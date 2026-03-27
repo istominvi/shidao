@@ -14,7 +14,7 @@ export default function AuthPage() {
           <p className="chip bg-lime-100 text-lime-700">Я взрослый</p>
           <h1 className="mt-4 text-3xl font-black">Вход / регистрация</h1>
           <p className="mt-2 text-sm text-neutral-600">
-            Единый аккаунт для ролей преподавателя и родителя. Выбор роли происходит после входа.
+            Единый аккаунт взрослого в Supabase Auth для ролей преподавателя и родителя. Выбор режима — после входа.
           </p>
           <div className="mt-5 space-y-3">
             <Input placeholder="Email или телефон" />
@@ -33,10 +33,10 @@ export default function AuthPage() {
           <p className="chip bg-violet-100 text-violet-700">Я ученик</p>
           <h2 className="mt-4 text-3xl font-black">Вход ученика</h2>
           <p className="mt-2 text-sm text-neutral-600">
-            Отдельный поток входа: логин ученика + пароль (или PIN в следующем этапе).
+            Отдельный UX-поток, но та же аутентификация через Supabase Auth (без отдельной student_credentials таблицы).
           </p>
           <div className="mt-5 space-y-3">
-            <Input placeholder="Логин ученика" />
+            <Input placeholder="Email/логин ученика" />
             <Input placeholder="Пароль" />
             <button className="w-full rounded-2xl bg-black px-4 py-3 font-semibold text-white">Войти как ученик</button>
           </div>
