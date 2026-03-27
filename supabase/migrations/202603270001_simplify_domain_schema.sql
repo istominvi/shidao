@@ -112,12 +112,7 @@ alter table if exists public.student
   alter column owner_adult_id set not null,
   alter column owner_kind set not null;
 
--- 8) Remove deprecated auth/storage tables from app domain
--- Supabase Auth (auth.users) is the source of truth for credentials.
-drop table if exists public.student_credentials;
-drop table if exists public.student_guardian_link;
-
--- 9) Trigger rename cleanup for readability
+-- 8) Trigger rename cleanup for readability
 -- PostgreSQL does not support `ALTER TRIGGER IF EXISTS`, so guard with catalog checks.
 do $$
 begin
@@ -151,7 +146,7 @@ begin
 end
 $$;
 
--- 10) RLS + helper function updates
+-- 9) RLS + helper function updates
 create or replace function public.current_adult_id()
 returns uuid
 language sql
@@ -183,6 +178,11 @@ begin
   end if;
 end
 $$;
+
+-- 10) Remove deprecated auth/storage tables from app domain
+-- Supabase Auth (auth.users) is the source of truth for credentials.
+drop table if exists public.student_credentials;
+drop table if exists public.student_guardian_link;
 
 create policy adult_self_select on public.adult
 for select using (id = public.current_adult_id());
