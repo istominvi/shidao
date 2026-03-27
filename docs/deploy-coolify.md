@@ -7,12 +7,11 @@
 4. Port: `3000`
 
 ## 2) Переменные окружения
-Заполните из `.env.example`:
+Текущий bootstrap использует **Supabase-подход** (без NextAuth), поэтому обязательны только Supabase-переменные ниже.
+Список должен совпадать 1:1 с `.env.example`:
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY`
-- `NEXTAUTH_SECRET`
-- `NEXTAUTH_URL`
 
 ## 3) Миграции в Supabase
 1. Откройте SQL Editor в Supabase.
