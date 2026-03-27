@@ -112,16 +112,41 @@ alter table if exists public.student
   alter column owner_adult_id set not null,
   alter column owner_kind set not null;
 
--- 8) Remove deprecated auth/storage tables from app domain
--- Supabase Auth (auth.users) is the source of truth for credentials.
-drop table if exists public.student_credentials;
-drop table if exists public.student_guardian_link;
+-- 8) Trigger rename cleanup for readability
+-- PostgreSQL does not support `ALTER TRIGGER IF EXISTS`, so guard with catalog checks.
+do $$
+begin
+  if exists (
+    select 1
+    from pg_trigger t
+    join pg_class c on c.oid = t.tgrelid
+    join pg_namespace n on n.oid = c.relnamespace
+    where n.nspname = 'public'
+      and c.relname = 'adult'
+      and t.tgname = 'trg_adult_account_updated_at'
+  ) then
+    execute 'alter trigger trg_adult_account_updated_at on public.adult rename to trg_adult_updated_at';
+  end if;
+end
+$$;
 
--- 9) Trigger rename cleanup for readability
-alter trigger if exists trg_adult_account_updated_at on public.adult rename to trg_adult_updated_at;
-alter trigger if exists trg_student_profile_updated_at on public.student rename to trg_student_updated_at;
+do $$
+begin
+  if exists (
+    select 1
+    from pg_trigger t
+    join pg_class c on c.oid = t.tgrelid
+    join pg_namespace n on n.oid = c.relnamespace
+    where n.nspname = 'public'
+      and c.relname = 'student'
+      and t.tgname = 'trg_student_profile_updated_at'
+  ) then
+    execute 'alter trigger trg_student_profile_updated_at on public.student rename to trg_student_updated_at';
+  end if;
+end
+$$;
 
--- 10) RLS + helper function updates
+-- 9) RLS + helper function updates
 create or replace function public.current_adult_id()
 returns uuid
 language sql
@@ -146,7 +171,18 @@ drop policy if exists adult_self_select on public.adult;
 drop policy if exists adult_self_update on public.adult;
 drop policy if exists role_membership_self_select on public.adult_role;
 drop policy if exists student_profile_select_policy on public.student;
-drop policy if exists guardian_link_self_select on public.student_guardian_link;
+do $$
+begin
+  if to_regclass('public.student_guardian_link') is not null then
+    execute 'drop policy if exists guardian_link_self_select on public.student_guardian_link';
+  end if;
+end
+$$;
+
+-- 10) Remove deprecated auth/storage tables from app domain
+-- Supabase Auth (auth.users) is the source of truth for credentials.
+drop table if exists public.student_credentials;
+drop table if exists public.student_guardian_link;
 
 create policy adult_self_select on public.adult
 for select using (id = public.current_adult_id());
