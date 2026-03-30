@@ -7,7 +7,7 @@ import { TopNav } from '@/components/top-nav';
 import { resolveCredentials, resolvePostSignInRoute } from '@/lib/auth-flow';
 import { signInWithPassword } from '@/lib/supabase-client';
 
-export default function SignInPage() {
+export default function LoginPage() {
   const router = useRouter();
   const [identifier, setIdentifier] = useState('');
   const [secret, setSecret] = useState('');
@@ -28,7 +28,7 @@ export default function SignInPage() {
       const resolved = await resolveCredentials(identifier);
 
       const session = await signInWithPassword(resolved.email, secret).catch(() => {
-        throw new Error('Неверный идентификатор или пароль/PIN-код.');
+        throw new Error('Неверный идентификатор или пароль.');
       });
 
       const route = await resolvePostSignInRoute(session);
@@ -49,27 +49,26 @@ export default function SignInPage() {
           <p className="chip bg-sky-100 text-sky-700">Единый вход</p>
           <h1 className="mt-4 text-3xl font-black">Вход в ShiDao</h1>
           <p className="mt-2 text-sm text-neutral-600">
-            Для взрослого используйте email. Для ученика используйте логин ученика. В поле ниже введите пароль или
-            PIN-код от Supabase Auth.
+            Взрослые входят по email. Ученики входят по выданному логину ученика через эту же форму.
           </p>
 
           <form className="mt-6 space-y-4" onSubmit={onSubmit}>
             <label className="block">
-              <span className="mb-2 block text-sm font-medium">Идентификатор</span>
+              <span className="mb-2 block text-sm font-medium">Email взрослого или логин ученика</span>
               <input
                 value={identifier}
                 onChange={(e) => setIdentifier(e.target.value)}
-                placeholder="Email взрослого или логин ученика"
+                placeholder="Введите email или логин ученика"
                 className="w-full rounded-2xl border border-black/10 bg-white px-4 py-3 outline-none transition focus:border-black/30 focus:ring-2 focus:ring-black/10"
               />
             </label>
             <label className="block">
-              <span className="mb-2 block text-sm font-medium">Пароль или PIN-код</span>
+              <span className="mb-2 block text-sm font-medium">Пароль</span>
               <input
                 type="password"
                 value={secret}
                 onChange={(e) => setSecret(e.target.value)}
-                placeholder="Введите пароль или PIN-код"
+                placeholder="Введите пароль"
                 className="w-full rounded-2xl border border-black/10 bg-white px-4 py-3 outline-none transition focus:border-black/30 focus:ring-2 focus:ring-black/10"
               />
             </label>
@@ -86,8 +85,8 @@ export default function SignInPage() {
           </form>
 
           <p className="mt-5 text-sm text-neutral-600">
-            Нет взрослого аккаунта?{' '}
-            <Link href="/auth/sign-up" className="font-semibold underline">
+            Нет аккаунта для взрослого?{' '}
+            <Link href="/join" className="font-semibold underline">
               Зарегистрироваться
             </Link>
           </p>

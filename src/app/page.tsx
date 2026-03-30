@@ -13,14 +13,14 @@ export default function LandingPage() {
           Прозрачное обучение китайскому языку для семьи, ученика и преподавателя
         </h1>
         <p className="mt-6 max-w-3xl text-lg text-neutral-700">
-          Взрослые создают один единый аккаунт, а ученик входит по своему логину. После первого входа взрослый выбирает
-          только одно направление и может позже переключить роль в шапке.
+          Родители и преподаватели создают один единый аккаунт. Ученикам логин выдаёт взрослый: они не регистрируются
+          самостоятельно и входят через общую форму.
         </p>
         <div className="mt-8 flex flex-wrap gap-3">
-          <Link className="chip bg-black px-7 py-4 text-white" href="/auth/sign-up">
-            Зарегистрироваться взрослому
+          <Link className="chip bg-black px-7 py-4 text-white" href="/join">
+            Создать аккаунт
           </Link>
-          <Link className="chip bg-neutral-100 px-7 py-4" href="/auth/sign-in">
+          <Link className="chip bg-neutral-100 px-7 py-4" href="/login">
             Войти в систему
           </Link>
         </div>
@@ -57,7 +57,7 @@ export default function LandingPage() {
           <p className="chip bg-violet-100 text-violet-700">Для ученика</p>
           <h3 className="mt-4 text-2xl font-black">Быстрый и понятный вход</h3>
           <p className="mt-2 text-neutral-700">
-            Единая форма входа принимает логин ученика и пароль/PIN-код. Не нужно выбирать тип аккаунта вручную.
+            Единая форма входа принимает логин ученика и пароль. Не нужно выбирать тип аккаунта вручную.
           </p>
           <Sparkles className="mt-4" />
         </article>

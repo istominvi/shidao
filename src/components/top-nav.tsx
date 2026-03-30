@@ -102,7 +102,7 @@ export function TopNav() {
 
   async function handleSignOut() {
     await signOut();
-    router.push('/auth/sign-in');
+    router.push('/login');
     router.refresh();
   }
 
@@ -116,10 +116,10 @@ export function TopNav() {
           <Link href="/" className={navLinkStyle}>
             Главная
           </Link>
-          <Link href="/auth/sign-in" className={navLinkStyle}>
+          <Link href="/login" className={navLinkStyle}>
             Вход
           </Link>
-          <Link href="/auth/sign-up" className={navLinkStyle}>
+          <Link href="/join" className={navLinkStyle}>
             Регистрация
           </Link>
         </nav>
@@ -142,7 +142,7 @@ export function TopNav() {
               Выйти
             </button>
           ) : (
-            <Link href="/auth/sign-in" className="rounded-full bg-black px-4 py-2 font-semibold text-white">
+            <Link href="/login" className="rounded-full bg-black px-4 py-2 font-semibold text-white">
               Войти
             </Link>
           )}
