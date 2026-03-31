@@ -33,7 +33,7 @@ export async function resolvePostSignInRoute(session: AuthSession): Promise<stri
     const roleList = roles.map((item) => item.role as AdultRole);
 
     if (roleList.length === 0) {
-      return '/auth/onboarding';
+      return '/onboarding';
     }
 
     const preferred = adult.current_role as AdultRole | null;

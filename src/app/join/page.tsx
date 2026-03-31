@@ -6,7 +6,7 @@ import { FormEvent, useState } from 'react';
 import { TopNav } from '@/components/top-nav';
 import { createAdultProfile, signUpWithPassword } from '@/lib/supabase-client';
 
-export default function SignUpPage() {
+export default function JoinPage() {
   const router = useRouter();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -42,7 +42,7 @@ export default function SignUpPage() {
 
       setSuccess('Аккаунт создан. Теперь выполните вход через единую форму.');
       setTimeout(() => {
-        router.push('/auth/sign-in');
+        router.push('/login');
       }, 800);
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : 'Ошибка регистрации.');
@@ -56,11 +56,22 @@ export default function SignUpPage() {
       <TopNav />
       <section className="container mt-8 pb-12">
         <div className="mx-auto max-w-xl glass rounded-3xl p-6 md:p-8">
-          <p className="chip bg-lime-100 text-lime-700">Регистрация взрослого</p>
-          <h1 className="mt-4 text-3xl font-black">Создать единый взрослый аккаунт</h1>
+          <p className="chip bg-lime-100 text-lime-700">Регистрация</p>
+          <h1 className="mt-4 text-3xl font-black">Создать единый аккаунт</h1>
           <p className="mt-2 text-sm text-neutral-600">
-            Родитель и преподаватель регистрируются одинаково. Выбор первого направления появится только после первого входа.
+            Родители и преподаватели регистрируются одинаково. Первое направление вы выберете после первого входа.
           </p>
+
+          <div className="mt-4 rounded-2xl border border-violet-200 bg-violet-50 px-4 py-3 text-sm text-violet-900">
+            <p className="font-semibold">Ученики не регистрируются самостоятельно.</p>
+            <p className="mt-1">
+              Если вы ученик, используйте выданный логин и пароль для входа.{' '}
+              <Link href="/login" className="font-semibold underline">
+                Перейти ко входу
+              </Link>
+              .
+            </p>
+          </div>
 
           <form className="mt-6 space-y-4" onSubmit={onSubmit}>
             <label className="block">
@@ -107,7 +118,7 @@ export default function SignUpPage() {
 
           <p className="mt-5 text-sm text-neutral-600">
             Уже есть аккаунт?{' '}
-            <Link href="/auth/sign-in" className="font-semibold underline">
+            <Link href="/login" className="font-semibold underline">
               Войти
             </Link>
           </p>
