@@ -1,5 +1,10 @@
 begin;
 
+-- Drop policies that depend on old scope columns before schema changes.
+drop policy if exists student_select_policy on public.student;
+drop policy if exists organization_select_policy on public.organization;
+drop policy if exists school_select_policy on public.school;
+
 -- 1) Rename organization -> school.
 do $$
 begin
@@ -149,8 +154,6 @@ alter table if exists public.student
   foreign key (school_id) references public.school(id) on delete cascade;
 
 -- 5) RLS policies for the new school context model.
-drop policy if exists student_select_policy on public.student;
-
 create policy student_select_policy on public.student
 for select using (
   owner_adult_id = public.current_adult_id()
@@ -167,7 +170,6 @@ for select using (
 );
 
 -- 6) Rename policy + grants to school.
-drop policy if exists organization_select_policy on public.school;
 create policy school_select_policy on public.school
 for select using (
   owner_adult_id = public.current_adult_id()
