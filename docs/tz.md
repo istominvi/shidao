@@ -9,7 +9,7 @@
 Используются только таблицы:
 - `adult`
 - `adult_role`
-- `organization`
+- `school`
 - `student`
 
 ## 3) Аутентификация
@@ -56,5 +56,7 @@
 
 ## 9) Поля, добавленные для UX
 - `adult.current_role` (`parent | teacher | NULL`) — активная роль взрослого.
+- `adult_role.school_id` (`NULL` для personal и `NOT NULL` для school-контекста).
+- `student.school_id` (`NULL` для personal и `NOT NULL` для school-контекста).
 - `student.login_identifier` — логин ученика для unified sign-in.
 - `student.auth_login_email` — email пользователя ученика в Supabase Auth.

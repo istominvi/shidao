@@ -145,7 +145,7 @@ export async function updateAdultCurrentRole(adultId: string, role: 'parent' | '
 
 export async function ensureAdultRole(adultId: string, role: 'parent' | 'teacher', accessToken: string) {
   const rows = await requestRest<Array<{ id: string }>>(
-    `adult_role?select=id&adult_id=eq.${adultId}&role=eq.${role}&scope_type=eq.personal`,
+    `adult_role?select=id&adult_id=eq.${adultId}&role=eq.${role}&school_id=is.null`,
     'GET',
     undefined,
     accessToken
@@ -156,7 +156,7 @@ export async function ensureAdultRole(adultId: string, role: 'parent' | 'teacher
   await requestRest(
     'adult_role',
     'POST',
-    { adult_id: adultId, role, scope_type: 'personal', scope_id: null },
+    { adult_id: adultId, role, school_id: null },
     accessToken
   );
 }

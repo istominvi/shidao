@@ -9,8 +9,12 @@
 Используются только таблицы:
 - `adult`
 - `adult_role`
-- `organization`
+- `school`
 - `student`
+
+Контекст задаётся через nullable `school_id`:
+- `school_id IS NULL` → personal-контекст;
+- `school_id IS NOT NULL` → school-контекст.
 
 ## Единая регистрация взрослого
 - Регистрация для взрослых выполняется через `/join`.
