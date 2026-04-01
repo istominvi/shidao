@@ -50,11 +50,13 @@ npm run dev
 Используются только таблицы домена:
 - `adult`
 - `adult_role`
-- `organization`
+- `school`
 - `student`
 
 Дополнительно для UX авторизации/ролей:
 - `adult.current_role` — активная роль взрослого (`parent | teacher` или `NULL`);
+- `adult_role.school_id` — контекст роли (`NULL` = personal, `NOT NULL` = school);
+- `student.school_id` — контекст ученика (`NULL` = personal, `NOT NULL` = school);
 - `student.login_identifier` — логин ученика для единой формы входа;
 - `student.auth_login_email` — email ученика в Supabase Auth.
 
