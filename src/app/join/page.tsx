@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FormEvent, useState } from 'react';
 import { TopNav } from '@/components/top-nav';
-import { createAdultProfile, signUpWithPassword } from '@/lib/supabase-client';
+import { signUpWithPassword } from '@/lib/supabase-client';
 
 export default function JoinPage() {
   const router = useRouter();
@@ -34,13 +34,9 @@ export default function JoinPage() {
         throw new Error('Не удалось создать аккаунт.');
       });
 
-      await createAdultProfile({
-        authUserId: user.id,
-        fullName: name.trim(),
-        email: email.trim().toLowerCase()
-      });
+      void user;
 
-      setSuccess('Аккаунт создан. Теперь выполните вход через единую форму.');
+      setSuccess('Аккаунт создан. Теперь выполните вход и завершите онбординг профиля.');
       setTimeout(() => {
         router.push('/login');
       }, 800);
@@ -59,7 +55,7 @@ export default function JoinPage() {
           <p className="chip bg-lime-100 text-lime-700">Регистрация</p>
           <h1 className="mt-4 text-3xl font-black">Создать единый аккаунт</h1>
           <p className="mt-2 text-sm text-neutral-600">
-            Родители и преподаватели регистрируются одинаково. Первое направление вы выберете после первого входа.
+            Родители и преподаватели регистрируются одинаково. После входа вы выберете профиль и завершите онбординг.
           </p>
 
           <div className="mt-4 rounded-2xl border border-violet-200 bg-violet-50 px-4 py-3 text-sm text-violet-900">
