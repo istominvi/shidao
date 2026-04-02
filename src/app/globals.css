@@ -51,3 +51,23 @@ a {
   align-items: center;
   gap: 0.45rem;
 }
+
+.landing-noise {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+  background-image:
+    radial-gradient(circle at 20% 10%, rgba(201, 255, 79, 0.26), transparent 30%),
+    radial-gradient(circle at 80% 5%, rgba(112, 183, 255, 0.2), transparent 33%),
+    radial-gradient(circle at 70% 70%, rgba(255, 182, 232, 0.24), transparent 32%),
+    radial-gradient(circle at 10% 85%, rgba(201, 180, 255, 0.24), transparent 30%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}
