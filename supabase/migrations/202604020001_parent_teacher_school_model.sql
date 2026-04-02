@@ -102,7 +102,7 @@ left join public.adult_role ar on ar.adult_id = a.id
 left join public.student s on s.owner_adult_id = a.id and s.owner_kind = 'parent'
 where a.auth_user_id is not null
   and (
-    ar.role = 'parent'
+    ar.role::text = 'parent'
     or s.id is not null
   )
 on conflict (user_id) do update
@@ -117,7 +117,7 @@ left join public.adult_role ar on ar.adult_id = a.id
 left join public.student s on s.created_by_adult_id = a.id
 where a.auth_user_id is not null
   and (
-    ar.role in ('teacher', 'org_teacher', 'org_owner', 'school_teacher', 'school_owner')
+    ar.role::text in ('teacher', 'org_teacher', 'org_owner', 'school_teacher', 'school_owner')
     or s.id is not null
   )
 on conflict (user_id) do update
@@ -139,13 +139,13 @@ insert into public.school_teacher (school_id, teacher_id, role, created_at)
 select distinct
   ar.school_id,
   t.id,
-  case when ar.role in ('org_owner', 'school_owner') then 'owner' else 'teacher' end,
+  case when ar.role::text in ('org_owner', 'school_owner') then 'owner' else 'teacher' end,
   coalesce(ar.created_at, now())
 from public.adult_role ar
 join public.adult a on a.id = ar.adult_id
 join public.teacher t on t.user_id = a.auth_user_id
 where ar.school_id is not null
-  and ar.role in ('org_owner', 'org_teacher', 'school_owner', 'school_teacher')
+  and ar.role::text in ('org_owner', 'org_teacher', 'school_owner', 'school_teacher')
 on conflict (school_id, teacher_id) do update
 set role = case
   when public.school_teacher.role = 'owner' or excluded.role = 'owner' then 'owner'
