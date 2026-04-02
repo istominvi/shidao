@@ -47,7 +47,7 @@ export default function LoginPage() {
       <section className="container mt-8 pb-12">
         <div className="mx-auto max-w-xl glass rounded-3xl p-6 md:p-8">
           <p className="chip bg-sky-100 text-sky-700">Единый вход</p>
-          <h1 className="mt-4 text-3xl font-black">Вход в ShiDao</h1>
+          <h1 className="mt-4 text-3xl font-black">Вход в Shidao</h1>
           <p className="mt-2 text-sm text-neutral-600">
             Взрослые входят по email. Ученики входят по выданному логину ученика через эту же форму.
           </p>

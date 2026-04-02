@@ -23,7 +23,7 @@ const notoSerifCjk = Noto_Serif_SC({
 });
 
 export const metadata: Metadata = {
-  title: 'ShiDao — обучение китайскому языку',
+  title: 'Shidao — обучение китайскому языку',
   description: 'Платформа для преподавателей, родителей и учеников.'
 };
 
