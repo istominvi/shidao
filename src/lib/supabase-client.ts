@@ -125,14 +125,13 @@ export async function signOut() {
 }
 
 export async function findStudentAuthEmail(login: string) {
-  const rows = await requestRest<Array<{ internal_auth_email: string | null; user_id: string | null }>>(
-    `student?select=internal_auth_email,user_id&login=eq.${encodeURIComponent(login)}`
+  const rows = await requestRest<Array<{ internal_auth_email: string | null }>>(
+    `student?select=internal_auth_email&login=eq.${encodeURIComponent(login)}`
   );
 
-  if (!rows[0]) return null;
+  if (!rows[0]?.internal_auth_email) return null;
 
-  const fallbackEmail = rows[0].user_id ? `${rows[0].user_id}@students.local` : null;
-  return rows[0].internal_auth_email ?? fallbackEmail;
+  return rows[0].internal_auth_email;
 }
 
 export async function findParentByAuthUserId(authUserId: string, accessToken: string) {
@@ -175,4 +174,103 @@ export async function onboardTeacherProfile(authUserId: string, fullName: string
     { p_user_id: authUserId, p_full_name: fullName },
     accessToken
   );
+}
+
+
+export type ParentStudentLearningContext = {
+  studentId: string;
+  studentName: string;
+  login: string;
+  classes: Array<{
+    classId: string;
+    className: string;
+    schoolId: string;
+    schoolName: string;
+  }>;
+};
+
+export async function loadParentLearningContexts(accessToken: string) {
+  const rows = await requestRest<
+    Array<{
+      id: string;
+      full_name: string | null;
+      login: string;
+      class_student: Array<{
+        class: {
+          id: string;
+          name: string;
+          school: { id: string; name: string } | null;
+        } | null;
+      }> | null;
+    }>
+  >(
+    'student?select=id,full_name,login,class_student(class:class_id(id,name,school:school_id(id,name)))&order=created_at.asc',
+    'GET',
+    undefined,
+    accessToken
+  );
+
+  return rows.map((student) => ({
+    studentId: student.id,
+    studentName: student.full_name ?? student.login,
+    login: student.login,
+    classes: (student.class_student ?? [])
+      .map((membership) => membership.class)
+      .filter((cls): cls is { id: string; name: string; school: { id: string; name: string } | null } => Boolean(cls))
+      .map((cls) => ({
+        classId: cls.id,
+        className: cls.name,
+        schoolId: cls.school?.id ?? '',
+        schoolName: cls.school?.name ?? 'Школа не указана'
+      }))
+  }));
+}
+
+export async function createStudentForClass(input: {
+  accessToken: string;
+  classId: string;
+  login: string;
+  password: string;
+  fullName?: string | null;
+  parentId?: string | null;
+}) {
+  const response = await fetch('/api/teacher/students', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${input.accessToken}`
+    },
+    body: JSON.stringify({
+      classId: input.classId,
+      login: input.login,
+      password: input.password,
+      fullName: input.fullName ?? null,
+      parentId: input.parentId ?? null
+    })
+  });
+
+  if (!response.ok) {
+    const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(payload?.error ?? 'Не удалось создать ученика.');
+  }
+
+  return (await response.json()) as { studentId: string; userId: string };
+}
+
+export async function attachExistingStudentToClass(input: { accessToken: string; classId: string; studentId: string }) {
+  const response = await fetch('/api/teacher/class-students', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${input.accessToken}`
+    },
+    body: JSON.stringify({ classId: input.classId, studentId: input.studentId })
+  });
+
+  if (!response.ok) {
+    const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(payload?.error ?? 'Не удалось привязать ученика к классу.');
+  }
+
+  return (await response.json()) as { classId: string; studentId: string };
 }
