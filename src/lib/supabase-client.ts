@@ -7,7 +7,7 @@ export type AuthSession = {
   refresh_token: string;
   expires_in: number;
   token_type: string;
-  user: { id: string; email?: string | null };
+  user: { id: string; email?: string | null; user_metadata?: { full_name?: string } | null };
 };
 
 const STORAGE_KEY = 'shidao.auth.session';
@@ -64,6 +64,26 @@ async function requestRest<T>(path: string, method = 'GET', payload?: Json, acce
   return (await response.json()) as T;
 }
 
+async function requestRpc<T>(fnName: string, payload: Json, accessToken: string): Promise<T> {
+  const { url, anonKey } = getSupabaseConfig();
+  const response = await fetch(`${url}/rest/v1/rpc/${fnName}`, {
+    method: 'POST',
+    headers: {
+      apikey: anonKey,
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(payload)
+  });
+
+  if (!response.ok) {
+    const payloadError = (await response.json().catch(() => null)) as { message?: string } | null;
+    throw new Error(payloadError?.message ?? 'Ошибка при выполнении серверной функции.');
+  }
+
+  return (await response.json()) as T;
+}
+
 export function saveSession(session: AuthSession) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
 }
@@ -104,20 +124,20 @@ export async function signOut() {
   clearSession();
 }
 
-export async function getCurrentUser(accessToken: string) {
-  return requestAuth<{ id: string; email?: string | null }>('user', 'GET', undefined, accessToken);
-}
-
-export async function findStudentAuthEmail(loginIdentifier: string) {
-  const rows = await requestRest<Array<{ auth_login_email: string | null }>>(
-    `student?select=auth_login_email&login_identifier=eq.${encodeURIComponent(loginIdentifier)}`
+export async function findStudentAuthEmail(login: string) {
+  const rows = await requestRest<Array<{ internal_auth_email: string | null; user_id: string | null }>>(
+    `student?select=internal_auth_email,user_id&login=eq.${encodeURIComponent(login)}`
   );
-  return rows[0]?.auth_login_email ?? null;
+
+  if (!rows[0]) return null;
+
+  const fallbackEmail = rows[0].user_id ? `${rows[0].user_id}@students.local` : null;
+  return rows[0].internal_auth_email ?? fallbackEmail;
 }
 
-export async function findAdultByAuthUserId(authUserId: string, accessToken: string) {
-  const rows = await requestRest<Array<{ id: string; current_role: 'parent' | 'teacher' | null }>>(
-    `adult?select=id,current_role&auth_user_id=eq.${authUserId}`,
+export async function findParentByAuthUserId(authUserId: string, accessToken: string) {
+  const rows = await requestRest<Array<{ id: string }>>(
+    `parent?select=id&user_id=eq.${authUserId}`,
     'GET',
     undefined,
     accessToken
@@ -125,45 +145,19 @@ export async function findAdultByAuthUserId(authUserId: string, accessToken: str
   return rows[0] ?? null;
 }
 
-export async function findAdultRoles(adultId: string, accessToken: string) {
-  return requestRest<Array<{ role: 'parent' | 'teacher' }>>(
-    `adult_role?select=role&adult_id=eq.${adultId}&role=in.(parent,teacher)`,
-    'GET',
-    undefined,
-    accessToken
-  );
-}
-
-export async function updateAdultCurrentRole(adultId: string, role: 'parent' | 'teacher', accessToken: string) {
-  await requestRest(
-    `adult?id=eq.${adultId}`,
-    'PATCH',
-    { current_role: role },
-    accessToken
-  );
-}
-
-export async function ensureAdultRole(adultId: string, role: 'parent' | 'teacher', accessToken: string) {
+export async function findTeacherByAuthUserId(authUserId: string, accessToken: string) {
   const rows = await requestRest<Array<{ id: string }>>(
-    `adult_role?select=id&adult_id=eq.${adultId}&role=eq.${role}&school_id=is.null`,
+    `teacher?select=id&user_id=eq.${authUserId}`,
     'GET',
     undefined,
     accessToken
   );
-
-  if (rows.length > 0) return;
-
-  await requestRest(
-    'adult_role',
-    'POST',
-    { adult_id: adultId, role, school_id: null },
-    accessToken
-  );
+  return rows[0] ?? null;
 }
 
 export async function findStudentByAuthUserId(authUserId: string, accessToken: string) {
   const rows = await requestRest<Array<{ id: string }>>(
-    `student?select=id&auth_user_id=eq.${authUserId}`,
+    `student?select=id&user_id=eq.${authUserId}`,
     'GET',
     undefined,
     accessToken
@@ -171,15 +165,14 @@ export async function findStudentByAuthUserId(authUserId: string, accessToken: s
   return rows[0] ?? null;
 }
 
-export async function createAdultProfile(input: {
-  authUserId: string;
-  fullName: string;
-  email: string;
-}) {
-  await requestRest('adult', 'POST', {
-    auth_user_id: input.authUserId,
-    full_name: input.fullName,
-    email: input.email,
-    current_role: null
-  });
+export async function onboardParentProfile(authUserId: string, fullName: string, accessToken: string) {
+  return requestRpc<string>('onboard_parent', { p_user_id: authUserId, p_full_name: fullName }, accessToken);
+}
+
+export async function onboardTeacherProfile(authUserId: string, fullName: string, accessToken: string) {
+  return requestRpc<Array<{ teacher_id: string; school_id: string; class_id: string }>>(
+    'onboard_teacher',
+    { p_user_id: authUserId, p_full_name: fullName },
+    accessToken
+  );
 }
