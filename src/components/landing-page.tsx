@@ -114,15 +114,15 @@ export function LandingPage() {
               ShiDao
             </Link>
             <nav aria-label="Навигация по лендингу" className="hidden flex-wrap gap-2 text-sm font-medium text-neutral-700 lg:flex">
-              <a href="#audience" className="rounded-full px-4 py-2 transition hover:bg-black hover:text-white">Для кого</a>
-              <a href="#method" className="rounded-full px-4 py-2 transition hover:bg-black hover:text-white">Методика</a>
-              <a href="#workflow" className="rounded-full px-4 py-2 transition hover:bg-black hover:text-white">Сценарий урока</a>
-              <a href="#access" className="rounded-full px-4 py-2 transition hover:bg-black hover:text-white">Доступ</a>
-              <a href="#faq" className="rounded-full px-4 py-2 transition hover:bg-black hover:text-white">FAQ</a>
+              <a href="#audience" className="rounded-full border border-transparent px-4 py-2 text-neutral-800 transition hover:border-black/10 hover:bg-black hover:text-white">Для кого</a>
+              <a href="#method" className="rounded-full border border-transparent px-4 py-2 text-neutral-800 transition hover:border-black/10 hover:bg-black hover:text-white">Методика</a>
+              <a href="#workflow" className="rounded-full border border-transparent px-4 py-2 text-neutral-800 transition hover:border-black/10 hover:bg-black hover:text-white">Сценарий урока</a>
+              <a href="#access" className="rounded-full border border-transparent px-4 py-2 text-neutral-800 transition hover:border-black/10 hover:bg-black hover:text-white">Доступ</a>
+              <a href="#faq" className="rounded-full border border-transparent px-4 py-2 text-neutral-800 transition hover:border-black/10 hover:bg-black hover:text-white">FAQ</a>
             </nav>
             <div className="flex gap-2">
-              <Link href="/login" className="rounded-full border border-black/15 bg-white px-4 py-2 text-sm font-semibold transition hover:border-black hover:bg-black hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/40">Войти</Link>
-              <Link href="/join" className="rounded-full bg-black px-4 py-2 text-sm font-semibold text-white transition hover:opacity-85 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/40">Создать аккаунт</Link>
+              <Link href="/login" className="rounded-full border border-black/20 bg-white px-4 py-2 text-sm font-semibold text-neutral-900 transition hover:border-black hover:bg-neutral-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/40">Войти</Link>
+              <Link href="/join" className="rounded-full bg-neutral-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-neutral-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/40">Создать аккаунт</Link>
             </div>
           </header>
 
@@ -135,8 +135,8 @@ export function LandingPage() {
                 урокам и заданиям, а ученик получает понятный маршрут работы и отдельный вход.
               </p>
               <div className="mt-8 flex flex-wrap gap-3">
-                <Link href="/join" className="inline-flex items-center gap-2 rounded-full bg-black px-6 py-3 text-sm font-semibold text-white transition hover:translate-y-[-1px] hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/40">Начать в Shidao <ChevronRight className="size-4" /></Link>
-                <Link href="/login" className="rounded-full border border-black/15 bg-white px-6 py-3 text-sm font-semibold transition hover:border-black hover:bg-neutral-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/40">У меня уже есть доступ</Link>
+                <Link href="/join" className="inline-flex items-center gap-2 rounded-full bg-neutral-900 px-6 py-3 text-sm font-semibold text-white transition hover:translate-y-[-1px] hover:bg-neutral-800 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/40">Начать в Shidao <ChevronRight className="size-4" /></Link>
+                <Link href="/login" className="rounded-full border border-black/20 bg-white px-6 py-3 text-sm font-semibold text-neutral-900 transition hover:border-black hover:bg-neutral-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/40">У меня уже есть доступ</Link>
               </div>
             </div>
 
@@ -300,8 +300,8 @@ export function LandingPage() {
           <h2 className="mt-6 text-3xl font-black leading-tight md:text-5xl">Начните в Shidao и соберите весь учебный процесс в одном месте</h2>
           <p className="mx-auto mt-4 max-w-2xl text-sm text-white/80 md:text-base">От первого урока до домашней работы и комментариев — единая методическая среда для преподавателя, родителя и ученика.</p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-            <Link href="/join" className="rounded-full bg-white px-6 py-3 text-sm font-semibold text-black transition hover:bg-lime-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white">Создать аккаунт</Link>
-            <Link href="/login" className="rounded-full border border-white/30 px-6 py-3 text-sm font-semibold transition hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white">Войти</Link>
+            <Link href="/join" className="rounded-full bg-lime-200 px-6 py-3 text-sm font-semibold text-neutral-950 transition hover:bg-lime-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white">Создать аккаунт</Link>
+            <Link href="/login" className="rounded-full border border-white/50 bg-white/5 px-6 py-3 text-sm font-semibold text-white transition hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white">Войти</Link>
           </div>
         </div>
       </section>
