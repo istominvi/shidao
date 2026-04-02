@@ -93,12 +93,22 @@ const faq = [
   }
 ];
 
-function SectionTitle({ eyebrow, title, description }: { eyebrow: string; title: string; description: string }) {
+function SectionTitle({
+  eyebrow,
+  title,
+  description,
+  invert = false
+}: {
+  eyebrow: string;
+  title: string;
+  description: string;
+  invert?: boolean;
+}) {
   return (
     <header className="max-w-3xl">
-      <p className="landing-chip landing-chip-soft text-xs tracking-[0.12em] uppercase">{eyebrow}</p>
-      <h2 className="mt-5 text-3xl font-black leading-tight tracking-tight md:text-5xl">{title}</h2>
-      <p className="mt-4 text-base text-neutral-700 md:text-lg">{description}</p>
+      <p className={`landing-chip text-xs tracking-[0.12em] uppercase ${invert ? 'bg-white/15 text-white border-white/20 shadow-none' : 'landing-chip-soft'}`}>{eyebrow}</p>
+      <h2 className={`mt-5 text-3xl font-black leading-tight tracking-tight md:text-5xl ${invert ? 'text-white' : ''}`}>{title}</h2>
+      <p className={`mt-4 text-base md:text-lg ${invert ? 'text-white/80' : 'text-neutral-700'}`}>{description}</p>
     </header>
   );
 }
@@ -187,12 +197,18 @@ export function LandingPage() {
       </section>
 
       <section className="container mt-6">
-        <div className="flex flex-wrap gap-2 rounded-[1.8rem] border border-black/5 bg-white/60 p-4 backdrop-blur-xl">
+        <div className="grid gap-3 rounded-[1.8rem] border border-black/5 bg-white/60 p-4 backdrop-blur-xl md:grid-cols-[1.2fr_0.8fr]">
+          <p className="px-1 text-xs font-semibold uppercase tracking-[0.15em] text-neutral-500 md:self-center">Опорные принципы среды</p>
+          <div className="hidden md:flex items-center justify-end">
+            <span className="landing-chip bg-black text-white">Art-directed rhythm</span>
+          </div>
+          <div className="md:col-span-2 flex flex-wrap gap-2">
           {trustItems.map((item, index) => (
             <span key={item} className={`landing-chip text-sm transition duration-300 hover:-translate-y-0.5 ${index % 4 === 0 ? 'rotate-1 bg-sky-100/80' : index % 4 === 1 ? '-rotate-1 bg-lime-100/80' : index % 4 === 2 ? 'rotate-2 bg-fuchsia-100/80' : '-rotate-2 bg-violet-100/70'}`}>
               {item}
             </span>
           ))}
+          </div>
         </div>
       </section>
 
@@ -204,7 +220,13 @@ export function LandingPage() {
         />
         <div className="mt-10 grid gap-5 md:grid-cols-6">
           {audienceCards.map(({ id, title, icon: Icon, points, tone }, index) => (
-            <article key={id} className={`landing-surface rounded-[1.9rem] border border-black/10 p-6 shadow-[0_16px_40px_rgba(20,20,20,0.08)] ${tone} ${index === 1 ? 'md:col-span-2 md:-translate-y-3' : 'md:col-span-2'}`}>
+            <article key={id} className={`landing-surface rounded-[1.9rem] border border-black/10 p-6 shadow-[0_16px_40px_rgba(20,20,20,0.08)] ${tone} ${
+              index === 0
+                ? 'md:col-span-3'
+                : index === 1
+                  ? 'md:col-span-2 md:translate-y-7'
+                  : 'md:col-span-3 md:-translate-y-5'
+            }`}>
               <Icon className="size-5" />
               <h3 className="mt-4 text-2xl font-black">{title}</h3>
               <ul className="mt-4 space-y-3 text-sm text-neutral-700">
@@ -218,16 +240,17 @@ export function LandingPage() {
       </section>
 
       <section id="method" className="container mt-16">
-        <div className="grid gap-6 rounded-[2rem] border border-black/10 bg-white/70 p-6 shadow-[0_18px_60px_rgba(20,20,20,0.08)] md:grid-cols-[1.1fr_0.9fr] md:p-8">
+        <div className="grid gap-6 rounded-[2rem] border border-black/10 bg-black p-6 text-white shadow-[0_24px_80px_rgba(10,10,10,0.32)] md:grid-cols-[1.1fr_0.9fr] md:p-8">
           <div>
-            <p className="text-4xl font-black leading-none tracking-[-0.04em] text-black/85 md:text-7xl">Методика = ритм</p>
+            <p className="text-4xl font-black leading-none tracking-[-0.04em] text-lime-200 md:text-7xl">Методика = ритм</p>
             <SectionTitle
               eyebrow="Методика — ядро"
               title="Shidao — не просто кабинет, а продуманная среда обучения."
               description="Курс, урок, материалы, домашняя работа и проверка собраны в единую цепочку. Преподаватель не собирает процесс вручную — он ведёт его по готовой логике."
+              invert
             />
           </div>
-          <div className="landing-surface rounded-[1.5rem] border border-black/10 bg-gradient-to-b from-white to-neutral-50 p-5">
+          <div className="landing-surface rounded-[1.5rem] border border-white/20 bg-gradient-to-b from-white to-neutral-100 p-5 text-black">
             {['Курс', 'Урок', 'Материалы', 'Домашнее задание', 'Тест / Комментарии'].map((step, idx) => (
               <div key={step} className="flex items-center gap-3">
                 <span className="my-3 inline-flex size-8 shrink-0 items-center justify-center rounded-full bg-black text-sm font-bold text-white">{idx + 1}</span>
@@ -245,9 +268,23 @@ export function LandingPage() {
           title="Сценарий одного урока — прозрачно для всех"
           description="Всё, что происходит вокруг урока, остаётся в рабочем пространстве и не теряется в чатах и заметках."
         />
-        <ol className="mt-8 grid gap-4 md:grid-cols-5">
+        <ol className="mt-8 grid gap-4 md:grid-cols-12">
           {workflow.map((item, idx) => (
-            <li key={item} className={`landing-surface rounded-3xl border border-black/10 p-5 ${idx === 1 || idx === 3 ? 'bg-black text-white shadow-[0_16px_32px_rgba(20,20,20,0.24)]' : 'bg-white/75'}`}>
+            <li
+              key={item}
+              className={`landing-surface rounded-3xl border border-black/10 p-5 ${
+                idx === 1 || idx === 3 ? 'bg-black text-white shadow-[0_16px_32px_rgba(20,20,20,0.24)]' : 'bg-white/75'
+              } ${
+                idx === 0
+                  ? 'md:col-span-5'
+                  : idx === 1
+                    ? 'md:col-span-7 md:translate-y-6'
+                    : idx === 2
+                      ? 'md:col-span-4'
+                      : idx === 3
+                        ? 'md:col-span-4 md:-translate-y-4'
+                        : 'md:col-span-4 md:translate-y-8'
+              }`}>
               <p className={`text-xs font-bold tracking-[0.14em] ${idx === 1 || idx === 3 ? 'text-white/70' : 'text-neutral-500'}`}>ШАГ {idx + 1}</p>
               <p className={`mt-3 text-sm leading-relaxed ${idx === 1 || idx === 3 ? 'text-white/90' : 'text-neutral-800'}`}>{item}</p>
             </li>
@@ -279,18 +316,29 @@ export function LandingPage() {
       </section>
 
       <section className="container mt-16">
-        <SectionTitle
-          eyebrow="Функциональные блоки"
-          title="Всё, что нужно для системного обучения китайскому"
-          description="Ключевые возможности собраны в едином пространстве и работают в контексте реальных уроков."
-        />
-        <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
+          <div className="lg:sticky lg:top-5">
+            <SectionTitle
+              eyebrow="Функциональные блоки"
+              title="Всё, что нужно для системного обучения китайскому"
+              description="Ключевые возможности собраны в едином пространстве и работают в контексте реальных уроков."
+            />
+            <p className="mt-8 text-5xl font-black leading-[0.95] tracking-[-0.04em] text-black md:text-7xl">Чистая архитектура. Живой ритм.</p>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {featureCards.map(({ title, icon: Icon }, idx) => (
-            <article key={title} className={`landing-surface rounded-3xl border border-black/10 p-5 ${idx % 4 === 0 ? 'bg-lime-100/70' : idx % 4 === 1 ? 'bg-sky-100/75' : idx % 4 === 2 ? 'bg-white/80' : 'bg-fuchsia-100/70'}`}>
+            <article
+              key={title}
+              className={`landing-surface rounded-3xl border border-black/10 p-5 ${
+                idx % 4 === 0 ? 'bg-lime-100/70' : idx % 4 === 1 ? 'bg-sky-100/75' : idx % 4 === 2 ? 'bg-white/80' : 'bg-fuchsia-100/70'
+              } ${
+                idx === 0 || idx === 5 ? 'sm:col-span-2' : ''
+              } ${idx === 2 ? 'sm:translate-y-5' : idx === 6 ? 'sm:-translate-y-4' : ''}`}>
               <Icon className="size-5" />
               <h3 className="mt-4 text-base font-bold">{title}</h3>
             </article>
           ))}
+          </div>
         </div>
       </section>
 
