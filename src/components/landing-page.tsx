@@ -11,7 +11,9 @@ import {
   GraduationCap,
   LayoutGrid,
   MessageSquare,
+  Orbit,
   School,
+  Sparkles,
   UserRound,
   Users,
   Waypoints
@@ -129,57 +131,99 @@ export function LandingPage() {
             </div>
           </header>
 
-          <div className="relative z-10 mt-10 grid items-center gap-10 lg:grid-cols-[1.03fr_0.97fr]">
+          <div className="relative z-10 mt-12 grid items-center gap-12 lg:grid-cols-[1.02fr_0.98fr]">
             <div>
-              <p className="landing-chip -rotate-2 bg-lime-200/85">Премиальная среда для преподавания китайского</p>
-              <h1 className="mt-6 text-4xl font-black leading-[0.98] tracking-[-0.03em] md:text-7xl">Китайский по готовой методике — в единой учебной среде для преподавателя, родителя и ученика</h1>
+              <p className="landing-chip -rotate-2 bg-lime-200/90">Премиальная платформа обучения китайскому</p>
+              <h1 className="mt-7 text-4xl font-black leading-[0.95] tracking-[-0.04em] md:text-7xl">
+                Методика уже внутри —
+                <span className="relative mx-2 inline-flex rounded-[1.2rem] bg-[linear-gradient(120deg,#b5ff6d,#86b8ff,#ecabff)] px-3 py-1 text-black shadow-[0_14px_34px_rgba(80,80,80,0.2)]">
+                  teacher + parent + student
+                </span>
+                в одном живом процессе
+              </h1>
               <p className="mt-6 max-w-xl text-base leading-relaxed text-neutral-700 md:text-lg">
-                Методика уже встроена в платформу: преподаватель ведёт обучение системно, родитель видит прогресс, а
-                ученик получает понятный маршрут и отдельный вход.
+                Преподаватель ведёт урок по готовой логике, родитель видит прозрачный прогресс, ученик идёт по
+                понятному маршруту — всё в едином пространстве Shidao.
               </p>
-              <div className="mt-8 flex flex-wrap gap-3">
-                <Link href="/join" className="landing-btn landing-btn-primary inline-flex items-center gap-2">Начать в Shidao <ChevronRight className="size-4" /></Link>
-                <Link href="/login" className="landing-btn landing-btn-muted">У меня уже есть доступ</Link>
+              <div className="mt-9 flex flex-wrap gap-3">
+                <Link
+                  href="/join"
+                  className="landing-btn inline-flex items-center gap-2 border-transparent bg-[linear-gradient(120deg,#171717,#2f2f2f,#141414)] px-6 py-3 text-white shadow-[0_18px_44px_rgba(17,17,17,0.35)]"
+                >
+                  Начать в Shidao <ChevronRight className="size-4" />
+                </Link>
+                <Link
+                  href="/login"
+                  className="landing-btn inline-flex items-center gap-2 border-black/10 bg-white/95 px-6 py-3 shadow-[0_10px_25px_rgba(17,17,17,0.14)]"
+                >
+                  У меня уже есть доступ
+                </Link>
               </div>
             </div>
 
-            <div className="relative">
-              <div className="absolute -right-3 -top-6 z-20">
-                <span className="landing-chip floating-chip rotate-[3deg] bg-white text-neutral-900">Методика внутри</span>
+            <div className="relative pb-4 pt-10 sm:pt-12">
+              <div className="absolute -left-2 top-0 z-30 hidden md:block">
+                <span className="landing-chip floating-chip -rotate-6 bg-sky-100/95 text-sky-700">
+                  <Sparkles className="size-4" /> Методика внутри
+                </span>
               </div>
-              <div className="absolute -left-5 top-10 z-20 hidden sm:block">
-                <span className="landing-chip floating-chip -rotate-3 bg-sky-100 text-neutral-800">Личный режим</span>
+              <div className="absolute right-0 top-3 z-30">
+                <span className="landing-chip floating-chip rotate-[8deg] bg-lime-100/95 text-lime-800">
+                  <Orbit className="size-4" /> Связанные роли
+                </span>
               </div>
-              <div className="absolute -right-6 bottom-14 z-20 hidden md:block">
-                <span className="landing-chip floating-chip rotate-2 bg-fuchsia-100 text-neutral-900">Школьный режим</span>
-              </div>
-              <div className="absolute left-10 top-[58%] z-20 hidden md:block">
-                <span className="landing-chip floating-chip -rotate-2 bg-lime-100 text-neutral-900">Тред в контексте урока</span>
+              <div className="absolute -bottom-2 left-8 z-30 hidden sm:block">
+                <span className="landing-chip floating-chip -rotate-3 bg-fuchsia-100/95 text-fuchsia-800">Тред в контексте урока</span>
               </div>
 
-              <div className="relative rounded-[2.2rem] border border-black/10 bg-gradient-to-br from-white via-white to-violet-50 p-4 shadow-[0_40px_90px_rgba(17,24,39,0.18)] md:p-6">
-                <div className="absolute inset-x-10 top-0 h-12 rounded-b-[2rem] bg-gradient-to-b from-white/85 to-transparent" aria-hidden="true" />
-                <div className="landing-surface rounded-[1.8rem] bg-[linear-gradient(140deg,rgba(240,247,255,0.9),rgba(255,255,255,0.9),rgba(255,241,250,0.85))] p-4 md:p-5">
-                  <article className="landing-card">
-                    <p className="text-xs uppercase tracking-[0.2em] text-neutral-500">Сегодня • HSK 2</p>
-                    <h3 className="mt-2 text-lg font-black">Урок: Диалоги и грамматика</h3>
-                    <p className="mt-2 text-sm text-neutral-700">Материалы, домашняя работа и комментарии собраны в едином пространстве обучения.</p>
-                  </article>
-                  <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                    <article className="landing-card bg-white/90">
+              <div className="relative overflow-hidden rounded-[2.5rem] border border-white/70 bg-[radial-gradient(circle_at_15%_15%,rgba(201,255,79,0.28),transparent_34%),radial-gradient(circle_at_85%_12%,rgba(112,183,255,0.28),transparent_35%),linear-gradient(135deg,#ffffff_0%,#fafcff_55%,#fff5fd_100%)] p-4 shadow-[0_45px_110px_rgba(17,24,39,0.2)] md:p-6">
+                <div className="landing-surface relative rounded-[2rem] border border-black/10 bg-white/80 p-4 backdrop-blur-sm md:p-5">
+                  <div className="flex items-center justify-between rounded-2xl border border-black/10 bg-white/90 px-4 py-3">
+                    <p className="text-sm font-semibold">Сегодняшний урок · HSK 2</p>
+                    <span className="rounded-full bg-black px-3 py-1 text-xs font-semibold text-white">Live</span>
+                  </div>
+
+                  <div className="mt-3 rounded-[1.4rem] border border-black/10 bg-[linear-gradient(130deg,rgba(188,243,255,0.34),rgba(255,255,255,0.9),rgba(255,203,243,0.32))] p-4">
+                    <h3 className="text-lg font-black md:text-xl">Диалоги + грамматика + речь</h3>
+                    <p className="mt-2 text-sm text-neutral-700">Материалы, домашнее задание и обсуждение собраны прямо внутри урока.</p>
+                    <div className="mt-4 grid gap-2 sm:grid-cols-3">
+                      {['Преподаватель ведёт', 'Родитель наблюдает', 'Ученик выполняет'].map((role, idx) => (
+                        <span
+                          key={role}
+                          className={`rounded-xl border border-black/10 px-3 py-2 text-xs font-semibold shadow-[0_8px_18px_rgba(20,20,20,0.08)] ${
+                            idx === 0 ? 'bg-sky-100/90' : idx === 1 ? 'bg-lime-100/90' : 'bg-fuchsia-100/90'
+                          }`}
+                        >
+                          {role}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="mt-3 grid gap-3 sm:grid-cols-[1.1fr_0.9fr]">
+                    <article className="landing-card bg-white/95">
                       <p className="text-sm font-semibold">Домашнее задание</p>
-                      <p className="mt-1 text-sm text-neutral-600">Назначено группе 3A, дедлайн до пятницы.</p>
+                      <p className="mt-1 text-sm text-neutral-600">Назначено группе, дедлайн и критерии видны всем участникам процесса.</p>
                     </article>
-                    <article className="landing-card border-black/20 bg-black text-white shadow-[0_20px_35px_rgba(10,10,10,0.35)]">
+                    <article className="landing-card border-black/20 bg-black text-white shadow-[0_20px_35px_rgba(10,10,10,0.33)]">
                       <p className="text-sm font-semibold">Кабинет родителя</p>
-                      <p className="mt-1 text-sm text-white/80">Посещаемость, статус и комментарии по уроку.</p>
+                      <p className="mt-1 text-sm text-white/80">Прогресс, посещаемость и комментарии преподавателя.</p>
                     </article>
                   </div>
-                  <article className="landing-card mt-3 border-dashed border-black/20 bg-white/80">
-                    <p className="text-sm font-semibold">Тред занятия</p>
-                    <p className="mt-1 text-sm text-neutral-600">Текст, файл и голосовые ответы ученика остаются рядом с этим уроком.</p>
-                  </article>
                 </div>
+
+                <article className="landing-card absolute -left-2 top-[42%] z-20 hidden w-44 -rotate-[6deg] bg-white/95 md:block">
+                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-neutral-500">Teacher</p>
+                  <p className="mt-2 text-sm font-semibold">План урока и проверка ДЗ</p>
+                </article>
+                <article className="landing-card absolute -right-3 bottom-6 z-20 hidden w-44 rotate-[7deg] bg-white/95 md:block">
+                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-neutral-500">Parent</p>
+                  <p className="mt-2 text-sm font-semibold">Статус урока и обратная связь</p>
+                </article>
+                <article className="landing-card absolute bottom-2 left-1/2 z-20 hidden w-44 -translate-x-1/2 -rotate-3 bg-white/95 sm:block md:w-52">
+                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-neutral-500">Student</p>
+                  <p className="mt-2 text-sm font-semibold">Отправляет текст, файл или голос</p>
+                </article>
               </div>
             </div>
           </div>
