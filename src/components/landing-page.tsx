@@ -17,7 +17,7 @@ import {
   Waypoints
 } from 'lucide-react';
 
-const trustItems = ['Методика внутри платформы', 'Урок как центральная единица', 'Домашние задания и тред рядом', 'Единая учебная среда', 'Кабинет родителя', 'История занятий'];
+const trustItems = ['Методика внутри платформы', 'Урок как центр процесса', 'Задания и обсуждение рядом', 'Единая учебная среда', 'Кабинет родителя', 'История занятий'];
 
 const audienceCards = [
   {
@@ -25,26 +25,26 @@ const audienceCards = [
     title: 'Для преподавателя',
     tone: 'bg-sky-100/70',
     icon: GraduationCap,
-    points: ['Ведёт группы и уроки в единой структуре.', 'Работает по встроенной методике без хаоса в материалах.', 'Назначает домашние задания группе или ученику.', 'Комментирует и общается в треде конкретного занятия.']
+    points: ['Ведёт группы и уроки в единой структуре.', 'Работает по встроенной методике — без хаоса в материалах.', 'Назначает домашние задания группе или ученику.', 'Обсуждает прогресс прямо в треде нужного урока.']
   },
   {
     id: 'parent',
     title: 'Для родителя',
     tone: 'bg-lime-100/80',
     icon: UserRound,
-    points: ['Видит актуальное расписание ребёнка.', 'Контролирует задания и статус выполнения.', 'Получает комментарии по урокам и домашней работе.', 'Понимает, как движется обучение по шагам.']
+    points: ['Видит актуальное расписание ребёнка.', 'Следит за заданиями и статусом выполнения.', 'Получает комментарии по урокам и домашней работе.', 'Понимает, как ребёнок движется по программе.']
   },
   {
     id: 'student',
     title: 'Для ученика',
     tone: 'bg-fuchsia-100/70',
     icon: BookOpen,
-    points: ['Заходит в отдельный, понятный кабинет.', 'Открывает урок и материалы в нужном порядке.', 'Сдаёт домашние задания текстом, файлом или голосом.', 'Общается в треде именно по своему занятию.']
+    points: ['Заходит в отдельный, понятный кабинет.', 'Открывает урок и материалы в нужном порядке.', 'Сдаёт домашние задания текстом, файлом или голосом.', 'Обсуждает вопросы в треде именно своего занятия.']
   }
 ];
 
 const workflow = [
-  'Урок появляется в расписании и сразу фиксирует контекст занятия.',
+  'Урок появляется в расписании и задаёт рамку занятия.',
   'Преподаватель открывает материалы и задаёт формат работы на урок.',
   'Домашнее задание назначается группе или конкретному ученику.',
   'Ученик отправляет ответ текстом, файлом или голосовым сообщением.',
@@ -69,7 +69,7 @@ const faq = [
   },
   {
     q: 'Что видит родитель в системе?',
-    a: 'Расписание, задания, статусы выполнения, комментарии и историю занятий — всё в одном интерфейсе.'
+    a: 'Расписание, задания, статусы выполнения, комментарии и историю занятий — всё в одном месте.'
   },
   {
     q: 'Можно ли использовать платформу частному преподавателю?',
@@ -81,7 +81,7 @@ const faq = [
   },
   {
     q: 'Как устроены задания и коммуникация?',
-    a: 'Задания назначаются по уроку, а обсуждение сохраняется в треде этого же занятия — без потери контекста.'
+    a: 'Задания назначаются по уроку, а обсуждение остаётся в треде этого же занятия — ничего не теряется.'
   },
   {
     q: 'Можно ли прикладывать файлы и голосовые сообщения?',
@@ -121,7 +121,7 @@ export function LandingPage() {
               <a href="#method" className="rounded-full border border-transparent px-4 py-2 text-neutral-800 transition hover:border-black/10 hover:bg-black hover:text-white">Методика</a>
               <a href="#workflow" className="rounded-full border border-transparent px-4 py-2 text-neutral-800 transition hover:border-black/10 hover:bg-black hover:text-white">Сценарий урока</a>
               <a href="#access" className="rounded-full border border-transparent px-4 py-2 text-neutral-800 transition hover:border-black/10 hover:bg-black hover:text-white">Доступ</a>
-              <a href="#faq" className="rounded-full border border-transparent px-4 py-2 text-neutral-800 transition hover:border-black/10 hover:bg-black hover:text-white">FAQ</a>
+              <a href="#faq" className="rounded-full border border-transparent px-4 py-2 text-neutral-800 transition hover:border-black/10 hover:bg-black hover:text-white">Вопросы</a>
             </nav>
             <div className="flex gap-2">
               <Link href="/login" className="landing-btn landing-btn-muted">Войти</Link>
@@ -132,10 +132,10 @@ export function LandingPage() {
           <div className="relative z-10 mt-10 grid items-center gap-10 lg:grid-cols-[1.03fr_0.97fr]">
             <div>
               <p className="landing-chip -rotate-2 bg-lime-200/85">Премиальная среда для преподавания китайского</p>
-              <h1 className="mt-6 text-4xl font-black leading-[0.98] tracking-[-0.03em] md:text-7xl">Китайский язык по готовой методике — в единой учебной среде для преподавателя, родителя и ученика</h1>
+              <h1 className="mt-6 text-4xl font-black leading-[0.98] tracking-[-0.03em] md:text-7xl">Китайский по готовой методике — в единой учебной среде для преподавателя, родителя и ученика</h1>
               <p className="mt-6 max-w-xl text-base leading-relaxed text-neutral-700 md:text-lg">
-                Методика уже встроена в платформу: преподаватель ведёт обучение системно, родитель видит прогресс по
-                урокам и заданиям, а ученик получает понятный маршрут работы и отдельный вход.
+                Методика уже встроена в платформу: преподаватель ведёт обучение системно, родитель видит прогресс, а
+                ученик получает понятный маршрут и отдельный вход.
               </p>
               <div className="mt-8 flex flex-wrap gap-3">
                 <Link href="/join" className="landing-btn landing-btn-primary inline-flex items-center gap-2">Начать в Shidao <ChevronRight className="size-4" /></Link>
@@ -163,7 +163,7 @@ export function LandingPage() {
                   <article className="landing-card">
                     <p className="text-xs uppercase tracking-[0.2em] text-neutral-500">Сегодня • HSK 2</p>
                     <h3 className="mt-2 text-lg font-black">Урок: Диалоги и грамматика</h3>
-                    <p className="mt-2 text-sm text-neutral-700">Материалы, домашняя работа и комментарии собраны в общем пространстве обучения.</p>
+                    <p className="mt-2 text-sm text-neutral-700">Материалы, домашняя работа и комментарии собраны в едином пространстве обучения.</p>
                   </article>
                   <div className="mt-3 grid gap-3 sm:grid-cols-2">
                     <article className="landing-card bg-white/90">
@@ -200,7 +200,7 @@ export function LandingPage() {
         <SectionTitle
           eyebrow="Для кого платформа"
           title="Три роли — один единый рабочий процесс"
-          description="Каждый участник учебного процесса получает свой понятный интерфейс и только нужные действия."
+          description="Каждый участник учебного процесса получает понятный интерфейс и только нужные действия."
         />
         <div className="mt-10 grid gap-5 md:grid-cols-6">
           {audienceCards.map(({ id, title, icon: Icon, points, tone }, index) => (
@@ -223,8 +223,8 @@ export function LandingPage() {
             <p className="text-4xl font-black leading-none tracking-[-0.04em] text-black/85 md:text-7xl">Методика = ритм</p>
             <SectionTitle
               eyebrow="Методика — ядро"
-              title="Shidao — не просто кабинет. Это среда обучения вокруг готовой структуры."
-              description="Курс, урок, материалы, домашняя работа и проверка связаны в единую цепочку. Преподаватель не собирает процесс вручную — он ведёт его по заранее выстроенной логике."
+              title="Shidao — не просто кабинет, а продуманная среда обучения."
+              description="Курс, урок, материалы, домашняя работа и проверка собраны в единую цепочку. Преподаватель не собирает процесс вручную — он ведёт его по готовой логике."
             />
           </div>
           <div className="landing-surface rounded-[1.5rem] border border-black/10 bg-gradient-to-b from-white to-neutral-50 p-5">
@@ -243,7 +243,7 @@ export function LandingPage() {
         <SectionTitle
           eyebrow="Как это работает"
           title="Сценарий одного урока — прозрачно для всех"
-          description="Всё, что происходит вокруг урока, остаётся в связной рабочей среде и не теряется в чатах и заметках."
+          description="Всё, что происходит вокруг урока, остаётся в рабочем пространстве и не теряется в чатах и заметках."
         />
         <ol className="mt-8 grid gap-4 md:grid-cols-5">
           {workflow.map((item, idx) => (
@@ -268,8 +268,8 @@ export function LandingPage() {
           <p className="landing-chip rotate-2 bg-violet-100/90">Личный и школьный режим</p>
           <h3 className="mt-5 text-3xl font-black leading-tight">Подходит частным преподавателям и командам школ</h3>
           <p className="mt-4 text-sm leading-relaxed text-neutral-700 md:text-base">
-            Начинайте в личном формате и масштабируйтесь до школьного режима, когда растёт команда. Доступы и данные
-            разделяются аккуратно, чтобы каждый работал в своей зоне ответственности.
+            Начинайте в личном формате и переходите в школьный режим, когда растёт команда. Доступы и данные
+            разграничены аккуратно, чтобы каждый работал в своей зоне ответственности.
           </p>
           <div className="mt-6 flex flex-wrap gap-2">
             <span className="landing-chip bg-sky-100/80"><GraduationCap className="size-4" /> Частный преподаватель</span>
@@ -282,7 +282,7 @@ export function LandingPage() {
         <SectionTitle
           eyebrow="Функциональные блоки"
           title="Всё, что нужно для системного обучения китайскому"
-          description="Ключевые возможности собраны в общем пространстве обучения и работают в контексте реальных уроков."
+          description="Ключевые возможности собраны в едином пространстве и работают в контексте реальных уроков."
         />
         <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {featureCards.map(({ title, icon: Icon }, idx) => (
@@ -296,7 +296,7 @@ export function LandingPage() {
 
       <section id="faq" className="container mt-16">
         <SectionTitle
-          eyebrow="FAQ"
+          eyebrow="Частые вопросы"
           title="Коротко о самом важном"
           description="Собрали ответы на частые вопросы перед стартом работы в Shidao."
         />

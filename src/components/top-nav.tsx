@@ -67,7 +67,7 @@ export function TopNav() {
     <header className="container pt-6">
       <div className="glass flex items-center justify-between gap-3 rounded-3xl px-5 py-4 shadow-sm">
         <Link href="/" className="text-xl font-black tracking-tight">
-          ShiDao.ru
+          Shidao
         </Link>
         <nav className="hidden gap-2 md:flex">
           <Link href="/" className={navLinkStyle}>Главная</Link>
