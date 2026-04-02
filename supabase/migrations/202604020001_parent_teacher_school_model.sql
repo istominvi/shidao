@@ -125,6 +125,9 @@ set full_name = excluded.full_name,
     timezone = excluded.timezone,
     updated_at = greatest(public.teacher.updated_at, excluded.updated_at);
 
+-- Drop legacy policies before dropping legacy columns they reference.
+drop policy if exists school_select_policy on public.school;
+
 -- School cleanup from legacy organization/school columns.
 alter table if exists public.school
   alter column name set not null,
@@ -271,7 +274,6 @@ drop policy if exists adult_self_select on public.adult;
 drop policy if exists adult_self_update on public.adult;
 drop policy if exists adult_role_self_select on public.adult_role;
 drop policy if exists student_select_policy on public.student;
-drop policy if exists school_select_policy on public.school;
 
 drop function if exists public.current_adult_account_id();
 drop function if exists public.current_adult_id();
