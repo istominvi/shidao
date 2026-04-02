@@ -43,13 +43,77 @@ a {
   backdrop-filter: blur(8px);
 }
 
-.chip {
+.chip,
+.landing-chip {
   border-radius: 999px;
-  padding: 0.6rem 1rem;
-  font-weight: 600;
+  padding: 0.58rem 1rem;
+  font-weight: 650;
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
+  border: 1px solid rgba(20, 20, 20, 0.1);
+  box-shadow: 0 8px 20px rgba(20, 20, 20, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+}
+
+.landing-chip-soft {
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.landing-btn {
+  border-radius: 999px;
+  padding: 0.72rem 1.25rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(20, 20, 20, 0.18);
+  transition: transform 220ms ease, box-shadow 220ms ease, background-color 220ms ease, border-color 220ms ease;
+}
+
+.landing-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 24px rgba(20, 20, 20, 0.12);
+}
+
+.landing-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(20, 20, 20, 0.35), 0 10px 22px rgba(20, 20, 20, 0.16);
+}
+
+.landing-btn-primary {
+  background: #141414;
+  color: #fff;
+  border-color: #141414;
+}
+
+.landing-btn-primary:hover {
+  background: #27272a;
+}
+
+.landing-btn-muted {
+  background: rgba(255, 255, 255, 0.92);
+  color: #141414;
+}
+
+.landing-surface {
+  box-shadow: 0 22px 42px rgba(20, 20, 20, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+}
+
+.landing-card {
+  border-radius: 1.35rem;
+  border: 1px solid rgba(20, 20, 20, 0.1);
+  background: rgba(255, 255, 255, 0.84);
+  padding: 1rem;
+  box-shadow: 0 14px 30px rgba(20, 20, 20, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.82);
+}
+
+.floating-chip {
+  animation: floaty 5.5s ease-in-out infinite;
+}
+
+.floating-chip:nth-child(2n) {
+  animation-duration: 6.4s;
 }
 
 .landing-noise {
@@ -62,6 +126,26 @@ a {
     radial-gradient(circle at 80% 5%, rgba(112, 183, 255, 0.2), transparent 33%),
     radial-gradient(circle at 70% 70%, rgba(255, 182, 232, 0.24), transparent 32%),
     radial-gradient(circle at 10% 85%, rgba(201, 180, 255, 0.24), transparent 30%);
+}
+
+@keyframes floaty {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+@media (max-width: 768px) {
+  .landing-btn {
+    padding: 0.75rem 1.15rem;
+  }
+
+  .landing-chip {
+    font-size: 0.82rem;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
