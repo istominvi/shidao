@@ -245,36 +245,112 @@ type SessionFallback = {
   fullName?: string | null;
 };
 
+type StudentNameFields = {
+  firstName?: string | null;
+  lastName?: string | null;
+  login?: string | null;
+};
+
 type Settled<T> = PromiseSettledResult<T>;
 
-function logUserContextPartFailure(userId: string, part: string, result: Settled<unknown>) {
+function formatStudentFullName(input: StudentNameFields) {
+  const firstName = input.firstName?.trim() ?? '';
+  const lastName = input.lastName?.trim() ?? '';
+  const login = input.login?.trim() ?? '';
+  const combined = [firstName, lastName].filter(Boolean).join(' ').trim();
+  return combined || firstName || login || null;
+}
+
+function splitStudentFullName(fullName?: string | null) {
+  const normalized = fullName?.trim() ?? '';
+  if (!normalized) return { firstName: null, lastName: null };
+
+  const [firstName, ...rest] = normalized.split(/\s+/);
+  const lastName = rest.join(' ').trim();
+
+  return {
+    firstName: firstName || null,
+    lastName: lastName || null
+  };
+}
+
+function logUserContextPartFailure(
+  userId: string,
+  query: { part: string; select: string; path: string },
+  result: Settled<unknown>
+) {
   if (result.status === 'rejected') {
-    console.error('[user-context] failed to load part', { userId, part, error: result.reason });
+    const errorMessage = result.reason instanceof Error ? result.reason.message : String(result.reason);
+    console.error('[user-context] failed to load part', {
+      userId,
+      part: query.part,
+      select: query.select,
+      path: query.path,
+      error: errorMessage
+    });
   }
 }
 
 export async function getUserContextById(userId: string, fallback?: SessionFallback) {
   const startedAt = Date.now();
+  const userContextQueries = {
+    parent: {
+      part: 'parent query',
+      select: 'id,full_name',
+      path: `/rest/v1/parent?select=id,full_name&user_id=eq.${userId}&limit=1`
+    },
+    teacher: {
+      part: 'teacher query',
+      select: 'id,full_name',
+      path: `/rest/v1/teacher?select=id,full_name&user_id=eq.${userId}&limit=1`
+    },
+    student: {
+      part: 'student query',
+      select: 'id,login,first_name,last_name',
+      path: `/rest/v1/student?select=id,login,first_name,last_name&user_id=eq.${userId}&limit=1`
+    },
+    preference: {
+      part: 'user_preference query',
+      select: 'last_active_profile,last_selected_school_id,theme,settings',
+      path: `/rest/v1/user_preference?select=last_active_profile,last_selected_school_id,theme,settings&user_id=eq.${userId}&limit=1`
+    },
+    security: {
+      part: 'user_security query',
+      select: 'pin_hash',
+      path: `/rest/v1/user_security?select=pin_hash&user_id=eq.${userId}&limit=1`
+    },
+    authUser: {
+      part: '/auth/v1/admin/users/{id}',
+      select: 'admin auth user payload',
+      path: `/auth/v1/admin/users/${userId}`
+    }
+  };
+
   const [parentResult, teacherResult, studentResult, prefResult, securityResult, authAdminUserResult] = await Promise.allSettled([
-    request<Array<{ id: string; full_name: string | null }>>(`/rest/v1/parent?select=id,full_name&user_id=eq.${userId}&limit=1`, 'GET', { admin: true }),
-    request<Array<{ id: string; full_name: string | null }>>(`/rest/v1/teacher?select=id,full_name&user_id=eq.${userId}&limit=1`, 'GET', { admin: true }),
-    request<Array<{ id: string; login: string; full_name: string | null }>>(`/rest/v1/student?select=id,login,full_name&user_id=eq.${userId}&limit=1`, 'GET', { admin: true }),
-    request<Array<{ last_active_profile: ProfileKind | null; last_selected_school_id: string | null; theme: string | null; settings: Record<string, unknown> }>>(`/rest/v1/user_preference?select=last_active_profile,last_selected_school_id,theme,settings&user_id=eq.${userId}&limit=1`, 'GET', { admin: true }),
-    request<Array<{ pin_hash: string | null }>>(`/rest/v1/user_security?select=pin_hash&user_id=eq.${userId}&limit=1`, 'GET', { admin: true }),
-    request<unknown>(`/auth/v1/admin/users/${userId}`, 'GET', { admin: true })
+    request<Array<{ id: string; full_name: string | null }>>(userContextQueries.parent.path, 'GET', { admin: true }),
+    request<Array<{ id: string; full_name: string | null }>>(userContextQueries.teacher.path, 'GET', { admin: true }),
+    request<Array<{ id: string; login: string; first_name: string | null; last_name: string | null }>>(userContextQueries.student.path, 'GET', {
+      admin: true
+    }),
+    request<Array<{ last_active_profile: ProfileKind | null; last_selected_school_id: string | null; theme: string | null; settings: Record<string, unknown> }>>(
+      userContextQueries.preference.path,
+      'GET',
+      { admin: true }
+    ),
+    request<Array<{ pin_hash: string | null }>>(userContextQueries.security.path, 'GET', { admin: true }),
+    request<unknown>(userContextQueries.authUser.path, 'GET', { admin: true })
   ]);
 
-  logUserContextPartFailure(userId, 'parent query', parentResult);
-  logUserContextPartFailure(userId, 'teacher query', teacherResult);
-  logUserContextPartFailure(userId, 'student query', studentResult);
-  logUserContextPartFailure(userId, 'user_preference query', prefResult);
-  logUserContextPartFailure(userId, 'user_security query', securityResult);
-  logUserContextPartFailure(userId, '/auth/v1/admin/users/{id}', authAdminUserResult);
+  logUserContextPartFailure(userId, userContextQueries.parent, parentResult);
+  logUserContextPartFailure(userId, userContextQueries.teacher, teacherResult);
+  logUserContextPartFailure(userId, userContextQueries.student, studentResult);
+  logUserContextPartFailure(userId, userContextQueries.preference, prefResult);
+  logUserContextPartFailure(userId, userContextQueries.security, securityResult);
+  logUserContextPartFailure(userId, userContextQueries.authUser, authAdminUserResult);
 
   const blockingParts: Array<{ part: string; result: Settled<unknown> }> = [
     { part: 'parent query', result: parentResult },
     { part: 'teacher query', result: teacherResult },
-    { part: 'student query', result: studentResult },
     { part: 'user_preference query', result: prefResult },
     { part: 'user_security query', result: securityResult }
   ];
@@ -317,7 +393,12 @@ export async function getUserContextById(userId: string, fallback?: SessionFallb
   }
 
   const resolvedFullName =
-    authUser?.user_metadata?.full_name ?? fallback?.fullName ?? parent?.full_name ?? teacher?.full_name ?? student?.full_name ?? null;
+    authUser?.user_metadata?.full_name ??
+    fallback?.fullName ??
+    parent?.full_name ??
+    teacher?.full_name ??
+    formatStudentFullName({ firstName: student?.first_name, lastName: student?.last_name, login: student?.login }) ??
+    null;
   const resolvedEmail = authUser?.email ?? fallback?.email ?? null;
 
   console.info('[user-context] resolved context', {
@@ -372,7 +453,8 @@ export async function loadParentLearningContextsByUser(userId: string) {
   const rows = await request<
     Array<{
       id: string;
-      full_name: string | null;
+      first_name: string | null;
+      last_name: string | null;
       login: string;
       class_student: Array<{
         class: {
@@ -383,14 +465,14 @@ export async function loadParentLearningContextsByUser(userId: string) {
       }> | null;
     }>
   >(
-    `/rest/v1/student?select=id,full_name,login,class_student(class:class_id(id,name,school:school_id(id,name)))&parent_id=eq.${parentId}&order=created_at.asc`,
+    `/rest/v1/student?select=id,first_name,last_name,login,class_student(class:class_id(id,name,school:school_id(id,name)))&parent_id=eq.${parentId}&order=created_at.asc`,
     'GET',
     { admin: true }
   );
 
   return rows.map((student) => ({
     studentId: student.id,
-    studentName: student.full_name ?? student.login,
+    studentName: formatStudentFullName({ firstName: student.first_name, lastName: student.last_name, login: student.login }) ?? student.login,
     login: student.login,
     classes: (student.class_student ?? [])
       .map((membership) => membership.class)
@@ -471,13 +553,15 @@ export async function insertStudentRow(input: {
   fullName?: string | null;
   parentId?: string | null;
 }) {
+  const studentName = splitStudentFullName(input.fullName);
   const rows = await request<Array<{ id: string }>>('/rest/v1/student', 'POST', {
     admin: true,
     payload: {
       user_id: input.userId,
       login: normalizeIdentifier(input.login),
       internal_auth_email: input.internalAuthEmail,
-      full_name: input.fullName ?? null,
+      first_name: studentName.firstName,
+      last_name: studentName.lastName,
       parent_id: input.parentId ?? null
     }
   });
