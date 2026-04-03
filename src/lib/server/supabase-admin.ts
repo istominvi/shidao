@@ -43,6 +43,35 @@ function redactPayload(payload: Json | undefined) {
   return clone;
 }
 
+function isSchemaMismatchError(details: string) {
+  const normalized = details.toLowerCase();
+  return normalized.includes('column') && normalized.includes('does not exist');
+}
+
+function splitStudentName(fullName?: string | null) {
+  const normalized = (fullName ?? '').trim();
+  if (!normalized) {
+    return { firstName: null as string | null, lastName: null as string | null };
+  }
+
+  const parts = normalized.split(/\s+/).filter(Boolean);
+  if (parts.length === 1) {
+    return { firstName: parts[0], lastName: null as string | null };
+  }
+
+  return {
+    firstName: parts[0],
+    lastName: parts.slice(1).join(' ')
+  };
+}
+
+function toStudentDisplayName(student: { first_name: string | null; last_name: string | null; login: string }) {
+  const firstName = student.first_name?.trim() ?? '';
+  const lastName = student.last_name?.trim() ?? '';
+  const fullName = `${firstName} ${lastName}`.trim();
+  return fullName || firstName || student.login;
+}
+
 async function request<T>(
   path: string,
   method = 'GET',
@@ -76,6 +105,9 @@ async function request<T>(
       details,
       payload: redactPayload(options?.payload)
     });
+    if (isSchemaMismatchError(details)) {
+      console.error('[supabase-admin] schema mismatch detected', { path, method, details });
+    }
     throw new Error(details);
   }
 
@@ -258,7 +290,11 @@ export async function getUserContextById(userId: string, fallback?: SessionFallb
   const [parentResult, teacherResult, studentResult, prefResult, securityResult, authAdminUserResult] = await Promise.allSettled([
     request<Array<{ id: string; full_name: string | null }>>(`/rest/v1/parent?select=id,full_name&user_id=eq.${userId}&limit=1`, 'GET', { admin: true }),
     request<Array<{ id: string; full_name: string | null }>>(`/rest/v1/teacher?select=id,full_name&user_id=eq.${userId}&limit=1`, 'GET', { admin: true }),
-    request<Array<{ id: string; login: string; full_name: string | null }>>(`/rest/v1/student?select=id,login,full_name&user_id=eq.${userId}&limit=1`, 'GET', { admin: true }),
+    request<Array<{ id: string; login: string; first_name: string | null; last_name: string | null }>>(
+      `/rest/v1/student?select=id,login,first_name,last_name&user_id=eq.${userId}&limit=1`,
+      'GET',
+      { admin: true }
+    ),
     request<Array<{ last_active_profile: ProfileKind | null; last_selected_school_id: string | null; theme: string | null; settings: Record<string, unknown> }>>(`/rest/v1/user_preference?select=last_active_profile,last_selected_school_id,theme,settings&user_id=eq.${userId}&limit=1`, 'GET', { admin: true }),
     request<Array<{ pin_hash: string | null }>>(`/rest/v1/user_security?select=pin_hash&user_id=eq.${userId}&limit=1`, 'GET', { admin: true }),
     request<unknown>(`/auth/v1/admin/users/${userId}`, 'GET', { admin: true })
@@ -317,7 +353,12 @@ export async function getUserContextById(userId: string, fallback?: SessionFallb
   }
 
   const resolvedFullName =
-    authUser?.user_metadata?.full_name ?? fallback?.fullName ?? parent?.full_name ?? teacher?.full_name ?? student?.full_name ?? null;
+    authUser?.user_metadata?.full_name ??
+    fallback?.fullName ??
+    parent?.full_name ??
+    teacher?.full_name ??
+    (student ? toStudentDisplayName(student) : null) ??
+    null;
   const resolvedEmail = authUser?.email ?? fallback?.email ?? null;
 
   console.info('[user-context] resolved context', {
@@ -372,7 +413,8 @@ export async function loadParentLearningContextsByUser(userId: string) {
   const rows = await request<
     Array<{
       id: string;
-      full_name: string | null;
+      first_name: string | null;
+      last_name: string | null;
       login: string;
       class_student: Array<{
         class: {
@@ -383,14 +425,14 @@ export async function loadParentLearningContextsByUser(userId: string) {
       }> | null;
     }>
   >(
-    `/rest/v1/student?select=id,full_name,login,class_student(class:class_id(id,name,school:school_id(id,name)))&parent_id=eq.${parentId}&order=created_at.asc`,
+    `/rest/v1/student?select=id,first_name,last_name,login,class_student(class:class_id(id,name,school:school_id(id,name)))&parent_id=eq.${parentId}&order=created_at.asc`,
     'GET',
     { admin: true }
   );
 
   return rows.map((student) => ({
     studentId: student.id,
-    studentName: student.full_name ?? student.login,
+    studentName: toStudentDisplayName(student),
     login: student.login,
     classes: (student.class_student ?? [])
       .map((membership) => membership.class)
@@ -471,13 +513,15 @@ export async function insertStudentRow(input: {
   fullName?: string | null;
   parentId?: string | null;
 }) {
+  const { firstName, lastName } = splitStudentName(input.fullName);
   const rows = await request<Array<{ id: string }>>('/rest/v1/student', 'POST', {
     admin: true,
     payload: {
       user_id: input.userId,
       login: normalizeIdentifier(input.login),
       internal_auth_email: input.internalAuthEmail,
-      full_name: input.fullName ?? null,
+      first_name: firstName,
+      last_name: lastName,
       parent_id: input.parentId ?? null
     }
   });
