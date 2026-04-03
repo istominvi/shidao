@@ -1,0 +1,93 @@
+import { NextRequest, NextResponse } from 'next/server';
+
+export const runtime = 'nodejs';
+
+type Payload = {
+  name?: string;
+  email?: string;
+  password?: string;
+};
+
+function getSupabaseConfig() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!url || !anonKey) {
+    throw new Error('Supabase auth is not configured.');
+  }
+
+  return { url, anonKey };
+}
+
+function getPublicSiteUrl() {
+  const candidate =
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    process.env.SITE_URL ||
+    process.env.NEXT_PUBLIC_APP_URL ||
+    'https://shidao.ru';
+  return candidate.replace(/\/+$/, '');
+}
+
+function mapSignupError(rawMessage: string) {
+  const message = rawMessage.toLowerCase();
+  if (message.includes('already registered') || message.includes('already exists') || message.includes('already been registered')) {
+    return 'Аккаунт с таким email уже существует. Попробуйте выполнить вход.';
+  }
+  if (message.includes('password')) {
+    return 'Пароль не соответствует требованиям безопасности.';
+  }
+  if (message.includes('invalid email')) {
+    return 'Укажите корректный email.';
+  }
+
+  return 'Не удалось завершить регистрацию. Попробуйте ещё раз.';
+}
+
+export async function POST(req: NextRequest) {
+  try {
+    const body = (await req.json()) as Payload;
+    const name = (body.name ?? '').trim();
+    const email = (body.email ?? '').trim().toLowerCase();
+    const password = body.password ?? '';
+
+    if (!name || !email || password.length < 8) {
+      return NextResponse.json(
+        { error: 'Укажите имя, корректный email и пароль не короче 8 символов.' },
+        { status: 400 }
+      );
+    }
+
+    const { url, anonKey } = getSupabaseConfig();
+    const emailRedirectTo = new URL('/auth/confirm', getPublicSiteUrl());
+    emailRedirectTo.searchParams.set('next', '/login?confirmed=1');
+
+    const response = await fetch(`${url}/auth/v1/signup`, {
+      method: 'POST',
+      headers: {
+        apikey: anonKey,
+        Authorization: `Bearer ${anonKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        email,
+        password,
+        data: { full_name: name },
+        email_redirect_to: emailRedirectTo.toString()
+      }),
+      cache: 'no-store'
+    });
+
+    if (!response.ok) {
+      const payload = (await response.json().catch(() => null)) as { message?: string; msg?: string } | null;
+      return NextResponse.json({ error: mapSignupError(payload?.message ?? payload?.msg ?? '') }, { status: 400 });
+    }
+
+    return NextResponse.json({ ok: true });
+  } catch {
+    return NextResponse.json(
+      { error: 'Сервис регистрации временно недоступен. Попробуйте чуть позже.' },
+      { status: 503 }
+    );
+  }
+}
+

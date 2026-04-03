@@ -12,6 +12,7 @@ npm run dev
 - `/` — лэндинг
 - `/join` — единая регистрация взрослого аккаунта
 - `/join/check-email` — экран подтверждения отправки письма
+- `/auth/confirm` — серверный callback для подтверждения email из письма
 - `/login` — единый вход для взрослых и учеников
 - `/onboarding` — создание первого взрослого профиля (`parent` или `teacher`)
 - `/dashboard` — единый приватный маршрут кабинета
@@ -40,8 +41,10 @@ Flow:
 
 ## Signup + email confirm
 - `/join` регистрирует только взрослый auth-аккаунт.
+- Форма `/join` отправляется в серверный endpoint `POST /api/auth/signup` (без direct browser вызова Supabase Auth).
 - На signup нет выбора роли, телефона и student signup.
 - После регистрации — экран `/join/check-email` с инструкцией подтвердить email и затем войти.
+- Подтверждение email проходит через `/auth/confirm`, после чего пользователь направляется на `/login`.
 - Выбор роли выполняется только после входа на `/onboarding`.
 
 ## User preference

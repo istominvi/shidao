@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { FormEvent, useState } from 'react';
 import { TopNav } from '@/components/top-nav';
 import { ROUTES } from '@/lib/auth';
-import { signUpWithPassword } from '@/lib/supabase-client';
 
 export default function JoinPage() {
   const router = useRouter();
@@ -38,10 +37,28 @@ export default function JoinPage() {
 
     try {
       setLoading(true);
-      await signUpWithPassword(email.trim().toLowerCase(), password, name.trim());
-      router.push(`${ROUTES.joinCheckEmail}?email=${encodeURIComponent(email.trim().toLowerCase())}`);
+      const normalizedEmail = email.trim().toLowerCase();
+      const response = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: name.trim(),
+          email: normalizedEmail,
+          password
+        })
+      });
+
+      const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+      if (!response.ok) {
+        throw new Error(payload?.error ?? 'Не удалось завершить регистрацию. Попробуйте ещё раз.');
+      }
+      router.push(`${ROUTES.joinCheckEmail}?email=${encodeURIComponent(normalizedEmail)}`);
     } catch (submitError) {
-      setError(submitError instanceof Error ? submitError.message : 'Ошибка регистрации.');
+      if (submitError instanceof TypeError && submitError.message.includes('fetch')) {
+        setError('Проблема с сетью. Проверьте подключение и попробуйте ещё раз.');
+      } else {
+        setError(submitError instanceof Error ? submitError.message : 'Ошибка регистрации.');
+      }
     } finally {
       setLoading(false);
     }
