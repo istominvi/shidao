@@ -1,4 +1,26 @@
 export type ProfileKind = 'parent' | 'teacher';
+export type ActorKind = 'adult' | 'student';
+
+export const PROFILE_LABELS: Record<ProfileKind, string> = {
+  parent: 'Кабинет родителя',
+  teacher: 'Кабинет преподавателя'
+};
+
+export const ROUTES = {
+  home: '/',
+  login: '/login',
+  join: '/join',
+  joinCheckEmail: '/join/check-email',
+  onboarding: '/onboarding',
+  dashboard: '/dashboard',
+  settingsSecurity: '/settings/security'
+} as const;
+
+export const AUTH_MESSAGES = {
+  invalidCredentials: 'Неверные данные для входа.',
+  temporarilyUnavailable: 'Вход временно недоступен, попробуйте позже.',
+  genericAuthError: 'Не удалось выполнить запрос авторизации.'
+} as const;
 
 const STUDENT_AUTH_DOMAIN = 'students.shidao.internal';
 
@@ -15,9 +37,17 @@ export function toStudentInternalAuthEmail(login: string) {
 }
 
 export function toProfileLabel(profile: ProfileKind) {
-  return profile === 'parent' ? 'Родитель' : 'Преподаватель';
+  return PROFILE_LABELS[profile];
 }
 
-export function toProfileRoute(profile: ProfileKind) {
-  return profile === 'parent' ? '/dashboard/parent' : '/dashboard/teacher';
+export function toInitials(fullName?: string | null, email?: string | null) {
+  const source = (fullName ?? '').trim();
+  if (source) {
+    const parts = source.split(/\s+/).slice(0, 2);
+    return parts.map((part) => part[0]?.toUpperCase() ?? '').join('') || 'U';
+  }
+
+  const local = (email ?? '').split('@')[0]?.trim();
+  if (!local) return 'U';
+  return local.slice(0, 2).toUpperCase();
 }

@@ -1,42 +1,22 @@
-'use client';
-
-import { useEffect, useState } from 'react';
 import { DashboardShell } from '@/components/dashboard-shell';
-import { getSession, loadParentLearningContexts, type ParentStudentLearningContext } from '@/lib/supabase-client';
 
-export default function ParentDashboard() {
-  const [children, setChildren] = useState<ParentStudentLearningContext[]>([]);
-  const [error, setError] = useState<string | null>(null);
+type ParentContext = {
+  studentId: string;
+  studentName: string;
+  login: string;
+  classes: Array<{ classId: string; className: string; schoolId: string; schoolName: string }>;
+};
 
-  useEffect(() => {
-    async function load() {
-      try {
-        const session = getSession();
-        if (!session) {
-          setError('Сессия не найдена. Выполните вход заново.');
-          return;
-        }
-
-        const contexts = await loadParentLearningContexts(session.access_token);
-        setChildren(contexts);
-      } catch (loadError) {
-        setError(loadError instanceof Error ? loadError.message : 'Не удалось загрузить данные детей.');
-      }
-    }
-
-    load();
-  }, []);
-
+export function ParentDashboard({ childrenContexts }: { childrenContexts: ParentContext[] }) {
   return (
     <DashboardShell roleLabel="Родитель" title="Панель родителя" subtitle="Расписание, прогресс и связь с преподавателем в одном месте.">
       <div className="grid gap-4 md:grid-cols-2">
         <article className="rounded-3xl bg-pink-100 p-5">
           <h3 className="text-lg font-bold">Мои дети</h3>
-          {error && <p className="mt-2 rounded-2xl bg-red-100 px-3 py-2 text-sm text-red-700">{error}</p>}
-          {!error && children.length === 0 && <p className="mt-2 text-sm">Пока нет привязанных учеников.</p>}
-          {!error && children.length > 0 && (
-            <ul className="mt-2 list-disc pl-5 text-sm space-y-2">
-              {children.map((child) => (
+          {childrenContexts.length === 0 && <p className="mt-2 text-sm">Пока нет привязанных учеников.</p>}
+          {childrenContexts.length > 0 && (
+            <ul className="mt-2 list-disc space-y-2 pl-5 text-sm">
+              {childrenContexts.map((child) => (
                 <li key={child.studentId}>
                   <p className="font-semibold">{child.studentName}</p>
                   <p className="text-neutral-700">Логин: {child.login}</p>
