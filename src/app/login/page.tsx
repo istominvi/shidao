@@ -4,8 +4,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FormEvent, useState } from 'react';
 import { TopNav } from '@/components/top-nav';
-import { resolveCredentials, resolvePostSignInRoute } from '@/lib/auth-flow';
-import { signInWithPassword } from '@/lib/supabase-client';
+import { loginWithIdentifier } from '@/lib/auth-flow';
+import { ROUTES } from '@/lib/auth';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -25,13 +25,7 @@ export default function LoginPage() {
 
     try {
       setLoading(true);
-      const resolved = await resolveCredentials(identifier);
-
-      const session = await signInWithPassword(resolved.email, secret).catch(() => {
-        throw new Error('Неверный идентификатор или пароль.');
-      });
-
-      const route = await resolvePostSignInRoute(session);
+      const route = await loginWithIdentifier(identifier, secret);
       router.push(route);
       router.refresh();
     } catch (submitError) {
@@ -49,26 +43,26 @@ export default function LoginPage() {
           <p className="chip bg-sky-100 text-sky-700">Единый вход</p>
           <h1 className="mt-4 text-3xl font-black">Вход в Shidao</h1>
           <p className="mt-2 text-sm text-neutral-600">
-            Взрослые входят по email. Ученики входят по выданному логину ученика через эту же форму.
+            Взрослые входят по email. Ученики входят по логину. Телефонный вход готовится и скоро появится.
           </p>
 
           <form className="mt-6 space-y-4" onSubmit={onSubmit}>
             <label className="block">
-              <span className="mb-2 block text-sm font-medium">Email взрослого или логин ученика</span>
+              <span className="mb-2 block text-sm font-medium">Email, логин или телефон</span>
               <input
                 value={identifier}
                 onChange={(e) => setIdentifier(e.target.value)}
-                placeholder="Введите email или логин ученика"
+                placeholder="Введите email, логин или телефон"
                 className="w-full rounded-2xl border border-black/10 bg-white px-4 py-3 outline-none transition focus:border-black/30 focus:ring-2 focus:ring-black/10"
               />
             </label>
             <label className="block">
-              <span className="mb-2 block text-sm font-medium">Пароль</span>
+              <span className="mb-2 block text-sm font-medium">Пароль или PIN-код</span>
               <input
                 type="password"
                 value={secret}
                 onChange={(e) => setSecret(e.target.value)}
-                placeholder="Введите пароль"
+                placeholder="Введите пароль или PIN"
                 className="w-full rounded-2xl border border-black/10 bg-white px-4 py-3 outline-none transition focus:border-black/30 focus:ring-2 focus:ring-black/10"
               />
             </label>
@@ -85,8 +79,8 @@ export default function LoginPage() {
           </form>
 
           <p className="mt-5 text-sm text-neutral-600">
-            Нет аккаунта для взрослого?{' '}
-            <Link href="/join" className="font-semibold underline">
+            Нет взрослого аккаунта?{' '}
+            <Link href={ROUTES.join} className="font-semibold underline">
               Зарегистрироваться
             </Link>
           </p>

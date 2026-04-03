@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import {
-  assertTeacherAssignedToClass,
+  assertTeacherAssignedToClassAdmin,
   attachStudentToClassAsAdmin,
   createStudentAuthUser,
-  findTeacherByAuthUserId,
-  getAuthUserFromAccessToken,
+  getUserContextById,
   insertStudentRow
 } from '@/lib/server/supabase-admin';
 import { normalizeIdentifier, toStudentInternalAuthEmail } from '@/lib/auth';
+import { readAppSession } from '@/lib/server/app-session';
 
 export const runtime = 'nodejs';
 
@@ -19,15 +19,10 @@ type Payload = {
   parentId?: string | null;
 };
 
-function getAccessToken(req: NextRequest) {
-  const auth = req.headers.get('authorization') ?? '';
-  return auth.startsWith('Bearer ') ? auth.slice('Bearer '.length).trim() : '';
-}
-
 export async function POST(req: NextRequest) {
   try {
-    const accessToken = getAccessToken(req);
-    if (!accessToken) {
+    const session = await readAppSession();
+    if (!session) {
       return NextResponse.json({ error: 'Не авторизовано.' }, { status: 401 });
     }
 
@@ -43,14 +38,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const authUser = await getAuthUserFromAccessToken(accessToken);
-    const teacher = await findTeacherByAuthUserId(accessToken, authUser.id);
-
-    if (!teacher?.id) {
+    const userContext = await getUserContextById(session.uid);
+    if (!userContext.teacher?.id) {
       return NextResponse.json({ error: 'Только преподаватель может создавать учеников.' }, { status: 403 });
     }
 
-    await assertTeacherAssignedToClass(accessToken, teacher.id, classId);
+    // Admin-only check: current teacher must be assigned to class.
+    await assertTeacherAssignedToClassAdmin(userContext.teacher.id, classId);
 
     const createdAuth = await createStudentAuthUser({
       login,

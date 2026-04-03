@@ -1,20 +1,19 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { TopNav } from '@/components/top-nav';
-import { getSession, onboardParentProfile, onboardTeacherProfile } from '@/lib/supabase-client';
-import type { ProfileKind } from '@/lib/auth';
+import { ROUTES, type ProfileKind } from '@/lib/auth';
 
 const options: Array<{ value: ProfileKind; title: string; description: string }> = [
   {
     value: 'parent',
-    title: 'Следить за обучением своего ребёнка',
-    description: 'Создадим профиль родителя и откроем доступ к ученикам, которые привязаны к вам.'
+    title: 'Я родитель',
+    description: 'Создадим профиль родителя и откроем доступ к детям, которые привязаны к вам.'
   },
   {
     value: 'teacher',
-    title: 'Преподавать Китайский язык',
+    title: 'Я преподаватель',
     description: 'Создадим профиль преподавателя, школу, первый класс и назначим вас владельцем.'
   }
 ];
@@ -24,26 +23,34 @@ export default function OnboardingPage() {
   const [loadingProfile, setLoadingProfile] = useState<ProfileKind | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    fetch('/api/auth/session', { cache: 'no-store' })
+      .then((r) => r.json())
+      .then((ctx) => {
+        if (!ctx.authenticated) router.replace(ROUTES.login);
+        if (ctx.actorKind === 'student') router.replace(ROUTES.dashboard);
+        if (ctx.hasAnyAdultProfile) router.replace(ROUTES.dashboard);
+      })
+      .catch(() => router.replace(ROUTES.login));
+  }, [router]);
+
   async function selectProfile(profile: ProfileKind) {
     setError(null);
     setLoadingProfile(profile);
 
     try {
-      const session = getSession();
-      if (!session) {
-        throw new Error('Сессия не найдена. Выполните вход заново.');
+      const response = await fetch('/api/onboarding', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ profile })
+      });
+
+      const payload = (await response.json().catch(() => null)) as { error?: string; redirectTo?: string } | null;
+      if (!response.ok) {
+        throw new Error(payload?.error ?? 'Не удалось завершить онбординг.');
       }
 
-      const fullName = session.user.user_metadata?.full_name ?? session.user.email ?? 'Пользователь';
-
-      if (profile === 'parent') {
-        await onboardParentProfile(session.user.id, fullName, session.access_token);
-        router.push('/dashboard/parent');
-      } else {
-        await onboardTeacherProfile(session.user.id, fullName, session.access_token);
-        router.push('/dashboard/teacher');
-      }
-
+      router.push(payload?.redirectTo ?? ROUTES.dashboard);
       router.refresh();
     } catch (selectError) {
       setError(selectError instanceof Error ? selectError.message : 'Не удалось завершить онбординг.');
@@ -59,7 +66,7 @@ export default function OnboardingPage() {
         <div className="mx-auto max-w-3xl glass rounded-3xl p-6 md:p-8">
           <p className="chip bg-amber-100 text-amber-700">Первый вход</p>
           <h1 className="mt-4 text-3xl font-black">Выберите профиль</h1>
-          <p className="mt-2 text-neutral-700">Если позже понадобится второй профиль, его можно добавить отдельно.</p>
+          <p className="mt-2 text-neutral-700">Профиль можно расширить позже: один взрослый аккаунт может иметь роли родителя и преподавателя.</p>
 
           <div className="mt-6 grid gap-4 md:grid-cols-2">
             {options.map((option) => (

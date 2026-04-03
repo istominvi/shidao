@@ -1,6 +1,6 @@
 import { DashboardShell } from '@/components/dashboard-shell';
 
-export default function TeacherDashboard() {
+export function TeacherDashboard() {
   return (
     <DashboardShell roleLabel="Преподаватель" title="Панель преподавателя" subtitle="Группы, расписание, уроки и задания под вашим контролем.">
       <div className="grid gap-4 md:grid-cols-3">
