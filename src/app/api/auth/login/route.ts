@@ -7,7 +7,7 @@ export const runtime = 'nodejs';
 
 type Payload = { identifier?: string; secret?: string };
 
-function fail(status = 401, message = AUTH_MESSAGES.invalidCredentials) {
+function fail(status = 401, message: string = AUTH_MESSAGES.invalidCredentials) {
   return NextResponse.json({ error: message }, { status });
 }
 
