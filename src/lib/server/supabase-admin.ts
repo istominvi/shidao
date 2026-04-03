@@ -49,9 +49,8 @@ async function request<T>(
   options?: { payload?: Json; accessToken?: string; admin?: boolean; allowEmpty?: boolean; extraHeaders?: Record<string, string> }
 ) {
   const { url, anonKey } = getPublicSupabaseConfig();
-  const serviceRoleKey = options?.admin ? getServiceRoleKey() : undefined;
-  const apiKey = options?.admin ? serviceRoleKey : anonKey;
-  const bearer = options?.admin ? serviceRoleKey : options?.accessToken ?? anonKey;
+  const apiKey = options?.admin ? getServiceRoleKey() : anonKey;
+  const bearer = options?.admin ? apiKey : options?.accessToken ?? anonKey;
 
   const response = await fetch(`${url}${path}`, {
     method,
