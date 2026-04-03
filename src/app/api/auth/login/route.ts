@@ -76,7 +76,7 @@ export async function POST(req: NextRequest) {
       const pinOk = await verifyUserPin(candidateUserId, secret);
       if (pinOk) {
         stage = 'load-student-context';
-        const context = await getUserContextById(candidateUserId);
+        const context = await getUserContextById(candidateUserId, { email: resolvedEmail });
 
         stage = 'write-session-pin';
         await writeAppSession({ uid: candidateUserId, email: context.email, fullName: context.fullName });

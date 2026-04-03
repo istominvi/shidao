@@ -240,8 +240,22 @@ export async function resolvePostLoginRedirect(userId: string) {
   }
 }
 
-export async function getUserContextById(userId: string) {
-  const [parentRows, teacherRows, studentRows, prefRows, securityRows, rawAuthUser] = await Promise.all([
+type SessionFallback = {
+  email?: string | null;
+  fullName?: string | null;
+};
+
+type Settled<T> = PromiseSettledResult<T>;
+
+function logUserContextPartFailure(userId: string, part: string, result: Settled<unknown>) {
+  if (result.status === 'rejected') {
+    console.error('[user-context] failed to load part', { userId, part, error: result.reason });
+  }
+}
+
+export async function getUserContextById(userId: string, fallback?: SessionFallback) {
+  const startedAt = Date.now();
+  const [parentResult, teacherResult, studentResult, prefResult, securityResult, authAdminUserResult] = await Promise.allSettled([
     request<Array<{ id: string; full_name: string | null }>>(`/rest/v1/parent?select=id,full_name&user_id=eq.${userId}&limit=1`, 'GET', { admin: true }),
     request<Array<{ id: string; full_name: string | null }>>(`/rest/v1/teacher?select=id,full_name&user_id=eq.${userId}&limit=1`, 'GET', { admin: true }),
     request<Array<{ id: string; login: string; full_name: string | null }>>(`/rest/v1/student?select=id,login,full_name&user_id=eq.${userId}&limit=1`, 'GET', { admin: true }),
@@ -250,7 +264,45 @@ export async function getUserContextById(userId: string) {
     request<unknown>(`/auth/v1/admin/users/${userId}`, 'GET', { admin: true })
   ]);
 
-  const authUser = parseAuthAdminUser(rawAuthUser);
+  logUserContextPartFailure(userId, 'parent query', parentResult);
+  logUserContextPartFailure(userId, 'teacher query', teacherResult);
+  logUserContextPartFailure(userId, 'student query', studentResult);
+  logUserContextPartFailure(userId, 'user_preference query', prefResult);
+  logUserContextPartFailure(userId, 'user_security query', securityResult);
+  logUserContextPartFailure(userId, '/auth/v1/admin/users/{id}', authAdminUserResult);
+
+  const blockingFailures = [
+    ['parent query', parentResult],
+    ['teacher query', teacherResult],
+    ['student query', studentResult],
+    ['user_preference query', prefResult],
+    ['user_security query', securityResult]
+  ]
+    .filter(([, result]) => result.status === 'rejected')
+    .map(([part]) => part);
+
+  if (blockingFailures.length > 0) {
+    console.error('[user-context] blocking failures while resolving context', { userId, blockingFailures });
+    throw new Error(`Не удалось загрузить контекст пользователя (${blockingFailures.join(', ')}).`);
+  }
+
+  const parentRows = parentResult.status === 'fulfilled' ? parentResult.value : [];
+  const teacherRows = teacherResult.status === 'fulfilled' ? teacherResult.value : [];
+  const studentRows = studentResult.status === 'fulfilled' ? studentResult.value : [];
+  const prefRows = prefResult.status === 'fulfilled' ? prefResult.value : [];
+  const securityRows = securityResult.status === 'fulfilled' ? securityResult.value : [];
+
+  let authUser: SupabaseUser | null = null;
+  if (authAdminUserResult.status === 'fulfilled') {
+    try {
+      authUser = parseAuthAdminUser(authAdminUserResult.value);
+    } catch (error) {
+      console.warn('[user-context] failed to parse auth admin payload; fallback to app-session fields', { userId, error });
+    }
+  } else {
+    console.warn('[user-context] admin user fetch unavailable; fallback to app-session fields', { userId });
+  }
+
   const student = studentRows[0] ?? null;
   const teacher = teacherRows[0] ?? null;
   const parent = parentRows[0] ?? null;
@@ -264,10 +316,26 @@ export async function getUserContextById(userId: string) {
     activeProfile = pref?.last_active_profile && profileChoices.includes(pref.last_active_profile) ? pref.last_active_profile : 'parent';
   }
 
+  const resolvedFullName =
+    authUser?.user_metadata?.full_name ?? fallback?.fullName ?? parent?.full_name ?? teacher?.full_name ?? student?.full_name ?? null;
+  const resolvedEmail = authUser?.email ?? fallback?.email ?? null;
+
+  console.info('[user-context] resolved context', {
+    userId,
+    actorKind: student ? 'student' : 'adult',
+    hasParent: Boolean(parent),
+    hasTeacher: Boolean(teacher),
+    hasStudent: Boolean(student),
+    usedAuthAdmin: Boolean(authUser),
+    usedFallbackEmail: !authUser?.email && Boolean(fallback?.email),
+    usedFallbackFullName: !authUser?.user_metadata?.full_name && Boolean(fallback?.fullName),
+    durationMs: Date.now() - startedAt
+  });
+
   return {
     userId,
-    email: authUser.email ?? null,
-    fullName: authUser.user_metadata?.full_name ?? parent?.full_name ?? teacher?.full_name ?? student?.full_name ?? null,
+    email: resolvedEmail,
+    fullName: resolvedFullName,
     actorKind: student ? ('student' as const) : ('adult' as const),
     student,
     teacher,

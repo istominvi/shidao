@@ -8,11 +8,11 @@ export const runtime = 'nodejs';
 export async function GET() {
   const session = await readAppSession();
   if (!session) {
-    return NextResponse.json({ authenticated: false });
+    return NextResponse.json({ authenticated: false, reason: 'no_session' }, { status: 401 });
   }
 
   try {
-    const ctx = await getUserContextById(session.uid);
+    const ctx = await getUserContextById(session.uid, { email: session.email, fullName: session.fullName });
     return NextResponse.json({
       authenticated: true,
       userId: ctx.userId,
@@ -27,6 +27,17 @@ export async function GET() {
     });
   } catch (error) {
     console.error('[auth-session] failed to resolve user context', { userId: session.uid, error });
-    return NextResponse.json({ authenticated: false }, { status: 503 });
+    return NextResponse.json(
+      {
+        authenticated: true,
+        contextResolved: false,
+        reason: 'context_unavailable',
+        userId: session.uid,
+        email: session.email,
+        fullName: session.fullName,
+        initials: toInitials(session.fullName, session.email)
+      },
+      { status: 503 }
+    );
   }
 }
