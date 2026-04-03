@@ -10,16 +10,23 @@ type AuthSession = {
   user: SupabaseUser;
 };
 
-function getServerSupabaseConfig() {
+function getPublicSupabaseConfig() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-  if (!url || !anonKey || !serviceRoleKey) {
-    throw new Error('Не настроены NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY.');
+  if (!url || !anonKey) {
+    throw new Error('Не настроены NEXT_PUBLIC_SUPABASE_URL и NEXT_PUBLIC_SUPABASE_ANON_KEY.');
   }
 
-  return { url, anonKey, serviceRoleKey };
+  return { url, anonKey };
+}
+
+function getServiceRoleKey() {
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!serviceRoleKey) {
+    throw new Error('Не настроен SUPABASE_SERVICE_ROLE_KEY для серверных admin-запросов.');
+  }
+  return serviceRoleKey;
 }
 
 function isFunctionMissingError(message: string) {
@@ -41,7 +48,8 @@ async function request<T>(
   method = 'GET',
   options?: { payload?: Json; accessToken?: string; admin?: boolean; allowEmpty?: boolean; extraHeaders?: Record<string, string> }
 ) {
-  const { url, anonKey, serviceRoleKey } = getServerSupabaseConfig();
+  const { url, anonKey } = getPublicSupabaseConfig();
+  const serviceRoleKey = options?.admin ? getServiceRoleKey() : undefined;
   const apiKey = options?.admin ? serviceRoleKey : anonKey;
   const bearer = options?.admin ? serviceRoleKey : options?.accessToken ?? anonKey;
 
@@ -98,7 +106,7 @@ function parseAuthAdminUser(payload: unknown): SupabaseUser {
 }
 
 async function authPasswordSignIn(email: string, password: string) {
-  const { url, anonKey } = getServerSupabaseConfig();
+  const { url, anonKey } = getPublicSupabaseConfig();
   const response = await fetch(`${url}/auth/v1/token?grant_type=password`, {
     method: 'POST',
     headers: {
