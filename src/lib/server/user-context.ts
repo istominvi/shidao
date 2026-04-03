@@ -9,7 +9,7 @@ export async function requireUserContext() {
     redirect(ROUTES.login);
   }
 
-  const context = await getUserContextById(session.uid);
+  const context = await getUserContextById(session.uid, { email: session.email, fullName: session.fullName });
   if (context.actorKind === 'adult') {
     try {
       await ensureUserPreference(context.userId);
