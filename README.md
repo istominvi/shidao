@@ -11,7 +11,7 @@ npm run dev
 ## Основные маршруты
 - `/` — лэндинг
 - `/join` — единая регистрация взрослого аккаунта
-- `/join/check-email` — экран подтверждения отправки письма
+- `/join/check-email` — экран подтверждения отправки письма (используется только когда email confirmation обязателен)
 - `/auth/confirm` — серверный callback для подтверждения email из письма
 - `/login` — единый вход для взрослых и учеников
 - `/onboarding` — создание первого взрослого профиля (`parent` или `teacher`)
@@ -22,7 +22,7 @@ npm run dev
 - Один взрослый auth-аккаунт может иметь `parent`, `teacher` или оба профиля.
 - Ученик — отдельный auth-аккаунт и отдельная сессия.
 - Роли больше не живут в URL (нет `/dashboard/teacher`, `/dashboard/parent`, `/dashboard/student`, `/dashboard/select-profile`).
-- Взрослый после первого подтверждённого входа без профиля направляется на `/onboarding`.
+- Взрослый после первого входа без профиля направляется на `/onboarding`.
 - При наличии двух взрослых профилей активный кабинет выбирается по `user_preference.last_active_profile` (дефолт: `parent`).
 - Переключение профиля делается через dropdown в аватарке, без перелогина и без смены сессии.
 
@@ -37,18 +37,22 @@ Flow:
 3. Не-email identifier → серверный lookup ученика в `student.internal_auth_email`.
 4. Сначала проверка пароля.
 5. Если пароль не подошёл и найден пользователь ученика → проверка PIN через `verify_user_pin`.
-6. Во всех ошибках наружу возвращаются только безопасные обобщённые сообщения.
+6. После успешного входа: установка app-session cookie, best-effort ensure `user_preference`, и route resolution (`/onboarding` для взрослых без профиля, иначе `/dashboard`).
+7. В server logs пишется диагностический этап, если flow падает.
 
-## Signup + email confirm
-- `/join` регистрирует только взрослый auth-аккаунт.
-- Форма `/join` отправляется в серверный endpoint `POST /api/auth/signup` (без direct browser вызова Supabase Auth).
-- На signup нет выбора роли, телефона и student signup.
-- После регистрации — экран `/join/check-email` с инструкцией подтвердить email и затем войти.
+## Signup и email-confirm режимы
+### Self-hosted/dev режим (`ENABLE_EMAIL_AUTOCONFIRM=true`)
+- `/join` создаёт взрослого пользователя в Supabase Auth.
+- После успешной регистрации пользователь уходит на `/login?registered=1`.
+- UI не обещает письмо и не отправляет на `/join/check-email`.
+- SMTP не обязателен для прохождения signup → login в этом режиме.
+
+### Email-confirm режим (`ENABLE_EMAIL_AUTOCONFIRM=false`)
+- После регистрации пользователь попадает на `/join/check-email`.
 - Подтверждение email проходит через `/auth/confirm`, после чего пользователь направляется на `/login`.
-- Выбор роли выполняется только после входа на `/onboarding`.
 
 ## User preference
-Новая таблица `public.user_preference` хранит:
+Таблица `public.user_preference` хранит:
 - `last_active_profile`
 - `last_selected_school_id`
 - `theme`
@@ -62,8 +66,11 @@ Flow:
 - `upsert_user_theme`
 - `merge_user_settings`
 
+Примечание по self-hosted совместимости:
+- если RPC `ensure_user_preference` или `set_last_active_profile` отсутствует, серверный слой использует fallback через direct PostgREST upsert/patch.
+
 ## User security + PIN
-Новая таблица `public.user_security` хранит:
+Таблица `public.user_security` хранит:
 - только `pin_hash` (без хранения PIN в открытом виде)
 - счётчик неудачных попыток
 - временную блокировку (`pin_locked_until`)
@@ -77,4 +84,4 @@ Flow:
 
 ## Миграции
 SQL миграции находятся в `supabase/migrations`.
-Ключевая новая миграция: `202604030001_user_preference_and_security.sql`.
+Ключевая миграция для preference/security функций: `202604030001_user_preference_and_security.sql`.

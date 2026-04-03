@@ -11,17 +11,22 @@ export async function GET() {
     return NextResponse.json({ authenticated: false });
   }
 
-  const ctx = await getUserContextById(session.uid);
-  return NextResponse.json({
-    authenticated: true,
-    userId: ctx.userId,
-    actorKind: ctx.actorKind,
-    fullName: ctx.fullName,
-    email: ctx.email,
-    initials: toInitials(ctx.fullName, ctx.email),
-    availableAdultProfiles: ctx.availableAdultProfiles,
-    activeProfile: ctx.activeProfile,
-    hasAnyAdultProfile: ctx.hasAnyAdultProfile,
-    hasPin: ctx.hasPin
-  });
+  try {
+    const ctx = await getUserContextById(session.uid);
+    return NextResponse.json({
+      authenticated: true,
+      userId: ctx.userId,
+      actorKind: ctx.actorKind,
+      fullName: ctx.fullName,
+      email: ctx.email,
+      initials: toInitials(ctx.fullName, ctx.email),
+      availableAdultProfiles: ctx.availableAdultProfiles,
+      activeProfile: ctx.activeProfile,
+      hasAnyAdultProfile: ctx.hasAnyAdultProfile,
+      hasPin: ctx.hasPin
+    });
+  } catch (error) {
+    console.error('[auth-session] failed to resolve user context', { userId: session.uid, error });
+    return NextResponse.json({ authenticated: false }, { status: 503 });
+  }
 }

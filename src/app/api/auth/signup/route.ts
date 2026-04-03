@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { ROUTES } from '@/lib/auth';
 
 export const runtime = 'nodejs';
 
@@ -17,6 +18,10 @@ function getSupabaseConfig() {
   }
 
   return { url, anonKey };
+}
+
+function isEmailAutoconfirmEnabled() {
+  return String(process.env.ENABLE_EMAIL_AUTOCONFIRM ?? '').toLowerCase() === 'true';
 }
 
 function getPublicSiteUrl() {
@@ -58,6 +63,7 @@ export async function POST(req: NextRequest) {
     }
 
     const { url, anonKey } = getSupabaseConfig();
+    const autoConfirmEnabled = isEmailAutoconfirmEnabled();
     const emailRedirectTo = new URL('/auth/confirm', getPublicSiteUrl());
     emailRedirectTo.searchParams.set('next', '/login?confirmed=1');
 
@@ -82,12 +88,24 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: mapSignupError(payload?.message ?? payload?.msg ?? '') }, { status: 400 });
     }
 
-    return NextResponse.json({ ok: true });
-  } catch {
+    if (autoConfirmEnabled) {
+      return NextResponse.json({
+        ok: true,
+        requiresEmailConfirmation: false,
+        redirectTo: `${ROUTES.login}?registered=1`
+      });
+    }
+
+    return NextResponse.json({
+      ok: true,
+      requiresEmailConfirmation: true,
+      redirectTo: `${ROUTES.joinCheckEmail}?email=${encodeURIComponent(email)}`
+    });
+  } catch (error) {
+    console.error('[auth-signup] failed', error);
     return NextResponse.json(
       { error: 'Сервис регистрации временно недоступен. Попробуйте чуть позже.' },
       { status: 503 }
     );
   }
 }
-

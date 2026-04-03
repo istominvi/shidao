@@ -48,11 +48,11 @@ export default function JoinPage() {
         })
       });
 
-      const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+      const payload = (await response.json().catch(() => null)) as { error?: string; redirectTo?: string } | null;
       if (!response.ok) {
         throw new Error(payload?.error ?? 'Не удалось завершить регистрацию. Попробуйте ещё раз.');
       }
-      router.push(`${ROUTES.joinCheckEmail}?email=${encodeURIComponent(normalizedEmail)}`);
+      router.push(payload?.redirectTo ?? `${ROUTES.joinCheckEmail}?email=${encodeURIComponent(normalizedEmail)}`);
     } catch (submitError) {
       if (submitError instanceof TypeError && submitError.message.includes('fetch')) {
         setError('Проблема с сетью. Проверьте подключение и попробуйте ещё раз.');
@@ -72,7 +72,7 @@ export default function JoinPage() {
           <p className="chip bg-lime-100 text-lime-700">Регистрация взрослого</p>
           <h1 className="mt-4 text-3xl font-black">Создать аккаунт</h1>
           <p className="mt-2 text-sm text-neutral-600">
-            Регистрация доступна только взрослым. Роль выбирается после подтверждения email на этапе онбординга.
+            Регистрация доступна только взрослым. После создания аккаунта вы перейдёте ко входу или к подтверждению email — в зависимости от режима окружения.
           </p>
 
           <form className="mt-6 space-y-4" onSubmit={onSubmit}>
