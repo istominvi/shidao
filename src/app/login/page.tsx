@@ -1,18 +1,29 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { FormEvent, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { FormEvent, Suspense, useMemo, useState } from 'react';
 import { TopNav } from '@/components/top-nav';
 import { loginWithIdentifier } from '@/lib/auth-flow';
 import { ROUTES } from '@/lib/auth';
 
-export default function LoginPage() {
+function LoginPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [identifier, setIdentifier] = useState('');
   const [secret, setSecret] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  const successHint = useMemo(() => {
+    if (searchParams.get('registered') === '1') {
+      return 'Аккаунт создан. Теперь войдите с email и паролем.';
+    }
+    if (searchParams.get('confirmed') === '1') {
+      return 'Email подтверждён. Теперь выполните вход.';
+    }
+    return null;
+  }, [searchParams]);
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
@@ -45,6 +56,8 @@ export default function LoginPage() {
           <p className="mt-2 text-sm text-neutral-600">
             Взрослые входят по email. Ученики входят по логину. Телефонный вход готовится и скоро появится.
           </p>
+
+          {successHint && <p className="mt-4 rounded-2xl bg-lime-100 px-4 py-3 text-sm text-lime-800">{successHint}</p>}
 
           <form className="mt-6 space-y-4" onSubmit={onSubmit}>
             <label className="block">
@@ -87,5 +100,13 @@ export default function LoginPage() {
         </div>
       </section>
     </main>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginPageContent />
+    </Suspense>
   );
 }

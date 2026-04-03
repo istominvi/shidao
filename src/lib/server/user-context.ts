@@ -11,10 +11,19 @@ export async function requireUserContext() {
 
   const context = await getUserContextById(session.uid);
   if (context.actorKind === 'adult') {
-    await ensureUserPreference(context.userId);
+    try {
+      await ensureUserPreference(context.userId);
+    } catch (error) {
+      console.error('[user-context] ensureUserPreference failed', { userId: context.userId, error });
+    }
+
     if (context.availableAdultProfiles.length === 2 && !context.preferences?.last_active_profile) {
-      await setLastActiveProfile(context.userId, 'parent');
-      context.activeProfile = 'parent';
+      try {
+        await setLastActiveProfile(context.userId, 'parent');
+        context.activeProfile = 'parent';
+      } catch (error) {
+        console.error('[user-context] setLastActiveProfile failed', { userId: context.userId, error });
+      }
     }
   }
 

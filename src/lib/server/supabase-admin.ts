@@ -1,4 +1,4 @@
-import { normalizeIdentifier, toStudentInternalAuthEmail, type ProfileKind } from '@/lib/auth';
+import { normalizeIdentifier, toStudentInternalAuthEmail, type ProfileKind, ROUTES } from '@/lib/auth';
 
 type Json = Record<string, unknown>;
 
@@ -10,22 +10,47 @@ type AuthSession = {
   user: SupabaseUser;
 };
 
-function getServerSupabaseConfig() {
+function getPublicSupabaseConfig() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-  if (!url || !anonKey || !serviceRoleKey) {
-    throw new Error('Не настроены NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY.');
+  if (!url || !anonKey) {
+    throw new Error('Не настроены NEXT_PUBLIC_SUPABASE_URL и NEXT_PUBLIC_SUPABASE_ANON_KEY.');
   }
 
-  return { url, anonKey, serviceRoleKey };
+  return { url, anonKey };
 }
 
-async function request<T>(path: string, method = 'GET', options?: { payload?: Json; accessToken?: string; admin?: boolean; allowEmpty?: boolean }) {
-  const { url, anonKey, serviceRoleKey } = getServerSupabaseConfig();
-  const apiKey = options?.admin ? serviceRoleKey : anonKey;
-  const bearer = options?.admin ? serviceRoleKey : options?.accessToken ?? anonKey;
+function getServiceRoleKey() {
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!serviceRoleKey) {
+    throw new Error('Не настроен SUPABASE_SERVICE_ROLE_KEY для серверных admin-запросов.');
+  }
+  return serviceRoleKey;
+}
+
+function isFunctionMissingError(message: string) {
+  const normalized = message.toLowerCase();
+  return normalized.includes('could not find the function') || normalized.includes('function') && normalized.includes('does not exist');
+}
+
+function redactPayload(payload: Json | undefined) {
+  if (!payload) return payload;
+  const clone: Json = { ...payload };
+  for (const key of ['password', 'p_raw_pin', 'secret']) {
+    if (key in clone) clone[key] = '[redacted]';
+  }
+  return clone;
+}
+
+async function request<T>(
+  path: string,
+  method = 'GET',
+  options?: { payload?: Json; accessToken?: string; admin?: boolean; allowEmpty?: boolean; extraHeaders?: Record<string, string> }
+) {
+  const { url, anonKey } = getPublicSupabaseConfig();
+  const apiKey = options?.admin ? getServiceRoleKey() : anonKey;
+  const bearer = options?.admin ? apiKey : options?.accessToken ?? anonKey;
 
   const response = await fetch(`${url}${path}`, {
     method,
@@ -33,15 +58,25 @@ async function request<T>(path: string, method = 'GET', options?: { payload?: Js
       apikey: apiKey,
       Authorization: `Bearer ${bearer}`,
       'Content-Type': 'application/json',
-      ...(method !== 'GET' ? { Prefer: 'return=representation' } : {})
+      ...(method !== 'GET' ? { Prefer: 'return=representation' } : {}),
+      ...(options?.extraHeaders ?? {})
     },
     body: options?.payload ? JSON.stringify(options.payload) : undefined,
     cache: 'no-store'
   });
 
   if (!response.ok) {
-    const payloadError = (await response.json().catch(() => null)) as { message?: string; msg?: string } | null;
-    throw new Error(payloadError?.message ?? payloadError?.msg ?? 'Ошибка запроса к Supabase.');
+    const payloadError = (await response.json().catch(() => null)) as { message?: string; msg?: string; code?: string } | null;
+    const details = payloadError?.message ?? payloadError?.msg ?? 'Ошибка запроса к Supabase.';
+    console.error('[supabase-admin] request failed', {
+      path,
+      method,
+      status: response.status,
+      code: payloadError?.code,
+      details,
+      payload: redactPayload(options?.payload)
+    });
+    throw new Error(details);
   }
 
   if (response.status === 204) {
@@ -57,8 +92,20 @@ async function request<T>(path: string, method = 'GET', options?: { payload?: Js
   return JSON.parse(text) as T;
 }
 
+function parseAuthAdminUser(payload: unknown): SupabaseUser {
+  if (payload && typeof payload === 'object') {
+    const maybeWrapped = payload as { user?: SupabaseUser };
+    if (maybeWrapped.user?.id) return maybeWrapped.user;
+
+    const maybeDirect = payload as SupabaseUser;
+    if (maybeDirect.id) return maybeDirect;
+  }
+
+  throw new Error('Неожиданная форма ответа /auth/v1/admin/users/{id}.');
+}
+
 async function authPasswordSignIn(email: string, password: string) {
-  const { url, anonKey } = getServerSupabaseConfig();
+  const { url, anonKey } = getPublicSupabaseConfig();
   const response = await fetch(`${url}/auth/v1/token?grant_type=password`, {
     method: 'POST',
     headers: {
@@ -70,7 +117,16 @@ async function authPasswordSignIn(email: string, password: string) {
     cache: 'no-store'
   });
 
-  if (!response.ok) return null;
+  if (!response.ok) {
+    const payloadError = (await response.json().catch(() => null)) as { message?: string; msg?: string; code?: string } | null;
+    console.warn('[auth-login] password grant rejected', {
+      status: response.status,
+      code: payloadError?.code,
+      message: payloadError?.message ?? payloadError?.msg ?? 'Unknown auth failure',
+      email
+    });
+    return null;
+  }
 
   return (await response.json()) as AuthSession;
 }
@@ -123,29 +179,78 @@ export async function hasUserPin(userId: string) {
 }
 
 export async function ensureUserPreference(userId: string) {
-  await request('/rest/v1/rpc/ensure_user_preference', 'POST', {
+  try {
+    await request('/rest/v1/rpc/ensure_user_preference', 'POST', {
+      admin: true,
+      payload: { p_user_id: userId }
+    });
+    return;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown ensure_user_preference error';
+    console.warn('[auth-login] ensure_user_preference rpc failed, fallback to direct upsert', { userId, message });
+
+    if (!isFunctionMissingError(message)) {
+      throw error;
+    }
+  }
+
+  await request('/rest/v1/user_preference', 'POST', {
     admin: true,
-    payload: { p_user_id: userId }
+    payload: { user_id: userId },
+    extraHeaders: {
+      Prefer: 'resolution=merge-duplicates,return=representation'
+    }
   });
 }
 
 export async function setLastActiveProfile(userId: string, profile: ProfileKind) {
-  await request('/rest/v1/rpc/set_last_active_profile', 'POST', {
+  try {
+    await request('/rest/v1/rpc/set_last_active_profile', 'POST', {
+      admin: true,
+      payload: { p_user_id: userId, p_profile: profile }
+    });
+    return;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown set_last_active_profile error';
+    if (!isFunctionMissingError(message)) {
+      throw error;
+    }
+    console.warn('[user-context] set_last_active_profile rpc missing, fallback to patch', { userId, profile });
+  }
+
+  await ensureUserPreference(userId);
+  await request('/rest/v1/user_preference?user_id=eq.' + userId, 'PATCH', {
     admin: true,
-    payload: { p_user_id: userId, p_profile: profile }
+    payload: { last_active_profile: profile },
+    allowEmpty: true
   });
 }
 
+export async function resolvePostLoginRedirect(userId: string) {
+  try {
+    const [parentRows, teacherRows] = await Promise.all([
+      request<Array<{ id: string }>>(`/rest/v1/parent?select=id&user_id=eq.${userId}&limit=1`, 'GET', { admin: true }),
+      request<Array<{ id: string }>>(`/rest/v1/teacher?select=id&user_id=eq.${userId}&limit=1`, 'GET', { admin: true })
+    ]);
+
+    return parentRows[0]?.id || teacherRows[0]?.id ? ROUTES.dashboard : ROUTES.onboarding;
+  } catch (error) {
+    console.error('[auth-login] failed to resolve post-login route, fallback to dashboard', { userId, error });
+    return ROUTES.dashboard;
+  }
+}
+
 export async function getUserContextById(userId: string) {
-  const [parentRows, teacherRows, studentRows, prefRows, securityRows, authUser] = await Promise.all([
+  const [parentRows, teacherRows, studentRows, prefRows, securityRows, rawAuthUser] = await Promise.all([
     request<Array<{ id: string; full_name: string | null }>>(`/rest/v1/parent?select=id,full_name&user_id=eq.${userId}&limit=1`, 'GET', { admin: true }),
     request<Array<{ id: string; full_name: string | null }>>(`/rest/v1/teacher?select=id,full_name&user_id=eq.${userId}&limit=1`, 'GET', { admin: true }),
     request<Array<{ id: string; login: string; full_name: string | null }>>(`/rest/v1/student?select=id,login,full_name&user_id=eq.${userId}&limit=1`, 'GET', { admin: true }),
     request<Array<{ last_active_profile: ProfileKind | null; last_selected_school_id: string | null; theme: string | null; settings: Record<string, unknown> }>>(`/rest/v1/user_preference?select=last_active_profile,last_selected_school_id,theme,settings&user_id=eq.${userId}&limit=1`, 'GET', { admin: true }),
     request<Array<{ pin_hash: string | null }>>(`/rest/v1/user_security?select=pin_hash&user_id=eq.${userId}&limit=1`, 'GET', { admin: true }),
-    request<{ user: SupabaseUser }>(`/auth/v1/admin/users/${userId}`, 'GET', { admin: true })
+    request<unknown>(`/auth/v1/admin/users/${userId}`, 'GET', { admin: true })
   ]);
 
+  const authUser = parseAuthAdminUser(rawAuthUser);
   const student = studentRows[0] ?? null;
   const teacher = teacherRows[0] ?? null;
   const parent = parentRows[0] ?? null;
@@ -161,8 +266,8 @@ export async function getUserContextById(userId: string) {
 
   return {
     userId,
-    email: authUser.user.email ?? null,
-    fullName: authUser.user.user_metadata?.full_name ?? parent?.full_name ?? teacher?.full_name ?? student?.full_name ?? null,
+    email: authUser.email ?? null,
+    fullName: authUser.user_metadata?.full_name ?? parent?.full_name ?? teacher?.full_name ?? student?.full_name ?? null,
     actorKind: student ? ('student' as const) : ('adult' as const),
     student,
     teacher,
@@ -258,6 +363,7 @@ export async function assertTeacherAssignedToClass(accessToken: string, teacherI
 }
 
 export async function assertTeacherAssignedToClassAdmin(teacherId: string, classId: string) {
+
   const rows = await request<Array<{ id: string }>>(
     `/rest/v1/class_teacher?select=id&class_id=eq.${classId}&teacher_id=eq.${teacherId}`,
     'GET',
