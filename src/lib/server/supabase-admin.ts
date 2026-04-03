@@ -271,15 +271,15 @@ export async function getUserContextById(userId: string, fallback?: SessionFallb
   logUserContextPartFailure(userId, 'user_security query', securityResult);
   logUserContextPartFailure(userId, '/auth/v1/admin/users/{id}', authAdminUserResult);
 
-  const blockingFailures = [
-    ['parent query', parentResult],
-    ['teacher query', teacherResult],
-    ['student query', studentResult],
-    ['user_preference query', prefResult],
-    ['user_security query', securityResult]
-  ]
-    .filter(([, result]) => result.status === 'rejected')
-    .map(([part]) => part);
+  const blockingParts: Array<{ part: string; result: Settled<unknown> }> = [
+    { part: 'parent query', result: parentResult },
+    { part: 'teacher query', result: teacherResult },
+    { part: 'student query', result: studentResult },
+    { part: 'user_preference query', result: prefResult },
+    { part: 'user_security query', result: securityResult }
+  ];
+
+  const blockingFailures = blockingParts.filter(({ result }) => result.status === 'rejected').map(({ part }) => part);
 
   if (blockingFailures.length > 0) {
     console.error('[user-context] blocking failures while resolving context', { userId, blockingFailures });
