@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { FormEvent, Suspense, useMemo, useState } from 'react';
-import { ContextCard, PageHero, ProductShell, StatusMessage } from '@/components/product-shell';
+import { PageHero, ProductShell, StatusMessage } from '@/components/product-shell';
 import { loginWithIdentifier } from '@/lib/auth-flow';
 import { ROUTES } from '@/lib/auth';
 
@@ -50,29 +50,11 @@ function LoginPageContent() {
     <ProductShell>
       <PageHero
         eyebrow="Единый вход в Shidao"
-        title="Продолжайте обучение в той же среде"
-        description="Взрослые входят по email, ученики — по логину. Форма единая, чтобы переход с лендинга ощущался как следующая глава продукта."
+        title="Вход в Shidao"
+        description="Взрослые входят по email, ученики — по логину."
       />
 
-      <div className="auth-shell-grid">
-        <div className="space-y-3">
-          <ContextCard
-            tone="lime"
-            title="Один взрослый аккаунт"
-            description="Родитель и преподаватель используют единый доступ. Профиль можно расширить после входа."
-          />
-          <ContextCard
-            tone="sky"
-            title="Отдельный вход ученика"
-            description="Ученик входит по логину в собственный кабинет и видит только свои уроки и задания."
-          />
-          <ContextCard
-            tone="violet"
-            title="Телефонный вход скоро"
-            description="Поддержка входа по телефону готовится, но пока основной сценарий — email или ученический логин."
-          />
-        </div>
-
+      <div className="mx-auto mt-4 w-full max-w-xl">
         <div className="primary-form-card">
           <h2 className="text-2xl font-black tracking-tight">Войти в кабинет</h2>
           <p className="mt-2 text-sm text-neutral-600">Введите данные доступа, которые вы получили при регистрации или от взрослого аккаунта.</p>
