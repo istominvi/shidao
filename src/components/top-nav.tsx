@@ -56,8 +56,8 @@ export function TopNav() {
   }
 
   return (
-    <header className="container pt-4 md:pt-6">
-      <div className="glass landing-surface relative flex items-center justify-between gap-3 rounded-[1.6rem] border border-white/70 px-4 py-3 md:px-5">
+    <header className="container relative z-50 pt-4 md:pt-6">
+      <div className="glass landing-surface relative z-50 flex items-center justify-between gap-3 rounded-[1.6rem] border border-white/70 px-4 py-3 md:px-5">
         <Link href={ROUTES.home} className="text-xl font-black tracking-tight">
           Shidao
         </Link>
@@ -98,7 +98,7 @@ export function TopNav() {
             </button>
 
             {open && (
-              <div className="landing-surface absolute right-0 z-20 mt-2 w-72 rounded-2xl border border-black/10 bg-white/95 p-2 shadow-xl backdrop-blur-xl">
+              <div className="landing-surface absolute right-0 z-[120] mt-2 w-72 rounded-2xl border border-black/10 bg-white/95 p-2 shadow-xl backdrop-blur-xl">
                 <div className="px-3 py-2">
                   <p className="text-sm font-semibold">{state.fullName ?? 'Пользователь'}</p>
                   <p className="text-xs text-neutral-500">{state.email ?? 'Без email'}</p>
