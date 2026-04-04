@@ -51,6 +51,12 @@ Flow:
 - После регистрации пользователь попадает на `/join/check-email`.
 - Подтверждение email проходит через `/auth/confirm`, после чего пользователь направляется на `/login`.
 
+
+## Email auth / SMTP (self-hosted Supabase)
+- В production/self-hosted режиме email auth проходит через Supabase Auth (GoTrue) и SMTP-провайдера VK WorkSpace (`smtp.mail.ru`).
+- Для нашего VPS рабочий SMTP submission-порт: `2525` (а не стандартные `25/465/587`, которые были недоступны на сетевом уровне).
+- Подробная практическая документация (архитектура, рабочие env, known issues, runbook): `docs/email-auth-selfhosted-supabase.md`.
+
 ## User preference
 Таблица `public.user_preference` хранит:
 - `last_active_profile`
