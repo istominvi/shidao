@@ -36,6 +36,13 @@ export function TopNav() {
     () => state.actorKind === 'adult' && (state.availableAdultProfiles?.length ?? 0) > 1,
     [state.actorKind, state.availableAdultProfiles]
   );
+  const missingProfile = useMemo<ProfileKind | null>(() => {
+    if (state.actorKind !== 'adult') return null;
+    const available = state.availableAdultProfiles ?? [];
+    if (available.includes('parent') && !available.includes('teacher')) return 'teacher';
+    if (available.includes('teacher') && !available.includes('parent')) return 'parent';
+    return null;
+  }, [state.actorKind, state.availableAdultProfiles]);
   const switchTargets = useMemo(
     () => (state.availableAdultProfiles ?? []).filter((profile) => profile !== state.activeProfile),
     [state.availableAdultProfiles, state.activeProfile]
@@ -121,6 +128,18 @@ export function TopNav() {
                         <span className="text-xs text-neutral-500">Сменить</span>
                       </button>
                     ))}
+                  </div>
+                )}
+                {!canSwitch && missingProfile && (
+                  <div className="border-t border-black/5 py-1">
+                    <Link
+                      href={`${ROUTES.onboarding}?mode=add-profile&profile=${missingProfile}`}
+                      className="flex items-center justify-between rounded-xl px-3 py-2 text-sm hover:bg-black/5"
+                      onClick={() => setOpen(false)}
+                    >
+                      <span>Добавить {PROFILE_LABELS[missingProfile].toLowerCase()}</span>
+                      <span className="text-xs text-neutral-500">Открыть</span>
+                    </Link>
                   </div>
                 )}
 

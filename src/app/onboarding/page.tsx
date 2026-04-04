@@ -1,6 +1,6 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { ContextCard, PageHero, ProductShell, StatusMessage } from '@/components/product-shell';
 import { ROUTES, type ProfileKind } from '@/lib/auth';
@@ -24,10 +24,13 @@ const options: Array<{ value: ProfileKind; title: string; description: string; p
 
 export default function OnboardingPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const manageMode = searchParams.get('mode') === 'add-profile';
   const [loadingProfile, setLoadingProfile] = useState<ProfileKind | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [sessionCheckPending, setSessionCheckPending] = useState(true);
   const [sessionError, setSessionError] = useState<string | null>(null);
+  const [availableAdultProfiles, setAvailableAdultProfiles] = useState<ProfileKind[]>([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -39,7 +42,7 @@ export default function OnboardingPage() {
       try {
         const response = await fetch('/api/auth/session', { cache: 'no-store' });
         const ctx = (await response.json().catch(() => null)) as
-          | { authenticated?: boolean; actorKind?: string; hasAnyAdultProfile?: boolean; reason?: string }
+          | { authenticated?: boolean; actorKind?: string; hasAnyAdultProfile?: boolean; availableAdultProfiles?: ProfileKind[]; reason?: string }
           | null;
 
         if (cancelled) return;
@@ -59,7 +62,13 @@ export default function OnboardingPage() {
           return;
         }
 
-        if (ctx.actorKind === 'student' || ctx.hasAnyAdultProfile) {
+        if (ctx.actorKind === 'student') {
+          router.replace(ROUTES.dashboard);
+          return;
+        }
+
+        setAvailableAdultProfiles(ctx.availableAdultProfiles ?? []);
+        if (!manageMode && ctx.hasAnyAdultProfile) {
           router.replace(ROUTES.dashboard);
           return;
         }
@@ -78,7 +87,12 @@ export default function OnboardingPage() {
     return () => {
       cancelled = true;
     };
-  }, [router]);
+  }, [manageMode, router]);
+
+  const optionsToShow =
+    manageMode && availableAdultProfiles.length > 0
+      ? options.filter((option) => !availableAdultProfiles.includes(option.value))
+      : options;
 
   async function selectProfile(profile: ProfileKind) {
     setError(null);
@@ -108,9 +122,13 @@ export default function OnboardingPage() {
   return (
     <ProductShell>
       <PageHero
-        eyebrow="Первый шаг внутри платформы"
-        title="Выберите, как начнёте работу в Shidao"
-        description="Это стартовый профиль. Позже вы сможете добавить вторую взрослую роль, не создавая новый аккаунт."
+        eyebrow={manageMode ? 'Расширение взрослого доступа' : 'Первый шаг внутри платформы'}
+        title={manageMode ? 'Добавьте второй кабинет в Shidao' : 'Выберите, как начнёте работу в Shidao'}
+        description={
+          manageMode
+            ? 'Вы можете добавить вторую взрослую роль к текущему аккаунту и переключаться между кабинетами в меню профиля.'
+            : 'Это стартовый профиль. Позже вы сможете добавить вторую взрослую роль, не создавая новый аккаунт.'
+        }
       />
 
       <div className="mt-4 grid gap-3 md:grid-cols-3">
@@ -124,7 +142,7 @@ export default function OnboardingPage() {
           <StatusMessage kind="info">Проверяем вашу сессию перед выбором роли…</StatusMessage>
         ) : (
           <div className="grid gap-4 md:grid-cols-2">
-            {options.map((option) => (
+            {optionsToShow.map((option) => (
               <button
                 key={option.value}
                 type="button"
@@ -143,6 +161,9 @@ export default function OnboardingPage() {
                 <p className="mt-5 text-sm font-semibold">{loadingProfile === option.value ? 'Создаём профиль…' : 'Выбрать и продолжить'}</p>
               </button>
             ))}
+            {optionsToShow.length === 0 && (
+              <StatusMessage kind="info">Обе взрослые роли уже доступны в вашем аккаунте.</StatusMessage>
+            )}
           </div>
         )}
 
