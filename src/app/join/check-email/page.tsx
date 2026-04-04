@@ -1,25 +1,38 @@
 import Link from 'next/link';
-import { TopNav } from '@/components/top-nav';
+import { ContextCard, PageHero, ProductShell } from '@/components/product-shell';
 import { ROUTES } from '@/lib/auth';
 
 export default async function JoinCheckEmailPage({ searchParams }: { searchParams: Promise<{ email?: string }> }) {
   const params = await searchParams;
+
   return (
-    <main>
-      <TopNav />
-      <section className="container mt-8 pb-12">
-        <div className="mx-auto max-w-xl glass rounded-3xl p-6 md:p-8">
-          <p className="chip bg-indigo-100 text-indigo-700">Проверьте email</p>
-          <h1 className="mt-4 text-3xl font-black">Письмо отправлено</h1>
-          <p className="mt-2 text-sm text-neutral-600">
-            Мы отправили письмо для подтверждения на <span className="font-semibold">{params.email ?? 'ваш email'}</span>. Подтвердите адрес, затем выполните вход.
-          </p>
+    <ProductShell>
+      <PageHero
+        eyebrow="Подтверждение адреса"
+        title="Проверьте почту перед первым входом"
+        description="Мы отправили письмо с подтверждением. После подтверждения вернитесь в Shidao и продолжайте настройку профиля."
+      />
+
+      <div className="auth-shell-grid">
+        <ContextCard
+          tone="sky"
+          title="Куда отправили письмо"
+          description={`Адрес: ${params.email ?? 'ваш email'}. Если письмо не видно, проверьте папки “Спам” и “Промоакции”.`}
+        />
+
+        <div className="primary-form-card">
+          <h2 className="text-2xl font-black tracking-tight">Письмо отправлено</h2>
+          <p className="mt-2 text-sm text-neutral-600">Подтвердите адрес и вернитесь ко входу. Это защитит ваш взрослый аккаунт.</p>
           <div className="mt-6 grid gap-3 sm:grid-cols-2">
-            <Link href={ROUTES.login} className="rounded-2xl bg-black px-4 py-3 text-center font-semibold text-white">Перейти ко входу</Link>
-            <Link href={ROUTES.join} className="rounded-2xl border border-black/15 bg-white px-4 py-3 text-center font-semibold">Назад / изменить email</Link>
+            <Link href={ROUTES.login} className="landing-btn landing-btn-primary min-h-12 w-full">
+              Перейти ко входу
+            </Link>
+            <Link href={ROUTES.join} className="landing-btn landing-btn-muted min-h-12 w-full border-black/15">
+              Изменить email
+            </Link>
           </div>
         </div>
-      </section>
-    </main>
+      </div>
+    </ProductShell>
   );
 }

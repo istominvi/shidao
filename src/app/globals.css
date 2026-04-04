@@ -108,6 +108,112 @@ a {
   box-shadow: 0 14px 30px rgba(20, 20, 20, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.82);
 }
 
+.product-hero-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1.7rem;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  background: linear-gradient(130deg, rgba(255, 255, 255, 0.88), rgba(255, 255, 255, 0.75));
+  padding: 1.25rem;
+  box-shadow: 0 24px 72px rgba(17, 24, 39, 0.08);
+  backdrop-filter: blur(10px);
+}
+
+.product-hero-card::before,
+.product-hero-card::after {
+  content: '';
+  position: absolute;
+  border-radius: 999px;
+  filter: blur(42px);
+  pointer-events: none;
+}
+
+.product-hero-card::before {
+  right: -5rem;
+  top: -4.5rem;
+  height: 9.5rem;
+  width: 9.5rem;
+  background: rgba(112, 183, 255, 0.36);
+}
+
+.product-hero-card::after {
+  left: -4.5rem;
+  bottom: -5rem;
+  height: 10.5rem;
+  width: 10.5rem;
+  background: rgba(255, 182, 232, 0.3);
+}
+
+.auth-shell-grid {
+  display: grid;
+  gap: 1.25rem;
+  margin-top: 1rem;
+}
+
+.primary-form-card,
+.context-card,
+.dashboard-grid-card {
+  border: 1px solid rgba(20, 20, 20, 0.1);
+  border-radius: 1.4rem;
+  padding: 1rem;
+  box-shadow: 0 16px 36px rgba(20, 20, 20, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.82);
+}
+
+.primary-form-card {
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.context-card {
+  background: rgba(255, 255, 255, 0.84);
+}
+
+.dashboard-grid-card {
+  background: rgba(255, 255, 255, 0.88);
+}
+
+.field-label {
+  margin-bottom: 0.45rem;
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 650;
+}
+
+.field-input {
+  width: 100%;
+  border-radius: 0.95rem;
+  border: 1px solid rgba(20, 20, 20, 0.14);
+  background: rgba(255, 255, 255, 0.96);
+  padding: 0.78rem 0.9rem;
+  transition: border-color 180ms ease, box-shadow 180ms ease;
+  outline: none;
+}
+
+.field-input:focus {
+  border-color: rgba(20, 20, 20, 0.32);
+  box-shadow: 0 0 0 3px rgba(20, 20, 20, 0.08);
+}
+
+.role-choice-card {
+  border-radius: 1.35rem;
+  border: 1px solid rgba(20, 20, 20, 0.11);
+  padding: 1.1rem;
+  text-align: left;
+  box-shadow: 0 16px 34px rgba(20, 20, 20, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+}
+
+.role-choice-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(20, 20, 20, 0.2);
+}
+
+.dashboard-hero {
+  border-radius: 1.8rem;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  background: linear-gradient(140deg, rgba(255, 255, 255, 0.88), rgba(249, 249, 251, 0.7));
+  padding: 1.4rem;
+}
+
 .floating-chip {
   animation: floaty 5.5s ease-in-out infinite;
 }
@@ -138,6 +244,26 @@ a {
   }
 }
 
+@media (min-width: 900px) {
+  .auth-shell-grid {
+    grid-template-columns: 0.95fr 1.05fr;
+    gap: 1.5rem;
+  }
+
+  .product-hero-card,
+  .dashboard-hero {
+    padding: 1.8rem;
+  }
+
+  .primary-form-card,
+  .context-card,
+  .dashboard-grid-card,
+  .role-choice-card {
+    border-radius: 1.55rem;
+    padding: 1.25rem;
+  }
+}
+
 @media (max-width: 768px) {
   .landing-btn {
     padding: 0.84rem 1.1rem;
@@ -157,6 +283,10 @@ a {
   .landing-btn:hover {
     transform: none;
     box-shadow: none;
+  }
+
+  .role-choice-card:hover {
+    transform: none;
   }
 }
 

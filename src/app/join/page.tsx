@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FormEvent, useState } from 'react';
-import { TopNav } from '@/components/top-nav';
+import { ContextCard, PageHero, ProductShell, StatusMessage } from '@/components/product-shell';
 import { ROUTES } from '@/lib/auth';
 
 export default function JoinPage() {
@@ -65,51 +65,62 @@ export default function JoinPage() {
   }
 
   return (
-    <main>
-      <TopNav />
-      <section className="container mt-8 pb-12">
-        <div className="mx-auto max-w-xl glass rounded-3xl p-6 md:p-8">
-          <p className="chip bg-lime-100 text-lime-700">Регистрация взрослого</p>
-          <h1 className="mt-4 text-3xl font-black">Создать аккаунт</h1>
-          <p className="mt-2 text-sm text-neutral-600">
-            Регистрация доступна только взрослым. После создания аккаунта вы перейдёте ко входу или к подтверждению email — в зависимости от режима окружения.
-          </p>
+    <ProductShell>
+      <PageHero
+        eyebrow="Вход в продукт"
+        title="Создайте взрослый аккаунт Shidao"
+        description="Это единый взрослый доступ: после входа вы выберете роль и сможете работать как родитель или преподаватель в одной системе."
+      />
 
-          <form className="mt-6 space-y-4" onSubmit={onSubmit}>
+      <div className="auth-shell-grid">
+        <div className="space-y-3">
+          <ContextCard tone="lime" title="Единый взрослый доступ" description="Один аккаунт для управления учебным процессом и коммуникацией внутри платформы." />
+          <ContextCard tone="sky" title="Роль выбирается позже" description="Сначала создаём доступ, затем на первом входе вы выбираете стартовый профиль." />
+          <ContextCard tone="pink" title="Отдельный ученический контур" description="Ученики получают собственный вход, чтобы не смешивать взрослые и учебные действия." />
+        </div>
+
+        <div className="primary-form-card">
+          <h2 className="text-2xl font-black tracking-tight">Регистрация взрослого</h2>
+          <p className="mt-2 text-sm text-neutral-600">После регистрации вы перейдёте к подтверждению email или сразу ко входу — зависит от режима проекта.</p>
+
+          <form className="mt-5 space-y-3.5" onSubmit={onSubmit}>
             <label className="block">
-              <span className="mb-2 block text-sm font-medium">Имя</span>
-              <input value={name} onChange={(e) => setName(e.target.value)} className="w-full rounded-2xl border border-black/10 bg-white px-4 py-3" />
+              <span className="field-label">Имя</span>
+              <input value={name} onChange={(e) => setName(e.target.value)} className="field-input" placeholder="Как к вам обращаться" />
             </label>
             <label className="block">
-              <span className="mb-2 block text-sm font-medium">Email</span>
-              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full rounded-2xl border border-black/10 bg-white px-4 py-3" />
+              <span className="field-label">Email</span>
+              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="field-input" placeholder="you@example.com" />
             </label>
             <label className="block">
-              <span className="mb-2 block text-sm font-medium">Пароль</span>
-              <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full rounded-2xl border border-black/10 bg-white px-4 py-3" />
+              <span className="field-label">Пароль</span>
+              <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="field-input" placeholder="Минимум 8 символов" />
             </label>
             <label className="block">
-              <span className="mb-2 block text-sm font-medium">Подтверждение пароля</span>
-              <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="w-full rounded-2xl border border-black/10 bg-white px-4 py-3" />
+              <span className="field-label">Подтверждение пароля</span>
+              <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="field-input" />
             </label>
 
-            <label className="flex items-start gap-2 rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm">
-              <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} className="mt-0.5" />
+            <label className="context-card flex items-start gap-2.5 bg-white/88 text-sm">
+              <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} className="mt-0.5 size-4" />
               <span>Я согласен(а) с условиями использования и политикой конфиденциальности.</span>
             </label>
 
-            {error && <p className="rounded-2xl bg-red-100 px-4 py-3 text-sm text-red-700">{error}</p>}
+            {error && <StatusMessage kind="error">{error}</StatusMessage>}
 
-            <button disabled={loading} className="w-full rounded-2xl bg-black px-4 py-3 font-semibold text-white disabled:opacity-60" type="submit">
+            <button disabled={loading} className="landing-btn landing-btn-primary min-h-12 w-full disabled:opacity-60" type="submit">
               {loading ? 'Создаём аккаунт…' : 'Создать аккаунт'}
             </button>
           </form>
 
           <p className="mt-5 text-sm text-neutral-600">
-            Уже есть аккаунт? <Link href={ROUTES.login} className="font-semibold underline">Войти</Link>
+            Уже есть аккаунт?{' '}
+            <Link href={ROUTES.login} className="font-semibold underline decoration-black/25 underline-offset-2">
+              Войти
+            </Link>
           </p>
         </div>
-      </section>
-    </main>
+      </div>
+    </ProductShell>
   );
 }

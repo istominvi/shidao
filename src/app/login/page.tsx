@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { FormEvent, Suspense, useMemo, useState } from 'react';
-import { TopNav } from '@/components/top-nav';
+import { PageHero, ProductShell, StatusMessage } from '@/components/product-shell';
 import { loginWithIdentifier } from '@/lib/auth-flow';
 import { ROUTES } from '@/lib/auth';
 
@@ -47,59 +47,61 @@ function LoginPageContent() {
   }
 
   return (
-    <main>
-      <TopNav />
-      <section className="container mt-8 pb-12">
-        <div className="mx-auto max-w-xl glass rounded-3xl p-6 md:p-8">
-          <p className="chip bg-sky-100 text-sky-700">Единый вход</p>
-          <h1 className="mt-4 text-3xl font-black">Вход в Shidao</h1>
-          <p className="mt-2 text-sm text-neutral-600">
-            Взрослые входят по email. Ученики входят по логину. Телефонный вход готовится и скоро появится.
-          </p>
+    <ProductShell>
+      <PageHero
+        eyebrow="Единый вход в Shidao"
+        title="Вход в Shidao"
+        description="Взрослые входят по email, ученики — по логину."
+      />
 
-          {successHint && <p className="mt-4 rounded-2xl bg-lime-100 px-4 py-3 text-sm text-lime-800">{successHint}</p>}
+      <div className="mx-auto mt-4 w-full max-w-xl">
+        <div className="primary-form-card">
+          <h2 className="text-2xl font-black tracking-tight">Войти в кабинет</h2>
+          <p className="mt-2 text-sm text-neutral-600">Введите данные доступа, которые вы получили при регистрации или от взрослого аккаунта.</p>
 
-          <form className="mt-6 space-y-4" onSubmit={onSubmit}>
+          {successHint && (
+            <div className="mt-4">
+              <StatusMessage kind="success">{successHint}</StatusMessage>
+            </div>
+          )}
+
+          <form className="mt-5 space-y-4" onSubmit={onSubmit}>
             <label className="block">
-              <span className="mb-2 block text-sm font-medium">Email, логин или телефон</span>
+              <span className="field-label">Email, логин или телефон</span>
               <input
                 value={identifier}
                 onChange={(e) => setIdentifier(e.target.value)}
-                placeholder="Введите email, логин или телефон"
-                className="w-full rounded-2xl border border-black/10 bg-white px-4 py-3 outline-none transition focus:border-black/30 focus:ring-2 focus:ring-black/10"
+                placeholder="Например, parent@school.com или login ученика"
+                className="field-input"
               />
             </label>
             <label className="block">
-              <span className="mb-2 block text-sm font-medium">Пароль или PIN-код</span>
+              <span className="field-label">Пароль или PIN-код</span>
               <input
                 type="password"
                 value={secret}
                 onChange={(e) => setSecret(e.target.value)}
                 placeholder="Введите пароль или PIN"
-                className="w-full rounded-2xl border border-black/10 bg-white px-4 py-3 outline-none transition focus:border-black/30 focus:ring-2 focus:ring-black/10"
+                className="field-input"
               />
             </label>
 
-            {error && <p className="rounded-2xl bg-red-100 px-4 py-3 text-sm text-red-700">{error}</p>}
+            {error && <StatusMessage kind="error">{error}</StatusMessage>}
 
-            <button
-              disabled={loading}
-              className="w-full rounded-2xl bg-black px-4 py-3 font-semibold text-white disabled:opacity-60"
-              type="submit"
-            >
-              {loading ? 'Входим…' : 'Войти'}
+            <button disabled={loading} className="landing-btn landing-btn-primary min-h-12 w-full disabled:opacity-60" type="submit">
+              {loading ? 'Входим…' : 'Войти в Shidao'}
             </button>
           </form>
 
           <p className="mt-5 text-sm text-neutral-600">
             Нет взрослого аккаунта?{' '}
-            <Link href={ROUTES.join} className="font-semibold underline">
+            <Link href={ROUTES.join} className="font-semibold underline decoration-black/25 underline-offset-2">
               Зарегистрироваться
             </Link>
           </p>
         </div>
-      </section>
-    </main>
+      </div>
+    </ProductShell>
   );
 }
 
