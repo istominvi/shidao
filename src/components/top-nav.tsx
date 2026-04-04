@@ -36,6 +36,10 @@ export function TopNav() {
     () => state.actorKind === 'adult' && (state.availableAdultProfiles?.length ?? 0) > 1,
     [state.actorKind, state.availableAdultProfiles]
   );
+  const switchTargets = useMemo(
+    () => (state.availableAdultProfiles ?? []).filter((profile) => profile !== state.activeProfile),
+    [state.availableAdultProfiles, state.activeProfile]
+  );
 
   async function handleSwitch(profile: ProfileKind) {
     await fetch('/api/preferences/profile', {
@@ -106,15 +110,15 @@ export function TopNav() {
 
                 {canSwitch && (
                   <div className="border-t border-black/5 py-1">
-                    {(state.availableAdultProfiles ?? []).map((profile) => (
+                    {switchTargets.map((profile) => (
                       <button
                         key={profile}
                         className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm hover:bg-black/5"
                         onClick={() => handleSwitch(profile)}
                         type="button"
                       >
-                        <span>{PROFILE_LABELS[profile]}</span>
-                        {state.activeProfile === profile && <span className="text-xs text-neutral-500">Активно</span>}
+                        <span>Перейти в {PROFILE_LABELS[profile].toLowerCase()}</span>
+                        <span className="text-xs text-neutral-500">Сменить</span>
                       </button>
                     ))}
                   </div>
