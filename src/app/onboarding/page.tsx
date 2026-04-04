@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { ContextCard, PageHero, ProductShell, StatusMessage } from '@/components/product-shell';
 import { ROUTES, type ProfileKind } from '@/lib/auth';
 
@@ -22,7 +22,7 @@ const options: Array<{ value: ProfileKind; title: string; description: string; p
   }
 ];
 
-export default function OnboardingPage() {
+function OnboardingPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const manageMode = searchParams.get('mode') === 'add-profile';
@@ -183,5 +183,13 @@ export default function OnboardingPage() {
         )}
       </section>
     </ProductShell>
+  );
+}
+
+export default function OnboardingPage() {
+  return (
+    <Suspense fallback={null}>
+      <OnboardingPageContent />
+    </Suspense>
   );
 }
