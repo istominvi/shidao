@@ -280,13 +280,20 @@ Helpers/RPC:
 - `npm run format` — применяет форматирование Prettier ко всему репозиторию.
 - `npm run format:check` — проверяет, что рабочее дерево уже отформатировано.
 - Базовый pre-merge набор: `npm run format:check && npm run lint && npm run build && npm run test`.
+- Полный прогон (включая браузерный smoke-слой): `npm run test:all`.
 
 ## Test strategy (MVP)
 
-- `npm run test` запускает каноничный двухшаговый pipeline:
-  1. `npm run test:compile` — компиляция `src/**/*.test.ts` в `.test-dist` через `tsc -p tsconfig.test.json`;
-  2. `npm run test:unit` → `node scripts/run-node-tests.mjs`, который детерминированно собирает и сортирует все `.test-dist/**/*.test.js`, затем запускает их через `node --test`.
-- Это сохраняет lightweight stack (`node:test` + TypeScript) без тяжёлой миграции на отдельный test-runner и убирает shell-цепочку `find | sort | xargs`.
+- `npm run test:compile` — компиляция `src/**/*.test.ts` в `.test-dist` через `tsc -p tsconfig.test.json`.
+- `npm run test` (основной стабильный pipeline) = `npm run test:unit`:
+  - запускает все node:test сценарии **кроме** browser-smoke (`--exclude browser-smoke`);
+  - сюда входят unit + integration/smoke без реального браузера (включая HTTP e2e-smoke слой на `fetch`).
+- `npm run test:browser`:
+  - запускает только browser-smoke тесты (`--include browser-smoke`);
+  - использует реальный Chromium через Playwright.
+- `npm run test:all`:
+  - последовательно запускает `test:unit` и `test:browser`.
+- Это сохраняет lightweight stack (`node:test` + TypeScript) и делает браузерный слой явным и управляемым.
 - Покрытие по слоям:
   - `src/lib/__tests__`: route matching, safe redirect normalisation, auth redirect policy, smoke-level user-flow контракты;
   - `src/components/__tests__`: session-driven TopNav/landing branching и contract-ожидания гостевых/auth CTA;
@@ -300,5 +307,7 @@ Helpers/RPC:
   - авторизованный пользователь на `/` видит auth-aware header;
   - guest на protected route (`/dashboard`) перенаправляется на `/login`;
   - авторизованный пользователь на `/login` уходит по access policy на `/dashboard`.
-- Тесты запускаются в реальном браузере через `playwright` **если пакет доступен в окружении**.
-  - При отсутствии `playwright` тесты автоматически помечаются как `skip` с понятной причиной (чтобы не ломать базовый CI без browser dependency).
+- Тесты запускаются в реальном браузере через `playwright`.
+  - Если пакет `playwright` не установлен, browser-smoke тесты помечаются как `skip` с причиной.
+  - Если пакет установлен, но отсутствуют browser binaries, тесты тоже помечаются как `skip` с явной инструкцией выполнить `npx playwright install chromium` (или `npx playwright install`).
+  - Поэтому `npm run test` остаётся стабильным в средах без браузеров, а `npm run test:browser` остаётся прозрачным и предсказуемым.
