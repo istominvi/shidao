@@ -52,7 +52,11 @@ export default function JoinPage() {
       if (!response.ok) {
         throw new Error(payload?.error ?? 'Не удалось завершить регистрацию. Попробуйте ещё раз.');
       }
-      router.push(payload?.redirectTo ?? `${ROUTES.joinCheckEmail}?email=${encodeURIComponent(normalizedEmail)}`);
+      if (!payload?.redirectTo) {
+        throw new Error('Сервер не вернул маршрут после регистрации.');
+      }
+
+      router.push(payload.redirectTo);
     } catch (submitError) {
       if (submitError instanceof TypeError && submitError.message.includes('fetch')) {
         setError('Проблема с сетью. Проверьте подключение и попробуйте ещё раз.');

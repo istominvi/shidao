@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { ROUTES } from '@/lib/auth';
+import { afterConfirm, afterSignup } from '@/lib/auth-redirects';
 import { getPublicSiteUrl, getSupabasePublicConfig } from '@/lib/server/auth-config';
 
 export const runtime = 'nodejs';
@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
     const { url, anonKey } = getSupabasePublicConfig();
     const autoConfirmEnabled = isEmailAutoconfirmEnabled();
     const emailRedirectTo = new URL('/auth/confirm', getPublicSiteUrl());
-    emailRedirectTo.searchParams.set('next', '/login?confirmed=1');
+    emailRedirectTo.searchParams.set('next', afterConfirm('signup'));
 
     const response = await fetch(`${url}/auth/v1/signup`, {
       method: 'POST',
@@ -73,14 +73,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({
         ok: true,
         requiresEmailConfirmation: false,
-        redirectTo: `${ROUTES.login}?registered=1`
+        redirectTo: afterSignup({ requiresEmailConfirmation: false, email })
       });
     }
 
     return NextResponse.json({
       ok: true,
       requiresEmailConfirmation: true,
-      redirectTo: `${ROUTES.joinCheckEmail}?email=${encodeURIComponent(email)}`
+      redirectTo: afterSignup({ requiresEmailConfirmation: true, email })
     });
   } catch (error) {
     console.error('[auth-signup] failed', error);

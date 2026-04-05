@@ -1,7 +1,5 @@
 'use client';
 
-import { ROUTES } from '@/lib/auth';
-
 export async function loginWithIdentifier(identifier: string, secret: string) {
   const response = await fetch('/api/auth/login', {
     method: 'POST',
@@ -15,7 +13,11 @@ export async function loginWithIdentifier(identifier: string, secret: string) {
     throw new Error(payload?.error ?? 'Не удалось выполнить вход.');
   }
 
-  return payload?.redirectTo ?? ROUTES.dashboard;
+  if (!payload?.redirectTo) {
+    throw new Error('Сервер не вернул маршрут для перехода после входа.');
+  }
+
+  return payload.redirectTo;
 }
 
 export async function signOutViaServer() {

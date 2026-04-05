@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { afterConfirm } from '@/lib/auth-redirects';
 import { isEmail } from '@/lib/auth';
 import { getPublicSiteUrl, getSupabasePublicConfig } from '@/lib/server/auth-config';
 
@@ -14,7 +15,7 @@ export async function POST(req: NextRequest) {
 
     const { url, anonKey } = getSupabasePublicConfig();
     const redirectTo = new URL('/auth/confirm', getPublicSiteUrl());
-    redirectTo.searchParams.set('next', '/reset-password');
+    redirectTo.searchParams.set('next', afterConfirm('recovery'));
 
     await fetch(`${url}/auth/v1/recover`, {
       method: 'POST',

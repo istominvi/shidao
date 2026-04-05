@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { ROUTES } from '@/lib/auth';
+import { afterConfirm } from '@/lib/auth-redirects';
 import { getPublicSiteUrl, getSupabasePublicConfig, resolveSafeAuthRedirect } from '@/lib/server/auth-config';
 import { writeAppSession } from '@/lib/server/app-session';
 
@@ -11,21 +11,13 @@ export async function GET(req: NextRequest) {
   const rawType = (req.nextUrl.searchParams.get('type') ?? '').toLowerCase();
   const type = rawType === 'email/signup' ? 'signup' : rawType;
   const next = req.nextUrl.searchParams.get('next');
-  const fallbackUrl = new URL(`${ROUTES.login}?confirmed=0`, getPublicSiteUrl());
+  const fallbackUrl = new URL(afterConfirm('unknown'), getPublicSiteUrl());
 
   if (!tokenHash || !type || !ALLOWED_TYPES.has(type)) {
     return NextResponse.redirect(fallbackUrl);
   }
 
-  const fallbackByType: Record<string, string> = {
-    signup: `${ROUTES.login}?confirmed=1`,
-    email: `${ROUTES.login}?confirmed=1`,
-    recovery: ROUTES.resetPassword,
-    invite: ROUTES.onboarding,
-    email_change: `${ROUTES.settingsProfile}?emailChanged=1`
-  };
-
-  const redirectPath = resolveSafeAuthRedirect(next, fallbackByType[type] ?? `${ROUTES.login}?confirmed=1`);
+  const redirectPath = resolveSafeAuthRedirect(next, afterConfirm(type));
 
   try {
     const { url, anonKey } = getSupabasePublicConfig();

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AUTH_MESSAGES, ROUTES, normalizeIdentifier, isEmail } from '@/lib/auth';
+import { afterLogin } from '@/lib/auth-redirects';
 import { writeAppSession } from '@/lib/server/app-session';
 import {
   ensureUserPreference,
@@ -67,7 +68,7 @@ export async function POST(req: NextRequest) {
       }
 
       stage = 'resolve-post-login-route-password';
-      const redirectTo = await resolvePostLoginRedirect(userId);
+      const redirectTo = afterLogin(await resolvePostLoginRedirect(userId));
       return NextResponse.json({ redirectTo });
     }
 
@@ -88,7 +89,7 @@ export async function POST(req: NextRequest) {
           console.error('[auth-login] ensureUserPreference failed after successful pin auth', { userId: candidateUserId, error });
         }
 
-        return NextResponse.json({ redirectTo: ROUTES.dashboard });
+        return NextResponse.json({ redirectTo: afterLogin(ROUTES.dashboard) });
       }
     }
 
