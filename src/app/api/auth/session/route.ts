@@ -1,18 +1,18 @@
-import { NextResponse } from 'next/server';
-import { readSessionViewServer } from '@/lib/server/session-view';
+import { NextResponse } from "next/server";
+import { readSessionViewServer } from "@/lib/server/session-view";
 
-export const runtime = 'nodejs';
+export const runtime = "nodejs";
 
 export async function GET() {
   const sessionView = await readSessionViewServer();
   const status = (() => {
     switch (sessionView.kind) {
-      case 'guest':
+      case "guest":
         return 401;
-      case 'degraded':
+      case "degraded":
         return 503;
-      case 'student':
-      case 'adult':
+      case "student":
+      case "adult":
         return 200;
       default: {
         const _exhaustive: never = sessionView;

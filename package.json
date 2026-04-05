@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test": "tsc -p tsconfig.test.json && find .test-dist -type f -name '*.test.js' -print0 | sort -z | xargs -0 node --test"
+    "test": "tsc -p tsconfig.test.json && find .test-dist -type f -name '*.test.js' -print0 | sort -z | xargs -0 node --test",
+    "format": "npx --yes prettier --write .",
+    "format:check": "npx --yes prettier --check ."
   },
   "dependencies": {
     "lucide-react": "^0.503.0",

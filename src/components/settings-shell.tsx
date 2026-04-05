@@ -1,6 +1,6 @@
-import { type ReactNode } from 'react';
-import { TopNav } from '@/components/top-nav';
-import { SettingsNavigation } from '@/components/settings-navigation';
+import { type ReactNode } from "react";
+import { TopNav } from "@/components/top-nav";
+import { SettingsNavigation } from "@/components/settings-navigation";
 
 type SettingsShellProps = {
   badgeClassName: string;
@@ -10,7 +10,13 @@ type SettingsShellProps = {
   children: ReactNode;
 };
 
-export function SettingsShell({ badgeClassName, badgeLabel, title, description, children }: SettingsShellProps) {
+export function SettingsShell({
+  badgeClassName,
+  badgeLabel,
+  title,
+  description,
+  children,
+}: SettingsShellProps) {
   return (
     <main>
       <TopNav />

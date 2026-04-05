@@ -3,6 +3,7 @@
 ## 1) Контекст
 
 Документ фиксирует **текущее фактическое рабочее состояние** email auth в Shidao:
+
 - приложение Shidao (Next.js) развёрнуто отдельно;
 - Supabase (self-hosted) и Supabase Auth (GoTrue) развёрнуты отдельно;
 - SMTP-провайдер: VK WorkSpace (`smtp.mail.ru`);
@@ -28,6 +29,7 @@
 9. После onboarding — переход в единый `/dashboard`.
 
 ### Зоны ответственности
+
 - **Shidao (Next.js):** UI/signup/login/onboarding/dashboard и callback `/auth/confirm`.
 - **Supabase Auth (GoTrue):** хранение auth users, выдача confirm-токенов, отправка auth email.
 - **SMTP (VK WorkSpace):** транспорт доставки письма подтверждения.
@@ -37,15 +39,20 @@
 ## 3) Итоговый рабочий SMTP-сценарий
 
 ### Что не работало на текущем VPS
+
 Стандартные SMTP-порты `25`, `465`, `587` в этом окружении не дали рабочего исходящего канала (сетевой timeout/недоступность).
 
 ### Что диагностировано
+
 Практическая проверка показала:
+
 - `smtp.mail.ru:25/465/587` — нерабочие для текущего VPS;
 - `smtp.mail.ru:2525` — доступен и проходит STARTTLS.
 
 ### Фактический рабочий результат
+
 Для текущего окружения подтверждён рабочий вариант:
+
 - `SMTP_HOST=smtp.mail.ru`
 - `SMTP_PORT=2525`
 
@@ -96,6 +103,7 @@ GOTRUE_MAILER_EXTERNAL_HOSTS=shidao.ru,supabase.shidao.ru,localhost
 Ранее были инциденты, когда verify link вёл на неправильный URL/порт, из-за чего подтверждение не завершалось в приложении.
 
 Текущее рабочее состояние:
+
 - verify link возвращает пользователя в приложение через корректный callback;
 - пользователь без подтверждения email не может пройти нормальный login;
 - после подтверждения email вход становится доступен;
@@ -112,6 +120,7 @@ docker compose exec auth env | egrep 'SMTP|ENABLE_EMAIL|SITE_URL|SUPABASE_PUBLIC
 ```
 
 Что проверяем:
+
 - `ENABLE_EMAIL_AUTOCONFIRM=false`
 - `SMTP_HOST=smtp.mail.ru`
 - `SMTP_PORT=2525`
@@ -132,6 +141,7 @@ docker compose logs auth --tail 200 -f
 ```
 
 Типовая интерпретация:
+
 - timeout/connect errors → сеть/egress/порт;
 - `535` / `authentication failed` → неверные SMTP credentials (часто не app-password);
 - жалобы на redirect/callback → ошибка `SITE_URL` / `API_EXTERNAL_URL` / `ADDITIONAL_REDIRECT_URLS`.
@@ -171,10 +181,12 @@ openssl s_client -starttls smtp -connect smtp.mail.ru:2525 -servername smtp.mail
 ## 8) Deliverability и антиспам
 
 Важно разделять два слоя:
+
 1. **SMTP transport** (письмо технически отправляется).
 2. **Deliverability** (письмо попадает во Входящие, а не в Spam).
 
 Минимум для домена отправителя:
+
 - SPF должен быть настроен.
 - DKIM должен быть настроен.
 - DMARC должен быть настроен отдельно.
@@ -195,6 +207,7 @@ Value: v=DMARC1; p=none; rua=mailto:auth@shidao.ru; adkim=s; aspf=s
 ```
 
 Пояснения:
+
 - `rua=mailto:...` — адрес для aggregate reports.
 - `p=none` — наблюдение без жёсткой блокировки.
 - после стабилизации доставляемости можно усилить политику до `p=quarantine` или `p=reject`.
@@ -204,6 +217,7 @@ Value: v=DMARC1; p=none; rua=mailto:auth@shidao.ru; adkim=s; aspf=s
 ## 10) Как читать отчёты deliverability (например, MXToolbox)
 
 Типичная ситуация:
+
 - SPF: valid
 - DKIM: enabled/valid
 - MX: ok

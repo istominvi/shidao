@@ -1,6 +1,6 @@
-import { ROUTES } from './auth';
-import { isSafeRelativePath } from './routes';
-import type { AccessResolution } from './server/access-policy';
+import { ROUTES } from "./auth";
+import { isSafeRelativePath } from "./routes";
+import type { AccessResolution } from "./server/access-policy";
 
 function toSafePath(input: string | null | undefined, fallback: string) {
   if (!isSafeRelativePath(input)) return fallback;
@@ -11,7 +11,10 @@ export function afterLogin(redirectTo?: string | null) {
   return toSafePath(redirectTo, ROUTES.dashboard);
 }
 
-export function afterSignup(params: { requiresEmailConfirmation: boolean; email: string }) {
+export function afterSignup(params: {
+  requiresEmailConfirmation: boolean;
+  email: string;
+}) {
   if (params.requiresEmailConfirmation) {
     return `${ROUTES.joinCheckEmail}?email=${encodeURIComponent(params.email)}`;
   }
@@ -21,14 +24,14 @@ export function afterSignup(params: { requiresEmailConfirmation: boolean; email:
 
 export function afterConfirm(type: string) {
   switch (type) {
-    case 'signup':
-    case 'email':
+    case "signup":
+    case "email":
       return `${ROUTES.login}?confirmed=1`;
-    case 'recovery':
+    case "recovery":
       return ROUTES.resetPassword;
-    case 'invite':
+    case "invite":
       return ROUTES.onboarding;
-    case 'email_change':
+    case "email_change":
       return `${ROUTES.settingsProfile}?emailChanged=1`;
     default:
       return `${ROUTES.login}?confirmed=0`;
@@ -44,11 +47,14 @@ export function afterLogout() {
 }
 
 export function onAuthPageWhenAuthenticated(resolution: AccessResolution) {
-  if (resolution.status === 'adult-without-profile') {
+  if (resolution.status === "adult-without-profile") {
     return ROUTES.onboarding;
   }
 
-  if (resolution.status === 'adult-with-profile' || resolution.status === 'student') {
+  if (
+    resolution.status === "adult-with-profile" ||
+    resolution.status === "student"
+  ) {
     return ROUTES.dashboard;
   }
 

@@ -1,4 +1,4 @@
-@import 'tailwindcss';
+@import "tailwindcss";
 
 :root {
   --background: #f4f4f6;
@@ -20,11 +20,19 @@ body {
   min-height: 100vh;
   background: radial-gradient(circle at top left, #fefefe 0%, #efeff2 100%);
   color: var(--foreground);
-  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+  font-family:
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    Segoe UI,
+    Roboto,
+    Helvetica,
+    Arial,
+    sans-serif;
 }
 
 .font-serif-noto {
-  font-family: ui-serif, Georgia, Cambria, 'Times New Roman', Times, serif;
+  font-family: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
 }
 
 a {
@@ -52,7 +60,9 @@ a {
   align-items: center;
   gap: 0.45rem;
   border: 1px solid rgba(20, 20, 20, 0.1);
-  box-shadow: 0 8px 20px rgba(20, 20, 20, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  box-shadow:
+    0 8px 20px rgba(20, 20, 20, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85);
 }
 
 .landing-chip-soft {
@@ -68,7 +78,11 @@ a {
   align-items: center;
   justify-content: center;
   border: 1px solid rgba(20, 20, 20, 0.18);
-  transition: transform 220ms ease, box-shadow 220ms ease, background-color 220ms ease, border-color 220ms ease;
+  transition:
+    transform 220ms ease,
+    box-shadow 220ms ease,
+    background-color 220ms ease,
+    border-color 220ms ease;
 }
 
 .landing-btn:hover {
@@ -78,7 +92,9 @@ a {
 
 .landing-btn:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 2px rgba(20, 20, 20, 0.35), 0 10px 22px rgba(20, 20, 20, 0.16);
+  box-shadow:
+    0 0 0 2px rgba(20, 20, 20, 0.35),
+    0 10px 22px rgba(20, 20, 20, 0.16);
 }
 
 .landing-btn-primary {
@@ -97,7 +113,9 @@ a {
 }
 
 .landing-surface {
-  box-shadow: 0 22px 42px rgba(20, 20, 20, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  box-shadow:
+    0 22px 42px rgba(20, 20, 20, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85);
 }
 
 .landing-card {
@@ -105,7 +123,9 @@ a {
   border: 1px solid rgba(20, 20, 20, 0.1);
   background: rgba(255, 255, 255, 0.84);
   padding: 1rem;
-  box-shadow: 0 14px 30px rgba(20, 20, 20, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.82);
+  box-shadow:
+    0 14px 30px rgba(20, 20, 20, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.82);
 }
 
 .product-hero-card {
@@ -113,7 +133,11 @@ a {
   overflow: hidden;
   border-radius: 1.7rem;
   border: 1px solid rgba(255, 255, 255, 0.7);
-  background: linear-gradient(130deg, rgba(255, 255, 255, 0.88), rgba(255, 255, 255, 0.75));
+  background: linear-gradient(
+    130deg,
+    rgba(255, 255, 255, 0.88),
+    rgba(255, 255, 255, 0.75)
+  );
   padding: 1.25rem;
   box-shadow: 0 24px 72px rgba(17, 24, 39, 0.08);
   backdrop-filter: blur(10px);
@@ -121,7 +145,7 @@ a {
 
 .product-hero-card::before,
 .product-hero-card::after {
-  content: '';
+  content: "";
   position: absolute;
   border-radius: 999px;
   filter: blur(42px);
@@ -156,7 +180,9 @@ a {
   border: 1px solid rgba(20, 20, 20, 0.1);
   border-radius: 1.4rem;
   padding: 1rem;
-  box-shadow: 0 16px 36px rgba(20, 20, 20, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.82);
+  box-shadow:
+    0 16px 36px rgba(20, 20, 20, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.82);
 }
 
 .primary-form-card {
@@ -184,7 +210,9 @@ a {
   border: 1px solid rgba(20, 20, 20, 0.14);
   background: rgba(255, 255, 255, 0.96);
   padding: 0.78rem 0.9rem;
-  transition: border-color 180ms ease, box-shadow 180ms ease;
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease;
   outline: none;
 }
 
@@ -198,8 +226,13 @@ a {
   border: 1px solid rgba(20, 20, 20, 0.11);
   padding: 1.1rem;
   text-align: left;
-  box-shadow: 0 16px 34px rgba(20, 20, 20, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.8);
-  transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+  box-shadow:
+    0 16px 34px rgba(20, 20, 20, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  transition:
+    transform 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease;
 }
 
 .role-choice-card:hover {
@@ -210,7 +243,11 @@ a {
 .dashboard-hero {
   border-radius: 1.8rem;
   border: 1px solid rgba(255, 255, 255, 0.7);
-  background: linear-gradient(140deg, rgba(255, 255, 255, 0.88), rgba(249, 249, 251, 0.7));
+  background: linear-gradient(
+    140deg,
+    rgba(255, 255, 255, 0.88),
+    rgba(249, 249, 251, 0.7)
+  );
   padding: 1.4rem;
 }
 
@@ -228,10 +265,26 @@ a {
   pointer-events: none;
   z-index: -1;
   background-image:
-    radial-gradient(circle at 20% 10%, rgba(201, 255, 79, 0.26), transparent 30%),
-    radial-gradient(circle at 80% 5%, rgba(112, 183, 255, 0.2), transparent 33%),
-    radial-gradient(circle at 70% 70%, rgba(255, 182, 232, 0.24), transparent 32%),
-    radial-gradient(circle at 10% 85%, rgba(201, 180, 255, 0.24), transparent 30%);
+    radial-gradient(
+      circle at 20% 10%,
+      rgba(201, 255, 79, 0.26),
+      transparent 30%
+    ),
+    radial-gradient(
+      circle at 80% 5%,
+      rgba(112, 183, 255, 0.2),
+      transparent 33%
+    ),
+    radial-gradient(
+      circle at 70% 70%,
+      rgba(255, 182, 232, 0.24),
+      transparent 32%
+    ),
+    radial-gradient(
+      circle at 10% 85%,
+      rgba(201, 180, 255, 0.24),
+      transparent 30%
+    );
 }
 
 @keyframes floaty {
