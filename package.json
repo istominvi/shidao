@@ -8,8 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "test": "tsc -p tsconfig.test.json && find .test-dist -type f -name '*.test.js' -print0 | sort -z | xargs -0 node --test",
-    "format": "npx --yes prettier --write .",
-    "format:check": "npx --yes prettier --check ."
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "dependencies": {
     "lucide-react": "^0.503.0",
@@ -25,6 +25,7 @@
     "eslint": "^9",
     "eslint-config-next": "^15.3.1",
     "tailwindcss": "^4.1.4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "prettier": "^3.6.0"
   }
 }
