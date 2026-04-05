@@ -3,8 +3,8 @@ import { redirect } from 'next/navigation';
 import { ROUTES } from '@/lib/auth';
 import { resolveAccessPolicy } from '@/lib/server/access-policy';
 
-function readRequestPathname() {
-  const headerStore = headers();
+async function readRequestPathname() {
+  const headerStore = await headers();
   const nextUrl = headerStore.get('next-url');
   if (nextUrl) {
     try {
@@ -28,7 +28,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     redirect(ROUTES.login);
   }
 
-  const pathname = readRequestPathname();
+  const pathname = await readRequestPathname();
   const isOnboardingRoute = pathname?.startsWith(ROUTES.onboarding) ?? false;
 
   if (resolution.status === 'adult-without-profile' && !isOnboardingRoute) {
