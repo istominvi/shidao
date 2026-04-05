@@ -241,6 +241,8 @@ export function SessionNavActions({ state, variant = 'top-nav', portalMenu = fal
         >
           {dashboardLabel}
         </Link>
+
+        <p className="px-3 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wide text-neutral-500">Личное</p>
         <Link
           href={ROUTES.settingsProfile}
           className="block rounded-xl px-3 py-2 text-sm hover:bg-black/5"
@@ -253,8 +255,22 @@ export function SessionNavActions({ state, variant = 'top-nav', portalMenu = fal
           className="block rounded-xl px-3 py-2 text-sm hover:bg-black/5"
           onClick={() => setOpen(false)}
         >
-          Настройки безопасности
+          Безопасность
         </Link>
+
+        {state.kind === 'adult' && (
+          <>
+            <p className="px-3 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wide text-neutral-500">Администрирование</p>
+            <Link
+              href={ROUTES.settingsTeam}
+              className="block rounded-xl px-3 py-2 text-sm hover:bg-black/5"
+              onClick={() => setOpen(false)}
+            >
+              Команда и приглашения
+            </Link>
+          </>
+        )}
+
         <button
           className="w-full rounded-xl px-3 py-2 text-left text-sm hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-60"
           onClick={handleSignOut}
