@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { ROUTES } from '@/lib/auth';
 import { SessionNavActions } from '@/components/session-nav-actions';
 import { useSessionView } from '@/components/use-session-view';
+import { canRenderSessionNavActions, resolveLandingAuthCtaHref, resolveLandingNavAction } from '@/components/navigation-contract';
 import {
   Bell,
   BookOpen,
@@ -110,30 +111,32 @@ function SectionTitle({ eyebrow, title, description }: { eyebrow: string; title:
 
 export function LandingPage() {
   const { state, sessionResolved } = useSessionView();
-  const authCtaHref = state.kind === 'adult' || state.kind === 'student' ? ROUTES.dashboard : ROUTES.login;
+  const authCtaHref = resolveLandingAuthCtaHref(state);
   const navActions = (() => {
-    switch (state.kind) {
-      case 'guest':
-      case 'degraded':
-        if (sessionResolved) {
-          return (
-            <>
-              <Link href={ROUTES.login} className="landing-btn landing-btn-muted min-h-11 flex-1 sm:flex-none">Войти</Link>
-              <Link href={ROUTES.join} className="landing-btn landing-btn-primary min-h-11 flex-1 sm:flex-none">Создать аккаунт</Link>
-            </>
-          );
+    const action = resolveLandingNavAction(state, sessionResolved);
+
+    switch (action) {
+      case 'guest-cta-pair':
+        return (
+          <>
+            <Link href={ROUTES.login} className="landing-btn landing-btn-muted min-h-11 flex-1 sm:flex-none">Войти</Link>
+            <Link href={ROUTES.join} className="landing-btn landing-btn-primary min-h-11 flex-1 sm:flex-none">Создать аккаунт</Link>
+          </>
+        );
+      case 'session-actions':
+        if (!canRenderSessionNavActions(state)) {
+          return null;
         }
 
+        return <SessionNavActions state={state} variant="landing" portalMenu />;
+      case 'skeleton':
         return (
           <div className="landing-btn landing-btn-muted min-h-11 flex-1 sm:flex-none sm:min-w-[148px]" aria-hidden="true">
             <span className="block h-4 w-24 animate-pulse rounded-full bg-neutral-300/70" />
           </div>
         );
-      case 'adult':
-      case 'student':
-        return <SessionNavActions state={state} variant="landing" portalMenu />;
       default: {
-        const _exhaustive: never = state;
+        const _exhaustive: never = action;
         return _exhaustive;
       }
     }

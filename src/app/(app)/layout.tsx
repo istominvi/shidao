@@ -1,25 +1,16 @@
 import { redirect } from 'next/navigation';
-import { ROUTES } from '@/lib/auth';
-import { isRouteWithin } from '@/lib/routes';
 import { resolveAccessPolicy } from '@/lib/server/access-policy';
+import { resolvePrivateLayoutRedirect } from '@/lib/server/access-guards';
 import { readRequestPathname } from '@/lib/server/request-pathname';
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const resolution = await resolveAccessPolicy();
 
-  if (resolution.status === 'guest') {
-    redirect(ROUTES.login);
-  }
-
-  if (resolution.status === 'degraded') {
-    redirect(ROUTES.login);
-  }
-
   const pathname = await readRequestPathname();
-  const isOnboardingRoute = isRouteWithin(pathname, ROUTES.onboarding);
+  const redirectPath = resolvePrivateLayoutRedirect(resolution.status, pathname);
 
-  if (resolution.status === 'adult-without-profile' && !isOnboardingRoute) {
-    redirect(ROUTES.onboarding);
+  if (redirectPath) {
+    redirect(redirectPath);
   }
 
   return children;
