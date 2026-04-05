@@ -1,4 +1,5 @@
 import { normalizeIdentifier, toStudentInternalAuthEmail, type ProfileKind, ROUTES } from '@/lib/auth';
+import { getSupabasePublicConfig } from '@/lib/server/auth-config';
 
 type Json = Record<string, unknown>;
 
@@ -9,17 +10,6 @@ type AuthSession = {
   refresh_token: string;
   user: SupabaseUser;
 };
-
-function getPublicSupabaseConfig() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-  if (!url || !anonKey) {
-    throw new Error('Не настроены NEXT_PUBLIC_SUPABASE_URL и NEXT_PUBLIC_SUPABASE_ANON_KEY.');
-  }
-
-  return { url, anonKey };
-}
 
 function getServiceRoleKey() {
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -48,7 +38,7 @@ async function request<T>(
   method = 'GET',
   options?: { payload?: Json; accessToken?: string; admin?: boolean; allowEmpty?: boolean; extraHeaders?: Record<string, string> }
 ) {
-  const { url, anonKey } = getPublicSupabaseConfig();
+  const { url, anonKey } = getSupabasePublicConfig();
   const apiKey = options?.admin ? getServiceRoleKey() : anonKey;
   const bearer = options?.admin ? apiKey : options?.accessToken ?? anonKey;
 
@@ -105,7 +95,7 @@ function parseAuthAdminUser(payload: unknown): SupabaseUser {
 }
 
 async function authPasswordSignIn(email: string, password: string) {
-  const { url, anonKey } = getPublicSupabaseConfig();
+  const { url, anonKey } = getSupabasePublicConfig();
   const response = await fetch(`${url}/auth/v1/token?grant_type=password`, {
     method: 'POST',
     headers: {
@@ -513,7 +503,6 @@ export async function assertTeacherAssignedToClass(accessToken: string, teacherI
 }
 
 export async function assertTeacherAssignedToClassAdmin(teacherId: string, classId: string) {
-
   const rows = await request<Array<{ id: string }>>(
     `/rest/v1/class_teacher?select=id&class_id=eq.${classId}&teacher_id=eq.${teacherId}`,
     'GET',

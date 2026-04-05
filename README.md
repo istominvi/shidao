@@ -28,7 +28,7 @@ npm run dev
 
 ## Единый login flow (`POST /api/auth/login`)
 Вход принимает:
-- `identifier`: email взрослого / логин ученика / (в будущем) телефон;
+- `identifier`: email взрослого или логин ученика;
 - `secret`: пароль или PIN.
 
 Фактический порядок обработки:

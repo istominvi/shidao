@@ -24,12 +24,15 @@ export function TopNav() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [state, setState] = useState<SessionView>({ authenticated: false });
+  const [sessionResolved, setSessionResolved] = useState(false);
 
   useEffect(() => {
+    setSessionResolved(false);
     fetch('/api/auth/session', { cache: 'no-store' })
       .then((r) => r.json())
       .then((payload: SessionView) => setState(payload))
-      .catch(() => setState({ authenticated: false }));
+      .catch(() => setState({ authenticated: false }))
+      .finally(() => setSessionResolved(true));
   }, [pathname]);
 
   const canSwitch = useMemo(
@@ -76,23 +79,23 @@ export function TopNav() {
           <Link href={ROUTES.home} className={navLinkStyle}>
             Главная
           </Link>
-          {!state.authenticated && (
+          {sessionResolved && !state.authenticated && (
             <Link href={ROUTES.login} className={navLinkStyle}>
               Вход
             </Link>
           )}
-          {!state.authenticated && (
+          {sessionResolved && !state.authenticated && (
             <Link href={ROUTES.join} className={navLinkStyle}>
               Регистрация
             </Link>
           )}
         </nav>
 
-        {!state.authenticated ? (
+        {sessionResolved && !state.authenticated ? (
           <Link href={ROUTES.login} className="landing-btn landing-btn-primary min-h-11 px-5">
             Войти
           </Link>
-        ) : (
+        ) : state.authenticated ? (
           <div className="relative">
             <button
               type="button"
@@ -133,7 +136,7 @@ export function TopNav() {
                 {!canSwitch && missingProfile && (
                   <div className="border-t border-black/5 py-1">
                     <Link
-                      href={`${ROUTES.onboarding}?mode=add-profile&profile=${missingProfile}`}
+                      href={`${ROUTES.onboarding}?mode=add-profile`}
                       className="flex items-center justify-between rounded-xl px-3 py-2 text-sm hover:bg-black/5"
                       onClick={() => setOpen(false)}
                     >
@@ -165,6 +168,8 @@ export function TopNav() {
               </div>
             )}
           </div>
+        ) : (
+          <div className="landing-btn landing-btn-muted min-h-11 px-5 text-sm text-neutral-500">Проверяем сессию…</div>
         )}
       </div>
     </header>

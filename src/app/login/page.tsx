@@ -70,7 +70,7 @@ function LoginPageContent() {
 
           <form className="mt-5 space-y-4" onSubmit={onSubmit}>
             <label className="block">
-              <span className="field-label">Email, логин или телефон</span>
+              <span className="field-label">Email или логин ученика</span>
               <input
                 value={identifier}
                 onChange={(e) => setIdentifier(e.target.value)}

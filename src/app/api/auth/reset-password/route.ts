@@ -8,6 +8,8 @@ const RECOVERY_TTL_MS = 1000 * 60 * 30;
 
 export async function POST(req: NextRequest) {
   try {
+    // Recovery подтверждается через /auth/confirm и фиксируется во внутренней app-сессии.
+    // Это намеренное исключение: здесь не используем supabase-js client state, чтобы flow был единообразно серверным.
     const session = await readAppSession();
     if (!session?.uid || !session.recoveryVerifiedAt) {
       return NextResponse.json({ error: 'Сессия восстановления не найдена. Запросите письмо ещё раз.' }, { status: 401 });

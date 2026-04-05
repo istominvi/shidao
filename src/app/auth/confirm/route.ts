@@ -1,29 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ROUTES } from '@/lib/auth';
+import { getPublicSiteUrl, getSupabasePublicConfig, resolveSafeAuthRedirect } from '@/lib/server/auth-config';
 import { writeAppSession } from '@/lib/server/app-session';
 
 export const runtime = 'nodejs';
 const ALLOWED_TYPES = new Set(['signup', 'email', 'recovery', 'invite', 'email_change']);
-
-function getSupabaseConfig() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-  if (!url || !anonKey) {
-    throw new Error('Supabase auth is not configured.');
-  }
-
-  return { url, anonKey };
-}
-
-function getPublicSiteUrl() {
-  const candidate =
-    process.env.NEXT_PUBLIC_SITE_URL ||
-    process.env.SITE_URL ||
-    process.env.NEXT_PUBLIC_APP_URL ||
-    'https://shidao.ru';
-  return candidate.replace(/\/+$/, '');
-}
 
 export async function GET(req: NextRequest) {
   const tokenHash = req.nextUrl.searchParams.get('token_hash');
@@ -44,16 +25,10 @@ export async function GET(req: NextRequest) {
     email_change: `${ROUTES.settingsProfile}?emailChanged=1`
   };
 
-  function resolveSafeNext(input: string | null, fallback: string) {
-    if (!input) return fallback;
-    if (!input.startsWith('/') || input.startsWith('//')) return fallback;
-    return input;
-  }
-
-  const redirectPath = resolveSafeNext(next, fallbackByType[type] ?? `${ROUTES.login}?confirmed=1`);
+  const redirectPath = resolveSafeAuthRedirect(next, fallbackByType[type] ?? `${ROUTES.login}?confirmed=1`);
 
   try {
-    const { url, anonKey } = getSupabaseConfig();
+    const { url, anonKey } = getSupabasePublicConfig();
     const response = await fetch(`${url}/auth/v1/verify`, {
       method: 'POST',
       headers: {
