@@ -11,13 +11,9 @@ export function TopNav() {
   const { state, sessionResolved } = useSessionView();
 
   const isLoginPage = pathname === ROUTES.login;
-  const isProtectedRoute =
-    pathname === ROUTES.dashboard ||
-    pathname.startsWith(`${ROUTES.dashboard}/`) ||
-    pathname === ROUTES.onboarding ||
-    pathname.startsWith(`${ROUTES.onboarding}/`) ||
-    pathname === ROUTES.settingsProfile ||
-    pathname.startsWith('/settings/');
+  const isProtectedRoute = [ROUTES.dashboard, ROUTES.onboarding, '/settings'].some(
+    (protectedPrefix) => pathname === protectedPrefix || pathname.startsWith(`${protectedPrefix}/`)
+  );
 
   const navAction = (() => {
     switch (state.kind) {

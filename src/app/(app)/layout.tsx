@@ -1,21 +1,7 @@
-import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { ROUTES } from '@/lib/auth';
 import { resolveAccessPolicy } from '@/lib/server/access-policy';
-
-async function readRequestPathname() {
-  const headerStore = await headers();
-  const nextUrl = headerStore.get('next-url');
-  if (nextUrl) {
-    try {
-      return new URL(nextUrl, 'http://localhost').pathname;
-    } catch {
-      return nextUrl;
-    }
-  }
-
-  return null;
-}
+import { readRequestPathname } from '@/lib/server/request-pathname';
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const resolution = await resolveAccessPolicy();

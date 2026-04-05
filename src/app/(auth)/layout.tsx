@@ -1,20 +1,8 @@
-import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { ROUTES } from '@/lib/auth';
 import { onAuthPageWhenAuthenticated } from '@/lib/auth-redirects';
 import { resolveAccessPolicy } from '@/lib/server/access-policy';
-
-async function readRequestPathname() {
-  const headerStore = await headers();
-  const nextUrl = headerStore.get('next-url');
-  if (!nextUrl) return null;
-
-  try {
-    return new URL(nextUrl, 'http://localhost').pathname;
-  } catch {
-    return nextUrl;
-  }
-}
+import { readRequestPathname } from '@/lib/server/request-pathname';
 
 function isGuardedAuthPath(pathname: string | null) {
   return pathname === ROUTES.login || pathname === ROUTES.join;
