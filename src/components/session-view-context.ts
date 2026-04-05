@@ -1,5 +1,5 @@
-import { createContext } from 'react';
-import type { SessionView } from '@/lib/session-view';
+import { createContext } from "react";
+import type { SessionView } from "@/lib/session-view";
 
 export type SessionViewContextValue = {
   state: SessionView;
@@ -7,4 +7,6 @@ export type SessionViewContextValue = {
   refetchSession: () => Promise<void>;
 };
 
-export const SessionViewContext = createContext<SessionViewContextValue | null>(null);
+export const SessionViewContext = createContext<SessionViewContextValue | null>(
+  null,
+);

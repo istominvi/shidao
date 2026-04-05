@@ -1,13 +1,13 @@
-import { redirect } from 'next/navigation';
-import { SettingsShell } from '@/components/settings-shell';
-import { ROUTES } from '@/lib/auth';
-import { requireUserContext } from '@/lib/server/user-context';
-import { InviteTeamForm } from './invite-team-form';
+import { redirect } from "next/navigation";
+import { SettingsShell } from "@/components/settings-shell";
+import { ROUTES } from "@/lib/auth";
+import { requireUserContext } from "@/lib/server/user-context";
+import { InviteTeamForm } from "./invite-team-form";
 
 export default async function TeamSettingsPage() {
   const context = await requireUserContext();
 
-  if (context.actorKind !== 'adult') {
+  if (context.actorKind !== "adult") {
     redirect(ROUTES.dashboard);
   }
 

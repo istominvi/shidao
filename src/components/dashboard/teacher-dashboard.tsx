@@ -1,4 +1,4 @@
-import { DashboardShell } from '@/components/dashboard-shell';
+import { DashboardShell } from "@/components/dashboard-shell";
 
 export function TeacherDashboard() {
   return (
@@ -11,7 +11,9 @@ export function TeacherDashboard() {
       <div className="grid gap-4 md:grid-cols-3">
         <article className="dashboard-grid-card bg-[linear-gradient(140deg,rgba(112,183,255,0.26),rgba(255,255,255,0.9))]">
           <h3 className="text-lg font-black">Сегодня</h3>
-          <p className="mt-2 text-sm text-neutral-700">2 урока · 1 проверка домашней работы · 3 новых сообщения</p>
+          <p className="mt-2 text-sm text-neutral-700">
+            2 урока · 1 проверка домашней работы · 3 новых сообщения
+          </p>
         </article>
         <article className="dashboard-grid-card bg-[linear-gradient(140deg,rgba(201,255,79,0.24),rgba(255,255,255,0.9))]">
           <h3 className="text-lg font-black">Группы</h3>

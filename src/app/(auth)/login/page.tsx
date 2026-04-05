@@ -1,31 +1,31 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { FormEvent, Suspense, useMemo, useState } from 'react';
-import { ProductShell, StatusMessage } from '@/components/product-shell';
-import { useSessionView } from '@/components/use-session-view';
-import { loginWithIdentifier } from '@/lib/auth-flow';
-import { ROUTES } from '@/lib/auth';
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { FormEvent, Suspense, useMemo, useState } from "react";
+import { ProductShell, StatusMessage } from "@/components/product-shell";
+import { useSessionView } from "@/components/use-session-view";
+import { loginWithIdentifier } from "@/lib/auth-flow";
+import { ROUTES } from "@/lib/auth";
 
 function LoginPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { refetchSession } = useSessionView();
-  const [identifier, setIdentifier] = useState('');
-  const [secret, setSecret] = useState('');
+  const [identifier, setIdentifier] = useState("");
+  const [secret, setSecret] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   const successHint = useMemo(() => {
-    if (searchParams.get('registered') === '1') {
-      return 'Аккаунт создан. Теперь войдите с email и паролем.';
+    if (searchParams.get("registered") === "1") {
+      return "Аккаунт создан. Теперь войдите с email и паролем.";
     }
-    if (searchParams.get('confirmed') === '1') {
-      return 'Email подтверждён. Теперь выполните вход.';
+    if (searchParams.get("confirmed") === "1") {
+      return "Email подтверждён. Теперь выполните вход.";
     }
-    if (searchParams.get('passwordReset') === '1') {
-      return 'Пароль обновлён. Войдите с новым паролем.';
+    if (searchParams.get("passwordReset") === "1") {
+      return "Пароль обновлён. Войдите с новым паролем.";
     }
     return null;
   }, [searchParams]);
@@ -35,7 +35,7 @@ function LoginPageContent() {
     setError(null);
 
     if (!identifier.trim() || !secret.trim()) {
-      setError('Заполните оба поля для входа.');
+      setError("Заполните оба поля для входа.");
       return;
     }
 
@@ -46,7 +46,11 @@ function LoginPageContent() {
       router.push(route);
       router.refresh();
     } catch (submitError) {
-      setError(submitError instanceof Error ? submitError.message : 'Не удалось выполнить вход.');
+      setError(
+        submitError instanceof Error
+          ? submitError.message
+          : "Не удалось выполнить вход.",
+      );
     } finally {
       setLoading(false);
     }
@@ -56,8 +60,13 @@ function LoginPageContent() {
     <ProductShell>
       <div className="mx-auto w-full max-w-xl">
         <div className="primary-form-card">
-          <h2 className="text-2xl font-black tracking-tight">Войти в кабинет</h2>
-          <p className="mt-2 text-sm text-neutral-600">Введите данные доступа, которые вы получили при регистрации или от учителя/родителя</p>
+          <h2 className="text-2xl font-black tracking-tight">
+            Войти в кабинет
+          </h2>
+          <p className="mt-2 text-sm text-neutral-600">
+            Введите данные доступа, которые вы получили при регистрации или от
+            учителя/родителя
+          </p>
 
           {successHint && (
             <div className="mt-4">
@@ -86,21 +95,31 @@ function LoginPageContent() {
               />
             </label>
             <div className="text-right">
-              <Link href={ROUTES.forgotPassword} className="text-sm font-semibold underline decoration-black/20 underline-offset-2">
+              <Link
+                href={ROUTES.forgotPassword}
+                className="text-sm font-semibold underline decoration-black/20 underline-offset-2"
+              >
                 Забыли пароль?
               </Link>
             </div>
 
             {error && <StatusMessage kind="error">{error}</StatusMessage>}
 
-            <button disabled={loading} className="landing-btn landing-btn-primary min-h-12 w-full disabled:opacity-60" type="submit">
-              {loading ? 'Входим…' : 'Войти в Shidao'}
+            <button
+              disabled={loading}
+              className="landing-btn landing-btn-primary min-h-12 w-full disabled:opacity-60"
+              type="submit"
+            >
+              {loading ? "Входим…" : "Войти в Shidao"}
             </button>
           </form>
 
           <p className="mt-5 text-sm text-neutral-600">
-            Нет взрослого аккаунта?{' '}
-            <Link href={ROUTES.join} className="font-semibold underline decoration-black/25 underline-offset-2">
+            Нет взрослого аккаунта?{" "}
+            <Link
+              href={ROUTES.join}
+              className="font-semibold underline decoration-black/25 underline-offset-2"
+            >
               Зарегистрироваться
             </Link>
           </p>

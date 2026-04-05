@@ -1,8 +1,8 @@
-import { redirect } from 'next/navigation';
-import { SecuritySettingsForm } from './security-settings-form';
-import { ROUTES } from '@/lib/auth';
-import { readSessionViewServer } from '@/lib/server/session-view';
-import { shouldRedirectSecuritySettingsToLogin } from '@/components/navigation-contract';
+import { redirect } from "next/navigation";
+import { SecuritySettingsForm } from "./security-settings-form";
+import { ROUTES } from "@/lib/auth";
+import { readSessionViewServer } from "@/lib/server/session-view";
+import { shouldRedirectSecuritySettingsToLogin } from "@/lib/navigation-contract";
 
 export default async function SecuritySettingsPage() {
   const session = await readSessionViewServer();
