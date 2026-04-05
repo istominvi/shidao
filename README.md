@@ -318,21 +318,27 @@ Helpers/RPC:
 
 - Добавлен минимальный browser-smoke набор: `src/lib/__tests__/auth-navigation-browser-smoke.test.ts`.
 - Сценарии:
-  - guest открывает `/` и видит гостевые CTA;
-  - авторизованный пользователь на `/` видит auth-aware header;
-  - guest на protected route (`/dashboard`) перенаправляется на `/login`;
-  - авторизованный пользователь на `/login` уходит по access policy на `/dashboard`.
-  - авторизованный пользователь открывает profile menu в header на `/` и видит auth-aware actions (`Профиль и email`, `Безопасность`);
-  - авторизованный пользователь переходит из header menu в `/settings/security` и страница проходит базовый контракт (`PIN-код входа`, актуальный статус PIN).
+  - **UI login smoke (через реальный submit формы `/login`)**:
+    - взрослый с профилем вводит credentials в форму и после submit уходит на `/dashboard`;
+    - взрослый без профиля вводит credentials в форму и после submit уходит на `/onboarding`;
+    - после UI login открывается profile menu и выполняется переход в `/settings/security`.
+  - **Contract/mocked smoke (без submit формы login)**:
+    - guest открывает `/` и видит гостевые CTA;
+    - авторизованный пользователь на `/` видит auth-aware header;
+    - guest на protected route (`/dashboard`) перенаправляется на `/login`;
+    - авторизованный пользователь на `/login` уходит по access policy на `/dashboard`.
+    - авторизованный пользователь открывает profile menu в header на `/` и видит auth-aware actions (`Профиль и email`, `Безопасность`);
+    - авторизованный пользователь переходит из header menu в `/settings/security` и страница проходит базовый контракт (`PIN-код входа`, актуальный статус PIN).
 - Тесты запускаются в реальном браузере через `playwright`.
-  - Local-friendly режим (`npm run test:browser`): если пакет `playwright` не установлен или отсутствуют browser binaries, тесты помечаются как `skip` с понятной причиной.
-  - CI-strict режим (`npm run test:browser:ci`, либо `CI=true`/`REQUIRE_BROWSER_SMOKE=1`): такие же условия дают **fail**, чтобы в CI нельзя было «тихо» пропустить browser smoke.
-  - Для browser server mode:
-    - по умолчанию используется `BROWSER_SMOKE_SERVER_MODE=prod` (то есть `next start` на уже собранном приложении);
-    - если локально сборка отсутствует, тест раннер печатает предупреждение и использует `next dev`;
-    - в strict режиме fallback запрещён — сначала нужен `npm run build`.
-  - Оркестрация app server сделана более переносимой и предсказуемой:
-    - тесты больше не полагаются на `detached` + `kill(-pid)` для process-group shutdown;
-    - server запускается как обычный child process, readiness проверяется polling-запросами и early-exit детектом процесса;
-    - при cleanup выполняется graceful `SIGTERM` с таймаутом, затем принудительный stop (`SIGKILL`, а на Windows — `taskkill /t /f`);
-    - в ошибки старта добавляется хвост stdout/stderr, чтобы быстрее диагностировать падения CI/local.
+- Для UI login сценариев используется test-only mock Supabase harness на уровне HTTP API (`/auth/v1/token`, `/rest/v1/*`, `/auth/v1/admin/users/*`), но путь аутентификации остаётся честным с точки зрения UI: тест заполняет поля формы и нажимает submit на `/login`.
+- Local-friendly режим (`npm run test:browser`): если пакет `playwright` не установлен или отсутствуют browser binaries, тесты помечаются как `skip` с понятной причиной.
+- CI-strict режим (`npm run test:browser:ci`, либо `CI=true`/`REQUIRE_BROWSER_SMOKE=1`): такие же условия дают **fail**, чтобы в CI нельзя было «тихо» пропустить browser smoke.
+- Для browser server mode:
+  - по умолчанию используется `BROWSER_SMOKE_SERVER_MODE=prod` (то есть `next start` на уже собранном приложении);
+  - если локально сборка отсутствует, тест раннер печатает предупреждение и использует `next dev`;
+  - в strict режиме fallback запрещён — сначала нужен `npm run build`.
+- Оркестрация app server сделана более переносимой и предсказуемой:
+  - тесты больше не полагаются на `detached` + `kill(-pid)` для process-group shutdown;
+  - server запускается как обычный child process, readiness проверяется polling-запросами и early-exit детектом процесса;
+  - при cleanup выполняется graceful `SIGTERM` с таймаутом, затем принудительный stop (`SIGKILL`, а на Windows — `taskkill /t /f`);
+  - в ошибки старта добавляется хвост stdout/stderr, чтобы быстрее диагностировать падения CI/local.

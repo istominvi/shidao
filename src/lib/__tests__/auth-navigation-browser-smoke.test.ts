@@ -13,6 +13,11 @@ import { after, before, test } from "node:test";
 
 const APP_SESSION_SECRET = "e2e-app-session-secret-value-with-minimum-32-chars";
 const E2E_ADULT_USER_ID = "e2e-adult";
+const E2E_ADULT_EMAIL = "adult-e2e@example.test";
+const E2E_ADULT_PASSWORD = "adult-pass-123";
+const E2E_ADULT_NO_PROFILE_USER_ID = "e2e-adult-no-profile";
+const E2E_ADULT_NO_PROFILE_EMAIL = "adult-no-profile-e2e@example.test";
+const E2E_ADULT_NO_PROFILE_PASSWORD = "adult-no-profile-pass-123";
 
 type PlaywrightChromium = {
   launch: () => Promise<{
@@ -33,10 +38,14 @@ type PlaywrightChromium = {
           options?: { timeout?: number; waitUntil?: "domcontentloaded" },
         ) => Promise<void>;
         getByRole: (
-          role: "button" | "link",
+          role: "button" | "link" | "textbox",
           options: { name: string | RegExp },
         ) => {
           click: () => Promise<void>;
+          fill: (value: string) => Promise<void>;
+        };
+        getByPlaceholder: (text: string | RegExp) => {
+          fill: (value: string) => Promise<void>;
         };
       }>;
       close: () => Promise<void>;
@@ -148,6 +157,18 @@ function readUserId(requestUrl: URL) {
   return match?.[1] ?? null;
 }
 
+function readAuthRequestBody(raw: string) {
+  try {
+    const parsed = JSON.parse(raw) as { email?: string; password?: string };
+    return {
+      email: parsed.email?.trim().toLowerCase() ?? "",
+      password: parsed.password ?? "",
+    };
+  } catch {
+    return null;
+  }
+}
+
 function handleMockSupabase(
   request: IncomingMessage,
   response: ServerResponse,
@@ -159,21 +180,84 @@ function handleMockSupabase(
 
   const requestUrl = new URL(request.url, `http://127.0.0.1:${mockPort}`);
 
+  if (
+    requestUrl.pathname === "/auth/v1/token" &&
+    requestUrl.searchParams.get("grant_type") === "password"
+  ) {
+    let body = "";
+    request.on("data", (chunk) => {
+      body += chunk.toString();
+    });
+    request.on("end", () => {
+      const parsedBody = readAuthRequestBody(body);
+      if (!parsedBody) {
+        json(response, 400, { message: "invalid auth payload" });
+        return;
+      }
+
+      if (
+        parsedBody.email === E2E_ADULT_EMAIL &&
+        parsedBody.password === E2E_ADULT_PASSWORD
+      ) {
+        json(response, 200, {
+          access_token: "token-adult",
+          refresh_token: "refresh-adult",
+          user: {
+            id: E2E_ADULT_USER_ID,
+            email: E2E_ADULT_EMAIL,
+            user_metadata: { full_name: "E2E Adult" },
+          },
+        });
+        return;
+      }
+
+      if (
+        parsedBody.email === E2E_ADULT_NO_PROFILE_EMAIL &&
+        parsedBody.password === E2E_ADULT_NO_PROFILE_PASSWORD
+      ) {
+        json(response, 200, {
+          access_token: "token-no-profile",
+          refresh_token: "refresh-no-profile",
+          user: {
+            id: E2E_ADULT_NO_PROFILE_USER_ID,
+            email: E2E_ADULT_NO_PROFILE_EMAIL,
+            user_metadata: { full_name: "E2E Adult No Profile" },
+          },
+        });
+        return;
+      }
+
+      json(response, 400, { message: "invalid login credentials" });
+    });
+    return;
+  }
+
   if (requestUrl.pathname.startsWith("/auth/v1/admin/users/")) {
     const userId = requestUrl.pathname.split("/").at(-1);
 
-    if (userId !== E2E_ADULT_USER_ID) {
-      json(response, 404, { message: "user not found" });
+    if (userId === E2E_ADULT_USER_ID) {
+      json(response, 200, {
+        user: {
+          id: E2E_ADULT_USER_ID,
+          email: E2E_ADULT_EMAIL,
+          user_metadata: { full_name: "E2E Adult" },
+        },
+      });
       return;
     }
 
-    json(response, 200, {
-      user: {
-        id: E2E_ADULT_USER_ID,
-        email: "adult-e2e@example.test",
-        user_metadata: { full_name: "E2E Adult" },
-      },
-    });
+    if (userId === E2E_ADULT_NO_PROFILE_USER_ID) {
+      json(response, 200, {
+        user: {
+          id: E2E_ADULT_NO_PROFILE_USER_ID,
+          email: E2E_ADULT_NO_PROFILE_EMAIL,
+          user_metadata: { full_name: "E2E Adult No Profile" },
+        },
+      });
+      return;
+    }
+
+    json(response, 404, { message: "user not found" });
     return;
   }
 
@@ -184,6 +268,8 @@ function handleMockSupabase(
 
   const userId = readUserId(requestUrl);
   const isAdultUser = userId === E2E_ADULT_USER_ID;
+  const isNoProfileAdult = userId === E2E_ADULT_NO_PROFILE_USER_ID;
+  const knownAdult = isAdultUser || isNoProfileAdult;
 
   if (requestUrl.pathname === "/rest/v1/parent") {
     json(
@@ -208,10 +294,10 @@ function handleMockSupabase(
     json(
       response,
       200,
-      isAdultUser
+      knownAdult
         ? [
             {
-              last_active_profile: "parent",
+              last_active_profile: isAdultUser ? "parent" : null,
               last_selected_school_id: null,
               theme: null,
               settings: {},
@@ -489,6 +575,95 @@ test("browser smoke: authenticated /login redirects by access policy", async (t)
   try {
     await runtime.page.goto("/login", { waitUntil: "domcontentloaded" });
     assert.equal(new URL(runtime.page.url()).pathname, "/dashboard");
+  } finally {
+    await runtime.close();
+  }
+});
+
+test("browser smoke: login form submit redirects profiled adult to /dashboard", async (t) => {
+  if (browserSmokeUnavailableReason) {
+    t.skip(browserSmokeUnavailableReason);
+    return;
+  }
+
+  const runtime = await openPage();
+
+  try {
+    await runtime.page.goto("/login", { waitUntil: "networkidle" });
+    await runtime.page
+      .getByPlaceholder(/parent@school\.com/i)
+      .fill(E2E_ADULT_EMAIL);
+    await runtime.page
+      .getByPlaceholder(/Введите пароль или PIN/i)
+      .fill(E2E_ADULT_PASSWORD);
+    await runtime.page.getByRole("button", { name: "Войти в Shidao" }).click();
+    await runtime.page.waitForURL(/\/dashboard$/, {
+      waitUntil: "domcontentloaded",
+    });
+
+    assert.equal(new URL(runtime.page.url()).pathname, "/dashboard");
+  } finally {
+    await runtime.close();
+  }
+});
+
+test("browser smoke: login flow can reach security settings from profile menu", async (t) => {
+  if (browserSmokeUnavailableReason) {
+    t.skip(browserSmokeUnavailableReason);
+    return;
+  }
+
+  const runtime = await openPage();
+
+  try {
+    await runtime.page.goto("/login", { waitUntil: "networkidle" });
+    await runtime.page
+      .getByRole("textbox", { name: /Email или логин ученика/i })
+      .fill(E2E_ADULT_EMAIL);
+    await runtime.page
+      .getByPlaceholder(/Введите пароль или PIN/i)
+      .fill(E2E_ADULT_PASSWORD);
+    await runtime.page.getByRole("button", { name: "Войти в Shidao" }).click();
+    await runtime.page.waitForURL(/\/dashboard$/, {
+      waitUntil: "domcontentloaded",
+    });
+
+    await runtime.page.goto("/", { waitUntil: "networkidle" });
+    await runtime.page.getByRole("button", { name: /E2E Adult/ }).click();
+    await runtime.page.getByRole("link", { name: "Безопасность" }).click();
+    await runtime.page.waitForURL(/\/settings\/security$/, {
+      waitUntil: "domcontentloaded",
+    });
+
+    const html = await runtime.page.content();
+    assert.match(html, /PIN-код входа/);
+  } finally {
+    await runtime.close();
+  }
+});
+
+test("browser smoke: login form submit redirects adult without profile to /onboarding", async (t) => {
+  if (browserSmokeUnavailableReason) {
+    t.skip(browserSmokeUnavailableReason);
+    return;
+  }
+
+  const runtime = await openPage();
+
+  try {
+    await runtime.page.goto("/login", { waitUntil: "networkidle" });
+    await runtime.page
+      .getByPlaceholder(/parent@school\.com/i)
+      .fill(E2E_ADULT_NO_PROFILE_EMAIL);
+    await runtime.page
+      .getByPlaceholder(/Введите пароль или PIN/i)
+      .fill(E2E_ADULT_NO_PROFILE_PASSWORD);
+    await runtime.page.getByRole("button", { name: "Войти в Shidao" }).click();
+    await runtime.page.waitForURL(/\/onboarding$/, {
+      waitUntil: "domcontentloaded",
+    });
+
+    assert.equal(new URL(runtime.page.url()).pathname, "/onboarding");
   } finally {
     await runtime.close();
   }
