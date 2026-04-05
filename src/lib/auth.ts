@@ -11,9 +11,12 @@ export const ROUTES = {
   login: '/login',
   join: '/join',
   joinCheckEmail: '/join/check-email',
+  forgotPassword: '/forgot-password',
+  resetPassword: '/reset-password',
   onboarding: '/onboarding',
   dashboard: '/dashboard',
-  settingsSecurity: '/settings/security'
+  settingsSecurity: '/settings/security',
+  settingsProfile: '/settings/profile'
 } as const;
 
 export const AUTH_MESSAGES = {

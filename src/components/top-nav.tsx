@@ -145,6 +145,13 @@ export function TopNav() {
 
                 <div className="border-t border-black/5 py-1">
                   <Link
+                    href={ROUTES.settingsProfile}
+                    className="block rounded-xl px-3 py-2 text-sm hover:bg-black/5"
+                    onClick={() => setOpen(false)}
+                  >
+                    Профиль и email
+                  </Link>
+                  <Link
                     href={ROUTES.settingsSecurity}
                     className="block rounded-xl px-3 py-2 text-sm hover:bg-black/5"
                     onClick={() => setOpen(false)}

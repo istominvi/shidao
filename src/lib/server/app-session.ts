@@ -7,6 +7,7 @@ type SessionPayload = {
   uid: string;
   email: string | null;
   fullName: string | null;
+  recoveryVerifiedAt?: number | null;
   iat: number;
 };
 
@@ -42,9 +43,15 @@ export async function readAppSession() {
   return verify(raw);
 }
 
-export async function writeAppSession(input: { uid: string; email?: string | null; fullName?: string | null }) {
+export async function writeAppSession(input: { uid: string; email?: string | null; fullName?: string | null; recoveryVerifiedAt?: number | null }) {
   const jar = await cookies();
-  const token = sign({ uid: input.uid, email: input.email ?? null, fullName: input.fullName ?? null, iat: Date.now() });
+  const token = sign({
+    uid: input.uid,
+    email: input.email ?? null,
+    fullName: input.fullName ?? null,
+    recoveryVerifiedAt: input.recoveryVerifiedAt ?? null,
+    iat: Date.now()
+  });
   jar.set(APP_SESSION_COOKIE, token, {
     httpOnly: true,
     sameSite: 'lax',
