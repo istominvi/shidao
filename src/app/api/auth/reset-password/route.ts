@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { afterRecovery } from '@/lib/auth-redirects';
 import { clearAppSession, readAppSession, writeAppSession } from '@/lib/server/app-session';
 import { updateAuthUserPasswordById } from '@/lib/server/supabase-admin';
 
@@ -41,7 +42,7 @@ export async function POST(req: NextRequest) {
       recoveryVerifiedAt: null
     });
 
-    return NextResponse.json({ ok: true, redirectTo: '/login?passwordReset=1' });
+    return NextResponse.json({ ok: true, redirectTo: afterRecovery() });
   } catch (error) {
     console.error('[auth-reset-password] failed', error);
     return NextResponse.json({ error: 'Не удалось обновить пароль.' }, { status: 503 });
