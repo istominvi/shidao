@@ -4,12 +4,14 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { FormEvent, Suspense, useMemo, useState } from 'react';
 import { ProductShell, StatusMessage } from '@/components/product-shell';
+import { useSessionView } from '@/components/use-session-view';
 import { loginWithIdentifier } from '@/lib/auth-flow';
 import { ROUTES } from '@/lib/auth';
 
 function LoginPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { refetchSession } = useSessionView();
   const [identifier, setIdentifier] = useState('');
   const [secret, setSecret] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -40,6 +42,7 @@ function LoginPageContent() {
     try {
       setLoading(true);
       const route = await loginWithIdentifier(identifier, secret);
+      await refetchSession();
       router.push(route);
       router.refresh();
     } catch (submitError) {

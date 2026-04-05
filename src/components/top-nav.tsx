@@ -15,7 +15,14 @@ export function TopNav() {
 
   const isLoginPage = pathname === ROUTES.login;
   const isJoinPage = pathname === ROUTES.join;
-  const hideCenterNav = state.authenticated || isLoginPage || isJoinPage;
+  const isProtectedRoute =
+    pathname === ROUTES.dashboard ||
+    pathname.startsWith(`${ROUTES.dashboard}/`) ||
+    pathname === ROUTES.onboarding ||
+    pathname.startsWith(`${ROUTES.onboarding}/`) ||
+    pathname === ROUTES.settingsProfile ||
+    pathname.startsWith('/settings/');
+  const hideCenterNav = state.authenticated || isLoginPage || isJoinPage || isProtectedRoute;
 
   return (
     <header className="container relative z-50 pt-4 md:pt-6">
@@ -42,7 +49,9 @@ export function TopNav() {
           </nav>
         )}
 
-        {sessionResolved && !state.authenticated ? (
+        {state.authenticated ? (
+          <SessionNavActions state={state} />
+        ) : sessionResolved && !isProtectedRoute ? (
           isLoginPage ? (
             <Link href={ROUTES.join} className="landing-btn landing-btn-primary min-h-11 px-5">
               Создать аккаунт
@@ -52,8 +61,6 @@ export function TopNav() {
               Войти
             </Link>
           )
-        ) : state.authenticated ? (
-          <SessionNavActions state={state} />
         ) : (
           <div className="landing-btn landing-btn-muted min-h-11 min-w-[148px] px-5" aria-hidden="true">
             <span className="block h-4 w-24 animate-pulse rounded-full bg-neutral-300/70" />
