@@ -580,3 +580,40 @@ export async function attachStudentToClassAsAdmin(input: { classId: string; stud
 
   return rows[0] ?? null;
 }
+
+export async function updateAuthUserPasswordById(userId: string, password: string) {
+  await request(`/auth/v1/admin/users/${userId}`, 'PUT', {
+    admin: true,
+    payload: { password },
+    allowEmpty: true
+  });
+}
+
+export async function inviteUserByEmail(input: { email: string; redirectTo: string }) {
+  const result = await request<{ id: string; email: string }>('/auth/v1/invite', 'POST', {
+    admin: true,
+    payload: {
+      email: input.email,
+      data: { invited_by: 'shidao-admin' },
+      redirect_to: input.redirectTo
+    }
+  });
+
+  return result;
+}
+
+export async function requestEmailChangeForUser(input: { currentEmail: string; currentPassword: string; newEmail: string; redirectTo: string }) {
+  const session = await authPasswordSignIn(input.currentEmail, input.currentPassword);
+  if (!session?.access_token) {
+    throw new Error('Не удалось подтвердить текущий пароль.');
+  }
+
+  await request('/auth/v1/user', 'PUT', {
+    accessToken: session.access_token,
+    payload: {
+      email: input.newEmail,
+      email_redirect_to: input.redirectTo
+    },
+    allowEmpty: true
+  });
+}

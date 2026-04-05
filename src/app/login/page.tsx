@@ -22,6 +22,9 @@ function LoginPageContent() {
     if (searchParams.get('confirmed') === '1') {
       return 'Email подтверждён. Теперь выполните вход.';
     }
+    if (searchParams.get('passwordReset') === '1') {
+      return 'Пароль обновлён. Войдите с новым паролем.';
+    }
     return null;
   }, [searchParams]);
 
@@ -85,6 +88,11 @@ function LoginPageContent() {
                 className="field-input"
               />
             </label>
+            <div className="text-right">
+              <Link href={ROUTES.forgotPassword} className="text-sm font-semibold underline decoration-black/20 underline-offset-2">
+                Забыли пароль?
+              </Link>
+            </div>
 
             {error && <StatusMessage kind="error">{error}</StatusMessage>}
 
