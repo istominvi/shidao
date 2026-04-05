@@ -6,15 +6,11 @@ import { ROUTES } from '@/lib/auth';
 import { SessionNavActions } from '@/components/session-nav-actions';
 import { useSessionView } from '@/components/use-session-view';
 
-const navLinkStyle =
-  'landing-btn landing-btn-muted min-h-10 border-transparent px-3 text-sm font-semibold text-neutral-700 hover:border-black/10 hover:text-neutral-900';
-
 export function TopNav() {
   const pathname = usePathname();
   const { state, sessionResolved } = useSessionView();
 
   const isLoginPage = pathname === ROUTES.login;
-  const isJoinPage = pathname === ROUTES.join;
   const isProtectedRoute =
     pathname === ROUTES.dashboard ||
     pathname.startsWith(`${ROUTES.dashboard}/`) ||
@@ -22,7 +18,6 @@ export function TopNav() {
     pathname.startsWith(`${ROUTES.onboarding}/`) ||
     pathname === ROUTES.settingsProfile ||
     pathname.startsWith('/settings/');
-  const hideCenterNav = state.authenticated || isLoginPage || isJoinPage || isProtectedRoute;
 
   return (
     <header className="container relative z-50 pt-4 md:pt-6">
@@ -30,24 +25,6 @@ export function TopNav() {
         <Link href={ROUTES.home} className="text-xl font-black tracking-tight">
           Shidao
         </Link>
-
-        {!hideCenterNav && (
-          <nav className="hidden gap-2 md:flex">
-            <Link href={ROUTES.home} className={navLinkStyle}>
-              Главная
-            </Link>
-            {sessionResolved && !state.authenticated && (
-              <Link href={ROUTES.login} className={navLinkStyle}>
-                Вход
-              </Link>
-            )}
-            {sessionResolved && !state.authenticated && (
-              <Link href={ROUTES.join} className={navLinkStyle}>
-                Регистрация
-              </Link>
-            )}
-          </nav>
-        )}
 
         {state.authenticated ? (
           <SessionNavActions state={state} />
