@@ -55,7 +55,9 @@ export function TopNav() {
         ) : state.authenticated ? (
           <SessionNavActions state={state} />
         ) : (
-          <div className="landing-btn landing-btn-muted min-h-11 px-5 text-sm text-neutral-500">Проверяем сессию…</div>
+          <div className="landing-btn landing-btn-muted min-h-11 min-w-[148px] px-5" aria-hidden="true">
+            <span className="block h-4 w-24 animate-pulse rounded-full bg-neutral-300/70" />
+          </div>
         )}
       </div>
     </header>

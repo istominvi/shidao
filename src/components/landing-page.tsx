@@ -140,7 +140,9 @@ export function LandingPage() {
               ) : state.authenticated ? (
                 <SessionNavActions state={state} variant="landing" portalMenu />
               ) : (
-                <div className="landing-btn landing-btn-muted min-h-11 flex-1 text-sm text-neutral-500 sm:flex-none">Проверяем сессию…</div>
+                <div className="landing-btn landing-btn-muted min-h-11 flex-1 sm:flex-none sm:min-w-[148px]" aria-hidden="true">
+                  <span className="block h-4 w-24 animate-pulse rounded-full bg-neutral-300/70" />
+                </div>
               )}
             </div>
           </header>

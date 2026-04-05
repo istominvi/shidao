@@ -6,7 +6,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { PROFILE_LABELS, ROUTES, type ProfileKind } from '@/lib/auth';
 import { signOutViaServer } from '@/lib/auth-flow';
-import type { SessionView } from '@/components/use-session-view';
+import { useSessionView } from '@/components/use-session-view';
+import type { SessionView } from '@/lib/session-view';
 
 type SessionNavActionsProps = {
   state: SessionView;
@@ -25,6 +26,7 @@ const VIEWPORT_PADDING = 8;
 
 export function SessionNavActions({ state, variant = 'top-nav', portalMenu = false }: SessionNavActionsProps) {
   const router = useRouter();
+  const { refetchSession } = useSessionView();
   const containerRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
@@ -117,6 +119,7 @@ export function SessionNavActions({ state, variant = 'top-nav', portalMenu = fal
       body: JSON.stringify({ profile })
     });
 
+    await refetchSession();
     setOpen(false);
     router.push(ROUTES.dashboard);
     router.refresh();
@@ -124,6 +127,7 @@ export function SessionNavActions({ state, variant = 'top-nav', portalMenu = fal
 
   async function handleSignOut() {
     await signOutViaServer();
+    await refetchSession();
     setOpen(false);
     router.push(ROUTES.login);
     router.refresh();
