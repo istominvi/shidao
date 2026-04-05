@@ -7,10 +7,10 @@ import { useRouter } from 'next/navigation';
 import { PROFILE_LABELS, ROUTES, type ProfileKind } from '@/lib/auth';
 import { signOutViaServer } from '@/lib/auth-flow';
 import { useSessionView } from '@/components/use-session-view';
-import type { SessionView } from '@/lib/session-view';
+import type { SessionAdultView, SessionStudentView } from '@/lib/session-view';
 
 type SessionNavActionsProps = {
-  state: SessionView;
+  state: SessionAdultView | SessionStudentView;
   variant?: 'top-nav' | 'landing';
   portalMenu?: boolean;
 };
@@ -32,33 +32,35 @@ export function SessionNavActions({ state, variant = 'top-nav', portalMenu = fal
   const [open, setOpen] = useState(false);
   const [menuPosition, setMenuPosition] = useState<MenuPosition | null>(null);
 
-  const canSwitch = useMemo(
-    () => state.actorKind === 'adult' && (state.availableAdultProfiles?.length ?? 0) > 1,
-    [state.actorKind, state.availableAdultProfiles]
-  );
+  const canSwitch = useMemo(() => state.kind === 'adult' && state.availableProfiles.length > 1, [state]);
   const missingProfile = useMemo<ProfileKind | null>(() => {
-    if (state.actorKind !== 'adult') return null;
+    if (state.kind !== 'adult') return null;
 
-    const available = state.availableAdultProfiles ?? [];
+    const available = state.availableProfiles;
     if (available.includes('parent') && !available.includes('teacher')) return 'teacher';
     if (available.includes('teacher') && !available.includes('parent')) return 'parent';
 
     return null;
-  }, [state.actorKind, state.availableAdultProfiles]);
+  }, [state]);
   const switchTargets = useMemo(
-    () => (state.availableAdultProfiles ?? []).filter((profile) => profile !== state.activeProfile),
-    [state.availableAdultProfiles, state.activeProfile]
+    () => (state.kind === 'adult' ? state.availableProfiles.filter((profile) => profile !== state.activeProfile) : []),
+    [state]
   );
   const dashboardLabel = useMemo(() => {
-    if (state.actorKind === 'student') return 'Кабинет ученика';
-    if (state.actorKind === 'adult') {
-      const currentProfile = state.activeProfile ?? state.availableAdultProfiles?.[0] ?? null;
-      if (currentProfile) return PROFILE_LABELS[currentProfile];
-      return 'Кабинет взрослого';
+    switch (state.kind) {
+      case 'student':
+        return 'Кабинет ученика';
+      case 'adult': {
+        const currentProfile = state.activeProfile ?? state.availableProfiles[0] ?? null;
+        if (currentProfile) return PROFILE_LABELS[currentProfile];
+        return 'Кабинет взрослого';
+      }
+      default: {
+        const _exhaustive: never = state;
+        return _exhaustive;
+      }
     }
-
-    return 'Кабинет';
-  }, [state.actorKind, state.activeProfile, state.availableAdultProfiles]);
+  }, [state]);
 
   const updateMenuPosition = useCallback(() => {
     if (!portalMenu || !containerRef.current) return;
