@@ -275,14 +275,30 @@ Helpers/RPC:
 - Используйте только placeholders (`<app-password>`, `<secret>`) и secret store.
 - Если секреты могли попасть в логи/чаты/скриншоты — ротируйте их.
 
+## Formatting и quality gates
+
+- `npm run format` — применяет форматирование Prettier ко всему репозиторию.
+- `npm run format:check` — проверяет, что рабочее дерево уже отформатировано.
+- Базовый pre-merge набор: `npm run format:check && npm run lint && npm run build && npm run test`.
+
 ## Test strategy (MVP)
 
-- `npm run test` сначала компилирует `src/**/*.test.ts` в `.test-dist`, затем рекурсивно запускает все `.test-dist/**/*.test.js` через `node:test` (не только `src/lib`).
-- Текущий контур покрывает:
-  - `src/lib/__tests__`: route matching, route-guards, safe redirect нормализацию, auth redirect policy и smoke-level user-flow контракты (`auth-navigation-smoke.test.ts`);
-  - `src/components/__tests__`: session-driven nav branching (TopNav + landing header), guest/auth CTA contract и security-page auth gate contract;
-  - `src/lib/server/__tests__`: private layout redirect contract для `guest`/`degraded`/`adult-without-profile`.
-- Code style discipline:
-  - `npm run format` — форматирует репозиторий через Prettier;
-  - `npm run format:check` — CI-like проверка форматирования без изменений.
-- Lint/build/test/format:check — обязательный pre-merge baseline для регрессий в shell auth/navigation.
+- `npm run test` запускает каноничный двухшаговый pipeline:
+  1. `npm run test:compile` — компиляция `src/**/*.test.ts` в `.test-dist` через `tsc -p tsconfig.test.json`;
+  2. `npm run test:unit` → `node scripts/run-node-tests.mjs`, который детерминированно собирает и сортирует все `.test-dist/**/*.test.js`, затем запускает их через `node --test`.
+- Это сохраняет lightweight stack (`node:test` + TypeScript) без тяжёлой миграции на отдельный test-runner и убирает shell-цепочку `find | sort | xargs`.
+- Покрытие по слоям:
+  - `src/lib/__tests__`: route matching, safe redirect normalisation, auth redirect policy, smoke-level user-flow контракты;
+  - `src/components/__tests__`: session-driven TopNav/landing branching и contract-ожидания гостевых/auth CTA;
+  - `src/lib/server/__tests__`: private-layout redirect contract для `guest`/`degraded`/`adult-without-profile`.
+
+### Browser smoke layer
+
+- Добавлен минимальный browser-smoke набор: `src/lib/__tests__/auth-navigation-browser-smoke.test.ts`.
+- Сценарии:
+  - guest открывает `/` и видит гостевые CTA;
+  - авторизованный пользователь на `/` видит auth-aware header;
+  - guest на protected route (`/dashboard`) перенаправляется на `/login`;
+  - авторизованный пользователь на `/login` уходит по access policy на `/dashboard`.
+- Тесты запускаются в реальном браузере через `playwright` **если пакет доступен в окружении**.
+  - При отсутствии `playwright` тесты автоматически помечаются как `skip` с понятной причиной (чтобы не ломать базовый CI без browser dependency).
