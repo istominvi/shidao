@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { isEmail } from '@/lib/auth';
+import { isEmail, ROUTES } from '@/lib/auth';
 import { getPublicSiteUrl } from '@/lib/server/auth-config';
 import { readAppSession } from '@/lib/server/app-session';
 import { requestEmailChangeForUser } from '@/lib/server/supabase-admin';
@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
     }
 
     const redirectTo = new URL('/auth/confirm', getPublicSiteUrl());
-    redirectTo.searchParams.set('next', '/settings/profile?emailChangeRequested=1');
+    redirectTo.searchParams.set('next', `${ROUTES.settingsProfile}?emailChangeRequested=1`);
 
     await requestEmailChangeForUser({
       currentEmail: session.email,

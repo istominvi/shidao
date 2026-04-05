@@ -21,6 +21,10 @@ APP_SESSION_SECRET=<your-generated-secret>
 - минимальная длина — `32` символа;
 - используйте криптографически случайный секрет с высокой энтропией.
 
+## Deploy notes (Coolify / self-hosted CI)
+- Проект не требует внешней загрузки Google Fonts на этапе `next build` (используются системные font stacks), поэтому сборка подходит для сред с ограниченным egress.
+- Для pull-request deploy в Coolify всё равно нужен исходящий HTTPS-доступ к `api.github.com` (helper проверяет GitHub API до старта сборки).
+
 ## Маршруты, route groups и layouts
 
 ### Route groups
@@ -49,6 +53,7 @@ APP_SESSION_SECRET=<your-generated-secret>
 - `/dashboard` — единый приватный кабинет.
 - `/settings/profile` — профиль и email.
 - `/settings/security` — PIN и параметры безопасности.
+- `/settings/team` — команда и приглашения (доступно только взрослому профилю).
 
 ## Protected/private зона и redirect policy
 
@@ -85,8 +90,8 @@ APP_SESSION_SECRET=<your-generated-secret>
 ### Контракт `SessionView`
 Навигация и UI опираются на единый union-контракт:
 - `guest`: `{ kind: 'guest', authenticated: false }`
-- `student`: `{ kind: 'student', authenticated: true, identity... }`
-- `adult`: `{ kind: 'adult', authenticated: true, identity..., activeProfile, availableProfiles }`
+- `student`: `{ kind: 'student', authenticated: true, identity..., hasPin }`
+- `adult`: `{ kind: 'adult', authenticated: true, identity..., hasPin, activeProfile, availableProfiles }`
 - `degraded`: `{ kind: 'degraded', authenticated: true, reason?, identity... }`
 
 ### Где формируется состояние

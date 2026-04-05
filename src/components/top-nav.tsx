@@ -5,15 +5,14 @@ import { usePathname } from 'next/navigation';
 import { ROUTES } from '@/lib/auth';
 import { SessionNavActions } from '@/components/session-nav-actions';
 import { useSessionView } from '@/components/use-session-view';
+import { isProtectedAppRoute } from '@/lib/routes';
 
 export function TopNav() {
   const pathname = usePathname();
   const { state, sessionResolved } = useSessionView();
 
   const isLoginPage = pathname === ROUTES.login;
-  const isProtectedRoute = [ROUTES.dashboard, ROUTES.onboarding, '/settings'].some(
-    (protectedPrefix) => pathname === protectedPrefix || pathname.startsWith(`${protectedPrefix}/`)
-  );
+  const isProtectedRoute = isProtectedAppRoute(pathname);
 
   const navAction = (() => {
     switch (state.kind) {
