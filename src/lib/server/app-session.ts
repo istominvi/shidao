@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 import { cookies } from 'next/headers';
 
 export const APP_SESSION_COOKIE = 'shidao_session';
+const MIN_APP_SESSION_SECRET_LENGTH = 32;
 
 type SessionPayload = {
   uid: string;
@@ -12,7 +13,18 @@ type SessionPayload = {
 };
 
 function getSecret() {
-  return process.env.APP_SESSION_SECRET ?? process.env.SUPABASE_SERVICE_ROLE_KEY ?? 'dev-secret-change-me';
+  const secret = process.env.APP_SESSION_SECRET;
+  if (!secret) {
+    throw new Error(
+      'Configuration error: APP_SESSION_SECRET is required for app session signing. Set APP_SESSION_SECRET in your environment.'
+    );
+  }
+  if (secret.length < MIN_APP_SESSION_SECRET_LENGTH) {
+    throw new Error(
+      `Configuration error: APP_SESSION_SECRET is too short. Use at least ${MIN_APP_SESSION_SECRET_LENGTH} characters with high entropy.`
+    );
+  }
+  return secret;
 }
 
 function sign(payload: SessionPayload) {
