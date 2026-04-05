@@ -1,8 +1,14 @@
+import { redirect } from 'next/navigation';
 import { SecuritySettingsForm } from './security-settings-form';
-import { requireUserContext } from '@/lib/server/user-context';
+import { ROUTES } from '@/lib/auth';
+import { readSessionViewServer } from '@/lib/server/session-view';
 
 export default async function SecuritySettingsPage() {
-  const context = await requireUserContext();
+  const session = await readSessionViewServer();
 
-  return <SecuritySettingsForm initialHasPin={context.hasPin} />;
+  if (session.kind === 'guest' || session.kind === 'degraded') {
+    redirect(ROUTES.login);
+  }
+
+  return <SecuritySettingsForm initialHasPin={session.hasPin} />;
 }
