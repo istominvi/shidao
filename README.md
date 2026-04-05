@@ -1,6 +1,6 @@
 # ShiDao MVP
 
-Продуктовый MVP на Next.js + self-hosted Supabase (Auth + Postgres). Текущее состояние: auth и routing уже унифицированы, основной приватный маршрут — единый `/dashboard`.
+Продуктовый MVP на Next.js + self-hosted Supabase (Auth + Postgres). Текущее состояние: auth и routing унифицированы, приватная зона живёт в едином app-контуре, а session-navigation state собирается server-first.
 
 ## Запуск
 ```bash
@@ -21,23 +21,122 @@ APP_SESSION_SECRET=<your-generated-secret>
 - минимальная длина — `32` символа;
 - используйте криптографически случайный секрет с высокой энтропией.
 
-## Основные маршруты
-- `/` — лэндинг
-- `/join` — регистрация взрослого аккаунта
-- `/join/check-email` — экран «проверьте почту» при обязательном email confirmation
-- `/auth/confirm` — callback подтверждения email
-- `/login` — единый вход
-- `/onboarding` — создание первого взрослого профиля
-- `/dashboard` — единый приватный кабинет
-- `/settings/security` — управление PIN и параметрами безопасности
+## Маршруты, route groups и layouts
 
-## Auth и routing модель
-- Один взрослый auth-account может иметь профили `parent`, `teacher` или оба.
-- Ученик — отдельный auth-account и отдельный session contour.
-- Роли не живут в URL: сегменты вида `/dashboard/<role>` удалены.
-- Если взрослый вошёл впервые и у него ещё нет профиля, он направляется на `/onboarding`.
-- Активный взрослый кабинет хранится в `user_preference.last_active_profile` (по умолчанию `parent`).
-- Переключение профиля (`parent`/`teacher`) — через dropdown аватарки, без перелогина.
+### Route groups
+- `src/app/(marketing)` — публичный маркетинговый слой (`/`).
+- `src/app/(auth)` — auth-страницы и callback (`/login`, `/join`, `/join/check-email`, `/auth/confirm`, восстановление пароля).
+- `src/app/(app)` — приватный продуктовый слой (`/onboarding`, `/dashboard`, `/settings/*`).
+
+### Layout responsibility
+- `src/app/layout.tsx` (root layout):
+  - читает session view на сервере;
+  - прокидывает его в `SessionViewProvider` как `initialState`.
+- `src/app/(auth)/layout.tsx` (auth-guard layout):
+  - применяет guard только к `/login` и `/join`;
+  - если пользователь уже авторизован, redirect по access policy (`/onboarding` или `/dashboard`).
+- `src/app/(app)/layout.tsx` (private guard layout):
+  - не пускает `guest`/`degraded` в приватную зону (redirect на `/login`);
+  - для `adult-without-profile` принудительно ведёт на `/onboarding` (кроме самого `/onboarding`).
+
+### Канонические маршруты
+- `/` — лэндинг.
+- `/join` — регистрация взрослого аккаунта.
+- `/join/check-email` — экран «проверьте почту» (когда нужно email confirmation).
+- `/auth/confirm` — callback подтверждения email/инвайта/восстановления.
+- `/login` — единый вход взрослого или ученика.
+- `/onboarding` — создание первого взрослого профиля / добавление второго профиля.
+- `/dashboard` — единый приватный кабинет.
+- `/settings/profile` — профиль и email.
+- `/settings/security` — PIN и параметры безопасности.
+
+## Protected/private зона и redirect policy
+
+### Access policy statuses
+Серверная `resolveAccessPolicy()` нормализует состояние до одного из статусов:
+- `guest`
+- `student`
+- `adult-with-profile`
+- `adult-without-profile`
+- `degraded`
+
+### Redirect policy (единая)
+- Гость (`guest`):
+  - доступ к `(app)` запрещён → `/login`.
+- Degraded (`degraded`):
+  - в `(app)` трактуется как невалидная сессия → `/login`.
+- Взрослый без профиля (`adult-without-profile`):
+  - из любых приватных страниц (кроме `/onboarding`) → `/onboarding`.
+- Взрослый с профилем (`adult-with-profile`) и ученик (`student`):
+  - при заходе на guarded auth-страницы (`/login`, `/join`) → `/dashboard`.
+- Взрослый без профиля на guarded auth-страницах:
+  - `/login` и `/join` → `/onboarding`.
+
+### Поведение `/login` и `/join` для уже авторизованных
+- Guard в `(auth)/layout` срабатывает только для двух путей: `/login` и `/join`.
+- Если пользователь уже авторизован:
+  - `adult-without-profile` всегда уходит на `/onboarding`;
+  - `adult-with-profile` и `student` всегда уходят на `/dashboard`.
+- Query-success сценарии на `/login` (`?registered=1`, `?confirmed=1`, `?passwordReset=1`) сохраняются для **гостя** и показывают success hint.
+- Если авторизованный пользователь открывает `/login?...` или `/join?...`, то сначала выполняется redirect guard, и success query не отображается (ожидаемое поведение, чтобы не показывать auth-экран в активной сессии).
+
+## Session-navigation state: единый контракт (server-first)
+
+### Контракт `SessionView`
+Навигация и UI опираются на единый union-контракт:
+- `guest`: `{ kind: 'guest', authenticated: false }`
+- `student`: `{ kind: 'student', authenticated: true, identity... }`
+- `adult`: `{ kind: 'adult', authenticated: true, identity..., activeProfile, availableProfiles }`
+- `degraded`: `{ kind: 'degraded', authenticated: true, reason?, identity... }`
+
+### Где формируется состояние
+1. Server-first источник истины: `readSessionViewServer()`
+   - читает app-session cookie;
+   - достраивает user context через server/admin слой;
+   - возвращает нормализованный `SessionView`.
+2. Root layout выполняет этот шаг на сервере и передаёт `initialState` в клиентский provider.
+3. Клиент может только revalidate (`/api/auth/session` через `refetchSession`) после login/logout/profile switch, но не определяет контракт сам.
+
+Итог: первичная навигационная развилка происходит на сервере, а клиентский state — это проекция и актуализация уже серверного решения.
+
+## Короткие flow-схемы
+
+### 1) Guest flow
+```text
+Guest
+  ├─ opens /(marketing) → stays public
+  ├─ opens /login or /join → auth pages
+  └─ opens /(app) route → redirect /login
+```
+
+### 2) Adult flow
+```text
+Adult login success
+  ├─ has profile(s) → /dashboard
+  └─ has no profile → /onboarding
+
+Adult on /login|/join while authenticated
+  ├─ with profile → /dashboard
+  └─ without profile → /onboarding
+```
+
+### 3) Student flow
+```text
+Student login success → /dashboard
+Student opens /login|/join while authenticated → /dashboard
+Student cannot enter adult onboarding branch (no adult profile state)
+```
+
+### 4) Onboarding / profile-switch flow
+```text
+Adult without profile
+  ├─ any /(app) page except /onboarding → redirect /onboarding
+  └─ completes onboarding → profile appears → /dashboard
+
+Adult with one profile
+  ├─ switch menu offers missing profile via /onboarding?mode=add-profile
+  └─ after adding/switching profile → /dashboard (activeProfile updated)
+```
 
 ## Единый login flow (`POST /api/auth/login`)
 Вход принимает:
