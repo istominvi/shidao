@@ -40,6 +40,22 @@ let mockServer: ReturnType<typeof createServer> | null = null;
 let chromium: PlaywrightChromium | null = null;
 let browserSmokeUnavailableReason: string | null = null;
 
+function resolveBrowserInstallHint(error: unknown) {
+  const message =
+    error instanceof Error ? error.message : `Unknown error: ${String(error)}`;
+  const normalized = message.toLowerCase();
+
+  if (
+    normalized.includes("executable doesn't exist") ||
+    normalized.includes("browserType.launch") ||
+    normalized.includes("playwright install")
+  ) {
+    return "Playwright package is installed, but Chromium binaries are missing. Run `npx playwright install chromium` (or `npx playwright install`) to enable browser smoke tests.";
+  }
+
+  return `Playwright Chromium is unavailable in this environment: ${message}`;
+}
+
 function buildSessionCookieValue(input: {
   uid: string;
   email: string;
@@ -246,6 +262,15 @@ before(async () => {
     return;
   }
 
+  try {
+    const browser = await chromium.launch();
+    await browser.close();
+  } catch (error) {
+    browserSmokeUnavailableReason = resolveBrowserInstallHint(error);
+    chromium = null;
+    return;
+  }
+
   mockPort = await allocatePort();
   appPort = await allocatePort();
 
@@ -302,6 +327,7 @@ after(async () => {
 test("browser smoke: guest opens / and sees guest header CTA", async (t) => {
   if (browserSmokeUnavailableReason) {
     t.skip(browserSmokeUnavailableReason);
+    return;
   }
 
   {
@@ -322,6 +348,7 @@ test("browser smoke: guest opens / and sees guest header CTA", async (t) => {
 test("browser smoke: authenticated user on / sees auth-aware header", async (t) => {
   if (browserSmokeUnavailableReason) {
     t.skip(browserSmokeUnavailableReason);
+    return;
   }
 
   const runtime = await openPage({ cookie: authenticatedCookieHeader() });
@@ -339,6 +366,7 @@ test("browser smoke: authenticated user on / sees auth-aware header", async (t) 
 test("browser smoke: guest on protected route is redirected to /login", async (t) => {
   if (browserSmokeUnavailableReason) {
     t.skip(browserSmokeUnavailableReason);
+    return;
   }
 
   const runtime = await openPage();
@@ -354,6 +382,7 @@ test("browser smoke: guest on protected route is redirected to /login", async (t
 test("browser smoke: authenticated /login redirects by access policy", async (t) => {
   if (browserSmokeUnavailableReason) {
     t.skip(browserSmokeUnavailableReason);
+    return;
   }
 
   const runtime = await openPage({ cookie: authenticatedCookieHeader() });
