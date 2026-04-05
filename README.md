@@ -237,9 +237,9 @@ Helpers/RPC:
 - Если секреты могли попасть в логи/чаты/скриншоты — ротируйте их.
 
 ## Test strategy (MVP)
-- Unit-тесты на критичные auth/routing контракты лежат в `src/lib/__tests__` и запускаются через `npm run test`.
-- Покрываем в первую очередь:
-  - route matching и route-guards;
-  - safe redirect нормализацию;
-  - redirect policy для auth-страниц при разных `AccessResolution`.
+- `npm run test` компилирует и запускает `*.test.ts` по всему `src` (`node:test`), а не только `src/lib`.
+- Текущий контур покрывает:
+  - `src/lib/__tests__`: route matching, route-guards, safe redirect нормализацию, auth redirect policy;
+  - `src/components/__tests__`: session-driven nav branching (TopNav + landing header), guest/auth CTA contract и security-page auth gate contract;
+  - `src/lib/server/__tests__`: private layout redirect contract для `guest`/`degraded`/`adult-without-profile`.
 - Lint/build/test — обязательный pre-merge baseline для регрессий в shell auth/navigation.

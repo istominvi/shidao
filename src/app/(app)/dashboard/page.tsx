@@ -11,7 +11,6 @@ export default async function DashboardIndexPage() {
     return <StudentDashboard />;
   }
 
-
   if (context.activeProfile === 'teacher') {
     return <TeacherDashboard />;
   }
