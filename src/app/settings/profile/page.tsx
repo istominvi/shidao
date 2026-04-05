@@ -1,11 +1,12 @@
 'use client';
 
+import { Suspense } from 'react';
 import { FormEvent, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { TopNav } from '@/components/top-nav';
 import { StatusMessage } from '@/components/product-shell';
 
-export default function ProfileSettingsPage() {
+function ProfileSettingsPageContent() {
   const searchParams = useSearchParams();
   const [newEmail, setNewEmail] = useState('');
   const [currentPassword, setCurrentPassword] = useState('');
@@ -138,5 +139,13 @@ export default function ProfileSettingsPage() {
         </div>
       </section>
     </main>
+  );
+}
+
+export default function ProfileSettingsPage() {
+  return (
+    <Suspense fallback={null}>
+      <ProfileSettingsPageContent />
+    </Suspense>
   );
 }
