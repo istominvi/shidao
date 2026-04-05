@@ -1,4 +1,9 @@
+'use client';
+
 import Link from 'next/link';
+import { ROUTES } from '@/lib/auth';
+import { SessionNavActions } from '@/components/session-nav-actions';
+import { useSessionView } from '@/components/use-session-view';
 import {
   Bell,
   BookOpen,
@@ -104,6 +109,9 @@ function SectionTitle({ eyebrow, title, description }: { eyebrow: string; title:
 }
 
 export function LandingPage() {
+  const { state, sessionResolved } = useSessionView();
+  const authCtaHref = sessionResolved && state.authenticated ? ROUTES.dashboard : ROUTES.login;
+
   return (
     <main className="pb-16">
       <div className="landing-noise" aria-hidden="true" />
@@ -113,7 +121,7 @@ export function LandingPage() {
           <div className="absolute -left-28 bottom-6 h-56 w-56 rounded-full bg-sky-200/45 blur-3xl" aria-hidden="true" />
 
           <header className="relative z-10 flex flex-wrap items-center justify-between gap-4">
-            <Link href="/" className="text-xl font-black tracking-tight transition hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/40">
+            <Link href={ROUTES.home} className="text-xl font-black tracking-tight transition hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/40">
               Shidao
             </Link>
             <nav aria-label="Навигация по лендингу" className="hidden flex-wrap gap-2 text-sm font-medium text-neutral-700 lg:flex">
@@ -124,8 +132,16 @@ export function LandingPage() {
               <a href="#faq" className="rounded-full border border-transparent px-4 py-2 text-neutral-800 transition hover:border-black/10 hover:bg-black hover:text-white">Вопросы</a>
             </nav>
             <div className="flex w-full gap-2 sm:w-auto">
-              <Link href="/login" className="landing-btn landing-btn-muted min-h-11 flex-1 sm:flex-none">Войти</Link>
-              <Link href="/join" className="landing-btn landing-btn-primary min-h-11 flex-1 sm:flex-none">Создать аккаунт</Link>
+              {sessionResolved && !state.authenticated ? (
+                <>
+                  <Link href={ROUTES.login} className="landing-btn landing-btn-muted min-h-11 flex-1 sm:flex-none">Войти</Link>
+                  <Link href={ROUTES.join} className="landing-btn landing-btn-primary min-h-11 flex-1 sm:flex-none">Создать аккаунт</Link>
+                </>
+              ) : state.authenticated ? (
+                <SessionNavActions state={state} variant="landing" portalMenu />
+              ) : (
+                <div className="landing-btn landing-btn-muted min-h-11 flex-1 text-sm text-neutral-500 sm:flex-none">Проверяем сессию…</div>
+              )}
             </div>
           </header>
 
@@ -137,8 +153,8 @@ export function LandingPage() {
                 Преподаватель ведёт обучение системно. Родитель видит прогресс. Ученик идёт по понятному маршруту и заходит в отдельный кабинет.
               </p>
               <div className="mt-6 grid gap-3 sm:mt-8 sm:flex sm:flex-wrap">
-                <Link href="/join" className="landing-btn landing-btn-primary min-h-12 w-full inline-flex items-center justify-center gap-2 sm:w-auto">Начать в Shidao <ChevronRight className="size-4" /></Link>
-                <Link href="/login" className="landing-btn landing-btn-muted min-h-12 w-full sm:w-auto">У меня уже есть доступ</Link>
+                <Link href={ROUTES.join} className="landing-btn landing-btn-primary min-h-12 w-full inline-flex items-center justify-center gap-2 sm:w-auto">Начать в Shidao <ChevronRight className="size-4" /></Link>
+                <Link href={authCtaHref} className="landing-btn landing-btn-muted min-h-12 w-full sm:w-auto">У меня уже есть доступ</Link>
               </div>
             </div>
 
@@ -319,8 +335,8 @@ export function LandingPage() {
           <h2 className="mx-auto mt-5 max-w-[18ch] text-2xl font-black leading-tight md:mt-6 md:max-w-none md:text-5xl">Начните в Shidao и соберите весь учебный процесс в одном месте</h2>
           <p className="mx-auto mt-3 max-w-[52ch] text-sm leading-relaxed text-white/80 md:mt-4 md:max-w-2xl md:text-base">От первого урока до домашней работы и комментариев — единая методическая среда для преподавателя, родителя и ученика.</p>
           <div className="mt-6 grid gap-3 sm:mt-8 sm:flex sm:flex-wrap sm:items-center sm:justify-center">
-            <Link href="/join" className="landing-btn min-h-12 w-full bg-lime-200 !text-black hover:bg-lime-300 sm:w-auto">Создать аккаунт</Link>
-            <Link href="/login" className="landing-btn min-h-12 w-full border border-white/50 bg-white/5 text-white hover:bg-white/15 sm:w-auto">Войти</Link>
+            <Link href={ROUTES.join} className="landing-btn min-h-12 w-full bg-lime-200 !text-black hover:bg-lime-300 sm:w-auto">Создать аккаунт</Link>
+            <Link href={authCtaHref} className="landing-btn min-h-12 w-full border border-white/50 bg-white/5 text-white hover:bg-white/15 sm:w-auto">Войти</Link>
           </div>
         </div>
       </section>
