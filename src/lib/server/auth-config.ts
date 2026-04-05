@@ -1,3 +1,5 @@
+import { isSafeRelativePath } from '@/lib/routes';
+
 const DEFAULT_PUBLIC_SITE_URL = 'https://shidao.ru';
 
 export function getSupabasePublicConfig() {
@@ -22,7 +24,6 @@ export function getPublicSiteUrl() {
 }
 
 export function resolveSafeAuthRedirect(input: string | null, fallback: string) {
-  if (!input) return fallback;
-  if (!input.startsWith('/') || input.startsWith('//')) return fallback;
+  if (!isSafeRelativePath(input)) return fallback;
   return input;
 }

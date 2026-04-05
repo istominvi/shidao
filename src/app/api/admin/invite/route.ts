@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { isEmail } from '@/lib/auth';
+import { ROUTES, isEmail } from '@/lib/auth';
 import { getPublicSiteUrl } from '@/lib/server/auth-config';
 import { readAppSession } from '@/lib/server/app-session';
 import { getUserContextById, inviteUserByEmail } from '@/lib/server/supabase-admin';
@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
     }
 
     const redirectTo = new URL('/auth/confirm', getPublicSiteUrl());
-    redirectTo.searchParams.set('next', '/onboarding');
+    redirectTo.searchParams.set('next', ROUTES.onboarding);
 
     await inviteUserByEmail({ email, redirectTo: redirectTo.toString() });
     return NextResponse.json({ ok: true });

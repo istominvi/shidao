@@ -1,9 +1,9 @@
 import { ROUTES } from './auth';
+import { isSafeRelativePath } from './routes';
 import type { AccessResolution } from './server/access-policy';
 
 function toSafePath(input: string | null | undefined, fallback: string) {
-  if (!input) return fallback;
-  if (!input.startsWith('/') || input.startsWith('//')) return fallback;
+  if (!isSafeRelativePath(input)) return fallback;
   return input;
 }
 

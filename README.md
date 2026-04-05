@@ -22,8 +22,10 @@ APP_SESSION_SECRET=<your-generated-secret>
 - используйте криптографически случайный секрет с высокой энтропией.
 
 ## Deploy notes (Coolify / self-hosted CI)
+- Репозиторий содержит production `Dockerfile` (multi-stage, Next standalone). В Coolify лучше использовать Dockerfile build mode, чтобы не зависеть от Nixpacks base image из `ghcr.io/railwayapp/nixpacks`.
 - Проект не требует внешней загрузки Google Fonts на этапе `next build` (используются системные font stacks), поэтому сборка подходит для сред с ограниченным egress.
 - Для pull-request deploy в Coolify всё равно нужен исходящий HTTPS-доступ к `api.github.com` (helper проверяет GitHub API до старта сборки).
+- Для Dockerfile-сборки нужен доступ к Docker Hub для `node:22-alpine`.
 
 ## Маршруты, route groups и layouts
 
@@ -49,11 +51,19 @@ APP_SESSION_SECRET=<your-generated-secret>
 - `/join/check-email` — экран «проверьте почту» (когда нужно email confirmation).
 - `/auth/confirm` — callback подтверждения email/инвайта/восстановления.
 - `/login` — единый вход взрослого или ученика.
+- `/forgot-password` — запрос на восстановление пароля.
+- `/reset-password` — установка нового пароля после recovery flow.
 - `/onboarding` — создание первого взрослого профиля / добавление второго профиля.
 - `/dashboard` — единый приватный кабинет.
 - `/settings/profile` — профиль и email.
 - `/settings/security` — PIN и параметры безопасности.
 - `/settings/team` — команда и приглашения (доступно только взрослому профилю).
+
+
+### Route/source-of-truth helpers
+- `src/lib/auth.ts` — канонические URL-константы (`ROUTES`).
+- `src/lib/routes.ts` — route-aware helpers (`isAppRoute`, `isSettingsRoute`, `isGuardedAuthRoute`, `isSafeRelativePath`).
+- UI и redirect-политика используют эти helper'ы вместо строковых префиксов в компонентах.
 
 ## Protected/private зона и redirect policy
 
@@ -224,3 +234,11 @@ Helpers/RPC:
 - Не храните SMTP credentials в документации.
 - Используйте только placeholders (`<app-password>`, `<secret>`) и secret store.
 - Если секреты могли попасть в логи/чаты/скриншоты — ротируйте их.
+
+## Test strategy (MVP)
+- Unit-тесты на критичные auth/routing контракты лежат в `src/lib/__tests__` и запускаются через `npm run test`.
+- Покрываем в первую очередь:
+  - route matching и route-guards;
+  - safe redirect нормализацию;
+  - redirect policy для auth-страниц при разных `AccessResolution`.
+- Lint/build/test — обязательный pre-merge baseline для регрессий в shell auth/navigation.
