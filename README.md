@@ -21,6 +21,10 @@ APP_SESSION_SECRET=<your-generated-secret>
 - минимальная длина — `32` символа;
 - используйте криптографически случайный секрет с высокой энтропией.
 
+## Deploy notes (Coolify / self-hosted CI)
+- Проект не требует внешней загрузки Google Fonts на этапе `next build` (используются системные font stacks), поэтому сборка подходит для сред с ограниченным egress.
+- Для pull-request deploy в Coolify всё равно нужен исходящий HTTPS-доступ к `api.github.com` (helper проверяет GitHub API до старта сборки).
+
 ## Маршруты, route groups и layouts
 
 ### Route groups
