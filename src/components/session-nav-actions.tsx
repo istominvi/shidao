@@ -26,6 +26,7 @@ const VIEWPORT_PADDING = 8;
 export function SessionNavActions({ state, variant = 'top-nav', portalMenu = false }: SessionNavActionsProps) {
   const router = useRouter();
   const containerRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
   const [menuPosition, setMenuPosition] = useState<MenuPosition | null>(null);
 
@@ -46,6 +47,16 @@ export function SessionNavActions({ state, variant = 'top-nav', portalMenu = fal
     () => (state.availableAdultProfiles ?? []).filter((profile) => profile !== state.activeProfile),
     [state.availableAdultProfiles, state.activeProfile]
   );
+  const dashboardLabel = useMemo(() => {
+    if (state.actorKind === 'student') return 'Кабинет ученика';
+    if (state.actorKind === 'adult') {
+      const currentProfile = state.activeProfile ?? state.availableAdultProfiles?.[0] ?? null;
+      if (currentProfile) return PROFILE_LABELS[currentProfile];
+      return 'Кабинет взрослого';
+    }
+
+    return 'Кабинет';
+  }, [state.actorKind, state.activeProfile, state.availableAdultProfiles]);
 
   const updateMenuPosition = useCallback(() => {
     if (!portalMenu || !containerRef.current) return;
@@ -64,7 +75,8 @@ export function SessionNavActions({ state, variant = 'top-nav', portalMenu = fal
     if (!open) return;
 
     const onPointerDown = (event: MouseEvent) => {
-      if (!containerRef.current?.contains(event.target as Node)) {
+      const target = event.target as Node;
+      if (!containerRef.current?.contains(target) && !menuRef.current?.contains(target)) {
         setOpen(false);
       }
     };
@@ -119,6 +131,7 @@ export function SessionNavActions({ state, variant = 'top-nav', portalMenu = fal
 
   const menu = (
     <div
+      ref={menuRef}
       className={`landing-surface w-72 rounded-2xl border border-black/10 bg-white/95 p-2 shadow-xl backdrop-blur-xl ${portalMenu ? 'fixed z-[260]' : 'absolute right-0 z-[120] mt-2'}`}
       style={portalMenu && menuPosition ? { top: menuPosition.top, left: menuPosition.left } : undefined}
     >
@@ -157,6 +170,13 @@ export function SessionNavActions({ state, variant = 'top-nav', portalMenu = fal
       )}
 
       <div className="border-t border-black/5 py-1">
+        <Link
+          href={ROUTES.dashboard}
+          className="block rounded-xl px-3 py-2 text-sm hover:bg-black/5"
+          onClick={() => setOpen(false)}
+        >
+          {dashboardLabel}
+        </Link>
         <Link
           href={ROUTES.settingsProfile}
           className="block rounded-xl px-3 py-2 text-sm hover:bg-black/5"
