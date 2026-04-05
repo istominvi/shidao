@@ -3,6 +3,7 @@
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useState } from 'react';
 import { ContextCard, PageHero, ProductShell, StatusMessage } from '@/components/product-shell';
+import { useSessionView } from '@/components/use-session-view';
 import { ROUTES, type ProfileKind } from '@/lib/auth';
 
 const options: Array<{ value: ProfileKind; title: string; description: string; points: string[]; toneClass: string }> = [
@@ -25,6 +26,7 @@ const options: Array<{ value: ProfileKind; title: string; description: string; p
 function OnboardingPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { refetchSession } = useSessionView();
   const manageMode = searchParams.get('mode') === 'add-profile';
   const [loadingProfile, setLoadingProfile] = useState<ProfileKind | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -45,6 +47,7 @@ function OnboardingPageContent() {
         throw new Error(payload?.error ?? 'Не удалось завершить онбординг.');
       }
 
+      await refetchSession();
       router.push(payload?.redirectTo ?? ROUTES.dashboard);
       router.refresh();
     } catch (selectError) {

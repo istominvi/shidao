@@ -1,43 +1,11 @@
 import { NextResponse } from 'next/server';
-import { readAppSession } from '@/lib/server/app-session';
-import { getUserContextById } from '@/lib/server/supabase-admin';
-import { toInitials } from '@/lib/auth';
+import { readSessionViewServer } from '@/lib/server/session-view';
 
 export const runtime = 'nodejs';
 
 export async function GET() {
-  const session = await readAppSession();
-  if (!session) {
-    return NextResponse.json({ authenticated: false, reason: 'no_session' }, { status: 401 });
-  }
+  const sessionView = await readSessionViewServer();
+  const status = sessionView.authenticated ? (sessionView.contextResolved === false ? 503 : 200) : 401;
 
-  try {
-    const ctx = await getUserContextById(session.uid, { email: session.email, fullName: session.fullName });
-    return NextResponse.json({
-      authenticated: true,
-      userId: ctx.userId,
-      actorKind: ctx.actorKind,
-      fullName: ctx.fullName,
-      email: ctx.email,
-      initials: toInitials(ctx.fullName, ctx.email),
-      availableAdultProfiles: ctx.availableAdultProfiles,
-      activeProfile: ctx.activeProfile,
-      hasAnyAdultProfile: ctx.hasAnyAdultProfile,
-      hasPin: ctx.hasPin
-    });
-  } catch (error) {
-    console.error('[auth-session] failed to resolve user context', { userId: session.uid, error });
-    return NextResponse.json(
-      {
-        authenticated: true,
-        contextResolved: false,
-        reason: 'context_unavailable',
-        userId: session.uid,
-        email: session.email,
-        fullName: session.fullName,
-        initials: toInitials(session.fullName, session.email)
-      },
-      { status: 503 }
-    );
-  }
+  return NextResponse.json(sessionView, { status });
 }

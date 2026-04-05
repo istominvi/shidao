@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import { Noto_Sans, Noto_Sans_SC, Noto_Serif, Noto_Serif_SC } from 'next/font/google';
+import { SessionViewProvider } from '@/components/use-session-view';
+import { readSessionViewServer } from '@/lib/server/session-view';
 import './globals.css';
 
 const notoSans = Noto_Sans({
@@ -27,13 +29,15 @@ export const metadata: Metadata = {
   description: 'Платформа для преподавателей, родителей и учеников.'
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const initialSessionView = await readSessionViewServer();
+
   return (
     <html lang="ru">
       <body
         className={`${notoSans.variable} ${notoSansCjk.variable} ${notoSerif.variable} ${notoSerifCjk.variable}`}
       >
-        {children}
+        <SessionViewProvider initialState={initialSessionView}>{children}</SessionViewProvider>
       </body>
     </html>
   );
