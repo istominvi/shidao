@@ -32,9 +32,9 @@ export function SessionViewProvider({ initialState, children }: SessionViewProvi
       });
 
       const payload = (await response.json().catch(() => null)) as SessionView | null;
-      setState(payload ?? { authenticated: false });
+      setState(payload ?? { kind: 'guest', authenticated: false });
     } catch {
-      setState({ authenticated: false });
+      setState({ kind: 'guest', authenticated: false });
     } finally {
       if (!controller.signal.aborted) {
         setSessionResolved(true);

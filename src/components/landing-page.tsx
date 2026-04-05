@@ -110,7 +110,34 @@ function SectionTitle({ eyebrow, title, description }: { eyebrow: string; title:
 
 export function LandingPage() {
   const { state, sessionResolved } = useSessionView();
-  const authCtaHref = sessionResolved && state.authenticated ? ROUTES.dashboard : ROUTES.login;
+  const authCtaHref = state.kind === 'adult' || state.kind === 'student' ? ROUTES.dashboard : ROUTES.login;
+  const navActions = (() => {
+    switch (state.kind) {
+      case 'guest':
+      case 'degraded':
+        if (sessionResolved) {
+          return (
+            <>
+              <Link href={ROUTES.login} className="landing-btn landing-btn-muted min-h-11 flex-1 sm:flex-none">Войти</Link>
+              <Link href={ROUTES.join} className="landing-btn landing-btn-primary min-h-11 flex-1 sm:flex-none">Создать аккаунт</Link>
+            </>
+          );
+        }
+
+        return (
+          <div className="landing-btn landing-btn-muted min-h-11 flex-1 sm:flex-none sm:min-w-[148px]" aria-hidden="true">
+            <span className="block h-4 w-24 animate-pulse rounded-full bg-neutral-300/70" />
+          </div>
+        );
+      case 'adult':
+      case 'student':
+        return <SessionNavActions state={state} variant="landing" portalMenu />;
+      default: {
+        const _exhaustive: never = state;
+        return _exhaustive;
+      }
+    }
+  })();
 
   return (
     <main className="pb-16">
@@ -132,18 +159,7 @@ export function LandingPage() {
               <a href="#faq" className="rounded-full border border-transparent px-4 py-2 text-neutral-800 transition hover:border-black/10 hover:bg-black hover:text-white">Вопросы</a>
             </nav>
             <div className="flex w-full gap-2 sm:w-auto">
-              {sessionResolved && !state.authenticated ? (
-                <>
-                  <Link href={ROUTES.login} className="landing-btn landing-btn-muted min-h-11 flex-1 sm:flex-none">Войти</Link>
-                  <Link href={ROUTES.join} className="landing-btn landing-btn-primary min-h-11 flex-1 sm:flex-none">Создать аккаунт</Link>
-                </>
-              ) : state.authenticated ? (
-                <SessionNavActions state={state} variant="landing" portalMenu />
-              ) : (
-                <div className="landing-btn landing-btn-muted min-h-11 flex-1 sm:flex-none sm:min-w-[148px]" aria-hidden="true">
-                  <span className="block h-4 w-24 animate-pulse rounded-full bg-neutral-300/70" />
-                </div>
-              )}
+              {navActions}
             </div>
           </header>
 

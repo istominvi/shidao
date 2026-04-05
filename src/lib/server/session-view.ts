@@ -6,29 +6,38 @@ import { getUserContextById } from '@/lib/server/supabase-admin';
 export async function readSessionViewServer(): Promise<SessionView> {
   const session = await readAppSession();
   if (!session) {
-    return { authenticated: false, reason: 'no_session' };
+    return { kind: 'guest', authenticated: false };
   }
 
   try {
     const ctx = await getUserContextById(session.uid, { email: session.email, fullName: session.fullName });
+
+    if (ctx.actorKind === 'student') {
+      return {
+        kind: 'student',
+        authenticated: true,
+        userId: ctx.userId,
+        fullName: ctx.fullName,
+        email: ctx.email,
+        initials: toInitials(ctx.fullName, ctx.email)
+      };
+    }
+
     return {
+      kind: 'adult',
       authenticated: true,
       userId: ctx.userId,
-      actorKind: ctx.actorKind,
       fullName: ctx.fullName,
       email: ctx.email,
       initials: toInitials(ctx.fullName, ctx.email),
-      availableAdultProfiles: ctx.availableAdultProfiles,
+      availableProfiles: ctx.availableAdultProfiles,
       activeProfile: ctx.activeProfile,
-      hasAnyAdultProfile: ctx.hasAnyAdultProfile,
-      hasPin: ctx.hasPin,
-      contextResolved: true
     };
   } catch (error) {
     console.error('[session-view] failed to resolve user context', { userId: session.uid, error });
     return {
+      kind: 'degraded',
       authenticated: true,
-      contextResolved: false,
       reason: 'context_unavailable',
       userId: session.uid,
       email: session.email,
