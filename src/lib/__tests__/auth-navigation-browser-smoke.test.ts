@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { spawn, type ChildProcess } from "node:child_process";
 import crypto from "node:crypto";
 import { once } from "node:events";
+import { access } from "node:fs/promises";
 import {
   createServer,
   type IncomingMessage,
@@ -39,6 +40,28 @@ let appServerProcess: ChildProcess | null = null;
 let mockServer: ReturnType<typeof createServer> | null = null;
 let chromium: PlaywrightChromium | null = null;
 let browserSmokeUnavailableReason: string | null = null;
+
+const strictBrowserSmoke =
+  process.env.REQUIRE_BROWSER_SMOKE === "1" || process.env.CI === "true";
+const requestedServerMode = process.env.BROWSER_SMOKE_SERVER_MODE;
+const browserSmokeServerMode = requestedServerMode === "dev" ? "dev" : "prod";
+
+async function hasProductionBuild() {
+  try {
+    await access(".next/BUILD_ID");
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function assertBrowserSmokeRequirement(reason: string) {
+  if (strictBrowserSmoke) {
+    throw new Error(`Browser smoke is required in strict mode: ${reason}`);
+  }
+
+  browserSmokeUnavailableReason = reason;
+}
 
 function resolveBrowserInstallHint(error: unknown) {
   const message =
@@ -251,14 +274,16 @@ before(async () => {
     const playwrightModule = await loadPlaywright();
     chromium = playwrightModule.chromium ?? null;
   } catch {
-    browserSmokeUnavailableReason =
-      "Install 'playwright' to enable real browser smoke tests.";
+    assertBrowserSmokeRequirement(
+      "Install 'playwright' to enable real browser smoke tests.",
+    );
     return;
   }
 
   if (!chromium) {
-    browserSmokeUnavailableReason =
-      "Install 'playwright' to enable real browser smoke tests.";
+    assertBrowserSmokeRequirement(
+      "Install 'playwright' to enable real browser smoke tests.",
+    );
     return;
   }
 
@@ -266,7 +291,7 @@ before(async () => {
     const browser = await chromium.launch();
     await browser.close();
   } catch (error) {
-    browserSmokeUnavailableReason = resolveBrowserInstallHint(error);
+    assertBrowserSmokeRequirement(resolveBrowserInstallHint(error));
     chromium = null;
     return;
   }
@@ -278,9 +303,33 @@ before(async () => {
   mockServer.listen(mockPort, "127.0.0.1");
   await once(mockServer, "listening");
 
+  const hasBuild = await hasProductionBuild();
+  const serverMode =
+    browserSmokeServerMode === "prod" && !hasBuild
+      ? "dev"
+      : browserSmokeServerMode;
+
+  if (browserSmokeServerMode === "prod" && !hasBuild && strictBrowserSmoke) {
+    throw new Error(
+      "Browser smoke strict mode requires a production build. Run `npm run build` before `npm run test:browser`.",
+    );
+  }
+
+  if (browserSmokeServerMode === "prod" && !hasBuild) {
+    console.warn(
+      "[browser-smoke] .next/BUILD_ID was not found, falling back to `npm run dev`.",
+    );
+  }
+
   appServerProcess = spawn(
     "npm",
-    ["run", "dev", "--", "--port", String(appPort)],
+    [
+      "run",
+      serverMode === "prod" ? "start" : "dev",
+      "--",
+      "--port",
+      String(appPort),
+    ],
     {
       cwd: process.cwd(),
       env: {
