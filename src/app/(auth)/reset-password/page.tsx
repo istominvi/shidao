@@ -30,12 +30,13 @@ export default function ResetPasswordPage() {
       }
 
       setSuccess('Пароль обновлён. Перенаправляем на страницу входа…');
-      if (!payload?.redirectTo) {
+      const redirectTo = payload?.redirectTo;
+      if (!redirectTo) {
         throw new Error('Сервер не вернул маршрут после обновления пароля.');
       }
 
       setTimeout(() => {
-        router.replace(payload.redirectTo);
+        router.replace(redirectTo);
       }, 700);
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : 'Не удалось обновить пароль.');
