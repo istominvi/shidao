@@ -19,5 +19,5 @@ export async function loginWithIdentifier(identifier: string, secret: string) {
 }
 
 export async function signOutViaServer() {
-  await fetch('/api/auth/logout', { method: 'POST' });
+  return fetch('/api/auth/logout', { method: 'POST' });
 }

@@ -31,6 +31,8 @@ export function SessionNavActions({ state, variant = 'top-nav', portalMenu = fal
   const menuRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
   const [menuPosition, setMenuPosition] = useState<MenuPosition | null>(null);
+  const [actionLoading, setActionLoading] = useState<`switch:${ProfileKind}` | 'signout' | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const canSwitch = useMemo(() => state.kind === 'adult' && state.availableProfiles.length > 1, [state]);
   const missingProfile = useMemo<ProfileKind | null>(() => {
@@ -114,25 +116,66 @@ export function SessionNavActions({ state, variant = 'top-nav', portalMenu = fal
     };
   }, [open, portalMenu, updateMenuPosition]);
 
-  async function handleSwitch(profile: ProfileKind) {
-    await fetch('/api/preferences/profile', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ profile })
-    });
+  const loadingMessage = useMemo(() => {
+    if (!actionLoading) return null;
+    if (actionLoading === 'signout') return 'Выходим из аккаунта…';
+    return 'Переключаем профиль…';
+  }, [actionLoading]);
 
-    await refetchSession();
-    setOpen(false);
-    router.push(ROUTES.dashboard);
-    router.refresh();
+  const getActionErrorMessage = useCallback((error: unknown, fallback: string) => {
+    if (error instanceof Error && error.message) return error.message;
+    return fallback;
+  }, []);
+
+  async function handleSwitch(profile: ProfileKind) {
+    const loadingKey = `switch:${profile}` as const;
+    setActionLoading(loadingKey);
+    setActionError(null);
+
+    try {
+      const response = await fetch('/api/preferences/profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ profile })
+      });
+      const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+
+      if (!response.ok) {
+        throw new Error(payload?.error ?? 'Не удалось переключить профиль.');
+      }
+
+      await refetchSession();
+      setOpen(false);
+      router.push(ROUTES.dashboard);
+      router.refresh();
+    } catch (error) {
+      setActionError(getActionErrorMessage(error, 'Не удалось переключить профиль.'));
+    } finally {
+      setActionLoading(null);
+    }
   }
 
   async function handleSignOut() {
-    await signOutViaServer();
-    await refetchSession();
-    setOpen(false);
-    router.push(ROUTES.login);
-    router.refresh();
+    setActionLoading('signout');
+    setActionError(null);
+
+    try {
+      const response = await signOutViaServer();
+      const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+
+      if (!response.ok) {
+        throw new Error(payload?.error ?? 'Не удалось выйти из аккаунта.');
+      }
+
+      await refetchSession();
+      setOpen(false);
+      router.push(ROUTES.login);
+      router.refresh();
+    } catch (error) {
+      setActionError(getActionErrorMessage(error, 'Не удалось выйти из аккаунта.'));
+    } finally {
+      setActionLoading(null);
+    }
   }
 
   const menu = (
@@ -145,20 +188,35 @@ export function SessionNavActions({ state, variant = 'top-nav', portalMenu = fal
         <p className="text-sm font-semibold">{state.fullName ?? 'Пользователь'}</p>
         <p className="text-xs text-neutral-500">{state.email ?? 'Без email'}</p>
       </div>
+      {loadingMessage && (
+        <p aria-live="polite" className="px-3 pb-2 text-xs text-neutral-500" role="status">
+          {loadingMessage}
+        </p>
+      )}
+      {actionError && (
+        <p aria-live="assertive" className="px-3 pb-2 text-xs text-red-600" role="alert">
+          {actionError}
+        </p>
+      )}
 
       {canSwitch && (
         <div className="border-t border-black/5 py-1">
-          {switchTargets.map((profile) => (
-            <button
-              key={profile}
-              className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm hover:bg-black/5"
-              onClick={() => handleSwitch(profile)}
-              type="button"
-            >
-              <span>Перейти в {PROFILE_LABELS[profile].toLowerCase()}</span>
-              <span className="text-xs text-neutral-500">Сменить</span>
-            </button>
-          ))}
+          {switchTargets.map((profile) => {
+            const isSwitchLoading = actionLoading === `switch:${profile}`;
+            return (
+              <button
+                key={profile}
+                className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-60"
+                onClick={() => handleSwitch(profile)}
+                disabled={isSwitchLoading}
+                aria-busy={isSwitchLoading}
+                type="button"
+              >
+                <span>Перейти в {PROFILE_LABELS[profile].toLowerCase()}</span>
+                <span className="text-xs text-neutral-500">{isSwitchLoading ? 'Переключаем…' : 'Сменить'}</span>
+              </button>
+            );
+          })}
         </div>
       )}
 
@@ -197,8 +255,14 @@ export function SessionNavActions({ state, variant = 'top-nav', portalMenu = fal
         >
           Настройки безопасности
         </Link>
-        <button className="w-full rounded-xl px-3 py-2 text-left text-sm hover:bg-black/5" onClick={handleSignOut} type="button">
-          Выйти
+        <button
+          className="w-full rounded-xl px-3 py-2 text-left text-sm hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-60"
+          onClick={handleSignOut}
+          disabled={actionLoading === 'signout'}
+          aria-busy={actionLoading === 'signout'}
+          type="button"
+        >
+          {actionLoading === 'signout' ? 'Выходим…' : 'Выйти'}
         </button>
       </div>
     </div>
