@@ -16,7 +16,8 @@ export const ROUTES = {
   onboarding: '/onboarding',
   dashboard: '/dashboard',
   settingsSecurity: '/settings/security',
-  settingsProfile: '/settings/profile'
+  settingsProfile: '/settings/profile',
+  settingsTeam: '/settings/team'
 } as const;
 
 export const AUTH_MESSAGES = {

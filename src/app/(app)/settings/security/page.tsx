@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useState } from 'react';
 import { TopNav } from '@/components/top-nav';
+import { SettingsNavigation } from '@/components/settings-navigation';
 
 export default function SecuritySettingsPage() {
   const [hasPin, setHasPin] = useState(false);
@@ -47,9 +48,11 @@ export default function SecuritySettingsPage() {
   return (
     <main>
       <TopNav />
-      <section className="container mt-8 pb-12">
-        <div className="mx-auto max-w-xl glass rounded-3xl p-6 md:p-8">
-          <p className="chip bg-violet-100 text-violet-700">Настройки безопасности</p>
+      <section className="container mt-8 grid gap-4 pb-12 md:grid-cols-[280px_minmax(0,1fr)]">
+        <SettingsNavigation />
+
+        <div className="glass rounded-3xl p-6 md:p-8">
+          <p className="chip bg-violet-100 text-violet-700">Личное</p>
           <h1 className="mt-4 text-3xl font-black">PIN-код входа</h1>
           <p className="mt-2 text-sm text-neutral-600">Статус: {hasPin ? 'PIN настроен' : 'PIN не настроен'}.</p>
 
