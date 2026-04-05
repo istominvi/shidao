@@ -21,24 +21,17 @@ export function SessionViewProvider({ initialState, children }: SessionViewProvi
   const [sessionResolved, setSessionResolved] = useState(true);
 
   const refetchSession = useCallback(async () => {
-    const controller = new AbortController();
-
     setSessionResolved(false);
 
     try {
-      const response = await fetch('/api/auth/session', {
-        cache: 'no-store',
-        signal: controller.signal
-      });
+      const response = await fetch('/api/auth/session', { cache: 'no-store' });
 
       const payload = (await response.json().catch(() => null)) as SessionView | null;
       setState(payload ?? { kind: 'guest', authenticated: false });
     } catch {
       setState({ kind: 'guest', authenticated: false });
     } finally {
-      if (!controller.signal.aborted) {
-        setSessionResolved(true);
-      }
+      setSessionResolved(true);
     }
   }, []);
 
