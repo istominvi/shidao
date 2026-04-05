@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ROUTES } from '@/lib/auth';
+import { getPublicSiteUrl, getSupabasePublicConfig } from '@/lib/server/auth-config';
 
 export const runtime = 'nodejs';
 
@@ -9,28 +10,8 @@ type Payload = {
   password?: string;
 };
 
-function getSupabaseConfig() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-  if (!url || !anonKey) {
-    throw new Error('Supabase auth is not configured.');
-  }
-
-  return { url, anonKey };
-}
-
 function isEmailAutoconfirmEnabled() {
   return String(process.env.ENABLE_EMAIL_AUTOCONFIRM ?? '').toLowerCase() === 'true';
-}
-
-function getPublicSiteUrl() {
-  const candidate =
-    process.env.NEXT_PUBLIC_SITE_URL ||
-    process.env.SITE_URL ||
-    process.env.NEXT_PUBLIC_APP_URL ||
-    'https://shidao.ru';
-  return candidate.replace(/\/+$/, '');
 }
 
 function mapSignupError(rawMessage: string) {
@@ -62,7 +43,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { url, anonKey } = getSupabaseConfig();
+    const { url, anonKey } = getSupabasePublicConfig();
     const autoConfirmEnabled = isEmailAutoconfirmEnabled();
     const emailRedirectTo = new URL('/auth/confirm', getPublicSiteUrl());
     emailRedirectTo.searchParams.set('next', '/login?confirmed=1');

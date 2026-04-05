@@ -1,36 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { isEmail } from '@/lib/auth';
+import { getPublicSiteUrl, getSupabasePublicConfig } from '@/lib/server/auth-config';
 
 export const runtime = 'nodejs';
-
-function getSupabaseConfig() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-  if (!url || !anonKey) {
-    throw new Error('Supabase auth is not configured.');
-  }
-
-  return { url, anonKey };
-}
-
-function getPublicSiteUrl() {
-  const candidate =
-    process.env.NEXT_PUBLIC_SITE_URL ||
-    process.env.SITE_URL ||
-    process.env.NEXT_PUBLIC_APP_URL ||
-    'https://shidao.ru';
-  return candidate.replace(/\/+$/, '');
-}
 
 export async function POST(req: NextRequest) {
   try {
     const body = (await req.json()) as { email?: string };
     const email = (body.email ?? '').trim().toLowerCase();
-    if (!email || !/.+@.+\..+/.test(email)) {
+    if (!isEmail(email)) {
       return NextResponse.json({ error: 'Укажите корректный email.' }, { status: 400 });
     }
 
-    const { url, anonKey } = getSupabaseConfig();
+    const { url, anonKey } = getSupabasePublicConfig();
     const redirectTo = new URL('/auth/confirm', getPublicSiteUrl());
     redirectTo.searchParams.set('next', '/reset-password');
 

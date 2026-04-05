@@ -1,27 +1,47 @@
-# Авторизация и профили (апрель 2026)
+# Авторизация и маршрутизация (актуально на апрель 2026)
 
-## Принципы
-- Источник истины для аутентификации — только `auth.users`.
-- Профили разделены явно: `parent`, `teacher`, `student`.
-- Один `auth.users.id` может иметь и `parent`, и `teacher` профиль.
-- Роль-переключатель в домене не используется.
+## Что считается нормой
+- Единая точка входа: `/login`.
+- Серверный auth-flow через API-роуты (`/api/auth/*`) и внутреннюю app-session cookie.
+- Единый callback подтверждений: `/auth/confirm`.
+- Единый приватный вход: `/dashboard` (без role-segments в URL).
 
-## Единый вход
-Маршрут: `/login`.
+## Login flow
+`POST /api/auth/login` принимает:
+- `identifier`: email взрослого или логин ученика;
+- `secret`: пароль или PIN.
 
-Поля:
-1. Email взрослого **или** логин ученика.
-2. Пароль.
+Порядок обработки:
+1. Нормализация `identifier`.
+2. Если `identifier` похож на email — password login взрослого.
+3. Если это не email — lookup ученика по `student.login`, затем password login через `student.internal_auth_email`.
+4. Если пароль не подошёл и это ученик — PIN fallback (`verify_user_pin`).
+5. После успеха пишется app-session и рассчитывается redirect:
+   - есть взрослые профили → `/dashboard`;
+   - профилей ещё нет → `/onboarding`.
 
-Если введён не-email, приложение ищет `student.login` и берёт внутренний email из `student.internal_auth_email` (технический слой совместимости), затем выполняет sign-in через Supabase Auth.
+## Confirm flow (`/auth/confirm`)
+Маршрут принимает `token_hash`, `type`, `next` и обрабатывает типы:
+- `signup`, `email` → `/login?confirmed=1`;
+- `recovery` → `/reset-password`;
+- `invite` → `/onboarding`;
+- `email_change` → `/settings/profile?emailChanged=1`.
 
-## Маршрутизация после входа
-1. Есть `student` по `student.user_id = auth.uid()` → `/dashboard/student`.
-2. Есть и `teacher`, и `parent` → `/dashboard/select-profile`.
-3. Только `teacher` → `/dashboard/teacher`.
-4. Только `parent` → `/dashboard/parent`.
-5. Нет профилей → `/onboarding`.
+`next` нормализуется только в безопасный внутренний путь (`/...`) с fallback по типу подтверждения.
 
-## Онбординг
-- `parent`: создаётся только строка в `parent`.
-- `teacher`: создаются `teacher`, `school`, `school_teacher(role='owner')`, первый `class`, `class_teacher`.
+## Signup / Recovery / Invite / Email change
+- Signup (`/api/auth/signup`) создаёт взрослый auth-user и отправляет на check-email или login (в зависимости от `ENABLE_EMAIL_AUTOCONFIRM`).
+- Recovery (`/api/auth/recovery`) отправляет письмо восстановления с callback на `/auth/confirm`.
+- Invite (`/api/admin/invite`) отправляется через Supabase admin invite API, callback тот же `/auth/confirm`.
+- Email change (`/api/settings/profile/email`) подтверждается текущим паролем и ведёт через `/auth/confirm`.
+
+## Onboarding и dashboard routing
+- Взрослый без профиля попадает на `/onboarding`.
+- После выбора роли создаётся соответствующий профиль и фиксируется `last_active_profile`.
+- Если профили уже есть — вход сразу в `/dashboard`, активный кабинет берётся из `user_preference.last_active_profile`.
+
+## PIN слой (без продуктовых изменений)
+- PIN хранится только в `user_security.pin_hash`.
+- Изменение PIN: `/api/settings/security/pin`.
+- При уже настроенном PIN действие подтверждается текущим паролем или старым PIN.
+- Телефонный auth/SMS сейчас не внедрён и не является частью текущего потока.

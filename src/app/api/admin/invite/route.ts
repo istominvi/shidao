@@ -1,17 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { isEmail } from '@/lib/auth';
+import { getPublicSiteUrl } from '@/lib/server/auth-config';
 import { readAppSession } from '@/lib/server/app-session';
 import { getUserContextById, inviteUserByEmail } from '@/lib/server/supabase-admin';
 
 export const runtime = 'nodejs';
-
-function getPublicSiteUrl() {
-  const candidate =
-    process.env.NEXT_PUBLIC_SITE_URL ||
-    process.env.SITE_URL ||
-    process.env.NEXT_PUBLIC_APP_URL ||
-    'https://shidao.ru';
-  return candidate.replace(/\/+$/, '');
-}
 
 export async function POST(req: NextRequest) {
   try {
@@ -27,7 +20,7 @@ export async function POST(req: NextRequest) {
 
     const body = (await req.json()) as { email?: string };
     const email = (body.email ?? '').trim().toLowerCase();
-    if (!email || !/.+@.+\..+/.test(email)) {
+    if (!isEmail(email)) {
       return NextResponse.json({ error: 'Укажите корректный email.' }, { status: 400 });
     }
 

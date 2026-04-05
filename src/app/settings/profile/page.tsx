@@ -119,9 +119,9 @@ function ProfileSettingsPageContent() {
         </div>
 
         <div className="glass rounded-3xl p-6 md:p-8">
-          <p className="chip bg-sky-100 text-sky-700">Invite flow</p>
+          <p className="chip bg-sky-100 text-sky-700">Приглашения</p>
           <h2 className="mt-4 text-3xl font-black">Пригласить пользователя</h2>
-          <p className="mt-2 text-sm text-neutral-600">Минимальный server action для отправки invite через Supabase admin flow.</p>
+          <p className="mt-2 text-sm text-neutral-600">Отправка приглашения через серверный admin-flow Supabase.</p>
 
           <form onSubmit={onInviteSubmit} className="mt-6 space-y-4">
             <label className="block">
