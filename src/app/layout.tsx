@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { Noto_Sans, Noto_Sans_SC, Noto_Serif, Noto_Serif_SC } from 'next/font/google';
-import { SessionViewProvider } from '@/components/use-session-view';
+import { SessionViewProvider } from '@/components/session-view-provider';
 import { readSessionViewServer } from '@/lib/server/session-view';
 import './globals.css';
 

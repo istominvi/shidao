@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import { ROUTES } from '@/lib/auth';
+import { isRouteWithin } from '@/lib/routes';
 import { resolveAccessPolicy } from '@/lib/server/access-policy';
 import { readRequestPathname } from '@/lib/server/request-pathname';
 
@@ -15,7 +16,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   }
 
   const pathname = await readRequestPathname();
-  const isOnboardingRoute = pathname?.startsWith(ROUTES.onboarding) ?? false;
+  const isOnboardingRoute = isRouteWithin(pathname, ROUTES.onboarding);
 
   if (resolution.status === 'adult-without-profile' && !isOnboardingRoute) {
     redirect(ROUTES.onboarding);

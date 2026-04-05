@@ -1,5 +1,5 @@
-import { ROUTES } from '@/lib/auth';
-import type { AccessResolution } from '@/lib/server/access-policy';
+import { ROUTES } from './auth';
+import type { AccessResolution } from './server/access-policy';
 
 function toSafePath(input: string | null | undefined, fallback: string) {
   if (!input) return fallback;

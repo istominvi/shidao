@@ -15,11 +15,13 @@ export type SessionGuestView = {
 export type SessionStudentView = SessionIdentity & {
   kind: 'student';
   authenticated: true;
+  hasPin: boolean;
 };
 
 export type SessionAdultView = SessionIdentity & {
   kind: 'adult';
   authenticated: true;
+  hasPin: boolean;
   activeProfile: ProfileKind | null;
   availableProfiles: ProfileKind[];
 };

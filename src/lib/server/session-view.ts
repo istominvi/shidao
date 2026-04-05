@@ -16,6 +16,7 @@ export async function readSessionViewServer(): Promise<SessionView> {
       return {
         kind: 'student',
         authenticated: true,
+        hasPin: ctx.hasPin,
         userId: ctx.userId,
         fullName: ctx.fullName,
         email: ctx.email,
@@ -26,6 +27,7 @@ export async function readSessionViewServer(): Promise<SessionView> {
     return {
       kind: 'adult',
       authenticated: true,
+      hasPin: ctx.hasPin,
       userId: ctx.userId,
       fullName: ctx.fullName,
       email: ctx.email,

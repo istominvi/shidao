@@ -1,15 +1,8 @@
 'use client';
 
-import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
+import { useCallback, useMemo, useState, type ReactNode } from 'react';
+import { SessionViewContext } from '@/components/session-view-context';
 import type { SessionView } from '@/lib/session-view';
-
-type SessionViewContextValue = {
-  state: SessionView;
-  sessionResolved: boolean;
-  refetchSession: () => Promise<void>;
-};
-
-const SessionViewContext = createContext<SessionViewContextValue | null>(null);
 
 type SessionViewProviderProps = {
   initialState: SessionView;
@@ -41,14 +34,4 @@ export function SessionViewProvider({ initialState, children }: SessionViewProvi
   );
 
   return <SessionViewContext.Provider value={value}>{children}</SessionViewContext.Provider>;
-}
-
-export function useSessionView() {
-  const context = useContext(SessionViewContext);
-
-  if (!context) {
-    throw new Error('useSessionView must be used inside SessionViewProvider.');
-  }
-
-  return context;
 }
