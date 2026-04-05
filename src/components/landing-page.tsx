@@ -138,7 +138,7 @@ export function LandingPage() {
                   <Link href={ROUTES.join} className="landing-btn landing-btn-primary min-h-11 flex-1 sm:flex-none">Создать аккаунт</Link>
                 </>
               ) : state.authenticated ? (
-                <SessionNavActions state={state} variant="landing" />
+                <SessionNavActions state={state} variant="landing" portalMenu />
               ) : (
                 <div className="landing-btn landing-btn-muted min-h-11 flex-1 text-sm text-neutral-500 sm:flex-none">Проверяем сессию…</div>
               )}

@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { PROFILE_LABELS, ROUTES, type ProfileKind } from '@/lib/auth';
 import { signOutViaServer } from '@/lib/auth-flow';
@@ -10,11 +11,23 @@ import type { SessionView } from '@/components/use-session-view';
 type SessionNavActionsProps = {
   state: SessionView;
   variant?: 'top-nav' | 'landing';
+  portalMenu?: boolean;
 };
 
-export function SessionNavActions({ state, variant = 'top-nav' }: SessionNavActionsProps) {
+type MenuPosition = {
+  top: number;
+  left: number;
+};
+
+const MENU_WIDTH = 288;
+const MENU_GAP = 8;
+const VIEWPORT_PADDING = 8;
+
+export function SessionNavActions({ state, variant = 'top-nav', portalMenu = false }: SessionNavActionsProps) {
   const router = useRouter();
+  const containerRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
+  const [menuPosition, setMenuPosition] = useState<MenuPosition | null>(null);
 
   const canSwitch = useMemo(
     () => state.actorKind === 'adult' && (state.availableAdultProfiles?.length ?? 0) > 1,
@@ -33,6 +46,57 @@ export function SessionNavActions({ state, variant = 'top-nav' }: SessionNavActi
     () => (state.availableAdultProfiles ?? []).filter((profile) => profile !== state.activeProfile),
     [state.availableAdultProfiles, state.activeProfile]
   );
+
+  const updateMenuPosition = useCallback(() => {
+    if (!portalMenu || !containerRef.current) return;
+
+    const rect = containerRef.current.getBoundingClientRect();
+    const maxLeft = window.innerWidth - MENU_WIDTH - VIEWPORT_PADDING;
+    const left = Math.min(Math.max(rect.right - MENU_WIDTH, VIEWPORT_PADDING), maxLeft);
+
+    setMenuPosition({
+      top: rect.bottom + MENU_GAP,
+      left
+    });
+  }, [portalMenu]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const onPointerDown = (event: MouseEvent) => {
+      if (!containerRef.current?.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    };
+
+    const onEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', onPointerDown);
+    document.addEventListener('keydown', onEscape);
+
+    return () => {
+      document.removeEventListener('mousedown', onPointerDown);
+      document.removeEventListener('keydown', onEscape);
+    };
+  }, [open]);
+
+  useEffect(() => {
+    if (!open || !portalMenu) return;
+
+    updateMenuPosition();
+
+    window.addEventListener('resize', updateMenuPosition);
+    window.addEventListener('scroll', updateMenuPosition, true);
+
+    return () => {
+      window.removeEventListener('resize', updateMenuPosition);
+      window.removeEventListener('scroll', updateMenuPosition, true);
+    };
+  }, [open, portalMenu, updateMenuPosition]);
 
   async function handleSwitch(profile: ProfileKind) {
     await fetch('/api/preferences/profile', {
@@ -53,8 +117,69 @@ export function SessionNavActions({ state, variant = 'top-nav' }: SessionNavActi
     router.refresh();
   }
 
+  const menu = (
+    <div
+      className={`landing-surface w-72 rounded-2xl border border-black/10 bg-white/95 p-2 shadow-xl backdrop-blur-xl ${portalMenu ? 'fixed z-[260]' : 'absolute right-0 z-[120] mt-2'}`}
+      style={portalMenu && menuPosition ? { top: menuPosition.top, left: menuPosition.left } : undefined}
+    >
+      <div className="px-3 py-2">
+        <p className="text-sm font-semibold">{state.fullName ?? 'Пользователь'}</p>
+        <p className="text-xs text-neutral-500">{state.email ?? 'Без email'}</p>
+      </div>
+
+      {canSwitch && (
+        <div className="border-t border-black/5 py-1">
+          {switchTargets.map((profile) => (
+            <button
+              key={profile}
+              className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm hover:bg-black/5"
+              onClick={() => handleSwitch(profile)}
+              type="button"
+            >
+              <span>Перейти в {PROFILE_LABELS[profile].toLowerCase()}</span>
+              <span className="text-xs text-neutral-500">Сменить</span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {!canSwitch && missingProfile && (
+        <div className="border-t border-black/5 py-1">
+          <Link
+            href={`${ROUTES.onboarding}?mode=add-profile`}
+            className="flex items-center justify-between rounded-xl px-3 py-2 text-sm hover:bg-black/5"
+            onClick={() => setOpen(false)}
+          >
+            <span>Добавить {PROFILE_LABELS[missingProfile].toLowerCase()}</span>
+            <span className="text-xs text-neutral-500">Открыть</span>
+          </Link>
+        </div>
+      )}
+
+      <div className="border-t border-black/5 py-1">
+        <Link
+          href={ROUTES.settingsProfile}
+          className="block rounded-xl px-3 py-2 text-sm hover:bg-black/5"
+          onClick={() => setOpen(false)}
+        >
+          Профиль и email
+        </Link>
+        <Link
+          href={ROUTES.settingsSecurity}
+          className="block rounded-xl px-3 py-2 text-sm hover:bg-black/5"
+          onClick={() => setOpen(false)}
+        >
+          Настройки безопасности
+        </Link>
+        <button className="w-full rounded-xl px-3 py-2 text-left text-sm hover:bg-black/5" onClick={handleSignOut} type="button">
+          Выйти
+        </button>
+      </div>
+    </div>
+  );
+
   return (
-    <div className="relative">
+    <div ref={containerRef} className="relative">
       <button
         type="button"
         onClick={() => setOpen((prev) => !prev)}
@@ -69,63 +194,7 @@ export function SessionNavActions({ state, variant = 'top-nav' }: SessionNavActi
         </span>
       </button>
 
-      {open && (
-        <div className="landing-surface absolute right-0 z-[120] mt-2 w-72 rounded-2xl border border-black/10 bg-white/95 p-2 shadow-xl backdrop-blur-xl">
-          <div className="px-3 py-2">
-            <p className="text-sm font-semibold">{state.fullName ?? 'Пользователь'}</p>
-            <p className="text-xs text-neutral-500">{state.email ?? 'Без email'}</p>
-          </div>
-
-          {canSwitch && (
-            <div className="border-t border-black/5 py-1">
-              {switchTargets.map((profile) => (
-                <button
-                  key={profile}
-                  className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm hover:bg-black/5"
-                  onClick={() => handleSwitch(profile)}
-                  type="button"
-                >
-                  <span>Перейти в {PROFILE_LABELS[profile].toLowerCase()}</span>
-                  <span className="text-xs text-neutral-500">Сменить</span>
-                </button>
-              ))}
-            </div>
-          )}
-
-          {!canSwitch && missingProfile && (
-            <div className="border-t border-black/5 py-1">
-              <Link
-                href={`${ROUTES.onboarding}?mode=add-profile`}
-                className="flex items-center justify-between rounded-xl px-3 py-2 text-sm hover:bg-black/5"
-                onClick={() => setOpen(false)}
-              >
-                <span>Добавить {PROFILE_LABELS[missingProfile].toLowerCase()}</span>
-                <span className="text-xs text-neutral-500">Открыть</span>
-              </Link>
-            </div>
-          )}
-
-          <div className="border-t border-black/5 py-1">
-            <Link
-              href={ROUTES.settingsProfile}
-              className="block rounded-xl px-3 py-2 text-sm hover:bg-black/5"
-              onClick={() => setOpen(false)}
-            >
-              Профиль и email
-            </Link>
-            <Link
-              href={ROUTES.settingsSecurity}
-              className="block rounded-xl px-3 py-2 text-sm hover:bg-black/5"
-              onClick={() => setOpen(false)}
-            >
-              Настройки безопасности
-            </Link>
-            <button className="w-full rounded-xl px-3 py-2 text-left text-sm hover:bg-black/5" onClick={handleSignOut} type="button">
-              Выйти
-            </button>
-          </div>
-        </div>
-      )}
+      {open && (portalMenu ? createPortal(menu, document.body) : menu)}
     </div>
   );
 }
