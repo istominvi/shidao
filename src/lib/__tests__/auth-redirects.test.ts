@@ -8,7 +8,7 @@ test('afterLogin sends users to dashboard by default', () => {
 });
 
 test('afterLogin keeps safe relative path', () => {
-  assert.equal(afterLogin('/settings/profile'), '/settings/profile');
+  assert.equal(afterLogin(ROUTES.settingsProfile), ROUTES.settingsProfile);
 });
 
 test('afterLogin drops unsafe redirect path', () => {

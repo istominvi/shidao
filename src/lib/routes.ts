@@ -1,11 +1,7 @@
 import { ROUTES } from './auth';
 
-export const ROUTE_PREFIXES = {
-  settings: '/settings'
-} as const;
-
 export const SETTINGS_ROUTES = [ROUTES.settingsProfile, ROUTES.settingsSecurity, ROUTES.settingsTeam] as const;
-export const PRIVATE_ROUTE_PREFIXES = [ROUTES.dashboard, ROUTES.onboarding, ROUTE_PREFIXES.settings] as const;
+export const PRIVATE_ROUTE_PREFIXES = [ROUTES.dashboard, ROUTES.onboarding, ROUTES.settings] as const;
 
 export function isRouteWithin(pathname: string | null | undefined, prefix: string) {
   if (!pathname) return false;
@@ -13,14 +9,11 @@ export function isRouteWithin(pathname: string | null | undefined, prefix: strin
 }
 
 export function isSettingsRoute(pathname: string | null | undefined) {
-  return isRouteWithin(pathname, ROUTE_PREFIXES.settings);
+  return isRouteWithin(pathname, ROUTES.settings);
 }
-
-export function isAppRoute(pathname: string | null | undefined) {
+export function isProtectedAppRoute(pathname: string | null | undefined) {
   return PRIVATE_ROUTE_PREFIXES.some((prefix) => isRouteWithin(pathname, prefix));
 }
-
-export const isProtectedAppRoute = isAppRoute;
 
 export function isGuardedAuthRoute(pathname: string | null | undefined) {
   return pathname === ROUTES.login || pathname === ROUTES.join;

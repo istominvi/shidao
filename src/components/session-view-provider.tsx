@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo, useState, type ReactNode } from 'react';
 import { SessionViewContext } from '@/components/session-view-context';
-import type { SessionView } from '@/lib/session-view';
+import { GUEST_SESSION_VIEW, toSessionView, type SessionView } from '@/lib/session-view';
 
 type SessionViewProviderProps = {
   initialState: SessionView;
@@ -10,7 +10,7 @@ type SessionViewProviderProps = {
 };
 
 export function SessionViewProvider({ initialState, children }: SessionViewProviderProps) {
-  const [state, setState] = useState<SessionView>(initialState);
+  const [state, setState] = useState<SessionView>(() => toSessionView(initialState));
   const [sessionResolved, setSessionResolved] = useState(true);
 
   const refetchSession = useCallback(async () => {
@@ -19,10 +19,10 @@ export function SessionViewProvider({ initialState, children }: SessionViewProvi
     try {
       const response = await fetch('/api/auth/session', { cache: 'no-store' });
 
-      const payload = (await response.json().catch(() => null)) as SessionView | null;
-      setState(payload ?? { kind: 'guest', authenticated: false });
+      const payload = (await response.json().catch(() => null)) as unknown;
+      setState(toSessionView(payload));
     } catch {
-      setState({ kind: 'guest', authenticated: false });
+      setState(GUEST_SESSION_VIEW);
     } finally {
       setSessionResolved(true);
     }

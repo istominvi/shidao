@@ -5,14 +5,14 @@ import { usePathname } from 'next/navigation';
 import { ROUTES } from '@/lib/auth';
 import { SessionNavActions } from '@/components/session-nav-actions';
 import { useSessionView } from '@/components/use-session-view';
-import { isAppRoute } from '@/lib/routes';
+import { isProtectedAppRoute } from '@/lib/routes';
 
 export function TopNav() {
   const pathname = usePathname();
   const { state, sessionResolved } = useSessionView();
 
   const isLoginPage = pathname === ROUTES.login;
-  const isProtectedRoute = isAppRoute(pathname);
+  const isProtectedRoute = isProtectedAppRoute(pathname);
 
   const navAction = (() => {
     switch (state.kind) {

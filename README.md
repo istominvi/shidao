@@ -62,7 +62,7 @@ APP_SESSION_SECRET=<your-generated-secret>
 
 ### Route/source-of-truth helpers
 - `src/lib/auth.ts` — канонические URL-константы (`ROUTES`).
-- `src/lib/routes.ts` — route-aware helpers (`isAppRoute`, `isSettingsRoute`, `isGuardedAuthRoute`, `isSafeRelativePath`).
+- `src/lib/routes.ts` — route-aware helpers (`isProtectedAppRoute`, `isSettingsRoute`, `isGuardedAuthRoute`, `isSafeRelativePath`).
 - UI и redirect-политика используют эти helper'ы вместо строковых префиксов в компонентах.
 
 ## Protected/private зона и redirect policy
@@ -110,7 +110,7 @@ APP_SESSION_SECRET=<your-generated-secret>
    - достраивает user context через server/admin слой;
    - возвращает нормализованный `SessionView`.
 2. Root layout выполняет этот шаг на сервере и передаёт `initialState` в клиентский provider.
-3. Клиент может только revalidate (`/api/auth/session` через `refetchSession`) после login/logout/profile switch, но не определяет контракт сам.
+3. Клиент может только revalidate (`/api/auth/session` через `refetchSession`) после login/logout/profile switch, а runtime-normalization (`toSessionView`) удерживает UI в рамках канонического union-контракта.
 
 Итог: первичная навигационная развилка происходит на сервере, а клиентский state — это проекция и актуализация уже серверного решения.
 

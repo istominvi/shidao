@@ -1,12 +1,12 @@
 import { toInitials } from '@/lib/auth';
-import type { SessionView } from '@/lib/session-view';
+import { GUEST_SESSION_VIEW, type SessionView } from '@/lib/session-view';
 import { readAppSession } from '@/lib/server/app-session';
 import { getUserContextById } from '@/lib/server/supabase-admin';
 
 export async function readSessionViewServer(): Promise<SessionView> {
   const session = await readAppSession();
   if (!session) {
-    return { kind: 'guest', authenticated: false };
+    return GUEST_SESSION_VIEW;
   }
 
   try {
