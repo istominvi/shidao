@@ -285,12 +285,18 @@ Helpers/RPC:
 ## Test strategy (MVP)
 
 - `npm run test:compile` — компиляция `src/**/*.test.ts` в `.test-dist` через `tsc -p tsconfig.test.json`.
+- `scripts/run-node-tests.mjs` оставлен минимальным и управляемым: он только собирает `.test-dist/**/*.test.js` и применяет include/exclude фильтры без дополнительной магии.
 - `npm run test` (основной стабильный pipeline) = `npm run test:unit`:
   - запускает все node:test сценарии **кроме** browser-smoke (`--exclude browser-smoke`);
   - сюда входят unit + integration/smoke без реального браузера (включая HTTP e2e-smoke слой на `fetch`).
 - `npm run test:browser`:
   - запускает только browser-smoke тесты (`--include browser-smoke`);
-  - использует реальный Chromium через Playwright.
+  - использует реальный Chromium через Playwright;
+  - по умолчанию пытается запускать приложение в production-like режиме (`next start`), если уже есть `.next/BUILD_ID`;
+  - если production-сборка не найдена локально, автоматически и явно fallback-ится на `next dev`.
+- `npm run test:browser:ci`:
+  - включает strict режим browser smoke (`REQUIRE_BROWSER_SMOKE=1`) и требует production-like server mode;
+  - если Playwright/Chromium недоступны или отсутствует production-сборка, это **ошибка**, а не `skip`.
 - `npm run test:all`:
   - последовательно запускает `test:unit` и `test:browser`.
 - Это сохраняет lightweight stack (`node:test` + TypeScript) и делает браузерный слой явным и управляемым.
@@ -308,6 +314,9 @@ Helpers/RPC:
   - guest на protected route (`/dashboard`) перенаправляется на `/login`;
   - авторизованный пользователь на `/login` уходит по access policy на `/dashboard`.
 - Тесты запускаются в реальном браузере через `playwright`.
-  - Если пакет `playwright` не установлен, browser-smoke тесты помечаются как `skip` с причиной.
-  - Если пакет установлен, но отсутствуют browser binaries, тесты тоже помечаются как `skip` с явной инструкцией выполнить `npx playwright install chromium` (или `npx playwright install`).
-  - Поэтому `npm run test` остаётся стабильным в средах без браузеров, а `npm run test:browser` остаётся прозрачным и предсказуемым.
+  - Local-friendly режим (`npm run test:browser`): если пакет `playwright` не установлен или отсутствуют browser binaries, тесты помечаются как `skip` с понятной причиной.
+  - CI-strict режим (`npm run test:browser:ci`, либо `CI=true`/`REQUIRE_BROWSER_SMOKE=1`): такие же условия дают **fail**, чтобы в CI нельзя было «тихо» пропустить browser smoke.
+  - Для browser server mode:
+    - по умолчанию используется `BROWSER_SMOKE_SERVER_MODE=prod` (то есть `next start` на уже собранном приложении);
+    - если локально сборка отсутствует, тест раннер печатает предупреждение и использует `next dev`;
+    - в strict режиме fallback запрещён — сначала нужен `npm run build`.
