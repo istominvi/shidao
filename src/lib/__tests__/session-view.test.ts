@@ -49,6 +49,27 @@ test('toSessionView keeps adult profile contract strict', () => {
 
 test('toSessionView falls back to guest on invalid payload', () => {
   assert.deepEqual(toSessionView({ kind: 'adult', authenticated: true }), GUEST_SESSION_VIEW);
+  assert.deepEqual(toSessionView({ kind: 'student', authenticated: true, userId: 'u-1' }), GUEST_SESSION_VIEW);
   assert.deepEqual(toSessionView(null), GUEST_SESSION_VIEW);
   assert.deepEqual(toSessionView({ kind: 'unknown', authenticated: true }), GUEST_SESSION_VIEW);
+});
+
+test('toSessionView keeps degraded contract without introducing hasPin', () => {
+  const actual = toSessionView({
+    kind: 'degraded',
+    authenticated: true,
+    reason: 'context_unavailable',
+    hasPin: true,
+    email: 'degraded@example.com'
+  });
+
+  assert.deepEqual(actual, {
+    kind: 'degraded',
+    authenticated: true,
+    reason: 'context_unavailable',
+    email: 'degraded@example.com',
+    userId: undefined,
+    fullName: undefined,
+    initials: undefined
+  });
 });

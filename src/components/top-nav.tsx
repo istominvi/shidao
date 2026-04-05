@@ -5,14 +5,15 @@ import { usePathname } from 'next/navigation';
 import { ROUTES } from '@/lib/auth';
 import { SessionNavActions } from '@/components/session-nav-actions';
 import { useSessionView } from '@/components/use-session-view';
-import { isProtectedAppRoute } from '@/lib/routes';
+import { isProtectedAppRoute, isSettingsRoute } from '@/lib/routes';
 
 export function TopNav() {
   const pathname = usePathname();
   const { state, sessionResolved } = useSessionView();
 
   const isLoginPage = pathname === ROUTES.login;
-  const isProtectedRoute = isProtectedAppRoute(pathname);
+  const onSettingsRoute = isSettingsRoute(pathname);
+  const shouldHideGuestCta = isProtectedAppRoute(pathname) || onSettingsRoute;
 
   const navAction = (() => {
     switch (state.kind) {
@@ -21,7 +22,7 @@ export function TopNav() {
         return <SessionNavActions state={state} />;
       case 'guest':
       case 'degraded':
-        if (sessionResolved && !isProtectedRoute) {
+        if (sessionResolved && !shouldHideGuestCta) {
           if (isLoginPage) {
             return (
               <Link href={ROUTES.join} className="landing-btn landing-btn-primary min-h-11 px-5">

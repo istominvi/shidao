@@ -111,6 +111,7 @@ APP_SESSION_SECRET=<your-generated-secret>
    - возвращает нормализованный `SessionView`.
 2. Root layout выполняет этот шаг на сервере и передаёт `initialState` в клиентский provider.
 3. Клиент может только revalidate (`/api/auth/session` через `refetchSession`) после login/logout/profile switch, а runtime-normalization (`toSessionView`) удерживает UI в рамках канонического union-контракта.
+4. Страница `/settings/security` получает `hasPin` server-first через `readSessionViewServer()` и не делает отдельный client-side fetch сессии.
 
 Итог: первичная навигационная развилка происходит на сервере, а клиентский state — это проекция и актуализация уже серверного решения.
 

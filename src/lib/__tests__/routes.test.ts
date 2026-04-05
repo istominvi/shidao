@@ -19,7 +19,15 @@ test('isProtectedAppRoute covers dashboard, onboarding, and settings tree', () =
   assert.equal(isProtectedAppRoute('/dashboard'), true);
   assert.equal(isProtectedAppRoute('/onboarding/step-2'), true);
   assert.equal(isProtectedAppRoute('/settings/team'), true);
+  assert.equal(isProtectedAppRoute('/settings-security'), false);
   assert.equal(isProtectedAppRoute('/login'), false);
+  assert.equal(isProtectedAppRoute(null), false);
+});
+
+test('settings routes are recognized only via settings tree helper', () => {
+  assert.equal(isSettingsRoute('/settings/security'), true);
+  assert.equal(isSettingsRoute('/settings-security'), false);
+  assert.equal(isSettingsRoute(undefined), false);
 });
 
 test('isGuardedAuthRoute includes only login and join routes', () => {
