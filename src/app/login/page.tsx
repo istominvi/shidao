@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { FormEvent, Suspense, useMemo, useState } from 'react';
-import { PageHero, ProductShell, StatusMessage } from '@/components/product-shell';
+import { ProductShell, StatusMessage } from '@/components/product-shell';
 import { loginWithIdentifier } from '@/lib/auth-flow';
 import { ROUTES } from '@/lib/auth';
 
@@ -51,16 +51,10 @@ function LoginPageContent() {
 
   return (
     <ProductShell>
-      <PageHero
-        eyebrow="Единый вход в Shidao"
-        title="Вход в Shidao"
-        description="Взрослые входят по email, ученики — по логину."
-      />
-
-      <div className="mx-auto mt-4 w-full max-w-xl">
+      <div className="mx-auto w-full max-w-xl">
         <div className="primary-form-card">
           <h2 className="text-2xl font-black tracking-tight">Войти в кабинет</h2>
-          <p className="mt-2 text-sm text-neutral-600">Введите данные доступа, которые вы получили при регистрации или от взрослого аккаунта.</p>
+          <p className="mt-2 text-sm text-neutral-600">Введите данные доступа, которые вы получили при регистрации или от учителя/родителя</p>
 
           {successHint && (
             <div className="mt-4">
