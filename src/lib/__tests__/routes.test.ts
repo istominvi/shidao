@@ -1,11 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { isAppRoute, isGuardedAuthRoute, isProtectedAppRoute, isRouteWithin, isSafeRelativePath, isSettingsRoute } from '../routes';
+import { isGuardedAuthRoute, isProtectedAppRoute, isRouteWithin, isSafeRelativePath, isSettingsRoute } from '../routes';
+import { ROUTES } from '../auth';
 
 test('isRouteWithin matches exact route and nested route', () => {
-  assert.equal(isRouteWithin('/settings', '/settings'), true);
-  assert.equal(isRouteWithin('/settings/security', '/settings'), true);
-  assert.equal(isRouteWithin('/settings-security', '/settings'), false);
+  assert.equal(isRouteWithin(ROUTES.settings, ROUTES.settings), true);
+  assert.equal(isRouteWithin(ROUTES.settingsSecurity, ROUTES.settings), true);
+  assert.equal(isRouteWithin('/settings-security', ROUTES.settings), false);
 });
 
 test('isSettingsRoute matches settings tree only', () => {
@@ -19,12 +20,6 @@ test('isProtectedAppRoute covers dashboard, onboarding, and settings tree', () =
   assert.equal(isProtectedAppRoute('/onboarding/step-2'), true);
   assert.equal(isProtectedAppRoute('/settings/team'), true);
   assert.equal(isProtectedAppRoute('/login'), false);
-});
-
-test('isAppRoute stays aligned with isProtectedAppRoute', () => {
-  assert.equal(isAppRoute('/dashboard'), true);
-  assert.equal(isAppRoute('/settings/security'), true);
-  assert.equal(isAppRoute('/join'), false);
 });
 
 test('isGuardedAuthRoute includes only login and join routes', () => {

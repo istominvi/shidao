@@ -15,6 +15,7 @@ export const ROUTES = {
   resetPassword: '/reset-password',
   onboarding: '/onboarding',
   dashboard: '/dashboard',
+  settings: '/settings',
   settingsSecurity: '/settings/security',
   settingsProfile: '/settings/profile',
   settingsTeam: '/settings/team'
