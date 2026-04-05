@@ -237,7 +237,7 @@ Helpers/RPC:
 - Если секреты могли попасть в логи/чаты/скриншоты — ротируйте их.
 
 ## Test strategy (MVP)
-- `npm run test` компилирует и запускает `*.test.ts` по всему `src` (`node:test`), а не только `src/lib`.
+- `npm run test` сначала компилирует `src/**/*.test.ts` в `.test-dist`, затем рекурсивно запускает все `.test-dist/**/*.test.js` через `node:test` (не только `src/lib`).
 - Текущий контур покрывает:
   - `src/lib/__tests__`: route matching, route-guards, safe redirect нормализацию, auth redirect policy;
   - `src/components/__tests__`: session-driven nav branching (TopNav + landing header), guest/auth CTA contract и security-page auth gate contract;
