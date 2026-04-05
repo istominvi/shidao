@@ -28,6 +28,16 @@ type PlaywrightChromium = {
         ) => Promise<void>;
         content: () => Promise<string>;
         url: () => string;
+        waitForURL: (
+          url: string | RegExp,
+          options?: { timeout?: number; waitUntil?: "domcontentloaded" },
+        ) => Promise<void>;
+        getByRole: (
+          role: "button" | "link",
+          options: { name: string | RegExp },
+        ) => {
+          click: () => Promise<void>;
+        };
       }>;
       close: () => Promise<void>;
     }>;
@@ -40,6 +50,7 @@ let appServerProcess: ChildProcess | null = null;
 let mockServer: ReturnType<typeof createServer> | null = null;
 let chromium: PlaywrightChromium | null = null;
 let browserSmokeUnavailableReason: string | null = null;
+let appServerOutput = "";
 
 const strictBrowserSmoke =
   process.env.REQUIRE_BROWSER_SMOKE === "1" || process.env.CI === "true";
@@ -219,11 +230,22 @@ function handleMockSupabase(
   json(response, 404, { message: `Unhandled path: ${requestUrl.pathname}` });
 }
 
-async function waitForAppReady(baseUrl: string) {
+function appendAppServerOutput(chunk: unknown) {
+  const text = typeof chunk === "string" ? chunk : String(chunk);
+  appServerOutput = `${appServerOutput}${text}`.slice(-4_000);
+}
+
+async function waitForAppReady(baseUrl: string, server: ChildProcess) {
   const timeoutAt = Date.now() + 60_000;
   let lastError: unknown = null;
 
   while (Date.now() < timeoutAt) {
+    if (server.exitCode !== null) {
+      throw new Error(
+        `app process exited before becoming ready (exit=${server.exitCode}, signal=${server.signalCode}). Output:\n${appServerOutput || "<no output>"}`,
+      );
+    }
+
     try {
       const response = await fetch(`${baseUrl}/`, {
         redirect: "manual",
@@ -240,7 +262,44 @@ async function waitForAppReady(baseUrl: string) {
     await new Promise((resolve) => setTimeout(resolve, 400));
   }
 
-  throw new Error(`app did not start in time: ${String(lastError)}`);
+  throw new Error(
+    `app did not start in time: ${String(lastError)}\nRecent output:\n${appServerOutput || "<no output>"}`,
+  );
+}
+
+async function terminateAppServer(server: ChildProcess) {
+  if (server.exitCode !== null || server.killed) return;
+
+  const waitExit = once(server, "exit").catch(() => undefined);
+  server.kill("SIGTERM");
+  await Promise.race([
+    waitExit,
+    new Promise((resolve) => setTimeout(resolve, 4_000)),
+  ]);
+
+  if (server.exitCode !== null || server.killed) return;
+
+  if (process.platform === "win32" && server.pid) {
+    await new Promise<void>((resolve) => {
+      const killer = spawn(
+        "taskkill",
+        ["/pid", String(server.pid), "/t", "/f"],
+        {
+          stdio: "ignore",
+          windowsHide: true,
+        },
+      );
+      killer.on("exit", () => resolve());
+      killer.on("error", () => resolve());
+    });
+    return;
+  }
+
+  server.kill("SIGKILL");
+  await Promise.race([
+    waitExit,
+    new Promise((resolve) => setTimeout(resolve, 2_000)),
+  ]);
 }
 
 async function openPage(options?: { cookie?: string }) {
@@ -339,28 +398,19 @@ before(async () => {
         NEXT_PUBLIC_SUPABASE_ANON_KEY: "e2e-anon-key",
         SUPABASE_SERVICE_ROLE_KEY: "e2e-service-role-key",
       },
-      stdio: "ignore",
-      detached: true,
+      stdio: ["ignore", "pipe", "pipe"],
     },
   );
-  appServerProcess.unref();
+  appServerOutput = "";
+  appServerProcess.stdout?.on("data", appendAppServerOutput);
+  appServerProcess.stderr?.on("data", appendAppServerOutput);
 
-  await waitForAppReady(`http://127.0.0.1:${appPort}`);
+  await waitForAppReady(`http://127.0.0.1:${appPort}`, appServerProcess);
 });
 
 after(async () => {
-  if (appServerProcess?.pid) {
-    try {
-      process.kill(-appServerProcess.pid, "SIGTERM");
-    } catch {
-      // process already exited
-    }
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    try {
-      process.kill(-appServerProcess.pid, "SIGKILL");
-    } catch {
-      // process already exited
-    }
+  if (appServerProcess) {
+    await terminateAppServer(appServerProcess);
   }
 
   if (mockServer) {
@@ -439,6 +489,51 @@ test("browser smoke: authenticated /login redirects by access policy", async (t)
   try {
     await runtime.page.goto("/login", { waitUntil: "domcontentloaded" });
     assert.equal(new URL(runtime.page.url()).pathname, "/dashboard");
+  } finally {
+    await runtime.close();
+  }
+});
+
+test("browser smoke: authenticated user can open profile menu on /", async (t) => {
+  if (browserSmokeUnavailableReason) {
+    t.skip(browserSmokeUnavailableReason);
+    return;
+  }
+
+  const runtime = await openPage({ cookie: authenticatedCookieHeader() });
+
+  try {
+    await runtime.page.goto("/", { waitUntil: "networkidle" });
+    await runtime.page.getByRole("button", { name: /E2E Adult/ }).click();
+    const html = await runtime.page.content();
+
+    assert.match(html, /Безопасность/);
+    assert.match(html, /Профиль и email/);
+  } finally {
+    await runtime.close();
+  }
+});
+
+test("browser smoke: authenticated user can navigate to /settings/security from header menu", async (t) => {
+  if (browserSmokeUnavailableReason) {
+    t.skip(browserSmokeUnavailableReason);
+    return;
+  }
+
+  const runtime = await openPage({ cookie: authenticatedCookieHeader() });
+
+  try {
+    await runtime.page.goto("/", { waitUntil: "networkidle" });
+    await runtime.page.getByRole("button", { name: /E2E Adult/ }).click();
+    await runtime.page.getByRole("link", { name: "Безопасность" }).click();
+    await runtime.page.waitForURL(/\/settings\/security$/, {
+      waitUntil: "domcontentloaded",
+    });
+    const html = await runtime.page.content();
+
+    assert.equal(new URL(runtime.page.url()).pathname, "/settings/security");
+    assert.match(html, /PIN-код входа/);
+    assert.match(html, /Статус: PIN настроен\./);
   } finally {
     await runtime.close();
   }
