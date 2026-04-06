@@ -5,6 +5,7 @@ import {
   ROUTES,
 } from "@/lib/auth";
 import { getSupabasePublicConfig } from "@/lib/server/auth-config";
+import { logger } from "@/lib/server/logger";
 
 type Json = Record<string, unknown>;
 
@@ -85,7 +86,7 @@ async function request<T>(
       payloadError?.message ??
       payloadError?.msg ??
       "Ошибка запроса к Supabase.";
-    console.error("[supabase-admin] request failed", {
+    logger.error("[supabase-admin] request failed", {
       path,
       method,
       status: response.status,
@@ -140,7 +141,7 @@ async function authPasswordSignIn(email: string, password: string) {
       msg?: string;
       code?: string;
     } | null;
-    console.warn("[auth-login] password grant rejected", {
+    logger.warn("[auth-login] password grant rejected", {
       status: response.status,
       code: payloadError?.code,
       message:
@@ -222,7 +223,7 @@ export async function ensureUserPreference(userId: string) {
       error instanceof Error
         ? error.message
         : "Unknown ensure_user_preference error";
-    console.warn(
+    logger.warn(
       "[auth-login] ensure_user_preference rpc failed, fallback to direct upsert",
       { userId, message },
     );
@@ -259,7 +260,7 @@ export async function setLastActiveProfile(
     if (!isFunctionMissingError(message)) {
       throw error;
     }
-    console.warn(
+    logger.warn(
       "[user-context] set_last_active_profile rpc missing, fallback to patch",
       { userId, profile },
     );
@@ -292,7 +293,7 @@ export async function resolvePostLoginRedirect(userId: string) {
       ? ROUTES.dashboard
       : ROUTES.onboarding;
   } catch (error) {
-    console.error(
+    logger.error(
       "[auth-login] failed to resolve post-login route, fallback to dashboard",
       { userId, error },
     );
@@ -344,7 +345,7 @@ function logUserContextPartFailure(
       result.reason instanceof Error
         ? result.reason.message
         : String(result.reason);
-    console.error("[user-context] failed to load part", {
+    logger.error("[user-context] failed to load part", {
       userId,
       part: query.part,
       select: query.select,
@@ -463,7 +464,7 @@ export async function getUserContextById(
     .map(({ part }) => part);
 
   if (blockingFailures.length > 0) {
-    console.error("[user-context] blocking failures while resolving context", {
+    logger.error("[user-context] blocking failures while resolving context", {
       userId,
       blockingFailures,
     });
@@ -487,13 +488,13 @@ export async function getUserContextById(
     try {
       authUser = parseAuthAdminUser(authAdminUserResult.value);
     } catch (error) {
-      console.warn(
+      logger.warn(
         "[user-context] failed to parse auth admin payload; fallback to app-session fields",
         { userId, error },
       );
     }
   } else {
-    console.warn(
+    logger.warn(
       "[user-context] admin user fetch unavailable; fallback to app-session fields",
       { userId },
     );
@@ -532,7 +533,7 @@ export async function getUserContextById(
     null;
   const resolvedEmail = authUser?.email ?? fallback?.email ?? null;
 
-  console.info("[user-context] resolved context", {
+  logger.info("[user-context] resolved context", {
     userId,
     actorKind: student ? "student" : "adult",
     hasParent: Boolean(parent),

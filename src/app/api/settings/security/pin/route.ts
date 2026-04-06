@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+import { apiError, parseJsonWithSchema } from "@/lib/server/api";
 import { readAppSession } from "@/lib/server/app-session";
+import { hitRateLimit } from "@/lib/server/rate-limit";
+import { securityPinPayloadSchema } from "@/lib/server/validation";
 import {
   hasUserPin,
   setUserPin,
@@ -9,35 +12,37 @@ import {
 
 export const runtime = "nodejs";
 
-type Payload = { newPin?: string; currentSecret?: string };
-
-function validPin(pin: string) {
-  return /^\d{4,8}$/.test(pin);
-}
-
 export async function POST(req: NextRequest) {
-  const session = await readAppSession();
-  if (!session)
-    return NextResponse.json({ error: "Не авторизовано." }, { status: 401 });
-
-  const body = (await req.json()) as Payload;
-  const newPin = (body.newPin ?? "").trim();
-  const currentSecret = (body.currentSecret ?? "").trim();
-
-  if (!validPin(newPin)) {
+  const rateLimit = hitRateLimit(req, {
+    key: "settings-security-pin",
+    limit: 5,
+    windowMs: 60_000,
+  });
+  if (rateLimit.limited) {
     return NextResponse.json(
-      { error: "PIN должен состоять из 4-8 цифр." },
-      { status: 400 },
+      { error: "Слишком много запросов. Повторите попытку позже." },
+      {
+        status: 429,
+        headers: { "Retry-After": String(rateLimit.retryAfterSeconds) },
+      },
     );
   }
+
+  const session = await readAppSession();
+  if (!session) return apiError(401, "Не авторизовано.");
+
+  const parsed = await parseJsonWithSchema(
+    req,
+    securityPinPayloadSchema,
+    "PIN должен состоять из 4-8 цифр.",
+  );
+  if (!parsed.ok) return parsed.response;
+  const { newPin, currentSecret } = parsed.data;
 
   const alreadyConfigured = await hasUserPin(session.uid);
   if (alreadyConfigured) {
     if (!currentSecret) {
-      return NextResponse.json(
-        { error: "Нужно подтвердить текущим паролем или PIN." },
-        { status: 400 },
-      );
+      return apiError(400, "Нужно подтвердить текущим паролем или PIN.");
     }
 
     const passwordAuth = session.email
@@ -46,10 +51,7 @@ export async function POST(req: NextRequest) {
     const pinAuth = await verifyUserPin(session.uid, currentSecret);
 
     if (!passwordAuth && !pinAuth) {
-      return NextResponse.json(
-        { error: "Подтверждение не прошло." },
-        { status: 401 },
-      );
+      return apiError(401, "Подтверждение не прошло.");
     }
   }
 

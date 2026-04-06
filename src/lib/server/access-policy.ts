@@ -1,10 +1,12 @@
 import { type ProfileKind } from "@/lib/auth";
+import { logger } from "@/lib/server/logger";
 import { readAppSession } from "@/lib/server/app-session";
 import {
   ensureUserPreference,
   getUserContextById,
   setLastActiveProfile,
 } from "@/lib/server/supabase-admin";
+import { cache } from "react";
 
 export type UserContext = Awaited<ReturnType<typeof getUserContextById>>;
 
@@ -35,7 +37,7 @@ async function normalizeAdultContext(context: UserContext) {
   try {
     await ensureUserPreference(context.userId);
   } catch (error) {
-    console.error("[access-policy] ensureUserPreference failed", {
+    logger.error("[access-policy] ensureUserPreference failed", {
       userId: context.userId,
       error,
     });
@@ -49,7 +51,7 @@ async function normalizeAdultContext(context: UserContext) {
       await setLastActiveProfile(context.userId, "parent");
       context.activeProfile = "parent";
     } catch (error) {
-      console.error("[access-policy] setLastActiveProfile failed", {
+      logger.error("[access-policy] setLastActiveProfile failed", {
         userId: context.userId,
         error,
       });
@@ -57,7 +59,7 @@ async function normalizeAdultContext(context: UserContext) {
   }
 }
 
-export async function resolveAccessPolicy(): Promise<AccessResolution> {
+export const resolveAccessPolicy = cache(async (): Promise<AccessResolution> => {
   const session = await readAppSession();
   if (!session) {
     return { status: "guest" };
@@ -93,7 +95,7 @@ export async function resolveAccessPolicy(): Promise<AccessResolution> {
       error instanceof Error
         ? error.message
         : "Unknown access resolution error";
-    console.error("[access-policy] resolve failed", { reason, error });
+    logger.error("[access-policy] resolve failed", { reason, error });
     return { status: "degraded", reason };
   }
-}
+});

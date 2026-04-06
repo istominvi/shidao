@@ -1,36 +1,35 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ROUTES, type ProfileKind } from "@/lib/auth";
+import { ROUTES } from "@/lib/auth";
+import { apiError, parseJsonWithSchema } from "@/lib/server/api";
 import { readAppSession } from "@/lib/server/app-session";
 import {
   getUserContextById,
   setLastActiveProfile,
 } from "@/lib/server/supabase-admin";
+import { profileSwitchPayloadSchema } from "@/lib/server/validation";
 
 export const runtime = "nodejs";
 
-type Payload = { profile?: ProfileKind };
-
 export async function POST(req: NextRequest) {
   const session = await readAppSession();
-  if (!session)
-    return NextResponse.json({ error: "Не авторизовано." }, { status: 401 });
+  if (!session) return apiError(401, "Не авторизовано.");
 
-  const body = (await req.json()) as Payload;
-  if (!body.profile || !["parent", "teacher"].includes(body.profile)) {
-    return NextResponse.json(
-      { error: "Некорректный профиль." },
-      { status: 400 },
-    );
-  }
+  const parsed = await parseJsonWithSchema(
+    req,
+    profileSwitchPayloadSchema,
+    "Некорректный профиль.",
+  );
+  if (!parsed.ok) return parsed.response;
+  const { profile } = parsed.data;
 
   const context = await getUserContextById(session.uid);
   if (
     context.actorKind !== "adult" ||
-    !context.availableAdultProfiles.includes(body.profile)
+    !context.availableAdultProfiles.includes(profile)
   ) {
-    return NextResponse.json({ error: "Профиль недоступен." }, { status: 403 });
+    return apiError(403, "Профиль недоступен.");
   }
 
-  await setLastActiveProfile(session.uid, body.profile);
+  await setLastActiveProfile(session.uid, profile);
   return NextResponse.json({ redirectTo: ROUTES.dashboard });
 }
