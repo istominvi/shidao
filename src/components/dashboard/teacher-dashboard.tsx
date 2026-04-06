@@ -7,6 +7,7 @@ import { toLessonWorkspaceRoute } from "@/lib/auth";
 
 export function TeacherDashboard() {
   const scheduledLessonId = getDevTeacherScheduledLessonId();
+  const demoBootstrapRoute = "/lessons/demo";
 
   return (
     <DashboardShell
@@ -23,22 +24,30 @@ export function TeacherDashboard() {
             Можно открыть workspace и проверить разделение methodology shell и
             runtime shell без редактирования канонических блоков.
           </p>
+          <p className="mt-3 text-sm text-neutral-700">
+            <Link
+              href={demoBootstrapRoute}
+              className="font-semibold text-sky-700 underline underline-offset-2"
+            >
+              Открыть demo-урок (auto-bootstrap)
+            </Link>
+          </p>
           {scheduledLessonId ? (
-            <p className="mt-3 text-sm text-neutral-700">
+            <p className="mt-1 text-sm text-neutral-700">
               <Link
                 href={toLessonWorkspaceRoute(scheduledLessonId)}
                 className="font-semibold text-sky-700 underline underline-offset-2"
               >
-                Открыть workspace урока
+                Открыть workspace по DEV_TEACHER_WORKSPACE_SCHEDULED_LESSON_ID
               </Link>
             </p>
           ) : (
-            <p className="mt-3 text-xs text-neutral-500">
-              Для dev-навигации задайте
+            <p className="mt-1 text-xs text-neutral-500">
+              Опционально можно задать
               {" "}
               <code>DEV_TEACHER_WORKSPACE_SCHEDULED_LESSON_ID</code>
               {" "}
-              в окружении приложения.
+              для прямой ссылки на конкретный scheduled lesson.
             </p>
           )}
         </article>
