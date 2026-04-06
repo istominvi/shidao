@@ -1,41 +1,30 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { ROUTES } from "../../auth";
-import { resolvePrivateLayoutRedirect } from "../access-guards";
+import {
+  resolveAppLayoutRedirect,
+  resolveAuthEntryRedirect,
+  resolveProfileRequiredRedirect,
+} from "../access-guards";
 
-test("private layout redirects guest/degraded to login", () => {
-  assert.equal(
-    resolvePrivateLayoutRedirect("guest", ROUTES.dashboard),
-    ROUTES.login,
-  );
-  assert.equal(
-    resolvePrivateLayoutRedirect("degraded", ROUTES.settingsProfile),
-    ROUTES.login,
-  );
+test("app layout redirects guest/degraded to login", () => {
+  assert.equal(resolveAppLayoutRedirect("guest"), ROUTES.login);
+  assert.equal(resolveAppLayoutRedirect("degraded"), ROUTES.login);
 });
 
-test("private layout keeps onboarding accessible for adult-without-profile", () => {
+test("profile-required layout redirects adult-without-profile to onboarding", () => {
   assert.equal(
-    resolvePrivateLayoutRedirect("adult-without-profile", ROUTES.onboarding),
-    null,
-  );
-  assert.equal(
-    resolvePrivateLayoutRedirect(
-      "adult-without-profile",
-      `${ROUTES.onboarding}/step-2`,
-    ),
-    null,
-  );
-  assert.equal(
-    resolvePrivateLayoutRedirect("adult-without-profile", ROUTES.dashboard),
+    resolveProfileRequiredRedirect("adult-without-profile"),
     ROUTES.onboarding,
   );
+  assert.equal(resolveProfileRequiredRedirect("student"), null);
+  assert.equal(resolveProfileRequiredRedirect("adult-with-profile"), null);
 });
 
-test("private layout does not redirect student or adult-with-profile", () => {
-  assert.equal(resolvePrivateLayoutRedirect("student", ROUTES.dashboard), null);
-  assert.equal(
-    resolvePrivateLayoutRedirect("adult-with-profile", ROUTES.settingsSecurity),
-    null,
-  );
+test("auth entry routes redirect authenticated users deterministically", () => {
+  assert.equal(resolveAuthEntryRedirect("adult-without-profile"), ROUTES.onboarding);
+  assert.equal(resolveAuthEntryRedirect("adult-with-profile"), ROUTES.dashboard);
+  assert.equal(resolveAuthEntryRedirect("student"), ROUTES.dashboard);
+  assert.equal(resolveAuthEntryRedirect("guest"), null);
+  assert.equal(resolveAuthEntryRedirect("degraded"), null);
 });

@@ -26,11 +26,11 @@ export function afterConfirm(type: string) {
   switch (type) {
     case "signup":
     case "email":
-      return `${ROUTES.login}?confirmed=1`;
-    case "recovery":
-      return ROUTES.resetPassword;
+      return ROUTES.dashboard;
     case "invite":
       return ROUTES.onboarding;
+    case "recovery":
+      return ROUTES.resetPassword;
     case "email_change":
       return `${ROUTES.settingsProfile}?emailChanged=1`;
     default:
