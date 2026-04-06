@@ -45,10 +45,7 @@ test("smoke: authenticated user opens / and sees auth-aware header contract", ()
 });
 
 test("smoke: guest on protected route is redirected to /login by server guard", () => {
-  assert.equal(
-    resolvePrivateLayoutRedirect("guest", ROUTES.dashboard),
-    ROUTES.login,
-  );
+  assert.equal(resolvePrivateLayoutRedirect("guest"), ROUTES.login);
 });
 
 test("smoke: authenticated user on /login is redirected by access policy", () => {
