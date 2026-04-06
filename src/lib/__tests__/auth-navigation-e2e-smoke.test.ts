@@ -13,6 +13,7 @@ import { after, before, test } from "node:test";
 const APP_SESSION_SECRET = "e2e-app-session-secret-value-with-minimum-32-chars";
 const E2E_ADULT_USER_ID = "e2e-adult";
 const E2E_ADULT_NEW_USER_ID = "e2e-adult-new";
+const E2E_STUDENT_USER_ID = "e2e-student";
 
 let appPort = 0;
 let mockPort = 0;
@@ -81,7 +82,64 @@ function readUserId(requestUrl: URL) {
   return match?.[1] ?? null;
 }
 
-function handleMockSupabase(
+async function handleVerifyRequest(
+  request: IncomingMessage,
+  response: ServerResponse,
+) {
+  const body = await new Promise<string>((resolve) => {
+    let chunks = "";
+    request.setEncoding("utf8");
+    request.on("data", (chunk) => {
+      chunks += chunk;
+    });
+    request.on("end", () => resolve(chunks));
+    request.on("error", () => resolve(""));
+  });
+
+  let tokenHash: string | null = null;
+  try {
+    const parsed = JSON.parse(body) as { token_hash?: string | null };
+    tokenHash = parsed.token_hash ?? null;
+  } catch {}
+
+  if (tokenHash === "adult-new") {
+    json(response, 200, {
+      user: {
+        id: E2E_ADULT_NEW_USER_ID,
+        email: "adult-new-e2e@example.test",
+        user_metadata: { full_name: "E2E Adult New" },
+      },
+    });
+    return;
+  }
+
+  if (tokenHash === "adult-with-profile") {
+    json(response, 200, {
+      user: {
+        id: E2E_ADULT_USER_ID,
+        email: "adult-e2e@example.test",
+        user_metadata: { full_name: "E2E Adult" },
+      },
+    });
+    return;
+  }
+
+  if (tokenHash === "student-user") {
+    json(response, 200, {
+      user: {
+        id: E2E_STUDENT_USER_ID,
+        email: "student-e2e@example.test",
+        user_metadata: { full_name: "E2E Student" },
+      },
+    });
+    return;
+  }
+
+  json(response, 400, { message: "bad token hash" });
+}
+
+
+async function handleMockSupabase(
   request: IncomingMessage,
   response: ServerResponse,
 ) {
@@ -91,6 +149,11 @@ function handleMockSupabase(
   }
 
   const requestUrl = new URL(request.url, `http://127.0.0.1:${mockPort}`);
+
+  if (requestUrl.pathname === "/auth/v1/verify") {
+    await handleVerifyRequest(request, response);
+    return;
+  }
 
   if (requestUrl.pathname.startsWith("/auth/v1/admin/users/")) {
     const userId = requestUrl.pathname.split("/").at(-1);
@@ -117,6 +180,17 @@ function handleMockSupabase(
       return;
     }
 
+    if (userId === E2E_STUDENT_USER_ID) {
+      json(response, 200, {
+        user: {
+          id: E2E_STUDENT_USER_ID,
+          email: "student-e2e@example.test",
+          user_metadata: { full_name: "E2E Student" },
+        },
+      });
+      return;
+    }
+
     json(response, 404, { message: "user not found" });
     return;
   }
@@ -129,6 +203,7 @@ function handleMockSupabase(
   const userId = readUserId(requestUrl);
   const isAdultUser = userId === E2E_ADULT_USER_ID;
   const isAdultWithoutProfileUser = userId === E2E_ADULT_NEW_USER_ID;
+  const isStudentUser = userId === E2E_STUDENT_USER_ID;
 
   if (requestUrl.pathname === "/rest/v1/parent") {
     json(
@@ -145,7 +220,20 @@ function handleMockSupabase(
   }
 
   if (requestUrl.pathname === "/rest/v1/student") {
-    json(response, 200, []);
+    json(
+      response,
+      200,
+      isStudentUser
+        ? [
+            {
+              id: "student-e2e-id",
+              first_name: "E2E",
+              last_name: "Student",
+              login: "student-e2e",
+            },
+          ]
+        : [],
+    );
     return;
   }
 
@@ -288,20 +376,32 @@ test("e2e smoke: guest reaching protected route is redirected to /login", async 
   assert.equal(response.headers.get("location"), "/login");
 });
 
-test("e2e smoke: authenticated /login redirects by access policy and /settings/security opens", async () => {
+test("e2e smoke: authenticated /login redirects by access policy without pathname headers", async () => {
   const cookie = authenticatedCookieHeader();
 
   const loginResponse = await fetch(`http://127.0.0.1:${appPort}/login`, {
-    headers: {
-      cookie,
-      "x-pathname": "/login",
-    },
+    headers: { cookie },
     redirect: "manual",
   });
 
   assert.equal(loginResponse.status, 307);
   assert.equal(loginResponse.headers.get("location"), "/dashboard");
+});
 
+test("e2e smoke: authenticated /join redirects by access policy without pathname headers", async () => {
+  const cookie = authenticatedCookieHeader();
+
+  const joinResponse = await fetch(`http://127.0.0.1:${appPort}/join`, {
+    headers: { cookie },
+    redirect: "manual",
+  });
+
+  assert.equal(joinResponse.status, 307);
+  assert.equal(joinResponse.headers.get("location"), "/dashboard");
+});
+
+test("e2e smoke: authenticated /settings/security opens", async () => {
+  const cookie = authenticatedCookieHeader();
   const securityResponse = await fetch(
     `http://127.0.0.1:${appPort}/settings/security`,
     {
@@ -314,7 +414,6 @@ test("e2e smoke: authenticated /login redirects by access policy and /settings/s
   assert.equal(securityResponse.status, 200);
   assert.match(securityHtml, /PIN-код входа/);
 });
-
 
 test("e2e smoke: adult-without-profile can open onboarding without pathname headers", async () => {
   const cookie = authenticatedCookieHeader({
@@ -356,14 +455,51 @@ test("e2e smoke: authenticated /login?confirmed=1 for adult-without-profile redi
     fullName: "E2E Adult New",
   });
 
-  const response = await fetch(`http://127.0.0.1:${appPort}/login?confirmed=1`, {
-    headers: {
-      cookie,
-      "x-pathname": "/login",
+  const response = await fetch(
+    `http://127.0.0.1:${appPort}/login?confirmed=1`,
+    {
+      headers: { cookie },
+      redirect: "manual",
     },
-    redirect: "manual",
-  });
+  );
 
   assert.equal(response.status, 307);
   assert.equal(response.headers.get("location"), "/onboarding");
+});
+
+test("e2e smoke: signup confirmation for adult-without-profile redirects to onboarding, not login", async () => {
+  const response = await fetch(
+    `http://127.0.0.1:${appPort}/auth/confirm?token_hash=adult-new&type=signup`,
+    {
+      redirect: "manual",
+    },
+  );
+
+  assert.equal(response.status, 307);
+  assert.equal(new URL(response.headers.get("location") ?? "http://invalid").pathname, "/onboarding");
+  assert.match(response.headers.get("set-cookie") ?? "", /shidao_session=/);
+});
+
+test("e2e smoke: signup confirmation for adult-with-profile redirects to dashboard", async () => {
+  const response = await fetch(
+    `http://127.0.0.1:${appPort}/auth/confirm?token_hash=adult-with-profile&type=signup`,
+    {
+      redirect: "manual",
+    },
+  );
+
+  assert.equal(response.status, 307);
+  assert.equal(new URL(response.headers.get("location") ?? "http://invalid").pathname, "/dashboard");
+});
+
+test("e2e smoke: signup confirmation for student redirects to dashboard", async () => {
+  const response = await fetch(
+    `http://127.0.0.1:${appPort}/auth/confirm?token_hash=student-user&type=signup`,
+    {
+      redirect: "manual",
+    },
+  );
+
+  assert.equal(response.status, 307);
+  assert.equal(new URL(response.headers.get("location") ?? "http://invalid").pathname, "/dashboard");
 });

@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { afterConfirm } from "@/lib/auth-redirects";
+import { ROUTES } from "@/lib/auth";
 import {
   getPublicSiteUrl,
   getSupabasePublicConfig,
   resolveSafeAuthRedirect,
 } from "@/lib/server/auth-config";
 import { writeAppSession } from "@/lib/server/app-session";
+import { getUserContextById } from "@/lib/server/supabase-admin";
 
 export const runtime = "nodejs";
 const ALLOWED_TYPES = new Set([
@@ -15,6 +17,27 @@ const ALLOWED_TYPES = new Set([
   "invite",
   "email_change",
 ]);
+
+async function resolveConfirmedAuthRedirect(input: {
+  userId: string;
+  email?: string | null;
+  fullName?: string | null;
+}) {
+  try {
+    const context = await getUserContextById(input.userId, {
+      email: input.email,
+      fullName: input.fullName,
+    });
+
+    if (context.actorKind === "student") {
+      return ROUTES.dashboard;
+    }
+
+    return context.hasAnyAdultProfile ? ROUTES.dashboard : ROUTES.onboarding;
+  } catch {
+    return ROUTES.onboarding;
+  }
+}
 
 export async function GET(req: NextRequest) {
   const tokenHash = req.nextUrl.searchParams.get("token_hash");
@@ -27,7 +50,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(fallbackUrl);
   }
 
-  const redirectPath = resolveSafeAuthRedirect(next, afterConfirm(type));
+  let redirectPath = resolveSafeAuthRedirect(next, afterConfirm(type));
 
   try {
     const { url, anonKey } = getSupabasePublicConfig();
@@ -64,6 +87,14 @@ export async function GET(req: NextRequest) {
         fullName: payload.user.user_metadata?.full_name ?? null,
         recoveryVerifiedAt: type === "recovery" ? Date.now() : null,
       });
+
+      if (type === "signup" || type === "email") {
+        redirectPath = await resolveConfirmedAuthRedirect({
+          userId: payload.user.id,
+          email: payload.user.email ?? null,
+          fullName: payload.user.user_metadata?.full_name ?? null,
+        });
+      }
     }
 
     return NextResponse.redirect(new URL(redirectPath, getPublicSiteUrl()));
