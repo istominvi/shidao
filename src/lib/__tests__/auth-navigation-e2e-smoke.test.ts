@@ -12,6 +12,7 @@ import { after, before, test } from "node:test";
 
 const APP_SESSION_SECRET = "e2e-app-session-secret-value-with-minimum-32-chars";
 const E2E_ADULT_USER_ID = "e2e-adult";
+const E2E_NEW_ADULT_USER_ID = "e2e-adult-new";
 
 let appPort = 0;
 let mockPort = 0;
@@ -45,6 +46,16 @@ function authenticatedCookieHeader() {
     uid: E2E_ADULT_USER_ID,
     email: "adult-e2e@example.test",
     fullName: "E2E Adult",
+  });
+
+  return `shidao_session=${cookie}`;
+}
+
+function authenticatedCookieHeaderWithoutProfile() {
+  const cookie = buildSessionCookieValue({
+    uid: E2E_NEW_ADULT_USER_ID,
+    email: "adult-new-e2e@example.test",
+    fullName: "E2E New Adult",
   });
 
   return `shidao_session=${cookie}`;
@@ -90,16 +101,22 @@ function handleMockSupabase(
   if (requestUrl.pathname.startsWith("/auth/v1/admin/users/")) {
     const userId = requestUrl.pathname.split("/").at(-1);
 
-    if (userId !== E2E_ADULT_USER_ID) {
+    if (userId !== E2E_ADULT_USER_ID && userId !== E2E_NEW_ADULT_USER_ID) {
       json(response, 404, { message: "user not found" });
       return;
     }
 
     json(response, 200, {
       user: {
-        id: E2E_ADULT_USER_ID,
-        email: "adult-e2e@example.test",
-        user_metadata: { full_name: "E2E Adult" },
+        id: userId,
+        email:
+          userId === E2E_NEW_ADULT_USER_ID
+            ? "adult-new-e2e@example.test"
+            : "adult-e2e@example.test",
+        user_metadata: {
+          full_name:
+            userId === E2E_NEW_ADULT_USER_ID ? "E2E New Adult" : "E2E Adult",
+        },
       },
     });
     return;
@@ -112,12 +129,17 @@ function handleMockSupabase(
 
   const userId = readUserId(requestUrl);
   const isAdultUser = userId === E2E_ADULT_USER_ID;
+  const isAdultWithoutProfile = userId === E2E_NEW_ADULT_USER_ID;
 
   if (requestUrl.pathname === "/rest/v1/parent") {
     json(
       response,
       200,
-      isAdultUser ? [{ id: "parent-e2e", full_name: "E2E Adult" }] : [],
+      isAdultUser
+        ? [{ id: "parent-e2e", full_name: "E2E Adult" }]
+        : isAdultWithoutProfile
+          ? []
+          : [],
     );
     return;
   }
@@ -145,7 +167,9 @@ function handleMockSupabase(
               settings: {},
             },
           ]
-        : [],
+        : isAdultWithoutProfile
+          ? [{ last_active_profile: null, theme: null, settings: {} }]
+          : [],
     );
     return;
   }
@@ -287,4 +311,42 @@ test("e2e smoke: authenticated /login redirects by access policy and /settings/s
 
   assert.equal(securityResponse.status, 200);
   assert.match(securityHtml, /PIN-код входа/);
+});
+
+test("e2e smoke: adult with profile can still open onboarding add-profile mode", async () => {
+  const response = await fetch(
+    `http://127.0.0.1:${appPort}/onboarding?mode=add-profile`,
+    {
+      headers: { cookie: authenticatedCookieHeader() },
+      redirect: "manual",
+    },
+  );
+  const html = await response.text();
+
+  assert.equal(response.status, 200);
+  assert.match(html, /Добавьте второй кабинет в Shidao/);
+});
+
+test("e2e smoke: adult without profile can open /onboarding even with bad pathname header", async () => {
+  const response = await fetch(`http://127.0.0.1:${appPort}/onboarding`, {
+    headers: {
+      cookie: authenticatedCookieHeaderWithoutProfile(),
+      "x-pathname": "/dashboard",
+    },
+    redirect: "manual",
+  });
+  const html = await response.text();
+
+  assert.equal(response.status, 200);
+  assert.match(html, /Выберите, как начнёте работу в Shidao/);
+});
+
+test("e2e smoke: adult without profile gets single server redirect from /dashboard to /onboarding", async () => {
+  const response = await fetch(`http://127.0.0.1:${appPort}/dashboard`, {
+    headers: { cookie: authenticatedCookieHeaderWithoutProfile() },
+    redirect: "manual",
+  });
+
+  assert.equal(response.status, 307);
+  assert.equal(response.headers.get("location"), "/onboarding");
 });
