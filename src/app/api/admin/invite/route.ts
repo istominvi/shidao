@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ROUTES, isEmail } from "@/lib/auth";
+import { ROUTES } from "@/lib/auth";
+import { apiError, parseJsonWithSchema } from "@/lib/server/api";
 import { getPublicSiteUrl } from "@/lib/server/auth-config";
 import { readAppSession } from "@/lib/server/app-session";
+import { logger } from "@/lib/server/logger";
+import { hitRateLimit } from "@/lib/server/rate-limit";
+import { invitePayloadSchema } from "@/lib/server/validation";
 import {
   getUserContextById,
   inviteUserByEmail,
@@ -10,13 +14,25 @@ import {
 export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
+  const rateLimit = hitRateLimit(req, {
+    key: "admin-invite",
+    limit: 5,
+    windowMs: 60_000,
+  });
+  if (rateLimit.limited) {
+    return NextResponse.json(
+      { error: "Слишком много запросов. Повторите попытку позже." },
+      {
+        status: 429,
+        headers: { "Retry-After": String(rateLimit.retryAfterSeconds) },
+      },
+    );
+  }
+
   try {
     const session = await readAppSession();
     if (!session?.uid) {
-      return NextResponse.json(
-        { error: "Требуется авторизация." },
-        { status: 401 },
-      );
+      return apiError(401, "Требуется авторизация.");
     }
 
     const context = await getUserContextById(session.uid, {
@@ -24,20 +40,16 @@ export async function POST(req: NextRequest) {
       fullName: session.fullName,
     });
     if (context.actorKind !== "adult") {
-      return NextResponse.json(
-        { error: "Только взрослый аккаунт может отправлять приглашения." },
-        { status: 403 },
-      );
+      return apiError(403, "Только взрослый аккаунт может отправлять приглашения.");
     }
 
-    const body = (await req.json()) as { email?: string };
-    const email = (body.email ?? "").trim().toLowerCase();
-    if (!isEmail(email)) {
-      return NextResponse.json(
-        { error: "Укажите корректный email." },
-        { status: 400 },
-      );
-    }
+    const parsed = await parseJsonWithSchema(
+      req,
+      invitePayloadSchema,
+      "Укажите корректный email.",
+    );
+    if (!parsed.ok) return parsed.response;
+    const { email } = parsed.data;
 
     const redirectTo = new URL("/auth/confirm", getPublicSiteUrl());
     redirectTo.searchParams.set("next", ROUTES.onboarding);
@@ -45,10 +57,7 @@ export async function POST(req: NextRequest) {
     await inviteUserByEmail({ email, redirectTo: redirectTo.toString() });
     return NextResponse.json({ ok: true });
   } catch (error) {
-    console.error("[admin-invite] failed", error);
-    return NextResponse.json(
-      { error: "Не удалось отправить приглашение." },
-      { status: 503 },
-    );
+    logger.error("[admin-invite] failed", { error });
+    return apiError(503, "Не удалось отправить приглашение.");
   }
 }

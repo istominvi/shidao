@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import {
-  AUTH_MESSAGES,
-  ROUTES,
-  normalizeIdentifier,
-  isEmail,
-} from "@/lib/auth";
+import { AUTH_MESSAGES, ROUTES, isEmail } from "@/lib/auth";
 import { afterLogin } from "@/lib/auth-redirects";
+import { apiError, parseJsonWithSchema } from "@/lib/server/api";
 import { writeAppSession } from "@/lib/server/app-session";
+import { logger } from "@/lib/server/logger";
+import { hitRateLimit } from "@/lib/server/rate-limit";
+import { loginPayloadSchema } from "@/lib/server/validation";
 import {
   ensureUserPreference,
   findStudentAuthEmail,
@@ -18,28 +17,39 @@ import {
 
 export const runtime = "nodejs";
 
-type Payload = { identifier?: string; secret?: string };
-
 function fail(
   status = 401,
   message: string = AUTH_MESSAGES.invalidCredentials,
 ) {
-  return NextResponse.json({ error: message }, { status });
+  return apiError(status, message);
 }
 
 export async function POST(req: NextRequest) {
+  const rateLimit = hitRateLimit(req, {
+    key: "auth-login",
+    limit: 8,
+    windowMs: 60_000,
+  });
+  if (rateLimit.limited) {
+    return NextResponse.json(
+      { error: "Слишком много попыток входа. Попробуйте позже." },
+      {
+        status: 429,
+        headers: { "Retry-After": String(rateLimit.retryAfterSeconds) },
+      },
+    );
+  }
+
   let stage = "read-body";
 
   try {
-    const body = (await req.json()) as Payload;
-    stage = "normalize-credentials";
-
-    const identifier = normalizeIdentifier(body.identifier ?? "");
-    const secret = (body.secret ?? "").trim();
-
-    if (!identifier || !secret) {
-      return fail();
-    }
+    const parsed = await parseJsonWithSchema(
+      req,
+      loginPayloadSchema,
+      AUTH_MESSAGES.invalidCredentials,
+    );
+    if (!parsed.ok) return parsed.response;
+    const { identifier, secret } = parsed.data;
 
     let resolvedEmail = "";
     let candidateUserId: string | null = null;
@@ -72,7 +82,7 @@ export async function POST(req: NextRequest) {
       try {
         await ensureUserPreference(userId);
       } catch (error) {
-        console.error(
+        logger.error(
           "[auth-login] ensureUserPreference failed after successful password auth",
           { userId, error },
         );
@@ -103,7 +113,7 @@ export async function POST(req: NextRequest) {
         try {
           await ensureUserPreference(candidateUserId);
         } catch (error) {
-          console.error(
+          logger.error(
             "[auth-login] ensureUserPreference failed after successful pin auth",
             { userId: candidateUserId, error },
           );
@@ -115,7 +125,7 @@ export async function POST(req: NextRequest) {
 
     return fail();
   } catch (error) {
-    console.error("[auth-login] unexpected error", { stage, error });
+    logger.error("[auth-login] unexpected error", { stage, error });
 
     if (stage === "write-session-password" || stage === "write-session-pin") {
       return fail(

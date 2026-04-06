@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ROUTES, type ProfileKind } from "@/lib/auth";
+import { ROUTES } from "@/lib/auth";
+import { apiError, parseJsonWithSchema } from "@/lib/server/api";
 import { readAppSession } from "@/lib/server/app-session";
 import {
   ensureUserPreference,
@@ -8,40 +9,35 @@ import {
   upsertParentProfile,
   upsertTeacherProfile,
 } from "@/lib/server/supabase-admin";
+import { onboardingPayloadSchema } from "@/lib/server/validation";
 
 export const runtime = "nodejs";
 
-type Payload = { profile?: ProfileKind };
-
 export async function POST(req: NextRequest) {
   const session = await readAppSession();
-  if (!session)
-    return NextResponse.json({ error: "Не авторизовано." }, { status: 401 });
+  if (!session) return apiError(401, "Не авторизовано.");
 
-  const body = (await req.json()) as Payload;
-  if (!body.profile || !["parent", "teacher"].includes(body.profile)) {
-    return NextResponse.json(
-      { error: "Некорректный профиль." },
-      { status: 400 },
-    );
-  }
+  const parsed = await parseJsonWithSchema(
+    req,
+    onboardingPayloadSchema,
+    "Некорректный профиль.",
+  );
+  if (!parsed.ok) return parsed.response;
+  const { profile } = parsed.data;
 
   const context = await getUserContextById(session.uid);
   if (context.actorKind === "student") {
-    return NextResponse.json(
-      { error: "Онбординг недоступен для ученика." },
-      { status: 403 },
-    );
+    return apiError(403, "Онбординг недоступен для ученика.");
   }
 
-  if (body.profile === "parent") {
+  if (profile === "parent") {
     await upsertParentProfile(session.uid, context.fullName);
   } else {
     await upsertTeacherProfile(session.uid, context.fullName);
   }
 
   await ensureUserPreference(session.uid);
-  await setLastActiveProfile(session.uid, body.profile);
+  await setLastActiveProfile(session.uid, profile);
 
   return NextResponse.json({ redirectTo: ROUTES.dashboard });
 }

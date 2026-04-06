@@ -9,22 +9,24 @@ npm install
 npm run dev
 ```
 
-Перед запуском обязательно задайте `APP_SESSION_SECRET` (и в dev, и в prod):
+Перед запуском задайте env-переменные (минимум):
 
 ```bash
-# Пример: сгенерировать 32 байта (64 hex-символа) секрета
+cp .env.example .env.local
+```
+
+Обязательные для runtime:
+
+- `APP_SESSION_SECRET` — минимум 32 символа, криптостойкий случайный секрет (используется для шифрования cookie-сессии).
+- `APP_SESSION_VERSION` — версия app-session для массовой инвалидизации токенов (по умолчанию `1`).
+- `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`.
+- `NEXT_PUBLIC_SITE_URL` (или `SITE_URL`) — canonical base URL для redirect/metadata.
+
+Генерация секрета:
+
+```bash
 openssl rand -hex 32
 ```
-
-```bash
-APP_SESSION_SECRET=<your-generated-secret>
-```
-
-Требования:
-
-- переменная обязательна, fallback-значений нет;
-- минимальная длина — `32` символа;
-- используйте криптографически случайный секрет с высокой энтропией.
 
 ## Deploy notes (Coolify / self-hosted CI)
 
@@ -279,8 +281,19 @@ Helpers/RPC:
 
 - `npm run format` — применяет форматирование Prettier ко всему репозиторию.
 - `npm run format:check` — проверяет, что рабочее дерево уже отформатировано.
-- Базовый pre-merge набор: `npm run format:check && npm run lint && npm run build && npm run test`.
+- `npm run typecheck` — строгая проверка TypeScript (`tsc --noEmit`).
+- Базовый pre-merge набор: `npm run typecheck && npm run lint && npm run test && npm run build`.
 - Полный прогон (включая браузерный smoke-слой): `npm run test:all`.
+
+## CI
+
+В репозитории добавлен workflow `.github/workflows/ci.yml`:
+
+- `npm ci`
+- `npm run typecheck`
+- `npm run lint`
+- `npm run test`
+- `npm run build`
 
 ## Test strategy (MVP)
 

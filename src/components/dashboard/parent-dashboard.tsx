@@ -63,11 +63,11 @@ export function ParentDashboard({
         </article>
 
         <article className="dashboard-grid-card bg-[linear-gradient(160deg,rgba(255,182,232,0.24),rgba(255,255,255,0.9))]">
-          <h3 className="text-lg font-black">Что доступно</h3>
+          <h3 className="text-lg font-black">Текущий MVP</h3>
           <ul className="mt-3 space-y-2 text-sm text-neutral-700">
-            <li>• Просмотр уроков и домашней работы по каждому ребёнку</li>
-            <li>• Комментарии и обратная связь в контексте занятия</li>
-            <li>• Контроль сроков и статусов без отдельного трекинга</li>
+            <li>• Привязка детей и просмотр их учебных контекстов</li>
+            <li>• Единый вход взрослого и отдельный вход ученика</li>
+            <li>• Подготовленная зона для будущих уроков и домашних заданий</li>
           </ul>
         </article>
       </div>

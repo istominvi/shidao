@@ -1,21 +1,21 @@
 import { toInitials } from "@/lib/auth";
 import { GUEST_SESSION_VIEW, type SessionView } from "@/lib/session-view";
-import { readAppSession } from "@/lib/server/app-session";
-import { getUserContextById } from "@/lib/server/supabase-admin";
+import { resolveAccessPolicy } from "@/lib/server/access-policy";
 
 export async function readSessionViewServer(): Promise<SessionView> {
-  const session = await readAppSession();
-  if (!session) {
-    return GUEST_SESSION_VIEW;
-  }
+  const resolution = await resolveAccessPolicy();
 
-  try {
-    const ctx = await getUserContextById(session.uid, {
-      email: session.email,
-      fullName: session.fullName,
-    });
-
-    if (ctx.actorKind === "student") {
+  switch (resolution.status) {
+    case "guest":
+      return GUEST_SESSION_VIEW;
+    case "degraded":
+      return {
+        kind: "degraded",
+        authenticated: true,
+        reason: "context_unavailable",
+      };
+    case "student": {
+      const ctx = resolution.context;
       return {
         kind: "student",
         authenticated: true,
@@ -26,31 +26,24 @@ export async function readSessionViewServer(): Promise<SessionView> {
         initials: toInitials(ctx.fullName, ctx.email),
       };
     }
-
-    return {
-      kind: "adult",
-      authenticated: true,
-      hasPin: ctx.hasPin,
-      userId: ctx.userId,
-      fullName: ctx.fullName,
-      email: ctx.email,
-      initials: toInitials(ctx.fullName, ctx.email),
-      availableProfiles: ctx.availableAdultProfiles,
-      activeProfile: ctx.activeProfile,
-    };
-  } catch (error) {
-    console.error("[session-view] failed to resolve user context", {
-      userId: session.uid,
-      error,
-    });
-    return {
-      kind: "degraded",
-      authenticated: true,
-      reason: "context_unavailable",
-      userId: session.uid,
-      email: session.email,
-      fullName: session.fullName,
-      initials: toInitials(session.fullName, session.email),
-    };
+    case "adult-with-profile":
+    case "adult-without-profile": {
+      const ctx = resolution.context;
+      return {
+        kind: "adult",
+        authenticated: true,
+        hasPin: ctx.hasPin,
+        userId: ctx.userId,
+        fullName: ctx.fullName,
+        email: ctx.email,
+        initials: toInitials(ctx.fullName, ctx.email),
+        availableProfiles: ctx.availableAdultProfiles,
+        activeProfile: ctx.activeProfile,
+      };
+    }
+    default: {
+      const _never: never = resolution;
+      return _never;
+    }
   }
 }

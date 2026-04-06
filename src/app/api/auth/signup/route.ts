@@ -4,6 +4,7 @@ import {
   getPublicSiteUrl,
   getSupabasePublicConfig,
 } from "@/lib/server/auth-config";
+import { logger } from "@/lib/server/logger";
 
 export const runtime = "nodejs";
 
@@ -100,7 +101,7 @@ export async function POST(req: NextRequest) {
       redirectTo: afterSignup({ requiresEmailConfirmation: true, email }),
     });
   } catch (error) {
-    console.error("[auth-signup] failed", error);
+    logger.error("[auth-signup] failed", { error });
     return NextResponse.json(
       {
         error: "Сервис регистрации временно недоступен. Попробуйте чуть позже.",

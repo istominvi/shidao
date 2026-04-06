@@ -5,6 +5,7 @@ import {
   getPublicSiteUrl,
   getSupabasePublicConfig,
 } from "@/lib/server/auth-config";
+import { logger } from "@/lib/server/logger";
 
 export const runtime = "nodejs";
 
@@ -39,7 +40,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ ok: true });
   } catch (error) {
-    console.error("[auth-recovery] failed", error);
+    logger.error("[auth-recovery] failed", { error });
     return NextResponse.json(
       { error: "Не удалось отправить письмо восстановления." },
       { status: 503 },

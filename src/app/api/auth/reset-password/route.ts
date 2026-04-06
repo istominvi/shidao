@@ -5,6 +5,7 @@ import {
   readAppSession,
   writeAppSession,
 } from "@/lib/server/app-session";
+import { logger } from "@/lib/server/logger";
 import { updateAuthUserPasswordById } from "@/lib/server/supabase-admin";
 
 export const runtime = "nodejs";
@@ -65,7 +66,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ ok: true, redirectTo: afterRecovery() });
   } catch (error) {
-    console.error("[auth-reset-password] failed", error);
+    logger.error("[auth-reset-password] failed", { error });
     return NextResponse.json(
       { error: "Не удалось обновить пароль." },
       { status: 503 },
