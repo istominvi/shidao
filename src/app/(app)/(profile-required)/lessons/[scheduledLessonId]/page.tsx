@@ -10,8 +10,10 @@ import {
 
 export default async function TeacherLessonWorkspacePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ scheduledLessonId: string }>;
+  searchParams: Promise<{ saved?: string; error?: string }>;
 }) {
   const accessResolution = await resolveAccessPolicy();
 
@@ -23,6 +25,7 @@ export default async function TeacherLessonWorkspacePage({
   const workspace = await getTeacherLessonWorkspaceByScheduledLessonId(
     scheduledLessonId,
   );
+  const query = await searchParams;
 
   if (!workspace) {
     notFound();
@@ -33,7 +36,13 @@ export default async function TeacherLessonWorkspacePage({
       <div className="landing-noise" aria-hidden="true" />
       <TopNav />
       <div className="container py-6 md:py-8">
-        <TeacherLessonWorkspace workspace={workspace} />
+        <TeacherLessonWorkspace
+          workspace={workspace}
+          runtimeFormFeedback={{
+            success: query.saved?.trim() || undefined,
+            error: query.error?.trim() || undefined,
+          }}
+        />
       </div>
     </main>
   );
