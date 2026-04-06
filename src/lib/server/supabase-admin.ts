@@ -39,6 +39,23 @@ function isFunctionMissingError(message: string) {
   );
 }
 
+function isUniqueViolationError(message: string) {
+  const normalized = message.toLowerCase();
+  return (
+    normalized.includes("duplicate key value violates unique constraint") ||
+    normalized.includes("23505")
+  );
+}
+
+function buildTeacherSchoolSlugBase(teacherId: string, fullName: string | null) {
+  const seed = `${fullName?.trim() || "teacher"}-${teacherId.slice(0, 8)}`;
+  const slug = seed
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return slug || `school-${teacherId.slice(0, 8)}`;
+}
+
 function redactPayload(payload: Json | undefined) {
   if (!payload) return payload;
   const clone: Json = { ...payload };
@@ -576,12 +593,222 @@ export async function upsertTeacherProfile(
   userId: string,
   fullName: string | null,
 ) {
-  return request<
-    Array<{ teacher_id: string; school_id: string; class_id: string }>
-  >("/rest/v1/rpc/onboard_teacher", "POST", {
-    admin: true,
-    payload: { p_user_id: userId, p_full_name: fullName },
-  });
+  try {
+    return await request<
+      Array<{ teacher_id: string; school_id: string; class_id: string }>
+    >("/rest/v1/rpc/onboard_teacher", "POST", {
+      admin: true,
+      payload: { p_user_id: userId, p_full_name: fullName },
+    });
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Unknown onboard_teacher error";
+    logger.warn(
+      "[onboarding] onboard_teacher rpc failed, fallback to direct upsert flow",
+      { userId, message },
+    );
+  }
+
+  return upsertTeacherProfileFallback(userId, fullName);
+}
+
+async function upsertTeacherProfileFallback(
+  userId: string,
+  fullName: string | null,
+) {
+  let teacherId = "";
+  const teacherLookup = await request<Array<{ id: string }>>(
+    `/rest/v1/teacher?select=id&user_id=eq.${userId}&limit=1`,
+    "GET",
+    { admin: true },
+  );
+
+  teacherId = teacherLookup[0]?.id ?? "";
+
+  if (teacherId) {
+    if (fullName !== null) {
+      await request(`/rest/v1/teacher?user_id=eq.${userId}`, "PATCH", {
+        admin: true,
+        payload: { full_name: fullName },
+        allowEmpty: true,
+      });
+    }
+  } else {
+    try {
+      const teacherRows = await request<Array<{ id: string }>>(
+        "/rest/v1/teacher",
+        "POST",
+        {
+          admin: true,
+          payload: { user_id: userId, full_name: fullName },
+        },
+      );
+      teacherId = teacherRows[0]?.id ?? "";
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Unknown teacher insert error";
+      if (!isUniqueViolationError(message)) {
+        throw error;
+      }
+      const teacherAfterConflict = await request<Array<{ id: string }>>(
+        `/rest/v1/teacher?select=id&user_id=eq.${userId}&limit=1`,
+        "GET",
+        { admin: true },
+      );
+      teacherId = teacherAfterConflict[0]?.id ?? "";
+    }
+  }
+
+  if (!teacherId) {
+    throw new Error("Не удалось определить teacher.id после upsert.");
+  }
+
+  let schoolId = "";
+  const ownerMembership = await request<Array<{ school_id: string }>>(
+    `/rest/v1/school_teacher?select=school_id&teacher_id=eq.${teacherId}&role=eq.owner&limit=1`,
+    "GET",
+    { admin: true },
+  );
+  schoolId = ownerMembership[0]?.school_id ?? "";
+
+  if (!schoolId) {
+    const anyMembership = await request<Array<{ school_id: string }>>(
+      `/rest/v1/school_teacher?select=school_id&teacher_id=eq.${teacherId}&order=created_at.asc&limit=1`,
+      "GET",
+      { admin: true },
+    );
+    schoolId = anyMembership[0]?.school_id ?? "";
+  }
+
+  if (!schoolId) {
+    const baseSlug = buildTeacherSchoolSlugBase(teacherId, fullName);
+    const schoolName = `${fullName?.trim() || "Преподаватель"} — школа`;
+    for (let attempt = 0; attempt < 25; attempt += 1) {
+      const slug = attempt === 0 ? baseSlug : `${baseSlug}-${attempt + 1}`;
+      try {
+        const schoolRows = await request<Array<{ id: string }>>(
+          "/rest/v1/school",
+          "POST",
+          {
+            admin: true,
+            payload: { name: schoolName, slug },
+          },
+        );
+        schoolId = schoolRows[0]?.id ?? "";
+        break;
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "Unknown school insert error";
+        if (!isUniqueViolationError(message)) {
+          throw error;
+        }
+      }
+    }
+  }
+
+  if (!schoolId) {
+    throw new Error("Не удалось создать или определить school.id для teacher onboarding.");
+  }
+
+  const schoolTeacherRows = await request<Array<{ id: string; role: string }>>(
+    `/rest/v1/school_teacher?select=id,role&school_id=eq.${schoolId}&teacher_id=eq.${teacherId}&limit=1`,
+    "GET",
+    { admin: true },
+  );
+  const schoolTeacherRow = schoolTeacherRows[0];
+  if (schoolTeacherRow) {
+    if (schoolTeacherRow.role !== "owner") {
+      await request(
+        `/rest/v1/school_teacher?id=eq.${schoolTeacherRow.id}`,
+        "PATCH",
+        {
+          admin: true,
+          payload: { role: "owner" },
+          allowEmpty: true,
+        },
+      );
+    }
+  } else {
+    try {
+      await request("/rest/v1/school_teacher", "POST", {
+        admin: true,
+        payload: {
+          school_id: schoolId,
+          teacher_id: teacherId,
+          role: "owner",
+        },
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Unknown school_teacher insert error";
+      if (!isUniqueViolationError(message)) {
+        throw error;
+      }
+    }
+  }
+
+  let classId = "";
+  const classRows = await request<Array<{ id: string }>>(
+    `/rest/v1/class?select=id&school_id=eq.${schoolId}&order=created_at.asc&limit=1`,
+    "GET",
+    { admin: true },
+  );
+  classId = classRows[0]?.id ?? "";
+
+  if (!classId) {
+    try {
+      const createdClassRows = await request<Array<{ id: string }>>(
+        "/rest/v1/class",
+        "POST",
+        {
+          admin: true,
+          payload: { school_id: schoolId, name: "Основной класс" },
+        },
+      );
+      classId = createdClassRows[0]?.id ?? "";
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Unknown class insert error";
+      if (!isUniqueViolationError(message)) {
+        throw error;
+      }
+      const fallbackClassRows = await request<Array<{ id: string }>>(
+        `/rest/v1/class?select=id&school_id=eq.${schoolId}&order=created_at.asc&limit=1`,
+        "GET",
+        { admin: true },
+      );
+      classId = fallbackClassRows[0]?.id ?? "";
+    }
+  }
+
+  if (!classId) {
+    throw new Error("Не удалось создать или определить class.id для teacher onboarding.");
+  }
+
+  const classTeacherRows = await request<Array<{ id: string }>>(
+    `/rest/v1/class_teacher?select=id&class_id=eq.${classId}&teacher_id=eq.${teacherId}&limit=1`,
+    "GET",
+    { admin: true },
+  );
+  if (!classTeacherRows[0]?.id) {
+    try {
+      await request("/rest/v1/class_teacher", "POST", {
+        admin: true,
+        payload: {
+          class_id: classId,
+          teacher_id: teacherId,
+        },
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Unknown class_teacher insert error";
+      if (!isUniqueViolationError(message)) {
+        throw error;
+      }
+    }
+  }
+
+  return [{ teacher_id: teacherId, school_id: schoolId, class_id: classId }];
 }
 
 export async function loadParentLearningContextsByUser(userId: string) {

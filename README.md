@@ -34,6 +34,7 @@ openssl rand -hex 32
 - Проект не требует внешней загрузки Google Fonts на этапе `next build` (используются системные font stacks), поэтому сборка подходит для сред с ограниченным egress.
 - Для pull-request deploy в Coolify всё равно нужен исходящий HTTPS-доступ к `api.github.com` (helper проверяет GitHub API до старта сборки).
 - Для Dockerfile-сборки нужен доступ к Docker Hub для `node:22-alpine`.
+- Перед стартом приложения в любом окружении обязательно применяйте все Supabase migrations (например, `supabase db push` или эквивалентный SQL migration job), иначе onboarding/RPC-ветки могут падать из-за schema drift.
 
 ## Маршруты, route groups и layouts
 
