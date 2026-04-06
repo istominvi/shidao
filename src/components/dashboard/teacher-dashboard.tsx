@@ -1,6 +1,13 @@
+import Link from "next/link";
 import { DashboardShell } from "@/components/dashboard-shell";
+import {
+  getDevTeacherScheduledLessonId,
+} from "@/lib/server/teacher-lesson-workspace";
+import { toLessonWorkspaceRoute } from "@/lib/auth";
 
 export function TeacherDashboard() {
+  const scheduledLessonId = getDevTeacherScheduledLessonId();
+
   return (
     <DashboardShell
       roleLabel="Преподаватель"
@@ -16,6 +23,24 @@ export function TeacherDashboard() {
             структура кабинета. Карточки с уроками и задачами появятся, когда
             будет подключён учебный контент.
           </p>
+          {scheduledLessonId ? (
+            <p className="mt-3 text-sm text-neutral-700">
+              <Link
+                href={toLessonWorkspaceRoute(scheduledLessonId)}
+                className="font-semibold text-sky-700 underline underline-offset-2"
+              >
+                Открыть workspace урока
+              </Link>
+            </p>
+          ) : (
+            <p className="mt-3 text-xs text-neutral-500">
+              Для dev-навигации задайте
+              {" "}
+              <code>DEV_TEACHER_WORKSPACE_SCHEDULED_LESSON_ID</code>
+              {" "}
+              в окружении приложения.
+            </p>
+          )}
         </article>
         <article className="dashboard-grid-card bg-[linear-gradient(140deg,rgba(201,180,255,0.28),rgba(255,255,255,0.9))]">
           <h3 className="text-lg font-black">Что уже можно сделать</h3>

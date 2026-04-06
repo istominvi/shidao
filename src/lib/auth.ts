@@ -15,6 +15,7 @@ export const ROUTES = {
   resetPassword: "/reset-password",
   onboarding: "/onboarding",
   dashboard: "/dashboard",
+  lessons: "/lessons",
   settings: "/settings",
   settingsSecurity: "/settings/security",
   settingsProfile: "/settings/profile",
@@ -55,4 +56,9 @@ export function toInitials(fullName?: string | null, email?: string | null) {
   const local = (email ?? "").split("@")[0]?.trim();
   if (!local) return "U";
   return local.slice(0, 2).toUpperCase();
+}
+
+
+export function toLessonWorkspaceRoute(scheduledLessonId: string) {
+  return `${ROUTES.lessons}/${encodeURIComponent(scheduledLessonId)}`;
 }
