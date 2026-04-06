@@ -6,11 +6,11 @@ function normalizeErrorMessage(error: unknown) {
 export function isSchemaDriftError(error: unknown) {
   const message = normalizeErrorMessage(error);
   return (
-    message.includes("does not exist") ||
     message.includes("could not find the function") ||
-    message.includes("relation") ||
-    message.includes("column") ||
-    message.includes("function")
+    message.includes("schema cache") ||
+    (message.includes("function") && message.includes("does not exist")) ||
+    (message.includes("relation") && message.includes("does not exist")) ||
+    (message.includes("column") && message.includes("does not exist"))
   );
 }
 
