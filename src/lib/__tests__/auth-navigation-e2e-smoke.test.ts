@@ -290,15 +290,23 @@ test("e2e smoke: authenticated /login redirects by access policy and /settings/s
   const cookie = authenticatedCookieHeader();
 
   const loginResponse = await fetch(`http://127.0.0.1:${appPort}/login`, {
-    headers: {
-      cookie,
-      "x-pathname": "/login",
-    },
+    headers: { cookie },
     redirect: "manual",
   });
 
   assert.equal(loginResponse.status, 307);
   assert.equal(loginResponse.headers.get("location"), "/dashboard");
+
+  const loginConfirmedResponse = await fetch(
+    `http://127.0.0.1:${appPort}/login?confirmed=1`,
+    {
+      headers: { cookie },
+      redirect: "manual",
+    },
+  );
+
+  assert.equal(loginConfirmedResponse.status, 307);
+  assert.equal(loginConfirmedResponse.headers.get("location"), "/dashboard");
 
   const securityResponse = await fetch(
     `http://127.0.0.1:${appPort}/settings/security`,
@@ -313,7 +321,20 @@ test("e2e smoke: authenticated /login redirects by access policy and /settings/s
   assert.match(securityHtml, /PIN-код входа/);
 });
 
-test("e2e smoke: adult with profile can still open onboarding add-profile mode", async () => {
+test("e2e smoke: authenticated adult without profile is redirected from /login?confirmed=1 to /onboarding", async () => {
+  const loginConfirmedResponse = await fetch(
+    `http://127.0.0.1:${appPort}/login?confirmed=1`,
+    {
+      headers: { cookie: authenticatedCookieHeaderWithoutProfile() },
+      redirect: "manual",
+    },
+  );
+
+  assert.equal(loginConfirmedResponse.status, 307);
+  assert.equal(loginConfirmedResponse.headers.get("location"), "/onboarding");
+});
+
+test("e2e smoke: authenticated adult with profile can still open onboarding add-profile mode", async () => {
   const response = await fetch(
     `http://127.0.0.1:${appPort}/onboarding?mode=add-profile`,
     {
