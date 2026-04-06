@@ -17,3 +17,17 @@ export async function requireUserContext() {
 
   return resolution.context;
 }
+
+export async function requireDashboardContext() {
+  const resolution = await resolveAccessPolicy();
+
+  if (resolution.status === "guest" || resolution.status === "degraded") {
+    redirect(ROUTES.login);
+  }
+
+  if (resolution.status === "adult-without-profile") {
+    redirect(ROUTES.onboarding);
+  }
+
+  return resolution.context;
+}

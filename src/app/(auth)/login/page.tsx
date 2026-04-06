@@ -43,8 +43,7 @@ function LoginPageContent() {
       setLoading(true);
       const route = await loginWithIdentifier(identifier, secret);
       await refetchSession();
-      router.push(route);
-      router.refresh();
+      router.replace(route);
     } catch (submitError) {
       setError(
         submitError instanceof Error
