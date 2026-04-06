@@ -4,7 +4,6 @@ import type {
   MethodologyLessonPosition,
   MethodologyReadinessStatus,
   ReusableAssetKind,
-  RuntimeLessonFormat,
   ScheduledLessonRuntimeStatus,
 } from "./types";
 
@@ -36,16 +35,25 @@ export type MethodologyLessonShell = {
   readinessStatus: MethodologyReadinessStatus;
 };
 
-export type ScheduledLessonRuntimeShell = {
+type BaseScheduledLessonRuntimeShell = {
   id: string;
   classId: string;
   startsAt: string;
-  format: RuntimeLessonFormat;
-  meetingLink?: string;
-  place?: string;
   runtimeStatus: ScheduledLessonRuntimeStatus;
   runtimeNotesSummary?: string;
 };
+
+export type ScheduledLessonRuntimeShell =
+  | (BaseScheduledLessonRuntimeShell & {
+      format: "online";
+      meetingLink: string;
+      place?: never;
+    })
+  | (BaseScheduledLessonRuntimeShell & {
+      format: "offline";
+      place: string;
+      meetingLink?: never;
+    });
 
 export type ReusableAsset = {
   id: string;
@@ -154,7 +162,7 @@ export type WorksheetTaskBlock = BaseLessonBlockInstance<
   "worksheet_task",
   {
     taskInstruction: string;
-    completionMode: "in_class" | "home" | "hybrid_flow";
+    completionMode: "in_class" | "home";
     answerKeyHint?: string;
     homeExtension?: string;
   }

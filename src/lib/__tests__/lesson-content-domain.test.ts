@@ -13,7 +13,11 @@ import {
   sortLessonBlocks,
   summarizeAssetsByKind,
 } from "../lesson-content";
-import type { LessonBlockType } from "../lesson-content";
+import type {
+  LessonBlockType,
+  ScheduledLessonRuntimeShell,
+  WorksheetTaskBlock,
+} from "../lesson-content";
 
 test("methodology shell and scheduled runtime shell remain separate concepts", () => {
   const methodologyShell = lessonContentFixtureMethodologyLesson.shell;
@@ -29,6 +33,62 @@ test("runtime lesson format accepts only online and offline", () => {
   assert.equal(isRuntimeLessonFormat("online"), true);
   assert.equal(isRuntimeLessonFormat("offline"), true);
   assert.equal(isRuntimeLessonFormat("hybrid"), false);
+});
+
+
+test("worksheet completion mode supports only in_class and home", () => {
+  const worksheetBlock = lessonContentFixtureBlocks.find(
+    (block): block is WorksheetTaskBlock => block.blockType === "worksheet_task",
+  );
+
+  assert.ok(worksheetBlock);
+  assert.equal(worksheetBlock.content.completionMode === "in_class", true);
+
+  // @ts-expect-error hybrid_flow is not part of MVP completion modes
+  const invalidMode: WorksheetTaskBlock["content"]["completionMode"] = "hybrid_flow";
+  assert.equal(invalidMode, "hybrid_flow");
+});
+
+test("online runtime shell requires meetingLink and disallows place", () => {
+  const onlineShell = lessonContentFixtureScheduledLesson.runtimeShell;
+
+  assert.equal(onlineShell.format, "online");
+  assert.equal(typeof onlineShell.meetingLink, "string");
+  assert.equal("place" in onlineShell, false);
+
+  // @ts-expect-error online shell must not provide place
+  const invalidOnlineShell: ScheduledLessonRuntimeShell = {
+    id: "runtime-shell:invalid-online",
+    classId: "class:red-dragons",
+    startsAt: "2026-04-07T15:00:00.000Z",
+    format: "online",
+    meetingLink: "https://meet.example.local/class-red-dragons",
+    place: "Classroom A",
+    runtimeStatus: "planned",
+  };
+  assert.equal(invalidOnlineShell.format, "online");
+});
+
+test("offline runtime shell requires place and disallows meetingLink", () => {
+  const offlineShell: ScheduledLessonRuntimeShell = {
+    id: "runtime-shell:offline-example",
+    classId: "class:red-dragons",
+    startsAt: "2026-04-09T15:00:00.000Z",
+    format: "offline",
+    place: "Room 204",
+    runtimeStatus: "planned",
+  };
+
+  assert.equal(offlineShell.format, "offline");
+  assert.equal(typeof offlineShell.place, "string");
+  assert.equal("meetingLink" in offlineShell, false);
+
+  // @ts-expect-error offline shell must not provide meetingLink
+  const invalidOfflineShell: ScheduledLessonRuntimeShell = {
+    ...offlineShell,
+    meetingLink: "https://meet.example.local/class-red-dragons",
+  };
+  assert.equal(invalidOfflineShell.format, "offline");
 });
 
 test("lesson blocks preserve ordering semantics via helper", () => {
