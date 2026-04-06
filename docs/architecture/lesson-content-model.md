@@ -35,12 +35,14 @@
 
 Для teacher центральный объект операционной работы — урок (подготовка, проведение, пост-урочная фиксация).
 
-### 2.3 Каноническая lesson shell + вариативное lesson body
+### 2.3 Два связанных shell-контура: methodology и runtime
 
-Каждый урок имеет:
+В модели есть **два разных shell-контура**, которые нельзя смешивать:
 
-- стабильный «верхний контур» (shell) для быстрых ответов «что это за урок»;
-- вариативное «тело» из упорядоченных сценарных блоков.
+- **Methodology lesson shell** — канонический стабильный контур урока внутри методологии;
+- **Scheduled lesson runtime shell (runtime contour)** — контур конкретного проведения для class+date/time.
+
+Оба контура связаны, но имеют разные цели и разные поля; вариативное «тело» урока (ordered blocks) наследуется от methodology baseline.
 
 ### 2.4 Component != Content
 
@@ -72,7 +74,8 @@ UI-компоненты только отображают данные. Конт
 
 - **Methodology** — предзагруженная учебная программа/подход, содержащая последовательность методологических уроков.
 - **Methodology lesson** — канонический урок внутри методологии (шаблон содержания и педагогического сценария).
-- **Lesson shell** — стабильный верхний контур урока (метаданные и краткое содержание).
+- **Methodology lesson shell** — стабильный канонический контур урока в методологии (идентичность и навигация).
+- **Scheduled lesson runtime shell / runtime contour** — runtime-контур конкретного проведения урока (дата/формат/статус/операционные поля).
 - **Lesson block** — тип блока сценария (например, `video`, `song`, `activity`).
 - **Lesson block instance** — конкретный экземпляр блока в конкретном уроке с собственным payload и порядком.
 - **Reusable asset** — отдельный переиспользуемый ресурс (медиа, worksheet, словарь, файл), на который могут ссылаться блоки.
@@ -84,19 +87,30 @@ UI-компоненты только отображают данные. Конт
 
 ---
 
-## 4) Что входит в lesson shell (upper contour)
+## 4) Два shell-контура: что где хранится
 
-В shell должны жить данные, которые редко меняют структуру и нужны для навигации/ориентации:
+### 4.1 Methodology lesson shell (канонический контур)
+
+Methodology shell отвечает на вопрос: **«что это за урок в методологии»**. Здесь живут стабильные поля:
 
 1. **Название урока**.
 2. **Позиция в методологии** (module/unit/lesson index).
 3. **Сводка ключевой лексики/фраз** (короткий digest, не полный сценарий).
-4. **Статус урока** (например: draft, ready, archived на уровне методологии; planned, in_progress, done на уровне scheduled-проекции).
-5. **Дата/время/формат** (для scheduled lesson: online/offline/hybrid).
-6. **Сводка связанных медиа** (например, «1 видео, 1 песня, 2 worksheet»).
-7. **Короткие teacher-facing metadata** (например, возрастная группа, ориентировочная длительность).
+4. **Ориентировочная длительность** (estimated duration).
+5. **Сводка связанных медиа** (например, «1 видео, 1 песня, 2 worksheet»).
+6. **Methodology-level статус готовности/публикации** при необходимости (например: draft, ready, archived).
 
-Что **не** входит в shell:
+### 4.2 Scheduled lesson runtime shell / runtime contour
+
+Runtime shell отвечает на вопрос: **«как проходит конкретный урок класса в конкретное время»**. Здесь живут operational/runtime поля:
+
+1. **Scheduled date/time**.
+2. **Формат проведения** (online/offline/hybrid).
+3. **Meeting link / place** (для online/offline).
+4. **Runtime status** (planned / in_progress / completed / cancelled).
+5. **Краткие class-specific teacher notes** (если нужны для этого проведения).
+
+### 4.3 Что не входит ни в один shell
 
 - детальные шаги сценария;
 - длинные инструкции и полные тексты реплик;
@@ -131,6 +145,69 @@ Lesson body — это **упорядоченный сценарий** из ти
 
 - сходство: единая типизация блоков и общий контракт;
 - вариативность: payload каждого block instance и ссылки на разные assets.
+
+### 5.1 Короткие pseudo-data примеры block instance payload
+
+> Псевдо-данные ниже — для снятия неоднозначности контрактов; это не SQL и не production-код.
+
+**Пример A — `video_segment`**
+
+```json
+{
+  "block_type": "video_segment",
+  "order": 2,
+  "embedded": {
+    "prompt_before_watch": "Послушай приветствия и отметь знакомые фразы",
+    "focus_points": ["你好", "你叫什么名字?"],
+    "questions_after_watch": ["Кто с кем здоровается?"]
+  },
+  "asset_refs": [
+    { "kind": "video", "id": "video:greetings-dialogue-a1" }
+  ]
+}
+```
+
+**Пример B — `vocabulary_focus`**
+
+```json
+{
+  "block_type": "vocabulary_focus",
+  "order": 3,
+  "embedded": {
+    "practice_mode": "choral_then_pairs",
+    "items": [
+      { "term": "老师", "pinyin": "lǎoshī", "meaning": "учитель" },
+      { "term": "学生", "pinyin": "xuésheng", "meaning": "ученик" }
+    ],
+    "mini_drill": "Назови слово по карточке за 5 секунд"
+  },
+  "asset_refs": [
+    { "kind": "vocabulary_set", "id": "vocab:classroom-core" }
+  ]
+}
+```
+
+**Пример C — `guided_activity`**
+
+```json
+{
+  "block_type": "guided_activity",
+  "order": 5,
+  "embedded": {
+    "activity_type": "pair_roleplay",
+    "steps": [
+      "A спрашивает имя",
+      "B отвечает и задаёт встречный вопрос",
+      "Смена ролей"
+    ],
+    "success_criteria": ["каждый ученик произнёс 2 реплики"]
+  },
+  "asset_refs": [
+    { "kind": "activity_template", "id": "activity:basic-greeting-roleplay" },
+    { "kind": "worksheet", "id": "ws:greeting-cards-set-1" }
+  ]
+}
+```
 
 ---
 
@@ -267,7 +344,7 @@ Lesson body — это **упорядоченный сценарий** из ти
 
 1. **Methodology** содержит множество **methodology lessons**.
 2. **Methodology lesson** содержит:
-   - один `lesson shell`;
+   - один `methodology lesson shell`;
    - упорядоченный список `lesson block instances`.
 3. Каждый **lesson block instance**:
    - имеет `block_type`;
@@ -279,17 +356,19 @@ Lesson body — это **упорядоченный сценарий** из ти
 
 4. **Class** имеет множество **scheduled lessons** по датам.
 5. **Scheduled lesson** обычно ссылается на один **methodology lesson** как baseline.
-6. Scheduled lesson может хранить runtime-данные (фактический статус, заметки, отклонения от baseline, фактические материалы).
+6. Scheduled lesson хранит runtime-данные (фактический статус, teacher/runtime notes, итоги проведения, фактические материалы).
+7. **MVP policy:** scheduled lesson наследует methodology lesson как baseline и **не поддерживает arbitrary per-block overrides** канонического content payload.
+8. Любые «изменения по месту» в MVP фиксируются как runtime notes/outcome notes вокруг scheduled lesson, а не как редактирование канонических block instances.
 
 ### 8.3 Интеграции вокруг урока
 
-7. **Lesson thread** привязан к scheduled lesson (коммуникация вокруг конкретного проведения).
-8. **Homework** привязан к scheduled lesson и при необходимости к конкретным block instances.
-9. **Attendance/история** в будущем также привязывается к scheduled lesson, а не к methodology lesson.
+9. **Lesson thread** привязан к scheduled lesson (коммуникация вокруг конкретного проведения).
+10. **Homework** привязан к scheduled lesson и при необходимости к конкретным block instances.
+11. **Attendance/история** в будущем также привязывается к scheduled lesson, а не к methodology lesson.
 
 ### 8.4 Проекции
 
-10. Из полного teacher domain view строятся разные read-проекции:
+12. Из полного teacher domain view строятся разные read-проекции:
    - teacher projection (полная);
    - parent/student projection (ограниченная, безопасная, понятная).
 
@@ -300,13 +379,13 @@ Lesson body — это **упорядоченный сценарий** из ти
 ### 9.1 До урока
 
 - teacher открывает scheduled lesson на конкретную дату/класс;
-- получает baseline из methodology lesson (shell + body);
-- проверяет `materials_prep`, медиа, worksheet, адаптирует локальные заметки под класс.
+- получает baseline из methodology lesson (methodology shell + ordered body);
+- дополняет только runtime shell (дата/формат/meeting/place/notes) и проверяет `materials_prep`, медиа, worksheet.
 
 ### 9.2 Во время урока
 
-- двигается по ordered blocks как по сценарию;
-- отмечает прогресс, при необходимости фиксирует отклонения/наблюдения;
+- двигается по ordered blocks как по сценарию baseline;
+- отмечает прогресс и фиксирует наблюдения как runtime notes/outcome notes;
 - использует linked assets и встроенные инструкции блока.
 
 ### 9.3 После урока
@@ -317,8 +396,9 @@ Lesson body — это **упорядоченный сценарий** из ти
 
 ### 9.4 Как кооперируются methodology lesson и scheduled lesson
 
-- methodology lesson задаёт канонический методический каркас;
-- scheduled lesson добавляет контекст конкретного класса и времени;
+- methodology lesson задаёт канонический методический каркас (source of truth контента);
+- scheduled lesson добавляет контекст конкретного класса и времени через runtime shell;
+- в MVP runtime-контур **не** делает per-block override канонического контента;
 - изменения runtime не должны «ломать» базовую методологию без отдельного процесса.
 
 ---
@@ -386,7 +466,7 @@ Lesson body — это **упорядоченный сценарий** из ти
 
 ### Phase 2 — Domain entities & contracts
 
-- Ввести доменные контракты (без UI-переусложнения): methodology lesson, shell, block instance, reusable asset.
+- Ввести доменные контракты (без UI-переусложнения): methodology lesson shell, scheduled lesson runtime shell, block instance, reusable asset.
 - Зафиксировать контракт проекций: teacher vs parent/student.
 
 ### Phase 3 — Teacher lesson workspace
@@ -410,10 +490,11 @@ Lesson body — это **упорядоченный сценарий** из ти
 ## 14) Открытые вопросы / решения к подтверждению
 
 1. Насколько глубоко versioning нужен для reusable assets уже в v1 (или отложить до v2)?
-2. Нужна ли явная поддержка block overrides в scheduled lesson (точечная замена payload) в MVP, или достаточно runtime notes?
-3. Где проходит граница между vocabulary как embedded list и как reusable set по умолчанию?
-4. Нужен ли единый каталог activity templates в MVP или сначала только embedded activities?
-5. Какой минимальный объём parent/student проекции обязателен для первого релиза?
+2. Где проходит граница между vocabulary как embedded list и как reusable set по умолчанию?
+3. Нужен ли единый каталог activity templates в MVP или сначала только embedded activities?
+4. Какой минимальный объём parent/student проекции обязателен для первого релиза?
+
+**Зафиксированное решение для MVP (не open question):** block overrides канонического methodology content в scheduled lesson не поддерживаются; допускаются только runtime/teacher/outcome notes вокруг проведения урока.
 
 ---
 
@@ -424,7 +505,8 @@ Lesson body — это **упорядоченный сценарий** из ти
 - [ ] Контент блоков хранится как данные, а не как код UI-компонентов.
 - [ ] Не используется table-per-block-type для хранения блоков.
 - [ ] Reusable ресурсы выделены отдельно там, где есть переиспользование/жизненный цикл.
-- [ ] Чётко разделены methodology lesson и scheduled lesson.
+- [ ] Чётко разделены methodology lesson shell и scheduled lesson runtime shell.
+- [ ] В MVP нет arbitrary per-block overrides канонического methodology content.
 - [ ] Teacher projection и parent/student projection разделены по доступу и полям.
 - [ ] Модель не включает non-goals v1 (AI generation, no-code builder, editor методологий).
 
