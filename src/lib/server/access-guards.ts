@@ -1,20 +1,31 @@
 import { ROUTES } from "../auth";
-import { isRouteWithin } from "../routes";
 import type { AccessResolution } from "./access-policy";
 
-export function resolvePrivateLayoutRedirect(
-  status: AccessResolution["status"],
-  pathname: string | null,
-) {
+export function resolveAppLayoutRedirect(status: AccessResolution["status"]) {
   if (status === "guest" || status === "degraded") {
     return ROUTES.login;
   }
 
-  if (
-    status === "adult-without-profile" &&
-    !isRouteWithin(pathname, ROUTES.onboarding)
-  ) {
+  return null;
+}
+
+export function resolveProfileRequiredRedirect(
+  status: AccessResolution["status"],
+) {
+  if (status === "adult-without-profile") {
     return ROUTES.onboarding;
+  }
+
+  return resolveAppLayoutRedirect(status);
+}
+
+export function resolveAuthEntryRedirect(status: AccessResolution["status"]) {
+  if (status === "adult-without-profile") {
+    return ROUTES.onboarding;
+  }
+
+  if (status === "adult-with-profile" || status === "student") {
+    return ROUTES.dashboard;
   }
 
   return null;

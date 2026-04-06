@@ -1,14 +1,14 @@
 import { redirect } from "next/navigation";
 import { resolveAccessPolicy } from "@/lib/server/access-policy";
-import { resolveAppLayoutRedirect } from "@/lib/server/access-guards";
+import { resolveAuthEntryRedirect } from "@/lib/server/access-guards";
 
-export default async function AppLayout({
+export default async function AuthEntryLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   const resolution = await resolveAccessPolicy();
-  const redirectPath = resolveAppLayoutRedirect(resolution.status);
+  const redirectPath = resolveAuthEntryRedirect(resolution.status);
 
   if (redirectPath) {
     redirect(redirectPath);

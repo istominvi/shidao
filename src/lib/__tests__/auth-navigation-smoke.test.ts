@@ -2,13 +2,12 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { ROUTES } from "../auth";
-import { onAuthPageWhenAuthenticated } from "../auth-redirects";
 import {
   resolveAddProfileHref,
   resolveTopNavAction,
   shouldRedirectSecuritySettingsToLogin,
 } from "../navigation-contract";
-import { resolvePrivateLayoutRedirect } from "../server/access-guards";
+import { resolveAppLayoutRedirect, resolveAuthEntryRedirect } from "../server/access-guards";
 import type {
   SessionAdultView,
   SessionGuestView,
@@ -46,27 +45,14 @@ test("smoke: authenticated user opens / and sees auth-aware header contract", ()
 
 test("smoke: guest on protected route is redirected to /login by server guard", () => {
   assert.equal(
-    resolvePrivateLayoutRedirect("guest", ROUTES.dashboard),
+    resolveAppLayoutRedirect("guest"),
     ROUTES.login,
   );
 });
 
 test("smoke: authenticated user on /login is redirected by access policy", () => {
-  assert.equal(
-    onAuthPageWhenAuthenticated({
-      status: "adult-with-profile",
-      context: {} as never,
-      activeProfile: "parent",
-    }),
-    ROUTES.dashboard,
-  );
-  assert.equal(
-    onAuthPageWhenAuthenticated({
-      status: "adult-without-profile",
-      context: {} as never,
-    }),
-    ROUTES.onboarding,
-  );
+  assert.equal(resolveAuthEntryRedirect("adult-with-profile"), ROUTES.dashboard);
+  assert.equal(resolveAuthEntryRedirect("adult-without-profile"), ROUTES.onboarding);
 });
 
 test("smoke: /settings/security follows server-first contract (no extra client fetch needed)", () => {
