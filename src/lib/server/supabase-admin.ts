@@ -620,13 +620,17 @@ async function upsertTeacherProfileFallback(
   fullName: string | null,
 ) {
   let teacherId = "";
-  const teacherRows = await request<Array<{ id: string }>>("/rest/v1/teacher", "POST", {
-    admin: true,
-    payload: { user_id: userId, full_name: fullName },
-    extraHeaders: {
-      Prefer: "resolution=merge-duplicates,return=representation",
+  const teacherRows = await request<Array<{ id: string }>>(
+    "/rest/v1/teacher?on_conflict=user_id",
+    "POST",
+    {
+      admin: true,
+      payload: { user_id: userId, full_name: fullName },
+      extraHeaders: {
+        Prefer: "resolution=merge-duplicates,return=representation",
+      },
     },
-  });
+  );
   teacherId = teacherRows[0]?.id ?? "";
   if (!teacherId) {
     const teacherLookup = await request<Array<{ id: string }>>(
@@ -688,17 +692,21 @@ async function upsertTeacherProfileFallback(
     throw new Error("Не удалось создать или определить school.id для teacher onboarding.");
   }
 
-  await request("/rest/v1/school_teacher", "POST", {
-    admin: true,
-    payload: {
-      school_id: schoolId,
-      teacher_id: teacherId,
-      role: "owner",
+  await request(
+    "/rest/v1/school_teacher?on_conflict=school_id,teacher_id",
+    "POST",
+    {
+      admin: true,
+      payload: {
+        school_id: schoolId,
+        teacher_id: teacherId,
+        role: "owner",
+      },
+      extraHeaders: {
+        Prefer: "resolution=merge-duplicates,return=representation",
+      },
     },
-    extraHeaders: {
-      Prefer: "resolution=merge-duplicates,return=representation",
-    },
-  });
+  );
 
   let classId = "";
   const classRows = await request<Array<{ id: string }>>(
@@ -738,16 +746,20 @@ async function upsertTeacherProfileFallback(
     throw new Error("Не удалось создать или определить class.id для teacher onboarding.");
   }
 
-  await request("/rest/v1/class_teacher", "POST", {
-    admin: true,
-    payload: {
-      class_id: classId,
-      teacher_id: teacherId,
+  await request(
+    "/rest/v1/class_teacher?on_conflict=class_id,teacher_id",
+    "POST",
+    {
+      admin: true,
+      payload: {
+        class_id: classId,
+        teacher_id: teacherId,
+      },
+      extraHeaders: {
+        Prefer: "resolution=merge-duplicates,return=representation",
+      },
     },
-    extraHeaders: {
-      Prefer: "resolution=merge-duplicates,return=representation",
-    },
-  });
+  );
 
   return [{ teacher_id: teacherId, school_id: schoolId, class_id: classId }];
 }
