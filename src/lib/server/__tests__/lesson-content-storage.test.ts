@@ -234,4 +234,8 @@ test("bootstrap fixture rows are deterministic and idempotent by stable IDs", ()
   assert.deepEqual(first.blockRows, second.blockRows);
   assert.deepEqual(first.blockAssetRows, second.blockAssetRows);
   assert.equal(first.blockRows.length > 0, true);
+  assert.match(
+    first.scheduledLessonRow.class_id,
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
+  );
 });

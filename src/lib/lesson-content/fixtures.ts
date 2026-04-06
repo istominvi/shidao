@@ -319,7 +319,7 @@ export const lessonContentFixtureScheduledLesson: ScheduledLesson = {
   methodologyLessonId: lessonContentFixtureMethodologyLesson.id,
   runtimeShell: {
     id: "runtime-shell:demo-world-around-me-lesson-1",
-    classId: "class:demo-world-around-me",
+    classId: "3f8e9cf9-66f2-4fb9-9504-9f708b67e952",
     startsAt: "2026-04-07T15:00:00.000Z",
     format: "offline",
     place: "Demo classroom A",
