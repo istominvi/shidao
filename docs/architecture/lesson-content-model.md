@@ -517,3 +517,13 @@ Lesson body — это **упорядоченный сценарий** из ти
 - Терминология ролей (`parent`, `teacher`, `student`) и школьного контура (`school`, `class`) согласована с `docs/tz.md`.
 - Документ не конфликтует с текущим auth/onboarding фундаментом из README: модель уроков накладывается поверх существующей role-aware архитектуры.
 - Потенциальный терминологический нюанс: в существующей документации приватный интерфейс описан как dashboard-centric, а здесь вводится lesson-centric рабочая единица для teacher. Это не конфликт, а уточнение продуктового фокуса следующего этапа.
+
+---
+
+## 17) Bootstrap baseline на апрель 2026 (MVP, первый реальный импорт)
+
+- В storage bootstrap загружается одна реальная методология: `我周围的世界` / `Мир вокруг меня`.
+- Загружается один канонический урок методологии: `Урок 1. Животные на ферме`.
+- В урок импортируются типизированные ordered blocks v1 (intro/video/vocabulary/prompts/guided activities/worksheet/song/wrap-up) без runtime overrides.
+- Для media используются reusable assets (`farm animals` video/song, workbook pages 3–4, Appendix 1) без поддельных URL.
+- Для dev-навигации bootstrap также создаёт один demo `scheduled_lesson`, чтобы teacher workspace мог открывать этот урок через `DEV_TEACHER_WORKSPACE_SCHEDULED_LESSON_ID`.

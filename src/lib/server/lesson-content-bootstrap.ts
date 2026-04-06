@@ -2,6 +2,7 @@ import {
   lessonContentFixtureAssets,
   lessonContentFixtureMethodology,
   lessonContentFixtureMethodologyLesson,
+  lessonContentFixtureScheduledLesson,
 } from "../lesson-content";
 import { createHash } from "node:crypto";
 
@@ -67,6 +68,7 @@ function stableUuid(seed: string): string {
 export function buildFixtureBootstrapRows() {
   const methodologyId = stableUuid(`methodology:${lessonContentFixtureMethodology.slug}`);
   const methodologyLessonId = stableUuid(`methodology_lesson:${lessonContentFixtureMethodologyLesson.id}`);
+  const scheduledLessonId = stableUuid(`scheduled_lesson:${lessonContentFixtureScheduledLesson.id}`);
 
   const assetIdMap = new Map<string, string>();
   for (const asset of lessonContentFixtureAssets) {
@@ -125,10 +127,32 @@ export function buildFixtureBootstrapRows() {
     })),
     blockRows,
     blockAssetRows,
+    scheduledLessonRow: {
+      id: scheduledLessonId,
+      class_id: lessonContentFixtureScheduledLesson.runtimeShell.classId,
+      methodology_lesson_id: methodologyLessonId,
+      starts_at: lessonContentFixtureScheduledLesson.runtimeShell.startsAt,
+      format: lessonContentFixtureScheduledLesson.runtimeShell.format,
+      meeting_link:
+        lessonContentFixtureScheduledLesson.runtimeShell.format === "online"
+          ? lessonContentFixtureScheduledLesson.runtimeShell.meetingLink
+          : null,
+      place:
+        lessonContentFixtureScheduledLesson.runtimeShell.format === "offline"
+          ? lessonContentFixtureScheduledLesson.runtimeShell.place
+          : null,
+      runtime_status: lessonContentFixtureScheduledLesson.runtimeShell.runtimeStatus,
+      runtime_notes_summary:
+        lessonContentFixtureScheduledLesson.runtimeShell.runtimeNotesSummary ?? null,
+      runtime_notes: lessonContentFixtureScheduledLesson.runtimeNotes ?? null,
+      outcome_notes: lessonContentFixtureScheduledLesson.outcomeNotes ?? null,
+    },
   };
 }
 
-export async function bootstrapLessonContentFixtureAdmin() {
+export async function bootstrapLessonContentFixtureAdmin(options?: {
+  includeDevScheduledLesson?: boolean;
+}) {
   const rows = buildFixtureBootstrapRows();
 
   await adminRequest("/rest/v1/methodology?on_conflict=slug", "POST", {
@@ -178,9 +202,19 @@ export async function bootstrapLessonContentFixtureAdmin() {
     },
   );
 
+  if (options?.includeDevScheduledLesson ?? true) {
+    await adminRequest("/rest/v1/scheduled_lesson?on_conflict=id", "POST", {
+      payload: rows.scheduledLessonRow,
+      extraHeaders: {
+        Prefer: "resolution=merge-duplicates,return=representation",
+      },
+    });
+  }
+
   return {
     methodologyId: rows.methodologyRow.id,
     methodologyLessonId: rows.methodologyLessonRow.id,
     blockCount: rows.blockRows.length,
+    scheduledLessonId: rows.scheduledLessonRow.id,
   };
 }

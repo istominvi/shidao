@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  lessonContentFixtureMethodology,
   lessonContentFixtureMethodologyLesson,
   lessonContentFixtureScheduledLesson,
 } from "../../lesson-content";
@@ -20,18 +21,18 @@ function buildLessonRowFixture(): RowMethodologyLessonWithBlocks {
     module_index: 1,
     unit_index: 1,
     lesson_index: 1,
-    vocabulary_summary: ["老师", "学生"],
-    phrase_summary: ["你好", "你叫什么名字", "我叫…"],
-    estimated_duration_minutes: 45,
+    vocabulary_summary: lessonContentFixtureMethodologyLesson.shell.vocabularySummary,
+    phrase_summary: lessonContentFixtureMethodologyLesson.shell.phraseSummary,
+    estimated_duration_minutes: lessonContentFixtureMethodologyLesson.shell.estimatedDurationMinutes,
     readiness_status: "ready",
-    methodology: { slug: "mandarin-a1-kids" },
+    methodology: { slug: lessonContentFixtureMethodology.slug },
     blocks: [
       {
         id: "block-2",
         block_type: "video_segment",
         sort_order: 2,
         title: "video",
-        content: { promptBeforeWatch: "listen", focusPoints: ["你好"] },
+        content: { promptBeforeWatch: "watch", focusPoints: ["狗"] },
         block_assets: [
           {
             sort_order: 0,
@@ -41,7 +42,7 @@ function buildLessonRowFixture(): RowMethodologyLessonWithBlocks {
               kind: "video",
               title: "video",
               description: null,
-              source_url: "https://example.com/video.mp4",
+              source_url: null,
               file_ref: null,
               metadata: null,
             },
@@ -53,7 +54,10 @@ function buildLessonRowFixture(): RowMethodologyLessonWithBlocks {
         block_type: "worksheet_task",
         sort_order: 3,
         title: "worksheet",
-        content: { taskInstruction: "do", completionMode: "home" },
+        content: {
+          taskInstruction: "Выполнить задание",
+          completionMode: "in_class",
+        },
         block_assets: [
           {
             sort_order: 0,
@@ -64,7 +68,7 @@ function buildLessonRowFixture(): RowMethodologyLessonWithBlocks {
               title: "worksheet",
               description: null,
               source_url: null,
-              file_ref: "worksheet.pdf",
+              file_ref: null,
               metadata: null,
             },
           },
@@ -75,7 +79,7 @@ function buildLessonRowFixture(): RowMethodologyLessonWithBlocks {
         block_type: "song_segment",
         sort_order: 1,
         title: "song",
-        content: { activityGoal: "repeat", teacherActions: ["sing"] },
+        content: { activityGoal: "sing", teacherActions: ["repeat"] },
         block_assets: [
           {
             sort_order: 0,
@@ -85,21 +89,8 @@ function buildLessonRowFixture(): RowMethodologyLessonWithBlocks {
               kind: "song",
               title: "song",
               description: null,
-              source_url: "https://example.com/song.mp3",
-              file_ref: null,
-              metadata: null,
-            },
-          },
-          {
-            sort_order: 1,
-            reusable_asset_id: "asset-worksheet-1",
-            asset: {
-              id: "asset-worksheet-1",
-              kind: "worksheet",
-              title: "worksheet",
-              description: null,
               source_url: null,
-              file_ref: "worksheet.pdf",
+              file_ref: null,
               metadata: null,
             },
           },
@@ -182,12 +173,63 @@ test("scheduled lesson domain does not include runtime block override structure"
   assert.equal("blocks" in scheduled, false);
 });
 
+test("bootstrap fixture rows import the real methodology lesson shell for lesson 1", () => {
+  const rows = buildFixtureBootstrapRows();
+
+  assert.equal(rows.methodologyRow.slug, "world-around-me");
+  assert.equal(rows.methodologyRow.title, "我周围的世界");
+  assert.equal(rows.methodologyLessonRow.title, "Урок 1. Животные на ферме");
+  assert.deepEqual(rows.methodologyLessonRow.vocabulary_summary, [
+    "狗",
+    "猫",
+    "兔子",
+    "马",
+    "农场",
+    "跑",
+    "跳",
+  ]);
+  assert.deepEqual(rows.methodologyLessonRow.phrase_summary, [
+    "我是…",
+    "这是…",
+    "我们…吧！",
+    "在…里",
+  ]);
+});
+
+test("real lesson block mapping keeps order and expected vocabulary/phrases", () => {
+  const rows = buildFixtureBootstrapRows();
+
+  assert.equal(rows.blockRows.length >= 10, true);
+  assert.deepEqual(
+    rows.blockRows.map((block) => block.sort_order),
+    [...rows.blockRows]
+      .sort((a, b) => a.sort_order - b.sort_order)
+      .map((block) => block.sort_order),
+  );
+
+  const vocabBlock = rows.blockRows.find((block) => block.block_type === "vocabulary_focus");
+  assert.ok(vocabBlock);
+
+  const vocabContent = vocabBlock.content as {
+    items: Array<{ term: string }>;
+  };
+
+  assert.equal(vocabContent.items.some((item) => item.term === "农场"), true);
+  assert.equal(vocabContent.items.some((item) => item.term === "我们…吧！"), true);
+
+  const promptBlock = rows.blockRows.find((block) => block.block_type === "teacher_prompt_pattern");
+  assert.ok(promptBlock);
+  const promptContent = promptBlock.content as { promptPatterns: string[] };
+  assert.equal(promptContent.promptPatterns.includes("你是谁？"), true);
+});
+
 test("bootstrap fixture rows are deterministic and idempotent by stable IDs", () => {
   const first = buildFixtureBootstrapRows();
   const second = buildFixtureBootstrapRows();
 
   assert.equal(first.methodologyRow.id, second.methodologyRow.id);
   assert.equal(first.methodologyLessonRow.id, second.methodologyLessonRow.id);
+  assert.equal(first.scheduledLessonRow.id, second.scheduledLessonRow.id);
   assert.deepEqual(first.reusableAssetRows, second.reusableAssetRows);
   assert.deepEqual(first.blockRows, second.blockRows);
   assert.deepEqual(first.blockAssetRows, second.blockAssetRows);
