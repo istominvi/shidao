@@ -70,6 +70,30 @@ test("teacher workspace read model keeps runtime and methodology shells distinct
   assert.equal("readinessStatus" in readModel.projection.runtimeShell, false);
 });
 
+test("teacher workspace read model keeps methodology shell immutable after runtime edits", () => {
+  const readModel = buildTeacherLessonWorkspaceReadModel({
+    projection: {
+      methodologyLessonId: lessonContentFixtureMethodologyLesson.id,
+      methodologyShell: lessonContentFixtureMethodologyLesson.shell,
+      runtimeShell: {
+        ...lessonContentFixtureScheduledLesson.runtimeShell,
+        runtimeStatus: "completed",
+        runtimeNotesSummary: "Сильный прогресс",
+      },
+      orderedBlocks: lessonContentFixtureMethodologyLesson.blocks,
+      runtimeNotes: "Заметки по проведению обновлены",
+      outcomeNotes: "Итоги урока обновлены",
+    },
+    scheduledLessonId: lessonContentFixtureScheduledLesson.id,
+    classId: lessonContentFixtureScheduledLesson.runtimeShell.classId,
+    assets: lessonContentFixtureAssets,
+  });
+
+  assert.equal(readModel.projection.runtimeShell.runtimeStatus, "completed");
+  assert.equal(readModel.projection.methodologyShell.title, lessonContentFixtureMethodologyLesson.shell.title);
+  assert.equal("runtimeNotesSummary" in readModel.projection.methodologyShell, false);
+});
+
 test("teacher workspace read model includes teacher notes and no block override structure", () => {
   const readModel = buildTeacherLessonWorkspaceReadModel({
     projection: {

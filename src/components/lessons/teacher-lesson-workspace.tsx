@@ -15,6 +15,10 @@ import type { TeacherLessonWorkspaceReadModel } from "@/lib/server/teacher-lesso
 
 type TeacherLessonWorkspaceProps = {
   workspace: TeacherLessonWorkspaceReadModel;
+  runtimeFormFeedback?: {
+    success?: string;
+    error?: string;
+  };
 };
 
 function formatRuntimeDateTime(iso: string) {
@@ -226,7 +230,10 @@ function renderBlockContent(block: LessonBlockInstance) {
   }
 }
 
-export function TeacherLessonWorkspace({ workspace }: TeacherLessonWorkspaceProps) {
+export function TeacherLessonWorkspace({
+  workspace,
+  runtimeFormFeedback,
+}: TeacherLessonWorkspaceProps) {
   const { projection } = workspace;
   const runtime = projection.runtimeShell;
   const methodology = projection.methodologyShell;
@@ -266,6 +273,86 @@ export function TeacherLessonWorkspace({ workspace }: TeacherLessonWorkspaceProp
             <li><b>Готовность:</b> {methodology.readinessStatus}</li>
           </ul>
         </article>
+      </section>
+
+      <section className="landing-surface rounded-3xl border border-emerald-200/70 p-5">
+        <h2 className="text-xl font-bold text-neutral-900">Runtime-действия преподавателя</h2>
+        <p className="mt-2 text-sm text-neutral-700">
+          Редактируются только operational runtime-данные занятия. Методологическая
+          структура и блоки урока остаются только для чтения.
+        </p>
+
+        {runtimeFormFeedback?.success ? (
+          <p className="mt-4 rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+            {runtimeFormFeedback.success}
+          </p>
+        ) : null}
+        {runtimeFormFeedback?.error ? (
+          <p className="mt-4 rounded-xl border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+            {runtimeFormFeedback.error}
+          </p>
+        ) : null}
+
+        <form
+          className="mt-4 space-y-4"
+          action={`/api/teacher/lessons/${workspace.scheduledLessonId}/runtime`}
+          method="POST"
+        >
+          <label className="block">
+            <span className="text-sm font-semibold text-neutral-900">Статус проведения</span>
+            <select
+              name="runtimeStatus"
+              defaultValue={runtime.runtimeStatus}
+              className="mt-1 w-full rounded-xl border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900"
+            >
+              <option value="planned">Запланирован</option>
+              <option value="in_progress">Идёт</option>
+              <option value="completed">Завершён</option>
+              <option value="cancelled">Отменён</option>
+            </select>
+          </label>
+
+          <label className="block">
+            <span className="text-sm font-semibold text-neutral-900">
+              Краткая runtime-заметка
+            </span>
+            <textarea
+              name="runtimeNotesSummary"
+              rows={2}
+              defaultValue={runtime.runtimeNotesSummary ?? ""}
+              className="mt-1 w-full rounded-xl border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900"
+            />
+          </label>
+
+          <label className="block">
+            <span className="text-sm font-semibold text-neutral-900">
+              Заметки по проведению
+            </span>
+            <textarea
+              name="runtimeNotes"
+              rows={4}
+              defaultValue={projection.runtimeNotes ?? ""}
+              className="mt-1 w-full rounded-xl border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900"
+            />
+          </label>
+
+          <label className="block">
+            <span className="text-sm font-semibold text-neutral-900">Итоговые заметки</span>
+            <textarea
+              name="outcomeNotes"
+              rows={4}
+              defaultValue={projection.outcomeNotes ?? ""}
+              className="mt-1 w-full rounded-xl border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900"
+            />
+          </label>
+
+          <button
+            type="submit"
+            className="inline-flex items-center rounded-xl bg-neutral-900 px-4 py-2 text-sm font-semibold text-white hover:bg-neutral-800"
+          >
+            Сохранить runtime-данные
+          </button>
+        </form>
       </section>
 
       <section className="landing-surface rounded-3xl border border-white/70 p-5">
