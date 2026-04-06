@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { ROUTES } from "@/lib/auth";
 import { apiError, parseJsonWithSchema } from "@/lib/server/api";
 import { readAppSession } from "@/lib/server/app-session";
+import { logger } from "@/lib/server/logger";
+import { mapOnboardingFailureToUserMessage } from "@/lib/server/onboarding-errors";
 import {
   ensureUserPreference,
   getUserContextById,
@@ -30,14 +32,26 @@ export async function POST(req: NextRequest) {
     return apiError(403, "Онбординг недоступен для ученика.");
   }
 
-  if (profile === "parent") {
-    await upsertParentProfile(session.uid, context.fullName);
-  } else {
-    await upsertTeacherProfile(session.uid, context.fullName);
-  }
+  try {
+    if (profile === "parent") {
+      await upsertParentProfile(session.uid, context.fullName);
+    } else {
+      await upsertTeacherProfile(session.uid, context.fullName);
+    }
 
-  await ensureUserPreference(session.uid);
-  await setLastActiveProfile(session.uid, profile);
+    await ensureUserPreference(session.uid);
+    await setLastActiveProfile(session.uid, profile);
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Unknown onboarding error";
+    logger.error("[api/onboarding] onboarding failed", {
+      userId: session.uid,
+      profile,
+      message,
+      error,
+    });
+    return apiError(500, mapOnboardingFailureToUserMessage(error));
+  }
 
   return NextResponse.json({ redirectTo: ROUTES.dashboard });
 }
