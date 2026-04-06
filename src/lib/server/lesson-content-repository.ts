@@ -1,14 +1,17 @@
 import type {
   Methodology,
   MethodologyLesson,
+  ReusableAsset,
   ScheduledLesson,
   ScheduledLessonRuntimeShell,
 } from "../lesson-content";
 import {
   mapMethodologyLessonRowToDomain,
   mapMethodologyRowToDomain,
+  mapReusableAssetRowsToDomain,
   mapScheduledLessonRowToDomain,
   type RowMethodologyLessonWithBlocks,
+  type RowReusableAsset,
   type RowScheduledLesson,
 } from "./lesson-content-mappers";
 
@@ -184,6 +187,23 @@ export async function listScheduledLessonsForClassAdmin(
   return rows.map(mapScheduledLessonRowToDomain);
 }
 
+
+
+export async function listReusableAssetsByIdsAdmin(
+  assetIds: string[],
+): Promise<ReusableAsset[]> {
+  const normalizedIds = Array.from(new Set(assetIds.map((id) => id.trim()).filter(Boolean)));
+  if (normalizedIds.length === 0) {
+    return [];
+  }
+
+  const inFilter = encodeURIComponent(`(${normalizedIds.join(",")})`);
+  const rows = await adminRequest<RowReusableAsset[]>(
+    `/rest/v1/reusable_asset?select=id,kind,title,description,source_url,file_ref,metadata&id=in.${inFilter}`,
+  );
+
+  return mapReusableAssetRowsToDomain(rows);
+}
 export async function createScheduledLessonAdmin(
   input: CreateScheduledLessonAdminInput,
 ): Promise<ScheduledLesson> {

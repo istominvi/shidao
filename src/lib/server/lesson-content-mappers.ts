@@ -16,7 +16,7 @@ type RowMethodology = {
   metadata: Record<string, unknown> | null;
 };
 
-type RowAsset = {
+export type RowReusableAsset = {
   id: string;
   kind: ReusableAsset["kind"];
   title: string;
@@ -29,7 +29,7 @@ type RowAsset = {
 type RowBlockAssetLink = {
   sort_order: number;
   reusable_asset_id: string;
-  asset: RowAsset | null;
+  asset: RowReusableAsset | null;
 };
 
 type RowMethodologyLessonBlock = {
@@ -112,7 +112,7 @@ export function mapMethodologyRowToDomain(row: RowMethodology): Methodology {
   };
 }
 
-function mapAssetRowToDomain(row: RowAsset): ReusableAsset {
+function mapAssetRowToDomain(row: RowReusableAsset): ReusableAsset {
   return {
     id: row.id,
     kind: row.kind,
@@ -207,6 +207,6 @@ export function mapScheduledLessonRowToDomain(row: RowScheduledLesson): Schedule
   };
 }
 
-export function mapReusableAssetRowsToDomain(rows: RowAsset[]): ReusableAsset[] {
+export function mapReusableAssetRowsToDomain(rows: RowReusableAsset[]): ReusableAsset[] {
   return rows.map(mapAssetRowToDomain);
 }

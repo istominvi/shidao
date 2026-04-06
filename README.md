@@ -334,3 +334,54 @@ Helpers/RPC:
     - по умолчанию используется `BROWSER_SMOKE_SERVER_MODE=prod` (то есть `next start` на уже собранном приложении);
     - если локально сборка отсутствует, тест раннер печатает предупреждение и использует `next dev`;
     - в strict режиме fallback запрещён — сначала нужен `npm run build`.
+
+## Teacher lesson workspace (read-only, MVP)
+
+Новый приватный teacher-only маршрут:
+
+- `/lessons/[scheduledLessonId]`
+
+Для быстрой dev-навигации из teacher dashboard можно указать env:
+
+- `DEV_TEACHER_WORKSPACE_SCHEDULED_LESSON_ID=<scheduled_lesson.id>`
+
+Минимальный путь получить рабочие данные в БД:
+
+1. Применить миграции lesson-content.
+2. Запустить bootstrap методологического контента (если используете текущий internal bootstrap flow).
+3. Создать один `scheduled_lesson`, связанный с существующим `methodology_lesson` и `class`.
+
+Пример SQL (адаптируйте `starts_at`/format):
+
+```sql
+insert into public.scheduled_lesson (
+  class_id,
+  methodology_lesson_id,
+  starts_at,
+  format,
+  meeting_link,
+  place,
+  runtime_status,
+  runtime_notes_summary,
+  runtime_notes,
+  outcome_notes
+)
+select
+  c.id,
+  ml.id,
+  now() + interval '1 day',
+  'online',
+  'https://meet.example.local/dev-lesson',
+  null,
+  'planned',
+  'Подготовить карточки и повторение тонов.',
+  'Фокус на повторении приветствий.',
+  'Итоговые заметки пока пустые.'
+from public.class c
+cross join public.methodology_lesson ml
+order by c.created_at asc, ml.module_index asc, ml.lesson_index asc
+limit 1
+returning id;
+```
+
+После этого откройте `/lessons/<id>` под teacher-профилем.
