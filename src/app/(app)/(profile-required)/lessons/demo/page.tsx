@@ -6,6 +6,15 @@ import { bootstrapLessonContentFixtureAdmin } from "@/lib/server/lesson-content-
 import { getFirstAssignedClassIdForTeacherAdmin } from "@/lib/server/lesson-content-repository";
 import { canAccessTeacherLessonWorkspace } from "@/lib/server/teacher-lesson-workspace";
 
+function isNextRedirectError(error: unknown): error is { digest: string } {
+  if (!error || typeof error !== "object") {
+    return false;
+  }
+
+  const digest = "digest" in error ? error.digest : null;
+  return typeof digest === "string" && digest.startsWith("NEXT_REDIRECT");
+}
+
 export default async function DemoTeacherLessonBootstrapPage() {
   const accessResolution = await resolveAccessPolicy();
 
@@ -35,6 +44,10 @@ export default async function DemoTeacherLessonBootstrapPage() {
     });
     redirect(toLessonWorkspaceRoute(result.scheduledLessonId));
   } catch (error) {
+    if (isNextRedirectError(error)) {
+      throw error;
+    }
+
     const message =
       error instanceof Error ? error.message : "Неизвестная ошибка bootstrap.";
 
