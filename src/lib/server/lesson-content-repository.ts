@@ -142,7 +142,7 @@ function methodologyLessonSelect() {
     "phrase_summary",
     "estimated_duration_minutes",
     "readiness_status",
-    "methodology:methodology_id(slug)",
+    "methodology:methodology_id(slug,title)",
     "blocks:methodology_lesson_block(id,block_type,sort_order,title,content,block_assets:methodology_lesson_block_asset(sort_order,reusable_asset_id,asset:reusable_asset_id(id,kind,title,description,source_url,file_ref,metadata)))",
   ].join(",");
 }

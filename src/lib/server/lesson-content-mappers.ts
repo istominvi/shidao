@@ -52,7 +52,7 @@ export type RowMethodologyLessonWithBlocks = {
   phrase_summary: string[];
   estimated_duration_minutes: number;
   readiness_status: "draft" | "ready" | "archived";
-  methodology: Pick<RowMethodology, "slug"> | null;
+  methodology: Pick<RowMethodology, "slug" | "title"> | null;
   blocks: RowMethodologyLessonBlock[] | null;
 };
 
@@ -178,6 +178,7 @@ export function mapMethodologyLessonRowToDomain(
     id: row.id,
     methodologyId: row.methodology_id,
     methodologySlug: row.methodology?.slug ?? "",
+    methodologyTitle: row.methodology?.title ?? undefined,
     shell: {
       id: row.id,
       methodologyId: row.methodology_id,

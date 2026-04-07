@@ -193,6 +193,7 @@ export type MethodologyLesson = {
   id: string;
   methodologyId: string;
   methodologySlug: string;
+  methodologyTitle?: string;
   shell: MethodologyLessonShell;
   blocks: LessonBlockInstance[];
 };

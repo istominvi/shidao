@@ -27,6 +27,8 @@ export type TeacherLessonFlowStep = {
   id: string;
   order: number;
   stepLabel: string;
+  blockLabel: string;
+  accentTone: "sky" | "violet" | "emerald" | "amber";
   title: string;
   description?: string;
   teacherActions: string[];
@@ -42,6 +44,8 @@ export type TeacherLessonFlowStep = {
 export type TeacherLessonWorkspacePresentation = {
   hero: {
     lessonTitle: string;
+    lessonEssence: string;
+    methodologyTitle: string;
     groupLabel: string;
     dateTimeLabel: string;
     statusLabel: string;
@@ -186,6 +190,24 @@ function blockTypeLabel(blockType: LessonBlockInstance["blockType"]) {
       return "Завершение урока";
     default:
       return "Этап урока";
+  }
+}
+
+function blockTone(
+  blockType: LessonBlockInstance["blockType"],
+): TeacherLessonFlowStep["accentTone"] {
+  switch (blockType) {
+    case "intro_framing":
+    case "video_segment":
+      return "sky";
+    case "song_segment":
+    case "teacher_prompt_pattern":
+      return "violet";
+    case "guided_activity":
+    case "wrap_up_closure":
+      return "emerald";
+    default:
+      return "amber";
   }
 }
 
@@ -350,6 +372,11 @@ function buildPresentation(input: {
   assetsById: Record<string, ReusableAsset>;
 }): TeacherLessonWorkspacePresentation {
   const { projection, classDisplayName, assetsById } = input;
+  const methodologyTitle =
+    projection.methodologyTitle?.trim() || "Методика курса";
+  const lessonEssence =
+    projection.methodologyShell.vocabularySummary.slice(0, 4).join(" · ") ||
+    "Повторение ключевой лексики и речевых паттернов в игровых активностях.";
 
   const resourceItems = normalizeItems(
     projection.orderedBlocks.flatMap((block) =>
@@ -387,12 +414,14 @@ function buildPresentation(input: {
   return {
     hero: {
       lessonTitle: projection.methodologyShell.title,
+      lessonEssence,
+      methodologyTitle,
       groupLabel: classDisplayName?.trim() || "Группа",
       dateTimeLabel: formatRuntimeDateTime(projection.runtimeShell.startsAt),
       statusLabel: formatRuntimeStatus(projection.runtimeShell.runtimeStatus),
       formatLabel:
         projection.runtimeShell.format === "online" ? "Онлайн" : "Офлайн",
-      methodologyLine: `По методике «${projection.methodologyShell.title}»`,
+      methodologyLine: `По методике «${methodologyTitle}»`,
     },
     quickSummary: {
       prepChecklist,
@@ -413,6 +442,8 @@ function buildPresentation(input: {
         id: block.id,
         order: block.order,
         stepLabel: `Шаг ${block.order}`,
+        blockLabel: blockTypeLabel(block.blockType),
+        accentTone: blockTone(block.blockType),
         title: block.title?.trim() || blockTypeLabel(block.blockType),
         description: flowContent.description,
         teacherActions: flowContent.teacherActions,

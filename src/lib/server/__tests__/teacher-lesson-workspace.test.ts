@@ -101,6 +101,34 @@ test("teacher workspace presentation hero does not depend on raw class id", () =
   );
 });
 
+test("teacher workspace presentation keeps methodology title separate from lesson title", () => {
+  const readModel = buildTeacherLessonWorkspaceReadModel({
+    projection: {
+      methodologyLessonId: lessonContentFixtureMethodologyLesson.id,
+      methodologyTitle: "Мир вокруг меня",
+      methodologyShell: {
+        ...lessonContentFixtureMethodologyLesson.shell,
+        title: "Урок 1. Животные на ферме",
+      },
+      runtimeShell: lessonContentFixtureScheduledLesson.runtimeShell,
+      orderedBlocks: lessonContentFixtureMethodologyLesson.blocks,
+      runtimeNotes: lessonContentFixtureScheduledLesson.runtimeNotes,
+      outcomeNotes: lessonContentFixtureScheduledLesson.outcomeNotes,
+    },
+    scheduledLessonId: lessonContentFixtureScheduledLesson.id,
+    classId: lessonContentFixtureScheduledLesson.runtimeShell.classId,
+    classDisplayName: "Лисички 5-6",
+    assets: lessonContentFixtureAssets,
+  });
+
+  assert.equal(readModel.presentation.hero.lessonTitle, "Урок 1. Животные на ферме");
+  assert.equal(readModel.presentation.hero.methodologyTitle, "Мир вокруг меня");
+  assert.equal(
+    readModel.presentation.hero.methodologyLine,
+    "По методике «Мир вокруг меня»",
+  );
+});
+
 test("teacher workspace quick summary and lesson flow are derived from lesson content", () => {
   const readModel = buildTeacherLessonWorkspaceReadModel({
     projection: {
@@ -126,6 +154,7 @@ test("teacher workspace quick summary and lesson flow are derived from lesson co
     readModel.presentation.lessonFlow.map((step) => step.order),
     lessonContentFixtureMethodologyLesson.blocks.map((block) => block.order),
   );
+  assert.equal(readModel.presentation.hero.lessonEssence.length > 0, true);
 });
 
 test("teacher workspace read model includes runtime edit fields and no block override structure", () => {
@@ -156,6 +185,7 @@ test("teacher workspace read model includes runtime edit fields and no block ove
   assert.equal(readModel.projection.runtimeNotes, "runtime note");
   assert.equal(readModel.projection.outcomeNotes, "outcome note");
   assert.equal("blockOverrides" in readModel.projection, false);
+  assert.equal("blockOverrides" in readModel.presentation, false);
 });
 
 test("teacher workspace access allows only teacher profile", () => {

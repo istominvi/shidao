@@ -10,6 +10,7 @@ import { sortLessonBlocks } from "./contracts-helpers";
 
 export type TeacherLessonProjection = {
   methodologyLessonId: string;
+  methodologyTitle?: string;
   methodologyShell: MethodologyLessonShell;
   runtimeShell: ScheduledLessonRuntimeShell;
   orderedBlocks: LessonBlockInstance[];
@@ -32,6 +33,7 @@ export function buildTeacherLessonProjection(
 ): TeacherLessonProjection {
   return {
     methodologyLessonId: methodologyLesson.id,
+    methodologyTitle: methodologyLesson.methodologyTitle,
     methodologyShell: methodologyLesson.shell,
     runtimeShell: scheduledLesson.runtimeShell,
     orderedBlocks: sortLessonBlocks(methodologyLesson.blocks),
