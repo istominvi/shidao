@@ -40,6 +40,17 @@ type RowClass = {
   name: string | null;
 };
 
+type RowMethodologyLessonCatalog = {
+  id: string;
+  title: string;
+  module_index: number;
+  unit_index: number | null;
+  lesson_index: number;
+  methodology: {
+    title: string | null;
+  } | null;
+};
+
 export type CreateScheduledLessonAdminInput = {
   classId: string;
   methodologyLessonId: string;
@@ -203,6 +214,25 @@ export async function listScheduledLessonsForClassAdmin(
   return rows.map(mapScheduledLessonRowToDomain);
 }
 
+export async function listScheduledLessonsForClassesAdmin(
+  classIds: string[],
+): Promise<ScheduledLesson[]> {
+  const normalizedClassIds = Array.from(
+    new Set(classIds.map((id) => id.trim()).filter(Boolean)),
+  );
+
+  if (normalizedClassIds.length === 0) {
+    return [];
+  }
+
+  const inFilter = encodeURIComponent(`(${normalizedClassIds.join(",")})`);
+  const rows = await adminRequest<RowScheduledLesson[]>(
+    `/rest/v1/scheduled_lesson?select=id,class_id,methodology_lesson_id,starts_at,format,meeting_link,place,runtime_status,runtime_notes_summary,runtime_notes,outcome_notes&class_id=in.${inFilter}&order=starts_at.desc`,
+  );
+
+  return rows.map(mapScheduledLessonRowToDomain);
+}
+
 export async function getFirstAssignedClassIdForTeacherAdmin(
   teacherId: string,
 ): Promise<string | null> {
@@ -210,6 +240,42 @@ export async function getFirstAssignedClassIdForTeacherAdmin(
     `/rest/v1/class_teacher?select=class_id&teacher_id=eq.${teacherId}&limit=1`,
   );
   return rows[0]?.class_id ?? null;
+}
+
+export async function listAssignedClassIdsForTeacherAdmin(
+  teacherId: string,
+): Promise<string[]> {
+  const rows = await adminRequest<RowClassTeacher[]>(
+    `/rest/v1/class_teacher?select=class_id&teacher_id=eq.${teacherId}`,
+  );
+
+  return Array.from(
+    new Set(rows.map((row) => row.class_id?.trim() ?? "").filter(Boolean)),
+  );
+}
+
+export async function listMethodologyLessonsCatalogAdmin(): Promise<
+  Array<{
+    id: string;
+    title: string;
+    methodologyTitle: string | null;
+    moduleIndex: number;
+    unitIndex: number | null;
+    lessonIndex: number;
+  }>
+> {
+  const rows = await adminRequest<RowMethodologyLessonCatalog[]>(
+    "/rest/v1/methodology_lesson?select=id,title,module_index,unit_index,lesson_index,methodology:methodology_id(title)&order=module_index.asc&order=unit_index.asc.nullslast&order=lesson_index.asc",
+  );
+
+  return rows.map((row) => ({
+    id: row.id,
+    title: row.title,
+    methodologyTitle: row.methodology?.title?.trim() || null,
+    moduleIndex: row.module_index,
+    unitIndex: row.unit_index,
+    lessonIndex: row.lesson_index,
+  }));
 }
 
 export async function getClassDisplayNameByIdAdmin(
