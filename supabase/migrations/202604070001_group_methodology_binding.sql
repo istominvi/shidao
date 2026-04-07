@@ -10,7 +10,7 @@ create index if not exists class_methodology_id_idx on public.class (methodology
 with class_methodology_candidates as (
   select
     sl.class_id,
-    min(ml.methodology_id) as methodology_id,
+    (array_agg(distinct ml.methodology_id))[1] as methodology_id,
     count(distinct ml.methodology_id) as methodology_count
   from public.scheduled_lesson sl
   join public.methodology_lesson ml on ml.id = sl.methodology_lesson_id
