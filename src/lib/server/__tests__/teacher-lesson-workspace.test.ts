@@ -13,26 +13,30 @@ import {
 } from "../teacher-lesson-workspace";
 
 test("teacher workspace loader combines scheduled + methodology and keeps sorted order", async () => {
-  const readModel = await getTeacherLessonWorkspaceByScheduledLessonId("scheduled-1", {
-    getScheduledLessonById: async () => ({
-      ...lessonContentFixtureScheduledLesson,
-      id: "scheduled-1",
-      methodologyLessonId: lessonContentFixtureMethodologyLesson.id,
-    }),
-    getMethodologyLessonById: async () => ({
-      ...lessonContentFixtureMethodologyLesson,
-      blocks: [
-        lessonContentFixtureMethodologyLesson.blocks[4],
-        lessonContentFixtureMethodologyLesson.blocks[0],
-        lessonContentFixtureMethodologyLesson.blocks[7],
-      ],
-    }),
-    listReusableAssetsByIds: async (ids) =>
-      lessonContentFixtureAssets.filter((asset) => ids.includes(asset.id)),
-  });
+  const readModel = await getTeacherLessonWorkspaceByScheduledLessonId(
+    "scheduled-1",
+    {
+      getScheduledLessonById: async () => ({
+        ...lessonContentFixtureScheduledLesson,
+        id: "scheduled-1",
+        methodologyLessonId: lessonContentFixtureMethodologyLesson.id,
+      }),
+      getMethodologyLessonById: async () => ({
+        ...lessonContentFixtureMethodologyLesson,
+        blocks: [
+          lessonContentFixtureMethodologyLesson.blocks[4],
+          lessonContentFixtureMethodologyLesson.blocks[0],
+          lessonContentFixtureMethodologyLesson.blocks[7],
+        ],
+      }),
+      listReusableAssetsByIds: async (ids) =>
+        lessonContentFixtureAssets.filter((asset) => ids.includes(asset.id)),
+      getClassDisplayNameById: async () => "Лисички 5-6",
+    },
+  );
 
   assert.ok(readModel);
-  assert.equal(readModel.classId, lessonContentFixtureScheduledLesson.runtimeShell.classId);
+  assert.equal(readModel.classDisplayName, "Лисички 5-6");
   assert.deepEqual(
     readModel.projection.orderedBlocks.map((block) => block.order),
     [1, 5, 8],
@@ -40,11 +44,15 @@ test("teacher workspace loader combines scheduled + methodology and keeps sorted
 });
 
 test("teacher workspace loader returns null when linked methodology lesson is missing", async () => {
-  const readModel = await getTeacherLessonWorkspaceByScheduledLessonId("scheduled-1", {
-    getScheduledLessonById: async () => lessonContentFixtureScheduledLesson,
-    getMethodologyLessonById: async () => null,
-    listReusableAssetsByIds: async () => [],
-  });
+  const readModel = await getTeacherLessonWorkspaceByScheduledLessonId(
+    "scheduled-1",
+    {
+      getScheduledLessonById: async () => lessonContentFixtureScheduledLesson,
+      getMethodologyLessonById: async () => null,
+      listReusableAssetsByIds: async () => [],
+      getClassDisplayNameById: async () => "Группа A",
+    },
+  );
 
   assert.equal(readModel, null);
 });
@@ -61,6 +69,7 @@ test("teacher workspace read model keeps runtime and methodology shells distinct
     },
     scheduledLessonId: lessonContentFixtureScheduledLesson.id,
     classId: lessonContentFixtureScheduledLesson.runtimeShell.classId,
+    classDisplayName: "Лисички 5-6",
     assets: lessonContentFixtureAssets,
   });
 
@@ -70,31 +79,29 @@ test("teacher workspace read model keeps runtime and methodology shells distinct
   assert.equal("readinessStatus" in readModel.projection.runtimeShell, false);
 });
 
-test("teacher workspace read model keeps methodology shell immutable after runtime edits", () => {
+test("teacher workspace presentation hero does not depend on raw class id", () => {
   const readModel = buildTeacherLessonWorkspaceReadModel({
     projection: {
       methodologyLessonId: lessonContentFixtureMethodologyLesson.id,
       methodologyShell: lessonContentFixtureMethodologyLesson.shell,
-      runtimeShell: {
-        ...lessonContentFixtureScheduledLesson.runtimeShell,
-        runtimeStatus: "completed",
-        runtimeNotesSummary: "Сильный прогресс",
-      },
+      runtimeShell: lessonContentFixtureScheduledLesson.runtimeShell,
       orderedBlocks: lessonContentFixtureMethodologyLesson.blocks,
-      runtimeNotes: "Заметки по проведению обновлены",
-      outcomeNotes: "Итоги урока обновлены",
+      runtimeNotes: lessonContentFixtureScheduledLesson.runtimeNotes,
+      outcomeNotes: lessonContentFixtureScheduledLesson.outcomeNotes,
     },
     scheduledLessonId: lessonContentFixtureScheduledLesson.id,
-    classId: lessonContentFixtureScheduledLesson.runtimeShell.classId,
+    classId: "11111111-1111-4111-8111-111111111111",
     assets: lessonContentFixtureAssets,
   });
 
-  assert.equal(readModel.projection.runtimeShell.runtimeStatus, "completed");
-  assert.equal(readModel.projection.methodologyShell.title, lessonContentFixtureMethodologyLesson.shell.title);
-  assert.equal("runtimeNotesSummary" in readModel.projection.methodologyShell, false);
+  assert.equal(readModel.presentation.hero.groupLabel, "Группа");
+  assert.equal(
+    readModel.presentation.hero.groupLabel.includes("11111111-1111"),
+    false,
+  );
 });
 
-test("teacher workspace read model includes teacher notes and no block override structure", () => {
+test("teacher workspace quick summary and lesson flow are derived from lesson content", () => {
   const readModel = buildTeacherLessonWorkspaceReadModel({
     projection: {
       methodologyLessonId: lessonContentFixtureMethodologyLesson.id,
@@ -106,9 +113,46 @@ test("teacher workspace read model includes teacher notes and no block override 
     },
     scheduledLessonId: lessonContentFixtureScheduledLesson.id,
     classId: lessonContentFixtureScheduledLesson.runtimeShell.classId,
+    classDisplayName: "Лисички 5-6",
     assets: lessonContentFixtureAssets,
   });
 
+  assert.ok(readModel.presentation.quickSummary.prepChecklist.length > 0);
+  assert.deepEqual(
+    readModel.presentation.quickSummary.keyWords,
+    lessonContentFixtureMethodologyLesson.shell.vocabularySummary,
+  );
+  assert.deepEqual(
+    readModel.presentation.lessonFlow.map((step) => step.order),
+    lessonContentFixtureMethodologyLesson.blocks.map((block) => block.order),
+  );
+});
+
+test("teacher workspace read model includes runtime edit fields and no block override structure", () => {
+  const readModel = buildTeacherLessonWorkspaceReadModel({
+    projection: {
+      methodologyLessonId: lessonContentFixtureMethodologyLesson.id,
+      methodologyShell: lessonContentFixtureMethodologyLesson.shell,
+      runtimeShell: {
+        ...lessonContentFixtureScheduledLesson.runtimeShell,
+        runtimeStatus: "completed",
+        runtimeNotesSummary: "Сильный прогресс",
+      },
+      orderedBlocks: lessonContentFixtureMethodologyLesson.blocks,
+      runtimeNotes: "runtime note",
+      outcomeNotes: "outcome note",
+    },
+    scheduledLessonId: lessonContentFixtureScheduledLesson.id,
+    classId: lessonContentFixtureScheduledLesson.runtimeShell.classId,
+    classDisplayName: "Лисички 5-6",
+    assets: lessonContentFixtureAssets,
+  });
+
+  assert.equal(readModel.projection.runtimeShell.runtimeStatus, "completed");
+  assert.equal(
+    readModel.projection.runtimeShell.runtimeNotesSummary,
+    "Сильный прогресс",
+  );
   assert.equal(readModel.projection.runtimeNotes, "runtime note");
   assert.equal(readModel.projection.outcomeNotes, "outcome note");
   assert.equal("blockOverrides" in readModel.projection, false);

@@ -35,6 +35,11 @@ type RowClassTeacher = {
   class_id: string;
 };
 
+type RowClass = {
+  id: string;
+  name: string | null;
+};
+
 export type CreateScheduledLessonAdminInput = {
   classId: string;
   methodologyLessonId: string;
@@ -64,7 +69,9 @@ export type UpdateScheduledLessonRuntimeNotesAdminInput = {
 function getServiceRoleKey() {
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!serviceRoleKey) {
-    throw new Error("SUPABASE_SERVICE_ROLE_KEY is required for admin lesson-content requests.");
+    throw new Error(
+      "SUPABASE_SERVICE_ROLE_KEY is required for admin lesson-content requests.",
+    );
   }
   return serviceRoleKey;
 }
@@ -72,7 +79,9 @@ function getServiceRoleKey() {
 function getSupabaseUrl() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   if (!url) {
-    throw new Error("NEXT_PUBLIC_SUPABASE_URL is required for lesson-content repository.");
+    throw new Error(
+      "NEXT_PUBLIC_SUPABASE_URL is required for lesson-content repository.",
+    );
   }
   return url;
 }
@@ -99,10 +108,13 @@ async function adminRequest<T>(
   });
 
   if (!response.ok) {
-    const payloadError = (await response.json().catch(() => null)) as
-      | { message?: string; msg?: string }
-      | null;
-    throw new Error(payloadError?.message ?? payloadError?.msg ?? "Supabase request failed.");
+    const payloadError = (await response.json().catch(() => null)) as {
+      message?: string;
+      msg?: string;
+    } | null;
+    throw new Error(
+      payloadError?.message ?? payloadError?.msg ?? "Supabase request failed.",
+    );
   }
 
   if (response.status === 204) {
@@ -200,12 +212,21 @@ export async function getFirstAssignedClassIdForTeacherAdmin(
   return rows[0]?.class_id ?? null;
 }
 
-
+export async function getClassDisplayNameByIdAdmin(
+  classId: string,
+): Promise<string | null> {
+  const rows = await adminRequest<RowClass[]>(
+    `/rest/v1/class?select=id,name&id=eq.${classId}&limit=1`,
+  );
+  return rows[0]?.name?.trim() || null;
+}
 
 export async function listReusableAssetsByIdsAdmin(
   assetIds: string[],
 ): Promise<ReusableAsset[]> {
-  const normalizedIds = Array.from(new Set(assetIds.map((id) => id.trim()).filter(Boolean)));
+  const normalizedIds = Array.from(
+    new Set(assetIds.map((id) => id.trim()).filter(Boolean)),
+  );
   if (normalizedIds.length === 0) {
     return [];
   }
@@ -255,8 +276,12 @@ export async function updateScheduledLessonRuntimeNotesAdmin(
         ...(input.runtimeNotesSummary !== undefined
           ? { runtime_notes_summary: input.runtimeNotesSummary }
           : {}),
-        ...(input.runtimeNotes !== undefined ? { runtime_notes: input.runtimeNotes } : {}),
-        ...(input.outcomeNotes !== undefined ? { outcome_notes: input.outcomeNotes } : {}),
+        ...(input.runtimeNotes !== undefined
+          ? { runtime_notes: input.runtimeNotes }
+          : {}),
+        ...(input.outcomeNotes !== undefined
+          ? { outcome_notes: input.outcomeNotes }
+          : {}),
       },
     },
   );
