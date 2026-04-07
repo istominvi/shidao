@@ -3,7 +3,7 @@ import { DashboardShell } from "@/components/dashboard-shell";
 import {
   getDevTeacherScheduledLessonId,
 } from "@/lib/server/teacher-lesson-workspace";
-import { toLessonWorkspaceRoute } from "@/lib/auth";
+import { ROUTES, toLessonWorkspaceRoute } from "@/lib/auth";
 
 export function TeacherDashboard() {
   const scheduledLessonId = getDevTeacherScheduledLessonId();
@@ -23,6 +23,14 @@ export function TeacherDashboard() {
             Для dev-потока доступен реальный базовый урок методологии «我周围的世界».
             Можно открыть workspace и проверить разделение methodology shell и
             runtime shell без редактирования канонических блоков.
+          </p>
+          <p className="mt-3 text-sm text-neutral-700">
+            <Link
+              href={ROUTES.lessons}
+              className="font-semibold text-sky-700 underline underline-offset-2"
+            >
+              Перейти в хаб занятий
+            </Link>
           </p>
           <p className="mt-3 text-sm text-neutral-700">
             <Link
