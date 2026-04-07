@@ -24,3 +24,20 @@ test("teacher workspace methodology section remains read-only", () => {
   assert.equal(workspaceComponentSource.includes('name="methodology"'), false);
   assert.equal(workspaceComponentSource.includes('name="methodologyTitle"'), false);
 });
+
+test("teacher workspace homework section keeps methodology content read-only and runtime controls", () => {
+  assert.equal(
+    workspaceComponentSource.includes("Из методики (только чтение)"),
+    true,
+  );
+  assert.equal(workspaceComponentSource.includes('name="recipientMode"'), true);
+  assert.equal(workspaceComponentSource.includes('name="dueAt"'), true);
+  assert.equal(
+    workspaceComponentSource.includes('name="homeworkTitle"'),
+    false,
+  );
+  assert.equal(
+    workspaceComponentSource.includes('name="instructions"'),
+    false,
+  );
+});

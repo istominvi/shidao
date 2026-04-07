@@ -86,6 +86,28 @@ Step 2 uses grounded derivations:
 - methodology editor / block editor;
 - AI features.
 
+## Step 4 (homework layer bound to scheduled lesson)
+
+Implemented in Step 4:
+
+- homework moved from deferred scope into first real post-lesson loop;
+- methodology remains canonical source for homework content;
+- teacher cannot edit methodology homework content and cannot create freeform homework;
+- `/lessons/[scheduledLessonId]` now includes homework runtime controls:
+  - read-only methodology homework card,
+  - issue homework (all students or selected students),
+  - due date,
+  - student-by-student submission/review tracking,
+  - review status + teacher review note.
+
+### Domain separation (enforced)
+
+- `methodology_lesson_homework` = canonical pedagogical definition.
+- `scheduled_lesson_homework_assignment` = issuance in scheduled-lesson runtime context.
+- `student_homework_assignment` = per-student submission/review state.
+
+This keeps methodology content immutable from teacher runtime screens while enabling operational homework workflows.
+
 ## Step 3 (group setup + methodology binding + contextual scheduling)
 
 Implemented in Step 3:

@@ -111,6 +111,20 @@ openssl rand -hex 32
 - `/dashboard` и `/groups` используют явное назначение методики (без эвристики от ближайших занятий).
 - `/lessons` сохраняется как secondary global lessons index; `/lessons/[scheduledLessonId]` остаётся execution workspace.
 
+### Teacher IA (Step 4: homework layer bound to scheduled lesson)
+
+- Домашнее задание теперь строго следует модели `methodology -> scheduled lesson runtime -> student submission`.
+- Canonical homework хранится в методике (`methodology_lesson_homework`) и отображается преподавателю только в режиме read-only.
+- В `/lessons/[scheduledLessonId]` преподаватель может:
+  - выдать homework всей группе или выбранным ученикам;
+  - задать дедлайн;
+  - видеть статус по каждому ученику;
+  - отмечать review-state и оставлять комментарий по проверке.
+- Преподаватель **не может** редактировать title/instructions/methodology-content homework.
+- Ученик видит назначенные задания на `/dashboard` и может отправить текстовый ответ.
+- Родительский `/dashboard` получает минимальную проекцию homework-статусов по детям.
+- Детали: `docs/architecture/homework-runtime-model.md`.
+
 ### Route/source-of-truth helpers
 
 - `src/lib/auth.ts` — канонические URL-константы (`ROUTES`).

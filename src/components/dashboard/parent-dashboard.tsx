@@ -14,8 +14,13 @@ type ParentContext = {
 
 export function ParentDashboard({
   childrenContexts,
+  homeworkByStudent,
 }: {
   childrenContexts: ParentContext[];
+  homeworkByStudent: Record<
+    string,
+    Array<{ dueAt: string | null; statusLabel: string }>
+  >;
 }) {
   return (
     <DashboardShell
@@ -56,6 +61,10 @@ export function ParentDashboard({
                       ))}
                     </ul>
                   )}
+                  <div className="mt-2 text-xs text-neutral-600">
+                    Домашние задания:{" "}
+                    {(homeworkByStudent[child.studentId] ?? []).length}
+                  </div>
                 </li>
               ))}
             </ul>

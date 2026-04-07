@@ -22,6 +22,10 @@ import {
   getScheduledLessonByIdAdmin,
   listReusableAssetsByIdsAdmin,
 } from "./lesson-content-repository";
+import {
+  getTeacherLessonHomeworkReadModel,
+  type TeacherLessonHomeworkReadModel,
+} from "./teacher-homework";
 
 export type TeacherLessonFlowStep = {
   id: string;
@@ -80,6 +84,7 @@ export type TeacherLessonWorkspaceReadModel = {
   classDisplayName: string | null;
   projection: TeacherLessonProjection;
   presentation: TeacherLessonWorkspacePresentation;
+  homework: TeacherLessonHomeworkReadModel;
 };
 
 type WorkspaceLoaderDeps = {
@@ -87,6 +92,7 @@ type WorkspaceLoaderDeps = {
   getMethodologyLessonById: typeof getMethodologyLessonByIdAdmin;
   listReusableAssetsByIds: typeof listReusableAssetsByIdsAdmin;
   getClassDisplayNameById: typeof getClassDisplayNameByIdAdmin;
+  getHomeworkReadModel: typeof getTeacherLessonHomeworkReadModel;
 };
 
 const defaultWorkspaceLoaderDeps: WorkspaceLoaderDeps = {
@@ -94,6 +100,7 @@ const defaultWorkspaceLoaderDeps: WorkspaceLoaderDeps = {
   getMethodologyLessonById: getMethodologyLessonByIdAdmin,
   listReusableAssetsByIds: listReusableAssetsByIdsAdmin,
   getClassDisplayNameById: getClassDisplayNameByIdAdmin,
+  getHomeworkReadModel: getTeacherLessonHomeworkReadModel,
 };
 
 export function canAccessTeacherLessonWorkspace(
@@ -472,6 +479,7 @@ export function buildTeacherLessonWorkspaceReadModel(input: {
   classId: string;
   classDisplayName?: string | null;
   assets: ReusableAsset[];
+  homework: TeacherLessonHomeworkReadModel;
 }): TeacherLessonWorkspaceReadModel {
   const sortedProjection: TeacherLessonProjection = {
     ...input.projection,
@@ -492,6 +500,7 @@ export function buildTeacherLessonWorkspaceReadModel(input: {
       classDisplayName: input.classDisplayName ?? null,
       assetsById,
     }),
+    homework: input.homework,
   };
 }
 
@@ -516,11 +525,12 @@ export async function getTeacherLessonWorkspaceByScheduledLessonId(
     scheduledLesson,
   );
   const assetIds = collectAssetIds(projection.orderedBlocks);
-  const [assets, classDisplayName] = await Promise.all([
+  const [assets, classDisplayName, homework] = await Promise.all([
     assetIds.length
       ? deps.listReusableAssetsByIds(assetIds)
       : Promise.resolve([]),
     deps.getClassDisplayNameById(scheduledLesson.runtimeShell.classId),
+    deps.getHomeworkReadModel(scheduledLessonId),
   ]);
 
   return buildTeacherLessonWorkspaceReadModel({
@@ -529,6 +539,7 @@ export async function getTeacherLessonWorkspaceByScheduledLessonId(
     classId: scheduledLesson.runtimeShell.classId,
     classDisplayName,
     assets,
+    homework,
   });
 }
 

@@ -429,6 +429,18 @@ export async function listStudentsForClassesAdmin(
   return byClass;
 }
 
+export async function listClassIdsForStudentAdmin(
+  studentId: string,
+): Promise<string[]> {
+  const rows = await adminRequest<Array<{ class_id: string }>>(
+    `/rest/v1/class_student?select=class_id&student_id=eq.${studentId}`,
+  );
+
+  return Array.from(
+    new Set(rows.map((row) => row.class_id?.trim() ?? "").filter(Boolean)),
+  );
+}
+
 export async function getClassDisplayNameByIdAdmin(
   classId: string,
 ): Promise<string | null> {

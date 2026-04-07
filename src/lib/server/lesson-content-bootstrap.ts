@@ -1,5 +1,6 @@
 import {
   lessonContentFixtureAssets,
+  lessonContentFixtureHomeworkDefinition,
   lessonContentFixtureMethodology,
   lessonContentFixtureMethodologyLesson,
   lessonContentFixtureScheduledLesson,
@@ -129,6 +130,14 @@ export function buildFixtureBootstrapRows(options?: {
     })),
     blockRows,
     blockAssetRows,
+    homeworkDefinitionRow: {
+      id: stableUuid(`methodology_lesson_homework:${lessonContentFixtureHomeworkDefinition.id}`),
+      methodology_lesson_id: methodologyLessonId,
+      title: lessonContentFixtureHomeworkDefinition.title,
+      instructions: lessonContentFixtureHomeworkDefinition.instructions,
+      material_links: lessonContentFixtureHomeworkDefinition.materialLinks,
+      answer_format_hint: lessonContentFixtureHomeworkDefinition.answerFormatHint ?? null,
+    },
     scheduledLessonRow: {
       id: scheduledLessonId,
       class_id:
@@ -203,6 +212,17 @@ export async function bootstrapLessonContentFixtureAdmin(options?: {
     "POST",
     {
       payload: rows.blockAssetRows,
+      extraHeaders: {
+        Prefer: "resolution=merge-duplicates,return=representation",
+      },
+    },
+  );
+
+  await adminRequest(
+    "/rest/v1/methodology_lesson_homework?on_conflict=methodology_lesson_id",
+    "POST",
+    {
+      payload: rows.homeworkDefinitionRow,
       extraHeaders: {
         Prefer: "resolution=merge-duplicates,return=representation",
       },
