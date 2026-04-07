@@ -47,6 +47,7 @@
 
 - `/dashboard` переведён в режим реального teacher command center.
 - Добавлены рабочие entry points: создание группы (`/groups/new`) и создание ученика (`/students/new`).
+- Добавлен маршрут `/methodologies` как read-only индекс методик, доступный с dashboard.
 - Dashboard read-model строится server-side в `teacher-dashboard-operations` и включает:
   - table-first `Мои группы` с progress/status/next-lesson;
   - недельный schedule block по всем группам;

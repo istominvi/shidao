@@ -71,6 +71,7 @@ openssl rand -hex 32
 - `/groups/new` — создание группы преподавателем.
 - `/groups/[groupId]` — teacher workspace уровня конкретной группы.
 - `/students/new` — создание ученика и добавление в группу.
+- `/methodologies` — индекс методик преподавателя (read-only на текущем этапе).
 - `/settings/profile` — профиль и email.
 - `/settings/security` — PIN и параметры безопасности.
 - `/settings/team` — команда и приглашения (доступно только взрослому профилю).
@@ -93,6 +94,7 @@ openssl rand -hex 32
   - compact attention summary (группы без учеников/методологии/ближайших занятий, занятия сегодня).
 - `/groups` — полный структурированный индекс групп преподавателя.
 - `/lessons` сохраняется как secondary cross-group lessons index.
+- `/methodologies` — индекс методик преподавателя.
 - В этом шаге намеренно **не** внедряются homework/thread/attendance/full-calendar/editor/AI.
 
 ### Route/source-of-truth helpers

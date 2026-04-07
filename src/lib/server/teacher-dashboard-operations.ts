@@ -392,10 +392,9 @@ export async function getTeacherDashboardOperationsReadModel(
 
   return {
     actions: [
-      { label: "Добавить группу", href: ROUTES.groupsNew, tone: "primary" },
-      { label: "Добавить ученика", href: ROUTES.studentsNew, tone: "primary" },
-      { label: "Открыть группы", href: ROUTES.groups, tone: "secondary" },
-      { label: "Открыть занятия", href: ROUTES.lessons, tone: "secondary" },
+      { label: "Добавить группу", href: ROUTES.groupsNew, tone: "secondary" },
+      { label: "Добавить ученика", href: ROUTES.studentsNew, tone: "secondary" },
+      { label: "Методики", href: ROUTES.methodologies, tone: "secondary" },
     ],
     groups: {
       rows: snapshot.filteredRows

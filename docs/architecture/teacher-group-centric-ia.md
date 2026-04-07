@@ -32,10 +32,11 @@ The following architectural decisions remain unchanged:
 ### Secondary surface
 
 4. `/lessons` — global cross-group lessons/schedule index.
+5. `/methodologies` — methodologies index (read-only in current step).
 
 ### Stable execution surface
 
-5. `/lessons/[scheduledLessonId]` — existing teacher lesson workspace (runtime execution).
+6. `/lessons/[scheduledLessonId]` — existing teacher lesson workspace (runtime execution).
 
 ## Step 1 (IA alignment)
 
@@ -52,8 +53,7 @@ Implemented in Step 2:
 - `/dashboard` rebuilt as teacher operations dashboard with visible quick actions:
   - add group,
   - add student,
-  - open groups,
-  - open lessons;
+  - open methodologies;
 - `My groups` rendered as table-first operational section (search + filters + row actions);
 - schedule block upgraded to weekly agenda across teacher groups;
 - compact attention summary added for operational risks;

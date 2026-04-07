@@ -19,6 +19,7 @@ export const ROUTES = {
   groupsNew: "/groups/new",
   studentsNew: "/students/new",
   lessons: "/lessons",
+  methodologies: "/methodologies",
   settings: "/settings",
   settingsSecurity: "/settings/security",
   settingsProfile: "/settings/profile",
