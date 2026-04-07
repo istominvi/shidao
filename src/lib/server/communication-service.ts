@@ -2,6 +2,7 @@ import { listClassIdsForStudentAdmin, listStudentsForClassesAdmin } from "./less
 import {
   createConversationMessageAdmin,
   ensureConversationByClassAndStudentAdmin,
+  isCommunicationSchemaMissingError,
   listMessagesByConversationAdmin,
   type GroupStudentMessage,
 } from "./communication-repository";
@@ -56,27 +57,39 @@ export async function getTeacherConversationReadModel(input: {
   scopedLessonId?: string;
   scopedHomeworkAssignmentId?: string;
 }): Promise<ConversationReadModel> {
-  const studentsByClass = await listStudentsForClassesAdmin([input.classId]);
-  const allowed = (studentsByClass[input.classId] ?? []).some((s) => s.id === input.studentId);
-  if (!allowed) throw new Error("Ученик не состоит в выбранной группе.");
+  try {
+    const studentsByClass = await listStudentsForClassesAdmin([input.classId]);
+    const allowed = (studentsByClass[input.classId] ?? []).some((s) => s.id === input.studentId);
+    if (!allowed) throw new Error("Ученик не состоит в выбранной группе.");
 
-  const conversation = await ensureConversationByClassAndStudentAdmin({
-    classId: input.classId,
-    studentId: input.studentId,
-  });
-  const messages = await listMessagesByConversationAdmin(conversation.id);
+    const conversation = await ensureConversationByClassAndStudentAdmin({
+      classId: input.classId,
+      studentId: input.studentId,
+    });
+    const messages = await listMessagesByConversationAdmin(conversation.id);
 
-  return {
-    conversationId: conversation.id,
-    classId: input.classId,
-    studentId: input.studentId,
-    messages: filterConversationMessages(
-      messages,
-      input.filter ?? "all",
-      input.scopedLessonId,
-      input.scopedHomeworkAssignmentId,
-    ),
-  };
+    return {
+      conversationId: conversation.id,
+      classId: input.classId,
+      studentId: input.studentId,
+      messages: filterConversationMessages(
+        messages,
+        input.filter ?? "all",
+        input.scopedLessonId,
+        input.scopedHomeworkAssignmentId,
+      ),
+    };
+  } catch (error) {
+    if (!isCommunicationSchemaMissingError(error)) {
+      throw error;
+    }
+    return {
+      conversationId: "",
+      classId: input.classId,
+      studentId: input.studentId,
+      messages: [],
+    };
+  }
 }
 
 export async function sendTeacherMessage(input: {
@@ -91,20 +104,35 @@ export async function sendTeacherMessage(input: {
   const normalized = input.body.trim();
   if (!normalized) throw new Error("Введите текст сообщения.");
 
-  const conversation = await ensureConversationByClassAndStudentAdmin({
-    classId: input.classId,
-    studentId: input.studentId,
-  });
+  let conversation;
+  try {
+    conversation = await ensureConversationByClassAndStudentAdmin({
+      classId: input.classId,
+      studentId: input.studentId,
+    });
+  } catch (error) {
+    if (isCommunicationSchemaMissingError(error)) {
+      throw new Error("Коммуникация временно недоступна: примените миграции communication runtime layer.");
+    }
+    throw error;
+  }
 
-  return createConversationMessageAdmin({
-    conversationId: conversation.id,
-    authorUserId: input.authorUserId,
-    authorRole: "teacher",
-    body: normalized,
-    scheduledLessonId: input.scheduledLessonId,
-    scheduledLessonHomeworkAssignmentId: input.scheduledLessonHomeworkAssignmentId,
-    topicKind: input.topicKind,
-  });
+  try {
+    return createConversationMessageAdmin({
+      conversationId: conversation.id,
+      authorUserId: input.authorUserId,
+      authorRole: "teacher",
+      body: normalized,
+      scheduledLessonId: input.scheduledLessonId,
+      scheduledLessonHomeworkAssignmentId: input.scheduledLessonHomeworkAssignmentId,
+      topicKind: input.topicKind,
+    });
+  } catch (error) {
+    if (isCommunicationSchemaMissingError(error)) {
+      throw new Error("Коммуникация временно недоступна: примените миграции communication runtime layer.");
+    }
+    throw error;
+  }
 }
 
 export async function sendStudentMessage(input: {
@@ -124,20 +152,35 @@ export async function sendStudentMessage(input: {
     throw new Error("Ученик не состоит в выбранной группе.");
   }
 
-  const conversation = await ensureConversationByClassAndStudentAdmin({
-    classId: input.classId,
-    studentId: input.studentId,
-  });
+  let conversation;
+  try {
+    conversation = await ensureConversationByClassAndStudentAdmin({
+      classId: input.classId,
+      studentId: input.studentId,
+    });
+  } catch (error) {
+    if (isCommunicationSchemaMissingError(error)) {
+      throw new Error("Коммуникация временно недоступна: примените миграции communication runtime layer.");
+    }
+    throw error;
+  }
 
-  return createConversationMessageAdmin({
-    conversationId: conversation.id,
-    authorUserId: input.authorUserId,
-    authorRole: "student",
-    body: normalized,
-    scheduledLessonId: input.scheduledLessonId,
-    scheduledLessonHomeworkAssignmentId: input.scheduledLessonHomeworkAssignmentId,
-    topicKind: input.topicKind,
-  });
+  try {
+    return createConversationMessageAdmin({
+      conversationId: conversation.id,
+      authorUserId: input.authorUserId,
+      authorRole: "student",
+      body: normalized,
+      scheduledLessonId: input.scheduledLessonId,
+      scheduledLessonHomeworkAssignmentId: input.scheduledLessonHomeworkAssignmentId,
+      topicKind: input.topicKind,
+    });
+  } catch (error) {
+    if (isCommunicationSchemaMissingError(error)) {
+      throw new Error("Коммуникация временно недоступна: примените миграции communication runtime layer.");
+    }
+    throw error;
+  }
 }
 
 export async function getStudentConversationReadModels(input: {

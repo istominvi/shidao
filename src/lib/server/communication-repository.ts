@@ -6,6 +6,25 @@ type RequestOptions = {
   extraHeaders?: Record<string, string>;
 };
 
+function isMissingCommunicationSchemaError(message: string) {
+  const normalized = message.toLowerCase();
+  const missingRelation =
+    normalized.includes("does not exist") ||
+    normalized.includes("schema cache") ||
+    normalized.includes("could not find the table");
+
+  return (
+    missingRelation &&
+    (normalized.includes("group_student_conversation") ||
+      normalized.includes("group_student_message"))
+  );
+}
+
+export function isCommunicationSchemaMissingError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error);
+  return isMissingCommunicationSchemaError(message);
+}
+
 type RowConversation = {
   id: string;
   class_id: string;
