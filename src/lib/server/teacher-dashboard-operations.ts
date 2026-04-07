@@ -231,7 +231,7 @@ async function buildOperationsSnapshot(
       attentionReasons.push("Нет учеников");
     }
     if (!methodologyLabel) {
-      attentionReasons.push("Не определена методология");
+      attentionReasons.push("Не определена методика");
     }
     if (!nextLesson) {
       attentionReasons.push("Нет ближайшего занятия");
@@ -394,8 +394,7 @@ export async function getTeacherDashboardOperationsReadModel(
     actions: [
       { label: "Добавить группу", href: ROUTES.groupsNew, tone: "secondary" },
       { label: "Добавить ученика", href: ROUTES.studentsNew, tone: "secondary" },
-      { label: "Методики", href: ROUTES.methodologies, tone: "secondary" },
-    ],
+          ],
     groups: {
       rows: snapshot.filteredRows
         .sort((a, b) => a.groupLabel.localeCompare(b.groupLabel, "ru-RU")),

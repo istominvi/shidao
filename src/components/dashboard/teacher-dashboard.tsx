@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { ROUTES } from "@/lib/auth";
 import type { TeacherDashboardOperationsReadModel } from "@/lib/server/teacher-dashboard-operations";
 
 type TeacherDashboardProps = {
@@ -11,7 +12,6 @@ type TeacherDashboardProps = {
 const ACTION_ICONS: Record<string, string> = {
   "Добавить группу": "➕",
   "Добавить ученика": "👤",
-  "Методики": "📚",
 };
 
 function statusTone(status: string) {
@@ -44,6 +44,15 @@ export function TeacherDashboard({ readModel }: TeacherDashboardProps) {
         <p className="mt-2 text-sm text-neutral-700">
           Рабочий центр: быстрые действия, группы, недельный график и точки внимания.
         </p>
+        <div className="mt-4">
+          <Link
+            href={ROUTES.methodologies}
+            className="inline-flex items-center gap-2 rounded-2xl border border-neutral-200 bg-white px-4 py-2 text-sm font-semibold text-neutral-900 transition hover:bg-neutral-50"
+          >
+            <span aria-hidden="true">📚</span>
+            <span>Методики</span>
+          </Link>
+        </div>
       </section>
 
       <section className="landing-surface rounded-3xl border border-white/80 p-4 md:p-5">
@@ -72,7 +81,7 @@ export function TeacherDashboard({ readModel }: TeacherDashboardProps) {
             onChange={(event) => setParam("methodology", event.target.value)}
             className="field-input"
           >
-            <option value="">Все методологии</option>
+            <option value="">Все методики</option>
             {readModel.groups.filters.methodologyOptions.map((option) => (
               <option key={option} value={option}>
                 {option}
@@ -111,7 +120,7 @@ export function TeacherDashboard({ readModel }: TeacherDashboardProps) {
               <tr>
                 <th className="px-4 py-3">Группа</th>
                 <th className="px-4 py-3">Ученики</th>
-                <th className="px-4 py-3">Методология</th>
+                <th className="px-4 py-3">Методика</th>
                 <th className="px-4 py-3">Прогресс</th>
                 <th className="px-4 py-3">Следующее занятие</th>
                 <th className="px-4 py-3">Статус</th>
@@ -197,7 +206,7 @@ export function TeacherDashboard({ readModel }: TeacherDashboardProps) {
         <h2 className="text-xl font-black text-neutral-950">Требует внимания</h2>
         <ul className="mt-3 grid gap-2 text-sm text-neutral-700 md:grid-cols-2">
           <li>Группы без учеников: {readModel.alerts.groupsWithoutStudents}</li>
-          <li>Группы без методологии: {readModel.alerts.groupsWithoutMethodology}</li>
+          <li>Группы без методики: {readModel.alerts.groupsWithoutMethodology}</li>
           <li>Группы без ближайших занятий: {readModel.alerts.groupsWithoutUpcomingLessons}</li>
           <li>Занятий сегодня: {readModel.alerts.lessonsToday}</li>
         </ul>

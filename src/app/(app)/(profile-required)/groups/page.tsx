@@ -58,7 +58,7 @@ export default async function TeacherGroupsPage({
           <form className="grid gap-2 md:grid-cols-4">
             <input name="q" defaultValue={readModel.filters.search} placeholder="Поиск группы" className="field-input" />
             <select name="methodology" defaultValue={readModel.filters.methodology} className="field-input">
-              <option value="">Все методологии</option>
+              <option value="">Все методики</option>
               {readModel.filters.methodologyOptions.map((option) => (
                 <option key={option} value={option}>{option}</option>
               ))}
@@ -78,7 +78,7 @@ export default async function TeacherGroupsPage({
                 <tr>
                   <th className="pb-2 pr-4">Группа</th>
                   <th className="pb-2 pr-4">Ученики</th>
-                  <th className="pb-2 pr-4">Методология</th>
+                  <th className="pb-2 pr-4">Методика</th>
                   <th className="pb-2 pr-4">Прогресс</th>
                   <th className="pb-2 pr-4">Следующее занятие</th>
                   <th className="pb-2 pr-4">Статус</th>

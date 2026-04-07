@@ -39,7 +39,7 @@ export default async function TeacherGroupPage({
             {readModel.group.label}
           </h1>
           <p className="mt-3 text-sm leading-6 text-neutral-700 md:text-base">
-            Группа — основной рабочий контекст преподавателя: состав учеников, методология и расписание занятий.
+            Группа — основной рабочий контекст преподавателя: состав учеников, методика и расписание занятий.
           </p>
           <div className="mt-4 flex flex-wrap gap-2 text-sm text-neutral-700">
             <span className="rounded-full border border-neutral-200 bg-white/90 px-3 py-1">
@@ -47,11 +47,11 @@ export default async function TeacherGroupPage({
             </span>
             {readModel.group.assignedMethodologyTitle ? (
               <span className="rounded-full border border-neutral-200 bg-white/90 px-3 py-1">
-                Методология: {readModel.group.assignedMethodologyTitle}
+                Методика: {readModel.group.assignedMethodologyTitle}
               </span>
             ) : (
               <span className="rounded-full border border-dashed border-neutral-300 bg-white/90 px-3 py-1 text-neutral-500">
-                Методология для группы пока не определена
+                Методика для группы пока не определена
               </span>
             )}
           </div>
