@@ -154,6 +154,10 @@ test("teacher workspace quick summary and lesson flow are derived from lesson co
     readModel.presentation.lessonFlow.map((step) => step.order),
     lessonContentFixtureMethodologyLesson.blocks.map((block) => block.order),
   );
+  assert.equal(
+    readModel.presentation.lessonFlow.every((step) => step.runHint.length > 0),
+    true,
+  );
   assert.equal(readModel.presentation.hero.lessonEssence.length > 0, true);
 });
 

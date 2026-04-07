@@ -31,6 +31,12 @@ function flowAccentClass(tone: "sky" | "violet" | "emerald" | "amber") {
   }
 }
 
+function compactList(items: string[], max = 2) {
+  const visible = items.slice(0, max);
+  const hiddenCount = Math.max(items.length - visible.length, 0);
+  return { visible, hiddenCount };
+}
+
 export function TeacherLessonWorkspace({
   workspace,
   runtimeFormFeedback,
@@ -40,31 +46,31 @@ export function TeacherLessonWorkspace({
     workspace.presentation;
 
   return (
-    <div className="space-y-8 lg:space-y-10">
-      <header className="landing-surface relative overflow-hidden rounded-[2rem] border border-white/80 p-6 shadow-[0_24px_72px_rgba(15,23,42,0.12)] md:p-8">
+    <div className="space-y-7 lg:space-y-9">
+      <header className="landing-surface relative overflow-hidden rounded-[2rem] border border-white/80 px-6 py-7 shadow-[0_24px_72px_rgba(15,23,42,0.12)] md:px-8 md:py-8">
         <div
           aria-hidden="true"
           className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(14,165,233,0.18),transparent_48%),radial-gradient(circle_at_bottom_left,rgba(168,85,247,0.16),transparent_44%)]"
         />
-        <div className="relative">
+        <div className="relative space-y-5">
           <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-sky-700">
             Рабочее пространство преподавателя
           </p>
-          <h1 className="mt-3 max-w-3xl text-3xl font-black tracking-[-0.03em] text-neutral-950 md:text-4xl">
+          <h1 className="max-w-3xl text-3xl font-black tracking-[-0.03em] text-neutral-950 md:text-4xl">
             {hero.lessonTitle}
           </h1>
-          <p className="mt-3 max-w-3xl text-sm leading-6 text-neutral-700 md:text-base">
+          <p className="max-w-3xl text-sm leading-6 text-neutral-700 md:text-base">
             {hero.lessonEssence}
           </p>
 
-          <div className="mt-5 flex flex-wrap items-center gap-2 text-sm text-neutral-700">
-            <span className="rounded-full border border-neutral-200 bg-white/90 px-3 py-1.5 font-medium text-neutral-900">
+          <div className="flex flex-wrap items-center gap-2 text-sm text-neutral-700">
+            <span className="rounded-full border border-neutral-200 bg-white/95 px-3 py-1.5 font-medium text-neutral-900">
               {hero.groupLabel}
             </span>
-            <span className="rounded-full border border-neutral-200 bg-white/80 px-3 py-1.5">
+            <span className="rounded-full border border-neutral-200 bg-white/85 px-3 py-1.5">
               {hero.dateTimeLabel}
             </span>
-            <span className="rounded-full border border-neutral-200 bg-white/80 px-3 py-1.5">
+            <span className="rounded-full border border-neutral-200 bg-white/85 px-3 py-1.5">
               {hero.formatLabel}
             </span>
             <span
@@ -73,16 +79,18 @@ export function TeacherLessonWorkspace({
               {hero.statusLabel}
             </span>
           </div>
-          <p className="mt-4 text-sm text-neutral-600">{hero.methodologyLine}</p>
+          <p className="border-t border-white/70 pt-4 text-sm text-neutral-600">
+            {hero.methodologyLine}
+          </p>
         </div>
       </header>
 
-      <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <article className="landing-surface rounded-3xl border border-white/80 p-5">
+      <section className="grid gap-3.5 md:grid-cols-2 xl:grid-cols-4">
+        <article className="landing-surface rounded-3xl border border-white/80 p-5 md:p-6">
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-neutral-500">
             Подготовить
           </p>
-          <ul className="mt-3 space-y-2 text-sm text-neutral-700">
+          <ul className="mt-3.5 space-y-2 text-sm text-neutral-700">
             {quickSummary.prepChecklist.slice(0, 5).map((item) => (
               <li key={item} className="flex gap-2">
                 <span className="mt-1 h-1.5 w-1.5 rounded-full bg-neutral-400" />
@@ -95,11 +103,11 @@ export function TeacherLessonWorkspace({
           </ul>
         </article>
 
-        <article className="landing-surface rounded-3xl border border-white/80 p-5">
+        <article className="landing-surface rounded-3xl border border-white/80 p-5 md:p-6">
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-neutral-500">
             Ключевые слова
           </p>
-          <div className="mt-3 flex flex-wrap gap-1.5">
+          <div className="mt-3.5 flex flex-wrap gap-1.5">
             {quickSummary.keyWords.length ? (
               quickSummary.keyWords.slice(0, 8).map((word) => (
                 <span
@@ -115,11 +123,11 @@ export function TeacherLessonWorkspace({
           </div>
         </article>
 
-        <article className="landing-surface rounded-3xl border border-white/80 p-5">
+        <article className="landing-surface rounded-3xl border border-white/80 p-5 md:p-6">
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-neutral-500">
             Ключевые фразы
           </p>
-          <div className="mt-3 flex flex-wrap gap-1.5">
+          <div className="mt-3.5 flex flex-wrap gap-1.5">
             {quickSummary.keyPhrases.length ? (
               quickSummary.keyPhrases.slice(0, 6).map((phrase) => (
                 <span
@@ -135,11 +143,11 @@ export function TeacherLessonWorkspace({
           </div>
         </article>
 
-        <article className="landing-surface rounded-3xl border border-white/80 p-5">
+        <article className="landing-surface rounded-3xl border border-white/80 p-5 md:p-6">
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-neutral-500">
             Видео и материалы
           </p>
-          <ul className="mt-3 space-y-2 text-sm text-neutral-700">
+          <ul className="mt-3.5 space-y-2 text-sm text-neutral-700">
             {quickSummary.resources.slice(0, 4).map((resource) => (
               <li key={`${resource.kindLabel}-${resource.title}`}>
                 <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-xs font-medium text-neutral-700">
@@ -184,102 +192,148 @@ export function TeacherLessonWorkspace({
             </span>
           </div>
 
-          <div className="mt-5 space-y-4">
-            {lessonFlow.map((step) => (
-              <article
-                key={step.id}
-                className="relative overflow-hidden rounded-3xl border border-neutral-200/90 bg-white/90 p-4 md:p-5"
-              >
-                <div
-                  aria-hidden="true"
-                  className={`pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-r ${flowAccentClass(step.accentTone)}`}
-                />
-                <div className="relative">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="rounded-full bg-neutral-900 px-2.5 py-1 text-xs font-semibold text-white">
-                      {step.stepLabel}
-                    </span>
-                    <span className="rounded-full bg-neutral-100 px-2.5 py-1 text-xs font-medium text-neutral-700">
-                      {step.blockLabel}
-                    </span>
-                  </div>
-
-                  <h3 className="mt-3 text-lg font-semibold text-neutral-950">
-                    {step.title}
-                  </h3>
-                  {step.description ? (
-                    <p className="mt-2 text-sm leading-6 text-neutral-700">
-                      {step.description}
-                    </p>
-                  ) : null}
-
-                  {(step.teacherActions.length > 0 ||
-                    step.studentActions.length > 0) && (
-                    <div className="mt-4 grid gap-3 md:grid-cols-2">
-                      {step.teacherActions.length ? (
-                        <div className="rounded-2xl bg-neutral-50 p-3">
-                          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-neutral-500">
-                            Действия преподавателя
-                          </p>
-                          <ul className="mt-2 space-y-1.5 text-sm text-neutral-700">
-                            {step.teacherActions.map((item) => (
-                              <li key={item}>• {item}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      ) : null}
-
-                      {step.studentActions.length ? (
-                        <div className="rounded-2xl bg-neutral-50 p-3">
-                          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-neutral-500">
-                            Действия детей
-                          </p>
-                          <ul className="mt-2 space-y-1.5 text-sm text-neutral-700">
-                            {step.studentActions.map((item) => (
-                              <li key={item}>• {item}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      ) : null}
+          <ol className="mt-5 space-y-3.5">
+            {lessonFlow.map((step) => {
+              const teacher = compactList(step.teacherActions, 2);
+              const students = compactList(step.studentActions, 2);
+              const hasHiddenDetails =
+                teacher.hiddenCount > 0 ||
+                students.hiddenCount > 0 ||
+                step.materials.length > 0 ||
+                step.resources.length > 0;
+              return (
+                <li
+                  key={step.id}
+                  className="relative overflow-hidden rounded-3xl border border-neutral-200/90 bg-white/90 px-4 py-4 md:px-5"
+                >
+                  <div
+                    aria-hidden="true"
+                    className={`pointer-events-none absolute inset-x-0 top-0 h-20 bg-gradient-to-r ${flowAccentClass(step.accentTone)}`}
+                  />
+                  <div className="relative space-y-3">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="rounded-full bg-neutral-900 px-2.5 py-1 text-xs font-semibold text-white">
+                        {step.stepLabel}
+                      </span>
+                      <span className="rounded-full bg-neutral-100 px-2.5 py-1 text-xs font-medium text-neutral-700">
+                        {step.blockLabel}
+                      </span>
                     </div>
-                  )}
 
-                  {(step.materials.length > 0 || step.resources.length > 0) && (
-                    <div className="mt-4 flex flex-wrap items-center gap-2">
-                      {step.materials.map((item) => (
-                        <span
-                          key={item}
-                          className="rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-900"
-                        >
-                          {item}
-                        </span>
-                      ))}
-                      {step.resources.map((resource) => (
-                        <span
-                          key={`${resource.kindLabel}:${resource.title}`}
-                          className="rounded-full bg-sky-50 px-2.5 py-1 text-xs text-sky-900"
-                        >
-                          {resource.kindLabel}: {" "}
-                          {resource.url ? (
-                            <a
-                              href={resource.url}
-                              className="font-semibold underline underline-offset-2"
-                              target="_blank"
-                              rel="noreferrer"
-                            >
-                              {resource.title}
-                            </a>
-                          ) : (
-                            <span className="font-semibold">{resource.title}</span>
+                    <div className="space-y-1.5">
+                      <h3 className="text-lg font-semibold text-neutral-950">
+                        {step.title}
+                      </h3>
+                      <p className="text-sm leading-6 text-neutral-700">
+                        {step.runHint}
+                      </p>
+                    </div>
+
+                    {(teacher.visible.length > 0 || students.visible.length > 0) && (
+                      <div className="grid gap-2.5 md:grid-cols-2">
+                        {teacher.visible.length ? (
+                          <div className="rounded-2xl border border-neutral-100 bg-neutral-50/80 px-3 py-2.5">
+                            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-neutral-500">
+                              Преподаватель
+                            </p>
+                            <ul className="mt-1.5 space-y-1 text-sm text-neutral-700">
+                              {teacher.visible.map((item) => (
+                                <li key={item}>• {item}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        ) : null}
+                        {students.visible.length ? (
+                          <div className="rounded-2xl border border-neutral-100 bg-neutral-50/80 px-3 py-2.5">
+                            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-neutral-500">
+                              Дети
+                            </p>
+                            <ul className="mt-1.5 space-y-1 text-sm text-neutral-700">
+                              {students.visible.map((item) => (
+                                <li key={item}>• {item}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        ) : null}
+                      </div>
+                    )}
+
+                    {hasHiddenDetails ? (
+                      <details className="group rounded-2xl border border-neutral-200/90 bg-white/90 px-3 py-2.5">
+                        <summary className="cursor-pointer list-none text-xs font-semibold uppercase tracking-[0.14em] text-neutral-600 group-open:mb-2">
+                          Детали этапа
+                        </summary>
+                        <div className="space-y-3">
+                          {step.description && step.description !== step.runHint ? (
+                            <p className="text-sm text-neutral-700">{step.description}</p>
+                          ) : null}
+
+                          {teacher.hiddenCount > 0 ? (
+                            <div>
+                              <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-neutral-500">
+                                Дополнительно для преподавателя
+                              </p>
+                              <ul className="mt-1.5 space-y-1 text-sm text-neutral-700">
+                                {step.teacherActions.slice(2).map((item) => (
+                                  <li key={item}>• {item}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          ) : null}
+
+                          {students.hiddenCount > 0 ? (
+                            <div>
+                              <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-neutral-500">
+                                Дополнительно для детей
+                              </p>
+                              <ul className="mt-1.5 space-y-1 text-sm text-neutral-700">
+                                {step.studentActions.slice(2).map((item) => (
+                                  <li key={item}>• {item}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          ) : null}
+
+                          {(step.materials.length > 0 || step.resources.length > 0) && (
+                            <div className="flex flex-wrap gap-1.5">
+                              {step.materials.map((item) => (
+                                <span
+                                  key={item}
+                                  className="rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-900"
+                                >
+                                  {item}
+                                </span>
+                              ))}
+                              {step.resources.map((resource) => (
+                                <span
+                                  key={`${resource.kindLabel}:${resource.title}`}
+                                  className="rounded-full bg-sky-50 px-2.5 py-1 text-xs text-sky-900"
+                                >
+                                  {resource.kindLabel}:{" "}
+                                  {resource.url ? (
+                                    <a
+                                      href={resource.url}
+                                      className="font-semibold underline underline-offset-2"
+                                      target="_blank"
+                                      rel="noreferrer"
+                                    >
+                                      {resource.title}
+                                    </a>
+                                  ) : (
+                                    <span className="font-semibold">{resource.title}</span>
+                                  )}
+                                </span>
+                              ))}
+                            </div>
                           )}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </article>
-            ))}
-          </div>
+                        </div>
+                      </details>
+                    ) : null}
+                  </div>
+                </li>
+              );
+            })}
+          </ol>
         </article>
 
         <aside className="space-y-4 xl:sticky xl:top-6 xl:self-start">
@@ -303,7 +357,7 @@ export function TeacherLessonWorkspace({
             ) : null}
 
             <form
-              className="mt-4 space-y-4"
+              className="mt-5 space-y-3.5"
               action={`/api/teacher/lessons/${workspace.scheduledLessonId}/runtime`}
               method="POST"
             >
@@ -359,18 +413,20 @@ export function TeacherLessonWorkspace({
                 />
               </label>
 
-              <button
-                type="submit"
-                className="inline-flex items-center rounded-xl bg-neutral-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-neutral-800"
-              >
-                Сохранить изменения
-              </button>
+              <div className="pt-1">
+                <button
+                  type="submit"
+                  className="inline-flex items-center rounded-xl bg-neutral-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-neutral-800"
+                >
+                  Сохранить изменения
+                </button>
+              </div>
             </form>
           </section>
 
           <section className="landing-surface rounded-3xl border border-white/80 p-5">
             <h2 className="text-lg font-bold text-neutral-900">Фокус преподавателя</h2>
-            <article className="mt-3 rounded-2xl border border-neutral-200 bg-white/80 p-4">
+            <article className="mt-3 rounded-2xl border border-neutral-200 bg-white/90 p-4">
               <h3 className="text-sm font-semibold text-neutral-900">
                 Короткая заметка
               </h3>
@@ -379,7 +435,7 @@ export function TeacherLessonWorkspace({
                   "Добавьте короткую заметку перед началом урока."}
               </p>
             </article>
-            <article className="mt-3 rounded-2xl border border-neutral-200 bg-white/80 p-4">
+            <article className="mt-2.5 rounded-2xl border border-neutral-200/80 bg-white/70 p-4">
               <h3 className="text-sm font-semibold text-neutral-900">
                 Заметки по проведению
               </h3>
@@ -388,7 +444,7 @@ export function TeacherLessonWorkspace({
                   "Пока нет заметок по проведению занятия."}
               </p>
             </article>
-            <article className="mt-3 rounded-2xl border border-neutral-200 bg-white/80 p-4">
+            <article className="mt-2.5 rounded-2xl border border-neutral-200/80 bg-white/70 p-4">
               <h3 className="text-sm font-semibold text-neutral-900">
                 Итоги после занятия
               </h3>
@@ -399,7 +455,7 @@ export function TeacherLessonWorkspace({
             </article>
           </section>
 
-          <section className="landing-surface rounded-3xl border border-violet-200/70 p-5">
+          <section className="landing-surface rounded-3xl border border-violet-200/60 bg-white/80 p-5">
             <h2 className="text-lg font-bold text-neutral-900">Ориентиры методики</h2>
             <p className="mt-2 text-sm text-neutral-700">{hero.methodologyTitle}</p>
             <ul className="mt-3 space-y-2 text-sm text-neutral-700">

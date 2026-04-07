@@ -30,6 +30,7 @@ export type TeacherLessonFlowStep = {
   blockLabel: string;
   accentTone: "sky" | "violet" | "emerald" | "amber";
   title: string;
+  runHint: string;
   description?: string;
   teacherActions: string[];
   studentActions: string[];
@@ -445,6 +446,11 @@ function buildPresentation(input: {
         blockLabel: blockTypeLabel(block.blockType),
         accentTone: blockTone(block.blockType),
         title: block.title?.trim() || blockTypeLabel(block.blockType),
+        runHint:
+          flowContent.description ||
+          flowContent.teacherActions[0] ||
+          flowContent.studentActions[0] ||
+          "Следуйте опоре этого этапа и удерживайте темп группы.",
         description: flowContent.description,
         teacherActions: flowContent.teacherActions,
         studentActions: flowContent.studentActions,
