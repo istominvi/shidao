@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound, redirect } from "next/navigation";
+import { redirect } from "next/navigation";
 import { TopNav } from "@/components/top-nav";
 import { ROUTES } from "@/lib/auth";
 import { resolveAccessPolicy } from "@/lib/server/access-policy";
@@ -24,17 +24,17 @@ export default async function TeacherStudentCommunicationPage({
   const { filter } = await searchParams;
   const activeFilter = FILTERS.includes(filter ?? "all") ? (filter ?? "all") : "all";
 
-  let readModel;
-  try {
-      readModel = await getTeacherConversationReadModel({
+  const readModel = await getTeacherConversationReadModel({
       teacherId: resolution.context.teacher?.id ?? "",
       classId: groupId,
       studentId,
       filter: activeFilter,
-    });
-  } catch {
-    notFound();
-  }
+    }).catch(() => ({
+      conversationId: "",
+      classId: groupId,
+      studentId,
+      messages: [],
+    }));
 
   return (
     <main className="pb-12">
