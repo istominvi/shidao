@@ -74,3 +74,21 @@
   - если у группы все scheduled lessons принадлежат одной методике, она назначается автоматически;
   - при неоднозначности `methodology_id` остаётся `null` и группа помечается как требующая настройки.
 - Всё ещё намеренно отложено: homework, thread/communication, attendance, advanced calendar UX, parent/student expansion.
+
+## Homework runtime layer (Step 4, April 7, 2026)
+
+- Домашнее задание формируется в методике (`methodology_lesson_homework`) и является каноническим контентом.
+- Преподаватель не редактирует контент homework; только выдаёт его в runtime-контексте запланированного урока.
+- Выдача хранится отдельно в `scheduled_lesson_homework_assignment` (one-per-scheduled-lesson).
+- Персональные состояния хранятся отдельно в `student_homework_assignment`:
+  - `assigned`,
+  - `submitted`,
+  - `reviewed`,
+  - `needs_revision`.
+- `/lessons/[scheduledLessonId]` стал primary surface для:
+  - просмотра методического homework (read-only),
+  - выдачи all/selected + due date,
+  - teacher review по каждому ученику.
+- `/dashboard` ученика показывает назначенные homework и submission form (текстовый ответ).
+- `/dashboard` родителя получает минимальную homework-проекцию по детям.
+- Намеренно отложено: file-heavy submissions, thread-коммуникация, attendance и расширенный UX-polish.

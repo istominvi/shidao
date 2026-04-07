@@ -5,6 +5,9 @@ import { TeacherDashboard } from "@/components/dashboard/teacher-dashboard";
 import { TopNav } from "@/components/top-nav";
 import { ROUTES } from "@/lib/auth";
 import { resolveAccessPolicy } from "@/lib/server/access-policy";
+import { getParentHomeworkProjection } from "@/lib/server/parent-homework";
+import { listClassIdsForStudentAdmin } from "@/lib/server/lesson-content-repository";
+import { getStudentHomeworkReadModel } from "@/lib/server/student-homework";
 import { getTeacherDashboardOperationsReadModel } from "@/lib/server/teacher-dashboard-operations";
 import { loadParentLearningContextsByUser } from "@/lib/server/supabase-admin";
 
@@ -26,7 +29,12 @@ export default async function DashboardIndexPage({
   const context = resolution.context;
 
   if (context.actorKind === "student") {
-    return <StudentDashboard />;
+    const studentId = context.student?.id;
+    const classIds = studentId ? await listClassIdsForStudentAdmin(studentId) : [];
+    const homework = studentId
+      ? await getStudentHomeworkReadModel({ studentId, classIds })
+      : [];
+    return <StudentDashboard homework={homework} />;
   }
 
   if (context.activeProfile === "teacher") {
@@ -55,5 +63,19 @@ export default async function DashboardIndexPage({
   }
 
   const learningContexts = await loadParentLearningContextsByUser(context.userId);
-  return <ParentDashboard childrenContexts={learningContexts} />;
+  const parentHomework = await getParentHomeworkProjection({
+    children: learningContexts.map((child) => ({
+      studentId: child.studentId,
+      classIds: child.classes.map((item) => item.classId),
+    })),
+  });
+  const homeworkByStudent = Object.fromEntries(
+    parentHomework.map((item) => [item.studentId, item.items]),
+  );
+  return (
+    <ParentDashboard
+      childrenContexts={learningContexts}
+      homeworkByStudent={homeworkByStudent}
+    />
+  );
 }

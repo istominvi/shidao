@@ -1,5 +1,6 @@
 import type {
   LessonBlockInstance,
+  MethodologyLessonHomeworkDefinition,
   Methodology,
   MethodologyLesson,
   ReusableAsset,
@@ -313,6 +314,17 @@ export const lessonContentFixtureMethodologyLesson: MethodologyLesson = {
   },
   blocks: lessonContentFixtureBlocks,
 };
+
+export const lessonContentFixtureHomeworkDefinition: MethodologyLessonHomeworkDefinition =
+  {
+    id: "methodology-homework:world-around-me-01",
+    methodologyLessonId: lessonContentFixtureMethodologyLesson.id,
+    title: "Домашняя практика: Животные на ферме",
+    instructions:
+      "Повтори слова 狗, 猫, 兔子, 马 и фразы «这是…», «我是…». Нарисуй 2 любимых животных и подпиши их по-китайски вместе со взрослым.",
+    materialLinks: ["Рабочая тетрадь, стр. 3–4", "Карточки животных из урока"],
+    answerFormatHint: "Текст + короткий устный ответ на следующем уроке.",
+  };
 
 export const lessonContentFixtureScheduledLesson: ScheduledLesson = {
   id: "scheduled-lesson:demo-world-around-me-lesson-1",

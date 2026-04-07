@@ -198,6 +198,15 @@ export type MethodologyLesson = {
   blocks: LessonBlockInstance[];
 };
 
+export type MethodologyLessonHomeworkDefinition = {
+  id: string;
+  methodologyLessonId: string;
+  title: string;
+  instructions: string;
+  materialLinks: string[];
+  answerFormatHint?: string;
+};
+
 export type ScheduledLesson = {
   id: string;
   methodologyLessonId: string;

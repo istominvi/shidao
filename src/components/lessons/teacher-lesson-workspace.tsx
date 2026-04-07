@@ -419,6 +419,104 @@ export function TeacherLessonWorkspace({
               </li>
             </ul>
           </section>
+
+          <section className="landing-surface rounded-3xl border border-sky-200/70 p-5">
+            <h2 className="text-lg font-bold text-neutral-900">Домашнее задание</h2>
+            {workspace.homework.definition ? (
+              <div className="mt-3 space-y-3 text-sm text-neutral-700">
+                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-sky-700">
+                  Из методики (только чтение)
+                </p>
+                <p className="font-semibold text-neutral-900">
+                  {workspace.homework.definition.title}
+                </p>
+                <p>{workspace.homework.definition.instructions}</p>
+                {workspace.homework.definition.materialLinks.length ? (
+                  <ul className="space-y-1 text-neutral-700">
+                    {workspace.homework.definition.materialLinks.map((item) => (
+                      <li key={item}>• {item}</li>
+                    ))}
+                  </ul>
+                ) : null}
+              </div>
+            ) : (
+              <p className="mt-3 text-sm text-neutral-600">
+                Для этого урока методики домашнее задание пока не определено.
+              </p>
+            )}
+
+            {workspace.homework.definition && !workspace.homework.assignment ? (
+              <form
+                className="mt-4 space-y-3 rounded-2xl border border-neutral-200 bg-white/80 p-3"
+                action={`/api/teacher/lessons/${workspace.scheduledLessonId}/homework/issue`}
+                method="POST"
+              >
+                <label className="block text-sm">
+                  <span className="font-semibold text-neutral-900">Кому выдать</span>
+                  <select
+                    name="recipientMode"
+                    defaultValue="all"
+                    className="mt-1.5 w-full rounded-xl border border-neutral-300 bg-white px-3 py-2"
+                  >
+                    <option value="all">Вся группа</option>
+                    <option value="selected">Выбранные ученики</option>
+                  </select>
+                </label>
+                <label className="block text-sm">
+                  <span className="font-semibold text-neutral-900">Срок сдачи</span>
+                  <input name="dueAt" type="datetime-local" className="mt-1.5 w-full rounded-xl border border-neutral-300 bg-white px-3 py-2" />
+                </label>
+                <fieldset className="space-y-1">
+                  <legend className="text-sm font-semibold text-neutral-900">
+                    Выбрать учеников (для режима “выбранные”)
+                  </legend>
+                  {workspace.homework.roster.map((row) => (
+                    <label key={row.studentId} className="flex items-center gap-2 text-sm">
+                      <input type="checkbox" name="studentIds" value={row.studentId} />
+                      <span>{row.studentName}</span>
+                    </label>
+                  ))}
+                </fieldset>
+                <button
+                  type="submit"
+                  className="inline-flex items-center rounded-xl bg-sky-700 px-4 py-2 text-sm font-semibold text-white"
+                >
+                  Выдать домашнее задание
+                </button>
+              </form>
+            ) : null}
+
+            {workspace.homework.assignment ? (
+              <div className="mt-4 rounded-2xl border border-neutral-200 bg-white/80 p-3 text-sm text-neutral-700">
+                <p>
+                  Выдано: {workspace.homework.assignment.recipientMode === "all" ? "всей группе" : "выбранным ученикам"}
+                </p>
+                <p>Срок: {workspace.homework.assignment.dueAt ?? "без срока"}</p>
+                <div className="mt-2 space-y-2">
+                  {workspace.homework.roster.map((row) => (
+                    <div key={row.studentId} className="rounded-xl border border-neutral-200 p-2">
+                      <p className="font-medium text-neutral-900">{row.studentName}: {row.statusLabel}</p>
+                      {row.assigned && row.studentHomeworkAssignmentId ? (
+                        <form
+                          className="mt-2 space-y-2"
+                          action={`/api/teacher/lessons/${workspace.scheduledLessonId}/homework/review`}
+                          method="POST"
+                        >
+                          <input type="hidden" name="studentHomeworkAssignmentId" value={row.studentHomeworkAssignmentId} />
+                          <select name="reviewStatus" defaultValue="reviewed" className="w-full rounded-xl border border-neutral-300 bg-white px-3 py-2 text-sm">
+                            <option value="reviewed">Проверено</option>
+                            <option value="needs_revision">Нужна доработка</option>
+                          </select>
+                          <textarea name="reviewNote" defaultValue={row.reviewNote ?? ""} rows={2} className="w-full rounded-xl border border-neutral-300 bg-white px-3 py-2 text-sm" placeholder="Комментарий преподавателя" />
+                          <button type="submit" className="rounded-xl border border-neutral-300 px-3 py-1.5 text-sm font-semibold text-neutral-800">Сохранить проверку</button>
+                        </form>
+                      ) : null}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+          </section>
         </aside>
       </section>
     </div>
