@@ -234,8 +234,17 @@ export function LandingPage() {
 
   return (
     <main className="pb-16">
+      <div className="landing-noise" aria-hidden="true" />
       <section className="container pt-4 md:pt-8">
-        <div className="rounded-[1.8rem] border border-white/70 bg-white/80 p-4 shadow-[0_20px_80px_rgba(20,20,20,0.08)] backdrop-blur-xl md:rounded-[2.2rem] md:p-7">
+        <div className="relative overflow-hidden rounded-[1.8rem] border border-white/70 bg-white/80 p-4 shadow-[0_20px_80px_rgba(20,20,20,0.08)] backdrop-blur-xl md:rounded-[2.2rem] md:p-7">
+          <div
+            className="absolute -right-24 -top-24 h-64 w-64 rounded-full bg-fuchsia-200/40 blur-3xl"
+            aria-hidden="true"
+          />
+          <div
+            className="absolute -left-24 bottom-0 h-56 w-56 rounded-full bg-sky-200/45 blur-3xl"
+            aria-hidden="true"
+          />
           <header className="flex flex-wrap items-center justify-between gap-4">
             <Link
               href={ROUTES.home}
@@ -266,7 +275,7 @@ export function LandingPage() {
             <div className="flex w-full gap-2 sm:w-auto">{navActions}</div>
           </header>
 
-          <div className="mt-8 grid items-center gap-8 lg:grid-cols-[1.04fr_0.96fr]">
+          <div className="relative mt-8 grid items-center gap-8 lg:grid-cols-[1.04fr_0.96fr]">
             <div>
               <p className="landing-chip bg-lime-200/90">Методика внутри платформы</p>
               <h1 className="mt-5 max-w-[15ch] text-[2rem] font-black leading-[1.02] tracking-[-0.03em] sm:text-[2.35rem] md:mt-6 md:max-w-none md:text-7xl">
@@ -299,7 +308,16 @@ export function LandingPage() {
               </p>
             </div>
 
-            <article className="rounded-[1.8rem] border border-black/10 bg-[linear-gradient(145deg,rgba(242,249,255,0.95),rgba(255,255,255,0.95),rgba(255,241,250,0.95))] p-4 shadow-[0_30px_80px_rgba(17,24,39,0.18)] md:p-6">
+            <article className="relative rounded-[1.8rem] border border-black/10 bg-[linear-gradient(145deg,rgba(242,249,255,0.95),rgba(255,255,255,0.95),rgba(255,241,250,0.95))] p-4 shadow-[0_30px_80px_rgba(17,24,39,0.18)] md:p-6">
+              <span className="landing-chip floating-chip absolute -left-3 top-5 hidden bg-sky-100/95 text-sm md:inline-flex">
+                Группа по методике
+              </span>
+              <span className="landing-chip floating-chip absolute -right-2 top-20 hidden bg-fuchsia-100/95 text-sm md:inline-flex">
+                Урок в расписании
+              </span>
+              <span className="landing-chip floating-chip absolute -left-4 bottom-8 hidden bg-lime-100/95 text-sm md:inline-flex">
+                Видно родителю
+              </span>
               <div className="grid gap-3">
                 {[
                   "Методика: «Мир вокруг меня»",
@@ -312,7 +330,13 @@ export function LandingPage() {
                 ].map((item, idx) => (
                   <div
                     key={item}
-                    className={`landing-card text-sm font-medium ${idx === 2 ? "border-black/20 bg-black text-white" : "bg-white/90"}`}
+                    className={`landing-card text-sm font-medium ${
+                      idx % 3 === 0
+                        ? "bg-sky-100/85"
+                        : idx % 3 === 1
+                          ? "bg-white/90"
+                          : "bg-fuchsia-100/75"
+                    }`}
                   >
                     {item}
                   </div>
@@ -325,8 +349,19 @@ export function LandingPage() {
 
       <section className="container mt-5 md:mt-6">
         <div className="flex flex-wrap gap-2 rounded-[1.8rem] border border-black/5 bg-white/60 p-4 backdrop-blur-xl">
-          {valueStrip.map((item) => (
-            <span key={item} className="landing-chip bg-white text-sm">
+          {valueStrip.map((item, idx) => (
+            <span
+              key={item}
+              className={`landing-chip text-sm ${
+                idx % 4 === 0
+                  ? "bg-sky-100/85"
+                  : idx % 4 === 1
+                    ? "bg-lime-100/85"
+                    : idx % 4 === 2
+                      ? "bg-fuchsia-100/80"
+                      : "bg-violet-100/80"
+              }`}
+            >
               {item}
             </span>
           ))}
@@ -353,7 +388,7 @@ export function LandingPage() {
               ))}
             </ul>
           </article>
-          <article className="landing-surface rounded-[1.6rem] border border-black/10 bg-lime-100/60 p-5">
+            <article className="landing-surface rounded-[1.6rem] border border-black/10 bg-gradient-to-br from-lime-100/80 to-sky-100/60 p-5">
             <p className="text-sm font-bold uppercase tracking-[0.12em] text-neutral-700">
               В Shidao
             </p>
@@ -387,7 +422,13 @@ export function LandingPage() {
             ].map((step, idx) => (
               <div
                 key={step}
-                className={`rounded-2xl border border-black/10 p-3 text-sm font-semibold ${idx === 0 || idx === 5 ? "bg-black text-white" : "bg-white"}`}
+                className={`rounded-2xl border border-black/10 p-3 text-sm font-semibold ${
+                  idx % 3 === 0
+                    ? "bg-sky-100/80"
+                    : idx % 3 === 1
+                      ? "bg-lime-100/75"
+                      : "bg-fuchsia-100/70"
+                }`}
               >
                 {step}
               </div>
@@ -437,13 +478,19 @@ export function LandingPage() {
           {workflowSteps.map(({ title, description }, idx) => (
             <li
               key={title}
-              className={`rounded-3xl border border-black/10 p-5 ${idx === 0 || idx === 3 ? "bg-black text-white" : "bg-white/80"}`}
+              className={`rounded-3xl border border-black/10 p-5 ${
+                idx % 3 === 0
+                  ? "bg-sky-100/80"
+                  : idx % 3 === 1
+                    ? "bg-white/85"
+                    : "bg-violet-100/75"
+              }`}
             >
-              <p className="text-xs font-bold tracking-[0.14em] opacity-70">
+              <p className="text-xs font-bold tracking-[0.14em] text-neutral-600">
                 ШАГ {idx + 1}
               </p>
               <p className="mt-3 text-base font-bold">{title}</p>
-              <p className="mt-2 text-sm leading-relaxed opacity-90">{description}</p>
+              <p className="mt-2 text-sm leading-relaxed text-neutral-700">{description}</p>
             </li>
           ))}
         </ol>
@@ -533,15 +580,15 @@ export function LandingPage() {
       </section>
 
       <section className="container mt-14 md:mt-16">
-        <div className="rounded-[1.6rem] border border-black/10 bg-black px-4 py-8 text-center text-white shadow-[0_24px_70px_rgba(20,20,20,0.3)] sm:px-6 md:rounded-[2rem] md:px-12 md:py-10">
-          <p className="landing-chip mx-auto bg-white/15">
+        <div className="rounded-[1.6rem] border border-black/10 bg-[linear-gradient(150deg,rgba(240,247,255,0.92),rgba(255,255,255,0.92),rgba(255,241,250,0.92))] px-4 py-8 text-center shadow-[0_24px_70px_rgba(20,20,20,0.16)] sm:px-6 md:rounded-[2rem] md:px-12 md:py-10">
+          <p className="landing-chip mx-auto bg-lime-100/85">
             Запустить обучение в единой рабочей среде
           </p>
           <h2 className="mx-auto mt-5 max-w-[22ch] text-2xl font-black leading-tight md:mt-6 md:max-w-none md:text-5xl">
             Shidao помогает преподавателю вести курс по методике, а не собирать
             процесс вручную
           </h2>
-          <p className="mx-auto mt-3 max-w-[56ch] text-sm leading-relaxed text-white/80 md:text-base">
+          <p className="mx-auto mt-3 max-w-[56ch] text-sm leading-relaxed text-neutral-700 md:text-base">
             От группы и расписания до домашнего задания и комментариев по уроку
             — всё собрано в одном учебном контуре для преподавателя, родителя и
             ученика.
@@ -555,12 +602,12 @@ export function LandingPage() {
             </Link>
             <Link
               href={authCtaHref}
-              className="landing-btn min-h-12 w-full border border-white/50 bg-white/5 text-white hover:bg-white/15 sm:w-auto"
+              className="landing-btn min-h-12 w-full border border-black/20 bg-white/80 text-neutral-900 hover:bg-white sm:w-auto"
             >
               Войти
             </Link>
           </div>
-          <p className="mt-3 text-sm text-white/75">
+          <p className="mt-3 text-sm text-neutral-600">
             Для частного преподавателя и для школы. Начать можно с первой
             готовой методики.
           </p>
