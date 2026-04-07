@@ -40,3 +40,10 @@ Teacher can only:
 - communication threads,
 - attendance,
 - advanced parent/student UX polish.
+
+
+## Communication cross-reference (Step 5)
+
+Homework discussion is now a scoped view of the same group-student continuous communication container.
+Homework does not own a separate isolated chat thread subsystem.
+See `docs/architecture/communication-runtime-model.md`.

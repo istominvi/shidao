@@ -26,6 +26,10 @@ import {
   getTeacherLessonHomeworkReadModel,
   type TeacherLessonHomeworkReadModel,
 } from "./teacher-homework";
+import {
+  getHomeworkScopedTeacherDiscussions,
+  getLessonScopedTeacherDiscussions,
+} from "./communication-service";
 
 export type TeacherLessonFlowStep = {
   id: string;
@@ -85,6 +89,28 @@ export type TeacherLessonWorkspaceReadModel = {
   projection: TeacherLessonProjection;
   presentation: TeacherLessonWorkspacePresentation;
   homework: TeacherLessonHomeworkReadModel;
+  communication: {
+    lessonScoped: Array<{
+      studentId: string;
+      studentName: string;
+      messages: Array<{
+        id: string;
+        authorRole: "teacher" | "student" | "parent";
+        body: string;
+        createdAt: string;
+      }>;
+    }>;
+    homeworkScoped: Array<{
+      studentId: string;
+      messages: Array<{
+        id: string;
+        authorRole: "teacher" | "student" | "parent";
+        body: string;
+        createdAt: string;
+      }>;
+    }>;
+    homeworkAssignmentId: string | null;
+  };
 };
 
 type WorkspaceLoaderDeps = {
@@ -93,6 +119,8 @@ type WorkspaceLoaderDeps = {
   listReusableAssetsByIds: typeof listReusableAssetsByIdsAdmin;
   getClassDisplayNameById: typeof getClassDisplayNameByIdAdmin;
   getHomeworkReadModel: typeof getTeacherLessonHomeworkReadModel;
+  getLessonDiscussions: typeof getLessonScopedTeacherDiscussions;
+  getHomeworkDiscussions: typeof getHomeworkScopedTeacherDiscussions;
 };
 
 const defaultWorkspaceLoaderDeps: WorkspaceLoaderDeps = {
@@ -101,6 +129,8 @@ const defaultWorkspaceLoaderDeps: WorkspaceLoaderDeps = {
   listReusableAssetsByIds: listReusableAssetsByIdsAdmin,
   getClassDisplayNameById: getClassDisplayNameByIdAdmin,
   getHomeworkReadModel: getTeacherLessonHomeworkReadModel,
+  getLessonDiscussions: getLessonScopedTeacherDiscussions,
+  getHomeworkDiscussions: getHomeworkScopedTeacherDiscussions,
 };
 
 export function canAccessTeacherLessonWorkspace(
@@ -480,6 +510,7 @@ export function buildTeacherLessonWorkspaceReadModel(input: {
   classDisplayName?: string | null;
   assets: ReusableAsset[];
   homework: TeacherLessonHomeworkReadModel;
+  communication?: TeacherLessonWorkspaceReadModel["communication"];
 }): TeacherLessonWorkspaceReadModel {
   const sortedProjection: TeacherLessonProjection = {
     ...input.projection,
@@ -501,6 +532,11 @@ export function buildTeacherLessonWorkspaceReadModel(input: {
       assetsById,
     }),
     homework: input.homework,
+    communication: input.communication ?? {
+      lessonScoped: [],
+      homeworkScoped: [],
+      homeworkAssignmentId: null,
+    },
   };
 }
 
@@ -525,13 +561,22 @@ export async function getTeacherLessonWorkspaceByScheduledLessonId(
     scheduledLesson,
   );
   const assetIds = collectAssetIds(projection.orderedBlocks);
-  const [assets, classDisplayName, homework] = await Promise.all([
+  const [assets, classDisplayName, homework, lessonDiscussions, homeworkDiscussions] =
+    await Promise.all([
     assetIds.length
       ? deps.listReusableAssetsByIds(assetIds)
       : Promise.resolve([]),
     deps.getClassDisplayNameById(scheduledLesson.runtimeShell.classId),
     deps.getHomeworkReadModel(scheduledLessonId),
-  ]);
+    deps.getLessonDiscussions({
+      classId: scheduledLesson.runtimeShell.classId,
+      scheduledLessonId: scheduledLesson.id,
+    }),
+    deps.getHomeworkDiscussions({
+      classId: scheduledLesson.runtimeShell.classId,
+      scheduledLessonId: scheduledLesson.id,
+    }),
+    ]);
 
   return buildTeacherLessonWorkspaceReadModel({
     projection,
@@ -540,6 +585,20 @@ export async function getTeacherLessonWorkspaceByScheduledLessonId(
     classDisplayName,
     assets,
     homework,
+    communication: {
+      lessonScoped: lessonDiscussions.map((item) => ({
+        studentId: item.studentId,
+        studentName: item.studentName,
+        messages: item.readModel.messages.map((message) => ({
+          id: message.id,
+          authorRole: message.authorRole,
+          body: message.body,
+          createdAt: message.createdAt,
+        })),
+      })),
+      homeworkScoped: homeworkDiscussions.items,
+      homeworkAssignmentId: homeworkDiscussions.assignmentId,
+    },
   });
 }
 

@@ -132,3 +132,20 @@ Migration introduces safe backfill for existing groups:
 
 - if all existing scheduled lessons of a class point to one methodology, class gets that methodology assigned;
 - if methodology cannot be inferred unambiguously, assignment stays `null` and UI shows setup-needed state.
+
+
+## Step 5 (communication layer with group-level continuity)
+
+Implemented in Step 5:
+
+- Introduced continuous communication container per `group(class) + student`.
+- Added teacher full-thread surface:
+  - `/groups/[groupId]/students/[studentId]/communication`.
+- Lesson workspace `/lessons/[scheduledLessonId]` now includes lesson/homework-scoped discussion projections from the same underlying conversation.
+- Student dashboard can reply in the same communication model (general + homework-scoped).
+- Parent dashboard receives read-only communication projection for linked children.
+
+### Why this model
+
+- Better than isolated per-lesson threads: preserves continuity across lessons.
+- Better than one global chat: keeps communication grounded in class/student runtime context.

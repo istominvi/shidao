@@ -15,11 +15,22 @@ type ParentContext = {
 export function ParentDashboard({
   childrenContexts,
   homeworkByStudent,
+  communicationByStudent,
 }: {
   childrenContexts: ParentContext[];
   homeworkByStudent: Record<
     string,
     Array<{ dueAt: string | null; statusLabel: string }>
+  >;
+  communicationByStudent: Record<
+    string,
+    Array<{
+      id: string;
+      authorRole: "teacher" | "student" | "parent";
+      body: string;
+      scheduledLessonId: string | null;
+      scheduledLessonHomeworkAssignmentId: string | null;
+    }>
   >;
 }) {
   return (
@@ -64,6 +75,16 @@ export function ParentDashboard({
                   <div className="mt-2 text-xs text-neutral-600">
                     Домашние задания:{" "}
                     {(homeworkByStudent[child.studentId] ?? []).length}
+                  </div>
+                  <div className="mt-2 rounded-xl border border-neutral-200 p-2 text-xs text-neutral-700">
+                    <p className="font-semibold text-neutral-900">Коммуникация (read-only)</p>
+                    {(communicationByStudent[child.studentId] ?? [])
+                      .slice(-3)
+                      .map((message) => (
+                        <p key={message.id} className="mt-1">
+                          {message.authorRole}: {message.body}
+                        </p>
+                      ))}
                   </div>
                 </li>
               ))}

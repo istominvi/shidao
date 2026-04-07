@@ -5,6 +5,7 @@ import { TeacherDashboard } from "@/components/dashboard/teacher-dashboard";
 import { TopNav } from "@/components/top-nav";
 import { ROUTES } from "@/lib/auth";
 import { resolveAccessPolicy } from "@/lib/server/access-policy";
+import { getParentCommunicationProjection, getStudentConversationReadModels } from "@/lib/server/communication-service";
 import { getParentHomeworkProjection } from "@/lib/server/parent-homework";
 import { listClassIdsForStudentAdmin } from "@/lib/server/lesson-content-repository";
 import { getStudentHomeworkReadModel } from "@/lib/server/student-homework";
@@ -34,7 +35,10 @@ export default async function DashboardIndexPage({
     const homework = studentId
       ? await getStudentHomeworkReadModel({ studentId, classIds })
       : [];
-    return <StudentDashboard homework={homework} />;
+    const communication = studentId
+      ? await getStudentConversationReadModels({ studentId, filter: "all" })
+      : [];
+    return <StudentDashboard homework={homework} communication={communication} />;
   }
 
   if (context.activeProfile === "teacher") {
@@ -72,10 +76,14 @@ export default async function DashboardIndexPage({
   const homeworkByStudent = Object.fromEntries(
     parentHomework.map((item) => [item.studentId, item.items]),
   );
+  const parentCommunication = await getParentCommunicationProjection({ userId: context.userId });
   return (
     <ParentDashboard
       childrenContexts={learningContexts}
       homeworkByStudent={homeworkByStudent}
+      communicationByStudent={Object.fromEntries(
+        parentCommunication.map((item) => [item.studentId, item.messages]),
+      )}
     />
   );
 }

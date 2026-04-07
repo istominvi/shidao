@@ -112,6 +112,20 @@ openssl rand -hex 32
 - `/lessons` сохраняется как secondary global lessons index; `/lessons/[scheduledLessonId]` остаётся execution workspace.
 
 ### Teacher IA (Step 4: homework layer bound to scheduled lesson)
+### Teacher IA (Step 5: communication runtime layer with continuity)
+
+- Добавлена непрерывная коммуникация `teacher ↔ student` в контексте конкретной группы.
+- Основной контейнер: `group_student_conversation` (1 conversation на пару `group + student`).
+- Сообщения (`group_student_message`) поддерживают опциональные runtime-ссылки:
+  - `scheduled_lesson_id` (lesson-scoped projection),
+  - `scheduled_lesson_homework_assignment_id` (homework-scoped projection),
+  - `topic_kind` (`general`, `lesson`, `homework`, `progress`, `organizational`).
+- Полный непрерывный поток: `/groups/[groupId]/students/[studentId]/communication`.
+- `/lessons/[scheduledLessonId]` показывает scoped-проекции того же conversation слоя (не отдельный silo-thread subsystem).
+- Student dashboard может отвечать в том же слое (general + homework-scoped).
+- Parent dashboard получает read-only проекцию сообщений по детям.
+- Детали: `docs/architecture/communication-runtime-model.md`.
+
 
 - Домашнее задание теперь строго следует модели `methodology -> scheduled lesson runtime -> student submission`.
 - Canonical homework хранится в методике (`methodology_lesson_homework`) и отображается преподавателю только в режиме read-only.
