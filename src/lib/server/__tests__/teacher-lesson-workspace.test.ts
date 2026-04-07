@@ -14,6 +14,7 @@ import {
 } from "../teacher-lesson-workspace";
 
 const homeworkSnapshot = {
+  schemaReady: true,
   definition: lessonContentFixtureHomeworkDefinition,
   assignment: null,
   roster: [],

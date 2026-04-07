@@ -192,6 +192,23 @@ export async function getMethodologyHomeworkByLessonIdAdmin(methodologyLessonId:
   return mapMethodologyHomework(rows[0]);
 }
 
+export async function isHomeworkSchemaReadyAdmin() {
+  try {
+    await adminRequest<RowMethodologyHomework[]>(
+      "/rest/v1/methodology_lesson_homework?select=id&limit=1",
+      "GET",
+      { allowEmpty: true },
+    );
+    return true;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "unknown";
+    if (isMissingHomeworkSchemaError(message)) {
+      return false;
+    }
+    throw error;
+  }
+}
+
 export async function getScheduledHomeworkAssignmentByLessonIdAdmin(scheduledLessonId: string) {
   let rows: RowScheduledHomeworkAssignment[];
   try {

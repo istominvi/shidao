@@ -4,6 +4,7 @@ import {
   createStudentHomeworkAssignmentsAdmin,
   getMethodologyHomeworkByLessonIdAdmin,
   getScheduledHomeworkAssignmentByLessonIdAdmin,
+  isHomeworkSchemaReadyAdmin,
   listStudentHomeworkAssignmentsByScheduledAssignmentAdmin,
   updateStudentHomeworkReviewAdmin,
 } from "./homework-repository";
@@ -24,6 +25,7 @@ export type TeacherHomeworkRosterItem = {
 };
 
 export type TeacherLessonHomeworkReadModel = {
+  schemaReady: boolean;
   definition: {
     id: string;
     title: string;
@@ -63,7 +65,8 @@ export async function getTeacherLessonHomeworkReadModel(scheduledLessonId: strin
     throw new Error("Урок не найден.");
   }
 
-  const [definition, assignment, classStudentsByClass] = await Promise.all([
+  const [schemaReady, definition, assignment, classStudentsByClass] = await Promise.all([
+    isHomeworkSchemaReadyAdmin(),
     getMethodologyHomeworkByLessonIdAdmin(scheduledLesson.methodologyLessonId),
     getScheduledHomeworkAssignmentByLessonIdAdmin(scheduledLessonId),
     listStudentsForClassesAdmin([scheduledLesson.runtimeShell.classId]),
@@ -76,6 +79,7 @@ export async function getTeacherLessonHomeworkReadModel(scheduledLessonId: strin
   const submissionsByStudentId = new Map(submissions.map((item) => [item.studentId, item]));
 
   return {
+    schemaReady,
     definition,
     assignment: assignment
       ? {
@@ -131,11 +135,16 @@ export async function issueHomeworkForScheduledLesson(input: {
     throw new Error("Урок не найден.");
   }
 
-  const [definition, existingAssignment, classStudentsByClass] = await Promise.all([
+  const [schemaReady, definition, existingAssignment, classStudentsByClass] = await Promise.all([
+    isHomeworkSchemaReadyAdmin(),
     getMethodologyHomeworkByLessonIdAdmin(scheduledLesson.methodologyLessonId),
     getScheduledHomeworkAssignmentByLessonIdAdmin(input.scheduledLessonId),
     listStudentsForClassesAdmin([scheduledLesson.runtimeShell.classId]),
   ]);
+
+  if (!schemaReady) {
+    throw new Error("Схема БД не обновлена: примените миграции homework-runtime-layer.");
+  }
 
   if (!definition) {
     throw new Error("Для этого урока методики пока не задано домашнее задание.");

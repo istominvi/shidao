@@ -422,7 +422,11 @@ export function TeacherLessonWorkspace({
 
           <section className="landing-surface rounded-3xl border border-sky-200/70 p-5">
             <h2 className="text-lg font-bold text-neutral-900">Домашнее задание</h2>
-            {workspace.homework.definition ? (
+            {!workspace.homework.schemaReady ? (
+              <p className="mt-3 text-sm text-amber-700">
+                Домашние задания временно недоступны: схема БД не обновлена. Примените миграцию homework runtime layer.
+              </p>
+            ) : workspace.homework.definition ? (
               <div className="mt-3 space-y-3 text-sm text-neutral-700">
                 <p className="text-xs font-semibold uppercase tracking-[0.12em] text-sky-700">
                   Из методики (только чтение)
