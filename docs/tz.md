@@ -42,3 +42,15 @@
 - `/lessons` сохраняется как вторичный глобальный индекс занятий по всем группам.
 - `methodology` остаётся каноническим источником содержания, а `scheduled_lesson` — runtime-сущностью исполнения урока.
 - Этот шаг фиксирует IA/read-model/routing направление; полные workflows homework/thread/progress планируются следующими этапами.
+
+## Teacher operations dashboard (Step 2, April 7, 2026)
+
+- `/dashboard` переведён в режим реального teacher command center.
+- Добавлены рабочие entry points: создание группы (`/groups/new`) и создание ученика (`/students/new`).
+- Dashboard read-model строится server-side в `teacher-dashboard-operations` и включает:
+  - table-first `Мои группы` с progress/status/next-lesson;
+  - недельный schedule block по всем группам;
+  - attention summary с операционными сигналами.
+- `/groups` усилен до полного индексного списка с поиском и фильтрами.
+- `/lessons` остаётся вторичным кросс-групповым индексом занятий.
+- Намеренно отложено: homework, threads, attendance, full calendar subsystem, methodology/block editors, AI layer.

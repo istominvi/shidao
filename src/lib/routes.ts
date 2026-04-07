@@ -11,6 +11,7 @@ export const PRIVATE_ROUTE_PREFIXES = [
   ROUTES.settings,
   ROUTES.lessons,
   ROUTES.groups,
+  ROUTES.studentsNew,
 ] as const;
 
 export function isRouteWithin(
