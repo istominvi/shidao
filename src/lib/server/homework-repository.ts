@@ -8,6 +8,25 @@ type RequestOptions = {
   extraHeaders?: Record<string, string>;
 };
 
+function isMissingHomeworkSchemaError(message: string) {
+  const normalized = message.toLowerCase();
+  const missingRelation =
+    normalized.includes("does not exist") ||
+    normalized.includes("schema cache") ||
+    normalized.includes("could not find the table");
+
+  return (
+    missingRelation &&
+    (normalized.includes("methodology_lesson_homework") ||
+      normalized.includes("scheduled_lesson_homework_assignment") ||
+      normalized.includes("student_homework_assignment"))
+  );
+}
+
+function toHomeworkSchemaMessage() {
+  return "Схема БД не обновлена: примените миграции homework-runtime-layer.";
+}
+
 type RowMethodologyHomework = {
   id: string;
   methodology_lesson_id: string;
@@ -156,18 +175,36 @@ function mapStudentAssignment(row: RowStudentHomeworkAssignment): StudentHomewor
 }
 
 export async function getMethodologyHomeworkByLessonIdAdmin(methodologyLessonId: string) {
-  const rows = await adminRequest<RowMethodologyHomework[]>(
-    `/rest/v1/methodology_lesson_homework?select=id,methodology_lesson_id,title,instructions,material_links,answer_format_hint&methodology_lesson_id=eq.${methodologyLessonId}&limit=1`,
-  );
+  let rows: RowMethodologyHomework[];
+  try {
+    rows = await adminRequest<RowMethodologyHomework[]>(
+      `/rest/v1/methodology_lesson_homework?select=id,methodology_lesson_id,title,instructions,material_links,answer_format_hint&methodology_lesson_id=eq.${methodologyLessonId}&limit=1`,
+    );
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "unknown";
+    if (isMissingHomeworkSchemaError(message)) {
+      return null;
+    }
+    throw error;
+  }
 
   if (!rows[0]) return null;
   return mapMethodologyHomework(rows[0]);
 }
 
 export async function getScheduledHomeworkAssignmentByLessonIdAdmin(scheduledLessonId: string) {
-  const rows = await adminRequest<RowScheduledHomeworkAssignment[]>(
-    `/rest/v1/scheduled_lesson_homework_assignment?select=id,scheduled_lesson_id,methodology_homework_id,assigned_by_teacher_id,recipient_mode,due_at,issued_at&scheduled_lesson_id=eq.${scheduledLessonId}&limit=1`,
-  );
+  let rows: RowScheduledHomeworkAssignment[];
+  try {
+    rows = await adminRequest<RowScheduledHomeworkAssignment[]>(
+      `/rest/v1/scheduled_lesson_homework_assignment?select=id,scheduled_lesson_id,methodology_homework_id,assigned_by_teacher_id,recipient_mode,due_at,issued_at&scheduled_lesson_id=eq.${scheduledLessonId}&limit=1`,
+    );
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "unknown";
+    if (isMissingHomeworkSchemaError(message)) {
+      return null;
+    }
+    throw error;
+  }
 
   if (!rows[0]) return null;
   return mapScheduledAssignment(rows[0]);
@@ -176,9 +213,18 @@ export async function getScheduledHomeworkAssignmentByLessonIdAdmin(scheduledLes
 export async function listStudentHomeworkAssignmentsByScheduledAssignmentAdmin(
   scheduledHomeworkAssignmentId: string,
 ) {
-  const rows = await adminRequest<RowStudentHomeworkAssignment[]>(
-    `/rest/v1/student_homework_assignment?select=id,scheduled_homework_assignment_id,student_id,status,submission_text,submitted_at,review_note,reviewed_at&scheduled_homework_assignment_id=eq.${scheduledHomeworkAssignmentId}`,
-  );
+  let rows: RowStudentHomeworkAssignment[];
+  try {
+    rows = await adminRequest<RowStudentHomeworkAssignment[]>(
+      `/rest/v1/student_homework_assignment?select=id,scheduled_homework_assignment_id,student_id,status,submission_text,submitted_at,review_note,reviewed_at&scheduled_homework_assignment_id=eq.${scheduledHomeworkAssignmentId}`,
+    );
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "unknown";
+    if (isMissingHomeworkSchemaError(message)) {
+      return [];
+    }
+    throw error;
+  }
 
   return rows.map(mapStudentAssignment);
 }
@@ -186,9 +232,18 @@ export async function listStudentHomeworkAssignmentsByScheduledAssignmentAdmin(
 export async function getStudentHomeworkAssignmentByIdAdmin(
   studentHomeworkAssignmentId: string,
 ) {
-  const rows = await adminRequest<RowStudentHomeworkAssignment[]>(
-    `/rest/v1/student_homework_assignment?select=id,scheduled_homework_assignment_id,student_id,status,submission_text,submitted_at,review_note,reviewed_at&id=eq.${studentHomeworkAssignmentId}&limit=1`,
-  );
+  let rows: RowStudentHomeworkAssignment[];
+  try {
+    rows = await adminRequest<RowStudentHomeworkAssignment[]>(
+      `/rest/v1/student_homework_assignment?select=id,scheduled_homework_assignment_id,student_id,status,submission_text,submitted_at,review_note,reviewed_at&id=eq.${studentHomeworkAssignmentId}&limit=1`,
+    );
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "unknown";
+    if (isMissingHomeworkSchemaError(message)) {
+      return null;
+    }
+    throw error;
+  }
 
   if (!rows[0]) return null;
   return mapStudentAssignment(rows[0]);
@@ -201,19 +256,28 @@ export async function createScheduledHomeworkAssignmentAdmin(input: {
   recipientMode: "all" | "selected";
   dueAt: string | null;
 }) {
-  const rows = await adminRequest<RowScheduledHomeworkAssignment[]>(
-    "/rest/v1/scheduled_lesson_homework_assignment",
-    "POST",
-    {
-      payload: {
-        scheduled_lesson_id: input.scheduledLessonId,
-        methodology_homework_id: input.methodologyHomeworkId,
-        assigned_by_teacher_id: input.assignedByTeacherId,
-        recipient_mode: input.recipientMode,
-        due_at: input.dueAt,
+  let rows: RowScheduledHomeworkAssignment[];
+  try {
+    rows = await adminRequest<RowScheduledHomeworkAssignment[]>(
+      "/rest/v1/scheduled_lesson_homework_assignment",
+      "POST",
+      {
+        payload: {
+          scheduled_lesson_id: input.scheduledLessonId,
+          methodology_homework_id: input.methodologyHomeworkId,
+          assigned_by_teacher_id: input.assignedByTeacherId,
+          recipient_mode: input.recipientMode,
+          due_at: input.dueAt,
+        },
       },
-    },
-  );
+    );
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "unknown";
+    if (isMissingHomeworkSchemaError(message)) {
+      throw new Error(toHomeworkSchemaMessage());
+    }
+    throw error;
+  }
 
   if (!rows[0]) throw new Error("Не удалось создать назначение домашнего задания.");
   return mapScheduledAssignment(rows[0]);
@@ -224,20 +288,29 @@ export async function createStudentHomeworkAssignmentsAdmin(
 ) {
   if (assignments.length === 0) return [];
 
-  const rows = await adminRequest<RowStudentHomeworkAssignment[]>(
-    "/rest/v1/student_homework_assignment",
-    "POST",
-    {
-      payload: assignments.map((item) => ({
-        scheduled_homework_assignment_id: item.scheduledHomeworkAssignmentId,
-        student_id: item.studentId,
-        status: "assigned",
-      })),
-      extraHeaders: {
-        Prefer: "resolution=merge-duplicates,return=representation",
+  let rows: RowStudentHomeworkAssignment[];
+  try {
+    rows = await adminRequest<RowStudentHomeworkAssignment[]>(
+      "/rest/v1/student_homework_assignment",
+      "POST",
+      {
+        payload: assignments.map((item) => ({
+          scheduled_homework_assignment_id: item.scheduledHomeworkAssignmentId,
+          student_id: item.studentId,
+          status: "assigned",
+        })),
+        extraHeaders: {
+          Prefer: "resolution=merge-duplicates,return=representation",
+        },
       },
-    },
-  );
+    );
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "unknown";
+    if (isMissingHomeworkSchemaError(message)) {
+      throw new Error(toHomeworkSchemaMessage());
+    }
+    throw error;
+  }
 
   return rows.map(mapStudentAssignment);
 }
@@ -248,17 +321,26 @@ export async function updateStudentHomeworkSubmissionAdmin(input: {
   submissionText: string | null;
   submittedAt: string;
 }) {
-  const rows = await adminRequest<RowStudentHomeworkAssignment[]>(
-    `/rest/v1/student_homework_assignment?id=eq.${input.studentHomeworkAssignmentId}`,
-    "PATCH",
-    {
-      payload: {
-        status: input.status,
-        submission_text: input.submissionText,
-        submitted_at: input.submittedAt,
+  let rows: RowStudentHomeworkAssignment[];
+  try {
+    rows = await adminRequest<RowStudentHomeworkAssignment[]>(
+      `/rest/v1/student_homework_assignment?id=eq.${input.studentHomeworkAssignmentId}`,
+      "PATCH",
+      {
+        payload: {
+          status: input.status,
+          submission_text: input.submissionText,
+          submitted_at: input.submittedAt,
+        },
       },
-    },
-  );
+    );
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "unknown";
+    if (isMissingHomeworkSchemaError(message)) {
+      throw new Error(toHomeworkSchemaMessage());
+    }
+    throw error;
+  }
 
   if (!rows[0]) throw new Error("Не удалось обновить отправку домашнего задания.");
   return mapStudentAssignment(rows[0]);
@@ -270,17 +352,26 @@ export async function updateStudentHomeworkReviewAdmin(input: {
   reviewNote: string | null;
   reviewedAt: string;
 }) {
-  const rows = await adminRequest<RowStudentHomeworkAssignment[]>(
-    `/rest/v1/student_homework_assignment?id=eq.${input.studentHomeworkAssignmentId}`,
-    "PATCH",
-    {
-      payload: {
-        status: input.status,
-        review_note: input.reviewNote,
-        reviewed_at: input.reviewedAt,
+  let rows: RowStudentHomeworkAssignment[];
+  try {
+    rows = await adminRequest<RowStudentHomeworkAssignment[]>(
+      `/rest/v1/student_homework_assignment?id=eq.${input.studentHomeworkAssignmentId}`,
+      "PATCH",
+      {
+        payload: {
+          status: input.status,
+          review_note: input.reviewNote,
+          reviewed_at: input.reviewedAt,
+        },
       },
-    },
-  );
+    );
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "unknown";
+    if (isMissingHomeworkSchemaError(message)) {
+      throw new Error(toHomeworkSchemaMessage());
+    }
+    throw error;
+  }
 
   if (!rows[0]) throw new Error("Не удалось сохранить ревью домашнего задания.");
   return mapStudentAssignment(rows[0]);
