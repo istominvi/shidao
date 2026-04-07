@@ -155,6 +155,16 @@ test("teacher workspace quick summary and lesson flow are derived from lesson co
     lessonContentFixtureMethodologyLesson.blocks.map((block) => block.order),
   );
   assert.equal(readModel.presentation.hero.lessonEssence.length > 0, true);
+  assert.equal(
+    readModel.presentation.lessonFlow.every(
+      (step) => step.conciseSummary.trim().length > 0,
+    ),
+    true,
+  );
+  assert.equal(
+    readModel.presentation.lessonFlow.every((step) => Boolean(step.stepKind)),
+    true,
+  );
 });
 
 test("teacher workspace read model includes runtime edit fields and no block override structure", () => {

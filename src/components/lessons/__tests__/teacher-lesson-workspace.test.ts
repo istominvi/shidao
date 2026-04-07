@@ -19,6 +19,12 @@ test("teacher workspace component keeps runtime editing surface", () => {
   assert.equal(workspaceComponentSource.includes("Проведение занятия"), true);
 });
 
+test("teacher workspace component uses compact guided step details", () => {
+  assert.equal(workspaceComponentSource.includes("<details"), true);
+  assert.equal(workspaceComponentSource.includes("Детали шага"), true);
+  assert.equal(workspaceComponentSource.includes("Подготовить"), true);
+});
+
 test("teacher workspace methodology section remains read-only", () => {
   assert.equal(workspaceComponentSource.includes("Ориентиры методики"), true);
   assert.equal(workspaceComponentSource.includes('name="methodology"'), false);

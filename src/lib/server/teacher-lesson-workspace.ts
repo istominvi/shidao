@@ -28,8 +28,16 @@ export type TeacherLessonFlowStep = {
   order: number;
   stepLabel: string;
   blockLabel: string;
+  stepKind:
+    | "opening"
+    | "materials"
+    | "media"
+    | "vocabulary"
+    | "activity"
+    | "closure";
   accentTone: "sky" | "violet" | "emerald" | "amber";
   title: string;
+  conciseSummary: string;
   description?: string;
   teacherActions: string[];
   studentActions: string[];
@@ -211,6 +219,30 @@ function blockTone(
   }
 }
 
+function stepKind(
+  blockType: LessonBlockInstance["blockType"],
+): TeacherLessonFlowStep["stepKind"] {
+  switch (blockType) {
+    case "intro_framing":
+      return "opening";
+    case "materials_prep":
+      return "materials";
+    case "video_segment":
+    case "song_segment":
+      return "media";
+    case "vocabulary_focus":
+    case "teacher_prompt_pattern":
+      return "vocabulary";
+    case "guided_activity":
+    case "worksheet_task":
+      return "activity";
+    case "wrap_up_closure":
+      return "closure";
+    default:
+      return "activity";
+  }
+}
+
 function normalizeItems(items: Array<string | undefined>) {
   return Array.from(
     new Set(items.map((item) => item?.trim() ?? "").filter(Boolean)),
@@ -366,6 +398,30 @@ function buildFlowStepContent(block: LessonBlockInstance) {
   }
 }
 
+function buildStepSummary(input: {
+  block: LessonBlockInstance;
+  description?: string;
+  teacherActions: string[];
+  studentActions: string[];
+}) {
+  const { block, description, teacherActions, studentActions } = input;
+  const descriptionPart = description?.trim();
+  if (descriptionPart) {
+    return descriptionPart;
+  }
+
+  if (block.blockType === "materials_prep") {
+    return "Подготовка пространства и материалов перед стартом занятия.";
+  }
+
+  const actionSample = teacherActions[0] || studentActions[0];
+  if (actionSample) {
+    return actionSample;
+  }
+
+  return "Рабочий этап занятия.";
+}
+
 function buildPresentation(input: {
   projection: TeacherLessonProjection;
   classDisplayName: string | null;
@@ -443,8 +499,15 @@ function buildPresentation(input: {
         order: block.order,
         stepLabel: `Шаг ${block.order}`,
         blockLabel: blockTypeLabel(block.blockType),
+        stepKind: stepKind(block.blockType),
         accentTone: blockTone(block.blockType),
         title: block.title?.trim() || blockTypeLabel(block.blockType),
+        conciseSummary: buildStepSummary({
+          block,
+          description: flowContent.description,
+          teacherActions: flowContent.teacherActions,
+          studentActions: flowContent.studentActions,
+        }),
         description: flowContent.description,
         teacherActions: flowContent.teacherActions,
         studentActions: flowContent.studentActions,

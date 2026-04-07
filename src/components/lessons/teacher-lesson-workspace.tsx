@@ -31,6 +31,49 @@ function flowAccentClass(tone: "sky" | "violet" | "emerald" | "amber") {
   }
 }
 
+function stepKindStyle(
+  stepKind:
+    | "opening"
+    | "materials"
+    | "media"
+    | "vocabulary"
+    | "activity"
+    | "closure",
+) {
+  switch (stepKind) {
+    case "opening":
+      return {
+        badge: "Старт",
+        chip: "bg-sky-50 text-sky-800 border-sky-200",
+      };
+    case "materials":
+      return {
+        badge: "Подготовка",
+        chip: "bg-amber-50 text-amber-900 border-amber-200",
+      };
+    case "media":
+      return {
+        badge: "Медиа",
+        chip: "bg-violet-50 text-violet-900 border-violet-200",
+      };
+    case "vocabulary":
+      return {
+        badge: "Лексика",
+        chip: "bg-indigo-50 text-indigo-900 border-indigo-200",
+      };
+    case "closure":
+      return {
+        badge: "Финал",
+        chip: "bg-emerald-50 text-emerald-900 border-emerald-200",
+      };
+    default:
+      return {
+        badge: "Практика",
+        chip: "bg-neutral-100 text-neutral-800 border-neutral-200",
+      };
+  }
+}
+
 export function TeacherLessonWorkspace({
   workspace,
   runtimeFormFeedback,
@@ -77,15 +120,18 @@ export function TeacherLessonWorkspace({
         </div>
       </header>
 
-      <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <article className="landing-surface rounded-3xl border border-white/80 p-5">
+      <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,0.9fr)_minmax(0,0.9fr)]">
+        <article className="landing-surface rounded-3xl border border-amber-200/80 p-5 md:row-span-2">
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-neutral-500">
             Подготовить
           </p>
-          <ul className="mt-3 space-y-2 text-sm text-neutral-700">
+          <p className="mt-2 text-sm text-neutral-700">
+            Проверка перед стартом урока.
+          </p>
+          <ul className="mt-4 space-y-2 text-sm text-neutral-700">
             {quickSummary.prepChecklist.slice(0, 5).map((item) => (
               <li key={item} className="flex gap-2">
-                <span className="mt-1 h-1.5 w-1.5 rounded-full bg-neutral-400" />
+                <span className="mt-1 h-1.5 w-1.5 rounded-full bg-amber-500" />
                 <span>{item}</span>
               </li>
             ))}
@@ -135,14 +181,17 @@ export function TeacherLessonWorkspace({
           </div>
         </article>
 
-        <article className="landing-surface rounded-3xl border border-white/80 p-5">
+        <article className="landing-surface rounded-3xl border border-white/80 p-5 md:col-span-2 xl:col-span-2">
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-neutral-500">
             Видео и материалы
           </p>
-          <ul className="mt-3 space-y-2 text-sm text-neutral-700">
+          <ul className="mt-3 grid gap-2 text-sm text-neutral-700 sm:grid-cols-2">
             {quickSummary.resources.slice(0, 4).map((resource) => (
-              <li key={`${resource.kindLabel}-${resource.title}`}>
-                <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-xs font-medium text-neutral-700">
+              <li
+                key={`${resource.kindLabel}-${resource.title}`}
+                className="rounded-2xl border border-neutral-200 bg-white/80 px-3 py-2"
+              >
+                <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-[11px] font-medium text-neutral-700">
                   {resource.kindLabel}
                 </span>{" "}
                 {resource.url ? (
@@ -202,79 +251,105 @@ export function TeacherLessonWorkspace({
                     <span className="rounded-full bg-neutral-100 px-2.5 py-1 text-xs font-medium text-neutral-700">
                       {step.blockLabel}
                     </span>
+                    <span
+                      className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${stepKindStyle(step.stepKind).chip}`}
+                    >
+                      {stepKindStyle(step.stepKind).badge}
+                    </span>
                   </div>
 
                   <h3 className="mt-3 text-lg font-semibold text-neutral-950">
                     {step.title}
                   </h3>
-                  {step.description ? (
-                    <p className="mt-2 text-sm leading-6 text-neutral-700">
-                      {step.description}
-                    </p>
-                  ) : null}
+                  <p className="mt-2 text-sm leading-6 text-neutral-700">
+                    {step.conciseSummary}
+                  </p>
 
                   {(step.teacherActions.length > 0 ||
-                    step.studentActions.length > 0) && (
-                    <div className="mt-4 grid gap-3 md:grid-cols-2">
-                      {step.teacherActions.length ? (
-                        <div className="rounded-2xl bg-neutral-50 p-3">
-                          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-neutral-500">
-                            Действия преподавателя
-                          </p>
-                          <ul className="mt-2 space-y-1.5 text-sm text-neutral-700">
-                            {step.teacherActions.map((item) => (
-                              <li key={item}>• {item}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      ) : null}
-
-                      {step.studentActions.length ? (
-                        <div className="rounded-2xl bg-neutral-50 p-3">
-                          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-neutral-500">
-                            Действия детей
-                          </p>
-                          <ul className="mt-2 space-y-1.5 text-sm text-neutral-700">
-                            {step.studentActions.map((item) => (
-                              <li key={item}>• {item}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      ) : null}
-                    </div>
-                  )}
-
-                  {(step.materials.length > 0 || step.resources.length > 0) && (
-                    <div className="mt-4 flex flex-wrap items-center gap-2">
-                      {step.materials.map((item) => (
-                        <span
-                          key={item}
-                          className="rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-900"
-                        >
-                          {item}
+                    step.studentActions.length > 0 ||
+                    step.materials.length > 0 ||
+                    step.resources.length > 0) && (
+                    <details className="group mt-3 rounded-2xl border border-neutral-200 bg-neutral-50/70 p-3">
+                      <summary className="cursor-pointer list-none text-sm font-semibold text-neutral-800">
+                        Детали шага
+                        <span className="ml-2 text-xs font-medium text-neutral-500 group-open:hidden">
+                          показать
                         </span>
-                      ))}
-                      {step.resources.map((resource) => (
-                        <span
-                          key={`${resource.kindLabel}:${resource.title}`}
-                          className="rounded-full bg-sky-50 px-2.5 py-1 text-xs text-sky-900"
-                        >
-                          {resource.kindLabel}: {" "}
-                          {resource.url ? (
-                            <a
-                              href={resource.url}
-                              className="font-semibold underline underline-offset-2"
-                              target="_blank"
-                              rel="noreferrer"
+                        <span className="ml-2 hidden text-xs font-medium text-neutral-500 group-open:inline">
+                          скрыть
+                        </span>
+                      </summary>
+
+                      {step.description && step.description !== step.conciseSummary ? (
+                        <p className="mt-3 text-sm text-neutral-700">
+                          {step.description}
+                        </p>
+                      ) : null}
+
+                      {(step.teacherActions.length > 0 ||
+                        step.studentActions.length > 0) && (
+                        <div className="mt-3 grid gap-3 md:grid-cols-2">
+                          {step.teacherActions.length ? (
+                            <div className="rounded-2xl bg-white p-3">
+                              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-neutral-500">
+                                Действия преподавателя
+                              </p>
+                              <ul className="mt-2 space-y-1.5 text-sm text-neutral-700">
+                                {step.teacherActions.map((item) => (
+                                  <li key={item}>• {item}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          ) : null}
+
+                          {step.studentActions.length ? (
+                            <div className="rounded-2xl bg-white p-3">
+                              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-neutral-500">
+                                Действия детей
+                              </p>
+                              <ul className="mt-2 space-y-1.5 text-sm text-neutral-700">
+                                {step.studentActions.map((item) => (
+                                  <li key={item}>• {item}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          ) : null}
+                        </div>
+                      )}
+
+                      {(step.materials.length > 0 || step.resources.length > 0) && (
+                        <div className="mt-3 flex flex-wrap items-center gap-2">
+                          {step.materials.map((item) => (
+                            <span
+                              key={item}
+                              className="rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-900"
                             >
-                              {resource.title}
-                            </a>
-                          ) : (
-                            <span className="font-semibold">{resource.title}</span>
-                          )}
-                        </span>
-                      ))}
-                    </div>
+                              {item}
+                            </span>
+                          ))}
+                          {step.resources.map((resource) => (
+                            <span
+                              key={`${resource.kindLabel}:${resource.title}`}
+                              className="rounded-full bg-sky-50 px-2.5 py-1 text-xs text-sky-900"
+                            >
+                              {resource.kindLabel}:{" "}
+                              {resource.url ? (
+                                <a
+                                  href={resource.url}
+                                  className="font-semibold underline underline-offset-2"
+                                  target="_blank"
+                                  rel="noreferrer"
+                                >
+                                  {resource.title}
+                                </a>
+                              ) : (
+                                <span className="font-semibold">{resource.title}</span>
+                              )}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </details>
                   )}
                 </div>
               </article>
@@ -384,8 +459,7 @@ export function TeacherLessonWorkspace({
                 Заметки по проведению
               </h3>
               <p className="mt-2 text-sm text-neutral-700">
-                {notes.runtimeNotes ||
-                  "Пока нет заметок по проведению занятия."}
+                {notes.runtimeNotes || "Пока нет заметок по проведению занятия."}
               </p>
             </article>
             <article className="mt-3 rounded-2xl border border-neutral-200 bg-white/80 p-4">
