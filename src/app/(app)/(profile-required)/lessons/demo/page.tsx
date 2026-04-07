@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { ROUTES, toLessonWorkspaceRoute } from "@/lib/auth";
 import { resolveAccessPolicy } from "@/lib/server/access-policy";
 import { bootstrapLessonContentFixtureAdmin } from "@/lib/server/lesson-content-bootstrap";
+import { getFirstAssignedClassIdForTeacherAdmin } from "@/lib/server/lesson-content-repository";
 import { canAccessTeacherLessonWorkspace } from "@/lib/server/teacher-lesson-workspace";
 
 export default async function DemoTeacherLessonBootstrapPage() {
@@ -13,8 +14,24 @@ export default async function DemoTeacherLessonBootstrapPage() {
   }
 
   try {
+    const teacherId =
+      accessResolution.status === "adult-with-profile"
+        ? accessResolution.context.teacher?.id ?? ""
+        : "";
+    if (!teacherId) {
+      throw new Error("Не найден teacher.id в текущем профиле.");
+    }
+
+    const classId = await getFirstAssignedClassIdForTeacherAdmin(teacherId);
+    if (!classId) {
+      throw new Error(
+        "Для преподавателя не найден назначенный класс. Сначала завершите teacher onboarding и назначение в class.",
+      );
+    }
+
     const result = await bootstrapLessonContentFixtureAdmin({
       includeDevScheduledLesson: true,
+      scheduledLessonClassId: classId,
     });
     redirect(toLessonWorkspaceRoute(result.scheduledLessonId));
   } catch (error) {

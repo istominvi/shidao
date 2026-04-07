@@ -239,3 +239,10 @@ test("bootstrap fixture rows are deterministic and idempotent by stable IDs", ()
     /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
   );
 });
+
+test("bootstrap rows allow overriding scheduled lesson class id for real teacher class", () => {
+  const classId = "11111111-1111-4111-8111-111111111111";
+  const rows = buildFixtureBootstrapRows({ scheduledLessonClassId: classId });
+
+  assert.equal(rows.scheduledLessonRow.class_id, classId);
+});

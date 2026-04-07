@@ -65,7 +65,9 @@ function stableUuid(seed: string): string {
   return `${hash.slice(0, 8)}-${hash.slice(8, 12)}-${hash.slice(12, 16)}-${hash.slice(16, 20)}-${hash.slice(20, 32)}`;
 }
 
-export function buildFixtureBootstrapRows() {
+export function buildFixtureBootstrapRows(options?: {
+  scheduledLessonClassId?: string;
+}) {
   const methodologyId = stableUuid(`methodology:${lessonContentFixtureMethodology.slug}`);
   const methodologyLessonId = stableUuid(`methodology_lesson:${lessonContentFixtureMethodologyLesson.id}`);
   const scheduledLessonId = stableUuid(`scheduled_lesson:${lessonContentFixtureScheduledLesson.id}`);
@@ -129,7 +131,9 @@ export function buildFixtureBootstrapRows() {
     blockAssetRows,
     scheduledLessonRow: {
       id: scheduledLessonId,
-      class_id: lessonContentFixtureScheduledLesson.runtimeShell.classId,
+      class_id:
+        options?.scheduledLessonClassId ??
+        lessonContentFixtureScheduledLesson.runtimeShell.classId,
       methodology_lesson_id: methodologyLessonId,
       starts_at: lessonContentFixtureScheduledLesson.runtimeShell.startsAt,
       format: lessonContentFixtureScheduledLesson.runtimeShell.format,
@@ -152,8 +156,11 @@ export function buildFixtureBootstrapRows() {
 
 export async function bootstrapLessonContentFixtureAdmin(options?: {
   includeDevScheduledLesson?: boolean;
+  scheduledLessonClassId?: string;
 }) {
-  const rows = buildFixtureBootstrapRows();
+  const rows = buildFixtureBootstrapRows({
+    scheduledLessonClassId: options?.scheduledLessonClassId,
+  });
 
   await adminRequest("/rest/v1/methodology?on_conflict=slug", "POST", {
     payload: rows.methodologyRow,
