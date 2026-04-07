@@ -1,6 +1,6 @@
-# Teacher IA: group-centric operational model (Step 1 + Step 2)
+# Teacher IA: group-centric operational model (Step 1 + Step 2 + Step 3)
 
-**Status:** Implemented Step 1 (IA alignment) + Step 2 (operations dashboard)  
+**Status:** Implemented Step 1 (IA alignment) + Step 2 (operations dashboard) + Step 3 (group setup/runtime container)  
 **Date:** April 7, 2026
 
 ## Purpose
@@ -10,6 +10,7 @@ This document formalizes the first two restructuring steps for teacher-side UX:
 - `group/class` becomes the primary operational context for teachers;
 - lesson-content architecture remains intact;
 - `/dashboard` becomes a real day-to-day teacher operations screen.
+- `/groups/[groupId]` becomes a real teaching container with setup + roster + contextual scheduling.
 
 ## Canonical content/runtime model (unchanged)
 
@@ -84,3 +85,28 @@ Step 2 uses grounded derivations:
 - full calendar subsystem;
 - methodology editor / block editor;
 - AI features.
+
+## Step 3 (group setup + methodology binding + contextual scheduling)
+
+Implemented in Step 3:
+
+- explicit `class.methodology_id` binding is now the primary methodology source for group/class;
+- `/groups/[groupId]` includes real setup and operations:
+  - assign/change methodology;
+  - visible roster with contextual student creation CTA;
+  - schedule lesson directly in group context without re-selecting class;
+- group-scoped scheduling is guarded:
+  - if no methodology assigned, scheduling form is blocked by setup CTA;
+  - methodology lesson options are limited to the assigned methodology only;
+- progress semantics are explicit and honest:
+  - numerator = completed scheduled lessons for the group (`runtime_status = completed`);
+  - denominator = total methodology lessons in assigned methodology;
+  - planned/in_progress/cancelled lessons do not count as completed;
+- dashboard and `/groups` now rely on explicit assignment rather than scheduled-lesson inference.
+
+### Backfill policy
+
+Migration introduces safe backfill for existing groups:
+
+- if all existing scheduled lessons of a class point to one methodology, class gets that methodology assigned;
+- if methodology cannot be inferred unambiguously, assignment stays `null` and UI shows setup-needed state.

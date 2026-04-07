@@ -1,18 +1,35 @@
 import Link from "next/link";
+import { revalidatePath } from "next/cache";
 import { notFound, redirect } from "next/navigation";
+import { isRedirectError } from "next/dist/client/components/redirect-error";
 import { TopNav } from "@/components/top-nav";
 import { ROUTES } from "@/lib/auth";
 import { resolveAccessPolicy } from "@/lib/server/access-policy";
 import {
   assertTeacherGroupsAccess,
+  assignMethodologyToTeacherGroup,
   canAccessTeacherGroups,
+  createTeacherGroupScopedLesson,
   getTeacherGroupOverview,
+  parseGroupScopedLessonFormData,
 } from "@/lib/server/teacher-groups";
+
+function withMessage(
+  groupId: string,
+  type: "saved" | "error",
+  message: string,
+) {
+  const params = new URLSearchParams();
+  params.set(type, message);
+  return `${ROUTES.groups}/${encodeURIComponent(groupId)}?${params.toString()}`;
+}
 
 export default async function TeacherGroupPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ groupId: string }>;
+  searchParams: Promise<{ error?: string; saved?: string }>;
 }) {
   const resolution = await resolveAccessPolicy();
 
@@ -28,6 +45,68 @@ export default async function TeacherGroupPage({
     notFound();
   }
 
+  async function assignMethodologyAction(formData: FormData) {
+    "use server";
+
+    try {
+      const actionResolution = await resolveAccessPolicy();
+      const { teacherId: actionTeacherId } = assertTeacherGroupsAccess(actionResolution);
+      const methodologyId = String(formData.get("methodologyId") ?? "").trim();
+      if (!methodologyId) {
+        throw new Error("Выберите методику для группы.");
+      }
+
+      await assignMethodologyToTeacherGroup({
+        teacherId: actionTeacherId,
+        groupId,
+        methodologyId,
+      });
+
+      revalidatePath(ROUTES.dashboard);
+      revalidatePath(ROUTES.groups);
+      revalidatePath(`${ROUTES.groups}/${groupId}`);
+      redirect(withMessage(groupId, "saved", "Методика группы обновлена."));
+    } catch (error) {
+      if (isRedirectError(error)) {
+        throw error;
+      }
+      const message =
+        error instanceof Error ? error.message : "Не удалось назначить методику.";
+      redirect(withMessage(groupId, "error", message));
+    }
+  }
+
+  async function scheduleLessonAction(formData: FormData) {
+    "use server";
+
+    try {
+      const actionResolution = await resolveAccessPolicy();
+      const { teacherId: actionTeacherId } = assertTeacherGroupsAccess(actionResolution);
+      const payload = parseGroupScopedLessonFormData(formData);
+      const lesson = await createTeacherGroupScopedLesson({
+        teacherId: actionTeacherId,
+        groupId,
+        payload,
+      });
+
+      revalidatePath(ROUTES.dashboard);
+      revalidatePath(ROUTES.groups);
+      revalidatePath(`${ROUTES.groups}/${groupId}`);
+      redirect(`/lessons/${lesson.id}`);
+    } catch (error) {
+      if (isRedirectError(error)) {
+        throw error;
+      }
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Не удалось запланировать занятие для группы.";
+      redirect(withMessage(groupId, "error", message));
+    }
+  }
+
+  const query = await searchParams;
+
   return (
     <main className="pb-12">
       <div className="landing-noise" aria-hidden="true" />
@@ -38,46 +117,137 @@ export default async function TeacherGroupPage({
           <h1 className="mt-3 text-3xl font-black tracking-[-0.03em] text-neutral-950 md:text-4xl">
             {readModel.group.label}
           </h1>
-          <p className="mt-3 text-sm leading-6 text-neutral-700 md:text-base">
-            Группа — основной рабочий контекст преподавателя: состав учеников, методика и расписание занятий.
-          </p>
+
+          {query.saved ? (
+            <p className="mt-3 rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">{query.saved}</p>
+          ) : null}
+          {query.error ? (
+            <p className="mt-3 rounded-xl border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-800">{query.error}</p>
+          ) : null}
+
           <div className="mt-4 flex flex-wrap gap-2 text-sm text-neutral-700">
             <span className="rounded-full border border-neutral-200 bg-white/90 px-3 py-1">
               Ученики: {readModel.group.studentCount}
             </span>
+            <span className="rounded-full border border-neutral-200 bg-white/90 px-3 py-1">
+              Прогресс: {readModel.group.progressLabel}
+            </span>
+            {readModel.group.nextLessonLabel ? (
+              <span className="rounded-full border border-neutral-200 bg-white/90 px-3 py-1">
+                Следующее занятие: {readModel.group.nextLessonLabel}
+              </span>
+            ) : null}
             {readModel.group.assignedMethodologyTitle ? (
               <span className="rounded-full border border-neutral-200 bg-white/90 px-3 py-1">
                 Методика: {readModel.group.assignedMethodologyTitle}
               </span>
             ) : (
               <span className="rounded-full border border-dashed border-neutral-300 bg-white/90 px-3 py-1 text-neutral-500">
-                Методика для группы пока не определена
+                Методика не назначена
               </span>
             )}
           </div>
           <div className="mt-4 flex flex-wrap gap-2">
-            <Link href={ROUTES.studentsNew} className="landing-btn landing-btn-muted text-xs">
+            <Link href={`${ROUTES.studentsNew}?groupId=${encodeURIComponent(readModel.group.id)}`} className="landing-btn landing-btn-muted text-xs">
               Добавить ученика
             </Link>
             <Link
               href={`${ROUTES.lessons}?groupId=${encodeURIComponent(readModel.group.id)}`}
               className="landing-btn landing-btn-muted text-xs"
             >
-              Занятия этой группы
+              Открыть global lessons index
             </Link>
           </div>
         </header>
 
         <section className="landing-surface rounded-3xl border border-white/80 p-5">
-          <h2 className="text-xl font-bold text-neutral-950">Ученики группы</h2>
+          <h2 className="text-xl font-bold text-neutral-950">Методика группы</h2>
+          {readModel.methodology.assignedMethodologyTitle ? (
+            <p className="mt-2 text-sm text-neutral-700">
+              Назначена: <strong>{readModel.methodology.assignedMethodologyTitle}</strong> · уроков в методике: {readModel.methodology.lessonTotal}
+            </p>
+          ) : (
+            <p className="mt-2 text-sm text-amber-700">У группы пока нет назначенной методики. Сначала назначьте её, затем планируйте уроки.</p>
+          )}
+          {readModel.methodology.assignedMethodologyShortDescription ? (
+            <p className="mt-1 text-sm text-neutral-600">{readModel.methodology.assignedMethodologyShortDescription}</p>
+          ) : null}
+          <form action={assignMethodologyAction} className="mt-3 flex flex-wrap items-end gap-2">
+            <label className="space-y-1 text-sm text-neutral-700">
+              <span>{readModel.methodology.assignedMethodologyId ? "Сменить методику" : "Назначить методику"}</span>
+              <select name="methodologyId" defaultValue={readModel.methodology.assignedMethodologyId ?? ""} required className="field-input min-w-[18rem]">
+                <option value="" disabled>Выберите методику</option>
+                {readModel.methodology.options.map((option) => (
+                  <option key={option.id} value={option.id}>{option.title}</option>
+                ))}
+              </select>
+            </label>
+            <button type="submit" className="landing-btn landing-btn-primary text-xs">
+              {readModel.methodology.assignedMethodologyId ? "Обновить" : "Назначить"}
+            </button>
+          </form>
+        </section>
+
+        <section className="landing-surface rounded-3xl border border-white/80 p-5">
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="text-xl font-bold text-neutral-950">Ученики группы</h2>
+            <Link href={`${ROUTES.studentsNew}?groupId=${encodeURIComponent(readModel.group.id)}`} className="text-sm text-sky-700 underline underline-offset-2">
+              Создать и добавить ученика
+            </Link>
+          </div>
           {readModel.students.length === 0 ? (
-            <p className="mt-3 text-sm text-neutral-500">Ученики пока не добавлены.</p>
+            <p className="mt-3 text-sm text-neutral-500">В группе пока нет учеников.</p>
           ) : (
             <ul className="mt-3 space-y-2 text-sm text-neutral-700">
               {readModel.students.map((student) => (
                 <li key={student.id}>{student.displayName}</li>
               ))}
             </ul>
+          )}
+        </section>
+
+        <section className="landing-surface rounded-3xl border border-white/80 p-5">
+          <h2 className="text-xl font-bold text-neutral-950">Запланировать занятие в контексте группы</h2>
+          {!readModel.schedule.canSchedule ? (
+            <p className="mt-2 text-sm text-amber-700">Сначала назначьте методику в блоке выше — тогда появится выбор уроков из неё.</p>
+          ) : (
+            <form action={scheduleLessonAction} className="mt-3 grid gap-3 md:grid-cols-2">
+              <label className="space-y-1 text-sm text-neutral-700">
+                <span>Урок методики</span>
+                <select name="methodologyLessonId" required className="field-input" defaultValue="">
+                  <option value="" disabled>Выберите урок</option>
+                  {readModel.schedule.lessonOptions.map((lesson) => (
+                    <option key={lesson.id} value={lesson.id}>{lesson.label}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="space-y-1 text-sm text-neutral-700">
+                <span>Формат</span>
+                <select name="format" required className="field-input" defaultValue="online">
+                  <option value="online">online</option>
+                  <option value="offline">offline</option>
+                </select>
+              </label>
+              <label className="space-y-1 text-sm text-neutral-700">
+                <span>Дата</span>
+                <input type="date" name="date" required className="field-input" />
+              </label>
+              <label className="space-y-1 text-sm text-neutral-700">
+                <span>Время</span>
+                <input type="time" name="time" required className="field-input" />
+              </label>
+              <label className="space-y-1 text-sm text-neutral-700">
+                <span>Ссылка на встречу (для online)</span>
+                <input type="url" name="meetingLink" placeholder="https://" className="field-input" />
+              </label>
+              <label className="space-y-1 text-sm text-neutral-700">
+                <span>Место (для offline)</span>
+                <input type="text" name="place" placeholder="Кабинет / адрес" className="field-input" />
+              </label>
+              <div className="md:col-span-2">
+                <button type="submit" className="landing-btn landing-btn-primary text-xs">Запланировать занятие</button>
+              </div>
+            </form>
           )}
         </section>
 
@@ -122,12 +292,6 @@ export default async function TeacherGroupPage({
             )}
           </article>
         </section>
-
-        <p className="text-sm text-neutral-700">
-          <Link href={ROUTES.lessons} className="font-semibold text-sky-700 underline underline-offset-2">
-            Открыть глобальный индекс занятий
-          </Link>
-        </p>
       </div>
     </main>
   );

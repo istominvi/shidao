@@ -102,6 +102,7 @@ test("lessons hub read model groups upcoming and past lessons and shapes cards",
         {
           id: lessonContentFixtureMethodologyLesson.id,
           title: lessonContentFixtureMethodologyLesson.shell.title,
+          methodologyId: lessonContentFixtureMethodologyLesson.methodologyId,
           methodologyTitle: lessonContentFixtureMethodologyLesson.methodologyTitle ?? null,
           moduleIndex: 1,
           unitIndex: 1,

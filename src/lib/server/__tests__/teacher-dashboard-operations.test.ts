@@ -1,14 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import {
-  getTeacherDashboardOperationsReadModel,
-  getTeacherGroupsIndexOperationsReadModel,
-} from "../teacher-dashboard-operations";
+import { getTeacherDashboardOperationsReadModel, getTeacherGroupsIndexOperationsReadModel } from "../teacher-dashboard-operations";
 
 const deps = {
   listTeacherClasses: async () => [
-    { id: "class-1", name: "Лисички" },
-    { id: "class-2", name: "Драконы" },
+    { id: "class-1", name: "Лисички", methodologyId: "m-1", methodologyTitle: "Мир вокруг" },
+    { id: "class-2", name: "Драконы", methodologyId: null, methodologyTitle: null },
   ],
   listStudentsForClasses: async () => ({
     "class-1": [{ id: "s-1", fullName: "Анна", login: "anna" }],
@@ -46,25 +43,7 @@ const deps = {
       outcomeNotes: "",
     },
   ],
-  getMethodologyLessonById: async () => ({ methodologyTitle: "Мир вокруг" } as never),
-  listMethodologyLessonsCatalog: async () => [
-    {
-      id: "ml-1",
-      title: "Урок 1",
-      methodologyTitle: "Мир вокруг",
-      moduleIndex: 1,
-      unitIndex: 1,
-      lessonIndex: 1,
-    },
-    {
-      id: "ml-2",
-      title: "Урок 2",
-      methodologyTitle: "Мир вокруг",
-      moduleIndex: 1,
-      unitIndex: 1,
-      lessonIndex: 2,
-    },
-  ],
+  listMethodologyLessonsByMethodology: async () => [{ id: "ml-1" }, { id: "ml-2" }] as never,
 };
 
 test("dashboard operations model builds rows, schedule and alerts", async () => {
