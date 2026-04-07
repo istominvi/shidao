@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { ROUTES } from "@/lib/auth";
 import { SessionNavActions } from "@/components/session-nav-actions";
 import { useSessionView } from "@/components/use-session-view";
@@ -13,9 +12,9 @@ import {
 import {
   ArrowRight,
   BookOpenText,
-  CalendarDays,
+  Building2,
+  CalendarClock,
   Check,
-  CheckCheck,
   ChevronRight,
   CircleHelp,
   ClipboardCheck,
@@ -23,202 +22,143 @@ import {
   FolderKanban,
   GraduationCap,
   History,
+  KeyRound,
+  LayoutDashboard,
+  Link2,
   MessageCircle,
   Music3,
-  NotebookText,
-  PlaySquare,
-  Sparkles,
+  NotebookTabs,
+  PlayCircle,
   UserRound,
   Users,
 } from "lucide-react";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 
-const valueStrip = [
-  "Методика — основа курса",
-  "Группа и урок связаны",
-  "Домашние задания из методики",
-  "Коммуникация в контексте занятия",
-  "Родитель видит процесс",
-  "Ученик работает в отдельном кабинете",
+const iconSystem = [
+  { label: "Методика", icon: BookOpenText, tone: "bg-sky-100/85" },
+  { label: "Группа", icon: Users, tone: "bg-lime-100/85" },
+  { label: "Урок", icon: CalendarClock, tone: "bg-violet-100/80" },
+  { label: "Домашнее задание", icon: ClipboardCheck, tone: "bg-fuchsia-100/80" },
+  { label: "Комментарии", icon: MessageCircle, tone: "bg-white" },
+  { label: "Преподаватель", icon: GraduationCap, tone: "bg-sky-100/85" },
+  { label: "Родитель", icon: UserRound, tone: "bg-lime-100/85" },
+  { label: "Отдельный вход ученика", icon: KeyRound, tone: "bg-violet-100/80" },
+  { label: "История занятия", icon: History, tone: "bg-fuchsia-100/80" },
+  { label: "Материалы и карточки", icon: FileStack, tone: "bg-white" },
+  { label: "Расписание", icon: CalendarClock, tone: "bg-sky-100/85" },
+  { label: "Школа / организация", icon: Building2, tone: "bg-lime-100/85" },
+  { label: "Личный контур", icon: UserRound, tone: "bg-violet-100/80" },
+  { label: "Онлайн-урок / ссылка", icon: Link2, tone: "bg-fuchsia-100/80" },
 ];
 
-const comparisonBefore = [
-  "Методика лежит в PDF или папках",
-  "Расписание живёт отдельно",
-  "Домашнее задание уходит в сообщения",
-  "После урока контекст теряется",
-  "Родителю виден только фрагмент процесса",
-  "Преподаватель собирает обучение вручную",
+const productFlow = [
+  { title: "Методика", note: "Source of truth курса", icon: BookOpenText },
+  { title: "Группа", note: "Рабочая единица", icon: Users },
+  { title: "Урок", note: "Runtime процесса", icon: CalendarClock },
+  { title: "Домашнее задание", note: "Продолжение после урока", icon: ClipboardCheck },
+  { title: "Комментарии", note: "Коммуникация по занятию", icon: MessageCircle },
 ];
 
-const comparisonAfter = [
-  "Методика встроена в рабочий процесс",
-  "Урок связан с группой",
-  "Задание назначается в контексте курса",
-  "Комментарии остаются внутри занятия",
-  "Родитель видит понятный статус",
-  "Ученик работает в отдельном кабинете",
-];
-
-const firstMethodStats = [
-  "5–6 лет",
-  "1 учебный год",
-  "~180 слов",
-  "21 песня",
-  "21 видео",
-  "45 минут урок",
-  "4–6 детей в группе",
-  "до 8 детей максимум",
-  "14–16 активностей на урок",
-];
-
-const workflowSteps = [
+const teacherWorkflow = [
   {
     title: "Выбрать методику",
-    description:
-      "Преподаватель открывает структуру курса: уроки, материалы, задания и сценарии работы.",
+    description: "Преподаватель открывает готовый курс с уроками, материалами и заданиями.",
   },
   {
     title: "Создать группу",
-    description:
-      "На базе методики создаётся учебная группа — будущий рабочий контур преподавателя.",
+    description: "Группа создаётся в /dashboard и становится операционной точкой запуска.",
   },
   {
     title: "Добавить учеников",
+    description: "Внутри группы собирается состав. Ученик получает отдельные данные входа.",
+  },
+  {
+    title: "Планировать занятия",
     description:
-      "Внутри группы собирается состав учеников, для которых дальше ведутся уроки и задания.",
+      "Занятия планируются внутри группы. /lessons остаётся вторичным индексом, а не стартовой точкой.",
   },
   {
-    title: "Запланировать урок",
+    title: "Вести урок и выдавать ДЗ",
     description:
-      "Занятие планируется в контексте конкретной группы и методики, а не через пустую форму.",
-  },
-  {
-    title: "Вести урок и домашнюю работу",
-    description:
-      "После занятия преподаватель оставляет комментарии, выдаёт домашнее задание, а ученик и родитель видят всё в своём контексте.",
-  },
-];
-
-const methodFlowSteps = [
-  { title: "Методика", icon: BookOpenText },
-  { title: "Уроки", icon: CalendarDays },
-  { title: "Материалы", icon: FolderKanban },
-  { title: "Домашнее задание", icon: ClipboardCheck },
-  { title: "Комментарии и ответы", icon: MessageCircle },
-  { title: "История занятия", icon: History },
-];
-
-const lessonComposition = [
-  {
-    title: "Песня",
-    subtitle: "Урок начинается и заканчивается песней",
-    icon: Music3,
-  },
-  {
-    title: "Видео",
-    subtitle: "Одно видео на занятие",
-    icon: PlaySquare,
-  },
-  {
-    title: "Карточки и реквизит",
-    subtitle: "Слова, предметы, визуальные опоры",
-    icon: FileStack,
-  },
-  {
-    title: "Игровая активность",
-    subtitle: "Действия, команды, сценарии",
-    icon: Sparkles,
-  },
-  {
-    title: "Повторение и движение",
-    subtitle: "Ритм урока и вовлечение",
-    icon: ArrowRight,
-  },
-  {
-    title: "Домашнее задание / комментарий",
-    subtitle: "Продолжение работы после занятия",
-    icon: CheckCheck,
+      "После урока преподаватель назначает домашнюю работу и оставляет комментарий в контексте занятия.",
   },
 ];
 
 const roleCards = [
   {
-    title: "Для преподавателя",
+    title: "Преподаватель",
     icon: GraduationCap,
     tone: "teacher",
     description:
-      "Рабочее пространство преподавателя строится вокруг методики, групп и уроков. Здесь видны ученики, расписание, материалы, домашние задания и коммуникация по каждому занятию.",
+      "Ведёт процесс через /dashboard: группы, уроки, расписание, материалы и комментарии по каждому занятию.",
     points: [
-      "группы и ученики в одном контуре",
-      "уроки и расписание",
-      "материалы и задания из методики",
-      "комментарии и коммуникация по занятию",
-      "понятная структура курса, а не набор разрозненных файлов",
+      "единый взрослый аккаунт",
+      "запуск группы по готовой методике",
+      "контроль расписания и статусов",
+      "назначение ДЗ и обратной связи",
     ],
   },
   {
-    title: "Для родителя",
+    title: "Родитель",
     icon: UserRound,
     tone: "parent",
     description:
-      "Родитель не погружается в преподавательский интерфейс, но видит всё важное по своему ребёнку: расписание, задания, сообщения и статус выполнения.",
+      "Видит только процесс ребёнка: расписание, задания, сообщения и актуальные статусы выполнения.",
     points: [
-      "расписание ребёнка",
-      "домашние задания",
-      "комментарии преподавателя",
-      "статус выполнения",
-      "прозрачная картина обучения без лишнего шума",
+      "прозрачная динамика обучения",
+      "комментарии привязаны к конкретному уроку",
+      "нет перегруза преподавательскими функциями",
+      "понятно, что делать после занятия",
     ],
   },
   {
-    title: "Для ученика",
+    title: "Ученик",
     icon: Users,
     tone: "student",
     description:
-      "Ученик получает отдельный кабинет и отдельный доступ. Внутри — только то, что связано с его обучением: уроки, материалы, задания и ответы преподавателя.",
+      "Получает отдельный доступ и отдельный кабинет с материалами, заданиями и ответами по своим урокам.",
     points: [
-      "отдельный вход",
-      "отдельный кабинет",
-      "материалы по уроку",
-      "домашняя работа",
-      "ответы и комментарии в контексте занятия",
+      "собственные авторизационные данные",
+      "материалы и карточки по теме",
+      "домашняя работа в своём контексте",
+      "история взаимодействия с преподавателем",
     ],
   },
 ];
 
+const lessonComposition = [
+  "Слова и фразы по теме",
+  "Карточки и реквизит",
+  "Материалы и игровые активности",
+  "Сценарий действий преподавателя",
+  "Старт и финал урока через песню",
+  "14–16 действий в одном занятии",
+];
+
 const faq = [
   {
-    q: "Нужна ли своя методика, чтобы начать?",
-    a: "Нет. Shidao построен вокруг готовых методик. Преподаватель получает доступ к уже подготовленной структуре курса и работает на её основе.",
+    q: "С чего преподаватель начинает работу в Shidao?",
+    a: "С /dashboard: выбирает методику, создаёт группу, добавляет учеников и уже внутри группы планирует занятия.",
+  },
+  {
+    q: "Есть ли готовая методика на старте?",
+    a: "Да. Первая методика — «我周围的世界» («Мир вокруг меня»): курс на год для детей 5–6 лет, с уроками, материалами и заданиями.",
   },
   {
     q: "Что именно видит родитель?",
-    a: "Родитель видит расписание ребёнка, домашние задания, сообщения преподавателя и статус выполнения. Родительский кабинет делает учебный процесс прозрачным, но не перегружает лишними функциями.",
+    a: "Расписание ребёнка, домашние задания, сообщения преподавателя и статус выполнения. Всё в рамках конкретных занятий.",
   },
   {
-    q: "Нужен ли ученику отдельный доступ?",
-    a: "Да. У ученика есть отдельные авторизационные данные и отдельный кабинет, где он видит только своё обучение: уроки, материалы, задания и ответы преподавателя.",
+    q: "У ученика отдельный вход или общий с родителем?",
+    a: "Отдельный. У ученика свои авторизационные данные и свой кабинет с личным учебным контекстом.",
   },
   {
-    q: "Можно ли работать как частный преподаватель?",
-    a: "Да. Shidao подходит для самостоятельной работы: преподаватель может вести группы в личном контуре и управлять учебным процессом без сложной настройки.",
+    q: "Подходит ли платформа частному преподавателю и школе?",
+    a: "Да. Есть личный контур для самостоятельной работы и организационный контур для школы с разграничением доступа.",
   },
   {
-    q: "Подходит ли Shidao школе или организации?",
-    a: "Да. В Shidao предусмотрен организационный контур: владелец может приглашать преподавателей и работать в рамках общего пространства с корректным разграничением доступа и данных.",
-  },
-  {
-    q: "Как связаны урок, домашнее задание и переписка?",
-    a: "В Shidao всё собирается вокруг занятия. Преподаватель планирует урок, назначает домашнюю работу, а комментарии и ответы сохраняются в контексте конкретного урока.",
-  },
-  {
-    q: "Что является ядром продукта уже сейчас?",
-    a: "Ядро Shidao — это методика, группы, уроки, задания и роли участников обучения. Платформа помогает преподавателю вести процесс по готовой логике, а родителю и ученику — видеть свою часть этого процесса.",
-  },
-  {
-    q: "Shidao только для детских курсов?",
-    a: "Нет. Но первая доступная методика в Shidao — это годовой курс китайского для детей 5–6 лет. Именно поэтому на старте платформа особенно хорошо показывает ценность методико-структурированного детского обучения.",
+    q: "Это CRM или LMS в классическом виде?",
+    a: "Shidao — методико-ориентированная платформа: методика задаёт рабочую логику курса, а не просто хранится как контент.",
   },
 ];
 
@@ -231,6 +171,7 @@ function Reveal({ children, className = "" }: { children: ReactNode; className?:
     if (!node) {
       return;
     }
+
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
@@ -240,6 +181,7 @@ function Reveal({ children, className = "" }: { children: ReactNode; className?:
       },
       { threshold: 0.15, rootMargin: "0px 0px -10% 0px" },
     );
+
     observer.observe(node);
     return () => observer.disconnect();
   }, []);
@@ -262,12 +204,8 @@ function SectionTitle({
 }) {
   return (
     <header className="max-w-3xl">
-      <p className="landing-chip landing-chip-soft text-xs tracking-[0.12em] uppercase">
-        {eyebrow}
-      </p>
-      <h2 className="mt-4 text-2xl font-black leading-tight tracking-tight md:mt-5 md:text-5xl">
-        {title}
-      </h2>
+      <p className="landing-chip landing-chip-soft text-xs tracking-[0.12em] uppercase">{eyebrow}</p>
+      <h2 className="mt-4 text-2xl font-black leading-tight tracking-tight md:mt-5 md:text-5xl">{title}</h2>
       <p className="mt-3 max-w-[62ch] text-[0.97rem] leading-relaxed text-neutral-700 md:mt-4 md:text-lg">
         {description}
       </p>
@@ -324,130 +262,99 @@ export function LandingPage() {
   return (
     <main className="pb-16">
       <div className="landing-noise" aria-hidden="true" />
+
       <section className="container pt-4 md:pt-8">
-        <div className="relative overflow-hidden rounded-[1.8rem] border border-white/70 bg-white/80 p-4 shadow-[0_20px_80px_rgba(20,20,20,0.08)] backdrop-blur-xl md:rounded-[2.2rem] md:p-7">
-          <div
-            className="absolute -right-24 -top-24 h-64 w-64 rounded-full bg-fuchsia-200/40 blur-3xl"
-            aria-hidden="true"
-          />
-          <div
-            className="absolute -left-24 bottom-0 h-56 w-56 rounded-full bg-sky-200/45 blur-3xl"
-            aria-hidden="true"
-          />
+        <div className="relative overflow-hidden rounded-[1.8rem] border border-white/70 bg-white/85 p-4 shadow-[0_20px_80px_rgba(20,20,20,0.08)] backdrop-blur-xl md:rounded-[2.2rem] md:p-7">
           <header className="flex flex-wrap items-center justify-between gap-4">
-            <Link
-              href={ROUTES.home}
-              className="text-xl font-black tracking-tight transition hover:opacity-80"
-            >
+            <Link href={ROUTES.home} className="text-xl font-black tracking-tight transition hover:opacity-80">
               Shidao
             </Link>
             <nav
               aria-label="Навигация по лендингу"
               className="hidden flex-wrap gap-2 text-sm font-medium text-neutral-700 lg:flex"
             >
-              <a className="landing-nav-link" href="#roles">
-                Для кого
-              </a>
               <a className="landing-nav-link" href="#why">
                 Почему Shidao
               </a>
-              <a className="landing-nav-link" href="#method-core">
-                Методика
+              <a className="landing-nav-link" href="#product-model">
+                Как устроен продукт
               </a>
               <a className="landing-nav-link" href="#workflow">
-                Как работает
+                Как работает преподаватель
+              </a>
+              <a className="landing-nav-link" href="#method">
+                Первая методика
               </a>
               <a className="landing-nav-link" href="#faq">
-                Вопросы
+                FAQ
               </a>
             </nav>
             <div className="flex w-full gap-2 sm:w-auto">{navActions}</div>
           </header>
 
-          <div className="relative mt-8 grid items-center gap-8 lg:grid-cols-[1.04fr_0.96fr]">
+          <div className="mt-8 grid items-center gap-8 lg:grid-cols-[1.03fr_0.97fr]">
             <div>
-              <p className="landing-chip bg-lime-200/90">Методика внутри платформы</p>
-              <h1 className="mt-5 max-w-[15ch] text-[2rem] font-black leading-[1.02] tracking-[-0.03em] sm:text-[2.35rem] md:mt-6 md:max-w-none md:text-7xl">
-                Китайский по готовой методике — через группы, уроки и домашние
-                задания
+              <p className="landing-chip bg-lime-200/90">Teacher-first методическая платформа</p>
+              <h1 className="mt-5 max-w-[16ch] text-[2rem] font-black leading-[1.02] tracking-[-0.03em] sm:text-[2.35rem] md:mt-6 md:max-w-none md:text-7xl">
+                Shidao ведёт китайский курс по логике методики, а не по папкам и чатам
               </h1>
-              <p className="mt-4 max-w-[60ch] text-[0.97rem] leading-relaxed text-neutral-700 md:mt-6 md:text-lg">
-                Shidao собирает обучение вокруг методики: преподаватель ведёт
-                группы и уроки, назначает задания и оставляет комментарии по
-                занятию, а родитель и ученик видят всё в своём контексте.
+              <p className="mt-4 max-w-[62ch] text-[0.97rem] leading-relaxed text-neutral-700 md:mt-6 md:text-lg">
+                Методика → группа → ученики → урок → домашнее задание → коммуникация. Преподаватель
+                запускает работу из /dashboard, родитель получает прозрачный статус по ребёнку, ученик
+                работает в отдельном кабинете.
               </p>
               <div className="mt-6 grid gap-3 sm:flex sm:flex-wrap">
-                <Link
-                  href={ROUTES.join}
-                  className="landing-btn landing-btn-primary min-h-12 w-full gap-2 sm:w-auto"
-                >
+                <Link href={ROUTES.join} className="landing-btn landing-btn-primary min-h-12 w-full gap-2 sm:w-auto">
                   Создать аккаунт <ChevronRight className="size-4" />
                 </Link>
-                <Link
-                  href={authCtaHref}
-                  className="landing-btn landing-btn-muted min-h-12 w-full sm:w-auto"
-                >
+                <Link href={authCtaHref} className="landing-btn landing-btn-muted min-h-12 w-full sm:w-auto">
                   У меня уже есть доступ
                 </Link>
               </div>
               <p className="mt-3 text-sm text-neutral-600">
-                Для частного преподавателя и для школы. Один продукт — разные
-                контуры работы.
+                Без пустого старта: первая методика уже содержит уроки, материалы и задания.
               </p>
             </div>
 
             <Reveal>
-              <article className="hero-mockup relative rounded-[1.8rem] border border-black/10 bg-[linear-gradient(145deg,rgba(242,249,255,0.95),rgba(255,255,255,0.95),rgba(255,241,250,0.95))] p-4 shadow-[0_30px_80px_rgba(17,24,39,0.18)] md:p-6">
-                <div className="hero-illustration-layer" aria-hidden="true">
-                  <Image
-                    src="/landing/hero-method-workspace.webp"
-                    alt=""
-                    fill
-                    sizes="(max-width: 1024px) 100vw, 45vw"
-                    className="object-contain object-right-bottom"
-                  />
-                </div>
-                <span className="landing-chip floating-chip absolute -left-3 top-5 hidden bg-sky-100/95 text-sm md:inline-flex">
-                  Группа по методике
-                </span>
-                <span className="landing-chip floating-chip absolute -right-4 top-9 hidden bg-fuchsia-100/95 text-sm md:inline-flex">
-                  Отдельный вход ученика
-                </span>
-                <span className="landing-chip floating-chip absolute -left-4 bottom-8 hidden bg-lime-100/95 text-sm md:inline-flex">
-                  Видно родителю
-                </span>
-                <span className="landing-chip floating-chip absolute right-6 bottom-3 hidden bg-white/95 text-sm md:inline-flex">
-                  Урок в расписании
-                </span>
-                <div className="grid gap-3.5">
-                  <div className="landing-card border-sky-200/80 bg-sky-100/85 p-4 md:p-5">
-                    <div className="flex items-center justify-between">
-                      <p className="text-xs font-bold uppercase tracking-[0.12em] text-sky-900/70">
-                        Методика
-                      </p>
-                      <span className="landing-chip bg-white/90 px-2 py-1 text-[0.65rem]">активна</span>
+              <article className="hero-mockup relative rounded-[1.8rem] border border-black/10 bg-white p-4 shadow-[0_30px_80px_rgba(17,24,39,0.16)] md:p-5">
+                <div className="grid gap-3">
+                  <div className="landing-card border-sky-200/80 bg-sky-100/85 p-4">
+                    <p className="text-xs font-bold uppercase tracking-[0.12em] text-sky-900/70">Операционный вход</p>
+                    <div className="mt-2 flex items-center justify-between gap-3">
+                      <p className="text-base font-black">/dashboard</p>
+                      <LayoutDashboard className="size-4 text-sky-900/70" />
                     </div>
-                    <p className="mt-2 text-base font-black text-neutral-900">«Мир вокруг меня»</p>
-                    <p className="mt-1 text-sm text-neutral-700">Годовой курс • 5–6 лет</p>
-                    <p className="mt-3 border-t border-sky-300/60 pt-2 text-xs text-neutral-700">
-                      21 песня • 21 видео • 45 минут урок
-                    </p>
+                    <p className="mt-2 text-sm text-neutral-700">Здесь создаётся группа и планируется работа по методике.</p>
                   </div>
-                  <div className="grid gap-3 md:grid-cols-2">
-                    <div className="landing-card bg-white/92 md:-rotate-1">
-                      <p className="text-xs font-bold uppercase tracking-[0.12em] text-neutral-500">
-                        Ближайший урок
-                      </p>
-                      <p className="mt-2 text-sm font-semibold">«Животные на ферме»</p>
-                      <p className="mt-1 text-sm text-neutral-700">Четверг • 17:00</p>
-                      <p className="mt-1 text-xs text-neutral-600">Группа: 6 учеников</p>
+
+                  <div className="rounded-2xl border border-black/10 bg-white/90 p-3">
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      <div className="rounded-xl border border-black/10 bg-lime-100/70 p-3 text-sm">
+                        <p className="font-semibold">Методика</p>
+                        <p className="mt-1 text-xs text-neutral-700">«我周围的世界» • 5–6 лет</p>
+                      </div>
+                      <div className="rounded-xl border border-black/10 bg-violet-100/70 p-3 text-sm">
+                        <p className="font-semibold">Группа</p>
+                        <p className="mt-1 text-xs text-neutral-700">4–6 детей • максимум 8</p>
+                      </div>
+                      <div className="rounded-xl border border-black/10 bg-sky-50 p-3 text-sm">
+                        <p className="font-semibold">Урок</p>
+                        <p className="mt-1 text-xs text-neutral-700">45 минут • 14–16 активностей</p>
+                      </div>
+                      <div className="rounded-xl border border-black/10 bg-fuchsia-100/70 p-3 text-sm">
+                        <p className="font-semibold">После урока</p>
+                        <p className="mt-1 text-xs text-neutral-700">ДЗ + комментарий по занятию</p>
+                      </div>
                     </div>
-                    <div className="landing-card bg-fuchsia-100/75 md:translate-y-3">
-                      <p className="text-xs font-bold uppercase tracking-[0.12em] text-neutral-500">
-                        После занятия
-                      </p>
-                      <p className="mt-2 text-sm font-semibold">Домашнее задание назначено</p>
-                      <p className="mt-1 text-sm text-neutral-700">Комментарий преподавателя оставлен</p>
+                  </div>
+
+                  <div className="rounded-2xl border border-black/10 bg-neutral-900 p-3 text-white">
+                    <p className="text-xs uppercase tracking-[0.11em] text-neutral-300">Роли в одном процессе</p>
+                    <div className="mt-2 grid grid-cols-3 gap-2 text-xs">
+                      <span className="rounded-lg bg-white/10 px-2 py-2">Преподаватель ведёт</span>
+                      <span className="rounded-lg bg-white/10 px-2 py-2">Родитель видит статус</span>
+                      <span className="rounded-lg bg-white/10 px-2 py-2">Ученик входит отдельно</span>
                     </div>
                   </div>
                 </div>
@@ -458,23 +365,12 @@ export function LandingPage() {
       </section>
 
       <section className="container mt-5 md:mt-6">
-        <div className="flex flex-wrap gap-2 rounded-[1.8rem] border border-black/5 bg-white/60 p-4 backdrop-blur-xl">
-          {valueStrip.map((item, idx) => (
-            <span
-              key={item}
-              className={`landing-chip text-sm transition hover:-translate-y-0.5 ${
-                idx % 4 === 0
-                  ? "bg-sky-100/85"
-                  : idx % 4 === 1
-                    ? "bg-lime-100/85"
-                    : idx % 4 === 2
-                      ? "bg-fuchsia-100/80"
-                      : "bg-violet-100/80"
-              }`}
-            >
-              {idx < 3 ? <NotebookText className="size-3.5" /> : null}
-              {item}
-            </span>
+        <div className="grid gap-2 rounded-[1.8rem] border border-black/5 bg-white/60 p-4 backdrop-blur-xl sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
+          {iconSystem.map(({ label, icon: Icon, tone }) => (
+            <div key={label} className={`landing-chip justify-start text-xs ${tone}`}>
+              <Icon className="size-3.5" />
+              <span>{label}</span>
+            </div>
           ))}
         </div>
       </section>
@@ -482,17 +378,19 @@ export function LandingPage() {
       <section id="why" className="container mt-14 md:mt-16">
         <SectionTitle
           eyebrow="Почему Shidao"
-          title="Не собирать обучение вручную, а вести его по готовой логике"
-          description="Обычно преподавателю приходится держать методику в одном месте, расписание — в другом, задания — в третьем, а переписку — в чатах. Shidao собирает всё вокруг урока: методику, группу, материалы, домашнее задание и коммуникацию по занятию."
+          title="Вместо ручной сборки из PDF, таблиц и чатов — единый рабочий контур"
+          description="Shidao соединяет методику, расписание, задания и коммуникацию в одном месте. Контекст занятия не теряется после урока и не распадается по разным инструментам."
         />
-        <p className="mt-6 text-sm font-semibold text-neutral-800 md:text-base">
-          Не PDF + чат + заметки, а единый учебный контур.
-        </p>
         <div className="why-connector mt-8 grid gap-4 md:grid-cols-2">
           <article className="landing-surface pattern-chaos rounded-[1.6rem] border border-black/10 bg-white/75 p-5">
-            <p className="text-sm font-bold uppercase tracking-[0.12em] text-neutral-500">До Shidao</p>
+            <p className="text-sm font-bold uppercase tracking-[0.12em] text-neutral-500">Разрозненный сценарий</p>
             <ul className="mt-4 space-y-2.5 text-sm text-neutral-700">
-              {comparisonBefore.map((point) => (
+              {[
+                "Методика хранится отдельно от расписания",
+                "Домашняя работа и комментарии уходят в чат",
+                "Родитель получает только часть информации",
+                "Преподаватель начинает работу почти с пустого экрана",
+              ].map((point) => (
                 <li key={point} className="flex gap-2">
                   <span className="mt-1 size-1.5 shrink-0 rounded-full bg-neutral-400" />
                   {point}
@@ -501,9 +399,14 @@ export function LandingPage() {
             </ul>
           </article>
           <article className="landing-surface pattern-structured rounded-[1.6rem] border border-black/10 bg-gradient-to-br from-lime-100/80 to-sky-100/60 p-5">
-            <p className="text-sm font-bold uppercase tracking-[0.12em] text-neutral-700">В Shidao</p>
+            <p className="text-sm font-bold uppercase tracking-[0.12em] text-neutral-700">Сценарий в Shidao</p>
             <ul className="mt-4 space-y-2.5 text-sm text-neutral-800">
-              {comparisonAfter.map((point) => (
+              {[
+                "Методика становится операционной основой курса",
+                "Группа и урок связаны с материалами и ДЗ",
+                "Комментарии привязаны к конкретному занятию",
+                "Родитель и ученик видят только свой контекст",
+              ].map((point) => (
                 <li key={point} className="flex gap-2">
                   <Check className="mt-0.5 size-4 shrink-0 text-emerald-700" />
                   {point}
@@ -514,140 +417,52 @@ export function LandingPage() {
         </div>
       </section>
 
-      <section id="method-core" className="container mt-14 md:mt-16">
+      <section id="product-model" className="container mt-14 md:mt-16">
         <SectionTitle
-          eyebrow="Методика как основа"
-          title="В Shidao методика — не приложение к курсу, а его рабочая структура"
-          description="Методика в Shidao — это не просто набор файлов. Она задаёт ход обучения: какие уроки идут по порядку, какие материалы использует преподаватель, какое домашнее задание назначается и в каком контексте идёт коммуникация по занятию."
+          eyebrow="Как устроен продукт"
+          title="Методика — source of truth, группа — рабочая единица, урок — runtime"
+          description="Shidao не про хранение контента. Это рабочий механизм преподавателя: методика определяет последовательность, а группа и урок превращают её в ежедневную операционную практику."
         />
         <Reveal className="mt-8 rounded-[1.8rem] border border-black/10 bg-white/75 p-5 md:p-7">
-          <div className="method-flow relative grid gap-3 md:grid-cols-6 md:gap-4">
-            {methodFlowSteps.map(({ title, icon: Icon }, idx) => (
+          <div className="method-flow relative grid gap-3 md:grid-cols-5 md:gap-4">
+            {productFlow.map(({ title, note, icon: Icon }, idx) => (
               <article
                 key={title}
-                className={`method-node rounded-2xl border border-black/10 p-3 text-sm font-semibold ${
-                  idx === 0
-                    ? "bg-sky-200/85 shadow-[0_14px_26px_rgba(14,116,144,0.15)]"
-                    : idx % 2 === 0
-                      ? "bg-fuchsia-100/70"
-                      : "bg-lime-100/75"
+                className={`method-node rounded-2xl border border-black/10 p-3 ${
+                  idx === 0 ? "bg-sky-200/85" : idx % 2 ? "bg-white" : "bg-violet-100/75"
                 }`}
               >
-                {idx === 0 ? (
-                  <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-sky-800">
-                    Старт
-                  </p>
-                ) : null}
-                <div className="mt-1 flex items-center gap-2">
+                <div className="flex items-center gap-2 text-sm font-semibold">
                   <Icon className="size-4" />
-                  <span>{title}</span>
+                  {title}
                 </div>
+                <p className="mt-1 text-xs text-neutral-600">{note}</p>
               </article>
             ))}
           </div>
-          <p className="mt-4 text-sm font-medium text-neutral-700">
-            Пример: Урок 1 → материалы → задание группе → комментарий преподавателя → ответ ученика.
-          </p>
-          <p className="mt-5 text-sm leading-relaxed text-neutral-700 md:text-base">
-            Преподаватель не собирает курс вручную. Он ведёт группу по уже заданной логике и видит весь учебный контекст в одном месте.
-          </p>
-        </Reveal>
-      </section>
-
-      <section id="method" className="container mt-14 md:mt-16">
-        <SectionTitle
-          eyebrow="Первая методика в Shidao"
-          title="«Мир вокруг меня» — готовый годовой курс китайского для детей 5–6 лет"
-          description="Первая методика в платформе рассчитана на учебный год и помогает преподавателю вести детскую группу последовательно: от темы к теме, от урока к уроку, с готовыми песнями, видео, активностями и подробными сценариями работы."
-        />
-        <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {firstMethodStats.map((item, idx) => (
-            <article
-              key={item}
-              className={`landing-surface rounded-3xl border border-black/10 p-5 ${idx % 3 === 0 ? "bg-sky-100/75" : idx % 3 === 1 ? "bg-white/85" : "bg-fuchsia-100/65"}`}
-            >
-              <p className="text-lg font-black tracking-tight">{item}</p>
+          <div className="mt-5 grid gap-3 md:grid-cols-2">
+            <article className="rounded-2xl border border-black/10 bg-neutral-900 p-4 text-white">
+              <p className="text-xs uppercase tracking-[0.11em] text-neutral-300">Главный вход</p>
+              <p className="mt-2 text-lg font-black">/dashboard</p>
+              <p className="mt-1 text-sm text-neutral-200">Запуск группы, расписания и учебного процесса начинается здесь.</p>
             </article>
-          ))}
-        </div>
-        <p className="mt-6 max-w-[74ch] text-sm leading-relaxed text-neutral-700 md:text-base">
-          Каждый урок в методике — это не абстрактная тема, а конкретный план
-          работы преподавателя: слова и фразы, карточки, реквизит, материалы,
-          игровые активности, движение, повторение и чёткий сценарий занятия.
-        </p>
-
-        <Reveal className="mt-6 rounded-[1.5rem] border border-black/10 bg-white/80 p-4 md:p-5">
-          <p className="text-sm font-bold uppercase tracking-[0.12em] text-neutral-600">Ритм одного занятия</p>
-          <div className="mt-4 grid gap-4 md:grid-cols-[0.9fr_1.1fr] md:items-start">
-            <div className="lesson-rhythm-visual relative min-h-44 overflow-hidden rounded-2xl border border-black/10 bg-white/70">
-              <Image
-                src="/landing/lesson-rhythm.webp"
-                alt=""
-                fill
-                sizes="(max-width: 768px) 100vw, 40vw"
-                className="object-contain object-center p-3"
-              />
-            </div>
-            <div className="grid gap-2 md:grid-cols-2">
-              {lessonComposition.map(({ title, subtitle, icon: Icon }, idx) => (
-                <article
-                  key={title}
-                  className={`rounded-2xl border border-black/10 p-3 text-sm ${idx % 2 === 0 ? "bg-sky-50/60" : "bg-white"}`}
-                >
-                  <div className="flex items-center gap-2 font-semibold">
-                    <Icon className="size-4 text-neutral-700" />
-                    {title}
-                  </div>
-                  <p className="mt-1 text-xs leading-relaxed text-neutral-600">{subtitle}</p>
-                </article>
-              ))}
-            </div>
+            <article className="rounded-2xl border border-black/10 bg-white p-4">
+              <p className="text-xs uppercase tracking-[0.11em] text-neutral-500">Вторичный индекс</p>
+              <p className="mt-2 text-lg font-black">/lessons</p>
+              <p className="mt-1 text-sm text-neutral-700">Используется как обзор по урокам, но не заменяет workflow внутри группы.</p>
+            </article>
           </div>
         </Reveal>
-
-        <div className="mt-6 rounded-[1.5rem] border border-black/10 bg-white/80 p-4 md:p-5">
-          <p className="text-sm font-bold uppercase tracking-[0.12em] text-neutral-600">
-            Что получает преподаватель внутри методики
-          </p>
-          <div className="mt-4 grid gap-2 md:grid-cols-2">
-            {[
-              "готовый план урока",
-              "слова и фразы по занятию",
-              "карточки, реквизит и материалы",
-              "игровые активности и сценарий работы",
-            ].map((item, idx) => (
-              <div
-                key={item}
-                className={`rounded-2xl border border-black/10 p-3 text-sm font-medium ${
-                  idx === 0
-                    ? "bg-sky-50/75"
-                    : idx === 1
-                      ? "bg-lime-50/80"
-                      : idx === 2
-                        ? "bg-fuchsia-50/80"
-                        : "bg-violet-50/75"
-                }`}
-              >
-                <span className="mb-2 block h-0.5 w-10 rounded-full bg-black/15" />
-                {item}
-              </div>
-            ))}
-          </div>
-        </div>
-        <p className="mt-3 max-w-[74ch] text-sm leading-relaxed text-neutral-700 md:text-base">
-          Урок начинается и заканчивается песней, а преподаватель работает не по
-          памяти и не по заметкам, а по готовой структуре.
-        </p>
       </section>
 
       <section id="workflow" className="container mt-14 md:mt-16">
         <SectionTitle
-          eyebrow="Как это работает"
-          title="Преподаватель начинает не с пустой формы, а с понятного учебного контура"
-          description="Shidao помогает выстроить обучение вокруг методики, группы и урока. Сначала преподаватель выбирает методику, затем запускает группу, добавляет учеников и уже после этого планирует занятия и выдаёт задания."
+          eyebrow="Как работает преподаватель"
+          title="Пошаговый рабочий поток от методики до обратной связи"
+          description="В Shidao преподаватель ведёт группу по готовой структуре курса. Это снижает ручную нагрузку и сохраняет единый контекст урока для всех ролей."
         />
         <Reveal className="workflow-rail mt-8 grid gap-3 md:grid-cols-5">
-          {workflowSteps.map(({ title, description }, idx) => (
+          {teacherWorkflow.map(({ title, description }, idx) => (
             <li
               key={title}
               className={`workflow-step list-none rounded-3xl border border-black/10 p-5 ${
@@ -671,11 +486,90 @@ export function LandingPage() {
         </Reveal>
       </section>
 
+      <section id="method" className="container mt-14 md:mt-16">
+        <SectionTitle
+          eyebrow="Первая методика"
+          title="«我周围的世界» / «Мир вокруг меня» — готовый курс для запуска первой группы"
+          description="Методика рассчитана на детей 5–6 лет и закрывает учебный год: структура уроков, материалы и задания уже собраны, чтобы преподаватель запускал работу без ручной сборки курса."
+        />
+
+        <div className="mt-8 grid gap-4 lg:grid-cols-[1.05fr_0.95fr]">
+          <article className="landing-surface rounded-[1.6rem] border border-black/10 bg-white/85 p-5">
+            <p className="text-sm font-bold uppercase tracking-[0.12em] text-neutral-600">Композиция методики</p>
+            <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
+              {[
+                "1 учебный год",
+                "~180 слов",
+                "21 песня",
+                "21 видео",
+                "45 минут урок",
+                "4–6 детей в группе",
+                "максимум 8 детей",
+                "14–16 активностей",
+                "старт и финал через песню",
+              ].map((item, idx) => (
+                <div
+                  key={item}
+                  className={`rounded-xl border border-black/10 p-3 text-sm font-semibold ${
+                    idx % 3 === 0
+                      ? "bg-sky-100/80"
+                      : idx % 3 === 1
+                        ? "bg-lime-100/80"
+                        : "bg-fuchsia-100/75"
+                  }`}
+                >
+                  {item}
+                </div>
+              ))}
+            </div>
+          </article>
+
+          <article className="landing-surface rounded-[1.6rem] border border-black/10 bg-gradient-to-br from-sky-100/60 to-white p-5">
+            <p className="text-sm font-bold uppercase tracking-[0.12em] text-neutral-600">Из чего состоит урок</p>
+            <div className="mt-4 grid gap-2">
+              {lessonComposition.map((item, idx) => (
+                <div
+                  key={item}
+                  className={`flex items-start gap-2 rounded-xl border border-black/10 p-3 text-sm ${
+                    idx % 2 ? "bg-white/95" : "bg-sky-50/70"
+                  }`}
+                >
+                  <ArrowRight className="mt-0.5 size-4 shrink-0 text-neutral-600" />
+                  <span>{item}</span>
+                </div>
+              ))}
+            </div>
+          </article>
+        </div>
+
+        <div className="mt-4 grid gap-3 md:grid-cols-4">
+          {[
+            { title: "Песни", icon: Music3, text: "21 песня встроена в сценарии уроков." },
+            { title: "Видео", icon: PlayCircle, text: "21 видео поддерживает тему и ритм занятия." },
+            { title: "Карточки", icon: FolderKanban, text: "Материалы и реквизит заданы внутри урока." },
+            { title: "Сценарии", icon: NotebookTabs, text: "Преподаватель видит последовательность действий." },
+          ].map(({ title, icon: Icon, text }, idx) => (
+            <article
+              key={title}
+              className={`rounded-2xl border border-black/10 p-4 ${
+                idx === 0 ? "bg-white" : idx === 1 ? "bg-sky-100/75" : idx === 2 ? "bg-lime-100/75" : "bg-violet-100/75"
+              }`}
+            >
+              <div className="flex items-center gap-2 text-sm font-bold">
+                <Icon className="size-4" />
+                {title}
+              </div>
+              <p className="mt-2 text-sm leading-relaxed text-neutral-700">{text}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
       <section id="roles" className="container mt-14 md:mt-16">
         <SectionTitle
-          eyebrow="Для кого платформа"
-          title="У каждого участника — свой контекст, но учебный процесс один"
-          description="Shidao разделяет роли так, чтобы каждый видел только то, что нужно ему в реальной работе или обучении."
+          eyebrow="Роли"
+          title="Преподаватель ведёт, родитель наблюдает, ученик учится в отдельном контексте"
+          description="У каждой роли свой интерфейс и своя зона ответственности, но все они связаны одним процессом внутри конкретного урока и группы."
         />
         <div className="mt-8 grid gap-4 lg:grid-cols-3">
           {roleCards.map(({ title, icon: Icon, tone, description, points }) => (
@@ -683,13 +577,12 @@ export function LandingPage() {
               key={title}
               className={`landing-surface rounded-[1.6rem] border border-black/10 p-5 role-card role-${tone}`}
             >
-              <p className="landing-chip bg-white/75 text-[0.68rem] uppercase">{tone === "teacher" ? "Роль: преподаватель" : tone === "parent" ? "Роль: родитель" : "Роль: ученик"}</p>
+              <p className="landing-chip bg-white/75 text-[0.68rem] uppercase">Роль</p>
               <div className="mt-3 flex items-center gap-2">
                 <Icon className="size-5" />
                 <h3 className="text-xl font-black">{title}</h3>
               </div>
-              <div className="my-3 h-px w-full bg-black/10" />
-              <p className="text-sm leading-relaxed text-neutral-700">{description}</p>
+              <p className="mt-3 text-sm leading-relaxed text-neutral-700">{description}</p>
               <ul className="mt-4 space-y-2.5 text-sm text-neutral-700">
                 {points.map((point) => (
                   <li key={point} className="flex gap-2">
@@ -705,44 +598,33 @@ export function LandingPage() {
 
       <section className="container mt-14 md:mt-16">
         <SectionTitle
-          eyebrow="Два режима работы"
-          title="Shidao подходит и частному преподавателю, и команде школы"
-          description="Платформа поддерживает личный контур преподавателя и контур организации. Это позволяет работать самостоятельно или в составе школы, не смешивая доступы и данные."
+          eyebrow="Частный преподаватель и школа"
+          title="Личный и организационный контур без смешивания данных"
+          description="Shidao спокойно масштабируется от самостоятельной практики до работы внутри школы: логика курса остаётся единой, а границы доступа — ясными."
         />
-        <p className="mt-6 text-sm font-medium text-neutral-700 md:text-base">
-          Личный и организационный контур разделены: преподаватель работает там,
-          где были созданы группы, уроки и данные.
-        </p>
         <div className="mt-8 grid gap-4 md:grid-cols-2">
           <article className="mode-card mode-private rounded-[1.6rem] border border-black/10 bg-white/90 p-5 shadow-[0_18px_36px_rgba(20,20,20,0.08)]">
             <p className="landing-chip bg-sky-100/85 text-xs">Личный контур</p>
             <h3 className="mt-3 text-xl font-black">Частный преподаватель</h3>
             <p className="mt-3 text-sm leading-relaxed text-neutral-700">
-              Можно вести группы самостоятельно, без лишней административной
-              сложности, сохраняя весь учебный процесс в одном месте.
+              Один взрослый аккаунт, свои группы, своё расписание и методический процесс без лишней административной настройки.
             </p>
           </article>
           <article className="mode-card mode-school rounded-[1.6rem] border border-black/10 bg-gradient-to-br from-fuchsia-100/50 to-white p-5 shadow-[0_18px_36px_rgba(20,20,20,0.08)]">
             <p className="landing-chip bg-fuchsia-100/85 text-xs">Организационный контур</p>
             <h3 className="mt-3 text-xl font-black">Школа / организация</h3>
             <p className="mt-3 text-sm leading-relaxed text-neutral-700">
-              Можно работать в организационном контуре: приглашать
-              преподавателей, разделять доступы и вести обучение в рамках общей
-              структуры.
+              Общий рабочий контур с приглашением преподавателей и корректным разграничением ролей и данных внутри организации.
             </p>
           </article>
         </div>
-        <p className="mt-4 text-sm text-neutral-700 md:text-base">
-          Один и тот же продукт остаётся понятным в обоих сценариях: личном и
-          организационном.
-        </p>
       </section>
 
       <section id="faq" className="container mt-14 md:mt-16">
         <SectionTitle
-          eyebrow="Частые вопросы"
-          title="Коротко о самом важном"
-          description="Ответы на вопросы, которые помогают быстро понять логику Shidao."
+          eyebrow="FAQ"
+          title="Короткие ответы на практические вопросы"
+          description="Только то, что важно для принятия решения о запуске первой группы в Shidao."
         />
         <div className="mt-8 space-y-3 rounded-[1.4rem] border border-black/5 bg-white/45 p-2 md:space-y-4 md:p-3">
           {faq.map(({ q, a }) => (
@@ -762,23 +644,15 @@ export function LandingPage() {
 
       <section className="container mt-14 md:mt-16">
         <div className="cta-finale relative overflow-hidden rounded-[1.6rem] border border-black/10 bg-[linear-gradient(150deg,rgba(240,247,255,0.92),rgba(255,255,255,0.92),rgba(255,241,250,0.92))] px-4 py-8 text-center shadow-[0_24px_70px_rgba(20,20,20,0.16)] sm:px-6 md:rounded-[2rem] md:px-12 md:py-10">
-          <span className="landing-chip absolute left-8 top-6 hidden bg-white/85 text-xs md:inline-flex">Методика</span>
-          <span className="landing-chip absolute right-8 top-8 hidden bg-sky-100/85 text-xs md:inline-flex">Группа</span>
-          <span className="landing-chip absolute bottom-6 left-10 hidden bg-lime-100/85 text-xs md:inline-flex">Урок</span>
-          <span className="landing-chip absolute bottom-8 right-10 hidden bg-fuchsia-100/85 text-xs md:inline-flex">Домашнее задание</span>
-          <p className="landing-chip mx-auto bg-lime-100/85">Запустить обучение в единой рабочей среде</p>
+          <p className="landing-chip mx-auto bg-lime-100/85">Методика уже внутри продукта</p>
           <h2 className="mx-auto mt-5 max-w-[22ch] text-2xl font-black leading-tight md:mt-6 md:max-w-none md:text-5xl">
-            Запустите первую группу по готовой методике в Shidao
+            Запустите первую группу по методике «Мир вокруг меня» в Shidao
           </h2>
           <p className="mx-auto mt-3 max-w-[56ch] text-sm leading-relaxed text-neutral-700 md:text-base">
-            От группы и расписания до задания и комментариев по уроку — Shidao
-            собирает учебный процесс в одном рабочем контуре.
+            Платформа собирает процесс в рабочую систему: /dashboard как вход преподавателя, роли с отдельными контекстами и коммуникация, привязанная к уроку.
           </p>
           <div className="mt-6 grid gap-3 sm:flex sm:justify-center">
-            <Link
-              href={ROUTES.join}
-              className="landing-btn min-h-12 w-full bg-lime-200 !text-black hover:bg-lime-300 sm:w-auto"
-            >
+            <Link href={ROUTES.join} className="landing-btn min-h-12 w-full bg-lime-200 !text-black hover:bg-lime-300 sm:w-auto">
               Создать аккаунт
             </Link>
             <Link
@@ -788,10 +662,6 @@ export function LandingPage() {
               Войти
             </Link>
           </div>
-          <p className="mt-3 text-sm text-neutral-600">
-            Для частного преподавателя и для школы. Начать можно с первой
-            готовой методики.
-          </p>
         </div>
       </section>
     </main>
