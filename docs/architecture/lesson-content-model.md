@@ -527,3 +527,22 @@ Lesson body — это **упорядоченный сценарий** из ти
 - В урок импортируются типизированные ordered blocks v1 (intro/video/vocabulary/prompts/guided activities/worksheet/song/wrap-up) без runtime overrides.
 - Для media используются reusable assets (`farm animals` video/song, workbook pages 3–4, Appendix 1) без поддельных URL.
 - Для dev-навигации bootstrap также создаёт один demo `scheduled_lesson`, чтобы teacher workspace мог открывать этот урок через `DEV_TEACHER_WORKSPACE_SCHEDULED_LESSON_ID`.
+
+---
+
+## 17) IA alignment note (Step 1, April 7, 2026)
+
+В рамках первого шага teacher-side реструктуризации:
+
+- teacher dashboard (`/dashboard`) становится обзорной точкой входа;
+- `/groups` и `/groups/[groupId]` становятся primary operational surfaces;
+- `/lessons` переопределяется как secondary global index across groups;
+- `/lessons/[scheduledLessonId]` остаётся runtime workspace для конкретного проведения.
+
+Это **не меняет** каноническую модель документа:
+
+- методология остаётся source of truth для pedagogical content;
+- scheduled lesson остаётся runtime execution unit;
+- block overrides/editor/AI/no-code в scope не добавляются.
+
+См. отдельный IA-документ: `docs/architecture/teacher-group-centric-ia.md`.

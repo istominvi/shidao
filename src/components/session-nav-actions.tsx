@@ -293,6 +293,28 @@ export function SessionNavActions({
           {dashboardLabel}
         </Link>
 
+        {state.kind === "adult" && state.activeProfile === "teacher" && (
+          <>
+            <p className="px-3 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wide text-neutral-500">
+              Преподавателю
+            </p>
+            <Link
+              href={ROUTES.groups}
+              className="block rounded-xl px-3 py-2 text-sm hover:bg-black/5"
+              onClick={() => setOpen(false)}
+            >
+              Группы
+            </Link>
+            <Link
+              href={ROUTES.lessons}
+              className="block rounded-xl px-3 py-2 text-sm hover:bg-black/5"
+              onClick={() => setOpen(false)}
+            >
+              Глобальный индекс занятий
+            </Link>
+          </>
+        )}
+
         <p className="px-3 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wide text-neutral-500">
           Личное
         </p>

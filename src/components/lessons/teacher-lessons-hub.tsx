@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ROUTES } from "@/lib/auth";
 import type { TeacherLessonsHubReadModel } from "@/lib/server/teacher-lessons-hub";
 
 type TeacherLessonsHubProps = {
@@ -117,17 +118,22 @@ export function TeacherLessonsHub({
           Рабочее пространство преподавателя
         </p>
         <h1 className="mt-3 text-3xl font-black tracking-[-0.03em] text-neutral-950 md:text-4xl">
-          Занятия
+          Глобальный индекс занятий
         </h1>
         <p className="mt-3 max-w-3xl text-sm leading-6 text-neutral-700 md:text-base">
-          Здесь преподаватель видит запланированные и прошедшие занятия, а также
-          быстро создаёт новые в привязке к методологическим урокам.
+          Это кросс-групповое расписание: здесь видно занятия по всем группам.
+          Основной рабочий контекст преподавателя — страницы групп.
+        </p>
+        <p className="mt-3 text-sm text-neutral-700">
+          <Link href={ROUTES.groups} className="font-semibold text-sky-700 underline underline-offset-2">
+            Перейти к группам
+          </Link>
         </p>
       </header>
 
       <section className="landing-surface rounded-3xl border border-white/80 p-5 md:p-6">
         <h2 className="text-xl font-bold tracking-[-0.02em] text-neutral-950">
-          Запланировать занятие
+          Запланировать занятие (пока глобально)
         </h2>
 
         {feedback?.success ? (
@@ -239,7 +245,7 @@ export function TeacherLessonsHub({
               type="submit"
               className="inline-flex items-center rounded-full bg-sky-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-sky-500"
             >
-              Запланировать занятие
+              Запланировать занятие (пока глобально)
             </button>
           </div>
         </form>

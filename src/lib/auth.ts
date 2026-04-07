@@ -15,6 +15,7 @@ export const ROUTES = {
   resetPassword: "/reset-password",
   onboarding: "/onboarding",
   dashboard: "/dashboard",
+  groups: "/groups",
   lessons: "/lessons",
   settings: "/settings",
   settingsSecurity: "/settings/security",
@@ -58,6 +59,9 @@ export function toInitials(fullName?: string | null, email?: string | null) {
   return local.slice(0, 2).toUpperCase();
 }
 
+export function toGroupRoute(groupId: string) {
+  return `${ROUTES.groups}/${encodeURIComponent(groupId)}`;
+}
 
 export function toLessonWorkspaceRoute(scheduledLessonId: string) {
   return `${ROUTES.lessons}/${encodeURIComponent(scheduledLessonId)}`;
