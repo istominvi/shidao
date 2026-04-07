@@ -97,6 +97,20 @@ openssl rand -hex 32
 - `/methodologies` — индекс методик преподавателя.
 - В этом шаге намеренно **не** внедряются homework/thread/attendance/full-calendar/editor/AI.
 
+### Teacher IA (Step 3: group setup + methodology binding + contextual scheduling)
+
+- `class` получает явную связь с методикой через `class.methodology_id`.
+- `/groups/[groupId]` становится реальным teaching container:
+  - назначение/смена методики прямо в группе;
+  - roster группы + контекстный вход в `students/new?groupId=...`;
+  - планирование занятия из контекста группы (без повторного выбора группы).
+- Если у группы нет методики, group-scoped scheduling блокируется до назначения методики.
+- Прогресс группы теперь считается честно:
+  - numerator = только `completed` занятия группы;
+  - denominator = количество уроков в назначенной методике.
+- `/dashboard` и `/groups` используют явное назначение методики (без эвристики от ближайших занятий).
+- `/lessons` сохраняется как secondary global lessons index; `/lessons/[scheduledLessonId]` остаётся execution workspace.
+
 ### Route/source-of-truth helpers
 
 - `src/lib/auth.ts` — канонические URL-константы (`ROUTES`).

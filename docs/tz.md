@@ -55,3 +55,22 @@
 - `/groups` усилен до полного индексного списка с поиском и фильтрами.
 - `/lessons` остаётся вторичным кросс-групповым индексом занятий.
 - Намеренно отложено: homework, threads, attendance, full calendar subsystem, methodology/block editors, AI layer.
+
+## Group setup + methodology binding + contextual scheduling (Step 3, April 7, 2026)
+
+- Для `class` введено явное поле назначения методики: `class.methodology_id`.
+- Это назначение теперь является основным source of truth для:
+  - методики группы на dashboard/groups/group page;
+  - denominator прогресса;
+  - списка методологических уроков при планировании занятий из контекста группы.
+- `/groups/[groupId]` теперь операционно покрывает:
+  - назначение/смену методики;
+  - roster группы и контекстный вход в создание ученика;
+  - планирование занятия без повторного выбора группы.
+- Прогресс считается честно:
+  - numerator: только `scheduled_lesson.runtime_status = completed`;
+  - denominator: общее число уроков в назначенной методике группы.
+- Safe backfill в миграции:
+  - если у группы все scheduled lessons принадлежат одной методике, она назначается автоматически;
+  - при неоднозначности `methodology_id` остаётся `null` и группа помечается как требующая настройки.
+- Всё ещё намеренно отложено: homework, thread/communication, attendance, advanced calendar UX, parent/student expansion.

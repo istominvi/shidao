@@ -3,10 +3,12 @@ import test from "node:test";
 import type { AccessResolution } from "../access-policy";
 import {
   assertTeacherGroupsAccess,
+  assignMethodologyToTeacherGroup,
   canAccessTeacherGroups,
-  getTeacherDashboardReadModel,
+  createTeacherGroupScopedLesson,
   getTeacherGroupOverview,
   getTeacherGroupsIndex,
+  parseGroupScopedLessonFormData,
 } from "../teacher-groups";
 
 const teacherContext = {
@@ -54,11 +56,11 @@ test("teacher groups access allows only teacher profile", () => {
   assert.throws(() => assertTeacherGroupsAccess(parentResolution), /Только профиль преподавателя/);
 });
 
-test("groups index and dashboard read models are group-centric", async () => {
+test("group models use explicit methodology assignment and honest progress", async () => {
   const deps = {
     listTeacherClasses: async () => [
-      { id: "class-1", name: "Лисички 5-6" },
-      { id: "class-2", name: "Драконы" },
+      { id: "class-1", name: "Лисички 5-6", methodologyId: "m-1", methodologyTitle: "Мир вокруг" },
+      { id: "class-2", name: "Драконы", methodologyId: null, methodologyTitle: null },
     ],
     listStudentsForClasses: async () => ({
       "class-1": [
@@ -99,70 +101,97 @@ test("groups index and dashboard read models are group-centric", async () => {
         outcomeNotes: "",
       },
     ],
-    getMethodologyLessonById: async (id: string) => ({ methodologyTitle: id === "ml-1" ? "Мир вокруг" : "Приветствия" } as never),
+    getMethodologyLessonById: async () =>
+      ({ shell: { title: "Урок", position: { moduleIndex: 1, unitIndex: 1, lessonIndex: 1 } } } as never),
+    listMethodologies: async () => [{ id: "m-1", title: "Мир вокруг", shortDescription: null }],
+    listMethodologyLessonsByMethodology: async () =>
+      [
+        { id: "ml-1", shell: { title: "Урок 1", position: { moduleIndex: 1, unitIndex: 1, lessonIndex: 1 } } },
+        { id: "ml-2", shell: { title: "Урок 2", position: { moduleIndex: 1, unitIndex: 1, lessonIndex: 2 } } },
+      ] as never,
+    assignMethodologyToClass: async () => undefined,
+    createScheduledLesson: async () => { throw new Error("unused"); },
+    assertTeacherAssignedToClass: async () => undefined,
   };
 
-  const groups = await getTeacherGroupsIndex(
-    { teacherId: "t-1", nowIso: "2026-04-07T00:00:00Z" },
-    deps,
-  );
-  assert.equal(groups.groups.length, 2);
-  assert.equal(groups.groups[0]?.label, "Драконы");
-  assert.equal(groups.groups[1]?.studentCount, 2);
-  assert.equal(groups.groups[1]?.upcomingLessonCount, 1);
+  const groups = await getTeacherGroupsIndex({ teacherId: "t-1", nowIso: "2026-04-07T00:00:00Z" }, deps);
+  assert.equal(groups.groups[1]?.progressLabel, "1 / 2 (50%)");
 
-  const dashboard = await getTeacherDashboardReadModel(
-    { teacherId: "t-1", nowIso: "2026-04-07T00:00:00Z" },
-    deps,
-  );
-  assert.equal(dashboard.groups[0]?.id, "class-1");
-  assert.equal(dashboard.upcomingLessons[0]?.href, "/lessons/scheduled-future");
-  assert.equal(dashboard.upcomingLessons[0]?.groupLabel, "Лисички 5-6");
-});
-
-test("group overview returns scoped students and lessons", async () => {
   const overview = await getTeacherGroupOverview(
     { teacherId: "t-1", groupId: "class-1", nowIso: "2026-04-07T00:00:00Z" },
-    {
-      listTeacherClasses: async () => [{ id: "class-1", name: "Лисички 5-6" }],
-      listStudentsForClasses: async () => ({
-        "class-1": [{ id: "s-1", fullName: null, login: "fox" }],
-      }),
-      listScheduledLessonsForClasses: async () => [
-        {
-          id: "scheduled-future",
-          methodologyLessonId: "ml-1",
-          runtimeShell: {
-            id: "scheduled-future",
-            classId: "class-1",
-            startsAt: "2026-04-08T10:00:00Z",
-            format: "online" as const,
-            meetingLink: "https://meet.example/1",
-            runtimeStatus: "planned" as const,
-            runtimeNotesSummary: "",
-          },
-          runtimeNotes: "",
-          outcomeNotes: "",
-        },
-      ],
-      getMethodologyLessonById: async () => ({ methodologyTitle: "Мир вокруг" } as never),
-    },
+    deps,
   );
+  assert.equal(overview?.methodology.assignedMethodologyTitle, "Мир вокруг");
+  assert.equal(overview?.schedule.canSchedule, true);
+});
 
-  assert.ok(overview);
-  assert.equal(overview?.students[0]?.displayName, "@fox");
-  assert.equal(overview?.upcomingLessons.length, 1);
-  assert.equal(overview?.upcomingLessons[0]?.title, "Мир вокруг");
-
-  const missing = await getTeacherGroupOverview(
-    { teacherId: "t-1", groupId: "class-404", nowIso: "2026-04-07T00:00:00Z" },
+test("methodology assignment and group scheduling actions are validated", async () => {
+  const calls: string[] = [];
+  await assignMethodologyToTeacherGroup(
+    { teacherId: "t-1", groupId: "class-1", methodologyId: "m-2" },
     {
-      listTeacherClasses: async () => [{ id: "class-1", name: "Лисички 5-6" }],
+      listTeacherClasses: async () => [],
       listStudentsForClasses: async () => ({}),
       listScheduledLessonsForClasses: async () => [],
       getMethodologyLessonById: async () => null,
+      listMethodologies: async () => [],
+      listMethodologyLessonsByMethodology: async () => [],
+      createScheduledLesson: async () => {
+        throw new Error("unused");
+      },
+      assertTeacherAssignedToClass: async () => {
+        calls.push("assigned");
+      },
+      assignMethodologyToClass: async () => {
+        calls.push("patched");
+      },
     },
   );
 
-  assert.equal(missing, null);
+  assert.deepEqual(calls, ["assigned", "patched"]);
+
+  await assert.rejects(
+    () =>
+      createTeacherGroupScopedLesson(
+        {
+          teacherId: "t-1",
+          groupId: "class-1",
+          payload: {
+            methodologyLessonId: "ml-outside",
+            startsAt: "2026-04-20T10:30:00Z",
+            format: "online",
+            meetingLink: "https://zoom.example/room",
+          },
+        },
+        {
+          listTeacherClasses: async () => [
+            { id: "class-1", name: "Лисички", methodologyId: "m-1", methodologyTitle: "Мир" },
+          ],
+          listStudentsForClasses: async () => ({}),
+          listScheduledLessonsForClasses: async () => [],
+          getMethodologyLessonById: async () => null,
+          listMethodologies: async () => [],
+          listMethodologyLessonsByMethodology: async () => [{ id: "ml-1" }] as never,
+          assignMethodologyToClass: async () => undefined,
+          assertTeacherAssignedToClass: async () => undefined,
+          createScheduledLesson: async () => {
+            throw new Error("should not create");
+          },
+        },
+      ),
+    /не принадлежит назначенной методике/i,
+  );
+});
+
+test("group-scoped scheduling parser enforces online/offline constraints", () => {
+  const offlineMissingPlace = new FormData();
+  offlineMissingPlace.set("methodologyLessonId", "lesson-1");
+  offlineMissingPlace.set("date", "2026-04-20");
+  offlineMissingPlace.set("time", "10:30");
+  offlineMissingPlace.set("format", "offline");
+
+  assert.throws(
+    () => parseGroupScopedLessonFormData(offlineMissingPlace),
+    /укажите место проведения/i,
+  );
 });

@@ -1,10 +1,15 @@
 import { ROUTES, toGroupRoute, toLessonWorkspaceRoute } from "../auth";
 import type { AccessResolution } from "./access-policy";
 import {
+  assignMethodologyToClassAdmin,
+  createScheduledLessonAdmin,
   getMethodologyLessonByIdAdmin,
+  listMethodologiesAdmin,
+  listMethodologyLessonsByMethodologyAdmin,
   listScheduledLessonsForClassesAdmin,
   listStudentsForClassesAdmin,
   listTeacherClassesAdmin,
+  type CreateScheduledLessonAdminInput,
 } from "./lesson-content-repository";
 import { canAccessTeacherLessonWorkspace } from "./teacher-lesson-workspace";
 
@@ -15,6 +20,7 @@ export type TeacherGroupListItem = {
   upcomingLessonCount: number;
   nextLessonLabel: string | null;
   assignedMethodologyTitle: string | null;
+  progressLabel: string;
   href: string;
 };
 
@@ -35,6 +41,13 @@ export type TeacherDashboardReadModel = {
 
 export type TeacherGroupOverviewReadModel = {
   group: TeacherGroupListItem;
+  methodology: {
+    assignedMethodologyId: string | null;
+    assignedMethodologyTitle: string | null;
+    assignedMethodologyShortDescription: string | null;
+    lessonTotal: number;
+    options: Array<{ id: string; title: string; shortDescription: string | null }>;
+  };
   students: Array<{ id: string; displayName: string }>;
   upcomingLessons: Array<{
     id: string;
@@ -50,6 +63,10 @@ export type TeacherGroupOverviewReadModel = {
     statusLabel: string;
     href: string;
   }>;
+  schedule: {
+    canSchedule: boolean;
+    lessonOptions: Array<{ id: string; label: string }>;
+  };
 };
 
 type TeacherGroupsDeps = {
@@ -57,13 +74,31 @@ type TeacherGroupsDeps = {
   listStudentsForClasses: typeof listStudentsForClassesAdmin;
   listScheduledLessonsForClasses: typeof listScheduledLessonsForClassesAdmin;
   getMethodologyLessonById: typeof getMethodologyLessonByIdAdmin;
+  listMethodologies: typeof listMethodologiesAdmin;
+  listMethodologyLessonsByMethodology: typeof listMethodologyLessonsByMethodologyAdmin;
+  assignMethodologyToClass: typeof assignMethodologyToClassAdmin;
+  createScheduledLesson: typeof createScheduledLessonAdmin;
+  assertTeacherAssignedToClass: (teacherId: string, classId: string) => Promise<void>;
 };
+
+async function assertTeacherAssignedToClassAdminDefault(
+  teacherId: string,
+  classId: string,
+) {
+  const { assertTeacherAssignedToClassAdmin } = await import("./supabase-admin");
+  await assertTeacherAssignedToClassAdmin(teacherId, classId);
+}
 
 const defaultDeps: TeacherGroupsDeps = {
   listTeacherClasses: listTeacherClassesAdmin,
   listStudentsForClasses: listStudentsForClassesAdmin,
   listScheduledLessonsForClasses: listScheduledLessonsForClassesAdmin,
   getMethodologyLessonById: getMethodologyLessonByIdAdmin,
+  listMethodologies: listMethodologiesAdmin,
+  listMethodologyLessonsByMethodology: listMethodologyLessonsByMethodologyAdmin,
+  assignMethodologyToClass: assignMethodologyToClassAdmin,
+  createScheduledLesson: createScheduledLessonAdmin,
+  assertTeacherAssignedToClass: assertTeacherAssignedToClassAdminDefault,
 };
 
 function formatDateTime(startsAt: string) {
@@ -95,6 +130,84 @@ function formatStatus(status: string) {
 
 function clean(value: string | null | undefined) {
   return value?.trim() || "";
+}
+
+function buildProgressLabel(completed: number, total: number | null) {
+  if (!total || total <= 0) {
+    return `${completed} проведено`;
+  }
+
+  const percent = Math.min(100, Math.round((completed / total) * 100));
+  return `${completed} / ${total} (${percent}%)`;
+}
+
+export function parseGroupScopedLessonFormData(
+  formData: FormData,
+): Omit<CreateScheduledLessonAdminInput, "classId"> {
+  const allowedKeys = new Set([
+    "methodologyLessonId",
+    "date",
+    "time",
+    "format",
+    "meetingLink",
+    "place",
+  ]);
+
+  for (const key of formData.keys()) {
+    if (!allowedKeys.has(key)) {
+      throw new Error("Обнаружены неподдерживаемые поля планирования занятия.");
+    }
+  }
+
+  const methodologyLessonId = clean(
+    formData.get("methodologyLessonId") as string | null,
+  );
+  const date = clean(formData.get("date") as string | null);
+  const time = clean(formData.get("time") as string | null);
+  const formatValue = clean(formData.get("format") as string | null);
+
+  if (!methodologyLessonId) {
+    throw new Error("Выберите урок из назначенной методики.");
+  }
+
+  if (!date || !time) {
+    throw new Error("Укажите дату и время занятия.");
+  }
+
+  if (formatValue !== "online" && formatValue !== "offline") {
+    throw new Error("Формат занятия должен быть online или offline.");
+  }
+
+  const startsAt = `${date}T${time}:00Z`;
+  if (Number.isNaN(Date.parse(startsAt))) {
+    throw new Error("Дата или время занятия указаны неверно.");
+  }
+
+  if (formatValue === "online") {
+    const meetingLink = clean(formData.get("meetingLink") as string | null);
+    if (!meetingLink) {
+      throw new Error("Для онлайн-формата нужна ссылка на встречу.");
+    }
+
+    return {
+      methodologyLessonId,
+      startsAt,
+      format: "online",
+      meetingLink,
+    };
+  }
+
+  const place = clean(formData.get("place") as string | null);
+  if (!place) {
+    throw new Error("Для офлайн-формата укажите место проведения.");
+  }
+
+  return {
+    methodologyLessonId,
+    startsAt,
+    format: "offline",
+    place,
+  };
 }
 
 export function canAccessTeacherGroups(resolution: AccessResolution) {
@@ -130,16 +243,33 @@ async function buildTeacherGroupsSnapshot(
     deps.listScheduledLessonsForClasses(classIds),
   ]);
 
-  const methodologyIds = Array.from(
-    new Set(lessons.map((lesson) => lesson.methodologyLessonId)),
+  const methodologyLessonTotalsEntries = await Promise.all(
+    Array.from(
+      new Set(
+        classes
+          .map((item) => item.methodologyId)
+          .filter((item): item is string => Boolean(item)),
+      ),
+    ).map(async (methodologyId) => [
+      methodologyId,
+      (await deps.listMethodologyLessonsByMethodology(methodologyId)).length,
+    ] as const),
   );
-  const methodologyEntries = await Promise.all(
-    methodologyIds.map(async (methodologyLessonId) => {
-      const lesson = await deps.getMethodologyLessonById(methodologyLessonId);
-      return [methodologyLessonId, lesson?.methodologyTitle?.trim() || null] as const;
-    }),
+  const methodologyLessonTotalsById = Object.fromEntries(
+    methodologyLessonTotalsEntries,
   );
-  const methodologyTitleById = Object.fromEntries(methodologyEntries);
+
+  const methodologyLessonTitleById = Object.fromEntries(
+    await Promise.all(
+      Array.from(new Set(lessons.map((item) => item.methodologyLessonId))).map(
+        async (methodologyLessonId) => [
+          methodologyLessonId,
+          clean((await deps.getMethodologyLessonById(methodologyLessonId))?.shell.title) ||
+            "Занятие",
+        ] as const,
+      ),
+    ),
+  );
 
   const now = Date.parse(input.nowIso ?? new Date().toISOString());
 
@@ -155,14 +285,15 @@ async function buildTeacherGroupsSnapshot(
       (lesson) => Date.parse(lesson.runtimeShell.startsAt) >= now,
     );
 
+    const completedLessons = classLessons.filter(
+      (lesson) => lesson.runtimeShell.runtimeStatus === "completed",
+    ).length;
+
+    const totalLessons = group.methodologyId
+      ? methodologyLessonTotalsById[group.methodologyId] ?? 0
+      : null;
+
     const nextLesson = upcomingLessons[0];
-    const latestLesson = classLessons[classLessons.length - 1] ?? null;
-    const methodologyTitle =
-      (nextLesson
-        ? methodologyTitleById[nextLesson.methodologyLessonId]
-        : latestLesson
-          ? methodologyTitleById[latestLesson.methodologyLessonId]
-          : null) ?? null;
 
     return {
       id: group.id,
@@ -170,7 +301,8 @@ async function buildTeacherGroupsSnapshot(
       studentCount: studentsByClass[group.id]?.length ?? 0,
       upcomingLessonCount: upcomingLessons.length,
       nextLessonLabel: nextLesson ? formatDateTime(nextLesson.runtimeShell.startsAt) : null,
-      assignedMethodologyTitle: methodologyTitle,
+      assignedMethodologyTitle: clean(group.methodologyTitle) || null,
+      progressLabel: buildProgressLabel(completedLessons, totalLessons),
       href: toGroupRoute(group.id),
     };
   });
@@ -183,14 +315,82 @@ async function buildTeacherGroupsSnapshot(
     .slice(0, 8)
     .map((lesson) => ({
       id: lesson.id,
-      title: clean(methodologyTitleById[lesson.methodologyLessonId]) || "Занятие",
+      title: methodologyLessonTitleById[lesson.methodologyLessonId] || "Занятие",
       groupLabel:
         groups.find((group) => group.id === lesson.runtimeShell.classId)?.label || "Группа",
       dateTimeLabel: formatDateTime(lesson.runtimeShell.startsAt),
       href: toLessonWorkspaceRoute(lesson.id),
     }));
 
-  return { groups, lessons, studentsByClass, upcomingLessons, methodologyTitleById };
+  return {
+    groups,
+    classes,
+    lessons,
+    studentsByClass,
+    upcomingLessons,
+    methodologyLessonTitleById,
+    methodologyLessonTotalsById,
+  };
+}
+
+export async function assignMethodologyToTeacherGroup(input: {
+  teacherId: string;
+  groupId: string;
+  methodologyId: string;
+}, deps: TeacherGroupsDeps = defaultDeps) {
+  await deps.assertTeacherAssignedToClass(input.teacherId, input.groupId);
+  await deps.assignMethodologyToClass({
+    classId: input.groupId,
+    methodologyId: input.methodologyId,
+  });
+}
+
+export async function createTeacherGroupScopedLesson(input: {
+  teacherId: string;
+  groupId: string;
+  payload: Omit<CreateScheduledLessonAdminInput, "classId">;
+}, deps: TeacherGroupsDeps = defaultDeps) {
+  await deps.assertTeacherAssignedToClass(input.teacherId, input.groupId);
+
+  const classes = await deps.listTeacherClasses(input.teacherId);
+  const group = classes.find((item) => item.id === input.groupId);
+  if (!group?.methodologyId) {
+    throw new Error("Сначала назначьте методику группе.");
+  }
+
+  const lessonIds = new Set(
+    (await deps.listMethodologyLessonsByMethodology(group.methodologyId)).map(
+      (item) => item.id,
+    ),
+  );
+
+  if (!lessonIds.has(input.payload.methodologyLessonId)) {
+    throw new Error("Выбранный урок не принадлежит назначенной методике группы.");
+  }
+
+  if (input.payload.format === "online") {
+    if (!input.payload.meetingLink) {
+      throw new Error("Для онлайн-формата нужна ссылка на встречу.");
+    }
+    return deps.createScheduledLesson({
+      classId: input.groupId,
+      methodologyLessonId: input.payload.methodologyLessonId,
+      startsAt: input.payload.startsAt,
+      format: "online",
+      meetingLink: input.payload.meetingLink,
+    });
+  }
+
+  if (!input.payload.place) {
+    throw new Error("Для офлайн-формата укажите место проведения.");
+  }
+  return deps.createScheduledLesson({
+    classId: input.groupId,
+    methodologyLessonId: input.payload.methodologyLessonId,
+    startsAt: input.payload.startsAt,
+    format: "offline",
+    place: input.payload.place,
+  });
 }
 
 export async function getTeacherGroupsIndex(
@@ -227,7 +427,8 @@ export async function getTeacherGroupOverview(
   );
 
   const group = snapshot.groups.find((item) => item.id === input.groupId);
-  if (!group) {
+  const classRow = snapshot.classes.find((item) => item.id === input.groupId);
+  if (!group || !classRow) {
     return null;
   }
 
@@ -242,7 +443,7 @@ export async function getTeacherGroupOverview(
   const lessonCards = scopedLessons.map((lesson) => ({
     startsAt: lesson.runtimeShell.startsAt,
     id: lesson.id,
-    title: clean(snapshot.methodologyTitleById[lesson.methodologyLessonId]) || "Занятие",
+    title: snapshot.methodologyLessonTitleById[lesson.methodologyLessonId] || "Занятие",
     dateTimeLabel: formatDateTime(lesson.runtimeShell.startsAt),
     statusLabel: formatStatus(lesson.runtimeShell.runtimeStatus),
     href: toLessonWorkspaceRoute(lesson.id),
@@ -250,11 +451,30 @@ export async function getTeacherGroupOverview(
 
   const students = (snapshot.studentsByClass[input.groupId] ?? []).map((student) => ({
     id: student.id,
-    displayName: clean(student.fullName) || (clean(student.login) ? `@${clean(student.login)}` : "Ученик"),
+    displayName:
+      clean(student.fullName) || (clean(student.login) ? `@${clean(student.login)}` : "Ученик"),
   }));
+
+  const methodologyOptions = await deps.listMethodologies();
+  const methodologyLessonOptions = classRow.methodologyId
+    ? await deps.listMethodologyLessonsByMethodology(classRow.methodologyId)
+    : [];
+  const selectedMethodology = methodologyOptions.find(
+    (item) => item.id === classRow.methodologyId,
+  );
 
   return {
     group,
+    methodology: {
+      assignedMethodologyId: classRow.methodologyId,
+      assignedMethodologyTitle: clean(classRow.methodologyTitle) || null,
+      assignedMethodologyShortDescription:
+        selectedMethodology?.shortDescription || null,
+      lessonTotal: classRow.methodologyId
+        ? snapshot.methodologyLessonTotalsById[classRow.methodologyId] ?? 0
+        : 0,
+      options: methodologyOptions,
+    },
     students,
     upcomingLessons: lessonCards
       .filter((lesson) => Date.parse(lesson.startsAt) >= now)
@@ -264,6 +484,13 @@ export async function getTeacherGroupOverview(
       .reverse()
       .slice(0, 10)
       .map(({ startsAt: _startsAt, ...lesson }) => lesson),
+    schedule: {
+      canSchedule: Boolean(classRow.methodologyId),
+      lessonOptions: methodologyLessonOptions.map((lesson) => ({
+        id: lesson.id,
+        label: `Модуль ${lesson.shell.position.moduleIndex} · Урок ${lesson.shell.position.lessonIndex} · ${lesson.shell.title}`,
+      })),
+    },
   };
 }
 

@@ -927,6 +927,7 @@ export async function assertTeacherAssignedToClassAdmin(
 export async function createClassForTeacherAdmin(input: {
   teacherId: string;
   name: string;
+  methodologyId?: string | null;
 }) {
   const memberships = await request<Array<{ school_id: string; role: string | null }>>(
     `/rest/v1/school_teacher?select=school_id,role&teacher_id=eq.${input.teacherId}&order=created_at.asc`,
@@ -949,6 +950,7 @@ export async function createClassForTeacherAdmin(input: {
       payload: {
         school_id: schoolId,
         name: input.name.trim(),
+        methodology_id: input.methodologyId ?? null,
       },
     },
   );

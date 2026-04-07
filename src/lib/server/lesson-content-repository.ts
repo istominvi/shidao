@@ -38,6 +38,11 @@ type RowClassTeacher = {
 type RowClass = {
   id: string;
   name: string | null;
+  methodology_id: string | null;
+  methodology?: {
+    id: string;
+    title: string | null;
+  } | null;
 };
 
 type RowTeacherClass = {
@@ -45,7 +50,18 @@ type RowTeacherClass = {
   class: {
     id: string;
     name: string | null;
+    methodology_id: string | null;
+    methodology?: {
+      id: string;
+      title: string | null;
+    } | null;
   } | null;
+};
+
+type RowMethodologySummary = {
+  id: string;
+  title: string;
+  short_description: string | null;
 };
 
 type RowClassStudentMembership = {
@@ -65,6 +81,7 @@ type RowMethodologyLessonCatalog = {
   unit_index: number | null;
   lesson_index: number;
   methodology: {
+    id: string;
     title: string | null;
   } | null;
 };
@@ -276,6 +293,7 @@ export async function listMethodologyLessonsCatalogAdmin(): Promise<
   Array<{
     id: string;
     title: string;
+    methodologyId: string | null;
     methodologyTitle: string | null;
     moduleIndex: number;
     unitIndex: number | null;
@@ -283,12 +301,13 @@ export async function listMethodologyLessonsCatalogAdmin(): Promise<
   }>
 > {
   const rows = await adminRequest<RowMethodologyLessonCatalog[]>(
-    "/rest/v1/methodology_lesson?select=id,title,module_index,unit_index,lesson_index,methodology:methodology_id(title)&order=module_index.asc&order=unit_index.asc.nullslast&order=lesson_index.asc",
+    "/rest/v1/methodology_lesson?select=id,title,module_index,unit_index,lesson_index,methodology:methodology_id(id,title)&order=module_index.asc&order=unit_index.asc.nullslast&order=lesson_index.asc",
   );
 
   return rows.map((row) => ({
     id: row.id,
     title: row.title,
+    methodologyId: row.methodology?.id ?? null,
     methodologyTitle: row.methodology?.title?.trim() || null,
     moduleIndex: row.module_index,
     unitIndex: row.unit_index,
@@ -296,17 +315,40 @@ export async function listMethodologyLessonsCatalogAdmin(): Promise<
   }));
 }
 
+export async function listMethodologiesAdmin(): Promise<
+  Array<{ id: string; title: string; shortDescription: string | null }>
+> {
+  const rows = await adminRequest<RowMethodologySummary[]>(
+    "/rest/v1/methodology?select=id,title,short_description&order=title.asc",
+  );
+
+  return rows.map((row) => ({
+    id: row.id,
+    title: row.title.trim(),
+    shortDescription: row.short_description?.trim() || null,
+  }));
+}
+
 export async function listTeacherClassesAdmin(
   teacherId: string,
-): Promise<Array<{ id: string; name: string | null }>> {
+): Promise<
+  Array<{
+    id: string;
+    name: string | null;
+    methodologyId: string | null;
+    methodologyTitle: string | null;
+  }>
+> {
   const rows = await adminRequest<RowTeacherClass[]>(
-    `/rest/v1/class_teacher?select=class_id,class:class_id(id,name)&teacher_id=eq.${teacherId}`,
+    `/rest/v1/class_teacher?select=class_id,class:class_id(id,name,methodology_id,methodology:methodology_id(id,title))&teacher_id=eq.${teacherId}`,
   );
 
   const classes = rows
     .map((row) => ({
       id: row.class?.id ?? row.class_id,
       name: row.class?.name?.trim() || null,
+      methodologyId: row.class?.methodology_id ?? null,
+      methodologyTitle: row.class?.methodology?.title?.trim() || null,
     }))
     .filter((row) => row.id);
 
@@ -357,9 +399,48 @@ export async function getClassDisplayNameByIdAdmin(
   classId: string,
 ): Promise<string | null> {
   const rows = await adminRequest<RowClass[]>(
-    `/rest/v1/class?select=id,name&id=eq.${classId}&limit=1`,
+    `/rest/v1/class?select=id,name,methodology_id,methodology:methodology_id(id,title)&id=eq.${classId}&limit=1`,
   );
   return rows[0]?.name?.trim() || null;
+}
+
+export async function getClassByIdAdmin(classId: string): Promise<{
+  id: string;
+  name: string | null;
+  methodologyId: string | null;
+  methodologyTitle: string | null;
+} | null> {
+  const rows = await adminRequest<RowClass[]>(
+    `/rest/v1/class?select=id,name,methodology_id,methodology:methodology_id(id,title)&id=eq.${classId}&limit=1`,
+  );
+
+  const classRow = rows[0];
+  if (!classRow) {
+    return null;
+  }
+
+  return {
+    id: classRow.id,
+    name: classRow.name?.trim() || null,
+    methodologyId: classRow.methodology_id ?? null,
+    methodologyTitle: classRow.methodology?.title?.trim() || null,
+  };
+}
+
+export async function assignMethodologyToClassAdmin(input: {
+  classId: string;
+  methodologyId: string | null;
+}): Promise<void> {
+  await adminRequest<RowClass[]>(
+    `/rest/v1/class?id=eq.${input.classId}`,
+    "PATCH",
+    {
+      payload: {
+        methodology_id: input.methodologyId,
+      },
+      allowEmpty: true,
+    },
+  );
 }
 
 export async function listReusableAssetsByIdsAdmin(

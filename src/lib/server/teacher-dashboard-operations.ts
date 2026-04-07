@@ -1,10 +1,9 @@
 import { ROUTES, toGroupRoute, toLessonWorkspaceRoute } from "../auth";
 import {
-  getMethodologyLessonByIdAdmin,
-  listMethodologyLessonsCatalogAdmin,
   listScheduledLessonsForClassesAdmin,
   listStudentsForClassesAdmin,
   listTeacherClassesAdmin,
+  listMethodologyLessonsByMethodologyAdmin,
 } from "./lesson-content-repository";
 
 export type TeacherGroupOperationalStatus =
@@ -87,16 +86,14 @@ type TeacherDashboardOperationsDeps = {
   listTeacherClasses: typeof listTeacherClassesAdmin;
   listStudentsForClasses: typeof listStudentsForClassesAdmin;
   listScheduledLessonsForClasses: typeof listScheduledLessonsForClassesAdmin;
-  getMethodologyLessonById: typeof getMethodologyLessonByIdAdmin;
-  listMethodologyLessonsCatalog: typeof listMethodologyLessonsCatalogAdmin;
+  listMethodologyLessonsByMethodology: typeof listMethodologyLessonsByMethodologyAdmin;
 };
 
 const defaultDeps: TeacherDashboardOperationsDeps = {
   listTeacherClasses: listTeacherClassesAdmin,
   listStudentsForClasses: listStudentsForClassesAdmin,
   listScheduledLessonsForClasses: listScheduledLessonsForClassesAdmin,
-  getMethodologyLessonById: getMethodologyLessonByIdAdmin,
-  listMethodologyLessonsCatalog: listMethodologyLessonsCatalogAdmin,
+  listMethodologyLessonsByMethodology: listMethodologyLessonsByMethodologyAdmin,
 };
 
 function clean(value: string | null | undefined) {
@@ -166,35 +163,24 @@ async function buildOperationsSnapshot(
   const classes = await deps.listTeacherClasses(input.teacherId);
   const classIds = classes.map((item) => item.id);
 
-  const [studentsByClass, lessons, methodologyCatalog] = await Promise.all([
+  const [studentsByClass, lessons] = await Promise.all([
     deps.listStudentsForClasses(classIds),
     deps.listScheduledLessonsForClasses(classIds),
-    deps.listMethodologyLessonsCatalog(),
   ]);
-
-  const methodologyIds = Array.from(
-    new Set(lessons.map((lesson) => lesson.methodologyLessonId)),
+  const methodologyLessonTotalsEntries = await Promise.all(
+    Array.from(
+      new Set(
+        classes
+          .map((item) => item.methodologyId)
+          .filter((item): item is string => Boolean(item)),
+      ),
+    ).map(async (methodologyId) => [
+      methodologyId,
+      (await deps.listMethodologyLessonsByMethodology(methodologyId)).length,
+    ] as const),
   );
-
-  const methodologyEntries = await Promise.all(
-    methodologyIds.map(async (methodologyLessonId) => {
-      const lesson = await deps.getMethodologyLessonById(methodologyLessonId);
-      return [
-        methodologyLessonId,
-        clean(lesson?.methodologyTitle) || null,
-      ] as const;
-    }),
-  );
-  const methodologyLabelByLessonId = Object.fromEntries(methodologyEntries);
-
-  const methodologyTotals = methodologyCatalog.reduce<Record<string, number>>(
-    (acc, lesson) => {
-      const title = clean(lesson.methodologyTitle);
-      if (!title) return acc;
-      acc[title] = (acc[title] ?? 0) + 1;
-      return acc;
-    },
-    {},
+  const methodologyLessonTotalsByMethodologyId = Object.fromEntries(
+    methodologyLessonTotalsEntries,
   );
 
   const now = Date.parse(input.nowIso ?? new Date().toISOString());
@@ -217,13 +203,9 @@ async function buildOperationsSnapshot(
     ).length;
 
     const nextLesson = upcomingLessons[0] ?? null;
-    const referenceLesson = nextLesson ?? scopedLessons.at(-1) ?? null;
-    const methodologyLabel = referenceLesson
-      ? methodologyLabelByLessonId[referenceLesson.methodologyLessonId]
-      : null;
-
-    const knownMethodologyLessonTotal = methodologyLabel
-      ? methodologyTotals[methodologyLabel] ?? null
+    const methodologyLabel = clean(group.methodologyTitle) || null;
+    const knownMethodologyLessonTotal = group.methodologyId
+      ? methodologyLessonTotalsByMethodologyId[group.methodologyId] ?? 0
       : null;
 
     const attentionReasons: string[] = [];
@@ -264,11 +246,7 @@ async function buildOperationsSnapshot(
       nextLessonLabel: nextLesson ? formatDateTime(nextLesson.runtimeShell.startsAt) : null,
       nextLessonHref: nextLesson ? toLessonWorkspaceRoute(nextLesson.id) : null,
       nextLessonTitle:
-        nextLesson && clean(methodologyLabelByLessonId[nextLesson.methodologyLessonId])
-          ? clean(methodologyLabelByLessonId[nextLesson.methodologyLessonId])
-          : nextLesson
-            ? "Занятие"
-            : null,
+        nextLesson ? "Занятие группы" : null,
       status,
       statusLabel,
       attentionReasons,
@@ -313,7 +291,7 @@ async function buildOperationsSnapshot(
     const isoDate = lesson.runtimeShell.startsAt.slice(0, 10);
     const items = scheduleByDay.get(isoDate) ?? [];
     const methodologyLabel = clean(
-      methodologyLabelByLessonId[lesson.methodologyLessonId],
+      rows.find((row) => row.id === lesson.runtimeShell.classId)?.methodologyLabel,
     );
 
     items.push({

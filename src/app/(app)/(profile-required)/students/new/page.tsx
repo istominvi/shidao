@@ -15,16 +15,10 @@ import {
   insertStudentRow,
 } from "@/lib/server/supabase-admin";
 
-function withMessage(type: "error", message: string) {
-  const params = new URLSearchParams();
-  params.set(type, message);
-  return `/students/new?${params.toString()}`;
-}
-
 export default async function NewStudentPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; groupId?: string }>;
 }) {
   const resolution = await resolveAccessPolicy();
 
@@ -34,6 +28,9 @@ export default async function NewStudentPage({
 
   const { teacherId } = assertTeacherGroupsAccess(resolution);
   const classOptions = await listTeacherClassesAdmin(teacherId);
+  const query = await searchParams;
+  const preselectedGroupId = query.groupId?.trim() || "";
+  const contextualGroup = classOptions.find((item) => item.id === preselectedGroupId) ?? null;
 
   async function createStudentAction(formData: FormData) {
     "use server";
@@ -75,11 +72,14 @@ export default async function NewStudentPage({
       redirect(toGroupRoute(classId));
     } catch (error) {
       const message = error instanceof Error ? error.message : "Не удалось создать ученика.";
-      redirect(withMessage("error", message));
+      const params = new URLSearchParams();
+      params.set("error", message);
+      if (preselectedGroupId) {
+        params.set("groupId", preselectedGroupId);
+      }
+      redirect(`${ROUTES.studentsNew}?${params.toString()}`);
     }
   }
-
-  const query = await searchParams;
 
   return (
     <main className="pb-12">
@@ -89,7 +89,12 @@ export default async function NewStudentPage({
         <section className="landing-surface rounded-3xl border border-white/80 p-6 md:p-8">
           <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-sky-700">Создание ученика</p>
           <h1 className="mt-3 text-3xl font-black text-neutral-950">Добавить ученика</h1>
-          <p className="mt-2 text-sm text-neutral-700">Рабочий teacher-flow: создаёт аккаунт ученика и сразу добавляет в выбранную группу.</p>
+          <p className="mt-2 text-sm text-neutral-700">Рабочий teacher-flow: создаёт аккаунт ученика и сразу добавляет в группу.</p>
+          {contextualGroup ? (
+            <p className="mt-2 text-sm text-sky-700">
+              Контекст группы: <strong>{contextualGroup.name?.trim() || "Группа"}</strong>.
+            </p>
+          ) : null}
 
           {classOptions.length === 0 ? (
             <p className="mt-4 text-sm text-neutral-600">
@@ -99,7 +104,7 @@ export default async function NewStudentPage({
             <form action={createStudentAction} className="mt-4 max-w-xl space-y-3">
               {query.error ? <p className="rounded-2xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{query.error}</p> : null}
               <label className="field-label" htmlFor="classId">Группа</label>
-              <select id="classId" name="classId" required className="field-input">
+              <select id="classId" name="classId" required className="field-input" defaultValue={preselectedGroupId || classOptions[0]?.id || ""}>
                 {classOptions.map((item) => (
                   <option key={item.id} value={item.id}>{item.name?.trim() || "Группа"}</option>
                 ))}
