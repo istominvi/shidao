@@ -132,6 +132,16 @@ function getSupabaseUrl() {
   return url;
 }
 
+function isMissingMethodologyBindingColumnError(message: string) {
+  const normalized = message.toLowerCase();
+  return (
+    normalized.includes("methodology_id") &&
+    (normalized.includes("column") ||
+      normalized.includes("schema cache") ||
+      normalized.includes("does not exist"))
+  );
+}
+
 async function adminRequest<T>(
   path: string,
   method = "GET",
@@ -339,9 +349,33 @@ export async function listTeacherClassesAdmin(
     methodologyTitle: string | null;
   }>
 > {
-  const rows = await adminRequest<RowTeacherClass[]>(
-    `/rest/v1/class_teacher?select=class_id,class:class_id(id,name,methodology_id,methodology:methodology_id(id,title))&teacher_id=eq.${teacherId}`,
-  );
+  let rows: RowTeacherClass[];
+  try {
+    rows = await adminRequest<RowTeacherClass[]>(
+      `/rest/v1/class_teacher?select=class_id,class:class_id(id,name,methodology_id,methodology:methodology_id(id,title))&teacher_id=eq.${teacherId}`,
+    );
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "unknown";
+    if (!isMissingMethodologyBindingColumnError(message)) {
+      throw error;
+    }
+
+    const fallbackRows = await adminRequest<
+      Array<{ class_id: string; class: { id: string; name: string | null } | null }>
+    >(
+      `/rest/v1/class_teacher?select=class_id,class:class_id(id,name)&teacher_id=eq.${teacherId}`,
+    );
+    rows = fallbackRows.map((row) => ({
+      class_id: row.class_id,
+      class: row.class
+        ? {
+            ...row.class,
+            methodology_id: null,
+            methodology: null,
+          }
+        : null,
+    }));
+  }
 
   const classes = rows
     .map((row) => ({
@@ -398,9 +432,26 @@ export async function listStudentsForClassesAdmin(
 export async function getClassDisplayNameByIdAdmin(
   classId: string,
 ): Promise<string | null> {
-  const rows = await adminRequest<RowClass[]>(
-    `/rest/v1/class?select=id,name,methodology_id,methodology:methodology_id(id,title)&id=eq.${classId}&limit=1`,
-  );
+  let rows: RowClass[];
+  try {
+    rows = await adminRequest<RowClass[]>(
+      `/rest/v1/class?select=id,name,methodology_id,methodology:methodology_id(id,title)&id=eq.${classId}&limit=1`,
+    );
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "unknown";
+    if (!isMissingMethodologyBindingColumnError(message)) {
+      throw error;
+    }
+    const fallbackRows = await adminRequest<Array<{ id: string; name: string | null }>>(
+      `/rest/v1/class?select=id,name&id=eq.${classId}&limit=1`,
+    );
+    rows = fallbackRows.map((row) => ({
+      id: row.id,
+      name: row.name,
+      methodology_id: null,
+      methodology: null,
+    }));
+  }
   return rows[0]?.name?.trim() || null;
 }
 
@@ -410,9 +461,26 @@ export async function getClassByIdAdmin(classId: string): Promise<{
   methodologyId: string | null;
   methodologyTitle: string | null;
 } | null> {
-  const rows = await adminRequest<RowClass[]>(
-    `/rest/v1/class?select=id,name,methodology_id,methodology:methodology_id(id,title)&id=eq.${classId}&limit=1`,
-  );
+  let rows: RowClass[];
+  try {
+    rows = await adminRequest<RowClass[]>(
+      `/rest/v1/class?select=id,name,methodology_id,methodology:methodology_id(id,title)&id=eq.${classId}&limit=1`,
+    );
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "unknown";
+    if (!isMissingMethodologyBindingColumnError(message)) {
+      throw error;
+    }
+    const fallbackRows = await adminRequest<Array<{ id: string; name: string | null }>>(
+      `/rest/v1/class?select=id,name&id=eq.${classId}&limit=1`,
+    );
+    rows = fallbackRows.map((row) => ({
+      id: row.id,
+      name: row.name,
+      methodology_id: null,
+      methodology: null,
+    }));
+  }
 
   const classRow = rows[0];
   if (!classRow) {
@@ -431,16 +499,26 @@ export async function assignMethodologyToClassAdmin(input: {
   classId: string;
   methodologyId: string | null;
 }): Promise<void> {
-  await adminRequest<RowClass[]>(
-    `/rest/v1/class?id=eq.${input.classId}`,
-    "PATCH",
-    {
-      payload: {
-        methodology_id: input.methodologyId,
+  try {
+    await adminRequest<RowClass[]>(
+      `/rest/v1/class?id=eq.${input.classId}`,
+      "PATCH",
+      {
+        payload: {
+          methodology_id: input.methodologyId,
+        },
+        allowEmpty: true,
       },
-      allowEmpty: true,
-    },
-  );
+    );
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "unknown";
+    if (isMissingMethodologyBindingColumnError(message)) {
+      throw new Error(
+        "Схема БД не обновлена: примените миграции перед назначением методики группе.",
+      );
+    }
+    throw error;
+  }
 }
 
 export async function listReusableAssetsByIdsAdmin(

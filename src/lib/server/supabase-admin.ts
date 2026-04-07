@@ -47,6 +47,16 @@ function isUniqueViolationError(message: string) {
   );
 }
 
+function isMissingMethodologyBindingColumnError(message: string) {
+  const normalized = message.toLowerCase();
+  return (
+    normalized.includes("methodology_id") &&
+    (normalized.includes("column") ||
+      normalized.includes("schema cache") ||
+      normalized.includes("does not exist"))
+  );
+}
+
 function buildTeacherSchoolSlugBase(teacherId: string, fullName: string | null) {
   const seed = `${fullName?.trim() || "teacher"}-${teacherId.slice(0, 8)}`;
   const slug = seed
@@ -942,18 +952,38 @@ export async function createClassForTeacherAdmin(input: {
     throw new Error("У преподавателя не найдена школа для создания группы.");
   }
 
-  const classRows = await request<Array<{ id: string; name: string | null }>>(
-    "/rest/v1/class",
-    "POST",
-    {
-      admin: true,
-      payload: {
-        school_id: schoolId,
-        name: input.name.trim(),
-        methodology_id: input.methodologyId ?? null,
+  let classRows: Array<{ id: string; name: string | null }>;
+  try {
+    classRows = await request<Array<{ id: string; name: string | null }>>(
+      "/rest/v1/class",
+      "POST",
+      {
+        admin: true,
+        payload: {
+          school_id: schoolId,
+          name: input.name.trim(),
+          methodology_id: input.methodologyId ?? null,
+        },
       },
-    },
-  );
+    );
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "unknown";
+    if (!isMissingMethodologyBindingColumnError(message)) {
+      throw error;
+    }
+
+    classRows = await request<Array<{ id: string; name: string | null }>>(
+      "/rest/v1/class",
+      "POST",
+      {
+        admin: true,
+        payload: {
+          school_id: schoolId,
+          name: input.name.trim(),
+        },
+      },
+    );
+  }
 
   const classId = classRows[0]?.id;
   if (!classId) {
