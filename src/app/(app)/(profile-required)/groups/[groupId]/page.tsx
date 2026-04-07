@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { revalidatePath } from "next/cache";
 import { notFound, redirect } from "next/navigation";
+import { isRedirectError } from "next/dist/client/components/redirect-error";
 import { TopNav } from "@/components/top-nav";
 import { ROUTES } from "@/lib/auth";
 import { resolveAccessPolicy } from "@/lib/server/access-policy";
@@ -66,6 +67,9 @@ export default async function TeacherGroupPage({
       revalidatePath(`${ROUTES.groups}/${groupId}`);
       redirect(withMessage(groupId, "saved", "Методика группы обновлена."));
     } catch (error) {
+      if (isRedirectError(error)) {
+        throw error;
+      }
       const message =
         error instanceof Error ? error.message : "Не удалось назначить методику.";
       redirect(withMessage(groupId, "error", message));
@@ -90,6 +94,9 @@ export default async function TeacherGroupPage({
       revalidatePath(`${ROUTES.groups}/${groupId}`);
       redirect(`/lessons/${lesson.id}`);
     } catch (error) {
+      if (isRedirectError(error)) {
+        throw error;
+      }
       const message =
         error instanceof Error
           ? error.message
