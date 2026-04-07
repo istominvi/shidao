@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { ROUTES } from "@/lib/auth";
 import { SessionNavActions } from "@/components/session-nav-actions";
 import { useSessionView } from "@/components/use-session-view";
@@ -397,6 +398,15 @@ export function LandingPage() {
 
             <Reveal>
               <article className="hero-mockup relative rounded-[1.8rem] border border-black/10 bg-[linear-gradient(145deg,rgba(242,249,255,0.95),rgba(255,255,255,0.95),rgba(255,241,250,0.95))] p-4 shadow-[0_30px_80px_rgba(17,24,39,0.18)] md:p-6">
+                <div className="hero-illustration-layer" aria-hidden="true">
+                  <Image
+                    src="/landing/hero-method-workspace.webp"
+                    alt=""
+                    fill
+                    sizes="(max-width: 1024px) 100vw, 45vw"
+                    className="object-contain object-right-bottom"
+                  />
+                </div>
                 <span className="landing-chip floating-chip absolute -left-3 top-5 hidden bg-sky-100/95 text-sm md:inline-flex">
                   Группа по методике
                 </span>
@@ -523,7 +533,11 @@ export function LandingPage() {
                       : "bg-lime-100/75"
                 }`}
               >
-                {idx === 0 ? <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-sky-800">Старт</p> : null}
+                {idx === 0 ? (
+                  <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-sky-800">
+                    Старт
+                  </p>
+                ) : null}
                 <div className="mt-1 flex items-center gap-2">
                   <Icon className="size-4" />
                   <span>{title}</span>
@@ -564,19 +578,30 @@ export function LandingPage() {
 
         <Reveal className="mt-6 rounded-[1.5rem] border border-black/10 bg-white/80 p-4 md:p-5">
           <p className="text-sm font-bold uppercase tracking-[0.12em] text-neutral-600">Ритм одного занятия</p>
-          <div className="mt-4 grid gap-2 md:grid-cols-3">
-            {lessonComposition.map(({ title, subtitle, icon: Icon }, idx) => (
-              <article
-                key={title}
-                className={`rounded-2xl border border-black/10 p-3 text-sm ${idx % 2 === 0 ? "bg-sky-50/60" : "bg-white"}`}
-              >
-                <div className="flex items-center gap-2 font-semibold">
-                  <Icon className="size-4 text-neutral-700" />
-                  {title}
-                </div>
-                <p className="mt-1 text-xs leading-relaxed text-neutral-600">{subtitle}</p>
-              </article>
-            ))}
+          <div className="mt-4 grid gap-4 md:grid-cols-[0.9fr_1.1fr] md:items-start">
+            <div className="lesson-rhythm-visual relative min-h-44 overflow-hidden rounded-2xl border border-black/10 bg-white/70">
+              <Image
+                src="/landing/lesson-rhythm.webp"
+                alt=""
+                fill
+                sizes="(max-width: 768px) 100vw, 40vw"
+                className="object-contain object-center p-3"
+              />
+            </div>
+            <div className="grid gap-2 md:grid-cols-2">
+              {lessonComposition.map(({ title, subtitle, icon: Icon }, idx) => (
+                <article
+                  key={title}
+                  className={`rounded-2xl border border-black/10 p-3 text-sm ${idx % 2 === 0 ? "bg-sky-50/60" : "bg-white"}`}
+                >
+                  <div className="flex items-center gap-2 font-semibold">
+                    <Icon className="size-4 text-neutral-700" />
+                    {title}
+                  </div>
+                  <p className="mt-1 text-xs leading-relaxed text-neutral-600">{subtitle}</p>
+                </article>
+              ))}
+            </div>
           </div>
         </Reveal>
 
@@ -625,7 +650,7 @@ export function LandingPage() {
           {workflowSteps.map(({ title, description }, idx) => (
             <li
               key={title}
-              className={`list-none rounded-3xl border border-black/10 p-5 ${
+              className={`workflow-step list-none rounded-3xl border border-black/10 p-5 ${
                 idx === 0 || idx === 3
                   ? "bg-sky-200/85 shadow-[0_18px_30px_rgba(56,189,248,0.2)]"
                   : idx % 3 === 1
