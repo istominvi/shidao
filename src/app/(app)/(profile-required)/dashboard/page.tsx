@@ -4,6 +4,7 @@ import { StudentDashboard } from "@/components/dashboard/student-dashboard";
 import { TeacherDashboard } from "@/components/dashboard/teacher-dashboard";
 import { ROUTES } from "@/lib/auth";
 import { resolveAccessPolicy } from "@/lib/server/access-policy";
+import { getTeacherDashboardReadModel } from "@/lib/server/teacher-groups";
 import { loadParentLearningContextsByUser } from "@/lib/server/supabase-admin";
 
 export default async function DashboardIndexPage() {
@@ -24,7 +25,13 @@ export default async function DashboardIndexPage() {
   }
 
   if (context.activeProfile === "teacher") {
-    return <TeacherDashboard />;
+    const teacherId = context.teacher?.id;
+    if (!teacherId) {
+      redirect(ROUTES.onboarding);
+    }
+
+    const readModel = await getTeacherDashboardReadModel({ teacherId });
+    return <TeacherDashboard readModel={readModel} />;
   }
 
   const learningContexts = await loadParentLearningContextsByUser(

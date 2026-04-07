@@ -42,7 +42,7 @@ openssl rand -hex 32
 
 - `src/app/(marketing)` — публичный маркетинговый слой (`/`).
 - `src/app/(auth)` — auth-страницы и callback (`/login`, `/join`, `/join/check-email`, `/auth/confirm`, восстановление пароля).
-- `src/app/(app)` — приватный продуктовый слой (`/onboarding`, `/dashboard`, `/settings/*`).
+- `src/app/(app)` — приватный продуктовый слой (`/onboarding`, `/dashboard`, `/groups/*`, `/lessons/*`, `/settings/*`).
 
 ### Layout responsibility
 
@@ -66,10 +66,20 @@ openssl rand -hex 32
 - `/forgot-password` — запрос на восстановление пароля.
 - `/reset-password` — установка нового пароля после recovery flow.
 - `/onboarding` — создание первого взрослого профиля / добавление второго профиля.
-- `/dashboard` — единый приватный кабинет.
+- `/dashboard` — обзор кабинета (для teacher: группы + ближайшие занятия).
+- `/groups` — список teacher-групп (primary teacher context).
+- `/groups/[groupId]` — teacher workspace уровня конкретной группы.
 - `/settings/profile` — профиль и email.
 - `/settings/security` — PIN и параметры безопасности.
 - `/settings/team` — команда и приглашения (доступно только взрослому профилю).
+
+### Teacher IA (Step 1: group-centric)
+
+- Для преподавателя primary navigation смещена к `group/class` контексту.
+- Основной маршрутный поток: `/dashboard` → `/groups` → `/groups/[groupId]` → `/lessons` → `/lessons/[scheduledLessonId]`.
+- `/lessons` остаётся полезным, но теперь это secondary global lessons index across groups.
+- Каноническая lesson-content архитектура не меняется: methodology = source of truth, scheduled lesson = runtime unit, workspace = execution screen.
+- Подробности: `docs/architecture/teacher-group-centric-ia.md`.
 
 ### Route/source-of-truth helpers
 
@@ -335,7 +345,7 @@ Helpers/RPC:
     - если локально сборка отсутствует, тест раннер печатает предупреждение и использует `next dev`;
     - в strict режиме fallback запрещён — сначала нужен `npm run build`.
 
-## Teacher lesson workspace (read-only, MVP)
+## Teacher lesson workspace (read-only, MVP, secondary entry for teacher IA)
 
 Новый приватный teacher-only маршрут:
 

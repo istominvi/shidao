@@ -40,6 +40,24 @@ type RowClass = {
   name: string | null;
 };
 
+type RowTeacherClass = {
+  class_id: string;
+  class: {
+    id: string;
+    name: string | null;
+  } | null;
+};
+
+type RowClassStudentMembership = {
+  class_id: string;
+  student: {
+    id: string;
+    first_name: string | null;
+    last_name: string | null;
+    login: string | null;
+  } | null;
+};
+
 type RowMethodologyLessonCatalog = {
   id: string;
   title: string;
@@ -276,6 +294,63 @@ export async function listMethodologyLessonsCatalogAdmin(): Promise<
     unitIndex: row.unit_index,
     lessonIndex: row.lesson_index,
   }));
+}
+
+export async function listTeacherClassesAdmin(
+  teacherId: string,
+): Promise<Array<{ id: string; name: string | null }>> {
+  const rows = await adminRequest<RowTeacherClass[]>(
+    `/rest/v1/class_teacher?select=class_id,class:class_id(id,name)&teacher_id=eq.${teacherId}`,
+  );
+
+  const classes = rows
+    .map((row) => ({
+      id: row.class?.id ?? row.class_id,
+      name: row.class?.name?.trim() || null,
+    }))
+    .filter((row) => row.id);
+
+  return Array.from(new Map(classes.map((row) => [row.id, row])).values());
+}
+
+export async function listStudentsForClassesAdmin(
+  classIds: string[],
+): Promise<Record<string, Array<{ id: string; fullName: string | null; login: string | null }>>> {
+  const normalizedClassIds = Array.from(
+    new Set(classIds.map((id) => id.trim()).filter(Boolean)),
+  );
+
+  if (normalizedClassIds.length === 0) {
+    return {};
+  }
+
+  const inFilter = encodeURIComponent(`(${normalizedClassIds.join(",")})`);
+  const rows = await adminRequest<RowClassStudentMembership[]>(
+    `/rest/v1/class_student?select=class_id,student:student_id(id,first_name,last_name,login)&class_id=in.${inFilter}`,
+  );
+
+  const byClass: Record<string, Array<{ id: string; fullName: string | null; login: string | null }>> = {};
+
+  for (const classId of normalizedClassIds) {
+    byClass[classId] = [];
+  }
+
+  for (const row of rows) {
+    const classId = row.class_id?.trim();
+    if (!classId || !row.student) continue;
+
+    const fullName = `${row.student.first_name ?? ""} ${row.student.last_name ?? ""}`
+      .trim() || null;
+
+    byClass[classId] ??= [];
+    byClass[classId].push({
+      id: row.student.id,
+      fullName,
+      login: row.student.login?.trim() || null,
+    });
+  }
+
+  return byClass;
 }
 
 export async function getClassDisplayNameByIdAdmin(

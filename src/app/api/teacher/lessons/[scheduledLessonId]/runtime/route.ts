@@ -1,5 +1,6 @@
 import { revalidatePath } from "next/cache";
 import { NextRequest, NextResponse } from "next/server";
+import { toLessonWorkspaceRoute } from "@/lib/auth";
 import { resolveAccessPolicy } from "@/lib/server/access-policy";
 import {
   assertTeacherRuntimeMutationAccess,
@@ -10,7 +11,7 @@ import {
 export const runtime = "nodejs";
 
 function workspacePath(scheduledLessonId: string) {
-  return `/lessons/${scheduledLessonId}`;
+  return toLessonWorkspaceRoute(scheduledLessonId);
 }
 
 function withMessage(path: string, type: "saved" | "error", message: string) {

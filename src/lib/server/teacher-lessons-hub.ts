@@ -1,3 +1,4 @@
+import { toLessonWorkspaceRoute } from "../auth";
 import type { ScheduledLesson } from "../lesson-content";
 import type { AccessResolution } from "./access-policy";
 import {
@@ -126,7 +127,7 @@ function mapLessonsToCards(input: {
       formatLabel: lesson.runtimeShell.format === "online" ? "Онлайн" : "Офлайн",
       statusLabel: formatStatus(lesson.runtimeShell.runtimeStatus),
       runtimeNotesSummary: cleanText(lesson.runtimeShell.runtimeNotesSummary),
-      workspaceHref: `/lessons/${encodeURIComponent(lesson.id)}`,
+      workspaceHref: toLessonWorkspaceRoute(lesson.id),
     };
   });
 }
