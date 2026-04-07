@@ -7,38 +7,47 @@ import { toLessonWorkspaceRoute } from "@/lib/auth";
 
 export function TeacherDashboard() {
   const scheduledLessonId = getDevTeacherScheduledLessonId();
+  const demoBootstrapRoute = "/lessons/demo";
 
   return (
     <DashboardShell
       roleLabel="Преподаватель"
       roleTone="teacher"
       title="Рабочая зона преподавателя"
-      subtitle="Базовый кабинет преподавателя уже доступен. Детальные блоки уроков, групп и заданий подключаются по мере запуска предметных модулей."
+      subtitle="Кабинет преподавателя уже показывает методологический урок из lesson-content хранилища. Runtime-заметки урока редактируются отдельно от канонического содержания."
     >
       <div className="grid gap-4 md:grid-cols-2">
         <article className="dashboard-grid-card bg-[linear-gradient(140deg,rgba(112,183,255,0.26),rgba(255,255,255,0.9))]">
           <h3 className="text-lg font-black">Текущий статус</h3>
           <p className="mt-2 text-sm text-neutral-700">
-            В MVP уже доступна авторизация, переключение профилей и базовая
-            структура кабинета. Карточки с уроками и задачами появятся, когда
-            будет подключён учебный контент.
+            Для dev-потока доступен реальный базовый урок методологии «我周围的世界».
+            Можно открыть workspace и проверить разделение methodology shell и
+            runtime shell без редактирования канонических блоков.
+          </p>
+          <p className="mt-3 text-sm text-neutral-700">
+            <Link
+              href={demoBootstrapRoute}
+              className="font-semibold text-sky-700 underline underline-offset-2"
+            >
+              Открыть demo-урок (auto-bootstrap)
+            </Link>
           </p>
           {scheduledLessonId ? (
-            <p className="mt-3 text-sm text-neutral-700">
+            <p className="mt-1 text-sm text-neutral-700">
               <Link
                 href={toLessonWorkspaceRoute(scheduledLessonId)}
                 className="font-semibold text-sky-700 underline underline-offset-2"
               >
-                Открыть workspace урока
+                Открыть workspace по DEV_TEACHER_WORKSPACE_SCHEDULED_LESSON_ID
               </Link>
             </p>
           ) : (
-            <p className="mt-3 text-xs text-neutral-500">
-              Для dev-навигации задайте
+            <p className="mt-1 text-xs text-neutral-500">
+              Опционально можно задать
               {" "}
               <code>DEV_TEACHER_WORKSPACE_SCHEDULED_LESSON_ID</code>
               {" "}
-              в окружении приложения.
+              для прямой ссылки на конкретный scheduled lesson.
             </p>
           )}
         </article>

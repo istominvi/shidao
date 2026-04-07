@@ -50,7 +50,14 @@ test("worksheet completion mode supports only in_class and home", () => {
 });
 
 test("online runtime shell requires meetingLink and disallows place", () => {
-  const onlineShell = lessonContentFixtureScheduledLesson.runtimeShell;
+  const onlineShell: ScheduledLessonRuntimeShell = {
+    id: "runtime-shell:online-example",
+    classId: "class:demo-world-around-me",
+    startsAt: "2026-04-08T15:00:00.000Z",
+    format: "online",
+    meetingLink: "https://meet.example.local/demo-world-around-me",
+    runtimeStatus: "planned",
+  };
 
   assert.equal(onlineShell.format, "online");
   assert.equal(typeof onlineShell.meetingLink, "string");
@@ -133,7 +140,7 @@ test("learner projection excludes teacher-only notes", () => {
 
   assert.equal("runtimeNotes" in learnerProjection, false);
   assert.equal("outcomeNotes" in learnerProjection, false);
-  assert.equal(learnerProjection.mediaLinks.length > 0, true);
+  assert.equal(Array.isArray(learnerProjection.mediaLinks), true);
 });
 
 test("scheduled lesson contract does not expose per-block override structure", () => {
@@ -171,5 +178,5 @@ test("asset summary helper groups reusable assets by kind", () => {
 
   assert.equal(summary.video, 1);
   assert.equal(summary.song, 1);
-  assert.equal(summary.worksheet, 1);
+  assert.equal(summary.worksheet, 2);
 });

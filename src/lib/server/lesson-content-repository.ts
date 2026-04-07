@@ -31,6 +31,10 @@ type RowMethodology = {
   metadata: Record<string, unknown> | null;
 };
 
+type RowClassTeacher = {
+  class_id: string;
+};
+
 export type CreateScheduledLessonAdminInput = {
   classId: string;
   methodologyLessonId: string;
@@ -185,6 +189,15 @@ export async function listScheduledLessonsForClassAdmin(
   );
 
   return rows.map(mapScheduledLessonRowToDomain);
+}
+
+export async function getFirstAssignedClassIdForTeacherAdmin(
+  teacherId: string,
+): Promise<string | null> {
+  const rows = await adminRequest<RowClassTeacher[]>(
+    `/rest/v1/class_teacher?select=class_id&teacher_id=eq.${teacherId}&limit=1`,
+  );
+  return rows[0]?.class_id ?? null;
 }
 
 
