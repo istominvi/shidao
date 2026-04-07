@@ -205,50 +205,58 @@ export async function getLessonScopedTeacherDiscussions(input: {
   classId: string;
   scheduledLessonId: string;
 }) {
-  const studentsByClass = await listStudentsForClassesAdmin([input.classId]);
-  const students = studentsByClass[input.classId] ?? [];
-  return Promise.all(
-    students.map(async (student) => ({
-      studentId: student.id,
-      studentName: student.fullName?.trim() || student.login?.trim() || "Ученик",
-      readModel: await getTeacherConversationReadModel({
-        teacherId: "",
-        classId: input.classId,
+  try {
+    const studentsByClass = await listStudentsForClassesAdmin([input.classId]);
+    const students = studentsByClass[input.classId] ?? [];
+    return Promise.all(
+      students.map(async (student) => ({
         studentId: student.id,
-        filter: "all",
-        scopedLessonId: input.scheduledLessonId,
-      }),
-    })),
-  );
+        studentName: student.fullName?.trim() || student.login?.trim() || "Ученик",
+        readModel: await getTeacherConversationReadModel({
+          teacherId: "",
+          classId: input.classId,
+          studentId: student.id,
+          filter: "all",
+          scopedLessonId: input.scheduledLessonId,
+        }),
+      })),
+    );
+  } catch {
+    return [];
+  }
 }
 
 export async function getHomeworkScopedTeacherDiscussions(input: {
   classId: string;
   scheduledLessonId: string;
 }) {
-  const assignment = await getScheduledHomeworkAssignmentByLessonIdAdmin(
-    input.scheduledLessonId,
-  );
-  if (!assignment) return { assignmentId: null, items: [] as Array<{ studentId: string; messages: GroupStudentMessage[] }> };
+  try {
+    const assignment = await getScheduledHomeworkAssignmentByLessonIdAdmin(
+      input.scheduledLessonId,
+    );
+    if (!assignment) return { assignmentId: null, items: [] as Array<{ studentId: string; messages: GroupStudentMessage[] }> };
 
-  const studentsByClass = await listStudentsForClassesAdmin([input.classId]);
-  const students = studentsByClass[input.classId] ?? [];
-  const items = await Promise.all(
-    students.map(async (student) => ({
-      studentId: student.id,
-      messages: (
-        await getTeacherConversationReadModel({
-          teacherId: "",
-          classId: input.classId,
-          studentId: student.id,
-          filter: "all",
-          scopedHomeworkAssignmentId: assignment.id,
-        })
-      ).messages,
-    })),
-  );
+    const studentsByClass = await listStudentsForClassesAdmin([input.classId]);
+    const students = studentsByClass[input.classId] ?? [];
+    const items = await Promise.all(
+      students.map(async (student) => ({
+        studentId: student.id,
+        messages: (
+          await getTeacherConversationReadModel({
+            teacherId: "",
+            classId: input.classId,
+            studentId: student.id,
+            filter: "all",
+            scopedHomeworkAssignmentId: assignment.id,
+          })
+        ).messages,
+      })),
+    );
 
-  return { assignmentId: assignment.id, items };
+    return { assignmentId: assignment.id, items };
+  } catch {
+    return { assignmentId: null, items: [] as Array<{ studentId: string; messages: GroupStudentMessage[] }> };
+  }
 }
 
 export async function getParentCommunicationProjection(input: { userId: string }) {

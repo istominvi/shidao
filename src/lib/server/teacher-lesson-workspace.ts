@@ -568,14 +568,18 @@ export async function getTeacherLessonWorkspaceByScheduledLessonId(
       : Promise.resolve([]),
     deps.getClassDisplayNameById(scheduledLesson.runtimeShell.classId),
     deps.getHomeworkReadModel(scheduledLessonId),
-    deps.getLessonDiscussions({
-      classId: scheduledLesson.runtimeShell.classId,
-      scheduledLessonId: scheduledLesson.id,
-    }),
-    deps.getHomeworkDiscussions({
-      classId: scheduledLesson.runtimeShell.classId,
-      scheduledLessonId: scheduledLesson.id,
-    }),
+    deps
+      .getLessonDiscussions({
+        classId: scheduledLesson.runtimeShell.classId,
+        scheduledLessonId: scheduledLesson.id,
+      })
+      .catch(() => []),
+    deps
+      .getHomeworkDiscussions({
+        classId: scheduledLesson.runtimeShell.classId,
+        scheduledLessonId: scheduledLesson.id,
+      })
+      .catch(() => ({ assignmentId: null, items: [] })),
     ]);
 
   return buildTeacherLessonWorkspaceReadModel({
