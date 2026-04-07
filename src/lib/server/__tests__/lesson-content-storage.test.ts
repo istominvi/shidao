@@ -25,7 +25,10 @@ function buildLessonRowFixture(): RowMethodologyLessonWithBlocks {
     phrase_summary: lessonContentFixtureMethodologyLesson.shell.phraseSummary,
     estimated_duration_minutes: lessonContentFixtureMethodologyLesson.shell.estimatedDurationMinutes,
     readiness_status: "ready",
-    methodology: { slug: lessonContentFixtureMethodology.slug },
+    methodology: {
+      slug: lessonContentFixtureMethodology.slug,
+      title: lessonContentFixtureMethodology.title,
+    },
     blocks: [
       {
         id: "block-2",

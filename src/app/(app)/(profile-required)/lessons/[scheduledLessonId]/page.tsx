@@ -32,10 +32,10 @@ export default async function TeacherLessonWorkspacePage({
   }
 
   return (
-    <main className="pb-10">
+    <main className="pb-12">
       <div className="landing-noise" aria-hidden="true" />
       <TopNav />
-      <div className="container py-6 md:py-8">
+      <div className="container py-7 md:py-10">
         <TeacherLessonWorkspace
           workspace={workspace}
           runtimeFormFeedback={{
