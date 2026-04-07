@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { isRedirectError } from "next/dist/client/components/redirect-error";
 import { TopNav } from "@/components/top-nav";
 import { ROUTES, toGroupRoute } from "@/lib/auth";
 import { resolveAccessPolicy } from "@/lib/server/access-policy";
@@ -71,6 +72,9 @@ export default async function NewStudentPage({
       revalidatePath(ROUTES.groups);
       redirect(toGroupRoute(classId));
     } catch (error) {
+      if (isRedirectError(error)) {
+        throw error;
+      }
       const message = error instanceof Error ? error.message : "Не удалось создать ученика.";
       const params = new URLSearchParams();
       params.set("error", message);

@@ -10,7 +10,9 @@ import {
 } from "./homework-repository";
 
 export type StudentHomeworkCard = {
+  classId: string;
   scheduledLessonId: string;
+  scheduledHomeworkAssignmentId: string;
   lessonTitle: string;
   homeworkTitle: string;
   instructions: string;
@@ -55,7 +57,9 @@ export async function getStudentHomeworkReadModel(input: {
     if (!homeworkDefinition || !studentAssignment) continue;
 
     cards.push({
+      classId: lesson.runtimeShell.classId,
       scheduledLessonId: lesson.id,
+      scheduledHomeworkAssignmentId: assignment.id,
       lessonTitle: "Домашнее задание по уроку",
       homeworkTitle: homeworkDefinition.title,
       instructions: homeworkDefinition.instructions,

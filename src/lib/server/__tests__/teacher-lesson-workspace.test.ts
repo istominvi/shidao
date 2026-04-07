@@ -41,6 +41,8 @@ test("teacher workspace loader combines scheduled + methodology and keeps sorted
         lessonContentFixtureAssets.filter((asset) => ids.includes(asset.id)),
       getClassDisplayNameById: async () => "Лисички 5-6",
       getHomeworkReadModel: async () => homeworkSnapshot,
+      getLessonDiscussions: async () => [],
+      getHomeworkDiscussions: async () => ({ assignmentId: null, items: [] }),
     },
   );
 
@@ -61,6 +63,8 @@ test("teacher workspace loader returns null when linked methodology lesson is mi
       listReusableAssetsByIds: async () => [],
       getClassDisplayNameById: async () => "Группа A",
       getHomeworkReadModel: async () => homeworkSnapshot,
+      getLessonDiscussions: async () => [],
+      getHomeworkDiscussions: async () => ({ assignmentId: null, items: [] }),
     },
   );
 

@@ -92,3 +92,17 @@
 - `/dashboard` ученика показывает назначенные homework и submission form (текстовый ответ).
 - `/dashboard` родителя получает минимальную homework-проекцию по детям.
 - Намеренно отложено: file-heavy submissions, thread-коммуникация, attendance и расширенный UX-polish.
+
+
+## Communication runtime layer (Step 5, April 7, 2026)
+
+- Введён runtime communication слой, не как isolated lesson-thread и не как глобальный чат.
+- Базовый контейнер continuity: `group_student_conversation` (`class_id + student_id`).
+- Сообщения в `group_student_message` могут ссылаться на:
+  - `scheduled_lesson_id`,
+  - `scheduled_lesson_homework_assignment_id`,
+  - `topic_kind`.
+- Teacher получает полный student-in-group conversation view и scoped projections из lesson/homework surfaces.
+- Student может читать и отвечать в том же container.
+- Parent в этом шаге: read-only projection по своим детям.
+- Намеренно отложено: attachments/voice/notifications/unread/attendance/full parent participation.

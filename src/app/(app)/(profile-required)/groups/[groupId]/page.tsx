@@ -200,7 +200,15 @@ export default async function TeacherGroupPage({
           ) : (
             <ul className="mt-3 space-y-2 text-sm text-neutral-700">
               {readModel.students.map((student) => (
-                <li key={student.id}>{student.displayName}</li>
+                <li key={student.id} className="flex items-center justify-between gap-3">
+                  <span>{student.displayName}</span>
+                  <Link
+                    href={`${ROUTES.groups}/${encodeURIComponent(groupId)}/students/${encodeURIComponent(student.id)}/communication`}
+                    className="text-xs text-sky-700 underline underline-offset-2"
+                  >
+                    Открыть коммуникацию
+                  </Link>
+                </li>
               ))}
             </ul>
           )}
