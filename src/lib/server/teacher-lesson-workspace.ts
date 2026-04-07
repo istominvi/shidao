@@ -590,16 +590,23 @@ export async function getTeacherLessonWorkspaceByScheduledLessonId(
     assets,
     homework,
     communication: {
-      lessonScoped: lessonDiscussions.map((item) => ({
-        studentId: item.studentId,
-        studentName: item.studentName,
-        messages: item.readModel.messages.map((message) => ({
-          id: message.id,
-          authorRole: message.authorRole,
-          body: message.body,
-          createdAt: message.createdAt,
-        })),
-      })),
+      lessonScoped:
+        lessonDiscussions.length > 0
+          ? lessonDiscussions.map((item) => ({
+              studentId: item.studentId,
+              studentName: item.studentName,
+              messages: item.readModel.messages.map((message) => ({
+                id: message.id,
+                authorRole: message.authorRole,
+                body: message.body,
+                createdAt: message.createdAt,
+              })),
+            }))
+          : homework.roster.map((row) => ({
+              studentId: row.studentId,
+              studentName: row.studentName,
+              messages: [],
+            })),
       homeworkScoped: homeworkDiscussions.items,
       homeworkAssignmentId: homeworkDiscussions.assignmentId,
     },

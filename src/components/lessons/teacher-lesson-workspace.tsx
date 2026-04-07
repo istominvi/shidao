@@ -525,6 +525,17 @@ export function TeacherLessonWorkspace({
           <section className="landing-surface rounded-3xl border border-amber-200/70 p-5">
             <h2 className="text-lg font-bold text-neutral-900">Discussion for this lesson</h2>
             <div className="mt-3 space-y-2">
+              {workspace.communication.lessonScoped.length === 0 ? (
+                <div className="rounded-xl border border-dashed border-neutral-300 p-3 text-sm text-neutral-600">
+                  В группе пока нет учеников для обсуждения.
+                  <a
+                    href={`/students/new?groupId=${workspace.classId}`}
+                    className="ml-2 text-sky-700 underline underline-offset-2"
+                  >
+                    Добавить ученика
+                  </a>
+                </div>
+              ) : null}
               {workspace.communication.lessonScoped.map((item) => (
                 <article key={item.studentId} className="rounded-xl border border-neutral-200 p-3 text-sm">
                   <p className="font-semibold text-neutral-900">{item.studentName}</p>
