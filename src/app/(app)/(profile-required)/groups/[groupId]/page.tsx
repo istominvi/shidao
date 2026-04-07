@@ -34,15 +34,12 @@ export default async function TeacherGroupPage({
       <TopNav />
       <div className="container py-7 md:py-10 space-y-6">
         <header className="landing-surface rounded-[2rem] border border-white/80 p-6 shadow-[0_24px_72px_rgba(15,23,42,0.12)] md:p-8">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-sky-700">
-            Группа
-          </p>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-sky-700">Группа</p>
           <h1 className="mt-3 text-3xl font-black tracking-[-0.03em] text-neutral-950 md:text-4xl">
             {readModel.group.label}
           </h1>
           <p className="mt-3 text-sm leading-6 text-neutral-700 md:text-base">
-            Группа — основной рабочий контекст преподавателя: состав учеников,
-            методология и расписание занятий живут здесь.
+            Группа — основной рабочий контекст преподавателя: состав учеников, методика и расписание занятий.
           </p>
           <div className="mt-4 flex flex-wrap gap-2 text-sm text-neutral-700">
             <span className="rounded-full border border-neutral-200 bg-white/90 px-3 py-1">
@@ -50,13 +47,24 @@ export default async function TeacherGroupPage({
             </span>
             {readModel.group.assignedMethodologyTitle ? (
               <span className="rounded-full border border-neutral-200 bg-white/90 px-3 py-1">
-                Методология: {readModel.group.assignedMethodologyTitle}
+                Методика: {readModel.group.assignedMethodologyTitle}
               </span>
             ) : (
               <span className="rounded-full border border-dashed border-neutral-300 bg-white/90 px-3 py-1 text-neutral-500">
-                Методология для группы пока не определена
+                Методика для группы пока не определена
               </span>
             )}
+          </div>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Link href={ROUTES.studentsNew} className="landing-btn landing-btn-muted text-xs">
+              Добавить ученика
+            </Link>
+            <Link
+              href={`${ROUTES.lessons}?groupId=${encodeURIComponent(readModel.group.id)}`}
+              className="landing-btn landing-btn-muted text-xs"
+            >
+              Занятия этой группы
+            </Link>
           </div>
         </header>
 
@@ -85,7 +93,9 @@ export default async function TeacherGroupPage({
                     <Link href={lesson.href} className="font-semibold text-sky-700 underline underline-offset-2">
                       {lesson.title}
                     </Link>
-                    <div>{lesson.dateTimeLabel} · {lesson.statusLabel}</div>
+                    <div>
+                      {lesson.dateTimeLabel} · {lesson.statusLabel}
+                    </div>
                   </li>
                 ))}
               </ul>
@@ -103,26 +113,14 @@ export default async function TeacherGroupPage({
                     <Link href={lesson.href} className="font-semibold text-sky-700 underline underline-offset-2">
                       {lesson.title}
                     </Link>
-                    <div>{lesson.dateTimeLabel} · {lesson.statusLabel}</div>
+                    <div>
+                      {lesson.dateTimeLabel} · {lesson.statusLabel}
+                    </div>
                   </li>
                 ))}
               </ul>
             )}
           </article>
-        </section>
-
-        <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-          {[
-            "Прогресс учеников",
-            "Домашняя работа",
-            "Материалы группы",
-            "Коммуникация",
-          ].map((title) => (
-            <article key={title} className="landing-surface rounded-3xl border border-dashed border-neutral-300 p-4">
-              <h3 className="font-semibold text-neutral-900">{title}</h3>
-              <p className="mt-2 text-sm text-neutral-500">Раздел будет добавлен на следующем этапе.</p>
-            </article>
-          ))}
         </section>
 
         <p className="text-sm text-neutral-700">

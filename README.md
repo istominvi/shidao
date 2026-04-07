@@ -66,9 +66,12 @@ openssl rand -hex 32
 - `/forgot-password` — запрос на восстановление пароля.
 - `/reset-password` — установка нового пароля после recovery flow.
 - `/onboarding` — создание первого взрослого профиля / добавление второго профиля.
-- `/dashboard` — обзор кабинета (для teacher: группы + ближайшие занятия).
-- `/groups` — список teacher-групп (primary teacher context).
+- `/dashboard` — операционный дашборд преподавателя (быстрые действия, таблица групп, недельное расписание, attention summary).
+- `/groups` — полный индекс teacher-групп (primary teacher context).
+- `/groups/new` — создание группы преподавателем.
 - `/groups/[groupId]` — teacher workspace уровня конкретной группы.
+- `/students/new` — создание ученика и добавление в группу.
+- `/methodologies` — индекс методик преподавателя (read-only на текущем этапе).
 - `/settings/profile` — профиль и email.
 - `/settings/security` — PIN и параметры безопасности.
 - `/settings/team` — команда и приглашения (доступно только взрослому профилю).
@@ -80,6 +83,19 @@ openssl rand -hex 32
 - `/lessons` остаётся полезным, но теперь это secondary global lessons index across groups.
 - Каноническая lesson-content архитектура не меняется: methodology = source of truth, scheduled lesson = runtime unit, workspace = execution screen.
 - Подробности: `docs/architecture/teacher-group-centric-ia.md`.
+
+### Teacher IA (Step 2: operations dashboard)
+
+- `/dashboard` теперь является рабочим экраном преподавателя, а не hero-обзором.
+- Дашборд включает:
+  - row быстрых действий (`Добавить группу`, `Добавить ученика`, `Открыть группы`, `Открыть занятия`);
+  - table-first секцию `Мои группы` с поиском/фильтрами (группа, ученики, методология, прогресс, следующее занятие, статус);
+  - недельную agenda-секцию расписания по всем группам;
+  - compact attention summary (группы без учеников/методологии/ближайших занятий, занятия сегодня).
+- `/groups` — полный структурированный индекс групп преподавателя.
+- `/lessons` сохраняется как secondary cross-group lessons index.
+- `/methodologies` — индекс методик преподавателя.
+- В этом шаге намеренно **не** внедряются homework/thread/attendance/full-calendar/editor/AI.
 
 ### Route/source-of-truth helpers
 

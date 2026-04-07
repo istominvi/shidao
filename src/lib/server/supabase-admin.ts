@@ -923,6 +923,59 @@ export async function assertTeacherAssignedToClassAdmin(
   }
 }
 
+
+export async function createClassForTeacherAdmin(input: {
+  teacherId: string;
+  name: string;
+}) {
+  const memberships = await request<Array<{ school_id: string; role: string | null }>>(
+    `/rest/v1/school_teacher?select=school_id,role&teacher_id=eq.${input.teacherId}&order=created_at.asc`,
+    "GET",
+    { admin: true },
+  );
+
+  const ownerMembership = memberships.find((item) => item.role === "owner");
+  const schoolId = ownerMembership?.school_id ?? memberships[0]?.school_id ?? "";
+
+  if (!schoolId) {
+    throw new Error("У преподавателя не найдена школа для создания группы.");
+  }
+
+  const classRows = await request<Array<{ id: string; name: string | null }>>(
+    "/rest/v1/class",
+    "POST",
+    {
+      admin: true,
+      payload: {
+        school_id: schoolId,
+        name: input.name.trim(),
+      },
+    },
+  );
+
+  const classId = classRows[0]?.id;
+  if (!classId) {
+    throw new Error("Не удалось создать группу.");
+  }
+
+  try {
+    await request("/rest/v1/class_teacher", "POST", {
+      admin: true,
+      payload: {
+        class_id: classId,
+        teacher_id: input.teacherId,
+      },
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown class_teacher insert error";
+    if (!isUniqueViolationError(message)) {
+      throw error;
+    }
+  }
+
+  return { classId };
+}
+
 export async function createStudentAuthUser(input: {
   login: string;
   password: string;

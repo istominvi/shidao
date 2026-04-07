@@ -1,93 +1,216 @@
+"use client";
+
 import Link from "next/link";
-import { DashboardShell } from "@/components/dashboard-shell";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ROUTES } from "@/lib/auth";
-import type { TeacherDashboardReadModel } from "@/lib/server/teacher-groups";
-import { getDevTeacherScheduledLessonId } from "@/lib/server/teacher-lesson-workspace";
+import type { TeacherDashboardOperationsReadModel } from "@/lib/server/teacher-dashboard-operations";
 
 type TeacherDashboardProps = {
-  readModel: TeacherDashboardReadModel;
+  readModel: TeacherDashboardOperationsReadModel;
 };
 
+const ACTION_ICONS: Record<string, string> = {
+  "Добавить группу": "➕",
+  "Добавить ученика": "👤",
+};
+
+function statusTone(status: string) {
+  if (status === "attention") return "bg-amber-100 text-amber-800 border-amber-200";
+  if (status === "scheduled") return "bg-emerald-100 text-emerald-800 border-emerald-200";
+  return "bg-neutral-100 text-neutral-700 border-neutral-200";
+}
+
 export function TeacherDashboard({ readModel }: TeacherDashboardProps) {
-  const scheduledLessonId = getDevTeacherScheduledLessonId();
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  function setParam(key: string, value: string) {
+    const params = new URLSearchParams(searchParams.toString());
+    if (value) {
+      params.set(key, value);
+    } else {
+      params.delete(key);
+    }
+    router.replace(`${pathname}?${params.toString()}`);
+  }
 
   return (
-    <DashboardShell
-      roleLabel="Преподаватель"
-      roleTone="teacher"
-      title="Обзор преподавателя"
-      subtitle="Основной операционный контекст — группа. Отсюда можно перейти в группы и посмотреть ближайшие занятия по всем группам, а глобальный раздел «Занятия» остаётся вторичным индексом расписания."
-    >
-      <div className="grid gap-4 md:grid-cols-2">
-        <article className="dashboard-grid-card bg-[linear-gradient(140deg,rgba(112,183,255,0.26),rgba(255,255,255,0.9))]">
-          <h3 className="text-lg font-black">Мои группы</h3>
-          <p className="mt-2 text-sm text-neutral-700">
-            Управление обучением строится через конкретные группы: состав учеников,
-            связанная методология и занятия.
-          </p>
-          <ul className="mt-3 space-y-2 text-sm text-neutral-700">
-            {readModel.groups.length === 0 ? (
-              <li className="text-neutral-500">
-                Пока нет групп. После онбординга первая группа создаётся автоматически.
-              </li>
-            ) : (
-              readModel.groups.map((group) => (
-                <li key={group.id}>
-                  <Link
-                    href={group.href}
-                    className="font-semibold text-sky-700 underline underline-offset-2"
-                  >
-                    {group.label}
-                  </Link>{" "}
-                  · {group.studentCount} учен.
-                </li>
-              ))
-            )}
-          </ul>
-          <p className="mt-3 text-sm text-neutral-700">
-            <Link
-              href={ROUTES.groups}
-              className="font-semibold text-sky-700 underline underline-offset-2"
-            >
-              Открыть все группы
-            </Link>
-          </p>
-        </article>
+    <div className="space-y-6">
+      <section className="landing-surface rounded-3xl border border-white/80 p-4 md:p-6">
+        <h1 className="text-3xl font-black tracking-[-0.03em] text-neutral-950 md:text-4xl">
+          Операционный дашборд преподавателя
+        </h1>
+        <p className="mt-2 text-sm text-neutral-700">
+          Рабочий центр: быстрые действия, группы, недельный график и точки внимания.
+        </p>
+        <div className="mt-4">
+          <Link
+            href={ROUTES.methodologies}
+            className="inline-flex items-center gap-2 rounded-2xl border border-neutral-200 bg-white px-4 py-2 text-sm font-semibold text-neutral-900 transition hover:bg-neutral-50"
+          >
+            <span aria-hidden="true">📚</span>
+            <span>Методики</span>
+          </Link>
+        </div>
+      </section>
 
-        <article className="dashboard-grid-card bg-[linear-gradient(140deg,rgba(201,180,255,0.28),rgba(255,255,255,0.9))]">
-          <h3 className="text-lg font-black">Ближайшие занятия</h3>
-          <ul className="mt-2 space-y-2 text-sm text-neutral-700">
-            {readModel.upcomingLessons.length === 0 ? (
-              <li className="text-neutral-500">Пока нет запланированных занятий.</li>
-            ) : (
-              readModel.upcomingLessons.map((lesson) => (
-                <li key={lesson.id}>
-                  <Link
-                    href={lesson.href}
-                    className="font-semibold text-sky-700 underline underline-offset-2"
-                  >
-                    {lesson.title}
-                  </Link>{" "}
-                  · {lesson.groupLabel} · {lesson.dateTimeLabel}
-                </li>
-              ))
-            )}
-          </ul>
-          <p className="mt-3 text-sm text-neutral-700">
+      <section className="landing-surface rounded-3xl border border-white/80 p-4 md:p-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-xl font-black text-neutral-950">Мои группы</h2>
+          <span className="text-xs text-neutral-500">Таблица — основной режим</span>
+        </div>
+
+        <div className="mt-4 flex flex-wrap gap-2">
+          {readModel.actions.map((action) => (
             <Link
-              href={ROUTES.lessons}
-              className="font-semibold text-sky-700 underline underline-offset-2"
+              key={action.label}
+              href={action.href}
+              className="inline-flex items-center gap-2 rounded-2xl border border-neutral-200 bg-white px-4 py-2 text-sm font-semibold text-neutral-900 transition hover:bg-neutral-50"
             >
-              Открыть глобальный индекс занятий
+              <span aria-hidden="true">{ACTION_ICONS[action.label] ?? "•"}</span>
+              <span>{action.label}</span>
             </Link>
-          </p>
-          {scheduledLessonId ? (
-            <p className="mt-3 text-xs text-neutral-500">
-              DEV shortcut workspace доступен через <code>DEV_TEACHER_WORKSPACE_SCHEDULED_LESSON_ID</code>.
-            </p>
+          ))}
+        </div>
+
+        <div className="mt-4 grid gap-2 md:grid-cols-3">
+          <select
+            name="methodology"
+            value={readModel.groups.filters.methodology}
+            onChange={(event) => setParam("methodology", event.target.value)}
+            className="field-input"
+          >
+            <option value="">Все методики</option>
+            {readModel.groups.filters.methodologyOptions.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
+          <select
+            name="status"
+            value={readModel.groups.filters.status}
+            onChange={(event) => setParam("status", event.target.value)}
+            className="field-input"
+          >
+            <option value="">Все статусы</option>
+            <option value="attention">Требует внимания</option>
+            <option value="scheduled">По плану</option>
+            <option value="on_track">Стабильно</option>
+          </select>
+          <input
+            name="q"
+            defaultValue={readModel.groups.filters.search}
+            placeholder="Поиск группы"
+            className="field-input"
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.preventDefault();
+                setParam("q", (event.target as HTMLInputElement).value.trim());
+              }
+            }}
+            onBlur={(event) => setParam("q", event.target.value.trim())}
+          />
+        </div>
+
+        <div className="mt-4 overflow-x-auto rounded-2xl border border-neutral-200 bg-white">
+          <table className="min-w-full text-left text-sm">
+            <thead className="bg-neutral-50 text-xs uppercase tracking-wide text-neutral-500">
+              <tr>
+                <th className="px-4 py-3">Группа</th>
+                <th className="px-4 py-3">Ученики</th>
+                <th className="px-4 py-3">Методика</th>
+                <th className="px-4 py-3">Прогресс</th>
+                <th className="px-4 py-3">Следующее занятие</th>
+                <th className="px-4 py-3">Статус</th>
+              </tr>
+            </thead>
+            <tbody>
+              {readModel.groups.rows.map((group) => (
+                <tr
+                  key={group.id}
+                  className="cursor-pointer border-t border-neutral-200 align-top transition hover:bg-sky-50/45"
+                  onClick={() => router.push(group.groupHref)}
+                >
+                  <td className="px-4 py-3 font-semibold text-neutral-950">{group.groupLabel}</td>
+                  <td className="px-4 py-3 text-neutral-700">{group.studentCount}</td>
+                  <td className="px-4 py-3 text-neutral-700">{group.methodologyLabel ?? "—"}</td>
+                  <td className="px-4 py-3 text-neutral-700">{group.progressLabel}</td>
+                  <td className="px-4 py-3 text-neutral-700">
+                    {group.nextLessonLabel ? (
+                      <>
+                        <div>{group.nextLessonLabel}</div>
+                        <div className="text-xs text-neutral-500">{group.nextLessonTitle}</div>
+                      </>
+                    ) : (
+                      "Не запланировано"
+                    )}
+                  </td>
+                  <td className="px-4 py-3 text-neutral-700">
+                    <span className={`rounded-full border px-2 py-1 text-xs ${statusTone(group.status)}`}>
+                      {group.statusLabel}
+                    </span>
+                    {group.attentionReasons.length > 0 ? (
+                      <div className="mt-1 text-xs text-neutral-500">{group.attentionReasons.join(" · ")}</div>
+                    ) : null}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {readModel.groups.rows.length === 0 ? (
+            <p className="px-4 py-4 text-sm text-neutral-500">По текущим фильтрам групп не найдено.</p>
           ) : null}
-        </article>
-      </div>
-    </DashboardShell>
+        </div>
+      </section>
+
+      <section className="landing-surface rounded-3xl border border-white/80 p-4 md:p-5">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-2xl font-black text-neutral-950">Расписание на 7 дней</h2>
+          <p className="text-xs text-neutral-500">
+            Всего: {readModel.schedule.totalLessons}
+            {readModel.schedule.nextLessonLabel ? ` · Следующее: ${readModel.schedule.nextLessonLabel}` : ""}
+          </p>
+        </div>
+
+        <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          {readModel.schedule.days.length === 0 ? (
+            <p className="text-sm text-neutral-500">На этой неделе занятий пока нет.</p>
+          ) : (
+            readModel.schedule.days.map((day) => (
+              <div key={day.isoDate} className="rounded-2xl border border-neutral-200 bg-white p-3">
+                <p className="text-sm font-semibold text-neutral-900">
+                  {day.label}
+                  {day.isToday ? <span className="ml-2 text-xs text-sky-700">Сегодня</span> : null}
+                </p>
+                <ul className="mt-2 space-y-2 text-sm">
+                  {day.lessons.map((lesson) => (
+                    <li key={lesson.id} className="rounded-xl border border-neutral-200 bg-neutral-50 px-2 py-2 text-neutral-700">
+                      <p className="font-semibold">{lesson.timeLabel} · {lesson.groupLabel}</p>
+                      <p>{lesson.lessonTitle}</p>
+                      <p className="mt-0.5 text-xs text-neutral-500">{lesson.statusLabel}</p>
+                      <Link href={lesson.href} className="mt-1 inline-block text-xs text-sky-700 underline underline-offset-2">
+                        Открыть урок
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))
+          )}
+        </div>
+      </section>
+
+      <section className="landing-surface rounded-3xl border border-white/80 p-4 md:p-5">
+        <h2 className="text-xl font-black text-neutral-950">Требует внимания</h2>
+        <ul className="mt-3 grid gap-2 text-sm text-neutral-700 md:grid-cols-2">
+          <li>Группы без учеников: {readModel.alerts.groupsWithoutStudents}</li>
+          <li>Группы без методики: {readModel.alerts.groupsWithoutMethodology}</li>
+          <li>Группы без ближайших занятий: {readModel.alerts.groupsWithoutUpcomingLessons}</li>
+          <li>Занятий сегодня: {readModel.alerts.lessonsToday}</li>
+        </ul>
+      </section>
+    </div>
   );
 }
