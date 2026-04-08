@@ -1,8 +1,10 @@
 # ТЗ (актуализация доменной модели)
 
-Дата: **2 апреля 2026**.
+Дата: **8 апреля 2026**.
 
-## Целевая модель
+## Текущая целевая модель (срез на main)
+
+### 1) Базовая identity/school/group модель
 
 - `parent`
 - `teacher`
@@ -13,96 +15,86 @@
 - `class_teacher`
 - `class_student`
 
-## Ограничения модели
+Ограничения core-модели:
 
 - `student` не содержит `teacher_id` и `school_id`.
-- Привязка ученика к школе идёт только через `class_student -> class -> school`.
-- `parent` и `teacher` — это отдельные сущности, а не роли.
+- Привязка ученика к школе идёт через `class_student -> class -> school`.
+- `parent` и `teacher` — отдельные сущности, не «роли в одной таблице».
+
+### 2) Методический source layer + runtime-уроков
+
+- `methodology`
+- `methodology_lesson`
+- `reusable_asset`
+- `methodology_lesson_block`
+- `methodology_lesson_block_asset`
+- `scheduled_lesson`
+
+Принцип:
+
+- `methodology`/`methodology_lesson` — педагогический source of truth.
+- `scheduled_lesson` — runtime-сущность исполнения.
+
+### 3) Homework runtime-слой
+
+- `methodology_lesson_homework`
+- `scheduled_lesson_homework_assignment`
+- `student_homework_assignment`
+
+### 4) Communication runtime-слой
+
+- `group_student_conversation`
+- `group_student_message`
+
+## Инвариант методики группы (`class.methodology_id`)
+
+- Для новых групп `class.methodology_id` обязателен при создании.
+- После создания группы `class.methodology_id` неизменяем (immutable).
+- Legacy/backfill-группы из старого состояния могут иметь `class.methodology_id = null`.
+- Текущее UI/маршруты не предоставляют свободную смену методики существующей группы.
 
 ## Онбординг преподавателя
 
-На первом создании `teacher` автоматически создаются:
+При первом создании `teacher` автоматически создаются:
 
 - школа,
 - связь `school_teacher` с ролью `owner`,
 - первый класс,
 - связь `class_teacher`.
 
-## Student auth compatibility
+## Совместимость student auth
 
 `student.internal_auth_email` сохранён как внутреннее инфраструктурное поле для безопасного перехода со старого login-flow.
 
-## Teacher information architecture (Step 1, April 7, 2026)
+## Teacher IA и runtime-слои (актуальное состояние)
 
-- Операционный центр преподавателя переносится в контекст `class/group`.
-- Основные teacher-маршруты:
-  - `/dashboard` — обзор преподавателя;
-  - `/groups` — список групп;
-  - `/groups/[groupId]` — рабочая страница группы.
-- `/lessons` сохраняется как вторичный глобальный индекс занятий по всем группам.
-- `methodology` остаётся каноническим источником содержания, а `scheduled_lesson` — runtime-сущностью исполнения урока.
-- Этот шаг фиксирует IA/read-model/routing направление; полные workflows homework/thread/progress планируются следующими этапами.
+### Step 1: group-centric IA — реализовано
 
-## Teacher operations dashboard (Step 2, April 7, 2026)
+- Основной teacher-контекст: `/dashboard`, `/groups`, `/groups/[groupId]`.
+- `/lessons` остаётся secondary global индексом.
 
-- `/dashboard` переведён в режим реального teacher command center.
-- Добавлены рабочие entry points: создание группы (`/groups/new`) и создание ученика (`/students/new`).
-- Добавлен маршрут `/methodologies` как read-only индекс методик, доступный с dashboard.
-- Dashboard read-model строится server-side в `teacher-dashboard-operations` и включает:
-  - table-first `Мои группы` с progress/status/next-lesson;
-  - недельный schedule block по всем группам;
-  - attention summary с операционными сигналами.
-- `/groups` усилен до полного индексного списка с поиском и фильтрами.
-- `/lessons` остаётся вторичным кросс-групповым индексом занятий.
-- Намеренно отложено: homework, threads, attendance, full calendar subsystem, methodology/block editors, AI layer.
+### Step 2: operations dashboard — реализовано
 
-## Group setup + methodology binding + contextual scheduling (Step 3, April 7, 2026)
+- `/dashboard` работает как command center.
+- Добавлены рабочие entry points: `/groups/new`, `/students/new`, `/methodologies`.
+- `/groups` усилен до полного индексного списка с поиском/фильтрами.
 
-- Для `class` введено явное поле назначения методики: `class.methodology_id`.
-- Это назначение теперь является основным source of truth для:
-  - методики группы на dashboard/groups/group page;
-  - denominator прогресса;
-  - списка методологических уроков при планировании занятий из контекста группы.
-- `/groups/[groupId]` теперь операционно покрывает:
-  - назначение/смену методики;
-  - roster группы и контекстный вход в создание ученика;
-  - планирование занятия без повторного выбора группы.
-- Прогресс считается честно:
-  - numerator: только `scheduled_lesson.runtime_status = completed`;
-  - denominator: общее число уроков в назначенной методике группы.
-- Safe backfill в миграции:
-  - если у группы все scheduled lessons принадлежат одной методике, она назначается автоматически;
-  - при неоднозначности `methodology_id` остаётся `null` и группа помечается как требующая настройки.
-- Всё ещё намеренно отложено: homework, thread/communication, attendance, advanced calendar UX, parent/student expansion.
+### Step 3: group setup + methodology binding + contextual scheduling — реализовано
 
-## Homework runtime layer (Step 4, April 7, 2026)
+- Источник методики группы: `class.methodology_id`.
+- Новая группа создаётся сразу с методикой; дальнейшее изменение методики запрещено.
+- `/groups/[groupId]` покрывает roster + group-scoped scheduling.
+- При `class.methodology_id = null` (legacy) scheduling блокируется.
+- Прогресс: `completed scheduled lessons / total lessons in assigned methodology`.
 
-- Домашнее задание формируется в методике (`methodology_lesson_homework`) и является каноническим контентом.
-- Преподаватель не редактирует контент homework; только выдаёт его в runtime-контексте запланированного урока.
-- Выдача хранится отдельно в `scheduled_lesson_homework_assignment` (one-per-scheduled-lesson).
-- Персональные состояния хранятся отдельно в `student_homework_assignment`:
-  - `assigned`,
-  - `submitted`,
-  - `reviewed`,
-  - `needs_revision`.
-- `/lessons/[scheduledLessonId]` стал primary surface для:
-  - просмотра методического homework (read-only),
-  - выдачи all/selected + due date,
-  - teacher review по каждому ученику.
-- `/dashboard` ученика показывает назначенные homework и submission form (текстовый ответ).
-- `/dashboard` родителя получает минимальную homework-проекцию по детям.
-- Намеренно отложено: file-heavy submissions, thread-коммуникация, attendance и расширенный UX-polish.
+### Step 4: homework runtime layer — реализовано
 
+- Канонический homework-контент хранится в методике.
+- `/lessons/[scheduledLessonId]` — выдача, контроль и ревью homework в runtime.
+- Student dashboard — submission, Parent dashboard — read-only проекция статусов.
 
-## Communication runtime layer (Step 5, April 7, 2026)
+### Step 5: communication runtime layer — реализовано
 
-- Введён runtime communication слой, не как isolated lesson-thread и не как глобальный чат.
-- Базовый контейнер continuity: `group_student_conversation` (`class_id + student_id`).
-- Сообщения в `group_student_message` могут ссылаться на:
-  - `scheduled_lesson_id`,
-  - `scheduled_lesson_homework_assignment_id`,
-  - `topic_kind`.
-- Teacher получает полный student-in-group conversation view и scoped projections из lesson/homework surfaces.
-- Student может читать и отвечать в том же container.
-- Parent в этом шаге: read-only projection по своим детям.
-- Намеренно отложено: attachments/voice/notifications/unread/attendance/full parent participation.
+- Непрерывная коммуникация строится вокруг `group_student_conversation`.
+- Сообщения связываются с lesson/homework runtime-контекстом через optional ссылки.
+- Teacher получает полный поток в `/groups/[groupId]/students/[studentId]/communication`.

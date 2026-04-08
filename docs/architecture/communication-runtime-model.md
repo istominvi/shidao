@@ -1,55 +1,55 @@
-# Communication runtime model (Step 5)
+# Модель communication runtime (Step 5)
 
-**Date:** April 7, 2026  
-**Status:** Implemented (MVP communication layer)
+**Дата:** 8 апреля 2026  
+**Статус:** Реализовано (MVP communication layer)
 
-## Core decision
+## Ключевое решение
 
-Communication is modeled as **two layers**:
+Коммуникация построена в двух слоях:
 
-1. **Continuous container**: one `group_student_conversation` per `class(group) + student`.
-2. **Scoped projections**: each message can optionally reference:
+1. **Непрерывный контейнер:** один `group_student_conversation` на пару `class(group) + student`.
+2. **Scoped-проекции:** каждое сообщение может содержать optional ссылки на:
    - `scheduled_lesson_id`,
    - `scheduled_lesson_homework_assignment_id`,
    - `topic_kind` (`general`, `lesson`, `homework`, `progress`, `organizational`).
 
-This avoids both extremes:
-- not isolated per-lesson silos,
-- not one undifferentiated global chat.
+Это избегает двух крайностей:
 
-## Storage
+- не отдельные lesson-silo чаты,
+- не один глобальный неструктурированный чат.
+
+## Хранилище
 
 - `group_student_conversation`
-  - unique by `(class_id, student_id)`.
+  - уникальность по `(class_id, student_id)`.
 - `group_student_message`
-  - belongs to a conversation,
-  - has sender role (`teacher` / `student` / `parent`),
-  - keeps plain text body,
-  - stores optional lesson/homework context references.
+  - принадлежит conversation,
+  - хранит `author_role` (`teacher` / `student` / `parent`) и текст,
+  - может хранить optional lesson/homework runtime-ссылки.
 
-## Runtime behavior
+## Runtime-поведение
 
-- Conversation is created lazily (`ensureConversationByClassAndStudentAdmin`) when first requested/message sent.
-- Full stream is available in teacher route:
+- Conversation создаётся лениво (`ensureConversationByClassAndStudentAdmin`) при первом обращении/сообщении.
+- Полный поток преподавателя доступен в:
   - `/groups/[groupId]/students/[studentId]/communication`.
-- Lesson page `/lessons/[scheduledLessonId]` renders **lesson-scoped** and **homework-scoped** slices from the same container.
-- Student dashboard can reply in:
-  - homework-scoped context,
-  - general class conversation context.
-- Parent dashboard shows read-only recent messages for each child.
+- `/lessons/[scheduledLessonId]` показывает **lesson-scoped** и **homework-scoped** срезы того же conversation контейнера.
+- Student dashboard позволяет отвечать в:
+  - homework-scoped контексте,
+  - general group-scoped контексте.
+- Parent dashboard показывает read-only последние сообщения по каждому ребёнку.
 
-## Access constraints
+## Ограничения доступа
 
-- Teacher: only assigned group/class scope.
-- Student: only own class membership scope.
-- Parent: read-only projection for linked children.
-- No cross-group and no cross-student mixing in projections.
+- Teacher: только в пределах назначенных ему групп.
+- Student: только собственное membership-пространство.
+- Parent: только read-only проекция по привязанным детям.
+- Нет смешивания сообщений между группами и между учениками.
 
-## Deferred in this step
+## Что отложено
 
 - attachments/files,
-- voice messages,
-- notifications,
+- voice-сообщения,
+- уведомления,
 - advanced unread state,
-- attendance coupling,
+- attendance-coupling,
 - parent write participation.
