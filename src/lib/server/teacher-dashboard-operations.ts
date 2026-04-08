@@ -6,11 +6,6 @@ import {
   listMethodologyLessonsByMethodologyAdmin,
 } from "./lesson-content-repository";
 
-export type TeacherGroupOperationalStatus =
-  | "attention"
-  | "scheduled"
-  | "on_track";
-
 export type TeacherGroupOperationsRow = {
   id: string;
   groupLabel: string;
@@ -21,9 +16,6 @@ export type TeacherGroupOperationsRow = {
   nextLessonLabel: string | null;
   nextLessonHref: string | null;
   nextLessonTitle: string | null;
-  status: TeacherGroupOperationalStatus;
-  statusLabel: string;
-  attentionReasons: string[];
   groupHref: string;
   groupLessonsHref: string;
 };
@@ -45,13 +37,6 @@ export type TeacherDashboardScheduleEvent = {
   timeRangeLabel: string;
 };
 
-export type TeacherDashboardAlerts = {
-  groupsWithoutStudents: number;
-  groupsWithoutUpcomingLessons: number;
-  lessonsToday: number;
-  attentionGroups: Array<{ id: string; label: string; reasons: string[]; href: string }>;
-};
-
 export type TeacherDashboardOperationsReadModel = {
   actions: Array<{ label: string; href: string; tone: "primary" | "secondary" }>;
   groups: {
@@ -59,7 +44,6 @@ export type TeacherDashboardOperationsReadModel = {
     filters: {
       search: string;
       methodology: string;
-      status: string;
       methodologyOptions: string[];
     };
   };
@@ -70,7 +54,6 @@ export type TeacherDashboardOperationsReadModel = {
     totalLessons: number;
     nextLessonLabel: string | null;
   };
-  alerts: TeacherDashboardAlerts;
 };
 
 export type TeacherGroupsIndexOperationsReadModel = {
@@ -78,7 +61,6 @@ export type TeacherGroupsIndexOperationsReadModel = {
   filters: {
     search: string;
     methodology: string;
-    status: string;
     methodologyOptions: string[];
   };
 };
@@ -167,7 +149,6 @@ async function buildOperationsSnapshot(
     weekStartsAtIso?: string;
     search?: string;
     methodology?: string;
-    status?: string;
   },
   deps: TeacherDashboardOperationsDeps,
 ) {
@@ -236,28 +217,6 @@ async function buildOperationsSnapshot(
       ? methodologyLessonTotalsByMethodologyId[group.methodologyId] ?? 0
       : null;
 
-    const attentionReasons: string[] = [];
-    if ((studentsByClass[group.id]?.length ?? 0) === 0) {
-      attentionReasons.push("Нет учеников");
-    }
-    if (!nextLesson) {
-      attentionReasons.push("Нет ближайшего занятия");
-    }
-
-    const status: TeacherGroupOperationalStatus =
-      attentionReasons.length > 0
-        ? "attention"
-        : upcomingLessons.length > 0
-          ? "scheduled"
-          : "on_track";
-
-    const statusLabel =
-      status === "attention"
-        ? "Требует внимания"
-        : status === "scheduled"
-          ? "По плану"
-          : "Стабильно";
-
     return {
       id: group.id,
       groupLabel: clean(group.name) || "Группа",
@@ -273,9 +232,6 @@ async function buildOperationsSnapshot(
       nextLessonTitle: nextLesson
         ? methodologyLessonMetaById[nextLesson.methodologyLessonId]?.title || "Занятие"
         : null,
-      status,
-      statusLabel,
-      attentionReasons,
       groupHref: toGroupRoute(group.id),
       groupLessonsHref: `${ROUTES.lessons}?groupId=${encodeURIComponent(group.id)}`,
     };
@@ -283,7 +239,6 @@ async function buildOperationsSnapshot(
 
   const search = normalizeFilter(input.search);
   const methodology = clean(input.methodology);
-  const status = normalizeFilter(input.status);
 
   const filteredRows = rows.filter((row) => {
     if (search && !row.groupLabel.toLowerCase().includes(search)) {
@@ -291,10 +246,6 @@ async function buildOperationsSnapshot(
     }
 
     if (methodology && row.methodologyLabel !== methodology) {
-      return false;
-    }
-
-    if (status && row.status !== status) {
       return false;
     }
 
@@ -332,7 +283,6 @@ async function buildOperationsSnapshot(
     });
 
   const defaultDateIso = nowIso.slice(0, 10);
-  const lessonsToday = scheduleEvents.filter((event) => event.isoDate === defaultDateIso).length;
   const nextLesson = scheduleEvents.find((event) => Date.parse(event.startsAt) >= now) ?? null;
 
   return {
@@ -341,7 +291,6 @@ async function buildOperationsSnapshot(
     filters: {
       search: clean(input.search),
       methodology,
-      status,
       methodologyOptions: Array.from(
         new Set(rows.map((row) => row.methodologyLabel).filter((value): value is string => Boolean(value))),
       ).sort((a, b) => a.localeCompare(b, "ru-RU")),
@@ -353,19 +302,6 @@ async function buildOperationsSnapshot(
       totalLessons: scheduleEvents.length,
       nextLessonLabel: nextLesson ? `${formatDate(nextLesson.startsAt)} · ${formatTime(nextLesson.startsAt)}` : null,
     },
-    alerts: {
-      groupsWithoutStudents: rows.filter((row) => row.studentCount === 0).length,
-      groupsWithoutUpcomingLessons: rows.filter((row) => !row.nextLessonHref).length,
-      lessonsToday,
-      attentionGroups: rows
-        .filter((row) => row.attentionReasons.length > 0)
-        .map((row) => ({
-          id: row.id,
-          label: row.groupLabel,
-          reasons: row.attentionReasons,
-          href: row.groupHref,
-        })),
-    },
   };
 }
 
@@ -376,7 +312,6 @@ export async function getTeacherDashboardOperationsReadModel(
     weekStartsAtIso?: string;
     search?: string;
     methodology?: string;
-    status?: string;
   },
   deps: TeacherDashboardOperationsDeps = defaultDeps,
 ): Promise<TeacherDashboardOperationsReadModel> {
@@ -393,7 +328,6 @@ export async function getTeacherDashboardOperationsReadModel(
       filters: snapshot.filters,
     },
     schedule: snapshot.schedule,
-    alerts: snapshot.alerts,
   };
 }
 
@@ -402,7 +336,6 @@ export async function getTeacherGroupsIndexOperationsReadModel(
     teacherId: string;
     search?: string;
     methodology?: string;
-    status?: string;
     nowIso?: string;
   },
   deps: TeacherDashboardOperationsDeps = defaultDeps,

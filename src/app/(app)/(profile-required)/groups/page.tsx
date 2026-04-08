@@ -2,6 +2,7 @@ import Link from "next/link";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { isRedirectError } from "next/dist/client/components/redirect-error";
+import { ChevronDown, FolderPlus, Search, UserPlus } from "lucide-react";
 import { TopNav } from "@/components/top-nav";
 import { ROUTES, toGroupRoute } from "@/lib/auth";
 import { listMethodologiesAdmin } from "@/lib/server/lesson-content-repository";
@@ -19,7 +20,6 @@ export default async function TeacherGroupsPage({
   searchParams: Promise<{
     q?: string;
     methodology?: string;
-    status?: string;
     create?: string;
     error?: string;
   }>;
@@ -72,7 +72,6 @@ export default async function TeacherGroupsPage({
     teacherId,
     search: query.q,
     methodology: query.methodology,
-    status: query.status,
   });
 
   return (
@@ -91,31 +90,33 @@ export default async function TeacherGroupsPage({
             Здесь — весь список групп с операционными полями. Для быстрых ежедневных действий и расписания используйте /dashboard.
           </p>
           <div className="mt-4 flex flex-wrap gap-2">
-            <Link href={`${ROUTES.groups}?create=1`} className="landing-btn landing-btn-primary">
+            <Link href={`${ROUTES.groups}?create=1`} className="landing-btn landing-btn-primary gap-2">
+              <FolderPlus className="h-4 w-4" aria-hidden="true" />
               Добавить группу
             </Link>
-            <Link href={ROUTES.studentsNew} className="landing-btn landing-btn-muted">
+            <Link href={ROUTES.studentsNew} className="landing-btn landing-btn-muted gap-2">
+              <UserPlus className="h-4 w-4" aria-hidden="true" />
               Добавить ученика
             </Link>
           </div>
         </header>
 
         <section className="landing-surface rounded-3xl border border-white/80 p-4 md:p-5">
-          <form className="grid gap-2 md:grid-cols-4">
-            <input name="q" defaultValue={readModel.filters.search} placeholder="Поиск группы" className="field-input" />
-            <select name="methodology" defaultValue={readModel.filters.methodology} className="field-input">
-              <option value="">Все методики</option>
-              {readModel.filters.methodologyOptions.map((option) => (
-                <option key={option} value={option}>{option}</option>
-              ))}
-            </select>
-            <select name="status" defaultValue={readModel.filters.status} className="field-input">
-              <option value="">Все статусы</option>
-              <option value="attention">Требует внимания</option>
-              <option value="scheduled">По плану</option>
-              <option value="on_track">Стабильно</option>
-            </select>
-            <button type="submit" className="landing-btn landing-btn-muted">Применить</button>
+          <form className="teacher-control-rail">
+            <div className="teacher-search-wrap">
+              <Search className="teacher-search-icon h-4 w-4" aria-hidden="true" />
+              <input name="q" defaultValue={readModel.filters.search} placeholder="Поиск группы" className="teacher-control teacher-control-search" />
+            </div>
+            <div className="teacher-select-wrap">
+              <select name="methodology" defaultValue={readModel.filters.methodology} className="teacher-control teacher-control-select">
+                <option value="">Все методики</option>
+                {readModel.filters.methodologyOptions.map((option) => (
+                  <option key={option} value={option}>{option}</option>
+                ))}
+              </select>
+              <ChevronDown className="teacher-select-icon h-4 w-4" aria-hidden="true" />
+            </div>
+            <button type="submit" className="teacher-control teacher-control-button font-semibold">Применить</button>
           </form>
 
           <div className="mt-4 overflow-x-auto">
@@ -123,11 +124,10 @@ export default async function TeacherGroupsPage({
               <thead className="text-xs uppercase tracking-wide text-neutral-500">
                 <tr>
                   <th className="pb-2 pr-4">Группа</th>
-                  <th className="pb-2 pr-4">Ученики</th>
                   <th className="pb-2 pr-4">Методика</th>
+                  <th className="pb-2 pr-4">Ученики</th>
                   <th className="pb-2 pr-4">Прогресс</th>
                   <th className="pb-2 pr-4">Следующее занятие</th>
-                  <th className="pb-2 pr-4">Статус</th>
                   <th className="pb-2">Действия</th>
                 </tr>
               </thead>
@@ -135,11 +135,10 @@ export default async function TeacherGroupsPage({
                 {readModel.rows.map((group) => (
                   <tr key={group.id} className="border-t border-neutral-200/80 align-top">
                     <td className="py-3 pr-4 font-semibold text-neutral-950">{group.groupLabel}</td>
+                    <td className="py-3 pr-4">{group.methodologyLabel ?? "Не назначена"}</td>
                     <td className="py-3 pr-4">{group.studentCount}</td>
-                    <td className="py-3 pr-4">{group.methodologyLabel ?? "—"}</td>
                     <td className="py-3 pr-4">{group.progressLabel}</td>
                     <td className="py-3 pr-4">{group.nextLessonLabel ?? "Не запланировано"}</td>
-                    <td className="py-3 pr-4">{group.statusLabel}</td>
                     <td className="py-3 text-xs">
                       <div className="flex flex-col gap-1">
                         <Link href={group.groupHref} className="text-sky-700 underline underline-offset-2">Открыть группу</Link>

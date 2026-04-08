@@ -15,7 +15,7 @@ import { loadParentLearningContextsByUser } from "@/lib/server/supabase-admin";
 export default async function DashboardIndexPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; methodology?: string; status?: string }>;
+  searchParams: Promise<{ q?: string; methodology?: string }>;
 }) {
   const resolution = await resolveAccessPolicy();
 
@@ -52,7 +52,6 @@ export default async function DashboardIndexPage({
       teacherId,
       search: query.q,
       methodology: query.methodology,
-      status: query.status,
     });
 
     return (

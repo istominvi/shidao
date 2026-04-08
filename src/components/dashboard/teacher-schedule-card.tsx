@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { TeacherDashboardScheduleEvent } from "@/lib/server/teacher-dashboard-operations";
 import type { TeacherDashboardOperationsReadModel } from "@/lib/server/teacher-dashboard-operations";
@@ -166,14 +167,16 @@ function DayView({
 }
 
 function ListView({ events, nowIso }: { events: TeacherDashboardScheduleEvent[]; nowIso: string }) {
+  const router = useRouter();
   const sortedEvents = events.slice().sort((a, b) => Date.parse(a.startsAt) - Date.parse(b.startsAt));
   const nowTs = Date.parse(nowIso);
   const focusIndex = sortedEvents.findIndex((event) => Date.parse(event.startsAt) <= nowTs && Date.parse(event.endsAt) >= nowTs);
   const nearestUpcomingIndex = sortedEvents.findIndex((event) => Date.parse(event.startsAt) >= nowTs);
-  const targetIndex = focusIndex >= 0 ? focusIndex : nearestUpcomingIndex >= 0 ? nearestUpcomingIndex : Math.max(0, sortedEvents.length - 1);
+  const targetIndex = focusIndex >= 0 ? focusIndex : nearestUpcomingIndex >= 0 ? nearestUpcomingIndex : -1;
   const targetRowRef = useRef<HTMLTableRowElement | null>(null);
 
   useEffect(() => {
+    if (targetIndex < 0) return;
     targetRowRef.current?.focus();
     targetRowRef.current?.scrollIntoView({ block: "center", behavior: "smooth" });
   }, [targetIndex]);
@@ -181,14 +184,14 @@ function ListView({ events, nowIso }: { events: TeacherDashboardScheduleEvent[];
   return (
     <div className="overflow-x-auto rounded-2xl border border-neutral-200 bg-white">
       <table className="min-w-full text-left text-sm">
-        <thead className="bg-neutral-50 text-xs font-semibold text-neutral-600">
+        <thead className="bg-neutral-50 text-xs uppercase tracking-wide text-neutral-500">
           <tr>
-            <th className="px-3 py-2">Дата</th>
-            <th className="px-3 py-2">Время</th>
-            <th className="px-3 py-2">Группа</th>
-            <th className="px-3 py-2">Урок</th>
-            <th className="px-3 py-2">Формат</th>
-            <th className="px-3 py-2">Статус</th>
+            <th className="px-4 py-3">Дата</th>
+            <th className="px-4 py-3">Время</th>
+            <th className="px-4 py-3">Группа</th>
+            <th className="px-4 py-3">Урок</th>
+            <th className="px-4 py-3">Формат</th>
+            <th className="px-4 py-3">Статус</th>
           </tr>
         </thead>
         <tbody>
@@ -197,14 +200,15 @@ function ListView({ events, nowIso }: { events: TeacherDashboardScheduleEvent[];
               key={event.id}
               ref={index === targetIndex ? targetRowRef : null}
               tabIndex={index === targetIndex ? -1 : undefined}
-              className={`border-t border-neutral-100 ${index === targetIndex ? "bg-sky-50/70 outline-none" : "hover:bg-neutral-50"}`}
+              onClick={() => router.push(event.href)}
+              className={`cursor-pointer border-t border-neutral-200 transition hover:bg-sky-50/45 ${index === targetIndex ? "bg-sky-50/70 outline-none" : ""}`}
             >
-              <td className="px-3 py-2 text-neutral-700">{formatDayLabel(event.isoDate)}</td>
-              <td className="px-3 py-2 font-medium text-neutral-900">{event.timeRangeLabel}</td>
-              <td className="px-3 py-2 text-neutral-700">{event.groupLabel}</td>
-              <td className="px-3 py-2 text-neutral-700">{event.lessonTitle}</td>
-              <td className="px-3 py-2 text-neutral-700">{event.formatLabel}</td>
-              <td className="px-3 py-2 text-neutral-700">{event.statusLabel}</td>
+              <td className="px-4 py-3 text-neutral-700">{formatDayLabel(event.isoDate)}</td>
+              <td className="px-4 py-3 font-medium text-neutral-900">{event.timeRangeLabel}</td>
+              <td className="px-4 py-3 text-neutral-700">{event.groupLabel}</td>
+              <td className="px-4 py-3 text-neutral-700">{event.lessonTitle}</td>
+              <td className="px-4 py-3 text-neutral-700">{event.formatLabel}</td>
+              <td className="px-4 py-3 text-neutral-700">{event.statusLabel}</td>
             </tr>
           ))}
         </tbody>
