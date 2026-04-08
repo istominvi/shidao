@@ -1,5 +1,6 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { isRedirectError } from "next/dist/client/components/redirect-error";
 import { TeacherLessonsHub } from "@/components/lessons/teacher-lessons-hub";
 import { TopNav } from "@/components/top-nav";
 import { ROUTES, toLessonWorkspaceRoute } from "@/lib/auth";
@@ -48,6 +49,9 @@ export default async function TeacherLessonsHubPage({
       revalidatePath(ROUTES.lessons);
       redirect(toLessonWorkspaceRoute(createdLesson.id));
     } catch (error) {
+      if (isRedirectError(error)) {
+        throw error;
+      }
       const message =
         error instanceof Error
           ? error.message
