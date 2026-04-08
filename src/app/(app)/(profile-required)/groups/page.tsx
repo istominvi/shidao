@@ -156,7 +156,7 @@ export default async function TeacherGroupsPage({
       </div>
 
       {isCreateModalOpen ? (
-        <div className="fixed inset-0 z-40 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
           <Link
             href={ROUTES.groups}
             className="absolute inset-0 bg-neutral-950/40 backdrop-blur-[1px]"
