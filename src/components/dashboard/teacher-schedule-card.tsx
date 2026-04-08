@@ -181,14 +181,14 @@ function ListView({ events, nowIso }: { events: TeacherDashboardScheduleEvent[];
   return (
     <div className="overflow-x-auto rounded-2xl border border-neutral-200 bg-white">
       <table className="min-w-full text-left text-sm">
-        <thead className="bg-neutral-50 text-xs font-semibold text-neutral-600">
+        <thead className="bg-neutral-50 text-xs uppercase tracking-wide text-neutral-500">
           <tr>
-            <th className="px-3 py-2">Дата</th>
-            <th className="px-3 py-2">Время</th>
-            <th className="px-3 py-2">Группа</th>
-            <th className="px-3 py-2">Урок</th>
-            <th className="px-3 py-2">Формат</th>
-            <th className="px-3 py-2">Статус</th>
+            <th className="px-4 py-3">Дата</th>
+            <th className="px-4 py-3">Время</th>
+            <th className="px-4 py-3">Группа</th>
+            <th className="px-4 py-3">Урок</th>
+            <th className="px-4 py-3">Формат</th>
+            <th className="px-4 py-3">Статус</th>
           </tr>
         </thead>
         <tbody>
@@ -197,14 +197,14 @@ function ListView({ events, nowIso }: { events: TeacherDashboardScheduleEvent[];
               key={event.id}
               ref={index === targetIndex ? targetRowRef : null}
               tabIndex={index === targetIndex ? -1 : undefined}
-              className={`border-t border-neutral-100 ${index === targetIndex ? "bg-sky-50/70 outline-none" : "hover:bg-neutral-50"}`}
+              className={`border-t border-neutral-200 transition hover:bg-sky-50/45 ${index === targetIndex ? "bg-sky-50/70 outline-none" : ""}`}
             >
-              <td className="px-3 py-2 text-neutral-700">{formatDayLabel(event.isoDate)}</td>
-              <td className="px-3 py-2 font-medium text-neutral-900">{event.timeRangeLabel}</td>
-              <td className="px-3 py-2 text-neutral-700">{event.groupLabel}</td>
-              <td className="px-3 py-2 text-neutral-700">{event.lessonTitle}</td>
-              <td className="px-3 py-2 text-neutral-700">{event.formatLabel}</td>
-              <td className="px-3 py-2 text-neutral-700">{event.statusLabel}</td>
+              <td className="px-4 py-3 text-neutral-700">{formatDayLabel(event.isoDate)}</td>
+              <td className="px-4 py-3 font-medium text-neutral-900">{event.timeRangeLabel}</td>
+              <td className="px-4 py-3 text-neutral-700">{event.groupLabel}</td>
+              <td className="px-4 py-3 text-neutral-700">{event.lessonTitle}</td>
+              <td className="px-4 py-3 text-neutral-700">{event.formatLabel}</td>
+              <td className="px-4 py-3 text-neutral-700">{event.statusLabel}</td>
             </tr>
           ))}
         </tbody>
