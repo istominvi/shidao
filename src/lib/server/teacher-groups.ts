@@ -45,7 +45,7 @@ export type TeacherGroupOverviewReadModel = {
     assignedMethodologyShortDescription: string | null;
     lessonTotal: number;
   };
-  students: Array<{ id: string; displayName: string }>;
+  students: Array<{ id: string; displayName: string; login: string | null }>;
   upcomingLessons: Array<{
     id: string;
     title: string;
@@ -471,6 +471,7 @@ export async function getTeacherGroupOverview(
     id: student.id,
     displayName:
       clean(student.fullName) || (clean(student.login) ? `@${clean(student.login)}` : "Ученик"),
+    login: clean(student.login) || null,
   }));
 
   const methodologyOptions = await deps.listMethodologies();
