@@ -72,7 +72,7 @@ export function TopNav() {
         {showTeacherPrimaryNav ? (
           <nav
             aria-label={PRIMARY_NAV_CONFIG.teacher.ariaLabel}
-            className="order-3 w-full overflow-x-auto md:order-none md:w-auto md:justify-self-center"
+            className="order-3 w-full overflow-x-auto overflow-y-visible py-1 md:order-none md:w-auto md:justify-self-center"
           >
             <ul className="mx-auto flex min-w-max items-center gap-1">
               {PRIMARY_NAV_CONFIG.teacher.items.map((item) => {
