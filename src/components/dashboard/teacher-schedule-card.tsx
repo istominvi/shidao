@@ -39,14 +39,14 @@ function formatDayLabel(isoDate: string, compact = false) {
 
 
 export function TeacherScheduleCard({ schedule }: Props) {
-  const [viewMode, setViewMode] = useState<ScheduleViewMode>("week");
+  const [viewMode, setViewMode] = useState<ScheduleViewMode>("list");
   const [activeDateIso, setActiveDateIso] = useState(schedule.defaultDateIso);
   const [monthAgendaIso, setMonthAgendaIso] = useState(schedule.defaultDateIso);
 
   useEffect(() => {
     const media = window.matchMedia("(max-width: 767px)");
     if (media.matches) {
-      setViewMode("day");
+      setViewMode("list");
     }
   }, []);
 
@@ -75,7 +75,7 @@ export function TeacherScheduleCard({ schedule }: Props) {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <div className="inline-flex rounded-full border border-neutral-200 bg-white p-1">
-            {(["day", "week", "month", "list"] as ScheduleViewMode[]).map((mode) => (
+            {(["list", "day", "week", "month"] as ScheduleViewMode[]).map((mode) => (
               <button
                 key={mode}
                 type="button"
@@ -145,14 +145,13 @@ function DayView({
             key={iso}
             type="button"
             onClick={() => onDayPick(iso)}
-            className={`shrink-0 cursor-pointer rounded-2xl border px-3 py-2 text-left transition ${
+            className={`shrink-0 cursor-pointer rounded-2xl border px-3 py-2 text-left text-xs font-semibold transition ${
               iso === activeDateIso
                 ? "border-neutral-900 bg-neutral-900 text-white"
                 : "border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50"
             }`}
           >
-            <div className="text-xs font-semibold uppercase">{formatDayLabel(iso, true)}</div>
-            <div className="text-xs opacity-85">{iso.slice(8, 10)}</div>
+            <div>{WEEKDAY_SHORT[(new Date(`${iso}T00:00:00Z`).getUTCDay() + 6) % 7]} · {iso.slice(8, 10)}</div>
           </button>
         ))}
       </div>
@@ -243,12 +242,12 @@ function HorizontalDayTimeline({
       <div className="min-w-[720px] p-3" style={{ width: `${Math.max(720, timelineWidth + 24)}px` }}>
         <div className="relative mb-2 h-6">
           {marks.map((hour) => (
-            <div key={hour} className="absolute -translate-x-1/2 text-[11px] text-neutral-500" style={{ left: `${((hour - hourRange.startHour) * HOUR_WIDTH) + 12}px` }}>
+            <div key={hour} className="absolute -translate-x-1/2 text-[11px] font-semibold text-neutral-500" style={{ left: `${((hour - hourRange.startHour) * HOUR_WIDTH) + 12}px` }}>
               {String(hour).padStart(2, "0")}:00
             </div>
           ))}
         </div>
-        <div className="relative rounded-xl border border-neutral-100 bg-neutral-50/40" style={{ height: `${Math.max(contentHeight, 78)}px` }}>
+        <div className="relative rounded-xl border border-neutral-200 bg-neutral-50/40" style={{ height: `${Math.max(contentHeight, 78)}px` }}>
           {marks.map((hour) => (
             <div
               key={hour}
@@ -279,12 +278,12 @@ function HorizontalDayTimeline({
               <Link
                 key={event.id}
                 href={event.href}
-                className="landing-card absolute z-10 block h-16 cursor-pointer overflow-hidden p-2 text-xs text-neutral-700 transition hover:border-sky-300 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500"
+                className="absolute z-10 block cursor-pointer overflow-hidden rounded-xl border border-neutral-200 bg-white p-2.5 text-xs text-neutral-700 shadow-sm transition hover:border-sky-300 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500"
                 style={{ left: `${left}px`, width: `${width}px`, top: `${top}px` }}
               >
                 <p className="truncate font-semibold text-neutral-900">{event.groupLabel}</p>
                 <p className="truncate text-[11px]">{event.lessonTitle}</p>
-                <p className="text-[11px] text-neutral-500">{event.timeRangeLabel} · {event.formatLabel}</p>
+                <p className="mt-0.5 text-[11px] text-neutral-500">{event.timeRangeLabel} · {event.formatLabel}</p>
               </Link>
             );
           })}
@@ -341,9 +340,9 @@ function TimeGrid({
   return (
     <div className="overflow-x-auto rounded-2xl border border-neutral-200 bg-white">
       <div className="grid min-w-[720px] grid-cols-[64px_repeat(7,minmax(140px,1fr))]">
-        <div className="border-b border-neutral-200 bg-neutral-50 p-2 text-xs font-semibold text-neutral-600">UTC</div>
+        <div className="border-b border-neutral-200 bg-neutral-50 p-2 text-xs font-semibold text-neutral-600" />
         {days.map((day) => (
-          <div key={day} className="border-b border-l border-neutral-200 bg-neutral-50 px-2 py-2 text-xs font-semibold text-neutral-600">
+          <div key={day} className="border-b border-l border-neutral-200 bg-neutral-50 px-2 py-2 text-center text-xs font-semibold text-neutral-600">
             <span className={day === nowDay ? "rounded-full bg-sky-100 px-2 py-0.5 text-sky-700" : ""}>
               {WEEKDAY_SHORT[(new Date(`${day}T00:00:00Z`).getUTCDay() + 6) % 7]} · {day.slice(8, 10)}
             </span>
@@ -395,7 +394,7 @@ function TimeGrid({
                     <Link
                       key={event.id}
                       href={event.href}
-                      className="landing-card absolute z-10 cursor-pointer overflow-hidden p-2 text-xs text-neutral-700 transition hover:border-sky-300 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500"
+                      className="absolute z-10 cursor-pointer overflow-hidden rounded-xl border border-neutral-200 bg-white p-2.5 text-xs text-neutral-700 shadow-sm transition hover:border-sky-300 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500"
                       style={{
                         top: `${top}px`,
                         left: `${left + 1}%`,
@@ -405,7 +404,7 @@ function TimeGrid({
                     >
                       <p className="truncate font-semibold text-neutral-900">{event.groupLabel}</p>
                       <p className="truncate text-[11px]">{event.lessonTitle}</p>
-                      <p className="mt-1 text-[11px] text-neutral-500">{event.timeRangeLabel}</p>
+                      <p className="mt-0.5 text-[11px] text-neutral-500">{event.timeRangeLabel}</p>
                       <div className="mt-1 flex flex-wrap gap-1">
                         <span className="rounded-full bg-sky-100 px-1.5 py-0.5 text-[10px] text-sky-700">{event.formatLabel}</span>
                         <span className="rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] text-emerald-700">{event.statusLabel}</span>
@@ -449,9 +448,9 @@ function MonthView({
     <div className="space-y-3">
       <div className="overflow-x-auto rounded-2xl border border-neutral-200 bg-white">
         <div className="grid min-w-[740px] grid-cols-7 border-b border-neutral-200 bg-neutral-50 text-xs font-semibold text-neutral-600">
-          {WEEKDAY_SHORT.map((label) => (
-            <div key={label} className="px-2 py-2 text-center">
-              {label}
+          {weeks[1]?.map((iso) => (
+            <div key={iso} className="px-2 py-2 text-center">
+              {WEEKDAY_SHORT[(new Date(`${iso}T00:00:00Z`).getUTCDay() + 6) % 7]} · {iso.slice(8, 10)}
             </div>
           ))}
         </div>
@@ -478,9 +477,9 @@ function MonthView({
                   </div>
                   <div className="mt-1 space-y-1">
                     {dayEvents.slice(0, 2).map((event) => (
-                      <div key={event.id} className="truncate rounded-full bg-neutral-100 px-2 py-0.5 text-[10px] text-neutral-700">
+                      <Link key={event.id} href={event.href} className="block cursor-pointer truncate rounded-lg border border-neutral-200 bg-white px-2 py-1 text-[10px] text-neutral-700 hover:border-sky-300">
                         {event.timeLabel} · {event.groupLabel}
-                      </div>
+                      </Link>
                     ))}
                   </div>
                 </button>
