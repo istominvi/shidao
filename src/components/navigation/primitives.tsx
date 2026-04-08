@@ -20,6 +20,7 @@ type NavPillLinkProps = {
   active?: boolean;
   className?: string;
   ariaCurrent?: "page";
+  scroll?: boolean;
 };
 
 export function NavPillLink({
@@ -28,11 +29,13 @@ export function NavPillLink({
   active = false,
   className,
   ariaCurrent,
+  scroll,
 }: NavPillLinkProps) {
   return (
     <Link
       href={href}
       aria-current={ariaCurrent}
+      scroll={scroll}
       className={cx("nav-pill", active ? "nav-pill-active" : "nav-pill-inactive", className)}
     >
       {children}

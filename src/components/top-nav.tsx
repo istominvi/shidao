@@ -64,7 +64,7 @@ export function TopNav() {
 
   return (
     <header className="container relative z-50 pt-4 md:pt-6">
-      <NavigationHeaderShell className="relative z-50 flex flex-wrap items-center gap-3 md:grid md:grid-cols-[auto_1fr_auto] md:items-center md:px-5">
+      <NavigationHeaderShell className="relative z-50 flex flex-wrap items-center gap-3 md:grid md:grid-cols-[auto_1fr_auto] md:items-center">
         <Link href={ROUTES.home} className="text-xl font-black tracking-tight">
           Shidao™
         </Link>
@@ -84,6 +84,7 @@ export function TopNav() {
                       active={active}
                       ariaCurrent={active ? "page" : undefined}
                       className="min-h-9 px-3.5 text-sm font-medium"
+                      scroll={false}
                     >
                       {item.label}
                     </NavPillLink>
