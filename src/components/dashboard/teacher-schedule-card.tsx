@@ -25,6 +25,7 @@ const VIEW_LABELS: Record<ScheduleViewMode, string> = {
 };
 
 const HOUR_HEIGHT = 62;
+const HOUR_WIDTH = 128;
 
 function formatDayLabel(isoDate: string, compact = false) {
   return new Intl.DateTimeFormat("ru-RU", {
@@ -100,7 +101,7 @@ export function TeacherScheduleCard({ schedule }: Props) {
                 type="button"
                 aria-pressed={viewMode === mode}
                 onClick={() => setViewMode(mode)}
-                className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
+                className={`cursor-pointer rounded-full px-3 py-1.5 text-xs font-semibold transition ${
                   viewMode === mode
                     ? "bg-neutral-900 text-white"
                     : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
@@ -110,13 +111,13 @@ export function TeacherScheduleCard({ schedule }: Props) {
               </button>
             ))}
           </div>
-          <button type="button" className={toolbarButtonClass} onClick={() => setActiveDateIso(nowIsoDate)}>
+          <button type="button" className={`${toolbarButtonClass} cursor-pointer`} onClick={() => setActiveDateIso(nowIsoDate)}>
             Сегодня
           </button>
-          <button type="button" aria-label="Назад" className={toolbarButtonClass} onClick={() => navigate(-1)}>
+          <button type="button" aria-label="Назад" className={`${toolbarButtonClass} cursor-pointer`} onClick={() => navigate(-1)}>
             ←
           </button>
-          <button type="button" aria-label="Вперёд" className={toolbarButtonClass} onClick={() => navigate(1)}>
+          <button type="button" aria-label="Вперёд" className={`${toolbarButtonClass} cursor-pointer`} onClick={() => navigate(1)}>
             →
           </button>
         </div>
@@ -170,7 +171,7 @@ function DayView({
             key={iso}
             type="button"
             onClick={() => onDayPick(iso)}
-            className={`shrink-0 rounded-2xl border px-3 py-2 text-left transition ${
+            className={`shrink-0 cursor-pointer rounded-2xl border px-3 py-2 text-left transition ${
               iso === activeDateIso
                 ? "border-neutral-900 bg-neutral-900 text-white"
                 : "border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50"
@@ -181,13 +182,98 @@ function DayView({
           </button>
         ))}
       </div>
-      <TimeGrid
-        days={[activeDateIso]}
+      <HorizontalDayTimeline
+        activeDateIso={activeDateIso}
         events={dayEvents}
         nowIso={nowIso}
         hourRange={hourRange}
-        singleDay
       />
+    </div>
+  );
+}
+
+function HorizontalDayTimeline({
+  activeDateIso,
+  events,
+  nowIso,
+  hourRange,
+}: {
+  activeDateIso: string;
+  events: TeacherDashboardScheduleEvent[];
+  nowIso: string;
+  hourRange: { startHour: number; endHour: number };
+}) {
+  const visibleStartMinutes = hourRange.startHour * 60;
+  const timelineWidth = (hourRange.endHour - hourRange.startHour) * HOUR_WIDTH;
+  const laneLayout = buildEventLaneLayout(events);
+  const laneById = new Map(laneLayout.map((item) => [item.id, item]));
+  const laneCount = Math.max(1, ...laneLayout.map((item) => item.laneCount));
+  const rowHeight = 74;
+  const contentHeight = laneCount * rowHeight;
+  const now = new Date(nowIso);
+  const nowDay = nowIso.slice(0, 10);
+  const nowMinutes = now.getUTCHours() * 60 + now.getUTCMinutes();
+  const showNow = nowDay === activeDateIso && nowMinutes >= visibleStartMinutes && nowMinutes <= hourRange.endHour * 60;
+  const marks = Array.from({ length: hourRange.endHour - hourRange.startHour + 1 }, (_, index) => hourRange.startHour + index);
+
+  return (
+    <div className="overflow-x-auto rounded-2xl border border-neutral-200 bg-white">
+      <div className="min-w-[720px] p-3" style={{ width: `${Math.max(720, timelineWidth + 24)}px` }}>
+        <div className="relative mb-2 h-6">
+          {marks.map((hour) => (
+            <div key={hour} className="absolute -translate-x-1/2 text-[11px] text-neutral-500" style={{ left: `${((hour - hourRange.startHour) * HOUR_WIDTH) + 12}px` }}>
+              {String(hour).padStart(2, "0")}:00
+            </div>
+          ))}
+        </div>
+        <div className="relative rounded-xl border border-neutral-100 bg-neutral-50/40" style={{ height: `${Math.max(contentHeight, 78)}px` }}>
+          {marks.map((hour) => (
+            <div
+              key={hour}
+              className="absolute bottom-0 top-0 border-l border-dashed border-neutral-200"
+              style={{ left: `${(hour - hourRange.startHour) * HOUR_WIDTH + 12}px` }}
+            />
+          ))}
+          {showNow ? (
+            <div
+              className="absolute bottom-0 top-0 z-20 border-l border-rose-400"
+              style={{ left: `${((nowMinutes - visibleStartMinutes) / 60) * HOUR_WIDTH + 12}px` }}
+            >
+              <span className="ml-1 mt-1 inline-block rounded-full bg-rose-500 px-1.5 py-0.5 text-[10px] font-semibold text-white">Сейчас</span>
+            </div>
+          ) : null}
+
+          {events.map((event) => {
+            const lane = laneById.get(event.id);
+            const start = new Date(event.startsAt);
+            const end = new Date(event.endsAt);
+            const startMinutes = start.getUTCHours() * 60 + start.getUTCMinutes();
+            const endMinutes = end.getUTCHours() * 60 + end.getUTCMinutes();
+            const left = ((startMinutes - visibleStartMinutes) / 60) * HOUR_WIDTH + 16;
+            const width = Math.max(140, ((endMinutes - startMinutes) / 60) * HOUR_WIDTH - 8);
+            const top = (lane?.laneIndex ?? 0) * rowHeight + 8;
+
+            return (
+              <Link
+                key={event.id}
+                href={event.href}
+                className="landing-card absolute z-10 block h-16 cursor-pointer overflow-hidden p-2 text-xs text-neutral-700 transition hover:border-sky-300 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500"
+                style={{ left: `${left}px`, width: `${width}px`, top: `${top}px` }}
+              >
+                <p className="truncate font-semibold text-neutral-900">{event.groupLabel}</p>
+                <p className="truncate text-[11px]">{event.lessonTitle}</p>
+                <p className="text-[11px] text-neutral-500">{event.timeRangeLabel} · {event.formatLabel}</p>
+              </Link>
+            );
+          })}
+
+          {events.length === 0 ? (
+            <div className="absolute inset-x-2 top-2 rounded-xl border border-dashed border-neutral-200 bg-white/80 p-3 text-xs text-neutral-500">
+              На этот день занятий не запланировано.
+            </div>
+          ) : null}
+        </div>
+      </div>
     </div>
   );
 }
@@ -292,7 +378,7 @@ function TimeGrid({
                     <Link
                       key={event.id}
                       href={event.href}
-                      className="landing-card absolute z-10 overflow-hidden p-2 text-xs text-neutral-700 transition hover:border-sky-300 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500"
+                      className="landing-card absolute z-10 cursor-pointer overflow-hidden p-2 text-xs text-neutral-700 transition hover:border-sky-300 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500"
                       style={{
                         top: `${top}px`,
                         left: `${left + 1}%`,
@@ -368,7 +454,7 @@ function MonthView({
                   key={iso}
                   type="button"
                   onClick={() => onSelectDate(iso)}
-                  className={`min-h-24 border-l border-neutral-100 px-2 py-2 text-left transition first:border-l-0 ${
+                  className={`min-h-24 cursor-pointer border-l border-neutral-100 px-2 py-2 text-left transition first:border-l-0 ${
                     isSelected ? "bg-sky-50" : "hover:bg-neutral-50"
                   }`}
                 >
@@ -400,7 +486,7 @@ function MonthView({
           ) : (
             agendaEvents.map((event) => (
               <li key={event.id}>
-                <Link href={event.href} className="landing-card block p-3 hover:border-sky-300">
+                <Link href={event.href} className="landing-card block cursor-pointer p-3 hover:border-sky-300">
                   <p className="text-sm font-semibold text-neutral-900">{event.timeRangeLabel} · {event.groupLabel}</p>
                   <p className="text-xs text-neutral-600">{event.lessonTitle}</p>
                   <p className="mt-1 text-[11px] text-neutral-500">{event.formatLabel} · {event.statusLabel}</p>

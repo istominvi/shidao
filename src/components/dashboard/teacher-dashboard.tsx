@@ -48,7 +48,7 @@ export function TeacherDashboard({ readModel }: TeacherDashboardProps) {
         <div className="mt-4">
           <Link
             href={ROUTES.methodologies}
-            className="inline-flex items-center gap-2 rounded-2xl border border-neutral-200 bg-white px-4 py-2 text-sm font-semibold text-neutral-900 transition hover:bg-neutral-50"
+            className="inline-flex cursor-pointer items-center gap-2 rounded-2xl border border-neutral-200 bg-white px-4 py-2 text-sm font-semibold text-neutral-900 transition hover:bg-neutral-50"
           >
             <span aria-hidden="true">📚</span>
             <span>Методики</span>
@@ -69,7 +69,7 @@ export function TeacherDashboard({ readModel }: TeacherDashboardProps) {
             <Link
               key={action.label}
               href={action.href}
-              className="inline-flex items-center gap-2 rounded-2xl border border-neutral-200 bg-white px-4 py-2 text-sm font-semibold text-neutral-900 transition hover:bg-neutral-50"
+              className="inline-flex cursor-pointer items-center gap-2 rounded-2xl border border-neutral-200 bg-white px-4 py-2 text-sm font-semibold text-neutral-900 transition hover:bg-neutral-50"
             >
               <span aria-hidden="true">{ACTION_ICONS[action.label] ?? "•"}</span>
               <span>{action.label}</span>
@@ -82,7 +82,7 @@ export function TeacherDashboard({ readModel }: TeacherDashboardProps) {
             name="methodology"
             value={readModel.groups.filters.methodology}
             onChange={(event) => setParam("methodology", event.target.value)}
-            className="field-input"
+            className="field-input cursor-pointer"
           >
             <option value="">Все методики</option>
             {readModel.groups.filters.methodologyOptions.map((option) => (
@@ -95,7 +95,7 @@ export function TeacherDashboard({ readModel }: TeacherDashboardProps) {
             name="status"
             value={readModel.groups.filters.status}
             onChange={(event) => setParam("status", event.target.value)}
-            className="field-input"
+            className="field-input cursor-pointer"
           >
             <option value="">Все статусы</option>
             <option value="attention">Требует внимания</option>
