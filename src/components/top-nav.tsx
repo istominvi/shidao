@@ -111,10 +111,10 @@ export function TopNav() {
                     <Link
                       href={item.href}
                       aria-current={active ? "page" : undefined}
-                      className={`inline-flex min-h-9 items-center rounded-full px-3.5 text-sm font-medium transition ${
+                      className={`landing-nav-link inline-flex min-h-9 items-center px-3.5 text-sm font-medium ${
                         active
-                          ? "bg-neutral-950 text-white shadow-[0_8px_20px_rgba(15,23,42,0.18)]"
-                          : "text-neutral-700 hover:bg-black/5"
+                          ? "border-black/70 bg-neutral-950 text-white"
+                          : "text-neutral-700"
                       }`}
                     >
                       {item.label}

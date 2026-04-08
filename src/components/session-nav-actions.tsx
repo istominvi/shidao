@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { createPortal } from "react-dom";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ROUTES, type ProfileKind } from "@/lib/auth";
 import { signOutViaServer } from "@/lib/auth-flow";
@@ -103,12 +103,6 @@ export function SessionNavActions({
     };
   }, [open, portalMenu, updateMenuPosition]);
 
-  const loadingMessage = useMemo(() => {
-    if (!actionLoading) return null;
-    if (actionLoading === "signout") return "Выходим из аккаунта…";
-    return "Переключаем профиль…";
-  }, [actionLoading]);
-
   const getActionErrorMessage = useCallback(
     (error: unknown, fallback: string) => {
       if (error instanceof Error && error.message) return error.message;
@@ -192,15 +186,6 @@ export function SessionNavActions({
         </p>
         <p className="text-xs text-neutral-500">{state.email ?? "Без email"}</p>
       </div>
-      {loadingMessage && (
-        <p
-          aria-live="polite"
-          className="px-3 pb-2 text-xs text-neutral-500"
-          role="status"
-        >
-          {loadingMessage}
-        </p>
-      )}
       {actionError && (
         <p
           aria-live="assertive"
@@ -213,7 +198,7 @@ export function SessionNavActions({
 
       {state.kind === "adult" && (
         <div className="border-t border-black/5 px-3 py-2">
-          <div className="inline-flex w-full rounded-full bg-neutral-100 p-1">
+          <div className="inline-flex w-full rounded-full">
             {ADULT_PROFILE_ORDER.map((profile) => {
               const available = state.availableProfiles.includes(profile);
               const active = state.activeProfile === profile;
@@ -222,13 +207,13 @@ export function SessionNavActions({
                 <button
                   key={profile}
                   type="button"
-                  className={`min-h-10 flex-1 rounded-full px-4 text-sm font-medium transition ${
+                  className={`landing-nav-link min-h-10 flex-1 px-4 text-sm font-medium ${
                     active
-                      ? "bg-neutral-950 text-white shadow-[0_8px_20px_rgba(15,23,42,0.18)]"
+                      ? "border-black/70 bg-neutral-950 text-white"
                       : "text-neutral-700"
                   } ${
                     !active && available
-                      ? "cursor-pointer hover:bg-black/5"
+                      ? "cursor-pointer"
                       : "disabled:cursor-not-allowed disabled:opacity-60"
                   }`}
                   onClick={() => {
