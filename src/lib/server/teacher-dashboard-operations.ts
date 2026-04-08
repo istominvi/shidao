@@ -10,12 +10,6 @@ export type TeacherGroupOperationsRow = {
   id: string;
   groupLabel: string;
   studentCount: number;
-  students: Array<{
-    id: string;
-    fullName: string | null;
-    login: string | null;
-    displayName: string;
-  }>;
   methodologyLabel: string | null;
   progressLabel: string;
   progressRatio: number | null;
@@ -223,18 +217,10 @@ async function buildOperationsSnapshot(
       ? methodologyLessonTotalsByMethodologyId[group.methodologyId] ?? 0
       : null;
 
-    const students = (studentsByClass[group.id] ?? []).map((student) => ({
-      id: student.id,
-      fullName: student.fullName,
-      login: student.login,
-      displayName: student.fullName || student.login || "Ученик",
-    }));
-
     return {
       id: group.id,
       groupLabel: clean(group.name) || "Группа",
-      studentCount: students.length,
-      students,
+      studentCount: studentsByClass[group.id]?.length ?? 0,
       methodologyLabel,
       progressLabel: buildProgressLabel(completedLessons, knownMethodologyLessonTotal),
       progressRatio:

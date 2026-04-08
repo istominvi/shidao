@@ -2,8 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { BookOpenText, ChevronDown, ChevronRight, FolderPlus, Search, UserPlus } from "lucide-react";
-import { Fragment, useState } from "react";
+import { BookOpenText, ChevronDown, FolderPlus, Search, UserPlus } from "lucide-react";
 import { ROUTES } from "@/lib/auth";
 import type { TeacherDashboardOperationsReadModel } from "@/lib/server/teacher-dashboard-operations";
 import { TeacherScheduleCard } from "./teacher-schedule-card";
@@ -21,7 +20,6 @@ export function TeacherDashboard({ readModel }: TeacherDashboardProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const [expandedGroupIds, setExpandedGroupIds] = useState<Record<string, boolean>>({});
 
   function setParam(key: string, value: string) {
     const params = new URLSearchParams(searchParams.toString());
@@ -31,13 +29,6 @@ export function TeacherDashboard({ readModel }: TeacherDashboardProps) {
       params.delete(key);
     }
     router.replace(`${pathname}?${params.toString()}`);
-  }
-
-  function toggleGroup(groupId: string) {
-    setExpandedGroupIds((current) => ({
-      ...current,
-      [groupId]: !current[groupId],
-    }));
   }
 
   return (
@@ -125,85 +116,28 @@ export function TeacherDashboard({ readModel }: TeacherDashboardProps) {
               </tr>
             </thead>
             <tbody>
-              {readModel.groups.rows.map((group) => {
-                const isExpanded = Boolean(expandedGroupIds[group.id]);
-                const expandedId = `group-students-${group.id}`;
-                return (
-                  <Fragment key={group.id}>
-                    <tr
-                      className="cursor-pointer border-t border-neutral-200 align-top transition hover:bg-sky-50/45"
-                      onClick={() => router.push(group.groupHref)}
-                    >
-                      <td className="px-4 py-3 font-semibold text-neutral-950">
-                        <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              toggleGroup(group.id);
-                            }}
-                            aria-expanded={isExpanded}
-                            aria-controls={expandedId}
-                            className="teacher-disclosure-btn"
-                          >
-                            {isExpanded ? (
-                              <ChevronDown className="h-4 w-4" aria-hidden="true" />
-                            ) : (
-                              <ChevronRight className="h-4 w-4" aria-hidden="true" />
-                            )}
-                            <span className="sr-only">
-                              {isExpanded ? "Свернуть группу" : "Раскрыть группу"}
-                            </span>
-                          </button>
-                          <span>{group.groupLabel}</span>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-neutral-700">{group.methodologyLabel ?? "Не назначена"}</td>
-                      <td className="px-4 py-3 text-neutral-700">{group.studentCount}</td>
-                      <td className="px-4 py-3 text-neutral-700">{group.progressLabel}</td>
-                      <td className="px-4 py-3 text-neutral-700">
-                        {group.nextLessonLabel ? (
-                          <>
-                            <div>{group.nextLessonLabel}</div>
-                            <div className="text-xs text-neutral-500">{group.nextLessonTitle}</div>
-                          </>
-                        ) : (
-                          "Не запланировано"
-                        )}
-                      </td>
-                    </tr>
-                    {isExpanded ? (
-                      <tr id={expandedId} className="border-t border-neutral-200 bg-neutral-50/70">
-                        <td colSpan={5} className="px-4 py-3">
-                          {group.students.length > 0 ? (
-                            <ul className="space-y-2">
-                              {group.students.map((student) => (
-                                <li key={student.id} className="flex items-center justify-between gap-3 text-sm">
-                                  <span className="font-medium text-neutral-900">{student.displayName}</span>
-                                  {student.login ? (
-                                    <span className="text-xs text-neutral-500">{student.login}</span>
-                                  ) : null}
-                                </li>
-                              ))}
-                            </ul>
-                          ) : (
-                            <div className="flex flex-wrap items-center gap-3 text-sm text-neutral-600">
-                              <span>В группе пока нет учеников.</span>
-                              <Link
-                                href={`${ROUTES.studentsNew}?groupId=${encodeURIComponent(group.id)}`}
-                                className="text-sky-700 underline underline-offset-2"
-                                onClick={(event) => event.stopPropagation()}
-                              >
-                                Добавить ученика
-                              </Link>
-                            </div>
-                          )}
-                        </td>
-                      </tr>
-                    ) : null}
-                  </Fragment>
-                );
-              })}
+              {readModel.groups.rows.map((group) => (
+                <tr
+                  key={group.id}
+                  className="cursor-pointer border-t border-neutral-200 align-top transition hover:bg-sky-50/45"
+                  onClick={() => router.push(group.groupHref)}
+                >
+                  <td className="px-4 py-3 font-semibold text-neutral-950">{group.groupLabel}</td>
+                  <td className="px-4 py-3 text-neutral-700">{group.methodologyLabel ?? "Не назначена"}</td>
+                  <td className="px-4 py-3 text-neutral-700">{group.studentCount}</td>
+                  <td className="px-4 py-3 text-neutral-700">{group.progressLabel}</td>
+                  <td className="px-4 py-3 text-neutral-700">
+                    {group.nextLessonLabel ? (
+                      <>
+                        <div>{group.nextLessonLabel}</div>
+                        <div className="text-xs text-neutral-500">{group.nextLessonTitle}</div>
+                      </>
+                    ) : (
+                      "Не запланировано"
+                    )}
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
           {readModel.groups.rows.length === 0 ? (

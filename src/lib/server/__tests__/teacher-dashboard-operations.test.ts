@@ -72,7 +72,7 @@ const deps = {
   ] as never,
 };
 
-test("dashboard operations model builds rows, students and schedule", async () => {
+test("dashboard operations model builds rows and schedule", async () => {
   const model = await getTeacherDashboardOperationsReadModel(
     {
       teacherId: "t-1",
@@ -83,12 +83,7 @@ test("dashboard operations model builds rows, students and schedule", async () =
 
   assert.equal(model.groups.rows.length, 2);
   const foxes = model.groups.rows.find((row) => row.groupLabel === "Лисички");
-  const dragons = model.groups.rows.find((row) => row.groupLabel === "Драконы");
   assert.equal(foxes?.progressLabel, "1/2 (50%)");
-  assert.deepEqual(foxes?.students, [
-    { id: "s-1", fullName: "Анна", login: "anna", displayName: "Анна" },
-  ]);
-  assert.deepEqual(dragons?.students, []);
   assert.equal(model.schedule.totalLessons, 3);
   const fallbackEvent = model.schedule.events.find((event) => event.id === "sl-2");
   const configuredEvent = model.schedule.events.find((event) => event.id === "sl-1");
