@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { AppCard } from "@/components/app/app-card";
+import { AppPageHeader } from "@/components/app/page-header";
 import { ROUTES } from "@/lib/auth";
 import type { TeacherLessonsHubReadModel } from "@/lib/server/teacher-lessons-hub";
 
@@ -48,15 +50,16 @@ function LessonsSection({
       </div>
 
       {cards.length === 0 ? (
-        <article className="landing-surface rounded-3xl border border-dashed border-neutral-300 p-5 text-sm text-neutral-600">
+        <AppCard className="border-dashed border-neutral-300 p-5 text-sm text-neutral-600" as="article">
           {emptyText}
-        </article>
+        </AppCard>
       ) : (
         <div className="grid gap-3">
           {cards.map((lesson) => (
-            <article
+            <AppCard
               key={lesson.scheduledLessonId}
-              className="landing-surface rounded-3xl border border-white/80 p-5"
+              className="p-5"
+              as="article"
             >
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
@@ -98,7 +101,7 @@ function LessonsSection({
                   Открыть занятие
                 </Link>
               </div>
-            </article>
+            </AppCard>
           ))}
         </div>
       )}
@@ -113,25 +116,23 @@ export function TeacherLessonsHub({
 }: TeacherLessonsHubProps) {
   return (
     <div className="space-y-8 lg:space-y-10">
-      <header className="landing-surface rounded-[2rem] border border-white/80 p-6 shadow-[0_24px_72px_rgba(15,23,42,0.12)] md:p-8">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-sky-700">
-          Рабочее пространство преподавателя
-        </p>
-        <h1 className="mt-3 text-3xl font-black tracking-[-0.03em] text-neutral-950 md:text-4xl">
-          Глобальный индекс занятий
-        </h1>
-        <p className="mt-3 max-w-3xl text-sm leading-6 text-neutral-700 md:text-base">
-          Это кросс-групповое расписание: здесь видно занятия по всем группам.
-          Основной рабочий контекст преподавателя — страницы групп.
-        </p>
-        <p className="mt-3 text-sm text-neutral-700">
+      <AppPageHeader
+        eyebrow="Рабочее пространство преподавателя"
+        title="Глобальный индекс занятий"
+        description={(
+          <>
+            Это кросс-групповое расписание: здесь видно занятия по всем группам.
+            Основной рабочий контекст преподавателя — страницы групп.
+          </>
+        )}
+        actions={(
           <Link href={ROUTES.groups} className="font-semibold text-sky-700 underline underline-offset-2">
             Перейти к группам
           </Link>
-        </p>
-      </header>
+        )}
+      />
 
-      <section className="landing-surface rounded-3xl border border-white/80 p-5 md:p-6">
+      <AppCard className="p-5 md:p-6">
         <h2 className="text-xl font-bold tracking-[-0.02em] text-neutral-950">
           Запланировать занятие (пока глобально)
         </h2>
@@ -249,7 +250,7 @@ export function TeacherLessonsHub({
             </button>
           </div>
         </form>
-      </section>
+      </AppCard>
 
       <LessonsSection
         title="Ближайшие занятия"

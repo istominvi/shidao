@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { TeacherDashboardScheduleEvent } from "@/lib/server/teacher-dashboard-operations";
 import type { TeacherDashboardOperationsReadModel } from "@/lib/server/teacher-dashboard-operations";
+import { AppCard } from "@/components/app/app-card";
 import {
   buildEventLaneLayout,
   getMonthMatrix,
@@ -65,7 +66,7 @@ export function TeacherScheduleCard({ schedule }: Props) {
   const nextInRange = rangeEvents.find((event) => Date.parse(event.startsAt) >= nowTs) ?? null;
 
   return (
-    <section className="landing-surface rounded-3xl border border-white/80 p-4 md:p-5">
+    <AppCard className="p-4 md:p-5">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <h2 className="text-xl font-black text-neutral-950">Расписание</h2>
@@ -119,7 +120,7 @@ export function TeacherScheduleCard({ schedule }: Props) {
           <ListView events={schedule.events} nowIso={schedule.nowIso} />
         ) : null}
       </div>
-    </section>
+    </AppCard>
   );
 }
 

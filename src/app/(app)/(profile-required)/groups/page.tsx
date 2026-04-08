@@ -3,6 +3,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { isRedirectError } from "next/dist/client/components/redirect-error";
 import { TopNav } from "@/components/top-nav";
+import { AppPageHeader } from "@/components/app/page-header";
 import { TeacherGroupsCard } from "@/components/dashboard/teacher-groups-card";
 import { ROUTES, toGroupRoute } from "@/lib/auth";
 import { listMethodologiesAdmin } from "@/lib/server/lesson-content-repository";
@@ -79,9 +80,7 @@ export default async function TeacherGroupsPage({
       <div className="landing-noise" aria-hidden="true" />
       <TopNav />
       <div className="container py-7 md:py-10 space-y-6">
-        <header className="landing-surface rounded-3xl border border-white/80 p-4 md:p-6">
-          <h1 className="text-3xl font-black tracking-[-0.03em] text-neutral-950 md:text-4xl">Группы</h1>
-        </header>
+        <AppPageHeader title="Группы" />
 
         <TeacherGroupsCard
           title="Мои группы"

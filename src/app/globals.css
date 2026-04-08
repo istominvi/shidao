@@ -244,6 +244,89 @@ a {
     inset 0 1px 0 rgba(255, 255, 255, 0.82);
 }
 
+.app-page-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.35rem 0.2rem 0.15rem;
+}
+
+.app-page-back-link {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.68rem;
+  font-weight: 650;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #0369a1;
+  text-decoration: none;
+}
+
+.app-page-back-link:hover,
+.app-page-back-link:focus-visible {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.app-page-back-link:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.3);
+  border-radius: 999px;
+}
+
+.app-page-eyebrow {
+  margin: 0;
+  font-size: 0.68rem;
+  font-weight: 650;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #0369a1;
+}
+
+.app-page-title {
+  margin: 0;
+  font-size: clamp(1.9rem, 3.6vw, 2.5rem);
+  line-height: 1.07;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  color: #0a0a0a;
+}
+
+.app-page-description {
+  margin: 0;
+  max-width: 56rem;
+  font-size: 0.95rem;
+  line-height: 1.7;
+  color: #404040;
+}
+
+.app-page-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.app-page-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.app-card {
+  border-radius: 1.6rem;
+  border: 1px solid rgba(20, 20, 20, 0.1);
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow:
+    0 10px 24px rgba(20, 20, 20, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.app-card-muted {
+  background: rgba(255, 255, 255, 0.92);
+}
+
 .product-hero-card {
   position: relative;
   overflow: hidden;

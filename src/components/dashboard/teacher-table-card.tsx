@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { AppCard } from "@/components/app/app-card";
 
 type TeacherTableCardProps = {
   title: string;
@@ -18,17 +19,17 @@ export function TeacherTableCard({
   children,
 }: TeacherTableCardProps) {
   return (
-    <section className="landing-surface rounded-3xl border border-white/80 p-4 md:p-5">
+    <AppCard className="p-4 md:p-5">
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-xl font-black text-neutral-950">{title}</h2>
         {headerAction}
       </div>
       {controls ? <div className="mt-4">{controls}</div> : null}
 
-      <div className="mt-4 overflow-x-auto rounded-2xl border border-neutral-200 bg-white">
+      <div className="mt-4 overflow-x-auto rounded-2xl border border-neutral-200 bg-white/95">
         {children}
       </div>
-    </section>
+    </AppCard>
   );
 }
 
