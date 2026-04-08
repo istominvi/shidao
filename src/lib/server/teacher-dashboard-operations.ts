@@ -57,6 +57,7 @@ export type TeacherDashboardOperationsReadModel = {
 };
 
 export type TeacherGroupsIndexOperationsReadModel = {
+  actions: Array<{ label: string; href: string; tone: "primary" | "secondary" }>;
   rows: TeacherGroupOperationsRow[];
   filters: {
     search: string;
@@ -305,6 +306,13 @@ async function buildOperationsSnapshot(
   };
 }
 
+function buildTeacherGroupActions() {
+  return [
+    { label: "Добавить группу", href: `${ROUTES.groups}?create=1`, tone: "secondary" as const },
+    { label: "Добавить ученика", href: ROUTES.studentsNew, tone: "secondary" as const },
+  ];
+}
+
 export async function getTeacherDashboardOperationsReadModel(
   input: {
     teacherId: string;
@@ -318,10 +326,7 @@ export async function getTeacherDashboardOperationsReadModel(
   const snapshot = await buildOperationsSnapshot(input, deps);
 
   return {
-    actions: [
-      { label: "Добавить группу", href: `${ROUTES.groups}?create=1`, tone: "secondary" },
-      { label: "Добавить ученика", href: ROUTES.studentsNew, tone: "secondary" },
-    ],
+    actions: buildTeacherGroupActions(),
     groups: {
       rows: snapshot.filteredRows
         .sort((a, b) => a.groupLabel.localeCompare(b.groupLabel, "ru-RU")),
@@ -343,6 +348,7 @@ export async function getTeacherGroupsIndexOperationsReadModel(
   const snapshot = await buildOperationsSnapshot(input, deps);
 
   return {
+    actions: buildTeacherGroupActions(),
     rows: snapshot.filteredRows
       .sort((a, b) => a.groupLabel.localeCompare(b.groupLabel, "ru-RU")),
     filters: snapshot.filters,
