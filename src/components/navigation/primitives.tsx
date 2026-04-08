@@ -1,5 +1,10 @@
 import Link from "next/link";
-import type { CSSProperties, ReactNode } from "react";
+import {
+  forwardRef,
+  type ComponentPropsWithoutRef,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
 
 function cx(...parts: Array<string | false | null | undefined>) {
   return parts.filter(Boolean).join(" ");
@@ -48,6 +53,7 @@ type NavPillButtonProps = {
   active?: boolean;
   unavailable?: boolean;
   loading?: boolean;
+  disabled?: boolean;
   onClick?: () => void;
   className?: string;
   type?: "button" | "submit" | "reset";
@@ -59,12 +65,13 @@ export function NavPillButton({
   active = false,
   unavailable = false,
   loading = false,
+  disabled = false,
   onClick,
   className,
   type = "button",
   ariaPressed,
 }: NavPillButtonProps) {
-  const isDisabled = unavailable || loading;
+  const isDisabled = unavailable || loading || disabled;
 
   return (
     <button
@@ -85,19 +92,25 @@ export function NavPillButton({
   );
 }
 
-type DropdownPanelProps = {
-  children: ReactNode;
+type DropdownPanelProps = ComponentPropsWithoutRef<"div"> & {
   className?: string;
   style?: CSSProperties;
 };
 
-export function NavigationDropdownPanel({ children, className, style }: DropdownPanelProps) {
-  return (
-    <div className={cx("nav-dropdown-panel", className)} style={style}>
-      {children}
-    </div>
-  );
-}
+export const NavigationDropdownPanel = forwardRef<HTMLDivElement, DropdownPanelProps>(
+  function NavigationDropdownPanel({ children, className, style, ...props }, ref) {
+    return (
+      <div
+        ref={ref}
+        className={cx("nav-dropdown-panel", className)}
+        style={style}
+        {...props}
+      >
+        {children}
+      </div>
+    );
+  },
+);
 
 export function navigationDropdownItemClass(className?: string, destructive = false) {
   return cx("nav-dropdown-item", destructive && "nav-dropdown-item-destructive", className);
