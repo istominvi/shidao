@@ -8,6 +8,12 @@ import { ROUTES, type ProfileKind } from "@/lib/auth";
 import { signOutViaServer } from "@/lib/auth-flow";
 import { useSessionView } from "@/components/use-session-view";
 import type { SessionAdultView, SessionStudentView } from "@/lib/session-view";
+import {
+  NavPillButton,
+  NavSegmentedSwitch,
+  NavigationDropdownPanel,
+  navigationDropdownItemClass,
+} from "@/components/navigation/primitives";
 
 type SessionNavActionsProps = {
   state: SessionAdultView | SessionStudentView;
@@ -25,8 +31,8 @@ const MENU_GAP = 8;
 const VIEWPORT_PADDING = 8;
 const ADULT_PROFILE_ORDER: ProfileKind[] = ["teacher", "parent"];
 const ADULT_PROFILE_TOGGLE_LABELS: Record<ProfileKind, string> = {
-  teacher: "Учителя",
-  parent: "Родителя",
+  teacher: "Учитель",
+  parent: "Родитель",
 };
 
 export function SessionNavActions({
@@ -171,9 +177,8 @@ export function SessionNavActions({
   }
 
   const menu = (
-    <div
-      ref={menuRef}
-      className={`landing-surface w-72 rounded-2xl border border-black/10 bg-white/95 p-2 shadow-xl backdrop-blur-xl ${portalMenu ? "fixed z-[260]" : "absolute right-0 z-[120] mt-2"}`}
+    <NavigationDropdownPanel
+      className={`w-72 ${portalMenu ? "fixed z-[260]" : "absolute right-0 z-[120] mt-2"}`}
       style={
         portalMenu && menuPosition
           ? { top: menuPosition.top, left: menuPosition.left }
@@ -198,52 +203,44 @@ export function SessionNavActions({
 
       {state.kind === "adult" && (
         <div className="border-t border-black/5 px-3 py-2">
-          <div className="inline-flex w-full rounded-full">
+          <NavSegmentedSwitch>
             {ADULT_PROFILE_ORDER.map((profile) => {
               const available = state.availableProfiles.includes(profile);
               const active = state.activeProfile === profile;
               const isSwitchLoading = actionLoading === `switch:${profile}`;
               return (
-                <button
+                <NavPillButton
                   key={profile}
-                  type="button"
-                  className={`landing-nav-link min-h-10 flex-1 px-4 text-sm font-medium ${
-                    active
-                      ? "border-black/70 bg-neutral-950 text-white"
-                      : "text-neutral-700"
-                  } ${
-                    !active && available
-                      ? "cursor-pointer"
-                      : "disabled:cursor-not-allowed disabled:opacity-60"
-                  }`}
+                  active={active}
+                  unavailable={!available}
+                  loading={isSwitchLoading}
+                  ariaPressed={active}
+                  className="min-h-10 flex-1 px-4 text-sm font-medium"
                   onClick={() => {
-                    if (!active && available) {
+                    if (!active && available && !isSwitchLoading) {
                       void handleSwitch(profile);
                     }
                   }}
-                  disabled={active || !available || isSwitchLoading}
-                  aria-pressed={active}
-                  aria-busy={isSwitchLoading}
                 >
                   {ADULT_PROFILE_TOGGLE_LABELS[profile]}
-                </button>
+                </NavPillButton>
               );
             })}
-          </div>
+          </NavSegmentedSwitch>
         </div>
       )}
 
       <div className="border-t border-black/5 py-1">
         <Link
           href={ROUTES.settingsProfile}
-          className="block rounded-xl px-3 py-2 text-sm font-medium hover:bg-black/5"
+          className={navigationDropdownItemClass()}
           onClick={() => setOpen(false)}
         >
           Настройки
         </Link>
 
         <button
-          className="w-full rounded-xl px-3 py-2 text-left text-sm font-medium hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-60"
+          className={navigationDropdownItemClass(undefined, true)}
           onClick={handleSignOut}
           disabled={actionLoading === "signout"}
           aria-busy={actionLoading === "signout"}
@@ -252,7 +249,7 @@ export function SessionNavActions({
           {actionLoading === "signout" ? "Выход…" : "Выход"}
         </button>
       </div>
-    </div>
+    </NavigationDropdownPanel>
   );
 
   return (

@@ -1,14 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ROUTES } from "@/lib/auth";
 import { useSessionView } from "@/components/use-session-view";
-import { isRouteWithin } from "@/lib/routes";
-
-function linkClassName(isActive: boolean) {
-  return `rounded-xl px-3 py-2 text-sm transition ${isActive ? "bg-black text-white" : "text-neutral-700 hover:bg-black/5"}`;
-}
+import { NavPillLink } from "@/components/navigation/primitives";
+import { SETTINGS_NAV_SECTIONS } from "@/lib/navigation/settings-nav";
 
 export function SettingsNavigation() {
   const pathname = usePathname();
@@ -16,44 +11,37 @@ export function SettingsNavigation() {
   const isAdult = state.kind === "adult";
 
   return (
-    <nav className="glass rounded-2xl p-3" aria-label="Навигация по настройкам">
-      <div className="space-y-1">
-        <p className="px-3 pb-1 text-xs font-semibold uppercase tracking-wide text-neutral-500">
-          Личное
-        </p>
-        <Link
-          href={ROUTES.settingsProfile}
-          className={linkClassName(
-            isRouteWithin(pathname, ROUTES.settingsProfile),
-          )}
-        >
-          Профиль и email
-        </Link>
-        <Link
-          href={ROUTES.settingsSecurity}
-          className={linkClassName(
-            isRouteWithin(pathname, ROUTES.settingsSecurity),
-          )}
-        >
-          Безопасность
-        </Link>
-      </div>
+    <nav className="glass nav-settings-shell" aria-label="Навигация по настройкам">
+      {SETTINGS_NAV_SECTIONS.map((section, sectionIndex) => {
+        if (section.adultOnly && !isAdult) {
+          return null;
+        }
 
-      {isAdult && (
-        <div className="mt-4 space-y-1 border-t border-black/10 pt-3">
-          <p className="px-3 pb-1 text-xs font-semibold uppercase tracking-wide text-neutral-500">
-            Администрирование
-          </p>
-          <Link
-            href={ROUTES.settingsTeam}
-            className={linkClassName(
-              isRouteWithin(pathname, ROUTES.settingsTeam),
-            )}
+        return (
+          <div
+            key={section.id}
+            className={sectionIndex === 0 ? "space-y-1" : "mt-4 space-y-1 border-t border-black/10 pt-3"}
           >
-            Команда и приглашения
-          </Link>
-        </div>
-      )}
+            <p className="px-3 pb-1 text-xs font-semibold uppercase tracking-wide text-neutral-500">
+              {section.title}
+            </p>
+            {section.items.map((item) => {
+              const active = item.isActive(pathname);
+              return (
+                <NavPillLink
+                  key={item.id}
+                  href={item.href}
+                  active={active}
+                  ariaCurrent={active ? "page" : undefined}
+                  className="flex min-h-10 rounded-xl px-3 text-sm font-medium"
+                >
+                  {item.label}
+                </NavPillLink>
+              );
+            })}
+          </div>
+        );
+      })}
     </nav>
   );
 }
