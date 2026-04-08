@@ -28,21 +28,21 @@ export type TeacherGroupOperationsRow = {
   groupLessonsHref: string;
 };
 
-export type TeacherDashboardScheduleItem = {
+export type TeacherDashboardScheduleEvent = {
   id: string;
-  dateLabel: string;
-  timeLabel: string;
+  href: string;
+  startsAt: string;
+  endsAt: string;
+  durationMinutes: number;
+  isoDate: string;
   groupLabel: string;
   lessonTitle: string;
+  status: string;
   statusLabel: string;
-  href: string;
-};
-
-export type TeacherDashboardScheduleDay = {
-  isoDate: string;
-  label: string;
-  isToday: boolean;
-  lessons: TeacherDashboardScheduleItem[];
+  format: "online" | "offline";
+  formatLabel: string;
+  timeLabel: string;
+  timeRangeLabel: string;
 };
 
 export type TeacherDashboardAlerts = {
@@ -65,7 +65,9 @@ export type TeacherDashboardOperationsReadModel = {
     };
   };
   schedule: {
-    days: TeacherDashboardScheduleDay[];
+    events: TeacherDashboardScheduleEvent[];
+    nowIso: string;
+    defaultDateIso: string;
     totalLessons: number;
     nextLessonLabel: string | null;
   };
@@ -95,6 +97,8 @@ const defaultDeps: TeacherDashboardOperationsDeps = {
   listScheduledLessonsForClasses: listScheduledLessonsForClassesAdmin,
   listMethodologyLessonsByMethodology: listMethodologyLessonsByMethodologyAdmin,
 };
+
+const SCHEDULE_DURATION_FALLBACK_MINUTES = 45;
 
 function clean(value: string | null | undefined) {
   return value?.trim() || "";
@@ -149,6 +153,14 @@ function normalizeFilter(value: string | null | undefined) {
   return clean(value).toLowerCase();
 }
 
+function formatTimeRange(startsAtIso: string, endsAtIso: string) {
+  return `${formatTime(startsAtIso)}–${formatTime(endsAtIso)}`;
+}
+
+function addMinutes(iso: string, minutes: number) {
+  return new Date(Date.parse(iso) + minutes * 60 * 1000).toISOString();
+}
+
 async function buildOperationsSnapshot(
   input: {
     teacherId: string;
@@ -167,7 +179,8 @@ async function buildOperationsSnapshot(
     deps.listStudentsForClasses(classIds),
     deps.listScheduledLessonsForClasses(classIds),
   ]);
-  const methodologyLessonTotalsEntries = await Promise.all(
+
+  const methodologyLessonEntries = await Promise.all(
     Array.from(
       new Set(
         classes
@@ -176,16 +189,32 @@ async function buildOperationsSnapshot(
       ),
     ).map(async (methodologyId) => [
       methodologyId,
-      (await deps.listMethodologyLessonsByMethodology(methodologyId)).length,
+      await deps.listMethodologyLessonsByMethodology(methodologyId),
     ] as const),
   );
+
   const methodologyLessonTotalsByMethodologyId = Object.fromEntries(
-    methodologyLessonTotalsEntries,
+    methodologyLessonEntries.map(([methodologyId, methodologyLessons]) => [
+      methodologyId,
+      methodologyLessons.length,
+    ]),
   );
 
-  const now = Date.parse(input.nowIso ?? new Date().toISOString());
-  const weekStart = Date.parse(input.weekStartsAtIso ?? input.nowIso ?? new Date().toISOString());
-  const weekEnd = weekStart + 7 * 24 * 60 * 60 * 1000;
+  const methodologyLessonMetaById = Object.fromEntries(
+    methodologyLessonEntries.flatMap(([, methodologyLessons]) =>
+      methodologyLessons.map((methodologyLesson) => [
+        methodologyLesson.id,
+        {
+          title: clean(methodologyLesson.shell.title) || null,
+          methodologyTitle: clean(methodologyLesson.methodologyTitle) || null,
+          durationMinutes: methodologyLesson.shell.estimatedDurationMinutes,
+        },
+      ]),
+    ),
+  ) as Record<string, { title: string | null; methodologyTitle: string | null; durationMinutes: number }>;
+
+  const nowIso = input.nowIso ?? new Date().toISOString();
+  const now = Date.parse(nowIso);
 
   const rows: TeacherGroupOperationsRow[] = classes.map((group) => {
     const scopedLessons = lessons
@@ -245,8 +274,9 @@ async function buildOperationsSnapshot(
           : null,
       nextLessonLabel: nextLesson ? formatDateTime(nextLesson.runtimeShell.startsAt) : null,
       nextLessonHref: nextLesson ? toLessonWorkspaceRoute(nextLesson.id) : null,
-      nextLessonTitle:
-        nextLesson ? "Занятие группы" : null,
+      nextLessonTitle: nextLesson
+        ? methodologyLessonMetaById[nextLesson.methodologyLessonId]?.title || "Занятие"
+        : null,
       status,
       statusLabel,
       attentionReasons,
@@ -275,50 +305,39 @@ async function buildOperationsSnapshot(
     return true;
   });
 
-  const scheduleSource = lessons
-    .filter((lesson) => {
-      const startsAt = Date.parse(lesson.runtimeShell.startsAt);
-      return startsAt >= weekStart && startsAt < weekEnd;
-    })
-    .sort(
-      (a, b) => Date.parse(a.runtimeShell.startsAt) - Date.parse(b.runtimeShell.startsAt),
-    );
+  const groupLabelByClassId = Object.fromEntries(rows.map((row) => [row.id, row.groupLabel]));
 
-  const todayIso = new Date(now).toISOString().slice(0, 10);
-  const scheduleByDay = new Map<string, TeacherDashboardScheduleItem[]>();
+  const scheduleEvents = lessons
+    .slice()
+    .sort((a, b) => Date.parse(a.runtimeShell.startsAt) - Date.parse(b.runtimeShell.startsAt))
+    .map((lesson): TeacherDashboardScheduleEvent => {
+      const startsAt = lesson.runtimeShell.startsAt;
+      const meta = methodologyLessonMetaById[lesson.methodologyLessonId];
+      const durationMinutes = meta?.durationMinutes || SCHEDULE_DURATION_FALLBACK_MINUTES;
+      const endsAt = addMinutes(startsAt, durationMinutes);
+      const lessonTitle = meta?.title || meta?.methodologyTitle || "Занятие";
 
-  for (const lesson of scheduleSource) {
-    const isoDate = lesson.runtimeShell.startsAt.slice(0, 10);
-    const items = scheduleByDay.get(isoDate) ?? [];
-    const methodologyLabel = clean(
-      rows.find((row) => row.id === lesson.runtimeShell.classId)?.methodologyLabel,
-    );
-
-    items.push({
-      id: lesson.id,
-      dateLabel: formatDate(lesson.runtimeShell.startsAt),
-      timeLabel: formatTime(lesson.runtimeShell.startsAt),
-      groupLabel:
-        rows.find((row) => row.id === lesson.runtimeShell.classId)?.groupLabel ||
-        "Группа",
-      lessonTitle: methodologyLabel || "Занятие",
-      statusLabel: formatStatus(lesson.runtimeShell.runtimeStatus),
-      href: toLessonWorkspaceRoute(lesson.id),
+      return {
+        id: lesson.id,
+        href: toLessonWorkspaceRoute(lesson.id),
+        startsAt,
+        endsAt,
+        durationMinutes,
+        isoDate: startsAt.slice(0, 10),
+        groupLabel: groupLabelByClassId[lesson.runtimeShell.classId] || "Группа",
+        lessonTitle,
+        status: lesson.runtimeShell.runtimeStatus,
+        statusLabel: formatStatus(lesson.runtimeShell.runtimeStatus),
+        format: lesson.runtimeShell.format,
+        formatLabel: lesson.runtimeShell.format === "online" ? "Онлайн" : "Офлайн",
+        timeLabel: formatTime(startsAt),
+        timeRangeLabel: formatTimeRange(startsAt, endsAt),
+      };
     });
 
-    scheduleByDay.set(isoDate, items);
-  }
-
-  const days: TeacherDashboardScheduleDay[] = Array.from(scheduleByDay.entries())
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([isoDate, dayLessons]) => ({
-      isoDate,
-      label: dayLessons[0]?.dateLabel ?? isoDate,
-      isToday: isoDate === todayIso,
-      lessons: dayLessons,
-    }));
-
-  const lessonsToday = days.find((day) => day.isoDate === todayIso)?.lessons.length ?? 0;
+  const defaultDateIso = nowIso.slice(0, 10);
+  const lessonsToday = scheduleEvents.filter((event) => event.isoDate === defaultDateIso).length;
+  const nextLesson = scheduleEvents.find((event) => Date.parse(event.startsAt) >= now) ?? null;
 
   return {
     rows,
@@ -332,11 +351,11 @@ async function buildOperationsSnapshot(
       ).sort((a, b) => a.localeCompare(b, "ru-RU")),
     },
     schedule: {
-      days,
-      totalLessons: scheduleSource.length,
-      nextLessonLabel: scheduleSource[0]
-        ? `${formatDate(scheduleSource[0].runtimeShell.startsAt)} · ${formatTime(scheduleSource[0].runtimeShell.startsAt)}`
-        : null,
+      events: scheduleEvents,
+      nowIso,
+      defaultDateIso,
+      totalLessons: scheduleEvents.length,
+      nextLessonLabel: nextLesson ? `${formatDate(nextLesson.startsAt)} · ${formatTime(nextLesson.startsAt)}` : null,
     },
     alerts: {
       groupsWithoutStudents: rows.filter((row) => row.studentCount === 0).length,
@@ -372,7 +391,7 @@ export async function getTeacherDashboardOperationsReadModel(
     actions: [
       { label: "Добавить группу", href: ROUTES.groupsNew, tone: "secondary" },
       { label: "Добавить ученика", href: ROUTES.studentsNew, tone: "secondary" },
-          ],
+    ],
     groups: {
       rows: snapshot.filteredRows
         .sort((a, b) => a.groupLabel.localeCompare(b.groupLabel, "ru-RU")),

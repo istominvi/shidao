@@ -29,9 +29,24 @@ const deps = {
     },
     {
       id: "sl-2",
-      methodologyLessonId: "ml-1",
+      methodologyLessonId: "missing-lesson",
       runtimeShell: {
         id: "sl-2",
+        classId: "class-1",
+        startsAt: "2026-04-09T12:15:00Z",
+        format: "offline" as const,
+        place: "A101",
+        runtimeStatus: "in_progress" as const,
+        runtimeNotesSummary: "",
+      },
+      runtimeNotes: "",
+      outcomeNotes: "",
+    },
+    {
+      id: "sl-3",
+      methodologyLessonId: "ml-1",
+      runtimeShell: {
+        id: "sl-3",
         classId: "class-1",
         startsAt: "2026-04-01T10:00:00Z",
         format: "online" as const,
@@ -43,7 +58,18 @@ const deps = {
       outcomeNotes: "",
     },
   ],
-  listMethodologyLessonsByMethodology: async () => [{ id: "ml-1" }, { id: "ml-2" }] as never,
+  listMethodologyLessonsByMethodology: async () => [
+    {
+      id: "ml-1",
+      methodologyTitle: "Мир вокруг",
+      shell: { title: "Урок 1", estimatedDurationMinutes: 50 },
+    },
+    {
+      id: "ml-2",
+      methodologyTitle: "Мир вокруг",
+      shell: { title: "Урок 2", estimatedDurationMinutes: 40 },
+    },
+  ] as never,
 };
 
 test("dashboard operations model builds rows, schedule and alerts", async () => {
@@ -51,7 +77,6 @@ test("dashboard operations model builds rows, schedule and alerts", async () => 
     {
       teacherId: "t-1",
       nowIso: "2026-04-07T00:00:00Z",
-      weekStartsAtIso: "2026-04-07T00:00:00Z",
     },
     deps,
   );
@@ -61,7 +86,13 @@ test("dashboard operations model builds rows, schedule and alerts", async () => 
   const dragons = model.groups.rows.find((row) => row.groupLabel === "Драконы");
   assert.equal(foxes?.progressLabel, "1/2 (50%)");
   assert.equal(dragons?.status, "attention");
-  assert.equal(model.schedule.totalLessons, 1);
+  assert.equal(model.schedule.totalLessons, 3);
+  const fallbackEvent = model.schedule.events.find((event) => event.id === "sl-2");
+  const configuredEvent = model.schedule.events.find((event) => event.id === "sl-1");
+  assert.equal(configuredEvent?.durationMinutes, 50);
+  assert.equal(fallbackEvent?.durationMinutes, 45);
+  assert.equal(fallbackEvent?.formatLabel, "Офлайн");
+  assert.equal(fallbackEvent?.timeRangeLabel, "12:15–13:00");
   assert.equal(model.alerts.groupsWithoutStudents, 1);
   assert.equal(model.actions[0]?.href, "/groups/new");
 });
