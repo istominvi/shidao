@@ -11,8 +11,10 @@ import {
   type CreateScheduledLessonAdminInput,
 } from "./lesson-content-repository";
 import { canAccessTeacherLessonWorkspace } from "./teacher-lesson-workspace";
+import type { TeacherDashboardScheduleEvent } from "./teacher-dashboard-operations";
 
 const allowedFormats = ["online", "offline"] as const;
+const SCHEDULE_DURATION_FALLBACK_MINUTES = 45;
 
 export type TeacherLessonHubCard = {
   scheduledLessonId: string;
@@ -27,6 +29,23 @@ export type TeacherLessonHubCard = {
 };
 
 export type TeacherLessonsHubReadModel = {
+  schedule: {
+    events: Array<
+      TeacherDashboardScheduleEvent & {
+        classId: string;
+        methodologyLessonId: string;
+        methodologyLabel: string;
+      }
+    >;
+    nowIso: string;
+    defaultDateIso: string;
+    filters: {
+      classOptions: Array<{ id: string; label: string }>;
+      methodologyOptions: Array<{ id: string; label: string }>;
+      formatOptions: Array<{ id: "online" | "offline"; label: string }>;
+      statusOptions: Array<{ id: string; label: string }>;
+    };
+  };
   upcoming: TeacherLessonHubCard[];
   past: TeacherLessonHubCard[];
   classOptions: Array<{ id: string; label: string }>;
@@ -88,8 +107,24 @@ function formatDateTime(startsAt: string) {
     .replace(",", " ·");
 }
 
+function formatTime(startsAt: string) {
+  return new Intl.DateTimeFormat("ru-RU", {
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "UTC",
+  }).format(new Date(startsAt));
+}
+
+function formatTimeRange(startsAtIso: string, endsAtIso: string) {
+  return `${formatTime(startsAtIso)}–${formatTime(endsAtIso)}`;
+}
+
 function cleanText(text: string | null | undefined) {
   return text?.trim() || "";
+}
+
+function addMinutes(iso: string, minutes: number) {
+  return new Date(Date.parse(iso) + minutes * 60 * 1000).toISOString();
 }
 
 function buildMethodologyOptionLabel(lesson: {
@@ -191,7 +226,8 @@ export async function getTeacherLessonsHub(
   const classNameById = Object.fromEntries(classNameEntries);
   const methodologyTitleById = Object.fromEntries(methodologyEntries);
 
-  const now = Date.parse(input.nowIso ?? new Date().toISOString());
+  const nowIso = input.nowIso ?? new Date().toISOString();
+  const now = Date.parse(nowIso);
 
   const upcomingLessons = scheduledLessons
     .filter((lesson) => Date.parse(lesson.runtimeShell.startsAt) >= now)
@@ -207,7 +243,81 @@ export async function getTeacherLessonsHub(
         Date.parse(b.runtimeShell.startsAt) - Date.parse(a.runtimeShell.startsAt),
     );
 
+  const methodologyMetaById = Object.fromEntries(
+    methodologyOptions.map((lesson) => [
+      lesson.id,
+      {
+        title: cleanText(lesson.title) || null,
+        methodologyTitle: cleanText(lesson.methodologyTitle) || null,
+        durationMinutes: SCHEDULE_DURATION_FALLBACK_MINUTES,
+      },
+    ]),
+  ) as Record<string, { title: string | null; methodologyTitle: string | null; durationMinutes: number }>;
+
+  const classOptions = classIds.map((classId) => ({
+    id: classId,
+    label: classNameById[classId]?.trim() || "Группа",
+  }));
+
+  const scheduleEvents = scheduledLessons
+    .slice()
+    .sort((a, b) => Date.parse(a.runtimeShell.startsAt) - Date.parse(b.runtimeShell.startsAt))
+    .map((lesson) => {
+      const startsAt = lesson.runtimeShell.startsAt;
+      const meta = methodologyMetaById[lesson.methodologyLessonId];
+      const durationMinutes = meta?.durationMinutes || SCHEDULE_DURATION_FALLBACK_MINUTES;
+      const endsAt = addMinutes(startsAt, durationMinutes);
+      const lessonTitle =
+        meta?.title ||
+        methodologyTitleById[lesson.methodologyLessonId] ||
+        meta?.methodologyTitle ||
+        "Занятие";
+
+      return {
+        id: lesson.id,
+        href: toLessonWorkspaceRoute(lesson.id),
+        startsAt,
+        endsAt,
+        durationMinutes,
+        isoDate: startsAt.slice(0, 10),
+        groupLabel: classNameById[lesson.runtimeShell.classId]?.trim() || "Группа",
+        classId: lesson.runtimeShell.classId,
+        lessonTitle,
+        methodologyLessonId: lesson.methodologyLessonId,
+        methodologyLabel:
+          methodologyTitleById[lesson.methodologyLessonId]?.trim() || "Без методики",
+        status: lesson.runtimeShell.runtimeStatus,
+        statusLabel: formatStatus(lesson.runtimeShell.runtimeStatus),
+        format: lesson.runtimeShell.format,
+        formatLabel: lesson.runtimeShell.format === "online" ? "Онлайн" : "Офлайн",
+        timeLabel: formatTime(startsAt),
+        timeRangeLabel: formatTimeRange(startsAt, endsAt),
+      };
+    });
+
   return {
+    schedule: {
+      events: scheduleEvents,
+      nowIso,
+      defaultDateIso: nowIso.slice(0, 10),
+      filters: {
+        classOptions,
+        methodologyOptions: methodologyOptions.map((lesson) => ({
+          id: lesson.id,
+          label: buildMethodologyOptionLabel(lesson),
+        })),
+        formatOptions: [
+          { id: "online", label: "Онлайн" },
+          { id: "offline", label: "Офлайн" },
+        ],
+        statusOptions: [
+          { id: "planned", label: "Запланировано" },
+          { id: "in_progress", label: "Идёт" },
+          { id: "completed", label: "Проведено" },
+          { id: "cancelled", label: "Отменено" },
+        ],
+      },
+    },
     upcoming: mapLessonsToCards({
       lessons: upcomingLessons,
       classNameById,
@@ -218,10 +328,7 @@ export async function getTeacherLessonsHub(
       classNameById,
       methodologyTitleById,
     }),
-    classOptions: classIds.map((classId) => ({
-      id: classId,
-      label: classNameById[classId]?.trim() || "Группа",
-    })),
+    classOptions,
     methodologyOptions: methodologyOptions.map((lesson) => ({
       id: lesson.id,
       label: buildMethodologyOptionLabel(lesson),
