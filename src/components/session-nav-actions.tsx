@@ -4,8 +4,7 @@ import Link from "next/link";
 import { createPortal } from "react-dom";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { PROFILE_LABELS, ROUTES, type ProfileKind } from "@/lib/auth";
-import { resolveAddProfileHref } from "@/lib/navigation-contract";
+import { ROUTES, type ProfileKind } from "@/lib/auth";
 import { signOutViaServer } from "@/lib/auth-flow";
 import { useSessionView } from "@/components/use-session-view";
 import type { SessionAdultView, SessionStudentView } from "@/lib/session-view";
@@ -24,6 +23,11 @@ type MenuPosition = {
 const MENU_WIDTH = 288;
 const MENU_GAP = 8;
 const VIEWPORT_PADDING = 8;
+const ADULT_PROFILE_ORDER: ProfileKind[] = ["teacher", "parent"];
+const ADULT_PROFILE_TOGGLE_LABELS: Record<ProfileKind, string> = {
+  teacher: "Учителя",
+  parent: "Родителя",
+};
 
 export function SessionNavActions({
   state,
@@ -40,47 +44,6 @@ export function SessionNavActions({
     `switch:${ProfileKind}` | "signout" | null
   >(null);
   const [actionError, setActionError] = useState<string | null>(null);
-
-  const canSwitch = useMemo(
-    () => state.kind === "adult" && state.availableProfiles.length > 1,
-    [state],
-  );
-  const missingProfile = useMemo<ProfileKind | null>(() => {
-    if (state.kind !== "adult") return null;
-
-    const available = state.availableProfiles;
-    if (available.includes("parent") && !available.includes("teacher"))
-      return "teacher";
-    if (available.includes("teacher") && !available.includes("parent"))
-      return "parent";
-
-    return null;
-  }, [state]);
-  const switchTargets = useMemo(
-    () =>
-      state.kind === "adult"
-        ? state.availableProfiles.filter(
-            (profile) => profile !== state.activeProfile,
-          )
-        : [],
-    [state],
-  );
-  const dashboardLabel = useMemo(() => {
-    switch (state.kind) {
-      case "student":
-        return "Кабинет ученика";
-      case "adult": {
-        const currentProfile =
-          state.activeProfile ?? state.availableProfiles[0] ?? null;
-        if (currentProfile) return PROFILE_LABELS[currentProfile];
-        return "Кабинет взрослого";
-      }
-      default: {
-        const _exhaustive: never = state;
-        return _exhaustive;
-      }
-    }
-  }, [state]);
 
   const updateMenuPosition = useCallback(() => {
     if (!portalMenu || !containerRef.current) return;
@@ -248,105 +211,56 @@ export function SessionNavActions({
         </p>
       )}
 
-      {canSwitch && (
-        <div className="border-t border-black/5 py-1">
-          {switchTargets.map((profile) => {
-            const isSwitchLoading = actionLoading === `switch:${profile}`;
-            return (
-              <button
-                key={profile}
-                className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-60"
-                onClick={() => handleSwitch(profile)}
-                disabled={isSwitchLoading}
-                aria-busy={isSwitchLoading}
-                type="button"
-              >
-                <span>Перейти в {PROFILE_LABELS[profile].toLowerCase()}</span>
-                <span className="text-xs text-neutral-500">
-                  {isSwitchLoading ? "Переключаем…" : "Сменить"}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      )}
-
-      {!canSwitch && missingProfile && (
-        <div className="border-t border-black/5 py-1">
-          <Link
-            href={resolveAddProfileHref()}
-            className="flex items-center justify-between rounded-xl px-3 py-2 text-sm hover:bg-black/5"
-            onClick={() => setOpen(false)}
-          >
-            <span>Добавить {PROFILE_LABELS[missingProfile].toLowerCase()}</span>
-            <span className="text-xs text-neutral-500">Открыть</span>
-          </Link>
+      {state.kind === "adult" && (
+        <div className="border-t border-black/5 px-3 py-2">
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-neutral-500">
+              Кабинет
+            </p>
+            <div className="inline-flex rounded-xl border border-black/10 bg-neutral-100/80 p-0.5">
+              {ADULT_PROFILE_ORDER.map((profile) => {
+                const available = state.availableProfiles.includes(profile);
+                const active = state.activeProfile === profile;
+                const isSwitchLoading = actionLoading === `switch:${profile}`;
+                return (
+                  <button
+                    key={profile}
+                    type="button"
+                    className={`rounded-lg px-2.5 py-1 text-xs font-medium transition ${
+                      active
+                        ? "bg-white text-neutral-950 shadow-sm"
+                        : "text-neutral-600"
+                    } ${
+                      !active && available
+                        ? "cursor-pointer hover:bg-white/80 hover:text-neutral-900"
+                        : ""
+                    }`}
+                    onClick={() => {
+                      if (!active && available) {
+                        void handleSwitch(profile);
+                      }
+                    }}
+                    disabled={active || !available || isSwitchLoading}
+                    aria-pressed={active}
+                    aria-busy={isSwitchLoading}
+                  >
+                    {ADULT_PROFILE_TOGGLE_LABELS[profile]}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         </div>
       )}
 
       <div className="border-t border-black/5 py-1">
         <Link
-          href={ROUTES.dashboard}
-          className="block rounded-xl px-3 py-2 text-sm hover:bg-black/5"
-          onClick={() => setOpen(false)}
-        >
-          {dashboardLabel}
-        </Link>
-
-        {state.kind === "adult" && state.activeProfile === "teacher" && (
-          <>
-            <p className="px-3 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wide text-neutral-500">
-              Преподавателю
-            </p>
-            <Link
-              href={ROUTES.groups}
-              className="block rounded-xl px-3 py-2 text-sm hover:bg-black/5"
-              onClick={() => setOpen(false)}
-            >
-              Группы
-            </Link>
-            <Link
-              href={ROUTES.lessons}
-              className="block rounded-xl px-3 py-2 text-sm hover:bg-black/5"
-              onClick={() => setOpen(false)}
-            >
-              Глобальный индекс занятий
-            </Link>
-          </>
-        )}
-
-        <p className="px-3 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wide text-neutral-500">
-          Личное
-        </p>
-        <Link
           href={ROUTES.settingsProfile}
           className="block rounded-xl px-3 py-2 text-sm hover:bg-black/5"
           onClick={() => setOpen(false)}
         >
-          Профиль и email
+          Настройки
         </Link>
-        <Link
-          href={ROUTES.settingsSecurity}
-          className="block rounded-xl px-3 py-2 text-sm hover:bg-black/5"
-          onClick={() => setOpen(false)}
-        >
-          Безопасность
-        </Link>
-
-        {state.kind === "adult" && (
-          <>
-            <p className="px-3 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wide text-neutral-500">
-              Администрирование
-            </p>
-            <Link
-              href={ROUTES.settingsTeam}
-              className="block rounded-xl px-3 py-2 text-sm hover:bg-black/5"
-              onClick={() => setOpen(false)}
-            >
-              Команда и приглашения
-            </Link>
-          </>
-        )}
 
         <button
           className="w-full rounded-xl px-3 py-2 text-left text-sm hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-60"
@@ -355,7 +269,7 @@ export function SessionNavActions({
           aria-busy={actionLoading === "signout"}
           type="button"
         >
-          {actionLoading === "signout" ? "Выходим…" : "Выйти"}
+          {actionLoading === "signout" ? "Выход…" : "Выход"}
         </button>
       </div>
     </div>
@@ -366,18 +280,13 @@ export function SessionNavActions({
       <button
         type="button"
         onClick={() => setOpen((prev) => !prev)}
-        className={`landing-btn landing-btn-muted inline-flex min-h-11 items-center gap-3 rounded-full border-black/10 bg-white/90 px-2 py-1.5 ${variant === "landing" ? "w-full justify-center sm:w-auto" : ""}`}
+        className={`landing-btn landing-btn-muted inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-full border-black/10 bg-white/90 px-2 py-1 ${variant === "landing" ? "w-full justify-center sm:w-auto" : ""}`}
       >
-        <span className="inline-flex size-8 items-center justify-center rounded-full bg-black text-xs font-bold text-white">
+        <span className="inline-flex size-7 items-center justify-center rounded-full bg-black text-[11px] font-bold text-white">
           {state.initials ?? "U"}
         </span>
-        <span className="hidden text-left md:block">
-          <span className="block text-sm font-semibold leading-tight">
-            {state.fullName ?? "Пользователь"}
-          </span>
-          <span className="block text-xs text-neutral-500">
-            {state.email ?? "Без email"}
-          </span>
+        <span className="hidden max-w-[16ch] truncate text-sm font-semibold leading-tight text-neutral-900 md:block">
+          {state.fullName ?? "Пользователь"}
         </span>
       </button>
 
