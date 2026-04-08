@@ -81,7 +81,10 @@ export default async function TeacherGroupPage({
       <TopNav />
       <div className="container py-7 md:py-10 space-y-6">
         <header className="landing-surface rounded-[2rem] border border-white/80 p-6 shadow-[0_24px_72px_rgba(15,23,42,0.12)] md:p-8">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-sky-700">Группа</p>
+          <Link href={ROUTES.groups} className="inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-sky-700 underline-offset-2 hover:underline">
+            <span aria-hidden="true">←</span>
+            <span>Группы</span>
+          </Link>
           <h1 className="mt-3 text-3xl font-black tracking-[-0.03em] text-neutral-950 md:text-4xl">
             {readModel.group.label}
           </h1>
