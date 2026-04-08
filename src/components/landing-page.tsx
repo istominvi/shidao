@@ -339,7 +339,7 @@ export function LandingPage() {
               href={ROUTES.home}
               className="text-xl font-black tracking-tight transition hover:opacity-80"
             >
-              Shidao
+              Shidao™
             </Link>
             <nav
               aria-label="Навигация по лендингу"
