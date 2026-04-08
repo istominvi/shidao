@@ -89,6 +89,12 @@ export type TeacherLessonWorkspaceReadModel = {
   projection: TeacherLessonProjection;
   presentation: TeacherLessonWorkspacePresentation;
   homework: TeacherLessonHomeworkReadModel;
+  sourceLesson: {
+    methodologySlug: string;
+    lessonId: string;
+    methodologyTitle: string;
+    positionLabel: string;
+  } | null;
   communication: {
     lessonScoped: Array<{
       studentId: string;
@@ -510,6 +516,7 @@ export function buildTeacherLessonWorkspaceReadModel(input: {
   classDisplayName?: string | null;
   assets: ReusableAsset[];
   homework: TeacherLessonHomeworkReadModel;
+  sourceLesson?: TeacherLessonWorkspaceReadModel["sourceLesson"];
   communication?: TeacherLessonWorkspaceReadModel["communication"];
 }): TeacherLessonWorkspaceReadModel {
   const sortedProjection: TeacherLessonProjection = {
@@ -532,6 +539,7 @@ export function buildTeacherLessonWorkspaceReadModel(input: {
       assetsById,
     }),
     homework: input.homework,
+    sourceLesson: input.sourceLesson ?? null,
     communication: input.communication ?? {
       lessonScoped: [],
       homeworkScoped: [],
@@ -589,6 +597,12 @@ export async function getTeacherLessonWorkspaceByScheduledLessonId(
     classDisplayName,
     assets,
     homework,
+    sourceLesson: {
+      methodologySlug: methodologyLesson.methodologySlug,
+      lessonId: methodologyLesson.id,
+      methodologyTitle: methodologyLesson.methodologyTitle?.trim() || "Методика",
+      positionLabel: `Модуль ${methodologyLesson.shell.position.moduleIndex} · Урок ${methodologyLesson.shell.position.lessonIndex}${methodologyLesson.shell.position.unitIndex ? ` · Раздел ${methodologyLesson.shell.position.unitIndex}` : ""}`,
+    },
     communication: {
       lessonScoped:
         lessonDiscussions.length > 0

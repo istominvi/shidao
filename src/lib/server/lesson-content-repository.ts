@@ -60,6 +60,7 @@ type RowTeacherClass = {
 
 type RowMethodologySummary = {
   id: string;
+  slug: string;
   title: string;
   short_description: string | null;
 };
@@ -577,4 +578,20 @@ export async function updateScheduledLessonRuntimeNotesAdmin(
   }
 
   return mapScheduledLessonRowToDomain(rows[0]);
+}
+
+
+export async function listMethodologiesWithSlugAdmin(): Promise<
+  Array<{ id: string; slug: string; title: string; shortDescription: string | null }>
+> {
+  const rows = await adminRequest<RowMethodology[]>(
+    "/rest/v1/methodology?select=id,slug,title,short_description&order=title.asc",
+  );
+
+  return rows.map((row) => ({
+    id: row.id,
+    slug: row.slug,
+    title: row.title.trim(),
+    shortDescription: row.short_description?.trim() || null,
+  }));
 }
