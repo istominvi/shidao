@@ -108,9 +108,17 @@ export default async function TeacherGroupPage({
                 </span>
               ) : null}
               {readModel.group.assignedMethodologyTitle ? (
-                <span className="rounded-full border border-neutral-200 bg-white/90 px-3 py-1 text-sm text-neutral-700">
-                  Методика: {readModel.group.assignedMethodologyTitle}
-                </span>
+                <div className="flex items-center gap-2 rounded-full border border-neutral-200 bg-white/90 px-3 py-1 text-sm text-neutral-700">
+                  <span>Методика: {readModel.group.assignedMethodologyTitle}</span>
+                  {readModel.methodology.assignedMethodologyId ? (
+                    <Link
+                      href={`${ROUTES.methodologies}/${encodeURIComponent(readModel.methodology.assignedMethodologyId)}`}
+                      className="text-xs text-sky-700 underline underline-offset-2"
+                    >
+                      Открыть методику
+                    </Link>
+                  ) : null}
+                </div>
               ) : (
                 <span className="rounded-full border border-dashed border-neutral-300 bg-white/90 px-3 py-1 text-sm text-neutral-500">
                   Методика: не указана (legacy-группа)
@@ -127,7 +135,7 @@ export default async function TeacherGroupPage({
                 href={`${ROUTES.lessons}?groupId=${encodeURIComponent(readModel.group.id)}`}
                 className="landing-btn landing-btn-muted text-xs"
               >
-                Открыть global lessons index
+                Открыть расписание занятий
               </Link>
             </>
           )}
@@ -172,13 +180,14 @@ export default async function TeacherGroupPage({
         </TeacherTableCard>
 
         <AppCard className="p-5">
-          <h2 className="text-xl font-bold text-neutral-950">Запланировать занятие в контексте группы</h2>
+          <h2 className="text-xl font-bold text-neutral-950">Запланировать занятие</h2>
           {!readModel.schedule.canSchedule ? (
             <p className="mt-2 text-sm text-amber-700">Для этой legacy-группы методика не задана. Планирование занятий недоступно.</p>
           ) : (
             <form action={scheduleLessonAction} className="mt-3 grid gap-3 md:grid-cols-2">
               <label className="space-y-1 text-sm text-neutral-700">
                 <span>Урок методики</span>
+                <p className="text-xs text-neutral-500">Сначала выберите урок методики. После сохранения будет создано занятие в расписании для этой группы.</p>
                 <select name="methodologyLessonId" required className="field-input" defaultValue="">
                   <option value="" disabled>Выберите урок</option>
                   {readModel.schedule.lessonOptions.map((lesson) => (

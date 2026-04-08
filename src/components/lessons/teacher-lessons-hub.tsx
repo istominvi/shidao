@@ -136,6 +136,7 @@ export function TeacherLessonsHub({
         <h2 className="text-xl font-bold tracking-[-0.02em] text-neutral-950">
           Запланировать занятие (пока глобально)
         </h2>
+        <p className="mt-2 text-sm text-neutral-600">Сначала выберите урок методики. После сохранения будет создано занятие в расписании.</p>
 
         {feedback?.success ? (
           <p className="mt-3 rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
@@ -170,7 +171,7 @@ export function TeacherLessonsHub({
           </label>
 
           <label className="space-y-1 text-sm text-neutral-700">
-            <span>Методологический урок</span>
+            <span>Урок методики</span>
             <select
               name="methodologyLessonId"
               required
@@ -178,7 +179,7 @@ export function TeacherLessonsHub({
               defaultValue=""
             >
               <option value="" disabled>
-                Выберите урок
+                Выберите урок методики
               </option>
               {hub.methodologyOptions.map((option) => (
                 <option key={option.id} value={option.id}>

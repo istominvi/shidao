@@ -190,7 +190,7 @@ function ListView({ events, nowIso }: { events: TeacherDashboardScheduleEvent[];
             <th className="px-4 py-3">Дата</th>
             <th className="px-4 py-3">Время</th>
             <th className="px-4 py-3">Группа</th>
-            <th className="px-4 py-3">Урок</th>
+            <th className="px-4 py-3">Занятие</th>
             <th className="px-4 py-3">Формат</th>
             <th className="px-4 py-3">Статус</th>
           </tr>

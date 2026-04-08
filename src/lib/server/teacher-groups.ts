@@ -41,6 +41,7 @@ export type TeacherDashboardReadModel = {
 export type TeacherGroupOverviewReadModel = {
   group: TeacherGroupListItem;
   methodology: {
+    assignedMethodologyId: string | null;
     assignedMethodologyTitle: string | null;
     assignedMethodologyShortDescription: string | null;
     lessonTotal: number;
@@ -485,6 +486,7 @@ export async function getTeacherGroupOverview(
   return {
     group,
     methodology: {
+      assignedMethodologyId: classRow.methodologyId || null,
       assignedMethodologyTitle: clean(classRow.methodologyTitle) || null,
       assignedMethodologyShortDescription:
         selectedMethodology?.shortDescription || null,

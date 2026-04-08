@@ -203,6 +203,19 @@ function methodologyLessonSelect() {
   ].join(",");
 }
 
+
+export async function getMethodologyByIdAdmin(
+  methodologyId: string,
+): Promise<Methodology | null> {
+  const rows = await adminRequest<RowMethodology[]>(
+    `/rest/v1/methodology?select=id,slug,title,short_description,metadata&id=eq.${encodeURIComponent(methodologyId)}&limit=1`,
+    "GET",
+  );
+
+  if (!rows[0]) return null;
+  return mapMethodologyRowToDomain(rows[0]);
+}
+
 export async function getMethodologyBySlugAdmin(
   slug: string,
 ): Promise<Methodology | null> {

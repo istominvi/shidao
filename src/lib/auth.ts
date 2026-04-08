@@ -69,3 +69,7 @@ export function toGroupRoute(groupId: string) {
 export function toLessonWorkspaceRoute(scheduledLessonId: string) {
   return `${ROUTES.lessons}/${encodeURIComponent(scheduledLessonId)}`;
 }
+
+export function toMethodologyRoute(methodologyId: string) {
+  return `${ROUTES.methodologies}/${encodeURIComponent(methodologyId)}`;
+}
