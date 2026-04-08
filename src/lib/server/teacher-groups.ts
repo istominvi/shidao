@@ -1,7 +1,6 @@
 import { ROUTES, toGroupRoute, toLessonWorkspaceRoute } from "../auth";
 import type { AccessResolution } from "./access-policy";
 import {
-  assignMethodologyToClassAdmin,
   createScheduledLessonAdmin,
   getMethodologyLessonByIdAdmin,
   listMethodologiesAdmin,
@@ -42,11 +41,9 @@ export type TeacherDashboardReadModel = {
 export type TeacherGroupOverviewReadModel = {
   group: TeacherGroupListItem;
   methodology: {
-    assignedMethodologyId: string | null;
     assignedMethodologyTitle: string | null;
     assignedMethodologyShortDescription: string | null;
     lessonTotal: number;
-    options: Array<{ id: string; title: string; shortDescription: string | null }>;
   };
   students: Array<{ id: string; displayName: string }>;
   upcomingLessons: Array<{
@@ -76,8 +73,12 @@ type TeacherGroupsDeps = {
   getMethodologyLessonById: typeof getMethodologyLessonByIdAdmin;
   listMethodologies: typeof listMethodologiesAdmin;
   listMethodologyLessonsByMethodology: typeof listMethodologyLessonsByMethodologyAdmin;
-  assignMethodologyToClass: typeof assignMethodologyToClassAdmin;
   createScheduledLesson: typeof createScheduledLessonAdmin;
+  createClassForTeacher: (input: {
+    teacherId: string;
+    name: string;
+    methodologyId: string;
+  }) => Promise<{ classId: string }>;
   assertTeacherAssignedToClass: (teacherId: string, classId: string) => Promise<void>;
 };
 
@@ -89,6 +90,15 @@ async function assertTeacherAssignedToClassAdminDefault(
   await assertTeacherAssignedToClassAdmin(teacherId, classId);
 }
 
+async function createClassForTeacherAdminDefault(input: {
+  teacherId: string;
+  name: string;
+  methodologyId: string;
+}) {
+  const { createClassForTeacherAdmin } = await import("./supabase-admin");
+  return createClassForTeacherAdmin(input);
+}
+
 const defaultDeps: TeacherGroupsDeps = {
   listTeacherClasses: listTeacherClassesAdmin,
   listStudentsForClasses: listStudentsForClassesAdmin,
@@ -96,8 +106,8 @@ const defaultDeps: TeacherGroupsDeps = {
   getMethodologyLessonById: getMethodologyLessonByIdAdmin,
   listMethodologies: listMethodologiesAdmin,
   listMethodologyLessonsByMethodology: listMethodologyLessonsByMethodologyAdmin,
-  assignMethodologyToClass: assignMethodologyToClassAdmin,
   createScheduledLesson: createScheduledLessonAdmin,
+  createClassForTeacher: createClassForTeacherAdminDefault,
   assertTeacherAssignedToClass: assertTeacherAssignedToClassAdminDefault,
 };
 
@@ -333,15 +343,23 @@ async function buildTeacherGroupsSnapshot(
   };
 }
 
-export async function assignMethodologyToTeacherGroup(input: {
+export async function createTeacherGroup(input: {
   teacherId: string;
-  groupId: string;
+  name: string;
   methodologyId: string;
 }, deps: TeacherGroupsDeps = defaultDeps) {
-  await deps.assertTeacherAssignedToClass(input.teacherId, input.groupId);
-  await deps.assignMethodologyToClass({
-    classId: input.groupId,
-    methodologyId: input.methodologyId,
+  const name = clean(input.name);
+  const methodologyId = clean(input.methodologyId);
+  if (!name) {
+    throw new Error("Укажите название группы.");
+  }
+  if (!methodologyId) {
+    throw new Error("Выберите методику для группы.");
+  }
+  return deps.createClassForTeacher({
+    teacherId: input.teacherId,
+    name,
+    methodologyId,
   });
 }
 
@@ -355,7 +373,7 @@ export async function createTeacherGroupScopedLesson(input: {
   const classes = await deps.listTeacherClasses(input.teacherId);
   const group = classes.find((item) => item.id === input.groupId);
   if (!group?.methodologyId) {
-    throw new Error("Сначала назначьте методику группе.");
+    throw new Error("У группы не указана методика. Обратитесь в поддержку.");
   }
 
   const lessonIds = new Set(
@@ -466,14 +484,12 @@ export async function getTeacherGroupOverview(
   return {
     group,
     methodology: {
-      assignedMethodologyId: classRow.methodologyId,
       assignedMethodologyTitle: clean(classRow.methodologyTitle) || null,
       assignedMethodologyShortDescription:
         selectedMethodology?.shortDescription || null,
       lessonTotal: classRow.methodologyId
         ? snapshot.methodologyLessonTotalsById[classRow.methodologyId] ?? 0
         : 0,
-      options: methodologyOptions,
     },
     students,
     upcomingLessons: lessonCards

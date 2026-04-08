@@ -3,8 +3,8 @@ import test from "node:test";
 import type { AccessResolution } from "../access-policy";
 import {
   assertTeacherGroupsAccess,
-  assignMethodologyToTeacherGroup,
   canAccessTeacherGroups,
+  createTeacherGroup,
   createTeacherGroupScopedLesson,
   getTeacherGroupOverview,
   getTeacherGroupsIndex,
@@ -109,8 +109,8 @@ test("group models use explicit methodology assignment and honest progress", asy
         { id: "ml-1", shell: { title: "Урок 1", position: { moduleIndex: 1, unitIndex: 1, lessonIndex: 1 } } },
         { id: "ml-2", shell: { title: "Урок 2", position: { moduleIndex: 1, unitIndex: 1, lessonIndex: 2 } } },
       ] as never,
-    assignMethodologyToClass: async () => undefined,
     createScheduledLesson: async () => { throw new Error("unused"); },
+    createClassForTeacher: async () => ({ classId: "unused" }),
     assertTeacherAssignedToClass: async () => undefined,
   };
 
@@ -125,10 +125,9 @@ test("group models use explicit methodology assignment and honest progress", asy
   assert.equal(overview?.schedule.canSchedule, true);
 });
 
-test("methodology assignment and group scheduling actions are validated", async () => {
-  const calls: string[] = [];
-  await assignMethodologyToTeacherGroup(
-    { teacherId: "t-1", groupId: "class-1", methodologyId: "m-2" },
+test("group creation requires methodology and scheduling validates assigned methodology", async () => {
+  const created = await createTeacherGroup(
+    { teacherId: "t-1", name: "Лисички", methodologyId: "m-2" },
     {
       listTeacherClasses: async () => [],
       listStudentsForClasses: async () => ({}),
@@ -139,16 +138,32 @@ test("methodology assignment and group scheduling actions are validated", async 
       createScheduledLesson: async () => {
         throw new Error("unused");
       },
-      assertTeacherAssignedToClass: async () => {
-        calls.push("assigned");
-      },
-      assignMethodologyToClass: async () => {
-        calls.push("patched");
-      },
+      createClassForTeacher: async () => ({ classId: "class-7" }),
+      assertTeacherAssignedToClass: async () => undefined,
     },
   );
+  assert.equal(created.classId, "class-7");
 
-  assert.deepEqual(calls, ["assigned", "patched"]);
+  await assert.rejects(
+    () =>
+      createTeacherGroup(
+        { teacherId: "t-1", name: "Без методики", methodologyId: "" },
+        {
+          listTeacherClasses: async () => [],
+          listStudentsForClasses: async () => ({}),
+          listScheduledLessonsForClasses: async () => [],
+          getMethodologyLessonById: async () => null,
+          listMethodologies: async () => [],
+          listMethodologyLessonsByMethodology: async () => [],
+          createScheduledLesson: async () => {
+            throw new Error("unused");
+          },
+          createClassForTeacher: async () => ({ classId: "class-8" }),
+          assertTeacherAssignedToClass: async () => undefined,
+        },
+      ),
+    /выберите методику/i,
+  );
 
   await assert.rejects(
     () =>
@@ -172,8 +187,8 @@ test("methodology assignment and group scheduling actions are validated", async 
           getMethodologyLessonById: async () => null,
           listMethodologies: async () => [],
           listMethodologyLessonsByMethodology: async () => [{ id: "ml-1" }] as never,
-          assignMethodologyToClass: async () => undefined,
           assertTeacherAssignedToClass: async () => undefined,
+          createClassForTeacher: async () => ({ classId: "unused" }),
           createScheduledLesson: async () => {
             throw new Error("should not create");
           },

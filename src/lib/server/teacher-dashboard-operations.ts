@@ -47,7 +47,6 @@ export type TeacherDashboardScheduleEvent = {
 
 export type TeacherDashboardAlerts = {
   groupsWithoutStudents: number;
-  groupsWithoutMethodology: number;
   groupsWithoutUpcomingLessons: number;
   lessonsToday: number;
   attentionGroups: Array<{ id: string; label: string; reasons: string[]; href: string }>;
@@ -241,9 +240,6 @@ async function buildOperationsSnapshot(
     if ((studentsByClass[group.id]?.length ?? 0) === 0) {
       attentionReasons.push("Нет учеников");
     }
-    if (!methodologyLabel) {
-      attentionReasons.push("Не определена методика");
-    }
     if (!nextLesson) {
       attentionReasons.push("Нет ближайшего занятия");
     }
@@ -359,7 +355,6 @@ async function buildOperationsSnapshot(
     },
     alerts: {
       groupsWithoutStudents: rows.filter((row) => row.studentCount === 0).length,
-      groupsWithoutMethodology: rows.filter((row) => !row.methodologyLabel).length,
       groupsWithoutUpcomingLessons: rows.filter((row) => !row.nextLessonHref).length,
       lessonsToday,
       attentionGroups: rows
@@ -389,7 +384,7 @@ export async function getTeacherDashboardOperationsReadModel(
 
   return {
     actions: [
-      { label: "Добавить группу", href: ROUTES.groupsNew, tone: "secondary" },
+      { label: "Добавить группу", href: `${ROUTES.groups}?create=1`, tone: "secondary" },
       { label: "Добавить ученика", href: ROUTES.studentsNew, tone: "secondary" },
     ],
     groups: {

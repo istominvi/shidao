@@ -47,16 +47,6 @@ function isUniqueViolationError(message: string) {
   );
 }
 
-function isMissingMethodologyBindingColumnError(message: string) {
-  const normalized = message.toLowerCase();
-  return (
-    normalized.includes("methodology_id") &&
-    (normalized.includes("column") ||
-      normalized.includes("schema cache") ||
-      normalized.includes("does not exist"))
-  );
-}
-
 function buildTeacherSchoolSlugBase(teacherId: string, fullName: string | null) {
   const seed = `${fullName?.trim() || "teacher"}-${teacherId.slice(0, 8)}`;
   const slug = seed
@@ -605,7 +595,7 @@ export async function upsertTeacherProfile(
 ) {
   try {
     return await request<
-      Array<{ teacher_id: string; school_id: string; class_id: string }>
+      Array<{ teacher_id: string; school_id: string; class_id: string | null }>
     >("/rest/v1/rpc/onboard_teacher", "POST", {
       admin: true,
       payload: { p_user_id: userId, p_full_name: fullName },
@@ -757,68 +747,7 @@ async function upsertTeacherProfileFallback(
     }
   }
 
-  let classId = "";
-  const classRows = await request<Array<{ id: string }>>(
-    `/rest/v1/class?select=id&school_id=eq.${schoolId}&order=created_at.asc&limit=1`,
-    "GET",
-    { admin: true },
-  );
-  classId = classRows[0]?.id ?? "";
-
-  if (!classId) {
-    try {
-      const createdClassRows = await request<Array<{ id: string }>>(
-        "/rest/v1/class",
-        "POST",
-        {
-          admin: true,
-          payload: { school_id: schoolId, name: "Основной класс" },
-        },
-      );
-      classId = createdClassRows[0]?.id ?? "";
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Unknown class insert error";
-      if (!isUniqueViolationError(message)) {
-        throw error;
-      }
-      const fallbackClassRows = await request<Array<{ id: string }>>(
-        `/rest/v1/class?select=id&school_id=eq.${schoolId}&order=created_at.asc&limit=1`,
-        "GET",
-        { admin: true },
-      );
-      classId = fallbackClassRows[0]?.id ?? "";
-    }
-  }
-
-  if (!classId) {
-    throw new Error("Не удалось создать или определить class.id для teacher onboarding.");
-  }
-
-  const classTeacherRows = await request<Array<{ id: string }>>(
-    `/rest/v1/class_teacher?select=id&class_id=eq.${classId}&teacher_id=eq.${teacherId}&limit=1`,
-    "GET",
-    { admin: true },
-  );
-  if (!classTeacherRows[0]?.id) {
-    try {
-      await request("/rest/v1/class_teacher", "POST", {
-        admin: true,
-        payload: {
-          class_id: classId,
-          teacher_id: teacherId,
-        },
-      });
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Unknown class_teacher insert error";
-      if (!isUniqueViolationError(message)) {
-        throw error;
-      }
-    }
-  }
-
-  return [{ teacher_id: teacherId, school_id: schoolId, class_id: classId }];
+  return [{ teacher_id: teacherId, school_id: schoolId, class_id: null }];
 }
 
 export async function loadParentLearningContextsByUser(userId: string) {
@@ -937,7 +866,7 @@ export async function assertTeacherAssignedToClassAdmin(
 export async function createClassForTeacherAdmin(input: {
   teacherId: string;
   name: string;
-  methodologyId?: string | null;
+  methodologyId: string;
 }) {
   const memberships = await request<Array<{ school_id: string; role: string | null }>>(
     `/rest/v1/school_teacher?select=school_id,role&teacher_id=eq.${input.teacherId}&order=created_at.asc`,
@@ -952,38 +881,27 @@ export async function createClassForTeacherAdmin(input: {
     throw new Error("У преподавателя не найдена школа для создания группы.");
   }
 
-  let classRows: Array<{ id: string; name: string | null }>;
-  try {
-    classRows = await request<Array<{ id: string; name: string | null }>>(
-      "/rest/v1/class",
-      "POST",
-      {
-        admin: true,
-        payload: {
-          school_id: schoolId,
-          name: input.name.trim(),
-          methodology_id: input.methodologyId ?? null,
-        },
-      },
-    );
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "unknown";
-    if (!isMissingMethodologyBindingColumnError(message)) {
-      throw error;
-    }
-
-    classRows = await request<Array<{ id: string; name: string | null }>>(
-      "/rest/v1/class",
-      "POST",
-      {
-        admin: true,
-        payload: {
-          school_id: schoolId,
-          name: input.name.trim(),
-        },
-      },
-    );
+  const name = input.name.trim();
+  const methodologyId = input.methodologyId.trim();
+  if (!name) {
+    throw new Error("Укажите название группы.");
   }
+  if (!methodologyId) {
+    throw new Error("Выберите методику для группы.");
+  }
+
+  const classRows = await request<Array<{ id: string; name: string | null }>>(
+    "/rest/v1/class",
+    "POST",
+    {
+      admin: true,
+      payload: {
+        school_id: schoolId,
+        name,
+        methodology_id: methodologyId,
+      },
+    },
+  );
 
   const classId = classRows[0]?.id;
   if (!classId) {

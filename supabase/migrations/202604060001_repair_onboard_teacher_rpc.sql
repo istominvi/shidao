@@ -130,7 +130,6 @@ as $$
 declare
   v_teacher_id uuid;
   v_school_id uuid;
-  v_class_id uuid;
   base_slug text;
   slug_candidate text;
   i integer;
@@ -171,23 +170,7 @@ begin
     on conflict (school_id, teacher_id) do update set role = 'owner';
   end if;
 
-  select c.id into v_class_id
-  from public."class" c
-  where c.school_id = v_school_id
-  order by c.created_at asc, c.id asc
-  limit 1;
-
-  if v_class_id is null then
-    insert into public."class" (school_id, name)
-    values (v_school_id, 'Основной класс')
-    returning id into v_class_id;
-  end if;
-
-  insert into public.class_teacher (class_id, teacher_id)
-  values (v_class_id, v_teacher_id)
-  on conflict (class_id, teacher_id) do nothing;
-
-  return query select v_teacher_id, v_school_id, v_class_id;
+  return query select v_teacher_id, v_school_id, null::uuid;
 end
 $$;
 
