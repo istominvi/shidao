@@ -1,18 +1,28 @@
 import Link from "next/link";
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { isRedirectError } from "next/dist/client/components/redirect-error";
 import { TopNav } from "@/components/top-nav";
-import { ROUTES } from "@/lib/auth";
+import { ROUTES, toGroupRoute } from "@/lib/auth";
+import { listMethodologiesAdmin } from "@/lib/server/lesson-content-repository";
 import { resolveAccessPolicy } from "@/lib/server/access-policy";
 import {
   assertTeacherGroupsAccess,
   canAccessTeacherGroups,
+  createTeacherGroup,
 } from "@/lib/server/teacher-groups";
 import { getTeacherGroupsIndexOperationsReadModel } from "@/lib/server/teacher-dashboard-operations";
 
 export default async function TeacherGroupsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; methodology?: string; status?: string }>;
+  searchParams: Promise<{
+    q?: string;
+    methodology?: string;
+    status?: string;
+    create?: string;
+    error?: string;
+  }>;
 }) {
   const resolution = await resolveAccessPolicy();
 
@@ -22,6 +32,42 @@ export default async function TeacherGroupsPage({
 
   const { teacherId } = assertTeacherGroupsAccess(resolution);
   const query = await searchParams;
+  const methodologies = await listMethodologiesAdmin();
+  const isCreateModalOpen = query.create === "1";
+
+  async function createGroupAction(formData: FormData) {
+    "use server";
+
+    let createdClassId = "";
+
+    try {
+      const actionResolution = await resolveAccessPolicy();
+      const { teacherId: actionTeacherId } = assertTeacherGroupsAccess(actionResolution);
+      const name = String(formData.get("name") ?? "").trim();
+      const methodologyId = String(formData.get("methodologyId") ?? "").trim();
+
+      const created = await createTeacherGroup({
+        teacherId: actionTeacherId,
+        name,
+        methodologyId,
+      });
+      createdClassId = created.classId;
+      revalidatePath(ROUTES.dashboard);
+      revalidatePath(ROUTES.groups);
+    } catch (error) {
+      if (isRedirectError(error)) {
+        throw error;
+      }
+      const message = error instanceof Error ? error.message : "Не удалось создать группу.";
+      const params = new URLSearchParams();
+      params.set("create", "1");
+      params.set("error", message);
+      redirect(`${ROUTES.groups}?${params.toString()}`);
+    }
+
+    redirect(toGroupRoute(createdClassId));
+  }
+
   const readModel = await getTeacherGroupsIndexOperationsReadModel({
     teacherId,
     search: query.q,
@@ -45,7 +91,7 @@ export default async function TeacherGroupsPage({
             Здесь — весь список групп с операционными полями. Для быстрых ежедневных действий и расписания используйте /dashboard.
           </p>
           <div className="mt-4 flex flex-wrap gap-2">
-            <Link href={ROUTES.groupsNew} className="landing-btn landing-btn-primary">
+            <Link href={`${ROUTES.groups}?create=1`} className="landing-btn landing-btn-primary">
               Добавить группу
             </Link>
             <Link href={ROUTES.studentsNew} className="landing-btn landing-btn-muted">
@@ -108,6 +154,46 @@ export default async function TeacherGroupsPage({
           </div>
         </section>
       </div>
+
+      {isCreateModalOpen ? (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
+          <Link
+            href={ROUTES.groups}
+            className="absolute inset-0 bg-neutral-950/40 backdrop-blur-[1px]"
+            aria-label="Закрыть модалку создания группы"
+          />
+          <section className="relative z-10 w-full max-w-lg landing-surface rounded-3xl border border-white/80 bg-[linear-gradient(150deg,rgba(255,255,255,0.97),rgba(255,255,255,0.92))] p-6 shadow-[0_24px_72px_rgba(15,23,42,0.28)] backdrop-blur-xl">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-sky-700">Создание группы</p>
+                <h2 className="mt-2 text-2xl font-black text-neutral-950">Добавить группу</h2>
+                <p className="mt-2 text-sm text-neutral-700">Группа создаётся сразу с выбранной методикой.</p>
+              </div>
+              <Link href={ROUTES.groups} className="text-sm text-neutral-500 underline underline-offset-2">Отмена</Link>
+            </div>
+            {query.error ? (
+              <p className="mt-3 rounded-2xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{query.error}</p>
+            ) : null}
+            <form action={createGroupAction} className="mt-4 space-y-3">
+              <label className="field-label" htmlFor="group-name">Название группы</label>
+              <input id="group-name" name="name" required className="field-input" placeholder="Например, Лисички 6-7" />
+              <label className="field-label" htmlFor="group-methodology">Методика</label>
+              <select id="group-methodology" name="methodologyId" className="field-input" required defaultValue="">
+                <option value="" disabled>Выберите методику</option>
+                {methodologies.map((methodology) => (
+                  <option key={methodology.id} value={methodology.id}>
+                    {methodology.title}
+                  </option>
+                ))}
+              </select>
+              <div className="flex items-center gap-2 pt-1">
+                <Link href={ROUTES.groups} className="landing-btn landing-btn-muted">Отмена</Link>
+                <button type="submit" className="landing-btn landing-btn-primary">Создать группу</button>
+              </div>
+            </form>
+          </section>
+        </div>
+      ) : null}
     </main>
   );
 }

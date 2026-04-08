@@ -102,7 +102,7 @@ export default async function NewStudentPage({
 
           {classOptions.length === 0 ? (
             <p className="mt-4 text-sm text-neutral-600">
-              Сначала создайте группу в разделе <Link className="text-sky-700 underline" href={ROUTES.groupsNew}>«Добавить группу»</Link>.
+              Сначала создайте группу в разделе <Link className="text-sky-700 underline" href={`${ROUTES.groups}?create=1`}>«Добавить группу»</Link>.
             </p>
           ) : (
             <form action={createStudentAction} className="mt-4 max-w-xl space-y-3">

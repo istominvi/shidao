@@ -7,7 +7,6 @@ import { ROUTES } from "@/lib/auth";
 import { resolveAccessPolicy } from "@/lib/server/access-policy";
 import {
   assertTeacherGroupsAccess,
-  assignMethodologyToTeacherGroup,
   canAccessTeacherGroups,
   createTeacherGroupScopedLesson,
   getTeacherGroupOverview,
@@ -43,37 +42,6 @@ export default async function TeacherGroupPage({
 
   if (!readModel) {
     notFound();
-  }
-
-  async function assignMethodologyAction(formData: FormData) {
-    "use server";
-
-    try {
-      const actionResolution = await resolveAccessPolicy();
-      const { teacherId: actionTeacherId } = assertTeacherGroupsAccess(actionResolution);
-      const methodologyId = String(formData.get("methodologyId") ?? "").trim();
-      if (!methodologyId) {
-        throw new Error("Выберите методику для группы.");
-      }
-
-      await assignMethodologyToTeacherGroup({
-        teacherId: actionTeacherId,
-        groupId,
-        methodologyId,
-      });
-
-      revalidatePath(ROUTES.dashboard);
-      revalidatePath(ROUTES.groups);
-      revalidatePath(`${ROUTES.groups}/${groupId}`);
-      redirect(withMessage(groupId, "saved", "Методика группы обновлена."));
-    } catch (error) {
-      if (isRedirectError(error)) {
-        throw error;
-      }
-      const message =
-        error instanceof Error ? error.message : "Не удалось назначить методику.";
-      redirect(withMessage(groupId, "error", message));
-    }
   }
 
   async function scheduleLessonAction(formData: FormData) {
@@ -143,10 +111,15 @@ export default async function TeacherGroupPage({
               </span>
             ) : (
               <span className="rounded-full border border-dashed border-neutral-300 bg-white/90 px-3 py-1 text-neutral-500">
-                Методика не назначена
+                Методика: не указана (legacy-группа)
               </span>
             )}
           </div>
+          {readModel.methodology.assignedMethodologyShortDescription ? (
+            <p className="mt-3 text-sm text-neutral-600">
+              {readModel.methodology.assignedMethodologyShortDescription}
+            </p>
+          ) : null}
           <div className="mt-4 flex flex-wrap gap-2">
             <Link href={`${ROUTES.studentsNew}?groupId=${encodeURIComponent(readModel.group.id)}`} className="landing-btn landing-btn-muted text-xs">
               Добавить ученика
@@ -159,34 +132,6 @@ export default async function TeacherGroupPage({
             </Link>
           </div>
         </header>
-
-        <section className="landing-surface rounded-3xl border border-white/80 p-5">
-          <h2 className="text-xl font-bold text-neutral-950">Методика группы</h2>
-          {readModel.methodology.assignedMethodologyTitle ? (
-            <p className="mt-2 text-sm text-neutral-700">
-              Назначена: <strong>{readModel.methodology.assignedMethodologyTitle}</strong> · уроков в методике: {readModel.methodology.lessonTotal}
-            </p>
-          ) : (
-            <p className="mt-2 text-sm text-amber-700">У группы пока нет назначенной методики. Сначала назначьте её, затем планируйте уроки.</p>
-          )}
-          {readModel.methodology.assignedMethodologyShortDescription ? (
-            <p className="mt-1 text-sm text-neutral-600">{readModel.methodology.assignedMethodologyShortDescription}</p>
-          ) : null}
-          <form action={assignMethodologyAction} className="mt-3 flex flex-wrap items-end gap-2">
-            <label className="space-y-1 text-sm text-neutral-700">
-              <span>{readModel.methodology.assignedMethodologyId ? "Сменить методику" : "Назначить методику"}</span>
-              <select name="methodologyId" defaultValue={readModel.methodology.assignedMethodologyId ?? ""} required className="field-input min-w-[18rem]">
-                <option value="" disabled>Выберите методику</option>
-                {readModel.methodology.options.map((option) => (
-                  <option key={option.id} value={option.id}>{option.title}</option>
-                ))}
-              </select>
-            </label>
-            <button type="submit" className="landing-btn landing-btn-primary text-xs">
-              {readModel.methodology.assignedMethodologyId ? "Обновить" : "Назначить"}
-            </button>
-          </form>
-        </section>
 
         <section className="landing-surface rounded-3xl border border-white/80 p-5">
           <div className="flex items-center justify-between gap-2">
@@ -217,7 +162,7 @@ export default async function TeacherGroupPage({
         <section className="landing-surface rounded-3xl border border-white/80 p-5">
           <h2 className="text-xl font-bold text-neutral-950">Запланировать занятие в контексте группы</h2>
           {!readModel.schedule.canSchedule ? (
-            <p className="mt-2 text-sm text-amber-700">Сначала назначьте методику в блоке выше — тогда появится выбор уроков из неё.</p>
+            <p className="mt-2 text-sm text-amber-700">Для этой legacy-группы методика не задана. Планирование занятий недоступно.</p>
           ) : (
             <form action={scheduleLessonAction} className="mt-3 grid gap-3 md:grid-cols-2">
               <label className="space-y-1 text-sm text-neutral-700">

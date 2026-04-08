@@ -173,7 +173,6 @@ export function TeacherDashboard({ readModel }: TeacherDashboardProps) {
         <h2 className="text-xl font-black text-neutral-950">Требует внимания</h2>
         <ul className="mt-3 grid gap-2 text-sm text-neutral-700 md:grid-cols-2">
           <li>Группы без учеников: {readModel.alerts.groupsWithoutStudents}</li>
-          <li>Группы без методики: {readModel.alerts.groupsWithoutMethodology}</li>
           <li>Группы без ближайших занятий: {readModel.alerts.groupsWithoutUpcomingLessons}</li>
           <li>Занятий сегодня: {readModel.alerts.lessonsToday}</li>
         </ul>

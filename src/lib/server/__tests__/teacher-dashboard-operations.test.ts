@@ -94,7 +94,7 @@ test("dashboard operations model builds rows, schedule and alerts", async () => 
   assert.equal(fallbackEvent?.formatLabel, "Офлайн");
   assert.equal(fallbackEvent?.timeRangeLabel, "12:15–13:00");
   assert.equal(model.alerts.groupsWithoutStudents, 1);
-  assert.equal(model.actions[0]?.href, "/groups/new");
+  assert.equal(model.actions[0]?.href, "/groups?create=1");
 });
 
 test("groups index supports search/methodology/status filtering", async () => {

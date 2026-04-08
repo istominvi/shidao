@@ -507,32 +507,6 @@ export async function getClassByIdAdmin(classId: string): Promise<{
   };
 }
 
-export async function assignMethodologyToClassAdmin(input: {
-  classId: string;
-  methodologyId: string | null;
-}): Promise<void> {
-  try {
-    await adminRequest<RowClass[]>(
-      `/rest/v1/class?id=eq.${input.classId}`,
-      "PATCH",
-      {
-        payload: {
-          methodology_id: input.methodologyId,
-        },
-        allowEmpty: true,
-      },
-    );
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "unknown";
-    if (isMissingMethodologyBindingColumnError(message)) {
-      throw new Error(
-        "Схема БД не обновлена: примените миграции перед назначением методики группе.",
-      );
-    }
-    throw error;
-  }
-}
-
 export async function listReusableAssetsByIdsAdmin(
   assetIds: string[],
 ): Promise<ReusableAsset[]> {
