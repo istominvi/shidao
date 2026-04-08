@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ROUTES } from "@/lib/auth";
 import type { TeacherDashboardOperationsReadModel } from "@/lib/server/teacher-dashboard-operations";
+import { TeacherScheduleCard } from "./teacher-schedule-card";
 
 type TeacherDashboardProps = {
   readModel: TeacherDashboardOperationsReadModel;
@@ -47,13 +48,15 @@ export function TeacherDashboard({ readModel }: TeacherDashboardProps) {
         <div className="mt-4">
           <Link
             href={ROUTES.methodologies}
-            className="inline-flex items-center gap-2 rounded-2xl border border-neutral-200 bg-white px-4 py-2 text-sm font-semibold text-neutral-900 transition hover:bg-neutral-50"
+            className="inline-flex cursor-pointer items-center gap-2 rounded-2xl border border-neutral-200 bg-white px-4 py-2 text-sm font-semibold text-neutral-900 transition hover:bg-neutral-50"
           >
             <span aria-hidden="true">📚</span>
             <span>Методики</span>
           </Link>
         </div>
       </section>
+
+      <TeacherScheduleCard schedule={readModel.schedule} />
 
       <section className="landing-surface rounded-3xl border border-white/80 p-4 md:p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -66,7 +69,7 @@ export function TeacherDashboard({ readModel }: TeacherDashboardProps) {
             <Link
               key={action.label}
               href={action.href}
-              className="inline-flex items-center gap-2 rounded-2xl border border-neutral-200 bg-white px-4 py-2 text-sm font-semibold text-neutral-900 transition hover:bg-neutral-50"
+              className="inline-flex cursor-pointer items-center gap-2 rounded-2xl border border-neutral-200 bg-white px-4 py-2 text-sm font-semibold text-neutral-900 transition hover:bg-neutral-50"
             >
               <span aria-hidden="true">{ACTION_ICONS[action.label] ?? "•"}</span>
               <span>{action.label}</span>
@@ -79,7 +82,7 @@ export function TeacherDashboard({ readModel }: TeacherDashboardProps) {
             name="methodology"
             value={readModel.groups.filters.methodology}
             onChange={(event) => setParam("methodology", event.target.value)}
-            className="field-input"
+            className="field-input cursor-pointer"
           >
             <option value="">Все методики</option>
             {readModel.groups.filters.methodologyOptions.map((option) => (
@@ -92,7 +95,7 @@ export function TeacherDashboard({ readModel }: TeacherDashboardProps) {
             name="status"
             value={readModel.groups.filters.status}
             onChange={(event) => setParam("status", event.target.value)}
-            className="field-input"
+            className="field-input cursor-pointer"
           >
             <option value="">Все статусы</option>
             <option value="attention">Требует внимания</option>
@@ -165,42 +168,6 @@ export function TeacherDashboard({ readModel }: TeacherDashboardProps) {
         </div>
       </section>
 
-      <section className="landing-surface rounded-3xl border border-white/80 p-4 md:p-5">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-2xl font-black text-neutral-950">Расписание на 7 дней</h2>
-          <p className="text-xs text-neutral-500">
-            Всего: {readModel.schedule.totalLessons}
-            {readModel.schedule.nextLessonLabel ? ` · Следующее: ${readModel.schedule.nextLessonLabel}` : ""}
-          </p>
-        </div>
-
-        <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {readModel.schedule.days.length === 0 ? (
-            <p className="text-sm text-neutral-500">На этой неделе занятий пока нет.</p>
-          ) : (
-            readModel.schedule.days.map((day) => (
-              <div key={day.isoDate} className="rounded-2xl border border-neutral-200 bg-white p-3">
-                <p className="text-sm font-semibold text-neutral-900">
-                  {day.label}
-                  {day.isToday ? <span className="ml-2 text-xs text-sky-700">Сегодня</span> : null}
-                </p>
-                <ul className="mt-2 space-y-2 text-sm">
-                  {day.lessons.map((lesson) => (
-                    <li key={lesson.id} className="rounded-xl border border-neutral-200 bg-neutral-50 px-2 py-2 text-neutral-700">
-                      <p className="font-semibold">{lesson.timeLabel} · {lesson.groupLabel}</p>
-                      <p>{lesson.lessonTitle}</p>
-                      <p className="mt-0.5 text-xs text-neutral-500">{lesson.statusLabel}</p>
-                      <Link href={lesson.href} className="mt-1 inline-block text-xs text-sky-700 underline underline-offset-2">
-                        Открыть урок
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))
-          )}
-        </div>
-      </section>
 
       <section className="landing-surface rounded-3xl border border-white/80 p-4 md:p-5">
         <h2 className="text-xl font-black text-neutral-950">Требует внимания</h2>
