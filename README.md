@@ -28,7 +28,7 @@ cp .env.example .env.local
 openssl rand -hex 32
 ```
 
-## Deploy notes (Coolify / self-hosted CI)
+## Заметки по деплою (Coolify / self-hosted CI)
 
 - Репозиторий содержит production `Dockerfile` (multi-stage, Next standalone). В Coolify лучше использовать Dockerfile build mode, чтобы не зависеть от Nixpacks base image из `ghcr.io/railwayapp/nixpacks`.
 - Проект не требует внешней загрузки Google Fonts на этапе `next build` (используются системные font stacks), поэтому сборка подходит для сред с ограниченным egress.
@@ -36,15 +36,15 @@ openssl rand -hex 32
 - Для Dockerfile-сборки нужен доступ к Docker Hub для `node:22-alpine`.
 - Перед стартом приложения в любом окружении обязательно применяйте все Supabase migrations (например, `supabase db push` или эквивалентный SQL migration job), иначе onboarding/RPC-ветки могут падать из-за schema drift.
 
-## Маршруты, route groups и layouts
+## Маршруты, route groups и layout-слои
 
-### Route groups
+### Route groups (группы маршрутов)
 
 - `src/app/(marketing)` — публичный маркетинговый слой (`/`).
 - `src/app/(auth)` — auth-страницы и callback (`/login`, `/join`, `/join/check-email`, `/auth/confirm`, восстановление пароля).
 - `src/app/(app)` — приватный продуктовый слой (`/onboarding`, `/dashboard`, `/groups/*`, `/lessons/*`, `/settings/*`).
 
-### Layout responsibility
+### Ответственность layout-слоёв
 
 - `src/app/layout.tsx` (root layout):
   - читает session view на сервере;
@@ -71,12 +71,14 @@ openssl rand -hex 32
 - `/groups/new` — создание группы преподавателем.
 - `/groups/[groupId]` — teacher workspace уровня конкретной группы.
 - `/students/new` — создание ученика и добавление в группу.
-- `/methodologies` — индекс методик преподавателя (read-only на текущем этапе).
+- `/methodologies` — индекс методик как педагогического source layer.
+- `/methodologies/[methodologySlug]` — страница выбранной методики со списком её уроков.
+- `/methodologies/[methodologySlug]/lessons/[lessonId]` — страница урока методики (без привязки к группе и расписанию) с возможностью назначения.
 - `/settings/profile` — профиль и email.
 - `/settings/security` — PIN и параметры безопасности.
 - `/settings/team` — команда и приглашения (доступно только взрослому профилю).
 
-### Teacher IA (Step 1: group-centric)
+### Teacher IA (Step 1: group-centric модель)
 
 - Для преподавателя primary navigation смещена к `group/class` контексту.
 - Основной маршрутный поток: `/dashboard` → `/groups` → `/groups/[groupId]` → `/lessons` → `/lessons/[scheduledLessonId]`.
@@ -94,38 +96,27 @@ openssl rand -hex 32
   - compact attention summary (группы без учеников/методологии/ближайших занятий, занятия сегодня).
 - `/groups` — полный структурированный индекс групп преподавателя.
 - `/lessons` сохраняется как secondary cross-group lessons index.
-- `/methodologies` — индекс методик преподавателя.
+- `/methodologies` — педагогический source layer c входом в уроки методики и назначение в runtime.
+- Преподаватель может открыть урок методики, нажать «Назначить урок», создать `scheduled_lesson` и перейти в `/lessons/[scheduledLessonId]`.
 - В этом шаге намеренно **не** внедряются homework/thread/attendance/full-calendar/editor/AI.
 
-### Teacher IA (Step 3: group setup + methodology binding + contextual scheduling)
+### Teacher IA (Step 3: настройка группы + привязка методики + контекстное планирование)
 
 - `class` получает явную связь с методикой через `class.methodology_id`.
+- Новая группа создаётся сразу с выбранной методикой (`methodology_id` обязателен при создании).
+- После создания группы `class.methodology_id` считается неизменяемым (immutable).
 - `/groups/[groupId]` становится реальным teaching container:
-  - назначение/смена методики прямо в группе;
   - roster группы + контекстный вход в `students/new?groupId=...`;
   - планирование занятия из контекста группы (без повторного выбора группы).
-- Если у группы нет методики, group-scoped scheduling блокируется до назначения методики.
+- Для legacy/backfill-групп возможен `class.methodology_id = null`; в таком случае group-scoped scheduling блокируется.
 - Прогресс группы теперь считается честно:
   - numerator = только `completed` занятия группы;
   - denominator = количество уроков в назначенной методике.
 - `/dashboard` и `/groups` используют явное назначение методики (без эвристики от ближайших занятий).
 - `/lessons` сохраняется как secondary global lessons index; `/lessons/[scheduledLessonId]` остаётся execution workspace.
+- Runtime workspace `/lessons/[scheduledLessonId]` хранит исполнение занятия и даёт ссылку назад на исходный source-урок методики.
 
-### Teacher IA (Step 4: homework layer bound to scheduled lesson)
-### Teacher IA (Step 5: communication runtime layer with continuity)
-
-- Добавлена непрерывная коммуникация `teacher ↔ student` в контексте конкретной группы.
-- Основной контейнер: `group_student_conversation` (1 conversation на пару `group + student`).
-- Сообщения (`group_student_message`) поддерживают опциональные runtime-ссылки:
-  - `scheduled_lesson_id` (lesson-scoped projection),
-  - `scheduled_lesson_homework_assignment_id` (homework-scoped projection),
-  - `topic_kind` (`general`, `lesson`, `homework`, `progress`, `organizational`).
-- Полный непрерывный поток: `/groups/[groupId]/students/[studentId]/communication`.
-- `/lessons/[scheduledLessonId]` показывает scoped-проекции того же conversation слоя (не отдельный silo-thread subsystem).
-- Student dashboard может отвечать в том же слое (general + homework-scoped).
-- Parent dashboard получает read-only проекцию сообщений по детям.
-- Детали: `docs/architecture/communication-runtime-model.md`.
-
+### Teacher IA (Step 4: homework runtime layer, привязанный к scheduled lesson)
 
 - Домашнее задание теперь строго следует модели `methodology -> scheduled lesson runtime -> student submission`.
 - Canonical homework хранится в методике (`methodology_lesson_homework`) и отображается преподавателю только в режиме read-only.
@@ -139,6 +130,20 @@ openssl rand -hex 32
 - Родительский `/dashboard` получает минимальную проекцию homework-статусов по детям.
 - Детали: `docs/architecture/homework-runtime-model.md`.
 
+### Teacher IA (Step 5: runtime-коммуникация с непрерывностью контекста)
+
+- Добавлена непрерывная коммуникация `teacher ↔ student` в контексте конкретной группы.
+- Основной контейнер: `group_student_conversation` (1 conversation на пару `group + student`).
+- Сообщения (`group_student_message`) поддерживают опциональные runtime-ссылки:
+  - `scheduled_lesson_id` (lesson-scoped projection),
+  - `scheduled_lesson_homework_assignment_id` (homework-scoped projection),
+  - `topic_kind` (`general`, `lesson`, `homework`, `progress`, `organizational`).
+- Полный непрерывный поток: `/groups/[groupId]/students/[studentId]/communication`.
+- `/lessons/[scheduledLessonId]` показывает scoped-проекции того же conversation слоя (не отдельный silo-thread subsystem).
+- Student dashboard может отвечать в том же слое (general + homework-scoped).
+- Parent dashboard получает read-only проекцию сообщений по детям.
+- Детали: `docs/architecture/communication-runtime-model.md`.
+
 ### Route/source-of-truth helpers
 
 - `src/lib/auth.ts` — канонические URL-константы (`ROUTES`).
@@ -146,9 +151,9 @@ openssl rand -hex 32
 - `src/lib/navigation-contract.ts` — session/navigation contract helpers для TopNav, Landing и server-first security gating.
 - UI и redirect-политика используют эти helper'ы вместо строковых префиксов в компонентах.
 
-## Protected/private зона и redirect policy
+## Защищённая/private зона и redirect policy
 
-### Access policy statuses
+### Статусы access policy
 
 Серверная `resolveAccessPolicy()` нормализует состояние до одного из статусов:
 
@@ -332,12 +337,17 @@ Helpers/RPC:
 ## Миграции
 
 Миграции находятся в `supabase/migrations`.
-Ключевые для текущего auth/routing/prefs/security состояния:
+Ключевые для текущего состояния auth/routing/prefs/security + lesson/runtime слоёв:
 
 - `202603260001_init_auth_and_roles.sql`
 - `202603270002_auth_onboarding_unified_signin.sql`
 - `202604020001_parent_teacher_school_model.sql`
 - `202604030001_user_preference_and_security.sql`
+- `202604060002_lesson_content_storage.sql`
+- `202604070001_group_methodology_binding.sql`
+- `202604070002_homework_runtime_layer.sql`
+- `202604070003_communication_runtime_layer.sql`
+- `202604080001_enforce_group_methodology_immutability.sql`
 
 ## Безопасность секретов
 
@@ -346,7 +356,7 @@ Helpers/RPC:
 - Используйте только placeholders (`<app-password>`, `<secret>`) и secret store.
 - Если секреты могли попасть в логи/чаты/скриншоты — ротируйте их.
 
-## Formatting и quality gates
+## Форматирование и quality gates
 
 - `npm run format` — применяет форматирование Prettier ко всему репозиторию.
 - `npm run format:check` — проверяет, что рабочее дерево уже отформатировано.
@@ -364,7 +374,7 @@ Helpers/RPC:
 - `npm run test`
 - `npm run build`
 
-## Test strategy (MVP)
+## Стратегия тестирования (MVP)
 
 - `npm run test:compile` — компиляция `src/**/*.test.ts` в `.test-dist` через `tsc -p tsconfig.test.json`.
 - `scripts/run-node-tests.mjs` оставлен минимальным и управляемым: он только собирает `.test-dist/**/*.test.js` и применяет include/exclude фильтры без дополнительной магии.
@@ -387,7 +397,7 @@ Helpers/RPC:
   - `src/components/__tests__`: session-driven TopNav/landing branching и contract-ожидания гостевых/auth CTA;
   - `src/lib/server/__tests__`: private-layout redirect contract для `guest`/`degraded`/`adult-without-profile`.
 
-### Browser smoke layer
+### Browser smoke слой
 
 - Добавлен минимальный browser-smoke набор: `src/lib/__tests__/auth-navigation-browser-smoke.test.ts`.
 - Сценарии:
@@ -403,7 +413,7 @@ Helpers/RPC:
     - если локально сборка отсутствует, тест раннер печатает предупреждение и использует `next dev`;
     - в strict режиме fallback запрещён — сначала нужен `npm run build`.
 
-## Teacher lesson workspace (read-only, MVP, secondary entry for teacher IA)
+## Teacher lesson workspace (MVP, runtime-экран исполнения)
 
 Новый приватный teacher-only маршрут:
 
