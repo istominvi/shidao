@@ -32,6 +32,8 @@ import {
   Users,
 } from "lucide-react";
 import { type ReactNode, useEffect, useRef, useState } from "react";
+import { PRIMARY_NAV_CONFIG } from "@/lib/navigation/primary-nav";
+import { NavPillLink } from "@/components/navigation/primitives";
 
 const valueStrip = [
   "Методика — основа курса",
@@ -342,24 +344,14 @@ export function LandingPage() {
               Shidao™
             </Link>
             <nav
-              aria-label="Навигация по лендингу"
+              aria-label={PRIMARY_NAV_CONFIG.marketing.ariaLabel}
               className="hidden flex-wrap gap-2 text-sm font-medium text-neutral-700 lg:flex"
             >
-              <a className="landing-nav-link" href="#roles">
-                Для кого
-              </a>
-              <a className="landing-nav-link" href="#why">
-                Почему Shidao
-              </a>
-              <a className="landing-nav-link" href="#method-core">
-                Методика
-              </a>
-              <a className="landing-nav-link" href="#workflow">
-                Как работает
-              </a>
-              <a className="landing-nav-link" href="#faq">
-                Вопросы
-              </a>
+              {PRIMARY_NAV_CONFIG.marketing.items.map((item) => (
+                <NavPillLink key={item.id} href={item.href} className="text-sm font-medium">
+                  {item.label}
+                </NavPillLink>
+              ))}
             </nav>
             <div className="flex w-full gap-2 sm:w-auto">{navActions}</div>
           </header>
