@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { TeacherDashboardScheduleEvent } from "@/lib/server/teacher-dashboard-operations";
 import type { TeacherDashboardOperationsReadModel } from "@/lib/server/teacher-dashboard-operations";
@@ -166,14 +167,16 @@ function DayView({
 }
 
 function ListView({ events, nowIso }: { events: TeacherDashboardScheduleEvent[]; nowIso: string }) {
+  const router = useRouter();
   const sortedEvents = events.slice().sort((a, b) => Date.parse(a.startsAt) - Date.parse(b.startsAt));
   const nowTs = Date.parse(nowIso);
   const focusIndex = sortedEvents.findIndex((event) => Date.parse(event.startsAt) <= nowTs && Date.parse(event.endsAt) >= nowTs);
   const nearestUpcomingIndex = sortedEvents.findIndex((event) => Date.parse(event.startsAt) >= nowTs);
-  const targetIndex = focusIndex >= 0 ? focusIndex : nearestUpcomingIndex >= 0 ? nearestUpcomingIndex : Math.max(0, sortedEvents.length - 1);
+  const targetIndex = focusIndex >= 0 ? focusIndex : nearestUpcomingIndex >= 0 ? nearestUpcomingIndex : -1;
   const targetRowRef = useRef<HTMLTableRowElement | null>(null);
 
   useEffect(() => {
+    if (targetIndex < 0) return;
     targetRowRef.current?.focus();
     targetRowRef.current?.scrollIntoView({ block: "center", behavior: "smooth" });
   }, [targetIndex]);
@@ -197,7 +200,8 @@ function ListView({ events, nowIso }: { events: TeacherDashboardScheduleEvent[];
               key={event.id}
               ref={index === targetIndex ? targetRowRef : null}
               tabIndex={index === targetIndex ? -1 : undefined}
-              className={`border-t border-neutral-200 transition hover:bg-sky-50/45 ${index === targetIndex ? "bg-sky-50/70 outline-none" : ""}`}
+              onClick={() => router.push(event.href)}
+              className={`cursor-pointer border-t border-neutral-200 transition hover:bg-sky-50/45 ${index === targetIndex ? "bg-sky-50/70 outline-none" : ""}`}
             >
               <td className="px-4 py-3 text-neutral-700">{formatDayLabel(event.isoDate)}</td>
               <td className="px-4 py-3 font-medium text-neutral-900">{event.timeRangeLabel}</td>
