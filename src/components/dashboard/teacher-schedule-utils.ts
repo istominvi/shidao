@@ -1,6 +1,6 @@
 import type { TeacherDashboardScheduleEvent } from "@/lib/server/teacher-dashboard-operations";
 
-export type ScheduleViewMode = "day" | "week" | "month";
+export type ScheduleViewMode = "day" | "week" | "month" | "list";
 
 export type HourRange = {
   startHour: number;
@@ -57,6 +57,10 @@ export function getMonthMatrix(activeIsoDate: string) {
 }
 
 export function getRangeByView(viewMode: ScheduleViewMode, activeIsoDate: string) {
+  if (viewMode === "list") {
+    return { startIso: "0000-01-01", endIsoExclusive: "9999-12-31" };
+  }
+
   if (viewMode === "day") {
     return { startIso: activeIsoDate, endIsoExclusive: addUtcDays(activeIsoDate, 1) };
   }
@@ -80,7 +84,7 @@ export function getRangeByView(viewMode: ScheduleViewMode, activeIsoDate: string
 
 export function getVisibleHourRange(events: TeacherDashboardScheduleEvent[]): HourRange {
   if (events.length === 0) {
-    return { startHour: 8, endHour: 20 };
+    return { startHour: 8, endHour: 9 };
   }
 
   let minMinutes = Number.POSITIVE_INFINITY;

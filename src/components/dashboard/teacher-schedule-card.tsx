@@ -1,11 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { TeacherDashboardScheduleEvent } from "@/lib/server/teacher-dashboard-operations";
 import type { TeacherDashboardOperationsReadModel } from "@/lib/server/teacher-dashboard-operations";
 import {
-  addUtcDays,
   buildEventLaneLayout,
   getMonthMatrix,
   getRangeByView,
@@ -22,7 +21,9 @@ const VIEW_LABELS: Record<ScheduleViewMode, string> = {
   day: "День",
   week: "Неделя",
   month: "Месяц",
+  list: "Список",
 };
+const WEEKDAY_SHORT = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
 
 const HOUR_HEIGHT = 62;
 const HOUR_WIDTH = 128;
@@ -49,39 +50,18 @@ export function TeacherScheduleCard({ schedule }: Props) {
     }
   }, []);
 
-  const nowIsoDate = schedule.nowIso.slice(0, 10);
   const nowTs = Date.parse(schedule.nowIso);
   const range = useMemo(() => getRangeByView(viewMode, activeDateIso), [viewMode, activeDateIso]);
 
-  const rangeEvents = useMemo(
-    () =>
-      schedule.events
-        .filter((event) => event.isoDate >= range.startIso && event.isoDate < range.endIsoExclusive)
-        .sort((a, b) => Date.parse(a.startsAt) - Date.parse(b.startsAt)),
-    [schedule.events, range],
-  );
+  const rangeEvents = useMemo(() => {
+    const source =
+      viewMode === "list"
+        ? schedule.events
+        : schedule.events.filter((event) => event.isoDate >= range.startIso && event.isoDate < range.endIsoExclusive);
+    return source.slice().sort((a, b) => Date.parse(a.startsAt) - Date.parse(b.startsAt));
+  }, [schedule.events, range, viewMode]);
 
   const nextInRange = rangeEvents.find((event) => Date.parse(event.startsAt) >= nowTs) ?? null;
-
-  function navigate(step: number) {
-    if (viewMode === "day") {
-      setActiveDateIso((prev) => addUtcDays(prev, step));
-      return;
-    }
-    if (viewMode === "week") {
-      setActiveDateIso((prev) => addUtcDays(prev, step * 7));
-      return;
-    }
-
-    const activeDate = new Date(`${activeDateIso}T00:00:00Z`);
-    activeDate.setUTCMonth(activeDate.getUTCMonth() + step);
-    const iso = activeDate.toISOString().slice(0, 10);
-    setActiveDateIso(iso);
-    setMonthAgendaIso(iso);
-  }
-
-  const toolbarButtonClass =
-    "landing-btn landing-btn-muted h-9 px-3 text-xs font-semibold text-neutral-700 hover:text-neutral-900";
 
   return (
     <section className="landing-surface rounded-3xl border border-white/80 p-4 md:p-5">
@@ -95,7 +75,7 @@ export function TeacherScheduleCard({ schedule }: Props) {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <div className="inline-flex rounded-full border border-neutral-200 bg-white p-1">
-            {(["day", "week", "month"] as ScheduleViewMode[]).map((mode) => (
+            {(["day", "week", "month", "list"] as ScheduleViewMode[]).map((mode) => (
               <button
                 key={mode}
                 type="button"
@@ -111,15 +91,6 @@ export function TeacherScheduleCard({ schedule }: Props) {
               </button>
             ))}
           </div>
-          <button type="button" className={`${toolbarButtonClass} cursor-pointer`} onClick={() => setActiveDateIso(nowIsoDate)}>
-            Сегодня
-          </button>
-          <button type="button" aria-label="Назад" className={`${toolbarButtonClass} cursor-pointer`} onClick={() => navigate(-1)}>
-            ←
-          </button>
-          <button type="button" aria-label="Вперёд" className={`${toolbarButtonClass} cursor-pointer`} onClick={() => navigate(1)}>
-            →
-          </button>
         </div>
       </div>
 
@@ -142,6 +113,9 @@ export function TeacherScheduleCard({ schedule }: Props) {
             events={schedule.events}
             onSelectDate={setMonthAgendaIso}
           />
+        ) : null}
+        {viewMode === "list" ? (
+          <ListView events={schedule.events} nowIso={schedule.nowIso} />
         ) : null}
       </div>
     </section>
@@ -188,6 +162,54 @@ function DayView({
         nowIso={nowIso}
         hourRange={hourRange}
       />
+    </div>
+  );
+}
+
+function ListView({ events, nowIso }: { events: TeacherDashboardScheduleEvent[]; nowIso: string }) {
+  const sortedEvents = events.slice().sort((a, b) => Date.parse(a.startsAt) - Date.parse(b.startsAt));
+  const nowTs = Date.parse(nowIso);
+  const focusIndex = sortedEvents.findIndex((event) => Date.parse(event.startsAt) <= nowTs && Date.parse(event.endsAt) >= nowTs);
+  const nearestUpcomingIndex = sortedEvents.findIndex((event) => Date.parse(event.startsAt) >= nowTs);
+  const targetIndex = focusIndex >= 0 ? focusIndex : nearestUpcomingIndex >= 0 ? nearestUpcomingIndex : Math.max(0, sortedEvents.length - 1);
+  const targetRowRef = useRef<HTMLTableRowElement | null>(null);
+
+  useEffect(() => {
+    targetRowRef.current?.focus();
+    targetRowRef.current?.scrollIntoView({ block: "center", behavior: "smooth" });
+  }, [targetIndex]);
+
+  return (
+    <div className="overflow-x-auto rounded-2xl border border-neutral-200 bg-white">
+      <table className="min-w-full text-left text-sm">
+        <thead className="bg-neutral-50 text-xs font-semibold text-neutral-600">
+          <tr>
+            <th className="px-3 py-2">Дата</th>
+            <th className="px-3 py-2">Время</th>
+            <th className="px-3 py-2">Группа</th>
+            <th className="px-3 py-2">Урок</th>
+            <th className="px-3 py-2">Формат</th>
+            <th className="px-3 py-2">Статус</th>
+          </tr>
+        </thead>
+        <tbody>
+          {sortedEvents.map((event, index) => (
+            <tr
+              key={event.id}
+              ref={index === targetIndex ? targetRowRef : null}
+              tabIndex={index === targetIndex ? -1 : undefined}
+              className={`border-t border-neutral-100 ${index === targetIndex ? "bg-sky-50/70 outline-none" : "hover:bg-neutral-50"}`}
+            >
+              <td className="px-3 py-2 text-neutral-700">{formatDayLabel(event.isoDate)}</td>
+              <td className="px-3 py-2 font-medium text-neutral-900">{event.timeRangeLabel}</td>
+              <td className="px-3 py-2 text-neutral-700">{event.groupLabel}</td>
+              <td className="px-3 py-2 text-neutral-700">{event.lessonTitle}</td>
+              <td className="px-3 py-2 text-neutral-700">{event.formatLabel}</td>
+              <td className="px-3 py-2 text-neutral-700">{event.statusLabel}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
@@ -267,11 +289,6 @@ function HorizontalDayTimeline({
             );
           })}
 
-          {events.length === 0 ? (
-            <div className="absolute inset-x-2 top-2 rounded-xl border border-dashed border-neutral-200 bg-white/80 p-3 text-xs text-neutral-500">
-              На этот день занятий не запланировано.
-            </div>
-          ) : null}
         </div>
       </div>
     </div>
@@ -299,13 +316,11 @@ function TimeGrid({
   events,
   nowIso,
   hourRange,
-  singleDay = false,
 }: {
   days: string[];
   events: TeacherDashboardScheduleEvent[];
   nowIso: string;
   hourRange: { startHour: number; endHour: number };
-  singleDay?: boolean;
 }) {
   const hours = Array.from({ length: hourRange.endHour - hourRange.startHour + 1 }, (_, i) => hourRange.startHour + i);
   const gridHeight = (hourRange.endHour - hourRange.startHour) * HOUR_HEIGHT;
@@ -325,11 +340,13 @@ function TimeGrid({
 
   return (
     <div className="overflow-x-auto rounded-2xl border border-neutral-200 bg-white">
-      <div className={`grid min-w-[720px] ${singleDay ? "grid-cols-[64px_1fr]" : "grid-cols-[64px_repeat(7,minmax(140px,1fr))]"}`}>
-        <div className="border-b border-neutral-200 bg-neutral-50 p-2 text-[11px] font-semibold uppercase text-neutral-500">UTC</div>
+      <div className="grid min-w-[720px] grid-cols-[64px_repeat(7,minmax(140px,1fr))]">
+        <div className="border-b border-neutral-200 bg-neutral-50 p-2 text-xs font-semibold text-neutral-600">UTC</div>
         {days.map((day) => (
-          <div key={day} className="border-b border-l border-neutral-200 bg-neutral-50 px-2 py-2 text-xs font-semibold text-neutral-700">
-            <span className={day === nowDay ? "rounded-full bg-sky-100 px-2 py-0.5 text-sky-700" : ""}>{formatDayLabel(day, true)}</span>
+          <div key={day} className="border-b border-l border-neutral-200 bg-neutral-50 px-2 py-2 text-xs font-semibold text-neutral-600">
+            <span className={day === nowDay ? "rounded-full bg-sky-100 px-2 py-0.5 text-sky-700" : ""}>
+              {WEEKDAY_SHORT[(new Date(`${day}T00:00:00Z`).getUTCDay() + 6) % 7]} · {day.slice(8, 10)}
+            </span>
           </div>
         ))}
 
@@ -397,11 +414,6 @@ function TimeGrid({
                   );
                 })}
 
-                {dayEvents.length === 0 ? (
-                  <div className="absolute inset-x-2 top-6 rounded-xl border border-dashed border-neutral-200 bg-white/70 p-3 text-xs text-neutral-500">
-                    На этот день занятий не запланировано.
-                  </div>
-                ) : null}
               </div>
             </div>
           );
@@ -436,8 +448,8 @@ function MonthView({
   return (
     <div className="space-y-3">
       <div className="overflow-x-auto rounded-2xl border border-neutral-200 bg-white">
-        <div className="grid min-w-[740px] grid-cols-7 border-b border-neutral-200 bg-neutral-50 text-[11px] font-semibold uppercase text-neutral-500">
-          {["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"].map((label) => (
+        <div className="grid min-w-[740px] grid-cols-7 border-b border-neutral-200 bg-neutral-50 text-xs font-semibold text-neutral-600">
+          {WEEKDAY_SHORT.map((label) => (
             <div key={label} className="px-2 py-2 text-center">
               {label}
             </div>
