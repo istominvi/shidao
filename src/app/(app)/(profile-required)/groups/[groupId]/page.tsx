@@ -2,6 +2,8 @@ import Link from "next/link";
 import { revalidatePath } from "next/cache";
 import { notFound, redirect } from "next/navigation";
 import { isRedirectError } from "next/dist/client/components/redirect-error";
+import { AppCard } from "@/components/app/app-card";
+import { AppPageHeader } from "@/components/app/page-header";
 import { TopNav } from "@/components/top-nav";
 import { TeacherTableCard, TeacherTableEmptyState } from "@/components/dashboard/teacher-table-card";
 import { ROUTES } from "@/lib/auth";
@@ -81,61 +83,55 @@ export default async function TeacherGroupPage({
       <div className="landing-noise" aria-hidden="true" />
       <TopNav />
       <div className="container py-7 md:py-10 space-y-6">
-        <header className="landing-surface rounded-[2rem] border border-white/80 p-6 shadow-[0_24px_72px_rgba(15,23,42,0.12)] md:p-8">
-          <Link href={ROUTES.groups} className="inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-sky-700 underline-offset-2 hover:underline">
-            <span aria-hidden="true">←</span>
-            <span>Группы</span>
-          </Link>
-          <h1 className="mt-3 text-3xl font-black tracking-[-0.03em] text-neutral-950 md:text-4xl">
-            {readModel.group.label}
-          </h1>
-
-          {query.saved ? (
-            <p className="mt-3 rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">{query.saved}</p>
-          ) : null}
-          {query.error ? (
-            <p className="mt-3 rounded-xl border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-800">{query.error}</p>
-          ) : null}
-
-          <div className="mt-4 flex flex-wrap gap-2 text-sm text-neutral-700">
-            <span className="rounded-full border border-neutral-200 bg-white/90 px-3 py-1">
-              Ученики: {readModel.group.studentCount}
-            </span>
-            <span className="rounded-full border border-neutral-200 bg-white/90 px-3 py-1">
-              Прогресс: {readModel.group.progressLabel}
-            </span>
-            {readModel.group.nextLessonLabel ? (
-              <span className="rounded-full border border-neutral-200 bg-white/90 px-3 py-1">
-                Следующее занятие: {readModel.group.nextLessonLabel}
+        <AppPageHeader
+          backHref={ROUTES.groups}
+          backLabel="Группы"
+          title={readModel.group.label}
+          description={readModel.methodology.assignedMethodologyShortDescription ?? undefined}
+          meta={(
+            <>
+              {query.saved ? (
+                <p className="w-full rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">{query.saved}</p>
+              ) : null}
+              {query.error ? (
+                <p className="w-full rounded-xl border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-800">{query.error}</p>
+              ) : null}
+              <span className="rounded-full border border-neutral-200 bg-white/90 px-3 py-1 text-sm text-neutral-700">
+                Ученики: {readModel.group.studentCount}
               </span>
-            ) : null}
-            {readModel.group.assignedMethodologyTitle ? (
-              <span className="rounded-full border border-neutral-200 bg-white/90 px-3 py-1">
-                Методика: {readModel.group.assignedMethodologyTitle}
+              <span className="rounded-full border border-neutral-200 bg-white/90 px-3 py-1 text-sm text-neutral-700">
+                Прогресс: {readModel.group.progressLabel}
               </span>
-            ) : (
-              <span className="rounded-full border border-dashed border-neutral-300 bg-white/90 px-3 py-1 text-neutral-500">
-                Методика: не указана (legacy-группа)
-              </span>
-            )}
-          </div>
-          {readModel.methodology.assignedMethodologyShortDescription ? (
-            <p className="mt-3 text-sm text-neutral-600">
-              {readModel.methodology.assignedMethodologyShortDescription}
-            </p>
-          ) : null}
-          <div className="mt-4 flex flex-wrap gap-2">
-            <Link href={`${ROUTES.studentsNew}?groupId=${encodeURIComponent(readModel.group.id)}`} className="landing-btn landing-btn-muted text-xs">
-              Добавить ученика
-            </Link>
-            <Link
-              href={`${ROUTES.lessons}?groupId=${encodeURIComponent(readModel.group.id)}`}
-              className="landing-btn landing-btn-muted text-xs"
-            >
-              Открыть global lessons index
-            </Link>
-          </div>
-        </header>
+              {readModel.group.nextLessonLabel ? (
+                <span className="rounded-full border border-neutral-200 bg-white/90 px-3 py-1 text-sm text-neutral-700">
+                  Следующее занятие: {readModel.group.nextLessonLabel}
+                </span>
+              ) : null}
+              {readModel.group.assignedMethodologyTitle ? (
+                <span className="rounded-full border border-neutral-200 bg-white/90 px-3 py-1 text-sm text-neutral-700">
+                  Методика: {readModel.group.assignedMethodologyTitle}
+                </span>
+              ) : (
+                <span className="rounded-full border border-dashed border-neutral-300 bg-white/90 px-3 py-1 text-sm text-neutral-500">
+                  Методика: не указана (legacy-группа)
+                </span>
+              )}
+            </>
+          )}
+          actions={(
+            <>
+              <Link href={`${ROUTES.studentsNew}?groupId=${encodeURIComponent(readModel.group.id)}`} className="landing-btn landing-btn-muted text-xs">
+                Добавить ученика
+              </Link>
+              <Link
+                href={`${ROUTES.lessons}?groupId=${encodeURIComponent(readModel.group.id)}`}
+                className="landing-btn landing-btn-muted text-xs"
+              >
+                Открыть global lessons index
+              </Link>
+            </>
+          )}
+        />
 
         <TeacherTableCard
           title="Ученики группы"
@@ -175,7 +171,7 @@ export default async function TeacherGroupPage({
           ) : null}
         </TeacherTableCard>
 
-        <section className="landing-surface rounded-3xl border border-white/80 p-5">
+        <AppCard className="p-5">
           <h2 className="text-xl font-bold text-neutral-950">Запланировать занятие в контексте группы</h2>
           {!readModel.schedule.canSchedule ? (
             <p className="mt-2 text-sm text-amber-700">Для этой legacy-группы методика не задана. Планирование занятий недоступно.</p>
@@ -218,10 +214,10 @@ export default async function TeacherGroupPage({
               </div>
             </form>
           )}
-        </section>
+        </AppCard>
 
         <section className="grid gap-4 md:grid-cols-2">
-          <article className="landing-surface rounded-3xl border border-white/80 p-5">
+          <AppCard as="article" className="p-5">
             <h2 className="text-xl font-bold text-neutral-950">Ближайшие занятия</h2>
             {readModel.upcomingLessons.length === 0 ? (
               <p className="mt-3 text-sm text-neutral-500">Пока нет запланированных занятий.</p>
@@ -239,9 +235,9 @@ export default async function TeacherGroupPage({
                 ))}
               </ul>
             )}
-          </article>
+          </AppCard>
 
-          <article className="landing-surface rounded-3xl border border-white/80 p-5">
+          <AppCard as="article" className="p-5">
             <h2 className="text-xl font-bold text-neutral-950">Недавние занятия</h2>
             {readModel.recentLessons.length === 0 ? (
               <p className="mt-3 text-sm text-neutral-500">История занятий пока пустая.</p>
@@ -259,7 +255,7 @@ export default async function TeacherGroupPage({
                 ))}
               </ul>
             )}
-          </article>
+          </AppCard>
         </section>
       </div>
     </main>

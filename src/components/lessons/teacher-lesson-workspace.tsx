@@ -1,4 +1,6 @@
 import type { TeacherLessonWorkspaceReadModel } from "@/lib/server/teacher-lesson-workspace";
+import { AppCard } from "@/components/app/app-card";
+import { AppPageHeader } from "@/components/app/page-header";
 
 type TeacherLessonWorkspaceProps = {
   workspace: TeacherLessonWorkspaceReadModel;
@@ -41,44 +43,31 @@ export function TeacherLessonWorkspace({
 
   return (
     <div className="space-y-8 lg:space-y-10">
-      <header className="landing-surface relative overflow-hidden rounded-[2rem] border border-white/80 p-6 shadow-[0_24px_72px_rgba(15,23,42,0.12)] md:p-8">
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(14,165,233,0.18),transparent_48%),radial-gradient(circle_at_bottom_left,rgba(168,85,247,0.16),transparent_44%)]"
-        />
-        <div className="relative">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-sky-700">
-            Рабочее пространство преподавателя
-          </p>
-          <h1 className="mt-3 max-w-3xl text-3xl font-black tracking-[-0.03em] text-neutral-950 md:text-4xl">
-            {hero.lessonTitle}
-          </h1>
-          <p className="mt-3 max-w-3xl text-sm leading-6 text-neutral-700 md:text-base">
-            {hero.lessonEssence}
-          </p>
-
-          <div className="mt-5 flex flex-wrap items-center gap-2 text-sm text-neutral-700">
-            <span className="rounded-full border border-neutral-200 bg-white/90 px-3 py-1.5 font-medium text-neutral-900">
+      <AppPageHeader
+        eyebrow="Рабочее пространство преподавателя"
+        title={hero.lessonTitle}
+        description={hero.lessonEssence}
+        meta={(
+          <>
+            <span className="rounded-full border border-neutral-200 bg-white/90 px-3 py-1.5 text-sm font-medium text-neutral-900">
               {hero.groupLabel}
             </span>
-            <span className="rounded-full border border-neutral-200 bg-white/80 px-3 py-1.5">
+            <span className="rounded-full border border-neutral-200 bg-white/80 px-3 py-1.5 text-sm text-neutral-700">
               {hero.dateTimeLabel}
             </span>
-            <span className="rounded-full border border-neutral-200 bg-white/80 px-3 py-1.5">
+            <span className="rounded-full border border-neutral-200 bg-white/80 px-3 py-1.5 text-sm text-neutral-700">
               {hero.formatLabel}
             </span>
-            <span
-              className={`rounded-full border px-3 py-1.5 text-xs font-semibold ${statusBadgeTone(hero.statusLabel)}`}
-            >
+            <span className={`rounded-full border px-3 py-1.5 text-xs font-semibold ${statusBadgeTone(hero.statusLabel)}`}>
               {hero.statusLabel}
             </span>
-          </div>
-          <p className="mt-4 text-sm text-neutral-600">{hero.methodologyLine}</p>
-        </div>
-      </header>
+          </>
+        )}
+        actions={<p className="text-sm text-neutral-600">{hero.methodologyLine}</p>}
+      />
 
       <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <article className="landing-surface rounded-3xl border border-white/80 p-5">
+        <AppCard as="article" className="p-5">
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-neutral-500">
             Подготовить
           </p>
@@ -93,9 +82,9 @@ export function TeacherLessonWorkspace({
               <li className="text-neutral-600">Все материалы уже в уроке.</li>
             ) : null}
           </ul>
-        </article>
+        </AppCard>
 
-        <article className="landing-surface rounded-3xl border border-white/80 p-5">
+        <AppCard as="article" className="p-5">
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-neutral-500">
             Ключевые слова
           </p>
@@ -113,9 +102,9 @@ export function TeacherLessonWorkspace({
               <p className="text-sm text-neutral-600">Слова не указаны.</p>
             )}
           </div>
-        </article>
+        </AppCard>
 
-        <article className="landing-surface rounded-3xl border border-white/80 p-5">
+        <AppCard as="article" className="p-5">
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-neutral-500">
             Ключевые фразы
           </p>
@@ -133,9 +122,9 @@ export function TeacherLessonWorkspace({
               <p className="text-sm text-neutral-600">Фразы не указаны.</p>
             )}
           </div>
-        </article>
+        </AppCard>
 
-        <article className="landing-surface rounded-3xl border border-white/80 p-5">
+        <AppCard as="article" className="p-5">
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-neutral-500">
             Видео и материалы
           </p>
@@ -165,11 +154,11 @@ export function TeacherLessonWorkspace({
               <li className="text-neutral-600">Материалы не указаны.</li>
             ) : null}
           </ul>
-        </article>
+        </AppCard>
       </section>
 
       <section className="grid gap-5 xl:grid-cols-[minmax(0,1.65fr)_minmax(320px,1fr)]">
-        <article className="landing-surface rounded-[2rem] border border-white/80 p-5 md:p-6">
+        <AppCard as="article" className="p-5 md:p-6">
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-neutral-500">
@@ -280,10 +269,10 @@ export function TeacherLessonWorkspace({
               </article>
             ))}
           </div>
-        </article>
+        </AppCard>
 
         <aside className="space-y-4 xl:sticky xl:top-6 xl:self-start">
-          <section className="landing-surface rounded-[2rem] border border-emerald-200/70 p-5 md:p-6">
+          <AppCard className="border-emerald-200/70 p-5 md:p-6">
             <h2 className="text-xl font-bold tracking-[-0.02em] text-neutral-900">
               Проведение занятия
             </h2>
@@ -366,9 +355,9 @@ export function TeacherLessonWorkspace({
                 Сохранить изменения
               </button>
             </form>
-          </section>
+          </AppCard>
 
-          <section className="landing-surface rounded-3xl border border-white/80 p-5">
+          <AppCard className="p-5">
             <h2 className="text-lg font-bold text-neutral-900">Фокус преподавателя</h2>
             <article className="mt-3 rounded-2xl border border-neutral-200 bg-white/80 p-4">
               <h3 className="text-sm font-semibold text-neutral-900">
@@ -397,9 +386,9 @@ export function TeacherLessonWorkspace({
                   "После урока добавьте короткий итог по группе."}
               </p>
             </article>
-          </section>
+          </AppCard>
 
-          <section className="landing-surface rounded-3xl border border-violet-200/70 p-5">
+          <AppCard className="border-violet-200/70 p-5">
             <h2 className="text-lg font-bold text-neutral-900">Ориентиры методики</h2>
             <p className="mt-2 text-sm text-neutral-700">{hero.methodologyTitle}</p>
             <ul className="mt-3 space-y-2 text-sm text-neutral-700">
@@ -418,9 +407,9 @@ export function TeacherLessonWorkspace({
                 {methodologyReference.readinessLabel}
               </li>
             </ul>
-          </section>
+          </AppCard>
 
-          <section className="landing-surface rounded-3xl border border-sky-200/70 p-5">
+          <AppCard className="border-sky-200/70 p-5">
             <h2 className="text-lg font-bold text-neutral-900">Домашнее задание</h2>
             {!workspace.homework.schemaReady ? (
               <p className="mt-3 text-sm text-amber-700">
@@ -520,9 +509,9 @@ export function TeacherLessonWorkspace({
                 </div>
               </div>
             ) : null}
-          </section>
+          </AppCard>
 
-          <section className="landing-surface rounded-3xl border border-amber-200/70 p-5">
+          <AppCard className="border-amber-200/70 p-5">
             <h2 className="text-lg font-bold text-neutral-900">Discussion for this lesson</h2>
             <div className="mt-3 space-y-2">
               {workspace.communication.lessonScoped.length === 0 ? (
@@ -568,10 +557,10 @@ export function TeacherLessonWorkspace({
                 </article>
               ))}
             </div>
-          </section>
+          </AppCard>
 
           {workspace.communication.homeworkAssignmentId ? (
-            <section className="landing-surface rounded-3xl border border-fuchsia-200/70 p-5">
+            <AppCard className="border-fuchsia-200/70 p-5">
               <h2 className="text-lg font-bold text-neutral-900">Discussion for this homework</h2>
               <div className="mt-3 space-y-2">
                 {workspace.communication.homeworkScoped.map((item) => (
@@ -600,7 +589,7 @@ export function TeacherLessonWorkspace({
                   </article>
                 ))}
               </div>
-            </section>
+            </AppCard>
           ) : null}
         </aside>
       </section>
