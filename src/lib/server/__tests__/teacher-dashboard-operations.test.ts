@@ -85,7 +85,10 @@ test("dashboard operations model builds rows, schedule and alerts", async () => 
   const foxes = model.groups.rows.find((row) => row.groupLabel === "Лисички");
   const dragons = model.groups.rows.find((row) => row.groupLabel === "Драконы");
   assert.equal(foxes?.progressLabel, "1/2 (50%)");
+  assert.deepEqual(foxes?.students, [{ id: "s-1", displayName: "Анна" }]);
+  assert.deepEqual(foxes?.statusChips, ["Запланировано"]);
   assert.equal(dragons?.status, "attention");
+  assert.deepEqual(dragons?.statusChips, ["Нет учеников", "Нужна методика", "Нет занятий"]);
   assert.equal(model.schedule.totalLessons, 3);
   const fallbackEvent = model.schedule.events.find((event) => event.id === "sl-2");
   const configuredEvent = model.schedule.events.find((event) => event.id === "sl-1");

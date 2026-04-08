@@ -8,13 +8,18 @@ import {
 
 export type TeacherGroupOperationalStatus =
   | "attention"
-  | "scheduled"
-  | "on_track";
+  | "scheduled";
+
+export type TeacherGroupRowStudent = {
+  id: string;
+  displayName: string;
+};
 
 export type TeacherGroupOperationsRow = {
   id: string;
   groupLabel: string;
   studentCount: number;
+  students: TeacherGroupRowStudent[];
   methodologyLabel: string | null;
   progressLabel: string;
   progressRatio: number | null;
@@ -23,7 +28,7 @@ export type TeacherGroupOperationsRow = {
   nextLessonTitle: string | null;
   status: TeacherGroupOperationalStatus;
   statusLabel: string;
-  attentionReasons: string[];
+  statusChips: string[];
   groupHref: string;
   groupLessonsHref: string;
 };
@@ -236,32 +241,31 @@ async function buildOperationsSnapshot(
       ? methodologyLessonTotalsByMethodologyId[group.methodologyId] ?? 0
       : null;
 
-    const attentionReasons: string[] = [];
-    if ((studentsByClass[group.id]?.length ?? 0) === 0) {
-      attentionReasons.push("Нет учеников");
+    const students = (studentsByClass[group.id] ?? []).map((student) => ({
+      id: student.id,
+      displayName: clean(student.fullName) || clean(student.login) || "Ученик",
+    }));
+
+    const setupIssues: string[] = [];
+    if (students.length === 0) {
+      setupIssues.push("Нет учеников");
+    }
+    if (!methodologyLabel) {
+      setupIssues.push("Нужна методика");
     }
     if (!nextLesson) {
-      attentionReasons.push("Нет ближайшего занятия");
+      setupIssues.push("Нет занятий");
     }
 
-    const status: TeacherGroupOperationalStatus =
-      attentionReasons.length > 0
-        ? "attention"
-        : upcomingLessons.length > 0
-          ? "scheduled"
-          : "on_track";
-
-    const statusLabel =
-      status === "attention"
-        ? "Требует внимания"
-        : status === "scheduled"
-          ? "По плану"
-          : "Стабильно";
+    const status: TeacherGroupOperationalStatus = setupIssues.length > 0 ? "attention" : "scheduled";
+    const statusChips = setupIssues.length > 0 ? setupIssues : ["Запланировано"];
+    const statusLabel = status === "attention" ? "Нужна настройка" : "Запланировано";
 
     return {
       id: group.id,
       groupLabel: clean(group.name) || "Группа",
-      studentCount: studentsByClass[group.id]?.length ?? 0,
+      studentCount: students.length,
+      students,
       methodologyLabel,
       progressLabel: buildProgressLabel(completedLessons, knownMethodologyLessonTotal),
       progressRatio:
@@ -275,7 +279,7 @@ async function buildOperationsSnapshot(
         : null,
       status,
       statusLabel,
-      attentionReasons,
+      statusChips,
       groupHref: toGroupRoute(group.id),
       groupLessonsHref: `${ROUTES.lessons}?groupId=${encodeURIComponent(group.id)}`,
     };
@@ -358,11 +362,11 @@ async function buildOperationsSnapshot(
       groupsWithoutUpcomingLessons: rows.filter((row) => !row.nextLessonHref).length,
       lessonsToday,
       attentionGroups: rows
-        .filter((row) => row.attentionReasons.length > 0)
+        .filter((row) => row.status === "attention")
         .map((row) => ({
           id: row.id,
           label: row.groupLabel,
-          reasons: row.attentionReasons,
+          reasons: row.statusChips,
           href: row.groupHref,
         })),
     },

@@ -64,11 +64,11 @@ export function TeacherScheduleCard({ schedule }: Props) {
   const nextInRange = rangeEvents.find((event) => Date.parse(event.startsAt) >= nowTs) ?? null;
 
   return (
-    <section className="landing-surface rounded-3xl border border-white/80 p-4 md:p-5">
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+    <section className="dashboard-section">
+      <div className="dashboard-section-header flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h2 className="text-xl font-black text-neutral-950">Расписание</h2>
-          <p className="mt-1 text-xs text-neutral-500">
+          <h2 className="dashboard-section-title">Расписание</h2>
+          <p className="dashboard-section-description">
             Занятий в диапазоне: {rangeEvents.length}
             {nextInRange ? ` · Ближайшее: ${nextInRange.timeRangeLabel}, ${nextInRange.groupLabel}` : " · Ближайших занятий нет"}
           </p>
@@ -179,7 +179,7 @@ function ListView({ events, nowIso }: { events: TeacherDashboardScheduleEvent[];
   }, [targetIndex]);
 
   return (
-    <div className="overflow-x-auto rounded-2xl border border-neutral-200 bg-white">
+    <div className="dashboard-subcard overflow-x-auto">
       <table className="min-w-full text-left text-sm">
         <thead className="bg-neutral-50 text-xs font-semibold text-neutral-600">
           <tr>
@@ -238,7 +238,7 @@ function HorizontalDayTimeline({
   const marks = Array.from({ length: hourRange.endHour - hourRange.startHour + 1 }, (_, index) => hourRange.startHour + index);
 
   return (
-    <div className="overflow-x-auto rounded-2xl border border-neutral-200 bg-white">
+    <div className="dashboard-subcard overflow-x-auto">
       <div className="min-w-[720px] p-3" style={{ width: `${Math.max(720, timelineWidth + 24)}px` }}>
         <div className="relative mb-2 h-6">
           {marks.map((hour) => (
