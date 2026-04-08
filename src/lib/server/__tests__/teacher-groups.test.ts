@@ -123,6 +123,7 @@ test("group models use explicit methodology assignment and honest progress", asy
   );
   assert.equal(overview?.methodology.assignedMethodologyTitle, "Мир вокруг");
   assert.equal(overview?.schedule.canSchedule, true);
+  assert.equal(overview?.students[0]?.login, "anya");
 });
 
 test("group creation requires methodology and scheduling validates assigned methodology", async () => {

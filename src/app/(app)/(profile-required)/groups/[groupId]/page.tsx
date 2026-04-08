@@ -3,6 +3,7 @@ import { revalidatePath } from "next/cache";
 import { notFound, redirect } from "next/navigation";
 import { isRedirectError } from "next/dist/client/components/redirect-error";
 import { TopNav } from "@/components/top-nav";
+import { TeacherTableCard, TeacherTableEmptyState } from "@/components/dashboard/teacher-table-card";
 import { ROUTES } from "@/lib/auth";
 import { resolveAccessPolicy } from "@/lib/server/access-policy";
 import {
@@ -136,31 +137,43 @@ export default async function TeacherGroupPage({
           </div>
         </header>
 
-        <section className="landing-surface rounded-3xl border border-white/80 p-5">
-          <div className="flex items-center justify-between gap-2">
-            <h2 className="text-xl font-bold text-neutral-950">Ученики группы</h2>
+        <TeacherTableCard
+          title="Ученики группы"
+          headerAction={(
             <Link href={`${ROUTES.studentsNew}?groupId=${encodeURIComponent(readModel.group.id)}`} className="text-sm text-sky-700 underline underline-offset-2">
               Создать и добавить ученика
             </Link>
-          </div>
-          {readModel.students.length === 0 ? (
-            <p className="mt-3 text-sm text-neutral-500">В группе пока нет учеников.</p>
-          ) : (
-            <ul className="mt-3 space-y-2 text-sm text-neutral-700">
-              {readModel.students.map((student) => (
-                <li key={student.id} className="flex items-center justify-between gap-3">
-                  <span>{student.displayName}</span>
-                  <Link
-                    href={`${ROUTES.groups}/${encodeURIComponent(groupId)}/students/${encodeURIComponent(student.id)}/communication`}
-                    className="text-xs text-sky-700 underline underline-offset-2"
-                  >
-                    Открыть коммуникацию
-                  </Link>
-                </li>
-              ))}
-            </ul>
           )}
-        </section>
+        >
+          <table className="min-w-full text-left text-sm">
+            <thead className="bg-neutral-50 text-xs uppercase tracking-wide text-neutral-500">
+              <tr>
+                <th className="px-4 py-3">Ученик</th>
+                <th className="px-4 py-3">Логин</th>
+                <th className="px-4 py-3">Коммуникация</th>
+              </tr>
+            </thead>
+            <tbody>
+              {readModel.students.map((student) => (
+                <tr key={student.id} className="border-t border-neutral-200 align-top transition hover:bg-sky-50/45">
+                  <td className="px-4 py-3 font-semibold text-neutral-950">{student.displayName}</td>
+                  <td className="px-4 py-3 text-neutral-700">{student.login ? `@${student.login}` : "—"}</td>
+                  <td className="px-4 py-3 text-neutral-700">
+                    <Link
+                      href={`${ROUTES.groups}/${encodeURIComponent(groupId)}/students/${encodeURIComponent(student.id)}/communication`}
+                      className="text-xs text-sky-700 underline underline-offset-2"
+                    >
+                      Открыть коммуникацию
+                    </Link>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {readModel.students.length === 0 ? (
+            <TeacherTableEmptyState text="В группе пока нет учеников." />
+          ) : null}
+        </TeacherTableCard>
 
         <section className="landing-surface rounded-3xl border border-white/80 p-5">
           <h2 className="text-xl font-bold text-neutral-950">Запланировать занятие в контексте группы</h2>
