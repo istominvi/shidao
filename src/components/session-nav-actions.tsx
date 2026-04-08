@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { createPortal } from "react-dom";
-import { LogOut, Settings, UserRound } from "lucide-react";
+import { LogOut, Settings } from "lucide-react";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ROUTES, type ProfileKind } from "@/lib/auth";
@@ -229,17 +229,6 @@ export function SessionNavActions({
 
       {state.kind === "adult" && (
         <div className="border-t border-black/5 px-3 py-2.5">
-          <div className="mb-2 flex items-center justify-between gap-2">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-neutral-500">
-              Активный кабинет
-            </p>
-            <p className="truncate text-xs font-medium text-neutral-600">
-              {state.activeProfile
-                ? ADULT_PROFILE_TOGGLE_LABELS[state.activeProfile]
-                : "Не выбран"}
-            </p>
-          </div>
-
           <NavSegmentedSwitch className="w-full">
             {ADULT_PROFILE_ORDER.map((profile) => {
               const available = state.availableProfiles.includes(profile);
@@ -315,7 +304,6 @@ export function SessionNavActions({
         <span className="hidden max-w-[16ch] truncate text-sm font-semibold leading-tight text-neutral-900 md:block">
           {state.fullName ?? "Пользователь"}
         </span>
-        <UserRound size={15} aria-hidden="true" className="text-neutral-500" />
       </button>
 
       {open && (portalMenu ? createPortal(menu, document.body) : menu)}
