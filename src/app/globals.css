@@ -235,6 +235,111 @@ a {
   box-shadow: 0 0 0 3px rgba(20, 20, 20, 0.08);
 }
 
+.teacher-control-rail {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.teacher-control {
+  height: 2.6rem;
+  border-radius: 0.95rem;
+  border: 1px solid rgba(20, 20, 20, 0.14);
+  background: rgba(255, 255, 255, 0.96);
+  font-size: 0.9rem;
+  color: #171717;
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    background-color 180ms ease;
+}
+
+.teacher-control:focus-visible {
+  outline: none;
+  border-color: rgba(20, 20, 20, 0.32);
+  box-shadow: 0 0 0 3px rgba(20, 20, 20, 0.08);
+}
+
+.teacher-control-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0 0.9rem;
+  font-weight: 600;
+}
+
+.teacher-control-button:hover {
+  background: rgba(250, 250, 250, 1);
+}
+
+.teacher-search-wrap,
+.teacher-select-wrap {
+  position: relative;
+}
+
+.teacher-search-wrap {
+  flex: 1 1 13rem;
+  min-width: 13rem;
+}
+
+.teacher-control-search {
+  width: 100%;
+  padding: 0 0.9rem 0 2.15rem;
+}
+
+.teacher-search-icon {
+  position: absolute;
+  left: 0.72rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #737373;
+  pointer-events: none;
+}
+
+.teacher-select-wrap {
+  min-width: 12rem;
+}
+
+.teacher-control-select {
+  width: 100%;
+  cursor: pointer;
+  appearance: none;
+  padding: 0 2rem 0 0.8rem;
+}
+
+.teacher-select-icon {
+  position: absolute;
+  right: 0.7rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #737373;
+  pointer-events: none;
+}
+
+.teacher-disclosure-btn {
+  display: inline-flex;
+  height: 1.65rem;
+  width: 1.65rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.5rem;
+  border: 1px solid rgba(20, 20, 20, 0.12);
+  color: #404040;
+  background: rgba(255, 255, 255, 0.95);
+  transition: background-color 160ms ease, border-color 160ms ease;
+}
+
+.teacher-disclosure-btn:hover {
+  background: rgba(245, 245, 245, 1);
+}
+
+.teacher-disclosure-btn:focus-visible {
+  outline: none;
+  border-color: rgba(20, 20, 20, 0.32);
+  box-shadow: 0 0 0 3px rgba(20, 20, 20, 0.08);
+}
+
 .role-choice-card {
   border-radius: 1.35rem;
   border: 1px solid rgba(20, 20, 20, 0.11);
