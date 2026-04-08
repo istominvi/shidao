@@ -245,7 +245,14 @@ export function SessionNavActions({
                   ariaPressed={active}
                   className="min-h-10 flex-1 px-2.5 text-sm font-semibold"
                   onClick={() => {
-                    if (!active && available && !isSwitchBusy) {
+                    if (active) {
+                      setOpen(false);
+                      router.replace(ROUTES.dashboard);
+                      router.refresh();
+                      return;
+                    }
+
+                    if (available && !isSwitchBusy) {
                       void handleSwitch(profile);
                     }
                   }}
