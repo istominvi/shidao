@@ -1,5 +1,6 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { isRedirectError } from "next/dist/client/components/redirect-error";
 import { TopNav } from "@/components/top-nav";
 import { ROUTES, toGroupRoute } from "@/lib/auth";
 import { resolveAccessPolicy } from "@/lib/server/access-policy";
@@ -28,6 +29,8 @@ export default async function NewGroupPage({
   async function createGroupAction(formData: FormData) {
     "use server";
 
+    let createdClassId = "";
+
     try {
       const actionResolution = await resolveAccessPolicy();
       const { teacherId } = assertTeacherGroupsAccess(actionResolution);
@@ -44,11 +47,16 @@ export default async function NewGroupPage({
       });
       revalidatePath(ROUTES.dashboard);
       revalidatePath(ROUTES.groups);
-      redirect(toGroupRoute(created.classId));
+      createdClassId = created.classId;
     } catch (error) {
+      if (isRedirectError(error)) {
+        throw error;
+      }
       const message = error instanceof Error ? error.message : "Не удалось создать группу.";
       redirect(withMessage("error", message));
     }
+
+    redirect(toGroupRoute(createdClassId));
   }
 
   const query = await searchParams;
