@@ -125,6 +125,9 @@ test("lessons hub read model groups upcoming and past lessons and shapes cards",
   assert.equal(hub.upcoming[0]?.workspaceHref, "/lessons/scheduled-future");
   assert.equal(hub.upcoming[0]?.classLabel, "Лисички 5-6");
   assert.equal("blockOverrides" in hub.upcoming[0]!, false);
+  assert.equal(hub.schedule.events.length, 2);
+  assert.equal(hub.schedule.events[0]?.href, "/lessons/scheduled-past");
+  assert.equal(hub.schedule.filters.formatOptions.length, 2);
 });
 
 test("lessons hub card identity stays human-readable and does not leak class uuid", async () => {
