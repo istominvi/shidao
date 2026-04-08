@@ -95,10 +95,7 @@ export function TopNav() {
     <header className="container relative z-50 pt-4 md:pt-6">
       <div className="glass landing-surface relative z-50 flex flex-wrap items-center gap-3 rounded-[1.6rem] border border-white/70 px-4 py-3 md:grid md:grid-cols-[auto_1fr_auto] md:items-center md:px-5">
         <Link href={ROUTES.home} className="text-xl font-black tracking-tight">
-          Shidao
-          <sup className="ml-0.5 align-super text-[0.52em] font-semibold text-neutral-500">
-            ™
-          </sup>
+          Shidao™
         </Link>
 
         {showTeacherPrimaryNav ? (
@@ -106,7 +103,7 @@ export function TopNav() {
             aria-label="Основная навигация кабинета преподавателя"
             className="order-3 w-full overflow-x-auto md:order-none md:w-auto md:justify-self-center"
           >
-            <ul className="mx-auto flex min-w-max items-center gap-1 rounded-full border border-black/10 bg-white/70 p-1 backdrop-blur">
+            <ul className="mx-auto flex min-w-max items-center gap-1">
               {TEACHER_NAV_ITEMS.map((item) => {
                 const active = item.isActive(pathname);
                 return (

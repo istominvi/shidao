@@ -213,42 +213,37 @@ export function SessionNavActions({
 
       {state.kind === "adult" && (
         <div className="border-t border-black/5 px-3 py-2">
-          <div className="flex items-center justify-between gap-2">
-            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-neutral-500">
-              Кабинет
-            </p>
-            <div className="inline-flex rounded-xl border border-black/10 bg-neutral-100/80 p-0.5">
-              {ADULT_PROFILE_ORDER.map((profile) => {
-                const available = state.availableProfiles.includes(profile);
-                const active = state.activeProfile === profile;
-                const isSwitchLoading = actionLoading === `switch:${profile}`;
-                return (
-                  <button
-                    key={profile}
-                    type="button"
-                    className={`rounded-lg px-2.5 py-1 text-xs font-medium transition ${
-                      active
-                        ? "bg-white text-neutral-950 shadow-sm"
-                        : "text-neutral-600"
-                    } ${
-                      !active && available
-                        ? "cursor-pointer hover:bg-white/80 hover:text-neutral-900"
-                        : ""
-                    }`}
-                    onClick={() => {
-                      if (!active && available) {
-                        void handleSwitch(profile);
-                      }
-                    }}
-                    disabled={active || !available || isSwitchLoading}
-                    aria-pressed={active}
-                    aria-busy={isSwitchLoading}
-                  >
-                    {ADULT_PROFILE_TOGGLE_LABELS[profile]}
-                  </button>
-                );
-              })}
-            </div>
+          <div className="inline-flex w-full rounded-full bg-neutral-100 p-1">
+            {ADULT_PROFILE_ORDER.map((profile) => {
+              const available = state.availableProfiles.includes(profile);
+              const active = state.activeProfile === profile;
+              const isSwitchLoading = actionLoading === `switch:${profile}`;
+              return (
+                <button
+                  key={profile}
+                  type="button"
+                  className={`min-h-10 flex-1 rounded-full px-4 text-sm font-medium transition ${
+                    active
+                      ? "bg-neutral-950 text-white shadow-[0_8px_20px_rgba(15,23,42,0.18)]"
+                      : "text-neutral-700"
+                  } ${
+                    !active && available
+                      ? "cursor-pointer hover:bg-black/5"
+                      : "disabled:cursor-not-allowed disabled:opacity-60"
+                  }`}
+                  onClick={() => {
+                    if (!active && available) {
+                      void handleSwitch(profile);
+                    }
+                  }}
+                  disabled={active || !available || isSwitchLoading}
+                  aria-pressed={active}
+                  aria-busy={isSwitchLoading}
+                >
+                  {ADULT_PROFILE_TOGGLE_LABELS[profile]}
+                </button>
+              );
+            })}
           </div>
         </div>
       )}
@@ -256,14 +251,14 @@ export function SessionNavActions({
       <div className="border-t border-black/5 py-1">
         <Link
           href={ROUTES.settingsProfile}
-          className="block rounded-xl px-3 py-2 text-sm hover:bg-black/5"
+          className="block rounded-xl px-3 py-2 text-sm font-medium hover:bg-black/5"
           onClick={() => setOpen(false)}
         >
           Настройки
         </Link>
 
         <button
-          className="w-full rounded-xl px-3 py-2 text-left text-sm hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-60"
+          className="w-full rounded-xl px-3 py-2 text-left text-sm font-medium hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-60"
           onClick={handleSignOut}
           disabled={actionLoading === "signout"}
           aria-busy={actionLoading === "signout"}
@@ -280,9 +275,9 @@ export function SessionNavActions({
       <button
         type="button"
         onClick={() => setOpen((prev) => !prev)}
-        className={`landing-btn landing-btn-muted inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-full border-black/10 bg-white/90 px-2 py-1 ${variant === "landing" ? "w-full justify-center sm:w-auto" : ""}`}
+        className={`landing-btn landing-btn-muted inline-flex min-h-9 cursor-pointer items-center gap-1.5 rounded-full border-black/10 bg-white/90 px-1.5 py-0.5 ${variant === "landing" ? "w-full justify-center sm:w-auto" : ""}`}
       >
-        <span className="inline-flex size-7 items-center justify-center rounded-full bg-black text-[11px] font-bold text-white">
+        <span className="inline-flex size-6 items-center justify-center rounded-full bg-black text-[11px] font-bold text-white">
           {state.initials ?? "U"}
         </span>
         <span className="hidden max-w-[16ch] truncate text-sm font-semibold leading-tight text-neutral-900 md:block">
