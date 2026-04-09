@@ -33,7 +33,7 @@ import {
 } from "lucide-react";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { PRIMARY_NAV_CONFIG } from "@/lib/navigation/primary-nav";
-import { NavPillLink } from "@/components/navigation/primitives";
+import { SiteHeader } from "@/components/navigation/site-header";
 
 const valueStrip = [
   "Методика — основа курса",
@@ -224,7 +224,92 @@ const faq = [
   },
 ];
 
-function Reveal({ children, className = "" }: { children: ReactNode; className?: string }) {
+function useLandingSectionNavActive(
+  items: Array<{ id: string; href: string }>,
+) {
+  const [activeId, setActiveId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const sectionItems = items
+      .map((item) => ({
+        itemId: item.id,
+        sectionId: item.href.startsWith("#") ? item.href.slice(1) : null,
+      }))
+      .filter((entry): entry is { itemId: string; sectionId: string } =>
+        Boolean(entry.sectionId),
+      );
+
+    if (sectionItems.length === 0) {
+      return;
+    }
+
+    const syncWithHash = () => {
+      const hash = window.location.hash.replace(/^#/, "");
+      if (!hash) {
+        return;
+      }
+      const match = sectionItems.find((entry) => entry.sectionId === hash);
+      if (match) {
+        setActiveId(match.itemId);
+      }
+    };
+
+    syncWithHash();
+    window.addEventListener("hashchange", syncWithHash);
+
+    const sectionToItem = new Map(
+      sectionItems.map((entry) => [entry.sectionId, entry.itemId]),
+    );
+    const observedSections = sectionItems
+      .map((entry) => document.getElementById(entry.sectionId))
+      .filter((node): node is HTMLElement => Boolean(node));
+
+    if (observedSections.length === 0) {
+      return () => {
+        window.removeEventListener("hashchange", syncWithHash);
+      };
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
+
+        if (visible.length === 0) {
+          return;
+        }
+
+        const sectionId = visible[0].target.id;
+        const itemId = sectionToItem.get(sectionId);
+
+        if (itemId) {
+          setActiveId(itemId);
+        }
+      },
+      {
+        rootMargin: "-34% 0px -48% 0px",
+        threshold: [0.2, 0.35, 0.5, 0.7],
+      },
+    );
+
+    observedSections.forEach((section) => observer.observe(section));
+
+    return () => {
+      window.removeEventListener("hashchange", syncWithHash);
+      observer.disconnect();
+    };
+  }, [items]);
+
+  return activeId;
+}
+function Reveal({
+  children,
+  className = "",
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
   const ref = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
 
@@ -247,7 +332,10 @@ function Reveal({ children, className = "" }: { children: ReactNode; className?:
   }, []);
 
   return (
-    <div ref={ref} className={`reveal ${visible ? "reveal-visible" : ""} ${className}`}>
+    <div
+      ref={ref}
+      className={`reveal ${visible ? "reveal-visible" : ""} ${className}`}
+    >
       {children}
     </div>
   );
@@ -280,6 +368,9 @@ function SectionTitle({
 export function LandingPage() {
   const { state, sessionResolved } = useSessionView();
   const authCtaHref = resolveLandingAuthCtaHref(state);
+  const marketingActiveId = useLandingSectionNavActive(
+    PRIMARY_NAV_CONFIG.marketing.items,
+  );
   const navActions = (() => {
     const action = resolveLandingNavAction(state, sessionResolved);
 
@@ -336,29 +427,36 @@ export function LandingPage() {
             className="absolute -left-24 bottom-0 h-56 w-56 rounded-full bg-sky-200/45 blur-3xl"
             aria-hidden="true"
           />
-          <header className="flex flex-wrap items-center justify-between gap-4">
-            <Link
-              href={ROUTES.home}
-              className="text-xl font-black tracking-tight transition hover:opacity-80"
-            >
-              Shidao™
-            </Link>
-            <nav
-              aria-label={PRIMARY_NAV_CONFIG.marketing.ariaLabel}
-              className="hidden flex-wrap gap-2 text-sm font-medium text-neutral-700 lg:flex"
-            >
-              {PRIMARY_NAV_CONFIG.marketing.items.map((item) => (
-                <NavPillLink key={item.id} href={item.href} className="text-sm font-medium">
-                  {item.label}
-                </NavPillLink>
-              ))}
-            </nav>
-            <div className="flex w-full gap-2 sm:w-auto">{navActions}</div>
-          </header>
+          <SiteHeader
+            variant="marketing-hero"
+            brand={
+              <Link
+                href={ROUTES.home}
+                className="text-xl font-black tracking-tight transition hover:opacity-80"
+              >
+                Shidao™
+              </Link>
+            }
+            nav={{
+              ariaLabel: PRIMARY_NAV_CONFIG.marketing.ariaLabel,
+              items: PRIMARY_NAV_CONFIG.marketing.items.map((item) => ({
+                id: item.id,
+                label: item.label,
+                href: item.href,
+                active: item.id === marketingActiveId,
+                ariaCurrent: item.id === marketingActiveId ? "page" : undefined,
+              })),
+            }}
+            actions={
+              <div className="flex w-full gap-2 sm:w-auto">{navActions}</div>
+            }
+          />
 
           <div className="relative mt-8 grid items-center gap-8 lg:grid-cols-[1.04fr_0.96fr]">
             <div>
-              <p className="landing-chip bg-lime-200/90">Методика внутри платформы</p>
+              <p className="landing-chip bg-lime-200/90">
+                Методика внутри платформы
+              </p>
               <h1 className="mt-5 max-w-[15ch] text-[2rem] font-black leading-[1.02] tracking-[-0.03em] sm:text-[2.35rem] md:mt-6 md:max-w-none md:text-7xl">
                 Китайский по готовой методике — через группы, уроки и домашние
                 задания
@@ -417,10 +515,16 @@ export function LandingPage() {
                       <p className="text-xs font-bold uppercase tracking-[0.12em] text-sky-900/70">
                         Методика
                       </p>
-                      <span className="landing-chip bg-white/90 px-2 py-1 text-[0.65rem]">активна</span>
+                      <span className="landing-chip bg-white/90 px-2 py-1 text-[0.65rem]">
+                        активна
+                      </span>
                     </div>
-                    <p className="mt-2 text-base font-black text-neutral-900">«Мир вокруг меня»</p>
-                    <p className="mt-1 text-sm text-neutral-700">Годовой курс • 5–6 лет</p>
+                    <p className="mt-2 text-base font-black text-neutral-900">
+                      «Мир вокруг меня»
+                    </p>
+                    <p className="mt-1 text-sm text-neutral-700">
+                      Годовой курс • 5–6 лет
+                    </p>
                     <p className="mt-3 border-t border-sky-300/60 pt-2 text-xs text-neutral-700">
                       21 песня • 21 видео • 45 минут урок
                     </p>
@@ -430,16 +534,26 @@ export function LandingPage() {
                       <p className="text-xs font-bold uppercase tracking-[0.12em] text-neutral-500">
                         Ближайший урок
                       </p>
-                      <p className="mt-2 text-sm font-semibold">«Животные на ферме»</p>
-                      <p className="mt-1 text-sm text-neutral-700">Четверг • 17:00</p>
-                      <p className="mt-1 text-xs text-neutral-600">Группа: 6 учеников</p>
+                      <p className="mt-2 text-sm font-semibold">
+                        «Животные на ферме»
+                      </p>
+                      <p className="mt-1 text-sm text-neutral-700">
+                        Четверг • 17:00
+                      </p>
+                      <p className="mt-1 text-xs text-neutral-600">
+                        Группа: 6 учеников
+                      </p>
                     </div>
                     <div className="landing-card bg-fuchsia-100/75 md:translate-y-3">
                       <p className="text-xs font-bold uppercase tracking-[0.12em] text-neutral-500">
                         После занятия
                       </p>
-                      <p className="mt-2 text-sm font-semibold">Домашнее задание назначено</p>
-                      <p className="mt-1 text-sm text-neutral-700">Комментарий преподавателя оставлен</p>
+                      <p className="mt-2 text-sm font-semibold">
+                        Домашнее задание назначено
+                      </p>
+                      <p className="mt-1 text-sm text-neutral-700">
+                        Комментарий преподавателя оставлен
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -482,7 +596,9 @@ export function LandingPage() {
         </p>
         <div className="why-connector mt-8 grid gap-4 md:grid-cols-2">
           <article className="landing-surface pattern-chaos rounded-[1.6rem] border border-black/10 bg-white/75 p-5">
-            <p className="text-sm font-bold uppercase tracking-[0.12em] text-neutral-500">До Shidao</p>
+            <p className="text-sm font-bold uppercase tracking-[0.12em] text-neutral-500">
+              До Shidao
+            </p>
             <ul className="mt-4 space-y-2.5 text-sm text-neutral-700">
               {comparisonBefore.map((point) => (
                 <li key={point} className="flex gap-2">
@@ -493,7 +609,9 @@ export function LandingPage() {
             </ul>
           </article>
           <article className="landing-surface pattern-structured rounded-[1.6rem] border border-black/10 bg-gradient-to-br from-lime-100/80 to-sky-100/60 p-5">
-            <p className="text-sm font-bold uppercase tracking-[0.12em] text-neutral-700">В Shidao</p>
+            <p className="text-sm font-bold uppercase tracking-[0.12em] text-neutral-700">
+              В Shidao
+            </p>
             <ul className="mt-4 space-y-2.5 text-sm text-neutral-800">
               {comparisonAfter.map((point) => (
                 <li key={point} className="flex gap-2">
@@ -538,10 +656,12 @@ export function LandingPage() {
             ))}
           </div>
           <p className="mt-4 text-sm font-medium text-neutral-700">
-            Пример: Урок 1 → материалы → задание группе → комментарий преподавателя → ответ ученика.
+            Пример: Урок 1 → материалы → задание группе → комментарий
+            преподавателя → ответ ученика.
           </p>
           <p className="mt-5 text-sm leading-relaxed text-neutral-700 md:text-base">
-            Преподаватель не собирает курс вручную. Он ведёт группу по уже заданной логике и видит весь учебный контекст в одном месте.
+            Преподаватель не собирает курс вручную. Он ведёт группу по уже
+            заданной логике и видит весь учебный контекст в одном месте.
           </p>
         </Reveal>
       </section>
@@ -569,7 +689,9 @@ export function LandingPage() {
         </p>
 
         <Reveal className="mt-6 rounded-[1.5rem] border border-black/10 bg-white/80 p-4 md:p-5">
-          <p className="text-sm font-bold uppercase tracking-[0.12em] text-neutral-600">Ритм одного занятия</p>
+          <p className="text-sm font-bold uppercase tracking-[0.12em] text-neutral-600">
+            Ритм одного занятия
+          </p>
           <div className="mt-4 grid gap-4 md:grid-cols-[0.9fr_1.1fr] md:items-start">
             <div className="lesson-rhythm-visual relative min-h-44 overflow-hidden rounded-2xl border border-black/10 bg-white/70">
               <Image
@@ -590,7 +712,9 @@ export function LandingPage() {
                     <Icon className="size-4 text-neutral-700" />
                     {title}
                   </div>
-                  <p className="mt-1 text-xs leading-relaxed text-neutral-600">{subtitle}</p>
+                  <p className="mt-1 text-xs leading-relaxed text-neutral-600">
+                    {subtitle}
+                  </p>
                 </article>
               ))}
             </div>
@@ -657,7 +781,9 @@ export function LandingPage() {
                 ШАГ
               </p>
               <p className="mt-3 text-base font-bold">{title}</p>
-              <p className="mt-2 text-sm leading-relaxed text-neutral-700">{description}</p>
+              <p className="mt-2 text-sm leading-relaxed text-neutral-700">
+                {description}
+              </p>
             </li>
           ))}
         </Reveal>
@@ -675,13 +801,21 @@ export function LandingPage() {
               key={title}
               className={`landing-surface rounded-[1.6rem] border border-black/10 p-5 role-card role-${tone}`}
             >
-              <p className="landing-chip bg-white/75 text-[0.68rem] uppercase">{tone === "teacher" ? "Роль: преподаватель" : tone === "parent" ? "Роль: родитель" : "Роль: ученик"}</p>
+              <p className="landing-chip bg-white/75 text-[0.68rem] uppercase">
+                {tone === "teacher"
+                  ? "Роль: преподаватель"
+                  : tone === "parent"
+                    ? "Роль: родитель"
+                    : "Роль: ученик"}
+              </p>
               <div className="mt-3 flex items-center gap-2">
                 <Icon className="size-5" />
                 <h3 className="text-xl font-black">{title}</h3>
               </div>
               <div className="my-3 h-px w-full bg-black/10" />
-              <p className="text-sm leading-relaxed text-neutral-700">{description}</p>
+              <p className="text-sm leading-relaxed text-neutral-700">
+                {description}
+              </p>
               <ul className="mt-4 space-y-2.5 text-sm text-neutral-700">
                 {points.map((point) => (
                   <li key={point} className="flex gap-2">
@@ -715,7 +849,9 @@ export function LandingPage() {
             </p>
           </article>
           <article className="mode-card mode-school rounded-[1.6rem] border border-black/10 bg-gradient-to-br from-fuchsia-100/50 to-white p-5 shadow-[0_18px_36px_rgba(20,20,20,0.08)]">
-            <p className="landing-chip bg-fuchsia-100/85 text-xs">Организационный контур</p>
+            <p className="landing-chip bg-fuchsia-100/85 text-xs">
+              Организационный контур
+            </p>
             <h3 className="mt-3 text-xl font-black">Школа / организация</h3>
             <p className="mt-3 text-sm leading-relaxed text-neutral-700">
               Можно работать в организационном контуре: приглашать
@@ -746,7 +882,9 @@ export function LandingPage() {
                 <span>{q}</span>
                 <CircleHelp className="size-4 shrink-0 text-neutral-500 transition duration-300 group-open:rotate-12 group-hover:-translate-y-0.5" />
               </summary>
-              <p className="mt-3 text-sm leading-relaxed text-neutral-700 md:mt-3.5">{a}</p>
+              <p className="mt-3 text-sm leading-relaxed text-neutral-700 md:mt-3.5">
+                {a}
+              </p>
             </details>
           ))}
         </div>
@@ -754,11 +892,21 @@ export function LandingPage() {
 
       <section className="container mt-14 md:mt-16">
         <div className="cta-finale relative overflow-hidden rounded-[1.6rem] border border-black/10 bg-[linear-gradient(150deg,rgba(240,247,255,0.92),rgba(255,255,255,0.92),rgba(255,241,250,0.92))] px-4 py-8 text-center shadow-[0_24px_70px_rgba(20,20,20,0.16)] sm:px-6 md:rounded-[2rem] md:px-12 md:py-10">
-          <span className="landing-chip absolute left-8 top-6 hidden bg-white/85 text-xs md:inline-flex">Методика</span>
-          <span className="landing-chip absolute right-8 top-8 hidden bg-sky-100/85 text-xs md:inline-flex">Группа</span>
-          <span className="landing-chip absolute bottom-6 left-10 hidden bg-lime-100/85 text-xs md:inline-flex">Урок</span>
-          <span className="landing-chip absolute bottom-8 right-10 hidden bg-fuchsia-100/85 text-xs md:inline-flex">Домашнее задание</span>
-          <p className="landing-chip mx-auto bg-lime-100/85">Запустить обучение в единой рабочей среде</p>
+          <span className="landing-chip absolute left-8 top-6 hidden bg-white/85 text-xs md:inline-flex">
+            Методика
+          </span>
+          <span className="landing-chip absolute right-8 top-8 hidden bg-sky-100/85 text-xs md:inline-flex">
+            Группа
+          </span>
+          <span className="landing-chip absolute bottom-6 left-10 hidden bg-lime-100/85 text-xs md:inline-flex">
+            Урок
+          </span>
+          <span className="landing-chip absolute bottom-8 right-10 hidden bg-fuchsia-100/85 text-xs md:inline-flex">
+            Домашнее задание
+          </span>
+          <p className="landing-chip mx-auto bg-lime-100/85">
+            Запустить обучение в единой рабочей среде
+          </p>
           <h2 className="mx-auto mt-5 max-w-[22ch] text-2xl font-black leading-tight md:mt-6 md:max-w-none md:text-5xl">
             Запустите первую группу по готовой методике в Shidao
           </h2>

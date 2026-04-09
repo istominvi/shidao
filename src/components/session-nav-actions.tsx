@@ -71,7 +71,8 @@ export function SessionNavActions({
   }, [portalMenu]);
 
   const isEventWithinMenu = useCallback((event: Event) => {
-    const path = typeof event.composedPath === "function" ? event.composedPath() : [];
+    const path =
+      typeof event.composedPath === "function" ? event.composedPath() : [];
     const containerNode = containerRef.current;
     const menuNode = menuRef.current;
 
@@ -80,7 +81,9 @@ export function SessionNavActions({
     }
 
     const target = event.target as Node | null;
-    return Boolean(target && (containerNode?.contains(target) || menuNode?.contains(target)));
+    return Boolean(
+      target && (containerNode?.contains(target) || menuNode?.contains(target)),
+    );
   }, []);
 
   useEffect(() => {
@@ -161,7 +164,9 @@ export function SessionNavActions({
       router.replace(ROUTES.dashboard);
       router.refresh();
     } catch (error) {
-      setActionError(getActionErrorMessage(error, "Не удалось переключить профиль."));
+      setActionError(
+        getActionErrorMessage(error, "Не удалось переключить профиль."),
+      );
     } finally {
       setActionLoading(null);
     }
@@ -186,7 +191,9 @@ export function SessionNavActions({
       router.push(ROUTES.login);
       router.refresh();
     } catch (error) {
-      setActionError(getActionErrorMessage(error, "Не удалось выйти из аккаунта."));
+      setActionError(
+        getActionErrorMessage(error, "Не удалось выйти из аккаунта."),
+      );
     } finally {
       setActionLoading(null);
     }
@@ -213,7 +220,9 @@ export function SessionNavActions({
           <p className="truncate text-sm font-semibold text-neutral-900">
             {state.fullName ?? "Пользователь"}
           </p>
-          <p className="truncate text-xs text-neutral-500">{state.email ?? "Без email"}</p>
+          <p className="truncate text-xs text-neutral-500">
+            {state.email ?? "Без email"}
+          </p>
         </div>
       </div>
 
@@ -273,7 +282,11 @@ export function SessionNavActions({
           role="menuitem"
         >
           <span className="inline-flex items-center gap-2.5">
-            <Settings size={16} className="text-neutral-500" aria-hidden="true" />
+            <Settings
+              size={16}
+              className="text-neutral-500"
+              aria-hidden="true"
+            />
             Настройки
           </span>
         </Link>
@@ -303,7 +316,7 @@ export function SessionNavActions({
         aria-haspopup="menu"
         aria-expanded={open}
         aria-controls={menuId}
-        className={`landing-btn landing-btn-muted inline-flex min-h-9 cursor-pointer items-center gap-1.5 rounded-full border-black/10 bg-white/90 px-1.5 py-0.5 ${variant === "landing" ? "w-full justify-center sm:w-auto" : ""}`}
+        className={`nav-user-trigger ${variant === "landing" ? "w-full justify-center sm:w-auto" : ""}`}
       >
         <span className="inline-flex size-6 items-center justify-center rounded-full bg-black text-[11px] font-bold text-white">
           {state.initials ?? "U"}
