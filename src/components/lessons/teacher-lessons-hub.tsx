@@ -9,8 +9,10 @@ import { ROUTES } from "@/lib/auth";
 import type { TeacherLessonsHubReadModel } from "@/lib/server/teacher-lessons-hub";
 import {
   addUtcDays,
+  buildEventLaneLayout,
   getMonthMatrix,
   getRangeByView,
+  getVisibleHourRange,
   getWeekDays,
   type ScheduleViewMode,
 } from "@/components/dashboard/teacher-schedule-utils";
@@ -40,6 +42,10 @@ const VIEW_LABELS: Record<ScheduleViewMode, string> = {
   month: "Месяц",
   list: "Список",
 };
+const WEEKDAY_SHORT = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
+const HOUR_HEIGHT = 62;
+const HOUR_WIDTH = 128;
+type LessonScheduleEvent = TeacherLessonsHubReadModel["schedule"]["events"][number];
 
 function formatDayLabel(isoDate: string, compact = false) {
   return new Intl.DateTimeFormat("ru-RU", {
@@ -187,12 +193,13 @@ export function TeacherLessonsHub({
         <div className="flex flex-col gap-3">
           <div className="flex flex-wrap items-center gap-2">
             <div className="inline-flex rounded-full border border-neutral-200 bg-white p-1">
-              {(["day", "week", "month", "list"] as ScheduleViewMode[]).map((mode) => (
+              {(["list", "day", "week", "month"] as ScheduleViewMode[]).map((mode) => (
                 <button
                   key={mode}
                   type="button"
+                  aria-pressed={viewMode === mode}
                   onClick={() => setViewMode(mode)}
-                  className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
+                  className={`cursor-pointer rounded-full px-3 py-1.5 text-xs font-semibold transition ${
                     viewMode === mode
                       ? "bg-neutral-900 text-white"
                       : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
@@ -261,50 +268,25 @@ export function TeacherLessonsHub({
           ) : null}
 
           {viewMode === "day" ? (
-            <ul className="space-y-2">
-              {rangeEvents.length === 0 ? <li className="text-sm text-neutral-500">На выбранный день занятий нет.</li> : rangeEvents.map((event) => (
-                <li key={event.id}><Link href={event.href} className="landing-card block p-3">{event.timeRangeLabel} · {event.groupLabel}</Link></li>
-              ))}
-            </ul>
+            <LessonsDayView
+              activeDateIso={activeDateIso}
+              events={filteredEvents}
+              nowIso={hub.schedule.nowIso}
+              onDayPick={setActiveDateIso}
+            />
           ) : null}
 
           {viewMode === "week" ? (
-            <div className="grid gap-2 md:grid-cols-7">
-              {getWeekDays(activeDateIso).map((day) => {
-                const dayEvents = rangeEvents.filter((event) => event.isoDate === day);
-                return (
-                  <div key={day} className="rounded-xl border border-neutral-200 p-2">
-                    <p className="text-xs font-semibold text-neutral-600">{formatDayLabel(day, true)}</p>
-                    <div className="mt-2 space-y-1">
-                      {dayEvents.length === 0 ? <p className="text-[11px] text-neutral-400">—</p> : dayEvents.map((event) => (
-                        <Link key={event.id} href={event.href} className="block truncate rounded-lg bg-sky-50 px-2 py-1 text-[11px] text-sky-800">{event.timeLabel} · {event.groupLabel}</Link>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+            <LessonsWeekView activeDateIso={activeDateIso} events={filteredEvents} nowIso={hub.schedule.nowIso} />
           ) : null}
 
           {viewMode === "month" ? (
-            <div className="space-y-3">
-              <div className="grid grid-cols-7 gap-1 text-center text-xs font-semibold text-neutral-500">
-                {["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"].map((day) => <div key={day}>{day}</div>)}
-              </div>
-              {getMonthMatrix(activeDateIso).weeks.map((week) => (
-                <div key={week[0]} className="grid grid-cols-7 gap-1">
-                  {week.map((day) => {
-                    const dayEvents = filteredEvents.filter((event) => event.isoDate === day);
-                    return (
-                      <button key={day} type="button" onClick={() => setMonthAgendaIso(day)} className={`min-h-20 rounded-lg border px-2 py-1 text-left ${monthAgendaIso === day ? "border-sky-400 bg-sky-50" : "border-neutral-200"}`}>
-                        <p className="text-xs font-semibold text-neutral-700">{Number(day.slice(8, 10))}</p>
-                        {dayEvents.length > 0 ? <p className="text-[10px] text-neutral-500">{dayEvents.length} зан.</p> : null}
-                      </button>
-                    );
-                  })}
-                </div>
-              ))}
-            </div>
+            <LessonsMonthView
+              activeDateIso={activeDateIso}
+              agendaDateIso={monthAgendaIso}
+              events={filteredEvents}
+              onSelectDate={setMonthAgendaIso}
+            />
           ) : null}
         </div>
       </AppCard>
@@ -408,6 +390,266 @@ export function TeacherLessonsHub({
           </div>
         </details>
       </AppCard>
+    </div>
+  );
+}
+
+function LessonsDayView({
+  activeDateIso,
+  events,
+  nowIso,
+  onDayPick,
+}: {
+  activeDateIso: string;
+  events: LessonScheduleEvent[];
+  nowIso: string;
+  onDayPick: (iso: string) => void;
+}) {
+  const weekDays = getWeekDays(activeDateIso);
+  const dayEvents = events.filter((event) => event.isoDate === activeDateIso);
+  const hourRange = getVisibleHourRange(dayEvents);
+  const visibleStartMinutes = hourRange.startHour * 60;
+  const timelineWidth = (hourRange.endHour - hourRange.startHour) * HOUR_WIDTH;
+  const laneLayout = buildEventLaneLayout(dayEvents);
+  const laneById = new Map(laneLayout.map((item) => [item.id, item]));
+  const laneCount = Math.max(1, ...laneLayout.map((item) => item.laneCount));
+  const rowHeight = 74;
+  const contentHeight = laneCount * rowHeight;
+  const now = new Date(nowIso);
+  const nowDay = nowIso.slice(0, 10);
+  const nowMinutes = now.getUTCHours() * 60 + now.getUTCMinutes();
+  const showNow = nowDay === activeDateIso && nowMinutes >= visibleStartMinutes && nowMinutes <= hourRange.endHour * 60;
+  const marks = Array.from({ length: hourRange.endHour - hourRange.startHour + 1 }, (_, index) => hourRange.startHour + index);
+
+  return (
+    <div className="space-y-3">
+      <div className="flex gap-2 overflow-x-auto pb-1">
+        {weekDays.map((iso) => (
+          <button
+            key={iso}
+            type="button"
+            onClick={() => onDayPick(iso)}
+            className={`shrink-0 cursor-pointer rounded-2xl border px-3 py-2 text-left text-xs font-semibold transition ${
+              iso === activeDateIso
+                ? "border-neutral-900 bg-neutral-900 text-white"
+                : "border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50"
+            }`}
+          >
+            <div>{WEEKDAY_SHORT[(new Date(`${iso}T00:00:00Z`).getUTCDay() + 6) % 7]} · {iso.slice(8, 10)}</div>
+          </button>
+        ))}
+      </div>
+      <div className="overflow-x-auto rounded-2xl border border-neutral-200 bg-white">
+        <div className="min-w-[720px] p-3" style={{ width: `${Math.max(720, timelineWidth + 24)}px` }}>
+          <div className="relative mb-2 h-6">
+            {marks.map((hour) => (
+              <div key={hour} className="absolute -translate-x-1/2 text-[11px] font-semibold text-neutral-500" style={{ left: `${((hour - hourRange.startHour) * HOUR_WIDTH) + 12}px` }}>
+                {String(hour).padStart(2, "0")}:00
+              </div>
+            ))}
+          </div>
+          <div className="relative rounded-xl border border-neutral-200 bg-neutral-50/40" style={{ height: `${Math.max(contentHeight, 78)}px` }}>
+            {marks.map((hour) => (
+              <div
+                key={hour}
+                className="absolute bottom-0 top-0 border-l border-dashed border-neutral-200"
+                style={{ left: `${(hour - hourRange.startHour) * HOUR_WIDTH + 12}px` }}
+              />
+            ))}
+
+            {showNow ? (
+              <div className="pointer-events-none absolute bottom-0 top-0 z-20 border-l border-rose-400" style={{ left: `${((nowMinutes - visibleStartMinutes) / 60) * HOUR_WIDTH + 12}px` }}>
+                <span className="-ml-3 rounded-full bg-rose-500 px-1.5 py-0.5 text-[10px] font-semibold text-white">Сейчас</span>
+              </div>
+            ) : null}
+
+            {dayEvents.map((event) => {
+              const start = new Date(event.startsAt);
+              const end = new Date(event.endsAt);
+              const startMinutes = start.getUTCHours() * 60 + start.getUTCMinutes();
+              const endMinutes = end.getUTCHours() * 60 + end.getUTCMinutes();
+              const left = ((startMinutes - visibleStartMinutes) / 60) * HOUR_WIDTH + 16;
+              const width = Math.max(80, ((endMinutes - startMinutes) / 60) * HOUR_WIDTH - 8);
+              const lane = laneById.get(event.id);
+              const top = (lane?.laneIndex ?? 0) * rowHeight + 8;
+
+              return (
+                <Link
+                  key={event.id}
+                  href={event.href}
+                  className="absolute z-10 block cursor-pointer overflow-hidden rounded-xl border border-neutral-200 bg-white p-2.5 text-xs text-neutral-700 shadow-sm transition hover:border-sky-300 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500"
+                  style={{ left: `${left}px`, width: `${width}px`, top: `${top}px` }}
+                >
+                  <p className="truncate font-semibold text-neutral-900">{event.groupLabel}</p>
+                  <p className="truncate text-[11px]">{event.lessonTitle}</p>
+                  <p className="mt-0.5 text-[11px] text-neutral-500">{event.timeRangeLabel} · {event.formatLabel}</p>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function LessonsWeekView({
+  activeDateIso,
+  events,
+  nowIso,
+}: {
+  activeDateIso: string;
+  events: LessonScheduleEvent[];
+  nowIso: string;
+}) {
+  const weekDays = getWeekDays(activeDateIso);
+  const weekEvents = events.filter((event) => weekDays.includes(event.isoDate));
+  const hourRange = getVisibleHourRange(weekEvents);
+  const hours = Array.from({ length: hourRange.endHour - hourRange.startHour + 1 }, (_, i) => hourRange.startHour + i);
+  const gridHeight = (hourRange.endHour - hourRange.startHour) * HOUR_HEIGHT;
+  const eventsByDay = new Map<string, LessonScheduleEvent[]>();
+
+  for (const day of weekDays) eventsByDay.set(day, []);
+  for (const event of weekEvents) {
+    eventsByDay.get(event.isoDate)?.push(event);
+  }
+
+  const now = new Date(nowIso);
+  const nowDay = nowIso.slice(0, 10);
+  const nowMinutes = now.getUTCHours() * 60 + now.getUTCMinutes();
+  const visibleStartMinutes = hourRange.startHour * 60;
+
+  return (
+    <div className="overflow-x-auto rounded-2xl border border-neutral-200 bg-white">
+      <div className="grid min-w-[720px] grid-cols-[64px_repeat(7,minmax(140px,1fr))]">
+        <div className="border-b border-neutral-200 bg-neutral-50 p-2 text-xs font-semibold text-neutral-600" />
+        {weekDays.map((day) => (
+          <div key={day} className="border-b border-l border-neutral-200 bg-neutral-50 px-2 py-2 text-center text-xs font-semibold text-neutral-600">
+            <span className={day === nowDay ? "rounded-full bg-sky-100 px-2 py-0.5 text-sky-700" : ""}>
+              {WEEKDAY_SHORT[(new Date(`${day}T00:00:00Z`).getUTCDay() + 6) % 7]} · {day.slice(8, 10)}
+            </span>
+          </div>
+        ))}
+        <div className="relative">
+          {hours.map((hour) => (
+            <div key={hour} className="h-[62px] border-t border-neutral-100 px-2 pt-1 text-[11px] text-neutral-500">
+              {String(hour).padStart(2, "0")}:00
+            </div>
+          ))}
+        </div>
+
+        {weekDays.map((day) => {
+          const dayEvents = (eventsByDay.get(day) ?? []).sort((a, b) => Date.parse(a.startsAt) - Date.parse(b.startsAt));
+          const laneLayout = buildEventLaneLayout(dayEvents);
+          const laneById = new Map(laneLayout.map((item) => [item.id, item]));
+          return (
+            <div key={day} className="relative border-l border-neutral-200">
+              <div className="relative" style={{ height: `${gridHeight}px` }}>
+                {hours.slice(0, -1).map((hour) => (
+                  <div key={hour} className="h-[62px] border-t border-neutral-100" />
+                ))}
+
+                {day === nowDay && nowMinutes >= visibleStartMinutes && nowMinutes <= hourRange.endHour * 60 ? (
+                  <div className="pointer-events-none absolute left-0 right-0 z-20 border-t border-rose-400" style={{ top: `${((nowMinutes - visibleStartMinutes) / 60) * HOUR_HEIGHT}px` }}>
+                    <span className="-mt-2 ml-1 inline-block rounded-full bg-rose-500 px-1.5 py-0.5 text-[10px] font-semibold text-white">Сейчас</span>
+                  </div>
+                ) : null}
+
+                {dayEvents.map((event) => {
+                  const start = new Date(event.startsAt);
+                  const end = new Date(event.endsAt);
+                  const startMinutes = start.getUTCHours() * 60 + start.getUTCMinutes();
+                  const endMinutes = end.getUTCHours() * 60 + end.getUTCMinutes();
+                  const top = ((startMinutes - visibleStartMinutes) / 60) * HOUR_HEIGHT;
+                  const height = Math.max(32, ((endMinutes - startMinutes) / 60) * HOUR_HEIGHT - 4);
+                  const lane = laneById.get(event.id);
+                  const laneCount = Math.max(lane?.laneCount ?? 1, 1);
+                  const laneWidth = 100 / laneCount;
+                  const left = (lane?.laneIndex ?? 0) * laneWidth;
+
+                  return (
+                    <Link
+                      key={event.id}
+                      href={event.href}
+                      className="absolute z-10 cursor-pointer overflow-hidden rounded-xl border border-neutral-200 bg-white p-2.5 text-xs text-neutral-700 shadow-sm transition hover:border-sky-300 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500"
+                      style={{ top: `${top}px`, left: `${left + 1}%`, width: `calc(${laneWidth}% - 2%)`, height: `${height}px` }}
+                    >
+                      <p className="truncate font-semibold text-neutral-900">{event.groupLabel}</p>
+                      <p className="truncate text-[11px]">{event.lessonTitle}</p>
+                      <p className="mt-0.5 text-[11px] text-neutral-500">{event.timeRangeLabel}</p>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function LessonsMonthView({
+  activeDateIso,
+  agendaDateIso,
+  events,
+  onSelectDate,
+}: {
+  activeDateIso: string;
+  agendaDateIso: string;
+  events: LessonScheduleEvent[];
+  onSelectDate: (isoDate: string) => void;
+}) {
+  const { weeks, month } = getMonthMatrix(activeDateIso);
+  const eventsByDate = new Map<string, LessonScheduleEvent[]>();
+  for (const event of events) {
+    const bucket = eventsByDate.get(event.isoDate) ?? [];
+    bucket.push(event);
+    eventsByDate.set(event.isoDate, bucket);
+  }
+
+  return (
+    <div className="overflow-x-auto rounded-2xl border border-neutral-200 bg-white">
+      <div className="grid min-w-[740px] grid-cols-7 border-b border-neutral-200 bg-neutral-50 text-xs font-semibold text-neutral-600">
+        {weeks[1]?.map((iso) => (
+          <div key={iso} className="px-2 py-2 text-center">
+            {WEEKDAY_SHORT[(new Date(`${iso}T00:00:00Z`).getUTCDay() + 6) % 7]} · {iso.slice(8, 10)}
+          </div>
+        ))}
+      </div>
+      {weeks.map((week, index) => (
+        <div key={`${week[0]}-${index}`} className="grid min-w-[740px] grid-cols-7 border-t border-neutral-100">
+          {week.map((iso) => {
+            const dayEvents = eventsByDate.get(iso) ?? [];
+            const isCurrentMonth = new Date(`${iso}T00:00:00Z`).getUTCMonth() === month;
+            const isSelected = iso === agendaDateIso;
+            return (
+              <button
+                key={iso}
+                type="button"
+                onClick={() => onSelectDate(iso)}
+                className={`min-h-24 cursor-pointer border-l border-neutral-100 px-2 py-2 text-left transition first:border-l-0 ${
+                  isSelected ? "bg-sky-50" : "hover:bg-neutral-50"
+                }`}
+              >
+                <div className="flex items-center justify-between text-xs">
+                  <span className={isCurrentMonth ? "font-semibold text-neutral-900" : "text-neutral-400"}>{Number(iso.slice(8, 10))}</span>
+                  {dayEvents.length > 0 ? (
+                    <span className="rounded-full bg-neutral-900 px-1.5 py-0.5 text-[10px] text-white">{dayEvents.length}</span>
+                  ) : null}
+                </div>
+                <div className="mt-1 space-y-1">
+                  {dayEvents.slice(0, 2).map((event) => (
+                    <Link key={event.id} href={event.href} className="block cursor-pointer truncate rounded-lg border border-neutral-200 bg-white px-2 py-1 text-[10px] text-neutral-700 hover:border-sky-300">
+                      {event.timeLabel} · {event.groupLabel}
+                    </Link>
+                  ))}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      ))}
     </div>
   );
 }

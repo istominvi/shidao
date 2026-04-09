@@ -37,16 +37,16 @@ export const PRIMARY_NAV_CONFIG: Record<PrimaryNavConfig["id"], PrimaryNavConfig
         isActive: (pathname) => pathname === ROUTES.dashboard,
       },
       {
-        id: "groups",
-        label: "Группы",
-        href: ROUTES.groups,
-        isActive: (pathname) => isRouteWithin(pathname, ROUTES.groups),
-      },
-      {
         id: "lessons",
         label: "Расписание",
         href: ROUTES.lessons,
         isActive: (pathname) => isRouteWithin(pathname, ROUTES.lessons),
+      },
+      {
+        id: "groups",
+        label: "Группы",
+        href: ROUTES.groups,
+        isActive: (pathname) => isRouteWithin(pathname, ROUTES.groups),
       },
       {
         id: "methodologies",
