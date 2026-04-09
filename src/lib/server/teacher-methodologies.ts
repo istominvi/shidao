@@ -1,6 +1,7 @@
 import { buildTeacherLessonProjection, type ScheduledLesson } from "../lesson-content";
 import type { Methodology, MethodologyMetadata } from "../lesson-content/contracts";
 import type { AccessResolution } from "./access-policy";
+import { getMethodologyHomeworkByLessonIdAdmin } from "./homework-repository";
 import {
   createScheduledLessonAdmin,
   getMethodologyBySlugAdmin,
@@ -48,6 +49,10 @@ function inferMaterialsSignals(summary: string | undefined) {
     hasProps: text.includes("реквиз") || text.includes("материал"),
     hasWorksheets: text.includes("тетрад") || text.includes("worksheet") || text.includes("рабоч"),
   };
+}
+
+function homeworkKindLabel(kind: "practice_text" | "quiz_single_choice") {
+  return kind === "quiz_single_choice" ? "Квиз" : "Практика";
 }
 
 export function canAccessTeacherMethodologies(resolution: AccessResolution) {
@@ -114,6 +119,13 @@ export async function getTeacherMethodologyDetailReadModel(slug: string) {
   const lessons = await listMethodologyLessonsByMethodologyAdmin(methodology.id);
   const metadata = withFallbackMetadata(methodology);
 
+  const lessonsWithHomework = await Promise.all(
+    lessons.map(async (lesson) => ({
+      lesson,
+      canonicalHomework: await getMethodologyHomeworkByLessonIdAdmin(lesson.id),
+    })),
+  );
+
   return {
     methodology,
     overview: {
@@ -140,9 +152,9 @@ export async function getTeacherMethodologyDetailReadModel(slug: string) {
       availableLessonsCount: lessons.length,
       programLessonCount: metadata.programLessonCount ?? null,
       sourceRuntimeNote:
-        "Методика — это педагогический источник. Группу и дату занятия вы задаёте позже при назначении урока.",
+        "Методика — это полный педагогический источник курса. В ShiDao ниже показаны только уже импортированные source-уроки, которые можно назначать группам в runtime-слое.",
     },
-    lessons: lessons.map((lesson) => {
+    lessons: lessonsWithHomework.map(({ lesson, canonicalHomework }) => {
       const prepSignals = inferMaterialsSignals(metadata.materialsEcosystemSummary);
       return {
         id: lesson.id,
@@ -154,7 +166,10 @@ export async function getTeacherMethodologyDetailReadModel(slug: string) {
         phrasePreview: lesson.shell.phraseSummary.slice(0, 4),
         mediaSummary: lesson.shell.mediaSummary,
         materialsSignal: prepSignals.hasCards || prepSignals.hasProps,
-        homeworkSignal: false,
+        homeworkSignal: Boolean(canonicalHomework),
+        homeworkLabel: canonicalHomework
+          ? `Есть домашнее задание · ${homeworkKindLabel(canonicalHomework.kind)}`
+          : null,
       };
     }),
   };
@@ -171,6 +186,7 @@ export async function getTeacherMethodologyLessonReadModel(input: { teacherId: s
 
   const lesson = await getMethodologyLessonByIdAdmin(input.lessonId);
   if (!lesson || lesson.methodologyId !== methodology.id) return null;
+  const canonicalHomework = await getMethodologyHomeworkByLessonIdAdmin(lesson.id);
 
   const scheduledStub: ScheduledLesson = {
     id: `preview-${lesson.id}`,
@@ -224,6 +240,18 @@ export async function getTeacherMethodologyLessonReadModel(input: { teacherId: s
       sourceRuntimeNote:
         "Это методологический шаблон урока. Группа, дата и формат задаются при назначении в runtime-слой.",
     },
+    canonicalHomework: canonicalHomework
+      ? {
+          title: canonicalHomework.title,
+          kindLabel: homeworkKindLabel(canonicalHomework.kind),
+          instructions: canonicalHomework.instructions,
+          estimatedMinutes: canonicalHomework.estimatedMinutes ?? null,
+          materialLinks: canonicalHomework.materialLinks,
+          answerFormatHint: canonicalHomework.answerFormatHint ?? null,
+          sourceLayerNote:
+            "Это каноничное домашнее задание из методики. Оно становится реальным назначением только после выдачи урока в группе.",
+        }
+      : null,
   };
 }
 

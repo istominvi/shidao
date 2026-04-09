@@ -80,6 +80,37 @@ export default async function MethodologyLessonPage({ params, searchParams }: { 
           <p className="mt-2 text-sm text-neutral-700">{readModel.metadata.sourceRuntimeNote}</p>
         </AppCard>
 
+        {readModel.canonicalHomework ? (
+          <AppCard className="p-5 md:p-6" as="article">
+            <h2 className="text-lg font-semibold text-neutral-900">Каноничное домашнее задание методики</h2>
+            <p className="mt-2 text-sm text-neutral-700">{readModel.canonicalHomework.sourceLayerNote}</p>
+            <div className="mt-3 flex flex-wrap gap-2 text-xs text-neutral-700">
+              <span className="rounded-full bg-violet-50 px-2.5 py-1 text-violet-800">{readModel.canonicalHomework.kindLabel}</span>
+              {readModel.canonicalHomework.estimatedMinutes ? (
+                <span className="rounded-full bg-neutral-100 px-2.5 py-1">~{readModel.canonicalHomework.estimatedMinutes} мин</span>
+              ) : null}
+            </div>
+            <h3 className="mt-4 text-base font-semibold text-neutral-900">{readModel.canonicalHomework.title}</h3>
+            <p className="mt-2 text-sm text-neutral-700">{readModel.canonicalHomework.instructions}</p>
+            {readModel.canonicalHomework.answerFormatHint ? (
+              <p className="mt-2 text-sm text-neutral-700">Формат ответа: {readModel.canonicalHomework.answerFormatHint}</p>
+            ) : null}
+            {readModel.canonicalHomework.materialLinks.length ? (
+              <div className="mt-3">
+                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-neutral-500">Материалы домашнего задания</p>
+                <ul className="mt-2 space-y-1.5 text-sm text-neutral-700">
+                  {readModel.canonicalHomework.materialLinks.map((item) => (
+                    <li key={item} className="flex gap-2">
+                      <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-neutral-400" />
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+          </AppCard>
+        ) : null}
+
         <TeacherLessonPedagogicalContent quickSummary={readModel.presentation.quickSummary} lessonFlow={readModel.presentation.lessonFlow} />
       </div>
     </main>
