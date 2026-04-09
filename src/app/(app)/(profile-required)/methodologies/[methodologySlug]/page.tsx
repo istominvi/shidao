@@ -22,21 +22,23 @@ export default async function MethodologyDetailPage({ params }: { params: Promis
   if (!readModel) notFound();
 
   const passport = readModel.overview.passport;
+  const cleanDescription = (readModel.methodology.shortDescription ?? "").replace(/^[^:：]+[:：]\s*/, "");
 
   return (
     <main className="pb-12">
       <div className="landing-noise" aria-hidden="true" />
       <TopNav />
       <div className="container space-y-6 py-7 md:py-10">
+        <Link href={ROUTES.methodologies} className="inline-flex items-center gap-1 text-sm font-medium text-sky-700 no-underline hover:underline">
+          <span aria-hidden="true">←</span>
+          <span>Методики</span>
+        </Link>
         <AppPageHeader
-          backHref={ROUTES.methodologies}
-          backLabel="Методики"
           title={readModel.methodology.title}
-          description={readModel.methodology.shortDescription}
+          description={cleanDescription || readModel.methodology.shortDescription}
           meta={
             <>
-              <LessonContextChip context="methodology" />
-              <span className="rounded-full border border-neutral-200 bg-white px-3 py-1 text-sm text-neutral-700">Уроков в ShiDao: {readModel.overview.availableLessonsCount}</span>
+              <span className="rounded-full border border-neutral-200 bg-white px-3 py-1 text-sm text-neutral-700">Доступных уроков: {readModel.overview.availableLessonsCount}</span>
               {readModel.overview.programLessonCount ? (
                 <span className="rounded-full border border-neutral-200 bg-white px-3 py-1 text-sm text-neutral-700">Программа: ~{readModel.overview.programLessonCount} уроков</span>
               ) : null}
@@ -46,6 +48,18 @@ export default async function MethodologyDetailPage({ params }: { params: Promis
 
         <AppCard className="p-5 md:p-6">
           <p className="text-sm font-medium text-neutral-700">{readModel.overview.sourceRuntimeNote}</p>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <div className="rounded-2xl border border-sky-200 bg-sky-50/70 p-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-sky-800">Полный объём курса</p>
+              <p className="mt-1 text-sm text-sky-900">
+                {readModel.overview.programLessonCount ? `Около ${readModel.overview.programLessonCount} уроков в программе` : "Годовая программа методики"}
+              </p>
+            </div>
+            <div className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-emerald-800">Сейчас импортировано в ShiDao</p>
+              <p className="mt-1 text-sm text-emerald-900">{readModel.overview.availableLessonsCount} source-урок(ов), доступных для назначения группам</p>
+            </div>
+          </div>
           <div className="mt-4 flex flex-wrap gap-2 text-sm text-neutral-700">
             {passport.targetAgeLabel ? <span className="rounded-full bg-neutral-100 px-2.5 py-1">Возраст: {passport.targetAgeLabel}</span> : null}
             {passport.level ? <span className="rounded-full bg-neutral-100 px-2.5 py-1">Уровень: {passport.level}</span> : null}
@@ -97,8 +111,17 @@ export default async function MethodologyDetailPage({ params }: { params: Promis
           </AppCard>
 
           <AppCard className="p-5" as="article">
-            <h2 className="text-lg font-semibold text-neutral-900">Материалы и методические заметки</h2>
+            <h2 className="text-lg font-semibold text-neutral-900">Формат урока и материалы</h2>
             {readModel.overview.materialsEcosystemSummary ? <p className="mt-3 text-sm text-neutral-700">{readModel.overview.materialsEcosystemSummary}</p> : null}
+            <ul className="mt-3 space-y-2 text-sm text-neutral-700">
+              {passport.lessonFormatSummary ? <li>• {passport.lessonFormatSummary}</li> : null}
+              {passport.activitiesPerLessonLabel ? <li>• {passport.activitiesPerLessonLabel}</li> : null}
+              {passport.idealGroupSizeLabel ? <li>• Идеально для малой группы: {passport.idealGroupSizeLabel}</li> : null}
+            </ul>
+          </AppCard>
+
+          <AppCard className="p-5" as="article">
+            <h2 className="text-lg font-semibold text-neutral-900">Методические заметки</h2>
             <ul className="mt-3 space-y-2 text-sm text-neutral-700">
               {readModel.overview.methodologyNotes.map((note) => (
                 <li key={note}>• {note}</li>
@@ -122,7 +145,7 @@ export default async function MethodologyDetailPage({ params }: { params: Promis
                     <span className="rounded-full bg-neutral-100 px-2.5 py-1">Песни: {lesson.mediaSummary.songs}</span>
                     <span className="rounded-full bg-neutral-100 px-2.5 py-1">Worksheet: {lesson.mediaSummary.worksheets}</span>
                     {lesson.materialsSignal ? <span className="rounded-full bg-amber-50 px-2.5 py-1 text-amber-800">Нужна подготовка материалов</span> : null}
-                    {lesson.homeworkSignal ? <span className="rounded-full bg-violet-50 px-2.5 py-1 text-violet-800">Есть домашнее задание</span> : null}
+                    {lesson.homeworkSignal ? <span className="rounded-full bg-violet-50 px-2.5 py-1 text-violet-800">{lesson.homeworkLabel ?? "Есть домашнее задание"}</span> : null}
                   </div>
                 </div>
                 <LessonContextChip context="methodology" />

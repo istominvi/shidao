@@ -27,8 +27,7 @@ export default async function MethodologiesPage() {
       <div className="container space-y-6 py-7 md:py-10">
         <AppPageHeader
           title="Методики"
-          description="Педагогический source-слой: изучите курс, структуру уроков и формат преподавания, затем назначайте уроки в реальные группы и расписание."
-          meta={<span className="rounded-full border border-neutral-200 bg-white px-3 py-1 text-sm text-neutral-700">Курсов: {readModel.cards.length}</span>}
+          description="Педагогический ресурс: изучите курс, структуру уроков и формат преподавания, затем назначайте уроки в реальные группы и расписание."
         />
 
         <section className="grid gap-4 lg:grid-cols-2">
@@ -88,7 +87,7 @@ export default async function MethodologiesPage() {
                 </p>
               ) : null}
 
-              <Link href={toMethodologyRoute(methodology.slug)} className="mt-5 inline-flex items-center rounded-full bg-neutral-900 px-4 py-2 text-sm font-semibold text-white">
+              <Link href={toMethodologyRoute(methodology.slug)} className="landing-btn landing-btn-primary mt-5 text-sm">
                 Открыть методику
               </Link>
             </AppCard>

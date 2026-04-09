@@ -14,6 +14,9 @@ type RequestOptions = {
   extraHeaders?: Record<string, string>;
 };
 
+type MethodologyIdRow = { id: string };
+type MethodologyLessonIdRow = { id: string };
+
 function getServiceRoleKey() {
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!serviceRoleKey) {
@@ -174,23 +177,69 @@ export async function bootstrapLessonContentFixtureAdmin(options?: {
     scheduledLessonClassId: options?.scheduledLessonClassId,
   });
 
-  await adminRequest("/rest/v1/methodology?on_conflict=slug", "POST", {
-    payload: rows.methodologyRow,
-    extraHeaders: {
-      Prefer: "resolution=merge-duplicates,return=representation",
-    },
-  });
+  const existingMethodology = await adminRequest<MethodologyIdRow[]>(
+    `/rest/v1/methodology?select=id&slug=eq.${encodeURIComponent(rows.methodologyRow.slug)}&limit=1`,
+    "GET",
+  );
+  const resolvedMethodologyId = existingMethodology[0]?.id ?? rows.methodologyRow.id;
+
+  if (existingMethodology[0]) {
+    await adminRequest<MethodologyIdRow[]>(
+      `/rest/v1/methodology?id=eq.${resolvedMethodologyId}`,
+      "PATCH",
+      {
+        payload: {
+          slug: rows.methodologyRow.slug,
+          title: rows.methodologyRow.title,
+          short_description: rows.methodologyRow.short_description,
+          metadata: rows.methodologyRow.metadata,
+        },
+      },
+    );
+  } else {
+    await adminRequest("/rest/v1/methodology?on_conflict=slug", "POST", {
+      payload: rows.methodologyRow,
+      extraHeaders: {
+        Prefer: "resolution=merge-duplicates,return=representation",
+      },
+    });
+  }
+
+  const existingMethodologyLesson = await adminRequest<MethodologyLessonIdRow[]>(
+    `/rest/v1/methodology_lesson?select=id&methodology_id=eq.${resolvedMethodologyId}&module_index=eq.${rows.methodologyLessonRow.module_index}&lesson_index=eq.${rows.methodologyLessonRow.lesson_index}${rows.methodologyLessonRow.unit_index === null ? "&unit_index=is.null" : `&unit_index=eq.${rows.methodologyLessonRow.unit_index}`}&limit=1`,
+    "GET",
+  );
+  const resolvedMethodologyLessonId =
+    existingMethodologyLesson[0]?.id ?? rows.methodologyLessonRow.id;
+  const methodologyLessonRow = {
+    ...rows.methodologyLessonRow,
+    id: resolvedMethodologyLessonId,
+    methodology_id: resolvedMethodologyId,
+  };
 
   await adminRequest(
     "/rest/v1/methodology_lesson?on_conflict=methodology_id,module_index,unit_index,lesson_index",
     "POST",
     {
-      payload: rows.methodologyLessonRow,
+      payload: methodologyLessonRow,
       extraHeaders: {
         Prefer: "resolution=merge-duplicates,return=representation",
       },
     },
   );
+
+  const blockRows = rows.blockRows.map((block) => ({
+    ...block,
+    methodology_lesson_id: resolvedMethodologyLessonId,
+  }));
+  const homeworkDefinitionRow = {
+    ...rows.homeworkDefinitionRow,
+    methodology_lesson_id: resolvedMethodologyLessonId,
+  };
+  const scheduledLessonRow = {
+    ...rows.scheduledLessonRow,
+    methodology_lesson_id: resolvedMethodologyLessonId,
+  };
 
   await adminRequest("/rest/v1/reusable_asset?on_conflict=slug", "POST", {
     payload: rows.reusableAssetRows,
@@ -203,7 +252,7 @@ export async function bootstrapLessonContentFixtureAdmin(options?: {
     "/rest/v1/methodology_lesson_block?on_conflict=methodology_lesson_id,sort_order",
     "POST",
     {
-      payload: rows.blockRows,
+      payload: blockRows,
       extraHeaders: {
         Prefer: "resolution=merge-duplicates,return=representation",
       },
@@ -225,7 +274,7 @@ export async function bootstrapLessonContentFixtureAdmin(options?: {
     "/rest/v1/methodology_lesson_homework?on_conflict=methodology_lesson_id",
     "POST",
     {
-      payload: rows.homeworkDefinitionRow,
+      payload: homeworkDefinitionRow,
       extraHeaders: {
         Prefer: "resolution=merge-duplicates,return=representation",
       },
@@ -234,7 +283,7 @@ export async function bootstrapLessonContentFixtureAdmin(options?: {
 
   if (options?.includeDevScheduledLesson ?? true) {
     await adminRequest("/rest/v1/scheduled_lesson?on_conflict=id", "POST", {
-      payload: rows.scheduledLessonRow,
+      payload: scheduledLessonRow,
       extraHeaders: {
         Prefer: "resolution=merge-duplicates,return=representation",
       },
@@ -242,9 +291,9 @@ export async function bootstrapLessonContentFixtureAdmin(options?: {
   }
 
   return {
-    methodologyId: rows.methodologyRow.id,
-    methodologyLessonId: rows.methodologyLessonRow.id,
-    blockCount: rows.blockRows.length,
-    scheduledLessonId: rows.scheduledLessonRow.id,
+    methodologyId: resolvedMethodologyId,
+    methodologyLessonId: resolvedMethodologyLessonId,
+    blockCount: blockRows.length,
+    scheduledLessonId: scheduledLessonRow.id,
   };
 }

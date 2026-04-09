@@ -47,6 +47,23 @@ export type TeacherLessonFlowStep = {
     kindLabel: string;
     url?: string;
   }>;
+  pedagogicalDetails?: {
+    vocabularyItems?: Array<{
+      term: string;
+      pinyin: string;
+      meaning: string;
+    }>;
+    promptPatterns?: string[];
+    expectedStudentResponses?: string[];
+    fallbackRu?: string;
+    activitySteps?: string[];
+    successCriteria?: string[];
+    answerKeyHint?: string;
+    homeExtension?: string;
+    recapPoints?: string[];
+    exitCheck?: string;
+    previewNextLesson?: string;
+  };
 };
 
 export type TeacherLessonWorkspacePresentation = {
@@ -346,6 +363,9 @@ function buildFlowStepContent(block: LessonBlockInstance) {
         studentActions: normalizeItems([
           `Повторяют слова: ${content.items.map((item) => item.term).join(", ")}`,
         ]),
+        pedagogicalDetails: {
+          vocabularyItems: content.items,
+        },
       };
     }
     case "teacher_prompt_pattern": {
@@ -359,6 +379,11 @@ function buildFlowStepContent(block: LessonBlockInstance) {
         studentActions: normalizeItems([
           `Ожидаемые ответы: ${content.expectedStudentResponses.join("; ")}`,
         ]),
+        pedagogicalDetails: {
+          promptPatterns: content.promptPatterns,
+          expectedStudentResponses: content.expectedStudentResponses,
+          fallbackRu: content.fallbackRu,
+        },
       };
     }
     case "guided_activity": {
@@ -369,6 +394,10 @@ function buildFlowStepContent(block: LessonBlockInstance) {
         studentActions: normalizeItems([
           `Цель: ${content.successCriteria.join("; ")}`,
         ]),
+        pedagogicalDetails: {
+          activitySteps: content.steps,
+          successCriteria: content.successCriteria,
+        },
       };
     }
     case "materials_prep": {
@@ -391,6 +420,10 @@ function buildFlowStepContent(block: LessonBlockInstance) {
             ? "Выполняют задание в классе"
             : "Выполняют задание дома",
         ],
+        pedagogicalDetails: {
+          answerKeyHint: content.answerKeyHint,
+          homeExtension: content.homeExtension,
+        },
       };
     }
     case "wrap_up_closure": {
@@ -402,6 +435,11 @@ function buildFlowStepContent(block: LessonBlockInstance) {
           content.previewNextLesson,
         ]),
         studentActions: ["Отвечают на итоговый вопрос"],
+        pedagogicalDetails: {
+          recapPoints: content.recapPoints,
+          exitCheck: content.exitCheck,
+          previewNextLesson: content.previewNextLesson,
+        },
       };
     }
     default:
@@ -500,6 +538,7 @@ function buildPresentation(input: {
             kindLabel: formatAssetKind(asset.kind),
             url: asset.sourceUrl,
           })),
+        pedagogicalDetails: flowContent.pedagogicalDetails,
       } satisfies TeacherLessonFlowStep;
     }),
     notes: {

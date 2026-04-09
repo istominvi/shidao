@@ -151,6 +151,71 @@ export function TeacherLessonPedagogicalContent({
                     </div>
                   </div>
                 ) : null}
+
+                {step.pedagogicalDetails?.vocabularyItems?.length ? (
+                  <div className="mt-3 rounded-2xl border border-violet-200 bg-violet-50/60 p-3">
+                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-violet-700">Лексика для преподавателя</p>
+                    <ul className="mt-2 space-y-2 text-sm text-neutral-800">
+                      {step.pedagogicalDetails.vocabularyItems.map((item) => (
+                        <li key={`${step.id}-${item.term}-${item.pinyin}`} className="grid gap-1 rounded-xl bg-white/80 px-3 py-2 sm:grid-cols-[90px_1fr]">
+                          <p className="text-base font-semibold text-neutral-950">{item.term}</p>
+                          <p className="text-sm text-neutral-700">{item.pinyin} · {item.meaning}</p>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
+
+                {(step.pedagogicalDetails?.promptPatterns?.length || step.pedagogicalDetails?.expectedStudentResponses?.length || step.pedagogicalDetails?.fallbackRu) ? (
+                  <div className="mt-3 grid gap-3 md:grid-cols-2">
+                    <div className="rounded-2xl border border-indigo-200 bg-indigo-50/60 p-3">
+                      <p className="text-xs font-semibold uppercase tracking-[0.12em] text-indigo-700">Шаблоны реплик преподавателя</p>
+                      <SummaryList items={step.pedagogicalDetails?.promptPatterns ?? []} emptyLabel="Шаблоны не указаны." />
+                    </div>
+                    <div className="rounded-2xl border border-indigo-200 bg-indigo-50/60 p-3">
+                      <p className="text-xs font-semibold uppercase tracking-[0.12em] text-indigo-700">Ожидаемые ответы детей</p>
+                      <SummaryList items={step.pedagogicalDetails?.expectedStudentResponses ?? []} emptyLabel="Ответы не указаны." />
+                      {step.pedagogicalDetails?.fallbackRu ? <p className="mt-2 text-xs text-neutral-700">RU fallback: {step.pedagogicalDetails.fallbackRu}</p> : null}
+                    </div>
+                  </div>
+                ) : null}
+
+                {(step.pedagogicalDetails?.activitySteps?.length || step.pedagogicalDetails?.successCriteria?.length) ? (
+                  <div className="mt-3 grid gap-3 md:grid-cols-2">
+                    <div className="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-3">
+                      <p className="text-xs font-semibold uppercase tracking-[0.12em] text-emerald-700">Шаги активности</p>
+                      <SummaryList items={step.pedagogicalDetails?.activitySteps ?? []} emptyLabel="Шаги не указаны." />
+                    </div>
+                    <div className="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-3">
+                      <p className="text-xs font-semibold uppercase tracking-[0.12em] text-emerald-700">Критерии успеха</p>
+                      <SummaryList items={step.pedagogicalDetails?.successCriteria ?? []} emptyLabel="Критерии не указаны." />
+                    </div>
+                  </div>
+                ) : null}
+
+                {(step.pedagogicalDetails?.answerKeyHint || step.pedagogicalDetails?.homeExtension) ? (
+                  <div className="mt-3 rounded-2xl border border-amber-200 bg-amber-50/60 p-3">
+                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-amber-700">Worksheet-подсказки</p>
+                    <ul className="mt-2 space-y-1.5 text-sm text-neutral-700">
+                      {step.pedagogicalDetails.answerKeyHint ? <li>• Подсказка по ответам: {step.pedagogicalDetails.answerKeyHint}</li> : null}
+                      {step.pedagogicalDetails.homeExtension ? <li>• Домашнее продолжение: {step.pedagogicalDetails.homeExtension}</li> : null}
+                    </ul>
+                  </div>
+                ) : null}
+
+                {(step.pedagogicalDetails?.recapPoints?.length || step.pedagogicalDetails?.exitCheck || step.pedagogicalDetails?.previewNextLesson) ? (
+                  <div className="mt-3 rounded-2xl border border-sky-200 bg-sky-50/60 p-3">
+                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-sky-700">Финал и переход к следующему уроку</p>
+                    {step.pedagogicalDetails?.recapPoints?.length ? (
+                      <div className="mt-2">
+                        <p className="text-xs font-semibold text-neutral-600">Рекап</p>
+                        <SummaryList items={step.pedagogicalDetails.recapPoints} emptyLabel="Рекап не указан." />
+                      </div>
+                    ) : null}
+                    {step.pedagogicalDetails?.exitCheck ? <p className="mt-2 text-sm text-neutral-700">Exit check: {step.pedagogicalDetails.exitCheck}</p> : null}
+                    {step.pedagogicalDetails?.previewNextLesson ? <p className="mt-1 text-sm text-neutral-700">Следующий урок: {step.pedagogicalDetails.previewNextLesson}</p> : null}
+                  </div>
+                ) : null}
               </div>
             </article>
           ))}
