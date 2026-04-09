@@ -12,10 +12,27 @@ export type Methodology = {
   slug: string;
   title: string;
   shortDescription?: string;
-  metadata?: {
-    locale?: string;
-    level?: string;
-  };
+  metadata?: MethodologyMetadata;
+};
+
+export type MethodologyMetadata = {
+  locale?: string;
+  level?: string;
+  targetAgeLabel?: string;
+  lessonDurationLabel?: string;
+  courseDurationLabel?: string;
+  approximateVocabularyCount?: number;
+  songCount?: number;
+  videoCount?: number;
+  idealGroupSizeLabel?: string;
+  maxGroupSize?: number;
+  teachingApproachSummary?: string;
+  learningOutcomes?: string[];
+  thematicModules?: string[];
+  methodologyNotes?: string[];
+  materialsEcosystemSummary?: string;
+  courseScopeLabel?: string;
+  availableLessonsNote?: string;
 };
 
 export type MethodologyLessonShell = {

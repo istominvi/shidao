@@ -68,9 +68,45 @@ export default async function MethodologyLessonPage({ params, searchParams }: { 
 
         {query.error ? <p className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{query.error}</p> : null}
 
-        <AppCard className="p-5">
-          <p className="text-sm text-neutral-700">Методика: <span className="font-semibold text-neutral-900">{readModel.methodology.title}</span></p>
-          <p className="mt-1 text-xs text-neutral-500">Без группы и расписания</p>
+        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <AppCard className="p-5">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-neutral-500">О чём урок</p>
+            <p className="mt-2 text-sm text-neutral-700">{readModel.presentation.hero.lessonEssence}</p>
+            <p className="mt-2 text-xs text-neutral-600">Методика: <span className="font-medium text-neutral-900">{readModel.methodology.title}</span></p>
+          </AppCard>
+          <AppCard className="p-5">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-neutral-500">Подготовка</p>
+            <ul className="mt-2 space-y-1.5 text-sm text-neutral-700">
+              {readModel.presentation.quickSummary.prepChecklist.slice(0, 4).map((item) => (
+                <li key={item} className="flex gap-2"><span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-amber-500" />{item}</li>
+              ))}
+            </ul>
+          </AppCard>
+          <AppCard className="p-5">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-neutral-500">Ключевые слова и фразы</p>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {readModel.presentation.quickSummary.keyWords.slice(0, 5).map((word) => (
+                <span key={word} className="rounded-full bg-sky-50 px-2.5 py-1 text-xs font-medium text-sky-900">{word}</span>
+              ))}
+              {readModel.presentation.quickSummary.keyPhrases.slice(0, 3).map((phrase) => (
+                <span key={phrase} className="rounded-full bg-violet-50 px-2.5 py-1 text-xs font-medium text-violet-900">{phrase}</span>
+              ))}
+            </div>
+          </AppCard>
+          <AppCard className="p-5">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-neutral-500">Ресурсы</p>
+            <ul className="mt-2 space-y-1.5 text-sm text-neutral-700">
+              {readModel.presentation.quickSummary.resources.slice(0, 4).map((resource) => (
+                <li key={`${resource.kindLabel}-${resource.title}`}>{resource.kindLabel}: {resource.title}</li>
+              ))}
+            </ul>
+          </AppCard>
+        </section>
+
+        <AppCard className="p-5" muted>
+          <p className="text-sm text-neutral-700">
+            Этот экран — педагогический шаблон урока. Группа и дата отсутствуют намеренно: назначение выполняется кнопкой <span className="font-semibold text-neutral-900">«Назначить урок»</span> и создаёт runtime-занятие.
+          </p>
         </AppCard>
 
         <div className="space-y-5">

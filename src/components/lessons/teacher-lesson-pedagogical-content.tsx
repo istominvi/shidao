@@ -71,6 +71,70 @@ export function TeacherLessonPedagogicalContent({
                 </div>
                 <h3 className="mt-3 text-lg font-semibold text-neutral-950">{step.title}</h3>
                 {step.description ? <p className="mt-2 text-sm leading-6 text-neutral-700">{step.description}</p> : null}
+                <div className="mt-4 grid gap-3 lg:grid-cols-2">
+                  <section className="rounded-2xl border border-neutral-200/90 bg-neutral-50/80 p-3">
+                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-neutral-500">Действия преподавателя</p>
+                    {step.teacherActions.length ? (
+                      <ul className="mt-2 space-y-1.5 text-sm text-neutral-700">
+                        {step.teacherActions.map((action) => (
+                          <li key={action} className="flex gap-2"><span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-neutral-500" />{action}</li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="mt-2 text-sm text-neutral-500">Нет отдельных инструкций.</p>
+                    )}
+                  </section>
+                  <section className="rounded-2xl border border-neutral-200/90 bg-neutral-50/80 p-3">
+                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-neutral-500">Действия учеников</p>
+                    {step.studentActions.length ? (
+                      <ul className="mt-2 space-y-1.5 text-sm text-neutral-700">
+                        {step.studentActions.map((action) => (
+                          <li key={action} className="flex gap-2"><span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-sky-500" />{action}</li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="mt-2 text-sm text-neutral-500">Нет отдельного student action.</p>
+                    )}
+                  </section>
+                </div>
+
+                {(step.materials.length || step.resources.length) ? (
+                  <div className="mt-3 grid gap-3 lg:grid-cols-2">
+                    <section className="rounded-2xl border border-amber-200/80 bg-amber-50/60 p-3">
+                      <p className="text-xs font-semibold uppercase tracking-[0.12em] text-amber-700">Материалы шага</p>
+                      {step.materials.length ? (
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                          {step.materials.map((material) => (
+                            <span key={material} className="rounded-full bg-white px-2.5 py-1 text-xs text-amber-800">{material}</span>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="mt-2 text-sm text-amber-800/80">Дополнительные материалы не указаны.</p>
+                      )}
+                    </section>
+                    <section className="rounded-2xl border border-violet-200/80 bg-violet-50/60 p-3">
+                      <p className="text-xs font-semibold uppercase tracking-[0.12em] text-violet-700">Связанные ресурсы</p>
+                      {step.resources.length ? (
+                        <ul className="mt-2 space-y-1.5 text-sm text-violet-900">
+                          {step.resources.map((resource) => (
+                            <li key={`${step.id}-${resource.kindLabel}-${resource.title}`}>
+                              {resource.kindLabel}:{" "}
+                              {resource.url ? (
+                                <a href={resource.url} className="underline underline-offset-2" target="_blank" rel="noreferrer">
+                                  {resource.title}
+                                </a>
+                              ) : (
+                                resource.title
+                              )}
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="mt-2 text-sm text-violet-900/80">Ресурсы не привязаны.</p>
+                      )}
+                    </section>
+                  </div>
+                ) : null}
               </div>
             </article>
           ))}

@@ -1,4 +1,5 @@
 import { buildTeacherLessonProjection, type ScheduledLesson } from "../lesson-content";
+import type { MethodologyMetadata } from "../lesson-content";
 import type { AccessResolution } from "./access-policy";
 import {
   createScheduledLessonAdmin,
@@ -24,6 +25,52 @@ function readinessLabel(readiness: "draft" | "ready" | "archived") {
   return "В архиве";
 }
 
+function toPositionLabel(input: {
+  moduleIndex: number;
+  lessonIndex: number;
+  unitIndex?: number;
+}) {
+  return `Модуль ${input.moduleIndex} · Урок ${input.lessonIndex}${input.unitIndex ? ` · Раздел ${input.unitIndex}` : ""}`;
+}
+
+function pickMetadata(methodology: { metadata?: MethodologyMetadata | null }): MethodologyMetadata {
+  return methodology.metadata ?? {};
+}
+
+function buildMethodologyPassport(
+  methodology: { metadata?: MethodologyMetadata | null },
+  lessonCount: number,
+) {
+  const metadata = pickMetadata(methodology);
+  const lessonAvailabilityNote =
+    metadata.availableLessonsNote ??
+    `В ShiDao доступно ${lessonCount} ${lessonCount === 1 ? "урок" : "уроков"} из программы.`;
+
+  return {
+    locale: metadata.locale ?? "zh-CN",
+    level: metadata.level ?? "Дошкольный уровень",
+    targetAgeLabel: metadata.targetAgeLabel ?? "Не указан",
+    lessonDurationLabel: metadata.lessonDurationLabel ?? "Не указано",
+    courseDurationLabel: metadata.courseDurationLabel ?? "Не указано",
+    approximateVocabularyCount: metadata.approximateVocabularyCount ?? null,
+    songCount: metadata.songCount ?? null,
+    videoCount: metadata.videoCount ?? null,
+    idealGroupSizeLabel: metadata.idealGroupSizeLabel ?? "Не указано",
+    maxGroupSize: metadata.maxGroupSize ?? null,
+    teachingApproachSummary:
+      metadata.teachingApproachSummary ??
+      "Коммуникативные занятия с опорой на активную практику.",
+    learningOutcomes: metadata.learningOutcomes ?? [],
+    thematicModules: metadata.thematicModules ?? [],
+    methodologyNotes: metadata.methodologyNotes ?? [],
+    materialsEcosystemSummary:
+      metadata.materialsEcosystemSummary ?? "Материалы методики уточняются.",
+    courseScopeLabel:
+      metadata.courseScopeLabel ?? "Полная программа уточняется методистом.",
+    lessonAvailabilityNote,
+  };
+}
+
 export function canAccessTeacherMethodologies(resolution: AccessResolution) {
   return canAccessTeacherLessonWorkspace(resolution);
 }
@@ -46,12 +93,14 @@ export async function getTeacherMethodologiesIndexReadModel() {
   const cards = await Promise.all(
     methodologies.map(async (item) => {
       const lessons = await listMethodologyLessonsByMethodologyAdmin(item.id);
+      const passport = buildMethodologyPassport(item, lessons.length);
       return {
         id: item.id,
         slug: item.slug,
         title: item.title,
         shortDescription: item.shortDescription,
         lessonCount: lessons.length,
+        passport,
       };
     }),
   );
@@ -64,15 +113,25 @@ export async function getTeacherMethodologyDetailReadModel(slug: string) {
   if (!methodology) return null;
 
   const lessons = await listMethodologyLessonsByMethodologyAdmin(methodology.id);
+  const passport = buildMethodologyPassport(methodology, lessons.length);
 
   return {
     methodology,
+    passport,
     lessons: lessons.map((lesson) => ({
       id: lesson.id,
       title: lesson.shell.title,
-      positionLabel: `Модуль ${lesson.shell.position.moduleIndex} · Урок ${lesson.shell.position.lessonIndex}${lesson.shell.position.unitIndex ? ` · Раздел ${lesson.shell.position.unitIndex}` : ""}`,
+      positionLabel: toPositionLabel(lesson.shell.position),
       durationLabel: `${lesson.shell.estimatedDurationMinutes} мин`,
       readinessLabel: readinessLabel(lesson.shell.readinessStatus),
+      vocabularyPreview: lesson.shell.vocabularySummary.slice(0, 4),
+      phrasePreview: lesson.shell.phraseSummary.slice(0, 3),
+      mediaSummary: lesson.shell.mediaSummary,
+      hasMaterialsPreparation:
+        lesson.blocks.some((block) => block.blockType === "materials_prep") ||
+        lesson.blocks.some((block) => block.blockType === "worksheet_task"),
+      hasHomework:
+        lesson.blocks.some((block) => block.blockType === "worksheet_task"),
     })),
   };
 }
@@ -135,7 +194,7 @@ export async function getTeacherMethodologyLessonReadModel(input: { teacherId: s
     groups,
     presentation,
     metadata: {
-      positionLabel: `Модуль ${lesson.shell.position.moduleIndex} · Урок ${lesson.shell.position.lessonIndex}${lesson.shell.position.unitIndex ? ` · Раздел ${lesson.shell.position.unitIndex}` : ""}`,
+      positionLabel: toPositionLabel(lesson.shell.position),
       durationLabel: `${lesson.shell.estimatedDurationMinutes} мин`,
       readinessLabel: readinessLabel(lesson.shell.readinessStatus),
     },
