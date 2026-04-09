@@ -303,7 +303,7 @@ export function SessionNavActions({
         aria-haspopup="menu"
         aria-expanded={open}
         aria-controls={menuId}
-        className={`landing-btn landing-btn-muted inline-flex min-h-9 cursor-pointer items-center gap-1.5 rounded-full border-black/10 bg-white/90 px-1.5 py-0.5 ${variant === "landing" ? "w-full justify-center sm:w-auto" : ""}`}
+        className={`nav-user-trigger ${variant === "landing" ? "w-full justify-center sm:w-auto" : ""}`}
       >
         <span className="inline-flex size-6 items-center justify-center rounded-full bg-black text-[11px] font-bold text-white">
           {state.initials ?? "U"}
