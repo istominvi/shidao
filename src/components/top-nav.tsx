@@ -10,7 +10,7 @@ import {
   resolveTopNavAction,
 } from "@/lib/navigation-contract";
 import { PRIMARY_NAV_CONFIG } from "@/lib/navigation/primary-nav";
-import { NavPillLink, NavigationHeaderShell } from "@/components/navigation/primitives";
+import { SiteHeader, type SiteHeaderNavItem } from "@/components/site-header";
 
 export function TopNav() {
   const pathname = usePathname();
@@ -62,43 +62,25 @@ export function TopNav() {
     }
   })();
 
+  const navItems: SiteHeaderNavItem[] = showTeacherPrimaryNav
+    ? PRIMARY_NAV_CONFIG.teacher.items.map((item) => ({
+        id: item.id,
+        label: item.label,
+        href: item.href,
+        active: item.isActive(pathname),
+        scroll: false,
+      }))
+    : [];
+
   return (
-    <header className="container relative z-50 pt-4 md:pt-6">
-      <NavigationHeaderShell className="relative z-50 flex flex-wrap items-center gap-3 md:grid md:grid-cols-[auto_1fr_auto] md:items-center">
-        <Link href={ROUTES.home} className="text-xl font-black tracking-tight">
-          Shidao™
-        </Link>
-
-        {showTeacherPrimaryNav ? (
-          <nav
-            aria-label={PRIMARY_NAV_CONFIG.teacher.ariaLabel}
-            className="order-3 w-full overflow-x-auto overflow-y-visible py-1 md:order-none md:w-auto md:justify-self-center"
-          >
-            <ul className="mx-auto flex min-w-max items-center gap-1">
-              {PRIMARY_NAV_CONFIG.teacher.items.map((item) => {
-                const active = item.isActive(pathname);
-                return (
-                  <li key={item.id}>
-                    <NavPillLink
-                      href={item.href}
-                      active={active}
-                      ariaCurrent={active ? "page" : undefined}
-                      className="min-h-9 px-3.5 text-sm font-medium"
-                      scroll={false}
-                    >
-                      {item.label}
-                    </NavPillLink>
-                  </li>
-                );
-              })}
-            </ul>
-          </nav>
-        ) : (
-          <div className="hidden md:block" aria-hidden="true" />
-        )}
-
-        <div className="ml-auto md:ml-0 md:justify-self-end">{navAction}</div>
-      </NavigationHeaderShell>
-    </header>
+    <div className="container relative z-50 pt-4 md:pt-6">
+      <SiteHeader
+        variant="product"
+        brandHref={ROUTES.home}
+        navAriaLabel={showTeacherPrimaryNav ? PRIMARY_NAV_CONFIG.teacher.ariaLabel : undefined}
+        navItems={navItems}
+        actions={navAction}
+      />
+    </div>
   );
 }
