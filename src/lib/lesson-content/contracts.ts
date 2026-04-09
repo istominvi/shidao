@@ -7,15 +7,34 @@ import type {
   ScheduledLessonRuntimeStatus,
 } from "./types";
 
+export type MethodologyCatalogPassport = {
+  locale?: string;
+  level?: string;
+  targetAgeLabel?: string;
+  lessonDurationLabel?: string;
+  courseDurationLabel?: string;
+  approximateVocabularyCount?: number;
+  songsCount?: number;
+  videosCount?: number;
+  idealGroupSizeLabel?: string;
+  maxGroupSize?: number;
+  teachingApproachSummary?: string;
+  learningOutcomes?: string[];
+  thematicModules?: string[];
+  methodologyNotes?: string[];
+  materialsEcosystemSummary?: string;
+  lessonActivityLoadLabel?: string;
+  lessonFormatSummary?: string;
+  courseScopeLabel?: string;
+  availableLessonsLabel?: string;
+};
+
 export type Methodology = {
   id: string;
   slug: string;
   title: string;
   shortDescription?: string;
-  metadata?: {
-    locale?: string;
-    level?: string;
-  };
+  metadata?: MethodologyCatalogPassport;
 };
 
 export type MethodologyLessonShell = {

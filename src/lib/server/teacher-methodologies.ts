@@ -1,4 +1,8 @@
-import { buildTeacherLessonProjection, type ScheduledLesson } from "../lesson-content";
+import {
+  buildTeacherLessonProjection,
+  type Methodology,
+  type ScheduledLesson,
+} from "../lesson-content";
 import type { AccessResolution } from "./access-policy";
 import {
   createScheduledLessonAdmin,
@@ -24,6 +28,43 @@ function readinessLabel(readiness: "draft" | "ready" | "archived") {
   return "В архиве";
 }
 
+function normalizeArray(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return Array.from(
+    new Set(value.map((item) => String(item ?? "").trim()).filter(Boolean)),
+  );
+}
+
+function resolvePassport(metadata: Methodology["metadata"] | null | undefined) {
+  return {
+    locale: clean(metadata?.locale),
+    level: clean(metadata?.level),
+    targetAgeLabel: clean(metadata?.targetAgeLabel),
+    lessonDurationLabel: clean(metadata?.lessonDurationLabel),
+    courseDurationLabel: clean(metadata?.courseDurationLabel),
+    approximateVocabularyCount:
+      typeof metadata?.approximateVocabularyCount === "number"
+        ? metadata.approximateVocabularyCount
+        : null,
+    songsCount:
+      typeof metadata?.songsCount === "number" ? metadata.songsCount : null,
+    videosCount:
+      typeof metadata?.videosCount === "number" ? metadata.videosCount : null,
+    idealGroupSizeLabel: clean(metadata?.idealGroupSizeLabel),
+    maxGroupSize:
+      typeof metadata?.maxGroupSize === "number" ? metadata.maxGroupSize : null,
+    teachingApproachSummary: clean(metadata?.teachingApproachSummary),
+    learningOutcomes: normalizeArray(metadata?.learningOutcomes),
+    thematicModules: normalizeArray(metadata?.thematicModules),
+    methodologyNotes: normalizeArray(metadata?.methodologyNotes),
+    materialsEcosystemSummary: clean(metadata?.materialsEcosystemSummary),
+    lessonActivityLoadLabel: clean(metadata?.lessonActivityLoadLabel),
+    lessonFormatSummary: clean(metadata?.lessonFormatSummary),
+    courseScopeLabel: clean(metadata?.courseScopeLabel),
+    availableLessonsLabel: clean(metadata?.availableLessonsLabel),
+  };
+}
+
 export function canAccessTeacherMethodologies(resolution: AccessResolution) {
   return canAccessTeacherLessonWorkspace(resolution);
 }
@@ -46,12 +87,14 @@ export async function getTeacherMethodologiesIndexReadModel() {
   const cards = await Promise.all(
     methodologies.map(async (item) => {
       const lessons = await listMethodologyLessonsByMethodologyAdmin(item.id);
+      const passport = resolvePassport(item.metadata);
       return {
         id: item.id,
         slug: item.slug,
         title: item.title,
         shortDescription: item.shortDescription,
         lessonCount: lessons.length,
+        passport,
       };
     }),
   );
@@ -64,15 +107,22 @@ export async function getTeacherMethodologyDetailReadModel(slug: string) {
   if (!methodology) return null;
 
   const lessons = await listMethodologyLessonsByMethodologyAdmin(methodology.id);
+  const passport = resolvePassport(methodology.metadata);
 
   return {
     methodology,
+    passport,
     lessons: lessons.map((lesson) => ({
       id: lesson.id,
       title: lesson.shell.title,
       positionLabel: `Модуль ${lesson.shell.position.moduleIndex} · Урок ${lesson.shell.position.lessonIndex}${lesson.shell.position.unitIndex ? ` · Раздел ${lesson.shell.position.unitIndex}` : ""}`,
       durationLabel: `${lesson.shell.estimatedDurationMinutes} мин`,
       readinessLabel: readinessLabel(lesson.shell.readinessStatus),
+      vocabularyPreview: lesson.shell.vocabularySummary.slice(0, 5),
+      phrasePreview: lesson.shell.phraseSummary.slice(0, 4),
+      mediaSummary: lesson.shell.mediaSummary,
+      hasMaterialsPrep: lesson.blocks.some((block) => block.blockType === "materials_prep"),
+      hasHomeworkSignal: lesson.blocks.some((block) => block.blockType === "worksheet_task"),
     })),
   };
 }
@@ -131,6 +181,7 @@ export async function getTeacherMethodologyLessonReadModel(input: { teacherId: s
 
   return {
     methodology,
+    passport: resolvePassport(methodology.metadata),
     lesson,
     groups,
     presentation,
