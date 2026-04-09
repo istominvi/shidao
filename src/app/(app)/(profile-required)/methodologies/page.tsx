@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { BookOpen, CalendarRange, CircleGauge, Clock3, GraduationCap, Shapes, Users } from "lucide-react";
 import { TopNav } from "@/components/top-nav";
 import { AppCard } from "@/components/app/app-card";
 import { AppPageHeader } from "@/components/app/page-header";
+import { SemanticChip } from "@/components/app/semantic-chip";
 import { ROUTES, toMethodologyRoute } from "@/lib/auth";
 import { resolveAccessPolicy } from "@/lib/server/access-policy";
 import {
@@ -27,7 +29,7 @@ export default async function MethodologiesPage() {
       <div className="container space-y-6 py-7 md:py-10">
         <AppPageHeader
           title="Методики"
-          description="Педагогический ресурс: изучите курс, структуру уроков и формат преподавания, затем назначайте уроки в реальные группы и расписание."
+          description="Педагогический source layer: изучите курс и уроки методики, затем назначайте их группам в runtime-расписание."
         />
 
         <section className="grid gap-4 lg:grid-cols-2">
@@ -38,19 +40,16 @@ export default async function MethodologiesPage() {
                   <h2 className="text-xl font-bold text-neutral-950">{methodology.title}</h2>
                   {methodology.shortDescription ? <p className="mt-2 text-sm text-neutral-700">{methodology.shortDescription}</p> : null}
                 </div>
-                <span className="rounded-full border border-neutral-200 bg-white px-3 py-1 text-xs font-semibold text-neutral-700">
-                  Доступно уроков: {methodology.lessonCount}
-                </span>
+                <SemanticChip icon={BookOpen} tone="violet">Source-уроков: {methodology.lessonCount}</SemanticChip>
               </div>
 
-              <div className="mt-4 flex flex-wrap gap-2 text-xs text-neutral-700">
-                {methodology.passport.targetAgeLabel ? <span className="rounded-full bg-neutral-100 px-2.5 py-1">Возраст: {methodology.passport.targetAgeLabel}</span> : null}
-                {methodology.passport.level ? <span className="rounded-full bg-neutral-100 px-2.5 py-1">Уровень: {methodology.passport.level}</span> : null}
-                {methodology.passport.lessonDurationLabel ? <span className="rounded-full bg-neutral-100 px-2.5 py-1">Урок: {methodology.passport.lessonDurationLabel}</span> : null}
-                {methodology.passport.courseDurationLabel ? <span className="rounded-full bg-neutral-100 px-2.5 py-1">Курс: {methodology.passport.courseDurationLabel}</span> : null}
-                {methodology.passport.approximateVocabularyCount ? <span className="rounded-full bg-sky-50 px-2.5 py-1 text-sky-800">≈ {methodology.passport.approximateVocabularyCount} слов</span> : null}
-                {methodology.passport.mediaFormatLabel ? <span className="rounded-full bg-violet-50 px-2.5 py-1 text-violet-800">{methodology.passport.mediaFormatLabel}</span> : null}
-                {methodology.passport.groupSizeLabel ? <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-emerald-800">Группа: {methodology.passport.groupSizeLabel}</span> : null}
+              <div className="mt-4 flex flex-wrap gap-2">
+                {methodology.passport.targetAgeLabel ? <SemanticChip icon={GraduationCap} tone="sky">Возраст: {methodology.passport.targetAgeLabel}</SemanticChip> : null}
+                {methodology.passport.lessonDurationLabel ? <SemanticChip icon={Clock3} tone="amber">Урок: {methodology.passport.lessonDurationLabel}</SemanticChip> : null}
+                {methodology.passport.courseDurationLabel ? <SemanticChip icon={CalendarRange}>Курс: {methodology.passport.courseDurationLabel}</SemanticChip> : null}
+                {methodology.passport.groupSizeLabel ? <SemanticChip icon={Users} tone="emerald">Группа: {methodology.passport.groupSizeLabel}</SemanticChip> : null}
+                {methodology.passport.approximateVocabularyCount ? <SemanticChip icon={CircleGauge} tone="sky">≈ {methodology.passport.approximateVocabularyCount} слов</SemanticChip> : null}
+                {methodology.passport.mediaFormatLabel ? <SemanticChip icon={Shapes} tone="violet">{methodology.passport.mediaFormatLabel}</SemanticChip> : null}
               </div>
 
               {methodology.passport.thematicHighlights.length ? (
