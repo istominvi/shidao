@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { AppCard } from "@/components/app/app-card";
@@ -8,7 +7,6 @@ import { AppPageHeader } from "@/components/app/page-header";
 import { TeacherScheduleSurface } from "@/components/schedule/teacher-schedule-surface";
 import { TeacherLessonsCarousel } from "@/components/schedule/teacher-lessons-carousel";
 import type { ScheduleViewMode } from "@/components/dashboard/teacher-schedule-utils";
-import { ROUTES } from "@/lib/auth";
 import type { TeacherLessonsHubReadModel } from "@/lib/server/teacher-lessons-hub";
 
 type TeacherLessonsHubProps = {
@@ -48,17 +46,7 @@ export function TeacherLessonsHub({
 
   return (
     <div className="space-y-6 lg:space-y-8">
-      <AppPageHeader
-        title="Расписание"
-        description="Все занятия по вашим группам в одном месте."
-        actions={(
-          <div className="flex items-center gap-3 text-sm">
-            <Link href={ROUTES.groups} className="font-semibold text-sky-700 underline underline-offset-2">
-              К группам
-            </Link>
-          </div>
-        )}
-      />
+      <AppPageHeader title="Расписание" />
 
       <TeacherLessonsCarousel events={hub.schedule.events} nowIso={hub.schedule.nowIso} />
 

@@ -25,7 +25,7 @@ export default async function MethodologiesPage() {
       <div className="landing-noise" aria-hidden="true" />
       <TopNav />
       <div className="container py-7 md:py-10 space-y-6">
-        <AppPageHeader eyebrow="Педагогический слой" title="Методики" description="Выберите методику и откройте уроки без группы и расписания." />
+        <AppPageHeader title="Методики" />
         <section className="grid gap-4 md:grid-cols-2">
           {readModel.cards.map((methodology) => (
             <AppCard key={methodology.id} className="p-5" as="article">
