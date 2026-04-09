@@ -15,6 +15,23 @@ export type Methodology = {
   metadata?: {
     locale?: string;
     level?: string;
+    targetAgeLabel?: string;
+    lessonDurationLabel?: string;
+    courseDurationLabel?: string;
+    approximateVocabularyCount?: number;
+    songCount?: number;
+    videoCount?: number;
+    idealGroupSizeLabel?: string;
+    maxGroupSize?: number;
+    teachingApproachSummary?: string;
+    learningOutcomes?: string[];
+    thematicModules?: string[];
+    methodologyNotes?: string[];
+    materialsEcosystemSummary?: string;
+    formatHighlights?: string[];
+    audienceSummary?: string;
+    courseScopeSummary?: string;
+    sourceImportStatusNote?: string;
   };
 };
 

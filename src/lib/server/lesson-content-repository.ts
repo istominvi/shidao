@@ -582,10 +582,16 @@ export async function updateScheduledLessonRuntimeNotesAdmin(
 
 
 export async function listMethodologiesWithSlugAdmin(): Promise<
-  Array<{ id: string; slug: string; title: string; shortDescription: string | null }>
+  Array<{
+    id: string;
+    slug: string;
+    title: string;
+    shortDescription: string | null;
+    metadata: Methodology["metadata"] | undefined;
+  }>
 > {
   const rows = await adminRequest<RowMethodology[]>(
-    "/rest/v1/methodology?select=id,slug,title,short_description&order=title.asc",
+    "/rest/v1/methodology?select=id,slug,title,short_description,metadata&order=title.asc",
   );
 
   return rows.map((row) => ({
@@ -593,5 +599,6 @@ export async function listMethodologiesWithSlugAdmin(): Promise<
     slug: row.slug,
     title: row.title.trim(),
     shortDescription: row.short_description?.trim() || null,
+    metadata: (row.metadata as Methodology["metadata"]) ?? undefined,
   }));
 }

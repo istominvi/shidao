@@ -1,4 +1,5 @@
 import { buildTeacherLessonProjection, type ScheduledLesson } from "../lesson-content";
+import type { Methodology } from "../lesson-content";
 import type { AccessResolution } from "./access-policy";
 import {
   createScheduledLessonAdmin,
@@ -14,6 +15,28 @@ import {
   canAccessTeacherLessonWorkspace,
 } from "./teacher-lesson-workspace";
 
+type MethodologyCoursePassport = {
+  locale: string;
+  level: string;
+  targetAgeLabel: string;
+  lessonDurationLabel: string;
+  courseDurationLabel: string;
+  approximateVocabularyCount: number | null;
+  songCount: number | null;
+  videoCount: number | null;
+  idealGroupSizeLabel: string;
+  maxGroupSize: number | null;
+  audienceSummary: string;
+  courseScopeSummary: string;
+  teachingApproachSummary: string;
+  learningOutcomes: string[];
+  thematicModules: string[];
+  methodologyNotes: string[];
+  materialsEcosystemSummary: string;
+  formatHighlights: string[];
+  sourceImportStatusNote: string;
+};
+
 function clean(value: string | null | undefined) {
   return value?.trim() || "";
 }
@@ -22,6 +45,62 @@ function readinessLabel(readiness: "draft" | "ready" | "archived") {
   if (readiness === "ready") return "Готов";
   if (readiness === "draft") return "В подготовке";
   return "В архиве";
+}
+
+function buildCoursePassport(metadata: Methodology["metadata"] | undefined): MethodologyCoursePassport {
+  return {
+    locale: clean(metadata?.locale) || "zh-CN",
+    level: clean(metadata?.level) || "Начальный уровень",
+    targetAgeLabel: clean(metadata?.targetAgeLabel) || "Не указан",
+    lessonDurationLabel: clean(metadata?.lessonDurationLabel) || "Не указана",
+    courseDurationLabel: clean(metadata?.courseDurationLabel) || "Не указана",
+    approximateVocabularyCount:
+      typeof metadata?.approximateVocabularyCount === "number"
+        ? metadata.approximateVocabularyCount
+        : null,
+    songCount: typeof metadata?.songCount === "number" ? metadata.songCount : null,
+    videoCount: typeof metadata?.videoCount === "number" ? metadata.videoCount : null,
+    idealGroupSizeLabel: clean(metadata?.idealGroupSizeLabel) || "Не указан",
+    maxGroupSize: typeof metadata?.maxGroupSize === "number" ? metadata.maxGroupSize : null,
+    audienceSummary:
+      clean(metadata?.audienceSummary) ||
+      "Методика для начинающих групп с акцентом на устную практику.",
+    courseScopeSummary:
+      clean(metadata?.courseScopeSummary) ||
+      "Курс построен как последовательная программа с тематическими блоками.",
+    teachingApproachSummary:
+      clean(metadata?.teachingApproachSummary) ||
+      "Коммуникативный формат с активной практикой и поддержкой преподавателя.",
+    learningOutcomes:
+      metadata?.learningOutcomes?.map(clean).filter(Boolean) ?? [],
+    thematicModules:
+      metadata?.thematicModules?.map(clean).filter(Boolean) ?? [],
+    methodologyNotes:
+      metadata?.methodologyNotes?.map(clean).filter(Boolean) ?? [],
+    materialsEcosystemSummary:
+      clean(metadata?.materialsEcosystemSummary) ||
+      "Материалы зависят от структуры конкретного урока.",
+    formatHighlights:
+      metadata?.formatHighlights?.map(clean).filter(Boolean) ?? [],
+    sourceImportStatusNote:
+      clean(metadata?.sourceImportStatusNote) ||
+      "Доступные в ShiDao уроки показываются отдельно от полного объёма программы.",
+  };
+}
+
+function compactLessonSignals(lesson: Awaited<ReturnType<typeof listMethodologyLessonsByMethodologyAdmin>>[number]) {
+  const materialsCount = lesson.blocks.filter((block) => block.blockType === "materials_prep").length;
+  const hasHomework =
+    lesson.blocks.some((block) => block.blockType === "worksheet_task" && block.content.completionMode === "home") ||
+    lesson.blocks.some((block) => block.blockType === "wrap_up_closure");
+  return {
+    vocabularyPreview: lesson.shell.vocabularySummary.slice(0, 5),
+    phrasePreview: lesson.shell.phraseSummary.slice(0, 4),
+    mediaSummary: lesson.shell.mediaSummary,
+    materialsSignal:
+      materialsCount > 0 ? "Требуется подготовка материалов" : "Без отдельного prep-блока",
+    homeworkSignal: hasHomework ? "Есть опора для домашней практики" : "Домашняя практика не указана",
+  };
 }
 
 export function canAccessTeacherMethodologies(resolution: AccessResolution) {
@@ -46,12 +125,16 @@ export async function getTeacherMethodologiesIndexReadModel() {
   const cards = await Promise.all(
     methodologies.map(async (item) => {
       const lessons = await listMethodologyLessonsByMethodologyAdmin(item.id);
+      const course = buildCoursePassport(item.metadata);
       return {
         id: item.id,
         slug: item.slug,
         title: item.title,
         shortDescription: item.shortDescription,
+        course,
         lessonCount: lessons.length,
+        availableLessonsLabel: `${lessons.length} урок${lessons.length === 1 ? "" : lessons.length < 5 ? "а" : "ов"} сейчас в ShiDao`,
+        lessonScopeNote: lessons.length > 0 ? course.sourceImportStatusNote : "Уроки пока не импортированы в ShiDao.",
       };
     }),
   );
@@ -64,15 +147,20 @@ export async function getTeacherMethodologyDetailReadModel(slug: string) {
   if (!methodology) return null;
 
   const lessons = await listMethodologyLessonsByMethodologyAdmin(methodology.id);
+  const course = buildCoursePassport(methodology.metadata);
 
   return {
     methodology,
+    course,
+    sourceRuntimeNote:
+      "Это педагогический source layer: изучите структуру урока здесь, а группу и дату задайте при назначении.",
     lessons: lessons.map((lesson) => ({
       id: lesson.id,
       title: lesson.shell.title,
       positionLabel: `Модуль ${lesson.shell.position.moduleIndex} · Урок ${lesson.shell.position.lessonIndex}${lesson.shell.position.unitIndex ? ` · Раздел ${lesson.shell.position.unitIndex}` : ""}`,
       durationLabel: `${lesson.shell.estimatedDurationMinutes} мин`,
       readinessLabel: readinessLabel(lesson.shell.readinessStatus),
+      ...compactLessonSignals(lesson),
     })),
   };
 }

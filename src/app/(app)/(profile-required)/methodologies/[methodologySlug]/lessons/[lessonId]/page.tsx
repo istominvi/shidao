@@ -55,11 +55,11 @@ export default async function MethodologyLessonPage({ params, searchParams }: { 
     <main className="pb-12">
       <div className="landing-noise" aria-hidden="true" />
       <TopNav />
-      <div className="container py-7 md:py-10 space-y-6">
+      <div className="container space-y-6 py-7 md:py-10">
         <AppPageHeader
           backHref={toMethodologyRoute(methodologySlug)}
           backLabel={readModel.methodology.title}
-          eyebrow="Урок"
+          eyebrow="Методологический урок"
           title={readModel.lesson.shell.title}
           description={readModel.presentation.hero.lessonEssence}
           meta={<><LessonContextChip context="methodology" /><span className="rounded-full border border-neutral-200 bg-white px-3 py-1 text-sm text-neutral-700">{readModel.metadata.positionLabel}</span><span className="rounded-full border border-neutral-200 bg-white px-3 py-1 text-sm text-neutral-700">{readModel.metadata.durationLabel}</span><span className="rounded-full border border-neutral-200 bg-white px-3 py-1 text-sm text-neutral-700">{readModel.metadata.readinessLabel}</span></>}
@@ -68,14 +68,20 @@ export default async function MethodologyLessonPage({ params, searchParams }: { 
 
         {query.error ? <p className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{query.error}</p> : null}
 
-        <AppCard className="p-5">
-          <p className="text-sm text-neutral-700">Методика: <span className="font-semibold text-neutral-900">{readModel.methodology.title}</span></p>
-          <p className="mt-1 text-xs text-neutral-500">Без группы и расписания</p>
-        </AppCard>
+        <section className="grid gap-4 lg:grid-cols-3">
+          <AppCard className="p-5 lg:col-span-2">
+            <h2 className="text-base font-semibold text-neutral-950">О чём урок</h2>
+            <p className="mt-2 text-sm leading-6 text-neutral-700">Этот экран показывает source-версию урока методики: структуру, материалы, teacher actions и ожидаемые student responses до назначения в конкретную группу.</p>
+            <p className="mt-2 text-sm leading-6 text-neutral-700">После проверки плана назначьте урок через кнопку «Назначить урок» и перейдите в runtime workspace.</p>
+          </AppCard>
+          <AppCard className="p-5">
+            <h2 className="text-base font-semibold text-neutral-950">Методика</h2>
+            <p className="mt-2 text-sm text-neutral-700">{readModel.methodology.title}</p>
+            <p className="mt-3 text-xs text-neutral-600">Источник контента: methodology layer. Группа, дата и формат задаются в момент назначения.</p>
+          </AppCard>
+        </section>
 
-        <div className="space-y-5">
-          <TeacherLessonPedagogicalContent quickSummary={readModel.presentation.quickSummary} lessonFlow={readModel.presentation.lessonFlow} />
-        </div>
+        <TeacherLessonPedagogicalContent quickSummary={readModel.presentation.quickSummary} lessonFlow={readModel.presentation.lessonFlow} />
       </div>
     </main>
   );
