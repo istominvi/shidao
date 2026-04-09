@@ -42,6 +42,8 @@ export function SiteHeader({
   anchorOffset = 96,
 }: SiteHeaderProps) {
   const hasNav = navItems.length > 0;
+  const hasTrademarkMark = brandLabel.endsWith("™");
+  const brandText = hasTrademarkMark ? brandLabel.slice(0, -1) : brandLabel;
 
   const handleNavClick = (event: MouseEvent<HTMLAnchorElement>, href: string) => {
     if (!smoothAnchorScroll || !href.startsWith("#")) {
@@ -74,7 +76,8 @@ export function SiteHeader({
         )}
       >
         <Link href={brandHref} className="site-header-brand text-xl font-black tracking-tight">
-          {brandLabel}
+          {brandText}
+          {hasTrademarkMark ? <span className="site-header-brand-mark">™</span> : null}
         </Link>
 
         {hasNav ? (
