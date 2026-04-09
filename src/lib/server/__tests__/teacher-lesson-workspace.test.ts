@@ -17,6 +17,13 @@ const homeworkSnapshot = {
   schemaReady: true,
   definition: lessonContentFixtureHomeworkDefinition,
   assignment: null,
+  stats: {
+    assignedCount: 0,
+    submittedCount: 0,
+    reviewedCount: 0,
+    needsRevisionCount: 0,
+    averageScore: null,
+  },
   roster: [],
 };
 

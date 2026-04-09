@@ -202,9 +202,25 @@ export type MethodologyLessonHomeworkDefinition = {
   id: string;
   methodologyLessonId: string;
   title: string;
+  kind: "practice_text" | "quiz_single_choice";
   instructions: string;
   materialLinks: string[];
   answerFormatHint?: string;
+  estimatedMinutes?: number;
+  quiz?: {
+    id: string;
+    version: number;
+    questions: Array<{
+      id: string;
+      prompt: string;
+      helperText?: string;
+      options: Array<{
+        id: string;
+        label: string;
+      }>;
+      correctOptionId: string;
+    }>;
+  };
 };
 
 export type ScheduledLesson = {

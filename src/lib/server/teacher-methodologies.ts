@@ -110,7 +110,19 @@ export async function getTeacherMethodologyLessonReadModel(input: { teacherId: s
     classId: "preview",
     classDisplayName: null,
     assets,
-    homework: { schemaReady: true, definition: null, assignment: null, roster: [] },
+    homework: {
+      schemaReady: true,
+      definition: null,
+      assignment: null,
+      stats: {
+        assignedCount: 0,
+        submittedCount: 0,
+        reviewedCount: 0,
+        needsRevisionCount: 0,
+        averageScore: null,
+      },
+      roster: [],
+    },
   }).presentation;
 
   const groups = (await listTeacherClassesAdmin(input.teacherId))

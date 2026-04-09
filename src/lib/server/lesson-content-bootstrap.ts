@@ -134,9 +134,12 @@ export function buildFixtureBootstrapRows(options?: {
       id: stableUuid(`methodology_lesson_homework:${lessonContentFixtureHomeworkDefinition.id}`),
       methodology_lesson_id: methodologyLessonId,
       title: lessonContentFixtureHomeworkDefinition.title,
+      kind: lessonContentFixtureHomeworkDefinition.kind,
       instructions: lessonContentFixtureHomeworkDefinition.instructions,
       material_links: lessonContentFixtureHomeworkDefinition.materialLinks,
       answer_format_hint: lessonContentFixtureHomeworkDefinition.answerFormatHint ?? null,
+      estimated_minutes: lessonContentFixtureHomeworkDefinition.estimatedMinutes ?? null,
+      quiz_payload: lessonContentFixtureHomeworkDefinition.quiz ?? null,
     },
     scheduledLessonRow: {
       id: scheduledLessonId,
