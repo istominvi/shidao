@@ -13,10 +13,27 @@ function cx(...parts: Array<string | false | null | undefined>) {
 type HeaderShellProps = {
   children: ReactNode;
   className?: string;
+  variant?: "integrated" | "app";
 };
 
-export function NavigationHeaderShell({ children, className }: HeaderShellProps) {
-  return <div className={cx("nav-header-shell", className)}>{children}</div>;
+export function NavigationHeaderShell({
+  children,
+  className,
+  variant = "app",
+}: HeaderShellProps) {
+  return (
+    <div
+      className={cx(
+        "nav-header-shell",
+        variant === "integrated"
+          ? "nav-header-shell-integrated"
+          : "nav-header-shell-app",
+        className,
+      )}
+    >
+      {children}
+    </div>
+  );
 }
 
 type NavPillLinkProps = {
