@@ -55,27 +55,32 @@ export default async function MethodologyLessonPage({ params, searchParams }: { 
     <main className="pb-12">
       <div className="landing-noise" aria-hidden="true" />
       <TopNav />
-      <div className="container py-7 md:py-10 space-y-6">
+      <div className="container space-y-6 py-7 md:py-10">
         <AppPageHeader
           backHref={toMethodologyRoute(methodologySlug)}
           backLabel={readModel.methodology.title}
-          eyebrow="Урок"
+          eyebrow="Урок методики"
           title={readModel.lesson.shell.title}
           description={readModel.presentation.hero.lessonEssence}
-          meta={<><LessonContextChip context="methodology" /><span className="rounded-full border border-neutral-200 bg-white px-3 py-1 text-sm text-neutral-700">{readModel.metadata.positionLabel}</span><span className="rounded-full border border-neutral-200 bg-white px-3 py-1 text-sm text-neutral-700">{readModel.metadata.durationLabel}</span><span className="rounded-full border border-neutral-200 bg-white px-3 py-1 text-sm text-neutral-700">{readModel.metadata.readinessLabel}</span></>}
+          meta={
+            <>
+              <LessonContextChip context="methodology" />
+              <span className="rounded-full border border-neutral-200 bg-white px-3 py-1 text-sm text-neutral-700">{readModel.metadata.positionLabel}</span>
+              <span className="rounded-full border border-neutral-200 bg-white px-3 py-1 text-sm text-neutral-700">{readModel.metadata.durationLabel}</span>
+              <span className="rounded-full border border-neutral-200 bg-white px-3 py-1 text-sm text-neutral-700">{readModel.metadata.readinessLabel}</span>
+            </>
+          }
           actions={<AssignLessonDialog action={assignLessonAction} groups={readModel.groups} lessonTitle={readModel.lesson.shell.title} defaultOpen={query.assign === "1"} />}
         />
 
         {query.error ? <p className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{query.error}</p> : null}
 
-        <AppCard className="p-5">
+        <AppCard className="p-5 md:p-6">
           <p className="text-sm text-neutral-700">Методика: <span className="font-semibold text-neutral-900">{readModel.methodology.title}</span></p>
-          <p className="mt-1 text-xs text-neutral-500">Без группы и расписания</p>
+          <p className="mt-2 text-sm text-neutral-700">{readModel.metadata.sourceRuntimeNote}</p>
         </AppCard>
 
-        <div className="space-y-5">
-          <TeacherLessonPedagogicalContent quickSummary={readModel.presentation.quickSummary} lessonFlow={readModel.presentation.lessonFlow} />
-        </div>
+        <TeacherLessonPedagogicalContent quickSummary={readModel.presentation.quickSummary} lessonFlow={readModel.presentation.lessonFlow} />
       </div>
     </main>
   );
