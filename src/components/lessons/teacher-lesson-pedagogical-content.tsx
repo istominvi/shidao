@@ -14,6 +14,21 @@ function flowAccentClass(tone: "sky" | "violet" | "emerald" | "amber") {
   }
 }
 
+function SummaryList({ items, emptyLabel }: { items: string[]; emptyLabel: string }) {
+  if (!items.length) return <p className="text-sm text-neutral-600">{emptyLabel}</p>;
+
+  return (
+    <ul className="mt-3 space-y-2 text-sm text-neutral-700">
+      {items.map((item) => (
+        <li key={item} className="flex gap-2">
+          <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-neutral-400" />
+          <span>{item}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 export function TeacherLessonPedagogicalContent({
   quickSummary,
   lessonFlow,
@@ -22,35 +37,64 @@ export function TeacherLessonPedagogicalContent({
     <>
       <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         <AppCard as="article" className="p-5">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-neutral-500">Подготовить</p>
-          <ul className="mt-3 space-y-2 text-sm text-neutral-700">
-            {quickSummary.prepChecklist.slice(0, 5).map((item) => (
-              <li key={item} className="flex gap-2"><span className="mt-1 h-1.5 w-1.5 rounded-full bg-neutral-400" />{item}</li>
-            ))}
-          </ul>
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-neutral-500">Подготовка</p>
+          <SummaryList items={quickSummary.prepChecklist.slice(0, 7)} emptyLabel="Чек-лист пока не заполнен." />
         </AppCard>
+
         <AppCard as="article" className="p-5">
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-neutral-500">Ключевые слова</p>
           <div className="mt-3 flex flex-wrap gap-1.5">
-            {quickSummary.keyWords.length ? quickSummary.keyWords.slice(0, 8).map((word) => (
-              <span key={word} className="rounded-full bg-sky-50 px-2.5 py-1 text-xs font-medium text-sky-900">{word}</span>
-            )) : <p className="text-sm text-neutral-600">Слова не указаны.</p>}
+            {quickSummary.keyWords.length ? (
+              quickSummary.keyWords.slice(0, 10).map((word) => (
+                <span key={word} className="rounded-full bg-sky-50 px-2.5 py-1 text-xs font-medium text-sky-900">
+                  {word}
+                </span>
+              ))
+            ) : (
+              <p className="text-sm text-neutral-600">Слова не указаны.</p>
+            )}
           </div>
         </AppCard>
+
         <AppCard as="article" className="p-5">
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-neutral-500">Ключевые фразы</p>
           <div className="mt-3 flex flex-wrap gap-1.5">
-            {quickSummary.keyPhrases.length ? quickSummary.keyPhrases.slice(0, 6).map((phrase) => (
-              <span key={phrase} className="rounded-full bg-violet-50 px-2.5 py-1 text-xs font-medium text-violet-900">{phrase}</span>
-            )) : <p className="text-sm text-neutral-600">Фразы не указаны.</p>}
+            {quickSummary.keyPhrases.length ? (
+              quickSummary.keyPhrases.slice(0, 8).map((phrase) => (
+                <span key={phrase} className="rounded-full bg-violet-50 px-2.5 py-1 text-xs font-medium text-violet-900">
+                  {phrase}
+                </span>
+              ))
+            ) : (
+              <p className="text-sm text-neutral-600">Фразы не указаны.</p>
+            )}
           </div>
         </AppCard>
+
         <AppCard as="article" className="p-5">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-neutral-500">Видео и материалы</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-neutral-500">Ресурсы урока</p>
           <ul className="mt-3 space-y-2 text-sm text-neutral-700">
-            {quickSummary.resources.slice(0, 4).map((resource) => (
-              <li key={`${resource.kindLabel}-${resource.title}`}>{resource.kindLabel}: {resource.url ? <a href={resource.url} className="font-medium text-sky-700 underline underline-offset-2" target="_blank" rel="noreferrer">{resource.title}</a> : resource.title}</li>
-            ))}
+            {quickSummary.resources.length ? (
+              quickSummary.resources.slice(0, 6).map((resource) => (
+                <li key={`${resource.kindLabel}-${resource.title}`}>
+                  <span className="font-medium">{resource.kindLabel}:</span>{" "}
+                  {resource.url ? (
+                    <a
+                      href={resource.url}
+                      className="font-medium text-sky-700 underline underline-offset-2"
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      {resource.title}
+                    </a>
+                  ) : (
+                    resource.title
+                  )}
+                </li>
+              ))
+            ) : (
+              <li className="text-neutral-600">Ресурсы не добавлены.</li>
+            )}
           </ul>
         </AppCard>
       </section>
@@ -58,8 +102,11 @@ export function TeacherLessonPedagogicalContent({
       <AppCard as="article" className="p-5 md:p-6">
         <div className="flex items-center justify-between gap-3">
           <h2 className="text-2xl font-bold tracking-[-0.02em] text-neutral-900">Ход урока</h2>
-          <span className="rounded-full border border-neutral-200 bg-white px-3 py-1 text-xs font-medium text-neutral-600">{lessonFlow.length} этапов</span>
+          <span className="rounded-full border border-neutral-200 bg-white px-3 py-1 text-xs font-medium text-neutral-600">
+            {lessonFlow.length} этапов
+          </span>
         </div>
+
         <div className="mt-5 space-y-4">
           {lessonFlow.map((step) => (
             <article key={step.id} className="relative overflow-hidden rounded-3xl border border-neutral-200/90 bg-white/90 p-4 md:p-5">
@@ -71,6 +118,39 @@ export function TeacherLessonPedagogicalContent({
                 </div>
                 <h3 className="mt-3 text-lg font-semibold text-neutral-950">{step.title}</h3>
                 {step.description ? <p className="mt-2 text-sm leading-6 text-neutral-700">{step.description}</p> : null}
+
+                <div className="mt-4 grid gap-3 md:grid-cols-2">
+                  <div className="rounded-2xl border border-neutral-200 bg-neutral-50/80 p-3">
+                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-neutral-500">Действия преподавателя</p>
+                    <SummaryList items={step.teacherActions} emptyLabel="Действия не указаны." />
+                  </div>
+                  <div className="rounded-2xl border border-neutral-200 bg-neutral-50/80 p-3">
+                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-neutral-500">Действия детей</p>
+                    <SummaryList items={step.studentActions} emptyLabel="Ожидаемые реакции не указаны." />
+                  </div>
+                </div>
+
+                {(step.materials.length || step.resources.length) ? (
+                  <div className="mt-3 grid gap-3 md:grid-cols-2">
+                    <div className="rounded-2xl border border-amber-200 bg-amber-50/70 p-3">
+                      <p className="text-xs font-semibold uppercase tracking-[0.12em] text-amber-700">Материалы этапа</p>
+                      <SummaryList items={step.materials} emptyLabel="Материалы не требуются." />
+                    </div>
+                    <div className="rounded-2xl border border-sky-200 bg-sky-50/70 p-3">
+                      <p className="text-xs font-semibold uppercase tracking-[0.12em] text-sky-700">Связанные ресурсы</p>
+                      <ul className="mt-3 space-y-2 text-sm text-neutral-700">
+                        {step.resources.length ? step.resources.map((resource) => (
+                          <li key={`${step.id}-${resource.kindLabel}-${resource.title}`}>
+                            <span className="font-medium">{resource.kindLabel}:</span>{" "}
+                            {resource.url ? (
+                              <a href={resource.url} className="font-medium text-sky-700 underline underline-offset-2" target="_blank" rel="noreferrer">{resource.title}</a>
+                            ) : resource.title}
+                          </li>
+                        )) : <li className="text-neutral-600">Связанные ресурсы не указаны.</li>}
+                      </ul>
+                    </div>
+                  </div>
+                ) : null}
               </div>
             </article>
           ))}
