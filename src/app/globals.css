@@ -74,7 +74,7 @@ a {
 :root {
   --header-shell-radius: 1.6rem;
   --header-shell-padding-y: 0.5rem;
-  --header-shell-padding-x: 1.75rem;
+  --header-shell-padding-x: 1.5rem;
   --header-shell-border: rgba(255, 255, 255, 0.72);
   --header-shell-bg: rgba(255, 255, 255, 0.82);
   --header-shell-shadow: 0 22px 42px rgba(20, 20, 20, 0.08),
@@ -428,7 +428,7 @@ a {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  padding: 0.35rem 0.2rem 0.15rem;
+  padding: 0.35rem 1.5rem 0.15rem;
 }
 
 .app-page-back-link {
