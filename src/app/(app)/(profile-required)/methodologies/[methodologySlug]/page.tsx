@@ -1,15 +1,6 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import {
-  BookOpen,
-  CalendarRange,
-  ChartColumnBig,
-  CircleGauge,
-  Clock3,
-  GraduationCap,
-  Shapes,
-  Users,
-} from "lucide-react";
+import { BookOpen, CalendarRange, Clock3, GraduationCap, Shapes, Users } from "lucide-react";
 import { AppCard } from "@/components/app/app-card";
 import { AppPageHeader } from "@/components/app/page-header";
 import { SemanticChip } from "@/components/app/semantic-chip";
@@ -33,7 +24,6 @@ export default async function MethodologyDetailPage({ params }: { params: Promis
   if (!readModel) notFound();
 
   const passport = readModel.overview.passport;
-  const fullScopeLabel = passport.courseScopeLabel ?? (readModel.overview.programLessonCount ? `~${readModel.overview.programLessonCount} уроков` : "Годовая программа");
 
   const overviewCards = [
     {
@@ -80,52 +70,26 @@ export default async function MethodologyDetailPage({ params }: { params: Promis
           meta={
             <>
               <SemanticChip icon={BookOpen} tone="violet" size="md">
-                Source-уроки: {readModel.overview.availableLessonsCount}
+                Уроки: {readModel.overview.availableLessonsCount}
               </SemanticChip>
-              {readModel.overview.programLessonCount ? (
-                <SemanticChip icon={ChartColumnBig} tone="sky" size="md">
-                  Полная программа: ~{readModel.overview.programLessonCount} уроков
-                </SemanticChip>
+              {passport.targetAgeLabel ? (
+                <SemanticChip icon={GraduationCap} tone="sky" size="md">Возраст: {passport.targetAgeLabel}</SemanticChip>
+              ) : null}
+              {passport.lessonDurationLabel ? (
+                <SemanticChip icon={Clock3} tone="amber" size="md">Время урока: {passport.lessonDurationLabel}</SemanticChip>
+              ) : null}
+              {passport.courseDurationLabel ? (
+                <SemanticChip icon={CalendarRange} tone="neutral" size="md">Курс: {passport.courseDurationLabel}</SemanticChip>
+              ) : null}
+              {passport.idealGroupSizeLabel ? (
+                <SemanticChip icon={Users} tone="emerald" size="md">Группа: {passport.idealGroupSizeLabel}</SemanticChip>
+              ) : null}
+              {passport.activitiesPerLessonLabel ? (
+                <SemanticChip icon={Shapes} tone="violet" size="md">{passport.activitiesPerLessonLabel}</SemanticChip>
               ) : null}
             </>
           }
         />
-
-        <AppCard className="p-5 md:p-6">
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="rounded-2xl border border-sky-200 bg-sky-50/70 p-3">
-              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-sky-800">Полный объём курса</p>
-              <p className="mt-1 text-sm text-sky-900">{fullScopeLabel}</p>
-            </div>
-            <div className="rounded-2xl border border-violet-200 bg-violet-50/70 p-3">
-              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-violet-800">Импортировано в ShiDao</p>
-              <p className="mt-1 text-sm text-violet-900">{readModel.overview.availableLessonsCount} source-урок(ов), доступных для назначения</p>
-            </div>
-          </div>
-
-          <div className="mt-4 flex flex-wrap gap-2">
-            {passport.targetAgeLabel ? (
-              <SemanticChip icon={GraduationCap} tone="sky">Возраст: {passport.targetAgeLabel}</SemanticChip>
-            ) : null}
-            {passport.lessonDurationLabel ? (
-              <SemanticChip icon={Clock3} tone="amber">Урок: {passport.lessonDurationLabel}</SemanticChip>
-            ) : null}
-            {passport.courseDurationLabel ? (
-              <SemanticChip icon={CalendarRange} tone="neutral">Курс: {passport.courseDurationLabel}</SemanticChip>
-            ) : null}
-            {passport.idealGroupSizeLabel ? (
-              <SemanticChip icon={Users} tone="emerald">
-                Группа: {passport.idealGroupSizeLabel}{passport.maxGroupSize ? ` (макс. ${passport.maxGroupSize})` : ""}
-              </SemanticChip>
-            ) : null}
-            {passport.activitiesPerLessonLabel ? (
-              <SemanticChip icon={Shapes} tone="violet">{passport.activitiesPerLessonLabel}</SemanticChip>
-            ) : null}
-            {passport.approximateVocabularyCount ? (
-              <SemanticChip icon={CircleGauge} tone="sky">≈ {passport.approximateVocabularyCount} слов</SemanticChip>
-            ) : null}
-          </div>
-        </AppCard>
 
         <section className="grid gap-4 lg:grid-cols-2">
           {overviewCards.map((card) => (
@@ -141,7 +105,7 @@ export default async function MethodologyDetailPage({ params }: { params: Promis
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl font-bold tracking-[-0.02em] text-neutral-950">Уроки в ShiDao</h2>
+          <h2 className="text-xl font-bold tracking-[-0.02em] text-neutral-950">Уроки</h2>
           {readModel.lessons.map((lesson) => (
             <AppCard key={lesson.id} className="p-5" as="article">
               <div className="flex flex-wrap items-start justify-between gap-4">
