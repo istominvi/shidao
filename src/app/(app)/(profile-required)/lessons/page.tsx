@@ -14,7 +14,7 @@ import {
 } from "@/lib/server/teacher-lessons-hub";
 
 function normalizeView(view: string | undefined) {
-  if (view === "day" || view === "week" || view === "month" || view === "list") {
+  if (view === "day" || view === "week" || view === "month") {
     return view;
   }
 
@@ -38,17 +38,12 @@ function withMessage(type: "saved" | "error", message: string) {
 export default async function TeacherLessonsHubPage({
   searchParams,
 }: {
-  searchParams: Promise<{
-    saved?: string;
-    error?: string;
-    view?: string;
-    date?: string;
-    search?: string;
-    classId?: string;
-    methodologyLessonId?: string;
-    format?: string;
-    status?: string;
-  }>;
+    searchParams: Promise<{
+      saved?: string;
+      error?: string;
+      view?: string;
+      date?: string;
+    }>;
 }) {
   const accessResolution = await resolveAccessPolicy();
 
@@ -98,21 +93,9 @@ export default async function TeacherLessonsHubPage({
         <TeacherLessonsHub
           hub={hub}
           createLessonAction={createLessonAction}
-          hasExplicitViewParam={Boolean(query.view)}
           initialState={{
             view: normalizeView(query.view),
             date: normalizeDate(query.date, defaultDate),
-            search: query.search?.trim() ?? "",
-            classId: query.classId?.trim() ?? "",
-            methodologyLessonId: query.methodologyLessonId?.trim() ?? "",
-            format: query.format === "online" || query.format === "offline" ? query.format : "",
-            status:
-              query.status === "planned" ||
-              query.status === "in_progress" ||
-              query.status === "completed" ||
-              query.status === "cancelled"
-                ? query.status
-                : "",
           }}
           feedback={{
             success: query.saved?.trim() || undefined,
