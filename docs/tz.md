@@ -91,6 +91,11 @@
 
 - Канонический homework-контент хранится в методике.
 - `/lessons/[scheduledLessonId]` — выдача, контроль и ревью homework в runtime.
+- Homework V2 (09.04.2026):
+  - typed model `practice_text | quiz_single_choice`;
+  - teacher issuance modal (`Задать ДЗ`) + due date + assignment comment;
+  - student quiz auto-checking (`submission_payload`, `auto_score`, `auto_max_score`, `auto_checked_at`);
+  - parent read-only projection со статусом, результатом и комментариями.
 - Student dashboard — submission, Parent dashboard — read-only проекция статусов.
 
 ### Step 5: communication runtime layer — реализовано

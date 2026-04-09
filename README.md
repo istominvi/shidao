@@ -126,8 +126,12 @@ openssl rand -hex 32
   - видеть статус по каждому ученику;
   - отмечать review-state и оставлять комментарий по проверке.
 - Преподаватель **не может** редактировать title/instructions/methodology-content homework.
-- Ученик видит назначенные задания на `/dashboard` и может отправить текстовый ответ.
-- Родительский `/dashboard` получает минимальную проекцию homework-статусов по детям.
+- Homework V2 поддерживает typed-модель:
+  - `practice_text` (backward compatible),
+  - `quiz_single_choice` (пошаговый мини-тест с авто-проверкой).
+- В выдаче teacher может добавить `assignment comment`; выдача перенесена в модальное окно `Задать ДЗ`.
+- Ученик видит дружелюбные карточки на `/dashboard`; для quiz — 1 вопрос на экран + прогресс + авто-результат.
+- Родительский `/dashboard` получает read-only карточки со статусом, comment и результатом (`score/max` для quiz).
 - Детали: `docs/architecture/homework-runtime-model.md`.
 
 ### Teacher IA (Step 5: runtime-коммуникация с непрерывностью контекста)
@@ -346,6 +350,7 @@ Helpers/RPC:
 - `202604060002_lesson_content_storage.sql`
 - `202604070001_group_methodology_binding.sql`
 - `202604070002_homework_runtime_layer.sql`
+- `202604090001_homework_typed_quiz_upgrade.sql`
 - `202604070003_communication_runtime_layer.sql`
 - `202604080001_enforce_group_methodology_immutability.sql`
 

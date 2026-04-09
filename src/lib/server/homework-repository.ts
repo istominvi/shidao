@@ -31,9 +31,12 @@ type RowMethodologyHomework = {
   id: string;
   methodology_lesson_id: string;
   title: string;
+  kind: "practice_text" | "quiz_single_choice";
   instructions: string;
   material_links: string[] | null;
   answer_format_hint: string | null;
+  estimated_minutes: number | null;
+  quiz_payload: Record<string, unknown> | null;
 };
 
 type RowScheduledHomeworkAssignment = {
@@ -43,6 +46,7 @@ type RowScheduledHomeworkAssignment = {
   assigned_by_teacher_id: string;
   recipient_mode: "all" | "selected";
   due_at: string | null;
+  assignment_comment: string | null;
   issued_at: string;
 };
 
@@ -52,6 +56,10 @@ type RowStudentHomeworkAssignment = {
   student_id: string;
   status: "assigned" | "submitted" | "reviewed" | "needs_revision";
   submission_text: string | null;
+  submission_payload: Record<string, unknown> | null;
+  auto_score: number | null;
+  auto_max_score: number | null;
+  auto_checked_at: string | null;
   submitted_at: string | null;
   review_note: string | null;
   reviewed_at: string | null;
@@ -122,9 +130,12 @@ function mapMethodologyHomework(row: RowMethodologyHomework): MethodologyLessonH
     id: row.id,
     methodologyLessonId: row.methodology_lesson_id,
     title: row.title,
+    kind: row.kind,
     instructions: row.instructions,
     materialLinks: row.material_links ?? [],
     answerFormatHint: row.answer_format_hint ?? undefined,
+    estimatedMinutes: row.estimated_minutes ?? undefined,
+    quiz: (row.quiz_payload as MethodologyLessonHomeworkDefinition["quiz"]) ?? undefined,
   };
 }
 
@@ -135,6 +146,7 @@ export type ScheduledHomeworkAssignment = {
   assignedByTeacherId: string;
   recipientMode: "all" | "selected";
   dueAt: string | null;
+  assignmentComment: string | null;
   issuedAt: string;
 };
 
@@ -144,6 +156,10 @@ export type StudentHomeworkAssignment = {
   studentId: string;
   status: "assigned" | "submitted" | "reviewed" | "needs_revision";
   submissionText: string | null;
+  submissionPayload: Record<string, unknown> | null;
+  autoScore: number | null;
+  autoMaxScore: number | null;
+  autoCheckedAt: string | null;
   submittedAt: string | null;
   reviewNote: string | null;
   reviewedAt: string | null;
@@ -157,6 +173,7 @@ function mapScheduledAssignment(row: RowScheduledHomeworkAssignment): ScheduledH
     assignedByTeacherId: row.assigned_by_teacher_id,
     recipientMode: row.recipient_mode,
     dueAt: row.due_at,
+    assignmentComment: row.assignment_comment,
     issuedAt: row.issued_at,
   };
 }
@@ -168,17 +185,28 @@ function mapStudentAssignment(row: RowStudentHomeworkAssignment): StudentHomewor
     studentId: row.student_id,
     status: row.status,
     submissionText: row.submission_text,
+    submissionPayload: row.submission_payload,
+    autoScore: row.auto_score,
+    autoMaxScore: row.auto_max_score,
+    autoCheckedAt: row.auto_checked_at,
     submittedAt: row.submitted_at,
     reviewNote: row.review_note,
     reviewedAt: row.reviewed_at,
   };
 }
 
+const methodologySelect =
+  "id,methodology_lesson_id,title,kind,instructions,material_links,answer_format_hint,estimated_minutes,quiz_payload";
+const scheduledSelect =
+  "id,scheduled_lesson_id,methodology_homework_id,assigned_by_teacher_id,recipient_mode,due_at,assignment_comment,issued_at";
+const studentSelect =
+  "id,scheduled_homework_assignment_id,student_id,status,submission_text,submission_payload,auto_score,auto_max_score,auto_checked_at,submitted_at,review_note,reviewed_at";
+
 export async function getMethodologyHomeworkByLessonIdAdmin(methodologyLessonId: string) {
   let rows: RowMethodologyHomework[];
   try {
     rows = await adminRequest<RowMethodologyHomework[]>(
-      `/rest/v1/methodology_lesson_homework?select=id,methodology_lesson_id,title,instructions,material_links,answer_format_hint&methodology_lesson_id=eq.${methodologyLessonId}&limit=1`,
+      `/rest/v1/methodology_lesson_homework?select=${methodologySelect}&methodology_lesson_id=eq.${methodologyLessonId}&limit=1`,
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : "unknown";
@@ -213,7 +241,27 @@ export async function getScheduledHomeworkAssignmentByLessonIdAdmin(scheduledLes
   let rows: RowScheduledHomeworkAssignment[];
   try {
     rows = await adminRequest<RowScheduledHomeworkAssignment[]>(
-      `/rest/v1/scheduled_lesson_homework_assignment?select=id,scheduled_lesson_id,methodology_homework_id,assigned_by_teacher_id,recipient_mode,due_at,issued_at&scheduled_lesson_id=eq.${scheduledLessonId}&limit=1`,
+      `/rest/v1/scheduled_lesson_homework_assignment?select=${scheduledSelect}&scheduled_lesson_id=eq.${scheduledLessonId}&limit=1`,
+    );
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "unknown";
+    if (isMissingHomeworkSchemaError(message)) {
+      return null;
+    }
+    throw error;
+  }
+
+  if (!rows[0]) return null;
+  return mapScheduledAssignment(rows[0]);
+}
+
+export async function getScheduledHomeworkAssignmentByIdAdmin(
+  scheduledHomeworkAssignmentId: string,
+) {
+  let rows: RowScheduledHomeworkAssignment[];
+  try {
+    rows = await adminRequest<RowScheduledHomeworkAssignment[]>(
+      `/rest/v1/scheduled_lesson_homework_assignment?select=${scheduledSelect}&id=eq.${scheduledHomeworkAssignmentId}&limit=1`,
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : "unknown";
@@ -233,7 +281,7 @@ export async function listStudentHomeworkAssignmentsByScheduledAssignmentAdmin(
   let rows: RowStudentHomeworkAssignment[];
   try {
     rows = await adminRequest<RowStudentHomeworkAssignment[]>(
-      `/rest/v1/student_homework_assignment?select=id,scheduled_homework_assignment_id,student_id,status,submission_text,submitted_at,review_note,reviewed_at&scheduled_homework_assignment_id=eq.${scheduledHomeworkAssignmentId}`,
+      `/rest/v1/student_homework_assignment?select=${studentSelect}&scheduled_homework_assignment_id=eq.${scheduledHomeworkAssignmentId}`,
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : "unknown";
@@ -252,7 +300,7 @@ export async function getStudentHomeworkAssignmentByIdAdmin(
   let rows: RowStudentHomeworkAssignment[];
   try {
     rows = await adminRequest<RowStudentHomeworkAssignment[]>(
-      `/rest/v1/student_homework_assignment?select=id,scheduled_homework_assignment_id,student_id,status,submission_text,submitted_at,review_note,reviewed_at&id=eq.${studentHomeworkAssignmentId}&limit=1`,
+      `/rest/v1/student_homework_assignment?select=${studentSelect}&id=eq.${studentHomeworkAssignmentId}&limit=1`,
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : "unknown";
@@ -272,6 +320,7 @@ export async function createScheduledHomeworkAssignmentAdmin(input: {
   assignedByTeacherId: string;
   recipientMode: "all" | "selected";
   dueAt: string | null;
+  assignmentComment: string | null;
 }) {
   let rows: RowScheduledHomeworkAssignment[];
   try {
@@ -285,6 +334,7 @@ export async function createScheduledHomeworkAssignmentAdmin(input: {
           assigned_by_teacher_id: input.assignedByTeacherId,
           recipient_mode: input.recipientMode,
           due_at: input.dueAt,
+          assignment_comment: input.assignmentComment,
         },
       },
     );
@@ -336,6 +386,10 @@ export async function updateStudentHomeworkSubmissionAdmin(input: {
   studentHomeworkAssignmentId: string;
   status: "submitted";
   submissionText: string | null;
+  submissionPayload: Record<string, unknown> | null;
+  autoScore: number | null;
+  autoMaxScore: number | null;
+  autoCheckedAt: string | null;
   submittedAt: string;
 }) {
   let rows: RowStudentHomeworkAssignment[];
@@ -347,6 +401,10 @@ export async function updateStudentHomeworkSubmissionAdmin(input: {
         payload: {
           status: input.status,
           submission_text: input.submissionText,
+          submission_payload: input.submissionPayload,
+          auto_score: input.autoScore,
+          auto_max_score: input.autoMaxScore,
+          auto_checked_at: input.autoCheckedAt,
           submitted_at: input.submittedAt,
         },
       },

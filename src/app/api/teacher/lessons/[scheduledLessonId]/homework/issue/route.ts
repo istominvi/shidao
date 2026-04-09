@@ -33,6 +33,9 @@ export async function POST(
     const recipientMode = formData.get("recipientMode") === "selected" ? "selected" : "all";
     const dueAtEntry = formData.get("dueAt");
     const dueAtRaw = typeof dueAtEntry === "string" ? dueAtEntry : "";
+    const assignmentCommentEntry = formData.get("assignmentComment");
+    const assignmentCommentRaw =
+      typeof assignmentCommentEntry === "string" ? assignmentCommentEntry : "";
     const selectedStudentIds = formData
       .getAll("studentIds")
       .filter((item): item is string => typeof item === "string")
@@ -45,6 +48,7 @@ export async function POST(
       recipientMode,
       selectedStudentIds,
       dueAt: dueAtRaw ? new Date(dueAtRaw).toISOString() : null,
+      assignmentComment: assignmentCommentRaw.trim() || null,
     });
 
     revalidatePath(path);

@@ -20,11 +20,21 @@ export async function POST(
 
     const formData = await request.formData();
     const submissionText = `${formData.get("submissionText") ?? ""}`;
+    const submissionPayloadRaw = `${formData.get("submissionPayload") ?? ""}`.trim();
+    let submissionPayload: unknown = undefined;
+    if (submissionPayloadRaw) {
+      try {
+        submissionPayload = JSON.parse(submissionPayloadRaw);
+      } catch {
+        throw new Error("Не удалось прочитать ответы теста.");
+      }
+    }
 
     await submitStudentHomework({
       studentId: resolution.context.student?.id ?? "",
       studentHomeworkAssignmentId,
       submissionText,
+      submissionPayload,
     });
 
     revalidatePath(ROUTES.dashboard);
