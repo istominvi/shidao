@@ -326,11 +326,10 @@ export function LandingPage() {
   return (
     <main className="pb-16">
       <div className="landing-noise" aria-hidden="true" />
-      <section className="container pt-4 md:pt-8">
+      <section className="container pt-4 md:pt-6">
         <AppHeader
-          variant="integrated"
+          variant="app"
           withinContainer={false}
-          className="pt-0 md:pt-0"
           brandHref={ROUTES.home}
           brandLabel="Shidao™"
           navAriaLabel={PRIMARY_NAV_CONFIG.marketing.ariaLabel}
