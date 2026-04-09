@@ -32,7 +32,7 @@ export function TopNav() {
         return (
           <Link
             href={ROUTES.join}
-            className="landing-btn landing-btn-primary min-h-11 px-5"
+            className="landing-btn landing-btn-primary header-action-btn px-5"
           >
             Создать аккаунт
           </Link>
@@ -41,7 +41,7 @@ export function TopNav() {
         return (
           <Link
             href={ROUTES.login}
-            className="landing-btn landing-btn-primary min-h-11 px-5"
+            className="landing-btn landing-btn-primary header-action-btn px-5"
           >
             Войти
           </Link>
@@ -49,7 +49,7 @@ export function TopNav() {
       case "skeleton":
         return (
           <div
-            className="landing-btn landing-btn-muted min-h-11 min-w-[148px] px-5"
+            className="landing-btn landing-btn-muted header-action-btn min-w-[148px] px-5"
             aria-hidden="true"
           >
             <span className="block h-4 w-24 animate-pulse rounded-full bg-neutral-300/70" />
