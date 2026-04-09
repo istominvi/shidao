@@ -73,8 +73,8 @@ a {
 /* Header system tokens */
 :root {
   --header-shell-radius: 1.6rem;
-  --header-shell-padding-y: 0.65rem;
-  --header-shell-padding-x: 1rem;
+  --header-shell-padding-y: 0.5rem;
+  --header-shell-padding-x: 1.75rem;
   --header-shell-border: rgba(255, 255, 255, 0.72);
   --header-shell-bg: rgba(255, 255, 255, 0.82);
   --header-shell-shadow: 0 22px 42px rgba(20, 20, 20, 0.08),
@@ -126,6 +126,11 @@ a {
 
 .site-header-brand {
   white-space: nowrap;
+}
+
+.site-header-brand-mark {
+  font-size: 0.68em;
+  vertical-align: super;
 }
 
 .site-header-nav-scroll {
