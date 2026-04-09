@@ -22,21 +22,23 @@ export default async function MethodologyDetailPage({ params }: { params: Promis
   if (!readModel) notFound();
 
   const passport = readModel.overview.passport;
+  const cleanDescription = (readModel.methodology.shortDescription ?? "").replace(/^[^:：]+[:：]\s*/, "");
 
   return (
     <main className="pb-12">
       <div className="landing-noise" aria-hidden="true" />
       <TopNav />
       <div className="container space-y-6 py-7 md:py-10">
+        <Link href={ROUTES.methodologies} className="inline-flex items-center gap-1 text-sm font-medium text-sky-700 no-underline hover:underline">
+          <span aria-hidden="true">←</span>
+          <span>Методики</span>
+        </Link>
         <AppPageHeader
-          backHref={ROUTES.methodologies}
-          backLabel="Методики"
           title={readModel.methodology.title}
-          description={readModel.methodology.shortDescription}
+          description={cleanDescription || readModel.methodology.shortDescription}
           meta={
             <>
-              <LessonContextChip context="methodology" />
-              <span className="rounded-full border border-neutral-200 bg-white px-3 py-1 text-sm text-neutral-700">Уроков в ShiDao: {readModel.overview.availableLessonsCount}</span>
+              <span className="rounded-full border border-neutral-200 bg-white px-3 py-1 text-sm text-neutral-700">Доступных уроков: {readModel.overview.availableLessonsCount}</span>
               {readModel.overview.programLessonCount ? (
                 <span className="rounded-full border border-neutral-200 bg-white px-3 py-1 text-sm text-neutral-700">Программа: ~{readModel.overview.programLessonCount} уроков</span>
               ) : null}
