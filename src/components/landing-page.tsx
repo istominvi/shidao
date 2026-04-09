@@ -327,7 +327,23 @@ export function LandingPage() {
     <main className="pb-16">
       <div className="landing-noise" aria-hidden="true" />
       <section className="container pt-4 md:pt-8">
-        <div className="relative overflow-hidden rounded-[1.8rem] border border-white/70 bg-white/80 p-4 shadow-[0_20px_80px_rgba(20,20,20,0.08)] backdrop-blur-xl md:rounded-[2.2rem] md:p-7">
+        <AppHeader
+          variant="integrated"
+          withinContainer={false}
+          className="pt-0 md:pt-0"
+          brandHref={ROUTES.home}
+          brandLabel="Shidao™"
+          navAriaLabel={PRIMARY_NAV_CONFIG.marketing.ariaLabel}
+          navItems={PRIMARY_NAV_CONFIG.marketing.items.map((item) => ({
+            id: item.id,
+            label: item.label,
+            href: item.href,
+          }))}
+          navVisibilityClassName="hidden lg:block"
+          rightActions={<div className="flex w-full gap-2 sm:w-auto">{navActions}</div>}
+        />
+
+        <div className="relative mt-4 overflow-hidden rounded-[1.8rem] border border-white/70 bg-white/80 p-4 shadow-[0_20px_80px_rgba(20,20,20,0.08)] backdrop-blur-xl md:rounded-[2.2rem] md:p-7">
           <div
             className="absolute -right-24 -top-24 h-64 w-64 rounded-full bg-fuchsia-200/40 blur-3xl"
             aria-hidden="true"
@@ -335,22 +351,6 @@ export function LandingPage() {
           <div
             className="absolute -left-24 bottom-0 h-56 w-56 rounded-full bg-sky-200/45 blur-3xl"
             aria-hidden="true"
-          />
-          <AppHeader
-            variant="integrated"
-            withinContainer={false}
-            className="pt-0 md:pt-0"
-            shellClassName="bg-transparent px-0 py-0 shadow-none backdrop-blur-0"
-            brandHref={ROUTES.home}
-            brandLabel="Shidao™"
-            navAriaLabel={PRIMARY_NAV_CONFIG.marketing.ariaLabel}
-            navItems={PRIMARY_NAV_CONFIG.marketing.items.map((item) => ({
-              id: item.id,
-              label: item.label,
-              href: item.href,
-            }))}
-            navVisibilityClassName="hidden lg:block"
-            rightActions={<div className="flex w-full gap-2 sm:w-auto">{navActions}</div>}
           />
 
           <div className="relative mt-8 grid items-center gap-8 lg:grid-cols-[1.04fr_0.96fr]">
