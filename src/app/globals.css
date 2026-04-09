@@ -397,6 +397,12 @@ a {
   color: #141414;
 }
 
+.header-action-btn {
+  min-height: var(--header-pill-height);
+  padding: 0.45rem 1rem;
+  font-size: 0.875rem;
+}
+
 .landing-surface {
   box-shadow:
     0 22px 42px rgba(20, 20, 20, 0.08),

@@ -293,13 +293,13 @@ export function LandingPage() {
           <>
             <Link
               href={ROUTES.login}
-              className="landing-btn landing-btn-muted min-h-11 flex-1 sm:flex-none"
+              className="landing-btn landing-btn-muted header-action-btn flex-1 sm:flex-none"
             >
               Войти
             </Link>
             <Link
               href={ROUTES.join}
-              className="landing-btn landing-btn-primary min-h-11 flex-1 sm:flex-none"
+              className="landing-btn landing-btn-primary header-action-btn flex-1 sm:flex-none"
             >
               Создать аккаунт
             </Link>
@@ -314,7 +314,7 @@ export function LandingPage() {
       case "skeleton":
         return (
           <div
-            className="landing-btn landing-btn-muted min-h-11 flex-1 sm:flex-none sm:min-w-[148px]"
+            className="landing-btn landing-btn-muted header-action-btn flex-1 sm:flex-none sm:min-w-[148px]"
             aria-hidden="true"
           >
             <span className="block h-4 w-24 animate-pulse rounded-full bg-neutral-300/70" />
