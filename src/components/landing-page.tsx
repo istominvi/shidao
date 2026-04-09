@@ -33,7 +33,7 @@ import {
 } from "lucide-react";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { PRIMARY_NAV_CONFIG } from "@/lib/navigation/primary-nav";
-import { NavPillLink } from "@/components/navigation/primitives";
+import { SiteHeader } from "@/components/site-header";
 
 const valueStrip = [
   "Методика — основа курса",
@@ -336,25 +336,13 @@ export function LandingPage() {
             className="absolute -left-24 bottom-0 h-56 w-56 rounded-full bg-sky-200/45 blur-3xl"
             aria-hidden="true"
           />
-          <header className="flex flex-wrap items-center justify-between gap-4">
-            <Link
-              href={ROUTES.home}
-              className="text-xl font-black tracking-tight transition hover:opacity-80"
-            >
-              Shidao™
-            </Link>
-            <nav
-              aria-label={PRIMARY_NAV_CONFIG.marketing.ariaLabel}
-              className="hidden flex-wrap gap-2 text-sm font-medium text-neutral-700 lg:flex"
-            >
-              {PRIMARY_NAV_CONFIG.marketing.items.map((item) => (
-                <NavPillLink key={item.id} href={item.href} className="text-sm font-medium">
-                  {item.label}
-                </NavPillLink>
-              ))}
-            </nav>
-            <div className="flex w-full gap-2 sm:w-auto">{navActions}</div>
-          </header>
+          <SiteHeader
+            variant="marketing-hero"
+            nav={PRIMARY_NAV_CONFIG.marketing}
+            activeStrategy={{ type: "section" }}
+            actions={navActions}
+            actionsClassName="w-full sm:w-auto"
+          />
 
           <div className="relative mt-8 grid items-center gap-8 lg:grid-cols-[1.04fr_0.96fr]">
             <div>
