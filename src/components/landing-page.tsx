@@ -330,7 +330,23 @@ export function LandingPage() {
   return (
     <main className="pb-16">
       <div className="landing-noise" aria-hidden="true" />
-      <section className="container pt-4 md:pt-8">
+      <div className="container relative z-50 pt-4 md:pt-6">
+        <SiteHeader
+          variant="product"
+          brandHref={ROUTES.home}
+          navAriaLabel={PRIMARY_NAV_CONFIG.marketing.ariaLabel}
+          navItems={PRIMARY_NAV_CONFIG.marketing.items.map((item) => ({
+            id: item.id,
+            label: item.label,
+            href: item.href,
+            active: marketingActiveId === item.id,
+            scroll: true,
+          }))}
+          actions={<div className="flex w-full gap-2 sm:w-auto">{navActions}</div>}
+        />
+      </div>
+
+      <section className="container mt-4 md:mt-6">
         <div className="relative rounded-[1.8rem] border border-white/70 bg-white/80 p-4 shadow-[0_20px_80px_rgba(20,20,20,0.08)] backdrop-blur-xl md:rounded-[2.2rem] md:p-7">
           <div
             className="absolute -right-24 -top-24 h-64 w-64 rounded-full bg-fuchsia-200/40 blur-3xl"
@@ -340,21 +356,8 @@ export function LandingPage() {
             className="absolute -left-24 bottom-0 h-56 w-56 rounded-full bg-sky-200/45 blur-3xl"
             aria-hidden="true"
           />
-          <SiteHeader
-            variant="marketing-hero"
-            brandHref={ROUTES.home}
-            navAriaLabel={PRIMARY_NAV_CONFIG.marketing.ariaLabel}
-            navItems={PRIMARY_NAV_CONFIG.marketing.items.map((item) => ({
-              id: item.id,
-              label: item.label,
-              href: item.href,
-              active: marketingActiveId === item.id,
-              scroll: true,
-            }))}
-            actions={<div className="flex w-full gap-2 sm:w-auto">{navActions}</div>}
-          />
 
-          <div className="relative mt-8 grid items-center gap-8 lg:grid-cols-[1.04fr_0.96fr]">
+          <div className="relative grid items-center gap-8 lg:grid-cols-[1.04fr_0.96fr]">
             <div>
               <p className="landing-chip bg-lime-200/90">Методика внутри платформы</p>
               <h1 className="mt-5 max-w-[15ch] text-[2rem] font-black leading-[1.02] tracking-[-0.03em] sm:text-[2.35rem] md:mt-6 md:max-w-none md:text-7xl">
