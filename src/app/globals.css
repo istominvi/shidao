@@ -431,6 +431,10 @@ a {
   padding: 0.35rem 1.5rem 0.15rem;
 }
 
+.app-page-header-has-back {
+  gap: 0.45rem;
+}
+
 .app-page-back-link {
   display: inline-flex;
   width: fit-content;

@@ -27,7 +27,7 @@ export function AppPageHeader({
   className,
 }: AppPageHeaderProps) {
   return (
-    <header className={joinClasses("app-page-header", className)}>
+    <header className={joinClasses("app-page-header", backHref && "app-page-header-has-back", className)}>
       {backHref ? (
         <Link href={backHref} className="app-page-back-link">
           <span aria-hidden="true">←</span>

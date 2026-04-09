@@ -18,6 +18,8 @@ export type Methodology = {
 export type MethodologyMetadata = {
   locale?: string;
   level?: string;
+  titleRu?: string;
+  titleNative?: string;
   targetAgeLabel?: string;
   lessonDurationLabel?: string;
   courseDurationLabel?: string;
@@ -86,6 +88,8 @@ export type ReusableAsset = {
     durationSeconds?: number;
     language?: string;
     level?: string;
+  titleRu?: string;
+  titleNative?: string;
     [key: string]: string | number | boolean | undefined;
   };
 };

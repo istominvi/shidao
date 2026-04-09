@@ -180,7 +180,7 @@ test("bootstrap fixture rows import the real methodology lesson shell for lesson
   const rows = buildFixtureBootstrapRows();
 
   assert.equal(rows.methodologyRow.slug, "world-around-me");
-  assert.equal(rows.methodologyRow.title, "我周围的世界");
+  assert.equal(rows.methodologyRow.title, "Мир вокруг меня — 我周围的世界");
   assert.equal(rows.methodologyLessonRow.title, "Урок 1. Животные на ферме");
   assert.deepEqual(rows.methodologyLessonRow.vocabulary_summary, [
     "狗",
