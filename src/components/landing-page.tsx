@@ -33,7 +33,8 @@ import {
 } from "lucide-react";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { PRIMARY_NAV_CONFIG } from "@/lib/navigation/primary-nav";
-import { NavPillLink } from "@/components/navigation/primitives";
+import { SiteHeader } from "@/components/site-header";
+import { useMarketingNavActive } from "@/components/navigation/use-marketing-nav-active";
 
 const valueStrip = [
   "Методика — основа курса",
@@ -280,6 +281,9 @@ function SectionTitle({
 export function LandingPage() {
   const { state, sessionResolved } = useSessionView();
   const authCtaHref = resolveLandingAuthCtaHref(state);
+  const marketingActiveId = useMarketingNavActive(
+    PRIMARY_NAV_CONFIG.marketing.items.map((item) => item.href),
+  );
   const navActions = (() => {
     const action = resolveLandingNavAction(state, sessionResolved);
 
@@ -289,13 +293,13 @@ export function LandingPage() {
           <>
             <Link
               href={ROUTES.login}
-              className="landing-btn landing-btn-muted min-h-11 flex-1 sm:flex-none"
+              className="landing-btn landing-btn-muted header-action-btn flex-1 sm:flex-none"
             >
               Войти
             </Link>
             <Link
               href={ROUTES.join}
-              className="landing-btn landing-btn-primary min-h-11 flex-1 sm:flex-none"
+              className="landing-btn landing-btn-primary header-action-btn flex-1 sm:flex-none"
             >
               Создать аккаунт
             </Link>
@@ -310,7 +314,7 @@ export function LandingPage() {
       case "skeleton":
         return (
           <div
-            className="landing-btn landing-btn-muted min-h-11 flex-1 sm:flex-none sm:min-w-[148px]"
+            className="landing-btn landing-btn-muted header-action-btn flex-1 sm:flex-none sm:min-w-[148px]"
             aria-hidden="true"
           >
             <span className="block h-4 w-24 animate-pulse rounded-full bg-neutral-300/70" />
@@ -326,8 +330,30 @@ export function LandingPage() {
   return (
     <main className="pb-16">
       <div className="landing-noise" aria-hidden="true" />
-      <section className="container pt-4 md:pt-8">
-        <div className="relative overflow-hidden rounded-[1.8rem] border border-white/70 bg-white/80 p-4 shadow-[0_20px_80px_rgba(20,20,20,0.08)] backdrop-blur-xl md:rounded-[2.2rem] md:p-7">
+      <div className="fixed inset-x-0 top-0 z-[140]">
+        <div className="container pt-4 md:pt-6">
+          <SiteHeader
+            variant="product"
+            brandHref={ROUTES.home}
+            navAriaLabel={PRIMARY_NAV_CONFIG.marketing.ariaLabel}
+            navItems={PRIMARY_NAV_CONFIG.marketing.items.map((item) => ({
+              id: item.id,
+              label: item.label,
+              href: item.href,
+              active: marketingActiveId === item.id,
+              scroll: true,
+            }))}
+            actions={<div className="flex w-full gap-2 sm:w-auto">{navActions}</div>}
+            smoothAnchorScroll
+            anchorOffset={112}
+          />
+        </div>
+      </div>
+
+      <div className="h-24 md:h-28" aria-hidden="true" />
+
+      <section className="container mt-4 md:mt-6">
+        <div className="relative rounded-[1.8rem] border border-white/70 bg-white/80 p-4 shadow-[0_20px_80px_rgba(20,20,20,0.08)] backdrop-blur-xl md:rounded-[2.2rem] md:p-7">
           <div
             className="absolute -right-24 -top-24 h-64 w-64 rounded-full bg-fuchsia-200/40 blur-3xl"
             aria-hidden="true"
@@ -336,27 +362,8 @@ export function LandingPage() {
             className="absolute -left-24 bottom-0 h-56 w-56 rounded-full bg-sky-200/45 blur-3xl"
             aria-hidden="true"
           />
-          <header className="flex flex-wrap items-center justify-between gap-4">
-            <Link
-              href={ROUTES.home}
-              className="text-xl font-black tracking-tight transition hover:opacity-80"
-            >
-              Shidao™
-            </Link>
-            <nav
-              aria-label={PRIMARY_NAV_CONFIG.marketing.ariaLabel}
-              className="hidden flex-wrap gap-2 text-sm font-medium text-neutral-700 lg:flex"
-            >
-              {PRIMARY_NAV_CONFIG.marketing.items.map((item) => (
-                <NavPillLink key={item.id} href={item.href} className="text-sm font-medium">
-                  {item.label}
-                </NavPillLink>
-              ))}
-            </nav>
-            <div className="flex w-full gap-2 sm:w-auto">{navActions}</div>
-          </header>
 
-          <div className="relative mt-8 grid items-center gap-8 lg:grid-cols-[1.04fr_0.96fr]">
+          <div className="relative grid items-center gap-8 lg:grid-cols-[1.04fr_0.96fr]">
             <div>
               <p className="landing-chip bg-lime-200/90">Методика внутри платформы</p>
               <h1 className="mt-5 max-w-[15ch] text-[2rem] font-black leading-[1.02] tracking-[-0.03em] sm:text-[2.35rem] md:mt-6 md:max-w-none md:text-7xl">
