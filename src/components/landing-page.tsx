@@ -33,7 +33,8 @@ import {
 } from "lucide-react";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { PRIMARY_NAV_CONFIG } from "@/lib/navigation/primary-nav";
-import { NavPillLink } from "@/components/navigation/primitives";
+import { SiteHeader } from "@/components/site-header";
+import { useMarketingNavActive } from "@/components/navigation/use-marketing-nav-active";
 
 const valueStrip = [
   "Методика — основа курса",
@@ -280,6 +281,7 @@ function SectionTitle({
 export function LandingPage() {
   const { state, sessionResolved } = useSessionView();
   const authCtaHref = resolveLandingAuthCtaHref(state);
+  const activeMarketingSection = useMarketingNavActive(PRIMARY_NAV_CONFIG.marketing.items);
   const navActions = (() => {
     const action = resolveLandingNavAction(state, sessionResolved);
 
@@ -327,34 +329,29 @@ export function LandingPage() {
     <main className="pb-16">
       <div className="landing-noise" aria-hidden="true" />
       <section className="container pt-4 md:pt-8">
-        <div className="relative overflow-hidden rounded-[1.8rem] border border-white/70 bg-white/80 p-4 shadow-[0_20px_80px_rgba(20,20,20,0.08)] backdrop-blur-xl md:rounded-[2.2rem] md:p-7">
-          <div
-            className="absolute -right-24 -top-24 h-64 w-64 rounded-full bg-fuchsia-200/40 blur-3xl"
-            aria-hidden="true"
+        <div className="relative rounded-[1.8rem] border border-white/70 bg-white/80 p-4 shadow-[0_20px_80px_rgba(20,20,20,0.08)] backdrop-blur-xl md:rounded-[2.2rem] md:p-7">
+          <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-[inherit]" aria-hidden="true">
+            <div className="absolute -right-24 -top-24 h-64 w-64 rounded-full bg-fuchsia-200/40 blur-3xl" />
+            <div className="absolute -left-24 bottom-0 h-56 w-56 rounded-full bg-sky-200/45 blur-3xl" />
+          </div>
+          <SiteHeader
+            variant="marketing-hero"
+            ariaLabel={PRIMARY_NAV_CONFIG.marketing.ariaLabel}
+            navItems={PRIMARY_NAV_CONFIG.marketing.items.map((item) => {
+              const sectionId = item.href.startsWith("#") ? item.href.slice(1) : null;
+              const active = sectionId !== null && sectionId === activeMarketingSection;
+
+              return {
+                id: item.id,
+                label: item.label,
+                href: item.href,
+                active,
+                ariaCurrent: active ? ("true" as const) : undefined,
+                scroll: true,
+              };
+            })}
+            actions={<div className="flex w-full gap-2 sm:w-auto">{navActions}</div>}
           />
-          <div
-            className="absolute -left-24 bottom-0 h-56 w-56 rounded-full bg-sky-200/45 blur-3xl"
-            aria-hidden="true"
-          />
-          <header className="flex flex-wrap items-center justify-between gap-4">
-            <Link
-              href={ROUTES.home}
-              className="text-xl font-black tracking-tight transition hover:opacity-80"
-            >
-              Shidao™
-            </Link>
-            <nav
-              aria-label={PRIMARY_NAV_CONFIG.marketing.ariaLabel}
-              className="hidden flex-wrap gap-2 text-sm font-medium text-neutral-700 lg:flex"
-            >
-              {PRIMARY_NAV_CONFIG.marketing.items.map((item) => (
-                <NavPillLink key={item.id} href={item.href} className="text-sm font-medium">
-                  {item.label}
-                </NavPillLink>
-              ))}
-            </nav>
-            <div className="flex w-full gap-2 sm:w-auto">{navActions}</div>
-          </header>
 
           <div className="relative mt-8 grid items-center gap-8 lg:grid-cols-[1.04fr_0.96fr]">
             <div>

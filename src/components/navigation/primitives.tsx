@@ -13,10 +13,17 @@ function cx(...parts: Array<string | false | null | undefined>) {
 type HeaderShellProps = {
   children: ReactNode;
   className?: string;
+  variant?: "marketing-hero" | "product";
 };
 
-export function NavigationHeaderShell({ children, className }: HeaderShellProps) {
-  return <div className={cx("nav-header-shell", className)}>{children}</div>;
+export function NavigationHeaderShell({
+  children,
+  className,
+  variant = "product",
+}: HeaderShellProps) {
+  return (
+    <div className={cx("nav-header-shell", `nav-header-shell-${variant}`, className)}>{children}</div>
+  );
 }
 
 type NavPillLinkProps = {
@@ -24,7 +31,7 @@ type NavPillLinkProps = {
   children: ReactNode;
   active?: boolean;
   className?: string;
-  ariaCurrent?: "page";
+  ariaCurrent?: "page" | "true";
   scroll?: boolean;
 };
 
