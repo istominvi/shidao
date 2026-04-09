@@ -27,9 +27,9 @@ export const metadata: Metadata = {
     description: "Платформа преподавания китайского языка, где методика становится основой рабочего процесса.",
   },
   icons: {
-    icon: "/icon.svg",
-    shortcut: "/icon.svg",
-    apple: "/icon.svg",
+    icon: "/favicon.svg",
+    shortcut: "/favicon.svg",
+    apple: "/favicon.svg",
   },
 };
 
