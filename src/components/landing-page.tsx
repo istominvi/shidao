@@ -330,21 +330,27 @@ export function LandingPage() {
   return (
     <main className="pb-16">
       <div className="landing-noise" aria-hidden="true" />
-      <div className="container relative z-50 pt-4 md:pt-6">
-        <SiteHeader
-          variant="product"
-          brandHref={ROUTES.home}
-          navAriaLabel={PRIMARY_NAV_CONFIG.marketing.ariaLabel}
-          navItems={PRIMARY_NAV_CONFIG.marketing.items.map((item) => ({
-            id: item.id,
-            label: item.label,
-            href: item.href,
-            active: marketingActiveId === item.id,
-            scroll: true,
-          }))}
-          actions={<div className="flex w-full gap-2 sm:w-auto">{navActions}</div>}
-        />
+      <div className="fixed inset-x-0 top-0 z-[140]">
+        <div className="container pt-4 md:pt-6">
+          <SiteHeader
+            variant="product"
+            brandHref={ROUTES.home}
+            navAriaLabel={PRIMARY_NAV_CONFIG.marketing.ariaLabel}
+            navItems={PRIMARY_NAV_CONFIG.marketing.items.map((item) => ({
+              id: item.id,
+              label: item.label,
+              href: item.href,
+              active: marketingActiveId === item.id,
+              scroll: true,
+            }))}
+            actions={<div className="flex w-full gap-2 sm:w-auto">{navActions}</div>}
+            smoothAnchorScroll
+            anchorOffset={112}
+          />
+        </div>
       </div>
+
+      <div className="h-24 md:h-28" aria-hidden="true" />
 
       <section className="container mt-4 md:mt-6">
         <div className="relative rounded-[1.8rem] border border-white/70 bg-white/80 p-4 shadow-[0_20px_80px_rgba(20,20,20,0.08)] backdrop-blur-xl md:rounded-[2.2rem] md:p-7">

@@ -3,6 +3,7 @@ import {
   forwardRef,
   type ComponentPropsWithoutRef,
   type CSSProperties,
+  type MouseEventHandler,
   type ReactNode,
 } from "react";
 
@@ -26,6 +27,7 @@ type NavPillLinkProps = {
   className?: string;
   ariaCurrent?: "page";
   scroll?: boolean;
+  onClick?: MouseEventHandler<HTMLAnchorElement>;
 };
 
 export function NavPillLink({
@@ -35,6 +37,7 @@ export function NavPillLink({
   className,
   ariaCurrent,
   scroll,
+  onClick,
 }: NavPillLinkProps) {
   return (
     <Link
@@ -42,6 +45,7 @@ export function NavPillLink({
       aria-current={ariaCurrent}
       scroll={scroll}
       className={cx("nav-pill", active ? "nav-pill-active" : "nav-pill-inactive", className)}
+      onClick={onClick}
     >
       {children}
     </Link>

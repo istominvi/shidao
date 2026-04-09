@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { type ReactNode } from "react";
+import { type MouseEvent, type ReactNode } from "react";
 import { NavPillLink, NavigationHeaderShell } from "@/components/navigation/primitives";
 
 function cx(...parts: Array<string | false | null | undefined>) {
@@ -25,6 +25,8 @@ type SiteHeaderProps = {
   actions?: ReactNode;
   className?: string;
   shellClassName?: string;
+  smoothAnchorScroll?: boolean;
+  anchorOffset?: number;
 };
 
 export function SiteHeader({
@@ -36,8 +38,31 @@ export function SiteHeader({
   actions,
   className,
   shellClassName,
+  smoothAnchorScroll = false,
+  anchorOffset = 96,
 }: SiteHeaderProps) {
   const hasNav = navItems.length > 0;
+
+  const handleNavClick = (event: MouseEvent<HTMLAnchorElement>, href: string) => {
+    if (!smoothAnchorScroll || !href.startsWith("#")) {
+      return;
+    }
+
+    const targetId = href.slice(1);
+    const target = document.getElementById(targetId);
+
+    if (!target) {
+      return;
+    }
+
+    event.preventDefault();
+
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const targetTop = target.getBoundingClientRect().top + window.scrollY - anchorOffset;
+
+    window.scrollTo({ top: Math.max(0, targetTop), behavior: prefersReducedMotion ? "auto" : "smooth" });
+    window.history.replaceState(null, "", href);
+  };
 
   return (
     <header className={cx("site-header", className)}>
@@ -64,6 +89,7 @@ export function SiteHeader({
                       ariaCurrent={item.active ? "page" : undefined}
                       className="site-header-nav-pill text-sm font-medium"
                       scroll={item.scroll}
+                      onClick={(event) => handleNavClick(event, item.href)}
                     >
                       {item.label}
                     </NavPillLink>
