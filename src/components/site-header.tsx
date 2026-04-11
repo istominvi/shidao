@@ -64,6 +64,7 @@ export function SiteHeader({
 
     window.scrollTo({ top: Math.max(0, targetTop), behavior: prefersReducedMotion ? "auto" : "smooth" });
     window.history.replaceState(null, "", href);
+    window.dispatchEvent(new Event("hashchange"));
   };
 
   return (
