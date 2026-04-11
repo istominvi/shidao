@@ -1,7 +1,7 @@
 import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 
-type SemanticTone = "neutral" | "sky" | "violet" | "emerald" | "amber";
+type SemanticTone = "neutral" | "sky" | "violet" | "emerald" | "amber" | "rose" | "indigo";
 
 type SemanticChipProps = {
   icon: LucideIcon;
@@ -21,6 +21,8 @@ const toneClass: Record<SemanticTone, string> = {
   violet: "border-violet-200 bg-violet-50/90 text-violet-800",
   emerald: "border-emerald-200 bg-emerald-50/90 text-emerald-800",
   amber: "border-amber-200 bg-amber-50/90 text-amber-800",
+  rose: "border-rose-200 bg-rose-50/90 text-rose-800",
+  indigo: "border-indigo-200 bg-indigo-50/90 text-indigo-800",
 };
 
 const sizeClass = {

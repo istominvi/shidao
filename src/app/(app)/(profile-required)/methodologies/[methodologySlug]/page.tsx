@@ -28,6 +28,8 @@ export default async function MethodologyDetailPage({ params }: { params: Promis
   const overviewCards = [
     {
       title: "Для кого курс",
+      surfaceClass: "border-sky-200/80 bg-sky-50/35",
+      dotClass: "bg-sky-500/70",
       points: [
         passport.audienceLabel,
         readModel.overview.teachingApproachSummary,
@@ -37,14 +39,20 @@ export default async function MethodologyDetailPage({ params }: { params: Promis
     },
     {
       title: "Что дети осваивают",
+      surfaceClass: "border-emerald-200/80 bg-emerald-50/35",
+      dotClass: "bg-emerald-500/70",
       points: readModel.overview.learningOutcomes,
     },
     {
       title: "Тематическая структура",
+      surfaceClass: "border-violet-200/80 bg-violet-50/35",
+      dotClass: "bg-violet-500/70",
       points: readModel.overview.thematicModules,
     },
     {
       title: "Формат урока и материалы",
+      surfaceClass: "border-amber-200/80 bg-amber-50/35",
+      dotClass: "bg-amber-500/70",
       points: [
         passport.lessonFormatSummary,
         passport.activitiesPerLessonLabel,
@@ -53,6 +61,8 @@ export default async function MethodologyDetailPage({ params }: { params: Promis
     },
     {
       title: "Методические заметки",
+      surfaceClass: "border-rose-200/80 bg-rose-50/35",
+      dotClass: "bg-rose-500/70",
       points: readModel.overview.methodologyNotes,
     },
   ].filter((card) => card.points.length >= 2);
@@ -79,13 +89,13 @@ export default async function MethodologyDetailPage({ params }: { params: Promis
                 <SemanticChip icon={Clock3} tone="amber" size="md">Время урока: {passport.lessonDurationLabel}</SemanticChip>
               ) : null}
               {passport.courseDurationLabel ? (
-                <SemanticChip icon={CalendarRange} tone="neutral" size="md">Курс: {passport.courseDurationLabel}</SemanticChip>
+                <SemanticChip icon={CalendarRange} tone="emerald" size="md">Курс: {passport.courseDurationLabel}</SemanticChip>
               ) : null}
               {passport.idealGroupSizeLabel ? (
-                <SemanticChip icon={Users} tone="emerald" size="md">Группа: {passport.idealGroupSizeLabel}</SemanticChip>
+                <SemanticChip icon={Users} tone="neutral" size="md">Группа: {passport.idealGroupSizeLabel}</SemanticChip>
               ) : null}
               {passport.activitiesPerLessonLabel ? (
-                <SemanticChip icon={Shapes} tone="violet" size="md">{passport.activitiesPerLessonLabel}</SemanticChip>
+                <SemanticChip icon={Shapes} tone="rose" size="md">{passport.activitiesPerLessonLabel}</SemanticChip>
               ) : null}
             </>
           }
@@ -93,18 +103,21 @@ export default async function MethodologyDetailPage({ params }: { params: Promis
 
         <section className="grid gap-4 lg:grid-cols-2">
           {overviewCards.map((card) => (
-            <AppCard key={card.title} className="p-5" as="article">
+            <AppCard key={card.title} className={`p-5 md:p-6 ${card.surfaceClass}`} as="article">
               <h2 className="text-lg font-semibold text-neutral-900">{card.title}</h2>
-              <ul className="mt-3 space-y-2 text-sm text-neutral-700">
+              <ul className="mt-4 space-y-2.5 text-sm leading-relaxed text-neutral-700">
                 {card.points.map((point) => (
-                  <li key={point}>• {point}</li>
+                  <li key={point} className="flex gap-2.5">
+                    <span className={`mt-2 h-1.5 w-1.5 shrink-0 rounded-full ${card.dotClass}`} />
+                    <span>{point}</span>
+                  </li>
                 ))}
               </ul>
             </AppCard>
           ))}
         </section>
 
-        <section className="space-y-3">
+        <section className="mt-6 space-y-3">
           <h2 className="text-xl font-bold tracking-[-0.02em] text-neutral-950">Уроки</h2>
           {readModel.lessons.map((lesson) => (
             <AppCard key={lesson.id} className="p-5" as="article">
