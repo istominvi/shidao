@@ -40,16 +40,16 @@ export default async function MethodologiesPage() {
                   <h2 className="text-xl font-bold text-neutral-950">{methodology.title}</h2>
                   {methodology.shortDescription ? <p className="mt-2 text-sm text-neutral-700">{methodology.shortDescription}</p> : null}
                 </div>
-                <SemanticChip icon={BookOpen} tone="violet">Source-уроков: {methodology.lessonCount}</SemanticChip>
+                <SemanticChip icon={BookOpen} tone="violet" size="md">Уроки: {methodology.lessonCount}</SemanticChip>
               </div>
 
-              <div className="mt-4 flex flex-wrap gap-2">
-                {methodology.passport.targetAgeLabel ? <SemanticChip icon={GraduationCap} tone="sky">Возраст: {methodology.passport.targetAgeLabel}</SemanticChip> : null}
-                {methodology.passport.lessonDurationLabel ? <SemanticChip icon={Clock3} tone="amber">Урок: {methodology.passport.lessonDurationLabel}</SemanticChip> : null}
-                {methodology.passport.courseDurationLabel ? <SemanticChip icon={CalendarRange}>Курс: {methodology.passport.courseDurationLabel}</SemanticChip> : null}
-                {methodology.passport.groupSizeLabel ? <SemanticChip icon={Users} tone="emerald">Группа: {methodology.passport.groupSizeLabel}</SemanticChip> : null}
-                {methodology.passport.approximateVocabularyCount ? <SemanticChip icon={CircleGauge} tone="sky">≈ {methodology.passport.approximateVocabularyCount} слов</SemanticChip> : null}
-                {methodology.passport.mediaFormatLabel ? <SemanticChip icon={Shapes} tone="violet">{methodology.passport.mediaFormatLabel}</SemanticChip> : null}
+              <div className="mt-4 flex flex-wrap gap-2.5">
+                {methodology.passport.targetAgeLabel ? <SemanticChip icon={GraduationCap} tone="sky" size="md">Возраст: {methodology.passport.targetAgeLabel}</SemanticChip> : null}
+                {methodology.passport.lessonDurationLabel ? <SemanticChip icon={Clock3} tone="amber" size="md">Время урока: {methodology.passport.lessonDurationLabel}</SemanticChip> : null}
+                {methodology.passport.courseDurationLabel ? <SemanticChip icon={CalendarRange} tone="emerald" size="md">Курс: {methodology.passport.courseDurationLabel}</SemanticChip> : null}
+                {methodology.passport.groupSizeLabel ? <SemanticChip icon={Users} tone="neutral" size="md">Группа: {methodology.passport.groupSizeLabel}</SemanticChip> : null}
+                {methodology.passport.approximateVocabularyCount ? <SemanticChip icon={CircleGauge} tone="rose" size="md">≈ {methodology.passport.approximateVocabularyCount} слов</SemanticChip> : null}
+                {methodology.passport.mediaFormatLabel ? <SemanticChip icon={Shapes} tone="indigo" size="md">{methodology.passport.mediaFormatLabel}</SemanticChip> : null}
               </div>
 
               {methodology.passport.thematicHighlights.length ? (

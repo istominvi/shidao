@@ -439,13 +439,13 @@ a {
   display: inline-flex;
   width: fit-content;
   align-items: center;
-  gap: 0.3rem;
-  font-size: 0.68rem;
-  font-weight: 650;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: #0369a1;
+  gap: 0.4rem;
+  font-size: 0.92rem;
+  font-weight: 520;
+  letter-spacing: normal;
+  color: #0f5f88;
   text-decoration: none;
+  line-height: 1.2;
 }
 
 .app-page-back-link:hover,

@@ -30,6 +30,18 @@ function compactText(items: Array<string | undefined>) {
   return Array.from(new Set(items.map((item) => item?.trim() ?? "").filter(Boolean)));
 }
 
+function teacherFacingMethodologyTitle(methodology: { title: string; metadata?: MethodologyMetadata | null }) {
+  const title = clean(methodology.title);
+  const titleRu = clean(methodology.metadata?.titleRu);
+  const titleNative = clean(methodology.metadata?.titleNative);
+
+  if (titleRu && titleNative) return `${titleRu} — ${titleNative}`;
+  if (title.includes("—")) return title;
+  if (titleRu && title && title !== titleRu) return `${titleRu} — ${title}`;
+  if (titleNative && title && title !== titleNative) return `${title} — ${titleNative}`;
+  return title || titleRu || titleNative;
+}
+
 function withFallbackMetadata(methodology: Pick<Methodology, "metadata" | "title">) {
   const metadata = methodology.metadata ?? {};
   return {
@@ -81,7 +93,7 @@ export async function getTeacherMethodologiesIndexReadModel() {
       return {
         id: item.id,
         slug: item.slug,
-        title: item.title,
+        title: teacherFacingMethodologyTitle(item),
         shortDescription: item.shortDescription,
         lessonCount: lessons.length,
         passport: {
@@ -127,7 +139,10 @@ export async function getTeacherMethodologyDetailReadModel(slug: string) {
   );
 
   return {
-    methodology,
+    methodology: {
+      ...methodology,
+      title: teacherFacingMethodologyTitle(methodology),
+    },
     overview: {
       passport: {
         audienceLabel: metadata.audienceLabel,
@@ -229,7 +244,10 @@ export async function getTeacherMethodologyLessonReadModel(input: { teacherId: s
     .map((group) => ({ id: group.id, label: clean(group.name) || "Группа" }));
 
   return {
-    methodology,
+    methodology: {
+      ...methodology,
+      title: teacherFacingMethodologyTitle(methodology),
+    },
     lesson,
     groups,
     presentation,
