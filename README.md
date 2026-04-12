@@ -468,3 +468,12 @@ returning id;
 ```
 
 После этого откройте `/lessons/<id>` под teacher-профилем.
+
+
+### Teacher IA (Step 6: three-part lesson model)
+
+- Канонический урок теперь разделён на 3 части: `Сценарий урока` + `Контент для ученика` + `Домашнее задание`.
+- Новый source-layer: `methodology_lesson_student_content`.
+- Student получает learner room: `/lesson-room/[scheduledLessonId]`.
+- Parent получает тот же learner room в child-context: `/children/[studentId]/lesson-room/[scheduledLessonId]`.
+- См. `docs/architecture/lesson-three-part-model.md`.

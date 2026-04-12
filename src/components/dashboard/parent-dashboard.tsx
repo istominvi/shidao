@@ -1,4 +1,5 @@
 import { DashboardShell } from "@/components/dashboard-shell";
+import { toParentLessonRoomRoute } from "@/lib/auth";
 
 type ParentContext = {
   studentId: string;
@@ -29,9 +30,11 @@ export function ParentDashboard({
   childrenContexts,
   homeworkByStudent,
   communicationByStudent,
+  parentLessonsByStudent,
 }: {
   childrenContexts: ParentContext[];
   homeworkByStudent: Record<string, ParentHomeworkItem[]>;
+  parentLessonsByStudent: Record<string, Array<{ scheduledLessonId: string; startsAt: string; status: string; title: string }>>;
   communicationByStudent: Record<
     string,
     Array<{
@@ -63,6 +66,14 @@ export function ParentDashboard({
                   <p className="font-semibold">{child.studentName}</p>
                   <p className="mt-1 text-neutral-700">Логин ученика: {child.login}</p>
                   <div className="mt-2 space-y-2">
+                    <div className="rounded-xl border border-neutral-200 bg-white p-2">
+                      <p className="text-xs font-semibold uppercase tracking-[0.12em] text-neutral-500">Занятия</p>
+                      {(parentLessonsByStudent[child.studentId] ?? []).slice(0, 6).map((lesson) => (
+                        <p key={lesson.scheduledLessonId} className="mt-1 text-xs">
+                          {lesson.title} · <a className="text-sky-700 underline" href={toParentLessonRoomRoute(child.studentId, lesson.scheduledLessonId)}>Открыть</a>
+                        </p>
+                      ))}
+                    </div>
                     {(homeworkByStudent[child.studentId] ?? []).map((item) => (
                       <article key={`${item.scheduledLessonId}-${item.homeworkTitle}`} className="rounded-xl border border-neutral-200 bg-white p-2">
                         <p className="font-semibold text-neutral-900">{item.homeworkTitle}</p>

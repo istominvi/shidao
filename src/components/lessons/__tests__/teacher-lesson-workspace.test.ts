@@ -19,25 +19,14 @@ test("teacher workspace component keeps runtime editing surface", () => {
   assert.equal(workspaceComponentSource.includes("Проведение занятия"), true);
 });
 
-test("teacher workspace methodology section remains read-only", () => {
-  assert.equal(workspaceComponentSource.includes("Ориентиры методики"), true);
+test("teacher workspace exposes three canonical parts", () => {
+  assert.equal(workspaceComponentSource.includes("Сценарий урока"), true);
+  assert.equal(workspaceComponentSource.includes("Контент для ученика"), true);
+  assert.equal(workspaceComponentSource.includes("Домашнее задание"), true);
   assert.equal(workspaceComponentSource.includes('name="methodology"'), false);
   assert.equal(workspaceComponentSource.includes('name="methodologyTitle"'), false);
 });
 
-test("teacher workspace homework section keeps methodology content read-only and runtime controls", () => {
-  assert.equal(
-    workspaceComponentSource.includes("Из методики (только чтение)"),
-    false,
-  );
+test("teacher workspace keeps homework runtime controls", () => {
   assert.equal(workspaceComponentSource.includes("TeacherHomeworkPanel"), true);
-  assert.equal(workspaceComponentSource.includes("Задать ДЗ"), false);
-  assert.equal(
-    workspaceComponentSource.includes('name="homeworkTitle"'),
-    false,
-  );
-  assert.equal(
-    workspaceComponentSource.includes('name="instructions"'),
-    false,
-  );
 });

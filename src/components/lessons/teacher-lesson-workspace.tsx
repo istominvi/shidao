@@ -4,6 +4,7 @@ import { AppPageHeader } from "@/components/app/page-header";
 import { LessonContextChip } from "@/components/lessons/lesson-context-chip";
 import { TeacherLessonPedagogicalContent } from "@/components/lessons/teacher-lesson-pedagogical-content";
 import { TeacherHomeworkPanel } from "@/components/lessons/teacher-homework-panel";
+import { TeacherStudentContentPreview } from "@/components/lessons/teacher-student-content-preview";
 import Link from "next/link";
 import { toMethodologyLessonRoute } from "@/lib/auth";
 
@@ -71,7 +72,18 @@ export function TeacherLessonWorkspace({
 
       <section className="grid gap-5 xl:grid-cols-[minmax(0,1.65fr)_minmax(320px,1fr)]">
         <div className="space-y-5">
+          <AppCard className="p-5">
+            <h2 className="text-xl font-bold text-neutral-900">Сценарий урока</h2>
+            <p className="mt-1 text-sm text-neutral-600">Методический сценарий для преподавателя: материалы, подсказки, ожидаемые ответы и ход урока.</p>
+          </AppCard>
           <TeacherLessonPedagogicalContent quickSummary={quickSummary} lessonFlow={lessonFlow} />
+          <AppCard className="border-sky-200/70 p-5">
+            <h2 className="text-xl font-bold text-neutral-900">Контент для ученика</h2>
+            <p className="mt-1 text-sm text-neutral-600">Это learner-facing версия урока для показа на экране и повторения дома.</p>
+            <div className="mt-3">
+              <TeacherStudentContentPreview content={workspace.learnerContent} scheduledLessonId={workspace.scheduledLessonId} />
+            </div>
+          </AppCard>
         </div>
 
         <aside className="space-y-4 xl:sticky xl:top-6 xl:self-start">
@@ -213,7 +225,7 @@ export function TeacherLessonWorkspace({
           </AppCard>
 
           <AppCard className="border-sky-200/70 p-5">
-            <h2 className="text-lg font-bold text-neutral-900">Домашнее задание</h2>
+            <h2 className="text-lg font-bold text-neutral-900">Домашнее задание</h2><p className="mt-1 text-sm text-neutral-600">Третья часть урока: выдача, прогресс и проверка.</p>
             <TeacherHomeworkPanel
               homework={workspace.homework}
               scheduledLessonId={workspace.scheduledLessonId}

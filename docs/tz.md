@@ -103,3 +103,11 @@
 - Непрерывная коммуникация строится вокруг `group_student_conversation`.
 - Сообщения связываются с lesson/homework runtime-контекстом через optional ссылки.
 - Teacher получает полный поток в `/groups/[groupId]/students/[studentId]/communication`.
+
+
+### 6) Three-part lesson model (реализовано)
+
+- Урок формализован как 3 части: teacher scenario + student lesson content + homework.
+- Добавлена таблица `methodology_lesson_student_content` (one-to-one к `methodology_lesson`).
+- Для student/parent внедрён общий learner-facing lesson room.
+- Teacher workspace показывает отдельный раздел `Контент для ученика` с переходом в ученическую версию.

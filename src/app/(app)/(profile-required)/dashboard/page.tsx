@@ -9,6 +9,7 @@ import { getParentCommunicationProjection, getStudentConversationReadModels } fr
 import { getParentHomeworkProjection } from "@/lib/server/parent-homework";
 import { listClassIdsForStudentAdmin } from "@/lib/server/lesson-content-repository";
 import { getStudentHomeworkReadModel } from "@/lib/server/student-homework";
+import { listLearnerScheduledLessonsForStudent } from "@/lib/server/lesson-room";
 import { getTeacherDashboardOperationsReadModel } from "@/lib/server/teacher-dashboard-operations";
 import { loadParentLearningContextsByUser } from "@/lib/server/supabase-admin";
 
@@ -38,7 +39,8 @@ export default async function DashboardIndexPage({
     const communication = studentId
       ? await getStudentConversationReadModels({ studentId, filter: "all" })
       : [];
-    return <StudentDashboard homework={homework} communication={communication} />;
+    const lessons = studentId ? await listLearnerScheduledLessonsForStudent({ studentId }) : [];
+    return <StudentDashboard homework={homework} communication={communication} lessons={lessons} />;
   }
 
   if (context.activeProfile === "teacher") {
@@ -76,10 +78,14 @@ export default async function DashboardIndexPage({
     parentHomework.map((item) => [item.studentId, item.items]),
   );
   const parentCommunication = await getParentCommunicationProjection({ userId: context.userId });
+  const parentLessonsByStudent = Object.fromEntries(
+    await Promise.all(learningContexts.map(async (child) => [child.studentId, await listLearnerScheduledLessonsForStudent({ studentId: child.studentId })])),
+  );
   return (
     <ParentDashboard
       childrenContexts={learningContexts}
       homeworkByStudent={homeworkByStudent}
+      parentLessonsByStudent={parentLessonsByStudent}
       communicationByStudent={Object.fromEntries(
         parentCommunication.map((item) => [item.studentId, item.messages]),
       )}

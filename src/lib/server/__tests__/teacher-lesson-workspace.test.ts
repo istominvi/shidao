@@ -46,6 +46,7 @@ test("teacher workspace loader combines scheduled + methodology and keeps sorted
       }),
       listReusableAssetsByIds: async (ids) =>
         lessonContentFixtureAssets.filter((asset) => ids.includes(asset.id)),
+      getMethodologyLessonStudentContentByLessonId: async () => null,
       getClassDisplayNameById: async () => "Лисички 5-6",
       getHomeworkReadModel: async () => homeworkSnapshot,
       getLessonDiscussions: async () => [],
@@ -68,6 +69,7 @@ test("teacher workspace loader returns null when linked methodology lesson is mi
       getScheduledLessonById: async () => lessonContentFixtureScheduledLesson,
       getMethodologyLessonById: async () => null,
       listReusableAssetsByIds: async () => [],
+      getMethodologyLessonStudentContentByLessonId: async () => null,
       getClassDisplayNameById: async () => "Группа A",
       getHomeworkReadModel: async () => homeworkSnapshot,
       getLessonDiscussions: async () => [],
@@ -263,4 +265,29 @@ test("teacher workspace access allows only teacher profile", () => {
   assert.equal(canAccessTeacherLessonWorkspace(teacherResolution), true);
   assert.equal(canAccessTeacherLessonWorkspace(studentResolution), false);
   assert.equal(canAccessTeacherLessonWorkspace({ status: "guest" }), false);
+});
+
+
+test("teacher workspace read model includes learner-facing student content preview", () => {
+  const readModel = buildTeacherLessonWorkspaceReadModel({
+    projection: {
+      methodologyLessonId: lessonContentFixtureMethodologyLesson.id,
+      methodologyShell: lessonContentFixtureMethodologyLesson.shell,
+      runtimeShell: lessonContentFixtureScheduledLesson.runtimeShell,
+      orderedBlocks: lessonContentFixtureMethodologyLesson.blocks,
+    },
+    scheduledLessonId: lessonContentFixtureScheduledLesson.id,
+    classId: lessonContentFixtureScheduledLesson.runtimeShell.classId,
+    assets: lessonContentFixtureAssets,
+    homework: homeworkSnapshot,
+    learnerContent: {
+      id: "sc-1",
+      methodologyLessonId: lessonContentFixtureMethodologyLesson.id,
+      title: "Урок 1. Животные на ферме",
+      sections: [{ type: "recap", title: "Вспомнить дома", bullets: ["狗"] }],
+    },
+  });
+
+  assert.equal(readModel.learnerContent?.title, "Урок 1. Животные на ферме");
+  assert.equal(readModel.learnerContent?.sections.length, 1);
 });

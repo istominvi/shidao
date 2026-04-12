@@ -63,3 +63,14 @@ Homework-контент определяется в методике. Препо
 
 Homework-обсуждение показывается как scoped-проекция единого `group_student_conversation`, а не как отдельный isolated chat-thread.
 См. `docs/architecture/communication-runtime-model.md`.
+
+
+## Соседний слой learner-content (Step 6)
+
+Homework остаётся третьей частью канонического урока.
+
+- teacher scenario: `methodology_lesson_block`
+- student lesson content: `methodology_lesson_student_content`
+- homework: `methodology_lesson_homework` + runtime assignment tables
+
+При этом права на homework не менялись: student submit, parent read-only.

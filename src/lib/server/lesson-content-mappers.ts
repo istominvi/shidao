@@ -4,6 +4,8 @@ import type {
   MethodologyLesson,
   ReusableAsset,
   ScheduledLesson,
+  MethodologyLessonStudentContent,
+  MethodologyLessonStudentContentSection,
   ScheduledLessonRuntimeShell,
 } from "../lesson-content";
 import { sortLessonBlocks } from "../lesson-content";
@@ -195,6 +197,45 @@ export function mapMethodologyLessonRowToDomain(
       readinessStatus: row.readiness_status,
     },
     blocks,
+  };
+}
+
+
+export type RowMethodologyLessonStudentContent = {
+  id: string;
+  methodology_lesson_id: string;
+  title: string;
+  subtitle: string | null;
+  content_payload: Record<string, unknown> | null;
+};
+
+function isStudentContentSection(value: unknown): value is MethodologyLessonStudentContentSection {
+  if (!value || typeof value !== "object" || !("type" in value)) return false;
+  const section = value as { type?: string };
+  return [
+    "lesson_focus",
+    "vocabulary_cards",
+    "phrase_cards",
+    "media_asset",
+    "action_cards",
+    "worksheet",
+    "recap",
+  ].includes(section.type ?? "");
+}
+
+export function mapMethodologyLessonStudentContentRowToDomain(
+  row: RowMethodologyLessonStudentContent,
+): MethodologyLessonStudentContent {
+  const payload = row.content_payload ?? {};
+  const sectionsRaw = Array.isArray(payload.sections) ? payload.sections : [];
+  const sections = sectionsRaw.filter(isStudentContentSection);
+
+  return {
+    id: row.id,
+    methodologyLessonId: row.methodology_lesson_id,
+    title: row.title,
+    subtitle: row.subtitle ?? undefined,
+    sections,
   };
 }
 

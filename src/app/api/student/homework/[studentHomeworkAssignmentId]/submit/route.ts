@@ -37,8 +37,11 @@ export async function POST(
       submissionPayload,
     });
 
+    const redirectToRaw = `${formData.get("redirectTo") ?? ""}`.trim();
+    const redirectTo = redirectToRaw.startsWith("/") ? redirectToRaw : ROUTES.dashboard;
     revalidatePath(ROUTES.dashboard);
-    return NextResponse.redirect(new URL(`${ROUTES.dashboard}?saved=homework`, request.url), {
+    revalidatePath(redirectTo);
+    return NextResponse.redirect(new URL(`${redirectTo}?saved=homework`, request.url), {
       status: 303,
     });
   } catch (error) {

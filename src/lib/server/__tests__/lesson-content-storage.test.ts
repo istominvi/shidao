@@ -4,11 +4,13 @@ import {
   lessonContentFixtureMethodology,
   lessonContentFixtureMethodologyLesson,
   lessonContentFixtureScheduledLesson,
+  lessonContentFixtureStudentContent,
 } from "../../lesson-content";
 import { buildFixtureBootstrapRows } from "../lesson-content-bootstrap";
 import {
   mapMethodologyLessonRowToDomain,
   mapScheduledLessonRowToDomain,
+  mapMethodologyLessonStudentContentRowToDomain,
   type RowMethodologyLessonWithBlocks,
   type RowScheduledLesson,
 } from "../lesson-content-mappers";
@@ -234,6 +236,7 @@ test("bootstrap fixture rows are deterministic and idempotent by stable IDs", ()
   assert.equal(first.methodologyLessonRow.id, second.methodologyLessonRow.id);
   assert.equal(first.scheduledLessonRow.id, second.scheduledLessonRow.id);
   assert.deepEqual(first.reusableAssetRows, second.reusableAssetRows);
+  assert.deepEqual(first.studentContentRow, second.studentContentRow);
   assert.deepEqual(first.blockRows, second.blockRows);
   assert.deepEqual(first.blockAssetRows, second.blockAssetRows);
   assert.equal(first.blockRows.length > 0, true);
@@ -249,3 +252,34 @@ test("bootstrap rows allow overriding scheduled lesson class id for real teacher
 
   assert.equal(rows.scheduledLessonRow.class_id, classId);
 });
+
+
+test("student lesson content mapper keeps typed sections", () => {
+  const mapped = mapMethodologyLessonStudentContentRowToDomain({
+    id: "sc-1",
+    methodology_lesson_id: "lesson-1",
+    title: "Урок 1",
+    subtitle: null,
+    content_payload: {
+      sections: [
+        { type: "lesson_focus", title: "Сегодня", body: "text", chips: ["狗"] },
+        { type: "unknown", title: "bad" },
+      ],
+    },
+  });
+
+  assert.equal(mapped.sections.length, 1);
+  assert.equal(mapped.sections[0]?.type, "lesson_focus");
+});
+
+
+test("lesson 1 fixture includes teacher scenario + student content + homework", () => {
+  assert.equal(lessonContentFixtureMethodologyLesson.blocks.length > 0, true);
+  assert.equal(lessonContentFixtureStudentContent.sections.length > 0, true);
+  assert.equal(rowsContainQuizHomework(), true);
+});
+
+function rowsContainQuizHomework() {
+  const rows = buildFixtureBootstrapRows();
+  return rows.homeworkDefinitionRow.kind === "quiz_single_choice";
+}

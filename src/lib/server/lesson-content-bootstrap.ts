@@ -4,6 +4,7 @@ import {
   lessonContentFixtureMethodology,
   lessonContentFixtureMethodologyLesson,
   lessonContentFixtureScheduledLesson,
+  lessonContentFixtureStudentContent,
 } from "../lesson-content";
 import { createHash } from "node:crypto";
 
@@ -144,6 +145,15 @@ export function buildFixtureBootstrapRows(options?: {
       estimated_minutes: lessonContentFixtureHomeworkDefinition.estimatedMinutes ?? null,
       quiz_payload: lessonContentFixtureHomeworkDefinition.quiz ?? null,
     },
+    studentContentRow: {
+      id: stableUuid(`methodology_lesson_student_content:${lessonContentFixtureStudentContent.id}`),
+      methodology_lesson_id: methodologyLessonId,
+      title: lessonContentFixtureStudentContent.title,
+      subtitle: lessonContentFixtureStudentContent.subtitle ?? null,
+      content_payload: {
+        sections: lessonContentFixtureStudentContent.sections,
+      },
+    },
     scheduledLessonRow: {
       id: scheduledLessonId,
       class_id:
@@ -236,6 +246,10 @@ export async function bootstrapLessonContentFixtureAdmin(options?: {
     ...rows.homeworkDefinitionRow,
     methodology_lesson_id: resolvedMethodologyLessonId,
   };
+  const studentContentRow = {
+    ...rows.studentContentRow,
+    methodology_lesson_id: resolvedMethodologyLessonId,
+  };
   const scheduledLessonRow = {
     ...rows.scheduledLessonRow,
     methodology_lesson_id: resolvedMethodologyLessonId,
@@ -275,6 +289,17 @@ export async function bootstrapLessonContentFixtureAdmin(options?: {
     "POST",
     {
       payload: homeworkDefinitionRow,
+      extraHeaders: {
+        Prefer: "resolution=merge-duplicates,return=representation",
+      },
+    },
+  );
+
+  await adminRequest(
+    "/rest/v1/methodology_lesson_student_content?on_conflict=methodology_lesson_id",
+    "POST",
+    {
+      payload: studentContentRow,
       extraHeaders: {
         Prefer: "resolution=merge-duplicates,return=representation",
       },

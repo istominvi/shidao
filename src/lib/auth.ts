@@ -19,6 +19,7 @@ export const ROUTES = {
   groupsNew: "/groups/new",
   studentsNew: "/students/new",
   lessons: "/lessons",
+  lessonRoom: "/lesson-room",
   methodologies: "/methodologies",
   settings: "/settings",
   settingsSecurity: "/settings/security",
@@ -77,4 +78,13 @@ export function toMethodologyRoute(methodologySlug: string) {
 
 export function toMethodologyLessonRoute(methodologySlug: string, lessonId: string) {
   return `${toMethodologyRoute(methodologySlug)}/lessons/${encodeURIComponent(lessonId)}`;
+}
+
+
+export function toStudentLessonRoomRoute(scheduledLessonId: string) {
+  return `${ROUTES.lessonRoom}/${encodeURIComponent(scheduledLessonId)}`;
+}
+
+export function toParentLessonRoomRoute(studentId: string, scheduledLessonId: string) {
+  return `/children/${encodeURIComponent(studentId)}/lesson-room/${encodeURIComponent(scheduledLessonId)}`;
 }

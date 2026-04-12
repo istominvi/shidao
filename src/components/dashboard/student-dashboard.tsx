@@ -3,6 +3,7 @@ import { StudentHomeworkQuizCard } from "@/components/dashboard/student-homework
 import type { GroupStudentMessage } from "@/lib/server/communication-repository";
 import type { StudentHomeworkCard } from "@/lib/server/student-homework";
 import type { getStudentConversationReadModels } from "@/lib/server/communication-service";
+import { toStudentLessonRoomRoute } from "@/lib/auth";
 
 function kindBadge(kind: StudentHomeworkCard["kind"]) {
   return kind === "quiz_single_choice" ? "Тест" : "Практика";
@@ -11,9 +12,11 @@ function kindBadge(kind: StudentHomeworkCard["kind"]) {
 export function StudentDashboard({
   homework,
   communication,
+  lessons,
 }: {
   homework: StudentHomeworkCard[];
   communication: Awaited<ReturnType<typeof getStudentConversationReadModels>>;
+  lessons: Array<{ scheduledLessonId: string; startsAt: string; status: string; title: string }>;
 }) {
   return (
     <DashboardShell
@@ -22,6 +25,23 @@ export function StudentDashboard({
       title="Твой учебный кабинет"
       subtitle="Короткие задания, понятные шаги и поддержка преподавателя."
     >
+      <section className="mt-4 rounded-3xl border border-white/80 bg-white/90 p-4">
+        <h3 className="text-lg font-black">Мои занятия</h3>
+        {lessons.length === 0 ? (
+          <p className="mt-2 text-sm text-neutral-600">Пока нет назначенных уроков.</p>
+        ) : (
+          <div className="mt-3 space-y-2">
+            {lessons.slice(0, 8).map((lesson) => (
+              <article key={lesson.scheduledLessonId} className="rounded-2xl border border-neutral-200 p-3 text-sm">
+                <p className="font-semibold">{lesson.title}</p>
+                <p className="text-xs text-neutral-500">{lesson.startsAt} · {lesson.status}</p>
+                <a className="mt-1 inline-block text-sky-700 underline" href={toStudentLessonRoomRoute(lesson.scheduledLessonId)}>Открыть урок</a>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
+
       <section className="mt-4 rounded-3xl border border-white/80 bg-white/90 p-4">
         <h3 className="text-lg font-black">Мои домашние задания</h3>
         {homework.length === 0 ? (

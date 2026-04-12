@@ -15,11 +15,13 @@ import {
   type WrapUpClosureBlock,
 } from "../lesson-content";
 import type { MethodologyReadinessStatus } from "../lesson-content/types";
+import type { MethodologyLessonStudentContent } from "../lesson-content";
 import type { AccessResolution } from "./access-policy";
 import {
   getClassDisplayNameByIdAdmin,
   getMethodologyLessonByIdAdmin,
   getScheduledLessonByIdAdmin,
+  getMethodologyLessonStudentContentByLessonIdAdmin,
   listReusableAssetsByIdsAdmin,
 } from "./lesson-content-repository";
 import {
@@ -112,6 +114,7 @@ export type TeacherLessonWorkspaceReadModel = {
     methodologyTitle: string;
     positionLabel: string;
   } | null;
+  learnerContent: MethodologyLessonStudentContent | null;
   communication: {
     lessonScoped: Array<{
       studentId: string;
@@ -139,6 +142,7 @@ export type TeacherLessonWorkspaceReadModel = {
 type WorkspaceLoaderDeps = {
   getScheduledLessonById: typeof getScheduledLessonByIdAdmin;
   getMethodologyLessonById: typeof getMethodologyLessonByIdAdmin;
+  getMethodologyLessonStudentContentByLessonId: typeof getMethodologyLessonStudentContentByLessonIdAdmin;
   listReusableAssetsByIds: typeof listReusableAssetsByIdsAdmin;
   getClassDisplayNameById: typeof getClassDisplayNameByIdAdmin;
   getHomeworkReadModel: typeof getTeacherLessonHomeworkReadModel;
@@ -149,6 +153,7 @@ type WorkspaceLoaderDeps = {
 const defaultWorkspaceLoaderDeps: WorkspaceLoaderDeps = {
   getScheduledLessonById: getScheduledLessonByIdAdmin,
   getMethodologyLessonById: getMethodologyLessonByIdAdmin,
+  getMethodologyLessonStudentContentByLessonId: getMethodologyLessonStudentContentByLessonIdAdmin,
   listReusableAssetsByIds: listReusableAssetsByIdsAdmin,
   getClassDisplayNameById: getClassDisplayNameByIdAdmin,
   getHomeworkReadModel: getTeacherLessonHomeworkReadModel,
@@ -358,7 +363,7 @@ function buildFlowStepContent(block: LessonBlockInstance) {
     case "vocabulary_focus": {
       const content = block.content as VocabularyFocusBlock["content"];
       return {
-        description: `Режим практики: ${content.practiceMode}`,
+        description: content.miniDrill ?? "Практика слов через карточки и движение",
         teacherActions: ["Проговаривает слова и запускает мини-дрилл"],
         studentActions: normalizeItems([
           `Повторяют слова: ${content.items.map((item) => item.term).join(", ")}`,
@@ -389,7 +394,7 @@ function buildFlowStepContent(block: LessonBlockInstance) {
     case "guided_activity": {
       const content = block.content as GuidedActivityBlock["content"];
       return {
-        description: content.activityType,
+        description: content.steps[0] ?? "Практическая активность",
         teacherActions: normalizeItems(content.steps),
         studentActions: normalizeItems([
           `Цель: ${content.successCriteria.join("; ")}`,
@@ -556,6 +561,7 @@ export function buildTeacherLessonWorkspaceReadModel(input: {
   assets: ReusableAsset[];
   homework: TeacherLessonHomeworkReadModel;
   sourceLesson?: TeacherLessonWorkspaceReadModel["sourceLesson"];
+  learnerContent?: MethodologyLessonStudentContent | null;
   communication?: TeacherLessonWorkspaceReadModel["communication"];
 }): TeacherLessonWorkspaceReadModel {
   const sortedProjection: TeacherLessonProjection = {
@@ -579,6 +585,7 @@ export function buildTeacherLessonWorkspaceReadModel(input: {
     }),
     homework: input.homework,
     sourceLesson: input.sourceLesson ?? null,
+    learnerContent: input.learnerContent ?? null,
     communication: input.communication ?? {
       lessonScoped: [],
       homeworkScoped: [],
@@ -608,13 +615,14 @@ export async function getTeacherLessonWorkspaceByScheduledLessonId(
     scheduledLesson,
   );
   const assetIds = collectAssetIds(projection.orderedBlocks);
-  const [assets, classDisplayName, homework, lessonDiscussions, homeworkDiscussions] =
+  const [assets, classDisplayName, homework, learnerContent, lessonDiscussions, homeworkDiscussions] =
     await Promise.all([
     assetIds.length
       ? deps.listReusableAssetsByIds(assetIds)
       : Promise.resolve([]),
     deps.getClassDisplayNameById(scheduledLesson.runtimeShell.classId),
     deps.getHomeworkReadModel(scheduledLessonId),
+    deps.getMethodologyLessonStudentContentByLessonId(scheduledLesson.methodologyLessonId),
     deps
       .getLessonDiscussions({
         classId: scheduledLesson.runtimeShell.classId,
@@ -642,6 +650,7 @@ export async function getTeacherLessonWorkspaceByScheduledLessonId(
       methodologyTitle: methodologyLesson.methodologyTitle?.trim() || "Методика",
       positionLabel: `Модуль ${methodologyLesson.shell.position.moduleIndex} · Урок ${methodologyLesson.shell.position.lessonIndex}${methodologyLesson.shell.position.unitIndex ? ` · Раздел ${methodologyLesson.shell.position.unitIndex}` : ""}`,
     },
+    learnerContent,
     communication: {
       lessonScoped:
         lessonDiscussions.length > 0
