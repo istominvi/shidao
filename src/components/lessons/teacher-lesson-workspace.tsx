@@ -112,7 +112,11 @@ export function TeacherLessonWorkspace({
                 </Link>
               </div>
               {!workspace.studentContent.source ? (
-                <p className="mt-3 text-sm text-neutral-600">Для этого урока пока нет отдельного learner-facing контента.</p>
+                <p className="mt-3 text-sm text-neutral-600">
+                  {workspace.studentContent.unavailableReason === "schema_missing"
+                    ? "Ученический контент временно недоступен: не применена миграция source-layer."
+                    : "Для этого урока ученический контент пока не подготовлен."}
+                </p>
               ) : (
                 <div className="mt-4 space-y-3">
                   {workspace.studentContent.source.sections.map((section, idx) => (

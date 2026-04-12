@@ -55,6 +55,7 @@ test("student lesson room resolves scheduled lesson + student content + homework
   assert.ok(readModel);
   assert.equal(readModel.homework?.role, "student");
   assert.equal(readModel.studentContent.sections.length > 0, true);
+  assert.equal(readModel.studentContentMode, "canonical");
 });
 
 test("parent lesson room reuses same learner-facing content projection", async () => {
@@ -114,4 +115,66 @@ test("parent lesson room reuses same learner-facing content projection", async (
     parentModel.studentContent.sections,
     lessonContentFixtureMethodologyLessonStudentContent.sections,
   );
+  assert.equal(parentModel.studentContentMode, "canonical");
+});
+
+test("student lesson room falls back to methodology projection when canonical content is missing", async () => {
+  const readModel = await getStudentLessonRoomReadModel(
+    {
+      studentId: "s-1",
+      classIds: [lessonContentFixtureScheduledLesson.runtimeShell.classId],
+      scheduledLessonId: lessonContentFixtureScheduledLesson.id,
+    },
+    {
+      getScheduledLessonById: async () => lessonContentFixtureScheduledLesson,
+      getMethodologyLessonById: async () => lessonContentFixtureMethodologyLesson,
+      getMethodologyLessonStudentContentByLessonId: async () => null,
+      listReusableAssetsByIds: async () => lessonContentFixtureAssets,
+      getStudentHomeworkReadModel: async () => [],
+      loadParentLearningContextsByUser: async () => [],
+      getParentHomeworkProjection: async () => [],
+    },
+  );
+
+  assert.ok(readModel);
+  assert.equal(readModel.studentContentMode, "fallback");
+  assert.equal(readModel.studentContent.sections.some((s) => s.type === "lesson_focus"), true);
+  assert.equal(readModel.studentContent.sections.some((s) => s.type === "recap"), true);
+});
+
+test("parent lesson room also uses fallback projection when canonical content is missing", async () => {
+  const parentModel = await getParentLessonRoomReadModel(
+    {
+      userId: "u-parent",
+      studentId: "s-1",
+      scheduledLessonId: lessonContentFixtureScheduledLesson.id,
+    },
+    {
+      getScheduledLessonById: async () => lessonContentFixtureScheduledLesson,
+      getMethodologyLessonById: async () => lessonContentFixtureMethodologyLesson,
+      getMethodologyLessonStudentContentByLessonId: async () => null,
+      listReusableAssetsByIds: async () => lessonContentFixtureAssets,
+      getStudentHomeworkReadModel: async () => [],
+      loadParentLearningContextsByUser: async () => [
+        {
+          studentId: "s-1",
+          studentName: "Student One",
+          login: "student1",
+          classes: [
+            {
+              classId: lessonContentFixtureScheduledLesson.runtimeShell.classId,
+              className: "A",
+              schoolId: "school-1",
+              schoolName: "Школа",
+            },
+          ],
+        },
+      ],
+      getParentHomeworkProjection: async () => [],
+    },
+  );
+
+  assert.ok(parentModel);
+  assert.equal(parentModel.studentContentMode, "fallback");
+  assert.equal(parentModel.studentContent.sections.length > 0, true);
 });

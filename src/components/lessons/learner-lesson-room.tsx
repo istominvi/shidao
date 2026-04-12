@@ -38,6 +38,11 @@ export function LearnerLessonRoom({
           <span className="rounded-full bg-neutral-100 px-3 py-1">{statusLabel(model.runtimeStatus)}</span>
           <span className="rounded-full bg-neutral-100 px-3 py-1">{whenLabel(model.startsAt)}</span>
         </div>
+        {model.studentContentMode === "fallback" ? (
+          <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+            Показана базовая версия урока: основной ученический контент ещё не подготовлен.
+          </p>
+        ) : null}
       </AppCard>
 
       {model.studentContent.sections.map((section, index) => (

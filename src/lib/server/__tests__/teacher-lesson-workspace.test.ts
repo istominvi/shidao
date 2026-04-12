@@ -45,6 +45,7 @@ test("teacher workspace loader combines scheduled + methodology and keeps sorted
           lessonContentFixtureMethodologyLesson.blocks[7],
         ],
       }),
+      isMethodologyLessonStudentContentSchemaReady: async () => true,
       getMethodologyLessonStudentContentByLessonId: async () =>
         lessonContentFixtureMethodologyLessonStudentContent,
       listReusableAssetsByIds: async (ids) =>
@@ -70,6 +71,7 @@ test("teacher workspace loader returns null when linked methodology lesson is mi
     {
       getScheduledLessonById: async () => lessonContentFixtureScheduledLesson,
       getMethodologyLessonById: async () => null,
+      isMethodologyLessonStudentContentSchemaReady: async () => true,
       getMethodologyLessonStudentContentByLessonId: async () => null,
       listReusableAssetsByIds: async () => [],
       getClassDisplayNameById: async () => "Группа A",
@@ -97,6 +99,7 @@ test("teacher workspace read model keeps runtime and methodology shells distinct
     classDisplayName: "Лисички 5-6",
     assets: lessonContentFixtureAssets,
     homework: homeworkSnapshot,
+    studentContentSchemaReady: true,
     studentContent: lessonContentFixtureMethodologyLessonStudentContent,
   });
 
@@ -120,6 +123,7 @@ test("teacher workspace presentation hero does not depend on raw class id", () =
     classId: "11111111-1111-4111-8111-111111111111",
     assets: lessonContentFixtureAssets,
     homework: homeworkSnapshot,
+    studentContentSchemaReady: true,
     studentContent: lessonContentFixtureMethodologyLessonStudentContent,
   });
 
@@ -149,6 +153,7 @@ test("teacher workspace presentation keeps methodology title separate from lesso
     classDisplayName: "Лисички 5-6",
     assets: lessonContentFixtureAssets,
     homework: homeworkSnapshot,
+    studentContentSchemaReady: true,
     studentContent: lessonContentFixtureMethodologyLessonStudentContent,
   });
 
@@ -175,6 +180,7 @@ test("teacher workspace quick summary and lesson flow are derived from lesson co
     classDisplayName: "Лисички 5-6",
     assets: lessonContentFixtureAssets,
     homework: homeworkSnapshot,
+    studentContentSchemaReady: true,
     studentContent: lessonContentFixtureMethodologyLessonStudentContent,
   });
 
@@ -209,6 +215,7 @@ test("teacher workspace read model includes runtime edit fields and no block ove
     classDisplayName: "Лисички 5-6",
     assets: lessonContentFixtureAssets,
     homework: homeworkSnapshot,
+    studentContentSchemaReady: true,
     studentContent: lessonContentFixtureMethodologyLessonStudentContent,
   });
 
@@ -222,6 +229,56 @@ test("teacher workspace read model includes runtime edit fields and no block ove
   assert.equal(readModel.studentContent.source?.title, "Урок 1. Животные на ферме");
   assert.equal("blockOverrides" in readModel.projection, false);
   assert.equal("blockOverrides" in readModel.presentation, false);
+});
+
+test("teacher workspace still builds when learner-content schema is missing", async () => {
+  const readModel = await getTeacherLessonWorkspaceByScheduledLessonId(
+    "scheduled-1",
+    {
+      getScheduledLessonById: async () => lessonContentFixtureScheduledLesson,
+      getMethodologyLessonById: async () => lessonContentFixtureMethodologyLesson,
+      isMethodologyLessonStudentContentSchemaReady: async () => false,
+      getMethodologyLessonStudentContentByLessonId: async () => null,
+      listReusableAssetsByIds: async (ids) =>
+        lessonContentFixtureAssets.filter((asset) => ids.includes(asset.id)),
+      getClassDisplayNameById: async () => "Лисички 5-6",
+      getHomeworkReadModel: async () => homeworkSnapshot,
+      getLessonDiscussions: async () => [],
+      getHomeworkDiscussions: async () => ({ assignmentId: null, items: [] }),
+    },
+  );
+
+  assert.ok(readModel);
+  assert.equal(readModel.studentContent.schemaReady, false);
+  assert.equal(readModel.studentContent.source, null);
+  assert.equal(readModel.studentContent.unavailableReason, "schema_missing");
+  assert.ok(readModel.homework);
+  assert.ok(readModel.presentation.lessonFlow.length > 0);
+});
+
+test("teacher workspace still builds when learner-content row is missing", async () => {
+  const readModel = await getTeacherLessonWorkspaceByScheduledLessonId(
+    "scheduled-1",
+    {
+      getScheduledLessonById: async () => lessonContentFixtureScheduledLesson,
+      getMethodologyLessonById: async () => lessonContentFixtureMethodologyLesson,
+      isMethodologyLessonStudentContentSchemaReady: async () => true,
+      getMethodologyLessonStudentContentByLessonId: async () => null,
+      listReusableAssetsByIds: async (ids) =>
+        lessonContentFixtureAssets.filter((asset) => ids.includes(asset.id)),
+      getClassDisplayNameById: async () => "Лисички 5-6",
+      getHomeworkReadModel: async () => homeworkSnapshot,
+      getLessonDiscussions: async () => [],
+      getHomeworkDiscussions: async () => ({ assignmentId: null, items: [] }),
+    },
+  );
+
+  assert.ok(readModel);
+  assert.equal(readModel.studentContent.schemaReady, true);
+  assert.equal(readModel.studentContent.source, null);
+  assert.equal(readModel.studentContent.unavailableReason, "source_missing");
+  assert.ok(readModel.homework);
+  assert.ok(readModel.presentation.lessonFlow.length > 0);
 });
 
 test("teacher workspace access allows only teacher profile", () => {
