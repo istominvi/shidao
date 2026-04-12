@@ -24,7 +24,12 @@ test("teacher workspace component keeps runtime editing surface", () => {
 });
 
 test("teacher workspace uses unified five-tab labels and removes legacy side cards", () => {
-  assert.equal(workspaceComponentSource.includes('[\"plan\", \"content\", \"homework\", \"conduct\", \"chat\"]'), true);
+  assert.equal(
+    workspaceComponentSource.includes(
+      '[\"plan\", \"content\", \"homework\", \"conduct\", \"chat\"]',
+    ),
+    true,
+  );
   assert.equal(tabsSource.includes("План урока"), true);
   assert.equal(tabsSource.includes("Контент"), true);
   assert.equal(tabsSource.includes("Домашнее задание"), true);
@@ -32,24 +37,25 @@ test("teacher workspace uses unified five-tab labels and removes legacy side car
   assert.equal(tabsSource.includes("Чат"), true);
   assert.equal(workspaceComponentSource.includes("Ориентиры методики"), false);
   assert.equal(workspaceComponentSource.includes("Фокус преподавателя"), false);
-  assert.equal(workspaceComponentSource.includes("Discussion for this lesson"), false);
+  assert.equal(
+    workspaceComponentSource.includes("Discussion for this lesson"),
+    false,
+  );
 });
 
-test("teacher workspace header meta uses shared lesson metadata pills", () => {
-  assert.equal(workspaceComponentSource.includes("LessonMetaRail"), true);
-  assert.equal(workspaceComponentSource.includes("LessonMetaPill"), true);
-  assert.equal(workspaceComponentSource.includes("LessonContextChip"), false);
-  assert.equal(workspaceComponentSource.includes("Runtime-урок в расписании"), false);
-  assert.equal(workspaceComponentSource.includes("statusBadgeTone"), false);
-  assert.equal(workspaceComponentSource.includes("hero.methodologyTitle"), true);
-  assert.equal(workspaceComponentSource.includes('icon="group"'), true);
-  assert.equal(workspaceComponentSource.includes('icon="datetime"'), true);
-  assert.equal(workspaceComponentSource.includes('icon="format"'), true);
-  assert.equal(workspaceComponentSource.includes('icon="methodology"'), true);
-  assert.equal(workspaceComponentSource.includes('icon="status"'), false);
-  assert.equal(workspaceComponentSource.includes("По методике"), false);
-  assert.equal(workspaceComponentSource.includes("Основан на уроке методики"), false);
-  assert.equal(workspaceComponentSource.includes("description={hero.lessonEssence}"), false);
+test("teacher workspace is headerless content surface", () => {
+  assert.equal(workspaceComponentSource.includes("AppPageHeader"), false);
+  assert.equal(workspaceComponentSource.includes("LessonMetaRail"), false);
+  assert.equal(workspaceComponentSource.includes("LessonMetaPill"), false);
+  assert.equal(workspaceComponentSource.includes("hero.lessonTitle"), false);
+  assert.equal(
+    workspaceComponentSource.includes("hero.methodologyTitle"),
+    false,
+  );
+  assert.equal(
+    workspaceComponentSource.includes("description={hero.lessonEssence}"),
+    false,
+  );
 });
 
 test("teacher workspace homework section keeps methodology content read-only and runtime controls", () => {
@@ -63,8 +69,5 @@ test("teacher workspace homework section keeps methodology content read-only and
     workspaceComponentSource.includes('name="homeworkTitle"'),
     false,
   );
-  assert.equal(
-    workspaceComponentSource.includes('name="instructions"'),
-    false,
-  );
+  assert.equal(workspaceComponentSource.includes('name="instructions"'), false);
 });
