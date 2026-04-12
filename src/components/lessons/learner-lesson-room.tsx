@@ -40,7 +40,29 @@ export function LearnerLessonRoom({
         </div>
       </AppCard>
 
-      {model.studentContent.sections.map((section, index) => (
+      {!model.studentContent ? (
+        <AppCard className="p-5">
+          {model.studentContentUnavailableReason === "schema_missing" ? (
+            <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+              Контент урока для ученика временно недоступен. Примените миграцию lesson student content layer.
+            </p>
+          ) : model.studentContentUnavailableReason === "invalid_payload" ? (
+            <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+              Контент урока для ученика временно недоступен: source-данные урока заполнены некорректно.
+            </p>
+          ) : model.studentContentUnavailableReason === "load_failed" ? (
+            <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+              Не удалось загрузить контент урока для ученика. Основной сценарий урока остаётся доступен.
+            </p>
+          ) : (
+            <p className="text-sm text-neutral-700">
+              Контент урока для ученика пока не опубликован.
+            </p>
+          )}
+        </AppCard>
+      ) : null}
+
+      {(model.studentContent?.sections ?? []).map((section, index) => (
         <AppCard key={`${section.type}-${index}`} className="p-5">
           <h2 className="text-xl font-bold text-neutral-900">{section.title}</h2>
           {section.type === "lesson_focus" ? (

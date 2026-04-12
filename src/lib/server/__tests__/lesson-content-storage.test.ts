@@ -8,6 +8,7 @@ import {
 } from "../../lesson-content";
 import { buildFixtureBootstrapRows } from "../lesson-content-bootstrap";
 import {
+  InvalidLessonStudentContentPayloadError,
   mapMethodologyLessonStudentContentRowToDomain,
   mapMethodologyLessonRowToDomain,
   mapScheduledLessonRowToDomain,
@@ -267,6 +268,23 @@ test("student lesson content mapper keeps typed sections", () => {
   const mapped = mapMethodologyLessonStudentContentRowToDomain(row);
   assert.equal(mapped.sections[0]?.type, "lesson_focus");
   assert.equal(mapped.sections.at(-1)?.type, "recap");
+});
+
+test("student lesson content mapper throws explicit error for malformed payload", () => {
+  const row: RowMethodologyLessonStudentContent = {
+    id: "student-content-1",
+    methodology_lesson_id: "lesson-1",
+    title: "Урок 1",
+    subtitle: null,
+    content_payload: {
+      sections: "not-an-array",
+    },
+  };
+
+  assert.throws(
+    () => mapMethodologyLessonStudentContentRowToDomain(row),
+    InvalidLessonStudentContentPayloadError,
+  );
 });
 
 test("lesson 1 fixture includes canonical 3-part model data", () => {

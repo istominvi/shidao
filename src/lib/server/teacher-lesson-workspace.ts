@@ -21,9 +21,12 @@ import {
   getClassDisplayNameByIdAdmin,
   getMethodologyLessonByIdAdmin,
   getMethodologyLessonStudentContentByLessonIdAdmin,
+  isLessonStudentContentSchemaReadyAdmin,
+  isMissingLessonStudentContentSchemaError,
   getScheduledLessonByIdAdmin,
   listReusableAssetsByIdsAdmin,
 } from "./lesson-content-repository";
+import { isInvalidLessonStudentContentPayloadError } from "./lesson-content-mappers";
 import {
   getTeacherLessonHomeworkReadModel,
   type TeacherLessonHomeworkReadModel,
@@ -111,6 +114,7 @@ export type TeacherLessonWorkspaceReadModel = {
   studentContent: {
     source: MethodologyLessonStudentContent | null;
     assetsById: Record<string, ReusableAsset>;
+    unavailableReason: "schema_missing" | "invalid_payload" | "load_failed" | null;
   };
   sourceLesson: {
     methodologySlug: string;
@@ -146,6 +150,7 @@ type WorkspaceLoaderDeps = {
   getScheduledLessonById: typeof getScheduledLessonByIdAdmin;
   getMethodologyLessonById: typeof getMethodologyLessonByIdAdmin;
   getMethodologyLessonStudentContentByLessonId: typeof getMethodologyLessonStudentContentByLessonIdAdmin;
+  isLessonStudentContentSchemaReady: typeof isLessonStudentContentSchemaReadyAdmin;
   listReusableAssetsByIds: typeof listReusableAssetsByIdsAdmin;
   getClassDisplayNameById: typeof getClassDisplayNameByIdAdmin;
   getHomeworkReadModel: typeof getTeacherLessonHomeworkReadModel;
@@ -158,6 +163,7 @@ const defaultWorkspaceLoaderDeps: WorkspaceLoaderDeps = {
   getMethodologyLessonById: getMethodologyLessonByIdAdmin,
   getMethodologyLessonStudentContentByLessonId:
     getMethodologyLessonStudentContentByLessonIdAdmin,
+  isLessonStudentContentSchemaReady: isLessonStudentContentSchemaReadyAdmin,
   listReusableAssetsByIds: listReusableAssetsByIdsAdmin,
   getClassDisplayNameById: getClassDisplayNameByIdAdmin,
   getHomeworkReadModel: getTeacherLessonHomeworkReadModel,
@@ -316,6 +322,19 @@ function collectAssetIds(blocks: LessonBlockInstance[]) {
       blocks.flatMap((block) => block.assetRefs.map((assetRef) => assetRef.id)),
     ),
   );
+}
+
+function toStudentContentUnavailableReason(
+  error: unknown,
+): TeacherLessonWorkspaceReadModel["studentContent"]["unavailableReason"] {
+  if (isInvalidLessonStudentContentPayloadError(error)) {
+    return "invalid_payload";
+  }
+  const message = error instanceof Error ? error.message : "";
+  if (isMissingLessonStudentContentSchemaError(message)) {
+    return "schema_missing";
+  }
+  return "load_failed";
 }
 
 function collectBlockMaterials(block: LessonBlockInstance) {
@@ -589,6 +608,8 @@ export function buildTeacherLessonWorkspaceReadModel(input: {
   assets: ReusableAsset[];
   homework: TeacherLessonHomeworkReadModel;
   studentContent?: MethodologyLessonStudentContent | null;
+  studentContentUnavailableReason?: TeacherLessonWorkspaceReadModel["studentContent"]["unavailableReason"];
+  studentContentAssets?: ReusableAsset[];
   sourceLesson?: TeacherLessonWorkspaceReadModel["sourceLesson"];
   communication?: TeacherLessonWorkspaceReadModel["communication"];
 }): TeacherLessonWorkspaceReadModel {
@@ -598,7 +619,10 @@ export function buildTeacherLessonWorkspaceReadModel(input: {
   };
 
   const assetsById = Object.fromEntries(
-    input.assets.map((asset) => [asset.id, asset]),
+    [...input.assets, ...(input.studentContentAssets ?? [])].map((asset) => [
+      asset.id,
+      asset,
+    ]),
   );
 
   return {
@@ -615,6 +639,7 @@ export function buildTeacherLessonWorkspaceReadModel(input: {
     studentContent: {
       source: input.studentContent ?? null,
       assetsById,
+      unavailableReason: input.studentContentUnavailableReason ?? null,
     },
     sourceLesson: input.sourceLesson ?? null,
     communication: input.communication ?? {
@@ -645,21 +670,11 @@ export async function getTeacherLessonWorkspaceByScheduledLessonId(
     methodologyLesson,
     scheduledLesson,
   );
-  const studentContent = await deps.getMethodologyLessonStudentContentByLessonId(
-    methodologyLesson.id,
-  );
-  const studentContentAssetIds = (studentContent?.sections ?? []).flatMap((section) => {
-    if (section.type === "media_asset") return [section.assetId];
-    if (section.type === "worksheet" && section.assetId) return [section.assetId];
-    return [];
-  });
-  const assetIds = Array.from(
-    new Set([...collectAssetIds(projection.orderedBlocks), ...studentContentAssetIds]),
-  );
+  const coreAssetIds = collectAssetIds(projection.orderedBlocks);
   const [assets, classDisplayName, homework, lessonDiscussions, homeworkDiscussions] =
     await Promise.all([
-    assetIds.length
-      ? deps.listReusableAssetsByIds(assetIds)
+    coreAssetIds.length
+      ? deps.listReusableAssetsByIds(coreAssetIds)
       : Promise.resolve([]),
     deps.getClassDisplayNameById(scheduledLesson.runtimeShell.classId),
     deps.getHomeworkReadModel(scheduledLessonId),
@@ -677,14 +692,56 @@ export async function getTeacherLessonWorkspaceByScheduledLessonId(
       .catch(() => ({ assignmentId: null, items: [] })),
     ]);
 
+  let studentContent: MethodologyLessonStudentContent | null = null;
+  let studentContentAssets: ReusableAsset[] = [];
+  let studentContentUnavailableReason: TeacherLessonWorkspaceReadModel["studentContent"]["unavailableReason"] =
+    null;
+
+  try {
+    studentContent = await deps.getMethodologyLessonStudentContentByLessonId(
+      methodologyLesson.id,
+    );
+
+    if (!studentContent) {
+      const studentContentSchemaReady =
+        await deps.isLessonStudentContentSchemaReady();
+      if (!studentContentSchemaReady) {
+        studentContentUnavailableReason = "schema_missing";
+      }
+    } else {
+      const studentContentAssetIds = Array.from(
+        new Set(
+          studentContent.sections.flatMap((section) => {
+            if (section.type === "media_asset") return [section.assetId];
+            if (section.type === "worksheet" && section.assetId) {
+              return [section.assetId];
+            }
+            return [];
+          }),
+        ),
+      );
+
+      if (studentContentAssetIds.length > 0) {
+        studentContentAssets =
+          await deps.listReusableAssetsByIds(studentContentAssetIds);
+      }
+    }
+  } catch (error) {
+    studentContent = null;
+    studentContentAssets = [];
+    studentContentUnavailableReason = toStudentContentUnavailableReason(error);
+  }
+
   return buildTeacherLessonWorkspaceReadModel({
     projection,
     scheduledLessonId: scheduledLesson.id,
     classId: scheduledLesson.runtimeShell.classId,
     classDisplayName,
     assets,
+    studentContentAssets,
     homework,
     studentContent,
+    studentContentUnavailableReason,
     sourceLesson: {
       methodologySlug: methodologyLesson.methodologySlug,
       lessonId: methodologyLesson.id,
