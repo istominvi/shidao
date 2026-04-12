@@ -5,10 +5,12 @@ import type {
 import {
   getMethodologyLessonByIdAdmin,
   getMethodologyLessonStudentContentByLessonIdAdmin,
+  isMissingLessonStudentContentSchemaError,
   isLessonStudentContentSchemaReadyAdmin,
   getScheduledLessonByIdAdmin,
   listReusableAssetsByIdsAdmin,
 } from "./lesson-content-repository";
+import { isInvalidLessonStudentContentPayloadError } from "./lesson-content-mappers";
 import { getParentHomeworkProjection } from "./parent-homework";
 import {
   getStudentHomeworkReadModel,
@@ -42,7 +44,7 @@ export type LearnerLessonRoomReadModel = {
   startsAt: string;
   runtimeStatus: "planned" | "in_progress" | "completed" | "cancelled";
   studentContent: MethodologyLessonStudentContent | null;
-  studentContentUnavailableDueToSchema: boolean;
+  studentContentUnavailableReason: "schema_missing" | "invalid_payload" | "load_failed" | null;
   assetsById: Record<string, ReusableAsset>;
   homework: LearnerHomeworkCard | null;
 };
@@ -76,6 +78,19 @@ const defaultDeps: LearnerLessonRoomDeps = {
   getParentHomeworkProjection,
 };
 
+function toStudentContentUnavailableReason(
+  error: unknown,
+): LearnerLessonRoomReadModel["studentContentUnavailableReason"] {
+  if (isInvalidLessonStudentContentPayloadError(error)) {
+    return "invalid_payload";
+  }
+  const message = error instanceof Error ? error.message : "";
+  if (isMissingLessonStudentContentSchemaError(message)) {
+    return "schema_missing";
+  }
+  return "load_failed";
+}
+
 async function getBaseLessonRoom(
   scheduledLessonId: string,
   deps: LearnerLessonRoomDeps,
@@ -88,34 +103,48 @@ async function getBaseLessonRoom(
   );
   if (!methodologyLesson) return null;
 
-  const studentContent = await deps.getMethodologyLessonStudentContentByLessonId(
-    methodologyLesson.id,
-  );
-  const studentContentSchemaReady = studentContent
-    ? true
-    : await deps.isLessonStudentContentSchemaReady();
+  let studentContent: MethodologyLessonStudentContent | null = null;
+  let studentContentUnavailableReason: LearnerLessonRoomReadModel["studentContentUnavailableReason"] =
+    null;
+  let assets: ReusableAsset[] = [];
 
-  const assetIds = Array.from(
-    new Set(
-      (studentContent?.sections ?? [])
-        .flatMap((section) => {
-          if (section.type === "media_asset") return [section.assetId];
-          if (section.type === "worksheet" && section.assetId) return [section.assetId];
-          return [];
-        })
-        .filter(Boolean),
-    ),
-  );
-  const assets = assetIds.length
-    ? await deps.listReusableAssetsByIds(assetIds)
-    : [];
+  try {
+    studentContent = await deps.getMethodologyLessonStudentContentByLessonId(
+      methodologyLesson.id,
+    );
+    if (!studentContent) {
+      const studentContentSchemaReady =
+        await deps.isLessonStudentContentSchemaReady();
+      if (!studentContentSchemaReady) {
+        studentContentUnavailableReason = "schema_missing";
+      }
+    } else {
+      const assetIds = Array.from(
+        new Set(
+          studentContent.sections
+            .flatMap((section) => {
+              if (section.type === "media_asset") return [section.assetId];
+              if (section.type === "worksheet" && section.assetId) return [section.assetId];
+              return [];
+            })
+            .filter(Boolean),
+        ),
+      );
+      assets = assetIds.length
+        ? await deps.listReusableAssetsByIds(assetIds)
+        : [];
+    }
+  } catch (error) {
+    studentContent = null;
+    assets = [];
+    studentContentUnavailableReason = toStudentContentUnavailableReason(error);
+  }
 
   return {
     scheduledLesson,
     methodologyLesson,
     studentContent,
-    studentContentUnavailableDueToSchema:
-      !studentContent && !studentContentSchemaReady,
+    studentContentUnavailableReason,
     assetsById: Object.fromEntries(assets.map((asset) => [asset.id, asset])),
   };
 }
@@ -135,7 +164,7 @@ export async function getLessonRoomPreviewByScheduledLessonId(
     startsAt: base.scheduledLesson.runtimeShell.startsAt,
     runtimeStatus: base.scheduledLesson.runtimeShell.runtimeStatus,
     studentContent: base.studentContent,
-    studentContentUnavailableDueToSchema: base.studentContentUnavailableDueToSchema,
+    studentContentUnavailableReason: base.studentContentUnavailableReason,
     assetsById: base.assetsById,
   };
 }
@@ -170,7 +199,7 @@ export async function getStudentLessonRoomReadModel(input: {
     startsAt: base.scheduledLesson.runtimeShell.startsAt,
     runtimeStatus: base.scheduledLesson.runtimeShell.runtimeStatus,
     studentContent: base.studentContent,
-    studentContentUnavailableDueToSchema: base.studentContentUnavailableDueToSchema,
+    studentContentUnavailableReason: base.studentContentUnavailableReason,
     assetsById: base.assetsById,
     homework: homeworkCard ? { role: "student", card: homeworkCard } : null,
   };
@@ -221,7 +250,7 @@ export async function getParentLessonRoomReadModel(input: {
     startsAt: base.scheduledLesson.runtimeShell.startsAt,
     runtimeStatus: base.scheduledLesson.runtimeShell.runtimeStatus,
     studentContent: base.studentContent,
-    studentContentUnavailableDueToSchema: base.studentContentUnavailableDueToSchema,
+    studentContentUnavailableReason: base.studentContentUnavailableReason,
     assetsById: base.assetsById,
     homework: lessonHomework
       ? {
