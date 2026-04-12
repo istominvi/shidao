@@ -10,7 +10,7 @@
 1. **Сценарий для преподавателя**
    - source: `methodology_lesson` + `methodology_lesson_block*`;
    - runtime: teacher workspace на `/lessons/[scheduledLessonId]`.
-2. **Контент для ученика**
+2. **Контент**
    - source: `methodology_lesson_student_content` (1 запись на урок методики);
    - runtime: role-aware projection на каноническом маршруте `/lessons/[scheduledLessonId]` (student и parent).
 3. **Домашнее задание**
@@ -38,10 +38,17 @@
 
 ## Runtime-проекции по ролям
 
-- **Teacher**: 3 верхних раздела в одном workspace на `/lessons/[scheduledLessonId]`:
-  - `Сценарий урока`
-  - `Контент для ученика` (встроенный предпросмотр)
-  - `Домашнее задание`
+- **Teacher**:
+  - source-layer страница урока методики `/methodologies/[methodologySlug]/lessons/[lessonId]` использует 3 вкладки:
+    - `План урока`
+    - `Контент`
+    - `Домашнее задание`
+  - runtime workspace `/lessons/[scheduledLessonId]` использует 5 вкладок:
+    - `План урока`
+    - `Контент` (встроенный предпросмотр)
+    - `Домашнее задание`
+    - `Проведение занятия`
+    - `Чат`
 - **Student**: learner-facing content + own homework block (actionable) на `/lessons/[scheduledLessonId]`.
 - **Parent**: тот же learner-facing content + read-only `childrenRuntime[]` блоки для всех детей в этом уроке на `/lessons/[scheduledLessonId]`.
 

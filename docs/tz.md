@@ -111,9 +111,11 @@
   - `student lesson content`;
   - `homework`.
 - Добавлен source-layer `methodology_lesson_student_content`.
-- Teacher workspace `/lessons/[scheduledLessonId]` теперь даёт явные разделы:
-  - `Сценарий урока`,
-  - `Контент для ученика`,
-  - `Домашнее задание`.
+- Teacher workspace `/lessons/[scheduledLessonId]` использует product-tab модель:
+  - `План урока`,
+  - `Контент`,
+  - `Домашнее задание`,
+  - `Проведение занятия`,
+  - `Чат`.
 - Введён единый runtime route для всех ролей: `/lessons/[scheduledLessonId]`.
 - Student и parent используют один и тот же learner-content projection, а parent получает multi-child runtime summary на этой же странице.
