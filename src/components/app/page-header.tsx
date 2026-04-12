@@ -7,6 +7,7 @@ type AppPageHeaderProps = {
   eyebrow?: ReactNode;
   backHref?: string;
   backLabel?: ReactNode;
+  backAriaLabel?: string;
   meta?: ReactNode;
   actions?: ReactNode;
   className?: string;
@@ -22,21 +23,34 @@ export function AppPageHeader({
   eyebrow,
   backHref,
   backLabel,
+  backAriaLabel,
   meta,
   actions,
   className,
 }: AppPageHeaderProps) {
   return (
-    <header className={joinClasses("app-page-header", backHref && "app-page-header-has-back", className)}>
+    <header
+      className={joinClasses(
+        "app-page-header",
+        backHref && "app-page-header-has-back",
+        className,
+      )}
+    >
       {backHref ? (
-        <Link href={backHref} className="app-page-back-link">
+        <Link
+          href={backHref}
+          className="app-page-back-link"
+          aria-label={backAriaLabel}
+        >
           <span aria-hidden="true">←</span>
           <span>{backLabel ?? "Назад"}</span>
         </Link>
       ) : null}
       {eyebrow ? <p className="app-page-eyebrow">{eyebrow}</p> : null}
       <h1 className="app-page-title">{title}</h1>
-      {description ? <p className="app-page-description">{description}</p> : null}
+      {description ? (
+        <p className="app-page-description">{description}</p>
+      ) : null}
       {meta ? <div className="app-page-meta">{meta}</div> : null}
       {actions ? <div className="app-page-actions">{actions}</div> : null}
     </header>

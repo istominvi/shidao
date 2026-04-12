@@ -97,6 +97,12 @@ test("teacher workspace read model keeps runtime and methodology shells distinct
     },
     scheduledLessonId: lessonContentFixtureScheduledLesson.id,
     classId: lessonContentFixtureScheduledLesson.runtimeShell.classId,
+    sourceLesson: {
+      methodologySlug: "world-around-me",
+      lessonId: lessonContentFixtureMethodologyLesson.id,
+      methodologyTitle: "Мир вокруг меня",
+      lessonTitle: lessonContentFixtureMethodologyLesson.shell.title,
+    },
     classDisplayName: "Лисички 5-6",
     assets: lessonContentFixtureAssets,
     homework: homeworkSnapshot,
@@ -121,6 +127,12 @@ test("teacher workspace presentation hero does not depend on raw class id", () =
     },
     scheduledLessonId: lessonContentFixtureScheduledLesson.id,
     classId: "11111111-1111-4111-8111-111111111111",
+    sourceLesson: {
+      methodologySlug: "world-around-me",
+      lessonId: lessonContentFixtureMethodologyLesson.id,
+      methodologyTitle: "Мир вокруг меня",
+      lessonTitle: lessonContentFixtureMethodologyLesson.shell.title,
+    },
     assets: lessonContentFixtureAssets,
     homework: homeworkSnapshot,
     studentContent: lessonContentFixtureMethodologyLessonStudentContent,
@@ -150,12 +162,21 @@ test("teacher workspace presentation keeps methodology title separate from lesso
     scheduledLessonId: lessonContentFixtureScheduledLesson.id,
     classId: lessonContentFixtureScheduledLesson.runtimeShell.classId,
     classDisplayName: "Лисички 5-6",
+    sourceLesson: {
+      methodologySlug: "world-around-me",
+      lessonId: lessonContentFixtureMethodologyLesson.id,
+      methodologyTitle: "Мир вокруг меня",
+      lessonTitle: lessonContentFixtureMethodologyLesson.shell.title,
+    },
     assets: lessonContentFixtureAssets,
     homework: homeworkSnapshot,
     studentContent: lessonContentFixtureMethodologyLessonStudentContent,
   });
 
-  assert.equal(readModel.presentation.hero.lessonTitle, "Урок 1. Животные на ферме");
+  assert.equal(
+    readModel.presentation.hero.lessonTitle,
+    "Урок 1. Животные на ферме",
+  );
   assert.equal(readModel.presentation.hero.methodologyTitle, "Мир вокруг меня");
   assert.equal("methodologyLine" in readModel.presentation.hero, false);
 });
@@ -172,6 +193,12 @@ test("teacher workspace quick summary and lesson flow are derived from lesson co
     },
     scheduledLessonId: lessonContentFixtureScheduledLesson.id,
     classId: lessonContentFixtureScheduledLesson.runtimeShell.classId,
+    sourceLesson: {
+      methodologySlug: "world-around-me",
+      lessonId: lessonContentFixtureMethodologyLesson.id,
+      methodologyTitle: "Мир вокруг меня",
+      lessonTitle: lessonContentFixtureMethodologyLesson.shell.title,
+    },
     classDisplayName: "Лисички 5-6",
     assets: lessonContentFixtureAssets,
     homework: homeworkSnapshot,
@@ -206,6 +233,12 @@ test("teacher workspace read model includes runtime edit fields and no block ove
     },
     scheduledLessonId: lessonContentFixtureScheduledLesson.id,
     classId: lessonContentFixtureScheduledLesson.runtimeShell.classId,
+    sourceLesson: {
+      methodologySlug: "world-around-me",
+      lessonId: lessonContentFixtureMethodologyLesson.id,
+      methodologyTitle: "Мир вокруг меня",
+      lessonTitle: lessonContentFixtureMethodologyLesson.shell.title,
+    },
     classDisplayName: "Лисички 5-6",
     assets: lessonContentFixtureAssets,
     homework: homeworkSnapshot,
@@ -219,28 +252,35 @@ test("teacher workspace read model includes runtime edit fields and no block ove
   );
   assert.equal(readModel.projection.runtimeNotes, "runtime note");
   assert.equal(readModel.projection.outcomeNotes, "outcome note");
-  assert.equal(readModel.studentContent.source?.title, "Урок 1. Животные на ферме");
+  assert.equal(
+    readModel.studentContent.source?.title,
+    "Урок 1. Животные на ферме",
+  );
   assert.equal(readModel.studentContent.unavailableReason, null);
   assert.equal("blockOverrides" in readModel.projection, false);
   assert.equal("blockOverrides" in readModel.presentation, false);
 });
 
 test("teacher workspace degrades gracefully when student content schema is unavailable", async () => {
-  const readModel = await getTeacherLessonWorkspaceByScheduledLessonId("scheduled-1", {
-    getScheduledLessonById: async () => ({
-      ...lessonContentFixtureScheduledLesson,
-      id: "scheduled-1",
-      methodologyLessonId: lessonContentFixtureMethodologyLesson.id,
-    }),
-    getMethodologyLessonById: async () => lessonContentFixtureMethodologyLesson,
-    getMethodologyLessonStudentContentByLessonId: async () => null,
-    isLessonStudentContentSchemaReady: async () => false,
-    listReusableAssetsByIds: async () => [],
-    getClassDisplayNameById: async () => "Лисички 5-6",
-    getHomeworkReadModel: async () => homeworkSnapshot,
-    getLessonDiscussions: async () => [],
-    getHomeworkDiscussions: async () => ({ assignmentId: null, items: [] }),
-  });
+  const readModel = await getTeacherLessonWorkspaceByScheduledLessonId(
+    "scheduled-1",
+    {
+      getScheduledLessonById: async () => ({
+        ...lessonContentFixtureScheduledLesson,
+        id: "scheduled-1",
+        methodologyLessonId: lessonContentFixtureMethodologyLesson.id,
+      }),
+      getMethodologyLessonById: async () =>
+        lessonContentFixtureMethodologyLesson,
+      getMethodologyLessonStudentContentByLessonId: async () => null,
+      isLessonStudentContentSchemaReady: async () => false,
+      listReusableAssetsByIds: async () => [],
+      getClassDisplayNameById: async () => "Лисички 5-6",
+      getHomeworkReadModel: async () => homeworkSnapshot,
+      getLessonDiscussions: async () => [],
+      getHomeworkDiscussions: async () => ({ assignmentId: null, items: [] }),
+    },
+  );
 
   assert.ok(readModel);
   assert.equal(readModel.studentContent.source, null);
@@ -249,23 +289,27 @@ test("teacher workspace degrades gracefully when student content schema is unava
 });
 
 test("teacher workspace degrades gracefully when student content payload is malformed", async () => {
-  const readModel = await getTeacherLessonWorkspaceByScheduledLessonId("scheduled-1", {
-    getScheduledLessonById: async () => ({
-      ...lessonContentFixtureScheduledLesson,
-      id: "scheduled-1",
-      methodologyLessonId: lessonContentFixtureMethodologyLesson.id,
-    }),
-    getMethodologyLessonById: async () => lessonContentFixtureMethodologyLesson,
-    getMethodologyLessonStudentContentByLessonId: async () => {
-      throw new InvalidLessonStudentContentPayloadError("invalid payload");
+  const readModel = await getTeacherLessonWorkspaceByScheduledLessonId(
+    "scheduled-1",
+    {
+      getScheduledLessonById: async () => ({
+        ...lessonContentFixtureScheduledLesson,
+        id: "scheduled-1",
+        methodologyLessonId: lessonContentFixtureMethodologyLesson.id,
+      }),
+      getMethodologyLessonById: async () =>
+        lessonContentFixtureMethodologyLesson,
+      getMethodologyLessonStudentContentByLessonId: async () => {
+        throw new InvalidLessonStudentContentPayloadError("invalid payload");
+      },
+      isLessonStudentContentSchemaReady: async () => true,
+      listReusableAssetsByIds: async () => [],
+      getClassDisplayNameById: async () => "Лисички 5-6",
+      getHomeworkReadModel: async () => homeworkSnapshot,
+      getLessonDiscussions: async () => [],
+      getHomeworkDiscussions: async () => ({ assignmentId: null, items: [] }),
     },
-    isLessonStudentContentSchemaReady: async () => true,
-    listReusableAssetsByIds: async () => [],
-    getClassDisplayNameById: async () => "Лисички 5-6",
-    getHomeworkReadModel: async () => homeworkSnapshot,
-    getLessonDiscussions: async () => [],
-    getHomeworkDiscussions: async () => ({ assignmentId: null, items: [] }),
-  });
+  );
 
   assert.ok(readModel);
   assert.equal(readModel.studentContent.source, null);
@@ -282,7 +326,8 @@ test("teacher workspace still throws on core homework load failure", async () =>
           id: "scheduled-1",
           methodologyLessonId: lessonContentFixtureMethodologyLesson.id,
         }),
-        getMethodologyLessonById: async () => lessonContentFixtureMethodologyLesson,
+        getMethodologyLessonById: async () =>
+          lessonContentFixtureMethodologyLesson,
         getMethodologyLessonStudentContentByLessonId: async () =>
           lessonContentFixtureMethodologyLessonStudentContent,
         isLessonStudentContentSchemaReady: async () => true,

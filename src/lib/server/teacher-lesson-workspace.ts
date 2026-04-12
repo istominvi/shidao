@@ -107,13 +107,23 @@ export type TeacherLessonWorkspaceReadModel = {
   scheduledLessonId: string;
   classId: string;
   classDisplayName: string | null;
+  sourceLesson: {
+    methodologySlug: string;
+    lessonId: string;
+    methodologyTitle: string;
+    lessonTitle: string;
+  };
   projection: TeacherLessonProjection;
   presentation: TeacherLessonWorkspacePresentation;
   homework: TeacherLessonHomeworkReadModel;
   studentContent: {
     source: MethodologyLessonStudentContent | null;
     assetsById: Record<string, ReusableAsset>;
-    unavailableReason: "schema_missing" | "invalid_payload" | "load_failed" | null;
+    unavailableReason:
+      | "schema_missing"
+      | "invalid_payload"
+      | "load_failed"
+      | null;
   };
   communication: {
     lessonScoped: Array<{
@@ -597,6 +607,7 @@ export function buildTeacherLessonWorkspaceReadModel(input: {
   scheduledLessonId: string;
   classId: string;
   classDisplayName?: string | null;
+  sourceLesson: TeacherLessonWorkspaceReadModel["sourceLesson"];
   assets: ReusableAsset[];
   homework: TeacherLessonHomeworkReadModel;
   studentContent?: MethodologyLessonStudentContent | null;
@@ -620,6 +631,7 @@ export function buildTeacherLessonWorkspaceReadModel(input: {
     scheduledLessonId: input.scheduledLessonId,
     classId: input.classId,
     classDisplayName: input.classDisplayName ?? null,
+    sourceLesson: input.sourceLesson,
     projection: sortedProjection,
     presentation: buildPresentation({
       projection: sortedProjection,
@@ -661,8 +673,13 @@ export async function getTeacherLessonWorkspaceByScheduledLessonId(
     scheduledLesson,
   );
   const coreAssetIds = collectAssetIds(projection.orderedBlocks);
-  const [assets, classDisplayName, homework, lessonDiscussions, homeworkDiscussions] =
-    await Promise.all([
+  const [
+    assets,
+    classDisplayName,
+    homework,
+    lessonDiscussions,
+    homeworkDiscussions,
+  ] = await Promise.all([
     coreAssetIds.length
       ? deps.listReusableAssetsByIds(coreAssetIds)
       : Promise.resolve([]),
@@ -680,7 +697,7 @@ export async function getTeacherLessonWorkspaceByScheduledLessonId(
         scheduledLessonId: scheduledLesson.id,
       })
       .catch(() => ({ assignmentId: null, items: [] })),
-    ]);
+  ]);
 
   let studentContent: MethodologyLessonStudentContent | null = null;
   let studentContentAssets: ReusableAsset[] = [];
@@ -712,8 +729,9 @@ export async function getTeacherLessonWorkspaceByScheduledLessonId(
       );
 
       if (studentContentAssetIds.length > 0) {
-        studentContentAssets =
-          await deps.listReusableAssetsByIds(studentContentAssetIds);
+        studentContentAssets = await deps.listReusableAssetsByIds(
+          studentContentAssetIds,
+        );
       }
     }
   } catch (error) {
@@ -727,6 +745,12 @@ export async function getTeacherLessonWorkspaceByScheduledLessonId(
     scheduledLessonId: scheduledLesson.id,
     classId: scheduledLesson.runtimeShell.classId,
     classDisplayName,
+    sourceLesson: {
+      methodologySlug: methodologyLesson.methodologySlug,
+      lessonId: methodologyLesson.id,
+      methodologyTitle: projection.methodologyTitle?.trim() || "Методика",
+      lessonTitle: methodologyLesson.shell.title,
+    },
     assets,
     studentContentAssets,
     homework,

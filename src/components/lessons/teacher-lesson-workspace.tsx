@@ -3,12 +3,13 @@
 import { useState } from "react";
 import type { TeacherLessonWorkspaceReadModel } from "@/lib/server/teacher-lesson-workspace";
 import { AppCard } from "@/components/app/app-card";
-import { AppPageHeader } from "@/components/app/page-header";
-import { LessonMetaPill, LessonMetaRail } from "@/components/lessons/lesson-meta-pill";
 import { LessonStudentContentPanel } from "@/components/lessons/lesson-student-content-panel";
 import { TeacherLessonPedagogicalContent } from "@/components/lessons/teacher-lesson-pedagogical-content";
 import { TeacherHomeworkPanel } from "@/components/lessons/teacher-homework-panel";
-import { TeacherLessonTabs, type TeacherLessonTabKey } from "@/components/lessons/teacher-lesson-tabs";
+import {
+  TeacherLessonTabs,
+  type TeacherLessonTabKey,
+} from "@/components/lessons/teacher-lesson-tabs";
 import { toScheduledLessonRoute } from "@/lib/auth";
 
 type TeacherLessonWorkspaceProps = {
@@ -19,30 +20,29 @@ type TeacherLessonWorkspaceProps = {
   };
 };
 
-export function TeacherLessonWorkspace({ workspace, runtimeFormFeedback }: TeacherLessonWorkspaceProps) {
+export function TeacherLessonWorkspace({
+  workspace,
+  runtimeFormFeedback,
+}: TeacherLessonWorkspaceProps) {
   const [tab, setTab] = useState<TeacherLessonTabKey>("plan");
   const runtime = workspace.projection.runtimeShell;
-  const { hero, quickSummary, lessonFlow } = workspace.presentation;
+  const { quickSummary, lessonFlow } = workspace.presentation;
 
   return (
     <div className="space-y-8 lg:space-y-10">
-      <AppPageHeader
-        eyebrow="Рабочее пространство преподавателя"
-        title={hero.lessonTitle}
-        meta={(
-          <LessonMetaRail>
-            <LessonMetaPill icon="methodology" tone="neutral" label={hero.methodologyTitle} />
-            <LessonMetaPill icon="datetime" tone="info" label={hero.dateTimeLabel} />
-            <LessonMetaPill icon="group" tone="neutral" label={hero.groupLabel} />
-            <LessonMetaPill icon="format" tone="muted" label={hero.formatLabel} />
-          </LessonMetaRail>
-        )}
-      />
-
       <section className="space-y-5">
-        <TeacherLessonTabs tabs={["plan", "content", "homework", "conduct", "chat"]} activeTab={tab} onTabChange={setTab} />
+        <TeacherLessonTabs
+          tabs={["plan", "content", "homework", "conduct", "chat"]}
+          activeTab={tab}
+          onTabChange={setTab}
+        />
 
-        {tab === "plan" ? <TeacherLessonPedagogicalContent quickSummary={quickSummary} lessonFlow={lessonFlow} /> : null}
+        {tab === "plan" ? (
+          <TeacherLessonPedagogicalContent
+            quickSummary={quickSummary}
+            lessonFlow={lessonFlow}
+          />
+        ) : null}
 
         {tab === "content" ? (
           <LessonStudentContentPanel
@@ -55,27 +55,50 @@ export function TeacherLessonWorkspace({ workspace, runtimeFormFeedback }: Teach
 
         {tab === "homework" ? (
           <AppCard className="border-sky-200/70 p-5">
-            <h2 className="text-lg font-bold text-neutral-900">Домашнее задание</h2>
-            <TeacherHomeworkPanel homework={workspace.homework} scheduledLessonId={workspace.scheduledLessonId} />
+            <h2 className="text-lg font-bold text-neutral-900">
+              Домашнее задание
+            </h2>
+            <TeacherHomeworkPanel
+              homework={workspace.homework}
+              scheduledLessonId={workspace.scheduledLessonId}
+            />
           </AppCard>
         ) : null}
 
         {tab === "conduct" ? (
           <AppCard className="border-emerald-200/70 p-5 md:p-6">
-            <h2 className="text-xl font-bold tracking-[-0.02em] text-neutral-900">Проведение занятия</h2>
-            <p className="mt-2 text-sm text-neutral-700">Обновляйте рабочий статус и заметки по этому занятию.</p>
+            <h2 className="text-xl font-bold tracking-[-0.02em] text-neutral-900">
+              Проведение занятия
+            </h2>
+            <p className="mt-2 text-sm text-neutral-700">
+              Обновляйте рабочий статус и заметки по этому занятию.
+            </p>
 
             {runtimeFormFeedback?.success ? (
-              <p className="mt-4 rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">{runtimeFormFeedback.success}</p>
+              <p className="mt-4 rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+                {runtimeFormFeedback.success}
+              </p>
             ) : null}
             {runtimeFormFeedback?.error ? (
-              <p className="mt-4 rounded-xl border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-700">{runtimeFormFeedback.error}</p>
+              <p className="mt-4 rounded-xl border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+                {runtimeFormFeedback.error}
+              </p>
             ) : null}
 
-            <form className="mt-4 space-y-4" action={`/api/teacher/lessons/${workspace.scheduledLessonId}/runtime`} method="POST">
+            <form
+              className="mt-4 space-y-4"
+              action={`/api/teacher/lessons/${workspace.scheduledLessonId}/runtime`}
+              method="POST"
+            >
               <label className="block">
-                <span className="text-sm font-semibold text-neutral-900">Статус занятия</span>
-                <select name="runtimeStatus" defaultValue={runtime.runtimeStatus} className="mt-1.5 w-full rounded-xl border border-neutral-300 bg-white px-3 py-2.5 text-sm text-neutral-900">
+                <span className="text-sm font-semibold text-neutral-900">
+                  Статус занятия
+                </span>
+                <select
+                  name="runtimeStatus"
+                  defaultValue={runtime.runtimeStatus}
+                  className="mt-1.5 w-full rounded-xl border border-neutral-300 bg-white px-3 py-2.5 text-sm text-neutral-900"
+                >
                   <option value="planned">Запланировано</option>
                   <option value="in_progress">Идёт занятие</option>
                   <option value="completed">Завершено</option>
@@ -84,21 +107,45 @@ export function TeacherLessonWorkspace({ workspace, runtimeFormFeedback }: Teach
               </label>
 
               <label className="block">
-                <span className="text-sm font-semibold text-neutral-900">Короткая заметка перед уроком</span>
-                <textarea name="runtimeNotesSummary" rows={2} defaultValue={runtime.runtimeNotesSummary ?? ""} className="mt-1.5 w-full rounded-xl border border-neutral-300 bg-white px-3 py-2.5 text-sm text-neutral-900" />
+                <span className="text-sm font-semibold text-neutral-900">
+                  Короткая заметка перед уроком
+                </span>
+                <textarea
+                  name="runtimeNotesSummary"
+                  rows={2}
+                  defaultValue={runtime.runtimeNotesSummary ?? ""}
+                  className="mt-1.5 w-full rounded-xl border border-neutral-300 bg-white px-3 py-2.5 text-sm text-neutral-900"
+                />
               </label>
 
               <label className="block">
-                <span className="text-sm font-semibold text-neutral-900">Заметки по проведению</span>
-                <textarea name="runtimeNotes" rows={4} defaultValue={workspace.projection.runtimeNotes ?? ""} className="mt-1.5 w-full rounded-xl border border-neutral-300 bg-white px-3 py-2.5 text-sm text-neutral-900" />
+                <span className="text-sm font-semibold text-neutral-900">
+                  Заметки по проведению
+                </span>
+                <textarea
+                  name="runtimeNotes"
+                  rows={4}
+                  defaultValue={workspace.projection.runtimeNotes ?? ""}
+                  className="mt-1.5 w-full rounded-xl border border-neutral-300 bg-white px-3 py-2.5 text-sm text-neutral-900"
+                />
               </label>
 
               <label className="block">
-                <span className="text-sm font-semibold text-neutral-900">Итоги после занятия</span>
-                <textarea name="outcomeNotes" rows={4} defaultValue={workspace.projection.outcomeNotes ?? ""} className="mt-1.5 w-full rounded-xl border border-neutral-300 bg-white px-3 py-2.5 text-sm text-neutral-900" />
+                <span className="text-sm font-semibold text-neutral-900">
+                  Итоги после занятия
+                </span>
+                <textarea
+                  name="outcomeNotes"
+                  rows={4}
+                  defaultValue={workspace.projection.outcomeNotes ?? ""}
+                  className="mt-1.5 w-full rounded-xl border border-neutral-300 bg-white px-3 py-2.5 text-sm text-neutral-900"
+                />
               </label>
 
-              <button type="submit" className="inline-flex items-center rounded-xl bg-neutral-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-neutral-800">
+              <button
+                type="submit"
+                className="inline-flex items-center rounded-xl bg-neutral-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-neutral-800"
+              >
                 Сохранить изменения
               </button>
             </form>
@@ -110,40 +157,90 @@ export function TeacherLessonWorkspace({ workspace, runtimeFormFeedback }: Teach
             <h2 className="text-xl font-bold text-neutral-900">Чат</h2>
 
             <section className="mt-4 space-y-2">
-              <h3 className="text-sm font-semibold uppercase tracking-[0.12em] text-neutral-500">По уроку</h3>
+              <h3 className="text-sm font-semibold uppercase tracking-[0.12em] text-neutral-500">
+                По уроку
+              </h3>
               {workspace.communication.lessonScoped.length === 0 ? (
                 <div className="rounded-xl border border-dashed border-neutral-300 p-3 text-sm text-neutral-600">
                   В группе пока нет учеников для обсуждения.
-                  <a href={`/students/new?groupId=${workspace.classId}`} className="ml-2 text-sky-700 underline underline-offset-2">
+                  <a
+                    href={`/students/new?groupId=${workspace.classId}`}
+                    className="ml-2 text-sky-700 underline underline-offset-2"
+                  >
                     Добавить ученика
                   </a>
                 </div>
               ) : null}
               {workspace.communication.lessonScoped.map((item) => (
-                <article key={item.studentId} className="rounded-xl border border-neutral-200 p-3 text-sm">
-                  <p className="font-semibold text-neutral-900">{item.studentName}</p>
-                  <a href={`/groups/${workspace.classId}/students/${item.studentId}/communication`} className="text-xs text-sky-700 underline underline-offset-2">
+                <article
+                  key={item.studentId}
+                  className="rounded-xl border border-neutral-200 p-3 text-sm"
+                >
+                  <p className="font-semibold text-neutral-900">
+                    {item.studentName}
+                  </p>
+                  <a
+                    href={`/groups/${workspace.classId}/students/${item.studentId}/communication`}
+                    className="text-xs text-sky-700 underline underline-offset-2"
+                  >
                     Открыть полный диалог
                   </a>
                   <div className="mt-2 space-y-1">
                     {item.messages.length === 0 ? (
-                      <p className="text-neutral-500">Нет сообщений по этому уроку.</p>
+                      <p className="text-neutral-500">
+                        Нет сообщений по этому уроку.
+                      </p>
                     ) : (
                       item.messages.slice(-3).map((message) => (
                         <p key={message.id} className="text-neutral-700">
-                          <span className="font-medium">{message.authorRole}:</span> {message.body}
+                          <span className="font-medium">
+                            {message.authorRole}:
+                          </span>{" "}
+                          {message.body}
                         </p>
                       ))
                     )}
                   </div>
-                  <form action="/api/teacher/communication" method="POST" className="mt-2 space-y-2">
-                    <input type="hidden" name="classId" value={workspace.classId} />
-                    <input type="hidden" name="studentId" value={item.studentId} />
+                  <form
+                    action="/api/teacher/communication"
+                    method="POST"
+                    className="mt-2 space-y-2"
+                  >
+                    <input
+                      type="hidden"
+                      name="classId"
+                      value={workspace.classId}
+                    />
+                    <input
+                      type="hidden"
+                      name="studentId"
+                      value={item.studentId}
+                    />
                     <input type="hidden" name="topicKind" value="lesson" />
-                    <input type="hidden" name="scheduledLessonId" value={workspace.scheduledLessonId} />
-                    <input type="hidden" name="redirectTo" value={toScheduledLessonRoute(workspace.scheduledLessonId)} />
-                    <textarea name="body" rows={2} className="w-full rounded-xl border border-neutral-300 px-3 py-2" placeholder="Сообщение по уроку" />
-                    <button type="submit" className="rounded-xl border border-neutral-300 px-3 py-1.5 text-xs font-semibold text-neutral-800">Отправить по уроку</button>
+                    <input
+                      type="hidden"
+                      name="scheduledLessonId"
+                      value={workspace.scheduledLessonId}
+                    />
+                    <input
+                      type="hidden"
+                      name="redirectTo"
+                      value={toScheduledLessonRoute(
+                        workspace.scheduledLessonId,
+                      )}
+                    />
+                    <textarea
+                      name="body"
+                      rows={2}
+                      className="w-full rounded-xl border border-neutral-300 px-3 py-2"
+                      placeholder="Сообщение по уроку"
+                    />
+                    <button
+                      type="submit"
+                      className="rounded-xl border border-neutral-300 px-3 py-1.5 text-xs font-semibold text-neutral-800"
+                    >
+                      Отправить по уроку
+                    </button>
                   </form>
                 </article>
               ))}
@@ -151,29 +248,77 @@ export function TeacherLessonWorkspace({ workspace, runtimeFormFeedback }: Teach
 
             {workspace.communication.homeworkAssignmentId ? (
               <section className="mt-5 space-y-2">
-                <h3 className="text-sm font-semibold uppercase tracking-[0.12em] text-neutral-500">По домашнему заданию</h3>
+                <h3 className="text-sm font-semibold uppercase tracking-[0.12em] text-neutral-500">
+                  По домашнему заданию
+                </h3>
                 {workspace.communication.homeworkScoped.map((item) => (
-                  <article key={item.studentId} className="rounded-xl border border-neutral-200 p-3 text-sm">
+                  <article
+                    key={item.studentId}
+                    className="rounded-xl border border-neutral-200 p-3 text-sm"
+                  >
                     <div className="space-y-1">
                       {item.messages.length === 0 ? (
-                        <p className="text-neutral-500">Нет сообщений по домашнему заданию.</p>
+                        <p className="text-neutral-500">
+                          Нет сообщений по домашнему заданию.
+                        </p>
                       ) : (
                         item.messages.slice(-2).map((message) => (
                           <p key={message.id} className="text-neutral-700">
-                            <span className="font-medium">{message.authorRole}:</span> {message.body}
+                            <span className="font-medium">
+                              {message.authorRole}:
+                            </span>{" "}
+                            {message.body}
                           </p>
                         ))
                       )}
                     </div>
-                    <form action="/api/teacher/communication" method="POST" className="mt-2 space-y-2">
-                      <input type="hidden" name="classId" value={workspace.classId} />
-                      <input type="hidden" name="studentId" value={item.studentId} />
+                    <form
+                      action="/api/teacher/communication"
+                      method="POST"
+                      className="mt-2 space-y-2"
+                    >
+                      <input
+                        type="hidden"
+                        name="classId"
+                        value={workspace.classId}
+                      />
+                      <input
+                        type="hidden"
+                        name="studentId"
+                        value={item.studentId}
+                      />
                       <input type="hidden" name="topicKind" value="homework" />
-                      <input type="hidden" name="scheduledLessonId" value={workspace.scheduledLessonId} />
-                      <input type="hidden" name="scheduledLessonHomeworkAssignmentId" value={workspace.communication.homeworkAssignmentId ?? ""} />
-                      <input type="hidden" name="redirectTo" value={toScheduledLessonRoute(workspace.scheduledLessonId)} />
-                      <textarea name="body" rows={2} className="w-full rounded-xl border border-neutral-300 px-3 py-2" placeholder="Сообщение по домашнему заданию" />
-                      <button type="submit" className="rounded-xl border border-neutral-300 px-3 py-1.5 text-xs font-semibold text-neutral-800">Отправить по домашнему заданию</button>
+                      <input
+                        type="hidden"
+                        name="scheduledLessonId"
+                        value={workspace.scheduledLessonId}
+                      />
+                      <input
+                        type="hidden"
+                        name="scheduledLessonHomeworkAssignmentId"
+                        value={
+                          workspace.communication.homeworkAssignmentId ?? ""
+                        }
+                      />
+                      <input
+                        type="hidden"
+                        name="redirectTo"
+                        value={toScheduledLessonRoute(
+                          workspace.scheduledLessonId,
+                        )}
+                      />
+                      <textarea
+                        name="body"
+                        rows={2}
+                        className="w-full rounded-xl border border-neutral-300 px-3 py-2"
+                        placeholder="Сообщение по домашнему заданию"
+                      />
+                      <button
+                        type="submit"
+                        className="rounded-xl border border-neutral-300 px-3 py-1.5 text-xs font-semibold text-neutral-800"
+                      >
+                        Отправить по домашнему заданию
+                      </button>
                     </form>
                   </article>
                 ))}

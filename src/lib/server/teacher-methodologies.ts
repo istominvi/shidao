@@ -1,6 +1,12 @@
-import { buildTeacherLessonProjection, type ScheduledLesson } from "../lesson-content";
+import {
+  buildTeacherLessonProjection,
+  type ScheduledLesson,
+} from "../lesson-content";
 import type { ReusableAsset } from "../lesson-content";
-import type { Methodology, MethodologyMetadata } from "../lesson-content/contracts";
+import type {
+  Methodology,
+  MethodologyMetadata,
+} from "../lesson-content/contracts";
 import type { AccessResolution } from "./access-policy";
 import { getMethodologyHomeworkByLessonIdAdmin } from "./homework-repository";
 import {
@@ -32,10 +38,15 @@ function readinessLabel(readiness: "draft" | "ready" | "archived") {
 }
 
 function compactText(items: Array<string | undefined>) {
-  return Array.from(new Set(items.map((item) => item?.trim() ?? "").filter(Boolean)));
+  return Array.from(
+    new Set(items.map((item) => item?.trim() ?? "").filter(Boolean)),
+  );
 }
 
-function teacherFacingMethodologyTitle(methodology: { title: string; metadata?: MethodologyMetadata | null }) {
+function teacherFacingMethodologyTitle(methodology: {
+  title: string;
+  metadata?: MethodologyMetadata | null;
+}) {
   const title = clean(methodology.title);
   const titleRu = clean(methodology.metadata?.titleRu);
   const titleNative = clean(methodology.metadata?.titleNative);
@@ -43,11 +54,14 @@ function teacherFacingMethodologyTitle(methodology: { title: string; metadata?: 
   if (titleRu && titleNative) return `${titleRu} — ${titleNative}`;
   if (title.includes("—")) return title;
   if (titleRu && title && title !== titleRu) return `${titleRu} — ${title}`;
-  if (titleNative && title && title !== titleNative) return `${title} — ${titleNative}`;
+  if (titleNative && title && title !== titleNative)
+    return `${title} — ${titleNative}`;
   return title || titleRu || titleNative;
 }
 
-function withFallbackMetadata(methodology: Pick<Methodology, "metadata" | "title">) {
+function withFallbackMetadata(
+  methodology: Pick<Methodology, "metadata" | "title">,
+) {
   const metadata = methodology.metadata ?? {};
   return {
     ...metadata,
@@ -55,7 +69,8 @@ function withFallbackMetadata(methodology: Pick<Methodology, "metadata" | "title
     lessonDurationLabel: metadata.lessonDurationLabel ?? "45 минут",
     courseDurationLabel: metadata.courseDurationLabel ?? "1 учебный год",
     idealGroupSizeLabel: metadata.idealGroupSizeLabel ?? "4–6 детей",
-    activitiesPerLessonLabel: metadata.activitiesPerLessonLabel ?? "Обычно 14–16 активностей",
+    activitiesPerLessonLabel:
+      metadata.activitiesPerLessonLabel ?? "Обычно 14–16 активностей",
   } satisfies MethodologyMetadata;
 }
 
@@ -64,7 +79,10 @@ function inferMaterialsSignals(summary: string | undefined) {
   return {
     hasCards: text.includes("карточ"),
     hasProps: text.includes("реквиз") || text.includes("материал"),
-    hasWorksheets: text.includes("тетрад") || text.includes("worksheet") || text.includes("рабоч"),
+    hasWorksheets:
+      text.includes("тетрад") ||
+      text.includes("worksheet") ||
+      text.includes("рабоч"),
   };
 }
 
@@ -88,7 +106,10 @@ export function canAccessTeacherMethodologies(resolution: AccessResolution) {
 }
 
 export function assertTeacherMethodologiesAccess(resolution: AccessResolution) {
-  if (!canAccessTeacherMethodologies(resolution) || resolution.status !== "adult-with-profile") {
+  if (
+    !canAccessTeacherMethodologies(resolution) ||
+    resolution.status !== "adult-with-profile"
+  ) {
     throw new Error("Только профиль преподавателя может открывать методики.");
   }
 
@@ -105,7 +126,10 @@ export async function getTeacherMethodologiesIndexReadModel() {
   const cards = await Promise.all(
     methodologies.map(async (item) => {
       const lessons = await listMethodologyLessonsByMethodologyAdmin(item.id);
-      const metadata = withFallbackMetadata({ metadata: item.metadata ?? undefined, title: item.title });
+      const metadata = withFallbackMetadata({
+        metadata: item.metadata ?? undefined,
+        title: item.title,
+      });
       return {
         id: item.id,
         slug: item.slug,
@@ -126,11 +150,16 @@ export async function getTeacherMethodologiesIndexReadModel() {
               : null,
           groupSizeLabel: metadata.maxGroupSize
             ? `${metadata.idealGroupSizeLabel ?? "Рекомендовано в малых группах"} · максимум ${metadata.maxGroupSize}`
-            : metadata.idealGroupSizeLabel ?? null,
-          thematicHighlights: compactText(metadata.thematicModules ?? []).slice(0, 3),
-          learningHighlights: compactText(
-            [metadata.teachingApproachSummary, metadata.lessonFormatSummary, ...(metadata.learningOutcomes ?? [])],
-          ).slice(0, 4),
+            : (metadata.idealGroupSizeLabel ?? null),
+          thematicHighlights: compactText(metadata.thematicModules ?? []).slice(
+            0,
+            3,
+          ),
+          learningHighlights: compactText([
+            metadata.teachingApproachSummary,
+            metadata.lessonFormatSummary,
+            ...(metadata.learningOutcomes ?? []),
+          ]).slice(0, 4),
           programLessonCount: metadata.programLessonCount ?? null,
         },
       };
@@ -144,7 +173,9 @@ export async function getTeacherMethodologyDetailReadModel(slug: string) {
   const methodology = await getMethodologyBySlugAdmin(slug);
   if (!methodology) return null;
 
-  const lessons = await listMethodologyLessonsByMethodologyAdmin(methodology.id);
+  const lessons = await listMethodologyLessonsByMethodologyAdmin(
+    methodology.id,
+  );
   const metadata = withFallbackMetadata(methodology);
 
   const lessonsWithHomework = await Promise.all(
@@ -186,7 +217,9 @@ export async function getTeacherMethodologyDetailReadModel(slug: string) {
         "Методика — это полный педагогический источник курса. В ShiDao ниже показаны только уже импортированные source-уроки, которые можно назначать группам в runtime-слое.",
     },
     lessons: lessonsWithHomework.map(({ lesson, canonicalHomework }) => {
-      const prepSignals = inferMaterialsSignals(metadata.materialsEcosystemSummary);
+      const prepSignals = inferMaterialsSignals(
+        metadata.materialsEcosystemSummary,
+      );
       return {
         id: lesson.id,
         title: lesson.shell.title,
@@ -206,18 +239,30 @@ export async function getTeacherMethodologyDetailReadModel(slug: string) {
   };
 }
 
-function collectAssetIds(lesson: Awaited<ReturnType<typeof getMethodologyLessonByIdAdmin>>) {
+function collectAssetIds(
+  lesson: Awaited<ReturnType<typeof getMethodologyLessonByIdAdmin>>,
+) {
   if (!lesson) return [];
-  return Array.from(new Set(lesson.blocks.flatMap((item) => item.assetRefs.map((ref) => ref.id))));
+  return Array.from(
+    new Set(
+      lesson.blocks.flatMap((item) => item.assetRefs.map((ref) => ref.id)),
+    ),
+  );
 }
 
-export async function getTeacherMethodologyLessonReadModel(input: { teacherId: string; methodologySlug: string; lessonId: string }) {
+export async function getTeacherMethodologyLessonReadModel(input: {
+  teacherId: string;
+  methodologySlug: string;
+  lessonId: string;
+}) {
   const methodology = await getMethodologyBySlugAdmin(input.methodologySlug);
   if (!methodology) return null;
 
   const lesson = await getMethodologyLessonByIdAdmin(input.lessonId);
   if (!lesson || lesson.methodologyId !== methodology.id) return null;
-  const canonicalHomework = await getMethodologyHomeworkByLessonIdAdmin(lesson.id);
+  const canonicalHomework = await getMethodologyHomeworkByLessonIdAdmin(
+    lesson.id,
+  );
 
   const scheduledStub: ScheduledLesson = {
     id: `preview-${lesson.id}`,
@@ -235,12 +280,17 @@ export async function getTeacherMethodologyLessonReadModel(input: { teacherId: s
   const projection = buildTeacherLessonProjection(lesson, scheduledStub);
   const assets = await listReusableAssetsByIdsAdmin(collectAssetIds(lesson));
   let studentContent = null;
-  let studentContentUnavailableReason: "schema_missing" | "invalid_payload" | "load_failed" | null =
-    null;
+  let studentContentUnavailableReason:
+    | "schema_missing"
+    | "invalid_payload"
+    | "load_failed"
+    | null = null;
   let studentContentAssets: ReusableAsset[] = [];
 
   try {
-    studentContent = await getMethodologyLessonStudentContentByLessonIdAdmin(lesson.id);
+    studentContent = await getMethodologyLessonStudentContentByLessonIdAdmin(
+      lesson.id,
+    );
     if (!studentContent) {
       const isSchemaReady = await isLessonStudentContentSchemaReadyAdmin();
       if (!isSchemaReady) {
@@ -251,12 +301,15 @@ export async function getTeacherMethodologyLessonReadModel(input: { teacherId: s
         new Set(
           studentContent.sections.flatMap((section) => {
             if (section.type === "media_asset") return [section.assetId];
-            if (section.type === "worksheet" && section.assetId) return [section.assetId];
+            if (section.type === "worksheet" && section.assetId)
+              return [section.assetId];
             return [];
           }),
         ),
       );
-      studentContentAssets = assetIds.length ? await listReusableAssetsByIdsAdmin(assetIds) : [];
+      studentContentAssets = assetIds.length
+        ? await listReusableAssetsByIdsAdmin(assetIds)
+        : [];
     }
   } catch (error) {
     studentContent = null;
@@ -269,6 +322,12 @@ export async function getTeacherMethodologyLessonReadModel(input: { teacherId: s
     scheduledLessonId: scheduledStub.id,
     classId: "preview",
     classDisplayName: null,
+    sourceLesson: {
+      methodologySlug: methodology.slug,
+      lessonId: lesson.id,
+      methodologyTitle: teacherFacingMethodologyTitle(methodology),
+      lessonTitle: lesson.shell.title,
+    },
     assets,
     homework: {
       schemaReady: true,
@@ -317,7 +376,9 @@ export async function getTeacherMethodologyLessonReadModel(input: { teacherId: s
       : null,
     studentContent: {
       source: studentContent,
-      assetsById: Object.fromEntries(studentContentAssets.map((asset) => [asset.id, asset])),
+      assetsById: Object.fromEntries(
+        studentContentAssets.map((asset) => [asset.id, asset]),
+      ),
       unavailableReason: studentContentUnavailableReason,
     },
   };
@@ -331,10 +392,12 @@ export function parseAssignLessonFromMethodologyFormData(formData: FormData) {
 
   if (!classId) throw new Error("Выберите группу.");
   if (!date || !time) throw new Error("Укажите дату и время.");
-  if (format !== "online" && format !== "offline") throw new Error("Выберите формат занятия.");
+  if (format !== "online" && format !== "offline")
+    throw new Error("Выберите формат занятия.");
 
   const startsAt = `${date}T${time}:00Z`;
-  if (Number.isNaN(Date.parse(startsAt))) throw new Error("Дата или время указаны неверно.");
+  if (Number.isNaN(Date.parse(startsAt)))
+    throw new Error("Дата или время указаны неверно.");
 
   if (format === "online") {
     const meetingLink = clean(formData.get("meetingLink") as string | null);
@@ -360,7 +423,9 @@ export async function createScheduledLessonFromMethodology(input: {
   if (!lesson) throw new Error("Урок методики не найден.");
 
   if (group.methodologyId !== lesson.methodologyId) {
-    throw new Error("Этот урок нельзя назначить в выбранную группу: у группы другая методика.");
+    throw new Error(
+      "Этот урок нельзя назначить в выбранную группу: у группы другая методика.",
+    );
   }
 
   if (input.payload.format === "online") {

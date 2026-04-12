@@ -6,55 +6,27 @@ import type {
   StudentScheduledLessonView,
 } from "@/lib/server/scheduled-lesson-view";
 
-function statusLabel(status: StudentScheduledLessonView["runtimeStatus"]) {
-  if (status === "in_progress") return "Идёт урок";
-  if (status === "completed") return "Урок завершён";
-  if (status === "cancelled") return "Урок отменён";
-  return "Урок запланирован";
-}
-
-function whenLabel(startsAt: string) {
-  return new Intl.DateTimeFormat("ru-RU", {
-    day: "numeric",
-    month: "long",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(startsAt));
-}
-
 export function ScheduledLessonLearnerView({
   model,
 }: {
-  model: StudentScheduledLessonView | ParentScheduledLessonView | ScheduledLessonPreviewView;
+  model:
+    | StudentScheduledLessonView
+    | ParentScheduledLessonView
+    | ScheduledLessonPreviewView;
 }) {
-  const isParent = model.role === "parent";
-  const isPreview = model.role === "preview";
-
   return (
     <div className="space-y-5">
-      <AppCard className="p-5 md:p-6">
-        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-sky-700">
-          {isPreview ? "Предпросмотр урока" : isParent ? "Урок ребёнка" : "Твой урок"}
-        </p>
-        <h1 className="mt-2 text-2xl font-black text-neutral-950">{model.lessonTitle}</h1>
-        <p className="mt-1 text-sm text-neutral-700">
-          {model.lessonSubtitle ?? "Повторяй слова и активности урока в удобном темпе."}
-        </p>
-        <div className="mt-3 flex flex-wrap gap-2 text-xs text-neutral-700">
-          <span className="rounded-full bg-neutral-100 px-3 py-1">{statusLabel(model.runtimeStatus)}</span>
-          <span className="rounded-full bg-neutral-100 px-3 py-1">{whenLabel(model.startsAt)}</span>
-        </div>
-      </AppCard>
-
       {!model.studentContent ? (
         <AppCard className="p-5">
           {model.studentContentUnavailableReason === "schema_missing" ? (
             <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
-              Контент урока для ученика временно недоступен. Примените миграцию lesson student content layer.
+              Контент урока для ученика временно недоступен. Примените миграцию
+              lesson student content layer.
             </p>
           ) : model.studentContentUnavailableReason === "invalid_payload" ? (
             <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
-              Контент урока для ученика временно недоступен: source-данные урока заполнены некорректно.
+              Контент урока для ученика временно недоступен: source-данные урока
+              заполнены некорректно.
             </p>
           ) : model.studentContentUnavailableReason === "load_failed" ? (
             <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
@@ -70,13 +42,20 @@ export function ScheduledLessonLearnerView({
 
       {(model.studentContent?.sections ?? []).map((section, index) => (
         <AppCard key={`${section.type}-${index}`} className="p-5">
-          <h2 className="text-xl font-bold text-neutral-900">{section.title}</h2>
+          <h2 className="text-xl font-bold text-neutral-900">
+            {section.title}
+          </h2>
           {section.type === "lesson_focus" ? (
             <>
               <p className="mt-2 text-sm text-neutral-700">{section.body}</p>
               <div className="mt-3 flex flex-wrap gap-2">
                 {section.chips.map((chip) => (
-                  <span key={chip} className="rounded-full bg-sky-50 px-2.5 py-1 text-xs font-semibold text-sky-900">{chip}</span>
+                  <span
+                    key={chip}
+                    className="rounded-full bg-sky-50 px-2.5 py-1 text-xs font-semibold text-sky-900"
+                  >
+                    {chip}
+                  </span>
                 ))}
               </div>
             </>
@@ -85,9 +64,16 @@ export function ScheduledLessonLearnerView({
           {section.type === "vocabulary_cards" ? (
             <div className="mt-3 grid gap-2 md:grid-cols-2">
               {section.items.map((item) => (
-                <article key={item.term} className="rounded-2xl border border-neutral-200 bg-white p-3">
-                  <p className="text-lg font-bold text-neutral-950">{item.term}</p>
-                  <p className="text-sm text-neutral-600">{item.pinyin ?? ""}</p>
+                <article
+                  key={item.term}
+                  className="rounded-2xl border border-neutral-200 bg-white p-3"
+                >
+                  <p className="text-lg font-bold text-neutral-950">
+                    {item.term}
+                  </p>
+                  <p className="text-sm text-neutral-600">
+                    {item.pinyin ?? ""}
+                  </p>
                   <p className="text-sm text-neutral-700">{item.meaning}</p>
                 </article>
               ))}
@@ -97,11 +83,22 @@ export function ScheduledLessonLearnerView({
           {section.type === "phrase_cards" ? (
             <div className="mt-3 grid gap-2 md:grid-cols-2">
               {section.items.map((item) => (
-                <article key={item.phrase} className="rounded-2xl border border-violet-200 bg-violet-50/50 p-3">
-                  <p className="text-lg font-bold text-neutral-950">{item.phrase}</p>
-                  <p className="text-sm text-neutral-600">{item.pinyin ?? ""}</p>
+                <article
+                  key={item.phrase}
+                  className="rounded-2xl border border-violet-200 bg-violet-50/50 p-3"
+                >
+                  <p className="text-lg font-bold text-neutral-950">
+                    {item.phrase}
+                  </p>
+                  <p className="text-sm text-neutral-600">
+                    {item.pinyin ?? ""}
+                  </p>
                   <p className="text-sm text-neutral-700">{item.meaning}</p>
-                  {item.usageHint ? <p className="mt-1 text-xs text-neutral-600">{item.usageHint}</p> : null}
+                  {item.usageHint ? (
+                    <p className="mt-1 text-xs text-neutral-600">
+                      {item.usageHint}
+                    </p>
+                  ) : null}
                 </article>
               ))}
             </div>
@@ -109,10 +106,19 @@ export function ScheduledLessonLearnerView({
 
           {section.type === "media_asset" ? (
             <article className="mt-3 rounded-2xl border border-sky-200 bg-sky-50/60 p-3 text-sm">
-              <p className="font-semibold text-neutral-900">{model.assetsById[section.assetId]?.title ?? section.title}</p>
+              <p className="font-semibold text-neutral-900">
+                {model.assetsById[section.assetId]?.title ?? section.title}
+              </p>
               <p className="text-neutral-700">{section.studentPrompt}</p>
               {model.assetsById[section.assetId]?.sourceUrl ? (
-                <a href={model.assetsById[section.assetId]?.sourceUrl} className="mt-2 inline-block text-xs text-sky-700 underline underline-offset-2" target="_blank" rel="noreferrer">Открыть материал</a>
+                <a
+                  href={model.assetsById[section.assetId]?.sourceUrl}
+                  className="mt-2 inline-block text-xs text-sky-700 underline underline-offset-2"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Открыть материал
+                </a>
               ) : null}
             </article>
           ) : null}
@@ -120,10 +126,19 @@ export function ScheduledLessonLearnerView({
           {section.type === "action_cards" ? (
             <div className="mt-3 grid gap-2 md:grid-cols-2">
               {section.items.map((item) => (
-                <article key={item.term} className="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-3">
-                  <p className="text-lg font-bold text-neutral-950">{item.term}</p>
-                  <p className="text-sm text-neutral-600">{item.pinyin ?? ""} · {item.meaning}</p>
-                  <p className="text-sm text-neutral-700">{item.movementHint}</p>
+                <article
+                  key={item.term}
+                  className="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-3"
+                >
+                  <p className="text-lg font-bold text-neutral-950">
+                    {item.term}
+                  </p>
+                  <p className="text-sm text-neutral-600">
+                    {item.pinyin ?? ""} · {item.meaning}
+                  </p>
+                  <p className="text-sm text-neutral-700">
+                    {item.movementHint}
+                  </p>
                 </article>
               ))}
             </div>
@@ -131,7 +146,9 @@ export function ScheduledLessonLearnerView({
 
           {section.type === "worksheet" ? (
             <article className="mt-3 rounded-2xl border border-amber-200 bg-amber-50/60 p-3 text-sm text-neutral-700">
-              <p className="font-semibold text-neutral-900">{section.pageLabel ?? "Задание"}</p>
+              <p className="font-semibold text-neutral-900">
+                {section.pageLabel ?? "Задание"}
+              </p>
               <p>{section.instructions}</p>
             </article>
           ) : null}
@@ -148,13 +165,26 @@ export function ScheduledLessonLearnerView({
 
       {model.role === "student" && model.homework ? (
         <AppCard className="border-fuchsia-200/80 p-5">
-          <h2 className="text-xl font-bold text-neutral-900">Домашнее задание</h2>
+          <h2 className="text-xl font-bold text-neutral-900">
+            Домашнее задание
+          </h2>
           <article className="mt-3 rounded-2xl border border-neutral-200 bg-white p-3">
-            <p className="font-semibold text-neutral-900">{model.homework.homeworkTitle}</p>
-            <p className="text-xs text-neutral-500">{model.homework.statusLabel} · Срок: {model.homework.dueAt ?? "без срока"}</p>
-            <p className="mt-2 text-sm text-neutral-700">{model.homework.instructions}</p>
+            <p className="font-semibold text-neutral-900">
+              {model.homework.homeworkTitle}
+            </p>
+            <p className="text-xs text-neutral-500">
+              {model.homework.statusLabel} · Срок:{" "}
+              {model.homework.dueAt ?? "без срока"}
+            </p>
+            <p className="mt-2 text-sm text-neutral-700">
+              {model.homework.instructions}
+            </p>
             {model.homework.kind === "practice_text" ? (
-              <form className="mt-2 space-y-2" action={`/api/student/homework/${model.homework.studentHomeworkAssignmentId}/submit`} method="POST">
+              <form
+                className="mt-2 space-y-2"
+                action={`/api/student/homework/${model.homework.studentHomeworkAssignmentId}/submit`}
+                method="POST"
+              >
                 <textarea
                   name="submissionText"
                   defaultValue={model.homework.submissionText ?? ""}
@@ -162,7 +192,12 @@ export function ScheduledLessonLearnerView({
                   className="w-full rounded-xl border border-neutral-300 px-3 py-2 text-sm"
                   placeholder="Напиши короткий ответ"
                 />
-                <button type="submit" className="rounded-xl bg-neutral-900 px-3 py-1.5 text-sm font-semibold text-white">Отправить</button>
+                <button
+                  type="submit"
+                  className="rounded-xl bg-neutral-900 px-3 py-1.5 text-sm font-semibold text-white"
+                >
+                  Отправить
+                </button>
               </form>
             ) : (
               <StudentHomeworkQuizCard item={model.homework} />
@@ -173,10 +208,15 @@ export function ScheduledLessonLearnerView({
 
       {model.role === "student" && model.communication.length > 0 ? (
         <AppCard className="p-5">
-          <h2 className="text-lg font-bold text-neutral-900">Обсуждение по уроку</h2>
+          <h2 className="text-lg font-bold text-neutral-900">
+            Обсуждение по уроку
+          </h2>
           <div className="mt-2 space-y-1 text-sm text-neutral-700">
             {model.communication.map((message) => (
-              <p key={message.id}><span className="font-medium">{message.authorRole}:</span> {message.body}</p>
+              <p key={message.id}>
+                <span className="font-medium">{message.authorRole}:</span>{" "}
+                {message.body}
+              </p>
             ))}
           </div>
         </AppCard>
@@ -184,28 +224,59 @@ export function ScheduledLessonLearnerView({
 
       {model.role === "parent" ? (
         <AppCard className="p-5">
-          <h2 className="text-lg font-bold text-neutral-900">Дети на этом уроке</h2>
+          <h2 className="text-lg font-bold text-neutral-900">
+            Дети на этом уроке
+          </h2>
           <div className="mt-3 space-y-3">
             {model.childrenRuntime.map((child) => (
-              <article key={child.studentId} className="rounded-2xl border border-neutral-200 bg-white p-3 text-sm">
-                <p className="font-semibold text-neutral-900">{child.studentName}</p>
-                <p className="text-xs text-neutral-500">{child.lessonStatusLabel}</p>
+              <article
+                key={child.studentId}
+                className="rounded-2xl border border-neutral-200 bg-white p-3 text-sm"
+              >
+                <p className="font-semibold text-neutral-900">
+                  {child.studentName}
+                </p>
+                <p className="text-xs text-neutral-500">
+                  {child.lessonStatusLabel}
+                </p>
                 {child.homework ? (
                   <>
-                    <p className="mt-1 text-neutral-700">{child.homework.homeworkTitle} · {child.homework.statusLabel}</p>
-                    {child.homework.score !== null && child.homework.maxScore !== null ? (
-                      <p className="text-xs text-sky-800">Результат: {child.homework.score} / {child.homework.maxScore}</p>
+                    <p className="mt-1 text-neutral-700">
+                      {child.homework.homeworkTitle} ·{" "}
+                      {child.homework.statusLabel}
+                    </p>
+                    {child.homework.score !== null &&
+                    child.homework.maxScore !== null ? (
+                      <p className="text-xs text-sky-800">
+                        Результат: {child.homework.score} /{" "}
+                        {child.homework.maxScore}
+                      </p>
                     ) : null}
-                    {child.homework.assignmentComment ? <p className="text-xs text-neutral-700">Комментарий к выдаче: {child.homework.assignmentComment}</p> : null}
-                    {child.homework.reviewNote ? <p className="text-xs text-neutral-700">Комментарий после проверки: {child.homework.reviewNote}</p> : null}
+                    {child.homework.assignmentComment ? (
+                      <p className="text-xs text-neutral-700">
+                        Комментарий к выдаче: {child.homework.assignmentComment}
+                      </p>
+                    ) : null}
+                    {child.homework.reviewNote ? (
+                      <p className="text-xs text-neutral-700">
+                        Комментарий после проверки: {child.homework.reviewNote}
+                      </p>
+                    ) : null}
                   </>
                 ) : (
-                  <p className="mt-1 text-neutral-600">Домашнее задание пока не выдано.</p>
+                  <p className="mt-1 text-neutral-600">
+                    Домашнее задание пока не выдано.
+                  </p>
                 )}
                 {child.communicationPreview.length > 0 ? (
                   <div className="mt-2 rounded-xl border border-neutral-200 bg-neutral-50 p-2">
                     {child.communicationPreview.map((message) => (
-                      <p key={message.id} className="text-xs text-neutral-700"><span className="font-medium">{message.authorRole}:</span> {message.body}</p>
+                      <p key={message.id} className="text-xs text-neutral-700">
+                        <span className="font-medium">
+                          {message.authorRole}:
+                        </span>{" "}
+                        {message.body}
+                      </p>
                     ))}
                   </div>
                 ) : null}
