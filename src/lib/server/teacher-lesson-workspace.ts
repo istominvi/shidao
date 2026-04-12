@@ -171,6 +171,22 @@ const defaultWorkspaceLoaderDeps: WorkspaceLoaderDeps = {
   getHomeworkDiscussions: getHomeworkScopedTeacherDiscussions,
 };
 
+function buildEmptyHomeworkReadModel(): TeacherLessonHomeworkReadModel {
+  return {
+    schemaReady: false,
+    definition: null,
+    assignment: null,
+    stats: {
+      assignedCount: 0,
+      submittedCount: 0,
+      reviewedCount: 0,
+      needsRevisionCount: 0,
+      averageScore: null,
+    },
+    roster: [],
+  };
+}
+
 export function canAccessTeacherLessonWorkspace(
   resolution: AccessResolution,
 ): boolean {
@@ -681,8 +697,10 @@ export async function getTeacherLessonWorkspaceByScheduledLessonId(
     assetIds.length
       ? deps.listReusableAssetsByIds(assetIds)
       : Promise.resolve([]),
-    deps.getClassDisplayNameById(scheduledLesson.runtimeShell.classId),
-    deps.getHomeworkReadModel(scheduledLessonId),
+    deps
+      .getClassDisplayNameById(scheduledLesson.runtimeShell.classId)
+      .catch(() => null),
+    deps.getHomeworkReadModel(scheduledLessonId).catch(() => buildEmptyHomeworkReadModel()),
     deps
       .getLessonDiscussions({
         classId: scheduledLesson.runtimeShell.classId,

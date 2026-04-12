@@ -308,6 +308,32 @@ test("teacher workspace still builds when learner-content source throws", async 
   assert.equal(readModel.studentContent.unavailableReason, "schema_missing");
 });
 
+test("teacher workspace still builds when homework read model fails", async () => {
+  const readModel = await getTeacherLessonWorkspaceByScheduledLessonId(
+    "scheduled-1",
+    {
+      getScheduledLessonById: async () => lessonContentFixtureScheduledLesson,
+      getMethodologyLessonById: async () => lessonContentFixtureMethodologyLesson,
+      isMethodologyLessonStudentContentSchemaReady: async () => true,
+      getMethodologyLessonStudentContentByLessonId: async () =>
+        lessonContentFixtureMethodologyLessonStudentContent,
+      listReusableAssetsByIds: async (ids) =>
+        lessonContentFixtureAssets.filter((asset) => ids.includes(asset.id)),
+      getClassDisplayNameById: async () => "Лисички 5-6",
+      getHomeworkReadModel: async () => {
+        throw new Error("homework layer unavailable");
+      },
+      getLessonDiscussions: async () => [],
+      getHomeworkDiscussions: async () => ({ assignmentId: null, items: [] }),
+    },
+  );
+
+  assert.ok(readModel);
+  assert.equal(readModel.homework.definition, null);
+  assert.equal(readModel.homework.roster.length, 0);
+  assert.equal(readModel.presentation.lessonFlow.length > 0, true);
+});
+
 test("teacher workspace access allows only teacher profile", () => {
   const baseContext = {
     userId: "u-1",
