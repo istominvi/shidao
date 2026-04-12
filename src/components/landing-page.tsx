@@ -10,24 +10,220 @@ import {
   resolveLandingAuthCtaHref,
   resolveLandingNavAction,
 } from "@/lib/navigation-contract";
-import { Check, ChevronRight, CircleHelp, NotebookText } from "lucide-react";
+import {
+  ArrowRight,
+  BookOpenText,
+  CalendarDays,
+  Check,
+  CheckCheck,
+  ChevronRight,
+  CircleHelp,
+  ClipboardCheck,
+  FileStack,
+  FolderKanban,
+  GraduationCap,
+  History,
+  MessageCircle,
+  Music3,
+  NotebookText,
+  PlaySquare,
+  Sparkles,
+  UserRound,
+  Users,
+} from "lucide-react";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { PRIMARY_NAV_CONFIG } from "@/lib/navigation/primary-nav";
 import { SiteHeader } from "@/components/site-header";
 import { useMarketingNavActive } from "@/components/navigation/use-marketing-nav-active";
 
-import {
-  LANDING_COMPARISON_AFTER,
-  LANDING_COMPARISON_BEFORE,
-  LANDING_FAQ,
-  LANDING_FIRST_METHOD_STATS,
-  LANDING_LESSON_COMPOSITION,
-  LANDING_METHOD_FLOW_STEPS,
-  LANDING_ROLE_CARDS,
-  LANDING_VALUE_STRIP,
-  LANDING_WORKFLOW_STEPS,
-} from "@/components/landing/content";
+const valueStrip = [
+  "Методика — основа курса",
+  "Группа и урок связаны",
+  "Домашние задания из методики",
+  "Коммуникация в контексте занятия",
+  "Родитель видит процесс",
+  "Ученик работает в отдельном кабинете",
+];
 
+const comparisonBefore = [
+  "Методика лежит в PDF или папках",
+  "Расписание живёт отдельно",
+  "Домашнее задание уходит в сообщения",
+  "После урока контекст теряется",
+  "Родителю виден только фрагмент процесса",
+  "Преподаватель собирает обучение вручную",
+];
+
+const comparisonAfter = [
+  "Методика встроена в рабочий процесс",
+  "Урок связан с группой",
+  "Задание назначается в контексте курса",
+  "Комментарии остаются внутри занятия",
+  "Родитель видит понятный статус",
+  "Ученик работает в отдельном кабинете",
+];
+
+const firstMethodStats = [
+  "5–6 лет",
+  "1 учебный год",
+  "~180 слов",
+  "21 песня",
+  "21 видео",
+  "45 минут урок",
+  "4–6 детей в группе",
+  "до 8 детей максимум",
+  "14–16 активностей на урок",
+];
+
+const workflowSteps = [
+  {
+    title: "Выбрать методику",
+    description:
+      "Преподаватель открывает структуру курса: уроки, материалы, задания и сценарии работы.",
+  },
+  {
+    title: "Создать группу",
+    description:
+      "На базе методики создаётся учебная группа — будущий рабочий контур преподавателя.",
+  },
+  {
+    title: "Добавить учеников",
+    description:
+      "Внутри группы собирается состав учеников, для которых дальше ведутся уроки и задания.",
+  },
+  {
+    title: "Запланировать урок",
+    description:
+      "Занятие планируется в контексте конкретной группы и методики, а не через пустую форму.",
+  },
+  {
+    title: "Вести урок и домашнюю работу",
+    description:
+      "После занятия преподаватель оставляет комментарии, выдаёт домашнее задание, а ученик и родитель видят всё в своём контексте.",
+  },
+];
+
+const methodFlowSteps = [
+  { title: "Методика", icon: BookOpenText },
+  { title: "Уроки", icon: CalendarDays },
+  { title: "Материалы", icon: FolderKanban },
+  { title: "Домашнее задание", icon: ClipboardCheck },
+  { title: "Комментарии и ответы", icon: MessageCircle },
+  { title: "История занятия", icon: History },
+];
+
+const lessonComposition = [
+  {
+    title: "Песня",
+    subtitle: "Урок начинается и заканчивается песней",
+    icon: Music3,
+  },
+  {
+    title: "Видео",
+    subtitle: "Одно видео на занятие",
+    icon: PlaySquare,
+  },
+  {
+    title: "Карточки и реквизит",
+    subtitle: "Слова, предметы, визуальные опоры",
+    icon: FileStack,
+  },
+  {
+    title: "Игровая активность",
+    subtitle: "Действия, команды, сценарии",
+    icon: Sparkles,
+  },
+  {
+    title: "Повторение и движение",
+    subtitle: "Ритм урока и вовлечение",
+    icon: ArrowRight,
+  },
+  {
+    title: "Домашнее задание / комментарий",
+    subtitle: "Продолжение работы после занятия",
+    icon: CheckCheck,
+  },
+];
+
+const roleCards = [
+  {
+    title: "Для преподавателя",
+    icon: GraduationCap,
+    tone: "teacher",
+    description:
+      "Рабочее пространство преподавателя строится вокруг методики, групп и уроков. Здесь видны ученики, расписание, материалы, домашние задания и коммуникация по каждому занятию.",
+    points: [
+      "группы и ученики в одном контуре",
+      "уроки и расписание",
+      "материалы и задания из методики",
+      "комментарии и коммуникация по занятию",
+      "понятная структура курса, а не набор разрозненных файлов",
+    ],
+  },
+  {
+    title: "Для родителя",
+    icon: UserRound,
+    tone: "parent",
+    description:
+      "Родитель не погружается в преподавательский интерфейс, но видит всё важное по своему ребёнку: расписание, задания, сообщения и статус выполнения.",
+    points: [
+      "расписание ребёнка",
+      "домашние задания",
+      "комментарии преподавателя",
+      "статус выполнения",
+      "прозрачная картина обучения без лишнего шума",
+    ],
+  },
+  {
+    title: "Для ученика",
+    icon: Users,
+    tone: "student",
+    description:
+      "Ученик получает отдельный кабинет и отдельный доступ. Внутри — только то, что связано с его обучением: уроки, материалы, задания и ответы преподавателя.",
+    points: [
+      "отдельный вход",
+      "отдельный кабинет",
+      "материалы по уроку",
+      "домашняя работа",
+      "ответы и комментарии в контексте занятия",
+    ],
+  },
+];
+
+const faq = [
+  {
+    q: "Нужна ли своя методика, чтобы начать?",
+    a: "Нет. Shidao построен вокруг готовых методик. Преподаватель получает доступ к уже подготовленной структуре курса и работает на её основе.",
+  },
+  {
+    q: "Что именно видит родитель?",
+    a: "Родитель видит расписание ребёнка, домашние задания, сообщения преподавателя и статус выполнения. Родительский кабинет делает учебный процесс прозрачным, но не перегружает лишними функциями.",
+  },
+  {
+    q: "Нужен ли ученику отдельный доступ?",
+    a: "Да. У ученика есть отдельные авторизационные данные и отдельный кабинет, где он видит только своё обучение: уроки, материалы, задания и ответы преподавателя.",
+  },
+  {
+    q: "Можно ли работать как частный преподаватель?",
+    a: "Да. Shidao подходит для самостоятельной работы: преподаватель может вести группы в личном контуре и управлять учебным процессом без сложной настройки.",
+  },
+  {
+    q: "Подходит ли Shidao школе или организации?",
+    a: "Да. В Shidao предусмотрен организационный контур: владелец может приглашать преподавателей и работать в рамках общего пространства с корректным разграничением доступа и данных.",
+  },
+  {
+    q: "Как связаны урок, домашнее задание и переписка?",
+    a: "В Shidao всё собирается вокруг занятия. Преподаватель планирует урок, назначает домашнюю работу, а комментарии и ответы сохраняются в контексте конкретного урока.",
+  },
+  {
+    q: "Что является ядром продукта уже сейчас?",
+    a: "Ядро Shidao — это методика, группы, уроки, задания и роли участников обучения. Платформа помогает преподавателю вести процесс по готовой логике, а родителю и ученику — видеть свою часть этого процесса.",
+  },
+  {
+    q: "Shidao только для детских курсов?",
+    a: "Нет. Но первая доступная методика в Shidao — это годовой курс китайского для детей 5–6 лет. Именно поэтому на старте платформа особенно хорошо показывает ценность методико-структурированного детского обучения.",
+  },
+];
 
 function Reveal({ children, className = "" }: { children: ReactNode; className?: string }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -262,7 +458,7 @@ export function LandingPage() {
 
       <section className="container mt-5 md:mt-6">
         <div className="flex flex-wrap gap-2 rounded-[1.8rem] border border-black/5 bg-white/60 p-4 backdrop-blur-xl">
-          {LANDING_VALUE_STRIP.map((item, idx) => (
+          {valueStrip.map((item, idx) => (
             <span
               key={item}
               className={`landing-chip text-sm transition hover:-translate-y-0.5 ${
@@ -295,7 +491,7 @@ export function LandingPage() {
           <article className="landing-surface pattern-chaos rounded-[1.6rem] border border-black/10 bg-white/75 p-5">
             <p className="text-sm font-bold uppercase tracking-[0.12em] text-neutral-500">До Shidao</p>
             <ul className="mt-4 space-y-2.5 text-sm text-neutral-700">
-              {LANDING_COMPARISON_BEFORE.map((point) => (
+              {comparisonBefore.map((point) => (
                 <li key={point} className="flex gap-2">
                   <span className="mt-1 size-1.5 shrink-0 rounded-full bg-neutral-400" />
                   {point}
@@ -306,7 +502,7 @@ export function LandingPage() {
           <article className="landing-surface pattern-structured rounded-[1.6rem] border border-black/10 bg-gradient-to-br from-lime-100/80 to-sky-100/60 p-5">
             <p className="text-sm font-bold uppercase tracking-[0.12em] text-neutral-700">В Shidao</p>
             <ul className="mt-4 space-y-2.5 text-sm text-neutral-800">
-              {LANDING_COMPARISON_AFTER.map((point) => (
+              {comparisonAfter.map((point) => (
                 <li key={point} className="flex gap-2">
                   <Check className="mt-0.5 size-4 shrink-0 text-emerald-700" />
                   {point}
@@ -325,7 +521,7 @@ export function LandingPage() {
         />
         <Reveal className="mt-8 rounded-[1.8rem] border border-black/10 bg-white/75 p-5 md:p-7">
           <div className="method-flow relative grid gap-3 md:grid-cols-6 md:gap-4">
-            {LANDING_METHOD_FLOW_STEPS.map(({ title, icon: Icon }, idx) => (
+            {methodFlowSteps.map(({ title, icon: Icon }, idx) => (
               <article
                 key={title}
                 className={`method-node rounded-2xl border border-black/10 p-3 text-sm font-semibold ${
@@ -364,7 +560,7 @@ export function LandingPage() {
           description="Первая методика в платформе рассчитана на учебный год и помогает преподавателю вести детскую группу последовательно: от темы к теме, от урока к уроку, с готовыми песнями, видео, активностями и подробными сценариями работы."
         />
         <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {LANDING_FIRST_METHOD_STATS.map((item, idx) => (
+          {firstMethodStats.map((item, idx) => (
             <article
               key={item}
               className={`landing-surface rounded-3xl border border-black/10 p-5 ${idx % 3 === 0 ? "bg-sky-100/75" : idx % 3 === 1 ? "bg-white/85" : "bg-fuchsia-100/65"}`}
@@ -392,7 +588,7 @@ export function LandingPage() {
               />
             </div>
             <div className="grid gap-2 md:grid-cols-2">
-              {LANDING_LESSON_COMPOSITION.map(({ title, subtitle, icon: Icon }, idx) => (
+              {lessonComposition.map(({ title, subtitle, icon: Icon }, idx) => (
                 <article
                   key={title}
                   className={`rounded-2xl border border-black/10 p-3 text-sm ${idx % 2 === 0 ? "bg-sky-50/60" : "bg-white"}`}
@@ -450,7 +646,7 @@ export function LandingPage() {
           description="Shidao помогает выстроить обучение вокруг методики, группы и урока. Сначала преподаватель выбирает методику, затем запускает группу, добавляет учеников и уже после этого планирует занятия и выдаёт задания."
         />
         <Reveal className="workflow-rail mt-8 grid gap-3 md:grid-cols-5">
-          {LANDING_WORKFLOW_STEPS.map(({ title, description }, idx) => (
+          {workflowSteps.map(({ title, description }, idx) => (
             <li
               key={title}
               className={`workflow-step list-none rounded-3xl border border-black/10 p-5 ${
@@ -481,7 +677,7 @@ export function LandingPage() {
           description="Shidao разделяет роли так, чтобы каждый видел только то, что нужно ему в реальной работе или обучении."
         />
         <div className="mt-8 grid gap-4 lg:grid-cols-3">
-          {LANDING_ROLE_CARDS.map(({ title, icon: Icon, tone, description, points }) => (
+          {roleCards.map(({ title, icon: Icon, tone, description, points }) => (
             <article
               key={title}
               className={`landing-surface rounded-[1.6rem] border border-black/10 p-5 role-card role-${tone}`}
@@ -541,14 +737,14 @@ export function LandingPage() {
         </p>
       </section>
 
-      <section id="LANDING_FAQ" className="container mt-14 md:mt-16">
+      <section id="faq" className="container mt-14 md:mt-16">
         <SectionTitle
           eyebrow="Частые вопросы"
           title="Коротко о самом важном"
           description="Ответы на вопросы, которые помогают быстро понять логику Shidao."
         />
         <div className="mt-8 space-y-3 rounded-[1.4rem] border border-black/5 bg-white/45 p-2 md:space-y-4 md:p-3">
-          {LANDING_FAQ.map(({ q, a }) => (
+          {faq.map(({ q, a }) => (
             <details
               key={q}
               className="group landing-surface rounded-[1.2rem] border border-black/10 bg-white/80 p-4 transition hover:bg-white open:bg-white md:rounded-3xl md:p-6"
