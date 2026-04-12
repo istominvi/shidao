@@ -8,7 +8,7 @@ import { LessonContextChip } from "@/components/lessons/lesson-context-chip";
 import { TeacherLessonPedagogicalContent } from "@/components/lessons/teacher-lesson-pedagogical-content";
 import { TeacherHomeworkPanel } from "@/components/lessons/teacher-homework-panel";
 import Link from "next/link";
-import { toMethodologyLessonRoute } from "@/lib/auth";
+import { toMethodologyLessonRoute, toScheduledLessonRoute } from "@/lib/auth";
 
 type TeacherLessonWorkspaceProps = {
   workspace: TeacherLessonWorkspaceReadModel;
@@ -105,10 +105,10 @@ export function TeacherLessonWorkspace({
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <h2 className="text-xl font-bold text-neutral-900">Контент для ученика</h2>
                 <Link
-                  href={`/lesson-room/${workspace.scheduledLessonId}`}
+                  href={`${toScheduledLessonRoute(workspace.scheduledLessonId)}?view=learner-preview`}
                   className="rounded-xl border border-sky-300 bg-sky-50 px-3 py-2 text-sm font-semibold text-sky-800"
                 >
-                  Открыть ученическую версию
+                  Предпросмотр ученической версии
                 </Link>
               </div>
               {!workspace.studentContent.source ? (
@@ -329,7 +329,7 @@ export function TeacherLessonWorkspace({
                     <input type="hidden" name="studentId" value={item.studentId} />
                     <input type="hidden" name="topicKind" value="lesson" />
                     <input type="hidden" name="scheduledLessonId" value={workspace.scheduledLessonId} />
-                    <input type="hidden" name="redirectTo" value={`/lessons/${workspace.scheduledLessonId}`} />
+                    <input type="hidden" name="redirectTo" value={toScheduledLessonRoute(workspace.scheduledLessonId)} />
                     <textarea name="body" rows={2} className="w-full rounded-xl border border-neutral-300 px-3 py-2" placeholder="Сообщение по уроку" />
                     <button type="submit" className="rounded-xl border border-neutral-300 px-3 py-1.5 text-xs font-semibold text-neutral-800">Отправить по уроку</button>
                   </form>
@@ -361,7 +361,7 @@ export function TeacherLessonWorkspace({
                       <input type="hidden" name="topicKind" value="homework" />
                       <input type="hidden" name="scheduledLessonId" value={workspace.scheduledLessonId} />
                       <input type="hidden" name="scheduledLessonHomeworkAssignmentId" value={workspace.communication.homeworkAssignmentId ?? ""} />
-                      <input type="hidden" name="redirectTo" value={`/lessons/${workspace.scheduledLessonId}`} />
+                      <input type="hidden" name="redirectTo" value={toScheduledLessonRoute(workspace.scheduledLessonId)} />
                       <textarea name="body" rows={2} className="w-full rounded-xl border border-neutral-300 px-3 py-2" placeholder="Сообщение по домашнему заданию" />
                       <button type="submit" className="rounded-xl border border-neutral-300 px-3 py-1.5 text-xs font-semibold text-neutral-800">Отправить по homework</button>
                     </form>

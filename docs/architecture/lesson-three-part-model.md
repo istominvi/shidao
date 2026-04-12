@@ -12,7 +12,7 @@
    - runtime: teacher workspace на `/lessons/[scheduledLessonId]`.
 2. **Контент для ученика**
    - source: `methodology_lesson_student_content` (1 запись на урок методики);
-   - runtime: learner lesson room на `/lesson-room/[scheduledLessonId]` и `/children/[studentId]/lesson-room/[scheduledLessonId]`.
+   - runtime: role-aware projection на каноническом маршруте `/lessons/[scheduledLessonId]` (student и parent).
 3. **Домашнее задание**
    - source: `methodology_lesson_homework`;
    - runtime: `scheduled_lesson_homework_assignment` + `student_homework_assignment`.
@@ -38,14 +38,14 @@
 
 ## Runtime-проекции по ролям
 
-- **Teacher**: 3 верхних раздела в одном workspace:
+- **Teacher**: 3 верхних раздела в одном workspace на `/lessons/[scheduledLessonId]`:
   - `Сценарий урока`
-  - `Контент для ученика` (preview + `Открыть ученическую версию`)
+  - `Контент для ученика` (встроенный предпросмотр)
   - `Домашнее задание`
-- **Student**: learner-facing lesson room + homework block (actionable).
-- **Parent**: тот же learner-facing lesson room + homework в read-only.
+- **Student**: learner-facing content + own homework block (actionable) на `/lessons/[scheduledLessonId]`.
+- **Parent**: тот же learner-facing content + read-only `childrenRuntime[]` блоки для всех детей в этом уроке на `/lessons/[scheduledLessonId]`.
 
-Важно: parent/student используют **одну и ту же** learner-content projection.
+Важно: parent/student используют **одну и ту же** learner-content projection; различается только runtime-обвязка.
 
 ## Что намеренно отложено
 

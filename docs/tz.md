@@ -115,7 +115,5 @@
   - `Сценарий урока`,
   - `Контент для ученика`,
   - `Домашнее задание`.
-- Добавлены learner-facing routes:
-  - student: `/lesson-room/[scheduledLessonId]`,
-  - parent: `/children/[studentId]/lesson-room/[scheduledLessonId]`.
-- Student и parent используют один и тот же learner-content projection.
+- Введён единый runtime route для всех ролей: `/lessons/[scheduledLessonId]`.
+- Student и parent используют один и тот же learner-content projection, а parent получает multi-child runtime summary на этой же странице.

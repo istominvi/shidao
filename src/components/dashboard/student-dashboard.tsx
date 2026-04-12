@@ -4,7 +4,7 @@ import Link from "next/link";
 import type { GroupStudentMessage } from "@/lib/server/communication-repository";
 import type { StudentHomeworkCard } from "@/lib/server/student-homework";
 import type { getStudentConversationReadModels } from "@/lib/server/communication-service";
-import { toStudentLessonRoomRoute } from "@/lib/auth";
+import { toScheduledLessonRoute } from "@/lib/auth";
 
 function kindBadge(kind: StudentHomeworkCard["kind"]) {
   return kind === "quiz_single_choice" ? "Тест" : "Практика";
@@ -41,7 +41,7 @@ export function StudentDashboard({
               <article key={lesson.scheduledLessonId} className="rounded-2xl border border-neutral-200 p-3">
                 <p className="font-semibold">{lesson.lessonTitle}</p>
                 <p className="text-xs text-neutral-500">{lesson.startsAt} · {lesson.statusLabel}</p>
-                <Link href={toStudentLessonRoomRoute(lesson.scheduledLessonId)} className="mt-2 inline-flex rounded-xl border border-sky-300 bg-sky-50 px-3 py-1.5 text-xs font-semibold text-sky-800">
+                <Link href={toScheduledLessonRoute(lesson.scheduledLessonId)} className="mt-2 inline-flex rounded-xl border border-sky-300 bg-sky-50 px-3 py-1.5 text-xs font-semibold text-sky-800">
                   Открыть урок
                 </Link>
               </article>
