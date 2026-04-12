@@ -1,8 +1,10 @@
 import { DashboardShell } from "@/components/dashboard-shell";
 import { StudentHomeworkQuizCard } from "@/components/dashboard/student-homework-quiz-card";
+import Link from "next/link";
 import type { GroupStudentMessage } from "@/lib/server/communication-repository";
 import type { StudentHomeworkCard } from "@/lib/server/student-homework";
 import type { getStudentConversationReadModels } from "@/lib/server/communication-service";
+import { toStudentLessonRoomRoute } from "@/lib/auth";
 
 function kindBadge(kind: StudentHomeworkCard["kind"]) {
   return kind === "quiz_single_choice" ? "Тест" : "Практика";
@@ -11,9 +13,16 @@ function kindBadge(kind: StudentHomeworkCard["kind"]) {
 export function StudentDashboard({
   homework,
   communication,
+  lessons,
 }: {
   homework: StudentHomeworkCard[];
   communication: Awaited<ReturnType<typeof getStudentConversationReadModels>>;
+  lessons: Array<{
+    scheduledLessonId: string;
+    lessonTitle: string;
+    startsAt: string;
+    statusLabel: string;
+  }>;
 }) {
   return (
     <DashboardShell
@@ -22,6 +31,25 @@ export function StudentDashboard({
       title="Твой учебный кабинет"
       subtitle="Короткие задания, понятные шаги и поддержка преподавателя."
     >
+      <section className="mt-4 rounded-3xl border border-white/80 bg-white/90 p-4">
+        <h3 className="text-lg font-black">Мои занятия</h3>
+        {lessons.length === 0 ? (
+          <p className="mt-2 text-sm text-neutral-600">Пока нет назначенных занятий.</p>
+        ) : (
+          <div className="mt-3 space-y-2">
+            {lessons.map((lesson) => (
+              <article key={lesson.scheduledLessonId} className="rounded-2xl border border-neutral-200 p-3">
+                <p className="font-semibold">{lesson.lessonTitle}</p>
+                <p className="text-xs text-neutral-500">{lesson.startsAt} · {lesson.statusLabel}</p>
+                <Link href={toStudentLessonRoomRoute(lesson.scheduledLessonId)} className="mt-2 inline-flex rounded-xl border border-sky-300 bg-sky-50 px-3 py-1.5 text-xs font-semibold text-sky-800">
+                  Открыть урок
+                </Link>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
+
       <section className="mt-4 rounded-3xl border border-white/80 bg-white/90 p-4">
         <h3 className="text-lg font-black">Мои домашние задания</h3>
         {homework.length === 0 ? (

@@ -7,10 +7,31 @@ import { ROUTES } from "@/lib/auth";
 import { resolveAccessPolicy } from "@/lib/server/access-policy";
 import { getParentCommunicationProjection, getStudentConversationReadModels } from "@/lib/server/communication-service";
 import { getParentHomeworkProjection } from "@/lib/server/parent-homework";
-import { listClassIdsForStudentAdmin } from "@/lib/server/lesson-content-repository";
+import {
+  getMethodologyLessonByIdAdmin,
+  listClassIdsForStudentAdmin,
+  listScheduledLessonsForClassesAdmin,
+} from "@/lib/server/lesson-content-repository";
 import { getStudentHomeworkReadModel } from "@/lib/server/student-homework";
 import { getTeacherDashboardOperationsReadModel } from "@/lib/server/teacher-dashboard-operations";
 import { loadParentLearningContextsByUser } from "@/lib/server/supabase-admin";
+
+function formatStatus(status: "planned" | "in_progress" | "completed" | "cancelled") {
+  if (status === "in_progress") return "Идёт";
+  if (status === "completed") return "Завершено";
+  if (status === "cancelled") return "Отменено";
+  return "Запланировано";
+}
+
+function formatStartsAt(iso: string) {
+  return new Intl.DateTimeFormat("ru-RU", {
+    day: "numeric",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "UTC",
+  }).format(new Date(iso));
+}
 
 export default async function DashboardIndexPage({
   searchParams,
@@ -35,10 +56,32 @@ export default async function DashboardIndexPage({
     const homework = studentId
       ? await getStudentHomeworkReadModel({ studentId, classIds })
       : [];
+    const scheduledLessons = classIds.length
+      ? await listScheduledLessonsForClassesAdmin(classIds)
+      : [];
+    const lessons = await Promise.all(
+      scheduledLessons.slice(0, 8).map(async (lesson) => {
+        const methodologyLesson = await getMethodologyLessonByIdAdmin(
+          lesson.methodologyLessonId,
+        );
+        return {
+          scheduledLessonId: lesson.id,
+          lessonTitle: methodologyLesson?.shell.title ?? "Урок",
+          startsAt: formatStartsAt(lesson.runtimeShell.startsAt),
+          statusLabel: formatStatus(lesson.runtimeShell.runtimeStatus),
+        };
+      }),
+    );
     const communication = studentId
       ? await getStudentConversationReadModels({ studentId, filter: "all" })
       : [];
-    return <StudentDashboard homework={homework} communication={communication} />;
+    return (
+      <StudentDashboard
+        homework={homework}
+        communication={communication}
+        lessons={lessons}
+      />
+    );
   }
 
   if (context.activeProfile === "teacher") {
@@ -76,6 +119,33 @@ export default async function DashboardIndexPage({
     parentHomework.map((item) => [item.studentId, item.items]),
   );
   const parentCommunication = await getParentCommunicationProjection({ userId: context.userId });
+  const lessonsByStudent: Record<
+    string,
+    Array<{
+      scheduledLessonId: string;
+      lessonTitle: string;
+      startsAt: string;
+      statusLabel: string;
+    }>
+  > = {};
+  for (const child of learningContexts) {
+    const lessons = child.classes.length
+      ? await listScheduledLessonsForClassesAdmin(child.classes.map((item) => item.classId))
+      : [];
+    lessonsByStudent[child.studentId] = await Promise.all(
+      lessons.slice(0, 6).map(async (lesson) => {
+        const methodologyLesson = await getMethodologyLessonByIdAdmin(
+          lesson.methodologyLessonId,
+        );
+        return {
+          scheduledLessonId: lesson.id,
+          lessonTitle: methodologyLesson?.shell.title ?? "Урок",
+          startsAt: formatStartsAt(lesson.runtimeShell.startsAt),
+          statusLabel: formatStatus(lesson.runtimeShell.runtimeStatus),
+        };
+      }),
+    );
+  }
   return (
     <ParentDashboard
       childrenContexts={learningContexts}
@@ -83,6 +153,7 @@ export default async function DashboardIndexPage({
       communicationByStudent={Object.fromEntries(
         parentCommunication.map((item) => [item.studentId, item.messages]),
       )}
+      lessonsByStudent={lessonsByStudent}
     />
   );
 }

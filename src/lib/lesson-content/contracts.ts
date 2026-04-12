@@ -1,6 +1,7 @@
 import type {
   AssetRef,
   LessonBlockType,
+  MethodologyStudentSectionType,
   MethodologyLessonPosition,
   MethodologyReadinessStatus,
   ReusableAssetKind,
@@ -245,6 +246,78 @@ export type MethodologyLessonHomeworkDefinition = {
       correctOptionId: string;
     }>;
   };
+};
+
+type BaseStudentSection<TType extends MethodologyStudentSectionType> = {
+  type: TType;
+  title: string;
+};
+
+export type LessonFocusStudentSection = BaseStudentSection<"lesson_focus"> & {
+  body: string;
+  chips: string[];
+};
+
+export type VocabularyCardsStudentSection =
+  BaseStudentSection<"vocabulary_cards"> & {
+    items: Array<{
+      term: string;
+      pinyin?: string;
+      meaning: string;
+      visualHint?: string;
+    }>;
+  };
+
+export type PhraseCardsStudentSection = BaseStudentSection<"phrase_cards"> & {
+  items: Array<{
+    phrase: string;
+    pinyin?: string;
+    meaning: string;
+    usageHint?: string;
+  }>;
+};
+
+export type MediaAssetStudentSection = BaseStudentSection<"media_asset"> & {
+  assetId: string;
+  assetKind: "video" | "song" | "media_file";
+  studentPrompt: string;
+  teacherShareHint?: string;
+};
+
+export type ActionCardsStudentSection = BaseStudentSection<"action_cards"> & {
+  items: Array<{
+    term: string;
+    pinyin?: string;
+    meaning: string;
+    movementHint: string;
+  }>;
+};
+
+export type WorksheetStudentSection = BaseStudentSection<"worksheet"> & {
+  assetId?: string;
+  instructions: string;
+  pageLabel?: string;
+};
+
+export type RecapStudentSection = BaseStudentSection<"recap"> & {
+  bullets: string[];
+};
+
+export type MethodologyLessonStudentContentSection =
+  | LessonFocusStudentSection
+  | VocabularyCardsStudentSection
+  | PhraseCardsStudentSection
+  | MediaAssetStudentSection
+  | ActionCardsStudentSection
+  | WorksheetStudentSection
+  | RecapStudentSection;
+
+export type MethodologyLessonStudentContent = {
+  id: string;
+  methodologyLessonId: string;
+  title: string;
+  subtitle?: string;
+  sections: MethodologyLessonStudentContentSection[];
 };
 
 export type ScheduledLesson = {

@@ -2,6 +2,7 @@ import type {
   LessonBlockInstance,
   Methodology,
   MethodologyLesson,
+  MethodologyLessonStudentContent,
   ReusableAsset,
   ScheduledLesson,
   ScheduledLessonRuntimeShell,
@@ -69,6 +70,38 @@ export type RowScheduledLesson = {
   runtime_notes: string | null;
   outcome_notes: string | null;
 };
+
+export type RowMethodologyLessonStudentContent = {
+  id: string;
+  methodology_lesson_id: string;
+  title: string;
+  subtitle: string | null;
+  content_payload: Record<string, unknown> | null;
+};
+
+export class InvalidLessonStudentContentPayloadError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "InvalidLessonStudentContentPayloadError";
+  }
+}
+
+export function isInvalidLessonStudentContentPayloadError(error: unknown) {
+  return error instanceof InvalidLessonStudentContentPayloadError;
+}
+
+function validateLessonStudentContentSectionsPayload(
+  payload: RowMethodologyLessonStudentContent["content_payload"],
+): MethodologyLessonStudentContent["sections"] {
+  const sections = payload?.sections;
+  if (!Array.isArray(sections)) {
+    throw new InvalidLessonStudentContentPayloadError(
+      "Invalid methodology_lesson_student_content payload: sections must be an array.",
+    );
+  }
+
+  return sections as MethodologyLessonStudentContent["sections"];
+}
 
 function mapRuntimeShellFromRow(row: RowScheduledLesson): ScheduledLessonRuntimeShell {
   const base = {
@@ -210,4 +243,16 @@ export function mapScheduledLessonRowToDomain(row: RowScheduledLesson): Schedule
 
 export function mapReusableAssetRowsToDomain(rows: RowReusableAsset[]): ReusableAsset[] {
   return rows.map(mapAssetRowToDomain);
+}
+
+export function mapMethodologyLessonStudentContentRowToDomain(
+  row: RowMethodologyLessonStudentContent,
+): MethodologyLessonStudentContent {
+  return {
+    id: row.id,
+    methodologyLessonId: row.methodology_lesson_id,
+    title: row.title,
+    subtitle: row.subtitle ?? undefined,
+    sections: validateLessonStudentContentSectionsPayload(row.content_payload),
+  };
 }

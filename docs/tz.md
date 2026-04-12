@@ -103,3 +103,19 @@
 - Непрерывная коммуникация строится вокруг `group_student_conversation`.
 - Сообщения связываются с lesson/homework runtime-контекстом через optional ссылки.
 - Teacher получает полный поток в `/groups/[groupId]/students/[studentId]/communication`.
+
+### Step 6: three-part lesson model — реализовано
+
+- Канонический урок теперь состоит из трёх частей:
+  - `teacher scenario`;
+  - `student lesson content`;
+  - `homework`.
+- Добавлен source-layer `methodology_lesson_student_content`.
+- Teacher workspace `/lessons/[scheduledLessonId]` теперь даёт явные разделы:
+  - `Сценарий урока`,
+  - `Контент для ученика`,
+  - `Домашнее задание`.
+- Добавлены learner-facing routes:
+  - student: `/lesson-room/[scheduledLessonId]`,
+  - parent: `/children/[studentId]/lesson-room/[scheduledLessonId]`.
+- Student и parent используют один и тот же learner-content projection.

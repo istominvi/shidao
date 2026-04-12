@@ -49,6 +49,11 @@ Homework-контент определяется в методике. Препо
 - `methodology_lesson_homework` — source layer.
 - `scheduled_lesson_homework_assignment` + `student_homework_assignment` — runtime layer.
 - `/lessons/[scheduledLessonId]` остаётся execution screen и не превращается в редактор методики.
+- В canonical lesson model homework является только одной из трёх частей урока:
+  - teacher scenario,
+  - student lesson content,
+  - homework.
+  Подробно: `docs/architecture/lesson-three-part-model.md`.
 
 ## Что отложено
 

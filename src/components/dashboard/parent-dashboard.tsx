@@ -1,4 +1,6 @@
 import { DashboardShell } from "@/components/dashboard-shell";
+import Link from "next/link";
+import { toParentLessonRoomRoute } from "@/lib/auth";
 
 type ParentContext = {
   studentId: string;
@@ -29,6 +31,7 @@ export function ParentDashboard({
   childrenContexts,
   homeworkByStudent,
   communicationByStudent,
+  lessonsByStudent,
 }: {
   childrenContexts: ParentContext[];
   homeworkByStudent: Record<string, ParentHomeworkItem[]>;
@@ -40,6 +43,15 @@ export function ParentDashboard({
       body: string;
       scheduledLessonId: string | null;
       scheduledLessonHomeworkAssignmentId: string | null;
+    }>
+  >;
+  lessonsByStudent: Record<
+    string,
+    Array<{
+      scheduledLessonId: string;
+      lessonTitle: string;
+      startsAt: string;
+      statusLabel: string;
     }>
   >;
 }) {
@@ -63,6 +75,18 @@ export function ParentDashboard({
                   <p className="font-semibold">{child.studentName}</p>
                   <p className="mt-1 text-neutral-700">Логин ученика: {child.login}</p>
                   <div className="mt-2 space-y-2">
+                    {(lessonsByStudent[child.studentId] ?? []).map((lesson) => (
+                      <article key={lesson.scheduledLessonId} className="rounded-xl border border-sky-200 bg-sky-50/60 p-2">
+                        <p className="font-semibold text-neutral-900">{lesson.lessonTitle}</p>
+                        <p className="text-xs text-neutral-600">{lesson.startsAt} · {lesson.statusLabel}</p>
+                        <Link
+                          href={toParentLessonRoomRoute(child.studentId, lesson.scheduledLessonId)}
+                          className="mt-1 inline-flex rounded-lg border border-sky-300 bg-white px-2 py-1 text-xs font-semibold text-sky-800"
+                        >
+                          Открыть урок
+                        </Link>
+                      </article>
+                    ))}
                     {(homeworkByStudent[child.studentId] ?? []).map((item) => (
                       <article key={`${item.scheduledLessonId}-${item.homeworkTitle}`} className="rounded-xl border border-neutral-200 bg-white p-2">
                         <p className="font-semibold text-neutral-900">{item.homeworkTitle}</p>

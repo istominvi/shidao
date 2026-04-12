@@ -3,6 +3,7 @@ import {
   lessonContentFixtureHomeworkDefinition,
   lessonContentFixtureMethodology,
   lessonContentFixtureMethodologyLesson,
+  lessonContentFixtureMethodologyLessonStudentContent,
   lessonContentFixtureScheduledLesson,
 } from "../lesson-content";
 import { createHash } from "node:crypto";
@@ -144,6 +145,17 @@ export function buildFixtureBootstrapRows(options?: {
       estimated_minutes: lessonContentFixtureHomeworkDefinition.estimatedMinutes ?? null,
       quiz_payload: lessonContentFixtureHomeworkDefinition.quiz ?? null,
     },
+    studentContentRow: {
+      id: stableUuid(
+        `methodology_lesson_student_content:${lessonContentFixtureMethodologyLessonStudentContent.id}`,
+      ),
+      methodology_lesson_id: methodologyLessonId,
+      title: lessonContentFixtureMethodologyLessonStudentContent.title,
+      subtitle: lessonContentFixtureMethodologyLessonStudentContent.subtitle ?? null,
+      content_payload: {
+        sections: lessonContentFixtureMethodologyLessonStudentContent.sections,
+      },
+    },
     scheduledLessonRow: {
       id: scheduledLessonId,
       class_id:
@@ -240,6 +252,10 @@ export async function bootstrapLessonContentFixtureAdmin(options?: {
     ...rows.scheduledLessonRow,
     methodology_lesson_id: resolvedMethodologyLessonId,
   };
+  const studentContentRow = {
+    ...rows.studentContentRow,
+    methodology_lesson_id: resolvedMethodologyLessonId,
+  };
 
   await adminRequest("/rest/v1/reusable_asset?on_conflict=slug", "POST", {
     payload: rows.reusableAssetRows,
@@ -275,6 +291,17 @@ export async function bootstrapLessonContentFixtureAdmin(options?: {
     "POST",
     {
       payload: homeworkDefinitionRow,
+      extraHeaders: {
+        Prefer: "resolution=merge-duplicates,return=representation",
+      },
+    },
+  );
+
+  await adminRequest(
+    "/rest/v1/methodology_lesson_student_content?on_conflict=methodology_lesson_id",
+    "POST",
+    {
+      payload: studentContentRow,
       extraHeaders: {
         Prefer: "resolution=merge-duplicates,return=representation",
       },

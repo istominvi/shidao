@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import type { TeacherLessonWorkspaceReadModel } from "@/lib/server/teacher-lesson-workspace";
 import { AppCard } from "@/components/app/app-card";
 import { AppPageHeader } from "@/components/app/page-header";
@@ -25,11 +28,19 @@ function statusBadgeTone(statusLabel: string) {
   return "bg-amber-100 text-amber-800 border-amber-200";
 }
 
+function tabButton(active: boolean) {
+  return active
+    ? "rounded-xl bg-neutral-900 px-3 py-2 text-sm font-semibold text-white"
+    : "rounded-xl border border-neutral-300 bg-white px-3 py-2 text-sm font-semibold text-neutral-700";
+}
 
 export function TeacherLessonWorkspace({
   workspace,
   runtimeFormFeedback,
 }: TeacherLessonWorkspaceProps) {
+  const [tab, setTab] = useState<"scenario" | "student-content" | "homework">(
+    "scenario",
+  );
   const runtime = workspace.projection.runtimeShell;
   const { hero, quickSummary, methodologyReference, lessonFlow, notes } =
     workspace.presentation;
@@ -71,7 +82,74 @@ export function TeacherLessonWorkspace({
 
       <section className="grid gap-5 xl:grid-cols-[minmax(0,1.65fr)_minmax(320px,1fr)]">
         <div className="space-y-5">
-          <TeacherLessonPedagogicalContent quickSummary={quickSummary} lessonFlow={lessonFlow} />
+          <AppCard className="p-3">
+            <div className="flex flex-wrap gap-2">
+              <button type="button" className={tabButton(tab === "scenario")} onClick={() => setTab("scenario")}>
+                Сценарий урока
+              </button>
+              <button type="button" className={tabButton(tab === "student-content")} onClick={() => setTab("student-content")}>
+                Контент для ученика
+              </button>
+              <button type="button" className={tabButton(tab === "homework")} onClick={() => setTab("homework")}>
+                Домашнее задание
+              </button>
+            </div>
+          </AppCard>
+
+          {tab === "scenario" ? (
+            <TeacherLessonPedagogicalContent quickSummary={quickSummary} lessonFlow={lessonFlow} />
+          ) : null}
+
+          {tab === "student-content" ? (
+            <AppCard className="p-5">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <h2 className="text-xl font-bold text-neutral-900">Контент для ученика</h2>
+                <Link
+                  href={`/lesson-room/${workspace.scheduledLessonId}`}
+                  className="rounded-xl border border-sky-300 bg-sky-50 px-3 py-2 text-sm font-semibold text-sky-800"
+                >
+                  Открыть ученическую версию
+                </Link>
+              </div>
+              {!workspace.studentContent.source ? (
+                <div className="mt-3 space-y-2">
+                  {workspace.studentContent.unavailableReason === "schema_missing" ? (
+                    <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                      Контент урока для ученика временно недоступен. Примените миграцию lesson student content layer.
+                    </p>
+                  ) : workspace.studentContent.unavailableReason === "invalid_payload" ? (
+                    <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                      Контент урока для ученика временно недоступен: source-данные урока заполнены некорректно.
+                    </p>
+                  ) : workspace.studentContent.unavailableReason === "load_failed" ? (
+                    <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                      Не удалось загрузить контент урока для ученика. Основной сценарий урока остаётся доступен.
+                    </p>
+                  ) : null}
+                  <p className="text-sm text-neutral-600">Для этого урока пока нет отдельного learner-facing контента.</p>
+                </div>
+              ) : (
+                <div className="mt-4 space-y-3">
+                  {workspace.studentContent.source.sections.map((section, idx) => (
+                    <article key={`${section.type}-${idx}`} className="rounded-2xl border border-neutral-200 bg-white p-3">
+                      <h3 className="font-semibold text-neutral-900">{section.title}</h3>
+                      <p className="text-xs text-neutral-500">Тип: {section.type}</p>
+                    </article>
+                  ))}
+                </div>
+              )}
+            </AppCard>
+          ) : null}
+
+          {tab === "homework" ? (
+            <AppCard className="border-sky-200/70 p-5">
+              <h2 className="text-lg font-bold text-neutral-900">Домашнее задание</h2>
+              <TeacherHomeworkPanel
+                homework={workspace.homework}
+                scheduledLessonId={workspace.scheduledLessonId}
+              />
+            </AppCard>
+          ) : null}
         </div>
 
         <aside className="space-y-4 xl:sticky xl:top-6 xl:self-start">
@@ -210,14 +288,6 @@ export function TeacherLessonWorkspace({
                 {methodologyReference.readinessLabel}
               </li>
             </ul>
-          </AppCard>
-
-          <AppCard className="border-sky-200/70 p-5">
-            <h2 className="text-lg font-bold text-neutral-900">Домашнее задание</h2>
-            <TeacherHomeworkPanel
-              homework={workspace.homework}
-              scheduledLessonId={workspace.scheduledLessonId}
-            />
           </AppCard>
 
           <AppCard className="border-amber-200/70 p-5">
