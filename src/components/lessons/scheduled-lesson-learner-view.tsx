@@ -2,6 +2,7 @@ import { AppCard } from "@/components/app/app-card";
 import { StudentHomeworkQuizCard } from "@/components/dashboard/student-homework-quiz-card";
 import type {
   ParentScheduledLessonView,
+  ScheduledLessonPreviewView,
   StudentScheduledLessonView,
 } from "@/lib/server/scheduled-lesson-view";
 
@@ -18,22 +19,22 @@ function whenLabel(startsAt: string) {
     month: "long",
     hour: "2-digit",
     minute: "2-digit",
-    timeZone: "UTC",
   }).format(new Date(startsAt));
 }
 
 export function ScheduledLessonLearnerView({
   model,
 }: {
-  model: StudentScheduledLessonView | ParentScheduledLessonView;
+  model: StudentScheduledLessonView | ParentScheduledLessonView | ScheduledLessonPreviewView;
 }) {
   const isParent = model.role === "parent";
+  const isPreview = model.role === "preview";
 
   return (
     <div className="space-y-5">
       <AppCard className="p-5 md:p-6">
         <p className="text-xs font-semibold uppercase tracking-[0.12em] text-sky-700">
-          {isParent ? "Урок ребёнка" : "Твой урок"}
+          {isPreview ? "Предпросмотр урока" : isParent ? "Урок ребёнка" : "Твой урок"}
         </p>
         <h1 className="mt-2 text-2xl font-black text-neutral-950">{model.lessonTitle}</h1>
         <p className="mt-1 text-sm text-neutral-700">

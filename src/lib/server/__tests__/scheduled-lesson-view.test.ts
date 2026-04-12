@@ -24,3 +24,9 @@ test("teacher and student access are class-scoped server-side", () => {
   assert.equal(source.includes("listClassIdsForStudentAdmin"), true);
   assert.equal(source.includes("if (!classIds.includes"), true);
 });
+
+test("learner communication preview uses neutral helper (no fake teacher identity)", () => {
+  assert.equal(source.includes("getLearnerConversationPreviewReadModel"), true);
+  assert.equal(source.includes("getTeacherConversationReadModel"), false);
+  assert.equal(source.includes("teacherId: \"\""), false);
+});

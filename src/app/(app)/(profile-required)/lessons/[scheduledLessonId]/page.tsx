@@ -85,7 +85,7 @@ export default async function ScheduledLessonPage({
         <TopNav />
         <div className="container py-7 md:py-10">
           {preview ? (
-            <ScheduledLessonLearnerView model={{ ...preview, role: "parent", childrenRuntime: [] }} />
+            <ScheduledLessonLearnerView model={preview} />
           ) : (
             <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">Предпросмотр ученической версии временно недоступен.</p>
           )}

@@ -20,7 +20,7 @@ import {
   type StudentHomeworkCard,
 } from "./student-homework";
 import {
-  getTeacherConversationReadModel,
+  getLearnerConversationPreviewReadModel,
   type CommunicationFilter,
 } from "./communication-service";
 import {
@@ -71,6 +71,10 @@ export type ParentScheduledLessonView = ScheduledLessonLearnerSharedView & {
       body: string;
     }>;
   }>;
+};
+
+export type ScheduledLessonPreviewView = ScheduledLessonLearnerSharedView & {
+  role: "preview";
 };
 
 export type TeacherScheduledLessonView = {
@@ -156,7 +160,10 @@ async function getLearnerSharedProjection(scheduledLessonId: string) {
 export async function getScheduledLessonLearnerPreview(scheduledLessonId: string) {
   const base = await getLearnerSharedProjection(scheduledLessonId);
   if (!base) return null;
-  return base.shared;
+  return {
+    ...base.shared,
+    role: "preview" as const,
+  };
 }
 
 export async function getTeacherScheduledLessonView(input: {
@@ -185,8 +192,7 @@ export async function getStudentScheduledLessonView(input: {
 
   const [homeworkCards, conversation] = await Promise.all([
     getStudentHomeworkReadModel({ studentId: input.studentId, classIds }),
-    getTeacherConversationReadModel({
-      teacherId: "",
+    getLearnerConversationPreviewReadModel({
       classId: base.shared.classId,
       studentId: input.studentId,
       filter: input.communicationFilter ?? "lesson",
@@ -242,8 +248,7 @@ export async function getParentScheduledLessonView(input: {
           .find((item) => item.studentId === child.studentId)
           ?.items.find((item) => item.scheduledLessonId === input.scheduledLessonId) ?? null;
 
-      const conversation = await getTeacherConversationReadModel({
-        teacherId: "",
+      const conversation = await getLearnerConversationPreviewReadModel({
         classId: base.shared.classId,
         studentId: child.studentId,
         filter: "lesson",

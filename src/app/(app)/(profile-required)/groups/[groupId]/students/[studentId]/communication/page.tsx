@@ -25,7 +25,6 @@ export default async function TeacherStudentCommunicationPage({
   const activeFilter = FILTERS.includes(filter ?? "all") ? (filter ?? "all") : "all";
 
   const readModel = await getTeacherConversationReadModel({
-      teacherId: resolution.context.teacher?.id ?? "",
       classId: groupId,
       studentId,
       filter: activeFilter,

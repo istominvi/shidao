@@ -17,6 +17,44 @@ type ConversationReadModel = {
   messages: GroupStudentMessage[];
 };
 
+async function getConversationReadModelByClassStudent(input: {
+  classId: string;
+  studentId: string;
+  filter?: CommunicationFilter;
+  scopedLessonId?: string;
+  scopedHomeworkAssignmentId?: string;
+}): Promise<ConversationReadModel> {
+  try {
+    const conversation = await ensureConversationByClassAndStudentAdmin({
+      classId: input.classId,
+      studentId: input.studentId,
+    });
+    const messages = await listMessagesByConversationAdmin(conversation.id);
+
+    return {
+      conversationId: conversation.id,
+      classId: input.classId,
+      studentId: input.studentId,
+      messages: filterConversationMessages(
+        messages,
+        input.filter ?? "all",
+        input.scopedLessonId,
+        input.scopedHomeworkAssignmentId,
+      ),
+    };
+  } catch (error) {
+    if (!isCommunicationSchemaMissingError(error)) {
+      throw error;
+    }
+    return {
+      conversationId: "",
+      classId: input.classId,
+      studentId: input.studentId,
+      messages: [],
+    };
+  }
+}
+
 export function filterConversationMessages(
   messages: GroupStudentMessage[],
   filter: CommunicationFilter,
@@ -50,46 +88,33 @@ export function filterConversationMessages(
 }
 
 export async function getTeacherConversationReadModel(input: {
-  teacherId: string;
   classId: string;
   studentId: string;
   filter?: CommunicationFilter;
   scopedLessonId?: string;
   scopedHomeworkAssignmentId?: string;
 }): Promise<ConversationReadModel> {
-  try {
-    const studentsByClass = await listStudentsForClassesAdmin([input.classId]);
-    const allowed = (studentsByClass[input.classId] ?? []).some((s) => s.id === input.studentId);
-    if (!allowed) throw new Error("Ученик не состоит в выбранной группе.");
+  const studentsByClass = await listStudentsForClassesAdmin([input.classId]);
+  const allowed = (studentsByClass[input.classId] ?? []).some((s) => s.id === input.studentId);
+  if (!allowed) throw new Error("Ученик не состоит в выбранной группе.");
 
-    const conversation = await ensureConversationByClassAndStudentAdmin({
-      classId: input.classId,
-      studentId: input.studentId,
-    });
-    const messages = await listMessagesByConversationAdmin(conversation.id);
+  return getConversationReadModelByClassStudent({
+    classId: input.classId,
+    studentId: input.studentId,
+    filter: input.filter,
+    scopedLessonId: input.scopedLessonId,
+    scopedHomeworkAssignmentId: input.scopedHomeworkAssignmentId,
+  });
+}
 
-    return {
-      conversationId: conversation.id,
-      classId: input.classId,
-      studentId: input.studentId,
-      messages: filterConversationMessages(
-        messages,
-        input.filter ?? "all",
-        input.scopedLessonId,
-        input.scopedHomeworkAssignmentId,
-      ),
-    };
-  } catch (error) {
-    if (!isCommunicationSchemaMissingError(error)) {
-      throw error;
-    }
-    return {
-      conversationId: "",
-      classId: input.classId,
-      studentId: input.studentId,
-      messages: [],
-    };
-  }
+export async function getLearnerConversationPreviewReadModel(input: {
+  classId: string;
+  studentId: string;
+  filter?: CommunicationFilter;
+  scopedLessonId?: string;
+  scopedHomeworkAssignmentId?: string;
+}) {
+  return getConversationReadModelByClassStudent(input);
 }
 
 export async function sendTeacherMessage(input: {
@@ -191,7 +216,6 @@ export async function getStudentConversationReadModels(input: {
   const models = await Promise.all(
     classIds.map(async (classId) =>
       getTeacherConversationReadModel({
-        teacherId: "",
         classId,
         studentId: input.studentId,
         filter: input.filter,
@@ -213,7 +237,6 @@ export async function getLessonScopedTeacherDiscussions(input: {
         studentId: student.id,
         studentName: student.fullName?.trim() || student.login?.trim() || "Ученик",
         readModel: await getTeacherConversationReadModel({
-          teacherId: "",
           classId: input.classId,
           studentId: student.id,
           filter: "all",
@@ -243,7 +266,6 @@ export async function getHomeworkScopedTeacherDiscussions(input: {
         studentId: student.id,
         messages: (
           await getTeacherConversationReadModel({
-            teacherId: "",
             classId: input.classId,
             studentId: student.id,
             filter: "all",
@@ -268,7 +290,6 @@ export async function getParentCommunicationProjection(input: { userId: string }
       if (!classId) return { studentId: child.studentId, studentName: child.studentName, messages: [] };
 
       const thread = await getTeacherConversationReadModel({
-        teacherId: "",
         classId,
         studentId: child.studentId,
         filter: "all",
