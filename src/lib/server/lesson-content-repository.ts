@@ -1,16 +1,19 @@
 import type {
   Methodology,
   MethodologyLesson,
+  MethodologyLessonStudentContent,
   ReusableAsset,
   ScheduledLesson,
   ScheduledLessonRuntimeShell,
 } from "../lesson-content";
 import {
+  mapMethodologyLessonStudentContentRowToDomain,
   mapMethodologyLessonRowToDomain,
   mapMethodologyRowToDomain,
   mapReusableAssetRowsToDomain,
   mapScheduledLessonRowToDomain,
   type RowMethodologyLessonWithBlocks,
+  type RowMethodologyLessonStudentContent,
   type RowReusableAsset,
   type RowScheduledLesson,
 } from "./lesson-content-mappers";
@@ -237,6 +240,17 @@ export async function getMethodologyLessonByIdAdmin(
 
   if (!rows[0]) return null;
   return mapMethodologyLessonRowToDomain(rows[0]);
+}
+
+export async function getMethodologyLessonStudentContentByLessonIdAdmin(
+  methodologyLessonId: string,
+): Promise<MethodologyLessonStudentContent | null> {
+  const rows = await adminRequest<RowMethodologyLessonStudentContent[]>(
+    `/rest/v1/methodology_lesson_student_content?select=id,methodology_lesson_id,title,subtitle,content_payload&methodology_lesson_id=eq.${methodologyLessonId}&limit=1`,
+  );
+
+  if (!rows[0]) return null;
+  return mapMethodologyLessonStudentContentRowToDomain(rows[0]);
 }
 
 export async function getScheduledLessonByIdAdmin(

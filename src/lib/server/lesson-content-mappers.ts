@@ -2,6 +2,7 @@ import type {
   LessonBlockInstance,
   Methodology,
   MethodologyLesson,
+  MethodologyLessonStudentContent,
   ReusableAsset,
   ScheduledLesson,
   ScheduledLessonRuntimeShell,
@@ -68,6 +69,14 @@ export type RowScheduledLesson = {
   runtime_notes_summary: string | null;
   runtime_notes: string | null;
   outcome_notes: string | null;
+};
+
+export type RowMethodologyLessonStudentContent = {
+  id: string;
+  methodology_lesson_id: string;
+  title: string;
+  subtitle: string | null;
+  content_payload: Record<string, unknown> | null;
 };
 
 function mapRuntimeShellFromRow(row: RowScheduledLesson): ScheduledLessonRuntimeShell {
@@ -210,4 +219,21 @@ export function mapScheduledLessonRowToDomain(row: RowScheduledLesson): Schedule
 
 export function mapReusableAssetRowsToDomain(rows: RowReusableAsset[]): ReusableAsset[] {
   return rows.map(mapAssetRowToDomain);
+}
+
+export function mapMethodologyLessonStudentContentRowToDomain(
+  row: RowMethodologyLessonStudentContent,
+): MethodologyLessonStudentContent {
+  const sections = row.content_payload?.sections;
+  if (!Array.isArray(sections)) {
+    throw new Error("Invalid methodology_lesson_student_content payload: sections must be an array.");
+  }
+
+  return {
+    id: row.id,
+    methodologyLessonId: row.methodology_lesson_id,
+    title: row.title,
+    subtitle: row.subtitle ?? undefined,
+    sections: sections as MethodologyLessonStudentContent["sections"],
+  };
 }

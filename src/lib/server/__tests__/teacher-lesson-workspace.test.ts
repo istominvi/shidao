@@ -4,6 +4,7 @@ import {
   lessonContentFixtureAssets,
   lessonContentFixtureHomeworkDefinition,
   lessonContentFixtureMethodologyLesson,
+  lessonContentFixtureMethodologyLessonStudentContent,
   lessonContentFixtureScheduledLesson,
 } from "../../lesson-content";
 import type { AccessResolution } from "../access-policy";
@@ -44,6 +45,8 @@ test("teacher workspace loader combines scheduled + methodology and keeps sorted
           lessonContentFixtureMethodologyLesson.blocks[7],
         ],
       }),
+      getMethodologyLessonStudentContentByLessonId: async () =>
+        lessonContentFixtureMethodologyLessonStudentContent,
       listReusableAssetsByIds: async (ids) =>
         lessonContentFixtureAssets.filter((asset) => ids.includes(asset.id)),
       getClassDisplayNameById: async () => "Лисички 5-6",
@@ -67,6 +70,7 @@ test("teacher workspace loader returns null when linked methodology lesson is mi
     {
       getScheduledLessonById: async () => lessonContentFixtureScheduledLesson,
       getMethodologyLessonById: async () => null,
+      getMethodologyLessonStudentContentByLessonId: async () => null,
       listReusableAssetsByIds: async () => [],
       getClassDisplayNameById: async () => "Группа A",
       getHomeworkReadModel: async () => homeworkSnapshot,
@@ -93,6 +97,7 @@ test("teacher workspace read model keeps runtime and methodology shells distinct
     classDisplayName: "Лисички 5-6",
     assets: lessonContentFixtureAssets,
     homework: homeworkSnapshot,
+    studentContent: lessonContentFixtureMethodologyLessonStudentContent,
   });
 
   assert.equal(readModel.projection.methodologyShell.title.length > 0, true);
@@ -115,6 +120,7 @@ test("teacher workspace presentation hero does not depend on raw class id", () =
     classId: "11111111-1111-4111-8111-111111111111",
     assets: lessonContentFixtureAssets,
     homework: homeworkSnapshot,
+    studentContent: lessonContentFixtureMethodologyLessonStudentContent,
   });
 
   assert.equal(readModel.presentation.hero.groupLabel, "Группа");
@@ -143,6 +149,7 @@ test("teacher workspace presentation keeps methodology title separate from lesso
     classDisplayName: "Лисички 5-6",
     assets: lessonContentFixtureAssets,
     homework: homeworkSnapshot,
+    studentContent: lessonContentFixtureMethodologyLessonStudentContent,
   });
 
   assert.equal(readModel.presentation.hero.lessonTitle, "Урок 1. Животные на ферме");
@@ -168,6 +175,7 @@ test("teacher workspace quick summary and lesson flow are derived from lesson co
     classDisplayName: "Лисички 5-6",
     assets: lessonContentFixtureAssets,
     homework: homeworkSnapshot,
+    studentContent: lessonContentFixtureMethodologyLessonStudentContent,
   });
 
   assert.ok(readModel.presentation.quickSummary.prepChecklist.length > 0);
@@ -201,6 +209,7 @@ test("teacher workspace read model includes runtime edit fields and no block ove
     classDisplayName: "Лисички 5-6",
     assets: lessonContentFixtureAssets,
     homework: homeworkSnapshot,
+    studentContent: lessonContentFixtureMethodologyLessonStudentContent,
   });
 
   assert.equal(readModel.projection.runtimeShell.runtimeStatus, "completed");
@@ -210,6 +219,7 @@ test("teacher workspace read model includes runtime edit fields and no block ove
   );
   assert.equal(readModel.projection.runtimeNotes, "runtime note");
   assert.equal(readModel.projection.outcomeNotes, "outcome note");
+  assert.equal(readModel.studentContent.source?.title, "Урок 1. Животные на ферме");
   assert.equal("blockOverrides" in readModel.projection, false);
   assert.equal("blockOverrides" in readModel.presentation, false);
 });

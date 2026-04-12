@@ -2,13 +2,16 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   lessonContentFixtureMethodology,
+  lessonContentFixtureMethodologyLessonStudentContent,
   lessonContentFixtureMethodologyLesson,
   lessonContentFixtureScheduledLesson,
 } from "../../lesson-content";
 import { buildFixtureBootstrapRows } from "../lesson-content-bootstrap";
 import {
+  mapMethodologyLessonStudentContentRowToDomain,
   mapMethodologyLessonRowToDomain,
   mapScheduledLessonRowToDomain,
+  type RowMethodologyLessonStudentContent,
   type RowMethodologyLessonWithBlocks,
   type RowScheduledLesson,
 } from "../lesson-content-mappers";
@@ -248,4 +251,27 @@ test("bootstrap rows allow overriding scheduled lesson class id for real teacher
   const rows = buildFixtureBootstrapRows({ scheduledLessonClassId: classId });
 
   assert.equal(rows.scheduledLessonRow.class_id, classId);
+});
+
+test("student lesson content mapper keeps typed sections", () => {
+  const row: RowMethodologyLessonStudentContent = {
+    id: "student-content-1",
+    methodology_lesson_id: "lesson-1",
+    title: "Урок 1",
+    subtitle: null,
+    content_payload: {
+      sections: lessonContentFixtureMethodologyLessonStudentContent.sections,
+    },
+  };
+
+  const mapped = mapMethodologyLessonStudentContentRowToDomain(row);
+  assert.equal(mapped.sections[0]?.type, "lesson_focus");
+  assert.equal(mapped.sections.at(-1)?.type, "recap");
+});
+
+test("lesson 1 fixture includes canonical 3-part model data", () => {
+  const rows = buildFixtureBootstrapRows();
+  assert.equal(rows.blockRows.length > 0, true);
+  assert.equal(rows.studentContentRow.title, "Урок 1. Животные на ферме");
+  assert.equal(rows.homeworkDefinitionRow.kind, "quiz_single_choice");
 });

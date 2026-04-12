@@ -468,3 +468,17 @@ returning id;
 ```
 
 После этого откройте `/lessons/<id>` под teacher-профилем.
+
+### Teacher IA (Step 6: canonical lesson = scenario + student content + homework)
+
+- Канонический урок теперь явно состоит из 3 частей:
+  - `Сценарий урока` (teacher-only methodology execution),
+  - `Контент для ученика` (learner-facing projection),
+  - `Домашнее задание` (runtime issuance/submission/review).
+- Добавлен source-layer для learner content: `methodology_lesson_student_content`.
+- Teacher workspace `/lessons/[scheduledLessonId]` показывает 3 верхних раздела (scenario/student-content/homework).
+- Добавлены learner-facing lesson room routes:
+  - Student: `/lesson-room/[scheduledLessonId]`
+  - Parent: `/children/[studentId]/lesson-room/[scheduledLessonId]`
+- Parent видит тот же learner-facing контент, что и ученик (без teacher-only методических внутренних полей).
+- Архитектурные детали: `docs/architecture/lesson-three-part-model.md`.

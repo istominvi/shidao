@@ -26,6 +26,15 @@ export type LessonBlockType =
   | "worksheet_task"
   | "wrap_up_closure";
 
+export type MethodologyStudentSectionType =
+  | "lesson_focus"
+  | "vocabulary_cards"
+  | "phrase_cards"
+  | "media_asset"
+  | "action_cards"
+  | "worksheet"
+  | "recap";
+
 export type AssetRef = {
   kind: ReusableAssetKind;
   id: string;
