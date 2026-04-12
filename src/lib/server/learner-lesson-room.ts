@@ -5,6 +5,7 @@ import type {
 import {
   getMethodologyLessonByIdAdmin,
   getMethodologyLessonStudentContentByLessonIdAdmin,
+  isLessonStudentContentSchemaReadyAdmin,
   getScheduledLessonByIdAdmin,
   listReusableAssetsByIdsAdmin,
 } from "./lesson-content-repository";
@@ -40,7 +41,8 @@ export type LearnerLessonRoomReadModel = {
   lessonSubtitle?: string;
   startsAt: string;
   runtimeStatus: "planned" | "in_progress" | "completed" | "cancelled";
-  studentContent: MethodologyLessonStudentContent;
+  studentContent: MethodologyLessonStudentContent | null;
+  studentContentUnavailableDueToSchema: boolean;
   assetsById: Record<string, ReusableAsset>;
   homework: LearnerHomeworkCard | null;
 };
@@ -49,6 +51,7 @@ type LearnerLessonRoomDeps = {
   getScheduledLessonById: typeof getScheduledLessonByIdAdmin;
   getMethodologyLessonById: typeof getMethodologyLessonByIdAdmin;
   getMethodologyLessonStudentContentByLessonId: typeof getMethodologyLessonStudentContentByLessonIdAdmin;
+  isLessonStudentContentSchemaReady: typeof isLessonStudentContentSchemaReadyAdmin;
   listReusableAssetsByIds: typeof listReusableAssetsByIdsAdmin;
   getStudentHomeworkReadModel: typeof getStudentHomeworkReadModel;
   loadParentLearningContextsByUser?: (userId: string) => Promise<
@@ -67,6 +70,7 @@ const defaultDeps: LearnerLessonRoomDeps = {
   getMethodologyLessonById: getMethodologyLessonByIdAdmin,
   getMethodologyLessonStudentContentByLessonId:
     getMethodologyLessonStudentContentByLessonIdAdmin,
+  isLessonStudentContentSchemaReady: isLessonStudentContentSchemaReadyAdmin,
   listReusableAssetsByIds: listReusableAssetsByIdsAdmin,
   getStudentHomeworkReadModel,
   getParentHomeworkProjection,
@@ -87,11 +91,13 @@ async function getBaseLessonRoom(
   const studentContent = await deps.getMethodologyLessonStudentContentByLessonId(
     methodologyLesson.id,
   );
-  if (!studentContent) return null;
+  const studentContentSchemaReady = studentContent
+    ? true
+    : await deps.isLessonStudentContentSchemaReady();
 
   const assetIds = Array.from(
     new Set(
-      studentContent.sections
+      (studentContent?.sections ?? [])
         .flatMap((section) => {
           if (section.type === "media_asset") return [section.assetId];
           if (section.type === "worksheet" && section.assetId) return [section.assetId];
@@ -108,6 +114,8 @@ async function getBaseLessonRoom(
     scheduledLesson,
     methodologyLesson,
     studentContent,
+    studentContentUnavailableDueToSchema:
+      !studentContent && !studentContentSchemaReady,
     assetsById: Object.fromEntries(assets.map((asset) => [asset.id, asset])),
   };
 }
@@ -123,10 +131,11 @@ export async function getLessonRoomPreviewByScheduledLessonId(
     scheduledLessonId,
     classId: base.scheduledLesson.runtimeShell.classId,
     lessonTitle: base.methodologyLesson.shell.title,
-    lessonSubtitle: base.studentContent.subtitle,
+    lessonSubtitle: base.studentContent?.subtitle,
     startsAt: base.scheduledLesson.runtimeShell.startsAt,
     runtimeStatus: base.scheduledLesson.runtimeShell.runtimeStatus,
     studentContent: base.studentContent,
+    studentContentUnavailableDueToSchema: base.studentContentUnavailableDueToSchema,
     assetsById: base.assetsById,
   };
 }
@@ -157,10 +166,11 @@ export async function getStudentLessonRoomReadModel(input: {
     scheduledLessonId: input.scheduledLessonId,
     classId: base.scheduledLesson.runtimeShell.classId,
     lessonTitle: base.methodologyLesson.shell.title,
-    lessonSubtitle: base.studentContent.subtitle,
+    lessonSubtitle: base.studentContent?.subtitle,
     startsAt: base.scheduledLesson.runtimeShell.startsAt,
     runtimeStatus: base.scheduledLesson.runtimeShell.runtimeStatus,
     studentContent: base.studentContent,
+    studentContentUnavailableDueToSchema: base.studentContentUnavailableDueToSchema,
     assetsById: base.assetsById,
     homework: homeworkCard ? { role: "student", card: homeworkCard } : null,
   };
@@ -207,10 +217,11 @@ export async function getParentLessonRoomReadModel(input: {
     scheduledLessonId: input.scheduledLessonId,
     classId: base.scheduledLesson.runtimeShell.classId,
     lessonTitle: base.methodologyLesson.shell.title,
-    lessonSubtitle: base.studentContent.subtitle,
+    lessonSubtitle: base.studentContent?.subtitle,
     startsAt: base.scheduledLesson.runtimeShell.startsAt,
     runtimeStatus: base.scheduledLesson.runtimeShell.runtimeStatus,
     studentContent: base.studentContent,
+    studentContentUnavailableDueToSchema: base.studentContentUnavailableDueToSchema,
     assetsById: base.assetsById,
     homework: lessonHomework
       ? {

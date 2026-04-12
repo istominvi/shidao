@@ -146,6 +146,21 @@ function isMissingMethodologyBindingColumnError(message: string) {
   );
 }
 
+export function isMissingLessonStudentContentSchemaError(message: string) {
+  const normalized = message.toLowerCase();
+  const referencesStudentContentTable = normalized.includes(
+    "methodology_lesson_student_content",
+  );
+  const isMissingRelationError =
+    normalized.includes("does not exist") ||
+    normalized.includes("schema cache") ||
+    normalized.includes("could not find the table") ||
+    normalized.includes("relation") ||
+    normalized.includes("undefined table");
+
+  return referencesStudentContentTable && isMissingRelationError;
+}
+
 async function adminRequest<T>(
   path: string,
   method = "GET",
@@ -245,12 +260,38 @@ export async function getMethodologyLessonByIdAdmin(
 export async function getMethodologyLessonStudentContentByLessonIdAdmin(
   methodologyLessonId: string,
 ): Promise<MethodologyLessonStudentContent | null> {
-  const rows = await adminRequest<RowMethodologyLessonStudentContent[]>(
-    `/rest/v1/methodology_lesson_student_content?select=id,methodology_lesson_id,title,subtitle,content_payload&methodology_lesson_id=eq.${methodologyLessonId}&limit=1`,
-  );
+  let rows: RowMethodologyLessonStudentContent[];
+  try {
+    rows = await adminRequest<RowMethodologyLessonStudentContent[]>(
+      `/rest/v1/methodology_lesson_student_content?select=id,methodology_lesson_id,title,subtitle,content_payload&methodology_lesson_id=eq.${methodologyLessonId}&limit=1`,
+    );
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "unknown";
+    if (isMissingLessonStudentContentSchemaError(message)) {
+      return null;
+    }
+    throw error;
+  }
 
   if (!rows[0]) return null;
   return mapMethodologyLessonStudentContentRowToDomain(rows[0]);
+}
+
+export async function isLessonStudentContentSchemaReadyAdmin() {
+  try {
+    await adminRequest<RowMethodologyLessonStudentContent[]>(
+      "/rest/v1/methodology_lesson_student_content?select=id&limit=1",
+      "GET",
+      { allowEmpty: true },
+    );
+    return true;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "unknown";
+    if (isMissingLessonStudentContentSchemaError(message)) {
+      return false;
+    }
+    throw error;
+  }
 }
 
 export async function getScheduledLessonByIdAdmin(

@@ -21,6 +21,7 @@ import {
   getClassDisplayNameByIdAdmin,
   getMethodologyLessonByIdAdmin,
   getMethodologyLessonStudentContentByLessonIdAdmin,
+  isLessonStudentContentSchemaReadyAdmin,
   getScheduledLessonByIdAdmin,
   listReusableAssetsByIdsAdmin,
 } from "./lesson-content-repository";
@@ -111,6 +112,7 @@ export type TeacherLessonWorkspaceReadModel = {
   studentContent: {
     source: MethodologyLessonStudentContent | null;
     assetsById: Record<string, ReusableAsset>;
+    unavailableDueToSchema: boolean;
   };
   sourceLesson: {
     methodologySlug: string;
@@ -146,6 +148,7 @@ type WorkspaceLoaderDeps = {
   getScheduledLessonById: typeof getScheduledLessonByIdAdmin;
   getMethodologyLessonById: typeof getMethodologyLessonByIdAdmin;
   getMethodologyLessonStudentContentByLessonId: typeof getMethodologyLessonStudentContentByLessonIdAdmin;
+  isLessonStudentContentSchemaReady: typeof isLessonStudentContentSchemaReadyAdmin;
   listReusableAssetsByIds: typeof listReusableAssetsByIdsAdmin;
   getClassDisplayNameById: typeof getClassDisplayNameByIdAdmin;
   getHomeworkReadModel: typeof getTeacherLessonHomeworkReadModel;
@@ -158,6 +161,7 @@ const defaultWorkspaceLoaderDeps: WorkspaceLoaderDeps = {
   getMethodologyLessonById: getMethodologyLessonByIdAdmin,
   getMethodologyLessonStudentContentByLessonId:
     getMethodologyLessonStudentContentByLessonIdAdmin,
+  isLessonStudentContentSchemaReady: isLessonStudentContentSchemaReadyAdmin,
   listReusableAssetsByIds: listReusableAssetsByIdsAdmin,
   getClassDisplayNameById: getClassDisplayNameByIdAdmin,
   getHomeworkReadModel: getTeacherLessonHomeworkReadModel,
@@ -589,6 +593,7 @@ export function buildTeacherLessonWorkspaceReadModel(input: {
   assets: ReusableAsset[];
   homework: TeacherLessonHomeworkReadModel;
   studentContent?: MethodologyLessonStudentContent | null;
+  studentContentUnavailableDueToSchema?: boolean;
   sourceLesson?: TeacherLessonWorkspaceReadModel["sourceLesson"];
   communication?: TeacherLessonWorkspaceReadModel["communication"];
 }): TeacherLessonWorkspaceReadModel {
@@ -615,6 +620,7 @@ export function buildTeacherLessonWorkspaceReadModel(input: {
     studentContent: {
       source: input.studentContent ?? null,
       assetsById,
+      unavailableDueToSchema: Boolean(input.studentContentUnavailableDueToSchema),
     },
     sourceLesson: input.sourceLesson ?? null,
     communication: input.communication ?? {
@@ -648,6 +654,9 @@ export async function getTeacherLessonWorkspaceByScheduledLessonId(
   const studentContent = await deps.getMethodologyLessonStudentContentByLessonId(
     methodologyLesson.id,
   );
+  const studentContentSchemaReady = studentContent
+    ? true
+    : await deps.isLessonStudentContentSchemaReady();
   const studentContentAssetIds = (studentContent?.sections ?? []).flatMap((section) => {
     if (section.type === "media_asset") return [section.assetId];
     if (section.type === "worksheet" && section.assetId) return [section.assetId];
@@ -685,6 +694,8 @@ export async function getTeacherLessonWorkspaceByScheduledLessonId(
     assets,
     homework,
     studentContent,
+    studentContentUnavailableDueToSchema:
+      !studentContent && !studentContentSchemaReady,
     sourceLesson: {
       methodologySlug: methodologyLesson.methodologySlug,
       lessonId: methodologyLesson.id,

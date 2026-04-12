@@ -40,7 +40,21 @@ export function LearnerLessonRoom({
         </div>
       </AppCard>
 
-      {model.studentContent.sections.map((section, index) => (
+      {!model.studentContent ? (
+        <AppCard className="p-5">
+          {model.studentContentUnavailableDueToSchema ? (
+            <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+              Контент урока для ученика временно недоступен. Примените миграцию lesson student content layer.
+            </p>
+          ) : (
+            <p className="text-sm text-neutral-700">
+              Контент урока для ученика пока не опубликован.
+            </p>
+          )}
+        </AppCard>
+      ) : null}
+
+      {(model.studentContent?.sections ?? []).map((section, index) => (
         <AppCard key={`${section.type}-${index}`} className="p-5">
           <h2 className="text-xl font-bold text-neutral-900">{section.title}</h2>
           {section.type === "lesson_focus" ? (

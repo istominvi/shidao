@@ -47,6 +47,7 @@ test("teacher workspace loader combines scheduled + methodology and keeps sorted
       }),
       getMethodologyLessonStudentContentByLessonId: async () =>
         lessonContentFixtureMethodologyLessonStudentContent,
+      isLessonStudentContentSchemaReady: async () => true,
       listReusableAssetsByIds: async (ids) =>
         lessonContentFixtureAssets.filter((asset) => ids.includes(asset.id)),
       getClassDisplayNameById: async () => "Лисички 5-6",
@@ -71,6 +72,7 @@ test("teacher workspace loader returns null when linked methodology lesson is mi
       getScheduledLessonById: async () => lessonContentFixtureScheduledLesson,
       getMethodologyLessonById: async () => null,
       getMethodologyLessonStudentContentByLessonId: async () => null,
+      isLessonStudentContentSchemaReady: async () => true,
       listReusableAssetsByIds: async () => [],
       getClassDisplayNameById: async () => "Группа A",
       getHomeworkReadModel: async () => homeworkSnapshot,
@@ -220,8 +222,32 @@ test("teacher workspace read model includes runtime edit fields and no block ove
   assert.equal(readModel.projection.runtimeNotes, "runtime note");
   assert.equal(readModel.projection.outcomeNotes, "outcome note");
   assert.equal(readModel.studentContent.source?.title, "Урок 1. Животные на ферме");
+  assert.equal(readModel.studentContent.unavailableDueToSchema, false);
   assert.equal("blockOverrides" in readModel.projection, false);
   assert.equal("blockOverrides" in readModel.presentation, false);
+});
+
+test("teacher workspace degrades gracefully when student content schema is unavailable", async () => {
+  const readModel = await getTeacherLessonWorkspaceByScheduledLessonId("scheduled-1", {
+    getScheduledLessonById: async () => ({
+      ...lessonContentFixtureScheduledLesson,
+      id: "scheduled-1",
+      methodologyLessonId: lessonContentFixtureMethodologyLesson.id,
+    }),
+    getMethodologyLessonById: async () => lessonContentFixtureMethodologyLesson,
+    getMethodologyLessonStudentContentByLessonId: async () => null,
+    isLessonStudentContentSchemaReady: async () => false,
+    listReusableAssetsByIds: async () => [],
+    getClassDisplayNameById: async () => "Лисички 5-6",
+    getHomeworkReadModel: async () => homeworkSnapshot,
+    getLessonDiscussions: async () => [],
+    getHomeworkDiscussions: async () => ({ assignmentId: null, items: [] }),
+  });
+
+  assert.ok(readModel);
+  assert.equal(readModel.studentContent.source, null);
+  assert.equal(readModel.studentContent.unavailableDueToSchema, true);
+  assert.ok(readModel.presentation.lessonFlow.length > 0);
 });
 
 test("teacher workspace access allows only teacher profile", () => {
