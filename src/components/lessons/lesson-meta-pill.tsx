@@ -1,9 +1,9 @@
 import type { LucideIcon } from "lucide-react";
-import { CalendarClock, CheckCircle2, Clock3, Layers3, Monitor, PlayCircle, Users } from "lucide-react";
+import { BookOpen, CalendarClock, CheckCircle2, Clock3, Layers3, Monitor, PlayCircle, Users } from "lucide-react";
 import type { ReactNode } from "react";
 
 export type LessonMetaTone = "primary" | "info" | "success" | "warning" | "neutral" | "muted";
-export type LessonMetaIconKey = "group" | "datetime" | "format" | "status" | "position" | "duration" | "readiness";
+export type LessonMetaIconKey = "group" | "datetime" | "format" | "status" | "position" | "duration" | "readiness" | "methodology";
 
 export const lessonMetaIconMap: Record<LessonMetaIconKey, LucideIcon> = {
   group: Users,
@@ -13,6 +13,7 @@ export const lessonMetaIconMap: Record<LessonMetaIconKey, LucideIcon> = {
   position: Layers3,
   duration: Clock3,
   readiness: CheckCircle2,
+  methodology: BookOpen,
 };
 
 function cx(...parts: Array<string | false | null | undefined>) {

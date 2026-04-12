@@ -40,11 +40,16 @@ test("teacher workspace header meta uses shared lesson metadata pills", () => {
   assert.equal(workspaceComponentSource.includes("LessonMetaPill"), true);
   assert.equal(workspaceComponentSource.includes("LessonContextChip"), false);
   assert.equal(workspaceComponentSource.includes("Runtime-урок в расписании"), false);
-  assert.equal(workspaceComponentSource.includes("tone={statusBadgeTone(hero.statusLabel)}"), true);
+  assert.equal(workspaceComponentSource.includes("statusBadgeTone"), false);
+  assert.equal(workspaceComponentSource.includes("hero.methodologyTitle"), true);
   assert.equal(workspaceComponentSource.includes('icon="group"'), true);
   assert.equal(workspaceComponentSource.includes('icon="datetime"'), true);
   assert.equal(workspaceComponentSource.includes('icon="format"'), true);
-  assert.equal(workspaceComponentSource.includes('icon="status"'), true);
+  assert.equal(workspaceComponentSource.includes('icon="methodology"'), true);
+  assert.equal(workspaceComponentSource.includes('icon="status"'), false);
+  assert.equal(workspaceComponentSource.includes("По методике"), false);
+  assert.equal(workspaceComponentSource.includes("Основан на уроке методики"), false);
+  assert.equal(workspaceComponentSource.includes("description={hero.lessonEssence}"), false);
 });
 
 test("teacher workspace homework section keeps methodology content read-only and runtime controls", () => {

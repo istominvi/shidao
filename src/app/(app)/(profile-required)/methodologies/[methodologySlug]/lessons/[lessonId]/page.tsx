@@ -21,12 +21,6 @@ function withError(methodologySlug: string, lessonId: string, message: string) {
   return `${toMethodologyRoute(methodologySlug)}/lessons/${encodeURIComponent(lessonId)}?${query.toString()}`;
 }
 
-function readinessTone(readinessLabel: string) {
-  if (readinessLabel.includes("Готов")) return "success" as const;
-  if (readinessLabel.includes("подготов")) return "warning" as const;
-  return "muted" as const;
-}
-
 export default async function MethodologyLessonPage({ params, searchParams }: { params: Promise<{ methodologySlug: string; lessonId: string }>; searchParams: Promise<{ assign?: string; error?: string }> }) {
   const resolution = await resolveAccessPolicy();
   if (!canAccessTeacherMethodologies(resolution)) redirect(ROUTES.dashboard);
@@ -64,24 +58,16 @@ export default async function MethodologyLessonPage({ params, searchParams }: { 
         <AppPageHeader
           backHref={toMethodologyRoute(methodologySlug)}
           backLabel={readModel.methodology.title}
-          eyebrow="Урок методики"
           title={readModel.lesson.shell.title}
-          description={readModel.presentation.hero.lessonEssence}
           meta={
             <LessonMetaRail>
-              <LessonMetaPill icon="position" tone="neutral" label={readModel.metadata.positionLabel} />
-              <LessonMetaPill icon="duration" tone="neutral" label={readModel.metadata.durationLabel} />
-              <LessonMetaPill icon="readiness" tone={readinessTone(readModel.metadata.readinessLabel)} label={readModel.metadata.readinessLabel} />
+              <LessonMetaPill icon="duration" tone="success" label={readModel.metadata.durationLabel} />
             </LessonMetaRail>
           }
           actions={<AssignLessonDialog action={assignLessonAction} groups={readModel.groups} lessonTitle={readModel.lesson.shell.title} defaultOpen={query.assign === "1"} />}
         />
 
         {query.error ? <p className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{query.error}</p> : null}
-
-        <p className="text-sm text-neutral-700">
-          Методика: <span className="font-semibold text-neutral-900">{readModel.methodology.title}</span> · {readModel.metadata.sourceRuntimeNote}
-        </p>
 
         <TeacherMethodologyLessonWorkspace readModel={readModel} />
       </div>

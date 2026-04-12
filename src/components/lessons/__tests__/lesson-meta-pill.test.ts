@@ -13,6 +13,7 @@ test("lesson meta pill defines shared icon map and semantic tones", () => {
   assert.equal(source.includes('"position"'), true);
   assert.equal(source.includes('"duration"'), true);
   assert.equal(source.includes('"readiness"'), true);
+  assert.equal(source.includes('"methodology"'), true);
   assert.equal(source.includes("LessonMetaRail"), true);
   assert.equal(source.includes("LessonMetaPill"), true);
 });

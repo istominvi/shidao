@@ -14,7 +14,12 @@ test("methodology lesson page uses shared teacher workspace tabs", () => {
   assert.equal(pageSource.includes("LessonMetaRail"), true);
   assert.equal(pageSource.includes("LessonMetaPill"), true);
   assert.equal(pageSource.includes("Source-урок методики"), false);
-  assert.equal(pageSource.includes('icon="position"'), true);
+  assert.equal(pageSource.includes('eyebrow="Урок методики"'), false);
   assert.equal(pageSource.includes('icon="duration"'), true);
-  assert.equal(pageSource.includes('icon="readiness"'), true);
+  assert.equal(pageSource.includes('tone="success"'), true);
+  assert.equal(pageSource.includes('icon="position"'), false);
+  assert.equal(pageSource.includes('icon="readiness"'), false);
+  assert.equal(pageSource.includes("sourceRuntimeNote"), false);
+  assert.equal(pageSource.includes("Методика:"), false);
+  assert.equal(pageSource.includes("description={readModel.presentation.hero.lessonEssence}"), false);
 });
