@@ -65,7 +65,7 @@ test("teacher workspace loader combines scheduled + methodology and keeps sorted
   );
 });
 
-test("teacher workspace loader returns null when linked methodology lesson is missing", async () => {
+test("teacher workspace loader falls back when linked methodology lesson is missing", async () => {
   const readModel = await getTeacherLessonWorkspaceByScheduledLessonId(
     "scheduled-1",
     {
@@ -81,7 +81,10 @@ test("teacher workspace loader returns null when linked methodology lesson is mi
     },
   );
 
-  assert.equal(readModel, null);
+  assert.ok(readModel);
+  assert.equal(readModel.sourceLesson, null);
+  assert.equal(readModel.projection.orderedBlocks.length, 0);
+  assert.equal(readModel.presentation.hero.lessonTitle, "Урок");
 });
 
 test("teacher workspace read model keeps runtime and methodology shells distinct", () => {

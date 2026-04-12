@@ -603,6 +603,42 @@ function buildPresentation(input: {
   };
 }
 
+function buildFallbackTeacherProjection(
+  scheduledLesson: Awaited<ReturnType<typeof getScheduledLessonByIdAdmin>>,
+): TeacherLessonProjection {
+  if (!scheduledLesson) {
+    throw new Error("Scheduled lesson is required to build fallback projection.");
+  }
+
+  return {
+    methodologyLessonId: scheduledLesson.methodologyLessonId,
+    methodologyTitle: "Методика курса",
+    methodologyShell: {
+      id: scheduledLesson.methodologyLessonId,
+      methodologyId: "",
+      title: "Урок",
+      position: {
+        moduleIndex: 1,
+        lessonIndex: 1,
+      },
+      vocabularySummary: [],
+      phraseSummary: [],
+      estimatedDurationMinutes: 45,
+      mediaSummary: {
+        videos: 0,
+        songs: 0,
+        worksheets: 0,
+        other: 0,
+      },
+      readinessStatus: "draft",
+    },
+    runtimeShell: scheduledLesson.runtimeShell,
+    orderedBlocks: [],
+    runtimeNotes: scheduledLesson.runtimeNotes,
+    outcomeNotes: scheduledLesson.outcomeNotes,
+  };
+}
+
 export function buildTeacherLessonWorkspaceReadModel(input: {
   projection: TeacherLessonProjection;
   scheduledLessonId: string;
@@ -664,22 +700,20 @@ export async function getTeacherLessonWorkspaceByScheduledLessonId(
     return null;
   }
 
-  const methodologyLesson = await deps.getMethodologyLessonById(
-    scheduledLesson.methodologyLessonId,
-  );
-  if (!methodologyLesson) {
-    return null;
-  }
+  const methodologyLesson = await deps
+    .getMethodologyLessonById(scheduledLesson.methodologyLessonId)
+    .catch(() => null);
 
-  const projection = buildTeacherLessonProjection(
-    methodologyLesson,
-    scheduledLesson,
-  );
+  const projection = methodologyLesson
+    ? buildTeacherLessonProjection(methodologyLesson, scheduledLesson)
+    : buildFallbackTeacherProjection(scheduledLesson);
   const studentContentSchemaReady =
-    await deps
-      .isMethodologyLessonStudentContentSchemaReady()
-      .catch(() => false);
-  const studentContent = studentContentSchemaReady
+    methodologyLesson
+      ? await deps
+          .isMethodologyLessonStudentContentSchemaReady()
+          .catch(() => false)
+      : false;
+  const studentContent = studentContentSchemaReady && methodologyLesson
     ? await deps
         .getMethodologyLessonStudentContentByLessonId(methodologyLesson.id)
         .catch(() => null)
@@ -724,12 +758,14 @@ export async function getTeacherLessonWorkspaceByScheduledLessonId(
     homework,
     studentContentSchemaReady,
     studentContent,
-    sourceLesson: {
-      methodologySlug: methodologyLesson.methodologySlug,
-      lessonId: methodologyLesson.id,
-      methodologyTitle: methodologyLesson.methodologyTitle?.trim() || "Методика",
-      positionLabel: `Модуль ${methodologyLesson.shell.position.moduleIndex} · Урок ${methodologyLesson.shell.position.lessonIndex}${methodologyLesson.shell.position.unitIndex ? ` · Раздел ${methodologyLesson.shell.position.unitIndex}` : ""}`,
-    },
+    sourceLesson: methodologyLesson
+      ? {
+          methodologySlug: methodologyLesson.methodologySlug,
+          lessonId: methodologyLesson.id,
+          methodologyTitle: methodologyLesson.methodologyTitle?.trim() || "Методика",
+          positionLabel: `Модуль ${methodologyLesson.shell.position.moduleIndex} · Урок ${methodologyLesson.shell.position.lessonIndex}${methodologyLesson.shell.position.unitIndex ? ` · Раздел ${methodologyLesson.shell.position.unitIndex}` : ""}`,
+        }
+      : null,
     communication: {
       lessonScoped:
         lessonDiscussions.length > 0
