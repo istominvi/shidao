@@ -1,8 +1,11 @@
 import { AppCard } from "@/components/app/app-card";
 import { StudentHomeworkQuizCard } from "@/components/dashboard/student-homework-quiz-card";
-import type { LearnerLessonRoomReadModel } from "@/lib/server/learner-lesson-room";
+import type {
+  ParentScheduledLessonView,
+  StudentScheduledLessonView,
+} from "@/lib/server/scheduled-lesson-view";
 
-function statusLabel(status: LearnerLessonRoomReadModel["runtimeStatus"]) {
+function statusLabel(status: StudentScheduledLessonView["runtimeStatus"]) {
   if (status === "in_progress") return "Идёт урок";
   if (status === "completed") return "Урок завершён";
   if (status === "cancelled") return "Урок отменён";
@@ -19,21 +22,23 @@ function whenLabel(startsAt: string) {
   }).format(new Date(startsAt));
 }
 
-export function LearnerLessonRoom({
+export function ScheduledLessonLearnerView({
   model,
-  role,
-  header,
 }: {
-  model: LearnerLessonRoomReadModel;
-  role: "student" | "parent";
-  header: { title: string; subtitle: string };
+  model: StudentScheduledLessonView | ParentScheduledLessonView;
 }) {
+  const isParent = model.role === "parent";
+
   return (
     <div className="space-y-5">
       <AppCard className="p-5 md:p-6">
-        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-sky-700">{header.title}</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-sky-700">
+          {isParent ? "Урок ребёнка" : "Твой урок"}
+        </p>
         <h1 className="mt-2 text-2xl font-black text-neutral-950">{model.lessonTitle}</h1>
-        <p className="mt-1 text-sm text-neutral-700">{model.lessonSubtitle ?? header.subtitle}</p>
+        <p className="mt-1 text-sm text-neutral-700">
+          {model.lessonSubtitle ?? "Повторяй слова и активности урока в удобном темпе."}
+        </p>
         <div className="mt-3 flex flex-wrap gap-2 text-xs text-neutral-700">
           <span className="rounded-full bg-neutral-100 px-3 py-1">{statusLabel(model.runtimeStatus)}</span>
           <span className="rounded-full bg-neutral-100 px-3 py-1">{whenLabel(model.startsAt)}</span>
@@ -52,7 +57,7 @@ export function LearnerLessonRoom({
             </p>
           ) : model.studentContentUnavailableReason === "load_failed" ? (
             <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
-              Не удалось загрузить контент урока для ученика. Основной сценарий урока остаётся доступен.
+              Не удалось загрузить контент урока для ученика.
             </p>
           ) : (
             <p className="text-sm text-neutral-700">
@@ -105,12 +110,9 @@ export function LearnerLessonRoom({
             <article className="mt-3 rounded-2xl border border-sky-200 bg-sky-50/60 p-3 text-sm">
               <p className="font-semibold text-neutral-900">{model.assetsById[section.assetId]?.title ?? section.title}</p>
               <p className="text-neutral-700">{section.studentPrompt}</p>
-              <p className="mt-1 text-xs text-neutral-500">Тип: {section.assetKind === "video" ? "Видео" : "Песня"}</p>
               {model.assetsById[section.assetId]?.sourceUrl ? (
                 <a href={model.assetsById[section.assetId]?.sourceUrl} className="mt-2 inline-block text-xs text-sky-700 underline underline-offset-2" target="_blank" rel="noreferrer">Открыть материал</a>
-              ) : (
-                <p className="mt-2 text-xs text-neutral-500">Ссылка будет добавлена преподавателем в материалы курса.</p>
-              )}
+              ) : null}
             </article>
           ) : null}
 
@@ -130,9 +132,6 @@ export function LearnerLessonRoom({
             <article className="mt-3 rounded-2xl border border-amber-200 bg-amber-50/60 p-3 text-sm text-neutral-700">
               <p className="font-semibold text-neutral-900">{section.pageLabel ?? "Задание"}</p>
               <p>{section.instructions}</p>
-              {section.assetId ? (
-                <p className="mt-1 text-xs text-neutral-500">Материал: {model.assetsById[section.assetId]?.title ?? section.assetId}</p>
-              ) : null}
             </article>
           ) : null}
 
@@ -146,42 +145,72 @@ export function LearnerLessonRoom({
         </AppCard>
       ))}
 
-      {model.homework ? (
+      {model.role === "student" && model.homework ? (
         <AppCard className="border-fuchsia-200/80 p-5">
           <h2 className="text-xl font-bold text-neutral-900">Домашнее задание</h2>
-          {model.homework.role === "student" ? (
-            <article className="mt-3 rounded-2xl border border-neutral-200 bg-white p-3">
-              <p className="font-semibold text-neutral-900">{model.homework.card.homeworkTitle}</p>
-              <p className="text-xs text-neutral-500">{model.homework.card.statusLabel} · Срок: {model.homework.card.dueAt ?? "без срока"}</p>
-              <p className="mt-2 text-sm text-neutral-700">{model.homework.card.instructions}</p>
-              {model.homework.card.kind === "practice_text" ? (
-                role === "student" ? (
-                  <form className="mt-2 space-y-2" action={`/api/student/homework/${model.homework.card.studentHomeworkAssignmentId}/submit`} method="POST">
-                    <textarea
-                      name="submissionText"
-                      defaultValue={model.homework.card.submissionText ?? ""}
-                      rows={3}
-                      className="w-full rounded-xl border border-neutral-300 px-3 py-2 text-sm"
-                      placeholder="Напиши короткий ответ"
-                    />
-                    <button type="submit" className="rounded-xl bg-neutral-900 px-3 py-1.5 text-sm font-semibold text-white">Отправить</button>
-                  </form>
-                ) : null
-              ) : (
-                <StudentHomeworkQuizCard item={model.homework.card} />
-              )}
-            </article>
-          ) : (
-            <article className="mt-3 rounded-2xl border border-neutral-200 bg-white p-3 text-sm text-neutral-700">
-              <p className="font-semibold text-neutral-900">{model.homework.card.homeworkTitle}</p>
-              <p className="text-xs text-neutral-500">{model.homework.card.statusLabel} · Срок: {model.homework.card.dueAt ?? "без срока"}</p>
-              {model.homework.card.score !== null && model.homework.card.maxScore !== null ? (
-                <p className="mt-1 text-xs text-sky-800">Результат: {model.homework.card.score} / {model.homework.card.maxScore}</p>
-              ) : null}
-              {model.homework.card.assignmentComment ? <p className="mt-1">Комментарий к выдаче: {model.homework.card.assignmentComment}</p> : null}
-              {model.homework.card.reviewNote ? <p className="mt-1">Комментарий после проверки: {model.homework.card.reviewNote}</p> : null}
-            </article>
-          )}
+          <article className="mt-3 rounded-2xl border border-neutral-200 bg-white p-3">
+            <p className="font-semibold text-neutral-900">{model.homework.homeworkTitle}</p>
+            <p className="text-xs text-neutral-500">{model.homework.statusLabel} · Срок: {model.homework.dueAt ?? "без срока"}</p>
+            <p className="mt-2 text-sm text-neutral-700">{model.homework.instructions}</p>
+            {model.homework.kind === "practice_text" ? (
+              <form className="mt-2 space-y-2" action={`/api/student/homework/${model.homework.studentHomeworkAssignmentId}/submit`} method="POST">
+                <textarea
+                  name="submissionText"
+                  defaultValue={model.homework.submissionText ?? ""}
+                  rows={3}
+                  className="w-full rounded-xl border border-neutral-300 px-3 py-2 text-sm"
+                  placeholder="Напиши короткий ответ"
+                />
+                <button type="submit" className="rounded-xl bg-neutral-900 px-3 py-1.5 text-sm font-semibold text-white">Отправить</button>
+              </form>
+            ) : (
+              <StudentHomeworkQuizCard item={model.homework} />
+            )}
+          </article>
+        </AppCard>
+      ) : null}
+
+      {model.role === "student" && model.communication.length > 0 ? (
+        <AppCard className="p-5">
+          <h2 className="text-lg font-bold text-neutral-900">Обсуждение по уроку</h2>
+          <div className="mt-2 space-y-1 text-sm text-neutral-700">
+            {model.communication.map((message) => (
+              <p key={message.id}><span className="font-medium">{message.authorRole}:</span> {message.body}</p>
+            ))}
+          </div>
+        </AppCard>
+      ) : null}
+
+      {model.role === "parent" ? (
+        <AppCard className="p-5">
+          <h2 className="text-lg font-bold text-neutral-900">Дети на этом уроке</h2>
+          <div className="mt-3 space-y-3">
+            {model.childrenRuntime.map((child) => (
+              <article key={child.studentId} className="rounded-2xl border border-neutral-200 bg-white p-3 text-sm">
+                <p className="font-semibold text-neutral-900">{child.studentName}</p>
+                <p className="text-xs text-neutral-500">{child.lessonStatusLabel}</p>
+                {child.homework ? (
+                  <>
+                    <p className="mt-1 text-neutral-700">{child.homework.homeworkTitle} · {child.homework.statusLabel}</p>
+                    {child.homework.score !== null && child.homework.maxScore !== null ? (
+                      <p className="text-xs text-sky-800">Результат: {child.homework.score} / {child.homework.maxScore}</p>
+                    ) : null}
+                    {child.homework.assignmentComment ? <p className="text-xs text-neutral-700">Комментарий к выдаче: {child.homework.assignmentComment}</p> : null}
+                    {child.homework.reviewNote ? <p className="text-xs text-neutral-700">Комментарий после проверки: {child.homework.reviewNote}</p> : null}
+                  </>
+                ) : (
+                  <p className="mt-1 text-neutral-600">Домашнее задание пока не выдано.</p>
+                )}
+                {child.communicationPreview.length > 0 ? (
+                  <div className="mt-2 rounded-xl border border-neutral-200 bg-neutral-50 p-2">
+                    {child.communicationPreview.map((message) => (
+                      <p key={message.id} className="text-xs text-neutral-700"><span className="font-medium">{message.authorRole}:</span> {message.body}</p>
+                    ))}
+                  </div>
+                ) : null}
+              </article>
+            ))}
+          </div>
         </AppCard>
       ) : null}
     </div>

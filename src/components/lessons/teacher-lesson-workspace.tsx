@@ -105,10 +105,10 @@ export function TeacherLessonWorkspace({
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <h2 className="text-xl font-bold text-neutral-900">Контент для ученика</h2>
                 <Link
-                  href={`/lesson-room/${workspace.scheduledLessonId}`}
+                  href={`/lessons/${workspace.scheduledLessonId}?view=learner-preview`}
                   className="rounded-xl border border-sky-300 bg-sky-50 px-3 py-2 text-sm font-semibold text-sky-800"
                 >
-                  Открыть ученическую версию
+                  Предпросмотр ученической версии
                 </Link>
               </div>
               {!workspace.studentContent.source ? (

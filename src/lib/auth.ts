@@ -66,16 +66,12 @@ export function toGroupRoute(groupId: string) {
   return `${ROUTES.groups}/${encodeURIComponent(groupId)}`;
 }
 
-export function toLessonWorkspaceRoute(scheduledLessonId: string) {
+export function toScheduledLessonRoute(scheduledLessonId: string) {
   return `${ROUTES.lessons}/${encodeURIComponent(scheduledLessonId)}`;
 }
 
-export function toStudentLessonRoomRoute(scheduledLessonId: string) {
-  return `/lesson-room/${encodeURIComponent(scheduledLessonId)}`;
-}
-
-export function toParentLessonRoomRoute(studentId: string, scheduledLessonId: string) {
-  return `/children/${encodeURIComponent(studentId)}/lesson-room/${encodeURIComponent(scheduledLessonId)}`;
+export function toLessonWorkspaceRoute(scheduledLessonId: string) {
+  return toScheduledLessonRoute(scheduledLessonId);
 }
 
 

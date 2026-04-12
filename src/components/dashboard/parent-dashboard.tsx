@@ -1,6 +1,6 @@
 import { DashboardShell } from "@/components/dashboard-shell";
 import Link from "next/link";
-import { toParentLessonRoomRoute } from "@/lib/auth";
+import { toScheduledLessonRoute } from "@/lib/auth";
 
 type ParentContext = {
   studentId: string;
@@ -80,7 +80,7 @@ export function ParentDashboard({
                         <p className="font-semibold text-neutral-900">{lesson.lessonTitle}</p>
                         <p className="text-xs text-neutral-600">{lesson.startsAt} · {lesson.statusLabel}</p>
                         <Link
-                          href={toParentLessonRoomRoute(child.studentId, lesson.scheduledLessonId)}
+                          href={toScheduledLessonRoute(lesson.scheduledLessonId)}
                           className="mt-1 inline-flex rounded-lg border border-sky-300 bg-white px-2 py-1 text-xs font-semibold text-sky-800"
                         >
                           Открыть урок
