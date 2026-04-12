@@ -7,6 +7,10 @@ const workspaceComponentSource = readFileSync(
   join(process.cwd(), "src/components/lessons/teacher-lesson-workspace.tsx"),
   "utf8",
 );
+const tabsSource = readFileSync(
+  join(process.cwd(), "src/components/lessons/teacher-lesson-tabs.tsx"),
+  "utf8",
+);
 
 test("teacher workspace component keeps runtime editing surface", () => {
   assert.equal(workspaceComponentSource.includes('name="runtimeStatus"'), true);
@@ -19,10 +23,28 @@ test("teacher workspace component keeps runtime editing surface", () => {
   assert.equal(workspaceComponentSource.includes("Проведение занятия"), true);
 });
 
-test("teacher workspace methodology section remains read-only", () => {
-  assert.equal(workspaceComponentSource.includes("Ориентиры методики"), true);
-  assert.equal(workspaceComponentSource.includes('name="methodology"'), false);
-  assert.equal(workspaceComponentSource.includes('name="methodologyTitle"'), false);
+test("teacher workspace uses unified five-tab labels and removes legacy side cards", () => {
+  assert.equal(workspaceComponentSource.includes('[\"plan\", \"content\", \"homework\", \"conduct\", \"chat\"]'), true);
+  assert.equal(tabsSource.includes("План урока"), true);
+  assert.equal(tabsSource.includes("Контент"), true);
+  assert.equal(tabsSource.includes("Домашнее задание"), true);
+  assert.equal(tabsSource.includes("Проведение занятия"), true);
+  assert.equal(tabsSource.includes("Чат"), true);
+  assert.equal(workspaceComponentSource.includes("Ориентиры методики"), false);
+  assert.equal(workspaceComponentSource.includes("Фокус преподавателя"), false);
+  assert.equal(workspaceComponentSource.includes("Discussion for this lesson"), false);
+});
+
+test("teacher workspace header meta uses shared lesson metadata pills", () => {
+  assert.equal(workspaceComponentSource.includes("LessonMetaRail"), true);
+  assert.equal(workspaceComponentSource.includes("LessonMetaPill"), true);
+  assert.equal(workspaceComponentSource.includes("LessonContextChip"), false);
+  assert.equal(workspaceComponentSource.includes("Runtime-урок в расписании"), false);
+  assert.equal(workspaceComponentSource.includes("tone={statusBadgeTone(hero.statusLabel)}"), true);
+  assert.equal(workspaceComponentSource.includes('icon="group"'), true);
+  assert.equal(workspaceComponentSource.includes('icon="datetime"'), true);
+  assert.equal(workspaceComponentSource.includes('icon="format"'), true);
+  assert.equal(workspaceComponentSource.includes('icon="status"'), true);
 });
 
 test("teacher workspace homework section keeps methodology content read-only and runtime controls", () => {

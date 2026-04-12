@@ -1,4 +1,5 @@
 import { buildTeacherLessonProjection, type ScheduledLesson } from "../lesson-content";
+import type { ReusableAsset } from "../lesson-content";
 import type { Methodology, MethodologyMetadata } from "../lesson-content/contracts";
 import type { AccessResolution } from "./access-policy";
 import { getMethodologyHomeworkByLessonIdAdmin } from "./homework-repository";
@@ -6,6 +7,9 @@ import {
   createScheduledLessonAdmin,
   getMethodologyBySlugAdmin,
   getMethodologyLessonByIdAdmin,
+  getMethodologyLessonStudentContentByLessonIdAdmin,
+  isLessonStudentContentSchemaReadyAdmin,
+  isMissingLessonStudentContentSchemaError,
   listMethodologiesWithSlugAdmin,
   listMethodologyLessonsByMethodologyAdmin,
   listReusableAssetsByIdsAdmin,
@@ -15,6 +19,7 @@ import {
   buildTeacherLessonWorkspaceReadModel,
   canAccessTeacherLessonWorkspace,
 } from "./teacher-lesson-workspace";
+import { isInvalidLessonStudentContentPayloadError } from "./lesson-content-mappers";
 
 function clean(value: string | null | undefined) {
   return value?.trim() || "";
@@ -65,6 +70,17 @@ function inferMaterialsSignals(summary: string | undefined) {
 
 function homeworkKindLabel(kind: "practice_text" | "quiz_single_choice") {
   return kind === "quiz_single_choice" ? "Квиз" : "Практика";
+}
+
+function toStudentContentUnavailableReason(error: unknown) {
+  if (isInvalidLessonStudentContentPayloadError(error)) {
+    return "invalid_payload" as const;
+  }
+  const message = error instanceof Error ? error.message : "";
+  if (isMissingLessonStudentContentSchemaError(message)) {
+    return "schema_missing" as const;
+  }
+  return "load_failed" as const;
 }
 
 export function canAccessTeacherMethodologies(resolution: AccessResolution) {
@@ -218,6 +234,36 @@ export async function getTeacherMethodologyLessonReadModel(input: { teacherId: s
 
   const projection = buildTeacherLessonProjection(lesson, scheduledStub);
   const assets = await listReusableAssetsByIdsAdmin(collectAssetIds(lesson));
+  let studentContent = null;
+  let studentContentUnavailableReason: "schema_missing" | "invalid_payload" | "load_failed" | null =
+    null;
+  let studentContentAssets: ReusableAsset[] = [];
+
+  try {
+    studentContent = await getMethodologyLessonStudentContentByLessonIdAdmin(lesson.id);
+    if (!studentContent) {
+      const isSchemaReady = await isLessonStudentContentSchemaReadyAdmin();
+      if (!isSchemaReady) {
+        studentContentUnavailableReason = "schema_missing";
+      }
+    } else {
+      const assetIds = Array.from(
+        new Set(
+          studentContent.sections.flatMap((section) => {
+            if (section.type === "media_asset") return [section.assetId];
+            if (section.type === "worksheet" && section.assetId) return [section.assetId];
+            return [];
+          }),
+        ),
+      );
+      studentContentAssets = assetIds.length ? await listReusableAssetsByIdsAdmin(assetIds) : [];
+    }
+  } catch (error) {
+    studentContent = null;
+    studentContentAssets = [];
+    studentContentUnavailableReason = toStudentContentUnavailableReason(error);
+  }
+
   const presentation = buildTeacherLessonWorkspaceReadModel({
     projection,
     scheduledLessonId: scheduledStub.id,
@@ -237,6 +283,9 @@ export async function getTeacherMethodologyLessonReadModel(input: { teacherId: s
       },
       roster: [],
     },
+    studentContent,
+    studentContentUnavailableReason,
+    studentContentAssets,
   }).presentation;
 
   const groups = (await listTeacherClassesAdmin(input.teacherId))
@@ -270,6 +319,11 @@ export async function getTeacherMethodologyLessonReadModel(input: { teacherId: s
             "Это каноничное домашнее задание из методики. Оно становится реальным назначением только после выдачи урока в группе.",
         }
       : null,
+    studentContent: {
+      source: studentContent,
+      assetsById: Object.fromEntries(studentContentAssets.map((asset) => [asset.id, asset])),
+      unavailableReason: studentContentUnavailableReason,
+    },
   };
 }
 
