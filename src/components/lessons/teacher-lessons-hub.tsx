@@ -3,7 +3,6 @@
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { AppCard } from "@/components/app/app-card";
-import { AppPageHeader } from "@/components/app/page-header";
 import { TeacherScheduleSurface } from "@/components/schedule/teacher-schedule-surface";
 import { TeacherLessonsCarousel } from "@/components/schedule/teacher-lessons-carousel";
 import type { ScheduleViewMode } from "@/components/dashboard/teacher-schedule-utils";
@@ -46,8 +45,6 @@ export function TeacherLessonsHub({
 
   return (
     <div className="space-y-6 lg:space-y-8">
-      <AppPageHeader title="Расписание" />
-
       <TeacherLessonsCarousel events={hub.schedule.events} nowIso={hub.schedule.nowIso} />
 
       <TeacherScheduleSurface

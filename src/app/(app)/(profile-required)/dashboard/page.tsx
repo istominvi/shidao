@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { ParentDashboard } from "@/components/dashboard/parent-dashboard";
 import { StudentDashboard } from "@/components/dashboard/student-dashboard";
 import { TeacherDashboard } from "@/components/dashboard/teacher-dashboard";
+import { AppPageHeader } from "@/components/app/page-header";
 import { TopNav } from "@/components/top-nav";
 import { ROUTES } from "@/lib/auth";
 import { resolveAccessPolicy } from "@/lib/server/access-policy";
@@ -101,7 +102,11 @@ export default async function DashboardIndexPage({
       <main className="pb-12">
         <div className="landing-noise" aria-hidden="true" />
         <TopNav />
-        <div className="container py-7 md:py-10">
+        <div className="container space-y-6 py-7 md:py-10">
+          <AppPageHeader
+            title="Обзор"
+            description="Операционный центр преподавателя: расписание, приоритеты и текущий статус учебных групп."
+          />
           <TeacherDashboard readModel={readModel} />
         </div>
       </main>

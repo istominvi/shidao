@@ -421,24 +421,24 @@ a {
 .app-page-header {
   display: flex;
   flex-direction: column;
-  gap: 0.7rem;
-  padding: 0.45rem 1.5rem 0.2rem;
+  gap: 0.78rem;
+  padding: 0.45rem 1.5rem 0.35rem;
 }
 
 .app-page-header-has-back {
-  gap: 0.55rem;
+  gap: 0.62rem;
 }
 
 .app-page-back-link {
   display: inline-flex;
   width: fit-content;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.42rem;
   min-height: 2rem;
   border-radius: 999px;
-  padding: 0.12rem 0.35rem;
-  font-size: 0.9rem;
-  font-weight: 520;
+  padding: 0.16rem 0.48rem;
+  font-size: 0.88rem;
+  font-weight: 560;
   letter-spacing: 0.01em;
   color: #0f5f88;
   text-decoration: none;
@@ -477,14 +477,17 @@ a {
   font-weight: 900;
   letter-spacing: -0.03em;
   color: #0a0a0a;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
 }
 
 .app-page-description {
   margin: 0;
-  max-width: 62ch;
+  max-width: 66ch;
   font-size: 0.95rem;
   line-height: 1.65;
   color: #404040;
+  text-wrap: pretty;
 }
 
 .app-page-meta {
@@ -492,6 +495,7 @@ a {
   flex-wrap: wrap;
   gap: 0.5rem;
   align-items: flex-start;
+  width: 100%;
 }
 
 .lesson-meta-rail {
@@ -588,6 +592,7 @@ a {
   flex-wrap: wrap;
   gap: 0.5rem;
   align-items: center;
+  width: 100%;
 }
 
 @media (max-width: 768px) {

@@ -1,6 +1,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { isRedirectError } from "next/dist/client/components/redirect-error";
+import { AppPageHeader } from "@/components/app/page-header";
 import { TeacherLessonsHub } from "@/components/lessons/teacher-lessons-hub";
 import { TopNav } from "@/components/top-nav";
 import { ROUTES, toLessonWorkspaceRoute } from "@/lib/auth";
@@ -89,7 +90,11 @@ export default async function TeacherLessonsHubPage({
     <main className="pb-12">
       <div className="landing-noise" aria-hidden="true" />
       <TopNav />
-      <div className="container py-7 md:py-10">
+      <div className="container space-y-6 py-7 md:py-10">
+        <AppPageHeader
+          title="Расписание"
+          description="Runtime-слой занятий по всем группам: планирование, просмотр ближайших уроков и навигация в рабочее пространство урока."
+        />
         <TeacherLessonsHub
           hub={hub}
           createLessonAction={createLessonAction}

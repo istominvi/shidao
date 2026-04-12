@@ -23,4 +23,7 @@ test("canonical scheduled lesson page resolves role-aware server projections", (
   assert.equal(pageSource.includes("workspace.sourceLesson"), true);
   assert.equal(pageSource.includes("LessonMetaRail"), true);
   assert.equal(pageSource.includes("LessonMetaPill"), true);
+  assert.equal(pageSource.includes("backHref={ROUTES.dashboard}"), true);
+  assert.equal(pageSource.includes("<h1"), false);
+  assert.equal(pageSource.includes('<header className="landing-surface'), false);
 });

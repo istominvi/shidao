@@ -58,9 +58,12 @@ export default async function MethodologyLessonPage({ params, searchParams }: { 
         <AppPageHeader
           backHref={toMethodologyRoute(methodologySlug)}
           backLabel={readModel.methodology.title}
+          eyebrow="Урок методики"
           title={readModel.lesson.shell.title}
+          description={readModel.presentation.hero.lessonEssence}
           meta={
             <LessonMetaRail>
+              <LessonMetaPill icon="methodology" tone="neutral" label={readModel.methodology.title} />
               <LessonMetaPill icon="duration" tone="success" label={readModel.metadata.durationLabel} />
             </LessonMetaRail>
           }

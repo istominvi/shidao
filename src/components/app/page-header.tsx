@@ -25,13 +25,16 @@ export function AppPageHeader({
   actions,
   className,
 }: AppPageHeaderProps) {
+  const resolvedBackAriaLabel =
+    backAriaLabel ?? (typeof backLabel === "string" ? `Назад: ${backLabel}` : "Назад");
+
   return (
     <header className={cn("app-page-header", backHref && "app-page-header-has-back", className)}>
       {backHref ? (
         <Link
           href={backHref}
           className="app-page-back-link"
-          aria-label={backAriaLabel}
+          aria-label={resolvedBackAriaLabel}
         >
           <span aria-hidden="true">←</span>
           <span>{backLabel ?? "Назад"}</span>

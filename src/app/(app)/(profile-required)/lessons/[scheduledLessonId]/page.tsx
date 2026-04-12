@@ -59,6 +59,8 @@ export default async function ScheduledLessonPage({
         <TopNav />
         <div className="container space-y-6 py-7 md:py-10">
           <AppPageHeader
+            backHref={ROUTES.dashboard}
+            backLabel="Дашборд"
             eyebrow={learnerEyebrow("student")}
             title={view.lessonTitle}
             description={
@@ -112,6 +114,8 @@ export default async function ScheduledLessonPage({
         <TopNav />
         <div className="container space-y-6 py-7 md:py-10">
           <AppPageHeader
+            backHref={ROUTES.dashboard}
+            backLabel="Дашборд"
             eyebrow={learnerEyebrow("parent")}
             title={view.lessonTitle}
             description={
@@ -174,6 +178,11 @@ export default async function ScheduledLessonPage({
           {preview ? (
             <>
               <AppPageHeader
+                backHref={toMethodologyLessonRoute(
+                  teacherView.workspace.sourceLesson.methodologySlug,
+                  teacherView.workspace.sourceLesson.lessonId,
+                )}
+                backLabel={teacherView.workspace.sourceLesson.methodologyTitle}
                 eyebrow={learnerEyebrow("preview")}
                 title={preview.lessonTitle}
                 description={
