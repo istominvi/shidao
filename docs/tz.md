@@ -117,5 +117,6 @@
   - `Домашнее задание`,
   - `Проведение занятия`,
   - `Чат`.
+- Header metadata на страницах teacher-уроков унифицирована в общий pill-rail без отдельных source/runtime context-chip.
 - Введён единый runtime route для всех ролей: `/lessons/[scheduledLessonId]`.
 - Student и parent используют один и тот же learner-content projection, а parent получает multi-child runtime summary на этой же странице.

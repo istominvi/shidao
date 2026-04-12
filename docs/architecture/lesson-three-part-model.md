@@ -49,6 +49,7 @@
     - `Домашнее задание`
     - `Проведение занятия`
     - `Чат`
+  - Оба teacher lesson pages используют общий metadata-pill rail в header; отдельные context-chip (`source/runtime`) не используются.
 - **Student**: learner-facing content + own homework block (actionable) на `/lessons/[scheduledLessonId]`.
 - **Parent**: тот же learner-facing content + read-only `childrenRuntime[]` блоки для всех детей в этом уроке на `/lessons/[scheduledLessonId]`.
 

@@ -3,7 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { isRedirectError } from "next/dist/client/components/redirect-error";
 import { AppPageHeader } from "@/components/app/page-header";
 import { AssignLessonDialog } from "@/components/lessons/assign-lesson-dialog";
-import { LessonContextChip } from "@/components/lessons/lesson-context-chip";
+import { LessonMetaPill, LessonMetaRail } from "@/components/lessons/lesson-meta-pill";
 import { TeacherMethodologyLessonWorkspace } from "@/components/lessons/teacher-methodology-lesson-workspace";
 import { TopNav } from "@/components/top-nav";
 import { ROUTES, toLessonWorkspaceRoute, toMethodologyRoute } from "@/lib/auth";
@@ -19,6 +19,12 @@ import {
 function withError(methodologySlug: string, lessonId: string, message: string) {
   const query = new URLSearchParams({ error: message, assign: "1" });
   return `${toMethodologyRoute(methodologySlug)}/lessons/${encodeURIComponent(lessonId)}?${query.toString()}`;
+}
+
+function readinessTone(readinessLabel: string) {
+  if (readinessLabel.includes("Готов")) return "success" as const;
+  if (readinessLabel.includes("подготов")) return "warning" as const;
+  return "muted" as const;
 }
 
 export default async function MethodologyLessonPage({ params, searchParams }: { params: Promise<{ methodologySlug: string; lessonId: string }>; searchParams: Promise<{ assign?: string; error?: string }> }) {
@@ -62,12 +68,11 @@ export default async function MethodologyLessonPage({ params, searchParams }: { 
           title={readModel.lesson.shell.title}
           description={readModel.presentation.hero.lessonEssence}
           meta={
-            <>
-              <LessonContextChip context="methodology" />
-              <span className="rounded-full border border-neutral-200 bg-white px-3 py-1 text-sm text-neutral-700">{readModel.metadata.positionLabel}</span>
-              <span className="rounded-full border border-neutral-200 bg-white px-3 py-1 text-sm text-neutral-700">{readModel.metadata.durationLabel}</span>
-              <span className="rounded-full border border-neutral-200 bg-white px-3 py-1 text-sm text-neutral-700">{readModel.metadata.readinessLabel}</span>
-            </>
+            <LessonMetaRail>
+              <LessonMetaPill icon="position" tone="neutral" label={readModel.metadata.positionLabel} />
+              <LessonMetaPill icon="duration" tone="neutral" label={readModel.metadata.durationLabel} />
+              <LessonMetaPill icon="readiness" tone={readinessTone(readModel.metadata.readinessLabel)} label={readModel.metadata.readinessLabel} />
+            </LessonMetaRail>
           }
           actions={<AssignLessonDialog action={assignLessonAction} groups={readModel.groups} lessonTitle={readModel.lesson.shell.title} defaultOpen={query.assign === "1"} />}
         />

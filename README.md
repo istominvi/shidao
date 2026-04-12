@@ -482,6 +482,7 @@ returning id;
   - `Домашнее задание`,
   - `Проведение занятия`,
   - `Чат`.
+- Header metadata на teacher lesson pages унифицирована в общий lesson-meta rail (без отдельных source/runtime context-chip плашек).
 - Введён единый canonical runtime route `/lessons/[scheduledLessonId]` для teacher/student/parent с server-side role-aware projection.
 - Parent видит тот же learner-facing контент, что и ученик (без teacher-only методических внутренних полей).
 - Архитектурные детали: `docs/architecture/lesson-three-part-model.md`.

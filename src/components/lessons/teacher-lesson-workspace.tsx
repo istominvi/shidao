@@ -5,7 +5,7 @@ import Link from "next/link";
 import type { TeacherLessonWorkspaceReadModel } from "@/lib/server/teacher-lesson-workspace";
 import { AppCard } from "@/components/app/app-card";
 import { AppPageHeader } from "@/components/app/page-header";
-import { LessonContextChip } from "@/components/lessons/lesson-context-chip";
+import { LessonMetaPill, LessonMetaRail, type LessonMetaTone } from "@/components/lessons/lesson-meta-pill";
 import { LessonStudentContentPanel } from "@/components/lessons/lesson-student-content-panel";
 import { TeacherLessonPedagogicalContent } from "@/components/lessons/teacher-lesson-pedagogical-content";
 import { TeacherHomeworkPanel } from "@/components/lessons/teacher-homework-panel";
@@ -21,10 +21,10 @@ type TeacherLessonWorkspaceProps = {
 };
 
 function statusBadgeTone(statusLabel: string) {
-  if (statusLabel.includes("Идёт")) return "bg-sky-100 text-sky-800 border-sky-200";
-  if (statusLabel.includes("Заверш")) return "bg-emerald-100 text-emerald-800 border-emerald-200";
-  if (statusLabel.includes("Отмен")) return "bg-rose-100 text-rose-800 border-rose-200";
-  return "bg-amber-100 text-amber-800 border-amber-200";
+  if (statusLabel.includes("Идёт")) return "info" as LessonMetaTone;
+  if (statusLabel.includes("Заверш")) return "success" as LessonMetaTone;
+  if (statusLabel.includes("Отмен")) return "warning" as LessonMetaTone;
+  return "primary" as LessonMetaTone;
 }
 
 export function TeacherLessonWorkspace({ workspace, runtimeFormFeedback }: TeacherLessonWorkspaceProps) {
@@ -39,13 +39,12 @@ export function TeacherLessonWorkspace({ workspace, runtimeFormFeedback }: Teach
         title={hero.lessonTitle}
         description={hero.lessonEssence}
         meta={(
-          <>
-            <span className="rounded-full border border-neutral-200 bg-white/90 px-3 py-1.5 text-sm font-medium text-neutral-900">{hero.groupLabel}</span>
-            <span className="rounded-full border border-neutral-200 bg-white/80 px-3 py-1.5 text-sm text-neutral-700">{hero.dateTimeLabel}</span>
-            <span className="rounded-full border border-neutral-200 bg-white/80 px-3 py-1.5 text-sm text-neutral-700">{hero.formatLabel}</span>
-            <span className={`rounded-full border px-3 py-1.5 text-xs font-semibold ${statusBadgeTone(hero.statusLabel)}`}>{hero.statusLabel}</span>
-            <LessonContextChip context="schedule" />
-          </>
+          <LessonMetaRail>
+            <LessonMetaPill icon="status" tone={statusBadgeTone(hero.statusLabel)} label={hero.statusLabel} />
+            <LessonMetaPill icon="datetime" tone="info" label={hero.dateTimeLabel} />
+            <LessonMetaPill icon="group" tone="neutral" label={hero.groupLabel} />
+            <LessonMetaPill icon="format" tone="muted" label={hero.formatLabel} />
+          </LessonMetaRail>
         )}
         actions={(
           <div className="text-sm text-neutral-600">

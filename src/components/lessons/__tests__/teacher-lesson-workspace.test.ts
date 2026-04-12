@@ -35,6 +35,18 @@ test("teacher workspace uses unified five-tab labels and removes legacy side car
   assert.equal(workspaceComponentSource.includes("Discussion for this lesson"), false);
 });
 
+test("teacher workspace header meta uses shared lesson metadata pills", () => {
+  assert.equal(workspaceComponentSource.includes("LessonMetaRail"), true);
+  assert.equal(workspaceComponentSource.includes("LessonMetaPill"), true);
+  assert.equal(workspaceComponentSource.includes("LessonContextChip"), false);
+  assert.equal(workspaceComponentSource.includes("Runtime-урок в расписании"), false);
+  assert.equal(workspaceComponentSource.includes("tone={statusBadgeTone(hero.statusLabel)}"), true);
+  assert.equal(workspaceComponentSource.includes('icon="group"'), true);
+  assert.equal(workspaceComponentSource.includes('icon="datetime"'), true);
+  assert.equal(workspaceComponentSource.includes('icon="format"'), true);
+  assert.equal(workspaceComponentSource.includes('icon="status"'), true);
+});
+
 test("teacher workspace homework section keeps methodology content read-only and runtime controls", () => {
   assert.equal(
     workspaceComponentSource.includes("Из методики (только чтение)"),
