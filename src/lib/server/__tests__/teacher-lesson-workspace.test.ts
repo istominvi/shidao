@@ -281,6 +281,33 @@ test("teacher workspace still builds when learner-content row is missing", async
   assert.ok(readModel.presentation.lessonFlow.length > 0);
 });
 
+test("teacher workspace still builds when learner-content source throws", async () => {
+  const readModel = await getTeacherLessonWorkspaceByScheduledLessonId(
+    "scheduled-1",
+    {
+      getScheduledLessonById: async () => lessonContentFixtureScheduledLesson,
+      getMethodologyLessonById: async () => lessonContentFixtureMethodologyLesson,
+      isMethodologyLessonStudentContentSchemaReady: async () => {
+        throw new Error("schema cache stale");
+      },
+      getMethodologyLessonStudentContentByLessonId: async () => {
+        throw new Error("unexpected");
+      },
+      listReusableAssetsByIds: async (ids) =>
+        lessonContentFixtureAssets.filter((asset) => ids.includes(asset.id)),
+      getClassDisplayNameById: async () => "Лисички 5-6",
+      getHomeworkReadModel: async () => homeworkSnapshot,
+      getLessonDiscussions: async () => [],
+      getHomeworkDiscussions: async () => ({ assignmentId: null, items: [] }),
+    },
+  );
+
+  assert.ok(readModel);
+  assert.equal(readModel.studentContent.schemaReady, false);
+  assert.equal(readModel.studentContent.source, null);
+  assert.equal(readModel.studentContent.unavailableReason, "schema_missing");
+});
+
 test("teacher workspace access allows only teacher profile", () => {
   const baseContext = {
     userId: "u-1",

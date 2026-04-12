@@ -60,3 +60,27 @@ test("student content schema readiness returns false for schema-cache miss", asy
   });
 });
 
+test("student content repository returns null for invalid payload row", async () => {
+  await withMockedFetch(async () => {
+    return new Response(
+      JSON.stringify([
+        {
+          id: "content-1",
+          methodology_lesson_id: "lesson-1",
+          title: "Lesson 1",
+          subtitle: null,
+          content_payload: {},
+        },
+      ]),
+      {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      },
+    );
+  }, async () => {
+    const content = await getMethodologyLessonStudentContentByLessonIdAdmin(
+      "lesson-1",
+    );
+    assert.equal(content, null);
+  });
+});

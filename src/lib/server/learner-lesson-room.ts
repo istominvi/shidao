@@ -225,9 +225,10 @@ async function getBaseLessonRoom(
   );
   if (!methodologyLesson) return null;
 
-  const canonicalStudentContent = await deps.getMethodologyLessonStudentContentByLessonId(
-    methodologyLesson.id,
-  );
+  const canonicalStudentContent =
+    await deps
+      .getMethodologyLessonStudentContentByLessonId(methodologyLesson.id)
+      .catch(() => null);
   const studentContent =
     canonicalStudentContent ??
     buildFallbackStudentContentFromMethodologyLesson(methodologyLesson);

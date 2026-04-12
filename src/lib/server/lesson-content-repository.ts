@@ -151,7 +151,9 @@ function isMissingMethodologyLessonStudentContentSchemaError(message: string) {
   const missingRelation =
     normalized.includes("does not exist") ||
     normalized.includes("schema cache") ||
-    normalized.includes("could not find the table");
+    normalized.includes("could not find the table") ||
+    normalized.includes("relation") ||
+    normalized.includes("table");
 
   return (
     missingRelation &&
@@ -272,7 +274,17 @@ export async function getMethodologyLessonStudentContentByLessonIdAdmin(
   }
 
   if (!rows[0]) return null;
-  return mapMethodologyLessonStudentContentRowToDomain(rows[0]);
+  try {
+    return mapMethodologyLessonStudentContentRowToDomain(rows[0]);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "unknown";
+    if (
+      message.includes("Invalid methodology_lesson_student_content payload")
+    ) {
+      return null;
+    }
+    throw error;
+  }
 }
 
 export async function isMethodologyLessonStudentContentSchemaReadyAdmin() {

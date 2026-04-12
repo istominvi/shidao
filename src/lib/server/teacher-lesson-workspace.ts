@@ -659,10 +659,15 @@ export async function getTeacherLessonWorkspaceByScheduledLessonId(
     methodologyLesson,
     scheduledLesson,
   );
-  const [studentContentSchemaReady, studentContent] = await Promise.all([
-    deps.isMethodologyLessonStudentContentSchemaReady(),
-    deps.getMethodologyLessonStudentContentByLessonId(methodologyLesson.id),
-  ]);
+  const studentContentSchemaReady =
+    await deps
+      .isMethodologyLessonStudentContentSchemaReady()
+      .catch(() => false);
+  const studentContent = studentContentSchemaReady
+    ? await deps
+        .getMethodologyLessonStudentContentByLessonId(methodologyLesson.id)
+        .catch(() => null)
+    : null;
   const studentContentAssetIds = (studentContent?.sections ?? []).flatMap((section) => {
     if (section.type === "media_asset") return [section.assetId];
     if (section.type === "worksheet" && section.assetId) return [section.assetId];

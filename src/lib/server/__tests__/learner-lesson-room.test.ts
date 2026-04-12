@@ -178,3 +178,28 @@ test("parent lesson room also uses fallback projection when canonical content is
   assert.equal(parentModel.studentContentMode, "fallback");
   assert.equal(parentModel.studentContent.sections.length > 0, true);
 });
+
+test("learner lesson room falls back when canonical source throws", async () => {
+  const readModel = await getStudentLessonRoomReadModel(
+    {
+      studentId: "s-1",
+      classIds: [lessonContentFixtureScheduledLesson.runtimeShell.classId],
+      scheduledLessonId: lessonContentFixtureScheduledLesson.id,
+    },
+    {
+      getScheduledLessonById: async () => lessonContentFixtureScheduledLesson,
+      getMethodologyLessonById: async () => lessonContentFixtureMethodologyLesson,
+      getMethodologyLessonStudentContentByLessonId: async () => {
+        throw new Error("invalid student content payload");
+      },
+      listReusableAssetsByIds: async () => lessonContentFixtureAssets,
+      getStudentHomeworkReadModel: async () => [],
+      loadParentLearningContextsByUser: async () => [],
+      getParentHomeworkProjection: async () => [],
+    },
+  );
+
+  assert.ok(readModel);
+  assert.equal(readModel.studentContentMode, "fallback");
+  assert.equal(readModel.studentContent.sections.length > 0, true);
+});
