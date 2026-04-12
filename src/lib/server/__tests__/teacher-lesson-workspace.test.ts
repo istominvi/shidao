@@ -5,6 +5,7 @@ import {
   lessonContentFixtureHomeworkDefinition,
   lessonContentFixtureMethodologyLesson,
   lessonContentFixtureScheduledLesson,
+  lessonContentFixtureStudentContent,
 } from "../../lesson-content";
 import type { AccessResolution } from "../access-policy";
 import {
@@ -50,6 +51,8 @@ test("teacher workspace loader combines scheduled + methodology and keeps sorted
       getHomeworkReadModel: async () => homeworkSnapshot,
       getLessonDiscussions: async () => [],
       getHomeworkDiscussions: async () => ({ assignmentId: null, items: [] }),
+      getMethodologyLessonStudentContentByLessonId: async () =>
+        lessonContentFixtureStudentContent,
     },
   );
 
@@ -59,6 +62,7 @@ test("teacher workspace loader combines scheduled + methodology and keeps sorted
     readModel.projection.orderedBlocks.map((block) => block.order),
     [1, 5, 8],
   );
+  assert.equal(readModel.studentContent?.sections.length, 9);
 });
 
 test("teacher workspace loader returns null when linked methodology lesson is missing", async () => {
@@ -72,6 +76,7 @@ test("teacher workspace loader returns null when linked methodology lesson is mi
       getHomeworkReadModel: async () => homeworkSnapshot,
       getLessonDiscussions: async () => [],
       getHomeworkDiscussions: async () => ({ assignmentId: null, items: [] }),
+      getMethodologyLessonStudentContentByLessonId: async () => null,
     },
   );
 

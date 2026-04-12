@@ -13,7 +13,7 @@ export default async function TeacherLessonWorkspacePage({
   searchParams,
 }: {
   params: Promise<{ scheduledLessonId: string }>;
-  searchParams: Promise<{ saved?: string; error?: string }>;
+  searchParams: Promise<{ saved?: string; error?: string; section?: string }>;
 }) {
   const accessResolution = await resolveAccessPolicy();
 
@@ -38,6 +38,11 @@ export default async function TeacherLessonWorkspacePage({
       <div className="container py-7 md:py-10">
         <TeacherLessonWorkspace
           workspace={workspace}
+          activeSection={
+            query.section === "student-content" || query.section === "homework"
+              ? query.section
+              : "scenario"
+          }
           runtimeFormFeedback={{
             success: query.saved?.trim() || undefined,
             error: query.error?.trim() || undefined,

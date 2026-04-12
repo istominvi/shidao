@@ -8,6 +8,7 @@ import {
 import { buildFixtureBootstrapRows } from "../lesson-content-bootstrap";
 import {
   mapMethodologyLessonRowToDomain,
+  mapMethodologyLessonStudentContentRowToDomain,
   mapScheduledLessonRowToDomain,
   type RowMethodologyLessonWithBlocks,
   type RowScheduledLesson,
@@ -236,11 +237,34 @@ test("bootstrap fixture rows are deterministic and idempotent by stable IDs", ()
   assert.deepEqual(first.reusableAssetRows, second.reusableAssetRows);
   assert.deepEqual(first.blockRows, second.blockRows);
   assert.deepEqual(first.blockAssetRows, second.blockAssetRows);
+  assert.deepEqual(first.studentContentRow, second.studentContentRow);
   assert.equal(first.blockRows.length > 0, true);
   assert.match(
     first.scheduledLessonRow.class_id,
     /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
   );
+});
+
+test("student lesson content mapper returns typed learner sections", () => {
+  const mapped = mapMethodologyLessonStudentContentRowToDomain({
+    id: "student-content-1",
+    methodology_lesson_id: "lesson-1",
+    title: "Урок 1. Животные на ферме",
+    subtitle: "Подзаголовок",
+    content_payload: {
+      sections: [
+        {
+          type: "lesson_focus",
+          title: "Сегодня на уроке",
+          body: "Повторим животных",
+          chips: ["狗"],
+        },
+      ],
+    },
+  });
+
+  assert.equal(mapped.methodologyLessonId, "lesson-1");
+  assert.equal(mapped.sections[0]?.type, "lesson_focus");
 });
 
 test("bootstrap rows allow overriding scheduled lesson class id for real teacher class", () => {

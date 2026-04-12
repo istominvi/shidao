@@ -468,3 +468,8 @@ returning id;
 ```
 
 После этого откройте `/lessons/<id>` под teacher-профилем.
+
+## Lesson model (3 canonical parts)
+
+С апреля 2026 lesson model оформлен как трёхчастный: teacher scenario + student lesson content + homework. Teacher runtime workspace показывает все 3 части, а learner-facing lesson room доступен студенту и родителю с общей проекцией learner-content.
+Подробности: `docs/architecture/lesson-three-part-model.md`.

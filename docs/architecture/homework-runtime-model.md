@@ -63,3 +63,8 @@ Homework-контент определяется в методике. Препо
 
 Homework-обсуждение показывается как scoped-проекция единого `group_student_conversation`, а не как отдельный isolated chat-thread.
 См. `docs/architecture/communication-runtime-model.md`.
+
+## Важное дополнение: связь с lesson content
+
+Homework runtime-layer остаётся независимым по правам/жизненному циклу, но теперь в scheduled lesson runtime отображается рядом с двумя другими каноническими частями урока: teacher scenario и student lesson content. Learner lesson room использует общий student-content projection для student/parent, а homework блок меняет только права (student action vs parent read-only).
+См. также: `docs/architecture/lesson-three-part-model.md`.

@@ -9,6 +9,7 @@ import { toMethodologyLessonRoute } from "@/lib/auth";
 
 type TeacherLessonWorkspaceProps = {
   workspace: TeacherLessonWorkspaceReadModel;
+  activeSection?: "scenario" | "student-content" | "homework";
   runtimeFormFeedback?: {
     success?: string;
     error?: string;
@@ -28,6 +29,7 @@ function statusBadgeTone(statusLabel: string) {
 
 export function TeacherLessonWorkspace({
   workspace,
+  activeSection = "scenario",
   runtimeFormFeedback,
 }: TeacherLessonWorkspaceProps) {
   const runtime = workspace.projection.runtimeShell;
@@ -71,7 +73,38 @@ export function TeacherLessonWorkspace({
 
       <section className="grid gap-5 xl:grid-cols-[minmax(0,1.65fr)_minmax(320px,1fr)]">
         <div className="space-y-5">
-          <TeacherLessonPedagogicalContent quickSummary={quickSummary} lessonFlow={lessonFlow} />
+          <div className="flex gap-2">
+            <a className={`rounded-xl px-3 py-2 text-sm font-semibold ${activeSection === "scenario" ? "bg-neutral-900 text-white" : "bg-neutral-100 text-neutral-700"}`} href={`?section=scenario`}>Сценарий урока</a>
+            <a className={`rounded-xl px-3 py-2 text-sm font-semibold ${activeSection === "student-content" ? "bg-neutral-900 text-white" : "bg-neutral-100 text-neutral-700"}`} href={`?section=student-content`}>Контент для ученика</a>
+            <a className={`rounded-xl px-3 py-2 text-sm font-semibold ${activeSection === "homework" ? "bg-neutral-900 text-white" : "bg-neutral-100 text-neutral-700"}`} href={`?section=homework`}>Домашнее задание</a>
+          </div>
+          {activeSection === "scenario" ? (
+            <TeacherLessonPedagogicalContent quickSummary={quickSummary} lessonFlow={lessonFlow} />
+          ) : null}
+          {activeSection === "student-content" ? (
+            <AppCard className="p-5">
+              <h2 className="text-xl font-bold text-neutral-900">Контент для ученика</h2>
+              <p className="mt-1 text-sm text-neutral-700">Это экран ученической версии для показа в классе.</p>
+              <a href={`/lesson-room/${workspace.scheduledLessonId}`} className="mt-3 inline-flex rounded-xl bg-sky-700 px-3 py-2 text-sm font-semibold text-white">Открыть ученическую версию</a>
+              <div className="mt-3 space-y-2">
+                {workspace.studentContent?.sections.map((section, idx) => (
+                  <article key={`${section.type}-${idx}`} className="rounded-xl border border-neutral-200 p-3">
+                    <p className="text-sm font-semibold text-neutral-900">{section.title}</p>
+                    <p className="text-xs text-neutral-600">Раздел: {section.type}</p>
+                  </article>
+                )) ?? <p className="text-sm text-neutral-600">Контент ученика пока не добавлен.</p>}
+              </div>
+            </AppCard>
+          ) : null}
+          {activeSection === "homework" ? (
+            <AppCard className="border-sky-200/70 p-5">
+              <h2 className="text-lg font-bold text-neutral-900">Домашнее задание</h2>
+              <TeacherHomeworkPanel
+                homework={workspace.homework}
+                scheduledLessonId={workspace.scheduledLessonId}
+              />
+            </AppCard>
+          ) : null}
         </div>
 
         <aside className="space-y-4 xl:sticky xl:top-6 xl:self-start">
@@ -210,14 +243,6 @@ export function TeacherLessonWorkspace({
                 {methodologyReference.readinessLabel}
               </li>
             </ul>
-          </AppCard>
-
-          <AppCard className="border-sky-200/70 p-5">
-            <h2 className="text-lg font-bold text-neutral-900">Домашнее задание</h2>
-            <TeacherHomeworkPanel
-              homework={workspace.homework}
-              scheduledLessonId={workspace.scheduledLessonId}
-            />
           </AppCard>
 
           <AppCard className="border-amber-200/70 p-5">

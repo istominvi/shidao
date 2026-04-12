@@ -1,6 +1,7 @@
 import type {
   LessonBlockInstance,
   MethodologyLessonHomeworkDefinition,
+  MethodologyLessonStudentContent,
   Methodology,
   MethodologyLesson,
   ReusableAsset,
@@ -424,6 +425,86 @@ export const lessonContentFixtureHomeworkDefinition: MethodologyLessonHomeworkDe
       ],
     },
   };
+
+export const lessonContentFixtureStudentContent: MethodologyLessonStudentContent = {
+  id: "methodology-student-content:world-around-me-01",
+  methodologyLessonId: lessonContentFixtureMethodologyLesson.id,
+  title: "Урок 1. Животные на ферме",
+  subtitle: "Смотрим, двигаемся и говорим по-китайски",
+  sections: [
+    {
+      type: "lesson_focus",
+      title: "Сегодня на уроке",
+      body: "Познакомимся с животными фермы, повторим движения и вместе споём песню.",
+      chips: ["狗", "猫", "兔子", "马", "农场", "我是…", "这是…", "跑", "跳"],
+    },
+    {
+      type: "vocabulary_cards",
+      title: "Слова",
+      items: [
+        { term: "狗", pinyin: "gǒu", meaning: "собака", visualHint: "покажи собаку" },
+        { term: "猫", pinyin: "māo", meaning: "кот / кошка", visualHint: "покажи кота" },
+        { term: "兔子", pinyin: "tùzi", meaning: "кролик" },
+        { term: "马", pinyin: "mǎ", meaning: "лошадь" },
+        { term: "农场", pinyin: "nóngchǎng", meaning: "ферма" },
+      ],
+    },
+    {
+      type: "phrase_cards",
+      title: "Фразы",
+      items: [
+        { phrase: "我是…", pinyin: "wǒ shì…", meaning: "Я…", usageHint: "представься" },
+        { phrase: "这是…", pinyin: "zhè shì…", meaning: "Это…", usageHint: "назови картинку" },
+      ],
+    },
+    {
+      type: "media_asset",
+      title: "Смотри и слушай: видео",
+      assetId: "video:farm-animals",
+      assetKind: "video",
+      studentPrompt: "Посмотри видео и найди животных фермы.",
+      teacherShareHint: "Покажи видео на большом экране и после спроси: «Кого запомнили?»",
+    },
+    {
+      type: "media_asset",
+      title: "Смотри и слушай: песня",
+      assetId: "song:farm-animals",
+      assetKind: "song",
+      studentPrompt: "Спой песню и покажи движения животных.",
+    },
+    {
+      type: "action_cards",
+      title: "Движение",
+      items: [
+        { term: "跑", pinyin: "pǎo", meaning: "бежать", movementHint: "беги к карточке животного" },
+        { term: "跳", pinyin: "tiào", meaning: "прыгать", movementHint: "прыгай как кролик" },
+      ],
+    },
+    {
+      type: "worksheet",
+      title: "Рабочая тетрадь",
+      assetId: "worksheet:workbook-pages-3-4",
+      pageLabel: "Стр. 3–4",
+      instructions: "Раскрась животных и ответь на вопрос «这是什么?»",
+    },
+    {
+      type: "worksheet",
+      title: "Приложение",
+      assetId: "worksheet:appendix-1",
+      pageLabel: "Приложение 1",
+      instructions: "Покажи указкой животное, посчитай и назови его.",
+    },
+    {
+      type: "recap",
+      title: "Вспомнить дома",
+      bullets: [
+        "Назови дома 2 животных: 狗 и 猫.",
+        "Повтори фразы «我是…» и «这是…».",
+        "Покажи действия 跑 и 跳 вместе с родителем.",
+      ],
+    },
+  ],
+};
 
 export const lessonContentFixtureScheduledLesson: ScheduledLesson = {
   id: "scheduled-lesson:demo-world-around-me-lesson-1",

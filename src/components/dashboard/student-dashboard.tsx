@@ -1,5 +1,6 @@
 import { DashboardShell } from "@/components/dashboard-shell";
 import { StudentHomeworkQuizCard } from "@/components/dashboard/student-homework-quiz-card";
+import { toStudentLessonRoomRoute } from "@/lib/auth";
 import type { GroupStudentMessage } from "@/lib/server/communication-repository";
 import type { StudentHomeworkCard } from "@/lib/server/student-homework";
 import type { getStudentConversationReadModels } from "@/lib/server/communication-service";
@@ -11,9 +12,11 @@ function kindBadge(kind: StudentHomeworkCard["kind"]) {
 export function StudentDashboard({
   homework,
   communication,
+  lessons,
 }: {
   homework: StudentHomeworkCard[];
   communication: Awaited<ReturnType<typeof getStudentConversationReadModels>>;
+  lessons: Array<{ scheduledLessonId: string; title: string; startsAt: string; statusLabel: string }>;
 }) {
   return (
     <DashboardShell
@@ -22,6 +25,18 @@ export function StudentDashboard({
       title="Твой учебный кабинет"
       subtitle="Короткие задания, понятные шаги и поддержка преподавателя."
     >
+      <section className="mt-4 rounded-3xl border border-white/80 bg-white/90 p-4">
+        <h3 className="text-lg font-black">Мои занятия</h3>
+        <div className="mt-2 space-y-2">
+          {lessons.map((item) => (
+            <article key={item.scheduledLessonId} className="rounded-xl border border-neutral-200 p-2 text-sm">
+              <p className="font-semibold">{item.title}</p>
+              <p className="text-xs text-neutral-600">{item.startsAt} · {item.statusLabel}</p>
+              <a href={toStudentLessonRoomRoute(item.scheduledLessonId)} className="text-xs font-semibold text-sky-700 underline">Открыть урок</a>
+            </article>
+          ))}
+        </div>
+      </section>
       <section className="mt-4 rounded-3xl border border-white/80 bg-white/90 p-4">
         <h3 className="text-lg font-black">Мои домашние задания</h3>
         {homework.length === 0 ? (

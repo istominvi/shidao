@@ -8,6 +8,7 @@ import { resolveAccessPolicy } from "@/lib/server/access-policy";
 import { getParentCommunicationProjection, getStudentConversationReadModels } from "@/lib/server/communication-service";
 import { getParentHomeworkProjection } from "@/lib/server/parent-homework";
 import { listClassIdsForStudentAdmin } from "@/lib/server/lesson-content-repository";
+import { getMethodologyLessonByIdAdmin, listScheduledLessonsForClassesAdmin } from "@/lib/server/lesson-content-repository";
 import { getStudentHomeworkReadModel } from "@/lib/server/student-homework";
 import { getTeacherDashboardOperationsReadModel } from "@/lib/server/teacher-dashboard-operations";
 import { loadParentLearningContextsByUser } from "@/lib/server/supabase-admin";
@@ -35,10 +36,24 @@ export default async function DashboardIndexPage({
     const homework = studentId
       ? await getStudentHomeworkReadModel({ studentId, classIds })
       : [];
+    const lessons = studentId
+      ? await listScheduledLessonsForClassesAdmin(classIds)
+      : [];
+    const studentLessons = await Promise.all(
+      lessons.map(async (lesson) => {
+        const source = await getMethodologyLessonByIdAdmin(lesson.methodologyLessonId);
+        return {
+          scheduledLessonId: lesson.id,
+          title: source?.shell.title ?? "Урок",
+          startsAt: lesson.runtimeShell.startsAt,
+          statusLabel: lesson.runtimeShell.runtimeStatus,
+        };
+      }),
+    );
     const communication = studentId
       ? await getStudentConversationReadModels({ studentId, filter: "all" })
       : [];
-    return <StudentDashboard homework={homework} communication={communication} />;
+    return <StudentDashboard homework={homework} communication={communication} lessons={studentLessons} />;
   }
 
   if (context.activeProfile === "teacher") {
@@ -76,6 +91,25 @@ export default async function DashboardIndexPage({
     parentHomework.map((item) => [item.studentId, item.items]),
   );
   const parentCommunication = await getParentCommunicationProjection({ userId: context.userId });
+  const parentLessons = await Promise.all(
+    learningContexts.map(async (child) => {
+      const lessons = await listScheduledLessonsForClassesAdmin(
+        child.classes.map((item) => item.classId),
+      );
+      const enriched = await Promise.all(
+        lessons.map(async (lesson) => {
+          const source = await getMethodologyLessonByIdAdmin(lesson.methodologyLessonId);
+          return {
+            scheduledLessonId: lesson.id,
+            title: source?.shell.title ?? "Урок",
+            startsAt: lesson.runtimeShell.startsAt,
+            statusLabel: lesson.runtimeShell.runtimeStatus,
+          };
+        }),
+      );
+      return [child.studentId, enriched] as const;
+    }),
+  );
   return (
     <ParentDashboard
       childrenContexts={learningContexts}
@@ -83,6 +117,7 @@ export default async function DashboardIndexPage({
       communicationByStudent={Object.fromEntries(
         parentCommunication.map((item) => [item.studentId, item.messages]),
       )}
+      lessonsByStudent={Object.fromEntries(parentLessons)}
     />
   );
 }

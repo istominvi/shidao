@@ -1,4 +1,5 @@
 import { DashboardShell } from "@/components/dashboard-shell";
+import { toParentLessonRoomRoute } from "@/lib/auth";
 
 type ParentContext = {
   studentId: string;
@@ -29,6 +30,7 @@ export function ParentDashboard({
   childrenContexts,
   homeworkByStudent,
   communicationByStudent,
+  lessonsByStudent,
 }: {
   childrenContexts: ParentContext[];
   homeworkByStudent: Record<string, ParentHomeworkItem[]>;
@@ -42,6 +44,7 @@ export function ParentDashboard({
       scheduledLessonHomeworkAssignmentId: string | null;
     }>
   >;
+  lessonsByStudent: Record<string, Array<{ scheduledLessonId: string; title: string; startsAt: string; statusLabel: string }>>;
 }) {
   return (
     <DashboardShell
@@ -62,6 +65,16 @@ export function ParentDashboard({
                 >
                   <p className="font-semibold">{child.studentName}</p>
                   <p className="mt-1 text-neutral-700">Логин ученика: {child.login}</p>
+                  <div className="mt-2 space-y-2">
+                    <p className="text-xs font-semibold uppercase tracking-[0.1em] text-neutral-500">Занятия</p>
+                    {(lessonsByStudent[child.studentId] ?? []).map((item) => (
+                      <article key={item.scheduledLessonId} className="rounded-xl border border-neutral-200 bg-white p-2">
+                        <p className="text-sm font-semibold text-neutral-900">{item.title}</p>
+                        <p className="text-xs text-neutral-600">{item.startsAt} · {item.statusLabel}</p>
+                        <a href={toParentLessonRoomRoute(child.studentId, item.scheduledLessonId)} className="text-xs font-semibold text-sky-700 underline">Открыть урок</a>
+                      </article>
+                    ))}
+                  </div>
                   <div className="mt-2 space-y-2">
                     {(homeworkByStudent[child.studentId] ?? []).map((item) => (
                       <article key={`${item.scheduledLessonId}-${item.homeworkTitle}`} className="rounded-xl border border-neutral-200 bg-white p-2">

@@ -247,6 +247,72 @@ export type MethodologyLessonHomeworkDefinition = {
   };
 };
 
+export type MethodologyLessonStudentContentSection =
+  | {
+      type: "lesson_focus";
+      title: string;
+      body: string;
+      chips: string[];
+    }
+  | {
+      type: "vocabulary_cards";
+      title: string;
+      items: Array<{
+        term: string;
+        pinyin?: string;
+        meaning: string;
+        visualHint?: string;
+      }>;
+    }
+  | {
+      type: "phrase_cards";
+      title: string;
+      items: Array<{
+        phrase: string;
+        pinyin?: string;
+        meaning: string;
+        usageHint?: string;
+      }>;
+    }
+  | {
+      type: "media_asset";
+      title: string;
+      assetId: string;
+      assetKind: ReusableAssetKind;
+      studentPrompt: string;
+      teacherShareHint?: string;
+    }
+  | {
+      type: "action_cards";
+      title: string;
+      items: Array<{
+        term: string;
+        pinyin?: string;
+        meaning: string;
+        movementHint: string;
+      }>;
+    }
+  | {
+      type: "worksheet";
+      title: string;
+      assetId?: string;
+      instructions: string;
+      pageLabel?: string;
+    }
+  | {
+      type: "recap";
+      title: string;
+      bullets: string[];
+    };
+
+export type MethodologyLessonStudentContent = {
+  id: string;
+  methodologyLessonId: string;
+  title: string;
+  subtitle?: string;
+  sections: MethodologyLessonStudentContentSection[];
+};
+
 export type ScheduledLesson = {
   id: string;
   methodologyLessonId: string;

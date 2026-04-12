@@ -1,5 +1,7 @@
 import type {
   LessonBlockInstance,
+  MethodologyLessonStudentContent,
+  MethodologyLessonStudentContentSection,
   Methodology,
   MethodologyLesson,
   ReusableAsset,
@@ -14,6 +16,16 @@ type RowMethodology = {
   title: string;
   short_description: string | null;
   metadata: Record<string, unknown> | null;
+};
+
+export type RowMethodologyLessonStudentContent = {
+  id: string;
+  methodology_lesson_id: string;
+  title: string;
+  subtitle: string | null;
+  content_payload: {
+    sections?: MethodologyLessonStudentContentSection[];
+  } | null;
 };
 
 export type RowReusableAsset = {
@@ -210,4 +222,16 @@ export function mapScheduledLessonRowToDomain(row: RowScheduledLesson): Schedule
 
 export function mapReusableAssetRowsToDomain(rows: RowReusableAsset[]): ReusableAsset[] {
   return rows.map(mapAssetRowToDomain);
+}
+
+export function mapMethodologyLessonStudentContentRowToDomain(
+  row: RowMethodologyLessonStudentContent,
+): MethodologyLessonStudentContent {
+  return {
+    id: row.id,
+    methodologyLessonId: row.methodology_lesson_id,
+    title: row.title,
+    subtitle: row.subtitle ?? undefined,
+    sections: row.content_payload?.sections ?? [],
+  };
 }

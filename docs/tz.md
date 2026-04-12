@@ -103,3 +103,7 @@
 - Непрерывная коммуникация строится вокруг `group_student_conversation`.
 - Сообщения связываются с lesson/homework runtime-контекстом через optional ссылки.
 - Teacher получает полный поток в `/groups/[groupId]/students/[studentId]/communication`.
+
+## Update (April 10, 2026)
+
+В source-layer добавлена таблица `methodology_lesson_student_content` для learner-facing lesson content. Parent и student используют одинаковую проекцию lesson content (различаются только permission/фрейминг).
