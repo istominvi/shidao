@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { cn } from "@/lib/ui/cn";
 
 type AppPageHeaderProps = {
   title: ReactNode;
@@ -13,10 +14,6 @@ type AppPageHeaderProps = {
   className?: string;
 };
 
-function joinClasses(...values: Array<string | false | null | undefined>) {
-  return values.filter(Boolean).join(" ");
-}
-
 export function AppPageHeader({
   title,
   description,
@@ -29,13 +26,7 @@ export function AppPageHeader({
   className,
 }: AppPageHeaderProps) {
   return (
-    <header
-      className={joinClasses(
-        "app-page-header",
-        backHref && "app-page-header-has-back",
-        className,
-      )}
-    >
+    <header className={cn("app-page-header", backHref && "app-page-header-has-back", className)}>
       {backHref ? (
         <Link
           href={backHref}

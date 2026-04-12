@@ -1,5 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
+import { cn } from "@/lib/ui/cn";
 
 type SemanticTone = "neutral" | "sky" | "violet" | "emerald" | "amber" | "rose" | "indigo";
 
@@ -10,10 +11,6 @@ type SemanticChipProps = {
   size?: "sm" | "md";
   className?: string;
 };
-
-function joinClasses(...values: Array<string | false | null | undefined>) {
-  return values.filter(Boolean).join(" ");
-}
 
 const toneClass: Record<SemanticTone, string> = {
   neutral: "border-neutral-200 bg-white/95 text-neutral-700",
@@ -32,7 +29,7 @@ const sizeClass = {
 
 export function SemanticChip({ icon: Icon, children, tone = "neutral", size = "sm", className }: SemanticChipProps) {
   return (
-    <span className={joinClasses("landing-chip border", toneClass[tone], sizeClass[size], className)}>
+    <span className={cn("landing-chip border", toneClass[tone], sizeClass[size], className)}>
       <Icon className="h-3.5 w-3.5" aria-hidden="true" />
       <span>{children}</span>
     </span>

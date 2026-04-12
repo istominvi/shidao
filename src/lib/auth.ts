@@ -70,6 +70,10 @@ export function toScheduledLessonRoute(scheduledLessonId: string) {
   return `${ROUTES.lessons}/${encodeURIComponent(scheduledLessonId)}`;
 }
 
+/**
+ * @deprecated Prefer `toScheduledLessonRoute` for new code.
+ * Kept as compatibility alias to avoid broad churn in existing flows.
+ */
 export function toLessonWorkspaceRoute(scheduledLessonId: string) {
   return toScheduledLessonRoute(scheduledLessonId);
 }

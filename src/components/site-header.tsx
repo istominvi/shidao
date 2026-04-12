@@ -3,10 +3,7 @@
 import Link from "next/link";
 import { type MouseEvent, type ReactNode } from "react";
 import { NavPillLink, NavigationHeaderShell } from "@/components/navigation/primitives";
-
-function cx(...parts: Array<string | false | null | undefined>) {
-  return parts.filter(Boolean).join(" ");
-}
+import { cn } from "@/lib/ui/cn";
 
 export type SiteHeaderNavItem = {
   id: string;
@@ -68,9 +65,9 @@ export function SiteHeader({
   };
 
   return (
-    <header className={cx("site-header", className)}>
+    <header className={cn("site-header", className)}>
       <NavigationHeaderShell
-        className={cx(
+        className={cn(
           "site-header-shell",
           variant === "marketing-hero" && "site-header-shell-marketing",
           shellClassName,

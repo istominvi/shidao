@@ -6,10 +6,7 @@ import {
   type MouseEventHandler,
   type ReactNode,
 } from "react";
-
-function cx(...parts: Array<string | false | null | undefined>) {
-  return parts.filter(Boolean).join(" ");
-}
+import { cn } from "@/lib/ui/cn";
 
 type HeaderShellProps = {
   children: ReactNode;
@@ -17,7 +14,7 @@ type HeaderShellProps = {
 };
 
 export function NavigationHeaderShell({ children, className }: HeaderShellProps) {
-  return <div className={cx("nav-header-shell", className)}>{children}</div>;
+  return <div className={cn("nav-header-shell", className)}>{children}</div>;
 }
 
 type NavPillLinkProps = {
@@ -44,7 +41,7 @@ export function NavPillLink({
       href={href}
       aria-current={ariaCurrent}
       scroll={scroll}
-      className={cx("nav-pill", active ? "nav-pill-active" : "nav-pill-inactive", className)}
+      className={cn("nav-pill", active ? "nav-pill-active" : "nav-pill-inactive", className)}
       onClick={onClick}
     >
       {children}
@@ -84,7 +81,7 @@ export function NavPillButton({
       disabled={isDisabled}
       aria-pressed={ariaPressed}
       aria-busy={loading || undefined}
-      className={cx(
+      className={cn(
         "nav-pill",
         active ? "nav-pill-active" : "nav-pill-inactive",
         unavailable && !active ? "nav-pill-unavailable" : "cursor-pointer",
@@ -106,7 +103,7 @@ export const NavigationDropdownPanel = forwardRef<HTMLDivElement, DropdownPanelP
     return (
       <div
         ref={ref}
-        className={cx("nav-dropdown-panel", className)}
+        className={cn("nav-dropdown-panel", className)}
         style={style}
         {...props}
       >
@@ -117,7 +114,7 @@ export const NavigationDropdownPanel = forwardRef<HTMLDivElement, DropdownPanelP
 );
 
 export function navigationDropdownItemClass(className?: string, destructive = false) {
-  return cx("nav-dropdown-item", destructive && "nav-dropdown-item-destructive", className);
+  return cn("nav-dropdown-item", destructive && "nav-dropdown-item-destructive", className);
 }
 
 type SegmentedSwitchProps = {
@@ -126,5 +123,5 @@ type SegmentedSwitchProps = {
 };
 
 export function NavSegmentedSwitch({ children, className }: SegmentedSwitchProps) {
-  return <div className={cx("nav-segmented-switch", className)}>{children}</div>;
+  return <div className={cn("nav-segmented-switch", className)}>{children}</div>;
 }
