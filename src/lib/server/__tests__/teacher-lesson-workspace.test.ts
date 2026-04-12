@@ -157,10 +157,7 @@ test("teacher workspace presentation keeps methodology title separate from lesso
 
   assert.equal(readModel.presentation.hero.lessonTitle, "Урок 1. Животные на ферме");
   assert.equal(readModel.presentation.hero.methodologyTitle, "Мир вокруг меня");
-  assert.equal(
-    readModel.presentation.hero.methodologyLine,
-    "По методике «Мир вокруг меня»",
-  );
+  assert.equal("methodologyLine" in readModel.presentation.hero, false);
 });
 
 test("teacher workspace quick summary and lesson flow are derived from lesson content", () => {

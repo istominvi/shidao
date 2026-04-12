@@ -80,7 +80,6 @@ export type TeacherLessonWorkspacePresentation = {
     dateTimeLabel: string;
     statusLabel: string;
     formatLabel: string;
-    methodologyLine: string;
   };
   quickSummary: {
     prepChecklist: string[];
@@ -116,12 +115,6 @@ export type TeacherLessonWorkspaceReadModel = {
     assetsById: Record<string, ReusableAsset>;
     unavailableReason: "schema_missing" | "invalid_payload" | "load_failed" | null;
   };
-  sourceLesson: {
-    methodologySlug: string;
-    lessonId: string;
-    methodologyTitle: string;
-    positionLabel: string;
-  } | null;
   communication: {
     lessonScoped: Array<{
       studentId: string;
@@ -554,7 +547,6 @@ function buildPresentation(input: {
       statusLabel: formatRuntimeStatus(projection.runtimeShell.runtimeStatus),
       formatLabel:
         projection.runtimeShell.format === "online" ? "Онлайн" : "Офлайн",
-      methodologyLine: `По методике «${methodologyTitle}»`,
     },
     quickSummary: {
       prepChecklist,
@@ -610,7 +602,6 @@ export function buildTeacherLessonWorkspaceReadModel(input: {
   studentContent?: MethodologyLessonStudentContent | null;
   studentContentUnavailableReason?: TeacherLessonWorkspaceReadModel["studentContent"]["unavailableReason"];
   studentContentAssets?: ReusableAsset[];
-  sourceLesson?: TeacherLessonWorkspaceReadModel["sourceLesson"];
   communication?: TeacherLessonWorkspaceReadModel["communication"];
 }): TeacherLessonWorkspaceReadModel {
   const sortedProjection: TeacherLessonProjection = {
@@ -641,7 +632,6 @@ export function buildTeacherLessonWorkspaceReadModel(input: {
       assetsById,
       unavailableReason: input.studentContentUnavailableReason ?? null,
     },
-    sourceLesson: input.sourceLesson ?? null,
     communication: input.communication ?? {
       lessonScoped: [],
       homeworkScoped: [],
@@ -742,12 +732,6 @@ export async function getTeacherLessonWorkspaceByScheduledLessonId(
     homework,
     studentContent,
     studentContentUnavailableReason,
-    sourceLesson: {
-      methodologySlug: methodologyLesson.methodologySlug,
-      lessonId: methodologyLesson.id,
-      methodologyTitle: methodologyLesson.methodologyTitle?.trim() || "Методика",
-      positionLabel: `Модуль ${methodologyLesson.shell.position.moduleIndex} · Урок ${methodologyLesson.shell.position.lessonIndex}${methodologyLesson.shell.position.unitIndex ? ` · Раздел ${methodologyLesson.shell.position.unitIndex}` : ""}`,
-    },
     communication: {
       lessonScoped:
         lessonDiscussions.length > 0

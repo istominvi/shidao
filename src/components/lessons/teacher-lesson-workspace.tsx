@@ -1,16 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import type { TeacherLessonWorkspaceReadModel } from "@/lib/server/teacher-lesson-workspace";
 import { AppCard } from "@/components/app/app-card";
 import { AppPageHeader } from "@/components/app/page-header";
-import { LessonMetaPill, LessonMetaRail, type LessonMetaTone } from "@/components/lessons/lesson-meta-pill";
+import { LessonMetaPill, LessonMetaRail } from "@/components/lessons/lesson-meta-pill";
 import { LessonStudentContentPanel } from "@/components/lessons/lesson-student-content-panel";
 import { TeacherLessonPedagogicalContent } from "@/components/lessons/teacher-lesson-pedagogical-content";
 import { TeacherHomeworkPanel } from "@/components/lessons/teacher-homework-panel";
 import { TeacherLessonTabs, type TeacherLessonTabKey } from "@/components/lessons/teacher-lesson-tabs";
-import { toMethodologyLessonRoute, toScheduledLessonRoute } from "@/lib/auth";
+import { toScheduledLessonRoute } from "@/lib/auth";
 
 type TeacherLessonWorkspaceProps = {
   workspace: TeacherLessonWorkspaceReadModel;
@@ -19,13 +18,6 @@ type TeacherLessonWorkspaceProps = {
     error?: string;
   };
 };
-
-function statusBadgeTone(statusLabel: string) {
-  if (statusLabel.includes("Идёт")) return "info" as LessonMetaTone;
-  if (statusLabel.includes("Заверш")) return "success" as LessonMetaTone;
-  if (statusLabel.includes("Отмен")) return "warning" as LessonMetaTone;
-  return "primary" as LessonMetaTone;
-}
 
 export function TeacherLessonWorkspace({ workspace, runtimeFormFeedback }: TeacherLessonWorkspaceProps) {
   const [tab, setTab] = useState<TeacherLessonTabKey>("plan");
@@ -37,27 +29,13 @@ export function TeacherLessonWorkspace({ workspace, runtimeFormFeedback }: Teach
       <AppPageHeader
         eyebrow="Рабочее пространство преподавателя"
         title={hero.lessonTitle}
-        description={hero.lessonEssence}
         meta={(
           <LessonMetaRail>
-            <LessonMetaPill icon="status" tone={statusBadgeTone(hero.statusLabel)} label={hero.statusLabel} />
+            <LessonMetaPill icon="methodology" tone="neutral" label={hero.methodologyTitle} />
             <LessonMetaPill icon="datetime" tone="info" label={hero.dateTimeLabel} />
             <LessonMetaPill icon="group" tone="neutral" label={hero.groupLabel} />
             <LessonMetaPill icon="format" tone="muted" label={hero.formatLabel} />
           </LessonMetaRail>
-        )}
-        actions={(
-          <div className="text-sm text-neutral-600">
-            <p>{hero.methodologyLine}</p>
-            {workspace.sourceLesson ? (
-              <p className="mt-1">
-                Основан на уроке методики ·{" "}
-                <Link href={toMethodologyLessonRoute(workspace.sourceLesson.methodologySlug, workspace.sourceLesson.lessonId)} className="text-sky-700 underline underline-offset-2">
-                  Открыть исходный урок
-                </Link>
-              </p>
-            ) : null}
-          </div>
         )}
       />
 

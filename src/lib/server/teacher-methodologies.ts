@@ -301,11 +301,7 @@ export async function getTeacherMethodologyLessonReadModel(input: { teacherId: s
     groups,
     presentation,
     metadata: {
-      positionLabel: `Модуль ${lesson.shell.position.moduleIndex} · Урок ${lesson.shell.position.lessonIndex}${lesson.shell.position.unitIndex ? ` · Раздел ${lesson.shell.position.unitIndex}` : ""}`,
       durationLabel: `${lesson.shell.estimatedDurationMinutes} мин`,
-      readinessLabel: readinessLabel(lesson.shell.readinessStatus),
-      sourceRuntimeNote:
-        "Это методологический шаблон урока. Группа, дата и формат задаются при назначении в runtime-слой.",
     },
     canonicalHomework: canonicalHomework
       ? {
