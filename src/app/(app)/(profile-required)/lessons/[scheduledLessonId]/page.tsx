@@ -24,7 +24,16 @@ export default async function TeacherLessonWorkspacePage({
   const { scheduledLessonId } = await params;
   const workspace = await getTeacherLessonWorkspaceByScheduledLessonId(
     scheduledLessonId,
-  );
+  ).catch((error) => {
+    console.error(
+      "[TeacherLessonWorkspacePage] failed to load workspace",
+      {
+        scheduledLessonId,
+        error,
+      },
+    );
+    return null;
+  });
   const query = await searchParams;
 
   if (!workspace) {

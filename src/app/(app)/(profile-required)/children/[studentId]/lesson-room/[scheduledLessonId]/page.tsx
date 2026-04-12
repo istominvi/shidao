@@ -27,6 +27,13 @@ export default async function ParentLessonRoomPage({
     userId: resolution.context.userId,
     studentId,
     scheduledLessonId,
+  }).catch((error) => {
+    console.error("[ParentLessonRoomPage] failed to load parent lesson room", {
+      scheduledLessonId,
+      studentId,
+      error,
+    });
+    return null;
   });
 
   if (!model) notFound();

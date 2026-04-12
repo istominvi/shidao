@@ -31,6 +31,16 @@ export default async function StudentLessonRoomPage({
       studentId,
       classIds,
       scheduledLessonId,
+    }).catch((error) => {
+      console.error(
+        "[StudentLessonRoomPage] failed to load student lesson room",
+        {
+          scheduledLessonId,
+          studentId,
+          error,
+        },
+      );
+      return null;
     });
 
     if (!model) notFound();
@@ -54,7 +64,15 @@ export default async function StudentLessonRoomPage({
   }
 
   if (resolution.context.activeProfile === "teacher") {
-    const preview = await getLessonRoomPreviewByScheduledLessonId(scheduledLessonId);
+    const preview = await getLessonRoomPreviewByScheduledLessonId(
+      scheduledLessonId,
+    ).catch((error) => {
+      console.error("[StudentLessonRoomPage] failed to load lesson room preview", {
+        scheduledLessonId,
+        error,
+      });
+      return null;
+    });
     if (!preview) notFound();
 
     return (
