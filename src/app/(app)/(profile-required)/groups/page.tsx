@@ -5,6 +5,7 @@ import { isRedirectError } from "next/dist/client/components/redirect-error";
 import { TopNav } from "@/components/top-nav";
 import { AppPageHeader } from "@/components/app/page-header";
 import { TeacherGroupsCard } from "@/components/dashboard/teacher-groups-card";
+import { Button, productButtonClassName } from "@/components/ui/button";
 import { ROUTES, toGroupRoute } from "@/lib/auth";
 import { listMethodologiesAdmin } from "@/lib/server/lesson-content-repository";
 import { resolveAccessPolicy } from "@/lib/server/access-policy";
@@ -122,8 +123,8 @@ export default async function TeacherGroupsPage({
                 ))}
               </select>
               <div className="flex items-center gap-2 pt-1">
-                <Link href={ROUTES.groups} className="landing-btn landing-btn-muted">Отмена</Link>
-                <button type="submit" className="landing-btn landing-btn-primary">Создать группу</button>
+                <Link href={ROUTES.groups} className={productButtonClassName("secondary")}>Отмена</Link>
+                <Button type="submit">Создать группу</Button>
               </div>
             </form>
           </section>

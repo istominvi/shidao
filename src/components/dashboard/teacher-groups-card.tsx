@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ChevronDown, FolderPlus, Search, UserPlus } from "lucide-react";
+import { productButtonClassName } from "@/components/ui/button";
 import type { TeacherGroupOperationsRow } from "@/lib/server/teacher-dashboard-operations";
 import { TeacherTableCard, TeacherTableEmptyState } from "./teacher-table-card";
 
@@ -48,22 +49,22 @@ export function TeacherGroupsCard({
     <TeacherTableCard
       title={title}
       controls={(
-        <div className="teacher-control-rail">
+        <div className="product-control-rail">
           {actions.map((action) => {
             const Icon = ACTION_ICONS[action.label as keyof typeof ACTION_ICONS] ?? FolderPlus;
             return (
-              <Link key={action.label} href={action.href} className="teacher-control teacher-control-button">
+              <Link key={action.label} href={action.href} className={productButtonClassName("primary")}>
                 <Icon className="h-4 w-4" aria-hidden="true" />
                 <span>{action.label}</span>
               </Link>
             );
           })}
-          <div className="teacher-select-wrap">
+          <div className="product-select-wrap">
             <select
               name="methodology"
               value={filters.methodology}
               onChange={(event) => setParam("methodology", event.target.value)}
-              className="teacher-control teacher-control-select"
+              className="product-control product-control-select"
             >
               <option value="">Все методики</option>
               {filters.methodologyOptions.map((option) => (
@@ -72,15 +73,15 @@ export function TeacherGroupsCard({
                 </option>
               ))}
             </select>
-            <ChevronDown className="teacher-select-icon h-4 w-4" aria-hidden="true" />
+            <ChevronDown className="product-select-icon h-4 w-4" aria-hidden="true" />
           </div>
-          <div className="teacher-search-wrap">
-            <Search className="teacher-search-icon h-4 w-4" aria-hidden="true" />
+          <div className="product-search-wrap">
+            <Search className="product-search-icon h-4 w-4" aria-hidden="true" />
             <input
               name="q"
               defaultValue={filters.search}
               placeholder="Поиск группы"
-              className="teacher-control teacher-control-search"
+              className="product-control product-control-input product-control-search"
               onKeyDown={(event) => {
                 if (event.key === "Enter") {
                   event.preventDefault();
@@ -93,36 +94,48 @@ export function TeacherGroupsCard({
         </div>
       )}
     >
-        <table className="min-w-full text-left text-sm">
+        <table className="min-w-full table-fixed text-left text-sm">
           <thead className="bg-neutral-50 text-xs uppercase tracking-wide text-neutral-500">
-            <tr>
-              <th className="px-4 py-3">Группа</th>
-              <th className="px-4 py-3">Методика</th>
-              <th className="px-4 py-3">Ученики</th>
-              <th className="px-4 py-3">Прогресс</th>
-              <th className="px-4 py-3">Следующее занятие</th>
+            <tr className="h-10">
+              <th className="px-4 py-0 align-middle">Группа</th>
+              <th className="px-4 py-0 align-middle">Методика</th>
+              <th className="px-4 py-0 align-middle">Ученики</th>
+              <th className="px-4 py-0 align-middle">Прогресс</th>
+              <th className="px-4 py-0 align-middle">Следующее занятие</th>
             </tr>
           </thead>
           <tbody>
             {rows.map((group) => (
               <tr
                 key={group.id}
-                className="cursor-pointer border-t border-neutral-200 align-top transition hover:bg-sky-50/45"
+                className="h-10 cursor-pointer border-t border-neutral-200 transition hover:bg-sky-50/45"
                 onClick={() => router.push(group.groupHref)}
               >
-                <td className="px-4 py-3 font-semibold text-neutral-950">{group.groupLabel}</td>
-                <td className="px-4 py-3 text-neutral-700">{group.methodologyLabel ?? "Не назначена"}</td>
-                <td className="px-4 py-3 text-neutral-700">{group.studentCount}</td>
-                <td className="px-4 py-3 text-neutral-700">{group.progressLabel}</td>
-                <td className="px-4 py-3 text-neutral-700">
-                  {group.nextLessonLabel ? (
-                    <>
-                      <div>{group.nextLessonLabel}</div>
-                      <div className="text-xs text-neutral-500">{group.nextLessonTitle}</div>
-                    </>
-                  ) : (
-                    "Не запланировано"
-                  )}
+                <td className="max-w-0 px-4 py-0 align-middle font-semibold text-neutral-950">
+                  <span className="block truncate" title={group.groupLabel}>{group.groupLabel}</span>
+                </td>
+                <td className="max-w-0 px-4 py-0 align-middle text-neutral-700">
+                  <span className="block truncate" title={group.methodologyLabel ?? "Не назначена"}>
+                    {group.methodologyLabel ?? "Не назначена"}
+                  </span>
+                </td>
+                <td className="px-4 py-0 align-middle text-neutral-700">{group.studentCount}</td>
+                <td className="max-w-0 px-4 py-0 align-middle text-neutral-700">
+                  <span className="block truncate" title={group.progressLabel}>{group.progressLabel}</span>
+                </td>
+                <td className="max-w-0 px-4 py-0 align-middle text-neutral-700">
+                  <span
+                    className="block truncate"
+                    title={
+                      group.nextLessonLabel
+                        ? [group.nextLessonLabel, group.nextLessonTitle].filter(Boolean).join(" • ")
+                        : "Не запланировано"
+                    }
+                  >
+                    {group.nextLessonLabel
+                      ? [group.nextLessonLabel, group.nextLessonTitle].filter(Boolean).join(" • ")
+                      : "Не запланировано"}
+                  </span>
                 </td>
               </tr>
             ))}
