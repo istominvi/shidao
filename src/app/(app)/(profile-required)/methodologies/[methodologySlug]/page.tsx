@@ -146,32 +146,34 @@ export default async function MethodologyDetailPage({
           }
         />
 
-        <section className="grid gap-4 lg:grid-cols-2">
-          {overviewCards.map((card) => (
-            <AppCard
-              key={card.title}
-              className={`p-5 md:p-6 ${card.surfaceClass}`}
-              as="article"
-            >
-              <h2 className="text-lg font-semibold text-neutral-900">
-                {card.title}
-              </h2>
-              <ul className="mt-4 space-y-2.5 text-sm leading-relaxed text-neutral-700">
-                {card.points.map((point) => (
-                  <li key={point} className="flex gap-2.5">
-                    <span
-                      className={`mt-2 h-1.5 w-1.5 shrink-0 rounded-full ${card.dotClass}`}
-                    />
-                    <span>{point}</span>
-                  </li>
-                ))}
-              </ul>
-            </AppCard>
-          ))}
-        </section>
+        {overviewCards.length > 0 ? (
+          <section className="grid gap-4 lg:grid-cols-2">
+            {overviewCards.map((card) => (
+              <AppCard
+                key={card.title}
+                className={`p-5 md:p-6 ${card.surfaceClass}`}
+                as="article"
+              >
+                <h2 className="text-lg font-semibold text-neutral-900">
+                  {card.title}
+                </h2>
+                <ul className="mt-4 space-y-2.5 text-sm leading-relaxed text-neutral-700">
+                  {card.points.map((point) => (
+                    <li key={point} className="flex gap-2.5">
+                      <span
+                        className={`mt-2 h-1.5 w-1.5 shrink-0 rounded-full ${card.dotClass}`}
+                      />
+                      <span>{point}</span>
+                    </li>
+                  ))}
+                </ul>
+              </AppCard>
+            ))}
+          </section>
+        ) : null}
 
         <section className="mt-6 space-y-3">
-          <h2 className="text-xl font-bold tracking-[-0.02em] text-neutral-950">
+          <h2 className="px-6 text-xl font-bold tracking-[-0.02em] text-neutral-950">
             Уроки
           </h2>
           {readModel.lessons.map((lesson) => (
