@@ -2,6 +2,7 @@
 
 import type { LucideIcon } from "lucide-react";
 import { BookOpenText, ClipboardCheck, MessageCircle, NotebookText, PlayCircle } from "lucide-react";
+import { productButtonClassName } from "@/components/ui/button";
 
 export type TeacherLessonTabKey = "plan" | "content" | "homework" | "conduct" | "chat";
 
@@ -20,9 +21,7 @@ type TeacherLessonTabsProps = {
 };
 
 function tabClassName(active: boolean) {
-  return active
-    ? "inline-flex items-center gap-2 rounded-xl bg-neutral-900 px-3 py-2 text-sm font-semibold text-white"
-    : "inline-flex items-center gap-2 rounded-xl border border-neutral-300 bg-white px-3 py-2 text-sm font-semibold text-neutral-700 transition hover:border-neutral-400 hover:text-neutral-900";
+  return productButtonClassName(active ? "primary" : "secondary", "text-sm");
 }
 
 export function TeacherLessonTabs({ tabs, activeTab, onTabChange }: TeacherLessonTabsProps) {

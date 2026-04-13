@@ -3,7 +3,9 @@
 import { useState } from "react";
 import { useFormStatus } from "react-dom";
 import type { ReactNode } from "react";
-import { ChevronDown, MonitorPlay, MapPin } from "lucide-react";
+import { ChevronDown, MapPin, MonitorPlay } from "lucide-react";
+import { Button, productButtonClassName } from "@/components/ui/button";
+import { Input, Select } from "@/components/ui/input";
 
 type AssignLessonDialogProps = {
   lessonTitle: string;
@@ -17,13 +19,9 @@ type AssignLessonDialogProps = {
 function SubmitButton() {
   const { pending } = useFormStatus();
   return (
-    <button
-      type="submit"
-      className="landing-btn landing-btn-primary h-10 cursor-pointer text-xs"
-      disabled={pending}
-    >
+    <Button type="submit" disabled={pending}>
       {pending ? "Назначаем..." : "Назначить"}
-    </button>
+    </Button>
   );
 }
 
@@ -33,7 +31,7 @@ export function AssignLessonDialog({
   action,
   defaultOpen = false,
   triggerContent = "Назначить урок",
-  triggerClassName = "landing-btn landing-btn-primary text-xs",
+  triggerClassName,
 }: AssignLessonDialogProps) {
   const [open, setOpen] = useState(defaultOpen);
   const [format, setFormat] = useState<"online" | "offline">("online");
@@ -42,7 +40,7 @@ export function AssignLessonDialog({
     <>
       <button
         type="button"
-        className={`${triggerClassName} cursor-pointer`}
+        className={triggerClassName ?? productButtonClassName("primary")}
         onClick={() => setOpen(true)}
       >
         {triggerContent}
@@ -64,13 +62,8 @@ export function AssignLessonDialog({
             <form action={action} className="mt-4 grid gap-3 md:grid-cols-2">
               <label className="space-y-2 text-sm text-neutral-700 md:col-span-2">
                 <span>Группа</span>
-                <span className="relative block">
-                  <select
-                    name="classId"
-                    required
-                    className="field-input h-10 appearance-none pr-10"
-                    defaultValue=""
-                  >
+                <span className="product-select-wrap block">
+                  <Select name="classId" required defaultValue="">
                     <option value="" disabled>
                       Выберите группу
                     </option>
@@ -79,21 +72,17 @@ export function AssignLessonDialog({
                         {group.label}
                       </option>
                     ))}
-                  </select>
-                  <ChevronDown
-                    className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-500"
-                    strokeWidth={2.4}
-                    aria-hidden="true"
-                  />
+                  </Select>
+                  <ChevronDown className="product-select-icon h-4 w-4" aria-hidden="true" />
                 </span>
               </label>
               <label className="space-y-2 text-sm text-neutral-700">
                 <span>Дата</span>
-                <input type="date" name="date" required className="field-input h-10" />
+                <Input type="date" name="date" required />
               </label>
               <label className="space-y-2 text-sm text-neutral-700">
                 <span>Время</span>
-                <input type="time" name="time" required className="field-input h-10" />
+                <Input type="time" name="time" required />
               </label>
               <fieldset className="space-y-2 text-sm text-neutral-700 md:col-span-2">
                 <legend>Формат</legend>
@@ -128,34 +117,20 @@ export function AssignLessonDialog({
               {format === "online" ? (
                 <label className="space-y-2 text-sm text-neutral-700 md:col-span-2">
                   <span>Ссылка на встречу</span>
-                  <input
-                    type="url"
-                    name="meetingLink"
-                    className="field-input h-10"
-                    placeholder="https://"
-                  />
+                  <Input type="url" name="meetingLink" placeholder="https://" />
                   <input type="hidden" name="place" value="" />
                 </label>
               ) : (
                 <label className="space-y-2 text-sm text-neutral-700 md:col-span-2">
                   <span>Место</span>
-                  <input
-                    type="text"
-                    name="place"
-                    className="field-input h-10"
-                    placeholder="Кабинет / адрес"
-                  />
+                  <Input type="text" name="place" placeholder="Кабинет / адрес" />
                   <input type="hidden" name="meetingLink" value="" />
                 </label>
               )}
               <div className="mt-3 flex justify-end gap-2 md:col-span-2">
-                <button
-                  type="button"
-                  onClick={() => setOpen(false)}
-                  className="landing-btn landing-btn-muted h-10 cursor-pointer text-xs"
-                >
+                <Button type="button" variant="secondary" onClick={() => setOpen(false)}>
                   Отмена
-                </button>
+                </Button>
                 <SubmitButton />
               </div>
             </form>

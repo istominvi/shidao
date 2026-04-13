@@ -2,8 +2,11 @@ import Link from "next/link";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { isRedirectError } from "next/dist/client/components/redirect-error";
+import { ChevronDown } from "lucide-react";
 import { AppPageHeader } from "@/components/app/page-header";
 import { TopNav } from "@/components/top-nav";
+import { Button } from "@/components/ui/button";
+import { Input, Select } from "@/components/ui/input";
 import { ROUTES, toGroupRoute } from "@/lib/auth";
 import { resolveAccessPolicy } from "@/lib/server/access-policy";
 import { listTeacherClassesAdmin } from "@/lib/server/lesson-content-repository";
@@ -144,56 +147,53 @@ export default async function NewStudentPage({
               <label className="field-label" htmlFor="classId">
                 Группа
               </label>
-              <select
-                id="classId"
-                name="classId"
-                required
-                className="field-input"
-                defaultValue={preselectedGroupId || classOptions[0]?.id || ""}
-              >
-                {classOptions.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.name?.trim() || "Группа"}
-                  </option>
-                ))}
-              </select>
+              <div className="product-select-wrap">
+                <Select
+                  id="classId"
+                  name="classId"
+                  required
+                  defaultValue={preselectedGroupId || classOptions[0]?.id || ""}
+                >
+                  {classOptions.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.name?.trim() || "Группа"}
+                    </option>
+                  ))}
+                </Select>
+                <ChevronDown className="product-select-icon h-4 w-4" aria-hidden="true" />
+              </div>
 
               <label className="field-label" htmlFor="fullName">
                 Имя ученика
               </label>
-              <input
+              <Input
                 id="fullName"
                 name="fullName"
-                className="field-input"
                 placeholder="Например, Анна Иванова"
               />
 
               <label className="field-label" htmlFor="login">
                 Логин ученика
               </label>
-              <input
+              <Input
                 id="login"
                 name="login"
                 required
-                className="field-input"
                 placeholder="anna.ivanova"
               />
 
               <label className="field-label" htmlFor="password">
                 Пароль
               </label>
-              <input
+              <Input
                 id="password"
                 name="password"
                 type="password"
                 minLength={8}
                 required
-                className="field-input"
               />
 
-              <button type="submit" className="landing-btn landing-btn-primary">
-                Создать ученика
-              </button>
+              <Button type="submit">Создать ученика</Button>
             </form>
           )}
         </section>
