@@ -1,57 +1,19 @@
-import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
-import { classNames } from "@/lib/ui/classnames";
-
-type SemanticTone =
-  | "neutral"
-  | "sky"
-  | "violet"
-  | "emerald"
-  | "amber"
-  | "rose"
-  | "indigo";
+import type { ChipSize, ChipTone } from "@/components/ui/chip";
+import { Chip } from "@/components/ui/chip";
 
 type SemanticChipProps = {
-  icon: LucideIcon;
+  icon: Parameters<typeof Chip>[0]["icon"];
   children: ReactNode;
-  tone?: SemanticTone;
-  size?: "sm" | "md";
+  tone?: ChipTone;
+  size?: ChipSize;
   className?: string;
 };
 
-const toneClass: Record<SemanticTone, string> = {
-  neutral: "border-neutral-200 bg-white/95 text-neutral-700",
-  sky: "border-sky-200 bg-sky-50/90 text-sky-800",
-  violet: "border-violet-200 bg-violet-50/90 text-violet-800",
-  emerald: "border-emerald-200 bg-emerald-50/90 text-emerald-800",
-  amber: "border-amber-200 bg-amber-50/90 text-amber-800",
-  rose: "border-rose-200 bg-rose-50/90 text-rose-800",
-  indigo: "border-indigo-200 bg-indigo-50/90 text-indigo-800",
-};
-
-const sizeClass = {
-  sm: "px-2.5 py-1 text-xs",
-  md: "px-3 py-1.5 text-sm",
-} as const;
-
-export function SemanticChip({
-  icon: Icon,
-  children,
-  tone = "neutral",
-  size = "sm",
-  className,
-}: SemanticChipProps) {
+export function SemanticChip({ icon, children, tone, size, className }: SemanticChipProps) {
   return (
-    <span
-      className={classNames(
-        "landing-chip border",
-        toneClass[tone],
-        sizeClass[size],
-        className,
-      )}
-    >
-      <Icon className="h-3.5 w-3.5" aria-hidden="true" />
-      <span>{children}</span>
-    </span>
+    <Chip icon={icon} tone={tone} size={size} className={className}>
+      {children}
+    </Chip>
   );
 }

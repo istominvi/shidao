@@ -86,7 +86,6 @@ export default async function TeacherGroupsPage({
         <AppPageHeader title="Группы" />
 
         <TeacherGroupsCard
-          title="Мои группы"
           actions={readModel.actions}
           rows={readModel.rows}
           filters={readModel.filters}

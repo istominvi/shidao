@@ -164,7 +164,7 @@ export function TeacherLessonWorkspace({
                 <div className="rounded-xl border border-dashed border-neutral-300 p-3 text-sm text-neutral-600">
                   В группе пока нет учеников для обсуждения.
                   <a
-                    href={`/students/new?groupId=${workspace.classId}`}
+                    href={`/groups/${workspace.classId}`}
                     className="ml-2 text-sky-700 underline underline-offset-2"
                   >
                     Добавить ученика

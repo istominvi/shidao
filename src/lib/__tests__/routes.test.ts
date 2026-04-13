@@ -28,7 +28,6 @@ test("isProtectedAppRoute covers dashboard, onboarding, settings, lessons, and g
   assert.equal(isProtectedAppRoute("/lessons/scheduled-1"), true);
   assert.equal(isProtectedAppRoute("/methodologies"), true);
   assert.equal(isProtectedAppRoute("/groups/class-1"), true);
-  assert.equal(isProtectedAppRoute("/students/new"), true);
   assert.equal(isProtectedAppRoute("/settings-security"), false);
   assert.equal(isProtectedAppRoute("/login"), false);
   assert.equal(isProtectedAppRoute(null), false);

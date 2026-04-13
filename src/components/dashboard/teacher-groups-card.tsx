@@ -5,11 +5,22 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ChevronDown, FolderPlus, Search, UserPlus } from "lucide-react";
 import { productButtonClassName } from "@/components/ui/button";
 import { Input, Select } from "@/components/ui/input";
+import {
+  ProductTable,
+  ProductTableBody,
+  ProductTableCell,
+  ProductTableEmptyState,
+  ProductTableHead,
+  ProductTableHeaderCell,
+  ProductTableHeaderRow,
+  ProductTableRow,
+  ProductTableTruncate,
+} from "@/components/ui/product-table";
 import type { TeacherGroupOperationsRow } from "@/lib/server/teacher-dashboard-operations";
-import { TeacherTableCard, TeacherTableEmptyState } from "./teacher-table-card";
+import { TeacherTableCard } from "./teacher-table-card";
 
 type TeacherGroupsCardProps = {
-  title: string;
+  title?: string;
   actions: Array<{ label: string; href: string }>;
   rows: TeacherGroupOperationsRow[];
   filters: {
@@ -54,7 +65,7 @@ export function TeacherGroupsCard({
           {actions.map((action) => {
             const Icon = ACTION_ICONS[action.label as keyof typeof ACTION_ICONS] ?? FolderPlus;
             return (
-              <Link key={action.label} href={action.href} className={productButtonClassName("primary")}>
+              <Link key={action.label} href={action.href} className={productButtonClassName("secondary")}>
                 <Icon className="h-4 w-4" aria-hidden="true" />
                 <span>{action.label}</span>
               </Link>
@@ -94,54 +105,53 @@ export function TeacherGroupsCard({
         </div>
       )}
     >
-        <table className="min-w-full table-fixed text-left text-sm">
-          <thead className="bg-neutral-50 text-xs uppercase tracking-wide text-neutral-500">
-            <tr className="h-10">
-              <th className="px-4 py-0 align-middle">Группа</th>
-              <th className="px-4 py-0 align-middle">Методика</th>
-              <th className="px-4 py-0 align-middle">Ученики</th>
-              <th className="px-4 py-0 align-middle">Прогресс</th>
-              <th className="px-4 py-0 align-middle">Следующее занятие</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((group) => (
-              <tr
-                key={group.id}
-                className="h-10 cursor-pointer border-t border-neutral-200 transition hover:bg-sky-50/45"
-                onClick={() => router.push(group.groupHref)}
-              >
-                <td className="max-w-0 px-4 py-0 align-middle font-semibold text-neutral-950">
-                  <span className="block truncate" title={group.groupLabel}>{group.groupLabel}</span>
-                </td>
-                <td className="max-w-0 px-4 py-0 align-middle text-neutral-700">
-                  <span className="block truncate" title={group.methodologyLabel ?? "Не назначена"}>
-                    {group.methodologyLabel ?? "Не назначена"}
-                  </span>
-                </td>
-                <td className="px-4 py-0 align-middle text-neutral-700">{group.studentCount}</td>
-                <td className="max-w-0 px-4 py-0 align-middle text-neutral-700">
-                  <span className="block truncate" title={group.progressLabel}>{group.progressLabel}</span>
-                </td>
-                <td className="max-w-0 px-4 py-0 align-middle text-neutral-700">
-                  <span
-                    className="block truncate"
-                    title={
-                      group.nextLessonLabel
-                        ? [group.nextLessonLabel, group.nextLessonTitle].filter(Boolean).join(" • ")
-                        : "Не запланировано"
-                    }
-                  >
-                    {group.nextLessonLabel
+      <ProductTable>
+        <ProductTableHead>
+          <ProductTableHeaderRow>
+            <ProductTableHeaderCell>Группа</ProductTableHeaderCell>
+            <ProductTableHeaderCell>Методика</ProductTableHeaderCell>
+            <ProductTableHeaderCell>Ученики</ProductTableHeaderCell>
+            <ProductTableHeaderCell>Прогресс</ProductTableHeaderCell>
+            <ProductTableHeaderCell>Следующее занятие</ProductTableHeaderCell>
+          </ProductTableHeaderRow>
+        </ProductTableHead>
+        <ProductTableBody>
+          {rows.map((group) => (
+            <ProductTableRow
+              key={group.id}
+              className="cursor-pointer"
+              onClick={() => router.push(group.groupHref)}
+            >
+              <ProductTableCell className="max-w-0 font-semibold text-neutral-950">
+                <ProductTableTruncate title={group.groupLabel}>{group.groupLabel}</ProductTableTruncate>
+              </ProductTableCell>
+              <ProductTableCell className="max-w-0">
+                <ProductTableTruncate title={group.methodologyLabel ?? "Не назначена"}>
+                  {group.methodologyLabel ?? "Не назначена"}
+                </ProductTableTruncate>
+              </ProductTableCell>
+              <ProductTableCell>{group.studentCount}</ProductTableCell>
+              <ProductTableCell className="max-w-0">
+                <ProductTableTruncate title={group.progressLabel}>{group.progressLabel}</ProductTableTruncate>
+              </ProductTableCell>
+              <ProductTableCell className="max-w-0">
+                <ProductTableTruncate
+                  title={
+                    group.nextLessonLabel
                       ? [group.nextLessonLabel, group.nextLessonTitle].filter(Boolean).join(" • ")
-                      : "Не запланировано"}
-                  </span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        {rows.length === 0 ? <TeacherTableEmptyState text={emptyStateText} /> : null}
+                      : "Не запланировано"
+                  }
+                >
+                  {group.nextLessonLabel
+                    ? [group.nextLessonLabel, group.nextLessonTitle].filter(Boolean).join(" • ")
+                    : "Не запланировано"}
+                </ProductTableTruncate>
+              </ProductTableCell>
+            </ProductTableRow>
+          ))}
+        </ProductTableBody>
+      </ProductTable>
+      {rows.length === 0 ? <ProductTableEmptyState text={emptyStateText} /> : null}
     </TeacherTableCard>
   );
 }

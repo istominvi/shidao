@@ -1,4 +1,5 @@
 import { AppCard } from "@/components/app/app-card";
+import { Chip } from "@/components/ui/chip";
 import type { TeacherLessonWorkspacePresentation } from "@/lib/server/teacher-lesson-workspace";
 
 function flowAccentClass(tone: "sky" | "violet" | "emerald" | "amber") {
@@ -46,9 +47,9 @@ export function TeacherLessonPedagogicalContent({
           <div className="mt-3 flex flex-wrap gap-1.5">
             {quickSummary.keyWords.length ? (
               quickSummary.keyWords.slice(0, 10).map((word) => (
-                <span key={word} className="rounded-full bg-sky-50 px-2.5 py-1 text-xs font-medium text-sky-900">
+                <Chip key={word} tone="sky">
                   {word}
-                </span>
+                </Chip>
               ))
             ) : (
               <p className="text-sm text-neutral-600">Слова не указаны.</p>
@@ -61,9 +62,9 @@ export function TeacherLessonPedagogicalContent({
           <div className="mt-3 flex flex-wrap gap-1.5">
             {quickSummary.keyPhrases.length ? (
               quickSummary.keyPhrases.slice(0, 8).map((phrase) => (
-                <span key={phrase} className="rounded-full bg-violet-50 px-2.5 py-1 text-xs font-medium text-violet-900">
+                <Chip key={phrase} tone="violet">
                   {phrase}
-                </span>
+                </Chip>
               ))
             ) : (
               <p className="text-sm text-neutral-600">Фразы не указаны.</p>
@@ -102,9 +103,7 @@ export function TeacherLessonPedagogicalContent({
       <AppCard as="article" className="p-5 md:p-6">
         <div className="flex items-center justify-between gap-3">
           <h2 className="text-2xl font-bold tracking-[-0.02em] text-neutral-900">Ход урока</h2>
-          <span className="rounded-full border border-neutral-200 bg-white px-3 py-1 text-xs font-medium text-neutral-600">
-            {lessonFlow.length} этапов
-          </span>
+          <Chip tone="neutral">{lessonFlow.length} этапов</Chip>
         </div>
 
         <div className="mt-5 space-y-4">
@@ -113,8 +112,8 @@ export function TeacherLessonPedagogicalContent({
               <div aria-hidden="true" className={`pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-r ${flowAccentClass(step.accentTone)}`} />
               <div className="relative">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="rounded-full bg-neutral-900 px-2.5 py-1 text-xs font-semibold text-white">{step.stepLabel}</span>
-                  <span className="rounded-full bg-neutral-100 px-2.5 py-1 text-xs font-medium text-neutral-700">{step.blockLabel}</span>
+                  <Chip className="border-neutral-900 bg-neutral-900 text-white">{step.stepLabel}</Chip>
+                  <Chip tone="slate">{step.blockLabel}</Chip>
                 </div>
                 <h3 className="mt-3 text-lg font-semibold text-neutral-950">{step.title}</h3>
                 {step.description ? <p className="mt-2 text-sm leading-6 text-neutral-700">{step.description}</p> : null}

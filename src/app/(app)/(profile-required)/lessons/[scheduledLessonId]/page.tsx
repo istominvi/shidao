@@ -231,7 +231,6 @@ export default async function ScheduledLessonPage({
             teacherView.workspace.sourceLesson.lessonId,
           )}
           backLabel={teacherView.workspace.sourceLesson.methodologyTitle}
-          eyebrow="Рабочее пространство преподавателя"
           title={teacherView.workspace.presentation.hero.lessonTitle}
           meta={
             <LessonMetaRail>
