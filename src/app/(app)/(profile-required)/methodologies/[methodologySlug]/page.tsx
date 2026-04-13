@@ -1,10 +1,18 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { BookOpen, CalendarRange, Clock3, GraduationCap, Shapes, Users } from "lucide-react";
+import {
+  BookOpen,
+  CalendarRange,
+  Clock3,
+  Eye,
+  GraduationCap,
+  Shapes,
+  UserPlus,
+  Users,
+} from "lucide-react";
 import { AppCard } from "@/components/app/app-card";
 import { AppPageHeader } from "@/components/app/page-header";
 import { SemanticChip } from "@/components/app/semantic-chip";
-import { LessonContextChip } from "@/components/lessons/lesson-context-chip";
 import { TopNav } from "@/components/top-nav";
 import { ROUTES, toMethodologyLessonRoute } from "@/lib/auth";
 import { resolveAccessPolicy } from "@/lib/server/access-policy";
@@ -14,7 +22,11 @@ import {
   getTeacherMethodologyDetailReadModel,
 } from "@/lib/server/teacher-methodologies";
 
-export default async function MethodologyDetailPage({ params }: { params: Promise<{ methodologySlug: string }> }) {
+export default async function MethodologyDetailPage({
+  params,
+}: {
+  params: Promise<{ methodologySlug: string }>;
+}) {
   const resolution = await resolveAccessPolicy();
   if (!canAccessTeacherMethodologies(resolution)) redirect(ROUTES.dashboard);
   assertTeacherMethodologiesAccess(resolution);
@@ -45,8 +57,12 @@ export default async function MethodologyDetailPage({ params }: { params: Promis
       points: [
         passport.audienceLabel,
         readModel.overview.teachingApproachSummary,
-        passport.idealGroupSizeLabel ? `Рекомендуемый размер группы: ${passport.idealGroupSizeLabel}` : undefined,
-        passport.maxGroupSize ? `Жёсткий максимум: ${passport.maxGroupSize} детей` : undefined,
+        passport.idealGroupSizeLabel
+          ? `Рекомендуемый размер группы: ${passport.idealGroupSizeLabel}`
+          : undefined,
+        passport.maxGroupSize
+          ? `Жёсткий максимум: ${passport.maxGroupSize} детей`
+          : undefined,
       ].filter(Boolean) as string[],
     },
     {
@@ -95,19 +111,29 @@ export default async function MethodologyDetailPage({ params }: { params: Promis
                 Уроков: {readModel.overview.availableLessonsCount}
               </SemanticChip>
               {normalizedCourseDurationLabel ? (
-                <SemanticChip icon={CalendarRange} tone="emerald" size="md">Курс: {normalizedCourseDurationLabel}</SemanticChip>
+                <SemanticChip icon={CalendarRange} tone="emerald" size="md">
+                  Курс: {normalizedCourseDurationLabel}
+                </SemanticChip>
               ) : null}
               {passport.lessonDurationLabel ? (
-                <SemanticChip icon={Clock3} tone="amber" size="md">Урок: {passport.lessonDurationLabel}</SemanticChip>
+                <SemanticChip icon={Clock3} tone="amber" size="md">
+                  Урок: {passport.lessonDurationLabel}
+                </SemanticChip>
               ) : null}
               {passport.targetAgeLabel ? (
-                <SemanticChip icon={GraduationCap} tone="sky" size="md">Возраст: {passport.targetAgeLabel}</SemanticChip>
+                <SemanticChip icon={GraduationCap} tone="sky" size="md">
+                  Возраст: {passport.targetAgeLabel}
+                </SemanticChip>
               ) : null}
               {passport.idealGroupSizeLabel ? (
-                <SemanticChip icon={Users} tone="indigo" size="md">Группа: {passport.idealGroupSizeLabel}</SemanticChip>
+                <SemanticChip icon={Users} tone="indigo" size="md">
+                  Группа: {passport.idealGroupSizeLabel}
+                </SemanticChip>
               ) : null}
               {normalizedActivitiesLabel ? (
-                <SemanticChip icon={Shapes} tone="rose" size="md">{normalizedActivitiesLabel}</SemanticChip>
+                <SemanticChip icon={Shapes} tone="rose" size="md">
+                  {normalizedActivitiesLabel}
+                </SemanticChip>
               ) : null}
             </>
           }
@@ -115,12 +141,20 @@ export default async function MethodologyDetailPage({ params }: { params: Promis
 
         <section className="grid gap-4 lg:grid-cols-2">
           {overviewCards.map((card) => (
-            <AppCard key={card.title} className={`p-5 md:p-6 ${card.surfaceClass}`} as="article">
-              <h2 className="text-lg font-semibold text-neutral-900">{card.title}</h2>
+            <AppCard
+              key={card.title}
+              className={`p-5 md:p-6 ${card.surfaceClass}`}
+              as="article"
+            >
+              <h2 className="text-lg font-semibold text-neutral-900">
+                {card.title}
+              </h2>
               <ul className="mt-4 space-y-2.5 text-sm leading-relaxed text-neutral-700">
                 {card.points.map((point) => (
                   <li key={point} className="flex gap-2.5">
-                    <span className={`mt-2 h-1.5 w-1.5 shrink-0 rounded-full ${card.dotClass}`} />
+                    <span
+                      className={`mt-2 h-1.5 w-1.5 shrink-0 rounded-full ${card.dotClass}`}
+                    />
                     <span>{point}</span>
                   </li>
                 ))}
@@ -130,28 +164,57 @@ export default async function MethodologyDetailPage({ params }: { params: Promis
         </section>
 
         <section className="mt-6 space-y-3">
-          <h2 className="text-xl font-bold tracking-[-0.02em] text-neutral-950">Уроки</h2>
+          <h2 className="text-xl font-bold tracking-[-0.02em] text-neutral-950">
+            Уроки
+          </h2>
           {readModel.lessons.map((lesson) => (
             <AppCard key={lesson.id} className="p-5" as="article">
-              <div className="flex flex-wrap items-start justify-between gap-4">
-                <div>
-                  <h3 className="text-lg font-semibold text-neutral-950">{lesson.title}</h3>
-                  <p className="mt-1 text-sm text-neutral-600">{lesson.positionLabel} · {lesson.durationLabel} · {lesson.readinessLabel}</p>
-                  {lesson.vocabularyPreview.length ? <p className="mt-2 text-sm text-neutral-700">Лексика: {lesson.vocabularyPreview.join(", ")}</p> : null}
-                  {lesson.phrasePreview.length ? <p className="mt-1 text-sm text-neutral-700">Фразы: {lesson.phrasePreview.join(" · ")}</p> : null}
-                  <div className="mt-2 flex flex-wrap gap-2 text-xs text-neutral-700">
-                    <span className="rounded-full bg-neutral-100 px-2.5 py-1">Видео: {lesson.mediaSummary.videos}</span>
-                    <span className="rounded-full bg-neutral-100 px-2.5 py-1">Песни: {lesson.mediaSummary.songs}</span>
-                    <span className="rounded-full bg-neutral-100 px-2.5 py-1">Worksheet: {lesson.mediaSummary.worksheets}</span>
-                    {lesson.materialsSignal ? <span className="rounded-full bg-amber-50 px-2.5 py-1 text-amber-800">Нужна подготовка материалов</span> : null}
-                    {lesson.homeworkSignal ? <span className="rounded-full bg-violet-50 px-2.5 py-1 text-violet-800">{lesson.homeworkLabel ?? "Есть домашнее задание"}</span> : null}
-                  </div>
+              <div>
+                <h3 className="text-lg font-semibold text-neutral-950">
+                  {lesson.title}
+                </h3>
+                <div className="mt-2 flex flex-wrap gap-2 text-xs text-neutral-700">
+                  <span className="landing-chip border border-sky-200 bg-sky-50/90 px-2.5 py-1 text-xs font-semibold text-sky-800">
+                    Видео: {lesson.mediaSummary.videos}
+                  </span>
+                  <span className="landing-chip border border-violet-200 bg-violet-50/90 px-2.5 py-1 text-xs font-semibold text-violet-800">
+                    Песни: {lesson.mediaSummary.songs}
+                  </span>
+                  {lesson.homeworkSignal ? (
+                    <span className="landing-chip border border-emerald-200 bg-emerald-50/90 px-2.5 py-1 text-xs font-semibold text-emerald-800">
+                      ДЗ: Квиз
+                    </span>
+                  ) : null}
                 </div>
-                <LessonContextChip context="methodology" />
+                {lesson.vocabularyPreview.length ? (
+                  <p className="mt-2 text-sm text-neutral-700">
+                    Лексика: {lesson.vocabularyPreview.join(", ")}
+                  </p>
+                ) : null}
+                {lesson.phrasePreview.length ? (
+                  <p className="mt-1 text-sm text-neutral-700">
+                    Фразы: {lesson.phrasePreview.join(" · ")}
+                  </p>
+                ) : null}
               </div>
               <div className="mt-4 flex gap-2">
-                <Link href={toMethodologyLessonRoute(readModel.methodology.slug, lesson.id)} className="landing-btn landing-btn-primary text-xs">Открыть урок</Link>
-                <Link href={`${toMethodologyLessonRoute(readModel.methodology.slug, lesson.id)}?assign=1`} className="landing-btn landing-btn-muted text-xs">Назначить</Link>
+                <Link
+                  href={toMethodologyLessonRoute(
+                    readModel.methodology.slug,
+                    lesson.id,
+                  )}
+                  className="landing-chip border border-neutral-200 bg-white px-3 py-1.5 text-sm font-semibold text-neutral-700 transition hover:-translate-y-0.5 hover:bg-neutral-50"
+                >
+                  <Eye className="h-3.5 w-3.5" aria-hidden="true" />
+                  <span>Открыть урок</span>
+                </Link>
+                <Link
+                  href={`${toMethodologyLessonRoute(readModel.methodology.slug, lesson.id)}?assign=1`}
+                  className="landing-chip border border-neutral-200 bg-white px-3 py-1.5 text-sm font-semibold text-neutral-700 transition hover:-translate-y-0.5 hover:bg-neutral-50"
+                >
+                  <UserPlus className="h-3.5 w-3.5" aria-hidden="true" />
+                  <span>Назначить</span>
+                </Link>
               </div>
             </AppCard>
           ))}
