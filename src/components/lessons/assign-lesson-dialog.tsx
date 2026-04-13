@@ -74,11 +74,11 @@ export function AssignLessonDialog({
                   ))}
                 </select>
               </label>
-              <label className="space-y-1 text-sm text-neutral-700 md:col-span-2">
+              <label className="space-y-1 text-sm text-neutral-700">
                 <span>Дата</span>
                 <input type="date" name="date" required className="field-input" />
               </label>
-              <label className="space-y-1 text-sm text-neutral-700 md:col-span-2">
+              <label className="space-y-1 text-sm text-neutral-700">
                 <span>Время</span>
                 <input type="time" name="time" required className="field-input" />
               </label>
