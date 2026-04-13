@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ChevronDown, FolderPlus, Search, UserPlus } from "lucide-react";
 import { productButtonClassName } from "@/components/ui/button";
+import { Input, Select } from "@/components/ui/input";
 import type { TeacherGroupOperationsRow } from "@/lib/server/teacher-dashboard-operations";
 import { TeacherTableCard, TeacherTableEmptyState } from "./teacher-table-card";
 
@@ -60,11 +61,10 @@ export function TeacherGroupsCard({
             );
           })}
           <div className="product-select-wrap">
-            <select
+            <Select
               name="methodology"
               value={filters.methodology}
               onChange={(event) => setParam("methodology", event.target.value)}
-              className="product-control product-control-select"
             >
               <option value="">Все методики</option>
               {filters.methodologyOptions.map((option) => (
@@ -72,16 +72,16 @@ export function TeacherGroupsCard({
                   {option}
                 </option>
               ))}
-            </select>
+            </Select>
             <ChevronDown className="product-select-icon h-4 w-4" aria-hidden="true" />
           </div>
           <div className="product-search-wrap">
             <Search className="product-search-icon h-4 w-4" aria-hidden="true" />
-            <input
+            <Input
               name="q"
               defaultValue={filters.search}
               placeholder="Поиск группы"
-              className="product-control product-control-input product-control-search"
+              className="product-control-search"
               onKeyDown={(event) => {
                 if (event.key === "Enter") {
                   event.preventDefault();

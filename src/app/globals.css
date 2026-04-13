@@ -448,6 +448,11 @@ a {
   box-shadow: 0 0 0 3px rgba(20, 20, 20, 0.08);
 }
 
+.product-control:disabled {
+  cursor: not-allowed;
+  opacity: 0.72;
+}
+
 .product-control-input {
   width: 100%;
   padding: 0 0.9rem;
@@ -519,6 +524,11 @@ a {
   outline: none;
   border-color: rgba(20, 20, 20, 0.32);
   box-shadow: 0 0 0 3px rgba(20, 20, 20, 0.08);
+}
+
+.product-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.72;
 }
 
 .product-btn-primary {
