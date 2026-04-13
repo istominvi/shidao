@@ -44,3 +44,12 @@
 - `npm run lint`
 - `npm run test`
 - `npm run build`
+
+## 8) DB snapshot layer for agents (current pass)
+
+- Added `supabase/schema/current-schema.sql` as a current-state schema snapshot for fast context loading.
+- Added `docs/database/current-schema.md` as the human-readable current DB model guide.
+- Added `docs/database/migration-history.md` to clarify why migration history is preserved and when to consult it.
+- Added root `AGENTS.md` DB policy so agents prioritize snapshot docs first and read migrations only for migration-sensitive tasks.
+
+Migration history remains intentionally preserved (`supabase/migrations/*`) to keep upgrade/backfill provenance and production safety.

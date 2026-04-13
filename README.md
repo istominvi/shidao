@@ -54,11 +54,13 @@ npm run build
 - Auth и routing: `docs/authorization-routing.md`
 - Доменная модель: `docs/domain-model.md`
 - Email auth runbook: `docs/email-auth-selfhosted-supabase.md`
-- Миграции и hygiene заметки: `supabase/migrations/*`, `docs/database/*`
+- Текущая схема (читать сначала): `docs/database/current-schema.md`, `supabase/schema/current-schema.sql`
+- Миграции и history: `supabase/migrations/*`, `docs/database/migration-history.md`
 - Отчёты рефакторинга: `docs/refactors/*`
 
 ## База данных и миграции
 
+- Текущая схема: `supabase/schema/current-schema.sql`.
 - SQL-миграции: `supabase/migrations`.
 - Перед запуском в окружении применяйте **все** миграции.
 - Seed/демо-данные, оставшиеся в миграциях раннего MVP, отражены в `docs/database/schema-hygiene-2026-04-12.md`.

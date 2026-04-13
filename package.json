@@ -15,7 +15,8 @@
     "test:browser:ci": "REQUIRE_BROWSER_SMOKE=1 BROWSER_SMOKE_SERVER_MODE=prod npm run test:browser",
     "test:all": "npm run test:unit && npm run test:browser",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "db:snapshot": "scripts/refresh-schema-snapshot.sh"
   },
   "dependencies": {
     "lucide-react": "^0.503.0",

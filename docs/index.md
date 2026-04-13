@@ -17,6 +17,9 @@
 ## Database / migrations
 
 - SQL migration history: `supabase/migrations/*`
+- [Current schema guide](./database/current-schema.md)
+- [Current schema SQL snapshot](../supabase/schema/current-schema.sql)
+- [Migration history policy](./database/migration-history.md)
 - [Schema hygiene note (2026-04-12)](./database/schema-hygiene-2026-04-12.md)
 
 ## Deployment / auth operations
