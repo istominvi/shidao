@@ -25,6 +25,7 @@ import {
 import { TopNav } from "@/components/top-nav";
 import { ROUTES, toLessonWorkspaceRoute, toMethodologyLessonRoute } from "@/lib/auth";
 import { resolveAccessPolicy } from "@/lib/server/access-policy";
+import { listTeacherClassesAdmin } from "@/lib/server/lesson-content-repository";
 import {
   assertTeacherMethodologiesAccess,
   canAccessTeacherMethodologies,
@@ -40,11 +41,14 @@ export default async function MethodologyDetailPage({
 }) {
   const resolution = await resolveAccessPolicy();
   if (!canAccessTeacherMethodologies(resolution)) redirect(ROUTES.dashboard);
-  assertTeacherMethodologiesAccess(resolution);
+  const { teacherId } = assertTeacherMethodologiesAccess(resolution);
 
   const { methodologySlug } = await params;
   const readModel = await getTeacherMethodologyDetailReadModel(methodologySlug);
   if (!readModel) notFound();
+  const groups = (await listTeacherClassesAdmin(teacherId))
+    .filter((group) => group.methodologyId === readModel.methodology.id)
+    .map((group) => ({ id: group.id, label: group.name?.trim() || "Группа" }));
 
   const passport = readModel.overview.passport;
   const normalizedCourseDurationLabel = passport.courseDurationLabel
@@ -258,7 +262,7 @@ export default async function MethodologyDetailPage({
                       revalidatePath(ROUTES.groups);
                       redirect(toLessonWorkspaceRoute(created.id));
                     }}
-                    groups={readModel.groups}
+                    groups={groups}
                     lessonTitle={lesson.title}
                     triggerClassName={methodologyEntityActionClass}
                     triggerContent={
