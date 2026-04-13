@@ -3,7 +3,6 @@ import { revalidatePath } from "next/cache";
 import { notFound, redirect } from "next/navigation";
 import { isRedirectError } from "next/dist/client/components/redirect-error";
 import { CalendarPlus2, UserPlus } from "lucide-react";
-import { AppCard } from "@/components/app/app-card";
 import { AppPageHeader } from "@/components/app/page-header";
 import { TopNav } from "@/components/top-nav";
 import { TeacherTableCard, TeacherTableEmptyState } from "@/components/dashboard/teacher-table-card";
@@ -191,8 +190,13 @@ export default async function TeacherGroupPage({
               )}
             </>
           )}
-          actions={(
-            <>
+          actions={null}
+        />
+
+        <TeacherTableCard
+          title={undefined}
+          headerAction={(
+            <div className="flex flex-wrap items-center justify-end gap-2">
               <CreateStudentDialog
                 action={createStudentAction}
                 triggerClassName={productButtonClassName("secondary")}
@@ -216,15 +220,10 @@ export default async function TeacherGroupPage({
                   )}
                 />
               ) : null}
-            </>
+            </div>
           )}
-        />
-
-        <TeacherTableCard
-          title="Ученики группы"
-          headerAction={null}
         >
-          <ProductTable className="min-w-full">
+          <ProductTable>
             <ProductTableHead>
               <ProductTableHeaderRow>
                 <ProductTableHeaderCell>Ученик</ProductTableHeaderCell>
@@ -260,47 +259,6 @@ export default async function TeacherGroupPage({
           ) : null}
         </TeacherTableCard>
 
-        <section className="grid gap-4 md:grid-cols-2">
-          <AppCard as="article" className="p-5">
-            <h2 className="text-xl font-bold text-neutral-950">Ближайшие занятия</h2>
-            {readModel.upcomingLessons.length === 0 ? (
-              <p className="mt-3 text-sm text-neutral-500">Пока нет запланированных занятий.</p>
-            ) : (
-              <ul className="mt-3 space-y-3 text-sm text-neutral-700">
-                {readModel.upcomingLessons.map((lesson) => (
-                  <li key={lesson.id}>
-                    <Link href={lesson.href} className="font-semibold text-sky-700 underline underline-offset-2">
-                      {lesson.title}
-                    </Link>
-                    <div>
-                      {lesson.dateTimeLabel} · {lesson.statusLabel}
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </AppCard>
-
-          <AppCard as="article" className="p-5">
-            <h2 className="text-xl font-bold text-neutral-950">Недавние занятия</h2>
-            {readModel.recentLessons.length === 0 ? (
-              <p className="mt-3 text-sm text-neutral-500">История занятий пока пустая.</p>
-            ) : (
-              <ul className="mt-3 space-y-3 text-sm text-neutral-700">
-                {readModel.recentLessons.map((lesson) => (
-                  <li key={lesson.id}>
-                    <Link href={lesson.href} className="font-semibold text-sky-700 underline underline-offset-2">
-                      {lesson.title}
-                    </Link>
-                    <div>
-                      {lesson.dateTimeLabel} · {lesson.statusLabel}
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </AppCard>
-        </section>
       </div>
     </main>
   );
