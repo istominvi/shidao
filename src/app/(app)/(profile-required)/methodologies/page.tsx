@@ -40,7 +40,7 @@ export default async function MethodologiesPage() {
       <div className="container space-y-6 py-7 md:py-10">
         <AppPageHeader
           title="Методики"
-          description="Педагогический source layer: изучите курс и уроки методики, затем назначайте их группам в runtime-расписание."
+          description="Выбирайте методику, изучайте структуру курса и удобно распределяйте уроки по группам в расписании."
         />
 
         <section className="space-y-3">
