@@ -6,6 +6,9 @@ import { AppCard } from "@/components/app/app-card";
 import { AppPageHeader } from "@/components/app/page-header";
 import { TopNav } from "@/components/top-nav";
 import { TeacherTableCard, TeacherTableEmptyState } from "@/components/dashboard/teacher-table-card";
+import { Button, productButtonClassName } from "@/components/ui/button";
+import { Chip } from "@/components/ui/chip";
+import { Input, Select } from "@/components/ui/input";
 import {
   ProductTable,
   ProductTableBody,
@@ -105,36 +108,39 @@ export default async function TeacherGroupPage({
               {query.error ? (
                 <p className="w-full rounded-xl border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-800">{query.error}</p>
               ) : null}
-              <span className="rounded-full border border-neutral-200 bg-white/90 px-3 py-1 text-sm text-neutral-700">
+              <Chip tone="neutral" size="md">
                 Ученики: {readModel.group.studentCount}
-              </span>
-              <span className="rounded-full border border-neutral-200 bg-white/90 px-3 py-1 text-sm text-neutral-700">
+              </Chip>
+              <Chip tone="neutral" size="md">
                 Прогресс: {readModel.group.progressLabel}
-              </span>
+              </Chip>
               {readModel.group.nextLessonLabel ? (
-                <span className="rounded-full border border-neutral-200 bg-white/90 px-3 py-1 text-sm text-neutral-700">
+                <Chip tone="neutral" size="md">
                   Следующее занятие: {readModel.group.nextLessonLabel}
-                </span>
+                </Chip>
               ) : null}
               {readModel.group.assignedMethodologyTitle ? (
-                <span className="rounded-full border border-neutral-200 bg-white/90 px-3 py-1 text-sm text-neutral-700">
+                <Chip tone="neutral" size="md">
                   Методика: {readModel.group.assignedMethodologyTitle}
-                </span>
+                </Chip>
               ) : (
-                <span className="rounded-full border border-dashed border-neutral-300 bg-white/90 px-3 py-1 text-sm text-neutral-500">
+                <Chip tone="slate" size="md" className="border-dashed text-neutral-500">
                   Методика: не указана (legacy-группа)
-                </span>
+                </Chip>
               )}
             </>
           )}
           actions={(
             <>
-              <Link href={`${ROUTES.studentsNew}?groupId=${encodeURIComponent(readModel.group.id)}`} className="landing-btn landing-btn-muted text-xs">
+              <Link
+                href={`${ROUTES.studentsNew}?groupId=${encodeURIComponent(readModel.group.id)}`}
+                className={productButtonClassName("secondary")}
+              >
                 Добавить ученика
               </Link>
               <Link
                 href={`${ROUTES.lessons}?groupId=${encodeURIComponent(readModel.group.id)}`}
-                className="landing-btn landing-btn-muted text-xs"
+                className={productButtonClassName("secondary")}
               >
                 Открыть global lessons index
               </Link>
@@ -188,38 +194,38 @@ export default async function TeacherGroupPage({
             <form action={scheduleLessonAction} className="mt-3 grid gap-3 md:grid-cols-2">
               <label className="space-y-1 text-sm text-neutral-700">
                 <span>Урок методики</span>
-                <select name="methodologyLessonId" required className="field-input" defaultValue="">
+                <Select name="methodologyLessonId" required defaultValue="">
                   <option value="" disabled>Выберите урок</option>
                   {readModel.schedule.lessonOptions.map((lesson) => (
                     <option key={lesson.id} value={lesson.id}>{lesson.label}</option>
                   ))}
-                </select>
+                </Select>
               </label>
               <label className="space-y-1 text-sm text-neutral-700">
                 <span>Формат</span>
-                <select name="format" required className="field-input" defaultValue="online">
+                <Select name="format" required defaultValue="online">
                   <option value="online">online</option>
                   <option value="offline">offline</option>
-                </select>
+                </Select>
               </label>
               <label className="space-y-1 text-sm text-neutral-700">
                 <span>Дата</span>
-                <input type="date" name="date" required className="field-input" />
+                <Input type="date" name="date" required />
               </label>
               <label className="space-y-1 text-sm text-neutral-700">
                 <span>Время</span>
-                <input type="time" name="time" required className="field-input" />
+                <Input type="time" name="time" required />
               </label>
               <label className="space-y-1 text-sm text-neutral-700">
                 <span>Ссылка на встречу (для online)</span>
-                <input type="url" name="meetingLink" placeholder="https://" className="field-input" />
+                <Input type="url" name="meetingLink" placeholder="https://" />
               </label>
               <label className="space-y-1 text-sm text-neutral-700">
                 <span>Место (для offline)</span>
-                <input type="text" name="place" placeholder="Кабинет / адрес" className="field-input" />
+                <Input type="text" name="place" placeholder="Кабинет / адрес" />
               </label>
               <div className="md:col-span-2">
-                <button type="submit" className="landing-btn landing-btn-primary text-xs">Запланировать занятие</button>
+                <Button type="submit">Запланировать занятие</Button>
               </div>
             </form>
           )}
