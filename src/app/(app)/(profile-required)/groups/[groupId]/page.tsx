@@ -2,13 +2,14 @@ import Link from "next/link";
 import { revalidatePath } from "next/cache";
 import { notFound, redirect } from "next/navigation";
 import { isRedirectError } from "next/dist/client/components/redirect-error";
+import { CalendarPlus2, UserPlus } from "lucide-react";
 import { AppCard } from "@/components/app/app-card";
 import { AppPageHeader } from "@/components/app/page-header";
 import { TopNav } from "@/components/top-nav";
 import { TeacherTableCard, TeacherTableEmptyState } from "@/components/dashboard/teacher-table-card";
-import { Button, productButtonClassName } from "@/components/ui/button";
+import { productButtonClassName } from "@/components/ui/button";
 import { Chip } from "@/components/ui/chip";
-import { Input, Select } from "@/components/ui/input";
+import { GroupAssignLessonDialog } from "@/components/lessons/group-assign-lesson-dialog";
 import {
   ProductTable,
   ProductTableBody,
@@ -17,6 +18,7 @@ import {
   ProductTableHeaderCell,
   ProductTableHeaderRow,
   ProductTableRow,
+  ProductTableTruncate,
 } from "@/components/ui/product-table";
 import { ROUTES } from "@/lib/auth";
 import { resolveAccessPolicy } from "@/lib/server/access-policy";
@@ -108,23 +110,23 @@ export default async function TeacherGroupPage({
               {query.error ? (
                 <p className="w-full rounded-xl border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-800">{query.error}</p>
               ) : null}
-              <Chip tone="neutral" size="md">
+              <Chip tone="sky" size="md">
                 Ученики: {readModel.group.studentCount}
               </Chip>
-              <Chip tone="neutral" size="md">
+              <Chip tone="emerald" size="md">
                 Прогресс: {readModel.group.progressLabel}
               </Chip>
               {readModel.group.nextLessonLabel ? (
-                <Chip tone="neutral" size="md">
+                <Chip tone="amber" size="md">
                   Следующее занятие: {readModel.group.nextLessonLabel}
                 </Chip>
               ) : null}
               {readModel.group.assignedMethodologyTitle ? (
-                <Chip tone="neutral" size="md">
+                <Chip tone="violet" size="md">
                   Методика: {readModel.group.assignedMethodologyTitle}
                 </Chip>
               ) : (
-                <Chip tone="slate" size="md" className="border-dashed text-neutral-500">
+                <Chip tone="indigo" size="md" className="border-dashed">
                   Методика: не указана (legacy-группа)
                 </Chip>
               )}
@@ -136,14 +138,22 @@ export default async function TeacherGroupPage({
                 href={`${ROUTES.studentsNew}?groupId=${encodeURIComponent(readModel.group.id)}`}
                 className={productButtonClassName("secondary")}
               >
+                <UserPlus className="h-4 w-4" aria-hidden="true" />
                 Добавить ученика
               </Link>
-              <Link
-                href={`${ROUTES.lessons}?groupId=${encodeURIComponent(readModel.group.id)}`}
-                className={productButtonClassName("secondary")}
-              >
-                Открыть global lessons index
-              </Link>
+              {readModel.schedule.canSchedule ? (
+                <GroupAssignLessonDialog
+                  lessons={readModel.schedule.lessonOptions}
+                  action={scheduleLessonAction}
+                  triggerClassName={productButtonClassName("primary")}
+                  triggerContent={(
+                    <>
+                      <CalendarPlus2 className="h-4 w-4" aria-hidden="true" />
+                      Назначить урок
+                    </>
+                  )}
+                />
+              ) : null}
             </>
           )}
         />
@@ -158,18 +168,24 @@ export default async function TeacherGroupPage({
         >
           <ProductTable className="min-w-full">
             <ProductTableHead>
-              <ProductTableHeaderRow className="h-auto">
-                <ProductTableHeaderCell className="py-3">Ученик</ProductTableHeaderCell>
-                <ProductTableHeaderCell className="py-3">Логин</ProductTableHeaderCell>
-                <ProductTableHeaderCell className="py-3">Коммуникация</ProductTableHeaderCell>
+              <ProductTableHeaderRow>
+                <ProductTableHeaderCell>Ученик</ProductTableHeaderCell>
+                <ProductTableHeaderCell>Логин</ProductTableHeaderCell>
+                <ProductTableHeaderCell>Коммуникация</ProductTableHeaderCell>
               </ProductTableHeaderRow>
             </ProductTableHead>
             <ProductTableBody>
               {readModel.students.map((student) => (
-                <ProductTableRow key={student.id} className="h-auto align-top">
-                  <ProductTableCell className="py-3 font-semibold text-neutral-950">{student.displayName}</ProductTableCell>
-                  <ProductTableCell className="py-3">{student.login ? `@${student.login}` : "—"}</ProductTableCell>
-                  <ProductTableCell className="py-3">
+                <ProductTableRow key={student.id}>
+                  <ProductTableCell className="max-w-0 font-semibold text-neutral-950">
+                    <ProductTableTruncate title={student.displayName}>{student.displayName}</ProductTableTruncate>
+                  </ProductTableCell>
+                  <ProductTableCell className="max-w-0">
+                    <ProductTableTruncate title={student.login ? `@${student.login}` : "—"}>
+                      {student.login ? `@${student.login}` : "—"}
+                    </ProductTableTruncate>
+                  </ProductTableCell>
+                  <ProductTableCell>
                     <Link
                       href={`${ROUTES.groups}/${encodeURIComponent(groupId)}/students/${encodeURIComponent(student.id)}/communication`}
                       className="text-xs text-sky-700 underline underline-offset-2"
@@ -185,51 +201,6 @@ export default async function TeacherGroupPage({
             <TeacherTableEmptyState text="В группе пока нет учеников." />
           ) : null}
         </TeacherTableCard>
-
-        <AppCard className="p-5">
-          <h2 className="text-xl font-bold text-neutral-950">Запланировать занятие в контексте группы</h2>
-          {!readModel.schedule.canSchedule ? (
-            <p className="mt-2 text-sm text-amber-700">Для этой legacy-группы методика не задана. Планирование занятий недоступно.</p>
-          ) : (
-            <form action={scheduleLessonAction} className="mt-3 grid gap-3 md:grid-cols-2">
-              <label className="space-y-1 text-sm text-neutral-700">
-                <span>Урок методики</span>
-                <Select name="methodologyLessonId" required defaultValue="">
-                  <option value="" disabled>Выберите урок</option>
-                  {readModel.schedule.lessonOptions.map((lesson) => (
-                    <option key={lesson.id} value={lesson.id}>{lesson.label}</option>
-                  ))}
-                </Select>
-              </label>
-              <label className="space-y-1 text-sm text-neutral-700">
-                <span>Формат</span>
-                <Select name="format" required defaultValue="online">
-                  <option value="online">online</option>
-                  <option value="offline">offline</option>
-                </Select>
-              </label>
-              <label className="space-y-1 text-sm text-neutral-700">
-                <span>Дата</span>
-                <Input type="date" name="date" required />
-              </label>
-              <label className="space-y-1 text-sm text-neutral-700">
-                <span>Время</span>
-                <Input type="time" name="time" required />
-              </label>
-              <label className="space-y-1 text-sm text-neutral-700">
-                <span>Ссылка на встречу (для online)</span>
-                <Input type="url" name="meetingLink" placeholder="https://" />
-              </label>
-              <label className="space-y-1 text-sm text-neutral-700">
-                <span>Место (для offline)</span>
-                <Input type="text" name="place" placeholder="Кабинет / адрес" />
-              </label>
-              <div className="md:col-span-2">
-                <Button type="submit">Запланировать занятие</Button>
-              </div>
-            </form>
-          )}
-        </AppCard>
 
         <section className="grid gap-4 md:grid-cols-2">
           <AppCard as="article" className="p-5">
