@@ -27,7 +27,7 @@ export function TeacherTableCard({
           {headerAction}
         </div>
       ) : null}
-      {controls ? <div className="mt-4">{controls}</div> : null}
+      {controls ? <div className={title || headerAction ? "mt-4" : undefined}>{controls}</div> : null}
 
       <div className="mt-4 overflow-x-auto rounded-2xl border border-neutral-200 bg-white/95">
         {children}
