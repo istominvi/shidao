@@ -128,7 +128,7 @@ export function AssignLessonDialog({
                 </label>
               )}
               <div className="mt-3 flex justify-end gap-2 md:col-span-2">
-                <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
+                <Button type="button" variant="secondary" onClick={() => setOpen(false)}>
                   Отмена
                 </Button>
                 <SubmitButton />

@@ -516,9 +516,15 @@ a {
   font-weight: 600;
   line-height: 1;
   transition:
+    transform 180ms ease,
     border-color 180ms ease,
     box-shadow 180ms ease,
     background-color 180ms ease;
+}
+
+.product-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 20px rgba(15, 23, 42, 0.08);
 }
 
 .product-btn:focus-visible {
@@ -538,7 +544,8 @@ a {
   color: #171717;
 }
 
-.product-btn-primary:hover {
+.product-btn-primary:hover:not(:disabled) {
+  border-color: rgba(20, 20, 20, 0.26);
   background: rgba(255, 255, 255, 1);
 }
 
@@ -547,7 +554,8 @@ a {
   color: #171717;
 }
 
-.product-btn-secondary:hover {
+.product-btn-secondary:hover:not(:disabled) {
+  border-color: rgba(20, 20, 20, 0.22);
   background: rgba(255, 255, 255, 1);
 }
 
@@ -557,7 +565,7 @@ a {
   color: #171717;
 }
 
-.product-btn-ghost:hover {
+.product-btn-ghost:hover:not(:disabled) {
   background: rgba(20, 20, 20, 0.06);
 }
 
