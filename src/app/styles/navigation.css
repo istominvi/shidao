@@ -1,0 +1,284 @@
+/* Header system tokens */
+:root {
+  --header-shell-radius: 1.6rem;
+  --header-shell-padding-y: 0.5rem;
+  --header-shell-padding-x: 1.5rem;
+  --header-shell-border: rgba(255, 255, 255, 0.72);
+  --header-shell-bg: rgba(255, 255, 255, 0.82);
+  --header-shell-shadow:
+    0 22px 42px rgba(20, 20, 20, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  --header-nav-gap: 0.35rem;
+  --header-pill-height: 2.35rem;
+  --header-pill-radius: 999px;
+  --header-pill-padding-x: 0.9rem;
+  --header-pill-text: #3f3f46;
+  --header-pill-hover-bg: rgba(20, 20, 20, 0.06);
+  --header-pill-active-bg: #141414;
+  --header-pill-active-border: rgba(20, 20, 20, 0.84);
+  --header-pill-focus: rgba(20, 20, 20, 0.24);
+}
+
+.site-header {
+  position: relative;
+  z-index: 50;
+}
+
+.nav-header-shell,
+.site-header-shell {
+  border-radius: var(--header-shell-radius);
+  border: 1px solid var(--header-shell-border);
+  background: var(--header-shell-bg);
+  padding: var(--header-shell-padding-y) var(--header-shell-padding-x);
+  backdrop-filter: blur(10px);
+  box-shadow: var(--header-shell-shadow);
+}
+
+.site-header-shell {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem 0.85rem;
+}
+
+.site-header-shell-marketing {
+  background: rgba(255, 255, 255, 0.76);
+}
+
+@media (min-width: 768px) {
+  .site-header-shell {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+  }
+}
+
+.site-header-brand {
+  white-space: nowrap;
+}
+
+.site-header-brand-mark {
+  font-size: 0.68em;
+  vertical-align: super;
+}
+
+.site-header-nav-scroll {
+  order: 3;
+  width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+  padding: 2px 1px;
+}
+
+@media (min-width: 768px) {
+  .site-header-nav-scroll {
+    order: 0;
+    width: auto;
+    justify-self: center;
+  }
+}
+
+.site-header-nav-list {
+  display: flex;
+  min-width: max-content;
+  align-items: center;
+  gap: var(--header-nav-gap);
+}
+
+.site-header-actions {
+  margin-left: auto;
+}
+
+@media (min-width: 768px) {
+  .site-header-actions {
+    margin-left: 0;
+    justify-self: end;
+  }
+}
+
+.nav-pill,
+.site-header-nav-pill {
+  display: inline-flex;
+  min-height: var(--header-pill-height);
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--header-pill-radius);
+  border: none;
+  padding: 0.45rem var(--header-pill-padding-x);
+  line-height: 1.2;
+  color: #262626;
+  white-space: nowrap;
+  transition:
+    background-color 220ms ease,
+    color 220ms ease,
+    box-shadow 220ms ease,
+    opacity 220ms ease;
+}
+
+.nav-pill-inactive {
+  color: var(--header-pill-text);
+  background: transparent;
+}
+
+.nav-pill-active {
+  background: var(--header-pill-active-bg);
+  color: #fff;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16);
+}
+
+.nav-pill:hover,
+.nav-pill:focus-visible {
+  background: var(--header-pill-hover-bg);
+  color: #141414;
+}
+
+.nav-pill-active:hover,
+.nav-pill-active:focus-visible {
+  background: var(--header-pill-active-bg);
+  color: #fff;
+}
+
+.nav-pill:focus-visible {
+  outline: none;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    0 0 0 3px var(--header-pill-focus);
+}
+
+.nav-pill-unavailable {
+  cursor: not-allowed;
+  opacity: 0.42;
+}
+
+.nav-user-trigger {
+  min-height: var(--header-pill-height);
+  border-radius: var(--header-pill-radius);
+  border: none;
+  background: transparent;
+  padding: 0.35rem 0.55rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition:
+    background-color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.nav-user-trigger:hover,
+.nav-user-trigger:focus-visible {
+  background: var(--header-pill-hover-bg);
+}
+
+.nav-user-trigger:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+.nav-dropdown-panel {
+  border-radius: 1rem;
+  border: 1px solid rgba(20, 20, 20, 0.1);
+  background: rgba(255, 255, 255, 0.95);
+  padding: 0.5rem;
+  box-shadow:
+    0 22px 42px rgba(20, 20, 20, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(10px);
+}
+
+.nav-dropdown-profile {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.65rem 0.75rem 0.7rem;
+}
+
+.nav-dropdown-avatar {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #141414;
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+
+.nav-dropdown-item {
+  width: 100%;
+  display: block;
+  cursor: pointer;
+  border: 1px solid transparent;
+  border-radius: 0.75rem;
+  padding: 0.55rem 0.75rem;
+  text-align: left;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #171717;
+  transition:
+    background-color 180ms ease,
+    color 180ms ease;
+}
+
+.nav-dropdown-item:hover,
+.nav-dropdown-item:focus-visible {
+  background: rgba(20, 20, 20, 0.06);
+  border-color: rgba(20, 20, 20, 0.08);
+}
+
+.nav-dropdown-item:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(20, 20, 20, 0.18);
+}
+
+.nav-dropdown-item-destructive {
+  color: #991b1b;
+}
+
+.nav-dropdown-item-destructive:hover,
+.nav-dropdown-item-destructive:focus-visible {
+  background: rgba(153, 27, 27, 0.1);
+}
+
+.nav-segmented-switch {
+  display: inline-flex;
+  width: 100%;
+  gap: 0.25rem;
+  border-radius: 0.85rem;
+  border: 1px solid rgba(20, 20, 20, 0.1);
+  background: rgba(245, 245, 245, 0.96);
+  padding: 0.2rem;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75);
+}
+
+.nav-segmented-switch .nav-pill {
+  border-radius: 0.67rem;
+  justify-content: center;
+  white-space: nowrap;
+}
+
+.nav-segmented-switch .nav-pill-inactive {
+  border-color: transparent;
+  color: #3f3f46;
+  background: transparent;
+}
+
+.nav-segmented-switch .nav-pill-inactive:hover,
+.nav-segmented-switch .nav-pill-inactive:focus-visible {
+  border-color: rgba(20, 20, 20, 0.06);
+  background: rgba(255, 255, 255, 0.85);
+  color: #111827;
+}
+
+.nav-segmented-switch .nav-pill-active:hover,
+.nav-segmented-switch .nav-pill-active:focus-visible {
+  border-color: rgba(20, 20, 20, 0.7);
+  background: #141414;
+  color: #fff;
+}
+
+.nav-settings-shell {
+  border-radius: 1rem;
+  padding: 0.75rem;
+}

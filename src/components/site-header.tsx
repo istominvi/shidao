@@ -2,11 +2,11 @@
 
 import Link from "next/link";
 import { type MouseEvent, type ReactNode } from "react";
-import { NavPillLink, NavigationHeaderShell } from "@/components/navigation/primitives";
-
-function cx(...parts: Array<string | false | null | undefined>) {
-  return parts.filter(Boolean).join(" ");
-}
+import {
+  NavPillLink,
+  NavigationHeaderShell,
+} from "@/components/navigation/primitives";
+import { classNames } from "@/lib/ui/classnames";
 
 export type SiteHeaderNavItem = {
   id: string;
@@ -45,7 +45,10 @@ export function SiteHeader({
   const hasTrademarkMark = brandLabel.endsWith("™");
   const brandText = hasTrademarkMark ? brandLabel.slice(0, -1) : brandLabel;
 
-  const handleNavClick = (event: MouseEvent<HTMLAnchorElement>, href: string) => {
+  const handleNavClick = (
+    event: MouseEvent<HTMLAnchorElement>,
+    href: string,
+  ) => {
     if (!smoothAnchorScroll || !href.startsWith("#")) {
       return;
     }
@@ -59,26 +62,37 @@ export function SiteHeader({
 
     event.preventDefault();
 
-    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const targetTop = target.getBoundingClientRect().top + window.scrollY - anchorOffset;
+    const prefersReducedMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+    const targetTop =
+      target.getBoundingClientRect().top + window.scrollY - anchorOffset;
 
-    window.scrollTo({ top: Math.max(0, targetTop), behavior: prefersReducedMotion ? "auto" : "smooth" });
+    window.scrollTo({
+      top: Math.max(0, targetTop),
+      behavior: prefersReducedMotion ? "auto" : "smooth",
+    });
     window.history.replaceState(null, "", href);
     window.dispatchEvent(new Event("hashchange"));
   };
 
   return (
-    <header className={cx("site-header", className)}>
+    <header className={classNames("site-header", className)}>
       <NavigationHeaderShell
-        className={cx(
+        className={classNames(
           "site-header-shell",
           variant === "marketing-hero" && "site-header-shell-marketing",
           shellClassName,
         )}
       >
-        <Link href={brandHref} className="site-header-brand text-xl font-black tracking-tight">
+        <Link
+          href={brandHref}
+          className="site-header-brand text-xl font-black tracking-tight"
+        >
           {brandText}
-          {hasTrademarkMark ? <span className="site-header-brand-mark">™</span> : null}
+          {hasTrademarkMark ? (
+            <span className="site-header-brand-mark">™</span>
+          ) : null}
         </Link>
 
         {hasNav ? (

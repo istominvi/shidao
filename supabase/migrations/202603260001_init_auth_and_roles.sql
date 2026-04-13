@@ -1,5 +1,5 @@
 -- ShiDao baseline schema for Demo + MVP foundation
--- Aligned with docs/tz.md and docs/autorization.md
+-- Aligned with docs/domain-model.md and docs/authorization-routing.md
 
 create extension if not exists pgcrypto;
 

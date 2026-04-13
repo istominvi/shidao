@@ -1,10 +1,5 @@
 import { ROUTES } from "./auth";
 
-export const SETTINGS_ROUTES = [
-  ROUTES.settingsProfile,
-  ROUTES.settingsSecurity,
-  ROUTES.settingsTeam,
-] as const;
 export const PRIVATE_ROUTE_PREFIXES = [
   ROUTES.dashboard,
   ROUTES.onboarding,
