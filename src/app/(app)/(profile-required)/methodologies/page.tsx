@@ -4,6 +4,7 @@ import {
   BookOpen,
   CalendarRange,
   Clock3,
+  Eye,
   GraduationCap,
   Shapes,
   Users,
@@ -94,7 +95,8 @@ export default async function MethodologiesPage() {
                   href={toMethodologyRoute(methodology.slug)}
                   className={methodologyEntityActionClass}
                 >
-                  Открыть методику
+                  <Eye className="h-3.5 w-3.5" aria-hidden="true" />
+                  <span>Смотреть</span>
                 </Link>
               }
             />
