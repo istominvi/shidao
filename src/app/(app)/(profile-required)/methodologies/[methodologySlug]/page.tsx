@@ -16,6 +16,10 @@ import {
 import { AppCard } from "@/components/app/app-card";
 import { AppPageHeader } from "@/components/app/page-header";
 import { SemanticChip } from "@/components/app/semantic-chip";
+import {
+  MethodologyEntityCard,
+  methodologyEntityActionClass,
+} from "@/components/methodologies/methodology-entity-card";
 import { TopNav } from "@/components/top-nav";
 import { ROUTES, toMethodologyLessonRoute } from "@/lib/auth";
 import { resolveAccessPolicy } from "@/lib/server/access-policy";
@@ -171,69 +175,86 @@ export default async function MethodologyDetailPage({
             Уроки
           </h2>
           {readModel.lessons.map((lesson) => (
-            <AppCard key={lesson.id} className="px-6 py-5" as="article">
-              <div>
-                <h3 className="flex flex-wrap items-center gap-2 text-lg font-semibold text-neutral-950">
+            <MethodologyEntityCard
+              key={lesson.id}
+              title={
+                <span className="flex flex-wrap items-center gap-2">
                   <span>{lesson.title}</span>
                   {lesson.mediaSummary.videos > 0 ? (
                     <span
-                      className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-sky-200 bg-sky-50/90 text-sky-800"
                       title="В уроке есть видео"
                       aria-label="В уроке есть видео"
+                      className="text-sky-700"
                     >
-                      <Video className="h-4 w-4" aria-hidden="true" />
+                      <Video
+                        className="h-3.5 w-3.5"
+                        strokeWidth={2.4}
+                        aria-hidden="true"
+                      />
                     </span>
                   ) : null}
                   {lesson.mediaSummary.songs > 0 ? (
                     <span
-                      className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-violet-200 bg-violet-50/90 text-violet-800"
                       title="В уроке есть песни"
                       aria-label="В уроке есть песни"
+                      className="text-violet-700"
                     >
-                      <Music2 className="h-4 w-4" aria-hidden="true" />
+                      <Music2
+                        className="h-3.5 w-3.5"
+                        strokeWidth={2.4}
+                        aria-hidden="true"
+                      />
                     </span>
                   ) : null}
                   {lesson.homeworkSignal ? (
                     <span
-                      className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-emerald-200 bg-emerald-50/90 text-emerald-800"
                       title="Есть домашнее задание: квиз"
                       aria-label="Есть домашнее задание: квиз"
+                      className="text-emerald-700"
                     >
-                      <ClipboardCheck className="h-4 w-4" aria-hidden="true" />
+                      <ClipboardCheck
+                        className="h-3.5 w-3.5"
+                        strokeWidth={2.4}
+                        aria-hidden="true"
+                      />
                     </span>
                   ) : null}
-                </h3>
-                {lesson.vocabularyPreview.length ? (
-                  <p className="mt-2 text-sm text-neutral-700">
-                    Лексика: {lesson.vocabularyPreview.join(", ")}
-                  </p>
-                ) : null}
-                {lesson.phrasePreview.length ? (
-                  <p className="mt-1 text-sm text-neutral-700">
-                    Фразы: {lesson.phrasePreview.join(" · ")}
-                  </p>
-                ) : null}
-              </div>
-              <div className="mt-4 flex gap-2">
-                <Link
-                  href={toMethodologyLessonRoute(
-                    readModel.methodology.slug,
-                    lesson.id,
-                  )}
-                  className="landing-chip border border-neutral-200 bg-white px-3 py-1.5 text-sm font-semibold text-neutral-700 transition hover:-translate-y-0.5 hover:bg-neutral-50"
-                >
-                  <Eye className="h-3.5 w-3.5" aria-hidden="true" />
-                  <span>Смотреть</span>
-                </Link>
-                <Link
-                  href={`${toMethodologyLessonRoute(readModel.methodology.slug, lesson.id)}?assign=1`}
-                  className="landing-chip border border-neutral-200 bg-white px-3 py-1.5 text-sm font-semibold text-neutral-700 transition hover:-translate-y-0.5 hover:bg-neutral-50"
-                >
-                  <CalendarClock className="h-3.5 w-3.5" aria-hidden="true" />
-                  <span>Назначить</span>
-                </Link>
-              </div>
-            </AppCard>
+                </span>
+              }
+              description={
+                <>
+                  {lesson.vocabularyPreview.length ? (
+                    <span>Лексика: {lesson.vocabularyPreview.join(", ")}</span>
+                  ) : null}
+                  {lesson.phrasePreview.length ? (
+                    <span className="block mt-1">
+                      Фразы: {lesson.phrasePreview.join(" · ")}
+                    </span>
+                  ) : null}
+                </>
+              }
+              actions={
+                <>
+                  <Link
+                    href={toMethodologyLessonRoute(
+                      readModel.methodology.slug,
+                      lesson.id,
+                    )}
+                    className={methodologyEntityActionClass}
+                  >
+                    <Eye className="h-3.5 w-3.5" aria-hidden="true" />
+                    <span>Смотреть</span>
+                  </Link>
+                  <Link
+                    href={`${toMethodologyLessonRoute(readModel.methodology.slug, lesson.id)}?assign=1`}
+                    className={methodologyEntityActionClass}
+                  >
+                    <CalendarClock className="h-3.5 w-3.5" aria-hidden="true" />
+                    <span>Назначить</span>
+                  </Link>
+                </>
+              }
+            />
           ))}
         </section>
       </div>
