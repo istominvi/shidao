@@ -2,12 +2,15 @@
 
 import { useState } from "react";
 import { useFormStatus } from "react-dom";
+import type { ReactNode } from "react";
 
 type AssignLessonDialogProps = {
   lessonTitle: string;
   groups: Array<{ id: string; label: string }>;
   action: (formData: FormData) => Promise<void>;
   defaultOpen?: boolean;
+  triggerContent?: ReactNode;
+  triggerClassName?: string;
 };
 
 function SubmitButton() {
@@ -15,12 +18,19 @@ function SubmitButton() {
   return <button type="submit" className="landing-btn landing-btn-primary text-xs" disabled={pending}>{pending ? "Назначаем..." : "Создать и открыть урок"}</button>;
 }
 
-export function AssignLessonDialog({ lessonTitle, groups, action, defaultOpen = false }: AssignLessonDialogProps) {
+export function AssignLessonDialog({
+  lessonTitle,
+  groups,
+  action,
+  defaultOpen = false,
+  triggerContent = "Назначить урок",
+  triggerClassName = "landing-btn landing-btn-primary text-xs",
+}: AssignLessonDialogProps) {
   const [open, setOpen] = useState(defaultOpen);
 
   return (
     <>
-      <button type="button" className="landing-btn landing-btn-primary text-xs" onClick={() => setOpen(true)}>Назначить урок</button>
+      <button type="button" className={triggerClassName} onClick={() => setOpen(true)}>{triggerContent}</button>
       {open ? (
         <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
           <button aria-label="Закрыть" className="absolute inset-0 bg-neutral-950/40" onClick={() => setOpen(false)} />
