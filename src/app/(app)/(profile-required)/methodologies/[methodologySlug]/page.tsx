@@ -24,6 +24,18 @@ export default async function MethodologyDetailPage({ params }: { params: Promis
   if (!readModel) notFound();
 
   const passport = readModel.overview.passport;
+  const normalizedCourseDurationLabel = passport.courseDurationLabel
+    ? passport.courseDurationLabel === "1 учебный год"
+      ? "1 год"
+      : passport.courseDurationLabel
+    : null;
+  const normalizedActivitiesLabel = passport.activitiesPerLessonLabel
+    ? `Активностей: ${passport.activitiesPerLessonLabel
+        .replace(/^Обычно:\s*/i, "")
+        .replace(/^Обычно\s+/i, "")
+        .replace(/\s*активност(?:ей|и)\s*$/i, "")
+        .trim()}`
+    : null;
 
   const overviewCards = [
     {
@@ -80,22 +92,22 @@ export default async function MethodologyDetailPage({ params }: { params: Promis
           meta={
             <>
               <SemanticChip icon={BookOpen} tone="violet" size="md">
-                Уроки: {readModel.overview.availableLessonsCount}
+                Уроков: {readModel.overview.availableLessonsCount}
               </SemanticChip>
+              {normalizedCourseDurationLabel ? (
+                <SemanticChip icon={CalendarRange} tone="emerald" size="md">Курс: {normalizedCourseDurationLabel}</SemanticChip>
+              ) : null}
+              {passport.lessonDurationLabel ? (
+                <SemanticChip icon={Clock3} tone="amber" size="md">Урок: {passport.lessonDurationLabel}</SemanticChip>
+              ) : null}
               {passport.targetAgeLabel ? (
                 <SemanticChip icon={GraduationCap} tone="sky" size="md">Возраст: {passport.targetAgeLabel}</SemanticChip>
               ) : null}
-              {passport.lessonDurationLabel ? (
-                <SemanticChip icon={Clock3} tone="amber" size="md">Время урока: {passport.lessonDurationLabel}</SemanticChip>
-              ) : null}
-              {passport.courseDurationLabel ? (
-                <SemanticChip icon={CalendarRange} tone="emerald" size="md">Курс: {passport.courseDurationLabel}</SemanticChip>
-              ) : null}
               {passport.idealGroupSizeLabel ? (
-                <SemanticChip icon={Users} tone="neutral" size="md">Группа: {passport.idealGroupSizeLabel}</SemanticChip>
+                <SemanticChip icon={Users} tone="indigo" size="md">Группа: {passport.idealGroupSizeLabel}</SemanticChip>
               ) : null}
-              {passport.activitiesPerLessonLabel ? (
-                <SemanticChip icon={Shapes} tone="rose" size="md">{passport.activitiesPerLessonLabel}</SemanticChip>
+              {normalizedActivitiesLabel ? (
+                <SemanticChip icon={Shapes} tone="rose" size="md">{normalizedActivitiesLabel}</SemanticChip>
               ) : null}
             </>
           }
