@@ -10,7 +10,7 @@ import {
   Users,
 } from "lucide-react";
 import type { ReactNode } from "react";
-import { classNames } from "@/lib/ui/classnames";
+import { Chip, type ChipTone } from "@/components/ui/chip";
 
 export type LessonMetaTone =
   | "primary"
@@ -40,6 +40,15 @@ export const lessonMetaIconMap: Record<LessonMetaIconKey, LucideIcon> = {
   methodology: BookOpen,
 };
 
+const lessonMetaToneMap: Record<LessonMetaTone, ChipTone> = {
+  primary: "sky",
+  info: "indigo",
+  success: "emerald",
+  warning: "amber",
+  neutral: "neutral",
+  muted: "slate",
+};
+
 export function LessonMetaRail({ children }: { children: ReactNode }) {
   return <div className="lesson-meta-rail">{children}</div>;
 }
@@ -53,16 +62,9 @@ export function LessonMetaPill({
   tone?: LessonMetaTone;
   icon?: LessonMetaIconKey;
 }) {
-  const Icon = icon ? lessonMetaIconMap[icon] : null;
-
   return (
-    <span
-      className={classNames("lesson-meta-pill", `lesson-meta-pill-${tone}`)}
-    >
-      {Icon ? (
-        <Icon className="lesson-meta-pill-icon" aria-hidden="true" />
-      ) : null}
-      <span>{label}</span>
-    </span>
+    <Chip tone={lessonMetaToneMap[tone]} icon={icon ? lessonMetaIconMap[icon] : undefined}>
+      {label}
+    </Chip>
   );
 }

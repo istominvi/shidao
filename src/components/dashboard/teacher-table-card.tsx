@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { AppCard } from "@/components/app/app-card";
+import { ProductTableEmptyState } from "@/components/ui/product-table";
 
 type TeacherTableCardProps = {
   title: string;
@@ -34,5 +35,5 @@ export function TeacherTableCard({
 }
 
 export function TeacherTableEmptyState({ text }: TeacherTableEmptyStateProps) {
-  return <p className="px-4 py-4 text-sm text-neutral-500">{text}</p>;
+  return <ProductTableEmptyState text={text} />;
 }

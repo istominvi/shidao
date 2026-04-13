@@ -6,6 +6,15 @@ import { AppCard } from "@/components/app/app-card";
 import { AppPageHeader } from "@/components/app/page-header";
 import { TopNav } from "@/components/top-nav";
 import { TeacherTableCard, TeacherTableEmptyState } from "@/components/dashboard/teacher-table-card";
+import {
+  ProductTable,
+  ProductTableBody,
+  ProductTableCell,
+  ProductTableHead,
+  ProductTableHeaderCell,
+  ProductTableHeaderRow,
+  ProductTableRow,
+} from "@/components/ui/product-table";
 import { ROUTES } from "@/lib/auth";
 import { resolveAccessPolicy } from "@/lib/server/access-policy";
 import {
@@ -141,31 +150,31 @@ export default async function TeacherGroupPage({
             </Link>
           )}
         >
-          <table className="min-w-full text-left text-sm">
-            <thead className="bg-neutral-50 text-xs uppercase tracking-wide text-neutral-500">
-              <tr>
-                <th className="px-4 py-3">Ученик</th>
-                <th className="px-4 py-3">Логин</th>
-                <th className="px-4 py-3">Коммуникация</th>
-              </tr>
-            </thead>
-            <tbody>
+          <ProductTable className="min-w-full">
+            <ProductTableHead>
+              <ProductTableHeaderRow className="h-auto">
+                <ProductTableHeaderCell className="py-3">Ученик</ProductTableHeaderCell>
+                <ProductTableHeaderCell className="py-3">Логин</ProductTableHeaderCell>
+                <ProductTableHeaderCell className="py-3">Коммуникация</ProductTableHeaderCell>
+              </ProductTableHeaderRow>
+            </ProductTableHead>
+            <ProductTableBody>
               {readModel.students.map((student) => (
-                <tr key={student.id} className="border-t border-neutral-200 align-top transition hover:bg-sky-50/45">
-                  <td className="px-4 py-3 font-semibold text-neutral-950">{student.displayName}</td>
-                  <td className="px-4 py-3 text-neutral-700">{student.login ? `@${student.login}` : "—"}</td>
-                  <td className="px-4 py-3 text-neutral-700">
+                <ProductTableRow key={student.id} className="h-auto align-top">
+                  <ProductTableCell className="py-3 font-semibold text-neutral-950">{student.displayName}</ProductTableCell>
+                  <ProductTableCell className="py-3">{student.login ? `@${student.login}` : "—"}</ProductTableCell>
+                  <ProductTableCell className="py-3">
                     <Link
                       href={`${ROUTES.groups}/${encodeURIComponent(groupId)}/students/${encodeURIComponent(student.id)}/communication`}
                       className="text-xs text-sky-700 underline underline-offset-2"
                     >
                       Открыть коммуникацию
                     </Link>
-                  </td>
-                </tr>
+                  </ProductTableCell>
+                </ProductTableRow>
               ))}
-            </tbody>
-          </table>
+            </ProductTableBody>
+          </ProductTable>
           {readModel.students.length === 0 ? (
             <TeacherTableEmptyState text="В группе пока нет учеников." />
           ) : null}
