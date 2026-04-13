@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useFormStatus } from "react-dom";
 import type { ReactNode } from "react";
+import { ChevronDown, MonitorPlay, MapPin } from "lucide-react";
 
 type AssignLessonDialogProps = {
   lessonTitle: string;
@@ -61,73 +62,87 @@ export function AssignLessonDialog({
             <h2 className="text-2xl font-bold text-neutral-950">Назначить урок</h2>
             <p className="mt-2 text-sm text-neutral-700">{lessonTitle}</p>
             <form action={action} className="mt-4 grid gap-3 md:grid-cols-2">
-              <label className="space-y-1 text-sm text-neutral-700 md:col-span-2">
+              <label className="space-y-2 text-sm text-neutral-700 md:col-span-2">
                 <span>Группа</span>
-                <select name="classId" required className="field-input" defaultValue="">
-                  <option value="" disabled>
-                    Выберите группу
-                  </option>
-                  {groups.map((group) => (
-                    <option key={group.id} value={group.id}>
-                      {group.label}
+                <span className="relative block">
+                  <select
+                    name="classId"
+                    required
+                    className="field-input h-10 appearance-none pr-10"
+                    defaultValue=""
+                  >
+                    <option value="" disabled>
+                      Выберите группу
                     </option>
-                  ))}
-                </select>
+                    {groups.map((group) => (
+                      <option key={group.id} value={group.id}>
+                        {group.label}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown
+                    className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-500"
+                    strokeWidth={2.4}
+                    aria-hidden="true"
+                  />
+                </span>
               </label>
-              <label className="space-y-1 text-sm text-neutral-700">
+              <label className="space-y-2 text-sm text-neutral-700">
                 <span>Дата</span>
-                <input type="date" name="date" required className="field-input" />
+                <input type="date" name="date" required className="field-input h-10" />
               </label>
-              <label className="space-y-1 text-sm text-neutral-700">
+              <label className="space-y-2 text-sm text-neutral-700">
                 <span>Время</span>
-                <input type="time" name="time" required className="field-input" />
+                <input type="time" name="time" required className="field-input h-10" />
               </label>
               <fieldset className="space-y-2 text-sm text-neutral-700 md:col-span-2">
                 <legend>Формат</legend>
                 <input type="hidden" name="format" value={format} />
-                <div className="inline-flex h-10 items-center rounded-full border border-neutral-200 bg-neutral-100 p-1">
+                <div className="inline-flex h-12 items-center rounded-full border border-neutral-200 bg-neutral-100 p-1">
                   <button
                     type="button"
-                    className={`h-8 cursor-pointer rounded-full px-4 text-xs font-semibold transition ${
+                    className={`inline-flex h-10 cursor-pointer items-center gap-1.5 rounded-full px-4 text-xs font-semibold transition ${
                       format === "online"
                         ? "bg-neutral-900 text-white"
                         : "text-neutral-600"
                     }`}
                     onClick={() => setFormat("online")}
                   >
-                    online
+                    <MonitorPlay className="h-3.5 w-3.5" aria-hidden="true" />
+                    Онлайн
                   </button>
                   <button
                     type="button"
-                    className={`h-8 cursor-pointer rounded-full px-4 text-xs font-semibold transition ${
+                    className={`inline-flex h-10 cursor-pointer items-center gap-1.5 rounded-full px-4 text-xs font-semibold transition ${
                       format === "offline"
                         ? "bg-neutral-900 text-white"
                         : "text-neutral-600"
                     }`}
                     onClick={() => setFormat("offline")}
                   >
-                    offline
+                    <MapPin className="h-3.5 w-3.5" aria-hidden="true" />
+                    Офлайн
                   </button>
                 </div>
               </fieldset>
               {format === "online" ? (
-                <label className="space-y-1 text-sm text-neutral-700 md:col-span-2">
+                <label className="space-y-2 text-sm text-neutral-700 md:col-span-2">
                   <span>Ссылка на встречу</span>
                   <input
                     type="url"
                     name="meetingLink"
-                    className="field-input"
+                    className="field-input h-10"
                     placeholder="https://"
                   />
                   <input type="hidden" name="place" value="" />
                 </label>
               ) : (
-                <label className="space-y-1 text-sm text-neutral-700 md:col-span-2">
+                <label className="space-y-2 text-sm text-neutral-700 md:col-span-2">
                   <span>Место</span>
                   <input
                     type="text"
                     name="place"
-                    className="field-input"
+                    className="field-input h-10"
                     placeholder="Кабинет / адрес"
                   />
                   <input type="hidden" name="meetingLink" value="" />
