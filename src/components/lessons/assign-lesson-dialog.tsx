@@ -18,7 +18,7 @@ function SubmitButton() {
   return (
     <button
       type="submit"
-      className="landing-btn landing-btn-primary cursor-pointer text-xs"
+      className="landing-btn landing-btn-primary h-10 cursor-pointer text-xs"
       disabled={pending}
     >
       {pending ? "Назначаем..." : "Назначить"}
@@ -137,7 +137,7 @@ export function AssignLessonDialog({
                 <button
                   type="button"
                   onClick={() => setOpen(false)}
-                  className="landing-btn landing-btn-muted cursor-pointer text-xs"
+                  className="landing-btn landing-btn-muted h-10 cursor-pointer text-xs"
                 >
                   Отмена
                 </button>
