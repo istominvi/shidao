@@ -25,7 +25,9 @@ export default async function MethodologyDetailPage({ params }: { params: Promis
 
   const passport = readModel.overview.passport;
   const normalizedCourseDurationLabel = passport.courseDurationLabel
-    ? passport.courseDurationLabel.replace(/\bучебн(?:ый|ого)\b\s*/i, "").trim()
+    ? passport.courseDurationLabel === "1 учебный год"
+      ? "1 год"
+      : passport.courseDurationLabel
     : null;
   const normalizedActivitiesLabel = passport.activitiesPerLessonLabel
     ? `Активностей: ${passport.activitiesPerLessonLabel
