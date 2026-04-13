@@ -70,8 +70,7 @@ function ProfileSettingsPageContent() {
 
   return (
     <SettingsShell
-      badgeClassName="bg-violet-100 text-violet-700"
-      badgeLabel="Личное"
+      eyebrow="Личное"
       title="Профиль и email"
       description="Для безопасности подтвердите действие текущим паролем."
     >

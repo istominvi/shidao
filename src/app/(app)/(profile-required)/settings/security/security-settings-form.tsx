@@ -48,8 +48,7 @@ export function SecuritySettingsForm({
 
   return (
     <SettingsShell
-      badgeClassName="bg-violet-100 text-violet-700"
-      badgeLabel="Личное"
+      eyebrow="Личное"
       title="PIN-код входа"
       description={`Статус: ${hasPin ? "PIN настроен" : "PIN не настроен"}.`}
     >
