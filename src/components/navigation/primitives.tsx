@@ -6,18 +6,20 @@ import {
   type MouseEventHandler,
   type ReactNode,
 } from "react";
-
-function cx(...parts: Array<string | false | null | undefined>) {
-  return parts.filter(Boolean).join(" ");
-}
+import { classNames } from "@/lib/ui/classnames";
 
 type HeaderShellProps = {
   children: ReactNode;
   className?: string;
 };
 
-export function NavigationHeaderShell({ children, className }: HeaderShellProps) {
-  return <div className={cx("nav-header-shell", className)}>{children}</div>;
+export function NavigationHeaderShell({
+  children,
+  className,
+}: HeaderShellProps) {
+  return (
+    <div className={classNames("nav-header-shell", className)}>{children}</div>
+  );
 }
 
 type NavPillLinkProps = {
@@ -44,7 +46,11 @@ export function NavPillLink({
       href={href}
       aria-current={ariaCurrent}
       scroll={scroll}
-      className={cx("nav-pill", active ? "nav-pill-active" : "nav-pill-inactive", className)}
+      className={classNames(
+        "nav-pill",
+        active ? "nav-pill-active" : "nav-pill-inactive",
+        className,
+      )}
       onClick={onClick}
     >
       {children}
@@ -84,7 +90,7 @@ export function NavPillButton({
       disabled={isDisabled}
       aria-pressed={ariaPressed}
       aria-busy={loading || undefined}
-      className={cx(
+      className={classNames(
         "nav-pill",
         active ? "nav-pill-active" : "nav-pill-inactive",
         unavailable && !active ? "nav-pill-unavailable" : "cursor-pointer",
@@ -101,23 +107,34 @@ type DropdownPanelProps = ComponentPropsWithoutRef<"div"> & {
   style?: CSSProperties;
 };
 
-export const NavigationDropdownPanel = forwardRef<HTMLDivElement, DropdownPanelProps>(
-  function NavigationDropdownPanel({ children, className, style, ...props }, ref) {
-    return (
-      <div
-        ref={ref}
-        className={cx("nav-dropdown-panel", className)}
-        style={style}
-        {...props}
-      >
-        {children}
-      </div>
-    );
-  },
-);
+export const NavigationDropdownPanel = forwardRef<
+  HTMLDivElement,
+  DropdownPanelProps
+>(function NavigationDropdownPanel(
+  { children, className, style, ...props },
+  ref,
+) {
+  return (
+    <div
+      ref={ref}
+      className={classNames("nav-dropdown-panel", className)}
+      style={style}
+      {...props}
+    >
+      {children}
+    </div>
+  );
+});
 
-export function navigationDropdownItemClass(className?: string, destructive = false) {
-  return cx("nav-dropdown-item", destructive && "nav-dropdown-item-destructive", className);
+export function navigationDropdownItemClass(
+  className?: string,
+  destructive = false,
+) {
+  return classNames(
+    "nav-dropdown-item",
+    destructive && "nav-dropdown-item-destructive",
+    className,
+  );
 }
 
 type SegmentedSwitchProps = {
@@ -125,6 +142,13 @@ type SegmentedSwitchProps = {
   className?: string;
 };
 
-export function NavSegmentedSwitch({ children, className }: SegmentedSwitchProps) {
-  return <div className={cx("nav-segmented-switch", className)}>{children}</div>;
+export function NavSegmentedSwitch({
+  children,
+  className,
+}: SegmentedSwitchProps) {
+  return (
+    <div className={classNames("nav-segmented-switch", className)}>
+      {children}
+    </div>
+  );
 }

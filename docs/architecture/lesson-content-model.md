@@ -161,9 +161,7 @@ Lesson body — это **упорядоченный сценарий** из ти
     "focus_points": ["你好", "你叫什么名字?"],
     "questions_after_watch": ["Кто с кем здоровается?"]
   },
-  "asset_refs": [
-    { "kind": "video", "id": "video:greetings-dialogue-a1" }
-  ]
+  "asset_refs": [{ "kind": "video", "id": "video:greetings-dialogue-a1" }]
 }
 ```
 
@@ -181,9 +179,7 @@ Lesson body — это **упорядоченный сценарий** из ти
     ],
     "mini_drill": "Назови слово по карточке за 5 секунд"
   },
-  "asset_refs": [
-    { "kind": "vocabulary_set", "id": "vocab:classroom-core" }
-  ]
+  "asset_refs": [{ "kind": "vocabulary_set", "id": "vocab:classroom-core" }]
 }
 ```
 
@@ -369,8 +365,9 @@ Lesson body — это **упорядоченный сценарий** из ти
 ### 8.4 Проекции
 
 12. Из полного teacher domain view строятся разные read-проекции:
-   - teacher projection (полная);
-   - parent/student projection (ограниченная, безопасная, понятная).
+
+- teacher projection (полная);
+- parent/student projection (ограниченная, безопасная, понятная).
 
 ---
 
@@ -462,7 +459,7 @@ Lesson body — это **упорядоченный сценарий** из ти
 ### Phase 1 — Documentation & model alignment
 
 - Зафиксировать этот документ как baseline.
-- Сверить терминологию с README и `docs/tz.md` (роли, class/school контур, MVP-ограничения).
+- Сверить терминологию с README и `docs/domain-model.md` (роли, class/school контур, MVP-ограничения).
 
 ### Phase 2 — Domain entities & contracts
 
@@ -514,7 +511,7 @@ Lesson body — это **упорядоченный сценарий** из ти
 
 ## 16) Выравнивание с текущей документацией репозитория
 
-- Терминология ролей (`parent`, `teacher`, `student`) и школьного контура (`school`, `class`) согласована с `docs/tz.md`.
+- Терминология ролей (`parent`, `teacher`, `student`) и школьного контура (`school`, `class`) согласована с `docs/domain-model.md`.
 - Документ не конфликтует с текущим auth/onboarding фундаментом из README: модель уроков накладывается поверх существующей role-aware архитектуры.
 - Потенциальный терминологический нюанс: в существующей документации приватный интерфейс описан как dashboard-centric, а здесь вводится lesson-centric рабочая единица для teacher. Это не конфликт, а уточнение продуктового фокуса следующего этапа.
 
