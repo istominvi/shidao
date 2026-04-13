@@ -18,7 +18,7 @@ function SubmitButton() {
   return (
     <button
       type="submit"
-      className="landing-btn landing-btn-primary text-xs"
+      className="landing-btn landing-btn-primary cursor-pointer text-xs"
       disabled={pending}
     >
       {pending ? "Назначаем..." : "Назначить"}
@@ -41,7 +41,7 @@ export function AssignLessonDialog({
     <>
       <button
         type="button"
-        className={triggerClassName}
+        className={`${triggerClassName} cursor-pointer`}
         onClick={() => setOpen(true)}
       >
         {triggerContent}
@@ -85,10 +85,10 @@ export function AssignLessonDialog({
               <fieldset className="space-y-2 text-sm text-neutral-700 md:col-span-2">
                 <legend>Формат</legend>
                 <input type="hidden" name="format" value={format} />
-                <div className="inline-flex rounded-full border border-neutral-200 bg-neutral-100 p-1">
+                <div className="inline-flex h-10 items-center rounded-full border border-neutral-200 bg-neutral-100 p-1">
                   <button
                     type="button"
-                    className={`rounded-full px-4 py-1.5 text-xs font-semibold transition ${
+                    className={`h-8 cursor-pointer rounded-full px-4 text-xs font-semibold transition ${
                       format === "online"
                         ? "bg-neutral-900 text-white"
                         : "text-neutral-600"
@@ -99,7 +99,7 @@ export function AssignLessonDialog({
                   </button>
                   <button
                     type="button"
-                    className={`rounded-full px-4 py-1.5 text-xs font-semibold transition ${
+                    className={`h-8 cursor-pointer rounded-full px-4 text-xs font-semibold transition ${
                       format === "offline"
                         ? "bg-neutral-900 text-white"
                         : "text-neutral-600"
@@ -137,7 +137,7 @@ export function AssignLessonDialog({
                 <button
                   type="button"
                   onClick={() => setOpen(false)}
-                  className="landing-btn landing-btn-muted text-xs"
+                  className="landing-btn landing-btn-muted cursor-pointer text-xs"
                 >
                   Отмена
                 </button>
