@@ -204,7 +204,7 @@ export default async function TeacherGroupPage({
                 <GroupAssignLessonDialog
                   lessons={readModel.schedule.lessonOptions}
                   action={scheduleLessonAction}
-                  triggerClassName={productButtonClassName("primary")}
+                  triggerClassName={productButtonClassName("secondary")}
                   triggerContent={(
                     <>
                       <CalendarPlus2 className="h-4 w-4" aria-hidden="true" />

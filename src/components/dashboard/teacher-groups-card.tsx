@@ -20,7 +20,7 @@ import type { TeacherGroupOperationsRow } from "@/lib/server/teacher-dashboard-o
 import { TeacherTableCard } from "./teacher-table-card";
 
 type TeacherGroupsCardProps = {
-  title: string;
+  title?: string;
   actions: Array<{ label: string; href: string }>;
   rows: TeacherGroupOperationsRow[];
   filters: {
@@ -65,7 +65,7 @@ export function TeacherGroupsCard({
           {actions.map((action) => {
             const Icon = ACTION_ICONS[action.label as keyof typeof ACTION_ICONS] ?? FolderPlus;
             return (
-              <Link key={action.label} href={action.href} className={productButtonClassName("primary")}>
+              <Link key={action.label} href={action.href} className={productButtonClassName("secondary")}>
                 <Icon className="h-4 w-4" aria-hidden="true" />
                 <span>{action.label}</span>
               </Link>
