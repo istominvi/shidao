@@ -1,9 +1,10 @@
 import { revalidatePath } from "next/cache";
 import { notFound, redirect } from "next/navigation";
 import { isRedirectError } from "next/dist/client/components/redirect-error";
+import { CalendarClock } from "lucide-react";
 import { AppPageHeader } from "@/components/app/page-header";
 import { AssignLessonDialog } from "@/components/lessons/assign-lesson-dialog";
-import { LessonMetaPill, LessonMetaRail } from "@/components/lessons/lesson-meta-pill";
+import { methodologyEntityActionClass } from "@/components/methodologies/methodology-entity-card";
 import { TeacherMethodologyLessonWorkspace } from "@/components/lessons/teacher-methodology-lesson-workspace";
 import { TopNav } from "@/components/top-nav";
 import { ROUTES, toLessonWorkspaceRoute, toMethodologyRoute } from "@/lib/auth";
@@ -59,12 +60,21 @@ export default async function MethodologyLessonPage({ params, searchParams }: { 
           backHref={toMethodologyRoute(methodologySlug)}
           backLabel={readModel.methodology.title}
           title={readModel.lesson.shell.title}
-          meta={
-            <LessonMetaRail>
-              <LessonMetaPill icon="duration" tone="success" label={readModel.metadata.durationLabel} />
-            </LessonMetaRail>
+          actions={
+            <AssignLessonDialog
+              action={assignLessonAction}
+              groups={readModel.groups}
+              lessonTitle={readModel.lesson.shell.title}
+              defaultOpen={query.assign === "1"}
+              triggerClassName={methodologyEntityActionClass}
+              triggerContent={
+                <>
+                  <CalendarClock className="h-3.5 w-3.5" aria-hidden="true" />
+                  <span>Назначить</span>
+                </>
+              }
+            />
           }
-          actions={<AssignLessonDialog action={assignLessonAction} groups={readModel.groups} lessonTitle={readModel.lesson.shell.title} defaultOpen={query.assign === "1"} />}
         />
 
         {query.error ? <p className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{query.error}</p> : null}
