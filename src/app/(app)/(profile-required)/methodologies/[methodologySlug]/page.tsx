@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { revalidatePath } from "next/cache";
 import { notFound, redirect } from "next/navigation";
 import {
   BookOpen,
@@ -15,18 +16,22 @@ import {
 } from "lucide-react";
 import { AppCard } from "@/components/app/app-card";
 import { AppPageHeader } from "@/components/app/page-header";
+import { AssignLessonDialog } from "@/components/lessons/assign-lesson-dialog";
 import { SemanticChip } from "@/components/app/semantic-chip";
 import {
   MethodologyEntityCard,
   methodologyEntityActionClass,
 } from "@/components/methodologies/methodology-entity-card";
 import { TopNav } from "@/components/top-nav";
-import { ROUTES, toMethodologyLessonRoute } from "@/lib/auth";
+import { ROUTES, toLessonWorkspaceRoute, toMethodologyLessonRoute } from "@/lib/auth";
 import { resolveAccessPolicy } from "@/lib/server/access-policy";
+import { listTeacherClassesAdmin } from "@/lib/server/lesson-content-repository";
 import {
   assertTeacherMethodologiesAccess,
   canAccessTeacherMethodologies,
+  createScheduledLessonFromMethodology,
   getTeacherMethodologyDetailReadModel,
+  parseAssignLessonFromMethodologyFormData,
 } from "@/lib/server/teacher-methodologies";
 
 export default async function MethodologyDetailPage({
@@ -36,11 +41,14 @@ export default async function MethodologyDetailPage({
 }) {
   const resolution = await resolveAccessPolicy();
   if (!canAccessTeacherMethodologies(resolution)) redirect(ROUTES.dashboard);
-  assertTeacherMethodologiesAccess(resolution);
+  const { teacherId } = assertTeacherMethodologiesAccess(resolution);
 
   const { methodologySlug } = await params;
   const readModel = await getTeacherMethodologyDetailReadModel(methodologySlug);
   if (!readModel) notFound();
+  const groups = (await listTeacherClassesAdmin(teacherId))
+    .filter((group) => group.methodologyId === readModel.methodology.id)
+    .map((group) => ({ id: group.id, label: group.name?.trim() || "Группа" }));
 
   const passport = readModel.overview.passport;
   const normalizedCourseDurationLabel = passport.courseDurationLabel
@@ -247,13 +255,33 @@ export default async function MethodologyDetailPage({
                     <Eye className="h-3.5 w-3.5" aria-hidden="true" />
                     <span>Смотреть</span>
                   </Link>
-                  <Link
-                    href={`${toMethodologyLessonRoute(readModel.methodology.slug, lesson.id)}?assign=1`}
-                    className={methodologyEntityActionClass}
-                  >
-                    <CalendarClock className="h-3.5 w-3.5" aria-hidden="true" />
-                    <span>Назначить</span>
-                  </Link>
+                  <AssignLessonDialog
+                    action={async (formData) => {
+                      "use server";
+                      const actionResolution = await resolveAccessPolicy();
+                      const { teacherId } =
+                        assertTeacherMethodologiesAccess(actionResolution);
+                      const payload =
+                        parseAssignLessonFromMethodologyFormData(formData);
+                      const created = await createScheduledLessonFromMethodology({
+                        teacherId,
+                        methodologyLessonId: lesson.id,
+                        payload,
+                      });
+                      revalidatePath(ROUTES.lessons);
+                      revalidatePath(ROUTES.groups);
+                      redirect(toLessonWorkspaceRoute(created.id));
+                    }}
+                    groups={groups}
+                    lessonTitle={lesson.title}
+                    triggerClassName={methodologyEntityActionClass}
+                    triggerContent={
+                      <>
+                        <CalendarClock className="h-3.5 w-3.5" aria-hidden="true" />
+                        <span>Назначить</span>
+                      </>
+                    }
+                  />
                 </>
               }
             />
