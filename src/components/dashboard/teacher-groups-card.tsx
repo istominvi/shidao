@@ -13,6 +13,7 @@ import {
   ProductTableHead,
   ProductTableHeaderCell,
   ProductTableHeaderRow,
+  ProductTablePrimaryCell,
   ProductTableRow,
   ProductTableTruncate,
 } from "@/components/ui/product-table";
@@ -122,9 +123,9 @@ export function TeacherGroupsCard({
               className="cursor-pointer"
               onClick={() => router.push(group.groupHref)}
             >
-              <ProductTableCell className="max-w-0 font-semibold text-neutral-950">
+              <ProductTablePrimaryCell className="max-w-0">
                 <ProductTableTruncate title={group.groupLabel}>{group.groupLabel}</ProductTableTruncate>
-              </ProductTableCell>
+              </ProductTablePrimaryCell>
               <ProductTableCell className="max-w-0">
                 <ProductTableTruncate title={group.methodologyLabel ?? "Не назначена"}>
                   {group.methodologyLabel ?? "Не назначена"}

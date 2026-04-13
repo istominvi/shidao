@@ -47,7 +47,32 @@ export function ProductTableHeaderCell({ className, ...props }: ComponentPropsWi
 }
 
 export function ProductTableCell({ className, ...props }: ComponentPropsWithoutRef<"td">) {
-  return <td className={classNames("px-4 py-0 align-middle text-neutral-700", className)} {...props} />;
+  return (
+    <td
+      className={classNames("px-4 py-0 align-middle text-sm font-normal text-neutral-700", className)}
+      {...props}
+    />
+  );
+}
+
+export function ProductTablePrimaryCell({ className, ...props }: ComponentPropsWithoutRef<"td">) {
+  return (
+    <ProductTableCell
+      className={classNames("text-neutral-950 font-medium", className)}
+      {...props}
+    />
+  );
+}
+
+export function ProductTableActionCell({ className, ...props }: ComponentPropsWithoutRef<"td">) {
+  return <ProductTableCell className={classNames("whitespace-nowrap", className)} {...props} />;
+}
+
+export function productTableActionLinkClassName(className?: string) {
+  return classNames(
+    "inline-flex items-center text-sm font-medium text-sky-700 underline underline-offset-2 transition-colors hover:text-sky-800",
+    className,
+  );
 }
 
 export function ProductTableTruncate({ className, ...props }: ComponentPropsWithoutRef<"span">) {
