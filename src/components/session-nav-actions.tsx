@@ -1,20 +1,14 @@
 "use client";
 
-import Link from "next/link";
+import { useId, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
-import { LogOut, Settings } from "lucide-react";
-import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { ROUTES, type ProfileKind } from "@/lib/auth";
 import { signOutViaServer } from "@/lib/auth-flow";
 import { useSessionView } from "@/components/use-session-view";
 import type { SessionAdultView, SessionStudentView } from "@/lib/session-view";
-import {
-  NavPillButton,
-  NavSegmentedSwitch,
-  NavigationDropdownPanel,
-  navigationDropdownItemClass,
-} from "@/components/navigation/primitives";
+import { useSessionMenuBehavior } from "@/components/session-nav/use-session-menu-behavior";
+import { SessionMenuPanel } from "@/components/session-nav/session-menu-panel";
 
 type SessionNavActionsProps = {
   state: SessionAdultView | SessionStudentView;
@@ -22,25 +16,10 @@ type SessionNavActionsProps = {
   portalMenu?: boolean;
 };
 
-type MenuPosition = { top: number; left: number };
 type ActionLoadingState = `switch:${ProfileKind}` | "signout" | null;
 
-const MENU_WIDTH = 288;
-const MENU_GAP = 8;
-const VIEWPORT_PADDING = 8;
-const ADULT_PROFILE_ORDER: ProfileKind[] = ["teacher", "parent"];
-const ADULT_PROFILE_TOGGLE_LABELS: Record<ProfileKind, string> = {
-  teacher: "Учитель",
-  parent: "Родитель",
-};
-
-async function readActionError(
-  response: Response,
-  fallback: string,
-): Promise<never> {
-  const payload = (await response.json().catch(() => null)) as
-    | { error?: string }
-    | null;
+async function readActionError(response: Response, fallback: string): Promise<never> {
+  const payload = (await response.json().catch(() => null)) as { error?: string } | null;
   throw new Error(payload?.error ?? fallback);
 }
 
@@ -52,70 +31,9 @@ export function SessionNavActions({
   const menuId = useId();
   const router = useRouter();
   const { refetchSession } = useSessionView();
-  const containerRef = useRef<HTMLDivElement>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
-  const [open, setOpen] = useState(false);
-  const [menuPosition, setMenuPosition] = useState<MenuPosition | null>(null);
+  const { open, setOpen, menuPosition, containerRef, menuRef } = useSessionMenuBehavior(portalMenu);
   const [actionLoading, setActionLoading] = useState<ActionLoadingState>(null);
   const [actionError, setActionError] = useState<string | null>(null);
-  const isSwitchBusy = actionLoading?.startsWith("switch:") ?? false;
-
-  const updateMenuPosition = useCallback(() => {
-    if (!portalMenu || !containerRef.current) return;
-
-    const rect = containerRef.current.getBoundingClientRect();
-    const maxLeft = window.innerWidth - MENU_WIDTH - VIEWPORT_PADDING;
-    setMenuPosition({
-      top: rect.bottom + MENU_GAP,
-      left: Math.min(Math.max(rect.right - MENU_WIDTH, VIEWPORT_PADDING), maxLeft),
-    });
-  }, [portalMenu]);
-
-  const isEventWithinMenu = useCallback((event: Event) => {
-    const path =
-      typeof event.composedPath === "function" ? event.composedPath() : [];
-    const containerNode = containerRef.current;
-    const menuNode = menuRef.current;
-
-    if (path.length > 0) {
-      return path.some((node) => node === containerNode || node === menuNode);
-    }
-
-    const target = event.target as Node | null;
-    return Boolean(
-      target && (containerNode?.contains(target) || menuNode?.contains(target)),
-    );
-  }, []);
-
-  useEffect(() => {
-    if (!open) return;
-
-    const onPointerDown = (event: PointerEvent) => {
-      if (!isEventWithinMenu(event)) setOpen(false);
-    };
-    const onEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setOpen(false);
-    };
-
-    document.addEventListener("pointerdown", onPointerDown, true);
-    document.addEventListener("keydown", onEscape);
-    return () => {
-      document.removeEventListener("pointerdown", onPointerDown, true);
-      document.removeEventListener("keydown", onEscape);
-    };
-  }, [isEventWithinMenu, open]);
-
-  useEffect(() => {
-    if (!open || !portalMenu) return;
-
-    updateMenuPosition();
-    window.addEventListener("resize", updateMenuPosition);
-    window.addEventListener("scroll", updateMenuPosition, true);
-    return () => {
-      window.removeEventListener("resize", updateMenuPosition);
-      window.removeEventListener("scroll", updateMenuPosition, true);
-    };
-  }, [open, portalMenu, updateMenuPosition]);
 
   async function handleSwitch(profile: ProfileKind) {
     if (
@@ -136,20 +54,14 @@ export function SessionNavActions({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ profile }),
       });
-      if (!response.ok) {
-        await readActionError(response, "Не удалось переключить профиль.");
-      }
+      if (!response.ok) await readActionError(response, "Не удалось переключить профиль.");
 
       await refetchSession();
       setOpen(false);
       router.replace(ROUTES.dashboard);
       router.refresh();
     } catch (error) {
-      setActionError(
-        error instanceof Error
-          ? error.message
-          : "Не удалось переключить профиль.",
-      );
+      setActionError(error instanceof Error ? error.message : "Не удалось переключить профиль.");
     } finally {
       setActionLoading(null);
     }
@@ -161,121 +73,36 @@ export function SessionNavActions({
 
     try {
       const response = await signOutViaServer();
-      if (!response.ok) {
-        await readActionError(response, "Не удалось выйти из аккаунта.");
-      }
+      if (!response.ok) await readActionError(response, "Не удалось выйти из аккаунта.");
 
       await refetchSession();
       setOpen(false);
       router.push(ROUTES.login);
       router.refresh();
     } catch (error) {
-      setActionError(
-        error instanceof Error ? error.message : "Не удалось выйти из аккаунта.",
-      );
+      setActionError(error instanceof Error ? error.message : "Не удалось выйти из аккаунта.");
     } finally {
       setActionLoading(null);
     }
   }
 
   const menu = (
-    <NavigationDropdownPanel
-      ref={menuRef}
-      id={menuId}
-      role="menu"
-      aria-label="Меню пользователя"
-      className={`w-72 ${portalMenu ? "fixed z-[260]" : "absolute right-0 z-[120] mt-2"}`}
-      style={portalMenu && menuPosition ? menuPosition : undefined}
-    >
-      <div className="nav-dropdown-profile">
-        <div className="nav-dropdown-avatar" aria-hidden="true">
-          {state.initials ?? "U"}
-        </div>
-        <div className="min-w-0">
-          <p className="truncate text-sm font-semibold text-neutral-900">
-            {state.fullName ?? "Пользователь"}
-          </p>
-          <p className="truncate text-xs text-neutral-500">
-            {state.email ?? "Без email"}
-          </p>
-        </div>
-      </div>
-
-      {actionError ? (
-        <div
-          aria-live="assertive"
-          className="mx-3 mb-2 rounded-xl border border-red-200 bg-red-50 px-2.5 py-2 text-xs font-medium text-red-700"
-          role="alert"
-        >
-          {actionError}
-        </div>
-      ) : null}
-
-      {state.kind === "adult" ? (
-        <div className="border-t border-black/5 px-3 py-2.5">
-          <NavSegmentedSwitch className="w-full">
-            {ADULT_PROFILE_ORDER.map((profile) => {
-              const available = state.availableProfiles.includes(profile);
-              const active = state.activeProfile === profile;
-              const isSwitchLoading = actionLoading === `switch:${profile}`;
-              return (
-                <NavPillButton
-                  key={profile}
-                  active={active}
-                  unavailable={!available}
-                  loading={isSwitchLoading}
-                  disabled={isSwitchBusy && !isSwitchLoading}
-                  ariaPressed={active}
-                  className="min-h-10 flex-1 px-2.5 text-sm font-semibold"
-                  onClick={() => {
-                    if (active) {
-                      setOpen(false);
-                      router.replace(ROUTES.dashboard);
-                      router.refresh();
-                      return;
-                    }
-
-                    if (available && !isSwitchBusy) {
-                      void handleSwitch(profile);
-                    }
-                  }}
-                >
-                  {ADULT_PROFILE_TOGGLE_LABELS[profile]}
-                </NavPillButton>
-              );
-            })}
-          </NavSegmentedSwitch>
-        </div>
-      ) : null}
-
-      <div className="border-t border-black/5 px-1 py-1.5">
-        <Link
-          href={ROUTES.settingsProfile}
-          className={navigationDropdownItemClass()}
-          onClick={() => setOpen(false)}
-          role="menuitem"
-        >
-          <span className="inline-flex items-center gap-2.5">
-            <Settings size={16} className="text-neutral-500" aria-hidden="true" />
-            Настройки
-          </span>
-        </Link>
-
-        <button
-          className={navigationDropdownItemClass("text-neutral-700")}
-          onClick={handleSignOut}
-          disabled={actionLoading === "signout"}
-          aria-busy={actionLoading === "signout"}
-          role="menuitem"
-          type="button"
-        >
-          <span className="inline-flex items-center gap-2.5">
-            <LogOut size={16} className="text-neutral-500" aria-hidden="true" />
-            {actionLoading === "signout" ? "Выход…" : "Выход"}
-          </span>
-        </button>
-      </div>
-    </NavigationDropdownPanel>
+    <SessionMenuPanel
+      menuId={menuId}
+      portalMenu={portalMenu}
+      menuPosition={menuPosition ?? undefined}
+      menuRef={menuRef}
+      state={state}
+      actionError={actionError}
+      actionLoading={actionLoading}
+      onClose={() => setOpen(false)}
+      onSwitch={(profile) => void handleSwitch(profile)}
+      onSignOut={() => void handleSignOut()}
+      onGoDashboard={() => {
+        router.replace(ROUTES.dashboard);
+        router.refresh();
+      }}
+    />
   );
 
   return (

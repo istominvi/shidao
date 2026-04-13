@@ -38,11 +38,15 @@ npm run build
 
 ## Документация
 
+> Do not use legacy aliases/duplicate docs as the current source of truth.
+
 - Индекс: `docs/index.md`
 - Auth и routing: `docs/authorization-routing.md`
 - Доменная модель: `docs/domain-model.md`
 - Текущая схема БД: `docs/database/current-schema.md`, `supabase/schema/current-schema.sql`
+- Migration guidelines: `docs/database/migration-guidelines.md`
 - История миграций: `docs/database/migration-history.md`, `supabase/migrations/*`
+- Архив/устаревшее: `docs/archive/*`, `docs/refactors/archive/*`
 
 ## Технический стек
 
