@@ -15,7 +15,15 @@ type AssignLessonDialogProps = {
 
 function SubmitButton() {
   const { pending } = useFormStatus();
-  return <button type="submit" className="landing-btn landing-btn-primary text-xs" disabled={pending}>{pending ? "Назначаем..." : "Создать и открыть урок"}</button>;
+  return (
+    <button
+      type="submit"
+      className="landing-btn landing-btn-primary text-xs"
+      disabled={pending}
+    >
+      {pending ? "Назначаем..." : "Назначить"}
+    </button>
+  );
 }
 
 export function AssignLessonDialog({
@@ -27,31 +35,112 @@ export function AssignLessonDialog({
   triggerClassName = "landing-btn landing-btn-primary text-xs",
 }: AssignLessonDialogProps) {
   const [open, setOpen] = useState(defaultOpen);
+  const [format, setFormat] = useState<"online" | "offline">("online");
 
   return (
     <>
-      <button type="button" className={triggerClassName} onClick={() => setOpen(true)}>{triggerContent}</button>
+      <button
+        type="button"
+        className={triggerClassName}
+        onClick={() => setOpen(true)}
+      >
+        {triggerContent}
+      </button>
       {open ? (
         <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
-          <button aria-label="Закрыть" className="absolute inset-0 bg-neutral-950/40" onClick={() => setOpen(false)} />
-          <section role="dialog" aria-modal="true" className="relative z-10 w-full max-w-xl rounded-3xl border border-white/80 bg-white p-6 shadow-2xl">
+          <button
+            aria-label="Закрыть"
+            className="absolute inset-0 bg-neutral-950/40"
+            onClick={() => setOpen(false)}
+          />
+          <section
+            role="dialog"
+            aria-modal="true"
+            className="relative z-10 w-full max-w-xl rounded-3xl border border-white/80 bg-white px-6 py-5 shadow-2xl"
+          >
             <h2 className="text-2xl font-bold text-neutral-950">Назначить урок</h2>
-            <p className="mt-2 text-sm text-neutral-700">Урок: {lessonTitle}</p>
+            <p className="mt-2 text-sm text-neutral-700">{lessonTitle}</p>
             <form action={action} className="mt-4 grid gap-3 md:grid-cols-2">
-              <label className="space-y-1 text-sm text-neutral-700">
+              <label className="space-y-1 text-sm text-neutral-700 md:col-span-2">
                 <span>Группа</span>
                 <select name="classId" required className="field-input" defaultValue="">
-                  <option value="" disabled>Выберите группу</option>
-                  {groups.map((group) => <option key={group.id} value={group.id}>{group.label}</option>)}
+                  <option value="" disabled>
+                    Выберите группу
+                  </option>
+                  {groups.map((group) => (
+                    <option key={group.id} value={group.id}>
+                      {group.label}
+                    </option>
+                  ))}
                 </select>
               </label>
-              <label className="space-y-1 text-sm text-neutral-700"><span>Формат</span><select name="format" required className="field-input" defaultValue="online"><option value="online">online</option><option value="offline">offline</option></select></label>
-              <label className="space-y-1 text-sm text-neutral-700"><span>Дата</span><input type="date" name="date" required className="field-input" /></label>
-              <label className="space-y-1 text-sm text-neutral-700"><span>Время</span><input type="time" name="time" required className="field-input" /></label>
-              <label className="space-y-1 text-sm text-neutral-700"><span>Ссылка на встречу (для online)</span><input type="url" name="meetingLink" className="field-input" placeholder="https://" /></label>
-              <label className="space-y-1 text-sm text-neutral-700"><span>Место (для offline)</span><input type="text" name="place" className="field-input" placeholder="Кабинет / адрес" /></label>
-              <div className="md:col-span-2 flex gap-2">
-                <button type="button" onClick={() => setOpen(false)} className="landing-btn landing-btn-muted text-xs">Отмена</button>
+              <label className="space-y-1 text-sm text-neutral-700 md:col-span-2">
+                <span>Дата</span>
+                <input type="date" name="date" required className="field-input" />
+              </label>
+              <label className="space-y-1 text-sm text-neutral-700 md:col-span-2">
+                <span>Время</span>
+                <input type="time" name="time" required className="field-input" />
+              </label>
+              <fieldset className="space-y-2 text-sm text-neutral-700 md:col-span-2">
+                <legend>Формат</legend>
+                <input type="hidden" name="format" value={format} />
+                <div className="inline-flex rounded-full border border-neutral-200 bg-neutral-100 p-1">
+                  <button
+                    type="button"
+                    className={`rounded-full px-4 py-1.5 text-xs font-semibold transition ${
+                      format === "online"
+                        ? "bg-neutral-900 text-white"
+                        : "text-neutral-600"
+                    }`}
+                    onClick={() => setFormat("online")}
+                  >
+                    online
+                  </button>
+                  <button
+                    type="button"
+                    className={`rounded-full px-4 py-1.5 text-xs font-semibold transition ${
+                      format === "offline"
+                        ? "bg-neutral-900 text-white"
+                        : "text-neutral-600"
+                    }`}
+                    onClick={() => setFormat("offline")}
+                  >
+                    offline
+                  </button>
+                </div>
+              </fieldset>
+              {format === "online" ? (
+                <label className="space-y-1 text-sm text-neutral-700 md:col-span-2">
+                  <span>Ссылка на встречу</span>
+                  <input
+                    type="url"
+                    name="meetingLink"
+                    className="field-input"
+                    placeholder="https://"
+                  />
+                  <input type="hidden" name="place" value="" />
+                </label>
+              ) : (
+                <label className="space-y-1 text-sm text-neutral-700 md:col-span-2">
+                  <span>Место</span>
+                  <input
+                    type="text"
+                    name="place"
+                    className="field-input"
+                    placeholder="Кабинет / адрес"
+                  />
+                  <input type="hidden" name="meetingLink" value="" />
+                </label>
+              )}
+              <div className="mt-3 flex justify-end gap-2 md:col-span-2">
+                <button
+                  type="button"
+                  onClick={() => setOpen(false)}
+                  className="landing-btn landing-btn-muted text-xs"
+                >
+                  Отмена
+                </button>
                 <SubmitButton />
               </div>
             </form>

@@ -245,6 +245,16 @@ export default async function MethodologyDetailPage({
               }
               actions={
                 <>
+                  <Link
+                    href={toMethodologyLessonRoute(
+                      readModel.methodology.slug,
+                      lesson.id,
+                    )}
+                    className={methodologyEntityActionClass}
+                  >
+                    <Eye className="h-3.5 w-3.5" aria-hidden="true" />
+                    <span>Смотреть</span>
+                  </Link>
                   <AssignLessonDialog
                     action={async (formData) => {
                       "use server";
@@ -272,16 +282,6 @@ export default async function MethodologyDetailPage({
                       </>
                     }
                   />
-                  <Link
-                    href={toMethodologyLessonRoute(
-                      readModel.methodology.slug,
-                      lesson.id,
-                    )}
-                    className={methodologyEntityActionClass}
-                  >
-                    <Eye className="h-3.5 w-3.5" aria-hidden="true" />
-                    <span>Смотреть</span>
-                  </Link>
                 </>
               }
             />
