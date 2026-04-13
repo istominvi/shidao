@@ -504,6 +504,7 @@ a {
 .product-btn {
   --product-control-height: 2.5rem;
   display: inline-flex;
+  cursor: pointer;
   height: var(--product-control-height);
   align-items: center;
   justify-content: center;
