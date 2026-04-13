@@ -1,5 +1,9 @@
-import { DashboardShell } from "@/components/dashboard-shell";
 import Link from "next/link";
+import { DashboardShell } from "@/components/dashboard-shell";
+import {
+  DashboardEmptyState,
+  DashboardSection,
+} from "@/components/dashboard/dashboard-section";
 import { toScheduledLessonRoute } from "@/lib/auth";
 
 type ParentContext = {
@@ -27,12 +31,7 @@ type ParentHomeworkItem = {
   maxScore: number | null;
 };
 
-export function ParentDashboard({
-  childrenContexts,
-  homeworkByStudent,
-  communicationByStudent,
-  lessonsByStudent,
-}: {
+type ParentDashboardProps = {
   childrenContexts: ParentContext[];
   homeworkByStudent: Record<string, ParentHomeworkItem[]>;
   communicationByStudent: Record<
@@ -54,77 +53,123 @@ export function ParentDashboard({
       statusLabel: string;
     }>
   >;
+};
+
+function ChildLessons({
+  lessons,
+}: {
+  lessons: ParentDashboardProps["lessonsByStudent"][string];
 }) {
+  if (lessons.length === 0) {
+    return <DashboardEmptyState>Пока нет запланированных уроков.</DashboardEmptyState>;
+  }
+
+  return (
+    <ul className="space-y-2">
+      {lessons.map((lesson) => (
+        <li key={lesson.scheduledLessonId} className="rounded-xl border border-neutral-200 p-3">
+          <p className="font-semibold text-neutral-900">{lesson.lessonTitle}</p>
+          <p className="text-xs text-neutral-600">{lesson.startsAt} · {lesson.statusLabel}</p>
+          <Link
+            href={toScheduledLessonRoute(lesson.scheduledLessonId)}
+            className="mt-2 inline-flex rounded-lg border border-neutral-300 px-2.5 py-1 text-xs font-semibold text-neutral-800"
+          >
+            Открыть урок
+          </Link>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function ChildHomework({ items }: { items: ParentHomeworkItem[] }) {
+  if (items.length === 0) {
+    return <DashboardEmptyState>Домашние задания пока не назначены.</DashboardEmptyState>;
+  }
+
+  return (
+    <ul className="space-y-2">
+      {items.map((item) => (
+        <li key={`${item.scheduledLessonId}-${item.homeworkTitle}`} className="rounded-xl border border-neutral-200 p-3">
+          <p className="font-semibold text-neutral-900">{item.homeworkTitle}</p>
+          <p className="text-xs text-neutral-500">{item.lessonTitle}</p>
+          <p className="text-xs text-neutral-600">Срок: {item.dueAt ?? "без срока"} · {item.statusLabel}</p>
+          {item.score !== null && item.maxScore !== null ? (
+            <p className="text-xs text-neutral-700">Результат: {item.score} / {item.maxScore}</p>
+          ) : null}
+          {item.assignmentComment ? (
+            <p className="mt-1 text-xs text-neutral-700">Комментарий к заданию: {item.assignmentComment}</p>
+          ) : null}
+          {item.reviewNote ? (
+            <p className="mt-1 text-xs text-neutral-700">Комментарий после проверки: {item.reviewNote}</p>
+          ) : null}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function ChildCommunication({
+  messages,
+}: {
+  messages: ParentDashboardProps["communicationByStudent"][string];
+}) {
+  if (messages.length === 0) {
+    return <DashboardEmptyState>Сообщений пока нет.</DashboardEmptyState>;
+  }
+
+  return (
+    <ul className="space-y-1.5">
+      {messages.slice(-3).map((message) => (
+        <li key={message.id} className="text-sm text-neutral-700">
+          <span className="font-medium text-neutral-900">{message.authorRole}:</span> {message.body}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+export function ParentDashboard({
+  childrenContexts,
+  homeworkByStudent,
+  communicationByStudent,
+  lessonsByStudent,
+}: ParentDashboardProps) {
   return (
     <DashboardShell
       roleLabel="Родитель"
       roleTone="parent"
-      title="Семейное учебное пространство"
-      subtitle="Только главное: что задано, что сдано и какой результат у ребёнка."
+      title="Кабинет родителя"
+      subtitle="Сводка по ребёнку: уроки, домашняя работа и комментарии преподавателя."
     >
-      <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
-        <article className="dashboard-grid-card bg-[linear-gradient(140deg,rgba(201,255,79,0.24),rgba(255,255,255,0.92))]">
-          <h3 className="text-lg font-black">Мои дети</h3>
-          {childrenContexts.length > 0 && (
-            <ul className="mt-3 space-y-3 text-sm">
-              {childrenContexts.map((child) => (
-                <li
-                  key={child.studentId}
-                  className="rounded-2xl border border-black/10 bg-white/80 p-3"
-                >
-                  <p className="font-semibold">{child.studentName}</p>
-                  <p className="mt-1 text-neutral-700">Логин ученика: {child.login}</p>
-                  <div className="mt-2 space-y-2">
-                    {(lessonsByStudent[child.studentId] ?? []).map((lesson) => (
-                      <article key={lesson.scheduledLessonId} className="rounded-xl border border-sky-200 bg-sky-50/60 p-2">
-                        <p className="font-semibold text-neutral-900">{lesson.lessonTitle}</p>
-                        <p className="text-xs text-neutral-600">{lesson.startsAt} · {lesson.statusLabel}</p>
-                        <Link
-                          href={toScheduledLessonRoute(lesson.scheduledLessonId)}
-                          className="mt-1 inline-flex rounded-lg border border-sky-300 bg-white px-2 py-1 text-xs font-semibold text-sky-800"
-                        >
-                          Открыть урок
-                        </Link>
-                      </article>
-                    ))}
-                    {(homeworkByStudent[child.studentId] ?? []).map((item) => (
-                      <article key={`${item.scheduledLessonId}-${item.homeworkTitle}`} className="rounded-xl border border-neutral-200 bg-white p-2">
-                        <p className="font-semibold text-neutral-900">{item.homeworkTitle}</p>
-                        <p className="text-xs text-neutral-500">{item.lessonTitle}</p>
-                        <p className="text-xs text-neutral-600">Срок: {item.dueAt ?? "без срока"} · {item.statusLabel}</p>
-                        {item.score !== null && item.maxScore !== null ? (
-                          <p className="text-xs text-sky-800">Результат: {item.score} / {item.maxScore}</p>
-                        ) : null}
-                        {item.assignmentComment ? <p className="text-xs text-neutral-700">Комментарий к заданию: {item.assignmentComment}</p> : null}
-                        {item.reviewNote ? <p className="text-xs text-neutral-700">Комментарий после проверки: {item.reviewNote}</p> : null}
-                      </article>
-                    ))}
-                  </div>
-                  <div className="mt-2 rounded-xl border border-neutral-200 p-2 text-xs text-neutral-700">
-                    <p className="font-semibold text-neutral-900">Коммуникация (read-only)</p>
-                    {(communicationByStudent[child.studentId] ?? [])
-                      .slice(-3)
-                      .map((message) => (
-                        <p key={message.id} className="mt-1">
-                          {message.authorRole}: {message.body}
-                        </p>
-                      ))}
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </article>
+      {childrenContexts.length === 0 ? (
+        <DashboardSection title="Детей пока нет" description="Добавьте ученика через преподавателя, чтобы увидеть прогресс.">
+          <DashboardEmptyState>После привязки ученика здесь появится учебная сводка.</DashboardEmptyState>
+        </DashboardSection>
+      ) : (
+        <div className="space-y-4">
+          {childrenContexts.map((child) => (
+            <article key={child.studentId} className="space-y-3 rounded-2xl border border-neutral-200 bg-white/70 p-3 md:p-4">
+              <header>
+                <h2 className="text-base font-bold text-neutral-900">{child.studentName}</h2>
+                <p className="text-sm text-neutral-600">Логин ученика: {child.login}</p>
+              </header>
 
-        <article className="dashboard-grid-card bg-[linear-gradient(160deg,rgba(255,182,232,0.24),rgba(255,255,255,0.9))]">
-          <h3 className="text-lg font-black">Что включено</h3>
-          <ul className="mt-3 space-y-2 text-sm text-neutral-700">
-            <li>• Домашние задания по каждому ребёнку</li>
-            <li>• Статус сдачи и проверки</li>
-            <li>• Результат теста и комментарии преподавателя</li>
-          </ul>
-        </article>
-      </div>
+              <div className="grid gap-3 lg:grid-cols-3">
+                <DashboardSection title="Уроки">
+                  <ChildLessons lessons={lessonsByStudent[child.studentId] ?? []} />
+                </DashboardSection>
+                <DashboardSection title="Домашняя работа">
+                  <ChildHomework items={homeworkByStudent[child.studentId] ?? []} />
+                </DashboardSection>
+                <DashboardSection title="Последние сообщения" description="Режим просмотра">
+                  <ChildCommunication messages={communicationByStudent[child.studentId] ?? []} />
+                </DashboardSection>
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
     </DashboardShell>
   );
 }

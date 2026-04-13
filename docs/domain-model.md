@@ -1,122 +1,55 @@
-# ТЗ (актуализация доменной модели)
+# Доменная модель ShiDao (текущий срез)
 
-Дата: **8 апреля 2026**.
+## 1) Канонические сущности
 
-## Текущая целевая модель (срез на main)
-
-### 1) Базовая identity/school/group модель
-
+### Identity и доступ
 - `parent`
 - `teacher`
 - `student`
+- `user_preference`
+- `user_security`
+
+### School/group контекст
 - `school`
 - `school_teacher`
 - `class`
 - `class_teacher`
 - `class_student`
 
-Ограничения core-модели:
-
-- `student` не содержит `teacher_id` и `school_id`.
-- Привязка ученика к школе идёт через `class_student -> class -> school`.
-- `parent` и `teacher` — отдельные сущности, не «роли в одной таблице».
-
-### 2) Методический source layer + runtime-уроков
-
+### Методический source layer
 - `methodology`
 - `methodology_lesson`
-- `reusable_asset`
 - `methodology_lesson_block`
 - `methodology_lesson_block_asset`
-- `scheduled_lesson`
-
-Принцип:
-
-- `methodology`/`methodology_lesson` — педагогический source of truth.
-- `scheduled_lesson` — runtime-сущность исполнения.
-
-### 3) Homework runtime-слой
-
+- `reusable_asset`
+- `methodology_lesson_student_content`
 - `methodology_lesson_homework`
+
+### Runtime layer
+- `scheduled_lesson`
 - `scheduled_lesson_homework_assignment`
 - `student_homework_assignment`
-
-### 4) Communication runtime-слой
-
 - `group_student_conversation`
 - `group_student_message`
 
-## Инвариант методики группы (`class.methodology_id`)
+Источник истины по таблицам и ограничениям: `supabase/schema/current-schema.sql`.
 
-- Для новых групп `class.methodology_id` обязателен при создании.
-- После создания группы `class.methodology_id` неизменяем (immutable).
-- Legacy/backfill-группы из старого состояния могут иметь `class.methodology_id = null`.
-- Текущее UI/маршруты не предоставляют свободную смену методики существующей группы.
+## 2) Продуктовые инварианты
 
-## Онбординг преподавателя
+- Роль в URL не кодируется: основной вход — `/dashboard`.
+- Teacher/parent переключаются через `user_preference.last_active_profile`.
+- Ученик логинится по `student.login` (с internal auth email внутри контура).
+- Канонический runtime-маршрут урока для всех ролей: `/lessons/[scheduledLessonId]`.
+- Parent видит read-only проекции по своим детям.
 
-При первом создании `teacher` автоматически создаются:
+## 3) Source vs runtime
 
-- школа,
-- связь `school_teacher` с ролью `owner`,
-- первый класс,
-- связь `class_teacher`.
+- Методика и уроки методики — неизменяемый педагогический source.
+- `scheduled_lesson` и связанные homework/communication — runtime-исполнение.
+- Teacher workspace работает с runtime-объектом, а не редактирует source урока в обход методики.
 
-## Совместимость student auth
+## 4) Что считать историческим слоем
 
-`student.internal_auth_email` сохранён как внутреннее инфраструктурное поле для безопасного перехода со старого login-flow.
-
-## Teacher IA и runtime-слои (актуальное состояние)
-
-### Step 1: group-centric IA — реализовано
-
-- Основной teacher-контекст: `/dashboard`, `/groups`, `/groups/[groupId]`.
-- `/lessons` остаётся secondary global индексом.
-
-### Step 2: operations dashboard — реализовано
-
-- `/dashboard` работает как command center.
-- Добавлены рабочие entry points: `/groups/new`, `/students/new`, `/methodologies`.
-- `/groups` усилен до полного индексного списка с поиском/фильтрами.
-
-### Step 3: group setup + methodology binding + contextual scheduling — реализовано
-
-- Источник методики группы: `class.methodology_id`.
-- Новая группа создаётся сразу с методикой; дальнейшее изменение методики запрещено.
-- `/groups/[groupId]` покрывает roster + group-scoped scheduling.
-- При `class.methodology_id = null` (legacy) scheduling блокируется.
-- Прогресс: `completed scheduled lessons / total lessons in assigned methodology`.
-
-### Step 4: homework runtime layer — реализовано
-
-- Канонический homework-контент хранится в методике.
-- `/lessons/[scheduledLessonId]` — выдача, контроль и ревью homework в runtime.
-- Homework V2 (09.04.2026):
-  - typed model `practice_text | quiz_single_choice`;
-  - teacher issuance modal (`Задать ДЗ`) + due date + assignment comment;
-  - student quiz auto-checking (`submission_payload`, `auto_score`, `auto_max_score`, `auto_checked_at`);
-  - parent read-only projection со статусом, результатом и комментариями.
-- Student dashboard — submission, Parent dashboard — read-only проекция статусов.
-
-### Step 5: communication runtime layer — реализовано
-
-- Непрерывная коммуникация строится вокруг `group_student_conversation`.
-- Сообщения связываются с lesson/homework runtime-контекстом через optional ссылки.
-- Teacher получает полный поток в `/groups/[groupId]/students/[studentId]/communication`.
-
-### Step 6: three-part lesson model — реализовано
-
-- Канонический урок теперь состоит из трёх частей:
-  - `teacher scenario`;
-  - `student lesson content`;
-  - `homework`.
-- Добавлен source-layer `methodology_lesson_student_content`.
-- Teacher workspace `/lessons/[scheduledLessonId]` использует product-tab модель:
-  - `План урока`,
-  - `Контент`,
-  - `Домашнее задание`,
-  - `Проведение занятия`,
-  - `Чат`.
-- Header metadata на страницах teacher-уроков унифицирована в общий pill-rail без отдельных source/runtime context-chip.
-- Введён единый runtime route для всех ролей: `/lessons/[scheduledLessonId]`.
-- Student и parent используют один и тот же learner-content projection, а parent получает multi-child runtime summary на этой же странице.
+- `supabase/migrations/*` — журнал эволюции и совместимости.
+- Исторические волны изменений и их причины — в `docs/database/migration-history.md`.
+- Для текущей разработки читать сначала snapshot: `docs/database/current-schema.md` и `supabase/schema/current-schema.sql`.
