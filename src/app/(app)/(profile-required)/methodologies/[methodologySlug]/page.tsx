@@ -24,6 +24,9 @@ export default async function MethodologyDetailPage({ params }: { params: Promis
   if (!readModel) notFound();
 
   const passport = readModel.overview.passport;
+  const normalizedCourseDurationLabel = passport.courseDurationLabel
+    ? passport.courseDurationLabel.replace(/\bучебн(?:ый|ого)\b\s*/i, "").trim()
+    : null;
   const normalizedActivitiesLabel = passport.activitiesPerLessonLabel
     ? `Активностей: ${passport.activitiesPerLessonLabel
         .replace(/^Обычно:\s*/i, "")
@@ -89,11 +92,11 @@ export default async function MethodologyDetailPage({ params }: { params: Promis
               <SemanticChip icon={BookOpen} tone="violet" size="md">
                 Уроков: {readModel.overview.availableLessonsCount}
               </SemanticChip>
-              {passport.courseDurationLabel ? (
-                <SemanticChip icon={CalendarRange} tone="emerald" size="md">Курс: {passport.courseDurationLabel}</SemanticChip>
+              {normalizedCourseDurationLabel ? (
+                <SemanticChip icon={CalendarRange} tone="emerald" size="md">Курс: {normalizedCourseDurationLabel}</SemanticChip>
               ) : null}
               {passport.lessonDurationLabel ? (
-                <SemanticChip icon={Clock3} tone="amber" size="md">Время урока: {passport.lessonDurationLabel}</SemanticChip>
+                <SemanticChip icon={Clock3} tone="amber" size="md">Урок: {passport.lessonDurationLabel}</SemanticChip>
               ) : null}
               {passport.targetAgeLabel ? (
                 <SemanticChip icon={GraduationCap} tone="sky" size="md">Возраст: {passport.targetAgeLabel}</SemanticChip>
