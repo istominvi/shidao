@@ -60,7 +60,8 @@ function teacherFacingMethodologyTitle(methodology: {
   const titleNative = clean(methodology.metadata?.titleNative);
 
   if (titleRu && titleNative) return joinBilingualTitle(titleRu, titleNative);
-  if (titleRu && title && title !== titleRu) return joinBilingualTitle(titleRu, title);
+  if (titleRu && title && title !== titleRu)
+    return joinBilingualTitle(titleRu, title);
   if (titleNative && title && title !== titleNative)
     return joinBilingualTitle(title, titleNative);
 
@@ -151,6 +152,7 @@ export async function getTeacherMethodologiesIndexReadModel() {
           targetAgeLabel: metadata.targetAgeLabel,
           lessonDurationLabel: metadata.lessonDurationLabel,
           courseDurationLabel: metadata.courseDurationLabel,
+          activitiesPerLessonLabel: metadata.activitiesPerLessonLabel,
           approximateVocabularyCount: metadata.approximateVocabularyCount,
           mediaFormatLabel:
             metadata.songCount || metadata.videoCount
