@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import { LogOut, Settings } from "lucide-react";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import { ROUTES, type ProfileKind } from "@/lib/auth";
 import { signOutViaServer } from "@/lib/auth-flow";
 import { useSessionView } from "@/components/use-session-view";
@@ -22,10 +22,8 @@ type SessionNavActionsProps = {
   portalMenu?: boolean;
 };
 
-type MenuPosition = {
-  top: number;
-  left: number;
-};
+type MenuPosition = { top: number; left: number };
+type ActionLoadingState = `switch:${ProfileKind}` | "signout" | null;
 
 const MENU_WIDTH = 288;
 const MENU_GAP = 8;
@@ -35,6 +33,16 @@ const ADULT_PROFILE_TOGGLE_LABELS: Record<ProfileKind, string> = {
   teacher: "Учитель",
   parent: "Родитель",
 };
+
+async function readActionError(
+  response: Response,
+  fallback: string,
+): Promise<never> {
+  const payload = (await response.json().catch(() => null)) as
+    | { error?: string }
+    | null;
+  throw new Error(payload?.error ?? fallback);
+}
 
 export function SessionNavActions({
   state,
@@ -48,9 +56,7 @@ export function SessionNavActions({
   const menuRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
   const [menuPosition, setMenuPosition] = useState<MenuPosition | null>(null);
-  const [actionLoading, setActionLoading] = useState<
-    `switch:${ProfileKind}` | "signout" | null
-  >(null);
+  const [actionLoading, setActionLoading] = useState<ActionLoadingState>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const isSwitchBusy = actionLoading?.startsWith("switch:") ?? false;
 
@@ -59,19 +65,15 @@ export function SessionNavActions({
 
     const rect = containerRef.current.getBoundingClientRect();
     const maxLeft = window.innerWidth - MENU_WIDTH - VIEWPORT_PADDING;
-    const left = Math.min(
-      Math.max(rect.right - MENU_WIDTH, VIEWPORT_PADDING),
-      maxLeft,
-    );
-
     setMenuPosition({
       top: rect.bottom + MENU_GAP,
-      left,
+      left: Math.min(Math.max(rect.right - MENU_WIDTH, VIEWPORT_PADDING), maxLeft),
     });
   }, [portalMenu]);
 
   const isEventWithinMenu = useCallback((event: Event) => {
-    const path = typeof event.composedPath === "function" ? event.composedPath() : [];
+    const path =
+      typeof event.composedPath === "function" ? event.composedPath() : [];
     const containerNode = containerRef.current;
     const menuNode = menuRef.current;
 
@@ -80,27 +82,23 @@ export function SessionNavActions({
     }
 
     const target = event.target as Node | null;
-    return Boolean(target && (containerNode?.contains(target) || menuNode?.contains(target)));
+    return Boolean(
+      target && (containerNode?.contains(target) || menuNode?.contains(target)),
+    );
   }, []);
 
   useEffect(() => {
     if (!open) return;
 
     const onPointerDown = (event: PointerEvent) => {
-      if (!isEventWithinMenu(event)) {
-        setOpen(false);
-      }
+      if (!isEventWithinMenu(event)) setOpen(false);
     };
-
     const onEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setOpen(false);
-      }
+      if (event.key === "Escape") setOpen(false);
     };
 
     document.addEventListener("pointerdown", onPointerDown, true);
     document.addEventListener("keydown", onEscape);
-
     return () => {
       document.removeEventListener("pointerdown", onPointerDown, true);
       document.removeEventListener("keydown", onEscape);
@@ -111,23 +109,13 @@ export function SessionNavActions({
     if (!open || !portalMenu) return;
 
     updateMenuPosition();
-
     window.addEventListener("resize", updateMenuPosition);
     window.addEventListener("scroll", updateMenuPosition, true);
-
     return () => {
       window.removeEventListener("resize", updateMenuPosition);
       window.removeEventListener("scroll", updateMenuPosition, true);
     };
   }, [open, portalMenu, updateMenuPosition]);
-
-  const getActionErrorMessage = useCallback(
-    (error: unknown, fallback: string) => {
-      if (error instanceof Error && error.message) return error.message;
-      return fallback;
-    },
-    [],
-  );
 
   async function handleSwitch(profile: ProfileKind) {
     if (
@@ -148,12 +136,8 @@ export function SessionNavActions({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ profile }),
       });
-      const payload = (await response.json().catch(() => null)) as {
-        error?: string;
-      } | null;
-
       if (!response.ok) {
-        throw new Error(payload?.error ?? "Не удалось переключить профиль.");
+        await readActionError(response, "Не удалось переключить профиль.");
       }
 
       await refetchSession();
@@ -161,7 +145,11 @@ export function SessionNavActions({
       router.replace(ROUTES.dashboard);
       router.refresh();
     } catch (error) {
-      setActionError(getActionErrorMessage(error, "Не удалось переключить профиль."));
+      setActionError(
+        error instanceof Error
+          ? error.message
+          : "Не удалось переключить профиль.",
+      );
     } finally {
       setActionLoading(null);
     }
@@ -173,12 +161,8 @@ export function SessionNavActions({
 
     try {
       const response = await signOutViaServer();
-      const payload = (await response.json().catch(() => null)) as {
-        error?: string;
-      } | null;
-
       if (!response.ok) {
-        throw new Error(payload?.error ?? "Не удалось выйти из аккаунта.");
+        await readActionError(response, "Не удалось выйти из аккаунта.");
       }
 
       await refetchSession();
@@ -186,7 +170,9 @@ export function SessionNavActions({
       router.push(ROUTES.login);
       router.refresh();
     } catch (error) {
-      setActionError(getActionErrorMessage(error, "Не удалось выйти из аккаунта."));
+      setActionError(
+        error instanceof Error ? error.message : "Не удалось выйти из аккаунта.",
+      );
     } finally {
       setActionLoading(null);
     }
@@ -199,11 +185,7 @@ export function SessionNavActions({
       role="menu"
       aria-label="Меню пользователя"
       className={`w-72 ${portalMenu ? "fixed z-[260]" : "absolute right-0 z-[120] mt-2"}`}
-      style={
-        portalMenu && menuPosition
-          ? { top: menuPosition.top, left: menuPosition.left }
-          : undefined
-      }
+      style={portalMenu && menuPosition ? menuPosition : undefined}
     >
       <div className="nav-dropdown-profile">
         <div className="nav-dropdown-avatar" aria-hidden="true">
@@ -213,11 +195,13 @@ export function SessionNavActions({
           <p className="truncate text-sm font-semibold text-neutral-900">
             {state.fullName ?? "Пользователь"}
           </p>
-          <p className="truncate text-xs text-neutral-500">{state.email ?? "Без email"}</p>
+          <p className="truncate text-xs text-neutral-500">
+            {state.email ?? "Без email"}
+          </p>
         </div>
       </div>
 
-      {actionError && (
+      {actionError ? (
         <div
           aria-live="assertive"
           className="mx-3 mb-2 rounded-xl border border-red-200 bg-red-50 px-2.5 py-2 text-xs font-medium text-red-700"
@@ -225,16 +209,15 @@ export function SessionNavActions({
         >
           {actionError}
         </div>
-      )}
+      ) : null}
 
-      {state.kind === "adult" && (
+      {state.kind === "adult" ? (
         <div className="border-t border-black/5 px-3 py-2.5">
           <NavSegmentedSwitch className="w-full">
             {ADULT_PROFILE_ORDER.map((profile) => {
               const available = state.availableProfiles.includes(profile);
               const active = state.activeProfile === profile;
               const isSwitchLoading = actionLoading === `switch:${profile}`;
-
               return (
                 <NavPillButton
                   key={profile}
@@ -263,7 +246,7 @@ export function SessionNavActions({
             })}
           </NavSegmentedSwitch>
         </div>
-      )}
+      ) : null}
 
       <div className="border-t border-black/5 px-1 py-1.5">
         <Link

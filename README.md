@@ -1,6 +1,6 @@
 # ShiDao
 
-ShiDao — Next.js продукт для методико-ориентированного обучения: маркетинговая витрина, auth-контур, защищённый продуктовый контур с ролевыми кабинетами (teacher/parent/student), и Supabase-backed data/auth слой.
+ShiDao — Next.js-приложение для операционной работы школы/преподавателя: методики, группы, уроки, домашние задания и role-aware кабинеты (teacher/parent/student).
 
 ## Быстрый старт
 
@@ -12,20 +12,14 @@ npm run dev
 
 Откройте `http://localhost:3000`.
 
-## Runtime env (минимум)
+## Обязательные переменные окружения
 
-- `APP_SESSION_SECRET` — минимум 32 символа.
-- `APP_SESSION_VERSION` — версия инвалидации app-session cookie.
+- `APP_SESSION_SECRET`
+- `APP_SESSION_VERSION`
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY`
 - `NEXT_PUBLIC_SITE_URL` (или `SITE_URL`)
-
-Сгенерировать секрет:
-
-```bash
-openssl rand -hex 32
-```
 
 ## Команды
 
@@ -36,38 +30,22 @@ npm run test
 npm run build
 ```
 
-## Основные поверхности приложения
+## Канонические пользовательские поверхности
 
-- `/(marketing)` — публичный лендинг.
-- `/(auth)` — login/join/recovery/confirm.
-- `/(app)` — onboarding + защищённые product-маршруты.
-- `/dashboard` — role-aware дашборд.
-- `/groups`, `/lessons`, `/methodologies`, `/settings/*` — основной teacher runtime.
+- Публично: `/`, `/login`, `/join`, `/forgot-password`, `/reset-password`, `/auth/confirm`.
+- Приложение: `/onboarding`, `/dashboard`, `/groups`, `/lessons`, `/methodologies`, `/settings/*`.
+- Канонический runtime-урок для всех ролей: `/lessons/[scheduledLessonId]`.
 
-## Где что документировано
+## Документация
 
-См. единый индекс документации: [`docs/index.md`](docs/index.md).
-
-Ключевые документы:
-
-- Архитектура: `docs/architecture/*`
+- Индекс: `docs/index.md`
 - Auth и routing: `docs/authorization-routing.md`
 - Доменная модель: `docs/domain-model.md`
-- Email auth runbook: `docs/email-auth-selfhosted-supabase.md`
-- Текущая схема (читать сначала): `docs/database/current-schema.md`, `supabase/schema/current-schema.sql`
-- Миграции и history: `supabase/migrations/*`, `docs/database/migration-history.md`
-- Отчёты рефакторинга: `docs/refactors/*`
+- Текущая схема БД: `docs/database/current-schema.md`, `supabase/schema/current-schema.sql`
+- История миграций: `docs/database/migration-history.md`, `supabase/migrations/*`
 
-## База данных и миграции
-
-- Текущая схема: `supabase/schema/current-schema.sql`.
-- SQL-миграции: `supabase/migrations`.
-- Перед запуском в окружении применяйте **все** миграции.
-- Seed/демо-данные, оставшиеся в миграциях раннего MVP, отражены в `docs/database/schema-hygiene-2026-04-12.md`.
-
-## Технологии
+## Технический стек
 
 - Next.js App Router
-- React 19
-- TypeScript
+- React 19 + TypeScript
 - Supabase (Auth + Postgres + RLS)
