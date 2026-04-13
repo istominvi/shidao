@@ -43,6 +43,14 @@ function compactText(items: Array<string | undefined>) {
   );
 }
 
+function normalizeBilingualTitlePart(value: string) {
+  return value.replace(/\s*[—–-]\s*/g, " ").trim();
+}
+
+function joinBilingualTitle(first: string, second: string) {
+  return `${normalizeBilingualTitlePart(first)} – ${normalizeBilingualTitlePart(second)}`;
+}
+
 function teacherFacingMethodologyTitle(methodology: {
   title: string;
   metadata?: MethodologyMetadata | null;
@@ -51,12 +59,12 @@ function teacherFacingMethodologyTitle(methodology: {
   const titleRu = clean(methodology.metadata?.titleRu);
   const titleNative = clean(methodology.metadata?.titleNative);
 
-  if (titleRu && titleNative) return `${titleRu} — ${titleNative}`;
-  if (title.includes("—")) return title;
-  if (titleRu && title && title !== titleRu) return `${titleRu} — ${title}`;
+  if (titleRu && titleNative) return joinBilingualTitle(titleRu, titleNative);
+  if (titleRu && title && title !== titleRu) return joinBilingualTitle(titleRu, title);
   if (titleNative && title && title !== titleNative)
-    return `${title} — ${titleNative}`;
-  return title || titleRu || titleNative;
+    return joinBilingualTitle(title, titleNative);
+
+  return title.replace(/\s*[—]\s*/g, " – ") || titleRu || titleNative;
 }
 
 function withFallbackMetadata(

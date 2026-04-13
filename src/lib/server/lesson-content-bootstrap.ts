@@ -70,6 +70,10 @@ function stableUuid(seed: string): string {
   return `${hash.slice(0, 8)}-${hash.slice(8, 12)}-${hash.slice(12, 16)}-${hash.slice(16, 20)}-${hash.slice(20, 32)}`;
 }
 
+function normalizeMethodologyDisplayTitle(title: string) {
+  return title.trim().replace(/\s*[—]\s*/g, " – ");
+}
+
 export function buildFixtureBootstrapRows(options?: {
   scheduledLessonClassId?: string;
 }) {
@@ -105,7 +109,7 @@ export function buildFixtureBootstrapRows(options?: {
     methodologyRow: {
       id: methodologyId,
       slug: lessonContentFixtureMethodology.slug,
-      title: lessonContentFixtureMethodology.title,
+      title: normalizeMethodologyDisplayTitle(lessonContentFixtureMethodology.title),
       short_description: lessonContentFixtureMethodology.shortDescription ?? null,
       metadata: lessonContentFixtureMethodology.metadata ?? {},
     },
