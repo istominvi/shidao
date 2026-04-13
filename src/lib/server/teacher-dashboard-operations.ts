@@ -309,7 +309,6 @@ async function buildOperationsSnapshot(
 function buildTeacherGroupActions() {
   return [
     { label: "Добавить группу", href: `${ROUTES.groups}?create=1`, tone: "secondary" as const },
-    { label: "Добавить ученика", href: ROUTES.studentsNew, tone: "secondary" as const },
   ];
 }
 

@@ -10,6 +10,7 @@ import { TeacherTableCard, TeacherTableEmptyState } from "@/components/dashboard
 import { productButtonClassName } from "@/components/ui/button";
 import { Chip } from "@/components/ui/chip";
 import { GroupAssignLessonDialog } from "@/components/lessons/group-assign-lesson-dialog";
+import { CreateStudentDialog } from "@/components/students/create-student-dialog";
 import {
   ProductTable,
   ProductTableBody,
@@ -29,6 +30,11 @@ import {
   getTeacherGroupOverview,
   parseGroupScopedLessonFormData,
 } from "@/lib/server/teacher-groups";
+import {
+  attachStudentToClassAsAdmin,
+  createStudentAuthUser,
+  insertStudentRow,
+} from "@/lib/server/supabase-admin";
 
 function withMessage(
   groupId: string,
@@ -90,6 +96,56 @@ export default async function TeacherGroupPage({
     }
   }
 
+  async function createStudentAction(formData: FormData) {
+    "use server";
+
+    try {
+      const actionResolution = await resolveAccessPolicy();
+      assertTeacherGroupsAccess(actionResolution);
+
+      const login = String(formData.get("login") ?? "")
+        .trim()
+        .toLowerCase();
+      const password = String(formData.get("password") ?? "");
+      const fullName = String(formData.get("fullName") ?? "").trim();
+
+      if (!login || password.length < 8) {
+        throw new Error("Нужны логин и пароль не короче 8 символов.");
+      }
+
+      const createdAuth = await createStudentAuthUser({
+        login,
+        password,
+        fullName: fullName || null,
+      });
+
+      const studentId = await insertStudentRow({
+        userId: createdAuth.userId,
+        login,
+        internalAuthEmail: createdAuth.email,
+        fullName: fullName || null,
+      });
+
+      if (!studentId) {
+        throw new Error("Не удалось создать профиль ученика.");
+      }
+
+      await attachStudentToClassAsAdmin({ classId: groupId, studentId });
+
+      revalidatePath(ROUTES.dashboard);
+      revalidatePath(ROUTES.groups);
+      revalidatePath(`${ROUTES.groups}/${groupId}`);
+      redirect(withMessage(groupId, "saved", "Ученик создан и добавлен в группу."));
+    } catch (error) {
+      if (isRedirectError(error)) {
+        throw error;
+      }
+      const message =
+        error instanceof Error ? error.message : "Не удалось создать ученика.";
+      redirect(withMessage(groupId, "error", message));
+    }
+  }
+
   const query = await searchParams;
 
   return (
@@ -134,13 +190,16 @@ export default async function TeacherGroupPage({
           )}
           actions={(
             <>
-              <Link
-                href={`${ROUTES.studentsNew}?groupId=${encodeURIComponent(readModel.group.id)}`}
-                className={productButtonClassName("secondary")}
-              >
-                <UserPlus className="h-4 w-4" aria-hidden="true" />
-                Добавить ученика
-              </Link>
+              <CreateStudentDialog
+                action={createStudentAction}
+                triggerClassName={productButtonClassName("secondary")}
+                triggerContent={(
+                  <>
+                    <UserPlus className="h-4 w-4" aria-hidden="true" />
+                    Добавить ученика
+                  </>
+                )}
+              />
               {readModel.schedule.canSchedule ? (
                 <GroupAssignLessonDialog
                   lessons={readModel.schedule.lessonOptions}
@@ -160,11 +219,7 @@ export default async function TeacherGroupPage({
 
         <TeacherTableCard
           title="Ученики группы"
-          headerAction={(
-            <Link href={`${ROUTES.studentsNew}?groupId=${encodeURIComponent(readModel.group.id)}`} className="text-sm text-sky-700 underline underline-offset-2">
-              Создать и добавить ученика
-            </Link>
-          )}
+          headerAction={null}
         >
           <ProductTable className="min-w-full">
             <ProductTableHead>
