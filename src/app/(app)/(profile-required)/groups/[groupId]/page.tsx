@@ -12,14 +12,17 @@ import { Chip } from "@/components/ui/chip";
 import { GroupAssignLessonDialog } from "@/components/lessons/group-assign-lesson-dialog";
 import { CreateStudentDialog } from "@/components/students/create-student-dialog";
 import {
+  ProductTableActionCell,
   ProductTable,
   ProductTableBody,
   ProductTableCell,
   ProductTableHead,
   ProductTableHeaderCell,
   ProductTableHeaderRow,
+  ProductTablePrimaryCell,
   ProductTableRow,
   ProductTableTruncate,
+  productTableActionLinkClassName,
 } from "@/components/ui/product-table";
 import { ROUTES } from "@/lib/auth";
 import { resolveAccessPolicy } from "@/lib/server/access-policy";
@@ -232,22 +235,22 @@ export default async function TeacherGroupPage({
             <ProductTableBody>
               {readModel.students.map((student) => (
                 <ProductTableRow key={student.id}>
-                  <ProductTableCell className="max-w-0 font-semibold text-neutral-950">
+                  <ProductTablePrimaryCell className="max-w-0">
                     <ProductTableTruncate title={student.displayName}>{student.displayName}</ProductTableTruncate>
-                  </ProductTableCell>
+                  </ProductTablePrimaryCell>
                   <ProductTableCell className="max-w-0">
                     <ProductTableTruncate title={student.login ? `@${student.login}` : "—"}>
                       {student.login ? `@${student.login}` : "—"}
                     </ProductTableTruncate>
                   </ProductTableCell>
-                  <ProductTableCell>
+                  <ProductTableActionCell>
                     <Link
                       href={`${ROUTES.groups}/${encodeURIComponent(groupId)}/students/${encodeURIComponent(student.id)}/communication`}
-                      className="text-xs text-sky-700 underline underline-offset-2"
+                      className={productTableActionLinkClassName()}
                     >
                       Открыть коммуникацию
                     </Link>
-                  </ProductTableCell>
+                  </ProductTableActionCell>
                 </ProductTableRow>
               ))}
             </ProductTableBody>
