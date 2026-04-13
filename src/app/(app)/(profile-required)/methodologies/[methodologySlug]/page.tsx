@@ -2,13 +2,16 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import {
   BookOpen,
+  CalendarClock,
   CalendarRange,
   Clock3,
   Eye,
   GraduationCap,
+  Music2,
   Shapes,
-  UserPlus,
   Users,
+  Video,
+  ClipboardCheck,
 } from "lucide-react";
 import { AppCard } from "@/components/app/app-card";
 import { AppPageHeader } from "@/components/app/page-header";
@@ -168,24 +171,38 @@ export default async function MethodologyDetailPage({
             Уроки
           </h2>
           {readModel.lessons.map((lesson) => (
-            <AppCard key={lesson.id} className="p-5" as="article">
+            <AppCard key={lesson.id} className="px-6 py-5" as="article">
               <div>
-                <h3 className="text-lg font-semibold text-neutral-950">
-                  {lesson.title}
-                </h3>
-                <div className="mt-2 flex flex-wrap gap-2 text-xs text-neutral-700">
-                  <span className="landing-chip border border-sky-200 bg-sky-50/90 px-2.5 py-1 text-xs font-semibold text-sky-800">
-                    Видео: {lesson.mediaSummary.videos}
-                  </span>
-                  <span className="landing-chip border border-violet-200 bg-violet-50/90 px-2.5 py-1 text-xs font-semibold text-violet-800">
-                    Песни: {lesson.mediaSummary.songs}
-                  </span>
-                  {lesson.homeworkSignal ? (
-                    <span className="landing-chip border border-emerald-200 bg-emerald-50/90 px-2.5 py-1 text-xs font-semibold text-emerald-800">
-                      ДЗ: Квиз
+                <h3 className="flex flex-wrap items-center gap-2 text-lg font-semibold text-neutral-950">
+                  <span>{lesson.title}</span>
+                  {lesson.mediaSummary.videos > 0 ? (
+                    <span
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-sky-200 bg-sky-50/90 text-sky-800"
+                      title="В уроке есть видео"
+                      aria-label="В уроке есть видео"
+                    >
+                      <Video className="h-4 w-4" aria-hidden="true" />
                     </span>
                   ) : null}
-                </div>
+                  {lesson.mediaSummary.songs > 0 ? (
+                    <span
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-violet-200 bg-violet-50/90 text-violet-800"
+                      title="В уроке есть песни"
+                      aria-label="В уроке есть песни"
+                    >
+                      <Music2 className="h-4 w-4" aria-hidden="true" />
+                    </span>
+                  ) : null}
+                  {lesson.homeworkSignal ? (
+                    <span
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-emerald-200 bg-emerald-50/90 text-emerald-800"
+                      title="Есть домашнее задание: квиз"
+                      aria-label="Есть домашнее задание: квиз"
+                    >
+                      <ClipboardCheck className="h-4 w-4" aria-hidden="true" />
+                    </span>
+                  ) : null}
+                </h3>
                 {lesson.vocabularyPreview.length ? (
                   <p className="mt-2 text-sm text-neutral-700">
                     Лексика: {lesson.vocabularyPreview.join(", ")}
@@ -206,13 +223,13 @@ export default async function MethodologyDetailPage({
                   className="landing-chip border border-neutral-200 bg-white px-3 py-1.5 text-sm font-semibold text-neutral-700 transition hover:-translate-y-0.5 hover:bg-neutral-50"
                 >
                   <Eye className="h-3.5 w-3.5" aria-hidden="true" />
-                  <span>Открыть урок</span>
+                  <span>Смотреть</span>
                 </Link>
                 <Link
                   href={`${toMethodologyLessonRoute(readModel.methodology.slug, lesson.id)}?assign=1`}
                   className="landing-chip border border-neutral-200 bg-white px-3 py-1.5 text-sm font-semibold text-neutral-700 transition hover:-translate-y-0.5 hover:bg-neutral-50"
                 >
-                  <UserPlus className="h-3.5 w-3.5" aria-hidden="true" />
+                  <CalendarClock className="h-3.5 w-3.5" aria-hidden="true" />
                   <span>Назначить</span>
                 </Link>
               </div>
