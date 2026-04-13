@@ -13,8 +13,7 @@ export default async function TeamSettingsPage() {
 
   return (
     <SettingsShell
-      badgeClassName="bg-sky-100 text-sky-700"
-      badgeLabel="Администрирование"
+      eyebrow="Администрирование"
       title="Команда и приглашения"
       description="Отправка приглашения через серверный admin-flow Supabase."
     >
