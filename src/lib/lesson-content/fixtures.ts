@@ -11,9 +11,9 @@ import type {
 export const lessonContentFixtureMethodology: Methodology = {
   id: "methodology:world-around-me",
   slug: "world-around-me",
-  title: "Мир вокруг меня — 我周围的世界",
+  title: "Мир вокруг меня – 我周围的世界",
   shortDescription:
-    "Китайский для детей 5–6 лет: 45-минутные занятия с песнями, видео и активной игровой практикой.",
+    "Китайский для детей 5–6 лет, 45-минутные занятия с песнями, видео и активной игровой практикой.",
   metadata: {
     locale: "zh-CN",
     level: "Beginner · Pre-A1",

@@ -519,7 +519,7 @@ Lesson body — это **упорядоченный сценарий** из ти
 
 ## 17) Bootstrap baseline на апрель 2026 (MVP, первый реальный импорт)
 
-- В storage bootstrap загружается одна реальная методология: `我周围的世界` / `Мир вокруг меня`.
+- В storage bootstrap загружается одна реальная методология: `Мир вокруг меня – 我周围的世界`.
 - Загружается один канонический урок методологии: `Урок 1. Животные на ферме`.
 - В урок импортируются типизированные ordered blocks v1 (intro/video/vocabulary/prompts/guided activities/worksheet/song/wrap-up) без runtime overrides.
 - Для media используются reusable assets (`farm animals` video/song, workbook pages 3–4, Appendix 1) без поддельных URL.

@@ -12,3 +12,9 @@ test("methodology lesson read model keeps canonical homework and source student 
   assert.equal(source.includes('"invalid_payload"'), true);
   assert.equal(source.includes('"load_failed"'), true);
 });
+
+test("teacher-facing methodology title formatter normalizes bilingual separator to en dash", () => {
+  assert.equal(source.includes("function joinBilingualTitle"), true);
+  assert.equal(source.includes(" – "), true);
+  assert.equal(source.includes("`${titleRu} — ${titleNative}`"), false);
+});
