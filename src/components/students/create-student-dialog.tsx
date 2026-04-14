@@ -5,7 +5,7 @@ import { useFormStatus } from "react-dom";
 import type { ReactNode } from "react";
 import { Button, productButtonClassName } from "@/components/ui/button";
 import { DialogShell } from "@/components/ui/dialog-shell";
-import { FieldHint, FieldLabel, FormField } from "@/components/ui/form-field";
+import { FieldLabel, FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
 
 type CreateStudentDialogProps = {
@@ -51,7 +51,6 @@ export function CreateStudentDialog({
             <FormField>
               <FieldLabel htmlFor="create-student-password">Пароль</FieldLabel>
               <Input id="create-student-password" name="password" type="password" required minLength={8} />
-              <FieldHint>Минимум 8 символов.</FieldHint>
             </FormField>
             <div className="dialog-shell-actions">
               <Button type="button" variant="secondary" onClick={() => setOpen(false)}>

@@ -69,8 +69,8 @@ export function GroupAssignLessonDialog({
               <FieldLabel htmlFor="group-assign-time">Время</FieldLabel>
               <Input id="group-assign-time" type="time" name="time" required />
             </FormField>
-            <fieldset className="space-y-2 md:col-span-2">
-              <legend className="form-field-label">Формат</legend>
+            <fieldset className="space-y-2.5 md:col-span-2">
+              <legend className="form-field-label mb-1 block">Формат</legend>
               <input type="hidden" name="format" value={format} />
               <SegmentedControl
                 ariaLabel="Формат занятия"

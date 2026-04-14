@@ -354,6 +354,7 @@ a {
 
 .dialog-shell-close {
   display: inline-flex;
+  cursor: pointer;
   height: 2rem;
   width: 2rem;
   flex-shrink: 0;
