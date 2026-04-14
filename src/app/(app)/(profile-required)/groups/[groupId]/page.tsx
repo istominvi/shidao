@@ -213,7 +213,7 @@ export default async function TeacherGroupPage({
           backHref={ROUTES.groups}
           backLabel="Группы"
           title={readModel.group.label}
-          description={readModel.methodology.assignedMethodologyShortDescription ?? undefined}
+          description="Моя первая группа - 5 человек"
           meta={(
             <>
               {query.saved ? (
