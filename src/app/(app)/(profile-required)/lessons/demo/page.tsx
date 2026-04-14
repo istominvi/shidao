@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { AppPageHeader } from "@/components/app/page-header";
 import { TopNav } from "@/components/top-nav";
+import { SurfaceCard } from "@/components/ui/surface-card";
 import { ROUTES, toLessonWorkspaceRoute } from "@/lib/auth";
 import { resolveAccessPolicy } from "@/lib/server/access-policy";
 import { bootstrapLessonContentFixtureAdmin } from "@/lib/server/lesson-content-bootstrap";
@@ -65,7 +66,7 @@ export default async function DemoTeacherLessonBootstrapPage() {
             title="Не удалось открыть demo-урок"
             description="Bootstrap lesson-content не выполнился автоматически."
           />
-          <section className="landing-surface rounded-3xl border border-white/80 p-6">
+          <SurfaceCard as="section" className="rounded-3xl border border-white/80 p-6">
             <p className="rounded-xl border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-800">
               {message}
             </p>
@@ -81,7 +82,7 @@ export default async function DemoTeacherLessonBootstrapPage() {
                 Вернуться в dashboard
               </Link>
             </p>
-          </section>
+          </SurfaceCard>
         </div>
       </main>
     );

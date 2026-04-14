@@ -1,5 +1,6 @@
 import { type ReactNode } from "react";
 import { TopNav } from "@/components/top-nav";
+import { Chip } from "@/components/ui/chip";
 
 type DashboardShellProps = {
   title: string;
@@ -11,11 +12,11 @@ type DashboardShellProps = {
 
 const roleToneClass: Record<
   NonNullable<DashboardShellProps["roleTone"]>,
-  string
+  "amber" | "sky" | "violet"
 > = {
-  parent: "bg-lime-100/85",
-  teacher: "bg-sky-100/80",
-  student: "bg-fuchsia-100/75",
+  parent: "amber",
+  teacher: "sky",
+  student: "violet",
 };
 
 export function DashboardShell({
@@ -30,12 +31,13 @@ export function DashboardShell({
       <div className="landing-noise" aria-hidden="true" />
       <TopNav />
       <div className="container py-6 md:py-8">
-        <section className="dashboard-hero landing-surface relative z-0 border border-white/70 shadow-[0_24px_72px_rgba(20,20,20,0.1)] backdrop-blur-xl">
-          <p
-            className={`landing-chip text-xs uppercase tracking-[0.16em] ${roleToneClass[roleTone]}`}
+        <section className="dashboard-hero product-hero-card relative z-0">
+          <Chip
+            tone={roleToneClass[roleTone]}
+            className="w-fit text-xs uppercase tracking-[0.16em]"
           >
             {roleLabel}
-          </p>
+          </Chip>
           <h1 className="mt-4 text-4xl font-black tracking-[-0.03em] md:text-6xl">
             {title}
           </h1>

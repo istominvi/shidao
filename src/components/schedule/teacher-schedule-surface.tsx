@@ -214,7 +214,10 @@ export function TeacherScheduleSurface({
 
 function ScheduleEventLink({ event }: { event: TeacherScheduleEvent }) {
   return (
-    <Link href={event.href} className="landing-card block cursor-pointer p-3 hover:border-sky-300">
+    <Link
+      href={event.href}
+      className="surface-card block cursor-pointer rounded-2xl border border-neutral-200 p-3 transition-colors hover:border-sky-300"
+    >
       <p className="text-sm font-semibold text-neutral-900">{event.groupLabel}</p>
       <p className="text-xs text-neutral-600">{event.lessonTitle}</p>
       <p className="mt-1 text-[11px] text-neutral-500">
