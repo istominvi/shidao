@@ -77,28 +77,15 @@ export function SiteHeader({
   };
 
   return (
-    <header
-      className={classNames(
-        "site-header",
-        variant === "product" ? "site-header-product" : "site-header-marketing",
-        className,
-      )}
-    >
+    <header className={classNames("site-header", className)}>
       <NavigationHeaderShell
         className={classNames(
           "site-header-shell",
-          variant === "product" && "site-header-shell-product",
           variant === "marketing-hero" && "site-header-shell-marketing",
           shellClassName,
         )}
       >
-        <Link
-          href={brandHref}
-          className={classNames(
-            "site-header-brand text-xl tracking-tight",
-            variant === "product" ? "font-bold" : "font-black",
-          )}
-        >
+        <Link href={brandHref} className="site-header-brand text-xl font-black tracking-tight">
           {brandText}
           {hasTrademarkMark ? (
             <span className="site-header-brand-mark">™</span>

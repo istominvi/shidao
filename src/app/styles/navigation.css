@@ -14,22 +14,8 @@
   --header-pill-text: #3f3f46;
   --header-pill-hover-bg: rgba(20, 20, 20, 0.06);
   --header-pill-active-bg: #141414;
-  --header-pill-active-border: rgba(20, 20, 20, 0.84);
+  --header-pill-active-border: transparent;
   --header-pill-focus: rgba(20, 20, 20, 0.24);
-
-  --product-header-shell-radius: 1.1rem;
-  --product-header-shell-bg: rgba(255, 255, 255, 0.96);
-  --product-header-shell-border: rgba(20, 20, 20, 0.1);
-  --product-header-shell-shadow:
-    0 10px 24px rgba(20, 20, 20, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.78);
-  --product-header-pill-radius: 0.9rem;
-  --product-header-pill-text: #525a68;
-  --product-header-pill-hover-bg: rgba(20, 20, 20, 0.045);
-  --product-header-pill-active-bg: rgba(255, 255, 255, 0.98);
-  --product-header-pill-active-border: rgba(20, 20, 20, 0.16);
-  --product-header-pill-active-shadow:
-    0 2px 8px rgba(20, 20, 20, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.82);
-  --product-header-focus-ring: rgba(20, 20, 20, 0.12);
 }
 
 .site-header {
@@ -54,15 +40,7 @@
 }
 
 .site-header-shell-marketing {
-  background: rgba(255, 255, 255, 0.76);
-  backdrop-filter: blur(10px);
-}
-
-.site-header-shell-product {
-  border-radius: var(--product-header-shell-radius);
-  border-color: var(--product-header-shell-border);
-  background: var(--product-header-shell-bg);
-  box-shadow: var(--product-header-shell-shadow);
+  background: var(--header-shell-bg);
 }
 
 @media (min-width: 768px) {
@@ -75,11 +53,6 @@
 
 .site-header-brand {
   white-space: nowrap;
-}
-
-.site-header-product .site-header-brand {
-  color: #171717;
-  letter-spacing: -0.015em;
 }
 
 .site-header-brand-mark {
@@ -129,7 +102,7 @@
   align-items: center;
   justify-content: center;
   border-radius: var(--header-pill-radius);
-  border: 1px solid transparent;
+  border: none;
   padding: 0.45rem var(--header-pill-padding-x);
   line-height: 1.2;
   color: #262626;
@@ -137,7 +110,6 @@
   transition:
     background-color 180ms ease,
     color 180ms ease,
-    border-color 180ms ease,
     box-shadow 180ms ease,
     opacity 220ms ease;
 }
@@ -150,7 +122,6 @@
 .nav-pill-active {
   background: var(--header-pill-active-bg);
   color: #fff;
-  border-color: var(--header-pill-active-border);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16);
 }
 
@@ -171,35 +142,6 @@
   box-shadow: 0 0 0 3px var(--header-pill-focus);
 }
 
-.site-header-product .site-header-nav-pill {
-  border-radius: var(--product-header-pill-radius);
-  color: var(--product-header-pill-text);
-  font-weight: 600;
-  letter-spacing: -0.005em;
-}
-
-.site-header-product .site-header-nav-pill.nav-pill-inactive:hover,
-.site-header-product .site-header-nav-pill.nav-pill-inactive:focus-visible {
-  background: var(--product-header-pill-hover-bg);
-  border-color: rgba(20, 20, 20, 0.06);
-  color: #2f3746;
-}
-
-.site-header-product .site-header-nav-pill.nav-pill-active,
-.site-header-product .site-header-nav-pill.nav-pill-active:hover,
-.site-header-product .site-header-nav-pill.nav-pill-active:focus-visible {
-  background: var(--product-header-pill-active-bg);
-  color: #1f2937;
-  border-color: var(--product-header-pill-active-border);
-  box-shadow: var(--product-header-pill-active-shadow);
-}
-
-.site-header-product .site-header-nav-pill:focus-visible {
-  box-shadow:
-    var(--product-header-pill-active-shadow),
-    0 0 0 3px var(--product-header-focus-ring);
-}
-
 .nav-pill-unavailable {
   cursor: not-allowed;
   opacity: 0.42;
@@ -215,35 +157,17 @@
   font-weight: 600;
   transition:
     background-color 180ms ease,
-    border-color 180ms ease,
     box-shadow 180ms ease;
+}
+
+.nav-user-trigger:hover,
+.nav-user-trigger:focus-visible {
+  background: var(--header-pill-hover-bg);
 }
 
 .nav-user-trigger:focus-visible {
   outline: none;
-}
-
-.nav-user-trigger-product {
-  border: 1px solid rgba(20, 20, 20, 0.12);
-  border-radius: 0.95rem;
-  background: rgba(255, 255, 255, 0.98);
-  color: #171717;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.82);
-}
-
-.nav-user-trigger-product:hover,
-.nav-user-trigger-product:focus-visible {
-  border-color: rgba(20, 20, 20, 0.18);
-  background: #fff;
-}
-
-.nav-user-trigger-product:focus-visible {
   box-shadow: 0 0 0 3px rgba(20, 20, 20, 0.1);
-}
-
-.nav-user-trigger-landing:hover,
-.nav-user-trigger-landing:focus-visible {
-  background: var(--header-pill-hover-bg);
 }
 
 .nav-dropdown-panel {
@@ -282,7 +206,7 @@
   width: 100%;
   display: block;
   cursor: pointer;
-  border: 1px solid transparent;
+  border: none;
   border-radius: 0.75rem;
   padding: 0.55rem 0.75rem;
   text-align: left;
@@ -297,7 +221,6 @@
 .nav-dropdown-item:hover,
 .nav-dropdown-item:focus-visible {
   background: rgba(20, 20, 20, 0.06);
-  border-color: rgba(20, 20, 20, 0.08);
 }
 
 .nav-dropdown-item:focus-visible {
