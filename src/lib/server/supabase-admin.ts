@@ -1001,6 +1001,81 @@ export async function attachStudentToClassAsAdmin(input: {
   return rows[0] ?? null;
 }
 
+export async function detachStudentFromClassAsAdmin(input: {
+  classId: string;
+  studentId: string;
+}) {
+  await request(
+    `/rest/v1/class_student?class_id=eq.${input.classId}&student_id=eq.${input.studentId}`,
+    "DELETE",
+    {
+      admin: true,
+      allowEmpty: true,
+    },
+  );
+}
+
+export async function updateStudentProfileAsAdmin(input: {
+  classId: string;
+  studentId: string;
+  login: string;
+  fullName?: string | null;
+  password?: string | null;
+}) {
+  const membershipRows = await request<Array<{ class_id: string; student_id: string }>>(
+    `/rest/v1/class_student?select=class_id,student_id&class_id=eq.${input.classId}&student_id=eq.${input.studentId}&limit=1`,
+    "GET",
+    { admin: true },
+  );
+  if (!membershipRows[0]) {
+    throw new Error("Ученик не найден в этой группе.");
+  }
+
+  const studentRows = await request<
+    Array<{ id: string; user_id: string | null }>
+  >(
+    `/rest/v1/student?select=id,user_id&id=eq.${input.studentId}&limit=1`,
+    "GET",
+    { admin: true },
+  );
+
+  const student = studentRows[0];
+  if (!student?.id || !student.user_id) {
+    throw new Error("Ученик не найден.");
+  }
+
+  const normalizedLogin = normalizeIdentifier(input.login);
+  const studentName = splitStudentFullName(input.fullName ?? null);
+  const nextEmail = toStudentInternalAuthEmail(normalizedLogin);
+
+  await request(`/rest/v1/student?id=eq.${student.id}`, "PATCH", {
+    admin: true,
+    payload: {
+      login: normalizedLogin,
+      internal_auth_email: nextEmail,
+      first_name: studentName.firstName,
+      last_name: studentName.lastName,
+    },
+    allowEmpty: true,
+  });
+
+  await request(`/auth/v1/admin/users/${student.user_id}`, "PUT", {
+    admin: true,
+    payload: {
+      email: nextEmail,
+      user_metadata: {
+        role: "student",
+        login: normalizedLogin,
+        full_name: input.fullName?.trim() || null,
+      },
+      ...(input.password && input.password.length >= 8
+        ? { password: input.password }
+        : {}),
+    },
+    allowEmpty: true,
+  });
+}
+
 export async function updateAuthUserPasswordById(
   userId: string,
   password: string,

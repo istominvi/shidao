@@ -19,11 +19,13 @@ export function TeacherTableCard({
   headerAction,
   children,
 }: TeacherTableCardProps) {
+  const hasTitle = Boolean(title);
+
   return (
     <AppCard className="p-4 md:p-5">
       {title || headerAction ? (
-        <div className="flex items-center justify-between gap-3">
-          {title ? <h2 className="text-xl font-black text-neutral-950">{title}</h2> : <span />}
+        <div className={`flex items-center gap-3 ${hasTitle ? "justify-between" : "justify-start"}`}>
+          {title ? <h2 className="text-xl font-black text-neutral-950">{title}</h2> : null}
           {headerAction}
         </div>
       ) : null}
