@@ -13,11 +13,11 @@ import {
   Video,
   ClipboardCheck,
 } from "lucide-react";
-import { AppCard } from "@/components/app/app-card";
 import { AppPageHeader } from "@/components/app/page-header";
 import { AssignLessonDialog } from "@/components/lessons/assign-lesson-dialog";
-import { Chip } from "@/components/ui/chip";
 import { MethodologyEntityCard } from "@/components/methodologies/methodology-entity-card";
+import { Chip } from "@/components/ui/chip";
+import { SurfaceCard } from "@/components/ui/surface-card";
 import { ActionLink, productActionClassName } from "@/components/ui/action";
 import { TopNav } from "@/components/top-nav";
 import { ROUTES, toLessonWorkspaceRoute, toMethodologyLessonRoute } from "@/lib/auth";
@@ -154,9 +154,9 @@ export default async function MethodologyDetailPage({
         {overviewCards.length > 0 ? (
           <section className="grid gap-4 lg:grid-cols-2">
             {overviewCards.map((card) => (
-              <AppCard
+              <SurfaceCard
                 key={card.title}
-                className={`p-5 md:p-6 ${card.surfaceClass}`}
+                className={`border p-5 md:p-6 ${card.surfaceClass}`}
                 as="article"
               >
                 <h2 className="text-lg font-semibold text-neutral-900">
@@ -172,7 +172,7 @@ export default async function MethodologyDetailPage({
                     </li>
                   ))}
                 </ul>
-              </AppCard>
+              </SurfaceCard>
             ))}
           </section>
         ) : null}
