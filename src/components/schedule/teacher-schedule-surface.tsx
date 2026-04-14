@@ -114,7 +114,7 @@ export function TeacherScheduleSurface({
 
   return (
     <SurfaceCard
-      title={<span className="text-xl font-black">{title}</span>}
+      title={title}
       description={
         subtitle ??
         `Занятий в диапазоне: ${rangeEvents.length}${

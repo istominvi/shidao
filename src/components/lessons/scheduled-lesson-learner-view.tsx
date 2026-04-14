@@ -41,7 +41,7 @@ export function ScheduledLessonLearnerView({
       ) : null}
 
       {(model.studentContent?.sections ?? []).map((section, index) => (
-        <SurfaceCard key={`${section.type}-${index}`} title={<span className="text-xl font-bold">{section.title}</span>}>
+        <SurfaceCard key={`${section.type}-${index}`} title={section.title}>
           {section.type === "lesson_focus" ? (
             <>
               <p className="mt-2 text-sm text-neutral-700">{section.body}</p>
@@ -161,7 +161,7 @@ export function ScheduledLessonLearnerView({
       ))}
 
       {model.role === "student" && model.homework ? (
-        <SurfaceCard title={<span className="text-xl font-bold">Домашнее задание</span>}>
+        <SurfaceCard title="Домашнее задание">
           <article className="mt-3 rounded-2xl border border-neutral-200 bg-white p-3">
             <p className="font-semibold text-neutral-900">
               {model.homework.homeworkTitle}

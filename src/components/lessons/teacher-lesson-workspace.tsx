@@ -64,7 +64,7 @@ export function TeacherLessonWorkspace({
 
         {tab === "conduct" ? (
           <SurfaceCard
-            title={<span className="text-xl font-bold tracking-[-0.02em]">Проведение занятия</span>}
+            title="Проведение занятия"
             description="Обновляйте рабочий статус и заметки по этому занятию."
           >
 
@@ -147,7 +147,7 @@ export function TeacherLessonWorkspace({
         ) : null}
 
         {tab === "chat" ? (
-          <SurfaceCard title={<span className="text-xl font-bold">Чат</span>}>
+          <SurfaceCard title="Чат">
 
             <section className="space-y-2">
               <h3 className="text-sm font-semibold uppercase tracking-[0.12em] text-neutral-500">

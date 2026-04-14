@@ -102,7 +102,7 @@ export function TeacherLessonPedagogicalContent({
 
       <SurfaceCard
         as="article"
-        title={<span className="text-2xl font-bold tracking-[-0.02em]">Ход урока</span>}
+        title="Ход урока"
         actions={<Chip tone="neutral">{lessonFlow.length} этапов</Chip>}
       >
 

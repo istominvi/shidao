@@ -18,7 +18,7 @@ export function ProductTableCard({
 
   return (
     <SurfaceCard
-      title={title ? <span className="text-xl font-black">{title}</span> : undefined}
+      title={title}
       actions={headerAction}
     >
       {controls ? <div>{controls}</div> : null}
