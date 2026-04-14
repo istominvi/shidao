@@ -111,7 +111,7 @@ export default async function MethodologyDetailPage({
     <main className="pb-12">
       <div className="landing-noise" aria-hidden="true" />
       <TopNav />
-      <div className="container space-y-6 py-7 md:py-10">
+      <div className="container space-y-6">
         <AppPageHeader
           backHref={ROUTES.methodologies}
           backLabel="Методики"
