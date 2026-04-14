@@ -99,14 +99,7 @@ export default async function TeacherGroupsPage({
         <DialogShell
           closeHref={ROUTES.groups}
           closeLabel="Закрыть модалку создания группы"
-          title={(
-            <>
-              <span className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.2em] text-sky-700">
-                Создание группы
-              </span>
-              Добавить группу
-            </>
-          )}
+          title="Добавить группу"
           description="Группа создаётся сразу с выбранной методикой."
           panelClassName="max-w-lg"
         >
@@ -130,7 +123,7 @@ export default async function TeacherGroupsPage({
                 <ChevronDown className="product-select-icon h-4 w-4" aria-hidden="true" />
               </FieldControl>
             </FormField>
-            <div className="flex items-center gap-2 pt-1">
+            <div className="dialog-shell-actions">
               <Link href={ROUTES.groups} className={productButtonClassName("secondary")}>Отмена</Link>
               <Button type="submit">Создать группу</Button>
             </div>

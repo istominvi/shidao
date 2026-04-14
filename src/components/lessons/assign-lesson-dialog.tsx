@@ -80,7 +80,7 @@ export function AssignLessonDialog({
               <FieldLabel htmlFor="assign-time">Время</FieldLabel>
               <Input id="assign-time" type="time" name="time" required />
             </FormField>
-            <fieldset className="space-y-2 text-sm text-neutral-700 md:col-span-2">
+            <fieldset className="space-y-2 md:col-span-2">
               <legend className="form-field-label">Формат</legend>
               <input type="hidden" name="format" value={format} />
               <SegmentedControl
@@ -106,7 +106,7 @@ export function AssignLessonDialog({
                 <input type="hidden" name="meetingLink" value="" />
               </FormField>
             )}
-            <div className="mt-3 flex justify-end gap-2 md:col-span-2">
+            <div className="dialog-shell-actions md:col-span-2">
               <Button type="button" variant="secondary" onClick={() => setOpen(false)}>
                 Отмена
               </Button>

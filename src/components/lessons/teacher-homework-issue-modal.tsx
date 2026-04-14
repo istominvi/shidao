@@ -110,7 +110,7 @@ export function TeacherHomeworkIssueModal({
           />
         </FormField>
 
-        <div className="flex items-center justify-end gap-2">
+        <div className="dialog-shell-actions">
           <Button type="button" variant="secondary" onClick={onClose}>
             Отмена
           </Button>

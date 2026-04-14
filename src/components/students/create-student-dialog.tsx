@@ -53,7 +53,7 @@ export function CreateStudentDialog({
               <Input id="create-student-password" name="password" type="password" required minLength={8} />
               <FieldHint>Минимум 8 символов.</FieldHint>
             </FormField>
-            <div className="mt-3 flex justify-end gap-2">
+            <div className="dialog-shell-actions">
               <Button type="button" variant="secondary" onClick={() => setOpen(false)}>
                 Отмена
               </Button>
