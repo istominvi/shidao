@@ -8,6 +8,7 @@ import { TeacherGroupsCard } from "@/components/dashboard/teacher-groups-card";
 import { ChevronDown } from "lucide-react";
 import { Button, productButtonClassName } from "@/components/ui/button";
 import { Input, Select } from "@/components/ui/input";
+import { SurfaceCard } from "@/components/ui/surface-card";
 import { ROUTES, toGroupRoute } from "@/lib/auth";
 import { listMethodologiesAdmin } from "@/lib/server/lesson-content-repository";
 import { resolveAccessPolicy } from "@/lib/server/access-policy";
@@ -99,7 +100,10 @@ export default async function TeacherGroupsPage({
             className="absolute inset-0 bg-neutral-950/40 backdrop-blur-[1px]"
             aria-label="Закрыть модалку создания группы"
           />
-          <section className="relative z-10 w-full max-w-lg landing-surface rounded-3xl border border-white/80 bg-[linear-gradient(150deg,rgba(255,255,255,0.97),rgba(255,255,255,0.92))] p-6 shadow-[0_24px_72px_rgba(15,23,42,0.28)] backdrop-blur-xl">
+          <SurfaceCard
+            as="section"
+            className="relative z-10 w-full max-w-lg rounded-3xl border border-white/80 bg-[linear-gradient(150deg,rgba(255,255,255,0.97),rgba(255,255,255,0.92))] p-6 shadow-[0_24px_72px_rgba(15,23,42,0.28)] backdrop-blur-xl"
+          >
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-sky-700">Создание группы</p>
@@ -131,7 +135,7 @@ export default async function TeacherGroupsPage({
                 <Button type="submit">Создать группу</Button>
               </div>
             </form>
-          </section>
+          </SurfaceCard>
         </div>
       ) : null}
     </main>

@@ -2,6 +2,10 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { AppPageHeader } from "@/components/app/page-header";
 import { TopNav } from "@/components/top-nav";
+import { Button } from "@/components/ui/button";
+import { Chip } from "@/components/ui/chip";
+import { productControlClassName } from "@/components/ui/input";
+import { SurfaceCard } from "@/components/ui/surface-card";
 import { ROUTES } from "@/lib/auth";
 import { resolveAccessPolicy } from "@/lib/server/access-policy";
 import {
@@ -60,16 +64,24 @@ export default async function TeacherStudentCommunicationPage({
                 <Link
                   key={item}
                   href={`${ROUTES.groups}/${groupId}/students/${studentId}/communication?filter=${item}`}
-                  className={`rounded-full border px-3 py-1 ${item === activeFilter ? "bg-neutral-900 text-white" : "bg-white text-neutral-700"}`}
                 >
-                  {item}
+                  <Chip
+                    tone={item === activeFilter ? "slate" : "neutral"}
+                    className={
+                      item === activeFilter
+                        ? "border-neutral-900 bg-neutral-900 text-white"
+                        : undefined
+                    }
+                  >
+                    {item}
+                  </Chip>
                 </Link>
               ))}
             </div>
           }
         />
 
-        <section className="landing-surface rounded-3xl border border-white/80 p-5 space-y-3">
+        <SurfaceCard as="section" className="rounded-3xl border border-white/80 p-5 space-y-3">
           {readModel.messages.length === 0 ? (
             <p className="text-sm text-neutral-500">Сообщений пока нет.</p>
           ) : (
@@ -109,17 +121,15 @@ export default async function TeacherStudentCommunicationPage({
             <textarea
               name="body"
               rows={3}
-              className="w-full rounded-xl border border-neutral-300 px-3 py-2 text-sm"
+              className={productControlClassName(
+                "input",
+                "w-full rounded-xl px-3 py-2 text-sm",
+              )}
               placeholder="Сообщение ученику"
             />
-            <button
-              type="submit"
-              className="rounded-xl bg-neutral-900 px-3 py-1.5 text-sm font-semibold text-white"
-            >
-              Отправить
-            </button>
+            <Button type="submit">Отправить</Button>
           </form>
-        </section>
+        </SurfaceCard>
       </div>
     </main>
   );

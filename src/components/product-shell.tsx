@@ -1,5 +1,6 @@
 import { type ReactNode } from "react";
 import { TopNav } from "@/components/top-nav";
+import { Chip } from "@/components/ui/chip";
 
 type ProductShellProps = {
   children: ReactNode;
@@ -30,9 +31,9 @@ type PageHeroProps = {
 export function PageHero({ eyebrow, title, description }: PageHeroProps) {
   return (
     <header className="product-hero-card">
-      <p className="landing-chip bg-white/85 text-xs uppercase tracking-[0.14em] text-neutral-700">
+      <Chip tone="neutral" className="w-fit bg-white/85 text-xs uppercase tracking-[0.14em] text-neutral-700">
         {eyebrow}
-      </p>
+      </Chip>
       <h1 className="mt-4 text-4xl font-black leading-[0.95] tracking-[-0.03em] text-neutral-950 md:text-6xl">
         {title}
       </h1>
