@@ -141,7 +141,7 @@ a {
 
 .app-page-header {
   --app-page-header-space: 0.5rem;
-  --app-page-header-padding-block: 20px;
+  --app-page-header-padding-block: 40px;
   --app-page-header-padding-inline: 20px;
   --app-page-header-chip-text-size: 0.875rem;
   --app-page-header-title-size: clamp(1.9rem, 3vw, 2.35rem);
