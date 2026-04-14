@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { AppCard } from "@/components/app/app-card";
+import { SurfaceCard } from "@/components/ui/surface-card";
 import type { TeacherDashboardScheduleEvent } from "@/lib/server/teacher-dashboard-operations";
 import {
   addUtcDays,
@@ -113,20 +113,17 @@ export function TeacherScheduleSurface({
   );
 
   return (
-    <AppCard className="p-4 md:p-5">
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div>
-          <h2 className="text-xl font-black text-neutral-950">{title}</h2>
-          <p className="mt-1 text-xs text-neutral-500">
-            {subtitle ??
-              `Занятий в диапазоне: ${rangeEvents.length}${
-                nextInRange
-                  ? ` · Ближайшее: ${nextInRange.timeRangeLabel}, ${nextInRange.groupLabel}`
-                  : " · Ближайших занятий нет"
-              }`}
-          </p>
-        </div>
-
+    <SurfaceCard
+      title={title}
+      description={
+        subtitle ??
+        `Занятий в диапазоне: ${rangeEvents.length}${
+          nextInRange
+            ? ` · Ближайшее: ${nextInRange.timeRangeLabel}, ${nextInRange.groupLabel}`
+            : " · Ближайших занятий нет"
+        }`
+      }
+      actions={
         <div className="flex flex-wrap items-center gap-2">
           <div className="inline-flex rounded-full border border-neutral-200 bg-white p-1">
             {VISIBLE_VIEWS.map((mode: "day" | "week" | "month") => (
@@ -177,9 +174,10 @@ export function TeacherScheduleSurface({
             →
           </button>
         </div>
-      </div>
+      }
+    >
 
-      <div className="mt-4">
+      <div>
         {viewMode === "day" ? (
           <DayView
             activeDateIso={activeDateIso}
@@ -217,7 +215,7 @@ export function TeacherScheduleSurface({
           </ul>
         </div>
       ) : null}
-    </AppCard>
+    </SurfaceCard>
   );
 }
 

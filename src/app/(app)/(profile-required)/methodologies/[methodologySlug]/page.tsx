@@ -178,9 +178,6 @@ export default async function MethodologyDetailPage({
         ) : null}
 
         <section className="mt-6 space-y-3">
-          <h2 className="px-6 text-xl font-bold tracking-[-0.02em] text-neutral-950">
-            Уроки
-          </h2>
           {readModel.lessons.map((lesson) => (
             <MethodologyEntityCard
               key={lesson.id}

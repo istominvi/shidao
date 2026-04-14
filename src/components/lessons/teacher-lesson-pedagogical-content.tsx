@@ -1,5 +1,5 @@
-import { AppCard } from "@/components/app/app-card";
 import { Chip } from "@/components/ui/chip";
+import { SurfaceCard } from "@/components/ui/surface-card";
 import type { TeacherLessonWorkspacePresentation } from "@/lib/server/teacher-lesson-workspace";
 
 function flowAccentClass(tone: "sky" | "violet" | "emerald" | "amber") {
@@ -37,12 +37,12 @@ export function TeacherLessonPedagogicalContent({
   return (
     <>
       <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <AppCard as="article" className="p-5">
+        <SurfaceCard as="article">
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-neutral-500">Подготовка</p>
           <SummaryList items={quickSummary.prepChecklist.slice(0, 7)} emptyLabel="Чек-лист пока не заполнен." />
-        </AppCard>
+        </SurfaceCard>
 
-        <AppCard as="article" className="p-5">
+        <SurfaceCard as="article">
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-neutral-500">Ключевые слова</p>
           <div className="mt-3 flex flex-wrap gap-1.5">
             {quickSummary.keyWords.length ? (
@@ -55,9 +55,9 @@ export function TeacherLessonPedagogicalContent({
               <p className="text-sm text-neutral-600">Слова не указаны.</p>
             )}
           </div>
-        </AppCard>
+        </SurfaceCard>
 
-        <AppCard as="article" className="p-5">
+        <SurfaceCard as="article">
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-neutral-500">Ключевые фразы</p>
           <div className="mt-3 flex flex-wrap gap-1.5">
             {quickSummary.keyPhrases.length ? (
@@ -70,9 +70,9 @@ export function TeacherLessonPedagogicalContent({
               <p className="text-sm text-neutral-600">Фразы не указаны.</p>
             )}
           </div>
-        </AppCard>
+        </SurfaceCard>
 
-        <AppCard as="article" className="p-5">
+        <SurfaceCard as="article">
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-neutral-500">Ресурсы урока</p>
           <ul className="mt-3 space-y-2 text-sm text-neutral-700">
             {quickSummary.resources.length ? (
@@ -97,16 +97,16 @@ export function TeacherLessonPedagogicalContent({
               <li className="text-neutral-600">Ресурсы не добавлены.</li>
             )}
           </ul>
-        </AppCard>
+        </SurfaceCard>
       </section>
 
-      <AppCard as="article" className="p-5 md:p-6">
-        <div className="flex items-center justify-between gap-3">
-          <h2 className="text-2xl font-bold tracking-[-0.02em] text-neutral-900">Ход урока</h2>
-          <Chip tone="neutral">{lessonFlow.length} этапов</Chip>
-        </div>
+      <SurfaceCard
+        as="article"
+        title="Ход урока"
+        actions={<Chip tone="neutral">{lessonFlow.length} этапов</Chip>}
+      >
 
-        <div className="mt-5 space-y-4">
+        <div className="space-y-4">
           {lessonFlow.map((step) => (
             <article key={step.id} className="relative overflow-hidden rounded-3xl border border-neutral-200/90 bg-white/90 p-4 md:p-5">
               <div aria-hidden="true" className={`pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-r ${flowAccentClass(step.accentTone)}`} />
@@ -219,7 +219,7 @@ export function TeacherLessonPedagogicalContent({
             </article>
           ))}
         </div>
-      </AppCard>
+      </SurfaceCard>
     </>
   );
 }
