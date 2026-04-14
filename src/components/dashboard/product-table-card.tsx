@@ -15,6 +15,7 @@ export function ProductTableCard({
   children,
 }: ProductTableCardProps) {
   const hasTitle = Boolean(title);
+  const tableTopSpacing = controls ? "mt-5" : hasTitle || headerAction ? "mt-4" : undefined;
 
   return (
     <SurfaceCard
@@ -22,7 +23,7 @@ export function ProductTableCard({
       actions={headerAction}
     >
       {controls ? <div>{controls}</div> : null}
-      <div className={hasTitle || headerAction || controls ? "mt-4" : undefined}>
+      <div className={tableTopSpacing}>
         <div className="overflow-x-auto rounded-2xl border border-neutral-200 bg-white/95">
           {children}
         </div>

@@ -247,10 +247,7 @@ export default async function TeacherGroupPage({
           actions={null}
         />
 
-        <section className="space-y-3">
-          <h2 className="px-6 text-xl font-bold tracking-[-0.02em] text-neutral-950">
-            Ученики
-          </h2>
+        <section>
           <GroupStudentsCard
             students={readModel.students.map((student) => ({
               id: student.id,

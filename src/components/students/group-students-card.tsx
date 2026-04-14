@@ -60,8 +60,8 @@ export function GroupStudentsCard({ students, headerActions, updateAction, remov
   return (
     <>
       <ProductTableCard
-        title={undefined}
-        headerAction={<div className="flex flex-wrap items-center justify-start gap-2">{headerActions}</div>}
+        title="Ученики"
+        controls={<div className="flex flex-wrap items-center gap-2">{headerActions}</div>}
       >
         <ProductTable>
           <ProductTableHead>
