@@ -22,6 +22,6 @@ test("methodology lesson page uses shared teacher workspace tabs", () => {
   assert.equal(pageSource.includes("sourceRuntimeNote"), false);
   assert.equal(pageSource.includes("Методика:"), false);
   assert.equal(pageSource.includes("description={readModel.presentation.hero.lessonEssence}"), false);
-  assert.equal(pageSource.includes("methodologyEntityActionClass"), true);
+  assert.equal(pageSource.includes("productActionClassName"), true);
   assert.equal(pageSource.includes("<span>Назначить</span>"), true);
 });

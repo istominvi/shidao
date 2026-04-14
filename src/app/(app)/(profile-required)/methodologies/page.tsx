@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
   BookOpen,
@@ -11,11 +10,9 @@ import {
 } from "lucide-react";
 import { TopNav } from "@/components/top-nav";
 import { AppPageHeader } from "@/components/app/page-header";
-import { SemanticChip } from "@/components/app/semantic-chip";
-import {
-  MethodologyEntityCard,
-  methodologyEntityActionClass,
-} from "@/components/methodologies/methodology-entity-card";
+import { Chip } from "@/components/ui/chip";
+import { MethodologyEntityCard } from "@/components/methodologies/methodology-entity-card";
+import { ActionLink } from "@/components/ui/action";
 import { ROUTES, toMethodologyRoute } from "@/lib/auth";
 import { resolveAccessPolicy } from "@/lib/server/access-policy";
 import {
@@ -51,53 +48,50 @@ export default async function MethodologiesPage() {
               description={methodology.shortDescription}
               badges={
                 <>
-                  <SemanticChip icon={BookOpen} tone="violet" size="md">
+                  <Chip icon={BookOpen} tone="violet" size="md">
                     Уроков: {methodology.lessonCount}
-                  </SemanticChip>
+                  </Chip>
                   {methodology.passport.courseDurationLabel ? (
-                    <SemanticChip icon={CalendarRange} tone="emerald" size="md">
+                    <Chip icon={CalendarRange} tone="emerald" size="md">
                       Курс:{" "}
                       {methodology.passport.courseDurationLabel ===
                       "1 учебный год"
                         ? "1 год"
                         : methodology.passport.courseDurationLabel}
-                    </SemanticChip>
+                    </Chip>
                   ) : null}
                   {methodology.passport.lessonDurationLabel ? (
-                    <SemanticChip icon={Clock3} tone="amber" size="md">
+                    <Chip icon={Clock3} tone="amber" size="md">
                       Урок: {methodology.passport.lessonDurationLabel}
-                    </SemanticChip>
+                    </Chip>
                   ) : null}
                   {methodology.passport.targetAgeLabel ? (
-                    <SemanticChip icon={GraduationCap} tone="sky" size="md">
+                    <Chip icon={GraduationCap} tone="sky" size="md">
                       Возраст: {methodology.passport.targetAgeLabel}
-                    </SemanticChip>
+                    </Chip>
                   ) : null}
                   {methodology.passport.groupSizeLabel ? (
-                    <SemanticChip icon={Users} tone="indigo" size="md">
+                    <Chip icon={Users} tone="indigo" size="md">
                       Группа: {methodology.passport.groupSizeLabel}
-                    </SemanticChip>
+                    </Chip>
                   ) : null}
                   {methodology.passport.activitiesPerLessonLabel ? (
-                    <SemanticChip icon={Shapes} tone="rose" size="md">
+                    <Chip icon={Shapes} tone="rose" size="md">
                       Активностей:{" "}
                       {methodology.passport.activitiesPerLessonLabel
                         .replace(/^Обычно:\s*/i, "")
                         .replace(/^Обычно\s+/i, "")
                         .replace(/\s*активност(?:ей|и)\s*$/i, "")
                         .trim()}
-                    </SemanticChip>
+                    </Chip>
                   ) : null}
                 </>
               }
               actions={
-                <Link
-                  href={toMethodologyRoute(methodology.slug)}
-                  className={methodologyEntityActionClass}
-                >
+                <ActionLink href={toMethodologyRoute(methodology.slug)} className="text-sm">
                   <Eye className="h-3.5 w-3.5" aria-hidden="true" />
                   <span>Смотреть</span>
-                </Link>
+                </ActionLink>
               }
             />
           ))}

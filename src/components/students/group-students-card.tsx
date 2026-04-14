@@ -4,11 +4,12 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useFormStatus } from "react-dom";
 import type { ReactNode } from "react";
-import { TeacherTableCard, TeacherTableEmptyState } from "@/components/dashboard/teacher-table-card";
+import { ProductTableCard } from "@/components/dashboard/product-table-card";
 import {
   ProductTable,
   ProductTableBody,
   ProductTableCell,
+  ProductTableEmptyState,
   ProductTableHead,
   ProductTableHeaderCell,
   ProductTableHeaderRow,
@@ -58,7 +59,7 @@ export function GroupStudentsCard({ students, headerActions, updateAction, remov
 
   return (
     <>
-      <TeacherTableCard
+      <ProductTableCard
         title={undefined}
         headerAction={<div className="flex flex-wrap items-center justify-start gap-2">{headerActions}</div>}
       >
@@ -101,9 +102,9 @@ export function GroupStudentsCard({ students, headerActions, updateAction, remov
           </ProductTableBody>
         </ProductTable>
         {students.length === 0 ? (
-          <TeacherTableEmptyState text="В группе пока нет учеников." />
+          <ProductTableEmptyState text="В группе пока нет учеников." />
         ) : null}
-      </TeacherTableCard>
+      </ProductTableCard>
 
       {selectedStudent ? (
         <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">

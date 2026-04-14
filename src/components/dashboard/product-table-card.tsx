@@ -1,24 +1,19 @@
 import type { ReactNode } from "react";
 import { AppCard } from "@/components/app/app-card";
-import { ProductTableEmptyState } from "@/components/ui/product-table";
 
-type TeacherTableCardProps = {
+type ProductTableCardProps = {
   title?: string;
   controls?: ReactNode;
   headerAction?: ReactNode;
   children: ReactNode;
 };
 
-type TeacherTableEmptyStateProps = {
-  text: string;
-};
-
-export function TeacherTableCard({
+export function ProductTableCard({
   title,
   controls,
   headerAction,
   children,
-}: TeacherTableCardProps) {
+}: ProductTableCardProps) {
   const hasTitle = Boolean(title);
 
   return (
@@ -36,8 +31,4 @@ export function TeacherTableCard({
       </div>
     </AppCard>
   );
-}
-
-export function TeacherTableEmptyState({ text }: TeacherTableEmptyStateProps) {
-  return <ProductTableEmptyState text={text} />;
 }

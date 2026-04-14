@@ -18,7 +18,7 @@ import {
   ProductTableTruncate,
 } from "@/components/ui/product-table";
 import type { TeacherGroupOperationsRow } from "@/lib/server/teacher-dashboard-operations";
-import { TeacherTableCard } from "./teacher-table-card";
+import { ProductTableCard } from "./product-table-card";
 
 type TeacherGroupsCardProps = {
   title?: string;
@@ -59,7 +59,7 @@ export function TeacherGroupsCard({
   }
 
   return (
-    <TeacherTableCard
+    <ProductTableCard
       title={title}
       controls={(
         <div className="product-control-rail">
@@ -153,6 +153,6 @@ export function TeacherGroupsCard({
         </ProductTableBody>
       </ProductTable>
       {rows.length === 0 ? <ProductTableEmptyState text={emptyStateText} /> : null}
-    </TeacherTableCard>
+    </ProductTableCard>
   );
 }
