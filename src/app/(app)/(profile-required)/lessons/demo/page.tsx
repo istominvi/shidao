@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { AppPageHeader } from "@/components/app/page-header";
 import { TopNav } from "@/components/top-nav";
+import { Alert } from "@/components/ui/alert";
 import { SurfaceCard } from "@/components/ui/surface-card";
 import { ROUTES, toLessonWorkspaceRoute } from "@/lib/auth";
 import { resolveAccessPolicy } from "@/lib/server/access-policy";
@@ -67,9 +68,7 @@ export default async function DemoTeacherLessonBootstrapPage() {
             description="Bootstrap lesson-content не выполнился автоматически."
           />
           <SurfaceCard as="section" className="rounded-3xl border border-white/80 p-6">
-            <p className="rounded-xl border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-800">
-              {message}
-            </p>
+            <Alert tone="error">{message}</Alert>
             <p className="mt-4 text-sm text-neutral-700">
               Проверьте server env: <code>NEXT_PUBLIC_SUPABASE_URL</code> и{" "}
               <code>SUPABASE_SERVICE_ROLE_KEY</code>, затем повторите.

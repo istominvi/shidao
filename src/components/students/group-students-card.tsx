@@ -18,6 +18,8 @@ import {
   ProductTableTruncate,
 } from "@/components/ui/product-table";
 import { Button } from "@/components/ui/button";
+import { DialogShell } from "@/components/ui/dialog-shell";
+import { FieldLabel, FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
 
 type GroupStudentRow = {
@@ -107,51 +109,42 @@ export function GroupStudentsCard({ students, headerActions, updateAction, remov
       </ProductTableCard>
 
       {selectedStudent ? (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
-          <button
-            aria-label="Закрыть"
-            className="absolute inset-0 bg-neutral-950/40"
-            onClick={() => setSelectedId(null)}
-          />
-          <section
-            role="dialog"
-            aria-modal="true"
-            className="relative z-10 w-full max-w-xl rounded-3xl border border-white/80 bg-white px-6 py-5 shadow-2xl"
-          >
-            <h2 className="text-2xl font-bold text-neutral-950">Ученик</h2>
-            <p className="mt-1 text-sm text-neutral-500">Измените данные ученика, перейдите в коммуникацию или удалите ученика из группы.</p>
+        <DialogShell
+          onClose={() => setSelectedId(null)}
+          title="Ученик"
+          description="Измените данные ученика, перейдите в коммуникацию или удалите ученика из группы."
+          panelClassName="max-w-xl"
+        >
+          <form action={updateAction} className="mt-4 grid gap-3">
+            <input type="hidden" name="studentId" value={selectedStudent.id} />
+            <FormField>
+              <FieldLabel htmlFor="group-student-full-name">Имя</FieldLabel>
+              <Input id="group-student-full-name" name="fullName" defaultValue={selectedStudent.displayName} placeholder="Например, Анна Иванова" />
+            </FormField>
+            <FormField>
+              <FieldLabel htmlFor="group-student-login">Логин</FieldLabel>
+              <Input id="group-student-login" name="login" required defaultValue={selectedStudent.login ?? ""} placeholder="anna.ivanova" />
+            </FormField>
+            <FormField>
+              <FieldLabel htmlFor="group-student-password">Новый пароль</FieldLabel>
+              <Input id="group-student-password" name="password" type="password" minLength={8} placeholder="Оставьте пустым, если не меняется" />
+            </FormField>
+            <div className="dialog-shell-actions flex-wrap">
+              <Link href={selectedStudent.communicationHref} className="inline-flex h-10 items-center rounded-xl border border-neutral-300 px-4 text-sm font-semibold text-neutral-800 hover:bg-neutral-100">
+                Написать ученику
+              </Link>
+              <Button type="button" variant="secondary" onClick={() => setSelectedId(null)}>
+                Отмена
+              </Button>
+              <SaveButton />
+            </div>
+          </form>
 
-            <form action={updateAction} className="mt-4 grid gap-3">
-              <input type="hidden" name="studentId" value={selectedStudent.id} />
-              <label className="space-y-2 text-sm text-neutral-700">
-                <span>Имя</span>
-                <Input name="fullName" defaultValue={selectedStudent.displayName} placeholder="Например, Анна Иванова" />
-              </label>
-              <label className="space-y-2 text-sm text-neutral-700">
-                <span>Логин</span>
-                <Input name="login" required defaultValue={selectedStudent.login ?? ""} placeholder="anna.ivanova" />
-              </label>
-              <label className="space-y-2 text-sm text-neutral-700">
-                <span>Новый пароль</span>
-                <Input name="password" type="password" minLength={8} placeholder="Оставьте пустым, если не меняется" />
-              </label>
-              <div className="mt-3 flex flex-wrap justify-end gap-2">
-                <Link href={selectedStudent.communicationHref} className="inline-flex h-11 items-center rounded-full border border-neutral-300 px-4 text-sm font-semibold text-neutral-800 hover:bg-neutral-100">
-                  Написать ученику
-                </Link>
-                <Button type="button" variant="secondary" onClick={() => setSelectedId(null)}>
-                  Отмена
-                </Button>
-                <SaveButton />
-              </div>
-            </form>
-
-            <form action={removeAction} className="mt-3 flex justify-end">
-              <input type="hidden" name="studentId" value={selectedStudent.id} />
-              <RemoveButton />
-            </form>
-          </section>
-        </div>
+          <form action={removeAction} className="dialog-shell-actions !mt-2">
+            <input type="hidden" name="studentId" value={selectedStudent.id} />
+            <RemoveButton />
+          </form>
+        </DialogShell>
       ) : null}
     </>
   );
