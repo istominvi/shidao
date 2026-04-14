@@ -4,7 +4,7 @@ import { isRedirectError } from "next/dist/client/components/redirect-error";
 import { CalendarClock } from "lucide-react";
 import { AppPageHeader } from "@/components/app/page-header";
 import { AssignLessonDialog } from "@/components/lessons/assign-lesson-dialog";
-import { methodologyEntityActionClass } from "@/components/methodologies/methodology-entity-card";
+import { productActionClassName } from "@/components/ui/action";
 import { TeacherMethodologyLessonWorkspace } from "@/components/lessons/teacher-methodology-lesson-workspace";
 import { TopNav } from "@/components/top-nav";
 import { ROUTES, toLessonWorkspaceRoute, toMethodologyRoute } from "@/lib/auth";
@@ -66,7 +66,7 @@ export default async function MethodologyLessonPage({ params, searchParams }: { 
               groups={readModel.groups}
               lessonTitle={readModel.lesson.shell.title}
               defaultOpen={query.assign === "1"}
-              triggerClassName={methodologyEntityActionClass}
+              triggerClassName={productActionClassName("text-sm")}
               triggerContent={
                 <>
                   <CalendarClock className="h-3.5 w-3.5" aria-hidden="true" />

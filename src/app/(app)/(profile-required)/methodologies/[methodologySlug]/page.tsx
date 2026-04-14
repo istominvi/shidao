@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { revalidatePath } from "next/cache";
 import { notFound, redirect } from "next/navigation";
 import {
@@ -17,11 +16,9 @@ import {
 import { AppCard } from "@/components/app/app-card";
 import { AppPageHeader } from "@/components/app/page-header";
 import { AssignLessonDialog } from "@/components/lessons/assign-lesson-dialog";
-import { SemanticChip } from "@/components/app/semantic-chip";
-import {
-  MethodologyEntityCard,
-  methodologyEntityActionClass,
-} from "@/components/methodologies/methodology-entity-card";
+import { Chip } from "@/components/ui/chip";
+import { MethodologyEntityCard } from "@/components/methodologies/methodology-entity-card";
+import { ActionLink, productActionClassName } from "@/components/ui/action";
 import { TopNav } from "@/components/top-nav";
 import { ROUTES, toLessonWorkspaceRoute, toMethodologyLessonRoute } from "@/lib/auth";
 import { resolveAccessPolicy } from "@/lib/server/access-policy";
@@ -122,33 +119,33 @@ export default async function MethodologyDetailPage({
           description={readModel.methodology.shortDescription}
           meta={
             <>
-              <SemanticChip icon={BookOpen} tone="violet" size="md">
+              <Chip icon={BookOpen} tone="violet" size="md">
                 Уроков: {readModel.overview.availableLessonsCount}
-              </SemanticChip>
+              </Chip>
               {normalizedCourseDurationLabel ? (
-                <SemanticChip icon={CalendarRange} tone="emerald" size="md">
+                <Chip icon={CalendarRange} tone="emerald" size="md">
                   Курс: {normalizedCourseDurationLabel}
-                </SemanticChip>
+                </Chip>
               ) : null}
               {passport.lessonDurationLabel ? (
-                <SemanticChip icon={Clock3} tone="amber" size="md">
+                <Chip icon={Clock3} tone="amber" size="md">
                   Урок: {passport.lessonDurationLabel}
-                </SemanticChip>
+                </Chip>
               ) : null}
               {passport.targetAgeLabel ? (
-                <SemanticChip icon={GraduationCap} tone="sky" size="md">
+                <Chip icon={GraduationCap} tone="sky" size="md">
                   Возраст: {passport.targetAgeLabel}
-                </SemanticChip>
+                </Chip>
               ) : null}
               {passport.idealGroupSizeLabel ? (
-                <SemanticChip icon={Users} tone="indigo" size="md">
+                <Chip icon={Users} tone="indigo" size="md">
                   Группа: {passport.idealGroupSizeLabel}
-                </SemanticChip>
+                </Chip>
               ) : null}
               {normalizedActivitiesLabel ? (
-                <SemanticChip icon={Shapes} tone="rose" size="md">
+                <Chip icon={Shapes} tone="rose" size="md">
                   {normalizedActivitiesLabel}
-                </SemanticChip>
+                </Chip>
               ) : null}
             </>
           }
@@ -245,16 +242,16 @@ export default async function MethodologyDetailPage({
               }
               actions={
                 <>
-                  <Link
+                  <ActionLink
                     href={toMethodologyLessonRoute(
                       readModel.methodology.slug,
                       lesson.id,
                     )}
-                    className={methodologyEntityActionClass}
+                    className="text-sm"
                   >
                     <Eye className="h-3.5 w-3.5" aria-hidden="true" />
                     <span>Смотреть</span>
-                  </Link>
+                  </ActionLink>
                   <AssignLessonDialog
                     action={async (formData) => {
                       "use server";
@@ -274,7 +271,7 @@ export default async function MethodologyDetailPage({
                     }}
                     groups={groups}
                     lessonTitle={lesson.title}
-                    triggerClassName={methodologyEntityActionClass}
+                    triggerClassName={productActionClassName("text-sm")}
                     triggerContent={
                       <>
                         <CalendarClock className="h-3.5 w-3.5" aria-hidden="true" />

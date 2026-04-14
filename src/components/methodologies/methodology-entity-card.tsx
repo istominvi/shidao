@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
 import { AppCard } from "@/components/app/app-card";
-import { productButtonClassName } from "@/components/ui/button";
 import { classNames } from "@/lib/ui/classnames";
 
 type MethodologyEntityCardProps = {
@@ -12,10 +11,6 @@ type MethodologyEntityCardProps = {
   className?: string;
 };
 
-export const methodologyEntityActionClass = productButtonClassName(
-  "secondary",
-  "text-sm",
-);
 
 export function MethodologyEntityCard({
   title,

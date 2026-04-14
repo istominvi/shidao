@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 import { ChevronDown, MapPin, MonitorPlay } from "lucide-react";
 import { Button, productButtonClassName } from "@/components/ui/button";
 import { Input, Select } from "@/components/ui/input";
+import { SegmentedControl } from "@/components/ui/segmented-control";
 
 type GroupAssignLessonDialogProps = {
   lessons: Array<{ id: string; label: string }>;
@@ -80,28 +81,15 @@ export function GroupAssignLessonDialog({
               <fieldset className="space-y-2 text-sm text-neutral-700 md:col-span-2">
                 <legend>Формат</legend>
                 <input type="hidden" name="format" value={format} />
-                <div className="inline-flex h-12 items-center rounded-full border border-neutral-200 bg-neutral-100 p-1">
-                  <button
-                    type="button"
-                    className={`inline-flex h-10 cursor-pointer items-center gap-1.5 rounded-full px-4 text-xs font-semibold transition ${
-                      format === "online" ? "bg-neutral-900 text-white" : "text-neutral-600"
-                    }`}
-                    onClick={() => setFormat("online")}
-                  >
-                    <MonitorPlay className="h-3.5 w-3.5" aria-hidden="true" />
-                    Онлайн
-                  </button>
-                  <button
-                    type="button"
-                    className={`inline-flex h-10 cursor-pointer items-center gap-1.5 rounded-full px-4 text-xs font-semibold transition ${
-                      format === "offline" ? "bg-neutral-900 text-white" : "text-neutral-600"
-                    }`}
-                    onClick={() => setFormat("offline")}
-                  >
-                    <MapPin className="h-3.5 w-3.5" aria-hidden="true" />
-                    Офлайн
-                  </button>
-                </div>
+                <SegmentedControl
+                  ariaLabel="Формат занятия"
+                  value={format}
+                  onChange={setFormat}
+                  items={[
+                    { value: "online", label: "Онлайн", icon: MonitorPlay },
+                    { value: "offline", label: "Офлайн", icon: MapPin },
+                  ]}
+                />
               </fieldset>
               {format === "online" ? (
                 <label className="space-y-2 text-sm text-neutral-700 md:col-span-2">
