@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef } from "react";
-import { AppCard } from "@/components/app/app-card";
+import { SurfaceCard } from "@/components/ui/surface-card";
 import { findDefaultCenteredEventIndex } from "./teacher-schedule-helpers";
 
 type LessonCarouselEvent = {
@@ -60,27 +60,26 @@ export function TeacherLessonsCarousel({ events, nowIso }: TeacherLessonsCarouse
 
   if (sortedEvents.length === 0) {
     return (
-      <AppCard className="p-4 md:p-5">
-        <h2 className="text-lg font-bold text-neutral-950">Ближайшие занятия</h2>
-        <p className="mt-2 text-sm text-neutral-500">Пока нет запланированных занятий. Когда они появятся, здесь будет быстрый доступ к урокам.</p>
-      </AppCard>
+      <SurfaceCard
+        title="Ближайшие занятия"
+        description="Пока нет запланированных занятий. Когда они появятся, здесь будет быстрый доступ к урокам."
+      />
     );
   }
 
   const nowTs = Date.parse(nowIso);
 
   return (
-    <AppCard className="p-4 md:p-5">
-      <div className="mb-3 flex items-center justify-between gap-2">
-        <div>
-          <h2 className="text-lg font-bold text-neutral-950">Ближайшие занятия</h2>
-          <p className="text-xs text-neutral-500">Слева прошедшие, по центру ближайшее релевантное занятие.</p>
-        </div>
+    <SurfaceCard
+      title="Ближайшие занятия"
+      description="Слева прошедшие, по центру ближайшее релевантное занятие."
+      actions={
         <div className="hidden items-center gap-2 md:flex">
           <button type="button" onClick={() => scrollByOne(-1)} className="rounded-full border border-neutral-200 px-3 py-1 text-sm hover:bg-neutral-50" aria-label="Прокрутить влево">←</button>
           <button type="button" onClick={() => scrollByOne(1)} className="rounded-full border border-neutral-200 px-3 py-1 text-sm hover:bg-neutral-50" aria-label="Прокрутить вправо">→</button>
         </div>
-      </div>
+      }
+    >
 
       <div
         ref={scrollRef}
@@ -122,6 +121,6 @@ export function TeacherLessonsCarousel({ events, nowIso }: TeacherLessonsCarouse
           );
         })}
       </div>
-    </AppCard>
+    </SurfaceCard>
   );
 }

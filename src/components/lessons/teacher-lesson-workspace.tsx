@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import type { TeacherLessonWorkspaceReadModel } from "@/lib/server/teacher-lesson-workspace";
-import { AppCard } from "@/components/app/app-card";
 import { LessonStudentContentPanel } from "@/components/lessons/lesson-student-content-panel";
 import { TeacherLessonPedagogicalContent } from "@/components/lessons/teacher-lesson-pedagogical-content";
 import { TeacherHomeworkPanel } from "@/components/lessons/teacher-homework-panel";
@@ -10,6 +9,7 @@ import {
   TeacherLessonTabs,
   type TeacherLessonTabKey,
 } from "@/components/lessons/teacher-lesson-tabs";
+import { SurfaceCard } from "@/components/ui/surface-card";
 import { toScheduledLessonRoute } from "@/lib/auth";
 
 type TeacherLessonWorkspaceProps = {
@@ -54,28 +54,22 @@ export function TeacherLessonWorkspace({
         ) : null}
 
         {tab === "homework" ? (
-          <AppCard className="border-sky-200/70 p-5">
-            <h2 className="text-lg font-bold text-neutral-900">
-              Домашнее задание
-            </h2>
+          <SurfaceCard title="Домашнее задание">
             <TeacherHomeworkPanel
               homework={workspace.homework}
               scheduledLessonId={workspace.scheduledLessonId}
             />
-          </AppCard>
+          </SurfaceCard>
         ) : null}
 
         {tab === "conduct" ? (
-          <AppCard className="border-emerald-200/70 p-5 md:p-6">
-            <h2 className="text-xl font-bold tracking-[-0.02em] text-neutral-900">
-              Проведение занятия
-            </h2>
-            <p className="mt-2 text-sm text-neutral-700">
-              Обновляйте рабочий статус и заметки по этому занятию.
-            </p>
+          <SurfaceCard
+            title={<span className="text-xl font-bold tracking-[-0.02em]">Проведение занятия</span>}
+            description="Обновляйте рабочий статус и заметки по этому занятию."
+          >
 
             {runtimeFormFeedback?.success ? (
-              <p className="mt-4 rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+              <p className="rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
                 {runtimeFormFeedback.success}
               </p>
             ) : null}
@@ -149,14 +143,13 @@ export function TeacherLessonWorkspace({
                 Сохранить изменения
               </button>
             </form>
-          </AppCard>
+          </SurfaceCard>
         ) : null}
 
         {tab === "chat" ? (
-          <AppCard className="border-amber-200/70 p-5 md:p-6">
-            <h2 className="text-xl font-bold text-neutral-900">Чат</h2>
+          <SurfaceCard title={<span className="text-xl font-bold">Чат</span>}>
 
-            <section className="mt-4 space-y-2">
+            <section className="space-y-2">
               <h3 className="text-sm font-semibold uppercase tracking-[0.12em] text-neutral-500">
                 По уроку
               </h3>
@@ -324,7 +317,7 @@ export function TeacherLessonWorkspace({
                 ))}
               </section>
             ) : null}
-          </AppCard>
+          </SurfaceCard>
         ) : null}
       </section>
     </div>

@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { AppCard } from "@/components/app/app-card";
+import { SurfaceCard } from "@/components/ui/surface-card";
 import { classNames } from "@/lib/ui/classnames";
 
 type MethodologyEntityCardProps = {
@@ -11,7 +11,6 @@ type MethodologyEntityCardProps = {
   className?: string;
 };
 
-
 export function MethodologyEntityCard({
   title,
   description,
@@ -21,21 +20,17 @@ export function MethodologyEntityCard({
   className,
 }: MethodologyEntityCardProps) {
   return (
-    <AppCard as="article" className={classNames("w-full px-6 py-5", className)}>
+    <SurfaceCard
+      as="article"
+      title={title}
+      description={description}
+      className={classNames("w-full", className)}
+    >
       <div className="space-y-4">
-        <div className="space-y-2">
-          <h3 className="text-lg font-semibold text-neutral-950">{title}</h3>
-          {description ? (
-            <p className="text-sm text-neutral-700">{description}</p>
-          ) : null}
-        </div>
-
         {badges ? <div className="flex flex-wrap gap-2.5">{badges}</div> : null}
-
         {children}
-
         {actions ? <div className="flex flex-wrap gap-2">{actions}</div> : null}
       </div>
-    </AppCard>
+    </SurfaceCard>
   );
 }

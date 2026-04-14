@@ -1,4 +1,4 @@
-import { AppCard } from "@/components/app/app-card";
+import { SurfaceCard } from "@/components/ui/surface-card";
 import { StudentHomeworkQuizCard } from "@/components/dashboard/student-homework-quiz-card";
 import type {
   ParentScheduledLessonView,
@@ -17,7 +17,7 @@ export function ScheduledLessonLearnerView({
   return (
     <div className="space-y-5">
       {!model.studentContent ? (
-        <AppCard className="p-5">
+        <SurfaceCard>
           {model.studentContentUnavailableReason === "schema_missing" ? (
             <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
               Контент урока для ученика временно недоступен. Примените миграцию
@@ -37,14 +37,11 @@ export function ScheduledLessonLearnerView({
               Контент урока для ученика пока не опубликован.
             </p>
           )}
-        </AppCard>
+        </SurfaceCard>
       ) : null}
 
       {(model.studentContent?.sections ?? []).map((section, index) => (
-        <AppCard key={`${section.type}-${index}`} className="p-5">
-          <h2 className="text-xl font-bold text-neutral-900">
-            {section.title}
-          </h2>
+        <SurfaceCard key={`${section.type}-${index}`} title={<span className="text-xl font-bold">{section.title}</span>}>
           {section.type === "lesson_focus" ? (
             <>
               <p className="mt-2 text-sm text-neutral-700">{section.body}</p>
@@ -160,14 +157,11 @@ export function ScheduledLessonLearnerView({
               ))}
             </ul>
           ) : null}
-        </AppCard>
+        </SurfaceCard>
       ))}
 
       {model.role === "student" && model.homework ? (
-        <AppCard className="border-fuchsia-200/80 p-5">
-          <h2 className="text-xl font-bold text-neutral-900">
-            Домашнее задание
-          </h2>
+        <SurfaceCard title={<span className="text-xl font-bold">Домашнее задание</span>}>
           <article className="mt-3 rounded-2xl border border-neutral-200 bg-white p-3">
             <p className="font-semibold text-neutral-900">
               {model.homework.homeworkTitle}
@@ -203,15 +197,12 @@ export function ScheduledLessonLearnerView({
               <StudentHomeworkQuizCard item={model.homework} />
             )}
           </article>
-        </AppCard>
+        </SurfaceCard>
       ) : null}
 
       {model.role === "student" && model.communication.length > 0 ? (
-        <AppCard className="p-5">
-          <h2 className="text-lg font-bold text-neutral-900">
-            Обсуждение по уроку
-          </h2>
-          <div className="mt-2 space-y-1 text-sm text-neutral-700">
+        <SurfaceCard title="Обсуждение по уроку">
+          <div className="space-y-1 text-sm text-neutral-700">
             {model.communication.map((message) => (
               <p key={message.id}>
                 <span className="font-medium">{message.authorRole}:</span>{" "}
@@ -219,15 +210,12 @@ export function ScheduledLessonLearnerView({
               </p>
             ))}
           </div>
-        </AppCard>
+        </SurfaceCard>
       ) : null}
 
       {model.role === "parent" ? (
-        <AppCard className="p-5">
-          <h2 className="text-lg font-bold text-neutral-900">
-            Дети на этом уроке
-          </h2>
-          <div className="mt-3 space-y-3">
+        <SurfaceCard title="Дети на этом уроке">
+          <div className="space-y-3">
             {model.childrenRuntime.map((child) => (
               <article
                 key={child.studentId}
@@ -283,7 +271,7 @@ export function ScheduledLessonLearnerView({
               </article>
             ))}
           </div>
-        </AppCard>
+        </SurfaceCard>
       ) : null}
     </div>
   );

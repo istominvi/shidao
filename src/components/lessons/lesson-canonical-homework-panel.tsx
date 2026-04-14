@@ -1,4 +1,4 @@
-import { AppCard } from "@/components/app/app-card";
+import { SurfaceCard } from "@/components/ui/surface-card";
 
 type CanonicalHomework = {
   title: string;
@@ -13,17 +13,17 @@ type CanonicalHomework = {
 export function LessonCanonicalHomeworkPanel({ homework }: { homework: CanonicalHomework | null }) {
   if (!homework) {
     return (
-      <AppCard className="p-5 md:p-6">
-        <h2 className="text-lg font-semibold text-neutral-900">Домашнее задание</h2>
-        <p className="mt-2 text-sm text-neutral-700">Для этого урока методики домашнее задание пока не определено.</p>
-      </AppCard>
+      <SurfaceCard title="Домашнее задание">
+        <p className="text-sm text-neutral-700">
+          Для этого урока методики домашнее задание пока не определено.
+        </p>
+      </SurfaceCard>
     );
   }
 
   return (
-    <AppCard className="p-5 md:p-6" as="article">
-      <h2 className="text-lg font-semibold text-neutral-900">Домашнее задание</h2>
-      <p className="mt-2 text-sm text-neutral-700">{homework.sourceLayerNote}</p>
+    <SurfaceCard as="article" title="Домашнее задание">
+      <p className="text-sm text-neutral-700">{homework.sourceLayerNote}</p>
       <div className="mt-3 flex flex-wrap gap-2 text-xs text-neutral-700">
         <span className="rounded-full bg-violet-50 px-2.5 py-1 text-violet-800">{homework.kindLabel}</span>
         {homework.estimatedMinutes ? (
@@ -48,6 +48,6 @@ export function LessonCanonicalHomeworkPanel({ homework }: { homework: Canonical
           </ul>
         </div>
       ) : null}
-    </AppCard>
+    </SurfaceCard>
   );
 }

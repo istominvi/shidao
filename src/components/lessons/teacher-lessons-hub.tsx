@@ -2,10 +2,10 @@
 
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { AppCard } from "@/components/app/app-card";
 import { AppPageHeader } from "@/components/app/page-header";
 import { TeacherScheduleSurface } from "@/components/schedule/teacher-schedule-surface";
 import { TeacherLessonsCarousel } from "@/components/schedule/teacher-lessons-carousel";
+import { SurfaceCard } from "@/components/ui/surface-card";
 import type { ScheduleViewMode } from "@/components/dashboard/teacher-schedule-utils";
 import type { TeacherLessonsHubReadModel } from "@/lib/server/teacher-lessons-hub";
 
@@ -61,10 +61,10 @@ export function TeacherLessonsHub({
         }}
       />
 
-      <AppCard className="p-5 md:p-6" muted>
+      <SurfaceCard title="Запланировать занятие">
         <details>
-          <summary className="cursor-pointer list-none text-base font-bold text-neutral-900">
-            Запланировать занятие
+          <summary className="cursor-pointer list-none text-sm font-semibold text-neutral-700">
+            Открыть форму
           </summary>
           <div className="mt-3">
             {feedback?.success ? (
@@ -138,7 +138,7 @@ export function TeacherLessonsHub({
             </form>
           </div>
         </details>
-      </AppCard>
+      </SurfaceCard>
     </div>
   );
 }
