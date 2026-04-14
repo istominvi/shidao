@@ -58,50 +58,6 @@ export function NavPillLink({
   );
 }
 
-type NavPillButtonProps = {
-  children: ReactNode;
-  active?: boolean;
-  unavailable?: boolean;
-  loading?: boolean;
-  disabled?: boolean;
-  onClick?: () => void;
-  className?: string;
-  type?: "button" | "submit" | "reset";
-  ariaPressed?: boolean;
-};
-
-export function NavPillButton({
-  children,
-  active = false,
-  unavailable = false,
-  loading = false,
-  disabled = false,
-  onClick,
-  className,
-  type = "button",
-  ariaPressed,
-}: NavPillButtonProps) {
-  const isDisabled = unavailable || loading || disabled;
-
-  return (
-    <button
-      type={type}
-      onClick={onClick}
-      disabled={isDisabled}
-      aria-pressed={ariaPressed}
-      aria-busy={loading || undefined}
-      className={classNames(
-        "nav-pill",
-        active ? "nav-pill-active" : "nav-pill-inactive",
-        unavailable && !active ? "nav-pill-unavailable" : "cursor-pointer",
-        className,
-      )}
-    >
-      {children}
-    </button>
-  );
-}
-
 type DropdownPanelProps = ComponentPropsWithoutRef<"div"> & {
   className?: string;
   style?: CSSProperties;
@@ -134,21 +90,5 @@ export function navigationDropdownItemClass(
     "nav-dropdown-item",
     destructive && "nav-dropdown-item-destructive",
     className,
-  );
-}
-
-type SegmentedSwitchProps = {
-  children: ReactNode;
-  className?: string;
-};
-
-export function NavSegmentedSwitch({
-  children,
-  className,
-}: SegmentedSwitchProps) {
-  return (
-    <div className={classNames("nav-segmented-switch", className)}>
-      {children}
-    </div>
   );
 }

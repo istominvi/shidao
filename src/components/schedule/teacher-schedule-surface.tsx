@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { SegmentedControl } from "@/components/ui/segmented-control";
 import { SurfaceCard } from "@/components/ui/surface-card";
 import type { TeacherDashboardScheduleEvent } from "@/lib/server/teacher-dashboard-operations";
 import {
@@ -125,23 +126,15 @@ export function TeacherScheduleSurface({
       }
       actions={
         <div className="flex flex-wrap items-center gap-2">
-          <div className="inline-flex rounded-full border border-neutral-200 bg-white p-1">
-            {VISIBLE_VIEWS.map((mode: "day" | "week" | "month") => (
-              <button
-                key={mode}
-                type="button"
-                aria-pressed={viewMode === mode}
-                onClick={() => setViewMode(mode)}
-                className={`cursor-pointer rounded-full px-3 py-1.5 text-xs font-semibold transition ${
-                  viewMode === mode
-                    ? "bg-neutral-900 text-white"
-                    : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
-                }`}
-              >
-                {VIEW_LABELS[mode]}
-              </button>
-            ))}
-          </div>
+          <SegmentedControl
+            ariaLabel="Режим расписания"
+            value={viewMode}
+            onChange={setViewMode}
+            items={VISIBLE_VIEWS.map((mode) => ({
+              value: mode,
+              label: VIEW_LABELS[mode],
+            }))}
+          />
 
           <button
             type="button"
