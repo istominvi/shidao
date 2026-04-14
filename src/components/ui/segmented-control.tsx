@@ -49,9 +49,11 @@ export function SegmentedControl<T extends string>({
             onClick={() => onChange(item.value)}
             aria-busy={item.busy || undefined}
             className={classNames(
-              "inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-[0.95rem] px-3 text-[0.9rem] font-semibold leading-none transition",
+              "inline-flex h-10 cursor-pointer items-center gap-1.5 rounded-[0.95rem] px-[0.9rem] text-[0.9rem] font-semibold leading-none transition",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/50",
-              isSelected ? "bg-neutral-900 text-white" : "text-neutral-600 hover:text-neutral-800",
+              isSelected
+                ? "bg-neutral-900 text-white shadow-[0_10px_20px_rgba(15,23,42,0.08)]"
+                : "text-neutral-600 hover:text-neutral-800",
               isDisabled ? "cursor-not-allowed opacity-60" : undefined,
             )}
           >
