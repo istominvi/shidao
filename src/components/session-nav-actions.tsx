@@ -9,9 +9,8 @@ import { ROUTES, type ProfileKind } from "@/lib/auth";
 import { signOutViaServer } from "@/lib/auth-flow";
 import { useSessionView } from "@/components/use-session-view";
 import type { SessionAdultView, SessionStudentView } from "@/lib/session-view";
+import { SegmentedControl } from "@/components/ui/segmented-control";
 import {
-  NavPillButton,
-  NavSegmentedSwitch,
   NavigationDropdownPanel,
   navigationDropdownItemClass,
 } from "@/components/navigation/primitives";
@@ -59,6 +58,24 @@ export function SessionNavActions({
   const [actionLoading, setActionLoading] = useState<ActionLoadingState>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const isSwitchBusy = actionLoading?.startsWith("switch:") ?? false;
+  const profileItems: Array<{
+    value: ProfileKind;
+    label: string;
+    disabled: boolean;
+    busy: boolean;
+  }> =
+    state.kind === "adult"
+      ? ADULT_PROFILE_ORDER.map((profile) => {
+          const available = state.availableProfiles.includes(profile);
+          const isSwitchLoading = actionLoading === `switch:${profile}`;
+          return {
+            value: profile,
+            label: ADULT_PROFILE_TOGGLE_LABELS[profile],
+            disabled: !available || (isSwitchBusy && !isSwitchLoading),
+            busy: isSwitchLoading,
+          };
+        })
+      : [];
 
   const updateMenuPosition = useCallback(() => {
     if (!portalMenu || !containerRef.current) return;
@@ -213,38 +230,28 @@ export function SessionNavActions({
 
       {state.kind === "adult" ? (
         <div className="border-t border-black/5 px-3 py-2.5">
-          <NavSegmentedSwitch className="w-full">
-            {ADULT_PROFILE_ORDER.map((profile) => {
-              const available = state.availableProfiles.includes(profile);
-              const active = state.activeProfile === profile;
-              const isSwitchLoading = actionLoading === `switch:${profile}`;
-              return (
-                <NavPillButton
-                  key={profile}
-                  active={active}
-                  unavailable={!available}
-                  loading={isSwitchLoading}
-                  disabled={isSwitchBusy && !isSwitchLoading}
-                  ariaPressed={active}
-                  className="min-h-10 flex-1 px-2.5 text-sm font-semibold"
-                  onClick={() => {
-                    if (active) {
-                      setOpen(false);
-                      router.replace(ROUTES.dashboard);
-                      router.refresh();
-                      return;
-                    }
+          <SegmentedControl
+            ariaLabel="Активный профиль"
+            size="sm"
+            fullWidth
+            className="bg-neutral-100"
+            itemClassName="px-2.5"
+            value={state.activeProfile}
+            onChange={(profile) => {
+              if (profile === state.activeProfile) {
+                setOpen(false);
+                router.replace(ROUTES.dashboard);
+                router.refresh();
+                return;
+              }
 
-                    if (available && !isSwitchBusy) {
-                      void handleSwitch(profile);
-                    }
-                  }}
-                >
-                  {ADULT_PROFILE_TOGGLE_LABELS[profile]}
-                </NavPillButton>
-              );
-            })}
-          </NavSegmentedSwitch>
+              const available = state.availableProfiles.includes(profile);
+              if (available && !isSwitchBusy) {
+                void handleSwitch(profile);
+              }
+            }}
+            items={profileItems}
+          />
         </div>
       ) : null}
 
