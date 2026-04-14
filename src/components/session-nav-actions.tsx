@@ -286,7 +286,7 @@ export function SessionNavActions({
         aria-haspopup="menu"
         aria-expanded={open}
         aria-controls={menuId}
-        className={`nav-user-trigger inline-flex cursor-pointer items-center gap-1.5 ${variant === "landing" ? "w-full justify-center sm:w-auto" : ""}`}
+        className={`nav-user-trigger ${variant === "top-nav" ? "nav-user-trigger-product" : "nav-user-trigger-landing"} inline-flex cursor-pointer items-center gap-1.5 ${variant === "landing" ? "w-full justify-center sm:w-auto" : ""}`}
       >
         <span className="inline-flex size-6 items-center justify-center rounded-full bg-black text-[11px] font-bold text-white">
           {state.initials ?? "U"}
