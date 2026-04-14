@@ -43,13 +43,13 @@ export function LandingPage() {
           <>
             <Link
               href={ROUTES.login}
-              className="landing-btn landing-btn-muted header-action-btn flex-1 sm:flex-none"
+              className="nav-pill nav-pill-inactive header-action-btn flex-1 sm:flex-none"
             >
               Войти
             </Link>
             <Link
               href={ROUTES.join}
-              className="landing-btn landing-btn-primary header-action-btn flex-1 sm:flex-none"
+              className="nav-pill nav-pill-active header-action-btn flex-1 sm:flex-none"
             >
               Создать аккаунт
             </Link>
@@ -64,7 +64,7 @@ export function LandingPage() {
       case "skeleton":
         return (
           <div
-            className="landing-btn landing-btn-muted header-action-btn flex-1 sm:flex-none sm:min-w-[148px]"
+            className="nav-pill nav-pill-inactive header-action-btn flex-1 sm:flex-none sm:min-w-[148px]"
             aria-hidden="true"
           >
             <span className="block h-4 w-24 animate-pulse rounded-full bg-neutral-300/70" />
@@ -81,7 +81,7 @@ export function LandingPage() {
     <main className="pb-16">
       <div className="landing-noise" aria-hidden="true" />
       <div className="fixed inset-x-0 top-0 z-[140]">
-        <div className="container pt-4 md:pt-6">
+        <div className="container pt-4 md:pt-5">
           <SiteHeader
             variant="product"
             brandHref={ROUTES.home}
