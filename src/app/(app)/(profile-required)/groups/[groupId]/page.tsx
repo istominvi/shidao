@@ -208,7 +208,7 @@ export default async function TeacherGroupPage({
     <main className="pb-12">
       <div className="landing-noise" aria-hidden="true" />
       <TopNav />
-      <div className="container py-7 md:py-10 space-y-6">
+      <div className="container app-page-container space-y-6">
         <AppPageHeader
           backHref={ROUTES.groups}
           backLabel="Группы"

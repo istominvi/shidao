@@ -55,7 +55,7 @@ export default async function MethodologyLessonPage({ params, searchParams }: { 
     <main className="pb-12">
       <div className="landing-noise" aria-hidden="true" />
       <TopNav />
-      <div className="container space-y-6 py-7 md:py-10">
+      <div className="container app-page-container space-y-6">
         <AppPageHeader
           backHref={toMethodologyRoute(methodologySlug)}
           backLabel={readModel.methodology.title}

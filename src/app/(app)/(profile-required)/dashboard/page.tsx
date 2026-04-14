@@ -101,7 +101,7 @@ export default async function DashboardIndexPage({
       <main className="pb-12">
         <div className="landing-noise" aria-hidden="true" />
         <TopNav />
-        <div className="container py-7 md:py-10">
+        <div className="container app-page-container">
           <TeacherDashboard readModel={readModel} />
         </div>
       </main>

@@ -27,7 +27,6 @@ export function SettingsShell({
             eyebrow={eyebrow}
             title={title}
             description={description}
-            className="px-0 pb-0"
           />
           {children}
         </div>
