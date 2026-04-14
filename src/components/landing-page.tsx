@@ -49,7 +49,7 @@ export function LandingPage() {
             </Link>
             <Link
               href={ROUTES.join}
-              className="nav-pill nav-pill-active header-action-btn flex-1 sm:flex-none"
+              className="nav-pill nav-pill-accent header-action-btn flex-1 sm:flex-none"
             >
               Создать аккаунт
             </Link>

@@ -32,7 +32,7 @@ export function TopNav() {
         return (
           <Link
             href={ROUTES.join}
-            className="nav-pill nav-pill-active header-action-btn px-5"
+            className="nav-pill nav-pill-accent header-action-btn px-5"
           >
             Создать аккаунт
           </Link>
