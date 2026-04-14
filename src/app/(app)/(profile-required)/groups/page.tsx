@@ -5,6 +5,9 @@ import { isRedirectError } from "next/dist/client/components/redirect-error";
 import { TopNav } from "@/components/top-nav";
 import { AppPageHeader } from "@/components/app/page-header";
 import { TeacherGroupsCard } from "@/components/dashboard/teacher-groups-card";
+import { ChevronDown } from "lucide-react";
+import { Button, productButtonClassName } from "@/components/ui/button";
+import { Input, Select } from "@/components/ui/input";
 import { ROUTES, toGroupRoute } from "@/lib/auth";
 import { listMethodologiesAdmin } from "@/lib/server/lesson-content-repository";
 import { resolveAccessPolicy } from "@/lib/server/access-policy";
@@ -83,7 +86,6 @@ export default async function TeacherGroupsPage({
         <AppPageHeader title="Группы" />
 
         <TeacherGroupsCard
-          title="Мои группы"
           actions={readModel.actions}
           rows={readModel.rows}
           filters={readModel.filters}
@@ -111,19 +113,22 @@ export default async function TeacherGroupsPage({
             ) : null}
             <form action={createGroupAction} className="mt-4 space-y-3">
               <label className="field-label" htmlFor="group-name">Название группы</label>
-              <input id="group-name" name="name" required className="field-input" placeholder="Например, Лисички 6-7" />
+              <Input id="group-name" name="name" required placeholder="Например, Лисички 6-7" />
               <label className="field-label" htmlFor="group-methodology">Методика</label>
-              <select id="group-methodology" name="methodologyId" className="field-input" required defaultValue="">
-                <option value="" disabled>Выберите методику</option>
-                {methodologies.map((methodology) => (
-                  <option key={methodology.id} value={methodology.id}>
-                    {methodology.title}
-                  </option>
-                ))}
-              </select>
+              <div className="product-select-wrap">
+                <Select id="group-methodology" name="methodologyId" required defaultValue="">
+                  <option value="" disabled>Выберите методику</option>
+                  {methodologies.map((methodology) => (
+                    <option key={methodology.id} value={methodology.id}>
+                      {methodology.title}
+                    </option>
+                  ))}
+                </Select>
+                <ChevronDown className="product-select-icon h-4 w-4" aria-hidden="true" />
+              </div>
               <div className="flex items-center gap-2 pt-1">
-                <Link href={ROUTES.groups} className="landing-btn landing-btn-muted">Отмена</Link>
-                <button type="submit" className="landing-btn landing-btn-primary">Создать группу</button>
+                <Link href={ROUTES.groups} className={productButtonClassName("secondary")}>Отмена</Link>
+                <Button type="submit">Создать группу</Button>
               </div>
             </form>
           </section>

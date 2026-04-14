@@ -1,11 +1,14 @@
-import Link from "next/link";
 import { revalidatePath } from "next/cache";
 import { notFound, redirect } from "next/navigation";
 import { isRedirectError } from "next/dist/client/components/redirect-error";
-import { AppCard } from "@/components/app/app-card";
+import { CalendarPlus2, UserPlus } from "lucide-react";
 import { AppPageHeader } from "@/components/app/page-header";
 import { TopNav } from "@/components/top-nav";
-import { TeacherTableCard, TeacherTableEmptyState } from "@/components/dashboard/teacher-table-card";
+import { productButtonClassName } from "@/components/ui/button";
+import { Chip } from "@/components/ui/chip";
+import { GroupAssignLessonDialog } from "@/components/lessons/group-assign-lesson-dialog";
+import { CreateStudentDialog } from "@/components/students/create-student-dialog";
+import { GroupStudentsCard } from "@/components/students/group-students-card";
 import { ROUTES } from "@/lib/auth";
 import { resolveAccessPolicy } from "@/lib/server/access-policy";
 import {
@@ -15,6 +18,13 @@ import {
   getTeacherGroupOverview,
   parseGroupScopedLessonFormData,
 } from "@/lib/server/teacher-groups";
+import {
+  attachStudentToClassAsAdmin,
+  createStudentAuthUser,
+  detachStudentFromClassAsAdmin,
+  insertStudentRow,
+  updateStudentProfileAsAdmin,
+} from "@/lib/server/supabase-admin";
 
 function withMessage(
   groupId: string,
@@ -76,6 +86,122 @@ export default async function TeacherGroupPage({
     }
   }
 
+  async function createStudentAction(formData: FormData) {
+    "use server";
+
+    try {
+      const actionResolution = await resolveAccessPolicy();
+      assertTeacherGroupsAccess(actionResolution);
+
+      const login = String(formData.get("login") ?? "")
+        .trim()
+        .toLowerCase();
+      const password = String(formData.get("password") ?? "");
+      const fullName = String(formData.get("fullName") ?? "").trim();
+
+      if (!login || password.length < 8) {
+        throw new Error("Нужны логин и пароль не короче 8 символов.");
+      }
+
+      const createdAuth = await createStudentAuthUser({
+        login,
+        password,
+        fullName: fullName || null,
+      });
+
+      const studentId = await insertStudentRow({
+        userId: createdAuth.userId,
+        login,
+        internalAuthEmail: createdAuth.email,
+        fullName: fullName || null,
+      });
+
+      if (!studentId) {
+        throw new Error("Не удалось создать профиль ученика.");
+      }
+
+      await attachStudentToClassAsAdmin({ classId: groupId, studentId });
+
+      revalidatePath(ROUTES.dashboard);
+      revalidatePath(ROUTES.groups);
+      revalidatePath(`${ROUTES.groups}/${groupId}`);
+      redirect(withMessage(groupId, "saved", "Ученик создан и добавлен в группу."));
+    } catch (error) {
+      if (isRedirectError(error)) {
+        throw error;
+      }
+      const message =
+        error instanceof Error ? error.message : "Не удалось создать ученика.";
+      redirect(withMessage(groupId, "error", message));
+    }
+  }
+
+  async function updateStudentAction(formData: FormData) {
+    "use server";
+
+    try {
+      const actionResolution = await resolveAccessPolicy();
+      assertTeacherGroupsAccess(actionResolution);
+      const studentId = String(formData.get("studentId") ?? "").trim();
+      const login = String(formData.get("login") ?? "").trim().toLowerCase();
+      const fullName = String(formData.get("fullName") ?? "").trim();
+      const password = String(formData.get("password") ?? "");
+
+      if (!studentId || !login) {
+        throw new Error("Нужны studentId и логин.");
+      }
+      if (password && password.length < 8) {
+        throw new Error("Пароль должен быть не короче 8 символов.");
+      }
+
+      await updateStudentProfileAsAdmin({
+        classId: groupId,
+        studentId,
+        login,
+        fullName: fullName || null,
+        password: password || null,
+      });
+
+      revalidatePath(ROUTES.dashboard);
+      revalidatePath(ROUTES.groups);
+      revalidatePath(`${ROUTES.groups}/${groupId}`);
+      redirect(withMessage(groupId, "saved", "Данные ученика обновлены."));
+    } catch (error) {
+      if (isRedirectError(error)) {
+        throw error;
+      }
+      const message =
+        error instanceof Error ? error.message : "Не удалось обновить ученика.";
+      redirect(withMessage(groupId, "error", message));
+    }
+  }
+
+  async function removeStudentAction(formData: FormData) {
+    "use server";
+
+    try {
+      const actionResolution = await resolveAccessPolicy();
+      assertTeacherGroupsAccess(actionResolution);
+      const studentId = String(formData.get("studentId") ?? "").trim();
+      if (!studentId) {
+        throw new Error("Не указан ученик для удаления.");
+      }
+      await detachStudentFromClassAsAdmin({ classId: groupId, studentId });
+
+      revalidatePath(ROUTES.dashboard);
+      revalidatePath(ROUTES.groups);
+      revalidatePath(`${ROUTES.groups}/${groupId}`);
+      redirect(withMessage(groupId, "saved", "Ученик удалён из группы."));
+    } catch (error) {
+      if (isRedirectError(error)) {
+        throw error;
+      }
+      const message =
+        error instanceof Error ? error.message : "Не удалось удалить ученика.";
+      redirect(withMessage(groupId, "error", message));
+    }
+  }
+
   const query = await searchParams;
 
   return (
@@ -87,7 +213,7 @@ export default async function TeacherGroupPage({
           backHref={ROUTES.groups}
           backLabel="Группы"
           title={readModel.group.label}
-          description={readModel.methodology.assignedMethodologyShortDescription ?? undefined}
+          description="Моя первая группа - 5 человек"
           meta={(
             <>
               {query.saved ? (
@@ -96,167 +222,75 @@ export default async function TeacherGroupPage({
               {query.error ? (
                 <p className="w-full rounded-xl border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-800">{query.error}</p>
               ) : null}
-              <span className="rounded-full border border-neutral-200 bg-white/90 px-3 py-1 text-sm text-neutral-700">
+              <Chip tone="sky" size="md">
                 Ученики: {readModel.group.studentCount}
-              </span>
-              <span className="rounded-full border border-neutral-200 bg-white/90 px-3 py-1 text-sm text-neutral-700">
+              </Chip>
+              <Chip tone="emerald" size="md">
                 Прогресс: {readModel.group.progressLabel}
-              </span>
+              </Chip>
               {readModel.group.nextLessonLabel ? (
-                <span className="rounded-full border border-neutral-200 bg-white/90 px-3 py-1 text-sm text-neutral-700">
+                <Chip tone="amber" size="md">
                   Следующее занятие: {readModel.group.nextLessonLabel}
-                </span>
+                </Chip>
               ) : null}
               {readModel.group.assignedMethodologyTitle ? (
-                <span className="rounded-full border border-neutral-200 bg-white/90 px-3 py-1 text-sm text-neutral-700">
+                <Chip tone="violet" size="md">
                   Методика: {readModel.group.assignedMethodologyTitle}
-                </span>
+                </Chip>
               ) : (
-                <span className="rounded-full border border-dashed border-neutral-300 bg-white/90 px-3 py-1 text-sm text-neutral-500">
+                <Chip tone="indigo" size="md" className="border-dashed">
                   Методика: не указана (legacy-группа)
-                </span>
+                </Chip>
               )}
             </>
           )}
-          actions={(
-            <>
-              <Link href={`${ROUTES.studentsNew}?groupId=${encodeURIComponent(readModel.group.id)}`} className="landing-btn landing-btn-muted text-xs">
-                Добавить ученика
-              </Link>
-              <Link
-                href={`${ROUTES.lessons}?groupId=${encodeURIComponent(readModel.group.id)}`}
-                className="landing-btn landing-btn-muted text-xs"
-              >
-                Открыть global lessons index
-              </Link>
-            </>
-          )}
+          actions={null}
         />
 
-        <TeacherTableCard
-          title="Ученики группы"
-          headerAction={(
-            <Link href={`${ROUTES.studentsNew}?groupId=${encodeURIComponent(readModel.group.id)}`} className="text-sm text-sky-700 underline underline-offset-2">
-              Создать и добавить ученика
-            </Link>
-          )}
-        >
-          <table className="min-w-full text-left text-sm">
-            <thead className="bg-neutral-50 text-xs uppercase tracking-wide text-neutral-500">
-              <tr>
-                <th className="px-4 py-3">Ученик</th>
-                <th className="px-4 py-3">Логин</th>
-                <th className="px-4 py-3">Коммуникация</th>
-              </tr>
-            </thead>
-            <tbody>
-              {readModel.students.map((student) => (
-                <tr key={student.id} className="border-t border-neutral-200 align-top transition hover:bg-sky-50/45">
-                  <td className="px-4 py-3 font-semibold text-neutral-950">{student.displayName}</td>
-                  <td className="px-4 py-3 text-neutral-700">{student.login ? `@${student.login}` : "—"}</td>
-                  <td className="px-4 py-3 text-neutral-700">
-                    <Link
-                      href={`${ROUTES.groups}/${encodeURIComponent(groupId)}/students/${encodeURIComponent(student.id)}/communication`}
-                      className="text-xs text-sky-700 underline underline-offset-2"
-                    >
-                      Открыть коммуникацию
-                    </Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {readModel.students.length === 0 ? (
-            <TeacherTableEmptyState text="В группе пока нет учеников." />
-          ) : null}
-        </TeacherTableCard>
-
-        <AppCard className="p-5">
-          <h2 className="text-xl font-bold text-neutral-950">Запланировать занятие в контексте группы</h2>
-          {!readModel.schedule.canSchedule ? (
-            <p className="mt-2 text-sm text-amber-700">Для этой legacy-группы методика не задана. Планирование занятий недоступно.</p>
-          ) : (
-            <form action={scheduleLessonAction} className="mt-3 grid gap-3 md:grid-cols-2">
-              <label className="space-y-1 text-sm text-neutral-700">
-                <span>Урок методики</span>
-                <select name="methodologyLessonId" required className="field-input" defaultValue="">
-                  <option value="" disabled>Выберите урок</option>
-                  {readModel.schedule.lessonOptions.map((lesson) => (
-                    <option key={lesson.id} value={lesson.id}>{lesson.label}</option>
-                  ))}
-                </select>
-              </label>
-              <label className="space-y-1 text-sm text-neutral-700">
-                <span>Формат</span>
-                <select name="format" required className="field-input" defaultValue="online">
-                  <option value="online">online</option>
-                  <option value="offline">offline</option>
-                </select>
-              </label>
-              <label className="space-y-1 text-sm text-neutral-700">
-                <span>Дата</span>
-                <input type="date" name="date" required className="field-input" />
-              </label>
-              <label className="space-y-1 text-sm text-neutral-700">
-                <span>Время</span>
-                <input type="time" name="time" required className="field-input" />
-              </label>
-              <label className="space-y-1 text-sm text-neutral-700">
-                <span>Ссылка на встречу (для online)</span>
-                <input type="url" name="meetingLink" placeholder="https://" className="field-input" />
-              </label>
-              <label className="space-y-1 text-sm text-neutral-700">
-                <span>Место (для offline)</span>
-                <input type="text" name="place" placeholder="Кабинет / адрес" className="field-input" />
-              </label>
-              <div className="md:col-span-2">
-                <button type="submit" className="landing-btn landing-btn-primary text-xs">Запланировать занятие</button>
-              </div>
-            </form>
-          )}
-        </AppCard>
-
-        <section className="grid gap-4 md:grid-cols-2">
-          <AppCard as="article" className="p-5">
-            <h2 className="text-xl font-bold text-neutral-950">Ближайшие занятия</h2>
-            {readModel.upcomingLessons.length === 0 ? (
-              <p className="mt-3 text-sm text-neutral-500">Пока нет запланированных занятий.</p>
-            ) : (
-              <ul className="mt-3 space-y-3 text-sm text-neutral-700">
-                {readModel.upcomingLessons.map((lesson) => (
-                  <li key={lesson.id}>
-                    <Link href={lesson.href} className="font-semibold text-sky-700 underline underline-offset-2">
-                      {lesson.title}
-                    </Link>
-                    <div>
-                      {lesson.dateTimeLabel} · {lesson.statusLabel}
-                    </div>
-                  </li>
-                ))}
-              </ul>
+        <section className="space-y-3">
+          <h2 className="px-6 text-xl font-bold tracking-[-0.02em] text-neutral-950">
+            Ученики
+          </h2>
+          <GroupStudentsCard
+            students={readModel.students.map((student) => ({
+              id: student.id,
+              displayName: student.displayName,
+              login: student.login,
+              progressLabel: "—",
+              communicationHref: `${ROUTES.groups}/${encodeURIComponent(groupId)}/students/${encodeURIComponent(student.id)}/communication`,
+            }))}
+            headerActions={(
+              <>
+                <CreateStudentDialog
+                  action={createStudentAction}
+                  triggerClassName={productButtonClassName("secondary")}
+                  triggerContent={(
+                    <>
+                      <UserPlus className="h-4 w-4" aria-hidden="true" />
+                      Добавить ученика
+                    </>
+                  )}
+                />
+                {readModel.schedule.canSchedule ? (
+                  <GroupAssignLessonDialog
+                    lessons={readModel.schedule.lessonOptions}
+                    action={scheduleLessonAction}
+                    triggerClassName={productButtonClassName("secondary")}
+                    triggerContent={(
+                      <>
+                        <CalendarPlus2 className="h-4 w-4" aria-hidden="true" />
+                        Назначить урок
+                      </>
+                    )}
+                  />
+                ) : null}
+              </>
             )}
-          </AppCard>
-
-          <AppCard as="article" className="p-5">
-            <h2 className="text-xl font-bold text-neutral-950">Недавние занятия</h2>
-            {readModel.recentLessons.length === 0 ? (
-              <p className="mt-3 text-sm text-neutral-500">История занятий пока пустая.</p>
-            ) : (
-              <ul className="mt-3 space-y-3 text-sm text-neutral-700">
-                {readModel.recentLessons.map((lesson) => (
-                  <li key={lesson.id}>
-                    <Link href={lesson.href} className="font-semibold text-sky-700 underline underline-offset-2">
-                      {lesson.title}
-                    </Link>
-                    <div>
-                      {lesson.dateTimeLabel} · {lesson.statusLabel}
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </AppCard>
+            updateAction={updateStudentAction}
+            removeAction={removeStudentAction}
+          />
         </section>
+
       </div>
     </main>
   );

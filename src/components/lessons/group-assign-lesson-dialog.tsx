@@ -7,9 +7,8 @@ import { ChevronDown, MapPin, MonitorPlay } from "lucide-react";
 import { Button, productButtonClassName } from "@/components/ui/button";
 import { Input, Select } from "@/components/ui/input";
 
-type AssignLessonDialogProps = {
-  lessonTitle: string;
-  groups: Array<{ id: string; label: string }>;
+type GroupAssignLessonDialogProps = {
+  lessons: Array<{ id: string; label: string }>;
   action: (formData: FormData) => Promise<void>;
   defaultOpen?: boolean;
   triggerContent?: ReactNode;
@@ -18,21 +17,16 @@ type AssignLessonDialogProps = {
 
 function SubmitButton() {
   const { pending } = useFormStatus();
-  return (
-    <Button type="submit" disabled={pending}>
-      {pending ? "Назначаем..." : "Назначить"}
-    </Button>
-  );
+  return <Button type="submit" disabled={pending}>{pending ? "Назначаем..." : "Назначить"}</Button>;
 }
 
-export function AssignLessonDialog({
-  lessonTitle,
-  groups,
+export function GroupAssignLessonDialog({
+  lessons,
   action,
   defaultOpen = false,
   triggerContent = "Назначить урок",
   triggerClassName,
-}: AssignLessonDialogProps) {
+}: GroupAssignLessonDialogProps) {
   const [open, setOpen] = useState(defaultOpen);
   const [format, setFormat] = useState<"online" | "offline">("online");
 
@@ -40,7 +34,7 @@ export function AssignLessonDialog({
     <>
       <button
         type="button"
-        className={triggerClassName ?? productButtonClassName("primary")}
+        className={triggerClassName ?? productButtonClassName("secondary")}
         onClick={() => setOpen(true)}
       >
         {triggerContent}
@@ -58,18 +52,17 @@ export function AssignLessonDialog({
             className="relative z-10 w-full max-w-xl rounded-3xl border border-white/80 bg-white px-6 py-5 shadow-2xl"
           >
             <h2 className="text-2xl font-bold text-neutral-950">Назначить урок</h2>
-            <p className="mt-2 text-sm text-neutral-700">{lessonTitle}</p>
             <form action={action} className="mt-4 grid gap-3 md:grid-cols-2">
               <label className="space-y-2 text-sm text-neutral-700 md:col-span-2">
-                <span>Группа</span>
+                <span>Урок</span>
                 <span className="product-select-wrap block">
-                  <Select name="classId" required defaultValue="">
+                  <Select name="methodologyLessonId" required defaultValue="">
                     <option value="" disabled>
-                      Выберите группу
+                      Выберите урок
                     </option>
-                    {groups.map((group) => (
-                      <option key={group.id} value={group.id}>
-                        {group.label}
+                    {lessons.map((lesson) => (
+                      <option key={lesson.id} value={lesson.id}>
+                        {lesson.label}
                       </option>
                     ))}
                   </Select>
@@ -91,9 +84,7 @@ export function AssignLessonDialog({
                   <button
                     type="button"
                     className={`inline-flex h-10 cursor-pointer items-center gap-1.5 rounded-full px-4 text-xs font-semibold transition ${
-                      format === "online"
-                        ? "bg-neutral-900 text-white"
-                        : "text-neutral-600"
+                      format === "online" ? "bg-neutral-900 text-white" : "text-neutral-600"
                     }`}
                     onClick={() => setFormat("online")}
                   >
@@ -103,9 +94,7 @@ export function AssignLessonDialog({
                   <button
                     type="button"
                     className={`inline-flex h-10 cursor-pointer items-center gap-1.5 rounded-full px-4 text-xs font-semibold transition ${
-                      format === "offline"
-                        ? "bg-neutral-900 text-white"
-                        : "text-neutral-600"
+                      format === "offline" ? "bg-neutral-900 text-white" : "text-neutral-600"
                     }`}
                     onClick={() => setFormat("offline")}
                   >

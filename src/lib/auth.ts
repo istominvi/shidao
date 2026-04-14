@@ -17,7 +17,6 @@ export const ROUTES = {
   dashboard: "/dashboard",
   groups: "/groups",
   groupsNew: "/groups/new",
-  studentsNew: "/students/new",
   lessons: "/lessons",
   methodologies: "/methodologies",
   settings: "/settings",

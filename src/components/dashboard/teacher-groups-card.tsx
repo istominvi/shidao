@@ -3,11 +3,25 @@
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ChevronDown, FolderPlus, Search, UserPlus } from "lucide-react";
+import { productButtonClassName } from "@/components/ui/button";
+import { Input, Select } from "@/components/ui/input";
+import {
+  ProductTable,
+  ProductTableBody,
+  ProductTableCell,
+  ProductTableEmptyState,
+  ProductTableHead,
+  ProductTableHeaderCell,
+  ProductTableHeaderRow,
+  ProductTablePrimaryCell,
+  ProductTableRow,
+  ProductTableTruncate,
+} from "@/components/ui/product-table";
 import type { TeacherGroupOperationsRow } from "@/lib/server/teacher-dashboard-operations";
-import { TeacherTableCard, TeacherTableEmptyState } from "./teacher-table-card";
+import { TeacherTableCard } from "./teacher-table-card";
 
 type TeacherGroupsCardProps = {
-  title: string;
+  title?: string;
   actions: Array<{ label: string; href: string }>;
   rows: TeacherGroupOperationsRow[];
   filters: {
@@ -48,22 +62,21 @@ export function TeacherGroupsCard({
     <TeacherTableCard
       title={title}
       controls={(
-        <div className="teacher-control-rail">
+        <div className="product-control-rail">
           {actions.map((action) => {
             const Icon = ACTION_ICONS[action.label as keyof typeof ACTION_ICONS] ?? FolderPlus;
             return (
-              <Link key={action.label} href={action.href} className="teacher-control teacher-control-button">
+              <Link key={action.label} href={action.href} className={productButtonClassName("secondary")}>
                 <Icon className="h-4 w-4" aria-hidden="true" />
                 <span>{action.label}</span>
               </Link>
             );
           })}
-          <div className="teacher-select-wrap">
-            <select
+          <div className="product-select-wrap">
+            <Select
               name="methodology"
               value={filters.methodology}
               onChange={(event) => setParam("methodology", event.target.value)}
-              className="teacher-control teacher-control-select"
             >
               <option value="">Все методики</option>
               {filters.methodologyOptions.map((option) => (
@@ -71,16 +84,16 @@ export function TeacherGroupsCard({
                   {option}
                 </option>
               ))}
-            </select>
-            <ChevronDown className="teacher-select-icon h-4 w-4" aria-hidden="true" />
+            </Select>
+            <ChevronDown className="product-select-icon h-4 w-4" aria-hidden="true" />
           </div>
-          <div className="teacher-search-wrap">
-            <Search className="teacher-search-icon h-4 w-4" aria-hidden="true" />
-            <input
+          <div className="product-search-wrap">
+            <Search className="product-search-icon h-4 w-4" aria-hidden="true" />
+            <Input
               name="q"
               defaultValue={filters.search}
               placeholder="Поиск группы"
-              className="teacher-control teacher-control-search"
+              className="product-control-search"
               onKeyDown={(event) => {
                 if (event.key === "Enter") {
                   event.preventDefault();
@@ -93,42 +106,53 @@ export function TeacherGroupsCard({
         </div>
       )}
     >
-        <table className="min-w-full text-left text-sm">
-          <thead className="bg-neutral-50 text-xs uppercase tracking-wide text-neutral-500">
-            <tr>
-              <th className="px-4 py-3">Группа</th>
-              <th className="px-4 py-3">Методика</th>
-              <th className="px-4 py-3">Ученики</th>
-              <th className="px-4 py-3">Прогресс</th>
-              <th className="px-4 py-3">Следующее занятие</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((group) => (
-              <tr
-                key={group.id}
-                className="cursor-pointer border-t border-neutral-200 align-top transition hover:bg-sky-50/45"
-                onClick={() => router.push(group.groupHref)}
-              >
-                <td className="px-4 py-3 font-semibold text-neutral-950">{group.groupLabel}</td>
-                <td className="px-4 py-3 text-neutral-700">{group.methodologyLabel ?? "Не назначена"}</td>
-                <td className="px-4 py-3 text-neutral-700">{group.studentCount}</td>
-                <td className="px-4 py-3 text-neutral-700">{group.progressLabel}</td>
-                <td className="px-4 py-3 text-neutral-700">
-                  {group.nextLessonLabel ? (
-                    <>
-                      <div>{group.nextLessonLabel}</div>
-                      <div className="text-xs text-neutral-500">{group.nextLessonTitle}</div>
-                    </>
-                  ) : (
-                    "Не запланировано"
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        {rows.length === 0 ? <TeacherTableEmptyState text={emptyStateText} /> : null}
+      <ProductTable>
+        <ProductTableHead>
+          <ProductTableHeaderRow>
+            <ProductTableHeaderCell>Группа</ProductTableHeaderCell>
+            <ProductTableHeaderCell>Методика</ProductTableHeaderCell>
+            <ProductTableHeaderCell>Ученики</ProductTableHeaderCell>
+            <ProductTableHeaderCell>Прогресс</ProductTableHeaderCell>
+            <ProductTableHeaderCell>Следующее занятие</ProductTableHeaderCell>
+          </ProductTableHeaderRow>
+        </ProductTableHead>
+        <ProductTableBody>
+          {rows.map((group) => (
+            <ProductTableRow
+              key={group.id}
+              className="cursor-pointer"
+              onClick={() => router.push(group.groupHref)}
+            >
+              <ProductTablePrimaryCell className="max-w-0">
+                <ProductTableTruncate title={group.groupLabel}>{group.groupLabel}</ProductTableTruncate>
+              </ProductTablePrimaryCell>
+              <ProductTableCell className="max-w-0">
+                <ProductTableTruncate title={group.methodologyLabel ?? "Не назначена"}>
+                  {group.methodologyLabel ?? "Не назначена"}
+                </ProductTableTruncate>
+              </ProductTableCell>
+              <ProductTableCell>{group.studentCount}</ProductTableCell>
+              <ProductTableCell className="max-w-0">
+                <ProductTableTruncate title={group.progressLabel}>{group.progressLabel}</ProductTableTruncate>
+              </ProductTableCell>
+              <ProductTableCell className="max-w-0">
+                <ProductTableTruncate
+                  title={
+                    group.nextLessonLabel
+                      ? [group.nextLessonLabel, group.nextLessonTitle].filter(Boolean).join(" • ")
+                      : "Не запланировано"
+                  }
+                >
+                  {group.nextLessonLabel
+                    ? [group.nextLessonLabel, group.nextLessonTitle].filter(Boolean).join(" • ")
+                    : "Не запланировано"}
+                </ProductTableTruncate>
+              </ProductTableCell>
+            </ProductTableRow>
+          ))}
+        </ProductTableBody>
+      </ProductTable>
+      {rows.length === 0 ? <ProductTableEmptyState text={emptyStateText} /> : null}
     </TeacherTableCard>
   );
 }

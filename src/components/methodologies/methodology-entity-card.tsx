@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { AppCard } from "@/components/app/app-card";
+import { productButtonClassName } from "@/components/ui/button";
 import { classNames } from "@/lib/ui/classnames";
 
 type MethodologyEntityCardProps = {
@@ -11,8 +12,10 @@ type MethodologyEntityCardProps = {
   className?: string;
 };
 
-export const methodologyEntityActionClass =
-  "landing-chip border border-neutral-200 bg-white px-3 py-1.5 text-sm font-semibold text-neutral-700 transition hover:-translate-y-0.5 hover:bg-neutral-50";
+export const methodologyEntityActionClass = productButtonClassName(
+  "secondary",
+  "text-sm",
+);
 
 export function MethodologyEntityCard({
   title,
