@@ -102,7 +102,7 @@ export function SiteHeader({
                       href={item.href}
                       active={item.active}
                       ariaCurrent={item.active ? "page" : undefined}
-                      className="site-header-nav-pill text-sm font-medium"
+                      className="site-header-nav-pill text-sm font-semibold"
                       scroll={item.scroll}
                       onClick={(event) => handleNavClick(event, item.href)}
                     >

@@ -11,7 +11,7 @@
   --header-pill-height: 2.5rem;
   --header-pill-radius: 0.95rem;
   --header-pill-padding-x: 0.9rem;
-  --header-pill-text: #3f3f46;
+  --header-pill-text: #171717;
   --header-pill-hover-bg: rgba(20, 20, 20, 0.06);
   --header-pill-active-bg: #141414;
   --header-pill-active-border: transparent;
@@ -138,23 +138,49 @@
 }
 
 .nav-pill-accent {
-  color: #1f2937;
+  color: #171717;
   background:
-    radial-gradient(circle at 15% 0%, rgba(201, 255, 79, 0.65), transparent 52%),
-    radial-gradient(circle at 100% 100%, rgba(201, 180, 255, 0.56), transparent 48%),
-    radial-gradient(circle at 0% 100%, rgba(112, 183, 255, 0.34), transparent 48%),
-    rgba(255, 255, 255, 0.9);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+    radial-gradient(circle at 18% 0%, rgba(201, 255, 79, 0.26), transparent 52%),
+    radial-gradient(circle at 100% 100%, rgba(201, 180, 255, 0.24), transparent 50%),
+    radial-gradient(circle at 0% 100%, rgba(112, 183, 255, 0.18), transparent 52%),
+    rgba(255, 255, 255, 0.92);
+  background-size: 150% 150%, 170% 170%, 160% 160%, 100% 100%;
+  animation: nav-pill-accent-flow 14s ease-in-out infinite alternate;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
 }
 
 .nav-pill-accent:hover,
 .nav-pill-accent:focus-visible {
   color: #111827;
   background:
-    radial-gradient(circle at 15% 0%, rgba(201, 255, 79, 0.72), transparent 52%),
-    radial-gradient(circle at 100% 100%, rgba(201, 180, 255, 0.62), transparent 48%),
-    radial-gradient(circle at 0% 100%, rgba(112, 183, 255, 0.4), transparent 48%),
-    rgba(255, 255, 255, 0.96);
+    radial-gradient(circle at 18% 0%, rgba(201, 255, 79, 0.3), transparent 52%),
+    radial-gradient(circle at 100% 100%, rgba(201, 180, 255, 0.28), transparent 50%),
+    radial-gradient(circle at 0% 100%, rgba(112, 183, 255, 0.22), transparent 52%),
+    rgba(255, 255, 255, 0.95);
+  background-size: 150% 150%, 170% 170%, 160% 160%, 100% 100%;
+}
+
+@keyframes nav-pill-accent-flow {
+  0% {
+    background-position:
+      0% 0%,
+      100% 100%,
+      0% 100%,
+      0% 0%;
+  }
+  100% {
+    background-position:
+      16% 8%,
+      84% 92%,
+      12% 84%,
+      0% 0%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-pill-accent {
+    animation: none;
+  }
 }
 
 .nav-pill:focus-visible {
