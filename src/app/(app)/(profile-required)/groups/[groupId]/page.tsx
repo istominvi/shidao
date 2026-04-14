@@ -1,28 +1,14 @@
-import Link from "next/link";
 import { revalidatePath } from "next/cache";
 import { notFound, redirect } from "next/navigation";
 import { isRedirectError } from "next/dist/client/components/redirect-error";
 import { CalendarPlus2, UserPlus } from "lucide-react";
 import { AppPageHeader } from "@/components/app/page-header";
 import { TopNav } from "@/components/top-nav";
-import { TeacherTableCard, TeacherTableEmptyState } from "@/components/dashboard/teacher-table-card";
 import { productButtonClassName } from "@/components/ui/button";
 import { Chip } from "@/components/ui/chip";
 import { GroupAssignLessonDialog } from "@/components/lessons/group-assign-lesson-dialog";
 import { CreateStudentDialog } from "@/components/students/create-student-dialog";
-import {
-  ProductTableActionCell,
-  ProductTable,
-  ProductTableBody,
-  ProductTableCell,
-  ProductTableHead,
-  ProductTableHeaderCell,
-  ProductTableHeaderRow,
-  ProductTablePrimaryCell,
-  ProductTableRow,
-  ProductTableTruncate,
-  productTableActionLinkClassName,
-} from "@/components/ui/product-table";
+import { GroupStudentsCard } from "@/components/students/group-students-card";
 import { ROUTES } from "@/lib/auth";
 import { resolveAccessPolicy } from "@/lib/server/access-policy";
 import {
@@ -35,7 +21,9 @@ import {
 import {
   attachStudentToClassAsAdmin,
   createStudentAuthUser,
+  detachStudentFromClassAsAdmin,
   insertStudentRow,
+  updateStudentProfileAsAdmin,
 } from "@/lib/server/supabase-admin";
 
 function withMessage(
@@ -148,6 +136,72 @@ export default async function TeacherGroupPage({
     }
   }
 
+  async function updateStudentAction(formData: FormData) {
+    "use server";
+
+    try {
+      const actionResolution = await resolveAccessPolicy();
+      assertTeacherGroupsAccess(actionResolution);
+      const studentId = String(formData.get("studentId") ?? "").trim();
+      const login = String(formData.get("login") ?? "").trim().toLowerCase();
+      const fullName = String(formData.get("fullName") ?? "").trim();
+      const password = String(formData.get("password") ?? "");
+
+      if (!studentId || !login) {
+        throw new Error("Нужны studentId и логин.");
+      }
+      if (password && password.length < 8) {
+        throw new Error("Пароль должен быть не короче 8 символов.");
+      }
+
+      await updateStudentProfileAsAdmin({
+        classId: groupId,
+        studentId,
+        login,
+        fullName: fullName || null,
+        password: password || null,
+      });
+
+      revalidatePath(ROUTES.dashboard);
+      revalidatePath(ROUTES.groups);
+      revalidatePath(`${ROUTES.groups}/${groupId}`);
+      redirect(withMessage(groupId, "saved", "Данные ученика обновлены."));
+    } catch (error) {
+      if (isRedirectError(error)) {
+        throw error;
+      }
+      const message =
+        error instanceof Error ? error.message : "Не удалось обновить ученика.";
+      redirect(withMessage(groupId, "error", message));
+    }
+  }
+
+  async function removeStudentAction(formData: FormData) {
+    "use server";
+
+    try {
+      const actionResolution = await resolveAccessPolicy();
+      assertTeacherGroupsAccess(actionResolution);
+      const studentId = String(formData.get("studentId") ?? "").trim();
+      if (!studentId) {
+        throw new Error("Не указан ученик для удаления.");
+      }
+      await detachStudentFromClassAsAdmin({ classId: groupId, studentId });
+
+      revalidatePath(ROUTES.dashboard);
+      revalidatePath(ROUTES.groups);
+      revalidatePath(`${ROUTES.groups}/${groupId}`);
+      redirect(withMessage(groupId, "saved", "Ученик удалён из группы."));
+    } catch (error) {
+      if (isRedirectError(error)) {
+        throw error;
+      }
+      const message =
+        error instanceof Error ? error.message : "Не удалось удалить ученика.";
+      redirect(withMessage(groupId, "error", message));
+    }
+  }
+
   const query = await searchParams;
 
   return (
@@ -193,71 +247,49 @@ export default async function TeacherGroupPage({
           actions={null}
         />
 
-        <TeacherTableCard
-          title={undefined}
-          headerAction={(
-            <div className="flex flex-wrap items-center justify-end gap-2">
-              <CreateStudentDialog
-                action={createStudentAction}
-                triggerClassName={productButtonClassName("secondary")}
-                triggerContent={(
-                  <>
-                    <UserPlus className="h-4 w-4" aria-hidden="true" />
-                    Добавить ученика
-                  </>
-                )}
-              />
-              {readModel.schedule.canSchedule ? (
-                <GroupAssignLessonDialog
-                  lessons={readModel.schedule.lessonOptions}
-                  action={scheduleLessonAction}
+        <section className="space-y-3">
+          <h2 className="px-6 text-xl font-bold tracking-[-0.02em] text-neutral-950">
+            Ученики
+          </h2>
+          <GroupStudentsCard
+            students={readModel.students.map((student) => ({
+              id: student.id,
+              displayName: student.displayName,
+              login: student.login,
+              progressLabel: "—",
+              communicationHref: `${ROUTES.groups}/${encodeURIComponent(groupId)}/students/${encodeURIComponent(student.id)}/communication`,
+            }))}
+            headerActions={(
+              <>
+                <CreateStudentDialog
+                  action={createStudentAction}
                   triggerClassName={productButtonClassName("secondary")}
                   triggerContent={(
                     <>
-                      <CalendarPlus2 className="h-4 w-4" aria-hidden="true" />
-                      Назначить урок
+                      <UserPlus className="h-4 w-4" aria-hidden="true" />
+                      Добавить ученика
                     </>
                   )}
                 />
-              ) : null}
-            </div>
-          )}
-        >
-          <ProductTable>
-            <ProductTableHead>
-              <ProductTableHeaderRow>
-                <ProductTableHeaderCell>Ученик</ProductTableHeaderCell>
-                <ProductTableHeaderCell>Логин</ProductTableHeaderCell>
-                <ProductTableHeaderCell>Коммуникация</ProductTableHeaderCell>
-              </ProductTableHeaderRow>
-            </ProductTableHead>
-            <ProductTableBody>
-              {readModel.students.map((student) => (
-                <ProductTableRow key={student.id}>
-                  <ProductTablePrimaryCell className="max-w-0">
-                    <ProductTableTruncate title={student.displayName}>{student.displayName}</ProductTableTruncate>
-                  </ProductTablePrimaryCell>
-                  <ProductTableCell className="max-w-0">
-                    <ProductTableTruncate title={student.login ? `@${student.login}` : "—"}>
-                      {student.login ? `@${student.login}` : "—"}
-                    </ProductTableTruncate>
-                  </ProductTableCell>
-                  <ProductTableActionCell>
-                    <Link
-                      href={`${ROUTES.groups}/${encodeURIComponent(groupId)}/students/${encodeURIComponent(student.id)}/communication`}
-                      className={productTableActionLinkClassName()}
-                    >
-                      Открыть коммуникацию
-                    </Link>
-                  </ProductTableActionCell>
-                </ProductTableRow>
-              ))}
-            </ProductTableBody>
-          </ProductTable>
-          {readModel.students.length === 0 ? (
-            <TeacherTableEmptyState text="В группе пока нет учеников." />
-          ) : null}
-        </TeacherTableCard>
+                {readModel.schedule.canSchedule ? (
+                  <GroupAssignLessonDialog
+                    lessons={readModel.schedule.lessonOptions}
+                    action={scheduleLessonAction}
+                    triggerClassName={productButtonClassName("secondary")}
+                    triggerContent={(
+                      <>
+                        <CalendarPlus2 className="h-4 w-4" aria-hidden="true" />
+                        Назначить урок
+                      </>
+                    )}
+                  />
+                ) : null}
+              </>
+            )}
+            updateAction={updateStudentAction}
+            removeAction={removeStudentAction}
+          />
+        </section>
 
       </div>
     </main>
