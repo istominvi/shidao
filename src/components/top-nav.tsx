@@ -73,7 +73,7 @@ export function TopNav() {
     : [];
 
   return (
-    <div className="container relative z-50 pt-4 md:pt-6">
+    <div className="container relative z-50 pt-4 md:pt-5">
       <SiteHeader
         variant="product"
         brandHref={ROUTES.home}
