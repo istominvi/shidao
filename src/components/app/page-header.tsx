@@ -26,14 +26,10 @@ export function AppPageHeader({
   className,
 }: AppPageHeaderProps) {
   const resolvedBackLabel = backLabel ?? "Назад";
+  const hasHeadingBlock = Boolean(eyebrow || title || description);
 
   return (
-    <header
-      className={classNames(
-        "app-page-header",
-        className,
-      )}
-    >
+    <header className={classNames("app-page-header", className)}>
       {backHref ? (
         <Link
           href={backHref}
@@ -45,14 +41,18 @@ export function AppPageHeader({
               : undefined)
           }
         >
-          <span aria-hidden="true">←</span>
+          <span className="app-page-back-link-icon" aria-hidden="true">←</span>
           <span>{resolvedBackLabel}</span>
         </Link>
       ) : null}
-      {eyebrow ? <p className="app-page-eyebrow">{eyebrow}</p> : null}
-      <h1 className="app-page-title">{title}</h1>
-      {description ? (
-        <p className="app-page-description">{description}</p>
+      {hasHeadingBlock ? (
+        <div className="app-page-heading">
+          {eyebrow ? <p className="app-page-eyebrow">{eyebrow}</p> : null}
+          <h1 className="app-page-title">{title}</h1>
+          {description ? (
+            <p className="app-page-description">{description}</p>
+          ) : null}
+        </div>
       ) : null}
       {meta ? <div className="app-page-meta">{meta}</div> : null}
       {actions ? <div className="app-page-actions">{actions}</div> : null}
