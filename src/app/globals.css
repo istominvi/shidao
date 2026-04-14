@@ -121,6 +121,9 @@ a {
   min-height: var(--header-pill-height);
   padding: 0.45rem 1rem;
   font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.005em;
 }
 
 .landing-surface {
