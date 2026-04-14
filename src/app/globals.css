@@ -47,6 +47,10 @@ a {
   margin-inline: auto;
 }
 
+.app-page-container {
+  padding-block: 0;
+}
+
 .glass {
   background: rgba(255, 255, 255, 0.8);
   border: 1px solid rgba(255, 255, 255, 0.6);
@@ -183,16 +187,15 @@ a {
   line-height: 1;
 }
 
-.app-page-back-link:hover,
+.app-page-back-link:hover {
+  color: #0c4a6e;
+}
+
 .app-page-back-link:focus-visible {
   color: #0c4a6e;
   text-decoration: underline;
   text-decoration-thickness: 1px;
   text-underline-offset: 0.14em;
-}
-
-.app-page-back-link:hover {
-  text-decoration-color: currentcolor;
 }
 
 .app-page-back-link:focus-visible {

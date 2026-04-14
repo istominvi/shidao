@@ -111,7 +111,7 @@ export default async function MethodologyDetailPage({
     <main className="pb-12">
       <div className="landing-noise" aria-hidden="true" />
       <TopNav />
-      <div className="container space-y-6">
+      <div className="container app-page-container space-y-6">
         <AppPageHeader
           backHref={ROUTES.methodologies}
           backLabel="Методики"
@@ -177,7 +177,7 @@ export default async function MethodologyDetailPage({
           </section>
         ) : null}
 
-        <section className="mt-6 space-y-3">
+        <section className="space-y-3">
           {readModel.lessons.map((lesson) => (
             <MethodologyEntityCard
               key={lesson.id}

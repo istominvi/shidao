@@ -89,7 +89,7 @@ export default async function TeacherLessonsHubPage({
     <main className="pb-12">
       <div className="landing-noise" aria-hidden="true" />
       <TopNav />
-      <div className="container py-7 md:py-10">
+      <div className="container app-page-container">
         <TeacherLessonsHub
           hub={hub}
           createLessonAction={createLessonAction}
