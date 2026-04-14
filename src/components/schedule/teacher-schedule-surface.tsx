@@ -128,8 +128,6 @@ export function TeacherScheduleSurface({
         <div className="flex flex-wrap items-center gap-2">
           <SegmentedControl
             ariaLabel="Режим расписания"
-            size="sm"
-            className="bg-white"
             value={viewMode}
             onChange={setViewMode}
             items={VISIBLE_VIEWS.map((mode) => ({

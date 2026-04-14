@@ -232,10 +232,6 @@ export function SessionNavActions({
         <div className="border-t border-black/5 px-3 py-2.5">
           <SegmentedControl
             ariaLabel="Активный профиль"
-            size="sm"
-            fullWidth
-            className="bg-neutral-100"
-            itemClassName="px-2.5"
             value={state.activeProfile}
             onChange={(profile) => {
               if (profile === state.activeProfile) {
