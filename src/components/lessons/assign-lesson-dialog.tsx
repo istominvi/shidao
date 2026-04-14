@@ -5,6 +5,8 @@ import { useFormStatus } from "react-dom";
 import type { ReactNode } from "react";
 import { ChevronDown, MapPin, MonitorPlay } from "lucide-react";
 import { Button, productButtonClassName } from "@/components/ui/button";
+import { DialogShell } from "@/components/ui/dialog-shell";
+import { FieldControl, FieldLabel, FormField } from "@/components/ui/form-field";
 import { Input, Select } from "@/components/ui/input";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 
@@ -47,79 +49,71 @@ export function AssignLessonDialog({
         {triggerContent}
       </button>
       {open ? (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
-          <button
-            aria-label="Закрыть"
-            className="absolute inset-0 bg-neutral-950/40"
-            onClick={() => setOpen(false)}
-          />
-          <section
-            role="dialog"
-            aria-modal="true"
-            className="relative z-10 w-full max-w-xl rounded-3xl border border-white/80 bg-white px-6 py-5 shadow-2xl"
-          >
-            <h2 className="text-2xl font-bold text-neutral-950">Назначить урок</h2>
-            <p className="mt-2 text-sm text-neutral-700">{lessonTitle}</p>
-            <form action={action} className="mt-4 grid gap-3 md:grid-cols-2">
-              <label className="space-y-2 text-sm text-neutral-700 md:col-span-2">
-                <span>Группа</span>
-                <span className="product-select-wrap block">
-                  <Select name="classId" required defaultValue="">
-                    <option value="" disabled>
-                      Выберите группу
+        <DialogShell
+          onClose={() => setOpen(false)}
+          title="Назначить урок"
+          description={lessonTitle}
+          panelClassName="max-w-xl"
+        >
+          <form action={action} className="grid gap-3 md:grid-cols-2">
+            <FormField className="md:col-span-2">
+              <FieldLabel htmlFor="assign-class-id">Группа</FieldLabel>
+              <FieldControl className="product-select-wrap">
+                <Select id="assign-class-id" name="classId" required defaultValue="">
+                  <option value="" disabled>
+                    Выберите группу
+                  </option>
+                  {groups.map((group) => (
+                    <option key={group.id} value={group.id}>
+                      {group.label}
                     </option>
-                    {groups.map((group) => (
-                      <option key={group.id} value={group.id}>
-                        {group.label}
-                      </option>
-                    ))}
-                  </Select>
-                  <ChevronDown className="product-select-icon h-4 w-4" aria-hidden="true" />
-                </span>
-              </label>
-              <label className="space-y-2 text-sm text-neutral-700">
-                <span>Дата</span>
-                <Input type="date" name="date" required />
-              </label>
-              <label className="space-y-2 text-sm text-neutral-700">
-                <span>Время</span>
-                <Input type="time" name="time" required />
-              </label>
-              <fieldset className="space-y-2 text-sm text-neutral-700 md:col-span-2">
-                <legend>Формат</legend>
-                <input type="hidden" name="format" value={format} />
-                <SegmentedControl
-                  ariaLabel="Формат занятия"
-                  value={format}
-                  onChange={setFormat}
-                  items={[
-                    { value: "online", label: "Онлайн", icon: MonitorPlay },
-                    { value: "offline", label: "Офлайн", icon: MapPin },
-                  ]}
-                />
-              </fieldset>
-              {format === "online" ? (
-                <label className="space-y-2 text-sm text-neutral-700 md:col-span-2">
-                  <span>Ссылка на встречу</span>
-                  <Input type="url" name="meetingLink" placeholder="https://" />
-                  <input type="hidden" name="place" value="" />
-                </label>
-              ) : (
-                <label className="space-y-2 text-sm text-neutral-700 md:col-span-2">
-                  <span>Место</span>
-                  <Input type="text" name="place" placeholder="Кабинет / адрес" />
-                  <input type="hidden" name="meetingLink" value="" />
-                </label>
-              )}
-              <div className="mt-3 flex justify-end gap-2 md:col-span-2">
-                <Button type="button" variant="secondary" onClick={() => setOpen(false)}>
-                  Отмена
-                </Button>
-                <SubmitButton />
-              </div>
-            </form>
-          </section>
-        </div>
+                  ))}
+                </Select>
+                <ChevronDown className="product-select-icon h-4 w-4" aria-hidden="true" />
+              </FieldControl>
+            </FormField>
+            <FormField>
+              <FieldLabel htmlFor="assign-date">Дата</FieldLabel>
+              <Input id="assign-date" type="date" name="date" required />
+            </FormField>
+            <FormField>
+              <FieldLabel htmlFor="assign-time">Время</FieldLabel>
+              <Input id="assign-time" type="time" name="time" required />
+            </FormField>
+            <fieldset className="space-y-2 text-sm text-neutral-700 md:col-span-2">
+              <legend className="form-field-label">Формат</legend>
+              <input type="hidden" name="format" value={format} />
+              <SegmentedControl
+                ariaLabel="Формат занятия"
+                value={format}
+                onChange={setFormat}
+                items={[
+                  { value: "online", label: "Онлайн", icon: MonitorPlay },
+                  { value: "offline", label: "Офлайн", icon: MapPin },
+                ]}
+              />
+            </fieldset>
+            {format === "online" ? (
+              <FormField className="md:col-span-2">
+                <FieldLabel htmlFor="assign-meeting-link">Ссылка на встречу</FieldLabel>
+                <Input id="assign-meeting-link" type="url" name="meetingLink" placeholder="https://" />
+                <input type="hidden" name="place" value="" />
+              </FormField>
+            ) : (
+              <FormField className="md:col-span-2">
+                <FieldLabel htmlFor="assign-place">Место</FieldLabel>
+                <Input id="assign-place" type="text" name="place" placeholder="Кабинет / адрес" />
+                <input type="hidden" name="meetingLink" value="" />
+              </FormField>
+            )}
+            <div className="mt-3 flex justify-end gap-2 md:col-span-2">
+              <Button type="button" variant="secondary" onClick={() => setOpen(false)}>
+                Отмена
+              </Button>
+              <SubmitButton />
+            </div>
+          </form>
+        </DialogShell>
       ) : null}
     </>
   );
