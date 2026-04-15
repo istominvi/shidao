@@ -10,7 +10,8 @@ export type ChipTone =
   | "amber"
   | "rose"
   | "indigo"
-  | "slate";
+  | "slate"
+  | "inverse";
 
 export type ChipSize = "sm" | "md";
 
@@ -31,6 +32,7 @@ const chipToneClass: Record<ChipTone, string> = {
   rose: "border-rose-200 bg-rose-50/90 text-rose-800",
   indigo: "border-indigo-200 bg-indigo-50/90 text-indigo-800",
   slate: "border-slate-200 bg-slate-50/90 text-slate-700",
+  inverse: "border-neutral-900 bg-neutral-900 text-white",
 };
 
 const chipSizeClass: Record<ChipSize, string> = {

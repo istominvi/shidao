@@ -26,7 +26,7 @@ function tabClassName(active: boolean, tone: "surface" | "embedded") {
   if (tone === "embedded") {
     return classNames(
       productButtonClassName("secondary", "text-sm"),
-      active && "border-neutral-900 bg-neutral-900 text-white shadow-[0_10px_24px_rgba(15,23,42,0.28)] hover:border-neutral-900 hover:bg-neutral-900 hover:text-white",
+      active && "border-neutral-900 bg-neutral-900 text-white shadow-[0_10px_20px_rgba(15,23,42,0.08)] hover:border-neutral-900 hover:bg-neutral-900 hover:text-white",
     );
   }
 

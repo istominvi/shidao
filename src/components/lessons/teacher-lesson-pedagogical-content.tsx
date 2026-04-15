@@ -126,7 +126,7 @@ export function TeacherLessonPedagogicalContent({
             <article key={step.id} className="space-y-4 p-4 md:p-5">
               <header className="space-y-2">
                 <div className="flex flex-wrap items-center gap-2">
-                  <Chip size="sm" className="border-neutral-900 bg-neutral-900 text-white">
+                  <Chip size="sm" tone="inverse">
                     {step.stepLabel || `Этап ${index + 1}`}
                   </Chip>
                   <Chip size="sm" tone="slate">
