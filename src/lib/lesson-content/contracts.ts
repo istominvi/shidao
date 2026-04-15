@@ -16,6 +16,68 @@ export type Methodology = {
   metadata?: MethodologyMetadata;
 };
 
+
+export type MethodologyProgramDescriptionSectionTone =
+  | "sky"
+  | "emerald"
+  | "violet"
+  | "amber"
+  | "rose"
+  | "slate";
+
+export type MethodologyProgramDescriptionTextSection = {
+  kind: "text";
+  id: string;
+  title: string;
+  tone?: MethodologyProgramDescriptionSectionTone;
+  paragraphs?: string[];
+  bullets?: string[];
+};
+
+export type MethodologyProgramDescriptionGroupedSection = {
+  kind: "grouped";
+  id: string;
+  title: string;
+  tone?: MethodologyProgramDescriptionSectionTone;
+  groups: Array<{
+    id: string;
+    title: string;
+    bullets: string[];
+  }>;
+};
+
+export type MethodologyProgramDescriptionSection =
+  | MethodologyProgramDescriptionTextSection
+  | MethodologyProgramDescriptionGroupedSection;
+
+export type MethodologyProgramCurriculumPlanItem = {
+  id: string;
+  title: string;
+  lessonCount: number;
+  dateRange: string;
+  grammar: string;
+  lessons: string[];
+};
+
+export type MethodologyProgramDescription = {
+  sourceTitle?: string;
+  sourceSubtitle?: string;
+  sourceNote?: string;
+  programFacts?: Array<{
+    id: string;
+    label: string;
+    value: string;
+  }>;
+  summarySections: MethodologyProgramDescriptionSection[];
+  goalAndTaskSections: MethodologyProgramDescriptionSection[];
+  valueOrientations?: string[];
+  curriculumPlan: MethodologyProgramCurriculumPlanItem[];
+  resultSections: MethodologyProgramDescriptionSection[];
+  courseCharacteristicSections: MethodologyProgramDescriptionSection[];
+  methodologySupportSections: MethodologyProgramDescriptionSection[];
+  additionalSections?: MethodologyProgramDescriptionSection[];
+  bibliography?: string[];
+};
 export type MethodologyMetadata = {
   locale?: string;
   level?: string;
@@ -43,6 +105,7 @@ export type MethodologyMetadata = {
   audienceLabel?: string;
   courseScopeLabel?: string;
   programLessonCount?: number;
+  programDescription?: MethodologyProgramDescription;
 };
 
 export type MethodologyLessonShell = {

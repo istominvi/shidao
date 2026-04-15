@@ -6,6 +6,7 @@ import type { ReusableAsset } from "../lesson-content";
 import type {
   Methodology,
   MethodologyMetadata,
+  MethodologyProgramDescription,
 } from "../lesson-content/contracts";
 import type { AccessResolution } from "./access-policy";
 import { getMethodologyHomeworkByLessonIdAdmin } from "./homework-repository";
@@ -28,6 +29,7 @@ import {
   canAccessTeacherLessonWorkspace,
 } from "./teacher-lesson-workspace";
 import { isInvalidLessonStudentContentPayloadError } from "./lesson-content-mappers";
+import { defaultProgramDescriptionBySlug } from "@/lib/methodologies/program-descriptions";
 
 function clean(value: string | null | undefined) {
   return value?.trim() || "";
@@ -100,6 +102,18 @@ function normalizeMethodologyCoverImage(methodology: {
   };
 }
 
+
+
+function normalizeMethodologyProgramDescription(methodology: {
+  slug: string;
+  metadata?: MethodologyMetadata | null;
+}): MethodologyProgramDescription | null {
+  return (
+    methodology.metadata?.programDescription ??
+    defaultProgramDescriptionBySlug[methodology.slug] ??
+    null
+  );
+}
 function withFallbackMetadata(
   methodology: Pick<Methodology, "metadata" | "title">,
 ) {
@@ -287,6 +301,7 @@ export async function getTeacherMethodologyDetailReadModel(
       sourceRuntimeNote:
         "Методика — это полный педагогический источник курса. В ShiDao ниже показаны только уже импортированные source-уроки, которые можно назначать группам в runtime-слое.",
     },
+    programDescription: normalizeMethodologyProgramDescription(methodology),
     lessons: lessonsWithHomework.map(({ lesson, canonicalHomework }) => {
       const prepSignals = inferMaterialsSignals(
         metadata.materialsEcosystemSummary,
