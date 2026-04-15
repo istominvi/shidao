@@ -1,5 +1,14 @@
 import Image from "next/image";
 import { BookOpenCheck, BrainCircuit, Globe2, HeartHandshake } from "lucide-react";
+import {
+  ProductTable,
+  ProductTableBody,
+  ProductTableCell,
+  ProductTableHead,
+  ProductTableHeaderCell,
+  ProductTableHeaderRow,
+  ProductTableRow,
+} from "@/components/ui/product-table";
 import type { MethodologyDescriptionContent } from "@/lib/methodologies/methodology-description-content";
 
 function SectionTitle({ title }: { title: string }) {
@@ -104,6 +113,15 @@ export function MethodologyDescriptionPanel({
                 ))}
               </div>
 
+              <div className="rounded-2xl border border-neutral-200 bg-white p-4">
+                <h4 className="text-xs font-semibold uppercase tracking-[0.12em] text-neutral-500">
+                  Ценностные ориентиры
+                </h4>
+                <div className="mt-3">
+                  <DotList items={section.valueOrientations} />
+                </div>
+              </div>
+
               <div className="rounded-2xl border border-neutral-200 bg-neutral-50/70 p-4">
                 <h4 className="text-xs font-semibold uppercase tracking-[0.12em] text-neutral-500">
                   Ключевые стратегические цели
@@ -140,27 +158,37 @@ export function MethodologyDescriptionPanel({
             <section key={section.id} className="space-y-3 border-b border-neutral-200 pb-6 last:border-b-0 last:pb-0">
               <SectionTitle title={section.title} />
               <div className="overflow-x-auto rounded-2xl border border-neutral-200 bg-white/95">
-                <table className="min-w-full divide-y divide-neutral-200 text-sm text-neutral-700">
-                  <thead className="bg-neutral-50/80 text-neutral-900">
-                    <tr>
+                <ProductTable className="table-auto">
+                  <colgroup>
+                    <col className="w-[21%]" />
+                    <col className="w-[15%]" />
+                    <col className="w-[8%]" />
+                    <col className="w-[27%]" />
+                    <col className="w-[29%]" />
+                  </colgroup>
+                  <ProductTableHead>
+                    <ProductTableHeaderRow>
                       {section.columns.map((column) => (
-                        <th key={column} scope="col" className="px-4 py-2.5 text-left font-semibold">
-                          {column}
-                        </th>
+                        <ProductTableHeaderCell key={column}>{column}</ProductTableHeaderCell>
                       ))}
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-neutral-200">
+                    </ProductTableHeaderRow>
+                  </ProductTableHead>
+                  <ProductTableBody>
                     {section.rows.map((row) => (
-                      <tr key={row.section}>
-                        <td className="px-4 py-2.5 font-medium text-neutral-900">{row.section}</td>
-                        <td className="px-4 py-2.5">{row.period}</td>
-                        <td className="px-4 py-2.5">{row.hours}</td>
-                        <td className="px-4 py-2.5">{row.grammar}</td>
-                      </tr>
+                      <ProductTableRow key={row.section}>
+                        <ProductTableCell className="text-neutral-700">{row.section}</ProductTableCell>
+                        <ProductTableCell>{row.period}</ProductTableCell>
+                        <ProductTableCell>{row.hours}</ProductTableCell>
+                        <ProductTableCell>{row.grammar}</ProductTableCell>
+                        <ProductTableCell>
+                          <span className="whitespace-pre-line">
+                            {row.lessons.join("\n")}
+                          </span>
+                        </ProductTableCell>
+                      </ProductTableRow>
                     ))}
-                  </tbody>
-                </table>
+                  </ProductTableBody>
+                </ProductTable>
               </div>
             </section>
           );
