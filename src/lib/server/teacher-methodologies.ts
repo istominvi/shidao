@@ -16,9 +16,11 @@ import {
   getMethodologyLessonStudentContentByLessonIdAdmin,
   isLessonStudentContentSchemaReadyAdmin,
   isMissingLessonStudentContentSchemaError,
+  listAssignedClassIdsForTeacherAdmin,
   listMethodologiesWithSlugAdmin,
   listMethodologyLessonsByMethodologyAdmin,
   listReusableAssetsByIdsAdmin,
+  listScheduledLessonsForClassesAdmin,
   listTeacherClassesAdmin,
 } from "./lesson-content-repository";
 import {
@@ -129,6 +131,14 @@ function homeworkKindLabel(kind: "practice_text" | "quiz_single_choice") {
   return kind === "quiz_single_choice" ? "Квиз" : "Практика";
 }
 
+function formatNearestScheduledLabel(startsAt: string) {
+  return new Intl.DateTimeFormat("ru-RU", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(new Date(startsAt));
+}
+
 function toStudentContentUnavailableReason(error: unknown) {
   if (isInvalidLessonStudentContentPayloadError(error)) {
     return "invalid_payload" as const;
@@ -210,7 +220,10 @@ export async function getTeacherMethodologiesIndexReadModel() {
   return { cards };
 }
 
-export async function getTeacherMethodologyDetailReadModel(slug: string) {
+export async function getTeacherMethodologyDetailReadModel(
+  slug: string,
+  teacherId: string,
+) {
   const methodology = await getMethodologyBySlugAdmin(slug);
   if (!methodology) return null;
 
@@ -225,6 +238,23 @@ export async function getTeacherMethodologyDetailReadModel(slug: string) {
       canonicalHomework: await getMethodologyHomeworkByLessonIdAdmin(lesson.id),
     })),
   );
+  const assignedClassIds = await listAssignedClassIdsForTeacherAdmin(teacherId);
+  const scheduledLessons = await listScheduledLessonsForClassesAdmin(
+    assignedClassIds,
+  );
+  const now = Date.now();
+  const nearestScheduledByMethodologyLesson = new Map<string, string>();
+
+  for (const scheduled of scheduledLessons) {
+    const startsAt = scheduled.runtimeShell.startsAt;
+    if (Date.parse(startsAt) < now) continue;
+    const current = nearestScheduledByMethodologyLesson.get(
+      scheduled.methodologyLessonId,
+    );
+    if (!current || Date.parse(startsAt) < Date.parse(current)) {
+      nearestScheduledByMethodologyLesson.set(scheduled.methodologyLessonId, startsAt);
+    }
+  }
 
   return {
     methodology: {
@@ -261,6 +291,7 @@ export async function getTeacherMethodologyDetailReadModel(slug: string) {
       const prepSignals = inferMaterialsSignals(
         metadata.materialsEcosystemSummary,
       );
+      const nearestAssignedAt = nearestScheduledByMethodologyLesson.get(lesson.id);
       return {
         id: lesson.id,
         title: lesson.shell.title,
@@ -272,6 +303,9 @@ export async function getTeacherMethodologyDetailReadModel(slug: string) {
         mediaSummary: lesson.shell.mediaSummary,
         materialsSignal: prepSignals.hasCards || prepSignals.hasProps,
         homeworkSignal: Boolean(canonicalHomework),
+        nearestAssignedAtLabel: nearestAssignedAt
+          ? formatNearestScheduledLabel(nearestAssignedAt)
+          : null,
         homeworkLabel: canonicalHomework
           ? `Есть домашнее задание · ${homeworkKindLabel(canonicalHomework.kind)}`
           : null,
