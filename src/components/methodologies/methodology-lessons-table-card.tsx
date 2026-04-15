@@ -112,7 +112,7 @@ export function MethodologyLessonsTableCard({
                   </ProductTableTruncate>
                 </ProductTableCell>
                 <ProductTableCell className="whitespace-nowrap">
-                  <div className="flex flex-wrap items-center gap-2 text-sm text-neutral-700">
+                  <div className="flex flex-nowrap items-center gap-2 text-sm text-neutral-700">
                     <MaterialMetric
                       label="Видео"
                       value={lesson.mediaSummary.videos}
