@@ -68,13 +68,19 @@ export function MethodologyLessonsTableCard({
 
   return (
     <ProductTableCard title={title}>
-      <ProductTable>
+      <ProductTable className="table-auto">
+        <colgroup>
+          <col />
+          <col className="w-px" />
+          <col className="w-px" />
+          <col className="w-px" />
+        </colgroup>
         <ProductTableHead>
           <ProductTableHeaderRow>
             <ProductTableHeaderCell>Урок</ProductTableHeaderCell>
-            <ProductTableHeaderCell>Длительность</ProductTableHeaderCell>
-            <ProductTableHeaderCell>Материалы</ProductTableHeaderCell>
-            <ProductTableHeaderCell>Назначен</ProductTableHeaderCell>
+            <ProductTableHeaderCell className="whitespace-nowrap">Длительность</ProductTableHeaderCell>
+            <ProductTableHeaderCell className="whitespace-nowrap">Материалы</ProductTableHeaderCell>
+            <ProductTableHeaderCell className="whitespace-nowrap">Назначен</ProductTableHeaderCell>
           </ProductTableHeaderRow>
         </ProductTableHead>
         <ProductTableBody>
@@ -95,17 +101,17 @@ export function MethodologyLessonsTableCard({
                   }
                 }}
               >
-                <ProductTablePrimaryCell className="max-w-0">
+                <ProductTablePrimaryCell className="w-full max-w-0">
                   <ProductTableTruncate title={lesson.title}>
                     {lesson.title}
                   </ProductTableTruncate>
                 </ProductTablePrimaryCell>
-                <ProductTableCell>
+                <ProductTableCell className="whitespace-nowrap">
                   <ProductTableTruncate title={lesson.durationLabel}>
                     {lesson.durationLabel}
                   </ProductTableTruncate>
                 </ProductTableCell>
-                <ProductTableCell>
+                <ProductTableCell className="whitespace-nowrap">
                   <div className="flex flex-wrap items-center gap-2 text-sm text-neutral-700">
                     <MaterialMetric
                       label="Видео"
@@ -129,7 +135,7 @@ export function MethodologyLessonsTableCard({
                     />
                   </div>
                 </ProductTableCell>
-                <ProductTableCell>
+                <ProductTableCell className="whitespace-nowrap">
                   <ProductTableTruncate title={lesson.nearestAssignedAtLabel ?? "Не назначен"}>
                     {lesson.nearestAssignedAtLabel ?? "—"}
                   </ProductTableTruncate>
