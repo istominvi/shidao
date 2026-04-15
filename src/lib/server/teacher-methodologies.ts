@@ -28,6 +28,7 @@ import {
   canAccessTeacherLessonWorkspace,
 } from "./teacher-lesson-workspace";
 import { isInvalidLessonStudentContentPayloadError } from "./lesson-content-mappers";
+import { getMethodologyDescriptionContentBySlug } from "@/lib/methodologies/description-content";
 
 function clean(value: string | null | undefined) {
   return value?.trim() || "";
@@ -260,7 +261,9 @@ export async function getTeacherMethodologyDetailReadModel(
     methodology: {
       ...methodology,
       title: teacherFacingMethodologyTitle(methodology),
+      coverImage: normalizeMethodologyCoverImage(methodology),
     },
+    descriptionContent: getMethodologyDescriptionContentBySlug(methodology.slug),
     overview: {
       passport: {
         audienceLabel: metadata.audienceLabel,
@@ -430,6 +433,7 @@ export async function getTeacherMethodologyLessonReadModel(input: {
     methodology: {
       ...methodology,
       title: teacherFacingMethodologyTitle(methodology),
+      coverImage: normalizeMethodologyCoverImage(methodology),
     },
     lesson,
     groups,
