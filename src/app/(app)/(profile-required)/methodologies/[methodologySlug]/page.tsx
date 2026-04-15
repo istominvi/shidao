@@ -1,34 +1,23 @@
-import { revalidatePath } from "next/cache";
 import { notFound, redirect } from "next/navigation";
 import {
   BookOpen,
-  CalendarClock,
   CalendarRange,
   Clock3,
-  Eye,
   GraduationCap,
-  Music2,
   Shapes,
   Users,
-  Video,
-  ClipboardCheck,
 } from "lucide-react";
 import { AppPageHeader } from "@/components/app/page-header";
-import { AssignLessonDialog } from "@/components/lessons/assign-lesson-dialog";
-import { MethodologyEntityCard } from "@/components/methodologies/methodology-entity-card";
+import { MethodologyLessonsTableCard } from "@/components/methodologies/methodology-lessons-table-card";
 import { Chip } from "@/components/ui/chip";
 import { SurfaceCard } from "@/components/ui/surface-card";
-import { ActionLink, productActionClassName } from "@/components/ui/action";
 import { TopNav } from "@/components/top-nav";
-import { ROUTES, toLessonWorkspaceRoute, toMethodologyLessonRoute } from "@/lib/auth";
+import { ROUTES } from "@/lib/auth";
 import { resolveAccessPolicy } from "@/lib/server/access-policy";
-import { listTeacherClassesAdmin } from "@/lib/server/lesson-content-repository";
 import {
   assertTeacherMethodologiesAccess,
   canAccessTeacherMethodologies,
-  createScheduledLessonFromMethodology,
   getTeacherMethodologyDetailReadModel,
-  parseAssignLessonFromMethodologyFormData,
 } from "@/lib/server/teacher-methodologies";
 
 export default async function MethodologyDetailPage({
@@ -38,15 +27,11 @@ export default async function MethodologyDetailPage({
 }) {
   const resolution = await resolveAccessPolicy();
   if (!canAccessTeacherMethodologies(resolution)) redirect(ROUTES.dashboard);
-  const { teacherId } = assertTeacherMethodologiesAccess(resolution);
+  assertTeacherMethodologiesAccess(resolution);
 
   const { methodologySlug } = await params;
   const readModel = await getTeacherMethodologyDetailReadModel(methodologySlug);
   if (!readModel) notFound();
-  const groups = (await listTeacherClassesAdmin(teacherId))
-    .filter((group) => group.methodologyId === readModel.methodology.id)
-    .map((group) => ({ id: group.id, label: group.name?.trim() || "Группа" }));
-
   const passport = readModel.overview.passport;
   const normalizedCourseDurationLabel = passport.courseDurationLabel
     ? passport.courseDurationLabel === "1 учебный год"
@@ -177,109 +162,11 @@ export default async function MethodologyDetailPage({
           </section>
         ) : null}
 
-        <section className="space-y-3">
-          {readModel.lessons.map((lesson) => (
-            <MethodologyEntityCard
-              key={lesson.id}
-              title={
-                <span className="flex flex-wrap items-center gap-2">
-                  <span>{lesson.title}</span>
-                  {lesson.mediaSummary.videos > 0 ? (
-                    <span
-                      title="В уроке есть видео"
-                      aria-label="В уроке есть видео"
-                      className="text-sky-700"
-                    >
-                      <Video
-                        className="h-3.5 w-3.5"
-                        strokeWidth={2.4}
-                        aria-hidden="true"
-                      />
-                    </span>
-                  ) : null}
-                  {lesson.mediaSummary.songs > 0 ? (
-                    <span
-                      title="В уроке есть песни"
-                      aria-label="В уроке есть песни"
-                      className="text-violet-700"
-                    >
-                      <Music2
-                        className="h-3.5 w-3.5"
-                        strokeWidth={2.4}
-                        aria-hidden="true"
-                      />
-                    </span>
-                  ) : null}
-                  {lesson.homeworkSignal ? (
-                    <span
-                      title="Есть домашнее задание: квиз"
-                      aria-label="Есть домашнее задание: квиз"
-                      className="text-emerald-700"
-                    >
-                      <ClipboardCheck
-                        className="h-3.5 w-3.5"
-                        strokeWidth={2.4}
-                        aria-hidden="true"
-                      />
-                    </span>
-                  ) : null}
-                </span>
-              }
-              description={
-                <>
-                  {lesson.vocabularyPreview.length ? (
-                    <span>Лексика: {lesson.vocabularyPreview.join(", ")}</span>
-                  ) : null}
-                  {lesson.phrasePreview.length ? (
-                    <span className="block mt-1">
-                      Фразы: {lesson.phrasePreview.join(" · ")}
-                    </span>
-                  ) : null}
-                </>
-              }
-              actions={
-                <>
-                  <ActionLink
-                    href={toMethodologyLessonRoute(
-                      readModel.methodology.slug,
-                      lesson.id,
-                    )}
-                    className="text-sm"
-                  >
-                    <Eye className="h-3.5 w-3.5" aria-hidden="true" />
-                    <span>Смотреть</span>
-                  </ActionLink>
-                  <AssignLessonDialog
-                    action={async (formData) => {
-                      "use server";
-                      const actionResolution = await resolveAccessPolicy();
-                      const { teacherId } =
-                        assertTeacherMethodologiesAccess(actionResolution);
-                      const payload =
-                        parseAssignLessonFromMethodologyFormData(formData);
-                      const created = await createScheduledLessonFromMethodology({
-                        teacherId,
-                        methodologyLessonId: lesson.id,
-                        payload,
-                      });
-                      revalidatePath(ROUTES.lessons);
-                      revalidatePath(ROUTES.groups);
-                      redirect(toLessonWorkspaceRoute(created.id));
-                    }}
-                    groups={groups}
-                    lessonTitle={lesson.title}
-                    triggerClassName={productActionClassName("text-sm")}
-                    triggerContent={
-                      <>
-                        <CalendarClock className="h-3.5 w-3.5" aria-hidden="true" />
-                        <span>Назначить</span>
-                      </>
-                    }
-                  />
-                </>
-              }
-            />
-          ))}
+        <section>
+          <MethodologyLessonsTableCard
+            methodologySlug={readModel.methodology.slug}
+            rows={readModel.lessons}
+          />
         </section>
       </div>
     </main>
