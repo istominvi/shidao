@@ -1,6 +1,8 @@
 "use client";
 
+import { ClipboardCheck, Music2, PanelsTopLeft, Video } from "lucide-react";
 import { useRouter } from "next/navigation";
+import type { ReactNode } from "react";
 import { ProductTableCard } from "@/components/dashboard/product-table-card";
 import {
   ProductTable,
@@ -19,10 +21,8 @@ import { toMethodologyLessonRoute } from "@/lib/auth";
 type MethodologyLessonRow = {
   id: string;
   title: string;
-  positionLabel: string;
   durationLabel: string;
-  readinessLabel: string;
-  homeworkLabel: string | null;
+  nearestAssignedAtLabel: string | null;
   mediaSummary: {
     videos: number;
     songs: number;
@@ -30,6 +30,7 @@ type MethodologyLessonRow = {
     other: number;
   };
   materialsSignal: boolean;
+  homeworkSignal: boolean;
 };
 
 type MethodologyLessonsTableCardProps = {
@@ -38,46 +39,24 @@ type MethodologyLessonsTableCardProps = {
   rows: MethodologyLessonRow[];
 };
 
-function pluralizeMaterial(count: number, one: string, few: string, many: string) {
-  const mod10 = count % 10;
-  const mod100 = count % 100;
-
-  if (mod10 === 1 && mod100 !== 11) return `${count} ${one}`;
-  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) {
-    return `${count} ${few}`;
-  }
-
-  return `${count} ${many}`;
-}
-
-function toMaterialsLabel(lesson: MethodologyLessonRow) {
-  const mediaParts: string[] = [];
-
-  if (lesson.mediaSummary.videos > 0) {
-    mediaParts.push(pluralizeMaterial(lesson.mediaSummary.videos, "видео", "видео", "видео"));
-  }
-  if (lesson.mediaSummary.songs > 0) {
-    mediaParts.push(pluralizeMaterial(lesson.mediaSummary.songs, "песня", "песни", "песен"));
-  }
-  if (lesson.mediaSummary.worksheets > 0) {
-    mediaParts.push(
-      pluralizeMaterial(lesson.mediaSummary.worksheets, "worksheet", "worksheets", "worksheets"),
-    );
-  }
-  if (lesson.mediaSummary.other > 0) {
-    mediaParts.push(pluralizeMaterial(lesson.mediaSummary.other, "материал", "материала", "материалов"));
-  }
-
-  if (mediaParts.length === 0 && lesson.materialsSignal) {
-    mediaParts.push("есть материалы");
-  }
-
-  const homeworkPart = lesson.homeworkLabel ? `ДЗ: ${lesson.homeworkLabel.replace(/^Есть домашнее задание\s*[·:]\s*/i, "")}` : "без ДЗ";
-
-  const parts = mediaParts.length > 0 ? mediaParts : ["без медиа"];
-  parts.push(homeworkPart);
-
-  return parts.join(" · ");
+function MaterialMetric({
+  label,
+  value,
+  icon,
+}: {
+  label: string;
+  value: number;
+  icon: ReactNode;
+}) {
+  return (
+    <span className="inline-flex items-center gap-1" title={`${label}: ${value}`}>
+      <span aria-hidden="true" className="text-neutral-500">
+        {icon}
+      </span>
+      <span>{value}</span>
+      <span className="sr-only">{label}</span>
+    </span>
+  );
 }
 
 export function MethodologyLessonsTableCard({
@@ -93,10 +72,9 @@ export function MethodologyLessonsTableCard({
         <ProductTableHead>
           <ProductTableHeaderRow>
             <ProductTableHeaderCell>Урок</ProductTableHeaderCell>
-            <ProductTableHeaderCell>Позиция</ProductTableHeaderCell>
             <ProductTableHeaderCell>Длительность</ProductTableHeaderCell>
-            <ProductTableHeaderCell>Материалы / ДЗ</ProductTableHeaderCell>
-            <ProductTableHeaderCell>Статус</ProductTableHeaderCell>
+            <ProductTableHeaderCell>Материалы</ProductTableHeaderCell>
+            <ProductTableHeaderCell>Назначен</ProductTableHeaderCell>
           </ProductTableHeaderRow>
         </ProductTableHead>
         <ProductTableBody>
@@ -122,24 +100,38 @@ export function MethodologyLessonsTableCard({
                     {lesson.title}
                   </ProductTableTruncate>
                 </ProductTablePrimaryCell>
-                <ProductTableCell className="max-w-0">
-                  <ProductTableTruncate title={lesson.positionLabel}>
-                    {lesson.positionLabel}
-                  </ProductTableTruncate>
-                </ProductTableCell>
                 <ProductTableCell>
                   <ProductTableTruncate title={lesson.durationLabel}>
                     {lesson.durationLabel}
                   </ProductTableTruncate>
                 </ProductTableCell>
-                <ProductTableCell className="max-w-0">
-                  <ProductTableTruncate title={toMaterialsLabel(lesson)}>
-                    {toMaterialsLabel(lesson)}
-                  </ProductTableTruncate>
+                <ProductTableCell>
+                  <div className="flex flex-wrap items-center gap-2 text-sm text-neutral-700">
+                    <MaterialMetric
+                      label="Видео"
+                      value={lesson.mediaSummary.videos}
+                      icon={<Video className="h-3.5 w-3.5" strokeWidth={2.2} />}
+                    />
+                    <MaterialMetric
+                      label="Песни"
+                      value={lesson.mediaSummary.songs}
+                      icon={<Music2 className="h-3.5 w-3.5" strokeWidth={2.2} />}
+                    />
+                    <MaterialMetric
+                      label="Карточки"
+                      value={lesson.mediaSummary.worksheets + lesson.mediaSummary.other + (lesson.materialsSignal ? 1 : 0)}
+                      icon={<PanelsTopLeft className="h-3.5 w-3.5" strokeWidth={2.2} />}
+                    />
+                    <MaterialMetric
+                      label="Квиз"
+                      value={lesson.homeworkSignal ? 1 : 0}
+                      icon={<ClipboardCheck className="h-3.5 w-3.5" strokeWidth={2.2} />}
+                    />
+                  </div>
                 </ProductTableCell>
                 <ProductTableCell>
-                  <ProductTableTruncate title={lesson.readinessLabel}>
-                    {lesson.readinessLabel}
+                  <ProductTableTruncate title={lesson.nearestAssignedAtLabel ?? "Не назначен"}>
+                    {lesson.nearestAssignedAtLabel ?? "—"}
                   </ProductTableTruncate>
                 </ProductTableCell>
               </ProductTableRow>

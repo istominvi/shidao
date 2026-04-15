@@ -27,10 +27,13 @@ export default async function MethodologyDetailPage({
 }) {
   const resolution = await resolveAccessPolicy();
   if (!canAccessTeacherMethodologies(resolution)) redirect(ROUTES.dashboard);
-  assertTeacherMethodologiesAccess(resolution);
+  const { teacherId } = assertTeacherMethodologiesAccess(resolution);
 
   const { methodologySlug } = await params;
-  const readModel = await getTeacherMethodologyDetailReadModel(methodologySlug);
+  const readModel = await getTeacherMethodologyDetailReadModel(
+    methodologySlug,
+    teacherId,
+  );
   if (!readModel) notFound();
   const passport = readModel.overview.passport;
   const normalizedCourseDurationLabel = passport.courseDurationLabel

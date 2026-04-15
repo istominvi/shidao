@@ -164,6 +164,7 @@ a {
   display: flex;
   flex-direction: column;
   gap: var(--app-page-header-space);
+  width: 100%;
 }
 
 .app-page-back-link {
@@ -228,7 +229,8 @@ a {
 
 .app-page-description {
   margin: 0;
-  max-width: 64ch;
+  max-width: none;
+  width: 100%;
   font-size: var(--app-page-header-description-size);
   line-height: var(--app-page-header-description-line-height);
   color: #475569;

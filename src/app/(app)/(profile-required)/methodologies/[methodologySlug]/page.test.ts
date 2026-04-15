@@ -22,6 +22,10 @@ test("methodology lessons table uses canonical product table primitives and keyb
   assert.equal(lessonsTableSource.includes("ProductTableCard"), true);
   assert.equal(lessonsTableSource.includes("ProductTableEmptyState"), true);
   assert.equal(lessonsTableSource.includes("toMethodologyLessonRoute"), true);
+  assert.equal(lessonsTableSource.includes("Материалы"), true);
+  assert.equal(lessonsTableSource.includes("Назначен"), true);
+  assert.equal(lessonsTableSource.includes("Позиция"), false);
+  assert.equal(lessonsTableSource.includes("Статус"), false);
   assert.equal(lessonsTableSource.includes('role="button"'), true);
   assert.equal(lessonsTableSource.includes('tabIndex={0}'), true);
   assert.equal(lessonsTableSource.includes('event.key === "Enter" || event.key === " "'), true);
