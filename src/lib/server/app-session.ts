@@ -1,5 +1,4 @@
 import crypto from "node:crypto";
-import { cache } from "react";
 import { cookies } from "next/headers";
 
 export const APP_SESSION_COOKIE = "shidao_session";
@@ -114,12 +113,12 @@ function normalizePayload(payload: SessionPayload | null) {
   return payload;
 }
 
-export const readAppSession = cache(async () => {
+export async function readAppSession() {
   const jar = await cookies();
   const raw = jar.get(APP_SESSION_COOKIE)?.value;
   if (!raw) return null;
   return normalizePayload(decrypt(raw) ?? verifyLegacyToken(raw));
-});
+}
 
 export async function writeAppSession(input: {
   uid: string;
