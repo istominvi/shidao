@@ -7,7 +7,7 @@ const source = readFileSync(
   "utf8",
 );
 
-test("world-around-me structured description content includes curriculum and extended goals section", () => {
+test("world-around-me structured description content includes revised goals section and curriculum lessons map", () => {
   assert.equal(source.includes('methodologySlug: "world-around-me"'), true);
   assert.equal(source.includes('lead:\n    "我周围的世界 / Мир вокруг меня — рабочая программа раннего обучения китайскому языку для дошкольников 5–6 лет.'), true);
   assert.equal(source.includes('type: "goal_map"'), true);
@@ -20,5 +20,5 @@ test("world-around-me structured description content includes curriculum and ext
   assert.equal(source.includes('title: "Планируемые результаты"'), true);
   assert.equal(source.includes('title: "Содержание и компетенции"'), true);
   assert.equal(source.includes('title: "Методическое обеспечение"'), true);
-  assert.equal(source.includes('title: "Литература"'), true);
+  assert.equal(source.includes('title: "Литература"'), false);
 });

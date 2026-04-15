@@ -1,5 +1,15 @@
 import Image from "next/image";
-import { BookOpenCheck, BrainCircuit, Globe2, HeartHandshake } from "lucide-react";
+import type { ReactNode } from "react";
+import {
+  BookOpenCheck,
+  BrainCircuit,
+  ClipboardList,
+  Globe2,
+  HeartHandshake,
+  Lightbulb,
+  Target,
+  Trophy,
+} from "lucide-react";
 import {
   ProductTable,
   ProductTableBody,
@@ -11,8 +21,23 @@ import {
 } from "@/components/ui/product-table";
 import type { MethodologyDescriptionContent } from "@/lib/methodologies/methodology-description-content";
 
-function SectionTitle({ title }: { title: string }) {
-  return <h3 className="text-base font-semibold text-neutral-950">{title}</h3>;
+function SectionTitle({
+  title,
+  icon,
+}: {
+  title: string;
+  icon?: ReactNode;
+}) {
+  return (
+    <h3 className="flex items-center gap-2 text-base font-semibold text-neutral-950">
+      {icon ? (
+        <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-neutral-200 bg-neutral-50 text-neutral-700">
+          {icon}
+        </span>
+      ) : null}
+      {title}
+    </h3>
+  );
 }
 
 function DotList({ items }: { items: string[] }) {
@@ -33,6 +58,15 @@ function GoalIcon({ kind }: { kind: "book" | "globe" | "brain" | "heart" }) {
   if (kind === "globe") return <Globe2 className="h-4 w-4" aria-hidden="true" />;
   if (kind === "brain") return <BrainCircuit className="h-4 w-4" aria-hidden="true" />;
   return <HeartHandshake className="h-4 w-4" aria-hidden="true" />;
+}
+
+function SectionIcon({ id }: { id: string }) {
+  if (id === "goals-and-tasks") return <Target className="h-4 w-4" aria-hidden="true" />;
+  if (id === "curriculum-plan") return <ClipboardList className="h-4 w-4" aria-hidden="true" />;
+  if (id === "planned-results") return <Trophy className="h-4 w-4" aria-hidden="true" />;
+  if (id === "content-and-competencies") return <Globe2 className="h-4 w-4" aria-hidden="true" />;
+  if (id === "methodological-support") return <Lightbulb className="h-4 w-4" aria-hidden="true" />;
+  return null;
 }
 
 export function MethodologyDescriptionPanel({
@@ -56,7 +90,7 @@ export function MethodologyDescriptionPanel({
   return (
     <section className="space-y-8" aria-label="Описание методики">
       <section className="space-y-3 border-b border-neutral-200 pb-6">
-        <SectionTitle title="О программе" />
+        <SectionTitle title="О программе" icon={<BookOpenCheck className="h-4 w-4" aria-hidden="true" />} />
         <div className="flex flex-col gap-4 md:flex-row md:items-start">
           {coverImage?.src ? (
             <div className="relative aspect-square w-full max-w-[180px] overflow-hidden rounded-2xl border border-black/10 bg-neutral-50">
@@ -83,7 +117,7 @@ export function MethodologyDescriptionPanel({
         if (section.type === "rich_text") {
           return (
             <section key={section.id} className="space-y-3 border-b border-neutral-200 pb-6 last:border-b-0 last:pb-0">
-              <SectionTitle title={section.title} />
+              <SectionTitle title={section.title} icon={<SectionIcon id={section.id} />} />
               <div className="space-y-3 text-sm leading-6 text-neutral-700">
                 {section.paragraphs.map((paragraph) => (
                   <p key={paragraph}>{paragraph}</p>
@@ -96,7 +130,7 @@ export function MethodologyDescriptionPanel({
         if (section.type === "bullets") {
           return (
             <section key={section.id} className="space-y-3 border-b border-neutral-200 pb-6 last:border-b-0 last:pb-0">
-              <SectionTitle title={section.title} />
+              <SectionTitle title={section.title} icon={<SectionIcon id={section.id} />} />
               <DotList items={section.items} />
             </section>
           );
@@ -105,7 +139,7 @@ export function MethodologyDescriptionPanel({
         if (section.type === "goal_map") {
           return (
             <section key={section.id} className="space-y-4 border-b border-neutral-200 pb-6 last:border-b-0 last:pb-0">
-              <SectionTitle title={section.title} />
+              <SectionTitle title={section.title} icon={<SectionIcon id={section.id} />} />
 
               <div className="space-y-3 text-sm leading-6 text-neutral-700">
                 {section.contextParagraphs.map((paragraph) => (
@@ -156,7 +190,7 @@ export function MethodologyDescriptionPanel({
         if (section.type === "table") {
           return (
             <section key={section.id} className="space-y-3 border-b border-neutral-200 pb-6 last:border-b-0 last:pb-0">
-              <SectionTitle title={section.title} />
+              <SectionTitle title={section.title} icon={<SectionIcon id={section.id} />} />
               <div className="overflow-x-auto rounded-2xl border border-neutral-200 bg-white/95">
                 <ProductTable className="table-auto">
                   <colgroup>
@@ -197,7 +231,7 @@ export function MethodologyDescriptionPanel({
         if (section.type === "grouped_bullets") {
           return (
             <section key={section.id} className="space-y-3 border-b border-neutral-200 pb-6 last:border-b-0 last:pb-0">
-              <SectionTitle title={section.title} />
+              <SectionTitle title={section.title} icon={<SectionIcon id={section.id} />} />
               <div className="grid gap-3 md:grid-cols-2">
                 {section.groups.map((group) => (
                   <section
@@ -217,7 +251,7 @@ export function MethodologyDescriptionPanel({
 
         return (
           <section key={section.id} className="space-y-3 border-b border-neutral-200 pb-6 last:border-b-0 last:pb-0">
-            <SectionTitle title={section.title} />
+            <SectionTitle title={section.title} icon={<SectionIcon id={section.id} />} />
             <ol className="list-decimal space-y-2 pl-5 text-sm leading-relaxed text-neutral-700 marker:font-semibold marker:text-neutral-500">
               {section.items.map((item) => (
                 <li key={item}>{item}</li>
