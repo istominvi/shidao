@@ -22,7 +22,16 @@ type TeacherLessonTabsProps = {
   tone?: "surface" | "embedded";
 };
 
-function tabClassName(active: boolean) {
+function tabClassName(active: boolean, tone: "surface" | "embedded") {
+  if (tone === "embedded") {
+    return classNames(
+      "inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-semibold transition",
+      active
+        ? "border-neutral-900 bg-neutral-900 text-white shadow-[0_10px_24px_rgba(15,23,42,0.28)]"
+        : "border-neutral-200 bg-neutral-50 text-neutral-700 hover:bg-neutral-100",
+    );
+  }
+
   return productButtonClassName(active ? "primary" : "secondary", "text-sm");
 }
 
@@ -43,7 +52,7 @@ export function TeacherLessonTabs({ tabs, activeTab, onTabChange, tone = "surfac
             <button
               key={tab}
               type="button"
-              className={tabClassName(isActive)}
+              className={tabClassName(isActive, tone)}
               onClick={() => onTabChange(tab)}
               aria-pressed={isActive}
             >

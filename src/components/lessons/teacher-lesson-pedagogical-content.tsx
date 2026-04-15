@@ -125,7 +125,7 @@ export function TeacherLessonPedagogicalContent({
 
       <section id="lesson-flow" className="scroll-mt-20">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-          <SectionTitle title="Ход урока" subtitle="Линейный сценарий проведения занятия по этапам." />
+          <SectionTitle title="План урока" />
           <Chip tone="neutral">{lessonFlow.length} этапов</Chip>
         </div>
 
@@ -134,8 +134,18 @@ export function TeacherLessonPedagogicalContent({
             <article key={step.id} className="space-y-4 p-4 md:p-5">
               <header className="space-y-2">
                 <div className="flex flex-wrap items-center gap-2">
-                  <Chip className="border-neutral-900 bg-neutral-900 text-white">{step.stepLabel || `Этап ${index + 1}`}</Chip>
-                  <Chip tone="slate">{step.blockLabel}</Chip>
+                  <Chip
+                    size="sm"
+                    className="border-neutral-900 bg-neutral-900 text-white shadow-[0_8px_20px_rgba(15,23,42,0.25)]"
+                  >
+                    {step.stepLabel || `Этап ${index + 1}`}
+                  </Chip>
+                  <Chip
+                    size="sm"
+                    className="border-neutral-900 bg-neutral-900 text-white shadow-[0_8px_20px_rgba(15,23,42,0.25)]"
+                  >
+                    {step.blockLabel}
+                  </Chip>
                 </div>
                 <h3 className="text-lg font-semibold text-neutral-950">{step.title}</h3>
                 {step.description ? <p className="text-sm leading-6 text-neutral-700">{step.description}</p> : null}
