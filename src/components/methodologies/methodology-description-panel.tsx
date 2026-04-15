@@ -1,4 +1,5 @@
-import { Chip } from "@/components/ui/chip";
+import Image from "next/image";
+import { BookOpenCheck, BrainCircuit, Globe2, HeartHandshake } from "lucide-react";
 import type { MethodologyDescriptionContent } from "@/lib/methodologies/methodology-description-content";
 
 function SectionTitle({ title }: { title: string }) {
@@ -18,10 +19,22 @@ function DotList({ items }: { items: string[] }) {
   );
 }
 
+function GoalIcon({ kind }: { kind: "book" | "globe" | "brain" | "heart" }) {
+  if (kind === "book") return <BookOpenCheck className="h-4 w-4" aria-hidden="true" />;
+  if (kind === "globe") return <Globe2 className="h-4 w-4" aria-hidden="true" />;
+  if (kind === "brain") return <BrainCircuit className="h-4 w-4" aria-hidden="true" />;
+  return <HeartHandshake className="h-4 w-4" aria-hidden="true" />;
+}
+
 export function MethodologyDescriptionPanel({
   description,
+  coverImage,
 }: {
   description: MethodologyDescriptionContent | null;
+  coverImage?: {
+    src: string;
+    alt: string;
+  } | null;
 }) {
   if (!description) {
     return (
@@ -33,23 +46,21 @@ export function MethodologyDescriptionPanel({
 
   return (
     <section className="space-y-8" aria-label="Описание методики">
-      <section className="space-y-4 border-b border-neutral-200 pb-6">
-        <p className="text-sm leading-6 text-neutral-700">{description.lead}</p>
+      <section className="border-b border-neutral-200 pb-6">
+        <div className="flex flex-col gap-4 md:flex-row md:items-start">
+          {coverImage?.src ? (
+            <div className="relative aspect-[4/5] w-full max-w-[180px] overflow-hidden rounded-2xl border border-black/10 bg-neutral-50">
+              <Image
+                src={coverImage.src}
+                alt={coverImage.alt}
+                fill
+                className="object-contain"
+                sizes="(max-width: 768px) 160px, 180px"
+              />
+            </div>
+          ) : null}
 
-        <div className="flex flex-wrap gap-2">
-          {description.passportFacts.map((fact) => (
-            <Chip key={fact} tone="neutral">
-              {fact}
-            </Chip>
-          ))}
-        </div>
-
-        <div className="flex flex-wrap gap-2">
-          {description.highlights.map((item) => (
-            <Chip key={item} tone="sky">
-              {item}
-            </Chip>
-          ))}
+          <p className="text-sm leading-6 text-neutral-700 md:pt-1">{description.lead}</p>
         </div>
       </section>
 
@@ -72,6 +83,48 @@ export function MethodologyDescriptionPanel({
             <section key={section.id} className="space-y-3 border-b border-neutral-200 pb-6 last:border-b-0 last:pb-0">
               <SectionTitle title={section.title} />
               <DotList items={section.items} />
+            </section>
+          );
+        }
+
+        if (section.type === "goal_map") {
+          return (
+            <section key={section.id} className="space-y-4 border-b border-neutral-200 pb-6 last:border-b-0 last:pb-0">
+              <SectionTitle title={section.title} />
+
+              <div className="space-y-3 text-sm leading-6 text-neutral-700">
+                {section.contextParagraphs.map((paragraph) => (
+                  <p key={paragraph}>{paragraph}</p>
+                ))}
+              </div>
+
+              <div className="rounded-2xl border border-neutral-200 bg-neutral-50/70 p-4">
+                <h4 className="text-xs font-semibold uppercase tracking-[0.12em] text-neutral-500">
+                  Ключевые стратегические цели
+                </h4>
+                <div className="mt-3">
+                  <DotList items={section.strategicGoals} />
+                </div>
+              </div>
+
+              <div className="grid gap-3 md:grid-cols-2">
+                {section.taskGroups.map((group) => (
+                  <section
+                    key={`${section.id}-${group.title}`}
+                    className="rounded-xl border border-neutral-200 bg-white p-3 shadow-[0_8px_18px_rgba(20,20,20,0.04)]"
+                  >
+                    <h4 className="flex items-center gap-2 text-sm font-semibold text-neutral-900">
+                      <span className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-neutral-200 bg-neutral-50 text-neutral-700">
+                        <GoalIcon kind={group.icon} />
+                      </span>
+                      {group.title}
+                    </h4>
+                    <div className="mt-2">
+                      <DotList items={group.items} />
+                    </div>
+                  </section>
+                ))}
+              </div>
             </section>
           );
         }

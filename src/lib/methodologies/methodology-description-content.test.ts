@@ -7,8 +7,12 @@ const source = readFileSync(
   "utf8",
 );
 
-test("world-around-me structured description content includes canonical tabs payload and curriculum sections", () => {
+test("world-around-me structured description content includes curriculum and extended goals section", () => {
   assert.equal(source.includes('methodologySlug: "world-around-me"'), true);
+  assert.equal(source.includes('lead:\n    "我周围的世界 / Мир вокруг меня — рабочая программа раннего обучения китайскому языку для дошкольников 5–6 лет.'), true);
+  assert.equal(source.includes('type: "goal_map"'), true);
+  assert.equal(source.includes('title: "Цели и задачи курса"'), true);
+  assert.equal(source.includes('title: "Ценностные ориентиры"'), true);
   assert.equal(source.includes('title: "Учебно-тематический план"'), true);
   assert.equal(source.includes('columns: ["Раздел", "Период", "Часы", "Грамматика"]'), true);
   assert.equal(source.includes('section: "10. Шоу талантов."'), true);

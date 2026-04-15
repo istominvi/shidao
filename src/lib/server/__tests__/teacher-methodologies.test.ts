@@ -30,3 +30,8 @@ test("methodology detail read model wires structured description content by slug
   assert.equal(source.includes("getMethodologyDescriptionContent"), true);
   assert.equal(source.includes("descriptionContent: getMethodologyDescriptionContent(methodology.slug)"), true);
 });
+
+
+test("methodology detail read model keeps normalized cover image", () => {
+  assert.equal(source.includes("coverImage: normalizeMethodologyCoverImage(methodology)"), true);
+});

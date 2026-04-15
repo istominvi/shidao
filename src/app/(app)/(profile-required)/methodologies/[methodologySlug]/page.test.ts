@@ -22,6 +22,11 @@ const lessonsTableSource = readFileSync(
   "utf8",
 );
 
+const descriptionPanelSource = readFileSync(
+  "src/components/methodologies/methodology-description-panel.tsx",
+  "utf8",
+);
+
 test("methodology detail page renders canonical tabbed workspace instead of free-floating overview cards", () => {
   assert.equal(pageSource.includes("TeacherMethodologyDetailWorkspace"), true);
   assert.equal(pageSource.includes("overviewCards"), false);
@@ -51,4 +56,13 @@ test("methodology lessons tab still uses canonical lessons table component in em
     lessonsTableSource.includes('event.key === "Enter" || event.key === " "'),
     true,
   );
+});
+
+
+test("description panel renders cover+lead intro without legacy chips list", () => {
+  assert.equal(pageSource.includes("coverImage={readModel.methodology.coverImage}"), true);
+  assert.equal(descriptionPanelSource.includes("next/image"), true);
+  assert.equal(descriptionPanelSource.includes("description.passportFacts"), false);
+  assert.equal(descriptionPanelSource.includes("description.highlights"), false);
+  assert.equal(descriptionPanelSource.includes('type === "goal_map"'), true);
 });

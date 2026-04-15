@@ -29,10 +29,15 @@ export function TeacherMethodologyDetailWorkspace({
   methodologySlug,
   descriptionContent,
   lessons,
+  coverImage,
 }: {
   methodologySlug: string;
   descriptionContent: MethodologyDescriptionContent | null;
   lessons: MethodologyLessonsTableRow[];
+  coverImage?: {
+    src: string;
+    alt: string;
+  } | null;
 }) {
   const [tab, setTab] = useState<MethodologyDetailTabKey>("description");
 
@@ -42,7 +47,10 @@ export function TeacherMethodologyDetailWorkspace({
 
       <div className="mt-5">
         {tab === "description" ? (
-          <MethodologyDescriptionPanel description={descriptionContent} />
+          <MethodologyDescriptionPanel
+            description={descriptionContent}
+            coverImage={coverImage}
+          />
         ) : null}
 
         {tab === "lessons" ? (

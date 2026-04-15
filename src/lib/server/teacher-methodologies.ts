@@ -261,6 +261,7 @@ export async function getTeacherMethodologyDetailReadModel(
     methodology: {
       ...methodology,
       title: teacherFacingMethodologyTitle(methodology),
+      coverImage: normalizeMethodologyCoverImage(methodology),
     },
     overview: {
       passport: {
@@ -432,6 +433,7 @@ export async function getTeacherMethodologyLessonReadModel(input: {
     methodology: {
       ...methodology,
       title: teacherFacingMethodologyTitle(methodology),
+      coverImage: normalizeMethodologyCoverImage(methodology),
     },
     lesson,
     groups,

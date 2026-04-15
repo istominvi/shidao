@@ -89,6 +89,7 @@ export default async function MethodologyDetailPage({
           methodologySlug={readModel.methodology.slug}
           descriptionContent={readModel.descriptionContent}
           lessons={readModel.lessons}
+          coverImage={readModel.methodology.coverImage}
         />
       </div>
     </main>
