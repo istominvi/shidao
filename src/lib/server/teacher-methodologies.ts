@@ -53,6 +53,7 @@ function joinBilingualTitle(first: string, second: string) {
 
 function teacherFacingMethodologyTitle(methodology: {
   title: string;
+  slug?: string;
   metadata?: MethodologyMetadata | null;
 }) {
   const title = clean(methodology.title);
@@ -66,6 +67,35 @@ function teacherFacingMethodologyTitle(methodology: {
     return joinBilingualTitle(title, titleNative);
 
   return title.replace(/\s*[—]\s*/g, " – ") || titleRu || titleNative;
+}
+
+const defaultMethodologyCoverImageBySlug: Record<
+  string,
+  { src: string; alt?: string }
+> = {
+  "world-around-me": {
+    src: "/methodologies/01.png",
+    alt: "Обложка методики «Мир вокруг меня»",
+  },
+};
+
+function normalizeMethodologyCoverImage(methodology: {
+  slug: string;
+  title: string;
+  metadata?: MethodologyMetadata | null;
+}) {
+  const rawCover =
+    methodology.metadata?.coverImage ??
+    defaultMethodologyCoverImageBySlug[methodology.slug];
+  const src = clean(rawCover?.src);
+  if (!src) return null;
+
+  return {
+    src,
+    alt:
+      clean(rawCover?.alt) ||
+      `Обложка методики «${teacherFacingMethodologyTitle(methodology)}»`,
+  };
 }
 
 function withFallbackMetadata(
@@ -144,6 +174,7 @@ export async function getTeacherMethodologiesIndexReadModel() {
         slug: item.slug,
         title: teacherFacingMethodologyTitle(item),
         shortDescription: item.shortDescription,
+        coverImage: normalizeMethodologyCoverImage(item),
         lessonCount: lessons.length,
         passport: {
           locale: metadata.locale,

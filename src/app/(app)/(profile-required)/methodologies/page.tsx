@@ -46,6 +46,8 @@ export default async function MethodologiesPage() {
               key={methodology.id}
               title={methodology.title}
               description={methodology.shortDescription}
+              href={toMethodologyRoute(methodology.slug)}
+              coverImage={methodology.coverImage}
               badges={
                 <>
                   <Chip icon={BookOpen} tone="violet" size="md">
