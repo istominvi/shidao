@@ -1,16 +1,8 @@
 import { notFound, redirect } from "next/navigation";
-import {
-  BookOpen,
-  CalendarRange,
-  Clock3,
-  GraduationCap,
-  Shapes,
-  Users,
-} from "lucide-react";
+import { BookOpen, CalendarRange, Clock3, GraduationCap, Shapes, Users } from "lucide-react";
 import { AppPageHeader } from "@/components/app/page-header";
-import { MethodologyLessonsTableCard } from "@/components/methodologies/methodology-lessons-table-card";
+import { TeacherMethodologyDetailWorkspace } from "@/components/methodologies/teacher-methodology-detail-workspace";
 import { Chip } from "@/components/ui/chip";
-import { SurfaceCard } from "@/components/ui/surface-card";
 import { TopNav } from "@/components/top-nav";
 import { ROUTES } from "@/lib/auth";
 import { resolveAccessPolicy } from "@/lib/server/access-policy";
@@ -48,52 +40,6 @@ export default async function MethodologyDetailPage({
         .replace(/\s*активност(?:ей|и)\s*$/i, "")
         .trim()}`
     : null;
-
-  const overviewCards = [
-    {
-      title: "Для кого курс",
-      surfaceClass: "border-sky-200/80 bg-sky-50/35",
-      dotClass: "bg-sky-500/70",
-      points: [
-        passport.audienceLabel,
-        readModel.overview.teachingApproachSummary,
-        passport.idealGroupSizeLabel
-          ? `Рекомендуемый размер группы: ${passport.idealGroupSizeLabel}`
-          : undefined,
-        passport.maxGroupSize
-          ? `Жёсткий максимум: ${passport.maxGroupSize} детей`
-          : undefined,
-      ].filter(Boolean) as string[],
-    },
-    {
-      title: "Что дети осваивают",
-      surfaceClass: "border-emerald-200/80 bg-emerald-50/35",
-      dotClass: "bg-emerald-500/70",
-      points: readModel.overview.learningOutcomes,
-    },
-    {
-      title: "Тематическая структура",
-      surfaceClass: "border-violet-200/80 bg-violet-50/35",
-      dotClass: "bg-violet-500/70",
-      points: readModel.overview.thematicModules,
-    },
-    {
-      title: "Формат урока и материалы",
-      surfaceClass: "border-amber-200/80 bg-amber-50/35",
-      dotClass: "bg-amber-500/70",
-      points: [
-        passport.lessonFormatSummary,
-        passport.activitiesPerLessonLabel,
-        readModel.overview.materialsEcosystemSummary,
-      ].filter(Boolean) as string[],
-    },
-    {
-      title: "Методические заметки",
-      surfaceClass: "border-rose-200/80 bg-rose-50/35",
-      dotClass: "bg-rose-500/70",
-      points: readModel.overview.methodologyNotes,
-    },
-  ].filter((card) => card.points.length >= 2);
 
   return (
     <main className="pb-12">
@@ -139,38 +85,11 @@ export default async function MethodologyDetailPage({
           }
         />
 
-        {overviewCards.length > 0 ? (
-          <section className="grid gap-4 lg:grid-cols-2">
-            {overviewCards.map((card) => (
-              <SurfaceCard
-                key={card.title}
-                className={`border p-5 md:p-6 ${card.surfaceClass}`}
-                as="article"
-              >
-                <h2 className="text-lg font-semibold text-neutral-900">
-                  {card.title}
-                </h2>
-                <ul className="mt-4 space-y-2.5 text-sm leading-relaxed text-neutral-700">
-                  {card.points.map((point) => (
-                    <li key={point} className="flex gap-2.5">
-                      <span
-                        className={`mt-2 h-1.5 w-1.5 shrink-0 rounded-full ${card.dotClass}`}
-                      />
-                      <span>{point}</span>
-                    </li>
-                  ))}
-                </ul>
-              </SurfaceCard>
-            ))}
-          </section>
-        ) : null}
-
-        <section>
-          <MethodologyLessonsTableCard
-            methodologySlug={readModel.methodology.slug}
-            rows={readModel.lessons}
-          />
-        </section>
+        <TeacherMethodologyDetailWorkspace
+          methodologySlug={readModel.methodology.slug}
+          descriptionContent={readModel.descriptionContent}
+          lessons={readModel.lessons}
+        />
       </div>
     </main>
   );

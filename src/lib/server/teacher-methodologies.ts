@@ -28,6 +28,7 @@ import {
   canAccessTeacherLessonWorkspace,
 } from "./teacher-lesson-workspace";
 import { isInvalidLessonStudentContentPayloadError } from "./lesson-content-mappers";
+import { getMethodologyDescriptionContent } from "@/lib/methodologies/methodology-description-content";
 
 function clean(value: string | null | undefined) {
   return value?.trim() || "";
@@ -287,6 +288,7 @@ export async function getTeacherMethodologyDetailReadModel(
       sourceRuntimeNote:
         "Методика — это полный педагогический источник курса. В ShiDao ниже показаны только уже импортированные source-уроки, которые можно назначать группам в runtime-слое.",
     },
+    descriptionContent: getMethodologyDescriptionContent(methodology.slug),
     lessons: lessonsWithHomework.map(({ lesson, canonicalHomework }) => {
       const prepSignals = inferMaterialsSignals(
         metadata.materialsEcosystemSummary,

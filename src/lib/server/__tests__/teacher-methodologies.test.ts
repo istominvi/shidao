@@ -24,3 +24,9 @@ test("methodologies index read model exposes normalized cover image metadata", (
   assert.equal(source.includes("defaultMethodologyCoverImageBySlug"), true);
   assert.equal(source.includes("Обложка методики"), true);
 });
+
+
+test("methodology detail read model wires structured description content by slug", () => {
+  assert.equal(source.includes("getMethodologyDescriptionContent"), true);
+  assert.equal(source.includes("descriptionContent: getMethodologyDescriptionContent(methodology.slug)"), true);
+});
