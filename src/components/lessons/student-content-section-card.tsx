@@ -11,6 +11,10 @@ type Props = {
   embedded?: boolean;
 };
 
+function assertNeverSection(section: never): never {
+  throw new Error(`Unsupported student content section type: ${JSON.stringify(section)}`);
+}
+
 function AssetCta({ label, url }: { label: string; url?: string }) {
   if (!url) {
     return (
@@ -364,10 +368,5 @@ export function StudentContentSectionCard({
     );
   }
 
-  return (
-    <article className={cardClass}>
-      <h3 className="font-semibold text-neutral-900">{section.title}</h3>
-      <p className="mt-2 text-xs text-neutral-500">{section.type}</p>
-    </article>
-  );
+  return assertNeverSection(section);
 }
