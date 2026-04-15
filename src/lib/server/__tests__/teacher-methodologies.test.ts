@@ -20,7 +20,7 @@ test("teacher-facing methodology title formatter normalizes bilingual separator 
 });
 
 test("methodologies index read model exposes normalized cover image metadata", () => {
-  assert.equal(source.includes("coverImage: item.metadata?.coverImage"), true);
-  assert.equal(source.includes("item.metadata.coverImage.src"), true);
+  assert.equal(source.includes("coverImage: normalizeMethodologyCoverImage(item)"), true);
+  assert.equal(source.includes("defaultMethodologyCoverImageBySlug"), true);
   assert.equal(source.includes("Обложка методики"), true);
 });
