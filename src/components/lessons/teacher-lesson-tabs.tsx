@@ -3,6 +3,7 @@
 import type { LucideIcon } from "lucide-react";
 import { BookOpenText, ClipboardCheck, MessageCircle, NotebookText, PlayCircle } from "lucide-react";
 import { productButtonClassName } from "@/components/ui/button";
+import { classNames } from "@/lib/ui/classnames";
 
 export type TeacherLessonTabKey = "plan" | "content" | "homework" | "conduct" | "chat";
 
@@ -18,15 +19,21 @@ type TeacherLessonTabsProps = {
   tabs: TeacherLessonTabKey[];
   activeTab: TeacherLessonTabKey;
   onTabChange: (tab: TeacherLessonTabKey) => void;
+  tone?: "surface" | "embedded";
 };
 
 function tabClassName(active: boolean) {
   return productButtonClassName(active ? "primary" : "secondary", "text-sm");
 }
 
-export function TeacherLessonTabs({ tabs, activeTab, onTabChange }: TeacherLessonTabsProps) {
+export function TeacherLessonTabs({ tabs, activeTab, onTabChange, tone = "surface" }: TeacherLessonTabsProps) {
   return (
-    <div className="rounded-2xl border border-neutral-200 bg-white p-3">
+    <div
+      className={classNames(
+        "border-neutral-200",
+        tone === "surface" ? "rounded-2xl border bg-white p-3" : "border-b pb-4",
+      )}
+    >
       <div className="flex flex-wrap gap-2">
         {tabs.map((tab) => {
           const meta = teacherLessonTabMeta[tab];

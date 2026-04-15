@@ -5,10 +5,14 @@ import { LessonCanonicalHomeworkPanel } from "@/components/lessons/lesson-canoni
 import { LessonStudentContentPanel } from "@/components/lessons/lesson-student-content-panel";
 import { TeacherLessonPedagogicalContent } from "@/components/lessons/teacher-lesson-pedagogical-content";
 import { TeacherLessonTabs, type TeacherLessonTabKey } from "@/components/lessons/teacher-lesson-tabs";
+import { SurfaceCard } from "@/components/ui/surface-card";
 import type { TeacherLessonWorkspaceReadModel } from "@/lib/server/teacher-lesson-workspace";
 
 type MethodologyLessonReadModel = {
-  presentation: Pick<TeacherLessonWorkspaceReadModel["presentation"], "quickSummary" | "lessonFlow">;
+  presentation: Pick<
+    TeacherLessonWorkspaceReadModel["presentation"],
+    "quickSummary" | "lessonFlow" | "methodologyReference"
+  >;
   canonicalHomework: {
     title: string;
     kindLabel: string;
@@ -25,25 +29,34 @@ export function TeacherMethodologyLessonWorkspace({ readModel }: { readModel: Me
   const [tab, setTab] = useState<TeacherLessonTabKey>("plan");
 
   return (
-    <section className="space-y-5">
-      <TeacherLessonTabs tabs={["plan", "content", "homework"]} activeTab={tab} onTabChange={setTab} />
+    <SurfaceCard as="section" className="p-5 md:p-6" bodyClassName="mt-0">
+      <TeacherLessonTabs
+        tabs={["plan", "content", "homework"]}
+        activeTab={tab}
+        onTabChange={setTab}
+        tone="embedded"
+      />
 
-      {tab === "plan" ? (
-        <TeacherLessonPedagogicalContent
-          quickSummary={readModel.presentation.quickSummary}
-          lessonFlow={readModel.presentation.lessonFlow}
-        />
-      ) : null}
+      <div className="mt-5">
+        {tab === "plan" ? (
+          <TeacherLessonPedagogicalContent
+            quickSummary={readModel.presentation.quickSummary}
+            lessonFlow={readModel.presentation.lessonFlow}
+            durationLabel={readModel.presentation.methodologyReference.durationLabel}
+          />
+        ) : null}
 
-      {tab === "content" ? (
-        <LessonStudentContentPanel
-          source={readModel.studentContent.source}
-          unavailableReason={readModel.studentContent.unavailableReason}
-          assetsById={readModel.studentContent.assetsById}
-        />
-      ) : null}
+        {tab === "content" ? (
+          <LessonStudentContentPanel
+            source={readModel.studentContent.source}
+            unavailableReason={readModel.studentContent.unavailableReason}
+            assetsById={readModel.studentContent.assetsById}
+            embedded
+          />
+        ) : null}
 
-      {tab === "homework" ? <LessonCanonicalHomeworkPanel homework={readModel.canonicalHomework} /> : null}
-    </section>
+        {tab === "homework" ? <LessonCanonicalHomeworkPanel homework={readModel.canonicalHomework} embedded /> : null}
+      </div>
+    </SurfaceCard>
   );
 }
