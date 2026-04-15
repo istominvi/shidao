@@ -46,10 +46,11 @@ export function MethodologyDescriptionPanel({
 
   return (
     <section className="space-y-8" aria-label="Описание методики">
-      <section className="border-b border-neutral-200 pb-6">
+      <section className="space-y-3 border-b border-neutral-200 pb-6">
+        <SectionTitle title="О программе" />
         <div className="flex flex-col gap-4 md:flex-row md:items-start">
           {coverImage?.src ? (
-            <div className="relative aspect-[4/5] w-full max-w-[180px] overflow-hidden rounded-2xl border border-black/10 bg-neutral-50">
+            <div className="relative aspect-square w-full max-w-[180px] overflow-hidden rounded-2xl border border-black/10 bg-neutral-50">
               <Image
                 src={coverImage.src}
                 alt={coverImage.alt}
@@ -60,7 +61,12 @@ export function MethodologyDescriptionPanel({
             </div>
           ) : null}
 
-          <p className="text-sm leading-6 text-neutral-700 md:pt-1">{description.lead}</p>
+          <div className="space-y-3 text-sm leading-6 text-neutral-700 md:pt-1">
+            <p>{description.lead}</p>
+            {description.introParagraphs.map((paragraph) => (
+              <p key={paragraph}>{paragraph}</p>
+            ))}
+          </div>
         </div>
       </section>
 
