@@ -10,19 +10,17 @@ type CanonicalHomework = {
   sourceLayerNote: string;
 };
 
-export function LessonCanonicalHomeworkPanel({ homework }: { homework: CanonicalHomework | null }) {
-  if (!homework) {
-    return (
-      <SurfaceCard title="Домашнее задание">
-        <p className="text-sm text-neutral-700">
-          Для этого урока методики домашнее задание пока не определено.
-        </p>
-      </SurfaceCard>
-    );
-  }
-
-  return (
-    <SurfaceCard as="article" title="Домашнее задание">
+export function LessonCanonicalHomeworkPanel({
+  homework,
+  embedded = false,
+}: {
+  homework: CanonicalHomework | null;
+  embedded?: boolean;
+}) {
+  const content = !homework ? (
+    <p className="text-sm text-neutral-700">Для этого урока методики домашнее задание пока не определено.</p>
+  ) : (
+    <article>
       <p className="text-sm text-neutral-700">{homework.sourceLayerNote}</p>
       <div className="mt-3 flex flex-wrap gap-2 text-xs text-neutral-700">
         <span className="rounded-full bg-violet-50 px-2.5 py-1 text-violet-800">{homework.kindLabel}</span>
@@ -48,6 +46,16 @@ export function LessonCanonicalHomeworkPanel({ homework }: { homework: Canonical
           </ul>
         </div>
       ) : null}
-    </SurfaceCard>
+    </article>
   );
+
+  if (embedded) {
+    return (
+      <section aria-label="Домашнее задание" className="space-y-1">
+        {content}
+      </section>
+    );
+  }
+
+  return <SurfaceCard title="Домашнее задание">{content}</SurfaceCard>;
 }

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { SurfaceCard } from "@/components/ui/surface-card";
+import { classNames } from "@/lib/ui/classnames";
 import type { MethodologyLessonStudentContent, ReusableAsset } from "@/lib/lesson-content";
 
 type Props = {
@@ -8,6 +9,7 @@ type Props = {
   unavailableReason: "schema_missing" | "invalid_payload" | "load_failed" | null;
   assetsById: Record<string, ReusableAsset>;
   previewHref?: string;
+  embedded?: boolean;
 };
 
 export function LessonStudentContentPanel({
@@ -16,21 +18,32 @@ export function LessonStudentContentPanel({
   unavailableReason,
   assetsById,
   previewHref,
+  embedded = false,
 }: Props) {
-  return (
-    <SurfaceCard
-      title={title}
-      actions={
-        previewHref ? (
+  const content = (
+    <>
+      {!embedded ? (
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-lg font-semibold text-neutral-900">{title}</h2>
+          {previewHref ? (
+            <Link
+              href={previewHref}
+              className="rounded-xl border border-sky-300 bg-sky-50 px-3 py-2 text-sm font-semibold text-sky-800"
+            >
+              Предпросмотр ученической версии
+            </Link>
+          ) : null}
+        </div>
+      ) : previewHref ? (
+        <div className="mb-4">
           <Link
             href={previewHref}
-            className="rounded-xl border border-sky-300 bg-sky-50 px-3 py-2 text-sm font-semibold text-sky-800"
+            className="inline-flex rounded-xl border border-sky-300 bg-sky-50 px-3 py-2 text-sm font-semibold text-sky-800"
           >
             Предпросмотр ученической версии
           </Link>
-        ) : null
-      }
-    >
+        </div>
+      ) : null}
 
       {!source ? (
         <div className="space-y-2">
@@ -52,7 +65,13 @@ export function LessonStudentContentPanel({
       ) : (
         <div className="space-y-3">
           {source.sections.map((section, idx) => (
-            <article key={`${section.type}-${idx}`} className="rounded-2xl border border-neutral-200 bg-white p-3">
+            <article
+              key={`${section.type}-${idx}`}
+              className={classNames(
+                "rounded-2xl border border-neutral-200 p-3",
+                embedded ? "bg-neutral-50/60" : "bg-white",
+              )}
+            >
               <h3 className="font-semibold text-neutral-900">{section.title}</h3>
               <p className="text-xs text-neutral-500">Тип: {section.type}</p>
               {section.type === "media_asset" && assetsById[section.assetId]?.sourceUrl ? (
@@ -69,6 +88,12 @@ export function LessonStudentContentPanel({
           ))}
         </div>
       )}
-    </SurfaceCard>
+    </>
   );
+
+  if (embedded) {
+    return <section aria-label={title}>{content}</section>;
+  }
+
+  return <SurfaceCard>{content}</SurfaceCard>;
 }
