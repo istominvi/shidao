@@ -25,10 +25,8 @@ type TeacherLessonTabsProps = {
 function tabClassName(active: boolean, tone: "surface" | "embedded") {
   if (tone === "embedded") {
     return classNames(
-      "inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-semibold transition",
-      active
-        ? "border-neutral-900 bg-neutral-900 text-white shadow-[0_10px_24px_rgba(15,23,42,0.28)]"
-        : "border-neutral-200 bg-neutral-50 text-neutral-700 hover:bg-neutral-100",
+      productButtonClassName("secondary", "text-sm"),
+      active && "border-neutral-900 bg-neutral-900 text-white shadow-[0_10px_24px_rgba(15,23,42,0.28)] hover:border-neutral-900 hover:bg-neutral-900 hover:text-white",
     );
   }
 

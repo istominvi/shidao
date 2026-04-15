@@ -26,9 +26,9 @@ test("methodology workspace uses one canonical lesson card with embedded tabs", 
   assert.equal(workspaceSource.includes('tabs={["plan", "content", "homework"]}'), true);
 });
 
-test("plan tab is organized as one pedagogical document with in-card orientation", () => {
+test("plan tab is organized as one pedagogical document without extra mini-navigation", () => {
   assert.equal(pedagogicalSource.includes('aria-label="План урока"'), true);
-  assert.equal(pedagogicalSource.includes('href="#lesson-passport"'), true);
+  assert.equal(pedagogicalSource.includes("Навигация по плану урока"), false);
   assert.equal(pedagogicalSource.includes('id="lesson-passport"'), true);
   assert.equal(pedagogicalSource.includes('id="lesson-materials"'), true);
   assert.equal(pedagogicalSource.includes('id="lesson-flow"'), true);
