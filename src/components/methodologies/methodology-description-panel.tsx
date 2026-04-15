@@ -194,11 +194,10 @@ export function MethodologyDescriptionPanel({
               <div className="overflow-x-auto rounded-2xl border border-neutral-200 bg-white/95">
                 <ProductTable className="table-auto">
                   <colgroup>
-                    <col className="w-[21%]" />
-                    <col className="w-[15%]" />
-                    <col className="w-[8%]" />
-                    <col className="w-[27%]" />
-                    <col className="w-[29%]" />
+                    <col className="w-[24%]" />
+                    <col className="w-[18%]" />
+                    <col className="w-[10%]" />
+                    <col className="w-[48%]" />
                   </colgroup>
                   <ProductTableHead>
                     <ProductTableHeaderRow>
@@ -214,11 +213,6 @@ export function MethodologyDescriptionPanel({
                         <ProductTableCell>{row.period}</ProductTableCell>
                         <ProductTableCell>{row.hours}</ProductTableCell>
                         <ProductTableCell>{row.grammar}</ProductTableCell>
-                        <ProductTableCell>
-                          <span className="whitespace-pre-line">
-                            {row.lessons.join("\n")}
-                          </span>
-                        </ProductTableCell>
                       </ProductTableRow>
                     ))}
                   </ProductTableBody>

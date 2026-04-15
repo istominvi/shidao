@@ -14,9 +14,9 @@ test("world-around-me structured description content includes revised goals sect
   assert.equal(source.includes('title: "Цели и задачи курса"'), true);
   assert.equal(source.includes("valueOrientations"), true);
   assert.equal(source.includes('title: "Учебно-тематический план"'), true);
-  assert.equal(source.includes('columns: ["Раздел", "Период", "Часы", "Грамматика", "Уроки"]'), true);
+  assert.equal(source.includes('columns: ["Раздел", "Период", "Часы", "Грамматика"]'), true);
   assert.equal(source.includes('section: "10. Шоу талантов."'), true);
-  assert.equal(source.includes('lessons: ["Урок 37", "Урок 38", "Урок 39", "Урок 40"]'), true);
+  assert.equal(source.includes('lessons: ["Урок 37", "Урок 38", "Урок 39", "Урок 40"]'), false);
   assert.equal(source.includes('title: "Планируемые результаты"'), true);
   assert.equal(source.includes('title: "Содержание и компетенции"'), true);
   assert.equal(source.includes('title: "Методическое обеспечение"'), true);
