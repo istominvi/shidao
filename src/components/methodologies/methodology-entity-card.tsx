@@ -38,7 +38,7 @@ export function MethodologyEntityCard({
 
   if (coverImage) {
     const coverPreview = (
-      <div className="relative aspect-square w-full max-w-[220px] overflow-hidden rounded-2xl border border-black/10 bg-neutral-50 p-2 md:max-w-none">
+      <div className="relative aspect-square w-full overflow-hidden rounded-2xl border border-black/10 bg-neutral-50 p-2 md:h-full md:w-auto md:min-w-[220px]">
         <Image
           src={coverImage.src}
           alt={coverImage.alt}
@@ -51,9 +51,9 @@ export function MethodologyEntityCard({
 
     return (
       <SurfaceCard as="article" className={classNames("w-full", className)}>
-        <div className="grid gap-4 md:grid-cols-[160px_minmax(0,1fr)] md:items-start">
+        <div className="flex flex-col gap-4 md:flex-row md:items-stretch">
           {href ? (
-            <Link href={href} className="block cursor-pointer">
+            <Link href={href} className="block cursor-pointer md:self-stretch">
               {coverPreview}
             </Link>
           ) : (
