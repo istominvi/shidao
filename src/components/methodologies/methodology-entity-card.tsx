@@ -1,11 +1,13 @@
 import type { ReactNode } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { SurfaceCard } from "@/components/ui/surface-card";
 import { classNames } from "@/lib/ui/classnames";
 
 type MethodologyEntityCardProps = {
   title: ReactNode;
   description?: ReactNode;
+  href?: string;
   coverImage?: {
     src: string;
     alt: string;
@@ -19,28 +21,47 @@ type MethodologyEntityCardProps = {
 export function MethodologyEntityCard({
   title,
   description,
+  href,
   coverImage,
   badges,
   children,
   actions,
   className,
 }: MethodologyEntityCardProps) {
+  const clickableTitle = href ? (
+    <Link href={href} className="inline-block cursor-pointer transition hover:opacity-80">
+      {title}
+    </Link>
+  ) : (
+    title
+  );
+
   if (coverImage) {
+    const coverPreview = (
+      <div className="relative aspect-square w-full max-w-[220px] overflow-hidden rounded-2xl border border-black/10 bg-neutral-50 p-2 md:max-w-none">
+        <Image
+          src={coverImage.src}
+          alt={coverImage.alt}
+          fill
+          className="object-contain"
+          sizes="(max-width: 768px) 220px, 160px"
+        />
+      </div>
+    );
+
     return (
       <SurfaceCard as="article" className={classNames("w-full", className)}>
         <div className="grid gap-4 md:grid-cols-[160px_minmax(0,1fr)] md:items-start">
-          <div className="relative aspect-square w-full max-w-[220px] overflow-hidden rounded-2xl border border-black/10 bg-neutral-50 p-2 md:max-w-none">
-            <Image
-              src={coverImage.src}
-              alt={coverImage.alt}
-              fill
-              className="object-contain"
-              sizes="(max-width: 768px) 220px, 160px"
-            />
-          </div>
+          {href ? (
+            <Link href={href} className="block cursor-pointer">
+              {coverPreview}
+            </Link>
+          ) : (
+            coverPreview
+          )}
           <div className="min-w-0 space-y-4">
             <div className="min-w-0">
-              <h2 className="surface-card-title">{title}</h2>
+              <h2 className="surface-card-title">{clickableTitle}</h2>
               {description ? (
                 <p className="surface-card-description">{description}</p>
               ) : null}
@@ -57,7 +78,7 @@ export function MethodologyEntityCard({
   return (
     <SurfaceCard
       as="article"
-      title={title}
+      title={clickableTitle}
       description={description}
       className={classNames("w-full", className)}
     >
