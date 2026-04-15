@@ -29,7 +29,7 @@ export function MethodologyEntityCard({
     return (
       <SurfaceCard as="article" className={classNames("w-full", className)}>
         <div className="grid gap-4 md:grid-cols-[160px_minmax(0,1fr)] md:items-start">
-          <div className="relative aspect-[3/4] w-full max-w-[220px] overflow-hidden rounded-2xl border border-black/10 bg-neutral-50 p-2 md:max-w-none">
+          <div className="relative aspect-square w-full max-w-[220px] overflow-hidden rounded-2xl border border-black/10 bg-neutral-50 p-2 md:max-w-none">
             <Image
               src={coverImage.src}
               alt={coverImage.alt}
