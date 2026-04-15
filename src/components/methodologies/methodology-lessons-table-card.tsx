@@ -37,6 +37,7 @@ type MethodologyLessonsTableCardProps = {
   title?: string;
   methodologySlug: string;
   rows: MethodologyLessonRow[];
+  embedded?: boolean;
 };
 
 function MaterialMetric({
@@ -59,15 +60,17 @@ function MaterialMetric({
   );
 }
 
-export function MethodologyLessonsTableCard({
-  title = "Уроки",
+function MethodologyLessonsTable({
   methodologySlug,
   rows,
-}: MethodologyLessonsTableCardProps) {
+}: {
+  methodologySlug: string;
+  rows: MethodologyLessonRow[];
+}) {
   const router = useRouter();
 
   return (
-    <ProductTableCard title={title}>
+    <>
       <ProductTable className="table-auto">
         <colgroup>
           <col />
@@ -78,9 +81,15 @@ export function MethodologyLessonsTableCard({
         <ProductTableHead>
           <ProductTableHeaderRow>
             <ProductTableHeaderCell>Урок</ProductTableHeaderCell>
-            <ProductTableHeaderCell className="whitespace-nowrap">Длительность</ProductTableHeaderCell>
-            <ProductTableHeaderCell className="whitespace-nowrap">Материалы</ProductTableHeaderCell>
-            <ProductTableHeaderCell className="whitespace-nowrap">Назначен</ProductTableHeaderCell>
+            <ProductTableHeaderCell className="whitespace-nowrap">
+              Длительность
+            </ProductTableHeaderCell>
+            <ProductTableHeaderCell className="whitespace-nowrap">
+              Материалы
+            </ProductTableHeaderCell>
+            <ProductTableHeaderCell className="whitespace-nowrap">
+              Назначен
+            </ProductTableHeaderCell>
           </ProductTableHeaderRow>
         </ProductTableHead>
         <ProductTableBody>
@@ -125,18 +134,28 @@ export function MethodologyLessonsTableCard({
                     />
                     <MaterialMetric
                       label="Карточки"
-                      value={lesson.mediaSummary.worksheets + lesson.mediaSummary.other + (lesson.materialsSignal ? 1 : 0)}
-                      icon={<PanelsTopLeft className="h-3.5 w-3.5" strokeWidth={2.2} />}
+                      value={
+                        lesson.mediaSummary.worksheets +
+                        lesson.mediaSummary.other +
+                        (lesson.materialsSignal ? 1 : 0)
+                      }
+                      icon={
+                        <PanelsTopLeft className="h-3.5 w-3.5" strokeWidth={2.2} />
+                      }
                     />
                     <MaterialMetric
                       label="Квиз"
                       value={lesson.homeworkSignal ? 1 : 0}
-                      icon={<ClipboardCheck className="h-3.5 w-3.5" strokeWidth={2.2} />}
+                      icon={
+                        <ClipboardCheck className="h-3.5 w-3.5" strokeWidth={2.2} />
+                      }
                     />
                   </div>
                 </ProductTableCell>
                 <ProductTableCell className="whitespace-nowrap">
-                  <ProductTableTruncate title={lesson.nearestAssignedAtLabel ?? "Не назначен"}>
+                  <ProductTableTruncate
+                    title={lesson.nearestAssignedAtLabel ?? "Не назначен"}
+                  >
                     {lesson.nearestAssignedAtLabel ?? "—"}
                   </ProductTableTruncate>
                 </ProductTableCell>
@@ -148,6 +167,27 @@ export function MethodologyLessonsTableCard({
       {rows.length === 0 ? (
         <ProductTableEmptyState text="В этой методике пока нет доступных уроков." />
       ) : null}
+    </>
+  );
+}
+
+export function MethodologyLessonsTableCard({
+  title = "Уроки",
+  methodologySlug,
+  rows,
+  embedded = false,
+}: MethodologyLessonsTableCardProps) {
+  if (embedded) {
+    return (
+      <div className="overflow-x-auto rounded-2xl border border-neutral-200 bg-white/95">
+        <MethodologyLessonsTable methodologySlug={methodologySlug} rows={rows} />
+      </div>
+    );
+  }
+
+  return (
+    <ProductTableCard title={title}>
+      <MethodologyLessonsTable methodologySlug={methodologySlug} rows={rows} />
     </ProductTableCard>
   );
 }
