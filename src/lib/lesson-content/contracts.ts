@@ -21,6 +21,10 @@ export type MethodologyMetadata = {
   level?: string;
   titleRu?: string;
   titleNative?: string;
+  coverImage?: {
+    src: string;
+    alt?: string;
+  };
   targetAgeLabel?: string;
   lessonDurationLabel?: string;
   courseDurationLabel?: string;

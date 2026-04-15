@@ -19,6 +19,10 @@ export const lessonContentFixtureMethodology: Methodology = {
     level: "Beginner · Pre-A1",
     titleRu: "Мир вокруг меня",
     titleNative: "我周围的世界",
+    coverImage: {
+      src: "/methodologies/01.png",
+      alt: "Обложка методики «Мир вокруг меня»",
+    },
     audienceLabel: "Дошкольники 5–6 лет, старт в китайском языке",
     targetAgeLabel: "5–6 лет",
     lessonDurationLabel: "45 минут",

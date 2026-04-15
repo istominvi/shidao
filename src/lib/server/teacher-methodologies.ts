@@ -144,6 +144,14 @@ export async function getTeacherMethodologiesIndexReadModel() {
         slug: item.slug,
         title: teacherFacingMethodologyTitle(item),
         shortDescription: item.shortDescription,
+        coverImage: item.metadata?.coverImage
+          ? {
+              src: item.metadata.coverImage.src,
+              alt:
+                item.metadata.coverImage.alt ??
+                `Обложка методики «${teacherFacingMethodologyTitle(item)}»`,
+            }
+          : null,
         lessonCount: lessons.length,
         passport: {
           locale: metadata.locale,
