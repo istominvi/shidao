@@ -1,5 +1,6 @@
 import { SurfaceCard } from "@/components/ui/surface-card";
 import { StudentHomeworkQuizCard } from "@/components/dashboard/student-homework-quiz-card";
+import { StudentContentSectionCard } from "@/components/lessons/student-content-section-card";
 import type {
   ParentScheduledLessonView,
   ScheduledLessonPreviewView,
@@ -41,134 +42,25 @@ export function ScheduledLessonLearnerView({
       ) : null}
 
       {(model.studentContent?.sections ?? []).map((section, index) => (
-        <SurfaceCard key={`${section.type}-${index}`} title={section.title}>
-          {section.type === "lesson_focus" ? (
-            <>
-              <p className="mt-2 text-sm text-neutral-700">{section.body}</p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {section.chips.map((chip) => (
-                  <span
-                    key={chip}
-                    className="rounded-full bg-sky-50 px-2.5 py-1 text-xs font-semibold text-sky-900"
-                  >
-                    {chip}
-                  </span>
-                ))}
-              </div>
-            </>
-          ) : null}
-
-          {section.type === "vocabulary_cards" ? (
-            <div className="mt-3 grid gap-2 md:grid-cols-2">
-              {section.items.map((item) => (
-                <article
-                  key={item.term}
-                  className="rounded-2xl border border-neutral-200 bg-white p-3"
-                >
-                  <p className="text-lg font-bold text-neutral-950">
-                    {item.term}
-                  </p>
-                  <p className="text-sm text-neutral-600">
-                    {item.pinyin ?? ""}
-                  </p>
-                  <p className="text-sm text-neutral-700">{item.meaning}</p>
-                </article>
-              ))}
-            </div>
-          ) : null}
-
-          {section.type === "phrase_cards" ? (
-            <div className="mt-3 grid gap-2 md:grid-cols-2">
-              {section.items.map((item) => (
-                <article
-                  key={item.phrase}
-                  className="rounded-2xl border border-violet-200 bg-violet-50/50 p-3"
-                >
-                  <p className="text-lg font-bold text-neutral-950">
-                    {item.phrase}
-                  </p>
-                  <p className="text-sm text-neutral-600">
-                    {item.pinyin ?? ""}
-                  </p>
-                  <p className="text-sm text-neutral-700">{item.meaning}</p>
-                  {item.usageHint ? (
-                    <p className="mt-1 text-xs text-neutral-600">
-                      {item.usageHint}
-                    </p>
-                  ) : null}
-                </article>
-              ))}
-            </div>
-          ) : null}
-
-          {section.type === "media_asset" ? (
-            <article className="mt-3 rounded-2xl border border-sky-200 bg-sky-50/60 p-3 text-sm">
-              <p className="font-semibold text-neutral-900">
-                {model.assetsById[section.assetId]?.title ?? section.title}
-              </p>
-              <p className="text-neutral-700">{section.studentPrompt}</p>
-              {model.assetsById[section.assetId]?.sourceUrl ? (
-                <a
-                  href={model.assetsById[section.assetId]?.sourceUrl}
-                  className="mt-2 inline-block text-xs text-sky-700 underline underline-offset-2"
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  Открыть материал
-                </a>
-              ) : null}
-            </article>
-          ) : null}
-
-          {section.type === "action_cards" ? (
-            <div className="mt-3 grid gap-2 md:grid-cols-2">
-              {section.items.map((item) => (
-                <article
-                  key={item.term}
-                  className="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-3"
-                >
-                  <p className="text-lg font-bold text-neutral-950">
-                    {item.term}
-                  </p>
-                  <p className="text-sm text-neutral-600">
-                    {item.pinyin ?? ""} · {item.meaning}
-                  </p>
-                  <p className="text-sm text-neutral-700">
-                    {item.movementHint}
-                  </p>
-                </article>
-              ))}
-            </div>
-          ) : null}
-
-          {section.type === "worksheet" ? (
-            <article className="mt-3 rounded-2xl border border-amber-200 bg-amber-50/60 p-3 text-sm text-neutral-700">
-              <p className="font-semibold text-neutral-900">
-                {section.pageLabel ?? "Задание"}
-              </p>
-              <p>{section.instructions}</p>
-            </article>
-          ) : null}
-
-          {section.type === "recap" ? (
-            <ul className="mt-3 space-y-2 text-sm text-neutral-700">
-              {section.bullets.map((bullet) => (
-                <li key={bullet}>• {bullet}</li>
-              ))}
-            </ul>
-          ) : null}
-        </SurfaceCard>
+        <StudentContentSectionCard
+          key={`${section.type}-${index}`}
+          section={section}
+          assetsById={model.assetsById}
+        />
       ))}
 
       {model.role === "student" && model.homework ? (
         <SurfaceCard title="Домашнее задание">
-          <article className="mt-3 rounded-2xl border border-neutral-200 bg-white p-3">
+          <article className="mt-3 rounded-2xl border border-violet-200 bg-gradient-to-br from-violet-50 to-white p-4">
             <p className="font-semibold text-neutral-900">
               {model.homework.homeworkTitle}
             </p>
             <p className="text-xs text-neutral-500">
               {model.homework.statusLabel} · Срок:{" "}
               {model.homework.dueAt ?? "без срока"}
+            </p>
+            <p className="mt-2 rounded-xl border border-violet-100 bg-white px-3 py-2 text-sm text-neutral-700">
+              Перед стартом повтори: 狗 / 猫 / 兔子 / 马 / 农场, фразы 我是… и 这是…, движения 跑 и 跳.
             </p>
             <p className="mt-2 text-sm text-neutral-700">
               {model.homework.instructions}
@@ -196,6 +88,9 @@ export function ScheduledLessonLearnerView({
             ) : (
               <StudentHomeworkQuizCard item={model.homework} />
             )}
+            <p className="mt-3 text-xs text-violet-800">
+              Отлично! После отправки проверь результат и попроси взрослого обсудить ошибки вместе с тобой.
+            </p>
           </article>
         </SurfaceCard>
       ) : null}

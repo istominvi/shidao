@@ -18,6 +18,10 @@ const homeworkPanelSource = readFileSync(
   "src/components/lessons/lesson-canonical-homework-panel.tsx",
   "utf8",
 );
+const studentCardSource = readFileSync(
+  "src/components/lessons/student-content-section-card.tsx",
+  "utf8",
+);
 
 test("methodology workspace uses one canonical lesson card with embedded tabs", () => {
   assert.equal(workspaceSource.includes('<SurfaceCard as="section"'), true);
@@ -38,6 +42,13 @@ test("plan tab is organized as one pedagogical document without extra mini-navig
 test("content and homework panels support embedded mode without own outer SurfaceCard", () => {
   assert.equal(studentPanelSource.includes("embedded?: boolean"), true);
   assert.equal(studentPanelSource.includes("if (embedded)"), true);
+  assert.equal(studentPanelSource.includes("StudentContentSectionCard"), true);
+  assert.equal(studentCardSource.includes("hero_banner"), true);
+  assert.equal(studentCardSource.includes("goal_cards"), true);
+  assert.equal(studentCardSource.includes("vocabulary_gallery"), true);
   assert.equal(homeworkPanelSource.includes("embedded?: boolean"), true);
   assert.equal(homeworkPanelSource.includes("if (embedded)"), true);
+  assert.equal(homeworkPanelSource.includes("Фокус отработки"), true);
+  assert.equal(homeworkPanelSource.includes("Перед началом"), true);
+  assert.equal(homeworkPanelSource.includes("Критерии успеха"), true);
 });

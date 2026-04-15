@@ -30,3 +30,9 @@ test("learner communication preview uses neutral helper (no fake teacher identit
   assert.equal(source.includes("getTeacherConversationReadModel"), false);
   assert.equal(source.includes("teacherId: \"\""), false);
 });
+
+test("learner shared projection resolves assets for richer student content section types", () => {
+  assert.equal(source.includes('section.type === "media_stage"'), true);
+  assert.equal(source.includes('section.type === "song_stage"'), true);
+  assert.equal(source.includes('section.type === "worksheet_preview"'), true);
+});

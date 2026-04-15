@@ -36,6 +36,22 @@
 - `worksheet`
 - `recap`
 
+Расширенные секции для card/slide-like learner flow (backward-compatible):
+
+- `hero_banner`
+- `goal_cards`
+- `story_scene`
+- `vocabulary_gallery`
+- `phrase_drill`
+- `movement_mission`
+- `counting_task`
+- `media_stage`
+- `farm_scene`
+- `worksheet_preview`
+- `song_stage`
+- `home_recap`
+- `parent_tip`
+
 ## Runtime-проекции по ролям
 
 - **Teacher**:

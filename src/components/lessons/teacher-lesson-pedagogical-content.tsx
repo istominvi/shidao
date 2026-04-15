@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Clock3, Compass, GraduationCap, PackageCheck, Sparkles } from "lucide-react";
 import { Chip } from "@/components/ui/chip";
 import type { TeacherLessonWorkspacePresentation } from "@/lib/server/teacher-lesson-workspace";
 
@@ -40,15 +41,41 @@ export function TeacherLessonPedagogicalContent({
   lessonFlow,
   durationLabel,
 }: Pick<TeacherLessonWorkspacePresentation, "quickSummary" | "lessonFlow"> & { durationLabel?: string | null }) {
+  const groupedMaterials = {
+    beforeClass: quickSummary.prepChecklist.filter((item) =>
+      /(герои|скотч|указка|подготов|разлож|ферм)/i.test(item),
+    ),
+    visuals: quickSummary.prepChecklist.filter((item) =>
+      /(карточ|приложени|рабоч|тетрад)/i.test(item),
+    ),
+    movement: quickSummary.prepChecklist.filter((item) =>
+      /(мяч|палоч|игрушк|движ)/i.test(item),
+    ),
+  };
+
   return (
     <section className="space-y-8" aria-label="План урока">
       <section id="lesson-passport" className="scroll-mt-20 border-b border-neutral-200 pb-6">
         <SectionTitle title="Паспорт урока" subtitle="Краткая методическая выжимка перед началом занятия." />
+        <div className="mb-4 rounded-2xl border border-sky-200 bg-gradient-to-br from-sky-50 to-white p-4">
+          <p className="text-sm font-semibold text-sky-900">
+            <Sparkles className="mr-1 inline h-4 w-4" /> Тема: farm animals
+          </p>
+          <div className="mt-2 flex flex-wrap gap-2 text-xs">
+            <Chip tone="sky">Возраст: 5–6</Chip>
+            <Chip tone="violet">Формат: игра + движение + медиа</Chip>
+            <Chip tone="emerald">Группа: 4–6 детей</Chip>
+            <Chip tone="amber">Модуль 1 · Урок 1</Chip>
+          </div>
+        </div>
 
         <div className="space-y-4">
           {durationLabel ? (
             <div className="flex flex-wrap items-center gap-2 text-sm text-neutral-700">
-              <span className="font-semibold text-neutral-900">Длительность:</span>
+              <span className="font-semibold text-neutral-900">
+                <Clock3 className="mr-1 inline h-4 w-4" />
+                Длительность:
+              </span>
               <Chip tone="neutral">{durationLabel}</Chip>
             </div>
           ) : null}
@@ -112,7 +139,26 @@ export function TeacherLessonPedagogicalContent({
 
       <section id="lesson-materials" className="scroll-mt-20 border-b border-neutral-200 pb-6">
         <SectionTitle title="Реквизит и материалы" subtitle="Проверьте подготовку до старта урока." />
-        <SummaryList items={quickSummary.prepChecklist} emptyLabel="Чек-лист подготовки пока не заполнен." />
+        <div className="grid gap-3 md:grid-cols-3">
+          <PedagogicalSubsection title="Before class">
+            <SummaryList items={groupedMaterials.beforeClass} emptyLabel="Нет отдельных пунктов." />
+          </PedagogicalSubsection>
+          <PedagogicalSubsection title="In-class visuals">
+            <SummaryList items={groupedMaterials.visuals} emptyLabel="Нет отдельных пунктов." />
+          </PedagogicalSubsection>
+          <PedagogicalSubsection title="Movement / game">
+            <SummaryList items={groupedMaterials.movement} emptyLabel="Нет отдельных пунктов." />
+          </PedagogicalSubsection>
+        </div>
+        <div className="mt-3 rounded-xl border border-neutral-200 bg-neutral-50/70 p-3">
+          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-neutral-500">
+            <PackageCheck className="mr-1 inline h-4 w-4" />
+            Полный чек-лист
+          </p>
+          <div className="mt-2">
+            <SummaryList items={quickSummary.prepChecklist} emptyLabel="Чек-лист подготовки пока не заполнен." />
+          </div>
+        </div>
       </section>
 
       <section id="lesson-flow" className="scroll-mt-20">
@@ -134,6 +180,16 @@ export function TeacherLessonPedagogicalContent({
                   </Chip>
                 </div>
                 <h3 className="text-lg font-semibold text-neutral-950">{step.title}</h3>
+                <div className="flex flex-wrap gap-2 text-xs">
+                  <span className="rounded-full bg-neutral-100 px-2 py-1 text-neutral-700">
+                    <Compass className="mr-1 inline h-3.5 w-3.5" />
+                    Flow stage
+                  </span>
+                  <span className="rounded-full bg-sky-50 px-2 py-1 text-sky-800">
+                    <GraduationCap className="mr-1 inline h-3.5 w-3.5" />
+                    Success driven
+                  </span>
+                </div>
                 {step.description ? <p className="text-sm leading-6 text-neutral-700">{step.description}</p> : null}
               </header>
 

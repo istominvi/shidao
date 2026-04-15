@@ -33,7 +33,20 @@ export type MethodologyStudentSectionType =
   | "media_asset"
   | "action_cards"
   | "worksheet"
-  | "recap";
+  | "recap"
+  | "hero_banner"
+  | "goal_cards"
+  | "story_scene"
+  | "vocabulary_gallery"
+  | "phrase_drill"
+  | "movement_mission"
+  | "counting_task"
+  | "media_stage"
+  | "farm_scene"
+  | "worksheet_preview"
+  | "song_stage"
+  | "home_recap"
+  | "parent_tip";
 
 export type AssetRef = {
   kind: ReusableAssetKind;

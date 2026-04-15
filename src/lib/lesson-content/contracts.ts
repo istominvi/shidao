@@ -307,6 +307,94 @@ export type RecapStudentSection = BaseStudentSection<"recap"> & {
   bullets: string[];
 };
 
+export type HeroBannerStudentSection = BaseStudentSection<"hero_banner"> & {
+  subtitle?: string;
+  mood?: string;
+  chips: string[];
+};
+
+export type GoalCardsStudentSection = BaseStudentSection<"goal_cards"> & {
+  goals: Array<{
+    icon?: string;
+    text: string;
+  }>;
+};
+
+export type StorySceneStudentSection = BaseStudentSection<"story_scene"> & {
+  sceneLine: string;
+  prompt?: string;
+  chips?: string[];
+};
+
+export type VocabularyGalleryStudentSection =
+  BaseStudentSection<"vocabulary_gallery"> & {
+    items: Array<{
+      term: string;
+      pinyin?: string;
+      meaning: string;
+      category: "animal" | "place" | "action" | "phrase";
+      visualHint?: string;
+    }>;
+  };
+
+export type PhraseDrillStudentSection = BaseStudentSection<"phrase_drill"> & {
+  items: Array<{
+    phrase: string;
+    pinyin?: string;
+    meaning: string;
+    example?: string;
+  }>;
+};
+
+export type MovementMissionStudentSection =
+  BaseStudentSection<"movement_mission"> & {
+    prompts: string[];
+    hints?: string[];
+    energyLevel?: "calm" | "active";
+  };
+
+export type CountingTaskStudentSection = BaseStudentSection<"counting_task"> & {
+  task: string;
+  countingRange?: string;
+  hints?: string[];
+};
+
+export type MediaStageStudentSection = BaseStudentSection<"media_stage"> & {
+  assetId?: string;
+  assetKind: "video" | "song" | "media_file";
+  prompt: string;
+  description?: string;
+  ctaLabel?: string;
+};
+
+export type FarmSceneStudentSection = BaseStudentSection<"farm_scene"> & {
+  modelLine: string;
+  childNote: string;
+  prompts?: string[];
+};
+
+export type WorksheetPreviewStudentSection =
+  BaseStudentSection<"worksheet_preview"> & {
+    assetId?: string;
+    pageLabel?: string;
+    instructions: string;
+    checklist?: string[];
+  };
+
+export type SongStageStudentSection = BaseStudentSection<"song_stage"> & {
+  assetId?: string;
+  prompt: string;
+  movementHint?: string;
+};
+
+export type HomeRecapStudentSection = BaseStudentSection<"home_recap"> & {
+  bullets: string[];
+};
+
+export type ParentTipStudentSection = BaseStudentSection<"parent_tip"> & {
+  tip: string;
+};
+
 export type MethodologyLessonStudentContentSection =
   | LessonFocusStudentSection
   | VocabularyCardsStudentSection
@@ -314,7 +402,20 @@ export type MethodologyLessonStudentContentSection =
   | MediaAssetStudentSection
   | ActionCardsStudentSection
   | WorksheetStudentSection
-  | RecapStudentSection;
+  | RecapStudentSection
+  | HeroBannerStudentSection
+  | GoalCardsStudentSection
+  | StorySceneStudentSection
+  | VocabularyGalleryStudentSection
+  | PhraseDrillStudentSection
+  | MovementMissionStudentSection
+  | CountingTaskStudentSection
+  | MediaStageStudentSection
+  | FarmSceneStudentSection
+  | WorksheetPreviewStudentSection
+  | SongStageStudentSection
+  | HomeRecapStudentSection
+  | ParentTipStudentSection;
 
 export type MethodologyLessonStudentContent = {
   id: string;

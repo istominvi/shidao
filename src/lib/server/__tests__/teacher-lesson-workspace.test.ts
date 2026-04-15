@@ -254,7 +254,7 @@ test("teacher workspace read model includes runtime edit fields and no block ove
   assert.equal(readModel.projection.outcomeNotes, "outcome note");
   assert.equal(
     readModel.studentContent.source?.title,
-    "Урок 1. Животные на ферме",
+    "今天我们去农场！",
   );
   assert.equal(readModel.studentContent.unavailableReason, null);
   assert.equal("blockOverrides" in readModel.projection, false);

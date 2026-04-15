@@ -723,6 +723,9 @@ export async function getTeacherLessonWorkspaceByScheduledLessonId(
             if (section.type === "worksheet" && section.assetId) {
               return [section.assetId];
             }
+            if (section.type === "media_stage" && section.assetId) return [section.assetId];
+            if (section.type === "song_stage" && section.assetId) return [section.assetId];
+            if (section.type === "worksheet_preview" && section.assetId) return [section.assetId];
             return [];
           }),
         ),

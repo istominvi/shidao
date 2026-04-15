@@ -378,6 +378,9 @@ export async function getTeacherMethodologyLessonReadModel(input: {
             if (section.type === "media_asset") return [section.assetId];
             if (section.type === "worksheet" && section.assetId)
               return [section.assetId];
+            if (section.type === "media_stage" && section.assetId) return [section.assetId];
+            if (section.type === "song_stage" && section.assetId) return [section.assetId];
+            if (section.type === "worksheet_preview" && section.assetId) return [section.assetId];
             return [];
           }),
         ),
@@ -447,6 +450,25 @@ export async function getTeacherMethodologyLessonReadModel(input: {
           answerFormatHint: canonicalHomework.answerFormatHint ?? null,
           sourceLayerNote:
             "Это каноничное домашнее задание из методики. Оно становится реальным назначением только после выдачи урока в группе.",
+          learningFocus: ["狗 / 猫 / 兔子 / 马 / 农场", "我是… / 这是…", "跑 / 跳"],
+          beforeStart: [
+            "Повторите 4 животных с карточками.",
+            "Скажите минимум по одной фразе: 我是… и 这是…",
+            "Вспомните движения 跑 и 跳.",
+          ],
+          completionSteps: [
+            "Откройте мини-квиз и читайте вопрос вслух.",
+            "Выберите один ответ на каждый вопрос.",
+            "После проверки разберите ошибки по карточкам урока.",
+          ],
+          successCriteria: [
+            "Ребёнок уверенно узнаёт минимум 4 слова темы фермы.",
+            "Различает фразы 我是… и 这是…",
+            "Понимает командные слова 跑 и 跳.",
+          ],
+          parentSupportTip:
+            "Помогайте читать вопросы вслух и просите ребёнка проговорить правильный ответ по-китайски.",
+          linkedLessonBlocks: ["Видеокарточка farm animals", "Движение 跑 / 跳", "Сцена 农场"],
         }
       : null,
     studentContent: {

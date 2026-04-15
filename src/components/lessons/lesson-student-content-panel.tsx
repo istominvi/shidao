@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { SurfaceCard } from "@/components/ui/surface-card";
-import { classNames } from "@/lib/ui/classnames";
+import { StudentContentSectionCard } from "@/components/lessons/student-content-section-card";
 import type { MethodologyLessonStudentContent, ReusableAsset } from "@/lib/lesson-content";
 
 type Props = {
@@ -65,26 +65,12 @@ export function LessonStudentContentPanel({
       ) : (
         <div className="space-y-3">
           {source.sections.map((section, idx) => (
-            <article
+            <StudentContentSectionCard
               key={`${section.type}-${idx}`}
-              className={classNames(
-                "rounded-2xl border border-neutral-200 p-3",
-                embedded ? "bg-neutral-50/60" : "bg-white",
-              )}
-            >
-              <h3 className="font-semibold text-neutral-900">{section.title}</h3>
-              <p className="text-xs text-neutral-500">Тип: {section.type}</p>
-              {section.type === "media_asset" && assetsById[section.assetId]?.sourceUrl ? (
-                <a
-                  href={assetsById[section.assetId]?.sourceUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="mt-2 inline-block text-xs text-sky-700 underline underline-offset-2"
-                >
-                  Открыть материал
-                </a>
-              ) : null}
-            </article>
+              section={section}
+              assetsById={assetsById}
+              embedded={embedded}
+            />
           ))}
         </div>
       )}

@@ -17,6 +17,15 @@ type RequestOptions = {
 
 type MethodologyIdRow = { id: string };
 type MethodologyLessonIdRow = { id: string };
+type MethodologyLessonLookupRow = {
+  id: string;
+  title: string;
+  module_index: number;
+  unit_index: number | null;
+  lesson_index: number;
+};
+
+const worldAroundMeLessonOneId = "b62b2f3d-c16f-6f3a-4a90-c124439690cf";
 
 function getServiceRoleKey() {
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -221,12 +230,24 @@ export async function bootstrapLessonContentFixtureAdmin(options?: {
     });
   }
 
-  const existingMethodologyLesson = await adminRequest<MethodologyLessonIdRow[]>(
+  const exactKnownLesson = await adminRequest<MethodologyLessonIdRow[]>(
+    `/rest/v1/methodology_lesson?select=id&id=eq.${worldAroundMeLessonOneId}&methodology_id=eq.${resolvedMethodologyId}&limit=1`,
+    "GET",
+  );
+  const byPosition = await adminRequest<MethodologyLessonIdRow[]>(
     `/rest/v1/methodology_lesson?select=id&methodology_id=eq.${resolvedMethodologyId}&module_index=eq.${rows.methodologyLessonRow.module_index}&lesson_index=eq.${rows.methodologyLessonRow.lesson_index}${rows.methodologyLessonRow.unit_index === null ? "&unit_index=is.null" : `&unit_index=eq.${rows.methodologyLessonRow.unit_index}`}&limit=1`,
     "GET",
   );
+  const byTitle = await adminRequest<MethodologyLessonLookupRow[]>(
+    `/rest/v1/methodology_lesson?select=id,title,module_index,unit_index,lesson_index&methodology_id=eq.${resolvedMethodologyId}&title=ilike.${encodeURIComponent("%Животные на ферме%")}&limit=1`,
+    "GET",
+  );
+
   const resolvedMethodologyLessonId =
-    existingMethodologyLesson[0]?.id ?? rows.methodologyLessonRow.id;
+    exactKnownLesson[0]?.id ??
+    byPosition[0]?.id ??
+    byTitle[0]?.id ??
+    rows.methodologyLessonRow.id;
   const methodologyLessonRow = {
     ...rows.methodologyLessonRow,
     id: resolvedMethodologyLessonId,

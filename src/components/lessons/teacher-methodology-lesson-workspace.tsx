@@ -21,6 +21,12 @@ type MethodologyLessonReadModel = {
     materialLinks: string[];
     answerFormatHint: string | null;
     sourceLayerNote: string;
+    learningFocus?: string[];
+    beforeStart?: string[];
+    completionSteps?: string[];
+    successCriteria?: string[];
+    parentSupportTip?: string | null;
+    linkedLessonBlocks?: string[];
   } | null;
   studentContent: TeacherLessonWorkspaceReadModel["studentContent"];
 };

@@ -10,6 +10,7 @@ const source = readFileSync(
 test("learner lesson view supports dedicated preview role", () => {
   assert.equal(source.includes("ScheduledLessonPreviewView"), true);
   assert.equal(source.includes("Предпросмотр урока"), false);
+  assert.equal(source.includes("StudentContentSectionCard"), true);
 });
 
 test("learner lesson view does not force UTC timezone", () => {
@@ -20,4 +21,6 @@ test("learner lesson view does not force UTC timezone", () => {
 test("learner lesson view no longer renders page-level handcrafted h1 header", () => {
   assert.equal(source.includes("<h1"), false);
   assert.equal(source.includes("model.lessonTitle"), false);
+  assert.equal(source.includes("Перед стартом повтори"), true);
+  assert.equal(source.includes("Отлично! После отправки"), true);
 });
