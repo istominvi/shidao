@@ -21,6 +21,13 @@ test("learner lesson view renders shared learner deck", () => {
   assert.equal(source.includes("model.studentContent?.sections"), false);
 });
 
+test("shared learner deck uses scene grouping with stronger progression rhythm", () => {
+  assert.equal(sharedDeckSource.includes("groupScenes"), true);
+  assert.equal(sharedDeckSource.includes("Сцена"), true);
+  assert.equal(sharedDeckSource.includes('section.layout === "hero"'), true);
+  assert.equal(sharedDeckSource.includes('section.layout === "roadmap"'), true);
+});
+
 test("shared learner deck gracefully handles media without source url", () => {
   assert.equal(sharedDeckSource.includes("Материал покажет преподаватель на уроке"), true);
   assert.equal(sharedDeckSource.includes("sourceUrl"), true);

@@ -258,6 +258,17 @@ type BaseStudentSection<TType extends MethodologyStudentSectionType> = {
   subtitle?: string;
   tone?: "sky" | "violet" | "emerald" | "amber" | "rose" | "neutral";
   illustrationSrc?: string;
+  layout?:
+    | "hero"
+    | "roadmap"
+    | "vocabulary"
+    | "phrases"
+    | "counting"
+    | "movement"
+    | "farm"
+    | "practice"
+    | "recap";
+  sceneId?: string;
 };
 
 export type LessonFocusStudentSection = BaseStudentSection<"lesson_focus"> & {

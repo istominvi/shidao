@@ -293,5 +293,8 @@ test("lesson 1 fixture includes canonical 3-part model data", () => {
   assert.equal(rows.blockRows.length > 0, true);
   assert.equal(rows.studentContentRow.title, "Урок 1. Животные на ферме");
   assert.equal(Array.isArray((rows.studentContentRow.content_payload as { sections: unknown[] }).sections), true);
+  const studentSections = (rows.studentContentRow.content_payload as { sections: Array<{ sceneId?: string; layout?: string }> }).sections;
+  assert.equal(studentSections.some((section) => section.layout === "hero"), true);
+  assert.equal(studentSections.some((section) => section.sceneId === "scene-practice"), true);
   assert.equal(rows.homeworkDefinitionRow.kind, "quiz_single_choice");
 });
