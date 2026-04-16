@@ -64,6 +64,10 @@ test("teacher workspace homework section keeps methodology content read-only and
     false,
   );
   assert.equal(workspaceComponentSource.includes("TeacherHomeworkPanel"), true);
+  assert.equal(
+    workspaceComponentSource.includes("TeacherHomeworkQuizPreviewPanel"),
+    false,
+  );
   assert.equal(workspaceComponentSource.includes("Задать ДЗ"), false);
   assert.equal(
     workspaceComponentSource.includes('name="homeworkTitle"'),

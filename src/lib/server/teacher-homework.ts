@@ -40,6 +40,7 @@ export type TeacherLessonHomeworkReadModel = {
     answerFormatHint?: string;
     estimatedMinutes?: number;
     questionCount?: number;
+    quizDefinition?: Record<string, unknown> | null;
   } | null;
   assignment: {
     id: string;
@@ -173,6 +174,8 @@ export async function getTeacherLessonHomeworkReadModel(
           answerFormatHint: definition.answerFormatHint,
           estimatedMinutes: definition.estimatedMinutes,
           questionCount,
+          quizDefinition:
+            definition.kind === "quiz_single_choice" ? definition.quiz ?? null : null,
         }
       : null,
     assignment: assignment

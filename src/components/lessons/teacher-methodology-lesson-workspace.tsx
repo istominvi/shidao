@@ -15,12 +15,14 @@ type MethodologyLessonReadModel = {
   >;
   canonicalHomework: {
     title: string;
+    kind: "practice_text" | "quiz_single_choice";
     kindLabel: string;
     instructions: string;
     estimatedMinutes: number | null;
     materialLinks: string[];
     answerFormatHint: string | null;
     sourceLayerNote: string;
+    quizDefinition: Record<string, unknown> | null;
   } | null;
   studentContent: TeacherLessonWorkspaceReadModel["studentContent"];
 };

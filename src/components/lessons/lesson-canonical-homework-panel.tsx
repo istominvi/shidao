@@ -1,5 +1,6 @@
 import { Chip } from "@/components/ui/chip";
 import { SurfaceCard } from "@/components/ui/surface-card";
+import { TeacherHomeworkQuizPreviewPanel } from "@/components/lessons/teacher-homework-quiz-preview-panel";
 
 type CanonicalHomework = {
   title: string;
@@ -9,6 +10,8 @@ type CanonicalHomework = {
   materialLinks: string[];
   answerFormatHint: string | null;
   sourceLayerNote: string;
+  kind: "practice_text" | "quiz_single_choice";
+  quizDefinition: Record<string, unknown> | null;
 };
 
 function DotList({ items }: { items: string[] }) {
@@ -85,6 +88,10 @@ export function LessonCanonicalHomeworkPanel({
       <p className="rounded-xl border border-dashed border-neutral-300 bg-neutral-50 px-3 py-2 text-xs text-neutral-600">
         {homework.sourceLayerNote}
       </p>
+
+      {homework.kind === "quiz_single_choice" && homework.quizDefinition ? (
+        <TeacherHomeworkQuizPreviewPanel quizDefinition={homework.quizDefinition} />
+      ) : null}
     </article>
   );
 

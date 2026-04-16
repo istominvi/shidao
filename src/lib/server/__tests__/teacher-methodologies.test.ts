@@ -6,6 +6,8 @@ const source = readFileSync("src/lib/server/teacher-methodologies.ts", "utf8");
 
 test("methodology lesson read model keeps canonical homework and source student content", () => {
   assert.equal(source.includes("canonicalHomework"), true);
+  assert.equal(source.includes("quizDefinition"), true);
+  assert.equal(source.includes('canonicalHomework.kind === "quiz_single_choice"'), true);
   assert.equal(source.includes("getMethodologyLessonStudentContentByLessonIdAdmin"), true);
   assert.equal(source.includes("studentContentUnavailableReason"), true);
   assert.equal(source.includes("getFixtureStudentContentFallback"), true);

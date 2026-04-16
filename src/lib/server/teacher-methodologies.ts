@@ -459,11 +459,16 @@ export async function getTeacherMethodologyLessonReadModel(input: {
     canonicalHomework: canonicalHomework
       ? {
           title: canonicalHomework.title,
+          kind: canonicalHomework.kind,
           kindLabel: homeworkKindLabel(canonicalHomework.kind),
           instructions: canonicalHomework.instructions,
           estimatedMinutes: canonicalHomework.estimatedMinutes ?? null,
           materialLinks: canonicalHomework.materialLinks,
           answerFormatHint: canonicalHomework.answerFormatHint ?? null,
+          quizDefinition:
+            canonicalHomework.kind === "quiz_single_choice"
+              ? canonicalHomework.quiz ?? null
+              : null,
           sourceLayerNote:
             "Это каноничное домашнее задание из методики. Оно становится реальным назначением только после выдачи урока в группе.",
         }

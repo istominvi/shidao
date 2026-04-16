@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { TeacherLessonHomeworkReadModel } from "@/lib/server/teacher-homework";
 import { TeacherHomeworkIssueModal } from "@/components/lessons/teacher-homework-issue-modal";
+import { TeacherHomeworkQuizPreviewPanel } from "@/components/lessons/teacher-homework-quiz-preview-panel";
 
 type Props = {
   homework: TeacherLessonHomeworkReadModel;
@@ -27,27 +28,33 @@ export function TeacherHomeworkPanel({ homework, scheduledLessonId }: Props) {
   return (
     <>
       {homework.definition ? (
-        <div className="mt-3 space-y-3 text-sm text-neutral-700">
-          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-sky-700">Из методики (только чтение)</p>
-          <div className="flex items-center gap-2">
-            <p className="font-semibold text-neutral-900">{homework.definition.title}</p>
-            <span className="rounded-full border border-sky-200 bg-sky-50 px-2 py-0.5 text-xs font-semibold text-sky-700">
-              {kindLabel(homework.definition.kind)}
-            </span>
-          </div>
-          <p>{homework.definition.instructions}</p>
-          {homework.definition.kind === "quiz_single_choice" ? (
-            <p className="text-xs text-neutral-600">
-              Вопросов: {homework.definition.questionCount ?? 0}
-              {homework.definition.estimatedMinutes ? ` · ${homework.definition.estimatedMinutes} мин` : ""}
-            </p>
-          ) : null}
-          {homework.definition.materialLinks.length ? (
-            <ul className="space-y-1 text-neutral-700">
-              {homework.definition.materialLinks.map((item) => (
-                <li key={item}>• {item}</li>
-              ))}
-            </ul>
+        <div className="mt-3 space-y-4 text-sm text-neutral-700">
+          <section className="space-y-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-sky-700">Из методики (только чтение)</p>
+            <div className="flex items-center gap-2">
+              <p className="font-semibold text-neutral-900">{homework.definition.title}</p>
+              <span className="rounded-full border border-sky-200 bg-sky-50 px-2 py-0.5 text-xs font-semibold text-sky-700">
+                {kindLabel(homework.definition.kind)}
+              </span>
+            </div>
+            <p>{homework.definition.instructions}</p>
+            {homework.definition.kind === "quiz_single_choice" ? (
+              <p className="text-xs text-neutral-600">
+                Вопросов: {homework.definition.questionCount ?? 0}
+                {homework.definition.estimatedMinutes ? ` · ${homework.definition.estimatedMinutes} мин` : ""}
+              </p>
+            ) : null}
+            {homework.definition.materialLinks.length ? (
+              <ul className="space-y-1 text-neutral-700">
+                {homework.definition.materialLinks.map((item) => (
+                  <li key={item}>• {item}</li>
+                ))}
+              </ul>
+            ) : null}
+          </section>
+
+          {homework.definition.kind === "quiz_single_choice" && homework.definition.quizDefinition ? (
+            <TeacherHomeworkQuizPreviewPanel quizDefinition={homework.definition.quizDefinition} />
           ) : null}
         </div>
       ) : (
