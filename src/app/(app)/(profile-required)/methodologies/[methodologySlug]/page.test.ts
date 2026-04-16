@@ -62,7 +62,7 @@ test("methodology lessons tab still uses canonical lessons table component in em
 test("description panel renders cover+lead intro without legacy chips list", () => {
   assert.equal(pageSource.includes("coverImage={readModel.methodology.coverImage}"), true);
   assert.equal(descriptionPanelSource.includes("next/image"), true);
-  assert.equal(descriptionPanelSource.includes("description.passportFacts"), false);
+  assert.equal(descriptionPanelSource.includes("description.passportFacts"), true);
   assert.equal(descriptionPanelSource.includes("description.highlights"), false);
-  assert.equal(descriptionPanelSource.includes('type === "goal_map"'), true);
+  assert.equal(descriptionPanelSource.includes('type === "anatomy_flow"'), true);
 });

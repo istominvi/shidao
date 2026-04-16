@@ -2,32 +2,19 @@ import Image from "next/image";
 import type { ReactNode } from "react";
 import {
   BookOpenCheck,
-  BrainCircuit,
-  ClipboardList,
+  Clock3,
   Globe2,
   HeartHandshake,
   Lightbulb,
-  Target,
-  Trophy,
+  Music2,
+  Sparkles,
+  Users,
+  Video,
 } from "lucide-react";
-import {
-  ProductTable,
-  ProductTableBody,
-  ProductTableCell,
-  ProductTableHead,
-  ProductTableHeaderCell,
-  ProductTableHeaderRow,
-  ProductTableRow,
-} from "@/components/ui/product-table";
+import { Chip } from "@/components/ui/chip";
 import type { MethodologyDescriptionContent } from "@/lib/methodologies/methodology-description-content";
 
-function SectionTitle({
-  title,
-  icon,
-}: {
-  title: string;
-  icon?: ReactNode;
-}) {
+function SectionTitle({ title, icon }: { title: string; icon?: ReactNode }) {
   return (
     <h3 className="flex items-center gap-2 text-base font-semibold text-neutral-950">
       {icon ? (
@@ -53,20 +40,24 @@ function DotList({ items }: { items: string[] }) {
   );
 }
 
-function GoalIcon({ kind }: { kind: "book" | "globe" | "brain" | "heart" }) {
-  if (kind === "book") return <BookOpenCheck className="h-4 w-4" aria-hidden="true" />;
-  if (kind === "globe") return <Globe2 className="h-4 w-4" aria-hidden="true" />;
-  if (kind === "brain") return <BrainCircuit className="h-4 w-4" aria-hidden="true" />;
-  return <HeartHandshake className="h-4 w-4" aria-hidden="true" />;
+function SectionIcon({ id }: { id: string }) {
+  if (id === "course-dna") return <Sparkles className="h-4 w-4" aria-hidden="true" />;
+  if (id === "how-to-work") return <BookOpenCheck className="h-4 w-4" aria-hidden="true" />;
+  if (id === "lesson-anatomy") return <Clock3 className="h-4 w-4" aria-hidden="true" />;
+  if (id === "pedagogical-principles") return <Lightbulb className="h-4 w-4" aria-hidden="true" />;
+  if (id === "learning-outcomes") return <HeartHandshake className="h-4 w-4" aria-hidden="true" />;
+  if (id === "thematic-map") return <Globe2 className="h-4 w-4" aria-hidden="true" />;
+  if (id === "materials-ecosystem") return <Users className="h-4 w-4" aria-hidden="true" />;
+  return <Sparkles className="h-4 w-4" aria-hidden="true" />;
 }
 
-function SectionIcon({ id }: { id: string }) {
-  if (id === "goals-and-tasks") return <Target className="h-4 w-4" aria-hidden="true" />;
-  if (id === "curriculum-plan") return <ClipboardList className="h-4 w-4" aria-hidden="true" />;
-  if (id === "planned-results") return <Trophy className="h-4 w-4" aria-hidden="true" />;
-  if (id === "content-and-competencies") return <Globe2 className="h-4 w-4" aria-hidden="true" />;
-  if (id === "methodological-support") return <Lightbulb className="h-4 w-4" aria-hidden="true" />;
-  return null;
+function CardIcon({ icon }: { icon: "book" | "music" | "video" | "users" | "clock" | "sparkles" }) {
+  if (icon === "book") return <BookOpenCheck className="h-4 w-4" aria-hidden="true" />;
+  if (icon === "music") return <Music2 className="h-4 w-4" aria-hidden="true" />;
+  if (icon === "video") return <Video className="h-4 w-4" aria-hidden="true" />;
+  if (icon === "users") return <Users className="h-4 w-4" aria-hidden="true" />;
+  if (icon === "clock") return <Clock3 className="h-4 w-4" aria-hidden="true" />;
+  return <Sparkles className="h-4 w-4" aria-hidden="true" />;
 }
 
 export function MethodologyDescriptionPanel({
@@ -89,27 +80,30 @@ export function MethodologyDescriptionPanel({
 
   return (
     <section className="space-y-8" aria-label="Описание методики">
-      <section className="space-y-3 border-b border-neutral-200 pb-6">
-        <SectionTitle title="О программе" icon={<BookOpenCheck className="h-4 w-4" aria-hidden="true" />} />
-        <div className="flex flex-col gap-4 md:flex-row md:items-start">
+      <section className="rounded-2xl border border-neutral-200 bg-gradient-to-b from-sky-50/70 to-white p-5 md:p-6">
+        <SectionTitle title="Паспорт программы" icon={<BookOpenCheck className="h-4 w-4" aria-hidden="true" />} />
+        <div className="mt-3 flex flex-col gap-4 md:flex-row md:items-start">
           {coverImage?.src ? (
             <div className="relative aspect-square w-full max-w-[180px] overflow-hidden rounded-2xl border border-black/10 bg-neutral-50">
-              <Image
-                src={coverImage.src}
-                alt={coverImage.alt}
-                fill
-                className="object-contain"
-                sizes="(max-width: 768px) 160px, 180px"
-              />
+              <Image src={coverImage.src} alt={coverImage.alt} fill className="object-contain" sizes="(max-width: 768px) 160px, 180px" />
             </div>
           ) : null}
 
-          <div className="space-y-3 text-sm leading-6 text-neutral-700 md:pt-1">
-            <p>{description.lead}</p>
+          <div className="min-w-0 space-y-3 text-sm leading-6 text-neutral-700 md:pt-1">
+            <p className="text-neutral-900">{description.lead}</p>
             {description.introParagraphs.map((paragraph) => (
               <p key={paragraph}>{paragraph}</p>
             ))}
           </div>
+        </div>
+
+        <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          {description.passportFacts.map((fact) => (
+            <div key={fact.label} className="rounded-xl border border-neutral-200 bg-white px-3 py-2">
+              <p className="text-xs uppercase tracking-[0.12em] text-neutral-500">{fact.label}</p>
+              <p className="mt-1 text-sm font-semibold text-neutral-900">{fact.value}</p>
+            </div>
+          ))}
         </div>
       </section>
 
@@ -136,87 +130,22 @@ export function MethodologyDescriptionPanel({
           );
         }
 
-        if (section.type === "goal_map") {
-          return (
-            <section key={section.id} className="space-y-4 border-b border-neutral-200 pb-6 last:border-b-0 last:pb-0">
-              <SectionTitle title={section.title} icon={<SectionIcon id={section.id} />} />
-
-              <div className="space-y-3 text-sm leading-6 text-neutral-700">
-                {section.contextParagraphs.map((paragraph) => (
-                  <p key={paragraph}>{paragraph}</p>
-                ))}
-              </div>
-
-              <div className="rounded-2xl border border-neutral-200 bg-white p-4">
-                <h4 className="text-xs font-semibold uppercase tracking-[0.12em] text-neutral-500">
-                  Ценностные ориентиры
-                </h4>
-                <div className="mt-3">
-                  <DotList items={section.valueOrientations} />
-                </div>
-              </div>
-
-              <div className="rounded-2xl border border-neutral-200 bg-neutral-50/70 p-4">
-                <h4 className="text-xs font-semibold uppercase tracking-[0.12em] text-neutral-500">
-                  Ключевые стратегические цели
-                </h4>
-                <div className="mt-3">
-                  <DotList items={section.strategicGoals} />
-                </div>
-              </div>
-
-              <div className="grid gap-3 md:grid-cols-2">
-                {section.taskGroups.map((group) => (
-                  <section
-                    key={`${section.id}-${group.title}`}
-                    className="rounded-xl border border-neutral-200 bg-white p-3 shadow-[0_8px_18px_rgba(20,20,20,0.04)]"
-                  >
-                    <h4 className="flex items-center gap-2 text-sm font-semibold text-neutral-900">
-                      <span className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-neutral-200 bg-neutral-50 text-neutral-700">
-                        <GoalIcon kind={group.icon} />
-                      </span>
-                      {group.title}
-                    </h4>
-                    <div className="mt-2">
-                      <DotList items={group.items} />
-                    </div>
-                  </section>
-                ))}
-              </div>
-            </section>
-          );
-        }
-
-        if (section.type === "table") {
+        if (section.type === "fact_cards") {
           return (
             <section key={section.id} className="space-y-3 border-b border-neutral-200 pb-6 last:border-b-0 last:pb-0">
               <SectionTitle title={section.title} icon={<SectionIcon id={section.id} />} />
-              <div className="overflow-x-auto rounded-2xl border border-neutral-200 bg-white/95">
-                <ProductTable className="table-auto">
-                  <colgroup>
-                    <col className="w-[24%]" />
-                    <col className="w-[18%]" />
-                    <col className="w-[10%]" />
-                    <col className="w-[48%]" />
-                  </colgroup>
-                  <ProductTableHead>
-                    <ProductTableHeaderRow>
-                      {section.columns.map((column) => (
-                        <ProductTableHeaderCell key={column}>{column}</ProductTableHeaderCell>
-                      ))}
-                    </ProductTableHeaderRow>
-                  </ProductTableHead>
-                  <ProductTableBody>
-                    {section.rows.map((row) => (
-                      <ProductTableRow key={row.section}>
-                        <ProductTableCell className="text-neutral-700">{row.section}</ProductTableCell>
-                        <ProductTableCell>{row.period}</ProductTableCell>
-                        <ProductTableCell>{row.hours}</ProductTableCell>
-                        <ProductTableCell>{row.grammar}</ProductTableCell>
-                      </ProductTableRow>
-                    ))}
-                  </ProductTableBody>
-                </ProductTable>
+              <div className="grid gap-3 md:grid-cols-2">
+                {section.cards.map((card) => (
+                  <article key={card.title} className="rounded-xl border border-neutral-200 bg-white p-4 shadow-[0_8px_18px_rgba(20,20,20,0.04)]">
+                    <h4 className="flex items-center gap-2 text-sm font-semibold text-neutral-900">
+                      <span className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-neutral-200 bg-neutral-50 text-neutral-700">
+                        <CardIcon icon={card.icon} />
+                      </span>
+                      {card.title}
+                    </h4>
+                    <p className="mt-2 text-sm text-neutral-700">{card.description}</p>
+                  </article>
+                ))}
               </div>
             </section>
           );
@@ -228,15 +157,32 @@ export function MethodologyDescriptionPanel({
               <SectionTitle title={section.title} icon={<SectionIcon id={section.id} />} />
               <div className="grid gap-3 md:grid-cols-2">
                 {section.groups.map((group) => (
-                  <section
-                    key={`${section.id}-${group.title}`}
-                    className="rounded-xl border border-neutral-200 bg-neutral-50/70 p-3"
-                  >
+                  <article key={group.title} className="rounded-xl border border-neutral-200 bg-neutral-50/70 p-3">
                     <h4 className="text-xs font-semibold uppercase tracking-[0.12em] text-neutral-500">{group.title}</h4>
                     <div className="mt-2">
                       <DotList items={group.items} />
                     </div>
-                  </section>
+                  </article>
+                ))}
+              </div>
+            </section>
+          );
+        }
+
+        if (section.type === "anatomy_flow") {
+          return (
+            <section key={section.id} className="space-y-4 border-b border-neutral-200 pb-6 last:border-b-0 last:pb-0">
+              <SectionTitle title={section.title} icon={<SectionIcon id={section.id} />} />
+              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                {section.stages.map((stage, index) => (
+                  <article key={stage.title} className="rounded-xl border border-sky-200 bg-sky-50/60 p-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <Chip tone="sky" size="sm">Этап {index + 1}</Chip>
+                      {stage.timeHint ? <span className="text-xs font-medium text-sky-800">{stage.timeHint}</span> : null}
+                    </div>
+                    <h4 className="mt-2 text-sm font-semibold text-neutral-900">{stage.title}</h4>
+                    <p className="mt-1 text-sm text-neutral-700">{stage.description}</p>
+                  </article>
                 ))}
               </div>
             </section>
