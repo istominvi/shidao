@@ -516,6 +516,40 @@ export const lessonContentFixtureMethodologyLessonStudentContent: MethodologyLes
   ],
 };
 
+
+function isWorldAroundMeLessonOneCandidate(input: {
+  methodologySlug?: string;
+  lessonTitle?: string;
+  moduleIndex?: number;
+  lessonIndex?: number;
+}) {
+  if (input.methodologySlug !== "world-around-me") return false;
+  if (input.moduleIndex === 1 && input.lessonIndex === 1) return true;
+  return input.lessonTitle?.trim().toLowerCase() === "урок 1. животные на ферме";
+}
+
+export function getFixtureStudentContentFallback(input: {
+  methodologySlug?: string;
+  lessonTitle?: string;
+  moduleIndex?: number;
+  lessonIndex?: number;
+}) {
+  if (!isWorldAroundMeLessonOneCandidate(input)) return null;
+
+  const neededAssetIds = new Set(
+    lessonContentFixtureMethodologyLessonStudentContent.sections.flatMap((section) => {
+      if (section.type === "media_asset") return [section.assetId];
+      if (section.type === "worksheet" && section.assetId) return [section.assetId];
+      return [];
+    }),
+  );
+
+  return {
+    source: lessonContentFixtureMethodologyLessonStudentContent,
+    assets: lessonContentFixtureAssets.filter((asset) => neededAssetIds.has(asset.id)),
+  };
+}
+
 export const lessonContentFixtureScheduledLesson: ScheduledLesson = {
   id: "scheduled-lesson:demo-world-around-me-lesson-1",
   methodologyLessonId: lessonContentFixtureMethodologyLesson.id,

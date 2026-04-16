@@ -1,5 +1,6 @@
 import {
   buildTeacherLessonProjection,
+  getFixtureStudentContentFallback,
   type ScheduledLesson,
 } from "../lesson-content";
 import type { ReusableAsset } from "../lesson-content";
@@ -393,6 +394,20 @@ export async function getTeacherMethodologyLessonReadModel(input: {
     studentContent = null;
     studentContentAssets = [];
     studentContentUnavailableReason = toStudentContentUnavailableReason(error);
+  }
+
+  if (!studentContent) {
+    const fallback = getFixtureStudentContentFallback({
+      methodologySlug: lesson.methodologySlug,
+      lessonTitle: lesson.shell.title,
+      moduleIndex: lesson.shell.position.moduleIndex,
+      lessonIndex: lesson.shell.position.lessonIndex,
+    });
+    if (fallback) {
+      studentContent = fallback.source;
+      studentContentAssets = fallback.assets;
+      studentContentUnavailableReason = null;
+    }
   }
 
   const presentation = buildTeacherLessonWorkspaceReadModel({

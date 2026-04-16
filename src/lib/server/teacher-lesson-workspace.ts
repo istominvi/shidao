@@ -1,5 +1,6 @@
 import {
   buildTeacherLessonProjection,
+  getFixtureStudentContentFallback,
   sortLessonBlocks,
   type GuidedActivityBlock,
   type IntroFramingBlock,
@@ -738,6 +739,21 @@ export async function getTeacherLessonWorkspaceByScheduledLessonId(
     studentContent = null;
     studentContentAssets = [];
     studentContentUnavailableReason = toStudentContentUnavailableReason(error);
+  }
+
+  if (!studentContent) {
+    const fallback = getFixtureStudentContentFallback({
+      methodologySlug: methodologyLesson.methodologySlug,
+      lessonTitle: methodologyLesson.shell.title,
+      moduleIndex: methodologyLesson.shell.position.moduleIndex,
+      lessonIndex: methodologyLesson.shell.position.lessonIndex,
+    });
+
+    if (fallback) {
+      studentContent = fallback.source;
+      studentContentAssets = fallback.assets;
+      studentContentUnavailableReason = null;
+    }
   }
 
   return buildTeacherLessonWorkspaceReadModel({

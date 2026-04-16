@@ -30,3 +30,9 @@ test("learner communication preview uses neutral helper (no fake teacher identit
   assert.equal(source.includes("getTeacherConversationReadModel"), false);
   assert.equal(source.includes("teacherId: \"\""), false);
 });
+
+
+test("scheduled learner projection falls back to fixture content for world-around-me lesson 1", () => {
+  assert.equal(source.includes("getFixtureStudentContentFallback"), true);
+  assert.equal(source.includes("studentContentUnavailableReason = null"), true);
+});
