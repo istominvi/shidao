@@ -108,3 +108,45 @@ test("publisher upserts homework and student content for resolved lesson id", as
   assert.equal(posts.some((item) => item.path.includes("methodology_lesson_homework")), true);
   assert.equal(posts.some((item) => item.path.includes("methodology_lesson_student_content")), true);
 });
+
+test("publisher still upserts student content when homework upsert fails", async () => {
+  const posts: string[] = [];
+  const warnings: string[] = [];
+  const originalWarn = console.warn;
+  console.warn = (...args: unknown[]) => warnings.push(String(args[0] ?? ""));
+
+  const request = async <T>(
+    path: string,
+    method: "GET" | "POST" | "PATCH" = "GET",
+  ): Promise<T> => {
+    if (method === "GET" && path.includes("/rest/v1/methodology?")) {
+      return [{ id: "methodology-1" }] as T;
+    }
+    if (method === "GET" && path.includes("id=eq.b62b2f3d-c16f-6f3a-4a90-c124439690cf")) {
+      return [{ id: "b62b2f3d-c16f-6f3a-4a90-c124439690cf" }] as T;
+    }
+    if (method === "POST" && path.includes("methodology_lesson_homework")) {
+      throw new Error("relation methodology_lesson_homework does not exist");
+    }
+    if (method === "POST") {
+      posts.push(path);
+      return [] as T;
+    }
+    return [] as T;
+  };
+
+  try {
+    const result = await publishWorldAroundMeLessonOneContent({ request });
+    assert.equal(result.methodologyLessonId, "b62b2f3d-c16f-6f3a-4a90-c124439690cf");
+    assert.equal(
+      posts.some((path) => path.includes("methodology_lesson_student_content")),
+      true,
+    );
+    assert.equal(
+      warnings.some((entry) => entry.includes("[world-around-me-publish] homework upsert skipped")),
+      true,
+    );
+  } finally {
+    console.warn = originalWarn;
+  }
+});

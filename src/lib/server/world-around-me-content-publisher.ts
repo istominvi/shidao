@@ -136,33 +136,8 @@ export async function publishWorldAroundMeLessonOneContent(input?: {
     titleHint: "Животные на ферме",
   });
 
-  const assetRows = rows.reusableAssetRows.map((asset) => ({
-    ...asset,
-    id: asset.id || stableUuid(`reusable_asset:${asset.slug}`),
-  }));
-
-  await request(
-    "/rest/v1/reusable_asset?on_conflict=slug",
-    "POST",
-    {
-      payload: assetRows,
-      extraHeaders: { Prefer: "resolution=merge-duplicates,return=representation" },
-    },
-  );
-
-  await request(
-    "/rest/v1/methodology_lesson_homework?on_conflict=methodology_lesson_id",
-    "POST",
-    {
-      payload: {
-        ...rows.homeworkDefinitionRow,
-        id: stableUuid(`methodology_lesson_homework:${resolved.lessonId}`),
-        methodology_lesson_id: resolved.lessonId,
-      },
-      extraHeaders: { Prefer: "resolution=merge-duplicates,return=representation" },
-    },
-  );
-
+  // Critical path: publish learner-facing source content row.
+  // This must succeed even if optional layers (assets/homework) are not ready in DB.
   await request(
     "/rest/v1/methodology_lesson_student_content?on_conflict=methodology_lesson_id",
     "POST",
@@ -175,6 +150,45 @@ export async function publishWorldAroundMeLessonOneContent(input?: {
       extraHeaders: { Prefer: "resolution=merge-duplicates,return=representation" },
     },
   );
+
+  // Best-effort: assets improve links in cards, but are not required for content rendering.
+  try {
+    const assetRows = rows.reusableAssetRows.map((asset) => ({
+      ...asset,
+      id: asset.id || stableUuid(`reusable_asset:${asset.slug}`),
+    }));
+
+    await request(
+      "/rest/v1/reusable_asset?on_conflict=slug",
+      "POST",
+      {
+        payload: assetRows,
+        extraHeaders: { Prefer: "resolution=merge-duplicates,return=representation" },
+      },
+    );
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "unknown error";
+    console.warn("[world-around-me-publish] asset upsert skipped", { error: message });
+  }
+
+  // Best-effort: canonical homework source row.
+  try {
+    await request(
+      "/rest/v1/methodology_lesson_homework?on_conflict=methodology_lesson_id",
+      "POST",
+      {
+        payload: {
+          ...rows.homeworkDefinitionRow,
+          id: stableUuid(`methodology_lesson_homework:${resolved.lessonId}`),
+          methodology_lesson_id: resolved.lessonId,
+        },
+        extraHeaders: { Prefer: "resolution=merge-duplicates,return=representation" },
+      },
+    );
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "unknown error";
+    console.warn("[world-around-me-publish] homework upsert skipped", { error: message });
+  }
 
   return {
     methodologyId,
