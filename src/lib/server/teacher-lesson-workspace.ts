@@ -124,6 +124,7 @@ export type TeacherLessonWorkspaceReadModel = {
       | "invalid_payload"
       | "load_failed"
       | null;
+    debugError?: string | null;
   };
   communication: {
     lessonScoped: Array<{
@@ -612,6 +613,7 @@ export function buildTeacherLessonWorkspaceReadModel(input: {
   homework: TeacherLessonHomeworkReadModel;
   studentContent?: MethodologyLessonStudentContent | null;
   studentContentUnavailableReason?: TeacherLessonWorkspaceReadModel["studentContent"]["unavailableReason"];
+  studentContentDebugError?: string | null;
   studentContentAssets?: ReusableAsset[];
   communication?: TeacherLessonWorkspaceReadModel["communication"];
 }): TeacherLessonWorkspaceReadModel {
@@ -643,6 +645,10 @@ export function buildTeacherLessonWorkspaceReadModel(input: {
       source: input.studentContent ?? null,
       assetsById,
       unavailableReason: input.studentContentUnavailableReason ?? null,
+      debugError:
+        process.env.NODE_ENV === "production"
+          ? null
+          : (input.studentContentDebugError ?? null),
     },
     communication: input.communication ?? {
       lessonScoped: [],

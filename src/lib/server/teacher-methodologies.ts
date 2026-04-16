@@ -360,6 +360,7 @@ export async function getTeacherMethodologyLessonReadModel(input: {
     | "invalid_payload"
     | "load_failed"
     | null = null;
+  let studentContentDebugError: string | null = null;
   let studentContentAssets: ReusableAsset[] = [];
 
   try {
@@ -393,6 +394,13 @@ export async function getTeacherMethodologyLessonReadModel(input: {
     studentContent = null;
     studentContentAssets = [];
     studentContentUnavailableReason = toStudentContentUnavailableReason(error);
+    studentContentDebugError = error instanceof Error ? error.message : "unknown error";
+    console.error("[teacher-methodology-lesson][student-content-load-failed]", {
+      lessonId: lesson.id,
+      methodologySlug: methodology.slug,
+      reason: studentContentUnavailableReason,
+      error: studentContentDebugError,
+    });
   }
 
   const presentation = buildTeacherLessonWorkspaceReadModel({
@@ -477,6 +485,8 @@ export async function getTeacherMethodologyLessonReadModel(input: {
         studentContentAssets.map((asset) => [asset.id, asset]),
       ),
       unavailableReason: studentContentUnavailableReason,
+      debugError:
+        process.env.NODE_ENV === "production" ? null : studentContentDebugError,
     },
   };
 }

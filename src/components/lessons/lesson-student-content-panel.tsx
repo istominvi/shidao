@@ -7,6 +7,7 @@ type Props = {
   title?: string;
   source: MethodologyLessonStudentContent | null;
   unavailableReason: "schema_missing" | "invalid_payload" | "load_failed" | null;
+  debugError?: string | null;
   assetsById: Record<string, ReusableAsset>;
   previewHref?: string;
   embedded?: boolean;
@@ -16,6 +17,7 @@ export function LessonStudentContentPanel({
   title = "Контент",
   source,
   unavailableReason,
+  debugError = null,
   assetsById,
   previewHref,
   embedded = false,
@@ -59,6 +61,13 @@ export function LessonStudentContentPanel({
             <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
               Не удалось загрузить контент урока для ученика.
             </p>
+          ) : null}
+          {unavailableReason === "load_failed" &&
+          process.env.NODE_ENV !== "production" &&
+          debugError ? (
+            <pre className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800 whitespace-pre-wrap">
+              debug: {debugError}
+            </pre>
           ) : null}
           <p className="text-sm text-neutral-600">Для этого урока пока нет отдельного learner-facing контента.</p>
         </div>

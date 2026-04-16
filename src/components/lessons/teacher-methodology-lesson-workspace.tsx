@@ -56,6 +56,7 @@ export function TeacherMethodologyLessonWorkspace({ readModel }: { readModel: Me
           <LessonStudentContentPanel
             source={readModel.studentContent.source}
             unavailableReason={readModel.studentContent.unavailableReason}
+            debugError={readModel.studentContent.debugError ?? null}
             assetsById={readModel.studentContent.assetsById}
             embedded
           />

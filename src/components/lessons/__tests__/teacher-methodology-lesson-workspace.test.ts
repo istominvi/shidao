@@ -42,6 +42,7 @@ test("plan tab is organized as one pedagogical document without extra mini-navig
 test("content and homework panels support embedded mode without own outer SurfaceCard", () => {
   assert.equal(studentPanelSource.includes("embedded?: boolean"), true);
   assert.equal(studentPanelSource.includes("if (embedded)"), true);
+  assert.equal(studentPanelSource.includes("debugError"), true);
   assert.equal(studentPanelSource.includes("StudentContentSectionCard"), true);
   assert.equal(studentCardSource.includes("hero_banner"), true);
   assert.equal(studentCardSource.includes("goal_cards"), true);

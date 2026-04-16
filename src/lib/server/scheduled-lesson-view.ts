@@ -140,6 +140,13 @@ async function getLearnerSharedProjection(scheduledLessonId: string) {
     studentContent = null;
     assets = [];
     studentContentUnavailableReason = toStudentContentUnavailableReason(error);
+    const errorMessage = error instanceof Error ? error.message : "unknown error";
+    console.error("[scheduled-lesson][student-content-load-failed]", {
+      scheduledLessonId,
+      methodologyLessonId: methodologyLesson.id,
+      reason: studentContentUnavailableReason,
+      error: errorMessage,
+    });
   }
 
   return {

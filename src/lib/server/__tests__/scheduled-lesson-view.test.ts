@@ -36,3 +36,10 @@ test("learner shared projection resolves assets for richer student content secti
   assert.equal(source.includes('section.type === "song_stage"'), true);
   assert.equal(source.includes('section.type === "worksheet_preview"'), true);
 });
+
+test("learner projection logs concise diagnostics when student content load fails", () => {
+  assert.equal(
+    source.includes("[scheduled-lesson][student-content-load-failed]"),
+    true,
+  );
+});

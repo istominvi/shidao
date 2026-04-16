@@ -80,3 +80,13 @@
 - advanced presentation/sharing controls;
 - teacher-authored runtime homework;
 - новые permission-модели для homework submit.
+
+## Публикация learner-content для реального lesson-1 (world-around-me)
+
+Для production-safe upsert (без demo-маршрута) доступен отдельный admin endpoint:
+
+- `POST /api/admin/methodology/publish-world-around-me-content`
+- Заголовок: `x-publish-token: $METHODOLOGY_CONTENT_PUBLISH_TOKEN`
+
+Endpoint идемпотентно находит lesson 1 (сначала exact id, затем fallback по позиции/названию)
+и upsert-ит `methodology_lesson_student_content` + `methodology_lesson_homework`.
