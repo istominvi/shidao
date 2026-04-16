@@ -43,3 +43,9 @@ test("learner projection logs concise diagnostics when student content load fail
     true,
   );
 });
+
+test("learner projection can auto-publish world-around-me lesson one content", () => {
+  assert.equal(source.includes("publishWorldAroundMeLessonOneContent"), true);
+  assert.equal(source.includes("student-content-autopublished"), true);
+  assert.equal(source.includes("student-content-autopublish-failed"), true);
+});

@@ -11,4 +11,7 @@ test("teacher methodology lesson read model logs student content load failures",
   );
   assert.equal(source.includes("studentContentDebugError"), true);
   assert.equal(source.includes("debugError:"), true);
+  assert.equal(source.includes("publishWorldAroundMeLessonOneContent"), true);
+  assert.equal(source.includes("student-content-autopublished"), true);
+  assert.equal(source.includes("student-content-autopublish-failed"), true);
 });

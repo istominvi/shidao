@@ -27,6 +27,10 @@ import {
   getTeacherLessonWorkspaceByScheduledLessonId,
   type TeacherLessonWorkspaceReadModel,
 } from "./teacher-lesson-workspace";
+import {
+  publishWorldAroundMeLessonOneContent,
+  WORLD_AROUND_ME_LESSON_ONE_STABLE_ID,
+} from "./world-around-me-content-publisher";
 
 export type ScheduledLessonLearnerSharedView = {
   scheduledLessonId: string;
@@ -147,6 +151,52 @@ async function getLearnerSharedProjection(scheduledLessonId: string) {
       reason: studentContentUnavailableReason,
       error: errorMessage,
     });
+  }
+
+  const shouldAttemptAutoPublish =
+    (methodologyLesson.id === WORLD_AROUND_ME_LESSON_ONE_STABLE_ID ||
+      (methodologyLesson.methodologySlug === "world-around-me" &&
+        methodologyLesson.shell.position.moduleIndex === 1 &&
+        methodologyLesson.shell.position.lessonIndex === 1)) &&
+    (!studentContent ||
+      studentContentUnavailableReason === "load_failed" ||
+      studentContentUnavailableReason === "invalid_payload");
+
+  if (shouldAttemptAutoPublish) {
+    try {
+      const publishResult = await publishWorldAroundMeLessonOneContent();
+      studentContent = await getMethodologyLessonStudentContentByLessonIdAdmin(
+        publishResult.methodologyLessonId,
+      );
+      studentContentUnavailableReason = null;
+      if (studentContent) {
+        const assetIds = Array.from(
+          new Set(
+            studentContent.sections.flatMap((section) => {
+              if (section.type === "media_asset") return [section.assetId];
+              if (section.type === "worksheet" && section.assetId) return [section.assetId];
+              if (section.type === "media_stage" && section.assetId) return [section.assetId];
+              if (section.type === "song_stage" && section.assetId) return [section.assetId];
+              if (section.type === "worksheet_preview" && section.assetId) return [section.assetId];
+              return [];
+            }),
+          ),
+        );
+        assets = assetIds.length ? await listReusableAssetsByIdsAdmin(assetIds) : [];
+      }
+      console.info("[scheduled-lesson][student-content-autopublished]", {
+        scheduledLessonId,
+        resolvedMethodologyLessonId: publishResult.methodologyLessonId,
+        resolution: publishResult.resolution,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "unknown error";
+      console.error("[scheduled-lesson][student-content-autopublish-failed]", {
+        scheduledLessonId,
+        methodologyLessonId: methodologyLesson.id,
+        error: message,
+      });
+    }
   }
 
   return {

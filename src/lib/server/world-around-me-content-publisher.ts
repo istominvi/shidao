@@ -21,6 +21,7 @@ type PublishResolution = "exact_id" | "position" | "title";
 
 const WORLD_AROUND_ME_SLUG = "world-around-me";
 const WORLD_AROUND_ME_LESSON_ONE_ID = "b62b2f3d-c16f-6f3a-4a90-c124439690cf";
+export const WORLD_AROUND_ME_LESSON_ONE_STABLE_ID = WORLD_AROUND_ME_LESSON_ONE_ID;
 
 function getServiceRoleKey() {
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;

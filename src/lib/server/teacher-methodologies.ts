@@ -28,6 +28,10 @@ import {
   canAccessTeacherLessonWorkspace,
 } from "./teacher-lesson-workspace";
 import { isInvalidLessonStudentContentPayloadError } from "./lesson-content-mappers";
+import {
+  publishWorldAroundMeLessonOneContent,
+  WORLD_AROUND_ME_LESSON_ONE_STABLE_ID,
+} from "./world-around-me-content-publisher";
 
 function clean(value: string | null | undefined) {
   return value?.trim() || "";
@@ -148,6 +152,20 @@ function toStudentContentUnavailableReason(error: unknown) {
     return "schema_missing" as const;
   }
   return "load_failed" as const;
+}
+
+function isWorldAroundMeLessonOneCandidate(input: {
+  methodologySlug: string;
+  lessonId: string;
+  moduleIndex: number;
+  lessonIndex: number;
+}) {
+  if (input.lessonId === WORLD_AROUND_ME_LESSON_ONE_STABLE_ID) return true;
+  return (
+    input.methodologySlug === "world-around-me" &&
+    input.moduleIndex === 1 &&
+    input.lessonIndex === 1
+  );
 }
 
 export function canAccessTeacherMethodologies(resolution: AccessResolution) {
@@ -401,6 +419,59 @@ export async function getTeacherMethodologyLessonReadModel(input: {
       reason: studentContentUnavailableReason,
       error: studentContentDebugError,
     });
+  }
+
+  const shouldAttemptAutoPublish =
+    isWorldAroundMeLessonOneCandidate({
+      methodologySlug: methodology.slug,
+      lessonId: lesson.id,
+      moduleIndex: lesson.shell.position.moduleIndex,
+      lessonIndex: lesson.shell.position.lessonIndex,
+    }) &&
+    (!studentContent ||
+      studentContentUnavailableReason === "load_failed" ||
+      studentContentUnavailableReason === "invalid_payload");
+
+  if (shouldAttemptAutoPublish) {
+    try {
+      const publishResult = await publishWorldAroundMeLessonOneContent();
+      studentContent = await getMethodologyLessonStudentContentByLessonIdAdmin(
+        publishResult.methodologyLessonId,
+      );
+      studentContentUnavailableReason = null;
+      studentContentDebugError = null;
+      if (studentContent) {
+        const assetIds = Array.from(
+          new Set(
+            studentContent.sections.flatMap((section) => {
+              if (section.type === "media_asset") return [section.assetId];
+              if (section.type === "worksheet" && section.assetId)
+                return [section.assetId];
+              if (section.type === "media_stage" && section.assetId) return [section.assetId];
+              if (section.type === "song_stage" && section.assetId) return [section.assetId];
+              if (section.type === "worksheet_preview" && section.assetId) return [section.assetId];
+              return [];
+            }),
+          ),
+        );
+        studentContentAssets = assetIds.length
+          ? await listReusableAssetsByIdsAdmin(assetIds)
+          : [];
+      }
+      console.info("[teacher-methodology-lesson][student-content-autopublished]", {
+        lessonId: lesson.id,
+        resolvedMethodologyLessonId: publishResult.methodologyLessonId,
+        resolution: publishResult.resolution,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "unknown error";
+      studentContentDebugError =
+        process.env.NODE_ENV === "production" ? studentContentDebugError : message;
+      console.error("[teacher-methodology-lesson][student-content-autopublish-failed]", {
+        lessonId: lesson.id,
+        error: message,
+      });
+    }
   }
 
   const presentation = buildTeacherLessonWorkspaceReadModel({
