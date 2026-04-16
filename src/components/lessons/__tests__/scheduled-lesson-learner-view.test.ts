@@ -7,17 +7,28 @@ const source = readFileSync(
   "utf8",
 );
 
+const sharedDeckSource = readFileSync(
+  "src/components/lessons/lesson-learner-content-deck.tsx",
+  "utf8",
+);
+
 test("learner lesson view supports dedicated preview role", () => {
   assert.equal(source.includes("ScheduledLessonPreviewView"), true);
-  assert.equal(source.includes("Предпросмотр урока"), false);
 });
 
-test("learner lesson view does not force UTC timezone", () => {
-  assert.equal(source.includes('timeZone: "UTC"'), false);
-  assert.equal(source.includes('new Intl.DateTimeFormat("ru-RU"'), false);
+test("learner lesson view renders shared learner deck", () => {
+  assert.equal(source.includes("LessonLearnerContentDeck"), true);
+  assert.equal(source.includes("model.studentContent?.sections"), false);
 });
 
-test("learner lesson view no longer renders page-level handcrafted h1 header", () => {
-  assert.equal(source.includes("<h1"), false);
-  assert.equal(source.includes("model.lessonTitle"), false);
+test("shared learner deck uses scene grouping with stronger progression rhythm", () => {
+  assert.equal(sharedDeckSource.includes("groupScenes"), true);
+  assert.equal(sharedDeckSource.includes("Сцена"), true);
+  assert.equal(sharedDeckSource.includes('section.layout === "hero"'), true);
+  assert.equal(sharedDeckSource.includes('section.layout === "roadmap"'), true);
+});
+
+test("shared learner deck gracefully handles media without source url", () => {
+  assert.equal(sharedDeckSource.includes("Материал покажет преподаватель на уроке"), true);
+  assert.equal(sharedDeckSource.includes("sourceUrl"), true);
 });

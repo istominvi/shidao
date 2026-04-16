@@ -261,7 +261,7 @@ test("teacher workspace read model includes runtime edit fields and no block ove
   assert.equal("blockOverrides" in readModel.presentation, false);
 });
 
-test("teacher workspace degrades gracefully when student content schema is unavailable", async () => {
+test("teacher workspace falls back to fixture learner content when student-content schema is unavailable", async () => {
   const readModel = await getTeacherLessonWorkspaceByScheduledLessonId(
     "scheduled-1",
     {
@@ -283,12 +283,12 @@ test("teacher workspace degrades gracefully when student content schema is unava
   );
 
   assert.ok(readModel);
-  assert.equal(readModel.studentContent.source, null);
-  assert.equal(readModel.studentContent.unavailableReason, "schema_missing");
+  assert.equal(readModel.studentContent.source?.title, "Урок 1. Животные на ферме");
+  assert.equal(readModel.studentContent.unavailableReason, null);
   assert.ok(readModel.presentation.lessonFlow.length > 0);
 });
 
-test("teacher workspace degrades gracefully when student content payload is malformed", async () => {
+test("teacher workspace falls back to fixture learner content when payload is malformed", async () => {
   const readModel = await getTeacherLessonWorkspaceByScheduledLessonId(
     "scheduled-1",
     {
@@ -312,8 +312,8 @@ test("teacher workspace degrades gracefully when student content payload is malf
   );
 
   assert.ok(readModel);
-  assert.equal(readModel.studentContent.source, null);
-  assert.equal(readModel.studentContent.unavailableReason, "invalid_payload");
+  assert.equal(readModel.studentContent.source?.title, "Урок 1. Животные на ферме");
+  assert.equal(readModel.studentContent.unavailableReason, null);
   assert.ok(readModel.presentation.lessonFlow.length > 0);
 });
 

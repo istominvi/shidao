@@ -1,6 +1,7 @@
-import type {
-  MethodologyLessonStudentContent,
-  ReusableAsset,
+import {
+  getFixtureStudentContentFallback,
+  type MethodologyLessonStudentContent,
+  type ReusableAsset,
 } from "../lesson-content";
 import {
   getMethodologyLessonByIdAdmin,
@@ -137,6 +138,21 @@ async function getLearnerSharedProjection(scheduledLessonId: string) {
     studentContent = null;
     assets = [];
     studentContentUnavailableReason = toStudentContentUnavailableReason(error);
+  }
+
+  if (!studentContent) {
+    const fallback = getFixtureStudentContentFallback({
+      methodologySlug: methodologyLesson.methodologySlug,
+      lessonTitle: methodologyLesson.shell.title,
+      moduleIndex: methodologyLesson.shell.position.moduleIndex,
+      lessonIndex: methodologyLesson.shell.position.lessonIndex,
+    });
+
+    if (fallback) {
+      studentContent = fallback.source;
+      assets = fallback.assets;
+      studentContentUnavailableReason = null;
+    }
   }
 
   return {

@@ -1,5 +1,6 @@
 import {
   buildTeacherLessonProjection,
+  getFixtureStudentContentFallback,
   type ScheduledLesson,
 } from "../lesson-content";
 import type { ReusableAsset } from "../lesson-content";
@@ -395,6 +396,20 @@ export async function getTeacherMethodologyLessonReadModel(input: {
     studentContentUnavailableReason = toStudentContentUnavailableReason(error);
   }
 
+  if (!studentContent) {
+    const fallback = getFixtureStudentContentFallback({
+      methodologySlug: lesson.methodologySlug,
+      lessonTitle: lesson.shell.title,
+      moduleIndex: lesson.shell.position.moduleIndex,
+      lessonIndex: lesson.shell.position.lessonIndex,
+    });
+    if (fallback) {
+      studentContent = fallback.source;
+      studentContentAssets = fallback.assets;
+      studentContentUnavailableReason = null;
+    }
+  }
+
   const presentation = buildTeacherLessonWorkspaceReadModel({
     projection,
     scheduledLessonId: scheduledStub.id,
@@ -444,11 +459,16 @@ export async function getTeacherMethodologyLessonReadModel(input: {
     canonicalHomework: canonicalHomework
       ? {
           title: canonicalHomework.title,
+          kind: canonicalHomework.kind,
           kindLabel: homeworkKindLabel(canonicalHomework.kind),
           instructions: canonicalHomework.instructions,
           estimatedMinutes: canonicalHomework.estimatedMinutes ?? null,
           materialLinks: canonicalHomework.materialLinks,
           answerFormatHint: canonicalHomework.answerFormatHint ?? null,
+          quizDefinition:
+            canonicalHomework.kind === "quiz_single_choice"
+              ? canonicalHomework.quiz ?? null
+              : null,
           sourceLayerNote:
             "Это каноничное домашнее задание из методики. Оно становится реальным назначением только после выдачи урока в группе.",
         }

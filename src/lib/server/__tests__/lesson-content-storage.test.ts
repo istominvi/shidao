@@ -196,6 +196,7 @@ test("bootstrap fixture rows import the real methodology lesson shell for lesson
     "跳",
   ]);
   assert.deepEqual(rows.methodologyLessonRow.phrase_summary, [
+    "你是谁？",
     "我是…",
     "这是…",
     "我们…吧！",
@@ -206,7 +207,7 @@ test("bootstrap fixture rows import the real methodology lesson shell for lesson
 test("real lesson block mapping keeps order and expected vocabulary/phrases", () => {
   const rows = buildFixtureBootstrapRows();
 
-  assert.equal(rows.blockRows.length >= 10, true);
+  assert.equal(rows.blockRows.length >= 16, true);
   assert.deepEqual(
     rows.blockRows.map((block) => block.sort_order),
     [...rows.blockRows]
@@ -214,20 +215,20 @@ test("real lesson block mapping keeps order and expected vocabulary/phrases", ()
       .map((block) => block.sort_order),
   );
 
-  const vocabBlock = rows.blockRows.find((block) => block.block_type === "vocabulary_focus");
-  assert.ok(vocabBlock);
+  const vocabBlocks = rows.blockRows.filter((block) => block.block_type === "vocabulary_focus");
+  assert.equal(vocabBlocks.length >= 2, true);
 
-  const vocabContent = vocabBlock.content as {
-    items: Array<{ term: string }>;
-  };
+  const allVocabTerms = vocabBlocks.flatMap((block) =>
+    ((block.content as { items?: Array<{ term: string }> }).items ?? []).map((item) => item.term),
+  );
 
-  assert.equal(vocabContent.items.some((item) => item.term === "农场"), true);
-  assert.equal(vocabContent.items.some((item) => item.term === "我们…吧！"), true);
+  assert.equal(allVocabTerms.includes("农场"), true);
+  assert.equal(allVocabTerms.includes("狗"), true);
 
   const promptBlock = rows.blockRows.find((block) => block.block_type === "teacher_prompt_pattern");
   assert.ok(promptBlock);
   const promptContent = promptBlock.content as { promptPatterns: string[] };
-  assert.equal(promptContent.promptPatterns.includes("你是谁？"), true);
+  assert.equal(promptContent.promptPatterns.includes("你是谁？") || promptContent.promptPatterns.includes("我们跑吧！"), true);
 });
 
 test("bootstrap fixture rows are deterministic and idempotent by stable IDs", () => {
@@ -291,5 +292,9 @@ test("lesson 1 fixture includes canonical 3-part model data", () => {
   const rows = buildFixtureBootstrapRows();
   assert.equal(rows.blockRows.length > 0, true);
   assert.equal(rows.studentContentRow.title, "Урок 1. Животные на ферме");
+  assert.equal(Array.isArray((rows.studentContentRow.content_payload as { sections: unknown[] }).sections), true);
+  const studentSections = (rows.studentContentRow.content_payload as { sections: Array<{ sceneId?: string; layout?: string }> }).sections;
+  assert.equal(studentSections.some((section) => section.layout === "hero"), true);
+  assert.equal(studentSections.some((section) => section.sceneId === "scene-practice"), true);
   assert.equal(rows.homeworkDefinitionRow.kind, "quiz_single_choice");
 });

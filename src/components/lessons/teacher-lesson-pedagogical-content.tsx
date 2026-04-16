@@ -1,10 +1,10 @@
 import type { ReactNode } from "react";
+import { BookOpen, Footprints, Layers3, MessageCircleMore, Timer, Workflow } from "lucide-react";
 import { Chip } from "@/components/ui/chip";
 import type { TeacherLessonWorkspacePresentation } from "@/lib/server/teacher-lesson-workspace";
 
 function SummaryList({ items, emptyLabel }: { items: string[]; emptyLabel: string }) {
   if (!items.length) return <p className="text-sm text-neutral-600">{emptyLabel}</p>;
-
   return (
     <ul className="space-y-1.5 text-sm text-neutral-700">
       {items.map((item) => (
@@ -35,6 +35,21 @@ function PedagogicalSubsection({ title, children }: { title: string; children: R
   );
 }
 
+function phaseLabel(order: number) {
+  if (order <= 2) return "Открытие урока";
+  if (order <= 4) return "Ввод языка";
+  if (order <= 11) return "Активная практика";
+  if (order <= 14) return "Закрепление";
+  return "Завершение";
+}
+
+function stepIcon(blockLabel: string) {
+  if (blockLabel.includes("Речевые")) return <MessageCircleMore className="h-4 w-4" />;
+  if (blockLabel.includes("Практическая")) return <Footprints className="h-4 w-4" />;
+  if (blockLabel.includes("Лексика")) return <BookOpen className="h-4 w-4" />;
+  return <Layers3 className="h-4 w-4" />;
+}
+
 export function TeacherLessonPedagogicalContent({
   quickSummary,
   lessonFlow,
@@ -42,155 +57,100 @@ export function TeacherLessonPedagogicalContent({
 }: Pick<TeacherLessonWorkspacePresentation, "quickSummary" | "lessonFlow"> & { durationLabel?: string | null }) {
   return (
     <section className="space-y-8" aria-label="План урока">
-      <section id="lesson-passport" className="scroll-mt-20 border-b border-neutral-200 pb-6">
-        <SectionTitle title="Паспорт урока" subtitle="Краткая методическая выжимка перед началом занятия." />
+      <section id="lesson-passport" className="scroll-mt-20 rounded-2xl border border-neutral-200 bg-gradient-to-b from-neutral-50 to-white p-4">
+        <SectionTitle title="Паспорт урока" subtitle="Готовая опора преподавателя перед стартом занятия." />
 
-        <div className="space-y-4">
-          {durationLabel ? (
-            <div className="flex flex-wrap items-center gap-2 text-sm text-neutral-700">
-              <span className="font-semibold text-neutral-900">Длительность:</span>
-              <Chip tone="neutral">{durationLabel}</Chip>
-            </div>
-          ) : null}
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          <article className="rounded-xl border border-neutral-200 bg-white p-3">
+            <p className="text-xs uppercase tracking-[0.12em] text-neutral-500">Длительность</p>
+            <p className="mt-1 flex items-center gap-1.5 text-sm font-semibold text-neutral-900"><Timer className="h-4 w-4" />{durationLabel ?? "45 мин"}</p>
+          </article>
+          <article className="rounded-xl border border-neutral-200 bg-white p-3">
+            <p className="text-xs uppercase tracking-[0.12em] text-neutral-500">Новые слова</p>
+            <p className="mt-1 text-sm font-semibold text-neutral-900">{quickSummary.keyWords.length}</p>
+          </article>
+          <article className="rounded-xl border border-neutral-200 bg-white p-3">
+            <p className="text-xs uppercase tracking-[0.12em] text-neutral-500">Ключевые фразы</p>
+            <p className="mt-1 text-sm font-semibold text-neutral-900">{quickSummary.keyPhrases.length}</p>
+          </article>
+          <article className="rounded-xl border border-neutral-200 bg-white p-3">
+            <p className="text-xs uppercase tracking-[0.12em] text-neutral-500">Этапов в плане</p>
+            <p className="mt-1 text-sm font-semibold text-neutral-900">{lessonFlow.length}</p>
+          </article>
+        </div>
 
+        <div className="mt-4 grid gap-4 lg:grid-cols-2">
           <div>
-            <h3 className="text-sm font-semibold text-neutral-800">Новые слова</h3>
+            <h3 className="text-sm font-semibold text-neutral-800">Лексика урока</h3>
             <div className="mt-2 flex flex-wrap gap-1.5">
-              {quickSummary.keyWords.length ? (
-                quickSummary.keyWords.map((word) => (
-                  <Chip key={word} tone="sky">
-                    {word}
-                  </Chip>
-                ))
-              ) : (
-                <p className="text-sm text-neutral-600">Слова не указаны.</p>
-              )}
+              {quickSummary.keyWords.length ? quickSummary.keyWords.map((word) => <Chip key={word} tone="sky">{word}</Chip>) : <p className="text-sm text-neutral-600">Слова не указаны.</p>}
             </div>
           </div>
-
           <div>
-            <h3 className="text-sm font-semibold text-neutral-800">Ключевые фразы</h3>
+            <h3 className="text-sm font-semibold text-neutral-800">Речевые паттерны</h3>
             <div className="mt-2 flex flex-wrap gap-1.5">
-              {quickSummary.keyPhrases.length ? (
-                quickSummary.keyPhrases.map((phrase) => (
-                  <Chip key={phrase} tone="violet">
-                    {phrase}
-                  </Chip>
-                ))
-              ) : (
-                <p className="text-sm text-neutral-600">Фразы не указаны.</p>
-              )}
+              {quickSummary.keyPhrases.length ? quickSummary.keyPhrases.map((phrase) => <Chip key={phrase} tone="violet">{phrase}</Chip>) : <p className="text-sm text-neutral-600">Фразы не указаны.</p>}
             </div>
           </div>
-
-          {quickSummary.resources.length ? (
-            <div>
-              <h3 className="text-sm font-semibold text-neutral-800">Опорные материалы урока</h3>
-              <ul className="mt-2 space-y-1.5 text-sm text-neutral-700">
-                {quickSummary.resources.map((resource) => (
-                  <li key={`${resource.kindLabel}-${resource.title}`}>
-                    <span className="font-medium">{resource.kindLabel}:</span>{" "}
-                    {resource.url ? (
-                      <a
-                        href={resource.url}
-                        className="font-medium text-sky-700 underline underline-offset-2"
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        {resource.title}
-                      </a>
-                    ) : (
-                      resource.title
-                    )}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ) : null}
         </div>
       </section>
 
       <section id="lesson-materials" className="scroll-mt-20 border-b border-neutral-200 pb-6">
-        <SectionTitle title="Реквизит и материалы" subtitle="Проверьте подготовку до старта урока." />
+        <SectionTitle title="Материалы и подготовка" subtitle="Проверьте реквизит до старта урока." />
         <SummaryList items={quickSummary.prepChecklist} emptyLabel="Чек-лист подготовки пока не заполнен." />
       </section>
 
       <section id="lesson-flow" className="scroll-mt-20">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-          <SectionTitle title="План урока" />
-          <Chip tone="neutral">{lessonFlow.length} этапов</Chip>
+          <SectionTitle title="Пошаговый план урока" subtitle="Фазы: открытие → ввод → практика → закрепление → завершение." />
+          <Chip tone="neutral"><Workflow className="mr-1 h-3.5 w-3.5" />{lessonFlow.length} этапов</Chip>
         </div>
 
-        <div className="divide-y divide-neutral-200 rounded-2xl border border-neutral-200">
+        <div className="space-y-3">
           {lessonFlow.map((step, index) => (
-            <article key={step.id} className="space-y-4 p-4 md:p-5">
+            <article key={step.id} className="rounded-2xl border border-neutral-200 bg-white p-4 md:p-5">
               <header className="space-y-2">
                 <div className="flex flex-wrap items-center gap-2">
-                  <Chip size="sm" tone="inverse">
-                    {step.stepLabel || `Этап ${index + 1}`}
-                  </Chip>
-                  <Chip size="sm" tone="slate">
-                    {step.blockLabel}
-                  </Chip>
+                  <Chip size="sm" tone="inverse">Шаг {index + 1}</Chip>
+                  <Chip size="sm" tone="slate">{phaseLabel(step.order)}</Chip>
+                  <Chip size="sm" tone="neutral" className="inline-flex items-center gap-1">{stepIcon(step.blockLabel)}{step.blockLabel}</Chip>
                 </div>
                 <h3 className="text-lg font-semibold text-neutral-950">{step.title}</h3>
                 {step.description ? <p className="text-sm leading-6 text-neutral-700">{step.description}</p> : null}
               </header>
 
-              <div className="grid gap-3 md:grid-cols-2">
-                <PedagogicalSubsection title="Реплики и действия преподавателя">
-                  <SummaryList items={step.teacherActions} emptyLabel="Реплики не указаны." />
+              <div className="mt-3 grid gap-3 md:grid-cols-2">
+                <PedagogicalSubsection title="Что делает педагог">
+                  <SummaryList items={step.teacherActions} emptyLabel="Действия не указаны." />
                 </PedagogicalSubsection>
-                <PedagogicalSubsection title="Ожидаемые действия детей">
+                <PedagogicalSubsection title="Что делают дети">
                   <SummaryList items={step.studentActions} emptyLabel="Ожидаемые реакции не указаны." />
                 </PedagogicalSubsection>
               </div>
 
-              {(step.pedagogicalDetails?.promptPatterns?.length ||
-                step.pedagogicalDetails?.expectedStudentResponses?.length ||
-                step.pedagogicalDetails?.fallbackRu) ? (
-                <div className="grid gap-3 md:grid-cols-2">
-                  <PedagogicalSubsection title="Языковые модели">
-                    <SummaryList items={step.pedagogicalDetails?.promptPatterns ?? []} emptyLabel="Шаблоны не указаны." />
+              {(step.pedagogicalDetails?.promptPatterns?.length || step.pedagogicalDetails?.expectedStudentResponses?.length) ? (
+                <div className="mt-3 grid gap-3 md:grid-cols-2">
+                  <PedagogicalSubsection title="Целевой язык">
+                    <SummaryList items={step.pedagogicalDetails?.promptPatterns ?? []} emptyLabel="Паттерны не указаны." />
                   </PedagogicalSubsection>
-                  <PedagogicalSubsection title="Ответы и подсказки">
-                    <SummaryList
-                      items={step.pedagogicalDetails?.expectedStudentResponses ?? []}
-                      emptyLabel="Ответы детей не указаны."
-                    />
-                    {step.pedagogicalDetails?.fallbackRu ? (
-                      <p className="mt-2 text-xs text-neutral-600">RU fallback: {step.pedagogicalDetails.fallbackRu}</p>
-                    ) : null}
+                  <PedagogicalSubsection title="Пример ответов">
+                    <SummaryList items={step.pedagogicalDetails?.expectedStudentResponses ?? []} emptyLabel="Ответы не указаны." />
+                    {step.pedagogicalDetails?.fallbackRu ? <p className="mt-2 text-xs text-neutral-600">Подсказка: {step.pedagogicalDetails.fallbackRu}</p> : null}
                   </PedagogicalSubsection>
                 </div>
               ) : null}
 
-              {(step.pedagogicalDetails?.activitySteps?.length || step.pedagogicalDetails?.successCriteria?.length) ? (
-                <div className="grid gap-3 md:grid-cols-2">
-                  <PedagogicalSubsection title="Как провести этап">
-                    <SummaryList items={step.pedagogicalDetails?.activitySteps ?? []} emptyLabel="Шаги этапа не указаны." />
-                  </PedagogicalSubsection>
-                  <PedagogicalSubsection title="Критерии успеха">
-                    <SummaryList
-                      items={step.pedagogicalDetails?.successCriteria ?? []}
-                      emptyLabel="Критерии не указаны."
-                    />
-                  </PedagogicalSubsection>
-                </div>
-              ) : null}
+              {(step.pedagogicalDetails?.activitySteps?.length || step.pedagogicalDetails?.successCriteria?.length || step.materials.length) ? (
+                <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                  {step.pedagogicalDetails?.activitySteps?.length ? (
+                    <PedagogicalSubsection title="Ход этапа">
+                      <SummaryList items={step.pedagogicalDetails.activitySteps} emptyLabel="Шаги не указаны." />
+                    </PedagogicalSubsection>
+                  ) : null}
 
-              {(step.pedagogicalDetails?.vocabularyItems?.length || step.materials.length || step.resources.length) ? (
-                <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                  {step.pedagogicalDetails?.vocabularyItems?.length ? (
-                    <PedagogicalSubsection title="Лексика этапа">
-                      <ul className="space-y-1.5 text-sm text-neutral-700">
-                        {step.pedagogicalDetails.vocabularyItems.map((item) => (
-                          <li key={`${step.id}-${item.term}-${item.pinyin}`}>
-                            <span className="font-semibold text-neutral-900">{item.term}</span>{" "}
-                            <span className="text-neutral-600">{item.pinyin}</span> — {item.meaning}
-                          </li>
-                        ))}
-                      </ul>
+                  {step.pedagogicalDetails?.successCriteria?.length ? (
+                    <PedagogicalSubsection title="Критерии успеха">
+                      <SummaryList items={step.pedagogicalDetails.successCriteria} emptyLabel="Критерии не указаны." />
                     </PedagogicalSubsection>
                   ) : null}
 
@@ -199,49 +159,7 @@ export function TeacherLessonPedagogicalContent({
                       <SummaryList items={step.materials} emptyLabel="Материалы не требуются." />
                     </PedagogicalSubsection>
                   ) : null}
-
-                  {step.resources.length ? (
-                    <PedagogicalSubsection title="Связанные ресурсы">
-                      <ul className="space-y-1.5 text-sm text-neutral-700">
-                        {step.resources.map((resource) => (
-                          <li key={`${step.id}-${resource.kindLabel}-${resource.title}`}>
-                            <span className="font-medium">{resource.kindLabel}:</span>{" "}
-                            {resource.url ? (
-                              <a
-                                href={resource.url}
-                                className="font-medium text-sky-700 underline underline-offset-2"
-                                target="_blank"
-                                rel="noreferrer"
-                              >
-                                {resource.title}
-                              </a>
-                            ) : (
-                              resource.title
-                            )}
-                          </li>
-                        ))}
-                      </ul>
-                    </PedagogicalSubsection>
-                  ) : null}
                 </div>
-              ) : null}
-
-              {(step.pedagogicalDetails?.answerKeyHint ||
-                step.pedagogicalDetails?.homeExtension ||
-                step.pedagogicalDetails?.recapPoints?.length ||
-                step.pedagogicalDetails?.exitCheck ||
-                step.pedagogicalDetails?.previewNextLesson) ? (
-                <PedagogicalSubsection title="Заметки преподавателю">
-                  <ul className="space-y-1.5 text-sm text-neutral-700">
-                    {step.pedagogicalDetails?.answerKeyHint ? <li>Подсказка по ответам: {step.pedagogicalDetails.answerKeyHint}</li> : null}
-                    {step.pedagogicalDetails?.homeExtension ? <li>Домашнее продолжение: {step.pedagogicalDetails.homeExtension}</li> : null}
-                    {step.pedagogicalDetails?.recapPoints?.map((point) => <li key={`${step.id}-${point}`}>Рекап: {point}</li>)}
-                    {step.pedagogicalDetails?.exitCheck ? <li>Exit check: {step.pedagogicalDetails.exitCheck}</li> : null}
-                    {step.pedagogicalDetails?.previewNextLesson ? (
-                      <li>Следующий урок: {step.pedagogicalDetails.previewNextLesson}</li>
-                    ) : null}
-                  </ul>
-                </PedagogicalSubsection>
               ) : null}
             </article>
           ))}

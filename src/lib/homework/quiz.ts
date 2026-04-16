@@ -3,12 +3,20 @@ import type { MethodologyLessonHomeworkDefinition } from "@/lib/lesson-content";
 export type QuizSingleChoiceOption = {
   id: string;
   label: string;
+  description?: string;
+  illustrationSrc?: string;
+  displayStyle?: "word" | "meaning" | "image" | "mixed";
 };
 
 export type QuizSingleChoiceQuestion = {
   id: string;
+  title?: string;
   prompt: string;
   helperText?: string;
+  illustrationSrc?: string;
+  tone?: "sky" | "violet" | "emerald" | "amber" | "rose" | "neutral";
+  skillTag?: string;
+  sceneLabel?: string;
   options: QuizSingleChoiceOption[];
   correctOptionId: string;
 };
@@ -16,6 +24,13 @@ export type QuizSingleChoiceQuestion = {
 export type QuizSingleChoicePayload = {
   id: string;
   version: number;
+  title?: string;
+  subtitle?: string;
+  introText?: string;
+  completionTitle?: string;
+  completionText?: string;
+  illustrationSrc?: string;
+  tone?: "sky" | "violet" | "emerald" | "amber" | "rose" | "neutral";
   questions: QuizSingleChoiceQuestion[];
 };
 
@@ -41,30 +56,67 @@ function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
 
+function cleanText(value: unknown): string | undefined {
+  if (typeof value !== "string") return undefined;
+  const trimmed = value.trim();
+  return trimmed || undefined;
+}
+
+function cleanTone(value: unknown): QuizSingleChoicePayload["tone"] {
+  if (
+    value === "sky" ||
+    value === "violet" ||
+    value === "emerald" ||
+    value === "amber" ||
+    value === "rose" ||
+    value === "neutral"
+  ) {
+    return value;
+  }
+  return undefined;
+}
+
+function cleanDisplayStyle(value: unknown): QuizSingleChoiceOption["displayStyle"] {
+  if (value === "word" || value === "meaning" || value === "image" || value === "mixed") {
+    return value;
+  }
+  return undefined;
+}
+
 function normalizeQuestion(input: unknown): QuizSingleChoiceQuestion | null {
   if (!isObject(input)) return null;
   const id = `${input.id ?? ""}`.trim();
   const prompt = `${input.prompt ?? ""}`.trim();
   const correctOptionId = `${input.correctOptionId ?? ""}`.trim();
-  const helperTextRaw = typeof input.helperText === "string" ? input.helperText.trim() : "";
   const optionsRaw = Array.isArray(input.options) ? input.options : [];
-  const options = optionsRaw
-    .map((option) => {
-      if (!isObject(option)) return null;
-      const optionId = `${option.id ?? ""}`.trim();
-      const label = `${option.label ?? ""}`.trim();
-      if (!optionId || !label) return null;
-      return { id: optionId, label };
-    })
-    .filter((item): item is QuizSingleChoiceOption => Boolean(item));
+  const options = optionsRaw.flatMap((option): QuizSingleChoiceOption[] => {
+    if (!isObject(option)) return [];
+    const optionId = `${option.id ?? ""}`.trim();
+    const label = `${option.label ?? ""}`.trim();
+    if (!optionId || !label) return [];
+    return [
+      {
+        id: optionId,
+        label,
+        description: cleanText(option.description),
+        illustrationSrc: cleanText(option.illustrationSrc),
+        displayStyle: cleanDisplayStyle(option.displayStyle),
+      },
+    ];
+  });
 
   if (!id || !prompt || !correctOptionId || options.length < 2) return null;
   if (!options.some((option) => option.id === correctOptionId)) return null;
 
   return {
     id,
+    title: cleanText(input.title),
     prompt,
-    helperText: helperTextRaw || undefined,
+    helperText: cleanText(input.helperText),
+    illustrationSrc: cleanText(input.illustrationSrc),
+    tone: cleanTone(input.tone),
+    skillTag: cleanText(input.skillTag),
+    sceneLabel: cleanText(input.sceneLabel),
     options,
     correctOptionId,
   };
@@ -93,6 +145,13 @@ export function normalizeQuizSingleChoicePayload(input: unknown): QuizSingleChoi
   return {
     id,
     version: Math.floor(versionRaw),
+    title: cleanText(input.title),
+    subtitle: cleanText(input.subtitle),
+    introText: cleanText(input.introText),
+    completionTitle: cleanText(input.completionTitle),
+    completionText: cleanText(input.completionText),
+    illustrationSrc: cleanText(input.illustrationSrc),
+    tone: cleanTone(input.tone),
     questions,
   };
 }

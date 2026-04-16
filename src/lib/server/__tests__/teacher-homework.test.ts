@@ -74,6 +74,21 @@ test("teacher homework read model includes typed info and quiz stats", async () 
 
   assert.equal(model.definition?.kind, "quiz_single_choice");
   assert.equal(model.definition?.questionCount, 1);
+  assert.deepEqual(model.definition?.quizDefinition, {
+    id: "q",
+    version: 1,
+    questions: [
+      {
+        id: "q1",
+        prompt: "p",
+        options: [
+          { id: "a", label: "A" },
+          { id: "b", label: "B" },
+        ],
+        correctOptionId: "a",
+      },
+    ],
+  });
   assert.equal(model.assignment?.assignmentComment, "Сделать вместе");
   assert.equal(model.stats.assignedCount, 1);
   assert.equal(model.stats.submittedCount, 1);

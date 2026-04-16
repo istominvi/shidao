@@ -255,6 +255,20 @@ export type MethodologyLessonHomeworkDefinition = {
 type BaseStudentSection<TType extends MethodologyStudentSectionType> = {
   type: TType;
   title: string;
+  subtitle?: string;
+  tone?: "sky" | "violet" | "emerald" | "amber" | "rose" | "neutral";
+  illustrationSrc?: string;
+  layout?:
+    | "hero"
+    | "roadmap"
+    | "vocabulary"
+    | "phrases"
+    | "counting"
+    | "movement"
+    | "farm"
+    | "practice"
+    | "recap";
+  sceneId?: string;
 };
 
 export type LessonFocusStudentSection = BaseStudentSection<"lesson_focus"> & {
@@ -269,6 +283,7 @@ export type VocabularyCardsStudentSection =
       pinyin?: string;
       meaning: string;
       visualHint?: string;
+      illustrationSrc?: string;
     }>;
   };
 
@@ -278,6 +293,7 @@ export type PhraseCardsStudentSection = BaseStudentSection<"phrase_cards"> & {
     pinyin?: string;
     meaning: string;
     usageHint?: string;
+    example?: string;
   }>;
 };
 
@@ -286,6 +302,7 @@ export type MediaAssetStudentSection = BaseStudentSection<"media_asset"> & {
   assetKind: "video" | "song" | "media_file";
   studentPrompt: string;
   teacherShareHint?: string;
+  ctaLabel?: string;
 };
 
 export type ActionCardsStudentSection = BaseStudentSection<"action_cards"> & {
@@ -294,6 +311,7 @@ export type ActionCardsStudentSection = BaseStudentSection<"action_cards"> & {
     pinyin?: string;
     meaning: string;
     movementHint: string;
+    illustrationSrc?: string;
   }>;
 };
 
@@ -301,6 +319,7 @@ export type WorksheetStudentSection = BaseStudentSection<"worksheet"> & {
   assetId?: string;
   instructions: string;
   pageLabel?: string;
+  teacherHint?: string;
 };
 
 export type RecapStudentSection = BaseStudentSection<"recap"> & {

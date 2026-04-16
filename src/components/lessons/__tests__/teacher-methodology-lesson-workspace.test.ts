@@ -40,4 +40,5 @@ test("content and homework panels support embedded mode without own outer Surfac
   assert.equal(studentPanelSource.includes("if (embedded)"), true);
   assert.equal(homeworkPanelSource.includes("embedded?: boolean"), true);
   assert.equal(homeworkPanelSource.includes("if (embedded)"), true);
+  assert.equal(homeworkPanelSource.includes("TeacherHomeworkQuizPreviewPanel"), true);
 });
