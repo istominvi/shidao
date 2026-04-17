@@ -10,8 +10,10 @@ import {
   lessonContentFixtureAssets,
   lessonContentFixtureBlocks,
   lessonContentFixtureHomeworkDefinitionLessonTwo,
+  lessonContentFixtureHomeworkDefinitionLessonThree,
   lessonContentFixtureMethodologyLesson,
   lessonContentFixtureMethodologyLessonStudentContentLessonTwo,
+  lessonContentFixtureMethodologyLessonStudentContentLessonThree,
   lessonContentFixtureMethodologyLessons,
   lessonContentFixtureScheduledLesson,
   sortLessonBlocks,
@@ -180,26 +182,36 @@ test("fixture block taxonomy satisfies discriminated union coverage", () => {
 test("asset summary helper groups reusable assets by kind", () => {
   const summary = summarizeAssetsByKind(lessonContentFixtureAssets);
 
-  assert.equal(summary.video, 1);
-  assert.equal(summary.song, 2);
-  assert.equal(summary.worksheet, 4);
+  assert.equal(summary.video, 2);
+  assert.equal(summary.song, 3);
+  assert.equal(summary.worksheet, 6);
 });
 
-test("world-around-me fixtures provide at least two canonical lessons", () => {
-  assert.equal(lessonContentFixtureMethodologyLessons.length >= 2, true);
+test("world-around-me fixtures provide at least three canonical lessons", () => {
+  assert.equal(lessonContentFixtureMethodologyLessons.length >= 3, true);
   const lessonOne = lessonContentFixtureMethodologyLessons.find(
     (lesson) => lesson.shell.position.lessonIndex === 1,
   );
   const lessonTwo = lessonContentFixtureMethodologyLessons.find(
     (lesson) => lesson.shell.position.lessonIndex === 2,
   );
+  const lessonThree = lessonContentFixtureMethodologyLessons.find(
+    (lesson) => lesson.shell.position.lessonIndex === 3,
+  );
 
   assert.ok(lessonOne);
   assert.ok(lessonTwo);
+  assert.ok(lessonThree);
   assert.equal(lessonTwo.shell.title, "Урок 2. Что это за животное?");
+  assert.equal(lessonThree.shell.title, "Урок 3. Этот разноцветный мир");
   assert.equal(lessonTwo.shell.vocabularySummary.includes("房子"), true);
+  assert.equal(lessonThree.shell.vocabularySummary.includes("车"), true);
   assert.equal(
     lessonContentFixtureHomeworkDefinitionLessonTwo.quiz?.questions.length,
+    6,
+  );
+  assert.equal(
+    lessonContentFixtureHomeworkDefinitionLessonThree.quiz?.questions.length,
     6,
   );
 });
@@ -224,6 +236,30 @@ test("fallback resolver returns lesson 2 learner content by title and position",
   assert.equal(byTitle.source.id, byPosition.source.id);
   assert.equal(
     byPosition.assets.some((asset) => asset.id === "worksheet:workbook-page-5"),
+    true,
+  );
+});
+
+test("fallback resolver returns lesson 3 learner content by title and position", () => {
+  const byPosition = getFixtureStudentContentFallback({
+    methodologySlug: "world-around-me",
+    moduleIndex: 1,
+    lessonIndex: 3,
+  });
+  const byTitle = getFixtureStudentContentFallback({
+    methodologySlug: "world-around-me",
+    lessonTitle: "Урок 3. Этот разноцветный мир",
+  });
+
+  assert.ok(byPosition);
+  assert.ok(byTitle);
+  assert.equal(
+    byPosition.source.id,
+    lessonContentFixtureMethodologyLessonStudentContentLessonThree.id,
+  );
+  assert.equal(byTitle.source.id, byPosition.source.id);
+  assert.equal(
+    byPosition.assets.some((asset) => asset.id === "worksheet:workbook-page-6"),
     true,
   );
 });

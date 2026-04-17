@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 200" role="img" aria-label="Разноцветный мир">
+  <rect width="320" height="200" rx="20" fill="#f8fafc"/>
+  <circle cx="92" cy="98" r="58" fill="#ef4444" opacity="0.9"/>
+  <circle cx="144" cy="78" r="58" fill="#22c55e" opacity="0.85"/>
+  <circle cx="190" cy="110" r="58" fill="#3b82f6" opacity="0.85"/>
+  <circle cx="142" cy="126" r="58" fill="#facc15" opacity="0.8"/>
+  <text x="160" y="185" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" fill="#0f172a">红色 · 绿色 · 蓝色 · 黄色</text>
+</svg>

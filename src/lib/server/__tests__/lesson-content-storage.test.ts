@@ -2,11 +2,14 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   lessonContentFixtureHomeworkDefinitionLessonTwo,
+  lessonContentFixtureHomeworkDefinitionLessonThree,
   lessonContentFixtureMethodology,
   lessonContentFixtureMethodologyLessonStudentContent,
   lessonContentFixtureMethodologyLessonStudentContentLessonTwo,
+  lessonContentFixtureMethodologyLessonStudentContentLessonThree,
   lessonContentFixtureMethodologyLesson,
   lessonContentFixtureMethodologyLessonTwo,
+  lessonContentFixtureMethodologyLessonThree,
   lessonContentFixtureScheduledLesson,
 } from "../../lesson-content";
 import { buildFixtureBootstrapRows } from "../lesson-content-bootstrap";
@@ -290,6 +293,35 @@ test("bootstrap rows include canonical lesson 2 lesson/homework/student-content"
     lessonTwoStudentContentRow.content_payload as { sections: Array<{ sceneId?: string }> }
   ).sections;
   assert.equal(sections.some((section) => section.sceneId === "scene-home-review"), true);
+});
+
+test("bootstrap rows include canonical lesson 3 lesson/homework/student-content", () => {
+  const rows = buildFixtureBootstrapRows();
+
+  const lessonThreeRow = rows.methodologyLessonRows.find(
+    (row) => row.lesson_index === 3 && row.module_index === 1,
+  );
+  assert.ok(lessonThreeRow);
+  assert.equal(lessonThreeRow.title, lessonContentFixtureMethodologyLessonThree.shell.title);
+  assert.equal(lessonThreeRow.vocabulary_summary.includes("次"), true);
+
+  const lessonThreeHomeworkRow = rows.homeworkDefinitionRows.find(
+    (row) => row.title === lessonContentFixtureHomeworkDefinitionLessonThree.title,
+  );
+  assert.ok(lessonThreeHomeworkRow);
+  assert.equal(
+    ((lessonThreeHomeworkRow.quiz_payload as { questions?: unknown[] })?.questions ?? []).length,
+    6,
+  );
+
+  const lessonThreeStudentContentRow = rows.studentContentRows.find(
+    (row) => row.title === lessonContentFixtureMethodologyLessonStudentContentLessonThree.title,
+  );
+  assert.ok(lessonThreeStudentContentRow);
+  const sections = (
+    lessonThreeStudentContentRow.content_payload as { sections: Array<{ sceneId?: string }> }
+  ).sections;
+  assert.equal(sections.some((section) => section.sceneId === "scene-cars"), true);
 });
 
 test("bootstrap rows allow overriding scheduled lesson class id for real teacher class", () => {
