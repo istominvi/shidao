@@ -136,6 +136,40 @@ where mba.methodology_lesson_block_id = b.id
       and dba.reusable_asset_id = mba.reusable_asset_id
   );
 
+with desired_block_assets as (
+  select
+    b.id as methodology_lesson_block_id,
+    a.id as reusable_asset_id,
+    m.asset_sort_order
+  from public.methodology_lesson_block b
+  join public.methodology_lesson ml on ml.id = b.methodology_lesson_id
+  join public.methodology md on md.id = ml.methodology_id
+  join (
+    values
+      (2, 'video:colors', 0),
+      (4, 'song:hello', 0),
+      (5, 'media:color-cards', 0),
+      (6, 'media:color-cards', 0),
+      (8, 'media:animals-bag', 0),
+      (11, 'media:car-silhouette', 0),
+      (12, 'worksheet:appendix-3', 0),
+      (12, 'media:color-die', 1),
+      (14, 'worksheet:workbook-page-6', 0),
+      (15, 'song:my-favorite-color-is-blue', 0),
+      (17, 'media:color-cards', 0),
+      (17, 'media:animals-bag', 1),
+      (17, 'media:car-silhouette', 2),
+      (17, 'worksheet:appendix-3', 3),
+      (17, 'worksheet:workbook-page-6', 4),
+      (17, 'media:color-die', 5)
+  ) as m(sort_order, asset_slug, asset_sort_order)
+    on m.sort_order = b.sort_order
+  join public.reusable_asset a on a.slug = m.asset_slug
+  where md.slug = 'world-around-me'
+    and ml.module_index = 1
+    and ml.unit_index = 1
+    and ml.lesson_index = 3
+)
 insert into public.methodology_lesson_block_asset (methodology_lesson_block_id, reusable_asset_id, sort_order)
 select methodology_lesson_block_id, reusable_asset_id, asset_sort_order
 from desired_block_assets
