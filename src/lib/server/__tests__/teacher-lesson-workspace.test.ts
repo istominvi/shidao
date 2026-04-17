@@ -6,9 +6,12 @@ import {
   lessonContentFixtureMethodologyLesson,
   lessonContentFixtureMethodologyLessonStudentContent,
   lessonContentFixtureMethodologyLessonStudentContentLessonTwo,
+  lessonContentFixtureMethodologyLessonStudentContentLessonThree,
   lessonContentFixtureMethodologyLessonTwo,
+  lessonContentFixtureMethodologyLessonThree,
   lessonContentFixtureScheduledLesson,
   lessonContentFixtureScheduledLessonLessonTwo,
+  lessonContentFixtureScheduledLessonLessonThree,
 } from "../../lesson-content";
 import type { AccessResolution } from "../access-policy";
 import {
@@ -347,6 +350,35 @@ test("teacher workspace fallback resolves lesson 2 learner deck without lesson-1
   );
   assert.equal(readModel.studentContent.unavailableReason, null);
   assert.equal(readModel.studentContent.source?.sections.length >= 10, true);
+});
+
+test("teacher workspace fallback resolves lesson 3 learner deck without lesson-2 coupling", async () => {
+  const readModel = await getTeacherLessonWorkspaceByScheduledLessonId(
+    "scheduled-3",
+    {
+      getScheduledLessonById: async () => ({
+        ...lessonContentFixtureScheduledLessonLessonThree,
+        id: "scheduled-3",
+        methodologyLessonId: lessonContentFixtureMethodologyLessonThree.id,
+      }),
+      getMethodologyLessonById: async () => lessonContentFixtureMethodologyLessonThree,
+      getMethodologyLessonStudentContentByLessonId: async () => null,
+      isLessonStudentContentSchemaReady: async () => false,
+      listReusableAssetsByIds: async () => [],
+      getClassDisplayNameById: async () => "Лисички 5-6",
+      getHomeworkReadModel: async () => homeworkSnapshot,
+      getLessonDiscussions: async () => [],
+      getHomeworkDiscussions: async () => ({ assignmentId: null, items: [] }),
+    },
+  );
+
+  assert.ok(readModel);
+  assert.equal(
+    readModel.studentContent.source?.id,
+    lessonContentFixtureMethodologyLessonStudentContentLessonThree.id,
+  );
+  assert.equal(readModel.studentContent.unavailableReason, null);
+  assert.equal(readModel.studentContent.source?.sections.some((section) => section.sceneId === "scene-cars"), true);
 });
 
 test("teacher workspace still throws on core homework load failure", async () => {

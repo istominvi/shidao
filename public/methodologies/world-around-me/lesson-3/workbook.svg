@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 200" role="img" aria-label="Рабочая тетрадь">
+  <rect width="320" height="200" rx="20" fill="#f8fafc"/>
+  <rect x="84" y="34" width="152" height="132" rx="12" fill="#ffffff" stroke="#94a3b8" stroke-width="4"/>
+  <rect x="96" y="48" width="128" height="20" rx="6" fill="#e2e8f0"/>
+  <circle cx="120" cy="92" r="10" fill="#ef4444"/>
+  <circle cx="160" cy="92" r="10" fill="#22c55e"/>
+  <circle cx="200" cy="92" r="10" fill="#3b82f6"/>
+  <circle cx="140" cy="122" r="10" fill="#facc15"/>
+  <text x="160" y="156" text-anchor="middle" font-family="Arial, sans-serif" font-size="15" fill="#0f172a">Рабочая тетрадь · стр. 6</text>
+</svg>

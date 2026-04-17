@@ -114,6 +114,58 @@ export const lessonContentFixtureAssets: ReusableAsset[] = [
     description: "Набор масок: 鸭子、鸡子、羊、牛 для командных игр.",
     fileRef: "/methodologies/world-around-me/lesson-2/masks.svg",
   },
+  {
+    id: "video:colors",
+    kind: "video",
+    title: "colors",
+    description: "Видео-сегмент урока 3: знакомство с цветами.",
+  },
+  {
+    id: "song:my-favorite-color-is-blue",
+    kind: "song",
+    title: "my favorite color is blue",
+    description: "Песня для финала урока 3 о любимом цвете.",
+  },
+  {
+    id: "worksheet:appendix-3",
+    kind: "worksheet",
+    title: "Приложение 3",
+    description: "Сортировка животных по цветам с цветным кубиком.",
+  },
+  {
+    id: "worksheet:workbook-page-6",
+    kind: "worksheet",
+    title: "Рабочая тетрадь, стр. 6",
+    description: "Раскрась цвета и назови их по-китайски.",
+  },
+  {
+    id: "media:color-cards",
+    kind: "media_file",
+    title: "Карточки цветов",
+    description: "Набор карточек 红色、绿色、蓝色、黄色.",
+    fileRef: "/methodologies/world-around-me/lesson-3/color-cards.svg",
+  },
+  {
+    id: "media:animals-bag",
+    kind: "media_file",
+    title: "Мешочек с игрушечными животными",
+    description: "Игровой реквизит для модели «两只狗 / 三只猫».",
+    fileRef: "/methodologies/world-around-me/lesson-3/animals-bag.svg",
+  },
+  {
+    id: "media:car-silhouette",
+    kind: "media_file",
+    title: "Силуэт машины",
+    description: "Картонный силуэт машины для моделей «…的车».",
+    fileRef: "/methodologies/world-around-me/lesson-3/car-silhouette.svg",
+  },
+  {
+    id: "media:color-die",
+    kind: "media_file",
+    title: "Цветной кубик",
+    description: "Кубик цветов для сортировки животных по цвету.",
+    fileRef: "/methodologies/world-around-me/lesson-3/color-die.svg",
+  },
 ];
 
 const lessonOneBlocks: LessonBlockInstance[] = [
@@ -688,8 +740,320 @@ const lessonTwoBlocks: LessonBlockInstance[] = [
   },
 ];
 
+const lessonThreeBlocks: LessonBlockInstance[] = [
+  {
+    id: "block:l3-step-01-greeting",
+    blockType: "intro_framing",
+    order: 1,
+    title: "Приветствие детей и героев курса",
+    assetRefs: [],
+    content: {
+      title: "Урок 3. Этот разноцветный мир",
+      goal: "Включить детей в тему цветов и напомнить игровой ритм урока.",
+      teacherScriptShort:
+        "Поприветствуйте детей и героев курса, соберите группу в круг и объявите цветное приключение.",
+      timeboxMinutes: 3,
+    },
+  },
+  {
+    id: "block:l3-step-02-video-colors",
+    blockType: "video_segment",
+    order: 2,
+    title: "Видео colors",
+    assetRefs: [{ kind: "video", id: "video:colors" }],
+    content: {
+      promptBeforeWatch: "Смотрим видео colors и слушаем названия цветов.",
+      focusPoints: ["红色", "绿色", "蓝色", "黄色"],
+      questionsAfterWatch: ["Какой цвет ты услышал?", "Покажи любимый цвет руками."],
+    },
+  },
+  {
+    id: "block:l3-step-03-ni-shi",
+    blockType: "teacher_prompt_pattern",
+    order: 3,
+    title: "Круг «你是… / 我是谁？»",
+    assetRefs: [],
+    content: {
+      promptPatterns: ["你是…", "我是谁？"],
+      expectedStudentResponses: ["你是…"],
+      fallbackRu:
+        "Покажите на ребёнка и мягко дайте начало фразы, чтобы он завершил «你是…».",
+    },
+  },
+  {
+    id: "block:l3-step-04-hello-song",
+    blockType: "song_segment",
+    order: 4,
+    title: "Песня hello",
+    assetRefs: [{ kind: "song", id: "song:hello" }],
+    content: {
+      activityGoal: "Сохранить ритуал начала урока и общий темп группы.",
+      teacherActions: ["Спойте hello song в круге вместе с детьми и героями курса."],
+      repeatCount: 1,
+      movementHint: "Добавьте мягкие жесты приветствия и хлопки в ритме песни.",
+    },
+  },
+  {
+    id: "block:l3-step-05-colors-vocabulary",
+    blockType: "vocabulary_focus",
+    order: 5,
+    title: "Цвета: 红色 / 绿色 / 蓝色 / 黄色",
+    assetRefs: [{ kind: "media_file", id: "media:color-cards" }],
+    content: {
+      items: [
+        { term: "红色", pinyin: "hóngsè", meaning: "красный" },
+        { term: "绿色", pinyin: "lǜsè", meaning: "зелёный" },
+        { term: "蓝色", pinyin: "lánsè", meaning: "синий" },
+        { term: "黄色", pinyin: "huángsè", meaning: "жёлтый" },
+      ],
+      practiceMode: "cards_two_passes_then_phrase_model",
+      miniDrill:
+        "Проход 1: называем слово. Проход 2: говорим полной фразой «这是红色。» и аналогично для других цветов.",
+    },
+  },
+  {
+    id: "block:l3-step-06-sticks-touch",
+    blockType: "guided_activity",
+    order: 6,
+    title: "Палочки и карточки: коснись нужного цвета",
+    assetRefs: [{ kind: "media_file", id: "media:color-cards" }],
+    content: {
+      activityType: "color_touch_with_sticks",
+      steps: [
+        "Разложите карточки 红色/绿色/蓝色/黄色 в ряд.",
+        "Раздайте детям цветные палочки.",
+        "Называйте цвет: ребёнок касается карточки палочкой и повторяет слово.",
+      ],
+      successCriteria: [
+        "Ребёнок находит нужный цвет по аудиокоманде.",
+        "Ребёнок проговаривает цвет после действия.",
+      ],
+      timeboxMinutes: 4,
+    },
+  },
+  {
+    id: "block:l3-step-07-find-color-objects",
+    blockType: "guided_activity",
+    order: 7,
+    title: "Найди в классе предмет нужного цвета",
+    assetRefs: [],
+    content: {
+      activityType: "bring_objects_by_color",
+      steps: [
+        "Разместите по классу предметы зелёного, синего, жёлтого и красного цветов.",
+        "Называйте цвет, дети находят предмет и приносят в корзину.",
+        "Перед тем как положить предмет, ребёнок самостоятельно называет цвет.",
+      ],
+      successCriteria: [
+        "Ребёнок узнаёт и приносит предмет нужного цвета.",
+        "Ребёнок произносит цвет без подсказки.",
+      ],
+      timeboxMinutes: 4,
+    },
+  },
+  {
+    id: "block:l3-step-08-animals-bag-classifier",
+    blockType: "guided_activity",
+    order: 8,
+    title: "Мешочек животных: 这是狗 / 两只狗 / 三只猫",
+    assetRefs: [{ kind: "media_file", id: "media:animals-bag" }],
+    content: {
+      activityType: "animal_bag_classifier_count",
+      steps: [
+        "Повторите животных по карточкам: 狗、猫、兔子、马、鸭子、鸡子、羊、牛.",
+        "Дети по очереди достают игрушки из мешочка и говорят: «这是狗。»",
+        "В конце мини-раунда ребёнок считает и подводит итог с 只: «两只狗», «三只猫».",
+      ],
+      successCriteria: [
+        "Ребёнок называет животное по модели «这是…».",
+        "Ребёнок использует классификатор 只 в короткой счётной фразе.",
+      ],
+      timeboxMinutes: 5,
+    },
+  },
+  {
+    id: "block:l3-step-09-che-word",
+    blockType: "vocabulary_focus",
+    order: 9,
+    title: "Новое слово 车",
+    assetRefs: [],
+    content: {
+      items: [{ term: "车", pinyin: "chē", meaning: "машина" }],
+      practiceMode: "single_card_with_object_link",
+      miniDrill: "Покажите карточку 车, затем игрушечную машину и проговорите слово хором.",
+    },
+  },
+  {
+    id: "block:l3-step-10-toy-cars",
+    blockType: "guided_activity",
+    order: 10,
+    title: "Игра с машинками: 我们在做什么？我们在开车。",
+    assetRefs: [],
+    content: {
+      activityType: "toy_car_action_commentary",
+      steps: [
+        "Раздайте детям игрушечные машинки и задайте вопрос: «我们在做什么？».",
+        "Смоделируйте ответ: «我们在开车。».",
+        "Попросите детей катать машинки и повторять полную фразу.",
+      ],
+      successCriteria: [
+        "Дети отвечают на вопрос готовой моделью.",
+        "Дети связывают действие и фразу «我们在开车。».",
+      ],
+      timeboxMinutes: 4,
+    },
+  },
+  {
+    id: "block:l3-step-11-colored-car",
+    blockType: "guided_activity",
+    order: 11,
+    title: "Силуэт машины и модель «…的车»",
+    assetRefs: [{ kind: "media_file", id: "media:car-silhouette" }],
+    content: {
+      activityType: "car_silhouette_color_phrase",
+      steps: [
+        "Покажите картонный силуэт машины с окошком.",
+        "По очереди вставляйте цветные карточки в силуэт.",
+        "Комментируйте и просите повторить: «红色的车。», «绿色的车。».",
+      ],
+      successCriteria: [
+        "Ребёнок повторяет модель «…的车».",
+        "Ребёнок соединяет цвет и предмет в единую фразу.",
+      ],
+      timeboxMinutes: 4,
+    },
+  },
+  {
+    id: "block:l3-step-12-appendix-3-color-die",
+    blockType: "guided_activity",
+    order: 12,
+    title: "Приложение 3: сортировка животных по цвету",
+    assetRefs: [
+      { kind: "worksheet", id: "worksheet:appendix-3" },
+      { kind: "media_file", id: "media:color-die" },
+    ],
+    content: {
+      activityType: "appendix_color_sorting_with_die",
+      steps: [
+        "Используйте Приложение 3 и цветной кубик.",
+        "Ребёнок бросает кубик и узнаёт целевой цвет.",
+        "Ребёнок выбирает животных нужного цвета и называет: «黄色的猫。», «绿色的牛。».",
+      ],
+      successCriteria: [
+        "Ребёнок сортирует карточки животных по цвету.",
+        "Ребёнок проговаривает словосочетание с «…的…».",
+      ],
+      timeboxMinutes: 5,
+    },
+  },
+  {
+    id: "block:l3-step-13-count-actions-ci",
+    blockType: "guided_activity",
+    order: 13,
+    title: "Движение и счёт с 次",
+    assetRefs: [],
+    content: {
+      activityType: "counted_actions_with_ci",
+      steps: [
+        "Повторите знакомые глаголы движения и хлопков.",
+        "Давайте команды с числом: «跳五次。», «拍手三次。».",
+        "Дети выполняют действие и считают вслух до 5.",
+      ],
+      successCriteria: [
+        "Ребёнок понимает модель «число + 次».",
+        "Ребёнок выполняет и считает нужное количество раз.",
+      ],
+      timeboxMinutes: 4,
+    },
+  },
+  {
+    id: "block:l3-step-14-workbook-page6",
+    blockType: "worksheet_task",
+    order: 14,
+    title: "Рабочая тетрадь: страница 6",
+    assetRefs: [{ kind: "worksheet", id: "worksheet:workbook-page-6" }],
+    content: {
+      taskInstruction: "Раскрась цвета на странице 6 и назови каждый цвет по-китайски.",
+      completionMode: "in_class",
+      answerKeyHint:
+        "Проверка устно: ребёнок показывает цвет и произносит «这是红色。» или аналогичную фразу.",
+    },
+  },
+  {
+    id: "block:l3-step-15-favorite-color-song",
+    blockType: "song_segment",
+    order: 15,
+    title: "Песня my favorite color is blue",
+    assetRefs: [{ kind: "song", id: "song:my-favorite-color-is-blue" }],
+    content: {
+      activityGoal: "Закрепить цвета и завершить урок эмоционально.",
+      teacherActions: ["Включите песню my favorite color is blue и подпевайте с детьми."],
+      repeatCount: 1,
+      movementHint: "Поднимайте карточку того цвета, который звучит в песне.",
+    },
+  },
+  {
+    id: "block:l3-step-16-goodbye",
+    blockType: "wrap_up_closure",
+    order: 16,
+    title: "Прощание с детьми и героями",
+    assetRefs: [],
+    content: {
+      recapPoints: [
+        "红色",
+        "绿色",
+        "蓝色",
+        "黄色",
+        "车",
+        "你是…",
+        "我是谁？",
+        "…的…",
+        "只",
+        "次",
+      ],
+      exitCheck:
+        "Перед прощанием каждый ребёнок называет один цвет, одну фразу с «…的…» и выполняет короткую команду с 次.",
+      teacherReflectionPrompt:
+        "Попрощайтесь вместе с героями и отметьте детей за смелую речь полными фразами.",
+    },
+  },
+  {
+    id: "block:l3-materials",
+    blockType: "materials_prep",
+    order: 17,
+    title: "Материалы урока 3",
+    assetRefs: [
+      { kind: "media_file", id: "media:color-cards" },
+      { kind: "media_file", id: "media:animals-bag" },
+      { kind: "media_file", id: "media:car-silhouette" },
+      { kind: "worksheet", id: "worksheet:appendix-3" },
+      { kind: "worksheet", id: "worksheet:workbook-page-6" },
+      { kind: "media_file", id: "media:color-die" },
+    ],
+    content: {
+      materialsChecklist: [
+        "герои курса",
+        "видео colors",
+        "карточки 红色/绿色/蓝色/黄色/车",
+        "цветные палочки",
+        "предметы 4 цветов для игры по классу",
+        "карточки и игрушки животных в мешочке",
+        "игрушечные машинки",
+        "картонный силуэт машины",
+        "Приложение 3",
+        "цветной кубик",
+        "рабочая тетрадь (стр. 6)",
+      ],
+      roomSetupNotes:
+        "Подготовьте активную зону поиска предметов и спокойную зону для сортировки/тетради; заранее проверьте, что цветные карточки видны всем детям.",
+    },
+  },
+];
+
 export const lessonContentFixtureBlocks: LessonBlockInstance[] = lessonOneBlocks;
 export const lessonContentFixtureLessonTwoBlocks: LessonBlockInstance[] = lessonTwoBlocks;
+export const lessonContentFixtureLessonThreeBlocks: LessonBlockInstance[] =
+  lessonThreeBlocks;
 
 const lessonOneMethodologyLesson: MethodologyLesson = {
   id: "methodology-lesson:world-around-me-01",
@@ -745,15 +1109,53 @@ const lessonTwoMethodologyLesson: MethodologyLesson = {
   blocks: lessonTwoBlocks,
 };
 
+const lessonThreeMethodologyLesson: MethodologyLesson = {
+  id: "methodology-lesson:world-around-me-03",
+  methodologyId: lessonContentFixtureMethodology.id,
+  methodologySlug: lessonContentFixtureMethodology.slug,
+  shell: {
+    id: "methodology-shell:world-around-me-03",
+    methodologyId: lessonContentFixtureMethodology.id,
+    title: "Урок 3. Этот разноцветный мир",
+    position: {
+      moduleIndex: 1,
+      unitIndex: 1,
+      lessonIndex: 3,
+    },
+    vocabularySummary: ["红色", "绿色", "蓝色", "黄色", "车", "只", "…的…", "次"],
+    phraseSummary: [
+      "你是…",
+      "我是谁？",
+      "这是红色。",
+      "这是狗。",
+      "我们在做什么？",
+      "我们在开车。",
+      "红色的车。",
+    ],
+    estimatedDurationMinutes: 45,
+    mediaSummary: {
+      videos: 1,
+      songs: 2,
+      worksheets: 2,
+      other: 4,
+    },
+    readinessStatus: "ready",
+  },
+  blocks: lessonThreeBlocks,
+};
+
 export const lessonContentFixtureMethodologyLessons: MethodologyLesson[] = [
   lessonOneMethodologyLesson,
   lessonTwoMethodologyLesson,
+  lessonThreeMethodologyLesson,
 ];
 
 export const lessonContentFixtureMethodologyLesson: MethodologyLesson =
   lessonOneMethodologyLesson;
 export const lessonContentFixtureMethodologyLessonTwo: MethodologyLesson =
   lessonTwoMethodologyLesson;
+export const lessonContentFixtureMethodologyLessonThree: MethodologyLesson =
+  lessonThreeMethodologyLesson;
 
 const lessonOneHomeworkDefinition: MethodologyLessonHomeworkDefinition = {
   id: "methodology-homework:world-around-me-01",
@@ -903,15 +1305,97 @@ const lessonTwoHomeworkDefinition: MethodologyLessonHomeworkDefinition = {
   },
 };
 
+const lessonThreeHomeworkDefinition: MethodologyLessonHomeworkDefinition = {
+  id: "methodology-homework:world-around-me-03",
+  methodologyLessonId: lessonThreeMethodologyLesson.id,
+  title: "Мини-миссия: Вспоминаем цвета и машинки",
+  kind: "quiz_single_choice",
+  instructions:
+    "Повтори цвета, машинки и короткие фразы урока 3. Выбери правильный ответ в каждом вопросе.",
+  materialLinks: ["Рабочая тетрадь, стр. 6", "Карточки 红色/绿色/蓝色/黄色/车"],
+  answerFormatHint: "6 коротких вопросов, по одному ответу.",
+  estimatedMinutes: 6,
+  quiz: {
+    id: "world-around-me-lesson-3-quiz",
+    version: 1,
+    questions: [
+      {
+        id: "q1",
+        prompt: "Как по-китайски «красный»?",
+        options: [
+          { id: "a", label: "红色" },
+          { id: "b", label: "绿色" },
+          { id: "c", label: "蓝色" },
+        ],
+        correctOptionId: "a",
+      },
+      {
+        id: "q2",
+        prompt: "Какое слово значит «машина»?",
+        options: [
+          { id: "a", label: "只" },
+          { id: "b", label: "车" },
+          { id: "c", label: "次" },
+        ],
+        correctOptionId: "b",
+      },
+      {
+        id: "q3",
+        prompt: "Выбери правильную фразу:",
+        helperText: "«Мы ведём машину.»",
+        options: [
+          { id: "a", label: "我们在开车。" },
+          { id: "b", label: "我们在跳车。" },
+          { id: "c", label: "我们是谁？" },
+        ],
+        correctOptionId: "a",
+      },
+      {
+        id: "q4",
+        prompt: "Выбери словосочетание «зелёная машина».",
+        options: [
+          { id: "a", label: "绿色的车" },
+          { id: "b", label: "车的绿色" },
+          { id: "c", label: "绿色在车" },
+        ],
+        correctOptionId: "a",
+      },
+      {
+        id: "q5",
+        prompt: "В какой фразе правильно используется 只?",
+        options: [
+          { id: "a", label: "三次猫" },
+          { id: "b", label: "两只狗" },
+          { id: "c", label: "狗的两" },
+        ],
+        correctOptionId: "b",
+      },
+      {
+        id: "q6",
+        prompt: "Выбери команду «Прыгни пять раз».",
+        options: [
+          { id: "a", label: "拍手三次。" },
+          { id: "b", label: "跳五次。" },
+          { id: "c", label: "跳五只。" },
+        ],
+        correctOptionId: "b",
+      },
+    ],
+  },
+};
+
 export const lessonContentFixtureHomeworkDefinitions: MethodologyLessonHomeworkDefinition[] = [
   lessonOneHomeworkDefinition,
   lessonTwoHomeworkDefinition,
+  lessonThreeHomeworkDefinition,
 ];
 
 export const lessonContentFixtureHomeworkDefinition: MethodologyLessonHomeworkDefinition =
   lessonOneHomeworkDefinition;
 export const lessonContentFixtureHomeworkDefinitionLessonTwo: MethodologyLessonHomeworkDefinition =
   lessonTwoHomeworkDefinition;
+export const lessonContentFixtureHomeworkDefinitionLessonThree: MethodologyLessonHomeworkDefinition =
+  lessonThreeHomeworkDefinition;
 
 const lessonOneStudentContent: MethodologyLessonStudentContent = {
   id: "methodology-student-content:world-around-me-01",
@@ -1305,13 +1789,233 @@ const lessonTwoStudentContent: MethodologyLessonStudentContent = {
   ],
 };
 
+const lessonThreeStudentContent: MethodologyLessonStudentContent = {
+  id: "methodology-student-content:world-around-me-03",
+  methodologyLessonId: lessonThreeMethodologyLesson.id,
+  title: "Урок 3. Этот разноцветный мир",
+  subtitle: "Изучаем цвета, играем с животными и машинками, считаем и поём.",
+  sections: [
+    {
+      type: "lesson_focus",
+      title: "Урок 3 · Этот разноцветный мир",
+      subtitle: "Сяо Лон и Сяо Мей приглашают нас в мир ярких цветов.",
+      body: "Сегодня мы смотрим видео colors, играем с карточками и учимся говорить цветные фразы.",
+      chips: ["红色", "绿色", "蓝色", "黄色"],
+      tone: "sky",
+      layout: "hero",
+      illustrationSrc: "/methodologies/world-around-me/lesson-3/color-world.svg",
+      sceneId: "scene-hero",
+    },
+    {
+      type: "lesson_focus",
+      title: "Что мы делаем сегодня",
+      body: "Смотрим видео, называем цвета, ищем цвета в классе, сортируем животных, играем с машинками и поём.",
+      chips: ["смотреть", "называть", "искать", "сортировать", "петь"],
+      tone: "violet",
+      layout: "roadmap",
+      sceneId: "scene-roadmap",
+    },
+    {
+      type: "vocabulary_cards",
+      title: "Главные цвета",
+      subtitle: "Слушай и повторяй каждый цвет.",
+      tone: "amber",
+      layout: "vocabulary",
+      sceneId: "scene-colors",
+      items: [
+        {
+          term: "红色",
+          pinyin: "hóngsè",
+          meaning: "красный",
+          visualHint: "Покажи красный цвет вокруг себя.",
+        },
+        {
+          term: "绿色",
+          pinyin: "lǜsè",
+          meaning: "зелёный",
+          visualHint: "Найди что-то зелёное.",
+        },
+        {
+          term: "蓝色",
+          pinyin: "lánsè",
+          meaning: "синий",
+          visualHint: "Покажи синий предмет.",
+        },
+        {
+          term: "黄色",
+          pinyin: "huángsè",
+          meaning: "жёлтый",
+          visualHint: "Улыбнись как жёлтое солнышко.",
+        },
+      ],
+    },
+    {
+      type: "phrase_cards",
+      title: "Говорим и показываем",
+      subtitle: "Играем в кругу с вопросом и ответом.",
+      tone: "violet",
+      layout: "phrases",
+      sceneId: "scene-speaking",
+      items: [
+        {
+          phrase: "你是…",
+          pinyin: "nǐ shì…",
+          meaning: "Ты…",
+          usageHint: "Покажи на друга и начни фразу.",
+        },
+        {
+          phrase: "我是谁？",
+          pinyin: "wǒ shì shéi?",
+          meaning: "Кто я?",
+          usageHint: "Спроси и послушай ответ друга.",
+        },
+      ],
+    },
+    {
+      type: "phrase_cards",
+      title: "Животные и счёт",
+      subtitle: "Называем и считаем с 只.",
+      tone: "emerald",
+      layout: "farm",
+      illustrationSrc: "/methodologies/world-around-me/lesson-3/animals-bag.svg",
+      sceneId: "scene-animals",
+      items: [
+        {
+          phrase: "这是狗。",
+          pinyin: "zhè shì gǒu.",
+          meaning: "Это собака.",
+          usageHint: "Скажи, когда достаёшь игрушку из мешочка.",
+        },
+        {
+          phrase: "两只狗。",
+          pinyin: "liǎng zhī gǒu.",
+          meaning: "Две собаки.",
+          usageHint: "Посчитай, сколько собак у тебя.",
+        },
+        {
+          phrase: "三只猫。",
+          pinyin: "sān zhī māo.",
+          meaning: "Три кошки.",
+          usageHint: "Назови итог с числом и 只.",
+        },
+      ],
+    },
+    {
+      type: "phrase_cards",
+      title: "Машинки",
+      subtitle: "Учимся говорить о машинах и цветах.",
+      tone: "amber",
+      layout: "practice",
+      illustrationSrc: "/methodologies/world-around-me/lesson-3/toy-car.svg",
+      sceneId: "scene-cars",
+      items: [
+        { phrase: "车", pinyin: "chē", meaning: "машина", usageHint: "Покажи игрушечную машину." },
+        {
+          phrase: "我们在开车。",
+          pinyin: "wǒmen zài kāichē.",
+          meaning: "Мы ведём машину.",
+          usageHint: "Скажи, когда играешь с машинкой.",
+        },
+        {
+          phrase: "红色的车。",
+          pinyin: "hóngsè de chē.",
+          meaning: "Красная машина.",
+          usageHint: "Подбери цвет и назови машину.",
+        },
+        {
+          phrase: "绿色的车。",
+          pinyin: "lǜsè de chē.",
+          meaning: "Зелёная машина.",
+          usageHint: "Сравни с другой машиной.",
+        },
+      ],
+    },
+    {
+      type: "phrase_cards",
+      title: "Сортируем по цветам",
+      subtitle: "Бросаем кубик цвета и ищем животных.",
+      tone: "sky",
+      layout: "practice",
+      illustrationSrc: "/methodologies/world-around-me/lesson-3/color-die.svg",
+      sceneId: "scene-sorting",
+      items: [
+        {
+          phrase: "黄色的猫。",
+          pinyin: "huángsè de māo.",
+          meaning: "Жёлтая кошка.",
+          usageHint: "Назови животное нужного цвета.",
+        },
+        {
+          phrase: "绿色的牛。",
+          pinyin: "lǜsè de niú.",
+          meaning: "Зелёная корова.",
+          usageHint: "Скажи фразу после броска кубика.",
+        },
+      ],
+    },
+    {
+      type: "action_cards",
+      title: "Считаем действия",
+      subtitle: "Двигаемся с числом и 次.",
+      tone: "emerald",
+      layout: "movement",
+      sceneId: "scene-actions",
+      items: [
+        {
+          term: "跳五次",
+          pinyin: "tiào wǔ cì",
+          meaning: "прыгни 5 раз",
+          movementHint: "Прыгаем и считаем до пяти.",
+        },
+        {
+          term: "拍手三次",
+          pinyin: "pāishǒu sān cì",
+          meaning: "хлопни 3 раза",
+          movementHint: "Хлопай в ладоши и считай до трёх.",
+        },
+      ],
+    },
+    {
+      type: "worksheet",
+      title: "Тетрадь и песня",
+      subtitle: "Спокойный финал перед прощанием.",
+      tone: "rose",
+      layout: "practice",
+      sceneId: "scene-workbook-song",
+      illustrationSrc: "/methodologies/world-around-me/lesson-3/workbook.svg",
+      pageLabel: "Рабочая тетрадь · стр. 6",
+      instructions:
+        "Раскрась цвета на стр. 6, произнеси каждый цвет и вместе спой my favorite color is blue.",
+      teacherHint: "Попросите детей показать любимый цвет и назвать его вслух.",
+      assetId: "worksheet:workbook-page-6",
+    },
+    {
+      type: "recap",
+      title: "Повтор дома",
+      subtitle: "Мини-итог перед домашней мини-миссией.",
+      tone: "neutral",
+      layout: "recap",
+      sceneId: "scene-home-review",
+      bullets: [
+        "Назови 4 цвета: 红色, 绿色, 蓝色, 黄色.",
+        "Скажи фразу: 这是红色。",
+        "Скажи про машинку: 红色的车 / 绿色的车.",
+        "Повтори счёт с 只: 两只狗, 三只猫.",
+        "Сделай 2 команды: 跳五次, 拍手三次.",
+      ],
+    },
+  ],
+};
+
 export const lessonContentFixtureMethodologyLessonStudentContents: MethodologyLessonStudentContent[] =
-  [lessonOneStudentContent, lessonTwoStudentContent];
+  [lessonOneStudentContent, lessonTwoStudentContent, lessonThreeStudentContent];
 
 export const lessonContentFixtureMethodologyLessonStudentContent: MethodologyLessonStudentContent =
   lessonOneStudentContent;
 export const lessonContentFixtureMethodologyLessonStudentContentLessonTwo: MethodologyLessonStudentContent =
   lessonTwoStudentContent;
+export const lessonContentFixtureMethodologyLessonStudentContentLessonThree: MethodologyLessonStudentContent =
+  lessonThreeStudentContent;
 
 const lessonOneScheduledLesson: ScheduledLesson = {
   id: "scheduled-lesson:demo-world-around-me-lesson-1",
@@ -1346,15 +2050,35 @@ const lessonTwoScheduledLesson: ScheduledLesson = {
   outcomeNotes: "",
 };
 
+const lessonThreeScheduledLesson: ScheduledLesson = {
+  id: "scheduled-lesson:demo-world-around-me-lesson-3",
+  methodologyLessonId: lessonThreeMethodologyLesson.id,
+  runtimeShell: {
+    id: "runtime-shell:demo-world-around-me-lesson-3",
+    classId: "3f8e9cf9-66f2-4fb9-9504-9f708b67e952",
+    startsAt: "2026-04-21T15:00:00.000Z",
+    format: "offline",
+    place: "Demo classroom A",
+    runtimeStatus: "planned",
+    runtimeNotesSummary: "Подготовить цветные карточки, игрушки животных и машинки.",
+  },
+  runtimeNotes:
+    "Проследить, чтобы каждый ребёнок назвал минимум один цвет и одну фразу с «…的…».",
+  outcomeNotes: "",
+};
+
 export const lessonContentFixtureScheduledLessons: ScheduledLesson[] = [
   lessonOneScheduledLesson,
   lessonTwoScheduledLesson,
+  lessonThreeScheduledLesson,
 ];
 
 export const lessonContentFixtureScheduledLesson: ScheduledLesson =
   lessonOneScheduledLesson;
 export const lessonContentFixtureScheduledLessonLessonTwo: ScheduledLesson =
   lessonTwoScheduledLesson;
+export const lessonContentFixtureScheduledLessonLessonThree: ScheduledLesson =
+  lessonThreeScheduledLesson;
 
 type FixtureLessonCandidateInput = {
   methodologySlug?: string;
