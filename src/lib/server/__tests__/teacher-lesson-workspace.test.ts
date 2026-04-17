@@ -5,7 +5,10 @@ import {
   lessonContentFixtureHomeworkDefinition,
   lessonContentFixtureMethodologyLesson,
   lessonContentFixtureMethodologyLessonStudentContent,
+  lessonContentFixtureMethodologyLessonStudentContentLessonTwo,
+  lessonContentFixtureMethodologyLessonTwo,
   lessonContentFixtureScheduledLesson,
+  lessonContentFixtureScheduledLessonLessonTwo,
 } from "../../lesson-content";
 import type { AccessResolution } from "../access-policy";
 import {
@@ -315,6 +318,35 @@ test("teacher workspace falls back to fixture learner content when payload is ma
   assert.equal(readModel.studentContent.source?.title, "Урок 1. Животные на ферме");
   assert.equal(readModel.studentContent.unavailableReason, null);
   assert.ok(readModel.presentation.lessonFlow.length > 0);
+});
+
+test("teacher workspace fallback resolves lesson 2 learner deck without lesson-1 hardcoding", async () => {
+  const readModel = await getTeacherLessonWorkspaceByScheduledLessonId(
+    "scheduled-2",
+    {
+      getScheduledLessonById: async () => ({
+        ...lessonContentFixtureScheduledLessonLessonTwo,
+        id: "scheduled-2",
+        methodologyLessonId: lessonContentFixtureMethodologyLessonTwo.id,
+      }),
+      getMethodologyLessonById: async () => lessonContentFixtureMethodologyLessonTwo,
+      getMethodologyLessonStudentContentByLessonId: async () => null,
+      isLessonStudentContentSchemaReady: async () => false,
+      listReusableAssetsByIds: async () => [],
+      getClassDisplayNameById: async () => "Лисички 5-6",
+      getHomeworkReadModel: async () => homeworkSnapshot,
+      getLessonDiscussions: async () => [],
+      getHomeworkDiscussions: async () => ({ assignmentId: null, items: [] }),
+    },
+  );
+
+  assert.ok(readModel);
+  assert.equal(
+    readModel.studentContent.source?.id,
+    lessonContentFixtureMethodologyLessonStudentContentLessonTwo.id,
+  );
+  assert.equal(readModel.studentContent.unavailableReason, null);
+  assert.equal(readModel.studentContent.source?.sections.length >= 10, true);
 });
 
 test("teacher workspace still throws on core homework load failure", async () => {

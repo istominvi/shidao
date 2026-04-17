@@ -32,7 +32,8 @@ test("learner communication preview uses neutral helper (no fake teacher identit
 });
 
 
-test("scheduled learner projection falls back to fixture content for world-around-me lesson 1", () => {
+test("scheduled learner projection keeps fixture fallback hook for world-around-me canonical lessons", () => {
   assert.equal(source.includes("getFixtureStudentContentFallback"), true);
   assert.equal(source.includes("studentContentUnavailableReason = null"), true);
+  assert.equal(source.includes("lessonIndex"), true);
 });

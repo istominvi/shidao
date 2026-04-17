@@ -1,10 +1,10 @@
 import {
   lessonContentFixtureAssets,
-  lessonContentFixtureHomeworkDefinition,
+  lessonContentFixtureHomeworkDefinitions,
   lessonContentFixtureMethodology,
-  lessonContentFixtureMethodologyLesson,
-  lessonContentFixtureMethodologyLessonStudentContent,
-  lessonContentFixtureScheduledLesson,
+  lessonContentFixtureMethodologyLessons,
+  lessonContentFixtureMethodologyLessonStudentContents,
+  lessonContentFixtureScheduledLessons,
 } from "../lesson-content";
 import { createHash } from "node:crypto";
 
@@ -17,6 +17,8 @@ type RequestOptions = {
 
 type MethodologyIdRow = { id: string };
 type MethodologyLessonIdRow = { id: string };
+
+type FixtureBootstrapRows = ReturnType<typeof buildFixtureBootstrapRows>;
 
 function getServiceRoleKey() {
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -78,32 +80,98 @@ export function buildFixtureBootstrapRows(options?: {
   scheduledLessonClassId?: string;
 }) {
   const methodologyId = stableUuid(`methodology:${lessonContentFixtureMethodology.slug}`);
-  const methodologyLessonId = stableUuid(`methodology_lesson:${lessonContentFixtureMethodologyLesson.id}`);
-  const scheduledLessonId = stableUuid(`scheduled_lesson:${lessonContentFixtureScheduledLesson.id}`);
 
   const assetIdMap = new Map<string, string>();
   for (const asset of lessonContentFixtureAssets) {
     assetIdMap.set(asset.id, stableUuid(`reusable_asset:${asset.id}`));
   }
 
-  const blockRows = lessonContentFixtureMethodologyLesson.blocks.map((block) => ({
-    id: stableUuid(`methodology_lesson_block:${block.id}`),
-    methodology_lesson_id: methodologyLessonId,
-    block_type: block.blockType,
-    sort_order: block.order,
-    title: block.title ?? null,
-    content: block.content,
+  const methodologyLessonRows = lessonContentFixtureMethodologyLessons.map((lesson) => ({
+    id: stableUuid(`methodology_lesson:${lesson.id}`),
+    fixtureLessonId: lesson.id,
+    methodology_id: methodologyId,
+    title: lesson.shell.title,
+    module_index: lesson.shell.position.moduleIndex,
+    unit_index: lesson.shell.position.unitIndex ?? null,
+    lesson_index: lesson.shell.position.lessonIndex,
+    vocabulary_summary: lesson.shell.vocabularySummary,
+    phrase_summary: lesson.shell.phraseSummary,
+    estimated_duration_minutes: lesson.shell.estimatedDurationMinutes,
+    readiness_status: lesson.shell.readinessStatus,
   }));
 
-  const blockAssetRows = lessonContentFixtureMethodologyLesson.blocks.flatMap((block) => {
-    const blockId = stableUuid(`methodology_lesson_block:${block.id}`);
-    return block.assetRefs.map((assetRef, index) => ({
-      id: stableUuid(`methodology_lesson_block_asset:${block.id}:${assetRef.id}`),
-      methodology_lesson_block_id: blockId,
-      reusable_asset_id: assetIdMap.get(assetRef.id) ?? "",
-      sort_order: index,
-    }));
-  });
+  const lessonIdMap = new Map(
+    methodologyLessonRows.map((row) => [row.fixtureLessonId, row.id]),
+  );
+
+  const blockRows = lessonContentFixtureMethodologyLessons.flatMap((lesson) =>
+    lesson.blocks.map((block) => ({
+      id: stableUuid(`methodology_lesson_block:${block.id}`),
+      methodology_lesson_id: lessonIdMap.get(lesson.id) ?? "",
+      block_type: block.blockType,
+      sort_order: block.order,
+      title: block.title ?? null,
+      content: block.content,
+    })),
+  );
+
+  const blockAssetRows = lessonContentFixtureMethodologyLessons.flatMap((lesson) =>
+    lesson.blocks.flatMap((block) => {
+      const blockId = stableUuid(`methodology_lesson_block:${block.id}`);
+      return block.assetRefs.map((assetRef, index) => ({
+        id: stableUuid(`methodology_lesson_block_asset:${block.id}:${assetRef.id}`),
+        methodology_lesson_block_id: blockId,
+        reusable_asset_id: assetIdMap.get(assetRef.id) ?? "",
+        sort_order: index,
+      }));
+    }),
+  );
+
+  const homeworkDefinitionRows = lessonContentFixtureHomeworkDefinitions.map((homework) => ({
+    id: stableUuid(`methodology_lesson_homework:${homework.id}`),
+    methodology_lesson_id: lessonIdMap.get(homework.methodologyLessonId) ?? "",
+    title: homework.title,
+    kind: homework.kind,
+    instructions: homework.instructions,
+    material_links: homework.materialLinks,
+    answer_format_hint: homework.answerFormatHint ?? null,
+    estimated_minutes: homework.estimatedMinutes ?? null,
+    quiz_payload: homework.quiz ?? null,
+  }));
+
+  const studentContentRows = lessonContentFixtureMethodologyLessonStudentContents.map(
+    (studentContent) => ({
+      id: stableUuid(`methodology_lesson_student_content:${studentContent.id}`),
+      methodology_lesson_id: lessonIdMap.get(studentContent.methodologyLessonId) ?? "",
+      title: studentContent.title,
+      subtitle: studentContent.subtitle ?? null,
+      content_payload: {
+        sections: studentContent.sections,
+      },
+    }),
+  );
+
+  const scheduledLessonRows = lessonContentFixtureScheduledLessons.map((scheduledLesson) => ({
+    id: stableUuid(`scheduled_lesson:${scheduledLesson.id}`),
+    fixtureScheduledLessonId: scheduledLesson.id,
+    fixtureMethodologyLessonId: scheduledLesson.methodologyLessonId,
+    class_id: options?.scheduledLessonClassId ?? scheduledLesson.runtimeShell.classId,
+    methodology_lesson_id: lessonIdMap.get(scheduledLesson.methodologyLessonId) ?? "",
+    starts_at: scheduledLesson.runtimeShell.startsAt,
+    format: scheduledLesson.runtimeShell.format,
+    meeting_link:
+      scheduledLesson.runtimeShell.format === "online"
+        ? scheduledLesson.runtimeShell.meetingLink
+        : null,
+    place:
+      scheduledLesson.runtimeShell.format === "offline"
+        ? scheduledLesson.runtimeShell.place
+        : null,
+    runtime_status: scheduledLesson.runtimeShell.runtimeStatus,
+    runtime_notes_summary: scheduledLesson.runtimeShell.runtimeNotesSummary ?? null,
+    runtime_notes: scheduledLesson.runtimeNotes ?? null,
+    outcome_notes: scheduledLesson.outcomeNotes ?? null,
+  }));
 
   return {
     methodologyRow: {
@@ -113,19 +181,7 @@ export function buildFixtureBootstrapRows(options?: {
       short_description: lessonContentFixtureMethodology.shortDescription ?? null,
       metadata: lessonContentFixtureMethodology.metadata ?? {},
     },
-    methodologyLessonRow: {
-      id: methodologyLessonId,
-      methodology_id: methodologyId,
-      title: lessonContentFixtureMethodologyLesson.shell.title,
-      module_index: lessonContentFixtureMethodologyLesson.shell.position.moduleIndex,
-      unit_index: lessonContentFixtureMethodologyLesson.shell.position.unitIndex ?? null,
-      lesson_index: lessonContentFixtureMethodologyLesson.shell.position.lessonIndex,
-      vocabulary_summary: lessonContentFixtureMethodologyLesson.shell.vocabularySummary,
-      phrase_summary: lessonContentFixtureMethodologyLesson.shell.phraseSummary,
-      estimated_duration_minutes:
-        lessonContentFixtureMethodologyLesson.shell.estimatedDurationMinutes,
-      readiness_status: lessonContentFixtureMethodologyLesson.shell.readinessStatus,
-    },
+    methodologyLessonRows,
     reusableAssetRows: lessonContentFixtureAssets.map((asset) => ({
       id: assetIdMap.get(asset.id) ?? "",
       kind: asset.kind,
@@ -138,51 +194,56 @@ export function buildFixtureBootstrapRows(options?: {
     })),
     blockRows,
     blockAssetRows,
-    homeworkDefinitionRow: {
-      id: stableUuid(`methodology_lesson_homework:${lessonContentFixtureHomeworkDefinition.id}`),
-      methodology_lesson_id: methodologyLessonId,
-      title: lessonContentFixtureHomeworkDefinition.title,
-      kind: lessonContentFixtureHomeworkDefinition.kind,
-      instructions: lessonContentFixtureHomeworkDefinition.instructions,
-      material_links: lessonContentFixtureHomeworkDefinition.materialLinks,
-      answer_format_hint: lessonContentFixtureHomeworkDefinition.answerFormatHint ?? null,
-      estimated_minutes: lessonContentFixtureHomeworkDefinition.estimatedMinutes ?? null,
-      quiz_payload: lessonContentFixtureHomeworkDefinition.quiz ?? null,
-    },
-    studentContentRow: {
-      id: stableUuid(
-        `methodology_lesson_student_content:${lessonContentFixtureMethodologyLessonStudentContent.id}`,
-      ),
-      methodology_lesson_id: methodologyLessonId,
-      title: lessonContentFixtureMethodologyLessonStudentContent.title,
-      subtitle: lessonContentFixtureMethodologyLessonStudentContent.subtitle ?? null,
-      content_payload: {
-        sections: lessonContentFixtureMethodologyLessonStudentContent.sections,
-      },
-    },
-    scheduledLessonRow: {
-      id: scheduledLessonId,
-      class_id:
-        options?.scheduledLessonClassId ??
-        lessonContentFixtureScheduledLesson.runtimeShell.classId,
-      methodology_lesson_id: methodologyLessonId,
-      starts_at: lessonContentFixtureScheduledLesson.runtimeShell.startsAt,
-      format: lessonContentFixtureScheduledLesson.runtimeShell.format,
-      meeting_link:
-        lessonContentFixtureScheduledLesson.runtimeShell.format === "online"
-          ? lessonContentFixtureScheduledLesson.runtimeShell.meetingLink
-          : null,
-      place:
-        lessonContentFixtureScheduledLesson.runtimeShell.format === "offline"
-          ? lessonContentFixtureScheduledLesson.runtimeShell.place
-          : null,
-      runtime_status: lessonContentFixtureScheduledLesson.runtimeShell.runtimeStatus,
-      runtime_notes_summary:
-        lessonContentFixtureScheduledLesson.runtimeShell.runtimeNotesSummary ?? null,
-      runtime_notes: lessonContentFixtureScheduledLesson.runtimeNotes ?? null,
-      outcome_notes: lessonContentFixtureScheduledLesson.outcomeNotes ?? null,
-    },
+    homeworkDefinitionRows,
+    studentContentRows,
+    scheduledLessonRows,
+    // Backward compatibility for existing tests and tooling that are still single-lesson oriented.
+    methodologyLessonRow: methodologyLessonRows[0],
+    homeworkDefinitionRow: homeworkDefinitionRows[0],
+    studentContentRow: studentContentRows[0],
+    scheduledLessonRow: scheduledLessonRows[0],
   };
+}
+
+async function upsertMethodologyLessonFixtures(input: {
+  resolvedMethodologyId: string;
+  rows: FixtureBootstrapRows;
+}) {
+  const lessonIdMap = new Map<string, string>();
+
+  for (const lessonRow of input.rows.methodologyLessonRows) {
+    const existingMethodologyLesson = await adminRequest<MethodologyLessonIdRow[]>(
+      `/rest/v1/methodology_lesson?select=id&methodology_id=eq.${input.resolvedMethodologyId}&module_index=eq.${lessonRow.module_index}&lesson_index=eq.${lessonRow.lesson_index}${lessonRow.unit_index === null ? "&unit_index=is.null" : `&unit_index=eq.${lessonRow.unit_index}`}&limit=1`,
+      "GET",
+    );
+
+    const resolvedMethodologyLessonId = existingMethodologyLesson[0]?.id ?? lessonRow.id;
+    lessonIdMap.set(lessonRow.fixtureLessonId, resolvedMethodologyLessonId);
+
+    await adminRequest(
+      "/rest/v1/methodology_lesson?on_conflict=methodology_id,module_index,unit_index,lesson_index",
+      "POST",
+      {
+        payload: {
+          id: resolvedMethodologyLessonId,
+          title: lessonRow.title,
+          module_index: lessonRow.module_index,
+          unit_index: lessonRow.unit_index,
+          lesson_index: lessonRow.lesson_index,
+          vocabulary_summary: lessonRow.vocabulary_summary,
+          phrase_summary: lessonRow.phrase_summary,
+          estimated_duration_minutes: lessonRow.estimated_duration_minutes,
+          readiness_status: lessonRow.readiness_status,
+          methodology_id: input.resolvedMethodologyId,
+        },
+        extraHeaders: {
+          Prefer: "resolution=merge-duplicates,return=representation",
+        },
+      },
+    );
+  }
+
+  return lessonIdMap;
 }
 
 export async function bootstrapLessonContentFixtureAdmin(options?: {
@@ -221,45 +282,59 @@ export async function bootstrapLessonContentFixtureAdmin(options?: {
     });
   }
 
-  const existingMethodologyLesson = await adminRequest<MethodologyLessonIdRow[]>(
-    `/rest/v1/methodology_lesson?select=id&methodology_id=eq.${resolvedMethodologyId}&module_index=eq.${rows.methodologyLessonRow.module_index}&lesson_index=eq.${rows.methodologyLessonRow.lesson_index}${rows.methodologyLessonRow.unit_index === null ? "&unit_index=is.null" : `&unit_index=eq.${rows.methodologyLessonRow.unit_index}`}&limit=1`,
-    "GET",
-  );
-  const resolvedMethodologyLessonId =
-    existingMethodologyLesson[0]?.id ?? rows.methodologyLessonRow.id;
-  const methodologyLessonRow = {
-    ...rows.methodologyLessonRow,
-    id: resolvedMethodologyLessonId,
-    methodology_id: resolvedMethodologyId,
-  };
+  const lessonIdMap = await upsertMethodologyLessonFixtures({
+    resolvedMethodologyId,
+    rows,
+  });
 
-  await adminRequest(
-    "/rest/v1/methodology_lesson?on_conflict=methodology_id,module_index,unit_index,lesson_index",
-    "POST",
-    {
-      payload: methodologyLessonRow,
-      extraHeaders: {
-        Prefer: "resolution=merge-duplicates,return=representation",
-      },
-    },
+  const fixtureLessonIdByBootstrapLessonId = new Map(
+    rows.methodologyLessonRows.map((lesson) => [lesson.id, lesson.fixtureLessonId]),
   );
 
   const blockRows = rows.blockRows.map((block) => ({
     ...block,
-    methodology_lesson_id: resolvedMethodologyLessonId,
+    methodology_lesson_id:
+      lessonIdMap.get(
+        fixtureLessonIdByBootstrapLessonId.get(block.methodology_lesson_id) ?? "",
+      ) ?? block.methodology_lesson_id,
   }));
-  const homeworkDefinitionRow = {
-    ...rows.homeworkDefinitionRow,
-    methodology_lesson_id: resolvedMethodologyLessonId,
-  };
-  const scheduledLessonRow = {
-    ...rows.scheduledLessonRow,
-    methodology_lesson_id: resolvedMethodologyLessonId,
-  };
-  const studentContentRow = {
-    ...rows.studentContentRow,
-    methodology_lesson_id: resolvedMethodologyLessonId,
-  };
+
+  const homeworkDefinitionRows = rows.homeworkDefinitionRows.map((homework) => {
+    return {
+      ...homework,
+      methodology_lesson_id:
+        lessonIdMap.get(
+          fixtureLessonIdByBootstrapLessonId.get(homework.methodology_lesson_id) ?? "",
+        ) ?? homework.methodology_lesson_id,
+    };
+  });
+
+  const studentContentRows = rows.studentContentRows.map((studentContent) => {
+    return {
+      ...studentContent,
+      methodology_lesson_id:
+        lessonIdMap.get(
+          fixtureLessonIdByBootstrapLessonId.get(studentContent.methodology_lesson_id) ??
+            "",
+        ) ?? studentContent.methodology_lesson_id,
+    };
+  });
+
+  const scheduledLessonRows = rows.scheduledLessonRows.map((scheduledLesson) => ({
+    id: scheduledLesson.id,
+    class_id: scheduledLesson.class_id,
+    methodology_lesson_id:
+      lessonIdMap.get(scheduledLesson.fixtureMethodologyLessonId) ??
+      scheduledLesson.methodology_lesson_id,
+    starts_at: scheduledLesson.starts_at,
+    format: scheduledLesson.format,
+    meeting_link: scheduledLesson.meeting_link,
+    place: scheduledLesson.place,
+    runtime_status: scheduledLesson.runtime_status,
+    runtime_notes_summary: scheduledLesson.runtime_notes_summary,
+    runtime_notes: scheduledLesson.runtime_notes,
+    outcome_notes: scheduledLesson.outcome_notes,
+  }));
 
   await adminRequest("/rest/v1/reusable_asset?on_conflict=slug", "POST", {
     payload: rows.reusableAssetRows,
@@ -294,7 +369,7 @@ export async function bootstrapLessonContentFixtureAdmin(options?: {
     "/rest/v1/methodology_lesson_homework?on_conflict=methodology_lesson_id",
     "POST",
     {
-      payload: homeworkDefinitionRow,
+      payload: homeworkDefinitionRows,
       extraHeaders: {
         Prefer: "resolution=merge-duplicates,return=representation",
       },
@@ -305,7 +380,7 @@ export async function bootstrapLessonContentFixtureAdmin(options?: {
     "/rest/v1/methodology_lesson_student_content?on_conflict=methodology_lesson_id",
     "POST",
     {
-      payload: studentContentRow,
+      payload: studentContentRows,
       extraHeaders: {
         Prefer: "resolution=merge-duplicates,return=representation",
       },
@@ -314,7 +389,7 @@ export async function bootstrapLessonContentFixtureAdmin(options?: {
 
   if (options?.includeDevScheduledLesson ?? true) {
     await adminRequest("/rest/v1/scheduled_lesson?on_conflict=id", "POST", {
-      payload: scheduledLessonRow,
+      payload: scheduledLessonRows,
       extraHeaders: {
         Prefer: "resolution=merge-duplicates,return=representation",
       },
@@ -323,8 +398,8 @@ export async function bootstrapLessonContentFixtureAdmin(options?: {
 
   return {
     methodologyId: resolvedMethodologyId,
-    methodologyLessonId: resolvedMethodologyLessonId,
+    methodologyLessonIds: Array.from(lessonIdMap.values()),
     blockCount: blockRows.length,
-    scheduledLessonId: scheduledLessonRow.id,
+    scheduledLessonIds: scheduledLessonRows.map((item) => item.id),
   };
 }
