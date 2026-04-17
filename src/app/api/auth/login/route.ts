@@ -113,6 +113,23 @@ export async function POST(req: NextRequest) {
         stage = "load-student-context";
         const context = await getUserContextById(candidateUserId, {
           email: resolvedEmail,
+        }).catch((error) => {
+          logger.error(
+            "[auth-login] getUserContextById failed after successful student pin verification, using fallback session context",
+            { userId: candidateUserId, error },
+          );
+          return {
+            userId: candidateUserId,
+            email: resolvedEmail,
+            fullName: null,
+            actorKind: "student" as const,
+            hasPin: true,
+            parent: null,
+            teacher: null,
+            student: null,
+            preference: null,
+            selectedSchool: null,
+          };
         });
 
         stage = "write-session-pin";
