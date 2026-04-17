@@ -69,13 +69,19 @@ export const lessonContentFixtureAssets: ReusableAsset[] = [
     id: "video:farm-animals",
     kind: "video",
     title: "farm animals",
-    description: "Видео-сегмент урока 1: farm animals.",
+    description: "Видео-сегмент уроков 1–2: знакомство с животными фермы.",
+  },
+  {
+    id: "song:hello",
+    kind: "song",
+    title: "hello",
+    description: "Песня-приветствие для начала урока 2.",
   },
   {
     id: "song:farm-animals",
     kind: "song",
     title: "farm animals",
-    description: "Песня для завершения урока 1.",
+    description: "Песня для завершения уроков про животных.",
   },
   {
     id: "worksheet:workbook-pages-3-4",
@@ -89,9 +95,28 @@ export const lessonContentFixtureAssets: ReusableAsset[] = [
     title: "Приложение 1",
     description: "Материал для указки: показать, посчитать, назвать животных.",
   },
+  {
+    id: "worksheet:workbook-page-5",
+    kind: "worksheet",
+    title: "Рабочая тетрадь, стр. 5",
+    description: "Соедини числа и животных, назови вслух по модели «这是…».",
+  },
+  {
+    id: "worksheet:appendix-2",
+    kind: "worksheet",
+    title: "Приложение 2",
+    description: "Пазлы с животными для счёта и называния.",
+  },
+  {
+    id: "media:masks-farm-animals",
+    kind: "media_file",
+    title: "Маски животных фермы",
+    description: "Набор масок: 鸭子、鸡子、羊、牛 для командных игр.",
+    fileRef: "/methodologies/world-around-me/lesson-2/masks.svg",
+  },
 ];
 
-export const lessonContentFixtureBlocks: LessonBlockInstance[] = [
+const lessonOneBlocks: LessonBlockInstance[] = [
   {
     id: "block:step-01-greeting",
     blockType: "intro_framing",
@@ -101,7 +126,8 @@ export const lessonContentFixtureBlocks: LessonBlockInstance[] = [
     content: {
       title: "Урок 1. Животные на ферме",
       goal: "Мягко включить детей в китайскую речь и обозначить тему урока.",
-      teacherScriptShort: "Поприветствовать детей и героев курса, создать доброжелательный круг.",
+      teacherScriptShort:
+        "Поприветствовать детей и героев курса, создать доброжелательный круг.",
       timeboxMinutes: 3,
     },
   },
@@ -112,7 +138,8 @@ export const lessonContentFixtureBlocks: LessonBlockInstance[] = [
     title: "Просмотр видео farm animals",
     assetRefs: [{ kind: "video", id: "video:farm-animals" }],
     content: {
-      promptBeforeWatch: "Смотрим видео farm animals и слушаем, как звучат названия животных.",
+      promptBeforeWatch:
+        "Смотрим видео farm animals и слушаем, как звучат названия животных.",
       focusPoints: ["狗", "猫", "兔子", "马"],
       questionsAfterWatch: ["Кого ты услышал?", "Какое слово запомнилось лучше всего?"],
     },
@@ -126,7 +153,8 @@ export const lessonContentFixtureBlocks: LessonBlockInstance[] = [
     content: {
       promptPatterns: ["你是谁？", "我是…"],
       expectedStudentResponses: ["我是…"],
-      fallbackRu: "Дайте ребёнку выбрать роль героя или животного и завершить фразу «我是…».",
+      fallbackRu:
+        "Дайте ребёнку выбрать роль героя или животного и завершить фразу «我是…».",
     },
   },
   {
@@ -143,7 +171,8 @@ export const lessonContentFixtureBlocks: LessonBlockInstance[] = [
         { term: "马", pinyin: "mǎ", meaning: "лошадь" },
       ],
       practiceMode: "cards_two_passes_then_actions",
-      miniDrill: "Проход 1: только слово. Проход 2: паттерн «这是…» с каждой карточкой.",
+      miniDrill:
+        "Проход 1: только слово. Проход 2: паттерн «这是…» с каждой карточкой.",
     },
   },
   {
@@ -256,7 +285,8 @@ export const lessonContentFixtureBlocks: LessonBlockInstance[] = [
     content: {
       promptPatterns: ["狗在做什么？", "狗在跳"],
       expectedStudentResponses: ["狗在跳", "猫在跑"],
-      fallbackRu: "Сначала моделируйте полный ответ, затем просите ребёнка повторить по образцу.",
+      fallbackRu:
+        "Сначала моделируйте полный ответ, затем просите ребёнка повторить по образцу.",
     },
   },
   {
@@ -280,7 +310,8 @@ export const lessonContentFixtureBlocks: LessonBlockInstance[] = [
     content: {
       items: [{ term: "农场", pinyin: "nóngchǎng", meaning: "ферма" }],
       practiceMode: "single_card_with_context",
-      miniDrill: "Покажите карточку 农场 и попросите детей повторить в хоре.",
+      miniDrill:
+        "Покажите карточку 农场 и попросите детей повторить в хоре.",
     },
   },
   {
@@ -295,7 +326,10 @@ export const lessonContentFixtureBlocks: LessonBlockInstance[] = [
         "Разместите животных в игрушечной ферме.",
         "Проговаривайте и повторяйте: «猫住在农场里。», «马在农场里。».",
       ],
-      successCriteria: ["Дети узнают слово 农场.", "Дети повторяют модель 在…里 с опорой на игрушки."],
+      successCriteria: [
+        "Дети узнают слово 农场.",
+        "Дети повторяют модель 在…里 с опорой на игрушки.",
+      ],
       timeboxMinutes: 4,
     },
   },
@@ -320,8 +354,10 @@ export const lessonContentFixtureBlocks: LessonBlockInstance[] = [
     assetRefs: [],
     content: {
       recapPoints: ["狗", "猫", "兔子", "马", "农场", "我是…", "这是…", "跑", "跳", "在…里"],
-      exitCheck: "Перед прощанием попросите каждого ребёнка назвать 1 животное и 1 действие.",
-      teacherReflectionPrompt: "Завершите урок песней и дружелюбным прощанием героев курса.",
+      exitCheck:
+        "Перед прощанием попросите каждого ребёнка назвать 1 животное и 1 действие.",
+      teacherReflectionPrompt:
+        "Завершите урок песней и дружелюбным прощанием героев курса.",
     },
   },
   {
@@ -343,12 +379,319 @@ export const lessonContentFixtureBlocks: LessonBlockInstance[] = [
         "рабочая тетрадь",
         "игрушечная ферма",
       ],
-      roomSetupNotes: "Подготовьте безопасные зоны для движения и заранее разложите игрушки для этапа команд.",
+      roomSetupNotes:
+        "Подготовьте безопасные зоны для движения и заранее разложите игрушки для этапа команд.",
     },
   },
 ];
 
-export const lessonContentFixtureMethodologyLesson: MethodologyLesson = {
+const lessonTwoBlocks: LessonBlockInstance[] = [
+  {
+    id: "block:l2-step-01-greeting",
+    blockType: "intro_framing",
+    order: 1,
+    title: "Приветствие детей и героев курса",
+    assetRefs: [],
+    content: {
+      title: "Урок 2. Что это за животное?",
+      goal: "Активно включить детей в урок и напомнить формат «играем и говорим по-китайски».",
+      teacherScriptShort:
+        "Поприветствуйте детей и героев курса, посадите группу в круг, задайте позитивный ритм.",
+      warmupQuestion: "你是谁？",
+      timeboxMinutes: 3,
+    },
+  },
+  {
+    id: "block:l2-step-02-video",
+    blockType: "video_segment",
+    order: 2,
+    title: "Видео farm animals",
+    assetRefs: [{ kind: "video", id: "video:farm-animals" }],
+    content: {
+      promptBeforeWatch:
+        "Смотрим farm animals и слушаем новые слова про животных фермы.",
+      focusPoints: ["鸭子", "鸡子", "羊", "牛"],
+      questionsAfterWatch: ["Кого ты услышал?", "Кто говорит «му-у»?", "Что ты запомнил?"],
+    },
+  },
+  {
+    id: "block:l2-step-03-wo-shi-circle",
+    blockType: "teacher_prompt_pattern",
+    order: 3,
+    title: "Круговой паттерн «你是谁？— 我是…»",
+    assetRefs: [],
+    content: {
+      promptPatterns: ["你是谁？", "我是…"],
+      expectedStudentResponses: ["我是小鸭子。", "我是小牛。"],
+      fallbackRu:
+        "Если ребёнок теряется, предложите выбрать маску/картинку и договорить «我是…» вместе с вами.",
+    },
+  },
+  {
+    id: "block:l2-step-04-hello-song",
+    blockType: "song_segment",
+    order: 4,
+    title: "Песня hello",
+    assetRefs: [{ kind: "song", id: "song:hello" }],
+    content: {
+      activityGoal: "Закрепить ритуал начала занятия и настроить группу на совместную речь.",
+      teacherActions: ["Включите песню hello и спойте её вместе с детьми в круге."],
+      repeatCount: 1,
+      movementHint: "Добавьте хлопки в ладоши и жест «привет» каждому ребёнку.",
+    },
+  },
+  {
+    id: "block:l2-step-05-vocabulary-animals",
+    blockType: "vocabulary_focus",
+    order: 5,
+    title: "Новые слова: животные фермы",
+    assetRefs: [],
+    content: {
+      items: [
+        { term: "鸭子", pinyin: "yāzi", meaning: "утка" },
+        { term: "鸡子", pinyin: "jīzi", meaning: "курица" },
+        { term: "羊", pinyin: "yáng", meaning: "овца" },
+        { term: "牛", pinyin: "niú", meaning: "корова" },
+      ],
+      practiceMode: "cards_two_passes_then_sentence_model",
+      miniDrill:
+        "Проход 1: называем слово. Проход 2: с каждой карточкой говорим полную модель «这是…».",
+    },
+  },
+  {
+    id: "block:l2-step-06-jump-cards",
+    blockType: "guided_activity",
+    order: 6,
+    title: "Прыжки по карточкам",
+    assetRefs: [],
+    content: {
+      activityType: "jump_and_name_cards",
+      steps: [
+        "Разложите карточки 鸭子/鸡子/羊/牛 в ряд на полу.",
+        "Ребёнок прыгает на карточку, показывает на неё и говорит: «这是…».",
+        "Группа повторяет фразу хором после каждого прыжка.",
+      ],
+      successCriteria: [
+        "Ребёнок уверенно соотносит карточку и слово.",
+        "Ребёнок произносит модель «这是…» в активном движении.",
+      ],
+      timeboxMinutes: 4,
+    },
+  },
+  {
+    id: "block:l2-step-07-sound-guess",
+    blockType: "guided_activity",
+    order: 7,
+    title: "Угадай животное по звуку",
+    assetRefs: [],
+    content: {
+      activityType: "animal_sound_guessing",
+      steps: [
+        "Дети садятся в круг и слушают звуки животных.",
+        "После каждого звука задайте вопрос: «这是什么？».",
+        "Дети отвечают словом животного или фразой «这是牛。».",
+      ],
+      successCriteria: [
+        "Дети распознают животное на слух.",
+        "Дети пробуют отвечать словами урока без подсказки на карточке.",
+      ],
+      timeboxMinutes: 3,
+    },
+  },
+  {
+    id: "block:l2-step-08-actions-clap-count",
+    blockType: "teacher_prompt_pattern",
+    order: 8,
+    title: "Команды 跑 / 跳 / 拍手 / 数",
+    assetRefs: [],
+    content: {
+      promptPatterns: ["我们跑吧！", "我们跳吧！", "拍手吧！", "我们数吧！"],
+      expectedStudentResponses: [
+        "Дети выполняют движение и проговаривают глагол.",
+        "Дети считают до 5, хлопая и прыгая.",
+      ],
+      fallbackRu:
+        "Сначала выполните команду сами, затем подключите группу и добавьте счёт «一、二、三、四、五».",
+    },
+  },
+  {
+    id: "block:l2-step-09-counting-toys",
+    blockType: "guided_activity",
+    order: 9,
+    title: "Считаем игрушки животных",
+    assetRefs: [],
+    content: {
+      activityType: "counting_with_soft_toys",
+      steps: [
+        "Посадите детей в круг и разложите игрушки (собака, кот, кролик, лошадь).",
+        "Считайте вместе до 5, по очереди показывая игрушки и называя животных.",
+        "Попросите детей повторить счёт и назвать одно животное самостоятельно.",
+      ],
+      successCriteria: [
+        "Дети держат ритм счёта до 5.",
+        "Дети совмещают счёт с называнием животного.",
+      ],
+      timeboxMinutes: 3,
+    },
+  },
+  {
+    id: "block:l2-step-10-appendix-2",
+    blockType: "guided_activity",
+    order: 10,
+    title: "Приложение 2: пазлы животных",
+    assetRefs: [{ kind: "worksheet", id: "worksheet:appendix-2" }],
+    content: {
+      activityType: "appendix_puzzle_count_and_name",
+      steps: [
+        "Раздайте детям элементы Приложения 2.",
+        "Попросите собрать пазл и назвать животное на картинке.",
+        "После сборки дети считают животных вслух по одному.",
+      ],
+      successCriteria: [
+        "Ребёнок называет хотя бы 1–2 животных из урока.",
+        "Ребёнок участвует в счёте и слышит ответы одногруппников.",
+      ],
+      timeboxMinutes: 4,
+    },
+  },
+  {
+    id: "block:l2-step-11-masks-commands",
+    blockType: "guided_activity",
+    order: 11,
+    title: "Маски и команды",
+    assetRefs: [{ kind: "media_file", id: "media:masks-farm-animals" }],
+    content: {
+      activityType: "mask_roleplay_commands",
+      steps: [
+        "Раздайте маски утки, курицы, овцы и коровы.",
+        "Давайте команды в игровом формате: «鸭子，跑吧！», «鸡子，拍手吧！».",
+        "Меняйте роли, чтобы каждый ребёнок выполнил минимум 2 команды.",
+      ],
+      successCriteria: [
+        "Дети реагируют на адресную команду.",
+        "Дети закрепляют глаголы 跑 / 跳 / 拍手.",
+      ],
+      timeboxMinutes: 4,
+    },
+  },
+  {
+    id: "block:l2-step-12-workbook-page-5",
+    blockType: "worksheet_task",
+    order: 12,
+    title: "Рабочая тетрадь: страница 5",
+    assetRefs: [{ kind: "worksheet", id: "worksheet:workbook-page-5" }],
+    content: {
+      taskInstruction:
+        "Откройте стр. 5 и соедините числа с животными. После соединения проговорите «这是…».",
+      completionMode: "in_class",
+      answerKeyHint:
+        "Проверяйте устно: ребёнок показывает линию и произносит название животного.",
+    },
+  },
+  {
+    id: "block:l2-step-13-house-word",
+    blockType: "vocabulary_focus",
+    order: 13,
+    title: "Слово 房子",
+    assetRefs: [],
+    content: {
+      items: [{ term: "房子", pinyin: "fángzi", meaning: "дом" }],
+      practiceMode: "single_card_with_context",
+      miniDrill:
+        "Покажите карточку 房子 и попросите детей повторить слово с жестом «домик» руками.",
+    },
+  },
+  {
+    id: "block:l2-step-14-house-pattern",
+    blockType: "guided_activity",
+    order: 14,
+    title: "Игрушечный дом: 我 / 你 / 在…里",
+    assetRefs: [],
+    content: {
+      activityType: "toy_house_phrase_practice",
+      steps: [
+        "Поставьте игрушечный дом и маленькие фигурки.",
+        "Моделируйте фразы: «我住在房子里。», «你在房子里吗？».",
+        "Попросите детей по очереди поместить фигурку в дом и проговорить короткую фразу.",
+      ],
+      successCriteria: [
+        "Дети распознают слова 我 / 你 / 房子.",
+        "Дети повторяют модель 在…里 в мини-ситуации.",
+      ],
+      timeboxMinutes: 4,
+    },
+  },
+  {
+    id: "block:l2-step-15-song-farm-animals",
+    blockType: "song_segment",
+    order: 15,
+    title: "Песня farm animals",
+    assetRefs: [{ kind: "song", id: "song:farm-animals" }],
+    content: {
+      activityGoal:
+        "Завершить урок в знакомом ритуале и закрепить новые слова о животных.",
+      teacherActions: ["Включите farm animals, пойте вместе и показывайте карточки животных."],
+      repeatCount: 1,
+      movementHint: "Добавьте хлопки и прыжки на знакомых словах.",
+    },
+  },
+  {
+    id: "block:l2-step-16-goodbye",
+    blockType: "wrap_up_closure",
+    order: 16,
+    title: "Прощание с детьми и героями",
+    assetRefs: [],
+    content: {
+      recapPoints: [
+        "鸭子",
+        "鸡子",
+        "羊",
+        "牛",
+        "房子",
+        "我是…",
+        "这是…",
+        "拍手",
+        "数",
+        "在…里",
+      ],
+      exitCheck:
+        "Перед прощанием каждый ребёнок называет 1 животное и 1 действие, затем говорит короткую фразу с «这是…».",
+      teacherReflectionPrompt:
+        "Попрощайтесь вместе с героями курса и отметьте детей за участие в играх.",
+    },
+  },
+  {
+    id: "block:l2-materials",
+    blockType: "materials_prep",
+    order: 17,
+    title: "Материалы урока 2",
+    assetRefs: [
+      { kind: "worksheet", id: "worksheet:appendix-2" },
+      { kind: "worksheet", id: "worksheet:workbook-page-5" },
+      { kind: "media_file", id: "media:masks-farm-animals" },
+    ],
+    content: {
+      materialsChecklist: [
+        "герои курса",
+        "карточки 鸭子/鸡子/羊/牛",
+        "карточка 房子",
+        "аудио со звуками животных",
+        "мягкие игрушки: собака, кот, кролик, лошадь",
+        "Приложение 2 (пазлы)",
+        "маски утки/курицы/овцы/коровы",
+        "рабочая тетрадь (стр. 5)",
+        "игрушечный дом",
+      ],
+      roomSetupNotes:
+        "Подготовьте две зоны: активную (прыжки/команды) и спокойную (пазлы/тетрадь), чтобы сохранить чередование темпа урока.",
+    },
+  },
+];
+
+export const lessonContentFixtureBlocks: LessonBlockInstance[] = lessonOneBlocks;
+export const lessonContentFixtureLessonTwoBlocks: LessonBlockInstance[] = lessonTwoBlocks;
+
+const lessonOneMethodologyLesson: MethodologyLesson = {
   id: "methodology-lesson:world-around-me-01",
   methodologyId: lessonContentFixtureMethodology.id,
   methodologySlug: lessonContentFixtureMethodology.slug,
@@ -372,15 +715,53 @@ export const lessonContentFixtureMethodologyLesson: MethodologyLesson = {
     },
     readinessStatus: "ready",
   },
-  blocks: lessonContentFixtureBlocks,
+  blocks: lessonOneBlocks,
 };
 
-export const lessonContentFixtureHomeworkDefinition: MethodologyLessonHomeworkDefinition = {
+const lessonTwoMethodologyLesson: MethodologyLesson = {
+  id: "methodology-lesson:world-around-me-02",
+  methodologyId: lessonContentFixtureMethodology.id,
+  methodologySlug: lessonContentFixtureMethodology.slug,
+  shell: {
+    id: "methodology-shell:world-around-me-02",
+    methodologyId: lessonContentFixtureMethodology.id,
+    title: "Урок 2. Что это за животное?",
+    position: {
+      moduleIndex: 1,
+      unitIndex: 1,
+      lessonIndex: 2,
+    },
+    vocabularySummary: ["鸭子", "鸡子", "羊", "牛", "房子", "拍手", "数", "我", "你"],
+    phraseSummary: ["你是谁？", "我是…", "这是…", "在…里", "我住在房子里。"],
+    estimatedDurationMinutes: 45,
+    mediaSummary: {
+      videos: 1,
+      songs: 2,
+      worksheets: 2,
+      other: 1,
+    },
+    readinessStatus: "ready",
+  },
+  blocks: lessonTwoBlocks,
+};
+
+export const lessonContentFixtureMethodologyLessons: MethodologyLesson[] = [
+  lessonOneMethodologyLesson,
+  lessonTwoMethodologyLesson,
+];
+
+export const lessonContentFixtureMethodologyLesson: MethodologyLesson =
+  lessonOneMethodologyLesson;
+export const lessonContentFixtureMethodologyLessonTwo: MethodologyLesson =
+  lessonTwoMethodologyLesson;
+
+const lessonOneHomeworkDefinition: MethodologyLessonHomeworkDefinition = {
   id: "methodology-homework:world-around-me-01",
-  methodologyLessonId: lessonContentFixtureMethodologyLesson.id,
+  methodologyLessonId: lessonOneMethodologyLesson.id,
   title: "Мини-тест: Животные на ферме",
   kind: "quiz_single_choice",
-  instructions: "Короткая игра на повторение слов и фраз урока. Выбери правильный ответ в каждом вопросе.",
+  instructions:
+    "Короткая игра на повторение слов и фраз урока. Выбери правильный ответ в каждом вопросе.",
   materialLinks: ["Рабочая тетрадь, стр. 3–4", "Карточки животных из урока"],
   answerFormatHint: "Тест из 5 вопросов, один ответ в каждом.",
   estimatedMinutes: 5,
@@ -388,18 +769,153 @@ export const lessonContentFixtureHomeworkDefinition: MethodologyLessonHomeworkDe
     id: "world-around-me-lesson-1-quiz",
     version: 1,
     questions: [
-      { id: "q1", prompt: "Как по-китайски «собака»?", helperText: "Выбери карточку со словом.", options: [{ id: "a", label: "狗" }, { id: "b", label: "猫" }, { id: "c", label: "马" }], correctOptionId: "a" },
-      { id: "q2", prompt: "Как по-китайски «кролик»?", options: [{ id: "a", label: "兔子" }, { id: "b", label: "农场" }, { id: "c", label: "狗" }], correctOptionId: "a" },
-      { id: "q3", prompt: "Что значит «农场»?", options: [{ id: "a", label: "кошка" }, { id: "b", label: "ферма" }, { id: "c", label: "лошадь" }], correctOptionId: "b" },
-      { id: "q4", prompt: "Выбери фразу «Это…»", options: [{ id: "a", label: "我是…" }, { id: "b", label: "这是…" }, { id: "c", label: "我们…吧！" }], correctOptionId: "b" },
-      { id: "q5", prompt: "Какое слово значит «прыгать»?", options: [{ id: "a", label: "跑" }, { id: "b", label: "在" }, { id: "c", label: "跳" }], correctOptionId: "c" },
+      {
+        id: "q1",
+        prompt: "Как по-китайски «собака»?",
+        helperText: "Выбери карточку со словом.",
+        options: [
+          { id: "a", label: "狗" },
+          { id: "b", label: "猫" },
+          { id: "c", label: "马" },
+        ],
+        correctOptionId: "a",
+      },
+      {
+        id: "q2",
+        prompt: "Как по-китайски «кролик»?",
+        options: [
+          { id: "a", label: "兔子" },
+          { id: "b", label: "农场" },
+          { id: "c", label: "狗" },
+        ],
+        correctOptionId: "a",
+      },
+      {
+        id: "q3",
+        prompt: "Что значит «农场»?",
+        options: [
+          { id: "a", label: "кошка" },
+          { id: "b", label: "ферма" },
+          { id: "c", label: "лошадь" },
+        ],
+        correctOptionId: "b",
+      },
+      {
+        id: "q4",
+        prompt: "Выбери фразу «Это…»",
+        options: [
+          { id: "a", label: "我是…" },
+          { id: "b", label: "这是…" },
+          { id: "c", label: "我们…吧！" },
+        ],
+        correctOptionId: "b",
+      },
+      {
+        id: "q5",
+        prompt: "Какое слово значит «прыгать»?",
+        options: [
+          { id: "a", label: "跑" },
+          { id: "b", label: "在" },
+          { id: "c", label: "跳" },
+        ],
+        correctOptionId: "c",
+      },
     ],
   },
 };
 
-export const lessonContentFixtureMethodologyLessonStudentContent: MethodologyLessonStudentContent = {
+const lessonTwoHomeworkDefinition: MethodologyLessonHomeworkDefinition = {
+  id: "methodology-homework:world-around-me-02",
+  methodologyLessonId: lessonTwoMethodologyLesson.id,
+  title: "Мини-миссия: Угадай животное и дом",
+  kind: "quiz_single_choice",
+  instructions:
+    "Повтори слова урока 2. Слушай вопрос, выбирай правильный ответ и помоги героям найти животных и дом.",
+  materialLinks: ["Рабочая тетрадь, стр. 5", "Карточки 鸭子/鸡子/羊/牛/房子"],
+  answerFormatHint: "6 коротких вопросов, по одному ответу.",
+  estimatedMinutes: 6,
+  quiz: {
+    id: "world-around-me-lesson-2-quiz",
+    version: 1,
+    questions: [
+      {
+        id: "q1",
+        prompt: "Как по-китайски «утка»?",
+        options: [
+          { id: "a", label: "鸭子" },
+          { id: "b", label: "羊" },
+          { id: "c", label: "牛" },
+        ],
+        correctOptionId: "a",
+      },
+      {
+        id: "q2",
+        prompt: "Что значит 房子?",
+        options: [
+          { id: "a", label: "овца" },
+          { id: "b", label: "дом" },
+          { id: "c", label: "курица" },
+        ],
+        correctOptionId: "b",
+      },
+      {
+        id: "q3",
+        prompt: "Выбери фразу «Это корова».",
+        options: [
+          { id: "a", label: "我是牛。" },
+          { id: "b", label: "这是牛。" },
+          { id: "c", label: "你是牛。" },
+        ],
+        correctOptionId: "b",
+      },
+      {
+        id: "q4",
+        prompt: "Какое слово — команда «хлопай»?",
+        options: [
+          { id: "a", label: "拍手" },
+          { id: "b", label: "数" },
+          { id: "c", label: "跳" },
+        ],
+        correctOptionId: "a",
+      },
+      {
+        id: "q5",
+        prompt: "Какое слово значит «считать»?",
+        options: [
+          { id: "a", label: "你" },
+          { id: "b", label: "我" },
+          { id: "c", label: "数" },
+        ],
+        correctOptionId: "c",
+      },
+      {
+        id: "q6",
+        prompt: "Выбери правильную фразу про дом.",
+        helperText: "Где я живу?",
+        options: [
+          { id: "a", label: "我住在房子里。" },
+          { id: "b", label: "你住在羊里。" },
+          { id: "c", label: "这是我里。" },
+        ],
+        correctOptionId: "a",
+      },
+    ],
+  },
+};
+
+export const lessonContentFixtureHomeworkDefinitions: MethodologyLessonHomeworkDefinition[] = [
+  lessonOneHomeworkDefinition,
+  lessonTwoHomeworkDefinition,
+];
+
+export const lessonContentFixtureHomeworkDefinition: MethodologyLessonHomeworkDefinition =
+  lessonOneHomeworkDefinition;
+export const lessonContentFixtureHomeworkDefinitionLessonTwo: MethodologyLessonHomeworkDefinition =
+  lessonTwoHomeworkDefinition;
+
+const lessonOneStudentContent: MethodologyLessonStudentContent = {
   id: "methodology-student-content:world-around-me-01",
-  methodologyLessonId: lessonContentFixtureMethodologyLesson.id,
+  methodologyLessonId: lessonOneMethodologyLesson.id,
   title: "Урок 1. Животные на ферме",
   subtitle: "Большое фермерское приключение: говорим, считаем, двигаемся и поём.",
   sections: [
@@ -431,10 +947,34 @@ export const lessonContentFixtureMethodologyLessonStudentContent: MethodologyLes
       layout: "vocabulary",
       sceneId: "scene-vocabulary",
       items: [
-        { term: "狗", pinyin: "gǒu", meaning: "собака", visualHint: "Скажи громко: gǒu!", illustrationSrc: "/methodologies/world-around-me/lesson-1/dog.svg" },
-        { term: "猫", pinyin: "māo", meaning: "кошка", visualHint: "Покажи лапки, как у кошки.", illustrationSrc: "/methodologies/world-around-me/lesson-1/cat.svg" },
-        { term: "兔子", pinyin: "tùzi", meaning: "кролик", visualHint: "Прыгни как кролик.", illustrationSrc: "/methodologies/world-around-me/lesson-1/rabbit.svg" },
-        { term: "马", pinyin: "mǎ", meaning: "лошадь", visualHint: "Покажи, как скачет лошадка.", illustrationSrc: "/methodologies/world-around-me/lesson-1/horse.svg" },
+        {
+          term: "狗",
+          pinyin: "gǒu",
+          meaning: "собака",
+          visualHint: "Скажи громко: gǒu!",
+          illustrationSrc: "/methodologies/world-around-me/lesson-1/dog.svg",
+        },
+        {
+          term: "猫",
+          pinyin: "māo",
+          meaning: "кошка",
+          visualHint: "Покажи лапки, как у кошки.",
+          illustrationSrc: "/methodologies/world-around-me/lesson-1/cat.svg",
+        },
+        {
+          term: "兔子",
+          pinyin: "tùzi",
+          meaning: "кролик",
+          visualHint: "Прыгни как кролик.",
+          illustrationSrc: "/methodologies/world-around-me/lesson-1/rabbit.svg",
+        },
+        {
+          term: "马",
+          pinyin: "mǎ",
+          meaning: "лошадь",
+          visualHint: "Покажи, как скачет лошадка.",
+          illustrationSrc: "/methodologies/world-around-me/lesson-1/horse.svg",
+        },
       ],
     },
     {
@@ -445,8 +985,20 @@ export const lessonContentFixtureMethodologyLessonStudentContent: MethodologyLes
       layout: "phrases",
       sceneId: "scene-phrases",
       items: [
-        { phrase: "我是…", pinyin: "wǒ shì…", meaning: "Я…", usageHint: "Назови себя или выбранное животное.", example: "我是小猫。" },
-        { phrase: "这是…", pinyin: "zhè shì…", meaning: "Это…", usageHint: "Покажи карточку и назови животное.", example: "这是狗。" },
+        {
+          phrase: "我是…",
+          pinyin: "wǒ shì…",
+          meaning: "Я…",
+          usageHint: "Назови себя или выбранное животное.",
+          example: "我是小猫。",
+        },
+        {
+          phrase: "这是…",
+          pinyin: "zhè shì…",
+          meaning: "Это…",
+          usageHint: "Покажи карточку и назови животное.",
+          example: "这是狗。",
+        },
       ],
     },
     {
@@ -493,8 +1045,19 @@ export const lessonContentFixtureMethodologyLessonStudentContent: MethodologyLes
       illustrationSrc: "/methodologies/world-around-me/lesson-1/barn.svg",
       sceneId: "scene-farm",
       items: [
-        { phrase: "农场", pinyin: "nóngchǎng", meaning: "ферма", usageHint: "Покажи карточку фермы." },
-        { phrase: "在…里", pinyin: "zài…lǐ", meaning: "внутри / в", usageHint: "Скажи, где находится животное.", example: "猫住在农场里。" },
+        {
+          phrase: "农场",
+          pinyin: "nóngchǎng",
+          meaning: "ферма",
+          usageHint: "Покажи карточку фермы.",
+        },
+        {
+          phrase: "在…里",
+          pinyin: "zài…lǐ",
+          meaning: "внутри / в",
+          usageHint: "Скажи, где находится животное.",
+          example: "猫住在农场里。",
+        },
       ],
     },
     {
@@ -541,9 +1104,218 @@ export const lessonContentFixtureMethodologyLessonStudentContent: MethodologyLes
   ],
 };
 
-export const lessonContentFixtureScheduledLesson: ScheduledLesson = {
+const lessonTwoStudentContent: MethodologyLessonStudentContent = {
+  id: "methodology-student-content:world-around-me-02",
+  methodologyLessonId: lessonTwoMethodologyLesson.id,
+  title: "Урок 2. Что это за животное?",
+  subtitle: "Новые животные фермы: слушаем, угадываем, двигаемся и говорим фразами.",
+  sections: [
+    {
+      type: "lesson_focus",
+      title: "Урок 2 · Что это за животное?",
+      subtitle: "Сяо Лон и Сяо Мей зовут нас на ферму знакомиться с новыми друзьями.",
+      body: "Сегодня мы будем говорить, двигаться, угадывать звуки и играть с масками животных.",
+      chips: ["鸭子", "鸡子", "羊", "牛"],
+      tone: "sky",
+      layout: "hero",
+      illustrationSrc: "/methodologies/world-around-me/lesson-2/farm-scene-2.svg",
+      sceneId: "scene-hero",
+    },
+    {
+      type: "lesson_focus",
+      title: "Что мы делаем сегодня",
+      body: "Смотрим видео, угадываем звуки, хлопаем и считаем, играем с масками, делаем страницу 5 и поём.",
+      chips: ["смотреть", "угадывать", "хлопать", "считать", "петь"],
+      tone: "violet",
+      layout: "roadmap",
+      sceneId: "scene-roadmap",
+    },
+    {
+      type: "vocabulary_cards",
+      title: "Новые животные фермы",
+      subtitle: "Слушай, повторяй и покажи карточку.",
+      tone: "amber",
+      layout: "vocabulary",
+      sceneId: "scene-vocabulary",
+      items: [
+        {
+          term: "鸭子",
+          pinyin: "yāzi",
+          meaning: "утка",
+          visualHint: "Покажи крылышки и скажи: yāzi!",
+          illustrationSrc: "/methodologies/world-around-me/lesson-2/duck.svg",
+        },
+        {
+          term: "鸡子",
+          pinyin: "jīzi",
+          meaning: "курица",
+          visualHint: "Скажи громко: jīzi!",
+          illustrationSrc: "/methodologies/world-around-me/lesson-2/chicken.svg",
+        },
+        {
+          term: "羊",
+          pinyin: "yáng",
+          meaning: "овца",
+          visualHint: "Сложи руки как пушистую овечку.",
+          illustrationSrc: "/methodologies/world-around-me/lesson-2/sheep.svg",
+        },
+        {
+          term: "牛",
+          pinyin: "niú",
+          meaning: "корова",
+          visualHint: "Покажи рога и скажи: niú!",
+          illustrationSrc: "/methodologies/world-around-me/lesson-2/cow.svg",
+        },
+      ],
+    },
+    {
+      type: "phrase_cards",
+      title: "Говорим фразами",
+      subtitle: "Скажи кто ты и что на карточке.",
+      tone: "violet",
+      layout: "phrases",
+      sceneId: "scene-speaking",
+      items: [
+        {
+          phrase: "我是…",
+          pinyin: "wǒ shì…",
+          meaning: "Я…",
+          usageHint: "Выбери животное и представься.",
+          example: "我是小羊。",
+        },
+        {
+          phrase: "这是…",
+          pinyin: "zhè shì…",
+          meaning: "Это…",
+          usageHint: "Покажи карточку и назови животное.",
+          example: "这是鸭子。",
+        },
+      ],
+    },
+    {
+      type: "lesson_focus",
+      title: "Слушай звук и угадай",
+      subtitle: "Какое животное так звучит?",
+      body: "Слушай звук внимательно и отвечай: «这是…».",
+      chips: ["слушай", "угадывай", "отвечай"],
+      tone: "sky",
+      layout: "practice",
+      illustrationSrc: "/methodologies/world-around-me/lesson-2/sounds.svg",
+      sceneId: "scene-sounds",
+    },
+    {
+      type: "action_cards",
+      title: "Двигаемся и считаем",
+      subtitle: "跑 · 跳 · 拍手 · 数",
+      tone: "emerald",
+      layout: "movement",
+      sceneId: "scene-actions",
+      items: [
+        {
+          term: "跑",
+          pinyin: "pǎo",
+          meaning: "бежать",
+          movementHint: "我们跑吧！",
+          illustrationSrc: "/methodologies/world-around-me/lesson-1/run.svg",
+        },
+        {
+          term: "跳",
+          pinyin: "tiào",
+          meaning: "прыгать",
+          movementHint: "我们跳吧！",
+          illustrationSrc: "/methodologies/world-around-me/lesson-1/jump.svg",
+        },
+        {
+          term: "拍手",
+          pinyin: "pāishǒu",
+          meaning: "хлопать в ладоши",
+          movementHint: "拍手吧！ 一、二、三、四、五。",
+          illustrationSrc: "/methodologies/world-around-me/lesson-2/clap.svg",
+        },
+        {
+          term: "数",
+          pinyin: "shǔ",
+          meaning: "считать",
+          movementHint: "我们数吧！",
+          illustrationSrc: "/methodologies/world-around-me/lesson-2/count.svg",
+        },
+      ],
+    },
+    {
+      type: "lesson_focus",
+      title: "Маски и команды",
+      subtitle: "Играй роль животного и слушай команду.",
+      body: "Надень маску и выполняй: «鸭子，跑吧！», «鸡子，拍手吧！».",
+      chips: ["маска", "команда", "игра"],
+      tone: "amber",
+      layout: "practice",
+      illustrationSrc: "/methodologies/world-around-me/lesson-2/masks.svg",
+      sceneId: "scene-masks",
+    },
+    {
+      type: "phrase_cards",
+      title: "Домик и новые слова",
+      subtitle: "我 · 你 · 房子 · 在…里",
+      tone: "amber",
+      layout: "farm",
+      illustrationSrc: "/methodologies/world-around-me/lesson-2/house.svg",
+      sceneId: "scene-house",
+      items: [
+        { phrase: "房子", pinyin: "fángzi", meaning: "дом", usageHint: "Покажи карточку домика." },
+        { phrase: "我", pinyin: "wǒ", meaning: "я", usageHint: "Скажи о себе." },
+        { phrase: "你", pinyin: "nǐ", meaning: "ты", usageHint: "Спроси друга: «你是谁？»." },
+        {
+          phrase: "在…里",
+          pinyin: "zài…lǐ",
+          meaning: "внутри / в",
+          usageHint: "Покажи, кто находится в домике.",
+          example: "我住在房子里。",
+        },
+      ],
+    },
+    {
+      type: "worksheet",
+      title: "Тетрадь и песня",
+      subtitle: "Спокойное закрепление перед финалом.",
+      tone: "rose",
+      layout: "practice",
+      sceneId: "scene-workbook-song",
+      illustrationSrc: "/methodologies/world-around-me/lesson-2/workbook.svg",
+      pageLabel: "Рабочая тетрадь · стр. 5",
+      instructions:
+        "Соедини числа с животными, назови их, а потом спой песню farm animals с группой.",
+      teacherHint: "После задания попросите каждого ребёнка назвать одну пару «число + животное».",
+      assetId: "worksheet:workbook-page-5",
+    },
+    {
+      type: "recap",
+      title: "Повтор дома",
+      subtitle: "Мини-итог после урока.",
+      tone: "neutral",
+      layout: "recap",
+      sceneId: "scene-home-review",
+      bullets: [
+        "Назови 4 животных: 鸭子, 鸡子, 羊, 牛.",
+        "Скажи 2 фразы: 我是… и 这是…",
+        "Покажи действия: 跑, 跳, 拍手.",
+        "Скажи слово 数 и посчитай до 5.",
+        "Произнеси: 我住在房子里。",
+      ],
+    },
+  ],
+};
+
+export const lessonContentFixtureMethodologyLessonStudentContents: MethodologyLessonStudentContent[] =
+  [lessonOneStudentContent, lessonTwoStudentContent];
+
+export const lessonContentFixtureMethodologyLessonStudentContent: MethodologyLessonStudentContent =
+  lessonOneStudentContent;
+export const lessonContentFixtureMethodologyLessonStudentContentLessonTwo: MethodologyLessonStudentContent =
+  lessonTwoStudentContent;
+
+const lessonOneScheduledLesson: ScheduledLesson = {
   id: "scheduled-lesson:demo-world-around-me-lesson-1",
-  methodologyLessonId: lessonContentFixtureMethodologyLesson.id,
+  methodologyLessonId: lessonOneMethodologyLesson.id,
   runtimeShell: {
     id: "runtime-shell:demo-world-around-me-lesson-1",
     classId: "3f8e9cf9-66f2-4fb9-9504-9f708b67e952",
@@ -557,27 +1329,79 @@ export const lessonContentFixtureScheduledLesson: ScheduledLesson = {
   outcomeNotes: "",
 };
 
-function isWorldAroundMeLessonOneCandidate(input: {
+const lessonTwoScheduledLesson: ScheduledLesson = {
+  id: "scheduled-lesson:demo-world-around-me-lesson-2",
+  methodologyLessonId: lessonTwoMethodologyLesson.id,
+  runtimeShell: {
+    id: "runtime-shell:demo-world-around-me-lesson-2",
+    classId: "3f8e9cf9-66f2-4fb9-9504-9f708b67e952",
+    startsAt: "2026-04-14T15:00:00.000Z",
+    format: "offline",
+    place: "Demo classroom A",
+    runtimeStatus: "planned",
+    runtimeNotesSummary: "Подготовить звуки животных, маски и игрушечный дом.",
+  },
+  runtimeNotes:
+    "Следить, чтобы в масочной игре каждый ребёнок выполнил минимум две команды.",
+  outcomeNotes: "",
+};
+
+export const lessonContentFixtureScheduledLessons: ScheduledLesson[] = [
+  lessonOneScheduledLesson,
+  lessonTwoScheduledLesson,
+];
+
+export const lessonContentFixtureScheduledLesson: ScheduledLesson =
+  lessonOneScheduledLesson;
+export const lessonContentFixtureScheduledLessonLessonTwo: ScheduledLesson =
+  lessonTwoScheduledLesson;
+
+type FixtureLessonCandidateInput = {
   methodologySlug?: string;
   lessonTitle?: string;
   moduleIndex?: number;
   lessonIndex?: number;
-}) {
-  if (input.methodologySlug !== "world-around-me") return false;
-  if (input.moduleIndex === 1 && input.lessonIndex === 1) return true;
-  return input.lessonTitle?.trim().toLowerCase() === "урок 1. животные на ферме";
+};
+
+function normalizeLessonTitle(value: string | undefined) {
+  return value?.trim().toLowerCase().replace(/\s+/g, " ") ?? "";
 }
 
-export function getFixtureStudentContentFallback(input: {
-  methodologySlug?: string;
-  lessonTitle?: string;
-  moduleIndex?: number;
-  lessonIndex?: number;
-}) {
-  if (!isWorldAroundMeLessonOneCandidate(input)) return null;
+function resolveFixtureLessonByIdentity(input: FixtureLessonCandidateInput) {
+  if (input.methodologySlug !== lessonContentFixtureMethodology.slug) return null;
+
+  const byPosition =
+    input.moduleIndex && input.lessonIndex
+      ? lessonContentFixtureMethodologyLessons.find(
+          (lesson) =>
+            lesson.shell.position.moduleIndex === input.moduleIndex &&
+            lesson.shell.position.lessonIndex === input.lessonIndex,
+        )
+      : null;
+
+  if (byPosition) return byPosition;
+
+  const normalizedTitle = normalizeLessonTitle(input.lessonTitle);
+  if (!normalizedTitle) return null;
+
+  return (
+    lessonContentFixtureMethodologyLessons.find(
+      (lesson) => normalizeLessonTitle(lesson.shell.title) === normalizedTitle,
+    ) ?? null
+  );
+}
+
+export function getFixtureStudentContentFallback(input: FixtureLessonCandidateInput) {
+  const fixtureLesson = resolveFixtureLessonByIdentity(input);
+  if (!fixtureLesson) return null;
+
+  const source = lessonContentFixtureMethodologyLessonStudentContents.find(
+    (item) => item.methodologyLessonId === fixtureLesson.id,
+  );
+  if (!source) return null;
 
   const neededAssetIds = new Set(
-    lessonContentFixtureMethodologyLessonStudentContent.sections.flatMap((section) => {
+    source.sections.flatMap((section) => {
       if (section.type === "media_asset") return [section.assetId];
       if (section.type === "worksheet" && section.assetId) return [section.assetId];
       return [];
@@ -585,7 +1409,7 @@ export function getFixtureStudentContentFallback(input: {
   );
 
   return {
-    source: lessonContentFixtureMethodologyLessonStudentContent,
+    source,
     assets: lessonContentFixtureAssets.filter((asset) => neededAssetIds.has(asset.id)),
   };
 }

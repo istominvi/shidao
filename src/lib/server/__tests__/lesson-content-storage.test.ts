@@ -1,9 +1,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  lessonContentFixtureHomeworkDefinitionLessonTwo,
   lessonContentFixtureMethodology,
   lessonContentFixtureMethodologyLessonStudentContent,
+  lessonContentFixtureMethodologyLessonStudentContentLessonTwo,
   lessonContentFixtureMethodologyLesson,
+  lessonContentFixtureMethodologyLessonTwo,
   lessonContentFixtureScheduledLesson,
 } from "../../lesson-content";
 import { buildFixtureBootstrapRows } from "../lesson-content-bootstrap";
@@ -202,18 +205,26 @@ test("bootstrap fixture rows import the real methodology lesson shell for lesson
     "我们…吧！",
     "在…里",
   ]);
+  assert.equal(rows.methodologyLessonRows.length >= 2, true);
 });
 
 test("real lesson block mapping keeps order and expected vocabulary/phrases", () => {
   const rows = buildFixtureBootstrapRows();
 
   assert.equal(rows.blockRows.length >= 16, true);
-  assert.deepEqual(
-    rows.blockRows.map((block) => block.sort_order),
-    [...rows.blockRows]
-      .sort((a, b) => a.sort_order - b.sort_order)
-      .map((block) => block.sort_order),
-  );
+  const blocksByLesson = rows.blockRows.reduce<Record<string, number[]>>((acc, block) => {
+    const key = block.methodology_lesson_id;
+    acc[key] = acc[key] ?? [];
+    acc[key].push(block.sort_order);
+    return acc;
+  }, {});
+
+  for (const orders of Object.values(blocksByLesson)) {
+    assert.deepEqual(
+      orders,
+      [...orders].sort((a, b) => a - b),
+    );
+  }
 
   const vocabBlocks = rows.blockRows.filter((block) => block.block_type === "vocabulary_focus");
   assert.equal(vocabBlocks.length >= 2, true);
@@ -238,6 +249,10 @@ test("bootstrap fixture rows are deterministic and idempotent by stable IDs", ()
   assert.equal(first.methodologyRow.id, second.methodologyRow.id);
   assert.equal(first.methodologyLessonRow.id, second.methodologyLessonRow.id);
   assert.equal(first.scheduledLessonRow.id, second.scheduledLessonRow.id);
+  assert.deepEqual(first.methodologyLessonRows, second.methodologyLessonRows);
+  assert.deepEqual(first.homeworkDefinitionRows, second.homeworkDefinitionRows);
+  assert.deepEqual(first.studentContentRows, second.studentContentRows);
+  assert.deepEqual(first.scheduledLessonRows, second.scheduledLessonRows);
   assert.deepEqual(first.reusableAssetRows, second.reusableAssetRows);
   assert.deepEqual(first.blockRows, second.blockRows);
   assert.deepEqual(first.blockAssetRows, second.blockAssetRows);
@@ -246,6 +261,35 @@ test("bootstrap fixture rows are deterministic and idempotent by stable IDs", ()
     first.scheduledLessonRow.class_id,
     /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
   );
+});
+
+test("bootstrap rows include canonical lesson 2 lesson/homework/student-content", () => {
+  const rows = buildFixtureBootstrapRows();
+
+  const lessonTwoRow = rows.methodologyLessonRows.find(
+    (row) => row.lesson_index === 2 && row.module_index === 1,
+  );
+  assert.ok(lessonTwoRow);
+  assert.equal(lessonTwoRow.title, lessonContentFixtureMethodologyLessonTwo.shell.title);
+  assert.equal(lessonTwoRow.vocabulary_summary.includes("房子"), true);
+
+  const lessonTwoHomeworkRow = rows.homeworkDefinitionRows.find(
+    (row) => row.title === lessonContentFixtureHomeworkDefinitionLessonTwo.title,
+  );
+  assert.ok(lessonTwoHomeworkRow);
+  assert.equal(
+    ((lessonTwoHomeworkRow.quiz_payload as { questions?: unknown[] })?.questions ?? []).length,
+    6,
+  );
+
+  const lessonTwoStudentContentRow = rows.studentContentRows.find(
+    (row) => row.title === lessonContentFixtureMethodologyLessonStudentContentLessonTwo.title,
+  );
+  assert.ok(lessonTwoStudentContentRow);
+  const sections = (
+    lessonTwoStudentContentRow.content_payload as { sections: Array<{ sceneId?: string }> }
+  ).sections;
+  assert.equal(sections.some((section) => section.sceneId === "scene-home-review"), true);
 });
 
 test("bootstrap rows allow overriding scheduled lesson class id for real teacher class", () => {

@@ -3,12 +3,16 @@ import test from "node:test";
 import {
   buildLearnerLessonProjection,
   buildTeacherLessonProjection,
+  getFixtureStudentContentFallback,
   isMethodologyLessonShell,
   isRuntimeLessonFormat,
   isScheduledLessonRuntimeShell,
   lessonContentFixtureAssets,
   lessonContentFixtureBlocks,
+  lessonContentFixtureHomeworkDefinitionLessonTwo,
   lessonContentFixtureMethodologyLesson,
+  lessonContentFixtureMethodologyLessonStudentContentLessonTwo,
+  lessonContentFixtureMethodologyLessons,
   lessonContentFixtureScheduledLesson,
   sortLessonBlocks,
   summarizeAssetsByKind,
@@ -177,6 +181,49 @@ test("asset summary helper groups reusable assets by kind", () => {
   const summary = summarizeAssetsByKind(lessonContentFixtureAssets);
 
   assert.equal(summary.video, 1);
-  assert.equal(summary.song, 1);
-  assert.equal(summary.worksheet, 2);
+  assert.equal(summary.song, 2);
+  assert.equal(summary.worksheet, 4);
+});
+
+test("world-around-me fixtures provide at least two canonical lessons", () => {
+  assert.equal(lessonContentFixtureMethodologyLessons.length >= 2, true);
+  const lessonOne = lessonContentFixtureMethodologyLessons.find(
+    (lesson) => lesson.shell.position.lessonIndex === 1,
+  );
+  const lessonTwo = lessonContentFixtureMethodologyLessons.find(
+    (lesson) => lesson.shell.position.lessonIndex === 2,
+  );
+
+  assert.ok(lessonOne);
+  assert.ok(lessonTwo);
+  assert.equal(lessonTwo.shell.title, "Урок 2. Что это за животное?");
+  assert.equal(lessonTwo.shell.vocabularySummary.includes("房子"), true);
+  assert.equal(
+    lessonContentFixtureHomeworkDefinitionLessonTwo.quiz?.questions.length,
+    6,
+  );
+});
+
+test("fallback resolver returns lesson 2 learner content by title and position", () => {
+  const byPosition = getFixtureStudentContentFallback({
+    methodologySlug: "world-around-me",
+    moduleIndex: 1,
+    lessonIndex: 2,
+  });
+  const byTitle = getFixtureStudentContentFallback({
+    methodologySlug: "world-around-me",
+    lessonTitle: "Урок 2. Что это за животное?",
+  });
+
+  assert.ok(byPosition);
+  assert.ok(byTitle);
+  assert.equal(
+    byPosition.source.id,
+    lessonContentFixtureMethodologyLessonStudentContentLessonTwo.id,
+  );
+  assert.equal(byTitle.source.id, byPosition.source.id);
+  assert.equal(
+    byPosition.assets.some((asset) => asset.id === "worksheet:workbook-page-5"),
+    true,
+  );
 });
