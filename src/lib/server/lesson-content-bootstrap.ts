@@ -398,8 +398,10 @@ export async function bootstrapLessonContentFixtureAdmin(options?: {
 
   return {
     methodologyId: resolvedMethodologyId,
+    methodologyLessonId: Array.from(lessonIdMap.values())[0] ?? null,
     methodologyLessonIds: Array.from(lessonIdMap.values()),
     blockCount: blockRows.length,
+    scheduledLessonId: scheduledLessonRows[0]?.id ?? null,
     scheduledLessonIds: scheduledLessonRows.map((item) => item.id),
   };
 }
