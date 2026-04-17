@@ -41,12 +41,14 @@
 - Ученик логинится по `student.login` (с internal auth email внутри контура).
 - Канонический runtime-маршрут урока для всех ролей: `/lessons/[scheduledLessonId]`.
 - Parent видит read-only проекции по своим детям.
+- Teacher runtime на `/lessons/[scheduledLessonId]` включает operational summary и связанный workflow: homework statuses + lesson/homework communication (Teacher Lesson Runtime V1).
 
 ## 3) Source vs runtime
 
 - Методика и уроки методики — неизменяемый педагогический source.
 - `scheduled_lesson` и связанные homework/communication — runtime-исполнение.
 - Teacher workspace работает с runtime-объектом, а не редактирует source урока в обход методики.
+- Для Teacher Lesson Runtime V1 использованы текущие runtime-сущности (`scheduled_lesson`, homework assignments, group_student_message) без расширения схемы.
 
 ## 4) Что считать историческим слоем
 

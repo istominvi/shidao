@@ -35,12 +35,14 @@ npm run build
 - Публично: `/`, `/login`, `/join`, `/forgot-password`, `/reset-password`, `/auth/confirm`.
 - Приложение: `/onboarding`, `/dashboard`, `/groups`, `/lessons`, `/methodologies`, `/settings/*`.
 - Канонический runtime-урок для всех ролей: `/lessons/[scheduledLessonId]`.
+- Teacher Lesson Runtime V1: operational flow на этом же маршруте (summary → homework work surface → communication handoff).
 
 ## Документация
 
 - Индекс: `docs/index.md`
 - Auth и routing: `docs/authorization-routing.md`
 - Доменная модель: `docs/domain-model.md`
+- Teacher Lesson Runtime V1: `docs/teacher-lesson-runtime-v1.md`
 - Текущая схема БД: `docs/database/current-schema.md`, `supabase/schema/current-schema.sql`
 - История миграций: `docs/database/migration-history.md`, `supabase/migrations/*`
 

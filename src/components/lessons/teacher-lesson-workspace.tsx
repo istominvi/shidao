@@ -27,9 +27,86 @@ export function TeacherLessonWorkspace({
   const [tab, setTab] = useState<TeacherLessonTabKey>("plan");
   const runtime = workspace.projection.runtimeShell;
   const { quickSummary, lessonFlow } = workspace.presentation;
+  const pendingReviewCount =
+    workspace.operationalSummary.submittedCount -
+    workspace.operationalSummary.reviewedCount -
+    workspace.operationalSummary.needsRevisionCount;
+
+  const attentionReasonLabel: Record<
+    (typeof workspace.operationalSummary.studentsNeedingAttention)[number]["reason"],
+    string
+  > = {
+    needs_revision: "требуется доработка",
+    submitted_not_reviewed: "ожидает проверки",
+    new_messages: "есть новые сообщения",
+  };
 
   return (
     <div className="space-y-8 lg:space-y-10">
+      <SurfaceCard
+        title="Оперативная сводка урока"
+        description="Куда смотреть в первую очередь по этому занятию."
+      >
+        <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm">
+            <p className="text-xs uppercase tracking-[0.12em] text-neutral-500">
+              Статус урока
+            </p>
+            <p className="mt-1 font-semibold text-neutral-900">
+              {workspace.operationalSummary.lessonStatusLabel}
+            </p>
+          </div>
+          <div className="rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm">
+            <p className="text-xs uppercase tracking-[0.12em] text-neutral-500">
+              Домашнее задание
+            </p>
+            <p className="mt-1 font-semibold text-neutral-900">
+              {workspace.operationalSummary.homeworkIssued
+                ? "Выдано"
+                : "Ещё не выдано"}
+            </p>
+          </div>
+          <div className="rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm">
+            <p className="text-xs uppercase tracking-[0.12em] text-neutral-500">
+              Статусы ДЗ
+            </p>
+            <p className="mt-1 font-semibold text-neutral-900">
+              {workspace.operationalSummary.submittedCount}/
+              {workspace.operationalSummary.assignedCount} сдали
+            </p>
+            <p className="text-xs text-neutral-600">
+              На проверку: {pendingReviewCount} · Доработка:{" "}
+              {workspace.operationalSummary.needsRevisionCount}
+            </p>
+          </div>
+          <div className="rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm">
+            <p className="text-xs uppercase tracking-[0.12em] text-neutral-500">
+              Коммуникация
+            </p>
+            <p className="mt-1 font-semibold text-neutral-900">
+              Урок: {workspace.operationalSummary.lessonDiscussionCount}
+            </p>
+            <p className="text-xs text-neutral-600">
+              ДЗ: {workspace.operationalSummary.homeworkDiscussionCount}
+            </p>
+          </div>
+        </div>
+        {workspace.operationalSummary.studentsNeedingAttention.length > 0 ? (
+          <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+            <p className="font-semibold">Требуют внимания сейчас:</p>
+            <ul className="mt-1 list-disc pl-4">
+              {workspace.operationalSummary.studentsNeedingAttention.map(
+                (student) => (
+                  <li key={`${student.studentId}-${student.reason}`}>
+                    {student.studentName} — {attentionReasonLabel[student.reason]}
+                  </li>
+                ),
+              )}
+            </ul>
+          </div>
+        ) : null}
+      </SurfaceCard>
+
       <section className="space-y-5">
         <TeacherLessonTabs
           tabs={["plan", "content", "homework", "conduct", "chat"]}
@@ -58,6 +135,8 @@ export function TeacherLessonWorkspace({
             <TeacherHomeworkPanel
               homework={workspace.homework}
               scheduledLessonId={workspace.scheduledLessonId}
+              classId={workspace.classId}
+              communication={workspace.communication}
             />
           </SurfaceCard>
         ) : null}

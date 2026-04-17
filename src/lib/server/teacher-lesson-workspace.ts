@@ -148,6 +148,21 @@ export type TeacherLessonWorkspaceReadModel = {
     }>;
     homeworkAssignmentId: string | null;
   };
+  operationalSummary: {
+    lessonStatusLabel: string;
+    homeworkIssued: boolean;
+    assignedCount: number;
+    submittedCount: number;
+    reviewedCount: number;
+    needsRevisionCount: number;
+    lessonDiscussionCount: number;
+    homeworkDiscussionCount: number;
+    studentsNeedingAttention: Array<{
+      studentId: string;
+      studentName: string;
+      reason: "submitted_not_reviewed" | "needs_revision" | "new_messages";
+    }>;
+  };
 };
 
 type WorkspaceLoaderDeps = {
@@ -628,6 +643,64 @@ export function buildTeacherLessonWorkspaceReadModel(input: {
     ]),
   );
 
+  const communication =
+    input.communication ?? {
+      lessonScoped: [],
+      homeworkScoped: [],
+      homeworkAssignmentId: null,
+    };
+
+  const lessonDiscussionCount = communication.lessonScoped.reduce(
+    (sum, item) => sum + item.messages.length,
+    0,
+  );
+  const homeworkDiscussionCount = communication.homeworkScoped.reduce(
+    (sum, item) => sum + item.messages.length,
+    0,
+  );
+  const lessonMessagesByStudentId = new Map(
+    communication.lessonScoped.map((item) => [item.studentId, item.messages.length]),
+  );
+  const homeworkMessagesByStudentId = new Map(
+    communication.homeworkScoped.map((item) => [item.studentId, item.messages.length]),
+  );
+
+  const attentionRoster = input.homework.roster
+    .map((row) => {
+      if (row.status === "needs_revision") {
+        return {
+          studentId: row.studentId,
+          studentName: row.studentName,
+          reason: "needs_revision",
+          priority: 1,
+        } as const;
+      }
+      if (row.status === "submitted") {
+        return {
+          studentId: row.studentId,
+          studentName: row.studentName,
+          reason: "submitted_not_reviewed",
+          priority: 2,
+        } as const;
+      }
+      const messagesCount =
+        (lessonMessagesByStudentId.get(row.studentId) ?? 0) +
+        (homeworkMessagesByStudentId.get(row.studentId) ?? 0);
+      if (messagesCount > 0) {
+        return {
+          studentId: row.studentId,
+          studentName: row.studentName,
+          reason: "new_messages",
+          priority: 3,
+        } as const;
+      }
+      return null;
+    })
+    .filter((item) => item !== null)
+    .sort((a, b) => a.priority - b.priority || a.studentName.localeCompare(b.studentName))
+    .slice(0, 5)
+    .map(({ priority: _priority, ...item }) => item);
+
   return {
     scheduledLessonId: input.scheduledLessonId,
     classId: input.classId,
@@ -645,10 +718,19 @@ export function buildTeacherLessonWorkspaceReadModel(input: {
       assetsById,
       unavailableReason: input.studentContentUnavailableReason ?? null,
     },
-    communication: input.communication ?? {
-      lessonScoped: [],
-      homeworkScoped: [],
-      homeworkAssignmentId: null,
+    communication,
+    operationalSummary: {
+      lessonStatusLabel: formatRuntimeStatus(
+        sortedProjection.runtimeShell.runtimeStatus,
+      ),
+      homeworkIssued: Boolean(input.homework.assignment),
+      assignedCount: input.homework.stats.assignedCount,
+      submittedCount: input.homework.stats.submittedCount,
+      reviewedCount: input.homework.stats.reviewedCount,
+      needsRevisionCount: input.homework.stats.needsRevisionCount,
+      lessonDiscussionCount,
+      homeworkDiscussionCount,
+      studentsNeedingAttention: attentionRoster,
     },
   };
 }
