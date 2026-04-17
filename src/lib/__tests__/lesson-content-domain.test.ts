@@ -12,6 +12,7 @@ import {
   lessonContentFixtureHomeworkDefinitionLessonTwo,
   lessonContentFixtureHomeworkDefinitionLessonThree,
   lessonContentFixtureMethodologyLesson,
+  lessonContentFixtureMethodologyLessonStudentContent,
   lessonContentFixtureMethodologyLessonStudentContentLessonTwo,
   lessonContentFixtureMethodologyLessonStudentContentLessonThree,
   lessonContentFixtureMethodologyLessons,
@@ -262,4 +263,76 @@ test("fallback resolver returns lesson 3 learner content by title and position",
     byPosition.assets.some((asset) => asset.id === "worksheet:workbook-page-6"),
     true,
   );
+});
+
+test("lesson 1 learner content uses watercolor illustration paths only for updated sections", () => {
+  const sectionIllustrations = lessonContentFixtureMethodologyLessonStudentContent.sections
+    .map((section) => ("illustrationSrc" in section ? section.illustrationSrc : undefined))
+    .filter((path): path is string => typeof path === "string");
+
+  assert.equal(
+    sectionIllustrations.includes("/methodologies/world-around-me/lesson-1/watercolor/hero-farm.png"),
+    true,
+  );
+  assert.equal(
+    sectionIllustrations.includes("/methodologies/world-around-me/lesson-1/watercolor/counting-to-five.png"),
+    true,
+  );
+  assert.equal(
+    sectionIllustrations.includes("/methodologies/world-around-me/lesson-1/watercolor/farm-barn.png"),
+    true,
+  );
+  assert.equal(
+    sectionIllustrations.includes("/methodologies/world-around-me/lesson-1/watercolor/workbook-practice.png"),
+    true,
+  );
+
+  const vocabSection = lessonContentFixtureMethodologyLessonStudentContent.sections.find(
+    (section) => section.type === "vocabulary_cards",
+  );
+  assert.ok(vocabSection);
+  const vocabIllustrations = vocabSection.items.map((item) => item.illustrationSrc);
+  assert.deepEqual(vocabIllustrations, [
+    "/methodologies/world-around-me/lesson-1/watercolor/dog-card.png",
+    "/methodologies/world-around-me/lesson-1/watercolor/cat-card.png",
+    "/methodologies/world-around-me/lesson-1/watercolor/rabbit-card.png",
+    "/methodologies/world-around-me/lesson-1/watercolor/horse-card.png",
+  ]);
+
+  const actionSection = lessonContentFixtureMethodologyLessonStudentContent.sections.find(
+    (section) => section.type === "action_cards",
+  );
+  assert.ok(actionSection);
+  assert.deepEqual(
+    actionSection.items.map((item) => item.illustrationSrc),
+    [
+      "/methodologies/world-around-me/lesson-1/watercolor/run-action.png",
+      "/methodologies/world-around-me/lesson-1/watercolor/jump-action.png",
+    ],
+  );
+});
+
+test("lesson 2 and lesson 3 learner content illustration paths remain unchanged", () => {
+  const lessonTwoActionSection = lessonContentFixtureMethodologyLessonStudentContentLessonTwo.sections.find(
+    (section) => section.type === "action_cards",
+  );
+  assert.ok(lessonTwoActionSection);
+  assert.equal(
+    lessonTwoActionSection.items.some(
+      (item) => item.illustrationSrc === "/methodologies/world-around-me/lesson-1/run.svg",
+    ),
+    true,
+  );
+  assert.equal(
+    lessonTwoActionSection.items.some(
+      (item) => item.illustrationSrc === "/methodologies/world-around-me/lesson-1/jump.svg",
+    ),
+    true,
+  );
+
+  const lessonThreeHero = lessonContentFixtureMethodologyLessonStudentContentLessonThree.sections.find(
+    (section) => section.type === "lesson_focus" && section.sceneId === "scene-hero",
+  );
+  assert.ok(lessonThreeHero);
+  assert.equal(lessonThreeHero.illustrationSrc, "/methodologies/world-around-me/lesson-3/color-world.svg");
 });
