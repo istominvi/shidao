@@ -17,6 +17,19 @@ import {
 
 export const runtime = "nodejs";
 
+function isInfrastructureAuthError(error: unknown) {
+  const message =
+    error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase();
+  return (
+    message.includes("supabase auth is not configured") ||
+    message.includes("fetch failed") ||
+    message.includes("network") ||
+    message.includes("econnrefused") ||
+    message.includes("enotfound") ||
+    message.includes("invalid url")
+  );
+}
+
 function fail(
   status = 401,
   message: string = AUTH_MESSAGES.invalidCredentials,
@@ -132,6 +145,18 @@ export async function POST(req: NextRequest) {
         500,
         "Не удалось сохранить сессию входа. Попробуйте ещё раз.",
       );
+    }
+
+    if (isInfrastructureAuthError(error)) {
+      return fail(503, AUTH_MESSAGES.temporarilyUnavailable);
+    }
+
+    if (
+      stage === "resolve-identifier" ||
+      stage === "password-login" ||
+      stage === "student-pin-verify"
+    ) {
+      return fail(401, AUTH_MESSAGES.invalidCredentials);
     }
 
     return fail(503, AUTH_MESSAGES.temporarilyUnavailable);
