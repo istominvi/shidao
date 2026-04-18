@@ -47,6 +47,8 @@ test("plan tab renders detailed pedagogical cards with phase and student preview
 
   assert.equal(pedagogicalSource.includes("Педагогические детали будут уточнены"), false);
   assert.equal(pedagogicalSource.includes("не указано"), false);
+  assert.equal(pedagogicalSource.includes('href={asset.fileRef ?? asset.sourceUrl ?? "#"}'), false);
+  assert.equal(pedagogicalSource.includes('href="#"'), false);
 });
 
 test("plan tab keeps local controls for student screen step selection", () => {

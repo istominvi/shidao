@@ -79,15 +79,24 @@ function InlineResourceLinks({ resourceIds, assetsById }: { resourceIds: string[
   return (
     <div className="mt-2 flex flex-wrap gap-2">
       {assets.map((asset) => (
-        <a
-          key={asset.id}
-          href={asset.fileRef ?? asset.sourceUrl ?? "#"}
-          target="_blank"
-          rel="noreferrer"
-          className="inline-flex rounded-lg border border-neutral-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-neutral-800"
-        >
-          {asset.title}
-        </a>
+        asset.fileRef ?? asset.sourceUrl ? (
+          <a
+            key={asset.id}
+            href={asset.fileRef ?? asset.sourceUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex rounded-lg border border-neutral-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-neutral-800"
+          >
+            {asset.title}
+          </a>
+        ) : (
+          <span
+            key={asset.id}
+            className="inline-flex rounded-lg border border-neutral-200 bg-neutral-100 px-2.5 py-1.5 text-xs font-semibold text-neutral-600"
+          >
+            {asset.title}
+          </span>
+        )
       ))}
     </div>
   );

@@ -116,6 +116,33 @@ test("world-around-me lesson 1 unified read model is canonical 16-step teacher/s
     assert.equal(step.teacher.notes?.some((note) => note.includes("Педагогические детали будут уточнены")) ?? false, false);
     assert.equal(step.movementMode == null, false);
   }
+
+  const lessonOneTeacherText = unified.steps
+    .map((step) => [
+      step.teacher.goal,
+      step.teacher.description,
+      ...step.teacher.teacherActions,
+      ...step.teacher.studentActions,
+      ...(step.teacher.teacherScript ?? []),
+      ...(step.teacher.expectedResponses ?? []),
+      ...step.teacher.materials,
+      ...(step.teacher.successCriteria ?? []),
+      ...(step.teacher.notes ?? []),
+    ].filter((chunk): chunk is string => Boolean(chunk)).join(" "))
+    .join(" ")
+    .toLowerCase();
+
+  assert.equal(lessonOneTeacherText.includes("cow"), false);
+  assert.equal(lessonOneTeacherText.includes("pig"), false);
+  assert.equal(lessonOneTeacherText.includes("three cows"), false);
+  assert.equal(lessonOneTeacherText.includes("where is horse"), false);
+  assert.equal(lessonOneTeacherText.includes("put cow"), false);
+
+  assert.equal(lessonOneTeacherText.includes("狗"), true);
+  assert.equal(lessonOneTeacherText.includes("猫"), true);
+  assert.equal(lessonOneTeacherText.includes("兔子"), true);
+  assert.equal(lessonOneTeacherText.includes("马"), true);
+  assert.equal(lessonOneTeacherText.includes("农场"), true);
 });
 
 
