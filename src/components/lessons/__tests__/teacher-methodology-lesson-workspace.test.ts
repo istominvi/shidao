@@ -25,7 +25,7 @@ test("methodology workspace uses plan / student screen / homework tabs", () => {
   assert.equal(lessonTabsSource.includes("Экран ученика"), true);
   assert.equal(lessonTabsSource.includes("Контент"), false);
   assert.equal(lessonTabsSource.includes("Домашнее задание"), true);
-  assert.equal(workspaceSource.includes("Открыть на весь экран"), false);
+  assert.equal(studentPanelSource.includes("Открыть на весь экран"), true);
 });
 
 test("plan tab renders detailed pedagogical cards with phase and student preview", () => {

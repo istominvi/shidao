@@ -72,7 +72,12 @@ test("world-around-me lesson 1 unified read model is canonical 16-step teacher/s
   const step8 = unified.steps[7];
   assert.equal(step8.title, "Приложение 1: считаем и называем");
   assert.equal(step8.student.payload?.sections?.[0]?.type, "count_board");
+  assert.equal(step8.student.instruction?.toLowerCase().includes("считай"), true);
   assert.equal(step8.resourceIds?.includes("worksheet:appendix-1"), true);
+
+  const step9 = unified.steps[8];
+  assert.equal(step9.title, "Глаголы 跑 и 跳");
+  assert.equal(step9.student.payload?.sections?.[0]?.type, "action_cards");
 
   const step15 = unified.steps[14];
   assert.equal(step15.title, "Песня: farm animals");
@@ -143,6 +148,8 @@ test("world-around-me lesson 1 unified read model is canonical 16-step teacher/s
   assert.equal(lessonOneTeacherText.includes("兔子"), true);
   assert.equal(lessonOneTeacherText.includes("马"), true);
   assert.equal(lessonOneTeacherText.includes("农场"), true);
+  assert.equal(lessonOneTeacherText.includes("показывает动作"), false);
+  assert.equal(lessonOneTeacherText.includes("показывает движения"), true);
 });
 
 

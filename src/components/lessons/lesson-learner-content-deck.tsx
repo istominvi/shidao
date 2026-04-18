@@ -30,11 +30,11 @@ type StepGroup = {
 
 function EmptyState({ reason }: { reason: Props["unavailableReason"] }) {
   return (
-      <div className="space-y-2 rounded-2xl border border-dashed border-neutral-300 bg-neutral-50 px-4 py-3 text-sm text-neutral-700">
-      {reason === "schema_missing" ? <p>Экран ученика временно недоступен. Примените миграцию lesson student content layer.</p> : null}
-      {reason === "invalid_payload" ? <p>Экран ученика временно недоступен: source-данные урока заполнены некорректно.</p> : null}
+    <div className="space-y-2 rounded-2xl border border-dashed border-neutral-300 bg-neutral-50 px-4 py-3 text-sm text-neutral-700">
+      {reason === "schema_missing" ? <p>Экран ученика временно недоступен. Данные урока пока не готовы.</p> : null}
+      {reason === "invalid_payload" ? <p>Экран ученика временно недоступен. Данные урока заполнены с ошибкой.</p> : null}
       {reason === "load_failed" ? <p>Не удалось загрузить экран ученика.</p> : null}
-      <p>Для этого урока пока нет отдельного learner-facing контента.</p>
+      <p>Для этого урока пока нет отдельного экрана ученика.</p>
     </div>
   );
 }
@@ -380,7 +380,10 @@ function PresentationCard({
   );
 }
 
-function renderSection(section: MethodologyLessonStudentContentSection, assetsById: Record<string, ReusableAsset>) {
+function renderSection(
+  section: MethodologyLessonStudentContentSection,
+  assetsById: Record<string, ReusableAsset>,
+) {
   if (section.type === "presentation") {
     const asset = assetsById[section.assetId];
     return <PresentationCard section={section} asset={asset} />;
@@ -474,7 +477,7 @@ function renderSection(section: MethodologyLessonStudentContentSection, assetsBy
     if (section.layout === "roadmap") {
       return (
         <div className="mt-3 rounded-xl border border-violet-200 bg-white p-3">
-          <p className="flex items-center gap-1.5 text-sm font-semibold text-violet-900"><ListChecks className="h-4 w-4" />План урока</p>
+          <p className="flex items-center gap-1.5 text-sm font-semibold text-violet-900"><ListChecks className="h-4 w-4" />Что сегодня делаем</p>
           <p className="mt-2 text-sm text-neutral-700">{section.body}</p>
           <div className="mt-3 flex flex-wrap gap-1.5">{section.chips.map((chip) => <Chip key={chip} tone="violet" size="sm">{chip}</Chip>)}</div>
         </div>
@@ -553,11 +556,30 @@ function renderSection(section: MethodologyLessonStudentContentSection, assetsBy
   }
 
   if (section.type === "media_asset") {
+    const asset = assetsById[section.assetId];
+    const url = resolveAssetPlaybackUrl(asset);
+    const isSong = section.assetKind === "song";
+    const renderAsVideo = !isSong && Boolean(url && isVideoUrl(url));
     return (
-      <article className="mt-3 rounded-xl border border-rose-200 bg-white p-3 text-sm text-neutral-700">
-        <p className="flex items-center gap-1.5 font-semibold text-neutral-900">{section.assetKind === "song" ? <Music2 className="h-4 w-4" /> : <CirclePlay className="h-4 w-4" />}{assetsById[section.assetId]?.title ?? section.title}</p>
+      <article className={classNames("mt-3 rounded-2xl border bg-white p-4 text-sm text-neutral-700", isSong ? "border-rose-200" : "border-sky-200")}>
+        <p className={classNames("flex items-center gap-1.5 text-base font-semibold", isSong ? "text-rose-900" : "text-sky-900")}>{isSong ? <Music2 className="h-5 w-5" /> : <CirclePlay className="h-5 w-5" />}{asset?.title ?? section.title}</p>
         <p className="mt-1">{section.studentPrompt}</p>
-        {resolveAssetPlaybackUrl(assetsById[section.assetId]) ? <a href={resolveAssetPlaybackUrl(assetsById[section.assetId])!} target="_blank" rel="noreferrer" className="mt-2 inline-flex rounded-lg border border-rose-300 bg-rose-50 px-2.5 py-1.5 text-xs font-semibold text-rose-800">{section.ctaLabel ?? "Открыть материал"}</a> : <p className="mt-2 inline-flex rounded-lg border border-neutral-200 bg-neutral-50 px-2.5 py-1.5 text-xs font-medium text-neutral-600">Материал покажет преподаватель на уроке</p>}
+        {renderAsVideo && url ? (
+          <video controls preload="metadata" className="mt-3 w-full rounded-xl border border-sky-200 bg-black/90">
+            <source src={url} />
+          </video>
+        ) : null}
+        {isSong && url ? (
+          <audio controls preload="none" className="mt-3 w-full">
+            <source src={url} />
+          </audio>
+        ) : null}
+        {!renderAsVideo && !isSong && url ? (
+          <a href={url} target="_blank" rel="noreferrer" className="mt-3 inline-flex rounded-xl border border-sky-300 bg-sky-50 px-4 py-2 text-sm font-semibold text-sky-800">
+            {section.ctaLabel ?? "Открыть видео"}
+          </a>
+        ) : null}
+        {!url ? <p className="mt-2 inline-flex rounded-lg border border-neutral-200 bg-neutral-50 px-2.5 py-1.5 text-xs font-medium text-neutral-600">Материал откроет преподаватель на уроке.</p> : null}
       </article>
     );
   }
@@ -624,29 +646,68 @@ export function LessonLearnerContentDeck({
   };
 
   const canNavigate = mode !== "student_live_locked";
+  const showTeacherPreviewHint = mode === "teacher_preview";
+  const showLiveLockedBanner = mode === "student_live_locked";
+  const showReviewBanner = mode === "student_review";
 
   return (
     <section className="space-y-4" aria-label="Экран ученика">
-      <article className={classNames("rounded-2xl border p-4", toneClass(main?.tone), main?.layout === "hero" ? "p-5 md:p-6 shadow-[0_14px_30px_rgba(15,23,42,0.08)]" : "")}>
+      {showLiveLockedBanner ? (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
+          <p className="text-sm font-semibold text-amber-900">Урок ведёт преподаватель</p>
+          <p className="mt-1 text-sm text-amber-900/90">Слушай, повторяй и выполняй задания на этом экране.</p>
+        </div>
+      ) : null}
+      {showReviewBanner ? (
+        <div className="rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3">
+          <p className="text-sm font-semibold text-sky-900">Повторение урока</p>
+          <p className="mt-1 text-sm text-sky-900/90">Можно пройти шаги ещё раз перед домашним заданием.</p>
+        </div>
+      ) : null}
+      {showTeacherPreviewHint ? (
+        <div className="rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-2 text-xs text-neutral-600">
+          Режим предпросмотра для преподавателя: так экран выглядит для ученика.
+        </div>
+      ) : null}
+      <article className={classNames("rounded-3xl border p-5 md:p-6", toneClass(main?.tone), main?.layout === "hero" ? "shadow-[0_14px_30px_rgba(15,23,42,0.08)]" : "")}>
         <div className="mb-2 flex items-center justify-between gap-2 text-xs font-semibold uppercase tracking-[0.1em] text-neutral-500">
           <span>Шаг {currentStepIndex + 1} из {resolvedSteps.length}</span>
           {canNavigate ? (
             <div className="flex gap-2 normal-case tracking-normal">
-              <button type="button" className="rounded-lg border border-neutral-300 bg-white px-3 py-1 text-xs font-semibold text-neutral-700 disabled:opacity-40" disabled={currentStepIndex === 0} onClick={() => moveToStep(currentStepIndex - 1)}>Назад</button>
-              <button type="button" className="rounded-lg border border-neutral-300 bg-white px-3 py-1 text-xs font-semibold text-neutral-700 disabled:opacity-40" disabled={currentStepIndex >= resolvedSteps.length - 1} onClick={() => moveToStep(currentStepIndex + 1)}>Далее</button>
+              <button type="button" className="min-h-10 rounded-xl border border-neutral-300 bg-white px-4 py-2 text-sm font-semibold text-neutral-700 disabled:opacity-40" disabled={currentStepIndex === 0} onClick={() => moveToStep(currentStepIndex - 1)}>Назад</button>
+              <button type="button" className="min-h-10 rounded-xl border border-neutral-300 bg-white px-4 py-2 text-sm font-semibold text-neutral-700 disabled:opacity-40" disabled={currentStepIndex >= resolvedSteps.length - 1} onClick={() => moveToStep(currentStepIndex + 1)}>Далее</button>
             </div>
           ) : null}
         </div>
 
-        <h3 className={classNames("font-semibold text-neutral-900", compact ? "text-base" : "text-lg")}>{currentStep.student.title}</h3>
-        {currentStep.student.instruction ? <p className="mt-1 text-sm text-neutral-600"><span className="font-semibold">Инструкция для ученика:</span> {currentStep.student.instruction}</p> : null}
+        {canNavigate ? (
+          <div className="mb-3 flex flex-wrap items-center gap-2">
+            {resolvedSteps.map((step, index) => (
+              <button
+                key={step.id}
+                type="button"
+                onClick={() => moveToStep(index)}
+                className={classNames(
+                  "h-2.5 w-2.5 rounded-full transition",
+                  index === currentStepIndex ? "bg-sky-600" : "bg-neutral-300 hover:bg-neutral-400",
+                )}
+                aria-label={`Перейти к шагу ${index + 1}`}
+              />
+            ))}
+          </div>
+        ) : null}
+
+        <h3 className={classNames("font-semibold text-neutral-900", compact ? "text-2xl" : "text-3xl")}>{currentStep.student.title}</h3>
+        {currentStep.student.instruction ? <p className="mt-2 text-base text-neutral-700">{currentStep.student.instruction}</p> : null}
 
         {main && (main.subtitle || main.illustrationSrc) ? <SceneHeader section={main} compact={compact} hideTitle /> : null}
         {sections.length ? sections.map((section, index) => (
           <div key={`${currentStep.id}-${section.type}-${section.title}-${index}`}>{renderSection(section, assetsById)}</div>
         )) : (
-          <div className="mt-4 rounded-xl border border-dashed border-neutral-300 bg-neutral-50 p-4 text-sm text-neutral-700">
-            Здесь появится экран шага. Пока используйте инструкцию преподавателя.
+          <div className="mt-4 rounded-2xl border border-dashed border-neutral-300 bg-neutral-50 p-5 text-sm text-neutral-700">
+            <p className="text-base font-semibold text-neutral-900">Слушай преподавателя</p>
+            {currentStep.student.instruction ? <p className="mt-2">{currentStep.student.instruction}</p> : null}
+            <p className="mt-2">Сейчас выполняем задание вместе.</p>
           </div>
         )}
         <StepResources step={currentStep} sections={sections} assetsById={assetsById} />

@@ -11,6 +11,10 @@ const sharedDeckSource = readFileSync(
   "src/components/lessons/lesson-learner-content-deck.tsx",
   "utf8",
 );
+const studentPanelSource = readFileSync(
+  "src/components/lessons/lesson-student-content-panel.tsx",
+  "utf8",
+);
 
 test("learner lesson view supports dedicated preview role", () => {
   assert.equal(source.includes("ScheduledLessonPreviewView"), true);
@@ -28,7 +32,14 @@ test("shared learner deck works as step-by-step player", () => {
   assert.equal(sharedDeckSource.includes("Сцена"), false);
   assert.equal(sharedDeckSource.includes("Назад"), true);
   assert.equal(sharedDeckSource.includes("Далее"), true);
-  assert.equal(sharedDeckSource.includes("Инструкция для ученика"), true);
+  assert.equal(sharedDeckSource.includes("Инструкция для ученика"), false);
+});
+
+test("shared learner deck mode behavior uses learner-focused banners and locking", () => {
+  assert.equal(sharedDeckSource.includes("mode !== \"student_live_locked\""), true);
+  assert.equal(sharedDeckSource.includes("Урок ведёт преподаватель"), true);
+  assert.equal(sharedDeckSource.includes("Повторение урока"), true);
+  assert.equal(sharedDeckSource.includes("Режим предпросмотра для преподавателя"), true);
 });
 
 test("shared learner deck keeps existing rich renderers", () => {
@@ -38,4 +49,27 @@ test("shared learner deck keeps existing rich renderers", () => {
   assert.equal(sharedDeckSource.includes('section.type === "count_board"'), true);
   assert.equal(sharedDeckSource.includes("StepResources"), true);
   assert.equal(sharedDeckSource.includes("Материалы шага"), true);
+});
+
+test("learner wording removes teacher-only labels and uses child-friendly roadmap", () => {
+  assert.equal(sharedDeckSource.includes("Что делает педагог"), false);
+  assert.equal(sharedDeckSource.includes("План урока"), false);
+  assert.equal(sharedDeckSource.includes("Что сегодня делаем"), true);
+  assert.equal(sharedDeckSource.includes("контента"), false);
+  assert.equal(sharedDeckSource.includes("Слушай преподавателя"), true);
+});
+
+test("student panel fullscreen button is functional and has no dead control", () => {
+  assert.equal(studentPanelSource.includes("document.fullscreenEnabled"), true);
+  assert.equal(studentPanelSource.includes("requestFullscreen"), true);
+  assert.equal(studentPanelSource.includes("exitFullscreen"), true);
+  assert.equal(studentPanelSource.includes("Открыть на весь экран"), true);
+  assert.equal(studentPanelSource.includes("Выйти из полноэкранного режима"), true);
+});
+
+test("deck navigation calls onStepChange and supports controlled id flow", () => {
+  assert.equal(sharedDeckSource.includes("controlledStepId"), true);
+  assert.equal(sharedDeckSource.includes("onStepChange?.(next.id)"), true);
+  assert.equal(sharedDeckSource.includes("disabled={currentStepIndex === 0}"), true);
+  assert.equal(sharedDeckSource.includes("disabled={currentStepIndex >= resolvedSteps.length - 1}"), true);
 });

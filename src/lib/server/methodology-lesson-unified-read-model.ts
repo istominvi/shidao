@@ -188,7 +188,7 @@ const lessonOneTeacherFallbackByOrder: Record<number, Omit<MethodologyLessonStep
   9: {
     goal: "Ввести глаголы движения 跑 и 跳.",
     description: "Команды с демонстрацией и повтором.",
-    teacherActions: ["Показывает动作 для 跑 и 跳.", "Чередует команды в разном темпе."],
+    teacherActions: ["Показывает движения для 跑 и 跳.", "Чередует команды в разном темпе."],
     studentActions: ["Повторяют глаголы.", "Выполняют правильное движение."],
     teacherScript: ["跑!", "跳!"],
     expectedResponses: ["Верное действие на команду"],

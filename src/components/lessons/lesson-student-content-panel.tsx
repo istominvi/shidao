@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { useEffect, useRef, useState } from "react";
 import { LessonLearnerContentDeck } from "@/components/lessons/lesson-learner-content-deck";
 import { SurfaceCard } from "@/components/ui/surface-card";
 import type { MethodologyLessonStudentContent, ReusableAsset } from "@/lib/lesson-content";
@@ -29,16 +32,55 @@ export function LessonStudentContentPanel({
   controlledStepId,
   onStepChange,
 }: Props) {
+  const containerRef = useRef<HTMLElement | null>(null);
+  const [isFullscreenSupported, setIsFullscreenSupported] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    setIsFullscreenSupported(typeof document.fullscreenEnabled === "boolean" ? document.fullscreenEnabled : false);
+    const handleFullscreenChange = () => {
+      const container = containerRef.current;
+      setIsFullscreen(Boolean(container && document.fullscreenElement === container));
+    };
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
+  }, []);
+
+  const handleFullscreenToggle = async () => {
+    if (typeof document === "undefined") return;
+    const container = containerRef.current;
+    if (!container || !isFullscreenSupported) return;
+    if (document.fullscreenElement === container) {
+      await document.exitFullscreen();
+      return;
+    }
+    await container.requestFullscreen();
+  };
+
   const content = (
     <>
       {!embedded ? (
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-lg font-semibold text-neutral-900">{title}</h2>
-          {previewHref ? (
-            <Link href={previewHref} className="rounded-xl border border-sky-300 bg-sky-50 px-3 py-2 text-sm font-semibold text-sky-800">
-              Предпросмотр ученической версии
-            </Link>
-          ) : null}
+          <div className="flex flex-wrap items-center gap-2">
+            {isFullscreenSupported ? (
+              <button
+                type="button"
+                onClick={() => {
+                  void handleFullscreenToggle();
+                }}
+                className="rounded-xl border border-neutral-300 bg-white px-3 py-2 text-sm font-semibold text-neutral-800"
+              >
+                {isFullscreen ? "Выйти из полноэкранного режима" : "Открыть на весь экран"}
+              </button>
+            ) : null}
+            {previewHref ? (
+              <Link href={previewHref} className="rounded-xl border border-sky-300 bg-sky-50 px-3 py-2 text-sm font-semibold text-sky-800">
+                Предпросмотр ученической версии
+              </Link>
+            ) : null}
+          </div>
         </div>
       ) : previewHref ? (
         <div className="mb-4">
@@ -65,5 +107,5 @@ export function LessonStudentContentPanel({
     return <section aria-label={title}>{content}</section>;
   }
 
-  return <SurfaceCard>{content}</SurfaceCard>;
+  return <SurfaceCard><section ref={containerRef}>{content}</section></SurfaceCard>;
 }
