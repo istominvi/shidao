@@ -54,6 +54,7 @@ export function TeacherMethodologyLessonWorkspace({
             steps={readModel.unifiedReadModel.steps}
             durationLabel={readModel.unifiedReadModel.lesson.durationLabel}
             activeStudentStepId={selectedStepId}
+            assetsById={readModel.unifiedReadModel.assetsById}
             onShowOnStudentScreen={setSelectedStepId}
             onOpenStudentScreen={(stepId) => {
               setSelectedStepId(stepId);

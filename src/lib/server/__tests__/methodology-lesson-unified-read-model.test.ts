@@ -102,6 +102,47 @@ test("world-around-me lesson 1 unified read model is canonical 16-step teacher/s
       ? `${step6Section.title ?? ""} ${step6Section.subtitle ?? ""} ${step6Section.prompt ?? ""}`
       : "";
   assert.equal(step6Text.toLowerCase().includes("homework"), false);
+
+
+  const totalMinutes = unified.steps.reduce((acc, step) => acc + (step.durationMinutes ?? 0), 0);
+  assert.equal(totalMinutes >= 43 && totalMinutes <= 47, true);
+
+  for (const step of unified.steps) {
+    assert.equal((step.teacher.teacherActions?.length ?? 0) > 0, true);
+    assert.equal((step.teacher.studentActions?.length ?? 0) > 0, true);
+    assert.equal((step.teacher.teacherScript?.length ?? 0) > 0, true);
+    assert.equal((step.teacher.materials?.length ?? 0) > 0, true);
+    assert.equal((step.teacher.successCriteria?.length ?? 0) > 0, true);
+    assert.equal(step.teacher.notes?.some((note) => note.includes("Педагогические детали будут уточнены")) ?? false, false);
+    assert.equal(step.movementMode == null, false);
+  }
+
+  const lessonOneTeacherText = unified.steps
+    .map((step) => [
+      step.teacher.goal,
+      step.teacher.description,
+      ...step.teacher.teacherActions,
+      ...step.teacher.studentActions,
+      ...(step.teacher.teacherScript ?? []),
+      ...(step.teacher.expectedResponses ?? []),
+      ...step.teacher.materials,
+      ...(step.teacher.successCriteria ?? []),
+      ...(step.teacher.notes ?? []),
+    ].filter((chunk): chunk is string => Boolean(chunk)).join(" "))
+    .join(" ")
+    .toLowerCase();
+
+  assert.equal(lessonOneTeacherText.includes("cow"), false);
+  assert.equal(lessonOneTeacherText.includes("pig"), false);
+  assert.equal(lessonOneTeacherText.includes("three cows"), false);
+  assert.equal(lessonOneTeacherText.includes("where is horse"), false);
+  assert.equal(lessonOneTeacherText.includes("put cow"), false);
+
+  assert.equal(lessonOneTeacherText.includes("狗"), true);
+  assert.equal(lessonOneTeacherText.includes("猫"), true);
+  assert.equal(lessonOneTeacherText.includes("兔子"), true);
+  assert.equal(lessonOneTeacherText.includes("马"), true);
+  assert.equal(lessonOneTeacherText.includes("农场"), true);
 });
 
 
