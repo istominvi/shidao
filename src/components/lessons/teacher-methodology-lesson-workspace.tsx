@@ -389,10 +389,12 @@ function TeacherLessonPlanResources({ readModel }: { readModel: MethodologyLesso
     const videoAsset = assetsById["video:farm-animals"];
     const songAsset = assetsById["song:farm-animals"];
 
-    const wordListSection = pickSections(source, "word_list")[0];
+    const wordListSection = pickSections(source, "word_list")[0] as
+      | Extract<MethodologyLessonStudentContentSection, { type: "word_list" }>
+      | undefined;
 
     const groups: WordGroup[] = [];
-    if (wordListSection && "groups" in wordListSection) {
+    if (wordListSection) {
       const lessonGroups = wordListSection.groups ?? [];
       const animals = lessonGroups.find((group) => group.id.includes("animals"));
       const phrase = lessonGroups.find((group) => group.id.includes("phrases"));
