@@ -74,9 +74,11 @@ export function TeacherLessonPedagogicalContent({
 
       <section>
         <h2 className="text-base font-semibold text-neutral-950">Подготовка до урока</h2>
-        <div className="mt-3 rounded-2xl border border-neutral-200 bg-white p-4">
-          <SummaryList items={quickSummary.prepChecklist} />
-        </div>
+        {quickSummary.prepChecklist.length ? (
+          <div className="mt-3 rounded-2xl border border-neutral-200 bg-white p-4">
+            <SummaryList items={quickSummary.prepChecklist} />
+          </div>
+        ) : null}
       </section>
 
       <section>

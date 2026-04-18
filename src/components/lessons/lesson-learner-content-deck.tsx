@@ -442,7 +442,7 @@ function renderSection(section: MethodologyLessonStudentContentSection, assetsBy
   );
 }
 
-function buildLegacyStepDeck(source: MethodologyLessonStudentContent | null): MethodologyLessonStep[] {
+function buildLegacyStepDeckFromStudentContent(source: MethodologyLessonStudentContent | null): MethodologyLessonStep[] {
   if (!source) return [];
   const grouped = groupSteps(source.sections);
   return grouped.map((group, index) => ({
@@ -473,7 +473,13 @@ export function LessonLearnerContentDeck({
   controlledStepId,
   onStepChange,
 }: Props) {
-  const resolvedSteps = useMemo(() => (steps?.length ? steps : buildLegacyStepDeck(source)), [steps, source]);
+  // Canonical path: methodology workspace passes unified steps directly.
+  // Legacy path is retained for runtime/older screens that still provide source sections.
+  const hasUnifiedSteps = Boolean(steps?.length);
+  const resolvedSteps = useMemo(
+    () => (hasUnifiedSteps ? (steps ?? []) : buildLegacyStepDeckFromStudentContent(source)),
+    [hasUnifiedSteps, source, steps],
+  );
   const [localStepId, setLocalStepId] = useState<string | null>(resolvedSteps[0]?.id ?? null);
   const activeStepId = controlledStepId ?? localStepId ?? resolvedSteps[0]?.id ?? null;
   const currentStepIndex = Math.max(0, resolvedSteps.findIndex((step) => step.id === activeStepId));

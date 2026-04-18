@@ -22,7 +22,8 @@ test("learner lesson view renders shared learner deck", () => {
 });
 
 test("shared learner deck works as step-by-step player", () => {
-  assert.equal(sharedDeckSource.includes("buildLegacyStepDeck"), true);
+  assert.equal(sharedDeckSource.includes("buildLegacyStepDeckFromStudentContent"), true);
+  assert.equal(sharedDeckSource.includes("hasUnifiedSteps"), true);
   assert.equal(sharedDeckSource.includes("Шаг"), true);
   assert.equal(sharedDeckSource.includes("Сцена"), false);
   assert.equal(sharedDeckSource.includes("Назад"), true);

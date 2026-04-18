@@ -62,43 +62,34 @@ export type MethodologyLessonUnifiedReadModel = {
   canonicalHomework: MethodologyLessonHomeworkDefinition | null;
 };
 
-const worldAroundMeLessonOneTitles = [
-  "Приветствие",
-  "Видео: farm animals",
-  "Фраза 我是…",
-  "Карточки животных",
-  "Изображаем животных",
-  "Игра с карточками и мячом",
-  "Счётные палочки",
-  "Приложение 1: считаем и называем",
-  "Глаголы 跑 и 跳",
-  "Бежим и прыгаем к животным",
-  "Что делает животное?",
-  "Рабочая тетрадь, стр. 3–4",
-  "Слово 农场",
-  "Кто живёт на ферме",
-  "Песня: farm animals",
-  "Прощание",
-] as const;
-
-const lessonOneSectionByStep: Record<number, string[]> = {
-  1: ["lesson_focus"],
-  2: ["media_asset", "presentation"],
-  3: ["phrase_cards"],
-  4: ["vocabulary_cards"],
-  5: ["action_cards"],
-  6: ["matching_practice"],
-  7: ["count_board"],
-  8: ["count_board"],
-  9: ["action_cards"],
-  10: ["action_cards"],
-  11: ["phrase_cards"],
-  12: ["worksheet"],
-  13: ["word_list"],
-  14: ["farm_placement"],
-  15: ["media_asset", "resource_links"],
-  16: ["recap", "word_list"],
+type LessonOneStepConfig = {
+  title: string;
+  preferredSectionTypes: MethodologyLessonStudentContentSection["type"][];
+  explicitResourceIds?: string[];
 };
+
+const worldAroundMeLessonOneConfig: LessonOneStepConfig[] = [
+  { title: "Приветствие", preferredSectionTypes: ["lesson_focus"] },
+  { title: "Видео: farm animals", preferredSectionTypes: ["media_asset", "presentation"], explicitResourceIds: ["video:farm-animals"] },
+  { title: "Фраза 我是…", preferredSectionTypes: ["phrase_cards"] },
+  { title: "Карточки животных", preferredSectionTypes: ["vocabulary_cards"], explicitResourceIds: ["flashcards:world-around-me-lesson-1"] },
+  { title: "Изображаем животных", preferredSectionTypes: ["action_cards"] },
+  { title: "Игра с карточками и мячом", preferredSectionTypes: ["matching_practice"] },
+  { title: "Счётные палочки", preferredSectionTypes: ["count_board"] },
+  { title: "Приложение 1: считаем и называем", preferredSectionTypes: ["count_board"], explicitResourceIds: ["worksheet:appendix-1"] },
+  { title: "Глаголы 跑 и 跳", preferredSectionTypes: ["action_cards"] },
+  { title: "Бежим и прыгаем к животным", preferredSectionTypes: ["action_cards"] },
+  { title: "Что делает животное?", preferredSectionTypes: ["phrase_cards"] },
+  { title: "Рабочая тетрадь, стр. 3–4", preferredSectionTypes: ["worksheet"], explicitResourceIds: ["worksheet:workbook-pages-3-4"] },
+  { title: "Слово 农场", preferredSectionTypes: ["word_list"] },
+  { title: "Кто живёт на ферме", preferredSectionTypes: ["farm_placement"] },
+  { title: "Песня: farm animals", preferredSectionTypes: ["media_asset", "resource_links"], explicitResourceIds: ["song:farm-animals"] },
+  { title: "Прощание", preferredSectionTypes: ["recap", "word_list"] },
+];
+
+function isWorldAroundMeLessonOne(lessonShell: MethodologyLessonShell) {
+  return lessonShell.position.moduleIndex === 1 && lessonShell.position.lessonIndex === 1;
+}
 
 function stepPhase(order: number): MethodologyLessonStep["phase"] {
   if (order <= 2) return "opening";
@@ -145,39 +136,106 @@ function collectSectionAssetIds(section: MethodologyLessonStudentContentSection)
   return [];
 }
 
-function sectionsForStep(input: {
-  lessonShell: MethodologyLessonShell;
-  order: number;
-  studentContent: MethodologyLessonStudentContent | null;
+function makeSectionSelectionKey(section: MethodologyLessonStudentContentSection, index: number) {
+  return `${section.type}-${section.title}-${index}`;
+}
+
+function selectSectionsByTypes(input: {
+  source: MethodologyLessonStudentContent;
+  preferredTypes: MethodologyLessonStudentContentSection["type"][];
   usedSectionKeys: Set<string>;
-}): MethodologyLessonStudentContentSection[] {
-  const { lessonShell, order, studentContent, usedSectionKeys } = input;
-  if (!studentContent) return [];
+}) {
+  const { source, preferredTypes, usedSectionKeys } = input;
+  const selected: MethodologyLessonStudentContentSection[] = [];
 
-  const isLessonOne = lessonShell.position.moduleIndex === 1 && lessonShell.position.lessonIndex === 1;
-  if (isLessonOne) {
-    const preferredTypes = lessonOneSectionByStep[order] ?? [];
-    const selected = studentContent.sections.filter((section, index) => {
-      const key = `${section.type}-${section.title}-${index}`;
-      if (usedSectionKeys.has(key)) return false;
-      return preferredTypes.includes(section.type);
-    });
-    if (selected.length > 0) {
-      selected.forEach((section, index) => usedSectionKeys.add(`${section.type}-${section.title}-${studentContent.sections.indexOf(section) + index}`));
-      return selected;
-    }
-  }
-
-  const section = studentContent.sections.find((candidate, index) => {
-    const key = `${candidate.type}-${candidate.title}-${index}`;
-    if (usedSectionKeys.has(key)) return false;
-    return true;
+  source.sections.forEach((section, index) => {
+    const key = makeSectionSelectionKey(section, index);
+    if (usedSectionKeys.has(key)) return;
+    if (!preferredTypes.includes(section.type)) return;
+    usedSectionKeys.add(key);
+    selected.push(section);
   });
 
-  if (!section) return [];
-  const index = studentContent.sections.indexOf(section);
-  usedSectionKeys.add(`${section.type}-${section.title}-${index}`);
-  return [section];
+  return selected;
+}
+
+function selectFirstUnassignedSection(source: MethodologyLessonStudentContent, usedSectionKeys: Set<string>) {
+  for (const [index, section] of source.sections.entries()) {
+    const key = makeSectionSelectionKey(section, index);
+    if (usedSectionKeys.has(key)) continue;
+    usedSectionKeys.add(key);
+    return section;
+  }
+  return null;
+}
+
+function resolveLegacyResourceIdsByTitle(input: {
+  step: TeacherLessonWorkspacePresentation["lessonFlow"][number];
+  assetsById: Record<string, ReusableAsset>;
+}) {
+  // Legacy fallback for non-normalized lessons where only display title is available in step.resources.
+  return input.step.resources
+    .map((resource) => Object.values(input.assetsById).find((asset) => asset.title === resource.title)?.id)
+    .filter((id): id is string => Boolean(id));
+}
+
+function normalizeWorldAroundMeLessonOneStep(input: {
+  order: number;
+  source: MethodologyLessonStudentContent | null;
+  usedSectionKeys: Set<string>;
+}) {
+  const config = worldAroundMeLessonOneConfig[input.order - 1];
+  if (!config) {
+    return {
+      normalizedTitle: null,
+      sections: [] as MethodologyLessonStudentContentSection[],
+      explicitResourceIds: [] as string[],
+    };
+  }
+
+  if (!input.source) {
+    return {
+      normalizedTitle: config.title,
+      sections: [] as MethodologyLessonStudentContentSection[],
+      explicitResourceIds: config.explicitResourceIds ?? [],
+    };
+  }
+
+  const sections = selectSectionsByTypes({
+    source: input.source,
+    preferredTypes: config.preferredSectionTypes,
+    usedSectionKeys: input.usedSectionKeys,
+  });
+
+  return {
+    normalizedTitle: config.title,
+    sections,
+    explicitResourceIds: config.explicitResourceIds ?? [],
+  };
+}
+
+function resolveStepSections(input: {
+  lessonShell: MethodologyLessonShell;
+  order: number;
+  source: MethodologyLessonStudentContent | null;
+  usedSectionKeys: Set<string>;
+}) {
+  if (!input.source) return { sections: [] as MethodologyLessonStudentContentSection[], normalizedTitle: null as string | null, explicitResourceIds: [] as string[] };
+
+  if (isWorldAroundMeLessonOne(input.lessonShell)) {
+    return normalizeWorldAroundMeLessonOneStep({
+      order: input.order,
+      source: input.source,
+      usedSectionKeys: input.usedSectionKeys,
+    });
+  }
+
+  const firstUnassigned = selectFirstUnassignedSection(input.source, input.usedSectionKeys);
+  return {
+    sections: firstUnassigned ? [firstUnassigned] : [],
+    normalizedTitle: null,
+    explicitResourceIds: [],
+  };
 }
 
 export function buildMethodologyLessonUnifiedReadModel(input: {
@@ -189,32 +247,34 @@ export function buildMethodologyLessonUnifiedReadModel(input: {
   canonicalHomework: MethodologyLessonHomeworkDefinition | null;
 }): MethodologyLessonUnifiedReadModel {
   const filteredFlow = input.presentation.lessonFlow.filter((step) => step.order <= 16);
-  const isLessonOne = input.lessonShell.position.moduleIndex === 1 && input.lessonShell.position.lessonIndex === 1;
   const usedSectionKeys = new Set<string>();
 
   const steps: MethodologyLessonStep[] = filteredFlow.map((step, index) => {
     const order = index + 1;
-    const sections = sectionsForStep({
+    const { sections, normalizedTitle, explicitResourceIds } = resolveStepSections({
       lessonShell: input.lessonShell,
       order,
-      studentContent: input.studentContent,
+      source: input.studentContent,
       usedSectionKeys,
     });
 
     const screenType = screenTypeFromSections(sections);
     const firstSection = sections[0];
+    const sectionAssetIds = sections.flatMap(collectSectionAssetIds);
+    const legacyStepResourceIds = sectionAssetIds.length > 0 ? [] : resolveLegacyResourceIdsByTitle({ step, assetsById: input.assetsById });
+
     const resourceIds = Array.from(new Set([
-      ...step.resources.map((resource) => {
-        const match = Object.values(input.assetsById).find((asset) => asset.title === resource.title);
-        return match?.id;
-      }),
-      ...sections.flatMap(collectSectionAssetIds),
-    ].filter((id): id is string => Boolean(id))));
+      ...sectionAssetIds,
+      ...explicitResourceIds,
+      ...legacyStepResourceIds,
+    ]));
+
+    const title = normalizedTitle ?? step.title;
 
     return {
       id: step.id,
       order,
-      title: isLessonOne ? worldAroundMeLessonOneTitles[index] : step.title,
+      title,
       phase: stepPhase(order),
       durationMinutes: null,
       resourceIds,
@@ -231,7 +291,7 @@ export function buildMethodologyLessonUnifiedReadModel(input: {
       },
       student: {
         screenType,
-        title: isLessonOne ? worldAroundMeLessonOneTitles[index] : step.title,
+        title,
         instruction: instructionFromSection(firstSection),
         assetIds: resourceIds,
         payload: sections.length
