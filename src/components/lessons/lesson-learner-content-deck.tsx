@@ -30,10 +30,10 @@ type StepGroup = {
 
 function EmptyState({ reason }: { reason: Props["unavailableReason"] }) {
   return (
-    <div className="space-y-2 rounded-2xl border border-dashed border-neutral-300 bg-neutral-50 px-4 py-3 text-sm text-neutral-700">
-      {reason === "schema_missing" ? <p>Контент урока для ученика временно недоступен. Примените миграцию lesson student content layer.</p> : null}
-      {reason === "invalid_payload" ? <p>Контент урока для ученика временно недоступен: source-данные урока заполнены некорректно.</p> : null}
-      {reason === "load_failed" ? <p>Не удалось загрузить контент урока для ученика.</p> : null}
+      <div className="space-y-2 rounded-2xl border border-dashed border-neutral-300 bg-neutral-50 px-4 py-3 text-sm text-neutral-700">
+      {reason === "schema_missing" ? <p>Экран ученика временно недоступен. Примените миграцию lesson student content layer.</p> : null}
+      {reason === "invalid_payload" ? <p>Экран ученика временно недоступен: source-данные урока заполнены некорректно.</p> : null}
+      {reason === "load_failed" ? <p>Не удалось загрузить экран ученика.</p> : null}
       <p>Для этого урока пока нет отдельного learner-facing контента.</p>
     </div>
   );
