@@ -70,6 +70,8 @@ test("lesson 1 migration contains complete hub payload markers", () => {
 
 
 test("lesson 1 migration aligns reusable asset kinds with fixture semantics", () => {
+  assert.equal(kindMigrationSource.includes("drop constraint if exists reusable_asset_kind_check"), true);
+  assert.equal(kindMigrationSource.includes("'flashcards_pdf'"), true);
   assert.equal(kindMigrationSource.includes("('presentation', 'presentation:world-around-me-lesson-1'"), true);
   assert.equal(kindMigrationSource.includes("('flashcards_pdf', 'flashcards:world-around-me-lesson-1'"), true);
   assert.equal(kindMigrationSource.includes("('worksheet_pdf', 'worksheet:appendix-1'"), true);

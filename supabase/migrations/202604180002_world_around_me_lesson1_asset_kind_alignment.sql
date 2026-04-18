@@ -1,5 +1,28 @@
 begin;
 
+alter table if exists public.reusable_asset
+  drop constraint if exists reusable_asset_kind_check;
+
+alter table if exists public.reusable_asset
+  add constraint reusable_asset_kind_check
+  check (
+    kind in (
+      'video',
+      'song',
+      'worksheet',
+      'vocabulary_set',
+      'activity_template',
+      'media_file',
+      'presentation',
+      'flashcards_pdf',
+      'lesson_video',
+      'worksheet_pdf',
+      'song_audio',
+      'song_video',
+      'pronunciation_audio'
+    )
+  );
+
 insert into public.reusable_asset (kind, slug, title, description, source_url, file_ref, metadata)
 values
   ('presentation', 'presentation:world-around-me-lesson-1', 'Презентация урока 1', 'Локальная презентация урока 1 для проведения и демонстрации слайдов.', 'https://docs.google.com/presentation/d/1o-LCuePhdVq39oBPqHgtHpJUREJNz4dS/edit?usp=drive_link&ouid=102261836036017130249&rtpof=true&sd=true', '/methodologies/world-around-me/lesson-1/presentation/lesson-1-slides.pdf', '{"pptxFileRef":"/methodologies/world-around-me/lesson-1/presentation/lesson-1-slides.pptx","slideImageRefs":["/methodologies/world-around-me/lesson-1/presentation/lesson-1-slide-01.png","/methodologies/world-around-me/lesson-1/presentation/lesson-1-slide-02.png","/methodologies/world-around-me/lesson-1/presentation/lesson-1-slide-03.png","/methodologies/world-around-me/lesson-1/presentation/lesson-1-slide-04.png","/methodologies/world-around-me/lesson-1/presentation/lesson-1-slide-05.png","/methodologies/world-around-me/lesson-1/presentation/lesson-1-slide-06.png","/methodologies/world-around-me/lesson-1/presentation/lesson-1-slide-07.png","/methodologies/world-around-me/lesson-1/presentation/lesson-1-slide-08.png","/methodologies/world-around-me/lesson-1/presentation/lesson-1-slide-09.png","/methodologies/world-around-me/lesson-1/presentation/lesson-1-slide-10.png","/methodologies/world-around-me/lesson-1/presentation/lesson-1-slide-11.png","/methodologies/world-around-me/lesson-1/presentation/lesson-1-slide-12.png","/methodologies/world-around-me/lesson-1/presentation/lesson-1-slide-13.png","/methodologies/world-around-me/lesson-1/presentation/lesson-1-slide-14.png","/methodologies/world-around-me/lesson-1/presentation/lesson-1-slide-15.png","/methodologies/world-around-me/lesson-1/presentation/lesson-1-slide-16.png"]}'::jsonb),
