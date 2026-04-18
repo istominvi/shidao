@@ -6,6 +6,10 @@ const workspaceSource = readFileSync(
   "src/components/lessons/teacher-methodology-lesson-workspace.tsx",
   "utf8",
 );
+const lessonTabsSource = readFileSync(
+  "src/components/lessons/teacher-lesson-tabs.tsx",
+  "utf8",
+);
 const pedagogicalSource = readFileSync(
   "src/components/lessons/teacher-lesson-pedagogical-content.tsx",
   "utf8",
@@ -19,18 +23,30 @@ const homeworkPanelSource = readFileSync(
   "utf8",
 );
 
-test("methodology workspace uses one canonical lesson card with embedded tabs", () => {
-  assert.equal(workspaceSource.includes('<SurfaceCard as="section"'), true);
+test("methodology workspace restores canonical top-level tabs", () => {
+  assert.equal(workspaceSource.includes("TeacherLessonTabs"), true);
+  assert.equal(workspaceSource.includes('const mainTabs: TeacherLessonTabKey[] = ["plan", "content", "homework"]'), true);
+  assert.equal(workspaceSource.includes('useState<TeacherLessonTabKey>("plan")'), true);
+  assert.equal(workspaceSource.includes('tone="embedded"'), true);
+  assert.equal(lessonTabsSource.includes("План урока"), true);
+  assert.equal(lessonTabsSource.includes("Контент"), true);
+  assert.equal(lessonTabsSource.includes("Домашнее задание"), true);
+  assert.equal(workspaceSource.includes("Контент для ученика"), false);
   assert.equal(workspaceSource.includes("Презентация"), true);
-  assert.equal(workspaceSource.includes("Карточки"), true);
+});
+
+test("methodology workspace keeps resource hub inside plan tab", () => {
+  assert.equal(workspaceSource.includes("Материалы к уроку"), true);
+  assert.equal(workspaceSource.includes("Презентация к уроку"), true);
+  assert.equal(workspaceSource.includes("Карточки урока"), true);
   assert.equal(workspaceSource.includes("Новые слова и фразы"), true);
   assert.equal(workspaceSource.includes("Реквизит к уроку"), true);
-  assert.equal(workspaceSource.includes("Скачать PPTX"), true);
-  assert.equal(workspaceSource.includes("flashcards:world-around-me-lesson-1"), true);
-  assert.equal(workspaceSource.includes("cardImageRefs"), true);
-  assert.equal(workspaceSource.includes("Откройте PDF"), true);
-  assert.equal(workspaceSource.includes("Контент для ученика"), true);
-  assert.equal(workspaceSource.includes("Домашнее задание"), true);
+  assert.equal(workspaceSource.includes("Открыть на весь экран"), true);
+  assert.equal(workspaceSource.includes("Слайд"), true);
+  assert.equal(workspaceSource.includes("Карточка"), true);
+  assert.equal(workspaceSource.includes("4 в ряд"), true);
+  assert.equal(workspaceSource.includes("Слушать"), true);
+  assert.equal(workspaceSource.includes("Открыть / скачать PDF"), false);
 });
 
 test("plan tab is organized as one pedagogical document without extra mini-navigation", () => {
