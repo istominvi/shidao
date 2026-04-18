@@ -10,7 +10,6 @@ import type { TeacherLessonWorkspaceReadModel } from "@/lib/server/teacher-lesso
 import type {
   MethodologyLessonStudentContentSection,
   ResourceLinksStudentSection,
-  VocabularyCardsStudentSection,
   WordListStudentSection,
   CountBoardStudentSection,
   PresentationStudentSection,
@@ -67,6 +66,7 @@ function TeacherResourceSection({
     url?: string | null;
     secondaryUrl?: string | null;
     imageRefs?: string[];
+    downloadable?: boolean;
   }>;
 }) {
   return (
@@ -80,7 +80,7 @@ function TeacherResourceSection({
               <p className="text-sm font-medium text-neutral-900">{item.title}</p>
               {item.url ? (
                 <a href={item.url} target="_blank" rel="noreferrer" className="mt-1 inline-flex rounded-lg border border-sky-300 bg-sky-50 px-2 py-1 text-xs font-semibold text-sky-800">
-                  Открыть
+                  {item.downloadable === false ? "Открыть PDF" : "Открыть / скачать PDF"}
                 </a>
               ) : (
                 <p className="mt-1 text-xs text-neutral-600">Ресурс сохранён в source-слое, ссылка появится после загрузки.</p>
@@ -124,9 +124,6 @@ export function TeacherMethodologyLessonWorkspace({ readModel }: { readModel: Me
       | PresentationStudentSection
       | undefined;
     const resourceSections = pickSections(source, "resource_links") as ResourceLinksStudentSection[];
-    const vocabularySection = pickSections(source, "vocabulary_cards")[0] as
-      | VocabularyCardsStudentSection
-      | undefined;
     const wordListSection = pickSections(source, "word_list")[0] as
       | WordListStudentSection
       | undefined;
@@ -152,13 +149,21 @@ export function TeacherMethodologyLessonWorkspace({ readModel }: { readModel: Me
       ? assetsById[presentation.assetId]
       : undefined;
 
-    const cards = vocabularySection
-        ? vocabularySection.items.map((item) => ({
-            id: item.term,
-            title: `${item.term} · ${item.meaning}`,
-            url: item.audioAssetId ? (assetsById[item.audioAssetId]?.fileRef ?? assetsById[item.audioAssetId]?.sourceUrl) : null,
-          }))
-        : [];
+    const flashcardsAsset = assetsById["flashcards:world-around-me-lesson-1"];
+
+    const cards = flashcardsAsset
+      ? [
+          {
+            id: flashcardsAsset.id,
+            title: flashcardsAsset.title,
+            url: flashcardsAsset.fileRef ?? flashcardsAsset.sourceUrl ?? null,
+            imageRefs: Array.isArray(flashcardsAsset.metadata?.cardImageRefs)
+              ? (flashcardsAsset.metadata.cardImageRefs as string[])
+              : undefined,
+            downloadable: false,
+          },
+        ]
+      : [];
 
     const words = wordListSection
         ? wordListSection.groups.flatMap((group) =>
@@ -239,8 +244,8 @@ export function TeacherMethodologyLessonWorkspace({ readModel }: { readModel: Me
 
         {tab === "cards" ? (
           <TeacherResourceSection
-            title="Карточки и произношение"
-            subtitle="Крупные карточки для урока и аудио-опоры по словам."
+            title="Карточки урока 1 (PDF)"
+            subtitle="Откройте PDF и используйте превью карточек; ученикам доступен просмотр без скачивания."
             links={resources.cards}
           />
         ) : null}

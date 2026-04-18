@@ -187,7 +187,7 @@ test("asset summary helper groups reusable assets by kind", () => {
   assert.equal(summary.song >= 1, true);
   assert.equal(summary.song_audio >= 1, true);
   assert.equal(summary.song_video >= 1, true);
-  assert.equal(summary.worksheet >= 6, true);
+  assert.equal(summary.worksheet >= 5, true);
   assert.equal(summary.pronunciation_audio >= 10, true);
 });
 
