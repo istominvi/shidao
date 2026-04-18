@@ -28,6 +28,7 @@ import {
   buildTeacherLessonWorkspaceReadModel,
   canAccessTeacherLessonWorkspace,
 } from "./teacher-lesson-workspace";
+import { buildMethodologyLessonUnifiedReadModel } from "./methodology-lesson-unified-read-model";
 import { isInvalidLessonStudentContentPayloadError } from "./lesson-content-mappers";
 import { getMethodologyDescriptionContent } from "@/lib/methodologies/methodology-description-content";
 
@@ -446,6 +447,10 @@ export async function getTeacherMethodologyLessonReadModel(input: {
     }
   }
 
+  const assetsById = Object.fromEntries(
+    [...assets, ...studentContentAssets].map((asset) => [asset.id, asset]),
+  );
+
   const presentation = buildTeacherLessonWorkspaceReadModel({
     projection,
     scheduledLessonId: scheduledStub.id,
@@ -480,6 +485,18 @@ export async function getTeacherMethodologyLessonReadModel(input: {
     .filter((group) => group.methodologyId === methodology.id)
     .map((group) => ({ id: group.id, label: clean(group.name) || "Группа" }));
 
+  const unifiedReadModel = buildMethodologyLessonUnifiedReadModel({
+    lessonId: lesson.id,
+    lessonShell: lesson.shell,
+    presentation: {
+      quickSummary: presentation.quickSummary,
+      lessonFlow: presentation.lessonFlow,
+    },
+    studentContent,
+    assetsById,
+    canonicalHomework,
+  });
+
   return {
     methodology: {
       ...methodology,
@@ -511,11 +528,10 @@ export async function getTeacherMethodologyLessonReadModel(input: {
       : null,
     studentContent: {
       source: studentContent,
-      assetsById: Object.fromEntries(
-        studentContentAssets.map((asset) => [asset.id, asset]),
-      ),
+      assetsById,
       unavailableReason: studentContentUnavailableReason,
     },
+    unifiedReadModel,
   };
 }
 

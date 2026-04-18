@@ -5,11 +5,11 @@ import { BookOpenText, ClipboardCheck, MessageCircle, NotebookText, PlayCircle }
 import { productButtonClassName } from "@/components/ui/button";
 import { classNames } from "@/lib/ui/classnames";
 
-export type TeacherLessonTabKey = "plan" | "content" | "homework" | "conduct" | "chat";
+export type TeacherLessonTabKey = "plan" | "student_screen" | "homework" | "conduct" | "chat";
 
 export const teacherLessonTabMeta: Record<TeacherLessonTabKey, { label: string; icon: LucideIcon }> = {
   plan: { label: "План урока", icon: NotebookText },
-  content: { label: "Контент", icon: BookOpenText },
+  student_screen: { label: "Экран ученика", icon: BookOpenText },
   homework: { label: "Домашнее задание", icon: ClipboardCheck },
   conduct: { label: "Проведение занятия", icon: PlayCircle },
   chat: { label: "Чат", icon: MessageCircle },

@@ -9,26 +9,31 @@ import type {
   MethodologyLessonStudentContentSection,
   ReusableAsset,
 } from "@/lib/lesson-content";
+import type { MethodologyLessonStep } from "@/lib/server/methodology-lesson-unified-read-model";
 import { classNames } from "@/lib/ui/classnames";
 
 type Props = {
+  steps?: MethodologyLessonStep[];
   source: MethodologyLessonStudentContent | null;
   unavailableReason: "schema_missing" | "invalid_payload" | "load_failed" | null;
   assetsById: Record<string, ReusableAsset>;
   compact?: boolean;
+  mode?: "teacher_preview" | "student_live_locked" | "student_review";
+  controlledStepId?: string;
+  onStepChange?: (stepId: string) => void;
 };
 
-type SceneGroup = {
+type StepGroup = {
   key: string;
   sections: MethodologyLessonStudentContentSection[];
 };
 
 function EmptyState({ reason }: { reason: Props["unavailableReason"] }) {
   return (
-    <div className="space-y-2 rounded-2xl border border-dashed border-neutral-300 bg-neutral-50 px-4 py-3 text-sm text-neutral-700">
-      {reason === "schema_missing" ? <p>Контент урока для ученика временно недоступен. Примените миграцию lesson student content layer.</p> : null}
-      {reason === "invalid_payload" ? <p>Контент урока для ученика временно недоступен: source-данные урока заполнены некорректно.</p> : null}
-      {reason === "load_failed" ? <p>Не удалось загрузить контент урока для ученика.</p> : null}
+      <div className="space-y-2 rounded-2xl border border-dashed border-neutral-300 bg-neutral-50 px-4 py-3 text-sm text-neutral-700">
+      {reason === "schema_missing" ? <p>Экран ученика временно недоступен. Примените миграцию lesson student content layer.</p> : null}
+      {reason === "invalid_payload" ? <p>Экран ученика временно недоступен: source-данные урока заполнены некорректно.</p> : null}
+      {reason === "load_failed" ? <p>Не удалось загрузить экран ученика.</p> : null}
       <p>Для этого урока пока нет отдельного learner-facing контента.</p>
     </div>
   );
@@ -43,8 +48,8 @@ function toneClass(tone?: string) {
   return "border-neutral-200 bg-white";
 }
 
-function groupScenes(sections: MethodologyLessonStudentContentSection[]) {
-  const groups: SceneGroup[] = [];
+function groupSteps(sections: MethodologyLessonStudentContentSection[]) {
+  const groups: StepGroup[] = [];
   for (const section of sections) {
     const sceneId = section.sceneId?.trim();
     if (sceneId && groups.length && groups[groups.length - 1].key === sceneId) {
@@ -58,6 +63,10 @@ function groupScenes(sections: MethodologyLessonStudentContentSection[]) {
 
 function resolveAssetPlaybackUrl(asset?: ReusableAsset) {
   return asset?.fileRef ?? asset?.sourceUrl ?? null;
+}
+
+function isVideoUrl(url: string) {
+  return /\.(mp4|webm|mov|m4v|ogg)(\?|$)/i.test(url);
 }
 
 function extractMetadataStringArray(asset: ReusableAsset | undefined, key: string) {
@@ -80,11 +89,11 @@ function AudioPlayButton({ asset }: { asset?: ReusableAsset }) {
   );
 }
 
-function SceneHeader({ section, compact }: { section: MethodologyLessonStudentContentSection; compact: boolean }) {
+function SceneHeader({ section, compact, hideTitle = false }: { section: MethodologyLessonStudentContentSection; compact: boolean; hideTitle?: boolean }) {
   return (
     <header className="flex items-start justify-between gap-3">
       <div>
-        <h3 className={classNames("font-semibold text-neutral-900", compact ? "text-base" : "text-lg")}>{section.title}</h3>
+        {!hideTitle ? <h3 className={classNames("font-semibold text-neutral-900", compact ? "text-base" : "text-lg")}>{section.title}</h3> : null}
         {section.subtitle ? <p className="mt-1 text-sm text-neutral-600">{section.subtitle}</p> : null}
       </div>
       {section.illustrationSrc ? (
@@ -97,6 +106,129 @@ function SceneHeader({ section, compact }: { section: MethodologyLessonStudentCo
         />
       ) : null}
     </header>
+  );
+}
+
+function collectAssetIdsFromSection(section: MethodologyLessonStudentContentSection): string[] {
+  if (section.type === "media_asset") return [section.assetId];
+  if (section.type === "presentation") return [section.assetId];
+  if (section.type === "worksheet" && section.assetId) return [section.assetId];
+  if (section.type === "count_board" && section.assetId) return [section.assetId];
+  if (section.type === "resource_links") {
+    return section.resources.map((resource) => resource.assetId).filter((id): id is string => Boolean(id));
+  }
+  if (section.type === "vocabulary_cards") {
+    return section.items.map((item) => item.audioAssetId).filter((id): id is string => Boolean(id));
+  }
+  if (section.type === "phrase_cards") {
+    return section.items.map((item) => item.audioAssetId).filter((id): id is string => Boolean(id));
+  }
+  if (section.type === "action_cards") {
+    return section.items.map((item) => item.audioAssetId).filter((id): id is string => Boolean(id));
+  }
+  if (section.type === "word_list") {
+    return section.groups.flatMap((group) =>
+      group.entries.map((entry) => entry.audioAssetId).filter((id): id is string => Boolean(id)),
+    );
+  }
+  return [];
+}
+
+function StepResources({
+  step,
+  sections,
+  assetsById,
+}: {
+  step: MethodologyLessonStep;
+  sections: MethodologyLessonStudentContentSection[];
+  assetsById: Record<string, ReusableAsset>;
+}) {
+  const alreadyRenderedAssetIds = new Set(sections.flatMap(collectAssetIdsFromSection));
+  const candidateAssetIds = Array.from(
+    new Set([...(step.student.assetIds ?? []), ...(step.resourceIds ?? [])]),
+  ).filter((assetId) => !alreadyRenderedAssetIds.has(assetId));
+
+  const assets = candidateAssetIds
+    .map((assetId) => assetsById[assetId])
+    .filter((asset): asset is ReusableAsset => Boolean(asset));
+
+  if (!assets.length) return null;
+  const renderedAssets = assets
+    .map((asset) => {
+      const url = resolveAssetPlaybackUrl(asset);
+      const slideImageRefs = extractMetadataStringArray(asset, "slideImageRefs");
+      const previewSlide = slideImageRefs[0];
+
+      if ((asset.kind === "video" || asset.kind === "lesson_video" || asset.kind === "media_file") && url && isVideoUrl(url)) {
+        return (
+          <article key={asset.id} className="rounded-xl border border-sky-200 bg-sky-50/40 p-3">
+            <p className="text-sm font-semibold text-neutral-900">{asset.title}</p>
+            <video controls preload="metadata" className="mt-2 w-full rounded-lg border border-sky-200 bg-black/80">
+              <source src={url} />
+            </video>
+          </article>
+        );
+      }
+
+      if ((asset.kind === "song_audio" || asset.kind === "pronunciation_audio") && url) {
+        return (
+          <article key={asset.id} className="rounded-xl border border-rose-200 bg-rose-50/40 p-3">
+            <p className="text-sm font-semibold text-neutral-900">{asset.title}</p>
+            <audio controls preload="none" className="mt-2 w-full">
+              <source src={url} />
+            </audio>
+          </article>
+        );
+      }
+
+      if (asset.kind === "presentation") {
+        if (!url && !previewSlide) return null;
+        return (
+          <article key={asset.id} className="rounded-xl border border-sky-200 bg-sky-50/40 p-3">
+            <p className="text-sm font-semibold text-neutral-900">{asset.title}</p>
+            {previewSlide ? (
+              <Image
+                src={previewSlide}
+                alt={`${asset.title} · превью`}
+                width={960}
+                height={540}
+                className="mt-2 h-auto w-full rounded-lg border border-sky-200 bg-white object-contain"
+              />
+            ) : null}
+            {url ? <a href={url} target="_blank" rel="noreferrer" className="mt-2 inline-flex rounded-lg border border-sky-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-sky-800">Открыть презентацию</a> : null}
+          </article>
+        );
+      }
+
+      if (asset.kind === "flashcards_pdf" || asset.kind === "worksheet_pdf" || asset.kind === "worksheet") {
+        if (!url) return null;
+        return (
+          <article key={asset.id} className="rounded-xl border border-neutral-200 bg-neutral-50 p-3">
+            <p className="text-sm font-semibold text-neutral-900">{asset.title}</p>
+            <a href={url} target="_blank" rel="noreferrer" className="mt-2 inline-flex rounded-lg border border-neutral-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-neutral-800">
+              {asset.kind === "flashcards_pdf" || asset.kind === "worksheet_pdf" ? "Открыть PDF" : "Открыть ресурс"}
+            </a>
+          </article>
+        );
+      }
+
+      if (!url) return null;
+      return (
+        <article key={asset.id} className="rounded-xl border border-neutral-200 bg-neutral-50 p-3">
+          <p className="text-sm font-semibold text-neutral-900">{asset.title}</p>
+          <a href={url} target="_blank" rel="noreferrer" className="mt-2 inline-flex rounded-lg border border-neutral-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-neutral-800">Открыть ресурс</a>
+        </article>
+      );
+    })
+    .filter((assetCard) => assetCard !== null);
+
+  if (!renderedAssets.length) return null;
+
+  return (
+    <section className="mt-4 rounded-xl border border-neutral-200 bg-white p-3">
+      <h4 className="text-xs font-semibold uppercase tracking-[0.1em] text-neutral-500">Материалы шага</h4>
+      <div className="mt-3 grid gap-3">{renderedAssets}</div>
+    </section>
   );
 }
 
@@ -437,25 +569,88 @@ function renderSection(section: MethodologyLessonStudentContentSection, assetsBy
   );
 }
 
-export function LessonLearnerContentDeck({ source, unavailableReason, assetsById, compact = false }: Props) {
-  const scenes = useMemo(() => groupScenes(source?.sections ?? []), [source?.sections]);
-  if (!source) return <EmptyState reason={unavailableReason} />;
+function buildLegacyStepDeckFromStudentContent(source: MethodologyLessonStudentContent | null): MethodologyLessonStep[] {
+  if (!source) return [];
+  const grouped = groupSteps(source.sections);
+  return grouped.map((group, index) => ({
+    id: `legacy-step-${index + 1}`,
+    order: index + 1,
+    title: group.sections[0]?.title ?? `Шаг ${index + 1}`,
+    teacher: {
+      teacherActions: [],
+      studentActions: [],
+      materials: [],
+    },
+    student: {
+      screenType: "placeholder",
+      title: group.sections[0]?.title ?? `Шаг ${index + 1}`,
+      instruction: group.sections[0]?.subtitle ?? "Следуйте инструкции преподавателя.",
+      payload: { sections: group.sections },
+    },
+  }));
+}
+
+export function LessonLearnerContentDeck({
+  steps,
+  source,
+  unavailableReason,
+  assetsById,
+  compact = false,
+  mode = "teacher_preview",
+  controlledStepId,
+  onStepChange,
+}: Props) {
+  // Canonical path: methodology workspace passes unified steps directly.
+  // Legacy path is retained for runtime/older screens that still provide source sections.
+  const hasUnifiedSteps = Boolean(steps?.length);
+  const resolvedSteps = useMemo(
+    () => (hasUnifiedSteps ? (steps ?? []) : buildLegacyStepDeckFromStudentContent(source)),
+    [hasUnifiedSteps, source, steps],
+  );
+  const [localStepId, setLocalStepId] = useState<string | null>(resolvedSteps[0]?.id ?? null);
+  const activeStepId = controlledStepId ?? localStepId ?? resolvedSteps[0]?.id ?? null;
+  const currentStepIndex = Math.max(0, resolvedSteps.findIndex((step) => step.id === activeStepId));
+  const currentStep = resolvedSteps[currentStepIndex];
+
+  if (!currentStep) return <EmptyState reason={unavailableReason} />;
+  const sections = currentStep.student.payload?.sections ?? [];
+  const main = sections[0];
+
+  const moveToStep = (nextIndex: number) => {
+    const next = resolvedSteps[nextIndex];
+    if (!next) return;
+    if (!controlledStepId) setLocalStepId(next.id);
+    onStepChange?.(next.id);
+  };
+
+  const canNavigate = mode !== "student_live_locked";
 
   return (
-    <section className="space-y-4" aria-label="Ученический контент урока">
-      {scenes.map((scene, sceneIndex) => {
-        const main = scene.sections[0];
-        const isHero = main.layout === "hero";
-        return (
-          <article key={scene.key} className={classNames("rounded-2xl border p-4", toneClass(main.tone), isHero ? "p-5 md:p-6 shadow-[0_14px_30px_rgba(15,23,42,0.08)]" : "")}>
-            <div className="mb-2 text-xs font-semibold uppercase tracking-[0.1em] text-neutral-500">Сцена {sceneIndex + 1}</div>
-            <SceneHeader section={main} compact={compact} />
-            {scene.sections.map((section, index) => (
-              <div key={`${scene.key}-${section.type}-${section.title}-${index}`}>{renderSection(section, assetsById)}</div>
-            ))}
-          </article>
-        );
-      })}
+    <section className="space-y-4" aria-label="Экран ученика">
+      <article className={classNames("rounded-2xl border p-4", toneClass(main?.tone), main?.layout === "hero" ? "p-5 md:p-6 shadow-[0_14px_30px_rgba(15,23,42,0.08)]" : "")}>
+        <div className="mb-2 flex items-center justify-between gap-2 text-xs font-semibold uppercase tracking-[0.1em] text-neutral-500">
+          <span>Шаг {currentStepIndex + 1} из {resolvedSteps.length}</span>
+          {canNavigate ? (
+            <div className="flex gap-2 normal-case tracking-normal">
+              <button type="button" className="rounded-lg border border-neutral-300 bg-white px-3 py-1 text-xs font-semibold text-neutral-700 disabled:opacity-40" disabled={currentStepIndex === 0} onClick={() => moveToStep(currentStepIndex - 1)}>Назад</button>
+              <button type="button" className="rounded-lg border border-neutral-300 bg-white px-3 py-1 text-xs font-semibold text-neutral-700 disabled:opacity-40" disabled={currentStepIndex >= resolvedSteps.length - 1} onClick={() => moveToStep(currentStepIndex + 1)}>Далее</button>
+            </div>
+          ) : null}
+        </div>
+
+        <h3 className={classNames("font-semibold text-neutral-900", compact ? "text-base" : "text-lg")}>{currentStep.student.title}</h3>
+        {currentStep.student.instruction ? <p className="mt-1 text-sm text-neutral-600"><span className="font-semibold">Инструкция для ученика:</span> {currentStep.student.instruction}</p> : null}
+
+        {main && (main.subtitle || main.illustrationSrc) ? <SceneHeader section={main} compact={compact} hideTitle /> : null}
+        {sections.length ? sections.map((section, index) => (
+          <div key={`${currentStep.id}-${section.type}-${section.title}-${index}`}>{renderSection(section, assetsById)}</div>
+        )) : (
+          <div className="mt-4 rounded-xl border border-dashed border-neutral-300 bg-neutral-50 p-4 text-sm text-neutral-700">
+            Здесь появится экран шага. Пока используйте инструкцию преподавателя.
+          </div>
+        )}
+        <StepResources step={currentStep} sections={sections} assetsById={assetsById} />
+      </article>
     </section>
   );
 }

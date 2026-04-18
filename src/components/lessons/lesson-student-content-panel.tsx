@@ -2,23 +2,32 @@ import Link from "next/link";
 import { LessonLearnerContentDeck } from "@/components/lessons/lesson-learner-content-deck";
 import { SurfaceCard } from "@/components/ui/surface-card";
 import type { MethodologyLessonStudentContent, ReusableAsset } from "@/lib/lesson-content";
+import type { MethodologyLessonStep } from "@/lib/server/methodology-lesson-unified-read-model";
 
 type Props = {
   title?: string;
+  steps?: MethodologyLessonStep[];
   source: MethodologyLessonStudentContent | null;
   unavailableReason: "schema_missing" | "invalid_payload" | "load_failed" | null;
   assetsById: Record<string, ReusableAsset>;
   previewHref?: string;
   embedded?: boolean;
+  mode?: "teacher_preview" | "student_live_locked" | "student_review";
+  controlledStepId?: string;
+  onStepChange?: (stepId: string) => void;
 };
 
 export function LessonStudentContentPanel({
-  title = "Контент",
+  title = "Экран ученика",
+  steps,
   source,
   unavailableReason,
   assetsById,
   previewHref,
   embedded = false,
+  mode = "teacher_preview",
+  controlledStepId,
+  onStepChange,
 }: Props) {
   const content = (
     <>
@@ -39,7 +48,16 @@ export function LessonStudentContentPanel({
         </div>
       ) : null}
 
-      <LessonLearnerContentDeck source={source} unavailableReason={unavailableReason} assetsById={assetsById} compact={embedded} />
+      <LessonLearnerContentDeck
+        steps={steps}
+        source={source}
+        unavailableReason={unavailableReason}
+        assetsById={assetsById}
+        compact={embedded}
+        mode={mode}
+        controlledStepId={controlledStepId}
+        onStepChange={onStepChange}
+      />
     </>
   );
 
