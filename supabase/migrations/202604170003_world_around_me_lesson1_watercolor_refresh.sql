@@ -20,7 +20,7 @@ select
         "chips": ["狗", "猫", "兔子", "马"],
         "tone": "sky",
         "layout": "hero",
-        "illustrationSrc": "/methodologies/world-around-me/lesson-1/watercolor/hero-farm.png",
+        "illustrationSrc": "/methodologies/world-around-me/lesson-1/visuals/hero-farm.png",
         "sceneId": "scene-hero"
       },
       {
@@ -40,10 +40,10 @@ select
         "layout": "vocabulary",
         "sceneId": "scene-vocabulary",
         "items": [
-          { "term": "狗", "pinyin": "gǒu", "meaning": "собака", "visualHint": "Скажи громко: gǒu!", "illustrationSrc": "/methodologies/world-around-me/lesson-1/watercolor/dog-card.png" },
-          { "term": "猫", "pinyin": "māo", "meaning": "кошка", "visualHint": "Покажи лапки, как у кошки.", "illustrationSrc": "/methodologies/world-around-me/lesson-1/watercolor/cat-card.png" },
-          { "term": "兔子", "pinyin": "tùzi", "meaning": "кролик", "visualHint": "Прыгни как кролик.", "illustrationSrc": "/methodologies/world-around-me/lesson-1/watercolor/rabbit-card.png" },
-          { "term": "马", "pinyin": "mǎ", "meaning": "лошадь", "visualHint": "Покажи, как скачет лошадка.", "illustrationSrc": "/methodologies/world-around-me/lesson-1/watercolor/horse-card.png" }
+          { "term": "狗", "pinyin": "gǒu", "meaning": "собака", "visualHint": "Скажи громко: gǒu!", "illustrationSrc": "/methodologies/world-around-me/lesson-1/visuals/dog-card.png" },
+          { "term": "猫", "pinyin": "māo", "meaning": "кошка", "visualHint": "Покажи лапки, как у кошки.", "illustrationSrc": "/methodologies/world-around-me/lesson-1/visuals/cat-card.png" },
+          { "term": "兔子", "pinyin": "tùzi", "meaning": "кролик", "visualHint": "Прыгни как кролик.", "illustrationSrc": "/methodologies/world-around-me/lesson-1/visuals/rabbit-card.png" },
+          { "term": "马", "pinyin": "mǎ", "meaning": "лошадь", "visualHint": "Покажи, как скачет лошадка.", "illustrationSrc": "/methodologies/world-around-me/lesson-1/visuals/horse-card.png" }
         ]
       },
       {
@@ -66,7 +66,7 @@ select
         "chips": ["1", "2", "3", "4", "5"],
         "tone": "sky",
         "layout": "counting",
-        "illustrationSrc": "/methodologies/world-around-me/lesson-1/watercolor/counting-to-five.png",
+        "illustrationSrc": "/methodologies/world-around-me/lesson-1/visuals/counting-to-five.png",
         "sceneId": "scene-counting"
       },
       {
@@ -77,8 +77,8 @@ select
         "layout": "movement",
         "sceneId": "scene-movement",
         "items": [
-          { "term": "跑", "pinyin": "pǎo", "meaning": "бежать", "movementHint": "我们跑吧！ — 跑到狗！", "illustrationSrc": "/methodologies/world-around-me/lesson-1/watercolor/run-action.png" },
-          { "term": "跳", "pinyin": "tiào", "meaning": "прыгать", "movementHint": "我们跳吧！ — 跳到兔子！", "illustrationSrc": "/methodologies/world-around-me/lesson-1/watercolor/jump-action.png" }
+          { "term": "跑", "pinyin": "pǎo", "meaning": "бежать", "movementHint": "我们跑吧！ — 跑到狗！", "illustrationSrc": "/methodologies/world-around-me/lesson-1/visuals/run-action.png" },
+          { "term": "跳", "pinyin": "tiào", "meaning": "прыгать", "movementHint": "我们跳吧！ — 跳到兔子！", "illustrationSrc": "/methodologies/world-around-me/lesson-1/visuals/jump-action.png" }
         ]
       },
       {
@@ -87,7 +87,7 @@ select
         "subtitle": "Ставим игрушки в ферму и говорим полными фразами.",
         "tone": "amber",
         "layout": "farm",
-        "illustrationSrc": "/methodologies/world-around-me/lesson-1/watercolor/farm-barn.png",
+        "illustrationSrc": "/methodologies/world-around-me/lesson-1/visuals/farm-barn.png",
         "sceneId": "scene-farm",
         "items": [
           { "phrase": "农场", "pinyin": "nóngchǎng", "meaning": "ферма", "usageHint": "Покажи карточку фермы." },
@@ -101,7 +101,7 @@ select
         "tone": "amber",
         "layout": "practice",
         "sceneId": "scene-practice",
-        "illustrationSrc": "/methodologies/world-around-me/lesson-1/watercolor/workbook-practice.png",
+        "illustrationSrc": "/methodologies/world-around-me/lesson-1/visuals/workbook-practice.png",
         "assetId": "worksheet:workbook-pages-3-4",
         "pageLabel": "Рабочая тетрадь · стр. 3–4",
         "instructions": "Раскрась животных и ответь: «这是什么？».",

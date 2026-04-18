@@ -93,9 +93,15 @@ export type ReusableAsset = {
     durationSeconds?: number;
     language?: string;
     level?: string;
-  titleRu?: string;
-  titleNative?: string;
-    [key: string]: string | number | boolean | undefined;
+    titleRu?: string;
+    titleNative?: string;
+    [key: string]:
+      | string
+      | number
+      | boolean
+      | undefined
+      | string[]
+      | { [nested: string]: string | number | boolean | undefined | string[] };
   };
 };
 

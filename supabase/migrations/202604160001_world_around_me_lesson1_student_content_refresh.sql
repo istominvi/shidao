@@ -56,8 +56,8 @@ select
         "title": "Движение: 跑 и 跳",
         "tone": "emerald",
         "items": [
-          { "term": "跑", "pinyin": "pǎo", "meaning": "бежать", "movementHint": "Бежим к игрушке по команде.", "illustrationSrc": "/methodologies/world-around-me/lesson-1/run.svg" },
-          { "term": "跳", "pinyin": "tiào", "meaning": "прыгать", "movementHint": "Прыгаем как животные фермы.", "illustrationSrc": "/methodologies/world-around-me/lesson-1/jump.svg" }
+          { "term": "跑", "pinyin": "pǎo", "meaning": "бежать", "movementHint": "Бежим к игрушке по команде.", "illustrationSrc": "/methodologies/world-around-me/lesson-1/visuals/run-action.png" },
+          { "term": "跳", "pinyin": "tiào", "meaning": "прыгать", "movementHint": "Прыгаем как животные фермы.", "illustrationSrc": "/methodologies/world-around-me/lesson-1/visuals/jump-action.png" }
         ]
       },
       {

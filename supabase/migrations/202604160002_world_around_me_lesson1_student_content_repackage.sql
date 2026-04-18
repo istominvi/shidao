@@ -77,8 +77,8 @@ select
         "layout": "movement",
         "sceneId": "scene-movement",
         "items": [
-          { "term": "跑", "pinyin": "pǎo", "meaning": "бежать", "movementHint": "我们跑吧！ — 跑到狗！", "illustrationSrc": "/methodologies/world-around-me/lesson-1/run.svg" },
-          { "term": "跳", "pinyin": "tiào", "meaning": "прыгать", "movementHint": "我们跳吧！ — 跳到兔子！", "illustrationSrc": "/methodologies/world-around-me/lesson-1/jump.svg" }
+          { "term": "跑", "pinyin": "pǎo", "meaning": "бежать", "movementHint": "我们跑吧！ — 跑到狗！", "illustrationSrc": "/methodologies/world-around-me/lesson-1/visuals/run-action.png" },
+          { "term": "跳", "pinyin": "tiào", "meaning": "прыгать", "movementHint": "我们跳吧！ — 跳到兔子！", "illustrationSrc": "/methodologies/world-around-me/lesson-1/visuals/jump-action.png" }
         ]
       },
       {

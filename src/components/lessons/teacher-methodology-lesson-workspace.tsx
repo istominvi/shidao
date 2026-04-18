@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Image from "next/image";
 import { LessonCanonicalHomeworkPanel } from "@/components/lessons/lesson-canonical-homework-panel";
 import { LessonStudentContentPanel } from "@/components/lessons/lesson-student-content-panel";
 import { TeacherLessonPedagogicalContent } from "@/components/lessons/teacher-lesson-pedagogical-content";
@@ -60,7 +61,13 @@ function TeacherResourceSection({
 }: {
   title: string;
   subtitle?: string;
-  links: Array<{ id: string; title: string; url?: string | null }>;
+  links: Array<{
+    id: string;
+    title: string;
+    url?: string | null;
+    secondaryUrl?: string | null;
+    imageRefs?: string[];
+  }>;
 }) {
   return (
     <section className="rounded-xl border border-neutral-200 bg-neutral-50/50 p-4">
@@ -78,6 +85,18 @@ function TeacherResourceSection({
               ) : (
                 <p className="mt-1 text-xs text-neutral-600">Ресурс сохранён в source-слое, ссылка появится после загрузки.</p>
               )}
+              {item.secondaryUrl ? (
+                <a href={item.secondaryUrl} target="_blank" rel="noreferrer" className="ml-2 mt-1 inline-flex rounded-lg border border-neutral-300 bg-neutral-50 px-2 py-1 text-xs font-semibold text-neutral-800">
+                  Скачать PPTX
+                </a>
+              ) : null}
+              {item.imageRefs?.length ? (
+                <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                  {item.imageRefs.slice(0, 8).map((imageRef) => (
+                    <Image key={imageRef} src={imageRef} alt={item.title} width={240} height={140} className="h-20 w-full rounded-md border border-neutral-200 object-cover" />
+                  ))}
+                </div>
+              ) : null}
             </article>
           ))
         ) : (
@@ -122,6 +141,9 @@ export function TeacherMethodologyLessonWorkspace({ readModel }: { readModel: Me
           id: resource.id,
           title: resource.title,
           url: asset?.fileRef ?? asset?.sourceUrl ?? resource.sourceUrl ?? null,
+          imageRefs: Array.isArray(asset?.metadata?.cardImageRefs)
+            ? (asset?.metadata?.cardImageRefs as string[])
+            : undefined,
         };
       }),
     );
@@ -157,6 +179,13 @@ export function TeacherMethodologyLessonWorkspace({ readModel }: { readModel: Me
               id: presentationAsset.id,
               title: presentationAsset.title,
               url: presentationAsset.fileRef ?? presentationAsset.sourceUrl,
+              secondaryUrl:
+                typeof presentationAsset.metadata?.pptxFileRef === "string"
+                  ? presentationAsset.metadata.pptxFileRef
+                  : null,
+              imageRefs: Array.isArray(presentationAsset.metadata?.slideImageRefs)
+                ? (presentationAsset.metadata.slideImageRefs as string[])
+                : undefined,
             },
           ]
         : [],
