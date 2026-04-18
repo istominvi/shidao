@@ -26,7 +26,9 @@ test("methodology workspace uses one canonical lesson card with embedded tabs", 
   assert.equal(workspaceSource.includes("Новые слова и фразы"), true);
   assert.equal(workspaceSource.includes("Реквизит к уроку"), true);
   assert.equal(workspaceSource.includes("Скачать PPTX"), true);
+  assert.equal(workspaceSource.includes("flashcards:world-around-me-lesson-1"), true);
   assert.equal(workspaceSource.includes("cardImageRefs"), true);
+  assert.equal(workspaceSource.includes("Откройте PDF"), true);
   assert.equal(workspaceSource.includes("Контент для ученика"), true);
   assert.equal(workspaceSource.includes("Домашнее задание"), true);
 });
