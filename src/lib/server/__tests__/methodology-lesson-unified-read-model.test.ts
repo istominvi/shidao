@@ -102,6 +102,20 @@ test("world-around-me lesson 1 unified read model is canonical 16-step teacher/s
       ? `${step6Section.title ?? ""} ${step6Section.subtitle ?? ""} ${step6Section.prompt ?? ""}`
       : "";
   assert.equal(step6Text.toLowerCase().includes("homework"), false);
+
+
+  const totalMinutes = unified.steps.reduce((acc, step) => acc + (step.durationMinutes ?? 0), 0);
+  assert.equal(totalMinutes >= 43 && totalMinutes <= 47, true);
+
+  for (const step of unified.steps) {
+    assert.equal((step.teacher.teacherActions?.length ?? 0) > 0, true);
+    assert.equal((step.teacher.studentActions?.length ?? 0) > 0, true);
+    assert.equal((step.teacher.teacherScript?.length ?? 0) > 0, true);
+    assert.equal((step.teacher.materials?.length ?? 0) > 0, true);
+    assert.equal((step.teacher.successCriteria?.length ?? 0) > 0, true);
+    assert.equal(step.teacher.notes?.some((note) => note.includes("Педагогические детали будут уточнены")) ?? false, false);
+    assert.equal(step.movementMode == null, false);
+  }
 });
 
 
