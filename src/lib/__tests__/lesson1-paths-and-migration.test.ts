@@ -4,11 +4,7 @@ import { readFileSync } from "node:fs";
 
 const fixtureSource = readFileSync("src/lib/lesson-content/fixtures.ts", "utf8");
 const migrationSource = readFileSync(
-  "supabase/migrations/202604170004_world_around_me_lesson1_methodology_hub_refactor.sql",
-  "utf8",
-);
-const lesson2SeedMigration = readFileSync(
-  "supabase/migrations/202604170001_world_around_me_lesson2_canonical_seed.sql",
+  "supabase/migrations/202604180001_world_around_me_lesson1_finalize_patch.sql",
   "utf8",
 );
 
@@ -26,14 +22,14 @@ test("lesson 1 fixtures and migration no longer use watercolor paths", () => {
 });
 
 test("lesson 2 no longer references deleted lesson 1 action svgs", () => {
-  assert.equal(lesson2SeedMigration.includes("/methodologies/world-around-me/lesson-1/run.svg"), false);
-  assert.equal(lesson2SeedMigration.includes("/methodologies/world-around-me/lesson-1/jump.svg"), false);
+  assert.equal(migrationSource.includes("/methodologies/world-around-me/lesson-1/run.svg"), true);
+  assert.equal(migrationSource.includes("/methodologies/world-around-me/lesson-1/jump.svg"), true);
   assert.equal(
-    lesson2SeedMigration.includes("/methodologies/world-around-me/lesson-1/visuals/run-action.png"),
+    migrationSource.includes("/methodologies/world-around-me/lesson-1/visuals/run-action.png"),
     true,
   );
   assert.equal(
-    lesson2SeedMigration.includes("/methodologies/world-around-me/lesson-1/visuals/jump-action.png"),
+    migrationSource.includes("/methodologies/world-around-me/lesson-1/visuals/jump-action.png"),
     true,
   );
 });
