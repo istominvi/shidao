@@ -7,6 +7,10 @@ const migrationSource = readFileSync(
   "supabase/migrations/202604180001_world_around_me_lesson1_finalize_patch.sql",
   "utf8",
 );
+const kindMigrationSource = readFileSync(
+  "supabase/migrations/202604180002_world_around_me_lesson1_asset_kind_alignment.sql",
+  "utf8",
+);
 
 test("lesson 1 fixtures and migration use canonical visual paths", () => {
   assert.equal(
@@ -66,12 +70,12 @@ test("lesson 1 migration contains complete hub payload markers", () => {
 
 
 test("lesson 1 migration aligns reusable asset kinds with fixture semantics", () => {
-  assert.equal(migrationSource.includes("('presentation', 'presentation:world-around-me-lesson-1'"), true);
-  assert.equal(migrationSource.includes("('flashcards_pdf', 'flashcards:world-around-me-lesson-1'"), true);
-  assert.equal(migrationSource.includes("('worksheet_pdf', 'worksheet:appendix-1'"), true);
-  assert.equal(migrationSource.includes("('song_audio', 'song:farm-animals'"), true);
-  assert.equal(migrationSource.includes("('song_video', 'song-video:farm-animals-movement'"), true);
-  assert.equal(migrationSource.includes("('pronunciation_audio', 'pronunciation:dog'"), true);
+  assert.equal(kindMigrationSource.includes("('presentation', 'presentation:world-around-me-lesson-1'"), true);
+  assert.equal(kindMigrationSource.includes("('flashcards_pdf', 'flashcards:world-around-me-lesson-1'"), true);
+  assert.equal(kindMigrationSource.includes("('worksheet_pdf', 'worksheet:appendix-1'"), true);
+  assert.equal(kindMigrationSource.includes("('song_audio', 'song:farm-animals'"), true);
+  assert.equal(kindMigrationSource.includes("('song_video', 'song-video:farm-animals-movement'"), true);
+  assert.equal(kindMigrationSource.includes("('pronunciation_audio', 'pronunciation:dog'"), true);
 });
 
 test("lesson 1 migration persists full homework practice sections and local audio paths", () => {
