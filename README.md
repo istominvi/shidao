@@ -36,6 +36,18 @@ npm run build
 - Приложение: `/onboarding`, `/dashboard`, `/groups`, `/lessons`, `/methodologies`, `/settings/*`.
 - Канонический runtime-урок для всех ролей: `/lessons/[scheduledLessonId]`.
 
+
+## Product architecture (lesson workflow)
+
+ShiDao — methodology-driven платформа: урок строится как единая последовательность шагов, где синхронизированы:
+
+- teacher side (`План урока`),
+- learner side (`Экран ученика`).
+
+В live-уроке переходы между шагами контролирует преподаватель; ученик не должен свободно переключать шаги по умолчанию. После завершения урока тот же `Экран ученика` становится режимом повторения с свободной навигацией. Видеозвонок сейчас внешний (Zoom/Meet/Telegram и т.д.): ShiDao хранит/открывает meeting link и поддерживает сценарий screen-share student screen.
+
+Подробная каноническая модель: `docs/architecture/lesson-workflow-model.md`.
+
 ## Документация
 
 - Индекс: `docs/index.md`

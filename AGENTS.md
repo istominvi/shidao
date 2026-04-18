@@ -28,3 +28,18 @@ Read migrations only when the task explicitly involves:
 
 - Never delete or rewrite old migrations unless explicitly requested.
 - Keep current-schema snapshot/docs updated when DB model changes.
+
+
+## Lesson workflow policy
+
+Before changing lesson plan/student screen/homework/materials docs or code, read:
+
+- `docs/architecture/lesson-workflow-model.md`
+
+Policy:
+
+- Use `Student Screen` / `Экран ученика` for learner-facing live/review player; do not use `Content` as the canonical product term for this surface.
+- Keep step numbering and step titles aligned across teacher and learner views.
+- During live lessons, learner free previous/next navigation must not be the default.
+- Do not mix teacher-private methodology instructions into learner-facing screens.
+- Do not add migrations unless the task explicitly asks for DB implementation.

@@ -34,6 +34,7 @@ This guide describes the **current** ShiDao database model.
 - `methodology_lesson_block`
 - `methodology_lesson_block_asset`
 - `methodology_lesson_student_content`
+- `methodology_lesson_student_content` currently represents learner-facing source-layer lesson content; future live sync/telemetry may require additional runtime fields/tables (not part of this documentation-only task).
 
 ### Runtime lesson + homework + communication
 
