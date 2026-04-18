@@ -48,6 +48,15 @@ insert into public.methodology_lesson_homework (
   estimated_minutes,
   quiz_payload
 )
+with lesson as (
+  select ml.id as methodology_lesson_id
+  from public.methodology_lesson ml
+  join public.methodology m on m.id = ml.methodology_id
+  where m.slug = 'world-around-me'
+    and ml.module_index = 1
+    and ml.lesson_index = 1
+  limit 1
+)
 select
   lesson.methodology_lesson_id,
   'Практика дома: ферма, слова и команды',
@@ -74,6 +83,15 @@ insert into public.methodology_lesson_student_content (
   title,
   subtitle,
   content_payload
+)
+with lesson as (
+  select ml.id as methodology_lesson_id
+  from public.methodology_lesson ml
+  join public.methodology m on m.id = ml.methodology_id
+  where m.slug = 'world-around-me'
+    and ml.module_index = 1
+    and ml.lesson_index = 1
+  limit 1
 )
 select
   lesson.methodology_lesson_id,
