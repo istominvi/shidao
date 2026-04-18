@@ -56,3 +56,11 @@
 - Переключение профилей teacher/parent через session menu.
 - Role boundaries: parent read-only, student own-scope, teacher own groups.
 - Канонический runtime маршрут урока: `/lessons/[scheduledLessonId]`.
+
+
+## 7) Lesson workflow terminology addendum (2026-04-18)
+
+- Историческое название teacher tab `Контент` для learner-facing lesson player считается устаревшим (deprecated) в продуктовой терминологии.
+- Канонический набор teacher tabs для урока: `План урока`, `Экран ученика`, `Материалы`, `Домашнее задание` (+ runtime/chat вкладки по контексту).
+- Термин `Сцены` (`scene`) может оставаться внутренним implementation-термином в существующем коде/контрактах, но product-facing docs должны использовать `Шаг` (`Lesson Step`).
+- Детальная каноническая модель зафиксирована в `docs/architecture/lesson-workflow-model.md`.
