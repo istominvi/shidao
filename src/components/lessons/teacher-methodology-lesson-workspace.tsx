@@ -50,7 +50,6 @@ type WordGroup = {
 type PrepItem = {
   id: string;
   title: string;
-  badge: "показать" | "распечатать" | "подготовить" | "включить";
   href?: string | null;
   actionLabel?: string;
   note?: string;
@@ -63,19 +62,6 @@ function pickSections(
   type: MethodologyLessonStudentContentSection["type"],
 ) {
   return source?.sections.filter((section) => section.type === type) ?? [];
-}
-
-function classForBadge(badge: PrepItem["badge"]) {
-  switch (badge) {
-    case "показать":
-      return "border-sky-200 bg-sky-50 text-sky-700";
-    case "распечатать":
-      return "border-violet-200 bg-violet-50 text-violet-700";
-    case "включить":
-      return "border-emerald-200 bg-emerald-50 text-emerald-700";
-    default:
-      return "border-amber-200 bg-amber-50 text-amber-700";
-  }
 }
 
 function resolveAssetUrl(asset?: ReusableAsset) {
@@ -333,21 +319,16 @@ function WordsAndPhrasesPanel({ groups }: { groups: WordGroup[] }) {
   );
 }
 
-function MaterialsPrepPanel({ digitalItems, prepItems }: { digitalItems: PrepItem[]; prepItems: string[] }) {
+function MaterialsPanel({ digitalItems }: { digitalItems: PrepItem[] }) {
   return (
     <section className="rounded-2xl border border-neutral-200 bg-white p-4">
-      <h3 className="text-base font-semibold text-neutral-900">Реквизит к уроку</h3>
-      <p className="mt-1 text-sm text-neutral-600">Цифровые материалы и чек-лист подготовки преподавателя.</p>
+      <h3 className="text-base font-semibold text-neutral-900">Материалы урока</h3>
+      <p className="mt-1 text-sm text-neutral-600">Видео, приложение, песня и тетрадь.</p>
 
-      <div className="mt-4 grid gap-3 md:grid-cols-2">
+      <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
         {digitalItems.map((item) => (
           <article key={item.id} className="rounded-xl border border-neutral-200 bg-neutral-50 p-3">
-            <div className="flex items-center justify-between gap-2">
-              <p className="text-sm font-semibold text-neutral-900">{item.title}</p>
-              <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${classForBadge(item.badge)}`}>
-                {item.badge}
-              </span>
-            </div>
+            <p className="text-sm font-semibold text-neutral-900">{item.title}</p>
             {item.note ? <p className="mt-1 text-xs text-neutral-600">{item.note}</p> : null}
             {item.href ? (
               <a
@@ -362,23 +343,11 @@ function MaterialsPrepPanel({ digitalItems, prepItems }: { digitalItems: PrepIte
           </article>
         ))}
       </div>
-
-      <div className="mt-4 rounded-xl border border-neutral-200 bg-neutral-50 p-3">
-        <h4 className="text-sm font-semibold text-neutral-800">Подготовка реквизита</h4>
-        <ul className="mt-2 space-y-1 text-sm text-neutral-700">
-          {prepItems.map((item) => (
-            <li key={item} className="flex items-start gap-2">
-              <span aria-hidden="true" className="mt-1 inline-block h-1.5 w-1.5 rounded-full bg-neutral-500" />
-              <span>{item}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
     </section>
   );
 }
 
-function TeacherLessonPlanResources({ readModel }: { readModel: MethodologyLessonReadModel }) {
+function TeacherLessonContentHub({ readModel }: { readModel: MethodologyLessonReadModel }) {
   const resources = useMemo(() => {
     const source = readModel.studentContent.source;
     const assetsById = readModel.studentContent.assetsById;
@@ -427,28 +396,24 @@ function TeacherLessonPlanResources({ readModel }: { readModel: MethodologyLesso
       {
         id: "video-farm",
         title: "Видео: farm animals",
-        badge: "показать",
         href: resolveAssetUrl(videoAsset),
         actionLabel: "Открыть видео",
       },
       {
         id: "flashcards-pdf",
         title: "Карточки урока 1",
-        badge: "распечатать",
         href: resolveAssetUrl(flashcardsAsset),
         actionLabel: "Скачать карточки PDF",
       },
       {
         id: "appendix-1",
         title: "Приложение 1",
-        badge: "распечатать",
         href: resolveAssetUrl(appendixAsset),
         actionLabel: "Открыть PDF",
       },
       {
         id: "workbook-3-4",
         title: "Рабочая тетрадь, стр. 3–4",
-        badge: "распечатать",
         href: resolveAssetUrl(workbookAsset),
         actionLabel: workbookAsset?.fileRef ? "Открыть PDF" : "Открыть ресурс",
         note: workbookAsset?.fileRef ? undefined : "PDF будет добавлен позже / внешний ресурс",
@@ -456,7 +421,6 @@ function TeacherLessonPlanResources({ readModel }: { readModel: MethodologyLesso
       {
         id: "song-farm",
         title: "Песня: farm animals",
-        badge: "включить",
         href: resolveAssetUrl(songAsset),
         actionLabel: "Слушать",
       },
@@ -485,12 +449,7 @@ function TeacherLessonPlanResources({ readModel }: { readModel: MethodologyLesso
   }, [readModel.studentContent.assetsById, readModel.studentContent.source]);
 
   return (
-    <section className="mt-5 space-y-4" aria-label="Материалы к уроку">
-      <header>
-        <h3 className="text-lg font-semibold text-neutral-900">Материалы к уроку</h3>
-        <p className="mt-1 text-sm text-neutral-600">Ресурсы для проведения, подготовки и повторения в рамках плана урока.</p>
-      </header>
-
+    <section className="space-y-4" aria-label="Контент урока">
       <ResourceViewerCard
         title="Презентация к уроку"
         helper="Показывайте слайды во время занятия или скачайте файл для подготовки."
@@ -505,7 +464,7 @@ function TeacherLessonPlanResources({ readModel }: { readModel: MethodologyLesso
 
       <ResourceViewerCard
         title="Карточки урока"
-        helper="Используйте карточки для показа, повторения и игр на уроке."
+        helper="Используйте карточки для показа, повторения и игр."
         imageRefs={resources.flashcards.imageRefs}
         itemLabel="Карточка"
         primaryHref={resources.flashcards.pdfUrl}
@@ -514,24 +473,67 @@ function TeacherLessonPlanResources({ readModel }: { readModel: MethodologyLesso
 
       <WordsAndPhrasesPanel groups={resources.words} />
 
-      <MaterialsPrepPanel
-        digitalItems={resources.materials}
-        prepItems={[
-          "Course heroes",
-          "Малярный скотч",
-          "Мяч",
-          "Счётные палочки",
-          "Указка",
-          "Мягкие игрушки: dog, cat, rabbit, horse",
-          "Игрушечная ферма",
-        ]}
-      />
+      <MaterialsPanel digitalItems={resources.materials} />
+
+      <section className="rounded-2xl border border-neutral-200 bg-white p-4">
+        <h3 className="text-base font-semibold text-neutral-900">Предпросмотр для ученика</h3>
+        <p className="mt-1 text-sm text-neutral-600">Откройте ученический экран перед занятием и проверьте порядок сцен.</p>
+        <div className="mt-4">
+          <LessonStudentContentPanel
+            title="Предпросмотр для ученика"
+            source={readModel.studentContent.source}
+            unavailableReason={readModel.studentContent.unavailableReason}
+            assetsById={readModel.studentContent.assetsById}
+            embedded
+          />
+        </div>
+      </section>
     </section>
+  );
+}
+
+function buildResourceChipsByStep(readModel: MethodologyLessonReadModel) {
+  const assetsById = readModel.studentContent.assetsById;
+  const videoUrl = resolveAssetUrl(assetsById["video:farm-animals"]);
+  const flashcardsUrl = resolveAssetUrl(assetsById["flashcards:world-around-me-lesson-1"]);
+  const appendixUrl = resolveAssetUrl(assetsById["worksheet:appendix-1"]);
+  const workbookUrl = resolveAssetUrl(assetsById["worksheet:workbook-pages-3-4"]);
+  const songUrl = resolveAssetUrl(assetsById["song:farm-animals"]);
+  const audioUrl =
+    resolveAssetUrl(assetsById["audio:dog"]) ??
+    resolveAssetUrl(assetsById["audio:cat"]) ??
+    resolveAssetUrl(assetsById["audio:rabbit"]) ??
+    resolveAssetUrl(assetsById["audio:horse"]);
+
+  return Object.fromEntries(
+    readModel.presentation.lessonFlow.map((step) => {
+      const stepText = `${step.title} ${step.materials.join(" ")}`.toLowerCase();
+      const chips: Array<{ label: string; href?: string | null }> = [];
+
+      if (stepText.includes("video")) chips.push({ label: "Видео farm animals", href: videoUrl });
+      if (stepText.includes("лексик") || stepText.includes("слова")) {
+        chips.push({ label: "Карточки животных", href: flashcardsUrl });
+        chips.push({ label: "Аудио слов", href: audioUrl });
+      }
+      if (stepText.includes("приложение 1") || stepText.includes("сч")) {
+        chips.push({ label: "Приложение 1", href: appendixUrl });
+      }
+      if (stepText.includes("тетрад")) chips.push({ label: "Рабочая тетрадь, стр. 3–4", href: workbookUrl });
+      if (stepText.includes("песн")) chips.push({ label: "Песня farm animals", href: songUrl });
+
+      for (const resource of step.resources) {
+        const alreadyIncluded = chips.some((chip) => chip.label === resource.title);
+        if (!alreadyIncluded) chips.push({ label: resource.title, href: resource.url ?? null });
+      }
+
+      return [step.id, chips];
+    }),
   );
 }
 
 export function TeacherMethodologyLessonWorkspace({ readModel }: { readModel: MethodologyLessonReadModel }) {
   const [tab, setTab] = useState<TeacherLessonTabKey>("plan");
+  const resourceChipsByStepId = useMemo(() => buildResourceChipsByStep(readModel), [readModel]);
 
   return (
     <SurfaceCard as="section" className="p-5 md:p-6" bodyClassName="mt-0">
@@ -539,23 +541,16 @@ export function TeacherMethodologyLessonWorkspace({ readModel }: { readModel: Me
 
       <div className="mt-5">
         {tab === "plan" ? (
-          <>
-            <TeacherLessonPedagogicalContent
-              quickSummary={readModel.presentation.quickSummary}
-              lessonFlow={readModel.presentation.lessonFlow}
-              durationLabel={readModel.presentation.methodologyReference.durationLabel}
-            />
-            <TeacherLessonPlanResources readModel={readModel} />
-          </>
+          <TeacherLessonPedagogicalContent
+            quickSummary={readModel.presentation.quickSummary}
+            lessonFlow={readModel.presentation.lessonFlow}
+            durationLabel={readModel.presentation.methodologyReference.durationLabel}
+            resourceChipsByStepId={resourceChipsByStepId}
+          />
         ) : null}
 
         {tab === "content" ? (
-          <LessonStudentContentPanel
-            source={readModel.studentContent.source}
-            unavailableReason={readModel.studentContent.unavailableReason}
-            assetsById={readModel.studentContent.assetsById}
-            embedded
-          />
+          <TeacherLessonContentHub readModel={readModel} />
         ) : null}
 
         {tab === "homework" ? (

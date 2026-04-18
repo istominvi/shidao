@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { BookOpen, Footprints, Layers3, MessageCircleMore, Timer, Workflow } from "lucide-react";
 import { Chip } from "@/components/ui/chip";
 import type { TeacherLessonWorkspacePresentation } from "@/lib/server/teacher-lesson-workspace";
+import { classNames } from "@/lib/ui/classnames";
 
 function SummaryList({ items, emptyLabel }: { items: string[]; emptyLabel: string }) {
   if (!items.length) return <p className="text-sm text-neutral-600">{emptyLabel}</p>;
@@ -54,7 +55,11 @@ export function TeacherLessonPedagogicalContent({
   quickSummary,
   lessonFlow,
   durationLabel,
-}: Pick<TeacherLessonWorkspacePresentation, "quickSummary" | "lessonFlow"> & { durationLabel?: string | null }) {
+  resourceChipsByStepId = {},
+}: Pick<TeacherLessonWorkspacePresentation, "quickSummary" | "lessonFlow"> & {
+  durationLabel?: string | null;
+  resourceChipsByStepId?: Record<string, Array<{ label: string; href?: string | null }>>;
+}) {
   return (
     <section className="space-y-8" aria-label="План урока">
       <section id="lesson-passport" className="scroll-mt-20 rounded-2xl border border-neutral-200 bg-gradient-to-b from-neutral-50 to-white p-4">
@@ -96,7 +101,7 @@ export function TeacherLessonPedagogicalContent({
       </section>
 
       <section id="lesson-materials" className="scroll-mt-20 border-b border-neutral-200 pb-6">
-        <SectionTitle title="Материалы и подготовка" subtitle="Проверьте реквизит до старта урока." />
+        <SectionTitle title="Подготовка к уроку" subtitle="Проверьте реквизит и пространство до старта урока." />
         <SummaryList items={quickSummary.prepChecklist} emptyLabel="Чек-лист подготовки пока не заполнен." />
       </section>
 
@@ -159,6 +164,37 @@ export function TeacherLessonPedagogicalContent({
                       <SummaryList items={step.materials} emptyLabel="Материалы не требуются." />
                     </PedagogicalSubsection>
                   ) : null}
+                </div>
+              ) : null}
+
+              {resourceChipsByStepId[step.id]?.length ? (
+                <div className="mt-3 border-t border-neutral-200 pt-3">
+                  <p className="text-xs font-semibold uppercase tracking-[0.1em] text-neutral-500">Ресурсы по шагу</p>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {resourceChipsByStepId[step.id].map((chip) =>
+                      chip.href ? (
+                        <a
+                          key={`${step.id}-${chip.label}`}
+                          href={chip.href}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="rounded-full border border-neutral-300 bg-neutral-50 px-2.5 py-1 text-xs font-medium text-neutral-700 transition hover:border-sky-300 hover:bg-sky-50 hover:text-sky-800"
+                        >
+                          {chip.label}
+                        </a>
+                      ) : (
+                        <span
+                          key={`${step.id}-${chip.label}`}
+                          className={classNames(
+                            "rounded-full border px-2.5 py-1 text-xs font-medium",
+                            "border-neutral-200 bg-neutral-100 text-neutral-500",
+                          )}
+                        >
+                          {chip.label}
+                        </span>
+                      ),
+                    )}
+                  </div>
                 </div>
               ) : null}
             </article>
