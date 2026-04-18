@@ -231,11 +231,22 @@ function formatReadiness(readiness: MethodologyReadinessStatus) {
 function formatAssetKind(kind: ReusableAsset["kind"]) {
   switch (kind) {
     case "video":
+    case "lesson_video":
       return "Видео";
     case "song":
+    case "song_audio":
       return "Песня";
+    case "song_video":
+      return "Видео песни";
     case "worksheet":
+    case "worksheet_pdf":
       return "Рабочая тетрадь";
+    case "presentation":
+      return "Презентация";
+    case "flashcards_pdf":
+      return "Карточки (PDF)";
+    case "pronunciation_audio":
+      return "Аудио произношения";
     case "vocabulary_set":
       return "Набор слов";
     case "activity_template":
@@ -339,6 +350,47 @@ function toStudentContentUnavailableReason(
     return "schema_missing";
   }
   return "load_failed";
+}
+
+function collectStudentContentAssetIds(studentContent: MethodologyLessonStudentContent) {
+  return Array.from(
+    new Set(
+      studentContent.sections.flatMap((section) => {
+        if (section.type === "media_asset") return [section.assetId];
+        if (section.type === "worksheet" && section.assetId) return [section.assetId];
+        if (section.type === "presentation") return [section.assetId];
+        if (section.type === "count_board" && section.assetId) return [section.assetId];
+        if (section.type === "resource_links") {
+          return section.resources
+            .map((resource) => resource.assetId)
+            .filter((id): id is string => Boolean(id));
+        }
+        if (section.type === "vocabulary_cards") {
+          return section.items
+            .map((item) => item.audioAssetId)
+            .filter((id): id is string => Boolean(id));
+        }
+        if (section.type === "phrase_cards") {
+          return section.items
+            .map((item) => item.audioAssetId)
+            .filter((id): id is string => Boolean(id));
+        }
+        if (section.type === "action_cards") {
+          return section.items
+            .map((item) => item.audioAssetId)
+            .filter((id): id is string => Boolean(id));
+        }
+        if (section.type === "word_list") {
+          return section.groups.flatMap((group) =>
+            group.entries
+              .map((entry) => entry.audioAssetId)
+              .filter((id): id is string => Boolean(id)),
+          );
+        }
+        return [];
+      }),
+    ),
+  );
 }
 
 function collectBlockMaterials(block: LessonBlockInstance) {
@@ -717,17 +769,7 @@ export async function getTeacherLessonWorkspaceByScheduledLessonId(
         studentContentUnavailableReason = "schema_missing";
       }
     } else {
-      const studentContentAssetIds = Array.from(
-        new Set(
-          studentContent.sections.flatMap((section) => {
-            if (section.type === "media_asset") return [section.assetId];
-            if (section.type === "worksheet" && section.assetId) {
-              return [section.assetId];
-            }
-            return [];
-          }),
-        ),
-      );
+      const studentContentAssetIds = collectStudentContentAssetIds(studentContent);
 
       if (studentContentAssetIds.length > 0) {
         studentContentAssets = await deps.listReusableAssetsByIds(

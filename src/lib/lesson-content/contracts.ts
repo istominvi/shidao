@@ -93,9 +93,15 @@ export type ReusableAsset = {
     durationSeconds?: number;
     language?: string;
     level?: string;
-  titleRu?: string;
-  titleNative?: string;
-    [key: string]: string | number | boolean | undefined;
+    titleRu?: string;
+    titleNative?: string;
+    [key: string]:
+      | string
+      | number
+      | boolean
+      | undefined
+      | string[]
+      | { [nested: string]: string | number | boolean | undefined | string[] };
   };
 };
 
@@ -239,6 +245,14 @@ export type MethodologyLessonHomeworkDefinition = {
   quiz?: {
     id: string;
     version: number;
+    title?: string;
+    subtitle?: string;
+    introText?: string;
+    completionTitle?: string;
+    completionText?: string;
+    illustrationSrc?: string;
+    tone?: "sky" | "violet" | "emerald" | "amber" | "rose" | "neutral";
+    practiceSections?: unknown[];
     questions: Array<{
       id: string;
       prompt: string;
@@ -261,12 +275,15 @@ type BaseStudentSection<TType extends MethodologyStudentSectionType> = {
   layout?:
     | "hero"
     | "roadmap"
+    | "presentation"
+    | "resources"
     | "vocabulary"
     | "phrases"
     | "counting"
     | "movement"
     | "farm"
     | "practice"
+    | "homework"
     | "recap";
   sceneId?: string;
 };
@@ -278,22 +295,27 @@ export type LessonFocusStudentSection = BaseStudentSection<"lesson_focus"> & {
 
 export type VocabularyCardsStudentSection =
   BaseStudentSection<"vocabulary_cards"> & {
+    displayMode?: "grid" | "carousel";
     items: Array<{
       term: string;
       pinyin?: string;
       meaning: string;
       visualHint?: string;
       illustrationSrc?: string;
+      audioAssetId?: string;
     }>;
   };
 
 export type PhraseCardsStudentSection = BaseStudentSection<"phrase_cards"> & {
+  displayMode?: "grid" | "dialogue";
   items: Array<{
     phrase: string;
     pinyin?: string;
     meaning: string;
     usageHint?: string;
     example?: string;
+    speaker?: string;
+    audioAssetId?: string;
   }>;
 };
 
@@ -306,11 +328,80 @@ export type MediaAssetStudentSection = BaseStudentSection<"media_asset"> & {
 };
 
 export type ActionCardsStudentSection = BaseStudentSection<"action_cards"> & {
+  displayMode?: "grid" | "slider";
   items: Array<{
     term: string;
     pinyin?: string;
     meaning: string;
     movementHint: string;
+    illustrationSrc?: string;
+    commandExample?: string;
+    audioAssetId?: string;
+  }>;
+};
+
+export type PresentationStudentSection = BaseStudentSection<"presentation"> & {
+  assetId: string;
+  readOnly?: boolean;
+  studentCtaLabel?: string;
+  teacherCtaLabel?: string;
+  note?: string;
+};
+
+export type ResourceLinksStudentSection = BaseStudentSection<"resource_links"> & {
+  audience: "teacher" | "student" | "both";
+  resources: Array<{
+    id: string;
+    title: string;
+    subtitle?: string;
+    assetId?: string;
+    sourceUrl?: string;
+    downloadable?: boolean;
+    previewable?: boolean;
+  }>;
+};
+
+export type WordListStudentSection = BaseStudentSection<"word_list"> & {
+  groups: Array<{
+    id: string;
+    title: string;
+    entries: Array<{
+      hanzi: string;
+      pinyin?: string;
+      meaning: string;
+      audioAssetId?: string;
+    }>;
+  }>;
+};
+
+export type CountBoardStudentSection = BaseStudentSection<"count_board"> & {
+  assetId?: string;
+  prompt: string;
+  groups: Array<{
+    id: string;
+    label: string;
+    count: number;
+    cue?: string;
+  }>;
+};
+
+export type FarmPlacementStudentSection = BaseStudentSection<"farm_placement"> & {
+  illustrationSrc?: string;
+  animals: Array<{
+    id: string;
+    hanzi: string;
+    pinyin?: string;
+    meaning: string;
+  }>;
+  targetPhraseTemplate: string;
+  defaultZoneLabel: string;
+};
+
+export type MatchingPracticeStudentSection = BaseStudentSection<"matching_practice"> & {
+  prompt: string;
+  pairs: Array<{
+    id: string;
+    label: string;
     illustrationSrc?: string;
   }>;
 };
@@ -328,10 +419,16 @@ export type RecapStudentSection = BaseStudentSection<"recap"> & {
 
 export type MethodologyLessonStudentContentSection =
   | LessonFocusStudentSection
+  | PresentationStudentSection
+  | ResourceLinksStudentSection
   | VocabularyCardsStudentSection
   | PhraseCardsStudentSection
+  | WordListStudentSection
+  | CountBoardStudentSection
   | MediaAssetStudentSection
   | ActionCardsStudentSection
+  | FarmPlacementStudentSection
+  | MatchingPracticeStudentSection
   | WorksheetStudentSection
   | RecapStudentSection;
 

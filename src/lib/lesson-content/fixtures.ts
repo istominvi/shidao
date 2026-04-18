@@ -70,6 +70,88 @@ export const lessonContentFixtureAssets: ReusableAsset[] = [
     kind: "video",
     title: "farm animals",
     description: "Видео-сегмент уроков 1–2: знакомство с животными фермы.",
+    sourceUrl:
+      "https://drive.google.com/file/d/1NXyngOuT9WIwvgA0gvvSzZc9-BUuKT7k/view?usp=drive_link",
+  },
+  {
+    id: "video-clip:farm-animals-dog",
+    kind: "video",
+    title: "Клип: собака на ферме",
+    fileRef: "/methodologies/world-around-me/lesson-1/media/gou.mp4",
+    metadata: { scope: "lesson-1-optional-clip" },
+  },
+  {
+    id: "video-clip:farm-animals-cat",
+    kind: "video",
+    title: "Клип: кошка на ферме",
+    fileRef: "/methodologies/world-around-me/lesson-1/media/mao.mp4",
+    metadata: { scope: "lesson-1-optional-clip" },
+  },
+  {
+    id: "video-clip:farm-animals-rabbit",
+    kind: "video",
+    title: "Клип: кролик на ферме",
+    fileRef: "/methodologies/world-around-me/lesson-1/media/tu.mp4",
+    metadata: { scope: "lesson-1-optional-clip" },
+  },
+  {
+    id: "video-clip:farm-animals-horse",
+    kind: "video",
+    title: "Клип: лошадь на ферме",
+    fileRef: "/methodologies/world-around-me/lesson-1/media/ma.mp4",
+    metadata: { scope: "lesson-1-optional-clip" },
+  },
+  {
+    id: "presentation:world-around-me-lesson-1",
+    kind: "presentation",
+    title: "Презентация урока 1",
+    description: "Локальная презентация урока 1 для проведения и демонстрации слайдов.",
+    sourceUrl:
+      "https://docs.google.com/presentation/d/1o-LCuePhdVq39oBPqHgtHpJUREJNz4dS/edit?usp=drive_link&ouid=102261836036017130249&rtpof=true&sd=true",
+    fileRef: "/methodologies/world-around-me/lesson-1/presentation/lesson-1-slides.pdf",
+    metadata: {
+      pptxFileRef: "/methodologies/world-around-me/lesson-1/presentation/lesson-1-slides.pptx",
+      slideImageRefs: [
+        "/methodologies/world-around-me/lesson-1/presentation/lesson-1-slide-01.png",
+        "/methodologies/world-around-me/lesson-1/presentation/lesson-1-slide-02.png",
+        "/methodologies/world-around-me/lesson-1/presentation/lesson-1-slide-03.png",
+        "/methodologies/world-around-me/lesson-1/presentation/lesson-1-slide-04.png",
+        "/methodologies/world-around-me/lesson-1/presentation/lesson-1-slide-05.png",
+        "/methodologies/world-around-me/lesson-1/presentation/lesson-1-slide-06.png",
+        "/methodologies/world-around-me/lesson-1/presentation/lesson-1-slide-07.png",
+        "/methodologies/world-around-me/lesson-1/presentation/lesson-1-slide-08.png",
+        "/methodologies/world-around-me/lesson-1/presentation/lesson-1-slide-09.png",
+        "/methodologies/world-around-me/lesson-1/presentation/lesson-1-slide-10.png",
+        "/methodologies/world-around-me/lesson-1/presentation/lesson-1-slide-11.png",
+        "/methodologies/world-around-me/lesson-1/presentation/lesson-1-slide-12.png",
+        "/methodologies/world-around-me/lesson-1/presentation/lesson-1-slide-13.png",
+        "/methodologies/world-around-me/lesson-1/presentation/lesson-1-slide-14.png",
+        "/methodologies/world-around-me/lesson-1/presentation/lesson-1-slide-15.png",
+        "/methodologies/world-around-me/lesson-1/presentation/lesson-1-slide-16.png",
+      ],
+    },
+  },
+  {
+    id: "flashcards:world-around-me-lesson-1",
+    kind: "flashcards_pdf",
+    title: "Карточки урока 1 (PDF)",
+    sourceUrl:
+      "https://drive.google.com/file/d/11LTKea4ui3_xB5ZBc6WbEanwlxfoO_GY/view?usp=drive_link",
+    fileRef: "/methodologies/world-around-me/lesson-1/flashcards/lesson-1-flashcards.pdf",
+    metadata: {
+      cardImageRefs: [
+        "/methodologies/world-around-me/lesson-1/flashcards/dog-card.png",
+        "/methodologies/world-around-me/lesson-1/flashcards/dog-card_2.png",
+        "/methodologies/world-around-me/lesson-1/flashcards/cat-card.png",
+        "/methodologies/world-around-me/lesson-1/flashcards/cat-card_2.png",
+        "/methodologies/world-around-me/lesson-1/flashcards/rabbit-card.png",
+        "/methodologies/world-around-me/lesson-1/flashcards/rabbit-card_2.png",
+        "/methodologies/world-around-me/lesson-1/flashcards/horse-card.png",
+        "/methodologies/world-around-me/lesson-1/flashcards/horse-card_2.png",
+        "/methodologies/world-around-me/lesson-1/flashcards/farm-card.png",
+        "/methodologies/world-around-me/lesson-1/flashcards/farm-card_2.png",
+      ],
+    },
   },
   {
     id: "song:hello",
@@ -79,21 +161,106 @@ export const lessonContentFixtureAssets: ReusableAsset[] = [
   },
   {
     id: "song:farm-animals",
-    kind: "song",
+    kind: "song_audio",
     title: "farm animals",
     description: "Песня для завершения уроков про животных.",
+    sourceUrl:
+      "https://drive.google.com/file/d/1RewHJRdd6oqSfX506A7ABt6VMDhDzJRP/view?usp=drive_link",
+    fileRef: "/methodologies/world-around-me/lesson-1/media/farm-animals-song.mp3",
+  },
+  {
+    id: "song-video:farm-animals-movement",
+    kind: "song_video",
+    title: "farm animals (movement version)",
+    sourceUrl:
+      "https://drive.google.com/file/d/1RdZLmZHFnxflYuYkSNvhclrfYuNxAnSC/view?usp=drive_link",
+    fileRef: "/methodologies/world-around-me/lesson-1/media/farm-animals-song-video.mp4",
   },
   {
     id: "worksheet:workbook-pages-3-4",
     kind: "worksheet",
     title: "Рабочая тетрадь, стр. 3–4",
     description: "Задание на раскрашивание животных и вопрос «这是什么？».",
+    sourceUrl:
+      "https://drive.google.com/file/d/1bS3KP_wRQSrAu9faPhyqkNdxeTul9bi0/view?usp=drive_link",
   },
   {
     id: "worksheet:appendix-1",
-    kind: "worksheet",
+    kind: "worksheet_pdf",
     title: "Приложение 1",
     description: "Материал для указки: показать, посчитать, назвать животных.",
+    sourceUrl:
+      "https://drive.google.com/file/d/1hNwwBZ0S7SNmSbAAt-vz1aPanAluSTrC/view?usp=drive_link",
+    fileRef: "/methodologies/world-around-me/lesson-1/appendix/appendix-1.pdf",
+    metadata: {
+      previewImageRef: "/methodologies/world-around-me/lesson-1/appendix/appendix-1.png",
+    },
+  },
+  {
+    id: "pronunciation:dog",
+    kind: "pronunciation_audio",
+    title: "狗 · gǒu",
+    fileRef: "/methodologies/world-around-me/lesson-1/audio/gou.mp3",
+  },
+  {
+    id: "pronunciation:cat",
+    kind: "pronunciation_audio",
+    title: "猫 · māo",
+    fileRef: "/methodologies/world-around-me/lesson-1/audio/mao.mp3",
+  },
+  {
+    id: "pronunciation:rabbit",
+    kind: "pronunciation_audio",
+    title: "兔子 · tùzi",
+    fileRef: "/methodologies/world-around-me/lesson-1/audio/tuzi.mp3",
+  },
+  {
+    id: "pronunciation:horse",
+    kind: "pronunciation_audio",
+    title: "马 · mǎ",
+    fileRef: "/methodologies/world-around-me/lesson-1/audio/ma.mp3",
+  },
+  {
+    id: "pronunciation:farm",
+    kind: "pronunciation_audio",
+    title: "农场 · nóngchǎng",
+    fileRef: "/methodologies/world-around-me/lesson-1/audio/nongchang.mp3",
+  },
+  {
+    id: "pronunciation:wo-shi",
+    kind: "pronunciation_audio",
+    title: "我是… · wǒ shì…",
+    fileRef: "/methodologies/world-around-me/lesson-1/audio/woshi.mp3",
+  },
+  {
+    id: "pronunciation:zhe-shi",
+    kind: "pronunciation_audio",
+    title: "这是… · zhè shì…",
+    fileRef: "/methodologies/world-around-me/lesson-1/audio/zheshi.mp3",
+  },
+  {
+    id: "pronunciation:run",
+    kind: "pronunciation_audio",
+    title: "跑 · pǎo",
+    fileRef: "/methodologies/world-around-me/lesson-1/audio/pao.mp3",
+  },
+  {
+    id: "pronunciation:jump",
+    kind: "pronunciation_audio",
+    title: "跳 · tiào",
+    fileRef: "/methodologies/world-around-me/lesson-1/audio/tiao.mp3",
+  },
+  {
+    id: "pronunciation:lets",
+    kind: "pronunciation_audio",
+    title: "我们…吧! · wǒmen … ba!",
+    fileRef: "/methodologies/world-around-me/lesson-1/audio/womenba.mp3",
+  },
+  {
+    id: "pronunciation:zai",
+    kind: "pronunciation_audio",
+    title: "在 · zài",
+    fileRef: "/methodologies/world-around-me/lesson-1/audio/zai.mp3",
   },
   {
     id: "worksheet:workbook-page-5",
@@ -1160,16 +1327,65 @@ export const lessonContentFixtureMethodologyLessonThree: MethodologyLesson =
 const lessonOneHomeworkDefinition: MethodologyLessonHomeworkDefinition = {
   id: "methodology-homework:world-around-me-01",
   methodologyLessonId: lessonOneMethodologyLesson.id,
-  title: "Мини-тест: Животные на ферме",
+  title: "Практика дома: ферма, слова и команды",
   kind: "quiz_single_choice",
   instructions:
-    "Короткая игра на повторение слов и фраз урока. Выбери правильный ответ в каждом вопросе.",
-  materialLinks: ["Рабочая тетрадь, стр. 3–4", "Карточки животных из урока"],
-  answerFormatHint: "Тест из 5 вопросов, один ответ в каждом.",
-  estimatedMinutes: 5,
+    "Сначала сопоставь животных и иероглифы, затем повтори слова с аудио, и после этого пройди короткий квиз.",
+  materialLinks: ["Рабочая тетрадь, стр. 3–4", "Карточки животных", "Презентация урока 1"],
+  answerFormatHint: "Интерактивная практика + квиз из 5 вопросов.",
+  estimatedMinutes: 10,
   quiz: {
     id: "world-around-me-lesson-1-quiz",
-    version: 1,
+    version: 2,
+    title: "Домашняя мини-миссия: Животные на ферме",
+    subtitle: "Сопоставь, послушай, затем выбери правильный вариант.",
+    introText: "Повтори слова урока вместе с карточками и аудио.",
+    completionTitle: "Отличная работа!",
+    completionText: "Ты повторил(а) слова, команды и фразы урока 1.",
+    practiceSections: [
+      {
+        id: "matching-l1",
+        type: "matching",
+        title: "Соедини картинку и иероглиф",
+        prompt: "Перетащи слово к правильной карточке животного.",
+        items: [
+          { id: "dog", label: "狗", illustrationSrc: "/methodologies/world-around-me/lesson-1/visuals/dog-card.png" },
+          { id: "cat", label: "猫", illustrationSrc: "/methodologies/world-around-me/lesson-1/visuals/cat-card.png" },
+          { id: "rabbit", label: "兔子", illustrationSrc: "/methodologies/world-around-me/lesson-1/visuals/rabbit-card.png" },
+          { id: "horse", label: "马", illustrationSrc: "/methodologies/world-around-me/lesson-1/visuals/horse-card.png" }
+        ]
+      },
+      {
+        id: "audio-review-l1",
+        type: "audio_review",
+        title: "Слушай и повторяй слова",
+        groups: [
+          {
+            id: "animals",
+            title: "Животные и ферма",
+            entries: [
+              { id: "狗", hanzi: "狗", pinyin: "gǒu", meaning: "собака", audioAssetId: "pronunciation:dog", audioUrl: "/methodologies/world-around-me/lesson-1/audio/gou.mp3" },
+              { id: "猫", hanzi: "猫", pinyin: "māo", meaning: "кошка", audioAssetId: "pronunciation:cat", audioUrl: "/methodologies/world-around-me/lesson-1/audio/mao.mp3" },
+              { id: "兔子", hanzi: "兔子", pinyin: "tùzi", meaning: "кролик", audioAssetId: "pronunciation:rabbit", audioUrl: "/methodologies/world-around-me/lesson-1/audio/tuzi.mp3" },
+              { id: "马", hanzi: "马", pinyin: "mǎ", meaning: "лошадь", audioAssetId: "pronunciation:horse", audioUrl: "/methodologies/world-around-me/lesson-1/audio/ma.mp3" },
+              { id: "农场", hanzi: "农场", pinyin: "nóngchǎng", meaning: "ферма", audioAssetId: "pronunciation:farm", audioUrl: "/methodologies/world-around-me/lesson-1/audio/nongchang.mp3" }
+            ]
+          },
+          {
+            id: "phrases-actions",
+            title: "Фразы, действия и грамматика",
+            entries: [
+              { id: "我是", hanzi: "我是…", pinyin: "wǒ shì…", meaning: "Я…", audioAssetId: "pronunciation:wo-shi", audioUrl: "/methodologies/world-around-me/lesson-1/audio/woshi.mp3" },
+              { id: "这是", hanzi: "这是…", pinyin: "zhè shì…", meaning: "Это…", audioAssetId: "pronunciation:zhe-shi", audioUrl: "/methodologies/world-around-me/lesson-1/audio/zheshi.mp3" },
+              { id: "跑", hanzi: "跑", pinyin: "pǎo", meaning: "бежать", audioAssetId: "pronunciation:run", audioUrl: "/methodologies/world-around-me/lesson-1/audio/pao.mp3" },
+              { id: "跳", hanzi: "跳", pinyin: "tiào", meaning: "прыгать", audioAssetId: "pronunciation:jump", audioUrl: "/methodologies/world-around-me/lesson-1/audio/tiao.mp3" },
+              { id: "我们吧", hanzi: "我们…吧!", pinyin: "wǒmen … ba!", meaning: "Давайте…!", audioAssetId: "pronunciation:lets", audioUrl: "/methodologies/world-around-me/lesson-1/audio/womenba.mp3" },
+              { id: "在", hanzi: "在", pinyin: "zài", meaning: "в / внутри", audioAssetId: "pronunciation:zai", audioUrl: "/methodologies/world-around-me/lesson-1/audio/zai.mp3" }
+            ]
+          }
+        ]
+      }
+    ],
     questions: [
       {
         id: "q1",
@@ -1401,188 +1617,183 @@ const lessonOneStudentContent: MethodologyLessonStudentContent = {
   id: "methodology-student-content:world-around-me-01",
   methodologyLessonId: lessonOneMethodologyLesson.id,
   title: "Урок 1. Животные на ферме",
-  subtitle: "Большое фермерское приключение: говорим, считаем, двигаемся и поём.",
+  subtitle: "Полноценный урок-хаб: презентация, карточки, счёт, движение, ферма и практика.",
   sections: [
     {
       type: "lesson_focus",
       title: "Урок 1 · Животные на ферме",
-      subtitle: "Сегодня мы отправляемся на ферму вместе с Сяо Лоном и Сяо Мей.",
-      body: "Поздороваемся, посмотрим видео и выучим первые слова про животных.",
-      chips: ["狗", "猫", "兔子", "马"],
+      subtitle: "Сяо Лон и Сяо Мей приглашают в фермерское приключение.",
+      body: "Поздороваемся, посмотрим презентацию, потренируем слова и команды, поработаем с приложением 1 и закрепим урок песней.",
+      chips: ["狗", "猫", "兔子", "马", "农场"],
       tone: "sky",
       layout: "hero",
-      illustrationSrc: "/methodologies/world-around-me/lesson-1/watercolor/hero-farm.png",
+      illustrationSrc: "/methodologies/world-around-me/lesson-1/visuals/hero-farm.png",
       sceneId: "scene-hero",
     },
     {
-      type: "lesson_focus",
-      title: "Что мы делаем сегодня",
-      body: "Смотрим видео farm animals, считаем до 5, двигаемся по командам, работаем в тетради и поём песню.",
-      chips: ["смотреть", "считать", "двигаться", "практиковать", "петь"],
-      tone: "violet",
-      layout: "roadmap",
-      sceneId: "scene-roadmap",
+      type: "presentation",
+      title: "Презентация урока",
+      subtitle: "Онлайн-версия для просмотра во время занятия.",
+      tone: "sky",
+      layout: "presentation",
+      sceneId: "scene-presentation",
+      assetId: "presentation:world-around-me-lesson-1",
+      readOnly: true,
+      studentCtaLabel: "Открыть слайды",
+      note: "Материал только для просмотра. Скачать презентацию можно в кабинете преподавателя.",
     },
     {
       type: "vocabulary_cards",
-      title: "Животные фермы",
-      subtitle: "Смотри на карточку, слушай и повторяй слово.",
+      title: "Большие карточки слов",
+      subtitle: "Листай карточки, слушай и повторяй.",
       tone: "amber",
       layout: "vocabulary",
-      sceneId: "scene-vocabulary",
+      sceneId: "scene-flashcards",
+      displayMode: "carousel",
       items: [
-        {
-          term: "狗",
-          pinyin: "gǒu",
-          meaning: "собака",
-          visualHint: "Скажи громко: gǒu!",
-          illustrationSrc: "/methodologies/world-around-me/lesson-1/watercolor/dog-card.png",
-        },
-        {
-          term: "猫",
-          pinyin: "māo",
-          meaning: "кошка",
-          visualHint: "Покажи лапки, как у кошки.",
-          illustrationSrc: "/methodologies/world-around-me/lesson-1/watercolor/cat-card.png",
-        },
-        {
-          term: "兔子",
-          pinyin: "tùzi",
-          meaning: "кролик",
-          visualHint: "Прыгни как кролик.",
-          illustrationSrc: "/methodologies/world-around-me/lesson-1/watercolor/rabbit-card.png",
-        },
-        {
-          term: "马",
-          pinyin: "mǎ",
-          meaning: "лошадь",
-          visualHint: "Покажи, как скачет лошадка.",
-          illustrationSrc: "/methodologies/world-around-me/lesson-1/watercolor/horse-card.png",
-        },
+        { term: "狗", pinyin: "gǒu", meaning: "собака", visualHint: "Скажи: 这是狗。", illustrationSrc: "/methodologies/world-around-me/lesson-1/visuals/dog-card.png", audioAssetId: "pronunciation:dog" },
+        { term: "猫", pinyin: "māo", meaning: "кошка", visualHint: "Покажи мягкие лапки.", illustrationSrc: "/methodologies/world-around-me/lesson-1/visuals/cat-card.png", audioAssetId: "pronunciation:cat" },
+        { term: "兔子", pinyin: "tùzi", meaning: "кролик", visualHint: "Прыгни как кролик.", illustrationSrc: "/methodologies/world-around-me/lesson-1/visuals/rabbit-card.png", audioAssetId: "pronunciation:rabbit" },
+        { term: "马", pinyin: "mǎ", meaning: "лошадь", visualHint: "Покажи, как скачет лошадка.", illustrationSrc: "/methodologies/world-around-me/lesson-1/visuals/horse-card.png", audioAssetId: "pronunciation:horse" },
+        { term: "农场", pinyin: "nóngchǎng", meaning: "ферма", visualHint: "Покажи ферму на картинке.", illustrationSrc: "/methodologies/world-around-me/lesson-1/visuals/farm-barn.png", audioAssetId: "pronunciation:farm" },
       ],
     },
     {
       type: "phrase_cards",
-      title: "Говорим по-китайски",
-      subtitle: "Скажи о себе и покажи, кто на карточке.",
+      title: "Диалог Сяо Лона и Сяо Мей",
+      subtitle: "Повторяем ключевые фразы урока.",
       tone: "violet",
       layout: "phrases",
       sceneId: "scene-phrases",
+      displayMode: "dialogue",
       items: [
-        {
-          phrase: "我是…",
-          pinyin: "wǒ shì…",
-          meaning: "Я…",
-          usageHint: "Назови себя или выбранное животное.",
-          example: "我是小猫。",
-        },
-        {
-          phrase: "这是…",
-          pinyin: "zhè shì…",
-          meaning: "Это…",
-          usageHint: "Покажи карточку и назови животное.",
-          example: "这是狗。",
-        },
+        { phrase: "你是谁？", pinyin: "nǐ shì shéi?", meaning: "Кто ты?", speaker: "Сяо Лон" },
+        { phrase: "我是…", pinyin: "wǒ shì…", meaning: "Я…", speaker: "Сяо Мей", example: "我是小猫。", audioAssetId: "pronunciation:wo-shi" },
+        { phrase: "这是…", pinyin: "zhè shì…", meaning: "Это…", speaker: "Сяо Лон", example: "这是狗。", audioAssetId: "pronunciation:zhe-shi" },
       ],
     },
     {
-      type: "lesson_focus",
-      title: "Считаем до 5",
-      subtitle: "Берём палочки и считаем вместе.",
-      body: "Покажи животных в Приложении 1 указкой, посчитай и назови их вслух.",
-      chips: ["1", "2", "3", "4", "5"],
+      type: "count_board",
+      title: "Приложение 1: считаем и называем",
+      subtitle: "Нажимай группы и проговаривай число + животное.",
       tone: "sky",
       layout: "counting",
-      illustrationSrc: "/methodologies/world-around-me/lesson-1/watercolor/counting-to-five.png",
       sceneId: "scene-counting",
+      prompt: "Покажи группу, посчитай животных и назови их вслух.",
+      assetId: "worksheet:appendix-1",
+      groups: [
+        { id: "g1", label: "1 × 狗", count: 1, cue: "一只狗" },
+        { id: "g2", label: "2 × 猫", count: 2, cue: "两只猫" },
+        { id: "g3", label: "3 × 兔子", count: 3, cue: "三只兔子" },
+        { id: "g4", label: "4 × 马", count: 4, cue: "四匹马" },
+        { id: "g5", label: "5 × 动物", count: 5, cue: "五只动物" },
+      ],
     },
     {
       type: "action_cards",
       title: "Движение и команды",
-      subtitle: "Слушай команду и двигайся быстро.",
+      subtitle: "Мини-дрилл по действиям и командам.",
       tone: "emerald",
       layout: "movement",
-      sceneId: "scene-movement",
+      sceneId: "scene-actions",
+      displayMode: "slider",
       items: [
-        {
-          term: "跑",
-          pinyin: "pǎo",
-          meaning: "бежать",
-          movementHint: "我们跑吧！ — 跑到狗！",
-          illustrationSrc: "/methodologies/world-around-me/lesson-1/watercolor/run-action.png",
-        },
-        {
-          term: "跳",
-          pinyin: "tiào",
-          meaning: "прыгать",
-          movementHint: "我们跳吧！ — 跳到兔子！",
-          illustrationSrc: "/methodologies/world-around-me/lesson-1/watercolor/jump-action.png",
-        },
+        { term: "跑", pinyin: "pǎo", meaning: "бежать", movementHint: "Побежали вместе по команде.", commandExample: "我们跑吧！ / 跑到狗！", illustrationSrc: "/methodologies/world-around-me/lesson-1/visuals/run-action.png", audioAssetId: "pronunciation:run" },
+        { term: "跳", pinyin: "tiào", meaning: "прыгать", movementHint: "Прыгаем на месте и к карточке.", commandExample: "我们跳吧！ / 跳到兔子！", illustrationSrc: "/methodologies/world-around-me/lesson-1/visuals/jump-action.png", audioAssetId: "pronunciation:jump" },
+        { term: "我们…吧!", pinyin: "wǒmen … ba!", meaning: "Давайте…!", movementHint: "Скажи команду всей группе.", commandExample: "我们跑吧！", audioAssetId: "pronunciation:lets" },
       ],
     },
     {
-      type: "phrase_cards",
-      title: "Ферма и где живут животные",
-      subtitle: "Ставим игрушки в ферму и говорим полными фразами.",
+      type: "farm_placement",
+      title: "Кто живёт на ферме",
+      subtitle: "Выбери животное и собери фразу с 在…里.",
       tone: "amber",
       layout: "farm",
-      illustrationSrc: "/methodologies/world-around-me/lesson-1/watercolor/farm-barn.png",
       sceneId: "scene-farm",
-      items: [
+      illustrationSrc: "/methodologies/world-around-me/lesson-1/visuals/farm-barn.png",
+      targetPhraseTemplate: "{animal} 在{zone}。",
+      defaultZoneLabel: "农场里",
+      animals: [
+        { id: "dog", hanzi: "狗", pinyin: "gǒu", meaning: "собака" },
+        { id: "cat", hanzi: "猫", pinyin: "māo", meaning: "кошка" },
+        { id: "rabbit", hanzi: "兔子", pinyin: "tùzi", meaning: "кролик" },
+        { id: "horse", hanzi: "马", pinyin: "mǎ", meaning: "лошадь" },
+      ],
+    },
+    {
+      type: "word_list",
+      title: "Новые слова и фразы",
+      subtitle: "Повтор перед домашней практикой.",
+      tone: "neutral",
+      layout: "recap",
+      sceneId: "scene-review",
+      groups: [
         {
-          phrase: "农场",
-          pinyin: "nóngchǎng",
-          meaning: "ферма",
-          usageHint: "Покажи карточку фермы.",
+          id: "animals",
+          title: "Животные и ферма",
+          entries: [
+            { hanzi: "狗", pinyin: "gǒu", meaning: "собака", audioAssetId: "pronunciation:dog" },
+            { hanzi: "猫", pinyin: "māo", meaning: "кошка", audioAssetId: "pronunciation:cat" },
+            { hanzi: "兔子", pinyin: "tùzi", meaning: "кролик", audioAssetId: "pronunciation:rabbit" },
+            { hanzi: "马", pinyin: "mǎ", meaning: "лошадь", audioAssetId: "pronunciation:horse" },
+            { hanzi: "农场", pinyin: "nóngchǎng", meaning: "ферма", audioAssetId: "pronunciation:farm" },
+          ],
         },
         {
-          phrase: "在…里",
-          pinyin: "zài…lǐ",
-          meaning: "внутри / в",
-          usageHint: "Скажи, где находится животное.",
-          example: "猫住在农场里。",
+          id: "phrases",
+          title: "Фразы и действия",
+          entries: [
+            { hanzi: "我是…", pinyin: "wǒ shì…", meaning: "Я…", audioAssetId: "pronunciation:wo-shi" },
+            { hanzi: "这是…", pinyin: "zhè shì…", meaning: "Это…", audioAssetId: "pronunciation:zhe-shi" },
+            { hanzi: "跑", pinyin: "pǎo", meaning: "бежать", audioAssetId: "pronunciation:run" },
+            { hanzi: "跳", pinyin: "tiào", meaning: "прыгать", audioAssetId: "pronunciation:jump" },
+            { hanzi: "我们…吧!", pinyin: "wǒmen … ba!", meaning: "давайте…", audioAssetId: "pronunciation:lets" },
+            { hanzi: "在", pinyin: "zài", meaning: "в / внутри", audioAssetId: "pronunciation:zai" },
+          ],
         },
       ],
     },
     {
       type: "worksheet",
-      title: "Закрепляем: тетрадь",
-      subtitle: "Спокойная практика после активных игр.",
-      tone: "amber",
+      title: "Тетрадь и песня",
+      subtitle: "Финальный блок урока.",
+      tone: "rose",
       layout: "practice",
-      sceneId: "scene-practice",
-      illustrationSrc: "/methodologies/world-around-me/lesson-1/watercolor/workbook-practice.png",
+      sceneId: "scene-materials",
+      illustrationSrc: "/methodologies/world-around-me/lesson-1/visuals/workbook-practice.png",
       pageLabel: "Рабочая тетрадь · стр. 3–4",
-      instructions: "Раскрась животных и ответь: «这是什么？».",
-      teacherHint: "Сначала раскрашиваем, потом показываем и называем вслух.",
+      instructions: "Раскрась животных, ответь «这是什么？», затем спой песню farm animals. PDF будет добавлен позже — пока открой внешний ресурс.",
+      teacherHint: "После тетради дайте детям 1 минуту на повтор слов перед песней.",
       assetId: "worksheet:workbook-pages-3-4",
     },
     {
-      type: "media_asset",
-      title: "Заканчиваем песней farm animals",
-      subtitle: "Поём и повторяем движения животных.",
+      type: "resource_links",
+      title: "Материалы урока",
+      subtitle: "Видео, карточки, приложение и песня.",
       tone: "rose",
-      layout: "practice",
-      sceneId: "scene-practice",
-      assetId: "song:farm-animals",
-      assetKind: "song",
-      studentPrompt: "Пой и двигайся вместе с группой.",
-      teacherShareHint: "Если кнопки нет, песню включает преподаватель в классе.",
-      ctaLabel: "Слушать песню",
+      layout: "resources",
+      sceneId: "scene-materials",
+      audience: "both",
+      resources: [
+        { id: "video", title: "Видео farm animals", assetId: "video:farm-animals", previewable: true },
+        { id: "cards", title: "Карточки урока", assetId: "flashcards:world-around-me-lesson-1", downloadable: false },
+        { id: "appendix", title: "Приложение 1", assetId: "worksheet:appendix-1", previewable: true },
+        { id: "song", title: "Песня farm animals", assetId: "song:farm-animals", previewable: true },
+      ],
     },
     {
-      type: "recap",
-      title: "Вспомнить дома",
-      subtitle: "Короткий повтор перед домашним заданием.",
-      tone: "neutral",
-      layout: "recap",
-      sceneId: "scene-recap",
-      bullets: [
-        "Назови 4 животных: 狗, 猫, 兔子, 马.",
-        "Скажи: 我是…",
-        "Скажи: 这是狗。 / 这是猫。",
-        "Покажи 跑 и 跳.",
-        "Скажи одну фразу с 农场 или 在…里.",
+      type: "matching_practice",
+      title: "Практика перед домашним заданием",
+      subtitle: "Сопоставь картинку и слово.",
+      tone: "violet",
+      layout: "homework",
+      sceneId: "scene-homework-practice",
+      prompt: "Перед домашкой потренируйся: найди пару картинка ↔ иероглиф.",
+      pairs: [
+        { id: "dog", label: "狗", illustrationSrc: "/methodologies/world-around-me/lesson-1/visuals/dog-card.png" },
+        { id: "cat", label: "猫", illustrationSrc: "/methodologies/world-around-me/lesson-1/visuals/cat-card.png" },
+        { id: "rabbit", label: "兔子", illustrationSrc: "/methodologies/world-around-me/lesson-1/visuals/rabbit-card.png" },
+        { id: "horse", label: "马", illustrationSrc: "/methodologies/world-around-me/lesson-1/visuals/horse-card.png" },
       ],
     },
   ],
@@ -1700,14 +1911,14 @@ const lessonTwoStudentContent: MethodologyLessonStudentContent = {
           pinyin: "pǎo",
           meaning: "бежать",
           movementHint: "我们跑吧！",
-          illustrationSrc: "/methodologies/world-around-me/lesson-1/run.svg",
+          illustrationSrc: "/methodologies/world-around-me/lesson-1/visuals/run-action.png",
         },
         {
           term: "跳",
           pinyin: "tiào",
           meaning: "прыгать",
           movementHint: "我们跳吧！",
-          illustrationSrc: "/methodologies/world-around-me/lesson-1/jump.svg",
+          illustrationSrc: "/methodologies/world-around-me/lesson-1/visuals/jump-action.png",
         },
         {
           term: "拍手",
@@ -2127,7 +2338,36 @@ export function getFixtureStudentContentFallback(input: FixtureLessonCandidateIn
   const neededAssetIds = new Set(
     source.sections.flatMap((section) => {
       if (section.type === "media_asset") return [section.assetId];
+      if (section.type === "presentation") return [section.assetId];
       if (section.type === "worksheet" && section.assetId) return [section.assetId];
+      if (section.type === "resource_links") {
+        return section.resources
+          .map((resource) => resource.assetId)
+          .filter((id): id is string => Boolean(id));
+      }
+      if (section.type === "count_board" && section.assetId) return [section.assetId];
+      if (section.type === "vocabulary_cards") {
+        return section.items
+          .map((item) => item.audioAssetId)
+          .filter((id): id is string => Boolean(id));
+      }
+      if (section.type === "phrase_cards") {
+        return section.items
+          .map((item) => item.audioAssetId)
+          .filter((id): id is string => Boolean(id));
+      }
+      if (section.type === "action_cards") {
+        return section.items
+          .map((item) => item.audioAssetId)
+          .filter((id): id is string => Boolean(id));
+      }
+      if (section.type === "word_list") {
+        return section.groups.flatMap((group) =>
+          group.entries
+            .map((entry) => entry.audioAssetId)
+            .filter((id): id is string => Boolean(id)),
+        );
+      }
       return [];
     }),
   );

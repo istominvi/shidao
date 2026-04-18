@@ -1,10 +1,140 @@
 "use client";
 
-import { useMemo } from "react";
-import { CheckCircle2 } from "lucide-react";
+import { useMemo, useState } from "react";
+import { CheckCircle2, GripVertical, Volume2 } from "lucide-react";
 import { HomeworkQuizExperience } from "@/components/lessons/homework-quiz-experience";
 import type { StudentHomeworkCard } from "@/lib/server/student-homework";
-import { normalizeQuizSingleChoicePayload } from "@/lib/homework/quiz";
+import { normalizeQuizSingleChoicePayload, type QuizPracticeSection } from "@/lib/homework/quiz";
+import Image from "next/image";
+
+function MatchingPractice({ section }: { section: Extract<QuizPracticeSection, { type: "matching" }> }) {
+  const [dragged, setDragged] = useState<string | null>(null);
+  const [matches, setMatches] = useState<Record<string, string>>({});
+  const [selectedLabel, setSelectedLabel] = useState<string | null>(null);
+  const [checked, setChecked] = useState(false);
+
+  const handleAssign = (targetId: string, label: string) => {
+    setMatches((prev) => ({ ...prev, [targetId]: label }));
+    setDragged(null);
+    setSelectedLabel(null);
+    setChecked(false);
+  };
+
+  const reset = () => {
+    setMatches({});
+    setDragged(null);
+    setSelectedLabel(null);
+    setChecked(false);
+  };
+
+  return (
+    <section className="rounded-xl border border-violet-200 bg-violet-50/40 p-3">
+      <p className="text-sm font-semibold text-violet-900">{section.title}</p>
+      <p className="mt-1 text-sm text-neutral-700">{section.prompt} Можно перетаскивать или выбирать нажатием.</p>
+      {selectedLabel ? (
+        <p className="mt-1 text-xs font-semibold text-violet-900">Выбрано: {selectedLabel}. Нажми на нужную карточку.</p>
+      ) : null}
+
+      <div className="mt-2 flex flex-wrap gap-2">
+        {section.items.map((item) => (
+          <button
+            key={item.id}
+            draggable
+            onDragStart={() => setDragged(item.label)}
+            onClick={() =>
+              setSelectedLabel((prev) => (prev === item.label ? null : item.label))
+            }
+            type="button"
+            className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-sm font-semibold ${
+              selectedLabel === item.label
+                ? "border-violet-500 bg-violet-100 text-violet-900"
+                : "border-violet-300 bg-white text-violet-900"
+            }`}
+          >
+            <GripVertical className="h-3.5 w-3.5" /> {item.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="mt-3 grid gap-2 sm:grid-cols-2">
+        {section.items.map((item) => (
+          <article
+            key={`slot-${item.id}`}
+            onDragOver={(event) => event.preventDefault()}
+            onDrop={() => {
+              if (!dragged) return;
+              handleAssign(item.id, dragged);
+            }}
+            onClick={() => {
+              if (selectedLabel) handleAssign(item.id, selectedLabel);
+            }}
+            className={`rounded-xl border bg-white p-2 ${checked ? (matches[item.id] === item.label ? "border-emerald-300" : "border-rose-300") : "border-violet-200"}`}
+          >
+            {item.illustrationSrc ? (
+              <Image src={item.illustrationSrc} alt={item.label} width={140} height={100} className="h-24 w-full rounded-md object-contain" />
+            ) : null}
+            <p className="mt-1 text-xs text-neutral-600">Перетащи сюда иероглиф или нажми после выбора слова</p>
+            <p className="mt-1 text-sm font-semibold text-neutral-900">{matches[item.id] ?? "—"}</p>
+          </article>
+        ))}
+      </div>
+      <div className="mt-3 flex flex-wrap gap-2">
+        <button type="button" className="rounded-lg border border-violet-300 bg-white px-3 py-1 text-xs font-semibold text-violet-900" onClick={() => setChecked(true)}>
+          Проверить
+        </button>
+        <button type="button" className="rounded-lg border border-neutral-300 bg-white px-3 py-1 text-xs font-semibold text-neutral-800" onClick={reset}>
+          Сбросить
+        </button>
+      </div>
+    </section>
+  );
+}
+
+function AudioReviewPractice({ section }: { section: Extract<QuizPracticeSection, { type: "audio_review" }> }) {
+  return (
+    <section className="rounded-xl border border-sky-200 bg-sky-50/40 p-3">
+      <p className="text-sm font-semibold text-sky-900">{section.title}</p>
+      <div className="mt-2 space-y-2">
+        {section.groups.map((group) => (
+          <article key={group.id} className="rounded-lg border border-sky-200 bg-white p-2">
+            <p className="text-xs font-semibold uppercase tracking-[0.1em] text-sky-700">{group.title}</p>
+            <div className="mt-2 grid gap-2">
+              {group.entries.map((entry) => (
+                <div key={entry.id} className="rounded-md border border-neutral-200 bg-neutral-50 px-2 py-1.5">
+                  <p className="text-lg font-semibold text-neutral-900">{entry.hanzi}</p>
+                  <p className="text-xs text-neutral-700">{entry.pinyin ?? ""} · {entry.meaning}</p>
+                  {entry.audioUrl ? (
+                    <audio controls preload="none" className="mt-1 w-full">
+                      <source src={entry.audioUrl} />
+                    </audio>
+                  ) : (
+                    <p className="mt-1 inline-flex items-center gap-1 rounded-full border border-neutral-200 bg-white px-2 py-0.5 text-xs text-neutral-600">
+                      <Volume2 className="h-3 w-3" /> Аудио недоступно
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function HomeworkPracticeSections({ sections }: { sections: QuizPracticeSection[] }) {
+  if (!sections.length) return null;
+  return (
+    <div className="mt-3 space-y-3">
+      {sections.map((section) => {
+        if (section.type === "matching") {
+          return <MatchingPractice key={section.id} section={section} />;
+        }
+        return <AudioReviewPractice key={section.id} section={section} />;
+      })}
+    </div>
+  );
+}
 
 export function StudentHomeworkQuizCard({ item }: { item: StudentHomeworkCard }) {
   const quiz = useMemo(() => normalizeQuizSingleChoicePayload(item.quizDefinition ?? null), [item.quizDefinition]);
@@ -28,6 +158,7 @@ export function StudentHomeworkQuizCard({ item }: { item: StudentHomeworkCard })
         <p className="mt-1 text-emerald-800">
           {quiz.completionText ?? "Отлично! Ты повторил(а) слова с фермы. Если хочешь — открой урок и повтори их ещё раз."}
         </p>
+        <HomeworkPracticeSections sections={quiz.practiceSections ?? []} />
         {item.reviewNote ? (
           <p className="mt-2 rounded-xl border border-sky-200 bg-white px-3 py-2 text-sky-900">
             Комментарий преподавателя: {item.reviewNote}
@@ -38,10 +169,13 @@ export function StudentHomeworkQuizCard({ item }: { item: StudentHomeworkCard })
   }
 
   return (
-    <HomeworkQuizExperience
-      quiz={quiz}
-      mode="student"
-      studentAssignmentId={item.studentHomeworkAssignmentId}
-    />
+    <>
+      <HomeworkPracticeSections sections={quiz.practiceSections ?? []} />
+      <HomeworkQuizExperience
+        quiz={quiz}
+        mode="student"
+        studentAssignmentId={item.studentHomeworkAssignmentId}
+      />
+    </>
   );
 }

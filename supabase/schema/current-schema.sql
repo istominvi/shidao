@@ -159,7 +159,23 @@ create table if not exists public.methodology_lesson (
 
 create table if not exists public.reusable_asset (
   id uuid primary key default gen_random_uuid(),
-  kind text not null,
+  kind text not null check (
+    kind in (
+      'video',
+      'song',
+      'worksheet',
+      'vocabulary_set',
+      'activity_template',
+      'media_file',
+      'presentation',
+      'flashcards_pdf',
+      'lesson_video',
+      'worksheet_pdf',
+      'song_audio',
+      'song_video',
+      'pronunciation_audio'
+    )
+  ),
   slug text unique,
   title text not null,
   description text,

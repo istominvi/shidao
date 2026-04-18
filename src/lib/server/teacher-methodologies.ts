@@ -152,6 +152,51 @@ function toStudentContentUnavailableReason(error: unknown) {
   return "load_failed" as const;
 }
 
+function collectStudentContentAssetIds(
+  studentContent: NonNullable<
+    Awaited<ReturnType<typeof getMethodologyLessonStudentContentByLessonIdAdmin>>
+  >,
+) {
+  return Array.from(
+    new Set(
+      studentContent.sections.flatMap((section) => {
+        if (section.type === "media_asset") return [section.assetId];
+        if (section.type === "worksheet" && section.assetId) return [section.assetId];
+        if (section.type === "presentation") return [section.assetId];
+        if (section.type === "count_board" && section.assetId) return [section.assetId];
+        if (section.type === "resource_links") {
+          return section.resources
+            .map((resource) => resource.assetId)
+            .filter((id): id is string => Boolean(id));
+        }
+        if (section.type === "vocabulary_cards") {
+          return section.items
+            .map((item) => item.audioAssetId)
+            .filter((id): id is string => Boolean(id));
+        }
+        if (section.type === "phrase_cards") {
+          return section.items
+            .map((item) => item.audioAssetId)
+            .filter((id): id is string => Boolean(id));
+        }
+        if (section.type === "action_cards") {
+          return section.items
+            .map((item) => item.audioAssetId)
+            .filter((id): id is string => Boolean(id));
+        }
+        if (section.type === "word_list") {
+          return section.groups.flatMap((group) =>
+            group.entries
+              .map((entry) => entry.audioAssetId)
+              .filter((id): id is string => Boolean(id)),
+          );
+        }
+        return [];
+      }),
+    ),
+  );
+}
+
 export function canAccessTeacherMethodologies(resolution: AccessResolution) {
   return canAccessTeacherLessonWorkspace(resolution);
 }
@@ -376,16 +421,7 @@ export async function getTeacherMethodologyLessonReadModel(input: {
         studentContentUnavailableReason = "schema_missing";
       }
     } else {
-      const assetIds = Array.from(
-        new Set(
-          studentContent.sections.flatMap((section) => {
-            if (section.type === "media_asset") return [section.assetId];
-            if (section.type === "worksheet" && section.assetId)
-              return [section.assetId];
-            return [];
-          }),
-        ),
-      );
+      const assetIds = collectStudentContentAssetIds(studentContent);
       studentContentAssets = assetIds.length
         ? await listReusableAssetsByIdsAdmin(assetIds)
         : [];

@@ -13,7 +13,14 @@ export type ReusableAssetKind =
   | "worksheet"
   | "vocabulary_set"
   | "activity_template"
-  | "media_file";
+  | "media_file"
+  | "presentation"
+  | "flashcards_pdf"
+  | "lesson_video"
+  | "worksheet_pdf"
+  | "song_audio"
+  | "song_video"
+  | "pronunciation_audio";
 
 export type LessonBlockType =
   | "intro_framing"
@@ -28,10 +35,16 @@ export type LessonBlockType =
 
 export type MethodologyStudentSectionType =
   | "lesson_focus"
+  | "presentation"
+  | "resource_links"
   | "vocabulary_cards"
   | "phrase_cards"
+  | "word_list"
+  | "count_board"
   | "media_asset"
   | "action_cards"
+  | "farm_placement"
+  | "matching_practice"
   | "worksheet"
   | "recap";
 

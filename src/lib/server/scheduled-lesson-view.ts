@@ -96,6 +96,47 @@ function toStudentContentUnavailableReason(
   return "load_failed";
 }
 
+function collectStudentContentAssetIds(studentContent: MethodologyLessonStudentContent) {
+  return Array.from(
+    new Set(
+      studentContent.sections.flatMap((section) => {
+        if (section.type === "media_asset") return [section.assetId];
+        if (section.type === "worksheet" && section.assetId) return [section.assetId];
+        if (section.type === "presentation") return [section.assetId];
+        if (section.type === "count_board" && section.assetId) return [section.assetId];
+        if (section.type === "resource_links") {
+          return section.resources
+            .map((resource) => resource.assetId)
+            .filter((id): id is string => Boolean(id));
+        }
+        if (section.type === "vocabulary_cards") {
+          return section.items
+            .map((item) => item.audioAssetId)
+            .filter((id): id is string => Boolean(id));
+        }
+        if (section.type === "phrase_cards") {
+          return section.items
+            .map((item) => item.audioAssetId)
+            .filter((id): id is string => Boolean(id));
+        }
+        if (section.type === "action_cards") {
+          return section.items
+            .map((item) => item.audioAssetId)
+            .filter((id): id is string => Boolean(id));
+        }
+        if (section.type === "word_list") {
+          return section.groups.flatMap((group) =>
+            group.entries
+              .map((entry) => entry.audioAssetId)
+              .filter((id): id is string => Boolean(id)),
+          );
+        }
+        return [];
+      }),
+    ),
+  );
+}
+
 async function getLearnerSharedProjection(scheduledLessonId: string) {
   const scheduledLesson = await getScheduledLessonByIdAdmin(scheduledLessonId);
   if (!scheduledLesson) return null;
@@ -121,17 +162,7 @@ async function getLearnerSharedProjection(scheduledLessonId: string) {
         studentContentUnavailableReason = "schema_missing";
       }
     } else {
-      const assetIds = Array.from(
-        new Set(
-          studentContent.sections
-            .flatMap((section) => {
-              if (section.type === "media_asset") return [section.assetId];
-              if (section.type === "worksheet" && section.assetId) return [section.assetId];
-              return [];
-            })
-            .filter(Boolean),
-        ),
-      );
+      const assetIds = collectStudentContentAssetIds(studentContent);
       assets = assetIds.length ? await listReusableAssetsByIdsAdmin(assetIds) : [];
     }
   } catch (error) {

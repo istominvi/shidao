@@ -344,7 +344,8 @@ test("student lesson content mapper keeps typed sections", () => {
 
   const mapped = mapMethodologyLessonStudentContentRowToDomain(row);
   assert.equal(mapped.sections[0]?.type, "lesson_focus");
-  assert.equal(mapped.sections.at(-1)?.type, "recap");
+  assert.equal(mapped.sections.some((section) => section.type === "presentation"), true);
+  assert.equal(mapped.sections.at(-1)?.type, "matching_practice");
 });
 
 test("student lesson content mapper throws explicit error for malformed payload", () => {
@@ -371,6 +372,6 @@ test("lesson 1 fixture includes canonical 3-part model data", () => {
   assert.equal(Array.isArray((rows.studentContentRow.content_payload as { sections: unknown[] }).sections), true);
   const studentSections = (rows.studentContentRow.content_payload as { sections: Array<{ sceneId?: string; layout?: string }> }).sections;
   assert.equal(studentSections.some((section) => section.layout === "hero"), true);
-  assert.equal(studentSections.some((section) => section.sceneId === "scene-practice"), true);
+  assert.equal(studentSections.some((section) => section.sceneId === "scene-homework-practice"), true);
   assert.equal(rows.homeworkDefinitionRow.kind, "quiz_single_choice");
 });
