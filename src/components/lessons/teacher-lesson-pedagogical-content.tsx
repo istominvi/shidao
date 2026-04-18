@@ -12,7 +12,7 @@ type Props = {
   durationLabel?: string | null;
   activeStudentStepId?: string | null;
   onShowOnStudentScreen?: (stepId: string) => void;
-  onOpenStudentScreen?: () => void;
+  onOpenStudentScreen?: (stepId: string) => void;
 };
 
 function SummaryList({ items }: { items: string[] }) {
@@ -72,14 +72,14 @@ export function TeacherLessonPedagogicalContent({
         </div>
       </section>
 
-      <section>
-        <h2 className="text-base font-semibold text-neutral-950">Подготовка до урока</h2>
-        {quickSummary.prepChecklist.length ? (
+      {quickSummary.prepChecklist.length ? (
+        <section>
+          <h2 className="text-base font-semibold text-neutral-950">Подготовка до урока</h2>
           <div className="mt-3 rounded-2xl border border-neutral-200 bg-white p-4">
             <SummaryList items={quickSummary.prepChecklist} />
           </div>
-        ) : null}
-      </section>
+        </section>
+      ) : null}
 
       <section>
         <div className="mb-4 flex items-center justify-between">
@@ -97,7 +97,7 @@ export function TeacherLessonPedagogicalContent({
                 </div>
                 <div className="flex gap-2">
                   <button type="button" onClick={() => onShowOnStudentScreen?.(step.id)} className="rounded-lg border border-neutral-300 bg-white px-3 py-1.5 text-xs font-semibold text-neutral-700">Показать на экране ученика</button>
-                  <button type="button" onClick={() => onOpenStudentScreen?.()} className="rounded-lg border border-neutral-300 bg-neutral-50 px-3 py-1.5 text-xs font-semibold text-neutral-800">Открыть экран ученика</button>
+                  <button type="button" onClick={() => onOpenStudentScreen?.(step.id)} className="rounded-lg border border-neutral-300 bg-neutral-50 px-3 py-1.5 text-xs font-semibold text-neutral-800">Открыть экран ученика</button>
                 </div>
               </div>
               <h3 className="mt-2 text-lg font-semibold text-neutral-950">{step.title}</h3>

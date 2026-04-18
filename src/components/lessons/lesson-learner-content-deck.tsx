@@ -65,6 +65,10 @@ function resolveAssetPlaybackUrl(asset?: ReusableAsset) {
   return asset?.fileRef ?? asset?.sourceUrl ?? null;
 }
 
+function isVideoUrl(url: string) {
+  return /\.(mp4|webm|mov|m4v|ogg)(\?|$)/i.test(url);
+}
+
 function extractMetadataStringArray(asset: ReusableAsset | undefined, key: string) {
   const value = asset?.metadata?.[key];
   return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
@@ -85,11 +89,11 @@ function AudioPlayButton({ asset }: { asset?: ReusableAsset }) {
   );
 }
 
-function SceneHeader({ section, compact }: { section: MethodologyLessonStudentContentSection; compact: boolean }) {
+function SceneHeader({ section, compact, hideTitle = false }: { section: MethodologyLessonStudentContentSection; compact: boolean; hideTitle?: boolean }) {
   return (
     <header className="flex items-start justify-between gap-3">
       <div>
-        <h3 className={classNames("font-semibold text-neutral-900", compact ? "text-base" : "text-lg")}>{section.title}</h3>
+        {!hideTitle ? <h3 className={classNames("font-semibold text-neutral-900", compact ? "text-base" : "text-lg")}>{section.title}</h3> : null}
         {section.subtitle ? <p className="mt-1 text-sm text-neutral-600">{section.subtitle}</p> : null}
       </div>
       {section.illustrationSrc ? (
@@ -102,6 +106,129 @@ function SceneHeader({ section, compact }: { section: MethodologyLessonStudentCo
         />
       ) : null}
     </header>
+  );
+}
+
+function collectAssetIdsFromSection(section: MethodologyLessonStudentContentSection): string[] {
+  if (section.type === "media_asset") return [section.assetId];
+  if (section.type === "presentation") return [section.assetId];
+  if (section.type === "worksheet" && section.assetId) return [section.assetId];
+  if (section.type === "count_board" && section.assetId) return [section.assetId];
+  if (section.type === "resource_links") {
+    return section.resources.map((resource) => resource.assetId).filter((id): id is string => Boolean(id));
+  }
+  if (section.type === "vocabulary_cards") {
+    return section.items.map((item) => item.audioAssetId).filter((id): id is string => Boolean(id));
+  }
+  if (section.type === "phrase_cards") {
+    return section.items.map((item) => item.audioAssetId).filter((id): id is string => Boolean(id));
+  }
+  if (section.type === "action_cards") {
+    return section.items.map((item) => item.audioAssetId).filter((id): id is string => Boolean(id));
+  }
+  if (section.type === "word_list") {
+    return section.groups.flatMap((group) =>
+      group.entries.map((entry) => entry.audioAssetId).filter((id): id is string => Boolean(id)),
+    );
+  }
+  return [];
+}
+
+function StepResources({
+  step,
+  sections,
+  assetsById,
+}: {
+  step: MethodologyLessonStep;
+  sections: MethodologyLessonStudentContentSection[];
+  assetsById: Record<string, ReusableAsset>;
+}) {
+  const alreadyRenderedAssetIds = new Set(sections.flatMap(collectAssetIdsFromSection));
+  const candidateAssetIds = Array.from(
+    new Set([...(step.student.assetIds ?? []), ...(step.resourceIds ?? [])]),
+  ).filter((assetId) => !alreadyRenderedAssetIds.has(assetId));
+
+  const assets = candidateAssetIds
+    .map((assetId) => assetsById[assetId])
+    .filter((asset): asset is ReusableAsset => Boolean(asset));
+
+  if (!assets.length) return null;
+  const renderedAssets = assets
+    .map((asset) => {
+      const url = resolveAssetPlaybackUrl(asset);
+      const slideImageRefs = extractMetadataStringArray(asset, "slideImageRefs");
+      const previewSlide = slideImageRefs[0];
+
+      if ((asset.kind === "video" || asset.kind === "lesson_video" || asset.kind === "media_file") && url && isVideoUrl(url)) {
+        return (
+          <article key={asset.id} className="rounded-xl border border-sky-200 bg-sky-50/40 p-3">
+            <p className="text-sm font-semibold text-neutral-900">{asset.title}</p>
+            <video controls preload="metadata" className="mt-2 w-full rounded-lg border border-sky-200 bg-black/80">
+              <source src={url} />
+            </video>
+          </article>
+        );
+      }
+
+      if ((asset.kind === "song_audio" || asset.kind === "pronunciation_audio") && url) {
+        return (
+          <article key={asset.id} className="rounded-xl border border-rose-200 bg-rose-50/40 p-3">
+            <p className="text-sm font-semibold text-neutral-900">{asset.title}</p>
+            <audio controls preload="none" className="mt-2 w-full">
+              <source src={url} />
+            </audio>
+          </article>
+        );
+      }
+
+      if (asset.kind === "presentation") {
+        if (!url && !previewSlide) return null;
+        return (
+          <article key={asset.id} className="rounded-xl border border-sky-200 bg-sky-50/40 p-3">
+            <p className="text-sm font-semibold text-neutral-900">{asset.title}</p>
+            {previewSlide ? (
+              <Image
+                src={previewSlide}
+                alt={`${asset.title} · превью`}
+                width={960}
+                height={540}
+                className="mt-2 h-auto w-full rounded-lg border border-sky-200 bg-white object-contain"
+              />
+            ) : null}
+            {url ? <a href={url} target="_blank" rel="noreferrer" className="mt-2 inline-flex rounded-lg border border-sky-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-sky-800">Открыть презентацию</a> : null}
+          </article>
+        );
+      }
+
+      if (asset.kind === "flashcards_pdf" || asset.kind === "worksheet_pdf" || asset.kind === "worksheet") {
+        if (!url) return null;
+        return (
+          <article key={asset.id} className="rounded-xl border border-neutral-200 bg-neutral-50 p-3">
+            <p className="text-sm font-semibold text-neutral-900">{asset.title}</p>
+            <a href={url} target="_blank" rel="noreferrer" className="mt-2 inline-flex rounded-lg border border-neutral-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-neutral-800">
+              {asset.kind === "flashcards_pdf" || asset.kind === "worksheet_pdf" ? "Открыть PDF" : "Открыть ресурс"}
+            </a>
+          </article>
+        );
+      }
+
+      if (!url) return null;
+      return (
+        <article key={asset.id} className="rounded-xl border border-neutral-200 bg-neutral-50 p-3">
+          <p className="text-sm font-semibold text-neutral-900">{asset.title}</p>
+          <a href={url} target="_blank" rel="noreferrer" className="mt-2 inline-flex rounded-lg border border-neutral-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-neutral-800">Открыть ресурс</a>
+        </article>
+      );
+    })
+    .filter((assetCard) => assetCard !== null);
+
+  if (!renderedAssets.length) return null;
+
+  return (
+    <section className="mt-4 rounded-xl border border-neutral-200 bg-white p-3">
+      <h4 className="text-xs font-semibold uppercase tracking-[0.1em] text-neutral-500">Материалы шага</h4>
+      <div className="mt-3 grid gap-3">{renderedAssets}</div>
+    </section>
   );
 }
 
@@ -514,7 +641,7 @@ export function LessonLearnerContentDeck({
         <h3 className={classNames("font-semibold text-neutral-900", compact ? "text-base" : "text-lg")}>{currentStep.student.title}</h3>
         {currentStep.student.instruction ? <p className="mt-1 text-sm text-neutral-600"><span className="font-semibold">Инструкция для ученика:</span> {currentStep.student.instruction}</p> : null}
 
-        {main ? <SceneHeader section={main} compact={compact} /> : null}
+        {main && (main.subtitle || main.illustrationSrc) ? <SceneHeader section={main} compact={compact} hideTitle /> : null}
         {sections.length ? sections.map((section, index) => (
           <div key={`${currentStep.id}-${section.type}-${section.title}-${index}`}>{renderSection(section, assetsById)}</div>
         )) : (
@@ -522,6 +649,7 @@ export function LessonLearnerContentDeck({
             Здесь появится экран шага. Пока используйте инструкцию преподавателя.
           </div>
         )}
+        <StepResources step={currentStep} sections={sections} assetsById={assetsById} />
       </article>
     </section>
   );

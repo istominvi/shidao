@@ -37,6 +37,8 @@ test("plan tab renders unified steps and local student screen controls", () => {
   assert.equal(pedagogicalSource.includes("Открыть экран ученика"), true);
   assert.equal(pedagogicalSource.includes("Действия не указаны"), false);
   assert.equal(pedagogicalSource.includes("Ожидаемые реакции не указаны"), false);
+  assert.equal(pedagogicalSource.includes("quickSummary.prepChecklist.length ? ("), true);
+  assert.equal(pedagogicalSource.includes("onOpenStudentScreen?.(step.id)"), true);
 });
 
 test("student screen panel supports step deck API and controlled navigation", () => {
@@ -49,4 +51,6 @@ test("methodology workspace uses unified read model as primary source", () => {
   assert.equal(workspaceSource.includes("readModel.unifiedReadModel.lesson.durationLabel"), true);
   assert.equal(workspaceSource.includes("source={null}"), true);
   assert.equal(workspaceSource.includes("unavailableReason={null}"), true);
+  assert.equal(workspaceSource.includes("setSelectedStepId(stepId);"), true);
+  assert.equal(workspaceSource.includes("setTab(\"student_screen\")"), true);
 });

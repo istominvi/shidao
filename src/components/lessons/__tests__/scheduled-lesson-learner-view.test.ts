@@ -36,4 +36,6 @@ test("shared learner deck keeps existing rich renderers", () => {
   assert.equal(sharedDeckSource.includes("ActionSlider"), true);
   assert.equal(sharedDeckSource.includes('section.type === "presentation"'), true);
   assert.equal(sharedDeckSource.includes('section.type === "count_board"'), true);
+  assert.equal(sharedDeckSource.includes("StepResources"), true);
+  assert.equal(sharedDeckSource.includes("Материалы шага"), true);
 });

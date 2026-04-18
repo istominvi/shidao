@@ -65,6 +65,8 @@ test("world-around-me lesson 1 unified read model is canonical 16-step teacher/s
 
   const step2 = unified.steps[1];
   assert.equal(step2.title, "Видео: farm animals");
+  assert.equal(step2.student.screenType, "video");
+  assert.equal(step2.resourceIds?.includes("video:farm-animals"), true);
   assert.equal(step2.resourceIds?.includes("song:farm-animals"), false);
 
   const step8 = unified.steps[7];
@@ -75,6 +77,7 @@ test("world-around-me lesson 1 unified read model is canonical 16-step teacher/s
   const step15 = unified.steps[14];
   assert.equal(step15.title, "Песня: farm animals");
   assert.equal(step15.resourceIds?.includes("song:farm-animals"), true);
+  assert.equal(step15.resourceIds?.includes("video:farm-animals"), false);
 
   const assignedSectionKeys = unified.steps.flatMap((step) =>
     (step.student.payload?.sections ?? []).map(
@@ -82,6 +85,23 @@ test("world-around-me lesson 1 unified read model is canonical 16-step teacher/s
     ),
   );
   assert.equal(new Set(assignedSectionKeys).size, assignedSectionKeys.length);
+
+  const step13 = unified.steps[12];
+  assert.equal(step13.student.payload?.sections?.[0]?.type, "word_list");
+  const step13Words = step13.student.payload?.sections?.[0]?.type === "word_list"
+    ? step13.student.payload.sections[0].groups.flatMap((group) => group.entries.map((entry) => entry.hanzi))
+    : [];
+  assert.deepEqual(step13Words, ["农场"]);
+
+  const step6 = unified.steps[5];
+  assert.equal(step6.student.payload?.sections?.[0]?.type, "matching_practice");
+  const step6Section = step6.student.payload?.sections?.[0];
+  const step6Text =
+    step6Section &&
+    step6Section.type === "matching_practice"
+      ? `${step6Section.title ?? ""} ${step6Section.subtitle ?? ""} ${step6Section.prompt ?? ""}`
+      : "";
+  assert.equal(step6Text.toLowerCase().includes("homework"), false);
 });
 
 

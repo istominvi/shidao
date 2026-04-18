@@ -71,6 +71,7 @@ type WorldAroundMeLessonOneCanonicalStep = {
   studentInstruction: string;
   selectSection?: (section: MethodologyLessonStudentContentSection) => boolean;
   explicitResourceIds?: string[];
+  forcedScreenType?: MethodologyLessonStep["student"]["screenType"];
   transformSelectedSection?: (section: MethodologyLessonStudentContentSection) => MethodologyLessonStudentContentSection;
 };
 
@@ -87,8 +88,12 @@ const worldAroundMeLessonOneCanonicalSteps: WorldAroundMeLessonOneCanonicalStep[
     title: "Видео: farm animals",
     teacherFlowOrder: 2,
     studentInstruction: "Посмотри видео и повтори названия животных.",
-    selectSection: (section) => section.sceneId === "scene-presentation" && section.type === "presentation",
-    explicitResourceIds: ["video:farm-animals", "presentation:world-around-me-lesson-1"],
+    // Prefer dedicated video asset renderer for step 2.
+    selectSection: (section) =>
+      section.type === "media_asset" &&
+      section.assetId === "video:farm-animals",
+    explicitResourceIds: ["video:farm-animals"],
+    forcedScreenType: "video",
   },
   {
     order: 3,
@@ -117,6 +122,15 @@ const worldAroundMeLessonOneCanonicalSteps: WorldAroundMeLessonOneCanonicalStep[
     teacherFlowOrder: 6,
     studentInstruction: "Слушай команду и выбери нужную карточку.",
     selectSection: (section) => section.sceneId === "scene-homework-practice" && section.type === "matching_practice",
+    transformSelectedSection: (section) => {
+      if (section.type !== "matching_practice") return section;
+      return {
+        ...section,
+        title: "Игра с карточками",
+        subtitle: "Тренируем внимание и скорость реакции.",
+        prompt: "Найди пару картинка ↔ слово по команде преподавателя.",
+      };
+    },
   },
   {
     order: 7,
@@ -165,6 +179,19 @@ const worldAroundMeLessonOneCanonicalSteps: WorldAroundMeLessonOneCanonicalStep[
     teacherFlowOrder: 13,
     studentInstruction: "Повтори слово 农场 и найди его в словаре урока.",
     selectSection: (section) => section.sceneId === "scene-review" && section.type === "word_list",
+    transformSelectedSection: (section) => {
+      if (section.type !== "word_list") return section;
+      return {
+        ...section,
+        title: "Слово 农场",
+        groups: section.groups
+          .map((group) => ({
+            ...group,
+            entries: group.entries.filter((entry) => entry.hanzi === "农场"),
+          }))
+          .filter((group) => group.entries.length > 0),
+      };
+    },
   },
   {
     order: 14,
@@ -180,6 +207,7 @@ const worldAroundMeLessonOneCanonicalSteps: WorldAroundMeLessonOneCanonicalStep[
     studentInstruction: "Послушай и спой песню про животных фермы.",
     selectSection: (section) => section.sceneId === "scene-materials" && section.type === "resource_links",
     explicitResourceIds: ["song:farm-animals"],
+    forcedScreenType: "song",
     transformSelectedSection: (section) => {
       if (section.type !== "resource_links") return section;
       return {
@@ -250,7 +278,7 @@ function collectSectionAssetIds(section: MethodologyLessonStudentContentSection)
 
 function makeSectionSelectionKey(section: MethodologyLessonStudentContentSection, index: number) {
   if (section.sceneId?.trim()) {
-    return `${section.sceneId.trim()}::${section.type}::${section.title}`;
+    return `${section.sceneId.trim()}::${section.type}::${section.title}::${index}`;
   }
   return `idx:${index}`;
 }
@@ -360,9 +388,7 @@ function buildWorldAroundMeLessonOneSteps(input: {
         : canonicalStep.studentInstruction;
 
     const screenType =
-      canonicalStep.order === 15
-        ? "song"
-        : screenTypeFromSections(sections);
+      canonicalStep.forcedScreenType ?? screenTypeFromSections(sections);
 
     return {
       id: `canonical-world-around-me-lesson-1-step-${canonicalStep.order}`,
