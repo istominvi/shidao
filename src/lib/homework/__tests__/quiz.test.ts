@@ -65,3 +65,36 @@ test("quiz submission normalization rejects invalid payload", () => {
   });
   assert.equal(submission, null);
 });
+
+test("quiz payload keeps optional practice sections", () => {
+  const payload = normalizeQuizSingleChoicePayload({
+    id: "quiz-with-practice",
+    version: 1,
+    practiceSections: [
+      {
+        id: "m1",
+        type: "matching",
+        title: "Match",
+        prompt: "Match image and hanzi",
+        items: [
+          { id: "dog", label: "狗" },
+          { id: "cat", label: "猫" },
+        ],
+      },
+    ],
+    questions: [
+      {
+        id: "q1",
+        prompt: "Q1",
+        options: [
+          { id: "a", label: "A" },
+          { id: "b", label: "B" },
+        ],
+        correctOptionId: "a",
+      },
+    ],
+  });
+
+  assert.ok(payload?.practiceSections);
+  assert.equal(payload?.practiceSections?.[0]?.type, "matching");
+});

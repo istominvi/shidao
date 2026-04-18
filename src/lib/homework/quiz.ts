@@ -31,8 +31,39 @@ export type QuizSingleChoicePayload = {
   completionText?: string;
   illustrationSrc?: string;
   tone?: "sky" | "violet" | "emerald" | "amber" | "rose" | "neutral";
+  practiceSections?: QuizPracticeSection[];
   questions: QuizSingleChoiceQuestion[];
 };
+
+export type QuizPracticeSection =
+  | {
+      id: string;
+      type: "matching";
+      title: string;
+      prompt: string;
+      items: Array<{
+        id: string;
+        label: string;
+        illustrationSrc?: string;
+      }>;
+    }
+  | {
+      id: string;
+      type: "audio_review";
+      title: string;
+      groups: Array<{
+        id: string;
+        title: string;
+        entries: Array<{
+          id: string;
+          hanzi: string;
+          pinyin?: string;
+          meaning: string;
+          audioAssetId?: string;
+          audioUrl?: string;
+        }>;
+      }>;
+    };
 
 export type QuizSubmissionPayload = {
   answers: Array<{
@@ -122,6 +153,64 @@ function normalizeQuestion(input: unknown): QuizSingleChoiceQuestion | null {
   };
 }
 
+function normalizePracticeSections(input: unknown): QuizPracticeSection[] | undefined {
+  if (!Array.isArray(input)) return undefined;
+  const sections = input.flatMap((section): QuizPracticeSection[] => {
+    if (!isObject(section)) return [];
+    const id = `${section.id ?? ""}`.trim();
+    const type = `${section.type ?? ""}`.trim();
+    const title = `${section.title ?? ""}`.trim();
+    if (!id || !title) return [];
+
+    if (type === "matching") {
+      const prompt = `${section.prompt ?? ""}`.trim();
+      const itemsRaw = Array.isArray(section.items) ? section.items : [];
+      const items = itemsRaw.flatMap((item) => {
+        if (!isObject(item)) return [];
+        const itemId = `${item.id ?? ""}`.trim();
+        const label = `${item.label ?? ""}`.trim();
+        if (!itemId || !label) return [];
+        return [{ id: itemId, label, illustrationSrc: cleanText(item.illustrationSrc) }];
+      });
+      if (!prompt || items.length < 2) return [];
+      return [{ id, type: "matching", title, prompt, items }];
+    }
+
+    if (type === "audio_review") {
+      const groupsRaw = Array.isArray(section.groups) ? section.groups : [];
+      const groups = groupsRaw.flatMap((group) => {
+        if (!isObject(group)) return [];
+        const groupId = `${group.id ?? ""}`.trim();
+        const groupTitle = `${group.title ?? ""}`.trim();
+        const entriesRaw = Array.isArray(group.entries) ? group.entries : [];
+        const entries = entriesRaw.flatMap((entry) => {
+          if (!isObject(entry)) return [];
+          const entryId = `${entry.id ?? ""}`.trim();
+          const hanzi = `${entry.hanzi ?? ""}`.trim();
+          const meaning = `${entry.meaning ?? ""}`.trim();
+          if (!entryId || !hanzi || !meaning) return [];
+          return [{
+            id: entryId,
+            hanzi,
+            meaning,
+            pinyin: cleanText(entry.pinyin),
+            audioAssetId: cleanText(entry.audioAssetId),
+            audioUrl: cleanText(entry.audioUrl),
+          }];
+        });
+        if (!groupId || !groupTitle || entries.length === 0) return [];
+        return [{ id: groupId, title: groupTitle, entries }];
+      });
+      if (groups.length === 0) return [];
+      return [{ id, type: "audio_review", title, groups }];
+    }
+
+    return [];
+  });
+
+  return sections.length ? sections : undefined;
+}
+
 export function normalizeQuizSingleChoicePayload(input: unknown): QuizSingleChoicePayload | null {
   if (!isObject(input)) return null;
 
@@ -152,6 +241,7 @@ export function normalizeQuizSingleChoicePayload(input: unknown): QuizSingleChoi
     completionText: cleanText(input.completionText),
     illustrationSrc: cleanText(input.illustrationSrc),
     tone: cleanTone(input.tone),
+    practiceSections: normalizePracticeSections(input.practiceSections),
     questions,
   };
 }

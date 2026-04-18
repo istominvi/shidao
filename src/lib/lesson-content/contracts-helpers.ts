@@ -37,6 +37,13 @@ export function summarizeAssetsByKind(
       vocabulary_set: 0,
       activity_template: 0,
       media_file: 0,
+      presentation: 0,
+      flashcards_pdf: 0,
+      lesson_video: 0,
+      worksheet_pdf: 0,
+      song_audio: 0,
+      song_video: 0,
+      pronunciation_audio: 0,
     },
   );
 }

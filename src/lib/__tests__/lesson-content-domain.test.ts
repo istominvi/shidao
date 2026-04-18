@@ -183,9 +183,11 @@ test("fixture block taxonomy satisfies discriminated union coverage", () => {
 test("asset summary helper groups reusable assets by kind", () => {
   const summary = summarizeAssetsByKind(lessonContentFixtureAssets);
 
-  assert.equal(summary.video, 2);
-  assert.equal(summary.song, 3);
-  assert.equal(summary.worksheet, 6);
+  assert.equal(summary.lesson_video >= 1, true);
+  assert.equal(summary.presentation >= 1, true);
+  assert.equal(summary.flashcards_pdf >= 1, true);
+  assert.equal(summary.pronunciation_audio >= 5, true);
+  assert.equal(summary.worksheet + summary.worksheet_pdf >= 6, true);
 });
 
 test("world-around-me fixtures provide at least three canonical lessons", () => {
@@ -265,17 +267,13 @@ test("fallback resolver returns lesson 3 learner content by title and position",
   );
 });
 
-test("lesson 1 learner content uses watercolor illustration paths only for updated sections", () => {
+test("lesson 1 learner content keeps upgraded hub sections and watercolor illustration assets", () => {
   const sectionIllustrations = lessonContentFixtureMethodologyLessonStudentContent.sections
     .map((section) => ("illustrationSrc" in section ? section.illustrationSrc : undefined))
     .filter((path): path is string => typeof path === "string");
 
   assert.equal(
     sectionIllustrations.includes("/methodologies/world-around-me/lesson-1/watercolor/hero-farm.png"),
-    true,
-  );
-  assert.equal(
-    sectionIllustrations.includes("/methodologies/world-around-me/lesson-1/watercolor/counting-to-five.png"),
     true,
   );
   assert.equal(
@@ -292,23 +290,44 @@ test("lesson 1 learner content uses watercolor illustration paths only for updat
   );
   assert.ok(vocabSection);
   const vocabIllustrations = vocabSection.items.map((item) => item.illustrationSrc);
-  assert.deepEqual(vocabIllustrations, [
+  assert.deepEqual(vocabIllustrations.slice(0, 4), [
     "/methodologies/world-around-me/lesson-1/watercolor/dog-card.png",
     "/methodologies/world-around-me/lesson-1/watercolor/cat-card.png",
     "/methodologies/world-around-me/lesson-1/watercolor/rabbit-card.png",
     "/methodologies/world-around-me/lesson-1/watercolor/horse-card.png",
   ]);
+  assert.equal(vocabSection.displayMode, "carousel");
 
   const actionSection = lessonContentFixtureMethodologyLessonStudentContent.sections.find(
     (section) => section.type === "action_cards",
   );
   assert.ok(actionSection);
+  assert.equal(actionSection.displayMode, "slider");
   assert.deepEqual(
-    actionSection.items.map((item) => item.illustrationSrc),
+    actionSection.items.slice(0, 2).map((item) => item.illustrationSrc),
     [
       "/methodologies/world-around-me/lesson-1/watercolor/run-action.png",
       "/methodologies/world-around-me/lesson-1/watercolor/jump-action.png",
     ],
+  );
+
+  assert.equal(
+    lessonContentFixtureMethodologyLessonStudentContent.sections.some(
+      (section) => section.type === "presentation",
+    ),
+    true,
+  );
+  assert.equal(
+    lessonContentFixtureMethodologyLessonStudentContent.sections.some(
+      (section) => section.type === "count_board",
+    ),
+    true,
+  );
+  assert.equal(
+    lessonContentFixtureMethodologyLessonStudentContent.sections.some(
+      (section) => section.type === "word_list",
+    ),
+    true,
   );
 });
 

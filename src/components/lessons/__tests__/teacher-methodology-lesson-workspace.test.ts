@@ -21,9 +21,12 @@ const homeworkPanelSource = readFileSync(
 
 test("methodology workspace uses one canonical lesson card with embedded tabs", () => {
   assert.equal(workspaceSource.includes('<SurfaceCard as="section"'), true);
-  assert.equal(workspaceSource.includes('tone="embedded"'), true);
-  assert.equal(workspaceSource.includes("embedded"), true);
-  assert.equal(workspaceSource.includes('tabs={["plan", "content", "homework"]}'), true);
+  assert.equal(workspaceSource.includes("Презентация"), true);
+  assert.equal(workspaceSource.includes("Карточки"), true);
+  assert.equal(workspaceSource.includes("Новые слова и фразы"), true);
+  assert.equal(workspaceSource.includes("Реквизит к уроку"), true);
+  assert.equal(workspaceSource.includes("Контент для ученика"), true);
+  assert.equal(workspaceSource.includes("Домашнее задание"), true);
 });
 
 test("plan tab is organized as one pedagogical document without extra mini-navigation", () => {
