@@ -8,5 +8,9 @@ test("student homework card includes matching and audio review practice surfaces
   assert.equal(source.includes("MatchingPractice"), true);
   assert.equal(source.includes("AudioReviewPractice"), true);
   assert.equal(source.includes("draggable"), true);
+  assert.equal(source.includes("setSelectedLabel"), true);
+  assert.equal(source.includes("Проверить"), true);
+  assert.equal(source.includes("Сбросить"), true);
+  assert.equal(source.includes("audio controls"), true);
   assert.equal(source.includes("practiceSections"), true);
 });

@@ -10,11 +10,30 @@ import Image from "next/image";
 function MatchingPractice({ section }: { section: Extract<QuizPracticeSection, { type: "matching" }> }) {
   const [dragged, setDragged] = useState<string | null>(null);
   const [matches, setMatches] = useState<Record<string, string>>({});
+  const [selectedLabel, setSelectedLabel] = useState<string | null>(null);
+  const [checked, setChecked] = useState(false);
+
+  const handleAssign = (targetId: string, label: string) => {
+    setMatches((prev) => ({ ...prev, [targetId]: label }));
+    setDragged(null);
+    setSelectedLabel(null);
+    setChecked(false);
+  };
+
+  const reset = () => {
+    setMatches({});
+    setDragged(null);
+    setSelectedLabel(null);
+    setChecked(false);
+  };
 
   return (
     <section className="rounded-xl border border-violet-200 bg-violet-50/40 p-3">
       <p className="text-sm font-semibold text-violet-900">{section.title}</p>
-      <p className="mt-1 text-sm text-neutral-700">{section.prompt}</p>
+      <p className="mt-1 text-sm text-neutral-700">{section.prompt} Можно перетаскивать или выбирать нажатием.</p>
+      {selectedLabel ? (
+        <p className="mt-1 text-xs font-semibold text-violet-900">Выбрано: {selectedLabel}. Нажми на нужную карточку.</p>
+      ) : null}
 
       <div className="mt-2 flex flex-wrap gap-2">
         {section.items.map((item) => (
@@ -22,8 +41,15 @@ function MatchingPractice({ section }: { section: Extract<QuizPracticeSection, {
             key={item.id}
             draggable
             onDragStart={() => setDragged(item.label)}
+            onClick={() =>
+              setSelectedLabel((prev) => (prev === item.label ? null : item.label))
+            }
             type="button"
-            className="inline-flex items-center gap-1 rounded-full border border-violet-300 bg-white px-3 py-1 text-sm font-semibold text-violet-900"
+            className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-sm font-semibold ${
+              selectedLabel === item.label
+                ? "border-violet-500 bg-violet-100 text-violet-900"
+                : "border-violet-300 bg-white text-violet-900"
+            }`}
           >
             <GripVertical className="h-3.5 w-3.5" /> {item.label}
           </button>
@@ -37,18 +63,28 @@ function MatchingPractice({ section }: { section: Extract<QuizPracticeSection, {
             onDragOver={(event) => event.preventDefault()}
             onDrop={() => {
               if (!dragged) return;
-              setMatches((prev) => ({ ...prev, [item.id]: dragged }));
-              setDragged(null);
+              handleAssign(item.id, dragged);
             }}
-            className="rounded-xl border border-violet-200 bg-white p-2"
+            onClick={() => {
+              if (selectedLabel) handleAssign(item.id, selectedLabel);
+            }}
+            className={`rounded-xl border bg-white p-2 ${checked ? (matches[item.id] === item.label ? "border-emerald-300" : "border-rose-300") : "border-violet-200"}`}
           >
             {item.illustrationSrc ? (
               <Image src={item.illustrationSrc} alt={item.label} width={140} height={100} className="h-24 w-full rounded-md object-contain" />
             ) : null}
-            <p className="mt-1 text-xs text-neutral-600">Перетащи сюда иероглиф</p>
+            <p className="mt-1 text-xs text-neutral-600">Перетащи сюда иероглиф или нажми после выбора слова</p>
             <p className="mt-1 text-sm font-semibold text-neutral-900">{matches[item.id] ?? "—"}</p>
           </article>
         ))}
+      </div>
+      <div className="mt-3 flex flex-wrap gap-2">
+        <button type="button" className="rounded-lg border border-violet-300 bg-white px-3 py-1 text-xs font-semibold text-violet-900" onClick={() => setChecked(true)}>
+          Проверить
+        </button>
+        <button type="button" className="rounded-lg border border-neutral-300 bg-white px-3 py-1 text-xs font-semibold text-neutral-800" onClick={reset}>
+          Сбросить
+        </button>
       </div>
     </section>
   );
@@ -68,10 +104,14 @@ function AudioReviewPractice({ section }: { section: Extract<QuizPracticeSection
                   <p className="text-lg font-semibold text-neutral-900">{entry.hanzi}</p>
                   <p className="text-xs text-neutral-700">{entry.pinyin ?? ""} · {entry.meaning}</p>
                   {entry.audioUrl ? (
-                    <a href={entry.audioUrl} target="_blank" rel="noreferrer" className="mt-1 inline-flex items-center gap-1 rounded-full border border-sky-300 bg-sky-50 px-2 py-0.5 text-xs font-semibold text-sky-800">
-                      <Volume2 className="h-3 w-3" /> Слушать
-                    </a>
-                  ) : null}
+                    <audio controls preload="none" className="mt-1 w-full">
+                      <source src={entry.audioUrl} />
+                    </audio>
+                  ) : (
+                    <p className="mt-1 inline-flex items-center gap-1 rounded-full border border-neutral-200 bg-white px-2 py-0.5 text-xs text-neutral-600">
+                      <Volume2 className="h-3 w-3" /> Аудио недоступно
+                    </p>
+                  )}
                 </div>
               ))}
             </div>

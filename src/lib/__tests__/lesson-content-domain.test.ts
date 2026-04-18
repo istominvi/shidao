@@ -184,9 +184,11 @@ test("asset summary helper groups reusable assets by kind", () => {
   const summary = summarizeAssetsByKind(lessonContentFixtureAssets);
 
   assert.equal(summary.video >= 3, true);
-  assert.equal(summary.song >= 3, true);
+  assert.equal(summary.song >= 1, true);
+  assert.equal(summary.song_audio >= 1, true);
+  assert.equal(summary.song_video >= 1, true);
   assert.equal(summary.worksheet >= 6, true);
-  assert.equal(summary.media_file >= 10, true);
+  assert.equal(summary.pronunciation_audio >= 10, true);
 });
 
 test("world-around-me fixtures provide at least three canonical lessons", () => {
@@ -266,21 +268,21 @@ test("fallback resolver returns lesson 3 learner content by title and position",
   );
 });
 
-test("lesson 1 learner content keeps upgraded hub sections and watercolor illustration assets", () => {
+test("lesson 1 learner content keeps upgraded hub sections and visuals illustration assets", () => {
   const sectionIllustrations = lessonContentFixtureMethodologyLessonStudentContent.sections
     .map((section) => ("illustrationSrc" in section ? section.illustrationSrc : undefined))
     .filter((path): path is string => typeof path === "string");
 
   assert.equal(
-    sectionIllustrations.includes("/methodologies/world-around-me/lesson-1/watercolor/hero-farm.png"),
+    sectionIllustrations.includes("/methodologies/world-around-me/lesson-1/visuals/hero-farm.png"),
     true,
   );
   assert.equal(
-    sectionIllustrations.includes("/methodologies/world-around-me/lesson-1/watercolor/farm-barn.png"),
+    sectionIllustrations.includes("/methodologies/world-around-me/lesson-1/visuals/farm-barn.png"),
     true,
   );
   assert.equal(
-    sectionIllustrations.includes("/methodologies/world-around-me/lesson-1/watercolor/workbook-practice.png"),
+    sectionIllustrations.includes("/methodologies/world-around-me/lesson-1/visuals/workbook-practice.png"),
     true,
   );
 
@@ -290,10 +292,10 @@ test("lesson 1 learner content keeps upgraded hub sections and watercolor illust
   assert.ok(vocabSection);
   const vocabIllustrations = vocabSection.items.map((item) => item.illustrationSrc);
   assert.deepEqual(vocabIllustrations.slice(0, 4), [
-    "/methodologies/world-around-me/lesson-1/watercolor/dog-card.png",
-    "/methodologies/world-around-me/lesson-1/watercolor/cat-card.png",
-    "/methodologies/world-around-me/lesson-1/watercolor/rabbit-card.png",
-    "/methodologies/world-around-me/lesson-1/watercolor/horse-card.png",
+    "/methodologies/world-around-me/lesson-1/visuals/dog-card.png",
+    "/methodologies/world-around-me/lesson-1/visuals/cat-card.png",
+    "/methodologies/world-around-me/lesson-1/visuals/rabbit-card.png",
+    "/methodologies/world-around-me/lesson-1/visuals/horse-card.png",
   ]);
   assert.equal(vocabSection.displayMode, "carousel");
 
@@ -305,8 +307,8 @@ test("lesson 1 learner content keeps upgraded hub sections and watercolor illust
   assert.deepEqual(
     actionSection.items.slice(0, 2).map((item) => item.illustrationSrc),
     [
-      "/methodologies/world-around-me/lesson-1/watercolor/run-action.png",
-      "/methodologies/world-around-me/lesson-1/watercolor/jump-action.png",
+      "/methodologies/world-around-me/lesson-1/visuals/run-action.png",
+      "/methodologies/world-around-me/lesson-1/visuals/jump-action.png",
     ],
   );
 
@@ -330,20 +332,20 @@ test("lesson 1 learner content keeps upgraded hub sections and watercolor illust
   );
 });
 
-test("lesson 2 and lesson 3 learner content illustration paths remain unchanged", () => {
+test("lesson 2 and lesson 3 learner content keep canonical illustration paths", () => {
   const lessonTwoActionSection = lessonContentFixtureMethodologyLessonStudentContentLessonTwo.sections.find(
     (section) => section.type === "action_cards",
   );
   assert.ok(lessonTwoActionSection);
   assert.equal(
     lessonTwoActionSection.items.some(
-      (item) => item.illustrationSrc === "/methodologies/world-around-me/lesson-1/run.svg",
+      (item) => item.illustrationSrc === "/methodologies/world-around-me/lesson-1/visuals/run-action.png",
     ),
     true,
   );
   assert.equal(
     lessonTwoActionSection.items.some(
-      (item) => item.illustrationSrc === "/methodologies/world-around-me/lesson-1/jump.svg",
+      (item) => item.illustrationSrc === "/methodologies/world-around-me/lesson-1/visuals/jump-action.png",
     ),
     true,
   );
@@ -353,4 +355,48 @@ test("lesson 2 and lesson 3 learner content illustration paths remain unchanged"
   );
   assert.ok(lessonThreeHero);
   assert.equal(lessonThreeHero.illustrationSrc, "/methodologies/world-around-me/lesson-3/color-world.svg");
+});
+
+test("lesson 1 reusable assets wire local pronunciation, presentation slides, and appendix preview", () => {
+  const byId = new Map(lessonContentFixtureAssets.map((asset) => [asset.id, asset]));
+  const dogAudio = byId.get("pronunciation:dog");
+  const presentation = byId.get("presentation:world-around-me-lesson-1");
+  const appendix = byId.get("worksheet:appendix-1");
+
+  assert.equal(dogAudio?.kind, "pronunciation_audio");
+  assert.equal(dogAudio?.fileRef, "/methodologies/world-around-me/lesson-1/audio/gou.mp3");
+  assert.equal(presentation?.kind, "presentation");
+  assert.equal(
+    Array.isArray(presentation?.metadata?.slideImageRefs),
+    true,
+  );
+  assert.equal(
+    (presentation?.metadata?.slideImageRefs as string[]).length,
+    16,
+  );
+  assert.equal(
+    appendix?.metadata?.previewImageRef,
+    "/methodologies/world-around-me/lesson-1/appendix/appendix-1.png",
+  );
+});
+
+test("fallback resolver for lesson 1 includes presentation and pronunciation assets", () => {
+  const fallback = getFixtureStudentContentFallback({
+    methodologySlug: "world-around-me",
+    moduleIndex: 1,
+    lessonIndex: 1,
+  });
+  assert.ok(fallback);
+  assert.equal(
+    fallback.assets.some((asset) => asset.id === "presentation:world-around-me-lesson-1"),
+    true,
+  );
+  assert.equal(
+    fallback.assets.some((asset) => asset.id === "pronunciation:dog"),
+    true,
+  );
+  assert.equal(
+    fallback.assets.some((asset) => asset.id === "worksheet:appendix-1"),
+    true,
+  );
 });

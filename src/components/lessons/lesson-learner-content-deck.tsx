@@ -60,6 +60,16 @@ function resolveAssetPlaybackUrl(asset?: ReusableAsset) {
   return asset?.fileRef ?? asset?.sourceUrl ?? null;
 }
 
+function extractMetadataStringArray(asset: ReusableAsset | undefined, key: string) {
+  const value = asset?.metadata?.[key];
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
+}
+
+function extractMetadataString(asset: ReusableAsset | undefined, key: string) {
+  const value = asset?.metadata?.[key];
+  return typeof value === "string" ? value : null;
+}
+
 function AudioPlayButton({ asset }: { asset?: ReusableAsset }) {
   const url = resolveAssetPlaybackUrl(asset);
   if (!url) return null;
@@ -143,12 +153,31 @@ function ActionSlider({ section, assetsById }: { section: Extract<MethodologyLes
   );
 }
 
-function CountBoard({ section }: { section: Extract<MethodologyLessonStudentContentSection, { type: "count_board" }> }) {
+function CountBoard({
+  section,
+  assetsById,
+}: {
+  section: Extract<MethodologyLessonStudentContentSection, { type: "count_board" }>;
+  assetsById: Record<string, ReusableAsset>;
+}) {
   const [selected, setSelected] = useState(section.groups[0]?.id);
   const active = section.groups.find((group) => group.id === selected) ?? section.groups[0];
+  const asset = section.assetId ? assetsById[section.assetId] : undefined;
+  const previewImageRef = extractMetadataString(asset, "previewImageRef");
   return (
     <div className="mt-3 rounded-xl border border-sky-200 bg-white p-3">
       <p className="text-sm text-neutral-700">{section.prompt}</p>
+      {previewImageRef ? (
+        <div className="mt-3 overflow-hidden rounded-xl border border-sky-200 bg-sky-50 p-2">
+          <Image
+            src={previewImageRef}
+            alt="Приложение 1"
+            width={800}
+            height={520}
+            className="h-auto w-full rounded-lg object-contain"
+          />
+        </div>
+      ) : null}
       <div className="mt-2 flex flex-wrap gap-2">
         {section.groups.map((group) => (
           <button key={group.id} type="button" onClick={() => setSelected(group.id)} className={classNames("rounded-full border px-3 py-1 text-sm", selected === group.id ? "border-sky-500 bg-sky-100 text-sky-900" : "border-neutral-300 bg-white text-neutral-700")}>{group.label}</button>
@@ -180,17 +209,49 @@ function FarmPlacementCard({ section }: { section: Extract<MethodologyLessonStud
   );
 }
 
+function PresentationCard({
+  section,
+  asset,
+}: {
+  section: Extract<MethodologyLessonStudentContentSection, { type: "presentation" }>;
+  asset?: ReusableAsset;
+}) {
+  const [slideIndex, setSlideIndex] = useState(0);
+  const url = resolveAssetPlaybackUrl(asset);
+  const slideImageRefs = extractMetadataStringArray(asset, "slideImageRefs");
+  const activeSlide = slideImageRefs[slideIndex] ?? null;
+
+  return (
+    <article className="mt-3 rounded-xl border border-sky-200 bg-white p-3 text-sm text-neutral-700">
+      <p className="font-semibold text-neutral-900">{asset?.title ?? "Презентация урока"}</p>
+      {section.note ? <p className="mt-1">{section.note}</p> : null}
+      {activeSlide ? (
+        <div className="mt-3 rounded-xl border border-sky-100 bg-sky-50/60 p-3">
+          <Image
+            src={activeSlide}
+            alt={`Слайд ${slideIndex + 1}`}
+            width={1200}
+            height={675}
+            className="h-auto w-full rounded-lg object-contain"
+          />
+          <div className="mt-2 flex items-center justify-between">
+            <p className="text-xs font-semibold text-sky-900">Слайд {slideIndex + 1} / {slideImageRefs.length}</p>
+            <div className="flex gap-2">
+              <button type="button" className="rounded-lg border border-sky-300 bg-white px-2 py-1 text-xs font-semibold text-sky-800" onClick={() => setSlideIndex((prev) => (prev - 1 + slideImageRefs.length) % slideImageRefs.length)}>Назад</button>
+              <button type="button" className="rounded-lg border border-sky-300 bg-white px-2 py-1 text-xs font-semibold text-sky-800" onClick={() => setSlideIndex((prev) => (prev + 1) % slideImageRefs.length)}>Далее</button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+      {url ? <a href={url} target="_blank" rel="noreferrer" className="mt-2 inline-flex rounded-lg border border-sky-300 bg-sky-50 px-2.5 py-1.5 text-xs font-semibold text-sky-800">{section.studentCtaLabel ?? "Открыть презентацию"}</a> : <p className="mt-2 text-xs">Презентацию открывает преподаватель.</p>}
+    </article>
+  );
+}
+
 function renderSection(section: MethodologyLessonStudentContentSection, assetsById: Record<string, ReusableAsset>) {
   if (section.type === "presentation") {
     const asset = assetsById[section.assetId];
-    const url = resolveAssetPlaybackUrl(asset);
-    return (
-      <article className="mt-3 rounded-xl border border-sky-200 bg-white p-3 text-sm text-neutral-700">
-        <p className="font-semibold text-neutral-900">{asset?.title ?? "Презентация урока"}</p>
-        {section.note ? <p className="mt-1">{section.note}</p> : null}
-        {url ? <a href={url} target="_blank" rel="noreferrer" className="mt-2 inline-flex rounded-lg border border-sky-300 bg-sky-50 px-2.5 py-1.5 text-xs font-semibold text-sky-800">{section.studentCtaLabel ?? "Открыть презентацию"}</a> : <p className="mt-2 text-xs">Презентацию открывает преподаватель.</p>}
-      </article>
-    );
+    return <PresentationCard section={section} asset={asset} />;
   }
 
   if (section.type === "resource_links") {
@@ -212,7 +273,7 @@ function renderSection(section: MethodologyLessonStudentContentSection, assetsBy
   }
 
   if (section.type === "count_board") {
-    return <CountBoard section={section} />;
+    return <CountBoard section={section} assetsById={assetsById} />;
   }
 
   if (section.type === "word_list") {
@@ -342,10 +403,19 @@ function renderSection(section: MethodologyLessonStudentContentSection, assetsBy
   }
 
   if (section.type === "worksheet") {
+    const asset = section.assetId ? assetsById[section.assetId] : undefined;
+    const url = resolveAssetPlaybackUrl(asset);
     return (
       <article className="mt-3 rounded-xl border border-amber-200 bg-white p-3 text-sm text-neutral-700">
         <p className="flex items-center gap-1.5 font-semibold text-neutral-900"><BookOpen className="h-4 w-4" />{section.pageLabel ?? "Задание"}</p>
         <p className="mt-1">{section.instructions}</p>
+        {url ? (
+          <a href={url} target="_blank" rel="noreferrer" className="mt-2 inline-flex rounded-lg border border-amber-300 bg-amber-50 px-2.5 py-1.5 text-xs font-semibold text-amber-800">
+            Открыть внешний ресурс
+          </a>
+        ) : (
+          <p className="mt-2 text-xs text-neutral-600">PDF будет добавлен позже.</p>
+        )}
       </article>
     );
   }

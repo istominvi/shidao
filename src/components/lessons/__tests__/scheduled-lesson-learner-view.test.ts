@@ -27,7 +27,9 @@ test("shared learner deck uses scene grouping with stronger progression rhythm",
   assert.equal(sharedDeckSource.includes("FlashcardCarousel"), true);
   assert.equal(sharedDeckSource.includes("ActionSlider"), true);
   assert.equal(sharedDeckSource.includes('section.type === "presentation"'), true);
+  assert.equal(sharedDeckSource.includes("slideImageRefs"), true);
   assert.equal(sharedDeckSource.includes('section.type === "count_board"'), true);
+  assert.equal(sharedDeckSource.includes("previewImageRef"), true);
 });
 
 test("shared learner deck gracefully handles media without source url", () => {
