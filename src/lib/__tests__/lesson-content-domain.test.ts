@@ -183,11 +183,10 @@ test("fixture block taxonomy satisfies discriminated union coverage", () => {
 test("asset summary helper groups reusable assets by kind", () => {
   const summary = summarizeAssetsByKind(lessonContentFixtureAssets);
 
-  assert.equal(summary.lesson_video >= 1, true);
-  assert.equal(summary.presentation >= 1, true);
-  assert.equal(summary.flashcards_pdf >= 1, true);
-  assert.equal(summary.pronunciation_audio >= 5, true);
-  assert.equal(summary.worksheet + summary.worksheet_pdf >= 6, true);
+  assert.equal(summary.video >= 3, true);
+  assert.equal(summary.song >= 3, true);
+  assert.equal(summary.worksheet >= 6, true);
+  assert.equal(summary.media_file >= 10, true);
 });
 
 test("world-around-me fixtures provide at least three canonical lessons", () => {

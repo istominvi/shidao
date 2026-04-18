@@ -67,7 +67,7 @@ export const lessonContentFixtureMethodology: Methodology = {
 export const lessonContentFixtureAssets: ReusableAsset[] = [
   {
     id: "video:farm-animals",
-    kind: "lesson_video",
+    kind: "video",
     title: "farm animals",
     description: "Видео-сегмент уроков 1–2: знакомство с животными фермы.",
     sourceUrl:
@@ -75,7 +75,7 @@ export const lessonContentFixtureAssets: ReusableAsset[] = [
   },
   {
     id: "presentation:world-around-me-lesson-1",
-    kind: "presentation",
+    kind: "media_file",
     title: "Презентация урока 1",
     description: "Google Slides с ходом урока 1 для онлайн и офлайн проведения.",
     sourceUrl:
@@ -83,7 +83,7 @@ export const lessonContentFixtureAssets: ReusableAsset[] = [
   },
   {
     id: "flashcards:world-around-me-lesson-1",
-    kind: "flashcards_pdf",
+    kind: "media_file",
     title: "Карточки урока 1 (PDF)",
     sourceUrl:
       "https://drive.google.com/file/d/11LTKea4ui3_xB5ZBc6WbEanwlxfoO_GY/view?usp=drive_link",
@@ -96,7 +96,7 @@ export const lessonContentFixtureAssets: ReusableAsset[] = [
   },
   {
     id: "song:farm-animals",
-    kind: "song_audio",
+    kind: "song",
     title: "farm animals",
     description: "Песня для завершения уроков про животных.",
     sourceUrl:
@@ -104,14 +104,14 @@ export const lessonContentFixtureAssets: ReusableAsset[] = [
   },
   {
     id: "song-video:farm-animals-movement",
-    kind: "song_video",
+    kind: "video",
     title: "farm animals (movement version)",
     sourceUrl:
       "https://drive.google.com/file/d/1RdZLmZHFnxflYuYkSNvhclrfYuNxAnSC/view?usp=drive_link",
   },
   {
     id: "worksheet:workbook-pages-3-4",
-    kind: "worksheet_pdf",
+    kind: "worksheet",
     title: "Рабочая тетрадь, стр. 3–4",
     description: "Задание на раскрашивание животных и вопрос «这是什么？».",
     sourceUrl:
@@ -119,7 +119,7 @@ export const lessonContentFixtureAssets: ReusableAsset[] = [
   },
   {
     id: "worksheet:appendix-1",
-    kind: "worksheet_pdf",
+    kind: "worksheet",
     title: "Приложение 1",
     description: "Материал для указки: показать, посчитать, назвать животных.",
     sourceUrl:
@@ -127,77 +127,77 @@ export const lessonContentFixtureAssets: ReusableAsset[] = [
   },
   {
     id: "pronunciation:dog",
-    kind: "pronunciation_audio",
+    kind: "media_file",
     title: "狗 · gǒu",
     sourceUrl:
       "https://drive.google.com/file/d/1grQp68jzA-GKI-347k_FCcioEFdpUeIa/view?usp=drive_link",
   },
   {
     id: "pronunciation:cat",
-    kind: "pronunciation_audio",
+    kind: "media_file",
     title: "猫 · māo",
     sourceUrl:
       "https://drive.google.com/file/d/1Q-nHIC2le2LncKp0ShW5VjVpShCeAfo-/view?usp=drive_link",
   },
   {
     id: "pronunciation:rabbit",
-    kind: "pronunciation_audio",
+    kind: "media_file",
     title: "兔子 · tùzi",
     sourceUrl:
       "https://drive.google.com/file/d/1bsr-B0VChwBtbAtzUYWw3XxNOm8tdQ0H/view?usp=drive_link",
   },
   {
     id: "pronunciation:horse",
-    kind: "pronunciation_audio",
+    kind: "media_file",
     title: "马 · mǎ",
     sourceUrl:
       "https://drive.google.com/file/d/1eOPR9ijCZCZYK2JlKy4QfhdMdqiENzUc/view?usp=drive_link",
   },
   {
     id: "pronunciation:farm",
-    kind: "pronunciation_audio",
+    kind: "media_file",
     title: "农场 · nóngchǎng",
     sourceUrl:
       "https://drive.google.com/file/d/12fQ1TLKBpoZ7GWgcJ1VQ4NIbc1W16Tpv/view?usp=drive_link",
   },
   {
     id: "pronunciation:wo-shi",
-    kind: "pronunciation_audio",
+    kind: "media_file",
     title: "我是… · wǒ shì…",
     sourceUrl:
       "https://drive.google.com/file/d/1ifEjsJxsrtrlae9UALLC4z59DAFN9XfM/view?usp=drive_link",
   },
   {
     id: "pronunciation:zhe-shi",
-    kind: "pronunciation_audio",
+    kind: "media_file",
     title: "这是… · zhè shì…",
     sourceUrl:
       "https://drive.google.com/file/d/1FryGPVixCPSoPI1-NhsFKaCz7_QFjuxj/view?usp=drive_link",
   },
   {
     id: "pronunciation:run",
-    kind: "pronunciation_audio",
+    kind: "media_file",
     title: "跑 · pǎo",
     sourceUrl:
       "https://drive.google.com/file/d/1FErrO1KK31rE0m1iCua2WjAyh9TWtodX/view?usp=drive_link",
   },
   {
     id: "pronunciation:jump",
-    kind: "pronunciation_audio",
+    kind: "media_file",
     title: "跳 · tiào",
     sourceUrl:
       "https://drive.google.com/file/d/1zEgYecw45dyHxbzR0LterPNIWBZtl4Rr/view?usp=drive_link",
   },
   {
     id: "pronunciation:lets",
-    kind: "pronunciation_audio",
+    kind: "media_file",
     title: "我们…吧! · wǒmen … ba!",
     sourceUrl:
       "https://drive.google.com/file/d/1nqGYhDcqVRANWl7-R_jcC9vrZ2t_VLFB/view?usp=drive_link",
   },
   {
     id: "pronunciation:zai",
-    kind: "pronunciation_audio",
+    kind: "media_file",
     title: "在 · zài",
     sourceUrl:
       "https://drive.google.com/file/d/15n4D2hLmnlRdcGjG1SlXvHyr1UV6R8qZ/view?usp=drive_link",
