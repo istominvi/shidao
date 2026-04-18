@@ -27,12 +27,32 @@ export function TeacherLessonWorkspace({
   const [tab, setTab] = useState<TeacherLessonTabKey>("plan");
   const runtime = workspace.projection.runtimeShell;
   const { quickSummary, lessonFlow } = workspace.presentation;
+  const planSteps = lessonFlow.map((step) => ({
+    id: step.id,
+    order: step.order,
+    title: step.title,
+    teacher: {
+      goal: step.description ?? null,
+      description: step.description ?? null,
+      teacherActions: step.teacherActions,
+      studentActions: step.studentActions,
+      teacherScript: step.pedagogicalDetails?.promptPatterns,
+      expectedResponses: step.pedagogicalDetails?.expectedStudentResponses,
+      materials: step.materials,
+      successCriteria: step.pedagogicalDetails?.successCriteria,
+    },
+    student: {
+      screenType: "placeholder" as const,
+      title: step.title,
+      instruction: "Следуйте указаниям преподавателя.",
+    },
+  }));
 
   return (
     <div className="space-y-8 lg:space-y-10">
       <section className="space-y-5">
         <TeacherLessonTabs
-          tabs={["plan", "content", "homework", "conduct", "chat"]}
+          tabs={["plan", "student_screen", "homework", "conduct", "chat"]}
           activeTab={tab}
           onTabChange={setTab}
         />
@@ -40,11 +60,11 @@ export function TeacherLessonWorkspace({
         {tab === "plan" ? (
           <TeacherLessonPedagogicalContent
             quickSummary={quickSummary}
-            lessonFlow={lessonFlow}
+            steps={planSteps}
           />
         ) : null}
 
-        {tab === "content" ? (
+        {tab === "student_screen" ? (
           <LessonStudentContentPanel
             source={workspace.studentContent.source}
             unavailableReason={workspace.studentContent.unavailableReason}

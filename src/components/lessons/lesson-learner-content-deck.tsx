@@ -9,16 +9,21 @@ import type {
   MethodologyLessonStudentContentSection,
   ReusableAsset,
 } from "@/lib/lesson-content";
+import type { MethodologyLessonStep } from "@/lib/server/methodology-lesson-unified-read-model";
 import { classNames } from "@/lib/ui/classnames";
 
 type Props = {
+  steps?: MethodologyLessonStep[];
   source: MethodologyLessonStudentContent | null;
   unavailableReason: "schema_missing" | "invalid_payload" | "load_failed" | null;
   assetsById: Record<string, ReusableAsset>;
   compact?: boolean;
+  mode?: "teacher_preview" | "student_live_locked" | "student_review";
+  controlledStepId?: string;
+  onStepChange?: (stepId: string) => void;
 };
 
-type SceneGroup = {
+type StepGroup = {
   key: string;
   sections: MethodologyLessonStudentContentSection[];
 };
@@ -43,8 +48,8 @@ function toneClass(tone?: string) {
   return "border-neutral-200 bg-white";
 }
 
-function groupScenes(sections: MethodologyLessonStudentContentSection[]) {
-  const groups: SceneGroup[] = [];
+function groupSteps(sections: MethodologyLessonStudentContentSection[]) {
+  const groups: StepGroup[] = [];
   for (const section of sections) {
     const sceneId = section.sceneId?.trim();
     if (sceneId && groups.length && groups[groups.length - 1].key === sceneId) {
@@ -437,25 +442,81 @@ function renderSection(section: MethodologyLessonStudentContentSection, assetsBy
   );
 }
 
-export function LessonLearnerContentDeck({ source, unavailableReason, assetsById, compact = false }: Props) {
-  const scenes = useMemo(() => groupScenes(source?.sections ?? []), [source?.sections]);
-  if (!source) return <EmptyState reason={unavailableReason} />;
+function buildLegacyStepDeck(source: MethodologyLessonStudentContent | null): MethodologyLessonStep[] {
+  if (!source) return [];
+  const grouped = groupSteps(source.sections);
+  return grouped.map((group, index) => ({
+    id: `legacy-step-${index + 1}`,
+    order: index + 1,
+    title: group.sections[0]?.title ?? `Шаг ${index + 1}`,
+    teacher: {
+      teacherActions: [],
+      studentActions: [],
+      materials: [],
+    },
+    student: {
+      screenType: "placeholder",
+      title: group.sections[0]?.title ?? `Шаг ${index + 1}`,
+      instruction: group.sections[0]?.subtitle ?? "Следуйте инструкции преподавателя.",
+      payload: { sections: group.sections },
+    },
+  }));
+}
+
+export function LessonLearnerContentDeck({
+  steps,
+  source,
+  unavailableReason,
+  assetsById,
+  compact = false,
+  mode = "teacher_preview",
+  controlledStepId,
+  onStepChange,
+}: Props) {
+  const resolvedSteps = useMemo(() => (steps?.length ? steps : buildLegacyStepDeck(source)), [steps, source]);
+  const [localStepId, setLocalStepId] = useState<string | null>(resolvedSteps[0]?.id ?? null);
+  const activeStepId = controlledStepId ?? localStepId ?? resolvedSteps[0]?.id ?? null;
+  const currentStepIndex = Math.max(0, resolvedSteps.findIndex((step) => step.id === activeStepId));
+  const currentStep = resolvedSteps[currentStepIndex];
+
+  if (!currentStep) return <EmptyState reason={unavailableReason} />;
+  const sections = currentStep.student.payload?.sections ?? [];
+  const main = sections[0];
+
+  const moveToStep = (nextIndex: number) => {
+    const next = resolvedSteps[nextIndex];
+    if (!next) return;
+    if (!controlledStepId) setLocalStepId(next.id);
+    onStepChange?.(next.id);
+  };
+
+  const canNavigate = mode !== "student_live_locked";
 
   return (
-    <section className="space-y-4" aria-label="Ученический контент урока">
-      {scenes.map((scene, sceneIndex) => {
-        const main = scene.sections[0];
-        const isHero = main.layout === "hero";
-        return (
-          <article key={scene.key} className={classNames("rounded-2xl border p-4", toneClass(main.tone), isHero ? "p-5 md:p-6 shadow-[0_14px_30px_rgba(15,23,42,0.08)]" : "")}>
-            <div className="mb-2 text-xs font-semibold uppercase tracking-[0.1em] text-neutral-500">Сцена {sceneIndex + 1}</div>
-            <SceneHeader section={main} compact={compact} />
-            {scene.sections.map((section, index) => (
-              <div key={`${scene.key}-${section.type}-${section.title}-${index}`}>{renderSection(section, assetsById)}</div>
-            ))}
-          </article>
-        );
-      })}
+    <section className="space-y-4" aria-label="Экран ученика">
+      <article className={classNames("rounded-2xl border p-4", toneClass(main?.tone), main?.layout === "hero" ? "p-5 md:p-6 shadow-[0_14px_30px_rgba(15,23,42,0.08)]" : "")}>
+        <div className="mb-2 flex items-center justify-between gap-2 text-xs font-semibold uppercase tracking-[0.1em] text-neutral-500">
+          <span>Шаг {currentStepIndex + 1} из {resolvedSteps.length}</span>
+          {canNavigate ? (
+            <div className="flex gap-2 normal-case tracking-normal">
+              <button type="button" className="rounded-lg border border-neutral-300 bg-white px-3 py-1 text-xs font-semibold text-neutral-700 disabled:opacity-40" disabled={currentStepIndex === 0} onClick={() => moveToStep(currentStepIndex - 1)}>Назад</button>
+              <button type="button" className="rounded-lg border border-neutral-300 bg-white px-3 py-1 text-xs font-semibold text-neutral-700 disabled:opacity-40" disabled={currentStepIndex >= resolvedSteps.length - 1} onClick={() => moveToStep(currentStepIndex + 1)}>Далее</button>
+            </div>
+          ) : null}
+        </div>
+
+        <h3 className={classNames("font-semibold text-neutral-900", compact ? "text-base" : "text-lg")}>{currentStep.student.title}</h3>
+        {currentStep.student.instruction ? <p className="mt-1 text-sm text-neutral-600"><span className="font-semibold">Инструкция для ученика:</span> {currentStep.student.instruction}</p> : null}
+
+        {main ? <SceneHeader section={main} compact={compact} /> : null}
+        {sections.length ? sections.map((section, index) => (
+          <div key={`${currentStep.id}-${section.type}-${section.title}-${index}`}>{renderSection(section, assetsById)}</div>
+        )) : (
+          <div className="mt-4 rounded-xl border border-dashed border-neutral-300 bg-neutral-50 p-4 text-sm text-neutral-700">
+            Здесь появится экран шага. Пока используйте инструкцию преподавателя.
+          </div>
+        )}
+      </article>
     </section>
   );
 }

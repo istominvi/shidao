@@ -1,11 +1,22 @@
-import type { ReactNode } from "react";
-import { BookOpen, Footprints, Layers3, MessageCircleMore, Timer, Workflow } from "lucide-react";
+import { Timer, Workflow } from "lucide-react";
 import { Chip } from "@/components/ui/chip";
-import type { TeacherLessonWorkspacePresentation } from "@/lib/server/teacher-lesson-workspace";
-import { classNames } from "@/lib/ui/classnames";
+import type { MethodologyLessonStep } from "@/lib/server/methodology-lesson-unified-read-model";
 
-function SummaryList({ items, emptyLabel }: { items: string[]; emptyLabel: string }) {
-  if (!items.length) return <p className="text-sm text-neutral-600">{emptyLabel}</p>;
+type Props = {
+  quickSummary: {
+    prepChecklist: string[];
+    keyWords: string[];
+    keyPhrases: string[];
+  };
+  steps: MethodologyLessonStep[];
+  durationLabel?: string | null;
+  activeStudentStepId?: string | null;
+  onShowOnStudentScreen?: (stepId: string) => void;
+  onOpenStudentScreen?: () => void;
+};
+
+function SummaryList({ items }: { items: string[] }) {
+  if (!items.length) return null;
   return (
     <ul className="space-y-1.5 text-sm text-neutral-700">
       {items.map((item) => (
@@ -18,54 +29,19 @@ function SummaryList({ items, emptyLabel }: { items: string[]; emptyLabel: strin
   );
 }
 
-function SectionTitle({ title, subtitle }: { title: string; subtitle?: string }) {
-  return (
-    <div className="mb-3">
-      <h2 className="text-base font-semibold text-neutral-950">{title}</h2>
-      {subtitle ? <p className="mt-1 text-sm text-neutral-600">{subtitle}</p> : null}
-    </div>
-  );
-}
-
-function PedagogicalSubsection({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <div className="rounded-xl border border-neutral-200 bg-neutral-50/70 p-3">
-      <h4 className="text-xs font-semibold uppercase tracking-[0.12em] text-neutral-500">{title}</h4>
-      <div className="mt-2">{children}</div>
-    </div>
-  );
-}
-
-function phaseLabel(order: number) {
-  if (order <= 2) return "Открытие урока";
-  if (order <= 4) return "Ввод языка";
-  if (order <= 11) return "Активная практика";
-  if (order <= 14) return "Закрепление";
-  return "Завершение";
-}
-
-function stepIcon(blockLabel: string) {
-  if (blockLabel.includes("Речевые")) return <MessageCircleMore className="h-4 w-4" />;
-  if (blockLabel.includes("Практическая")) return <Footprints className="h-4 w-4" />;
-  if (blockLabel.includes("Лексика")) return <BookOpen className="h-4 w-4" />;
-  return <Layers3 className="h-4 w-4" />;
-}
-
 export function TeacherLessonPedagogicalContent({
   quickSummary,
-  lessonFlow,
+  steps,
   durationLabel,
-  resourceChipsByStepId = {},
-}: Pick<TeacherLessonWorkspacePresentation, "quickSummary" | "lessonFlow"> & {
-  durationLabel?: string | null;
-  resourceChipsByStepId?: Record<string, Array<{ label: string; href?: string | null }>>;
-}) {
+  activeStudentStepId,
+  onShowOnStudentScreen,
+  onOpenStudentScreen,
+}: Props) {
   return (
     <section className="space-y-8" aria-label="План урока">
-      <section id="lesson-passport" className="scroll-mt-20 rounded-2xl border border-neutral-200 bg-gradient-to-b from-neutral-50 to-white p-4">
-        <SectionTitle title="Паспорт урока" subtitle="Готовая опора преподавателя перед стартом занятия." />
-
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+      <section className="rounded-2xl border border-neutral-200 bg-gradient-to-b from-neutral-50 to-white p-4">
+        <h2 className="text-base font-semibold text-neutral-950">Кратко об уроке</h2>
+        <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           <article className="rounded-xl border border-neutral-200 bg-white p-3">
             <p className="text-xs uppercase tracking-[0.12em] text-neutral-500">Длительность</p>
             <p className="mt-1 flex items-center gap-1.5 text-sm font-semibold text-neutral-900"><Timer className="h-4 w-4" />{durationLabel ?? "45 мин"}</p>
@@ -79,124 +55,87 @@ export function TeacherLessonPedagogicalContent({
             <p className="mt-1 text-sm font-semibold text-neutral-900">{quickSummary.keyPhrases.length}</p>
           </article>
           <article className="rounded-xl border border-neutral-200 bg-white p-3">
-            <p className="text-xs uppercase tracking-[0.12em] text-neutral-500">Этапов в плане</p>
-            <p className="mt-1 text-sm font-semibold text-neutral-900">{lessonFlow.length}</p>
+            <p className="text-xs uppercase tracking-[0.12em] text-neutral-500">Шагов</p>
+            <p className="mt-1 text-sm font-semibold text-neutral-900">{steps.length}</p>
           </article>
         </div>
 
         <div className="mt-4 grid gap-4 lg:grid-cols-2">
           <div>
             <h3 className="text-sm font-semibold text-neutral-800">Лексика урока</h3>
-            <div className="mt-2 flex flex-wrap gap-1.5">
-              {quickSummary.keyWords.length ? quickSummary.keyWords.map((word) => <Chip key={word} tone="sky">{word}</Chip>) : <p className="text-sm text-neutral-600">Слова не указаны.</p>}
-            </div>
+            <div className="mt-2 flex flex-wrap gap-1.5">{quickSummary.keyWords.map((word) => <Chip key={word} tone="sky">{word}</Chip>)}</div>
           </div>
           <div>
             <h3 className="text-sm font-semibold text-neutral-800">Речевые паттерны</h3>
-            <div className="mt-2 flex flex-wrap gap-1.5">
-              {quickSummary.keyPhrases.length ? quickSummary.keyPhrases.map((phrase) => <Chip key={phrase} tone="violet">{phrase}</Chip>) : <p className="text-sm text-neutral-600">Фразы не указаны.</p>}
-            </div>
+            <div className="mt-2 flex flex-wrap gap-1.5">{quickSummary.keyPhrases.map((phrase) => <Chip key={phrase} tone="violet">{phrase}</Chip>)}</div>
           </div>
         </div>
       </section>
 
-      <section id="lesson-materials" className="scroll-mt-20 border-b border-neutral-200 pb-6">
-        <SectionTitle title="Подготовка к уроку" subtitle="Проверьте реквизит и пространство до старта урока." />
-        <SummaryList items={quickSummary.prepChecklist} emptyLabel="Чек-лист подготовки пока не заполнен." />
+      <section>
+        <h2 className="text-base font-semibold text-neutral-950">Подготовка до урока</h2>
+        <div className="mt-3 rounded-2xl border border-neutral-200 bg-white p-4">
+          <SummaryList items={quickSummary.prepChecklist} />
+        </div>
       </section>
 
-      <section id="lesson-flow" className="scroll-mt-20">
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-          <SectionTitle title="Пошаговый план урока" subtitle="Фазы: открытие → ввод → практика → закрепление → завершение." />
-          <Chip tone="neutral"><Workflow className="mr-1 h-3.5 w-3.5" />{lessonFlow.length} этапов</Chip>
+      <section>
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-base font-semibold text-neutral-950">План урока</h2>
+          <Chip tone="neutral"><Workflow className="mr-1 h-3.5 w-3.5" />{steps.length} шагов</Chip>
         </div>
 
         <div className="space-y-3">
-          {lessonFlow.map((step, index) => (
+          {steps.map((step) => (
             <article key={step.id} className="rounded-2xl border border-neutral-200 bg-white p-4 md:p-5">
-              <header className="space-y-2">
-                <div className="flex flex-wrap items-center gap-2">
-                  <Chip size="sm" tone="inverse">Шаг {index + 1}</Chip>
-                  <Chip size="sm" tone="slate">{phaseLabel(step.order)}</Chip>
-                  <Chip size="sm" tone="neutral" className="inline-flex items-center gap-1">{stepIcon(step.blockLabel)}{step.blockLabel}</Chip>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <Chip size="sm" tone="inverse">Шаг {step.order}</Chip>
+                  {activeStudentStepId === step.id ? <Chip size="sm" tone="sky">На экране ученика</Chip> : null}
                 </div>
-                <h3 className="text-lg font-semibold text-neutral-950">{step.title}</h3>
-                {step.description ? <p className="text-sm leading-6 text-neutral-700">{step.description}</p> : null}
-              </header>
+                <div className="flex gap-2">
+                  <button type="button" onClick={() => onShowOnStudentScreen?.(step.id)} className="rounded-lg border border-neutral-300 bg-white px-3 py-1.5 text-xs font-semibold text-neutral-700">Показать на экране ученика</button>
+                  <button type="button" onClick={() => onOpenStudentScreen?.()} className="rounded-lg border border-neutral-300 bg-neutral-50 px-3 py-1.5 text-xs font-semibold text-neutral-800">Открыть экран ученика</button>
+                </div>
+              </div>
+              <h3 className="mt-2 text-lg font-semibold text-neutral-950">{step.title}</h3>
+              {step.teacher.description ? <p className="mt-1 text-sm text-neutral-700">{step.teacher.description}</p> : null}
 
               <div className="mt-3 grid gap-3 md:grid-cols-2">
-                <PedagogicalSubsection title="Что делает педагог">
-                  <SummaryList items={step.teacherActions} emptyLabel="Действия не указаны." />
-                </PedagogicalSubsection>
-                <PedagogicalSubsection title="Что делают дети">
-                  <SummaryList items={step.studentActions} emptyLabel="Ожидаемые реакции не указаны." />
-                </PedagogicalSubsection>
+                {step.teacher.teacherActions.length ? (
+                  <div className="rounded-xl border border-neutral-200 bg-neutral-50/70 p-3">
+                    <h4 className="text-xs font-semibold uppercase tracking-[0.12em] text-neutral-500">Что делает педагог</h4>
+                    <div className="mt-2"><SummaryList items={step.teacher.teacherActions} /></div>
+                  </div>
+                ) : null}
+                {step.teacher.studentActions.length ? (
+                  <div className="rounded-xl border border-neutral-200 bg-neutral-50/70 p-3">
+                    <h4 className="text-xs font-semibold uppercase tracking-[0.12em] text-neutral-500">Что делают ученики</h4>
+                    <div className="mt-2"><SummaryList items={step.teacher.studentActions} /></div>
+                  </div>
+                ) : null}
               </div>
 
-              {(step.pedagogicalDetails?.promptPatterns?.length || step.pedagogicalDetails?.expectedStudentResponses?.length) ? (
-                <div className="mt-3 grid gap-3 md:grid-cols-2">
-                  <PedagogicalSubsection title="Целевой язык">
-                    <SummaryList items={step.pedagogicalDetails?.promptPatterns ?? []} emptyLabel="Паттерны не указаны." />
-                  </PedagogicalSubsection>
-                  <PedagogicalSubsection title="Пример ответов">
-                    <SummaryList items={step.pedagogicalDetails?.expectedStudentResponses ?? []} emptyLabel="Ответы не указаны." />
-                    {step.pedagogicalDetails?.fallbackRu ? <p className="mt-2 text-xs text-neutral-600">Подсказка: {step.pedagogicalDetails.fallbackRu}</p> : null}
-                  </PedagogicalSubsection>
-                </div>
-              ) : null}
-
-              {(step.pedagogicalDetails?.activitySteps?.length || step.pedagogicalDetails?.successCriteria?.length || step.materials.length) ? (
-                <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                  {step.pedagogicalDetails?.activitySteps?.length ? (
-                    <PedagogicalSubsection title="Ход этапа">
-                      <SummaryList items={step.pedagogicalDetails.activitySteps} emptyLabel="Шаги не указаны." />
-                    </PedagogicalSubsection>
-                  ) : null}
-
-                  {step.pedagogicalDetails?.successCriteria?.length ? (
-                    <PedagogicalSubsection title="Критерии успеха">
-                      <SummaryList items={step.pedagogicalDetails.successCriteria} emptyLabel="Критерии не указаны." />
-                    </PedagogicalSubsection>
-                  ) : null}
-
-                  {step.materials.length ? (
-                    <PedagogicalSubsection title="Материалы этапа">
-                      <SummaryList items={step.materials} emptyLabel="Материалы не требуются." />
-                    </PedagogicalSubsection>
-                  ) : null}
-                </div>
-              ) : null}
-
-              {resourceChipsByStepId[step.id]?.length ? (
-                <div className="mt-3 border-t border-neutral-200 pt-3">
-                  <p className="text-xs font-semibold uppercase tracking-[0.1em] text-neutral-500">Ресурсы по шагу</p>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {resourceChipsByStepId[step.id].map((chip) =>
-                      chip.href ? (
-                        <a
-                          key={`${step.id}-${chip.label}`}
-                          href={chip.href}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="rounded-full border border-neutral-300 bg-neutral-50 px-2.5 py-1 text-xs font-medium text-neutral-700 transition hover:border-sky-300 hover:bg-sky-50 hover:text-sky-800"
-                        >
-                          {chip.label}
-                        </a>
-                      ) : (
-                        <span
-                          key={`${step.id}-${chip.label}`}
-                          className={classNames(
-                            "rounded-full border px-2.5 py-1 text-xs font-medium",
-                            "border-neutral-200 bg-neutral-100 text-neutral-500",
-                          )}
-                        >
-                          {chip.label}
-                        </span>
-                      ),
-                    )}
+              <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                {step.teacher.teacherScript?.length ? (
+                  <div className="rounded-xl border border-neutral-200 bg-neutral-50/70 p-3">
+                    <h4 className="text-xs font-semibold uppercase tracking-[0.12em] text-neutral-500">Целевой язык</h4>
+                    <div className="mt-2"><SummaryList items={step.teacher.teacherScript} /></div>
                   </div>
-                </div>
-              ) : null}
+                ) : null}
+                {step.teacher.expectedResponses?.length ? (
+                  <div className="rounded-xl border border-neutral-200 bg-neutral-50/70 p-3">
+                    <h4 className="text-xs font-semibold uppercase tracking-[0.12em] text-neutral-500">Ожидаемые ответы</h4>
+                    <div className="mt-2"><SummaryList items={step.teacher.expectedResponses} /></div>
+                  </div>
+                ) : null}
+                {step.teacher.materials.length ? (
+                  <div className="rounded-xl border border-neutral-200 bg-neutral-50/70 p-3">
+                    <h4 className="text-xs font-semibold uppercase tracking-[0.12em] text-neutral-500">Материалы</h4>
+                    <div className="mt-2"><SummaryList items={step.teacher.materials} /></div>
+                  </div>
+                ) : null}
+              </div>
             </article>
           ))}
         </div>

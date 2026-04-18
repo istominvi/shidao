@@ -26,12 +26,13 @@ test("teacher workspace component keeps runtime editing surface", () => {
 test("teacher workspace uses unified five-tab labels and removes legacy side cards", () => {
   assert.equal(
     workspaceComponentSource.includes(
-      '[\"plan\", \"content\", \"homework\", \"conduct\", \"chat\"]',
+      '[\"plan\", \"student_screen\", \"homework\", \"conduct\", \"chat\"]',
     ),
     true,
   );
   assert.equal(tabsSource.includes("План урока"), true);
-  assert.equal(tabsSource.includes("Контент"), true);
+  assert.equal(tabsSource.includes("Экран ученика"), true);
+  assert.equal(tabsSource.includes("Контент"), false);
   assert.equal(tabsSource.includes("Домашнее задание"), true);
   assert.equal(tabsSource.includes("Проведение занятия"), true);
   assert.equal(tabsSource.includes("Чат"), true);

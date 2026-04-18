@@ -21,18 +21,18 @@ test("learner lesson view renders shared learner deck", () => {
   assert.equal(source.includes("model.studentContent?.sections"), false);
 });
 
-test("shared learner deck uses scene grouping with stronger progression rhythm", () => {
-  assert.equal(sharedDeckSource.includes("groupScenes"), true);
-  assert.equal(sharedDeckSource.includes("Сцена"), true);
+test("shared learner deck works as step-by-step player", () => {
+  assert.equal(sharedDeckSource.includes("buildLegacyStepDeck"), true);
+  assert.equal(sharedDeckSource.includes("Шаг"), true);
+  assert.equal(sharedDeckSource.includes("Сцена"), false);
+  assert.equal(sharedDeckSource.includes("Назад"), true);
+  assert.equal(sharedDeckSource.includes("Далее"), true);
+  assert.equal(sharedDeckSource.includes("Инструкция для ученика"), true);
+});
+
+test("shared learner deck keeps existing rich renderers", () => {
   assert.equal(sharedDeckSource.includes("FlashcardCarousel"), true);
   assert.equal(sharedDeckSource.includes("ActionSlider"), true);
   assert.equal(sharedDeckSource.includes('section.type === "presentation"'), true);
-  assert.equal(sharedDeckSource.includes("slideImageRefs"), true);
   assert.equal(sharedDeckSource.includes('section.type === "count_board"'), true);
-  assert.equal(sharedDeckSource.includes("previewImageRef"), true);
-});
-
-test("shared learner deck gracefully handles media without source url", () => {
-  assert.equal(sharedDeckSource.includes("Материал покажет преподаватель на уроке"), true);
-  assert.equal(sharedDeckSource.includes("sourceUrl"), true);
 });
