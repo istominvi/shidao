@@ -64,10 +64,7 @@ export function TeacherMethodologyLessonWorkspace({
         ) : null}
 
         {tab === "student_screen" ? (
-          <section className="space-y-3">
-            <div className="rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-2">
-              <p className="text-sm font-semibold text-neutral-800">Экран ученика</p>
-            </div>
+          <section>
             <LessonStudentContentPanel
               title="Экран ученика"
               steps={readModel.unifiedReadModel.steps}
@@ -75,6 +72,7 @@ export function TeacherMethodologyLessonWorkspace({
               unavailableReason={null}
               assetsById={readModel.unifiedReadModel.assetsById}
               embedded
+              showFullscreenControl
               mode="teacher_preview"
               controlledStepId={selectedStepId ?? undefined}
               onStepChange={setSelectedStepId}

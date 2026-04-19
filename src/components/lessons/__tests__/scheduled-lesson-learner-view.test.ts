@@ -48,7 +48,8 @@ test("shared learner deck keeps existing rich renderers", () => {
   assert.equal(sharedDeckSource.includes('section.type === "presentation"'), true);
   assert.equal(sharedDeckSource.includes('section.type === "count_board"'), true);
   assert.equal(sharedDeckSource.includes("StepResources"), true);
-  assert.equal(sharedDeckSource.includes("Материалы шага"), true);
+  assert.equal(sharedDeckSource.includes("Материалы шага"), false);
+  assert.equal(sharedDeckSource.includes("Посмотри и послушай"), true);
 });
 
 test("learner wording removes teacher-only labels and uses child-friendly roadmap", () => {
@@ -63,8 +64,13 @@ test("student panel fullscreen button is functional and has no dead control", ()
   assert.equal(studentPanelSource.includes("document.fullscreenEnabled"), true);
   assert.equal(studentPanelSource.includes("requestFullscreen"), true);
   assert.equal(studentPanelSource.includes("exitFullscreen"), true);
+  assert.equal(studentPanelSource.includes("showFullscreenControl"), true);
+  assert.equal(studentPanelSource.includes("shouldShowFullscreenButton"), true);
+  assert.equal(studentPanelSource.includes("if (!container || !isFullscreenSupported) return;"), true);
+  assert.equal(studentPanelSource.includes("catch {"), true);
   assert.equal(studentPanelSource.includes("Открыть на весь экран"), true);
   assert.equal(studentPanelSource.includes("Выйти из полноэкранного режима"), true);
+  assert.equal(studentPanelSource.includes('href="#"'), false);
 });
 
 test("deck navigation calls onStepChange and supports controlled id flow", () => {

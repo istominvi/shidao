@@ -6,6 +6,7 @@ import { LessonLearnerContentDeck } from "@/components/lessons/lesson-learner-co
 import { SurfaceCard } from "@/components/ui/surface-card";
 import type { MethodologyLessonStudentContent, ReusableAsset } from "@/lib/lesson-content";
 import type { MethodologyLessonStep } from "@/lib/server/methodology-lesson-unified-read-model";
+import { classNames } from "@/lib/ui/classnames";
 
 type Props = {
   title?: string;
@@ -15,6 +16,7 @@ type Props = {
   assetsById: Record<string, ReusableAsset>;
   previewHref?: string;
   embedded?: boolean;
+  showFullscreenControl?: boolean;
   mode?: "teacher_preview" | "student_live_locked" | "student_review";
   controlledStepId?: string;
   onStepChange?: (stepId: string) => void;
@@ -28,6 +30,7 @@ export function LessonStudentContentPanel({
   assetsById,
   previewHref,
   embedded = false,
+  showFullscreenControl = false,
   mode = "teacher_preview",
   controlledStepId,
   onStepChange,
@@ -51,12 +54,51 @@ export function LessonStudentContentPanel({
     if (typeof document === "undefined") return;
     const container = containerRef.current;
     if (!container || !isFullscreenSupported) return;
-    if (document.fullscreenElement === container) {
-      await document.exitFullscreen();
-      return;
+    try {
+      if (document.fullscreenElement === container) {
+        await document.exitFullscreen();
+        return;
+      }
+      await container.requestFullscreen();
+    } catch {
+      setIsFullscreen(false);
     }
-    await container.requestFullscreen();
   };
+
+  const shouldShowFullscreenButton = isFullscreenSupported && (!embedded || showFullscreenControl);
+
+  const fullscreenButton = shouldShowFullscreenButton ? (
+    <button
+      type="button"
+      onClick={() => {
+        void handleFullscreenToggle();
+      }}
+      className="rounded-xl border border-neutral-300 bg-white px-3 py-2 text-sm font-semibold text-neutral-800"
+    >
+      {isFullscreen ? "Выйти из полноэкранного режима" : "Открыть на весь экран"}
+    </button>
+  ) : null;
+
+  const deck = (
+    <section
+      ref={containerRef}
+      className={classNames(
+        "rounded-2xl",
+        isFullscreen ? "bg-neutral-100 p-4 md:p-6" : "",
+      )}
+    >
+      <LessonLearnerContentDeck
+        steps={steps}
+        source={source}
+        unavailableReason={unavailableReason}
+        assetsById={assetsById}
+        compact={embedded}
+        mode={mode}
+        controlledStepId={controlledStepId}
+        onStepChange={onStepChange}
+      />
+    </section>
+  );
 
   const content = (
     <>
@@ -64,17 +106,7 @@ export function LessonStudentContentPanel({
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-lg font-semibold text-neutral-900">{title}</h2>
           <div className="flex flex-wrap items-center gap-2">
-            {isFullscreenSupported ? (
-              <button
-                type="button"
-                onClick={() => {
-                  void handleFullscreenToggle();
-                }}
-                className="rounded-xl border border-neutral-300 bg-white px-3 py-2 text-sm font-semibold text-neutral-800"
-              >
-                {isFullscreen ? "Выйти из полноэкранного режима" : "Открыть на весь экран"}
-              </button>
-            ) : null}
+            {fullscreenButton}
             {previewHref ? (
               <Link href={previewHref} className="rounded-xl border border-sky-300 bg-sky-50 px-3 py-2 text-sm font-semibold text-sky-800">
                 Предпросмотр ученической версии
@@ -90,16 +122,13 @@ export function LessonStudentContentPanel({
         </div>
       ) : null}
 
-      <LessonLearnerContentDeck
-        steps={steps}
-        source={source}
-        unavailableReason={unavailableReason}
-        assetsById={assetsById}
-        compact={embedded}
-        mode={mode}
-        controlledStepId={controlledStepId}
-        onStepChange={onStepChange}
-      />
+      {embedded && fullscreenButton ? (
+        <div className="mb-3 flex justify-end">
+          {fullscreenButton}
+        </div>
+      ) : null}
+
+      {deck}
     </>
   );
 
@@ -107,5 +136,5 @@ export function LessonStudentContentPanel({
     return <section aria-label={title}>{content}</section>;
   }
 
-  return <SurfaceCard><section ref={containerRef}>{content}</section></SurfaceCard>;
+  return <SurfaceCard>{content}</SurfaceCard>;
 }

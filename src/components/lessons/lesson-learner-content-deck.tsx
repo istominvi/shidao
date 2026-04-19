@@ -226,7 +226,7 @@ function StepResources({
 
   return (
     <section className="mt-4 rounded-xl border border-neutral-200 bg-white p-3">
-      <h4 className="text-xs font-semibold uppercase tracking-[0.1em] text-neutral-500">Материалы шага</h4>
+      <h4 className="text-xs font-semibold uppercase tracking-[0.1em] text-neutral-500">Посмотри и послушай</h4>
       <div className="mt-3 grid gap-3">{renderedAssets}</div>
     </section>
   );

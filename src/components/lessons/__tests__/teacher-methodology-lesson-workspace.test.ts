@@ -26,6 +26,7 @@ test("methodology workspace uses plan / student screen / homework tabs", () => {
   assert.equal(lessonTabsSource.includes("Контент"), false);
   assert.equal(lessonTabsSource.includes("Домашнее задание"), true);
   assert.equal(studentPanelSource.includes("Открыть на весь экран"), true);
+  assert.equal(workspaceSource.includes("showFullscreenControl"), true);
 });
 
 test("plan tab renders detailed pedagogical cards with phase and student preview", () => {
@@ -63,6 +64,8 @@ test("student screen panel supports step deck API and controlled navigation", ()
   assert.equal(studentPanelSource.includes("steps?: MethodologyLessonStep[]"), true);
   assert.equal(studentPanelSource.includes("controlledStepId?: string"), true);
   assert.equal(studentPanelSource.includes("mode?: \"teacher_preview\" | \"student_live_locked\" | \"student_review\""), true);
+  assert.equal(studentPanelSource.includes("showFullscreenControl?: boolean"), true);
+  assert.equal(studentPanelSource.includes("embedded && fullscreenButton"), true);
 });
 
 test("methodology workspace uses unified read model as primary source", () => {
