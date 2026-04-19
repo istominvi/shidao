@@ -98,13 +98,19 @@ export async function getStudentHomeworkReadModel(
   deps: StudentHomeworkDeps = defaultDeps,
 ) {
   const lessons = await deps.listScheduledLessonsForClasses(input.classIds);
-  const classLabelRows = await Promise.all(
+  const classLabelRows = await Promise.allSettled(
     input.classIds.map((classId) => deps.getClassById(classId)),
   );
   const classLabelById = Object.fromEntries(
     classLabelRows
-      .filter((row): row is NonNullable<typeof row> => Boolean(row))
-      .map((row) => [row.id, row.name?.trim() || "Группа"]),
+      .filter(
+        (
+          row,
+        ): row is PromiseFulfilledResult<
+          NonNullable<Awaited<ReturnType<typeof deps.getClassById>>>
+        > => row.status === "fulfilled" && Boolean(row.value),
+      )
+      .map((row) => [row.value.id, row.value.name?.trim() || "Группа"]),
   );
   const teacherLabelById = new Map<string, string>();
   const cards: StudentHomeworkCard[] = [];
@@ -120,11 +126,15 @@ export async function getStudentHomeworkReadModel(
     ]);
     const assignedTeacherId = assignment.assignedByTeacherId?.trim() ?? "";
     if (assignedTeacherId && !teacherLabelById.has(assignedTeacherId)) {
-      const labelsById = await deps.listTeacherLabelsByIds([assignedTeacherId]);
-      teacherLabelById.set(
-        assignedTeacherId,
-        labelsById[assignedTeacherId] ?? "Преподаватель не указан",
-      );
+      try {
+        const labelsById = await deps.listTeacherLabelsByIds([assignedTeacherId]);
+        teacherLabelById.set(
+          assignedTeacherId,
+          labelsById[assignedTeacherId] ?? "Преподаватель не указан",
+        );
+      } catch {
+        teacherLabelById.set(assignedTeacherId, "Преподаватель не указан");
+      }
     }
 
     const studentAssignment = perStudent.find((item) => item.studentId === input.studentId);

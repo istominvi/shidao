@@ -96,16 +96,14 @@ export default async function StudentHomeworkPage() {
     redirect(ROUTES.login);
   }
 
-  let homework: StudentHomeworkCard[] = [];
+  const classIds = await listClassIdsForStudentAdmin(studentId);
+  const homework = await getStudentHomeworkReadModel({ studentId, classIds });
+
   let communication: Awaited<ReturnType<typeof getStudentConversationReadModels>> = [];
   try {
-    const classIds = await listClassIdsForStudentAdmin(studentId);
-    [homework, communication] = await Promise.all([
-      getStudentHomeworkReadModel({ studentId, classIds }),
-      getStudentConversationReadModels({ studentId, filter: "all" }),
-    ]);
+    communication = await getStudentConversationReadModels({ studentId, filter: "all" });
   } catch (error) {
-    logger.error("[homework] failed to load student homework page", {
+    logger.error("[homework] failed to load student communication projection", {
       studentId,
       userId: resolution.context.userId,
       error,

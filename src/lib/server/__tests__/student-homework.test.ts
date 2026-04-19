@@ -110,3 +110,38 @@ test("student homework read model tolerates missing assigned teacher id", async 
 
   assert.equal(model[0]?.teacherLabel, "Преподаватель не указан");
 });
+
+test("student homework read model keeps cards when teacher label lookup fails", async () => {
+  const model = await getStudentHomeworkReadModel(
+    { studentId: "s-1", classIds: ["c-1"] },
+    {
+      getClassById: async () => ({
+        id: "c-1",
+        name: "Группа A",
+        methodologyId: null,
+        methodologyTitle: null,
+      }),
+      listTeacherLabelsByIds: async () => {
+        throw new Error("teacher lookup failed");
+      },
+      listScheduledLessonsForClasses: async () => [{
+        id: "lesson-1",
+        methodologyLessonId: "m-1",
+        runtimeShell: { id: "shell-1", classId: "c-1", startsAt: "2026-04-10T10:00:00Z", runtimeStatus: "planned", format: "offline", place: "A" },
+        runtimeNotes: "",
+        outcomeNotes: "",
+      }],
+      getScheduledLessonById: async () => null,
+      getMethodologyLessonById: async () => ({ id: "m-1", methodologyId: "x", methodologySlug: "slug", shell: { id: "s", methodologyId: "x", title: "Урок 1", position: { moduleIndex: 1, unitIndex: 1, lessonIndex: 1 }, vocabularySummary: [], phraseSummary: [], estimatedDurationMinutes: 45, mediaSummary: { videos: 0, songs: 0, worksheets: 0, other: 0 }, readinessStatus: "ready" }, blocks: [] }),
+      getMethodologyHomeworkByLessonId: async () => ({ id: "hw-1", methodologyLessonId: "m-1", title: "Практика", kind: "practice_text", instructions: "text", materialLinks: [] }),
+      getScheduledHomeworkAssignmentByLessonId: async () => ({ id: "sha-1", scheduledLessonId: "lesson-1", methodologyHomeworkId: "hw-1", assignedByTeacherId: "t-1", recipientMode: "all", dueAt: null, assignmentComment: "comment", issuedAt: "x" }),
+      getScheduledHomeworkAssignmentById: async () => null,
+      listStudentHomeworkAssignmentsByScheduledAssignment: async () => [{ id: "st-1", scheduledHomeworkAssignmentId: "sha-1", studentId: "s-1", status: "assigned", submissionText: null, submissionPayload: null, autoScore: null, autoMaxScore: null, autoCheckedAt: null, submittedAt: null, reviewNote: null, reviewedAt: null }],
+      getStudentHomeworkAssignmentById: async () => null,
+      updateStudentHomeworkSubmission: async () => { throw new Error("unused"); },
+    },
+  );
+
+  assert.equal(model.length, 1);
+  assert.equal(model[0]?.teacherLabel, "Преподаватель не указан");
+});
