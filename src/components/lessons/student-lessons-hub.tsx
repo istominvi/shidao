@@ -25,7 +25,6 @@ const VIEW_LABELS: Record<"day" | "week" | "month", string> = {
   month: "Месяц",
 };
 const WEEKDAY_SHORT = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
-const HOUR_WIDTH = 128;
 
 function formatDayLabel(isoDate: string, compact = false) {
   return new Intl.DateTimeFormat("ru-RU", {
