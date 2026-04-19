@@ -550,10 +550,14 @@ export async function listTeacherLabelsForClassIdsAdmin(
 }
 
 export async function listTeacherLabelsByIdsAdmin(
-  teacherIds: string[],
+  teacherIds: Array<string | null | undefined>,
 ): Promise<Record<string, string>> {
   const normalizedTeacherIds = Array.from(
-    new Set(teacherIds.map((id) => id.trim()).filter(Boolean)),
+    new Set(
+      teacherIds
+        .map((id) => (typeof id === "string" ? id.trim() : ""))
+        .filter(Boolean),
+    ),
   );
   if (normalizedTeacherIds.length === 0) {
     return {};

@@ -8,6 +8,7 @@ import { resolveAccessPolicy } from "@/lib/server/access-policy";
 import type { GroupStudentMessage } from "@/lib/server/communication-repository";
 import { getStudentConversationReadModels } from "@/lib/server/communication-service";
 import { listClassIdsForStudentAdmin } from "@/lib/server/lesson-content-repository";
+import { logger } from "@/lib/server/logger";
 import { getStudentHomeworkReadModel, type StudentHomeworkCard } from "@/lib/server/student-homework";
 
 function kindBadge(kind: StudentHomeworkCard["kind"]) {
@@ -95,11 +96,21 @@ export default async function StudentHomeworkPage() {
     redirect(ROUTES.login);
   }
 
-  const classIds = await listClassIdsForStudentAdmin(studentId);
-  const [homework, communication] = await Promise.all([
-    getStudentHomeworkReadModel({ studentId, classIds }),
-    getStudentConversationReadModels({ studentId, filter: "all" }),
-  ]);
+  let homework: StudentHomeworkCard[] = [];
+  let communication: Awaited<ReturnType<typeof getStudentConversationReadModels>> = [];
+  try {
+    const classIds = await listClassIdsForStudentAdmin(studentId);
+    [homework, communication] = await Promise.all([
+      getStudentHomeworkReadModel({ studentId, classIds }),
+      getStudentConversationReadModels({ studentId, filter: "all" }),
+    ]);
+  } catch (error) {
+    logger.error("[homework] failed to load student homework page", {
+      studentId,
+      userId: resolution.context.userId,
+      error,
+    });
+  }
 
   return (
     <main className="pb-12">

@@ -118,11 +118,12 @@ export async function getStudentHomeworkReadModel(
       deps.getMethodologyLessonById(lesson.methodologyLessonId),
       deps.listStudentHomeworkAssignmentsByScheduledAssignment(assignment.id),
     ]);
-    if (!teacherLabelById.has(assignment.assignedByTeacherId)) {
-      const labelsById = await deps.listTeacherLabelsByIds([assignment.assignedByTeacherId]);
+    const assignedTeacherId = assignment.assignedByTeacherId?.trim() ?? "";
+    if (assignedTeacherId && !teacherLabelById.has(assignedTeacherId)) {
+      const labelsById = await deps.listTeacherLabelsByIds([assignedTeacherId]);
       teacherLabelById.set(
-        assignment.assignedByTeacherId,
-        labelsById[assignment.assignedByTeacherId] ?? "Преподаватель не указан",
+        assignedTeacherId,
+        labelsById[assignedTeacherId] ?? "Преподаватель не указан",
       );
     }
 
@@ -134,7 +135,9 @@ export async function getStudentHomeworkReadModel(
     cards.push({
       classId: lesson.runtimeShell.classId,
       groupLabel: classLabelById[lesson.runtimeShell.classId] ?? "Группа",
-      teacherLabel: teacherLabelById.get(assignment.assignedByTeacherId) ?? "Преподаватель не указан",
+      teacherLabel: assignedTeacherId
+        ? (teacherLabelById.get(assignedTeacherId) ?? "Преподаватель не указан")
+        : "Преподаватель не указан",
       scheduledLessonId: lesson.id,
       scheduledHomeworkAssignmentId: assignment.id,
       lessonTitle: methodologyLesson?.shell.title ?? "Урок",
