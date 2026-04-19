@@ -115,6 +115,20 @@
     opacity 220ms ease;
 }
 
+.nav-pill-content {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.42rem;
+}
+
+.nav-pill-icon {
+  opacity: 0.8;
+}
+
+.nav-pill-active .nav-pill-icon {
+  opacity: 0.92;
+}
+
 .nav-pill-inactive {
   color: var(--header-pill-text);
   background: transparent;

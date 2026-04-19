@@ -75,6 +75,7 @@ export function TopNav() {
         id: item.id,
         label: item.label,
         href: item.href,
+        icon: item.icon,
         active: item.isActive(pathname),
         scroll: false,
       }))
