@@ -19,7 +19,7 @@ export async function GET(
 
   const classId = scheduledLesson.runtimeShell.classId;
 
-  if (access.status !== "adult-with-profile") {
+  if (access.status !== "adult-with-profile" && access.status !== "student") {
     return NextResponse.json({ error: "Доступ запрещён." }, { status: 403 });
   }
 

@@ -22,12 +22,10 @@ import {
   getClassDisplayNameByIdAdmin,
   getMethodologyLessonByIdAdmin,
   getMethodologyLessonStudentContentByLessonIdAdmin,
-  isLessonStudentContentSchemaReadyAdmin,
-  isMissingLessonStudentContentSchemaError,
   getScheduledLessonByIdAdmin,
+  isLessonStudentContentSchemaReadyAdmin,
   listReusableAssetsByIdsAdmin,
 } from "./lesson-content-repository";
-import { isInvalidLessonStudentContentPayloadError } from "./lesson-content-mappers";
 import {
   getTeacherLessonHomeworkReadModel,
   type TeacherLessonHomeworkReadModel,
@@ -45,6 +43,7 @@ import {
   resolveActiveLessonStep,
   type ScheduledLessonLiveState,
 } from "./scheduled-lesson-live-state";
+import { loadScheduledLessonUnifiedSeedAdmin } from "./scheduled-lesson-unified-context";
 
 export type TeacherLessonFlowStep = {
   id: string;
@@ -165,10 +164,11 @@ export type TeacherLessonWorkspaceReadModel = {
 type WorkspaceLoaderDeps = {
   getScheduledLessonById: typeof getScheduledLessonByIdAdmin;
   getMethodologyLessonById: typeof getMethodologyLessonByIdAdmin;
-  getMethodologyLessonStudentContentByLessonId: typeof getMethodologyLessonStudentContentByLessonIdAdmin;
-  isLessonStudentContentSchemaReady: typeof isLessonStudentContentSchemaReadyAdmin;
-  listReusableAssetsByIds: typeof listReusableAssetsByIdsAdmin;
+  getMethodologyLessonStudentContentByLessonId?: typeof getMethodologyLessonStudentContentByLessonIdAdmin;
+  isLessonStudentContentSchemaReady?: typeof isLessonStudentContentSchemaReadyAdmin;
   getClassDisplayNameById: typeof getClassDisplayNameByIdAdmin;
+  listReusableAssetsByIds: typeof listReusableAssetsByIdsAdmin;
+  loadUnifiedSeed?: typeof loadScheduledLessonUnifiedSeedAdmin;
   getHomeworkReadModel: typeof getTeacherLessonHomeworkReadModel;
   getLessonDiscussions: typeof getLessonScopedTeacherDiscussions;
   getHomeworkDiscussions: typeof getHomeworkScopedTeacherDiscussions;
@@ -180,8 +180,9 @@ const defaultWorkspaceLoaderDeps: WorkspaceLoaderDeps = {
   getMethodologyLessonStudentContentByLessonId:
     getMethodologyLessonStudentContentByLessonIdAdmin,
   isLessonStudentContentSchemaReady: isLessonStudentContentSchemaReadyAdmin,
-  listReusableAssetsByIds: listReusableAssetsByIdsAdmin,
   getClassDisplayNameById: getClassDisplayNameByIdAdmin,
+  listReusableAssetsByIds: listReusableAssetsByIdsAdmin,
+  loadUnifiedSeed: loadScheduledLessonUnifiedSeedAdmin,
   getHomeworkReadModel: getTeacherLessonHomeworkReadModel,
   getLessonDiscussions: getLessonScopedTeacherDiscussions,
   getHomeworkDiscussions: getHomeworkScopedTeacherDiscussions,
@@ -341,68 +342,6 @@ function humanizePracticeMode(mode: string) {
     return "Карточки в два прохода, затем отработка в действии";
   }
   return mode.replaceAll("_", " ");
-}
-
-function collectAssetIds(blocks: LessonBlockInstance[]) {
-  return Array.from(
-    new Set(
-      blocks.flatMap((block) => block.assetRefs.map((assetRef) => assetRef.id)),
-    ),
-  );
-}
-
-function toStudentContentUnavailableReason(
-  error: unknown,
-): TeacherLessonWorkspaceReadModel["studentContent"]["unavailableReason"] {
-  if (isInvalidLessonStudentContentPayloadError(error)) {
-    return "invalid_payload";
-  }
-  const message = error instanceof Error ? error.message : "";
-  if (isMissingLessonStudentContentSchemaError(message)) {
-    return "schema_missing";
-  }
-  return "load_failed";
-}
-
-function collectStudentContentAssetIds(studentContent: MethodologyLessonStudentContent) {
-  return Array.from(
-    new Set(
-      studentContent.sections.flatMap((section) => {
-        if (section.type === "media_asset") return [section.assetId];
-        if (section.type === "worksheet" && section.assetId) return [section.assetId];
-        if (section.type === "presentation") return [section.assetId];
-        if (section.type === "count_board" && section.assetId) return [section.assetId];
-        if (section.type === "resource_links") {
-          return section.resources
-            .map((resource) => resource.assetId)
-            .filter((id): id is string => Boolean(id));
-        }
-        if (section.type === "vocabulary_cards") {
-          return section.items
-            .map((item) => item.audioAssetId)
-            .filter((id): id is string => Boolean(id));
-        }
-        if (section.type === "phrase_cards") {
-          return section.items
-            .map((item) => item.audioAssetId)
-            .filter((id): id is string => Boolean(id));
-        }
-        if (section.type === "action_cards") {
-          return section.items
-            .map((item) => item.audioAssetId)
-            .filter((id): id is string => Boolean(id));
-        }
-        if (section.type === "word_list") {
-          return section.groups.flatMap((group) =>
-            group.entries
-              .map((entry) => entry.audioAssetId)
-              .filter((id): id is string => Boolean(id)),
-          );
-        }
-        return [];
-      }),
-    ),
-  );
 }
 
 function collectBlockMaterials(block: LessonBlockInstance) {
@@ -750,114 +689,142 @@ export function buildTeacherLessonWorkspaceReadModel(input: {
 
 export async function getTeacherLessonWorkspaceByScheduledLessonId(
   scheduledLessonId: string,
-  deps: WorkspaceLoaderDeps = defaultWorkspaceLoaderDeps,
+  deps: Partial<WorkspaceLoaderDeps> = {},
 ): Promise<TeacherLessonWorkspaceReadModel | null> {
-  const scheduledLesson = await deps.getScheduledLessonById(scheduledLessonId);
+  const runtimeDeps = { ...defaultWorkspaceLoaderDeps, ...deps };
+  const scheduledLesson = await runtimeDeps.getScheduledLessonById(scheduledLessonId);
   if (!scheduledLesson) {
     return null;
   }
 
-  const methodologyLesson = await deps.getMethodologyLessonById(
-    scheduledLesson.methodologyLessonId,
-  );
-  if (!methodologyLesson) {
-    return null;
-  }
+  const [seed, homework, lessonDiscussions, homeworkDiscussions] = await Promise.all([
+    (deps.loadUnifiedSeed
+      ? deps.loadUnifiedSeed(scheduledLessonId)
+      : (async () => {
+          const methodologyLesson = await runtimeDeps.getMethodologyLessonById(
+            scheduledLesson.methodologyLessonId,
+          );
+          if (!methodologyLesson) return null;
+          const projection = buildTeacherLessonProjection(
+            methodologyLesson,
+            scheduledLesson,
+          );
+          const coreAssetIds = Array.from(
+            new Set(
+              projection.orderedBlocks.flatMap((block) =>
+                block.assetRefs.map((assetRef) => assetRef.id),
+              ),
+            ),
+          );
+          let studentContent: MethodologyLessonStudentContent | null = null;
+          let studentContentAssets: ReusableAsset[] = [];
+          let studentContentUnavailableReason:
+            | "schema_missing"
+            | "invalid_payload"
+            | "load_failed"
+            | null = null;
+          if (runtimeDeps.getMethodologyLessonStudentContentByLessonId) {
+            try {
+              studentContent =
+                await runtimeDeps.getMethodologyLessonStudentContentByLessonId(
+                  methodologyLesson.id,
+                );
+              if (!studentContent) {
+                const schemaReady =
+                  (await runtimeDeps.isLessonStudentContentSchemaReady?.()) ?? true;
+                if (!schemaReady) {
+                  studentContentUnavailableReason = "schema_missing";
+                }
+              } else {
+                const studentAssetIds = Array.from(
+                  new Set(
+                    studentContent.sections.flatMap((section) => {
+                      if (section.type === "media_asset") return [section.assetId];
+                      if (section.type === "worksheet" && section.assetId)
+                        return [section.assetId];
+                      if (section.type === "presentation") return [section.assetId];
+                      if (section.type === "count_board" && section.assetId)
+                        return [section.assetId];
+                      return [];
+                    }),
+                  ),
+                ).filter((id): id is string => Boolean(id));
+                studentContentAssets = studentAssetIds.length
+                  ? await runtimeDeps.listReusableAssetsByIds(studentAssetIds)
+                  : [];
+              }
+            } catch {
+              studentContent = null;
+              studentContentAssets = [];
+              studentContentUnavailableReason = "load_failed";
+            }
+          }
 
-  const projection = buildTeacherLessonProjection(
-    methodologyLesson,
-    scheduledLesson,
-  );
-  const coreAssetIds = collectAssetIds(projection.orderedBlocks);
-  const [
-    assets,
-    classDisplayName,
-    homework,
-    lessonDiscussions,
-    homeworkDiscussions,
-  ] = await Promise.all([
-    coreAssetIds.length
-      ? deps.listReusableAssetsByIds(coreAssetIds)
-      : Promise.resolve([]),
-    deps.getClassDisplayNameById(scheduledLesson.runtimeShell.classId),
-    deps.getHomeworkReadModel(scheduledLessonId),
-    deps
+          if (!studentContent) {
+            const fallback = getFixtureStudentContentFallback({
+              methodologySlug: methodologyLesson.methodologySlug,
+              lessonTitle: methodologyLesson.shell.title,
+              moduleIndex: methodologyLesson.shell.position.moduleIndex,
+              lessonIndex: methodologyLesson.shell.position.lessonIndex,
+            });
+            if (fallback) {
+              studentContent = fallback.source;
+              studentContentAssets = fallback.assets;
+              studentContentUnavailableReason = null;
+            }
+          }
+          return {
+            scheduledLesson,
+            methodologyLesson,
+            projection,
+            sourceLesson: {
+              methodologySlug: methodologyLesson.methodologySlug,
+              lessonId: methodologyLesson.id,
+              methodologyTitle: projection.methodologyTitle?.trim() || "Методика",
+              lessonTitle: methodologyLesson.shell.title,
+            },
+            classDisplayName: await runtimeDeps.getClassDisplayNameById(
+              scheduledLesson.runtimeShell.classId,
+            ),
+            coreAssets: coreAssetIds.length
+              ? await runtimeDeps.listReusableAssetsByIds(coreAssetIds)
+              : [],
+            studentContent,
+            studentContentAssets,
+            studentContentUnavailableReason,
+            liveState: mapScheduledLessonLiveState(scheduledLesson),
+          };
+        })()),
+    runtimeDeps.getHomeworkReadModel(scheduledLessonId),
+    runtimeDeps
       .getLessonDiscussions({
         classId: scheduledLesson.runtimeShell.classId,
         scheduledLessonId: scheduledLesson.id,
       })
       .catch(() => []),
-    deps
+    runtimeDeps
       .getHomeworkDiscussions({
         classId: scheduledLesson.runtimeShell.classId,
         scheduledLessonId: scheduledLesson.id,
       })
       .catch(() => ({ assignmentId: null, items: [] })),
   ]);
-
-  let studentContent: MethodologyLessonStudentContent | null = null;
-  let studentContentAssets: ReusableAsset[] = [];
-  let studentContentUnavailableReason: TeacherLessonWorkspaceReadModel["studentContent"]["unavailableReason"] =
-    null;
-
-  try {
-    studentContent = await deps.getMethodologyLessonStudentContentByLessonId(
-      methodologyLesson.id,
-    );
-
-    if (!studentContent) {
-      const studentContentSchemaReady =
-        await deps.isLessonStudentContentSchemaReady();
-      if (!studentContentSchemaReady) {
-        studentContentUnavailableReason = "schema_missing";
-      }
-    } else {
-      const studentContentAssetIds = collectStudentContentAssetIds(studentContent);
-
-      if (studentContentAssetIds.length > 0) {
-        studentContentAssets = await deps.listReusableAssetsByIds(
-          studentContentAssetIds,
-        );
-      }
-    }
-  } catch (error) {
-    studentContent = null;
-    studentContentAssets = [];
-    studentContentUnavailableReason = toStudentContentUnavailableReason(error);
-  }
-
-  if (!studentContent) {
-    const fallback = getFixtureStudentContentFallback({
-      methodologySlug: methodologyLesson.methodologySlug,
-      lessonTitle: methodologyLesson.shell.title,
-      moduleIndex: methodologyLesson.shell.position.moduleIndex,
-      lessonIndex: methodologyLesson.shell.position.lessonIndex,
-    });
-
-    if (fallback) {
-      studentContent = fallback.source;
-      studentContentAssets = fallback.assets;
-      studentContentUnavailableReason = null;
-    }
+  if (!seed) {
+    return null;
   }
 
   return buildTeacherLessonWorkspaceReadModel({
-    projection,
-    scheduledLessonId: scheduledLesson.id,
-    classId: scheduledLesson.runtimeShell.classId,
-    classDisplayName,
-    sourceLesson: {
-      methodologySlug: methodologyLesson.methodologySlug,
-      lessonId: methodologyLesson.id,
-      methodologyTitle: projection.methodologyTitle?.trim() || "Методика",
-      lessonTitle: methodologyLesson.shell.title,
-    },
-    assets,
-    studentContentAssets,
+    projection: seed.projection,
+    scheduledLessonId: seed.scheduledLesson.id,
+    classId: seed.scheduledLesson.runtimeShell.classId,
+    classDisplayName: seed.classDisplayName,
+    sourceLesson: seed.sourceLesson,
+    assets: seed.coreAssets,
+    studentContentAssets: seed.studentContentAssets,
     homework,
-    studentContent,
-    liveState: mapScheduledLessonLiveState(scheduledLesson),
-    studentContentUnavailableReason,
+    studentContent: seed.studentContent,
+    liveState: seed.liveState,
+    studentContentUnavailableReason: seed.studentContentUnavailableReason,
     communication: {
       lessonScoped:
         lessonDiscussions.length > 0

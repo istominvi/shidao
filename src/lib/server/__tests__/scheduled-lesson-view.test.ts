@@ -33,9 +33,9 @@ test("learner communication preview uses neutral helper (no fake teacher identit
 
 
 test("scheduled learner projection keeps fixture fallback hook for world-around-me canonical lessons", () => {
-  assert.equal(source.includes("getFixtureStudentContentFallback"), true);
-  assert.equal(source.includes("studentContentUnavailableReason = null"), true);
-  assert.equal(source.includes("lessonIndex"), true);
+  assert.equal(source.includes("loadScheduledLessonUnifiedSeedAdmin"), true);
+  assert.equal(source.includes("studentContentUnavailableReason"), true);
+  assert.equal(source.includes("assetsById: workspaceProjection.unifiedReadModel.assetsById"), true);
   assert.equal(source.includes("liveState"), true);
   assert.equal(source.includes("controlledStepId"), true);
   assert.equal(source.includes("unifiedReadModel"), true);

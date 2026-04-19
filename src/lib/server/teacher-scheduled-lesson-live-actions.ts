@@ -1,10 +1,9 @@
 import type { MethodologyLessonStep } from "@/lib/server/methodology-lesson-unified-read-model";
 import { getScheduledLessonByIdAdmin, updateScheduledLessonRuntimeNotesAdmin } from "@/lib/server/lesson-content-repository";
-import { buildMethodologyLessonUnifiedReadModel } from "@/lib/server/methodology-lesson-unified-read-model";
-import { buildTeacherLessonProjection } from "@/lib/lesson-content";
-import { getMethodologyLessonByIdAdmin } from "@/lib/server/lesson-content-repository";
 import { assertTeacherAssignedToClassAdmin } from "@/lib/server/supabase-admin";
 import { mapScheduledLessonLiveState, resolveActiveLessonStep } from "@/lib/server/scheduled-lesson-live-state";
+import { loadScheduledLessonUnifiedSeedAdmin } from "@/lib/server/scheduled-lesson-unified-context";
+import { buildTeacherLessonWorkspaceReadModel } from "@/lib/server/teacher-lesson-workspace";
 
 export type LiveAction = "start" | "set_step" | "next" | "previous" | "complete";
 
@@ -32,34 +31,34 @@ export async function applyTeacherScheduledLessonLiveAction(input: {
     scheduledLesson.runtimeShell.classId,
   );
 
-  const methodologyLesson = await getMethodologyLessonByIdAdmin(
-    scheduledLesson.methodologyLessonId,
-  );
-  if (!methodologyLesson) throw new Error("Исходный урок методики не найден.");
-
-  const projection = buildTeacherLessonProjection(methodologyLesson, scheduledLesson);
-  const unified = buildMethodologyLessonUnifiedReadModel({
-    lessonId: methodologyLesson.id,
-    lessonShell: methodologyLesson.shell,
-    presentation: {
-      quickSummary: { prepChecklist: [], keyWords: [], keyPhrases: [], resources: [] },
-      lessonFlow: projection.orderedBlocks.map((block) => ({
-        id: block.id,
-        order: block.order,
-        stepLabel: `Шаг ${block.order}`,
-        blockLabel: block.blockType,
-        accentTone: "sky",
-        title: block.title?.trim() || `Шаг ${block.order}`,
-        teacherActions: [],
-        studentActions: [],
-        materials: [],
-        resources: [],
-      })),
+  const seed = await loadScheduledLessonUnifiedSeedAdmin(input.scheduledLessonId);
+  if (!seed) throw new Error("Исходный урок методики не найден.");
+  const workspace = buildTeacherLessonWorkspaceReadModel({
+    projection: seed.projection,
+    scheduledLessonId: seed.scheduledLesson.id,
+    classId: seed.scheduledLesson.runtimeShell.classId,
+    classDisplayName: seed.classDisplayName,
+    sourceLesson: seed.sourceLesson,
+    assets: seed.coreAssets,
+    studentContentAssets: seed.studentContentAssets,
+    studentContent: seed.studentContent,
+    studentContentUnavailableReason: seed.studentContentUnavailableReason,
+    liveState: seed.liveState,
+    homework: {
+      schemaReady: true,
+      definition: null,
+      assignment: null,
+      stats: {
+        assignedCount: 0,
+        submittedCount: 0,
+        reviewedCount: 0,
+        needsRevisionCount: 0,
+        averageScore: null,
+      },
+      roster: [],
     },
-    studentContent: null,
-    assetsById: {},
-    canonicalHomework: null,
   });
+  const unified = workspace.unifiedReadModel;
 
   const liveState = mapScheduledLessonLiveState(scheduledLesson);
   const active = findStepOrThrow(unified.steps, liveState);

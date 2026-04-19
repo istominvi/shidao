@@ -1,19 +1,11 @@
 import {
-  getFixtureStudentContentFallback,
   type MethodologyLessonStudentContent,
   type ReusableAsset,
 } from "../lesson-content";
 import {
-  getMethodologyLessonByIdAdmin,
-  getMethodologyLessonStudentContentByLessonIdAdmin,
-  isMissingLessonStudentContentSchemaError,
-  isLessonStudentContentSchemaReadyAdmin,
-  getScheduledLessonByIdAdmin,
   listAssignedClassIdsForTeacherAdmin,
   listClassIdsForStudentAdmin,
-  listReusableAssetsByIdsAdmin,
 } from "./lesson-content-repository";
-import { isInvalidLessonStudentContentPayloadError } from "./lesson-content-mappers";
 import { getParentHomeworkProjection } from "./parent-homework";
 import { loadParentLearningContextsByUser } from "./supabase-admin";
 import {
@@ -29,12 +21,11 @@ import {
   buildTeacherLessonWorkspaceReadModel,
   type TeacherLessonWorkspaceReadModel,
 } from "./teacher-lesson-workspace";
-import { buildTeacherLessonProjection } from "../lesson-content";
 import {
-  mapScheduledLessonLiveState,
   resolveActiveLessonStep,
   type ScheduledLessonLiveState,
 } from "./scheduled-lesson-live-state";
+import { loadScheduledLessonUnifiedSeedAdmin } from "./scheduled-lesson-unified-context";
 
 export type ScheduledLessonLearnerSharedView = {
   scheduledLessonId: string;
@@ -93,124 +84,15 @@ export type TeacherScheduledLessonView = {
   workspace: TeacherLessonWorkspaceReadModel;
 };
 
-function toStudentContentUnavailableReason(
-  error: unknown,
-): ScheduledLessonLearnerSharedView["studentContentUnavailableReason"] {
-  if (isInvalidLessonStudentContentPayloadError(error)) {
-    return "invalid_payload";
-  }
-  const message = error instanceof Error ? error.message : "";
-  if (isMissingLessonStudentContentSchemaError(message)) {
-    return "schema_missing";
-  }
-  return "load_failed";
-}
-
-function collectStudentContentAssetIds(studentContent: MethodologyLessonStudentContent) {
-  return Array.from(
-    new Set(
-      studentContent.sections.flatMap((section) => {
-        if (section.type === "media_asset") return [section.assetId];
-        if (section.type === "worksheet" && section.assetId) return [section.assetId];
-        if (section.type === "presentation") return [section.assetId];
-        if (section.type === "count_board" && section.assetId) return [section.assetId];
-        if (section.type === "resource_links") {
-          return section.resources
-            .map((resource) => resource.assetId)
-            .filter((id): id is string => Boolean(id));
-        }
-        if (section.type === "vocabulary_cards") {
-          return section.items
-            .map((item) => item.audioAssetId)
-            .filter((id): id is string => Boolean(id));
-        }
-        if (section.type === "phrase_cards") {
-          return section.items
-            .map((item) => item.audioAssetId)
-            .filter((id): id is string => Boolean(id));
-        }
-        if (section.type === "action_cards") {
-          return section.items
-            .map((item) => item.audioAssetId)
-            .filter((id): id is string => Boolean(id));
-        }
-        if (section.type === "word_list") {
-          return section.groups.flatMap((group) =>
-            group.entries
-              .map((entry) => entry.audioAssetId)
-              .filter((id): id is string => Boolean(id)),
-          );
-        }
-        return [];
-      }),
-    ),
-  );
-}
-
 async function getLearnerSharedProjection(scheduledLessonId: string) {
-  const scheduledLesson = await getScheduledLessonByIdAdmin(scheduledLessonId);
-  if (!scheduledLesson) return null;
-
-  const methodologyLesson = await getMethodologyLessonByIdAdmin(
-    scheduledLesson.methodologyLessonId,
-  );
-  if (!methodologyLesson) return null;
-
-  let studentContent: MethodologyLessonStudentContent | null = null;
-  let studentContentUnavailableReason: ScheduledLessonLearnerSharedView["studentContentUnavailableReason"] =
-    null;
-  let assets: ReusableAsset[] = [];
-
-  try {
-    studentContent = await getMethodologyLessonStudentContentByLessonIdAdmin(
-      methodologyLesson.id,
-    );
-    if (!studentContent) {
-      const studentContentSchemaReady =
-        await isLessonStudentContentSchemaReadyAdmin();
-      if (!studentContentSchemaReady) {
-        studentContentUnavailableReason = "schema_missing";
-      }
-    } else {
-      const assetIds = collectStudentContentAssetIds(studentContent);
-      assets = assetIds.length ? await listReusableAssetsByIdsAdmin(assetIds) : [];
-    }
-  } catch (error) {
-    studentContent = null;
-    assets = [];
-    studentContentUnavailableReason = toStudentContentUnavailableReason(error);
-  }
-
-  if (!studentContent) {
-    const fallback = getFixtureStudentContentFallback({
-      methodologySlug: methodologyLesson.methodologySlug,
-      lessonTitle: methodologyLesson.shell.title,
-      moduleIndex: methodologyLesson.shell.position.moduleIndex,
-      lessonIndex: methodologyLesson.shell.position.lessonIndex,
-    });
-
-    if (fallback) {
-      studentContent = fallback.source;
-      assets = fallback.assets;
-      studentContentUnavailableReason = null;
-    }
-  }
-
-  const projection = buildTeacherLessonProjection(
-    methodologyLesson,
-    scheduledLesson,
-  );
+  const seed = await loadScheduledLessonUnifiedSeedAdmin(scheduledLessonId);
+  if (!seed) return null;
   const workspaceProjection = buildTeacherLessonWorkspaceReadModel({
-    projection,
-    scheduledLessonId: scheduledLesson.id,
-    classId: scheduledLesson.runtimeShell.classId,
-    sourceLesson: {
-      methodologySlug: methodologyLesson.methodologySlug,
-      lessonId: methodologyLesson.id,
-      methodologyTitle: methodologyLesson.methodologyTitle ?? "Методика",
-      lessonTitle: methodologyLesson.shell.title,
-    },
-    assets,
+    projection: seed.projection,
+    scheduledLessonId: seed.scheduledLesson.id,
+    classId: seed.scheduledLesson.runtimeShell.classId,
+    sourceLesson: seed.sourceLesson,
+    assets: seed.coreAssets,
     homework: {
       schemaReady: true,
       definition: null,
@@ -224,9 +106,11 @@ async function getLearnerSharedProjection(scheduledLessonId: string) {
       },
       roster: [],
     },
-    studentContent,
-    studentContentAssets: assets,
-    liveState: mapScheduledLessonLiveState(scheduledLesson),
+    studentContent: seed.studentContent,
+    studentContentAssets: seed.studentContentAssets,
+    liveState: seed.liveState,
+    classDisplayName: seed.classDisplayName,
+    studentContentUnavailableReason: seed.studentContentUnavailableReason,
   });
   const controlledStepId =
     resolveActiveLessonStep(
@@ -237,19 +121,19 @@ async function getLearnerSharedProjection(scheduledLessonId: string) {
   return {
     shared: {
       scheduledLessonId,
-      classId: scheduledLesson.runtimeShell.classId,
-      lessonTitle: methodologyLesson.shell.title,
-      lessonSubtitle: studentContent?.subtitle,
-      startsAt: scheduledLesson.runtimeShell.startsAt,
-      runtimeStatus: scheduledLesson.runtimeShell.runtimeStatus,
+      classId: seed.scheduledLesson.runtimeShell.classId,
+      lessonTitle: seed.methodologyLesson.shell.title,
+      lessonSubtitle: seed.studentContent?.subtitle,
+      startsAt: seed.scheduledLesson.runtimeShell.startsAt,
+      runtimeStatus: seed.scheduledLesson.runtimeShell.runtimeStatus,
       liveState: workspaceProjection.liveState,
       controlledStepId,
       unifiedReadModel: workspaceProjection.unifiedReadModel,
-      studentContent,
-      studentContentUnavailableReason,
-      assetsById: Object.fromEntries(assets.map((asset) => [asset.id, asset])),
+      studentContent: seed.studentContent,
+      studentContentUnavailableReason: seed.studentContentUnavailableReason,
+      assetsById: workspaceProjection.unifiedReadModel.assetsById,
     } satisfies ScheduledLessonLearnerSharedView,
-    scheduledLesson,
+    scheduledLesson: seed.scheduledLesson,
   };
 }
 

@@ -14,6 +14,9 @@ test("live actions include required start/set-step/next/previous/complete operat
   assert.equal(source.includes('input.action === "next"'), true);
   assert.equal(source.includes('input.action === "previous"'), true);
   assert.equal(source.includes('input.action === "complete"'), true);
+  assert.equal(source.includes("loadScheduledLessonUnifiedSeedAdmin"), true);
+  assert.equal(source.includes("buildTeacherLessonWorkspaceReadModel"), true);
+  assert.equal(source.includes("buildMethodologyLessonUnifiedReadModel"), false);
 });
 
 test("live action mutation sets lock and completion semantics", () => {

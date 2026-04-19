@@ -28,13 +28,17 @@ export function ScheduledLessonLearnerView({
       return;
     }
     const timer = window.setInterval(async () => {
-      const response = await fetch(`/api/lessons/${model.scheduledLessonId}/live-state`, {
-        method: "GET",
-        cache: "no-store",
-      });
-      if (!response.ok) return;
-      const data = (await response.json()) as { liveState?: typeof liveState };
-      if (data.liveState) setLiveState(data.liveState);
+      try {
+        const response = await fetch(`/api/lessons/${model.scheduledLessonId}/live-state`, {
+          method: "GET",
+          cache: "no-store",
+        });
+        if (!response.ok) return;
+        const data = (await response.json()) as { liveState?: typeof liveState };
+        if (data.liveState) setLiveState(data.liveState);
+      } catch {
+        // Silent retry on next tick; do not interrupt learner UI.
+      }
     }, 2000);
     return () => window.clearInterval(timer);
   }, [liveState.runtimeStatus, model.scheduledLessonId]);

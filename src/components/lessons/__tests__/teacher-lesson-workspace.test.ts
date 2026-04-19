@@ -26,6 +26,12 @@ test("teacher workspace component keeps runtime editing surface", () => {
   assert.equal(workspaceComponentSource.includes("Предыдущий шаг"), true);
   assert.equal(workspaceComponentSource.includes("Следующий шаг"), true);
   assert.equal(workspaceComponentSource.includes("/live-state"), true);
+  assert.equal(workspaceComponentSource.includes("onStepChange={(stepId) =>"), true);
+  assert.equal(workspaceComponentSource.includes("onOpenStudentScreen={(stepId) =>"), true);
+  assert.equal(workspaceComponentSource.includes("setTab(\"student_screen\")"), true);
+  assert.equal(workspaceComponentSource.includes("disabled={!canPrevious}"), true);
+  assert.equal(workspaceComponentSource.includes("disabled={!canNext}"), true);
+  assert.equal(workspaceComponentSource.includes("disabled={!canComplete}"), true);
 });
 
 test("teacher workspace uses unified five-tab labels and removes legacy side cards", () => {
@@ -47,6 +53,7 @@ test("teacher workspace uses unified five-tab labels and removes legacy side car
     workspaceComponentSource.includes("workspace.unifiedReadModel.steps"),
     true,
   );
+  assert.equal(workspaceComponentSource.includes("LiveLessonControlBar"), true);
   assert.equal(
     workspaceComponentSource.includes("Discussion for this lesson"),
     false,

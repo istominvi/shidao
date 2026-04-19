@@ -34,6 +34,8 @@ test("scheduled learner view handles planned/completed/cancelled states", () => 
   assert.equal(source.includes("Преподаватель откроет первый шаг"), true);
   assert.equal(source.includes("Урок отменён"), true);
   assert.equal(source.includes("/api/lessons/${model.scheduledLessonId}/live-state"), true);
+  assert.equal(source.includes("window.clearInterval(timer)"), true);
+  assert.equal(source.includes("catch {"), true);
 });
 
 test("shared learner deck works as step-by-step player", () => {
