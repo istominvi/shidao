@@ -6,18 +6,12 @@ import { useEffect, useMemo, useState } from "react";
 import { AppPageHeader } from "@/components/app/page-header";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { SurfaceCard } from "@/components/ui/surface-card";
-import {
-  addUtcDays,
-  getMonthMatrix,
-  getWeekDays,
-  type ScheduleViewMode,
-} from "@/components/dashboard/teacher-schedule-utils";
+import { getMonthMatrix } from "@/components/dashboard/teacher-schedule-utils";
 import type {
   StudentLessonsHubEvent,
   StudentLessonsHubReadModel,
 } from "@/lib/server/student-schedule";
 
-const CALENDAR_VIEWS: Array<"day" | "week" | "month"> = ["day", "week", "month"];
 const DISPLAY_MODES = ["table", "calendar"] as const;
 const DISPLAY_MODE_LABELS: Record<(typeof DISPLAY_MODES)[number], string> = {
   table: "Таблица",
@@ -43,9 +37,15 @@ function formatDateCell(isoDate: string) {
   }).format(new Date(`${isoDate}T00:00:00Z`));
 }
 
-function shiftDateByView(current: string, view: ScheduleViewMode, delta: number) {
-  if (view === "day") return addUtcDays(current, delta);
-  if (view === "week") return addUtcDays(current, delta * 7);
+function formatMonthLabel(isoDate: string) {
+  return new Intl.DateTimeFormat("ru-RU", {
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(new Date(`${isoDate}T00:00:00Z`));
+}
+
+function shiftMonth(current: string, delta: number) {
   const date = new Date(`${current}T00:00:00Z`);
   return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + delta, 1))
     .toISOString()
@@ -63,8 +63,7 @@ function isNowActive(event: StudentLessonsHubEvent, nowTs: number) {
 }
 
 export function StudentLessonsHub({ hub }: { hub: StudentLessonsHubReadModel }) {
-  const [displayMode, setDisplayMode] = useState<(typeof DISPLAY_MODES)[number]>("calendar");
-  const [calendarView, setCalendarView] = useState<"day" | "week" | "month">("week");
+  const [displayMode, setDisplayMode] = useState<(typeof DISPLAY_MODES)[number]>("table");
   const [activeDateIso, setActiveDateIso] = useState(hub.defaultDateIso);
   const [monthDialogIso, setMonthDialogIso] = useState<string | null>(null);
   const [teacherFilter, setTeacherFilter] = useState("all");
@@ -83,16 +82,7 @@ export function StudentLessonsHub({ hub }: { hub: StudentLessonsHubReadModel }) 
     [filteredEvents],
   );
 
-  const rangeEvents = useMemo(() => {
-    if (calendarView === "day") {
-      return sortedFilteredEvents.filter((event) => event.isoDate === activeDateIso);
-    }
-
-    if (calendarView === "week") {
-      const weekDays = getWeekDays(activeDateIso);
-      return sortedFilteredEvents.filter((event) => weekDays.includes(event.isoDate));
-    }
-
+  const monthEvents = useMemo(() => {
     const monthStart = new Date(`${activeDateIso}T00:00:00Z`);
     const startIso = new Date(
       Date.UTC(monthStart.getUTCFullYear(), monthStart.getUTCMonth(), 1),
@@ -108,9 +98,7 @@ export function StudentLessonsHub({ hub }: { hub: StudentLessonsHubReadModel }) 
     return sortedFilteredEvents.filter(
       (event) => event.isoDate >= startIso && event.isoDate < endIso,
     );
-  }, [activeDateIso, calendarView, sortedFilteredEvents]);
-
-  const filteredCount = filteredEvents.length;
+  }, [activeDateIso, sortedFilteredEvents]);
 
   return (
     <div className="space-y-6 lg:space-y-8">
@@ -118,137 +106,92 @@ export function StudentLessonsHub({ hub }: { hub: StudentLessonsHubReadModel }) 
 
       <SurfaceCard
         title="Уроки"
-        description={`Всего: ${hub.totalLessons} · По фильтрам: ${filteredCount}`}
-        actions={
-          <div className="flex w-full flex-col gap-2 md:items-end">
-            <div className="flex w-full flex-wrap items-center gap-2 md:justify-end">
-                <SegmentedControl
-                  ariaLabel="Режим отображения"
-                  value={displayMode}
-                  onChange={(value) => setDisplayMode(value as (typeof DISPLAY_MODES)[number])}
-                  items={DISPLAY_MODES.map((mode) => ({
-                    value: mode,
-                    label: DISPLAY_MODE_LABELS[mode],
-                  }))}
-                />
-              <select
-                value={teacherFilter}
-                onChange={(event) => setTeacherFilter(event.target.value)}
-                className="rounded-xl border border-neutral-300 px-2.5 py-1.5 text-xs"
-                aria-label="Фильтр по преподавателю"
-              >
-                <option value="all">Все преподаватели</option>
-                {hub.teacherOptions.map((label) => (
-                  <option key={label} value={label}>
-                    {label}
-                  </option>
-                ))}
-              </select>
-              <select
-                value={groupFilter}
-                onChange={(event) => setGroupFilter(event.target.value)}
-                className="rounded-xl border border-neutral-300 px-2.5 py-1.5 text-xs"
-                aria-label="Фильтр по группе"
-              >
-                <option value="all">Все группы</option>
-                {hub.groupOptions.map((label) => (
-                  <option key={label} value={label}>
-                    {label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {displayMode === "calendar" ? (
-              <div className="flex w-full flex-wrap items-center gap-2 md:justify-end">
-                <SegmentedControl
-                  ariaLabel="Режим календаря"
-                  value={calendarView}
-                  onChange={(value) => setCalendarView(value as "day" | "week" | "month")}
-                  items={CALENDAR_VIEWS.map((mode) => ({
-                    value: mode,
-                    label: mode === "day" ? "День" : mode === "week" ? "Неделя" : "Месяц",
-                  }))}
-                />
-                <button
-                  type="button"
-                  onClick={() => setActiveDateIso(hub.defaultDateIso)}
-                  className="rounded-full border border-neutral-300 bg-white px-3 py-1.5 text-xs font-semibold text-neutral-700 hover:bg-neutral-50"
-                >
-                  Сегодня
-                </button>
-                <button
-                  type="button"
-                  onClick={() =>
-                    setActiveDateIso(shiftDateByView(activeDateIso, calendarView, -1))
-                  }
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-neutral-200 text-sm"
-                  aria-label="Предыдущий диапазон"
-                >
-                  <ChevronLeft size={16} />
-                </button>
-                <input
-                  type="date"
-                  value={activeDateIso}
-                  onChange={(event) => setActiveDateIso(event.target.value)}
-                  className="rounded-xl border border-neutral-300 px-3 py-1.5 text-sm"
-                  aria-label="Выбранная дата"
-                />
-                <button
-                  type="button"
-                  onClick={() =>
-                    setActiveDateIso(shiftDateByView(activeDateIso, calendarView, 1))
-                  }
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-neutral-200 text-sm"
-                  aria-label="Следующий диапазон"
-                >
-                  <ChevronRight size={16} />
-                </button>
-              </div>
-            ) : null}
-          </div>
-        }
+        description={`Всего: ${hub.totalLessons} · По фильтрам: ${filteredEvents.length}`}
       >
+        <div className="flex flex-wrap items-center gap-2">
+          <SegmentedControl
+            ariaLabel="Режим отображения"
+            value={displayMode}
+            onChange={(value) => setDisplayMode(value as (typeof DISPLAY_MODES)[number])}
+            items={DISPLAY_MODES.map((mode) => ({
+              value: mode,
+              label: DISPLAY_MODE_LABELS[mode],
+            }))}
+          />
+
+          <select
+            value={teacherFilter}
+            onChange={(event) => setTeacherFilter(event.target.value)}
+            className="rounded-xl border border-neutral-300 px-2.5 py-1.5 text-xs"
+            aria-label="Фильтр по преподавателю"
+          >
+            <option value="all">Все преподаватели</option>
+            {hub.teacherOptions.map((label) => (
+              <option key={label} value={label}>
+                {label}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={groupFilter}
+            onChange={(event) => setGroupFilter(event.target.value)}
+            className="rounded-xl border border-neutral-300 px-2.5 py-1.5 text-xs"
+            aria-label="Фильтр по группе"
+          >
+            <option value="all">Все группы</option>
+            {hub.groupOptions.map((label) => (
+              <option key={label} value={label}>
+                {label}
+              </option>
+            ))}
+          </select>
+
+          {displayMode === "calendar" ? (
+            <div className="ml-0 inline-flex items-center gap-1 rounded-xl border border-neutral-200 bg-white p-1 sm:ml-1">
+              <button
+                type="button"
+                onClick={() => setActiveDateIso(shiftMonth(activeDateIso, -1))}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-neutral-200 text-sm hover:bg-neutral-50"
+                aria-label="Предыдущий месяц"
+              >
+                <ChevronLeft size={16} />
+              </button>
+              <span className="min-w-[140px] px-1 text-center text-sm font-semibold capitalize text-neutral-700 sm:min-w-[180px]">
+                {formatMonthLabel(activeDateIso)}
+              </span>
+              <button
+                type="button"
+                onClick={() => setActiveDateIso(shiftMonth(activeDateIso, 1))}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-neutral-200 text-sm hover:bg-neutral-50"
+                aria-label="Следующий месяц"
+              >
+                <ChevronRight size={16} />
+              </button>
+            </div>
+          ) : null}
+        </div>
+
         {displayMode === "table" ? (
-          <StudentLessonsTable events={sortedFilteredEvents} />
-        ) : null}
+          <StudentLessonsTable events={sortedFilteredEvents} nowIso={hub.nowIso} />
+        ) : (
+          <>
+            <StudentMonthView
+              activeDateIso={activeDateIso}
+              events={sortedFilteredEvents}
+              onOpenDay={setMonthDialogIso}
+            />
+            <StudentMonthDialog
+              isoDate={monthDialogIso}
+              events={sortedFilteredEvents}
+              nowIso={hub.nowIso}
+              onClose={() => setMonthDialogIso(null)}
+            />
+          </>
+        )}
 
-        {displayMode === "calendar" && calendarView === "day" ? (
-          <StudentDayAgenda
-            activeDateIso={activeDateIso}
-            events={sortedFilteredEvents}
-            nowIso={hub.nowIso}
-            onDayPick={setActiveDateIso}
-          />
-        ) : null}
-
-        {displayMode === "calendar" && calendarView === "week" ? (
-          <StudentWeekAgenda
-            activeDateIso={activeDateIso}
-            events={sortedFilteredEvents}
-            nowIso={hub.nowIso}
-          />
-        ) : null}
-
-        {displayMode === "calendar" && calendarView === "month" ? (
-          <StudentMonthView
-            activeDateIso={activeDateIso}
-            events={sortedFilteredEvents}
-            onOpenDay={setMonthDialogIso}
-          />
-        ) : null}
-
-        {displayMode === "calendar" && calendarView === "month" ? (
-          <StudentMonthDialog
-            isoDate={monthDialogIso}
-            events={sortedFilteredEvents}
-            nowIso={hub.nowIso}
-            onClose={() => setMonthDialogIso(null)}
-          />
-        ) : null}
-
-        {((displayMode === "calendar" && rangeEvents.length === 0) ||
-          (displayMode === "table" && sortedFilteredEvents.length === 0)) ? (
+        {(displayMode === "table" && sortedFilteredEvents.length === 0) ||
+        (displayMode === "calendar" && monthEvents.length === 0) ? (
           <p className="mt-3 text-sm text-neutral-500">По выбранным фильтрам занятий нет.</p>
         ) : null}
       </SurfaceCard>
@@ -271,7 +214,13 @@ function HomeworkPreview({ event }: { event: StudentLessonsHubEvent }) {
   );
 }
 
-function StudentLessonsTable({ events }: { events: StudentLessonsHubEvent[] }) {
+function StudentLessonsTable({
+  events,
+  nowIso,
+}: {
+  events: StudentLessonsHubEvent[];
+  nowIso: string;
+}) {
   return (
     <>
       <div className="hidden overflow-x-auto rounded-2xl border border-neutral-200 bg-white md:block">
@@ -313,7 +262,7 @@ function StudentLessonsTable({ events }: { events: StudentLessonsHubEvent[] }) {
 
       <div className="space-y-2 md:hidden">
         {events.map((event) => (
-          <LessonEventCard key={event.id} event={event} nowIso={new Date().toISOString()} compact />
+          <LessonEventCard key={event.id} event={event} nowIso={nowIso} compact />
         ))}
       </div>
     </>
@@ -358,106 +307,6 @@ function LessonEventCard({
         Открыть урок
       </p>
     </Link>
-  );
-}
-
-function StudentDayAgenda({
-  activeDateIso,
-  events,
-  nowIso,
-  onDayPick,
-}: {
-  activeDateIso: string;
-  events: StudentLessonsHubEvent[];
-  nowIso: string;
-  onDayPick: (iso: string) => void;
-}) {
-  const weekDays = getWeekDays(activeDateIso);
-  const dayEvents = events.filter((event) => event.isoDate === activeDateIso);
-
-  return (
-    <div className="space-y-3">
-      <div className="flex gap-2 overflow-x-auto pb-1">
-        {weekDays.map((iso) => (
-          <button
-            key={iso}
-            type="button"
-            onClick={() => onDayPick(iso)}
-            className={`shrink-0 rounded-2xl border px-3 py-2 text-left text-xs font-semibold transition ${
-              iso === activeDateIso
-                ? "border-neutral-900 bg-neutral-900 text-white"
-                : "border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50"
-            }`}
-          >
-            <div>
-              {WEEKDAY_SHORT[(new Date(`${iso}T00:00:00Z`).getUTCDay() + 6) % 7]} · {iso.slice(8, 10)}
-            </div>
-          </button>
-        ))}
-      </div>
-
-      <div className="space-y-2">
-        {dayEvents.map((event) => (
-          <LessonEventCard key={event.id} event={event} nowIso={nowIso} />
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function StudentWeekAgenda({
-  activeDateIso,
-  events,
-  nowIso,
-}: {
-  activeDateIso: string;
-  events: StudentLessonsHubEvent[];
-  nowIso: string;
-}) {
-  const weekDays = getWeekDays(activeDateIso);
-
-  return (
-    <div className="space-y-3">
-      <div className="hidden grid-cols-7 gap-2 lg:grid">
-        {weekDays.map((iso) => {
-          const dayEvents = events.filter((event) => event.isoDate === iso);
-          return (
-            <div key={iso} className="rounded-2xl border border-neutral-200 bg-white p-2">
-              <p className="px-1 text-xs font-semibold text-neutral-500">{formatDayLabel(iso, true)}</p>
-              <div className="mt-2 space-y-2">
-                {dayEvents.length === 0 ? (
-                  <p className="px-1 text-xs text-neutral-400">Нет уроков</p>
-                ) : (
-                  dayEvents.map((event) => (
-                    <LessonEventCard key={event.id} event={event} nowIso={nowIso} compact />
-                  ))
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      <div className="space-y-3 lg:hidden">
-        {weekDays.map((iso) => {
-          const dayEvents = events.filter((event) => event.isoDate === iso);
-          return (
-            <section key={iso} className="rounded-2xl border border-neutral-200 bg-white p-3">
-              <h3 className="text-sm font-semibold text-neutral-800">{formatDayLabel(iso)}</h3>
-              <div className="mt-2 space-y-2">
-                {dayEvents.length === 0 ? (
-                  <p className="text-xs text-neutral-500">Нет уроков</p>
-                ) : (
-                  dayEvents.map((event) => (
-                    <LessonEventCard key={event.id} event={event} nowIso={nowIso} compact />
-                  ))
-                )}
-              </div>
-            </section>
-          );
-        })}
-      </div>
-    </div>
   );
 }
 
