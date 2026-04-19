@@ -181,7 +181,7 @@ export function TeacherLessonPedagogicalContent({
                     <h3 className="text-lg font-semibold text-neutral-950">{step.title}</h3>
                   </div>
                   <div className="flex gap-2">
-                    <button type="button" onClick={() => onShowOnStudentScreen?.(step.id)} className="rounded-lg border border-neutral-300 bg-white px-3 py-1.5 text-xs font-semibold text-neutral-700">Показать на экране ученика</button>
+                    <button type="button" onClick={() => onShowOnStudentScreen?.(step.id)} className="rounded-lg border border-neutral-300 bg-white px-3 py-1.5 text-xs font-semibold text-neutral-700">Показать ученикам</button>
                     <button type="button" onClick={() => onOpenStudentScreen?.(step.id)} className="rounded-lg border border-neutral-300 bg-neutral-50 px-3 py-1.5 text-xs font-semibold text-neutral-800">Открыть экран ученика</button>
                   </div>
                 </div>

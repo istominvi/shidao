@@ -66,6 +66,12 @@ export type RowScheduledLesson = {
   meeting_link: string | null;
   place: string | null;
   runtime_status: "planned" | "in_progress" | "completed" | "cancelled";
+  runtime_current_step_id?: string | null;
+  runtime_current_step_order?: number | null;
+  runtime_student_navigation_locked?: boolean;
+  runtime_step_updated_at?: string | null;
+  runtime_started_at?: string | null;
+  runtime_completed_at?: string | null;
   runtime_notes_summary: string | null;
   runtime_notes: string | null;
   outcome_notes: string | null;
@@ -109,6 +115,12 @@ function mapRuntimeShellFromRow(row: RowScheduledLesson): ScheduledLessonRuntime
     classId: row.class_id,
     startsAt: row.starts_at,
     runtimeStatus: row.runtime_status,
+    runtimeCurrentStepId: row.runtime_current_step_id ?? undefined,
+    runtimeCurrentStepOrder: row.runtime_current_step_order ?? undefined,
+    runtimeStudentNavigationLocked: row.runtime_student_navigation_locked ?? true,
+    runtimeStepUpdatedAt: row.runtime_step_updated_at ?? undefined,
+    runtimeStartedAt: row.runtime_started_at ?? undefined,
+    runtimeCompletedAt: row.runtime_completed_at ?? undefined,
     runtimeNotesSummary: row.runtime_notes_summary ?? undefined,
   };
 

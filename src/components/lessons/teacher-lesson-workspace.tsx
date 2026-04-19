@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import type { TeacherLessonWorkspaceReadModel } from "@/lib/server/teacher-lesson-workspace";
 import { LessonStudentContentPanel } from "@/components/lessons/lesson-student-content-panel";
 import { TeacherLessonPedagogicalContent } from "@/components/lessons/teacher-lesson-pedagogical-content";
@@ -20,33 +21,116 @@ type TeacherLessonWorkspaceProps = {
   };
 };
 
+type LiveActionHandler = (payload: Record<string, unknown>) => Promise<void>;
+
+function LiveLessonControlBar({
+  workspace,
+  onAction,
+}: {
+  workspace: TeacherLessonWorkspaceReadModel;
+  onAction: LiveActionHandler;
+}) {
+  const steps = workspace.unifiedReadModel.steps;
+  const activeStep =
+    steps.find((step) => step.id === workspace.liveActiveStepId) ?? steps[0] ?? null;
+  const activeIndex = activeStep
+    ? steps.findIndex((step) => step.id === activeStep.id)
+    : -1;
+  const isCompletedOrCancelled =
+    workspace.liveState.runtimeStatus === "completed" ||
+    workspace.liveState.runtimeStatus === "cancelled";
+  const canStart = workspace.liveState.runtimeStatus === "planned";
+  const canComplete = !isCompletedOrCancelled;
+  const canPrevious = !isCompletedOrCancelled && activeIndex > 0;
+  const canNext =
+    !isCompletedOrCancelled && activeIndex >= 0 && activeIndex < steps.length - 1;
+
+  return (
+    <div className="rounded-xl border border-sky-200 bg-sky-50 p-3 text-sm text-sky-900">
+      <p className="font-semibold">
+        {workspace.liveState.runtimeStatus === "in_progress"
+          ? "Идёт занятие"
+          : workspace.liveState.runtimeStatus === "completed"
+            ? "Урок завершён"
+            : workspace.liveState.runtimeStatus === "cancelled"
+              ? "Урок отменён"
+              : "Запланировано"}
+      </p>
+      <p className="mt-1">
+        Сейчас у учеников: Шаг {activeStep?.order ?? 1}
+      </p>
+      <div className="mt-3 flex flex-wrap gap-2">
+        {canStart ? (
+          <button
+            type="button"
+            className="rounded-xl border border-neutral-300 bg-white px-3 py-2 text-sm font-semibold disabled:opacity-50"
+            onClick={() => void onAction({ action: "start" })}
+          >
+            Начать урок
+          </button>
+        ) : null}
+        <button
+          type="button"
+          disabled={!canPrevious}
+          className="rounded-xl border border-neutral-300 bg-white px-3 py-2 text-sm font-semibold disabled:opacity-50"
+          onClick={() => void onAction({ action: "previous" })}
+        >
+          Предыдущий шаг
+        </button>
+        <button
+          type="button"
+          disabled={!canNext}
+          className="rounded-xl border border-neutral-300 bg-white px-3 py-2 text-sm font-semibold disabled:opacity-50"
+          onClick={() => void onAction({ action: "next" })}
+        >
+          Следующий шаг
+        </button>
+        <button
+          type="button"
+          disabled={!canComplete}
+          className="rounded-xl bg-neutral-900 px-3 py-2 text-sm font-semibold text-white disabled:opacity-50"
+          onClick={() => void onAction({ action: "complete" })}
+        >
+          Завершить урок
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export function TeacherLessonWorkspace({
   workspace,
   runtimeFormFeedback,
 }: TeacherLessonWorkspaceProps) {
+  const router = useRouter();
   const [tab, setTab] = useState<TeacherLessonTabKey>("plan");
+  const [liveActionError, setLiveActionError] = useState<string | null>(null);
   const runtime = workspace.projection.runtimeShell;
-  const { quickSummary, lessonFlow } = workspace.presentation;
-  const planSteps = lessonFlow.map((step) => ({
-    id: step.id,
-    order: step.order,
-    title: step.title,
-    teacher: {
-      goal: step.description ?? null,
-      description: step.description ?? null,
-      teacherActions: step.teacherActions,
-      studentActions: step.studentActions,
-      teacherScript: step.pedagogicalDetails?.promptPatterns,
-      expectedResponses: step.pedagogicalDetails?.expectedStudentResponses,
-      materials: step.materials,
-      successCriteria: step.pedagogicalDetails?.successCriteria,
-    },
-    student: {
-      screenType: "placeholder" as const,
-      title: step.title,
-      instruction: "Следуйте указаниям преподавателя.",
-    },
-  }));
+  const { quickSummary } = workspace.unifiedReadModel;
+  const planSteps = workspace.unifiedReadModel.steps;
+
+  const callLiveAction = async (payload: Record<string, unknown>) => {
+    setLiveActionError(null);
+    const response = await fetch(
+      `/api/teacher/lessons/${workspace.scheduledLessonId}/live-state`,
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(payload),
+      },
+    );
+    if (!response.ok) {
+      const data = (await response.json().catch(() => ({}))) as { error?: string };
+      throw new Error(data.error ?? "Не удалось обновить live-состояние урока.");
+    }
+    router.refresh();
+  };
+
+  const runLiveAction = (payload: Record<string, unknown>, fallbackMessage: string) => {
+    void callLiveAction(payload).catch((error) => {
+      setLiveActionError(error instanceof Error ? error.message : fallbackMessage);
+    });
+  };
 
   return (
     <div className="space-y-8 lg:space-y-10">
@@ -56,21 +140,84 @@ export function TeacherLessonWorkspace({
           activeTab={tab}
           onTabChange={setTab}
         />
+        {liveActionError ? (
+          <p className="rounded-xl border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+            Не удалось обновить live-режим урока: {liveActionError}
+          </p>
+        ) : null}
 
         {tab === "plan" ? (
           <TeacherLessonPedagogicalContent
             quickSummary={quickSummary}
             steps={planSteps}
+            activeStudentStepId={workspace.liveActiveStepId}
+            assetsById={workspace.unifiedReadModel.assetsById}
+            onShowOnStudentScreen={(stepId) => {
+              const step = workspace.unifiedReadModel.steps.find((item) => item.id === stepId);
+              if (!step) return;
+              void callLiveAction({
+                action: "set_step",
+                stepId: step.id,
+                stepOrder: step.order,
+              }).catch((error) =>
+                setLiveActionError(
+                  error instanceof Error ? error.message : "Не удалось показать шаг ученикам.",
+                ),
+              );
+            }}
+            onOpenStudentScreen={(stepId) => {
+              const step = workspace.unifiedReadModel.steps.find((item) => item.id === stepId);
+              if (!step) return;
+              setLiveActionError(null);
+              void callLiveAction({
+                action: "set_step",
+                stepId: step.id,
+                stepOrder: step.order,
+              })
+                .then(() => setTab("student_screen"))
+                .catch((error) => {
+                  setLiveActionError(
+                    error instanceof Error
+                      ? error.message
+                      : "Не удалось открыть экран ученика.",
+                  );
+                });
+            }}
           />
         ) : null}
 
         {tab === "student_screen" ? (
-          <LessonStudentContentPanel
-            source={workspace.studentContent.source}
-            unavailableReason={workspace.studentContent.unavailableReason}
-            assetsById={workspace.studentContent.assetsById}
-            previewHref={`${toScheduledLessonRoute(workspace.scheduledLessonId)}?view=learner-preview`}
-          />
+          <section className="space-y-3">
+            <LiveLessonControlBar
+              workspace={workspace}
+              onAction={(payload) =>
+                callLiveAction(payload).catch((error) => {
+                  setLiveActionError(
+                    error instanceof Error
+                      ? error.message
+                      : "Не удалось обновить live-режим урока.",
+                  );
+                })
+              }
+            />
+            <LessonStudentContentPanel
+              source={workspace.studentContent.source}
+              unavailableReason={workspace.studentContent.unavailableReason}
+              steps={workspace.unifiedReadModel.steps}
+              assetsById={workspace.unifiedReadModel.assetsById}
+              previewHref={`${toScheduledLessonRoute(workspace.scheduledLessonId)}?view=learner-preview`}
+              mode="teacher_preview"
+              controlledStepId={workspace.liveActiveStepId ?? undefined}
+              onStepChange={(stepId) => {
+                const step = workspace.unifiedReadModel.steps.find((item) => item.id === stepId);
+                if (!step) return;
+                runLiveAction(
+                  { action: "set_step", stepId: step.id, stepOrder: step.order },
+                  "Не удалось показать выбранный шаг ученикам.",
+                );
+              }}
+            />
+          </section>
         ) : null}
 
         {tab === "homework" ? (
@@ -87,6 +234,20 @@ export function TeacherLessonWorkspace({
             title="Проведение занятия"
             description="Обновляйте рабочий статус и заметки по этому занятию."
           >
+            <div className="mb-4">
+              <LiveLessonControlBar
+                workspace={workspace}
+                onAction={(payload) =>
+                  callLiveAction(payload).catch((error) => {
+                    setLiveActionError(
+                      error instanceof Error
+                        ? error.message
+                        : "Не удалось обновить live-режим урока.",
+                    );
+                  })
+                }
+              />
+            </div>
 
             {runtimeFormFeedback?.success ? (
               <p className="rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">

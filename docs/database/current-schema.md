@@ -49,6 +49,7 @@ This guide describes the **current** ShiDao database model.
 
 - `class.methodology_id` is required on insert and immutable after group creation (legacy rows may still be null).
 - `scheduled_lesson` enforces online/offline format constraints (`meeting_link` vs `place`).
+- `scheduled_lesson` runtime live-step state uses `runtime_current_step_id` + fallback `runtime_current_step_order`, plus lock/timestamps (`runtime_student_navigation_locked`, `runtime_step_updated_at`, `runtime_started_at`, `runtime_completed_at`).
 - `methodology_lesson_homework.kind` supports `practice_text | quiz_single_choice`.
 - `reusable_asset.kind` supports legacy + semantic kinds: `video | song | worksheet | vocabulary_set | activity_template | media_file | presentation | flashcards_pdf | lesson_video | worksheet_pdf | song_audio | song_video | pronunciation_audio`.
 - `student.login` and `student.internal_auth_email` are unique.

@@ -21,6 +21,17 @@ test("teacher workspace component keeps runtime editing surface", () => {
   assert.equal(workspaceComponentSource.includes('name="runtimeNotes"'), true);
   assert.equal(workspaceComponentSource.includes('name="outcomeNotes"'), true);
   assert.equal(workspaceComponentSource.includes("Проведение занятия"), true);
+  assert.equal(workspaceComponentSource.includes("Начать урок"), true);
+  assert.equal(workspaceComponentSource.includes("Завершить урок"), true);
+  assert.equal(workspaceComponentSource.includes("Предыдущий шаг"), true);
+  assert.equal(workspaceComponentSource.includes("Следующий шаг"), true);
+  assert.equal(workspaceComponentSource.includes("/live-state"), true);
+  assert.equal(workspaceComponentSource.includes("onStepChange={(stepId) =>"), true);
+  assert.equal(workspaceComponentSource.includes("onOpenStudentScreen={(stepId) =>"), true);
+  assert.equal(workspaceComponentSource.includes("setTab(\"student_screen\")"), true);
+  assert.equal(workspaceComponentSource.includes("disabled={!canPrevious}"), true);
+  assert.equal(workspaceComponentSource.includes("disabled={!canNext}"), true);
+  assert.equal(workspaceComponentSource.includes("disabled={!canComplete}"), true);
 });
 
 test("teacher workspace uses unified five-tab labels and removes legacy side cards", () => {
@@ -38,6 +49,11 @@ test("teacher workspace uses unified five-tab labels and removes legacy side car
   assert.equal(tabsSource.includes("Чат"), true);
   assert.equal(workspaceComponentSource.includes("Ориентиры методики"), false);
   assert.equal(workspaceComponentSource.includes("Фокус преподавателя"), false);
+  assert.equal(
+    workspaceComponentSource.includes("workspace.unifiedReadModel.steps"),
+    true,
+  );
+  assert.equal(workspaceComponentSource.includes("LiveLessonControlBar"), true);
   assert.equal(
     workspaceComponentSource.includes("Discussion for this lesson"),
     false,

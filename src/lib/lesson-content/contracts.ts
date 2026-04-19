@@ -68,6 +68,12 @@ type BaseScheduledLessonRuntimeShell = {
   startsAt: string;
   runtimeStatus: ScheduledLessonRuntimeStatus;
   runtimeNotesSummary?: string;
+  runtimeCurrentStepId?: string;
+  runtimeCurrentStepOrder?: number;
+  runtimeStudentNavigationLocked?: boolean;
+  runtimeStepUpdatedAt?: string;
+  runtimeStartedAt?: string;
+  runtimeCompletedAt?: string;
 };
 
 export type ScheduledLessonRuntimeShell =
