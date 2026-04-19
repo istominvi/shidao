@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { AppPageHeader } from "@/components/app/page-header";
@@ -105,10 +106,17 @@ export function StudentLessonsHub({ hub }: { hub: StudentLessonsHubReadModel }) 
       <AppPageHeader title="Расписание" />
 
       <SurfaceCard
-        title="Уроки"
-        description={`Всего: ${hub.totalLessons} · По фильтрам: ${filteredEvents.length}`}
+        title={
+          <span className="inline-flex flex-wrap items-baseline gap-x-3 gap-y-1">
+            <span>Уроки</span>
+            <span className="text-sm font-semibold text-neutral-500">
+              Всего: {hub.totalLessons} · По фильтрам: {filteredEvents.length}
+            </span>
+          </span>
+        }
+        bodyClassName="mt-5"
       >
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-3">
           <SegmentedControl
             ariaLabel="Режим отображения"
             value={displayMode}
@@ -122,7 +130,7 @@ export function StudentLessonsHub({ hub }: { hub: StudentLessonsHubReadModel }) 
           <select
             value={teacherFilter}
             onChange={(event) => setTeacherFilter(event.target.value)}
-            className="rounded-xl border border-neutral-300 px-2.5 py-1.5 text-xs"
+            className="h-10 rounded-full border border-neutral-300 bg-white px-4 text-sm font-medium text-neutral-700"
             aria-label="Фильтр по преподавателю"
           >
             <option value="all">Все преподаватели</option>
@@ -136,7 +144,7 @@ export function StudentLessonsHub({ hub }: { hub: StudentLessonsHubReadModel }) 
           <select
             value={groupFilter}
             onChange={(event) => setGroupFilter(event.target.value)}
-            className="rounded-xl border border-neutral-300 px-2.5 py-1.5 text-xs"
+            className="h-10 rounded-full border border-neutral-300 bg-white px-4 text-sm font-medium text-neutral-700"
             aria-label="Фильтр по группе"
           >
             <option value="all">Все группы</option>
@@ -148,7 +156,7 @@ export function StudentLessonsHub({ hub }: { hub: StudentLessonsHubReadModel }) 
           </select>
 
           {displayMode === "calendar" ? (
-            <div className="ml-0 inline-flex items-center gap-1 rounded-xl border border-neutral-200 bg-white p-1 sm:ml-1">
+            <div className="inline-flex h-10 items-center gap-1 rounded-full border border-neutral-200 bg-white px-1.5">
               <button
                 type="button"
                 onClick={() => setActiveDateIso(shiftMonth(activeDateIso, -1))}
@@ -157,7 +165,7 @@ export function StudentLessonsHub({ hub }: { hub: StudentLessonsHubReadModel }) 
               >
                 <ChevronLeft size={16} />
               </button>
-              <span className="min-w-[140px] px-1 text-center text-sm font-semibold capitalize text-neutral-700 sm:min-w-[180px]">
+              <span className="min-w-[140px] px-1 text-center text-sm font-semibold capitalize text-neutral-700 sm:min-w-[170px]">
                 {formatMonthLabel(activeDateIso)}
               </span>
               <button
@@ -172,23 +180,25 @@ export function StudentLessonsHub({ hub }: { hub: StudentLessonsHubReadModel }) 
           ) : null}
         </div>
 
-        {displayMode === "table" ? (
-          <StudentLessonsTable events={sortedFilteredEvents} nowIso={hub.nowIso} />
-        ) : (
-          <>
-            <StudentMonthView
-              activeDateIso={activeDateIso}
-              events={sortedFilteredEvents}
-              onOpenDay={setMonthDialogIso}
-            />
-            <StudentMonthDialog
-              isoDate={monthDialogIso}
-              events={sortedFilteredEvents}
-              nowIso={hub.nowIso}
-              onClose={() => setMonthDialogIso(null)}
-            />
-          </>
-        )}
+        <div className="mt-5">
+          {displayMode === "table" ? (
+            <StudentLessonsTable events={sortedFilteredEvents} nowIso={hub.nowIso} />
+          ) : (
+            <>
+              <StudentMonthView
+                activeDateIso={activeDateIso}
+                events={sortedFilteredEvents}
+                onOpenDay={setMonthDialogIso}
+              />
+              <StudentMonthDialog
+                isoDate={monthDialogIso}
+                events={sortedFilteredEvents}
+                nowIso={hub.nowIso}
+                onClose={() => setMonthDialogIso(null)}
+              />
+            </>
+          )}
+        </div>
 
         {(displayMode === "table" && sortedFilteredEvents.length === 0) ||
         (displayMode === "calendar" && monthEvents.length === 0) ? (
@@ -221,39 +231,39 @@ function StudentLessonsTable({
   events: StudentLessonsHubEvent[];
   nowIso: string;
 }) {
+  const router = useRouter();
+
   return (
     <>
       <div className="hidden overflow-x-auto rounded-2xl border border-neutral-200 bg-white md:block">
         <table className="min-w-full divide-y divide-neutral-200 text-sm">
-          <thead className="bg-neutral-50 text-xs font-semibold uppercase tracking-[0.08em] text-neutral-500">
+          <thead className="bg-neutral-50 text-sm font-semibold text-neutral-600">
             <tr>
-              <th className="px-3 py-2 text-left">Дата</th>
-              <th className="px-3 py-2 text-left">Время</th>
-              <th className="px-3 py-2 text-left">Урок</th>
-              <th className="px-3 py-2 text-left">ДЗ</th>
-              <th className="px-3 py-2 text-left">Учитель</th>
-              <th className="px-3 py-2 text-left">Группа</th>
-              <th className="px-3 py-2 text-left">Статус</th>
-              <th className="px-3 py-2 text-left">Формат</th>
-              <th className="px-3 py-2 text-right">Действие</th>
+              <th className="h-10 px-3 text-left align-middle">Дата</th>
+              <th className="h-10 px-3 text-left align-middle">Время</th>
+              <th className="h-10 px-3 text-left align-middle">Урок</th>
+              <th className="h-10 px-3 text-left align-middle">ДЗ</th>
+              <th className="h-10 px-3 text-left align-middle">Учитель</th>
+              <th className="h-10 px-3 text-left align-middle">Группа</th>
+              <th className="h-10 px-3 text-left align-middle">Статус</th>
+              <th className="h-10 px-3 text-left align-middle">Формат</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-neutral-100">
             {events.map((event) => (
-              <tr key={event.id} className="align-top hover:bg-neutral-50/70">
-                <td className="px-3 py-2.5 text-neutral-700">{formatDateCell(event.isoDate)}</td>
-                <td className="px-3 py-2.5 text-neutral-700">{event.timeRangeLabel}</td>
-                <td className="px-3 py-2.5 font-medium text-neutral-900">{event.lessonTitle}</td>
-                <td className="px-3 py-2.5"><HomeworkPreview event={event} /></td>
-                <td className="px-3 py-2.5 text-neutral-700">{event.teacherLabel}</td>
-                <td className="px-3 py-2.5 text-neutral-700">{event.groupLabel}</td>
-                <td className="px-3 py-2.5 text-neutral-700">{event.statusLabel}</td>
-                <td className="px-3 py-2.5 text-neutral-700">{event.formatLabel}</td>
-                <td className="px-3 py-2.5 text-right">
-                  <Link href={event.href} className="text-sm font-semibold text-sky-700 hover:text-sky-800">
-                    Открыть
-                  </Link>
-                </td>
+              <tr
+                key={event.id}
+                className="cursor-pointer align-top text-sm hover:bg-neutral-50/70"
+                onClick={() => router.push(event.href)}
+              >
+                <td className="px-3 py-3 text-neutral-700">{formatDateCell(event.isoDate)}</td>
+                <td className="px-3 py-3 text-neutral-700">{event.timeRangeLabel}</td>
+                <td className="px-3 py-3 font-medium text-neutral-900">{event.lessonTitle}</td>
+                <td className="px-3 py-3 text-neutral-700">{event.homework ? event.homework.dueAtLabel : ""}</td>
+                <td className="px-3 py-3 text-neutral-700">{event.teacherLabel}</td>
+                <td className="px-3 py-3 text-neutral-700">{event.groupLabel}</td>
+                <td className="px-3 py-3 text-neutral-700">{event.statusLabel}</td>
+                <td className="px-3 py-3 text-neutral-700">{event.formatLabel}</td>
               </tr>
             ))}
           </tbody>
@@ -342,12 +352,14 @@ function StudentMonthView({
               key={iso}
               type="button"
               onClick={() => onOpenDay(iso)}
-              className={`min-h-24 border-r border-b border-neutral-100 px-2 py-2 text-left transition ${
+              className={`relative min-h-24 border-r border-b border-neutral-100 px-2 py-2 text-left transition ${
                 inMonth ? "bg-white hover:bg-neutral-50" : "bg-neutral-50/70 text-neutral-400"
               }`}
             >
-              <div className="text-xs font-semibold">{Number(iso.slice(8, 10))}</div>
-              <div className="mt-1.5 space-y-1">
+              <div className="absolute left-2 top-2 text-xs font-semibold">
+                {Number(iso.slice(8, 10))}
+              </div>
+              <div className="mt-5 space-y-1">
                 {previewEvents.map((event) => (
                   <div
                     key={event.id}
