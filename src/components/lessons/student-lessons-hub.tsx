@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { AppPageHeader } from "@/components/app/page-header";
 import { SegmentedControl } from "@/components/ui/segmented-control";
+import { Select } from "@/components/ui/input";
 import { SurfaceCard } from "@/components/ui/surface-card";
 import { getMonthMatrix } from "@/components/dashboard/teacher-schedule-utils";
 import type {
@@ -116,7 +117,7 @@ export function StudentLessonsHub({ hub }: { hub: StudentLessonsHubReadModel }) 
         }
         bodyClassName="mt-5"
       >
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="product-control-rail">
           <SegmentedControl
             ariaLabel="Режим отображения"
             value={displayMode}
@@ -127,10 +128,11 @@ export function StudentLessonsHub({ hub }: { hub: StudentLessonsHubReadModel }) 
             }))}
           />
 
-          <select
+          <div className="product-select-wrap">
+          <Select
             value={teacherFilter}
             onChange={(event) => setTeacherFilter(event.target.value)}
-            className="h-10 rounded-full border border-neutral-300 bg-white px-4 text-sm font-medium text-neutral-700"
+            className="min-w-[13rem]"
             aria-label="Фильтр по преподавателю"
           >
             <option value="all">Все преподаватели</option>
@@ -139,12 +141,15 @@ export function StudentLessonsHub({ hub }: { hub: StudentLessonsHubReadModel }) 
                 {label}
               </option>
             ))}
-          </select>
+          </Select>
+          <ChevronDown className="product-select-icon h-4 w-4" aria-hidden="true" />
+          </div>
 
-          <select
+          <div className="product-select-wrap">
+          <Select
             value={groupFilter}
             onChange={(event) => setGroupFilter(event.target.value)}
-            className="h-10 rounded-full border border-neutral-300 bg-white px-4 text-sm font-medium text-neutral-700"
+            className="min-w-[11rem]"
             aria-label="Фильтр по группе"
           >
             <option value="all">Все группы</option>
@@ -153,25 +158,27 @@ export function StudentLessonsHub({ hub }: { hub: StudentLessonsHubReadModel }) 
                 {label}
               </option>
             ))}
-          </select>
+          </Select>
+          <ChevronDown className="product-select-icon h-4 w-4" aria-hidden="true" />
+          </div>
 
           {displayMode === "calendar" ? (
-            <div className="inline-flex h-10 items-center gap-1 rounded-full border border-neutral-200 bg-white px-1.5">
+            <div className="product-control inline-flex min-w-[230px] items-center gap-1 px-1.5">
               <button
                 type="button"
                 onClick={() => setActiveDateIso(shiftMonth(activeDateIso, -1))}
-                className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-neutral-200 text-sm hover:bg-neutral-50"
+                className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-black/10 text-sm hover:bg-neutral-50"
                 aria-label="Предыдущий месяц"
               >
                 <ChevronLeft size={16} />
               </button>
-              <span className="min-w-[140px] px-1 text-center text-sm font-semibold capitalize text-neutral-700 sm:min-w-[170px]">
+              <span className="min-w-[140px] flex-1 px-1 text-center text-sm font-semibold capitalize text-neutral-700">
                 {formatMonthLabel(activeDateIso)}
               </span>
               <button
                 type="button"
                 onClick={() => setActiveDateIso(shiftMonth(activeDateIso, 1))}
-                className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-neutral-200 text-sm hover:bg-neutral-50"
+                className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-black/10 text-sm hover:bg-neutral-50"
                 aria-label="Следующий месяц"
               >
                 <ChevronRight size={16} />
@@ -232,6 +239,7 @@ function StudentLessonsTable({
   nowIso: string;
 }) {
   const router = useRouter();
+  const nowTs = Date.parse(nowIso);
 
   return (
     <>
@@ -242,30 +250,33 @@ function StudentLessonsTable({
               <th className="h-10 px-3 text-left align-middle">Дата</th>
               <th className="h-10 px-3 text-left align-middle">Время</th>
               <th className="h-10 px-3 text-left align-middle">Урок</th>
-              <th className="h-10 px-3 text-left align-middle">ДЗ</th>
               <th className="h-10 px-3 text-left align-middle">Учитель</th>
               <th className="h-10 px-3 text-left align-middle">Группа</th>
-              <th className="h-10 px-3 text-left align-middle">Статус</th>
               <th className="h-10 px-3 text-left align-middle">Формат</th>
+              <th className="h-10 px-3 text-left align-middle">ДЗ</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-neutral-100">
-            {events.map((event) => (
-              <tr
-                key={event.id}
-                className="cursor-pointer align-top text-sm hover:bg-neutral-50/70"
-                onClick={() => router.push(event.href)}
-              >
-                <td className="px-3 py-3 text-neutral-700">{formatDateCell(event.isoDate)}</td>
-                <td className="px-3 py-3 text-neutral-700">{event.timeRangeLabel}</td>
-                <td className="px-3 py-3 font-medium text-neutral-900">{event.lessonTitle}</td>
-                <td className="px-3 py-3 text-neutral-700">{event.homework ? event.homework.dueAtLabel : ""}</td>
-                <td className="px-3 py-3 text-neutral-700">{event.teacherLabel}</td>
-                <td className="px-3 py-3 text-neutral-700">{event.groupLabel}</td>
-                <td className="px-3 py-3 text-neutral-700">{event.statusLabel}</td>
-                <td className="px-3 py-3 text-neutral-700">{event.formatLabel}</td>
-              </tr>
-            ))}
+            {events.map((event) => {
+              const isPast = Date.parse(event.endsAt) < nowTs;
+              const rowTone = isPast ? "text-neutral-400" : "text-neutral-700";
+
+              return (
+                <tr
+                  key={event.id}
+                  className={`cursor-pointer align-top text-sm hover:bg-neutral-50/70 ${rowTone}`}
+                  onClick={() => router.push(event.href)}
+                >
+                  <td className="px-3 py-3">{formatDateCell(event.isoDate)}</td>
+                  <td className="px-3 py-3">{event.timeRangeLabel}</td>
+                  <td className="px-3 py-3">{event.lessonTitle}</td>
+                  <td className="px-3 py-3">{event.teacherLabel}</td>
+                  <td className="px-3 py-3">{event.groupLabel}</td>
+                  <td className="px-3 py-3">{event.formatLabel}</td>
+                  <td className="px-3 py-3">{event.homework ? event.homework.dueAtLabel : ""}</td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
