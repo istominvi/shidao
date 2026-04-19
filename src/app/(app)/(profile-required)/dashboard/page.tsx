@@ -7,6 +7,7 @@ import { ROUTES } from "@/lib/auth";
 import { resolveAccessPolicy } from "@/lib/server/access-policy";
 import { getParentCommunicationProjection, getStudentConversationReadModels } from "@/lib/server/communication-service";
 import { getParentHomeworkProjection } from "@/lib/server/parent-homework";
+import { logger } from "@/lib/server/logger";
 import {
   getMethodologyLessonByIdAdmin,
   listClassIdsForStudentAdmin,
@@ -51,30 +52,49 @@ export default async function DashboardIndexPage({
   const context = resolution.context;
 
   if (context.actorKind === "student") {
-    const studentId = context.student?.id;
-    const classIds = studentId ? await listClassIdsForStudentAdmin(studentId) : [];
-    const homework = studentId
-      ? await getStudentHomeworkReadModel({ studentId, classIds })
-      : [];
-    const scheduledLessons = classIds.length
-      ? await listScheduledLessonsForClassesAdmin(classIds)
-      : [];
-    const lessons = await Promise.all(
-      scheduledLessons.slice(0, 8).map(async (lesson) => {
-        const methodologyLesson = await getMethodologyLessonByIdAdmin(
-          lesson.methodologyLessonId,
+    const studentId = context.student?.id ?? null;
+    let homework: Awaited<ReturnType<typeof getStudentHomeworkReadModel>> = [];
+    let lessons: Array<{
+      scheduledLessonId: string;
+      lessonTitle: string;
+      startsAt: string;
+      statusLabel: string;
+    }> = [];
+    let communication: Awaited<ReturnType<typeof getStudentConversationReadModels>> = [];
+
+    if (studentId) {
+      try {
+        const classIds = await listClassIdsForStudentAdmin(studentId);
+        homework = await getStudentHomeworkReadModel({ studentId, classIds });
+        const scheduledLessons = classIds.length
+          ? await listScheduledLessonsForClassesAdmin(classIds)
+          : [];
+        lessons = await Promise.all(
+          scheduledLessons.slice(0, 8).map(async (lesson) => {
+            const methodologyLesson = await getMethodologyLessonByIdAdmin(
+              lesson.methodologyLessonId,
+            );
+            return {
+              scheduledLessonId: lesson.id,
+              lessonTitle: methodologyLesson?.shell.title ?? "Урок",
+              startsAt: formatStartsAt(lesson.runtimeShell.startsAt),
+              statusLabel: formatStatus(lesson.runtimeShell.runtimeStatus),
+            };
+          }),
         );
-        return {
-          scheduledLessonId: lesson.id,
-          lessonTitle: methodologyLesson?.shell.title ?? "Урок",
-          startsAt: formatStartsAt(lesson.runtimeShell.startsAt),
-          statusLabel: formatStatus(lesson.runtimeShell.runtimeStatus),
-        };
-      }),
-    );
-    const communication = studentId
-      ? await getStudentConversationReadModels({ studentId, filter: "all" })
-      : [];
+        communication = await getStudentConversationReadModels({
+          studentId,
+          filter: "all",
+        });
+      } catch (error) {
+        logger.error("[dashboard] failed to build student read model", {
+          userId: context.userId,
+          studentId,
+          error,
+        });
+      }
+    }
+
     return (
       <StudentDashboard
         homework={homework}

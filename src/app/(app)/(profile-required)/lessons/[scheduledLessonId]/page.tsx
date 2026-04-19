@@ -9,6 +9,7 @@ import { TeacherLessonWorkspace } from "@/components/lessons/teacher-lesson-work
 import { TopNav } from "@/components/top-nav";
 import { ROUTES, toMethodologyLessonRoute } from "@/lib/auth";
 import { resolveAccessPolicy } from "@/lib/server/access-policy";
+import { logger } from "@/lib/server/logger";
 import {
   getParentScheduledLessonView,
   getScheduledLessonLearnerPreview,
@@ -20,6 +21,20 @@ function learnerEyebrow(view: "preview" | "parent" | "student") {
   if (view === "preview") return "Предпросмотр урока";
   if (view === "parent") return "Урок ребёнка";
   return "Твой урок";
+}
+
+function formatLessonDateLabel(startsAt: string) {
+  const date = new Date(startsAt);
+  if (Number.isNaN(date.getTime())) {
+    return "Дата урока уточняется";
+  }
+
+  return new Intl.DateTimeFormat("ru-RU", {
+    day: "numeric",
+    month: "long",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
 }
 
 export default async function ScheduledLessonPage({
@@ -47,11 +62,40 @@ export default async function ScheduledLessonPage({
 
   if (accessResolution.context.actorKind === "student") {
     const studentId = accessResolution.context.student?.id ?? "";
-    const view = await getStudentScheduledLessonView({
-      scheduledLessonId,
-      studentId,
-    });
-    if (!view) notFound();
+    let view: Awaited<ReturnType<typeof getStudentScheduledLessonView>> = null;
+    let loadFailed = false;
+    try {
+      view = await getStudentScheduledLessonView({
+        scheduledLessonId,
+        studentId,
+      });
+    } catch (error) {
+      loadFailed = true;
+      logger.error("[lessons] failed to load student scheduled lesson view", {
+        scheduledLessonId,
+        studentId,
+        userId: accessResolution.context.userId,
+        error,
+      });
+    }
+    if (!view) {
+      if (loadFailed) {
+        return (
+          <main className="pb-12">
+            <div className="landing-noise" aria-hidden="true" />
+            <TopNav />
+            <div className="container app-page-container">
+              <AppPageHeader
+                eyebrow={learnerEyebrow("student")}
+                title="Урок временно недоступен"
+                description="Не удалось загрузить данные урока. Попробуй открыть его позже или вернись в кабинет."
+              />
+            </div>
+          </main>
+        );
+      }
+      notFound();
+    }
 
     return (
       <main className="pb-12">
@@ -83,12 +127,7 @@ export default async function ScheduledLessonPage({
                 <LessonMetaPill
                   icon="datetime"
                   tone="neutral"
-                  label={new Intl.DateTimeFormat("ru-RU", {
-                    day: "numeric",
-                    month: "long",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  }).format(new Date(view.startsAt))}
+                  label={formatLessonDateLabel(view.startsAt)}
                 />
               </LessonMetaRail>
             }
@@ -100,10 +139,19 @@ export default async function ScheduledLessonPage({
   }
 
   if (accessResolution.context.activeProfile === "parent") {
-    const view = await getParentScheduledLessonView({
-      scheduledLessonId,
-      userId: accessResolution.context.userId,
-    });
+    let view: Awaited<ReturnType<typeof getParentScheduledLessonView>> = null;
+    try {
+      view = await getParentScheduledLessonView({
+        scheduledLessonId,
+        userId: accessResolution.context.userId,
+      });
+    } catch (error) {
+      logger.error("[lessons] failed to load parent scheduled lesson view", {
+        scheduledLessonId,
+        userId: accessResolution.context.userId,
+        error,
+      });
+    }
     if (!view) notFound();
 
     return (
@@ -136,12 +184,7 @@ export default async function ScheduledLessonPage({
                 <LessonMetaPill
                   icon="datetime"
                   tone="neutral"
-                  label={new Intl.DateTimeFormat("ru-RU", {
-                    day: "numeric",
-                    month: "long",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  }).format(new Date(view.startsAt))}
+                  label={formatLessonDateLabel(view.startsAt)}
                 />
               </LessonMetaRail>
             }
@@ -164,7 +207,18 @@ export default async function ScheduledLessonPage({
   if (!teacherView) notFound();
 
   if (query.view === "learner-preview") {
-    const preview = await getScheduledLessonLearnerPreview(scheduledLessonId);
+    let preview: Awaited<ReturnType<typeof getScheduledLessonLearnerPreview>> =
+      null;
+    try {
+      preview = await getScheduledLessonLearnerPreview(scheduledLessonId);
+    } catch (error) {
+      logger.error("[lessons] failed to load learner preview", {
+        scheduledLessonId,
+        teacherId,
+        userId: accessResolution.context.userId,
+        error,
+      });
+    }
 
     return (
       <main className="pb-12">
@@ -198,12 +252,7 @@ export default async function ScheduledLessonPage({
                     <LessonMetaPill
                       icon="datetime"
                       tone="neutral"
-                      label={new Intl.DateTimeFormat("ru-RU", {
-                        day: "numeric",
-                        month: "long",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      }).format(new Date(preview.startsAt))}
+                      label={formatLessonDateLabel(preview.startsAt)}
                     />
                   </LessonMetaRail>
                 }

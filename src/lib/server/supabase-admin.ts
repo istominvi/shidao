@@ -1,4 +1,5 @@
 import {
+  isStudentInternalAuthEmail,
   normalizeIdentifier,
   toStudentInternalAuthEmail,
   type ProfileKind,
@@ -6,13 +7,19 @@ import {
 } from "@/lib/auth";
 import { getSupabasePublicConfig } from "@/lib/server/auth-config";
 import { logger } from "@/lib/server/logger";
+import { resolvePostLoginRedirectForContext } from "@/lib/server/post-login-redirect";
 
 type Json = Record<string, unknown>;
 
 type SupabaseUser = {
   id: string;
   email?: string | null;
-  user_metadata?: { full_name?: string | null } | null;
+  user_metadata?:
+    | {
+        full_name?: string | null;
+        role?: string | null;
+      }
+    | null;
 };
 
 type AuthSession = {
@@ -293,7 +300,12 @@ export async function setLastActiveProfile(
 
 export async function resolvePostLoginRedirect(userId: string) {
   try {
-    const [parentRows, teacherRows] = await Promise.all([
+    const [studentRows, parentRows, teacherRows] = await Promise.all([
+      request<Array<{ id: string }>>(
+        `/rest/v1/student?select=id&user_id=eq.${userId}&limit=1`,
+        "GET",
+        { admin: true },
+      ),
       request<Array<{ id: string }>>(
         `/rest/v1/parent?select=id&user_id=eq.${userId}&limit=1`,
         "GET",
@@ -306,9 +318,10 @@ export async function resolvePostLoginRedirect(userId: string) {
       ),
     ]);
 
-    return parentRows[0]?.id || teacherRows[0]?.id
-      ? ROUTES.dashboard
-      : ROUTES.onboarding;
+    return resolvePostLoginRedirectForContext({
+      actorKind: studentRows[0]?.id ? "student" : "adult",
+      hasAnyAdultProfile: Boolean(parentRows[0]?.id || teacherRows[0]?.id),
+    });
   } catch (error) {
     logger.error(
       "[auth-login] failed to resolve post-login route, fallback to dashboard",
@@ -321,6 +334,7 @@ export async function resolvePostLoginRedirect(userId: string) {
 type SessionFallback = {
   email?: string | null;
   fullName?: string | null;
+  expectedActorKind?: "adult" | "student";
 };
 
 type StudentNameFields = {
@@ -537,9 +551,13 @@ export async function getUserContextById(
         : "parent";
   }
 
+  const authFullNameRaw = authUser?.user_metadata?.full_name;
+  const authFullName = typeof authFullNameRaw === "string" ? authFullNameRaw : null;
+  const fallbackFullName =
+    typeof fallback?.fullName === "string" ? fallback.fullName : null;
   const resolvedFullName =
-    authUser?.user_metadata?.full_name ??
-    fallback?.fullName ??
+    authFullName ??
+    fallbackFullName ??
     parent?.full_name ??
     teacher?.full_name ??
     formatStudentFullName({
@@ -548,7 +566,34 @@ export async function getUserContextById(
       login: student?.login,
     }) ??
     null;
-  const resolvedEmail = authUser?.email ?? fallback?.email ?? null;
+
+  const authEmailRaw = authUser?.email;
+  const authEmail = typeof authEmailRaw === "string" ? authEmailRaw : null;
+  const fallbackEmail = typeof fallback?.email === "string" ? fallback.email : null;
+  const resolvedEmail = authEmail ?? fallbackEmail ?? null;
+  const metadataRoleRaw = authUser?.user_metadata?.role;
+  const metadataRole =
+    typeof metadataRoleRaw === "string"
+      ? metadataRoleRaw.trim().toLowerCase()
+      : null;
+  const metadataSuggestsStudent = metadataRole === "student";
+  const emailSuggestsStudent = isStudentInternalAuthEmail(resolvedEmail);
+  const fallbackSuggestsStudent = fallback?.expectedActorKind === "student";
+  const shouldTreatAsStudent =
+    metadataSuggestsStudent || emailSuggestsStudent || fallbackSuggestsStudent;
+  const studentPartFailed = studentResult.status === "rejected";
+
+  if (shouldTreatAsStudent && studentPartFailed) {
+    throw new Error(
+      "Не удалось подтвердить student-контекст пользователя (student query failed).",
+    );
+  }
+
+  if (shouldTreatAsStudent && !student) {
+    throw new Error(
+      "Не удалось подтвердить student-контекст пользователя (student row missing).",
+    );
+  }
 
   logger.info("[user-context] resolved context", {
     userId,
@@ -556,10 +601,10 @@ export async function getUserContextById(
     hasParent: Boolean(parent),
     hasTeacher: Boolean(teacher),
     hasStudent: Boolean(student),
+    shouldTreatAsStudent,
     usedAuthAdmin: Boolean(authUser),
-    usedFallbackEmail: !authUser?.email && Boolean(fallback?.email),
-    usedFallbackFullName:
-      !authUser?.user_metadata?.full_name && Boolean(fallback?.fullName),
+    usedFallbackEmail: !authEmail && Boolean(fallbackEmail),
+    usedFallbackFullName: !authFullName && Boolean(fallbackFullName),
     durationMs: Date.now() - startedAt,
   });
 
