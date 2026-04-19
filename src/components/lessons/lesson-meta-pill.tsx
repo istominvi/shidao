@@ -10,7 +10,7 @@ import {
   Users,
 } from "lucide-react";
 import type { ReactNode } from "react";
-import { Chip, type ChipTone } from "@/components/ui/chip";
+import { Chip, type ChipSize, type ChipTone } from "@/components/ui/chip";
 
 export type LessonMetaTone =
   | "primary"
@@ -57,13 +57,19 @@ export function LessonMetaPill({
   label,
   tone = "neutral",
   icon,
+  size = "md",
 }: {
   label: ReactNode;
   tone?: LessonMetaTone;
   icon?: LessonMetaIconKey;
+  size?: ChipSize;
 }) {
   return (
-    <Chip tone={lessonMetaToneMap[tone]} icon={icon ? lessonMetaIconMap[icon] : undefined}>
+    <Chip
+      tone={lessonMetaToneMap[tone]}
+      size={size}
+      icon={icon ? lessonMetaIconMap[icon] : undefined}
+    >
       {label}
     </Chip>
   );

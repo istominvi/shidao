@@ -106,12 +106,7 @@ export default async function ScheduledLessonPage({
         <TopNav />
         <div className="container app-page-container space-y-6">
           <AppPageHeader
-            eyebrow={learnerEyebrow("student")}
-            title={view.lessonTitle}
-            description={
-              view.lessonSubtitle ??
-              "Повторяй слова и активности урока в удобном темпе."
-            }
+            title={view.runtimeStatus === "completed" ? "Урок окончен" : view.lessonTitle}
             meta={
               <LessonMetaRail>
                 <LessonMetaPill

@@ -18,10 +18,18 @@ export function ScheduledLessonLearnerView({
     | ParentScheduledLessonView
     | ScheduledLessonPreviewView;
 }) {
+  const modelHomework = model.role === "student" ? model.homework : null;
   const [liveState, setLiveState] = useState(model.liveState);
+  const [studentHomework, setStudentHomework] = useState(
+    modelHomework,
+  );
   useEffect(() => {
     setLiveState(model.liveState);
   }, [model.liveState]);
+  useEffect(() => {
+    if (model.role !== "student") return;
+    setStudentHomework(modelHomework);
+  }, [model.role, modelHomework]);
 
   useEffect(() => {
     if (liveState.runtimeStatus !== "planned" && liveState.runtimeStatus !== "in_progress") {
@@ -42,6 +50,24 @@ export function ScheduledLessonLearnerView({
     }, 2000);
     return () => window.clearInterval(timer);
   }, [liveState.runtimeStatus, model.scheduledLessonId]);
+
+  useEffect(() => {
+    if (model.role !== "student" || studentHomework) return;
+    const timer = window.setInterval(async () => {
+      try {
+        const response = await fetch(`/api/student/lessons/${model.scheduledLessonId}/homework`, {
+          method: "GET",
+          cache: "no-store",
+        });
+        if (!response.ok) return;
+        const data = (await response.json()) as { homework?: typeof studentHomework };
+        if (data.homework) setStudentHomework(data.homework);
+      } catch {
+        // Silent retry on next tick; do not interrupt learner UI.
+      }
+    }, 2000);
+    return () => window.clearInterval(timer);
+  }, [model.role, model.scheduledLessonId, studentHomework]);
 
   const controlledStepId = useMemo(() => {
     if (liveState.currentStepId) {
@@ -68,9 +94,7 @@ export function ScheduledLessonLearnerView({
   return (
     <div className="space-y-5">
       {liveState.runtimeStatus === "planned" ? (
-        <SurfaceCard title="Урок скоро начнётся">
-          <p className="text-sm text-neutral-700">Преподаватель откроет первый шаг.</p>
-        </SurfaceCard>
+        <SurfaceCard title="Учитель ещё не начал урок" />
       ) : null}
       {liveState.runtimeStatus === "cancelled" ? (
         <SurfaceCard title="Урок отменён">
@@ -80,8 +104,11 @@ export function ScheduledLessonLearnerView({
       {liveState.runtimeStatus !== "planned" &&
       liveState.runtimeStatus !== "cancelled" ? (
         <SurfaceCard
-          title={model.studentContent?.title ?? model.lessonTitle}
-          description={model.studentContent?.subtitle}
+          title={
+            liveState.runtimeStatus === "completed"
+              ? "Урок окончен"
+              : "Урок начался"
+          }
         >
           <LessonLearnerContentDeck
             steps={model.unifiedReadModel.steps}
@@ -89,26 +116,28 @@ export function ScheduledLessonLearnerView({
             unavailableReason={model.studentContentUnavailableReason}
             assetsById={model.unifiedReadModel.assetsById}
             mode={learnerMode}
-            controlledStepId={controlledStepId ?? undefined}
+            controlledStepId={
+              learnerMode === "student_live_locked" ? controlledStepId ?? undefined : undefined
+            }
           />
         </SurfaceCard>
       ) : null}
 
-      {model.role === "student" && model.homework ? (
+      {model.role === "student" && studentHomework ? (
         <SurfaceCard title="Домашнее задание">
           <article className="mt-3 rounded-2xl border border-neutral-200 bg-white p-3">
             <p className="font-semibold text-neutral-900">
-              {model.homework.homeworkTitle}
+              {studentHomework.homeworkTitle}
             </p>
             <p className="text-xs text-neutral-500">
-              {model.homework.statusLabel} · Срок: {model.homework.dueAt ?? "без срока"}
+              {studentHomework.statusLabel} · Срок: {studentHomework.dueAt ?? "без срока"}
             </p>
-            <p className="mt-2 text-sm text-neutral-700">{model.homework.instructions}</p>
-            {model.homework.kind === "practice_text" ? (
-              <form className="mt-2 space-y-2" action={`/api/student/homework/${model.homework.studentHomeworkAssignmentId}/submit`} method="POST">
+            <p className="mt-2 text-sm text-neutral-700">{studentHomework.instructions}</p>
+            {studentHomework.kind === "practice_text" ? (
+              <form className="mt-2 space-y-2" action={`/api/student/homework/${studentHomework.studentHomeworkAssignmentId}/submit`} method="POST">
                 <textarea
                   name="submissionText"
-                  defaultValue={model.homework.submissionText ?? ""}
+                  defaultValue={studentHomework.submissionText ?? ""}
                   rows={3}
                   className="w-full rounded-xl border border-neutral-300 px-3 py-2 text-sm"
                   placeholder="Напиши короткий ответ"
@@ -118,7 +147,7 @@ export function ScheduledLessonLearnerView({
                 </button>
               </form>
             ) : (
-              <StudentHomeworkQuizCard item={model.homework} />
+              <StudentHomeworkQuizCard item={studentHomework} />
             )}
           </article>
         </SurfaceCard>
