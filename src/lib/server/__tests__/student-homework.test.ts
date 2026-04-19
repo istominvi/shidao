@@ -6,6 +6,8 @@ test("student homework read model keeps lesson title and quiz data", async () =>
   const model = await getStudentHomeworkReadModel(
     { studentId: "s-1", classIds: ["c-1"] },
     {
+      getClassById: async () => ({ id: "c-1", name: "Группа A", methodologyId: null, methodologyTitle: null }),
+      listTeacherLabelsByIds: async () => ({ t: "Teacher One" }),
       listScheduledLessonsForClasses: async () => [{
         id: "lesson-1",
         methodologyLessonId: "m-1",
@@ -34,6 +36,8 @@ test("student submit supports practice_text and quiz autograding", async () => {
   await submitStudentHomework(
     { studentId: "s-1", studentHomeworkAssignmentId: "st-1", submissionText: " ответ " },
     {
+      getClassById: async () => null,
+      listTeacherLabelsByIds: async () => ({}),
       listScheduledLessonsForClasses: async () => [],
       getScheduledLessonById: async () => ({ id: "lesson-1", methodologyLessonId: "m-1", runtimeShell: { id: "x", classId: "c", startsAt: "2026-04-10T10:00:00Z", runtimeStatus: "planned", format: "offline", place: "A" }, runtimeNotes: "", outcomeNotes: "" }),
       getMethodologyLessonById: async () => null,
@@ -54,6 +58,8 @@ test("student submit supports practice_text and quiz autograding", async () => {
   const quizResult = await submitStudentHomework(
     { studentId: "s-1", studentHomeworkAssignmentId: "st-2", submissionPayload: { answers: [{ questionId: "q1", selectedOptionId: "a" }] } },
     {
+      getClassById: async () => null,
+      listTeacherLabelsByIds: async () => ({}),
       listScheduledLessonsForClasses: async () => [],
       getScheduledLessonById: async () => ({ id: "lesson-1", methodologyLessonId: "m-1", runtimeShell: { id: "x", classId: "c", startsAt: "2026-04-10T10:00:00Z", runtimeStatus: "planned", format: "offline", place: "A" }, runtimeNotes: "", outcomeNotes: "" }),
       getMethodologyLessonById: async () => null,

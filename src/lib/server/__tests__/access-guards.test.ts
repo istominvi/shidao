@@ -25,7 +25,7 @@ test("profile-required layout redirects adult-without-profile to onboarding", ()
 test("auth entry routes redirect authenticated users deterministically", () => {
   assert.equal(resolveAuthEntryRedirect("adult-without-profile"), ROUTES.onboarding);
   assert.equal(resolveAuthEntryRedirect("adult-with-profile"), ROUTES.dashboard);
-  assert.equal(resolveAuthEntryRedirect("student"), ROUTES.dashboard);
+  assert.equal(resolveAuthEntryRedirect("student"), ROUTES.schedule);
   assert.equal(resolveAuthEntryRedirect("guest"), null);
   assert.equal(resolveAuthEntryRedirect("degraded"), null);
 });
@@ -33,7 +33,7 @@ test("auth entry routes redirect authenticated users deterministically", () => {
 test("onboarding route blocks guest/degraded/student and preserves add-profile flow", () => {
   assert.equal(resolveOnboardingRedirect("guest"), ROUTES.login);
   assert.equal(resolveOnboardingRedirect("degraded"), ROUTES.login);
-  assert.equal(resolveOnboardingRedirect("student"), ROUTES.dashboard);
+  assert.equal(resolveOnboardingRedirect("student"), ROUTES.schedule);
   assert.equal(resolveOnboardingRedirect("adult-without-profile"), null);
   assert.equal(resolveOnboardingRedirect("adult-with-profile"), ROUTES.dashboard);
   assert.equal(

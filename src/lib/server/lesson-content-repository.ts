@@ -38,6 +38,18 @@ type RowClassTeacher = {
   class_id: string;
 };
 
+type RowClassTeacherWithTeacher = {
+  class_id: string;
+  teacher: {
+    full_name: string | null;
+  } | null;
+};
+
+type RowTeacher = {
+  id: string;
+  full_name: string | null;
+};
+
 type RowClass = {
   id: string;
   name: string | null;
@@ -500,6 +512,62 @@ export async function listClassIdsForStudentAdmin(
 
   return Array.from(
     new Set(rows.map((row) => row.class_id?.trim() ?? "").filter(Boolean)),
+  );
+}
+
+export async function listTeacherLabelsForClassIdsAdmin(
+  classIds: string[],
+): Promise<Record<string, string[]>> {
+  const normalizedClassIds = Array.from(
+    new Set(classIds.map((id) => id.trim()).filter(Boolean)),
+  );
+  if (normalizedClassIds.length === 0) {
+    return {};
+  }
+
+  const inFilter = encodeURIComponent(`(${normalizedClassIds.join(",")})`);
+  const rows = await adminRequest<RowClassTeacherWithTeacher[]>(
+    `/rest/v1/class_teacher?select=class_id,teacher:teacher_id(full_name)&class_id=in.${inFilter}`,
+  );
+
+  const labelsByClass = Object.fromEntries(
+    normalizedClassIds.map((classId) => [classId, [] as string[]]),
+  );
+
+  for (const row of rows) {
+    const classId = row.class_id?.trim();
+    const teacherLabel = row.teacher?.full_name?.trim() ?? "";
+    if (!classId || !teacherLabel) continue;
+    labelsByClass[classId] ??= [];
+    labelsByClass[classId].push(teacherLabel);
+  }
+
+  for (const [classId, labels] of Object.entries(labelsByClass)) {
+    labelsByClass[classId] = Array.from(new Set(labels));
+  }
+
+  return labelsByClass;
+}
+
+export async function listTeacherLabelsByIdsAdmin(
+  teacherIds: string[],
+): Promise<Record<string, string>> {
+  const normalizedTeacherIds = Array.from(
+    new Set(teacherIds.map((id) => id.trim()).filter(Boolean)),
+  );
+  if (normalizedTeacherIds.length === 0) {
+    return {};
+  }
+
+  const inFilter = encodeURIComponent(`(${normalizedTeacherIds.join(",")})`);
+  const rows = await adminRequest<RowTeacher[]>(
+    `/rest/v1/teacher?select=id,full_name&id=in.${inFilter}`,
+  );
+
+  return Object.fromEntries(
+    rows
+      .map((row) => [row.id, row.full_name?.trim() ?? ""] as const)
+      .filter(([, label]) => Boolean(label)),
   );
 }
 

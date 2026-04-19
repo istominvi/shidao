@@ -61,7 +61,10 @@ export default async function ScheduledLessonPage({
   const query = await searchParams;
 
   if (accessResolution.context.actorKind === "student") {
-    const studentId = accessResolution.context.student?.id ?? "";
+    const studentId = accessResolution.context.student?.id;
+    if (!studentId) {
+      redirect(ROUTES.login);
+    }
     let view: Awaited<ReturnType<typeof getStudentScheduledLessonView>> = null;
     let loadFailed = false;
     try {
