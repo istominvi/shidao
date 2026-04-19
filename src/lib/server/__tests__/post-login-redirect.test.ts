@@ -3,13 +3,13 @@ import test from "node:test";
 import { ROUTES } from "../../auth";
 import { resolvePostLoginRedirectForContext } from "../post-login-redirect";
 
-test("post-login redirect sends student to dashboard", () => {
+test("post-login redirect sends student to schedule", () => {
   assert.equal(
     resolvePostLoginRedirectForContext({
       actorKind: "student",
       hasAnyAdultProfile: false,
     }),
-    ROUTES.dashboard,
+    ROUTES.schedule,
   );
 });
 

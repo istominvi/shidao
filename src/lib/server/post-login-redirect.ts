@@ -5,7 +5,7 @@ export function resolvePostLoginRedirectForContext(context: {
   hasAnyAdultProfile: boolean;
 }) {
   if (context.actorKind === "student") {
-    return ROUTES.dashboard;
+    return ROUTES.schedule;
   }
 
   return context.hasAnyAdultProfile ? ROUTES.dashboard : ROUTES.onboarding;

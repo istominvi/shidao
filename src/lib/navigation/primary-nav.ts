@@ -64,6 +64,19 @@ export const PRIMARY_NAV_CONFIG: Record<PrimaryNavConfig["id"], PrimaryNavConfig
   student: {
     id: "student",
     ariaLabel: "Основная навигация кабинета ученика",
-    items: [],
+    items: [
+      {
+        id: "schedule",
+        label: "Расписание",
+        href: ROUTES.schedule,
+        isActive: (pathname) => isRouteWithin(pathname, ROUTES.schedule),
+      },
+      {
+        id: "homework",
+        label: "Домашнее задание",
+        href: ROUTES.homework,
+        isActive: (pathname) => isRouteWithin(pathname, ROUTES.homework),
+      },
+    ],
   },
 };

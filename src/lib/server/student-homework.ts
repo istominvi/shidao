@@ -1,6 +1,8 @@
 import {
+  getClassByIdAdmin,
   getMethodologyLessonByIdAdmin,
   getScheduledLessonByIdAdmin,
+  listTeacherLabelsByIdsAdmin,
   listScheduledLessonsForClassesAdmin,
 } from "./lesson-content-repository";
 import {
@@ -19,6 +21,8 @@ import {
 
 export type StudentHomeworkCard = {
   classId: string;
+  groupLabel: string;
+  teacherLabel: string;
   scheduledLessonId: string;
   scheduledHomeworkAssignmentId: string;
   lessonTitle: string;
@@ -45,6 +49,8 @@ export type StudentHomeworkCard = {
 };
 
 type StudentHomeworkDeps = {
+  getClassById: typeof getClassByIdAdmin;
+  listTeacherLabelsByIds: typeof listTeacherLabelsByIdsAdmin;
   listScheduledLessonsForClasses: typeof listScheduledLessonsForClassesAdmin;
   getScheduledLessonById: typeof getScheduledLessonByIdAdmin;
   getMethodologyLessonById: typeof getMethodologyLessonByIdAdmin;
@@ -57,6 +63,8 @@ type StudentHomeworkDeps = {
 };
 
 const defaultDeps: StudentHomeworkDeps = {
+  getClassById: getClassByIdAdmin,
+  listTeacherLabelsByIds: listTeacherLabelsByIdsAdmin,
   listScheduledLessonsForClasses: listScheduledLessonsForClassesAdmin,
   getScheduledLessonById: getScheduledLessonByIdAdmin,
   getMethodologyLessonById: getMethodologyLessonByIdAdmin,
@@ -90,6 +98,21 @@ export async function getStudentHomeworkReadModel(
   deps: StudentHomeworkDeps = defaultDeps,
 ) {
   const lessons = await deps.listScheduledLessonsForClasses(input.classIds);
+  const classLabelRows = await Promise.allSettled(
+    input.classIds.map((classId) => deps.getClassById(classId)),
+  );
+  const classLabelById = Object.fromEntries(
+    classLabelRows
+      .filter(
+        (
+          row,
+        ): row is PromiseFulfilledResult<
+          NonNullable<Awaited<ReturnType<typeof deps.getClassById>>>
+        > => row.status === "fulfilled" && Boolean(row.value),
+      )
+      .map((row) => [row.value.id, row.value.name?.trim() || "Группа"]),
+  );
+  const teacherLabelById = new Map<string, string>();
   const cards: StudentHomeworkCard[] = [];
 
   for (const lesson of lessons) {
@@ -101,6 +124,18 @@ export async function getStudentHomeworkReadModel(
       deps.getMethodologyLessonById(lesson.methodologyLessonId),
       deps.listStudentHomeworkAssignmentsByScheduledAssignment(assignment.id),
     ]);
+    const assignedTeacherId = assignment.assignedByTeacherId?.trim() ?? "";
+    if (assignedTeacherId && !teacherLabelById.has(assignedTeacherId)) {
+      try {
+        const labelsById = await deps.listTeacherLabelsByIds([assignedTeacherId]);
+        teacherLabelById.set(
+          assignedTeacherId,
+          labelsById[assignedTeacherId] ?? "Преподаватель не указан",
+        );
+      } catch {
+        teacherLabelById.set(assignedTeacherId, "Преподаватель не указан");
+      }
+    }
 
     const studentAssignment = perStudent.find((item) => item.studentId === input.studentId);
     if (!homeworkDefinition || !studentAssignment) continue;
@@ -109,6 +144,10 @@ export async function getStudentHomeworkReadModel(
 
     cards.push({
       classId: lesson.runtimeShell.classId,
+      groupLabel: classLabelById[lesson.runtimeShell.classId] ?? "Группа",
+      teacherLabel: assignedTeacherId
+        ? (teacherLabelById.get(assignedTeacherId) ?? "Преподаватель не указан")
+        : "Преподаватель не указан",
       scheduledLessonId: lesson.id,
       scheduledHomeworkAssignmentId: assignment.id,
       lessonTitle: methodologyLesson?.shell.title ?? "Урок",
