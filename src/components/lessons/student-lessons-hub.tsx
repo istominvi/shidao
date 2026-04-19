@@ -44,7 +44,9 @@ function formatMonthLabel(isoDate: string) {
     month: "long",
     year: "numeric",
     timeZone: "UTC",
-  }).format(new Date(`${isoDate}T00:00:00Z`));
+  })
+    .format(new Date(`${isoDate}T00:00:00Z`))
+    .replace(/\sг\.$/u, "");
 }
 
 function shiftMonth(current: string, delta: number) {
@@ -171,18 +173,18 @@ export function StudentLessonsHub({ hub }: { hub: StudentLessonsHubReadModel }) 
               <button
                 type="button"
                 onClick={() => setActiveDateIso(shiftMonth(activeDateIso, -1))}
-                className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-black/10 text-sm hover:bg-neutral-50"
+                className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-black/10 text-sm hover:bg-neutral-50"
                 aria-label="Предыдущий месяц"
               >
                 <ChevronLeft size={16} />
               </button>
-              <span className="min-w-[140px] flex-1 px-1 text-center text-sm font-semibold capitalize text-neutral-700">
+              <span className="min-w-[140px] flex-1 px-1 text-center text-sm font-medium capitalize text-neutral-700">
                 {formatMonthLabel(activeDateIso)}
               </span>
               <button
                 type="button"
                 onClick={() => setActiveDateIso(shiftMonth(activeDateIso, 1))}
-                className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-black/10 text-sm hover:bg-neutral-50"
+                className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-black/10 text-sm hover:bg-neutral-50"
                 aria-label="Следующий месяц"
               >
                 <ChevronRight size={16} />
