@@ -563,7 +563,11 @@ export async function getUserContextById(
     }) ??
     null;
   const resolvedEmail = authUser?.email ?? fallback?.email ?? null;
-  const metadataRole = authUser?.user_metadata?.role?.trim().toLowerCase();
+  const metadataRoleRaw = authUser?.user_metadata?.role;
+  const metadataRole =
+    typeof metadataRoleRaw === "string"
+      ? metadataRoleRaw.trim().toLowerCase()
+      : null;
   const metadataSuggestsStudent = metadataRole === "student";
   const emailSuggestsStudent = isStudentInternalAuthEmail(resolvedEmail);
   const fallbackSuggestsStudent = fallback?.expectedActorKind === "student";
