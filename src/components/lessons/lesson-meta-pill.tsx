@@ -52,13 +52,22 @@ const lessonMetaToneMap: Record<LessonMetaTone, ChipTone> = {
   muted: "slate",
 };
 
+const lessonMetaToneByIcon: Partial<Record<LessonMetaIconKey, LessonMetaTone>> = {
+  status: "info",
+  datetime: "primary",
+  teacher: "success",
+  group: "primary",
+  format: "warning",
+  methodology: "muted",
+};
+
 export function LessonMetaRail({ children }: { children: ReactNode }) {
   return <div className="lesson-meta-rail">{children}</div>;
 }
 
 export function LessonMetaPill({
   label,
-  tone = "neutral",
+  tone,
   icon,
   size = "md",
 }: {
@@ -67,9 +76,11 @@ export function LessonMetaPill({
   icon?: LessonMetaIconKey;
   size?: ChipSize;
 }) {
+  const resolvedTone =
+    tone ?? (icon ? lessonMetaToneByIcon[icon] : undefined) ?? "neutral";
   return (
     <Chip
-      tone={lessonMetaToneMap[tone]}
+      tone={lessonMetaToneMap[resolvedTone]}
       size={size}
       icon={icon ? lessonMetaIconMap[icon] : undefined}
     >

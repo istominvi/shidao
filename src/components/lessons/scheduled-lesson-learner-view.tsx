@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { LessonLearnerContentDeck } from "@/components/lessons/lesson-learner-content-deck";
 import { productButtonClassName } from "@/components/ui/button";
 import { SurfaceCard } from "@/components/ui/surface-card";
@@ -21,6 +22,7 @@ export function ScheduledLessonLearnerView({
     | ScheduledLessonPreviewView;
 }) {
   const modelHomework = model.role === "student" ? model.homework : null;
+  const router = useRouter();
   const [liveState, setLiveState] = useState(model.liveState);
   const [studentHomework, setStudentHomework] = useState(modelHomework);
   const [studentTab, setStudentTab] = useState<"lesson" | "homework">(
@@ -58,6 +60,12 @@ export function ScheduledLessonLearnerView({
     }, 2000);
     return () => window.clearInterval(timer);
   }, [liveState.runtimeStatus, model.scheduledLessonId]);
+
+  useEffect(() => {
+    if (model.role !== "student") return;
+    if (liveState.runtimeStatus === model.runtimeStatus) return;
+    router.refresh();
+  }, [liveState.runtimeStatus, model.role, model.runtimeStatus, router]);
 
   useEffect(() => {
     if (model.role !== "student" || studentHomework) return;
@@ -102,38 +110,36 @@ export function ScheduledLessonLearnerView({
   const lessonPanel = (
     <>
       {liveState.runtimeStatus === "planned" ? (
-        <SurfaceCard>
+        <div className="rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3">
           <p className="text-base font-semibold text-neutral-900">Учитель ещё не начал урок</p>
-        </SurfaceCard>
+        </div>
       ) : null}
       {liveState.runtimeStatus === "cancelled" ? (
-        <SurfaceCard>
+        <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3">
           <p className="text-base font-semibold text-neutral-900">Урок отменён</p>
           <p className="mt-2 text-sm text-neutral-700">Пожалуйста, дождитесь нового расписания от преподавателя.</p>
-        </SurfaceCard>
+        </div>
       ) : null}
       {liveState.runtimeStatus !== "planned" &&
       liveState.runtimeStatus !== "cancelled" ? (
-        <SurfaceCard>
-          <LessonLearnerContentDeck
-            steps={model.unifiedReadModel.steps}
-            source={model.studentContent}
-            unavailableReason={model.studentContentUnavailableReason}
-            assetsById={model.unifiedReadModel.assetsById}
-            mode={learnerMode}
-            controlledStepId={
-              learnerMode === "student_live_locked" ? controlledStepId ?? undefined : undefined
-            }
-          />
-        </SurfaceCard>
+        <LessonLearnerContentDeck
+          steps={model.unifiedReadModel.steps}
+          source={model.studentContent}
+          unavailableReason={model.studentContentUnavailableReason}
+          assetsById={model.unifiedReadModel.assetsById}
+          mode={learnerMode}
+          controlledStepId={
+            learnerMode === "student_live_locked" ? controlledStepId ?? undefined : undefined
+          }
+        />
       ) : null}
     </>
   );
 
   const homeworkPanel =
     model.role === "student" && studentHomework ? (
-      <SurfaceCard>
-        <article className="mt-3 rounded-2xl border border-neutral-200 bg-white p-3">
+      <section>
+        <article className="rounded-2xl border border-neutral-200 bg-white p-3">
           <p className="font-semibold text-neutral-900">
             {studentHomework.homeworkTitle}
           </p>
@@ -158,59 +164,59 @@ export function ScheduledLessonLearnerView({
             <StudentHomeworkQuizCard item={studentHomework} />
           )}
         </article>
-      </SurfaceCard>
+      </section>
     ) : (
-      <SurfaceCard>
+      <section className="rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3">
         <p className="text-sm text-neutral-600">Домашнее задание пока не выдано.</p>
-      </SurfaceCard>
+      </section>
     );
 
   return (
     <div className="space-y-5">
       {model.role === "student" ? (
-        <div className="border-b border-neutral-200 pb-4">
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              className={classNames(
-                productButtonClassName("secondary", "text-sm"),
-                "cursor-pointer",
-                studentTab === "lesson" &&
-                  "!border-neutral-900 !bg-neutral-900 !text-white shadow-[0_10px_20px_rgba(15,23,42,0.08)] hover:!border-neutral-900 hover:!bg-neutral-900 hover:!text-white",
-              )}
-              onClick={() => setStudentTab("lesson")}
-              aria-pressed={studentTab === "lesson"}
-            >
-              Урок
-            </button>
-            <span className="h-6 w-px bg-neutral-200" aria-hidden="true" />
-            <button
-              type="button"
-              className={classNames(
-                productButtonClassName("secondary", "text-sm"),
-                studentHomework ? "cursor-pointer" : "cursor-not-allowed opacity-60",
-                studentTab === "homework" &&
-                  studentHomework &&
-                  "!border-neutral-900 !bg-neutral-900 !text-white shadow-[0_10px_20px_rgba(15,23,42,0.08)] hover:!border-neutral-900 hover:!bg-neutral-900 hover:!text-white",
-              )}
-              onClick={() => {
-                if (!studentHomework) return;
-                setStudentTab("homework");
-              }}
-              aria-pressed={studentTab === "homework"}
-              disabled={!studentHomework}
-            >
-              Домашнее задание
-            </button>
+        <SurfaceCard as="section" className="p-5 md:p-6" bodyClassName="mt-0">
+          <div className="border-b border-neutral-200 pb-4">
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                className={classNames(
+                  productButtonClassName("secondary", "text-sm"),
+                  "cursor-pointer",
+                  studentTab === "lesson" &&
+                    "!border-neutral-900 !bg-neutral-900 !text-white shadow-[0_10px_20px_rgba(15,23,42,0.08)] hover:!border-neutral-900 hover:!bg-neutral-900 hover:!text-white",
+                )}
+                onClick={() => setStudentTab("lesson")}
+                aria-pressed={studentTab === "lesson"}
+              >
+                Урок
+              </button>
+              <button
+                type="button"
+                className={classNames(
+                  productButtonClassName("secondary", "text-sm"),
+                  studentHomework ? "cursor-pointer" : "cursor-not-allowed opacity-60",
+                  studentTab === "homework" &&
+                    studentHomework &&
+                    "!border-neutral-900 !bg-neutral-900 !text-white shadow-[0_10px_20px_rgba(15,23,42,0.08)] hover:!border-neutral-900 hover:!bg-neutral-900 hover:!text-white",
+                )}
+                onClick={() => {
+                  if (!studentHomework) return;
+                  setStudentTab("homework");
+                }}
+                aria-pressed={studentTab === "homework"}
+                disabled={!studentHomework}
+              >
+                Домашнее задание
+              </button>
+            </div>
           </div>
-        </div>
+          <div className="mt-5">
+            {studentTab === "lesson" ? lessonPanel : homeworkPanel}
+          </div>
+        </SurfaceCard>
       ) : null}
 
-      {model.role === "student"
-        ? studentTab === "lesson"
-          ? lessonPanel
-          : homeworkPanel
-        : lessonPanel}
+      {model.role !== "student" ? lessonPanel : null}
 
       {model.role === "student" && model.communication.length > 0 ? (
         <SurfaceCard title="Обсуждение по уроку">
