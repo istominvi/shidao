@@ -48,7 +48,7 @@ export default async function DashboardIndexPage({
   const context = resolution.context;
 
   if (context.actorKind === "student") {
-    redirect(ROUTES.schedule);
+    redirect(ROUTES.lessons);
   }
 
   if (context.activeProfile === "teacher") {

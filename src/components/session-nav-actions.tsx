@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import { LogOut, Settings } from "lucide-react";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
-import { ROUTES, type ProfileKind } from "@/lib/auth";
+import { isStudentInternalAuthEmail, ROUTES, type ProfileKind } from "@/lib/auth";
 import { signOutViaServer } from "@/lib/auth-flow";
 import { useSessionView } from "@/components/use-session-view";
 import type { SessionAdultView, SessionStudentView } from "@/lib/session-view";
@@ -58,6 +58,9 @@ export function SessionNavActions({
   const [actionLoading, setActionLoading] = useState<ActionLoadingState>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const isSwitchBusy = actionLoading?.startsWith("switch:") ?? false;
+  const shouldHideStudentInternalEmail =
+    state.kind === "student" && isStudentInternalAuthEmail(state.email);
+  const emailLabel = shouldHideStudentInternalEmail ? null : state.email;
   const profileItems: Array<{
     value: ProfileKind;
     label: string;
@@ -212,9 +215,9 @@ export function SessionNavActions({
           <p className="truncate text-sm font-semibold text-neutral-900">
             {state.fullName ?? "Пользователь"}
           </p>
-          <p className="truncate text-xs text-neutral-500">
-            {state.email ?? "Без email"}
-          </p>
+          {emailLabel ? (
+            <p className="truncate text-xs text-neutral-500">{emailLabel}</p>
+          ) : null}
         </div>
       </div>
 
@@ -252,6 +255,16 @@ export function SessionNavActions({
       ) : null}
 
       <div className="border-t border-black/5 px-1 py-1.5">
+        {state.kind === "student" ? (
+          <Link
+            href={ROUTES.lessons}
+            className={navigationDropdownItemClass()}
+            onClick={() => setOpen(false)}
+            role="menuitem"
+          >
+            Кабинет ученика
+          </Link>
+        ) : null}
         <Link
           href={ROUTES.settingsProfile}
           className={navigationDropdownItemClass()}

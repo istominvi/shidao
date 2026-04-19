@@ -68,14 +68,8 @@ export const PRIMARY_NAV_CONFIG: Record<PrimaryNavConfig["id"], PrimaryNavConfig
       {
         id: "schedule",
         label: "Расписание",
-        href: ROUTES.schedule,
-        isActive: (pathname) => isRouteWithin(pathname, ROUTES.schedule),
-      },
-      {
-        id: "homework",
-        label: "Домашнее задание",
-        href: ROUTES.homework,
-        isActive: (pathname) => isRouteWithin(pathname, ROUTES.homework),
+        href: ROUTES.lessons,
+        isActive: (pathname) => isRouteWithin(pathname, ROUTES.lessons),
       },
     ],
   },
