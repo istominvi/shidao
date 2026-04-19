@@ -204,7 +204,7 @@ export function SessionNavActions({
       id={menuId}
       role="menu"
       aria-label="Меню пользователя"
-      className={`w-72 ${portalMenu ? "fixed z-[260]" : "absolute right-0 z-[120] mt-2"}`}
+      className={`w-fit ${portalMenu ? "fixed z-[260]" : "absolute right-0 z-[120] mt-2"}`}
       style={portalMenu && menuPosition ? menuPosition : undefined}
     >
       <div className="nav-dropdown-profile">
