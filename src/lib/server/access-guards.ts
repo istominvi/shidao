@@ -30,3 +30,27 @@ export function resolveAuthEntryRedirect(status: AccessResolution["status"]) {
 
   return null;
 }
+
+export function resolveOnboardingRedirect(
+  status: AccessResolution["status"],
+  options?: { mode?: string | null },
+) {
+  if (status === "guest" || status === "degraded") {
+    return ROUTES.login;
+  }
+
+  if (status === "student") {
+    return ROUTES.dashboard;
+  }
+
+  if (
+    status === "adult-with-profile" &&
+    (options?.mode === null ||
+      options?.mode === undefined ||
+      options.mode !== "add-profile")
+  ) {
+    return ROUTES.dashboard;
+  }
+
+  return null;
+}

@@ -45,6 +45,12 @@ export function toStudentInternalAuthEmail(login: string) {
   return `${normalizeIdentifier(login)}@${STUDENT_AUTH_DOMAIN}`;
 }
 
+export function isStudentInternalAuthEmail(email: string | null | undefined) {
+  if (!email) return false;
+  const [, domain = ""] = normalizeIdentifier(email).split("@");
+  return domain === STUDENT_AUTH_DOMAIN;
+}
+
 export function toProfileLabel(profile: ProfileKind) {
   return PROFILE_LABELS[profile];
 }

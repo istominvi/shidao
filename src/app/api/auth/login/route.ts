@@ -1,16 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { AUTH_MESSAGES, ROUTES, isEmail } from "@/lib/auth";
+import { AUTH_MESSAGES, isEmail } from "@/lib/auth";
 import { afterLogin } from "@/lib/auth-redirects";
 import { apiError, parseJsonWithSchema } from "@/lib/server/api";
 import { writeAppSession } from "@/lib/server/app-session";
 import { logger } from "@/lib/server/logger";
+import { resolvePostLoginRedirectForContext } from "@/lib/server/post-login-redirect";
 import { hitRateLimit } from "@/lib/server/rate-limit";
 import { loginPayloadSchema } from "@/lib/server/validation";
 import {
   ensureUserPreference,
   findStudentAuthEmail,
   getUserContextById,
-  resolvePostLoginRedirect,
   trySignInWithPassword,
   verifyUserPin,
 } from "@/lib/server/supabase-admin";
@@ -71,25 +71,39 @@ export async function POST(req: NextRequest) {
 
     if (passwordSession?.user?.id) {
       const userId = passwordSession.user.id;
+      stage = "load-user-context-password";
+      const context = await getUserContextById(userId, {
+        email: passwordSession.user.email ?? resolvedEmail,
+        fullName: passwordSession.user.user_metadata?.full_name ?? null,
+        expectedActorKind: candidateUserId ? "student" : "adult",
+      });
+
       stage = "write-session-password";
       await writeAppSession({
         uid: userId,
-        email: passwordSession.user.email ?? null,
-        fullName: passwordSession.user.user_metadata?.full_name ?? null,
+        email: context.email,
+        fullName: context.fullName,
       });
 
-      stage = "ensure-user-preference-password";
-      try {
-        await ensureUserPreference(userId);
-      } catch (error) {
-        logger.error(
-          "[auth-login] ensureUserPreference failed after successful password auth",
-          { userId, error },
-        );
+      if (context.actorKind === "adult") {
+        stage = "ensure-user-preference-password";
+        try {
+          await ensureUserPreference(userId);
+        } catch (error) {
+          logger.error(
+            "[auth-login] ensureUserPreference failed after successful password auth",
+            { userId, error },
+          );
+        }
       }
 
       stage = "resolve-post-login-route-password";
-      const redirectTo = afterLogin(await resolvePostLoginRedirect(userId));
+      const redirectTo = afterLogin(
+        resolvePostLoginRedirectForContext({
+          actorKind: context.actorKind,
+          hasAnyAdultProfile: context.hasAnyAdultProfile,
+        }),
+      );
       return NextResponse.json({ redirectTo });
     }
 
@@ -100,6 +114,7 @@ export async function POST(req: NextRequest) {
         stage = "load-student-context";
         const context = await getUserContextById(candidateUserId, {
           email: resolvedEmail,
+          expectedActorKind: "student",
         });
 
         stage = "write-session-pin";
@@ -109,17 +124,26 @@ export async function POST(req: NextRequest) {
           fullName: context.fullName,
         });
 
-        stage = "ensure-user-preference-pin";
-        try {
-          await ensureUserPreference(candidateUserId);
-        } catch (error) {
-          logger.error(
-            "[auth-login] ensureUserPreference failed after successful pin auth",
-            { userId: candidateUserId, error },
-          );
+        if (context.actorKind === "adult") {
+          stage = "ensure-user-preference-pin";
+          try {
+            await ensureUserPreference(candidateUserId);
+          } catch (error) {
+            logger.error(
+              "[auth-login] ensureUserPreference failed after successful pin auth",
+              { userId: candidateUserId, error },
+            );
+          }
         }
 
-        return NextResponse.json({ redirectTo: afterLogin(ROUTES.dashboard) });
+        return NextResponse.json({
+          redirectTo: afterLogin(
+            resolvePostLoginRedirectForContext({
+              actorKind: context.actorKind,
+              hasAnyAdultProfile: context.hasAnyAdultProfile,
+            }),
+          ),
+        });
       }
     }
 
