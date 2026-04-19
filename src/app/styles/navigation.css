@@ -3,6 +3,7 @@
   --header-shell-radius: 1.6rem;
   --header-shell-padding-y: 0.625rem;
   --header-shell-padding-x: 1.25rem;
+  --header-shell-padding-right: 0.625rem;
   --header-shell-border: rgba(255, 255, 255, 0.72);
   --header-shell-bg: rgba(255, 255, 255, 0.82);
   --header-shell-shadow:
@@ -28,7 +29,7 @@
   border-radius: var(--header-shell-radius);
   border: 1px solid var(--header-shell-border);
   background: var(--header-shell-bg);
-  padding: var(--header-shell-padding-y) var(--header-shell-padding-x);
+  padding: var(--header-shell-padding-y) var(--header-shell-padding-right) var(--header-shell-padding-y) var(--header-shell-padding-x);
   box-shadow: var(--header-shell-shadow);
 }
 
@@ -180,7 +181,7 @@
   border-radius: var(--header-pill-radius);
   border: none;
   background: transparent;
-  padding: 0.35rem 0.55rem;
+  padding: 0.45rem var(--header-pill-padding-x);
   font-size: 0.9rem;
   font-weight: 600;
   transition:
