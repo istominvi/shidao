@@ -83,6 +83,10 @@ export function StudentLessonsHub({ hub }: { hub: StudentLessonsHubReadModel }) 
     () => filteredEvents.slice().sort((a, b) => Date.parse(a.startsAt) - Date.parse(b.startsAt)),
     [filteredEvents],
   );
+  const tableEvents = useMemo(
+    () => sortedFilteredEvents.slice().sort((a, b) => Date.parse(b.startsAt) - Date.parse(a.startsAt)),
+    [sortedFilteredEvents],
+  );
 
   const monthEvents = useMemo(() => {
     const monthStart = new Date(`${activeDateIso}T00:00:00Z`);
@@ -189,7 +193,7 @@ export function StudentLessonsHub({ hub }: { hub: StudentLessonsHubReadModel }) 
 
         <div className="mt-5">
           {displayMode === "table" ? (
-            <StudentLessonsTable events={sortedFilteredEvents} nowIso={hub.nowIso} />
+            <StudentLessonsTable events={tableEvents} nowIso={hub.nowIso} />
           ) : (
             <>
               <StudentMonthView
@@ -245,15 +249,15 @@ function StudentLessonsTable({
     <>
       <div className="hidden overflow-x-auto rounded-2xl border border-neutral-200 bg-white md:block">
         <table className="min-w-full divide-y divide-neutral-200 text-sm">
-          <thead className="bg-neutral-50 text-sm font-semibold text-neutral-600">
-            <tr>
-              <th className="h-10 px-3 text-left align-middle">Дата</th>
-              <th className="h-10 px-3 text-left align-middle">Время</th>
-              <th className="h-10 px-3 text-left align-middle">Урок</th>
-              <th className="h-10 px-3 text-left align-middle">Учитель</th>
-              <th className="h-10 px-3 text-left align-middle">Группа</th>
-              <th className="h-10 px-3 text-left align-middle">Формат</th>
-              <th className="h-10 px-3 text-left align-middle">ДЗ</th>
+          <thead className="bg-neutral-50 text-xs uppercase tracking-wide text-neutral-500">
+            <tr className="h-10">
+              <th className="px-4 py-0 text-left align-middle">Дата</th>
+              <th className="px-4 py-0 text-left align-middle">Время</th>
+              <th className="px-4 py-0 text-left align-middle">Урок</th>
+              <th className="px-4 py-0 text-left align-middle">Учитель</th>
+              <th className="px-4 py-0 text-left align-middle">Группа</th>
+              <th className="px-4 py-0 text-left align-middle">Формат</th>
+              <th className="px-4 py-0 text-left align-middle">ДЗ</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-neutral-100">
