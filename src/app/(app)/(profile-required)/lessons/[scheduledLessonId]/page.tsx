@@ -3,6 +3,8 @@ import { AppPageHeader } from "@/components/app/page-header";
 import {
   LessonMetaPill,
   LessonMetaRail,
+  type LessonMetaIconKey,
+  type LessonMetaTone,
 } from "@/components/lessons/lesson-meta-pill";
 import { ScheduledLessonLearnerView } from "@/components/lessons/scheduled-lesson-learner-view";
 import { TeacherLessonWorkspace } from "@/components/lessons/teacher-lesson-workspace";
@@ -35,6 +37,23 @@ function formatLessonDateLabel(startsAt: string) {
     hour: "2-digit",
     minute: "2-digit",
   }).format(date);
+}
+
+function runtimeStatusMeta(status: "planned" | "in_progress" | "completed" | "cancelled"): {
+  label: string;
+  icon: LessonMetaIconKey;
+  tone: LessonMetaTone;
+} {
+  if (status === "in_progress") {
+    return { label: "Урок начался", icon: "status", tone: "success" };
+  }
+  if (status === "completed") {
+    return { label: "Урок окончен", icon: "readiness", tone: "muted" };
+  }
+  if (status === "cancelled") {
+    return { label: "Урок отменён", icon: "readiness", tone: "muted" };
+  }
+  return { label: "Урок запланирован", icon: "datetime", tone: "primary" };
 }
 
 export default async function ScheduledLessonPage({
@@ -100,6 +119,8 @@ export default async function ScheduledLessonPage({
       notFound();
     }
 
+    const runtimeMeta = runtimeStatusMeta(view.runtimeStatus);
+
     return (
       <main className="pb-12">
         <div className="landing-noise" aria-hidden="true" />
@@ -112,16 +133,9 @@ export default async function ScheduledLessonPage({
             meta={
               <LessonMetaRail>
                 <LessonMetaPill
-                  icon="status"
-                  label={
-                    view.runtimeStatus === "in_progress"
-                      ? "Урок начался"
-                      : view.runtimeStatus === "completed"
-                        ? "Урок окончен"
-                        : view.runtimeStatus === "cancelled"
-                          ? "Урок отменён"
-                          : "Урок запланирован"
-                  }
+                  icon={runtimeMeta.icon}
+                  tone={runtimeMeta.tone}
+                  label={runtimeMeta.label}
                 />
                 <LessonMetaPill
                   icon="datetime"
@@ -155,6 +169,8 @@ export default async function ScheduledLessonPage({
     }
     if (!view) notFound();
 
+    const runtimeMeta = runtimeStatusMeta(view.runtimeStatus);
+
     return (
       <main className="pb-12">
         <div className="landing-noise" aria-hidden="true" />
@@ -170,16 +186,9 @@ export default async function ScheduledLessonPage({
             meta={
               <LessonMetaRail>
                 <LessonMetaPill
-                  icon="status"
-                  label={
-                    view.runtimeStatus === "in_progress"
-                      ? "Урок начался"
-                      : view.runtimeStatus === "completed"
-                        ? "Урок окончен"
-                        : view.runtimeStatus === "cancelled"
-                          ? "Урок отменён"
-                          : "Урок запланирован"
-                  }
+                  icon={runtimeMeta.icon}
+                  tone={runtimeMeta.tone}
+                  label={runtimeMeta.label}
                 />
                 <LessonMetaPill
                   icon="datetime"
@@ -219,6 +228,8 @@ export default async function ScheduledLessonPage({
       });
     }
 
+    const runtimeMeta = preview ? runtimeStatusMeta(preview.runtimeStatus) : null;
+
     return (
       <main className="pb-12">
         <div className="landing-noise" aria-hidden="true" />
@@ -236,16 +247,9 @@ export default async function ScheduledLessonPage({
                 meta={
                   <LessonMetaRail>
                     <LessonMetaPill
-                      icon="status"
-                      label={
-                        preview.runtimeStatus === "in_progress"
-                          ? "Урок начался"
-                          : preview.runtimeStatus === "completed"
-                            ? "Урок окончен"
-                            : preview.runtimeStatus === "cancelled"
-                              ? "Урок отменён"
-                              : "Урок запланирован"
-                      }
+                      icon={runtimeMeta?.icon ?? "datetime"}
+                      tone={runtimeMeta?.tone}
+                      label={runtimeMeta?.label ?? "Урок запланирован"}
                     />
                     <LessonMetaPill
                       icon="datetime"
