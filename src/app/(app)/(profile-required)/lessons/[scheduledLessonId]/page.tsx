@@ -106,7 +106,7 @@ export default async function ScheduledLessonPage({
         <TopNav />
         <div className="container app-page-container space-y-6">
           <AppPageHeader
-            title={view.runtimeStatus === "completed" ? "Урок окончен" : view.lessonTitle}
+            title={view.lessonTitle}
             meta={
               <LessonMetaRail>
                 <LessonMetaPill
@@ -114,9 +114,9 @@ export default async function ScheduledLessonPage({
                   tone="info"
                   label={
                     view.runtimeStatus === "in_progress"
-                      ? "Идёт урок"
+                      ? "Урок начался"
                       : view.runtimeStatus === "completed"
-                        ? "Урок завершён"
+                        ? "Урок окончен"
                         : view.runtimeStatus === "cancelled"
                           ? "Урок отменён"
                           : "Урок запланирован"
@@ -127,6 +127,9 @@ export default async function ScheduledLessonPage({
                   tone="neutral"
                   label={formatLessonDateLabel(view.startsAt)}
                 />
+                <LessonMetaPill icon="teacher" tone="neutral" label={view.teacherLabel} />
+                <LessonMetaPill icon="group" tone="neutral" label={view.groupLabel} />
+                <LessonMetaPill icon="format" tone="muted" label={view.formatLabel} />
               </LessonMetaRail>
             }
           />

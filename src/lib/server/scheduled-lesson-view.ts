@@ -5,6 +5,7 @@ import {
 import {
   listAssignedClassIdsForTeacherAdmin,
   listClassIdsForStudentAdmin,
+  listTeacherLabelsForClassIdsAdmin,
 } from "./lesson-content-repository";
 import { getParentHomeworkProjection } from "./parent-homework";
 import { loadParentLearningContextsByUser } from "./supabase-admin";
@@ -33,6 +34,9 @@ export type ScheduledLessonLearnerSharedView = {
   classId: string;
   lessonTitle: string;
   lessonSubtitle?: string;
+  teacherLabel: string;
+  groupLabel: string;
+  formatLabel: string;
   startsAt: string;
   runtimeStatus: "planned" | "in_progress" | "completed" | "cancelled";
   liveState: ScheduledLessonLiveState;
@@ -100,6 +104,12 @@ async function getStudentHomeworkCardForScheduledLesson(input: {
 async function getLearnerSharedProjection(scheduledLessonId: string) {
   const seed = await loadScheduledLessonUnifiedSeedAdmin(scheduledLessonId);
   if (!seed) return null;
+  const teacherLabelsByClass = await listTeacherLabelsForClassIdsAdmin([
+    seed.scheduledLesson.runtimeShell.classId,
+  ]);
+  const teacherLabels =
+    teacherLabelsByClass[seed.scheduledLesson.runtimeShell.classId] ?? [];
+  const teacherLabel = teacherLabels.join(", ") || "Преподаватель не указан";
   const workspaceProjection = buildTeacherLessonWorkspaceReadModel({
     projection: seed.projection,
     scheduledLessonId: seed.scheduledLesson.id,
@@ -137,6 +147,9 @@ async function getLearnerSharedProjection(scheduledLessonId: string) {
       classId: seed.scheduledLesson.runtimeShell.classId,
       lessonTitle: seed.methodologyLesson.shell.title,
       lessonSubtitle: seed.studentContent?.subtitle,
+      teacherLabel,
+      groupLabel: seed.classDisplayName?.trim() || "Группа",
+      formatLabel: seed.scheduledLesson.runtimeShell.format === "online" ? "Онлайн" : "Офлайн",
       startsAt: seed.scheduledLesson.runtimeShell.startsAt,
       runtimeStatus: seed.scheduledLesson.runtimeShell.runtimeStatus,
       liveState: workspaceProjection.liveState,

@@ -7,6 +7,7 @@ import {
   Layers3,
   Monitor,
   PlayCircle,
+  UserRound,
   Users,
 } from "lucide-react";
 import type { ReactNode } from "react";
@@ -27,7 +28,8 @@ export type LessonMetaIconKey =
   | "position"
   | "duration"
   | "readiness"
-  | "methodology";
+  | "methodology"
+  | "teacher";
 
 export const lessonMetaIconMap: Record<LessonMetaIconKey, LucideIcon> = {
   group: Users,
@@ -38,6 +40,7 @@ export const lessonMetaIconMap: Record<LessonMetaIconKey, LucideIcon> = {
   duration: Clock3,
   readiness: CheckCircle2,
   methodology: BookOpen,
+  teacher: UserRound,
 };
 
 const lessonMetaToneMap: Record<LessonMetaTone, ChipTone> = {

@@ -2,8 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { LessonLearnerContentDeck } from "@/components/lessons/lesson-learner-content-deck";
+import { productButtonClassName } from "@/components/ui/button";
 import { SurfaceCard } from "@/components/ui/surface-card";
 import { StudentHomeworkQuizCard } from "@/components/dashboard/student-homework-quiz-card";
+import { classNames } from "@/lib/ui/classnames";
 import type {
   ParentScheduledLessonView,
   ScheduledLessonPreviewView,
@@ -20,8 +22,9 @@ export function ScheduledLessonLearnerView({
 }) {
   const modelHomework = model.role === "student" ? model.homework : null;
   const [liveState, setLiveState] = useState(model.liveState);
-  const [studentHomework, setStudentHomework] = useState(
-    modelHomework,
+  const [studentHomework, setStudentHomework] = useState(modelHomework);
+  const [studentTab, setStudentTab] = useState<"lesson" | "homework">(
+    modelHomework ? "homework" : "lesson",
   );
   useEffect(() => {
     setLiveState(model.liveState);
@@ -29,6 +32,11 @@ export function ScheduledLessonLearnerView({
   useEffect(() => {
     if (model.role !== "student") return;
     setStudentHomework(modelHomework);
+    if (modelHomework) {
+      setStudentTab("homework");
+      return;
+    }
+    setStudentTab("lesson");
   }, [model.role, modelHomework]);
 
   useEffect(() => {
@@ -91,25 +99,22 @@ export function ScheduledLessonLearnerView({
         ? "student_review"
         : "teacher_preview";
 
-  return (
-    <div className="space-y-5">
+  const lessonPanel = (
+    <>
       {liveState.runtimeStatus === "planned" ? (
-        <SurfaceCard title="Учитель ещё не начал урок" />
+        <SurfaceCard>
+          <p className="text-base font-semibold text-neutral-900">Учитель ещё не начал урок</p>
+        </SurfaceCard>
       ) : null}
       {liveState.runtimeStatus === "cancelled" ? (
-        <SurfaceCard title="Урок отменён">
-          <p className="text-sm text-neutral-700">Пожалуйста, дождитесь нового расписания от преподавателя.</p>
+        <SurfaceCard>
+          <p className="text-base font-semibold text-neutral-900">Урок отменён</p>
+          <p className="mt-2 text-sm text-neutral-700">Пожалуйста, дождитесь нового расписания от преподавателя.</p>
         </SurfaceCard>
       ) : null}
       {liveState.runtimeStatus !== "planned" &&
       liveState.runtimeStatus !== "cancelled" ? (
-        <SurfaceCard
-          title={
-            liveState.runtimeStatus === "completed"
-              ? "Урок окончен"
-              : "Урок начался"
-          }
-        >
+        <SurfaceCard>
           <LessonLearnerContentDeck
             steps={model.unifiedReadModel.steps}
             source={model.studentContent}
@@ -122,36 +127,90 @@ export function ScheduledLessonLearnerView({
           />
         </SurfaceCard>
       ) : null}
+    </>
+  );
 
-      {model.role === "student" && studentHomework ? (
-        <SurfaceCard title="Домашнее задание">
-          <article className="mt-3 rounded-2xl border border-neutral-200 bg-white p-3">
-            <p className="font-semibold text-neutral-900">
-              {studentHomework.homeworkTitle}
-            </p>
-            <p className="text-xs text-neutral-500">
-              {studentHomework.statusLabel} · Срок: {studentHomework.dueAt ?? "без срока"}
-            </p>
-            <p className="mt-2 text-sm text-neutral-700">{studentHomework.instructions}</p>
-            {studentHomework.kind === "practice_text" ? (
-              <form className="mt-2 space-y-2" action={`/api/student/homework/${studentHomework.studentHomeworkAssignmentId}/submit`} method="POST">
-                <textarea
-                  name="submissionText"
-                  defaultValue={studentHomework.submissionText ?? ""}
-                  rows={3}
-                  className="w-full rounded-xl border border-neutral-300 px-3 py-2 text-sm"
-                  placeholder="Напиши короткий ответ"
-                />
-                <button type="submit" className="rounded-xl bg-neutral-900 px-3 py-1.5 text-sm font-semibold text-white">
-                  Отправить
-                </button>
-              </form>
-            ) : (
-              <StudentHomeworkQuizCard item={studentHomework} />
-            )}
-          </article>
-        </SurfaceCard>
+  const homeworkPanel =
+    model.role === "student" && studentHomework ? (
+      <SurfaceCard>
+        <article className="mt-3 rounded-2xl border border-neutral-200 bg-white p-3">
+          <p className="font-semibold text-neutral-900">
+            {studentHomework.homeworkTitle}
+          </p>
+          <p className="text-xs text-neutral-500">
+            {studentHomework.statusLabel} · Срок: {studentHomework.dueAt ?? "без срока"}
+          </p>
+          <p className="mt-2 text-sm text-neutral-700">{studentHomework.instructions}</p>
+          {studentHomework.kind === "practice_text" ? (
+            <form className="mt-2 space-y-2" action={`/api/student/homework/${studentHomework.studentHomeworkAssignmentId}/submit`} method="POST">
+              <textarea
+                name="submissionText"
+                defaultValue={studentHomework.submissionText ?? ""}
+                rows={3}
+                className="w-full rounded-xl border border-neutral-300 px-3 py-2 text-sm"
+                placeholder="Напиши короткий ответ"
+              />
+              <button type="submit" className="rounded-xl bg-neutral-900 px-3 py-1.5 text-sm font-semibold text-white">
+                Отправить
+              </button>
+            </form>
+          ) : (
+            <StudentHomeworkQuizCard item={studentHomework} />
+          )}
+        </article>
+      </SurfaceCard>
+    ) : (
+      <SurfaceCard>
+        <p className="text-sm text-neutral-600">Домашнее задание пока не выдано.</p>
+      </SurfaceCard>
+    );
+
+  return (
+    <div className="space-y-5">
+      {model.role === "student" ? (
+        <div className="border-b border-neutral-200 pb-4">
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              className={classNames(
+                productButtonClassName("secondary", "text-sm"),
+                "cursor-pointer",
+                studentTab === "lesson" &&
+                  "!border-neutral-900 !bg-neutral-900 !text-white shadow-[0_10px_20px_rgba(15,23,42,0.08)] hover:!border-neutral-900 hover:!bg-neutral-900 hover:!text-white",
+              )}
+              onClick={() => setStudentTab("lesson")}
+              aria-pressed={studentTab === "lesson"}
+            >
+              Урок
+            </button>
+            <span className="h-6 w-px bg-neutral-200" aria-hidden="true" />
+            <button
+              type="button"
+              className={classNames(
+                productButtonClassName("secondary", "text-sm"),
+                studentHomework ? "cursor-pointer" : "cursor-not-allowed opacity-60",
+                studentTab === "homework" &&
+                  studentHomework &&
+                  "!border-neutral-900 !bg-neutral-900 !text-white shadow-[0_10px_20px_rgba(15,23,42,0.08)] hover:!border-neutral-900 hover:!bg-neutral-900 hover:!text-white",
+              )}
+              onClick={() => {
+                if (!studentHomework) return;
+                setStudentTab("homework");
+              }}
+              aria-pressed={studentTab === "homework"}
+              disabled={!studentHomework}
+            >
+              Домашнее задание
+            </button>
+          </div>
+        </div>
       ) : null}
+
+      {model.role === "student"
+        ? studentTab === "lesson"
+          ? lessonPanel
+          : homeworkPanel
+        : lessonPanel}
 
       {model.role === "student" && model.communication.length > 0 ? (
         <SurfaceCard title="Обсуждение по уроку">

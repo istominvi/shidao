@@ -32,11 +32,11 @@ test("learner lesson view renders shared learner deck", () => {
 test("scheduled learner view handles planned/completed/cancelled states", () => {
   assert.equal(source.includes("Учитель ещё не начал урок"), true);
   assert.equal(source.includes("Преподаватель откроет первый шаг"), false);
-  assert.equal(source.includes("Урок начался"), true);
-  assert.equal(source.includes("Урок окончен"), true);
   assert.equal(source.includes("Урок отменён"), true);
   assert.equal(source.includes("/api/lessons/${model.scheduledLessonId}/live-state"), true);
   assert.equal(source.includes("/api/student/lessons/${model.scheduledLessonId}/homework"), true);
+  assert.equal(source.includes("Домашнее задание пока не выдано."), true);
+  assert.equal(source.includes("setStudentTab(\"homework\")"), true);
   assert.equal(source.includes("window.clearInterval(timer)"), true);
   assert.equal(source.includes("catch {"), true);
 });
