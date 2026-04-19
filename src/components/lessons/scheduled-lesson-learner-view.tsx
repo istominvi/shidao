@@ -1,3 +1,6 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
 import { LessonLearnerContentDeck } from "@/components/lessons/lesson-learner-content-deck";
 import { SurfaceCard } from "@/components/ui/surface-card";
 import { StudentHomeworkQuizCard } from "@/components/dashboard/student-homework-quiz-card";
@@ -15,15 +18,77 @@ export function ScheduledLessonLearnerView({
     | ParentScheduledLessonView
     | ScheduledLessonPreviewView;
 }) {
+  const [liveState, setLiveState] = useState(model.liveState);
+  useEffect(() => {
+    setLiveState(model.liveState);
+  }, [model.liveState]);
+
+  useEffect(() => {
+    if (liveState.runtimeStatus !== "planned" && liveState.runtimeStatus !== "in_progress") {
+      return;
+    }
+    const timer = window.setInterval(async () => {
+      const response = await fetch(`/api/lessons/${model.scheduledLessonId}/live-state`, {
+        method: "GET",
+        cache: "no-store",
+      });
+      if (!response.ok) return;
+      const data = (await response.json()) as { liveState?: typeof liveState };
+      if (data.liveState) setLiveState(data.liveState);
+    }, 2000);
+    return () => window.clearInterval(timer);
+  }, [liveState.runtimeStatus, model.scheduledLessonId]);
+
+  const controlledStepId = useMemo(() => {
+    if (liveState.currentStepId) {
+      const match = model.unifiedReadModel.steps.find((step) => step.id === liveState.currentStepId);
+      if (match) return match.id;
+    }
+    if (liveState.currentStepOrder !== null) {
+      return (
+        model.unifiedReadModel.steps.find((step) => step.order === liveState.currentStepOrder)?.id ??
+        model.unifiedReadModel.steps[0]?.id ??
+        null
+      );
+    }
+    return model.unifiedReadModel.steps[0]?.id ?? null;
+  }, [liveState.currentStepId, liveState.currentStepOrder, model.unifiedReadModel.steps]);
+
+  const learnerMode =
+    liveState.runtimeStatus === "in_progress"
+      ? "student_live_locked"
+      : liveState.runtimeStatus === "completed"
+        ? "student_review"
+        : "teacher_preview";
+
   return (
     <div className="space-y-5">
-      <SurfaceCard title={model.studentContent?.title ?? model.lessonTitle} description={model.studentContent?.subtitle}>
-        <LessonLearnerContentDeck
-          source={model.studentContent}
-          unavailableReason={model.studentContentUnavailableReason}
-          assetsById={model.assetsById}
-        />
-      </SurfaceCard>
+      {liveState.runtimeStatus === "planned" ? (
+        <SurfaceCard title="Урок скоро начнётся">
+          <p className="text-sm text-neutral-700">Преподаватель откроет первый шаг.</p>
+        </SurfaceCard>
+      ) : null}
+      {liveState.runtimeStatus === "cancelled" ? (
+        <SurfaceCard title="Урок отменён">
+          <p className="text-sm text-neutral-700">Пожалуйста, дождитесь нового расписания от преподавателя.</p>
+        </SurfaceCard>
+      ) : null}
+      {liveState.runtimeStatus !== "planned" &&
+      liveState.runtimeStatus !== "cancelled" ? (
+        <SurfaceCard
+          title={model.studentContent?.title ?? model.lessonTitle}
+          description={model.studentContent?.subtitle}
+        >
+          <LessonLearnerContentDeck
+            steps={model.unifiedReadModel.steps}
+            source={model.studentContent}
+            unavailableReason={model.studentContentUnavailableReason}
+            assetsById={model.unifiedReadModel.assetsById}
+            mode={learnerMode}
+            controlledStepId={controlledStepId ?? undefined}
+          />
+        </SurfaceCard>
+      ) : null}
 
       {model.role === "student" && model.homework ? (
         <SurfaceCard title="Домашнее задание">

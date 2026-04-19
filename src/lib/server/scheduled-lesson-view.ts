@@ -26,8 +26,15 @@ import {
 } from "./communication-service";
 import {
   getTeacherLessonWorkspaceByScheduledLessonId,
+  buildTeacherLessonWorkspaceReadModel,
   type TeacherLessonWorkspaceReadModel,
 } from "./teacher-lesson-workspace";
+import { buildTeacherLessonProjection } from "../lesson-content";
+import {
+  mapScheduledLessonLiveState,
+  resolveActiveLessonStep,
+  type ScheduledLessonLiveState,
+} from "./scheduled-lesson-live-state";
 
 export type ScheduledLessonLearnerSharedView = {
   scheduledLessonId: string;
@@ -36,6 +43,9 @@ export type ScheduledLessonLearnerSharedView = {
   lessonSubtitle?: string;
   startsAt: string;
   runtimeStatus: "planned" | "in_progress" | "completed" | "cancelled";
+  liveState: ScheduledLessonLiveState;
+  controlledStepId: string | null;
+  unifiedReadModel: TeacherLessonWorkspaceReadModel["unifiedReadModel"];
   studentContent: MethodologyLessonStudentContent | null;
   studentContentUnavailableReason: "schema_missing" | "invalid_payload" | "load_failed" | null;
   assetsById: Record<string, ReusableAsset>;
@@ -186,6 +196,44 @@ async function getLearnerSharedProjection(scheduledLessonId: string) {
     }
   }
 
+  const projection = buildTeacherLessonProjection(
+    methodologyLesson,
+    scheduledLesson,
+  );
+  const workspaceProjection = buildTeacherLessonWorkspaceReadModel({
+    projection,
+    scheduledLessonId: scheduledLesson.id,
+    classId: scheduledLesson.runtimeShell.classId,
+    sourceLesson: {
+      methodologySlug: methodologyLesson.methodologySlug,
+      lessonId: methodologyLesson.id,
+      methodologyTitle: methodologyLesson.methodologyTitle ?? "Методика",
+      lessonTitle: methodologyLesson.shell.title,
+    },
+    assets,
+    homework: {
+      schemaReady: true,
+      definition: null,
+      assignment: null,
+      stats: {
+        assignedCount: 0,
+        submittedCount: 0,
+        reviewedCount: 0,
+        needsRevisionCount: 0,
+        averageScore: null,
+      },
+      roster: [],
+    },
+    studentContent,
+    studentContentAssets: assets,
+    liveState: mapScheduledLessonLiveState(scheduledLesson),
+  });
+  const controlledStepId =
+    resolveActiveLessonStep(
+      workspaceProjection.unifiedReadModel.steps,
+      workspaceProjection.liveState,
+    )?.id ?? null;
+
   return {
     shared: {
       scheduledLessonId,
@@ -194,6 +242,9 @@ async function getLearnerSharedProjection(scheduledLessonId: string) {
       lessonSubtitle: studentContent?.subtitle,
       startsAt: scheduledLesson.runtimeShell.startsAt,
       runtimeStatus: scheduledLesson.runtimeShell.runtimeStatus,
+      liveState: workspaceProjection.liveState,
+      controlledStepId,
+      unifiedReadModel: workspaceProjection.unifiedReadModel,
       studentContent,
       studentContentUnavailableReason,
       assetsById: Object.fromEntries(assets.map((asset) => [asset.id, asset])),

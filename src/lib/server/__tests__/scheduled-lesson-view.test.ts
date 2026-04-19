@@ -36,4 +36,7 @@ test("scheduled learner projection keeps fixture fallback hook for world-around-
   assert.equal(source.includes("getFixtureStudentContentFallback"), true);
   assert.equal(source.includes("studentContentUnavailableReason = null"), true);
   assert.equal(source.includes("lessonIndex"), true);
+  assert.equal(source.includes("liveState"), true);
+  assert.equal(source.includes("controlledStepId"), true);
+  assert.equal(source.includes("unifiedReadModel"), true);
 });

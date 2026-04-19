@@ -53,7 +53,7 @@ test("plan tab renders detailed pedagogical cards with phase and student preview
 });
 
 test("plan tab keeps local controls for student screen step selection", () => {
-  assert.equal(pedagogicalSource.includes("Показать на экране ученика"), true);
+  assert.equal(pedagogicalSource.includes("Показать ученикам"), true);
   assert.equal(pedagogicalSource.includes("Открыть экран ученика"), true);
   assert.equal(pedagogicalSource.includes("onOpenStudentScreen?.(step.id)"), true);
   assert.equal(workspaceSource.includes("setSelectedStepId(stepId);"), true);

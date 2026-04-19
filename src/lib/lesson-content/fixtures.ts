@@ -2238,6 +2238,7 @@ const lessonOneScheduledLesson: ScheduledLesson = {
     format: "offline",
     place: "Demo classroom A",
     runtimeStatus: "planned",
+    runtimeStudentNavigationLocked: true,
     runtimeNotesSummary: "Подготовить карточки и мягкие игрушки до начала урока.",
   },
   runtimeNotes: "Следить за равномерным участием детей в подвижных активностях.",
@@ -2254,6 +2255,7 @@ const lessonTwoScheduledLesson: ScheduledLesson = {
     format: "offline",
     place: "Demo classroom A",
     runtimeStatus: "planned",
+    runtimeStudentNavigationLocked: true,
     runtimeNotesSummary: "Подготовить звуки животных, маски и игрушечный дом.",
   },
   runtimeNotes:
@@ -2271,6 +2273,7 @@ const lessonThreeScheduledLesson: ScheduledLesson = {
     format: "offline",
     place: "Demo classroom A",
     runtimeStatus: "planned",
+    runtimeStudentNavigationLocked: true,
     runtimeNotesSummary: "Подготовить цветные карточки, игрушки животных и машинки.",
   },
   runtimeNotes:

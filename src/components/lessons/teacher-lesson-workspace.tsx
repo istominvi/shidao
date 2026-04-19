@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import type { TeacherLessonWorkspaceReadModel } from "@/lib/server/teacher-lesson-workspace";
 import { LessonStudentContentPanel } from "@/components/lessons/lesson-student-content-panel";
 import { TeacherLessonPedagogicalContent } from "@/components/lessons/teacher-lesson-pedagogical-content";
@@ -24,29 +25,29 @@ export function TeacherLessonWorkspace({
   workspace,
   runtimeFormFeedback,
 }: TeacherLessonWorkspaceProps) {
+  const router = useRouter();
   const [tab, setTab] = useState<TeacherLessonTabKey>("plan");
+  const [liveActionError, setLiveActionError] = useState<string | null>(null);
   const runtime = workspace.projection.runtimeShell;
-  const { quickSummary, lessonFlow } = workspace.presentation;
-  const planSteps = lessonFlow.map((step) => ({
-    id: step.id,
-    order: step.order,
-    title: step.title,
-    teacher: {
-      goal: step.description ?? null,
-      description: step.description ?? null,
-      teacherActions: step.teacherActions,
-      studentActions: step.studentActions,
-      teacherScript: step.pedagogicalDetails?.promptPatterns,
-      expectedResponses: step.pedagogicalDetails?.expectedStudentResponses,
-      materials: step.materials,
-      successCriteria: step.pedagogicalDetails?.successCriteria,
-    },
-    student: {
-      screenType: "placeholder" as const,
-      title: step.title,
-      instruction: "Следуйте указаниям преподавателя.",
-    },
-  }));
+  const { quickSummary } = workspace.unifiedReadModel;
+  const planSteps = workspace.unifiedReadModel.steps;
+
+  const callLiveAction = async (payload: Record<string, unknown>) => {
+    setLiveActionError(null);
+    const response = await fetch(
+      `/api/teacher/lessons/${workspace.scheduledLessonId}/live-state`,
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(payload),
+      },
+    );
+    if (!response.ok) {
+      const data = (await response.json().catch(() => ({}))) as { error?: string };
+      throw new Error(data.error ?? "Не удалось обновить live-состояние урока.");
+    }
+    router.refresh();
+  };
 
   return (
     <div className="space-y-8 lg:space-y-10">
@@ -61,6 +62,21 @@ export function TeacherLessonWorkspace({
           <TeacherLessonPedagogicalContent
             quickSummary={quickSummary}
             steps={planSteps}
+            activeStudentStepId={workspace.liveActiveStepId}
+            assetsById={workspace.unifiedReadModel.assetsById}
+            onShowOnStudentScreen={(stepId) => {
+              const step = workspace.unifiedReadModel.steps.find((item) => item.id === stepId);
+              if (!step) return;
+              void callLiveAction({
+                action: "set_step",
+                stepId: step.id,
+                stepOrder: step.order,
+              }).catch((error) => {
+                setLiveActionError(
+                  error instanceof Error ? error.message : "Не удалось показать шаг ученикам.",
+                );
+              });
+            }}
           />
         ) : null}
 
@@ -68,8 +84,11 @@ export function TeacherLessonWorkspace({
           <LessonStudentContentPanel
             source={workspace.studentContent.source}
             unavailableReason={workspace.studentContent.unavailableReason}
-            assetsById={workspace.studentContent.assetsById}
+            steps={workspace.unifiedReadModel.steps}
+            assetsById={workspace.unifiedReadModel.assetsById}
             previewHref={`${toScheduledLessonRoute(workspace.scheduledLessonId)}?view=learner-preview`}
+            mode="teacher_preview"
+            controlledStepId={workspace.liveActiveStepId ?? undefined}
           />
         ) : null}
 
@@ -87,6 +106,37 @@ export function TeacherLessonWorkspace({
             title="Проведение занятия"
             description="Обновляйте рабочий статус и заметки по этому занятию."
           >
+            <div className="mb-4 rounded-xl border border-sky-200 bg-sky-50 p-3 text-sm text-sky-900">
+              <p className="font-semibold">
+                {workspace.liveState.runtimeStatus === "in_progress"
+                  ? "Идёт занятие"
+                  : workspace.liveState.runtimeStatus === "completed"
+                    ? "Урок завершён"
+                    : workspace.liveState.runtimeStatus === "cancelled"
+                      ? "Урок отменён"
+                      : "Урок запланирован"}
+              </p>
+              <p className="mt-1">
+                Сейчас у учеников: Шаг {workspace.unifiedReadModel.steps.find((step) => step.id === workspace.liveActiveStepId)?.order ?? 1}
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button type="button" className="rounded-xl border border-neutral-300 bg-white px-3 py-2 text-sm font-semibold" onClick={() => void callLiveAction({ action: "start" }).catch((error) => setLiveActionError(error instanceof Error ? error.message : "Не удалось начать урок."))}>
+                  Начать урок
+                </button>
+                <button type="button" className="rounded-xl border border-neutral-300 bg-white px-3 py-2 text-sm font-semibold" onClick={() => void callLiveAction({ action: "previous" }).catch((error) => setLiveActionError(error instanceof Error ? error.message : "Не удалось переключить шаг."))}>
+                  Предыдущий шаг
+                </button>
+                <button type="button" className="rounded-xl border border-neutral-300 bg-white px-3 py-2 text-sm font-semibold" onClick={() => void callLiveAction({ action: "next" }).catch((error) => setLiveActionError(error instanceof Error ? error.message : "Не удалось переключить шаг."))}>
+                  Следующий шаг
+                </button>
+                <button type="button" className="rounded-xl bg-neutral-900 px-3 py-2 text-sm font-semibold text-white" onClick={() => void callLiveAction({ action: "complete" }).catch((error) => setLiveActionError(error instanceof Error ? error.message : "Не удалось завершить урок."))}>
+                  Завершить урок
+                </button>
+              </div>
+              {liveActionError ? (
+                <p className="mt-2 rounded-lg border border-rose-200 bg-rose-50 px-2 py-1 text-rose-700">{liveActionError}</p>
+              ) : null}
+            </div>
 
             {runtimeFormFeedback?.success ? (
               <p className="rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">

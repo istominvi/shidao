@@ -114,6 +114,12 @@ export type UpdateScheduledLessonRuntimeNotesAdminInput = {
   runtimeNotes?: string;
   outcomeNotes?: string;
   runtimeStatus?: ScheduledLessonRuntimeShell["runtimeStatus"];
+  runtimeCurrentStepId?: string | null;
+  runtimeCurrentStepOrder?: number | null;
+  runtimeStudentNavigationLocked?: boolean;
+  runtimeStepUpdatedAt?: string;
+  runtimeStartedAt?: string;
+  runtimeCompletedAt?: string;
 };
 
 function getServiceRoleKey() {
@@ -298,7 +304,7 @@ export async function getScheduledLessonByIdAdmin(
   scheduledLessonId: string,
 ): Promise<ScheduledLesson | null> {
   const rows = await adminRequest<RowScheduledLesson[]>(
-    `/rest/v1/scheduled_lesson?select=id,class_id,methodology_lesson_id,starts_at,format,meeting_link,place,runtime_status,runtime_notes_summary,runtime_notes,outcome_notes&id=eq.${scheduledLessonId}&limit=1`,
+    `/rest/v1/scheduled_lesson?select=id,class_id,methodology_lesson_id,starts_at,format,meeting_link,place,runtime_status,runtime_current_step_id,runtime_current_step_order,runtime_student_navigation_locked,runtime_step_updated_at,runtime_started_at,runtime_completed_at,runtime_notes_summary,runtime_notes,outcome_notes&id=eq.${scheduledLessonId}&limit=1`,
   );
 
   if (!rows[0]) return null;
@@ -309,7 +315,7 @@ export async function listScheduledLessonsForClassAdmin(
   classId: string,
 ): Promise<ScheduledLesson[]> {
   const rows = await adminRequest<RowScheduledLesson[]>(
-    `/rest/v1/scheduled_lesson?select=id,class_id,methodology_lesson_id,starts_at,format,meeting_link,place,runtime_status,runtime_notes_summary,runtime_notes,outcome_notes&class_id=eq.${classId}&order=starts_at.asc`,
+    `/rest/v1/scheduled_lesson?select=id,class_id,methodology_lesson_id,starts_at,format,meeting_link,place,runtime_status,runtime_current_step_id,runtime_current_step_order,runtime_student_navigation_locked,runtime_step_updated_at,runtime_started_at,runtime_completed_at,runtime_notes_summary,runtime_notes,outcome_notes&class_id=eq.${classId}&order=starts_at.asc`,
   );
 
   return rows.map(mapScheduledLessonRowToDomain);
@@ -328,7 +334,7 @@ export async function listScheduledLessonsForClassesAdmin(
 
   const inFilter = encodeURIComponent(`(${normalizedClassIds.join(",")})`);
   const rows = await adminRequest<RowScheduledLesson[]>(
-    `/rest/v1/scheduled_lesson?select=id,class_id,methodology_lesson_id,starts_at,format,meeting_link,place,runtime_status,runtime_notes_summary,runtime_notes,outcome_notes&class_id=in.${inFilter}&order=starts_at.desc`,
+    `/rest/v1/scheduled_lesson?select=id,class_id,methodology_lesson_id,starts_at,format,meeting_link,place,runtime_status,runtime_current_step_id,runtime_current_step_order,runtime_student_navigation_locked,runtime_step_updated_at,runtime_started_at,runtime_completed_at,runtime_notes_summary,runtime_notes,outcome_notes&class_id=in.${inFilter}&order=starts_at.desc`,
   );
 
   return rows.map(mapScheduledLessonRowToDomain);
@@ -595,6 +601,7 @@ export async function createScheduledLessonAdmin(
         meeting_link: input.format === "online" ? input.meetingLink : null,
         place: input.format === "offline" ? input.place : null,
         runtime_status: input.runtimeStatus ?? "planned",
+        runtime_student_navigation_locked: true,
       },
     },
   );
@@ -615,6 +622,24 @@ export async function updateScheduledLessonRuntimeNotesAdmin(
     {
       payload: {
         ...(input.runtimeStatus ? { runtime_status: input.runtimeStatus } : {}),
+        ...(input.runtimeCurrentStepId !== undefined
+          ? { runtime_current_step_id: input.runtimeCurrentStepId }
+          : {}),
+        ...(input.runtimeCurrentStepOrder !== undefined
+          ? { runtime_current_step_order: input.runtimeCurrentStepOrder }
+          : {}),
+        ...(input.runtimeStudentNavigationLocked !== undefined
+          ? { runtime_student_navigation_locked: input.runtimeStudentNavigationLocked }
+          : {}),
+        ...(input.runtimeStepUpdatedAt !== undefined
+          ? { runtime_step_updated_at: input.runtimeStepUpdatedAt }
+          : {}),
+        ...(input.runtimeStartedAt !== undefined
+          ? { runtime_started_at: input.runtimeStartedAt }
+          : {}),
+        ...(input.runtimeCompletedAt !== undefined
+          ? { runtime_completed_at: input.runtimeCompletedAt }
+          : {}),
         ...(input.runtimeNotesSummary !== undefined
           ? { runtime_notes_summary: input.runtimeNotesSummary }
           : {}),

@@ -36,6 +36,15 @@ import {
   getHomeworkScopedTeacherDiscussions,
   getLessonScopedTeacherDiscussions,
 } from "./communication-service";
+import {
+  buildMethodologyLessonUnifiedReadModel,
+  type MethodologyLessonUnifiedReadModel,
+} from "./methodology-lesson-unified-read-model";
+import {
+  mapScheduledLessonLiveState,
+  resolveActiveLessonStep,
+  type ScheduledLessonLiveState,
+} from "./scheduled-lesson-live-state";
 
 export type TeacherLessonFlowStep = {
   id: string;
@@ -116,6 +125,9 @@ export type TeacherLessonWorkspaceReadModel = {
   };
   projection: TeacherLessonProjection;
   presentation: TeacherLessonWorkspacePresentation;
+  unifiedReadModel: MethodologyLessonUnifiedReadModel;
+  liveState: ScheduledLessonLiveState;
+  liveActiveStepId: string | null;
   homework: TeacherLessonHomeworkReadModel;
   studentContent: {
     source: MethodologyLessonStudentContent | null;
@@ -667,6 +679,7 @@ export function buildTeacherLessonWorkspaceReadModel(input: {
   studentContentUnavailableReason?: TeacherLessonWorkspaceReadModel["studentContent"]["unavailableReason"];
   studentContentAssets?: ReusableAsset[];
   communication?: TeacherLessonWorkspaceReadModel["communication"];
+  liveState?: ScheduledLessonLiveState;
 }): TeacherLessonWorkspaceReadModel {
   const sortedProjection: TeacherLessonProjection = {
     ...input.projection,
@@ -679,6 +692,37 @@ export function buildTeacherLessonWorkspaceReadModel(input: {
       asset,
     ]),
   );
+  const presentation = buildPresentation({
+    projection: sortedProjection,
+    classDisplayName: input.classDisplayName ?? null,
+    assetsById,
+  });
+
+  const unifiedReadModel = buildMethodologyLessonUnifiedReadModel({
+    lessonId: input.sourceLesson.lessonId,
+    lessonShell: sortedProjection.methodologyShell,
+    presentation: {
+      quickSummary: presentation.quickSummary,
+      lessonFlow: presentation.lessonFlow,
+    },
+    studentContent: input.studentContent ?? null,
+    assetsById,
+    canonicalHomework: null,
+  });
+  const liveState =
+    input.liveState ??
+    ({
+      runtimeStatus: sortedProjection.runtimeShell.runtimeStatus,
+      currentStepId: sortedProjection.runtimeShell.runtimeCurrentStepId ?? null,
+      currentStepOrder: sortedProjection.runtimeShell.runtimeCurrentStepOrder ?? null,
+      studentNavigationLocked:
+        sortedProjection.runtimeShell.runtimeStudentNavigationLocked ?? true,
+      stepUpdatedAt: sortedProjection.runtimeShell.runtimeStepUpdatedAt ?? null,
+      startedAt: sortedProjection.runtimeShell.runtimeStartedAt ?? null,
+      completedAt: sortedProjection.runtimeShell.runtimeCompletedAt ?? null,
+    } satisfies ScheduledLessonLiveState);
+  const liveActiveStepId =
+    resolveActiveLessonStep(unifiedReadModel.steps, liveState)?.id ?? null;
 
   return {
     scheduledLessonId: input.scheduledLessonId,
@@ -686,11 +730,10 @@ export function buildTeacherLessonWorkspaceReadModel(input: {
     classDisplayName: input.classDisplayName ?? null,
     sourceLesson: input.sourceLesson,
     projection: sortedProjection,
-    presentation: buildPresentation({
-      projection: sortedProjection,
-      classDisplayName: input.classDisplayName ?? null,
-      assetsById,
-    }),
+    presentation,
+    unifiedReadModel,
+    liveState,
+    liveActiveStepId,
     homework: input.homework,
     studentContent: {
       source: input.studentContent ?? null,
@@ -813,6 +856,7 @@ export async function getTeacherLessonWorkspaceByScheduledLessonId(
     studentContentAssets,
     homework,
     studentContent,
+    liveState: mapScheduledLessonLiveState(scheduledLesson),
     studentContentUnavailableReason,
     communication: {
       lessonScoped:
