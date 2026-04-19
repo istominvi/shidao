@@ -1,10 +1,12 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { isRedirectError } from "next/dist/client/components/redirect-error";
+import { StudentLessonsHub } from "@/components/lessons/student-lessons-hub";
 import { TeacherLessonsHub } from "@/components/lessons/teacher-lessons-hub";
 import { TopNav } from "@/components/top-nav";
 import { ROUTES, toLessonWorkspaceRoute } from "@/lib/auth";
 import { resolveAccessPolicy } from "@/lib/server/access-policy";
+import { getStudentLessonsHubReadModel } from "@/lib/server/student-schedule";
 import {
   assertTeacherLessonsHubMutationAccess,
   canAccessTeacherLessonsHub,
@@ -35,7 +37,7 @@ function withMessage(type: "saved" | "error", message: string) {
   return `${ROUTES.lessons}?${params.toString()}`;
 }
 
-export default async function TeacherLessonsHubPage({
+export default async function LessonsPage({
   searchParams,
 }: {
     searchParams: Promise<{
@@ -46,6 +48,29 @@ export default async function TeacherLessonsHubPage({
     }>;
 }) {
   const accessResolution = await resolveAccessPolicy();
+
+  if (accessResolution.status === "guest" || accessResolution.status === "degraded") {
+    redirect(ROUTES.login);
+  }
+  if (accessResolution.status === "adult-without-profile") {
+    redirect(ROUTES.onboarding);
+  }
+
+  if (accessResolution.context.actorKind === "student") {
+    const studentId = accessResolution.context.student?.id;
+    if (!studentId) redirect(ROUTES.login);
+    const hub = await getStudentLessonsHubReadModel({ studentId });
+
+    return (
+      <main className="pb-12">
+        <div className="landing-noise" aria-hidden="true" />
+        <TopNav />
+        <div className="container app-page-container">
+          <StudentLessonsHub hub={hub} />
+        </div>
+      </main>
+    );
+  }
 
   if (!canAccessTeacherLessonsHub(accessResolution)) {
     redirect(ROUTES.dashboard);

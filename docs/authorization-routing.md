@@ -20,13 +20,13 @@
 3. Не email → поиск `student.login`, затем auth через `student.internal_auth_email`.
 4. Если пароль не подошёл для ученика → проверка PIN.
 5. После успеха пишется app-session и вычисляется redirect:
-   - `student` actor → `/schedule` (и при password, и при PIN);
+   - `student` actor → `/lessons` (и при password, и при PIN);
    - взрослый с хотя бы одним профилем (`teacher` или `parent`) → `/dashboard`;
    - взрослый без профилей → `/onboarding`.
 
 Важно:
 - ученик никогда не классифицируется как «взрослый без профиля»;
-- вход ученика по `student.login + password`, `student.login + PIN` и `student.internal_auth_email + password` всегда ведёт на `/schedule`.
+- вход ученика по `student.login + password`, `student.login + PIN` и `student.internal_auth_email + password` всегда ведёт на `/lessons`.
 
 ## Confirm flow
 
@@ -45,7 +45,7 @@
 - Parent: read-only видимость детей.
 - Student: только собственный контекст.
 - Teacher: только собственные группы/уроки.
-- `/onboarding` доступен только взрослому без профиля (или взрослому с `?mode=add-profile` при добавлении второй роли). Для ученика `/onboarding` серверно редиректится на `/schedule`.
+- `/onboarding` доступен только взрослому без профиля (или взрослому с `?mode=add-profile` при добавлении второй роли). Для ученика `/onboarding` серверно редиректится на `/lessons`.
 
 ## Профиль и сессия
 

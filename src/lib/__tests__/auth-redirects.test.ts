@@ -52,7 +52,7 @@ test("guarded auth route redirect for authenticated users follows access policy"
   );
   assert.equal(
     onAuthPageWhenAuthenticated({ status: "student", context: {} as never }),
-    ROUTES.schedule,
+    ROUTES.lessons,
   );
   assert.equal(onAuthPageWhenAuthenticated({ status: "guest" }), null);
   assert.equal(

@@ -25,7 +25,7 @@ export function resolveAuthEntryRedirect(status: AccessResolution["status"]) {
   }
 
   if (status === "adult-with-profile" || status === "student") {
-    return status === "student" ? ROUTES.schedule : ROUTES.dashboard;
+    return status === "student" ? ROUTES.lessons : ROUTES.dashboard;
   }
 
   return null;
@@ -40,7 +40,7 @@ export function resolveOnboardingRedirect(
   }
 
   if (status === "student") {
-    return ROUTES.schedule;
+    return ROUTES.lessons;
   }
 
   if (

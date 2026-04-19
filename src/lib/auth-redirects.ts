@@ -55,7 +55,7 @@ export function onAuthPageWhenAuthenticated(resolution: AccessResolution) {
     resolution.status === "adult-with-profile" ||
     resolution.status === "student"
   ) {
-    return resolution.status === "student" ? ROUTES.schedule : ROUTES.dashboard;
+    return resolution.status === "student" ? ROUTES.lessons : ROUTES.dashboard;
   }
 
   return null;
