@@ -30,10 +30,13 @@ test("learner lesson view renders shared learner deck", () => {
 });
 
 test("scheduled learner view handles planned/completed/cancelled states", () => {
-  assert.equal(source.includes("Урок скоро начнётся"), true);
-  assert.equal(source.includes("Преподаватель откроет первый шаг"), true);
+  assert.equal(source.includes("Учитель ещё не начал урок"), true);
+  assert.equal(source.includes("Преподаватель откроет первый шаг"), false);
   assert.equal(source.includes("Урок отменён"), true);
   assert.equal(source.includes("/api/lessons/${model.scheduledLessonId}/live-state"), true);
+  assert.equal(source.includes("/api/student/lessons/${model.scheduledLessonId}/homework"), true);
+  assert.equal(source.includes("Домашнее задание пока не выдано."), true);
+  assert.equal(source.includes("setStudentTab(\"homework\")"), true);
   assert.equal(source.includes("window.clearInterval(timer)"), true);
   assert.equal(source.includes("catch {"), true);
 });
@@ -91,4 +94,13 @@ test("deck navigation calls onStepChange and supports controlled id flow", () =>
   assert.equal(sharedDeckSource.includes("onStepChange?.(next.id)"), true);
   assert.equal(sharedDeckSource.includes("disabled={currentStepIndex === 0}"), true);
   assert.equal(sharedDeckSource.includes("disabled={currentStepIndex >= resolvedSteps.length - 1}"), true);
+});
+
+test("scheduled learner view unlocks navigation in review mode", () => {
+  assert.equal(
+    source.includes(
+      "learnerMode === \"student_live_locked\" ? controlledStepId ?? undefined : undefined",
+    ),
+    true,
+  );
 });

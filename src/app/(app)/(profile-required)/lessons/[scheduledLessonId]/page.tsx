@@ -3,6 +3,8 @@ import { AppPageHeader } from "@/components/app/page-header";
 import {
   LessonMetaPill,
   LessonMetaRail,
+  type LessonMetaIconKey,
+  type LessonMetaTone,
 } from "@/components/lessons/lesson-meta-pill";
 import { ScheduledLessonLearnerView } from "@/components/lessons/scheduled-lesson-learner-view";
 import { TeacherLessonWorkspace } from "@/components/lessons/teacher-lesson-workspace";
@@ -35,6 +37,23 @@ function formatLessonDateLabel(startsAt: string) {
     hour: "2-digit",
     minute: "2-digit",
   }).format(date);
+}
+
+function runtimeStatusMeta(status: "planned" | "in_progress" | "completed" | "cancelled"): {
+  label: string;
+  icon: LessonMetaIconKey;
+  tone: LessonMetaTone;
+} {
+  if (status === "in_progress") {
+    return { label: "Урок начался", icon: "status", tone: "success" };
+  }
+  if (status === "completed") {
+    return { label: "Урок окончен", icon: "readiness", tone: "muted" };
+  }
+  if (status === "cancelled") {
+    return { label: "Урок отменён", icon: "readiness", tone: "muted" };
+  }
+  return { label: "Урок запланирован", icon: "datetime", tone: "primary" };
 }
 
 export default async function ScheduledLessonPage({
@@ -100,38 +119,31 @@ export default async function ScheduledLessonPage({
       notFound();
     }
 
+    const runtimeMeta = runtimeStatusMeta(view.runtimeStatus);
+
     return (
       <main className="pb-12">
         <div className="landing-noise" aria-hidden="true" />
         <TopNav />
         <div className="container app-page-container space-y-6">
           <AppPageHeader
-            eyebrow={learnerEyebrow("student")}
+            backHref={ROUTES.schedule}
+            backLabel="Расписание"
             title={view.lessonTitle}
-            description={
-              view.lessonSubtitle ??
-              "Повторяй слова и активности урока в удобном темпе."
-            }
             meta={
               <LessonMetaRail>
                 <LessonMetaPill
-                  icon="status"
-                  tone="info"
-                  label={
-                    view.runtimeStatus === "in_progress"
-                      ? "Идёт урок"
-                      : view.runtimeStatus === "completed"
-                        ? "Урок завершён"
-                        : view.runtimeStatus === "cancelled"
-                          ? "Урок отменён"
-                          : "Урок запланирован"
-                  }
+                  icon={runtimeMeta.icon}
+                  tone={runtimeMeta.tone}
+                  label={runtimeMeta.label}
                 />
                 <LessonMetaPill
                   icon="datetime"
-                  tone="neutral"
                   label={formatLessonDateLabel(view.startsAt)}
                 />
+                <LessonMetaPill icon="teacher" label={view.teacherLabel} />
+                <LessonMetaPill icon="group" label={view.groupLabel} />
+                <LessonMetaPill icon="format" label={view.formatLabel} />
               </LessonMetaRail>
             }
           />
@@ -157,6 +169,8 @@ export default async function ScheduledLessonPage({
     }
     if (!view) notFound();
 
+    const runtimeMeta = runtimeStatusMeta(view.runtimeStatus);
+
     return (
       <main className="pb-12">
         <div className="landing-noise" aria-hidden="true" />
@@ -172,21 +186,12 @@ export default async function ScheduledLessonPage({
             meta={
               <LessonMetaRail>
                 <LessonMetaPill
-                  icon="status"
-                  tone="info"
-                  label={
-                    view.runtimeStatus === "in_progress"
-                      ? "Идёт урок"
-                      : view.runtimeStatus === "completed"
-                        ? "Урок завершён"
-                        : view.runtimeStatus === "cancelled"
-                          ? "Урок отменён"
-                          : "Урок запланирован"
-                  }
+                  icon={runtimeMeta.icon}
+                  tone={runtimeMeta.tone}
+                  label={runtimeMeta.label}
                 />
                 <LessonMetaPill
                   icon="datetime"
-                  tone="neutral"
                   label={formatLessonDateLabel(view.startsAt)}
                 />
               </LessonMetaRail>
@@ -223,6 +228,8 @@ export default async function ScheduledLessonPage({
       });
     }
 
+    const runtimeMeta = preview ? runtimeStatusMeta(preview.runtimeStatus) : null;
+
     return (
       <main className="pb-12">
         <div className="landing-noise" aria-hidden="true" />
@@ -240,21 +247,12 @@ export default async function ScheduledLessonPage({
                 meta={
                   <LessonMetaRail>
                     <LessonMetaPill
-                      icon="status"
-                      tone="info"
-                      label={
-                        preview.runtimeStatus === "in_progress"
-                          ? "Идёт урок"
-                          : preview.runtimeStatus === "completed"
-                            ? "Урок завершён"
-                            : preview.runtimeStatus === "cancelled"
-                              ? "Урок отменён"
-                              : "Урок запланирован"
-                      }
+                      icon={runtimeMeta?.icon ?? "datetime"}
+                      tone={runtimeMeta?.tone}
+                      label={runtimeMeta?.label ?? "Урок запланирован"}
                     />
                     <LessonMetaPill
                       icon="datetime"
-                      tone="neutral"
                       label={formatLessonDateLabel(preview.startsAt)}
                     />
                   </LessonMetaRail>
@@ -288,22 +286,18 @@ export default async function ScheduledLessonPage({
             <LessonMetaRail>
               <LessonMetaPill
                 icon="methodology"
-                tone="neutral"
                 label={teacherView.workspace.presentation.hero.methodologyTitle}
               />
               <LessonMetaPill
                 icon="datetime"
-                tone="info"
                 label={teacherView.workspace.presentation.hero.dateTimeLabel}
               />
               <LessonMetaPill
                 icon="group"
-                tone="neutral"
                 label={teacherView.workspace.presentation.hero.groupLabel}
               />
               <LessonMetaPill
                 icon="format"
-                tone="muted"
                 label={teacherView.workspace.presentation.hero.formatLabel}
               />
             </LessonMetaRail>

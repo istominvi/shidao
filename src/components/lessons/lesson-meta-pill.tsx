@@ -7,10 +7,11 @@ import {
   Layers3,
   Monitor,
   PlayCircle,
+  UserRound,
   Users,
 } from "lucide-react";
 import type { ReactNode } from "react";
-import { Chip, type ChipTone } from "@/components/ui/chip";
+import { Chip, type ChipSize, type ChipTone } from "@/components/ui/chip";
 
 export type LessonMetaTone =
   | "primary"
@@ -27,7 +28,8 @@ export type LessonMetaIconKey =
   | "position"
   | "duration"
   | "readiness"
-  | "methodology";
+  | "methodology"
+  | "teacher";
 
 export const lessonMetaIconMap: Record<LessonMetaIconKey, LucideIcon> = {
   group: Users,
@@ -38,6 +40,7 @@ export const lessonMetaIconMap: Record<LessonMetaIconKey, LucideIcon> = {
   duration: Clock3,
   readiness: CheckCircle2,
   methodology: BookOpen,
+  teacher: UserRound,
 };
 
 const lessonMetaToneMap: Record<LessonMetaTone, ChipTone> = {
@@ -49,21 +52,38 @@ const lessonMetaToneMap: Record<LessonMetaTone, ChipTone> = {
   muted: "slate",
 };
 
+const lessonMetaToneByIcon: Partial<Record<LessonMetaIconKey, LessonMetaTone>> = {
+  status: "info",
+  datetime: "primary",
+  teacher: "success",
+  group: "primary",
+  format: "warning",
+  methodology: "muted",
+};
+
 export function LessonMetaRail({ children }: { children: ReactNode }) {
   return <div className="lesson-meta-rail">{children}</div>;
 }
 
 export function LessonMetaPill({
   label,
-  tone = "neutral",
+  tone,
   icon,
+  size = "md",
 }: {
   label: ReactNode;
   tone?: LessonMetaTone;
   icon?: LessonMetaIconKey;
+  size?: ChipSize;
 }) {
+  const resolvedTone =
+    tone ?? (icon ? lessonMetaToneByIcon[icon] : undefined) ?? "neutral";
   return (
-    <Chip tone={lessonMetaToneMap[tone]} icon={icon ? lessonMetaIconMap[icon] : undefined}>
+    <Chip
+      tone={lessonMetaToneMap[resolvedTone]}
+      size={size}
+      icon={icon ? lessonMetaIconMap[icon] : undefined}
+    >
       {label}
     </Chip>
   );

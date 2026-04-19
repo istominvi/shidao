@@ -674,8 +674,8 @@ export function LessonLearnerContentDeck({
           <span>Шаг {currentStepIndex + 1} из {resolvedSteps.length}</span>
           {canNavigate ? (
             <div className="flex gap-2 normal-case tracking-normal">
-              <button type="button" className="min-h-10 rounded-xl border border-neutral-300 bg-white px-4 py-2 text-sm font-semibold text-neutral-700 disabled:opacity-40" disabled={currentStepIndex === 0} onClick={() => moveToStep(currentStepIndex - 1)}>Назад</button>
-              <button type="button" className="min-h-10 rounded-xl border border-neutral-300 bg-white px-4 py-2 text-sm font-semibold text-neutral-700 disabled:opacity-40" disabled={currentStepIndex >= resolvedSteps.length - 1} onClick={() => moveToStep(currentStepIndex + 1)}>Далее</button>
+              <button type="button" className="min-h-10 cursor-pointer rounded-xl border border-neutral-300 bg-white px-4 py-2 text-sm font-semibold text-neutral-700 disabled:cursor-not-allowed disabled:opacity-40" disabled={currentStepIndex === 0} onClick={() => moveToStep(currentStepIndex - 1)}>Назад</button>
+              <button type="button" className="min-h-10 cursor-pointer rounded-xl border border-neutral-300 bg-white px-4 py-2 text-sm font-semibold text-neutral-700 disabled:cursor-not-allowed disabled:opacity-40" disabled={currentStepIndex >= resolvedSteps.length - 1} onClick={() => moveToStep(currentStepIndex + 1)}>Далее</button>
             </div>
           ) : null}
         </div>
@@ -688,7 +688,7 @@ export function LessonLearnerContentDeck({
                 type="button"
                 onClick={() => moveToStep(index)}
                 className={classNames(
-                  "h-2.5 w-2.5 rounded-full transition",
+                  "h-2.5 w-2.5 cursor-pointer rounded-full transition",
                   index === currentStepIndex ? "bg-sky-600" : "bg-neutral-300 hover:bg-neutral-400",
                 )}
                 aria-label={`Перейти к шагу ${index + 1}`}
