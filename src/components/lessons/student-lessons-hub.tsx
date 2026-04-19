@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ChevronDown, ChevronLeft, ChevronRight, X } from "lucide-react";
+import { CalendarDays, ChevronDown, ChevronLeft, ChevronRight, Rows3, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { AppPageHeader } from "@/components/app/page-header";
 import { SegmentedControl } from "@/components/ui/segmented-control";
@@ -131,6 +131,7 @@ export function StudentLessonsHub({ hub }: { hub: StudentLessonsHubReadModel }) 
             items={DISPLAY_MODES.map((mode) => ({
               value: mode,
               label: DISPLAY_MODE_LABELS[mode],
+              icon: mode === "table" ? Rows3 : CalendarDays,
             }))}
           />
 
