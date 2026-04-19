@@ -23,6 +23,7 @@ test("teacher and student access are class-scoped server-side", () => {
   assert.equal(source.includes("listAssignedClassIdsForTeacherAdmin"), true);
   assert.equal(source.includes("listClassIdsForStudentAdmin"), true);
   assert.equal(source.includes("if (!classIds.includes"), true);
+  assert.equal(source.includes("student denied access to scheduled lesson"), true);
 });
 
 test("learner communication preview uses neutral helper (no fake teacher identity)", () => {
@@ -39,4 +40,17 @@ test("scheduled learner projection keeps fixture fallback hook for world-around-
   assert.equal(source.includes("liveState"), true);
   assert.equal(source.includes("controlledStepId"), true);
   assert.equal(source.includes("unifiedReadModel"), true);
+});
+
+test("student lesson view degrades gracefully when homework or communication projections fail", () => {
+  assert.equal(source.includes("getStudentHomeworkCardForScheduledLesson"), true);
+  assert.equal(source.includes("failed to load student homework projection"), true);
+  assert.equal(source.includes("homework: StudentHomeworkCard | null = null"), true);
+  assert.equal(source.includes("failed to load student communication projection"), true);
+  assert.equal(source.includes("communication: StudentScheduledLessonView[\"communication\"] = []"), true);
+});
+
+test("student lesson logging distinguishes base projection and membership failures", () => {
+  assert.equal(source.includes("failed to load student base lesson projection"), true);
+  assert.equal(source.includes("failed to load student class membership"), true);
 });

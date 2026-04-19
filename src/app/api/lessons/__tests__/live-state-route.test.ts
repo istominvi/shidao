@@ -12,4 +12,6 @@ test("learner live-state route allows student and adult profiles", () => {
     source.includes('access.status !== "adult-with-profile" && access.status !== "student"'),
     true,
   );
+  assert.equal(source.includes("listClassIdsForStudentAdmin"), true);
+  assert.equal(source.includes("if (!classIds.includes(classId))"), true);
 });

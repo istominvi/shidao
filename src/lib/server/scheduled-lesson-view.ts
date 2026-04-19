@@ -21,6 +21,7 @@ import {
   buildTeacherLessonWorkspaceReadModel,
   type TeacherLessonWorkspaceReadModel,
 } from "./teacher-lesson-workspace";
+import { logger } from "./logger";
 import {
   resolveActiveLessonStep,
   type ScheduledLessonLiveState,
@@ -83,6 +84,18 @@ export type TeacherScheduledLessonView = {
   role: "teacher";
   workspace: TeacherLessonWorkspaceReadModel;
 };
+
+async function getStudentHomeworkCardForScheduledLesson(input: {
+  studentId: string;
+  classIds: string[];
+  scheduledLessonId: string;
+}): Promise<StudentHomeworkCard | null> {
+  const homeworkCards = await getStudentHomeworkReadModel({
+    studentId: input.studentId,
+    classIds: input.classIds,
+  });
+  return homeworkCards.find((item) => item.scheduledLessonId === input.scheduledLessonId) ?? null;
+}
 
 async function getLearnerSharedProjection(scheduledLessonId: string) {
   const seed = await loadScheduledLessonUnifiedSeedAdmin(scheduledLessonId);
@@ -166,32 +179,83 @@ export async function getStudentScheduledLessonView(input: {
   studentId: string;
   communicationFilter?: CommunicationFilter;
 }): Promise<StudentScheduledLessonView | null> {
-  const base = await getLearnerSharedProjection(input.scheduledLessonId);
+  let base: Awaited<ReturnType<typeof getLearnerSharedProjection>> = null;
+  try {
+    base = await getLearnerSharedProjection(input.scheduledLessonId);
+  } catch (error) {
+    logger.error("[lessons] failed to load student base lesson projection", {
+      scheduledLessonId: input.scheduledLessonId,
+      studentId: input.studentId,
+      error,
+    });
+    throw error;
+  }
   if (!base) return null;
 
-  const classIds = await listClassIdsForStudentAdmin(input.studentId);
-  if (!classIds.includes(base.shared.classId)) return null;
+  let classIds: string[] = [];
+  try {
+    classIds = await listClassIdsForStudentAdmin(input.studentId);
+  } catch (error) {
+    logger.error("[lessons] failed to load student class membership", {
+      scheduledLessonId: input.scheduledLessonId,
+      studentId: input.studentId,
+      classId: base.shared.classId,
+      error,
+    });
+    throw error;
+  }
+  if (!classIds.includes(base.shared.classId)) {
+    logger.warn("[lessons] student denied access to scheduled lesson", {
+      scheduledLessonId: input.scheduledLessonId,
+      studentId: input.studentId,
+      classId: base.shared.classId,
+    });
+    return null;
+  }
 
-  const [homeworkCards, conversation] = await Promise.all([
-    getStudentHomeworkReadModel({ studentId: input.studentId, classIds }),
-    getLearnerConversationPreviewReadModel({
+  let homework: StudentHomeworkCard | null = null;
+  try {
+    homework = await getStudentHomeworkCardForScheduledLesson({
+      studentId: input.studentId,
+      classIds,
+      scheduledLessonId: input.scheduledLessonId,
+    });
+  } catch (error) {
+    logger.error("[lessons] failed to load student homework projection", {
+      scheduledLessonId: input.scheduledLessonId,
+      studentId: input.studentId,
+      classId: base.shared.classId,
+      error,
+    });
+  }
+
+  let communication: StudentScheduledLessonView["communication"] = [];
+  try {
+    const conversation = await getLearnerConversationPreviewReadModel({
       classId: base.shared.classId,
       studentId: input.studentId,
       filter: input.communicationFilter ?? "lesson",
       scopedLessonId: input.scheduledLessonId,
-    }),
-  ]);
+    });
+    communication = conversation.messages.slice(-3).map((message) => ({
+      id: message.id,
+      authorRole: message.authorRole,
+      body: message.body,
+    }));
+  } catch (error) {
+    logger.error("[lessons] failed to load student communication projection", {
+      scheduledLessonId: input.scheduledLessonId,
+      studentId: input.studentId,
+      classId: base.shared.classId,
+      error,
+    });
+  }
 
   return {
     ...base.shared,
     role: "student",
-    homework:
-      homeworkCards.find((item) => item.scheduledLessonId === input.scheduledLessonId) ?? null,
-    communication: conversation.messages.slice(-3).map((message) => ({
-      id: message.id,
-      authorRole: message.authorRole,
-      body: message.body,
-    })),
+    homework,
+    communication,
   };
 }
 
