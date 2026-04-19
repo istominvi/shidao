@@ -63,12 +63,14 @@ export default async function ScheduledLessonPage({
   if (accessResolution.context.actorKind === "student") {
     const studentId = accessResolution.context.student?.id ?? "";
     let view: Awaited<ReturnType<typeof getStudentScheduledLessonView>> = null;
+    let loadFailed = false;
     try {
       view = await getStudentScheduledLessonView({
         scheduledLessonId,
         studentId,
       });
     } catch (error) {
+      loadFailed = true;
       logger.error("[lessons] failed to load student scheduled lesson view", {
         scheduledLessonId,
         studentId,
@@ -76,7 +78,24 @@ export default async function ScheduledLessonPage({
         error,
       });
     }
-    if (!view) notFound();
+    if (!view) {
+      if (loadFailed) {
+        return (
+          <main className="pb-12">
+            <div className="landing-noise" aria-hidden="true" />
+            <TopNav />
+            <div className="container app-page-container">
+              <AppPageHeader
+                eyebrow={learnerEyebrow("student")}
+                title="Урок временно недоступен"
+                description="Не удалось загрузить данные урока. Попробуй открыть его позже или вернись в кабинет."
+              />
+            </div>
+          </main>
+        );
+      }
+      notFound();
+    }
 
     return (
       <main className="pb-12">
