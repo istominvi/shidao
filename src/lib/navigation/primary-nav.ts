@@ -1,10 +1,13 @@
 import { ROUTES } from "@/lib/auth";
 import { isRouteWithin } from "@/lib/routes";
+import type { LucideIcon } from "lucide-react";
+import { CalendarDays } from "lucide-react";
 
 export type PrimaryNavItem = {
   id: string;
   label: string;
   href: string;
+  icon?: LucideIcon;
   isActive: (pathname: string | null) => boolean;
 };
 
@@ -40,6 +43,7 @@ export const PRIMARY_NAV_CONFIG: Record<PrimaryNavConfig["id"], PrimaryNavConfig
         id: "lessons",
         label: "Расписание",
         href: ROUTES.lessons,
+        icon: CalendarDays,
         isActive: (pathname) => isRouteWithin(pathname, ROUTES.lessons),
       },
       {
@@ -69,6 +73,7 @@ export const PRIMARY_NAV_CONFIG: Record<PrimaryNavConfig["id"], PrimaryNavConfig
         id: "schedule",
         label: "Расписание",
         href: ROUTES.lessons,
+        icon: CalendarDays,
         isActive: (pathname) => isRouteWithin(pathname, ROUTES.lessons),
       },
     ],

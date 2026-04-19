@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import type { LucideIcon } from "lucide-react";
 import { type MouseEvent, type ReactNode } from "react";
 import {
   NavPillLink,
@@ -13,6 +14,7 @@ export type SiteHeaderNavItem = {
   label: string;
   href: string;
   active: boolean;
+  icon?: LucideIcon;
   scroll?: boolean;
 };
 
@@ -106,7 +108,16 @@ export function SiteHeader({
                       scroll={item.scroll}
                       onClick={(event) => handleNavClick(event, item.href)}
                     >
-                      {item.label}
+                      <span className="nav-pill-content">
+                        {item.icon ? (
+                          <item.icon
+                            size={15}
+                            className="nav-pill-icon"
+                            aria-hidden="true"
+                          />
+                        ) : null}
+                        <span>{item.label}</span>
+                      </span>
                     </NavPillLink>
                   </li>
                 ))}

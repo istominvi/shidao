@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
-import { LogOut, Settings } from "lucide-react";
+import { CalendarDays, LogOut, Settings } from "lucide-react";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { isStudentInternalAuthEmail, ROUTES, type ProfileKind } from "@/lib/auth";
 import { signOutViaServer } from "@/lib/auth-flow";
@@ -262,8 +262,14 @@ export function SessionNavActions({
             onClick={() => setOpen(false)}
             role="menuitem"
           >
-            Кабинет ученика
+            <span className="inline-flex items-center gap-2.5">
+              <CalendarDays size={16} className="text-neutral-500" aria-hidden="true" />
+              Расписание
+            </span>
           </Link>
+        ) : null}
+        {state.kind === "student" ? (
+          <div className="my-1 border-t border-black/5" aria-hidden="true" />
         ) : null}
         <Link
           href={ROUTES.settingsProfile}
