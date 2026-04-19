@@ -12,19 +12,18 @@ const tabsSource = readFileSync(
   "utf8",
 );
 
-test("teacher workspace component keeps runtime editing surface", () => {
+test("teacher workspace component keeps global live controls and note editing surface", () => {
   assert.equal(workspaceComponentSource.includes('name="runtimeStatus"'), true);
-  assert.equal(
-    workspaceComponentSource.includes('name="runtimeNotesSummary"'),
-    true,
-  );
+  assert.equal(workspaceComponentSource.includes('name="runtimeNotesSummary"'), true);
   assert.equal(workspaceComponentSource.includes('name="runtimeNotes"'), true);
   assert.equal(workspaceComponentSource.includes('name="outcomeNotes"'), true);
-  assert.equal(workspaceComponentSource.includes("Проведение занятия"), true);
+  assert.equal(workspaceComponentSource.includes("Проведение занятия"), false);
   assert.equal(workspaceComponentSource.includes("Начать урок"), true);
   assert.equal(workspaceComponentSource.includes("Завершить урок"), true);
   assert.equal(workspaceComponentSource.includes("Предыдущий шаг"), true);
   assert.equal(workspaceComponentSource.includes("Следующий шаг"), true);
+  assert.equal(workspaceComponentSource.includes("Заметки к уроку"), true);
+  assert.equal(workspaceComponentSource.includes("Сохранить заметки"), true);
   assert.equal(workspaceComponentSource.includes("/live-state"), true);
   assert.equal(workspaceComponentSource.includes("onStepChange={(stepId) =>"), true);
   assert.equal(workspaceComponentSource.includes("onOpenStudentScreen={(stepId) =>"), true);
@@ -34,10 +33,10 @@ test("teacher workspace component keeps runtime editing surface", () => {
   assert.equal(workspaceComponentSource.includes("disabled={!canComplete}"), true);
 });
 
-test("teacher workspace uses unified five-tab labels and removes legacy side cards", () => {
+test("teacher workspace uses unified tabs without conduct and removes legacy side cards", () => {
   assert.equal(
     workspaceComponentSource.includes(
-      '[\"plan\", \"student_screen\", \"homework\", \"conduct\", \"chat\"]',
+      '[\"plan\", \"student_screen\", \"homework\", \"chat\"]',
     ),
     true,
   );
@@ -45,7 +44,7 @@ test("teacher workspace uses unified five-tab labels and removes legacy side car
   assert.equal(tabsSource.includes("Экран ученика"), true);
   assert.equal(tabsSource.includes("Контент"), false);
   assert.equal(tabsSource.includes("Домашнее задание"), true);
-  assert.equal(tabsSource.includes("Проведение занятия"), true);
+  assert.equal(tabsSource.includes("Проведение занятия"), false);
   assert.equal(tabsSource.includes("Чат"), true);
   assert.equal(workspaceComponentSource.includes("Ориентиры методики"), false);
   assert.equal(workspaceComponentSource.includes("Фокус преподавателя"), false);

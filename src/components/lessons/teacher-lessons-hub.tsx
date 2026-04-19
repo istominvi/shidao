@@ -463,52 +463,52 @@ function TeacherMonthView({
   }, [events]);
 
   return (
-    <div className="space-y-2 rounded-2xl border border-neutral-200 bg-white p-3">
-      <div className="grid grid-cols-7 gap-1 text-center text-[11px] font-semibold uppercase tracking-wide text-neutral-500">
+    <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-white">
+      <div className="grid grid-cols-7 border-b border-neutral-200 bg-neutral-50 text-center text-xs font-semibold text-neutral-500">
         {WEEKDAY_SHORT.map((day) => (
-          <span key={day} className="px-1 py-1">
+          <span key={day} className="px-2 py-2">
             {day}
           </span>
         ))}
       </div>
 
-      <div className="space-y-1">
-        {monthMatrix.weeks.map((week) => (
-          <div key={week[0]} className="grid grid-cols-7 gap-1">
-            {week.map((isoDate: string) => {
-              const dayEvents = eventsByDay.get(isoDate) ?? [];
-              const isCurrentMonth = isoDate.slice(0, 7) === activeDateIso.slice(0, 7);
+      <div className="grid grid-cols-7">
+        {monthMatrix.weeks.flat().map((isoDate: string) => {
+          const dayEvents = eventsByDay.get(isoDate) ?? [];
+          const isCurrentMonth = isoDate.slice(0, 7) === activeDateIso.slice(0, 7);
+          const previewEvents = dayEvents.slice(0, 2);
+          const extraCount = dayEvents.length - previewEvents.length;
 
-              return (
-                <button
-                  key={isoDate}
-                  type="button"
-                  onClick={() => onOpenDay(isoDate)}
-                  className={`relative min-h-[84px] rounded-xl border p-2 text-left transition ${
-                    isCurrentMonth
-                      ? "border-neutral-200 bg-white hover:border-sky-300"
-                      : "border-neutral-100 bg-neutral-50 text-neutral-400"
-                  }`}
-                >
-                  <span className="text-xs font-semibold">{isoDate.slice(8, 10)}</span>
-                  <div className="mt-1 space-y-1">
-                    {dayEvents.slice(0, 2).map((event) => (
-                      <p
-                        key={event.id}
-                        className="truncate rounded-md bg-sky-50 px-1.5 py-0.5 text-[10px] font-medium text-sky-700"
-                      >
-                        {event.timeLabel} · {event.groupLabel}
-                      </p>
-                    ))}
-                    {dayEvents.length > 2 ? (
-                      <p className="text-[10px] text-neutral-500">+ ещё {dayEvents.length - 2}</p>
-                    ) : null}
+          return (
+            <button
+              key={isoDate}
+              type="button"
+              onClick={() => onOpenDay(isoDate)}
+              className={`relative min-h-24 border-b border-r border-neutral-100 px-2 py-2 text-left transition ${
+                isCurrentMonth ? "bg-white hover:bg-neutral-50" : "bg-neutral-50/70 text-neutral-400"
+              }`}
+            >
+              <div className="absolute left-2 top-2 text-xs font-semibold">
+                {Number(isoDate.slice(8, 10))}
+              </div>
+              <div className="mt-5 space-y-1">
+                {previewEvents.map((event) => (
+                  <div
+                    key={event.id}
+                    className="rounded-lg border border-neutral-200 bg-neutral-50 px-1.5 py-1 text-[10px] leading-tight text-neutral-700"
+                  >
+                    <div className="font-semibold">{event.timeLabel}</div>
+                    <div className="truncate">{event.lessonTitle}</div>
+                    <div className="truncate text-[9px] text-neutral-500">{event.groupLabel}</div>
                   </div>
-                </button>
-              );
-            })}
-          </div>
-        ))}
+                ))}
+                {extraCount > 0 ? (
+                  <div className="text-[10px] font-semibold text-neutral-500">+{extraCount}</div>
+                ) : null}
+              </div>
+            </button>
+          );
+        })}
       </div>
     </div>
   );
@@ -538,35 +538,34 @@ function TeacherMonthDialog({
   if (!isoDate) return null;
 
   return (
-    <div className="fixed inset-0 z-40 flex items-end bg-neutral-950/40 md:items-center md:justify-center">
-      <div className="w-full rounded-t-3xl bg-white p-4 shadow-xl md:w-[560px] md:rounded-3xl">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <p className="text-sm font-semibold text-neutral-900">{formatDayLabel(isoDate)}</p>
-            <p className="text-xs text-neutral-500">Занятий: {dayEvents.length}</p>
-          </div>
+    <div className="fixed inset-0 z-[280] flex items-end justify-center bg-black/40 p-3 sm:items-center">
+      <div className="absolute inset-0" onClick={onClose} aria-hidden="true" />
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={`Уроки на ${formatDayLabel(isoDate)}`}
+        className="relative z-[1] max-h-[85vh] w-full max-w-2xl overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-2xl"
+      >
+        <div className="flex items-center justify-between border-b border-neutral-200 px-4 py-3">
+          <h3 className="text-sm font-semibold text-neutral-900">{formatDayLabel(isoDate)}</h3>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-full border border-neutral-200 p-1 text-neutral-500 hover:bg-neutral-50"
-            aria-label="Закрыть расписание дня"
+            className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-neutral-200 text-neutral-600 hover:bg-neutral-50"
+            aria-label="Закрыть"
           >
             <X size={16} />
           </button>
         </div>
-        <div className="mt-3 space-y-2">
+        <div className="max-h-[calc(85vh-56px)] overflow-y-auto p-4">
           {dayEvents.length === 0 ? (
-            <p className="rounded-xl border border-dashed border-neutral-200 px-3 py-4 text-sm text-neutral-500">
-              На этот день уроков нет.
-            </p>
+            <p className="text-sm text-neutral-500">На выбранный день занятий пока нет.</p>
           ) : (
-            dayEvents.map((event) => (
-              <TeacherLessonEventCard
-                key={event.id}
-                event={event}
-                nowIso={nowIso}
-              />
-            ))
+            <div className="space-y-2">
+              {dayEvents.map((event) => (
+                <TeacherLessonEventCard key={event.id} event={event} nowIso={nowIso} />
+              ))}
+            </div>
           )}
         </div>
       </div>

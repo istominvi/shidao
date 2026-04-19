@@ -1,4 +1,5 @@
 import { Timer, Workflow } from "lucide-react";
+import type { ReactNode } from "react";
 import { Chip } from "@/components/ui/chip";
 import type { ReusableAsset } from "@/lib/lesson-content";
 import type { MethodologyLessonStep } from "@/lib/server/methodology-lesson-unified-read-model";
@@ -14,6 +15,7 @@ type Props = {
   summaryNote?: string | null;
   activeStudentStepId?: string | null;
   assetsById?: Record<string, ReusableAsset>;
+  lessonNotesSlot?: ReactNode;
   onShowOnStudentScreen?: (stepId: string) => void;
   onOpenStudentScreen?: (stepId: string) => void;
 };
@@ -109,6 +111,7 @@ export function TeacherLessonPedagogicalContent({
   summaryNote,
   activeStudentStepId,
   assetsById = {},
+  lessonNotesSlot,
   onShowOnStudentScreen,
   onOpenStudentScreen,
 }: Props) {
@@ -147,6 +150,7 @@ export function TeacherLessonPedagogicalContent({
         </div>
 
         {summaryNote ? <p className="mt-4 text-sm text-neutral-600">{summaryNote}</p> : null}
+        {lessonNotesSlot}
       </section>
 
       {quickSummary.prepChecklist.length ? (

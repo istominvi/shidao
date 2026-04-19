@@ -134,9 +134,24 @@ export function TeacherLessonWorkspace({
 
   return (
     <div className="space-y-8 lg:space-y-10">
+      <section>
+        <LiveLessonControlBar
+          workspace={workspace}
+          onAction={(payload) =>
+            callLiveAction(payload).catch((error) => {
+              setLiveActionError(
+                error instanceof Error
+                  ? error.message
+                  : "Не удалось обновить live-режим урока.",
+              );
+            })
+          }
+        />
+      </section>
+
       <SurfaceCard as="section" className="p-5 md:p-6" bodyClassName="mt-0">
         <TeacherLessonTabs
-          tabs={["plan", "student_screen", "homework", "conduct", "chat"]}
+          tabs={["plan", "student_screen", "homework", "chat"]}
           activeTab={tab}
           onTabChange={setTab}
           tone="embedded"
@@ -154,6 +169,53 @@ export function TeacherLessonWorkspace({
               steps={planSteps}
               activeStudentStepId={workspace.liveActiveStepId}
               assetsById={workspace.unifiedReadModel.assetsById}
+              lessonNotesSlot={
+                <form
+                  className="mt-4 space-y-3"
+                  action={`/api/teacher/lessons/${workspace.scheduledLessonId}/runtime`}
+                  method="POST"
+                >
+                  {runtimeFormFeedback?.success ? (
+                    <p className="rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+                      {runtimeFormFeedback.success}
+                    </p>
+                  ) : null}
+                  {runtimeFormFeedback?.error ? (
+                    <p className="rounded-xl border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+                      {runtimeFormFeedback.error}
+                    </p>
+                  ) : null}
+                  <input type="hidden" name="runtimeStatus" value={runtime.runtimeStatus} />
+                  <input
+                    type="hidden"
+                    name="runtimeNotesSummary"
+                    value={runtime.runtimeNotesSummary ?? ""}
+                  />
+                  <input
+                    type="hidden"
+                    name="outcomeNotes"
+                    value={workspace.projection.outcomeNotes ?? ""}
+                  />
+                  <label className="block">
+                    <span className="text-sm font-semibold text-neutral-900">
+                      Заметки к уроку
+                    </span>
+                    <textarea
+                      name="runtimeNotes"
+                      rows={5}
+                      defaultValue={workspace.projection.runtimeNotes ?? ""}
+                      className="mt-1.5 w-full rounded-xl border border-neutral-300 bg-white px-3 py-2.5 text-sm text-neutral-900"
+                      placeholder="Личные заметки преподавателя по уроку"
+                    />
+                  </label>
+                  <button
+                    type="submit"
+                    className="inline-flex items-center rounded-xl bg-neutral-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-neutral-800"
+                  >
+                    Сохранить заметки
+                  </button>
+                </form>
+              }
               onShowOnStudentScreen={(stepId) => {
                 const step = workspace.unifiedReadModel.steps.find((item) => item.id === stepId);
                 if (!step) return;
@@ -191,18 +253,6 @@ export function TeacherLessonWorkspace({
 
         {tab === "student_screen" ? (
           <section className="space-y-3">
-            <LiveLessonControlBar
-              workspace={workspace}
-              onAction={(payload) =>
-                callLiveAction(payload).catch((error) => {
-                  setLiveActionError(
-                    error instanceof Error
-                      ? error.message
-                      : "Не удалось обновить live-режим урока.",
-                  );
-                })
-              }
-            />
             <LessonStudentContentPanel
               source={workspace.studentContent.source}
               unavailableReason={workspace.studentContent.unavailableReason}
@@ -229,104 +279,6 @@ export function TeacherLessonWorkspace({
               homework={workspace.homework}
               scheduledLessonId={workspace.scheduledLessonId}
             />
-          </SurfaceCard>
-        ) : null}
-
-        {tab === "conduct" ? (
-          <SurfaceCard
-            title="Проведение занятия"
-            description="Обновляйте рабочий статус и заметки по этому занятию."
-          >
-            <div className="mb-4">
-              <LiveLessonControlBar
-                workspace={workspace}
-                onAction={(payload) =>
-                  callLiveAction(payload).catch((error) => {
-                    setLiveActionError(
-                      error instanceof Error
-                        ? error.message
-                        : "Не удалось обновить live-режим урока.",
-                    );
-                  })
-                }
-              />
-            </div>
-
-            {runtimeFormFeedback?.success ? (
-              <p className="rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
-                {runtimeFormFeedback.success}
-              </p>
-            ) : null}
-            {runtimeFormFeedback?.error ? (
-              <p className="mt-4 rounded-xl border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-700">
-                {runtimeFormFeedback.error}
-              </p>
-            ) : null}
-
-            <form
-              className="mt-4 space-y-4"
-              action={`/api/teacher/lessons/${workspace.scheduledLessonId}/runtime`}
-              method="POST"
-            >
-              <label className="block">
-                <span className="text-sm font-semibold text-neutral-900">
-                  Статус занятия
-                </span>
-                <select
-                  name="runtimeStatus"
-                  defaultValue={runtime.runtimeStatus}
-                  className="mt-1.5 w-full rounded-xl border border-neutral-300 bg-white px-3 py-2.5 text-sm text-neutral-900"
-                >
-                  <option value="planned">Запланировано</option>
-                  <option value="in_progress">Идёт занятие</option>
-                  <option value="completed">Завершено</option>
-                  <option value="cancelled">Отменено</option>
-                </select>
-              </label>
-
-              <label className="block">
-                <span className="text-sm font-semibold text-neutral-900">
-                  Короткая заметка перед уроком
-                </span>
-                <textarea
-                  name="runtimeNotesSummary"
-                  rows={2}
-                  defaultValue={runtime.runtimeNotesSummary ?? ""}
-                  className="mt-1.5 w-full rounded-xl border border-neutral-300 bg-white px-3 py-2.5 text-sm text-neutral-900"
-                />
-              </label>
-
-              <label className="block">
-                <span className="text-sm font-semibold text-neutral-900">
-                  Заметки по проведению
-                </span>
-                <textarea
-                  name="runtimeNotes"
-                  rows={4}
-                  defaultValue={workspace.projection.runtimeNotes ?? ""}
-                  className="mt-1.5 w-full rounded-xl border border-neutral-300 bg-white px-3 py-2.5 text-sm text-neutral-900"
-                />
-              </label>
-
-              <label className="block">
-                <span className="text-sm font-semibold text-neutral-900">
-                  Итоги после занятия
-                </span>
-                <textarea
-                  name="outcomeNotes"
-                  rows={4}
-                  defaultValue={workspace.projection.outcomeNotes ?? ""}
-                  className="mt-1.5 w-full rounded-xl border border-neutral-300 bg-white px-3 py-2.5 text-sm text-neutral-900"
-                />
-              </label>
-
-              <button
-                type="submit"
-                className="inline-flex items-center rounded-xl bg-neutral-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-neutral-800"
-              >
-                Сохранить изменения
-              </button>
-            </form>
           </SurfaceCard>
         ) : null}
 

@@ -175,40 +175,43 @@ export function ScheduledLessonLearnerView({
     <div className="space-y-5">
       {model.role === "student" ? (
         <SurfaceCard as="section" className="p-5 md:p-6" bodyClassName="mt-0">
-          <div className="border-b border-neutral-200 pb-4">
-            <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
-                className={classNames(
-                  productButtonClassName("secondary", "text-sm"),
-                  "cursor-pointer",
-                  studentTab === "lesson" &&
-                    "!border-neutral-900 !bg-neutral-900 !text-white shadow-[0_10px_20px_rgba(15,23,42,0.08)] hover:!border-neutral-900 hover:!bg-neutral-900 hover:!text-white",
-                )}
-                onClick={() => setStudentTab("lesson")}
-                aria-pressed={studentTab === "lesson"}
-              >
-                Урок
-              </button>
-              <button
-                type="button"
-                className={classNames(
-                  productButtonClassName("secondary", "text-sm"),
-                  studentHomework ? "cursor-pointer" : "cursor-not-allowed opacity-60",
-                  studentTab === "homework" &&
-                    studentHomework &&
-                    "!border-neutral-900 !bg-neutral-900 !text-white shadow-[0_10px_20px_rgba(15,23,42,0.08)] hover:!border-neutral-900 hover:!bg-neutral-900 hover:!text-white",
-                )}
-                onClick={() => {
-                  if (!studentHomework) return;
-                  setStudentTab("homework");
-                }}
-                aria-pressed={studentTab === "homework"}
-                disabled={!studentHomework}
-              >
-                Домашнее задание
-              </button>
+          <div className="-mx-5 md:-mx-6">
+            <div className="px-5 md:px-6">
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  className={classNames(
+                    productButtonClassName("secondary", "text-sm"),
+                    "cursor-pointer",
+                    studentTab === "lesson" &&
+                      "!border-neutral-900 !bg-neutral-900 !text-white shadow-[0_10px_20px_rgba(15,23,42,0.08)] hover:!border-neutral-900 hover:!bg-neutral-900 hover:!text-white",
+                  )}
+                  onClick={() => setStudentTab("lesson")}
+                  aria-pressed={studentTab === "lesson"}
+                >
+                  Урок
+                </button>
+                <button
+                  type="button"
+                  className={classNames(
+                    productButtonClassName("secondary", "text-sm"),
+                    studentHomework ? "cursor-pointer" : "cursor-not-allowed opacity-60",
+                    studentTab === "homework" &&
+                      studentHomework &&
+                      "!border-neutral-900 !bg-neutral-900 !text-white shadow-[0_10px_20px_rgba(15,23,42,0.08)] hover:!border-neutral-900 hover:!bg-neutral-900 hover:!text-white",
+                  )}
+                  onClick={() => {
+                    if (!studentHomework) return;
+                    setStudentTab("homework");
+                  }}
+                  aria-pressed={studentTab === "homework"}
+                  disabled={!studentHomework}
+                >
+                  Домашнее задание
+                </button>
+              </div>
             </div>
+            <div className="mt-5 border-b border-neutral-200" />
           </div>
           <div className="mt-5">
             {studentTab === "lesson" ? lessonPanel : homeworkPanel}
