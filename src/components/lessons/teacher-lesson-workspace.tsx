@@ -134,56 +134,59 @@ export function TeacherLessonWorkspace({
 
   return (
     <div className="space-y-8 lg:space-y-10">
-      <section className="space-y-5">
+      <SurfaceCard as="section" className="p-5 md:p-6" bodyClassName="mt-0">
         <TeacherLessonTabs
           tabs={["plan", "student_screen", "homework", "conduct", "chat"]}
           activeTab={tab}
           onTabChange={setTab}
+          tone="embedded"
         />
         {liveActionError ? (
-          <p className="rounded-xl border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+          <p className="mt-4 rounded-xl border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-700">
             Не удалось обновить live-режим урока: {liveActionError}
           </p>
         ) : null}
 
         {tab === "plan" ? (
-          <TeacherLessonPedagogicalContent
-            quickSummary={quickSummary}
-            steps={planSteps}
-            activeStudentStepId={workspace.liveActiveStepId}
-            assetsById={workspace.unifiedReadModel.assetsById}
-            onShowOnStudentScreen={(stepId) => {
-              const step = workspace.unifiedReadModel.steps.find((item) => item.id === stepId);
-              if (!step) return;
-              void callLiveAction({
-                action: "set_step",
-                stepId: step.id,
-                stepOrder: step.order,
-              }).catch((error) =>
-                setLiveActionError(
-                  error instanceof Error ? error.message : "Не удалось показать шаг ученикам.",
-                ),
-              );
-            }}
-            onOpenStudentScreen={(stepId) => {
-              const step = workspace.unifiedReadModel.steps.find((item) => item.id === stepId);
-              if (!step) return;
-              setLiveActionError(null);
-              void callLiveAction({
-                action: "set_step",
-                stepId: step.id,
-                stepOrder: step.order,
-              })
-                .then(() => setTab("student_screen"))
-                .catch((error) => {
+          <div className="mt-5">
+            <TeacherLessonPedagogicalContent
+              quickSummary={quickSummary}
+              steps={planSteps}
+              activeStudentStepId={workspace.liveActiveStepId}
+              assetsById={workspace.unifiedReadModel.assetsById}
+              onShowOnStudentScreen={(stepId) => {
+                const step = workspace.unifiedReadModel.steps.find((item) => item.id === stepId);
+                if (!step) return;
+                void callLiveAction({
+                  action: "set_step",
+                  stepId: step.id,
+                  stepOrder: step.order,
+                }).catch((error) =>
                   setLiveActionError(
-                    error instanceof Error
-                      ? error.message
-                      : "Не удалось открыть экран ученика.",
-                  );
-                });
-            }}
-          />
+                    error instanceof Error ? error.message : "Не удалось показать шаг ученикам.",
+                  ),
+                );
+              }}
+              onOpenStudentScreen={(stepId) => {
+                const step = workspace.unifiedReadModel.steps.find((item) => item.id === stepId);
+                if (!step) return;
+                setLiveActionError(null);
+                void callLiveAction({
+                  action: "set_step",
+                  stepId: step.id,
+                  stepOrder: step.order,
+                })
+                  .then(() => setTab("student_screen"))
+                  .catch((error) => {
+                    setLiveActionError(
+                      error instanceof Error
+                        ? error.message
+                        : "Не удалось открыть экран ученика.",
+                    );
+                  });
+              }}
+            />
+          </div>
         ) : null}
 
         {tab === "student_screen" ? (
@@ -500,7 +503,7 @@ export function TeacherLessonWorkspace({
             ) : null}
           </SurfaceCard>
         ) : null}
-      </section>
+      </SurfaceCard>
     </div>
   );
 }

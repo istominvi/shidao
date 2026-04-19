@@ -9,7 +9,7 @@ import {
 import { ScheduledLessonLearnerView } from "@/components/lessons/scheduled-lesson-learner-view";
 import { TeacherLessonWorkspace } from "@/components/lessons/teacher-lesson-workspace";
 import { TopNav } from "@/components/top-nav";
-import { ROUTES, toMethodologyLessonRoute } from "@/lib/auth";
+import { ROUTES } from "@/lib/auth";
 import { resolveAccessPolicy } from "@/lib/server/access-policy";
 import { logger } from "@/lib/server/logger";
 import {
@@ -213,6 +213,9 @@ export default async function ScheduledLessonPage({
     teacherId,
   });
   if (!teacherView) notFound();
+  const teacherRuntimeMeta = runtimeStatusMeta(
+    teacherView.workspace.liveState.runtimeStatus,
+  );
 
   if (query.view === "learner-preview") {
     let preview: Awaited<ReturnType<typeof getScheduledLessonLearnerPreview>> =
@@ -276,21 +279,19 @@ export default async function ScheduledLessonPage({
       <TopNav />
       <div className="container app-page-container space-y-6">
         <AppPageHeader
-          backHref={toMethodologyLessonRoute(
-            teacherView.workspace.sourceLesson.methodologySlug,
-            teacherView.workspace.sourceLesson.lessonId,
-          )}
-          backLabel={teacherView.workspace.sourceLesson.methodologyTitle}
+          backHref={ROUTES.schedule}
+          backLabel="Расписание"
           title={teacherView.workspace.presentation.hero.lessonTitle}
           meta={
             <LessonMetaRail>
               <LessonMetaPill
-                icon="methodology"
-                label={teacherView.workspace.presentation.hero.methodologyTitle}
+                icon={teacherRuntimeMeta.icon}
+                tone={teacherRuntimeMeta.tone}
+                label={teacherRuntimeMeta.label}
               />
               <LessonMetaPill
                 icon="datetime"
-                label={teacherView.workspace.presentation.hero.dateTimeLabel}
+                label={formatLessonDateLabel(teacherView.workspace.projection.runtimeShell.startsAt)}
               />
               <LessonMetaPill
                 icon="group"
