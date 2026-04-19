@@ -96,8 +96,19 @@ export default async function StudentHomeworkPage() {
     redirect(ROUTES.login);
   }
 
-  const classIds = await listClassIdsForStudentAdmin(studentId);
-  const homework = await getStudentHomeworkReadModel({ studentId, classIds });
+  let homework: StudentHomeworkCard[] = [];
+  let homeworkLoadFailed = false;
+  try {
+    const classIds = await listClassIdsForStudentAdmin(studentId);
+    homework = await getStudentHomeworkReadModel({ studentId, classIds });
+  } catch (error) {
+    homeworkLoadFailed = true;
+    logger.error("[homework] failed to load student homework projection", {
+      studentId,
+      userId: resolution.context.userId,
+      error,
+    });
+  }
 
   let communication: Awaited<ReturnType<typeof getStudentConversationReadModels>> = [];
   try {
@@ -122,7 +133,11 @@ export default async function StudentHomeworkPage() {
         />
 
         <SurfaceCard title="Список заданий" description={`Всего: ${homework.length}`}>
-          {homework.length === 0 ? (
+          {homeworkLoadFailed ? (
+            <p className="text-sm text-amber-700">
+              Не удалось загрузить домашние задания. Попробуй обновить страницу чуть позже.
+            </p>
+          ) : homework.length === 0 ? (
             <p className="text-sm text-neutral-600">Пока преподаватель не выдал домашнее задание.</p>
           ) : (
             <ul className="space-y-3">
