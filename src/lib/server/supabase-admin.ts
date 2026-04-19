@@ -551,9 +551,13 @@ export async function getUserContextById(
         : "parent";
   }
 
+  const authFullNameRaw = authUser?.user_metadata?.full_name;
+  const authFullName = typeof authFullNameRaw === "string" ? authFullNameRaw : null;
+  const fallbackFullName =
+    typeof fallback?.fullName === "string" ? fallback.fullName : null;
   const resolvedFullName =
-    authUser?.user_metadata?.full_name ??
-    fallback?.fullName ??
+    authFullName ??
+    fallbackFullName ??
     parent?.full_name ??
     teacher?.full_name ??
     formatStudentFullName({
@@ -562,7 +566,11 @@ export async function getUserContextById(
       login: student?.login,
     }) ??
     null;
-  const resolvedEmail = authUser?.email ?? fallback?.email ?? null;
+
+  const authEmailRaw = authUser?.email;
+  const authEmail = typeof authEmailRaw === "string" ? authEmailRaw : null;
+  const fallbackEmail = typeof fallback?.email === "string" ? fallback.email : null;
+  const resolvedEmail = authEmail ?? fallbackEmail ?? null;
   const metadataRoleRaw = authUser?.user_metadata?.role;
   const metadataRole =
     typeof metadataRoleRaw === "string"
@@ -595,9 +603,8 @@ export async function getUserContextById(
     hasStudent: Boolean(student),
     shouldTreatAsStudent,
     usedAuthAdmin: Boolean(authUser),
-    usedFallbackEmail: !authUser?.email && Boolean(fallback?.email),
-    usedFallbackFullName:
-      !authUser?.user_metadata?.full_name && Boolean(fallback?.fullName),
+    usedFallbackEmail: !authEmail && Boolean(fallbackEmail),
+    usedFallbackFullName: !authFullName && Boolean(fallbackFullName),
     durationMs: Date.now() - startedAt,
   });
 
