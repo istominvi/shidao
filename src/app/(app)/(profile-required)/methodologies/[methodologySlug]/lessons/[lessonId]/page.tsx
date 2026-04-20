@@ -57,6 +57,7 @@ export default async function MethodologyLessonPage({ params, searchParams }: { 
       <TopNav />
       <div className="container app-page-container space-y-6">
         <AppPageHeader
+          className="[&_.app-page-actions]:mt-5"
           backHref={toMethodologyRoute(methodologySlug)}
           backLabel={readModel.methodology.title}
           title={readModel.lesson.shell.title}
@@ -70,7 +71,7 @@ export default async function MethodologyLessonPage({ params, searchParams }: { 
               triggerContent={
                 <>
                   <CalendarClock className="h-3.5 w-3.5" aria-hidden="true" />
-                  <span>Назначить</span>
+                  <span>Запланировать</span>
                 </>
               }
             />

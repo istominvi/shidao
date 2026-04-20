@@ -14,7 +14,9 @@ type MethodologyLessonsTableRow = {
   id: string;
   title: string;
   durationLabel: string;
-  nearestAssignedAtLabel: string | null;
+  stepsCount: number;
+  newWordsCount: number;
+  newPhrasesCount: number;
   mediaSummary: {
     videos: number;
     songs: number;

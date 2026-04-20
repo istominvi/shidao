@@ -22,7 +22,9 @@ type MethodologyLessonRow = {
   id: string;
   title: string;
   durationLabel: string;
-  nearestAssignedAtLabel: string | null;
+  stepsCount: number;
+  newWordsCount: number;
+  newPhrasesCount: number;
   mediaSummary: {
     videos: number;
     songs: number;
@@ -77,6 +79,8 @@ function MethodologyLessonsTable({
           <col className="w-px" />
           <col className="w-px" />
           <col className="w-px" />
+          <col className="w-px" />
+          <col className="w-px" />
         </colgroup>
         <ProductTableHead>
           <ProductTableHeaderRow>
@@ -88,7 +92,13 @@ function MethodologyLessonsTable({
               Материалы
             </ProductTableHeaderCell>
             <ProductTableHeaderCell className="whitespace-nowrap">
-              Назначен
+              Шаги
+            </ProductTableHeaderCell>
+            <ProductTableHeaderCell className="whitespace-nowrap">
+              Новые слова
+            </ProductTableHeaderCell>
+            <ProductTableHeaderCell className="whitespace-nowrap">
+              Новые фразы
             </ProductTableHeaderCell>
           </ProductTableHeaderRow>
         </ProductTableHead>
@@ -153,11 +163,13 @@ function MethodologyLessonsTable({
                   </div>
                 </ProductTableCell>
                 <ProductTableCell className="whitespace-nowrap">
-                  <ProductTableTruncate
-                    title={lesson.nearestAssignedAtLabel ?? "Не назначен"}
-                  >
-                    {lesson.nearestAssignedAtLabel ?? "—"}
-                  </ProductTableTruncate>
+                  {lesson.stepsCount}
+                </ProductTableCell>
+                <ProductTableCell className="whitespace-nowrap">
+                  {lesson.newWordsCount}
+                </ProductTableCell>
+                <ProductTableCell className="whitespace-nowrap">
+                  {lesson.newPhrasesCount}
                 </ProductTableCell>
               </ProductTableRow>
             );
