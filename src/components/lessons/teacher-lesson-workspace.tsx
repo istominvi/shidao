@@ -52,7 +52,7 @@ function LiveLessonControlBar({
     !isCompletedOrCancelled && activeIndex >= 0 && activeIndex < steps.length - 1;
 
   return (
-    <div className="rounded-2xl border border-sky-200 bg-sky-50 p-5 text-sm text-sky-900">
+    <div className="rounded-3xl border border-sky-200 bg-sky-50 p-5 text-sm text-sky-900">
       <p className="font-semibold">
         {liveState.runtimeStatus === "in_progress"
           ? "Идёт занятие"
@@ -324,12 +324,13 @@ export function TeacherLessonWorkspace({
           ) : null}
 
           {tab === "student_screen" ? (
-            <section className="space-y-3">
             <LessonStudentContentPanel
+              steps={workspace.unifiedReadModel.steps}
               source={workspace.studentContent.source}
               unavailableReason={workspace.studentContent.unavailableReason}
-              steps={workspace.unifiedReadModel.steps}
               assetsById={workspace.unifiedReadModel.assetsById}
+              embedded
+              showFullscreenControl
               mode="teacher_preview"
               controlledStepId={liveStepId ?? undefined}
               onStepChange={(stepId) => {
@@ -341,16 +342,13 @@ export function TeacherLessonWorkspace({
                 );
               }}
             />
-            </section>
           ) : null}
 
           {tab === "homework" ? (
-            <SurfaceCard title="Домашнее задание">
             <TeacherHomeworkPanel
               homework={workspace.homework}
               scheduledLessonId={workspace.scheduledLessonId}
             />
-            </SurfaceCard>
           ) : null}
 
           {tab === "chat" ? (
