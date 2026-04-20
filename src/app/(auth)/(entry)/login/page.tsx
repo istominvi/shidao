@@ -97,9 +97,17 @@ function LoginPageContent() {
               </FieldControl>
             </FormField>
             <FormField>
-              <FieldLabel htmlFor="login-secret" className="text-black">
-                Пароль или PIN-код
-              </FieldLabel>
+              <div className="flex items-center justify-between gap-3">
+                <FieldLabel htmlFor="login-secret" className="text-black">
+                  Пароль или PIN-код
+                </FieldLabel>
+                <Link
+                  href={ROUTES.forgotPassword}
+                  className="text-sm font-medium text-neutral-500 underline decoration-black/20 underline-offset-2"
+                >
+                  Забыли пароль?
+                </Link>
+              </div>
               <FieldControl>
                 <Input
                   id="login-secret"
@@ -114,14 +122,6 @@ function LoginPageContent() {
                 />
               </FieldControl>
             </FormField>
-            <div className="text-right">
-              <Link
-                href={ROUTES.forgotPassword}
-                className="text-sm font-semibold underline decoration-black/20 underline-offset-2"
-              >
-                Забыли пароль?
-              </Link>
-            </div>
 
             {error && <StatusMessage kind="error">{error}</StatusMessage>}
 

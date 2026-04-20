@@ -173,7 +173,7 @@ export default function JoinPage() {
                   type="checkbox"
                   checked={agreed}
                   onChange={(e) => setAgreed(e.target.checked)}
-                  className="auth-checkbox mt-0.5 size-4"
+                  className="auth-checkbox mt-0.5"
                 />
                 <span>
                   Я согласен(а) с условиями использования и политикой
