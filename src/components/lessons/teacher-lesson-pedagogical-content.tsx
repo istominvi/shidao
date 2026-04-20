@@ -321,7 +321,9 @@ function toGoogleDrivePreviewUrl(url: string) {
 }
 
 function StepOneVideoEmbed({ asset }: { asset: ReusableAsset }) {
-  const sourceUrl = asset.sourceUrl ? toGoogleDrivePreviewUrl(asset.sourceUrl) : null;
+  const { localUrl } = mapAssetUrls(asset);
+  const fallbackSourceUrl = asset.sourceUrl ? toGoogleDrivePreviewUrl(asset.sourceUrl) : null;
+  const sourceUrl = localUrl ?? fallbackSourceUrl;
   if (!sourceUrl) return null;
   return (
     <video
