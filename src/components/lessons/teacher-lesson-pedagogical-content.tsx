@@ -1,6 +1,16 @@
-import { ChevronDown, Timer, Workflow } from "lucide-react";
+import {
+  BookOpenText,
+  ChevronDown,
+  Languages,
+  MonitorUp,
+  NotebookPen,
+  Package,
+  Timer,
+  Workflow,
+} from "lucide-react";
 import { useState } from "react";
 import type { ReactNode } from "react";
+import { productButtonClassName } from "@/components/ui/button";
 import { Chip } from "@/components/ui/chip";
 import type { ReusableAsset } from "@/lib/lesson-content";
 import type { MethodologyLessonStep } from "@/lib/server/methodology-lesson-unified-read-model";
@@ -264,10 +274,10 @@ function ResourceButtons({
   );
 }
 
-function GlossaryChips({ terms }: { terms: string[] }) {
+function GlossaryChips({ terms, compactTop = false }: { terms: string[]; compactTop?: boolean }) {
   if (!terms.length) return null;
   return (
-    <div className="mt-3 flex flex-wrap gap-1.5">
+    <div className={`${compactTop ? "mt-1" : "mt-3"} flex flex-wrap gap-1.5`}>
       {terms.map((term) => (
         <span
           key={term}
@@ -285,10 +295,14 @@ function GlossaryChips({ terms }: { terms: string[] }) {
 function CollapsibleCard({
   title,
   defaultOpen = true,
+  icon: Icon,
+  contentClassName,
   children,
 }: {
   title: string;
   defaultOpen?: boolean;
+  icon: React.ComponentType<{ className?: string }>;
+  contentClassName?: string;
   children: ReactNode;
 }) {
   const [open, setOpen] = useState(defaultOpen);
@@ -297,15 +311,22 @@ function CollapsibleCard({
       <button
         type="button"
         onClick={() => setOpen((previous) => !previous)}
-        className="flex w-full items-center justify-between px-4 py-3 text-left"
+        className="flex w-full cursor-pointer items-center justify-between px-4 py-3 text-left"
       >
-        <h3 className="text-sm font-semibold text-neutral-900">{title}</h3>
+        <h3 className="flex items-center gap-2 text-sm font-semibold text-neutral-900">
+          <Icon className="h-4 w-4 text-neutral-500" aria-hidden="true" />
+          {title}
+        </h3>
         <ChevronDown
           className={`h-4 w-4 text-neutral-500 transition-transform ${open ? "rotate-180" : ""}`}
           aria-hidden="true"
         />
       </button>
-      {open ? <div className="border-t border-neutral-100 px-4 py-3">{children}</div> : null}
+      {open ? (
+        <div className={`border-t border-neutral-100 px-4 py-3 ${contentClassName ?? ""}`}>
+          {children}
+        </div>
+      ) : null}
     </article>
   );
 }
@@ -325,23 +346,33 @@ function LessonOnePlan({
   return (
     <section className="space-y-6" aria-label="План урока">
       <section className="space-y-3">
-        <CollapsibleCard title="Об уроке" defaultOpen>
+        <CollapsibleCard title="Об уроке" icon={BookOpenText} defaultOpen>
           <p className="text-sm text-neutral-700">
             Первый урок знакомит детей с животными фермы через видео, карточки, движение, счёт, игрушечную ферму и песню. План следует методике: учитель ведёт детей от первых слов к коротким моделям 我是… / 这是… / 在…里.
           </p>
         </CollapsibleCard>
 
         {lessonNotesSlot ? (
-          <CollapsibleCard title="Заметки к уроку" defaultOpen>
+          <CollapsibleCard
+            title="Заметки к уроку"
+            icon={NotebookPen}
+            defaultOpen
+            contentClassName="pt-1"
+          >
             {lessonNotesSlot}
           </CollapsibleCard>
         ) : null}
 
-        <CollapsibleCard title="Новые слова и фразы" defaultOpen>
-          <GlossaryChips terms={["狗", "猫", "兔子", "马", "农场", "我是…", "这是狗。", "跑", "跳", "我们跑吧！", "在…里"]} />
+        <CollapsibleCard
+          title="Новые слова и фразы"
+          icon={Languages}
+          defaultOpen
+          contentClassName="pt-1"
+        >
+          <GlossaryChips compactTop terms={["狗", "猫", "兔子", "马", "农场", "我是…", "这是狗。", "跑", "跳", "我们跑吧！", "在…里"]} />
         </CollapsibleCard>
 
-        <CollapsibleCard title="Реквизит к уроку" defaultOpen={false}>
+        <CollapsibleCard title="Реквизиты к уроку" icon={Package} defaultOpen={false}>
           <ul className="space-y-1 text-sm text-neutral-700">
             <li>Активность 1: герои курса</li>
             <li>Активность 3: герои курса</li>
@@ -360,12 +391,14 @@ function LessonOnePlan({
       </section>
 
       <section>
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-          <div>
-            <h2 className="text-base font-semibold text-neutral-950">Структура урока</h2>
-          </div>
-          <Chip tone="sky"><Timer className="mr-1 h-3.5 w-3.5" />45 минут</Chip>
-          <Chip tone="neutral"><Workflow className="mr-1 h-3.5 w-3.5" />15 этапов</Chip>
+        <div className="mb-4 flex flex-wrap items-center gap-2">
+          <h2 className="text-base font-semibold text-neutral-950">Структура урока</h2>
+          <span className="whitespace-nowrap">
+            <Chip tone="sky"><Timer className="mr-1 h-3.5 w-3.5" />45 минут</Chip>
+          </span>
+          <span className="whitespace-nowrap">
+            <Chip tone="neutral"><Workflow className="mr-1 h-3.5 w-3.5" />15 этапов</Chip>
+          </span>
         </div>
 
         <div className="space-y-3">
@@ -375,10 +408,12 @@ function LessonOnePlan({
                 <div className="flex flex-wrap items-center gap-2">
                   <Chip size="sm" tone="inverse">Шаг {step.order}</Chip>
                   <Chip size="sm" tone="neutral">{step.category}</Chip>
-                  <Chip size="sm" tone="sky">
-                    <Timer className="mr-1 h-3.5 w-3.5" />
-                    {step.durationMinutes ?? steps.find((sourceStep) => sourceStep.order === step.order)?.durationMinutes ?? 3} мин
-                  </Chip>
+                  <span className="whitespace-nowrap">
+                    <Chip size="sm" tone="sky">
+                      <Timer className="mr-1 h-3.5 w-3.5" />
+                      {step.durationMinutes ?? steps.find((sourceStep) => sourceStep.order === step.order)?.durationMinutes ?? 3} мин
+                    </Chip>
+                  </span>
                 </div>
                 {onShowOnStudentScreen ? (
                   <button
@@ -387,8 +422,9 @@ function LessonOnePlan({
                       const sourceStep = steps.find((source) => source.order === step.order);
                       if (sourceStep) onShowOnStudentScreen(sourceStep.id);
                     }}
-                    className="rounded-lg border border-neutral-300 bg-white px-3 py-1.5 text-xs font-semibold text-neutral-700"
+                    className={productButtonClassName("secondary", "text-sm")}
                   >
+                    <MonitorUp className="h-4 w-4" aria-hidden="true" />
                     На экран ученика
                   </button>
                 ) : null}
