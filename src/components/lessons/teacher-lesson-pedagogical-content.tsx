@@ -1,9 +1,11 @@
 import {
   BookOpenText,
   ChevronDown,
+  FileText,
   Languages,
   MonitorUp,
   NotebookPen,
+  Presentation,
   Package,
   Timer,
   Workflow,
@@ -42,6 +44,9 @@ type LessonPlanDisplayStep = {
   resourceIds?: string[];
   resourceButtons?: Array<{ label: string; assetId: string; preferDownload?: boolean }>;
 };
+
+const cjkFontFamily =
+  '"Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Arial Unicode MS", system-ui, sans-serif';
 
 const chineseGlossary: Record<string, string> = {
   "狗": "собака",
@@ -256,7 +261,7 @@ function ResourceButtons({
         if (!asset) return null;
         const href = action.preferDownload
           ? asset.fileRef ?? asset.sourceUrl
-          : asset.sourceUrl ?? asset.fileRef;
+          : asset.fileRef ?? asset.sourceUrl;
         if (!href) return null;
         return (
           <a
@@ -274,6 +279,146 @@ function ResourceButtons({
   );
 }
 
+function mapAssetUrls(asset: ReusableAsset) {
+  const metadata = asset.metadata ?? {};
+  const localUrl = typeof asset.fileRef === "string" && asset.fileRef.startsWith("/methodologies/")
+    ? asset.fileRef
+    : undefined;
+  const previewImageRefs = [
+    ...(Array.isArray(metadata.previewImageRefs) ? metadata.previewImageRefs : []),
+    ...(typeof metadata.previewImageRef === "string" ? [metadata.previewImageRef] : []),
+  ].filter((value): value is string => typeof value === "string");
+  const slideImageRefs = Array.isArray(metadata.slideImageRefs)
+    ? metadata.slideImageRefs.filter((value): value is string => typeof value === "string")
+    : [];
+  const cardImageRefs = Array.isArray(metadata.cardImageRefs)
+    ? metadata.cardImageRefs.filter((value): value is string => typeof value === "string")
+    : [];
+  const pptxFileRef = typeof metadata.pptxFileRef === "string" ? metadata.pptxFileRef : undefined;
+  const fallbackUrl = !localUrl ? asset.sourceUrl : undefined;
+  return { localUrl, fallbackUrl, previewImageRefs, slideImageRefs, cardImageRefs, pptxFileRef };
+}
+
+function downloadLabel(asset: ReusableAsset) {
+  if (asset.kind === "song_audio" || asset.kind === "song" || asset.kind === "pronunciation_audio") return "Скачать аудио";
+  if (asset.kind === "song_video" || asset.kind === "video" || asset.kind === "lesson_video") return "Скачать MP4";
+  if (asset.kind === "presentation" || asset.kind === "flashcards_pdf" || asset.kind === "worksheet" || asset.kind === "worksheet_pdf") return "Скачать PDF";
+  return "Скачать файл";
+}
+
+function openLabel(asset: ReusableAsset) {
+  if (asset.kind === "song_audio" || asset.kind === "song" || asset.kind === "pronunciation_audio") return "Открыть аудио";
+  if (asset.kind === "song_video" || asset.kind === "video" || asset.kind === "lesson_video") return "Открыть видео";
+  if (asset.kind === "presentation" || asset.kind === "flashcards_pdf" || asset.kind === "worksheet" || asset.kind === "worksheet_pdf") return "Открыть PDF";
+  return "Открыть файл";
+}
+
+function LessonPlanResourcePreview({ asset }: { asset: ReusableAsset }) {
+  const { localUrl, fallbackUrl, previewImageRefs, slideImageRefs, cardImageRefs, pptxFileRef } = mapAssetUrls(asset);
+  const primaryUrl = localUrl ?? fallbackUrl;
+  if (!primaryUrl && !previewImageRefs.length && !slideImageRefs.length && !cardImageRefs.length) return null;
+
+  const actionButtonClassName =
+    "inline-flex rounded-lg border border-neutral-300 bg-white px-3 py-1.5 text-xs font-semibold text-neutral-800";
+
+  if (asset.kind === "video" || asset.kind === "lesson_video" || asset.kind === "song_video") {
+    return (
+      <div className="mt-3 rounded-xl border border-neutral-200 bg-neutral-50 p-3">
+        {primaryUrl ? (
+          <video controls playsInline preload="metadata" src={primaryUrl} className="w-full rounded-lg border border-neutral-200 bg-black" />
+        ) : null}
+        <div className="mt-2 flex flex-wrap gap-2">
+          {primaryUrl ? <a href={primaryUrl} target="_blank" rel="noreferrer" className={actionButtonClassName}>{openLabel(asset)}</a> : null}
+          {localUrl ? <a href={localUrl} download className={actionButtonClassName}>{downloadLabel(asset)}</a> : null}
+          {!localUrl && fallbackUrl ? <a href={fallbackUrl} target="_blank" rel="noreferrer" className={actionButtonClassName}>Открыть источник</a> : null}
+        </div>
+      </div>
+    );
+  }
+
+  if (asset.kind === "song_audio" || asset.kind === "song" || asset.kind === "pronunciation_audio") {
+    return (
+      <div className="mt-3 rounded-xl border border-neutral-200 bg-neutral-50 p-3">
+        {primaryUrl ? <audio controls preload="metadata" src={primaryUrl} className="w-full" /> : null}
+        <div className="mt-2 flex flex-wrap gap-2">
+          {!localUrl && fallbackUrl ? <a href={fallbackUrl} target="_blank" rel="noreferrer" className={actionButtonClassName}>Открыть аудио</a> : null}
+          {localUrl ? <a href={localUrl} download className={actionButtonClassName}>Скачать аудио</a> : null}
+        </div>
+      </div>
+    );
+  }
+
+  if (asset.kind === "presentation") {
+    return (
+      <div className="mt-3 rounded-xl border border-neutral-200 bg-neutral-50 p-3">
+        {slideImageRefs.length ? (
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            {slideImageRefs.slice(0, 6).map((imageRef, index) => (
+              <img key={imageRef} src={imageRef} alt={`Слайд ${index + 1}: ${asset.title}`} className="h-20 w-full rounded-md border border-neutral-200 object-cover" />
+            ))}
+          </div>
+        ) : localUrl ? (
+          <iframe src={localUrl} title={asset.title} className="h-56 w-full rounded-lg border border-neutral-200 bg-white" />
+        ) : null}
+        <div className="mt-2 flex flex-wrap gap-2">
+          {localUrl ? <a href={localUrl} target="_blank" rel="noreferrer" className={actionButtonClassName}>Открыть PDF</a> : null}
+          {pptxFileRef ? <a href={pptxFileRef} target="_blank" rel="noreferrer" className={actionButtonClassName}>Скачать PPTX</a> : null}
+          {!localUrl && fallbackUrl ? <a href={fallbackUrl} target="_blank" rel="noreferrer" className={actionButtonClassName}>Открыть источник</a> : null}
+        </div>
+      </div>
+    );
+  }
+
+  if (asset.kind === "flashcards_pdf") {
+    return (
+      <div className="mt-3 rounded-xl border border-neutral-200 bg-neutral-50 p-3">
+        {cardImageRefs.length ? (
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+            {cardImageRefs.slice(0, 10).map((imageRef, index) => (
+              <img key={imageRef} src={imageRef} alt={`Карточка ${index + 1}: ${asset.title}`} className="h-20 w-full rounded-md border border-neutral-200 object-cover" />
+            ))}
+          </div>
+        ) : null}
+        <div className="mt-2 flex flex-wrap gap-2">
+          {localUrl ? <a href={localUrl} target="_blank" rel="noreferrer" className={actionButtonClassName}>Открыть PDF</a> : null}
+          {localUrl ? <a href={localUrl} download className={actionButtonClassName}>Скачать PDF</a> : null}
+          {!localUrl && fallbackUrl ? <a href={fallbackUrl} target="_blank" rel="noreferrer" className={actionButtonClassName}>Открыть источник</a> : null}
+        </div>
+      </div>
+    );
+  }
+
+  if (asset.kind === "worksheet" || asset.kind === "worksheet_pdf") {
+    return (
+      <div className="mt-3 rounded-xl border border-neutral-200 bg-neutral-50 p-3">
+        {previewImageRefs.length ? (
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            {previewImageRefs.slice(0, 2).map((imageRef, index) => (
+              <img key={imageRef} src={imageRef} alt={`Превью листа ${index + 1}: ${asset.title}`} className="h-40 w-full rounded-md border border-neutral-200 object-cover" />
+            ))}
+          </div>
+        ) : localUrl ? (
+          <iframe src={localUrl} title={asset.title} className="h-56 w-full rounded-lg border border-neutral-200 bg-white" />
+        ) : null}
+        <div className="mt-2 flex flex-wrap gap-2">
+          {localUrl ? <a href={localUrl} target="_blank" rel="noreferrer" className={actionButtonClassName}>Открыть PDF</a> : null}
+          {localUrl ? <a href={localUrl} download className={actionButtonClassName}>Скачать PDF</a> : null}
+          {!localUrl && fallbackUrl ? <a href={fallbackUrl} target="_blank" rel="noreferrer" className={actionButtonClassName}>Открыть источник</a> : null}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-3 rounded-xl border border-neutral-200 bg-neutral-50 p-3">
+      <div className="mt-2 flex flex-wrap gap-2">
+        {primaryUrl ? <a href={primaryUrl} target="_blank" rel="noreferrer" className={actionButtonClassName}>{openLabel(asset)}</a> : null}
+        {localUrl ? <a href={localUrl} download className={actionButtonClassName}>{downloadLabel(asset)}</a> : null}
+      </div>
+    </div>
+  );
+}
+
 function GlossaryChips({ terms, compactTop = false }: { terms: string[]; compactTop?: boolean }) {
   if (!terms.length) return null;
   return (
@@ -283,7 +428,7 @@ function GlossaryChips({ terms, compactTop = false }: { terms: string[]; compact
           key={term}
           title={chineseGlossary[term] ?? ""}
           className="inline-flex rounded-lg border border-violet-200 bg-violet-50 px-2 py-1 text-xs text-violet-900"
-          style={{ fontFamily: '"Noto Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif' }}
+          style={{ fontFamily: cjkFontFamily }}
         >
           {term}
         </span>
@@ -347,7 +492,7 @@ function LessonOnePlan({
     <section className="space-y-6" aria-label="План урока">
       <section className="space-y-3">
         <CollapsibleCard title="Об уроке" icon={BookOpenText} defaultOpen>
-          <p className="text-sm text-neutral-700">
+          <p className="text-sm text-neutral-700" style={{ fontFamily: cjkFontFamily }}>
             Первый урок знакомит детей с животными фермы через видео, карточки, движение, счёт, игрушечную ферму и песню. План следует методике: учитель ведёт детей от первых слов к коротким моделям 我是… / 这是… / 在…里.
           </p>
         </CollapsibleCard>
@@ -362,6 +507,30 @@ function LessonOnePlan({
             {lessonNotesSlot}
           </CollapsibleCard>
         ) : null}
+
+        <CollapsibleCard
+          title="Презентация"
+          icon={Presentation}
+          defaultOpen
+        >
+          {assetsById["presentation:world-around-me-lesson-1"] ? (
+            <LessonPlanResourcePreview asset={assetsById["presentation:world-around-me-lesson-1"]} />
+          ) : (
+            <p className="text-sm text-neutral-700">Презентация не найдена.</p>
+          )}
+        </CollapsibleCard>
+
+        <CollapsibleCard
+          title="Карточки"
+          icon={FileText}
+          defaultOpen
+        >
+          {assetsById["flashcards:world-around-me-lesson-1"] ? (
+            <LessonPlanResourcePreview asset={assetsById["flashcards:world-around-me-lesson-1"]} />
+          ) : (
+            <p className="text-sm text-neutral-700">Карточки не найдены.</p>
+          )}
+        </CollapsibleCard>
 
         <CollapsibleCard
           title="Новые слова и фразы"
@@ -427,10 +596,15 @@ function LessonOnePlan({
                   </button>
                 ) : null}
               </div>
-              <h3 className="mt-2 text-lg font-semibold text-neutral-950">{step.title}</h3>
-              <p className="mt-2 text-sm leading-6 text-neutral-700">{step.text}</p>
+              <h3 className="mt-2 text-lg font-semibold text-neutral-950" style={{ fontFamily: cjkFontFamily }}>{step.title}</h3>
+              <p className="mt-2 text-sm leading-6 text-neutral-700" style={{ fontFamily: cjkFontFamily }}>{step.text}</p>
               <GlossaryChips terms={step.glossaryTerms} />
-              {step.resourceButtons ? (
+              {step.resourceIds?.map((resourceId) => {
+                const asset = assetsById[resourceId];
+                if (!asset) return null;
+                return <LessonPlanResourcePreview key={`${step.id}-${resourceId}`} asset={asset} />;
+              })}
+              {!step.resourceIds?.length && step.resourceButtons?.length ? (
                 <ResourceButtons actions={step.resourceButtons} assetsById={assetsById} />
               ) : null}
             </article>
