@@ -352,12 +352,8 @@ export function TeacherLessonWorkspace({
           ) : null}
 
           {tab === "chat" ? (
-            <SurfaceCard title="Чат">
-
+            <>
             <section className="space-y-2">
-              <h3 className="text-sm font-semibold uppercase tracking-[0.12em] text-neutral-500">
-                По уроку
-              </h3>
               {workspace.communication.lessonScoped.length === 0 ? (
                 <div className="rounded-xl border border-dashed border-neutral-300 p-3 text-sm text-neutral-600">
                   В группе пока нет учеников для обсуждения.
@@ -522,7 +518,7 @@ export function TeacherLessonWorkspace({
                 ))}
               </section>
             ) : null}
-            </SurfaceCard>
+            </>
           ) : null}
         </div>
       </SurfaceCard>
