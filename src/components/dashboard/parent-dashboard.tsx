@@ -172,10 +172,7 @@ export function ParentDashboard({
 
   return (
     <DashboardShell
-      roleLabel="Родитель"
       roleTone="parent"
-      title="Кабинет родителя"
-      subtitle="Спокойный обзор обучения ребёнка: ближайшие уроки, домашние задания и комментарии преподавателя."
     >
       {childrenContexts.length === 0 ? (
         <DashboardSection
@@ -212,10 +209,7 @@ export function ParentDashboard({
           ) : null}
 
           <section className="rounded-2xl border border-neutral-200 bg-white/70 p-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
-              Родитель видит учебный процесс, но не изменяет уроки, задания и переписку.
-            </p>
-            <dl className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            <dl className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
               <div>
                 <dt className="text-xs text-neutral-500">Ребёнок</dt>
                 <dd className="font-semibold text-neutral-900">{selectedChild.studentName}</dd>
