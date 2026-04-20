@@ -45,7 +45,14 @@ export type TeacherGroupOverviewReadModel = {
     assignedMethodologyShortDescription: string | null;
     lessonTotal: number;
   };
-  students: Array<{ id: string; displayName: string; login: string | null }>;
+  students: Array<{
+    id: string;
+    displayName: string;
+    login: string | null;
+    parentId: string | null;
+    parentName: string | null;
+    parentEmail: string | null;
+  }>;
   upcomingLessons: Array<{
     id: string;
     title: string;
@@ -80,6 +87,12 @@ type TeacherGroupsDeps = {
     methodologyId: string;
   }) => Promise<{ classId: string }>;
   assertTeacherAssignedToClass: (teacherId: string, classId: string) => Promise<void>;
+  getAuthUsersByIds?: (userIds: string[]) => Promise<
+    Record<
+      string,
+      { id: string; email: string | null; user_metadata?: { full_name?: string | null } | null }
+    >
+  >;
 };
 
 async function assertTeacherAssignedToClassAdminDefault(
@@ -99,6 +112,11 @@ async function createClassForTeacherAdminDefault(input: {
   return createClassForTeacherAdmin(input);
 }
 
+async function getAuthUsersByIdsAdminDefault(userIds: string[]) {
+  const { getAuthUsersByIdsAdmin } = await import("./supabase-admin");
+  return getAuthUsersByIdsAdmin(userIds);
+}
+
 const defaultDeps: TeacherGroupsDeps = {
   listTeacherClasses: listTeacherClassesAdmin,
   listStudentsForClasses: listStudentsForClassesAdmin,
@@ -109,6 +127,7 @@ const defaultDeps: TeacherGroupsDeps = {
   createScheduledLesson: createScheduledLessonAdmin,
   createClassForTeacher: createClassForTeacherAdminDefault,
   assertTeacherAssignedToClass: assertTeacherAssignedToClassAdminDefault,
+  getAuthUsersByIds: getAuthUsersByIdsAdminDefault,
 };
 
 function formatDateTime(startsAt: string) {
@@ -467,11 +486,25 @@ export async function getTeacherGroupOverview(
     href: toLessonWorkspaceRoute(lesson.id),
   }));
 
-  const students = (snapshot.studentsByClass[input.groupId] ?? []).map((student) => ({
+  const studentRows = snapshot.studentsByClass[input.groupId] ?? [];
+  const parentUsersById = deps.getAuthUsersByIds
+    ? await deps.getAuthUsersByIds(
+      studentRows
+        .map((student) => student.parentUserId)
+        .filter((id): id is string => Boolean(id)),
+    )
+    : {};
+
+  const students = studentRows.map((student) => ({
     id: student.id,
     displayName:
       clean(student.fullName) || (clean(student.login) ? `@${clean(student.login)}` : "Ученик"),
     login: clean(student.login) || null,
+    parentId: clean(student.parentId) || null,
+    parentName: clean(student.parentName) || null,
+    parentEmail:
+      (student.parentUserId ? clean(parentUsersById[student.parentUserId]?.email) : "") ||
+      null,
   }));
 
   const methodologyOptions = await deps.listMethodologies();

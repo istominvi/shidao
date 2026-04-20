@@ -19,10 +19,13 @@ import {
   parseGroupScopedLessonFormData,
 } from "@/lib/server/teacher-groups";
 import {
+  assertTeacherAssignedToClassAdmin,
   attachStudentToClassAsAdmin,
   createStudentAuthUser,
   detachStudentFromClassAsAdmin,
   insertStudentRow,
+  resolveOptionalParentLinkByEmailAdmin,
+  updateStudentParentLinkAsAdmin,
   updateStudentProfileAsAdmin,
 } from "@/lib/server/supabase-admin";
 
@@ -91,13 +94,16 @@ export default async function TeacherGroupPage({
 
     try {
       const actionResolution = await resolveAccessPolicy();
-      assertTeacherGroupsAccess(actionResolution);
+      const { teacherId: actionTeacherId } = assertTeacherGroupsAccess(actionResolution);
+      await assertTeacherAssignedToClassAdmin(actionTeacherId, groupId);
 
       const login = String(formData.get("login") ?? "")
         .trim()
         .toLowerCase();
       const password = String(formData.get("password") ?? "");
       const fullName = String(formData.get("fullName") ?? "").trim();
+      const parentEmail = String(formData.get("parentEmail") ?? "").trim();
+      const parentFullName = String(formData.get("parentFullName") ?? "").trim();
 
       if (!login || password.length < 8) {
         throw new Error("Нужны логин и пароль не короче 8 символов.");
@@ -109,11 +115,17 @@ export default async function TeacherGroupPage({
         fullName: fullName || null,
       });
 
+      const parentId = await resolveOptionalParentLinkByEmailAdmin({
+        parentEmail: parentEmail || null,
+        parentFullName: parentFullName || null,
+      });
+
       const studentId = await insertStudentRow({
         userId: createdAuth.userId,
         login,
         internalAuthEmail: createdAuth.email,
         fullName: fullName || null,
+        parentId,
       });
 
       if (!studentId) {
@@ -125,7 +137,15 @@ export default async function TeacherGroupPage({
       revalidatePath(ROUTES.dashboard);
       revalidatePath(ROUTES.groups);
       revalidatePath(`${ROUTES.groups}/${groupId}`);
-      redirect(withMessage(groupId, "saved", "Ученик создан и добавлен в группу."));
+      redirect(
+        withMessage(
+          groupId,
+          "saved",
+          parentId
+            ? "Ученик создан, добавлен в группу и привязан к родителю."
+            : "Ученик создан и добавлен в группу.",
+        ),
+      );
     } catch (error) {
       if (isRedirectError(error)) {
         throw error;
@@ -141,11 +161,15 @@ export default async function TeacherGroupPage({
 
     try {
       const actionResolution = await resolveAccessPolicy();
-      assertTeacherGroupsAccess(actionResolution);
+      const { teacherId: actionTeacherId } = assertTeacherGroupsAccess(actionResolution);
+      await assertTeacherAssignedToClassAdmin(actionTeacherId, groupId);
       const studentId = String(formData.get("studentId") ?? "").trim();
       const login = String(formData.get("login") ?? "").trim().toLowerCase();
       const fullName = String(formData.get("fullName") ?? "").trim();
       const password = String(formData.get("password") ?? "");
+      const parentLinkMode = String(formData.get("parentLinkMode") ?? "").trim();
+      const parentEmail = String(formData.get("parentEmail") ?? "").trim();
+      const parentFullName = String(formData.get("parentFullName") ?? "").trim();
 
       if (!studentId || !login) {
         throw new Error("Нужны studentId и логин.");
@@ -161,6 +185,42 @@ export default async function TeacherGroupPage({
         fullName: fullName || null,
         password: password || null,
       });
+
+      if (parentLinkMode === "unlink") {
+        await updateStudentParentLinkAsAdmin({
+          classId: groupId,
+          studentId,
+          parentId: null,
+        });
+      } else if (parentLinkMode === "link") {
+        if (!parentEmail) {
+          throw new Error("Укажите email родителя.");
+        }
+        let parentId: string | null = null;
+        try {
+          parentId = await resolveOptionalParentLinkByEmailAdmin({
+            parentEmail,
+            parentFullName: parentFullName || null,
+          });
+        } catch (error) {
+          if (
+            error instanceof Error &&
+            error.message ===
+              "Родитель с таким email ещё не зарегистрирован. Попросите родителя создать аккаунт или оставьте поле пустым."
+          ) {
+            throw error;
+          }
+          throw new Error("Не удалось привязать родителя.");
+        }
+        if (!parentId) {
+          throw new Error("Укажите email родителя.");
+        }
+        await updateStudentParentLinkAsAdmin({
+          classId: groupId,
+          studentId,
+          parentId,
+        });
+      }
 
       revalidatePath(ROUTES.dashboard);
       revalidatePath(ROUTES.groups);
@@ -181,7 +241,8 @@ export default async function TeacherGroupPage({
 
     try {
       const actionResolution = await resolveAccessPolicy();
-      assertTeacherGroupsAccess(actionResolution);
+      const { teacherId: actionTeacherId } = assertTeacherGroupsAccess(actionResolution);
+      await assertTeacherAssignedToClassAdmin(actionTeacherId, groupId);
       const studentId = String(formData.get("studentId") ?? "").trim();
       if (!studentId) {
         throw new Error("Не указан ученик для удаления.");
@@ -253,6 +314,9 @@ export default async function TeacherGroupPage({
               id: student.id,
               displayName: student.displayName,
               login: student.login,
+              parentId: student.parentId,
+              parentName: student.parentName,
+              parentEmail: student.parentEmail,
               progressLabel: "—",
               communicationHref: `${ROUTES.groups}/${encodeURIComponent(groupId)}/students/${encodeURIComponent(student.id)}/communication`,
             }))}
