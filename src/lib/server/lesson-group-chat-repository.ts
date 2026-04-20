@@ -8,6 +8,25 @@ type RequestOptions = {
   extraHeaders?: Record<string, string>;
 };
 
+function isMissingLessonGroupChatSchemaError(message: string) {
+  const normalized = message.toLowerCase();
+  const missingRelation =
+    normalized.includes("does not exist") ||
+    normalized.includes("schema cache") ||
+    normalized.includes("could not find the table");
+
+  return (
+    missingRelation &&
+    (normalized.includes("lesson_group_conversation") ||
+      normalized.includes("lesson_group_message"))
+  );
+}
+
+export function isLessonGroupChatSchemaMissingError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error);
+  return isMissingLessonGroupChatSchemaError(message);
+}
+
 type RowLessonGroupConversation = {
   id: string;
   scheduled_lesson_id: string;

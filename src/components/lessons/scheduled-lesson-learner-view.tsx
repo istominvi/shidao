@@ -221,7 +221,7 @@ export function ScheduledLessonLearnerView({
                   onClick={() => setStudentTab("chat")}
                   aria-pressed={studentTab === "chat"}
                 >
-                  Чат
+                  Чат урока
                 </button>
               </div>
             </div>

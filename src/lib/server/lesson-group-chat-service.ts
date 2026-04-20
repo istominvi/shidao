@@ -3,6 +3,7 @@ import { getScheduledLessonByIdAdmin, listClassIdsForStudentAdmin } from "./less
 import {
   createLessonGroupMessageAdmin,
   ensureLessonGroupConversationAdmin,
+  isLessonGroupChatSchemaMissingError,
   listLessonGroupMessagesAdmin,
   type LessonGroupMessage,
 } from "./lesson-group-chat-repository";
@@ -155,9 +156,22 @@ export async function getLessonGroupChatReadModel(input: {
     principal,
   });
 
-  const { conversation, messages } = await listLessonGroupMessagesAdmin({
-    scheduledLessonId: readAccess.scheduledLesson.id,
-  });
+  let conversation;
+  let messages;
+  try {
+    const payload = await listLessonGroupMessagesAdmin({
+      scheduledLessonId: readAccess.scheduledLesson.id,
+    });
+    conversation = payload.conversation;
+    messages = payload.messages;
+  } catch (error) {
+    if (isLessonGroupChatSchemaMissingError(error)) {
+      throw new Error(
+        "Чат урока временно недоступен: нужно применить миграции lesson_group_chat.",
+      );
+    }
+    throw error;
+  }
 
   return {
     thread: {
@@ -187,9 +201,19 @@ export async function sendLessonGroupChatMessage(input: {
   }
 
   const body = normalizeMessageBody(input.body);
-  const conversation = await ensureLessonGroupConversationAdmin({
-    scheduledLessonId: input.scheduledLessonId,
-  });
+  let conversation;
+  try {
+    conversation = await ensureLessonGroupConversationAdmin({
+      scheduledLessonId: input.scheduledLessonId,
+    });
+  } catch (error) {
+    if (isLessonGroupChatSchemaMissingError(error)) {
+      throw new Error(
+        "Чат урока временно недоступен: нужно применить миграции lesson_group_chat.",
+      );
+    }
+    throw error;
+  }
 
   if (principal.kind === "student") {
     const authorLogin = principal.studentLogin;
@@ -197,27 +221,45 @@ export async function sendLessonGroupChatMessage(input: {
       `${principal.studentFirstName ?? ""} ${principal.studentLastName ?? ""}`.trim() ||
       "Ученик";
 
-    return createLessonGroupMessageAdmin({
-      conversationId: conversation.id,
-      authorUserId: principal.userId,
-      authorRole: "student",
-      authorStudentId: principal.studentId,
-      authorLogin,
-      authorName,
-      body,
-    });
+    try {
+      return createLessonGroupMessageAdmin({
+        conversationId: conversation.id,
+        authorUserId: principal.userId,
+        authorRole: "student",
+        authorStudentId: principal.studentId,
+        authorLogin,
+        authorName,
+        body,
+      });
+    } catch (error) {
+      if (isLessonGroupChatSchemaMissingError(error)) {
+        throw new Error(
+          "Чат урока временно недоступен: нужно применить миграции lesson_group_chat.",
+        );
+      }
+      throw error;
+    }
   }
 
   const authorLogin = `teacher-${principal.teacherId.slice(0, 8)}`;
   const authorName = principal.teacherFullName || "Преподаватель";
 
-  return createLessonGroupMessageAdmin({
-    conversationId: conversation.id,
-    authorUserId: principal.userId,
-    authorRole: "teacher",
-    authorTeacherId: principal.teacherId,
-    authorLogin,
-    authorName,
-    body,
-  });
+  try {
+    return createLessonGroupMessageAdmin({
+      conversationId: conversation.id,
+      authorUserId: principal.userId,
+      authorRole: "teacher",
+      authorTeacherId: principal.teacherId,
+      authorLogin,
+      authorName,
+      body,
+    });
+  } catch (error) {
+    if (isLessonGroupChatSchemaMissingError(error)) {
+      throw new Error(
+        "Чат урока временно недоступен: нужно применить миграции lesson_group_chat.",
+      );
+    }
+    throw error;
+  }
 }

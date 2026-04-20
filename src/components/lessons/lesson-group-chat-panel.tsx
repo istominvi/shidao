@@ -108,8 +108,7 @@ export function LessonGroupChatPanel({
   return (
     <section className="rounded-2xl border border-neutral-200 bg-white p-4 md:p-5">
       <header>
-        <h3 className="text-base font-semibold text-neutral-900">Чат урока</h3>
-        <p className="mt-1 text-sm text-neutral-600">{headerTitle}</p>
+        <h3 className="text-base font-semibold text-neutral-900">{headerTitle}</h3>
       </header>
 
       <div
