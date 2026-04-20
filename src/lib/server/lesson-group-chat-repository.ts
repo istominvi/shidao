@@ -27,6 +27,14 @@ export function isLessonGroupChatSchemaMissingError(error: unknown) {
   return isMissingLessonGroupChatSchemaError(message);
 }
 
+function isUniqueViolationError(message: string) {
+  const normalized = message.toLowerCase();
+  return (
+    normalized.includes("duplicate key value violates unique constraint") ||
+    normalized.includes("23505")
+  );
+}
+
 type RowLessonGroupConversation = {
   id: string;
   scheduled_lesson_id: string;
@@ -164,20 +172,28 @@ export async function ensureLessonGroupConversationAdmin(input: { scheduledLesso
   const methodologyLesson = await getMethodologyLessonByIdAdmin(scheduledLesson.methodologyLessonId);
   const title = methodologyLesson?.shell.title?.trim() || "Чат урока";
 
-  const rows = await adminRequest<RowLessonGroupConversation[]>(
-    "/rest/v1/lesson_group_conversation",
-    "POST",
-    {
-      payload: {
-        scheduled_lesson_id: scheduledLesson.id,
-        class_id: scheduledLesson.runtimeShell.classId,
-        title,
+  let rows: RowLessonGroupConversation[] = [];
+  try {
+    rows = await adminRequest<RowLessonGroupConversation[]>(
+      "/rest/v1/lesson_group_conversation?on_conflict=scheduled_lesson_id",
+      "POST",
+      {
+        payload: {
+          scheduled_lesson_id: scheduledLesson.id,
+          class_id: scheduledLesson.runtimeShell.classId,
+          title,
+        },
+        extraHeaders: {
+          Prefer: "resolution=merge-duplicates,return=representation",
+        },
       },
-      extraHeaders: {
-        Prefer: "resolution=merge-duplicates,return=representation",
-      },
-    },
-  );
+    );
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (!isUniqueViolationError(message)) {
+      throw error;
+    }
+  }
 
   if (rows[0]) return mapConversation(rows[0]);
 
