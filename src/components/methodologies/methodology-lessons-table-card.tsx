@@ -22,7 +22,9 @@ type MethodologyLessonRow = {
   id: string;
   title: string;
   durationLabel: string;
-  nearestAssignedAtLabel: string | null;
+  stepsCount: number;
+  newWordsCount: number;
+  newPhrasesCount: number;
   mediaSummary: {
     videos: number;
     songs: number;
@@ -77,6 +79,8 @@ function MethodologyLessonsTable({
           <col className="w-px" />
           <col className="w-px" />
           <col className="w-px" />
+          <col className="w-px" />
+          <col className="w-px" />
         </colgroup>
         <ProductTableHead>
           <ProductTableHeaderRow>
@@ -85,10 +89,16 @@ function MethodologyLessonsTable({
               Длительность
             </ProductTableHeaderCell>
             <ProductTableHeaderCell className="whitespace-nowrap">
-              Материалы
+              Шаги
             </ProductTableHeaderCell>
             <ProductTableHeaderCell className="whitespace-nowrap">
-              Назначен
+              Новые слова
+            </ProductTableHeaderCell>
+            <ProductTableHeaderCell className="whitespace-nowrap">
+              Новые фразы
+            </ProductTableHeaderCell>
+            <ProductTableHeaderCell className="whitespace-nowrap">
+              Материалы
             </ProductTableHeaderCell>
           </ProductTableHeaderRow>
         </ProductTableHead>
@@ -121,6 +131,15 @@ function MethodologyLessonsTable({
                   </ProductTableTruncate>
                 </ProductTableCell>
                 <ProductTableCell className="whitespace-nowrap">
+                  {lesson.stepsCount}
+                </ProductTableCell>
+                <ProductTableCell className="whitespace-nowrap">
+                  {lesson.newWordsCount}
+                </ProductTableCell>
+                <ProductTableCell className="whitespace-nowrap">
+                  {lesson.newPhrasesCount}
+                </ProductTableCell>
+                <ProductTableCell className="whitespace-nowrap">
                   <div className="flex flex-nowrap items-center gap-2 text-sm text-neutral-700">
                     <MaterialMetric
                       label="Видео"
@@ -151,13 +170,6 @@ function MethodologyLessonsTable({
                       }
                     />
                   </div>
-                </ProductTableCell>
-                <ProductTableCell className="whitespace-nowrap">
-                  <ProductTableTruncate
-                    title={lesson.nearestAssignedAtLabel ?? "Не назначен"}
-                  >
-                    {lesson.nearestAssignedAtLabel ?? "—"}
-                  </ProductTableTruncate>
                 </ProductTableCell>
               </ProductTableRow>
             );
