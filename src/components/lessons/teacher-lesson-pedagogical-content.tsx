@@ -316,20 +316,20 @@ function mapAssetUrls(asset: ReusableAsset) {
 
 function toGoogleDrivePreviewUrl(url: string) {
   const match = url.match(/\/file\/d\/([^/]+)\//);
-  if (!match) return url;
-  return `https://drive.google.com/file/d/${match[1]}/preview`;
+  if (!match) return null;
+  return `https://drive.usercontent.google.com/download?id=${match[1]}&export=download&confirm=t`;
 }
 
 function StepOneVideoEmbed({ asset }: { asset: ReusableAsset }) {
   const sourceUrl = asset.sourceUrl ? toGoogleDrivePreviewUrl(asset.sourceUrl) : null;
   if (!sourceUrl) return null;
   return (
-    <iframe
+    <video
+      controls
+      playsInline
+      preload="metadata"
       src={sourceUrl}
-      title={asset.title}
-      className="mt-3 h-64 w-full rounded-xl border border-neutral-200"
-      allow="autoplay; encrypted-media; picture-in-picture"
-      allowFullScreen
+      className="mt-3 aspect-video w-full rounded-xl border border-neutral-200 bg-black object-contain"
     />
   );
 }
