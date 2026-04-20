@@ -313,6 +313,29 @@ create table if not exists public.group_student_message (
   updated_at timestamptz not null default now()
 );
 
+create table if not exists public.lesson_group_conversation (
+  id uuid primary key default gen_random_uuid(),
+  scheduled_lesson_id uuid not null unique references public.scheduled_lesson(id) on delete cascade,
+  class_id uuid not null references public.class(id) on delete cascade,
+  title text not null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.lesson_group_message (
+  id uuid primary key default gen_random_uuid(),
+  conversation_id uuid not null references public.lesson_group_conversation(id) on delete cascade,
+  author_user_id uuid references auth.users(id) on delete set null,
+  author_role text not null check (author_role in ('teacher', 'student')),
+  author_teacher_id uuid references public.teacher(id) on delete set null,
+  author_student_id uuid references public.student(id) on delete set null,
+  author_login text not null,
+  author_name text not null,
+  body text not null check (length(btrim(body)) > 0),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
 -- -----------------------------------------------------------------------------
 -- Key DB functions used by app flows (non-exhaustive)
 -- -----------------------------------------------------------------------------

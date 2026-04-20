@@ -7,13 +7,13 @@ import type { TeacherLessonWorkspaceReadModel } from "@/lib/server/teacher-lesso
 import { LessonStudentContentPanel } from "@/components/lessons/lesson-student-content-panel";
 import { TeacherLessonPedagogicalContent } from "@/components/lessons/teacher-lesson-pedagogical-content";
 import { TeacherHomeworkPanel } from "@/components/lessons/teacher-homework-panel";
+import { LessonGroupChatPanel } from "@/components/lessons/lesson-group-chat-panel";
 import {
   TeacherLessonTabs,
   type TeacherLessonTabKey,
 } from "@/components/lessons/teacher-lesson-tabs";
 import { productButtonClassName } from "@/components/ui/button";
 import { SurfaceCard } from "@/components/ui/surface-card";
-import { toScheduledLessonRoute } from "@/lib/auth";
 
 type TeacherLessonWorkspaceProps = {
   workspace: TeacherLessonWorkspaceReadModel;
@@ -352,173 +352,7 @@ export function TeacherLessonWorkspace({
           ) : null}
 
           {tab === "chat" ? (
-            <>
-            <section className="space-y-2">
-              {workspace.communication.lessonScoped.length === 0 ? (
-                <div className="rounded-xl border border-dashed border-neutral-300 p-3 text-sm text-neutral-600">
-                  В группе пока нет учеников для обсуждения.
-                  <a
-                    href={`/groups/${workspace.classId}`}
-                    className="ml-2 text-sky-700 underline underline-offset-2"
-                  >
-                    Добавить ученика
-                  </a>
-                </div>
-              ) : null}
-              {workspace.communication.lessonScoped.map((item) => (
-                <article
-                  key={item.studentId}
-                  className="rounded-xl border border-neutral-200 p-3 text-sm"
-                >
-                  <p className="font-semibold text-neutral-900">
-                    {item.studentName}
-                  </p>
-                  <a
-                    href={`/groups/${workspace.classId}/students/${item.studentId}/communication`}
-                    className="text-xs text-sky-700 underline underline-offset-2"
-                  >
-                    Открыть полный диалог
-                  </a>
-                  <div className="mt-2 space-y-1">
-                    {item.messages.length === 0 ? (
-                      <p className="text-neutral-500">
-                        Нет сообщений по этому уроку.
-                      </p>
-                    ) : (
-                      item.messages.slice(-3).map((message) => (
-                        <p key={message.id} className="text-neutral-700">
-                          <span className="font-medium">
-                            {message.authorRole}:
-                          </span>{" "}
-                          {message.body}
-                        </p>
-                      ))
-                    )}
-                  </div>
-                  <form
-                    action="/api/teacher/communication"
-                    method="POST"
-                    className="mt-2 space-y-2"
-                  >
-                    <input
-                      type="hidden"
-                      name="classId"
-                      value={workspace.classId}
-                    />
-                    <input
-                      type="hidden"
-                      name="studentId"
-                      value={item.studentId}
-                    />
-                    <input type="hidden" name="topicKind" value="lesson" />
-                    <input
-                      type="hidden"
-                      name="scheduledLessonId"
-                      value={workspace.scheduledLessonId}
-                    />
-                    <input
-                      type="hidden"
-                      name="redirectTo"
-                      value={toScheduledLessonRoute(
-                        workspace.scheduledLessonId,
-                      )}
-                    />
-                    <textarea
-                      name="body"
-                      rows={2}
-                      className="w-full rounded-xl border border-neutral-300 px-3 py-2"
-                      placeholder="Сообщение по уроку"
-                    />
-                    <button
-                      type="submit"
-                      className="rounded-xl border border-neutral-300 px-3 py-1.5 text-xs font-semibold text-neutral-800"
-                    >
-                      Отправить по уроку
-                    </button>
-                  </form>
-                </article>
-              ))}
-            </section>
-
-            {workspace.communication.homeworkAssignmentId ? (
-              <section className="mt-5 space-y-2">
-                <h3 className="text-sm font-semibold uppercase tracking-[0.12em] text-neutral-500">
-                  По домашнему заданию
-                </h3>
-                {workspace.communication.homeworkScoped.map((item) => (
-                  <article
-                    key={item.studentId}
-                    className="rounded-xl border border-neutral-200 p-3 text-sm"
-                  >
-                    <div className="space-y-1">
-                      {item.messages.length === 0 ? (
-                        <p className="text-neutral-500">
-                          Нет сообщений по домашнему заданию.
-                        </p>
-                      ) : (
-                        item.messages.slice(-2).map((message) => (
-                          <p key={message.id} className="text-neutral-700">
-                            <span className="font-medium">
-                              {message.authorRole}:
-                            </span>{" "}
-                            {message.body}
-                          </p>
-                        ))
-                      )}
-                    </div>
-                    <form
-                      action="/api/teacher/communication"
-                      method="POST"
-                      className="mt-2 space-y-2"
-                    >
-                      <input
-                        type="hidden"
-                        name="classId"
-                        value={workspace.classId}
-                      />
-                      <input
-                        type="hidden"
-                        name="studentId"
-                        value={item.studentId}
-                      />
-                      <input type="hidden" name="topicKind" value="homework" />
-                      <input
-                        type="hidden"
-                        name="scheduledLessonId"
-                        value={workspace.scheduledLessonId}
-                      />
-                      <input
-                        type="hidden"
-                        name="scheduledLessonHomeworkAssignmentId"
-                        value={
-                          workspace.communication.homeworkAssignmentId ?? ""
-                        }
-                      />
-                      <input
-                        type="hidden"
-                        name="redirectTo"
-                        value={toScheduledLessonRoute(
-                          workspace.scheduledLessonId,
-                        )}
-                      />
-                      <textarea
-                        name="body"
-                        rows={2}
-                        className="w-full rounded-xl border border-neutral-300 px-3 py-2"
-                        placeholder="Сообщение по домашнему заданию"
-                      />
-                      <button
-                        type="submit"
-                        className="rounded-xl border border-neutral-300 px-3 py-1.5 text-xs font-semibold text-neutral-800"
-                      >
-                        Отправить по домашнему заданию
-                      </button>
-                    </form>
-                  </article>
-                ))}
-              </section>
-            ) : null}
-            </>
+            <LessonGroupChatPanel scheduledLessonId={workspace.scheduledLessonId} canWrite />
           ) : null}
         </div>
       </SurfaceCard>

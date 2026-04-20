@@ -31,6 +31,8 @@
 - `student_homework_assignment`
 - `group_student_conversation`
 - `group_student_message`
+- `lesson_group_conversation`
+- `lesson_group_message`
 
 Источник истины по таблицам и ограничениям: `supabase/schema/current-schema.sql`.
 

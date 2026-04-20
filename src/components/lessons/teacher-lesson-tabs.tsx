@@ -11,7 +11,7 @@ export const teacherLessonTabMeta: Record<TeacherLessonTabKey, { label: string; 
   plan: { label: "План урока", icon: NotebookText },
   student_screen: { label: "Экран ученика", icon: MonitorUp },
   homework: { label: "Домашнее задание", icon: ClipboardCheck },
-  chat: { label: "Чат", icon: MessageCircle },
+  chat: { label: "Чат урока", icon: MessageCircle },
 };
 
 type TeacherLessonTabsProps = {
