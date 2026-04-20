@@ -111,41 +111,29 @@ export function TeacherGroupsCard({
         </div>
       )}
     >
-      <div className="space-y-3 md:hidden">
+      <ul className="space-y-2.5 md:hidden">
         {rows.map((group) => (
-          <Link
-            key={group.id}
-            href={group.groupHref}
-            className="block rounded-2xl border border-black/10 bg-white/90 p-4 shadow-[0_8px_24px_rgba(20,20,20,0.04)] transition hover:border-black/15 hover:bg-white"
-          >
-            <p className="truncate text-base font-semibold text-neutral-900" title={group.groupLabel}>
-              {group.groupLabel}
-            </p>
-            <dl className="mt-3 space-y-2 text-sm">
-              <div className="flex items-start justify-between gap-3">
-                <dt className="text-neutral-500">Методика</dt>
-                <dd className="text-right font-medium text-neutral-900">
-                  {group.methodologyLabel ?? "Не назначена"}
-                </dd>
-              </div>
-              <div className="flex items-start justify-between gap-3">
-                <dt className="text-neutral-500">Ученики</dt>
-                <dd className="font-medium text-neutral-900">{group.studentCount}</dd>
-              </div>
-              <div className="flex items-start justify-between gap-3">
-                <dt className="text-neutral-500">Прогресс</dt>
-                <dd className="text-right font-medium text-neutral-900">{group.progressLabel}</dd>
-              </div>
-              <div className="flex items-start justify-between gap-3">
-                <dt className="text-neutral-500">Следующее занятие</dt>
-                <dd className="max-w-[68%] text-right font-medium text-neutral-900" title={groupNextLessonLabel(group)}>
-                  {groupNextLessonLabel(group)}
-                </dd>
-              </div>
-            </dl>
-          </Link>
+          <li key={group.id}>
+            <Link
+              href={group.groupHref}
+              className="surface-card block cursor-pointer rounded-2xl border border-neutral-200 p-3 transition-colors hover:border-sky-300"
+            >
+              <p className="truncate text-sm font-semibold text-neutral-900" title={group.groupLabel}>
+                {group.groupLabel}
+              </p>
+              <p className="mt-0.5 text-xs text-neutral-600">
+                Методика: {group.methodologyLabel ?? "Не назначена"}
+              </p>
+              <p className="mt-1 text-[11px] text-neutral-500">
+                {group.studentCount} учен. · {group.progressLabel}
+              </p>
+              <p className="mt-1 truncate text-[11px] text-neutral-500" title={groupNextLessonLabel(group)}>
+                {groupNextLessonLabel(group)}
+              </p>
+            </Link>
+          </li>
         ))}
-      </div>
+      </ul>
 
       <div className="hidden md:block">
         <ProductTable>
