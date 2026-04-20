@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation";
 import { ParentDashboard } from "@/components/dashboard/parent-dashboard";
-import { TopNav } from "@/components/top-nav";
 import { ROUTES } from "@/lib/auth";
 import { resolveAccessPolicy } from "@/lib/server/access-policy";
 import { getParentCommunicationProjection } from "@/lib/server/communication-service";
@@ -28,11 +27,7 @@ function formatStartsAt(iso: string) {
   }).format(new Date(iso));
 }
 
-export default async function DashboardIndexPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ q?: string; methodology?: string }>;
-}) {
+export default async function DashboardIndexPage() {
   const resolution = await resolveAccessPolicy();
 
   if (resolution.status === "guest" || resolution.status === "degraded") {
