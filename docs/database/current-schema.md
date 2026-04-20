@@ -44,6 +44,8 @@ This guide describes the **current** ShiDao database model.
 - `student_homework_assignment` — per-student status/submission/review.
 - `group_student_conversation` — continuous class+student communication channel.
 - `group_student_message` — messages with optional lesson/homework context links.
+- `lesson_group_conversation` — one shared chat thread per scheduled lesson.
+- `lesson_group_message` — lesson-scoped group chat messages (teacher/student authorship).
 
 ## Key invariants
 

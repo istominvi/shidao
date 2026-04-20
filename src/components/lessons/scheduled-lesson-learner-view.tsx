@@ -6,6 +6,7 @@ import { LessonLearnerContentDeck } from "@/components/lessons/lesson-learner-co
 import { productButtonClassName } from "@/components/ui/button";
 import { SurfaceCard } from "@/components/ui/surface-card";
 import { StudentHomeworkQuizCard } from "@/components/dashboard/student-homework-quiz-card";
+import { LessonGroupChatPanel } from "@/components/lessons/lesson-group-chat-panel";
 import { classNames } from "@/lib/ui/classnames";
 import type {
   ParentScheduledLessonView,
@@ -25,7 +26,7 @@ export function ScheduledLessonLearnerView({
   const router = useRouter();
   const [liveState, setLiveState] = useState(model.liveState);
   const [studentHomework, setStudentHomework] = useState(modelHomework);
-  const [studentTab, setStudentTab] = useState<"lesson" | "homework">(
+  const [studentTab, setStudentTab] = useState<"lesson" | "homework" | "chat">(
     modelHomework ? "homework" : "lesson",
   );
   useEffect(() => {
@@ -209,62 +210,61 @@ export function ScheduledLessonLearnerView({
                 >
                   Домашнее задание
                 </button>
+                <button
+                  type="button"
+                  className={classNames(
+                    productButtonClassName("secondary", "text-sm"),
+                    "cursor-pointer",
+                    studentTab === "chat" &&
+                      "!border-neutral-900 !bg-neutral-900 !text-white shadow-[0_10px_20px_rgba(15,23,42,0.08)] hover:!border-neutral-900 hover:!bg-neutral-900 hover:!text-white",
+                  )}
+                  onClick={() => setStudentTab("chat")}
+                  aria-pressed={studentTab === "chat"}
+                >
+                  Чат
+                </button>
               </div>
             </div>
             <div className="mt-5 border-b border-neutral-200" />
           </div>
           <div className="mt-5">
-            {studentTab === "lesson" ? lessonPanel : homeworkPanel}
+            {studentTab === "lesson" ? lessonPanel : null}
+            {studentTab === "homework" ? homeworkPanel : null}
+            {studentTab === "chat" ? (
+              <LessonGroupChatPanel scheduledLessonId={model.scheduledLessonId} canWrite />
+            ) : null}
           </div>
         </SurfaceCard>
       ) : null}
 
       {model.role !== "student" ? lessonPanel : null}
 
-      {model.role === "student" && model.communication.length > 0 ? (
-        <SurfaceCard title="Обсуждение по уроку">
-          <div className="space-y-1 text-sm text-neutral-700">
-            {model.communication.map((message) => (
-              <p key={message.id}>
-                <span className="font-medium">{message.authorRole}:</span> {message.body}
-              </p>
-            ))}
-          </div>
-        </SurfaceCard>
-      ) : null}
-
       {model.role === "parent" ? (
-        <SurfaceCard title="Дети на этом уроке">
-          <div className="space-y-3">
-            {model.childrenRuntime.map((child) => (
-              <article key={child.studentId} className="rounded-2xl border border-neutral-200 bg-white p-3 text-sm">
-                <p className="font-semibold text-neutral-900">{child.studentName}</p>
-                <p className="text-xs text-neutral-500">{child.lessonStatusLabel}</p>
-                {child.homework ? (
-                  <>
-                    <p className="mt-1 text-neutral-700">{child.homework.homeworkTitle} · {child.homework.statusLabel}</p>
-                    {child.homework.score !== null && child.homework.maxScore !== null ? (
-                      <p className="text-xs text-sky-800">Результат: {child.homework.score} / {child.homework.maxScore}</p>
-                    ) : null}
-                    {child.homework.assignmentComment ? <p className="text-xs text-neutral-700">Комментарий к выдаче: {child.homework.assignmentComment}</p> : null}
-                    {child.homework.reviewNote ? <p className="text-xs text-neutral-700">Комментарий после проверки: {child.homework.reviewNote}</p> : null}
-                  </>
-                ) : (
-                  <p className="mt-1 text-neutral-600">Домашнее задание пока не выдано.</p>
-                )}
-                {child.communicationPreview.length > 0 ? (
-                  <div className="mt-2 rounded-xl border border-neutral-200 bg-neutral-50 p-2">
-                    {child.communicationPreview.map((message) => (
-                      <p key={message.id} className="text-xs text-neutral-700">
-                        <span className="font-medium">{message.authorRole}:</span> {message.body}
-                      </p>
-                    ))}
-                  </div>
-                ) : null}
-              </article>
-            ))}
-          </div>
-        </SurfaceCard>
+        <>
+          <LessonGroupChatPanel scheduledLessonId={model.scheduledLessonId} canWrite={false} />
+          <SurfaceCard title="Дети на этом уроке">
+            <div className="space-y-3">
+              {model.childrenRuntime.map((child) => (
+                <article key={child.studentId} className="rounded-2xl border border-neutral-200 bg-white p-3 text-sm">
+                  <p className="font-semibold text-neutral-900">{child.studentName}</p>
+                  <p className="text-xs text-neutral-500">{child.lessonStatusLabel}</p>
+                  {child.homework ? (
+                    <>
+                      <p className="mt-1 text-neutral-700">{child.homework.homeworkTitle} · {child.homework.statusLabel}</p>
+                      {child.homework.score !== null && child.homework.maxScore !== null ? (
+                        <p className="text-xs text-sky-800">Результат: {child.homework.score} / {child.homework.maxScore}</p>
+                      ) : null}
+                      {child.homework.assignmentComment ? <p className="text-xs text-neutral-700">Комментарий к выдаче: {child.homework.assignmentComment}</p> : null}
+                      {child.homework.reviewNote ? <p className="text-xs text-neutral-700">Комментарий после проверки: {child.homework.reviewNote}</p> : null}
+                    </>
+                  ) : (
+                    <p className="mt-1 text-neutral-600">Домашнее задание пока не выдано.</p>
+                  )}
+                </article>
+              ))}
+            </div>
+          </SurfaceCard>
+        </>
       ) : null}
     </div>
   );
