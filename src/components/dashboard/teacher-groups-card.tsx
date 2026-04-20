@@ -116,15 +116,24 @@ export function TeacherGroupsCard({
           <li key={group.id}>
             <Link
               href={group.groupHref}
-              className="surface-card block cursor-pointer rounded-2xl border border-neutral-200 p-3 transition hover:border-sky-300 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500"
+              className="block rounded-2xl border border-neutral-200 bg-white p-3 transition hover:border-sky-300"
             >
-              <p className="text-sm font-semibold text-neutral-900">{group.groupLabel}</p>
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="text-sm font-semibold text-neutral-900">{group.groupLabel}</p>
+                <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-[11px] font-medium text-neutral-600">
+                  {group.studentCount} учен.
+                </span>
+                <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-[11px] font-medium text-neutral-600">
+                  {group.progressLabel}
+                </span>
+              </div>
               <p className="mt-0.5 text-xs text-neutral-600">
                 Методика: {group.methodologyLabel ?? "Не назначена"}
               </p>
               <p className="mt-1 text-[11px] text-neutral-500">
-                {group.studentCount} учен. · {group.progressLabel} · {groupNextLessonLabel(group)}
+                Следующее занятие: {groupNextLessonLabel(group)}
               </p>
+              <p className="mt-2 text-xs font-semibold text-sky-700">Открыть группу</p>
             </Link>
           </li>
         ))}
