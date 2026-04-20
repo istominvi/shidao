@@ -325,7 +325,7 @@ const lessonOneStepOneVideoPlaylist = [
   { fileName: "ma.mp4", labelRu: "Лошадь", labelZh: "马" },
   { fileName: "ji.mp4", labelRu: "Курица", labelZh: "鸡" },
   { fileName: "gou.mp4", labelRu: "Собака", labelZh: "狗" },
-  { fileName: "e.mp4", labelRu: "Животные на ферме", labelZh: "农场动物" },
+  { fileName: "e.mp4", labelRu: "Гуси", labelZh: "鹅" },
 ] as const;
 
 function StepOneVideoEmbed() {
