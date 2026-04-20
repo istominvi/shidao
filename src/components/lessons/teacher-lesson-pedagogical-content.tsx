@@ -2,7 +2,6 @@ import {
   BookOpenText,
   ChevronDown,
   Languages,
-  MonitorUp,
   NotebookPen,
   Package,
   Timer,
@@ -394,7 +393,7 @@ function LessonOnePlan({
         <div className="mb-4 flex items-center gap-2">
           <h2 className="text-base font-semibold text-neutral-950">Структура урока</h2>
           <Chip tone="sky" icon={Timer} className="whitespace-nowrap">45 минут</Chip>
-          <Chip tone="neutral" icon={Workflow} className="whitespace-nowrap">15 этапов</Chip>
+          <Chip tone="neutral" icon={Workflow} className="whitespace-nowrap">15 шагов</Chip>
         </div>
 
         <div className="space-y-3">
@@ -422,8 +421,8 @@ function LessonOnePlan({
                     }}
                     className={productButtonClassName("secondary", "text-sm whitespace-nowrap")}
                   >
-                    <MonitorUp className="h-4 w-4" aria-hidden="true" />
-                    На экран ученика
+                    <BookOpenText className="h-4 w-4" aria-hidden="true" />
+                    На экран
                   </button>
                 ) : null}
               </div>
