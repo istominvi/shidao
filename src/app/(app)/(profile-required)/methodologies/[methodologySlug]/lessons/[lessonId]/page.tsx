@@ -71,7 +71,7 @@ export default async function MethodologyLessonPage({ params, searchParams }: { 
               triggerContent={
                 <>
                   <CalendarClock className="h-3.5 w-3.5" aria-hidden="true" />
-                  <span>Запланировать</span>
+                  <span>Запланировать урок</span>
                 </>
               }
             />

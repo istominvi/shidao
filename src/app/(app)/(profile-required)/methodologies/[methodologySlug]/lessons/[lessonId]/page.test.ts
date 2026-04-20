@@ -25,7 +25,7 @@ const contentPanelSource = readFileSync(
 test("methodology lesson page uses shared teacher workspace tabs", () => {
   assert.equal(pageSource.includes("TeacherMethodologyLessonWorkspace"), true);
   assert.equal(pageSource.includes("productActionClassName"), true);
-  assert.equal(pageSource.includes("<span>Запланировать</span>"), true);
+  assert.equal(pageSource.includes("<span>Запланировать урок</span>"), true);
   assert.equal(pageSource.includes('className="[&_.app-page-actions]:mt-5"'), true);
 });
 
