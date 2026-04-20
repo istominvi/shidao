@@ -342,6 +342,29 @@ function isWorldAroundMeLessonOne(
   );
 }
 
+function getRequiredTeacherPlanAssetIds(input: {
+  methodologySlug: string;
+  moduleIndex: number;
+  lessonIndex: number;
+}) {
+  if (
+    input.methodologySlug === "world-around-me" &&
+    input.moduleIndex === 1 &&
+    input.lessonIndex === 1
+  ) {
+    return [
+      "video:farm-animals",
+      "presentation:world-around-me-lesson-1",
+      "flashcards:world-around-me-lesson-1",
+      "worksheet:appendix-1",
+      "worksheet:workbook-pages-3-4",
+      "song:farm-animals",
+      "song-video:farm-animals-movement",
+    ];
+  }
+  return [];
+}
+
 function humanizeActivityType(activityType: string) {
   switch (activityType) {
     case "movement_imitation":
@@ -750,9 +773,16 @@ export async function getTeacherLessonWorkspaceByScheduledLessonId(
           );
           const coreAssetIds = Array.from(
             new Set(
-              projection.orderedBlocks.flatMap((block) =>
-                block.assetRefs.map((assetRef) => assetRef.id),
-              ),
+              [
+                ...projection.orderedBlocks.flatMap((block) =>
+                  block.assetRefs.map((assetRef) => assetRef.id),
+                ),
+                ...getRequiredTeacherPlanAssetIds({
+                  methodologySlug: methodologyLesson.methodologySlug,
+                  moduleIndex: methodologyLesson.shell.position.moduleIndex,
+                  lessonIndex: methodologyLesson.shell.position.lessonIndex,
+                }),
+              ],
             ),
           );
           let studentContent: MethodologyLessonStudentContent | null = null;
