@@ -33,7 +33,7 @@ test("plan tab renders premium canonical script for world-around-me lesson 1", (
   assert.equal(pedagogicalSource.includes("Структура урока"), true);
   assert.equal(pedagogicalSource.includes("45 минут"), true);
   assert.equal(pedagogicalSource.includes("15 шагов"), true);
-  assert.equal(pedagogicalSource.includes("Смотрим видео «farm animals»"), true);
+  assert.equal(pedagogicalSource.includes("Смотрим видео «Животные на ферме»"), true);
   assert.equal(pedagogicalSource.includes("Учим фразу 我是…"), true);
   assert.equal(pedagogicalSource.includes("Проход 1 — слово"), true);
   assert.equal(pedagogicalSource.includes("Проход 2 — предложение"), true);

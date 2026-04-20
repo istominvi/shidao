@@ -95,7 +95,7 @@ const lessonOneDisplaySteps: LessonPlanDisplayStep[] = [
     id: "lesson-1-step-1",
     order: 1,
     category: "Видео",
-    title: "Смотрим видео «farm animals»",
+    title: "Смотрим видео «Животные на ферме»",
     text: "",
     glossaryTerms: [],
     durationMinutes: 3,
@@ -314,24 +314,14 @@ function mapAssetUrls(asset: ReusableAsset) {
   return { localUrl, fallbackUrl, previewImageRefs, slideImageRefs, cardImageRefs, pptxFileRef };
 }
 
-function toGoogleDrivePreviewUrl(url: string) {
-  const match = url.match(/\/file\/d\/([^/]+)\//);
-  if (!match) return null;
-  return `https://drive.usercontent.google.com/download?id=${match[1]}&export=download&confirm=t`;
-}
-
 function StepOneVideoEmbed({ asset }: { asset: ReusableAsset }) {
-  const { localUrl } = mapAssetUrls(asset);
-  const fallbackSourceUrl = asset.sourceUrl ? toGoogleDrivePreviewUrl(asset.sourceUrl) : null;
-  const sourceUrl = localUrl ?? fallbackSourceUrl;
-  if (!sourceUrl) return null;
+  const yandexEmbedUrl = "https://disk.yandex.ru/i/T1Op1Vuv5OgvwQ";
   return (
-    <video
-      controls
-      playsInline
-      preload="metadata"
-      src={sourceUrl}
-      className="mt-3 aspect-video w-full rounded-xl border border-neutral-200 bg-black object-contain"
+    <iframe
+      src={yandexEmbedUrl}
+      title={asset.title}
+      className="mt-3 aspect-video w-full rounded-xl border border-neutral-200 bg-black"
+      allowFullScreen
     />
   );
 }
