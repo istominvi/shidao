@@ -70,6 +70,7 @@ export const lessonContentFixtureAssets: ReusableAsset[] = [
     kind: "video",
     title: "farm animals",
     description: "Видео-сегмент уроков 1–2: знакомство с животными фермы.",
+    fileRef: "/methodologies/world-around-me/lesson-1/media/e.mp4",
     sourceUrl:
       "https://drive.google.com/file/d/1NXyngOuT9WIwvgA0gvvSzZc9-BUuKT7k/view?usp=drive_link",
   },
@@ -181,6 +182,10 @@ export const lessonContentFixtureAssets: ReusableAsset[] = [
     kind: "worksheet",
     title: "Рабочая тетрадь, стр. 3–4",
     description: "Задание на раскрашивание животных и вопрос «这是什么？».",
+    metadata: {
+      previewImageRef:
+        "/methodologies/world-around-me/lesson-1/visuals/workbook-practice.png",
+    },
     sourceUrl:
       "https://drive.google.com/file/d/1bS3KP_wRQSrAu9faPhyqkNdxeTul9bi0/view?usp=drive_link",
   },

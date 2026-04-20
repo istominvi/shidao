@@ -1,7 +1,7 @@
 "use client";
 
 import type { LucideIcon } from "lucide-react";
-import { BookOpenText, ClipboardCheck, MessageCircle, NotebookText } from "lucide-react";
+import { ClipboardCheck, MessageCircle, MonitorUp, NotebookText } from "lucide-react";
 import { productButtonClassName } from "@/components/ui/button";
 import { classNames } from "@/lib/ui/classnames";
 
@@ -9,7 +9,7 @@ export type TeacherLessonTabKey = "plan" | "student_screen" | "homework" | "chat
 
 export const teacherLessonTabMeta: Record<TeacherLessonTabKey, { label: string; icon: LucideIcon }> = {
   plan: { label: "План урока", icon: NotebookText },
-  student_screen: { label: "Экран ученика", icon: BookOpenText },
+  student_screen: { label: "Экран ученика", icon: MonitorUp },
   homework: { label: "Домашнее задание", icon: ClipboardCheck },
   chat: { label: "Чат", icon: MessageCircle },
 };

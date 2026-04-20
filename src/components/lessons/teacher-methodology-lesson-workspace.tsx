@@ -37,6 +37,8 @@ export function TeacherMethodologyLessonWorkspace({
   const [selectedStepId, setSelectedStepId] = useState<string | null>(
     readModel.unifiedReadModel.steps[0]?.id ?? null,
   );
+  const isWorldAroundMeLessonOne =
+    readModel.unifiedReadModel.lesson.title.includes("Урок 1");
 
   return (
     <SurfaceCard as="section" className="p-5 md:p-6" bodyClassName="mt-0">
@@ -53,6 +55,11 @@ export function TeacherMethodologyLessonWorkspace({
             quickSummary={readModel.unifiedReadModel.quickSummary}
             steps={readModel.unifiedReadModel.steps}
             durationLabel={readModel.unifiedReadModel.lesson.durationLabel}
+            summaryNote={
+              isWorldAroundMeLessonOne
+                ? "Первый урок знакомит детей с животными фермы через видео, карточки, движение, счёт, игрушечную ферму и песню. Учитель ведёт детей от повторения отдельных слов к коротким моделям 我是… / 这是… / 在…里."
+                : null
+            }
             activeStudentStepId={selectedStepId}
             assetsById={readModel.unifiedReadModel.assetsById}
             onShowOnStudentScreen={setSelectedStepId}
