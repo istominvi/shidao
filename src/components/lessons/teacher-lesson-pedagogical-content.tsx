@@ -2,6 +2,7 @@ import {
   BookOpenText,
   ChevronDown,
   Languages,
+  MonitorUp,
   NotebookPen,
   Package,
   Timer,
@@ -421,7 +422,7 @@ function LessonOnePlan({
                     }}
                     className={productButtonClassName("secondary", "text-sm whitespace-nowrap")}
                   >
-                    <BookOpenText className="h-4 w-4" aria-hidden="true" />
+                    <MonitorUp className="h-4 w-4" aria-hidden="true" />
                     На экран
                   </button>
                 ) : null}
