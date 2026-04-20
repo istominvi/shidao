@@ -44,6 +44,13 @@
   background: var(--header-shell-bg);
 }
 
+.site-header-shell-transparent {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
 @media (min-width: 768px) {
   .site-header-shell {
     display: grid;

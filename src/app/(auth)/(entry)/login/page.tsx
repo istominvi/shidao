@@ -57,8 +57,8 @@ function LoginPageContent() {
   }
 
   return (
-    <ProductShell>
-      <div className="mx-auto w-full max-w-xl">
+    <ProductShell contentClassName="flex min-h-[calc(100vh-8rem)] items-center justify-center">
+      <div className="w-full max-w-xl">
         <div className="primary-form-card">
           <h2 className="text-2xl font-black tracking-tight">
             Войти в кабинет
@@ -82,6 +82,8 @@ function LoginPageContent() {
                 onChange={(e) => setIdentifier(e.target.value)}
                 placeholder="Например, parent@school.com или login ученика"
                 className="field-input"
+                autoComplete="username"
+                required
               />
             </label>
             <label className="block">
@@ -92,6 +94,8 @@ function LoginPageContent() {
                 onChange={(e) => setSecret(e.target.value)}
                 placeholder="Введите пароль или PIN"
                 className="field-input"
+                autoComplete="current-password"
+                required
               />
             </label>
             <div className="text-right">

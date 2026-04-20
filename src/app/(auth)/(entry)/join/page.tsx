@@ -3,12 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
-import {
-  ContextCard,
-  PageHero,
-  ProductShell,
-  StatusMessage,
-} from "@/components/product-shell";
+import { ProductShell, StatusMessage } from "@/components/product-shell";
 import { ROUTES } from "@/lib/auth";
 
 export default function JoinPage() {
@@ -89,42 +84,18 @@ export default function JoinPage() {
   }
 
   return (
-    <ProductShell>
-      <PageHero
-        eyebrow="Вход в продукт"
-        title="Создайте взрослый аккаунт Shidao"
-        description="Это единый взрослый доступ: после входа вы выберете роль и сможете работать как родитель или преподаватель в одной системе."
-      />
-
-      <div className="auth-shell-grid">
-        <div className="space-y-3">
-          <ContextCard
-            tone="lime"
-            title="Единый взрослый доступ"
-            description="Один аккаунт для управления учебным процессом и коммуникацией внутри платформы."
-          />
-          <ContextCard
-            tone="sky"
-            title="Роль выбирается позже"
-            description="Сначала создаём доступ, затем на первом входе вы выбираете стартовый профиль."
-          />
-          <ContextCard
-            tone="pink"
-            title="Отдельный ученический контур"
-            description="Ученики получают собственный вход, чтобы не смешивать взрослые и учебные действия."
-          />
-        </div>
-
+    <ProductShell contentClassName="flex min-h-[calc(100vh-8rem)] items-center justify-center">
+      <div className="w-full max-w-xl">
         <div className="primary-form-card">
           <h2 className="text-2xl font-black tracking-tight">
-            Регистрация взрослого
+            Создать аккаунт
           </h2>
           <p className="mt-2 text-sm text-neutral-600">
-            После регистрации вы перейдёте к подтверждению email или сразу ко
-            входу — зависит от режима проекта.
+            Зарегистрируйте взрослый аккаунт. После регистрации вы перейдёте к
+            подтверждению email или сразу ко входу.
           </p>
 
-          <form className="mt-5 space-y-3.5" onSubmit={onSubmit}>
+          <form className="mt-5 space-y-4" onSubmit={onSubmit}>
             <label className="block">
               <span className="field-label">Имя</span>
               <input
@@ -132,6 +103,8 @@ export default function JoinPage() {
                 onChange={(e) => setName(e.target.value)}
                 className="field-input"
                 placeholder="Как к вам обращаться"
+                autoComplete="name"
+                required
               />
             </label>
             <label className="block">
@@ -142,6 +115,8 @@ export default function JoinPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 className="field-input"
                 placeholder="you@example.com"
+                autoComplete="email"
+                required
               />
             </label>
             <label className="block">
@@ -152,6 +127,8 @@ export default function JoinPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 className="field-input"
                 placeholder="Минимум 8 символов"
+                autoComplete="new-password"
+                required
               />
             </label>
             <label className="block">
@@ -161,19 +138,23 @@ export default function JoinPage() {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 className="field-input"
+                autoComplete="new-password"
+                required
               />
             </label>
 
-            <label className="context-card flex items-start gap-2.5 bg-white/88 text-sm">
-              <input
-                type="checkbox"
-                checked={agreed}
-                onChange={(e) => setAgreed(e.target.checked)}
-                className="mt-0.5 size-4"
-              />
-              <span>
-                Я согласен(а) с условиями использования и политикой
-                конфиденциальности.
+            <label className="field-checkbox-row">
+              <span className="field-label mb-0">
+                <input
+                  type="checkbox"
+                  checked={agreed}
+                  onChange={(e) => setAgreed(e.target.checked)}
+                  className="field-checkbox-input"
+                />
+                <span>
+                  Я согласен(а) с условиями использования и политикой
+                  конфиденциальности.
+                </span>
               </span>
             </label>
 
