@@ -76,6 +76,7 @@ const chineseGlossary: Record<string, string> = {
   "这是猫。": "это кошка",
   "这是兔子。": "это кролик",
   "这是马。": "это лошадь",
+  "我是狗。": "я собачка / я собака",
   "这是什么？": "что это?",
   "跑": "бежать",
   "跳": "прыгать",
@@ -115,7 +116,7 @@ const lessonOneDisplaySteps: LessonPlanDisplayStep[] = [
     id: "lesson-1-step-3",
     order: 3,
     category: "Лексика",
-    title: "Учим слова 狗，猫，兔子，马",
+    title: "Карточки животных: два прохода",
     text: "Учим слова 狗 (собака)，猫 (кошка)，兔子 (кролик)，马 (лошадь) с помощью карточек. Показываем их детям поочередно два раза. Первый раз называем только слово, соответствующее картинке: 狗，猫，兔子，马. Второй раз проговариваем предложением: 这是狗。 这是猫。 这是兔子。 这是马。",
     glossaryTerms: ["狗", "猫", "兔子", "马", "这是…", "这是狗。", "这是猫。", "这是兔子。", "这是马。"],
     durationMinutes: 4,
@@ -138,7 +139,7 @@ const lessonOneDisplaySteps: LessonPlanDisplayStep[] = [
     id: "lesson-1-step-5",
     order: 5,
     category: "Активность",
-    title: "Игра с мячом у стены",
+    title: "Игра с мячом и карточками",
     text: "С помощью малярного скотча расклеиваем карточки с животными на стене и берем мяч. Задача ребенка: попасть мячом по той карточке, которую называет преподаватель, и сказать, что на ней изображено.",
     glossaryTerms: [],
     durationMinutes: 4,
@@ -696,6 +697,97 @@ function LessonOnePlan({
   steps: MethodologyLessonStep[];
   onShowOnStudentScreen?: (stepId: string) => void;
 }) {
+  const lessonOneAnimalCards = [
+    { src: "/methodologies/world-around-me/lesson-1/visuals/dog-card.png", label: "狗", alt: "Карточка собаки" },
+    { src: "/methodologies/world-around-me/lesson-1/visuals/cat-card.png", label: "猫", alt: "Карточка кошки" },
+    { src: "/methodologies/world-around-me/lesson-1/visuals/rabbit-card.png", label: "兔子", alt: "Карточка кролика" },
+    { src: "/methodologies/world-around-me/lesson-1/visuals/horse-card.png", label: "马", alt: "Карточка лошади" },
+  ] as const;
+
+  function StepTwoDialogueBlock() {
+    return (
+      <div className="mt-3 rounded-xl border border-violet-200 bg-violet-50/40 p-3">
+        <p className="text-xs font-semibold uppercase tracking-wide text-violet-900">Диалоговый шаблон</p>
+        <div className="mt-2 grid gap-2 sm:grid-cols-2">
+          <div className="rounded-lg border border-violet-200/80 bg-white p-2.5">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-500">Вопрос</p>
+            <p className="mt-1 text-sm text-neutral-900">
+              <GlossaryTerm term="你是谁？" />
+            </p>
+          </div>
+          <div className="rounded-lg border border-violet-200/80 bg-white p-2.5">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-500">Ответ</p>
+            <p className="mt-1 text-sm text-neutral-900">
+              <GlossaryTerm term="我是…" />
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  function AnimalCardReferenceGrid() {
+    return (
+      <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+        {lessonOneAnimalCards.map((card) => (
+          <figure key={card.src} className="rounded-xl border border-neutral-200 bg-white p-2">
+            <img src={card.src} alt={card.alt} className="h-20 w-full rounded-lg object-contain" />
+            <figcaption className="mt-1.5 text-center text-sm font-semibold text-neutral-800">
+              <GlossaryTerm term={card.label} />
+            </figcaption>
+          </figure>
+        ))}
+      </div>
+    );
+  }
+
+  function StepThreeCardPassesBlock() {
+    return (
+      <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50/60 p-3">
+        <p className="text-xs font-semibold uppercase tracking-wide text-amber-900">Два прохода с карточками</p>
+        <div className="mt-2 space-y-2">
+          <p className="text-sm text-neutral-800">
+            <strong>Проход 1 — слово:</strong>{" "}
+            <span style={{ fontFamily: cjkFontFamily }}>狗 / 猫 / 兔子 / 马</span>
+          </p>
+          <p className="text-sm text-neutral-800">
+            <strong>Проход 2 — предложение:</strong>{" "}
+            <span style={{ fontFamily: cjkFontFamily }}>这是狗。 / 这是猫。 / 这是兔子。 / 这是马。</span>
+          </p>
+        </div>
+        <AnimalCardReferenceGrid />
+      </div>
+    );
+  }
+
+  function StepFourActionBlock() {
+    return (
+      <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50/50 p-3">
+        <p className="text-xs font-semibold uppercase tracking-wide text-emerald-900">Действие</p>
+        <ul className="mt-2 space-y-1 text-sm text-neutral-800">
+          <li>• Показать карточку</li>
+          <li>• Изобразить животное</li>
+          <li>
+            • Сказать: <GlossaryTerm term="我是狗。" />
+          </li>
+        </ul>
+      </div>
+    );
+  }
+
+  function StepFiveGameMechanicsBlock() {
+    return (
+      <div className="mt-3 rounded-xl border border-sky-200 bg-sky-50/50 p-3">
+        <p className="text-xs font-semibold uppercase tracking-wide text-sky-900">Механика игры</p>
+        <ol className="mt-2 list-inside list-decimal space-y-1 text-sm text-neutral-800">
+          <li>Расклеить карточки на стене</li>
+          <li>Назвать животное</li>
+          <li>Ребёнок бросает мяч</li>
+          <li>Ребёнок называет карточку</li>
+        </ol>
+      </div>
+    );
+  }
 
   return (
     <section className="space-y-6" aria-label="План урока">
@@ -812,19 +904,10 @@ function LessonOnePlan({
                 <p className="mt-2 text-sm leading-6 text-neutral-700" style={{ fontFamily: cjkFontFamily }}>{step.text}</p>
               ) : null}
               <GlossaryChips terms={step.glossaryTerms} />
-              {step.order === 3 ? (
-                <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50/60 p-3">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-amber-800">Два прохода</p>
-                  <p className="mt-2 text-sm text-neutral-800">
-                    <strong>Проход 1 — слово:</strong>{" "}
-                    <span style={{ fontFamily: cjkFontFamily }}>狗, 猫, 兔子, 马</span>
-                  </p>
-                  <p className="mt-1 text-sm text-neutral-800">
-                    <strong>Проход 2 — предложение:</strong>{" "}
-                    <span style={{ fontFamily: cjkFontFamily }}>这是狗。 / 这是猫。 / 这是兔子。 / 这是马。</span>
-                  </p>
-                </div>
-              ) : null}
+              {step.order === 2 ? <StepTwoDialogueBlock /> : null}
+              {step.order === 3 ? <StepThreeCardPassesBlock /> : null}
+              {step.order === 4 ? <StepFourActionBlock /> : null}
+              {step.order === 5 ? <StepFiveGameMechanicsBlock /> : null}
               {step.resourceIds?.map((resourceId) => {
                 const asset = assetsById[resourceId];
                 if (!asset) return null;
