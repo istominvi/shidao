@@ -241,6 +241,12 @@ export function TeacherLessonWorkspace({
               summaryNote={workspace.presentation.hero.lessonEssence}
               activeStudentStepId={liveStepId}
               assetsById={workspace.unifiedReadModel.assetsById}
+              lessonIdentity={{
+                methodologySlug: workspace.sourceLesson.methodologySlug,
+                moduleIndex: workspace.unifiedReadModel.lesson.moduleIndex,
+                lessonIndex: workspace.unifiedReadModel.lesson.lessonIndex,
+                lessonTitle: workspace.unifiedReadModel.lesson.title,
+              }}
               lessonNotesSlot={
                 <form
                   className="mt-4 space-y-3"
