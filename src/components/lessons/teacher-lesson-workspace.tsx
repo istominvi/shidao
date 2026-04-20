@@ -237,6 +237,8 @@ export function TeacherLessonWorkspace({
             <TeacherLessonPedagogicalContent
               quickSummary={quickSummary}
               steps={planSteps}
+              durationLabel={workspace.unifiedReadModel.lesson.durationLabel}
+              summaryNote={workspace.presentation.hero.lessonEssence}
               activeStudentStepId={liveStepId}
               assetsById={workspace.unifiedReadModel.assetsById}
               lessonNotesSlot={

@@ -315,8 +315,30 @@ function blockTone(
 }
 
 function normalizeItems(items: Array<string | undefined>) {
+  const isMeaningful = (value: string) => {
+    if (!value) return false;
+    if (value === "…" || value === "...") return false;
+    if (/^[,.;:!?\-\s]+$/.test(value)) return false;
+    if (/^фраза\s+[.…]+$/i.test(value)) return false;
+    if (/^фокус:\s*[,.\s]*$/i.test(value)) return false;
+    if (/^карточки\s*[,.\s]*$/i.test(value)) return false;
+    return true;
+  };
   return Array.from(
-    new Set(items.map((item) => item?.trim() ?? "").filter(Boolean)),
+    new Set(
+      items
+        .map((item) => item?.trim() ?? "")
+        .filter((item) => isMeaningful(item)),
+    ),
+  );
+}
+
+function isWorldAroundMeLessonOne(
+  projection: TeacherLessonProjection,
+) {
+  return (
+    projection.methodologyShell.position.moduleIndex === 1 &&
+    projection.methodologyShell.position.lessonIndex === 1
   );
 }
 
@@ -514,9 +536,11 @@ function buildPresentation(input: {
   const { projection, classDisplayName, assetsById } = input;
   const methodologyTitle =
     projection.methodologyTitle?.trim() || "Методика курса";
-  const lessonEssence =
-    projection.methodologyShell.vocabularySummary.slice(0, 4).join(" · ") ||
-    "Повторение ключевой лексики и речевых паттернов в игровых активностях.";
+  const isLessonOne = isWorldAroundMeLessonOne(projection);
+  const lessonEssence = isLessonOne
+    ? "Первый урок знакомит детей с животными фермы через видео, карточки, движение, счёт, игрушечную ферму и песню. Учитель ведёт детей от повторения отдельных слов к коротким моделям 我是… / 这是… / 在…里."
+    : projection.methodologyShell.vocabularySummary.slice(0, 4).join(" · ") ||
+      "Повторение ключевой лексики и речевых паттернов в игровых активностях.";
 
   const resourceItems = normalizeItems(
     projection.orderedBlocks.flatMap((block) =>
@@ -546,10 +570,30 @@ function buildPresentation(input: {
     ).values(),
   );
 
-  const prepChecklist = normalizeItems([
-    ...projection.orderedBlocks.flatMap(collectBlockMaterials),
-    ...resourceItems,
-  ]);
+  const prepChecklist = isLessonOne
+    ? [
+        "A. Персонажи и карточки",
+        "герои курса",
+        "карточки 狗, 猫, 兔子, 马",
+        "карточка 农场",
+        "B. Для подвижных игр",
+        "малярный скотч",
+        "мяч",
+        "мягкие игрушки: собака, кот, кролик, лошадь",
+        "игрушечная ферма",
+        "C. Для спокойной работы",
+        "палочки для счёта",
+        "Приложение 1",
+        "указка",
+        "рабочая тетрадь, страницы 3–4",
+        "D. Для финала",
+        "аудио песни farm animals",
+        "видео с движениями песни farm animals",
+      ]
+    : normalizeItems([
+        ...projection.orderedBlocks.flatMap(collectBlockMaterials),
+        ...resourceItems,
+      ]);
 
   return {
     hero: {
@@ -564,8 +608,8 @@ function buildPresentation(input: {
     },
     quickSummary: {
       prepChecklist,
-      keyWords: projection.methodologyShell.vocabularySummary,
-      keyPhrases: projection.methodologyShell.phraseSummary,
+      keyWords: normalizeItems(projection.methodologyShell.vocabularySummary),
+      keyPhrases: normalizeItems(projection.methodologyShell.phraseSummary),
       resources: quickResources,
     },
     methodologyReference: {

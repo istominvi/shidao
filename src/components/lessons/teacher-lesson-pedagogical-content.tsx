@@ -64,6 +64,60 @@ function SummaryList({ items }: { items: string[] }) {
   );
 }
 
+function PreparationChecklist({ items }: { items: string[] }) {
+  if (!items.length) return null;
+  const grouped = items.reduce<Array<{ title: string; items: string[] }>>((acc, item) => {
+    const value = item.trim();
+    if (!value) return acc;
+    const groupMatch = value.match(/^[A-D]\.\s+(.+)$/);
+    if (groupMatch) {
+      acc.push({ title: groupMatch[1], items: [] });
+      return acc;
+    }
+    if (!acc.length) {
+      acc.push({ title: "Подготовка", items: [] });
+    }
+    acc[acc.length - 1].items.push(value);
+    return acc;
+  }, []);
+
+  return (
+    <div className="grid gap-3 md:grid-cols-2">
+      {grouped.map((group) => (
+        <article key={group.title} className="rounded-xl border border-neutral-200 bg-neutral-50/70 p-3">
+          <h3 className="text-sm font-semibold text-neutral-900">{group.title}</h3>
+          <div className="mt-2">
+            <SummaryList items={group.items} />
+          </div>
+        </article>
+      ))}
+    </div>
+  );
+}
+
+function TeacherPhraseList({ phrases }: { phrases: string[] }) {
+  if (!phrases.length) return null;
+  return (
+    <ul className="space-y-2 text-sm text-neutral-700">
+      {phrases.map((phrase) => {
+        const lines = phrase.split("\n").map((line) => line.trim()).filter(Boolean);
+        return (
+          <li key={phrase} className="rounded-lg border border-neutral-200 bg-white/80 px-3 py-2">
+            {lines.map((line, index) => (
+              <p
+                key={`${phrase}-${index}`}
+                className={index === 0 ? "text-base font-semibold text-neutral-900" : index === 1 ? "text-sm italic text-neutral-700" : "text-sm text-neutral-700"}
+              >
+                {line}
+              </p>
+            ))}
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
 function shouldRenderGoal(step: MethodologyLessonStep) {
   if (!step.teacher.goal) return false;
   const goal = step.teacher.goal.trim().toLowerCase();
@@ -157,7 +211,7 @@ export function TeacherLessonPedagogicalContent({
         <section>
           <h2 className="text-base font-semibold text-neutral-950">Подготовка до урока</h2>
           <div className="mt-3 rounded-2xl border border-neutral-200 bg-white p-4">
-            <SummaryList items={quickSummary.prepChecklist} />
+            <PreparationChecklist items={quickSummary.prepChecklist} />
           </div>
         </section>
       ) : null}
@@ -196,13 +250,13 @@ export function TeacherLessonPedagogicalContent({
                   <h4 className="text-xs font-semibold uppercase tracking-[0.12em] text-sky-700">На экране ученика</h4>
                   <div className="mt-2 flex flex-wrap gap-2 text-xs">
                     <Chip size="sm" tone="sky">{screenTypeLabelMap[step.student.screenType]}</Chip>
-                    <Chip size="sm" tone="neutral">Ресурсов: {resourceCount}</Chip>
+                    {resourceCount > 0 ? <Chip size="sm" tone="neutral">Ресурсы: {resourceCount}</Chip> : null}
                   </div>
                   {step.student.instruction ? <p className="mt-2 text-sm text-neutral-700">{step.student.instruction}</p> : null}
                   {step.student.screenType === "placeholder" ? <p className="mt-1 text-xs text-neutral-600">Опорный экран без интерактива</p> : null}
                 </div>
 
-                <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                <div className="mt-3 grid gap-3 md:grid-cols-2">
                   {shouldRenderGoal(step) ? (
                     <div className="rounded-xl border border-neutral-200 bg-neutral-50/70 p-3">
                       <h4 className="text-xs font-semibold uppercase tracking-[0.12em] text-neutral-500">Цель шага</h4>
@@ -218,7 +272,7 @@ export function TeacherLessonPedagogicalContent({
                   {step.teacher.teacherScript?.length ? (
                     <div className="rounded-xl border border-neutral-200 bg-neutral-50/70 p-3">
                       <h4 className="text-xs font-semibold uppercase tracking-[0.12em] text-neutral-500">Что говорит педагог</h4>
-                      <div className="mt-2"><SummaryList items={step.teacher.teacherScript} /></div>
+                      <div className="mt-2"><TeacherPhraseList phrases={step.teacher.teacherScript} /></div>
                     </div>
                   ) : null}
                   {step.teacher.studentActions.length ? (
@@ -242,13 +296,13 @@ export function TeacherLessonPedagogicalContent({
                   ) : null}
                   {step.teacher.successCriteria?.length ? (
                     <div className="rounded-xl border border-neutral-200 bg-neutral-50/70 p-3">
-                      <h4 className="text-xs font-semibold uppercase tracking-[0.12em] text-neutral-500">Критерии успеха</h4>
+                      <h4 className="text-xs font-semibold uppercase tracking-[0.12em] text-neutral-500">Критерий успеха</h4>
                       <div className="mt-2"><SummaryList items={step.teacher.successCriteria} /></div>
                     </div>
                   ) : null}
                   {step.teacher.notes?.length ? (
                     <div className="rounded-xl border border-neutral-200 bg-neutral-50/70 p-3">
-                      <h4 className="text-xs font-semibold uppercase tracking-[0.12em] text-neutral-500">Методические заметки</h4>
+                      <h4 className="text-xs font-semibold uppercase tracking-[0.12em] text-neutral-500">Методическая подсказка</h4>
                       <div className="mt-2"><SummaryList items={step.teacher.notes} /></div>
                     </div>
                   ) : null}
