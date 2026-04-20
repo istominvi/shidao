@@ -54,6 +54,8 @@ export type MethodologyLessonUnifiedReadModel = {
   lesson: {
     id: string;
     title: string;
+    moduleIndex: number;
+    lessonIndex: number;
     durationMinutes: number;
     durationLabel: string;
   };
@@ -668,6 +670,8 @@ export function buildMethodologyLessonUnifiedReadModel(input: {
     lesson: {
       id: input.lessonId,
       title: input.lessonShell.title,
+      moduleIndex: input.lessonShell.position.moduleIndex,
+      lessonIndex: input.lessonShell.position.lessonIndex,
       durationMinutes: input.lessonShell.estimatedDurationMinutes,
       durationLabel: `${input.lessonShell.estimatedDurationMinutes} мин`,
     },

@@ -34,7 +34,7 @@ function buildPresentationFlow() {
     }));
 }
 
-test("world-around-me lesson 1 unified read model is canonical 16-step teacher/student aligned mapping", () => {
+test("world-around-me lesson 1 unified read model keeps canonical 15-step mapping", () => {
   const assetsById = Object.fromEntries(
     lessonContentFixtureAssets.map((asset) => [asset.id, asset]),
   );
@@ -56,33 +56,33 @@ test("world-around-me lesson 1 unified read model is canonical 16-step teacher/s
     canonicalHomework: null,
   });
 
-  assert.equal(unified.steps.length, 16);
+  assert.equal(unified.steps.length, 15);
   assert.equal(unified.steps.some((step) => step.title === "Подготовка до урока"), false);
 
   for (const step of unified.steps) {
     assert.equal(step.title, step.student.title);
   }
 
-  const step2 = unified.steps[1];
-  assert.equal(step2.title, "Видео: farm animals");
-  assert.equal(step2.student.screenType, "video");
-  assert.equal(step2.resourceIds?.includes("video:farm-animals"), true);
-  assert.equal(step2.resourceIds?.includes("song:farm-animals"), false);
+  const step1 = unified.steps[0];
+  assert.equal(step1.title, "Смотрим видео «farm animals»");
+  assert.equal(step1.student.screenType, "video");
+  assert.equal(step1.resourceIds?.includes("video:farm-animals"), true);
+  assert.equal(step1.resourceIds?.includes("song:farm-animals"), false);
+
+  const step7 = unified.steps[6];
+  assert.equal(step7.title, "Приложение 1: указываем, считаем и называем животных");
+  assert.equal(step7.student.payload?.sections?.[0]?.type, "count_board");
+  assert.equal(step7.student.instruction?.toLowerCase().includes("считай"), true);
+  assert.equal(step7.resourceIds?.includes("worksheet:appendix-1"), true);
 
   const step8 = unified.steps[7];
-  assert.equal(step8.title, "Приложение 1: считаем и называем");
-  assert.equal(step8.student.payload?.sections?.[0]?.type, "count_board");
-  assert.equal(step8.student.instruction?.toLowerCase().includes("считай"), true);
-  assert.equal(step8.resourceIds?.includes("worksheet:appendix-1"), true);
+  assert.equal(step8.title, "Учим глаголы 跑，跳");
+  assert.equal(step8.student.payload?.sections?.[0]?.type, "action_cards");
 
-  const step9 = unified.steps[8];
-  assert.equal(step9.title, "Глаголы 跑 и 跳");
-  assert.equal(step9.student.payload?.sections?.[0]?.type, "action_cards");
-
-  const step15 = unified.steps[14];
-  assert.equal(step15.title, "Песня: farm animals");
-  assert.equal(step15.resourceIds?.includes("song:farm-animals"), true);
-  assert.equal(step15.resourceIds?.includes("video:farm-animals"), false);
+  const step14 = unified.steps[13];
+  assert.equal(step14.title, "Поём песню «Животные на ферме»");
+  assert.equal(step14.resourceIds?.includes("song:farm-animals"), true);
+  assert.equal(step14.resourceIds?.includes("video:farm-animals"), false);
 
   const assignedSectionKeys = unified.steps.flatMap((step) =>
     (step.student.payload?.sections ?? []).map(
@@ -91,22 +91,22 @@ test("world-around-me lesson 1 unified read model is canonical 16-step teacher/s
   );
   assert.equal(new Set(assignedSectionKeys).size, assignedSectionKeys.length);
 
-  const step13 = unified.steps[12];
-  assert.equal(step13.student.payload?.sections?.[0]?.type, "word_list");
-  const step13Words = step13.student.payload?.sections?.[0]?.type === "word_list"
-    ? step13.student.payload.sections[0].groups.flatMap((group) => group.entries.map((entry) => entry.hanzi))
+  const step12 = unified.steps[11];
+  assert.equal(step12.student.payload?.sections?.[0]?.type, "word_list");
+  const step12Words = step12.student.payload?.sections?.[0]?.type === "word_list"
+    ? step12.student.payload.sections[0].groups.flatMap((group) => group.entries.map((entry) => entry.hanzi))
     : [];
-  assert.deepEqual(step13Words, ["农场"]);
+  assert.deepEqual(step12Words, ["农场"]);
 
-  const step6 = unified.steps[5];
-  assert.equal(step6.student.payload?.sections?.[0]?.type, "matching_practice");
-  const step6Section = step6.student.payload?.sections?.[0];
-  const step6Text =
-    step6Section &&
-    step6Section.type === "matching_practice"
-      ? `${step6Section.title ?? ""} ${step6Section.subtitle ?? ""} ${step6Section.prompt ?? ""}`
+  const step5 = unified.steps[4];
+  assert.equal(step5.student.payload?.sections?.[0]?.type, "matching_practice");
+  const step5Section = step5.student.payload?.sections?.[0];
+  const step5Text =
+    step5Section &&
+    step5Section.type === "matching_practice"
+      ? `${step5Section.title ?? ""} ${step5Section.subtitle ?? ""} ${step5Section.prompt ?? ""}`
       : "";
-  assert.equal(step6Text.toLowerCase().includes("homework"), false);
+  assert.equal(step5Text.toLowerCase().includes("homework"), false);
 
 
   const totalMinutes = unified.steps.reduce((acc, step) => acc + (step.durationMinutes ?? 0), 0);
@@ -174,7 +174,7 @@ test("world-around-me step mapping keeps phrase scene single-use and avoids dupl
         keyPhrases: [],
         resources: [],
       },
-      lessonFlow: Array.from({ length: 16 }, (_, i) => ({
+      lessonFlow: Array.from({ length: 15 }, (_, i) => ({
         id: `s${i + 1}`,
         order: i + 1,
         stepLabel: `Шаг ${i + 1}`,
@@ -202,6 +202,6 @@ test("world-around-me step mapping keeps phrase scene single-use and avoids dupl
     canonicalHomework: null,
   });
 
-  assert.equal(readModel.steps[2]?.student.screenType, "phrase_practice");
-  assert.equal(readModel.steps[10]?.student.screenType, "placeholder");
+  assert.equal(readModel.steps[1]?.student.screenType, "phrase_practice");
+  assert.equal(readModel.steps[9]?.student.screenType, "placeholder");
 });

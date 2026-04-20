@@ -1,13 +1,19 @@
 import {
+  Activity,
   BookOpenText,
+  CheckCircle2,
   ChevronLeft,
   ChevronRight,
   ChevronDown,
   FileText,
-  Maximize,
+  Hash,
   Languages,
+  Maximize,
+  MonitorPlay,
   MonitorUp,
+  Music,
   NotebookPen,
+  PlayCircle,
   Presentation,
   Package,
   Timer,
@@ -32,6 +38,12 @@ type Props = {
   activeStudentStepId?: string | null;
   assetsById?: Record<string, ReusableAsset>;
   lessonNotesSlot?: ReactNode;
+  lessonIdentity?: {
+    methodologySlug?: string | null;
+    moduleIndex?: number | null;
+    lessonIndex?: number | null;
+    lessonTitle?: string | null;
+  };
   onShowOnStudentScreen?: (stepId: string) => void;
   onOpenStudentScreen?: (stepId: string) => void;
 };
@@ -59,6 +71,7 @@ const chineseGlossary: Record<string, string> = {
   "农场": "ферма",
   "我是…": "я…",
   "你是谁？": "кто ты?",
+  "这是…": "это…",
   "这是狗。": "это собака",
   "这是猫。": "это кошка",
   "这是兔子。": "это кролик",
@@ -83,15 +96,11 @@ const lessonOneDisplaySteps: LessonPlanDisplayStep[] = [
     id: "lesson-1-step-1",
     order: 1,
     category: "Видео",
-    title: "Смотрим видео «farm animals»",
-    text: "Смотрим видео «farm animals».",
+    title: "Смотрим видео «Животные на ферме»",
+    text: "",
     glossaryTerms: [],
     durationMinutes: 3,
     resourceIds: ["video:farm-animals"],
-    resourceButtons: [
-      { label: "Предпросмотр видео", assetId: "video:farm-animals" },
-      { label: "Скачать MP4", assetId: "video:farm-animals", preferDownload: true },
-    ],
   },
   {
     id: "lesson-1-step-2",
@@ -108,7 +117,7 @@ const lessonOneDisplaySteps: LessonPlanDisplayStep[] = [
     category: "Лексика",
     title: "Учим слова 狗，猫，兔子，马",
     text: "Учим слова 狗 (собака)，猫 (кошка)，兔子 (кролик)，马 (лошадь) с помощью карточек. Показываем их детям поочередно два раза. Первый раз называем только слово, соответствующее картинке: 狗，猫，兔子，马. Второй раз проговариваем предложением: 这是狗。 这是猫。 这是兔子。 这是马。",
-    glossaryTerms: ["狗", "猫", "兔子", "马", "这是狗。", "这是猫。", "这是兔子。", "这是马。"],
+    glossaryTerms: ["狗", "猫", "兔子", "马", "这是…", "这是狗。", "这是猫。", "这是兔子。", "这是马。"],
     durationMinutes: 4,
     resourceIds: ["flashcards:world-around-me-lesson-1"],
     resourceButtons: [
@@ -242,8 +251,12 @@ const lessonOneDisplaySteps: LessonPlanDisplayStep[] = [
   },
 ];
 
-function isLessonOnePlan(steps: MethodologyLessonStep[]) {
-  return steps.length === 15 && steps[0]?.title.includes("farm animals");
+function isLessonOnePlan(identity?: Props["lessonIdentity"]) {
+  return (
+    identity?.methodologySlug === "world-around-me" &&
+    identity?.moduleIndex === 1 &&
+    identity?.lessonIndex === 1
+  );
 }
 
 function ResourceButtons({
@@ -302,52 +315,68 @@ function mapAssetUrls(asset: ReusableAsset) {
   return { localUrl, fallbackUrl, previewImageRefs, slideImageRefs, cardImageRefs, pptxFileRef };
 }
 
-function StepAssetVideoCarousel({ assets }: { assets: ReusableAsset[] }) {
-  const [activeIndex, setActiveIndex] = useState(0);
-  const normalizedAssets = assets.filter((asset) => {
-    const { localUrl, fallbackUrl } = mapAssetUrls(asset);
-    return Boolean(localUrl ?? fallbackUrl);
-  });
-  if (!normalizedAssets.length) return null;
+const lessonOneStepOneVideoPlaylist = [
+  { fileName: "zhu.mp4", labelRu: "Свинья", labelZh: "猪" },
+  { fileName: "yang.mp4", labelRu: "Овца", labelZh: "羊" },
+  { fileName: "ya.mp4", labelRu: "Утка", labelZh: "鸭" },
+  { fileName: "tu.mp4", labelRu: "Кролик", labelZh: "兔子" },
+  { fileName: "nainiu.mp4", labelRu: "Корова", labelZh: "奶牛" },
+  { fileName: "mao.mp4", labelRu: "Кошка", labelZh: "猫" },
+  { fileName: "ma.mp4", labelRu: "Лошадь", labelZh: "马" },
+  { fileName: "ji.mp4", labelRu: "Курица", labelZh: "鸡" },
+  { fileName: "gou.mp4", labelRu: "Собака", labelZh: "狗" },
+  { fileName: "e.mp4", labelRu: "Гуси", labelZh: "鹅" },
+] as const;
 
-  const activeAsset = normalizedAssets[activeIndex] ?? normalizedAssets[0];
-  const { localUrl, fallbackUrl } = mapAssetUrls(activeAsset);
-  const activeUrl = localUrl ?? fallbackUrl;
-  if (!activeUrl) return null;
+function StepOneVideoEmbed() {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const playlist = lessonOneStepOneVideoPlaylist.map((item, index) => ({
+    id: `step-1-video-${index + 1}`,
+    fileName: item.fileName,
+    src: `/methodologies/world-around-me/lesson-1/media/${item.fileName}`,
+    labelRu: item.labelRu,
+    labelZh: item.labelZh,
+  }));
+
+  const activeItem = playlist[activeIndex] ?? playlist[0];
+  if (!activeItem) return null;
 
   return (
-    <div className="mt-3 rounded-xl border border-neutral-200 bg-neutral-50 p-3">
-      <video controls playsInline preload="metadata" src={activeUrl} className="w-full rounded-lg border border-neutral-200 bg-black" />
-      {normalizedAssets.length > 1 ? (
-        <div className="mt-2 flex items-center justify-between gap-2">
+    <div className="mt-3 space-y-3">
+      <video
+        key={activeItem.src}
+        ref={videoRef}
+        controls
+        playsInline
+        muted
+        autoPlay
+        preload="metadata"
+        src={activeItem.src}
+        onEnded={() => setActiveIndex((prev) => (prev + 1) % playlist.length)}
+        className="aspect-video w-full rounded-xl border border-neutral-200 bg-black object-contain"
+      />
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+        {playlist.map((item, index) => (
           <button
+            key={item.id}
             type="button"
-            onClick={() => setActiveIndex((prev) => (prev === 0 ? normalizedAssets.length - 1 : prev - 1))}
-            className="inline-flex items-center gap-1 rounded-lg border border-neutral-300 bg-white px-2 py-1 text-xs font-semibold text-neutral-800"
+            onClick={() => {
+              setActiveIndex(index);
+              void videoRef.current?.play().catch(() => {});
+            }}
+            className={`flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-xs font-semibold ${
+              index === activeIndex
+                ? "border-sky-300 bg-sky-50 text-sky-900"
+                : "border-neutral-200 bg-white text-neutral-700"
+            }`}
           >
-            <ChevronLeft className="h-3.5 w-3.5" aria-hidden="true" />
-            Назад
+            <MonitorPlay className="h-3.5 w-3.5" aria-hidden="true" />
+            <span className="truncate">
+              {item.labelRu} · <span style={{ fontFamily: cjkFontFamily }}>{item.labelZh}</span>
+            </span>
           </button>
-          <span className="text-xs text-neutral-600">Видео {activeIndex + 1} из {normalizedAssets.length}</span>
-          <button
-            type="button"
-            onClick={() => setActiveIndex((prev) => (prev + 1) % normalizedAssets.length)}
-            className="inline-flex items-center gap-1 rounded-lg border border-neutral-300 bg-white px-2 py-1 text-xs font-semibold text-neutral-800"
-          >
-            Вперёд
-            <ChevronRight className="h-3.5 w-3.5" aria-hidden="true" />
-          </button>
-        </div>
-      ) : null}
-      <div className="mt-2 flex flex-wrap gap-2">
-        <a href={activeUrl} target="_blank" rel="noreferrer" className="inline-flex rounded-lg border border-neutral-300 bg-white px-3 py-1.5 text-xs font-semibold text-neutral-800">
-          Открыть видео
-        </a>
-        {localUrl ? (
-          <a href={localUrl} download className="inline-flex rounded-lg border border-neutral-300 bg-white px-3 py-1.5 text-xs font-semibold text-neutral-800">
-            Скачать MP4
-          </a>
-        ) : null}
+        ))}
       </div>
     </div>
   );
@@ -550,19 +579,43 @@ function LessonPlanResourcePreview({
   );
 }
 
+function GlossaryTerm({ term }: { term: string }) {
+  const meaning = chineseGlossary[term];
+  if (!meaning) {
+    return (
+      <span
+        className="inline-flex rounded-lg border border-violet-200 bg-violet-50 px-2 py-1 text-xs text-violet-900"
+        style={{ fontFamily: cjkFontFamily }}
+      >
+        {term}
+      </span>
+    );
+  }
+  return (
+    <button
+      type="button"
+      className="group relative inline-flex rounded-lg border border-violet-200 bg-violet-50 px-2 py-1 text-left text-xs text-violet-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300"
+      style={{ fontFamily: cjkFontFamily }}
+      aria-label={`${term}: ${meaning}`}
+    >
+      {term}
+      <span
+        role="tooltip"
+        className="pointer-events-none absolute left-1/2 top-full z-20 mt-1 hidden w-max -translate-x-1/2 rounded-md bg-neutral-900 px-2 py-1 text-xs text-white shadow-lg group-hover:block group-focus-visible:block"
+        style={{ fontFamily: "system-ui, sans-serif" }}
+      >
+        {meaning}
+      </span>
+    </button>
+  );
+}
+
 function GlossaryChips({ terms, compactTop = false }: { terms: string[]; compactTop?: boolean }) {
   if (!terms.length) return null;
   return (
     <div className={`${compactTop ? "mt-1" : "mt-3"} flex flex-wrap gap-1.5`}>
       {terms.map((term) => (
-        <span
-          key={term}
-          title={chineseGlossary[term] ?? ""}
-          className="inline-flex rounded-lg border border-violet-200 bg-violet-50 px-2 py-1 text-xs text-violet-900"
-          style={{ fontFamily: cjkFontFamily }}
-        >
-          {term}
-        </span>
+        <GlossaryTerm key={term} term={term} />
       ))}
     </div>
   );
@@ -605,6 +658,31 @@ function CollapsibleCard({
       ) : null}
     </article>
   );
+}
+
+const categoryChipByLabel: Record<
+  LessonPlanDisplayStep["category"],
+  { tone: "sky" | "amber" | "emerald" | "indigo" | "rose" | "violet" | "slate"; icon: typeof PlayCircle }
+> = {
+  Видео: { tone: "sky", icon: PlayCircle },
+  Лексика: { tone: "amber", icon: Languages },
+  Активность: { tone: "emerald", icon: Activity },
+  "Счёт": { tone: "indigo", icon: Hash },
+  Тетрадь: { tone: "rose", icon: NotebookPen },
+  Песня: { tone: "violet", icon: Music },
+  Завершение: { tone: "slate", icon: CheckCircle2 },
+};
+
+function resolveCanonicalStepSource(steps: MethodologyLessonStep[], displayStepOrder: number) {
+  const direct = steps.find((source) => source.order === displayStepOrder);
+  const hasIntroOffset =
+    steps.length === 16 &&
+    /привет|вход|знаком/i.test(steps[0]?.title ?? "") &&
+    /видео/i.test(steps[1]?.title ?? "");
+  if (hasIntroOffset) {
+    return steps.find((source) => source.order === displayStepOrder + 1) ?? direct;
+  }
+  return direct;
 }
 
 function LessonOnePlan({
@@ -669,7 +747,7 @@ function LessonOnePlan({
           defaultOpen={false}
           contentClassName="pt-1"
         >
-          <GlossaryChips compactTop terms={["狗", "猫", "兔子", "马", "农场", "我是…", "这是狗。", "跑", "跳", "我们跑吧！", "在…里"]} />
+          <GlossaryChips compactTop terms={["狗", "猫", "兔子", "马", "农场", "我是…", "这是…", "跑", "跳", "我们…吧！", "在"]} />
         </CollapsibleCard>
 
         <CollapsibleCard title="Реквизит" icon={Package} defaultOpen={false}>
@@ -699,25 +777,27 @@ function LessonOnePlan({
 
         <div className="space-y-3">
           {lessonOneDisplaySteps.map((step) => (
-            <article key={step.id} className="rounded-2xl border border-neutral-200 bg-white p-4">
+            <article key={step.id} className="rounded-2xl border border-neutral-200/80 bg-white p-4 shadow-[0_8px_28px_rgba(20,20,20,0.04)]">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex flex-wrap items-center gap-2">
                   <Chip size="sm" tone="inverse">Шаг {step.order}</Chip>
-                  <Chip size="sm" tone="neutral">{step.category}</Chip>
+                  <Chip size="sm" tone={categoryChipByLabel[step.category].tone} icon={categoryChipByLabel[step.category].icon}>
+                    {step.category}
+                  </Chip>
                   <Chip
                     size="sm"
                     tone="sky"
                     icon={Timer}
                     className="whitespace-nowrap"
                   >
-                    {step.durationMinutes ?? steps.find((sourceStep) => sourceStep.order === step.order)?.durationMinutes ?? 3} мин
+                    {step.durationMinutes ?? resolveCanonicalStepSource(steps, step.order)?.durationMinutes ?? 3} мин
                   </Chip>
                 </div>
                 {onShowOnStudentScreen ? (
                   <button
                     type="button"
                     onClick={() => {
-                      const sourceStep = steps.find((source) => source.order === step.order);
+                      const sourceStep = resolveCanonicalStepSource(steps, step.order);
                       if (sourceStep) onShowOnStudentScreen(sourceStep.id);
                     }}
                     className={productButtonClassName("secondary", "text-sm whitespace-nowrap")}
@@ -728,20 +808,28 @@ function LessonOnePlan({
                 ) : null}
               </div>
               <h3 className="mt-2 text-lg font-semibold text-neutral-950" style={{ fontFamily: cjkFontFamily }}>{step.title}</h3>
-              <p className="mt-2 text-sm leading-6 text-neutral-700" style={{ fontFamily: cjkFontFamily }}>{step.text}</p>
+              {step.text ? (
+                <p className="mt-2 text-sm leading-6 text-neutral-700" style={{ fontFamily: cjkFontFamily }}>{step.text}</p>
+              ) : null}
               <GlossaryChips terms={step.glossaryTerms} />
+              {step.order === 3 ? (
+                <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50/60 p-3">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-amber-800">Два прохода</p>
+                  <p className="mt-2 text-sm text-neutral-800">
+                    <strong>Проход 1 — слово:</strong>{" "}
+                    <span style={{ fontFamily: cjkFontFamily }}>狗, 猫, 兔子, 马</span>
+                  </p>
+                  <p className="mt-1 text-sm text-neutral-800">
+                    <strong>Проход 2 — предложение:</strong>{" "}
+                    <span style={{ fontFamily: cjkFontFamily }}>这是狗。 / 这是猫。 / 这是兔子。 / 这是马。</span>
+                  </p>
+                </div>
+              ) : null}
               {step.resourceIds?.map((resourceId) => {
                 const asset = assetsById[resourceId];
                 if (!asset) return null;
                 if (step.order === 1 && resourceId === "video:farm-animals") {
-                  const stepOneAssets = [
-                    asset,
-                    assetsById["video-clip:farm-animals-dog"],
-                    assetsById["video-clip:farm-animals-cat"],
-                    assetsById["video-clip:farm-animals-rabbit"],
-                    assetsById["video-clip:farm-animals-horse"],
-                  ].filter((item): item is ReusableAsset => Boolean(item));
-                  return <StepAssetVideoCarousel key={`${step.id}-${resourceId}`} assets={stepOneAssets} />;
+                  return <StepOneVideoEmbed key={`${step.id}-${resourceId}`} />;
                 }
                 return <LessonPlanResourcePreview key={`${step.id}-${resourceId}`} asset={asset} />;
               })}
@@ -785,9 +873,10 @@ export function TeacherLessonPedagogicalContent({
   durationLabel,
   assetsById = {},
   lessonNotesSlot,
+  lessonIdentity,
   onShowOnStudentScreen,
 }: Props) {
-  if (isLessonOnePlan(steps)) {
+  if (isLessonOnePlan(lessonIdentity)) {
     return (
       <LessonOnePlan
         assetsById={assetsById}

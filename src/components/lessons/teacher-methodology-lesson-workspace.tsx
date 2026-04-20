@@ -12,6 +12,16 @@ import { SurfaceCard } from "@/components/ui/surface-card";
 import type { MethodologyLessonUnifiedReadModel } from "@/lib/server/methodology-lesson-unified-read-model";
 
 type MethodologyLessonReadModel = {
+  lesson: {
+    methodologySlug: string;
+    shell: {
+      title: string;
+      position: {
+        moduleIndex: number;
+        lessonIndex: number;
+      };
+    };
+  };
   canonicalHomework: {
     title: string;
     kind: "practice_text" | "quiz_single_choice";
@@ -38,7 +48,9 @@ export function TeacherMethodologyLessonWorkspace({
     readModel.unifiedReadModel.steps[0]?.id ?? null,
   );
   const isWorldAroundMeLessonOne =
-    readModel.unifiedReadModel.lesson.title.includes("Урок 1");
+    readModel.lesson.methodologySlug === "world-around-me" &&
+    readModel.lesson.shell.position.moduleIndex === 1 &&
+    readModel.lesson.shell.position.lessonIndex === 1;
 
   return (
     <SurfaceCard as="section" className="p-5 md:p-6" bodyClassName="mt-0">
@@ -62,6 +74,12 @@ export function TeacherMethodologyLessonWorkspace({
             }
             activeStudentStepId={selectedStepId}
             assetsById={readModel.unifiedReadModel.assetsById}
+            lessonIdentity={{
+              methodologySlug: readModel.lesson.methodologySlug,
+              moduleIndex: readModel.lesson.shell.position.moduleIndex,
+              lessonIndex: readModel.lesson.shell.position.lessonIndex,
+              lessonTitle: readModel.lesson.shell.title,
+            }}
             onShowOnStudentScreen={setSelectedStepId}
             onOpenStudentScreen={(stepId) => {
               setSelectedStepId(stepId);

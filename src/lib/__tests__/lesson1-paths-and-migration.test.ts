@@ -11,6 +11,10 @@ const kindMigrationSource = readFileSync(
   "supabase/migrations/202604180002_world_around_me_lesson1_asset_kind_alignment.sql",
   "utf8",
 );
+const stepOneVideosMigrationSource = readFileSync(
+  "supabase/migrations/202604200001_world_around_me_lesson1_add_video_playlist_assets.sql",
+  "utf8",
+);
 
 test("lesson 1 fixtures and migration use canonical visual paths", () => {
   assert.equal(
@@ -88,6 +92,49 @@ test("lesson 1 migration persists full homework practice sections and local audi
   );
   assert.equal(
     migrationSource.includes('"audioUrl":"/methodologies/world-around-me/lesson-1/audio/zai.mp3"'),
+    true,
+  );
+});
+
+test("lesson 1 step 1 playlist migration registers all local farm videos", () => {
+  assert.equal(
+    stepOneVideosMigrationSource.includes("/methodologies/world-around-me/lesson-1/media/e.mp4"),
+    true,
+  );
+  assert.equal(
+    stepOneVideosMigrationSource.includes("/methodologies/world-around-me/lesson-1/media/gou.mp4"),
+    true,
+  );
+  assert.equal(
+    stepOneVideosMigrationSource.includes("/methodologies/world-around-me/lesson-1/media/mao.mp4"),
+    true,
+  );
+  assert.equal(
+    stepOneVideosMigrationSource.includes("/methodologies/world-around-me/lesson-1/media/tu.mp4"),
+    true,
+  );
+  assert.equal(
+    stepOneVideosMigrationSource.includes("/methodologies/world-around-me/lesson-1/media/ma.mp4"),
+    true,
+  );
+  assert.equal(
+    stepOneVideosMigrationSource.includes("/methodologies/world-around-me/lesson-1/media/zhu.mp4"),
+    true,
+  );
+  assert.equal(
+    stepOneVideosMigrationSource.includes("/methodologies/world-around-me/lesson-1/media/nainiu.mp4"),
+    true,
+  );
+  assert.equal(
+    stepOneVideosMigrationSource.includes("/methodologies/world-around-me/lesson-1/media/yang.mp4"),
+    true,
+  );
+  assert.equal(
+    stepOneVideosMigrationSource.includes("/methodologies/world-around-me/lesson-1/media/ya.mp4"),
+    true,
+  );
+  assert.equal(
+    stepOneVideosMigrationSource.includes("/methodologies/world-around-me/lesson-1/media/ji.mp4"),
     true,
   );
 });

@@ -22,7 +22,7 @@ test("teacher workspace component keeps global live controls and note editing su
   assert.equal(workspaceComponentSource.includes("Завершить урок"), true);
   assert.equal(workspaceComponentSource.includes("Предыдущий шаг"), true);
   assert.equal(workspaceComponentSource.includes("Следующий шаг"), true);
-  assert.equal(workspaceComponentSource.includes("Заметки к уроку"), true);
+  assert.equal(workspaceComponentSource.includes("Заметки к уроку"), false);
   assert.equal(workspaceComponentSource.includes("Сохранить заметки"), true);
   assert.equal(workspaceComponentSource.includes("/live-state"), true);
   assert.equal(workspaceComponentSource.includes("onStepChange={(stepId) =>"), true);
