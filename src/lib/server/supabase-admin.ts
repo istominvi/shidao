@@ -746,8 +746,19 @@ export async function ensureParentProfileForUserAdmin(input: {
   const inserted = await request<Array<{ id: string }>>("/rest/v1/parent", "POST", {
     admin: true,
     payload: { user_id: userId, full_name: fullName },
+  }).catch(async (error) => {
+    const message =
+      error instanceof Error ? error.message : "Unknown parent insert error";
+    if (!isUniqueViolationError(message)) {
+      throw error;
+    }
+    return [] as Array<{ id: string }>;
   });
-  const parentId = inserted[0]?.id;
+  let parentId = inserted[0]?.id;
+  if (!parentId) {
+    const onboardedParentId = await upsertParentProfile(userId, fullName);
+    parentId = onboardedParentId?.trim() || "";
+  }
   if (!parentId) {
     throw new Error("Не удалось привязать родителя.");
   }
@@ -976,25 +987,41 @@ export async function loadParentLearningContextsByUser(userId: string) {
   const parentId = parentRows[0]?.id;
   if (!parentId) return [];
 
-  const rows = await request<
-    Array<{
-      id: string;
-      first_name: string | null;
-      last_name: string | null;
-      login: string;
-      class_student: Array<{
-        class: {
-          id: string;
-          name: string;
-          school: { id: string; name: string } | null;
-        } | null;
-      }> | null;
-    }>
-  >(
-    `/rest/v1/student?select=id,first_name,last_name,login,class_student(class:class_id(id,name,school:school_id(id,name)))&parent_id=eq.${parentId}&order=created_at.asc`,
-    "GET",
-    { admin: true },
-  );
+  type ParentStudentContextRow = {
+    id: string;
+    first_name: string | null;
+    last_name: string | null;
+    login: string;
+    class_student: Array<{
+      class: {
+        id: string;
+        name: string;
+        school?: { id: string; name: string } | null;
+      } | null;
+    }> | null;
+  };
+
+  let rows: ParentStudentContextRow[] = [];
+  try {
+    rows = await request<ParentStudentContextRow[]>(
+      `/rest/v1/student?select=id,first_name,last_name,login,class_student(class:class_id(id,name,school:school_id(id,name)))&parent_id=eq.${parentId}&order=created_at.asc`,
+      "GET",
+      { admin: true },
+    );
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown parent context query error";
+    logger.warn("[parent-dashboard] failed to load school relation for parent contexts, fallback to class-only shape", {
+      userId,
+      parentId,
+      message,
+    });
+
+    rows = await request<ParentStudentContextRow[]>(
+      `/rest/v1/student?select=id,first_name,last_name,login,class_student(class:class_id(id,name))&parent_id=eq.${parentId}&order=created_at.asc`,
+      "GET",
+      { admin: true },
+    );
+  }
 
   return rows.map((student) => ({
     studentId: student.id,
