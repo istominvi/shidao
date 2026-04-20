@@ -2,11 +2,15 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { CalendarDays, ChevronDown, ChevronLeft, ChevronRight, Rows3, X } from "lucide-react";
+import { CalendarClock, CalendarDays, ChevronDown, ChevronLeft, ChevronRight, Rows3, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { AppPageHeader } from "@/components/app/page-header";
+import { productActionClassName } from "@/components/ui/action";
+import { Button } from "@/components/ui/button";
+import { DialogShell } from "@/components/ui/dialog-shell";
+import { FieldControl, FieldLabel, FormField } from "@/components/ui/form-field";
+import { Input, Select } from "@/components/ui/input";
 import { SegmentedControl } from "@/components/ui/segmented-control";
-import { Select } from "@/components/ui/input";
 import { SurfaceCard } from "@/components/ui/surface-card";
 import type { ScheduleViewMode } from "@/components/dashboard/teacher-schedule-utils";
 import { getMonthMatrix } from "@/components/dashboard/teacher-schedule-utils";
@@ -35,7 +39,6 @@ export function TeacherLessonsHub({
   const pathname = usePathname();
   const [view, setView] = useState<ScheduleViewMode>(initialState.view);
   const [date, setDate] = useState(initialState.date);
-  const [scheduleFormat, setScheduleFormat] = useState<"online" | "offline">("online");
 
   useEffect(() => {
     const params = new URLSearchParams();
@@ -49,7 +52,17 @@ export function TeacherLessonsHub({
 
   return (
     <div className="space-y-6 lg:space-y-8">
-      <AppPageHeader title="Расписание" />
+      <AppPageHeader
+        className="[&_.app-page-actions]:mt-5"
+        title="Расписание"
+        actions={(
+          <TeacherScheduleLessonDialog
+            createLessonAction={createLessonAction}
+            hub={hub}
+            error={feedback?.error}
+          />
+        )}
+      />
 
       <TeacherLessonsSchedule
         events={hub.schedule.events}
@@ -60,86 +73,128 @@ export function TeacherLessonsHub({
           setDate(state.date);
         }}
       />
-
-      <SurfaceCard title="Запланировать занятие">
-        <details>
-          <summary className="cursor-pointer list-none text-sm font-semibold text-neutral-700">
-            Открыть форму
-          </summary>
-          <div className="mt-3">
-            {feedback?.success ? (
-              <p className="mb-3 rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
-                {feedback.success}
-              </p>
-            ) : null}
-
-            {feedback?.error ? (
-              <p className="mb-3 rounded-xl border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-800">
-                {feedback.error}
-              </p>
-            ) : null}
-
-            <form action={createLessonAction} className="grid gap-3 md:grid-cols-2">
-              <label className="space-y-1 text-sm text-neutral-700">
-                <span>Группа</span>
-                <select name="classId" required className="w-full rounded-xl border border-neutral-300 bg-white px-3 py-2 text-sm" defaultValue="">
-                  <option value="" disabled>Выберите группу</option>
-                  {hub.classOptions.map((option) => (
-                    <option key={option.id} value={option.id}>{option.label}</option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="space-y-1 text-sm text-neutral-700">
-                <span>Методологический урок</span>
-                <select name="methodologyLessonId" required className="w-full rounded-xl border border-neutral-300 bg-white px-3 py-2 text-sm" defaultValue="">
-                  <option value="" disabled>Выберите урок</option>
-                  {hub.methodologyOptions.map((option) => (
-                    <option key={option.id} value={option.id}>{option.label}</option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="space-y-1 text-sm text-neutral-700">
-                <span>Дата</span>
-                <input type="date" name="date" required className="w-full rounded-xl border border-neutral-300 bg-white px-3 py-2 text-sm" />
-              </label>
-
-              <label className="space-y-1 text-sm text-neutral-700">
-                <span>Время</span>
-                <input type="time" name="time" required className="w-full rounded-xl border border-neutral-300 bg-white px-3 py-2 text-sm" />
-              </label>
-
-              <label className="space-y-1 text-sm text-neutral-700">
-                <span>Формат</span>
-                <select name="format" required className="w-full rounded-xl border border-neutral-300 bg-white px-3 py-2 text-sm" value={scheduleFormat} onChange={(event) => setScheduleFormat(event.target.value as "online" | "offline")}>
-                  <option value="online">Онлайн</option>
-                  <option value="offline">Офлайн</option>
-                </select>
-              </label>
-
-              {scheduleFormat === "online" ? (
-                <label className="space-y-1 text-sm text-neutral-700">
-                  <span>Ссылка на встречу</span>
-                  <input type="url" name="meetingLink" placeholder="https://" className="w-full rounded-xl border border-neutral-300 bg-white px-3 py-2 text-sm" required />
-                </label>
-              ) : (
-                <label className="space-y-1 text-sm text-neutral-700">
-                  <span>Место проведения</span>
-                  <input type="text" name="place" placeholder="Кабинет / адрес" className="w-full rounded-xl border border-neutral-300 bg-white px-3 py-2 text-sm" required />
-                </label>
-              )}
-
-              <div className="md:col-span-2">
-                <button type="submit" className="inline-flex items-center rounded-full bg-sky-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-sky-500">
-                  Запланировать занятие
-                </button>
-              </div>
-            </form>
-          </div>
-        </details>
-      </SurfaceCard>
     </div>
+  );
+}
+
+type TeacherScheduleLessonDialogProps = {
+  hub: TeacherLessonsHubReadModel;
+  createLessonAction: (formData: FormData) => Promise<void>;
+  error?: string;
+};
+
+function TeacherScheduleLessonDialog({
+  hub,
+  createLessonAction,
+  error,
+}: TeacherScheduleLessonDialogProps) {
+  const [open, setOpen] = useState(Boolean(error));
+  const [scheduleFormat, setScheduleFormat] = useState<"online" | "offline">("online");
+
+  return (
+    <>
+      <button
+        type="button"
+        className={productActionClassName("text-sm")}
+        onClick={() => setOpen(true)}
+      >
+        <CalendarClock className="h-3.5 w-3.5" aria-hidden="true" />
+        <span>Запланировать урок</span>
+      </button>
+      {open ? (
+        <DialogShell
+          onClose={() => setOpen(false)}
+          title="Запланировать урок"
+          panelClassName="max-w-xl"
+        >
+          {error ? (
+            <p className="mb-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+              {error}
+            </p>
+          ) : null}
+
+          <form action={createLessonAction} className="grid gap-3 md:grid-cols-2">
+            <FormField className="md:col-span-2">
+              <FieldLabel htmlFor="schedule-class-id">Группа</FieldLabel>
+              <FieldControl className="product-select-wrap">
+                <Select id="schedule-class-id" name="classId" required defaultValue="">
+                  <option value="" disabled>
+                    Выберите группу
+                  </option>
+                  {hub.classOptions.map((option) => (
+                    <option key={option.id} value={option.id}>
+                      {option.label}
+                    </option>
+                  ))}
+                </Select>
+                <ChevronDown className="product-select-icon h-4 w-4" aria-hidden="true" />
+              </FieldControl>
+            </FormField>
+            <FormField className="md:col-span-2">
+              <FieldLabel htmlFor="schedule-methodology-lesson-id">Методологический урок</FieldLabel>
+              <FieldControl className="product-select-wrap">
+                <Select
+                  id="schedule-methodology-lesson-id"
+                  name="methodologyLessonId"
+                  required
+                  defaultValue=""
+                >
+                  <option value="" disabled>
+                    Выберите урок
+                  </option>
+                  {hub.methodologyOptions.map((option) => (
+                    <option key={option.id} value={option.id}>
+                      {option.label}
+                    </option>
+                  ))}
+                </Select>
+                <ChevronDown className="product-select-icon h-4 w-4" aria-hidden="true" />
+              </FieldControl>
+            </FormField>
+            <FormField>
+              <FieldLabel htmlFor="schedule-date">Дата</FieldLabel>
+              <Input id="schedule-date" type="date" name="date" required />
+            </FormField>
+            <FormField>
+              <FieldLabel htmlFor="schedule-time">Время</FieldLabel>
+              <Input id="schedule-time" type="time" name="time" required />
+            </FormField>
+            <fieldset className="space-y-2.5 md:col-span-2">
+              <legend className="form-field-label mb-1 block">Формат</legend>
+              <input type="hidden" name="format" value={scheduleFormat} />
+              <SegmentedControl
+                ariaLabel="Формат занятия"
+                value={scheduleFormat}
+                onChange={(value) => setScheduleFormat(value as "online" | "offline")}
+                items={[
+                  { value: "online", label: "Онлайн" },
+                  { value: "offline", label: "Офлайн" },
+                ]}
+              />
+            </fieldset>
+            {scheduleFormat === "online" ? (
+              <FormField className="md:col-span-2">
+                <FieldLabel htmlFor="schedule-meeting-link">Ссылка на встречу</FieldLabel>
+                <Input id="schedule-meeting-link" type="url" name="meetingLink" placeholder="https://" />
+                <input type="hidden" name="place" value="" />
+              </FormField>
+            ) : (
+              <FormField className="md:col-span-2">
+                <FieldLabel htmlFor="schedule-place">Место проведения</FieldLabel>
+                <Input id="schedule-place" type="text" name="place" placeholder="Кабинет / адрес" />
+                <input type="hidden" name="meetingLink" value="" />
+              </FormField>
+            )}
+            <div className="dialog-shell-actions md:col-span-2">
+              <Button type="button" variant="secondary" onClick={() => setOpen(false)}>
+                Отмена
+              </Button>
+              <Button type="submit">Запланировать урок</Button>
+            </div>
+          </form>
+        </DialogShell>
+      ) : null}
+    </>
   );
 }
 
