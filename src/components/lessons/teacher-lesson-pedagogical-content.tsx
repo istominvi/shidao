@@ -1,4 +1,5 @@
-import { Timer, Workflow } from "lucide-react";
+import { ChevronDown, Timer, Workflow } from "lucide-react";
+import { useState } from "react";
 import type { ReactNode } from "react";
 import { Chip } from "@/components/ui/chip";
 import type { ReusableAsset } from "@/lib/lesson-content";
@@ -265,60 +266,64 @@ function GlossaryChips({ terms }: { terms: string[] }) {
   );
 }
 
+function CollapsibleCard({
+  title,
+  defaultOpen = true,
+  children,
+}: {
+  title: string;
+  defaultOpen?: boolean;
+  children: ReactNode;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <article className="rounded-2xl border border-neutral-200 bg-white">
+      <button
+        type="button"
+        onClick={() => setOpen((previous) => !previous)}
+        className="flex w-full items-center justify-between px-4 py-3 text-left"
+      >
+        <h3 className="text-sm font-semibold text-neutral-900">{title}</h3>
+        <ChevronDown
+          className={`h-4 w-4 text-neutral-500 transition-transform ${open ? "rotate-180" : ""}`}
+          aria-hidden="true"
+        />
+      </button>
+      {open ? <div className="border-t border-neutral-100 px-4 py-3">{children}</div> : null}
+    </article>
+  );
+}
+
 function LessonOnePlan({ assetsById, lessonNotesSlot }: { assetsById: Record<string, ReusableAsset>; lessonNotesSlot?: ReactNode }) {
-  const presentationAsset = assetsById["presentation:world-around-me-lesson-1"];
-  const flashcardsAsset = assetsById["flashcards:world-around-me-lesson-1"];
 
   return (
     <section className="space-y-6" aria-label="План урока">
       <section className="rounded-2xl border border-neutral-200 bg-gradient-to-b from-neutral-50 to-white p-4">
-        <h2 className="text-xl font-semibold text-neutral-950">Урок 1. Животные на ферме</h2>
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <Chip tone="sky"><Timer className="mr-1 h-3.5 w-3.5" />45 минут</Chip>
           <Chip tone="neutral"><Workflow className="mr-1 h-3.5 w-3.5" />15 этапов</Chip>
         </div>
-        <p className="mt-3 text-sm text-neutral-700">
-          Первый урок знакомит детей с животными фермы через видео, карточки, движение, счёт, игрушечную ферму и песню. План следует методике: учитель ведёт детей от первых слов к коротким моделям 我是… / 这是… / 在…里.
-        </p>
-        {lessonNotesSlot}
       </section>
 
-      <section className="grid gap-3 md:grid-cols-2">
-        <article className="rounded-2xl border border-neutral-200 bg-white p-4">
-          <h3 className="text-sm font-semibold text-neutral-900">Презентация</h3>
-          <p className="mt-2 text-sm text-neutral-700">Презентация доступна для предпросмотра.</p>
-          {presentationAsset?.sourceUrl || presentationAsset?.fileRef ? (
-            <a href={presentationAsset?.sourceUrl ?? presentationAsset?.fileRef} target="_blank" rel="noreferrer" className="mt-3 inline-flex rounded-lg border border-neutral-300 px-3 py-1.5 text-xs font-semibold text-neutral-800">Открыть презентацию</a>
-          ) : null}
-        </article>
+      <section className="space-y-3">
+        <CollapsibleCard title="Об уроке" defaultOpen>
+          <p className="text-sm text-neutral-700">
+            Первый урок знакомит детей с животными фермы через видео, карточки, движение, счёт, игрушечную ферму и песню. План следует методике: учитель ведёт детей от первых слов к коротким моделям 我是… / 这是… / 在…里.
+          </p>
+        </CollapsibleCard>
 
-        <article className="rounded-2xl border border-neutral-200 bg-white p-4">
-          <h3 className="text-sm font-semibold text-neutral-900">Карточки</h3>
-          <ul className="mt-2 space-y-1 text-sm text-neutral-700">
-            <li>狗 — собака</li>
-            <li>猫 — кошка</li>
-            <li>兔子 — кролик</li>
-            <li>马 — лошадь</li>
-            <li>农场 — ферма</li>
-          </ul>
-          <div className="mt-3 flex flex-wrap gap-2">
-            {(flashcardsAsset?.sourceUrl || flashcardsAsset?.fileRef) ? (
-              <a href={flashcardsAsset?.sourceUrl ?? flashcardsAsset?.fileRef} target="_blank" rel="noreferrer" className="inline-flex rounded-lg border border-neutral-300 px-3 py-1.5 text-xs font-semibold text-neutral-800">Предпросмотр карточек</a>
-            ) : null}
-            {flashcardsAsset?.fileRef ? (
-              <a href={flashcardsAsset.fileRef} target="_blank" rel="noreferrer" className="inline-flex rounded-lg border border-neutral-300 px-3 py-1.5 text-xs font-semibold text-neutral-800">Скачать PDF</a>
-            ) : null}
-          </div>
-        </article>
+        {lessonNotesSlot ? (
+          <CollapsibleCard title="Заметки к уроку" defaultOpen>
+            {lessonNotesSlot}
+          </CollapsibleCard>
+        ) : null}
 
-        <article className="rounded-2xl border border-neutral-200 bg-white p-4">
-          <h3 className="text-sm font-semibold text-neutral-900">Новые слова и фразы</h3>
+        <CollapsibleCard title="Новые слова и фразы" defaultOpen>
           <GlossaryChips terms={["狗", "猫", "兔子", "马", "农场", "我是…", "这是狗。", "跑", "跳", "我们跑吧！", "在…里"]} />
-        </article>
+        </CollapsibleCard>
 
-        <article className="rounded-2xl border border-neutral-200 bg-white p-4">
-          <h3 className="text-sm font-semibold text-neutral-900">Реквизит к уроку</h3>
-          <ul className="mt-2 space-y-1 text-sm text-neutral-700">
+        <CollapsibleCard title="Реквизит к уроку" defaultOpen={false}>
+          <ul className="space-y-1 text-sm text-neutral-700">
             <li>Активность 1: герои курса</li>
             <li>Активность 3: герои курса</li>
             <li>Активность 4: карточки 狗，猫，兔子，马</li>
@@ -332,7 +337,7 @@ function LessonOnePlan({ assetsById, lessonNotesSlot }: { assetsById: Record<str
             <li>Активность 14: игрушечная ферма</li>
             <li>Активность 16: герои курса</li>
           </ul>
-        </article>
+        </CollapsibleCard>
       </section>
 
       <section>
