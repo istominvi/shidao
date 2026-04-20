@@ -4,6 +4,9 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, Suspense, useMemo, useState } from "react";
 import { ProductShell, StatusMessage } from "@/components/product-shell";
+import { Button } from "@/components/ui/button";
+import { FieldControl, FieldLabel, FormField } from "@/components/ui/form-field";
+import { Input } from "@/components/ui/input";
 import { useSessionView } from "@/components/use-session-view";
 import { loginWithIdentifier } from "@/lib/auth-flow";
 import { ROUTES } from "@/lib/auth";
@@ -57,13 +60,13 @@ function LoginPageContent() {
   }
 
   return (
-    <ProductShell>
-      <div className="mx-auto w-full max-w-xl">
-        <div className="primary-form-card">
-          <h2 className="text-2xl font-black tracking-tight">
-            Войти в кабинет
-          </h2>
-          <p className="mt-2 text-sm text-neutral-600">
+    <ProductShell contentClassName="mt-10">
+      <div className="mx-auto w-full max-w-[500px]">
+        <div className="surface-card">
+          <h1 className="surface-card-title text-2xl text-black">
+            Войти
+          </h1>
+          <p className="surface-card-description mt-2 text-black">
             Введите данные доступа, которые вы получили при регистрации или от
             учителя/родителя
           </p>
@@ -75,54 +78,63 @@ function LoginPageContent() {
           )}
 
           <form className="mt-5 space-y-4" onSubmit={onSubmit}>
-            <label className="block">
-              <span className="field-label">Email или логин ученика</span>
-              <input
+            <FormField>
+              <FieldLabel htmlFor="login-identifier" className="text-black">
+                Email или логин ученика
+              </FieldLabel>
+              <FieldControl>
+                <Input
+                  id="login-identifier"
+                  name="identifier"
+                  type="text"
                 value={identifier}
                 onChange={(e) => setIdentifier(e.target.value)}
                 placeholder="Например, parent@school.com или login ученика"
-                className="field-input"
-              />
-            </label>
-            <label className="block">
-              <span className="field-label">Пароль или PIN-код</span>
-              <input
-                type="password"
+                className="w-full"
+                autoComplete="username"
+                required
+                />
+              </FieldControl>
+            </FormField>
+            <FormField>
+              <div className="flex items-center justify-between gap-3">
+                <FieldLabel htmlFor="login-secret" className="text-black">
+                  Пароль или PIN-код
+                </FieldLabel>
+                <Link
+                  href={ROUTES.forgotPassword}
+                  className="text-sm font-medium text-neutral-500 underline decoration-neutral-400/50 underline-offset-2 hover:text-neutral-600"
+                >
+                  Забыли пароль?
+                </Link>
+              </div>
+              <FieldControl>
+                <Input
+                  id="login-secret"
+                  name="secret"
+                  type="password"
                 value={secret}
                 onChange={(e) => setSecret(e.target.value)}
                 placeholder="Введите пароль или PIN"
-                className="field-input"
-              />
-            </label>
-            <div className="text-right">
-              <Link
-                href={ROUTES.forgotPassword}
-                className="text-sm font-semibold underline decoration-black/20 underline-offset-2"
-              >
-                Забыли пароль?
-              </Link>
-            </div>
+                className="w-full"
+                autoComplete="current-password"
+                required
+                />
+              </FieldControl>
+            </FormField>
 
             {error && <StatusMessage kind="error">{error}</StatusMessage>}
 
-            <button
-              disabled={loading}
-              className="landing-btn landing-btn-primary min-h-12 w-full disabled:opacity-60"
-              type="submit"
-            >
-              {loading ? "Входим…" : "Войти в Shidao"}
-            </button>
+            <div className="flex justify-center">
+              <Button
+                disabled={loading}
+                className="px-8"
+                type="submit"
+              >
+                {loading ? "Входим…" : "Войти"}
+              </Button>
+            </div>
           </form>
-
-          <p className="mt-5 text-sm text-neutral-600">
-            Нет взрослого аккаунта?{" "}
-            <Link
-              href={ROUTES.join}
-              className="font-semibold underline decoration-black/25 underline-offset-2"
-            >
-              Зарегистрироваться
-            </Link>
-          </p>
         </div>
       </div>
     </ProductShell>

@@ -1,15 +1,11 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
-import {
-  ContextCard,
-  PageHero,
-  ProductShell,
-  StatusMessage,
-} from "@/components/product-shell";
-import { ROUTES } from "@/lib/auth";
+import { ProductShell, StatusMessage } from "@/components/product-shell";
+import { Button } from "@/components/ui/button";
+import { FieldControl, FieldLabel, FormField } from "@/components/ui/form-field";
+import { Input } from "@/components/ui/input";
 
 export default function JoinPage() {
   const router = useRouter();
@@ -89,114 +85,115 @@ export default function JoinPage() {
   }
 
   return (
-    <ProductShell>
-      <PageHero
-        eyebrow="Вход в продукт"
-        title="Создайте взрослый аккаунт Shidao"
-        description="Это единый взрослый доступ: после входа вы выберете роль и сможете работать как родитель или преподаватель в одной системе."
-      />
-
-      <div className="auth-shell-grid">
-        <div className="space-y-3">
-          <ContextCard
-            tone="lime"
-            title="Единый взрослый доступ"
-            description="Один аккаунт для управления учебным процессом и коммуникацией внутри платформы."
-          />
-          <ContextCard
-            tone="sky"
-            title="Роль выбирается позже"
-            description="Сначала создаём доступ, затем на первом входе вы выбираете стартовый профиль."
-          />
-          <ContextCard
-            tone="pink"
-            title="Отдельный ученический контур"
-            description="Ученики получают собственный вход, чтобы не смешивать взрослые и учебные действия."
-          />
-        </div>
-
-        <div className="primary-form-card">
-          <h2 className="text-2xl font-black tracking-tight">
-            Регистрация взрослого
-          </h2>
-          <p className="mt-2 text-sm text-neutral-600">
-            После регистрации вы перейдёте к подтверждению email или сразу ко
-            входу — зависит от режима проекта.
+    <ProductShell contentClassName="mt-10">
+      <div className="mx-auto w-full max-w-[500px]">
+        <div className="surface-card">
+          <h1 className="surface-card-title text-2xl text-black">
+            Создать аккаунт
+          </h1>
+          <p className="surface-card-description mt-2 text-black">
+            Зарегистрируйте взрослый аккаунт. После регистрации вы перейдёте к
+            подтверждению email или сразу ко входу.
           </p>
 
-          <form className="mt-5 space-y-3.5" onSubmit={onSubmit}>
-            <label className="block">
-              <span className="field-label">Имя</span>
-              <input
+          <form className="mt-5 space-y-4" onSubmit={onSubmit}>
+            <FormField>
+              <FieldLabel htmlFor="join-name" className="text-black">Имя</FieldLabel>
+              <FieldControl>
+                <Input
+                  id="join-name"
+                  name="name"
+                  type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="field-input"
+                className="w-full"
                 placeholder="Как к вам обращаться"
-              />
-            </label>
-            <label className="block">
-              <span className="field-label">Email</span>
-              <input
-                type="email"
+                autoComplete="name"
+                required
+                />
+              </FieldControl>
+            </FormField>
+            <FormField>
+              <FieldLabel htmlFor="join-email" className="text-black">Email</FieldLabel>
+              <FieldControl>
+                <Input
+                  id="join-email"
+                  name="email"
+                  type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="field-input"
+                className="w-full"
                 placeholder="you@example.com"
-              />
-            </label>
-            <label className="block">
-              <span className="field-label">Пароль</span>
-              <input
-                type="password"
+                autoComplete="email"
+                required
+                />
+              </FieldControl>
+            </FormField>
+            <FormField>
+              <FieldLabel htmlFor="join-password" className="text-black">Пароль</FieldLabel>
+              <FieldControl>
+                <Input
+                  id="join-password"
+                  name="password"
+                  type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="field-input"
+                className="w-full"
                 placeholder="Минимум 8 символов"
-              />
-            </label>
-            <label className="block">
-              <span className="field-label">Подтверждение пароля</span>
-              <input
-                type="password"
+                autoComplete="new-password"
+                required
+                />
+              </FieldControl>
+            </FormField>
+            <FormField>
+              <FieldLabel htmlFor="join-confirm-password" className="text-black">
+                Подтверждение пароля
+              </FieldLabel>
+              <FieldControl>
+                <Input
+                  id="join-confirm-password"
+                  name="confirmPassword"
+                  type="password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                className="field-input"
-              />
-            </label>
+                className="w-full"
+                autoComplete="new-password"
+                required
+                />
+              </FieldControl>
+            </FormField>
 
-            <label className="context-card flex items-start gap-2.5 bg-white/88 text-sm">
-              <input
-                type="checkbox"
-                checked={agreed}
-                onChange={(e) => setAgreed(e.target.checked)}
-                className="mt-0.5 size-4"
-              />
-              <span>
-                Я согласен(а) с условиями использования и политикой
-                конфиденциальности.
-              </span>
-            </label>
+            <FormField>
+              <FieldLabel
+                htmlFor="join-agree"
+                className="surface-card-description mt-0 flex cursor-pointer items-start gap-2 font-normal text-black"
+              >
+                <input
+                  id="join-agree"
+                  type="checkbox"
+                  checked={agreed}
+                  onChange={(e) => setAgreed(e.target.checked)}
+                  className="auth-checkbox mt-0.5"
+                />
+                <span>
+                  Я согласен(а) с условиями использования и политикой
+                  конфиденциальности.
+                </span>
+              </FieldLabel>
+            </FormField>
 
             {error && <StatusMessage kind="error">{error}</StatusMessage>}
 
-            <button
-              disabled={loading}
-              className="landing-btn landing-btn-primary min-h-12 w-full disabled:opacity-60"
-              type="submit"
-            >
-              {loading ? "Создаём аккаунт…" : "Создать аккаунт"}
-            </button>
+            <div className="flex justify-center">
+              <Button
+                disabled={loading}
+                className="px-8"
+                type="submit"
+              >
+                {loading ? "Создаём аккаунт…" : "Создать аккаунт"}
+              </Button>
+            </div>
           </form>
-
-          <p className="mt-5 text-sm text-neutral-600">
-            Уже есть аккаунт?{" "}
-            <Link
-              href={ROUTES.login}
-              className="font-semibold underline decoration-black/25 underline-offset-2"
-            >
-              Войти
-            </Link>
-          </p>
         </div>
       </div>
     </ProductShell>

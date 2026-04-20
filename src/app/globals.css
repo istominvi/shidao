@@ -568,6 +568,51 @@ a {
   box-shadow: 0 0 0 3px rgba(20, 20, 20, 0.08);
 }
 
+.auth-checkbox {
+  position: relative;
+  appearance: none;
+  display: inline-grid;
+  flex-shrink: 0;
+  place-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 0.45rem;
+  border: 1px solid rgba(20, 20, 20, 0.14);
+  background: #fff;
+  cursor: pointer;
+}
+
+.auth-checkbox:hover {
+  border-color: rgba(20, 20, 20, 0.22);
+}
+
+.auth-checkbox::before {
+  content: "";
+  width: 0.6rem;
+  height: 0.35rem;
+  border: 2px solid #fff;
+  border-top: 0;
+  border-right: 0;
+  transform: rotate(-45deg) scale(0);
+  transform-origin: center;
+  transition: transform 120ms ease;
+}
+
+.auth-checkbox:checked {
+  background: #141414;
+  border-color: #141414;
+}
+
+.auth-checkbox:checked::before {
+  transform: rotate(-45deg) scale(1);
+}
+
+.auth-checkbox:focus-visible {
+  outline: none;
+  border-color: rgba(20, 20, 20, 0.32);
+  box-shadow: 0 0 0 3px rgba(20, 20, 20, 0.08);
+}
+
 .product-control-rail {
   display: flex;
   flex-wrap: wrap;
