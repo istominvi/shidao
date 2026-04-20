@@ -13,11 +13,23 @@ test("post-login redirect sends student to lessons", () => {
   );
 });
 
-test("post-login redirect sends adult with profile to dashboard", () => {
+test("post-login redirect sends teacher profile to lessons", () => {
   assert.equal(
     resolvePostLoginRedirectForContext({
       actorKind: "adult",
       hasAnyAdultProfile: true,
+      activeAdultProfile: "teacher",
+    }),
+    ROUTES.lessons,
+  );
+});
+
+test("post-login redirect sends parent profile to dashboard", () => {
+  assert.equal(
+    resolvePostLoginRedirectForContext({
+      actorKind: "adult",
+      hasAnyAdultProfile: true,
+      activeAdultProfile: "parent",
     }),
     ROUTES.dashboard,
   );

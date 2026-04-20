@@ -1,12 +1,20 @@
 import { ROUTES } from "../auth";
+import type { ProfileKind } from "../auth";
 
 export function resolvePostLoginRedirectForContext(context: {
   actorKind: "adult" | "student";
   hasAnyAdultProfile: boolean;
+  activeAdultProfile?: ProfileKind | null;
 }) {
   if (context.actorKind === "student") {
     return ROUTES.lessons;
   }
 
-  return context.hasAnyAdultProfile ? ROUTES.dashboard : ROUTES.onboarding;
+  if (!context.hasAnyAdultProfile) {
+    return ROUTES.onboarding;
+  }
+
+  return context.activeAdultProfile === "teacher"
+    ? ROUTES.lessons
+    : ROUTES.dashboard;
 }

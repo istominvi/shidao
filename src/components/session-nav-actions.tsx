@@ -32,6 +32,10 @@ const ADULT_PROFILE_TOGGLE_LABELS: Record<ProfileKind, string> = {
   teacher: "Учитель",
   parent: "Родитель",
 };
+const PROFILE_HOME_ROUTE: Record<ProfileKind, string> = {
+  teacher: ROUTES.lessons,
+  parent: ROUTES.dashboard,
+};
 
 async function readActionError(
   response: Response,
@@ -162,7 +166,7 @@ export function SessionNavActions({
 
       await refetchSession();
       setOpen(false);
-      router.replace(ROUTES.dashboard);
+      router.replace(PROFILE_HOME_ROUTE[profile]);
       router.refresh();
     } catch (error) {
       setActionError(
@@ -239,7 +243,7 @@ export function SessionNavActions({
             onChange={(profile) => {
               if (profile === state.activeProfile) {
                 setOpen(false);
-                router.replace(ROUTES.dashboard);
+                router.replace(PROFILE_HOME_ROUTE[profile]);
                 router.refresh();
                 return;
               }

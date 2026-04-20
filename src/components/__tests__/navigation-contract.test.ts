@@ -69,9 +69,9 @@ test("Landing header: guest/degraded is auth-aware and depends on session resolv
   assert.equal(resolveLandingNavAction(degraded, true), "guest-cta-pair");
 });
 
-test("Landing hero auth CTA points authenticated users to dashboard", () => {
-  assert.equal(resolveLandingAuthCtaHref(adult), ROUTES.dashboard);
-  assert.equal(resolveLandingAuthCtaHref(student), ROUTES.dashboard);
+test("Landing hero auth CTA points authenticated users to lessons", () => {
+  assert.equal(resolveLandingAuthCtaHref(adult), ROUTES.lessons);
+  assert.equal(resolveLandingAuthCtaHref(student), ROUTES.lessons);
   assert.equal(resolveLandingAuthCtaHref(guest), ROUTES.login);
 });
 

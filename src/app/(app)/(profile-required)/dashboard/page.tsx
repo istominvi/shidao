@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation";
 import { ParentDashboard } from "@/components/dashboard/parent-dashboard";
-import { TeacherDashboard } from "@/components/dashboard/teacher-dashboard";
 import { TopNav } from "@/components/top-nav";
 import { ROUTES } from "@/lib/auth";
 import { resolveAccessPolicy } from "@/lib/server/access-policy";
@@ -10,7 +9,6 @@ import {
   getMethodologyLessonByIdAdmin,
   listScheduledLessonsForClassesAdmin,
 } from "@/lib/server/lesson-content-repository";
-import { getTeacherDashboardOperationsReadModel } from "@/lib/server/teacher-dashboard-operations";
 import { loadParentLearningContextsByUser } from "@/lib/server/supabase-admin";
 
 function formatStatus(status: "planned" | "in_progress" | "completed" | "cancelled") {
@@ -52,27 +50,7 @@ export default async function DashboardIndexPage({
   }
 
   if (context.activeProfile === "teacher") {
-    const teacherId = context.teacher?.id;
-    if (!teacherId) {
-      redirect(ROUTES.onboarding);
-    }
-
-    const query = await searchParams;
-    const readModel = await getTeacherDashboardOperationsReadModel({
-      teacherId,
-      search: query.q,
-      methodology: query.methodology,
-    });
-
-    return (
-      <main className="pb-12">
-        <div className="landing-noise" aria-hidden="true" />
-        <TopNav />
-        <div className="container app-page-container">
-          <TeacherDashboard readModel={readModel} />
-        </div>
-      </main>
-    );
+    redirect(ROUTES.lessons);
   }
 
   const learningContexts = await loadParentLearningContextsByUser(context.userId);

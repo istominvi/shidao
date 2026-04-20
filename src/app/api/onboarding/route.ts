@@ -53,5 +53,5 @@ export async function POST(req: NextRequest) {
     return apiError(500, mapOnboardingFailureToUserMessage(error));
   }
 
-  return NextResponse.json({ redirectTo: ROUTES.dashboard });
+  return NextResponse.json({ redirectTo: ROUTES.lessons });
 }
