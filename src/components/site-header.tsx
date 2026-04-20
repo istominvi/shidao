@@ -83,6 +83,7 @@ export function SiteHeader({
       <NavigationHeaderShell
         className={classNames(
           "site-header-shell",
+          variant === "product" && "site-header-shell-product",
           variant === "marketing-hero" && "site-header-shell-marketing",
           shellClassName,
         )}
@@ -95,7 +96,12 @@ export function SiteHeader({
         </Link>
 
         {hasNav ? (
-          <div className="site-header-nav-scroll md:justify-self-center">
+          <div
+            className={classNames(
+              "site-header-nav-scroll md:justify-self-center",
+              variant === "product" && "site-header-nav-scroll-product",
+            )}
+          >
             <nav aria-label={navAriaLabel}>
               <ul className="site-header-nav-list">
                 {navItems.map((item) => (

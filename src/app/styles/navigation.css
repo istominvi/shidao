@@ -40,6 +40,10 @@
   gap: 0.65rem 0.85rem;
 }
 
+.site-header-shell-product {
+  flex-wrap: nowrap;
+}
+
 .site-header-shell-marketing {
   background: var(--header-shell-bg);
 }
@@ -70,11 +74,19 @@
   padding: 0;
 }
 
+.site-header-nav-scroll-product {
+  display: none;
+}
+
 @media (min-width: 768px) {
   .site-header-nav-scroll {
     order: 0;
     width: auto;
     justify-self: center;
+  }
+
+  .site-header-nav-scroll-product {
+    display: block;
   }
 }
 

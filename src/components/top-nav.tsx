@@ -26,6 +26,17 @@ export function TopNav() {
   const primaryNavId = resolvePrimaryNavId(state);
   const primaryNavConfig = primaryNavId ? PRIMARY_NAV_CONFIG[primaryNavId] : null;
 
+  const navItems: SiteHeaderNavItem[] = primaryNavConfig
+    ? primaryNavConfig.items.map((item) => ({
+        id: item.id,
+        label: item.label,
+        href: item.href,
+        icon: item.icon,
+        active: item.isActive(pathname),
+        scroll: false,
+      }))
+    : [];
+
   const navAction = (() => {
     const action = resolveTopNavAction(pathname, state, sessionResolved);
 
@@ -35,7 +46,7 @@ export function TopNav() {
           return null;
         }
 
-        return <SessionNavActions state={state} />;
+        return <SessionNavActions state={state} mobileNavItems={navItems} />;
       case "guest-join":
         return (
           <Link
@@ -69,17 +80,6 @@ export function TopNav() {
       }
     }
   })();
-
-  const navItems: SiteHeaderNavItem[] = primaryNavConfig
-    ? primaryNavConfig.items.map((item) => ({
-        id: item.id,
-        label: item.label,
-        href: item.href,
-        icon: item.icon,
-        active: item.isActive(pathname),
-        scroll: false,
-      }))
-    : [];
 
   return (
     <div className="container relative z-50 pt-4 md:pt-5">
