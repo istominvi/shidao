@@ -1,13 +1,11 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { ProductShell, StatusMessage } from "@/components/product-shell";
 import { Button } from "@/components/ui/button";
 import { FieldControl, FieldLabel, FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
-import { ROUTES } from "@/lib/auth";
 
 export default function JoinPage() {
   const router = useRouter();
@@ -87,13 +85,13 @@ export default function JoinPage() {
   }
 
   return (
-    <ProductShell contentClassName="auth-entry-content">
-      <div className="auth-entry-center-frame w-full max-w-xl">
-        <div className="primary-form-card">
-          <h2 className="text-2xl font-black tracking-tight">
+    <ProductShell contentClassName="mt-10">
+      <div className="mx-auto w-full max-w-[500px]">
+        <div className="surface-card">
+          <h1 className="surface-card-title text-2xl">
             Создать аккаунт
-          </h2>
-          <p className="mt-2 text-sm text-neutral-600">
+          </h1>
+          <p className="surface-card-description mt-2">
             Зарегистрируйте взрослый аккаунт. После регистрации вы перейдёте к
             подтверждению email или сразу ко входу.
           </p>
@@ -166,13 +164,13 @@ export default function JoinPage() {
             </FormField>
 
             <FormField>
-              <FieldLabel htmlFor="join-agree" className="flex items-start gap-2">
+              <FieldLabel htmlFor="join-agree" className="flex items-start gap-2 font-normal">
                 <input
                   id="join-agree"
                   type="checkbox"
                   checked={agreed}
                   onChange={(e) => setAgreed(e.target.checked)}
-                  className="mt-0.5 size-4"
+                  className="auth-checkbox mt-0.5 size-4"
                 />
                 <span>
                   Я согласен(а) с условиями использования и политикой
@@ -185,22 +183,12 @@ export default function JoinPage() {
 
             <Button
               disabled={loading}
-              className="w-full"
+              className="auth-submit-btn"
               type="submit"
             >
               {loading ? "Создаём аккаунт…" : "Создать аккаунт"}
             </Button>
           </form>
-
-          <p className="mt-5 text-sm text-neutral-600">
-            Уже есть аккаунт?{" "}
-            <Link
-              href={ROUTES.login}
-              className="font-semibold underline decoration-black/25 underline-offset-2"
-            >
-              Войти
-            </Link>
-          </p>
         </div>
       </div>
     </ProductShell>

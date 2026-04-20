@@ -536,19 +536,6 @@ a {
   background: rgba(255, 255, 255, 0.92);
 }
 
-.auth-entry-content {
-  margin-top: 0.75rem;
-}
-
-.auth-entry-center-frame {
-  --auth-header-offset: 5.75rem;
-  min-height: calc(100dvh - var(--auth-header-offset));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-inline: auto;
-}
-
 .context-card {
   background: rgba(255, 255, 255, 0.84);
 }
@@ -581,10 +568,36 @@ a {
   box-shadow: 0 0 0 3px rgba(20, 20, 20, 0.08);
 }
 
-@media (min-width: 768px) {
-  .auth-entry-center-frame {
-    --auth-header-offset: 6.25rem;
-  }
+.auth-submit-btn {
+  width: fit-content;
+  border-color: transparent;
+  background: #141414;
+  color: #fff;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16);
+}
+
+.auth-submit-btn:hover:not(:disabled) {
+  border-color: transparent;
+  background: #141414;
+  color: #fff;
+}
+
+.auth-checkbox {
+  appearance: none;
+  border-radius: 0.4rem;
+  border: 1px solid rgba(20, 20, 20, 0.14);
+  background: rgba(255, 255, 255, 0.96);
+}
+
+.auth-checkbox:checked {
+  background: #141414;
+  border-color: #141414;
+}
+
+.auth-checkbox:focus-visible {
+  outline: none;
+  border-color: rgba(20, 20, 20, 0.32);
+  box-shadow: 0 0 0 3px rgba(20, 20, 20, 0.08);
 }
 
 .product-control-rail {

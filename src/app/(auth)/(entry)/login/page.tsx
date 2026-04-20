@@ -60,13 +60,13 @@ function LoginPageContent() {
   }
 
   return (
-    <ProductShell contentClassName="auth-entry-content">
-      <div className="auth-entry-center-frame w-full max-w-xl">
-        <div className="primary-form-card">
-          <h2 className="text-2xl font-black tracking-tight">
-            Войти в кабинет
-          </h2>
-          <p className="mt-2 text-sm text-neutral-600">
+    <ProductShell contentClassName="mt-10">
+      <div className="mx-auto w-full max-w-[500px]">
+        <div className="surface-card">
+          <h1 className="surface-card-title text-2xl">
+            Войти
+          </h1>
+          <p className="surface-card-description mt-2">
             Введите данные доступа, которые вы получили при регистрации или от
             учителя/родителя
           </p>
@@ -125,22 +125,12 @@ function LoginPageContent() {
 
             <Button
               disabled={loading}
-              className="w-full"
+              className="auth-submit-btn"
               type="submit"
             >
-              {loading ? "Входим…" : "Войти в Shidao"}
+              {loading ? "Входим…" : "Войти"}
             </Button>
           </form>
-
-          <p className="mt-5 text-sm text-neutral-600">
-            Нет взрослого аккаунта?{" "}
-            <Link
-              href={ROUTES.join}
-              className="font-semibold underline decoration-black/25 underline-offset-2"
-            >
-              Зарегистрироваться
-            </Link>
-          </p>
         </div>
       </div>
     </ProductShell>
