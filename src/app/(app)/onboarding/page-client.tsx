@@ -24,7 +24,7 @@ const PROFILE_OPTIONS: Array<{
   },
   {
     value: "teacher",
-    title: "Я преподаватель",
+    title: "Я учитель",
     description: "Веду группы, уроки и домашнюю работу в рабочем кабинете.",
     bullets: [
       "Планирование уроков по методике",
@@ -99,7 +99,7 @@ export function OnboardingPageClient({ manageMode }: { manageMode: boolean }) {
         description={hero.description}
       />
 
-      <section className="mt-5 rounded-2xl border border-neutral-200 bg-white p-4 md:p-5">
+      <section className="primary-form-card mt-5 md:p-5">
         <div className="grid gap-4 md:grid-cols-2">
           {PROFILE_OPTIONS.map((option) => (
             <button
@@ -107,21 +107,20 @@ export function OnboardingPageClient({ manageMode }: { manageMode: boolean }) {
               type="button"
               onClick={() => selectProfile(option.value)}
               disabled={loadingProfile !== null}
-              className="rounded-2xl border border-neutral-200 bg-white p-4 text-left transition hover:border-neutral-400 disabled:opacity-60"
+              className="role-choice-card bg-white cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
             >
-              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-neutral-500">
-                Стартовый профиль
-              </p>
-              <h2 className="mt-3 text-2xl font-black tracking-tight">{option.title}</h2>
-              <p className="mt-2 text-sm leading-relaxed text-neutral-700">
+              <h2 className="text-2xl font-black tracking-tight text-neutral-950">
+                {option.title}
+              </h2>
+              <p className="mt-2 text-base leading-relaxed text-neutral-700">
                 {option.description}
               </p>
-              <ul className="mt-4 space-y-1.5 text-sm text-neutral-700">
+              <ul className="mt-4 space-y-1.5 text-base text-neutral-700">
                 {option.bullets.map((bullet) => (
                   <li key={bullet}>• {bullet}</li>
                 ))}
               </ul>
-              <p className="mt-5 text-sm font-semibold text-neutral-900">
+              <p className="mt-5 text-base font-semibold text-neutral-900">
                 {loadingProfile === option.value
                   ? "Создаём профиль…"
                   : "Выбрать и продолжить"}
