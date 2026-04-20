@@ -391,14 +391,10 @@ function LessonOnePlan({
       </section>
 
       <section>
-        <div className="mb-4 flex flex-wrap items-center gap-2">
+        <div className="mb-4 flex items-center gap-2">
           <h2 className="text-base font-semibold text-neutral-950">Структура урока</h2>
-          <span className="whitespace-nowrap">
-            <Chip tone="sky"><Timer className="mr-1 h-3.5 w-3.5" />45 минут</Chip>
-          </span>
-          <span className="whitespace-nowrap">
-            <Chip tone="neutral"><Workflow className="mr-1 h-3.5 w-3.5" />15 этапов</Chip>
-          </span>
+          <Chip tone="sky" icon={Timer} className="whitespace-nowrap">45 минут</Chip>
+          <Chip tone="neutral" icon={Workflow} className="whitespace-nowrap">15 этапов</Chip>
         </div>
 
         <div className="space-y-3">
@@ -408,12 +404,14 @@ function LessonOnePlan({
                 <div className="flex flex-wrap items-center gap-2">
                   <Chip size="sm" tone="inverse">Шаг {step.order}</Chip>
                   <Chip size="sm" tone="neutral">{step.category}</Chip>
-                  <span className="whitespace-nowrap">
-                    <Chip size="sm" tone="sky">
-                      <Timer className="mr-1 h-3.5 w-3.5" />
-                      {step.durationMinutes ?? steps.find((sourceStep) => sourceStep.order === step.order)?.durationMinutes ?? 3} мин
-                    </Chip>
-                  </span>
+                  <Chip
+                    size="sm"
+                    tone="sky"
+                    icon={Timer}
+                    className="whitespace-nowrap"
+                  >
+                    {step.durationMinutes ?? steps.find((sourceStep) => sourceStep.order === step.order)?.durationMinutes ?? 3} мин
+                  </Chip>
                 </div>
                 {onShowOnStudentScreen ? (
                   <button
@@ -422,7 +420,7 @@ function LessonOnePlan({
                       const sourceStep = steps.find((source) => source.order === step.order);
                       if (sourceStep) onShowOnStudentScreen(sourceStep.id);
                     }}
-                    className={productButtonClassName("secondary", "text-sm")}
+                    className={productButtonClassName("secondary", "text-sm whitespace-nowrap")}
                   >
                     <MonitorUp className="h-4 w-4" aria-hidden="true" />
                     На экран ученика
