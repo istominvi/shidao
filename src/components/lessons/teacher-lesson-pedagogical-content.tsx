@@ -156,11 +156,6 @@ const lessonOneDisplaySteps: LessonPlanDisplayStep[] = [
     text: "Приложение 1: раздаем каждому ребенку картинки из приложения 1 и указку. Вместе указываем, считаем и называем животных.",
     glossaryTerms: ["狗", "猫", "兔子", "马"],
     durationMinutes: 4,
-    resourceIds: ["worksheet:appendix-1"],
-    resourceButtons: [
-      { label: "Предпросмотр Приложения 1", assetId: "worksheet:appendix-1" },
-      { label: "Скачать PDF", assetId: "worksheet:appendix-1", preferDownload: true },
-    ],
   },
   {
     id: "lesson-1-step-8",
@@ -197,11 +192,6 @@ const lessonOneDisplaySteps: LessonPlanDisplayStep[] = [
     text: "Выполняем страницы 3–4 в рабочей тетради. Раскрашиваем животных, задавая вопрос 这是什么？ (Что это?)",
     glossaryTerms: ["这是什么？"],
     durationMinutes: 4,
-    resourceIds: ["worksheet:workbook-pages-3-4"],
-    resourceButtons: [
-      { label: "Предпросмотр тетради", assetId: "worksheet:workbook-pages-3-4" },
-      { label: "Скачать PDF", assetId: "worksheet:workbook-pages-3-4", preferDownload: true },
-    ],
   },
   {
     id: "lesson-1-step-12",
@@ -860,14 +850,13 @@ function LessonOnePlan({
   function StepSevenGalleryBlock() {
     return (
       <div className="mt-3 rounded-xl border border-indigo-200 bg-indigo-50/50 p-3">
-        <p className="text-xs font-semibold uppercase tracking-wide text-indigo-900">Галерея для шага 7</p>
         <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-5">
           {stepSevenGalleryImages.map((imageRef, index) => (
             <img
               key={imageRef}
               src={imageRef}
               alt={`Шаг 7, изображение ${index + 1}`}
-              className="h-24 w-full rounded-lg border border-neutral-200 bg-white object-cover"
+              className="aspect-square w-full rounded-lg border border-neutral-200 bg-white object-cover"
             />
           ))}
         </div>
@@ -878,12 +867,11 @@ function LessonOnePlan({
   function StepElevenWorkbookColoringBlock() {
     return (
       <div className="mt-3 rounded-xl border border-rose-200 bg-rose-50/50 p-3">
-        <p className="text-xs font-semibold uppercase tracking-wide text-rose-900">Раскраска (шаг 11)</p>
-        <div className="mt-2 overflow-hidden rounded-lg border border-neutral-200 bg-white">
+        <div className="mt-2 w-fit overflow-hidden rounded-lg border border-neutral-200 bg-white">
           <img
             src="/methodologies/world-around-me/lesson-1/step11/step11.png"
             alt="Раскраска для шага 11"
-            className="h-auto w-full object-contain"
+            className="h-auto w-48 object-contain"
           />
         </div>
       </div>
