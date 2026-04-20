@@ -367,6 +367,10 @@ function splitStudentFullName(fullName?: string | null) {
   };
 }
 
+function normalizeEmailAddress(email: string) {
+  return email.trim().toLowerCase();
+}
+
 function logUserContextPartFailure(
   userId: string,
   query: { part: string; select: string; path: string },
@@ -632,6 +636,171 @@ export async function upsertParentProfile(
   return request<string>("/rest/v1/rpc/onboard_parent", "POST", {
     admin: true,
     payload: { p_user_id: userId, p_full_name: fullName },
+  });
+}
+
+export async function findAuthUserByEmailAdmin(email: string): Promise<{
+  id: string;
+  email: string | null;
+  user_metadata?: { full_name?: string | null } | null;
+} | null> {
+  const normalizedEmail = normalizeEmailAddress(email);
+  if (!normalizedEmail) {
+    return null;
+  }
+
+  const perPage = 100;
+  for (let page = 1; page <= 10; page += 1) {
+    const payload = await request<{
+      users?: SupabaseUser[];
+      next_page?: number | null;
+    }>(
+      `/auth/v1/admin/users?page=${page}&per_page=${perPage}`,
+      "GET",
+      { admin: true },
+    );
+
+    const users = Array.isArray(payload?.users) ? payload.users : [];
+    const matched = users.find(
+      (user) => normalizeEmailAddress(user.email ?? "") === normalizedEmail,
+    );
+    if (matched) {
+      return {
+        id: matched.id,
+        email: matched.email ?? null,
+        user_metadata: matched.user_metadata ?? null,
+      };
+    }
+
+    if (!payload?.next_page) {
+      break;
+    }
+  }
+
+  return null;
+}
+
+export async function getAuthUsersByIdsAdmin(userIds: string[]): Promise<
+  Record<
+    string,
+    { id: string; email: string | null; user_metadata?: { full_name?: string | null } | null }
+  >
+> {
+  const normalizedIds = Array.from(
+    new Set(userIds.map((userId) => userId.trim()).filter(Boolean)),
+  );
+
+  const result: Record<
+    string,
+    { id: string; email: string | null; user_metadata?: { full_name?: string | null } | null }
+  > = {};
+
+  for (const userId of normalizedIds) {
+    try {
+      const payload = await request<unknown>(`/auth/v1/admin/users/${userId}`, "GET", {
+        admin: true,
+      });
+      const user = parseAuthAdminUser(payload);
+      result[userId] = {
+        id: user.id,
+        email: user.email ?? null,
+        user_metadata: user.user_metadata ?? null,
+      };
+    } catch {
+      // noop for users that cannot be loaded
+    }
+  }
+
+  return result;
+}
+
+export async function ensureParentProfileForUserAdmin(input: {
+  userId: string;
+  fullName?: string | null;
+}): Promise<{ parentId: string }> {
+  const userId = input.userId.trim();
+  if (!userId) {
+    throw new Error("Не удалось привязать родителя.");
+  }
+
+  const rows = await request<Array<{ id: string; full_name: string | null }>>(
+    `/rest/v1/parent?select=id,full_name&user_id=eq.${userId}&limit=1`,
+    "GET",
+    { admin: true },
+  );
+  const existing = rows[0] ?? null;
+  const fullName = input.fullName?.trim() || null;
+
+  if (existing?.id) {
+    if (fullName && !existing.full_name?.trim()) {
+      await request(`/rest/v1/parent?id=eq.${existing.id}`, "PATCH", {
+        admin: true,
+        payload: { full_name: fullName },
+        allowEmpty: true,
+      });
+    }
+    await ensureUserPreference(userId);
+    return { parentId: existing.id };
+  }
+
+  const inserted = await request<Array<{ id: string }>>("/rest/v1/parent", "POST", {
+    admin: true,
+    payload: { user_id: userId, full_name: fullName },
+  });
+  const parentId = inserted[0]?.id;
+  if (!parentId) {
+    throw new Error("Не удалось привязать родителя.");
+  }
+
+  await ensureUserPreference(userId);
+  return { parentId };
+}
+
+export async function resolveOptionalParentLinkByEmailAdmin(input: {
+  parentEmail?: string | null;
+  parentFullName?: string | null;
+}): Promise<string | null> {
+  const parentEmail = input.parentEmail?.trim() ?? "";
+  if (!parentEmail) {
+    return null;
+  }
+
+  const authUser = await findAuthUserByEmailAdmin(parentEmail);
+  if (!authUser?.id) {
+    throw new Error(
+      "Родитель с таким email ещё не зарегистрирован. Попросите родителя создать аккаунт или оставьте поле пустым.",
+    );
+  }
+
+  const { parentId } = await ensureParentProfileForUserAdmin({
+    userId: authUser.id,
+    fullName:
+      input.parentFullName?.trim() ||
+      authUser.user_metadata?.full_name?.trim() ||
+      null,
+  });
+  return parentId;
+}
+
+export async function updateStudentParentLinkAsAdmin(input: {
+  classId: string;
+  studentId: string;
+  parentId: string | null;
+}): Promise<void> {
+  const membershipRows = await request<Array<{ class_id: string; student_id: string }>>(
+    `/rest/v1/class_student?select=class_id,student_id&class_id=eq.${input.classId}&student_id=eq.${input.studentId}&limit=1`,
+    "GET",
+    { admin: true },
+  );
+
+  if (!membershipRows[0]) {
+    throw new Error("Ученик не найден в этой группе.");
+  }
+
+  await request(`/rest/v1/student?id=eq.${input.studentId}`, "PATCH", {
+    admin: true,
+    payload: { parent_id: input.parentId },
+    allowEmpty: true,
   });
 }
 

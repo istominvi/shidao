@@ -87,6 +87,11 @@ type RowClassStudentMembership = {
     first_name: string | null;
     last_name: string | null;
     login: string | null;
+    parent_id: string | null;
+    parent: {
+      full_name: string | null;
+      user_id: string | null;
+    } | null;
   } | null;
 };
 
@@ -465,7 +470,14 @@ export async function listTeacherClassesAdmin(
 
 export async function listStudentsForClassesAdmin(
   classIds: string[],
-): Promise<Record<string, Array<{ id: string; fullName: string | null; login: string | null }>>> {
+): Promise<Record<string, Array<{
+  id: string;
+  fullName: string | null;
+  login: string | null;
+  parentId?: string | null;
+  parentName?: string | null;
+  parentUserId?: string | null;
+}>>> {
   const normalizedClassIds = Array.from(
     new Set(classIds.map((id) => id.trim()).filter(Boolean)),
   );
@@ -476,10 +488,17 @@ export async function listStudentsForClassesAdmin(
 
   const inFilter = encodeURIComponent(`(${normalizedClassIds.join(",")})`);
   const rows = await adminRequest<RowClassStudentMembership[]>(
-    `/rest/v1/class_student?select=class_id,student:student_id(id,first_name,last_name,login)&class_id=in.${inFilter}`,
+    `/rest/v1/class_student?select=class_id,student:student_id(id,first_name,last_name,login,parent_id,parent:parent_id(full_name,user_id))&class_id=in.${inFilter}`,
   );
 
-  const byClass: Record<string, Array<{ id: string; fullName: string | null; login: string | null }>> = {};
+  const byClass: Record<string, Array<{
+    id: string;
+    fullName: string | null;
+    login: string | null;
+    parentId?: string | null;
+    parentName?: string | null;
+    parentUserId?: string | null;
+  }>> = {};
 
   for (const classId of normalizedClassIds) {
     byClass[classId] = [];
@@ -497,6 +516,9 @@ export async function listStudentsForClassesAdmin(
       id: row.student.id,
       fullName,
       login: row.student.login?.trim() || null,
+      parentId: row.student.parent_id?.trim() || null,
+      parentName: row.student.parent?.full_name?.trim() || null,
+      parentUserId: row.student.parent?.user_id?.trim() || null,
     });
   }
 
