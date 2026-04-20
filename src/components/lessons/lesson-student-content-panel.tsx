@@ -1,8 +1,9 @@
 "use client";
 
-import Link from "next/link";
+import { Expand } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { LessonLearnerContentDeck } from "@/components/lessons/lesson-learner-content-deck";
+import { productButtonClassName } from "@/components/ui/button";
 import { SurfaceCard } from "@/components/ui/surface-card";
 import type { MethodologyLessonStudentContent, ReusableAsset } from "@/lib/lesson-content";
 import type { MethodologyLessonStep } from "@/lib/server/methodology-lesson-unified-read-model";
@@ -14,7 +15,6 @@ type Props = {
   source: MethodologyLessonStudentContent | null;
   unavailableReason: "schema_missing" | "invalid_payload" | "load_failed" | null;
   assetsById: Record<string, ReusableAsset>;
-  previewHref?: string;
   embedded?: boolean;
   showFullscreenControl?: boolean;
   mode?: "teacher_preview" | "student_live_locked" | "student_review";
@@ -28,7 +28,6 @@ export function LessonStudentContentPanel({
   source,
   unavailableReason,
   assetsById,
-  previewHref,
   embedded = false,
   showFullscreenControl = false,
   mode = "teacher_preview",
@@ -73,9 +72,10 @@ export function LessonStudentContentPanel({
       onClick={() => {
         void handleFullscreenToggle();
       }}
-      className="rounded-xl border border-neutral-300 bg-white px-3 py-2 text-sm font-semibold text-neutral-800"
+      className={productButtonClassName("secondary", "text-sm")}
     >
-      {isFullscreen ? "Выйти из полноэкранного режима" : "Открыть на весь экран"}
+      <Expand className="h-4 w-4" aria-hidden="true" />
+      {isFullscreen ? "Выйти из полноэкранного режима" : "На весь экран"}
     </button>
   ) : null;
 
@@ -107,18 +107,7 @@ export function LessonStudentContentPanel({
           <h2 className="text-lg font-semibold text-neutral-900">{title}</h2>
           <div className="flex flex-wrap items-center gap-2">
             {fullscreenButton}
-            {previewHref ? (
-              <Link href={previewHref} className="rounded-xl border border-sky-300 bg-sky-50 px-3 py-2 text-sm font-semibold text-sky-800">
-                Предпросмотр ученической версии
-              </Link>
-            ) : null}
           </div>
-        </div>
-      ) : previewHref ? (
-        <div className="mb-4">
-          <Link href={previewHref} className="inline-flex rounded-xl border border-sky-300 bg-sky-50 px-3 py-2 text-sm font-semibold text-sky-800">
-            Предпросмотр ученической версии
-          </Link>
         </div>
       ) : null}
 

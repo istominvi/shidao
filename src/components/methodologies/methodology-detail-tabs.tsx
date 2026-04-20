@@ -32,29 +32,32 @@ export function MethodologyDetailTabs({
   onTabChange,
 }: MethodologyDetailTabsProps) {
   return (
-    <div className="border-b border-neutral-200 pb-4">
-      <div className="flex flex-wrap gap-2">
-        {(Object.keys(methodologyDetailTabMeta) as MethodologyDetailTabKey[]).map(
-          (tab) => {
-            const meta = methodologyDetailTabMeta[tab];
-            const Icon = meta.icon;
-            const isActive = tab === activeTab;
+    <div className="-mx-5 md:-mx-6">
+      <div className="px-5 md:px-6">
+        <div className="flex flex-wrap gap-2">
+          {(Object.keys(methodologyDetailTabMeta) as MethodologyDetailTabKey[]).map(
+            (tab) => {
+              const meta = methodologyDetailTabMeta[tab];
+              const Icon = meta.icon;
+              const isActive = tab === activeTab;
 
-            return (
-              <button
-                key={tab}
-                type="button"
-                className={embeddedTabClassName(isActive)}
-                onClick={() => onTabChange(tab)}
-                aria-pressed={isActive}
-              >
-                <Icon className="h-4 w-4" aria-hidden="true" />
-                <span>{meta.label}</span>
-              </button>
-            );
-          },
-        )}
+              return (
+                <button
+                  key={tab}
+                  type="button"
+                  className={embeddedTabClassName(isActive)}
+                  onClick={() => onTabChange(tab)}
+                  aria-pressed={isActive}
+                >
+                  <Icon className="h-4 w-4" aria-hidden="true" />
+                  <span>{meta.label}</span>
+                </button>
+              );
+            },
+          )}
+        </div>
       </div>
+      <div className="mt-5 border-b border-neutral-200" />
     </div>
   );
 }

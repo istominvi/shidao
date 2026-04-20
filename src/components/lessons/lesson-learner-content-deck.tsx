@@ -646,7 +646,6 @@ export function LessonLearnerContentDeck({
   };
 
   const canNavigate = mode !== "student_live_locked";
-  const showTeacherPreviewHint = mode === "teacher_preview";
   const showLiveLockedBanner = mode === "student_live_locked";
   const showReviewBanner = mode === "student_review";
 
@@ -662,11 +661,6 @@ export function LessonLearnerContentDeck({
         <div className="rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3">
           <p className="text-sm font-semibold text-sky-900">Повторение урока</p>
           <p className="mt-1 text-sm text-sky-900/90">Можно пройти шаги ещё раз перед домашним заданием.</p>
-        </div>
-      ) : null}
-      {showTeacherPreviewHint ? (
-        <div className="rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-2 text-xs text-neutral-600">
-          Режим предпросмотра для преподавателя: так экран выглядит для ученика.
         </div>
       ) : null}
       <article className={classNames("rounded-3xl border p-5 md:p-6", toneClass(main?.tone), main?.layout === "hero" ? "shadow-[0_14px_30px_rgba(15,23,42,0.08)]" : "")}>

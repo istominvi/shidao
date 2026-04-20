@@ -16,11 +16,10 @@ test("canonical scheduled lesson page resolves role-aware server projections", (
     pageSource.includes('role: "parent", childrenRuntime: []'),
     false,
   );
-  assert.equal(pageSource.includes("getScheduledLessonLearnerPreview"), true);
-  assert.equal(pageSource.includes('query.view === "learner-preview"'), true);
   assert.equal(pageSource.includes("AppPageHeader"), true);
-  assert.equal(pageSource.includes("toMethodologyLessonRoute"), true);
-  assert.equal(pageSource.includes("workspace.sourceLesson"), true);
+  assert.equal(pageSource.includes("toMethodologyLessonRoute"), false);
+  assert.equal(pageSource.includes("workspace.sourceLesson"), false);
+  assert.equal(pageSource.includes("backHref={ROUTES.schedule}"), true);
   assert.equal(pageSource.includes("LessonMetaRail"), true);
   assert.equal(pageSource.includes("LessonMetaPill"), true);
 });
