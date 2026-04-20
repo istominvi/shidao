@@ -19,7 +19,7 @@ import {
   Timer,
   Workflow,
 } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { productButtonClassName } from "@/components/ui/button";
 import { Chip } from "@/components/ui/chip";
@@ -76,6 +76,7 @@ const chineseGlossary: Record<string, string> = {
   "这是猫。": "это кошка",
   "这是兔子。": "это кролик",
   "这是马。": "это лошадь",
+  "我是狗。": "я собачка / я собака",
   "这是什么？": "что это?",
   "跑": "бежать",
   "跳": "прыгать",
@@ -115,15 +116,10 @@ const lessonOneDisplaySteps: LessonPlanDisplayStep[] = [
     id: "lesson-1-step-3",
     order: 3,
     category: "Лексика",
-    title: "Учим слова 狗，猫，兔子，马",
+    title: "Карточки животных: два прохода",
     text: "Учим слова 狗 (собака)，猫 (кошка)，兔子 (кролик)，马 (лошадь) с помощью карточек. Показываем их детям поочередно два раза. Первый раз называем только слово, соответствующее картинке: 狗，猫，兔子，马. Второй раз проговариваем предложением: 这是狗。 这是猫。 这是兔子。 这是马。",
     glossaryTerms: ["狗", "猫", "兔子", "马", "这是…", "这是狗。", "这是猫。", "这是兔子。", "这是马。"],
     durationMinutes: 4,
-    resourceIds: ["flashcards:world-around-me-lesson-1"],
-    resourceButtons: [
-      { label: "Предпросмотр карточек", assetId: "flashcards:world-around-me-lesson-1" },
-      { label: "Скачать PDF", assetId: "flashcards:world-around-me-lesson-1", preferDownload: true },
-    ],
   },
   {
     id: "lesson-1-step-4",
@@ -138,7 +134,7 @@ const lessonOneDisplaySteps: LessonPlanDisplayStep[] = [
     id: "lesson-1-step-5",
     order: 5,
     category: "Активность",
-    title: "Игра с мячом у стены",
+    title: "Игра с мячом и карточками",
     text: "С помощью малярного скотча расклеиваем карточки с животными на стене и берем мяч. Задача ребенка: попасть мячом по той карточке, которую называет преподаватель, и сказать, что на ней изображено.",
     glossaryTerms: [],
     durationMinutes: 4,
@@ -160,11 +156,6 @@ const lessonOneDisplaySteps: LessonPlanDisplayStep[] = [
     text: "Приложение 1: раздаем каждому ребенку картинки из приложения 1 и указку. Вместе указываем, считаем и называем животных.",
     glossaryTerms: ["狗", "猫", "兔子", "马"],
     durationMinutes: 4,
-    resourceIds: ["worksheet:appendix-1"],
-    resourceButtons: [
-      { label: "Предпросмотр Приложения 1", assetId: "worksheet:appendix-1" },
-      { label: "Скачать PDF", assetId: "worksheet:appendix-1", preferDownload: true },
-    ],
   },
   {
     id: "lesson-1-step-8",
@@ -201,11 +192,6 @@ const lessonOneDisplaySteps: LessonPlanDisplayStep[] = [
     text: "Выполняем страницы 3–4 в рабочей тетради. Раскрашиваем животных, задавая вопрос 这是什么？ (Что это?)",
     glossaryTerms: ["这是什么？"],
     durationMinutes: 4,
-    resourceIds: ["worksheet:workbook-pages-3-4"],
-    resourceButtons: [
-      { label: "Предпросмотр тетради", assetId: "worksheet:workbook-pages-3-4" },
-      { label: "Скачать PDF", assetId: "worksheet:workbook-pages-3-4", preferDownload: true },
-    ],
   },
   {
     id: "lesson-1-step-12",
@@ -696,6 +682,201 @@ function LessonOnePlan({
   steps: MethodologyLessonStep[];
   onShowOnStudentScreen?: (stepId: string) => void;
 }) {
+  const lessonOneAnimalCards = [
+    { src: "/methodologies/world-around-me/lesson-1/visuals/dog-card.png", label: "狗", alt: "Карточка собаки" },
+    { src: "/methodologies/world-around-me/lesson-1/visuals/cat-card.png", label: "猫", alt: "Карточка кошки" },
+    { src: "/methodologies/world-around-me/lesson-1/visuals/rabbit-card.png", label: "兔子", alt: "Карточка кролика" },
+    { src: "/methodologies/world-around-me/lesson-1/visuals/horse-card.png", label: "马", alt: "Карточка лошади" },
+  ] as const;
+
+  function AnimalCardReferenceGrid() {
+    return (
+      <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+        {lessonOneAnimalCards.map((card) => (
+          <figure key={card.src} className="rounded-xl border border-neutral-200 bg-white p-2">
+            <img src={card.src} alt={card.alt} className="h-20 w-full rounded-lg object-contain" />
+            <figcaption className="mt-1.5 text-center text-sm font-semibold text-neutral-800">
+              <GlossaryTerm term={card.label} />
+            </figcaption>
+          </figure>
+        ))}
+      </div>
+    );
+  }
+
+  function StepThreeCardPassesBlock() {
+    return (
+      <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50/60 p-3">
+        <p className="text-xs font-semibold uppercase tracking-wide text-amber-900">Два прохода с карточками</p>
+        <div className="mt-2 space-y-2">
+          <p className="text-sm text-neutral-800">
+            <strong>Проход 1 — слово:</strong>{" "}
+            <span style={{ fontFamily: cjkFontFamily }}>狗 / 猫 / 兔子 / 马</span>
+          </p>
+          <p className="text-sm text-neutral-800">
+            <strong>Проход 2 — предложение:</strong>{" "}
+            <span style={{ fontFamily: cjkFontFamily }}>这是狗。 / 这是猫。 / 这是兔子。 / 这是马。</span>
+          </p>
+        </div>
+        <AnimalCardReferenceGrid />
+      </div>
+    );
+  }
+
+  function StepFourActionBlock() {
+    const [activeIndex, setActiveIndex] = useState(0);
+    const activeCard = lessonOneAnimalCards[activeIndex] ?? lessonOneAnimalCards[0];
+
+    useEffect(() => {
+      const intervalId = window.setInterval(() => {
+        setActiveIndex((previous) => (previous + 1) % lessonOneAnimalCards.length);
+      }, 2600);
+      return () => window.clearInterval(intervalId);
+    }, []);
+
+    return (
+      <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50/50 p-3">
+        <p className="text-xs font-semibold uppercase tracking-wide text-emerald-900">Действие</p>
+        <ul className="mt-2 space-y-1 text-sm text-neutral-800">
+          <li>• Показать карточку</li>
+          <li>• Изобразить животное</li>
+          <li>
+            • Сказать: <GlossaryTerm term="我是狗。" />
+          </li>
+        </ul>
+        {activeCard ? (
+          <div className="mt-3 rounded-xl border border-emerald-200/80 bg-white p-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Карусель карточек</p>
+            <div className="mt-2 flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() =>
+                  setActiveIndex((previous) =>
+                    previous === 0 ? lessonOneAnimalCards.length - 1 : previous - 1,
+                  )
+                }
+                className="inline-flex rounded-lg border border-neutral-300 bg-white px-2 py-1 text-xs font-semibold text-neutral-700"
+              >
+                <ChevronLeft className="h-3.5 w-3.5" aria-hidden="true" />
+              </button>
+              <div className="relative h-28 flex-1 overflow-hidden rounded-lg border border-neutral-200 bg-neutral-50">
+                <img
+                  key={activeCard.src}
+                  src={activeCard.src}
+                  alt={activeCard.alt}
+                  className="h-full w-full object-contain transition duration-500 ease-out motion-safe:animate-[pulse_1.8s_ease-in-out_infinite]"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => setActiveIndex((previous) => (previous + 1) % lessonOneAnimalCards.length)}
+                className="inline-flex rounded-lg border border-neutral-300 bg-white px-2 py-1 text-xs font-semibold text-neutral-700"
+              >
+                <ChevronRight className="h-3.5 w-3.5" aria-hidden="true" />
+              </button>
+            </div>
+            <p className="mt-2 text-center text-sm font-semibold text-neutral-800">
+              <GlossaryTerm term={activeCard.label} />
+            </p>
+          </div>
+        ) : null}
+      </div>
+    );
+  }
+
+  function StepFiveGameMechanicsBlock() {
+    const onlinePreviewCards = [
+      ...lessonOneAnimalCards,
+      ...lessonOneAnimalCards,
+      lessonOneAnimalCards[0],
+    ].filter((card): card is (typeof lessonOneAnimalCards)[number] => Boolean(card));
+    const [activeCardSrc, setActiveCardSrc] = useState<string | null>(null);
+
+    return (
+      <div className="mt-3 rounded-xl border border-sky-200 bg-sky-50/50 p-3">
+        <p className="text-xs font-semibold uppercase tracking-wide text-sky-900">Механика игры</p>
+        <ol className="mt-2 list-inside list-decimal space-y-1 text-sm text-neutral-800">
+          <li>Расклеить карточки на стене</li>
+          <li>Назвать животное</li>
+          <li>Ребёнок бросает мяч</li>
+          <li>Ребёнок называет карточку</li>
+        </ol>
+        <div className="mt-3 rounded-xl border border-sky-200/80 bg-white p-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Онлайн-превью (сетка 3×3)</p>
+          <p className="mt-1 text-xs text-neutral-600">
+            На экране ученика ребёнок тапает по названной карточке и озвучивает животное.
+          </p>
+          <div className="mt-2 grid grid-cols-3 gap-2">
+            {onlinePreviewCards.map((card, index) => {
+              const isActive = activeCardSrc === `${card.src}-${index}`;
+              return (
+                <button
+                  key={`${card.src}-${index}`}
+                  type="button"
+                  onClick={() => {
+                    setActiveCardSrc(`${card.src}-${index}`);
+                    window.setTimeout(() => setActiveCardSrc((previous) => (previous === `${card.src}-${index}` ? null : previous)), 360);
+                  }}
+                  className={`rounded-lg border bg-neutral-50 p-1.5 transition ${
+                    isActive ? "scale-95 border-sky-400 ring-2 ring-sky-200" : "border-neutral-200 hover:border-sky-300"
+                  }`}
+                >
+                  <img src={card.src} alt={card.alt} className="h-16 w-full object-contain" />
+                  <span className="mt-1 block text-center text-xs font-semibold text-neutral-700" style={{ fontFamily: cjkFontFamily }}>
+                    {card.label}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const stepSevenGalleryImages = [
+    "/methodologies/world-around-me/lesson-1/step7/step7_1.png",
+    "/methodologies/world-around-me/lesson-1/step7/step7_2.png",
+    "/methodologies/world-around-me/lesson-1/step7/step7_3.png",
+    "/methodologies/world-around-me/lesson-1/step7/step7_4.png",
+    "/methodologies/world-around-me/lesson-1/step7/step7_5.png",
+    "/methodologies/world-around-me/lesson-1/step7/step7_6.png",
+    "/methodologies/world-around-me/lesson-1/step7/step7_7.png",
+    "/methodologies/world-around-me/lesson-1/step7/step7_8.png",
+    "/methodologies/world-around-me/lesson-1/step7/step7_9.png",
+    "/methodologies/world-around-me/lesson-1/step7/step7_10.png",
+  ] as const;
+
+  function StepSevenGalleryBlock() {
+    return (
+      <div className="mt-3 rounded-xl border border-indigo-200 bg-indigo-50/50 p-3">
+        <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-5">
+          {stepSevenGalleryImages.map((imageRef, index) => (
+            <img
+              key={imageRef}
+              src={imageRef}
+              alt={`Шаг 7, изображение ${index + 1}`}
+              className="aspect-square w-full rounded-lg border border-neutral-200 bg-white object-cover"
+            />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  function StepElevenWorkbookColoringBlock() {
+    return (
+      <div className="mt-3 rounded-xl border border-rose-200 bg-rose-50/50 p-3">
+        <div className="mt-2 w-fit overflow-hidden rounded-lg border border-neutral-200 bg-white">
+          <img
+            src="/methodologies/world-around-me/lesson-1/step11/step11.png"
+            alt="Раскраска для шага 11"
+            className="h-auto w-48 object-contain"
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <section className="space-y-6" aria-label="План урока">
@@ -812,19 +993,11 @@ function LessonOnePlan({
                 <p className="mt-2 text-sm leading-6 text-neutral-700" style={{ fontFamily: cjkFontFamily }}>{step.text}</p>
               ) : null}
               <GlossaryChips terms={step.glossaryTerms} />
-              {step.order === 3 ? (
-                <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50/60 p-3">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-amber-800">Два прохода</p>
-                  <p className="mt-2 text-sm text-neutral-800">
-                    <strong>Проход 1 — слово:</strong>{" "}
-                    <span style={{ fontFamily: cjkFontFamily }}>狗, 猫, 兔子, 马</span>
-                  </p>
-                  <p className="mt-1 text-sm text-neutral-800">
-                    <strong>Проход 2 — предложение:</strong>{" "}
-                    <span style={{ fontFamily: cjkFontFamily }}>这是狗。 / 这是猫。 / 这是兔子。 / 这是马。</span>
-                  </p>
-                </div>
-              ) : null}
+              {step.order === 3 ? <StepThreeCardPassesBlock /> : null}
+              {step.order === 4 ? <StepFourActionBlock /> : null}
+              {step.order === 5 ? <StepFiveGameMechanicsBlock /> : null}
+              {step.order === 7 ? <StepSevenGalleryBlock /> : null}
+              {step.order === 11 ? <StepElevenWorkbookColoringBlock /> : null}
               {step.resourceIds?.map((resourceId) => {
                 const asset = assetsById[resourceId];
                 if (!asset) return null;
