@@ -19,13 +19,24 @@ export function resolveProfileRequiredRedirect(
   return resolveAppLayoutRedirect(status);
 }
 
-export function resolveAuthEntryRedirect(status: AccessResolution["status"]) {
+export function resolveAuthEntryRedirect(
+  resolution: Pick<AccessResolution, "status"> & {
+    activeProfile?: "teacher" | "parent";
+  },
+) {
+  const { status } = resolution;
   if (status === "adult-without-profile") {
     return ROUTES.onboarding;
   }
 
-  if (status === "adult-with-profile" || status === "student") {
-    return status === "student" ? ROUTES.lessons : ROUTES.dashboard;
+  if (status === "student") {
+    return ROUTES.lessons;
+  }
+
+  if (status === "adult-with-profile") {
+    return resolution.activeProfile === "parent"
+      ? ROUTES.dashboard
+      : ROUTES.lessons;
   }
 
   return null;

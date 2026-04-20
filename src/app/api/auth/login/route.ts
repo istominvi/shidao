@@ -102,6 +102,7 @@ export async function POST(req: NextRequest) {
         resolvePostLoginRedirectForContext({
           actorKind: context.actorKind,
           hasAnyAdultProfile: context.hasAnyAdultProfile,
+          activeAdultProfile: context.activeProfile ?? context.availableAdultProfiles[0] ?? null,
         }),
       );
       return NextResponse.json({ redirectTo });
@@ -141,6 +142,8 @@ export async function POST(req: NextRequest) {
             resolvePostLoginRedirectForContext({
               actorKind: context.actorKind,
               hasAnyAdultProfile: context.hasAnyAdultProfile,
+              activeAdultProfile:
+                context.activeProfile ?? context.availableAdultProfiles[0] ?? null,
             }),
           ),
         });

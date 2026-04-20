@@ -78,7 +78,7 @@ export function OnboardingPageClient({ manageMode }: { manageMode: boolean }) {
       }
 
       await refetchSession();
-      router.push(payload?.redirectTo ?? ROUTES.dashboard);
+      router.push(payload?.redirectTo ?? ROUTES.lessons);
       router.refresh();
     } catch (selectError) {
       setError(

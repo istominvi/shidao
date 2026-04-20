@@ -51,8 +51,17 @@ test("smoke: guest on protected route is redirected to /login by server guard", 
 });
 
 test("smoke: authenticated user on /login is redirected by access policy", () => {
-  assert.equal(resolveAuthEntryRedirect("adult-with-profile"), ROUTES.dashboard);
-  assert.equal(resolveAuthEntryRedirect("adult-without-profile"), ROUTES.onboarding);
+  assert.equal(
+    resolveAuthEntryRedirect({
+      status: "adult-with-profile",
+      activeProfile: "teacher",
+    }),
+    ROUTES.lessons,
+  );
+  assert.equal(
+    resolveAuthEntryRedirect({ status: "adult-without-profile" }),
+    ROUTES.onboarding,
+  );
 });
 
 test("smoke: /settings/security follows server-first contract (no extra client fetch needed)", () => {

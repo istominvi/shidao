@@ -321,13 +321,14 @@ export async function resolvePostLoginRedirect(userId: string) {
     return resolvePostLoginRedirectForContext({
       actorKind: studentRows[0]?.id ? "student" : "adult",
       hasAnyAdultProfile: Boolean(parentRows[0]?.id || teacherRows[0]?.id),
+      activeAdultProfile: teacherRows[0]?.id ? "teacher" : parentRows[0]?.id ? "parent" : null,
     });
   } catch (error) {
     logger.error(
-      "[auth-login] failed to resolve post-login route, fallback to dashboard",
+      "[auth-login] failed to resolve post-login route, fallback to lessons",
       { userId, error },
     );
-    return ROUTES.dashboard;
+    return ROUTES.lessons;
   }
 }
 
