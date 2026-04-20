@@ -66,6 +66,7 @@ export function TeacherGroupsCard({
   return (
     <ProductTableCard
       title={title}
+      contentShellClassName="overflow-visible rounded-none border-0 bg-transparent md:overflow-x-auto md:rounded-2xl md:border md:border-neutral-200 md:bg-white/95"
       controls={(
         <div className="product-control-rail">
           {actions.map((action) => {
