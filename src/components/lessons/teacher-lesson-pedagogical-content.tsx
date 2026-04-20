@@ -9,6 +9,7 @@ import {
   Hash,
   Languages,
   Maximize,
+  MonitorPlay,
   MonitorUp,
   Music,
   NotebookPen,
@@ -314,15 +315,67 @@ function mapAssetUrls(asset: ReusableAsset) {
   return { localUrl, fallbackUrl, previewImageRefs, slideImageRefs, cardImageRefs, pptxFileRef };
 }
 
-function StepOneVideoEmbed({ asset }: { asset: ReusableAsset }) {
-  const yandexEmbedUrl = "https://disk.yandex.ru/i/T1Op1Vuv5OgvwQ";
+const lessonOneStepOneVideoPlaylist = [
+  "zhu.mp4",
+  "yang.mp4",
+  "ya.mp4",
+  "tu.mp4",
+  "nainiu.mp4",
+  "mao.mp4",
+  "ma.mp4",
+  "ji.mp4",
+  "gou.mp4",
+  "e.mp4",
+] as const;
+
+function StepOneVideoEmbed() {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const playlist = lessonOneStepOneVideoPlaylist.map((fileName, index) => ({
+    id: `step-1-video-${index + 1}`,
+    fileName,
+    src: `/methodologies/world-around-me/lesson-1/media/${fileName}`,
+    label: fileName.replace(".mp4", ""),
+  }));
+
+  const activeItem = playlist[activeIndex] ?? playlist[0];
+  if (!activeItem) return null;
+
   return (
-    <iframe
-      src={yandexEmbedUrl}
-      title={asset.title}
-      className="mt-3 aspect-video w-full rounded-xl border border-neutral-200 bg-black"
-      allowFullScreen
-    />
+    <div className="mt-3 space-y-3">
+      <video
+        key={activeItem.src}
+        ref={videoRef}
+        controls
+        playsInline
+        muted
+        autoPlay
+        preload="metadata"
+        src={activeItem.src}
+        onEnded={() => setActiveIndex((prev) => (prev + 1) % playlist.length)}
+        className="aspect-video w-full rounded-xl border border-neutral-200 bg-black object-contain"
+      />
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+        {playlist.map((item, index) => (
+          <button
+            key={item.id}
+            type="button"
+            onClick={() => {
+              setActiveIndex(index);
+              void videoRef.current?.play().catch(() => {});
+            }}
+            className={`flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-xs font-semibold ${
+              index === activeIndex
+                ? "border-sky-300 bg-sky-50 text-sky-900"
+                : "border-neutral-200 bg-white text-neutral-700"
+            }`}
+          >
+            <MonitorPlay className="h-3.5 w-3.5" aria-hidden="true" />
+            <span className="truncate">{item.label}</span>
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -773,7 +826,7 @@ function LessonOnePlan({
                 const asset = assetsById[resourceId];
                 if (!asset) return null;
                 if (step.order === 1 && resourceId === "video:farm-animals") {
-                  return <StepOneVideoEmbed key={`${step.id}-${resourceId}`} asset={asset} />;
+                  return <StepOneVideoEmbed key={`${step.id}-${resourceId}`} />;
                 }
                 return <LessonPlanResourcePreview key={`${step.id}-${resourceId}`} asset={asset} />;
               })}
