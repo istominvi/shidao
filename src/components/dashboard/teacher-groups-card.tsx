@@ -111,24 +111,19 @@ export function TeacherGroupsCard({
         </div>
       )}
     >
-      <ul className="space-y-2.5 md:hidden">
+      <ul className="mt-2 space-y-2 md:hidden">
         {rows.map((group) => (
           <li key={group.id}>
             <Link
               href={group.groupHref}
-              className="surface-card block cursor-pointer rounded-2xl border border-neutral-200 p-3 transition-colors hover:border-sky-300"
+              className="surface-card block cursor-pointer rounded-2xl border border-neutral-200 p-3 transition hover:border-sky-300 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500"
             >
-              <p className="truncate text-sm font-semibold text-neutral-900" title={group.groupLabel}>
-                {group.groupLabel}
-              </p>
+              <p className="text-sm font-semibold text-neutral-900">{group.groupLabel}</p>
               <p className="mt-0.5 text-xs text-neutral-600">
                 Методика: {group.methodologyLabel ?? "Не назначена"}
               </p>
               <p className="mt-1 text-[11px] text-neutral-500">
-                {group.studentCount} учен. · {group.progressLabel}
-              </p>
-              <p className="mt-1 truncate text-[11px] text-neutral-500" title={groupNextLessonLabel(group)}>
-                {groupNextLessonLabel(group)}
+                {group.studentCount} учен. · {group.progressLabel} · {groupNextLessonLabel(group)}
               </p>
             </Link>
           </li>
