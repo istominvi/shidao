@@ -316,26 +316,27 @@ function mapAssetUrls(asset: ReusableAsset) {
 }
 
 const lessonOneStepOneVideoPlaylist = [
-  "zhu.mp4",
-  "yang.mp4",
-  "ya.mp4",
-  "tu.mp4",
-  "nainiu.mp4",
-  "mao.mp4",
-  "ma.mp4",
-  "ji.mp4",
-  "gou.mp4",
-  "e.mp4",
+  { fileName: "zhu.mp4", labelRu: "Свинья", labelZh: "猪" },
+  { fileName: "yang.mp4", labelRu: "Овца", labelZh: "羊" },
+  { fileName: "ya.mp4", labelRu: "Утка", labelZh: "鸭" },
+  { fileName: "tu.mp4", labelRu: "Кролик", labelZh: "兔子" },
+  { fileName: "nainiu.mp4", labelRu: "Корова", labelZh: "奶牛" },
+  { fileName: "mao.mp4", labelRu: "Кошка", labelZh: "猫" },
+  { fileName: "ma.mp4", labelRu: "Лошадь", labelZh: "马" },
+  { fileName: "ji.mp4", labelRu: "Курица", labelZh: "鸡" },
+  { fileName: "gou.mp4", labelRu: "Собака", labelZh: "狗" },
+  { fileName: "e.mp4", labelRu: "Животные на ферме", labelZh: "农场动物" },
 ] as const;
 
 function StepOneVideoEmbed() {
   const [activeIndex, setActiveIndex] = useState(0);
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const playlist = lessonOneStepOneVideoPlaylist.map((fileName, index) => ({
+  const playlist = lessonOneStepOneVideoPlaylist.map((item, index) => ({
     id: `step-1-video-${index + 1}`,
-    fileName,
-    src: `/methodologies/world-around-me/lesson-1/media/${fileName}`,
-    label: fileName.replace(".mp4", ""),
+    fileName: item.fileName,
+    src: `/methodologies/world-around-me/lesson-1/media/${item.fileName}`,
+    labelRu: item.labelRu,
+    labelZh: item.labelZh,
   }));
 
   const activeItem = playlist[activeIndex] ?? playlist[0];
@@ -371,7 +372,9 @@ function StepOneVideoEmbed() {
             }`}
           >
             <MonitorPlay className="h-3.5 w-3.5" aria-hidden="true" />
-            <span className="truncate">{item.label}</span>
+            <span className="truncate">
+              {item.labelRu} · <span style={{ fontFamily: cjkFontFamily }}>{item.labelZh}</span>
+            </span>
           </button>
         ))}
       </div>
