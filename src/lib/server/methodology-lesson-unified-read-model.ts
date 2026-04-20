@@ -294,14 +294,7 @@ const lessonOneTeacherFallbackByOrder: Record<number, Omit<MethodologyLessonStep
 const worldAroundMeLessonOneCanonicalSteps: WorldAroundMeLessonOneCanonicalStep[] = [
   {
     order: 1,
-    title: "Приветствие детей и героев курса",
-    teacherFlowOrder: 1,
-    studentInstruction: "Поздоровайся с преподавателем и героями урока.",
-    selectSection: (section) => section.sceneId === "scene-hero" && section.type === "lesson_focus",
-  },
-  {
-    order: 2,
-    title: "Видео “farm animals”",
+    title: "Смотрим видео «farm animals»",
     teacherFlowOrder: 2,
     studentInstruction: "Посмотри видео и повтори названия животных.",
     selectSection: (section) =>
@@ -310,12 +303,12 @@ const worldAroundMeLessonOneCanonicalSteps: WorldAroundMeLessonOneCanonicalStep[
     explicitResourceIds: ["video:farm-animals"],
     forcedScreenType: "video",
   },
-  { order: 3, title: "Круг знакомства: 你是谁？— 我是…", teacherFlowOrder: 3, studentInstruction: "Повтори фразы 你是谁？ и 我是… в круге знакомства.", selectSection: (section) => section.sceneId === "scene-phrases" && section.type === "phrase_cards" },
-  { order: 4, title: "Карточки животных", teacherFlowOrder: 4, studentInstruction: "Посмотри карточки животных и повтори слова.", selectSection: (section) => section.sceneId === "scene-flashcards" && section.type === "vocabulary_cards", explicitResourceIds: ["flashcards:world-around-me-lesson-1"] },
-  { order: 5, title: "Изображаем животных", teacherFlowOrder: 5, studentInstruction: "Изобрази животное и повтори 我是… по модели педагога." },
+  { order: 2, title: "Учим фразу 我是…", teacherFlowOrder: 3, studentInstruction: "Повтори фразу 我是… и ответь на вопрос 你是谁？.", selectSection: (section) => section.sceneId === "scene-phrases" && section.type === "phrase_cards" },
+  { order: 3, title: "Учим слова 狗，猫，兔子，马", teacherFlowOrder: 4, studentInstruction: "Посмотри карточки животных и повтори слова.", selectSection: (section) => section.sceneId === "scene-flashcards" && section.type === "vocabulary_cards", explicitResourceIds: ["flashcards:world-around-me-lesson-1"] },
+  { order: 4, title: "Изображаем животных", teacherFlowOrder: 5, studentInstruction: "Изобрази животное и повтори 我是… по модели педагога." },
   {
-    order: 6,
-    title: "Игра с карточками и мячом",
+    order: 5,
+    title: "Игра с мячом у стены",
     teacherFlowOrder: 6,
     studentInstruction: "Слушай команду и выбери нужную карточку.",
     selectSection: (section) => section.sceneId === "scene-homework-practice" && section.type === "matching_practice",
@@ -329,15 +322,15 @@ const worldAroundMeLessonOneCanonicalSteps: WorldAroundMeLessonOneCanonicalStep[
       };
     },
   },
-  { order: 7, title: "Счётные палочки", teacherFlowOrder: 7, studentInstruction: "Считай до пяти вместе с педагогом." },
-  { order: 8, title: "Приложение 1: показываем, считаем и называем", teacherFlowOrder: 8, studentInstruction: "Покажи, посчитай и назови животных в Приложении 1.", selectSection: (section) => section.sceneId === "scene-counting" && section.type === "count_board", explicitResourceIds: ["worksheet:appendix-1"] },
-  { order: 9, title: "Команды 我们跑吧！/ 我们跳吧！", teacherFlowOrder: 9, studentInstruction: "Выполняй команды с 跑 и 跳 вместе с педагогом.", selectSection: (section) => section.sceneId === "scene-actions" && section.type === "action_cards" },
-  { order: 10, title: "Бежим и прыгаем к мягким игрушкам", teacherFlowOrder: 10, studentInstruction: "Беги или прыгай к нужной игрушке по команде педагога." },
-  { order: 11, title: "Что делает животное?", teacherFlowOrder: 11, studentInstruction: "Ответь, что делает животное." },
-  { order: 12, title: "Рабочая тетрадь, страницы 3–4", teacherFlowOrder: 12, studentInstruction: "Открой рабочую тетрадь на страницах 3–4 и назови животных.", selectSection: (section) => section.sceneId === "scene-materials" && section.type === "worksheet", explicitResourceIds: ["worksheet:workbook-pages-3-4"] },
+  { order: 6, title: "Счётные палочки", teacherFlowOrder: 7, studentInstruction: "Считай до пяти вместе с педагогом." },
+  { order: 7, title: "Приложение 1: указываем, считаем и называем животных", teacherFlowOrder: 8, studentInstruction: "Покажи, посчитай и назови животных в Приложении 1.", selectSection: (section) => section.sceneId === "scene-counting" && section.type === "count_board", explicitResourceIds: ["worksheet:appendix-1"] },
+  { order: 8, title: "Учим глаголы 跑，跳", teacherFlowOrder: 9, studentInstruction: "Выполняй команды с 跑 и 跳 вместе с педагогом.", selectSection: (section) => section.sceneId === "scene-actions" && section.type === "action_cards" },
+  { order: 9, title: "Команды с мягкими игрушками", teacherFlowOrder: 10, studentInstruction: "Беги или прыгай к нужной игрушке по команде педагога." },
+  { order: 10, title: "Отрабатываем 跑，跳 на мягких игрушках", teacherFlowOrder: 11, studentInstruction: "Ответь, что делает животное." },
+  { order: 11, title: "Рабочая тетрадь, страницы 3–4", teacherFlowOrder: 12, studentInstruction: "Открой рабочую тетрадь на страницах 3–4 и назови животных.", selectSection: (section) => section.sceneId === "scene-materials" && section.type === "worksheet", explicitResourceIds: ["worksheet:workbook-pages-3-4"] },
   {
-    order: 13,
-    title: "Слово 农场",
+    order: 12,
+    title: "Учим слово 农场",
     teacherFlowOrder: 13,
     studentInstruction: "Повтори слово 农场 и найди его в словаре урока.",
     selectSection: (section) => section.sceneId === "scene-review" && section.type === "word_list",
@@ -355,10 +348,10 @@ const worldAroundMeLessonOneCanonicalSteps: WorldAroundMeLessonOneCanonicalStep[
       };
     },
   },
-  { order: 14, title: "Игрушечная ферма и 在…里", teacherFlowOrder: 14, studentInstruction: "Скажи, кто находится на ферме, используя 在…里.", selectSection: (section) => section.sceneId === "scene-farm" && section.type === "farm_placement" },
+  { order: 13, title: "Игрушечная ферма и конструкция 在…里", teacherFlowOrder: 14, studentInstruction: "Скажи, кто находится на ферме, используя 在…里.", selectSection: (section) => section.sceneId === "scene-farm" && section.type === "farm_placement" },
   {
-    order: 15,
-    title: "Песня “farm animals”",
+    order: 14,
+    title: "Поём песню «Животные на ферме»",
     teacherFlowOrder: 15,
     studentInstruction: "Послушай и спой песню про животных фермы.",
     selectSection: (section) => section.sceneId === "scene-materials" && section.type === "resource_links",
@@ -372,7 +365,7 @@ const worldAroundMeLessonOneCanonicalSteps: WorldAroundMeLessonOneCanonicalStep[
       };
     },
   },
-  { order: 16, title: "Прощание с детьми и героями курса", teacherFlowOrder: 16, studentInstruction: "Попрощайся и повтори слова урока.", selectSection: (section) => section.sceneId === "scene-review" && section.type === "recap" },
+  { order: 15, title: "Прощаемся с детьми и героями курса", teacherFlowOrder: 16, studentInstruction: "Попрощайся и повтори слова урока.", selectSection: (section) => section.sceneId === "scene-review" && section.type === "recap" },
 ];
 
 function isWorldAroundMeLessonOne(lessonShell: MethodologyLessonShell) {
@@ -489,7 +482,7 @@ function buildTeacherSideForCanonicalStep(input: {
       step.order === input.canonicalStep.teacherFlowOrder &&
       !step.blockLabel.toLowerCase().includes("подготов"),
   );
-  const fallback = lessonOneTeacherFallbackByOrder[input.canonicalStep.order];
+  const fallback = lessonOneTeacherFallbackByOrder[input.canonicalStep.teacherFlowOrder];
   return {
     goal: fallback.goal ?? matched?.description ?? null,
     description: fallback.description ?? matched?.description ?? null,
@@ -560,8 +553,8 @@ function buildWorldAroundMeLessonOneSteps(input: {
       order: canonicalStep.order,
       title: canonicalStep.title,
       phase: stepPhase(canonicalStep.order),
-      durationMinutes: lessonOneTeacherFallbackByOrder[canonicalStep.order].durationMinutes,
-      movementMode: lessonOneTeacherFallbackByOrder[canonicalStep.order].movementMode,
+      durationMinutes: lessonOneTeacherFallbackByOrder[canonicalStep.teacherFlowOrder].durationMinutes,
+      movementMode: lessonOneTeacherFallbackByOrder[canonicalStep.teacherFlowOrder].movementMode,
       resourceIds,
       teacher,
       student: {
