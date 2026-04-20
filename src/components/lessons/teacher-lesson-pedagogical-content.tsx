@@ -28,6 +28,7 @@ type LessonPlanDisplayStep = {
   title: string;
   text: string;
   glossaryTerms: string[];
+  durationMinutes?: number;
   resourceIds?: string[];
   resourceButtons?: Array<{ label: string; assetId: string; preferDownload?: boolean }>;
 };
@@ -67,6 +68,7 @@ const lessonOneDisplaySteps: LessonPlanDisplayStep[] = [
     title: "Смотрим видео «farm animals»",
     text: "Смотрим видео «farm animals».",
     glossaryTerms: [],
+    durationMinutes: 3,
     resourceIds: ["video:farm-animals"],
     resourceButtons: [
       { label: "Предпросмотр видео", assetId: "video:farm-animals" },
@@ -80,6 +82,7 @@ const lessonOneDisplaySteps: LessonPlanDisplayStep[] = [
     title: "Учим фразу 我是…",
     text: "Учим фразу 我是… (я…). Садимся в круг, по очереди представляемся, указывая на себя и героев: 我是… (имя преподавателя/героя). По очереди спрашиваем детей: 你是谁？ (Кто ты?) и помогаем с ответом: 我是…",
     glossaryTerms: ["我是…", "你是谁？"],
+    durationMinutes: 3,
   },
   {
     id: "lesson-1-step-3",
@@ -88,6 +91,7 @@ const lessonOneDisplaySteps: LessonPlanDisplayStep[] = [
     title: "Учим слова 狗，猫，兔子，马",
     text: "Учим слова 狗 (собака)，猫 (кошка)，兔子 (кролик)，马 (лошадь) с помощью карточек. Показываем их детям поочередно два раза. Первый раз называем только слово, соответствующее картинке: 狗，猫，兔子，马. Второй раз проговариваем предложением: 这是狗。 这是猫。 这是兔子。 这是马。",
     glossaryTerms: ["狗", "猫", "兔子", "马", "这是狗。", "这是猫。", "这是兔子。", "这是马。"],
+    durationMinutes: 4,
     resourceIds: ["flashcards:world-around-me-lesson-1"],
     resourceButtons: [
       { label: "Предпросмотр карточек", assetId: "flashcards:world-around-me-lesson-1" },
@@ -101,6 +105,7 @@ const lessonOneDisplaySteps: LessonPlanDisplayStep[] = [
     title: "Изображаем животных",
     text: "Встаем. Поочередно указываем на карточки с животными и изображаем их вместе с детьми: лаем, как собаки, приглаживаем усики, как коты и т.д. Комментируем действия: 我是狗.",
     glossaryTerms: ["我是狗。"],
+    durationMinutes: 3,
   },
   {
     id: "lesson-1-step-5",
@@ -109,6 +114,7 @@ const lessonOneDisplaySteps: LessonPlanDisplayStep[] = [
     title: "Игра с мячом у стены",
     text: "С помощью малярного скотча расклеиваем карточки с животными на стене и берем мяч. Задача ребенка: попасть мячом по той карточке, которую называет преподаватель, и сказать, что на ней изображено.",
     glossaryTerms: [],
+    durationMinutes: 4,
   },
   {
     id: "lesson-1-step-6",
@@ -117,6 +123,7 @@ const lessonOneDisplaySteps: LessonPlanDisplayStep[] = [
     title: "Счётные палочки",
     text: "Садимся. Берем палочки для счета, показательно считаем до 5. Раздаем палочки каждому ребенку и считаем все вместе.",
     glossaryTerms: [],
+    durationMinutes: 3,
   },
   {
     id: "lesson-1-step-7",
@@ -125,6 +132,7 @@ const lessonOneDisplaySteps: LessonPlanDisplayStep[] = [
     title: "Приложение 1: указываем, считаем и называем животных",
     text: "Приложение 1: раздаем каждому ребенку картинки из приложения 1 и указку. Вместе указываем, считаем и называем животных.",
     glossaryTerms: ["狗", "猫", "兔子", "马"],
+    durationMinutes: 4,
     resourceIds: ["worksheet:appendix-1"],
     resourceButtons: [
       { label: "Предпросмотр Приложения 1", assetId: "worksheet:appendix-1" },
@@ -138,6 +146,7 @@ const lessonOneDisplaySteps: LessonPlanDisplayStep[] = [
     title: "Учим глаголы 跑，跳",
     text: "Встаем. Учим глаголы 跑 (бежать)，跳 (прыгать). Даем команду: 我们跑吧！ (Побегаем!) 我们跳吧！ (Попрыгаем!) и выполняем вместе с детьми.",
     glossaryTerms: ["跑", "跳", "我们跑吧！", "我们跳吧！"],
+    durationMinutes: 3,
   },
   {
     id: "lesson-1-step-9",
@@ -146,6 +155,7 @@ const lessonOneDisplaySteps: LessonPlanDisplayStep[] = [
     title: "Команды с мягкими игрушками",
     text: "Берем мягкие игрушки собаки, кота, кролика и лошади и расставляем по комнате. Даем команды: 跑到狗！ 跳到兔子！ 跑到马！ 跳到猫！",
     glossaryTerms: ["跑到狗！", "跳到兔子！", "跑到马！", "跳到猫！"],
+    durationMinutes: 4,
   },
   {
     id: "lesson-1-step-10",
@@ -154,6 +164,7 @@ const lessonOneDisplaySteps: LessonPlanDisplayStep[] = [
     title: "Отрабатываем 跑，跳 на мягких игрушках",
     text: "Берем мягкие игрушки и отрабатываем на них глаголы 跑 (бежать)，跳 (прыгать). Попутно задаем вопросы: 狗在做什么？ (Что собачка делает?) 狗在跳 (Собачка прыгает) и т.д.",
     glossaryTerms: ["跑", "跳", "狗在做什么？", "狗在跳"],
+    durationMinutes: 3,
   },
   {
     id: "lesson-1-step-11",
@@ -162,6 +173,7 @@ const lessonOneDisplaySteps: LessonPlanDisplayStep[] = [
     title: "Рабочая тетрадь, страницы 3–4",
     text: "Выполняем страницы 3–4 в рабочей тетради. Раскрашиваем животных, задавая вопрос 这是什么？ (Что это?)",
     glossaryTerms: ["这是什么？"],
+    durationMinutes: 4,
     resourceIds: ["worksheet:workbook-pages-3-4"],
     resourceButtons: [
       { label: "Предпросмотр тетради", assetId: "worksheet:workbook-pages-3-4" },
@@ -175,6 +187,7 @@ const lessonOneDisplaySteps: LessonPlanDisplayStep[] = [
     title: "Учим слово 农场",
     text: "Учим слово 农场 (ферма) с помощью карточки.",
     glossaryTerms: ["农场"],
+    durationMinutes: 2,
   },
   {
     id: "lesson-1-step-13",
@@ -183,6 +196,7 @@ const lessonOneDisplaySteps: LessonPlanDisplayStep[] = [
     title: "Игрушечная ферма и конструкция 在…里",
     text: "Отрабатываем слова 农场，狗，猫，兔子，马 и грамматическую конструкцию 在…里 при помощи игрушечной фермы. Ставим игрушки на ферму и комментируем: 猫住在农场里。 (Кошка живёт на ферме)",
     glossaryTerms: ["农场", "狗", "猫", "兔子", "马", "在…里", "猫住在农场里。"],
+    durationMinutes: 4,
   },
   {
     id: "lesson-1-step-14",
@@ -191,6 +205,7 @@ const lessonOneDisplaySteps: LessonPlanDisplayStep[] = [
     title: "Поём песню «Животные на ферме»",
     text: "Поем песню «Животные на ферме».",
     glossaryTerms: [],
+    durationMinutes: 3,
     resourceIds: ["song:farm-animals", "song-video:farm-animals-movement"],
     resourceButtons: [
       { label: "Воспроизвести аудио", assetId: "song:farm-animals" },
@@ -205,6 +220,7 @@ const lessonOneDisplaySteps: LessonPlanDisplayStep[] = [
     title: "Прощаемся с детьми и героями курса",
     text: "Прощаемся с детьми и героями курса.",
     glossaryTerms: [],
+    durationMinutes: 2,
   },
 ];
 
@@ -294,17 +310,20 @@ function CollapsibleCard({
   );
 }
 
-function LessonOnePlan({ assetsById, lessonNotesSlot }: { assetsById: Record<string, ReusableAsset>; lessonNotesSlot?: ReactNode }) {
+function LessonOnePlan({
+  assetsById,
+  lessonNotesSlot,
+  steps,
+  onShowOnStudentScreen,
+}: {
+  assetsById: Record<string, ReusableAsset>;
+  lessonNotesSlot?: ReactNode;
+  steps: MethodologyLessonStep[];
+  onShowOnStudentScreen?: (stepId: string) => void;
+}) {
 
   return (
     <section className="space-y-6" aria-label="План урока">
-      <section className="rounded-2xl border border-neutral-200 bg-gradient-to-b from-neutral-50 to-white p-4">
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          <Chip tone="sky"><Timer className="mr-1 h-3.5 w-3.5" />45 минут</Chip>
-          <Chip tone="neutral"><Workflow className="mr-1 h-3.5 w-3.5" />15 этапов</Chip>
-        </div>
-      </section>
-
       <section className="space-y-3">
         <CollapsibleCard title="Об уроке" defaultOpen>
           <p className="text-sm text-neutral-700">
@@ -344,17 +363,35 @@ function LessonOnePlan({ assetsById, lessonNotesSlot }: { assetsById: Record<str
         <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
           <div>
             <h2 className="text-base font-semibold text-neutral-950">Структура урока</h2>
-            <p className="text-sm text-neutral-600">пошаговый план проведения занятия — 15 этапов</p>
           </div>
-          <Chip tone="sky">45 минут</Chip>
+          <Chip tone="sky"><Timer className="mr-1 h-3.5 w-3.5" />45 минут</Chip>
+          <Chip tone="neutral"><Workflow className="mr-1 h-3.5 w-3.5" />15 этапов</Chip>
         </div>
 
         <div className="space-y-3">
           {lessonOneDisplaySteps.map((step) => (
             <article key={step.id} className="rounded-2xl border border-neutral-200 bg-white p-4">
-              <div className="flex flex-wrap items-center gap-2">
-                <Chip size="sm" tone="inverse">Шаг {step.order}</Chip>
-                <Chip size="sm" tone="neutral">{step.category}</Chip>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Chip size="sm" tone="inverse">Шаг {step.order}</Chip>
+                  <Chip size="sm" tone="neutral">{step.category}</Chip>
+                  <Chip size="sm" tone="sky">
+                    <Timer className="mr-1 h-3.5 w-3.5" />
+                    {step.durationMinutes ?? steps.find((sourceStep) => sourceStep.order === step.order)?.durationMinutes ?? 3} мин
+                  </Chip>
+                </div>
+                {onShowOnStudentScreen ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const sourceStep = steps.find((source) => source.order === step.order);
+                      if (sourceStep) onShowOnStudentScreen(sourceStep.id);
+                    }}
+                    className="rounded-lg border border-neutral-300 bg-white px-3 py-1.5 text-xs font-semibold text-neutral-700"
+                  >
+                    На экран ученика
+                  </button>
+                ) : null}
               </div>
               <h3 className="mt-2 text-lg font-semibold text-neutral-950">{step.title}</h3>
               <p className="mt-2 text-sm leading-6 text-neutral-700">{step.text}</p>
@@ -399,9 +436,17 @@ export function TeacherLessonPedagogicalContent({
   durationLabel,
   assetsById = {},
   lessonNotesSlot,
+  onShowOnStudentScreen,
 }: Props) {
   if (isLessonOnePlan(steps)) {
-    return <LessonOnePlan assetsById={assetsById} lessonNotesSlot={lessonNotesSlot} />;
+    return (
+      <LessonOnePlan
+        assetsById={assetsById}
+        lessonNotesSlot={lessonNotesSlot}
+        steps={steps}
+        onShowOnStudentScreen={onShowOnStudentScreen}
+      />
+    );
   }
 
   return <GenericPlan quickSummary={quickSummary} steps={steps} durationLabel={durationLabel} />;

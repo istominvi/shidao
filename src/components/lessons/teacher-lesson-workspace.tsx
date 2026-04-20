@@ -269,9 +269,6 @@ export function TeacherLessonWorkspace({
                     value={workspace.projection.outcomeNotes ?? ""}
                   />
                   <label className="block">
-                    <span className="text-sm font-semibold text-neutral-900">
-                      Заметки к уроку
-                    </span>
                     <textarea
                       name="runtimeNotes"
                       rows={5}
