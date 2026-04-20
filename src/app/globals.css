@@ -583,15 +583,36 @@ a {
 }
 
 .auth-checkbox {
+  position: relative;
   appearance: none;
-  border-radius: 0.4rem;
-  border: 1px solid rgba(20, 20, 20, 0.14);
-  background: rgba(255, 255, 255, 0.96);
+  display: inline-grid;
+  flex-shrink: 0;
+  place-content: center;
+  border-radius: 0.45rem;
+  border: 1.5px solid rgba(20, 20, 20, 0.22);
+  background: #fff;
+  cursor: pointer;
+}
+
+.auth-checkbox::before {
+  content: "";
+  width: 0.6rem;
+  height: 0.35rem;
+  border: 2px solid #fff;
+  border-top: 0;
+  border-right: 0;
+  transform: rotate(-45deg) scale(0);
+  transform-origin: center;
+  transition: transform 120ms ease;
 }
 
 .auth-checkbox:checked {
   background: #141414;
   border-color: #141414;
+}
+
+.auth-checkbox:checked::before {
+  transform: rotate(-45deg) scale(1);
 }
 
 .auth-checkbox:focus-visible {

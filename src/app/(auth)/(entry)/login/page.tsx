@@ -63,10 +63,10 @@ function LoginPageContent() {
     <ProductShell contentClassName="mt-10">
       <div className="mx-auto w-full max-w-[500px]">
         <div className="surface-card">
-          <h1 className="surface-card-title text-2xl">
+          <h1 className="surface-card-title text-2xl text-black">
             Войти
           </h1>
-          <p className="surface-card-description mt-2">
+          <p className="surface-card-description mt-2 text-black">
             Введите данные доступа, которые вы получили при регистрации или от
             учителя/родителя
           </p>
@@ -79,7 +79,7 @@ function LoginPageContent() {
 
           <form className="mt-5 space-y-4" onSubmit={onSubmit}>
             <FormField>
-              <FieldLabel htmlFor="login-identifier">
+              <FieldLabel htmlFor="login-identifier" className="text-black">
                 Email или логин ученика
               </FieldLabel>
               <FieldControl>
@@ -97,7 +97,9 @@ function LoginPageContent() {
               </FieldControl>
             </FormField>
             <FormField>
-              <FieldLabel htmlFor="login-secret">Пароль или PIN-код</FieldLabel>
+              <FieldLabel htmlFor="login-secret" className="text-black">
+                Пароль или PIN-код
+              </FieldLabel>
               <FieldControl>
                 <Input
                   id="login-secret"
@@ -123,13 +125,15 @@ function LoginPageContent() {
 
             {error && <StatusMessage kind="error">{error}</StatusMessage>}
 
-            <Button
-              disabled={loading}
-              className="auth-submit-btn"
-              type="submit"
-            >
-              {loading ? "Входим…" : "Войти"}
-            </Button>
+            <div className="flex justify-center">
+              <Button
+                disabled={loading}
+                className="auth-submit-btn"
+                type="submit"
+              >
+                {loading ? "Входим…" : "Войти"}
+              </Button>
+            </div>
           </form>
         </div>
       </div>

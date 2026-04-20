@@ -88,17 +88,17 @@ export default function JoinPage() {
     <ProductShell contentClassName="mt-10">
       <div className="mx-auto w-full max-w-[500px]">
         <div className="surface-card">
-          <h1 className="surface-card-title text-2xl">
+          <h1 className="surface-card-title text-2xl text-black">
             Создать аккаунт
           </h1>
-          <p className="surface-card-description mt-2">
+          <p className="surface-card-description mt-2 text-black">
             Зарегистрируйте взрослый аккаунт. После регистрации вы перейдёте к
             подтверждению email или сразу ко входу.
           </p>
 
           <form className="mt-5 space-y-4" onSubmit={onSubmit}>
             <FormField>
-              <FieldLabel htmlFor="join-name">Имя</FieldLabel>
+              <FieldLabel htmlFor="join-name" className="text-black">Имя</FieldLabel>
               <FieldControl>
                 <Input
                   id="join-name"
@@ -114,7 +114,7 @@ export default function JoinPage() {
               </FieldControl>
             </FormField>
             <FormField>
-              <FieldLabel htmlFor="join-email">Email</FieldLabel>
+              <FieldLabel htmlFor="join-email" className="text-black">Email</FieldLabel>
               <FieldControl>
                 <Input
                   id="join-email"
@@ -130,7 +130,7 @@ export default function JoinPage() {
               </FieldControl>
             </FormField>
             <FormField>
-              <FieldLabel htmlFor="join-password">Пароль</FieldLabel>
+              <FieldLabel htmlFor="join-password" className="text-black">Пароль</FieldLabel>
               <FieldControl>
                 <Input
                   id="join-password"
@@ -146,7 +146,7 @@ export default function JoinPage() {
               </FieldControl>
             </FormField>
             <FormField>
-              <FieldLabel htmlFor="join-confirm-password">
+              <FieldLabel htmlFor="join-confirm-password" className="text-black">
                 Подтверждение пароля
               </FieldLabel>
               <FieldControl>
@@ -164,7 +164,10 @@ export default function JoinPage() {
             </FormField>
 
             <FormField>
-              <FieldLabel htmlFor="join-agree" className="flex items-start gap-2 font-normal">
+              <FieldLabel
+                htmlFor="join-agree"
+                className="surface-card-description mt-0 flex items-start gap-2 font-normal text-black"
+              >
                 <input
                   id="join-agree"
                   type="checkbox"
@@ -181,13 +184,15 @@ export default function JoinPage() {
 
             {error && <StatusMessage kind="error">{error}</StatusMessage>}
 
-            <Button
-              disabled={loading}
-              className="auth-submit-btn"
-              type="submit"
-            >
-              {loading ? "Создаём аккаунт…" : "Создать аккаунт"}
-            </Button>
+            <div className="flex justify-center">
+              <Button
+                disabled={loading}
+                className="auth-submit-btn"
+                type="submit"
+              >
+                {loading ? "Создаём аккаунт…" : "Создать аккаунт"}
+              </Button>
+            </div>
           </form>
         </div>
       </div>
