@@ -166,7 +166,7 @@ export default function JoinPage() {
             <FormField>
               <FieldLabel
                 htmlFor="join-agree"
-                className="surface-card-description mt-0 flex items-start gap-2 font-normal text-black"
+                className="surface-card-description mt-0 flex cursor-pointer items-start gap-2 font-normal text-black"
               >
                 <input
                   id="join-agree"
@@ -187,7 +187,7 @@ export default function JoinPage() {
             <div className="flex justify-center">
               <Button
                 disabled={loading}
-                className="auth-submit-btn"
+                className="px-8"
                 type="submit"
               >
                 {loading ? "Создаём аккаунт…" : "Создать аккаунт"}

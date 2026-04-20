@@ -103,7 +103,7 @@ function LoginPageContent() {
                 </FieldLabel>
                 <Link
                   href={ROUTES.forgotPassword}
-                  className="text-sm font-medium text-neutral-500 underline decoration-black/20 underline-offset-2"
+                  className="text-sm font-medium text-neutral-500 underline decoration-neutral-400/50 underline-offset-2 hover:text-neutral-600"
                 >
                   Забыли пароль?
                 </Link>
@@ -128,7 +128,7 @@ function LoginPageContent() {
             <div className="flex justify-center">
               <Button
                 disabled={loading}
-                className="auth-submit-btn"
+                className="px-8"
                 type="submit"
               >
                 {loading ? "Входим…" : "Войти"}
