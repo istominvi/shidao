@@ -22,8 +22,6 @@ function resolvePrimaryNavId(state: ReturnType<typeof useSessionView>["state"]):
 export function TopNav() {
   const pathname = usePathname();
   const { state, sessionResolved } = useSessionView();
-  const isAuthEntryRoute =
-    pathname === ROUTES.login || pathname === ROUTES.join;
 
   const primaryNavId = resolvePrimaryNavId(state);
   const primaryNavConfig = primaryNavId ? PRIMARY_NAV_CONFIG[primaryNavId] : null;
@@ -91,7 +89,6 @@ export function TopNav() {
         navAriaLabel={primaryNavConfig?.ariaLabel}
         navItems={navItems}
         actions={navAction}
-        shellClassName={isAuthEntryRoute ? "site-header-shell-transparent" : undefined}
       />
     </div>
   );

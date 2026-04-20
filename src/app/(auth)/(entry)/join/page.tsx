@@ -4,6 +4,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { ProductShell, StatusMessage } from "@/components/product-shell";
+import { Button } from "@/components/ui/button";
+import { FieldControl, FieldLabel, FormField } from "@/components/ui/form-field";
+import { Input } from "@/components/ui/input";
 import { ROUTES } from "@/lib/auth";
 
 export default function JoinPage() {
@@ -84,8 +87,8 @@ export default function JoinPage() {
   }
 
   return (
-    <ProductShell contentClassName="flex min-h-[calc(100vh-8rem)] items-center justify-center">
-      <div className="w-full max-w-xl">
+    <ProductShell contentClassName="auth-entry-content">
+      <div className="auth-entry-center-frame w-full max-w-xl">
         <div className="primary-form-card">
           <h2 className="text-2xl font-black tracking-tight">
             Создать аккаунт
@@ -96,77 +99,97 @@ export default function JoinPage() {
           </p>
 
           <form className="mt-5 space-y-4" onSubmit={onSubmit}>
-            <label className="block">
-              <span className="field-label">Имя</span>
-              <input
+            <FormField>
+              <FieldLabel htmlFor="join-name">Имя</FieldLabel>
+              <FieldControl>
+                <Input
+                  id="join-name"
+                  name="name"
+                  type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="field-input"
+                className="w-full"
                 placeholder="Как к вам обращаться"
                 autoComplete="name"
                 required
-              />
-            </label>
-            <label className="block">
-              <span className="field-label">Email</span>
-              <input
-                type="email"
+                />
+              </FieldControl>
+            </FormField>
+            <FormField>
+              <FieldLabel htmlFor="join-email">Email</FieldLabel>
+              <FieldControl>
+                <Input
+                  id="join-email"
+                  name="email"
+                  type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="field-input"
+                className="w-full"
                 placeholder="you@example.com"
                 autoComplete="email"
                 required
-              />
-            </label>
-            <label className="block">
-              <span className="field-label">Пароль</span>
-              <input
-                type="password"
+                />
+              </FieldControl>
+            </FormField>
+            <FormField>
+              <FieldLabel htmlFor="join-password">Пароль</FieldLabel>
+              <FieldControl>
+                <Input
+                  id="join-password"
+                  name="password"
+                  type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="field-input"
+                className="w-full"
                 placeholder="Минимум 8 символов"
                 autoComplete="new-password"
                 required
-              />
-            </label>
-            <label className="block">
-              <span className="field-label">Подтверждение пароля</span>
-              <input
-                type="password"
+                />
+              </FieldControl>
+            </FormField>
+            <FormField>
+              <FieldLabel htmlFor="join-confirm-password">
+                Подтверждение пароля
+              </FieldLabel>
+              <FieldControl>
+                <Input
+                  id="join-confirm-password"
+                  name="confirmPassword"
+                  type="password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                className="field-input"
+                className="w-full"
                 autoComplete="new-password"
                 required
-              />
-            </label>
+                />
+              </FieldControl>
+            </FormField>
 
-            <label className="field-checkbox-row">
-              <span className="field-label mb-0">
+            <FormField>
+              <FieldLabel htmlFor="join-agree" className="flex items-start gap-2">
                 <input
+                  id="join-agree"
                   type="checkbox"
                   checked={agreed}
                   onChange={(e) => setAgreed(e.target.checked)}
-                  className="field-checkbox-input"
+                  className="mt-0.5 size-4"
                 />
                 <span>
                   Я согласен(а) с условиями использования и политикой
                   конфиденциальности.
                 </span>
-              </span>
-            </label>
+              </FieldLabel>
+            </FormField>
 
             {error && <StatusMessage kind="error">{error}</StatusMessage>}
 
-            <button
+            <Button
               disabled={loading}
-              className="landing-btn landing-btn-primary min-h-12 w-full disabled:opacity-60"
+              className="w-full"
               type="submit"
             >
               {loading ? "Создаём аккаунт…" : "Создать аккаунт"}
-            </button>
+            </Button>
           </form>
 
           <p className="mt-5 text-sm text-neutral-600">

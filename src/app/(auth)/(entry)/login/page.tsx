@@ -4,6 +4,9 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, Suspense, useMemo, useState } from "react";
 import { ProductShell, StatusMessage } from "@/components/product-shell";
+import { Button } from "@/components/ui/button";
+import { FieldControl, FieldLabel, FormField } from "@/components/ui/form-field";
+import { Input } from "@/components/ui/input";
 import { useSessionView } from "@/components/use-session-view";
 import { loginWithIdentifier } from "@/lib/auth-flow";
 import { ROUTES } from "@/lib/auth";
@@ -57,8 +60,8 @@ function LoginPageContent() {
   }
 
   return (
-    <ProductShell contentClassName="flex min-h-[calc(100vh-8rem)] items-center justify-center">
-      <div className="w-full max-w-xl">
+    <ProductShell contentClassName="auth-entry-content">
+      <div className="auth-entry-center-frame w-full max-w-xl">
         <div className="primary-form-card">
           <h2 className="text-2xl font-black tracking-tight">
             Войти в кабинет
@@ -75,29 +78,40 @@ function LoginPageContent() {
           )}
 
           <form className="mt-5 space-y-4" onSubmit={onSubmit}>
-            <label className="block">
-              <span className="field-label">Email или логин ученика</span>
-              <input
+            <FormField>
+              <FieldLabel htmlFor="login-identifier">
+                Email или логин ученика
+              </FieldLabel>
+              <FieldControl>
+                <Input
+                  id="login-identifier"
+                  name="identifier"
+                  type="text"
                 value={identifier}
                 onChange={(e) => setIdentifier(e.target.value)}
                 placeholder="Например, parent@school.com или login ученика"
-                className="field-input"
+                className="w-full"
                 autoComplete="username"
                 required
-              />
-            </label>
-            <label className="block">
-              <span className="field-label">Пароль или PIN-код</span>
-              <input
-                type="password"
+                />
+              </FieldControl>
+            </FormField>
+            <FormField>
+              <FieldLabel htmlFor="login-secret">Пароль или PIN-код</FieldLabel>
+              <FieldControl>
+                <Input
+                  id="login-secret"
+                  name="secret"
+                  type="password"
                 value={secret}
                 onChange={(e) => setSecret(e.target.value)}
                 placeholder="Введите пароль или PIN"
-                className="field-input"
+                className="w-full"
                 autoComplete="current-password"
                 required
-              />
-            </label>
+                />
+              </FieldControl>
+            </FormField>
             <div className="text-right">
               <Link
                 href={ROUTES.forgotPassword}
@@ -109,13 +123,13 @@ function LoginPageContent() {
 
             {error && <StatusMessage kind="error">{error}</StatusMessage>}
 
-            <button
+            <Button
               disabled={loading}
-              className="landing-btn landing-btn-primary min-h-12 w-full disabled:opacity-60"
+              className="w-full"
               type="submit"
             >
               {loading ? "Входим…" : "Войти в Shidao"}
-            </button>
+            </Button>
           </form>
 
           <p className="mt-5 text-sm text-neutral-600">
