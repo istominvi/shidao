@@ -296,78 +296,77 @@ const lessonOneTeacherFallbackByOrder: Record<number, Omit<MethodologyLessonStep
 const worldAroundMeLessonOneCanonicalSteps: WorldAroundMeLessonOneCanonicalStep[] = [
   {
     order: 1,
+    title: "Приветствие детей и героев курса",
+    teacherFlowOrder: 1,
+    studentInstruction: "Поздоровайся с героями и приготовься к уроку про ферму.",
+    selectSection: (section) => section.sceneId === "scene-hello" && section.type === "lesson_focus",
+    forcedScreenType: "intro",
+  },
+  {
+    order: 2,
     title: "Смотрим видео «farm animals»",
     teacherFlowOrder: 2,
-    studentInstruction: "Посмотри видео и повтори названия животных.",
+    studentInstruction: "Посмотри видео и повтори названия животных: 狗, 猫, 兔子, 马.",
     selectSection: (section) =>
       section.type === "media_asset" &&
+      section.sceneId === "scene-video" &&
       section.assetId === "video:farm-animals",
     explicitResourceIds: ["video:farm-animals"],
     forcedScreenType: "video",
   },
-  { order: 2, title: "Учим фразу 我是…", teacherFlowOrder: 3, studentInstruction: "Повтори фразу 我是… и ответь на вопрос 你是谁？.", selectSection: (section) => section.sceneId === "scene-phrases" && section.type === "phrase_cards" },
-  { order: 3, title: "Учим слова 狗，猫，兔子，马", teacherFlowOrder: 4, studentInstruction: "Посмотри карточки животных и повтори слова.", selectSection: (section) => section.sceneId === "scene-flashcards" && section.type === "vocabulary_cards", explicitResourceIds: ["flashcards:world-around-me-lesson-1"] },
-  { order: 4, title: "Изображаем животных", teacherFlowOrder: 5, studentInstruction: "Изобрази животное и повтори 我是… по модели педагога." },
+  {
+    order: 3,
+    title: "Учим фразу 我是…",
+    teacherFlowOrder: 3,
+    studentInstruction: "Ответь на вопрос 你是谁？ и повтори модель 我是…",
+    selectSection: (section) => section.sceneId === "scene-phrase-wo-shi" && section.type === "phrase_cards",
+  },
+  {
+    order: 4,
+    title: "Учим слова 狗，猫，兔子，马 с карточками",
+    teacherFlowOrder: 4,
+    studentInstruction: "Листай карточки и повторяй только слова 狗, 猫, 兔子, 马.",
+    selectSection: (section) => section.sceneId === "scene-animal-cards" && section.type === "vocabulary_cards",
+    explicitResourceIds: ["flashcards:world-around-me-lesson-1"],
+  },
   {
     order: 5,
-    title: "Игра с мячом у стены",
-    teacherFlowOrder: 6,
-    studentInstruction: "Слушай команду и выбери нужную карточку.",
-    selectSection: (section) => section.sceneId === "scene-homework-practice" && section.type === "matching_practice",
-    transformSelectedSection: (section) => {
-      if (section.type !== "matching_practice") return section;
-      return {
-        ...section,
-        title: "Игра с карточками",
-        subtitle: "Тренируем внимание и скорость реакции.",
-        prompt: "Найди пару картинка ↔ слово по команде преподавателя.",
-      };
-    },
+    title: "Изображаем животных",
+    teacherFlowOrder: 5,
+    studentInstruction: "Изобрази животное и скажи 我是…",
+    selectSection: (section) => section.sceneId === "scene-imitation" && section.type === "action_cards",
   },
-  { order: 6, title: "Счётные палочки", teacherFlowOrder: 7, studentInstruction: "Считай до пяти вместе с педагогом." },
-  { order: 7, title: "Приложение 1: указываем, считаем и называем животных", teacherFlowOrder: 8, studentInstruction: "Покажи, посчитай и назови животных в Приложении 1.", selectSection: (section) => section.sceneId === "scene-counting" && section.type === "count_board", explicitResourceIds: ["worksheet:appendix-1"] },
-  { order: 8, title: "Учим глаголы 跑，跳", teacherFlowOrder: 9, studentInstruction: "Выполняй команды с 跑 и 跳 вместе с педагогом.", selectSection: (section) => section.sceneId === "scene-actions" && section.type === "action_cards" },
-  { order: 9, title: "Команды с мягкими игрушками", teacherFlowOrder: 10, studentInstruction: "Беги или прыгай к нужной игрушке по команде педагога." },
-  { order: 10, title: "Отрабатываем 跑，跳 на мягких игрушках", teacherFlowOrder: 11, studentInstruction: "Ответь, что делает животное." },
-  { order: 11, title: "Рабочая тетрадь, страницы 3–4", teacherFlowOrder: 12, studentInstruction: "Открой рабочую тетрадь на страницах 3–4 и назови животных.", selectSection: (section) => section.sceneId === "scene-materials" && section.type === "worksheet", explicitResourceIds: ["worksheet:workbook-pages-3-4"] },
   {
-    order: 12,
+    order: 6,
+    title: "Игра с мячом и карточками",
+    teacherFlowOrder: 6,
+    studentInstruction: "Слушай слово, выбери карточку и скажи 这是…",
+    selectSection: (section) => section.sceneId === "scene-ball-game" && section.type === "matching_practice",
+  },
+  { order: 7, title: "Счётные палочки", teacherFlowOrder: 7, studentInstruction: "Считай до пяти: 一 二 三 四 五.", selectSection: (section) => section.sceneId === "scene-counting-sticks" && section.type === "count_board" },
+  { order: 8, title: "Приложение 1: указываем, считаем и называем животных", teacherFlowOrder: 8, studentInstruction: "Покажи, посчитай и назови животных в Приложении 1.", selectSection: (section) => section.sceneId === "scene-appendix-1" && section.type === "count_board", explicitResourceIds: ["worksheet:appendix-1"] },
+  { order: 9, title: "Учим глаголы 跑，跳", teacherFlowOrder: 9, studentInstruction: "Повтори 跑 и 跳, затем выполни команду 我们…吧！", selectSection: (section) => section.sceneId === "scene-run-jump" && section.type === "action_cards" },
+  { order: 10, title: "Команды с мягкими игрушками", teacherFlowOrder: 10, studentInstruction: "Следи за командой педагога и иди к нужному животному.", selectSection: (section) => section.sceneId === "scene-toy-commands" && section.type === "action_cards" },
+  { order: 11, title: "Что делает животное? 跑 / 跳", teacherFlowOrder: 11, studentInstruction: "Ответь на вопрос: 狗在做什么？", selectSection: (section) => section.sceneId === "scene-what-doing" && section.type === "phrase_cards" },
+  { order: 12, title: "Рабочая тетрадь, страницы 3–4", teacherFlowOrder: 12, studentInstruction: "Раскрась животных и отвечай: 这是什么？", selectSection: (section) => section.sceneId === "scene-workbook" && section.type === "worksheet", explicitResourceIds: ["worksheet:workbook-pages-3-4"] },
+  {
+    order: 13,
     title: "Учим слово 农场",
     teacherFlowOrder: 13,
-    studentInstruction: "Повтори слово 农场 и найди его в словаре урока.",
-    selectSection: (section) => section.sceneId === "scene-review" && section.type === "word_list",
-    transformSelectedSection: (section) => {
-      if (section.type !== "word_list") return section;
-      return {
-        ...section,
-        title: "Слово 农场",
-        groups: section.groups
-          .map((group) => ({
-            ...group,
-            entries: group.entries.filter((entry) => entry.hanzi === "农场"),
-          }))
-          .filter((group) => group.entries.length > 0),
-      };
-    },
+    studentInstruction: "Повтори слово 农场 и фразу 这是农场。",
+    selectSection: (section) => section.sceneId === "scene-farm-word" && section.type === "vocabulary_cards",
   },
-  { order: 13, title: "Игрушечная ферма и конструкция 在…里", teacherFlowOrder: 14, studentInstruction: "Скажи, кто находится на ферме, используя 在…里.", selectSection: (section) => section.sceneId === "scene-farm" && section.type === "farm_placement" },
+  { order: 14, title: "Игрушечная ферма и конструкция 在…里", teacherFlowOrder: 14, studentInstruction: "Скажи фразу по модели: {animal}在农场里。", selectSection: (section) => section.sceneId === "scene-farm-placement" && section.type === "farm_placement" },
   {
-    order: 14,
+    order: 15,
     title: "Поём песню «Животные на ферме»",
     teacherFlowOrder: 15,
-    studentInstruction: "Послушай и спой песню про животных фермы.",
-    selectSection: (section) => section.sceneId === "scene-materials" && section.type === "resource_links",
-    explicitResourceIds: ["song:farm-animals"],
+    studentInstruction: "Слушай, пой и показывай животных.",
+    selectSection: (section) => section.sceneId === "scene-song" && section.type === "media_asset",
+    explicitResourceIds: ["song:farm-animals", "song-video:farm-animals-movement"],
     forcedScreenType: "song",
-    transformSelectedSection: (section) => {
-      if (section.type !== "resource_links") return section;
-      return {
-        ...section,
-        resources: section.resources.filter((resource) => resource.assetId === "song:farm-animals"),
-      };
-    },
   },
-  { order: 15, title: "Прощаемся с детьми и героями курса", teacherFlowOrder: 16, studentInstruction: "Попрощайся и повтори слова урока.", selectSection: (section) => section.sceneId === "scene-review" && section.type === "recap" },
+  { order: 16, title: "Прощаемся с детьми и героями курса", teacherFlowOrder: 16, studentInstruction: "Выбери 1 животное, 1 действие и скажи: 再见！", selectSection: (section) => section.sceneId === "scene-goodbye" && section.type === "recap" },
 ];
 
 function isWorldAroundMeLessonOne(lessonShell: MethodologyLessonShell) {

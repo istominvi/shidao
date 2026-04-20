@@ -682,6 +682,10 @@ function LessonOnePlan({
   steps: MethodologyLessonStep[];
   onShowOnStudentScreen?: (stepId: string) => void;
 }) {
+  void lessonOneDisplaySteps;
+  void categoryChipByLabel;
+  void resolveCanonicalStepSource;
+  void ResourceButtons;
   const lessonOneAnimalCards = [
     { src: "/methodologies/world-around-me/lesson-1/visuals/dog-card.png", label: "狗", alt: "Карточка собаки" },
     { src: "/methodologies/world-around-me/lesson-1/visuals/cat-card.png", label: "猫", alt: "Карточка кошки" },
@@ -953,17 +957,17 @@ function LessonOnePlan({
         <div className="mb-4 flex items-center gap-2">
           <h2 className="text-base font-semibold text-neutral-950">Структура урока</h2>
           <Chip tone="sky" icon={Timer} className="whitespace-nowrap">45 минут</Chip>
-          <Chip tone="neutral" icon={Workflow} className="whitespace-nowrap">15 шагов</Chip>
+          <Chip tone="neutral" icon={Workflow} className="whitespace-nowrap">{steps.length} шагов</Chip>
         </div>
 
         <div className="space-y-3">
-          {lessonOneDisplaySteps.map((step) => (
+          {steps.map((step) => (
             <article key={step.id} className="rounded-2xl border border-neutral-200/80 bg-white p-4 shadow-[0_8px_28px_rgba(20,20,20,0.04)]">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex flex-wrap items-center gap-2">
                   <Chip size="sm" tone="inverse">Шаг {step.order}</Chip>
-                  <Chip size="sm" tone={categoryChipByLabel[step.category].tone} icon={categoryChipByLabel[step.category].icon}>
-                    {step.category}
+                  <Chip size="sm" tone="sky" icon={Activity}>
+                    {step.phase === "opening" ? "Старт" : step.phase === "closure" ? "Завершение" : "Практика"}
                   </Chip>
                   <Chip
                     size="sm"
@@ -971,15 +975,14 @@ function LessonOnePlan({
                     icon={Timer}
                     className="whitespace-nowrap"
                   >
-                    {step.durationMinutes ?? resolveCanonicalStepSource(steps, step.order)?.durationMinutes ?? 3} мин
+                    {step.durationMinutes ?? 3} мин
                   </Chip>
                 </div>
                 {onShowOnStudentScreen ? (
                   <button
                     type="button"
                     onClick={() => {
-                      const sourceStep = resolveCanonicalStepSource(steps, step.order);
-                      if (sourceStep) onShowOnStudentScreen(sourceStep.id);
+                      onShowOnStudentScreen(step.id);
                     }}
                     className={productButtonClassName("secondary", "text-sm whitespace-nowrap")}
                   >
@@ -989,26 +992,23 @@ function LessonOnePlan({
                 ) : null}
               </div>
               <h3 className="mt-2 text-lg font-semibold text-neutral-950" style={{ fontFamily: cjkFontFamily }}>{step.title}</h3>
-              {step.text ? (
-                <p className="mt-2 text-sm leading-6 text-neutral-700" style={{ fontFamily: cjkFontFamily }}>{step.text}</p>
+              {step.teacher.description ? (
+                <p className="mt-2 text-sm leading-6 text-neutral-700" style={{ fontFamily: cjkFontFamily }}>{step.teacher.description}</p>
               ) : null}
-              <GlossaryChips terms={step.glossaryTerms} />
-              {step.order === 3 ? <StepThreeCardPassesBlock /> : null}
-              {step.order === 4 ? <StepFourActionBlock /> : null}
-              {step.order === 5 ? <StepFiveGameMechanicsBlock /> : null}
-              {step.order === 7 ? <StepSevenGalleryBlock /> : null}
-              {step.order === 11 ? <StepElevenWorkbookColoringBlock /> : null}
+              <GlossaryChips terms={[...(step.teacher.expectedResponses ?? []).slice(0, 5)]} />
+              {step.order === 4 ? <StepThreeCardPassesBlock /> : null}
+              {step.order === 5 ? <StepFourActionBlock /> : null}
+              {step.order === 6 ? <StepFiveGameMechanicsBlock /> : null}
+              {step.order === 8 ? <StepSevenGalleryBlock /> : null}
+              {step.order === 12 ? <StepElevenWorkbookColoringBlock /> : null}
               {step.resourceIds?.map((resourceId) => {
                 const asset = assetsById[resourceId];
                 if (!asset) return null;
-                if (step.order === 1 && resourceId === "video:farm-animals") {
+                if (step.order === 2 && resourceId === "video:farm-animals") {
                   return <StepOneVideoEmbed key={`${step.id}-${resourceId}`} />;
                 }
                 return <LessonPlanResourcePreview key={`${step.id}-${resourceId}`} asset={asset} />;
               })}
-              {!step.resourceIds?.length && step.resourceButtons?.length ? (
-                <ResourceButtons actions={step.resourceButtons} assetsById={assetsById} />
-              ) : null}
             </article>
           ))}
         </div>

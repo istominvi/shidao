@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   lessonContentFixtureAssets,
+  lessonContentFixtureHomeworkDefinition,
   lessonContentFixtureMethodologyLesson,
   lessonContentFixtureMethodologyLessonStudentContent,
 } from "../../lesson-content";
@@ -34,7 +35,7 @@ function buildPresentationFlow() {
     }));
 }
 
-test("world-around-me lesson 1 unified read model keeps canonical 15-step mapping", () => {
+test("world-around-me lesson 1 unified read model keeps canonical 16-step mapping", () => {
   const assetsById = Object.fromEntries(
     lessonContentFixtureAssets.map((asset) => [asset.id, asset]),
   );
@@ -56,7 +57,7 @@ test("world-around-me lesson 1 unified read model keeps canonical 15-step mappin
     canonicalHomework: null,
   });
 
-  assert.equal(unified.steps.length, 15);
+  assert.equal(unified.steps.length, 16);
   assert.equal(unified.steps.some((step) => step.title === "Подготовка до урока"), false);
 
   for (const step of unified.steps) {
@@ -64,25 +65,61 @@ test("world-around-me lesson 1 unified read model keeps canonical 15-step mappin
   }
 
   const step1 = unified.steps[0];
-  assert.equal(step1.title, "Смотрим видео «farm animals»");
-  assert.equal(step1.student.screenType, "video");
-  assert.equal(step1.resourceIds?.includes("video:farm-animals"), true);
-  assert.equal(step1.resourceIds?.includes("song:farm-animals"), false);
+  assert.equal(step1.title, "Приветствие детей и героев курса");
+  assert.equal(step1.student.screenType, "intro");
+
+  const step2 = unified.steps[1];
+  assert.equal(step2.title, "Смотрим видео «farm animals»");
+  assert.equal(step2.student.screenType, "video");
+  assert.equal(step2.resourceIds?.includes("video:farm-animals"), true);
+  assert.equal(step2.resourceIds?.includes("song:farm-animals"), false);
+
+  const step3 = unified.steps[2];
+  assert.equal(step3.title, "Учим фразу 我是…");
+  const step3Phrases = step3.student.payload?.sections?.[0];
+  assert.equal(step3Phrases?.type, "phrase_cards");
+  if (step3Phrases?.type === "phrase_cards") {
+    const phrases = step3Phrases.items.map((item) => item.phrase);
+    assert.equal(phrases.includes("你是谁？"), true);
+    assert.equal(phrases.includes("我是…"), true);
+  }
+
+  const step4 = unified.steps[3];
+  assert.equal(step4.title, "Учим слова 狗，猫，兔子，马 с карточками");
+  assert.equal(step4.student.payload?.sections?.[0]?.type, "vocabulary_cards");
+  const step4Words = step4.student.payload?.sections?.[0]?.type === "vocabulary_cards"
+    ? step4.student.payload.sections[0].items.map((entry) => entry.term)
+    : [];
+  assert.deepEqual(step4Words, ["狗", "猫", "兔子", "马"]);
 
   const step7 = unified.steps[6];
-  assert.equal(step7.title, "Приложение 1: указываем, считаем и называем животных");
+  assert.equal(step7.title, "Счётные палочки");
   assert.equal(step7.student.payload?.sections?.[0]?.type, "count_board");
-  assert.equal(step7.student.instruction?.toLowerCase().includes("считай"), true);
-  assert.equal(step7.resourceIds?.includes("worksheet:appendix-1"), true);
+  const step7Section = step7.student.payload?.sections?.[0];
+  const step7Text = JSON.stringify(step7Section ?? {});
+  assert.equal(/一只|两只|三只|四匹|五只/u.test(step7Text), false);
 
   const step8 = unified.steps[7];
-  assert.equal(step8.title, "Учим глаголы 跑，跳");
-  assert.equal(step8.student.payload?.sections?.[0]?.type, "action_cards");
+  assert.equal(step8.title, "Приложение 1: указываем, считаем и называем животных");
+  assert.equal(step8.student.payload?.sections?.[0]?.type, "count_board");
+  assert.equal(step8.resourceIds?.includes("worksheet:appendix-1"), true);
+  const step8Text = JSON.stringify(step8.student.payload?.sections?.[0] ?? {});
+  assert.equal(/一只|两只|三只|四匹|五只/u.test(step8Text), false);
+
+  const step13 = unified.steps[12];
+  assert.equal(step13.title, "Учим слово 农场");
+  const step13Terms = step13.student.payload?.sections?.[0]?.type === "vocabulary_cards"
+    ? step13.student.payload.sections[0].items.map((item) => item.term)
+    : [];
+  assert.deepEqual(step13Terms, ["农场"]);
 
   const step14 = unified.steps[13];
-  assert.equal(step14.title, "Поём песню «Животные на ферме»");
-  assert.equal(step14.resourceIds?.includes("song:farm-animals"), true);
-  assert.equal(step14.resourceIds?.includes("video:farm-animals"), false);
+  assert.equal(step14.title, "Игрушечная ферма и конструкция 在…里");
+  assert.equal(step14.student.payload?.sections?.[0]?.type, "farm_placement");
+  const step14Section = step14.student.payload?.sections?.[0];
+  if (step14Section?.type === "farm_placement") {
+    assert.equal(step14Section.defaultZoneLabel.includes("农场里"), true);
+  }
 
   const assignedSectionKeys = unified.steps.flatMap((step) =>
     (step.student.payload?.sections ?? []).map(
@@ -91,14 +128,7 @@ test("world-around-me lesson 1 unified read model keeps canonical 15-step mappin
   );
   assert.equal(new Set(assignedSectionKeys).size, assignedSectionKeys.length);
 
-  const step12 = unified.steps[11];
-  assert.equal(step12.student.payload?.sections?.[0]?.type, "word_list");
-  const step12Words = step12.student.payload?.sections?.[0]?.type === "word_list"
-    ? step12.student.payload.sections[0].groups.flatMap((group) => group.entries.map((entry) => entry.hanzi))
-    : [];
-  assert.deepEqual(step12Words, ["农场"]);
-
-  const step5 = unified.steps[4];
+  const step5 = unified.steps[5];
   assert.equal(step5.student.payload?.sections?.[0]?.type, "matching_practice");
   const step5Section = step5.student.payload?.sections?.[0];
   const step5Text =
@@ -150,6 +180,13 @@ test("world-around-me lesson 1 unified read model keeps canonical 15-step mappin
   assert.equal(lessonOneTeacherText.includes("农场"), true);
   assert.equal(lessonOneTeacherText.includes("показывает动作"), false);
   assert.equal(lessonOneTeacherText.includes("показывает движения"), true);
+
+  const studentPayloadText = unified.steps
+    .map((step) => JSON.stringify(step.student.payload ?? {}))
+    .join(" ");
+  assert.equal(studentPayloadText.includes("Фраза …"), false);
+  assert.equal(studentPayloadText.includes("..."), false);
+  assert.equal(studentPayloadText.includes("，，"), false);
 });
 
 
@@ -202,6 +239,27 @@ test("world-around-me step mapping keeps phrase scene single-use and avoids dupl
     canonicalHomework: null,
   });
 
-  assert.equal(readModel.steps[1]?.student.screenType, "phrase_practice");
+  assert.equal(readModel.steps[2]?.student.screenType, "phrase_practice");
   assert.equal(readModel.steps[9]?.student.screenType, "placeholder");
+});
+
+test("lesson 1 homework keeps mission flow: cards, matching, audio review, then quiz", () => {
+  const homework = lessonContentFixtureHomeworkDefinition;
+  assert.equal(homework.title.toLowerCase().includes("мини"), true);
+  assert.equal(homework.quiz?.practiceSections?.length, 2);
+  assert.equal(homework.materialLinks.includes("Карточки животных"), true);
+
+  const sections = homework.quiz?.practiceSections as Array<Record<string, unknown>>;
+  const matching = sections.find((section) => section.id === "matching-l1");
+  assert.equal(matching?.type, "matching");
+  assert.equal(Array.isArray(matching?.items), true);
+  assert.equal((matching?.items as unknown[]).length, 4);
+
+  const audioReview = sections.find((section) => section.id === "audio-review-l1");
+  assert.equal(audioReview?.type, "audio_review");
+  const audioGroups = (audioReview?.groups as Array<{ entries: Array<{ hanzi: string }> }>) ?? [];
+  const hanzi = audioGroups.flatMap((group) => group.entries.map((entry) => entry.hanzi));
+  for (const expected of ["狗", "猫", "兔子", "马", "农场", "我是…", "这是…", "跑", "跳", "我们…吧!", "在"]) {
+    assert.equal(hanzi.includes(expected), true);
+  }
 });
