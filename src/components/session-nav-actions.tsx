@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
-import { CalendarDays, LogOut, Settings } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import { LogOut, Menu, Settings } from "lucide-react";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { isStudentInternalAuthEmail, ROUTES, type ProfileKind } from "@/lib/auth";
 import { signOutViaServer } from "@/lib/auth-flow";
@@ -19,9 +20,19 @@ type SessionNavActionsProps = {
   state: SessionAdultView | SessionStudentView;
   variant?: "top-nav" | "landing";
   portalMenu?: boolean;
+  mobileNavItems?: SessionNavItem[];
 };
 
-type MenuPosition = { top: number; left: number };
+type SessionNavItem = {
+  id: string;
+  label: string;
+  href: string;
+  active: boolean;
+  icon?: LucideIcon;
+  scroll?: boolean;
+};
+
+type MenuPosition = { top: number; left: number; width: number };
 type ActionLoadingState = `switch:${ProfileKind}` | "signout" | null;
 
 const MENU_WIDTH = 288;
@@ -51,6 +62,7 @@ export function SessionNavActions({
   state,
   variant = "top-nav",
   portalMenu = false,
+  mobileNavItems = [],
 }: SessionNavActionsProps) {
   const menuId = useId();
   const router = useRouter();
@@ -88,10 +100,16 @@ export function SessionNavActions({
     if (!portalMenu || !containerRef.current) return;
 
     const rect = containerRef.current.getBoundingClientRect();
-    const maxLeft = window.innerWidth - MENU_WIDTH - VIEWPORT_PADDING;
+    const availableWidth = Math.max(
+      window.innerWidth - VIEWPORT_PADDING * 2,
+      220,
+    );
+    const menuWidth = Math.min(MENU_WIDTH, availableWidth);
+    const maxLeft = window.innerWidth - menuWidth - VIEWPORT_PADDING;
     setMenuPosition({
       top: rect.bottom + MENU_GAP,
-      left: Math.min(Math.max(rect.right - MENU_WIDTH, VIEWPORT_PADDING), maxLeft),
+      left: Math.min(Math.max(rect.right - menuWidth, VIEWPORT_PADDING), maxLeft),
+      width: menuWidth,
     });
   }, [portalMenu]);
 
@@ -208,8 +226,16 @@ export function SessionNavActions({
       id={menuId}
       role="menu"
       aria-label="Меню пользователя"
-      className={`w-fit ${portalMenu ? "fixed z-[260]" : "absolute right-0 z-[120] mt-2"}`}
-      style={portalMenu && menuPosition ? menuPosition : undefined}
+      className={`w-[18rem] max-w-[calc(100vw-16px)] ${portalMenu ? "fixed z-[260]" : "absolute right-0 z-[120] mt-2"}`}
+      style={
+        portalMenu && menuPosition
+          ? {
+              top: menuPosition.top,
+              left: menuPosition.left,
+              width: menuPosition.width,
+            }
+          : undefined
+      }
     >
       <div className="nav-dropdown-profile">
         <div className="nav-dropdown-avatar" aria-hidden="true">
@@ -259,20 +285,37 @@ export function SessionNavActions({
       ) : null}
 
       <div className="border-t border-black/5 px-1 py-1.5">
-        {state.kind === "student" ? (
-          <Link
-            href={ROUTES.lessons}
-            className={navigationDropdownItemClass()}
-            onClick={() => setOpen(false)}
-            role="menuitem"
-          >
-            <span className="inline-flex items-center gap-2.5">
-              <CalendarDays size={16} className="text-neutral-500" aria-hidden="true" />
-              Расписание
-            </span>
-          </Link>
+        {mobileNavItems.length > 0 ? (
+          <div className="mb-1 md:hidden">
+            {mobileNavItems.map((item) => (
+              <Link
+                key={item.id}
+                href={item.href}
+                className={navigationDropdownItemClass(
+                  item.active
+                    ? "bg-neutral-100 text-neutral-900 hover:bg-neutral-200"
+                    : undefined,
+                )}
+                onClick={() => setOpen(false)}
+                role="menuitem"
+                scroll={item.scroll}
+                aria-current={item.active ? "page" : undefined}
+              >
+                <span className="inline-flex items-center gap-2.5">
+                  {item.icon ? (
+                    <item.icon
+                      size={16}
+                      className="text-neutral-500"
+                      aria-hidden="true"
+                    />
+                  ) : null}
+                  {item.label}
+                </span>
+              </Link>
+            ))}
+          </div>
         ) : null}
-        {state.kind === "student" ? (
+        {mobileNavItems.length > 0 ? (
           <div className="my-1 border-t border-black/5" aria-hidden="true" />
         ) : null}
         <Link
@@ -312,11 +355,25 @@ export function SessionNavActions({
         aria-haspopup="menu"
         aria-expanded={open}
         aria-controls={menuId}
+        aria-label={variant === "top-nav" ? "Открыть меню пользователя" : undefined}
         className={`nav-user-trigger inline-flex cursor-pointer items-center gap-1.5 ${variant === "landing" ? "w-full justify-center sm:w-auto" : ""}`}
       >
-        <span className="inline-flex size-6 items-center justify-center rounded-full bg-black text-[11px] font-bold text-white">
+        {variant === "top-nav" ? (
+          <span className="inline-flex md:hidden" aria-hidden="true">
+            <Menu size={18} />
+          </span>
+        ) : null}
+        <span
+          className={`size-6 items-center justify-center rounded-full bg-black text-[11px] font-bold text-white ${variant === "top-nav" ? "hidden md:inline-flex" : "inline-flex"}`}
+        >
           {state.initials ?? "U"}
         </span>
+        {variant !== "top-nav" ? (
+          <span className="sr-only">Открыть меню пользователя</span>
+        ) : null}
+        {variant === "top-nav" ? (
+          <span className="sr-only md:hidden">Открыть меню пользователя</span>
+        ) : null}
         <span className="hidden max-w-[16ch] truncate text-sm font-semibold leading-tight text-neutral-900 md:block">
           {state.fullName ?? "Пользователь"}
         </span>

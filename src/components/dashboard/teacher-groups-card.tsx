@@ -58,9 +58,15 @@ export function TeacherGroupsCard({
     router.replace(`${pathname}?${params.toString()}`);
   }
 
+  const groupNextLessonLabel = (group: TeacherGroupOperationsRow) =>
+    group.nextLessonLabel
+      ? [group.nextLessonLabel, group.nextLessonTitle].filter(Boolean).join(" • ")
+      : "Не запланировано";
+
   return (
     <ProductTableCard
       title={title}
+      contentShellClassName="overflow-visible rounded-none border-0 bg-transparent md:overflow-x-auto md:rounded-2xl md:border md:border-neutral-200 md:bg-white/95"
       controls={(
         <div className="product-control-rail">
           {actions.map((action) => {
@@ -106,52 +112,74 @@ export function TeacherGroupsCard({
         </div>
       )}
     >
-      <ProductTable>
-        <ProductTableHead>
-          <ProductTableHeaderRow>
-            <ProductTableHeaderCell>Группа</ProductTableHeaderCell>
-            <ProductTableHeaderCell>Методика</ProductTableHeaderCell>
-            <ProductTableHeaderCell>Ученики</ProductTableHeaderCell>
-            <ProductTableHeaderCell>Прогресс</ProductTableHeaderCell>
-            <ProductTableHeaderCell>Следующее занятие</ProductTableHeaderCell>
-          </ProductTableHeaderRow>
-        </ProductTableHead>
-        <ProductTableBody>
-          {rows.map((group) => (
-            <ProductTableRow
-              key={group.id}
-              className="cursor-pointer"
-              onClick={() => router.push(group.groupHref)}
+      <ul className="mt-2 space-y-2 md:hidden">
+        {rows.map((group) => (
+          <li key={group.id}>
+            <Link
+              href={group.groupHref}
+              className="block rounded-2xl border border-neutral-200 bg-white p-3 transition hover:border-sky-300"
             >
-              <ProductTablePrimaryCell className="max-w-0">
-                <ProductTableTruncate title={group.groupLabel}>{group.groupLabel}</ProductTableTruncate>
-              </ProductTablePrimaryCell>
-              <ProductTableCell className="max-w-0">
-                <ProductTableTruncate title={group.methodologyLabel ?? "Не назначена"}>
-                  {group.methodologyLabel ?? "Не назначена"}
-                </ProductTableTruncate>
-              </ProductTableCell>
-              <ProductTableCell>{group.studentCount}</ProductTableCell>
-              <ProductTableCell className="max-w-0">
-                <ProductTableTruncate title={group.progressLabel}>{group.progressLabel}</ProductTableTruncate>
-              </ProductTableCell>
-              <ProductTableCell className="max-w-0">
-                <ProductTableTruncate
-                  title={
-                    group.nextLessonLabel
-                      ? [group.nextLessonLabel, group.nextLessonTitle].filter(Boolean).join(" • ")
-                      : "Не запланировано"
-                  }
-                >
-                  {group.nextLessonLabel
-                    ? [group.nextLessonLabel, group.nextLessonTitle].filter(Boolean).join(" • ")
-                    : "Не запланировано"}
-                </ProductTableTruncate>
-              </ProductTableCell>
-            </ProductTableRow>
-          ))}
-        </ProductTableBody>
-      </ProductTable>
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="text-sm font-semibold text-neutral-900">{group.groupLabel}</p>
+                <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-[11px] font-medium text-neutral-600">
+                  {group.studentCount} учен.
+                </span>
+                <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-[11px] font-medium text-neutral-600">
+                  {group.progressLabel}
+                </span>
+              </div>
+              <p className="mt-0.5 text-xs text-neutral-600">
+                Методика: {group.methodologyLabel ?? "Не назначена"}
+              </p>
+              <p className="mt-1 text-[11px] text-neutral-500">
+                Следующее занятие: {groupNextLessonLabel(group)}
+              </p>
+              <p className="mt-2 text-xs font-semibold text-sky-700">Открыть группу</p>
+            </Link>
+          </li>
+        ))}
+      </ul>
+
+      <div className="hidden md:block">
+        <ProductTable>
+          <ProductTableHead>
+            <ProductTableHeaderRow>
+              <ProductTableHeaderCell>Группа</ProductTableHeaderCell>
+              <ProductTableHeaderCell>Методика</ProductTableHeaderCell>
+              <ProductTableHeaderCell>Ученики</ProductTableHeaderCell>
+              <ProductTableHeaderCell>Прогресс</ProductTableHeaderCell>
+              <ProductTableHeaderCell>Следующее занятие</ProductTableHeaderCell>
+            </ProductTableHeaderRow>
+          </ProductTableHead>
+          <ProductTableBody>
+            {rows.map((group) => (
+              <ProductTableRow
+                key={group.id}
+                className="cursor-pointer"
+                onClick={() => router.push(group.groupHref)}
+              >
+                <ProductTablePrimaryCell className="max-w-0">
+                  <ProductTableTruncate title={group.groupLabel}>{group.groupLabel}</ProductTableTruncate>
+                </ProductTablePrimaryCell>
+                <ProductTableCell className="max-w-0">
+                  <ProductTableTruncate title={group.methodologyLabel ?? "Не назначена"}>
+                    {group.methodologyLabel ?? "Не назначена"}
+                  </ProductTableTruncate>
+                </ProductTableCell>
+                <ProductTableCell>{group.studentCount}</ProductTableCell>
+                <ProductTableCell className="max-w-0">
+                  <ProductTableTruncate title={group.progressLabel}>{group.progressLabel}</ProductTableTruncate>
+                </ProductTableCell>
+                <ProductTableCell className="max-w-0">
+                  <ProductTableTruncate title={groupNextLessonLabel(group)}>
+                    {groupNextLessonLabel(group)}
+                  </ProductTableTruncate>
+                </ProductTableCell>
+              </ProductTableRow>
+            ))}
+          </ProductTableBody>
+        </ProductTable>
+      </div>
       {rows.length === 0 ? <ProductTableEmptyState text={emptyStateText} /> : null}
     </ProductTableCard>
   );
