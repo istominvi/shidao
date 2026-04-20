@@ -120,10 +120,6 @@ const lessonOneDisplaySteps: LessonPlanDisplayStep[] = [
     text: "Учим слова 狗 (собака)，猫 (кошка)，兔子 (кролик)，马 (лошадь) с помощью карточек. Показываем их детям поочередно два раза. Первый раз называем только слово, соответствующее картинке: 狗，猫，兔子，马. Второй раз проговариваем предложением: 这是狗。 这是猫。 这是兔子。 这是马。",
     glossaryTerms: ["狗", "猫", "兔子", "马", "这是…", "这是狗。", "这是猫。", "这是兔子。", "这是马。"],
     durationMinutes: 4,
-    resourceButtons: [
-      { label: "Предпросмотр карточек", assetId: "flashcards:world-around-me-lesson-1" },
-      { label: "Скачать PDF", assetId: "flashcards:world-around-me-lesson-1", preferDownload: true },
-    ],
   },
   {
     id: "lesson-1-step-4",
@@ -160,11 +156,6 @@ const lessonOneDisplaySteps: LessonPlanDisplayStep[] = [
     text: "Приложение 1: раздаем каждому ребенку картинки из приложения 1 и указку. Вместе указываем, считаем и называем животных.",
     glossaryTerms: ["狗", "猫", "兔子", "马"],
     durationMinutes: 4,
-    resourceIds: ["worksheet:appendix-1"],
-    resourceButtons: [
-      { label: "Предпросмотр Приложения 1", assetId: "worksheet:appendix-1" },
-      { label: "Скачать PDF", assetId: "worksheet:appendix-1", preferDownload: true },
-    ],
   },
   {
     id: "lesson-1-step-8",
@@ -201,11 +192,6 @@ const lessonOneDisplaySteps: LessonPlanDisplayStep[] = [
     text: "Выполняем страницы 3–4 в рабочей тетради. Раскрашиваем животных, задавая вопрос 这是什么？ (Что это?)",
     glossaryTerms: ["这是什么？"],
     durationMinutes: 4,
-    resourceIds: ["worksheet:workbook-pages-3-4"],
-    resourceButtons: [
-      { label: "Предпросмотр тетради", assetId: "worksheet:workbook-pages-3-4" },
-      { label: "Скачать PDF", assetId: "worksheet:workbook-pages-3-4", preferDownload: true },
-    ],
   },
   {
     id: "lesson-1-step-12",
@@ -848,6 +834,50 @@ function LessonOnePlan({
     );
   }
 
+  const stepSevenGalleryImages = [
+    "/methodologies/world-around-me/lesson-1/step7/step7_1.png",
+    "/methodologies/world-around-me/lesson-1/step7/step7_2.png",
+    "/methodologies/world-around-me/lesson-1/step7/step7_3.png",
+    "/methodologies/world-around-me/lesson-1/step7/step7_4.png",
+    "/methodologies/world-around-me/lesson-1/step7/step7_5.png",
+    "/methodologies/world-around-me/lesson-1/step7/step7_6.png",
+    "/methodologies/world-around-me/lesson-1/step7/step7_7.png",
+    "/methodologies/world-around-me/lesson-1/step7/step7_8.png",
+    "/methodologies/world-around-me/lesson-1/step7/step7_9.png",
+    "/methodologies/world-around-me/lesson-1/step7/step7_10.png",
+  ] as const;
+
+  function StepSevenGalleryBlock() {
+    return (
+      <div className="mt-3 rounded-xl border border-indigo-200 bg-indigo-50/50 p-3">
+        <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-5">
+          {stepSevenGalleryImages.map((imageRef, index) => (
+            <img
+              key={imageRef}
+              src={imageRef}
+              alt={`Шаг 7, изображение ${index + 1}`}
+              className="aspect-square w-full rounded-lg border border-neutral-200 bg-white object-cover"
+            />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  function StepElevenWorkbookColoringBlock() {
+    return (
+      <div className="mt-3 rounded-xl border border-rose-200 bg-rose-50/50 p-3">
+        <div className="mt-2 w-fit overflow-hidden rounded-lg border border-neutral-200 bg-white">
+          <img
+            src="/methodologies/world-around-me/lesson-1/step11/step11.png"
+            alt="Раскраска для шага 11"
+            className="h-auto w-48 object-contain"
+          />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <section className="space-y-6" aria-label="План урока">
       <section className="space-y-3">
@@ -966,6 +996,8 @@ function LessonOnePlan({
               {step.order === 3 ? <StepThreeCardPassesBlock /> : null}
               {step.order === 4 ? <StepFourActionBlock /> : null}
               {step.order === 5 ? <StepFiveGameMechanicsBlock /> : null}
+              {step.order === 7 ? <StepSevenGalleryBlock /> : null}
+              {step.order === 11 ? <StepElevenWorkbookColoringBlock /> : null}
               {step.resourceIds?.map((resourceId) => {
                 const asset = assetsById[resourceId];
                 if (!asset) return null;
