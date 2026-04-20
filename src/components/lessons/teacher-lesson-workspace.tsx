@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { Check, ChevronLeft, ChevronRight, Play } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { TeacherLessonWorkspaceReadModel } from "@/lib/server/teacher-lesson-workspace";
 import { LessonStudentContentPanel } from "@/components/lessons/lesson-student-content-panel";
@@ -10,6 +11,7 @@ import {
   TeacherLessonTabs,
   type TeacherLessonTabKey,
 } from "@/components/lessons/teacher-lesson-tabs";
+import { productButtonClassName } from "@/components/ui/button";
 import { SurfaceCard } from "@/components/ui/surface-card";
 import { toScheduledLessonRoute } from "@/lib/auth";
 
@@ -21,38 +23,42 @@ type TeacherLessonWorkspaceProps = {
   };
 };
 
-type LiveActionHandler = (payload: Record<string, unknown>) => Promise<void>;
+type LiveActionHandler = (payload: Record<string, unknown>) => void;
 
 function LiveLessonControlBar({
-  workspace,
+  liveState,
+  liveStepId,
+  steps,
+  pending,
   onAction,
 }: {
-  workspace: TeacherLessonWorkspaceReadModel;
+  liveState: TeacherLessonWorkspaceReadModel["liveState"];
+  liveStepId: string | null;
+  steps: TeacherLessonWorkspaceReadModel["unifiedReadModel"]["steps"];
+  pending: boolean;
   onAction: LiveActionHandler;
 }) {
-  const steps = workspace.unifiedReadModel.steps;
-  const activeStep =
-    steps.find((step) => step.id === workspace.liveActiveStepId) ?? steps[0] ?? null;
+  const activeStep = steps.find((step) => step.id === liveStepId) ?? steps[0] ?? null;
   const activeIndex = activeStep
     ? steps.findIndex((step) => step.id === activeStep.id)
     : -1;
   const isCompletedOrCancelled =
-    workspace.liveState.runtimeStatus === "completed" ||
-    workspace.liveState.runtimeStatus === "cancelled";
-  const canStart = workspace.liveState.runtimeStatus === "planned";
+    liveState.runtimeStatus === "completed" ||
+    liveState.runtimeStatus === "cancelled";
+  const canStart = liveState.runtimeStatus === "planned";
   const canComplete = !isCompletedOrCancelled;
   const canPrevious = !isCompletedOrCancelled && activeIndex > 0;
   const canNext =
     !isCompletedOrCancelled && activeIndex >= 0 && activeIndex < steps.length - 1;
 
   return (
-    <div className="rounded-xl border border-sky-200 bg-sky-50 p-3 text-sm text-sky-900">
+    <div className="rounded-2xl border border-sky-200 bg-sky-50 p-5 text-sm text-sky-900">
       <p className="font-semibold">
-        {workspace.liveState.runtimeStatus === "in_progress"
+        {liveState.runtimeStatus === "in_progress"
           ? "Идёт занятие"
-          : workspace.liveState.runtimeStatus === "completed"
+          : liveState.runtimeStatus === "completed"
             ? "Урок завершён"
-            : workspace.liveState.runtimeStatus === "cancelled"
+            : liveState.runtimeStatus === "cancelled"
               ? "Урок отменён"
               : "Запланировано"}
       </p>
@@ -63,34 +69,39 @@ function LiveLessonControlBar({
         {canStart ? (
           <button
             type="button"
-            className="rounded-xl border border-neutral-300 bg-white px-3 py-2 text-sm font-semibold disabled:opacity-50"
+            className={productButtonClassName("secondary", "text-sm")}
+            disabled={pending}
             onClick={() => void onAction({ action: "start" })}
           >
+            <Play className="h-4 w-4" aria-hidden="true" />
             Начать урок
           </button>
         ) : null}
         <button
           type="button"
-          disabled={!canPrevious}
-          className="rounded-xl border border-neutral-300 bg-white px-3 py-2 text-sm font-semibold disabled:opacity-50"
+          disabled={!canPrevious || pending}
+          className={productButtonClassName("secondary", "text-sm")}
           onClick={() => void onAction({ action: "previous" })}
         >
+          <ChevronLeft className="h-4 w-4" aria-hidden="true" />
           Предыдущий шаг
         </button>
         <button
           type="button"
-          disabled={!canNext}
-          className="rounded-xl border border-neutral-300 bg-white px-3 py-2 text-sm font-semibold disabled:opacity-50"
+          disabled={!canNext || pending}
+          className={productButtonClassName("secondary", "text-sm")}
           onClick={() => void onAction({ action: "next" })}
         >
+          <ChevronRight className="h-4 w-4" aria-hidden="true" />
           Следующий шаг
         </button>
         <button
           type="button"
-          disabled={!canComplete}
-          className="rounded-xl bg-neutral-900 px-3 py-2 text-sm font-semibold text-white disabled:opacity-50"
+          disabled={!canComplete || pending}
+          className={productButtonClassName("secondary", "text-sm")}
           onClick={() => void onAction({ action: "complete" })}
         >
+          <Check className="h-4 w-4" aria-hidden="true" />
           Завершить урок
         </button>
       </div>
@@ -108,6 +119,20 @@ export function TeacherLessonWorkspace({
   const runtime = workspace.projection.runtimeShell;
   const { quickSummary } = workspace.unifiedReadModel;
   const planSteps = workspace.unifiedReadModel.steps;
+  const [liveState, setLiveState] = useState(workspace.liveState);
+  const [liveStepId, setLiveStepId] = useState<string | null>(workspace.liveActiveStepId);
+  const [livePending, setLivePending] = useState(false);
+
+  useEffect(() => {
+    setLiveState(workspace.liveState);
+    setLiveStepId(workspace.liveActiveStepId);
+    setLivePending(false);
+  }, [workspace.liveActiveStepId, workspace.liveState, workspace.scheduledLessonId]);
+
+  const stepById = useMemo(
+    () => new Map(planSteps.map((step) => [step.id, step] as const)),
+    [planSteps],
+  );
 
   const callLiveAction = async (payload: Record<string, unknown>) => {
     setLiveActionError(null);
@@ -126,26 +151,71 @@ export function TeacherLessonWorkspace({
     router.refresh();
   };
 
+  const applyOptimisticLiveState = (payload: Record<string, unknown>) => {
+    const action = String(payload.action ?? "");
+    const resolvedActiveStep =
+      planSteps.find((step) => step.id === liveStepId) ?? planSteps[0] ?? null;
+    const activeIndex = resolvedActiveStep
+      ? planSteps.findIndex((step) => step.id === resolvedActiveStep.id)
+      : -1;
+
+    if (action === "set_step") {
+      const stepId = String(payload.stepId ?? "");
+      const step = stepById.get(stepId);
+      if (step) {
+        setLiveStepId(step.id);
+      }
+      if (liveState.runtimeStatus === "planned") {
+        setLiveState((previous) => ({ ...previous, runtimeStatus: "in_progress" }));
+      }
+      return;
+    }
+    if (action === "start") {
+      setLiveState((previous) => ({ ...previous, runtimeStatus: "in_progress" }));
+      if (!resolvedActiveStep && planSteps[0]) {
+        setLiveStepId(planSteps[0].id);
+      }
+      return;
+    }
+    if (action === "next") {
+      const nextStep = activeIndex >= 0 ? planSteps[activeIndex + 1] : planSteps[0];
+      if (nextStep) setLiveStepId(nextStep.id);
+      if (liveState.runtimeStatus === "planned") {
+        setLiveState((previous) => ({ ...previous, runtimeStatus: "in_progress" }));
+      }
+      return;
+    }
+    if (action === "previous") {
+      const previousStep = activeIndex > 0 ? planSteps[activeIndex - 1] : null;
+      if (previousStep) setLiveStepId(previousStep.id);
+      return;
+    }
+    if (action === "complete") {
+      setLiveState((previous) => ({ ...previous, runtimeStatus: "completed" }));
+    }
+  };
+
   const runLiveAction = (payload: Record<string, unknown>, fallbackMessage: string) => {
-    void callLiveAction(payload).catch((error) => {
-      setLiveActionError(error instanceof Error ? error.message : fallbackMessage);
-    });
+    setLivePending(true);
+    applyOptimisticLiveState(payload);
+    void callLiveAction(payload)
+      .catch((error) => {
+        setLiveActionError(error instanceof Error ? error.message : fallbackMessage);
+      })
+      .finally(() => {
+        setLivePending(false);
+      });
   };
 
   return (
     <div className="space-y-8 lg:space-y-10">
       <section>
         <LiveLessonControlBar
-          workspace={workspace}
-          onAction={(payload) =>
-            callLiveAction(payload).catch((error) => {
-              setLiveActionError(
-                error instanceof Error
-                  ? error.message
-                  : "Не удалось обновить live-режим урока.",
-              );
-            })
-          }
+          liveState={liveState}
+          liveStepId={liveStepId}
+          steps={planSteps}
+          pending={livePending}
+          onAction={(payload) => runLiveAction(payload, "Не удалось обновить live-режим урока.")}
         />
       </section>
 
@@ -162,12 +232,12 @@ export function TeacherLessonWorkspace({
           </p>
         ) : null}
 
-        {tab === "plan" ? (
-          <div className="mt-5">
+        <div className="mt-5">
+          {tab === "plan" ? (
             <TeacherLessonPedagogicalContent
               quickSummary={quickSummary}
               steps={planSteps}
-              activeStudentStepId={workspace.liveActiveStepId}
+              activeStudentStepId={liveStepId}
               assetsById={workspace.unifiedReadModel.assetsById}
               lessonNotesSlot={
                 <form
@@ -219,20 +289,21 @@ export function TeacherLessonWorkspace({
               onShowOnStudentScreen={(stepId) => {
                 const step = workspace.unifiedReadModel.steps.find((item) => item.id === stepId);
                 if (!step) return;
-                void callLiveAction({
-                  action: "set_step",
-                  stepId: step.id,
-                  stepOrder: step.order,
-                }).catch((error) =>
-                  setLiveActionError(
-                    error instanceof Error ? error.message : "Не удалось показать шаг ученикам.",
-                  ),
+                runLiveAction(
+                  { action: "set_step", stepId: step.id, stepOrder: step.order },
+                  "Не удалось показать шаг ученикам.",
                 );
               }}
               onOpenStudentScreen={(stepId) => {
                 const step = workspace.unifiedReadModel.steps.find((item) => item.id === stepId);
                 if (!step) return;
                 setLiveActionError(null);
+                setLivePending(true);
+                applyOptimisticLiveState({
+                  action: "set_step",
+                  stepId: step.id,
+                  stepOrder: step.order,
+                });
                 void callLiveAction({
                   action: "set_step",
                   stepId: step.id,
@@ -245,22 +316,23 @@ export function TeacherLessonWorkspace({
                         ? error.message
                         : "Не удалось открыть экран ученика.",
                     );
+                  })
+                  .finally(() => {
+                    setLivePending(false);
                   });
               }}
             />
-          </div>
-        ) : null}
+          ) : null}
 
-        {tab === "student_screen" ? (
-          <section className="space-y-3">
+          {tab === "student_screen" ? (
+            <section className="space-y-3">
             <LessonStudentContentPanel
               source={workspace.studentContent.source}
               unavailableReason={workspace.studentContent.unavailableReason}
               steps={workspace.unifiedReadModel.steps}
               assetsById={workspace.unifiedReadModel.assetsById}
-              previewHref={`${toScheduledLessonRoute(workspace.scheduledLessonId)}?view=learner-preview`}
               mode="teacher_preview"
-              controlledStepId={workspace.liveActiveStepId ?? undefined}
+              controlledStepId={liveStepId ?? undefined}
               onStepChange={(stepId) => {
                 const step = workspace.unifiedReadModel.steps.find((item) => item.id === stepId);
                 if (!step) return;
@@ -270,20 +342,20 @@ export function TeacherLessonWorkspace({
                 );
               }}
             />
-          </section>
-        ) : null}
+            </section>
+          ) : null}
 
-        {tab === "homework" ? (
-          <SurfaceCard title="Домашнее задание">
+          {tab === "homework" ? (
+            <SurfaceCard title="Домашнее задание">
             <TeacherHomeworkPanel
               homework={workspace.homework}
               scheduledLessonId={workspace.scheduledLessonId}
             />
-          </SurfaceCard>
-        ) : null}
+            </SurfaceCard>
+          ) : null}
 
-        {tab === "chat" ? (
-          <SurfaceCard title="Чат">
+          {tab === "chat" ? (
+            <SurfaceCard title="Чат">
 
             <section className="space-y-2">
               <h3 className="text-sm font-semibold uppercase tracking-[0.12em] text-neutral-500">
@@ -453,8 +525,9 @@ export function TeacherLessonWorkspace({
                 ))}
               </section>
             ) : null}
-          </SurfaceCard>
-        ) : null}
+            </SurfaceCard>
+          ) : null}
+        </div>
       </SurfaceCard>
     </div>
   );

@@ -14,7 +14,6 @@ import { resolveAccessPolicy } from "@/lib/server/access-policy";
 import { logger } from "@/lib/server/logger";
 import {
   getParentScheduledLessonView,
-  getScheduledLessonLearnerPreview,
   getStudentScheduledLessonView,
   getTeacherScheduledLessonView,
 } from "@/lib/server/scheduled-lesson-view";
@@ -61,7 +60,7 @@ export default async function ScheduledLessonPage({
   searchParams,
 }: {
   params: Promise<{ scheduledLessonId: string }>;
-  searchParams: Promise<{ saved?: string; error?: string; view?: string }>;
+  searchParams: Promise<{ saved?: string; error?: string }>;
 }) {
   const accessResolution = await resolveAccessPolicy();
 
@@ -216,62 +215,6 @@ export default async function ScheduledLessonPage({
   const teacherRuntimeMeta = runtimeStatusMeta(
     teacherView.workspace.liveState.runtimeStatus,
   );
-
-  if (query.view === "learner-preview") {
-    let preview: Awaited<ReturnType<typeof getScheduledLessonLearnerPreview>> =
-      null;
-    try {
-      preview = await getScheduledLessonLearnerPreview(scheduledLessonId);
-    } catch (error) {
-      logger.error("[lessons] failed to load learner preview", {
-        scheduledLessonId,
-        teacherId,
-        userId: accessResolution.context.userId,
-        error,
-      });
-    }
-
-    const runtimeMeta = preview ? runtimeStatusMeta(preview.runtimeStatus) : null;
-
-    return (
-      <main className="pb-12">
-        <div className="landing-noise" aria-hidden="true" />
-        <TopNav />
-        <div className="container app-page-container space-y-6">
-          {preview ? (
-            <>
-              <AppPageHeader
-                eyebrow={learnerEyebrow("preview")}
-                title={preview.lessonTitle}
-                description={
-                  preview.lessonSubtitle ??
-                  "Канонический ученический surface для текущего урока."
-                }
-                meta={
-                  <LessonMetaRail>
-                    <LessonMetaPill
-                      icon={runtimeMeta?.icon ?? "datetime"}
-                      tone={runtimeMeta?.tone}
-                      label={runtimeMeta?.label ?? "Урок запланирован"}
-                    />
-                    <LessonMetaPill
-                      icon="datetime"
-                      label={formatLessonDateLabel(preview.startsAt)}
-                    />
-                  </LessonMetaRail>
-                }
-              />
-              <ScheduledLessonLearnerView model={preview} />
-            </>
-          ) : (
-            <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
-              Предпросмотр ученической версии временно недоступен.
-            </p>
-          )}
-        </div>
-      </main>
-    );
-  }
 
   return (
     <main className="pb-12">

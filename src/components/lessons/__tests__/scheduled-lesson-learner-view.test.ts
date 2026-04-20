@@ -55,7 +55,7 @@ test("shared learner deck mode behavior uses learner-focused banners and locking
   assert.equal(sharedDeckSource.includes("mode !== \"student_live_locked\""), true);
   assert.equal(sharedDeckSource.includes("Урок ведёт преподаватель"), true);
   assert.equal(sharedDeckSource.includes("Повторение урока"), true);
-  assert.equal(sharedDeckSource.includes("Режим предпросмотра для преподавателя"), true);
+  assert.equal(sharedDeckSource.includes("Режим предпросмотра для преподавателя"), false);
 });
 
 test("shared learner deck keeps existing rich renderers", () => {
@@ -84,7 +84,7 @@ test("student panel fullscreen button is functional and has no dead control", ()
   assert.equal(studentPanelSource.includes("shouldShowFullscreenButton"), true);
   assert.equal(studentPanelSource.includes("if (!container || !isFullscreenSupported) return;"), true);
   assert.equal(studentPanelSource.includes("catch {"), true);
-  assert.equal(studentPanelSource.includes("Открыть на весь экран"), true);
+  assert.equal(studentPanelSource.includes("На весь экран"), true);
   assert.equal(studentPanelSource.includes("Выйти из полноэкранного режима"), true);
   assert.equal(studentPanelSource.includes('href="#"'), false);
 });

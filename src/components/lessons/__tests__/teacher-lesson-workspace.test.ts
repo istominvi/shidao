@@ -28,9 +28,9 @@ test("teacher workspace component keeps global live controls and note editing su
   assert.equal(workspaceComponentSource.includes("onStepChange={(stepId) =>"), true);
   assert.equal(workspaceComponentSource.includes("onOpenStudentScreen={(stepId) =>"), true);
   assert.equal(workspaceComponentSource.includes("setTab(\"student_screen\")"), true);
-  assert.equal(workspaceComponentSource.includes("disabled={!canPrevious}"), true);
-  assert.equal(workspaceComponentSource.includes("disabled={!canNext}"), true);
-  assert.equal(workspaceComponentSource.includes("disabled={!canComplete}"), true);
+  assert.equal(workspaceComponentSource.includes("disabled={!canPrevious || pending}"), true);
+  assert.equal(workspaceComponentSource.includes("disabled={!canNext || pending}"), true);
+  assert.equal(workspaceComponentSource.includes("disabled={!canComplete || pending}"), true);
 });
 
 test("teacher workspace uses unified tabs without conduct and removes legacy side cards", () => {
