@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { useMemo, useState } from "react";
 import { DashboardShell } from "@/components/dashboard-shell";
 import {
   DashboardEmptyState,
@@ -31,45 +34,53 @@ type ParentHomeworkItem = {
   maxScore: number | null;
 };
 
+type ParentMessage = {
+  id: string;
+  authorRole: "teacher" | "student" | "parent";
+  body: string;
+  scheduledLessonId: string | null;
+  scheduledLessonHomeworkAssignmentId: string | null;
+  createdAt: string;
+};
+
+type ParentLesson = {
+  scheduledLessonId: string;
+  lessonTitle: string;
+  startsAt: string;
+  startsAtIso: string;
+  statusLabel: string;
+};
+
 type ParentDashboardProps = {
   childrenContexts: ParentContext[];
   homeworkByStudent: Record<string, ParentHomeworkItem[]>;
-  communicationByStudent: Record<
-    string,
-    Array<{
-      id: string;
-      authorRole: "teacher" | "student" | "parent";
-      body: string;
-      scheduledLessonId: string | null;
-      scheduledLessonHomeworkAssignmentId: string | null;
-    }>
-  >;
-  lessonsByStudent: Record<
-    string,
-    Array<{
-      scheduledLessonId: string;
-      lessonTitle: string;
-      startsAt: string;
-      statusLabel: string;
-    }>
-  >;
+  communicationByStudent: Record<string, ParentMessage[]>;
+  lessonsByStudent: Record<string, ParentLesson[]>;
 };
 
-function ChildLessons({
-  lessons,
-}: {
-  lessons: ParentDashboardProps["lessonsByStudent"][string];
-}) {
+function getAuthorRoleLabel(role: ParentMessage["authorRole"]) {
+  if (role === "teacher") return "Преподаватель";
+  if (role === "student") return "Ученик";
+  return "Родитель";
+}
+
+function formatClassLabel(classes: ParentContext["classes"]) {
+  if (classes.length === 0) return "Группа пока не назначена";
+  return classes.map((item) => item.className).join(", ");
+}
+
+function UpcomingLessons({ lessons }: { lessons: ParentLesson[] }) {
   if (lessons.length === 0) {
-    return <DashboardEmptyState>Пока нет запланированных уроков.</DashboardEmptyState>;
+    return <DashboardEmptyState>Ближайший урок пока не запланирован.</DashboardEmptyState>;
   }
 
   return (
     <ul className="space-y-2">
-      {lessons.map((lesson) => (
+      {lessons.slice(0, 5).map((lesson) => (
         <li key={lesson.scheduledLessonId} className="rounded-xl border border-neutral-200 p-3">
           <p className="font-semibold text-neutral-900">{lesson.lessonTitle}</p>
-          <p className="text-xs text-neutral-600">{lesson.startsAt} · {lesson.statusLabel}</p>
+          <p className="text-xs text-neutral-600">{lesson.startsAt}</p>
+          <p className="mt-1 text-xs text-neutral-600">{lesson.statusLabel}</p>
           <Link
             href={toScheduledLessonRoute(lesson.scheduledLessonId)}
             className="mt-2 inline-flex rounded-lg border border-neutral-300 px-2.5 py-1 text-xs font-semibold text-neutral-800"
@@ -82,20 +93,25 @@ function ChildLessons({
   );
 }
 
-function ChildHomework({ items }: { items: ParentHomeworkItem[] }) {
+function HomeworkList({ items }: { items: ParentHomeworkItem[] }) {
   if (items.length === 0) {
-    return <DashboardEmptyState>Домашние задания пока не назначены.</DashboardEmptyState>;
+    return <DashboardEmptyState>Нет активных заданий.</DashboardEmptyState>;
   }
 
   return (
     <ul className="space-y-2">
-      {items.map((item) => (
+      {items.slice(0, 5).map((item) => (
         <li key={`${item.scheduledLessonId}-${item.homeworkTitle}`} className="rounded-xl border border-neutral-200 p-3">
-          <p className="font-semibold text-neutral-900">{item.homeworkTitle}</p>
+          <div className="flex items-center justify-between gap-2">
+            <p className="font-semibold text-neutral-900">{item.homeworkTitle}</p>
+            <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-[11px] font-medium text-neutral-700">
+              {item.statusLabel}
+            </span>
+          </div>
           <p className="text-xs text-neutral-500">{item.lessonTitle}</p>
-          <p className="text-xs text-neutral-600">Срок: {item.dueAt ?? "без срока"} · {item.statusLabel}</p>
+          <p className="mt-1 text-xs text-neutral-600">Срок: {item.dueAt ?? "без срока"}</p>
           {item.score !== null && item.maxScore !== null ? (
-            <p className="text-xs text-neutral-700">Результат: {item.score} / {item.maxScore}</p>
+            <p className="mt-1 text-xs text-neutral-700">Результат: {item.score} / {item.maxScore}</p>
           ) : null}
           {item.assignmentComment ? (
             <p className="mt-1 text-xs text-neutral-700">Комментарий к заданию: {item.assignmentComment}</p>
@@ -109,20 +125,19 @@ function ChildHomework({ items }: { items: ParentHomeworkItem[] }) {
   );
 }
 
-function ChildCommunication({
-  messages,
-}: {
-  messages: ParentDashboardProps["communicationByStudent"][string];
-}) {
+function MessagesList({ messages }: { messages: ParentMessage[] }) {
   if (messages.length === 0) {
     return <DashboardEmptyState>Сообщений пока нет.</DashboardEmptyState>;
   }
 
   return (
-    <ul className="space-y-1.5">
-      {messages.slice(-3).map((message) => (
-        <li key={message.id} className="text-sm text-neutral-700">
-          <span className="font-medium text-neutral-900">{message.authorRole}:</span> {message.body}
+    <ul className="space-y-2">
+      {messages.slice(0, 5).map((message) => (
+        <li key={message.id} className="rounded-xl border border-neutral-200 p-3 text-sm text-neutral-700">
+          <p>
+            <span className="font-medium text-neutral-900">{getAuthorRoleLabel(message.authorRole)}:</span>{" "}
+            {message.body}
+          </p>
         </li>
       ))}
     </ul>
@@ -135,41 +150,118 @@ export function ParentDashboard({
   communicationByStudent,
   lessonsByStudent,
 }: ParentDashboardProps) {
+  const [selectedStudentId, setSelectedStudentId] = useState<string | null>(
+    childrenContexts[0]?.studentId ?? null,
+  );
+
+  const selectedChild = useMemo(
+    () => childrenContexts.find((child) => child.studentId === selectedStudentId) ?? null,
+    [childrenContexts, selectedStudentId],
+  );
+
+  const selectedLessons = selectedChild ? lessonsByStudent[selectedChild.studentId] ?? [] : [];
+  const selectedHomework = selectedChild ? homeworkByStudent[selectedChild.studentId] ?? [] : [];
+  const selectedMessages = selectedChild
+    ? [...(communicationByStudent[selectedChild.studentId] ?? [])]
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+    : [];
+
+  const nextLesson = selectedLessons[0] ?? null;
+  const activeHomeworkCount = selectedHomework.length;
+  const latestMessage = selectedMessages[0] ?? null;
+
   return (
     <DashboardShell
       roleLabel="Родитель"
       roleTone="parent"
       title="Кабинет родителя"
-      subtitle="Сводка по ребёнку: уроки, домашняя работа и комментарии преподавателя."
+      subtitle="Спокойный обзор обучения ребёнка: ближайшие уроки, домашние задания и комментарии преподавателя."
     >
       {childrenContexts.length === 0 ? (
-        <DashboardSection title="Детей пока нет" description="Добавьте ученика через преподавателя, чтобы увидеть прогресс.">
-          <DashboardEmptyState>После привязки ученика здесь появится учебная сводка.</DashboardEmptyState>
+        <DashboardSection
+          title="Детей пока нет"
+          description="Когда преподаватель привяжет ученика к вашему аккаунту, здесь появятся уроки, домашние задания и сообщения."
+        >
+          <DashboardEmptyState>
+            Когда преподаватель привяжет ученика к вашему аккаунту, здесь появятся уроки, домашние задания и сообщения.
+          </DashboardEmptyState>
         </DashboardSection>
-      ) : (
+      ) : selectedChild ? (
         <div className="space-y-4">
-          {childrenContexts.map((child) => (
-            <article key={child.studentId} className="space-y-3 rounded-2xl border border-neutral-200 bg-white/70 p-3 md:p-4">
-              <header>
-                <h2 className="text-base font-bold text-neutral-900">{child.studentName}</h2>
-                <p className="text-sm text-neutral-600">Логин ученика: {child.login}</p>
-              </header>
+          {childrenContexts.length > 1 ? (
+            <div className="flex flex-wrap gap-2">
+              {childrenContexts.map((child) => {
+                const isActive = child.studentId === selectedChild.studentId;
+                return (
+                  <button
+                    key={child.studentId}
+                    type="button"
+                    aria-pressed={isActive}
+                    onClick={() => setSelectedStudentId(child.studentId)}
+                    className={`rounded-full border px-3 py-1.5 text-sm font-medium transition ${
+                      isActive
+                        ? "border-neutral-900 bg-neutral-900 text-white"
+                        : "border-neutral-300 bg-white text-neutral-700 hover:border-neutral-400"
+                    }`}
+                  >
+                    {child.studentName}
+                  </button>
+                );
+              })}
+            </div>
+          ) : null}
 
-              <div className="grid gap-3 lg:grid-cols-3">
-                <DashboardSection title="Уроки">
-                  <ChildLessons lessons={lessonsByStudent[child.studentId] ?? []} />
-                </DashboardSection>
-                <DashboardSection title="Домашняя работа">
-                  <ChildHomework items={homeworkByStudent[child.studentId] ?? []} />
-                </DashboardSection>
-                <DashboardSection title="Последние сообщения" description="Режим просмотра">
-                  <ChildCommunication messages={communicationByStudent[child.studentId] ?? []} />
-                </DashboardSection>
+          <section className="rounded-2xl border border-neutral-200 bg-white/70 p-4">
+            <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
+              Родитель видит учебный процесс, но не изменяет уроки, задания и переписку.
+            </p>
+            <dl className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+              <div>
+                <dt className="text-xs text-neutral-500">Ребёнок</dt>
+                <dd className="font-semibold text-neutral-900">{selectedChild.studentName}</dd>
               </div>
-            </article>
-          ))}
+              <div>
+                <dt className="text-xs text-neutral-500">Логин ученика</dt>
+                <dd className="font-semibold text-neutral-900">{selectedChild.login}</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-neutral-500">Группа</dt>
+                <dd className="font-semibold text-neutral-900">{formatClassLabel(selectedChild.classes)}</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-neutral-500">Ближайший урок</dt>
+                <dd className="font-semibold text-neutral-900">
+                  {nextLesson ? `${nextLesson.lessonTitle} · ${nextLesson.startsAt}` : "Ближайший урок пока не запланирован"}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-xs text-neutral-500">Домашние задания</dt>
+                <dd className="font-semibold text-neutral-900">
+                  {activeHomeworkCount > 0 ? `${activeHomeworkCount} активных` : "Нет активных заданий"}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-xs text-neutral-500">Последнее сообщение</dt>
+                <dd className="font-semibold text-neutral-900">
+                  {latestMessage ? latestMessage.body : "Сообщений пока нет"}
+                </dd>
+              </div>
+            </dl>
+          </section>
+
+          <div className="grid gap-3 lg:grid-cols-3">
+            <DashboardSection title="Ближайшие уроки">
+              <UpcomingLessons lessons={selectedLessons} />
+            </DashboardSection>
+            <DashboardSection title="Домашние задания">
+              <HomeworkList items={selectedHomework} />
+            </DashboardSection>
+            <DashboardSection title="Комментарии и сообщения" description="Режим просмотра">
+              <MessagesList messages={selectedMessages} />
+            </DashboardSection>
+          </div>
         </div>
-      )}
+      ) : null}
     </DashboardShell>
   );
 }
