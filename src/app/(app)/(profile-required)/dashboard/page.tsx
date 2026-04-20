@@ -8,6 +8,7 @@ import {
   getMethodologyLessonByIdAdmin,
   listScheduledLessonsForClassesAdmin,
 } from "@/lib/server/lesson-content-repository";
+import { logger } from "@/lib/server/logger";
 import { loadParentLearningContextsByUser } from "@/lib/server/supabase-admin";
 
 function formatStatus(status: "planned" | "in_progress" | "completed" | "cancelled") {
@@ -48,17 +49,42 @@ export default async function DashboardIndexPage() {
     redirect(ROUTES.lessons);
   }
 
-  const learningContexts = await loadParentLearningContextsByUser(context.userId);
-  const parentHomework = await getParentHomeworkProjection({
-    children: learningContexts.map((child) => ({
-      studentId: child.studentId,
-      classIds: child.classes.map((item) => item.classId),
-    })),
-  });
+  let learningContexts: Awaited<ReturnType<typeof loadParentLearningContextsByUser>> = [];
+  try {
+    learningContexts = await loadParentLearningContextsByUser(context.userId);
+  } catch (error) {
+    logger.error("[parent-dashboard] failed to load learning contexts", {
+      userId: context.userId,
+      error,
+    });
+  }
+
+  let parentHomework: Awaited<ReturnType<typeof getParentHomeworkProjection>> = [];
+  try {
+    parentHomework = await getParentHomeworkProjection({
+      children: learningContexts.map((child) => ({
+        studentId: child.studentId,
+        classIds: child.classes.map((item) => item.classId),
+      })),
+    });
+  } catch (error) {
+    logger.error("[parent-dashboard] failed to load homework projection", {
+      userId: context.userId,
+      error,
+    });
+  }
   const homeworkByStudent = Object.fromEntries(
     parentHomework.map((item) => [item.studentId, item.items]),
   );
-  const parentCommunication = await getParentCommunicationProjection({ userId: context.userId });
+  let parentCommunication: Awaited<ReturnType<typeof getParentCommunicationProjection>> = [];
+  try {
+    parentCommunication = await getParentCommunicationProjection({ userId: context.userId });
+  } catch (error) {
+    logger.error("[parent-dashboard] failed to load communication projection", {
+      userId: context.userId,
+      error,
+    });
+  }
   const lessonsByStudent: Record<
     string,
     Array<{
@@ -69,22 +95,37 @@ export default async function DashboardIndexPage() {
     }>
   > = {};
   for (const child of learningContexts) {
-    const lessons = child.classes.length
-      ? await listScheduledLessonsForClassesAdmin(child.classes.map((item) => item.classId))
-      : [];
-    lessonsByStudent[child.studentId] = await Promise.all(
-      lessons.slice(0, 6).map(async (lesson) => {
-        const methodologyLesson = await getMethodologyLessonByIdAdmin(
-          lesson.methodologyLessonId,
-        );
-        return {
-          scheduledLessonId: lesson.id,
-          lessonTitle: methodologyLesson?.shell.title ?? "Урок",
-          startsAt: formatStartsAt(lesson.runtimeShell.startsAt),
-          statusLabel: formatStatus(lesson.runtimeShell.runtimeStatus),
-        };
-      }),
-    );
+    try {
+      const lessons = child.classes.length
+        ? await listScheduledLessonsForClassesAdmin(child.classes.map((item) => item.classId))
+        : [];
+      lessonsByStudent[child.studentId] = await Promise.all(
+        lessons.slice(0, 6).map(async (lesson) => {
+          let lessonTitle = "Урок";
+          try {
+            const methodologyLesson = await getMethodologyLessonByIdAdmin(
+              lesson.methodologyLessonId,
+            );
+            lessonTitle = methodologyLesson?.shell.title ?? "Урок";
+          } catch {
+            lessonTitle = "Урок";
+          }
+          return {
+            scheduledLessonId: lesson.id,
+            lessonTitle,
+            startsAt: formatStartsAt(lesson.runtimeShell.startsAt),
+            statusLabel: formatStatus(lesson.runtimeShell.runtimeStatus),
+          };
+        }),
+      );
+    } catch (error) {
+      logger.error("[parent-dashboard] failed to load lessons for student", {
+        userId: context.userId,
+        studentId: child.studentId,
+        error,
+      });
+      lessonsByStudent[child.studentId] = [];
+    }
   }
   return (
     <ParentDashboard
