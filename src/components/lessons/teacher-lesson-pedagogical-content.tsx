@@ -19,7 +19,7 @@ import {
   Timer,
   Workflow,
 } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { productButtonClassName } from "@/components/ui/button";
 import { Chip } from "@/components/ui/chip";
@@ -120,7 +120,6 @@ const lessonOneDisplaySteps: LessonPlanDisplayStep[] = [
     text: "Учим слова 狗 (собака)，猫 (кошка)，兔子 (кролик)，马 (лошадь) с помощью карточек. Показываем их детям поочередно два раза. Первый раз называем только слово, соответствующее картинке: 狗，猫，兔子，马. Второй раз проговариваем предложением: 这是狗。 这是猫。 这是兔子。 这是马。",
     glossaryTerms: ["狗", "猫", "兔子", "马", "这是…", "这是狗。", "这是猫。", "这是兔子。", "这是马。"],
     durationMinutes: 4,
-    resourceIds: ["flashcards:world-around-me-lesson-1"],
     resourceButtons: [
       { label: "Предпросмотр карточек", assetId: "flashcards:world-around-me-lesson-1" },
       { label: "Скачать PDF", assetId: "flashcards:world-around-me-lesson-1", preferDownload: true },
@@ -704,28 +703,6 @@ function LessonOnePlan({
     { src: "/methodologies/world-around-me/lesson-1/visuals/horse-card.png", label: "马", alt: "Карточка лошади" },
   ] as const;
 
-  function StepTwoDialogueBlock() {
-    return (
-      <div className="mt-3 rounded-xl border border-violet-200 bg-violet-50/40 p-3">
-        <p className="text-xs font-semibold uppercase tracking-wide text-violet-900">Диалоговый шаблон</p>
-        <div className="mt-2 grid gap-2 sm:grid-cols-2">
-          <div className="rounded-lg border border-violet-200/80 bg-white p-2.5">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-500">Вопрос</p>
-            <p className="mt-1 text-sm text-neutral-900">
-              <GlossaryTerm term="你是谁？" />
-            </p>
-          </div>
-          <div className="rounded-lg border border-violet-200/80 bg-white p-2.5">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-500">Ответ</p>
-            <p className="mt-1 text-sm text-neutral-900">
-              <GlossaryTerm term="我是…" />
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   function AnimalCardReferenceGrid() {
     return (
       <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -761,6 +738,16 @@ function LessonOnePlan({
   }
 
   function StepFourActionBlock() {
+    const [activeIndex, setActiveIndex] = useState(0);
+    const activeCard = lessonOneAnimalCards[activeIndex] ?? lessonOneAnimalCards[0];
+
+    useEffect(() => {
+      const intervalId = window.setInterval(() => {
+        setActiveIndex((previous) => (previous + 1) % lessonOneAnimalCards.length);
+      }, 2600);
+      return () => window.clearInterval(intervalId);
+    }, []);
+
     return (
       <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50/50 p-3">
         <p className="text-xs font-semibold uppercase tracking-wide text-emerald-900">Действие</p>
@@ -771,11 +758,54 @@ function LessonOnePlan({
             • Сказать: <GlossaryTerm term="我是狗。" />
           </li>
         </ul>
+        {activeCard ? (
+          <div className="mt-3 rounded-xl border border-emerald-200/80 bg-white p-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Карусель карточек</p>
+            <div className="mt-2 flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() =>
+                  setActiveIndex((previous) =>
+                    previous === 0 ? lessonOneAnimalCards.length - 1 : previous - 1,
+                  )
+                }
+                className="inline-flex rounded-lg border border-neutral-300 bg-white px-2 py-1 text-xs font-semibold text-neutral-700"
+              >
+                <ChevronLeft className="h-3.5 w-3.5" aria-hidden="true" />
+              </button>
+              <div className="relative h-28 flex-1 overflow-hidden rounded-lg border border-neutral-200 bg-neutral-50">
+                <img
+                  key={activeCard.src}
+                  src={activeCard.src}
+                  alt={activeCard.alt}
+                  className="h-full w-full object-contain transition duration-500 ease-out motion-safe:animate-[pulse_1.8s_ease-in-out_infinite]"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => setActiveIndex((previous) => (previous + 1) % lessonOneAnimalCards.length)}
+                className="inline-flex rounded-lg border border-neutral-300 bg-white px-2 py-1 text-xs font-semibold text-neutral-700"
+              >
+                <ChevronRight className="h-3.5 w-3.5" aria-hidden="true" />
+              </button>
+            </div>
+            <p className="mt-2 text-center text-sm font-semibold text-neutral-800">
+              <GlossaryTerm term={activeCard.label} />
+            </p>
+          </div>
+        ) : null}
       </div>
     );
   }
 
   function StepFiveGameMechanicsBlock() {
+    const onlinePreviewCards = [
+      ...lessonOneAnimalCards,
+      ...lessonOneAnimalCards,
+      lessonOneAnimalCards[0],
+    ].filter((card): card is (typeof lessonOneAnimalCards)[number] => Boolean(card));
+    const [activeCardSrc, setActiveCardSrc] = useState<string | null>(null);
+
     return (
       <div className="mt-3 rounded-xl border border-sky-200 bg-sky-50/50 p-3">
         <p className="text-xs font-semibold uppercase tracking-wide text-sky-900">Механика игры</p>
@@ -785,6 +815,35 @@ function LessonOnePlan({
           <li>Ребёнок бросает мяч</li>
           <li>Ребёнок называет карточку</li>
         </ol>
+        <div className="mt-3 rounded-xl border border-sky-200/80 bg-white p-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Онлайн-превью (сетка 3×3)</p>
+          <p className="mt-1 text-xs text-neutral-600">
+            На экране ученика ребёнок тапает по названной карточке и озвучивает животное.
+          </p>
+          <div className="mt-2 grid grid-cols-3 gap-2">
+            {onlinePreviewCards.map((card, index) => {
+              const isActive = activeCardSrc === `${card.src}-${index}`;
+              return (
+                <button
+                  key={`${card.src}-${index}`}
+                  type="button"
+                  onClick={() => {
+                    setActiveCardSrc(`${card.src}-${index}`);
+                    window.setTimeout(() => setActiveCardSrc((previous) => (previous === `${card.src}-${index}` ? null : previous)), 360);
+                  }}
+                  className={`rounded-lg border bg-neutral-50 p-1.5 transition ${
+                    isActive ? "scale-95 border-sky-400 ring-2 ring-sky-200" : "border-neutral-200 hover:border-sky-300"
+                  }`}
+                >
+                  <img src={card.src} alt={card.alt} className="h-16 w-full object-contain" />
+                  <span className="mt-1 block text-center text-xs font-semibold text-neutral-700" style={{ fontFamily: cjkFontFamily }}>
+                    {card.label}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
       </div>
     );
   }
@@ -904,7 +963,6 @@ function LessonOnePlan({
                 <p className="mt-2 text-sm leading-6 text-neutral-700" style={{ fontFamily: cjkFontFamily }}>{step.text}</p>
               ) : null}
               <GlossaryChips terms={step.glossaryTerms} />
-              {step.order === 2 ? <StepTwoDialogueBlock /> : null}
               {step.order === 3 ? <StepThreeCardPassesBlock /> : null}
               {step.order === 4 ? <StepFourActionBlock /> : null}
               {step.order === 5 ? <StepFiveGameMechanicsBlock /> : null}
