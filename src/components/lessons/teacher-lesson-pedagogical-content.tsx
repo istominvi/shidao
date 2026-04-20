@@ -5,7 +5,6 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronDown,
-  Download,
   FileText,
   Hash,
   Languages,
@@ -97,7 +96,7 @@ const lessonOneDisplaySteps: LessonPlanDisplayStep[] = [
     order: 1,
     category: "Видео",
     title: "Смотрим видео «farm animals»",
-    text: "Смотрим видео «farm animals».",
+    text: "",
     glossaryTerms: [],
     durationMinutes: 3,
     resourceIds: ["video:farm-animals"],
@@ -315,68 +314,23 @@ function mapAssetUrls(asset: ReusableAsset) {
   return { localUrl, fallbackUrl, previewImageRefs, slideImageRefs, cardImageRefs, pptxFileRef };
 }
 
-function StepAssetVideoCarousel({ assets }: { assets: ReusableAsset[] }) {
-  const [activeIndex, setActiveIndex] = useState(0);
-  const normalizedAssets = assets.filter((asset) => {
-    const { localUrl, fallbackUrl } = mapAssetUrls(asset);
-    return Boolean(localUrl ?? fallbackUrl);
-  });
-  if (!normalizedAssets.length) return null;
+function toGoogleDrivePreviewUrl(url: string) {
+  const match = url.match(/\/file\/d\/([^/]+)\//);
+  if (!match) return url;
+  return `https://drive.google.com/file/d/${match[1]}/preview`;
+}
 
-  const activeAsset = normalizedAssets[activeIndex] ?? normalizedAssets[0];
-  const { localUrl, fallbackUrl } = mapAssetUrls(activeAsset);
-  const activeUrl = localUrl ?? fallbackUrl;
-  if (!activeUrl) return null;
-
+function StepOneVideoEmbed({ asset }: { asset: ReusableAsset }) {
+  const sourceUrl = asset.sourceUrl ? toGoogleDrivePreviewUrl(asset.sourceUrl) : null;
+  if (!sourceUrl) return null;
   return (
-    <div className="mt-3 rounded-xl border border-neutral-200 bg-neutral-50 p-3">
-      <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-500">Видео к шагу</p>
-      <video controls playsInline preload="metadata" src={activeUrl} className="w-full rounded-lg border border-neutral-200 bg-black" />
-      {normalizedAssets.length > 1 ? (
-        <div className="mt-2 flex items-center justify-between gap-2">
-          <button
-            type="button"
-            onClick={() => setActiveIndex((prev) => (prev === 0 ? normalizedAssets.length - 1 : prev - 1))}
-            className="inline-flex items-center gap-1 rounded-lg border border-neutral-300 bg-white px-2 py-1 text-xs font-semibold text-neutral-800"
-          >
-            <ChevronLeft className="h-3.5 w-3.5" aria-hidden="true" />
-            Назад
-          </button>
-          <span className="text-xs text-neutral-600">Видео {activeIndex + 1} из {normalizedAssets.length}</span>
-          <button
-            type="button"
-            onClick={() => setActiveIndex((prev) => (prev + 1) % normalizedAssets.length)}
-            className="inline-flex items-center gap-1 rounded-lg border border-neutral-300 bg-white px-2 py-1 text-xs font-semibold text-neutral-800"
-          >
-            Вперёд
-            <ChevronRight className="h-3.5 w-3.5" aria-hidden="true" />
-          </button>
-        </div>
-      ) : null}
-      <div className="mt-3 grid gap-2 sm:grid-cols-2">
-        {normalizedAssets.map((asset) => {
-          const urls = mapAssetUrls(asset);
-          const itemUrl = urls.localUrl ?? urls.fallbackUrl;
-          if (!itemUrl) return null;
-          const displayTitle = asset.title || itemUrl.split("/").pop() || "Видео";
-          return (
-            <div key={asset.id} className="flex items-center justify-between gap-2 rounded-lg border border-neutral-200 bg-white px-3 py-2">
-              <span className="min-w-0 truncate text-xs text-neutral-700">{displayTitle}</span>
-              <a
-                href={itemUrl}
-                download={Boolean(urls.localUrl)}
-                target={urls.localUrl ? undefined : "_blank"}
-                rel={urls.localUrl ? undefined : "noreferrer"}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-neutral-800"
-              >
-                <Download className="h-3.5 w-3.5" aria-hidden="true" />
-                Скачать
-              </a>
-            </div>
-          );
-        })}
-      </div>
-    </div>
+    <iframe
+      src={sourceUrl}
+      title={asset.title}
+      className="mt-3 h-64 w-full rounded-xl border border-neutral-200"
+      allow="autoplay; encrypted-media; picture-in-picture"
+      allowFullScreen
+    />
   );
 }
 
@@ -683,22 +637,6 @@ function resolveCanonicalStepSource(steps: MethodologyLessonStep[], displayStepO
   return direct;
 }
 
-function lessonOneStepOneVideos(assetsById: Record<string, ReusableAsset>) {
-  const assets = Object.values(assetsById).filter((asset) => {
-    if (asset.kind !== "video" && asset.kind !== "lesson_video") return false;
-    if (!asset.fileRef?.startsWith("/methodologies/world-around-me/lesson-1/media/")) return false;
-    return !asset.fileRef.includes("farm-animals-song-video.mp4");
-  });
-
-  return assets
-    .slice()
-    .sort((a, b) => (a.fileRef ?? "").localeCompare(b.fileRef ?? ""))
-    .map((asset) => ({
-      ...asset,
-      title: asset.title || (asset.fileRef?.split("/").pop() ?? asset.id),
-    }));
-}
-
 function LessonOnePlan({
   assetsById,
   lessonNotesSlot,
@@ -822,7 +760,9 @@ function LessonOnePlan({
                 ) : null}
               </div>
               <h3 className="mt-2 text-lg font-semibold text-neutral-950" style={{ fontFamily: cjkFontFamily }}>{step.title}</h3>
-              <p className="mt-2 text-sm leading-6 text-neutral-700" style={{ fontFamily: cjkFontFamily }}>{step.text}</p>
+              {step.text ? (
+                <p className="mt-2 text-sm leading-6 text-neutral-700" style={{ fontFamily: cjkFontFamily }}>{step.text}</p>
+              ) : null}
               <GlossaryChips terms={step.glossaryTerms} />
               {step.order === 3 ? (
                 <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50/60 p-3">
@@ -841,8 +781,7 @@ function LessonOnePlan({
                 const asset = assetsById[resourceId];
                 if (!asset) return null;
                 if (step.order === 1 && resourceId === "video:farm-animals") {
-                  const stepOneAssets = lessonOneStepOneVideos(assetsById);
-                  return <StepAssetVideoCarousel key={`${step.id}-${resourceId}`} assets={stepOneAssets} />;
+                  return <StepOneVideoEmbed key={`${step.id}-${resourceId}`} asset={asset} />;
                 }
                 return <LessonPlanResourcePreview key={`${step.id}-${resourceId}`} asset={asset} />;
               })}
