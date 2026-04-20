@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { productButtonClassName } from "@/components/ui/button";
 import { classNames } from "@/lib/ui/classnames";
 import type { LessonGroupChatReadModel } from "@/lib/server/lesson-group-chat-service";
@@ -9,7 +9,6 @@ type LessonGroupChatPanelProps = {
   scheduledLessonId: string;
   initialModel?: LessonGroupChatReadModel | null;
   canWrite?: boolean;
-  title?: string;
 };
 
 function formatMessageTime(iso: string) {
@@ -25,7 +24,6 @@ export function LessonGroupChatPanel({
   scheduledLessonId,
   initialModel,
   canWrite,
-  title,
 }: LessonGroupChatPanelProps) {
   const [model, setModel] = useState<LessonGroupChatReadModel | null>(initialModel ?? null);
   const [body, setBody] = useState("");
@@ -34,11 +32,6 @@ export function LessonGroupChatPanel({
   const viewportRef = useRef<HTMLDivElement | null>(null);
 
   const resolvedCanWrite = canWrite ?? model?.canWrite ?? false;
-
-  const headerTitle = useMemo(
-    () => title?.trim() || model?.thread.title?.trim() || "Чат урока",
-    [model?.thread.title, title],
-  );
 
   const refreshMessages = useCallback(async () => {
     const response = await fetch(`/api/lessons/${scheduledLessonId}/group-chat`, {
@@ -106,14 +99,10 @@ export function LessonGroupChatPanel({
   };
 
   return (
-    <section className="rounded-2xl border border-neutral-200 bg-white p-4 md:p-5">
-      <header>
-        <h3 className="text-base font-semibold text-neutral-900">{headerTitle}</h3>
-      </header>
-
+    <div className="space-y-3">
       <div
         ref={viewportRef}
-        className="mt-4 max-h-[24rem] space-y-2 overflow-y-auto rounded-2xl border border-neutral-200 bg-neutral-50 p-3"
+        className="max-h-[24rem] space-y-2 overflow-y-auto rounded-2xl border border-neutral-200 bg-neutral-50 p-3"
       >
         {!model || model.messages.length === 0 ? (
           <p className="text-sm text-neutral-600">
@@ -143,13 +132,13 @@ export function LessonGroupChatPanel({
       </div>
 
       {error ? (
-        <p className="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
+        <p className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
           {error}
         </p>
       ) : null}
 
       {resolvedCanWrite ? (
-        <div className="mt-3 space-y-2">
+        <div className="space-y-2">
           <textarea
             rows={3}
             value={body}
@@ -168,10 +157,10 @@ export function LessonGroupChatPanel({
           </button>
         </div>
       ) : (
-        <p className="mt-3 text-xs text-neutral-600">
+        <p className="text-xs text-neutral-600">
           Родительский просмотр: писать в чат может преподаватель и ученики группы.
         </p>
       )}
-    </section>
+    </div>
   );
 }
