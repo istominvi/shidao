@@ -15,6 +15,10 @@ const studentPanelSource = readFileSync(
   "src/components/lessons/lesson-student-content-panel.tsx",
   "utf8",
 );
+const lessonOneActivitiesSource = readFileSync(
+  "src/components/lessons/lesson-one-student-activities.tsx",
+  "utf8",
+);
 
 test("learner lesson view supports dedicated preview role", () => {
   assert.equal(source.includes("ScheduledLessonPreviewView"), true);
@@ -108,4 +112,12 @@ test("scheduled learner view unlocks navigation in review mode", () => {
 test("shared learner deck uses dedicated lesson one student activities for canonical steps", () => {
   assert.equal(sharedDeckSource.includes("LessonOneStudentActivities"), true);
   assert.equal(sharedDeckSource.includes("isWorldAroundMeLessonOneCanonicalStep"), true);
+});
+
+test("lesson one step 1 student screen keeps teacher playlist behavior", () => {
+  assert.equal(lessonOneActivitiesSource.includes("lessonOneStepOneVideoPlaylist"), true);
+  assert.equal(lessonOneActivitiesSource.includes("onEnded={goToNextVideo}"), true);
+  assert.equal(lessonOneActivitiesSource.includes("Свинья"), true);
+  assert.equal(lessonOneActivitiesSource.includes("Кролик"), true);
+  assert.equal(lessonOneActivitiesSource.includes("Гуси"), true);
 });

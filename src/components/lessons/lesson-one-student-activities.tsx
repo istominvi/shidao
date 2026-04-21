@@ -27,6 +27,19 @@ const animals: Animal[] = [
   { id: "horse", hanzi: "马", pinyin: "mǎ", meaning: "лошадь", image: "/methodologies/world-around-me/lesson-1/visuals/horse-card.png" },
 ];
 
+const lessonOneStepOneVideoPlaylist = [
+  { fileName: "zhu.mp4", labelRu: "Свинья", labelZh: "猪" },
+  { fileName: "yang.mp4", labelRu: "Овца", labelZh: "羊" },
+  { fileName: "ya.mp4", labelRu: "Утка", labelZh: "鸭" },
+  { fileName: "tu.mp4", labelRu: "Кролик", labelZh: "兔子" },
+  { fileName: "nainiu.mp4", labelRu: "Корова", labelZh: "奶牛" },
+  { fileName: "mao.mp4", labelRu: "Кошка", labelZh: "猫" },
+  { fileName: "ma.mp4", labelRu: "Лошадь", labelZh: "马" },
+  { fileName: "ji.mp4", labelRu: "Курица", labelZh: "鸡" },
+  { fileName: "gou.mp4", labelRu: "Собака", labelZh: "狗" },
+  { fileName: "e.mp4", labelRu: "Гуси", labelZh: "鹅" },
+] as const;
+
 function assetUrl(asset?: ReusableAsset) {
   return asset?.fileRef ?? asset?.sourceUrl ?? null;
 }
@@ -41,6 +54,7 @@ export function isWorldAroundMeLessonOneCanonicalStep(stepId: string) {
 
 export function LessonOneStudentActivities({ step, assetsById, sections: _sections }: Props) {
   const [idx, setIdx] = useState(0);
+  const [videoIndex, setVideoIndex] = useState(0);
   const [selected, setSelected] = useState<string | null>(null);
   const [sticks, setSticks] = useState(1);
   const [verb, setVerb] = useState<"跑" | "跳">("跑");
@@ -54,20 +68,61 @@ export function LessonOneStudentActivities({ step, assetsById, sections: _sectio
   const baseCard = "mt-4 rounded-2xl border border-neutral-200 bg-white p-4 md:p-5";
 
   if (stepNum === 1) {
-    const videoAsset = assetsById["video:farm-animals"];
-    const video = assetUrl(videoAsset);
+    const playlist = lessonOneStepOneVideoPlaylist.map((item, index) => ({
+      id: `lesson-1-video-${index + 1}`,
+      src: `/methodologies/world-around-me/lesson-1/media/${item.fileName}`,
+      labelRu: item.labelRu,
+      labelZh: item.labelZh,
+    }));
+    const fallbackVideo = assetUrl(assetsById["video:farm-animals"]);
+    const activeVideo = playlist[videoIndex] ?? playlist[0];
+    const videoSrc = activeVideo?.src ?? fallbackVideo;
+
+    const goToNextVideo = () => {
+      if (!playlist.length) return;
+      setVideoIndex((prev) => (prev + 1) % playlist.length);
+    };
+
     return (
-      <div className={classNames(baseCard, "flex flex-col") }>
+      <div className={classNames(baseCard, "flex flex-col")}>
         <p className="text-sm text-neutral-700">Смотри, слушай и повторяй животных.</p>
-        {video && isVideo(video) ? (
+        {videoSrc && isVideo(videoSrc) ? (
           <div className="mt-3 flex min-h-0 flex-1 items-center justify-center overflow-hidden rounded-xl border border-sky-200 bg-black/90 p-1">
-            <video controls preload="metadata" className="max-h-[60vh] w-full rounded-lg object-contain">
-              <source src={video} />
+            <video
+              key={videoSrc}
+              controls
+              preload="metadata"
+              autoPlay
+              muted
+              playsInline
+              onEnded={goToNextVideo}
+              className="max-h-[60vh] w-full rounded-lg object-contain"
+            >
+              <source src={videoSrc} />
             </video>
           </div>
         ) : (
           <p className="mt-3 text-sm text-neutral-600">Видео покажет преподаватель.</p>
         )}
+        {playlist.length ? (
+          <div className="mt-3 grid grid-cols-2 gap-2 md:grid-cols-5">
+            {playlist.map((item, index) => (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => setVideoIndex(index)}
+                className={classNames(
+                  "rounded-xl border px-2.5 py-2 text-xs font-semibold",
+                  index === videoIndex
+                    ? "border-sky-500 bg-sky-100 text-sky-900"
+                    : "border-neutral-300 bg-white text-neutral-700",
+                )}
+              >
+                {item.labelRu} · <span style={{ fontFamily: cjkFontFamily }}>{item.labelZh}</span>
+              </button>
+            ))}
+          </div>
+        ) : null}
       </div>
     );
   }
