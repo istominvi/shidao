@@ -11,11 +11,12 @@ import {
   UserRound,
 } from "lucide-react";
 import { AppPageHeader } from "@/components/app/page-header";
-import { DashboardShell } from "@/components/dashboard-shell";
 import {
   DashboardEmptyState,
   DashboardSection,
 } from "@/components/dashboard/dashboard-section";
+import { TopNav } from "@/components/top-nav";
+import { SurfaceCard } from "@/components/ui/surface-card";
 import { toScheduledLessonRoute } from "@/lib/auth";
 
 type ParentContext = {
@@ -262,175 +263,179 @@ export function ParentDashboard({
   }, {});
 
   return (
-    <DashboardShell>
-      {childrenContexts.length === 0 ? (
-        <section className="surface-card rounded-3xl border border-neutral-200/70 bg-white/80 p-6 shadow-sm">
-          <h2 className="text-2xl font-bold tracking-tight text-neutral-900">
-            Детей пока нет
-          </h2>
-          <p className="mt-2 text-sm text-neutral-600">
-            Когда преподаватель привяжет ученика к вашему аккаунту, здесь
-            появятся уроки, домашние задания и сообщения.
-          </p>
-          <p className="mt-4 inline-flex items-center gap-2 rounded-full bg-neutral-100 px-3 py-1 text-xs font-medium text-neutral-700">
-            <AlertCircle className="size-3.5" />
-            Родительский кабинет работает в режиме просмотра.
-          </p>
-        </section>
-      ) : selectedChild ? (
-        <div className="space-y-4 md:space-y-5">
-          <AppPageHeader title="Кабинет родителя" />
-          {childrenContexts.length > 1 ? (
-            <div className="flex flex-wrap gap-2">
-              {childrenContexts.map((child) => (
-                <button
-                  key={child.studentId}
-                  type="button"
-                  aria-pressed={child.studentId === selectedChild.studentId}
-                  onClick={() => setSelectedStudentId(child.studentId)}
-                  className={`rounded-full border px-3 py-1.5 text-sm font-semibold transition ${
-                    child.studentId === selectedChild.studentId
-                      ? "border-sky-300 bg-sky-50 text-sky-700"
-                      : "border-neutral-300 bg-white text-neutral-700 hover:border-neutral-400"
-                  }`}
-                >
-                  <span className="mr-1.5 inline-flex size-6 items-center justify-center rounded-full bg-gradient-to-br from-sky-100 via-violet-50 to-amber-100 text-xs text-neutral-700">
-                    {getInitials(child.studentName)}
-                  </span>
-                  {child.studentName}
-                </button>
-              ))}
-            </div>
-          ) : null}
-
-          <section className="rounded-3xl border border-neutral-200/70 bg-white/85 p-5 shadow-sm md:p-6">
-            <button
-              type="button"
-              onClick={() => setIsSummaryExpanded((previous) => !previous)}
-              aria-expanded={isSummaryExpanded}
-              className="w-full text-left"
-            >
-              <div className="grid gap-5 lg:grid-cols-[1.2fr_1fr]">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-neutral-500">
-                    Ученик
-                  </p>
-                  <h2 className="mt-2 text-2xl font-bold tracking-tight text-neutral-900">
-                    {selectedChild.studentName}
-                  </h2>
-                  <dl className="mt-4 space-y-2 text-sm">
-                    <div className="flex items-start gap-2 text-neutral-700">
-                      <UserRound className="mt-0.5 size-4 text-neutral-500" />
-                      <div>
-                        <dt className="text-xs text-neutral-500">
-                          Логин ученика
-                        </dt>
-                        <dd className="font-medium text-neutral-900">
-                          {selectedChild.login}
-                        </dd>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-2 text-neutral-700">
-                      <BookOpenCheck className="mt-0.5 size-4 text-neutral-500" />
-                      <div>
-                        <dt className="text-xs text-neutral-500">Группа</dt>
-                        <dd className="font-medium text-neutral-900">
-                          {formatClassLabel(selectedChild.classes)}
-                        </dd>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-2 text-neutral-700">
-                      <CalendarDays className="mt-0.5 size-4 text-neutral-500" />
-                      <div>
-                        <dt className="text-xs text-neutral-500">
-                          Следующий урок
-                        </dt>
-                        <dd className="font-medium text-neutral-900">
-                          {nextLesson
-                            ? `${nextLesson.lessonTitle} · ${nextLesson.startsAt}`
-                            : "Ближайший урок пока не запланирован"}
-                        </dd>
-                      </div>
-                    </div>
-                  </dl>
-                </div>
-
-                <div className="space-y-3">
-                  <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
-                    <div className="rounded-2xl bg-gradient-to-br from-sky-50 to-white p-3 ring-1 ring-sky-100">
-                      <p className="text-xs text-neutral-500">
-                        Ближайшие уроки
-                      </p>
-                      <p className="mt-1 text-2xl font-bold text-neutral-900">
-                        {Math.min(selectedLessons.length, 5)}
-                      </p>
-                    </div>
-                    <div className="rounded-2xl bg-gradient-to-br from-amber-50 to-white p-3 ring-1 ring-amber-100">
-                      <p className="text-xs text-neutral-500">Активные ДЗ</p>
-                      <p className="mt-1 text-2xl font-bold text-neutral-900">
-                        {selectedHomework.length}
-                      </p>
-                    </div>
-                    <div className="rounded-2xl bg-gradient-to-br from-violet-50 to-white p-3 ring-1 ring-violet-100">
-                      <p className="text-xs text-neutral-500">Сообщения</p>
-                      <p className="mt-1 text-2xl font-bold text-neutral-900">
-                        {selectedMessages.length}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="rounded-2xl border border-neutral-200/80 bg-neutral-50/70 p-3">
-                    <p className="text-xs font-semibold text-neutral-600">
-                      Статусы домашних заданий
-                    </p>
-                    <div className="mt-2 flex flex-wrap gap-1.5">
-                      {Object.entries(homeworkStatusDistribution).length ===
-                      0 ? (
-                        <span className="text-xs text-neutral-500">
-                          Пока нет назначенных заданий
-                        </span>
-                      ) : (
-                        Object.entries(homeworkStatusDistribution).map(
-                          ([status, count]) => (
-                            <span
-                              key={status}
-                              className={`rounded-full border px-2 py-0.5 text-[11px] font-medium ${getHomeworkStatusTone(status)}`}
-                            >
-                              {status}: {count}
-                            </span>
-                          ),
-                        )
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="rounded-2xl border border-neutral-200/80 bg-white p-3 text-xs text-neutral-600">
-                    <p className="font-semibold text-neutral-700">
-                      Последний комментарий
-                    </p>
-                    <p className="mt-1 truncate">
-                      {latestMessage
-                        ? `${getAuthorRoleLabel(latestMessage.authorRole)}: ${latestMessage.body}`
-                        : "Сообщений пока нет"}
-                    </p>
-                  </div>
-                </div>
+    <main className="pb-12">
+      <div className="landing-noise" aria-hidden="true" />
+      <TopNav />
+      <div className="container app-page-container space-y-6">
+        <AppPageHeader title="Кабинет родителя" />
+        {childrenContexts.length === 0 ? (
+          <SurfaceCard>
+            <h2 className="text-2xl font-bold tracking-tight text-neutral-900">
+              Детей пока нет
+            </h2>
+            <p className="mt-2 text-sm text-neutral-600">
+              Когда преподаватель привяжет ученика к вашему аккаунту, здесь
+              появятся уроки, домашние задания и сообщения.
+            </p>
+            <p className="mt-4 inline-flex items-center gap-2 rounded-full bg-neutral-100 px-3 py-1 text-xs font-medium text-neutral-700">
+              <AlertCircle className="size-3.5" />
+              Родительский кабинет работает в режиме просмотра.
+            </p>
+          </SurfaceCard>
+        ) : selectedChild ? (
+          <div className="space-y-4 md:space-y-5">
+            {childrenContexts.length > 1 ? (
+              <div className="flex flex-wrap gap-2">
+                {childrenContexts.map((child) => (
+                  <button
+                    key={child.studentId}
+                    type="button"
+                    aria-pressed={child.studentId === selectedChild.studentId}
+                    onClick={() => setSelectedStudentId(child.studentId)}
+                    className={`rounded-full border px-3 py-1.5 text-sm font-semibold transition ${
+                      child.studentId === selectedChild.studentId
+                        ? "border-sky-300 bg-sky-50 text-sky-700"
+                        : "border-neutral-300 bg-white text-neutral-700 hover:border-neutral-400"
+                    }`}
+                  >
+                    <span className="mr-1.5 inline-flex size-6 items-center justify-center rounded-full bg-gradient-to-br from-sky-100 via-violet-50 to-amber-100 text-xs text-neutral-700">
+                      {getInitials(child.studentName)}
+                    </span>
+                    {child.studentName}
+                  </button>
+                ))}
               </div>
-            </button>
-          </section>
+            ) : null}
 
-          {isSummaryExpanded ? (
-            <div className="grid gap-3 xl:grid-cols-2">
-              <DashboardSection title="Ближайшие уроки">
-                <UpcomingLessons lessons={selectedLessons} />
-              </DashboardSection>
-              <DashboardSection title="Домашние задания">
-                <HomeworkList items={selectedHomework} />
-              </DashboardSection>
-            </div>
-          ) : null}
-        </div>
-      ) : null}
-    </DashboardShell>
+            <SurfaceCard className="rounded-3xl p-5 md:p-6">
+              <button
+                type="button"
+                onClick={() => setIsSummaryExpanded((previous) => !previous)}
+                aria-expanded={isSummaryExpanded}
+                className="w-full text-left"
+              >
+                <div className="grid gap-5 lg:grid-cols-[1.2fr_1fr]">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-neutral-500">
+                      Ученик
+                    </p>
+                    <h2 className="mt-2 text-2xl font-bold tracking-tight text-neutral-900">
+                      {selectedChild.studentName}
+                    </h2>
+                    <dl className="mt-4 space-y-2 text-sm">
+                      <div className="flex items-start gap-2 text-neutral-700">
+                        <UserRound className="mt-0.5 size-4 text-neutral-500" />
+                        <div>
+                          <dt className="text-xs text-neutral-500">
+                            Логин ученика
+                          </dt>
+                          <dd className="font-medium text-neutral-900">
+                            {selectedChild.login}
+                          </dd>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-2 text-neutral-700">
+                        <BookOpenCheck className="mt-0.5 size-4 text-neutral-500" />
+                        <div>
+                          <dt className="text-xs text-neutral-500">Группа</dt>
+                          <dd className="font-medium text-neutral-900">
+                            {formatClassLabel(selectedChild.classes)}
+                          </dd>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-2 text-neutral-700">
+                        <CalendarDays className="mt-0.5 size-4 text-neutral-500" />
+                        <div>
+                          <dt className="text-xs text-neutral-500">
+                            Следующий урок
+                          </dt>
+                          <dd className="font-medium text-neutral-900">
+                            {nextLesson
+                              ? `${nextLesson.lessonTitle} · ${nextLesson.startsAt}`
+                              : "Ближайший урок пока не запланирован"}
+                          </dd>
+                        </div>
+                      </div>
+                    </dl>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
+                      <div className="rounded-2xl bg-gradient-to-br from-sky-50 to-white p-3 ring-1 ring-sky-100">
+                        <p className="text-xs text-neutral-500">
+                          Ближайшие уроки
+                        </p>
+                        <p className="mt-1 text-2xl font-bold text-neutral-900">
+                          {Math.min(selectedLessons.length, 5)}
+                        </p>
+                      </div>
+                      <div className="rounded-2xl bg-gradient-to-br from-amber-50 to-white p-3 ring-1 ring-amber-100">
+                        <p className="text-xs text-neutral-500">Активные ДЗ</p>
+                        <p className="mt-1 text-2xl font-bold text-neutral-900">
+                          {selectedHomework.length}
+                        </p>
+                      </div>
+                      <div className="rounded-2xl bg-gradient-to-br from-violet-50 to-white p-3 ring-1 ring-violet-100">
+                        <p className="text-xs text-neutral-500">Сообщения</p>
+                        <p className="mt-1 text-2xl font-bold text-neutral-900">
+                          {selectedMessages.length}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="rounded-2xl border border-neutral-200/80 bg-neutral-50/70 p-3">
+                      <p className="text-xs font-semibold text-neutral-600">
+                        Статусы домашних заданий
+                      </p>
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        {Object.entries(homeworkStatusDistribution).length ===
+                        0 ? (
+                          <span className="text-xs text-neutral-500">
+                            Пока нет назначенных заданий
+                          </span>
+                        ) : (
+                          Object.entries(homeworkStatusDistribution).map(
+                            ([status, count]) => (
+                              <span
+                                key={status}
+                                className={`rounded-full border px-2 py-0.5 text-[11px] font-medium ${getHomeworkStatusTone(status)}`}
+                              >
+                                {status}: {count}
+                              </span>
+                            ),
+                          )
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="rounded-2xl border border-neutral-200/80 bg-white p-3 text-xs text-neutral-600">
+                      <p className="font-semibold text-neutral-700">
+                        Последний комментарий
+                      </p>
+                      <p className="mt-1 truncate">
+                        {latestMessage
+                          ? `${getAuthorRoleLabel(latestMessage.authorRole)}: ${latestMessage.body}`
+                          : "Сообщений пока нет"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </button>
+            </SurfaceCard>
+
+            {isSummaryExpanded ? (
+              <div className="grid gap-3 xl:grid-cols-2">
+                <DashboardSection title="Ближайшие уроки">
+                  <UpcomingLessons lessons={selectedLessons} />
+                </DashboardSection>
+                <DashboardSection title="Домашние задания">
+                  <HomeworkList items={selectedHomework} />
+                </DashboardSection>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+      </div>
+    </main>
   );
 }
