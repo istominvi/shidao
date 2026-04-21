@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import type { LucideIcon } from "lucide-react";
-import { LogOut, Menu, Settings } from "lucide-react";
+import { Building2, ChevronDown, LogOut, Menu, Settings } from "lucide-react";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { isStudentInternalAuthEmail, ROUTES, type ProfileKind } from "@/lib/auth";
 import { signOutViaServer } from "@/lib/auth-flow";
@@ -100,6 +100,20 @@ export function SessionNavActions({
           };
         })
       : [];
+  const organizationSchoolOptions =
+    state.kind === "adult"
+      ? (state.schoolOptions ?? []).filter(
+          (option) => option.kind === "organization",
+        )
+      : [];
+  const showTeacherSchoolControl =
+    state.kind === "adult" && state.activeProfile === "teacher";
+  const schoolTriggerLabel =
+    state.kind === "adult" &&
+    state.selectedSchool?.mode === "organization" &&
+    state.selectedSchool.schoolName
+      ? state.selectedSchool.schoolName
+      : "Выбрать школу";
 
   const updateMenuPosition = useCallback(() => {
     if (!portalMenu || !containerRef.current) return;
@@ -318,41 +332,61 @@ export function SessionNavActions({
         </div>
       ) : null}
 
-      {state.kind === "adult" && state.activeProfile === "teacher" ? (
-        <div className="border-t border-black/5 px-3 py-2.5">
-          <p className="mb-2 px-1 text-xs font-semibold uppercase tracking-[0.08em] text-neutral-500">
-            Школа
-          </p>
-          <button
-            type="button"
-            className={navigationDropdownItemClass()}
-            onClick={() => void handleSwitchSchool("personal")}
-          >
-            Лично
-          </button>
-          {(state.schoolOptions ?? [])
-            .filter((option) => option.kind === "organization")
-            .map((option) => (
-              <button
-                key={option.id}
-                type="button"
-                className={navigationDropdownItemClass()}
-                onClick={() => void handleSwitchSchool(option.id)}
+      {showTeacherSchoolControl ? (
+        <div className="border-t border-black/5 px-1 py-1.5">
+          {organizationSchoolOptions.length === 0 ? (
+            <Link
+              href={`${ROUTES.school}?create=1`}
+              className={navigationDropdownItemClass()}
+              onClick={() => setOpen(false)}
+            >
+              <span className="inline-flex items-center gap-2.5">
+                <Building2 size={16} className="text-neutral-500" aria-hidden="true" />
+                Создать школу
+              </span>
+            </Link>
+          ) : (
+            <details className="group">
+              <summary
+                className={navigationDropdownItemClass(
+                  "cursor-pointer list-none justify-between marker:hidden",
+                )}
               >
-                {option.label}
-              </button>
-            ))}
-          <Link
-            href={`${ROUTES.school}?create=1`}
-            className={navigationDropdownItemClass()}
-            onClick={() => setOpen(false)}
-          >
-            Создать школу
-          </Link>
+                <span className="inline-flex items-center gap-2.5">
+                  <Building2 size={16} className="text-neutral-500" aria-hidden="true" />
+                  {schoolTriggerLabel}
+                </span>
+                <ChevronDown
+                  size={16}
+                  className="text-neutral-500 transition group-open:rotate-180"
+                  aria-hidden="true"
+                />
+              </summary>
+              <div className="mt-1 space-y-0.5 px-2 pb-1">
+                <button
+                  type="button"
+                  className={navigationDropdownItemClass("text-sm")}
+                  onClick={() => void handleSwitchSchool("personal")}
+                >
+                  Лично
+                </button>
+                {organizationSchoolOptions.map((option) => (
+                  <button
+                    key={option.id}
+                    type="button"
+                    className={navigationDropdownItemClass("text-sm")}
+                    onClick={() => void handleSwitchSchool(option.id)}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </details>
+          )}
         </div>
       ) : null}
 
-      <div className="border-t border-black/5 px-1 py-1.5">
+      <div className={`${showTeacherSchoolControl ? "" : "border-t border-black/5"} px-1 py-1.5`}>
         {mobileNavItems.length > 0 ? (
           <div className="mb-1 md:hidden">
             {mobileNavItems.map((item) => (
