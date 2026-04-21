@@ -76,6 +76,7 @@ export function LessonOneStudentActivities({
     fullscreen ? "mt-2 p-3 md:p-4" : "mt-4",
   );
   const mediaMaxHeightClass = fullscreen ? "max-h-[42dvh]" : "max-h-[60vh]";
+  const worksheetMaxHeightClass = fullscreen ? "max-h-[36dvh]" : "max-h-[48vh]";
 
   if (stepNum === 1) {
     const playlist = lessonOneStepOneVideoPlaylist.map((item, index) => ({
@@ -164,7 +165,7 @@ export function LessonOneStudentActivities({
 
   if (stepNum === 7) {
     const pics = Array.from({ length: 10 }, (_, i) => `/methodologies/world-around-me/lesson-1/step7/step7_${i + 1}.png`);
-    return <div className={baseCard}><p className="text-sm text-neutral-700">Сколько животных? Назови животное.</p><Image src={pics[appendix - 1] ?? pics[0]} alt={`Приложение 1 · ${appendix}`} width={1000} height={600} className="mt-3 h-auto w-full rounded-xl border border-sky-200 object-contain" /><div className="mt-3 flex flex-wrap gap-2">{pics.map((_, i) => <button key={i} type="button" onClick={() => setAppendix(i + 1)} className={classNames("rounded-full border px-3 py-1 text-xs", appendix === i + 1 ? "border-sky-500 bg-sky-100" : "border-neutral-300 bg-white")}>{i + 1}</button>)}</div></div>;
+    return <div className={baseCard}><p className="text-sm text-neutral-700">Сколько животных? Назови животное.</p><Image src={pics[appendix - 1] ?? pics[0]} alt={`Приложение 1 · ${appendix}`} width={1000} height={600} className={classNames("mx-auto mt-3 w-full rounded-xl border border-sky-200 object-contain", worksheetMaxHeightClass)} /><div className="mt-3 flex flex-wrap gap-2">{pics.map((_, i) => <button key={i} type="button" onClick={() => setAppendix(i + 1)} className={classNames("rounded-full border px-3 py-1 text-xs", appendix === i + 1 ? "border-sky-500 bg-sky-100" : "border-neutral-300 bg-white")}>{i + 1}</button>)}</div></div>;
   }
 
   if (stepNum === 8) {
@@ -184,7 +185,7 @@ export function LessonOneStudentActivities({
     const workbookAsset = assetsById["worksheet:workbook-pages-3-4"];
     const preview = typeof workbookAsset?.metadata?.previewImageRef === "string" ? workbookAsset.metadata.previewImageRef : "/methodologies/world-around-me/lesson-1/step11/step11.png";
     const url = assetUrl(workbookAsset);
-    return <div className={baseCard}><p className="text-sm text-neutral-700">Раскрась животных и ответь: 这是什么？</p><Image src={preview} alt="Рабочая тетрадь 3–4" width={1000} height={700} className="mt-3 h-auto w-full rounded-xl border border-amber-200 object-contain" />{url ? <a href={url} target="_blank" rel="noreferrer" className="mt-3 inline-flex rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-800">Открыть просмотр</a> : null}</div>;
+    return <div className={baseCard}><p className="text-sm text-neutral-700">Раскрась животных и ответь: 这是什么？</p><Image src={preview} alt="Рабочая тетрадь 3–4" width={1000} height={700} className={classNames("mx-auto mt-3 w-full rounded-xl border border-amber-200 object-contain", worksheetMaxHeightClass)} />{url ? <a href={url} target="_blank" rel="noreferrer" className="mt-3 inline-flex rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-800">Открыть просмотр</a> : null}</div>;
   }
 
   if (stepNum === 12) {
