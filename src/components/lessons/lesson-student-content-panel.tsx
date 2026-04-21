@@ -84,7 +84,7 @@ export function LessonStudentContentPanel({
       ref={containerRef}
       className={classNames(
         "rounded-2xl",
-        isFullscreen ? "h-screen overflow-auto bg-neutral-100 p-3 md:p-6" : "",
+        isFullscreen ? "h-[100dvh] overflow-hidden bg-neutral-100 p-2 md:p-4" : "",
       )}
     >
       <LessonLearnerContentDeck
@@ -92,7 +92,8 @@ export function LessonStudentContentPanel({
         source={source}
         unavailableReason={unavailableReason}
         assetsById={assetsById}
-        compact={embedded}
+        compact={embedded || isFullscreen}
+        fullscreen={isFullscreen}
         mode={mode}
         controlledStepId={controlledStepId}
         onStepChange={onStepChange}

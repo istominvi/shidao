@@ -88,6 +88,7 @@ test("student panel fullscreen button is functional and has no dead control", ()
   assert.equal(studentPanelSource.includes("shouldShowFullscreenButton"), true);
   assert.equal(studentPanelSource.includes("if (!container || !isFullscreenSupported) return;"), true);
   assert.equal(studentPanelSource.includes("catch {"), true);
+  assert.equal(studentPanelSource.includes("fullscreen={isFullscreen}"), true);
   assert.equal(studentPanelSource.includes("На весь экран"), true);
   assert.equal(studentPanelSource.includes("Выйти из полноэкранного режима"), true);
   assert.equal(studentPanelSource.includes('href="#"'), false);

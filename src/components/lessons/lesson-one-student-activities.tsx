@@ -17,6 +17,7 @@ type Props = {
   step: MethodologyLessonStep;
   assetsById: Record<string, ReusableAsset>;
   sections: MethodologyLessonStudentContentSection[];
+  fullscreen?: boolean;
 };
 
 type Animal = { id: "dog" | "cat" | "rabbit" | "horse"; hanzi: string; pinyin: string; meaning: string; image: string };
@@ -52,7 +53,12 @@ export function isWorldAroundMeLessonOneCanonicalStep(stepId: string) {
   return stepId.startsWith("canonical-world-around-me-lesson-1-step-");
 }
 
-export function LessonOneStudentActivities({ step, assetsById, sections: _sections }: Props) {
+export function LessonOneStudentActivities({
+  step,
+  assetsById,
+  sections: _sections,
+  fullscreen = false,
+}: Props) {
   const [idx, setIdx] = useState(0);
   const [videoIndex, setVideoIndex] = useState(0);
   const [selected, setSelected] = useState<string | null>(null);
@@ -65,7 +71,11 @@ export function LessonOneStudentActivities({ step, assetsById, sections: _sectio
   const chosenAnimal = animals.find((a) => a.id === animal) ?? animals[0];
 
   const stepNum = step.order;
-  const baseCard = "mt-4 rounded-2xl border border-neutral-200 bg-white p-4 md:p-5";
+  const baseCard = classNames(
+    "rounded-2xl border border-neutral-200 bg-white p-4 md:p-5",
+    fullscreen ? "mt-2 p-3 md:p-4" : "mt-4",
+  );
+  const mediaMaxHeightClass = fullscreen ? "max-h-[42dvh]" : "max-h-[60vh]";
 
   if (stepNum === 1) {
     const playlist = lessonOneStepOneVideoPlaylist.map((item, index) => ({
@@ -96,7 +106,7 @@ export function LessonOneStudentActivities({ step, assetsById, sections: _sectio
               muted
               playsInline
               onEnded={goToNextVideo}
-              className="max-h-[60vh] w-full rounded-lg object-contain"
+              className={classNames(mediaMaxHeightClass, "w-full rounded-lg object-contain")}
             >
               <source src={videoSrc} />
             </video>
@@ -105,7 +115,7 @@ export function LessonOneStudentActivities({ step, assetsById, sections: _sectio
           <p className="mt-3 text-sm text-neutral-600">Видео покажет преподаватель.</p>
         )}
         {playlist.length ? (
-          <div className="mt-3 grid grid-cols-2 gap-2 md:grid-cols-5">
+          <div className="mt-2 grid grid-cols-2 gap-1.5 md:grid-cols-5">
             {playlist.map((item, index) => (
               <button
                 key={item.id}
