@@ -91,6 +91,7 @@ export default async function DashboardIndexPage() {
       scheduledLessonId: string;
       lessonTitle: string;
       startsAt: string;
+      startsAtIso: string;
       statusLabel: string;
     }>
   > = {};
@@ -99,8 +100,23 @@ export default async function DashboardIndexPage() {
       const lessons = child.classes.length
         ? await listScheduledLessonsForClassesAdmin(child.classes.map((item) => item.classId))
         : [];
+      const now = Date.now();
+      const sortedLessons = lessons
+        .slice()
+        .sort(
+          (a, b) =>
+            new Date(a.runtimeShell.startsAt).getTime() -
+            new Date(b.runtimeShell.startsAt).getTime(),
+        );
+      const upcomingLessons = sortedLessons.filter(
+        (lesson) => new Date(lesson.runtimeShell.startsAt).getTime() >= now,
+      );
+      const pastLessons = sortedLessons.filter(
+        (lesson) => new Date(lesson.runtimeShell.startsAt).getTime() < now,
+      );
+
       lessonsByStudent[child.studentId] = await Promise.all(
-        lessons.slice(0, 6).map(async (lesson) => {
+        [...upcomingLessons, ...pastLessons].slice(0, 6).map(async (lesson) => {
           let lessonTitle = "Урок";
           try {
             const methodologyLesson = await getMethodologyLessonByIdAdmin(
@@ -114,6 +130,7 @@ export default async function DashboardIndexPage() {
             scheduledLessonId: lesson.id,
             lessonTitle,
             startsAt: formatStartsAt(lesson.runtimeShell.startsAt),
+            startsAtIso: lesson.runtimeShell.startsAt,
             statusLabel: formatStatus(lesson.runtimeShell.runtimeStatus),
           };
         }),

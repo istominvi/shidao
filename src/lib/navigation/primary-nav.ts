@@ -59,7 +59,15 @@ export const PRIMARY_NAV_CONFIG: Record<PrimaryNavConfig["id"], PrimaryNavConfig
   parent: {
     id: "parent",
     ariaLabel: "Основная навигация кабинета родителя",
-    items: [],
+    items: [
+      {
+        id: "overview",
+        label: "Обзор",
+        href: ROUTES.dashboard,
+        icon: Users,
+        isActive: (pathname) => isRouteWithin(pathname, ROUTES.dashboard),
+      },
+    ],
   },
   student: {
     id: "student",
