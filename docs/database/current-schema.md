@@ -46,6 +46,7 @@ This guide describes the **current** ShiDao database model.
 - `group_student_message` — messages with optional lesson/homework context links.
 - `lesson_group_conversation` — one shared chat thread per scheduled lesson.
 - `lesson_group_message` — lesson-scoped group chat messages (teacher/student authorship).
+- `notification` — in-app runtime notifications with read/unread state for teacher/parent/student recipients.
 
 ## Key invariants
 

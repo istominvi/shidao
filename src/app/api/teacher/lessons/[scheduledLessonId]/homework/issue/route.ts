@@ -24,6 +24,8 @@ export async function POST(
   try {
     const accessResolution = await resolveAccessPolicy();
     const { teacherId } = assertTeacherHomeworkAccess(accessResolution);
+    const actorUserId =
+      "context" in accessResolution ? accessResolution.context.userId : null;
 
     const scheduledLesson = await getScheduledLessonByIdAdmin(scheduledLessonId);
     if (!scheduledLesson) throw new Error("Урок не найден.");
@@ -45,6 +47,7 @@ export async function POST(
     await issueHomeworkForScheduledLesson({
       scheduledLessonId,
       teacherId,
+      actorUserId,
       recipientMode,
       selectedStudentIds,
       dueAt: dueAtRaw ? new Date(dueAtRaw).toISOString() : null,

@@ -26,6 +26,7 @@ export const ROUTES = {
   settingsSecurity: "/settings/security",
   settingsProfile: "/settings/profile",
   settingsTeam: "/settings/team",
+  notifications: "/notifications",
 } as const;
 
 export const AUTH_MESSAGES = {

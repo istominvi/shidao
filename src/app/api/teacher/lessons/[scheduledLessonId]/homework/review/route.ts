@@ -22,6 +22,8 @@ export async function POST(
   try {
     const accessResolution = await resolveAccessPolicy();
     assertTeacherHomeworkAccess(accessResolution);
+    const actorUserId =
+      "context" in accessResolution ? accessResolution.context.userId : null;
 
     const formData = await request.formData();
     const studentHomeworkAssignmentId = `${formData.get("studentHomeworkAssignmentId") ?? ""}`.trim();
@@ -37,6 +39,7 @@ export async function POST(
       studentHomeworkAssignmentId,
       status,
       reviewNote,
+      actorUserId,
     });
 
     revalidatePath(path);

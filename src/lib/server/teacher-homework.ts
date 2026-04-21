@@ -11,6 +11,7 @@ import {
 import type { AccessResolution } from "./access-policy";
 import { canAccessTeacherLessonWorkspace } from "./teacher-lesson-workspace";
 import { resolveHomeworkQuiz } from "../homework/quiz";
+import { notifyHomeworkAssigned, notifyHomeworkReviewed } from "./notification-service";
 
 export type TeacherHomeworkRosterItem = {
   studentId: string;
@@ -217,6 +218,7 @@ export function assertTeacherHomeworkAccess(resolution: AccessResolution): { tea
 export async function issueHomeworkForScheduledLesson(input: {
   scheduledLessonId: string;
   teacherId: string;
+  actorUserId?: string | null;
   recipientMode: "all" | "selected";
   selectedStudentIds: string[];
   dueAt: string | null;
@@ -266,12 +268,28 @@ export async function issueHomeworkForScheduledLesson(input: {
     assignmentComment: input.assignmentComment,
   });
 
-  await deps.createStudentHomeworkAssignments(
+  const studentAssignments = await deps.createStudentHomeworkAssignments(
     recipients.map((studentId) => ({
       scheduledHomeworkAssignmentId: assignment.id,
       studentId,
     })),
   );
+
+  for (const studentAssignment of studentAssignments) {
+    try {
+      await notifyHomeworkAssigned({
+        actorUserId: input.actorUserId ?? null,
+        scheduledLessonId: input.scheduledLessonId,
+        scheduledHomeworkAssignmentId: assignment.id,
+        studentHomeworkAssignmentId: studentAssignment.id,
+        studentId: studentAssignment.studentId,
+        href: `/lessons/${encodeURIComponent(input.scheduledLessonId)}`,
+        homeworkTitle: definition.title,
+      });
+    } catch (error) {
+      console.warn("[notifications] notifyHomeworkAssigned failed", error);
+    }
+  }
 
   return assignment;
 }
@@ -281,6 +299,7 @@ export async function reviewStudentHomeworkSubmission(input: {
   studentHomeworkAssignmentId: string;
   status: "reviewed" | "needs_revision";
   reviewNote: string;
+  actorUserId?: string | null;
 }, deps: TeacherHomeworkDeps = defaultDeps) {
   const assignment = await deps.getScheduledHomeworkAssignmentByLessonId(input.scheduledLessonId);
   if (!assignment) {
@@ -298,10 +317,27 @@ export async function reviewStudentHomeworkSubmission(input: {
     throw new Error("Ученик ещё не отправил домашнее задание.");
   }
 
-  return deps.updateStudentHomeworkReview({
+  const updated = await deps.updateStudentHomeworkReview({
     studentHomeworkAssignmentId: target.id,
     status: input.status,
     reviewNote: input.reviewNote.trim() || null,
     reviewedAt: new Date().toISOString(),
   });
+
+  try {
+    await notifyHomeworkReviewed({
+      actorUserId: input.actorUserId ?? null,
+      scheduledLessonId: input.scheduledLessonId,
+      scheduledHomeworkAssignmentId: assignment.id,
+      studentHomeworkAssignmentId: target.id,
+      studentId: target.studentId,
+      status: input.status,
+      reviewNote: input.reviewNote.trim() || null,
+      href: `/lessons/${encodeURIComponent(input.scheduledLessonId)}`,
+    });
+  } catch (error) {
+    console.warn("[notifications] notifyHomeworkReviewed failed", error);
+  }
+
+  return updated;
 }
