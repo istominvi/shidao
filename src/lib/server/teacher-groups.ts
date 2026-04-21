@@ -89,6 +89,11 @@ type TeacherGroupsDeps = {
     methodologyId: string;
   }) => Promise<{ classId: string }>;
   assertTeacherAssignedToClass: (teacherId: string, classId: string) => Promise<void>;
+  assertTeacherCanUseClassInActiveSchool?: (input: {
+    teacherId: string;
+    classId: string;
+    activeSchoolId: string;
+  }) => Promise<void>;
   getAuthUsersByIds?: (userIds: string[]) => Promise<
     Record<
       string,
@@ -103,6 +108,15 @@ async function assertTeacherAssignedToClassAdminDefault(
 ) {
   const { assertTeacherAssignedToClassAdmin } = await import("./supabase-admin");
   await assertTeacherAssignedToClassAdmin(teacherId, classId);
+}
+
+async function assertTeacherCanUseClassInActiveSchoolAdminDefault(input: {
+  teacherId: string;
+  classId: string;
+  activeSchoolId: string;
+}) {
+  const { assertTeacherCanUseClassInActiveSchoolAdmin } = await import("./supabase-admin");
+  await assertTeacherCanUseClassInActiveSchoolAdmin(input);
 }
 
 async function createClassForTeacherAdminDefault(input: {
@@ -131,6 +145,7 @@ const defaultDeps: TeacherGroupsDeps = {
   createScheduledLesson: createScheduledLessonAdmin,
   createClassForTeacher: createClassForTeacherAdminDefault,
   assertTeacherAssignedToClass: assertTeacherAssignedToClassAdminDefault,
+  assertTeacherCanUseClassInActiveSchool: assertTeacherCanUseClassInActiveSchoolAdminDefault,
   getAuthUsersByIds: getAuthUsersByIdsAdminDefault,
 };
 
@@ -266,10 +281,12 @@ export function assertTeacherGroupsAccess(
 }
 
 async function buildTeacherGroupsSnapshot(
-  input: { teacherId: string; nowIso?: string },
+  input: { teacherId: string; nowIso?: string; activeSchoolId?: string },
   deps: TeacherGroupsDeps,
 ) {
-  const classes = await deps.listTeacherClasses(input.teacherId);
+  const classes = (await deps.listTeacherClasses(input.teacherId)).filter((item) =>
+    input.activeSchoolId ? item.schoolId === input.activeSchoolId : true,
+  );
   const classIds = classes.map((item) => item.id);
   const [studentsByClass, lessons] = await Promise.all([
     deps.listStudentsForClasses(classIds),
@@ -394,8 +411,20 @@ export async function createTeacherGroupScopedLesson(input: {
   teacherId: string;
   groupId: string;
   payload: Omit<CreateScheduledLessonAdminInput, "classId">;
+  activeSchoolId?: string;
 }, deps: TeacherGroupsDeps = defaultDeps) {
-  await deps.assertTeacherAssignedToClass(input.teacherId, input.groupId);
+  if (input.activeSchoolId) {
+    if (!deps.assertTeacherCanUseClassInActiveSchool) {
+      throw new Error("Не настроена проверка доступа к группе по активной школе.");
+    }
+    await deps.assertTeacherCanUseClassInActiveSchool({
+      teacherId: input.teacherId,
+      classId: input.groupId,
+      activeSchoolId: input.activeSchoolId,
+    });
+  } else {
+    await deps.assertTeacherAssignedToClass(input.teacherId, input.groupId);
+  }
 
   const classes = await deps.listTeacherClasses(input.teacherId);
   const group = classes.find((item) => item.id === input.groupId);
@@ -439,7 +468,7 @@ export async function createTeacherGroupScopedLesson(input: {
 }
 
 export async function getTeacherGroupsIndex(
-  input: { teacherId: string; nowIso?: string },
+  input: { teacherId: string; nowIso?: string; activeSchoolId?: string },
   deps: TeacherGroupsDeps = defaultDeps,
 ): Promise<TeacherGroupsIndexReadModel> {
   const snapshot = await buildTeacherGroupsSnapshot(input, deps);
@@ -449,7 +478,7 @@ export async function getTeacherGroupsIndex(
 }
 
 export async function getTeacherDashboardReadModel(
-  input: { teacherId: string; nowIso?: string },
+  input: { teacherId: string; nowIso?: string; activeSchoolId?: string },
   deps: TeacherGroupsDeps = defaultDeps,
 ): Promise<TeacherDashboardReadModel> {
   const snapshot = await buildTeacherGroupsSnapshot(input, deps);
@@ -463,11 +492,11 @@ export async function getTeacherDashboardReadModel(
 }
 
 export async function getTeacherGroupOverview(
-  input: { teacherId: string; groupId: string; nowIso?: string },
+  input: { teacherId: string; groupId: string; nowIso?: string; activeSchoolId?: string },
   deps: TeacherGroupsDeps = defaultDeps,
 ): Promise<TeacherGroupOverviewReadModel | null> {
   const snapshot = await buildTeacherGroupsSnapshot(
-    { teacherId: input.teacherId, nowIso: input.nowIso },
+    { teacherId: input.teacherId, nowIso: input.nowIso, activeSchoolId: input.activeSchoolId },
     deps,
   );
 

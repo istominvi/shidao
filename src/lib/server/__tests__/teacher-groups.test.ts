@@ -118,12 +118,58 @@ test("group models use explicit methodology assignment and honest progress", asy
   assert.equal(groups.groups[1]?.progressLabel, "1 / 2 (50%)");
 
   const overview = await getTeacherGroupOverview(
-    { teacherId: "t-1", groupId: "class-1", nowIso: "2026-04-07T00:00:00Z" },
+    {
+      teacherId: "t-1",
+      groupId: "class-1",
+      nowIso: "2026-04-07T00:00:00Z",
+      activeSchoolId: "school-personal",
+    },
     deps,
   );
   assert.equal(overview?.methodology.assignedMethodologyTitle, "Мир вокруг");
   assert.equal(overview?.schedule.canSchedule, true);
   assert.equal(overview?.students[0]?.login, "anya");
+});
+
+test("group read models scope classes by active school", async () => {
+  const deps = {
+    listTeacherClasses: async () => [
+      { id: "class-personal", schoolId: "school-personal", name: "Личные", methodologyId: null, methodologyTitle: null },
+      { id: "class-org-a", schoolId: "school-org-a", name: "Школа А", methodologyId: null, methodologyTitle: null },
+      { id: "class-org-b", schoolId: "school-org-b", name: "Школа Б", methodologyId: null, methodologyTitle: null },
+    ],
+    listStudentsForClasses: async () => ({}),
+    listScheduledLessonsForClasses: async () => [],
+    getMethodologyLessonById: async () => null,
+    listMethodologies: async () => [],
+    listMethodologyLessonsByMethodology: async () => [],
+    createScheduledLesson: async () => {
+      throw new Error("unused");
+    },
+    createClassForTeacher: async () => ({ classId: "unused" }),
+    assertTeacherAssignedToClass: async () => undefined,
+  };
+
+  const personalIndex = await getTeacherGroupsIndex(
+    { teacherId: "t-1", activeSchoolId: "school-personal" },
+    deps,
+  );
+  assert.deepEqual(
+    personalIndex.groups.map((group) => group.id),
+    ["class-personal"],
+  );
+
+  const orgOverview = await getTeacherGroupOverview(
+    { teacherId: "t-1", groupId: "class-org-a", activeSchoolId: "school-org-a" },
+    deps,
+  );
+  assert.equal(orgOverview?.group.id, "class-org-a");
+
+  const blockedOverview = await getTeacherGroupOverview(
+    { teacherId: "t-1", groupId: "class-personal", activeSchoolId: "school-org-a" },
+    deps,
+  );
+  assert.equal(blockedOverview, null);
 });
 
 test("group creation requires methodology and scheduling validates assigned methodology", async () => {
@@ -209,5 +255,43 @@ test("group-scoped scheduling parser enforces online/offline constraints", () =>
   assert.throws(
     () => parseGroupScopedLessonFormData(offlineMissingPlace),
     /укажите место проведения/i,
+  );
+});
+
+test("group-scoped scheduling rejects classes outside active school", async () => {
+  await assert.rejects(
+    () =>
+      createTeacherGroupScopedLesson(
+        {
+          teacherId: "t-1",
+          groupId: "class-org",
+          activeSchoolId: "school-personal",
+          payload: {
+            methodologyLessonId: "ml-1",
+            startsAt: "2026-04-20T10:30:00Z",
+            format: "online",
+            meetingLink: "https://zoom.example/room",
+          },
+        },
+        {
+          listTeacherClasses: async () => [
+            { id: "class-org", schoolId: "school-org", name: "Орг", methodologyId: "m-1", methodologyTitle: "Методика" },
+          ],
+          listStudentsForClasses: async () => ({}),
+          listScheduledLessonsForClasses: async () => [],
+          getMethodologyLessonById: async () => null,
+          listMethodologies: async () => [],
+          listMethodologyLessonsByMethodology: async () => [{ id: "ml-1" }] as never,
+          assertTeacherAssignedToClass: async () => undefined,
+          assertTeacherCanUseClassInActiveSchool: async () => {
+            throw new Error("Эта группа недоступна в текущем режиме школы.");
+          },
+          createClassForTeacher: async () => ({ classId: "unused" }),
+          createScheduledLesson: async () => {
+            throw new Error("should not create");
+          },
+        },
+      ),
+    /недоступна в текущем режиме школы/i,
   );
 });
