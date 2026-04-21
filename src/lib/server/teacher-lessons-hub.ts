@@ -5,7 +5,7 @@ import {
   createScheduledLessonAdmin,
   getClassDisplayNameByIdAdmin,
   getMethodologyLessonByIdAdmin,
-  listAssignedClassIdsForTeacherAdmin,
+  listTeacherClassesAdmin,
   listMethodologyLessonsCatalogAdmin,
   listScheduledLessonsForClassesAdmin,
   type CreateScheduledLessonAdminInput,
@@ -53,7 +53,7 @@ export type TeacherLessonsHubReadModel = {
 };
 
 type TeacherLessonsHubDeps = {
-  listAssignedClassIdsForTeacher: typeof listAssignedClassIdsForTeacherAdmin;
+  listTeacherClasses: typeof listTeacherClassesAdmin;
   listScheduledLessonsForClasses: typeof listScheduledLessonsForClassesAdmin;
   getClassDisplayNameById: typeof getClassDisplayNameByIdAdmin;
   getMethodologyLessonById: typeof getMethodologyLessonByIdAdmin;
@@ -71,7 +71,7 @@ async function assertTeacherAssignedToClassAdminDefault(
 }
 
 const defaultDeps: TeacherLessonsHubDeps = {
-  listAssignedClassIdsForTeacher: listAssignedClassIdsForTeacherAdmin,
+  listTeacherClasses: listTeacherClassesAdmin,
   listScheduledLessonsForClasses: listScheduledLessonsForClassesAdmin,
   getClassDisplayNameById: getClassDisplayNameByIdAdmin,
   getMethodologyLessonById: getMethodologyLessonByIdAdmin,
@@ -190,10 +190,15 @@ export function assertTeacherLessonsHubMutationAccess(
 }
 
 export async function getTeacherLessonsHub(
-  input: { teacherId: string; nowIso?: string },
+  input: { teacherId: string; nowIso?: string; activeSchoolId?: string },
   deps: TeacherLessonsHubDeps = defaultDeps,
 ): Promise<TeacherLessonsHubReadModel> {
-  const classIds = await deps.listAssignedClassIdsForTeacher(input.teacherId);
+  const teacherClasses = await deps.listTeacherClasses(input.teacherId);
+  const classIds = teacherClasses
+    .filter((item) =>
+      input.activeSchoolId ? item.schoolId === input.activeSchoolId : true,
+    )
+    .map((item) => item.id);
   const [scheduledLessons, methodologyOptions] = await Promise.all([
     deps.listScheduledLessonsForClasses(classIds),
     deps.listMethodologyLessonsCatalog(),

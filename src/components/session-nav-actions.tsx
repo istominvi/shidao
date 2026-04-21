@@ -267,6 +267,7 @@ export function SessionNavActions({
         await readActionError(response, "Не удалось переключить школу.");
       }
       await refetchSession();
+      setOpen(false);
       router.refresh();
     } catch (error) {
       setActionError(
@@ -358,7 +359,7 @@ export function SessionNavActions({
             <details className="group">
               <summary
                 className={navigationDropdownItemClass(
-                  "flex list-none items-center justify-between marker:hidden",
+                  "nav-dropdown-item-inline list-none marker:hidden",
                 )}
               >
                 <span className="inline-flex items-center gap-2.5">

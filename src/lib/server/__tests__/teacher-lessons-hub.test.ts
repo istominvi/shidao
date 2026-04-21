@@ -63,7 +63,7 @@ test("lessons hub read model groups upcoming and past lessons and shapes cards",
   const hub = await getTeacherLessonsHub(
     { teacherId: "teacher-1", nowIso: "2026-04-07T10:00:00Z" },
     {
-      listAssignedClassIdsForTeacher: async () => ["class-1"],
+      listTeacherClasses: async () => [{ id: "class-1", schoolId: "school-1", name: "Лисички", methodologyId: null, methodologyTitle: null }],
       listScheduledLessonsForClasses: async () => [
         {
           id: "scheduled-future",
@@ -134,7 +134,7 @@ test("lessons hub card identity stays human-readable and does not leak class uui
   const hub = await getTeacherLessonsHub(
     { teacherId: "teacher-1", nowIso: "2026-04-07T10:00:00Z" },
     {
-      listAssignedClassIdsForTeacher: async () => ["11111111-1111-4111-8111-111111111111"],
+      listTeacherClasses: async () => [{ id: "11111111-1111-4111-8111-111111111111", schoolId: "school-1", name: null, methodologyId: null, methodologyTitle: null }],
       listScheduledLessonsForClasses: async () => [
         {
           id: "scheduled-1",
@@ -219,7 +219,7 @@ test("teacher create flow uses createScheduledLessonAdmin dependency and returns
       },
     },
     {
-      listAssignedClassIdsForTeacher: async () => [],
+      listTeacherClasses: async () => [],
       listScheduledLessonsForClasses: async () => [],
       getClassDisplayNameById: async () => null,
       getMethodologyLessonById: async () => null,
