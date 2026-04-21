@@ -29,7 +29,8 @@ export async function POST(
 
   try {
     const accessResolution = await resolveAccessPolicy();
-    const { teacherId } = assertTeacherRuntimeMutationAccess(accessResolution);
+    const { teacherId, userId: actorUserId } =
+      assertTeacherRuntimeMutationAccess(accessResolution);
 
     const formData = await request.formData();
     const payload = parseTeacherRuntimeUpdateFormData(formData);
@@ -37,6 +38,7 @@ export async function POST(
     await updateTeacherLessonRuntime({
       scheduledLessonId,
       teacherId,
+      actorUserId,
       payload,
     });
 
