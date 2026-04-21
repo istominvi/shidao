@@ -1,6 +1,7 @@
 import { revalidatePath } from "next/cache";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { isRedirectError } from "next/dist/client/components/redirect-error";
 import { TopNav } from "@/components/top-nav";
 import { AppPageHeader } from "@/components/app/page-header";
 import { Alert } from "@/components/ui/alert";
@@ -61,6 +62,9 @@ export default async function SchoolPage({
       revalidatePath(ROUTES.lessons);
       redirect(ROUTES.school);
     } catch (error) {
+      if (isRedirectError(error)) {
+        throw error;
+      }
       const message = error instanceof Error ? error.message : "Не удалось создать школу.";
       redirect(`${ROUTES.school}?create=1&error=${encodeURIComponent(message)}`);
     }
@@ -121,6 +125,29 @@ export default async function SchoolPage({
 
   const members = selectedOrg ? await listSchoolMembersAdmin({ schoolId: selectedOrg.id }) : [];
   const isOwner = selectedOrg ? selectedOrg.role === "owner" : false;
+
+  if (query.create === "1") {
+    return (
+      <main className="pb-12">
+        <TopNav />
+        <div className="container app-page-container space-y-6">
+          <AppPageHeader title="Создать школу" />
+          {query.error ? <Alert tone="error">{query.error}</Alert> : null}
+          <section className="glass rounded-3xl p-6">
+            <form action={createSchoolAction} className="space-y-3">
+              <Input name="name" required placeholder="Название школы" />
+              <div className="flex gap-2">
+                <Link href={ROUTES.school} className={productButtonClassName("secondary")}>
+                  Отмена
+                </Link>
+                <Button type="submit">Создать школу</Button>
+              </div>
+            </form>
+          </section>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="pb-12">
@@ -194,18 +221,6 @@ export default async function SchoolPage({
           </section>
         )}
 
-        {query.create === "1" ? (
-          <section className="glass rounded-3xl p-6">
-            <h3 className="text-lg font-semibold">Создать школу</h3>
-            <form action={createSchoolAction} className="mt-4 space-y-3">
-              <Input name="name" required placeholder="Название школы" />
-              <div className="flex gap-2">
-                <Link href={ROUTES.school} className={productButtonClassName("secondary")}>Отмена</Link>
-                <Button type="submit">Создать школу</Button>
-              </div>
-            </form>
-          </section>
-        ) : null}
       </div>
     </main>
   );

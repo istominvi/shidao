@@ -108,6 +108,15 @@ export function SessionNavActions({
       : [];
   const showTeacherSchoolControl =
     state.kind === "adult" && state.activeProfile === "teacher";
+  const selectedOrganizationId =
+    state.kind === "adult" && state.selectedSchool?.mode === "organization"
+      ? state.selectedSchool.schoolId
+      : null;
+  const showPersonalOption =
+    state.kind === "adult" && state.selectedSchool?.mode === "organization";
+  const schoolOptionsForMenu = organizationSchoolOptions.filter(
+    (option) => option.id !== selectedOrganizationId,
+  );
   const schoolTriggerLabel =
     state.kind === "adult" &&
     state.selectedSchool?.mode === "organization" &&
@@ -349,7 +358,7 @@ export function SessionNavActions({
             <details className="group">
               <summary
                 className={navigationDropdownItemClass(
-                  "cursor-pointer list-none justify-between marker:hidden",
+                  "flex list-none items-center justify-between marker:hidden",
                 )}
               >
                 <span className="inline-flex items-center gap-2.5">
@@ -363,18 +372,20 @@ export function SessionNavActions({
                 />
               </summary>
               <div className="mt-1 space-y-0.5 px-2 pb-1">
-                <button
-                  type="button"
-                  className={navigationDropdownItemClass("text-sm")}
-                  onClick={() => void handleSwitchSchool("personal")}
-                >
-                  Лично
-                </button>
-                {organizationSchoolOptions.map((option) => (
+                {showPersonalOption ? (
+                  <button
+                    type="button"
+                    className={navigationDropdownItemClass("pl-6 text-sm")}
+                    onClick={() => void handleSwitchSchool("personal")}
+                  >
+                    Лично
+                  </button>
+                ) : null}
+                {schoolOptionsForMenu.map((option) => (
                   <button
                     key={option.id}
                     type="button"
-                    className={navigationDropdownItemClass("text-sm")}
+                    className={navigationDropdownItemClass("pl-6 text-sm")}
                     onClick={() => void handleSwitchSchool(option.id)}
                   >
                     {option.label}
