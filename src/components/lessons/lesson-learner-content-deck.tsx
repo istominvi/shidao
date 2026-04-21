@@ -4,6 +4,10 @@ import { useMemo, useState } from "react";
 import Image from "next/image";
 import { BookOpen, CirclePlay, ListChecks, Music2, Sparkles } from "lucide-react";
 import { Chip } from "@/components/ui/chip";
+import {
+  isWorldAroundMeLessonOneCanonicalStep,
+  LessonOneStudentActivities,
+} from "@/components/lessons/lesson-one-student-activities";
 import type {
   MethodologyLessonStudentContent,
   MethodologyLessonStudentContentSection,
@@ -637,6 +641,7 @@ export function LessonLearnerContentDeck({
   if (!currentStep) return <EmptyState reason={unavailableReason} />;
   const sections = currentStep.student.payload?.sections ?? [];
   const main = sections[0];
+  const useLessonOneSpecializedView = isWorldAroundMeLessonOneCanonicalStep(currentStep.id);
 
   const moveToStep = (nextIndex: number) => {
     const next = resolvedSteps[nextIndex];
@@ -695,7 +700,13 @@ export function LessonLearnerContentDeck({
         {currentStep.student.instruction ? <p className="mt-2 text-base text-neutral-700">{currentStep.student.instruction}</p> : null}
 
         {main && (main.subtitle || main.illustrationSrc) ? <SceneHeader section={main} compact={compact} hideTitle /> : null}
-        {sections.length ? sections.map((section, index) => (
+        {useLessonOneSpecializedView ? (
+          <LessonOneStudentActivities
+            step={currentStep}
+            assetsById={assetsById}
+            sections={sections}
+          />
+        ) : sections.length ? sections.map((section, index) => (
           <div key={`${currentStep.id}-${section.type}-${section.title}-${index}`}>{renderSection(section, assetsById)}</div>
         )) : (
           <div className="mt-4 rounded-2xl border border-dashed border-neutral-300 bg-neutral-50 p-5 text-sm text-neutral-700">
@@ -704,7 +715,7 @@ export function LessonLearnerContentDeck({
             <p className="mt-2">Сейчас выполняем задание вместе.</p>
           </div>
         )}
-        <StepResources step={currentStep} sections={sections} assetsById={assetsById} />
+        {useLessonOneSpecializedView ? null : <StepResources step={currentStep} sections={sections} assetsById={assetsById} />}
       </article>
     </section>
   );

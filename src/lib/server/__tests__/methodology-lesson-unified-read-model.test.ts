@@ -61,6 +61,7 @@ test("world-around-me lesson 1 unified read model keeps canonical 15-step mappin
 
   for (const step of unified.steps) {
     assert.equal(step.title, step.student.title);
+    assert.equal(Boolean(step.student.instruction && step.student.instruction.trim()), true);
   }
 
   const step1 = unified.steps[0];
@@ -83,6 +84,7 @@ test("world-around-me lesson 1 unified read model keeps canonical 15-step mappin
   assert.equal(step14.title, "Поём песню «Животные на ферме»");
   assert.equal(step14.resourceIds?.includes("song:farm-animals"), true);
   assert.equal(step14.resourceIds?.includes("video:farm-animals"), false);
+  assert.equal(step14.resourceIds?.includes("song-video:farm-animals-movement"), true);
 
   const assignedSectionKeys = unified.steps.flatMap((step) =>
     (step.student.payload?.sections ?? []).map(

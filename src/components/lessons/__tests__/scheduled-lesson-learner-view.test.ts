@@ -104,3 +104,8 @@ test("scheduled learner view unlocks navigation in review mode", () => {
     true,
   );
 });
+
+test("shared learner deck uses dedicated lesson one student activities for canonical steps", () => {
+  assert.equal(sharedDeckSource.includes("LessonOneStudentActivities"), true);
+  assert.equal(sharedDeckSource.includes("isWorldAroundMeLessonOneCanonicalStep"), true);
+});
