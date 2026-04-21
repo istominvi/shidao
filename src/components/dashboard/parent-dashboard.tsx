@@ -223,7 +223,6 @@ export function ParentDashboard({
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(
     childrenContexts[0]?.studentId ?? null,
   );
-  const [isSummaryExpanded, setIsSummaryExpanded] = useState(false);
 
   useEffect(() => {
     if (
@@ -308,123 +307,114 @@ export function ParentDashboard({
             ) : null}
 
             <SurfaceCard className="rounded-3xl p-5 md:p-6">
-              <button
-                type="button"
-                onClick={() => setIsSummaryExpanded((previous) => !previous)}
-                aria-expanded={isSummaryExpanded}
-                className="w-full text-left"
-              >
-                <div className="grid gap-5 lg:grid-cols-[1.2fr_1fr]">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-neutral-500">
-                      Ученик
-                    </p>
-                    <h2 className="mt-2 text-2xl font-bold tracking-tight text-neutral-900">
-                      {selectedChild.studentName}
-                    </h2>
-                    <dl className="mt-4 space-y-2 text-sm">
-                      <div className="flex items-start gap-2 text-neutral-700">
-                        <UserRound className="mt-0.5 size-4 text-neutral-500" />
-                        <div>
-                          <dt className="text-xs text-neutral-500">
-                            Логин ученика
-                          </dt>
-                          <dd className="font-medium text-neutral-900">
-                            {selectedChild.login}
-                          </dd>
-                        </div>
+              <div className="grid gap-5 lg:grid-cols-[1.2fr_1fr]">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-neutral-500">
+                    Ученик
+                  </p>
+                  <h2 className="mt-2 text-2xl font-bold tracking-tight text-neutral-900">
+                    {selectedChild.studentName}
+                  </h2>
+                  <dl className="mt-4 space-y-2 text-sm">
+                    <div className="flex items-start gap-2 text-neutral-700">
+                      <UserRound className="mt-0.5 size-4 text-neutral-500" />
+                      <div>
+                        <dt className="text-xs text-neutral-500">
+                          Логин ученика
+                        </dt>
+                        <dd className="font-medium text-neutral-900">
+                          {selectedChild.login}
+                        </dd>
                       </div>
-                      <div className="flex items-start gap-2 text-neutral-700">
-                        <BookOpenCheck className="mt-0.5 size-4 text-neutral-500" />
-                        <div>
-                          <dt className="text-xs text-neutral-500">Группа</dt>
-                          <dd className="font-medium text-neutral-900">
-                            {formatClassLabel(selectedChild.classes)}
-                          </dd>
-                        </div>
+                    </div>
+                    <div className="flex items-start gap-2 text-neutral-700">
+                      <BookOpenCheck className="mt-0.5 size-4 text-neutral-500" />
+                      <div>
+                        <dt className="text-xs text-neutral-500">Группа</dt>
+                        <dd className="font-medium text-neutral-900">
+                          {formatClassLabel(selectedChild.classes)}
+                        </dd>
                       </div>
-                      <div className="flex items-start gap-2 text-neutral-700">
-                        <CalendarDays className="mt-0.5 size-4 text-neutral-500" />
-                        <div>
-                          <dt className="text-xs text-neutral-500">
-                            Следующий урок
-                          </dt>
-                          <dd className="font-medium text-neutral-900">
-                            {nextLesson
-                              ? `${nextLesson.lessonTitle} · ${nextLesson.startsAt}`
-                              : "Ближайший урок пока не запланирован"}
-                          </dd>
-                        </div>
+                    </div>
+                    <div className="flex items-start gap-2 text-neutral-700">
+                      <CalendarDays className="mt-0.5 size-4 text-neutral-500" />
+                      <div>
+                        <dt className="text-xs text-neutral-500">
+                          Следующий урок
+                        </dt>
+                        <dd className="font-medium text-neutral-900">
+                          {nextLesson
+                            ? `${nextLesson.lessonTitle} · ${nextLesson.startsAt}`
+                            : "Ближайший урок пока не запланирован"}
+                        </dd>
                       </div>
-                    </dl>
+                    </div>
+                  </dl>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
+                    <div className="rounded-2xl bg-gradient-to-br from-sky-50 to-white p-3 ring-1 ring-sky-100">
+                      <p className="text-xs text-neutral-500">
+                        Ближайшие уроки
+                      </p>
+                      <p className="mt-1 text-2xl font-bold text-neutral-900">
+                        {Math.min(selectedLessons.length, 5)}
+                      </p>
+                    </div>
+                    <div className="rounded-2xl bg-gradient-to-br from-amber-50 to-white p-3 ring-1 ring-amber-100">
+                      <p className="text-xs text-neutral-500">Активные ДЗ</p>
+                      <p className="mt-1 text-2xl font-bold text-neutral-900">
+                        {selectedHomework.length}
+                      </p>
+                    </div>
+                    <div className="rounded-2xl bg-gradient-to-br from-violet-50 to-white p-3 ring-1 ring-violet-100">
+                      <p className="text-xs text-neutral-500">Сообщения</p>
+                      <p className="mt-1 text-2xl font-bold text-neutral-900">
+                        {selectedMessages.length}
+                      </p>
+                    </div>
                   </div>
 
-                  <div className="space-y-3">
-                    <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
-                      <div className="rounded-2xl bg-gradient-to-br from-sky-50 to-white p-3 ring-1 ring-sky-100">
-                        <p className="text-xs text-neutral-500">
-                          Ближайшие уроки
-                        </p>
-                        <p className="mt-1 text-2xl font-bold text-neutral-900">
-                          {Math.min(selectedLessons.length, 5)}
-                        </p>
-                      </div>
-                      <div className="rounded-2xl bg-gradient-to-br from-amber-50 to-white p-3 ring-1 ring-amber-100">
-                        <p className="text-xs text-neutral-500">Активные ДЗ</p>
-                        <p className="mt-1 text-2xl font-bold text-neutral-900">
-                          {selectedHomework.length}
-                        </p>
-                      </div>
-                      <div className="rounded-2xl bg-gradient-to-br from-violet-50 to-white p-3 ring-1 ring-violet-100">
-                        <p className="text-xs text-neutral-500">Сообщения</p>
-                        <p className="mt-1 text-2xl font-bold text-neutral-900">
-                          {selectedMessages.length}
-                        </p>
-                      </div>
+                  <div className="rounded-2xl border border-neutral-200/80 bg-neutral-50/70 p-3">
+                    <p className="text-xs font-semibold text-neutral-600">
+                      Статусы домашних заданий
+                    </p>
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {Object.entries(homeworkStatusDistribution).length ===
+                      0 ? (
+                        <span className="text-xs text-neutral-500">
+                          Пока нет назначенных заданий
+                        </span>
+                      ) : (
+                        Object.entries(homeworkStatusDistribution).map(
+                          ([status, count]) => (
+                            <span
+                              key={status}
+                              className={`rounded-full border px-2 py-0.5 text-[11px] font-medium ${getHomeworkStatusTone(status)}`}
+                            >
+                              {status}: {count}
+                            </span>
+                          ),
+                        )
+                      )}
                     </div>
+                  </div>
 
-                    <div className="rounded-2xl border border-neutral-200/80 bg-neutral-50/70 p-3">
-                      <p className="text-xs font-semibold text-neutral-600">
-                        Статусы домашних заданий
-                      </p>
-                      <div className="mt-2 flex flex-wrap gap-1.5">
-                        {Object.entries(homeworkStatusDistribution).length ===
-                        0 ? (
-                          <span className="text-xs text-neutral-500">
-                            Пока нет назначенных заданий
-                          </span>
-                        ) : (
-                          Object.entries(homeworkStatusDistribution).map(
-                            ([status, count]) => (
-                              <span
-                                key={status}
-                                className={`rounded-full border px-2 py-0.5 text-[11px] font-medium ${getHomeworkStatusTone(status)}`}
-                              >
-                                {status}: {count}
-                              </span>
-                            ),
-                          )
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="rounded-2xl border border-neutral-200/80 bg-white p-3 text-xs text-neutral-600">
-                      <p className="font-semibold text-neutral-700">
-                        Последний комментарий
-                      </p>
-                      <p className="mt-1 truncate">
-                        {latestMessage
-                          ? `${getAuthorRoleLabel(latestMessage.authorRole)}: ${latestMessage.body}`
-                          : "Сообщений пока нет"}
-                      </p>
-                    </div>
+                  <div className="rounded-2xl border border-neutral-200/80 bg-white p-3 text-xs text-neutral-600">
+                    <p className="font-semibold text-neutral-700">
+                      Последний комментарий
+                    </p>
+                    <p className="mt-1 truncate">
+                      {latestMessage
+                        ? `${getAuthorRoleLabel(latestMessage.authorRole)}: ${latestMessage.body}`
+                        : "Сообщений пока нет"}
+                    </p>
                   </div>
                 </div>
-              </button>
-            </SurfaceCard>
+              </div>
 
-            {isSummaryExpanded ? (
-              <div className="grid gap-3 xl:grid-cols-2">
+              <div className="mt-5 grid gap-3 xl:grid-cols-2">
                 <DashboardSection title="Ближайшие уроки">
                   <UpcomingLessons lessons={selectedLessons} />
                 </DashboardSection>
@@ -432,7 +422,7 @@ export function ParentDashboard({
                   <HomeworkList items={selectedHomework} />
                 </DashboardSection>
               </div>
-            ) : null}
+            </SurfaceCard>
           </div>
         ) : null}
       </div>
