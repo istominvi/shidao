@@ -1,12 +1,10 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import {
   AlertCircle,
   BookOpenCheck,
   CalendarDays,
-  ChevronRight,
   Clock3,
   UserRound,
 } from "lucide-react";
@@ -17,7 +15,6 @@ import {
 } from "@/components/dashboard/dashboard-section";
 import { TopNav } from "@/components/top-nav";
 import { SurfaceCard } from "@/components/ui/surface-card";
-import { toScheduledLessonRoute } from "@/lib/auth";
 
 type ParentContext = {
   studentId: string;
@@ -152,13 +149,6 @@ function UpcomingLessons({ lessons }: { lessons: ParentLesson[] }) {
               {lesson.statusLabel}
             </span>
           </div>
-          <Link
-            href={toScheduledLessonRoute(lesson.scheduledLessonId)}
-            className="mt-2 inline-flex items-center gap-1 rounded-lg border border-neutral-300 px-2.5 py-1 text-xs font-semibold text-neutral-800 hover:border-neutral-400"
-          >
-            Открыть урок
-            <ChevronRight className="size-3.5" />
-          </Link>
         </li>
       ))}
     </ul>
