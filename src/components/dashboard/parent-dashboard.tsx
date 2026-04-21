@@ -10,6 +10,7 @@ import {
   Clock3,
   UserRound,
 } from "lucide-react";
+import { AppPageHeader } from "@/components/app/page-header";
 import { DashboardShell } from "@/components/dashboard-shell";
 import {
   DashboardEmptyState,
@@ -278,9 +279,7 @@ export function ParentDashboard({
         </section>
       ) : selectedChild ? (
         <div className="space-y-4 md:space-y-5">
-          <h1 className="text-4xl font-black tracking-[-0.03em] text-neutral-950 md:text-5xl">
-            Кабинет родителя
-          </h1>
+          <AppPageHeader title="Кабинет родителя" />
           {childrenContexts.length > 1 ? (
             <div className="flex flex-wrap gap-2">
               {childrenContexts.map((child) => (
