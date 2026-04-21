@@ -34,22 +34,29 @@ export async function readSessionViewServer(): Promise<SessionView> {
     case "adult-without-profile": {
       const ctx = resolution.context;
       const teacherId = ctx.teacher?.id ?? null;
-      const schoolOptions =
-        teacherId && ctx.actorKind === "adult"
-          ? await listTeacherSchoolChoicesAdmin({
-              teacherId,
-              teacherFullName: ctx.teacher?.full_name ?? null,
-            })
-          : [];
-      const selectedSchool =
-        teacherId && ctx.actorKind === "adult"
-          ? await resolveTeacherSchoolSelectionAdmin({
-              userId: ctx.userId,
-              teacherId,
-              teacherFullName: ctx.teacher?.full_name ?? null,
-              preferredSchoolId: ctx.preferences?.last_selected_school_id ?? null,
-            })
-          : null;
+      let schoolOptions: Awaited<
+        ReturnType<typeof listTeacherSchoolChoicesAdmin>
+      > = [];
+      let selectedSchool: Awaited<
+        ReturnType<typeof resolveTeacherSchoolSelectionAdmin>
+      > | null = null;
+      if (teacherId && ctx.actorKind === "adult") {
+        try {
+          schoolOptions = await listTeacherSchoolChoicesAdmin({
+            teacherId,
+            teacherFullName: ctx.teacher?.full_name ?? null,
+          });
+          selectedSchool = await resolveTeacherSchoolSelectionAdmin({
+            userId: ctx.userId,
+            teacherId,
+            teacherFullName: ctx.teacher?.full_name ?? null,
+            preferredSchoolId: ctx.preferences?.last_selected_school_id ?? null,
+          });
+        } catch {
+          schoolOptions = [];
+          selectedSchool = null;
+        }
+      }
       return {
         kind: "adult",
         authenticated: true,
