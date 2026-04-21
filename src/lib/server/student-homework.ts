@@ -18,6 +18,7 @@ import {
   normalizeQuizSubmissionPayload,
   resolveHomeworkQuiz,
 } from "../homework/quiz";
+import { notifyHomeworkSubmitted } from "./notification-service";
 
 export type StudentHomeworkCard = {
   classId: string;
@@ -187,6 +188,7 @@ export async function submitStudentHomework(
     studentHomeworkAssignmentId: string;
     submissionText?: string;
     submissionPayload?: unknown;
+    actorUserId?: string | null;
   },
   deps: StudentHomeworkDeps = defaultDeps,
 ) {
@@ -204,7 +206,7 @@ export async function submitStudentHomework(
     ? await deps.getScheduledLessonById(scheduledAssignment.scheduledLessonId)
     : null;
 
-  if (!scheduledLesson) {
+  if (!scheduledLesson || !scheduledAssignment) {
     throw new Error("Не найден контекст занятия для домашнего задания.");
   }
 
@@ -215,13 +217,28 @@ export async function submitStudentHomework(
 
   const submittedAt = new Date().toISOString();
 
+  const notifyTeacher = async () => {
+    try {
+      await notifyHomeworkSubmitted({
+        actorUserId: input.actorUserId ?? null,
+        assignedTeacherId: scheduledAssignment.assignedByTeacherId,
+        scheduledLessonId: scheduledLesson.id,
+        studentHomeworkAssignmentId: input.studentHomeworkAssignmentId,
+        studentId: input.studentId,
+        href: `/lessons/${encodeURIComponent(scheduledLesson.id)}`,
+      });
+    } catch (error) {
+      console.warn("[notifications] notifyHomeworkSubmitted failed", error);
+    }
+  };
+
   if (definition.kind === "practice_text") {
     const normalized = `${input.submissionText ?? ""}`.trim();
     if (!normalized) {
       throw new Error("Добавьте текст ответа перед отправкой.");
     }
 
-    return deps.updateStudentHomeworkSubmission({
+    const updated = await deps.updateStudentHomeworkSubmission({
       studentHomeworkAssignmentId: input.studentHomeworkAssignmentId,
       status: "submitted",
       submissionText: normalized,
@@ -231,6 +248,8 @@ export async function submitStudentHomework(
       autoCheckedAt: null,
       submittedAt,
     });
+    await notifyTeacher();
+    return updated;
   }
 
   const quiz = resolveHomeworkQuiz(definition);
@@ -245,7 +264,7 @@ export async function submitStudentHomework(
 
   const grade = gradeQuizSingleChoice(quiz, payload);
 
-  return deps.updateStudentHomeworkSubmission({
+  const updated = await deps.updateStudentHomeworkSubmission({
     studentHomeworkAssignmentId: input.studentHomeworkAssignmentId,
     status: "submitted",
     submissionText: null,
@@ -258,4 +277,6 @@ export async function submitStudentHomework(
     autoCheckedAt: submittedAt,
     submittedAt,
   });
+  await notifyTeacher();
+  return updated;
 }

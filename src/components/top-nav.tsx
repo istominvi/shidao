@@ -12,6 +12,7 @@ import {
 } from "@/lib/navigation-contract";
 import { PRIMARY_NAV_CONFIG, type PrimaryNavConfig } from "@/lib/navigation/primary-nav";
 import { SiteHeader, type SiteHeaderNavItem } from "@/components/site-header";
+import { NotificationBell } from "@/components/notifications/notification-bell";
 
 function resolvePrimaryNavId(state: ReturnType<typeof useSessionView>["state"]): PrimaryNavConfig["id"] | null {
   if (state.kind === "student") return "student";
@@ -61,7 +62,12 @@ export function TopNav() {
           return null;
         }
 
-        return <SessionNavActions state={state} mobileNavItems={navItems} />;
+        return (
+          <div className="flex items-center gap-2">
+            <NotificationBell />
+            <SessionNavActions state={state} mobileNavItems={navItems} />
+          </div>
+        );
       case "guest-join":
         return (
           <Link

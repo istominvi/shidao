@@ -8,6 +8,7 @@ import {
   type LessonGroupMessage,
 } from "./lesson-group-chat-repository";
 import { loadParentLearningContextsByUser, assertTeacherAssignedToClassAdmin } from "./supabase-admin";
+import { notifyLessonGroupMessageCreated } from "./notification-service";
 
 const MESSAGE_MAX_LENGTH = 2000;
 
@@ -222,7 +223,7 @@ export async function sendLessonGroupChatMessage(input: {
       "Ученик";
 
     try {
-      return createLessonGroupMessageAdmin({
+      const message = await createLessonGroupMessageAdmin({
         conversationId: conversation.id,
         authorUserId: principal.userId,
         authorRole: "student",
@@ -231,6 +232,21 @@ export async function sendLessonGroupChatMessage(input: {
         authorName,
         body,
       });
+      try {
+        await notifyLessonGroupMessageCreated({
+          actorUserId: principal.userId,
+          actorRole: "student",
+          classId: writeAccess.classId,
+          scheduledLessonId: writeAccess.scheduledLesson.id,
+          messageId: message.id,
+          body: message.body,
+          studentName: authorName,
+          href: `/lessons/${encodeURIComponent(writeAccess.scheduledLesson.id)}`,
+        });
+      } catch (error) {
+        console.warn("[notifications] notifyLessonGroupMessageCreated(student) failed", error);
+      }
+      return message;
     } catch (error) {
       if (isLessonGroupChatSchemaMissingError(error)) {
         throw new Error(
@@ -245,7 +261,7 @@ export async function sendLessonGroupChatMessage(input: {
   const authorName = principal.teacherFullName || "Преподаватель";
 
   try {
-    return createLessonGroupMessageAdmin({
+    const message = await createLessonGroupMessageAdmin({
       conversationId: conversation.id,
       authorUserId: principal.userId,
       authorRole: "teacher",
@@ -254,6 +270,20 @@ export async function sendLessonGroupChatMessage(input: {
       authorName,
       body,
     });
+    try {
+      await notifyLessonGroupMessageCreated({
+        actorUserId: principal.userId,
+        actorRole: "teacher",
+        classId: writeAccess.classId,
+        scheduledLessonId: writeAccess.scheduledLesson.id,
+        messageId: message.id,
+        body: message.body,
+        href: `/lessons/${encodeURIComponent(writeAccess.scheduledLesson.id)}`,
+      });
+    } catch (error) {
+      console.warn("[notifications] notifyLessonGroupMessageCreated(teacher) failed", error);
+    }
+    return message;
   } catch (error) {
     if (isLessonGroupChatSchemaMissingError(error)) {
       throw new Error(

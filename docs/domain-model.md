@@ -33,6 +33,7 @@
 - `group_student_message`
 - `lesson_group_conversation`
 - `lesson_group_message`
+- `notification`
 
 Источник истины по таблицам и ограничениям: `supabase/schema/current-schema.sql`.
 

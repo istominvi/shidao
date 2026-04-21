@@ -7,6 +7,10 @@ import {
   type GroupStudentMessage,
 } from "./communication-repository";
 import { getScheduledHomeworkAssignmentByLessonIdAdmin } from "./homework-repository";
+import {
+  notifyStudentMessageCreated,
+  notifyTeacherMessageCreated,
+} from "./notification-service";
 
 export type CommunicationFilter = "all" | "lesson" | "homework" | "general";
 
@@ -143,7 +147,7 @@ export async function sendTeacherMessage(input: {
   }
 
   try {
-    return createConversationMessageAdmin({
+    const message = await createConversationMessageAdmin({
       conversationId: conversation.id,
       authorUserId: input.authorUserId,
       authorRole: "teacher",
@@ -152,6 +156,23 @@ export async function sendTeacherMessage(input: {
       scheduledLessonHomeworkAssignmentId: input.scheduledLessonHomeworkAssignmentId,
       topicKind: input.topicKind,
     });
+    try {
+      await notifyTeacherMessageCreated({
+        actorUserId: input.authorUserId,
+        classId: input.classId,
+        studentId: input.studentId,
+        body: normalized,
+        conversationId: conversation.id,
+        messageId: message.id,
+        scheduledLessonId: input.scheduledLessonId,
+        href: input.scheduledLessonId
+          ? `/lessons/${encodeURIComponent(input.scheduledLessonId)}`
+          : "/dashboard",
+      });
+    } catch (error) {
+      console.warn("[notifications] notifyTeacherMessageCreated failed", error);
+    }
+    return message;
   } catch (error) {
     if (isCommunicationSchemaMissingError(error)) {
       throw new Error("Коммуникация временно недоступна: примените миграции communication runtime layer.");
@@ -191,7 +212,7 @@ export async function sendStudentMessage(input: {
   }
 
   try {
-    return createConversationMessageAdmin({
+    const message = await createConversationMessageAdmin({
       conversationId: conversation.id,
       authorUserId: input.authorUserId,
       authorRole: "student",
@@ -200,6 +221,23 @@ export async function sendStudentMessage(input: {
       scheduledLessonHomeworkAssignmentId: input.scheduledLessonHomeworkAssignmentId,
       topicKind: input.topicKind,
     });
+    try {
+      await notifyStudentMessageCreated({
+        actorUserId: input.authorUserId,
+        classId: input.classId,
+        studentId: input.studentId,
+        body: normalized,
+        conversationId: conversation.id,
+        messageId: message.id,
+        scheduledLessonId: input.scheduledLessonId,
+        href: input.scheduledLessonId
+          ? `/lessons/${encodeURIComponent(input.scheduledLessonId)}`
+          : "/dashboard",
+      });
+    } catch (error) {
+      console.warn("[notifications] notifyStudentMessageCreated failed", error);
+    }
+    return message;
   } catch (error) {
     if (isCommunicationSchemaMissingError(error)) {
       throw new Error("Коммуникация временно недоступна: примените миграции communication runtime layer.");

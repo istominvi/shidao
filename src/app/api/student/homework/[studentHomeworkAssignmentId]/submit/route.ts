@@ -35,6 +35,7 @@ export async function POST(
       studentHomeworkAssignmentId,
       submissionText,
       submissionPayload,
+      actorUserId: resolution.context.userId,
     });
 
     revalidatePath(ROUTES.dashboard);
