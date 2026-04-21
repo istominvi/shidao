@@ -15,6 +15,10 @@ const studentPanelSource = readFileSync(
   "src/components/lessons/lesson-student-content-panel.tsx",
   "utf8",
 );
+const lessonOneActivitiesSource = readFileSync(
+  "src/components/lessons/lesson-one-student-activities.tsx",
+  "utf8",
+);
 
 test("learner lesson view supports dedicated preview role", () => {
   assert.equal(source.includes("ScheduledLessonPreviewView"), true);
@@ -84,6 +88,7 @@ test("student panel fullscreen button is functional and has no dead control", ()
   assert.equal(studentPanelSource.includes("shouldShowFullscreenButton"), true);
   assert.equal(studentPanelSource.includes("if (!container || !isFullscreenSupported) return;"), true);
   assert.equal(studentPanelSource.includes("catch {"), true);
+  assert.equal(studentPanelSource.includes("fullscreen={isFullscreen}"), true);
   assert.equal(studentPanelSource.includes("На весь экран"), true);
   assert.equal(studentPanelSource.includes("Выйти из полноэкранного режима"), true);
   assert.equal(studentPanelSource.includes('href="#"'), false);
@@ -103,4 +108,17 @@ test("scheduled learner view unlocks navigation in review mode", () => {
     ),
     true,
   );
+});
+
+test("shared learner deck uses dedicated lesson one student activities for canonical steps", () => {
+  assert.equal(sharedDeckSource.includes("LessonOneStudentActivities"), true);
+  assert.equal(sharedDeckSource.includes("isWorldAroundMeLessonOneCanonicalStep"), true);
+});
+
+test("lesson one step 1 student screen keeps teacher playlist behavior", () => {
+  assert.equal(lessonOneActivitiesSource.includes("lessonOneStepOneVideoPlaylist"), true);
+  assert.equal(lessonOneActivitiesSource.includes("onEnded={goToNextVideo}"), true);
+  assert.equal(lessonOneActivitiesSource.includes("Свинья"), true);
+  assert.equal(lessonOneActivitiesSource.includes("Кролик"), true);
+  assert.equal(lessonOneActivitiesSource.includes("Гуси"), true);
 });

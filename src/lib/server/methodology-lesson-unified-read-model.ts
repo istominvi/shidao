@@ -298,7 +298,7 @@ const worldAroundMeLessonOneCanonicalSteps: WorldAroundMeLessonOneCanonicalStep[
     order: 1,
     title: "Смотрим видео «farm animals»",
     teacherFlowOrder: 2,
-    studentInstruction: "Посмотри видео и повтори названия животных.",
+    studentInstruction: "Смотри, слушай и повторяй животных.",
     selectSection: (section) =>
       section.type === "media_asset" &&
       section.assetId === "video:farm-animals",
@@ -324,12 +324,12 @@ const worldAroundMeLessonOneCanonicalSteps: WorldAroundMeLessonOneCanonicalStep[
       };
     },
   },
-  { order: 6, title: "Счётные палочки", teacherFlowOrder: 7, studentInstruction: "Считай до пяти вместе с педагогом." },
+  { order: 6, title: "Счётные палочки", teacherFlowOrder: 7, studentInstruction: "Считай до пяти вместе с преподавателем." },
   { order: 7, title: "Приложение 1: указываем, считаем и называем животных", teacherFlowOrder: 8, studentInstruction: "Покажи, посчитай и назови животных в Приложении 1.", selectSection: (section) => section.sceneId === "scene-counting" && section.type === "count_board", explicitResourceIds: ["worksheet:appendix-1"] },
   { order: 8, title: "Учим глаголы 跑，跳", teacherFlowOrder: 9, studentInstruction: "Выполняй команды с 跑 и 跳 вместе с педагогом.", selectSection: (section) => section.sceneId === "scene-actions" && section.type === "action_cards" },
   { order: 9, title: "Команды с мягкими игрушками", teacherFlowOrder: 10, studentInstruction: "Беги или прыгай к нужной игрушке по команде педагога." },
   { order: 10, title: "Отрабатываем 跑，跳 на мягких игрушках", teacherFlowOrder: 11, studentInstruction: "Ответь, что делает животное." },
-  { order: 11, title: "Рабочая тетрадь, страницы 3–4", teacherFlowOrder: 12, studentInstruction: "Открой рабочую тетрадь на страницах 3–4 и назови животных.", selectSection: (section) => section.sceneId === "scene-materials" && section.type === "worksheet", explicitResourceIds: ["worksheet:workbook-pages-3-4"] },
+  { order: 11, title: "Рабочая тетрадь, страницы 3–4", teacherFlowOrder: 12, studentInstruction: "Раскрась животных и ответь: 这是什么？", selectSection: (section) => section.sceneId === "scene-materials" && section.type === "worksheet", explicitResourceIds: ["worksheet:workbook-pages-3-4"] },
   {
     order: 12,
     title: "Учим слово 农场",
@@ -355,9 +355,9 @@ const worldAroundMeLessonOneCanonicalSteps: WorldAroundMeLessonOneCanonicalStep[
     order: 14,
     title: "Поём песню «Животные на ферме»",
     teacherFlowOrder: 15,
-    studentInstruction: "Послушай и спой песню про животных фермы.",
+    studentInstruction: "Слушай, пой и показывай движения.",
     selectSection: (section) => section.sceneId === "scene-materials" && section.type === "resource_links",
-    explicitResourceIds: ["song:farm-animals"],
+    explicitResourceIds: ["song:farm-animals", "song-video:farm-animals-movement"],
     forcedScreenType: "song",
     transformSelectedSection: (section) => {
       if (section.type !== "resource_links") return section;

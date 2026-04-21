@@ -4,6 +4,10 @@ import { useMemo, useState } from "react";
 import Image from "next/image";
 import { BookOpen, CirclePlay, ListChecks, Music2, Sparkles } from "lucide-react";
 import { Chip } from "@/components/ui/chip";
+import {
+  isWorldAroundMeLessonOneCanonicalStep,
+  LessonOneStudentActivities,
+} from "@/components/lessons/lesson-one-student-activities";
 import type {
   MethodologyLessonStudentContent,
   MethodologyLessonStudentContentSection,
@@ -18,6 +22,7 @@ type Props = {
   unavailableReason: "schema_missing" | "invalid_payload" | "load_failed" | null;
   assetsById: Record<string, ReusableAsset>;
   compact?: boolean;
+  fullscreen?: boolean;
   mode?: "teacher_preview" | "student_live_locked" | "student_review";
   controlledStepId?: string;
   onStepChange?: (stepId: string) => void;
@@ -618,6 +623,7 @@ export function LessonLearnerContentDeck({
   unavailableReason,
   assetsById,
   compact = false,
+  fullscreen = false,
   mode = "teacher_preview",
   controlledStepId,
   onStepChange,
@@ -637,6 +643,7 @@ export function LessonLearnerContentDeck({
   if (!currentStep) return <EmptyState reason={unavailableReason} />;
   const sections = currentStep.student.payload?.sections ?? [];
   const main = sections[0];
+  const useLessonOneSpecializedView = isWorldAroundMeLessonOneCanonicalStep(currentStep.id);
 
   const moveToStep = (nextIndex: number) => {
     const next = resolvedSteps[nextIndex];
@@ -650,7 +657,10 @@ export function LessonLearnerContentDeck({
   const showReviewBanner = mode === "student_review";
 
   return (
-    <section className="space-y-4" aria-label="Экран ученика">
+    <section
+      className={classNames("space-y-4", fullscreen ? "flex h-full min-h-0 flex-col" : "")}
+      aria-label="Экран ученика"
+    >
       {showLiveLockedBanner ? (
         <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
           <p className="text-sm font-semibold text-amber-900">Урок ведёт преподаватель</p>
@@ -663,7 +673,14 @@ export function LessonLearnerContentDeck({
           <p className="mt-1 text-sm text-sky-900/90">Можно пройти шаги ещё раз перед домашним заданием.</p>
         </div>
       ) : null}
-      <article className={classNames("rounded-3xl border p-5 md:p-6", toneClass(main?.tone), main?.layout === "hero" ? "shadow-[0_14px_30px_rgba(15,23,42,0.08)]" : "")}>
+      <article
+        className={classNames(
+          "rounded-3xl border p-5 md:p-6",
+          toneClass(main?.tone),
+          main?.layout === "hero" ? "shadow-[0_14px_30px_rgba(15,23,42,0.08)]" : "",
+          fullscreen ? "flex min-h-0 flex-1 flex-col overflow-hidden p-4 md:p-5" : "",
+        )}
+      >
         <div className="mb-2 flex items-center justify-between gap-2 text-xs font-semibold uppercase tracking-[0.1em] text-neutral-500">
           <span>Шаг {currentStepIndex + 1} из {resolvedSteps.length}</span>
           {canNavigate ? (
@@ -694,17 +711,26 @@ export function LessonLearnerContentDeck({
         <h3 className={classNames("font-semibold text-neutral-900", compact ? "text-2xl" : "text-3xl")}>{currentStep.student.title}</h3>
         {currentStep.student.instruction ? <p className="mt-2 text-base text-neutral-700">{currentStep.student.instruction}</p> : null}
 
-        {main && (main.subtitle || main.illustrationSrc) ? <SceneHeader section={main} compact={compact} hideTitle /> : null}
-        {sections.length ? sections.map((section, index) => (
-          <div key={`${currentStep.id}-${section.type}-${section.title}-${index}`}>{renderSection(section, assetsById)}</div>
-        )) : (
-          <div className="mt-4 rounded-2xl border border-dashed border-neutral-300 bg-neutral-50 p-5 text-sm text-neutral-700">
-            <p className="text-base font-semibold text-neutral-900">Слушай преподавателя</p>
-            {currentStep.student.instruction ? <p className="mt-2">{currentStep.student.instruction}</p> : null}
-            <p className="mt-2">Сейчас выполняем задание вместе.</p>
-          </div>
-        )}
-        <StepResources step={currentStep} sections={sections} assetsById={assetsById} />
+        <div className={classNames(fullscreen ? "min-h-0 flex-1" : "")}>
+          {main && (main.subtitle || main.illustrationSrc) ? <SceneHeader section={main} compact={compact} hideTitle /> : null}
+          {useLessonOneSpecializedView ? (
+            <LessonOneStudentActivities
+              step={currentStep}
+              assetsById={assetsById}
+              sections={sections}
+              fullscreen={fullscreen}
+            />
+          ) : sections.length ? sections.map((section, index) => (
+            <div key={`${currentStep.id}-${section.type}-${section.title}-${index}`}>{renderSection(section, assetsById)}</div>
+          )) : (
+            <div className="mt-4 rounded-2xl border border-dashed border-neutral-300 bg-neutral-50 p-5 text-sm text-neutral-700">
+              <p className="text-base font-semibold text-neutral-900">Слушай преподавателя</p>
+              {currentStep.student.instruction ? <p className="mt-2">{currentStep.student.instruction}</p> : null}
+              <p className="mt-2">Сейчас выполняем задание вместе.</p>
+            </div>
+          )}
+          {useLessonOneSpecializedView ? null : <StepResources step={currentStep} sections={sections} assetsById={assetsById} />}
+        </div>
       </article>
     </section>
   );
