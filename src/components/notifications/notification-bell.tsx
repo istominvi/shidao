@@ -108,7 +108,7 @@ export function NotificationBell() {
       <button
         type="button"
         onClick={() => setOpen((prev) => !prev)}
-        className="relative inline-flex size-9 items-center justify-center rounded-full border border-black/10 bg-white text-neutral-700 hover:bg-neutral-50"
+        className="nav-user-trigger relative inline-flex items-center justify-center px-2.5 text-neutral-900"
         aria-label="Уведомления"
       >
         <Bell size={18} />
