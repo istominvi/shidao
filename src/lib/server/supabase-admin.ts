@@ -8,6 +8,7 @@ import {
 import { getSupabasePublicConfig } from "@/lib/server/auth-config";
 import { logger } from "@/lib/server/logger";
 import { resolvePostLoginRedirectForContext } from "@/lib/server/post-login-redirect";
+import { pickTeacherPersonalSchoolMembership } from "@/lib/server/teacher-personal-school";
 
 type Json = Record<string, unknown>;
 
@@ -374,6 +375,7 @@ async function ensureTeacherPersonalSchoolAdmin(input: {
   fullName: string | null;
 }): Promise<{ schoolId: string; schoolName: string }> {
   let memberships: Array<{
+    id: string;
     school_id: string;
     role: "owner" | "teacher";
     school: { id: string; name: string | null; kind: string | null } | null;
@@ -381,12 +383,13 @@ async function ensureTeacherPersonalSchoolAdmin(input: {
   try {
     memberships = await request<
     Array<{
+      id: string;
       school_id: string;
       role: "owner" | "teacher";
       school: { id: string; name: string | null; kind: string | null } | null;
     }>
   >(
-    `/rest/v1/school_teacher?select=school_id,role,school:school_id(id,name,kind)&teacher_id=eq.${input.teacherId}&order=created_at.asc`,
+    `/rest/v1/school_teacher?select=id,school_id,role,school:school_id(id,name,kind)&teacher_id=eq.${input.teacherId}&order=created_at.asc`,
     "GET",
     { admin: true },
   );
@@ -401,12 +404,13 @@ async function ensureTeacherPersonalSchoolAdmin(input: {
     try {
       const legacyMemberships = await request<
         Array<{
+          id: string;
           school_id: string;
           role: "owner" | "teacher";
           school: { id: string; name: string | null } | null;
         }>
       >(
-        `/rest/v1/school_teacher?select=school_id,role,school:school_id(id,name)&teacher_id=eq.${input.teacherId}&order=created_at.asc`,
+        `/rest/v1/school_teacher?select=id,school_id,role,school:school_id(id,name)&teacher_id=eq.${input.teacherId}&order=created_at.asc`,
         "GET",
         { admin: true },
       );
@@ -419,13 +423,29 @@ async function ensureTeacherPersonalSchoolAdmin(input: {
     }
   }
 
-  const personalMembership = memberships.find(
-    (membership) => membership.school?.kind === "personal",
+  const personalMembership = pickTeacherPersonalSchoolMembership(
+    memberships.map((membership) => ({
+      id: membership.id,
+      schoolId: membership.school_id,
+      role: membership.role,
+      schoolKind:
+        membership.school?.kind === "personal" || membership.school?.kind === "organization"
+          ? membership.school.kind
+          : null,
+      schoolName: membership.school?.name ?? null,
+    })),
   );
-  if (personalMembership?.school?.id) {
+  if (personalMembership?.schoolId) {
+    if (personalMembership.role !== "owner") {
+      await request(`/rest/v1/school_teacher?id=eq.${personalMembership.id}`, "PATCH", {
+        admin: true,
+        payload: { role: "owner" },
+        allowEmpty: true,
+      });
+    }
     return {
-      schoolId: personalMembership.school.id,
-      schoolName: personalMembership.school.name?.trim() || "Личное пространство",
+      schoolId: personalMembership.schoolId,
+      schoolName: personalMembership.schoolName?.trim() || "Личное пространство",
     };
   }
 
@@ -1281,99 +1301,12 @@ async function upsertTeacherProfileFallback(
     throw new Error("Не удалось определить teacher.id после upsert.");
   }
 
-  let schoolId = "";
-  const ownerMembership = await request<Array<{ school_id: string }>>(
-    `/rest/v1/school_teacher?select=school_id&teacher_id=eq.${teacherId}&role=eq.owner&limit=1`,
-    "GET",
-    { admin: true },
-  );
-  schoolId = ownerMembership[0]?.school_id ?? "";
+  const personalSchool = await ensureTeacherPersonalSchoolAdmin({
+    teacherId,
+    fullName,
+  });
 
-  if (!schoolId) {
-    const anyMembership = await request<Array<{ school_id: string }>>(
-      `/rest/v1/school_teacher?select=school_id&teacher_id=eq.${teacherId}&order=created_at.asc&limit=1`,
-      "GET",
-      { admin: true },
-    );
-    schoolId = anyMembership[0]?.school_id ?? "";
-  }
-
-  if (!schoolId) {
-    const baseSlug = buildTeacherSchoolSlugBase(teacherId, fullName);
-    const schoolName = `${fullName?.trim() || "Преподаватель"} — личное`;
-    for (let attempt = 0; attempt < 25; attempt += 1) {
-      const slug = attempt === 0 ? baseSlug : `${baseSlug}-${attempt + 1}`;
-      try {
-        const schoolRows = await request<Array<{ id: string }>>(
-          "/rest/v1/school",
-          "POST",
-          {
-            admin: true,
-            payload: {
-              name: schoolName,
-              slug,
-              kind: "personal",
-              owner_teacher_id: teacherId,
-              teacher_limit: 1,
-              plan_code: "demo",
-              subscription_status: "active",
-            },
-          },
-        );
-        schoolId = schoolRows[0]?.id ?? "";
-        break;
-      } catch (error) {
-        const message =
-          error instanceof Error ? error.message : "Unknown school insert error";
-        if (!isUniqueViolationError(message)) {
-          throw error;
-        }
-      }
-    }
-  }
-
-  if (!schoolId) {
-    throw new Error("Не удалось создать или определить school.id для teacher onboarding.");
-  }
-
-  const schoolTeacherRows = await request<Array<{ id: string; role: string }>>(
-    `/rest/v1/school_teacher?select=id,role&school_id=eq.${schoolId}&teacher_id=eq.${teacherId}&limit=1`,
-    "GET",
-    { admin: true },
-  );
-  const schoolTeacherRow = schoolTeacherRows[0];
-  if (schoolTeacherRow) {
-    if (schoolTeacherRow.role !== "owner") {
-      await request(
-        `/rest/v1/school_teacher?id=eq.${schoolTeacherRow.id}`,
-        "PATCH",
-        {
-          admin: true,
-          payload: { role: "owner" },
-          allowEmpty: true,
-        },
-      );
-    }
-  } else {
-    try {
-      await request("/rest/v1/school_teacher", "POST", {
-        admin: true,
-        payload: {
-          school_id: schoolId,
-          teacher_id: teacherId,
-          role: "owner",
-        },
-      });
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Unknown school_teacher insert error";
-      if (!isUniqueViolationError(message)) {
-        throw error;
-      }
-    }
-  }
-
-  return [{ teacher_id: teacherId, school_id: schoolId, class_id: null }];
+  return [{ teacher_id: teacherId, school_id: personalSchool.schoolId, class_id: null }];
 }
 
 export async function loadParentLearningContextsByUser(userId: string) {
@@ -1502,6 +1435,28 @@ export async function assertTeacherAssignedToClassAdmin(
       "Только преподаватель, назначенный в этот класс, может выполнять действие.",
     );
   }
+}
+
+export async function assertTeacherCanUseClassInActiveSchoolAdmin(input: {
+  teacherId: string;
+  classId: string;
+  activeSchoolId: string;
+}) {
+  const classRows = await request<Array<{ id: string; school_id: string | null }>>(
+    `/rest/v1/class?select=id,school_id&id=eq.${input.classId}&limit=1`,
+    "GET",
+    { admin: true },
+  );
+  const classRow = classRows[0];
+  if (!classRow?.id) {
+    throw new Error("Группа не найдена.");
+  }
+
+  if (!classRow.school_id || classRow.school_id !== input.activeSchoolId) {
+    throw new Error("Эта группа недоступна в текущем режиме школы.");
+  }
+
+  await assertTeacherAssignedToClassAdmin(input.teacherId, input.classId);
 }
 
 

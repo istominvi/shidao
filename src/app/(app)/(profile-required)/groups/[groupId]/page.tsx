@@ -19,12 +19,13 @@ import {
   parseGroupScopedLessonFormData,
 } from "@/lib/server/teacher-groups";
 import {
-  assertTeacherAssignedToClassAdmin,
+  assertTeacherCanUseClassInActiveSchoolAdmin,
   attachStudentToClassAsAdmin,
   createStudentAuthUser,
   detachStudentFromClassAsAdmin,
   insertStudentRow,
   resolveOptionalParentLinkByEmailAdmin,
+  resolveTeacherSchoolSelectionAdmin,
   updateStudentParentLinkAsAdmin,
   updateStudentProfileAsAdmin,
 } from "@/lib/server/supabase-admin";
@@ -48,13 +49,26 @@ export default async function TeacherGroupPage({
 }) {
   const resolution = await resolveAccessPolicy();
 
-  if (!canAccessTeacherGroups(resolution)) {
+  if (
+    resolution.status !== "adult-with-profile" ||
+    !canAccessTeacherGroups(resolution)
+  ) {
     redirect(ROUTES.dashboard);
   }
 
   const { teacherId } = assertTeacherGroupsAccess(resolution);
   const { groupId } = await params;
-  const readModel = await getTeacherGroupOverview({ teacherId, groupId });
+  const schoolSelection = await resolveTeacherSchoolSelectionAdmin({
+    userId: resolution.context.userId,
+    teacherId,
+    teacherFullName: resolution.context.teacher?.full_name ?? null,
+    preferredSchoolId: resolution.context.preferences?.last_selected_school_id ?? null,
+  });
+  const activeSchoolId =
+    schoolSelection.mode === "organization"
+      ? schoolSelection.selectedSchoolId
+      : schoolSelection.personalSchoolId;
+  const readModel = await getTeacherGroupOverview({ teacherId, groupId, activeSchoolId });
 
   if (!readModel) {
     notFound();
@@ -65,11 +79,28 @@ export default async function TeacherGroupPage({
 
     try {
       const actionResolution = await resolveAccessPolicy();
+      if (
+        actionResolution.status !== "adult-with-profile" ||
+        !canAccessTeacherGroups(actionResolution)
+      ) {
+        redirect(ROUTES.dashboard);
+      }
       const { teacherId: actionTeacherId } = assertTeacherGroupsAccess(actionResolution);
+      const actionSchoolSelection = await resolveTeacherSchoolSelectionAdmin({
+        userId: actionResolution.context.userId,
+        teacherId: actionTeacherId,
+        teacherFullName: actionResolution.context.teacher?.full_name ?? null,
+        preferredSchoolId: actionResolution.context.preferences?.last_selected_school_id ?? null,
+      });
+      const actionActiveSchoolId =
+        actionSchoolSelection.mode === "organization"
+          ? actionSchoolSelection.selectedSchoolId
+          : actionSchoolSelection.personalSchoolId;
       const payload = parseGroupScopedLessonFormData(formData);
       const lesson = await createTeacherGroupScopedLesson({
         teacherId: actionTeacherId,
         groupId,
+        activeSchoolId: actionActiveSchoolId,
         payload,
       });
 
@@ -94,8 +125,27 @@ export default async function TeacherGroupPage({
 
     try {
       const actionResolution = await resolveAccessPolicy();
+      if (
+        actionResolution.status !== "adult-with-profile" ||
+        !canAccessTeacherGroups(actionResolution)
+      ) {
+        redirect(ROUTES.dashboard);
+      }
       const { teacherId: actionTeacherId } = assertTeacherGroupsAccess(actionResolution);
-      await assertTeacherAssignedToClassAdmin(actionTeacherId, groupId);
+      const actionSchoolSelection = await resolveTeacherSchoolSelectionAdmin({
+        userId: actionResolution.context.userId,
+        teacherId: actionTeacherId,
+        teacherFullName: actionResolution.context.teacher?.full_name ?? null,
+        preferredSchoolId: actionResolution.context.preferences?.last_selected_school_id ?? null,
+      });
+      await assertTeacherCanUseClassInActiveSchoolAdmin({
+        teacherId: actionTeacherId,
+        classId: groupId,
+        activeSchoolId:
+          actionSchoolSelection.mode === "organization"
+            ? actionSchoolSelection.selectedSchoolId
+            : actionSchoolSelection.personalSchoolId,
+      });
 
       const login = String(formData.get("login") ?? "")
         .trim()
@@ -161,8 +211,27 @@ export default async function TeacherGroupPage({
 
     try {
       const actionResolution = await resolveAccessPolicy();
+      if (
+        actionResolution.status !== "adult-with-profile" ||
+        !canAccessTeacherGroups(actionResolution)
+      ) {
+        redirect(ROUTES.dashboard);
+      }
       const { teacherId: actionTeacherId } = assertTeacherGroupsAccess(actionResolution);
-      await assertTeacherAssignedToClassAdmin(actionTeacherId, groupId);
+      const actionSchoolSelection = await resolveTeacherSchoolSelectionAdmin({
+        userId: actionResolution.context.userId,
+        teacherId: actionTeacherId,
+        teacherFullName: actionResolution.context.teacher?.full_name ?? null,
+        preferredSchoolId: actionResolution.context.preferences?.last_selected_school_id ?? null,
+      });
+      await assertTeacherCanUseClassInActiveSchoolAdmin({
+        teacherId: actionTeacherId,
+        classId: groupId,
+        activeSchoolId:
+          actionSchoolSelection.mode === "organization"
+            ? actionSchoolSelection.selectedSchoolId
+            : actionSchoolSelection.personalSchoolId,
+      });
       const studentId = String(formData.get("studentId") ?? "").trim();
       const login = String(formData.get("login") ?? "").trim().toLowerCase();
       const fullName = String(formData.get("fullName") ?? "").trim();
@@ -241,8 +310,27 @@ export default async function TeacherGroupPage({
 
     try {
       const actionResolution = await resolveAccessPolicy();
+      if (
+        actionResolution.status !== "adult-with-profile" ||
+        !canAccessTeacherGroups(actionResolution)
+      ) {
+        redirect(ROUTES.dashboard);
+      }
       const { teacherId: actionTeacherId } = assertTeacherGroupsAccess(actionResolution);
-      await assertTeacherAssignedToClassAdmin(actionTeacherId, groupId);
+      const actionSchoolSelection = await resolveTeacherSchoolSelectionAdmin({
+        userId: actionResolution.context.userId,
+        teacherId: actionTeacherId,
+        teacherFullName: actionResolution.context.teacher?.full_name ?? null,
+        preferredSchoolId: actionResolution.context.preferences?.last_selected_school_id ?? null,
+      });
+      await assertTeacherCanUseClassInActiveSchoolAdmin({
+        teacherId: actionTeacherId,
+        classId: groupId,
+        activeSchoolId:
+          actionSchoolSelection.mode === "organization"
+            ? actionSchoolSelection.selectedSchoolId
+            : actionSchoolSelection.personalSchoolId,
+      });
       const studentId = String(formData.get("studentId") ?? "").trim();
       if (!studentId) {
         throw new Error("Не указан ученик для удаления.");
