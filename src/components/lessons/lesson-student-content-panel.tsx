@@ -84,7 +84,7 @@ export function LessonStudentContentPanel({
       ref={containerRef}
       className={classNames(
         "rounded-2xl",
-        isFullscreen ? "bg-neutral-100 p-4 md:p-6" : "",
+        isFullscreen ? "h-screen overflow-auto bg-neutral-100 p-3 md:p-6" : "",
       )}
     >
       <LessonLearnerContentDeck

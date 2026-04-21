@@ -56,18 +56,22 @@ export function LessonOneStudentActivities({ step, assetsById, sections: _sectio
   if (stepNum === 1) {
     const videoAsset = assetsById["video:farm-animals"];
     const video = assetUrl(videoAsset);
-    const presentation = assetsById["presentation:world-around-me-lesson-1"];
-    const slide = Array.isArray(presentation?.metadata?.slideImageRefs)
-      ? presentation?.metadata?.slideImageRefs.find((v): v is string => typeof v === "string")
-      : null;
     return (
-      <div className={baseCard}>
+      <div className={classNames(baseCard, "flex flex-col") }>
         <p className="text-sm text-neutral-700">Смотри, слушай и повторяй животных.</p>
-        {video && isVideo(video) ? <video controls preload="metadata" className="mt-3 w-full rounded-xl border border-sky-200 bg-black/90"><source src={video} /></video> : <p className="mt-3 text-sm text-neutral-600">Видео покажет преподаватель.</p>}
-        {slide ? <div className="mt-4 rounded-xl border border-sky-200 bg-sky-50 p-3"><p className="text-xs font-semibold uppercase tracking-[0.1em] text-sky-800">Презентация урока (только просмотр)</p><Image src={slide} alt="Презентация урока" width={1200} height={675} className="mt-2 h-auto w-full rounded-lg object-contain" /></div> : null}
+        {video && isVideo(video) ? (
+          <div className="mt-3 flex min-h-0 flex-1 items-center justify-center overflow-hidden rounded-xl border border-sky-200 bg-black/90 p-1">
+            <video controls preload="metadata" className="max-h-[60vh] w-full rounded-lg object-contain">
+              <source src={video} />
+            </video>
+          </div>
+        ) : (
+          <p className="mt-3 text-sm text-neutral-600">Видео покажет преподаватель.</p>
+        )}
       </div>
     );
   }
+
 
   if (stepNum === 2) {
     const picks = ["小龙", "小美", "我"] as const;
