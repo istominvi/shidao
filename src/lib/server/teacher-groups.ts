@@ -83,6 +83,8 @@ type TeacherGroupsDeps = {
   createScheduledLesson: typeof createScheduledLessonAdmin;
   createClassForTeacher: (input: {
     teacherId: string;
+    userId: string;
+    teacherFullName: string | null;
     name: string;
     methodologyId: string;
   }) => Promise<{ classId: string }>;
@@ -105,6 +107,8 @@ async function assertTeacherAssignedToClassAdminDefault(
 
 async function createClassForTeacherAdminDefault(input: {
   teacherId: string;
+  userId: string;
+  teacherFullName: string | null;
   name: string;
   methodologyId: string;
 }) {
@@ -364,6 +368,8 @@ async function buildTeacherGroupsSnapshot(
 
 export async function createTeacherGroup(input: {
   teacherId: string;
+  userId: string;
+  teacherFullName: string | null;
   name: string;
   methodologyId: string;
 }, deps: TeacherGroupsDeps = defaultDeps) {
@@ -377,6 +383,8 @@ export async function createTeacherGroup(input: {
   }
   return deps.createClassForTeacher({
     teacherId: input.teacherId,
+    userId: input.userId,
+    teacherFullName: input.teacherFullName,
     name,
     methodologyId,
   });

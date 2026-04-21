@@ -59,8 +59,8 @@ test("teacher groups access allows only teacher profile", () => {
 test("group models use explicit methodology assignment and honest progress", async () => {
   const deps = {
     listTeacherClasses: async () => [
-      { id: "class-1", name: "Лисички 5-6", methodologyId: "m-1", methodologyTitle: "Мир вокруг" },
-      { id: "class-2", name: "Драконы", methodologyId: null, methodologyTitle: null },
+      { id: "class-1", schoolId: "school-personal", name: "Лисички 5-6", methodologyId: "m-1", methodologyTitle: "Мир вокруг" },
+      { id: "class-2", schoolId: "school-personal", name: "Драконы", methodologyId: null, methodologyTitle: null },
     ],
     listStudentsForClasses: async () => ({
       "class-1": [
@@ -128,7 +128,7 @@ test("group models use explicit methodology assignment and honest progress", asy
 
 test("group creation requires methodology and scheduling validates assigned methodology", async () => {
   const created = await createTeacherGroup(
-    { teacherId: "t-1", name: "Лисички", methodologyId: "m-2" },
+    { teacherId: "t-1", userId: "u-1", teacherFullName: "Teacher One", name: "Лисички", methodologyId: "m-2" },
     {
       listTeacherClasses: async () => [],
       listStudentsForClasses: async () => ({}),
@@ -148,7 +148,7 @@ test("group creation requires methodology and scheduling validates assigned meth
   await assert.rejects(
     () =>
       createTeacherGroup(
-        { teacherId: "t-1", name: "Без методики", methodologyId: "" },
+        { teacherId: "t-1", userId: "u-1", teacherFullName: "Teacher One", name: "Без методики", methodologyId: "" },
         {
           listTeacherClasses: async () => [],
           listStudentsForClasses: async () => ({}),
@@ -181,7 +181,7 @@ test("group creation requires methodology and scheduling validates assigned meth
         },
         {
           listTeacherClasses: async () => [
-            { id: "class-1", name: "Лисички", methodologyId: "m-1", methodologyTitle: "Мир" },
+            { id: "class-1", schoolId: "school-personal", name: "Лисички", methodologyId: "m-1", methodologyTitle: "Мир" },
           ],
           listStudentsForClasses: async () => ({}),
           listScheduledLessonsForClasses: async () => [],

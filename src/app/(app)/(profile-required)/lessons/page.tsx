@@ -7,6 +7,7 @@ import { TopNav } from "@/components/top-nav";
 import { ROUTES, toLessonWorkspaceRoute } from "@/lib/auth";
 import { resolveAccessPolicy } from "@/lib/server/access-policy";
 import { getStudentLessonsHubReadModel } from "@/lib/server/student-schedule";
+import { resolveTeacherSchoolSelectionAdmin } from "@/lib/server/supabase-admin";
 import {
   assertTeacherLessonsHubMutationAccess,
   canAccessTeacherLessonsHub,
@@ -77,6 +78,17 @@ export default async function LessonsPage({
   }
 
   const { teacherId } = assertTeacherLessonsHubMutationAccess(accessResolution);
+  const schoolSelection = await resolveTeacherSchoolSelectionAdmin({
+    userId: accessResolution.context.userId,
+    teacherId,
+    teacherFullName: accessResolution.context.teacher?.full_name ?? null,
+    preferredSchoolId:
+      accessResolution.context.preferences?.last_selected_school_id ?? null,
+  });
+  const activeSchoolId =
+    schoolSelection.mode === "organization"
+      ? schoolSelection.selectedSchoolId
+      : schoolSelection.personalSchoolId;
 
   async function createLessonAction(formData: FormData) {
     "use server";
@@ -106,7 +118,7 @@ export default async function LessonsPage({
     }
   }
 
-  const hub = await getTeacherLessonsHub({ teacherId });
+  const hub = await getTeacherLessonsHub({ teacherId, activeSchoolId });
   const query = await searchParams;
   const defaultDate = hub.schedule.defaultDateIso;
 

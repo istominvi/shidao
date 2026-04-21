@@ -54,6 +54,23 @@ function isUniqueViolationError(message: string) {
   );
 }
 
+function isMissingSchoolColumnsError(message: string) {
+  const normalized = message.toLowerCase();
+  const mentionsSchoolColumn =
+    normalized.includes("school") &&
+    (normalized.includes("kind") ||
+      normalized.includes("teacher_limit") ||
+      normalized.includes("owner_teacher_id") ||
+      normalized.includes("plan_code") ||
+      normalized.includes("subscription_status"));
+  return (
+    mentionsSchoolColumn &&
+    (normalized.includes("does not exist") ||
+      normalized.includes("schema cache") ||
+      normalized.includes("column"))
+  );
+}
+
 function buildTeacherSchoolSlugBase(teacherId: string, fullName: string | null) {
   const seed = `${fullName?.trim() || "teacher"}-${teacherId.slice(0, 8)}`;
   const slug = seed
@@ -62,6 +79,31 @@ function buildTeacherSchoolSlugBase(teacherId: string, fullName: string | null) 
     .replace(/^-+|-+$/g, "");
   return slug || `school-${teacherId.slice(0, 8)}`;
 }
+
+export type TeacherSchoolChoice = {
+  id: string;
+  name: string;
+  kind: "personal" | "organization";
+  role: "owner" | "teacher";
+  teacherLimit: number;
+  teacherCount: number;
+};
+
+export type TeacherSchoolSelection =
+  | {
+      mode: "personal";
+      personalSchoolId: string;
+      personalSchoolName: string;
+      selectedSchoolId: null;
+      selectedSchoolName: null;
+    }
+  | {
+      mode: "organization";
+      personalSchoolId: string;
+      personalSchoolName: string;
+      selectedSchoolId: string;
+      selectedSchoolName: string;
+    };
 
 function redactPayload(payload: Json | undefined) {
   if (!payload) return payload;
@@ -296,6 +338,302 @@ export async function setLastActiveProfile(
     payload: { last_active_profile: profile },
     allowEmpty: true,
   });
+}
+
+export async function setLastSelectedSchool(
+  userId: string,
+  schoolId: string | null,
+) {
+  try {
+    await request("/rest/v1/rpc/set_last_selected_school", "POST", {
+      admin: true,
+      payload: { p_user_id: userId, p_school_id: schoolId },
+      allowEmpty: true,
+    });
+    return;
+  } catch (error) {
+    const message =
+      error instanceof Error
+        ? error.message
+        : "Unknown set_last_selected_school error";
+    if (!isFunctionMissingError(message)) {
+      throw error;
+    }
+  }
+
+  await ensureUserPreference(userId);
+  await request(`/rest/v1/user_preference?user_id=eq.${userId}`, "PATCH", {
+    admin: true,
+    payload: { last_selected_school_id: schoolId },
+    allowEmpty: true,
+  });
+}
+
+async function ensureTeacherPersonalSchoolAdmin(input: {
+  teacherId: string;
+  fullName: string | null;
+}): Promise<{ schoolId: string; schoolName: string }> {
+  let memberships: Array<{
+    school_id: string;
+    role: "owner" | "teacher";
+    school: { id: string; name: string | null; kind: string | null } | null;
+  }> = [];
+  try {
+    memberships = await request<
+    Array<{
+      school_id: string;
+      role: "owner" | "teacher";
+      school: { id: string; name: string | null; kind: string | null } | null;
+    }>
+  >(
+    `/rest/v1/school_teacher?select=school_id,role,school:school_id(id,name,kind)&teacher_id=eq.${input.teacherId}&order=created_at.asc`,
+    "GET",
+    { admin: true },
+  );
+  } catch {
+    memberships = [];
+  }
+  if (!Array.isArray(memberships)) {
+    memberships = [];
+  }
+
+  if (memberships.length === 0) {
+    try {
+      const legacyMemberships = await request<
+        Array<{
+          school_id: string;
+          role: "owner" | "teacher";
+          school: { id: string; name: string | null } | null;
+        }>
+      >(
+        `/rest/v1/school_teacher?select=school_id,role,school:school_id(id,name)&teacher_id=eq.${input.teacherId}&order=created_at.asc`,
+        "GET",
+        { admin: true },
+      );
+      memberships = legacyMemberships.map((item) => ({
+        ...item,
+        school: item.school ? { ...item.school, kind: null } : null,
+      }));
+    } catch {
+      // no-op, fallback to create
+    }
+  }
+
+  const personalMembership = memberships.find(
+    (membership) => membership.school?.kind === "personal",
+  );
+  if (personalMembership?.school?.id) {
+    return {
+      schoolId: personalMembership.school.id,
+      schoolName: personalMembership.school.name?.trim() || "Личное пространство",
+    };
+  }
+
+  const baseSlug = buildTeacherSchoolSlugBase(input.teacherId, input.fullName);
+  const schoolName = `${input.fullName?.trim() || "Преподаватель"} — личное`;
+  let schoolId = "";
+  for (let attempt = 0; attempt < 25; attempt += 1) {
+    const slug = attempt === 0 ? baseSlug : `${baseSlug}-${attempt + 1}`;
+    try {
+      let schoolRows: Array<{ id: string }> = [];
+      try {
+        schoolRows = await request<Array<{ id: string }>>("/rest/v1/school", "POST", {
+          admin: true,
+          payload: {
+            name: schoolName,
+            slug,
+            kind: "personal",
+            owner_teacher_id: input.teacherId,
+            teacher_limit: 1,
+            plan_code: "demo",
+            subscription_status: "active",
+          },
+        });
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "Unknown school insert error";
+        if (!isMissingSchoolColumnsError(message)) {
+          throw error;
+        }
+        schoolRows = await request<Array<{ id: string }>>("/rest/v1/school", "POST", {
+          admin: true,
+          payload: { name: schoolName, slug },
+        });
+      }
+      schoolId = schoolRows[0]?.id ?? "";
+      break;
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Unknown school insert error";
+      if (!isUniqueViolationError(message)) throw error;
+    }
+  }
+
+  if (!schoolId) {
+    throw new Error("Не удалось создать личное пространство преподавателя.");
+  }
+
+  try {
+    await request("/rest/v1/school_teacher", "POST", {
+      admin: true,
+      payload: {
+        school_id: schoolId,
+        teacher_id: input.teacherId,
+        role: "owner",
+      },
+    });
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Unknown school_teacher insert error";
+    if (!isUniqueViolationError(message)) throw error;
+  }
+
+  return { schoolId, schoolName };
+}
+
+export async function listTeacherSchoolChoicesAdmin(input: {
+  teacherId: string;
+  teacherFullName: string | null;
+}) {
+  const personal = await ensureTeacherPersonalSchoolAdmin({
+    teacherId: input.teacherId,
+    fullName: input.teacherFullName,
+  });
+
+  let rows: Array<{
+    school_id: string;
+    role: "owner" | "teacher";
+    school: {
+      id: string;
+      name: string | null;
+      kind: string | null;
+      teacher_limit: number | null;
+    } | null;
+  }> = [];
+  try {
+    rows = await request<
+    Array<{
+      school_id: string;
+      role: "owner" | "teacher";
+      school: {
+        id: string;
+        name: string | null;
+        kind: string | null;
+        teacher_limit: number | null;
+      } | null;
+    }>
+  >(
+    `/rest/v1/school_teacher?select=school_id,role,school:school_id(id,name,kind,teacher_limit)&teacher_id=eq.${input.teacherId}&order=created_at.asc`,
+    "GET",
+    { admin: true },
+  );
+  } catch {
+    rows = [];
+  }
+  if (!Array.isArray(rows)) rows = [];
+
+  if (rows.length === 0) {
+    try {
+      const legacyRows = await request<
+        Array<{
+          school_id: string;
+          role: "owner" | "teacher";
+          school: { id: string; name: string | null } | null;
+        }>
+      >(
+        `/rest/v1/school_teacher?select=school_id,role,school:school_id(id,name)&teacher_id=eq.${input.teacherId}&order=created_at.asc`,
+        "GET",
+        { admin: true },
+      );
+      rows = legacyRows.map((row) => ({
+        ...row,
+        school: row.school
+          ? { ...row.school, kind: null, teacher_limit: null }
+          : null,
+      }));
+    } catch {
+      rows = [];
+    }
+  }
+
+  const counts = await Promise.all(
+    rows.map(async (row) => {
+      const teacherRows = await request<Array<{ teacher_id: string }>>(
+        `/rest/v1/school_teacher?select=teacher_id&school_id=eq.${row.school_id}`,
+        "GET",
+        { admin: true },
+      );
+      return [row.school_id, teacherRows.length] as const;
+    }),
+  );
+  const countBySchoolId = Object.fromEntries(counts);
+
+  const items: TeacherSchoolChoice[] = rows
+    .map((row) => {
+      if (!row.school?.id) return null;
+      const kind =
+        row.school.kind === "organization" ? "organization" : "personal";
+      return {
+        id: row.school.id,
+        name: row.school.name?.trim() || "Школа",
+        kind,
+        role: row.role,
+        teacherLimit: row.school.teacher_limit ?? (kind === "organization" ? 5 : 1),
+        teacherCount: countBySchoolId[row.school_id] ?? 0,
+      } as TeacherSchoolChoice;
+    })
+    .filter((item): item is TeacherSchoolChoice => Boolean(item));
+
+  if (!items.some((item) => item.id === personal.schoolId)) {
+    items.unshift({
+      id: personal.schoolId,
+      name: personal.schoolName,
+      kind: "personal",
+      role: "owner",
+      teacherLimit: 1,
+      teacherCount: 1,
+    });
+  }
+
+  return items;
+}
+
+export async function resolveTeacherSchoolSelectionAdmin(input: {
+  userId: string;
+  teacherId: string;
+  teacherFullName: string | null;
+  preferredSchoolId: string | null;
+}): Promise<TeacherSchoolSelection> {
+  const choices = await listTeacherSchoolChoicesAdmin({
+    teacherId: input.teacherId,
+    teacherFullName: input.teacherFullName,
+  });
+  const personal = choices.find((item) => item.kind === "personal");
+  if (!personal) {
+    throw new Error("Личное пространство преподавателя не найдено.");
+  }
+
+  const preferred = choices.find(
+    (item) => item.id === input.preferredSchoolId && item.kind === "organization",
+  );
+  if (!preferred) {
+    await setLastSelectedSchool(input.userId, null);
+    return {
+      mode: "personal",
+      personalSchoolId: personal.id,
+      personalSchoolName: personal.name,
+      selectedSchoolId: null,
+      selectedSchoolName: null,
+    };
+  }
+
+  return {
+    mode: "organization",
+    personalSchoolId: personal.id,
+    personalSchoolName: personal.name,
+    selectedSchoolId: preferred.id,
+    selectedSchoolName: preferred.name,
+  };
 }
 
 export async function resolvePostLoginRedirect(userId: string) {
@@ -838,6 +1176,60 @@ export async function upsertTeacherProfile(
   return upsertTeacherProfileFallback(userId, fullName);
 }
 
+export async function ensureTeacherProfileForUserAdmin(input: {
+  userId: string;
+  fullName?: string | null;
+}): Promise<{ teacherId: string }> {
+  const userId = input.userId.trim();
+  if (!userId) {
+    throw new Error("Не удалось определить пользователя преподавателя.");
+  }
+
+  const rows = await request<Array<{ id: string; full_name: string | null }>>(
+    `/rest/v1/teacher?select=id,full_name&user_id=eq.${userId}&limit=1`,
+    "GET",
+    { admin: true },
+  );
+  const existing = rows[0];
+  const fullName = input.fullName?.trim() || null;
+
+  if (existing?.id) {
+    if (fullName && !existing.full_name?.trim()) {
+      await request(`/rest/v1/teacher?id=eq.${existing.id}`, "PATCH", {
+        admin: true,
+        payload: { full_name: fullName },
+        allowEmpty: true,
+      });
+    }
+    return { teacherId: existing.id };
+  }
+
+  const inserted = await request<Array<{ id: string }>>("/rest/v1/teacher", "POST", {
+    admin: true,
+    payload: { user_id: userId, full_name: fullName },
+  }).catch(async (error) => {
+    const message =
+      error instanceof Error ? error.message : "Unknown teacher insert error";
+    if (!isUniqueViolationError(message)) throw error;
+    return [] as Array<{ id: string }>;
+  });
+  const teacherId =
+    inserted[0]?.id ??
+    (
+      await request<Array<{ id: string }>>(
+        `/rest/v1/teacher?select=id&user_id=eq.${userId}&limit=1`,
+        "GET",
+        { admin: true },
+      )
+    )[0]?.id;
+
+  if (!teacherId) {
+    throw new Error("Не удалось создать профиль преподавателя.");
+  }
+
+  return { teacherId };
+}
+
 async function upsertTeacherProfileFallback(
   userId: string,
   fullName: string | null,
@@ -908,7 +1300,7 @@ async function upsertTeacherProfileFallback(
 
   if (!schoolId) {
     const baseSlug = buildTeacherSchoolSlugBase(teacherId, fullName);
-    const schoolName = `${fullName?.trim() || "Преподаватель"} — школа`;
+    const schoolName = `${fullName?.trim() || "Преподаватель"} — личное`;
     for (let attempt = 0; attempt < 25; attempt += 1) {
       const slug = attempt === 0 ? baseSlug : `${baseSlug}-${attempt + 1}`;
       try {
@@ -917,7 +1309,15 @@ async function upsertTeacherProfileFallback(
           "POST",
           {
             admin: true,
-            payload: { name: schoolName, slug },
+            payload: {
+              name: schoolName,
+              slug,
+              kind: "personal",
+              owner_teacher_id: teacherId,
+              teacher_limit: 1,
+              plan_code: "demo",
+              subscription_status: "active",
+            },
           },
         );
         schoolId = schoolRows[0]?.id ?? "";
@@ -1107,21 +1507,30 @@ export async function assertTeacherAssignedToClassAdmin(
 
 export async function createClassForTeacherAdmin(input: {
   teacherId: string;
+  userId: string;
+  teacherFullName: string | null;
   name: string;
   methodologyId: string;
 }) {
-  const memberships = await request<Array<{ school_id: string; role: string | null }>>(
-    `/rest/v1/school_teacher?select=school_id,role&teacher_id=eq.${input.teacherId}&order=created_at.asc`,
+  const contextRows = await request<
+    Array<{
+      last_selected_school_id: string | null;
+    }>
+  >(
+    `/rest/v1/user_preference?select=last_selected_school_id&user_id=eq.${input.userId}&limit=1`,
     "GET",
     { admin: true },
   );
-
-  const ownerMembership = memberships.find((item) => item.role === "owner");
-  const schoolId = ownerMembership?.school_id ?? memberships[0]?.school_id ?? "";
-
-  if (!schoolId) {
-    throw new Error("У преподавателя не найдена школа для создания группы.");
-  }
+  const selectedSchool = await resolveTeacherSchoolSelectionAdmin({
+    userId: input.userId,
+    teacherId: input.teacherId,
+    teacherFullName: input.teacherFullName,
+    preferredSchoolId: contextRows[0]?.last_selected_school_id ?? null,
+  });
+  const schoolId =
+    selectedSchool.mode === "organization"
+      ? selectedSchool.selectedSchoolId
+      : selectedSchool.personalSchoolId;
 
   const name = input.name.trim();
   const methodologyId = input.methodologyId.trim();
@@ -1166,6 +1575,201 @@ export async function createClassForTeacherAdmin(input: {
   }
 
   return { classId };
+}
+
+export async function createOrganizationSchoolAdmin(input: {
+  userId: string;
+  teacherId: string;
+  teacherFullName: string | null;
+  schoolName: string;
+}) {
+  const schoolName = input.schoolName.trim();
+  if (!schoolName) {
+    throw new Error("Укажите название школы.");
+  }
+
+  const baseSlug = buildTeacherSchoolSlugBase(input.teacherId, schoolName);
+  let schoolId = "";
+  for (let attempt = 0; attempt < 25; attempt += 1) {
+    const slug = attempt === 0 ? `${baseSlug}-org` : `${baseSlug}-org-${attempt + 1}`;
+    try {
+      let rows: Array<{ id: string }> = [];
+      try {
+        rows = await request<Array<{ id: string }>>("/rest/v1/school", "POST", {
+          admin: true,
+          payload: {
+            name: schoolName,
+            slug,
+            kind: "organization",
+            owner_teacher_id: input.teacherId,
+            teacher_limit: 5,
+            plan_code: "demo",
+            subscription_status: "active",
+          },
+        });
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "Unknown school insert error";
+        if (!isMissingSchoolColumnsError(message)) {
+          throw error;
+        }
+        rows = await request<Array<{ id: string }>>("/rest/v1/school", "POST", {
+          admin: true,
+          payload: { name: schoolName, slug },
+        });
+      }
+      schoolId = rows[0]?.id ?? "";
+      break;
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Unknown school insert error";
+      if (!isUniqueViolationError(message)) throw error;
+    }
+  }
+
+  if (!schoolId) {
+    throw new Error("Не удалось создать школу.");
+  }
+
+  await request("/rest/v1/school_teacher", "POST", {
+    admin: true,
+    payload: { school_id: schoolId, teacher_id: input.teacherId, role: "owner" },
+  });
+  await setLastSelectedSchool(input.userId, schoolId);
+
+  return { schoolId, schoolName };
+}
+
+export async function listSchoolMembersAdmin(input: {
+  schoolId: string;
+}): Promise<
+  Array<{
+    teacherId: string;
+    role: "owner" | "teacher";
+    fullName: string | null;
+    email: string | null;
+  }>
+> {
+  const rows = await request<
+    Array<{ teacher_id: string; role: "owner" | "teacher"; teacher: { user_id: string | null; full_name: string | null } | null }>
+  >(
+    `/rest/v1/school_teacher?select=teacher_id,role,teacher:teacher_id(user_id,full_name)&school_id=eq.${input.schoolId}&order=created_at.asc`,
+    "GET",
+    { admin: true },
+  );
+  const authByUser = await getAuthUsersByIdsAdmin(
+    rows
+      .map((row) => row.teacher?.user_id ?? "")
+      .filter(Boolean),
+  );
+  return rows.map((row) => ({
+    teacherId: row.teacher_id,
+    role: row.role,
+    fullName: row.teacher?.full_name?.trim() || null,
+    email: row.teacher?.user_id ? authByUser[row.teacher.user_id]?.email ?? null : null,
+  }));
+}
+
+export async function addTeacherToSchoolByEmailAdmin(input: {
+  schoolId: string;
+  ownerTeacherId: string;
+  email: string;
+}) {
+  const schoolRows = await request<
+    Array<{ id: string; kind: string | null; teacher_limit: number | null }>
+  >(`/rest/v1/school?select=id,kind,teacher_limit&id=eq.${input.schoolId}&limit=1`, "GET", {
+    admin: true,
+  });
+  const school = schoolRows[0];
+  if (!school?.id || school.kind !== "organization") {
+    throw new Error("Управление преподавателями доступно только для школы.");
+  }
+
+  const ownerRows = await request<Array<{ id: string }>>(
+    `/rest/v1/school_teacher?select=id&school_id=eq.${input.schoolId}&teacher_id=eq.${input.ownerTeacherId}&role=eq.owner&limit=1`,
+    "GET",
+    { admin: true },
+  );
+  if (!ownerRows[0]?.id) {
+    throw new Error("Только владелец школы может управлять преподавателями.");
+  }
+
+  const foundAuthUser = await findAuthUserByEmailAdmin(input.email);
+  if (!foundAuthUser?.id) {
+    throw new Error(
+      "Преподаватель с таким email пока не зарегистрирован. Попросите его создать аккаунт, затем добавьте снова.",
+    );
+  }
+
+  const ensuredTeacher = await ensureTeacherProfileForUserAdmin({
+    userId: foundAuthUser.id,
+    fullName: foundAuthUser.user_metadata?.full_name ?? null,
+  });
+
+  const existing = await request<Array<{ id: string }>>(
+    `/rest/v1/school_teacher?select=id&school_id=eq.${input.schoolId}&teacher_id=eq.${ensuredTeacher.teacherId}&limit=1`,
+    "GET",
+    { admin: true },
+  );
+  if (existing[0]?.id) {
+    return { message: "Преподаватель уже добавлен в школу." };
+  }
+
+  const memberships = await request<Array<{ teacher_id: string }>>(
+    `/rest/v1/school_teacher?select=teacher_id&school_id=eq.${input.schoolId}`,
+    "GET",
+    { admin: true },
+  );
+  const limit = school.teacher_limit ?? 5;
+  if (memberships.length + 1 > limit) {
+    throw new Error("Лимит преподавателей в школе исчерпан.");
+  }
+
+  await request("/rest/v1/school_teacher", "POST", {
+    admin: true,
+    payload: {
+      school_id: input.schoolId,
+      teacher_id: ensuredTeacher.teacherId,
+      role: "teacher",
+    },
+  });
+
+  return {
+    message:
+      "Преподаватель добавлен в школу. Теперь школа появится у него в меню профиля.",
+  };
+}
+
+export async function removeTeacherFromSchoolAdmin(input: {
+  schoolId: string;
+  ownerTeacherId: string;
+  teacherId: string;
+}) {
+  const ownerRows = await request<Array<{ id: string }>>(
+    `/rest/v1/school_teacher?select=id&school_id=eq.${input.schoolId}&teacher_id=eq.${input.ownerTeacherId}&role=eq.owner&limit=1`,
+    "GET",
+    { admin: true },
+  );
+  if (!ownerRows[0]?.id) {
+    throw new Error("Только владелец школы может управлять преподавателями.");
+  }
+
+  if (input.ownerTeacherId === input.teacherId) {
+    const ownerCount = await request<Array<{ teacher_id: string }>>(
+      `/rest/v1/school_teacher?select=teacher_id&school_id=eq.${input.schoolId}&role=eq.owner`,
+      "GET",
+      { admin: true },
+    );
+    if (ownerCount.length <= 1) {
+      throw new Error("Нельзя удалить последнего владельца школы.");
+    }
+  }
+
+  await request(
+    `/rest/v1/school_teacher?school_id=eq.${input.schoolId}&teacher_id=eq.${input.teacherId}`,
+    "DELETE",
+    { admin: true, allowEmpty: true },
+  );
 }
 
 export async function createStudentAuthUser(input: {

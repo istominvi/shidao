@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Building2 } from "lucide-react";
 import { ROUTES } from "@/lib/auth";
 import { SessionNavActions } from "@/components/session-nav-actions";
 import { useSessionView } from "@/components/use-session-view";
@@ -36,6 +37,20 @@ export function TopNav() {
         scroll: false,
       }))
     : [];
+  if (
+    state.kind === "adult" &&
+    state.activeProfile === "teacher" &&
+    state.selectedSchool?.mode === "organization"
+  ) {
+    navItems.push({
+      id: "school",
+      label: "Школа",
+      href: ROUTES.school,
+      icon: Building2,
+      active: pathname === ROUTES.school,
+      scroll: false,
+    });
+  }
 
   const navAction = (() => {
     const action = resolveTopNavAction(pathname, state, sessionResolved);

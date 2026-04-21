@@ -75,6 +75,30 @@ export const profileSwitchPayloadSchema: Parser<{ profile: ProfileKind }> = (
 
 export const onboardingPayloadSchema = profileSwitchPayloadSchema;
 
+export const schoolSwitchPayloadSchema: Parser<
+  | { mode: "personal" }
+  | { schoolId: string }
+> = (payload) => {
+  const record = asRecord(payload);
+  if (!record) return { success: false, message: "Некорректный выбор школы." };
+  if (record.mode === "personal") {
+    return { success: true, data: { mode: "personal" } };
+  }
+  const schoolId = ensureString(record.schoolId).trim();
+  if (!schoolId) {
+    return { success: false, message: "Некорректный выбор школы." };
+  }
+  return { success: true, data: { schoolId } };
+};
+
+export const createSchoolPayloadSchema: Parser<{ name: string }> = (payload) => {
+  const record = asRecord(payload);
+  if (!record) return { success: false, message: "Укажите название школы." };
+  const name = ensureString(record.name).trim();
+  if (!name) return { success: false, message: "Укажите название школы." };
+  return { success: true, data: { name } };
+};
+
 export const securityPinPayloadSchema: Parser<{ newPin: string; currentSecret: string }> = (
   payload,
 ) => {

@@ -24,6 +24,17 @@ export type SessionAdultView = SessionIdentity & {
   hasPin: boolean;
   activeProfile: ProfileKind | null;
   availableProfiles: ProfileKind[];
+  schoolOptions?: Array<{
+    id: string;
+    label: string;
+    kind: "personal" | "organization";
+    role: "owner" | "teacher";
+  }>;
+  selectedSchool?: {
+    mode: "personal" | "organization";
+    schoolId: string | null;
+    schoolName: string | null;
+  };
 };
 
 export type SessionDegradedView = SessionIdentity & {
@@ -91,6 +102,35 @@ export function toSessionView(input: unknown): SessionView {
       ) {
         return GUEST_SESSION_VIEW;
       }
+      const schoolOptions = Array.isArray(input.schoolOptions)
+        ? input.schoolOptions.filter((option): option is NonNullable<SessionAdultView["schoolOptions"]>[number] => {
+            if (!isRecord(option)) return false;
+            return (
+              typeof option.id === "string" &&
+              typeof option.label === "string" &&
+              (option.kind === "personal" || option.kind === "organization") &&
+              (option.role === "owner" || option.role === "teacher")
+            );
+          })
+        : undefined;
+      const selectedSchool = isRecord(input.selectedSchool) &&
+          (input.selectedSchool.mode === "personal" ||
+            input.selectedSchool.mode === "organization")
+        ? {
+            mode: input.selectedSchool.mode as "personal" | "organization",
+            schoolId:
+              typeof input.selectedSchool.schoolId === "string" ||
+              input.selectedSchool.schoolId === null
+                ? input.selectedSchool.schoolId
+                : null,
+            schoolName:
+              typeof input.selectedSchool.schoolName === "string" ||
+              input.selectedSchool.schoolName === null
+                ? input.selectedSchool.schoolName
+                : null,
+          }
+        : undefined;
+
       return {
         kind: "adult",
         authenticated: true,
@@ -99,6 +139,8 @@ export function toSessionView(input: unknown): SessionView {
           ? input.activeProfile
           : null,
         availableProfiles: input.availableProfiles.filter(isProfileKind),
+        ...(schoolOptions ? { schoolOptions } : {}),
+        ...(selectedSchool ? { selectedSchool } : {}),
         ...pickIdentity(input),
       };
     case "degraded":

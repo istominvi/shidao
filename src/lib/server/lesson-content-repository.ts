@@ -64,6 +64,7 @@ type RowTeacherClass = {
   class_id: string;
   class: {
     id: string;
+    school_id: string;
     name: string | null;
     methodology_id: string | null;
     methodology?: {
@@ -434,6 +435,7 @@ export async function listTeacherClassesAdmin(
 ): Promise<
   Array<{
     id: string;
+    schoolId: string;
     name: string | null;
     methodologyId: string | null;
     methodologyTitle: string | null;
@@ -442,7 +444,7 @@ export async function listTeacherClassesAdmin(
   let rows: RowTeacherClass[];
   try {
     rows = await adminRequest<RowTeacherClass[]>(
-      `/rest/v1/class_teacher?select=class_id,class:class_id(id,name,methodology_id,methodology:methodology_id(id,title))&teacher_id=eq.${teacherId}`,
+      `/rest/v1/class_teacher?select=class_id,class:class_id(id,school_id,name,methodology_id,methodology:methodology_id(id,title))&teacher_id=eq.${teacherId}`,
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : "unknown";
@@ -460,6 +462,7 @@ export async function listTeacherClassesAdmin(
       class: row.class
         ? {
             ...row.class,
+            school_id: "",
             methodology_id: null,
             methodology: null,
           }
@@ -470,6 +473,7 @@ export async function listTeacherClassesAdmin(
   const classes = rows
     .map((row) => ({
       id: row.class?.id ?? row.class_id,
+      schoolId: row.class?.school_id ?? "",
       name: row.class?.name?.trim() || null,
       methodologyId: row.class?.methodology_id ?? null,
       methodologyTitle: row.class?.methodology?.title?.trim() || null,
