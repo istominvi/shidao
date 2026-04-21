@@ -40,6 +40,9 @@
 
 - Роль в URL не кодируется: основной вход — `/dashboard`.
 - Teacher/parent переключаются через `user_preference.last_active_profile`.
+- Для teacher дополнительно поддерживается режим работы:
+  - `Лично` (personal school `school.kind='personal'`, `user_preference.last_selected_school_id = null`);
+  - `Школа` (selected organization school id в `user_preference.last_selected_school_id`).
 - Ученик логинится по `student.login` (с internal auth email внутри контура).
 - Канонический runtime-маршрут урока для всех ролей: `/lessons/[scheduledLessonId]`.
 - Parent видит read-only проекции по своим детям.

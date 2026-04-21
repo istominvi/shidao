@@ -50,5 +50,6 @@
 ## Профиль и сессия
 
 - Переключение teacher/parent: `POST /api/preferences/profile`.
+- Переключение teacher-режима `Лично/Школа`: `POST /api/preferences/school`.
 - Logout: `/api/auth/logout`.
 - Управление PIN: `/api/settings/security/pin`.

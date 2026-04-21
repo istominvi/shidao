@@ -47,6 +47,27 @@ test("toSessionView keeps adult profile contract strict", () => {
   });
 });
 
+test("toSessionView keeps optional school selection for adult teacher", () => {
+  const actual = toSessionView({
+    kind: "adult",
+    authenticated: true,
+    hasPin: false,
+    activeProfile: "teacher",
+    availableProfiles: ["teacher"],
+    schoolOptions: [
+      { id: "personal", label: "Лично", kind: "personal", role: "owner" },
+      { id: "org-1", label: "Школа №12", kind: "organization", role: "teacher" },
+    ],
+    selectedSchool: { mode: "organization", schoolId: "org-1", schoolName: "Школа №12" },
+  });
+
+  assert.equal(actual.kind, "adult");
+  if (actual.kind !== "adult") return;
+  assert.equal(actual.schoolOptions?.length, 2);
+  assert.equal(actual.selectedSchool?.mode, "organization");
+  assert.equal(actual.selectedSchool?.schoolId, "org-1");
+});
+
 test("toSessionView falls back to guest on invalid payload", () => {
   assert.deepEqual(
     toSessionView({ kind: "adult", authenticated: true }),

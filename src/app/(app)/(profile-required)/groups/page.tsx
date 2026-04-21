@@ -20,6 +20,7 @@ import {
   createTeacherGroup,
 } from "@/lib/server/teacher-groups";
 import { getTeacherGroupsIndexOperationsReadModel } from "@/lib/server/teacher-dashboard-operations";
+import { resolveTeacherSchoolSelectionAdmin } from "@/lib/server/supabase-admin";
 
 export default async function TeacherGroupsPage({
   searchParams,
@@ -33,7 +34,10 @@ export default async function TeacherGroupsPage({
 }) {
   const resolution = await resolveAccessPolicy();
 
-  if (!canAccessTeacherGroups(resolution)) {
+  if (
+    resolution.status !== "adult-with-profile" ||
+    !canAccessTeacherGroups(resolution)
+  ) {
     redirect(ROUTES.dashboard);
   }
 
@@ -41,6 +45,12 @@ export default async function TeacherGroupsPage({
   const query = await searchParams;
   const methodologies = await listMethodologiesAdmin();
   const isCreateModalOpen = query.create === "1";
+  const schoolSelection = await resolveTeacherSchoolSelectionAdmin({
+    userId: resolution.context.userId,
+    teacherId,
+    teacherFullName: resolution.context.teacher?.full_name ?? null,
+    preferredSchoolId: resolution.context.preferences?.last_selected_school_id ?? null,
+  });
 
   async function createGroupAction(formData: FormData) {
     "use server";
@@ -49,12 +59,20 @@ export default async function TeacherGroupsPage({
 
     try {
       const actionResolution = await resolveAccessPolicy();
+      if (
+        actionResolution.status !== "adult-with-profile" ||
+        !canAccessTeacherGroups(actionResolution)
+      ) {
+        redirect(ROUTES.dashboard);
+      }
       const { teacherId: actionTeacherId } = assertTeacherGroupsAccess(actionResolution);
       const name = String(formData.get("name") ?? "").trim();
       const methodologyId = String(formData.get("methodologyId") ?? "").trim();
 
       const created = await createTeacherGroup({
         teacherId: actionTeacherId,
+        userId: actionResolution.context.userId,
+        teacherFullName: actionResolution.context.teacher?.full_name ?? null,
         name,
         methodologyId,
       });
@@ -77,6 +95,10 @@ export default async function TeacherGroupsPage({
 
   const readModel = await getTeacherGroupsIndexOperationsReadModel({
     teacherId,
+    activeSchoolId:
+      schoolSelection.mode === "organization"
+        ? schoolSelection.selectedSchoolId
+        : schoolSelection.personalSchoolId,
     search: query.q,
     methodology: query.methodology,
   });
@@ -123,6 +145,11 @@ export default async function TeacherGroupsPage({
                 <ChevronDown className="product-select-icon h-4 w-4" aria-hidden="true" />
               </FieldControl>
             </FormField>
+            {schoolSelection.mode === "organization" ? (
+              <p className="text-sm text-neutral-600">
+                Группа будет создана в школе — {schoolSelection.selectedSchoolName}
+              </p>
+            ) : null}
             <div className="dialog-shell-actions">
               <Link href={ROUTES.groups} className={productButtonClassName("secondary")}>Отмена</Link>
               <Button type="submit">Создать группу</Button>

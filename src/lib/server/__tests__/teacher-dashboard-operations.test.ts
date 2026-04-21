@@ -4,8 +4,8 @@ import { getTeacherDashboardOperationsReadModel, getTeacherGroupsIndexOperations
 
 const deps = {
   listTeacherClasses: async () => [
-    { id: "class-1", name: "Лисички", methodologyId: "m-1", methodologyTitle: "Мир вокруг" },
-    { id: "class-2", name: "Драконы", methodologyId: null, methodologyTitle: null },
+    { id: "class-1", schoolId: "school-personal", name: "Лисички", methodologyId: "m-1", methodologyTitle: "Мир вокруг" },
+    { id: "class-2", schoolId: "school-personal", name: "Драконы", methodologyId: null, methodologyTitle: null },
   ],
   listStudentsForClasses: async () => ({
     "class-1": [{ id: "s-1", fullName: "Анна", login: "anna" }],

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import {
   AlertCircle,
@@ -8,6 +9,7 @@ import {
   Clock3,
   UserRound,
 } from "lucide-react";
+import { toScheduledLessonRoute } from "@/lib/auth";
 import { AppPageHeader } from "@/components/app/page-header";
 import {
   DashboardEmptyState,
@@ -135,9 +137,12 @@ function UpcomingLessons({ lessons }: { lessons: ParentLesson[] }) {
         >
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
-              <p className="font-semibold text-neutral-900">
+              <Link
+                href={toScheduledLessonRoute(lesson.scheduledLessonId)}
+                className="font-semibold text-neutral-900 hover:text-sky-700"
+              >
                 {lesson.lessonTitle}
-              </p>
+              </Link>
               <p className="mt-1 inline-flex items-center gap-1 text-xs text-neutral-600">
                 <Clock3 className="size-3.5" />
                 {lesson.startsAt}

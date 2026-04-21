@@ -33,7 +33,12 @@ type SessionNavItem = {
 };
 
 type MenuPosition = { top: number; left: number; width: number };
-type ActionLoadingState = `switch:${ProfileKind}` | "signout" | null;
+type ActionLoadingState =
+  | `switch:${ProfileKind}`
+  | "signout"
+  | "switch-school:personal"
+  | `switch-school:${string}`
+  | null;
 
 const MENU_WIDTH = 288;
 const MENU_GAP = 8;
@@ -220,6 +225,35 @@ export function SessionNavActions({
     }
   }
 
+  async function handleSwitchSchool(target: "personal" | string) {
+    if (state.kind !== "adult") return;
+    const loadingKey: ActionLoadingState =
+      target === "personal" ? "switch-school:personal" : `switch-school:${target}`;
+    setActionLoading(loadingKey);
+    setActionError(null);
+    try {
+      const response = await fetch("/api/preferences/school", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body:
+          target === "personal"
+            ? JSON.stringify({ mode: "personal" })
+            : JSON.stringify({ schoolId: target }),
+      });
+      if (!response.ok) {
+        await readActionError(response, "Не удалось переключить школу.");
+      }
+      await refetchSession();
+      router.refresh();
+    } catch (error) {
+      setActionError(
+        error instanceof Error ? error.message : "Не удалось переключить школу.",
+      );
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
   const menu = (
     <NavigationDropdownPanel
       ref={menuRef}
@@ -281,6 +315,40 @@ export function SessionNavActions({
             }}
             items={profileItems}
           />
+        </div>
+      ) : null}
+
+      {state.kind === "adult" && state.activeProfile === "teacher" ? (
+        <div className="border-t border-black/5 px-3 py-2.5">
+          <p className="mb-2 px-1 text-xs font-semibold uppercase tracking-[0.08em] text-neutral-500">
+            Школа
+          </p>
+          <button
+            type="button"
+            className={navigationDropdownItemClass()}
+            onClick={() => void handleSwitchSchool("personal")}
+          >
+            Лично
+          </button>
+          {(state.schoolOptions ?? [])
+            .filter((option) => option.kind === "organization")
+            .map((option) => (
+              <button
+                key={option.id}
+                type="button"
+                className={navigationDropdownItemClass()}
+                onClick={() => void handleSwitchSchool(option.id)}
+              >
+                {option.label}
+              </button>
+            ))}
+          <Link
+            href={`${ROUTES.school}?create=1`}
+            className={navigationDropdownItemClass()}
+            onClick={() => setOpen(false)}
+          >
+            Создать школу
+          </Link>
         </div>
       ) : null}
 

@@ -1,6 +1,10 @@
 import { toInitials } from "@/lib/auth";
 import { GUEST_SESSION_VIEW, type SessionView } from "@/lib/session-view";
 import { resolveAccessPolicy } from "@/lib/server/access-policy";
+import {
+  listTeacherSchoolChoicesAdmin,
+  resolveTeacherSchoolSelectionAdmin,
+} from "@/lib/server/supabase-admin";
 
 export async function readSessionViewServer(): Promise<SessionView> {
   const resolution = await resolveAccessPolicy();
@@ -29,6 +33,23 @@ export async function readSessionViewServer(): Promise<SessionView> {
     case "adult-with-profile":
     case "adult-without-profile": {
       const ctx = resolution.context;
+      const teacherId = ctx.teacher?.id ?? null;
+      const schoolOptions =
+        teacherId && ctx.actorKind === "adult"
+          ? await listTeacherSchoolChoicesAdmin({
+              teacherId,
+              teacherFullName: ctx.teacher?.full_name ?? null,
+            })
+          : [];
+      const selectedSchool =
+        teacherId && ctx.actorKind === "adult"
+          ? await resolveTeacherSchoolSelectionAdmin({
+              userId: ctx.userId,
+              teacherId,
+              teacherFullName: ctx.teacher?.full_name ?? null,
+              preferredSchoolId: ctx.preferences?.last_selected_school_id ?? null,
+            })
+          : null;
       return {
         kind: "adult",
         authenticated: true,
@@ -39,6 +60,25 @@ export async function readSessionViewServer(): Promise<SessionView> {
         initials: toInitials(ctx.fullName, ctx.email),
         availableProfiles: ctx.availableAdultProfiles,
         activeProfile: ctx.activeProfile,
+        schoolOptions: schoolOptions.map((option) => ({
+          id: option.id,
+          label: option.kind === "personal" ? "Лично" : option.name,
+          kind: option.kind,
+          role: option.role,
+        })),
+        selectedSchool: selectedSchool
+          ? {
+              mode: selectedSchool.mode,
+              schoolId:
+                selectedSchool.mode === "organization"
+                  ? selectedSchool.selectedSchoolId
+                  : null,
+              schoolName:
+                selectedSchool.mode === "organization"
+                  ? selectedSchool.selectedSchoolName
+                  : null,
+            }
+          : undefined,
       };
     }
     default: {

@@ -146,6 +146,7 @@ function addMinutes(iso: string, minutes: number) {
 async function buildOperationsSnapshot(
   input: {
     teacherId: string;
+    activeSchoolId?: string;
     nowIso?: string;
     weekStartsAtIso?: string;
     search?: string;
@@ -154,7 +155,10 @@ async function buildOperationsSnapshot(
   deps: TeacherDashboardOperationsDeps,
 ) {
   const classes = await deps.listTeacherClasses(input.teacherId);
-  const classIds = classes.map((item) => item.id);
+  const scopedClasses = input.activeSchoolId
+    ? classes.filter((item) => item.schoolId === input.activeSchoolId)
+    : classes;
+  const classIds = scopedClasses.map((item) => item.id);
 
   const [studentsByClass, lessons] = await Promise.all([
     deps.listStudentsForClasses(classIds),
@@ -164,7 +168,7 @@ async function buildOperationsSnapshot(
   const methodologyLessonEntries = await Promise.all(
     Array.from(
       new Set(
-        classes
+        scopedClasses
           .map((item) => item.methodologyId)
           .filter((item): item is string => Boolean(item)),
       ),
@@ -197,7 +201,7 @@ async function buildOperationsSnapshot(
   const nowIso = input.nowIso ?? new Date().toISOString();
   const now = Date.parse(nowIso);
 
-  const rows: TeacherGroupOperationsRow[] = classes.map((group) => {
+  const rows: TeacherGroupOperationsRow[] = scopedClasses.map((group) => {
     const scopedLessons = lessons
       .filter((lesson) => lesson.runtimeShell.classId === group.id)
       .sort(
@@ -315,6 +319,7 @@ function buildTeacherGroupActions() {
 export async function getTeacherDashboardOperationsReadModel(
   input: {
     teacherId: string;
+    activeSchoolId?: string;
     nowIso?: string;
     weekStartsAtIso?: string;
     search?: string;
@@ -338,6 +343,7 @@ export async function getTeacherDashboardOperationsReadModel(
 export async function getTeacherGroupsIndexOperationsReadModel(
   input: {
     teacherId: string;
+    activeSchoolId?: string;
     search?: string;
     methodology?: string;
     nowIso?: string;

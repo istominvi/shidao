@@ -14,7 +14,7 @@ This guide describes the **current** ShiDao database model.
 
 - `parent` — parent profile linked to `auth.users`.
 - `teacher` — teacher profile linked to `auth.users`.
-- `school` — school/org container.
+- `school` — school/org container (`kind = personal | organization`, owner, teacher limit, demo plan fields).
 - `school_teacher` — teacher membership in school (`owner | teacher`).
 - `class` — group inside school, with immutable `methodology_id` after creation.
 - `class_teacher` — teacher assignment to class.
@@ -55,6 +55,17 @@ This guide describes the **current** ShiDao database model.
 - `methodology_lesson_homework.kind` supports `practice_text | quiz_single_choice`.
 - `reusable_asset.kind` supports legacy + semantic kinds: `video | song | worksheet | vocabulary_set | activity_template | media_file | presentation | flashcards_pdf | lesson_video | worksheet_pdf | song_audio | song_video | pronunciation_audio`.
 - `student.login` and `student.internal_auth_email` are unique.
+- `school.kind = 'personal'` is the personal teacher workspace (shown as `Лично` in UI).
+- `school.kind = 'organization'` is a real school/org (shown as `Школа` in UI).
+- `user_preference.last_selected_school_id` stores selected organization; `null` means personal mode.
+
+## Demo organization behavior (MVP)
+
+- Teacher always has a personal workspace and lands in personal mode by default.
+- Creating a school creates `school.kind = 'organization'` + `school_teacher(role='owner')`.
+- Demo invite flow is immediate membership add for existing users (no pending invite yet).
+- If email is not registered, API returns a validation message and does not create pending invitation rows.
+- TODO (future): pending invite + in-app/email/Telegram notification + explicit accept before activation.
 
 ## Source-of-truth distinctions
 
