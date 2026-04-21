@@ -120,30 +120,30 @@ export function NotificationBell() {
       </button>
 
       {open ? (
-        <div className="absolute right-0 z-[170] mt-2 w-[22rem] max-w-[calc(100vw-16px)] rounded-2xl border border-black/10 bg-white p-2 shadow-xl">
-          <div className="mb-2 flex items-center justify-between px-2 pt-1">
-            <p className="text-sm font-semibold text-neutral-900">Уведомления</p>
-            <Link href="/notifications" className="text-xs font-medium text-neutral-600 hover:text-neutral-900" onClick={() => setOpen(false)}>
+        <div className="fixed inset-x-3 bottom-3 top-20 z-[220] flex flex-col rounded-2xl border border-black/10 bg-white p-3 shadow-xl md:absolute md:inset-auto md:right-0 md:top-full md:mt-2 md:block md:w-[22rem] md:max-w-[calc(100vw-16px)] md:p-2">
+          <div className="mb-2 flex items-center justify-between px-1 pt-1 md:px-2">
+            <p className="text-base font-semibold text-neutral-900 md:text-sm">Уведомления</p>
+            <Link href="/notifications" className="text-sm font-semibold text-neutral-700 hover:text-neutral-900 md:text-xs md:font-medium" onClick={() => setOpen(false)}>
               Все
             </Link>
           </div>
-          {loading ? <p className="px-2 py-3 text-xs text-neutral-500">Загрузка…</p> : null}
-          {error ? <p className="px-2 py-3 text-xs text-red-600">{error}</p> : null}
+          {loading ? <p className="px-2 py-3 text-sm text-neutral-500">Загрузка…</p> : null}
+          {error ? <p className="px-2 py-3 text-sm text-red-600">{error}</p> : null}
           {!loading && !error && recentItems.length === 0 ? (
-            <p className="px-2 py-3 text-xs text-neutral-500">Уведомлений пока нет.</p>
+            <p className="px-2 py-3 text-sm text-neutral-500">Уведомлений пока нет.</p>
           ) : null}
           {!loading && !error && recentItems.length > 0 ? (
-            <ul className="max-h-[22rem] space-y-1 overflow-y-auto">
+            <ul className="min-h-0 flex-1 space-y-1 overflow-y-auto md:max-h-[22rem] md:flex-none">
               {recentItems.map((item) => (
                 <li key={item.id}>
                   <button
                     type="button"
                     onClick={() => void handleNotificationClick(item)}
-                    className={`w-full rounded-xl px-2 py-2 text-left hover:bg-neutral-50 ${item.readAt ? "opacity-75" : "bg-blue-50/60"}`}
+                    className={`w-full rounded-xl px-3 py-2.5 text-left hover:bg-neutral-50 md:px-2 md:py-2 ${item.readAt ? "opacity-75" : "bg-blue-50/60"}`}
                   >
-                    <p className="text-sm font-medium text-neutral-900">{item.title}</p>
-                    {item.body ? <p className="truncate text-xs text-neutral-600">{item.body}</p> : null}
-                    <p className="mt-1 text-[11px] text-neutral-500">{toRelativeLabel(item.createdAt)}</p>
+                    <p className="text-[15px] font-semibold text-neutral-900 md:text-sm md:font-medium">{item.title}</p>
+                    {item.body ? <p className="line-clamp-2 text-sm text-neutral-600 md:truncate md:text-xs">{item.body}</p> : null}
+                    <p className="mt-1 text-xs text-neutral-500 md:text-[11px]">{toRelativeLabel(item.createdAt)}</p>
                   </button>
                 </li>
               ))}
