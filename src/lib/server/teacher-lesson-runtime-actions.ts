@@ -5,6 +5,7 @@ import {
   updateScheduledLessonRuntimeNotesAdmin,
   type UpdateScheduledLessonRuntimeNotesAdminInput,
 } from "./lesson-content-repository";
+import { notifyLessonStatusChanged } from "./notification-service";
 import { canAccessTeacherLessonWorkspace } from "./teacher-lesson-workspace";
 
 const runtimeStatuses = ["planned", "in_progress", "completed", "cancelled"] as const;
@@ -45,7 +46,7 @@ const defaultRuntimeMutationDeps: RuntimeMutationDeps = {
 
 export function assertTeacherRuntimeMutationAccess(
   resolution: AccessResolution,
-): { teacherId: string } {
+): { teacherId: string; userId: string } {
   if (
     resolution.status !== "adult-with-profile" ||
     !canAccessTeacherLessonWorkspace(resolution)
@@ -58,7 +59,7 @@ export function assertTeacherRuntimeMutationAccess(
     throw new Error("Профиль преподавателя не найден.");
   }
 
-  return { teacherId };
+  return { teacherId, userId: resolution.context.userId };
 }
 
 function normalizeText(value: FormDataEntryValue | null) {
@@ -77,6 +78,13 @@ function parseRuntimeStatus(value: FormDataEntryValue | null) {
   }
 
   return normalized;
+}
+
+function formatRuntimeStatusLabel(status: ScheduledLessonRuntimeShell["runtimeStatus"]) {
+  if (status === "in_progress") return "Идёт урок";
+  if (status === "completed") return "Урок завершён";
+  if (status === "cancelled") return "Урок отменён";
+  return "Запланирован";
 }
 
 export function parseTeacherRuntimeUpdateFormData(
@@ -102,6 +110,7 @@ export async function updateTeacherLessonRuntime(
   input: {
     scheduledLessonId: string;
     teacherId: string;
+    actorUserId?: string | null;
     payload: TeacherRuntimeUpdatePayload;
   },
   deps: RuntimeMutationDeps = defaultRuntimeMutationDeps,
@@ -116,11 +125,27 @@ export async function updateTeacherLessonRuntime(
     scheduledLesson.runtimeShell.classId,
   );
 
-  return deps.updateScheduledLessonRuntimeNotes({
+  const updated = await deps.updateScheduledLessonRuntimeNotes({
     scheduledLessonId: input.scheduledLessonId,
     runtimeStatus: input.payload.runtimeStatus,
     runtimeNotesSummary: input.payload.runtimeNotesSummary,
     runtimeNotes: input.payload.runtimeNotes,
     outcomeNotes: input.payload.outcomeNotes,
   });
+
+  if (scheduledLesson.runtimeShell.runtimeStatus !== updated.runtimeShell.runtimeStatus) {
+    try {
+      await notifyLessonStatusChanged({
+        actorUserId: input.actorUserId ?? null,
+        classId: updated.runtimeShell.classId,
+        scheduledLessonId: updated.id,
+        status: updated.runtimeShell.runtimeStatus,
+        statusLabel: formatRuntimeStatusLabel(updated.runtimeShell.runtimeStatus),
+      });
+    } catch (error) {
+      console.warn("[notifications] notifyLessonStatusChanged(runtime) failed", error);
+    }
+  }
+
+  return updated;
 }

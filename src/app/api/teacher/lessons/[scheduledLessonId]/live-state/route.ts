@@ -15,7 +15,7 @@ export async function POST(
 
   try {
     const access = await resolveAccessPolicy();
-    const { teacherId } = assertTeacherRuntimeMutationAccess(access);
+    const { teacherId, userId: actorUserId } = assertTeacherRuntimeMutationAccess(access);
     const payload = (await request.json()) as {
       action: LiveAction;
       stepId?: string;
@@ -29,6 +29,7 @@ export async function POST(
     await applyTeacherScheduledLessonLiveAction({
       scheduledLessonId,
       teacherId,
+      actorUserId,
       action: payload.action,
       stepId: payload.stepId,
       stepOrder: payload.stepOrder,

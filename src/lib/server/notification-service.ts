@@ -17,6 +17,19 @@ type Recipient = {
   studentId?: string | null;
 };
 
+export function toRecipientDedupeKey(
+  prefix: string,
+  recipient: Pick<Recipient, "role" | "teacherId" | "parentId" | "studentId">,
+) {
+  if (recipient.role === "teacher") {
+    return recipient.teacherId ? `${prefix}:teacher:${recipient.teacherId}` : null;
+  }
+  if (recipient.role === "student") {
+    return recipient.studentId ? `${prefix}:student:${recipient.studentId}` : null;
+  }
+  return recipient.parentId ? `${prefix}:parent:${recipient.parentId}` : null;
+}
+
 export function createNotificationInput(
   input: {
     recipient: Recipient;
@@ -104,6 +117,10 @@ export async function notifyHomeworkAssigned(input: {
       scheduledHomeworkAssignmentId: input.scheduledHomeworkAssignmentId,
       studentHomeworkAssignmentId: input.studentHomeworkAssignmentId,
       metadata: { studentId: target.studentId },
+      dedupeKey: toRecipientDedupeKey(
+        `homework_assigned:${input.studentHomeworkAssignmentId}`,
+        { role: "student", studentId: target.studentId },
+      ),
     }),
     createNotificationInput({
       recipient: { userId: target.parentUserId, role: "parent", parentId: target.parentId },
@@ -117,6 +134,10 @@ export async function notifyHomeworkAssigned(input: {
       scheduledHomeworkAssignmentId: input.scheduledHomeworkAssignmentId,
       studentHomeworkAssignmentId: input.studentHomeworkAssignmentId,
       metadata: { studentId: target.studentId, studentName: target.studentDisplayName },
+      dedupeKey: toRecipientDedupeKey(
+        `homework_assigned:${input.studentHomeworkAssignmentId}`,
+        { role: "parent", parentId: target.parentId },
+      ),
     }),
   ]);
 }
@@ -150,6 +171,10 @@ export async function notifyHomeworkSubmitted(input: {
       scheduledLessonId: input.scheduledLessonId,
       studentHomeworkAssignmentId: input.studentHomeworkAssignmentId,
       metadata: { studentId: input.studentId, studentName },
+      dedupeKey: toRecipientDedupeKey(
+        `homework_submitted:${input.studentHomeworkAssignmentId}`,
+        { role: "teacher", teacherId: teacher.teacherId },
+      ),
     }),
   ]);
 }
@@ -185,6 +210,10 @@ export async function notifyHomeworkReviewed(input: {
       scheduledLessonId: input.scheduledLessonId,
       scheduledHomeworkAssignmentId: input.scheduledHomeworkAssignmentId,
       studentHomeworkAssignmentId: input.studentHomeworkAssignmentId,
+      dedupeKey: toRecipientDedupeKey(`${eventType}:${input.studentHomeworkAssignmentId}`, {
+        role: "student",
+        studentId: target.studentId,
+      }),
     }),
     createNotificationInput({
       recipient: { userId: target.parentUserId, role: "parent", parentId: target.parentId },
@@ -198,6 +227,10 @@ export async function notifyHomeworkReviewed(input: {
       scheduledHomeworkAssignmentId: input.scheduledHomeworkAssignmentId,
       studentHomeworkAssignmentId: input.studentHomeworkAssignmentId,
       metadata: { studentId: target.studentId, studentName: target.studentDisplayName },
+      dedupeKey: toRecipientDedupeKey(`${eventType}:${input.studentHomeworkAssignmentId}`, {
+        role: "parent",
+        parentId: target.parentId,
+      }),
     }),
   ]);
 }
@@ -228,6 +261,10 @@ export async function notifyTeacherMessageCreated(input: {
       conversationId: input.conversationId,
       messageId: input.messageId,
       metadata: { classId: input.classId, studentId: input.studentId },
+      dedupeKey: toRecipientDedupeKey(`message_created:${input.messageId}`, {
+        role: "student",
+        studentId: target.studentId,
+      }),
     }),
     createNotificationInput({
       recipient: { userId: target.parentUserId, role: "parent", parentId: target.parentId },
@@ -241,6 +278,10 @@ export async function notifyTeacherMessageCreated(input: {
       conversationId: input.conversationId,
       messageId: input.messageId,
       metadata: { classId: input.classId, studentId: input.studentId, studentName: target.studentDisplayName },
+      dedupeKey: toRecipientDedupeKey(`message_created:${input.messageId}`, {
+        role: "parent",
+        parentId: target.parentId,
+      }),
     }),
   ]);
 }
@@ -278,6 +319,10 @@ export async function notifyStudentMessageCreated(input: {
         conversationId: input.conversationId,
         messageId: input.messageId,
         metadata: { classId: input.classId, studentId: input.studentId, studentName },
+        dedupeKey: toRecipientDedupeKey(`message_created:${input.messageId}`, {
+          role: "teacher",
+          teacherId: teacher.teacherId,
+        }),
       }),
     ),
   );
@@ -308,6 +353,10 @@ export async function notifyLessonGroupMessageCreated(input: {
           scheduledLessonId: input.scheduledLessonId,
           messageId: input.messageId,
           metadata: { classId: input.classId, studentId: student.studentId },
+          dedupeKey: toRecipientDedupeKey(`lesson_group_message_created:${input.messageId}`, {
+            role: "student",
+            studentId: student.studentId,
+          }),
         }),
         createNotificationInput({
           recipient: { userId: student.parentUserId, role: "parent", parentId: student.parentId },
@@ -320,6 +369,10 @@ export async function notifyLessonGroupMessageCreated(input: {
           scheduledLessonId: input.scheduledLessonId,
           messageId: input.messageId,
           metadata: { classId: input.classId, studentId: student.studentId, studentName: student.studentDisplayName },
+          dedupeKey: toRecipientDedupeKey(`lesson_group_message_created:${input.messageId}`, {
+            role: "parent",
+            parentId: student.parentId,
+          }),
         }),
       ]),
     );
@@ -344,7 +397,58 @@ export async function notifyLessonGroupMessageCreated(input: {
         scheduledLessonId: input.scheduledLessonId,
         messageId: input.messageId,
         metadata: { classId: input.classId },
+        dedupeKey: toRecipientDedupeKey(`lesson_group_message_created:${input.messageId}`, {
+          role: "teacher",
+          teacherId: teacher.teacherId,
+        }),
       }),
     ),
+  );
+}
+
+export async function notifyLessonStatusChanged(input: {
+  actorUserId?: string | null;
+  classId: string;
+  scheduledLessonId: string;
+  status: "planned" | "in_progress" | "completed" | "cancelled";
+  statusLabel: string;
+  href?: string;
+}) {
+  const students = await listStudentNotificationTargetsByClassIdAdmin(input.classId);
+  const href = input.href ?? `/lessons/${encodeURIComponent(input.scheduledLessonId)}`;
+
+  await createBestEffort(
+    students.flatMap((student) => [
+      createNotificationInput({
+        recipient: { userId: student.studentUserId, role: "student", studentId: student.studentId },
+        actorUserId: input.actorUserId,
+        actorRole: "teacher",
+        eventType: "lesson_status_changed",
+        title: "Статус урока изменён",
+        body: `Новый статус: ${input.statusLabel}`,
+        href,
+        scheduledLessonId: input.scheduledLessonId,
+        metadata: { classId: input.classId, status: input.status },
+        dedupeKey: toRecipientDedupeKey(
+          `lesson_status_changed:${input.scheduledLessonId}:${input.status}`,
+          { role: "student", studentId: student.studentId },
+        ),
+      }),
+      createNotificationInput({
+        recipient: { userId: student.parentUserId, role: "parent", parentId: student.parentId },
+        actorUserId: input.actorUserId,
+        actorRole: "teacher",
+        eventType: "lesson_status_changed",
+        title: "Статус урока изменён",
+        body: `Новый статус: ${input.statusLabel}`,
+        href,
+        scheduledLessonId: input.scheduledLessonId,
+        metadata: { classId: input.classId, status: input.status, studentId: student.studentId },
+        dedupeKey: toRecipientDedupeKey(
+          `lesson_status_changed:${input.scheduledLessonId}:${input.status}`,
+          { role: "parent", parentId: student.parentId },
+        ),
+      }),
+    ]),
   );
 }

@@ -68,11 +68,13 @@ export default async function NotificationsPage() {
         title="Уведомления"
         description="Системные события по домашним заданиям, сообщениям и статусам."
         actions={
-          <form action={markAllReadAction}>
-            <button type="submit" className="nav-pill nav-pill-inactive px-3 py-1.5 text-sm">
-              Отметить всё прочитанным
-            </button>
-          </form>
+          unreadCount > 0 ? (
+            <form action={markAllReadAction}>
+              <button type="submit" className="nav-pill nav-pill-inactive px-3 py-1.5 text-sm">
+                Отметить всё прочитанным
+              </button>
+            </form>
+          ) : null
         }
         meta={<span className="text-sm text-neutral-500">Непрочитанных: {unreadCount}</span>}
       />
@@ -96,12 +98,16 @@ export default async function NotificationsPage() {
                         <p className="mt-1 text-xs text-neutral-500">{formatDateTime(item.createdAt)}</p>
                       </div>
                       <div className="flex items-center gap-2">
-                        <form action={markOneReadAction}>
-                          <input type="hidden" name="notificationId" value={item.id} />
-                          <button type="submit" className="text-xs text-neutral-500 hover:text-neutral-700">
-                            Прочитано
-                          </button>
-                        </form>
+                        {item.readAt ? (
+                          <span className="text-xs text-neutral-400">Прочитано</span>
+                        ) : (
+                          <form action={markOneReadAction}>
+                            <input type="hidden" name="notificationId" value={item.id} />
+                            <button type="submit" className="text-xs text-neutral-500 hover:text-neutral-700">
+                              Отметить прочитанным
+                            </button>
+                          </form>
+                        )}
                         <Link href={item.href} className="text-xs font-medium text-neutral-700 underline underline-offset-2">
                           Открыть
                         </Link>

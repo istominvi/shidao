@@ -1,11 +1,19 @@
 import type { MethodologyLessonStep } from "@/lib/server/methodology-lesson-unified-read-model";
 import { getScheduledLessonByIdAdmin, updateScheduledLessonRuntimeNotesAdmin } from "@/lib/server/lesson-content-repository";
+import { notifyLessonStatusChanged } from "@/lib/server/notification-service";
 import { assertTeacherAssignedToClassAdmin } from "@/lib/server/supabase-admin";
 import { mapScheduledLessonLiveState, resolveActiveLessonStep } from "@/lib/server/scheduled-lesson-live-state";
 import { loadScheduledLessonUnifiedSeedAdmin } from "@/lib/server/scheduled-lesson-unified-context";
 import { buildTeacherLessonWorkspaceReadModel } from "@/lib/server/teacher-lesson-workspace";
 
 export type LiveAction = "start" | "set_step" | "next" | "previous" | "complete";
+
+function formatRuntimeStatusLabel(status: "planned" | "in_progress" | "completed" | "cancelled") {
+  if (status === "in_progress") return "Идёт урок";
+  if (status === "completed") return "Урок завершён";
+  if (status === "cancelled") return "Урок отменён";
+  return "Запланирован";
+}
 
 function findStepOrThrow(
   steps: MethodologyLessonStep[],
@@ -19,6 +27,7 @@ function findStepOrThrow(
 export async function applyTeacherScheduledLessonLiveAction(input: {
   scheduledLessonId: string;
   teacherId: string;
+  actorUserId?: string | null;
   action: LiveAction;
   stepId?: string;
   stepOrder?: number;
@@ -73,7 +82,7 @@ export async function applyTeacherScheduledLessonLiveAction(input: {
   if (input.action === "start") {
     const firstStep = unified.steps[0];
     if (!firstStep) throw new Error("В уроке нет шагов.");
-    return updateScheduledLessonRuntimeNotesAdmin({
+    const updated = await updateScheduledLessonRuntimeNotesAdmin({
       scheduledLessonId: input.scheduledLessonId,
       runtimeStatus: "in_progress",
       runtimeCurrentStepId: scheduledLesson.runtimeShell.runtimeCurrentStepId ?? firstStep.id,
@@ -83,15 +92,43 @@ export async function applyTeacherScheduledLessonLiveAction(input: {
       runtimeStudentNavigationLocked: true,
       runtimeStepUpdatedAt: new Date().toISOString(),
     });
+    if (liveState.runtimeStatus !== updated.runtimeShell.runtimeStatus) {
+      try {
+        await notifyLessonStatusChanged({
+          actorUserId: input.actorUserId ?? null,
+          classId: updated.runtimeShell.classId,
+          scheduledLessonId: updated.id,
+          status: updated.runtimeShell.runtimeStatus,
+          statusLabel: formatRuntimeStatusLabel(updated.runtimeShell.runtimeStatus),
+        });
+      } catch (error) {
+        console.warn("[notifications] notifyLessonStatusChanged(live:start) failed", error);
+      }
+    }
+    return updated;
   }
 
   if (input.action === "complete") {
-    return updateScheduledLessonRuntimeNotesAdmin({
+    const updated = await updateScheduledLessonRuntimeNotesAdmin({
       scheduledLessonId: input.scheduledLessonId,
       runtimeStatus: "completed",
       runtimeStudentNavigationLocked: false,
       runtimeCompletedAt: new Date().toISOString(),
     });
+    if (liveState.runtimeStatus !== updated.runtimeShell.runtimeStatus) {
+      try {
+        await notifyLessonStatusChanged({
+          actorUserId: input.actorUserId ?? null,
+          classId: updated.runtimeShell.classId,
+          scheduledLessonId: updated.id,
+          status: updated.runtimeShell.runtimeStatus,
+          statusLabel: formatRuntimeStatusLabel(updated.runtimeShell.runtimeStatus),
+        });
+      } catch (error) {
+        console.warn("[notifications] notifyLessonStatusChanged(live:complete) failed", error);
+      }
+    }
+    return updated;
   }
 
   let target = active;
@@ -110,7 +147,7 @@ export async function applyTeacherScheduledLessonLiveAction(input: {
       })();
   }
 
-  return updateScheduledLessonRuntimeNotesAdmin({
+  const updated = await updateScheduledLessonRuntimeNotesAdmin({
     scheduledLessonId: input.scheduledLessonId,
     runtimeStatus:
       liveState.runtimeStatus === "planned" ? "in_progress" : liveState.runtimeStatus,
@@ -122,4 +159,18 @@ export async function applyTeacherScheduledLessonLiveAction(input: {
       liveState.startedAt ??
       (liveState.runtimeStatus === "planned" ? new Date().toISOString() : undefined),
   });
+  if (liveState.runtimeStatus !== updated.runtimeShell.runtimeStatus) {
+    try {
+      await notifyLessonStatusChanged({
+        actorUserId: input.actorUserId ?? null,
+        classId: updated.runtimeShell.classId,
+        scheduledLessonId: updated.id,
+        status: updated.runtimeShell.runtimeStatus,
+        statusLabel: formatRuntimeStatusLabel(updated.runtimeShell.runtimeStatus),
+      });
+    } catch (error) {
+      console.warn("[notifications] notifyLessonStatusChanged(live:navigate) failed", error);
+    }
+  }
+  return updated;
 }

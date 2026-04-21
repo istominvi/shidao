@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   createNotificationInput,
   isNotificationUnread,
+  toRecipientDedupeKey,
   toHomeworkReviewEventType,
 } from "../notification-service";
 
@@ -26,4 +27,35 @@ test("notification generation skips actor as recipient", () => {
     href: "/dashboard",
   });
   assert.equal(draft, null);
+});
+
+test("dedupe key generation uses role-specific ids and skips missing ids", () => {
+  assert.equal(
+    toRecipientDedupeKey("homework_assigned:sha-1", {
+      role: "student",
+      studentId: "student-1",
+    }),
+    "homework_assigned:sha-1:student:student-1",
+  );
+  assert.equal(
+    toRecipientDedupeKey("homework_assigned:sha-1", {
+      role: "parent",
+      parentId: "parent-1",
+    }),
+    "homework_assigned:sha-1:parent:parent-1",
+  );
+  assert.equal(
+    toRecipientDedupeKey("homework_submitted:sha-1", {
+      role: "teacher",
+      teacherId: "teacher-1",
+    }),
+    "homework_submitted:sha-1:teacher:teacher-1",
+  );
+  assert.equal(
+    toRecipientDedupeKey("homework_assigned:sha-1", {
+      role: "parent",
+      parentId: null,
+    }),
+    null,
+  );
 });
