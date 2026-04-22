@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { CalendarDays, ChevronDown, ChevronLeft, ChevronRight, Rows3, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -260,6 +259,7 @@ function StudentLessonsTable({
               <th className="px-4 py-0 text-left align-middle">Учитель</th>
               <th className="px-4 py-0 text-left align-middle">Группа</th>
               <th className="px-4 py-0 text-left align-middle">Формат</th>
+              <th className="px-4 py-0 text-left align-middle">Подключение</th>
               <th className="px-4 py-0 text-left align-middle">ДЗ</th>
             </tr>
           </thead>
@@ -280,6 +280,9 @@ function StudentLessonsTable({
                   <td className="px-3 py-3">{event.teacherLabel}</td>
                   <td className="px-3 py-3">{event.groupLabel}</td>
                   <td className="px-3 py-3">{event.formatLabel}</td>
+                  <td className="px-3 py-3">
+                    <StudentConnectionMeta event={event} stopRowNavigation />
+                  </td>
                   <td className="px-3 py-3">{event.homework ? event.homework.dueAtLabel : ""}</td>
                 </tr>
               );
@@ -306,11 +309,20 @@ function LessonEventCard({
   nowIso: string;
   compact?: boolean;
 }) {
+  const router = useRouter();
   const isCurrent = isNowActive(event, Date.parse(nowIso));
 
   return (
-    <Link
-      href={event.href}
+    <article
+      role="link"
+      tabIndex={0}
+      onClick={() => router.push(event.href)}
+      onKeyDown={(keyboardEvent) => {
+        if (keyboardEvent.key === "Enter" || keyboardEvent.key === " ") {
+          keyboardEvent.preventDefault();
+          router.push(event.href);
+        }
+      }}
       className={`block rounded-2xl border p-3 transition hover:border-sky-300 ${
         isCurrent ? "border-sky-300 bg-sky-50/70" : "border-neutral-200 bg-white"
       }`}
@@ -328,14 +340,46 @@ function LessonEventCard({
       <p className="mt-1 text-xs text-neutral-600">
         Учитель: {event.teacherLabel} · Группа: {event.groupLabel}
       </p>
+      <div className="mt-2">
+        <StudentConnectionMeta event={event} stopRowNavigation />
+      </div>
       <div className="mt-2 rounded-xl border border-neutral-200 bg-neutral-50 px-2.5 py-2">
         <HomeworkPreview event={event} />
       </div>
       <p className={`mt-2 text-xs font-semibold text-sky-700 ${compact ? "" : "sm:text-sm"}`}>
         Открыть урок
       </p>
-    </Link>
+    </article>
   );
+}
+
+function StudentConnectionMeta({
+  event,
+  stopRowNavigation = false,
+}: {
+  event: StudentLessonsHubEvent;
+  stopRowNavigation?: boolean;
+}) {
+  if (event.connection.kind === "online") {
+    return (
+      <div className="space-y-1">
+        <a
+          href={event.connection.meetingLink}
+          target="_blank"
+          rel="noreferrer noopener"
+          onClick={(mouseEvent) => {
+            if (stopRowNavigation) mouseEvent.stopPropagation();
+          }}
+          className="inline-flex rounded-lg border border-sky-200 bg-sky-50 px-2 py-1 text-xs font-semibold text-sky-800 hover:bg-sky-100"
+        >
+          {event.connection.ctaLabel}
+        </a>
+        <p className="text-[11px] text-neutral-500">{event.connection.displayLabel}</p>
+      </div>
+    );
+  }
+
+  return <p className="text-xs text-neutral-600">{event.connection.displayLabel}</p>;
 }
 
 function StudentMonthView({

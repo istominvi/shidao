@@ -209,6 +209,30 @@ export function TeacherLessonWorkspace({
 
   return (
     <div className="space-y-8 lg:space-y-10">
+      <section className="rounded-3xl border border-neutral-200 bg-white p-5">
+        <p className="text-sm font-semibold text-neutral-900">
+          {workspace.presentation.hero.connection.title}
+        </p>
+        {workspace.presentation.hero.connection.kind === "online" ? (
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <a
+              href={workspace.presentation.hero.connection.meetingLink}
+              target="_blank"
+              rel="noreferrer noopener"
+              className={productButtonClassName("secondary", "text-sm")}
+            >
+              {workspace.presentation.hero.connection.ctaLabel}
+            </a>
+            <p className="text-xs text-neutral-600">
+              Ссылка откроется во внешнем сервисе · {workspace.presentation.hero.connection.displayLabel}
+            </p>
+          </div>
+        ) : (
+          <p className="mt-2 text-sm text-neutral-700">
+            {workspace.presentation.hero.connection.place}
+          </p>
+        )}
+      </section>
       <section>
         <LiveLessonControlBar
           liveState={liveState}

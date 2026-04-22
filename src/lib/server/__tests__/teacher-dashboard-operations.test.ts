@@ -90,6 +90,10 @@ test("dashboard operations model builds rows and schedule", async () => {
   assert.equal(configuredEvent?.durationMinutes, 50);
   assert.equal(fallbackEvent?.durationMinutes, 45);
   assert.equal(fallbackEvent?.formatLabel, "Офлайн");
+  assert.equal(configuredEvent?.connection.kind, "online");
+  assert.equal(configuredEvent?.connection.ctaLabel, "Открыть встречу");
+  assert.equal(fallbackEvent?.connection.kind, "offline");
+  assert.equal(fallbackEvent?.connection.displayLabel, "Место: A101");
   assert.equal(fallbackEvent?.timeRangeLabel, "12:15–13:00");
   assert.equal(model.actions[0]?.href, "/groups?create=1");
 });

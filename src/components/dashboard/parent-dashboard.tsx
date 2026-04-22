@@ -10,6 +10,7 @@ import {
   UserRound,
 } from "lucide-react";
 import { toScheduledLessonRoute } from "@/lib/auth";
+import type { LessonConnectionInfo } from "@/lib/lesson-connection";
 import { AppPageHeader } from "@/components/app/page-header";
 import {
   DashboardEmptyState,
@@ -58,6 +59,7 @@ type ParentLesson = {
   startsAt: string;
   startsAtIso: string;
   statusLabel: string;
+  connection: LessonConnectionInfo;
 };
 
 type ParentDashboardProps = {
@@ -147,6 +149,18 @@ function UpcomingLessons({ lessons }: { lessons: ParentLesson[] }) {
                 <Clock3 className="size-3.5" />
                 {lesson.startsAt}
               </p>
+              {lesson.connection.kind === "online" ? (
+                <a
+                  href={lesson.connection.meetingLink}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  className="mt-2 inline-flex rounded-lg border border-sky-200 bg-sky-50 px-2 py-1 text-xs font-semibold text-sky-800 hover:bg-sky-100"
+                >
+                  {lesson.connection.ctaLabel}
+                </a>
+              ) : (
+                <p className="mt-2 text-xs text-neutral-600">{lesson.connection.displayLabel}</p>
+              )}
             </div>
             <span
               className={`shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-medium ${getLessonStatusTone(lesson.statusLabel)}`}

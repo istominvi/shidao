@@ -214,17 +214,37 @@ export function TeacherScheduleSurface({
 
 function ScheduleEventLink({ event }: { event: TeacherScheduleEvent }) {
   return (
-    <Link
-      href={event.href}
-      className="surface-card block cursor-pointer rounded-2xl border border-neutral-200 p-3 transition-colors hover:border-sky-300"
-    >
+    <div className="surface-card rounded-2xl border border-neutral-200 p-3 transition-colors hover:border-sky-300">
+      <Link href={event.href} className="block cursor-pointer">
       <p className="text-sm font-semibold text-neutral-900">{event.groupLabel}</p>
       <p className="text-xs text-neutral-600">{event.lessonTitle}</p>
       <p className="mt-1 text-[11px] text-neutral-500">
         {event.timeRangeLabel} · {event.formatLabel} · {event.statusLabel}
       </p>
-    </Link>
+      </Link>
+      <ScheduleConnectionMeta event={event} />
+    </div>
   );
+}
+
+function ScheduleConnectionMeta({ event }: { event: TeacherScheduleEvent }) {
+  if (event.connection.kind === "online") {
+    return (
+      <div className="mt-2 flex items-center gap-2">
+        <a
+          href={event.connection.meetingLink}
+          target="_blank"
+          rel="noreferrer noopener"
+          className="inline-flex rounded-lg border border-sky-200 bg-sky-50 px-2 py-1 text-xs font-semibold text-sky-800 hover:bg-sky-100"
+        >
+          {event.connection.ctaLabel}
+        </a>
+        <span className="truncate text-[11px] text-neutral-500">{event.connection.displayLabel}</span>
+      </div>
+    );
+  }
+
+  return <p className="mt-2 text-xs text-neutral-600">{event.connection.displayLabel}</p>;
 }
 
 function DayView({

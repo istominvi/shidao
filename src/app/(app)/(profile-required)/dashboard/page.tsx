@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { ParentDashboard } from "@/components/dashboard/parent-dashboard";
 import { ROUTES } from "@/lib/auth";
+import { buildLessonConnectionInfo } from "@/lib/lesson-connection";
 import { resolveAccessPolicy } from "@/lib/server/access-policy";
 import { getParentCommunicationProjection } from "@/lib/server/communication-service";
 import { getParentHomeworkProjection } from "@/lib/server/parent-homework";
@@ -93,6 +94,7 @@ export default async function DashboardIndexPage() {
       startsAt: string;
       startsAtIso: string;
       statusLabel: string;
+      connection: ReturnType<typeof buildLessonConnectionInfo>;
     }>
   > = {};
   for (const child of learningContexts) {
@@ -132,6 +134,10 @@ export default async function DashboardIndexPage() {
             startsAt: formatStartsAt(lesson.runtimeShell.startsAt),
             startsAtIso: lesson.runtimeShell.startsAt,
             statusLabel: formatStatus(lesson.runtimeShell.runtimeStatus),
+            connection: buildLessonConnectionInfo(lesson.runtimeShell, {
+              onlineCtaLabel: "Войти на урок",
+              offlineDisplayPrefix: "Место: ",
+            }),
           };
         }),
       );

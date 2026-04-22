@@ -1,9 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { CalendarClock, CalendarDays, ChevronDown, ChevronLeft, ChevronRight, Rows3, X } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type MouseEvent } from "react";
 import { AppPageHeader } from "@/components/app/page-header";
 import { productActionClassName } from "@/components/ui/action";
 import { Button } from "@/components/ui/button";
@@ -424,6 +423,7 @@ function TeacherLessonsTable({
               <th className="px-4 py-0 text-left align-middle">Урок</th>
               <th className="px-4 py-0 text-left align-middle">Группа</th>
               <th className="px-4 py-0 text-left align-middle">Формат</th>
+              <th className="px-4 py-0 text-left align-middle">Подключение</th>
               <th className="px-4 py-0 text-left align-middle">Статус</th>
             </tr>
           </thead>
@@ -443,6 +443,9 @@ function TeacherLessonsTable({
                   <td className="px-3 py-3">{event.lessonTitle}</td>
                   <td className="px-3 py-3">{event.groupLabel}</td>
                   <td className="px-3 py-3">{event.formatLabel}</td>
+                  <td className="px-3 py-3">
+                    <ConnectionMeta event={event} stopRowNavigation />
+                  </td>
                   <td className="px-3 py-3">{event.statusLabel}</td>
                 </tr>
               );
@@ -469,11 +472,20 @@ function TeacherLessonEventCard({
   nowIso: string;
   compact?: boolean;
 }) {
+  const router = useRouter();
   const isCurrent = isNowActive(event, Date.parse(nowIso));
 
   return (
-    <Link
-      href={event.href}
+    <article
+      role="link"
+      tabIndex={0}
+      onClick={() => router.push(event.href)}
+      onKeyDown={(keyboardEvent) => {
+        if (keyboardEvent.key === "Enter" || keyboardEvent.key === " ") {
+          keyboardEvent.preventDefault();
+          router.push(event.href);
+        }
+      }}
       className={`block rounded-2xl border p-3 transition hover:border-sky-300 ${
         isCurrent ? "border-sky-300 bg-sky-50/70" : "border-neutral-200 bg-white"
       }`}
@@ -489,11 +501,46 @@ function TeacherLessonEventCard({
       </div>
       <p className="mt-1 text-sm font-semibold text-neutral-900">{event.lessonTitle}</p>
       <p className="mt-1 text-xs text-neutral-600">Группа: {event.groupLabel}</p>
+      <div className="mt-2">
+        <ConnectionMeta event={event} stopRowNavigation />
+      </div>
       <p className={`mt-2 text-xs font-semibold text-sky-700 ${compact ? "" : "sm:text-sm"}`}>
         Открыть урок
       </p>
-    </Link>
+    </article>
   );
+}
+
+function ConnectionMeta({
+  event,
+  stopRowNavigation = false,
+}: {
+  event: TeacherLessonsHubReadModel["schedule"]["events"][number];
+  stopRowNavigation?: boolean;
+}) {
+  const stopEvent = (mouseEvent: MouseEvent<HTMLElement>) => {
+    if (!stopRowNavigation) return;
+    mouseEvent.stopPropagation();
+  };
+
+  if (event.connection.kind === "online") {
+    return (
+      <div className="space-y-1">
+        <a
+          href={event.connection.meetingLink}
+          target="_blank"
+          rel="noreferrer noopener"
+          onClick={stopEvent}
+          className="inline-flex rounded-lg border border-sky-200 bg-sky-50 px-2 py-1 text-xs font-semibold text-sky-800 hover:bg-sky-100"
+        >
+          {event.connection.ctaLabel}
+        </a>
+        <p className="text-[11px] text-neutral-500">{event.connection.displayLabel}</p>
+      </div>
+    );
+  }
+
+  return <p className="text-xs text-neutral-600">{event.connection.displayLabel}</p>;
 }
 
 function TeacherMonthView({

@@ -127,6 +127,10 @@ test("lessons hub read model groups upcoming and past lessons and shapes cards",
   assert.equal("blockOverrides" in hub.upcoming[0]!, false);
   assert.equal(hub.schedule.events.length, 2);
   assert.equal(hub.schedule.events[0]?.href, "/lessons/scheduled-past");
+  assert.equal(hub.schedule.events[1]?.connection.kind, "online");
+  assert.equal(hub.schedule.events[1]?.connection.ctaLabel, "Открыть встречу");
+  assert.equal(hub.schedule.events[0]?.connection.kind, "offline");
+  assert.equal(hub.schedule.events[0]?.connection.displayLabel, "Место: Кабинет 5");
   assert.equal(hub.schedule.filters.formatOptions.length, 2);
 });
 
