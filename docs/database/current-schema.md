@@ -43,9 +43,10 @@ This guide describes the **current** ShiDao database model.
 - `scheduled_lesson_homework_assignment` — issued homework for a runtime lesson.
 - `student_homework_assignment` — per-student status/submission/review.
 - `group_student_conversation` — continuous class+student communication channel.
-- `group_student_message` — messages with optional lesson/homework context links.
+- `group_student_message` — messages with optional lesson/homework context links (text body can be null for voice/file-only messages).
 - `lesson_group_conversation` — one shared chat thread per scheduled lesson.
-- `lesson_group_message` — lesson-scoped group chat messages (teacher/student authorship).
+- `lesson_group_message` — lesson-scoped group chat messages (teacher/student authorship, supports voice-only entries).
+- `communication_message_attachment` — message attachments metadata (voice now, files later) with private Storage pointer.
 - `notification` — in-app runtime notifications with read/unread state for teacher/parent/student recipients.
 
 ## Key invariants
