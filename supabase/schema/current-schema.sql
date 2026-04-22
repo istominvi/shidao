@@ -310,7 +310,7 @@ create table if not exists public.group_student_message (
   conversation_id uuid not null references public.group_student_conversation(id) on delete cascade,
   author_user_id uuid references auth.users(id) on delete set null,
   author_role text not null check (author_role in ('teacher', 'student', 'parent')),
-  body text not null,
+  body text,
   scheduled_lesson_id uuid references public.scheduled_lesson(id) on delete set null,
   scheduled_lesson_homework_assignment_id uuid references public.scheduled_lesson_homework_assignment(id) on delete set null,
   topic_kind text check (topic_kind in ('general', 'lesson', 'homework', 'progress', 'organizational')),
@@ -336,9 +336,35 @@ create table if not exists public.lesson_group_message (
   author_student_id uuid references public.student(id) on delete set null,
   author_login text not null,
   author_name text not null,
-  body text not null check (length(btrim(body)) > 0),
+  body text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
+);
+
+create table if not exists public.communication_message_attachment (
+  id uuid primary key default gen_random_uuid(),
+  group_student_message_id uuid references public.group_student_message(id) on delete cascade,
+  lesson_group_message_id uuid references public.lesson_group_message(id) on delete cascade,
+  kind text not null check (kind in ('voice', 'file')),
+  storage_bucket text not null,
+  storage_path text not null unique,
+  mime_type text not null,
+  size_bytes integer not null check (size_bytes > 0),
+  duration_ms integer check (duration_ms is null or duration_ms >= 0),
+  original_filename text,
+  created_by_user_id uuid references auth.users(id) on delete set null,
+  created_at timestamptz not null default now(),
+  metadata jsonb not null default '{}'::jsonb,
+  constraint communication_message_attachment_one_parent_check check (
+    (
+      group_student_message_id is not null
+      and lesson_group_message_id is null
+    )
+    or (
+      group_student_message_id is null
+      and lesson_group_message_id is not null
+    )
+  )
 );
 
 -- -----------------------------------------------------------------------------

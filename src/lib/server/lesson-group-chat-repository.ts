@@ -35,6 +35,16 @@ function isUniqueViolationError(message: string) {
   );
 }
 
+function isBucketNotFoundError(message: string) {
+  const normalized = message.toLowerCase();
+  return normalized.includes("bucket not found") || normalized.includes("not found");
+}
+
+function isBucketAlreadyExistsError(message: string) {
+  const normalized = message.toLowerCase();
+  return normalized.includes("already exists") || normalized.includes("duplicate");
+}
+
 type RowLessonGroupConversation = {
   id: string;
   scheduled_lesson_id: string;
@@ -52,7 +62,23 @@ type RowLessonGroupMessage = {
   author_student_id: string | null;
   author_login: string;
   author_name: string;
-  body: string;
+  body: string | null;
+  created_at: string;
+};
+
+type RowCommunicationMessageAttachment = {
+  id: string;
+  group_student_message_id: string | null;
+  lesson_group_message_id: string | null;
+  kind: "voice" | "file";
+  storage_bucket: string;
+  storage_path: string;
+  mime_type: string;
+  size_bytes: number;
+  duration_ms: number | null;
+  original_filename: string | null;
+  metadata: Json;
+  created_by_user_id: string | null;
   created_at: string;
 };
 
@@ -73,7 +99,23 @@ export type LessonGroupMessage = {
   authorStudentId: string | null;
   authorLogin: string;
   authorName: string;
-  body: string;
+  body: string | null;
+  createdAt: string;
+};
+
+export type CommunicationMessageAttachment = {
+  id: string;
+  groupStudentMessageId: string | null;
+  lessonGroupMessageId: string | null;
+  kind: "voice" | "file";
+  storageBucket: string;
+  storagePath: string;
+  mimeType: string;
+  sizeBytes: number;
+  durationMs: number | null;
+  originalFilename: string | null;
+  metadata: Json;
+  createdByUserId: string | null;
   createdAt: string;
 };
 
@@ -154,6 +196,24 @@ function mapMessage(row: RowLessonGroupMessage): LessonGroupMessage {
   };
 }
 
+function mapAttachment(row: RowCommunicationMessageAttachment): CommunicationMessageAttachment {
+  return {
+    id: row.id,
+    groupStudentMessageId: row.group_student_message_id,
+    lessonGroupMessageId: row.lesson_group_message_id,
+    kind: row.kind,
+    storageBucket: row.storage_bucket,
+    storagePath: row.storage_path,
+    mimeType: row.mime_type,
+    sizeBytes: row.size_bytes,
+    durationMs: row.duration_ms,
+    originalFilename: row.original_filename,
+    metadata: row.metadata,
+    createdByUserId: row.created_by_user_id,
+    createdAt: row.created_at,
+  };
+}
+
 export async function getLessonGroupConversationAdmin(input: { scheduledLessonId: string }) {
   const rows = await adminRequest<RowLessonGroupConversation[]>(
     `/rest/v1/lesson_group_conversation?select=id,scheduled_lesson_id,class_id,title,created_at&scheduled_lesson_id=eq.${input.scheduledLessonId}&limit=1`,
@@ -229,7 +289,7 @@ export async function createLessonGroupMessageAdmin(input: {
   authorStudentId?: string | null;
   authorLogin: string;
   authorName: string;
-  body: string;
+  body: string | null;
 }) {
   const rows = await adminRequest<RowLessonGroupMessage[]>("/rest/v1/lesson_group_message", "POST", {
     payload: {
@@ -246,4 +306,175 @@ export async function createLessonGroupMessageAdmin(input: {
 
   if (!rows[0]) throw new Error("Не удалось отправить сообщение в чат урока.");
   return mapMessage(rows[0]);
+}
+
+export async function getLessonGroupMessageByIdAdmin(messageId: string) {
+  const rows = await adminRequest<RowLessonGroupMessage[]>(
+    `/rest/v1/lesson_group_message?select=id,conversation_id,author_user_id,author_role,author_teacher_id,author_student_id,author_login,author_name,body,created_at&id=eq.${messageId}&limit=1`,
+  );
+  if (!rows[0]) return null;
+  return mapMessage(rows[0]);
+}
+
+export async function deleteLessonGroupMessageByIdAdmin(messageId: string) {
+  await adminRequest<null>(`/rest/v1/lesson_group_message?id=eq.${messageId}`, "DELETE", {
+    allowEmpty: true,
+  });
+}
+
+export async function createCommunicationAttachmentAdmin(input: {
+  lessonGroupMessageId: string;
+  kind: "voice" | "file";
+  storageBucket: string;
+  storagePath: string;
+  mimeType: string;
+  sizeBytes: number;
+  durationMs?: number | null;
+  originalFilename?: string | null;
+  createdByUserId?: string | null;
+  metadata?: Json;
+}) {
+  const rows = await adminRequest<RowCommunicationMessageAttachment[]>(
+    "/rest/v1/communication_message_attachment",
+    "POST",
+    {
+      payload: {
+        lesson_group_message_id: input.lessonGroupMessageId,
+        kind: input.kind,
+        storage_bucket: input.storageBucket,
+        storage_path: input.storagePath,
+        mime_type: input.mimeType,
+        size_bytes: input.sizeBytes,
+        duration_ms: input.durationMs ?? null,
+        original_filename: input.originalFilename ?? null,
+        created_by_user_id: input.createdByUserId ?? null,
+        metadata: input.metadata ?? {},
+      },
+    },
+  );
+
+  if (!rows[0]) throw new Error("Не удалось сохранить вложение сообщения.");
+  return mapAttachment(rows[0]);
+}
+
+export async function listAttachmentsByLessonGroupMessageIdsAdmin(messageIds: string[]) {
+  if (messageIds.length === 0) return [];
+  const inClause = messageIds.join(",");
+  const rows = await adminRequest<RowCommunicationMessageAttachment[]>(
+    `/rest/v1/communication_message_attachment?select=id,group_student_message_id,lesson_group_message_id,kind,storage_bucket,storage_path,mime_type,size_bytes,duration_ms,original_filename,metadata,created_by_user_id,created_at&lesson_group_message_id=in.(${inClause})&order=created_at.asc`,
+  );
+  return rows.map(mapAttachment);
+}
+
+export async function getCommunicationAttachmentByIdAdmin(attachmentId: string) {
+  const rows = await adminRequest<RowCommunicationMessageAttachment[]>(
+    `/rest/v1/communication_message_attachment?select=id,group_student_message_id,lesson_group_message_id,kind,storage_bucket,storage_path,mime_type,size_bytes,duration_ms,original_filename,metadata,created_by_user_id,created_at&id=eq.${attachmentId}&limit=1`,
+  );
+  if (!rows[0]) return null;
+  return mapAttachment(rows[0]);
+}
+
+export async function createSignedStorageObjectUrlAdmin(input: {
+  bucket: string;
+  path: string;
+  expiresInSeconds: number;
+}) {
+  try {
+    const payload = await adminRequest<{ signedURL: string }>(
+      `/storage/v1/object/sign/${encodeURIComponent(input.bucket)}/${input.path}`,
+      "POST",
+      {
+        payload: { expiresIn: input.expiresInSeconds },
+      },
+    );
+    return `${getSupabaseUrl()}/storage/v1${payload.signedURL}`;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (isBucketNotFoundError(message)) {
+      throw new Error(
+        "Storage bucket communication-media не найден. Не удалось сформировать ссылку на аудио.",
+      );
+    }
+    throw error;
+  }
+}
+
+export async function uploadStorageObjectAdmin(input: {
+  bucket: string;
+  path: string;
+  mimeType: string;
+  payload: ArrayBuffer;
+}) {
+  const attemptUpload = async () =>
+    fetch(`${getSupabaseUrl()}/storage/v1/object/${encodeURIComponent(input.bucket)}/${input.path}`, {
+      method: "POST",
+      headers: {
+        apikey: getServiceRoleKey(),
+        Authorization: `Bearer ${getServiceRoleKey()}`,
+        "Content-Type": input.mimeType,
+        "x-upsert": "false",
+      },
+      body: input.payload,
+      cache: "no-store",
+    });
+
+  let response = await attemptUpload();
+  if (!response.ok) {
+    const payloadError = (await response.json().catch(() => null)) as
+      | { message?: string; error?: string }
+      | null;
+    const message =
+      payloadError?.message ?? payloadError?.error ?? "Не удалось загрузить медиа в Storage.";
+    if (isBucketNotFoundError(message)) {
+      await ensureStorageBucketExistsAdmin(input.bucket);
+      response = await attemptUpload();
+      if (response.ok) return;
+      const retryPayloadError = (await response.json().catch(() => null)) as
+        | { message?: string; error?: string }
+        | null;
+      const retryMessage =
+        retryPayloadError?.message ??
+        retryPayloadError?.error ??
+        "Не удалось загрузить медиа в Storage.";
+      throw new Error(`Не удалось загрузить голосовое сообщение: ${retryMessage}`);
+    }
+    throw new Error(message);
+  }
+}
+
+export async function deleteStorageObjectAdmin(input: { bucket: string; path: string }) {
+  await adminRequest<{ message?: string }>(
+    `/storage/v1/object/${encodeURIComponent(input.bucket)}/${input.path}`,
+    "DELETE",
+    { allowEmpty: true },
+  );
+}
+
+async function ensureStorageBucketExistsAdmin(bucketId: string) {
+  const response = await fetch(`${getSupabaseUrl()}/storage/v1/bucket`, {
+    method: "POST",
+    headers: {
+      apikey: getServiceRoleKey(),
+      Authorization: `Bearer ${getServiceRoleKey()}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      id: bucketId,
+      name: bucketId,
+      public: false,
+      file_size_limit: 10 * 1024 * 1024,
+      allowed_mime_types: ["audio/webm", "audio/ogg", "audio/mp4", "audio/mpeg", "audio/wav"],
+    }),
+    cache: "no-store",
+  });
+
+  if (response.ok) return;
+  const payloadError = (await response.json().catch(() => null)) as
+    | { message?: string; error?: string }
+    | null;
+  const message = payloadError?.message ?? payloadError?.error ?? "Не удалось создать bucket.";
+  if (isBucketAlreadyExistsError(message)) return;
+  throw new Error(
+    `Storage bucket ${bucketId} не найден и не удалось создать автоматически: ${message}`,
+  );
 }
