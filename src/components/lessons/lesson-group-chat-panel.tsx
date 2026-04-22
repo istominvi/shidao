@@ -68,6 +68,7 @@ export function LessonGroupChatPanel({
   const [previewDurationMs, setPreviewDurationMs] = useState<number | null>(null);
   const [audioUrls, setAudioUrls] = useState<Record<string, string>>({});
   const [audioLoadErrors, setAudioLoadErrors] = useState<Record<string, string>>({});
+  const [deletingMessageId, setDeletingMessageId] = useState<string | null>(null);
 
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -307,6 +308,33 @@ export function LessonGroupChatPanel({
     }
   };
 
+  const onDeleteMessage = async (messageId: string) => {
+    if (!resolvedCanWrite || pending || deletingMessageId) return;
+    const shouldDelete = window.confirm("Удалить это сообщение?");
+    if (!shouldDelete) return;
+
+    setDeletingMessageId(messageId);
+    setError(null);
+    try {
+      const response = await fetch(`/api/lessons/${scheduledLessonId}/group-chat`, {
+        method: "DELETE",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ messageId }),
+      });
+      const data = (await response.json().catch(() => ({}))) as
+        | LessonGroupChatReadModel
+        | { error?: string };
+      if (!response.ok) {
+        throw new Error("error" in data ? data.error : "Не удалось удалить сообщение.");
+      }
+      setModel(data as LessonGroupChatReadModel);
+    } catch (apiError) {
+      setError(apiError instanceof Error ? apiError.message : "Не удалось удалить сообщение.");
+    } finally {
+      setDeletingMessageId(null);
+    }
+  };
+
   const recorderStatusText = useMemo(() => {
     if (recorderState === "requesting") return "Запрашиваем доступ к микрофону...";
     if (recorderState === "uploading") return "Отправляем голосовое сообщение...";
@@ -337,6 +365,19 @@ export function LessonGroupChatPanel({
                     message.isOwn ? "bg-sky-100/70 text-neutral-900" : "bg-white text-neutral-900",
                   )}
                 >
+                  {message.isOwn && resolvedCanWrite ? (
+                    <div className="mb-1 flex justify-end">
+                      <button
+                        type="button"
+                        onClick={() => void onDeleteMessage(message.id)}
+                        aria-label="Удалить сообщение"
+                        className="inline-flex size-6 items-center justify-center rounded-lg text-neutral-500 hover:bg-white/70 hover:text-neutral-800 disabled:opacity-50"
+                        disabled={Boolean(deletingMessageId) || pending}
+                      >
+                        <Trash2 className="size-3.5" aria-hidden />
+                      </button>
+                    </div>
+                  ) : null}
                   {message.body ? <p className="whitespace-pre-wrap break-words">{message.body}</p> : null}
                   {message.attachments.map((attachment) =>
                     attachment.kind === "voice" ? (
