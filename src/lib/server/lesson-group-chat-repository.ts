@@ -374,6 +374,12 @@ export async function getCommunicationAttachmentByIdAdmin(attachmentId: string) 
   return mapAttachment(rows[0]);
 }
 
+export async function deleteCommunicationAttachmentByIdAdmin(attachmentId: string) {
+  await adminRequest<null>(`/rest/v1/communication_message_attachment?id=eq.${attachmentId}`, "DELETE", {
+    allowEmpty: true,
+  });
+}
+
 export async function createSignedStorageObjectUrlAdmin(input: {
   bucket: string;
   path: string;

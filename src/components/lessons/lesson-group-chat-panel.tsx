@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { productButtonClassName } from "@/components/ui/button";
+import { Mic, SendHorizontal, Trash2 } from "lucide-react";
 import { classNames } from "@/lib/ui/classnames";
 import type { LessonGroupChatReadModel } from "@/lib/server/lesson-group-chat-service";
 
@@ -11,7 +11,7 @@ type LessonGroupChatPanelProps = {
   canWrite?: boolean;
 };
 
-type RecorderState = "idle" | "requesting" | "recording" | "preview" | "uploading" | "error";
+type RecorderState = "idle" | "requesting" | "recording" | "preview" | "uploading";
 
 const MAX_DURATION_SECONDS = 120;
 
@@ -27,7 +27,7 @@ function formatMessageTime(iso: string) {
 function formatDuration(durationMs: number | null) {
   if (durationMs === null) return "";
   const totalSeconds = Math.floor(durationMs / 1000);
-  const minutes = String(Math.floor(totalSeconds / 60)).padStart(2, "0");
+  const minutes = String(Math.floor(totalSeconds / 60));
   const seconds = String(totalSeconds % 60).padStart(2, "0");
   return `${minutes}:${seconds}`;
 }
@@ -39,6 +39,17 @@ function chooseRecorderMimeType() {
     if (MediaRecorder.isTypeSupported(candidate)) return candidate;
   }
   return "";
+}
+
+function getAuthorDisplayName(message: LessonGroupChatReadModel["messages"][number]) {
+  const trimmedName = message.authorName.trim();
+  if (trimmedName.length > 0) return trimmedName;
+
+  const fallbackLogin = message.authorLogin.trim();
+  if (fallbackLogin.length > 0 && !fallbackLogin.startsWith("@")) return fallbackLogin;
+  if (fallbackLogin.length > 0) return fallbackLogin.slice(1);
+
+  return "Ученик";
 }
 
 export function LessonGroupChatPanel({
@@ -56,14 +67,19 @@ export function LessonGroupChatPanel({
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewDurationMs, setPreviewDurationMs] = useState<number | null>(null);
   const [audioUrls, setAudioUrls] = useState<Record<string, string>>({});
+  const [audioLoadErrors, setAudioLoadErrors] = useState<Record<string, string>>({});
+  const [deletingMessageId, setDeletingMessageId] = useState<string | null>(null);
 
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const chunksRef = useRef<BlobPart[]>([]);
   const timerRef = useRef<number | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   const resolvedCanWrite = canWrite ?? model?.canWrite ?? false;
+  const canSendText = body.trim().length > 0;
+  const canSendAny = canSendText || recorderState === "preview";
 
   const cleanupRecording = () => {
     if (timerRef.current) {
@@ -122,7 +138,7 @@ export function LessonGroupChatPanel({
   }, [audioUrls, previewUrl]);
 
   const onSend = async () => {
-    if (!resolvedCanWrite || pending) return;
+    if (!resolvedCanWrite || pending || !canSendText) return;
     setPending(true);
     setError(null);
     try {
@@ -143,6 +159,9 @@ export function LessonGroupChatPanel({
 
       setModel(data as LessonGroupChatReadModel);
       setBody("");
+      if (textareaRef.current) {
+        textareaRef.current.style.height = "auto";
+      }
     } catch (apiError) {
       setError(apiError instanceof Error ? apiError.message : "Не удалось отправить сообщение.");
     } finally {
@@ -152,7 +171,7 @@ export function LessonGroupChatPanel({
 
   const requestSignedUrl = useCallback(
     async (attachmentId: string) => {
-      if (audioUrls[attachmentId]) return;
+      if (audioUrls[attachmentId] || audioLoadErrors[attachmentId]) return;
       const response = await fetch(
         `/api/communication/attachments/${attachmentId}/signed-url?scheduledLessonId=${encodeURIComponent(scheduledLessonId)}`,
         { cache: "no-store" },
@@ -163,21 +182,30 @@ export function LessonGroupChatPanel({
       }
       setAudioUrls((prev) => ({ ...prev, [attachmentId]: data.signedUrl! }));
     },
-    [audioUrls, scheduledLessonId],
+    [audioLoadErrors, audioUrls, scheduledLessonId],
   );
 
   useEffect(() => {
     const voiceAttachments =
-      model?.messages.flatMap((message) => message.attachments.filter((item) => item.kind === "voice")) ??
-      [];
+      model?.messages.flatMap((message) => message.attachments.filter((item) => item.kind === "voice")) ?? [];
     for (const attachment of voiceAttachments) {
-      if (audioUrls[attachment.id]) continue;
-      void requestSignedUrl(attachment.id).catch(() => undefined);
+      if (audioUrls[attachment.id] || audioLoadErrors[attachment.id]) continue;
+      void requestSignedUrl(attachment.id).catch((apiError) => {
+        setAudioLoadErrors((prev) => ({
+          ...prev,
+          [attachment.id]: apiError instanceof Error ? apiError.message : "Не удалось загрузить аудио.",
+        }));
+      });
     }
-  }, [audioUrls, model?.messages, requestSignedUrl]);
+  }, [audioLoadErrors, audioUrls, model?.messages, requestSignedUrl]);
 
   const startRecording = async () => {
     if (!resolvedCanWrite || recorderState === "recording" || recorderState === "requesting") return;
+
+    if (typeof window === "undefined" || typeof MediaRecorder === "undefined") {
+      setError("Ваш браузер не поддерживает запись голосовых сообщений.");
+      return;
+    }
 
     setError(null);
     setRecorderState("requesting");
@@ -201,7 +229,7 @@ export function LessonGroupChatPanel({
         cleanupRecording();
         const blob = new Blob(chunksRef.current, { type: recorder.mimeType || "audio/webm" });
         if (blob.size === 0) {
-          setRecorderState("error");
+          setRecorderState("idle");
           setError("Не удалось записать голосовое сообщение.");
           return;
         }
@@ -226,8 +254,8 @@ export function LessonGroupChatPanel({
       }, 1000);
     } catch {
       cleanupRecording();
-      setRecorderState("error");
-      setError("Не удалось получить доступ к микрофону. Разрешите доступ к микрофону в браузере.");
+      setRecorderState("idle");
+      setError("Не удалось получить доступ к микрофону. Проверьте разрешения браузера.");
     }
   };
 
@@ -280,131 +308,199 @@ export function LessonGroupChatPanel({
     }
   };
 
+  const onDeleteMessage = async (messageId: string) => {
+    if (!resolvedCanWrite || pending || deletingMessageId) return;
+    const shouldDelete = window.confirm("Удалить это сообщение?");
+    if (!shouldDelete) return;
+
+    setDeletingMessageId(messageId);
+    setError(null);
+    try {
+      const response = await fetch(`/api/lessons/${scheduledLessonId}/group-chat`, {
+        method: "DELETE",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ messageId }),
+      });
+      const data = (await response.json().catch(() => ({}))) as
+        | LessonGroupChatReadModel
+        | { error?: string };
+      if (!response.ok) {
+        throw new Error("error" in data ? data.error : "Не удалось удалить сообщение.");
+      }
+      setModel(data as LessonGroupChatReadModel);
+    } catch (apiError) {
+      setError(apiError instanceof Error ? apiError.message : "Не удалось удалить сообщение.");
+    } finally {
+      setDeletingMessageId(null);
+    }
+  };
+
   const recorderStatusText = useMemo(() => {
-    if (recorderState === "recording") return `Запись ${formatDuration(recordingMs)}`;
     if (recorderState === "requesting") return "Запрашиваем доступ к микрофону...";
     if (recorderState === "uploading") return "Отправляем голосовое сообщение...";
     return null;
-  }, [recorderState, recordingMs]);
+  }, [recorderState]);
 
   return (
     <div className="space-y-3">
       <div
         ref={viewportRef}
-        className="max-h-[24rem] space-y-2 overflow-y-auto rounded-2xl border border-neutral-200 bg-neutral-50 p-3"
+        className="max-h-[24rem] space-y-3 overflow-y-auto rounded-2xl border border-neutral-200/80 bg-neutral-50 p-3"
       >
         {!model || model.messages.length === 0 ? (
-          <p className="text-sm text-neutral-600">
-            Пока нет сообщений. Напишите первое сообщение для группы.
-          </p>
+          <p className="px-1 text-sm text-neutral-600">Пока нет сообщений. Начните обсуждение урока.</p>
         ) : (
           model.messages.map((message) => (
             <article
               key={message.id}
-              className={classNames(
-                "max-w-[85%] rounded-2xl px-3 py-2 text-sm",
-                message.isOwn
-                  ? "ml-auto border border-sky-200 bg-sky-50 text-sky-950"
-                  : "mr-auto border border-neutral-200 bg-white text-neutral-900",
-              )}
+              className={classNames("flex", message.isOwn ? "justify-end" : "justify-start")}
             >
-              <p className="text-xs font-semibold text-neutral-700">
-                @{message.authorLogin} — {message.authorName}
-              </p>
-              {message.body ? <p className="mt-1 whitespace-pre-wrap break-words">{message.body}</p> : null}
-              {message.attachments.map((attachment) =>
-                attachment.kind === "voice" ? (
-                  <div key={attachment.id} className="mt-2 rounded-xl border border-neutral-200 bg-white/80 p-2">
-                    <audio
-                      controls
-                      preload="none"
-                      className="w-full"
-                      src={audioUrls[attachment.id] ?? undefined}
-                    />
-                    {attachment.durationMs !== null ? (
-                      <p className="mt-1 text-[11px] text-neutral-500">{formatDuration(attachment.durationMs)}</p>
-                    ) : null}
-                  </div>
-                ) : null,
-              )}
-              <p className="mt-1 text-right text-[11px] text-neutral-500">
-                {formatMessageTime(message.createdAt)}
-              </p>
+              <div className="w-full max-w-[85%] md:max-w-[70%]">
+                {!message.isOwn ? (
+                  <p className="mb-1 px-1 text-[11px] font-medium text-neutral-500">{getAuthorDisplayName(message)}</p>
+                ) : null}
+                <div
+                  className={classNames(
+                    "rounded-2xl px-3 py-2 text-sm shadow-sm",
+                    message.isOwn ? "bg-sky-100/70 text-neutral-900" : "bg-white text-neutral-900",
+                  )}
+                >
+                  {message.isOwn && resolvedCanWrite ? (
+                    <div className="mb-1 flex justify-end">
+                      <button
+                        type="button"
+                        onClick={() => void onDeleteMessage(message.id)}
+                        aria-label="Удалить сообщение"
+                        className="inline-flex size-6 items-center justify-center rounded-lg text-neutral-500 hover:bg-white/70 hover:text-neutral-800 disabled:opacity-50"
+                        disabled={Boolean(deletingMessageId) || pending}
+                      >
+                        <Trash2 className="size-3.5" aria-hidden />
+                      </button>
+                    </div>
+                  ) : null}
+                  {message.body ? <p className="whitespace-pre-wrap break-words">{message.body}</p> : null}
+                  {message.attachments.map((attachment) =>
+                    attachment.kind === "voice" ? (
+                      <div key={attachment.id} className={classNames(message.body ? "mt-2" : "", "space-y-1")}>
+                        <div className="flex items-center gap-2 text-[11px] text-neutral-500">
+                          <span>Голосовое сообщение</span>
+                          {attachment.durationMs !== null ? <span>{formatDuration(attachment.durationMs)}</span> : null}
+                        </div>
+                        {audioLoadErrors[attachment.id] ? (
+                          <p className="text-xs text-rose-600">Не удалось загрузить аудио.</p>
+                        ) : (
+                          <audio
+                            controls
+                            preload="none"
+                            className="w-full max-w-[20rem]"
+                            src={audioUrls[attachment.id] ?? undefined}
+                          />
+                        )}
+                      </div>
+                    ) : null,
+                  )}
+                  <p className="mt-1 text-right text-[11px] text-neutral-500">{formatMessageTime(message.createdAt)}</p>
+                </div>
+              </div>
             </article>
           ))
         )}
       </div>
 
-      {error ? (
-        <p className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
-          {error}
-        </p>
-      ) : null}
+      {error ? <p className="px-1 text-xs text-rose-700">{error}</p> : null}
+      {recorderStatusText ? <p className="px-1 text-xs text-neutral-500">{recorderStatusText}</p> : null}
 
       {resolvedCanWrite ? (
-        <div className="space-y-2">
-          <textarea
-            rows={3}
-            value={body}
-            onChange={(event) => setBody(event.target.value)}
-            className="w-full rounded-xl border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900"
-            placeholder="Сообщение в общий чат урока"
-            maxLength={2000}
-          />
-
-          {recorderStatusText ? (
-            <div className="rounded-xl border border-sky-200 bg-sky-50 px-3 py-2 text-xs text-sky-700">
-              {recorderStatusText}
+        recorderState === "recording" ? (
+          <div className="flex items-center justify-between gap-2 rounded-2xl border border-neutral-200 bg-white px-3 py-2">
+            <div className="flex items-center gap-2 text-sm text-neutral-700">
+              <span aria-hidden className="inline-block size-2 rounded-full bg-rose-500" />
+              <span>Идёт запись</span>
+              <span className="text-neutral-500">{formatDuration(recordingMs)}</span>
             </div>
-          ) : null}
-
-          {recorderState === "recording" ? (
-            <div className="flex flex-wrap gap-2">
-              <button type="button" className={productButtonClassName("ghost", "text-sm")} onClick={cancelRecording}>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                className="rounded-xl px-3 py-1.5 text-sm text-neutral-600 hover:bg-neutral-100"
+                onClick={cancelRecording}
+              >
                 Отменить
               </button>
-              <button type="button" className={productButtonClassName("secondary", "text-sm")} onClick={stopRecording}>
+              <button
+                type="button"
+                className="rounded-xl bg-neutral-900 px-3 py-1.5 text-sm text-white hover:bg-neutral-800"
+                onClick={stopRecording}
+              >
                 Остановить
               </button>
             </div>
-          ) : null}
-
-          {recorderState === "preview" && previewUrl ? (
-            <div className="space-y-2 rounded-xl border border-neutral-200 bg-neutral-50 p-3">
-              <audio controls preload="metadata" className="w-full" src={previewUrl} />
-              <div className="flex flex-wrap gap-2">
-                <button type="button" className={productButtonClassName("ghost", "text-sm")} onClick={clearPreview}>
-                  Удалить
-                </button>
-                <button type="button" className={productButtonClassName("secondary", "text-sm")} onClick={() => void sendVoice()}>
-                  Отправить голос
-                </button>
-              </div>
+          </div>
+        ) : recorderState === "preview" && previewUrl ? (
+          <div className="space-y-2 rounded-2xl border border-neutral-200 bg-white p-3">
+            <div className="flex items-center justify-between gap-2 text-sm text-neutral-700">
+              <span>Голосовое сообщение готово</span>
+              {previewDurationMs !== null ? <span className="text-xs text-neutral-500">{formatDuration(previewDurationMs)}</span> : null}
             </div>
-          ) : null}
-
-          <div className="flex flex-wrap items-center gap-2">
+            <audio controls preload="metadata" className="w-full" src={previewUrl} />
+            <div className="flex items-center justify-end gap-2">
+              <button
+                type="button"
+                className="inline-flex items-center gap-1 rounded-xl px-3 py-1.5 text-sm text-neutral-600 hover:bg-neutral-100"
+                onClick={clearPreview}
+              >
+                <Trash2 className="size-4" aria-hidden />
+                Удалить
+              </button>
+              <button
+                type="button"
+                className="inline-flex items-center gap-1 rounded-xl bg-neutral-900 px-3 py-1.5 text-sm text-white hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-60"
+                onClick={() => void sendVoice()}
+                disabled={pending}
+              >
+                <SendHorizontal className="size-4" aria-hidden />
+                Отправить
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-end gap-2 rounded-2xl border border-neutral-200 bg-white p-2">
+            <textarea
+              ref={textareaRef}
+              rows={1}
+              value={body}
+              onChange={(event) => setBody(event.target.value)}
+              onInput={(event) => {
+                const target = event.currentTarget;
+                target.style.height = "auto";
+                target.style.height = `${Math.min(target.scrollHeight, 104)}px`;
+              }}
+              className="max-h-[104px] min-h-[38px] flex-1 resize-none bg-transparent px-2 py-2 text-sm text-neutral-900 outline-none placeholder:text-neutral-400"
+              placeholder="Сообщение в чат урока"
+              maxLength={2000}
+            />
             <button
               type="button"
-              className={productButtonClassName("ghost", "text-sm")}
+              className="inline-flex size-9 items-center justify-center rounded-xl text-neutral-600 transition hover:bg-neutral-100 disabled:opacity-50"
               onClick={() => void startRecording()}
-              disabled={pending || recorderState === "recording" || recorderState === "uploading"}
+              disabled={pending || recorderState === "uploading"}
+              aria-label="Записать голосовое"
             >
-              🎤
+              <Mic className="size-4" aria-hidden />
             </button>
             <button
               type="button"
-              className={productButtonClassName("secondary", "text-sm")}
+              className="inline-flex size-9 items-center justify-center rounded-xl bg-neutral-900 text-white transition hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-50"
               onClick={() => void onSend()}
-              disabled={pending || recorderState === "uploading"}
+              disabled={pending || recorderState === "uploading" || !canSendAny}
+              aria-label="Отправить сообщение"
             >
-              Отправить
+              <SendHorizontal className="size-4" aria-hidden />
             </button>
           </div>
-        </div>
+        )
       ) : (
-        <p className="text-xs text-neutral-600">
-          Родительский просмотр: писать в чат может преподаватель и ученики группы.
+        <p className="px-1 text-xs text-neutral-600">
+          Родительский просмотр: писать в чат может преподаватель и ученик.
         </p>
       )}
     </div>

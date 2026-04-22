@@ -5,6 +5,7 @@ import {
   createCommunicationAttachmentAdmin,
   createLessonGroupMessageAdmin,
   createSignedStorageObjectUrlAdmin,
+  deleteCommunicationAttachmentByIdAdmin,
   deleteLessonGroupMessageByIdAdmin,
   deleteStorageObjectAdmin,
   ensureLessonGroupConversationAdmin,
@@ -469,4 +470,47 @@ export async function getCommunicationAttachmentSignedUrl(input: {
     signedUrl,
     expiresInSeconds: SIGNED_URL_TTL_SECONDS,
   };
+}
+
+export async function deleteLessonGroupChatMessage(input: {
+  scheduledLessonId: string;
+  messageId: string;
+  accessResolution: AccessResolution;
+}) {
+  const principal = await resolveLessonChatPrincipal(input.accessResolution);
+  const readAccess = await assertCanReadLessonChat({
+    scheduledLessonId: input.scheduledLessonId,
+    principal,
+  });
+
+  if (!readAccess.canWrite || principal.kind === "parent") {
+    throw new Error("Родительский профиль не может удалять сообщения в чате урока.");
+  }
+
+  const conversation = await getLessonGroupConversationAdmin({
+    scheduledLessonId: readAccess.scheduledLesson.id,
+  });
+  if (!conversation) throw new Error("Чат урока не найден.");
+
+  const message = await getLessonGroupMessageByIdAdmin(input.messageId);
+  if (!message || message.conversationId !== conversation.id) {
+    throw new Error("Сообщение не найдено.");
+  }
+
+  const canDelete =
+    principal.kind === "teacher" || (message.authorUserId !== null && message.authorUserId === principal.userId);
+  if (!canDelete) {
+    throw new Error("Недостаточно прав для удаления сообщения.");
+  }
+
+  const attachments = await listAttachmentsByLessonGroupMessageIdsAdmin([message.id]);
+  for (const attachment of attachments) {
+    await deleteStorageObjectAdmin({
+      bucket: attachment.storageBucket,
+      path: attachment.storagePath,
+    }).catch(() => undefined);
+    await deleteCommunicationAttachmentByIdAdmin(attachment.id);
+  }
+
+  await deleteLessonGroupMessageByIdAdmin(message.id);
 }
