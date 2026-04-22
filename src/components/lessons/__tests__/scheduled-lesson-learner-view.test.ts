@@ -115,10 +115,13 @@ test("shared learner deck uses dedicated lesson one student activities for canon
   assert.equal(sharedDeckSource.includes("isWorldAroundMeLessonOneCanonicalStep"), true);
 });
 
-test("lesson one step 1 student screen keeps teacher playlist behavior", () => {
-  assert.equal(lessonOneActivitiesSource.includes("lessonOneStepOneVideoPlaylist"), true);
-  assert.equal(lessonOneActivitiesSource.includes("onEnded={goToNextVideo}"), true);
-  assert.equal(lessonOneActivitiesSource.includes("Свинья"), true);
-  assert.equal(lessonOneActivitiesSource.includes("Кролик"), true);
-  assert.equal(lessonOneActivitiesSource.includes("Гуси"), true);
+test("lesson one student screen keeps canonical 16-step ordering cues", () => {
+  assert.equal(lessonOneActivitiesSource.includes("step.order === 1"), true);
+  assert.equal(lessonOneActivitiesSource.includes("step.order === 14"), true);
+  assert.equal(lessonOneActivitiesSource.includes("step.order === 15"), true);
+  assert.equal(lessonOneActivitiesSource.includes("step.order === 16"), true);
+  assert.equal(lessonOneActivitiesSource.includes("Свинья"), false);
+  assert.equal(lessonOneActivitiesSource.includes("Гуси"), false);
+  assert.equal(lessonOneActivitiesSource.includes("你好！"), true);
+  assert.equal(lessonOneActivitiesSource.includes("再见！"), true);
 });
