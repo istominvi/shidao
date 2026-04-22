@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, ChevronLeft, ChevronRight, Play } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, ExternalLink, Play } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { TeacherLessonWorkspaceReadModel } from "@/lib/server/teacher-lesson-workspace";
@@ -209,30 +209,16 @@ export function TeacherLessonWorkspace({
 
   return (
     <div className="space-y-8 lg:space-y-10">
-      <section className="rounded-3xl border border-neutral-200 bg-white p-5">
-        <p className="text-sm font-semibold text-neutral-900">
-          {workspace.presentation.hero.connection.title}
-        </p>
-        {workspace.presentation.hero.connection.kind === "online" ? (
-          <div className="mt-2 flex flex-wrap items-center gap-2">
-            <a
-              href={workspace.presentation.hero.connection.meetingLink}
-              target="_blank"
-              rel="noreferrer noopener"
-              className={productButtonClassName("secondary", "text-sm")}
-            >
-              {workspace.presentation.hero.connection.ctaLabel}
-            </a>
-            <p className="text-xs text-neutral-600">
-              Ссылка откроется во внешнем сервисе · {workspace.presentation.hero.connection.displayLabel}
-            </p>
-          </div>
-        ) : (
+      {workspace.presentation.hero.connection.kind === "offline" ? (
+        <section className="rounded-3xl border border-neutral-200 bg-white p-5">
+          <p className="text-sm font-semibold text-neutral-900">
+            {workspace.presentation.hero.connection.title}
+          </p>
           <p className="mt-2 text-sm text-neutral-700">
             {workspace.presentation.hero.connection.place}
           </p>
-        )}
-      </section>
+        </section>
+      ) : null}
       <section>
         <LiveLessonControlBar
           liveState={liveState}
@@ -244,12 +230,25 @@ export function TeacherLessonWorkspace({
       </section>
 
       <SurfaceCard as="section" className="p-5 md:p-6" bodyClassName="mt-0">
-        <TeacherLessonTabs
-          tabs={["plan", "student_screen", "homework", "chat"]}
-          activeTab={tab}
-          onTabChange={setTab}
-          tone="embedded"
-        />
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <TeacherLessonTabs
+            tabs={["plan", "student_screen", "homework", "chat"]}
+            activeTab={tab}
+            onTabChange={setTab}
+            tone="embedded"
+          />
+          {workspace.presentation.hero.connection.kind === "online" ? (
+            <a
+              href={workspace.presentation.hero.connection.meetingLink}
+              target="_blank"
+              rel="noreferrer noopener"
+              className={productButtonClassName("secondary", "text-sm")}
+            >
+              <span>{workspace.presentation.hero.connection.ctaLabel}</span>
+              <ExternalLink className="h-4 w-4" aria-hidden="true" />
+            </a>
+          ) : null}
+        </div>
         {liveActionError ? (
           <p className="mt-4 rounded-xl border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-700">
             Не удалось обновить live-режим урока: {liveActionError}
