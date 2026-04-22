@@ -25,7 +25,7 @@ test("learner lesson view supports dedicated preview role", () => {
 });
 
 test("learner lesson view renders shared learner deck", () => {
-  assert.equal(source.includes("LessonLearnerContentDeck"), true);
+  assert.equal(source.includes("LessonStudentContentPanel"), true);
   assert.equal(source.includes("model.unifiedReadModel.steps"), true);
   assert.equal(source.includes("controlledStepId"), true);
   assert.equal(source.includes("student_live_locked"), true);

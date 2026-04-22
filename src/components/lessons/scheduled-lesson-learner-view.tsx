@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { ExternalLink } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { LessonLearnerContentDeck } from "@/components/lessons/lesson-learner-content-deck";
+import { LessonStudentContentPanel } from "@/components/lessons/lesson-student-content-panel";
 import { productButtonClassName } from "@/components/ui/button";
 import { SurfaceCard } from "@/components/ui/surface-card";
 import { StudentHomeworkQuizCard } from "@/components/dashboard/student-homework-quiz-card";
 import { LessonGroupChatPanel } from "@/components/lessons/lesson-group-chat-panel";
-import { classNames } from "@/lib/ui/classnames";
+import { TeacherLessonTabs, type TeacherLessonTabKey } from "@/components/lessons/teacher-lesson-tabs";
 import type {
   ParentScheduledLessonView,
   ScheduledLessonPreviewView,
@@ -121,21 +122,35 @@ export function ScheduledLessonLearnerView({
           <p className="mt-2 text-sm text-neutral-700">Пожалуйста, дождитесь нового расписания от преподавателя.</p>
         </div>
       ) : null}
-      {liveState.runtimeStatus !== "planned" &&
-      liveState.runtimeStatus !== "cancelled" ? (
-        <LessonLearnerContentDeck
+      {liveState.runtimeStatus !== "planned" && liveState.runtimeStatus !== "cancelled" ? (
+        <LessonStudentContentPanel
+          title="Экран ученика"
+          embedded
+          showFullscreenControl
           steps={model.unifiedReadModel.steps}
           source={model.studentContent}
           unavailableReason={model.studentContentUnavailableReason}
           assetsById={model.unifiedReadModel.assetsById}
           mode={learnerMode}
-          controlledStepId={
-            learnerMode === "student_live_locked" ? controlledStepId ?? undefined : undefined
-          }
+          controlledStepId={learnerMode === "student_live_locked" ? controlledStepId ?? undefined : undefined}
         />
       ) : null}
     </>
   );
+
+  const studentActiveTab: TeacherLessonTabKey = studentTab === "lesson" ? "plan" : studentTab;
+  const onlineMeetingAction =
+    model.connection.kind === "online" && model.connection.meetingLink && model.connection.ctaLabel ? (
+      <a
+        href={model.connection.meetingLink}
+        target="_blank"
+        rel="noreferrer noopener"
+        className={productButtonClassName("secondary", "text-sm")}
+      >
+        <span>{model.connection.ctaLabel}</span>
+        <ExternalLink className="h-4 w-4" aria-hidden="true" />
+      </a>
+    ) : null;
 
   const homeworkPanel =
     model.role === "student" && studentHomework ? (
@@ -174,78 +189,27 @@ export function ScheduledLessonLearnerView({
 
   return (
     <div className="space-y-5">
-      <SurfaceCard as="section" className="p-4" bodyClassName="mt-0">
-        <p className="text-sm font-semibold text-neutral-900">{model.connection.title}</p>
-        {model.connection.kind === "online" ? (
-          <div className="mt-2 flex flex-wrap items-center gap-2">
-            {model.connection.meetingLink && model.connection.ctaLabel ? (
-              <a
-                href={model.connection.meetingLink}
-                target="_blank"
-                rel="noreferrer noopener"
-                className={productButtonClassName("secondary", "text-sm")}
-              >
-                {model.connection.ctaLabel}
-              </a>
-            ) : null}
-            <p className="text-xs text-neutral-600">{model.connection.displayLabel}</p>
-          </div>
-        ) : (
-          <p className="mt-2 text-sm text-neutral-700">{model.connection.place}</p>
-        )}
-      </SurfaceCard>
       {model.role === "student" ? (
         <SurfaceCard as="section" className="p-5 md:p-6" bodyClassName="mt-0">
           <div className="-mx-5 md:-mx-6">
             <div className="px-5 md:px-6">
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  className={classNames(
-                    productButtonClassName("secondary", "text-sm"),
-                    "cursor-pointer",
-                    studentTab === "lesson" &&
-                      "!border-neutral-900 !bg-neutral-900 !text-white shadow-[0_10px_20px_rgba(15,23,42,0.08)] hover:!border-neutral-900 hover:!bg-neutral-900 hover:!text-white",
-                  )}
-                  onClick={() => setStudentTab("lesson")}
-                  aria-pressed={studentTab === "lesson"}
-                >
-                  Урок
-                </button>
-                <button
-                  type="button"
-                  className={classNames(
-                    productButtonClassName("secondary", "text-sm"),
-                    studentHomework ? "cursor-pointer" : "cursor-not-allowed opacity-60",
-                    studentTab === "homework" &&
-                      studentHomework &&
-                      "!border-neutral-900 !bg-neutral-900 !text-white shadow-[0_10px_20px_rgba(15,23,42,0.08)] hover:!border-neutral-900 hover:!bg-neutral-900 hover:!text-white",
-                  )}
-                  onClick={() => {
-                    if (!studentHomework) return;
-                    setStudentTab("homework");
-                  }}
-                  aria-pressed={studentTab === "homework"}
-                  disabled={!studentHomework}
-                >
-                  Домашнее задание
-                </button>
-                <button
-                  type="button"
-                  className={classNames(
-                    productButtonClassName("secondary", "text-sm"),
-                    "cursor-pointer",
-                    studentTab === "chat" &&
-                      "!border-neutral-900 !bg-neutral-900 !text-white shadow-[0_10px_20px_rgba(15,23,42,0.08)] hover:!border-neutral-900 hover:!bg-neutral-900 hover:!text-white",
-                  )}
-                  onClick={() => setStudentTab("chat")}
-                  aria-pressed={studentTab === "chat"}
-                >
-                  Чат урока
-                </button>
-              </div>
+              <TeacherLessonTabs
+                tabs={["plan", "homework", "chat"]}
+                activeTab={studentActiveTab}
+                onTabChange={(tab) => {
+                  if (tab === "plan" || tab === "student_screen") {
+                    setStudentTab("lesson");
+                    return;
+                  }
+                  if (tab === "homework" && !studentHomework) return;
+                  if (tab === "homework" || tab === "chat") {
+                    setStudentTab(tab);
+                  }
+                }}
+                tone="embedded"
+                trailingActions={onlineMeetingAction}
+              />
             </div>
-            <div className="mt-5 border-b border-neutral-200" />
           </div>
           <div className="mt-5">
             {studentTab === "lesson" ? lessonPanel : null}
