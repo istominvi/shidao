@@ -398,7 +398,7 @@ export function SessionNavActions({
         </div>
       ) : null}
 
-      <div className={`${showTeacherSchoolControl ? "" : "border-t border-black/5"} px-1 py-1.5`}>
+      <div className={`${showTeacherSchoolControl || state.kind === "adult" ? "" : "border-t border-black/5"} px-1 py-1.5`}>
         {mobileNavItems.length > 0 ? (
           <div className="mb-1 md:hidden">
             {mobileNavItems.map((item) => (
