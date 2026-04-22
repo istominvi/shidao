@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { ROUTES } from "@/lib/auth";
 import { SessionNavActions } from "@/components/session-nav-actions";
@@ -121,7 +122,7 @@ export function LandingPage() {
       <div className="h-24 md:h-28" aria-hidden="true" />
 
       <section className="container mt-4 md:mt-6">
-        <div className="landing-surface premium-hero-grid rounded-[2rem] border border-black/10 bg-white/80 p-5 md:p-8">
+        <div className="landing-surface premium-hero-grid rounded-[2rem] bg-white/80 p-5 md:p-8">
           <div>
             <p className="landing-chip bg-lime-100/90 text-sm">
               Методико-ориентированная платформа для китайского
@@ -130,9 +131,8 @@ export function LandingPage() {
               Китайский для детей — урок за уроком по готовой методике
             </h1>
             <p className="mt-5 max-w-[68ch] text-base leading-relaxed text-neutral-700 md:text-lg">
-              ShiDao превращает методическое пособие в рабочий цифровой контур:
-              преподаватель ведёт группу по Плану урока, ученик работает через
-              Экран ученика, родитель видит домашнюю работу, комментарий и статус
+              Shidao превращает методику в рабочий цифровой контур, где преподаватель ведёт группу по Плану
+              урока, ученик работает через Экран ученика, родитель видит домашнюю работу, комментарий и статус
               после каждого занятия.
             </p>
             <div className="mt-7 grid gap-3 sm:flex sm:flex-wrap">
@@ -151,43 +151,15 @@ export function LandingPage() {
             </div>
           </div>
 
-          <article className="hero-product-mockup" aria-label="Пример интерфейса урока 1">
-            <div className="hero-topline">
-              <p className="text-sm font-bold text-neutral-500">Урок 1 · Животные на ферме</p>
-              <p className="landing-chip bg-sky-100/80 px-3 py-1 text-xs">45 мин · 16 шагов · 7 слов · 4 фразы</p>
-            </div>
-            <div className="hero-mockup-grid">
-              <section className="landing-card bg-white/90">
-                <p className="text-xs font-bold uppercase tracking-[0.12em] text-neutral-500">План урока преподавателя</p>
-                <p className="mt-2 text-sm font-semibold">Шаг 3 · Карточки животных</p>
-                <p className="mt-2 text-sm text-neutral-700">
-                  Покажите карточки два раза: сначала слово, затем фразу 这是…
-                </p>
-                <ul className="mt-3 space-y-1.5 text-xs text-neutral-700">
-                  <li>• Сначала 狗 / 猫 / 兔子 / 马 по одной карточке</li>
-                  <li>• Затем 这是狗 / 这是猫 / 这是兔子 / 这是马</li>
-                </ul>
-              </section>
-
-              <section className="landing-card bg-sky-50/80">
-                <p className="text-xs font-bold uppercase tracking-[0.12em] text-sky-900/70">Экран ученика</p>
-                <div className="mt-2 grid grid-cols-2 gap-2">
-                  {lessonWords.slice(0, 4).map((word) => (
-                    <WordChip key={word.hanzi} {...word} />
-                  ))}
-                </div>
-              </section>
-
-              <section className="landing-card bg-lime-50/80">
-                <p className="text-xs font-bold uppercase tracking-[0.12em] text-neutral-500">Материалы урока</p>
-                <p className="mt-2 text-sm text-neutral-800">Видео «Farm animals» · Карточки · Приложение 1 · Песня</p>
-              </section>
-
-              <section className="landing-card bg-rose-50/90">
-                <p className="text-xs font-bold uppercase tracking-[0.12em] text-neutral-500">Домашнее задание</p>
-                <p className="mt-2 text-sm text-neutral-800">Сопоставить картинку с иероглифом и отправить ответ преподавателю</p>
-              </section>
-            </div>
+          <article className="hero-product-shot" aria-label="Пример экранов продукта">
+            <Image
+              src="/landing/screen_1.png"
+              alt="Скриншоты интерфейса ShiDao"
+              width={1491}
+              height={1491}
+              className="hero-product-shot-image"
+              priority
+            />
           </article>
         </div>
       </section>
@@ -240,7 +212,7 @@ export function LandingPage() {
         </p>
 
         <div className="mt-8 grid gap-4 xl:grid-cols-2">
-          <article className="landing-surface rounded-[1.6rem] border border-black/10 bg-white/90 p-5 md:p-6">
+          <article className="landing-surface rounded-[1.6rem] bg-white/90 p-5 md:p-6">
             <p className="text-xs font-bold uppercase tracking-[0.12em] text-neutral-500">План урока преподавателя</p>
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
               {lessonWords.slice(0, 8).map((word) => (
@@ -251,7 +223,7 @@ export function LandingPage() {
             <h3 className="mt-6 text-lg font-bold">Реквизит и материалы</h3>
             <ul className="mt-2 grid gap-2 text-sm text-neutral-700 sm:grid-cols-2">
               {lessonProps.map((item) => (
-                <li key={item} className="rounded-xl border border-black/10 bg-neutral-50 px-3 py-2">
+                <li key={item} className="rounded-xl bg-neutral-50 px-3 py-2">
                   {item}
                 </li>
               ))}
@@ -260,7 +232,7 @@ export function LandingPage() {
             <h3 className="mt-6 text-lg font-bold">Шаги занятия (фрагмент)</h3>
             <ol className="mt-2 space-y-2 text-sm text-neutral-700">
               {lessonStepsPreview.map((step, idx) => (
-                <li key={step} className="rounded-xl border border-black/10 bg-white px-3 py-2">
+                <li key={step} className="rounded-xl bg-white px-3 py-2">
                   <span className="mr-2 text-xs font-bold text-neutral-500">Шаг {idx + 1}.</span>
                   {step}
                 </li>
@@ -268,7 +240,7 @@ export function LandingPage() {
             </ol>
           </article>
 
-          <article className="landing-surface rounded-[1.6rem] border border-black/10 bg-gradient-to-b from-sky-50/80 to-white p-5 md:p-6">
+          <article className="landing-surface rounded-[1.6rem] bg-gradient-to-b from-sky-50/80 to-white p-5 md:p-6">
             <p className="text-xs font-bold uppercase tracking-[0.12em] text-sky-900/70">Экран ученика</p>
             <div className="student-screen-preview mt-4">
               <p className="text-sm font-semibold">Урок 1 · Шаг 3 «Карточки животных»</p>
@@ -294,7 +266,7 @@ export function LandingPage() {
         <h2 className="text-3xl font-black tracking-tight md:text-5xl">Три роли — один учебный контур</h2>
         <div className="mt-8 grid gap-4 lg:grid-cols-3">
           {roleCards.map(({ title, icon: Icon, tone, description, points }) => (
-            <article key={title} className={`landing-surface role-card role-${tone} rounded-[1.6rem] border border-black/10 p-5`}>
+            <article key={title} className={`landing-surface role-card role-${tone} rounded-[1.6rem] p-5`}>
               <div className="flex items-center gap-2">
                 <Icon className="size-5" />
                 <h3 className="text-xl font-black">{title}</h3>
@@ -324,7 +296,7 @@ export function LandingPage() {
 
       <section className="container mt-14 md:mt-16">
         <div className="grid gap-4 lg:grid-cols-2">
-          <article className="landing-surface rounded-[1.6rem] border border-black/10 bg-white/85 p-5">
+          <article className="landing-surface rounded-[1.6rem] bg-white/85 p-5">
             <p className="text-sm font-bold uppercase tracking-[0.12em] text-neutral-500">До</p>
             <ul className="mt-3 space-y-2 text-sm text-neutral-700">
               {beforeAfter.before.map((item) => (
@@ -332,7 +304,7 @@ export function LandingPage() {
               ))}
             </ul>
           </article>
-          <article className="landing-surface rounded-[1.6rem] border border-black/10 bg-lime-50/70 p-5">
+          <article className="landing-surface rounded-[1.6rem] bg-lime-50/70 p-5">
             <p className="text-sm font-bold uppercase tracking-[0.12em] text-neutral-700">После</p>
             <ul className="mt-3 space-y-2 text-sm text-neutral-800">
               {beforeAfter.after.map((item) => (
@@ -347,7 +319,7 @@ export function LandingPage() {
         <h2 className="text-3xl font-black tracking-tight md:text-5xl">Вопросы о продукте</h2>
         <div className="mt-7 space-y-3">
           {faq.map(({ q, a }) => (
-            <details key={q} className="landing-surface rounded-2xl border border-black/10 bg-white/90 p-4 md:p-5">
+            <details key={q} className="landing-surface rounded-2xl bg-white/90 p-4 md:p-5">
               <summary className="cursor-pointer text-base font-semibold">{q}</summary>
               <p className="mt-3 text-sm leading-relaxed text-neutral-700">{a}</p>
             </details>
@@ -356,7 +328,7 @@ export function LandingPage() {
       </section>
 
       <section className="container mt-14 md:mt-16">
-        <div className="landing-surface rounded-[2rem] border border-black/10 bg-white/85 px-4 py-8 text-center md:px-10 md:py-10">
+        <div className="landing-surface rounded-[2rem] bg-white/85 px-4 py-8 text-center md:px-10 md:py-10">
           <h2 className="mx-auto max-w-[20ch] text-3xl font-black tracking-tight md:max-w-none md:text-5xl">
             Запустите первую группу по методике, а не с пустой страницы
           </h2>

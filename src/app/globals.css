@@ -64,7 +64,6 @@ a {
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
-  border: 1px solid rgba(20, 20, 20, 0.1);
   box-shadow:
     0 8px 20px rgba(20, 20, 20, 0.06),
     inset 0 1px 0 rgba(255, 255, 255, 0.85);
@@ -134,7 +133,6 @@ a {
 
 .landing-card {
   border-radius: 1.35rem;
-  border: 1px solid rgba(20, 20, 20, 0.1);
   background: rgba(255, 255, 255, 0.84);
   padding: 1rem;
   box-shadow:
