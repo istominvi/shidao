@@ -165,22 +165,22 @@ export function LandingPage() {
       </section>
 
       <section id="methodology" className="container mt-14 md:mt-16">
-        <h2 className="text-3xl font-black tracking-tight md:text-5xl">
-          В ShiDao методика — не папка с файлами, а сценарий работы
-        </h2>
-        <p className="mt-4 max-w-[74ch] text-sm leading-relaxed text-neutral-700 md:text-base">
-          Методика задаёт курс, уроки, Материалы, Домашнее задание, teacher-side
-          guidance и learner-facing Экран ученика. Runtime-слой добавляет
-          расписание, конкретное занятие и коммуникацию в контексте урока — без
-          ручной сборки процесса преподавателем.
-        </p>
-        <ol className="methodology-flow mt-6">
-          {methodologyFlow.map((item) => (
-            <li key={item} className="methodology-node">
-              {item}
-            </li>
-          ))}
-        </ol>
+        <div className="px-5 md:px-8">
+          <h2 className="text-3xl font-black tracking-tight md:text-5xl">
+            В ShiDao методика — не папка с файлами, а сценарий работы
+          </h2>
+          <p className="mt-4 max-w-[74ch] text-sm leading-relaxed text-neutral-700 md:text-base">
+            Методика задаёт курс, уроки, Материалы, Домашнее задание, План урока и Экран ученика. А функционал
+            позволяет добавлять урок в расписание, проводить онлайн занятие и коммуникацию в контексте урока
+          </p>
+          <ol className="methodology-flow mt-6">
+            {methodologyFlow.map((item) => (
+              <li key={item} className="methodology-node">
+                {item}
+              </li>
+            ))}
+          </ol>
+        </div>
       </section>
 
       <section className="container mt-14 md:mt-16">
