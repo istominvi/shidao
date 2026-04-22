@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, ChevronLeft, ChevronRight, Play } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, ExternalLink, Play } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { TeacherLessonWorkspaceReadModel } from "@/lib/server/teacher-lesson-workspace";
@@ -209,6 +209,16 @@ export function TeacherLessonWorkspace({
 
   return (
     <div className="space-y-8 lg:space-y-10">
+      {workspace.presentation.hero.connection.kind === "offline" ? (
+        <section className="rounded-3xl border border-neutral-200 bg-white p-5">
+          <p className="text-sm font-semibold text-neutral-900">
+            {workspace.presentation.hero.connection.title}
+          </p>
+          <p className="mt-2 text-sm text-neutral-700">
+            {workspace.presentation.hero.connection.place}
+          </p>
+        </section>
+      ) : null}
       <section>
         <LiveLessonControlBar
           liveState={liveState}
@@ -225,6 +235,19 @@ export function TeacherLessonWorkspace({
           activeTab={tab}
           onTabChange={setTab}
           tone="embedded"
+          trailingActions={workspace.presentation.hero.connection.kind === "online" &&
+            workspace.presentation.hero.connection.meetingLink &&
+            workspace.presentation.hero.connection.ctaLabel ? (
+            <a
+              href={workspace.presentation.hero.connection.meetingLink}
+              target="_blank"
+              rel="noreferrer noopener"
+              className={productButtonClassName("secondary", "text-sm")}
+            >
+              <span>{workspace.presentation.hero.connection.ctaLabel}</span>
+              <ExternalLink className="h-4 w-4" aria-hidden="true" />
+            </a>
+          ) : null}
         />
         {liveActionError ? (
           <p className="mt-4 rounded-xl border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-700">

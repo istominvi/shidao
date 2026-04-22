@@ -127,6 +127,10 @@ test("lessons hub read model groups upcoming and past lessons and shapes cards",
   assert.equal("blockOverrides" in hub.upcoming[0]!, false);
   assert.equal(hub.schedule.events.length, 2);
   assert.equal(hub.schedule.events[0]?.href, "/lessons/scheduled-past");
+  assert.equal(hub.schedule.events[1]?.connection.kind, "online");
+  assert.equal(hub.schedule.events[1]?.connection.ctaLabel, "Открыть встречу");
+  assert.equal(hub.schedule.events[0]?.connection.kind, "offline");
+  assert.equal(hub.schedule.events[0]?.connection.displayLabel, "Место: Кабинет 5");
   assert.equal(hub.schedule.filters.formatOptions.length, 2);
 });
 
@@ -178,6 +182,27 @@ test("create scheduled lesson parser validates required fields and online/offlin
   online.set("meetingLink", "https://zoom.example/room");
 
   assert.equal(parseCreateScheduledLessonFormData(online).format, "online");
+  assert.equal(
+    parseCreateScheduledLessonFormData(online).format === "online" &&
+      parseCreateScheduledLessonFormData(online).meetingLink,
+    "https://zoom.example/room",
+  );
+
+  const onlineWithoutLink = new FormData();
+  onlineWithoutLink.set("classId", "class-1");
+  onlineWithoutLink.set("methodologyLessonId", "lesson-1");
+  onlineWithoutLink.set("date", "2026-04-20");
+  onlineWithoutLink.set("time", "10:30");
+  onlineWithoutLink.set("format", "online");
+
+  const parsedOnlineWithoutLink = parseCreateScheduledLessonFormData(onlineWithoutLink);
+  assert.equal(parsedOnlineWithoutLink.format, "online");
+  assert.equal(
+    parsedOnlineWithoutLink.format === "online"
+      ? parsedOnlineWithoutLink.meetingLink
+      : "unexpected",
+    undefined,
+  );
 
   const offlineMissingPlace = new FormData();
   offlineMissingPlace.set("classId", "class-1");

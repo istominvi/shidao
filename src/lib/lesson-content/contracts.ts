@@ -79,7 +79,7 @@ type BaseScheduledLessonRuntimeShell = {
 export type ScheduledLessonRuntimeShell =
   | (BaseScheduledLessonRuntimeShell & {
       format: "online";
-      meetingLink: string;
+      meetingLink?: string;
       place?: never;
     })
   | (BaseScheduledLessonRuntimeShell & {

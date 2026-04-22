@@ -1,4 +1,5 @@
 import { toScheduledLessonRoute } from "@/lib/auth";
+import { buildLessonConnectionInfo, type LessonConnectionInfo } from "@/lib/lesson-connection";
 import {
   getClassByIdAdmin,
   getMethodologyLessonByIdAdmin,
@@ -37,6 +38,7 @@ export type StudentLessonsHubEvent = {
   statusLabel: string;
   format: "online" | "offline";
   formatLabel: string;
+  connection: LessonConnectionInfo;
   groupLabel: string;
   teacherLabel: string;
   homework: StudentLessonsHubHomeworkMeta | null;
@@ -199,6 +201,10 @@ export async function getStudentLessonsHubReadModel(input: {
         statusLabel: toStatusLabel(lesson.runtimeShell.runtimeStatus),
         format: lesson.runtimeShell.format,
         formatLabel: toFormatLabel(lesson.runtimeShell.format),
+        connection: buildLessonConnectionInfo(lesson.runtimeShell, {
+          onlineCtaLabel: "Войти на урок",
+          offlineDisplayPrefix: "Место: ",
+        }),
         groupLabel: classLabelById[classId] ?? "Группа",
         teacherLabel:
           teacherNames.length > 0 ? teacherNames.join(", ") : "Преподаватель не назначен",

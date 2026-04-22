@@ -1,4 +1,5 @@
 import { toLessonWorkspaceRoute } from "../auth";
+import { buildLessonConnectionInfo, type LessonConnectionInfo } from "../lesson-connection";
 import type { ScheduledLesson } from "../lesson-content";
 import type { AccessResolution } from "./access-policy";
 import {
@@ -23,6 +24,7 @@ export type TeacherLessonHubCard = {
   classLabel: string;
   dateTimeLabel: string;
   formatLabel: "Онлайн" | "Офлайн";
+  connection: LessonConnectionInfo;
   statusLabel: string;
   runtimeNotesSummary: string;
   workspaceHref: string;
@@ -160,6 +162,10 @@ function mapLessonsToCards(input: {
       classLabel,
       dateTimeLabel: formatDateTime(lesson.runtimeShell.startsAt),
       formatLabel: lesson.runtimeShell.format === "online" ? "Онлайн" : "Офлайн",
+      connection: buildLessonConnectionInfo(lesson.runtimeShell, {
+        onlineCtaLabel: "Открыть встречу",
+        offlineDisplayPrefix: "Место: ",
+      }),
       statusLabel: formatStatus(lesson.runtimeShell.runtimeStatus),
       runtimeNotesSummary: cleanText(lesson.runtimeShell.runtimeNotesSummary),
       workspaceHref: toLessonWorkspaceRoute(lesson.id),
@@ -295,6 +301,10 @@ export async function getTeacherLessonsHub(
         statusLabel: formatStatus(lesson.runtimeShell.runtimeStatus),
         format: lesson.runtimeShell.format,
         formatLabel: lesson.runtimeShell.format === "online" ? "Онлайн" : "Офлайн",
+        connection: buildLessonConnectionInfo(lesson.runtimeShell, {
+          onlineCtaLabel: "Открыть встречу",
+          offlineDisplayPrefix: "Место: ",
+        }),
         timeLabel: formatTime(startsAt),
         timeRangeLabel: formatTimeRange(startsAt, endsAt),
       };
@@ -391,16 +401,13 @@ export function parseCreateScheduledLessonFormData(
 
   if (formatValue === "online") {
     const meetingLink = cleanText(formData.get("meetingLink") as string | null);
-    if (!meetingLink) {
-      throw new Error("Для онлайн-формата нужна ссылка на встречу.");
-    }
 
     return {
       classId,
       methodologyLessonId,
       startsAt,
       format: "online",
-      meetingLink,
+      meetingLink: meetingLink || undefined,
     };
   }
 

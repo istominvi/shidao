@@ -246,6 +246,18 @@ test("group creation requires methodology and scheduling validates assigned meth
 });
 
 test("group-scoped scheduling parser enforces online/offline constraints", () => {
+  const onlineWithoutLink = new FormData();
+  onlineWithoutLink.set("methodologyLessonId", "lesson-1");
+  onlineWithoutLink.set("date", "2026-04-20");
+  onlineWithoutLink.set("time", "10:30");
+  onlineWithoutLink.set("format", "online");
+  const parsedOnline = parseGroupScopedLessonFormData(onlineWithoutLink);
+  assert.equal(parsedOnline.format, "online");
+  assert.equal(
+    parsedOnline.format === "online" ? parsedOnline.meetingLink : "unexpected",
+    undefined,
+  );
+
   const offlineMissingPlace = new FormData();
   offlineMissingPlace.set("methodologyLessonId", "lesson-1");
   offlineMissingPlace.set("date", "2026-04-20");

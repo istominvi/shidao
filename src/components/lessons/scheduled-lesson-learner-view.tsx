@@ -174,6 +174,26 @@ export function ScheduledLessonLearnerView({
 
   return (
     <div className="space-y-5">
+      <SurfaceCard as="section" className="p-4" bodyClassName="mt-0">
+        <p className="text-sm font-semibold text-neutral-900">{model.connection.title}</p>
+        {model.connection.kind === "online" ? (
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            {model.connection.meetingLink && model.connection.ctaLabel ? (
+              <a
+                href={model.connection.meetingLink}
+                target="_blank"
+                rel="noreferrer noopener"
+                className={productButtonClassName("secondary", "text-sm")}
+              >
+                {model.connection.ctaLabel}
+              </a>
+            ) : null}
+            <p className="text-xs text-neutral-600">{model.connection.displayLabel}</p>
+          </div>
+        ) : (
+          <p className="mt-2 text-sm text-neutral-700">{model.connection.place}</p>
+        )}
+      </SurfaceCard>
       {model.role === "student" ? (
         <SurfaceCard as="section" className="p-5 md:p-6" bodyClassName="mt-0">
           <div className="-mx-5 md:-mx-6">

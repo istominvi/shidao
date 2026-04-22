@@ -16,6 +16,7 @@ import {
   type WorksheetTaskBlock,
   type WrapUpClosureBlock,
 } from "../lesson-content";
+import { buildLessonConnectionInfo, type LessonConnectionInfo } from "../lesson-connection";
 import type { MethodologyReadinessStatus } from "../lesson-content/types";
 import type { AccessResolution } from "./access-policy";
 import {
@@ -89,6 +90,7 @@ export type TeacherLessonWorkspacePresentation = {
     dateTimeLabel: string;
     statusLabel: string;
     formatLabel: string;
+    connection: LessonConnectionInfo;
   };
   quickSummary: {
     prepChecklist: string[];
@@ -600,6 +602,10 @@ function buildPresentation(input: {
       statusLabel: formatRuntimeStatus(projection.runtimeShell.runtimeStatus),
       formatLabel:
         projection.runtimeShell.format === "online" ? "Онлайн" : "Офлайн",
+      connection: buildLessonConnectionInfo(projection.runtimeShell, {
+        onlineCtaLabel: "Открыть встречу",
+        offlineDisplayPrefix: "Место: ",
+      }),
     },
     quickSummary: {
       prepChecklist,

@@ -1,9 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { CalendarClock, CalendarDays, ChevronDown, ChevronLeft, ChevronRight, Rows3, X } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type MouseEvent } from "react";
 import { AppPageHeader } from "@/components/app/page-header";
 import { productActionClassName } from "@/components/ui/action";
 import { Button } from "@/components/ui/button";
@@ -464,16 +463,27 @@ function TeacherLessonEventCard({
   event,
   nowIso,
   compact = false,
+  showConnectionAction = true,
 }: {
   event: TeacherLessonsHubReadModel["schedule"]["events"][number];
   nowIso: string;
   compact?: boolean;
+  showConnectionAction?: boolean;
 }) {
+  const router = useRouter();
   const isCurrent = isNowActive(event, Date.parse(nowIso));
 
   return (
-    <Link
-      href={event.href}
+    <article
+      role="link"
+      tabIndex={0}
+      onClick={() => router.push(event.href)}
+      onKeyDown={(keyboardEvent) => {
+        if (keyboardEvent.key === "Enter" || keyboardEvent.key === " ") {
+          keyboardEvent.preventDefault();
+          router.push(event.href);
+        }
+      }}
       className={`block rounded-2xl border p-3 transition hover:border-sky-300 ${
         isCurrent ? "border-sky-300 bg-sky-50/70" : "border-neutral-200 bg-white"
       }`}
@@ -489,11 +499,50 @@ function TeacherLessonEventCard({
       </div>
       <p className="mt-1 text-sm font-semibold text-neutral-900">{event.lessonTitle}</p>
       <p className="mt-1 text-xs text-neutral-600">Группа: {event.groupLabel}</p>
+      {showConnectionAction ? (
+        <div className="mt-2">
+          <ConnectionMeta event={event} stopRowNavigation />
+        </div>
+      ) : null}
       <p className={`mt-2 text-xs font-semibold text-sky-700 ${compact ? "" : "sm:text-sm"}`}>
         Открыть урок
       </p>
-    </Link>
+    </article>
   );
+}
+
+function ConnectionMeta({
+  event,
+  stopRowNavigation = false,
+}: {
+  event: TeacherLessonsHubReadModel["schedule"]["events"][number];
+  stopRowNavigation?: boolean;
+}) {
+  const stopEvent = (mouseEvent: MouseEvent<HTMLElement>) => {
+    if (!stopRowNavigation) return;
+    mouseEvent.stopPropagation();
+  };
+
+  if (event.connection.kind === "online") {
+    return (
+      <div className="space-y-1">
+        {event.connection.meetingLink && event.connection.ctaLabel ? (
+          <a
+            href={event.connection.meetingLink}
+            target="_blank"
+            rel="noreferrer noopener"
+            onClick={stopEvent}
+            className="inline-flex rounded-lg border border-sky-200 bg-sky-50 px-2 py-1 text-xs font-semibold text-sky-800 hover:bg-sky-100"
+          >
+            {event.connection.ctaLabel}
+          </a>
+        ) : null}
+        <p className="text-[11px] text-neutral-500">{event.connection.displayLabel}</p>
+      </div>
+    );
+  }
+
+  return <p className="text-xs text-neutral-600">{event.connection.displayLabel}</p>;
 }
 
 function TeacherMonthView({
@@ -618,7 +667,12 @@ function TeacherMonthDialog({
           ) : (
             <div className="space-y-2">
               {dayEvents.map((event) => (
-                <TeacherLessonEventCard key={event.id} event={event} nowIso={nowIso} />
+                <TeacherLessonEventCard
+                  key={event.id}
+                  event={event}
+                  nowIso={nowIso}
+                  showConnectionAction={false}
+                />
               ))}
             </div>
           )}

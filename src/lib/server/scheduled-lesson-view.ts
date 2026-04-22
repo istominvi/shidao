@@ -2,6 +2,7 @@ import {
   type MethodologyLessonStudentContent,
   type ReusableAsset,
 } from "../lesson-content";
+import { buildLessonConnectionInfo, type LessonConnectionInfo } from "../lesson-connection";
 import {
   listAssignedClassIdsForTeacherAdmin,
   listClassIdsForStudentAdmin,
@@ -37,6 +38,7 @@ export type ScheduledLessonLearnerSharedView = {
   teacherLabel: string;
   groupLabel: string;
   formatLabel: string;
+  connection: LessonConnectionInfo;
   startsAt: string;
   runtimeStatus: "planned" | "in_progress" | "completed" | "cancelled";
   liveState: ScheduledLessonLiveState;
@@ -150,6 +152,10 @@ async function getLearnerSharedProjection(scheduledLessonId: string) {
       teacherLabel,
       groupLabel: seed.classDisplayName?.trim() || "Группа",
       formatLabel: seed.scheduledLesson.runtimeShell.format === "online" ? "Онлайн" : "Офлайн",
+      connection: buildLessonConnectionInfo(seed.scheduledLesson.runtimeShell, {
+        onlineCtaLabel: "Войти на урок",
+        offlineDisplayPrefix: "Место: ",
+      }),
       startsAt: seed.scheduledLesson.runtimeShell.startsAt,
       runtimeStatus: seed.scheduledLesson.runtimeShell.runtimeStatus,
       liveState: workspaceProjection.liveState,

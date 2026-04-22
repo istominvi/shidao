@@ -116,7 +116,7 @@ export type CreateScheduledLessonAdminInput = {
 } & (
   | {
       format: "online";
-      meetingLink: string;
+      meetingLink?: string;
       place?: never;
     }
   | {
@@ -738,7 +738,8 @@ export async function createScheduledLessonAdmin(
         methodology_lesson_id: input.methodologyLessonId,
         starts_at: input.startsAt,
         format: input.format,
-        meeting_link: input.format === "online" ? input.meetingLink : null,
+        meeting_link:
+          input.format === "online" ? input.meetingLink ?? null : null,
         place: input.format === "offline" ? input.place : null,
         runtime_status: input.runtimeStatus ?? "planned",
         runtime_student_navigation_locked: true,

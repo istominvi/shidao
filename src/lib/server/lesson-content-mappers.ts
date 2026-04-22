@@ -125,14 +125,14 @@ function mapRuntimeShellFromRow(row: RowScheduledLesson): ScheduledLessonRuntime
   };
 
   if (row.format === "online") {
-    if (!row.meeting_link || row.place) {
+    if (row.place) {
       throw new Error("Invalid online scheduled_lesson row: meeting_link/place mismatch.");
     }
 
     return {
       ...base,
       format: "online",
-      meetingLink: row.meeting_link,
+      meetingLink: row.meeting_link ?? undefined,
     };
   }
 

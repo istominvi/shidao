@@ -1,4 +1,5 @@
 import { ROUTES, toGroupRoute, toLessonWorkspaceRoute } from "../auth";
+import { buildLessonConnectionInfo, type LessonConnectionInfo } from "../lesson-connection";
 import {
   listScheduledLessonsForClassesAdmin,
   listStudentsForClassesAdmin,
@@ -33,6 +34,7 @@ export type TeacherDashboardScheduleEvent = {
   statusLabel: string;
   format: "online" | "offline";
   formatLabel: string;
+  connection: LessonConnectionInfo;
   timeLabel: string;
   timeRangeLabel: string;
 };
@@ -282,6 +284,10 @@ async function buildOperationsSnapshot(
         statusLabel: formatStatus(lesson.runtimeShell.runtimeStatus),
         format: lesson.runtimeShell.format,
         formatLabel: lesson.runtimeShell.format === "online" ? "Онлайн" : "Офлайн",
+        connection: buildLessonConnectionInfo(lesson.runtimeShell, {
+          onlineCtaLabel: "Открыть встречу",
+          offlineDisplayPrefix: "Место: ",
+        }),
         timeLabel: formatTime(startsAt),
         timeRangeLabel: formatTimeRange(startsAt, endsAt),
       };
