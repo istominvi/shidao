@@ -154,7 +154,7 @@ export function LandingPage() {
 
           <article className="hero-product-shot" aria-label="Пример экранов продукта">
             <Image
-              src="/landing/screen_2.png"
+              src="/landing/screen_7.png"
               alt="Скриншоты интерфейса ShiDao"
               width={1491}
               height={1491}
@@ -311,15 +311,29 @@ export function LandingPage() {
 
       <section id="workflow" className="container mt-14 md:mt-16">
         <div className="px-5 md:px-8">
-          <h2 className="text-3xl font-black tracking-tight md:text-5xl">Как работает ShiDao в реальном процессе</h2>
-          <ol className="workflow-steps mt-10 md:mt-12">
-            {workflowSteps.map((step, idx) => (
-              <li key={step} className="workflow-step-card">
-                <span className="workflow-index">{idx + 1}</span>
-                <p>{step}</p>
-              </li>
-            ))}
-          </ol>
+          <div className="workflow-shell">
+            <div className="workflow-head">
+              <p className="workflow-chip">Продуктовый сценарий</p>
+              <h2 className="text-3xl font-black tracking-tight md:text-5xl">
+                Как работает ShiDao в реальном процессе
+              </h2>
+              <p className="workflow-subtitle">
+                От запуска группы до post-lesson коммуникации — каждый этап фиксируется внутри урока и не теряет
+                контекст.
+              </p>
+            </div>
+            <ol className="workflow-steps mt-8 md:mt-10">
+              {workflowSteps.map((step, idx) => (
+                <li key={step} className="workflow-step-card">
+                  <span className="workflow-index">{idx + 1}</span>
+                  <div className="workflow-step-body">
+                    <p className="workflow-step-label">Шаг {idx + 1}</p>
+                    <p>{step}</p>
+                  </div>
+                </li>
+              ))}
+            </ol>
+          </div>
         </div>
       </section>
 

@@ -439,7 +439,7 @@ export function SessionNavActions({
           </div>
         ) : null}
         {mobileNavItems.length > 0 ? (
-          <div className="my-0.5 border-t border-black/5" aria-hidden="true" />
+          <div className="my-0.5 border-t border-black/5 md:hidden" aria-hidden="true" />
         ) : null}
         <Link
           href={ROUTES.settingsProfile}
