@@ -154,7 +154,7 @@ export function LandingPage() {
 
           <article className="hero-product-shot" aria-label="Пример экранов продукта">
             <Image
-              src="/landing/screen_7.png"
+              src="/landing/screen_8.png"
               alt="Скриншоты интерфейса ShiDao"
               width={1491}
               height={1491}
