@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 import { ROUTES } from "@/lib/auth";
 import { SessionNavActions } from "@/components/session-nav-actions";
 import { useSessionView } from "@/components/use-session-view";
@@ -95,7 +96,7 @@ export function LandingPage() {
   })();
 
   return (
-    <main className="landing-main pb-16">
+    <main className="landing-main landing-main-marketing pb-16">
       <div className="landing-noise" aria-hidden="true" />
       <div className="fixed inset-x-0 top-0 z-[140]">
         <div className="container pt-4 md:pt-5">
@@ -123,7 +124,7 @@ export function LandingPage() {
 
       <section className="container mt-4 md:mt-6">
         <div className="landing-surface premium-hero-grid rounded-[2rem] bg-white/80 p-5 md:p-8">
-          <div>
+          <div className="hero-copy">
             <p className="landing-chip bg-lime-100/90 text-sm">
               Методико-ориентированная платформа для китайского
             </p>
@@ -153,7 +154,7 @@ export function LandingPage() {
 
           <article className="hero-product-shot" aria-label="Пример экранов продукта">
             <Image
-              src="/landing/screen_1.png"
+              src="/landing/screen_2.png"
               alt="Скриншоты интерфейса ShiDao"
               width={1491}
               height={1491}
@@ -165,54 +166,77 @@ export function LandingPage() {
       </section>
 
       <section id="methodology" className="container mt-14 md:mt-16">
-        <h2 className="text-3xl font-black tracking-tight md:text-5xl">
-          В ShiDao методика — не папка с файлами, а сценарий работы
-        </h2>
-        <p className="mt-4 max-w-[74ch] text-sm leading-relaxed text-neutral-700 md:text-base">
-          Методика задаёт курс, уроки, Материалы, Домашнее задание, teacher-side
-          guidance и learner-facing Экран ученика. Runtime-слой добавляет
-          расписание, конкретное занятие и коммуникацию в контексте урока — без
-          ручной сборки процесса преподавателем.
-        </p>
-        <ol className="methodology-flow mt-6">
-          {methodologyFlow.map((item) => (
-            <li key={item} className="methodology-node">
-              {item}
-            </li>
-          ))}
-        </ol>
+        <div className="px-5 md:px-8">
+          <h2 className="text-3xl font-black tracking-tight md:text-5xl">
+            В ShiDao методика — не папка с файлами, а сценарий работы
+          </h2>
+          <p className="mt-4 max-w-[74ch] text-sm leading-relaxed text-neutral-700 md:text-base">
+            Методика задаёт курс, уроки, Материалы, Домашнее задание, План урока и Экран ученика. А функционал
+            позволяет добавлять урок в расписание, проводить онлайн занятие и коммуникацию в контексте урока
+          </p>
+          <ol className="methodology-flow mt-6" aria-label="Поток работы по методике">
+            {methodologyFlow.map((item, index) => (
+              <li key={item.label} className="methodology-node-wrap">
+                <article className={`methodology-node methodology-node-${item.tone}`}>
+                  <item.icon className="size-4" />
+                  <span>{item.label}</span>
+                </article>
+                {index < methodologyFlow.length - 1 ? (
+                  <ArrowRight className="methodology-flow-arrow size-4" aria-hidden="true" />
+                ) : null}
+              </li>
+            ))}
+          </ol>
+        </div>
       </section>
 
       <section className="container mt-14 md:mt-16">
-        <h2 className="text-3xl font-black tracking-tight md:text-5xl">
-          «Мир вокруг меня» — первая методика в ShiDao
-        </h2>
-        <p className="mt-4 max-w-[72ch] text-sm leading-relaxed text-neutral-700 md:text-base">
-          Курс построен вокруг героев Сяо Лон и Сяо Мей: они помогают ребёнку
-          5–6 лет входить в китайский через песни, видео и игровые активности,
-          сохраняя ритм урока и предсказуемый сценарий для преподавателя.
-        </p>
-        <div className="mt-7 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {methodologyStats.map((item) => (
-            <article key={item} className="landing-card bg-white/90 p-5">
-              <p className="text-lg font-black tracking-tight">{item}</p>
+        <div className="px-5 md:px-8">
+          <div className="methodology-intro">
+            <div>
+              <h2 className="text-3xl font-black tracking-tight md:text-5xl">
+                «Мир вокруг меня» — первая методика в ShiDao
+              </h2>
+              <p className="mt-4 max-w-[72ch] text-sm leading-relaxed text-neutral-700 md:text-base">
+                Курс построен вокруг героев Сяо Лон и Сяо Мей: они помогают ребёнку 5–6 лет входить в китайский через
+                песни, видео и игровые активности, сохраняя ритм урока и предсказуемый сценарий для преподавателя.
+              </p>
+            </div>
+            <article className="methodology-cover" aria-label="Обложка методики Мир вокруг меня">
+              <Image
+                src="/methodologies/01.png"
+                alt="Обложка методики Мир вокруг меня"
+                width={220}
+                height={280}
+                className="methodology-cover-image"
+              />
             </article>
-          ))}
+          </div>
+          <div className="mt-7 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {methodologyStats.map((item) => (
+              <article key={item.label} className={`landing-card methodology-stat-card stat-${item.tone} p-5`}>
+                <div className="flex items-center gap-2">
+                  <item.icon className="size-4.5" />
+                  <p className="text-lg font-black tracking-tight">{item.label}</p>
+                </div>
+              </article>
+            ))}
+          </div>
         </div>
       </section>
 
       <section id="lesson" className="container mt-14 md:mt-16">
-        <h2 className="text-3xl font-black tracking-tight md:text-5xl">
-          Как выглядит один урок внутри продукта
-        </h2>
-        <p className="mt-4 max-w-[74ch] text-sm leading-relaxed text-neutral-700 md:text-base">
-          Урок 1 «Животные на ферме» показывает, как ShiDao разделяет
-          преподавательскую методическую опору и learner-facing Экран ученика,
-          сохраняя единые шаги занятия.
-        </p>
+        <div className="px-5 md:px-8">
+          <h2 className="text-3xl font-black tracking-tight md:text-5xl">
+            Как выглядит один урок внутри продукта
+          </h2>
+          <p className="mt-4 max-w-[74ch] text-sm leading-relaxed text-neutral-700 md:text-base">
+            Урок 1 «Животные на ферме» показывает, как Shidao разделяет преподавательскую методическую опору и Экран
+            ученика, сохраняя единые шаги занятия.
+          </p>
 
-        <div className="mt-8 grid gap-4 xl:grid-cols-2">
-          <article className="landing-surface rounded-[1.6rem] bg-white/90 p-5 md:p-6">
+          <div className="mt-8 grid gap-4 xl:grid-cols-2">
+            <article className="landing-surface rounded-[1.6rem] bg-white/90 p-5 md:p-6">
             <p className="text-xs font-bold uppercase tracking-[0.12em] text-neutral-500">План урока преподавателя</p>
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
               {lessonWords.slice(0, 8).map((word) => (
@@ -238,9 +262,9 @@ export function LandingPage() {
                 </li>
               ))}
             </ol>
-          </article>
+            </article>
 
-          <article className="landing-surface rounded-[1.6rem] bg-gradient-to-b from-sky-50/80 to-white p-5 md:p-6">
+            <article className="landing-surface rounded-[1.6rem] bg-gradient-to-b from-sky-50/80 to-white p-5 md:p-6">
             <p className="text-xs font-bold uppercase tracking-[0.12em] text-sky-900/70">Экран ученика</p>
             <div className="student-screen-preview mt-4">
               <p className="text-sm font-semibold">Урок 1 · Шаг 3 «Карточки животных»</p>
@@ -258,91 +282,102 @@ export function LandingPage() {
                 </li>
               ))}
             </ul>
-          </article>
+            </article>
+          </div>
         </div>
       </section>
 
       <section id="roles" className="container mt-14 md:mt-16">
-        <h2 className="text-3xl font-black tracking-tight md:text-5xl">Три роли — один учебный контур</h2>
-        <div className="mt-8 grid gap-4 lg:grid-cols-3">
-          {roleCards.map(({ title, icon: Icon, tone, description, points }) => (
-            <article key={title} className={`landing-surface role-card role-${tone} rounded-[1.6rem] p-5`}>
-              <div className="flex items-center gap-2">
-                <Icon className="size-5" />
-                <h3 className="text-xl font-black">{title}</h3>
-              </div>
-              <p className="mt-3 text-sm leading-relaxed text-neutral-700">{description}</p>
-              <ul className="mt-4 space-y-2 text-sm text-neutral-700">
-                {points.map((point) => (
-                  <li key={point}>• {point}</li>
-                ))}
-              </ul>
-            </article>
-          ))}
+        <div className="px-5 md:px-8">
+          <h2 className="text-3xl font-black tracking-tight md:text-5xl">Три роли — один учебный контур</h2>
+          <div className="mt-8 grid gap-4 lg:grid-cols-3">
+            {roleCards.map(({ title, icon: Icon, tone, description, points }) => (
+              <article key={title} className={`landing-surface role-card role-${tone} rounded-[1.6rem] p-5`}>
+                <div className="flex items-center gap-2">
+                  <Icon className="size-5" />
+                  <h3 className="text-xl font-black">{title}</h3>
+                </div>
+                <p className="mt-3 text-sm leading-relaxed text-neutral-700">{description}</p>
+                <ul className="mt-4 space-y-2 text-sm text-neutral-700">
+                  {points.map((point) => (
+                    <li key={point}>• {point}</li>
+                  ))}
+                </ul>
+              </article>
+            ))}
+          </div>
         </div>
       </section>
 
       <section id="workflow" className="container mt-14 md:mt-16">
-        <h2 className="text-3xl font-black tracking-tight md:text-5xl">Как работает ShiDao в реальном процессе</h2>
-        <ol className="workflow-steps mt-7">
-          {workflowSteps.map((step, idx) => (
-            <li key={step} className="workflow-step-card">
-              <span className="workflow-index">{idx + 1}</span>
-              <p>{step}</p>
-            </li>
-          ))}
-        </ol>
+        <div className="px-5 md:px-8">
+          <h2 className="text-3xl font-black tracking-tight md:text-5xl">Как работает ShiDao в реальном процессе</h2>
+          <ol className="workflow-steps mt-10 md:mt-12">
+            {workflowSteps.map((step, idx) => (
+              <li key={step} className="workflow-step-card">
+                <span className="workflow-index">{idx + 1}</span>
+                <p>{step}</p>
+              </li>
+            ))}
+          </ol>
+        </div>
       </section>
 
       <section className="container mt-14 md:mt-16">
-        <div className="grid gap-4 lg:grid-cols-2">
-          <article className="landing-surface rounded-[1.6rem] bg-white/85 p-5">
-            <p className="text-sm font-bold uppercase tracking-[0.12em] text-neutral-500">До</p>
-            <ul className="mt-3 space-y-2 text-sm text-neutral-700">
-              {beforeAfter.before.map((item) => (
-                <li key={item}>• {item}</li>
-              ))}
-            </ul>
-          </article>
-          <article className="landing-surface rounded-[1.6rem] bg-lime-50/70 p-5">
-            <p className="text-sm font-bold uppercase tracking-[0.12em] text-neutral-700">После</p>
-            <ul className="mt-3 space-y-2 text-sm text-neutral-800">
-              {beforeAfter.after.map((item) => (
-                <li key={item}>• {item}</li>
-              ))}
-            </ul>
-          </article>
+        <div className="px-5 md:px-8">
+          <div className="grid gap-4 lg:grid-cols-2">
+            <article className="landing-surface rounded-[1.6rem] bg-white/85 p-5">
+              <p className="text-sm font-bold uppercase tracking-[0.12em] text-neutral-500">До</p>
+              <ul className="mt-3 space-y-2 text-sm text-neutral-700">
+                {beforeAfter.before.map((item) => (
+                  <li key={item}>• {item}</li>
+                ))}
+              </ul>
+            </article>
+            <article className="landing-surface rounded-[1.6rem] bg-lime-50/70 p-5">
+              <p className="text-sm font-bold uppercase tracking-[0.12em] text-neutral-700">После</p>
+              <ul className="mt-3 space-y-2 text-sm text-neutral-800">
+                {beforeAfter.after.map((item) => (
+                  <li key={item}>• {item}</li>
+                ))}
+              </ul>
+            </article>
+          </div>
         </div>
       </section>
 
       <section id="faq" className="container mt-14 md:mt-16">
-        <h2 className="text-3xl font-black tracking-tight md:text-5xl">Вопросы о продукте</h2>
-        <div className="mt-7 space-y-3">
-          {faq.map(({ q, a }) => (
-            <details key={q} className="landing-surface rounded-2xl bg-white/90 p-4 md:p-5">
-              <summary className="cursor-pointer text-base font-semibold">{q}</summary>
-              <p className="mt-3 text-sm leading-relaxed text-neutral-700">{a}</p>
-            </details>
-          ))}
+        <div className="px-5 md:px-8">
+          <h2 className="text-3xl font-black tracking-tight md:text-5xl">Вопросы о продукте</h2>
+          <div className="mt-7 space-y-3">
+            {faq.map(({ q, a }) => (
+              <details key={q} className="landing-surface rounded-2xl bg-white/90 p-4 md:p-5">
+                <summary className="cursor-pointer text-base font-semibold">{q}</summary>
+                <p className="mt-3 text-sm leading-relaxed text-neutral-700">{a}</p>
+              </details>
+            ))}
+          </div>
         </div>
       </section>
 
       <section className="container mt-14 md:mt-16">
-        <div className="landing-surface rounded-[2rem] bg-white/85 px-4 py-8 text-center md:px-10 md:py-10">
-          <h2 className="mx-auto max-w-[20ch] text-3xl font-black tracking-tight md:max-w-none md:text-5xl">
-            Запустите первую группу по методике, а не с пустой страницы
-          </h2>
-          <p className="mx-auto mt-4 max-w-[62ch] text-sm leading-relaxed text-neutral-700 md:text-base">
-            ShiDao собирает курс, урок, материалы, домашнюю работу и обратную
-            связь в один рабочий контур.
-          </p>
-          <div className="mt-6 grid gap-3 sm:flex sm:justify-center">
-            <Link href={ROUTES.join} className="landing-btn landing-btn-primary min-h-12 w-full sm:w-auto">
-              Создать аккаунт
-            </Link>
-            <Link href={ROUTES.login} className="landing-btn landing-btn-muted min-h-12 w-full sm:w-auto">
-              Войти
-            </Link>
+        <div className="px-5 md:px-8">
+          <div className="landing-surface rounded-[2rem] bg-white/85 px-4 py-8 text-center md:px-10 md:py-10">
+            <h2 className="mx-auto max-w-[20ch] text-3xl font-black tracking-tight md:max-w-none md:text-5xl">
+              Запустите первую группу по методике, а не с пустой страницы
+            </h2>
+            <p className="mx-auto mt-4 max-w-[62ch] text-sm leading-relaxed text-neutral-700 md:text-base">
+              ShiDao собирает курс, урок, материалы, домашнюю работу и обратную
+              связь в один рабочий контур.
+            </p>
+            <div className="mt-6 grid gap-3 sm:flex sm:justify-center">
+              <Link href={ROUTES.join} className="landing-btn landing-btn-primary min-h-12 w-full sm:w-auto">
+                Создать аккаунт
+              </Link>
+              <Link href={ROUTES.login} className="landing-btn landing-btn-muted min-h-12 w-full sm:w-auto">
+                Войти
+              </Link>
+            </div>
           </div>
         </div>
       </section>
