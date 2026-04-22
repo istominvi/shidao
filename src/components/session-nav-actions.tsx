@@ -4,7 +4,15 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import type { LucideIcon } from "lucide-react";
-import { Building2, ChevronDown, LogOut, Menu, Settings } from "lucide-react";
+import {
+  Building2,
+  ChevronDown,
+  GraduationCap,
+  LogOut,
+  Menu,
+  Settings,
+  UserRound,
+} from "lucide-react";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { isStudentInternalAuthEmail, ROUTES, type ProfileKind } from "@/lib/auth";
 import { signOutViaServer } from "@/lib/auth-flow";
@@ -95,6 +103,7 @@ export function SessionNavActions({
           return {
             value: profile,
             label: ADULT_PROFILE_TOGGLE_LABELS[profile],
+            icon: profile === "teacher" ? GraduationCap : UserRound,
             disabled: !available || (isSwitchBusy && !isSwitchLoading),
             busy: isSwitchLoading,
           };
@@ -343,7 +352,7 @@ export function SessionNavActions({
       ) : null}
 
       {showTeacherSchoolControl ? (
-        <div className="border-t border-black/5 px-1 py-1.5">
+        <div className="px-1 py-1">
           {organizationSchoolOptions.length === 0 ? (
             <Link
               href={`${ROUTES.school}?create=1`}
@@ -430,7 +439,7 @@ export function SessionNavActions({
           </div>
         ) : null}
         {mobileNavItems.length > 0 ? (
-          <div className="my-1 border-t border-black/5" aria-hidden="true" />
+          <div className="my-0.5 border-t border-black/5" aria-hidden="true" />
         ) : null}
         <Link
           href={ROUTES.settingsProfile}
