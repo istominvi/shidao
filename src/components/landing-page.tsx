@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 import { ROUTES } from "@/lib/auth";
 import { SessionNavActions } from "@/components/session-nav-actions";
 import { useSessionView } from "@/components/use-session-view";
@@ -123,7 +124,7 @@ export function LandingPage() {
 
       <section className="container mt-4 md:mt-6">
         <div className="landing-surface premium-hero-grid rounded-[2rem] bg-white/80 p-5 md:p-8">
-          <div>
+          <div className="hero-copy">
             <p className="landing-chip bg-lime-100/90 text-sm">
               Методико-ориентированная платформа для китайского
             </p>
@@ -173,10 +174,16 @@ export function LandingPage() {
             Методика задаёт курс, уроки, Материалы, Домашнее задание, План урока и Экран ученика. А функционал
             позволяет добавлять урок в расписание, проводить онлайн занятие и коммуникацию в контексте урока
           </p>
-          <ol className="methodology-flow mt-6">
-            {methodologyFlow.map((item) => (
-              <li key={item} className="methodology-node">
-                {item}
+          <ol className="methodology-flow mt-6" aria-label="Поток работы по методике">
+            {methodologyFlow.map((item, index) => (
+              <li key={item.label} className="methodology-node-wrap">
+                <article className={`methodology-node methodology-node-${item.tone}`}>
+                  <item.icon className="size-4" />
+                  <span>{item.label}</span>
+                </article>
+                {index < methodologyFlow.length - 1 ? (
+                  <ArrowRight className="methodology-flow-arrow size-4" aria-hidden="true" />
+                ) : null}
               </li>
             ))}
           </ol>
@@ -184,20 +191,37 @@ export function LandingPage() {
       </section>
 
       <section className="container mt-14 md:mt-16">
-        <h2 className="text-3xl font-black tracking-tight md:text-5xl">
-          «Мир вокруг меня» — первая методика в ShiDao
-        </h2>
-        <p className="mt-4 max-w-[72ch] text-sm leading-relaxed text-neutral-700 md:text-base">
-          Курс построен вокруг героев Сяо Лон и Сяо Мей: они помогают ребёнку
-          5–6 лет входить в китайский через песни, видео и игровые активности,
-          сохраняя ритм урока и предсказуемый сценарий для преподавателя.
-        </p>
-        <div className="mt-7 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {methodologyStats.map((item) => (
-            <article key={item} className="landing-card bg-white/90 p-5">
-              <p className="text-lg font-black tracking-tight">{item}</p>
+        <div className="px-5 md:px-8">
+          <div className="methodology-intro">
+            <div>
+              <h2 className="text-3xl font-black tracking-tight md:text-5xl">
+                «Мир вокруг меня» — первая методика в ShiDao
+              </h2>
+              <p className="mt-4 max-w-[72ch] text-sm leading-relaxed text-neutral-700 md:text-base">
+                Курс построен вокруг героев Сяо Лон и Сяо Мей: они помогают ребёнку 5–6 лет входить в китайский через
+                песни, видео и игровые активности, сохраняя ритм урока и предсказуемый сценарий для преподавателя.
+              </p>
+            </div>
+            <article className="methodology-cover" aria-label="Обложка методики Мир вокруг меня">
+              <Image
+                src="/methodologies/01.png"
+                alt="Обложка методики Мир вокруг меня"
+                width={220}
+                height={280}
+                className="methodology-cover-image"
+              />
             </article>
-          ))}
+          </div>
+          <div className="mt-7 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {methodologyStats.map((item) => (
+              <article key={item.label} className={`landing-card methodology-stat-card stat-${item.tone} p-5`}>
+                <div className="flex items-center gap-2">
+                  <item.icon className="size-4.5" />
+                  <p className="text-lg font-black tracking-tight">{item.label}</p>
+                </div>
+              </article>
+            ))}
+          </div>
         </div>
       </section>
 

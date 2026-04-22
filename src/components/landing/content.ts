@@ -1,24 +1,41 @@
-import { GraduationCap, UserRound, Users } from "lucide-react";
+import {
+  BookOpen,
+  CalendarClock,
+  CircleHelp,
+  ClipboardList,
+  Clock3,
+  FileText,
+  Film,
+  FolderKanban,
+  GraduationCap,
+  Group,
+  Languages,
+  Music4,
+  School,
+  Sparkles,
+  UserRound,
+  Users,
+} from "lucide-react";
 
 export const methodologyFlow = [
-  "Методика",
-  "Группа",
-  "Урок",
-  "Материалы",
-  "Домашнее задание",
-  "Комментарий / ответ ученика",
+  { label: "Методика", icon: BookOpen, tone: "lime" },
+  { label: "Группа", icon: Group, tone: "sky" },
+  { label: "Урок", icon: CalendarClock, tone: "violet" },
+  { label: "Материалы", icon: FolderKanban, tone: "amber" },
+  { label: "Домашнее задание", icon: ClipboardList, tone: "rose" },
+  { label: "Отчет", icon: FileText, tone: "emerald" },
 ] as const;
 
 export const methodologyStats = [
-  "5–6 лет",
-  "1 учебный год",
-  "около 180 слов",
-  "21 песня",
-  "21 видео",
-  "45 минут",
-  "4–6 детей в группе",
-  "до 8 максимум",
-  "14–16 активностей",
+  { label: "5–6 лет", icon: School, tone: "lime" },
+  { label: "1 учебный год", icon: CalendarClock, tone: "sky" },
+  { label: "около 180 слов", icon: Languages, tone: "violet" },
+  { label: "21 песня", icon: Music4, tone: "rose" },
+  { label: "21 видео", icon: Film, tone: "amber" },
+  { label: "45 минут", icon: Clock3, tone: "emerald" },
+  { label: "4–6 детей в группе", icon: Users, tone: "sky" },
+  { label: "до 8 максимум", icon: CircleHelp, tone: "amber" },
+  { label: "14–16 активностей", icon: Sparkles, tone: "violet" },
 ] as const;
 
 export const lessonWords = [
