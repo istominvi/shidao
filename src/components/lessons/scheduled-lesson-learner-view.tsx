@@ -197,12 +197,14 @@ export function ScheduledLessonLearnerView({
                 tabs={["plan", "homework", "chat"]}
                 activeTab={studentActiveTab}
                 onTabChange={(tab) => {
-                  if (tab === "plan") {
+                  if (tab === "plan" || tab === "student_screen") {
                     setStudentTab("lesson");
                     return;
                   }
                   if (tab === "homework" && !studentHomework) return;
-                  setStudentTab(tab);
+                  if (tab === "homework" || tab === "chat") {
+                    setStudentTab(tab);
+                  }
                 }}
                 tone="embedded"
                 trailingActions={onlineMeetingAction}
