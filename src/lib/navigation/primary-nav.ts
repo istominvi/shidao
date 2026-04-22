@@ -22,9 +22,9 @@ export const PRIMARY_NAV_CONFIG: Record<PrimaryNavConfig["id"], PrimaryNavConfig
     id: "marketing",
     ariaLabel: "Навигация по лендингу",
     items: [
-      { id: "roles", label: "Для кого", href: "#roles", isActive: () => false },
-      { id: "why", label: "Почему Shidao", href: "#why", isActive: () => false },
-      { id: "method-core", label: "Методика", href: "#method-core", isActive: () => false },
+      { id: "methodology", label: "Методика", href: "#methodology", isActive: () => false },
+      { id: "lesson", label: "Урок", href: "#lesson", isActive: () => false },
+      { id: "roles", label: "Роли", href: "#roles", isActive: () => false },
       { id: "workflow", label: "Как работает", href: "#workflow", isActive: () => false },
       { id: "faq", label: "Вопросы", href: "#faq", isActive: () => false },
     ],
