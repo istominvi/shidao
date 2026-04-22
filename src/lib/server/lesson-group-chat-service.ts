@@ -5,6 +5,8 @@ import {
   createCommunicationAttachmentAdmin,
   createLessonGroupMessageAdmin,
   createSignedStorageObjectUrlAdmin,
+  deleteLessonGroupMessageByIdAdmin,
+  deleteStorageObjectAdmin,
   ensureLessonGroupConversationAdmin,
   getCommunicationAttachmentByIdAdmin,
   getLessonGroupConversationAdmin,
@@ -406,24 +408,30 @@ export async function sendLessonGroupVoiceMessage(input: {
 
   const storagePath = `classes/${writeAccess.classId}/lessons/${writeAccess.scheduledLesson.id}/group-chat/messages/${message.id}/${crypto.randomUUID()}.${extensionForMimeType(mimeType)}`;
 
-  await uploadStorageObjectAdmin({
-    bucket: STORAGE_BUCKET,
-    path: storagePath,
-    mimeType,
-    payload: input.payload,
-  });
+  try {
+    await uploadStorageObjectAdmin({
+      bucket: STORAGE_BUCKET,
+      path: storagePath,
+      mimeType,
+      payload: input.payload,
+    });
 
-  await createCommunicationAttachmentAdmin({
-    lessonGroupMessageId: message.id,
-    kind: "voice",
-    storageBucket: STORAGE_BUCKET,
-    storagePath,
-    mimeType,
-    sizeBytes: input.sizeBytes,
-    durationMs: input.durationMs ?? null,
-    createdByUserId: principal.userId,
-    metadata: { source: "lesson-group-chat-voice" },
-  });
+    await createCommunicationAttachmentAdmin({
+      lessonGroupMessageId: message.id,
+      kind: "voice",
+      storageBucket: STORAGE_BUCKET,
+      storagePath,
+      mimeType,
+      sizeBytes: input.sizeBytes,
+      durationMs: input.durationMs ?? null,
+      createdByUserId: principal.userId,
+      metadata: { source: "lesson-group-chat-voice" },
+    });
+  } catch (error) {
+    await deleteStorageObjectAdmin({ bucket: STORAGE_BUCKET, path: storagePath }).catch(() => undefined);
+    await deleteLessonGroupMessageByIdAdmin(message.id).catch(() => undefined);
+    throw error;
+  }
 }
 
 export async function getCommunicationAttachmentSignedUrl(input: {

@@ -35,6 +35,11 @@ function isUniqueViolationError(message: string) {
   );
 }
 
+function isBucketNotFoundError(message: string) {
+  const normalized = message.toLowerCase();
+  return normalized.includes("bucket not found") || normalized.includes("not found");
+}
+
 type RowLessonGroupConversation = {
   id: string;
   scheduled_lesson_id: string;
@@ -306,6 +311,12 @@ export async function getLessonGroupMessageByIdAdmin(messageId: string) {
   return mapMessage(rows[0]);
 }
 
+export async function deleteLessonGroupMessageByIdAdmin(messageId: string) {
+  await adminRequest<null>(`/rest/v1/lesson_group_message?id=eq.${messageId}`, "DELETE", {
+    allowEmpty: true,
+  });
+}
+
 export async function createCommunicationAttachmentAdmin(input: {
   lessonGroupMessageId: string;
   kind: "voice" | "file";
@@ -363,14 +374,24 @@ export async function createSignedStorageObjectUrlAdmin(input: {
   path: string;
   expiresInSeconds: number;
 }) {
-  const payload = await adminRequest<{ signedURL: string }>(
-    `/storage/v1/object/sign/${encodeURIComponent(input.bucket)}/${input.path}`,
-    "POST",
-    {
-      payload: { expiresIn: input.expiresInSeconds },
-    },
-  );
-  return `${getSupabaseUrl()}/storage/v1${payload.signedURL}`;
+  try {
+    const payload = await adminRequest<{ signedURL: string }>(
+      `/storage/v1/object/sign/${encodeURIComponent(input.bucket)}/${input.path}`,
+      "POST",
+      {
+        payload: { expiresIn: input.expiresInSeconds },
+      },
+    );
+    return `${getSupabaseUrl()}/storage/v1${payload.signedURL}`;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (isBucketNotFoundError(message)) {
+      throw new Error(
+        "Storage bucket communication-media не найден. Создайте private bucket communication-media в Supabase.",
+      );
+    }
+    throw error;
+  }
 }
 
 export async function uploadStorageObjectAdmin(input: {
@@ -398,9 +419,14 @@ export async function uploadStorageObjectAdmin(input: {
     const payloadError = (await response.json().catch(() => null)) as
       | { message?: string; error?: string }
       | null;
-    throw new Error(
-      payloadError?.message ?? payloadError?.error ?? "Не удалось загрузить медиа в Storage.",
-    );
+    const message =
+      payloadError?.message ?? payloadError?.error ?? "Не удалось загрузить медиа в Storage.";
+    if (isBucketNotFoundError(message)) {
+      throw new Error(
+        "Storage bucket communication-media не найден. Создайте private bucket communication-media в Supabase.",
+      );
+    }
+    throw new Error(message);
   }
 }
 

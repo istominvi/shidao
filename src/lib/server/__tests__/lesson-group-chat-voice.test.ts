@@ -19,4 +19,5 @@ test("voice flow keeps parent write restrictions and signed URL access checks in
   assert.equal(source.includes("Родительский профиль не может отправлять сообщения в чат урока"), true);
   assert.equal(source.includes("getCommunicationAttachmentSignedUrl"), true);
   assert.equal(source.includes("assertCanReadLessonChat"), true);
+  assert.equal(source.includes("deleteLessonGroupMessageByIdAdmin"), true);
 });
