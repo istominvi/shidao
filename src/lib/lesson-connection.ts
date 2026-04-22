@@ -5,8 +5,8 @@ export type LessonConnectionInfo =
       kind: "online";
       formatLabel: "Онлайн";
       title: "Онлайн-занятие";
-      meetingLink: string;
-      ctaLabel: string;
+      meetingLink?: string;
+      ctaLabel: string | null;
       displayLabel: string;
     }
   | {
@@ -31,15 +31,16 @@ export function buildLessonConnectionInfo(
   labels: { onlineCtaLabel: string; onlineDisplayLabel?: string; offlineDisplayPrefix?: string },
 ): LessonConnectionInfo {
   if (runtimeShell.format === "online") {
-    const hostname = parseHostname(runtimeShell.meetingLink);
+    const meetingLink = runtimeShell.meetingLink?.trim() || "";
+    const hostname = parseHostname(meetingLink);
     return {
       kind: "online",
       formatLabel: "Онлайн",
       title: "Онлайн-занятие",
-      meetingLink: runtimeShell.meetingLink,
-      ctaLabel: labels.onlineCtaLabel,
+      meetingLink: meetingLink || undefined,
+      ctaLabel: meetingLink ? labels.onlineCtaLabel : null,
       displayLabel:
-        hostname || labels.onlineDisplayLabel || "Ссылка на онлайн-занятие",
+        hostname || labels.onlineDisplayLabel || "Ссылка не указана",
     };
   }
 

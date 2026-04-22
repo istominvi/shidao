@@ -37,3 +37,21 @@ test("buildLessonConnectionInfo maps offline lesson with place label", () => {
   assert.equal(connection.place, "Кабинет 9");
   assert.equal(connection.displayLabel, "Место: Кабинет 9");
 });
+
+test("buildLessonConnectionInfo keeps online lesson without CTA when link is missing", () => {
+  const connection = buildLessonConnectionInfo(
+    {
+      id: "sl-3",
+      classId: "class-1",
+      startsAt: "2026-04-10T10:00:00Z",
+      runtimeStatus: "planned",
+      format: "online",
+    },
+    { onlineCtaLabel: "Войти на урок" },
+  );
+
+  assert.equal(connection.kind, "online");
+  assert.equal(connection.meetingLink, undefined);
+  assert.equal(connection.ctaLabel, null);
+  assert.equal(connection.displayLabel, "Ссылка не указана");
+});

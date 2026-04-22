@@ -182,6 +182,27 @@ test("create scheduled lesson parser validates required fields and online/offlin
   online.set("meetingLink", "https://zoom.example/room");
 
   assert.equal(parseCreateScheduledLessonFormData(online).format, "online");
+  assert.equal(
+    parseCreateScheduledLessonFormData(online).format === "online" &&
+      parseCreateScheduledLessonFormData(online).meetingLink,
+    "https://zoom.example/room",
+  );
+
+  const onlineWithoutLink = new FormData();
+  onlineWithoutLink.set("classId", "class-1");
+  onlineWithoutLink.set("methodologyLessonId", "lesson-1");
+  onlineWithoutLink.set("date", "2026-04-20");
+  onlineWithoutLink.set("time", "10:30");
+  onlineWithoutLink.set("format", "online");
+
+  const parsedOnlineWithoutLink = parseCreateScheduledLessonFormData(onlineWithoutLink);
+  assert.equal(parsedOnlineWithoutLink.format, "online");
+  assert.equal(
+    parsedOnlineWithoutLink.format === "online"
+      ? parsedOnlineWithoutLink.meetingLink
+      : "unexpected",
+    undefined,
+  );
 
   const offlineMissingPlace = new FormData();
   offlineMissingPlace.set("classId", "class-1");

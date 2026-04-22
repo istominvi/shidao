@@ -401,16 +401,13 @@ export function parseCreateScheduledLessonFormData(
 
   if (formatValue === "online") {
     const meetingLink = cleanText(formData.get("meetingLink") as string | null);
-    if (!meetingLink) {
-      throw new Error("Для онлайн-формата нужна ссылка на встречу.");
-    }
 
     return {
       classId,
       methodologyLessonId,
       startsAt,
       format: "online",
-      meetingLink,
+      meetingLink: meetingLink || undefined,
     };
   }
 

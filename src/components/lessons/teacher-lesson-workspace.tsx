@@ -235,7 +235,9 @@ export function TeacherLessonWorkspace({
           activeTab={tab}
           onTabChange={setTab}
           tone="embedded"
-          trailingActions={workspace.presentation.hero.connection.kind === "online" ? (
+          trailingActions={workspace.presentation.hero.connection.kind === "online" &&
+            workspace.presentation.hero.connection.meetingLink &&
+            workspace.presentation.hero.connection.ctaLabel ? (
             <a
               href={workspace.presentation.hero.connection.meetingLink}
               target="_blank"

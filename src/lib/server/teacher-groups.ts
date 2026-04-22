@@ -233,15 +233,11 @@ export function parseGroupScopedLessonFormData(
 
   if (formatValue === "online") {
     const meetingLink = clean(formData.get("meetingLink") as string | null);
-    if (!meetingLink) {
-      throw new Error("Для онлайн-формата нужна ссылка на встречу.");
-    }
-
     return {
       methodologyLessonId,
       startsAt,
       format: "online",
-      meetingLink,
+      meetingLink: meetingLink || undefined,
     };
   }
 
@@ -443,15 +439,12 @@ export async function createTeacherGroupScopedLesson(input: {
   }
 
   if (input.payload.format === "online") {
-    if (!input.payload.meetingLink) {
-      throw new Error("Для онлайн-формата нужна ссылка на встречу.");
-    }
     return deps.createScheduledLesson({
       classId: input.groupId,
       methodologyLessonId: input.payload.methodologyLessonId,
       startsAt: input.payload.startsAt,
       format: "online",
-      meetingLink: input.payload.meetingLink,
+      meetingLink: input.payload.meetingLink || undefined,
     });
   }
 

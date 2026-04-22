@@ -231,14 +231,16 @@ function ScheduleConnectionMeta({ event }: { event: TeacherScheduleEvent }) {
   if (event.connection.kind === "online") {
     return (
       <div className="mt-2 flex items-center gap-2">
-        <a
-          href={event.connection.meetingLink}
-          target="_blank"
-          rel="noreferrer noopener"
-          className="inline-flex rounded-lg border border-sky-200 bg-sky-50 px-2 py-1 text-xs font-semibold text-sky-800 hover:bg-sky-100"
-        >
-          {event.connection.ctaLabel}
-        </a>
+        {event.connection.meetingLink && event.connection.ctaLabel ? (
+          <a
+            href={event.connection.meetingLink}
+            target="_blank"
+            rel="noreferrer noopener"
+            className="inline-flex rounded-lg border border-sky-200 bg-sky-50 px-2 py-1 text-xs font-semibold text-sky-800 hover:bg-sky-100"
+          >
+            {event.connection.ctaLabel}
+          </a>
+        ) : null}
         <span className="truncate text-[11px] text-neutral-500">{event.connection.displayLabel}</span>
       </div>
     );

@@ -178,14 +178,16 @@ export function ScheduledLessonLearnerView({
         <p className="text-sm font-semibold text-neutral-900">{model.connection.title}</p>
         {model.connection.kind === "online" ? (
           <div className="mt-2 flex flex-wrap items-center gap-2">
-            <a
-              href={model.connection.meetingLink}
-              target="_blank"
-              rel="noreferrer noopener"
-              className={productButtonClassName("secondary", "text-sm")}
-            >
-              {model.connection.ctaLabel}
-            </a>
+            {model.connection.meetingLink && model.connection.ctaLabel ? (
+              <a
+                href={model.connection.meetingLink}
+                target="_blank"
+                rel="noreferrer noopener"
+                className={productButtonClassName("secondary", "text-sm")}
+              >
+                {model.connection.ctaLabel}
+              </a>
+            ) : null}
             <p className="text-xs text-neutral-600">{model.connection.displayLabel}</p>
           </div>
         ) : (

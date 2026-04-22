@@ -149,7 +149,9 @@ function UpcomingLessons({ lessons }: { lessons: ParentLesson[] }) {
                 <Clock3 className="size-3.5" />
                 {lesson.startsAt}
               </p>
-              {lesson.connection.kind === "online" ? (
+              {lesson.connection.kind === "online" &&
+              lesson.connection.meetingLink &&
+              lesson.connection.ctaLabel ? (
                 <a
                   href={lesson.connection.meetingLink}
                   target="_blank"

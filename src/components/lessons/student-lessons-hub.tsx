@@ -259,7 +259,6 @@ function StudentLessonsTable({
               <th className="px-4 py-0 text-left align-middle">Учитель</th>
               <th className="px-4 py-0 text-left align-middle">Группа</th>
               <th className="px-4 py-0 text-left align-middle">Формат</th>
-              <th className="px-4 py-0 text-left align-middle">Подключение</th>
               <th className="px-4 py-0 text-left align-middle">ДЗ</th>
             </tr>
           </thead>
@@ -280,9 +279,6 @@ function StudentLessonsTable({
                   <td className="px-3 py-3">{event.teacherLabel}</td>
                   <td className="px-3 py-3">{event.groupLabel}</td>
                   <td className="px-3 py-3">{event.formatLabel}</td>
-                  <td className="px-3 py-3">
-                    <StudentConnectionMeta event={event} stopRowNavigation />
-                  </td>
                   <td className="px-3 py-3">{event.homework ? event.homework.dueAtLabel : ""}</td>
                 </tr>
               );
@@ -363,17 +359,19 @@ function StudentConnectionMeta({
   if (event.connection.kind === "online") {
     return (
       <div className="space-y-1">
-        <a
-          href={event.connection.meetingLink}
-          target="_blank"
-          rel="noreferrer noopener"
-          onClick={(mouseEvent) => {
-            if (stopRowNavigation) mouseEvent.stopPropagation();
-          }}
-          className="inline-flex rounded-lg border border-sky-200 bg-sky-50 px-2 py-1 text-xs font-semibold text-sky-800 hover:bg-sky-100"
-        >
-          {event.connection.ctaLabel}
-        </a>
+        {event.connection.meetingLink && event.connection.ctaLabel ? (
+          <a
+            href={event.connection.meetingLink}
+            target="_blank"
+            rel="noreferrer noopener"
+            onClick={(mouseEvent) => {
+              if (stopRowNavigation) mouseEvent.stopPropagation();
+            }}
+            className="inline-flex rounded-lg border border-sky-200 bg-sky-50 px-2 py-1 text-xs font-semibold text-sky-800 hover:bg-sky-100"
+          >
+            {event.connection.ctaLabel}
+          </a>
+        ) : null}
         <p className="text-[11px] text-neutral-500">{event.connection.displayLabel}</p>
       </div>
     );
