@@ -230,14 +230,12 @@ export function TeacherLessonWorkspace({
       </section>
 
       <SurfaceCard as="section" className="p-5 md:p-6" bodyClassName="mt-0">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <TeacherLessonTabs
-            tabs={["plan", "student_screen", "homework", "chat"]}
-            activeTab={tab}
-            onTabChange={setTab}
-            tone="embedded"
-          />
-          {workspace.presentation.hero.connection.kind === "online" ? (
+        <TeacherLessonTabs
+          tabs={["plan", "student_screen", "homework", "chat"]}
+          activeTab={tab}
+          onTabChange={setTab}
+          tone="embedded"
+          trailingActions={workspace.presentation.hero.connection.kind === "online" ? (
             <a
               href={workspace.presentation.hero.connection.meetingLink}
               target="_blank"
@@ -248,7 +246,7 @@ export function TeacherLessonWorkspace({
               <ExternalLink className="h-4 w-4" aria-hidden="true" />
             </a>
           ) : null}
-        </div>
+        />
         {liveActionError ? (
           <p className="mt-4 rounded-xl border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-700">
             Не удалось обновить live-режим урока: {liveActionError}

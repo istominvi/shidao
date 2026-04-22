@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
 import { ClipboardCheck, MessageCircle, MonitorUp, NotebookText } from "lucide-react";
 import { productButtonClassName } from "@/components/ui/button";
@@ -19,6 +20,7 @@ type TeacherLessonTabsProps = {
   activeTab: TeacherLessonTabKey;
   onTabChange: (tab: TeacherLessonTabKey) => void;
   tone?: "surface" | "embedded";
+  trailingActions?: ReactNode;
 };
 
 function tabClassName(active: boolean, tone: "surface" | "embedded") {
@@ -32,29 +34,42 @@ function tabClassName(active: boolean, tone: "surface" | "embedded") {
   return productButtonClassName(active ? "primary" : "secondary", "text-sm");
 }
 
-export function TeacherLessonTabs({ tabs, activeTab, onTabChange, tone = "surface" }: TeacherLessonTabsProps) {
+export function TeacherLessonTabs({
+  tabs,
+  activeTab,
+  onTabChange,
+  tone = "surface",
+  trailingActions,
+}: TeacherLessonTabsProps) {
   if (tone === "embedded") {
     return (
       <div className="-mx-5 md:-mx-6">
         <div className="px-5 md:px-6">
-          <div className="flex flex-wrap gap-2">
-            {tabs.map((tab) => {
-              const meta = teacherLessonTabMeta[tab];
-              const Icon = meta.icon;
-              const isActive = tab === activeTab;
-              return (
-                <button
-                  key={tab}
-                  type="button"
-                  className={tabClassName(isActive, tone)}
-                  onClick={() => onTabChange(tab)}
-                  aria-pressed={isActive}
-                >
-                  <Icon className="h-4 w-4" aria-hidden="true" />
-                  <span>{meta.label}</span>
-                </button>
-              );
-            })}
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex flex-wrap gap-2">
+              {tabs.map((tab) => {
+                const meta = teacherLessonTabMeta[tab];
+                const Icon = meta.icon;
+                const isActive = tab === activeTab;
+                return (
+                  <button
+                    key={tab}
+                    type="button"
+                    className={tabClassName(isActive, tone)}
+                    onClick={() => onTabChange(tab)}
+                    aria-pressed={isActive}
+                  >
+                    <Icon className="h-4 w-4" aria-hidden="true" />
+                    <span>{meta.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+            {trailingActions ? (
+              <div className="flex items-center gap-2">
+                {trailingActions}
+              </div>
+            ) : null}
           </div>
         </div>
         <div className="mt-5 border-b border-neutral-200" />
