@@ -463,10 +463,12 @@ function TeacherLessonEventCard({
   event,
   nowIso,
   compact = false,
+  showConnectionAction = true,
 }: {
   event: TeacherLessonsHubReadModel["schedule"]["events"][number];
   nowIso: string;
   compact?: boolean;
+  showConnectionAction?: boolean;
 }) {
   const router = useRouter();
   const isCurrent = isNowActive(event, Date.parse(nowIso));
@@ -497,9 +499,11 @@ function TeacherLessonEventCard({
       </div>
       <p className="mt-1 text-sm font-semibold text-neutral-900">{event.lessonTitle}</p>
       <p className="mt-1 text-xs text-neutral-600">Группа: {event.groupLabel}</p>
-      <div className="mt-2">
-        <ConnectionMeta event={event} stopRowNavigation />
-      </div>
+      {showConnectionAction ? (
+        <div className="mt-2">
+          <ConnectionMeta event={event} stopRowNavigation />
+        </div>
+      ) : null}
       <p className={`mt-2 text-xs font-semibold text-sky-700 ${compact ? "" : "sm:text-sm"}`}>
         Открыть урок
       </p>
@@ -663,7 +667,12 @@ function TeacherMonthDialog({
           ) : (
             <div className="space-y-2">
               {dayEvents.map((event) => (
-                <TeacherLessonEventCard key={event.id} event={event} nowIso={nowIso} />
+                <TeacherLessonEventCard
+                  key={event.id}
+                  event={event}
+                  nowIso={nowIso}
+                  showConnectionAction={false}
+                />
               ))}
             </div>
           )}
