@@ -40,6 +40,11 @@ function isBucketNotFoundError(message: string) {
   return normalized.includes("bucket not found") || normalized.includes("not found");
 }
 
+function isBucketAlreadyExistsError(message: string) {
+  const normalized = message.toLowerCase();
+  return normalized.includes("already exists") || normalized.includes("duplicate");
+}
+
 type RowLessonGroupConversation = {
   id: string;
   scheduled_lesson_id: string;
@@ -387,7 +392,7 @@ export async function createSignedStorageObjectUrlAdmin(input: {
     const message = error instanceof Error ? error.message : String(error);
     if (isBucketNotFoundError(message)) {
       throw new Error(
-        "Storage bucket communication-media не найден. Создайте private bucket communication-media в Supabase.",
+        "Storage bucket communication-media не найден. Не удалось сформировать ссылку на аудио.",
       );
     }
     throw error;
@@ -400,9 +405,8 @@ export async function uploadStorageObjectAdmin(input: {
   mimeType: string;
   payload: ArrayBuffer;
 }) {
-  const response = await fetch(
-    `${getSupabaseUrl()}/storage/v1/object/${encodeURIComponent(input.bucket)}/${input.path}`,
-    {
+  const attemptUpload = async () =>
+    fetch(`${getSupabaseUrl()}/storage/v1/object/${encodeURIComponent(input.bucket)}/${input.path}`, {
       method: "POST",
       headers: {
         apikey: getServiceRoleKey(),
@@ -412,9 +416,9 @@ export async function uploadStorageObjectAdmin(input: {
       },
       body: input.payload,
       cache: "no-store",
-    },
-  );
+    });
 
+  let response = await attemptUpload();
   if (!response.ok) {
     const payloadError = (await response.json().catch(() => null)) as
       | { message?: string; error?: string }
@@ -422,9 +426,17 @@ export async function uploadStorageObjectAdmin(input: {
     const message =
       payloadError?.message ?? payloadError?.error ?? "Не удалось загрузить медиа в Storage.";
     if (isBucketNotFoundError(message)) {
-      throw new Error(
-        "Storage bucket communication-media не найден. Создайте private bucket communication-media в Supabase.",
-      );
+      await ensureStorageBucketExistsAdmin(input.bucket);
+      response = await attemptUpload();
+      if (response.ok) return;
+      const retryPayloadError = (await response.json().catch(() => null)) as
+        | { message?: string; error?: string }
+        | null;
+      const retryMessage =
+        retryPayloadError?.message ??
+        retryPayloadError?.error ??
+        "Не удалось загрузить медиа в Storage.";
+      throw new Error(`Не удалось загрузить голосовое сообщение: ${retryMessage}`);
     }
     throw new Error(message);
   }
@@ -435,5 +447,34 @@ export async function deleteStorageObjectAdmin(input: { bucket: string; path: st
     `/storage/v1/object/${encodeURIComponent(input.bucket)}/${input.path}`,
     "DELETE",
     { allowEmpty: true },
+  );
+}
+
+async function ensureStorageBucketExistsAdmin(bucketId: string) {
+  const response = await fetch(`${getSupabaseUrl()}/storage/v1/bucket`, {
+    method: "POST",
+    headers: {
+      apikey: getServiceRoleKey(),
+      Authorization: `Bearer ${getServiceRoleKey()}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      id: bucketId,
+      name: bucketId,
+      public: false,
+      file_size_limit: 10 * 1024 * 1024,
+      allowed_mime_types: ["audio/webm", "audio/ogg", "audio/mp4", "audio/mpeg", "audio/wav"],
+    }),
+    cache: "no-store",
+  });
+
+  if (response.ok) return;
+  const payloadError = (await response.json().catch(() => null)) as
+    | { message?: string; error?: string }
+    | null;
+  const message = payloadError?.message ?? payloadError?.error ?? "Не удалось создать bucket.";
+  if (isBucketAlreadyExistsError(message)) return;
+  throw new Error(
+    `Storage bucket ${bucketId} не найден и не удалось создать автоматически: ${message}`,
   );
 }

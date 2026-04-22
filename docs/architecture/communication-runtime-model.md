@@ -64,3 +64,4 @@
 - privacy: private bucket (без public read);
 - MIME allowlist: `audio/webm`, `audio/ogg`, `audio/mp4`, `audio/mpeg`, `audio/wav`;
 - suggested max file size: 10 MB.
+- upload flow пытается создать bucket автоматически (server-side, service role), если bucket отсутствует.
