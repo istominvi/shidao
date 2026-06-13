@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Gift } from "lucide-react";
 import { ROUTES } from "@/lib/auth";
 import { SessionNavActions } from "@/components/session-nav-actions";
 import { useSessionView } from "@/components/use-session-view";
@@ -26,6 +26,9 @@ import {
   studentScreenItems,
   workflowSteps,
 } from "@/components/landing/content";
+
+const materialsBotHref =
+  "https://max.ru/id753611991489_bot?start=c1775561912493-ds";
 
 function WordChip({
   hanzi,
@@ -132,9 +135,10 @@ export function LandingPage() {
               Китайский для детей — урок за уроком по готовой методике
             </h1>
             <p className="mt-5 max-w-[68ch] text-base leading-relaxed text-neutral-700 md:text-lg">
-              Shidao превращает методику в рабочий цифровой контур, где преподаватель ведёт группу по Плану
-              урока, ученик работает через Экран ученика, родитель видит домашнюю работу, комментарий и статус
-              после каждого занятия.
+              Shidao превращает методику в рабочий цифровой контур, где
+              преподаватель ведёт группу по Плану урока, ученик работает через
+              Экран ученика, родитель видит домашнюю работу, комментарий и
+              статус после каждого занятия.
             </p>
             <div className="mt-7 grid gap-3 sm:flex sm:flex-wrap">
               <Link
@@ -152,7 +156,10 @@ export function LandingPage() {
             </div>
           </div>
 
-          <article className="hero-product-shot" aria-label="Пример экранов продукта">
+          <article
+            className="hero-product-shot"
+            aria-label="Пример экранов продукта"
+          >
             <Image
               src="/landing/screen_8.png"
               alt="Скриншоты интерфейса ShiDao"
@@ -165,24 +172,107 @@ export function LandingPage() {
         </div>
       </section>
 
+      <section
+        className="container mt-10 md:mt-12"
+        aria-labelledby="school-materials-title"
+      >
+        <article className="landing-surface materials-gift-card overflow-hidden rounded-[2rem] bg-white/90">
+          <div className="materials-gift-copy p-5 md:p-8">
+            <p className="landing-chip materials-gift-chip bg-amber-100/90 text-sm">
+              <Gift className="size-4" aria-hidden="true" />
+              Бесплатные материалы для родителей
+            </p>
+            <h2
+              id="school-materials-title"
+              className="mt-5 max-w-[18ch] text-3xl font-black leading-[1.05] tracking-[-0.03em] md:max-w-[20ch] md:text-5xl"
+            >
+              🎁 Дарим три полезных документа
+            </h2>
+            <p className="mt-4 max-w-[64ch] text-sm leading-relaxed text-neutral-700 md:text-base">
+              Они помогают родителям понять, готов ли ребёнок к школе, что он
+              чувствует перед школой и стоит ли обратить внимание на частые
+              ошибки при письме.
+            </p>
+            <ol className="materials-gift-list mt-5 space-y-3 text-sm text-neutral-800 md:text-base">
+              <li>
+                Чек-лист готовности к первому классу (требования ФГОС,
+                госшколы).
+              </li>
+              <li>Тест, что ребёнок чувствует перед школой.</li>
+              <li>Тест на дисграфию.</li>
+            </ol>
+            <div
+              className="mt-6 flex flex-wrap gap-2"
+              aria-label="Каналы получения материалов"
+            >
+              <a
+                href={materialsBotHref}
+                target="_blank"
+                rel="noreferrer"
+                className="landing-btn landing-btn-primary min-h-11"
+              >
+                Получить материалы
+              </a>
+              <a
+                href={materialsBotHref}
+                target="_blank"
+                rel="noreferrer"
+                className="landing-btn landing-btn-muted min-h-11"
+              >
+                MAX
+              </a>
+              <button
+                type="button"
+                className="landing-btn landing-btn-muted min-h-11"
+                aria-label="Telegram скоро будет доступен"
+              >
+                Telegram
+              </button>
+            </div>
+            <p className="mt-3 max-w-[58ch] text-xs leading-relaxed text-neutral-500">
+              Чтобы получить материалы, переходите в официальный бот Евразийской
+              начальной школы в MAX.
+            </p>
+          </div>
+          <div className="materials-gift-photo" aria-hidden="true">
+            <Image
+              src="/hero.png"
+              alt=""
+              width={1400}
+              height={1000}
+              className="materials-gift-image"
+            />
+          </div>
+        </article>
+      </section>
+
       <section id="methodology" className="container mt-14 md:mt-16">
         <div className="px-5 md:px-8">
           <h2 className="text-3xl font-black tracking-tight md:text-5xl">
             В ShiDao методика — не папка с файлами, а сценарий работы
           </h2>
           <p className="mt-4 max-w-[74ch] text-sm leading-relaxed text-neutral-700 md:text-base">
-            Методика задаёт курс, уроки, Материалы, Домашнее задание, План урока и Экран ученика. А функционал
-            позволяет добавлять урок в расписание, проводить онлайн занятие и коммуникацию в контексте урока
+            Методика задаёт курс, уроки, Материалы, Домашнее задание, План урока
+            и Экран ученика. А функционал позволяет добавлять урок в расписание,
+            проводить онлайн занятие и коммуникацию в контексте урока
           </p>
-          <ol className="methodology-flow mt-6" aria-label="Поток работы по методике">
+          <ol
+            className="methodology-flow mt-6"
+            aria-label="Поток работы по методике"
+          >
             {methodologyFlow.map((item, index) => (
               <li key={item.label} className="methodology-node-wrap">
-                <article className={`methodology-node methodology-node-${item.tone}`}>
+                <article
+                  className={`methodology-node methodology-node-${item.tone}`}
+                >
                   <item.icon className="size-4" />
                   <span>{item.label}</span>
                 </article>
                 {index < methodologyFlow.length - 1 ? (
-                  <ArrowRight className="methodology-flow-arrow size-4" aria-hidden="true" />
+                  <ArrowRight
+                    className="methodology-flow-arrow size-4"
+                    aria-hidden="true"
+                  />
                 ) : null}
               </li>
             ))}
@@ -198,11 +288,16 @@ export function LandingPage() {
                 «Мир вокруг меня» — первая методика в ShiDao
               </h2>
               <p className="mt-4 max-w-[72ch] text-sm leading-relaxed text-neutral-700 md:text-base">
-                Курс построен вокруг героев Сяо Лон и Сяо Мей: они помогают ребёнку 5–6 лет входить в китайский через
-                песни, видео и игровые активности, сохраняя ритм урока и предсказуемый сценарий для преподавателя.
+                Курс построен вокруг героев Сяо Лон и Сяо Мей: они помогают
+                ребёнку 5–6 лет входить в китайский через песни, видео и игровые
+                активности, сохраняя ритм урока и предсказуемый сценарий для
+                преподавателя.
               </p>
             </div>
-            <article className="methodology-cover" aria-label="Обложка методики Мир вокруг меня">
+            <article
+              className="methodology-cover"
+              aria-label="Обложка методики Мир вокруг меня"
+            >
               <Image
                 src="/methodologies/01.png"
                 alt="Обложка методики Мир вокруг меня"
@@ -214,10 +309,15 @@ export function LandingPage() {
           </div>
           <div className="mt-7 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {methodologyStats.map((item) => (
-              <article key={item.label} className={`landing-card methodology-stat-card stat-${item.tone} p-5`}>
+              <article
+                key={item.label}
+                className={`landing-card methodology-stat-card stat-${item.tone} p-5`}
+              >
                 <div className="flex items-center gap-2">
                   <item.icon className="size-4.5" />
-                  <p className="text-lg font-black tracking-tight">{item.label}</p>
+                  <p className="text-lg font-black tracking-tight">
+                    {item.label}
+                  </p>
                 </div>
               </article>
             ))}
@@ -231,57 +331,73 @@ export function LandingPage() {
             Как выглядит один урок внутри продукта
           </h2>
           <p className="mt-4 max-w-[74ch] text-sm leading-relaxed text-neutral-700 md:text-base">
-            Урок 1 «Животные на ферме» показывает, как Shidao разделяет преподавательскую методическую опору и Экран
-            ученика, сохраняя единые шаги занятия.
+            Урок 1 «Животные на ферме» показывает, как Shidao разделяет
+            преподавательскую методическую опору и Экран ученика, сохраняя
+            единые шаги занятия.
           </p>
 
           <div className="mt-8 grid gap-4 xl:grid-cols-2">
             <article className="landing-surface rounded-[1.6rem] bg-white/90 p-5 md:p-6">
-            <p className="text-xs font-bold uppercase tracking-[0.12em] text-neutral-500">План урока преподавателя</p>
-            <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              {lessonWords.slice(0, 8).map((word) => (
-                <WordChip key={`${word.hanzi}-${word.pinyin}`} {...word} />
-              ))}
-            </div>
+              <p className="text-xs font-bold uppercase tracking-[0.12em] text-neutral-500">
+                План урока преподавателя
+              </p>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                {lessonWords.slice(0, 8).map((word) => (
+                  <WordChip key={`${word.hanzi}-${word.pinyin}`} {...word} />
+                ))}
+              </div>
 
-            <h3 className="mt-6 text-lg font-bold">Реквизит и материалы</h3>
-            <ul className="mt-2 grid gap-2 text-sm text-neutral-700 sm:grid-cols-2">
-              {lessonProps.map((item) => (
-                <li key={item} className="rounded-xl bg-neutral-50 px-3 py-2">
-                  {item}
-                </li>
-              ))}
-            </ul>
+              <h3 className="mt-6 text-lg font-bold">Реквизит и материалы</h3>
+              <ul className="mt-2 grid gap-2 text-sm text-neutral-700 sm:grid-cols-2">
+                {lessonProps.map((item) => (
+                  <li key={item} className="rounded-xl bg-neutral-50 px-3 py-2">
+                    {item}
+                  </li>
+                ))}
+              </ul>
 
-            <h3 className="mt-6 text-lg font-bold">Шаги занятия (фрагмент)</h3>
-            <ol className="mt-2 space-y-2 text-sm text-neutral-700">
-              {lessonStepsPreview.map((step, idx) => (
-                <li key={step} className="rounded-xl bg-white px-3 py-2">
-                  <span className="mr-2 text-xs font-bold text-neutral-500">Шаг {idx + 1}.</span>
-                  {step}
-                </li>
-              ))}
-            </ol>
+              <h3 className="mt-6 text-lg font-bold">
+                Шаги занятия (фрагмент)
+              </h3>
+              <ol className="mt-2 space-y-2 text-sm text-neutral-700">
+                {lessonStepsPreview.map((step, idx) => (
+                  <li key={step} className="rounded-xl bg-white px-3 py-2">
+                    <span className="mr-2 text-xs font-bold text-neutral-500">
+                      Шаг {idx + 1}.
+                    </span>
+                    {step}
+                  </li>
+                ))}
+              </ol>
             </article>
 
             <article className="landing-surface rounded-[1.6rem] bg-gradient-to-b from-sky-50/80 to-white p-5 md:p-6">
-            <p className="text-xs font-bold uppercase tracking-[0.12em] text-sky-900/70">Экран ученика</p>
-            <div className="student-screen-preview mt-4">
-              <p className="text-sm font-semibold">Урок 1 · Шаг 3 «Карточки животных»</p>
-              <div className="mt-3 grid grid-cols-2 gap-2">
-                {lessonWords.slice(0, 4).map((word) => (
-                  <WordChip key={`student-${word.hanzi}`} {...word} />
-                ))}
+              <p className="text-xs font-bold uppercase tracking-[0.12em] text-sky-900/70">
+                Экран ученика
+              </p>
+              <div className="student-screen-preview mt-4">
+                <p className="text-sm font-semibold">
+                  Урок 1 · Шаг 3 «Карточки животных»
+                </p>
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  {lessonWords.slice(0, 4).map((word) => (
+                    <WordChip key={`student-${word.hanzi}`} {...word} />
+                  ))}
+                </div>
+                <p className="mt-3 text-sm text-neutral-700">
+                  Задание шага: нажми карточку, которую назвал преподаватель.
+                </p>
               </div>
-              <p className="mt-3 text-sm text-neutral-700">Задание шага: нажми карточку, которую назвал преподаватель.</p>
-            </div>
-            <ul className="mt-4 space-y-2 text-sm text-neutral-700">
-              {studentScreenItems.map((item) => (
-                <li key={item} className="rounded-xl border border-sky-200/70 bg-white/90 px-3 py-2">
-                  {item}
-                </li>
-              ))}
-            </ul>
+              <ul className="mt-4 space-y-2 text-sm text-neutral-700">
+                {studentScreenItems.map((item) => (
+                  <li
+                    key={item}
+                    className="rounded-xl border border-sky-200/70 bg-white/90 px-3 py-2"
+                  >
+                    {item}
+                  </li>
+                ))}
+              </ul>
             </article>
           </div>
         </div>
@@ -289,22 +405,31 @@ export function LandingPage() {
 
       <section id="roles" className="container mt-14 md:mt-16">
         <div className="px-5 md:px-8">
-          <h2 className="text-3xl font-black tracking-tight md:text-5xl">Три роли — один учебный контур</h2>
+          <h2 className="text-3xl font-black tracking-tight md:text-5xl">
+            Три роли — один учебный контур
+          </h2>
           <div className="mt-8 grid gap-4 lg:grid-cols-3">
-            {roleCards.map(({ title, icon: Icon, tone, description, points }) => (
-              <article key={title} className={`landing-surface role-card role-${tone} rounded-[1.6rem] p-5`}>
-                <div className="flex items-center gap-2">
-                  <Icon className="size-5" />
-                  <h3 className="text-xl font-black">{title}</h3>
-                </div>
-                <p className="mt-3 text-sm leading-relaxed text-neutral-700">{description}</p>
-                <ul className="mt-4 space-y-2 text-sm text-neutral-700">
-                  {points.map((point) => (
-                    <li key={point}>• {point}</li>
-                  ))}
-                </ul>
-              </article>
-            ))}
+            {roleCards.map(
+              ({ title, icon: Icon, tone, description, points }) => (
+                <article
+                  key={title}
+                  className={`landing-surface role-card role-${tone} rounded-[1.6rem] p-5`}
+                >
+                  <div className="flex items-center gap-2">
+                    <Icon className="size-5" />
+                    <h3 className="text-xl font-black">{title}</h3>
+                  </div>
+                  <p className="mt-3 text-sm leading-relaxed text-neutral-700">
+                    {description}
+                  </p>
+                  <ul className="mt-4 space-y-2 text-sm text-neutral-700">
+                    {points.map((point) => (
+                      <li key={point}>• {point}</li>
+                    ))}
+                  </ul>
+                </article>
+              ),
+            )}
           </div>
         </div>
       </section>
@@ -318,8 +443,8 @@ export function LandingPage() {
                 Как работает ShiDao в реальном процессе
               </h2>
               <p className="workflow-subtitle">
-                От запуска группы до post-lesson коммуникации — каждый этап фиксируется внутри урока и не теряет
-                контекст.
+                От запуска группы до post-lesson коммуникации — каждый этап
+                фиксируется внутри урока и не теряет контекст.
               </p>
             </div>
             <ol className="workflow-steps mt-8 md:mt-10">
@@ -341,7 +466,9 @@ export function LandingPage() {
         <div className="px-5 md:px-8">
           <div className="grid gap-4 lg:grid-cols-2">
             <article className="landing-surface rounded-[1.6rem] bg-white/85 p-5">
-              <p className="text-sm font-bold uppercase tracking-[0.12em] text-neutral-500">До</p>
+              <p className="text-sm font-bold uppercase tracking-[0.12em] text-neutral-500">
+                До
+              </p>
               <ul className="mt-3 space-y-2 text-sm text-neutral-700">
                 {beforeAfter.before.map((item) => (
                   <li key={item}>• {item}</li>
@@ -349,7 +476,9 @@ export function LandingPage() {
               </ul>
             </article>
             <article className="landing-surface rounded-[1.6rem] bg-lime-50/70 p-5">
-              <p className="text-sm font-bold uppercase tracking-[0.12em] text-neutral-700">После</p>
+              <p className="text-sm font-bold uppercase tracking-[0.12em] text-neutral-700">
+                После
+              </p>
               <ul className="mt-3 space-y-2 text-sm text-neutral-800">
                 {beforeAfter.after.map((item) => (
                   <li key={item}>• {item}</li>
@@ -362,12 +491,21 @@ export function LandingPage() {
 
       <section id="faq" className="container mt-14 md:mt-16">
         <div className="px-5 md:px-8">
-          <h2 className="text-3xl font-black tracking-tight md:text-5xl">Вопросы о продукте</h2>
+          <h2 className="text-3xl font-black tracking-tight md:text-5xl">
+            Вопросы о продукте
+          </h2>
           <div className="mt-7 space-y-3">
             {faq.map(({ q, a }) => (
-              <details key={q} className="landing-surface rounded-2xl bg-white/90 p-4 md:p-5">
-                <summary className="cursor-pointer text-base font-semibold">{q}</summary>
-                <p className="mt-3 text-sm leading-relaxed text-neutral-700">{a}</p>
+              <details
+                key={q}
+                className="landing-surface rounded-2xl bg-white/90 p-4 md:p-5"
+              >
+                <summary className="cursor-pointer text-base font-semibold">
+                  {q}
+                </summary>
+                <p className="mt-3 text-sm leading-relaxed text-neutral-700">
+                  {a}
+                </p>
               </details>
             ))}
           </div>
@@ -385,10 +523,16 @@ export function LandingPage() {
               связь в один рабочий контур.
             </p>
             <div className="mt-6 grid gap-3 sm:flex sm:justify-center">
-              <Link href={ROUTES.join} className="landing-btn landing-btn-primary min-h-12 w-full sm:w-auto">
+              <Link
+                href={ROUTES.join}
+                className="landing-btn landing-btn-primary min-h-12 w-full sm:w-auto"
+              >
                 Создать аккаунт
               </Link>
-              <Link href={ROUTES.login} className="landing-btn landing-btn-muted min-h-12 w-full sm:w-auto">
+              <Link
+                href={ROUTES.login}
+                className="landing-btn landing-btn-muted min-h-12 w-full sm:w-auto"
+              >
                 Войти
               </Link>
             </div>
