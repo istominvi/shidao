@@ -37,6 +37,7 @@ import {
 } from "./communication-service";
 import {
   buildMethodologyLessonUnifiedReadModel,
+  type MethodologyLessonStudentComponentKey,
   type MethodologyLessonUnifiedReadModel,
 } from "./methodology-lesson-unified-read-model";
 import {
@@ -62,6 +63,9 @@ export type TeacherLessonFlowStep = {
     kindLabel: string;
     url?: string;
   }>;
+  studentComponentKey?: MethodologyLessonStudentComponentKey;
+  studentInstruction?: string;
+  studentPayload?: Record<string, unknown>;
   pedagogicalDetails?: {
     vocabularyItems?: Array<{
       term: string;
@@ -391,6 +395,38 @@ function collectBlockMaterials(block: LessonBlockInstance) {
   return [];
 }
 
+function getBlockStudentAuthoring(block: LessonBlockInstance): Pick<
+  TeacherLessonFlowStep,
+  "studentComponentKey" | "studentInstruction" | "studentPayload"
+> {
+  const student = (block.content as { student?: unknown }).student;
+  if (!student || typeof student !== "object" || Array.isArray(student)) {
+    return {};
+  }
+
+  const authoring = student as {
+    componentKey?: unknown;
+    instruction?: unknown;
+    payload?: unknown;
+  };
+  const payload =
+    authoring.payload &&
+    typeof authoring.payload === "object" &&
+    !Array.isArray(authoring.payload)
+      ? (authoring.payload as Record<string, unknown>)
+      : undefined;
+
+  return {
+    studentComponentKey:
+      typeof authoring.componentKey === "string"
+        ? authoring.componentKey
+        : undefined,
+    studentInstruction:
+      typeof authoring.instruction === "string" ? authoring.instruction : undefined,
+    studentPayload: payload,
+  };
+}
+
 function buildFlowStepContent(block: LessonBlockInstance) {
   switch (block.blockType) {
     case "intro_framing": {
@@ -622,6 +658,7 @@ function buildPresentation(input: {
     },
     lessonFlow: projection.orderedBlocks.map((block) => {
       const flowContent = buildFlowStepContent(block);
+      const studentAuthoring = getBlockStudentAuthoring(block);
       return {
         id: block.id,
         order: block.order,
@@ -641,6 +678,7 @@ function buildPresentation(input: {
             kindLabel: formatAssetKind(asset.kind),
             url: asset.sourceUrl,
           })),
+        ...studentAuthoring,
         pedagogicalDetails: flowContent.pedagogicalDetails,
       } satisfies TeacherLessonFlowStep;
     }),

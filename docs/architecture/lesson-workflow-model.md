@@ -148,13 +148,41 @@ Target direction (план):
 
 Source слой read-only для MVP-проведения, runtime слой — изменяемый операционный контур.
 
+## Simple implementation contract
+
+Для ближайшей реализации не усложняем БД и не вводим отдельный движок уроков.
+
+Текущий `methodology_lesson_block` трактуется как канонический **Lesson Step**:
+
+- одна строка `methodology_lesson_block` = один шаг урока;
+- `sort_order` = номер шага;
+- `title` = название шага;
+- `content` хранит teacher-side данные и learner-side routing/payload;
+- сложная интерактивная логика не описывается таблицами.
+
+Минимальный learner-side контракт внутри шага:
+
+```json
+{
+  "student": {
+    "componentKey": "placeholder_v1",
+    "instruction": "Короткая инструкция ученику",
+    "payload": {}
+  }
+}
+```
+
+`componentKey` выбирает React-компонент из кода. `payload` передаёт только данные для этого компонента: слова, asset ids, настройки задания, варианты и т.п. Поведение компонента, анимации, drag-and-drop, проверки, состояние и визуальная механика остаются в коде.
+
+Если уроку нужен уникальный интерактив, добавляется новый React-renderer и новый `componentKey`; схема БД при этом не меняется.
+
 ## Current implementation notes
 
 На текущем срезе кода и схемы:
 
-- teacher tabs в runtime workspace ещё содержат историческое имя `content` / «Контент»;
 - source learner content хранится в `methodology_lesson_student_content`;
 - learner deck в реализации группирует секции по `sceneId`.
+- learner read model поддерживает `componentKey`, но старые уроки могут ещё использовать legacy `screenType`/sections mapping.
 
 Это допустимо как внутреннее текущее состояние, но продуктовая терминология в документации должна использовать **Шаг / Student Screen**, а не «Контент» как имя вкладки.
 
