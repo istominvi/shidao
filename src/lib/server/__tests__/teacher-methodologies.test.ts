@@ -1,8 +1,37 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { readFileSync } from "node:fs";
+import {
+  lessonContentFixtureMethodology,
+  lessonContentFixtureMethodologyLessons,
+  type MethodologyLesson,
+} from "../../lesson-content";
+import { buildFixtureBootstrapRows } from "../lesson-content-bootstrap";
+import {
+  getCanonicalFixtureAssetsFallback,
+  getCanonicalFixtureHomeworkFallback,
+  mergeCanonicalMethodologyLessonFallbacks,
+  resolveCanonicalMethodologyLessonFallback,
+} from "../teacher-methodology-fixture-fallback";
 
 const source = readFileSync("src/lib/server/teacher-methodologies.ts", "utf8");
+
+function materializeDbLesson(
+  lesson: MethodologyLesson,
+  input: { id: string; methodologyId: string },
+): MethodologyLesson {
+  return {
+    ...lesson,
+    id: input.id,
+    methodologyId: input.methodologyId,
+    methodologySlug: lessonContentFixtureMethodology.slug,
+    shell: {
+      ...lesson.shell,
+      id: input.id,
+      methodologyId: input.methodologyId,
+    },
+  };
+}
 
 test("methodology lesson read model keeps canonical homework and source student content", () => {
   assert.equal(source.includes("canonicalHomework"), true);
@@ -37,4 +66,80 @@ test("methodology detail read model wires structured description content by slug
 
 test("methodology detail read model keeps normalized cover image", () => {
   assert.equal(source.includes("coverImage: normalizeMethodologyCoverImage(methodology)"), true);
+});
+
+test("canonical methodology fallback fills missing fixture lessons with stable route ids", () => {
+  const methodology = {
+    ...lessonContentFixtureMethodology,
+    id: "db-methodology-world-around-me",
+  };
+  const bootstrapRows = buildFixtureBootstrapRows();
+  const bootstrapIdByFixtureId = new Map(
+    bootstrapRows.methodologyLessonRows.map((lesson) => [
+      lesson.fixtureLessonId,
+      lesson.id,
+    ]),
+  );
+  const dbLessons = lessonContentFixtureMethodologyLessons
+    .slice(0, 3)
+    .map((lesson, index) =>
+      materializeDbLesson(lesson, {
+        id: `db-lesson-${index + 1}`,
+        methodologyId: methodology.id,
+      }),
+    );
+
+  const merged = mergeCanonicalMethodologyLessonFallbacks(
+    methodology,
+    dbLessons,
+    { methodologyTitle: "World Around Me" },
+  );
+  const lessonFour = lessonContentFixtureMethodologyLessons[3];
+  const mergedLessonFour = merged.find(
+    (lesson) => lesson.shell.position.lessonIndex === 4,
+  );
+
+  assert.equal(merged.length, 4);
+  assert.equal(mergedLessonFour?.id, bootstrapIdByFixtureId.get(lessonFour.id));
+  assert.equal(mergedLessonFour?.methodologyId, methodology.id);
+  assert.equal(mergedLessonFour?.methodologySlug, methodology.slug);
+});
+
+test("canonical methodology fallback resolves fixture lesson pages and assets", () => {
+  const methodology = {
+    ...lessonContentFixtureMethodology,
+    id: "db-methodology-world-around-me",
+  };
+  const bootstrapRows = buildFixtureBootstrapRows();
+  const lessonFour = lessonContentFixtureMethodologyLessons[3];
+  const lessonFourBootstrapRow = bootstrapRows.methodologyLessonRows.find(
+    (lesson) => lesson.fixtureLessonId === lessonFour.id,
+  );
+  assert.ok(lessonFourBootstrapRow);
+
+  const resolvedLesson = resolveCanonicalMethodologyLessonFallback(
+    methodology,
+    lessonFourBootstrapRow.id,
+    { methodologyTitle: "World Around Me" },
+  );
+  assert.ok(resolvedLesson);
+  assert.equal(resolvedLesson.shell.position.lessonIndex, 4);
+  assert.equal(resolvedLesson.shell.title, lessonFour.shell.title);
+
+  const homework = getCanonicalFixtureHomeworkFallback(resolvedLesson);
+  const lessonFourHomeworkRow = bootstrapRows.homeworkDefinitionRows.find(
+    (item) => item.methodology_lesson_id === lessonFourBootstrapRow.id,
+  );
+  assert.equal(homework?.id, lessonFourHomeworkRow?.id);
+  assert.equal(homework?.methodologyLessonId, resolvedLesson.id);
+
+  const assets = getCanonicalFixtureAssetsFallback([
+    "media:lesson-4-abacus",
+    "missing-asset",
+    "media:lesson-4-abacus",
+  ]);
+  assert.deepEqual(
+    assets.map((asset) => asset.id),
+    ["media:lesson-4-abacus"],
+  );
 });

@@ -1,9 +1,10 @@
 import {
   buildTeacherLessonProjection,
   getFixtureStudentContentFallback,
+  type MethodologyLesson,
+  type ReusableAsset,
   type ScheduledLesson,
 } from "../lesson-content";
-import type { ReusableAsset } from "../lesson-content";
 import type {
   Methodology,
   MethodologyMetadata,
@@ -28,6 +29,12 @@ import {
   buildTeacherLessonWorkspaceReadModel,
   canAccessTeacherLessonWorkspace,
 } from "./teacher-lesson-workspace";
+import {
+  getCanonicalFixtureAssetsFallback,
+  getCanonicalFixtureHomeworkFallback,
+  mergeCanonicalMethodologyLessonFallbacks,
+  resolveCanonicalMethodologyLessonFallback,
+} from "./teacher-methodology-fixture-fallback";
 import { buildMethodologyLessonUnifiedReadModel } from "./methodology-lesson-unified-read-model";
 import { isInvalidLessonStudentContentPayloadError } from "./lesson-content-mappers";
 import { getMethodologyDescriptionContent } from "@/lib/methodologies/methodology-description-content";
@@ -222,7 +229,11 @@ export async function getTeacherMethodologiesIndexReadModel() {
   const methodologies = await listMethodologiesWithSlugAdmin();
   const cards = await Promise.all(
     methodologies.map(async (item) => {
-      const lessons = await listMethodologyLessonsByMethodologyAdmin(item.id);
+      const lessons = mergeCanonicalMethodologyLessonFallbacks(
+        item,
+        await listMethodologyLessonsByMethodologyAdmin(item.id),
+        { methodologyTitle: teacherFacingMethodologyTitle(item) },
+      );
       const metadata = withFallbackMetadata({
         metadata: item.metadata ?? undefined,
         title: item.title,
@@ -275,15 +286,20 @@ export async function getTeacherMethodologyDetailReadModel(
   const methodology = await getMethodologyBySlugAdmin(slug);
   if (!methodology) return null;
 
-  const lessons = await listMethodologyLessonsByMethodologyAdmin(
-    methodology.id,
+  const methodologyTitle = teacherFacingMethodologyTitle(methodology);
+  const lessons = mergeCanonicalMethodologyLessonFallbacks(
+    methodology,
+    await listMethodologyLessonsByMethodologyAdmin(methodology.id),
+    { methodologyTitle },
   );
   const metadata = withFallbackMetadata(methodology);
 
   const lessonsWithHomework = await Promise.all(
     lessons.map(async (lesson) => ({
       lesson,
-      canonicalHomework: await getMethodologyHomeworkByLessonIdAdmin(lesson.id),
+      canonicalHomework:
+        (await getMethodologyHomeworkByLessonIdAdmin(lesson.id)) ??
+        getCanonicalFixtureHomeworkFallback(lesson),
     })),
   );
   const assignedClassIds = await listAssignedClassIdsForTeacherAdmin(teacherId);
@@ -307,7 +323,7 @@ export async function getTeacherMethodologyDetailReadModel(
   return {
     methodology: {
       ...methodology,
-      title: teacherFacingMethodologyTitle(methodology),
+      title: methodologyTitle,
       coverImage: normalizeMethodologyCoverImage(methodology),
     },
     overview: {
@@ -334,7 +350,7 @@ export async function getTeacherMethodologyDetailReadModel(
       availableLessonsCount: lessons.length,
       programLessonCount: metadata.programLessonCount ?? null,
       sourceRuntimeNote:
-        "Методика — это полный педагогический источник курса. В ShiDao ниже показаны только уже импортированные source-уроки, которые можно назначать группам в runtime-слое.",
+        "Методика — это полный педагогический источник курса. В ShiDao ниже показаны импортированные source-уроки и канонические уроки из кода, которые ожидают синхронизации с БД.",
     },
     descriptionContent: getMethodologyDescriptionContent(methodology.slug),
     lessons: lessonsWithHomework.map(({ lesson, canonicalHomework }) => {
@@ -368,7 +384,7 @@ export async function getTeacherMethodologyDetailReadModel(
 }
 
 function collectAssetIds(
-  lesson: Awaited<ReturnType<typeof getMethodologyLessonByIdAdmin>>,
+  lesson: MethodologyLesson | null,
 ) {
   if (!lesson) return [];
   return Array.from(
@@ -376,6 +392,22 @@ function collectAssetIds(
       lesson.blocks.flatMap((item) => item.assetRefs.map((ref) => ref.id)),
     ),
   );
+}
+
+async function listReusableAssetsWithFixtureFallback(assetIds: string[]) {
+  const normalizedIds = Array.from(
+    new Set(assetIds.map((id) => id.trim()).filter(Boolean)),
+  );
+  if (normalizedIds.length === 0) return [];
+
+  const dbAssets = await listReusableAssetsByIdsAdmin(normalizedIds);
+  const dbAssetIds = new Set(dbAssets.map((asset) => asset.id));
+  const missingAssetIds = normalizedIds.filter((id) => !dbAssetIds.has(id));
+
+  return [
+    ...dbAssets,
+    ...getCanonicalFixtureAssetsFallback(missingAssetIds),
+  ];
 }
 
 export async function getTeacherMethodologyLessonReadModel(input: {
@@ -386,11 +418,18 @@ export async function getTeacherMethodologyLessonReadModel(input: {
   const methodology = await getMethodologyBySlugAdmin(input.methodologySlug);
   if (!methodology) return null;
 
-  const lesson = await getMethodologyLessonByIdAdmin(input.lessonId);
-  if (!lesson || lesson.methodologyId !== methodology.id) return null;
-  const canonicalHomework = await getMethodologyHomeworkByLessonIdAdmin(
-    lesson.id,
-  );
+  const methodologyTitle = teacherFacingMethodologyTitle(methodology);
+  const dbLesson = await getMethodologyLessonByIdAdmin(input.lessonId);
+  const lesson =
+    dbLesson && dbLesson.methodologyId === methodology.id
+      ? dbLesson
+      : resolveCanonicalMethodologyLessonFallback(methodology, input.lessonId, {
+          methodologyTitle,
+        });
+  if (!lesson) return null;
+  const canonicalHomework =
+    (await getMethodologyHomeworkByLessonIdAdmin(lesson.id)) ??
+    getCanonicalFixtureHomeworkFallback(lesson);
 
   const scheduledStub: ScheduledLesson = {
     id: `preview-${lesson.id}`,
@@ -406,7 +445,9 @@ export async function getTeacherMethodologyLessonReadModel(input: {
   };
 
   const projection = buildTeacherLessonProjection(lesson, scheduledStub);
-  const assets = await listReusableAssetsByIdsAdmin(collectAssetIds(lesson));
+  const assets = await listReusableAssetsWithFixtureFallback(
+    collectAssetIds(lesson),
+  );
   let studentContent = null;
   let studentContentUnavailableReason:
     | "schema_missing"
@@ -427,7 +468,7 @@ export async function getTeacherMethodologyLessonReadModel(input: {
     } else {
       const assetIds = collectStudentContentAssetIds(studentContent);
       studentContentAssets = assetIds.length
-        ? await listReusableAssetsByIdsAdmin(assetIds)
+        ? await listReusableAssetsWithFixtureFallback(assetIds)
         : [];
     }
   } catch (error) {
@@ -462,7 +503,7 @@ export async function getTeacherMethodologyLessonReadModel(input: {
     sourceLesson: {
       methodologySlug: methodology.slug,
       lessonId: lesson.id,
-      methodologyTitle: teacherFacingMethodologyTitle(methodology),
+      methodologyTitle,
       lessonTitle: lesson.shell.title,
     },
     assets,
@@ -503,7 +544,7 @@ export async function getTeacherMethodologyLessonReadModel(input: {
   return {
     methodology: {
       ...methodology,
-      title: teacherFacingMethodologyTitle(methodology),
+      title: methodologyTitle,
       coverImage: normalizeMethodologyCoverImage(methodology),
     },
     lesson,
