@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { filterConversationMessages } from "../communication-service";
+import {
+  filterConversationMessages,
+  getAuthorizedTeacherConversationReadModel,
+} from "../communication-service";
 import type { GroupStudentMessage } from "../communication-repository";
 
 const messages: GroupStudentMessage[] = [
@@ -64,4 +67,35 @@ test("communication filter narrows by lesson/homework context to prevent cross-c
     filterConversationMessages(messages, "all", undefined, "ha-1").map((m) => m.id),
     ["m-3"],
   );
+});
+
+test("authorized teacher reader rejects a teacher not assigned to the class (IDOR guard)", async () => {
+  const calls: Array<{ teacherId: string; classId: string }> = [];
+  const deps = {
+    assertTeacherAssignedToClass: async (teacherId: string, classId: string) => {
+      calls.push({ teacherId, classId });
+      throw new Error(
+        "Только преподаватель, назначенный в этот класс, может выполнять действие.",
+      );
+    },
+  };
+
+  await assert.rejects(
+    getAuthorizedTeacherConversationReadModel(
+      {
+        teacherId: "teacher-not-in-class",
+        classId: "class-belonging-to-someone-else",
+        studentId: "student-1",
+        filter: "all",
+      },
+      deps,
+    ),
+    /назначенный в этот класс/,
+  );
+
+  // Authorization must run for the requested class, and must fail *before*
+  // any conversation data is fetched.
+  assert.deepEqual(calls, [
+    { teacherId: "teacher-not-in-class", classId: "class-belonging-to-someone-else" },
+  ]);
 });
