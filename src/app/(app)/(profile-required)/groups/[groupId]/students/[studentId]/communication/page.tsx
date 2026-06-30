@@ -9,7 +9,7 @@ import { SurfaceCard } from "@/components/ui/surface-card";
 import { ROUTES } from "@/lib/auth";
 import { resolveAccessPolicy } from "@/lib/server/access-policy";
 import {
-  getTeacherConversationReadModel,
+  getAuthorizedTeacherConversationReadModel,
   type CommunicationFilter,
 } from "@/lib/server/communication-service";
 import {
@@ -29,7 +29,7 @@ export default async function TeacherStudentCommunicationPage({
   const resolution = await resolveAccessPolicy();
   if (!canAccessTeacherGroups(resolution)) redirect(ROUTES.dashboard);
   if (resolution.status !== "adult-with-profile") redirect(ROUTES.dashboard);
-  assertTeacherGroupsAccess(resolution);
+  const { teacherId } = assertTeacherGroupsAccess(resolution);
 
   const { groupId, studentId } = await params;
   const { filter } = await searchParams;
@@ -37,7 +37,8 @@ export default async function TeacherStudentCommunicationPage({
     ? (filter ?? "all")
     : "all";
 
-  const readModel = await getTeacherConversationReadModel({
+  const readModel = await getAuthorizedTeacherConversationReadModel({
+    teacherId,
     classId: groupId,
     studentId,
     filter: activeFilter,

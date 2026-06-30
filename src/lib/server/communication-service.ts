@@ -111,6 +111,50 @@ export async function getTeacherConversationReadModel(input: {
   });
 }
 
+async function assertTeacherAssignedToClassAdminDefault(
+  teacherId: string,
+  classId: string,
+) {
+  const { assertTeacherAssignedToClassAdmin } = await import("./supabase-admin");
+  await assertTeacherAssignedToClassAdmin(teacherId, classId);
+}
+
+export type AuthorizedTeacherConversationDeps = {
+  assertTeacherAssignedToClass: (teacherId: string, classId: string) => Promise<void>;
+};
+
+/**
+ * Teacher-facing conversation reader that first verifies the caller is actually
+ * assigned to the requested class (class_teacher), mirroring the write path in
+ * `src/app/api/teacher/communication/route.ts`. Without this gate any teacher
+ * could read another class's thread by enumerating class/student UUIDs, since
+ * `getTeacherConversationReadModel` only checks student-in-class membership and
+ * the app runs as service_role (RLS bypassed).
+ */
+export async function getAuthorizedTeacherConversationReadModel(
+  input: {
+    teacherId: string;
+    classId: string;
+    studentId: string;
+    filter?: CommunicationFilter;
+    scopedLessonId?: string;
+    scopedHomeworkAssignmentId?: string;
+  },
+  deps: AuthorizedTeacherConversationDeps = {
+    assertTeacherAssignedToClass: assertTeacherAssignedToClassAdminDefault,
+  },
+): Promise<ConversationReadModel> {
+  await deps.assertTeacherAssignedToClass(input.teacherId, input.classId);
+
+  return getTeacherConversationReadModel({
+    classId: input.classId,
+    studentId: input.studentId,
+    filter: input.filter,
+    scopedLessonId: input.scopedLessonId,
+    scopedHomeworkAssignmentId: input.scopedHomeworkAssignmentId,
+  });
+}
+
 export async function getLearnerConversationPreviewReadModel(input: {
   classId: string;
   studentId: string;
