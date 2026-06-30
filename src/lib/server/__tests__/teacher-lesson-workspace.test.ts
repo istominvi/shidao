@@ -223,6 +223,72 @@ test("teacher workspace quick summary and lesson flow are derived from lesson co
   assert.equal(readModel.presentation.hero.lessonEssence.length > 0, true);
 });
 
+test("teacher workspace carries simple student component routing from block content", () => {
+  const authoredBlock = {
+    id: "lesson-4-step-1",
+    blockType: "intro_framing" as const,
+    order: 1,
+    title: "Собираем сцену",
+    assetRefs: [],
+    content: {
+      title: "Собираем сцену",
+      goal: "Запустить первый интерактив урока.",
+      teacherScriptShort: "Объясняет правила и запускает сцену.",
+      student: {
+        componentKey: "scene_builder_v1",
+        instruction: "Выбери карточки и собери сцену.",
+        payload: {
+          cards: ["red", "blue"],
+        },
+      },
+    },
+  };
+
+  const readModel = buildTeacherLessonWorkspaceReadModel({
+    projection: {
+      methodologyLessonId: "lesson-4",
+      methodologyShell: {
+        ...lessonContentFixtureMethodologyLesson.shell,
+        id: "lesson-4",
+        title: "Урок 4",
+        position: {
+          ...lessonContentFixtureMethodologyLesson.shell.position,
+          lessonIndex: 4,
+        },
+      },
+      runtimeShell: lessonContentFixtureScheduledLesson.runtimeShell,
+      orderedBlocks: [authoredBlock],
+    },
+    scheduledLessonId: lessonContentFixtureScheduledLesson.id,
+    classId: lessonContentFixtureScheduledLesson.runtimeShell.classId,
+    sourceLesson: {
+      methodologySlug: "world-around-me",
+      lessonId: "lesson-4",
+      methodologyTitle: "Мир вокруг меня",
+      lessonTitle: "Урок 4",
+    },
+    classDisplayName: "Лисички 5-6",
+    assets: [],
+    homework: homeworkSnapshot,
+    studentContent: null,
+  });
+
+  const flowStep = readModel.presentation.lessonFlow[0];
+  assert.equal(flowStep?.studentComponentKey, "scene_builder_v1");
+  assert.equal(flowStep?.studentInstruction, "Выбери карточки и собери сцену.");
+  assert.deepEqual(flowStep?.studentPayload, { cards: ["red", "blue"] });
+
+  const unifiedStep = readModel.unifiedReadModel.steps[0];
+  assert.equal(unifiedStep?.student.componentKey, "scene_builder_v1");
+  assert.equal(
+    unifiedStep?.student.instruction,
+    "Выбери карточки и собери сцену.",
+  );
+  assert.deepEqual(unifiedStep?.student.payload?.data, {
+    cards: ["red", "blue"],
+  });
+});
+
 test("teacher workspace read model includes runtime edit fields and no block override structure", () => {
   const readModel = buildTeacherLessonWorkspaceReadModel({
     projection: {

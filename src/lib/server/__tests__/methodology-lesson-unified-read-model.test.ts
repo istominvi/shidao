@@ -67,11 +67,13 @@ test("world-around-me lesson 1 unified read model keeps canonical 15-step mappin
   const step1 = unified.steps[0];
   assert.equal(step1.title, "Смотрим видео «farm animals»");
   assert.equal(step1.student.screenType, "video");
+  assert.equal(step1.student.componentKey, "lesson_one_custom_v1");
   assert.equal(step1.resourceIds?.includes("video:farm-animals"), true);
   assert.equal(step1.resourceIds?.includes("song:farm-animals"), false);
 
   const step7 = unified.steps[6];
   assert.equal(step7.title, "Приложение 1: указываем, считаем и называем животных");
+  assert.equal(step7.student.componentKey, "lesson_one_custom_v1");
   assert.equal(step7.student.payload?.sections?.[0]?.type, "count_board");
   assert.equal(step7.student.instruction?.toLowerCase().includes("считай"), true);
   assert.equal(step7.resourceIds?.includes("worksheet:appendix-1"), true);
@@ -205,5 +207,60 @@ test("world-around-me step mapping keeps phrase scene single-use and avoids dupl
   });
 
   assert.equal(readModel.steps[1]?.student.screenType, "phrase_practice");
+  assert.equal(readModel.steps[1]?.student.componentKey, "lesson_one_custom_v1");
   assert.equal(readModel.steps[9]?.student.screenType, "placeholder");
+  assert.equal(readModel.steps[9]?.student.componentKey, "lesson_one_custom_v1");
+});
+
+test("generic read model keeps simple student component routing from lesson flow", () => {
+  const readModel = buildMethodologyLessonUnifiedReadModel({
+    lessonId: "lesson-4",
+    lessonShell: {
+      id: "lesson-4",
+      methodologyId: "m1",
+      title: "Урок 4",
+      position: { moduleIndex: 1, lessonIndex: 4 },
+      vocabularySummary: [],
+      phraseSummary: [],
+      estimatedDurationMinutes: 45,
+      mediaSummary: { videos: 0, songs: 0, worksheets: 0, other: 0 },
+      readinessStatus: "ready",
+    },
+    presentation: {
+      quickSummary: {
+        prepChecklist: [],
+        keyWords: [],
+        keyPhrases: [],
+        resources: [],
+      },
+      lessonFlow: [
+        {
+          id: "lesson-4-step-1",
+          order: 1,
+          stepLabel: "Шаг 1",
+          blockLabel: "Активность",
+          accentTone: "sky" as const,
+          title: "Собираем сцену",
+          teacherActions: ["Запускает интерактив."],
+          studentActions: ["Выбирают карточки."],
+          materials: [],
+          resources: [],
+          studentComponentKey: "scene_builder_v1",
+          studentInstruction: "Выбери карточки и собери сцену.",
+          studentPayload: {
+            cards: ["red", "blue"],
+          },
+        },
+      ],
+    },
+    studentContent: null,
+    assetsById: {},
+    canonicalHomework: null,
+  });
+
+  const step = readModel.steps[0];
+  assert.equal(step?.student.componentKey, "scene_builder_v1");
+  assert.equal(step?.student.instruction, "Выбери карточки и собери сцену.");
+  assert.deepEqual(step?.student.payload?.data, { cards: ["red", "blue"] });
+  assert.equal(step?.student.allowStudentInteraction, true);
 });

@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import type { ReactNode } from "react";
 import Image from "next/image";
 import { BookOpen, CirclePlay, ListChecks, Music2, Sparkles } from "lucide-react";
 import { Chip } from "@/components/ui/chip";
@@ -610,11 +611,99 @@ function buildLegacyStepDeckFromStudentContent(source: MethodologyLessonStudentC
     },
     student: {
       screenType: "placeholder",
+      componentKey: group.sections.length ? "section_renderer_v1" : "placeholder_v1",
       title: group.sections[0]?.title ?? `Шаг ${index + 1}`,
       instruction: group.sections[0]?.subtitle ?? "Следуйте инструкции преподавателя.",
       payload: { sections: group.sections },
     },
   }));
+}
+
+type StudentStepRendererProps = {
+  currentStep: MethodologyLessonStep;
+  sections: MethodologyLessonStudentContentSection[];
+  assetsById: Record<string, ReusableAsset>;
+  fullscreen: boolean;
+};
+
+type StudentStepRenderer = (props: StudentStepRendererProps) => ReactNode;
+
+function PlaceholderStepRenderer({ currentStep }: StudentStepRendererProps) {
+  return (
+    <div className="mt-4 rounded-2xl border border-dashed border-neutral-300 bg-neutral-50 p-5 text-sm text-neutral-700">
+      <p className="text-base font-semibold text-neutral-900">Слушай преподавателя</p>
+      {currentStep.student.instruction ? <p className="mt-2">{currentStep.student.instruction}</p> : null}
+      <p className="mt-2">Сейчас выполняем задание вместе.</p>
+    </div>
+  );
+}
+
+function SectionRenderer({
+  currentStep,
+  sections,
+  assetsById,
+}: StudentStepRendererProps) {
+  if (!sections.length) {
+    return (
+      <PlaceholderStepRenderer
+        currentStep={currentStep}
+        sections={sections}
+        assetsById={assetsById}
+        fullscreen={false}
+      />
+    );
+  }
+
+  return (
+    <>
+      {sections.map((section, index) => (
+        <div key={`${currentStep.id}-${section.type}-${section.title}-${index}`}>
+          {renderSection(section, assetsById)}
+        </div>
+      ))}
+      <StepResources step={currentStep} sections={sections} assetsById={assetsById} />
+    </>
+  );
+}
+
+function LessonOneCustomRenderer({
+  currentStep,
+  sections,
+  assetsById,
+  fullscreen,
+}: StudentStepRendererProps) {
+  return (
+    <LessonOneStudentActivities
+      step={currentStep}
+      assetsById={assetsById}
+      sections={sections}
+      fullscreen={fullscreen}
+    />
+  );
+}
+
+const studentComponentRegistry: Record<string, StudentStepRenderer> = {
+  lesson_one_custom_v1: LessonOneCustomRenderer,
+  section_renderer_v1: SectionRenderer,
+  placeholder_v1: PlaceholderStepRenderer,
+  lesson_focus_v1: SectionRenderer,
+  presentation_deck_v1: SectionRenderer,
+  media_asset_v1: SectionRenderer,
+  flashcards_v1: SectionRenderer,
+  phrase_cards_v1: SectionRenderer,
+  count_board_v1: SectionRenderer,
+  movement_cards_v1: SectionRenderer,
+  matching_practice_v1: SectionRenderer,
+  worksheet_v1: SectionRenderer,
+  farm_placement_v1: SectionRenderer,
+  song_player_v1: SectionRenderer,
+};
+
+function resolveStudentComponentKey(step: MethodologyLessonStep) {
+  if (step.student.componentKey) return step.student.componentKey;
+  if (isWorldAroundMeLessonOneCanonicalStep(step.id)) return "lesson_one_custom_v1";
+  if (step.student.payload?.sections?.length) return "section_renderer_v1";
+  return "placeholder_v1";
 }
 
 export function LessonLearnerContentDeck({
@@ -643,7 +732,9 @@ export function LessonLearnerContentDeck({
   if (!currentStep) return <EmptyState reason={unavailableReason} />;
   const sections = currentStep.student.payload?.sections ?? [];
   const main = sections[0];
-  const useLessonOneSpecializedView = isWorldAroundMeLessonOneCanonicalStep(currentStep.id);
+  const componentKey = resolveStudentComponentKey(currentStep);
+  const StepRenderer =
+    studentComponentRegistry[componentKey] ?? studentComponentRegistry.section_renderer_v1;
 
   const moveToStep = (nextIndex: number) => {
     const next = resolvedSteps[nextIndex];
@@ -713,23 +804,12 @@ export function LessonLearnerContentDeck({
 
         <div className={classNames(fullscreen ? "min-h-0 flex-1" : "")}>
           {main && (main.subtitle || main.illustrationSrc) ? <SceneHeader section={main} compact={compact} hideTitle /> : null}
-          {useLessonOneSpecializedView ? (
-            <LessonOneStudentActivities
-              step={currentStep}
-              assetsById={assetsById}
-              sections={sections}
-              fullscreen={fullscreen}
-            />
-          ) : sections.length ? sections.map((section, index) => (
-            <div key={`${currentStep.id}-${section.type}-${section.title}-${index}`}>{renderSection(section, assetsById)}</div>
-          )) : (
-            <div className="mt-4 rounded-2xl border border-dashed border-neutral-300 bg-neutral-50 p-5 text-sm text-neutral-700">
-              <p className="text-base font-semibold text-neutral-900">Слушай преподавателя</p>
-              {currentStep.student.instruction ? <p className="mt-2">{currentStep.student.instruction}</p> : null}
-              <p className="mt-2">Сейчас выполняем задание вместе.</p>
-            </div>
-          )}
-          {useLessonOneSpecializedView ? null : <StepResources step={currentStep} sections={sections} assetsById={assetsById} />}
+          <StepRenderer
+            currentStep={currentStep}
+            sections={sections}
+            assetsById={assetsById}
+            fullscreen={fullscreen}
+          />
         </div>
       </article>
     </section>

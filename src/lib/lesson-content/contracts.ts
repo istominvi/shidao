@@ -117,7 +117,27 @@ type BaseLessonBlockInstance<TBlockType extends LessonBlockType, TPayload> = {
   order: number;
   title?: string;
   assetRefs: AssetRef[];
-  content: TPayload;
+  content: TPayload & LessonStepAuthoringFields;
+};
+
+export type LessonStepStudentAuthoring = {
+  componentKey?: string;
+  instruction?: string;
+  payload?: Record<string, unknown>;
+};
+
+export type LessonStepTeacherAuthoring = {
+  goal?: string;
+  description?: string;
+  actions?: string[];
+  expectedResponses?: string[];
+  materials?: string[];
+  notes?: string[];
+};
+
+export type LessonStepAuthoringFields = {
+  teacher?: LessonStepTeacherAuthoring;
+  student?: LessonStepStudentAuthoring;
 };
 
 export type IntroFramingBlock = BaseLessonBlockInstance<

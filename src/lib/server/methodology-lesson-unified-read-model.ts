@@ -7,6 +7,23 @@ import type {
 } from "@/lib/lesson-content";
 import type { TeacherLessonWorkspacePresentation } from "@/lib/server/teacher-lesson-workspace";
 
+export type MethodologyLessonStudentComponentKey =
+  | "lesson_one_custom_v1"
+  | "section_renderer_v1"
+  | "placeholder_v1"
+  | "lesson_focus_v1"
+  | "presentation_deck_v1"
+  | "media_asset_v1"
+  | "flashcards_v1"
+  | "phrase_cards_v1"
+  | "count_board_v1"
+  | "movement_cards_v1"
+  | "matching_practice_v1"
+  | "worksheet_v1"
+  | "farm_placement_v1"
+  | "song_player_v1"
+  | (string & {});
+
 export type MethodologyLessonStep = {
   id: string;
   order: number;
@@ -39,12 +56,14 @@ export type MethodologyLessonStep = {
       | "farm_placement"
       | "song"
       | "placeholder";
+    componentKey?: MethodologyLessonStudentComponentKey;
     title: string;
     instruction?: string;
     assetIds?: string[];
     payload?: {
       sections?: MethodologyLessonStudentContentSection[];
       chips?: string[];
+      data?: Record<string, unknown>;
     };
     allowStudentInteraction?: boolean;
   };
@@ -397,6 +416,47 @@ function screenTypeFromSections(sections: MethodologyLessonStudentContentSection
   return "placeholder" as const;
 }
 
+function componentKeyFromScreenType(
+  screenType: MethodologyLessonStep["student"]["screenType"],
+): MethodologyLessonStudentComponentKey {
+  switch (screenType) {
+    case "intro":
+      return "lesson_focus_v1";
+    case "video":
+      return "media_asset_v1";
+    case "presentation":
+      return "presentation_deck_v1";
+    case "flashcards":
+      return "flashcards_v1";
+    case "phrase_practice":
+      return "phrase_cards_v1";
+    case "counting":
+      return "count_board_v1";
+    case "movement":
+      return "movement_cards_v1";
+    case "worksheet":
+      return "worksheet_v1";
+    case "farm_placement":
+      return "farm_placement_v1";
+    case "song":
+      return "song_player_v1";
+    case "placeholder":
+      return "placeholder_v1";
+    default:
+      return "section_renderer_v1";
+  }
+}
+
+function componentKeyFromSections(
+  sections: MethodologyLessonStudentContentSection[],
+  screenType: MethodologyLessonStep["student"]["screenType"],
+): MethodologyLessonStudentComponentKey {
+  if (!sections.length) return "placeholder_v1";
+  const types = new Set(sections.map((section) => section.type));
+  if (types.has("matching_practice")) return "matching_practice_v1";
+  return componentKeyFromScreenType(screenType);
+}
+
 function instructionFromSection(section?: MethodologyLessonStudentContentSection): string {
   if (!section) return "Следуйте инструкции преподавателя.";
   if (section.type === "lesson_focus") return section.body;
@@ -549,6 +609,8 @@ function buildWorldAroundMeLessonOneSteps(input: {
 
     const screenType =
       canonicalStep.forcedScreenType ?? screenTypeFromSections(sections);
+    const componentKey: MethodologyLessonStudentComponentKey =
+      "lesson_one_custom_v1";
 
     return {
       id: `canonical-world-around-me-lesson-1-step-${canonicalStep.order}`,
@@ -561,6 +623,7 @@ function buildWorldAroundMeLessonOneSteps(input: {
       teacher,
       student: {
         screenType,
+        componentKey,
         title: canonicalStep.title,
         instruction: studentInstruction,
         assetIds: resourceIds,
@@ -571,7 +634,7 @@ function buildWorldAroundMeLessonOneSteps(input: {
                 sections[0]?.type === "lesson_focus" ? sections[0].chips : undefined,
             }
           : undefined,
-        allowStudentInteraction: screenType !== "placeholder",
+        allowStudentInteraction: componentKey !== "placeholder_v1",
       },
     } satisfies MethodologyLessonStep;
   });
@@ -602,6 +665,15 @@ function buildGenericUnifiedSteps(input: {
 
       const resourceIds = Array.from(new Set([...sectionAssetIds, ...legacyResourceIds]));
       const screenType = screenTypeFromSections(sections);
+      const componentKey =
+        step.studentComponentKey ?? componentKeyFromSections(sections, screenType);
+      const studentPayload =
+        sections.length || step.studentPayload
+          ? {
+              ...(sections.length ? { sections } : {}),
+              ...(step.studentPayload ? { data: step.studentPayload } : {}),
+            }
+          : undefined;
 
       return {
         id: step.id,
@@ -628,11 +700,12 @@ function buildGenericUnifiedSteps(input: {
         },
         student: {
           screenType,
+          componentKey,
           title: step.title,
-          instruction: instructionFromSection(sections[0]),
+          instruction: step.studentInstruction ?? instructionFromSection(sections[0]),
           assetIds: resourceIds,
-          payload: sections.length ? { sections } : undefined,
-          allowStudentInteraction: screenType !== "placeholder",
+          payload: studentPayload,
+          allowStudentInteraction: componentKey !== "placeholder_v1",
         },
       } satisfies MethodologyLessonStep;
     });
