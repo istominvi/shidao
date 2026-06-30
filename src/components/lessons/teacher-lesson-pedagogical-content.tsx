@@ -105,6 +105,19 @@ const chineseGlossary: Record<string, string> = {
   "草地上有一头蓝色的牛。": "на лугу одна синяя корова",
   "草地上有黄色的猫。": "на лугу жёлтая кошка",
   "这是黑色。": "это чёрный цвет",
+  "花": "цветок",
+  "树": "дерево",
+  "草": "трава",
+  "我很好": "у меня всё хорошо",
+  "我不好": "мне нехорошо / не очень",
+  "我喜欢蓝色的花。": "мне нравится синий цветок",
+  "我喜欢红色的花。": "мне нравится красный цветок",
+  "我喜欢黄色的花。": "мне нравится жёлтый цветок",
+  "我喜欢绿色的花。": "мне нравится зелёный цветок",
+  "草地上有什么？": "что есть на лугу?",
+  "草地上有花。": "на лугу есть цветы",
+  "草地上有树。": "на лугу есть деревья",
+  "草地上有草。": "на лугу есть трава",
 };
 
 const lessonOneDisplaySteps: LessonPlanDisplayStep[] = [
@@ -265,6 +278,14 @@ function isLessonFourPlan(identity?: Props["lessonIdentity"]) {
     identity?.methodologySlug === "world-around-me" &&
     identity?.moduleIndex === 1 &&
     identity?.lessonIndex === 4
+  );
+}
+
+function isLessonFivePlan(identity?: Props["lessonIdentity"]) {
+  return (
+    identity?.methodologySlug === "world-around-me" &&
+    identity?.moduleIndex === 1 &&
+    identity?.lessonIndex === 5
   );
 }
 
@@ -1625,6 +1646,422 @@ function LessonFourPlan({
   );
 }
 
+const lessonFiveDisplaySteps: LessonPlanDisplayStep[] = [
+  {
+    id: "lesson-5-step-1",
+    order: 1,
+    category: "Активность",
+    title: "Приветствие детей и героев курса",
+    text: "Начинаем урок с Сяо Лоном и Сяо Мей, объявляем тему природы и показываем, что сегодня будем собирать луг из цветов, деревьев и травы.",
+    glossaryTerms: ["你好", "花", "树", "草地"],
+    durationMinutes: 2,
+    resourceIds: ["presentation:world-around-me-lesson-5", "media:lesson-5-heroes"],
+  },
+  {
+    id: "lesson-5-step-2",
+    order: 2,
+    category: "Видео",
+    title: "Смотрим видео и входим в тему природы",
+    text: "Короткий видеовход помогает вспомнить цвета перед фразами про цветы. После просмотра спрашиваем, какого цвета может быть 花.",
+    glossaryTerms: ["颜色", "花"],
+    durationMinutes: 3,
+    resourceIds: ["video:colors"],
+  },
+  {
+    id: "lesson-5-step-3",
+    order: 3,
+    category: "Лексика",
+    title: "Проверяем настроение: 我很好 / 我不好",
+    text: "Показываем два состояния через смайлы и жесты, затем каждый ребёнок выбирает короткую фразу про себя.",
+    glossaryTerms: ["我很好", "我不好"],
+    durationMinutes: 3,
+  },
+  {
+    id: "lesson-5-step-4",
+    order: 4,
+    category: "Песня",
+    title: "Песня-ритуал перед новыми словами",
+    text: "Поём короткий знакомый фрагмент или открываем песню по ссылке из презентации, чтобы собрать внимание перед карточками.",
+    glossaryTerms: [],
+    durationMinutes: 3,
+    resourceIds: ["song:hello"],
+  },
+  {
+    id: "lesson-5-step-5",
+    order: 5,
+    category: "Лексика",
+    title: "Слово 花",
+    text: "Вводим 花 через крупную карточку и озвучку. Дети показывают цветок на слайде и повторяют слово.",
+    glossaryTerms: ["花"],
+    durationMinutes: 3,
+    resourceIds: ["flashcards:world-around-me-lesson-5", "pronunciation:lesson-5-flower"],
+  },
+  {
+    id: "lesson-5-step-6",
+    order: 6,
+    category: "Лексика",
+    title: "Слово 树",
+    text: "Показываем дерево, произносим 树 и добавляем жест высокого дерева.",
+    glossaryTerms: ["树"],
+    durationMinutes: 3,
+    resourceIds: ["flashcards:world-around-me-lesson-5", "media:lesson-5-tree"],
+  },
+  {
+    id: "lesson-5-step-7",
+    order: 7,
+    category: "Лексика",
+    title: "Слово 草",
+    text: "Показываем траву, произносим 草 и телесно противопоставляем низкую траву высокому дереву.",
+    glossaryTerms: ["草"],
+    durationMinutes: 3,
+    resourceIds: ["flashcards:world-around-me-lesson-5", "media:lesson-5-grass"],
+  },
+  {
+    id: "lesson-5-step-8",
+    order: 8,
+    category: "Лексика",
+    title: "Слово 草地",
+    text: "Показываем весь луг и собираем значение из 草 + 地: место с травой.",
+    glossaryTerms: ["草地"],
+    durationMinutes: 3,
+    resourceIds: ["flashcards:world-around-me-lesson-5", "media:lesson-5-grassland"],
+  },
+  {
+    id: "lesson-5-step-9",
+    order: 9,
+    category: "Активность",
+    title: "Игра «Колесо слов»",
+    text: "Крутим колесо, останавливаем его и просим ребёнка назвать выпавшее слово: 花, 树, 草 или 草地.",
+    glossaryTerms: ["花", "树", "草", "草地"],
+    durationMinutes: 4,
+    resourceIds: ["activity:lesson-5-wheel"],
+  },
+  {
+    id: "lesson-5-step-10",
+    order: 10,
+    category: "Активность",
+    title: "Приложение 3: карточки растений",
+    text: "Закрепляем карточки растений: выбираем картинку, называем слово и сопоставляем картинку с иероглифом.",
+    glossaryTerms: ["花", "树", "草", "草地"],
+    durationMinutes: 4,
+    resourceIds: ["activity:lesson-5-plant-cards"],
+  },
+  {
+    id: "lesson-5-step-11",
+    order: 11,
+    category: "Лексика",
+    title: "Конструкция 我喜欢…的花",
+    text: "Выбираем цветок и расширяем фразу о любимом цвете: 我喜欢蓝色的花。",
+    glossaryTerms: ["我喜欢蓝色的花。", "我喜欢红色的花。", "我喜欢黄色的花。", "我喜欢绿色的花。"],
+    durationMinutes: 4,
+    resourceIds: ["worksheet:lesson-5-favorite-flowers"],
+  },
+  {
+    id: "lesson-5-step-12",
+    order: 12,
+    category: "Активность",
+    title: "Действия: 飞 / 跑 / 跳 / 拍手 / 数",
+    text: "Повторяем действия на карточках и выполняем их всей группой. Завершаем словом 数 как мостиком к счёту.",
+    glossaryTerms: ["飞", "跑", "跳", "拍手", "数"],
+    durationMinutes: 4,
+    resourceIds: ["worksheet:lesson-5-actions"],
+  },
+  {
+    id: "lesson-5-step-13",
+    order: 13,
+    category: "Активность",
+    title: "Сцена 草地: что есть на лугу?",
+    text: "Показываем луг, добавляем цветы, деревья и траву. Задаём вопрос 草地上有什么？ и принимаем ответ одним словом или короткой фразой.",
+    glossaryTerms: ["草地上有什么？", "草地上有花。", "草地上有树。", "草地上有草。"],
+    durationMinutes: 4,
+    resourceIds: ["media:lesson-5-grassland", "media:lesson-5-flower", "media:lesson-5-tree", "media:lesson-5-grass"],
+  },
+  {
+    id: "lesson-5-step-14",
+    order: 14,
+    category: "Счёт",
+    title: "Считаем цветы, деревья и траву",
+    text: "Открываем Приложение 6 и считаем группы объектов на лугу: цветы, деревья и траву.",
+    glossaryTerms: ["花", "树", "草", "数"],
+    durationMinutes: 4,
+    resourceIds: ["worksheet:lesson-5-meadow-count", "media:lesson-5-count-hands"],
+  },
+  {
+    id: "lesson-5-step-15",
+    order: 15,
+    category: "Тетрадь",
+    title: "Создаём и раскрашиваем луг",
+    text: "Переходим к творческому заданию: ребёнок выбирает элементы, раскрашивает и называет 花, 树, 草, 草地.",
+    glossaryTerms: ["花", "树", "草", "草地"],
+    durationMinutes: 5,
+    resourceIds: ["worksheet:lesson-5-flower-coloring", "worksheet:lesson-5-homework-meadow"],
+  },
+  {
+    id: "lesson-5-step-16",
+    order: 16,
+    category: "Завершение",
+    title: "Песня, прощание и домашняя миссия",
+    text: "Финальная песня, быстрый recap слов урока и показ домашней миссии: создать свой луг.",
+    glossaryTerms: ["花", "树", "草", "草地", "再见！"],
+    durationMinutes: 3,
+    resourceIds: ["song:my-favorite-color-is-blue", "song-video:my-favorite-color-is-blue", "worksheet:lesson-5-homework"],
+  },
+];
+
+const lessonFivePlants = [
+  { id: "flower", hanzi: "花", pinyin: "huā", meaning: "цветок", src: "/methodologies/world-around-me/lesson-5/assets/flower-purple.png" },
+  { id: "tree", hanzi: "树", pinyin: "shù", meaning: "дерево", src: "/methodologies/world-around-me/lesson-5/assets/tree.png" },
+  { id: "grass", hanzi: "草", pinyin: "cǎo", meaning: "трава", src: "/methodologies/world-around-me/lesson-5/assets/grass.png" },
+  { id: "grassland", hanzi: "草地", pinyin: "cǎodì", meaning: "луг / поле", src: "/methodologies/world-around-me/lesson-5/assets/meadow-bg.jpeg" },
+] as const;
+
+function LessonFivePlantCardsBlock() {
+  return (
+    <div className="mt-3 border-t border-emerald-100 pt-3">
+      <p className="text-xs font-bold uppercase text-emerald-800">Карточки растений</p>
+      <div className="mt-2 grid gap-2 sm:grid-cols-4">
+        {lessonFivePlants.map((plant) => (
+          <div key={plant.id} className="rounded-xl border border-neutral-200 bg-white p-3 text-center">
+            <img src={plant.src} alt={plant.meaning} className="mx-auto h-24 w-full object-contain" />
+            <p className="mt-2 text-3xl font-bold text-neutral-950" style={{ fontFamily: cjkFontFamily }}>{plant.hanzi}</p>
+            <p className="text-xs text-neutral-600">{plant.pinyin} · {plant.meaning}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function LessonFiveWheelBlock() {
+  return (
+    <div className="mt-3 grid gap-3 border-t border-violet-100 pt-3 md:grid-cols-[220px_1fr]">
+      <img
+        src="/methodologies/world-around-me/lesson-5/appendices/appendix-2-page-01.png"
+        alt="Колесо слов урока 5"
+        className="h-44 w-full rounded-xl border border-neutral-200 bg-white object-contain"
+      />
+      <div className="flex flex-col justify-center text-sm leading-6 text-neutral-700">
+        <p className="font-semibold text-neutral-900">Механика</p>
+        <p>Крутим колесо, останавливаем и называем выпавшее слово без русской подсказки.</p>
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          {lessonFivePlants.map((plant) => (
+            <Chip key={plant.id} tone="violet" size="sm">{plant.hanzi}</Chip>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function LessonFiveFavoriteFlowerBlock() {
+  return (
+    <div className="mt-3 grid gap-3 border-t border-rose-100 pt-3 md:grid-cols-[220px_1fr]">
+      <img
+        src="/methodologies/world-around-me/lesson-5/assets/colored-flowers.png"
+        alt="Цветные цветы"
+        className="h-44 w-full object-contain"
+      />
+      <div className="space-y-2 text-sm leading-6 text-neutral-700" style={{ fontFamily: cjkFontFamily }}>
+        <p className="font-semibold text-neutral-900">Фраза</p>
+        <p>我喜欢蓝色的花。</p>
+        <p>我喜欢红色的花。</p>
+        <p>Меняем цвет, но сохраняем модель 我喜欢…的花。</p>
+      </div>
+    </div>
+  );
+}
+
+function LessonFiveActionsBlock() {
+  return (
+    <div className="mt-3 border-t border-emerald-100 pt-3">
+      <p className="text-xs font-bold uppercase text-emerald-800">Действия урока</p>
+      <div className="mt-2 grid gap-2 sm:grid-cols-5">
+        {["飞", "跑", "跳", "拍手", "数"].map((action, index) => (
+          <div key={action} className="rounded-xl border border-neutral-200 bg-white p-3 text-center">
+            <img
+              src={`/methodologies/world-around-me/lesson-5/presentation/lesson-5-slide-${String(index + 13).padStart(2, "0")}.png`}
+              alt={action}
+              className="h-24 w-full object-contain"
+            />
+            <p className="mt-2 text-2xl font-bold" style={{ fontFamily: cjkFontFamily }}>{action}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function LessonFiveMeadowBlock() {
+  return (
+    <div className="mt-3 grid gap-3 border-t border-sky-100 pt-3 md:grid-cols-[1fr_0.8fr]">
+      <img
+        src="/methodologies/world-around-me/lesson-5/presentation/lesson-5-slide-19.png"
+        alt="Цветы на лугу"
+        className="h-56 w-full rounded-xl border border-neutral-200 bg-white object-contain"
+      />
+      <div className="space-y-2 text-sm leading-6 text-neutral-700" style={{ fontFamily: cjkFontFamily }}>
+        <p className="font-semibold text-neutral-900">Речевой сценарий</p>
+        <p>草地上有什么？</p>
+        <p>草地上有花。</p>
+        <p>草地上有树。</p>
+      </div>
+    </div>
+  );
+}
+
+function LessonFiveCountingBlock() {
+  return (
+    <div className="mt-3 border-t border-sky-100 pt-3">
+      <div className="grid gap-2 sm:grid-cols-3">
+        {[
+          ["花", "10", "/methodologies/world-around-me/lesson-5/presentation/lesson-5-slide-22.png"],
+          ["树", "10", "/methodologies/world-around-me/lesson-5/presentation/lesson-5-slide-23.png"],
+          ["草", "10", "/methodologies/world-around-me/lesson-5/presentation/lesson-5-slide-24.png"],
+        ].map(([label, count, src]) => (
+          <div key={label} className="rounded-xl border border-neutral-200 bg-white p-3">
+            <img src={src} alt={`${label} count`} className="h-28 w-full object-contain" />
+            <p className="mt-2 text-xl font-bold" style={{ fontFamily: cjkFontFamily }}>{label} · {count}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function LessonFiveCreativeBlock() {
+  return (
+    <div className="mt-3 grid gap-3 border-t border-emerald-100 pt-3 md:grid-cols-2">
+      <img
+        src="/methodologies/world-around-me/lesson-5/appendices/appendix-7-page-01.png"
+        alt="Раскраска цветка"
+        className="h-56 w-full rounded-xl border border-neutral-200 bg-white object-contain"
+      />
+      <img
+        src="/methodologies/world-around-me/lesson-5/appendices/appendix-8-page-01.png"
+        alt="Домашний луг"
+        className="h-56 w-full rounded-xl border border-neutral-200 bg-white object-contain"
+      />
+    </div>
+  );
+}
+
+function LessonFiveCustomBlock({ order }: { order: number }) {
+  if ([5, 6, 7, 8, 10].includes(order)) return <LessonFivePlantCardsBlock />;
+  if (order === 9) return <LessonFiveWheelBlock />;
+  if (order === 11) return <LessonFiveFavoriteFlowerBlock />;
+  if (order === 12) return <LessonFiveActionsBlock />;
+  if (order === 13) return <LessonFiveMeadowBlock />;
+  if (order === 14) return <LessonFiveCountingBlock />;
+  if (order === 15) return <LessonFiveCreativeBlock />;
+  return null;
+}
+
+function LessonFivePlan({
+  assetsById,
+  lessonNotesSlot,
+  steps,
+  onShowOnStudentScreen,
+}: {
+  assetsById: Record<string, ReusableAsset>;
+  lessonNotesSlot?: ReactNode;
+  steps: MethodologyLessonStep[];
+  onShowOnStudentScreen?: (stepId: string) => void;
+}) {
+  return (
+    <section className="space-y-6" aria-label="План урока">
+      <section className="space-y-3">
+        <CollapsibleCard title="Об уроке" icon={BookOpenText} defaultOpen>
+          <p className="text-sm leading-6 text-neutral-700" style={{ fontFamily: cjkFontFamily }}>
+            Урок знакомит детей с 花, 树, 草 и 草地. Дети повторяют настроение,
+            любимый цветок, действия и счёт, а в конце собирают собственный луг.
+          </p>
+        </CollapsibleCard>
+
+        {lessonNotesSlot ? (
+          <CollapsibleCard title="Заметки к уроку" icon={NotebookPen} defaultOpen={false} contentClassName="pt-1">
+            {lessonNotesSlot}
+          </CollapsibleCard>
+        ) : null}
+
+        <CollapsibleCard title="Материалы" icon={FileText} defaultOpen={false}>
+          <GlossaryChips compactTop terms={["花", "树", "草", "草地", "我很好", "我不好", "我喜欢蓝色的花。"]} />
+          {assetsById["presentation:world-around-me-lesson-5"] ? (
+            <LessonPlanResourcePreview
+              asset={assetsById["presentation:world-around-me-lesson-5"]}
+              mode="single-slide"
+            />
+          ) : null}
+        </CollapsibleCard>
+
+        <CollapsibleCard title="Реквизит" icon={Package} defaultOpen={false}>
+          <ul className="space-y-1 text-sm leading-6 text-neutral-700">
+            <li>Презентация урока 5 и экран для демонстрации.</li>
+            <li>Приложение 1: карточки 花、树、草、草地.</li>
+            <li>Приложение 2: колесо слов.</li>
+            <li>Приложение 3: карточки растений.</li>
+            <li>Приложения 4-6: цветы, действия и счёт на лугу.</li>
+            <li>Приложения 7-8: раскраска, вырезание, клей и карандаши.</li>
+          </ul>
+        </CollapsibleCard>
+      </section>
+
+      <section>
+        <div className="mb-4 flex items-center gap-2">
+          <h2 className="text-base font-semibold text-neutral-950">Структура урока</h2>
+          <Chip tone="sky" icon={Timer} className="whitespace-nowrap">45 минут</Chip>
+          <Chip tone="neutral" icon={Workflow} className="whitespace-nowrap">16 шагов</Chip>
+        </div>
+
+        <div className="space-y-3">
+          {lessonFiveDisplaySteps.map((step) => (
+            <article key={step.id} className="rounded-2xl border border-neutral-200/80 bg-white p-4 shadow-[0_8px_28px_rgba(20,20,20,0.04)]">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Chip size="sm" tone="inverse">Шаг {step.order}</Chip>
+                  <Chip size="sm" tone={categoryChipByLabel[step.category].tone} icon={categoryChipByLabel[step.category].icon}>
+                    {step.category}
+                  </Chip>
+                  <Chip size="sm" tone="sky" icon={Timer} className="whitespace-nowrap">
+                    {step.durationMinutes ?? steps.find((source) => source.order === step.order)?.durationMinutes ?? 3} мин
+                  </Chip>
+                </div>
+                {onShowOnStudentScreen ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const sourceStep = steps.find((source) => source.order === step.order);
+                      if (sourceStep) onShowOnStudentScreen(sourceStep.id);
+                    }}
+                    className={productButtonClassName("secondary", "text-sm whitespace-nowrap")}
+                  >
+                    <MonitorUp className="h-4 w-4" aria-hidden="true" />
+                    На экран
+                  </button>
+                ) : null}
+              </div>
+              <h3 className="mt-2 text-lg font-semibold text-neutral-950" style={{ fontFamily: cjkFontFamily }}>{step.title}</h3>
+              <p className="mt-2 text-sm leading-6 text-neutral-700" style={{ fontFamily: cjkFontFamily }}>{step.text}</p>
+              <GlossaryChips terms={step.glossaryTerms} />
+              <LessonFiveCustomBlock order={step.order} />
+              {step.resourceIds?.map((resourceId) => {
+                const asset = assetsById[resourceId];
+                if (!asset) return null;
+                return (
+                  <LessonPlanResourcePreview
+                    key={`${step.id}-${resourceId}`}
+                    asset={asset}
+                    mode={asset.kind === "flashcards_pdf" || asset.kind === "presentation" ? "single-slide" : "default"}
+                  />
+                );
+              })}
+            </article>
+          ))}
+        </div>
+      </section>
+    </section>
+  );
+}
+
 function normalizePlanItems(items: Array<string | null | undefined> | undefined) {
   return Array.from(
     new Set(
@@ -1835,6 +2272,17 @@ export function TeacherLessonPedagogicalContent({
   if (isLessonFourPlan(lessonIdentity)) {
     return (
       <LessonFourPlan
+        assetsById={assetsById}
+        lessonNotesSlot={lessonNotesSlot}
+        steps={steps}
+        onShowOnStudentScreen={onShowOnStudentScreen}
+      />
+    );
+  }
+
+  if (isLessonFivePlan(lessonIdentity)) {
+    return (
+      <LessonFivePlan
         assetsById={assetsById}
         lessonNotesSlot={lessonNotesSlot}
         steps={steps}

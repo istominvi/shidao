@@ -102,14 +102,21 @@ test("canonical methodology fallback fills missing fixture lessons with stable r
     { methodologyTitle: "World Around Me" },
   );
   const lessonFour = lessonContentFixtureMethodologyLessons[3];
+  const lessonFive = lessonContentFixtureMethodologyLessons[4];
   const mergedLessonFour = merged.find(
     (lesson) => lesson.shell.position.lessonIndex === 4,
   );
+  const mergedLessonFive = merged.find(
+    (lesson) => lesson.shell.position.lessonIndex === 5,
+  );
 
-  assert.equal(merged.length, 4);
+  assert.equal(merged.length, 5);
   assert.equal(mergedLessonFour?.id, bootstrapIdByFixtureId.get(lessonFour.id));
+  assert.equal(mergedLessonFive?.id, bootstrapIdByFixtureId.get(lessonFive.id));
   assert.equal(mergedLessonFour?.methodologyId, methodology.id);
+  assert.equal(mergedLessonFive?.methodologyId, methodology.id);
   assert.equal(mergedLessonFour?.methodologySlug, methodology.slug);
+  assert.equal(mergedLessonFive?.methodologySlug, methodology.slug);
 });
 
 test("canonical methodology fallback resolves fixture lesson pages and assets", () => {

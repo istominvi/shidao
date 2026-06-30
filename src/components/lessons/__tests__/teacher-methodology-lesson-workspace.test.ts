@@ -72,6 +72,27 @@ test("plan tab renders rich source materials for world-around-me lesson 4", () =
   assert.equal(pedagogicalSource.includes("drivePreviewUrl"), true);
 });
 
+test("plan tab renders rich source materials for world-around-me lesson 5", () => {
+  assert.equal(pedagogicalSource.includes("function LessonFivePlan"), true);
+  assert.equal(pedagogicalSource.includes("isLessonFivePlan(lessonIdentity)"), true);
+  assert.equal(pedagogicalSource.includes("Игра «Колесо слов»"), true);
+  assert.equal(pedagogicalSource.includes("appendix-2-page-01.png"), true);
+  assert.equal(pedagogicalSource.includes("lesson-5-slide-22.png"), true);
+  assert.equal(pedagogicalSource.includes("worksheet:lesson-5-homework"), true);
+  assert.equal(pedagogicalSource.includes("presentation:world-around-me-lesson-5"), true);
+});
+
+test("student screen has custom interactions for world-around-me lesson 5", () => {
+  const learnerDeckSource = readFileSync(
+    "src/components/lessons/lesson-learner-content-deck.tsx",
+    "utf8",
+  );
+  assert.equal(learnerDeckSource.includes("PlantWheelGameRenderer"), true);
+  assert.equal(learnerDeckSource.includes("MeadowBuilderRenderer"), true);
+  assert.equal(learnerDeckSource.includes("plant_wheel_game_v1"), true);
+  assert.equal(learnerDeckSource.includes("meadow_builder_v1"), true);
+});
+
 test("student screen panel supports step deck API and controlled navigation", () => {
   assert.equal(studentPanelSource.includes("steps?: MethodologyLessonStep[]"), true);
   assert.equal(studentPanelSource.includes("controlledStepId?: string"), true);

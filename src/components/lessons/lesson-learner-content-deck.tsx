@@ -645,6 +645,18 @@ type LessonFourSortItem = {
   colorId: string;
 };
 
+type LessonFivePlantItem = {
+  id: string;
+  term: string;
+  pinyin?: string;
+  meaning: string;
+  illustrationSrc: string;
+};
+
+type LessonFiveMeadowElement = LessonFivePlantItem & {
+  targetCount: number;
+};
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -687,6 +699,41 @@ function readSortItems(value: unknown): LessonFourSortItem[] {
   });
 }
 
+function readPlantItems(value: unknown): LessonFivePlantItem[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((item): LessonFivePlantItem[] => {
+    if (!isRecord(item)) return [];
+    const id = readString(item.id);
+    const term = readString(item.term);
+    const meaning = readString(item.meaning);
+    const illustrationSrc = readString(item.illustrationSrc);
+    if (!id || !term || !meaning || !illustrationSrc) return [];
+    return [
+      {
+        id,
+        term,
+        meaning,
+        illustrationSrc,
+        pinyin: readString(item.pinyin) ?? undefined,
+      },
+    ];
+  });
+}
+
+function readMeadowElements(value: unknown): LessonFiveMeadowElement[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((item): LessonFiveMeadowElement[] => {
+    if (!isRecord(item)) return [];
+    const [plant] = readPlantItems([item]);
+    const targetCount =
+      typeof item.targetCount === "number" && Number.isFinite(item.targetCount)
+        ? Math.max(0, Math.floor(item.targetCount))
+        : 0;
+    if (!plant || targetCount <= 0) return [];
+    return [{ ...plant, targetCount }];
+  });
+}
+
 const lessonFourFallbackColors: LessonFourColorCard[] = [
   {
     id: "orange",
@@ -720,6 +767,52 @@ const lessonFourFallbackColors: LessonFourColorCard[] = [
 ];
 
 function getLessonFourColorData(currentStep: MethodologyLessonStep) {
+  const data = currentStep.student.payload?.data;
+  return isRecord(data) ? data : {};
+}
+
+const lessonFiveFallbackPlants: LessonFivePlantItem[] = [
+  {
+    id: "flower",
+    term: "花",
+    pinyin: "huā",
+    meaning: "цветок",
+    illustrationSrc:
+      "/methodologies/world-around-me/lesson-5/assets/flower-purple.png",
+  },
+  {
+    id: "tree",
+    term: "树",
+    pinyin: "shù",
+    meaning: "дерево",
+    illustrationSrc: "/methodologies/world-around-me/lesson-5/assets/tree.png",
+  },
+  {
+    id: "grass",
+    term: "草",
+    pinyin: "cǎo",
+    meaning: "трава",
+    illustrationSrc: "/methodologies/world-around-me/lesson-5/assets/grass.png",
+  },
+  {
+    id: "grassland",
+    term: "草地",
+    pinyin: "cǎodì",
+    meaning: "луг / поле",
+    illustrationSrc:
+      "/methodologies/world-around-me/lesson-5/assets/meadow-bg.jpeg",
+  },
+];
+
+const lessonFiveFallbackMeadowElements: LessonFiveMeadowElement[] =
+  lessonFiveFallbackPlants
+    .filter((item) => item.id !== "grassland")
+    .map((item) => ({
+      ...item,
+      targetCount: item.id === "flower" ? 3 : item.id === "tree" ? 2 : 4,
+    }));
+
+function getLessonFiveData(currentStep: MethodologyLessonStep) {
   const data = currentStep.student.payload?.data;
   return isRecord(data) ? data : {};
 }
@@ -983,6 +1076,262 @@ function ColorSortingGameRenderer({
               Сбросить
             </button>
           </div>
+        </section>
+      </div>
+      <SectionRenderer
+        currentStep={currentStep}
+        sections={sections}
+        assetsById={assetsById}
+        fullscreen={fullscreen}
+      />
+    </>
+  );
+}
+
+function PlantWheelGameRenderer({
+  currentStep,
+  sections,
+  assetsById,
+  fullscreen,
+}: StudentStepRendererProps) {
+  const data = getLessonFiveData(currentStep);
+  const items = readPlantItems(data.items);
+  const resolvedItems = items.length ? items : lessonFiveFallbackPlants;
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const selectedItem = resolvedItems[selectedIndex] ?? resolvedItems[0];
+
+  if (!selectedItem) {
+    return (
+      <SectionRenderer
+        currentStep={currentStep}
+        sections={sections}
+        assetsById={assetsById}
+        fullscreen={fullscreen}
+      />
+    );
+  }
+
+  return (
+    <>
+      <div className="mt-4 grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
+        <section className="rounded-2xl border border-violet-200 bg-white p-4">
+          <p className="text-sm font-semibold text-violet-900">
+            Колесо слов
+          </p>
+          <div className="mt-3 flex min-h-64 items-center justify-center rounded-2xl border border-violet-100 bg-violet-50/70 p-4">
+            <div
+              className="relative h-56 w-56 rounded-full border-[10px] border-white shadow-[0_12px_32px_rgba(88,28,135,0.18)]"
+              style={{
+                background:
+                  "conic-gradient(#a78bfa 0 25%, #facc15 25% 50%, #34d399 50% 75%, #60a5fa 75% 100%)",
+                transform: `rotate(${selectedIndex * 55}deg)`,
+                transition: "transform 420ms ease",
+              }}
+            >
+              <div className="absolute inset-8 rounded-full border border-white/70 bg-white/80" />
+              <div className="absolute left-1/2 top-1/2 flex h-20 w-20 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-violet-200 bg-white text-3xl font-black text-violet-900">
+                {selectedItem.term}
+              </div>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() =>
+              setSelectedIndex((previous) => (previous + 1) % resolvedItems.length)
+            }
+            className="mt-3 w-full rounded-xl bg-violet-700 px-4 py-2 text-sm font-semibold text-white"
+          >
+            Stop / следующее слово
+          </button>
+        </section>
+
+        <section className="rounded-2xl border border-violet-200 bg-violet-50/50 p-4">
+          <p className="text-sm font-semibold text-neutral-900">
+            Выпало слово
+          </p>
+          <div className="mt-3 grid gap-3 md:grid-cols-[0.9fr_1.1fr]">
+            <div className="flex min-h-44 items-center justify-center rounded-2xl border border-violet-100 bg-white p-3">
+              <Image
+                src={selectedItem.illustrationSrc}
+                alt={selectedItem.meaning}
+                width={280}
+                height={220}
+                className="max-h-48 w-auto object-contain"
+              />
+            </div>
+            <div className="rounded-2xl border border-violet-100 bg-white p-4">
+              <p className="text-6xl font-black leading-none text-neutral-950">
+                {selectedItem.term}
+              </p>
+              {selectedItem.pinyin ? (
+                <p className="mt-2 text-lg text-neutral-700">
+                  {selectedItem.pinyin}
+                </p>
+              ) : null}
+              <p className="mt-2 text-base font-semibold text-neutral-900">
+                {selectedItem.meaning}
+              </p>
+              <p className="mt-3 rounded-xl border border-violet-100 bg-violet-50 px-3 py-2 text-sm text-violet-900">
+                Назови слово вслух и покажи картинку.
+              </p>
+            </div>
+          </div>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {resolvedItems.map((item, index) => (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => setSelectedIndex(index)}
+                className={classNames(
+                  "rounded-full border px-3 py-1 text-sm font-semibold",
+                  selectedIndex === index
+                    ? "border-violet-500 bg-violet-100 text-violet-900"
+                    : "border-neutral-300 bg-white text-neutral-700",
+                )}
+              >
+                {item.term}
+              </button>
+            ))}
+          </div>
+        </section>
+      </div>
+      <SectionRenderer
+        currentStep={currentStep}
+        sections={sections}
+        assetsById={assetsById}
+        fullscreen={fullscreen}
+      />
+    </>
+  );
+}
+
+function MeadowBuilderRenderer({
+  currentStep,
+  sections,
+  assetsById,
+  fullscreen,
+}: StudentStepRendererProps) {
+  const data = getLessonFiveData(currentStep);
+  const elements = readMeadowElements(data.elements);
+  const resolvedElements = elements.length
+    ? elements
+    : lessonFiveFallbackMeadowElements;
+  const [counts, setCounts] = useState<Record<string, number>>(
+    Object.fromEntries(resolvedElements.map((item) => [item.id, 0])),
+  );
+  const totalCount = Object.values(counts).reduce(
+    (sum, value) => sum + value,
+    0,
+  );
+
+  const updateCount = (id: string, nextCount: number) => {
+    const max =
+      resolvedElements.find((item) => item.id === id)?.targetCount ?? 0;
+    setCounts((previous) => ({
+      ...previous,
+      [id]: Math.min(max, Math.max(0, nextCount)),
+    }));
+  };
+
+  return (
+    <>
+      <div className="mt-4 grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+        <section className="rounded-2xl border border-emerald-200 bg-white p-4">
+          <div
+            className="relative min-h-72 overflow-hidden rounded-2xl border border-emerald-200 bg-cover bg-center p-4"
+            style={{
+              backgroundImage:
+                "url('/methodologies/world-around-me/lesson-5/assets/meadow-bg.jpeg')",
+            }}
+          >
+            <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-lime-500/50 to-transparent" />
+            <div className="relative flex min-h-60 flex-wrap content-end items-end justify-center gap-3 pt-16">
+              {resolvedElements.flatMap((item) =>
+                Array.from({ length: counts[item.id] ?? 0 }, (_, index) => (
+                  <div
+                    key={`${item.id}-${index}`}
+                    className="flex h-20 w-20 items-end justify-center rounded-2xl bg-white/70 p-1 shadow-sm"
+                  >
+                    <Image
+                      src={item.illustrationSrc}
+                      alt={item.meaning}
+                      width={80}
+                      height={80}
+                      className="max-h-16 w-auto object-contain"
+                    />
+                  </div>
+                )),
+              )}
+              {!totalCount ? (
+                <p className="mb-8 rounded-2xl border border-emerald-200 bg-white/90 px-4 py-3 text-sm font-semibold text-emerald-900">
+                  Добавь элементы на луг.
+                </p>
+              ) : null}
+            </div>
+          </div>
+          <p className="mt-3 rounded-xl border border-emerald-100 bg-emerald-50 px-3 py-2 text-sm text-emerald-900">
+            草地上有 {totalCount} 个东西. Назови каждый элемент: 花、树、草.
+          </p>
+        </section>
+
+        <section className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4">
+          <p className="text-sm font-semibold text-neutral-900">
+            Собери свой 草地
+          </p>
+          <div className="mt-3 grid gap-3">
+            {resolvedElements.map((item) => {
+              const count = counts[item.id] ?? 0;
+              return (
+                <article
+                  key={item.id}
+                  className="rounded-2xl border border-emerald-100 bg-white p-3"
+                >
+                  <div className="flex items-center gap-3">
+                    <Image
+                      src={item.illustrationSrc}
+                      alt={item.meaning}
+                      width={72}
+                      height={72}
+                      className="h-14 w-14 rounded-xl border border-neutral-100 object-contain"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-2xl font-black text-neutral-950">
+                        {item.term}
+                      </p>
+                      <p className="text-xs text-neutral-600">
+                        {item.meaning} · {count} / {item.targetCount}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="mt-3 flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => updateCount(item.id, count - 1)}
+                      className="min-h-10 flex-1 rounded-xl border border-neutral-300 bg-white px-3 py-2 text-sm font-semibold text-neutral-800"
+                    >
+                      Убрать
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => updateCount(item.id, count + 1)}
+                      className="min-h-10 flex-1 rounded-xl bg-emerald-700 px-3 py-2 text-sm font-semibold text-white"
+                    >
+                      Добавить
+                    </button>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+          <button
+            type="button"
+            onClick={() =>
+              setCounts(Object.fromEntries(resolvedElements.map((item) => [item.id, 0])))
+            }
+            className="mt-3 w-full rounded-xl border border-neutral-300 bg-white px-3 py-2 text-sm font-semibold text-neutral-800"
+          >
+            Очистить луг
+          </button>
         </section>
       </div>
       <SectionRenderer
@@ -1522,6 +1871,8 @@ const studentComponentRegistry: Record<string, StudentStepRenderer> = {
   lesson_one_custom_v1: LessonOneCustomRenderer,
   missing_color_game_v1: MissingColorGameRenderer,
   color_sorting_game_v1: ColorSortingGameRenderer,
+  plant_wheel_game_v1: PlantWheelGameRenderer,
+  meadow_builder_v1: MeadowBuilderRenderer,
   section_renderer_v1: SectionRenderer,
   placeholder_v1: PlaceholderStepRenderer,
   lesson_focus_v1: SectionRenderer,

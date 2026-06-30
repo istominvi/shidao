@@ -4,8 +4,10 @@ import {
   lessonContentFixtureAssets,
   lessonContentFixtureMethodologyLesson,
   lessonContentFixtureMethodologyLessonFour,
+  lessonContentFixtureMethodologyLessonFive,
   lessonContentFixtureMethodologyLessonStudentContent,
   lessonContentFixtureMethodologyLessonStudentContentLessonFour,
+  lessonContentFixtureMethodologyLessonStudentContentLessonFive,
 } from "../../lesson-content";
 import { buildMethodologyLessonUnifiedReadModel } from "../methodology-lesson-unified-read-model";
 
@@ -42,6 +44,51 @@ function buildPresentationFlowForLessonFour() {
   );
 
   return lessonContentFixtureMethodologyLessonFour.blocks
+    .slice()
+    .sort((a, b) => a.order - b.order)
+    .map((block) => ({
+      id: block.id,
+      order: block.order,
+      stepLabel: `Шаг ${block.order}`,
+      blockLabel:
+        block.blockType === "materials_prep"
+          ? "Подготовка материалов"
+          : "Этап урока",
+      accentTone: "sky" as const,
+      title: block.title ?? `Шаг ${block.order}`,
+      description: undefined,
+      teacherActions: ["Провести шаг по плану."],
+      studentActions: ["Выполняют задание шага."],
+      materials: [],
+      resources: block.assetRefs.map((ref) => ({
+        title: assetsById[ref.id]?.title ?? ref.id,
+        kindLabel: ref.kind,
+        url: assetsById[ref.id]?.sourceUrl,
+      })),
+      studentComponentKey:
+        typeof (block.content as { student?: { componentKey?: unknown } })
+          .student?.componentKey === "string"
+          ? (block.content as { student: { componentKey: string } }).student
+              .componentKey
+          : undefined,
+      studentInstruction:
+        typeof (block.content as { student?: { instruction?: unknown } })
+          .student?.instruction === "string"
+          ? (block.content as { student: { instruction: string } }).student
+              .instruction
+          : undefined,
+      studentPayload: (
+        block.content as { student?: { payload?: Record<string, unknown> } }
+      ).student?.payload,
+    }));
+}
+
+function buildPresentationFlowForLessonFive() {
+  const assetsById = Object.fromEntries(
+    lessonContentFixtureAssets.map((asset) => [asset.id, asset]),
+  );
+
+  return lessonContentFixtureMethodologyLessonFive.blocks
     .slice()
     .sort((a, b) => a.order - b.order)
     .map((block) => ({
@@ -436,6 +483,71 @@ test("world-around-me lesson 4 keeps 16-step student parity and custom games", (
   const grasslandStep = readModel.steps[9];
   assert.equal(
     grasslandStep?.resourceIds?.includes("media:lesson-4-grassland"),
+    true,
+  );
+});
+
+test("world-around-me lesson 5 keeps 16-step student parity and plant interactions", () => {
+  const assetsById = Object.fromEntries(
+    lessonContentFixtureAssets.map((asset) => [asset.id, asset]),
+  );
+
+  const readModel = buildMethodologyLessonUnifiedReadModel({
+    lessonId: lessonContentFixtureMethodologyLessonFive.id,
+    lessonShell: lessonContentFixtureMethodologyLessonFive.shell,
+    presentation: {
+      quickSummary: {
+        prepChecklist: ["Приложение 1", "Приложение 8"],
+        keyWords:
+          lessonContentFixtureMethodologyLessonFive.shell.vocabularySummary,
+        keyPhrases:
+          lessonContentFixtureMethodologyLessonFive.shell.phraseSummary,
+        resources: [],
+      },
+      lessonFlow: buildPresentationFlowForLessonFive(),
+    },
+    studentContent:
+      lessonContentFixtureMethodologyLessonStudentContentLessonFive,
+    assetsById,
+    canonicalHomework: null,
+  });
+
+  assert.equal(readModel.steps.length, 16);
+
+  for (const step of readModel.steps) {
+    assert.equal(step.title, step.student.title);
+    assert.equal(
+      Boolean(step.student.instruction && step.student.instruction.trim()),
+      true,
+    );
+  }
+
+  const wheelStep = readModel.steps[8];
+  assert.equal(wheelStep?.title, "Игра «Колесо слов»");
+  assert.equal(wheelStep?.student.componentKey, "plant_wheel_game_v1");
+  assert.equal(
+    (
+      (
+        wheelStep?.student.payload?.data as
+          { items?: unknown[] } | undefined
+      )?.items ?? []
+    ).length,
+    4,
+  );
+
+  const meadowStep = readModel.steps[14];
+  assert.equal(meadowStep?.title, "Создаём и раскрашиваем луг");
+  assert.equal(meadowStep?.student.componentKey, "meadow_builder_v1");
+  assert.equal(meadowStep?.resourceIds?.includes("worksheet:lesson-5-homework-meadow"), true);
+
+  const homeworkStep = readModel.steps[15];
+  assert.equal(
+    homeworkStep?.resourceIds?.includes("worksheet:lesson-5-homework"),
+    true,
+  );
+  assert.equal(
+    readModel.assetsById["presentation:world-around-me-lesson-5"]?.metadata
+      ?.slideImageRefs instanceof Array,
     true,
   );
 });

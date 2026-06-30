@@ -4,15 +4,18 @@ import {
   lessonContentFixtureHomeworkDefinitionLessonTwo,
   lessonContentFixtureHomeworkDefinitionLessonThree,
   lessonContentFixtureHomeworkDefinitionLessonFour,
+  lessonContentFixtureHomeworkDefinitionLessonFive,
   lessonContentFixtureMethodology,
   lessonContentFixtureMethodologyLessonStudentContent,
   lessonContentFixtureMethodologyLessonStudentContentLessonTwo,
   lessonContentFixtureMethodologyLessonStudentContentLessonThree,
   lessonContentFixtureMethodologyLessonStudentContentLessonFour,
+  lessonContentFixtureMethodologyLessonStudentContentLessonFive,
   lessonContentFixtureMethodologyLesson,
   lessonContentFixtureMethodologyLessonTwo,
   lessonContentFixtureMethodologyLessonThree,
   lessonContentFixtureMethodologyLessonFour,
+  lessonContentFixtureMethodologyLessonFive,
   lessonContentFixtureScheduledLesson,
 } from "../../lesson-content";
 import { buildFixtureBootstrapRows } from "../lesson-content-bootstrap";
@@ -410,6 +413,55 @@ test("bootstrap rows include canonical lesson 4 lesson/homework/student-content"
   assert.equal(sections.length, 16);
   assert.equal(
     sections.some((section) => section.sceneId === "l4-step-07"),
+    true,
+  );
+});
+
+test("bootstrap rows include canonical lesson 5 lesson/homework/student-content", () => {
+  const rows = buildFixtureBootstrapRows();
+
+  const lessonFiveRow = rows.methodologyLessonRows.find(
+    (row) => row.lesson_index === 5 && row.module_index === 1,
+  );
+  assert.ok(lessonFiveRow);
+  assert.equal(
+    lessonFiveRow.title,
+    lessonContentFixtureMethodologyLessonFive.shell.title,
+  );
+  assert.equal(lessonFiveRow.vocabulary_summary.includes("花"), true);
+  assert.equal(lessonFiveRow.phrase_summary.includes("草地上有花。"), true);
+
+  const lessonFiveHomeworkRow = rows.homeworkDefinitionRows.find(
+    (row) =>
+      row.title === lessonContentFixtureHomeworkDefinitionLessonFive.title,
+  );
+  assert.ok(lessonFiveHomeworkRow);
+  assert.equal(
+    (
+      (lessonFiveHomeworkRow.quiz_payload as { questions?: unknown[] })
+        ?.questions ?? []
+    ).length,
+    6,
+  );
+
+  const lessonFiveStudentContentRow = rows.studentContentRows.find(
+    (row) =>
+      row.title ===
+      lessonContentFixtureMethodologyLessonStudentContentLessonFive.title,
+  );
+  assert.ok(lessonFiveStudentContentRow);
+  const sections = (
+    lessonFiveStudentContentRow.content_payload as {
+      sections: Array<{ sceneId?: string; type?: string }>;
+    }
+  ).sections;
+  assert.equal(sections.length, 16);
+  assert.equal(
+    sections.some((section) => section.sceneId === "l5-step-09"),
+    true,
+  );
+  assert.equal(
+    sections.some((section) => section.sceneId === "l5-step-15"),
     true,
   );
 });
