@@ -1,0 +1,82 @@
+<svg
+  width="640"
+  height="480"
+  viewBox="0 0 640 480"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+  role="img"
+  aria-labelledby="title desc"
+>
+  <title id="title">Сердце для выбора любимого цвета</title>
+  <desc id="desc">Красное сердце с цветными карточками для фразы 我喜欢</desc>
+  <rect width="640" height="480" rx="32" fill="#FFF7ED" />
+  <path
+    d="M320 390C250 326 148 271 148 176C148 119 194 82 245 82C281 82 306 101 320 126C334 101 359 82 395 82C446 82 492 119 492 176C492 271 390 326 320 390Z"
+    fill="#FB7185"
+    stroke="#BE123C"
+    stroke-width="10"
+  />
+  <rect
+    x="244"
+    y="194"
+    width="152"
+    height="92"
+    rx="18"
+    fill="white"
+    stroke="#BE123C"
+    stroke-width="5"
+  />
+  <text
+    x="320"
+    y="235"
+    text-anchor="middle"
+    font-family="Arial, sans-serif"
+    font-size="34"
+    font-weight="700"
+    fill="#111827"
+  >
+    我喜欢
+  </text>
+  <text
+    x="320"
+    y="268"
+    text-anchor="middle"
+    font-family="Arial, sans-serif"
+    font-size="18"
+    fill="#7F1D1D"
+  >
+    wǒ xǐhuan
+  </text>
+  <circle
+    cx="126"
+    cy="348"
+    r="34"
+    fill="#F47C24"
+    stroke="#9A3412"
+    stroke-width="5"
+  />
+  <circle
+    cx="218"
+    cy="396"
+    r="34"
+    fill="#111111"
+    stroke="#111827"
+    stroke-width="5"
+  />
+  <circle
+    cx="422"
+    cy="396"
+    r="34"
+    fill="#FFFFFF"
+    stroke="#4F7FD9"
+    stroke-width="5"
+  />
+  <circle
+    cx="514"
+    cy="348"
+    r="34"
+    fill="#8A6500"
+    stroke="#713F12"
+    stroke-width="5"
+  />
+</svg>

@@ -39,9 +39,7 @@ test("plan tab renders premium canonical script for world-around-me lesson 1", (
   assert.equal(pedagogicalSource.includes("Проход 2 — предложение"), true);
   assert.equal(pedagogicalSource.includes("StepOneVideoEmbed"), true);
   assert.equal(pedagogicalSource.includes("Скачать"), true);
-  assert.equal(pedagogicalSource.includes("Цель шага"), false);
-  assert.equal(pedagogicalSource.includes("Критерии успеха"), false);
-  assert.equal(pedagogicalSource.includes("Методические заметки"), false);
+  assert.equal(pedagogicalSource.includes("LessonOnePlan"), true);
 });
 
 test("plan tab keeps local controls for student screen step selection", () => {
@@ -49,6 +47,50 @@ test("plan tab keeps local controls for student screen step selection", () => {
   assert.equal(pedagogicalSource.includes("resolveCanonicalStepSource"), true);
   assert.equal(workspaceSource.includes("setSelectedStepId(stepId);"), true);
   assert.equal(workspaceSource.includes("setTab(\"student_screen\")"), true);
+});
+
+test("generic plan renders full teacher-side step details for canonical lessons", () => {
+  assert.equal(pedagogicalSource.includes("function GenericPlan"), true);
+  assert.equal(pedagogicalSource.includes("Действия преподавателя"), true);
+  assert.equal(pedagogicalSource.includes("Действия детей"), true);
+  assert.equal(pedagogicalSource.includes("Ожидаемые ответы"), true);
+  assert.equal(pedagogicalSource.includes("Критерии успеха"), true);
+  assert.equal(pedagogicalSource.includes("Методические заметки"), true);
+  assert.equal(pedagogicalSource.includes("GenericStepResources"), true);
+});
+
+test("plan tab renders rich source materials for world-around-me lesson 4", () => {
+  assert.equal(pedagogicalSource.includes("function LessonFourPlan"), true);
+  assert.equal(pedagogicalSource.includes("isLessonFourPlan(lessonIdentity)"), true);
+  assert.equal(pedagogicalSource.includes("Игра 4.6 · что пропало?"), true);
+  assert.equal(pedagogicalSource.includes("Игра 4.7 · сортировка по корзинам"), true);
+  assert.equal(pedagogicalSource.includes("color-animals-grassland.svg"), true);
+  assert.equal(pedagogicalSource.includes("color-domino.svg"), true);
+  assert.equal(pedagogicalSource.includes("workbook-pages-7-8.svg"), true);
+  assert.equal(pedagogicalSource.includes("song-video:my-favorite-color-is-blue"), true);
+  assert.equal(pedagogicalSource.includes("extractGoogleDriveFileId"), true);
+  assert.equal(pedagogicalSource.includes("drivePreviewUrl"), true);
+});
+
+test("plan tab renders rich source materials for world-around-me lesson 5", () => {
+  assert.equal(pedagogicalSource.includes("function LessonFivePlan"), true);
+  assert.equal(pedagogicalSource.includes("isLessonFivePlan(lessonIdentity)"), true);
+  assert.equal(pedagogicalSource.includes("Игра «Колесо слов»"), true);
+  assert.equal(pedagogicalSource.includes("appendix-2-page-01.png"), true);
+  assert.equal(pedagogicalSource.includes("lesson-5-slide-22.png"), true);
+  assert.equal(pedagogicalSource.includes("worksheet:lesson-5-homework"), true);
+  assert.equal(pedagogicalSource.includes("presentation:world-around-me-lesson-5"), true);
+});
+
+test("student screen has custom interactions for world-around-me lesson 5", () => {
+  const learnerDeckSource = readFileSync(
+    "src/components/lessons/lesson-learner-content-deck.tsx",
+    "utf8",
+  );
+  assert.equal(learnerDeckSource.includes("PlantWheelGameRenderer"), true);
+  assert.equal(learnerDeckSource.includes("MeadowBuilderRenderer"), true);
+  assert.equal(learnerDeckSource.includes("plant_wheel_game_v1"), true);
+  assert.equal(learnerDeckSource.includes("meadow_builder_v1"), true);
 });
 
 test("student screen panel supports step deck API and controlled navigation", () => {

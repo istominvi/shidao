@@ -234,6 +234,13 @@ test("teacher workspace carries simple student component routing from block cont
       title: "Собираем сцену",
       goal: "Запустить первый интерактив урока.",
       teacherScriptShort: "Объясняет правила и запускает сцену.",
+      teacher: {
+        goal: "Собрать фразу через интерактивную сцену.",
+        actions: ["Показывает карточки.", "Просит собрать сцену."],
+        expectedResponses: ["我喜欢蓝色。"],
+        materials: ["карточки цветов"],
+        notes: ["Сильным детям предложить полную фразу."],
+      },
       student: {
         componentKey: "scene_builder_v1",
         instruction: "Выбери карточки и собери сцену.",
@@ -277,8 +284,33 @@ test("teacher workspace carries simple student component routing from block cont
   assert.equal(flowStep?.studentComponentKey, "scene_builder_v1");
   assert.equal(flowStep?.studentInstruction, "Выбери карточки и собери сцену.");
   assert.deepEqual(flowStep?.studentPayload, { cards: ["red", "blue"] });
+  assert.equal(flowStep?.teacherGoal, "Собрать фразу через интерактивную сцену.");
+  assert.deepEqual(flowStep?.teacherActions, [
+    "Показывает карточки.",
+    "Просит собрать сцену.",
+  ]);
+  assert.deepEqual(flowStep?.materials, ["карточки цветов"]);
+  assert.deepEqual(flowStep?.pedagogicalDetails?.expectedStudentResponses, [
+    "我喜欢蓝色。",
+  ]);
+  assert.deepEqual(flowStep?.pedagogicalDetails?.teacherNotes, [
+    "Сильным детям предложить полную фразу.",
+  ]);
 
   const unifiedStep = readModel.unifiedReadModel.steps[0];
+  assert.equal(
+    unifiedStep?.teacher.goal,
+    "Собрать фразу через интерактивную сцену.",
+  );
+  assert.deepEqual(unifiedStep?.teacher.teacherActions, [
+    "Показывает карточки.",
+    "Просит собрать сцену.",
+  ]);
+  assert.deepEqual(unifiedStep?.teacher.expectedResponses, ["我喜欢蓝色。"]);
+  assert.deepEqual(unifiedStep?.teacher.materials, ["карточки цветов"]);
+  assert.deepEqual(unifiedStep?.teacher.notes, [
+    "Сильным детям предложить полную фразу.",
+  ]);
   assert.equal(unifiedStep?.student.componentKey, "scene_builder_v1");
   assert.equal(
     unifiedStep?.student.instruction,

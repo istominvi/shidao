@@ -141,12 +141,15 @@ export const lessonContentFixtureAssets: ReusableAsset[] = [
     id: "presentation:world-around-me-lesson-1",
     kind: "presentation",
     title: "Презентация урока 1",
-    description: "Локальная презентация урока 1 для проведения и демонстрации слайдов.",
+    description:
+      "Локальная презентация урока 1 для проведения и демонстрации слайдов.",
     sourceUrl:
       "https://docs.google.com/presentation/d/1o-LCuePhdVq39oBPqHgtHpJUREJNz4dS/edit?usp=drive_link&ouid=102261836036017130249&rtpof=true&sd=true",
-    fileRef: "/methodologies/world-around-me/lesson-1/presentation/lesson-1-slides.pdf",
+    fileRef:
+      "/methodologies/world-around-me/lesson-1/presentation/lesson-1-slides.pdf",
     metadata: {
-      pptxFileRef: "/methodologies/world-around-me/lesson-1/presentation/lesson-1-slides.pptx",
+      pptxFileRef:
+        "/methodologies/world-around-me/lesson-1/presentation/lesson-1-slides.pptx",
       slideImageRefs: [
         "/methodologies/world-around-me/lesson-1/presentation/lesson-1-slide-01.png",
         "/methodologies/world-around-me/lesson-1/presentation/lesson-1-slide-02.png",
@@ -173,7 +176,8 @@ export const lessonContentFixtureAssets: ReusableAsset[] = [
     title: "Карточки урока 1 (PDF)",
     sourceUrl:
       "https://drive.google.com/file/d/11LTKea4ui3_xB5ZBc6WbEanwlxfoO_GY/view?usp=drive_link",
-    fileRef: "/methodologies/world-around-me/lesson-1/flashcards/lesson-1-flashcards.pdf",
+    fileRef:
+      "/methodologies/world-around-me/lesson-1/flashcards/lesson-1-flashcards.pdf",
     metadata: {
       cardImageRefs: [
         "/methodologies/world-around-me/lesson-1/flashcards/dog-card.png",
@@ -202,7 +206,8 @@ export const lessonContentFixtureAssets: ReusableAsset[] = [
     description: "Песня для завершения уроков про животных.",
     sourceUrl:
       "https://drive.google.com/file/d/1RewHJRdd6oqSfX506A7ABt6VMDhDzJRP/view?usp=drive_link",
-    fileRef: "/methodologies/world-around-me/lesson-1/media/farm-animals-song.mp3",
+    fileRef:
+      "/methodologies/world-around-me/lesson-1/media/farm-animals-song.mp3",
   },
   {
     id: "song-video:farm-animals-movement",
@@ -210,7 +215,8 @@ export const lessonContentFixtureAssets: ReusableAsset[] = [
     title: "farm animals (movement version)",
     sourceUrl:
       "https://drive.google.com/file/d/1RdZLmZHFnxflYuYkSNvhclrfYuNxAnSC/view?usp=drive_link",
-    fileRef: "/methodologies/world-around-me/lesson-1/media/farm-animals-song-video.mp4",
+    fileRef:
+      "/methodologies/world-around-me/lesson-1/media/farm-animals-song-video.mp4",
   },
   {
     id: "worksheet:workbook-pages-3-4",
@@ -233,7 +239,8 @@ export const lessonContentFixtureAssets: ReusableAsset[] = [
       "https://drive.google.com/file/d/1hNwwBZ0S7SNmSbAAt-vz1aPanAluSTrC/view?usp=drive_link",
     fileRef: "/methodologies/world-around-me/lesson-1/appendix/appendix-1.pdf",
     metadata: {
-      previewImageRef: "/methodologies/world-around-me/lesson-1/appendix/appendix-1.png",
+      previewImageRef:
+        "/methodologies/world-around-me/lesson-1/appendix/appendix-1.png",
     },
   },
   {
@@ -326,12 +333,24 @@ export const lessonContentFixtureAssets: ReusableAsset[] = [
     kind: "video",
     title: "colors",
     description: "Видео-сегмент урока 3: знакомство с цветами.",
+    sourceUrl:
+      "https://drive.google.com/file/d/1XzwJU3b9Vdk20LwHUtfqqtWvt6QTESvr/view?usp=drive_link",
   },
   {
     id: "song:my-favorite-color-is-blue",
     kind: "song",
     title: "my favorite color is blue",
-    description: "Песня для финала урока 3 о любимом цвете.",
+    description: "Песня для финала уроков о любимом цвете.",
+    sourceUrl:
+      "https://drive.google.com/file/d/1poNUSgbO6jgYl7fkQdIb5Zr5pAQ5wAqf/view?usp=drive_link",
+  },
+  {
+    id: "song-video:my-favorite-color-is-blue",
+    kind: "song_video",
+    title: "my favorite color is blue (video)",
+    description: "Видео песни для демонстрации и подпевания.",
+    sourceUrl:
+      "https://drive.google.com/file/d/187Poj_6dwktDokSSRkqzGy5MBmiRTAhG/view?usp=drive_link",
   },
   {
     id: "worksheet:appendix-3",
@@ -373,6 +392,321 @@ export const lessonContentFixtureAssets: ReusableAsset[] = [
     description: "Кубик цветов для сортировки животных по цвету.",
     fileRef: "/methodologies/world-around-me/lesson-3/color-die.svg",
   },
+  {
+    id: "flashcards:world-around-me-lesson-4",
+    kind: "flashcards_pdf",
+    title: "Карточки урока 4: новые цвета",
+    description:
+      "Карточки 橘色、黑色、白色、棕色 и дополнительные слова урока.",
+    fileRef: "/methodologies/world-around-me/lesson-4/color-cards.svg",
+    metadata: {
+      cardImageRefs: [
+        "/methodologies/world-around-me/lesson-4/color-card-orange.svg",
+        "/methodologies/world-around-me/lesson-4/color-card-black.svg",
+        "/methodologies/world-around-me/lesson-4/color-card-white.svg",
+        "/methodologies/world-around-me/lesson-4/color-card-brown.svg",
+      ],
+    },
+  },
+  {
+    id: "activity:lesson-4-missing-color",
+    kind: "activity_template",
+    title: "Игра 4.6: Что пропало?",
+    description: "PPTX-материал с карточками цветов для игры на внимание.",
+    fileRef:
+      "/methodologies/world-around-me/lesson-4/games/lesson-4-game-4-6.pptx",
+  },
+  {
+    id: "activity:lesson-4-color-sorting",
+    kind: "activity_template",
+    title: "Игра 4.7: Сортировка по цветам",
+    description: "PPTX-материал с корзинами и предметами для сортировки.",
+    fileRef:
+      "/methodologies/world-around-me/lesson-4/games/lesson-4-game-4-7.pptx",
+  },
+  {
+    id: "worksheet:appendix-3-color-animals",
+    kind: "worksheet",
+    title: "Приложение 3: цветные животные на лугу",
+    description: "Материал для выкладывания луга и фраз «草地上有…».",
+    fileRef:
+      "/methodologies/world-around-me/lesson-4/color-animals-grassland.svg",
+    metadata: {
+      previewImageRef:
+        "/methodologies/world-around-me/lesson-4/color-animals-grassland.svg",
+    },
+  },
+  {
+    id: "worksheet:appendix-4-color-domino",
+    kind: "worksheet",
+    title: "Приложение 4: домино цветов",
+    description:
+      "Найди пару: иероглиф цвета и соответствующая цветовая карточка.",
+    fileRef: "/methodologies/world-around-me/lesson-4/color-domino.svg",
+    metadata: {
+      previewImageRef: "/methodologies/world-around-me/lesson-4/color-domino.svg",
+    },
+  },
+  {
+    id: "worksheet:workbook-pages-7-8",
+    kind: "worksheet",
+    title: "Рабочая тетрадь, стр. 7–8",
+    description: "Раскрась животных нужным цветом и назови цвет по-китайски.",
+    fileRef: "/methodologies/world-around-me/lesson-4/workbook-pages-7-8.svg",
+    metadata: {
+      previewImageRef:
+        "/methodologies/world-around-me/lesson-4/workbook-pages-7-8.svg",
+    },
+  },
+  {
+    id: "media:lesson-4-heart",
+    kind: "media_file",
+    title: "Сердце для фразы 我喜欢…",
+    description: "Шаблон для выбора любимого цвета.",
+    fileRef: "/methodologies/world-around-me/lesson-4/heart-color.svg",
+  },
+  {
+    id: "media:lesson-4-grassland",
+    kind: "media_file",
+    title: "Карточка 草地",
+    description: "Визуальная опора для слова 草地.",
+    fileRef: "/methodologies/world-around-me/lesson-4/grassland.svg",
+  },
+  {
+    id: "media:lesson-4-abacus",
+    kind: "media_file",
+    title: "Разноцветные счёты",
+    description: "Опора для счёта до 5 по цветам.",
+    fileRef: "/methodologies/world-around-me/lesson-4/abacus.svg",
+  },
+  {
+    id: "media:lesson-4-action-cards",
+    kind: "media_file",
+    title: "Карточки действий урока 4",
+    description: "飞、跑、跳、拍手、数 для командной игры.",
+    fileRef: "/methodologies/world-around-me/lesson-4/action-cards.svg",
+  },
+  {
+    id: "presentation:world-around-me-lesson-5",
+    kind: "presentation",
+    title: "Презентация урока 5",
+    description:
+      "Student Screen deck: растения, луг, действия, счёт и домашнее задание.",
+    fileRef:
+      "/methodologies/world-around-me/lesson-5/presentation/lesson-5-visual.pdf",
+    metadata: {
+      pptxFileRef:
+        "/methodologies/world-around-me/lesson-5/presentation/lesson-5-visual.pptx",
+      slideImageRefs: [
+        "/methodologies/world-around-me/lesson-5/presentation/lesson-5-slide-01.png",
+        "/methodologies/world-around-me/lesson-5/presentation/lesson-5-slide-02.png",
+        "/methodologies/world-around-me/lesson-5/presentation/lesson-5-slide-03.png",
+        "/methodologies/world-around-me/lesson-5/presentation/lesson-5-slide-04.png",
+        "/methodologies/world-around-me/lesson-5/presentation/lesson-5-slide-05.png",
+        "/methodologies/world-around-me/lesson-5/presentation/lesson-5-slide-06.png",
+        "/methodologies/world-around-me/lesson-5/presentation/lesson-5-slide-07.png",
+        "/methodologies/world-around-me/lesson-5/presentation/lesson-5-slide-08.png",
+        "/methodologies/world-around-me/lesson-5/presentation/lesson-5-slide-09.png",
+        "/methodologies/world-around-me/lesson-5/presentation/lesson-5-slide-10.png",
+        "/methodologies/world-around-me/lesson-5/presentation/lesson-5-slide-11.png",
+        "/methodologies/world-around-me/lesson-5/presentation/lesson-5-slide-12.png",
+        "/methodologies/world-around-me/lesson-5/presentation/lesson-5-slide-13.png",
+        "/methodologies/world-around-me/lesson-5/presentation/lesson-5-slide-14.png",
+        "/methodologies/world-around-me/lesson-5/presentation/lesson-5-slide-15.png",
+        "/methodologies/world-around-me/lesson-5/presentation/lesson-5-slide-16.png",
+        "/methodologies/world-around-me/lesson-5/presentation/lesson-5-slide-17.png",
+        "/methodologies/world-around-me/lesson-5/presentation/lesson-5-slide-18.png",
+        "/methodologies/world-around-me/lesson-5/presentation/lesson-5-slide-19.png",
+        "/methodologies/world-around-me/lesson-5/presentation/lesson-5-slide-20.png",
+        "/methodologies/world-around-me/lesson-5/presentation/lesson-5-slide-21.png",
+        "/methodologies/world-around-me/lesson-5/presentation/lesson-5-slide-22.png",
+        "/methodologies/world-around-me/lesson-5/presentation/lesson-5-slide-23.png",
+        "/methodologies/world-around-me/lesson-5/presentation/lesson-5-slide-24.png",
+        "/methodologies/world-around-me/lesson-5/presentation/lesson-5-slide-25.png",
+        "/methodologies/world-around-me/lesson-5/presentation/lesson-5-slide-26.png",
+        "/methodologies/world-around-me/lesson-5/presentation/lesson-5-slide-27.png",
+        "/methodologies/world-around-me/lesson-5/presentation/lesson-5-slide-28.png",
+        "/methodologies/world-around-me/lesson-5/presentation/lesson-5-slide-29.png",
+        "/methodologies/world-around-me/lesson-5/presentation/lesson-5-slide-30.png",
+      ],
+    },
+  },
+  {
+    id: "flashcards:world-around-me-lesson-5",
+    kind: "flashcards_pdf",
+    title: "Карточки урока 5: растения и луг",
+    description: "Карточки 花、树、草、草地 с картинками и пиньинем.",
+    fileRef:
+      "/methodologies/world-around-me/lesson-5/appendices/appendix-1-flashcards.pdf",
+    metadata: {
+      cardImageRefs: [
+        "/methodologies/world-around-me/lesson-5/appendices/appendix-1-page-1.png",
+        "/methodologies/world-around-me/lesson-5/appendices/appendix-1-page-2.png",
+        "/methodologies/world-around-me/lesson-5/appendices/appendix-1-page-3.png",
+        "/methodologies/world-around-me/lesson-5/appendices/appendix-1-page-4.png",
+        "/methodologies/world-around-me/lesson-5/appendices/appendix-1-page-5.png",
+        "/methodologies/world-around-me/lesson-5/appendices/appendix-1-page-6.png",
+        "/methodologies/world-around-me/lesson-5/appendices/appendix-1-page-7.png",
+        "/methodologies/world-around-me/lesson-5/appendices/appendix-1-page-8.png",
+      ],
+    },
+  },
+  {
+    id: "activity:lesson-5-wheel",
+    kind: "activity_template",
+    title: "Приложение 2: колесо слов",
+    description: "Колесо для игры: крутим, останавливаем и называем растение.",
+    fileRef:
+      "/methodologies/world-around-me/lesson-5/appendices/appendix-2-wheel.pdf",
+    metadata: {
+      previewImageRef:
+        "/methodologies/world-around-me/lesson-5/appendices/appendix-2-page-01.png",
+    },
+  },
+  {
+    id: "activity:lesson-5-plant-cards",
+    kind: "activity_template",
+    title: "Приложение 3: карточки растений",
+    description: "PPTX-карточки 花、树、草、草地 для быстрой практики.",
+    fileRef:
+      "/methodologies/world-around-me/lesson-5/appendices/appendix-3-cards.pdf",
+    metadata: {
+      pptxFileRef:
+        "/methodologies/world-around-me/lesson-5/appendices/appendix-3-cards.pptx",
+      slideImageRefs: [
+        "/methodologies/world-around-me/lesson-5/appendices/appendix-3-page-1.png",
+        "/methodologies/world-around-me/lesson-5/appendices/appendix-3-page-2.png",
+      ],
+    },
+  },
+  {
+    id: "worksheet:lesson-5-favorite-flowers",
+    kind: "worksheet_pdf",
+    title: "Приложение 4: любимые цветы",
+    description: "Цветные цветы и сердца для фразы 我喜欢…的花.",
+    fileRef:
+      "/methodologies/world-around-me/lesson-5/appendices/appendix-4-favorite-flowers.pdf",
+    metadata: {
+      previewImageRefs: [
+        "/methodologies/world-around-me/lesson-5/appendices/appendix-4-page-1.png",
+        "/methodologies/world-around-me/lesson-5/appendices/appendix-4-page-2.png",
+      ],
+    },
+  },
+  {
+    id: "worksheet:lesson-5-actions",
+    kind: "worksheet_pdf",
+    title: "Приложение 5: действия",
+    description: "Карточки действий 飞、跑、跳、拍手、数 для повторения.",
+    fileRef:
+      "/methodologies/world-around-me/lesson-5/appendices/appendix-5-actions.pdf",
+    metadata: {
+      previewImageRefs: [
+        "/methodologies/world-around-me/lesson-5/appendices/appendix-5-page-1.png",
+        "/methodologies/world-around-me/lesson-5/appendices/appendix-5-page-2.png",
+      ],
+    },
+  },
+  {
+    id: "worksheet:lesson-5-meadow-count",
+    kind: "worksheet_pdf",
+    title: "Приложение 6: считаем на лугу",
+    description: "Луг с цветами, деревьями и травой для счёта до десяти.",
+    fileRef:
+      "/methodologies/world-around-me/lesson-5/appendices/appendix-6-meadow-count.pdf",
+    metadata: {
+      previewImageRefs: [
+        "/methodologies/world-around-me/lesson-5/appendices/appendix-6-page-1.png",
+        "/methodologies/world-around-me/lesson-5/appendices/appendix-6-page-2.png",
+      ],
+    },
+  },
+  {
+    id: "worksheet:lesson-5-flower-coloring",
+    kind: "worksheet_pdf",
+    title: "Приложение 7: раскрась цветок",
+    description: "Цветок для раскрашивания и фразы про любимый цвет.",
+    fileRef:
+      "/methodologies/world-around-me/lesson-5/appendices/appendix-7-flower-coloring.pdf",
+    metadata: {
+      previewImageRef:
+        "/methodologies/world-around-me/lesson-5/appendices/appendix-7-page-01.png",
+    },
+  },
+  {
+    id: "worksheet:lesson-5-homework-meadow",
+    kind: "worksheet_pdf",
+    title: "Приложение 8: домашний луг",
+    description: "Распечатка для создания луга дома: вырезать, наклеить, раскрасить.",
+    fileRef:
+      "/methodologies/world-around-me/lesson-5/appendices/appendix-8-homework-meadow.pdf",
+    metadata: {
+      previewImageRef:
+        "/methodologies/world-around-me/lesson-5/appendices/appendix-8-page-01.png",
+    },
+  },
+  {
+    id: "worksheet:lesson-5-homework",
+    kind: "worksheet_pdf",
+    title: "Домашнее задание урока 5",
+    description: "PDF-инструкция: создать луг с изученными словами.",
+    fileRef:
+      "/methodologies/world-around-me/lesson-5/appendices/homework-lesson-5.pdf",
+    metadata: {
+      previewImageRef:
+        "/methodologies/world-around-me/lesson-5/appendices/homework-page-01.png",
+    },
+  },
+  {
+    id: "media:lesson-5-heroes",
+    kind: "media_file",
+    title: "Сяо Лон и Сяо Мей",
+    description: "Герои курса для приветствия и прощания.",
+    fileRef: "/methodologies/world-around-me/lesson-5/assets/heroes.png",
+  },
+  {
+    id: "media:lesson-5-flower",
+    kind: "media_file",
+    title: "Картинка 花",
+    description: "Визуальная опора для слова 花.",
+    fileRef: "/methodologies/world-around-me/lesson-5/assets/flower-purple.png",
+  },
+  {
+    id: "media:lesson-5-tree",
+    kind: "media_file",
+    title: "Картинка 树",
+    description: "Визуальная опора для слова 树.",
+    fileRef: "/methodologies/world-around-me/lesson-5/assets/tree.png",
+  },
+  {
+    id: "media:lesson-5-grass",
+    kind: "media_file",
+    title: "Картинка 草",
+    description: "Визуальная опора для слова 草.",
+    fileRef: "/methodologies/world-around-me/lesson-5/assets/grass.png",
+  },
+  {
+    id: "media:lesson-5-grassland",
+    kind: "media_file",
+    title: "Картинка 草地",
+    description: "Фон луга для фраз и счёта.",
+    fileRef: "/methodologies/world-around-me/lesson-5/assets/meadow-bg.jpeg",
+  },
+  {
+    id: "media:lesson-5-count-hands",
+    kind: "media_file",
+    title: "Счёт на пальцах 1-5",
+    description: "Опора для повторения счёта перед задачами с лугом.",
+    fileRef: "/methodologies/world-around-me/lesson-5/assets/count-hands.png",
+  },
+  {
+    id: "pronunciation:lesson-5-flower",
+    kind: "pronunciation_audio",
+    title: "花 · huā",
+    description: "Озвучка из презентации урока 5.",
+    fileRef:
+      "/methodologies/world-around-me/lesson-5/audio/lesson-5-audio-1.wav",
+  },
 ];
 
 const lessonOneBlocks: LessonBlockInstance[] = [
@@ -400,7 +734,10 @@ const lessonOneBlocks: LessonBlockInstance[] = [
       promptBeforeWatch:
         "Смотрим видео farm animals и слушаем, как звучат названия животных.",
       focusPoints: ["狗", "猫", "兔子", "马"],
-      questionsAfterWatch: ["Кого ты услышал?", "Какое слово запомнилось лучше всего?"],
+      questionsAfterWatch: [
+        "Кого ты услышал?",
+        "Какое слово запомнилось лучше всего?",
+      ],
     },
   },
   {
@@ -485,7 +822,10 @@ const lessonOneBlocks: LessonBlockInstance[] = [
         "Дети садятся в круг, педагог считает палочками до 5.",
         "Дети повторяют счёт с собственными палочками.",
       ],
-      successCriteria: ["Группа синхронно считает до 5.", "Дети удерживают речевой ритм."],
+      successCriteria: [
+        "Группа синхронно считает до 5.",
+        "Дети удерживают речевой ритм.",
+      ],
       timeboxMinutes: 3,
     },
   },
@@ -531,7 +871,10 @@ const lessonOneBlocks: LessonBlockInstance[] = [
         "Разместите игрушки собаки, кошки, кролика и лошади по комнате.",
         "Давайте команды: «跑到狗！», «跳到兔子！», «跑到马！», «跳到猫！».",
       ],
-      successCriteria: ["Дети различают 跑 и 跳.", "Дети реагируют быстро и безопасно."],
+      successCriteria: [
+        "Дети различают 跑 и 跳.",
+        "Дети реагируют быстро и безопасно.",
+      ],
       timeboxMinutes: 4,
     },
   },
@@ -555,9 +898,11 @@ const lessonOneBlocks: LessonBlockInstance[] = [
     title: "Рабочая тетрадь: страницы 3–4",
     assetRefs: [{ kind: "worksheet", id: "worksheet:workbook-pages-3-4" }],
     content: {
-      taskInstruction: "Раскрась животных на стр. 3–4 и ответь на вопрос «这是什么？».",
+      taskInstruction:
+        "Раскрась животных на стр. 3–4 и ответь на вопрос «这是什么？».",
       completionMode: "in_class",
-      answerKeyHint: "Проверяйте устно: ребёнок показывает рисунок и говорит «这是…».",
+      answerKeyHint:
+        "Проверяйте устно: ребёнок показывает рисунок и говорит «这是…».",
     },
   },
   {
@@ -569,8 +914,7 @@ const lessonOneBlocks: LessonBlockInstance[] = [
     content: {
       items: [{ term: "农场", pinyin: "nóngchǎng", meaning: "ферма" }],
       practiceMode: "single_card_with_context",
-      miniDrill:
-        "Покажите карточку 农场 и попросите детей повторить в хоре.",
+      miniDrill: "Покажите карточку 农场 и попросите детей повторить в хоре.",
     },
   },
   {
@@ -600,7 +944,9 @@ const lessonOneBlocks: LessonBlockInstance[] = [
     assetRefs: [{ kind: "song", id: "song:farm-animals" }],
     content: {
       activityGoal: "Закрепить слова и завершить урок в знакомом ритуале.",
-      teacherActions: ["Включите песню farm animals и подпевайте вместе с детьми."],
+      teacherActions: [
+        "Включите песню farm animals и подпевайте вместе с детьми.",
+      ],
       repeatCount: 1,
       movementHint: "Поддерживайте знакомые движения на словах животных.",
     },
@@ -612,7 +958,18 @@ const lessonOneBlocks: LessonBlockInstance[] = [
     title: "Прощание с детьми и героями",
     assetRefs: [],
     content: {
-      recapPoints: ["狗", "猫", "兔子", "马", "农场", "我是…", "这是…", "跑", "跳", "在…里"],
+      recapPoints: [
+        "狗",
+        "猫",
+        "兔子",
+        "马",
+        "农场",
+        "我是…",
+        "这是…",
+        "跑",
+        "跳",
+        "在…里",
+      ],
       exitCheck:
         "Перед прощанием попросите каждого ребёнка назвать 1 животное и 1 действие.",
       teacherReflectionPrompt:
@@ -670,7 +1027,11 @@ const lessonTwoBlocks: LessonBlockInstance[] = [
       promptBeforeWatch:
         "Смотрим farm animals и слушаем новые слова про животных фермы.",
       focusPoints: ["鸭子", "鸡子", "羊", "牛"],
-      questionsAfterWatch: ["Кого ты услышал?", "Кто говорит «му-у»?", "Что ты запомнил?"],
+      questionsAfterWatch: [
+        "Кого ты услышал?",
+        "Кто говорит «му-у»?",
+        "Что ты запомнил?",
+      ],
     },
   },
   {
@@ -693,8 +1054,11 @@ const lessonTwoBlocks: LessonBlockInstance[] = [
     title: "Песня hello",
     assetRefs: [{ kind: "song", id: "song:hello" }],
     content: {
-      activityGoal: "Закрепить ритуал начала занятия и настроить группу на совместную речь.",
-      teacherActions: ["Включите песню hello и спойте её вместе с детьми в круге."],
+      activityGoal:
+        "Закрепить ритуал начала занятия и настроить группу на совместную речь.",
+      teacherActions: [
+        "Включите песню hello и спойте её вместе с детьми в круге.",
+      ],
       repeatCount: 1,
       movementHint: "Добавьте хлопки в ладоши и жест «привет» каждому ребёнку.",
     },
@@ -889,7 +1253,9 @@ const lessonTwoBlocks: LessonBlockInstance[] = [
     content: {
       activityGoal:
         "Завершить урок в знакомом ритуале и закрепить новые слова о животных.",
-      teacherActions: ["Включите farm animals, пойте вместе и показывайте карточки животных."],
+      teacherActions: [
+        "Включите farm animals, пойте вместе и показывайте карточки животных.",
+      ],
       repeatCount: 1,
       movementHint: "Добавьте хлопки и прыжки на знакомых словах.",
     },
@@ -971,7 +1337,10 @@ const lessonThreeBlocks: LessonBlockInstance[] = [
     content: {
       promptBeforeWatch: "Смотрим видео colors и слушаем названия цветов.",
       focusPoints: ["红色", "绿色", "蓝色", "黄色"],
-      questionsAfterWatch: ["Какой цвет ты услышал?", "Покажи любимый цвет руками."],
+      questionsAfterWatch: [
+        "Какой цвет ты услышал?",
+        "Покажи любимый цвет руками.",
+      ],
     },
   },
   {
@@ -995,7 +1364,9 @@ const lessonThreeBlocks: LessonBlockInstance[] = [
     assetRefs: [{ kind: "song", id: "song:hello" }],
     content: {
       activityGoal: "Сохранить ритуал начала урока и общий темп группы.",
-      teacherActions: ["Спойте hello song в круге вместе с детьми и героями курса."],
+      teacherActions: [
+        "Спойте hello song в круге вместе с детьми и героями курса.",
+      ],
       repeatCount: 1,
       movementHint: "Добавьте мягкие жесты приветствия и хлопки в ритме песни.",
     },
@@ -1087,7 +1458,8 @@ const lessonThreeBlocks: LessonBlockInstance[] = [
     content: {
       items: [{ term: "车", pinyin: "chē", meaning: "машина" }],
       practiceMode: "single_card_with_object_link",
-      miniDrill: "Покажите карточку 车, затем игрушечную машину и проговорите слово хором.",
+      miniDrill:
+        "Покажите карточку 车, затем игрушечную машину и проговорите слово хором.",
     },
   },
   {
@@ -1180,7 +1552,8 @@ const lessonThreeBlocks: LessonBlockInstance[] = [
     title: "Рабочая тетрадь: страница 6",
     assetRefs: [{ kind: "worksheet", id: "worksheet:workbook-page-6" }],
     content: {
-      taskInstruction: "Раскрась цвета на странице 6 и назови каждый цвет по-китайски.",
+      taskInstruction:
+        "Раскрась цвета на странице 6 и назови каждый цвет по-китайски.",
       completionMode: "in_class",
       answerKeyHint:
         "Проверка устно: ребёнок показывает цвет и произносит «这是红色。» или аналогичную фразу.",
@@ -1194,7 +1567,9 @@ const lessonThreeBlocks: LessonBlockInstance[] = [
     assetRefs: [{ kind: "song", id: "song:my-favorite-color-is-blue" }],
     content: {
       activityGoal: "Закрепить цвета и завершить урок эмоционально.",
-      teacherActions: ["Включите песню my favorite color is blue и подпевайте с детьми."],
+      teacherActions: [
+        "Включите песню my favorite color is blue и подпевайте с детьми.",
+      ],
       repeatCount: 1,
       movementHint: "Поднимайте карточку того цвета, который звучит в песне.",
     },
@@ -1257,10 +1632,1269 @@ const lessonThreeBlocks: LessonBlockInstance[] = [
   },
 ];
 
-export const lessonContentFixtureBlocks: LessonBlockInstance[] = lessonOneBlocks;
-export const lessonContentFixtureLessonTwoBlocks: LessonBlockInstance[] = lessonTwoBlocks;
+const lessonFourBlocks: LessonBlockInstance[] = [
+  {
+    id: "block:l4-step-01-greeting",
+    blockType: "intro_framing",
+    order: 1,
+    title: "Приветствие детей и героев курса",
+    assetRefs: [],
+    content: {
+      title: "Урок 4. Мне нравятся цвета",
+      goal: "Включить детей в урок и подготовить к новым цветам через знакомый ритуал.",
+      teacherScriptShort:
+        "Поприветствуйте детей и героев курса, напомните, что сегодня продолжаем тему цветов.",
+      timeboxMinutes: 2,
+      teacher: {
+        goal: "Создать спокойный старт и вернуть внимание к цветной теме.",
+        actions: [
+          "Поприветствуйте группу и героев курса.",
+          "Покажите, что урок будет про новые цвета и любимые цвета.",
+        ],
+        materials: ["герои курса"],
+      },
+      student: {
+        componentKey: "lesson_focus_v1",
+        instruction: "Поздоровайся с преподавателем и героями курса.",
+      },
+    },
+  },
+  {
+    id: "block:l4-step-02-video-colors",
+    blockType: "video_segment",
+    order: 2,
+    title: "Смотрим видео «colors»",
+    assetRefs: [{ kind: "video", id: "video:colors" }],
+    content: {
+      promptBeforeWatch: "Смотрим видео colors и вспоминаем знакомые цвета.",
+      focusPoints: [
+        "红色",
+        "绿色",
+        "蓝色",
+        "黄色",
+        "橘色",
+        "黑色",
+        "白色",
+        "棕色",
+      ],
+      questionsAfterWatch: [
+        "Какой цвет ты услышал?",
+        "Покажи цвет, который запомнил.",
+      ],
+      teacher: {
+        goal: "Актуализировать старые цвета и подготовить ввод новых.",
+        actions: [
+          "Включите видео colors.",
+          "После просмотра попросите детей назвать любой услышанный цвет.",
+        ],
+        expectedResponses: ["红色", "绿色", "蓝色", "黄色"],
+        materials: ["video:colors"],
+      },
+      student: {
+        componentKey: "media_asset_v1",
+        instruction: "Смотри, слушай и показывай цвета, которые узнаёшь.",
+      },
+    },
+  },
+  {
+    id: "block:l4-step-03-ni-shi",
+    blockType: "teacher_prompt_pattern",
+    order: 3,
+    title: "Фразы 我是… / 你是… / 我是谁？",
+    assetRefs: [],
+    content: {
+      promptPatterns: ["我是…", "你是…", "我是谁？"],
+      expectedStudentResponses: ["你是…", "我是…"],
+      fallbackRu:
+        "Сначала покажите на себя и героя курса, затем мягко помогите ребёнку ответить по модели.",
+      teacher: {
+        goal: "Повторить личные местоимения и фразы представления.",
+        actions: [
+          "Смоделируйте «我是…» от лица преподавателя или героя.",
+          "Указывая на ребёнка, произнесите «你是…» и попросите повторить.",
+          "Спросите «我是谁？» и помогите ответить «你是…».",
+        ],
+        expectedResponses: ["我是…", "你是…"],
+        materials: ["герои курса"],
+      },
+      student: {
+        componentKey: "phrase_cards_v1",
+        instruction: "Повтори фразы и ответь преподавателю по образцу.",
+      },
+    },
+  },
+  {
+    id: "block:l4-step-04-farm-song",
+    blockType: "song_segment",
+    order: 4,
+    title: "Песня farm animals",
+    assetRefs: [
+      { kind: "song", id: "song:farm-animals" },
+      { kind: "song_video", id: "song-video:farm-animals-movement" },
+    ],
+    content: {
+      activityGoal:
+        "Сохранить знакомый ритуал и активизировать лексику животных.",
+      teacherActions: ["Включите farm animals и пойте вместе с детьми."],
+      repeatCount: 1,
+      movementHint: "Добавьте жесты животных и короткие повторы знакомых слов.",
+      teacher: {
+        goal: "Разогреть группу через знакомую песню.",
+        actions: ["Включите песню.", "Поддерживайте движения и подпевание."],
+        materials: ["song:farm-animals", "song-video:farm-animals-movement"],
+      },
+      student: {
+        componentKey: "song_player_v1",
+        instruction: "Слушай, пой и показывай знакомых животных.",
+      },
+    },
+  },
+  {
+    id: "block:l4-step-05-new-colors",
+    blockType: "vocabulary_focus",
+    order: 5,
+    title: "Новые цвета: 橘色 / 黑色 / 白色 / 棕色",
+    assetRefs: [
+      { kind: "flashcards_pdf", id: "flashcards:world-around-me-lesson-4" },
+    ],
+    content: {
+      items: [
+        { term: "橘色", pinyin: "júsè", meaning: "оранжевый" },
+        { term: "黑色", pinyin: "hēisè", meaning: "чёрный" },
+        { term: "白色", pinyin: "báisè", meaning: "белый" },
+        { term: "棕色", pinyin: "zōngsè", meaning: "коричневый" },
+      ],
+      practiceMode: "cards_two_passes_then_phrase_model",
+      miniDrill:
+        "Проход 1: называем цвет. Проход 2: говорим полной фразой «这是黑色。» и аналогично для других цветов.",
+      teacher: {
+        goal: "Ввести четыре новых цвета через карточки и модель 这是…",
+        actions: [
+          "Покажите карточки 橘色、黑色、白色、棕色 по очереди.",
+          "Первый проход: произносите только слово.",
+          "Второй проход: проговаривайте «这是…».",
+        ],
+        expectedResponses: ["橘色", "黑色", "白色", "棕色", "这是黑色。"],
+        materials: ["карточки 橘色、黑色、白色、棕色"],
+      },
+      student: {
+        componentKey: "flashcards_v1",
+        instruction: "Смотри на карточки и повторяй новые цвета.",
+      },
+    },
+  },
+  {
+    id: "block:l4-step-06-missing-color",
+    blockType: "guided_activity",
+    order: 6,
+    title: "Игра «Что пропало?»",
+    assetRefs: [
+      { kind: "activity_template", id: "activity:lesson-4-missing-color" },
+    ],
+    content: {
+      activityType: "missing_color_memory_game",
+      steps: [
+        "Выложите карточки 橘色、黑色、白色、棕色 в ряд.",
+        "Попросите детей закрыть глаза.",
+        "Уберите одну карточку и попросите назвать, какой цвет пропал.",
+        "Верните карточку и повторите раунд с другим цветом.",
+      ],
+      successCriteria: [
+        "Ребёнок удерживает в памяти 4 новых цвета.",
+        "Ребёнок называет пропавший цвет по-китайски.",
+      ],
+      timeboxMinutes: 4,
+      teacher: {
+        goal: "Закрепить новые цвета через память и быструю реакцию.",
+        actions: [
+          "Запустите игру 4.6 на Student Screen.",
+          "Спрячьте один цвет и попросите назвать, что пропало.",
+        ],
+        materials: ["Игра 4.6", "карточки 橘色、黑色、白色、棕色"],
+      },
+      student: {
+        componentKey: "missing_color_game_v1",
+        instruction: "Закрой глаза, затем назови цвет, который исчез.",
+        payload: {
+          colors: [
+            {
+              id: "orange",
+              hanzi: "橘色",
+              pinyin: "júsè",
+              meaning: "оранжевый",
+              swatch: "#f47c24",
+            },
+            {
+              id: "black",
+              hanzi: "黑色",
+              pinyin: "hēisè",
+              meaning: "чёрный",
+              swatch: "#111111",
+            },
+            {
+              id: "white",
+              hanzi: "白色",
+              pinyin: "báisè",
+              meaning: "белый",
+              swatch: "#ffffff",
+              border: "#4f7fd9",
+            },
+            {
+              id: "brown",
+              hanzi: "棕色",
+              pinyin: "zōngsè",
+              meaning: "коричневый",
+              swatch: "#8a6500",
+            },
+          ],
+        },
+      },
+    },
+  },
+  {
+    id: "block:l4-step-07-color-sorting",
+    blockType: "guided_activity",
+    order: 7,
+    title: "Сортируем предметы по цветам",
+    assetRefs: [
+      { kind: "activity_template", id: "activity:lesson-4-color-sorting" },
+    ],
+    content: {
+      activityType: "color_basket_sorting",
+      steps: [
+        "Разложите разноцветные мячи или карточки предметов.",
+        "Дети выбирают предмет и кладут его в коробку нужного цвета.",
+        "Перед тем как положить предмет, ребёнок называет цвет вслух.",
+      ],
+      successCriteria: [
+        "Ребёнок сортирует предмет по цвету.",
+        "Ребёнок называет цвет перед действием.",
+      ],
+      timeboxMinutes: 4,
+      teacher: {
+        goal: "Перенести распознавание цвета в игровое действие.",
+        actions: [
+          "Запустите игру 4.7.",
+          "Попросите выбрать предмет, назвать цвет и поместить в правильную корзину.",
+        ],
+        expectedResponses: ["橘色", "黑色", "白色", "棕色"],
+        materials: ["разноцветные мячи", "коробки для сортировки", "Игра 4.7"],
+      },
+      student: {
+        componentKey: "color_sorting_game_v1",
+        instruction:
+          "Выбери предмет, назови его цвет и положи в правильную корзину.",
+        payload: {
+          baskets: [
+            {
+              id: "orange",
+              hanzi: "橘色",
+              meaning: "оранжевый",
+              swatch: "#f47c24",
+            },
+            {
+              id: "black",
+              hanzi: "黑色",
+              meaning: "чёрный",
+              swatch: "#111111",
+            },
+            {
+              id: "white",
+              hanzi: "白色",
+              meaning: "белый",
+              swatch: "#ffffff",
+              border: "#4f7fd9",
+            },
+            {
+              id: "brown",
+              hanzi: "棕色",
+              meaning: "коричневый",
+              swatch: "#8a6500",
+            },
+          ],
+          items: [
+            { id: "jacket", label: "кофта", colorId: "brown" },
+            { id: "bread", label: "хлеб", colorId: "brown" },
+            { id: "carrot", label: "морковь", colorId: "orange" },
+            { id: "ball", label: "мяч", colorId: "orange" },
+            { id: "cat", label: "кот", colorId: "black" },
+            { id: "bat", label: "летучая мышь", colorId: "black" },
+            { id: "plane", label: "самолёт", colorId: "white" },
+            { id: "bird", label: "птица", colorId: "white" },
+          ],
+        },
+      },
+    },
+  },
+  {
+    id: "block:l4-step-08-wo-xihuan",
+    blockType: "guided_activity",
+    order: 8,
+    title: "Конструкция 我喜欢…",
+    assetRefs: [{ kind: "media_file", id: "media:lesson-4-heart" }],
+    content: {
+      activityType: "favorite_color_heart",
+      steps: [
+        "Покажите сердце из картона с клейкой лентой.",
+        "Выберите цвет и прикрепите его на сердце.",
+        "Смоделируйте фразу «我喜欢蓝色。».",
+        "Дети по очереди выбирают цвет и повторяют фразу.",
+      ],
+      successCriteria: [
+        "Ребёнок понимает модель 我喜欢…",
+        "Ребёнок выбирает цвет и повторяет фразу с поддержкой.",
+      ],
+      timeboxMinutes: 4,
+      teacher: {
+        goal: "Ввести фразу о предпочтении через любимый цвет.",
+        actions: [
+          "Покажите сердце.",
+          "Дайте каждому ребёнку выбрать цвет.",
+          "Повторите «我喜欢…».",
+        ],
+        expectedResponses: ["我喜欢蓝色。", "我喜欢黑色。"],
+        materials: ["сердце из картона", "карточки цветов"],
+      },
+      student: {
+        componentKey: "phrase_cards_v1",
+        instruction: "Выбери любимый цвет и скажи: 我喜欢…",
+      },
+    },
+  },
+  {
+    id: "block:l4-step-09-actions-fei",
+    blockType: "teacher_prompt_pattern",
+    order: 9,
+    title: "Глагол 飞 и повтор действий",
+    assetRefs: [{ kind: "media_file", id: "media:lesson-4-action-cards" }],
+    content: {
+      promptPatterns: [
+        "飞",
+        "跑",
+        "跳",
+        "拍手",
+        "数",
+        "我们数到五吧！",
+        "我们跳吧！",
+      ],
+      expectedStudentResponses: [
+        "Дети выполняют действие и повторяют слово или команду.",
+      ],
+      fallbackRu:
+        "Сначала покажите действие сами, затем кликайте нужную карточку и подключайте детей.",
+      teacher: {
+        goal: "Ввести 飞 и повторить знакомые действия.",
+        actions: [
+          "Покажите карточку 飞.",
+          "Чередуйте 飞、跑、跳、拍手、数.",
+          "Просите детей выполнять действие после команды.",
+        ],
+        materials: ["карточки действий"],
+      },
+      student: {
+        componentKey: "movement_cards_v1",
+        instruction: "Смотри на выбранную карточку и выполняй действие.",
+      },
+    },
+  },
+  {
+    id: "block:l4-step-10-caodi-word",
+    blockType: "vocabulary_focus",
+    order: 10,
+    title: "Слово 草地",
+    assetRefs: [{ kind: "media_file", id: "media:lesson-4-grassland" }],
+    content: {
+      items: [{ term: "草地", pinyin: "cǎodì", meaning: "луг / поле" }],
+      practiceMode: "single_card_with_context",
+      miniDrill:
+        "Покажите карточку 草地 и попросите детей повторить слово хором.",
+      teacher: {
+        goal: "Ввести слово 草地 как место для следующей сцены.",
+        actions: [
+          "Покажите карточку луга.",
+          "Произнесите 草地 несколько раз в разном темпе.",
+        ],
+        expectedResponses: ["草地"],
+        materials: ["карточка 草地"],
+      },
+      student: {
+        componentKey: "flashcards_v1",
+        instruction: "Повтори слово 草地 и покажи луг.",
+      },
+    },
+  },
+  {
+    id: "block:l4-step-11-grassland-animals",
+    blockType: "guided_activity",
+    order: 11,
+    title: "Луг и животные: 草地上有什么动物？",
+    assetRefs: [
+      { kind: "worksheet", id: "worksheet:appendix-3-color-animals" },
+      { kind: "media_file", id: "media:lesson-4-grassland" },
+    ],
+    content: {
+      activityType: "grassland_colored_animals_scene",
+      steps: [
+        "Выложите луг из синей, зелёной и жёлтой ткани.",
+        "Добавьте цветных животных из Приложения 3.",
+        "Задайте вопрос «草地上有什么动物？».",
+        "Смоделируйте ответ «草地上有一头蓝色的牛。».",
+      ],
+      successCriteria: [
+        "Ребёнок понимает вопрос о животных на лугу.",
+        "Ребёнок повторяет фразу с 有 и цветом.",
+      ],
+      timeboxMinutes: 5,
+      teacher: {
+        goal: "Соединить 草地, 有, цвета и животных в одну сцену.",
+        actions: [
+          "Соберите луг из ткани.",
+          "Дайте ребёнку выбрать животное.",
+          "Комментируйте фразуми с 有.",
+        ],
+        expectedResponses: ["草地上有一头蓝色的牛。", "草地上有黄色的猫。"],
+        materials: ["синяя, зелёная и жёлтая ткани", "Приложение 3"],
+      },
+      student: {
+        componentKey: "phrase_cards_v1",
+        instruction: "Посмотри на луг и повтори, кто находится на нём.",
+      },
+    },
+  },
+  {
+    id: "block:l4-step-12-color-domino",
+    blockType: "guided_activity",
+    order: 12,
+    title: "Приложение 4: домино цветов",
+    assetRefs: [{ kind: "worksheet", id: "worksheet:appendix-4-color-domino" }],
+    content: {
+      activityType: "color_domino_matching",
+      steps: [
+        "Откройте Приложение 4.",
+        "Справа расположены иероглифы цветов, слева цветовые карточки.",
+        "Дети соединяют иероглиф с правильным цветом.",
+      ],
+      successCriteria: [
+        "Ребёнок узнаёт иероглиф цвета.",
+        "Ребёнок соединяет цвет и слово без лишней подсказки.",
+      ],
+      timeboxMinutes: 4,
+      teacher: {
+        goal: "Закрепить визуальное узнавание иероглифов цветов.",
+        actions: [
+          "Покажите пары.",
+          "Дайте детям по очереди выбрать соответствие.",
+        ],
+        materials: ["Приложение 4"],
+      },
+      student: {
+        componentKey: "matching_practice_v1",
+        instruction: "Найди пару: цвет и иероглиф.",
+      },
+    },
+  },
+  {
+    id: "block:l4-step-13-abacus",
+    blockType: "guided_activity",
+    order: 13,
+    title: "Разноцветные счёты: считаем до 5",
+    assetRefs: [{ kind: "media_file", id: "media:lesson-4-abacus" }],
+    content: {
+      activityType: "colored_abacus_counting",
+      steps: [
+        "Покажите разноцветные счёты.",
+        "Дети называют цвет ряда и считают бусины до 5.",
+        "Проговаривайте коротко: 橘色，五个; 黑色，四个.",
+      ],
+      successCriteria: [
+        "Ребёнок называет цвет.",
+        "Ребёнок считает до 5 с опорой на предмет.",
+      ],
+      timeboxMinutes: 3,
+      teacher: {
+        goal: "Повторить счёт до 5 через новые цвета.",
+        actions: [
+          "Показывайте ряд счётов.",
+          "Попросите назвать цвет и посчитать бусины.",
+        ],
+        expectedResponses: ["一、二、三、四、五", "橘色"],
+        materials: ["разноцветные счёты"],
+      },
+      student: {
+        componentKey: "count_board_v1",
+        instruction: "Выбери цветной ряд и посчитай бусины.",
+      },
+    },
+  },
+  {
+    id: "block:l4-step-14-workbook-pages-7-8",
+    blockType: "worksheet_task",
+    order: 14,
+    title: "Рабочая тетрадь: страницы 7–8",
+    assetRefs: [{ kind: "worksheet", id: "worksheet:workbook-pages-7-8" }],
+    content: {
+      taskInstruction:
+        "Слушай преподавателя, раскрашивай животных нужным цветом и называй цвет по-китайски.",
+      completionMode: "in_class",
+      answerKeyHint:
+        "Проверяйте устно: ребёнок показывает животное и произносит цвет или фразу «这是黑色。».",
+      teacher: {
+        goal: "Закрепить цвета в спокойной тетрадной практике.",
+        actions: [
+          "Откройте страницы 7–8.",
+          "Называйте цвет, дети раскрашивают соответствующее животное.",
+        ],
+        materials: ["рабочая тетрадь", "карандаши"],
+      },
+      student: {
+        componentKey: "worksheet_v1",
+        instruction: "Раскрась животных нужным цветом и назови цвет.",
+      },
+    },
+  },
+  {
+    id: "block:l4-step-15-favorite-color-song",
+    blockType: "song_segment",
+    order: 15,
+    title: "Песня my favorite color is blue",
+    assetRefs: [
+      { kind: "song", id: "song:my-favorite-color-is-blue" },
+      { kind: "song_video", id: "song-video:my-favorite-color-is-blue" },
+    ],
+    content: {
+      activityGoal:
+        "Закрепить тему любимого цвета и эмоционально закрыть активную часть урока.",
+      teacherActions: [
+        "Включите my favorite color is blue и подпевайте с детьми.",
+      ],
+      repeatCount: 1,
+      movementHint: "Поднимайте карточку цвета, который звучит в песне.",
+      teacher: {
+        goal: "Повторить фразу про любимый цвет через песню.",
+        actions: [
+          "Включите песню.",
+          "Показывайте карточки цветов и приглашайте детей подпевать.",
+        ],
+        materials: [
+          "song:my-favorite-color-is-blue",
+          "song-video:my-favorite-color-is-blue",
+        ],
+      },
+      student: {
+        componentKey: "song_player_v1",
+        instruction: "Слушай песню и показывай любимый цвет.",
+      },
+    },
+  },
+  {
+    id: "block:l4-step-16-goodbye",
+    blockType: "wrap_up_closure",
+    order: 16,
+    title: "Прощание с детьми и героями курса",
+    assetRefs: [],
+    content: {
+      recapPoints: [
+        "橘色",
+        "黑色",
+        "白色",
+        "棕色",
+        "草地",
+        "我喜欢…",
+        "有",
+        "飞",
+      ],
+      exitCheck:
+        "Перед прощанием каждый ребёнок называет один новый цвет и одну фразу «我喜欢…».",
+      teacherReflectionPrompt:
+        "Попрощайтесь вместе с героями курса и отметьте детей за самостоятельный выбор цвета.",
+      teacher: {
+        goal: "Собрать короткий итог урока и завершить занятие.",
+        actions: [
+          "Попросите каждого ребёнка назвать цвет.",
+          "Попрощайтесь с героями курса.",
+        ],
+        expectedResponses: ["橘色", "我喜欢黑色。", "再见！"],
+        materials: ["герои курса"],
+      },
+      student: {
+        componentKey: "lesson_focus_v1",
+        instruction: "Назови новый цвет, скажи любимый цвет и попрощайся.",
+      },
+    },
+  },
+  {
+    id: "block:l4-materials",
+    blockType: "materials_prep",
+    order: 17,
+    title: "Материалы урока 4",
+    assetRefs: [
+      { kind: "video", id: "video:colors" },
+      { kind: "flashcards_pdf", id: "flashcards:world-around-me-lesson-4" },
+      { kind: "activity_template", id: "activity:lesson-4-missing-color" },
+      { kind: "activity_template", id: "activity:lesson-4-color-sorting" },
+      { kind: "media_file", id: "media:lesson-4-heart" },
+      { kind: "media_file", id: "media:lesson-4-action-cards" },
+      { kind: "media_file", id: "media:lesson-4-grassland" },
+      { kind: "worksheet", id: "worksheet:appendix-3-color-animals" },
+      { kind: "worksheet", id: "worksheet:appendix-4-color-domino" },
+      { kind: "media_file", id: "media:lesson-4-abacus" },
+      { kind: "worksheet", id: "worksheet:workbook-pages-7-8" },
+      { kind: "song", id: "song:my-favorite-color-is-blue" },
+      { kind: "song_video", id: "song-video:my-favorite-color-is-blue" },
+    ],
+    content: {
+      materialsChecklist: [
+        "герои курса",
+        "видео colors",
+        "карточки 橘色、黑色、白色、棕色",
+        "разноцветные мячи",
+        "8 коробок для сортировки",
+        "сердце из картона с клейкой лентой",
+        "карточки действий 飞、跑、跳、拍手、数",
+        "карточка 草地",
+        "синяя, зелёная и жёлтая ткани",
+        "Приложение 3",
+        "Приложение 4",
+        "разноцветные счёты",
+        "рабочая тетрадь, стр. 7–8",
+      ],
+      roomSetupNotes:
+        "Подготовьте активную зону для сортировки и отдельный стол для карточек, домино и тетради.",
+    },
+  },
+];
+
+const lessonFiveBlocks: LessonBlockInstance[] = [
+  {
+    id: "block:l5-step-01-greeting",
+    blockType: "intro_framing",
+    order: 1,
+    title: "Приветствие детей и героев курса",
+    assetRefs: [
+      { kind: "presentation", id: "presentation:world-around-me-lesson-5" },
+      { kind: "media_file", id: "media:lesson-5-heroes" },
+    ],
+    content: {
+      title: "Урок 5. Растения на лугу",
+      goal: "Включить детей в урок через знакомых героев и тему природы.",
+      teacherScriptShort:
+        "Поприветствуйте группу и героев, покажите, что сегодня будем собирать луг из цветов, деревьев и травы.",
+      timeboxMinutes: 2,
+      teacher: {
+        goal: "Создать мягкий старт и обозначить тему 花、树、草、草地.",
+        actions: [
+          "Покажите слайд с Сяо Лоном и Сяо Мей.",
+          "Поприветствуйте детей и предложите отправиться на луг.",
+        ],
+        expectedResponses: ["你好！", "你好，小龙！", "你好，小妹！"],
+        materials: ["герои курса", "Презентация урока 5"],
+      },
+      student: {
+        componentKey: "lesson_focus_v1",
+        instruction: "Поздоровайся с преподавателем и героями курса.",
+      },
+    },
+  },
+  {
+    id: "block:l5-step-02-video-nature",
+    blockType: "video_segment",
+    order: 2,
+    title: "Смотрим видео и входим в тему природы",
+    assetRefs: [{ kind: "video", id: "video:colors" }],
+    content: {
+      promptBeforeWatch:
+        "Смотрим короткий видеовход и вспоминаем цвета, которые понадобятся для цветов на лугу.",
+      focusPoints: ["花", "树", "草", "草地", "颜色"],
+      questionsAfterWatch: [
+        "Какой цвет ты увидел?",
+        "Какого цвета может быть 花?",
+      ],
+      teacher: {
+        goal: "Разогреть слух и внимание перед вводом слов про растения.",
+        actions: [
+          "Включите видеовход или откройте слайд со ссылкой на видео.",
+          "После просмотра задайте 1-2 вопроса про цвета и природу.",
+        ],
+        expectedResponses: ["红色", "绿色", "蓝色", "黄色"],
+        materials: ["video:colors", "Презентация урока 5"],
+      },
+      student: {
+        componentKey: "media_asset_v1",
+        instruction: "Смотри, слушай и вспоминай цвета.",
+      },
+    },
+  },
+  {
+    id: "block:l5-step-03-feelings",
+    blockType: "teacher_prompt_pattern",
+    order: 3,
+    title: "Проверяем настроение: 我很好 / 我不好",
+    assetRefs: [],
+    content: {
+      promptPatterns: ["我很好", "我不好"],
+      expectedStudentResponses: ["我很好", "我不好"],
+      fallbackRu:
+        "Покажите жестом и мимикой два состояния, затем помогите ребёнку выбрать короткий ответ.",
+      teacher: {
+        goal: "Добавить короткую эмоциональную реплику в ритуал начала.",
+        actions: [
+          "Покажите весёлый и грустный смайлы.",
+          "Смоделируйте ответы 我很好 и 我不好.",
+          "Попросите каждого ребёнка выбрать и повторить фразу.",
+        ],
+        expectedResponses: ["我很好", "我不好"],
+        materials: ["слайд настроения"],
+      },
+      student: {
+        componentKey: "phrase_cards_v1",
+        instruction: "Выбери, как ты себя чувствуешь, и повтори фразу.",
+      },
+    },
+  },
+  {
+    id: "block:l5-step-04-song",
+    blockType: "song_segment",
+    order: 4,
+    title: "Песня-ритуал перед новыми словами",
+    assetRefs: [{ kind: "song", id: "song:hello" }],
+    content: {
+      activityGoal:
+        "Переключить группу в музыкальный режим и подготовить к повторению за преподавателем.",
+      teacherActions: [
+        "Включите песню по ссылке из презентации или проведите знакомый hello-ритуал.",
+      ],
+      repeatCount: 1,
+      movementHint: "Добавьте простые движения руками и приветствие героев.",
+      teacher: {
+        goal: "Снять напряжение и собрать внимание перед карточками.",
+        actions: [
+          "Запустите песню или спойте короткий знакомый фрагмент.",
+          "После песни верните внимание к слайдам 花、树、草、草地.",
+        ],
+        materials: ["song:hello", "Презентация урока 5"],
+      },
+      student: {
+        componentKey: "song_player_v1",
+        instruction: "Слушай, пой и повторяй движения.",
+      },
+    },
+  },
+  {
+    id: "block:l5-step-05-flower",
+    blockType: "vocabulary_focus",
+    order: 5,
+    title: "Слово 花",
+    assetRefs: [
+      { kind: "flashcards_pdf", id: "flashcards:world-around-me-lesson-5" },
+      { kind: "media_file", id: "media:lesson-5-flower" },
+      { kind: "pronunciation_audio", id: "pronunciation:lesson-5-flower" },
+    ],
+    content: {
+      items: [{ term: "花", pinyin: "huā", meaning: "цветок" }],
+      practiceMode: "show_picture_then_word_then_repeat",
+      miniDrill: "Покажите картинку цветка, произнесите 花 и попросите повторить 3 раза.",
+      teacher: {
+        goal: "Ввести первое слово урока через крупную карточку и озвучку.",
+        actions: [
+          "Покажите картинку цветка.",
+          "Произнесите 花 медленно, затем в обычном темпе.",
+          "Попросите детей показать цветок рукой или на слайде.",
+        ],
+        expectedResponses: ["花"],
+        materials: ["карточка 花", "Приложение 1", "озвучка 花"],
+      },
+      student: {
+        componentKey: "flashcards_v1",
+        instruction: "Смотри на цветок и повторяй: 花.",
+      },
+    },
+  },
+  {
+    id: "block:l5-step-06-tree",
+    blockType: "vocabulary_focus",
+    order: 6,
+    title: "Слово 树",
+    assetRefs: [
+      { kind: "flashcards_pdf", id: "flashcards:world-around-me-lesson-5" },
+      { kind: "media_file", id: "media:lesson-5-tree" },
+    ],
+    content: {
+      items: [{ term: "树", pinyin: "shù", meaning: "дерево" }],
+      practiceMode: "show_picture_then_word_then_repeat",
+      miniDrill: "Покажите дерево и сравните: 花 маленький, 树 высокий.",
+      teacher: {
+        goal: "Ввести слово 树 и связать его с образом дерева.",
+        actions: [
+          "Покажите дерево на слайде.",
+          "Произнесите 树 и попросите детей изобразить высокое дерево.",
+        ],
+        expectedResponses: ["树"],
+        materials: ["карточка 树", "Приложение 1"],
+      },
+      student: {
+        componentKey: "flashcards_v1",
+        instruction: "Смотри на дерево и повторяй: 树.",
+      },
+    },
+  },
+  {
+    id: "block:l5-step-07-grass",
+    blockType: "vocabulary_focus",
+    order: 7,
+    title: "Слово 草",
+    assetRefs: [
+      { kind: "flashcards_pdf", id: "flashcards:world-around-me-lesson-5" },
+      { kind: "media_file", id: "media:lesson-5-grass" },
+    ],
+    content: {
+      items: [{ term: "草", pinyin: "cǎo", meaning: "трава" }],
+      practiceMode: "show_picture_then_word_then_repeat",
+      miniDrill: "Покажите траву и попросите детей присесть ниже, чем дерево.",
+      teacher: {
+        goal: "Ввести слово 草 через визуальный и телесный контраст.",
+        actions: [
+          "Покажите траву.",
+          "Произнесите 草 и попросите детей повторить тихим коротким эхом.",
+        ],
+        expectedResponses: ["草"],
+        materials: ["карточка 草", "Приложение 1"],
+      },
+      student: {
+        componentKey: "flashcards_v1",
+        instruction: "Смотри на траву и повторяй: 草.",
+      },
+    },
+  },
+  {
+    id: "block:l5-step-08-grassland",
+    blockType: "vocabulary_focus",
+    order: 8,
+    title: "Слово 草地",
+    assetRefs: [
+      { kind: "flashcards_pdf", id: "flashcards:world-around-me-lesson-5" },
+      { kind: "media_file", id: "media:lesson-5-grassland" },
+    ],
+    content: {
+      items: [{ term: "草地", pinyin: "cǎodì", meaning: "луг / поле" }],
+      practiceMode: "show_scene_then_word_then_phrase",
+      miniDrill: "Соберите значение из 草 + 地: место с травой.",
+      teacher: {
+        goal: "Закрепить знакомое из урока 4 слово 草地 в новой теме растений.",
+        actions: [
+          "Покажите фон луга.",
+          "Попросите детей сказать 草地 и провести рукой по лугу.",
+        ],
+        expectedResponses: ["草地"],
+        materials: ["карточка 草地", "Приложение 1"],
+      },
+      student: {
+        componentKey: "flashcards_v1",
+        instruction: "Смотри на луг и повторяй: 草地.",
+      },
+    },
+  },
+  {
+    id: "block:l5-step-09-wheel",
+    blockType: "guided_activity",
+    order: 9,
+    title: "Игра «Колесо слов»",
+    assetRefs: [{ kind: "activity_template", id: "activity:lesson-5-wheel" }],
+    content: {
+      activityType: "plant_word_wheel",
+      steps: [
+        "Откройте колесо слов.",
+        "Нажмите Go, затем Stop.",
+        "Ребёнок называет слово, на котором остановилось колесо.",
+        "После ответа попросите показать предмет на карточке.",
+      ],
+      successCriteria: [
+        "Ребёнок узнаёт 花、树、草、草地.",
+        "Ребёнок произносит слово без длинной русской подсказки.",
+      ],
+      timeboxMinutes: 4,
+      teacher: {
+        goal: "Перевести новые слова из показа карточек в быструю реакцию.",
+        actions: [
+          "Запустите wheel game.",
+          "После каждого остановленного сектора просите назвать слово.",
+        ],
+        expectedResponses: ["花", "树", "草", "草地"],
+        materials: ["Приложение 2", "Приложение 3"],
+      },
+      student: {
+        componentKey: "plant_wheel_game_v1",
+        instruction: "Останови колесо и назови слово.",
+        payload: {
+          items: [
+            {
+              id: "flower",
+              term: "花",
+              pinyin: "huā",
+              meaning: "цветок",
+              illustrationSrc:
+                "/methodologies/world-around-me/lesson-5/assets/flower-purple.png",
+            },
+            {
+              id: "tree",
+              term: "树",
+              pinyin: "shù",
+              meaning: "дерево",
+              illustrationSrc:
+                "/methodologies/world-around-me/lesson-5/assets/tree.png",
+            },
+            {
+              id: "grass",
+              term: "草",
+              pinyin: "cǎo",
+              meaning: "трава",
+              illustrationSrc:
+                "/methodologies/world-around-me/lesson-5/assets/grass.png",
+            },
+            {
+              id: "grassland",
+              term: "草地",
+              pinyin: "cǎodì",
+              meaning: "луг / поле",
+              illustrationSrc:
+                "/methodologies/world-around-me/lesson-5/assets/meadow-bg.jpeg",
+            },
+          ],
+        },
+      },
+    },
+  },
+  {
+    id: "block:l5-step-10-plant-cards",
+    blockType: "guided_activity",
+    order: 10,
+    title: "Приложение 3: карточки растений",
+    assetRefs: [
+      { kind: "activity_template", id: "activity:lesson-5-plant-cards" },
+    ],
+    content: {
+      activityType: "plant_card_matching",
+      steps: [
+        "Покажите карточки из Приложения 3.",
+        "Перемешайте порядок.",
+        "Ребёнок выбирает картинку и называет слово.",
+        "Затем ребёнок сопоставляет картинку и иероглиф.",
+      ],
+      successCriteria: [
+        "Ребёнок сопоставляет картинку и слово.",
+        "Ребёнок различает 草 и 草地.",
+      ],
+      timeboxMinutes: 4,
+      teacher: {
+        goal: "Закрепить визуальное различение четырёх слов.",
+        actions: [
+          "Откройте карточки растений.",
+          "Меняйте порядок карточек и просите назвать слово.",
+        ],
+        expectedResponses: ["花", "树", "草", "草地"],
+        materials: ["Приложение 3"],
+      },
+      student: {
+        componentKey: "matching_practice_v1",
+        instruction: "Найди пару: картинка и слово.",
+      },
+    },
+  },
+  {
+    id: "block:l5-step-11-favorite-flower",
+    blockType: "guided_activity",
+    order: 11,
+    title: "Конструкция 我喜欢…的花",
+    assetRefs: [
+      { kind: "worksheet_pdf", id: "worksheet:lesson-5-favorite-flowers" },
+    ],
+    content: {
+      activityType: "favorite_color_flower_phrase",
+      steps: [
+        "Покажите цветные цветы и сердце.",
+        "Выберите цветок и произнесите 我喜欢蓝色的花.",
+        "Дети по очереди выбирают цвет и повторяют фразу.",
+      ],
+      successCriteria: [
+        "Ребёнок понимает модель 我喜欢…",
+        "Ребёнок добавляет цвет и слово 花 в одну фразу.",
+      ],
+      timeboxMinutes: 4,
+      teacher: {
+        goal: "Расширить фразу о любимом цвете: любимый цветок.",
+        actions: [
+          "Покажите Приложение 4.",
+          "Смоделируйте фразу с разными цветами.",
+          "Помогите детям выбрать цвет и повторить фразу.",
+        ],
+        expectedResponses: [
+          "我喜欢蓝色的花。",
+          "我喜欢红色的花。",
+          "我喜欢黄色的花。",
+          "我喜欢绿色的花。",
+        ],
+        materials: ["Приложение 4", "сердце", "цветные цветы"],
+      },
+      student: {
+        componentKey: "phrase_cards_v1",
+        instruction: "Выбери цветок и скажи, какой цветок тебе нравится.",
+      },
+    },
+  },
+  {
+    id: "block:l5-step-12-actions",
+    blockType: "guided_activity",
+    order: 12,
+    title: "Действия: 飞 / 跑 / 跳 / 拍手 / 数",
+    assetRefs: [{ kind: "worksheet_pdf", id: "worksheet:lesson-5-actions" }],
+    content: {
+      activityType: "movement_cards_review",
+      steps: [
+        "Покажите карточку действия.",
+        "Дети называют или повторяют слово.",
+        "Вся группа выполняет действие.",
+        "Завершите счётом 数 до пяти.",
+      ],
+      successCriteria: [
+        "Ребёнок реагирует движением на действие.",
+        "Ребёнок повторяет минимум 3 действия.",
+      ],
+      timeboxMinutes: 4,
+      teacher: {
+        goal: "Повторить действия из уроков 1-4 и подготовить к счёту на лугу.",
+        actions: [
+          "Откройте Приложение 5.",
+          "Чередуйте карточки действий в разном темпе.",
+        ],
+        expectedResponses: ["飞", "跑", "跳", "拍手", "数"],
+        materials: ["Приложение 5", "свободное пространство"],
+      },
+      student: {
+        componentKey: "movement_cards_v1",
+        instruction: "Смотри на карточку, повторяй слово и выполняй действие.",
+      },
+    },
+  },
+  {
+    id: "block:l5-step-13-meadow-scene",
+    blockType: "guided_activity",
+    order: 13,
+    title: "Сцена 草地: что есть на лугу?",
+    assetRefs: [
+      { kind: "media_file", id: "media:lesson-5-grassland" },
+      { kind: "media_file", id: "media:lesson-5-flower" },
+      { kind: "media_file", id: "media:lesson-5-tree" },
+      { kind: "media_file", id: "media:lesson-5-grass" },
+    ],
+    content: {
+      activityType: "meadow_scene_phrase",
+      steps: [
+        "Покажите пустой луг.",
+        "Добавьте цветы, деревья и траву.",
+        "Задайте вопрос: 草地上有什么？",
+        "Отвечайте коротко: 草地上有花 / 树 / 草.",
+      ],
+      successCriteria: [
+        "Ребёнок понимает вопрос 草地上有什么？",
+        "Ребёнок отвечает одним словом или короткой фразой.",
+      ],
+      timeboxMinutes: 4,
+      teacher: {
+        goal: "Связать новые слова в сцену луга.",
+        actions: [
+          "Постепенно добавляйте объекты на луг.",
+          "Задавайте вопрос и принимайте ответы от одного слова до фразы.",
+        ],
+        expectedResponses: ["花", "树", "草", "草地上有花。"],
+        materials: ["фон луга", "картинки 花、树、草"],
+      },
+      student: {
+        componentKey: "phrase_cards_v1",
+        instruction: "Посмотри на луг и скажи, что на нём есть.",
+      },
+    },
+  },
+  {
+    id: "block:l5-step-14-count-meadow",
+    blockType: "guided_activity",
+    order: 14,
+    title: "Считаем цветы, деревья и траву",
+    assetRefs: [
+      { kind: "worksheet_pdf", id: "worksheet:lesson-5-meadow-count" },
+      { kind: "media_file", id: "media:lesson-5-count-hands" },
+    ],
+    content: {
+      activityType: "meadow_counting",
+      steps: [
+        "Откройте Приложение 6.",
+        "Сначала посчитайте цветы.",
+        "Затем деревья и кусты травы.",
+        "После каждого счёта повторите объект: 花 / 树 / 草.",
+      ],
+      successCriteria: [
+        "Ребёнок считает до 10 с поддержкой.",
+        "Ребёнок соединяет число и объект.",
+      ],
+      timeboxMinutes: 4,
+      teacher: {
+        goal: "Закрепить слова урока через счёт.",
+        actions: [
+          "Показывайте группы объектов на лугу.",
+          "Ведите счёт хором и индивидуально.",
+        ],
+        expectedResponses: ["一、二、三、四、五", "十朵花", "十棵树"],
+        materials: ["Приложение 6", "счёт на пальцах"],
+      },
+      student: {
+        componentKey: "count_board_v1",
+        instruction: "Выбери группу на лугу и посчитай вместе с преподавателем.",
+      },
+    },
+  },
+  {
+    id: "block:l5-step-15-create-meadow",
+    blockType: "worksheet_task",
+    order: 15,
+    title: "Создаём и раскрашиваем луг",
+    assetRefs: [
+      { kind: "worksheet_pdf", id: "worksheet:lesson-5-flower-coloring" },
+      { kind: "worksheet_pdf", id: "worksheet:lesson-5-homework-meadow" },
+    ],
+    content: {
+      taskInstruction:
+        "Раскрась цветок, выбери элементы луга и собери свою сцену: 花、树、草、草地.",
+      completionMode: "in_class",
+      answerKeyHint:
+        "Ребёнок называет минимум два элемента своего луга по-китайски.",
+      homeExtension:
+        "Дома можно вырезать, наклеить изученные слова и раскрасить собственный луг.",
+      teacher: {
+        goal: "Перенести лексику в творческое задание.",
+        actions: [
+          "Откройте Приложения 7 и 8.",
+          "Покажите, как выбрать цвет и элементы луга.",
+          "Просите детей называть добавленный элемент по-китайски.",
+        ],
+        expectedResponses: ["花", "树", "草", "草地"],
+        materials: ["Приложение 7", "Приложение 8", "карандаши", "клей", "ножницы"],
+      },
+      student: {
+        componentKey: "meadow_builder_v1",
+        instruction: "Собери свой луг и называй элементы по-китайски.",
+        payload: {
+          elements: [
+            {
+              id: "flower",
+              term: "花",
+              meaning: "цветок",
+              targetCount: 3,
+              illustrationSrc:
+                "/methodologies/world-around-me/lesson-5/assets/flower-purple.png",
+            },
+            {
+              id: "tree",
+              term: "树",
+              meaning: "дерево",
+              targetCount: 2,
+              illustrationSrc:
+                "/methodologies/world-around-me/lesson-5/assets/tree.png",
+            },
+            {
+              id: "grass",
+              term: "草",
+              meaning: "трава",
+              targetCount: 4,
+              illustrationSrc:
+                "/methodologies/world-around-me/lesson-5/assets/grass.png",
+            },
+          ],
+        },
+      },
+    },
+  },
+  {
+    id: "block:l5-step-16-goodbye-homework",
+    blockType: "wrap_up_closure",
+    order: 16,
+    title: "Песня, прощание и домашняя миссия",
+    assetRefs: [
+      { kind: "song", id: "song:my-favorite-color-is-blue" },
+      { kind: "song_video", id: "song-video:my-favorite-color-is-blue" },
+      { kind: "worksheet_pdf", id: "worksheet:lesson-5-homework" },
+      { kind: "media_file", id: "media:lesson-5-heroes" },
+    ],
+    content: {
+      recapPoints: [
+        "Назови слова урока: 花、树、草、草地.",
+        "Скажи фразу: 我喜欢蓝色的花.",
+        "Посчитай предметы на лугу.",
+        "Попрощайся с героями курса.",
+      ],
+      exitCheck: "Каждый ребёнок называет один элемент луга перед прощанием.",
+      previewNextLesson: "Дома ребёнок создаёт свой луг и повторяет слова урока.",
+      teacherReflectionPrompt:
+        "Отметьте, различают ли дети 草 и 草地 без русской подсказки.",
+      teacher: {
+        goal: "Закрыть урок песней, повтором и понятной домашней миссией.",
+        actions: [
+          "Включите финальную песню.",
+          "Попросите каждого ребёнка назвать одно слово урока.",
+          "Покажите домашнее задание: создать луг.",
+        ],
+        expectedResponses: ["花", "树", "草", "草地", "再见！"],
+        materials: ["песня my favorite color is blue", "домашнее задание урока 5"],
+      },
+      student: {
+        componentKey: "song_player_v1",
+        instruction: "Спой, повтори слова урока и попрощайся с героями.",
+      },
+    },
+  },
+  {
+    id: "block:l5-materials-prep",
+    blockType: "materials_prep",
+    order: 17,
+    title: "Подготовка материалов урока 5",
+    assetRefs: [
+      { kind: "presentation", id: "presentation:world-around-me-lesson-5" },
+      { kind: "flashcards_pdf", id: "flashcards:world-around-me-lesson-5" },
+      { kind: "activity_template", id: "activity:lesson-5-wheel" },
+      { kind: "activity_template", id: "activity:lesson-5-plant-cards" },
+      { kind: "worksheet_pdf", id: "worksheet:lesson-5-favorite-flowers" },
+      { kind: "worksheet_pdf", id: "worksheet:lesson-5-actions" },
+      { kind: "worksheet_pdf", id: "worksheet:lesson-5-meadow-count" },
+      { kind: "worksheet_pdf", id: "worksheet:lesson-5-flower-coloring" },
+      { kind: "worksheet_pdf", id: "worksheet:lesson-5-homework-meadow" },
+      { kind: "worksheet_pdf", id: "worksheet:lesson-5-homework" },
+    ],
+    content: {
+      materialsChecklist: [
+        "герои курса",
+        "Презентация урока 5",
+        "Приложение 1: карточки 花、树、草、草地",
+        "Приложение 2: колесо слов",
+        "Приложение 3: карточки растений",
+        "Приложение 4: любимые цветы",
+        "Приложение 5: действия 飞、跑、跳、拍手、数",
+        "Приложение 6: счёт на лугу",
+        "Приложения 7-8: творческий луг",
+        "карандаши, клей, ножницы",
+      ],
+      roomSetupNotes:
+        "Подготовьте экран для презентации, стол для раскрашивания и свободную зону для действий.",
+    },
+  },
+];
+
+export const lessonContentFixtureBlocks: LessonBlockInstance[] =
+  lessonOneBlocks;
+export const lessonContentFixtureLessonTwoBlocks: LessonBlockInstance[] =
+  lessonTwoBlocks;
 export const lessonContentFixtureLessonThreeBlocks: LessonBlockInstance[] =
   lessonThreeBlocks;
+export const lessonContentFixtureLessonFourBlocks: LessonBlockInstance[] =
+  lessonFourBlocks;
+export const lessonContentFixtureLessonFiveBlocks: LessonBlockInstance[] =
+  lessonFiveBlocks;
 
 const lessonOneMethodologyLesson: MethodologyLesson = {
   id: "methodology-lesson:world-around-me-01",
@@ -1302,7 +2936,17 @@ const lessonTwoMethodologyLesson: MethodologyLesson = {
       unitIndex: 1,
       lessonIndex: 2,
     },
-    vocabularySummary: ["鸭子", "鸡子", "羊", "牛", "房子", "拍手", "数", "我", "你"],
+    vocabularySummary: [
+      "鸭子",
+      "鸡子",
+      "羊",
+      "牛",
+      "房子",
+      "拍手",
+      "数",
+      "我",
+      "你",
+    ],
     phraseSummary: ["你是谁？", "我是…", "这是…", "在…里", "我住在房子里。"],
     estimatedDurationMinutes: 45,
     mediaSummary: {
@@ -1329,7 +2973,16 @@ const lessonThreeMethodologyLesson: MethodologyLesson = {
       unitIndex: 1,
       lessonIndex: 3,
     },
-    vocabularySummary: ["红色", "绿色", "蓝色", "黄色", "车", "只", "…的…", "次"],
+    vocabularySummary: [
+      "红色",
+      "绿色",
+      "蓝色",
+      "黄色",
+      "车",
+      "只",
+      "…的…",
+      "次",
+    ],
     phraseSummary: [
       "你是…",
       "我是谁？",
@@ -1351,10 +3004,102 @@ const lessonThreeMethodologyLesson: MethodologyLesson = {
   blocks: lessonThreeBlocks,
 };
 
+const lessonFourMethodologyLesson: MethodologyLesson = {
+  id: "methodology-lesson:world-around-me-04",
+  methodologyId: lessonContentFixtureMethodology.id,
+  methodologySlug: lessonContentFixtureMethodology.slug,
+  shell: {
+    id: "methodology-shell:world-around-me-04",
+    methodologyId: lessonContentFixtureMethodology.id,
+    title: "Урок 4. Мне нравятся цвета",
+    position: {
+      moduleIndex: 1,
+      unitIndex: 1,
+      lessonIndex: 4,
+    },
+    vocabularySummary: [
+      "橘色",
+      "黑色",
+      "白色",
+      "棕色",
+      "草地",
+      "我喜欢…",
+      "有",
+      "飞",
+    ],
+    phraseSummary: [
+      "我是…",
+      "你是…",
+      "我是谁？",
+      "这是黑色。",
+      "我喜欢蓝色。",
+      "我们数到五吧！",
+      "草地上有什么动物？",
+      "草地上有一头蓝色的牛。",
+    ],
+    estimatedDurationMinutes: 45,
+    mediaSummary: {
+      videos: 1,
+      songs: 2,
+      worksheets: 3,
+      other: 6,
+    },
+    readinessStatus: "ready",
+  },
+  blocks: lessonFourBlocks,
+};
+
+const lessonFiveMethodologyLesson: MethodologyLesson = {
+  id: "methodology-lesson:world-around-me-05",
+  methodologyId: lessonContentFixtureMethodology.id,
+  methodologySlug: lessonContentFixtureMethodology.slug,
+  shell: {
+    id: "methodology-shell:world-around-me-05",
+    methodologyId: lessonContentFixtureMethodology.id,
+    title: "Урок 5. Растения на лугу",
+    position: {
+      moduleIndex: 1,
+      unitIndex: 1,
+      lessonIndex: 5,
+    },
+    vocabularySummary: [
+      "花",
+      "树",
+      "草",
+      "草地",
+      "我很好",
+      "我不好",
+      "飞",
+      "跑",
+      "跳",
+      "拍手",
+      "数",
+    ],
+    phraseSummary: [
+      "我喜欢蓝色的花。",
+      "我喜欢红色的花。",
+      "草地上有什么？",
+      "草地上有花。",
+      "草地上有树。",
+    ],
+    estimatedDurationMinutes: 45,
+    mediaSummary: {
+      videos: 1,
+      songs: 2,
+      worksheets: 7,
+      other: 8,
+    },
+    readinessStatus: "ready",
+  },
+  blocks: lessonFiveBlocks,
+};
+
 export const lessonContentFixtureMethodologyLessons: MethodologyLesson[] = [
   lessonOneMethodologyLesson,
   lessonTwoMethodologyLesson,
   lessonThreeMethodologyLesson,
+  lessonFourMethodologyLesson,
+  lessonFiveMethodologyLesson,
 ];
 
 export const lessonContentFixtureMethodologyLesson: MethodologyLesson =
@@ -1363,6 +3108,10 @@ export const lessonContentFixtureMethodologyLessonTwo: MethodologyLesson =
   lessonTwoMethodologyLesson;
 export const lessonContentFixtureMethodologyLessonThree: MethodologyLesson =
   lessonThreeMethodologyLesson;
+export const lessonContentFixtureMethodologyLessonFour: MethodologyLesson =
+  lessonFourMethodologyLesson;
+export const lessonContentFixtureMethodologyLessonFive: MethodologyLesson =
+  lessonFiveMethodologyLesson;
 
 const lessonOneHomeworkDefinition: MethodologyLessonHomeworkDefinition = {
   id: "methodology-homework:world-around-me-01",
@@ -1371,7 +3120,11 @@ const lessonOneHomeworkDefinition: MethodologyLessonHomeworkDefinition = {
   kind: "quiz_single_choice",
   instructions:
     "Сначала сопоставь животных и иероглифы, затем повтори слова с аудио, и после этого пройди короткий квиз.",
-  materialLinks: ["Рабочая тетрадь, стр. 3–4", "Карточки животных", "Презентация урока 1"],
+  materialLinks: [
+    "Рабочая тетрадь, стр. 3–4",
+    "Карточки животных",
+    "Презентация урока 1",
+  ],
   answerFormatHint: "Интерактивная практика + квиз из 5 вопросов.",
   estimatedMinutes: 10,
   quiz: {
@@ -1389,11 +3142,31 @@ const lessonOneHomeworkDefinition: MethodologyLessonHomeworkDefinition = {
         title: "Соедини картинку и иероглиф",
         prompt: "Перетащи слово к правильной карточке животного.",
         items: [
-          { id: "dog", label: "狗", illustrationSrc: "/methodologies/world-around-me/lesson-1/visuals/dog-card.png" },
-          { id: "cat", label: "猫", illustrationSrc: "/methodologies/world-around-me/lesson-1/visuals/cat-card.png" },
-          { id: "rabbit", label: "兔子", illustrationSrc: "/methodologies/world-around-me/lesson-1/visuals/rabbit-card.png" },
-          { id: "horse", label: "马", illustrationSrc: "/methodologies/world-around-me/lesson-1/visuals/horse-card.png" }
-        ]
+          {
+            id: "dog",
+            label: "狗",
+            illustrationSrc:
+              "/methodologies/world-around-me/lesson-1/visuals/dog-card.png",
+          },
+          {
+            id: "cat",
+            label: "猫",
+            illustrationSrc:
+              "/methodologies/world-around-me/lesson-1/visuals/cat-card.png",
+          },
+          {
+            id: "rabbit",
+            label: "兔子",
+            illustrationSrc:
+              "/methodologies/world-around-me/lesson-1/visuals/rabbit-card.png",
+          },
+          {
+            id: "horse",
+            label: "马",
+            illustrationSrc:
+              "/methodologies/world-around-me/lesson-1/visuals/horse-card.png",
+          },
+        ],
       },
       {
         id: "audio-review-l1",
@@ -1404,27 +3177,115 @@ const lessonOneHomeworkDefinition: MethodologyLessonHomeworkDefinition = {
             id: "animals",
             title: "Животные и ферма",
             entries: [
-              { id: "狗", hanzi: "狗", pinyin: "gǒu", meaning: "собака", audioAssetId: "pronunciation:dog", audioUrl: "/methodologies/world-around-me/lesson-1/audio/gou.mp3" },
-              { id: "猫", hanzi: "猫", pinyin: "māo", meaning: "кошка", audioAssetId: "pronunciation:cat", audioUrl: "/methodologies/world-around-me/lesson-1/audio/mao.mp3" },
-              { id: "兔子", hanzi: "兔子", pinyin: "tùzi", meaning: "кролик", audioAssetId: "pronunciation:rabbit", audioUrl: "/methodologies/world-around-me/lesson-1/audio/tuzi.mp3" },
-              { id: "马", hanzi: "马", pinyin: "mǎ", meaning: "лошадь", audioAssetId: "pronunciation:horse", audioUrl: "/methodologies/world-around-me/lesson-1/audio/ma.mp3" },
-              { id: "农场", hanzi: "农场", pinyin: "nóngchǎng", meaning: "ферма", audioAssetId: "pronunciation:farm", audioUrl: "/methodologies/world-around-me/lesson-1/audio/nongchang.mp3" }
-            ]
+              {
+                id: "狗",
+                hanzi: "狗",
+                pinyin: "gǒu",
+                meaning: "собака",
+                audioAssetId: "pronunciation:dog",
+                audioUrl:
+                  "/methodologies/world-around-me/lesson-1/audio/gou.mp3",
+              },
+              {
+                id: "猫",
+                hanzi: "猫",
+                pinyin: "māo",
+                meaning: "кошка",
+                audioAssetId: "pronunciation:cat",
+                audioUrl:
+                  "/methodologies/world-around-me/lesson-1/audio/mao.mp3",
+              },
+              {
+                id: "兔子",
+                hanzi: "兔子",
+                pinyin: "tùzi",
+                meaning: "кролик",
+                audioAssetId: "pronunciation:rabbit",
+                audioUrl:
+                  "/methodologies/world-around-me/lesson-1/audio/tuzi.mp3",
+              },
+              {
+                id: "马",
+                hanzi: "马",
+                pinyin: "mǎ",
+                meaning: "лошадь",
+                audioAssetId: "pronunciation:horse",
+                audioUrl:
+                  "/methodologies/world-around-me/lesson-1/audio/ma.mp3",
+              },
+              {
+                id: "农场",
+                hanzi: "农场",
+                pinyin: "nóngchǎng",
+                meaning: "ферма",
+                audioAssetId: "pronunciation:farm",
+                audioUrl:
+                  "/methodologies/world-around-me/lesson-1/audio/nongchang.mp3",
+              },
+            ],
           },
           {
             id: "phrases-actions",
             title: "Фразы, действия и грамматика",
             entries: [
-              { id: "我是", hanzi: "我是…", pinyin: "wǒ shì…", meaning: "Я…", audioAssetId: "pronunciation:wo-shi", audioUrl: "/methodologies/world-around-me/lesson-1/audio/woshi.mp3" },
-              { id: "这是", hanzi: "这是…", pinyin: "zhè shì…", meaning: "Это…", audioAssetId: "pronunciation:zhe-shi", audioUrl: "/methodologies/world-around-me/lesson-1/audio/zheshi.mp3" },
-              { id: "跑", hanzi: "跑", pinyin: "pǎo", meaning: "бежать", audioAssetId: "pronunciation:run", audioUrl: "/methodologies/world-around-me/lesson-1/audio/pao.mp3" },
-              { id: "跳", hanzi: "跳", pinyin: "tiào", meaning: "прыгать", audioAssetId: "pronunciation:jump", audioUrl: "/methodologies/world-around-me/lesson-1/audio/tiao.mp3" },
-              { id: "我们吧", hanzi: "我们…吧!", pinyin: "wǒmen … ba!", meaning: "Давайте…!", audioAssetId: "pronunciation:lets", audioUrl: "/methodologies/world-around-me/lesson-1/audio/womenba.mp3" },
-              { id: "在", hanzi: "在", pinyin: "zài", meaning: "в / внутри", audioAssetId: "pronunciation:zai", audioUrl: "/methodologies/world-around-me/lesson-1/audio/zai.mp3" }
-            ]
-          }
-        ]
-      }
+              {
+                id: "我是",
+                hanzi: "我是…",
+                pinyin: "wǒ shì…",
+                meaning: "Я…",
+                audioAssetId: "pronunciation:wo-shi",
+                audioUrl:
+                  "/methodologies/world-around-me/lesson-1/audio/woshi.mp3",
+              },
+              {
+                id: "这是",
+                hanzi: "这是…",
+                pinyin: "zhè shì…",
+                meaning: "Это…",
+                audioAssetId: "pronunciation:zhe-shi",
+                audioUrl:
+                  "/methodologies/world-around-me/lesson-1/audio/zheshi.mp3",
+              },
+              {
+                id: "跑",
+                hanzi: "跑",
+                pinyin: "pǎo",
+                meaning: "бежать",
+                audioAssetId: "pronunciation:run",
+                audioUrl:
+                  "/methodologies/world-around-me/lesson-1/audio/pao.mp3",
+              },
+              {
+                id: "跳",
+                hanzi: "跳",
+                pinyin: "tiào",
+                meaning: "прыгать",
+                audioAssetId: "pronunciation:jump",
+                audioUrl:
+                  "/methodologies/world-around-me/lesson-1/audio/tiao.mp3",
+              },
+              {
+                id: "我们吧",
+                hanzi: "我们…吧!",
+                pinyin: "wǒmen … ba!",
+                meaning: "Давайте…!",
+                audioAssetId: "pronunciation:lets",
+                audioUrl:
+                  "/methodologies/world-around-me/lesson-1/audio/womenba.mp3",
+              },
+              {
+                id: "在",
+                hanzi: "在",
+                pinyin: "zài",
+                meaning: "в / внутри",
+                audioAssetId: "pronunciation:zai",
+                audioUrl:
+                  "/methodologies/world-around-me/lesson-1/audio/zai.mp3",
+              },
+            ],
+          },
+        ],
+      },
     ],
     questions: [
       {
@@ -1640,11 +3501,330 @@ const lessonThreeHomeworkDefinition: MethodologyLessonHomeworkDefinition = {
   },
 };
 
-export const lessonContentFixtureHomeworkDefinitions: MethodologyLessonHomeworkDefinition[] = [
-  lessonOneHomeworkDefinition,
-  lessonTwoHomeworkDefinition,
-  lessonThreeHomeworkDefinition,
-];
+const lessonFourHomeworkDefinition: MethodologyLessonHomeworkDefinition = {
+  id: "methodology-homework:world-around-me-04",
+  methodologyLessonId: lessonFourMethodologyLesson.id,
+  title: "Мини-миссия: Любимые цвета и луг",
+  kind: "quiz_single_choice",
+  instructions:
+    "Повтори новые цвета, фразу «я люблю…», слово 草地 и глагол 飞. Затем выбери правильный ответ в каждом вопросе.",
+  materialLinks: ["Рабочая тетрадь, стр. 7–8", "Карточки 橘色/黑色/白色/棕色"],
+  answerFormatHint: "6 коротких вопросов, по одному ответу.",
+  estimatedMinutes: 7,
+  quiz: {
+    id: "world-around-me-lesson-4-quiz",
+    version: 1,
+    title: "Домашняя мини-миссия: Любимые цвета",
+    subtitle: "Вспомни новые цвета, 草地 и короткие фразы урока.",
+    introText: "Выбери правильный ответ и помоги героям собрать цветной луг.",
+    completionTitle: "Цветная миссия выполнена!",
+    completionText: "Ты повторил(а) новые цвета, фразы и действия урока 4.",
+    tone: "amber",
+    practiceSections: [
+      {
+        id: "audio-review-l4",
+        type: "audio_review",
+        title: "Слова урока 4",
+        groups: [
+          {
+            id: "colors",
+            title: "Новые цвета",
+            entries: [
+              {
+                id: "orange",
+                hanzi: "橘色",
+                pinyin: "júsè",
+                meaning: "оранжевый",
+              },
+              {
+                id: "black",
+                hanzi: "黑色",
+                pinyin: "hēisè",
+                meaning: "чёрный",
+              },
+              { id: "white", hanzi: "白色", pinyin: "báisè", meaning: "белый" },
+              {
+                id: "brown",
+                hanzi: "棕色",
+                pinyin: "zōngsè",
+                meaning: "коричневый",
+              },
+            ],
+          },
+          {
+            id: "phrases",
+            title: "Фразы и действия",
+            entries: [
+              {
+                id: "grassland",
+                hanzi: "草地",
+                pinyin: "cǎodì",
+                meaning: "луг / поле",
+              },
+              {
+                id: "like",
+                hanzi: "我喜欢…",
+                pinyin: "wǒ xǐhuan…",
+                meaning: "мне нравится…",
+              },
+              {
+                id: "have",
+                hanzi: "有",
+                pinyin: "yǒu",
+                meaning: "иметь / есть",
+              },
+              { id: "fly", hanzi: "飞", pinyin: "fēi", meaning: "летать" },
+            ],
+          },
+        ],
+      },
+    ],
+    questions: [
+      {
+        id: "q1",
+        prompt: "Как по-китайски «оранжевый»?",
+        options: [
+          { id: "a", label: "橘色" },
+          { id: "b", label: "黑色" },
+          { id: "c", label: "白色" },
+        ],
+        correctOptionId: "a",
+      },
+      {
+        id: "q2",
+        prompt: "Что значит 黑色?",
+        options: [
+          { id: "a", label: "белый" },
+          { id: "b", label: "чёрный" },
+          { id: "c", label: "коричневый" },
+        ],
+        correctOptionId: "b",
+      },
+      {
+        id: "q3",
+        prompt: "Выбери фразу «Мне нравится синий цвет».",
+        options: [
+          { id: "a", label: "我喜欢蓝色。" },
+          { id: "b", label: "你是蓝色。" },
+          { id: "c", label: "这是喜欢。" },
+        ],
+        correctOptionId: "a",
+      },
+      {
+        id: "q4",
+        prompt: "Какое слово значит «луг / поле»?",
+        options: [
+          { id: "a", label: "草地" },
+          { id: "b", label: "棕色" },
+          { id: "c", label: "飞" },
+        ],
+        correctOptionId: "a",
+      },
+      {
+        id: "q5",
+        prompt: "Что значит 飞?",
+        options: [
+          { id: "a", label: "считать" },
+          { id: "b", label: "летать" },
+          { id: "c", label: "хлопать" },
+        ],
+        correctOptionId: "b",
+      },
+      {
+        id: "q6",
+        prompt: "Выбери правильную фразу про луг.",
+        helperText: "На лугу есть одна синяя корова.",
+        options: [
+          { id: "a", label: "草地上有一头蓝色的牛。" },
+          { id: "b", label: "草地喜欢黑色。" },
+          { id: "c", label: "牛飞五次。" },
+        ],
+        correctOptionId: "a",
+      },
+    ],
+  },
+};
+
+const lessonFiveHomeworkDefinition: MethodologyLessonHomeworkDefinition = {
+  id: "methodology-homework:world-around-me-05",
+  methodologyLessonId: lessonFiveMethodologyLesson.id,
+  title: "Мини-миссия: Создай свой луг",
+  kind: "quiz_single_choice",
+  instructions:
+    "Повтори слова 花、树、草、草地, фразу про любимый цветок и счёт на лугу. Затем создай свой луг: вырежи, наклей, раскрась и назови элементы по-китайски.",
+  materialLinks: [
+    "Приложение 8: домашний луг",
+    "Домашнее задание урока 5",
+    "Карточки 花 / 树 / 草 / 草地",
+  ],
+  answerFormatHint: "Творческая распечатка + 6 коротких вопросов.",
+  estimatedMinutes: 10,
+  quiz: {
+    id: "world-around-me-lesson-5-quiz",
+    version: 1,
+    title: "Домашняя мини-миссия: Растения на лугу",
+    subtitle: "Вспомни слова урока и собери свой 草地.",
+    introText: "Выбери правильный ответ, а потом создай луг с цветами, деревьями и травой.",
+    completionTitle: "Луг готов!",
+    completionText: "Ты повторил(а) растения, любимый цветок и счёт урока 5.",
+    illustrationSrc:
+      "/methodologies/world-around-me/lesson-5/assets/homework-meadow.jpeg",
+    tone: "emerald",
+    practiceSections: [
+      {
+        id: "audio-review-l5",
+        type: "audio_review",
+        title: "Слова урока 5",
+        groups: [
+          {
+            id: "plants",
+            title: "Растения и луг",
+            entries: [
+              {
+                id: "flower",
+                hanzi: "花",
+                pinyin: "huā",
+                meaning: "цветок",
+                audioAssetId: "pronunciation:lesson-5-flower",
+                audioUrl:
+                  "/methodologies/world-around-me/lesson-5/audio/lesson-5-audio-1.wav",
+              },
+              { id: "tree", hanzi: "树", pinyin: "shù", meaning: "дерево" },
+              { id: "grass", hanzi: "草", pinyin: "cǎo", meaning: "трава" },
+              {
+                id: "grassland",
+                hanzi: "草地",
+                pinyin: "cǎodì",
+                meaning: "луг / поле",
+              },
+            ],
+          },
+          {
+            id: "phrases",
+            title: "Фразы",
+            entries: [
+              {
+                id: "favorite-flower",
+                hanzi: "我喜欢蓝色的花。",
+                pinyin: "wǒ xǐhuan lánsè de huā.",
+                meaning: "мне нравится синий цветок",
+              },
+              {
+                id: "meadow-has",
+                hanzi: "草地上有花。",
+                pinyin: "cǎodì shàng yǒu huā.",
+                meaning: "на лугу есть цветы",
+              },
+            ],
+          },
+        ],
+      },
+      {
+        id: "matching-l5",
+        type: "matching",
+        title: "Соедини слово и картинку",
+        prompt: "Перетащи иероглиф к правильной карточке растения.",
+        items: [
+          {
+            id: "flower",
+            label: "花",
+            illustrationSrc:
+              "/methodologies/world-around-me/lesson-5/assets/flower-purple.png",
+          },
+          {
+            id: "tree",
+            label: "树",
+            illustrationSrc:
+              "/methodologies/world-around-me/lesson-5/assets/tree.png",
+          },
+          {
+            id: "grass",
+            label: "草",
+            illustrationSrc:
+              "/methodologies/world-around-me/lesson-5/assets/grass.png",
+          },
+          {
+            id: "grassland",
+            label: "草地",
+            illustrationSrc:
+              "/methodologies/world-around-me/lesson-5/assets/meadow-bg.jpeg",
+          },
+        ],
+      },
+    ],
+    questions: [
+      {
+        id: "q1",
+        prompt: "Как по-китайски «цветок»?",
+        options: [
+          { id: "a", label: "花" },
+          { id: "b", label: "树" },
+          { id: "c", label: "草" },
+        ],
+        correctOptionId: "a",
+      },
+      {
+        id: "q2",
+        prompt: "Что значит 树?",
+        options: [
+          { id: "a", label: "трава" },
+          { id: "b", label: "дерево" },
+          { id: "c", label: "цветок" },
+        ],
+        correctOptionId: "b",
+      },
+      {
+        id: "q3",
+        prompt: "Какое слово значит «трава»?",
+        options: [
+          { id: "a", label: "草" },
+          { id: "b", label: "草地" },
+          { id: "c", label: "花" },
+        ],
+        correctOptionId: "a",
+      },
+      {
+        id: "q4",
+        prompt: "Выбери слово «луг / поле».",
+        options: [
+          { id: "a", label: "树" },
+          { id: "b", label: "草地" },
+          { id: "c", label: "拍手" },
+        ],
+        correctOptionId: "b",
+      },
+      {
+        id: "q5",
+        prompt: "Выбери фразу «Мне нравится синий цветок».",
+        options: [
+          { id: "a", label: "我喜欢蓝色的花。" },
+          { id: "b", label: "我不好花。" },
+          { id: "c", label: "草地上有树。" },
+        ],
+        correctOptionId: "a",
+      },
+      {
+        id: "q6",
+        prompt: "Что можно сказать, если на лугу есть цветы?",
+        options: [
+          { id: "a", label: "草地上有花。" },
+          { id: "b", label: "花在跑。" },
+          { id: "c", label: "我不好树。" },
+        ],
+        correctOptionId: "a",
+      },
+    ],
+  },
+};
+
+export const lessonContentFixtureHomeworkDefinitions: MethodologyLessonHomeworkDefinition[] =
+  [
+    lessonOneHomeworkDefinition,
+    lessonTwoHomeworkDefinition,
+    lessonThreeHomeworkDefinition,
+    lessonFourHomeworkDefinition,
+    lessonFiveHomeworkDefinition,
+  ];
 
 export const lessonContentFixtureHomeworkDefinition: MethodologyLessonHomeworkDefinition =
   lessonOneHomeworkDefinition;
@@ -1652,12 +3832,17 @@ export const lessonContentFixtureHomeworkDefinitionLessonTwo: MethodologyLessonH
   lessonTwoHomeworkDefinition;
 export const lessonContentFixtureHomeworkDefinitionLessonThree: MethodologyLessonHomeworkDefinition =
   lessonThreeHomeworkDefinition;
+export const lessonContentFixtureHomeworkDefinitionLessonFour: MethodologyLessonHomeworkDefinition =
+  lessonFourHomeworkDefinition;
+export const lessonContentFixtureHomeworkDefinitionLessonFive: MethodologyLessonHomeworkDefinition =
+  lessonFiveHomeworkDefinition;
 
 const lessonOneStudentContent: MethodologyLessonStudentContent = {
   id: "methodology-student-content:world-around-me-01",
   methodologyLessonId: lessonOneMethodologyLesson.id,
   title: "Урок 1. Животные на ферме",
-  subtitle: "Полноценный урок-хаб: презентация, карточки, счёт, движение, ферма и практика.",
+  subtitle:
+    "Полноценный урок-хаб: презентация, карточки, счёт, движение, ферма и практика.",
   sections: [
     {
       type: "lesson_focus",
@@ -1667,7 +3852,8 @@ const lessonOneStudentContent: MethodologyLessonStudentContent = {
       chips: ["狗", "猫", "兔子", "马", "农场"],
       tone: "sky",
       layout: "hero",
-      illustrationSrc: "/methodologies/world-around-me/lesson-1/visuals/hero-farm.png",
+      illustrationSrc:
+        "/methodologies/world-around-me/lesson-1/visuals/hero-farm.png",
       sceneId: "scene-hero",
     },
     {
@@ -1691,11 +3877,51 @@ const lessonOneStudentContent: MethodologyLessonStudentContent = {
       sceneId: "scene-flashcards",
       displayMode: "carousel",
       items: [
-        { term: "狗", pinyin: "gǒu", meaning: "собака", visualHint: "Скажи: 这是狗。", illustrationSrc: "/methodologies/world-around-me/lesson-1/visuals/dog-card.png", audioAssetId: "pronunciation:dog" },
-        { term: "猫", pinyin: "māo", meaning: "кошка", visualHint: "Покажи мягкие лапки.", illustrationSrc: "/methodologies/world-around-me/lesson-1/visuals/cat-card.png", audioAssetId: "pronunciation:cat" },
-        { term: "兔子", pinyin: "tùzi", meaning: "кролик", visualHint: "Прыгни как кролик.", illustrationSrc: "/methodologies/world-around-me/lesson-1/visuals/rabbit-card.png", audioAssetId: "pronunciation:rabbit" },
-        { term: "马", pinyin: "mǎ", meaning: "лошадь", visualHint: "Покажи, как скачет лошадка.", illustrationSrc: "/methodologies/world-around-me/lesson-1/visuals/horse-card.png", audioAssetId: "pronunciation:horse" },
-        { term: "农场", pinyin: "nóngchǎng", meaning: "ферма", visualHint: "Покажи ферму на картинке.", illustrationSrc: "/methodologies/world-around-me/lesson-1/visuals/farm-barn.png", audioAssetId: "pronunciation:farm" },
+        {
+          term: "狗",
+          pinyin: "gǒu",
+          meaning: "собака",
+          visualHint: "Скажи: 这是狗。",
+          illustrationSrc:
+            "/methodologies/world-around-me/lesson-1/visuals/dog-card.png",
+          audioAssetId: "pronunciation:dog",
+        },
+        {
+          term: "猫",
+          pinyin: "māo",
+          meaning: "кошка",
+          visualHint: "Покажи мягкие лапки.",
+          illustrationSrc:
+            "/methodologies/world-around-me/lesson-1/visuals/cat-card.png",
+          audioAssetId: "pronunciation:cat",
+        },
+        {
+          term: "兔子",
+          pinyin: "tùzi",
+          meaning: "кролик",
+          visualHint: "Прыгни как кролик.",
+          illustrationSrc:
+            "/methodologies/world-around-me/lesson-1/visuals/rabbit-card.png",
+          audioAssetId: "pronunciation:rabbit",
+        },
+        {
+          term: "马",
+          pinyin: "mǎ",
+          meaning: "лошадь",
+          visualHint: "Покажи, как скачет лошадка.",
+          illustrationSrc:
+            "/methodologies/world-around-me/lesson-1/visuals/horse-card.png",
+          audioAssetId: "pronunciation:horse",
+        },
+        {
+          term: "农场",
+          pinyin: "nóngchǎng",
+          meaning: "ферма",
+          visualHint: "Покажи ферму на картинке.",
+          illustrationSrc:
+            "/methodologies/world-around-me/lesson-1/visuals/farm-barn.png",
+          audioAssetId: "pronunciation:farm",
+        },
       ],
     },
     {
@@ -1707,9 +3933,28 @@ const lessonOneStudentContent: MethodologyLessonStudentContent = {
       sceneId: "scene-phrases",
       displayMode: "dialogue",
       items: [
-        { phrase: "你是谁？", pinyin: "nǐ shì shéi?", meaning: "Кто ты?", speaker: "Сяо Лон" },
-        { phrase: "我是…", pinyin: "wǒ shì…", meaning: "Я…", speaker: "Сяо Мей", example: "我是小猫。", audioAssetId: "pronunciation:wo-shi" },
-        { phrase: "这是…", pinyin: "zhè shì…", meaning: "Это…", speaker: "Сяо Лон", example: "这是狗。", audioAssetId: "pronunciation:zhe-shi" },
+        {
+          phrase: "你是谁？",
+          pinyin: "nǐ shì shéi?",
+          meaning: "Кто ты?",
+          speaker: "Сяо Лон",
+        },
+        {
+          phrase: "我是…",
+          pinyin: "wǒ shì…",
+          meaning: "Я…",
+          speaker: "Сяо Мей",
+          example: "我是小猫。",
+          audioAssetId: "pronunciation:wo-shi",
+        },
+        {
+          phrase: "这是…",
+          pinyin: "zhè shì…",
+          meaning: "Это…",
+          speaker: "Сяо Лон",
+          example: "这是狗。",
+          audioAssetId: "pronunciation:zhe-shi",
+        },
       ],
     },
     {
@@ -1738,9 +3983,34 @@ const lessonOneStudentContent: MethodologyLessonStudentContent = {
       sceneId: "scene-actions",
       displayMode: "slider",
       items: [
-        { term: "跑", pinyin: "pǎo", meaning: "бежать", movementHint: "Побежали вместе по команде.", commandExample: "我们跑吧！ / 跑到狗！", illustrationSrc: "/methodologies/world-around-me/lesson-1/visuals/run-action.png", audioAssetId: "pronunciation:run" },
-        { term: "跳", pinyin: "tiào", meaning: "прыгать", movementHint: "Прыгаем на месте и к карточке.", commandExample: "我们跳吧！ / 跳到兔子！", illustrationSrc: "/methodologies/world-around-me/lesson-1/visuals/jump-action.png", audioAssetId: "pronunciation:jump" },
-        { term: "我们…吧!", pinyin: "wǒmen … ba!", meaning: "Давайте…!", movementHint: "Скажи команду всей группе.", commandExample: "我们跑吧！", audioAssetId: "pronunciation:lets" },
+        {
+          term: "跑",
+          pinyin: "pǎo",
+          meaning: "бежать",
+          movementHint: "Побежали вместе по команде.",
+          commandExample: "我们跑吧！ / 跑到狗！",
+          illustrationSrc:
+            "/methodologies/world-around-me/lesson-1/visuals/run-action.png",
+          audioAssetId: "pronunciation:run",
+        },
+        {
+          term: "跳",
+          pinyin: "tiào",
+          meaning: "прыгать",
+          movementHint: "Прыгаем на месте и к карточке.",
+          commandExample: "我们跳吧！ / 跳到兔子！",
+          illustrationSrc:
+            "/methodologies/world-around-me/lesson-1/visuals/jump-action.png",
+          audioAssetId: "pronunciation:jump",
+        },
+        {
+          term: "我们…吧!",
+          pinyin: "wǒmen … ba!",
+          meaning: "Давайте…!",
+          movementHint: "Скажи команду всей группе.",
+          commandExample: "我们跑吧！",
+          audioAssetId: "pronunciation:lets",
+        },
       ],
     },
     {
@@ -1750,7 +4020,8 @@ const lessonOneStudentContent: MethodologyLessonStudentContent = {
       tone: "amber",
       layout: "farm",
       sceneId: "scene-farm",
-      illustrationSrc: "/methodologies/world-around-me/lesson-1/visuals/farm-barn.png",
+      illustrationSrc:
+        "/methodologies/world-around-me/lesson-1/visuals/farm-barn.png",
       targetPhraseTemplate: "{animal} 在{zone}。",
       defaultZoneLabel: "农场里",
       animals: [
@@ -1772,23 +4043,78 @@ const lessonOneStudentContent: MethodologyLessonStudentContent = {
           id: "animals",
           title: "Животные и ферма",
           entries: [
-            { hanzi: "狗", pinyin: "gǒu", meaning: "собака", audioAssetId: "pronunciation:dog" },
-            { hanzi: "猫", pinyin: "māo", meaning: "кошка", audioAssetId: "pronunciation:cat" },
-            { hanzi: "兔子", pinyin: "tùzi", meaning: "кролик", audioAssetId: "pronunciation:rabbit" },
-            { hanzi: "马", pinyin: "mǎ", meaning: "лошадь", audioAssetId: "pronunciation:horse" },
-            { hanzi: "农场", pinyin: "nóngchǎng", meaning: "ферма", audioAssetId: "pronunciation:farm" },
+            {
+              hanzi: "狗",
+              pinyin: "gǒu",
+              meaning: "собака",
+              audioAssetId: "pronunciation:dog",
+            },
+            {
+              hanzi: "猫",
+              pinyin: "māo",
+              meaning: "кошка",
+              audioAssetId: "pronunciation:cat",
+            },
+            {
+              hanzi: "兔子",
+              pinyin: "tùzi",
+              meaning: "кролик",
+              audioAssetId: "pronunciation:rabbit",
+            },
+            {
+              hanzi: "马",
+              pinyin: "mǎ",
+              meaning: "лошадь",
+              audioAssetId: "pronunciation:horse",
+            },
+            {
+              hanzi: "农场",
+              pinyin: "nóngchǎng",
+              meaning: "ферма",
+              audioAssetId: "pronunciation:farm",
+            },
           ],
         },
         {
           id: "phrases",
           title: "Фразы и действия",
           entries: [
-            { hanzi: "我是…", pinyin: "wǒ shì…", meaning: "Я…", audioAssetId: "pronunciation:wo-shi" },
-            { hanzi: "这是…", pinyin: "zhè shì…", meaning: "Это…", audioAssetId: "pronunciation:zhe-shi" },
-            { hanzi: "跑", pinyin: "pǎo", meaning: "бежать", audioAssetId: "pronunciation:run" },
-            { hanzi: "跳", pinyin: "tiào", meaning: "прыгать", audioAssetId: "pronunciation:jump" },
-            { hanzi: "我们…吧!", pinyin: "wǒmen … ba!", meaning: "давайте…", audioAssetId: "pronunciation:lets" },
-            { hanzi: "在", pinyin: "zài", meaning: "в / внутри", audioAssetId: "pronunciation:zai" },
+            {
+              hanzi: "我是…",
+              pinyin: "wǒ shì…",
+              meaning: "Я…",
+              audioAssetId: "pronunciation:wo-shi",
+            },
+            {
+              hanzi: "这是…",
+              pinyin: "zhè shì…",
+              meaning: "Это…",
+              audioAssetId: "pronunciation:zhe-shi",
+            },
+            {
+              hanzi: "跑",
+              pinyin: "pǎo",
+              meaning: "бежать",
+              audioAssetId: "pronunciation:run",
+            },
+            {
+              hanzi: "跳",
+              pinyin: "tiào",
+              meaning: "прыгать",
+              audioAssetId: "pronunciation:jump",
+            },
+            {
+              hanzi: "我们…吧!",
+              pinyin: "wǒmen … ba!",
+              meaning: "давайте…",
+              audioAssetId: "pronunciation:lets",
+            },
+            {
+              hanzi: "在",
+              pinyin: "zài",
+              meaning: "в / внутри",
+              audioAssetId: "pronunciation:zai",
+            },
           ],
         },
       ],
@@ -1800,10 +4126,13 @@ const lessonOneStudentContent: MethodologyLessonStudentContent = {
       tone: "rose",
       layout: "practice",
       sceneId: "scene-materials",
-      illustrationSrc: "/methodologies/world-around-me/lesson-1/visuals/workbook-practice.png",
+      illustrationSrc:
+        "/methodologies/world-around-me/lesson-1/visuals/workbook-practice.png",
       pageLabel: "Рабочая тетрадь · стр. 3–4",
-      instructions: "Раскрась животных, ответь «这是什么？», затем спой песню farm animals. PDF будет добавлен позже — пока открой внешний ресурс.",
-      teacherHint: "После тетради дайте детям 1 минуту на повтор слов перед песней.",
+      instructions:
+        "Раскрась животных, ответь «这是什么？», затем спой песню farm animals. PDF будет добавлен позже — пока открой внешний ресурс.",
+      teacherHint:
+        "После тетради дайте детям 1 минуту на повтор слов перед песней.",
       assetId: "worksheet:workbook-pages-3-4",
     },
     {
@@ -1815,10 +4144,30 @@ const lessonOneStudentContent: MethodologyLessonStudentContent = {
       sceneId: "scene-materials",
       audience: "both",
       resources: [
-        { id: "video", title: "Видео farm animals", assetId: "video:farm-animals", previewable: true },
-        { id: "cards", title: "Карточки урока", assetId: "flashcards:world-around-me-lesson-1", downloadable: false },
-        { id: "appendix", title: "Приложение 1", assetId: "worksheet:appendix-1", previewable: true },
-        { id: "song", title: "Песня farm animals", assetId: "song:farm-animals", previewable: true },
+        {
+          id: "video",
+          title: "Видео farm animals",
+          assetId: "video:farm-animals",
+          previewable: true,
+        },
+        {
+          id: "cards",
+          title: "Карточки урока",
+          assetId: "flashcards:world-around-me-lesson-1",
+          downloadable: false,
+        },
+        {
+          id: "appendix",
+          title: "Приложение 1",
+          assetId: "worksheet:appendix-1",
+          previewable: true,
+        },
+        {
+          id: "song",
+          title: "Песня farm animals",
+          assetId: "song:farm-animals",
+          previewable: true,
+        },
       ],
     },
     {
@@ -1830,10 +4179,30 @@ const lessonOneStudentContent: MethodologyLessonStudentContent = {
       sceneId: "scene-homework-practice",
       prompt: "Перед домашкой потренируйся: найди пару картинка ↔ иероглиф.",
       pairs: [
-        { id: "dog", label: "狗", illustrationSrc: "/methodologies/world-around-me/lesson-1/visuals/dog-card.png" },
-        { id: "cat", label: "猫", illustrationSrc: "/methodologies/world-around-me/lesson-1/visuals/cat-card.png" },
-        { id: "rabbit", label: "兔子", illustrationSrc: "/methodologies/world-around-me/lesson-1/visuals/rabbit-card.png" },
-        { id: "horse", label: "马", illustrationSrc: "/methodologies/world-around-me/lesson-1/visuals/horse-card.png" },
+        {
+          id: "dog",
+          label: "狗",
+          illustrationSrc:
+            "/methodologies/world-around-me/lesson-1/visuals/dog-card.png",
+        },
+        {
+          id: "cat",
+          label: "猫",
+          illustrationSrc:
+            "/methodologies/world-around-me/lesson-1/visuals/cat-card.png",
+        },
+        {
+          id: "rabbit",
+          label: "兔子",
+          illustrationSrc:
+            "/methodologies/world-around-me/lesson-1/visuals/rabbit-card.png",
+        },
+        {
+          id: "horse",
+          label: "马",
+          illustrationSrc:
+            "/methodologies/world-around-me/lesson-1/visuals/horse-card.png",
+        },
       ],
     },
   ],
@@ -1843,17 +4212,20 @@ const lessonTwoStudentContent: MethodologyLessonStudentContent = {
   id: "methodology-student-content:world-around-me-02",
   methodologyLessonId: lessonTwoMethodologyLesson.id,
   title: "Урок 2. Что это за животное?",
-  subtitle: "Новые животные фермы: слушаем, угадываем, двигаемся и говорим фразами.",
+  subtitle:
+    "Новые животные фермы: слушаем, угадываем, двигаемся и говорим фразами.",
   sections: [
     {
       type: "lesson_focus",
       title: "Урок 2 · Что это за животное?",
-      subtitle: "Сяо Лон и Сяо Мей зовут нас на ферму знакомиться с новыми друзьями.",
+      subtitle:
+        "Сяо Лон и Сяо Мей зовут нас на ферму знакомиться с новыми друзьями.",
       body: "Сегодня мы будем говорить, двигаться, угадывать звуки и играть с масками животных.",
       chips: ["鸭子", "鸡子", "羊", "牛"],
       tone: "sky",
       layout: "hero",
-      illustrationSrc: "/methodologies/world-around-me/lesson-2/farm-scene-2.svg",
+      illustrationSrc:
+        "/methodologies/world-around-me/lesson-2/farm-scene-2.svg",
       sceneId: "scene-hero",
     },
     {
@@ -1885,7 +4257,8 @@ const lessonTwoStudentContent: MethodologyLessonStudentContent = {
           pinyin: "jīzi",
           meaning: "курица",
           visualHint: "Скажи громко: jīzi!",
-          illustrationSrc: "/methodologies/world-around-me/lesson-2/chicken.svg",
+          illustrationSrc:
+            "/methodologies/world-around-me/lesson-2/chicken.svg",
         },
         {
           term: "羊",
@@ -1951,14 +4324,16 @@ const lessonTwoStudentContent: MethodologyLessonStudentContent = {
           pinyin: "pǎo",
           meaning: "бежать",
           movementHint: "我们跑吧！",
-          illustrationSrc: "/methodologies/world-around-me/lesson-1/visuals/run-action.png",
+          illustrationSrc:
+            "/methodologies/world-around-me/lesson-1/visuals/run-action.png",
         },
         {
           term: "跳",
           pinyin: "tiào",
           meaning: "прыгать",
           movementHint: "我们跳吧！",
-          illustrationSrc: "/methodologies/world-around-me/lesson-1/visuals/jump-action.png",
+          illustrationSrc:
+            "/methodologies/world-around-me/lesson-1/visuals/jump-action.png",
         },
         {
           term: "拍手",
@@ -1996,9 +4371,24 @@ const lessonTwoStudentContent: MethodologyLessonStudentContent = {
       illustrationSrc: "/methodologies/world-around-me/lesson-2/house.svg",
       sceneId: "scene-house",
       items: [
-        { phrase: "房子", pinyin: "fángzi", meaning: "дом", usageHint: "Покажи карточку домика." },
-        { phrase: "我", pinyin: "wǒ", meaning: "я", usageHint: "Скажи о себе." },
-        { phrase: "你", pinyin: "nǐ", meaning: "ты", usageHint: "Спроси друга: «你是谁？»." },
+        {
+          phrase: "房子",
+          pinyin: "fángzi",
+          meaning: "дом",
+          usageHint: "Покажи карточку домика.",
+        },
+        {
+          phrase: "我",
+          pinyin: "wǒ",
+          meaning: "я",
+          usageHint: "Скажи о себе.",
+        },
+        {
+          phrase: "你",
+          pinyin: "nǐ",
+          meaning: "ты",
+          usageHint: "Спроси друга: «你是谁？».",
+        },
         {
           phrase: "在…里",
           pinyin: "zài…lǐ",
@@ -2019,7 +4409,8 @@ const lessonTwoStudentContent: MethodologyLessonStudentContent = {
       pageLabel: "Рабочая тетрадь · стр. 5",
       instructions:
         "Соедини числа с животными, назови их, а потом спой песню farm animals с группой.",
-      teacherHint: "После задания попросите каждого ребёнка назвать одну пару «число + животное».",
+      teacherHint:
+        "После задания попросите каждого ребёнка назвать одну пару «число + животное».",
       assetId: "worksheet:workbook-page-5",
     },
     {
@@ -2054,7 +4445,8 @@ const lessonThreeStudentContent: MethodologyLessonStudentContent = {
       chips: ["红色", "绿色", "蓝色", "黄色"],
       tone: "sky",
       layout: "hero",
-      illustrationSrc: "/methodologies/world-around-me/lesson-3/color-world.svg",
+      illustrationSrc:
+        "/methodologies/world-around-me/lesson-3/color-world.svg",
       sceneId: "scene-hero",
     },
     {
@@ -2128,7 +4520,8 @@ const lessonThreeStudentContent: MethodologyLessonStudentContent = {
       subtitle: "Называем и считаем с 只.",
       tone: "emerald",
       layout: "farm",
-      illustrationSrc: "/methodologies/world-around-me/lesson-3/animals-bag.svg",
+      illustrationSrc:
+        "/methodologies/world-around-me/lesson-3/animals-bag.svg",
       sceneId: "scene-animals",
       items: [
         {
@@ -2160,7 +4553,12 @@ const lessonThreeStudentContent: MethodologyLessonStudentContent = {
       illustrationSrc: "/methodologies/world-around-me/lesson-3/toy-car.svg",
       sceneId: "scene-cars",
       items: [
-        { phrase: "车", pinyin: "chē", meaning: "машина", usageHint: "Покажи игрушечную машину." },
+        {
+          phrase: "车",
+          pinyin: "chē",
+          meaning: "машина",
+          usageHint: "Покажи игрушечную машину.",
+        },
         {
           phrase: "我们在开车。",
           pinyin: "wǒmen zài kāichē.",
@@ -2258,8 +4656,725 @@ const lessonThreeStudentContent: MethodologyLessonStudentContent = {
   ],
 };
 
+const lessonFourStudentContent: MethodologyLessonStudentContent = {
+  id: "methodology-student-content:world-around-me-04",
+  methodologyLessonId: lessonFourMethodologyLesson.id,
+  title: "Урок 4. Мне нравятся цвета",
+  subtitle: "Новые цвета, любимый цвет, луг, действия и счёт в игровых шагах.",
+  sections: [
+    {
+      type: "lesson_focus",
+      title: "Приветствие детей и героев курса",
+      subtitle: "Начинаем цветное занятие вместе с героями.",
+      body: "Поздоровайся, посмотри на героев курса и приготовься изучать новые цвета.",
+      chips: ["你好", "цвета", "герои курса"],
+      tone: "sky",
+      layout: "hero",
+      illustrationSrc:
+        "/methodologies/world-around-me/lesson-3/color-world.svg",
+      sceneId: "l4-step-01",
+    },
+    {
+      type: "media_asset",
+      title: "Смотрим видео «colors»",
+      subtitle: "Слушаем и вспоминаем цвета.",
+      tone: "sky",
+      layout: "practice",
+      sceneId: "l4-step-02",
+      assetId: "video:colors",
+      assetKind: "video",
+      studentPrompt: "Смотри видео и показывай цвета, которые уже знаешь.",
+      ctaLabel: "Открыть видео colors",
+    },
+    {
+      type: "phrase_cards",
+      title: "Фразы 我是… / 你是… / 我是谁？",
+      subtitle: "Повтори фразы и ответь преподавателю.",
+      tone: "violet",
+      layout: "phrases",
+      sceneId: "l4-step-03",
+      items: [
+        {
+          phrase: "我是…",
+          pinyin: "wǒ shì…",
+          meaning: "я…",
+          usageHint: "Скажи о себе.",
+        },
+        {
+          phrase: "你是…",
+          pinyin: "nǐ shì…",
+          meaning: "ты…",
+          usageHint: "Скажи о друге или преподавателе.",
+        },
+        {
+          phrase: "我是谁？",
+          pinyin: "wǒ shì shéi?",
+          meaning: "кто я?",
+          usageHint: "Спроси и послушай ответ.",
+        },
+      ],
+    },
+    {
+      type: "media_asset",
+      title: "Песня farm animals",
+      subtitle: "Поём знакомую песню и вспоминаем животных.",
+      tone: "rose",
+      layout: "practice",
+      sceneId: "l4-step-04",
+      assetId: "song:farm-animals",
+      assetKind: "song",
+      studentPrompt: "Слушай, пой и показывай животных движениями.",
+      ctaLabel: "Открыть песню",
+    },
+    {
+      type: "vocabulary_cards",
+      title: "Новые цвета: 橘色 / 黑色 / 白色 / 棕色",
+      subtitle: "Слушай преподавателя и повторяй каждый цвет.",
+      tone: "amber",
+      layout: "vocabulary",
+      sceneId: "l4-step-05",
+      displayMode: "grid",
+      items: [
+        {
+          term: "橘色",
+          pinyin: "júsè",
+          meaning: "оранжевый",
+          visualHint: "Покажи оранжевый цвет.",
+        },
+        {
+          term: "黑色",
+          pinyin: "hēisè",
+          meaning: "чёрный",
+          visualHint: "Найди что-то чёрное.",
+        },
+        {
+          term: "白色",
+          pinyin: "báisè",
+          meaning: "белый",
+          visualHint: "Покажи белую карточку.",
+        },
+        {
+          term: "棕色",
+          pinyin: "zōngsè",
+          meaning: "коричневый",
+          visualHint: "Назови коричневый предмет.",
+        },
+      ],
+    },
+    {
+      type: "lesson_focus",
+      title: "Игра «Что пропало?»",
+      subtitle: "Запоминаем 4 цвета и угадываем исчезнувший.",
+      body: "Смотри на цвета, закрывай глаза по команде преподавателя и называй цвет, который исчез.",
+      chips: ["橘色", "黑色", "白色", "棕色"],
+      tone: "amber",
+      layout: "practice",
+      sceneId: "l4-step-06",
+    },
+    {
+      type: "lesson_focus",
+      title: "Сортируем предметы по цветам",
+      subtitle: "Кликаем предмет и кладём его в правильную корзину.",
+      body: "Выбери предмет, назови его цвет и положи в корзину такого же цвета.",
+      chips: ["сортировка", "цвет", "корзина"],
+      tone: "emerald",
+      layout: "practice",
+      sceneId: "l4-step-07",
+    },
+    {
+      type: "phrase_cards",
+      title: "Конструкция 我喜欢…",
+      subtitle: "Выбираем любимый цвет.",
+      tone: "rose",
+      layout: "phrases",
+      illustrationSrc:
+        "/methodologies/world-around-me/lesson-4/heart-color.svg",
+      sceneId: "l4-step-08",
+      items: [
+        {
+          phrase: "我喜欢…",
+          pinyin: "wǒ xǐhuan…",
+          meaning: "мне нравится…",
+          usageHint: "Поставь после фразы цвет.",
+          example: "我喜欢蓝色。",
+        },
+        {
+          phrase: "我喜欢黑色。",
+          pinyin: "wǒ xǐhuan hēisè.",
+          meaning: "мне нравится чёрный цвет",
+          usageHint: "Скажи, если выбрал чёрный.",
+        },
+        {
+          phrase: "我喜欢橘色。",
+          pinyin: "wǒ xǐhuan júsè.",
+          meaning: "мне нравится оранжевый цвет",
+          usageHint: "Скажи, если выбрал оранжевый.",
+        },
+      ],
+    },
+    {
+      type: "action_cards",
+      title: "Глагол 飞 и повтор действий",
+      subtitle: "Смотри на карточку и выполняй действие.",
+      tone: "emerald",
+      layout: "movement",
+      illustrationSrc:
+        "/methodologies/world-around-me/lesson-4/action-cards.svg",
+      sceneId: "l4-step-09",
+      displayMode: "slider",
+      items: [
+        {
+          term: "飞",
+          pinyin: "fēi",
+          meaning: "летать",
+          movementHint: "Покажи, как летишь.",
+        },
+        {
+          term: "跑",
+          pinyin: "pǎo",
+          meaning: "бежать",
+          movementHint: "Беги на месте.",
+          commandExample: "我们跑吧！",
+        },
+        {
+          term: "跳",
+          pinyin: "tiào",
+          meaning: "прыгать",
+          movementHint: "Прыгни по команде.",
+          commandExample: "我们跳吧！",
+        },
+        {
+          term: "拍手",
+          pinyin: "pāishǒu",
+          meaning: "хлопать",
+          movementHint: "Хлопай в ладоши.",
+        },
+        {
+          term: "数",
+          pinyin: "shǔ",
+          meaning: "считать",
+          movementHint: "Считай вместе до пяти.",
+          commandExample: "我们数到五吧！",
+        },
+      ],
+    },
+    {
+      type: "word_list",
+      title: "Слово 草地",
+      subtitle: "Готовимся к сцене на лугу.",
+      tone: "amber",
+      layout: "recap",
+      illustrationSrc: "/methodologies/world-around-me/lesson-4/grassland.svg",
+      sceneId: "l4-step-10",
+      groups: [
+        {
+          id: "grassland",
+          title: "Новое слово",
+          entries: [{ hanzi: "草地", pinyin: "cǎodì", meaning: "луг / поле" }],
+        },
+      ],
+    },
+    {
+      type: "phrase_cards",
+      title: "Луг и животные: 草地上有什么动物？",
+      subtitle: "Смотрим на луг и говорим, кто на нём есть.",
+      tone: "sky",
+      layout: "farm",
+      illustrationSrc: "/methodologies/world-around-me/lesson-4/grassland.svg",
+      sceneId: "l4-step-11",
+      items: [
+        {
+          phrase: "草地上有什么动物？",
+          pinyin: "cǎodì shàng yǒu shénme dòngwù?",
+          meaning: "какие животные на лугу?",
+          usageHint: "Посмотри на луг и ответь.",
+        },
+        {
+          phrase: "草地上有一头蓝色的牛。",
+          pinyin: "cǎodì shàng yǒu yì tóu lánsè de niú.",
+          meaning: "на лугу одна синяя корова",
+          usageHint: "Повтори длинную фразу частями.",
+        },
+        {
+          phrase: "草地上有黄色的猫。",
+          pinyin: "cǎodì shàng yǒu huángsè de māo.",
+          meaning: "на лугу жёлтая кошка",
+          usageHint: "Скажи про другое животное.",
+        },
+      ],
+    },
+    {
+      type: "matching_practice",
+      title: "Приложение 4: домино цветов",
+      subtitle: "Найди пару цвета и иероглифа.",
+      tone: "violet",
+      layout: "homework",
+      sceneId: "l4-step-12",
+      prompt: "Соедини цветовую карточку и правильный иероглиф.",
+      pairs: [
+        { id: "orange", label: "橘色" },
+        { id: "black", label: "黑色" },
+        { id: "white", label: "白色" },
+        { id: "brown", label: "棕色" },
+      ],
+    },
+    {
+      type: "count_board",
+      title: "Разноцветные счёты: считаем до 5",
+      subtitle: "Выбери цветной ряд и посчитай.",
+      tone: "sky",
+      layout: "counting",
+      illustrationSrc: "/methodologies/world-around-me/lesson-4/abacus.svg",
+      sceneId: "l4-step-13",
+      prompt: "Назови цвет ряда и посчитай бусины вместе с преподавателем.",
+      assetId: "media:lesson-4-abacus",
+      groups: [
+        {
+          id: "orange",
+          label: "橘色 · 5",
+          count: 5,
+          cue: "橘色：一、二、三、四、五",
+        },
+        {
+          id: "black",
+          label: "黑色 · 4",
+          count: 4,
+          cue: "黑色：一、二、三、四",
+        },
+        { id: "white", label: "白色 · 3", count: 3, cue: "白色：一、二、三" },
+        { id: "brown", label: "棕色 · 2", count: 2, cue: "棕色：一、二" },
+      ],
+    },
+    {
+      type: "worksheet",
+      title: "Рабочая тетрадь: страницы 7–8",
+      subtitle: "Раскрашиваем животных нужным цветом.",
+      tone: "rose",
+      layout: "practice",
+      sceneId: "l4-step-14",
+      pageLabel: "Рабочая тетрадь · стр. 7–8",
+      instructions:
+        "Слушай цвет от преподавателя, раскрась животное и назови цвет по-китайски.",
+      teacherHint: "Проверяйте устно: цвет или короткая фраза «这是黑色。».",
+      assetId: "worksheet:workbook-pages-7-8",
+    },
+    {
+      type: "media_asset",
+      title: "Песня my favorite color is blue",
+      subtitle: "Финальный музыкальный повтор.",
+      tone: "rose",
+      layout: "practice",
+      sceneId: "l4-step-15",
+      assetId: "song:my-favorite-color-is-blue",
+      assetKind: "song",
+      studentPrompt: "Слушай песню, подпевай и показывай любимый цвет.",
+      ctaLabel: "Открыть песню",
+    },
+    {
+      type: "recap",
+      title: "Прощание с детьми и героями курса",
+      subtitle: "Повторяем главное и завершаем урок.",
+      tone: "neutral",
+      layout: "recap",
+      sceneId: "l4-step-16",
+      bullets: [
+        "Назови новые цвета: 橘色, 黑色, 白色, 棕色.",
+        "Скажи любимый цвет: 我喜欢…",
+        "Повтори слово 草地.",
+        "Покажи действие 飞.",
+        "Попрощайся с героями курса.",
+      ],
+    },
+  ],
+};
+
+const lessonFiveStudentContent: MethodologyLessonStudentContent = {
+  id: "methodology-student-content:world-around-me-05",
+  methodologyLessonId: lessonFiveMethodologyLesson.id,
+  title: "Урок 5. Растения на лугу",
+  subtitle:
+    "Цветы, деревья, трава, луг, любимый цветок, действия и счёт на лугу.",
+  sections: [
+    {
+      type: "lesson_focus",
+      title: "Приветствие детей и героев курса",
+      subtitle: "Сяо Лон и Сяо Мей приглашают на луг.",
+      body: "Поздоровайся с героями и приготовься собирать луг из цветов, деревьев и травы.",
+      chips: ["你好", "花", "树", "草地"],
+      tone: "sky",
+      layout: "hero",
+      illustrationSrc:
+        "/methodologies/world-around-me/lesson-5/assets/heroes.png",
+      sceneId: "l5-step-01",
+    },
+    {
+      type: "media_asset",
+      title: "Смотрим видео и входим в тему природы",
+      subtitle: "Вспоминаем цвета перед цветами на лугу.",
+      tone: "sky",
+      layout: "practice",
+      sceneId: "l5-step-02",
+      assetId: "video:colors",
+      assetKind: "video",
+      studentPrompt: "Смотри видео и называй цвета, которые узнаёшь.",
+      ctaLabel: "Открыть видео",
+    },
+    {
+      type: "phrase_cards",
+      title: "Проверяем настроение: 我很好 / 我不好",
+      subtitle: "Выбери фразу про своё настроение.",
+      tone: "amber",
+      layout: "phrases",
+      sceneId: "l5-step-03",
+      items: [
+        {
+          phrase: "我很好",
+          pinyin: "wǒ hěn hǎo",
+          meaning: "у меня всё хорошо",
+          usageHint: "Скажи, если настроение хорошее.",
+        },
+        {
+          phrase: "我不好",
+          pinyin: "wǒ bù hǎo",
+          meaning: "мне нехорошо / не очень",
+          usageHint: "Скажи, если настроение не очень.",
+        },
+      ],
+    },
+    {
+      type: "media_asset",
+      title: "Песня-ритуал перед новыми словами",
+      subtitle: "Поём короткий приветственный фрагмент.",
+      tone: "rose",
+      layout: "practice",
+      sceneId: "l5-step-04",
+      assetId: "song:hello",
+      assetKind: "song",
+      studentPrompt: "Слушай, пой и повторяй движения.",
+      ctaLabel: "Открыть песню",
+    },
+    {
+      type: "vocabulary_cards",
+      title: "Слово 花",
+      subtitle: "Смотри на цветок и повторяй слово.",
+      tone: "amber",
+      layout: "vocabulary",
+      sceneId: "l5-step-05",
+      displayMode: "carousel",
+      items: [
+        {
+          term: "花",
+          pinyin: "huā",
+          meaning: "цветок",
+          visualHint: "Покажи цветок на картинке.",
+          illustrationSrc:
+            "/methodologies/world-around-me/lesson-5/assets/flower-purple.png",
+          audioAssetId: "pronunciation:lesson-5-flower",
+        },
+      ],
+    },
+    {
+      type: "vocabulary_cards",
+      title: "Слово 树",
+      subtitle: "Смотри на дерево и повторяй слово.",
+      tone: "emerald",
+      layout: "vocabulary",
+      sceneId: "l5-step-06",
+      displayMode: "carousel",
+      items: [
+        {
+          term: "树",
+          pinyin: "shù",
+          meaning: "дерево",
+          visualHint: "Покажи, какое дерево высокое.",
+          illustrationSrc:
+            "/methodologies/world-around-me/lesson-5/assets/tree.png",
+        },
+      ],
+    },
+    {
+      type: "vocabulary_cards",
+      title: "Слово 草",
+      subtitle: "Смотри на траву и повторяй слово.",
+      tone: "emerald",
+      layout: "vocabulary",
+      sceneId: "l5-step-07",
+      displayMode: "carousel",
+      items: [
+        {
+          term: "草",
+          pinyin: "cǎo",
+          meaning: "трава",
+          visualHint: "Покажи траву низко у земли.",
+          illustrationSrc:
+            "/methodologies/world-around-me/lesson-5/assets/grass.png",
+        },
+      ],
+    },
+    {
+      type: "vocabulary_cards",
+      title: "Слово 草地",
+      subtitle: "Смотри на луг и повторяй слово.",
+      tone: "sky",
+      layout: "vocabulary",
+      sceneId: "l5-step-08",
+      displayMode: "carousel",
+      items: [
+        {
+          term: "草地",
+          pinyin: "cǎodì",
+          meaning: "луг / поле",
+          visualHint: "Покажи весь луг.",
+          illustrationSrc:
+            "/methodologies/world-around-me/lesson-5/assets/meadow-bg.jpeg",
+        },
+      ],
+    },
+    {
+      type: "lesson_focus",
+      title: "Игра «Колесо слов»",
+      subtitle: "Останови колесо и назови слово.",
+      body: "Нажми Stop, посмотри на выпавшую карточку и произнеси слово по-китайски.",
+      chips: ["花", "树", "草", "草地"],
+      tone: "violet",
+      layout: "practice",
+      sceneId: "l5-step-09",
+    },
+    {
+      type: "matching_practice",
+      title: "Приложение 3: карточки растений",
+      subtitle: "Соединяем картинку и слово.",
+      tone: "amber",
+      layout: "practice",
+      sceneId: "l5-step-10",
+      prompt: "Найди пару: картинка растения и правильный иероглиф.",
+      pairs: [
+        {
+          id: "flower",
+          label: "花",
+          illustrationSrc:
+            "/methodologies/world-around-me/lesson-5/assets/flower-purple.png",
+        },
+        {
+          id: "tree",
+          label: "树",
+          illustrationSrc:
+            "/methodologies/world-around-me/lesson-5/assets/tree.png",
+        },
+        {
+          id: "grass",
+          label: "草",
+          illustrationSrc:
+            "/methodologies/world-around-me/lesson-5/assets/grass.png",
+        },
+        {
+          id: "grassland",
+          label: "草地",
+          illustrationSrc:
+            "/methodologies/world-around-me/lesson-5/assets/meadow-bg.jpeg",
+        },
+      ],
+    },
+    {
+      type: "phrase_cards",
+      title: "Конструкция 我喜欢…的花",
+      subtitle: "Выбираем любимый цветок.",
+      tone: "rose",
+      layout: "phrases",
+      illustrationSrc:
+        "/methodologies/world-around-me/lesson-5/assets/colored-flowers.png",
+      sceneId: "l5-step-11",
+      items: [
+        {
+          phrase: "我喜欢蓝色的花。",
+          pinyin: "wǒ xǐhuan lánsè de huā.",
+          meaning: "мне нравится синий цветок",
+          usageHint: "Выбери синий цветок.",
+        },
+        {
+          phrase: "我喜欢红色的花。",
+          pinyin: "wǒ xǐhuan hóngsè de huā.",
+          meaning: "мне нравится красный цветок",
+          usageHint: "Выбери красный цветок.",
+        },
+        {
+          phrase: "我喜欢黄色的花。",
+          pinyin: "wǒ xǐhuan huángsè de huā.",
+          meaning: "мне нравится жёлтый цветок",
+          usageHint: "Выбери жёлтый цветок.",
+        },
+        {
+          phrase: "我喜欢绿色的花。",
+          pinyin: "wǒ xǐhuan lǜsè de huā.",
+          meaning: "мне нравится зелёный цветок",
+          usageHint: "Выбери зелёный цветок.",
+        },
+      ],
+    },
+    {
+      type: "action_cards",
+      title: "Действия: 飞 / 跑 / 跳 / 拍手 / 数",
+      subtitle: "Смотри на карточку и выполняй действие.",
+      tone: "emerald",
+      layout: "movement",
+      sceneId: "l5-step-12",
+      displayMode: "slider",
+      items: [
+        {
+          term: "飞",
+          pinyin: "fēi",
+          meaning: "летать",
+          movementHint: "Покажи руками, как летишь.",
+          illustrationSrc:
+            "/methodologies/world-around-me/lesson-5/presentation/lesson-5-slide-13.png",
+        },
+        {
+          term: "跑",
+          pinyin: "pǎo",
+          meaning: "бежать",
+          movementHint: "Беги на месте.",
+          commandExample: "我们跑吧！",
+          illustrationSrc:
+            "/methodologies/world-around-me/lesson-5/presentation/lesson-5-slide-14.png",
+        },
+        {
+          term: "跳",
+          pinyin: "tiào",
+          meaning: "прыгать",
+          movementHint: "Прыгни по команде.",
+          commandExample: "我们跳吧！",
+          illustrationSrc:
+            "/methodologies/world-around-me/lesson-5/presentation/lesson-5-slide-15.png",
+        },
+        {
+          term: "拍手",
+          pinyin: "pāishǒu",
+          meaning: "хлопать",
+          movementHint: "Хлопай в ладоши.",
+          illustrationSrc:
+            "/methodologies/world-around-me/lesson-5/presentation/lesson-5-slide-16.png",
+        },
+        {
+          term: "数",
+          pinyin: "shǔ",
+          meaning: "считать",
+          movementHint: "Считай вместе до пяти.",
+          commandExample: "我们数到五吧！",
+          illustrationSrc:
+            "/methodologies/world-around-me/lesson-5/presentation/lesson-5-slide-17.png",
+        },
+      ],
+    },
+    {
+      type: "phrase_cards",
+      title: "Сцена 草地: что есть на лугу?",
+      subtitle: "Смотрим на луг и говорим, что на нём есть.",
+      tone: "sky",
+      layout: "farm",
+      illustrationSrc:
+        "/methodologies/world-around-me/lesson-5/assets/meadow-bg.jpeg",
+      sceneId: "l5-step-13",
+      items: [
+        {
+          phrase: "草地上有什么？",
+          pinyin: "cǎodì shàng yǒu shénme?",
+          meaning: "что есть на лугу?",
+          usageHint: "Посмотри на луг и ответь.",
+        },
+        {
+          phrase: "草地上有花。",
+          pinyin: "cǎodì shàng yǒu huā.",
+          meaning: "на лугу есть цветы",
+          usageHint: "Скажи, когда видишь цветы.",
+        },
+        {
+          phrase: "草地上有树。",
+          pinyin: "cǎodì shàng yǒu shù.",
+          meaning: "на лугу есть деревья",
+          usageHint: "Скажи, когда видишь деревья.",
+        },
+        {
+          phrase: "草地上有草。",
+          pinyin: "cǎodì shàng yǒu cǎo.",
+          meaning: "на лугу есть трава",
+          usageHint: "Скажи, когда видишь траву.",
+        },
+      ],
+    },
+    {
+      type: "count_board",
+      title: "Считаем цветы, деревья и траву",
+      subtitle: "Выбери группу на лугу и посчитай.",
+      tone: "sky",
+      layout: "counting",
+      illustrationSrc:
+        "/methodologies/world-around-me/lesson-5/assets/count-hands.png",
+      sceneId: "l5-step-14",
+      prompt: "Назови объект и посчитай его вместе с преподавателем.",
+      assetId: "worksheet:lesson-5-meadow-count",
+      groups: [
+        {
+          id: "flowers",
+          label: "花 · 10",
+          count: 10,
+          cue: "花：一、二、三、四、五、六、七、八、九、十",
+        },
+        {
+          id: "trees",
+          label: "树 · 10",
+          count: 10,
+          cue: "树：一、二、三、四、五、六、七、八、九、十",
+        },
+        {
+          id: "grass",
+          label: "草 · 10",
+          count: 10,
+          cue: "草：一、二、三、四、五、六、七、八、九、十",
+        },
+      ],
+    },
+    {
+      type: "worksheet",
+      title: "Создаём и раскрашиваем луг",
+      subtitle: "Выбираем элементы и собираем свой 草地.",
+      tone: "emerald",
+      layout: "practice",
+      sceneId: "l5-step-15",
+      pageLabel: "Приложения 7-8 · творческий луг",
+      instructions:
+        "Добавь цветы, деревья и траву на луг. Называй каждый элемент по-китайски.",
+      teacherHint:
+        "Проверяйте устно: ребёнок должен назвать минимум два элемента луга.",
+      assetId: "worksheet:lesson-5-homework-meadow",
+    },
+    {
+      type: "recap",
+      title: "Песня, прощание и домашняя миссия",
+      subtitle: "Повторяем главное и завершаем урок.",
+      tone: "neutral",
+      layout: "recap",
+      illustrationSrc:
+        "/methodologies/world-around-me/lesson-5/assets/heroes.png",
+      sceneId: "l5-step-16",
+      bullets: [
+        "Назови слова урока: 花, 树, 草, 草地.",
+        "Скажи любимый цветок: 我喜欢蓝色的花.",
+        "Посчитай предметы на лугу.",
+        "Открой домашнюю миссию и создай свой луг.",
+        "Попрощайся с героями курса.",
+      ],
+    },
+  ],
+};
+
 export const lessonContentFixtureMethodologyLessonStudentContents: MethodologyLessonStudentContent[] =
-  [lessonOneStudentContent, lessonTwoStudentContent, lessonThreeStudentContent];
+  [
+    lessonOneStudentContent,
+    lessonTwoStudentContent,
+    lessonThreeStudentContent,
+    lessonFourStudentContent,
+    lessonFiveStudentContent,
+  ];
 
 export const lessonContentFixtureMethodologyLessonStudentContent: MethodologyLessonStudentContent =
   lessonOneStudentContent;
@@ -2267,6 +5382,10 @@ export const lessonContentFixtureMethodologyLessonStudentContentLessonTwo: Metho
   lessonTwoStudentContent;
 export const lessonContentFixtureMethodologyLessonStudentContentLessonThree: MethodologyLessonStudentContent =
   lessonThreeStudentContent;
+export const lessonContentFixtureMethodologyLessonStudentContentLessonFour: MethodologyLessonStudentContent =
+  lessonFourStudentContent;
+export const lessonContentFixtureMethodologyLessonStudentContentLessonFive: MethodologyLessonStudentContent =
+  lessonFiveStudentContent;
 
 const lessonOneScheduledLesson: ScheduledLesson = {
   id: "scheduled-lesson:demo-world-around-me-lesson-1",
@@ -2279,9 +5398,11 @@ const lessonOneScheduledLesson: ScheduledLesson = {
     place: "Demo classroom A",
     runtimeStatus: "planned",
     runtimeStudentNavigationLocked: true,
-    runtimeNotesSummary: "Подготовить карточки и мягкие игрушки до начала урока.",
+    runtimeNotesSummary:
+      "Подготовить карточки и мягкие игрушки до начала урока.",
   },
-  runtimeNotes: "Следить за равномерным участием детей в подвижных активностях.",
+  runtimeNotes:
+    "Следить за равномерным участием детей в подвижных активностях.",
   outcomeNotes: "",
 };
 
@@ -2314,10 +5435,49 @@ const lessonThreeScheduledLesson: ScheduledLesson = {
     place: "Demo classroom A",
     runtimeStatus: "planned",
     runtimeStudentNavigationLocked: true,
-    runtimeNotesSummary: "Подготовить цветные карточки, игрушки животных и машинки.",
+    runtimeNotesSummary:
+      "Подготовить цветные карточки, игрушки животных и машинки.",
   },
   runtimeNotes:
     "Проследить, чтобы каждый ребёнок назвал минимум один цвет и одну фразу с «…的…».",
+  outcomeNotes: "",
+};
+
+const lessonFourScheduledLesson: ScheduledLesson = {
+  id: "scheduled-lesson:demo-world-around-me-lesson-4",
+  methodologyLessonId: lessonFourMethodologyLesson.id,
+  runtimeShell: {
+    id: "runtime-shell:demo-world-around-me-lesson-4",
+    classId: "3f8e9cf9-66f2-4fb9-9504-9f708b67e952",
+    startsAt: "2026-04-28T15:00:00.000Z",
+    format: "offline",
+    place: "Demo classroom A",
+    runtimeStatus: "planned",
+    runtimeStudentNavigationLocked: true,
+    runtimeNotesSummary:
+      "Подготовить карточки новых цветов, игры 4.6/4.7, ткани для луга и счёты.",
+  },
+  runtimeNotes:
+    "Проследить, чтобы каждый ребёнок назвал минимум один новый цвет и фразу «我喜欢…».",
+  outcomeNotes: "",
+};
+
+const lessonFiveScheduledLesson: ScheduledLesson = {
+  id: "scheduled-lesson:demo-world-around-me-lesson-5",
+  methodologyLessonId: lessonFiveMethodologyLesson.id,
+  runtimeShell: {
+    id: "runtime-shell:demo-world-around-me-lesson-5",
+    classId: "3f8e9cf9-66f2-4fb9-9504-9f708b67e952",
+    startsAt: "2026-05-05T15:00:00.000Z",
+    format: "offline",
+    place: "Demo classroom A",
+    runtimeStatus: "planned",
+    runtimeStudentNavigationLocked: true,
+    runtimeNotesSummary:
+      "Подготовить презентацию урока 5, приложения 1-8, карандаши, клей и ножницы.",
+  },
+  runtimeNotes:
+    "Проследить, чтобы каждый ребёнок различал 草 и 草地 и назвал минимум два элемента своего луга.",
   outcomeNotes: "",
 };
 
@@ -2325,6 +5485,8 @@ export const lessonContentFixtureScheduledLessons: ScheduledLesson[] = [
   lessonOneScheduledLesson,
   lessonTwoScheduledLesson,
   lessonThreeScheduledLesson,
+  lessonFourScheduledLesson,
+  lessonFiveScheduledLesson,
 ];
 
 export const lessonContentFixtureScheduledLesson: ScheduledLesson =
@@ -2333,6 +5495,10 @@ export const lessonContentFixtureScheduledLessonLessonTwo: ScheduledLesson =
   lessonTwoScheduledLesson;
 export const lessonContentFixtureScheduledLessonLessonThree: ScheduledLesson =
   lessonThreeScheduledLesson;
+export const lessonContentFixtureScheduledLessonLessonFour: ScheduledLesson =
+  lessonFourScheduledLesson;
+export const lessonContentFixtureScheduledLessonLessonFive: ScheduledLesson =
+  lessonFiveScheduledLesson;
 
 type FixtureLessonCandidateInput = {
   methodologySlug?: string;
@@ -2346,7 +5512,8 @@ function normalizeLessonTitle(value: string | undefined) {
 }
 
 function resolveFixtureLessonByIdentity(input: FixtureLessonCandidateInput) {
-  if (input.methodologySlug !== lessonContentFixtureMethodology.slug) return null;
+  if (input.methodologySlug !== lessonContentFixtureMethodology.slug)
+    return null;
 
   const byPosition =
     input.moduleIndex && input.lessonIndex
@@ -2369,7 +5536,9 @@ function resolveFixtureLessonByIdentity(input: FixtureLessonCandidateInput) {
   );
 }
 
-export function getFixtureStudentContentFallback(input: FixtureLessonCandidateInput) {
+export function getFixtureStudentContentFallback(
+  input: FixtureLessonCandidateInput,
+) {
   const fixtureLesson = resolveFixtureLessonByIdentity(input);
   if (!fixtureLesson) return null;
 
@@ -2382,13 +5551,15 @@ export function getFixtureStudentContentFallback(input: FixtureLessonCandidateIn
     source.sections.flatMap((section) => {
       if (section.type === "media_asset") return [section.assetId];
       if (section.type === "presentation") return [section.assetId];
-      if (section.type === "worksheet" && section.assetId) return [section.assetId];
+      if (section.type === "worksheet" && section.assetId)
+        return [section.assetId];
       if (section.type === "resource_links") {
         return section.resources
           .map((resource) => resource.assetId)
           .filter((id): id is string => Boolean(id));
       }
-      if (section.type === "count_board" && section.assetId) return [section.assetId];
+      if (section.type === "count_board" && section.assetId)
+        return [section.assetId];
       if (section.type === "vocabulary_cards") {
         return section.items
           .map((item) => item.audioAssetId)
@@ -2417,6 +5588,8 @@ export function getFixtureStudentContentFallback(input: FixtureLessonCandidateIn
 
   return {
     source,
-    assets: lessonContentFixtureAssets.filter((asset) => neededAssetIds.has(asset.id)),
+    assets: lessonContentFixtureAssets.filter((asset) =>
+      neededAssetIds.has(asset.id),
+    ),
   };
 }

@@ -658,10 +658,10 @@ function buildGenericUnifiedSteps(input: {
 
       const sections = section ? [section] : [];
       const sectionAssetIds = sections.flatMap(collectSectionAssetIds);
-      const legacyResourceIds =
-        sectionAssetIds.length > 0
-          ? []
-          : resolveLegacyResourceIdsByTitle({ step, assetsById: input.assetsById });
+      const legacyResourceIds = resolveLegacyResourceIdsByTitle({
+        step,
+        assetsById: input.assetsById,
+      });
 
       const resourceIds = Array.from(new Set([...sectionAssetIds, ...legacyResourceIds]));
       const screenType = screenTypeFromSections(sections);
@@ -684,7 +684,7 @@ function buildGenericUnifiedSteps(input: {
         movementMode: null,
         resourceIds,
         teacher: {
-          goal: step.description ?? null,
+          goal: step.teacherGoal ?? step.description ?? null,
           description: step.description ?? null,
           teacherActions: step.teacherActions,
           studentActions: step.studentActions,
@@ -693,6 +693,7 @@ function buildGenericUnifiedSteps(input: {
           materials: step.materials,
           successCriteria: step.pedagogicalDetails?.successCriteria,
           notes: [
+            ...(step.pedagogicalDetails?.teacherNotes ?? []),
             step.pedagogicalDetails?.fallbackRu,
             step.pedagogicalDetails?.homeExtension,
             step.pedagogicalDetails?.exitCheck,
