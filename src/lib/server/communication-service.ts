@@ -363,24 +363,63 @@ export async function getHomeworkScopedTeacherDiscussions(input: {
   }
 }
 
-export async function getParentCommunicationProjection(input: { userId: string }) {
+type ParentLearningChild = {
+  studentId: string;
+  studentName: string;
+  classes: Array<{ classId: string }>;
+};
+
+export type ParentCommunicationDeps = {
+  loadParentLearningContexts: (userId: string) => Promise<ParentLearningChild[]>;
+  readConversation: (input: {
+    classId: string;
+    studentId: string;
+    filter?: CommunicationFilter;
+  }) => Promise<{ messages: GroupStudentMessage[] }>;
+};
+
+async function loadParentLearningContextsByUserDefault(
+  userId: string,
+): Promise<ParentLearningChild[]> {
   const { loadParentLearningContextsByUser } = await import("./supabase-admin");
-  const children = await loadParentLearningContextsByUser(input.userId);
+  return loadParentLearningContextsByUser(userId);
+}
+
+export async function getParentCommunicationProjection(
+  input: { userId: string },
+  deps: ParentCommunicationDeps = {
+    loadParentLearningContexts: loadParentLearningContextsByUserDefault,
+    readConversation: getTeacherConversationReadModel,
+  },
+) {
+  const children = await deps.loadParentLearningContexts(input.userId);
   const result = await Promise.all(
     children.map(async (child) => {
-      const classId = child.classes[0]?.classId;
-      if (!classId) return { studentId: child.studentId, studentName: child.studentName, messages: [] };
+      // A child can be enrolled in several classes, and every (class, student)
+      // pair is a distinct conversation thread. Aggregate across ALL of the
+      // child's classes instead of only the first one, mirroring the student
+      // reader `getStudentConversationReadModels`. Threads are disjoint by
+      // conversation id, so concatenation never double-counts; we re-sort the
+      // merged list because each thread is only individually chronological.
+      const threadsByClass = await Promise.all(
+        child.classes.map(async ({ classId }) => {
+          const thread = await deps.readConversation({
+            classId,
+            studentId: child.studentId,
+            filter: "all",
+          });
+          return thread.messages;
+        }),
+      );
 
-      const thread = await getTeacherConversationReadModel({
-        classId,
-        studentId: child.studentId,
-        filter: "all",
-      });
+      const messages = threadsByClass
+        .flat()
+        .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
 
       return {
         studentId: child.studentId,
         studentName: child.studentName,
-        messages: thread.messages,
+        messages,
       };
     }),
   );
