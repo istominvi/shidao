@@ -68,6 +68,13 @@ test("methodology detail read model keeps normalized cover image", () => {
   assert.equal(source.includes("coverImage: normalizeMethodologyCoverImage(methodology)"), true);
 });
 
+test("methodology lesson read model does not query uuid columns with fixture ids", () => {
+  assert.equal(source.includes("function isUuidLike"), true);
+  assert.equal(source.includes("const databaseAssetIds = normalizedIds.filter(isUuidLike);"), true);
+  assert.equal(source.includes("listReusableAssetsByIdsAdmin(databaseAssetIds)"), true);
+  assert.equal(source.includes("const dbLesson = isUuidLike(input.lessonId)"), true);
+});
+
 test("canonical methodology fallback fills missing fixture lessons with stable route ids", () => {
   const methodology = {
     ...lessonContentFixtureMethodology,

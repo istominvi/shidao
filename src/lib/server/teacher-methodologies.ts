@@ -394,13 +394,22 @@ function collectAssetIds(
   );
 }
 
+function isUuidLike(value: string) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+    value.trim(),
+  );
+}
+
 async function listReusableAssetsWithFixtureFallback(assetIds: string[]) {
   const normalizedIds = Array.from(
     new Set(assetIds.map((id) => id.trim()).filter(Boolean)),
   );
   if (normalizedIds.length === 0) return [];
 
-  const dbAssets = await listReusableAssetsByIdsAdmin(normalizedIds);
+  const databaseAssetIds = normalizedIds.filter(isUuidLike);
+  const dbAssets = databaseAssetIds.length
+    ? await listReusableAssetsByIdsAdmin(databaseAssetIds)
+    : [];
   const dbAssetIds = new Set(dbAssets.map((asset) => asset.id));
   const missingAssetIds = normalizedIds.filter((id) => !dbAssetIds.has(id));
 
@@ -419,7 +428,9 @@ export async function getTeacherMethodologyLessonReadModel(input: {
   if (!methodology) return null;
 
   const methodologyTitle = teacherFacingMethodologyTitle(methodology);
-  const dbLesson = await getMethodologyLessonByIdAdmin(input.lessonId);
+  const dbLesson = isUuidLike(input.lessonId)
+    ? await getMethodologyLessonByIdAdmin(input.lessonId)
+    : null;
   const lesson =
     dbLesson && dbLesson.methodologyId === methodology.id
       ? dbLesson
