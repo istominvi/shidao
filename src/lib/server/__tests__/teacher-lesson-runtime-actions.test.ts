@@ -32,6 +32,7 @@ test("teacher runtime mutation access allows only teacher profile", () => {
     availableAdultProfiles: ["teacher" as const, "parent" as const],
     hasAnyAdultProfile: true,
     hasPin: false,
+    sessionsInvalidBefore: null,
   };
 
   const teacherResolution: AccessResolution = {

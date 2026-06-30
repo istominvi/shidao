@@ -777,8 +777,8 @@ export async function getUserContextById(
     },
     security: {
       part: "user_security query",
-      select: "pin_hash",
-      path: `/rest/v1/user_security?select=pin_hash&user_id=eq.${userId}&limit=1`,
+      select: "pin_hash,sessions_invalid_before",
+      path: `/rest/v1/user_security?select=pin_hash,sessions_invalid_before&user_id=eq.${userId}&limit=1`,
     },
     authUser: {
       part: "/auth/v1/admin/users/{id}",
@@ -823,11 +823,9 @@ export async function getUserContextById(
         settings: Record<string, unknown>;
       }>
     >(userContextQueries.preference.path, "GET", { admin: true }),
-    request<Array<{ pin_hash: string | null }>>(
-      userContextQueries.security.path,
-      "GET",
-      { admin: true },
-    ),
+    request<
+      Array<{ pin_hash: string | null; sessions_invalid_before: string | null }>
+    >(userContextQueries.security.path, "GET", { admin: true }),
     request<unknown>(userContextQueries.authUser.path, "GET", { admin: true }),
   ]);
 
@@ -984,7 +982,31 @@ export async function getUserContextById(
     availableAdultProfiles: profileChoices,
     hasAnyAdultProfile: Boolean(parent || teacher),
     hasPin: Boolean(securityRows[0]?.pin_hash),
+    sessionsInvalidBefore: securityRows[0]?.sessions_invalid_before ?? null,
   };
+}
+
+/**
+ * Revokes all of a user's app sessions issued before `cutoff` (default: now).
+ * Used on password reset and for "log out everywhere" / compromise response.
+ * Returns the effective cutoff ISO string, or null if the RPC returned nothing.
+ */
+export async function revokeUserSessionsAdmin(
+  userId: string,
+  cutoff: Date | string = new Date(),
+): Promise<string | null> {
+  // Default the cutoff to the app-server clock (not the DB clock) so it is
+  // consistent with the issued-at (iat) stamped onto sessions by the same
+  // server — a session minted right after revocation is then guaranteed to
+  // survive regardless of any app/DB clock skew.
+  const payload = {
+    p_user_id: userId,
+    p_cutoff: cutoff instanceof Date ? cutoff.toISOString() : cutoff,
+  };
+  return request<string | null>("/rest/v1/rpc/revoke_user_sessions", "POST", {
+    admin: true,
+    payload,
+  });
 }
 
 export async function upsertParentProfile(

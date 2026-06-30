@@ -2,6 +2,7 @@
 
 ## Канонический минимум
 
+- [Roadmap (возобновление разработки, скоуп Фазы 2)](./roadmap.md)
 - [README](../README.md)
 - [Auth и routing](./authorization-routing.md)
 - [Доменная модель](./domain-model.md)

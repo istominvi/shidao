@@ -128,6 +128,7 @@ create table if not exists public.user_security (
   pin_created_at timestamptz null,
   pin_updated_at timestamptz null,
   last_pin_login_at timestamptz null,
+  sessions_invalid_before timestamptz null,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
