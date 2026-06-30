@@ -59,6 +59,19 @@ test("generic plan renders full teacher-side step details for canonical lessons"
   assert.equal(pedagogicalSource.includes("GenericStepResources"), true);
 });
 
+test("plan tab renders rich source materials for world-around-me lesson 4", () => {
+  assert.equal(pedagogicalSource.includes("function LessonFourPlan"), true);
+  assert.equal(pedagogicalSource.includes("isLessonFourPlan(lessonIdentity)"), true);
+  assert.equal(pedagogicalSource.includes("Игра 4.6 · что пропало?"), true);
+  assert.equal(pedagogicalSource.includes("Игра 4.7 · сортировка по корзинам"), true);
+  assert.equal(pedagogicalSource.includes("color-animals-grassland.svg"), true);
+  assert.equal(pedagogicalSource.includes("color-domino.svg"), true);
+  assert.equal(pedagogicalSource.includes("workbook-pages-7-8.svg"), true);
+  assert.equal(pedagogicalSource.includes("song-video:my-favorite-color-is-blue"), true);
+  assert.equal(pedagogicalSource.includes("extractGoogleDriveFileId"), true);
+  assert.equal(pedagogicalSource.includes("drivePreviewUrl"), true);
+});
+
 test("student screen panel supports step deck API and controlled navigation", () => {
   assert.equal(studentPanelSource.includes("steps?: MethodologyLessonStep[]"), true);
   assert.equal(studentPanelSource.includes("controlledStepId?: string"), true);

@@ -90,6 +90,21 @@ const chineseGlossary: Record<string, string> = {
   "狗在跳": "собачка прыгает",
   "在…里": "в / внутри",
   "猫住在农场里。": "кошка живёт на ферме",
+  "橘色": "оранжевый",
+  "黑色": "чёрный",
+  "白色": "белый",
+  "棕色": "коричневый",
+  "草地": "луг / поле",
+  "我喜欢…": "мне нравится…",
+  "我喜欢蓝色。": "мне нравится синий цвет",
+  "我喜欢黑色。": "мне нравится чёрный цвет",
+  "我喜欢橘色。": "мне нравится оранжевый цвет",
+  "有": "иметь / есть",
+  "飞": "летать",
+  "草地上有什么动物？": "какие животные на лугу?",
+  "草地上有一头蓝色的牛。": "на лугу одна синяя корова",
+  "草地上有黄色的猫。": "на лугу жёлтая кошка",
+  "这是黑色。": "это чёрный цвет",
 };
 
 const lessonOneDisplaySteps: LessonPlanDisplayStep[] = [
@@ -245,6 +260,14 @@ function isLessonOnePlan(identity?: Props["lessonIdentity"]) {
   );
 }
 
+function isLessonFourPlan(identity?: Props["lessonIdentity"]) {
+  return (
+    identity?.methodologySlug === "world-around-me" &&
+    identity?.moduleIndex === 1 &&
+    identity?.lessonIndex === 4
+  );
+}
+
 function ResourceButtons({
   actions,
   assetsById,
@@ -298,7 +321,31 @@ function mapAssetUrls(asset: ReusableAsset) {
     : [];
   const pptxFileRef = typeof metadata.pptxFileRef === "string" ? metadata.pptxFileRef : undefined;
   const fallbackUrl = !localUrl ? asset.sourceUrl : undefined;
-  return { localUrl, fallbackUrl, previewImageRefs, slideImageRefs, cardImageRefs, pptxFileRef };
+  const driveFileId = fallbackUrl ? extractGoogleDriveFileId(fallbackUrl) : null;
+  const drivePreviewUrl = driveFileId
+    ? `https://drive.google.com/file/d/${driveFileId}/preview`
+    : undefined;
+  const driveDownloadUrl = driveFileId
+    ? `https://drive.google.com/uc?export=download&id=${driveFileId}`
+    : undefined;
+  return {
+    localUrl,
+    fallbackUrl,
+    previewImageRefs,
+    slideImageRefs,
+    cardImageRefs,
+    pptxFileRef,
+    drivePreviewUrl,
+    driveDownloadUrl,
+  };
+}
+
+function extractGoogleDriveFileId(url: string) {
+  const fileMatch = url.match(/\/file\/d\/([^/]+)/);
+  if (fileMatch?.[1]) return fileMatch[1];
+
+  const queryMatch = url.match(/[?&]id=([^&]+)/);
+  return queryMatch?.[1] ?? null;
 }
 
 const lessonOneStepOneVideoPlaylist = [
@@ -392,9 +439,24 @@ function LessonPlanResourcePreview({
   const [activeSlide, setActiveSlide] = useState(0);
   const [activeCard, setActiveCard] = useState(0);
   const frameRef = useRef<HTMLDivElement | null>(null);
-  const { localUrl, fallbackUrl, previewImageRefs, slideImageRefs, cardImageRefs, pptxFileRef } = mapAssetUrls(asset);
+  const {
+    localUrl,
+    fallbackUrl,
+    previewImageRefs,
+    slideImageRefs,
+    cardImageRefs,
+    pptxFileRef,
+    drivePreviewUrl,
+    driveDownloadUrl,
+  } = mapAssetUrls(asset);
   const primaryUrl = localUrl ?? fallbackUrl;
-  if (!primaryUrl && !previewImageRefs.length && !slideImageRefs.length && !cardImageRefs.length) return null;
+  if (
+    !primaryUrl &&
+    !drivePreviewUrl &&
+    !previewImageRefs.length &&
+    !slideImageRefs.length &&
+    !cardImageRefs.length
+  ) return null;
 
   const actionButtonClassName =
     "inline-flex rounded-lg border border-neutral-300 bg-white px-3 py-1.5 text-xs font-semibold text-neutral-800";
@@ -402,12 +464,20 @@ function LessonPlanResourcePreview({
   if (asset.kind === "video" || asset.kind === "lesson_video" || asset.kind === "song_video") {
     return (
       <div className="mt-3 rounded-xl border border-neutral-200 bg-neutral-50 p-3">
-        {primaryUrl ? (
+        {localUrl ? (
           <video controls playsInline preload="metadata" src={primaryUrl} className="w-full rounded-lg border border-neutral-200 bg-black" />
+        ) : drivePreviewUrl ? (
+          <iframe
+            src={drivePreviewUrl}
+            title={asset.title}
+            className="aspect-video w-full rounded-lg border border-neutral-200 bg-black"
+            allow="autoplay"
+          />
         ) : null}
         <div className="mt-2 flex flex-wrap gap-2">
           {primaryUrl ? <a href={primaryUrl} target="_blank" rel="noreferrer" className={actionButtonClassName}>{openLabel(asset)}</a> : null}
           {localUrl ? <a href={localUrl} download className={actionButtonClassName}>{downloadLabel(asset)}</a> : null}
+          {!localUrl && driveDownloadUrl ? <a href={driveDownloadUrl} target="_blank" rel="noreferrer" className={actionButtonClassName}>{downloadLabel(asset)}</a> : null}
           {!localUrl && fallbackUrl ? <a href={fallbackUrl} target="_blank" rel="noreferrer" className={actionButtonClassName}>Открыть источник</a> : null}
         </div>
       </div>
@@ -417,10 +487,20 @@ function LessonPlanResourcePreview({
   if (asset.kind === "song_audio" || asset.kind === "song" || asset.kind === "pronunciation_audio") {
     return (
       <div className="mt-3 rounded-xl border border-neutral-200 bg-neutral-50 p-3">
-        {primaryUrl ? <audio controls preload="metadata" src={primaryUrl} className="w-full" /> : null}
+        {localUrl ? (
+          <audio controls preload="metadata" src={localUrl} className="w-full" />
+        ) : drivePreviewUrl ? (
+          <iframe
+            src={drivePreviewUrl}
+            title={asset.title}
+            className="h-24 w-full rounded-lg border border-neutral-200 bg-white"
+            allow="autoplay"
+          />
+        ) : null}
         <div className="mt-2 flex flex-wrap gap-2">
           {!localUrl && fallbackUrl ? <a href={fallbackUrl} target="_blank" rel="noreferrer" className={actionButtonClassName}>Открыть аудио</a> : null}
           {localUrl ? <a href={localUrl} download className={actionButtonClassName}>Скачать аудио</a> : null}
+          {!localUrl && driveDownloadUrl ? <a href={driveDownloadUrl} target="_blank" rel="noreferrer" className={actionButtonClassName}>Скачать аудио</a> : null}
         </div>
       </div>
     );
@@ -448,6 +528,8 @@ function LessonPlanResourcePreview({
           </div>
         ) : localUrl ? (
           <iframe src={localUrl} title={asset.title} className="h-56 w-full rounded-lg border border-neutral-200 bg-white" />
+        ) : drivePreviewUrl ? (
+          <iframe src={drivePreviewUrl} title={asset.title} className="h-56 w-full rounded-lg border border-neutral-200 bg-white" />
         ) : null}
         {mode === "single-slide" && previewSlides.length > 1 ? (
           <div className="mt-2 flex items-center justify-between gap-2">
@@ -545,10 +627,13 @@ function LessonPlanResourcePreview({
           </div>
         ) : localUrl ? (
           <iframe src={localUrl} title={asset.title} className="h-56 w-full rounded-lg border border-neutral-200 bg-white" />
+        ) : drivePreviewUrl ? (
+          <iframe src={drivePreviewUrl} title={asset.title} className="h-56 w-full rounded-lg border border-neutral-200 bg-white" />
         ) : null}
         <div className="mt-2 flex flex-wrap gap-2">
           {localUrl ? <a href={localUrl} target="_blank" rel="noreferrer" className={actionButtonClassName}>Открыть PDF</a> : null}
           {localUrl ? <a href={localUrl} download className={actionButtonClassName}>Скачать PDF</a> : null}
+          {!localUrl && driveDownloadUrl ? <a href={driveDownloadUrl} target="_blank" rel="noreferrer" className={actionButtonClassName}>Скачать PDF</a> : null}
           {!localUrl && fallbackUrl ? <a href={fallbackUrl} target="_blank" rel="noreferrer" className={actionButtonClassName}>Открыть источник</a> : null}
         </div>
       </div>
@@ -1017,6 +1102,529 @@ function LessonOnePlan({
   );
 }
 
+const lessonFourDisplaySteps: LessonPlanDisplayStep[] = [
+  {
+    id: "lesson-4-step-1",
+    order: 1,
+    category: "Активность",
+    title: "Приветствуем учеников и героев курса",
+    text: "Начинаем урок с приветствия, возвращаем детей к теме цветов и показываем, что сегодня будем говорить о любимых цветах.",
+    glossaryTerms: [],
+    durationMinutes: 2,
+  },
+  {
+    id: "lesson-4-step-2",
+    order: 2,
+    category: "Видео",
+    title: "Смотрим видео «colors»",
+    text: "Смотрим видео colors, вспоминаем знакомые цвета и слушаем новые. После просмотра просим детей показать или назвать цвет, который они услышали.",
+    glossaryTerms: ["红色", "绿色", "蓝色", "黄色", "橘色", "黑色", "白色", "棕色"],
+    durationMinutes: 3,
+    resourceIds: ["video:colors"],
+  },
+  {
+    id: "lesson-4-step-3",
+    order: 3,
+    category: "Лексика",
+    title: "Отрабатываем фразы 我是… / 你是… / 我是谁？",
+    text: "По очереди представляемся: сначала 我是… от лица преподавателя или героя. Затем, указывая на ребёнка, говорим 你是… и спрашиваем 我是谁？, помогая ответить 你是…",
+    glossaryTerms: ["我是…", "你是…", "我是谁？"],
+    durationMinutes: 3,
+  },
+  {
+    id: "lesson-4-step-4",
+    order: 4,
+    category: "Песня",
+    title: "Поём песню «farm animals»",
+    text: "Поём знакомую песню, возвращаем животных из прошлых уроков и добавляем движение: дети показывают животных и включаются в ритм занятия.",
+    glossaryTerms: [],
+    durationMinutes: 3,
+    resourceIds: ["song:farm-animals", "song-video:farm-animals-movement"],
+  },
+  {
+    id: "lesson-4-step-5",
+    order: 5,
+    category: "Лексика",
+    title: "Новые цвета: 橘色 / 黑色 / 白色 / 棕色",
+    text: "Учим цвета с помощью карточек. Первый проход: называем только слово. Второй проход: говорим предложением, например 这是黑色。",
+    glossaryTerms: ["橘色", "黑色", "白色", "棕色", "这是黑色。"],
+    durationMinutes: 4,
+    resourceIds: ["flashcards:world-around-me-lesson-4"],
+  },
+  {
+    id: "lesson-4-step-6",
+    order: 6,
+    category: "Активность",
+    title: "Игра «Что пропало?»",
+    text: "Выкладываем карточки в ряд, дети закрывают глаза, преподаватель убирает одну карточку. Дети называют цвет, который пропал. Это игра 4.6 из исходного плана.",
+    glossaryTerms: ["橘色", "黑色", "白色", "棕色"],
+    durationMinutes: 4,
+    resourceIds: ["activity:lesson-4-missing-color"],
+  },
+  {
+    id: "lesson-4-step-7",
+    order: 7,
+    category: "Активность",
+    title: "Сортируем предметы по цветам",
+    text: "Рассыпаем по комнате разноцветные мячи или предметы. Ребёнок выбирает предмет, называет цвет и кладёт его в правильную коробку. Это игра 4.7.",
+    glossaryTerms: ["绿色", "蓝色", "红色", "橘色", "黑色", "白色", "棕色"],
+    durationMinutes: 4,
+    resourceIds: ["activity:lesson-4-color-sorting"],
+  },
+  {
+    id: "lesson-4-step-8",
+    order: 8,
+    category: "Лексика",
+    title: "Грамматическая конструкция 我喜欢…",
+    text: "Берём сердце из картона с клейкой лентой. Выбираем цвет и прикрепляем его на сердце, комментируя 我喜欢蓝色。 Дети по очереди выбирают цвет и говорят свою фразу.",
+    glossaryTerms: ["我喜欢…", "我喜欢蓝色。", "我喜欢黑色。", "我喜欢橘色。"],
+    durationMinutes: 4,
+    resourceIds: ["media:lesson-4-heart"],
+  },
+  {
+    id: "lesson-4-step-9",
+    order: 9,
+    category: "Активность",
+    title: "Глагол 飞 и повтор действий",
+    text: "Вводим 飞 и повторяем знакомые действия: 跑, 跳, 拍手, 数. Учитель показывает карточку, дети выполняют действие.",
+    glossaryTerms: ["飞", "跑", "跳", "我们跳吧！"],
+    durationMinutes: 3,
+    resourceIds: ["media:lesson-4-action-cards"],
+  },
+  {
+    id: "lesson-4-step-10",
+    order: 10,
+    category: "Лексика",
+    title: "Учим слово 草地",
+    text: "Показываем карточку 草地, проговариваем слово несколько раз и готовим детей к сцене с лугом и животными.",
+    glossaryTerms: ["草地"],
+    durationMinutes: 3,
+    resourceIds: ["media:lesson-4-grassland"],
+  },
+  {
+    id: "lesson-4-step-11",
+    order: 11,
+    category: "Активность",
+    title: "Луг и животные: 草地上有什么动物？",
+    text: "Выкладываем луг из синей, зелёной и жёлтой ткани, добавляем цветных животных из Приложения 3 и говорим: 草地上有一头蓝色的牛。",
+    glossaryTerms: ["草地上有什么动物？", "草地上有一头蓝色的牛。", "草地上有黄色的猫。"],
+    durationMinutes: 5,
+    resourceIds: ["worksheet:appendix-3-color-animals", "media:lesson-4-grassland"],
+  },
+  {
+    id: "lesson-4-step-12",
+    order: 12,
+    category: "Активность",
+    title: "Приложение 4: домино цветов",
+    text: "На экране иероглифы цветов и цветовые карточки. Ребёнок соединяет цвет с правильным иероглифом. Если пара неправильная, соединение не засчитывается.",
+    glossaryTerms: ["橘色", "黑色", "白色", "棕色"],
+    durationMinutes: 4,
+    resourceIds: ["worksheet:appendix-4-color-domino"],
+  },
+  {
+    id: "lesson-4-step-13",
+    order: 13,
+    category: "Счёт",
+    title: "Разноцветные счёты: считаем до 5",
+    text: "Показываем разноцветные счёты. Дети называют цвет ряда и считают бусины: оранжевые — 5, чёрные — 4, белые — 3, коричневые — 2.",
+    glossaryTerms: ["橘色", "黑色", "白色", "棕色"],
+    durationMinutes: 3,
+    resourceIds: ["media:lesson-4-abacus"],
+  },
+  {
+    id: "lesson-4-step-14",
+    order: 14,
+    category: "Тетрадь",
+    title: "Рабочая тетрадь: страницы 7–8",
+    text: "Слушаем преподавателя и раскрашиваем животных нужным цветом. После выполнения ребёнок показывает животное и называет цвет.",
+    glossaryTerms: ["这是黑色。", "橘色", "黑色", "白色", "棕色"],
+    durationMinutes: 4,
+    resourceIds: ["worksheet:workbook-pages-7-8"],
+  },
+  {
+    id: "lesson-4-step-15",
+    order: 15,
+    category: "Песня",
+    title: "Поём «my favorite color is blue»",
+    text: "Финальный музыкальный повтор фразы про любимый цвет. Дети слушают, поют и показывают карточку любимого цвета.",
+    glossaryTerms: ["我喜欢…", "我喜欢蓝色。"],
+    durationMinutes: 3,
+    resourceIds: [
+      "song:my-favorite-color-is-blue",
+      "song-video:my-favorite-color-is-blue",
+    ],
+  },
+  {
+    id: "lesson-4-step-16",
+    order: 16,
+    category: "Завершение",
+    title: "Прощаемся с детьми и героями курса",
+    text: "Перед прощанием каждый ребёнок называет один новый цвет и одну фразу 我喜欢… Затем прощаемся с героями курса.",
+    glossaryTerms: ["橘色", "黑色", "白色", "棕色", "我喜欢…"],
+    durationMinutes: 2,
+  },
+];
+
+const lessonFourColors = [
+  { id: "orange", hanzi: "橘色", pinyin: "juse", meaning: "оранжевый", swatch: "#f97316", border: "#f97316" },
+  { id: "black", hanzi: "黑色", pinyin: "heise", meaning: "чёрный", swatch: "#111111", border: "#111111" },
+  { id: "white", hanzi: "白色", pinyin: "baise", meaning: "белый", swatch: "#ffffff", border: "#60a5fa" },
+  { id: "brown", hanzi: "棕色", pinyin: "zongse", meaning: "коричневый", swatch: "#8b5e34", border: "#8b5e34" },
+] as const;
+
+function LessonFourColorCardsBlock() {
+  return (
+    <div className="mt-3 border-t border-amber-100 pt-3">
+      <p className="text-xs font-bold uppercase text-amber-800">Карточки в два прохода</p>
+      <div className="mt-2 grid gap-2 sm:grid-cols-4">
+        {lessonFourColors.map((color) => (
+          <div key={color.id} className="rounded-xl border border-neutral-200 bg-white px-3 py-3 text-center">
+            <span
+              className="mx-auto block h-12 w-12 rounded-full border"
+              style={{
+                backgroundColor: color.swatch,
+                borderColor: color.border,
+              }}
+            />
+            <p className="mt-2 text-2xl font-bold text-neutral-950" style={{ fontFamily: cjkFontFamily }}>{color.hanzi}</p>
+            <p className="text-xs text-neutral-600">{color.pinyin} · {color.meaning}</p>
+          </div>
+        ))}
+      </div>
+      <p className="mt-2 text-sm text-neutral-700" style={{ fontFamily: cjkFontFamily }}>
+        Проход 1: 橘色 / 黑色 / 白色 / 棕色. Проход 2: 这是黑色。
+      </p>
+    </div>
+  );
+}
+
+function LessonFourMissingColorBlock() {
+  const [hiddenColorId, setHiddenColorId] = useState<string | null>("black");
+
+  return (
+    <div className="mt-3 border-t border-amber-100 pt-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-xs font-bold uppercase text-amber-800">Игра 4.6 · что пропало?</p>
+        <button
+          type="button"
+          onClick={() => {
+            const currentIndex = lessonFourColors.findIndex((color) => color.id === hiddenColorId);
+            const next = lessonFourColors[(currentIndex + 1) % lessonFourColors.length];
+            setHiddenColorId(next?.id ?? null);
+          }}
+          className={productButtonClassName("secondary", "text-xs")}
+        >
+          Спрятать следующий цвет
+        </button>
+      </div>
+      <div className="mt-2 grid gap-2 sm:grid-cols-4">
+        {lessonFourColors.map((color) => {
+          const hidden = color.id === hiddenColorId;
+          return (
+            <div
+              key={color.id}
+              className={`flex min-h-28 flex-col items-center justify-center rounded-xl border px-3 py-3 text-center ${
+                hidden ? "border-dashed border-neutral-300 bg-neutral-100" : "border-neutral-200 bg-white"
+              }`}
+            >
+              {hidden ? (
+                <>
+                  <span className="text-3xl font-black text-neutral-400">?</span>
+                  <span className="mt-1 text-xs text-neutral-500">Что пропало?</span>
+                </>
+              ) : (
+                <>
+                  <span
+                    className="block h-12 w-12 rounded-full border"
+                  style={{ backgroundColor: color.swatch, borderColor: color.border }}
+                  />
+                  <span className="mt-2 text-xl font-bold text-neutral-950" style={{ fontFamily: cjkFontFamily }}>{color.hanzi}</span>
+                </>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function LessonFourSortingBlock() {
+  const items = [
+    { label: "морковь", color: "orange" },
+    { label: "ворона", color: "black" },
+    { label: "снег", color: "white" },
+    { label: "хлеб", color: "brown" },
+  ];
+  return (
+    <div className="mt-3 border-t border-emerald-100 pt-3">
+      <p className="text-xs font-bold uppercase text-emerald-800">Игра 4.7 · сортировка по корзинам</p>
+      <div className="mt-2 grid gap-3 lg:grid-cols-[0.9fr_1.1fr]">
+        <div className="grid grid-cols-2 gap-2">
+          {lessonFourColors.map((color) => (
+            <div key={color.id} className="rounded-xl border border-neutral-200 bg-white p-3 text-center">
+              <span
+                className="mx-auto block h-10 w-10 rounded-lg border"
+                style={{ backgroundColor: color.swatch, borderColor: color.border }}
+              />
+              <p className="mt-2 text-lg font-bold" style={{ fontFamily: cjkFontFamily }}>{color.hanzi}</p>
+              <p className="text-xs text-neutral-600">корзина</p>
+            </div>
+          ))}
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          {items.map((item) => {
+            const color = lessonFourColors.find((candidate) => candidate.id === item.color);
+            return (
+              <div key={item.label} className="flex items-center gap-2 rounded-xl border border-neutral-200 bg-white p-3">
+                <span
+                  className="h-8 w-8 rounded-full border"
+                  style={{ backgroundColor: color?.swatch, borderColor: color?.border }}
+                />
+                <span className="text-sm font-semibold text-neutral-800">{item.label} → {color?.hanzi}</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function LessonFourHeartBlock() {
+  return (
+    <div className="mt-3 grid gap-3 border-t border-rose-100 pt-3 md:grid-cols-[220px_1fr]">
+      <img
+        src="/methodologies/world-around-me/lesson-4/heart-color.svg"
+        alt="Сердце для фразы 我喜欢"
+        className="h-44 w-full object-contain"
+      />
+      <div className="flex flex-col justify-center">
+        <p className="text-sm leading-6 text-neutral-700" style={{ fontFamily: cjkFontFamily }}>
+          Учитель выбирает цвет, прикрепляет его на сердце и говорит: 我喜欢蓝色。
+          Затем каждый ребёнок выбирает свой цвет и повторяет фразу.
+        </p>
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          {lessonFourColors.map((color) => (
+            <Chip key={color.id} tone="rose" size="sm">{color.hanzi}</Chip>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function LessonFourGrasslandBlock() {
+  return (
+    <div className="mt-3 grid gap-3 border-t border-sky-100 pt-3 md:grid-cols-[1fr_0.8fr]">
+      <img
+        src="/methodologies/world-around-me/lesson-4/color-animals-grassland.svg"
+        alt="Цветные животные на лугу"
+        className="h-56 w-full rounded-xl border border-neutral-200 bg-white object-contain"
+      />
+      <div className="space-y-2 text-sm leading-6 text-neutral-700" style={{ fontFamily: cjkFontFamily }}>
+        <p className="font-semibold text-neutral-900">Речевой сценарий</p>
+        <p>草地上有什么动物？</p>
+        <p>草地上有一头蓝色的牛。</p>
+        <p>草地上有黄色的猫。</p>
+      </div>
+    </div>
+  );
+}
+
+function LessonFourDominoBlock() {
+  return (
+    <div className="mt-3 border-t border-violet-100 pt-3">
+      <img
+        src="/methodologies/world-around-me/lesson-4/color-domino.svg"
+        alt="Домино цветов"
+        className="h-56 w-full rounded-xl border border-neutral-200 bg-white object-contain"
+      />
+      <p className="mt-2 text-sm text-neutral-700">
+        Интерактивная логика: сначала кликаем иероглиф, затем соответствующий цвет. Неверная пара не соединяется.
+      </p>
+    </div>
+  );
+}
+
+function LessonFourAbacusBlock() {
+  return (
+    <div className="mt-3 grid gap-3 border-t border-sky-100 pt-3 md:grid-cols-[220px_1fr]">
+      <img
+        src="/methodologies/world-around-me/lesson-4/abacus.svg"
+        alt="Разноцветные счёты"
+        className="h-44 w-full object-contain"
+      />
+      <div className="grid grid-cols-2 gap-2">
+        {[
+          ["橘色", "5"],
+          ["黑色", "4"],
+          ["白色", "3"],
+          ["棕色", "2"],
+        ].map(([label, count]) => (
+          <div key={label} className="border-l-2 border-sky-200 pl-3">
+            <p className="text-xl font-bold" style={{ fontFamily: cjkFontFamily }}>{label}</p>
+            <p className="text-sm text-neutral-600">считаем до {count}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function LessonFourWorkbookBlock() {
+  return (
+    <div className="mt-3 border-t border-rose-100 pt-3">
+      <img
+        src="/methodologies/world-around-me/lesson-4/workbook-pages-7-8.svg"
+        alt="Рабочая тетрадь страницы 7-8"
+        className="h-56 w-full rounded-xl border border-neutral-200 bg-white object-contain"
+      />
+      <p className="mt-2 text-sm text-neutral-700">
+        Учитель называет цвет, ребёнок раскрашивает животное и произносит цвет или короткую фразу.
+      </p>
+    </div>
+  );
+}
+
+function LessonFourCustomBlock({ order }: { order: number }) {
+  if (order === 5) return <LessonFourColorCardsBlock />;
+  if (order === 6) return <LessonFourMissingColorBlock />;
+  if (order === 7) return <LessonFourSortingBlock />;
+  if (order === 8) return <LessonFourHeartBlock />;
+  if (order === 11) return <LessonFourGrasslandBlock />;
+  if (order === 12) return <LessonFourDominoBlock />;
+  if (order === 13) return <LessonFourAbacusBlock />;
+  if (order === 14) return <LessonFourWorkbookBlock />;
+  return null;
+}
+
+function LessonFourPlan({
+  assetsById,
+  lessonNotesSlot,
+  steps,
+  onShowOnStudentScreen,
+}: {
+  assetsById: Record<string, ReusableAsset>;
+  lessonNotesSlot?: ReactNode;
+  steps: MethodologyLessonStep[];
+  onShowOnStudentScreen?: (stepId: string) => void;
+}) {
+  return (
+    <section className="space-y-6" aria-label="План урока">
+      <section className="space-y-3">
+        <CollapsibleCard title="Об уроке" icon={BookOpenText} defaultOpen>
+          <p className="text-sm leading-6 text-neutral-700" style={{ fontFamily: cjkFontFamily }}>
+            Урок знакомит детей с новыми цветами через видео, карточки, игры и песню.
+            Дети повторяют животных, добавляют глагол 飞, строят фразы 我喜欢… и 草地上有…
+          </p>
+        </CollapsibleCard>
+
+        {lessonNotesSlot ? (
+          <CollapsibleCard
+            title="Заметки к уроку"
+            icon={NotebookPen}
+            defaultOpen={false}
+            contentClassName="pt-1"
+          >
+            {lessonNotesSlot}
+          </CollapsibleCard>
+        ) : null}
+
+        <CollapsibleCard title="Карточки" icon={FileText} defaultOpen={false}>
+          <GlossaryChips compactTop terms={["橘色", "黑色", "白色", "棕色", "草地", "我喜欢…", "有", "飞"]} />
+          {assetsById["flashcards:world-around-me-lesson-4"] ? (
+            <LessonPlanResourcePreview
+              asset={assetsById["flashcards:world-around-me-lesson-4"]}
+              mode="single-slide"
+            />
+          ) : null}
+        </CollapsibleCard>
+
+        <CollapsibleCard
+          title="Новые слова и фразы"
+          icon={Languages}
+          defaultOpen={false}
+          contentClassName="pt-1"
+        >
+          <GlossaryChips compactTop terms={["橘色", "黑色", "白色", "棕色", "草地", "我喜欢…", "有", "飞", "草地上有什么动物？"]} />
+        </CollapsibleCard>
+
+        <CollapsibleCard title="Реквизит" icon={Package} defaultOpen={false}>
+          <ul className="space-y-1 text-sm leading-6 text-neutral-700">
+            <li>Активность 1: герои курса</li>
+            <li>Активность 3: герои курса</li>
+            <li>Активность 5: карточки 橘色，黑色，白色，棕色</li>
+            <li>Активность 6: карточки 橘色，黑色，白色，棕色 / игра 4.6</li>
+            <li>Активность 7: разноцветные мячи, коробки для сортировки / игра 4.7</li>
+            <li>Активность 8: сердце из картона, клейкая лента, карточки цветов</li>
+            <li>Активность 10: карточка 草地</li>
+            <li>Активность 11: синяя, зелёная и жёлтая ткани, Приложение 3</li>
+            <li>Активность 12: Приложение 4, домино цветов</li>
+            <li>Активность 13: разноцветные счёты</li>
+            <li>Активность 14: рабочая тетрадь, страницы 7–8</li>
+            <li>Активность 16: герои курса</li>
+          </ul>
+        </CollapsibleCard>
+      </section>
+
+      <section>
+        <div className="mb-4 flex items-center gap-2">
+          <h2 className="text-base font-semibold text-neutral-950">Структура урока</h2>
+          <Chip tone="sky" icon={Timer} className="whitespace-nowrap">45 минут</Chip>
+          <Chip tone="neutral" icon={Workflow} className="whitespace-nowrap">16 шагов</Chip>
+        </div>
+
+        <div className="space-y-3">
+          {lessonFourDisplaySteps.map((step) => (
+            <article key={step.id} className="rounded-2xl border border-neutral-200/80 bg-white p-4 shadow-[0_8px_28px_rgba(20,20,20,0.04)]">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Chip size="sm" tone="inverse">Шаг {step.order}</Chip>
+                  <Chip size="sm" tone={categoryChipByLabel[step.category].tone} icon={categoryChipByLabel[step.category].icon}>
+                    {step.category}
+                  </Chip>
+                  <Chip size="sm" tone="sky" icon={Timer} className="whitespace-nowrap">
+                    {step.durationMinutes ?? resolveCanonicalStepSource(steps, step.order)?.durationMinutes ?? 3} мин
+                  </Chip>
+                </div>
+                {onShowOnStudentScreen ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const sourceStep = resolveCanonicalStepSource(steps, step.order);
+                      if (sourceStep) onShowOnStudentScreen(sourceStep.id);
+                    }}
+                    className={productButtonClassName("secondary", "text-sm whitespace-nowrap")}
+                  >
+                    <MonitorUp className="h-4 w-4" aria-hidden="true" />
+                    На экран
+                  </button>
+                ) : null}
+              </div>
+              <h3 className="mt-2 text-lg font-semibold text-neutral-950" style={{ fontFamily: cjkFontFamily }}>{step.title}</h3>
+              <p className="mt-2 text-sm leading-6 text-neutral-700" style={{ fontFamily: cjkFontFamily }}>{step.text}</p>
+              <GlossaryChips terms={step.glossaryTerms} />
+              <LessonFourCustomBlock order={step.order} />
+              {step.resourceIds?.map((resourceId) => {
+                const asset = assetsById[resourceId];
+                if (!asset) return null;
+                return (
+                  <LessonPlanResourcePreview
+                    key={`${step.id}-${resourceId}`}
+                    asset={asset}
+                    mode={asset.kind === "flashcards_pdf" ? "single-slide" : "default"}
+                  />
+                );
+              })}
+            </article>
+          ))}
+        </div>
+      </section>
+    </section>
+  );
+}
+
 function normalizePlanItems(items: Array<string | null | undefined> | undefined) {
   return Array.from(
     new Set(
@@ -1216,6 +1824,17 @@ export function TeacherLessonPedagogicalContent({
   if (isLessonOnePlan(lessonIdentity)) {
     return (
       <LessonOnePlan
+        assetsById={assetsById}
+        lessonNotesSlot={lessonNotesSlot}
+        steps={steps}
+        onShowOnStudentScreen={onShowOnStudentScreen}
+      />
+    );
+  }
+
+  if (isLessonFourPlan(lessonIdentity)) {
+    return (
+      <LessonFourPlan
         assetsById={assetsById}
         lessonNotesSlot={lessonNotesSlot}
         steps={steps}

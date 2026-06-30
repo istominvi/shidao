@@ -340,9 +340,17 @@ export const lessonContentFixtureAssets: ReusableAsset[] = [
     id: "song:my-favorite-color-is-blue",
     kind: "song",
     title: "my favorite color is blue",
-    description: "Песня для финала урока 3 о любимом цвете.",
+    description: "Песня для финала уроков о любимом цвете.",
     sourceUrl:
       "https://drive.google.com/file/d/1poNUSgbO6jgYl7fkQdIb5Zr5pAQ5wAqf/view?usp=drive_link",
+  },
+  {
+    id: "song-video:my-favorite-color-is-blue",
+    kind: "song_video",
+    title: "my favorite color is blue (video)",
+    description: "Видео песни для демонстрации и подпевания.",
+    sourceUrl:
+      "https://drive.google.com/file/d/187Poj_6dwktDokSSRkqzGy5MBmiRTAhG/view?usp=drive_link",
   },
   {
     id: "worksheet:appendix-3",
@@ -390,6 +398,15 @@ export const lessonContentFixtureAssets: ReusableAsset[] = [
     title: "Карточки урока 4: новые цвета",
     description:
       "Карточки 橘色、黑色、白色、棕色 и дополнительные слова урока.",
+    fileRef: "/methodologies/world-around-me/lesson-4/color-cards.svg",
+    metadata: {
+      cardImageRefs: [
+        "/methodologies/world-around-me/lesson-4/color-card-orange.svg",
+        "/methodologies/world-around-me/lesson-4/color-card-black.svg",
+        "/methodologies/world-around-me/lesson-4/color-card-white.svg",
+        "/methodologies/world-around-me/lesson-4/color-card-brown.svg",
+      ],
+    },
   },
   {
     id: "activity:lesson-4-missing-color",
@@ -412,6 +429,12 @@ export const lessonContentFixtureAssets: ReusableAsset[] = [
     kind: "worksheet",
     title: "Приложение 3: цветные животные на лугу",
     description: "Материал для выкладывания луга и фраз «草地上有…».",
+    fileRef:
+      "/methodologies/world-around-me/lesson-4/color-animals-grassland.svg",
+    metadata: {
+      previewImageRef:
+        "/methodologies/world-around-me/lesson-4/color-animals-grassland.svg",
+    },
   },
   {
     id: "worksheet:appendix-4-color-domino",
@@ -419,12 +442,21 @@ export const lessonContentFixtureAssets: ReusableAsset[] = [
     title: "Приложение 4: домино цветов",
     description:
       "Найди пару: иероглиф цвета и соответствующая цветовая карточка.",
+    fileRef: "/methodologies/world-around-me/lesson-4/color-domino.svg",
+    metadata: {
+      previewImageRef: "/methodologies/world-around-me/lesson-4/color-domino.svg",
+    },
   },
   {
     id: "worksheet:workbook-pages-7-8",
     kind: "worksheet",
     title: "Рабочая тетрадь, стр. 7–8",
     description: "Раскрась животных нужным цветом и назови цвет по-китайски.",
+    fileRef: "/methodologies/world-around-me/lesson-4/workbook-pages-7-8.svg",
+    metadata: {
+      previewImageRef:
+        "/methodologies/world-around-me/lesson-4/workbook-pages-7-8.svg",
+    },
   },
   {
     id: "media:lesson-4-heart",
@@ -1475,7 +1507,10 @@ const lessonFourBlocks: LessonBlockInstance[] = [
     blockType: "song_segment",
     order: 4,
     title: "Песня farm animals",
-    assetRefs: [{ kind: "song", id: "song:farm-animals" }],
+    assetRefs: [
+      { kind: "song", id: "song:farm-animals" },
+      { kind: "song_video", id: "song-video:farm-animals-movement" },
+    ],
     content: {
       activityGoal:
         "Сохранить знакомый ритуал и активизировать лексику животных.",
@@ -1485,7 +1520,7 @@ const lessonFourBlocks: LessonBlockInstance[] = [
       teacher: {
         goal: "Разогреть группу через знакомую песню.",
         actions: ["Включите песню.", "Поддерживайте движения и подпевание."],
-        materials: ["song:farm-animals"],
+        materials: ["song:farm-animals", "song-video:farm-animals-movement"],
       },
       student: {
         componentKey: "song_player_v1",
@@ -1901,7 +1936,10 @@ const lessonFourBlocks: LessonBlockInstance[] = [
     blockType: "song_segment",
     order: 15,
     title: "Песня my favorite color is blue",
-    assetRefs: [{ kind: "song", id: "song:my-favorite-color-is-blue" }],
+    assetRefs: [
+      { kind: "song", id: "song:my-favorite-color-is-blue" },
+      { kind: "song_video", id: "song-video:my-favorite-color-is-blue" },
+    ],
     content: {
       activityGoal:
         "Закрепить тему любимого цвета и эмоционально закрыть активную часть урока.",
@@ -1916,7 +1954,10 @@ const lessonFourBlocks: LessonBlockInstance[] = [
           "Включите песню.",
           "Показывайте карточки цветов и приглашайте детей подпевать.",
         ],
-        materials: ["song:my-favorite-color-is-blue"],
+        materials: [
+          "song:my-favorite-color-is-blue",
+          "song-video:my-favorite-color-is-blue",
+        ],
       },
       student: {
         componentKey: "song_player_v1",
@@ -1977,6 +2018,8 @@ const lessonFourBlocks: LessonBlockInstance[] = [
       { kind: "worksheet", id: "worksheet:appendix-4-color-domino" },
       { kind: "media_file", id: "media:lesson-4-abacus" },
       { kind: "worksheet", id: "worksheet:workbook-pages-7-8" },
+      { kind: "song", id: "song:my-favorite-color-is-blue" },
+      { kind: "song_video", id: "song-video:my-favorite-color-is-blue" },
     ],
     content: {
       materialsChecklist: [

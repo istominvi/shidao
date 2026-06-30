@@ -419,6 +419,20 @@ test("world-around-me lesson 4 keeps 16-step student parity and custom games", (
   assert.equal(sortingStep?.student.componentKey, "color_sorting_game_v1");
   assert.equal(sortingStep?.student.allowStudentInteraction, true);
 
+  const favoriteColorSongStep = readModel.steps[14];
+  assert.equal(
+    favoriteColorSongStep?.resourceIds?.includes(
+      "song-video:my-favorite-color-is-blue",
+    ),
+    true,
+  );
+
+  const dominoStep = readModel.steps[11];
+  assert.equal(
+    dominoStep?.resourceIds?.includes("worksheet:appendix-4-color-domino"),
+    true,
+  );
+
   const grasslandStep = readModel.steps[9];
   assert.equal(
     grasslandStep?.resourceIds?.includes("media:lesson-4-grassland"),

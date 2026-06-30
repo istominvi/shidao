@@ -658,10 +658,10 @@ function buildGenericUnifiedSteps(input: {
 
       const sections = section ? [section] : [];
       const sectionAssetIds = sections.flatMap(collectSectionAssetIds);
-      const legacyResourceIds =
-        sectionAssetIds.length > 0
-          ? []
-          : resolveLegacyResourceIdsByTitle({ step, assetsById: input.assetsById });
+      const legacyResourceIds = resolveLegacyResourceIdsByTitle({
+        step,
+        assetsById: input.assetsById,
+      });
 
       const resourceIds = Array.from(new Set([...sectionAssetIds, ...legacyResourceIds]));
       const screenType = screenTypeFromSections(sections);
