@@ -6,7 +6,10 @@ import {
   writeAppSession,
 } from "@/lib/server/app-session";
 import { logger } from "@/lib/server/logger";
-import { updateAuthUserPasswordById } from "@/lib/server/supabase-admin";
+import {
+  revokeUserSessionsAdmin,
+  updateAuthUserPasswordById,
+} from "@/lib/server/supabase-admin";
 
 export const runtime = "nodejs";
 
@@ -56,6 +59,18 @@ export async function POST(req: NextRequest) {
     }
 
     await updateAuthUserPasswordById(session.uid, password);
+
+    // Revoke every previously issued session (including any leaked/stale cookie)
+    // before minting a fresh one. The cutoff is captured on the app clock so the
+    // new session below (iat >= cutoff) is guaranteed to survive.
+    try {
+      await revokeUserSessionsAdmin(session.uid, new Date());
+    } catch (error) {
+      logger.error("[auth-reset-password] failed to revoke prior sessions", {
+        userId: session.uid,
+        error,
+      });
+    }
 
     await writeAppSession({
       uid: session.uid,

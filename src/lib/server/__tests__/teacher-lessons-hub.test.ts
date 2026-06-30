@@ -33,6 +33,7 @@ const teacherContext = {
   availableAdultProfiles: ["teacher" as const, "parent" as const],
   hasAnyAdultProfile: true,
   hasPin: false,
+  sessionsInvalidBefore: null,
 };
 
 test("lessons hub access allows only teacher profile", () => {

@@ -1,6 +1,6 @@
 import { type ProfileKind } from "@/lib/auth";
 import { logger } from "@/lib/server/logger";
-import { readAppSession } from "@/lib/server/app-session";
+import { isSessionRevoked, readAppSession } from "@/lib/server/app-session";
 import {
   ensureUserPreference,
   getUserContextById,
@@ -70,6 +70,13 @@ export const resolveAccessPolicy = cache(async (): Promise<AccessResolution> => 
       email: session.email,
       fullName: session.fullName,
     });
+
+    // Per-user server-side revocation: a session whose iat predates the user's
+    // revocation cutoff is treated as logged out (e.g. after password reset or
+    // "log out everywhere"). See migration 202606300001.
+    if (isSessionRevoked(session.iat, context.sessionsInvalidBefore)) {
+      return { status: "guest" };
+    }
 
     if (context.actorKind === "student") {
       return { status: "student", context };

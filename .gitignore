@@ -1,2 +1,16 @@
 node_modules
 .next
+
+# local env files (secrets — never commit)
+.env*.local
+.env.local
+
+# Design system (work in progress, not ready for repo)
+docs/design-system/
+
+# build / tooling artifacts
+.test-dist/
+tsconfig.tsbuildinfo
+
+# local Claude Code config
+.claude/

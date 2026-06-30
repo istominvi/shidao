@@ -4,7 +4,18 @@ import { cookies } from "next/headers";
 
 export const APP_SESSION_COOKIE = "shidao_session";
 const MIN_APP_SESSION_SECRET_LENGTH = 32;
-const SESSION_TTL_SECONDS = 60 * 60 * 24 * 7;
+const DEFAULT_SESSION_TTL_HOURS = 48;
+
+function resolveSessionTtlSeconds() {
+  const raw = process.env.APP_SESSION_TTL_HOURS;
+  const hours = raw ? Number(raw) : DEFAULT_SESSION_TTL_HOURS;
+  if (!Number.isFinite(hours) || hours <= 0) {
+    return DEFAULT_SESSION_TTL_HOURS * 3600;
+  }
+  return Math.floor(hours * 3600);
+}
+
+const SESSION_TTL_SECONDS = resolveSessionTtlSeconds();
 const SESSION_VERSION = Number(process.env.APP_SESSION_VERSION ?? "1");
 
 type SessionPayload = {
@@ -151,4 +162,25 @@ export async function writeAppSession(input: {
 export async function clearAppSession() {
   const jar = await cookies();
   jar.delete(APP_SESSION_COOKIE);
+}
+
+/**
+ * A session is revoked when it was issued (`iat`) strictly before the user's
+ * `sessions_invalid_before` cutoff (see migration 202606300001). Pure and
+ * testable; the cutoff may arrive as an ISO string (PostgREST), epoch ms, or
+ * Date. A null/unparseable cutoff means "not revoked".
+ */
+export function isSessionRevoked(
+  issuedAtMs: number,
+  sessionsInvalidBefore: string | number | Date | null | undefined,
+): boolean {
+  if (sessionsInvalidBefore == null) return false;
+  const cutoffMs =
+    sessionsInvalidBefore instanceof Date
+      ? sessionsInvalidBefore.getTime()
+      : typeof sessionsInvalidBefore === "number"
+        ? sessionsInvalidBefore
+        : Date.parse(sessionsInvalidBefore);
+  if (!Number.isFinite(cutoffMs)) return false;
+  return issuedAtMs < cutoffMs;
 }

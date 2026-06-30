@@ -24,7 +24,7 @@ This guide describes the **current** ShiDao database model.
 ### User preference and security
 
 - `user_preference` — `last_active_profile`, selected school, theme/settings.
-- `user_security` — PIN hash + lock/attempt metadata.
+- `user_security` — PIN hash + lock/attempt metadata, plus `sessions_invalid_before` (per-user app-session revocation cutoff).
 
 ### Methodology source layer
 
@@ -60,6 +60,7 @@ This guide describes the **current** ShiDao database model.
 - `school.kind = 'personal'` is the personal teacher workspace (shown as `Лично` in UI).
 - `school.kind = 'organization'` is a real school/org (shown as `Школа` in UI).
 - `user_preference.last_selected_school_id` stores selected organization; `null` means personal mode.
+- App sessions are stateless encrypted cookies carrying an `iat`. `user_security.sessions_invalid_before` is a per-user revocation cutoff: any session with `iat` before it is treated as logged out (enforced in `resolveAccessPolicy`). The `revoke_user_sessions(p_user_id, p_cutoff)` RPC bumps it (used on password reset / "log out everywhere"); the global `APP_SESSION_VERSION` env remains a separate all-users kill-switch.
 
 ## Demo organization behavior (MVP)
 

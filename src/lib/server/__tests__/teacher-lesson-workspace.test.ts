@@ -431,6 +431,7 @@ test("teacher workspace access allows only teacher profile", () => {
     availableAdultProfiles: ["teacher" as const],
     hasAnyAdultProfile: true,
     hasPin: false,
+    sessionsInvalidBefore: null,
   };
 
   const teacherResolution: AccessResolution = {
