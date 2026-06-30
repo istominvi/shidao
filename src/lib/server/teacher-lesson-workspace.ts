@@ -54,6 +54,7 @@ export type TeacherLessonFlowStep = {
   blockLabel: string;
   accentTone: "sky" | "violet" | "emerald" | "amber";
   title: string;
+  teacherGoal?: string;
   description?: string;
   teacherActions: string[];
   studentActions: string[];
@@ -79,6 +80,7 @@ export type TeacherLessonFlowStep = {
     successCriteria?: string[];
     answerKeyHint?: string;
     homeExtension?: string;
+    teacherNotes?: string[];
     recapPoints?: string[];
     exitCheck?: string;
     previewNextLesson?: string;
@@ -427,6 +429,44 @@ function getBlockStudentAuthoring(block: LessonBlockInstance): Pick<
   };
 }
 
+function getBlockTeacherAuthoring(block: LessonBlockInstance) {
+  const teacher = (block.content as { teacher?: unknown }).teacher;
+  if (!teacher || typeof teacher !== "object" || Array.isArray(teacher)) {
+    return {};
+  }
+
+  const authoring = teacher as {
+    goal?: unknown;
+    description?: unknown;
+    actions?: unknown;
+    expectedResponses?: unknown;
+    materials?: unknown;
+    notes?: unknown;
+  };
+
+  return {
+    goal: typeof authoring.goal === "string" ? authoring.goal : undefined,
+    description:
+      typeof authoring.description === "string"
+        ? authoring.description
+        : undefined,
+    actions: Array.isArray(authoring.actions)
+      ? authoring.actions.filter((item): item is string => typeof item === "string")
+      : undefined,
+    expectedResponses: Array.isArray(authoring.expectedResponses)
+      ? authoring.expectedResponses.filter(
+          (item): item is string => typeof item === "string",
+        )
+      : undefined,
+    materials: Array.isArray(authoring.materials)
+      ? authoring.materials.filter((item): item is string => typeof item === "string")
+      : undefined,
+    notes: Array.isArray(authoring.notes)
+      ? authoring.notes.filter((item): item is string => typeof item === "string")
+      : undefined,
+  };
+}
+
 function buildFlowStepContent(block: LessonBlockInstance) {
   switch (block.blockType) {
     case "intro_framing": {
@@ -659,6 +699,15 @@ function buildPresentation(input: {
     lessonFlow: projection.orderedBlocks.map((block) => {
       const flowContent = buildFlowStepContent(block);
       const studentAuthoring = getBlockStudentAuthoring(block);
+      const teacherAuthoring = getBlockTeacherAuthoring(block);
+      const teacherActions =
+        teacherAuthoring.actions && teacherAuthoring.actions.length > 0
+          ? teacherAuthoring.actions
+          : flowContent.teacherActions;
+      const materials = normalizeItems([
+        ...(teacherAuthoring.materials ?? []),
+        ...collectBlockMaterials(block),
+      ]);
       return {
         id: block.id,
         order: block.order,
@@ -666,10 +715,14 @@ function buildPresentation(input: {
         blockLabel: blockTypeLabel(block.blockType),
         accentTone: blockTone(block.blockType),
         title: block.title?.trim() || blockTypeLabel(block.blockType),
-        description: flowContent.description,
-        teacherActions: flowContent.teacherActions,
+        teacherGoal: teacherAuthoring.goal,
+        description:
+          teacherAuthoring.description ??
+          teacherAuthoring.goal ??
+          flowContent.description,
+        teacherActions,
         studentActions: flowContent.studentActions,
-        materials: collectBlockMaterials(block),
+        materials,
         resources: block.assetRefs
           .map((assetRef) => assetsById[assetRef.id])
           .filter((asset): asset is ReusableAsset => Boolean(asset))
@@ -679,7 +732,13 @@ function buildPresentation(input: {
             url: asset.sourceUrl,
           })),
         ...studentAuthoring,
-        pedagogicalDetails: flowContent.pedagogicalDetails,
+        pedagogicalDetails: {
+          ...flowContent.pedagogicalDetails,
+          expectedStudentResponses:
+            teacherAuthoring.expectedResponses ??
+            flowContent.pedagogicalDetails?.expectedStudentResponses,
+          teacherNotes: teacherAuthoring.notes,
+        },
       } satisfies TeacherLessonFlowStep;
     }),
     notes: {

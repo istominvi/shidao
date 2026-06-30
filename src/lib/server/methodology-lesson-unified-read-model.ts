@@ -684,7 +684,7 @@ function buildGenericUnifiedSteps(input: {
         movementMode: null,
         resourceIds,
         teacher: {
-          goal: step.description ?? null,
+          goal: step.teacherGoal ?? step.description ?? null,
           description: step.description ?? null,
           teacherActions: step.teacherActions,
           studentActions: step.studentActions,
@@ -693,6 +693,7 @@ function buildGenericUnifiedSteps(input: {
           materials: step.materials,
           successCriteria: step.pedagogicalDetails?.successCriteria,
           notes: [
+            ...(step.pedagogicalDetails?.teacherNotes ?? []),
             step.pedagogicalDetails?.fallbackRu,
             step.pedagogicalDetails?.homeExtension,
             step.pedagogicalDetails?.exitCheck,

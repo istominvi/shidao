@@ -39,9 +39,7 @@ test("plan tab renders premium canonical script for world-around-me lesson 1", (
   assert.equal(pedagogicalSource.includes("Проход 2 — предложение"), true);
   assert.equal(pedagogicalSource.includes("StepOneVideoEmbed"), true);
   assert.equal(pedagogicalSource.includes("Скачать"), true);
-  assert.equal(pedagogicalSource.includes("Цель шага"), false);
-  assert.equal(pedagogicalSource.includes("Критерии успеха"), false);
-  assert.equal(pedagogicalSource.includes("Методические заметки"), false);
+  assert.equal(pedagogicalSource.includes("LessonOnePlan"), true);
 });
 
 test("plan tab keeps local controls for student screen step selection", () => {
@@ -49,6 +47,16 @@ test("plan tab keeps local controls for student screen step selection", () => {
   assert.equal(pedagogicalSource.includes("resolveCanonicalStepSource"), true);
   assert.equal(workspaceSource.includes("setSelectedStepId(stepId);"), true);
   assert.equal(workspaceSource.includes("setTab(\"student_screen\")"), true);
+});
+
+test("generic plan renders full teacher-side step details for canonical lessons", () => {
+  assert.equal(pedagogicalSource.includes("function GenericPlan"), true);
+  assert.equal(pedagogicalSource.includes("Действия преподавателя"), true);
+  assert.equal(pedagogicalSource.includes("Действия детей"), true);
+  assert.equal(pedagogicalSource.includes("Ожидаемые ответы"), true);
+  assert.equal(pedagogicalSource.includes("Критерии успеха"), true);
+  assert.equal(pedagogicalSource.includes("Методические заметки"), true);
+  assert.equal(pedagogicalSource.includes("GenericStepResources"), true);
 });
 
 test("student screen panel supports step deck API and controlled navigation", () => {

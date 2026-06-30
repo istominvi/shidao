@@ -1017,24 +1017,187 @@ function LessonOnePlan({
   );
 }
 
-function GenericPlan({ quickSummary, steps, durationLabel }: Pick<Props, "quickSummary" | "steps" | "durationLabel">) {
+function normalizePlanItems(items: Array<string | null | undefined> | undefined) {
+  return Array.from(
+    new Set(
+      (items ?? [])
+        .map((item) => item?.trim() ?? "")
+        .filter(Boolean),
+    ),
+  );
+}
+
+function PlanDetailList({
+  title,
+  items,
+}: {
+  title: string;
+  items: Array<string | null | undefined> | undefined;
+}) {
+  const normalized = normalizePlanItems(items);
+  if (!normalized.length) return null;
+
+  return (
+    <div className="border-l-2 border-neutral-200 pl-3">
+      <p className="text-xs font-bold uppercase text-neutral-500">{title}</p>
+      <ul className="mt-2 space-y-1.5 text-sm leading-6 text-neutral-700">
+        {normalized.map((item) => (
+          <li key={item} className="flex gap-2">
+            <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-neutral-400" aria-hidden="true" />
+            <span className="whitespace-pre-line" style={{ fontFamily: cjkFontFamily }}>
+              {item}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function GenericStepResources({
+  resourceIds,
+  assetsById,
+}: {
+  resourceIds: string[] | undefined;
+  assetsById: Record<string, ReusableAsset>;
+}) {
+  const assets = normalizePlanItems(resourceIds)
+    .map((assetId) => assetsById[assetId])
+    .filter((asset): asset is ReusableAsset => Boolean(asset));
+  if (!assets.length) return null;
+
+  return (
+    <div className="mt-3 border-t border-sky-100 pt-3">
+      <p className="text-xs font-bold uppercase text-sky-800">Материалы шага</p>
+      <div className="mt-2 flex flex-wrap gap-2">
+        {assets.map((asset) => {
+          const href = asset.fileRef ?? asset.sourceUrl;
+          if (!href) return null;
+          return (
+            <a
+              key={asset.id}
+              href={href}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex rounded-lg border border-sky-200 bg-white px-3 py-1.5 text-xs font-semibold text-sky-900"
+            >
+              {openLabel(asset)}
+            </a>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function GenericPlan({
+  quickSummary,
+  steps,
+  durationLabel,
+  summaryNote,
+  lessonNotesSlot,
+  assetsById = {},
+  onShowOnStudentScreen,
+}: Pick<
+  Props,
+  | "quickSummary"
+  | "steps"
+  | "durationLabel"
+  | "summaryNote"
+  | "lessonNotesSlot"
+  | "assetsById"
+  | "onShowOnStudentScreen"
+>) {
   return (
     <section className="space-y-6" aria-label="План урока">
       <section className="rounded-2xl border border-neutral-200 bg-white p-4">
         <h2 className="text-base font-semibold text-neutral-950">Кратко об уроке</h2>
         <p className="mt-2 text-sm text-neutral-700">{durationLabel ?? "45 минут"} · {steps.length} шагов</p>
+        {summaryNote ? (
+          <p className="mt-2 text-sm leading-6 text-neutral-700">{summaryNote}</p>
+        ) : null}
         <div className="mt-3 flex flex-wrap gap-1.5">
           {quickSummary.keyWords.map((word) => <Chip key={word} tone="sky">{word}</Chip>)}
           {quickSummary.keyPhrases.map((phrase) => <Chip key={phrase} tone="violet">{phrase}</Chip>)}
         </div>
       </section>
+      {lessonNotesSlot ? (
+        <CollapsibleCard
+          title="Заметки к уроку"
+          icon={NotebookPen}
+          defaultOpen={false}
+          contentClassName="pt-1"
+        >
+          {lessonNotesSlot}
+        </CollapsibleCard>
+      ) : null}
+      {quickSummary.prepChecklist.length ? (
+        <CollapsibleCard title="Реквизит" icon={Package} defaultOpen={false}>
+          <ul className="space-y-1 text-sm leading-6 text-neutral-700">
+            {quickSummary.prepChecklist.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+        </CollapsibleCard>
+      ) : null}
       <section className="space-y-3">
-        {steps.map((step) => (
-          <article key={step.id} className="rounded-2xl border border-neutral-200 bg-white p-4">
-            <h3 className="text-base font-semibold text-neutral-950">Шаг {step.order}. {step.title}</h3>
-            {step.teacher.description ? <p className="mt-2 text-sm text-neutral-700">{step.teacher.description}</p> : null}
-          </article>
-        ))}
+        {steps.map((step) => {
+          const showGoal =
+            step.teacher.goal &&
+            step.teacher.goal !== step.teacher.description
+              ? [step.teacher.goal]
+              : [];
+
+          return (
+            <article
+              key={step.id}
+              className="rounded-2xl border border-neutral-200/80 bg-white p-4 shadow-[0_8px_28px_rgba(20,20,20,0.04)]"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Chip size="sm" tone="inverse">Шаг {step.order}</Chip>
+                  {step.durationMinutes ? (
+                    <Chip size="sm" tone="sky" icon={Timer} className="whitespace-nowrap">
+                      {step.durationMinutes} мин
+                    </Chip>
+                  ) : null}
+                </div>
+                {onShowOnStudentScreen ? (
+                  <button
+                    type="button"
+                    onClick={() => onShowOnStudentScreen(step.id)}
+                    className={productButtonClassName("secondary", "text-sm whitespace-nowrap")}
+                  >
+                    <MonitorUp className="h-4 w-4" aria-hidden="true" />
+                    На экран
+                  </button>
+                ) : null}
+              </div>
+              <h3 className="mt-2 text-lg font-semibold text-neutral-950" style={{ fontFamily: cjkFontFamily }}>
+                {step.title}
+              </h3>
+              {step.teacher.description ? (
+                <p className="mt-2 text-sm leading-6 text-neutral-700" style={{ fontFamily: cjkFontFamily }}>
+                  {step.teacher.description}
+                </p>
+              ) : null}
+              <div className="mt-3 grid gap-3 md:grid-cols-2">
+                <PlanDetailList title="Цель" items={showGoal} />
+                <PlanDetailList title="Действия преподавателя" items={step.teacher.teacherActions} />
+                <PlanDetailList title="Действия детей" items={step.teacher.studentActions} />
+                <PlanDetailList title="Речевые модели" items={step.teacher.teacherScript} />
+                <PlanDetailList title="Ожидаемые ответы" items={step.teacher.expectedResponses} />
+                <PlanDetailList title="Критерии успеха" items={step.teacher.successCriteria} />
+                <PlanDetailList title="Материалы" items={step.teacher.materials} />
+                <PlanDetailList title="Методические заметки" items={step.teacher.notes} />
+              </div>
+              <GenericStepResources
+                resourceIds={step.resourceIds}
+                assetsById={assetsById}
+              />
+            </article>
+          );
+        })}
       </section>
     </section>
   );
@@ -1044,6 +1207,7 @@ export function TeacherLessonPedagogicalContent({
   quickSummary,
   steps,
   durationLabel,
+  summaryNote,
   assetsById = {},
   lessonNotesSlot,
   lessonIdentity,
@@ -1060,5 +1224,15 @@ export function TeacherLessonPedagogicalContent({
     );
   }
 
-  return <GenericPlan quickSummary={quickSummary} steps={steps} durationLabel={durationLabel} />;
+  return (
+    <GenericPlan
+      quickSummary={quickSummary}
+      steps={steps}
+      durationLabel={durationLabel}
+      summaryNote={summaryNote}
+      lessonNotesSlot={lessonNotesSlot}
+      assetsById={assetsById}
+      onShowOnStudentScreen={onShowOnStudentScreen}
+    />
+  );
 }
