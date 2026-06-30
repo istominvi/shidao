@@ -410,17 +410,56 @@ create table if not exists public.notification (
 -- Key DB functions used by app flows (non-exhaustive)
 -- -----------------------------------------------------------------------------
 
-create or replace function public.current_teacher_id() returns uuid language sql stable as $$
+-- Identity + membership helpers for RLS. ALL are SECURITY DEFINER (their internal
+-- reads bypass RLS) so policies built on them never read the mutually-recursive
+-- graph tables (class_teacher/class_student/student) directly. See migration
+-- 202606300002.
+create or replace function public.current_teacher_id() returns uuid language sql stable security definer set search_path = public as $$
   select t.id from public.teacher t where t.user_id = auth.uid() limit 1;
 $$;
 
-create or replace function public.current_parent_id() returns uuid language sql stable as $$
+create or replace function public.current_parent_id() returns uuid language sql stable security definer set search_path = public as $$
   select p.id from public.parent p where p.user_id = auth.uid() limit 1;
 $$;
 
-create or replace function public.current_student_id() returns uuid language sql stable as $$
+create or replace function public.current_student_id() returns uuid language sql stable security definer set search_path = public as $$
   select s.id from public.student s where s.user_id = auth.uid() limit 1;
 $$;
 
--- Note: RLS policies, all indexes, and all operational functions/RPCs are defined in migrations.
--- This snapshot is optimized for CURRENT model readability.
+create or replace function public.is_class_teacher(p_class_id uuid) returns boolean language sql stable security definer set search_path = public as $$
+  select exists (select 1 from public.class_teacher ct where ct.class_id = p_class_id and ct.teacher_id = public.current_teacher_id());
+$$;
+
+create or replace function public.is_class_student(p_class_id uuid) returns boolean language sql stable security definer set search_path = public as $$
+  select exists (select 1 from public.class_student cs where cs.class_id = p_class_id and cs.student_id = public.current_student_id());
+$$;
+
+create or replace function public.parent_in_class(p_class_id uuid) returns boolean language sql stable security definer set search_path = public as $$
+  select exists (select 1 from public.class_student cs join public.student s on s.id = cs.student_id where cs.class_id = p_class_id and s.parent_id = public.current_parent_id());
+$$;
+
+create or replace function public.can_read_class(p_class_id uuid) returns boolean language sql stable security definer set search_path = public as $$
+  select public.is_class_teacher(p_class_id) or public.is_class_student(p_class_id) or public.parent_in_class(p_class_id);
+$$;
+
+create or replace function public.is_my_child(p_student_id uuid) returns boolean language sql stable security definer set search_path = public as $$
+  select exists (select 1 from public.student s where s.id = p_student_id and s.parent_id = public.current_parent_id());
+$$;
+
+create or replace function public.teaches_student(p_student_id uuid) returns boolean language sql stable security definer set search_path = public as $$
+  select exists (select 1 from public.class_student cs join public.class_teacher ct on ct.class_id = cs.class_id where cs.student_id = p_student_id and ct.teacher_id = public.current_teacher_id());
+$$;
+
+create or replace function public.parent_in_school(p_school_id uuid) returns boolean language sql stable security definer set search_path = public as $$
+  select exists (select 1 from public.class_student cs join public.student s on s.id = cs.student_id join public.class c on c.id = cs.class_id where c.school_id = p_school_id and s.parent_id = public.current_parent_id());
+$$;
+
+create or replace function public.scheduled_homework_class_id(p_slha_id uuid) returns uuid language sql stable security definer set search_path = public as $$
+  select sl.class_id from public.scheduled_lesson_homework_assignment sha join public.scheduled_lesson sl on sl.id = sha.scheduled_lesson_id where sha.id = p_slha_id;
+$$;
+
+-- Note: RLS is enabled on all 24 application tables and (since 202606300002) every
+-- RLS table has SELECT policies — runtime/content tables are membership-scoped via
+-- the helpers above; methodology/content is a shared catalog (USING(true) to
+-- authenticated). Full policy text, all indexes, and operational RPCs live in
+-- migrations. This snapshot is optimized for CURRENT model readability.
