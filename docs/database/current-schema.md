@@ -80,7 +80,19 @@ This guide describes the **current** ShiDao database model.
 
 - Adult identity is split into explicit profile tables (`teacher`, `parent`) tied to `auth.users`.
 - Student can authenticate via internal login mapping (`student.internal_auth_email`) and may also have `student.user_id` when linked.
-- Current helper functions used by RLS/queries include `current_teacher_id`, `current_parent_id`, `current_student_id`.
+- RLS identity/membership helpers are `SECURITY DEFINER` (their internal reads bypass RLS — required to avoid policy recursion): `current_teacher_id`, `current_parent_id`, `current_student_id`, plus membership predicates `is_class_teacher`, `is_class_student`, `parent_in_class`, `can_read_class`, `is_my_child`, `teaches_student`, `parent_in_school`, and the lookup `scheduled_homework_class_id`.
+
+## Row-level security (RLS)
+
+RLS is enabled on all 24 application tables (off only on `user_preference`/`user_security`, reached exclusively via SECURITY DEFINER RPCs). Since migration `202606300002` **every** RLS-enabled table has at least one policy — there are no remaining "RLS-on / 0-policies" tables.
+
+- **Defense-in-depth, not the primary control.** The app always connects as `service_role` (`BYPASSRLS`), so policies do not change app behavior. They deliver real tenant isolation only if a PostgREST/Realtime surface is ever exposed with `anon`/`authenticated` keys. The primary access control remains `resolveAccessPolicy()` in app code.
+- **Reads only.** Policies are `FOR SELECT` (plus the pre-existing narrow self-`UPDATE` on `parent`/`teacher`/`student`/`notification`). No `INSERT`/`UPDATE`/`DELETE` policies on runtime/content tables — all writes go through `service_role` / SECURITY DEFINER RPCs.
+- **Grants.** Each policied table does `revoke all from anon, authenticated; grant select to authenticated`. `anon` has no table grants (schema-usage only) and sees nothing.
+- **Membership model.** Visibility is computed via the SECURITY DEFINER helpers above, which bypass RLS internally so policies never read the mutually-recursive graph tables (`class_teacher`/`class_student`/`student`) directly:
+  - Runtime layer (`scheduled_lesson`, homework assignments, conversations, messages, attachments) is scoped to the class/student: teacher of the class, the enrolled student, or the parent of an enrolled child (`can_read_class` / `is_class_teacher` / `is_my_child`). Messages/attachments are visible iff their parent conversation/message is.
+  - Methodology/content layer (`methodology*`, `reusable_asset`) is a **shared global catalog**: readable by any `authenticated` user (`USING (true)`, scoped `to authenticated`), denied to `anon`. There is no school-ownership column, so per-school content isolation is not currently expressible (would require a schema change).
+- **Recursion fix (202606300002).** The identity helpers were `SECURITY INVOKER` and the covered-table policies referenced one another, so reads under `authenticated` raised `stack depth limit exceeded`. The migration converts the helpers to `SECURITY DEFINER` and rewrites the covered-table predicates to use them (behavior-preserving; `service_role` unaffected).
 
 ## Compatibility / legacy notes
 
