@@ -8,6 +8,9 @@ node_modules
 # Design system (work in progress, not ready for repo)
 docs/design-system/
 
+# local lesson authoring materials (pptx/docx, not for repo)
+lesson_4/
+
 # build / tooling artifacts
 .test-dist/
 tsconfig.tsbuildinfo
