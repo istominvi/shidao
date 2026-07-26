@@ -65,26 +65,27 @@
 .model-logo {
   display: inline-flex;
   align-items: center;
-  gap: 0.75rem;
   width: fit-content;
 }
 
-.model-logo > span:last-child {
-  display: flex;
-  flex-direction: column;
-  gap: 0.12rem;
+.model-wordmark {
+  position: relative;
+  display: inline-block;
+  color: currentColor;
+  font-size: 1.25rem;
+  font-weight: 900;
+  letter-spacing: -0.025em;
+  line-height: 1;
+  white-space: nowrap;
 }
 
-.model-logo strong {
-  font-size: 0.9rem;
-  letter-spacing: 0.18em;
-}
-
-.model-logo small {
-  color: rgba(255, 255, 255, 0.48);
-  font-size: 0.57rem;
-  font-weight: 650;
-  letter-spacing: 0.13em;
+.model-wordmark-mark {
+  position: relative;
+  top: -0.46em;
+  margin-left: 0.05em;
+  font-size: 0.52em;
+  font-weight: 800;
+  letter-spacing: 0;
 }
 
 .model-brand-mark {
@@ -199,7 +200,7 @@
   grid-template-columns: minmax(0, 1.55fr) minmax(270px, 0.45fr);
   gap: clamp(2.5rem, 6vw, 8rem);
   min-height: calc(100vh - 74px);
-  padding: clamp(5rem, 9vw, 8.5rem) 6vw 0;
+  padding: clamp(5rem, 9vw, 8.5rem) 6vw clamp(4.5rem, 7vw, 7rem);
   overflow: hidden;
   background:
     radial-gradient(
@@ -424,90 +425,84 @@
   font-size: 0.75rem;
 }
 
-.model-hero-visual {
-  position: relative;
-  z-index: 4;
-  grid-column: 1 / -1;
-  width: 100%;
-  margin: clamp(4rem, 7vw, 7rem) 0 0;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-bottom: 0;
-  border-radius: 1.75rem 1.75rem 0 0;
-  overflow: hidden;
-  box-shadow: 0 -30px 80px rgba(0, 0, 0, 0.26);
-}
-
-.model-hero-visual img {
-  display: block;
-  width: 100%;
-  height: auto;
-}
-
-.model-hero-visual figcaption {
-  position: absolute;
-  right: 1rem;
-  bottom: 1rem;
-  left: 1rem;
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.55rem;
-}
-
-.model-hero-visual figcaption span {
-  padding: 0.5rem 0.72rem;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 999px;
-  background: rgba(9, 19, 38, 0.72);
-  color: rgba(255, 255, 255, 0.76);
-  font-size: 0.6rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  backdrop-filter: blur(10px);
-}
-
 .model-shift {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto minmax(230px, 0.4fr);
+  grid-template-columns: minmax(0, 1fr) auto minmax(280px, 0.42fr);
   align-items: center;
-  gap: 1.6rem;
-  padding: 2.1rem 6vw;
+  gap: clamp(1.5rem, 3vw, 3.5rem);
+  padding: 2.35rem 6vw;
   border-bottom: 1px solid var(--model-line);
   background: var(--model-paper);
 }
 
-.model-shift > p {
+.model-shift-source {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.6rem 1.2rem;
+}
+
+.model-shift-source > p {
   margin: 0;
-  color: rgba(16, 24, 39, 0.42);
-  font-size: 0.61rem;
+  color: rgba(16, 24, 39, 0.5);
+  font-size: 0.66rem;
   font-weight: 800;
   letter-spacing: 0.13em;
 }
 
+.model-shift-source > strong {
+  color: var(--model-navy);
+  font-size: 1rem;
+  letter-spacing: -0.02em;
+}
+
 .model-shift-track {
+  grid-column: 1 / -1;
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: 0.6rem;
+  margin-top: 0.35rem;
 }
 
 .model-shift-track span {
-  padding: 0.48rem 0.72rem;
+  padding: 0.58rem 0.82rem;
   border: 1px solid var(--model-line);
   border-radius: 999px;
-  color: rgba(16, 24, 39, 0.55);
-  font-size: 0.65rem;
-  text-decoration: line-through;
-  text-decoration-color: rgba(255, 130, 110, 0.85);
+  background: #fff;
+  color: rgba(16, 24, 39, 0.72);
+  font-size: 0.76rem;
+  font-weight: 650;
+}
+
+.model-shift-bridge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  color: rgba(16, 24, 39, 0.48);
+}
+
+.model-shift-bridge span {
+  font-size: 0.62rem;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .model-shift-result {
   display: flex;
   align-items: center;
-  gap: 0.8rem;
-  min-height: 66px;
-  padding: 0.8rem 1rem;
-  border-radius: 0.9rem;
+  gap: 1.1rem;
+  min-height: 82px;
+  padding: 1rem 1.2rem;
+  border-radius: 1rem;
   background: var(--model-navy);
   color: #fff;
+}
+
+.model-shift-wordmark {
+  flex: 0 0 auto;
+  font-size: 1.05rem;
 }
 
 .model-shift-result > span {
@@ -517,14 +512,14 @@
 }
 
 .model-shift-result small {
-  color: var(--model-lime);
-  font-size: 0.55rem;
+  color: rgba(255, 255, 255, 0.48);
+  font-size: 0.56rem;
   font-weight: 800;
   letter-spacing: 0.12em;
 }
 
 .model-shift-result strong {
-  font-size: 0.83rem;
+  font-size: 0.9rem;
 }
 
 .model-section {
@@ -3070,10 +3065,6 @@
     min-height: 66px;
   }
 
-  .model-header .model-logo small {
-    display: none;
-  }
-
   .model-nav {
     position: absolute;
     top: 66px;
@@ -3120,23 +3111,15 @@
     padding: 0;
   }
 
-  .model-hero-visual {
-    grid-column: 1;
-  }
-
   .model-shift {
     grid-template-columns: 1fr auto;
   }
 
-  .model-shift > p {
-    grid-column: 1 / -1;
-  }
-
-  .model-shift-track {
+  .model-shift-source {
     grid-column: 1;
   }
 
-  .model-shift > svg {
+  .model-shift-bridge {
     display: none;
   }
 
@@ -3366,21 +3349,6 @@
 
   .model-button {
     width: 100%;
-  }
-
-  .model-hero-visual {
-    margin-top: 3rem;
-    border-radius: 1rem 1rem 0 0;
-  }
-
-  .model-hero-visual img {
-    min-height: 300px;
-    object-fit: cover;
-    object-position: 60% center;
-  }
-
-  .model-hero-visual figcaption {
-    display: none;
   }
 
   .model-shift {

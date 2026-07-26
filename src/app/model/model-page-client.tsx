@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import {
   ArrowDown,
   ArrowRight,
@@ -168,6 +167,14 @@ function BrandMark() {
   );
 }
 
+function Wordmark({ className = "" }: { className?: string }) {
+  return (
+    <span className={`model-wordmark ${className}`.trim()}>
+      Shidao<span className="model-wordmark-mark">™</span>
+    </span>
+  );
+}
+
 function SectionIntro({
   index,
   eyebrow,
@@ -230,11 +237,7 @@ export function ModelPageClient() {
 
       <header className="model-header">
         <a className="model-logo" href="#top" aria-label="ShiDao, наверх">
-          <BrandMark />
-          <span>
-            <strong>SHIDAO</strong>
-            <small>PRODUCT MODEL / 2026</small>
-          </span>
+          <Wordmark />
         </a>
 
         <nav
@@ -299,9 +302,9 @@ export function ModelPageClient() {
             объяснение в образование.
           </h1>
           <p className="model-hero-lead">
-            Персональная образовательная система, в которой человек может
-            создать курс, учить другого, учиться сам или передать проведение AI
-            — не теряя историю, структуру и контроль.
+            Профессиональная образовательная система, в которой человек может
+            создать курс, учить другого, учиться сам и передать процесс AI, не
+            теряя историю, структуру и контроль.
           </p>
           <div className="model-hero-actions">
             <a className="model-button model-button-primary" href="#model">
@@ -319,8 +322,8 @@ export function ModelPageClient() {
               В одном предложении
             </span>
             <p>
-              ShiDao — это операционная система персонального образования для
-              обучения с человеком и AI.
+              ShiDao — это образовательная система для обучения с человеком и
+              AI.
             </p>
           </div>
           <div className="model-hero-signal">
@@ -329,42 +332,32 @@ export function ModelPageClient() {
             <strong>Устойчивая инфраструктура обучения</strong>
           </div>
         </div>
-
-        <figure className="model-hero-visual">
-          <Image
-            src="/model/shidao-model-hero.png"
-            alt="Образовательный путь человека, соединяющий курсы, материалы и искусственный интеллект"
-            width={1672}
-            height={941}
-            priority
-            sizes="(max-width: 900px) 100vw, 88vw"
-          />
-          <figcaption>
-            <span>Человек в центре</span>
-            <span>AI вокруг процесса</span>
-            <span>История остаётся</span>
-          </figcaption>
-        </figure>
       </section>
 
       <section
         className="model-shift"
         aria-label="Изменение модели образования"
       >
-        <p>ОБРАЗОВАНИЕ СЕГОДНЯ</p>
-        <div className="model-shift-track">
-          <span>Школа</span>
-          <span>Преподаватель</span>
-          <span>Документы</span>
-          <span>Мессенджер</span>
-          <span>Календарь</span>
-          <span>AI-чат</span>
+        <div className="model-shift-source">
+          <p>ОБРАЗОВАНИЕ СЕГОДНЯ</p>
+          <strong>Путь разбит между инструментами</strong>
+          <div className="model-shift-track">
+            <span>Школа</span>
+            <span>Преподаватель</span>
+            <span>Документы</span>
+            <span>Мессенджер</span>
+            <span>Календарь</span>
+            <span>AI-чат</span>
+          </div>
         </div>
-        <ArrowRight size={28} />
+        <div className="model-shift-bridge" aria-hidden="true">
+          <span>единый контекст</span>
+          <ArrowRight size={28} />
+        </div>
         <div className="model-shift-result">
-          <BrandMark />
+          <Wordmark className="model-shift-wordmark" />
           <span>
-            <small>SHIDAO</small>
+            <small>ОБРАЗОВАТЕЛЬНАЯ СИСТЕМА</small>
             <strong>Один управляемый путь</strong>
           </span>
         </div>
