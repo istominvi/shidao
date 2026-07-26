@@ -806,24 +806,6 @@
   }
 }
 
-.model-principles-grid {
-  display: grid;
-  grid-template-columns: 2fr repeat(2, minmax(0, 1fr));
-  gap: 1px;
-  margin-top: clamp(1.5rem, 3vw, 2.5rem);
-  border: 1px solid var(--model-line);
-  border-radius: 1.4rem;
-  overflow: hidden;
-  background: var(--model-line);
-}
-
-.model-principle-feature {
-  grid-row: span 2;
-  padding: clamp(2rem, 4vw, 4rem);
-  background: var(--model-navy);
-  color: #fff;
-}
-
 .model-card-label {
   display: inline-block;
   color: rgba(16, 24, 39, 0.46);
@@ -834,57 +816,6 @@
 
 .model-card-label-dark {
   color: var(--model-lime);
-}
-
-.model-principle-feature .model-card-label {
-  color: var(--model-lime);
-}
-
-.model-principle-feature h3 {
-  max-width: 10ch;
-  margin: 1.4rem 0 1rem;
-  font-family: var(--model-serif);
-  font-size: clamp(2.3rem, 4vw, 4rem);
-  font-weight: 400;
-  letter-spacing: -0.05em;
-  line-height: 0.98;
-}
-
-.model-principle-feature > p {
-  max-width: 48ch;
-  margin: 0;
-  color: rgba(255, 255, 255, 0.57);
-  font-size: 0.92rem;
-  line-height: 1.72;
-}
-
-.model-principle-card {
-  min-height: 240px;
-  padding: clamp(1.5rem, 2.2vw, 2rem);
-  background: var(--model-paper);
-}
-
-.model-principle-card > span {
-  color: rgba(16, 24, 39, 0.33);
-  font-size: 0.62rem;
-  font-weight: 800;
-}
-
-.model-principle-card h3 {
-  max-width: 17ch;
-  margin: 2rem 0 0.8rem;
-  font-family: var(--model-serif);
-  font-size: clamp(1.35rem, 1.8vw, 1.65rem);
-  font-weight: 400;
-  letter-spacing: -0.035em;
-  line-height: 1.05;
-}
-
-.model-principle-card p {
-  margin: 0;
-  color: #68696c;
-  font-size: 0.79rem;
-  line-height: 1.62;
 }
 
 .model-loop-section {
@@ -1052,24 +983,24 @@
 
 .model-persona-tabs button {
   position: relative;
-  min-width: 170px;
-  padding: 1rem 0;
+  min-width: 200px;
+  padding: 1.15rem 0;
   border: 0;
   background: transparent;
   color: rgba(16, 24, 39, 0.38);
-  font-size: 0.75rem;
-  font-weight: 750;
+  font-size: clamp(0.95rem, 1.25vw, 1.1rem);
+  font-weight: 500;
   text-align: left;
   cursor: pointer;
 }
 
 .model-persona-tabs button span {
   position: absolute;
-  right: 1.2rem;
-  bottom: -3px;
+  right: 0;
+  bottom: -1px;
   left: 0;
-  height: 5px;
-  border-radius: 5px 5px 0 0;
+  height: 2px;
+  border-radius: 0;
   background: var(--model-navy);
   transform: scaleX(0);
   transform-origin: left;
@@ -3134,14 +3065,6 @@
     min-height: 460px;
   }
 
-  .model-principles-grid {
-    grid-template-columns: 1.4fr 1fr;
-  }
-
-  .model-principle-feature {
-    grid-row: span 4;
-  }
-
   .model-window-body {
     grid-template-columns: 125px minmax(290px, 1fr) 190px;
   }
@@ -3502,14 +3425,6 @@
     font-size: 0.76rem;
   }
 
-  .model-principles-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .model-principle-feature {
-    grid-row: auto;
-  }
-
   .model-loop-copy {
     grid-template-columns: 1fr;
   }
@@ -3560,8 +3475,8 @@
   }
 
   .model-persona-tabs button {
-    flex: 0 0 130px;
-    min-width: 130px;
+    flex: 0 0 150px;
+    min-width: 150px;
   }
 
   .model-persona-story {
