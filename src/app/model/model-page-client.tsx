@@ -409,8 +409,7 @@ export function ModelPageClient() {
             <div className="model-entity-person">
               <Bot size={42} strokeWidth={1.35} />
             </div>
-            <p>AI</p>
-            <strong>Интеллект образовательного процесса</strong>
+            <strong>AI</strong>
           </div>
 
           <div className="model-entity-orbit model-orbit-profile">

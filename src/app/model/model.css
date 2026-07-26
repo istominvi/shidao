@@ -593,7 +593,9 @@
 }
 
 .model-entity-map {
+  --orbit-outer-size: clamp(600px, 54vw, 620px);
   position: relative;
+  isolation: isolate;
   min-height: clamp(650px, 60vw, 700px);
   margin: -1.5rem 0;
   overflow: visible;
@@ -610,95 +612,91 @@
   top: 50%;
   left: 50%;
   display: flex;
-  flex-direction: column;
   align-items: center;
+  gap: 0.7rem;
   justify-content: center;
-  width: 148px;
-  min-height: 148px;
-  padding: 1.15rem 0.85rem;
-  border: 1px solid rgba(201, 255, 79, 0.42);
-  border-radius: 50%;
-  background: var(--model-navy);
-  color: #fff;
-  text-align: center;
+  width: auto;
+  min-height: auto;
+  padding: 0;
   transform: translate(-50%, -50%);
-  box-shadow:
-    0 0 0 10px rgba(201, 255, 79, 0.045),
-    0 20px 48px rgba(16, 30, 56, 0.2);
 }
 
 .model-entity-person {
   display: grid;
   place-items: center;
-  width: 52px;
-  height: 52px;
-  margin-bottom: 0.6rem;
+  width: 58px;
+  height: 58px;
   border-radius: 50%;
   background: var(--model-lime);
   color: var(--model-navy);
-}
-
-.model-entity-center > p {
-  margin: 0 0 0.4rem;
-  color: var(--model-lime);
-  font-size: 0.58rem;
-  font-weight: 800;
-  letter-spacing: 0.16em;
+  box-shadow: 0 12px 30px rgba(16, 30, 56, 0.12);
 }
 
 .model-entity-center > strong {
-  max-width: 120px;
+  color: var(--model-lime);
   font-family: var(--model-serif);
-  font-size: 0.94rem;
+  font-size: clamp(1rem, 1.25vw, 1.2rem);
   font-weight: 400;
-  line-height: 1.15;
+  letter-spacing: -0.035em;
+  line-height: 1.05;
 }
 
 .model-entity-orbit {
-  --orbit-size: 330px;
+  --orbit-size: var(--orbit-outer-size);
   --orbit-duration: 72s;
   --orbit-delay: 0s;
   --orbit-content-width: 210px;
+  --orbit-color: rgba(16, 30, 56, 0.26);
   position: absolute;
-  z-index: 2;
   top: 50%;
   left: 50%;
   width: var(--orbit-size);
-  aspect-ratio: 1;
-  border: 1px dashed rgba(16, 30, 56, 0.26);
+  height: var(--orbit-size);
+  margin-top: calc(var(--orbit-size) * -0.5);
+  margin-left: calc(var(--orbit-size) * -0.5);
   border-radius: 50%;
-  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.model-entity-orbit::before {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  border: 1px dashed var(--orbit-color);
+  border-radius: inherit;
+  content: "";
   pointer-events: none;
 }
 
 .model-orbit-profile {
-  --orbit-size: clamp(420px, 38vw, 440px);
+  --orbit-size: calc(var(--orbit-outer-size) - 216px);
   --orbit-delay: 0s;
-  --orbit-content-width: 174px;
-  border-color: rgba(118, 87, 215, 0.27);
+  --orbit-content-width: 168px;
+  --orbit-color: rgba(118, 87, 215, 0.27);
 }
 
 .model-orbit-lesson {
-  --orbit-size: clamp(480px, 43vw, 500px);
+  --orbit-size: calc(var(--orbit-outer-size) - 144px);
   --orbit-delay: -18s;
-  border-color: rgba(67, 139, 205, 0.27);
+  --orbit-color: rgba(67, 139, 205, 0.27);
 }
 
 .model-orbit-course {
-  --orbit-size: clamp(540px, 48vw, 560px);
+  --orbit-size: calc(var(--orbit-outer-size) - 72px);
   --orbit-delay: -36s;
-  border-color: rgba(122, 156, 43, 0.27);
+  --orbit-color: rgba(122, 156, 43, 0.27);
 }
 
 .model-orbit-material {
-  --orbit-size: clamp(600px, 54vw, 620px);
+  --orbit-size: var(--orbit-outer-size);
   --orbit-delay: -54s;
-  border-color: rgba(218, 92, 74, 0.25);
+  --orbit-color: rgba(218, 92, 74, 0.25);
 }
 
 .model-orbit-runner {
   position: absolute;
-  inset: 0;
+  z-index: 2;
+  inset: 0.5px;
   animation: model-orbit-spin var(--orbit-duration) linear infinite;
   animation-delay: var(--orbit-delay);
   pointer-events: none;
@@ -723,6 +721,7 @@
 
 .model-orbit-content {
   position: absolute;
+  z-index: 3;
   top: -27px;
   left: -27px;
   display: grid;
@@ -752,6 +751,8 @@
 }
 
 .model-entity-icon {
+  position: relative;
+  z-index: 4;
   display: grid;
   place-items: center;
   width: 54px;
@@ -3386,9 +3387,8 @@
     left: auto;
     z-index: 1;
     align-self: center;
-    width: 176px;
-    min-height: 176px;
-    border-radius: 50%;
+    width: auto;
+    min-height: auto;
     transform: none;
   }
 
@@ -3396,14 +3396,21 @@
     position: relative;
     inset: auto;
     width: 100%;
+    height: auto;
+    margin: 0;
     aspect-ratio: auto;
     border: 0;
     transform: none;
     pointer-events: auto;
   }
 
+  .model-entity-orbit::before {
+    display: none;
+  }
+
   .model-orbit-runner {
     position: relative;
+    z-index: auto;
     inset: auto;
     animation: none;
   }
