@@ -253,17 +253,63 @@ const initialLessonSteps: LessonStep[] = [
   },
 ];
 
-const weekDays = [
-  { day: "Пн", date: "20", state: "past" },
-  { day: "Вт", date: "21", state: "past" },
-  { day: "Ср", date: "22", state: "past" },
-  { day: "Чт", date: "23", state: "past" },
-  { day: "Пт", date: "24", state: "past" },
-  { day: "Сб", date: "25", state: "past" },
-  { day: "Вс", date: "26", state: "today" },
-  { day: "Пн", date: "27", state: "future" },
-  { day: "Вт", date: "28", state: "future" },
-];
+const demoToday = new Date(2026, 6, 26, 12);
+
+function dateKey(date: Date) {
+  return [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, "0"),
+    String(date.getDate()).padStart(2, "0"),
+  ].join("-");
+}
+
+function addDays(date: Date, days: number) {
+  const next = new Date(date);
+  next.setDate(next.getDate() + days);
+  return next;
+}
+
+function startOfWeek(date: Date) {
+  const start = new Date(date);
+  const dayIndex = start.getDay() === 0 ? 6 : start.getDay() - 1;
+  start.setDate(start.getDate() - dayIndex);
+  return start;
+}
+
+function formatWeekRange(start: Date, end: Date) {
+  const monthNames = [
+    "января",
+    "февраля",
+    "марта",
+    "апреля",
+    "мая",
+    "июня",
+    "июля",
+    "августа",
+    "сентября",
+    "октября",
+    "ноября",
+    "декабря",
+  ];
+  const startMonth = monthNames[start.getMonth()];
+  const endMonth = monthNames[end.getMonth()];
+
+  if (start.getMonth() === end.getMonth()) {
+    return `${start.getDate()}–${end.getDate()} ${endMonth} ${end.getFullYear()}`;
+  }
+
+  return `${start.getDate()} ${startMonth} — ${end.getDate()} ${endMonth} ${end.getFullYear()}`;
+}
+
+function formatScheduleDate(date: Date) {
+  if (dateKey(date) === dateKey(demoToday)) return "Сегодня";
+  const value = new Intl.DateTimeFormat("ru-RU", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  }).format(date);
+  return value.charAt(0).toUpperCase() + value.slice(1);
+}
 
 const generationStages = [
   "Анализирую цель и учебный профиль",
@@ -380,6 +426,8 @@ export function DemoExperience() {
   const [mobileMenu, setMobileMenu] = useState(false);
   const [profileMenu, setProfileMenu] = useState(false);
   const [scheduleFilter, setScheduleFilter] = useState("Все контексты");
+  const [calendarWeekOffset, setCalendarWeekOffset] = useState(0);
+  const [selectedScheduleDate, setSelectedScheduleDate] = useState(dateKey(demoToday));
   const [studentTab, setStudentTab] = useState("Профиль");
   const [courseTab, setCourseTab] = useState("Уроки");
   const [lessonTab, setLessonTab] = useState("План урока");
@@ -409,6 +457,7 @@ export function DemoExperience() {
   ]);
   const [toast, setToast] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const profileMenuRef = useRef<HTMLDivElement>(null);
 
   const allCourses = useMemo(
     () =>
@@ -446,6 +495,29 @@ export function DemoExperience() {
     return () => window.clearTimeout(timeout);
   }, [toast]);
 
+  useEffect(() => {
+    if (!profileMenu) return;
+
+    const closeOnOutsideClick = (event: PointerEvent) => {
+      if (
+        profileMenuRef.current &&
+        !profileMenuRef.current.contains(event.target as Node)
+      ) {
+        setProfileMenu(false);
+      }
+    };
+    const closeOnEscape = (event: globalThis.KeyboardEvent) => {
+      if (event.key === "Escape") setProfileMenu(false);
+    };
+
+    document.addEventListener("pointerdown", closeOnOutsideClick);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeOnOutsideClick);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [profileMenu]);
+
   function navigate(next: DemoView) {
     setView(next);
     setMobileMenu(false);
@@ -472,7 +544,7 @@ export function DemoExperience() {
         : [];
     if (!names.length) return;
     setSourceFiles((current) => Array.from(new Set([...current, ...names])));
-    setToast("Источник добавлен в демо-курс");
+    setToast("Источник добавлен в курс");
   }
 
   function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
@@ -523,7 +595,7 @@ export function DemoExperience() {
         setGeneratedCourse(true);
         setGenerationStage(null);
         setCourseTab("Уроки");
-        setToast("Курс создан. Данные существуют только в этой демо-сессии.");
+        setToast("Курс создан и готов к редактированию");
         navigate("course");
         return;
       }
@@ -620,12 +692,11 @@ export function DemoExperience() {
           </nav>
 
           <div className="demo-header-actions">
-            <span className="demo-prototype-label">Демо v2</span>
             <button className="demo-icon-button demo-desktop-only" type="button" aria-label="Уведомления">
               <Bell size={18} />
               <span className="demo-notification-dot" />
             </button>
-            <div className="demo-profile-menu-wrap">
+            <div className="demo-profile-menu-wrap" ref={profileMenuRef}>
               <button
                 type="button"
                 className="demo-profile-trigger"
@@ -635,7 +706,6 @@ export function DemoExperience() {
                 <span className="demo-avatar">АИ</span>
                 <span className="demo-profile-copy">
                   <strong>Агата Истомина</strong>
-                  <small>Один аккаунт · 3 контекста</small>
                 </span>
                 <ChevronDown size={15} />
               </button>
@@ -645,7 +715,7 @@ export function DemoExperience() {
                     <span className="demo-avatar">АИ</span>
                     <div>
                       <strong>Агата Истомина</strong>
-                      <span>agata@shidao.demo</span>
+                      <span>agata.istomina@gmail.com</span>
                     </div>
                   </div>
                   <div className="demo-context-stack">
@@ -687,6 +757,11 @@ export function DemoExperience() {
   }
 
   function renderSchedule() {
+    const weekStart = addDays(startOfWeek(demoToday), calendarWeekOffset * 7);
+    const calendarDays = Array.from({ length: 7 }, (_, index) => addDays(weekStart, index));
+    const weekEnd = calendarDays[calendarDays.length - 1];
+    const selectedDate =
+      calendarDays.find((date) => dateKey(date) === selectedScheduleDate) ?? demoToday;
     const contextCards = [
       {
         time: "10:00",
@@ -732,17 +807,18 @@ export function DemoExperience() {
       <>
         <section className="demo-page-hero demo-schedule-hero">
           <div>
-            <DemoTag tone="lime">Воскресенье · 26 июля</DemoTag>
             <h1>Добрый день, Агата</h1>
-            <p>
-              Сегодня три занятия в разных контекстах — всё в одном аккаунте и одном календаре.
-            </p>
+            <div className="demo-hero-metrics" aria-label="Показатели на сегодня">
+              <span><strong>3</strong> занятия</span>
+              <span><strong>2 ч 45 мин</strong> в расписании</span>
+              <span><strong>1</strong> рекомендация</span>
+            </div>
           </div>
           <div className="demo-hero-actions">
             <DemoButton variant="secondary" onClick={() => navigate("builder")}>
               <Plus size={17} /> Новый курс
             </DemoButton>
-            <DemoButton variant="primary" onClick={() => setToast("Окно планирования открыто в демо-режиме")}>
+            <DemoButton variant="primary" onClick={() => setToast("Планирование открыто")}>
               <CalendarPlus size={17} /> Запланировать
             </DemoButton>
           </div>
@@ -751,33 +827,73 @@ export function DemoExperience() {
         <section className="demo-week-card">
           <div className="demo-week-heading">
             <div>
-              <strong>Июль — август 2026</strong>
-              <span>Учебный календарь</span>
+              <strong>{formatWeekRange(weekStart, weekEnd)}</strong>
             </div>
             <div className="demo-week-controls">
-              <DemoButton size="sm" variant="ghost"><ArrowLeft size={15} /></DemoButton>
-              <DemoButton size="sm" variant="secondary">Сегодня</DemoButton>
-              <DemoButton size="sm" variant="ghost"><ArrowRight size={15} /></DemoButton>
+              <DemoButton
+                size="sm"
+                variant="ghost"
+                aria-label="Предыдущая неделя"
+                onClick={() => {
+                  setCalendarWeekOffset((value) => value - 1);
+                  setSelectedScheduleDate(dateKey(addDays(selectedDate, -7)));
+                }}
+              >
+                <ArrowLeft size={15} />
+              </DemoButton>
+              <DemoButton
+                size="sm"
+                variant="secondary"
+                onClick={() => {
+                  setCalendarWeekOffset(0);
+                  setSelectedScheduleDate(dateKey(demoToday));
+                }}
+              >
+                Сегодня
+              </DemoButton>
+              <DemoButton
+                size="sm"
+                variant="ghost"
+                aria-label="Следующая неделя"
+                onClick={() => {
+                  setCalendarWeekOffset((value) => value + 1);
+                  setSelectedScheduleDate(dateKey(addDays(selectedDate, 7)));
+                }}
+              >
+                <ArrowRight size={15} />
+              </DemoButton>
             </div>
           </div>
           <div className="demo-week-days">
-            {weekDays.map((item) => (
-              <button
-                type="button"
-                key={`${item.day}-${item.date}`}
-                className={item.state === "today" ? "is-today" : ""}
-              >
-                <span>{item.day}</span>
-                <strong>{item.date}</strong>
-                {item.state === "today" ? <i /> : null}
-              </button>
-            ))}
+            {calendarDays.map((date) => {
+              const key = dateKey(date);
+              const isToday = key === dateKey(demoToday);
+              const isSelected = key === selectedScheduleDate;
+              const weekday = new Intl.DateTimeFormat("ru-RU", { weekday: "short" })
+                .format(date)
+                .replace(".", "");
+              return (
+                <button
+                  type="button"
+                  key={key}
+                  className={`${isToday ? "is-today" : ""} ${isSelected ? "is-selected" : ""}`}
+                  aria-pressed={isSelected}
+                  onClick={() => setSelectedScheduleDate(key)}
+                >
+                  <span>
+                    {weekday.charAt(0).toUpperCase() + weekday.slice(1)}
+                  </span>
+                  <strong>{date.getDate()}</strong>
+                  {isToday ? <i /> : null}
+                </button>
+              );
+            })}
           </div>
         </section>
 
         <div className="demo-section-heading demo-section-heading-spaced">
           <div>
-            <span className="demo-eyebrow">Сегодня</span>
+            <span className="demo-eyebrow">{formatScheduleDate(selectedDate)}</span>
             <h2>Ваш образовательный день</h2>
           </div>
           <div className="demo-filter-row">
@@ -894,7 +1010,7 @@ export function DemoExperience() {
             </p>
           </div>
           <div className="demo-hero-actions">
-            <DemoButton variant="secondary" onClick={() => setToast("Приглашение скопировано в демо-режиме")}>
+            <DemoButton variant="secondary" onClick={() => setToast("Приглашение скопировано")}>
               <Link2 size={17} /> Пригласить
             </DemoButton>
             <DemoButton variant="primary" onClick={() => setToast("Форма нового учебного профиля открыта")}>
@@ -1087,8 +1203,8 @@ export function DemoExperience() {
             </div>
             <h2>{studentTab}</h2>
             <p>
-              Эта поверхность показана как часть демо. В v2 данные остаются привязанными к
-              учебному профилю, даже если курс или урок закончился.
+              Данные остаются привязанными к учебному профилю, даже если курс или урок
+              закончился.
             </p>
             <DemoButton variant="secondary" onClick={() => setStudentTab("Профиль")}>
               Вернуться к обзору
@@ -1286,7 +1402,7 @@ export function DemoExperience() {
                 <h2>Уроки</h2>
               </div>
               <div className="demo-hero-actions">
-                <DemoButton variant="secondary" onClick={() => setToast("Добавлен пустой урок в демо")}>
+                <DemoButton variant="secondary" onClick={() => setToast("Добавлен новый урок")}>
                   <Plus size={16} /> Пустой урок
                 </DemoButton>
                 <DemoButton variant="lime" onClick={() => { setAgentOpen(true); setAgentInput("Создай следующие три урока"); }}>
@@ -1375,7 +1491,7 @@ export function DemoExperience() {
           <div>
             <DemoTag tone="lime"><Sparkles size={13} /> Конструктор курса</DemoTag>
             <h1>Превратите цель в учебный путь</h1>
-            <p>Всё можно изменить до и после генерации. Ни одно действие в демо не сохраняется.</p>
+            <p>Всё можно изменить до и после генерации.</p>
           </div>
           <div className="demo-builder-progress-copy">
             <span>Шаг {builderStep} из 4</span>
@@ -1503,7 +1619,7 @@ export function DemoExperience() {
               <div className="demo-builder-section">
                 <span className="demo-eyebrow">Шаг 3</span>
                 <h2>Добавьте источники</h2>
-                <p>Перетащите файлы, выберите материалы из каталога или добавьте ссылку. В демо они никуда не загружаются.</p>
+                <p>Перетащите файлы, выберите материалы из каталога или добавьте ссылку.</p>
                 <div
                   className={`demo-drop-zone ${dragOver ? "is-dragging" : ""}`}
                   onDragOver={(event) => { event.preventDefault(); setDragOver(true); }}
@@ -1512,7 +1628,7 @@ export function DemoExperience() {
                 >
                   <UploadCloud size={28} />
                   <h3>Перетащите PDF, DOCX, аудио или изображения</h3>
-                  <p>или выберите файлы на устройстве — они останутся только в памяти этой вкладки</p>
+                  <p>или выберите файлы на устройстве</p>
                   <DemoButton variant="secondary" onClick={() => fileInputRef.current?.click()}>
                     Выбрать файлы
                   </DemoButton>
@@ -1529,7 +1645,7 @@ export function DemoExperience() {
                   {sourceFiles.map((file) => (
                     <div key={file}>
                       <span><FileText size={18} /></span>
-                      <div><strong>{file}</strong><small>Готово к использованию в демо</small></div>
+                      <div><strong>{file}</strong><small>Готово к использованию</small></div>
                       <CheckCircle2 size={18} />
                       <button type="button" aria-label={`Удалить ${file}`} onClick={() => setSourceFiles((current) => current.filter((item) => item !== file))}><X size={16} /></button>
                     </div>
@@ -1622,7 +1738,7 @@ export function DemoExperience() {
             <DemoButton variant="secondary" onClick={() => { setScreenMode("review"); navigate("learner"); }}>
               <CirclePlay size={16} /> Предпросмотр
             </DemoButton>
-            <DemoButton variant="primary" onClick={() => setToast("Занятие готово к запуску в демо")}>
+            <DemoButton variant="primary" onClick={() => setToast("Занятие готово к запуску")}>
               <Play size={16} /> Начать занятие
             </DemoButton>
           </div>
@@ -1661,7 +1777,7 @@ export function DemoExperience() {
             <aside className="demo-step-list">
               <div className="demo-step-list-heading">
                 <div><span>Шаги урока</span><strong>{lessonSteps.length}</strong></div>
-                <button type="button" onClick={() => setToast("Новый шаг добавлен в демо")}><Plus size={17} /></button>
+                <button type="button" onClick={() => setToast("Новый шаг добавлен")}><Plus size={17} /></button>
               </div>
               {lessonSteps.map((lessonStep, index) => (
                 <button
@@ -1944,8 +2060,8 @@ export function DemoExperience() {
                 <span className="demo-activity-kicker">Твой ход</span>
                 <h2>{currentStep === 3 ? "Have you ever tried something new?" : "Выбери ответ, который подходит тебе"}</h2>
                 <div className="demo-large-answer-options">
-                  <button type="button" onClick={() => setToast("Ответ принят в демо")}>Yes, I have</button>
-                  <button type="button" onClick={() => setToast("Ответ принят в демо")}>No, I haven’t</button>
+                  <button type="button" onClick={() => setToast("Ответ принят")}>Yes, I have</button>
+                  <button type="button" onClick={() => setToast("Ответ принят")}>No, I haven’t</button>
                 </div>
               </>
             )}
@@ -1961,7 +2077,7 @@ export function DemoExperience() {
         </main>
         {screenMode === "live" ? (
           <div className="demo-teacher-remote">
-            <small>Панель преподавателя · демо</small>
+            <small>Панель преподавателя</small>
             <strong>Сейчас показан шаг {currentStep + 1}</strong>
             <div>
               <button type="button" disabled={currentStep === 0} onClick={() => setCurrentStep((index) => Math.max(0, index - 1))}><ArrowLeft size={16} /></button>
@@ -2073,10 +2189,6 @@ export function DemoExperience() {
       <div className="demo-background-orb demo-orb-one" />
       <div className="demo-background-orb demo-orb-two" />
       {renderHeader()}
-      <div className="demo-disclaimer">
-        <span><Sparkles size={14} /> Интерактивный прототип ShiDao v2</span>
-        <p>Все данные вымышлены и сбросятся после перезагрузки. База данных не используется.</p>
-      </div>
       <main className={`demo-page demo-page-${view}`}>
         {view === "schedule" ? renderSchedule() : null}
         {view === "students" ? renderStudents() : null}
@@ -2094,7 +2206,7 @@ export function DemoExperience() {
             <span className="demo-generation-orb"><Sparkles size={30} /></span>
             <DemoTag tone="lime">AI создаёт курс</DemoTag>
             <h2>{generationStages[generationStage]}</h2>
-            <p>Это имитация: запросы к AI и базе данных не выполняются.</p>
+            <p>После создания структуру и каждый урок можно будет изменить.</p>
             <ProgressBar value={((generationStage + 1) / generationStages.length) * 100} />
             <div className="demo-generation-steps">
               {generationStages.map((stage, index) => (
