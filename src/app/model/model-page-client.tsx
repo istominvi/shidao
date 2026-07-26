@@ -46,7 +46,7 @@ const personas = [
       "Меньше времени на подготовку и администрирование. Больше — на само обучение.",
     steps: [
       ["01", "Создаёт курс", "Вручную, из шаблона или вместе с AI"],
-      ["02", "Готовит урок", "Teacher document, Student Screen и материалы"],
+      ["02", "Готовит урок", "План преподавателя, Экран ученика и материалы"],
       ["03", "Проводит", "Сам, с AI-copilot или повторно по тому же уроку"],
       [
         "04",
@@ -88,7 +88,7 @@ const personas = [
       "Курсы и преподаватели меняются. Образовательная память человека остаётся.",
     steps: [
       ["01", "Видит сегодня", "Ближайшее занятие без административного шума"],
-      ["02", "Проходит шаг", "Только Student Screen и доступные действия"],
+      ["02", "Проходит шаг", "Только Экран ученика и доступные действия"],
       ["03", "Делает ДЗ", "Общее или персональное задание"],
       ["04", "Растёт дальше", "Следующий урок учитывает прошлый опыт"],
     ],
@@ -129,7 +129,7 @@ const roadmap = [
     stage: "01",
     tag: "Сейчас",
     title: "Инструмент преподавателя",
-    text: "Course builder, Student Screen, материалы, расписание, ДЗ и профиль учащегося.",
+    text: "Конструктор курсов, Экран ученика, материалы, расписание, ДЗ и образовательный профиль.",
   },
   {
     stage: "02",
@@ -660,48 +660,98 @@ export function ModelPageClient() {
           </div>
         </div>
 
-        <div className="model-case-study">
-          <div className="model-case-head">
-            <span>КЕЙС · ОДИН ПРОФИЛЬ, ТРИ РЕЖИМА</span>
-            <strong>Миша · 9 лет · китайский язык</strong>
+        <div className="model-context-case">
+          <div className="model-context-case-head">
+            <span>КЕЙС · ОДИН ЧЕЛОВЕК, ТРИ КОНТЕКСТА</span>
+            <strong>Анна преподаёт, помогает дочери и сама учится</strong>
+            <p>
+              В ShiDao ей не нужны три аккаунта. Текущая задача и связи с
+              конкретными курсами и образовательными профилями определяют, какой
+              интерфейс и какие возможности она видит.
+            </p>
           </div>
-          <div className="model-case-timeline">
-            <article>
-              <div className="model-case-icon is-lime">
-                <GraduationCap size={22} />
+
+          <div className="model-context-case-body">
+            <article className="model-context-identity">
+              <div className="model-context-avatar">
+                <CircleUserRound size={58} strokeWidth={1.2} />
               </div>
-              <span>ПН · 17:00</span>
-              <h4>Живой урок</h4>
+              <span>ОДИН АККАУНТ SHIDAO</span>
+              <h3>Анна</h3>
               <p>
-                Преподаватель ведёт группу, AI подсказывает, Student Screen
-                синхронизирован.
+                Преподаватель английского, мама Лизы и ученица на курсе
+                китайского языка.
               </p>
-            </article>
-            <article>
-              <div className="model-case-icon is-blue">
-                <Bot size={22} />
+              <div className="model-context-role-chips">
+                <span>
+                  <GraduationCap size={15} /> Учитель
+                </span>
+                <span>
+                  <Heart size={15} /> Родитель
+                </span>
+                <span>
+                  <BookOpen size={15} /> Ученик
+                </span>
               </div>
-              <span>СР · 18:30</span>
-              <h4>AI-практика</h4>
-              <p>AI повторяет слова, на которых Миша ошибался в понедельник.</p>
             </article>
-            <article>
-              <div className="model-case-icon is-lilac">
-                <Heart size={22} />
-              </div>
-              <span>ВС · 11:00</span>
-              <h4>Вместе с мамой</h4>
-              <p>
-                Мама открывает короткий сценарий и видит только разрешённый
-                прогресс.
-              </p>
-            </article>
+
+            <div className="model-context-cards">
+              <article className="is-teacher">
+                <div className="model-context-card-top">
+                  <span>КОНТЕКСТ 01 · УЧИТЕЛЬ</span>
+                  <div>
+                    <GraduationCap size={22} />
+                  </div>
+                </div>
+                <small>Курс «English B1» · группа подростков</small>
+                <h4>Проводит занятие</h4>
+                <p>
+                  Открывает план урока, управляет Экраном ученика и получает от
+                  ИИ подсказки по ходу занятия.
+                </p>
+              </article>
+
+              <article className="is-parent">
+                <div className="model-context-card-top">
+                  <span>КОНТЕКСТ 02 · РОДИТЕЛЬ</span>
+                  <div>
+                    <Heart size={22} />
+                  </div>
+                </div>
+                <small>Образовательный профиль Лизы · 9 лет</small>
+                <h4>Организует обучение дочери</h4>
+                <p>
+                  Выбирает курс по математике, видит расписание, домашние
+                  задания, результаты и подтверждённые выводы.
+                </p>
+              </article>
+
+              <article className="is-learner">
+                <div className="model-context-card-top">
+                  <span>КОНТЕКСТ 03 · УЧЕНИК</span>
+                  <div>
+                    <Bot size={22} />
+                  </div>
+                </div>
+                <small>Личный курс · китайский язык</small>
+                <h4>Учится с ИИ-преподавателем</h4>
+                <p>
+                  Проходит занятия в своём темпе. Ответы, ошибки и прогресс
+                  пополняют её собственный образовательный профиль.
+                </p>
+              </article>
+            </div>
           </div>
-          <div className="model-case-result">
-            <History size={20} />
+
+          <div className="model-context-summary">
+            <div>
+              <Network size={23} />
+            </div>
             <span>
-              Три разных формата добавляют данные в{" "}
-              <strong>один Learner Profile</strong>
+              <strong>Меняется контекст — не аккаунт.</strong>
+              Для собственного обучения у Анны есть образовательный профиль, а к
+              профилю дочери она подключена как родитель. Курсы, группы и связи
+              определяют доступные действия.
             </span>
           </div>
         </div>
@@ -728,7 +778,7 @@ export function ModelPageClient() {
                 <Check size={16} /> Материалы перетаскиваются из каталога
               </li>
               <li>
-                <Check size={16} /> Student Screen отделён от заметок
+                <Check size={16} /> Экран ученика отделён от заметок
                 преподавателя
               </li>
               <li>
@@ -926,7 +976,7 @@ export function ModelPageClient() {
         <div className="model-ui-story model-ui-story-student">
           <div className="model-student-experience-copy">
             <span className="model-card-label model-card-label-dark">
-              STUDENT SCREEN
+              ЭКРАН УЧЕНИКА
             </span>
             <h3>Один экран. Два режима доступа.</h3>
             <p>
@@ -936,7 +986,7 @@ export function ModelPageClient() {
             <div
               className="model-mode-switch"
               role="tablist"
-              aria-label="Режим Student Screen"
+              aria-label="Режим Экрана ученика"
             >
               <button
                 type="button"
