@@ -148,16 +148,6 @@ const roadmap = [
   },
 ];
 
-function BrandMark() {
-  return (
-    <span className="model-brand-mark" aria-hidden="true">
-      <span />
-      <span />
-      <span />
-    </span>
-  );
-}
-
 function Wordmark({ className = "" }: { className?: string }) {
   return (
     <span className={`model-wordmark ${className}`.trim()}>
@@ -1304,23 +1294,13 @@ export function ModelPageClient() {
             ],
             [
               "03",
-              "Процесс важнее генерации",
-              "AI-результат должен сразу жить в курсе, уроке или материале.",
+              "Обновление важнее копий",
+              "Компоненты совершенствуются в каталоге и обновляются до последней версии во всех курсах — вместе с ними совершенствуются и сами курсы.",
             ],
             [
               "04",
-              "Переиспользование важнее копий",
-              "Хороший материал улучшается один раз и работает во многих местах.",
-            ],
-            [
-              "05",
               "Прозрачность важнее магии",
-              "Показываем, что AI изменит, сколько это стоит и как отменить.",
-            ],
-            [
-              "06",
-              "MVP важнее фантазии",
-              "Не тащим школы, voice AI и marketplace до доказанного основного цикла.",
+              "ИИ постоянно работает рядом в режиме помощника: обсуждает предложение, показывает, что хочет изменить, и действует только после разрешения человека.",
             ],
           ].map(([number, title, text]) => (
             <article key={number}>
@@ -1336,41 +1316,23 @@ export function ModelPageClient() {
       <section className="model-north-star" id="north-star">
         <div className="model-north-star-grid" aria-hidden="true" />
         <div className="model-north-star-label">
-          <BrandMark />
           <span>НАША СЕВЕРНАЯ ЗВЕЗДА</span>
         </div>
         <h2>
           Сегодня ShiDao продаёт
           <br />
-          <span>инструмент персонального обучения.</span>
+          <span>систему для создания и проведения обучения с ИИ.</span>
           <br />
           Завтра — само персональное образование.
         </h2>
         <p>
           У каждого человека должен быть собственный образовательный путь, а не
-          только доступ к чужой программе.
+          только доступ к учебным материалам.
         </p>
         <a href="#top" className="model-button model-button-light">
           Вернуться к началу <ArrowRight size={17} />
         </a>
       </section>
-
-      <footer className="model-footer">
-        <div className="model-logo">
-          <BrandMark />
-          <span>
-            <strong>SHIDAO</strong>
-            <small>PERSONAL EDUCATION OS</small>
-          </span>
-        </div>
-        <p>
-          Продуктовая модель v1.0 · основана на глобальной спецификации
-          рефакторинга · 26 июля 2026
-        </p>
-        <a href="https://shidao.ru">
-          shidao.ru <ArrowRight size={14} />
-        </a>
-      </footer>
     </main>
   );
 }

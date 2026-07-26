@@ -88,35 +88,6 @@
   letter-spacing: 0;
 }
 
-.model-brand-mark {
-  position: relative;
-  display: grid;
-  grid-template-columns: repeat(3, 5px);
-  align-items: end;
-  gap: 3px;
-  width: 21px;
-  height: 24px;
-}
-
-.model-brand-mark span {
-  display: block;
-  width: 5px;
-  border-radius: 5px;
-  background: var(--model-lime);
-}
-
-.model-brand-mark span:nth-child(1) {
-  height: 12px;
-}
-
-.model-brand-mark span:nth-child(2) {
-  height: 23px;
-}
-
-.model-brand-mark span:nth-child(3) {
-  height: 17px;
-}
-
 .model-nav {
   display: flex;
   align-items: center;
@@ -2613,21 +2584,6 @@
   text-align: center;
 }
 
-.model-north-star::before {
-  position: absolute;
-  top: 14%;
-  left: 50%;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  content: "";
-  background: var(--model-lime);
-  box-shadow:
-    0 0 0 10px rgba(201, 255, 79, 0.06),
-    0 0 70px 20px rgba(201, 255, 79, 0.22);
-  transform: translateX(-50%);
-}
-
 .model-north-star-grid {
   opacity: 0.25;
   mask-image: radial-gradient(circle at center, black, transparent 65%);
@@ -2676,35 +2632,6 @@
 .model-button-light {
   background: #fff;
   color: var(--model-navy);
-}
-
-.model-footer {
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  align-items: center;
-  gap: 1.5rem;
-  min-height: 110px;
-  padding: 1.5rem 6vw;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-  background: var(--model-navy-deep);
-  color: #fff;
-}
-
-.model-footer p {
-  margin: 0;
-  color: rgba(255, 255, 255, 0.35);
-  font-size: 0.58rem;
-  text-align: center;
-}
-
-.model-footer > a {
-  display: inline-flex;
-  align-items: center;
-  justify-self: end;
-  gap: 0.4rem;
-  color: rgba(255, 255, 255, 0.65);
-  font-size: 0.64rem;
-  font-weight: 650;
 }
 
 @media (max-width: 1180px) {
@@ -2900,16 +2827,6 @@
   .model-future-scene {
     min-height: auto;
   }
-
-  .model-footer {
-    grid-template-columns: 1fr auto;
-  }
-
-  .model-footer p {
-    grid-column: 1 / -1;
-    grid-row: 2;
-    text-align: left;
-  }
 }
 
 @media (max-width: 680px) {
@@ -2919,8 +2836,7 @@
   .model-loop-section,
   .model-ai-section,
   .model-future,
-  .model-north-star,
-  .model-footer {
+  .model-north-star {
     padding-right: 1.15rem;
     padding-left: 1.15rem;
   }
@@ -3291,20 +3207,6 @@
 
   .model-north-star h2 {
     font-size: clamp(3rem, 13vw, 4.7rem);
-  }
-
-  .model-footer {
-    grid-template-columns: 1fr;
-  }
-
-  .model-footer p {
-    grid-column: 1;
-    grid-row: auto;
-    line-height: 1.5;
-  }
-
-  .model-footer > a {
-    justify-self: start;
   }
 }
 
