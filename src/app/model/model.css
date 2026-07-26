@@ -2589,7 +2589,6 @@
   mask-image: radial-gradient(circle at center, black, transparent 65%);
 }
 
-.model-north-star-label,
 .model-north-star h2,
 .model-north-star > p,
 .model-north-star > a {
@@ -2597,19 +2596,9 @@
   z-index: 2;
 }
 
-.model-north-star-label {
-  display: flex;
-  align-items: center;
-  gap: 0.7rem;
-  color: var(--model-lime);
-  font-size: 0.61rem;
-  font-weight: 800;
-  letter-spacing: 0.14em;
-}
-
 .model-north-star h2 {
   max-width: 20ch;
-  margin: 2rem 0 0;
+  margin: 0;
   font-family: var(--model-serif);
   font-size: clamp(3rem, 6vw, 6.6rem);
   font-weight: 400;

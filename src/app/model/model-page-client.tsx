@@ -240,6 +240,9 @@ export function ModelPageClient() {
           <a href="#strategy" onClick={closeMenu}>
             Стратегия
           </a>
+          <a href="#principles" onClick={closeMenu}>
+            Компас
+          </a>
         </nav>
 
         <a className="model-header-cta" href="#north-star">
@@ -641,7 +644,7 @@ export function ModelPageClient() {
         <div className="model-context-case">
           <div className="model-context-case-head">
             <span>КЕЙС · ОДИН ЧЕЛОВЕК, ТРИ КОНТЕКСТА</span>
-            <strong>Анна преподаёт, помогает дочери и сама учится</strong>
+            <strong>Агата преподаёт, помогает дочери и сама учится</strong>
             <p>
               В ShiDao ей не нужны три аккаунта. Текущая задача и связи с
               конкретными курсами и образовательными профилями определяют, какой
@@ -655,7 +658,7 @@ export function ModelPageClient() {
                 <CircleUserRound size={58} strokeWidth={1.2} />
               </div>
               <span>ОДИН АККАУНТ SHIDAO</span>
-              <h3>Анна</h3>
+              <h3>Агата</h3>
               <p>
                 Преподаватель английского, мама Лизы и ученица на курсе
                 китайского языка.
@@ -1128,12 +1131,12 @@ export function ModelPageClient() {
             <ArrowRight size={25} />
           </div>
           <div className="model-wedge-next">
-            <span>СТРАТЕГИЯ · РАСШИРЕНИЕ</span>
+            <span>СТРАТЕГИЯ · МАСШТАБИРОВАНИЕ</span>
             <div className="model-market-rings">
               <div>Преподаватели</div>
-              <div>Семьи</div>
+              <div>Агенты</div>
+              <div>ИИ-преподаватель</div>
               <div>Самообучение</div>
-              <div>Обучение с ИИ</div>
             </div>
           </div>
         </div>
@@ -1273,7 +1276,7 @@ export function ModelPageClient() {
         </div>
       </section>
 
-      <section className="model-section model-decisions">
+      <section className="model-section model-decisions" id="principles">
         <SectionIntro
           index="06"
           eyebrow="Компас команды"
@@ -1315,9 +1318,6 @@ export function ModelPageClient() {
 
       <section className="model-north-star" id="north-star">
         <div className="model-north-star-grid" aria-hidden="true" />
-        <div className="model-north-star-label">
-          <span>НАША СЕВЕРНАЯ ЗВЕЗДА</span>
-        </div>
         <h2>
           Сегодня ShiDao продаёт
           <br />
