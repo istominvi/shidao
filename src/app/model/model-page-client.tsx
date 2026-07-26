@@ -10,7 +10,6 @@ import {
   ChevronRight,
   CircleUserRound,
   Clock3,
-  Copy,
   FileStack,
   GraduationCap,
   Heart,
@@ -22,7 +21,6 @@ import {
   Network,
   PanelRightOpen,
   Play,
-  Plus,
   Route,
   ShieldCheck,
   Sparkles,
@@ -206,9 +204,6 @@ export function ModelPageClient() {
   const [persona, setPersona] =
     useState<(typeof personas)[number]["id"]>("teacher");
   const [lessonMode, setLessonMode] = useState<"live" | "review">("live");
-  const [workspaceTab, setWorkspaceTab] = useState<
-    "teacher" | "student" | "homework"
-  >("teacher");
   const [scrollProgress, setScrollProgress] = useState(0);
 
   useEffect(() => {
@@ -768,207 +763,135 @@ export function ModelPageClient() {
         <div className="model-ui-story">
           <div className="model-ui-copy">
             <span className="model-card-label">РАБОЧЕЕ МЕСТО АВТОРА</span>
-            <h3>Урок собирается как живой документ</h3>
+            <h3>Урок — центр связанной системы</h3>
             <p>
-              Слева — структура курса. В центре — выбранная поверхность урока.
-              Справа — AI, который предлагает изменения как понятный change set.
+              Автор собирает не набор разрозненных экранов, а один редактируемый
+              документ. Он связывает цель и аудиторию с материалами, планом
+              преподавателя, Экраном ученика, домашним заданием и каждым
+              проведением.
             </p>
             <ul>
               <li>
-                <Check size={16} /> Материалы перетаскиваются из каталога
+                <Check size={16} /> План урока и Экран ученика остаются разными
+                рабочими контурами
               </li>
               <li>
-                <Check size={16} /> Экран ученика отделён от заметок
-                преподавателя
+                <Check size={16} /> Материалы подключаются из единого каталога
               </li>
               <li>
-                <Check size={16} /> Любое массовое AI-изменение сначала
-                показывается
+                <Check size={16} /> Один урок можно проводить многократно, не
+                дублируя содержание
               </li>
             </ul>
           </div>
 
-          <div className="model-product-window model-teacher-window">
-            <div className="model-window-topbar">
-              <div className="model-window-dots">
-                <span />
-                <span />
-                <span />
-              </div>
-              <div className="model-window-title">
-                Курс · Китайский для Миши
-              </div>
-              <div className="model-window-user">АИ</div>
+          <div
+            className="model-author-map"
+            aria-label="Карта связей документа урока"
+          >
+            <div className="model-author-map-head">
+              <span>КАРТА ДОКУМЕНТА УРОКА</span>
+              <p>Контекст → живой документ → рабочие контуры</p>
             </div>
-            <div className="model-window-body">
-              <aside className="model-course-sidebar">
-                <div className="model-sidebar-heading">
-                  <span>УРОКИ</span>
-                  <Plus size={15} />
-                </div>
-                {[
-                  ["01", "Знакомство", true],
-                  ["02", "Моя семья", false],
-                  ["03", "Любимые игры", false],
-                  ["04", "Еда и вкусы", false],
-                ].map(([number, title, active]) => (
-                  <div
-                    className={`model-sidebar-lesson ${active ? "is-active" : ""}`}
-                    key={String(number)}
-                  >
-                    <span>{String(number)}</span>
-                    <p>{String(title)}</p>
-                  </div>
-                ))}
-                <div className="model-sidebar-progress">
-                  <span>4 из 12 создано</span>
-                  <i>
-                    <b />
-                  </i>
-                </div>
-              </aside>
 
-              <div className="model-lesson-editor">
-                <div className="model-editor-title">
+            <div className="model-author-map-body">
+              <div className="model-author-map-column model-author-map-inputs">
+                <span className="model-author-map-label">
+                  01 · ЧТО ФОРМИРУЕТ УРОК
+                </span>
+                <article>
                   <div>
-                    <span>УРОК 1</span>
-                    <h4>Знакомство</h4>
+                    <Target size={18} />
                   </div>
-                  <button
-                    type="button"
-                    aria-label="Открыть дополнительные действия"
-                  >
-                    •••
-                  </button>
-                </div>
-                <div
-                  className="model-editor-tabs"
-                  role="tablist"
-                  aria-label="Области урока"
-                >
-                  <button
-                    type="button"
-                    role="tab"
-                    aria-selected={workspaceTab === "teacher"}
-                    className={workspaceTab === "teacher" ? "is-active" : ""}
-                    onClick={() => setWorkspaceTab("teacher")}
-                  >
-                    План урока
-                  </button>
-                  <button
-                    type="button"
-                    role="tab"
-                    aria-selected={workspaceTab === "student"}
-                    className={workspaceTab === "student" ? "is-active" : ""}
-                    onClick={() => setWorkspaceTab("student")}
-                  >
-                    Экран ученика
-                  </button>
-                  <button
-                    type="button"
-                    role="tab"
-                    aria-selected={workspaceTab === "homework"}
-                    className={workspaceTab === "homework" ? "is-active" : ""}
-                    onClick={() => setWorkspaceTab("homework")}
-                  >
-                    ДЗ
-                  </button>
-                </div>
-
-                {workspaceTab === "teacher" && (
-                  <div className="model-document-blocks">
-                    <div className="model-doc-goal">
-                      <Target size={16} />
-                      <span>
-                        <small>ЦЕЛЬ УРОКА</small> Научиться представляться и
-                        узнавать имя собеседника
-                      </span>
-                    </div>
-                    <div className="model-doc-step">
-                      <span>01</span>
-                      <div>
-                        <small>РАЗОГРЕВ · 5 МИН</small>
-                        <strong>Приветствие и настрой</strong>
-                        <p>
-                          Поприветствуйте Мишу, покажите карточку 你好 и
-                          предложите повторить с разной интонацией.
-                        </p>
-                        <button type="button">
-                          <FileStack size={14} /> Карточка «你好»
-                        </button>
-                      </div>
-                    </div>
-                    <div className="model-doc-step">
-                      <span>02</span>
-                      <div>
-                        <small>ПРАКТИКА · 8 МИН</small>
-                        <strong>Как тебя зовут?</strong>
-                        <p>
-                          Сначала покажите диалог, затем поменяйтесь ролями.
-                        </p>
-                      </div>
-                    </div>
+                  <span>
+                    <strong>Цель и аудитория</strong>
+                    <small>Для кого и ради какого результата</small>
+                  </span>
+                </article>
+                <article>
+                  <div>
+                    <Route size={18} />
                   </div>
-                )}
-
-                {workspaceTab === "student" && (
-                  <div className="model-student-preview-card">
-                    <span>ШАГ 1 ИЗ 6</span>
-                    <h4>Поздоровайся по-китайски</h4>
-                    <div className="model-word-card">
-                      <b>你好</b>
-                      <small>nǐ hǎo</small>
-                      <button
-                        type="button"
-                        aria-label="Прослушать произношение"
-                      >
-                        <Play size={15} fill="currentColor" /> Послушать
-                      </button>
-                    </div>
+                  <span>
+                    <strong>Место в курсе</strong>
+                    <small>Что было раньше и что будет дальше</small>
+                  </span>
+                </article>
+                <article>
+                  <div>
+                    <Library size={18} />
                   </div>
-                )}
-
-                {workspaceTab === "homework" && (
-                  <div className="model-homework-preview">
-                    <span>ОБЩЕЕ ДЗ</span>
-                    <h4>Повтори 5 слов и запиши своё приветствие</h4>
-                    <div>
-                      <CheckCircle2 size={17} /> Применяется к 4 учащимся
-                    </div>
-                    <button type="button">
-                      <Copy size={15} /> Вариант для Миши
-                    </button>
-                  </div>
-                )}
+                  <span>
+                    <strong>Материалы</strong>
+                    <small>Карточки, задания, медиа и ссылки</small>
+                  </span>
+                </article>
               </div>
 
-              <aside className="model-ai-panel">
-                <div className="model-ai-panel-head">
+              <div className="model-author-map-arrow" aria-hidden="true">
+                <ArrowRight size={20} />
+              </div>
+
+              <div className="model-author-map-core">
+                <span>02 · РЕДАКТИРУЕМЫЙ ДОКУМЕНТ</span>
+                <div className="model-author-map-core-icon">
+                  <BookOpen size={30} />
+                </div>
+                <h4>Урок</h4>
+                <p>
+                  Единая структура занятия: цель, шаги, содержание и настройки
+                </p>
+                <div className="model-author-map-ai">
                   <Sparkles size={17} />
-                  <strong>ShiDao AI</strong>
-                  <PanelRightOpen size={16} />
+                  <span>
+                    <strong>ИИ помогает автору</strong>
+                    <small>Создаёт, адаптирует и объясняет изменения</small>
+                  </span>
                 </div>
-                <div className="model-ai-message">
-                  <span>AI</span>
-                  <p>Я могу адаптировать урок под Мишу. Что изменить?</p>
+              </div>
+
+              <div className="model-author-map-arrow" aria-hidden="true">
+                <ArrowRight size={20} />
+              </div>
+
+              <div className="model-author-map-column model-author-map-outputs">
+                <span className="model-author-map-label">
+                  03 · ГДЕ УРОК РАБОТАЕТ
+                </span>
+                <div className="model-author-map-output-grid">
+                  <article>
+                    <FileStack size={18} />
+                    <strong>План урока</strong>
+                    <small>Сценарий и заметки автора</small>
+                  </article>
+                  <article>
+                    <PanelRightOpen size={18} />
+                    <strong>Экран ученика</strong>
+                    <small>Только нужный учащемуся шаг</small>
+                  </article>
+                  <article>
+                    <CheckCircle2 size={18} />
+                    <strong>Домашнее задание</strong>
+                    <small>Общее или персональное</small>
+                  </article>
+                  <article>
+                    <History size={18} />
+                    <strong>Проведения</strong>
+                    <small>Новые сессии того же урока</small>
+                  </article>
                 </div>
-                <div className="model-ai-prompt">
-                  Сделай практику короче и добавь тему космоса
-                </div>
-                <div className="model-change-set">
-                  <small>ПРЕДЛОЖЕНО 3 ИЗМЕНЕНИЯ</small>
-                  <p>
-                    <Check size={13} /> Сократить шаг 2 до 5 минут
-                  </p>
-                  <p>
-                    <Check size={13} /> Заменить примеры на космические
-                  </p>
-                  <p>
-                    <Check size={13} /> Добавить 2 карточки
-                  </p>
-                  <button type="button">Применить · ~12 AI units</button>
-                </div>
-              </aside>
+              </div>
+            </div>
+
+            <div className="model-author-map-note">
+              <div>
+                <Sparkles size={19} />
+              </div>
+              <p>
+                <strong>ИИ предлагает — автор принимает решение.</strong>
+                Любое изменение сначала показано понятным набором правок и
+                применяется к документу только после подтверждения.
+              </p>
             </div>
           </div>
         </div>
