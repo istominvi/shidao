@@ -401,70 +401,80 @@ export function ModelPageClient() {
           }
         />
 
-        <div className="model-entity-map">
+        <div
+          className="model-entity-map"
+          aria-label="Сущности продуктовой модели вращаются вокруг человека"
+        >
           <div className="model-entity-center">
             <div className="model-entity-person">
               <CircleUserRound size={48} strokeWidth={1.25} />
             </div>
             <p>ЧЕЛОВЕК</p>
-            <strong>Один Account на всю жизнь</strong>
-            <span>учится · обучает · помогает ребёнку</span>
+            <strong>Один аккаунт на всю жизнь</strong>
           </div>
 
-          <div className="model-entity-card model-entity-profile">
-            <div className="model-entity-icon is-lilac">
-              <History size={22} />
+          <div className="model-entity-orbit model-orbit-profile">
+            <div className="model-orbit-runner">
+              <article className="model-orbit-node">
+                <div className="model-entity-icon is-lilac">
+                  <History size={22} />
+                </div>
+                <span>01</span>
+                <h3>Учебный профиль</h3>
+                <p>
+                  Долговременная история знаний, занятий, ошибок, темпа и
+                  предпочтений человека.
+                </p>
+              </article>
             </div>
-            <span>01</span>
-            <h3>Учебный профиль</h3>
-            <p>
-              Единая долговременная запись человека: занятия, ответы, ошибки,
-              освоенные знания, темп, интересы и подтверждённые выводы. Не
-              исчезает вместе с курсом.
-            </p>
           </div>
 
-          <div className="model-entity-card model-entity-course">
-            <div className="model-entity-icon is-lime">
-              <Route size={22} />
+          <div className="model-entity-orbit model-orbit-lesson">
+            <div className="model-orbit-runner">
+              <article className="model-orbit-node">
+                <div className="model-entity-icon is-blue">
+                  <BookOpen size={22} />
+                </div>
+                <span>02</span>
+                <h3>Урок</h3>
+                <p>
+                  Редактируемый сценарий, отделённый от каждого конкретного
+                  проведения.
+                </p>
+              </article>
             </div>
-            <span>02</span>
-            <h3>Курс</h3>
-            <p>
-              Личный управляемый план достижения цели. Принадлежит создателю,
-              собирается вручную или с AI и назначается одному учащемуся либо
-              группе.
-            </p>
           </div>
 
-          <div className="model-entity-card model-entity-lesson">
-            <div className="model-entity-icon is-blue">
-              <BookOpen size={22} />
+          <div className="model-entity-orbit model-orbit-course">
+            <div className="model-orbit-runner">
+              <article className="model-orbit-node">
+                <div className="model-entity-icon is-lime">
+                  <Route size={22} />
+                </div>
+                <span>03</span>
+                <h3>Курс</h3>
+                <p>
+                  Личный управляемый план достижения цели для учащегося или
+                  группы.
+                </p>
+              </article>
             </div>
-            <span>03</span>
-            <h3>Урок</h3>
-            <p>
-              Редактируемый сценарий внутри курса, отделённый от проведения.
-              Один урок можно провести многократно, сохраняя каждую сессию
-              отдельно.
-            </p>
           </div>
 
-          <div className="model-entity-card model-entity-material">
-            <div className="model-entity-icon is-coral">
-              <Library size={22} />
+          <div className="model-entity-orbit model-orbit-material">
+            <div className="model-orbit-runner">
+              <article className="model-orbit-node">
+                <div className="model-entity-icon is-coral">
+                  <Library size={22} />
+                </div>
+                <span>04</span>
+                <h3>Материал</h3>
+                <p>
+                  Самостоятельный объект каталога, который подключается к
+                  разным урокам.
+                </p>
+              </article>
             </div>
-            <span>04</span>
-            <h3>Материал</h3>
-            <p>
-              Самостоятельный объект каталога: текст, карточка, тест, игра или
-              AI-блок. Подключается к разным урокам и обновляется в одном месте.
-            </p>
-          </div>
-
-          <div className="model-ai-ring">
-            <Sparkles size={16} />
-            <span>AI создаёт · редактирует · проводит · анализирует</span>
           </div>
         </div>
 
