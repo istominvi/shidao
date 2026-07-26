@@ -106,7 +106,7 @@ const aiRoles = [
   },
   {
     number: "03",
-    title: "Copilot",
+    title: "Помощник",
     text: "Подсказывает преподавателю следующий вопрос, материал или объяснение.",
   },
   {
@@ -251,7 +251,7 @@ export function ModelPageClient() {
             UI / UX
           </a>
           <a href="#ai" onClick={closeMenu}>
-            AI
+            ИИ
           </a>
           <a href="#strategy" onClick={closeMenu}>
             Стратегия
@@ -997,8 +997,8 @@ export function ModelPageClient() {
         <div className="model-ai-section-inner">
           <SectionIntro
             index="04"
-            eyebrow="AI-native, не AI-зависимый"
-            title="Интеллект заменяем. Образовательная память — нет."
+            eyebrow="Создан для ИИ, но не зависит от него"
+            title="Модели ИИ заменяемы. Образовательная память — нет."
             text="ShiDao не конкурирует с моделью. Он даёт любой подходящей модели контекст, инструменты и безопасное место в реальном образовательном процессе."
           />
 
@@ -1016,75 +1016,107 @@ export function ModelPageClient() {
           </div>
 
           <div className="model-ai-safety">
-            <div className="model-ai-safety-copy">
-              <span className="model-card-label model-card-label-dark">
-                SAFETY BY DESIGN
-              </span>
-              <h3>AI не «ходит в базу». Он предлагает проверяемые действия.</h3>
-              <p>
-                Один registry типизированных инструментов обслуживает внутренний
-                AI, будущий MCP и внешних агентов. Права и ownership проверяются
-                на каждом шаге.
-              </p>
-              <div className="model-safety-pills">
-                <span>
-                  <ShieldCheck size={14} /> Typed tools
+            <div className="model-ai-safety-main">
+              <div className="model-ai-safety-copy">
+                <span className="model-card-label model-card-label-dark">
+                  ЕДИНЫЙ И БЕЗОПАСНЫЙ КОНТУР
                 </span>
-                <span>
-                  <LockKeyhole size={14} /> Ownership
-                </span>
-                <span>
-                  <History size={14} /> Audit
-                </span>
-                <span>
-                  <Zap size={14} /> Quota
-                </span>
-              </div>
-            </div>
-            <div className="model-change-flow">
-              {[
-                ["01", "Запрос", "«Адаптируй урок для 8 лет»"],
-                ["02", "Change set", "4 изменения · ~18 AI units"],
-                ["03", "Подтверждение", "Пользователь видит влияние"],
-                ["04", "Применение", "Audit trail + undo"],
-              ].map(([number, title, text], index) => (
-                <div className="model-change-flow-item" key={number}>
-                  <span>{number}</span>
-                  <div>
-                    <strong>{title}</strong>
-                    <small>{text}</small>
-                  </div>
-                  {index < 3 && <ArrowDown size={17} />}
+                <h3>
+                  ИИ не зашит в продукт: MCP-сервер задаёт единые правила всем
+                  моделям.
+                </h3>
+                <p>
+                  MCP — это защищённый вход к возможностям ShiDao. Внутренняя
+                  модель с самого начала работает через него; в дальнейшем к
+                  тому же серверу смогут подключаться внешние чаты и модели. Все
+                  они получают только разрешённые инструменты, а ShiDao
+                  проверяет права и сохраняет историю действий.
+                </p>
+                <div className="model-safety-pills">
+                  <span>
+                    <ShieldCheck size={14} /> Разрешённые инструменты
+                  </span>
+                  <span>
+                    <LockKeyhole size={14} /> Проверка прав
+                  </span>
+                  <span>
+                    <History size={14} /> История действий
+                  </span>
+                  <span>
+                    <Zap size={14} /> Лимиты расходов
+                  </span>
                 </div>
-              ))}
-            </div>
-          </div>
+              </div>
 
-          <div className="model-stack">
-            <div className="model-stack-title">
-              <span>УСТОЙЧИВЫЙ СЛОЙ SHIDAO</span>
-              <p>То, что не должно исчезнуть при смене AI-модели</p>
+              <div
+                className="model-stack-layers"
+                aria-label="Устройство контура ИИ"
+              >
+                <div className="model-stack-layer layer-ai">
+                  <Bot size={19} />
+                  <span>Сменяемые модели ИИ</span>
+                  <small>
+                    внутренняя модель · внешние чаты · другие модели
+                  </small>
+                </div>
+                <div className="model-stack-layer layer-tools">
+                  <WandSparkles size={19} />
+                  <span>MCP-сервер и разрешённые инструменты</span>
+                  <small>
+                    единые правила · проверка прав · история действий
+                  </small>
+                </div>
+                <div className="model-stack-layer layer-product">
+                  <Route size={19} />
+                  <span>Образовательный процесс</span>
+                  <small>курс · урок · занятие · ДЗ · общение</small>
+                </div>
+                <div className="model-stack-layer layer-memory">
+                  <History size={19} />
+                  <span>Долговременная образовательная память</span>
+                  <small>
+                    профиль · события · слова · подтверждённые выводы
+                  </small>
+                </div>
+              </div>
             </div>
-            <div className="model-stack-layers">
-              <div className="model-stack-layer layer-ai">
-                <Bot size={19} />
-                <span>Заменяемые AI-модели</span>
-                <small>OpenRouter · будущие провайдеры</small>
+
+            <div className="model-ai-operation">
+              <div className="model-ai-operation-copy">
+                <span>КАК ИИ ВНОСИТ ИЗМЕНЕНИЯ</span>
+                <p>
+                  Модель ничего не меняет скрытно: человек заранее видит план,
+                  примерный расход и может отменить уже применённое действие.
+                </p>
               </div>
-              <div className="model-stack-layer layer-tools">
-                <WandSparkles size={19} />
-                <span>Tools + MCP + change sets</span>
-                <small>валидация · права · audit · quota</small>
-              </div>
-              <div className="model-stack-layer layer-product">
-                <Route size={19} />
-                <span>Образовательный процесс</span>
-                <small>курс · урок · сессия · ДЗ · чат</small>
-              </div>
-              <div className="model-stack-layer layer-memory">
-                <History size={19} />
-                <span>Долговременная память человека</span>
-                <small>профиль · события · слова · подтверждённые выводы</small>
+              <div className="model-change-flow">
+                {[
+                  ["01", "Просьба", "«Адаптируй урок для восьми лет»"],
+                  [
+                    "02",
+                    "План изменений",
+                    "4 изменения · примерный расход 18 единиц",
+                  ],
+                  [
+                    "03",
+                    "Подтверждение",
+                    "Человек видит, что именно изменится",
+                  ],
+                  [
+                    "04",
+                    "Применение",
+                    "Действие сохранено в истории · можно отменить",
+                  ],
+                ].map(([number, title, text], index) => (
+                  <div className="model-change-flow-item" key={number}>
+                    <span>{number}</span>
+                    <div>
+                      <strong>{title}</strong>
+                      <small>{text}</small>
+                    </div>
+                    {index < 3 && <ArrowDown size={17} />}
+                  </div>
+                ))}
               </div>
             </div>
           </div>
