@@ -341,7 +341,7 @@ export function ModelPageClient() {
         <SectionIntro
           index="01"
           eyebrow="Продуктовая модель"
-          title="Главная сущность — образовательный путь человека"
+          title="Главная сущность — образовательный профиль человека"
           text="Курс может закончиться. Преподаватель — смениться. AI-модель — обновиться. Учебный профиль остаётся и делает каждое следующее занятие точнее."
           detail={
             <div className="model-foundation-story">
@@ -375,8 +375,8 @@ export function ModelPageClient() {
                 </strong>
                 <p>
                   Обычная платформа помнит прогресс внутри курса. ShiDao
-                  продолжает образовательный путь между курсами,
-                  преподавателями и AI-моделями.
+                  продолжает образовательный путь между курсами, преподавателями
+                  и AI-моделями.
                 </p>
               </aside>
 
@@ -403,13 +403,29 @@ export function ModelPageClient() {
 
         <div
           className="model-entity-map"
-          aria-label="AI работает с ключевыми сущностями продуктовой модели"
+          aria-label="Ключевые сущности продуктовой модели движутся по своим орбитам вокруг образовательного профиля человека"
         >
           <div className="model-entity-center">
             <div className="model-entity-person">
-              <Bot size={42} strokeWidth={1.35} />
+              <CircleUserRound size={68} strokeWidth={1.15} />
             </div>
-            <strong>AI</strong>
+            <strong>Образовательный профиль человека</strong>
+          </div>
+
+          <div className="model-entity-orbit model-orbit-ai">
+            <div className="model-orbit-runner">
+              <article className="model-orbit-node">
+                <div className="model-orbit-content">
+                  <div className="model-entity-icon is-ai">
+                    <Bot size={25} />
+                  </div>
+                  <div className="model-orbit-copy">
+                    <h3>ИИ</h3>
+                    <p>Создаёт, адаптирует и помогает проводить обучение.</p>
+                  </div>
+                </div>
+              </article>
+            </div>
           </div>
 
           <div className="model-entity-orbit model-orbit-profile">
@@ -420,7 +436,7 @@ export function ModelPageClient() {
                     <History size={25} />
                   </div>
                   <div className="model-orbit-copy">
-                    <h3>Учебный профиль</h3>
+                    <h3>Учебная история</h3>
                     <p>
                       Долговременная история знаний, занятий, ошибок, темпа и
                       предпочтений человека.
@@ -495,10 +511,10 @@ export function ModelPageClient() {
             <h3>Роль — это контекст, а не тип аккаунта.</h3>
             <p>
               Один человек может одновременно создавать курсы, учиться сам,
-              проводить занятия и помогать ребёнку. Его возможности
-              определяются владением и связями с конкретными сущностями, а
-              интерфейс показывает нужный контекст без искусственного
-              переключения между аккаунтами «учителя», «родителя» и «ученика».
+              проводить занятия и помогать ребёнку. Его возможности определяются
+              владением и связями с конкретными сущностями, а интерфейс
+              показывает нужный контекст без искусственного переключения между
+              аккаунтами «учителя», «родителя» и «ученика».
             </p>
           </article>
 

@@ -612,10 +612,11 @@
   top: 50%;
   left: 50%;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 0.7rem;
+  gap: 0.55rem;
   justify-content: center;
-  width: auto;
+  width: 156px;
   min-height: auto;
   padding: 0;
   transform: translate(-50%, -50%);
@@ -624,21 +625,17 @@
 .model-entity-person {
   display: grid;
   place-items: center;
-  width: 58px;
-  height: 58px;
-  border-radius: 50%;
-  background: var(--model-lime);
-  color: var(--model-navy);
-  box-shadow: 0 12px 30px rgba(16, 30, 56, 0.12);
+  color: rgba(16, 30, 56, 0.72);
 }
 
 .model-entity-center > strong {
-  color: var(--model-lime);
+  color: var(--model-navy);
   font-family: var(--model-serif);
-  font-size: clamp(1rem, 1.25vw, 1.2rem);
+  font-size: clamp(0.95rem, 1.15vw, 1.1rem);
   font-weight: 400;
   letter-spacing: -0.035em;
-  line-height: 1.05;
+  line-height: 1.08;
+  text-align: center;
 }
 
 .model-entity-orbit {
@@ -675,6 +672,13 @@
   --orbit-color: rgba(118, 87, 215, 0.27);
 }
 
+.model-orbit-ai {
+  --orbit-size: calc(var(--orbit-outer-size) - 288px);
+  --orbit-delay: -9s;
+  --orbit-content-width: 176px;
+  --orbit-color: rgba(185, 134, 24, 0.28);
+}
+
 .model-orbit-lesson {
   --orbit-size: calc(var(--orbit-outer-size) - 144px);
   --orbit-delay: -18s;
@@ -696,26 +700,22 @@
 .model-orbit-runner {
   position: absolute;
   z-index: 2;
-  inset: 0.5px;
-  animation: model-orbit-spin var(--orbit-duration) linear infinite;
-  animation-delay: var(--orbit-delay);
+  inset: 0;
   pointer-events: none;
 }
 
 .model-orbit-node {
   position: absolute;
   top: 50%;
-  left: 100%;
+  left: 50%;
   width: 0;
   height: 0;
-  transform: translate(0, -50%);
-  animation: model-orbit-counter-spin var(--orbit-duration) linear infinite;
+  animation: model-orbit-path var(--orbit-duration) linear infinite;
   animation-delay: var(--orbit-delay);
   pointer-events: auto;
 }
 
-.model-entity-orbit:has(.model-orbit-node:hover) .model-orbit-runner,
-.model-entity-orbit:has(.model-orbit-node:hover) .model-orbit-node {
+.model-orbit-node:hover {
   animation-play-state: paused;
 }
 
@@ -780,15 +780,20 @@
   background: var(--model-coral);
 }
 
-@keyframes model-orbit-spin {
-  to {
-    transform: rotate(1turn);
-  }
+.model-entity-icon.is-ai {
+  background: #f1c75b;
+  color: var(--model-navy-deep);
 }
 
-@keyframes model-orbit-counter-spin {
+@keyframes model-orbit-path {
+  from {
+    transform: rotate(0turn) translateX(calc(var(--orbit-size) * 0.5))
+      rotate(0turn);
+  }
+
   to {
-    transform: translate(0, -50%) rotate(-1turn);
+    transform: rotate(1turn) translateX(calc(var(--orbit-size) * 0.5))
+      rotate(-1turn);
   }
 }
 
@@ -3387,7 +3392,7 @@
     left: auto;
     z-index: 1;
     align-self: center;
-    width: auto;
+    width: 180px;
     min-height: auto;
     transform: none;
   }
@@ -3691,40 +3696,32 @@
 }
 
 @media (prefers-reduced-motion: reduce) and (min-width: 681px) {
-  .model-orbit-runner,
   .model-orbit-node {
     animation: none;
   }
 
-  .model-orbit-profile .model-orbit-runner {
-    transform: rotate(-32deg);
+  .model-orbit-ai .model-orbit-node {
+    transform: rotate(-72deg) translateX(calc(var(--orbit-size) * 0.5))
+      rotate(72deg);
   }
 
   .model-orbit-profile .model-orbit-node {
-    transform: translate(0, -50%) rotate(32deg);
-  }
-
-  .model-orbit-lesson .model-orbit-runner {
-    transform: rotate(128deg);
+    transform: rotate(-32deg) translateX(calc(var(--orbit-size) * 0.5))
+      rotate(32deg);
   }
 
   .model-orbit-lesson .model-orbit-node {
-    transform: translate(0, -50%) rotate(-128deg);
-  }
-
-  .model-orbit-course .model-orbit-runner {
-    transform: rotate(218deg);
+    transform: rotate(128deg) translateX(calc(var(--orbit-size) * 0.5))
+      rotate(-128deg);
   }
 
   .model-orbit-course .model-orbit-node {
-    transform: translate(0, -50%) rotate(-218deg);
-  }
-
-  .model-orbit-material .model-orbit-runner {
-    transform: rotate(310deg);
+    transform: rotate(218deg) translateX(calc(var(--orbit-size) * 0.5))
+      rotate(-218deg);
   }
 
   .model-orbit-material .model-orbit-node {
-    transform: translate(0, -50%) rotate(-310deg);
+    transform: rotate(310deg) translateX(calc(var(--orbit-size) * 0.5))
+      rotate(-310deg);
   }
 }
