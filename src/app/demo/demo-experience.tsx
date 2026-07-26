@@ -837,14 +837,10 @@ export function DemoExperience() {
                     </div>
                   </div>
                   <div className="demo-context-stack">
-                    <span><BookOpen size={14} /> Преподаю: 2 курса</span>
-                    <span><UserRound size={14} /> Помогаю Лизе</span>
-                    <span><Sparkles size={14} /> Учусь: китайский</span>
+                    <span><BookOpen size={14} /> Учитель</span>
+                    <span><UserRound size={14} /> Родитель</span>
+                    <span><Sparkles size={14} /> Ученик</span>
                   </div>
-                  <p>
-                    Это не переключатель ролей: доступные действия складываются из ваших связей с
-                    курсами и учебными профилями.
-                  </p>
                 </div>
               ) : null}
             </div>
