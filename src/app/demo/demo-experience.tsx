@@ -23,6 +23,7 @@ import {
   GraduationCap,
   HeartHandshake,
   Image as ImageIcon,
+  LayoutGrid,
   Layers3,
   Link2,
   ListChecks,
@@ -38,6 +39,7 @@ import {
   Search,
   Send,
   Sparkles,
+  Table2,
   Target,
   UploadCloud,
   UserRound,
@@ -106,6 +108,8 @@ type AgentMessage = {
 };
 
 type ScheduleRole = "teacher" | "parent" | "student";
+type StudentsScope = "profiles" | "groups" | "archive";
+type StudentsViewMode = "cards" | "table";
 
 type ScheduleLesson = {
   id: string;
@@ -574,6 +578,10 @@ export function DemoExperience() {
   const [calendarView, setCalendarView] = useState<"week" | "month">("week");
   const [calendarCursorDate, setCalendarCursorDate] = useState(dateKey(demoToday));
   const [selectedScheduleDate, setSelectedScheduleDate] = useState(dateKey(demoToday));
+  const [studentsScope, setStudentsScope] = useState<StudentsScope>("profiles");
+  const [studentsViewMode, setStudentsViewMode] = useState<StudentsViewMode>("cards");
+  const [studentsSearch, setStudentsSearch] = useState("");
+  const [restoredArchivedStudents, setRestoredArchivedStudents] = useState<string[]>([]);
   const [studentTab, setStudentTab] = useState("Профиль");
   const [courseTab, setCourseTab] = useState("Уроки");
   const [lessonTab, setLessonTab] = useState("План урока");
@@ -1318,46 +1326,174 @@ export function DemoExperience() {
   function renderStudents() {
     const studentCards = [
       {
+        id: "misha",
         initials: "М",
         name: "Миша Орлов",
         age: "13 лет",
         level: "English A2+",
         courses: "2 активных курса",
         progress: "7 занятий",
+        group: "Teen Talk",
+        next: "Сегодня, 10:00",
         note: "Нужна опора с формами глаголов",
         tone: "blue" as Tone,
       },
       {
+        id: "liza",
         initials: "Л",
         name: "Лиза Истомина",
         age: "9 лет · мой ребёнок",
         level: "Математика · 4 класс",
         courses: "1 активный курс",
         progress: "4 занятия",
+        group: "Индивидуально",
+        next: "Сегодня, 14:30",
         note: "Уверенно работает с равными долями",
         tone: "lime" as Tone,
       },
       {
+        id: "anya",
         initials: "А",
         name: "Аня Соколова",
         age: "14 лет",
         level: "English B1",
         courses: "1 активный курс",
         progress: "11 занятий",
+        group: "Teen Talk",
+        next: "27 июля, 09:00",
         note: "Готова к более свободной речи",
         tone: "pink" as Tone,
       },
       {
+        id: "petya",
         initials: "П",
         name: "Петя Ли",
         age: "13 лет",
         level: "English A2+",
         courses: "1 активный курс",
         progress: "8 занятий",
+        group: "Teen Talk",
+        next: "29 июля, 19:10",
         note: "Лучше реагирует на визуальные примеры",
         tone: "purple" as Tone,
       },
+      {
+        id: "sonya",
+        initials: "С",
+        name: "Соня Ким",
+        age: "12 лет",
+        level: "English A2",
+        courses: "2 активных курса",
+        progress: "6 занятий",
+        group: "Teen Talk",
+        next: "27 июля, 09:00",
+        note: "Быстрее включается через короткие разговорные задания",
+        tone: "amber" as Tone,
+      },
     ];
+
+    const archivedStudents = [
+      {
+        id: "ilya",
+        initials: "И",
+        name: "Илья Романов",
+        age: "15 лет",
+        level: "English B1 · курс завершён",
+        courses: "1 завершённый курс",
+        progress: "18 занятий",
+        group: "Был в Teen Talk",
+        next: "Нет занятий",
+        note: "Цель курса достигнута, история обучения сохранена",
+        archivedAt: "12 июня 2026",
+        archiveReason: "Курс завершён",
+        tone: "neutral" as Tone,
+      },
+      {
+        id: "vera",
+        initials: "В",
+        name: "Вера Мельник",
+        age: "11 лет",
+        level: "Математика · 5 класс",
+        courses: "1 приостановленный курс",
+        progress: "9 занятий",
+        group: "Индивидуально",
+        next: "Нет занятий",
+        note: "Профиль можно вернуть вместе со всей историей занятий",
+        archivedAt: "3 мая 2026",
+        archiveReason: "Пауза в обучении",
+        tone: "neutral" as Tone,
+      },
+    ];
+
+    const groups = [
+      {
+        id: "teen-talk",
+        name: "Teen Talk",
+        members: 4,
+        courses: "2 курса",
+        methodology: "Коммуникативный английский",
+        progress: "24 из 36 уроков",
+        next: "Сегодня, 10:00",
+        initials: ["М", "А", "П", "С"],
+        tone: "amber" as Tone,
+      },
+      {
+        id: "english-start",
+        name: "English Start",
+        members: 3,
+        courses: "1 курс",
+        methodology: "Английский через проекты",
+        progress: "8 из 20 уроков",
+        next: "28 июля, 10:30",
+        initials: ["К", "Н", "Д"],
+        tone: "blue" as Tone,
+      },
+    ];
+
+    const restoredStudents = archivedStudents
+      .filter((student) => restoredArchivedStudents.includes(student.id))
+      .map((student) => ({
+        ...student,
+        level: student.level.replace(" · курс завершён", ""),
+        courses: "Нет активных курсов",
+        group: "Без группы",
+        note: "Профиль восстановлен — можно назначить новый курс",
+      }));
+    const activeStudents = [...studentCards, ...restoredStudents];
+    const visibleArchivedStudents = archivedStudents.filter(
+      (student) => !restoredArchivedStudents.includes(student.id),
+    );
+    const normalizedSearch = studentsSearch.trim().toLocaleLowerCase("ru-RU");
+    const matchesSearch = (...values: Array<string | number>) =>
+      !normalizedSearch ||
+      values.some((value) =>
+        String(value).toLocaleLowerCase("ru-RU").includes(normalizedSearch),
+      );
+    const filteredStudents = activeStudents.filter((student) =>
+      matchesSearch(student.name, student.level, student.group, student.courses),
+    );
+    const filteredGroups = groups.filter((group) =>
+      matchesSearch(group.name, group.methodology, group.courses),
+    );
+    const filteredArchivedStudents = visibleArchivedStudents.filter((student) =>
+      matchesSearch(student.name, student.level, student.archiveReason),
+    );
+    const scopeResultCount =
+      studentsScope === "profiles"
+        ? filteredStudents.length
+        : studentsScope === "groups"
+          ? filteredGroups.length
+          : filteredArchivedStudents.length;
+
+    const chooseStudentsScope = (scope: StudentsScope) => {
+      setStudentsScope(scope);
+      setStudentsSearch("");
+    };
+
+    const restoreStudent = (studentId: string, studentName: string) => {
+      setRestoredArchivedStudents((current) => [...current, studentId]);
+      setToast(`${studentName}: профиль восстановлен`);
+    };
 
     return (
       <>
@@ -1381,61 +1517,339 @@ export function DemoExperience() {
         </section>
 
         <section className="demo-toolbar">
-          <div className="demo-segmented">
-            <button className="is-active" type="button">Все профили <span>5</span></button>
-            <button type="button">Группы <span>1</span></button>
-            <button type="button">Архив</button>
+          <div className="demo-segmented" role="tablist" aria-label="Состав учеников">
+            <button
+              className={studentsScope === "profiles" ? "is-active" : ""}
+              type="button"
+              role="tab"
+              aria-selected={studentsScope === "profiles"}
+              onClick={() => chooseStudentsScope("profiles")}
+            >
+              Все профили <span>{activeStudents.length}</span>
+            </button>
+            <button
+              className={studentsScope === "groups" ? "is-active" : ""}
+              type="button"
+              role="tab"
+              aria-selected={studentsScope === "groups"}
+              onClick={() => chooseStudentsScope("groups")}
+            >
+              Группы <span>{groups.length}</span>
+            </button>
+            <button
+              className={studentsScope === "archive" ? "is-active" : ""}
+              type="button"
+              role="tab"
+              aria-selected={studentsScope === "archive"}
+              onClick={() => chooseStudentsScope("archive")}
+            >
+              Архив <span>{visibleArchivedStudents.length}</span>
+            </button>
           </div>
-          <label className="demo-search">
-            <Search size={17} />
-            <input placeholder="Найти учащегося" />
-          </label>
+          <div className="demo-toolbar-side">
+            <label className="demo-search">
+              <Search size={17} />
+              <input
+                value={studentsSearch}
+                onChange={(event) => setStudentsSearch(event.target.value)}
+                placeholder={
+                  studentsScope === "groups"
+                    ? "Найти группу"
+                    : studentsScope === "archive"
+                      ? "Найти в архиве"
+                      : "Найти ученика"
+                }
+              />
+            </label>
+            <div className="demo-view-toggle" role="group" aria-label="Вид списка">
+              <button
+                type="button"
+                className={studentsViewMode === "cards" ? "is-active" : ""}
+                aria-pressed={studentsViewMode === "cards"}
+                aria-label="Показать карточками"
+                title="Карточки"
+                onClick={() => setStudentsViewMode("cards")}
+              >
+                <LayoutGrid size={17} />
+              </button>
+              <button
+                type="button"
+                className={studentsViewMode === "table" ? "is-active" : ""}
+                aria-pressed={studentsViewMode === "table"}
+                aria-label="Показать таблицей"
+                title="Таблица"
+                onClick={() => setStudentsViewMode("table")}
+              >
+                <Table2 size={17} />
+              </button>
+            </div>
+          </div>
         </section>
 
-        <section className="demo-student-grid">
-          {studentCards.map((student) => (
-            <button
-              type="button"
-              className="demo-student-card"
-              key={student.name}
-              onClick={() => navigate("student")}
-            >
-              <div className="demo-student-card-top">
-                <span className={`demo-large-avatar ${toneClass(student.tone)}`}>{student.initials}</span>
-                <DemoTag tone={student.tone}>{student.age}</DemoTag>
-              </div>
-              <h2>{student.name}</h2>
-              <p>{student.level}</p>
-              <div className="demo-student-stats">
-                <span><BookOpen size={15} /> {student.courses}</span>
-                <span><CheckCircle2 size={15} /> {student.progress}</span>
-              </div>
-              <div className="demo-mini-insight">
-                <Sparkles size={15} />
-                <span>{student.note}</span>
-              </div>
-              <div className="demo-card-link">Открыть профиль <ArrowRight size={15} /></div>
-            </button>
-          ))}
-          <article className="demo-group-card">
-            <div className="demo-overlap-avatars">
-              <span>М</span><span>А</span><span>П</span><span>+1</span>
-            </div>
-            <DemoTag tone="amber">Группа</DemoTag>
-            <h2>Teen Talk</h2>
-            <p>4 участника · 2 курса</p>
-            <div className="demo-group-next">
-              <CalendarDays size={17} />
-              <div>
-                <span>Следующее занятие</span>
-                <strong>Сегодня, 10:00</strong>
-              </div>
-            </div>
-            <DemoButton variant="secondary" onClick={() => setToast("Открыт состав группы Teen Talk")}>
-              Управлять группой
+        <div className="demo-results-summary" aria-live="polite">
+          {studentsScope === "profiles"
+            ? `${scopeResultCount} ${scopeResultCount === 1 ? "ученик" : "учеников"}`
+            : studentsScope === "groups"
+              ? `${scopeResultCount} ${scopeResultCount === 1 ? "группа" : "группы"}`
+              : `${scopeResultCount} ${scopeResultCount === 1 ? "профиль" : "профиля"} в архиве`}
+        </div>
+
+        {studentsViewMode === "cards" ? (
+          <section className="demo-student-grid">
+            {studentsScope === "profiles"
+              ? filteredStudents.map((student) => (
+                  <button
+                    type="button"
+                    className="demo-student-card"
+                    key={student.id}
+                    onClick={() => navigate("student")}
+                  >
+                    <div className="demo-student-card-top">
+                      <span className={`demo-large-avatar ${toneClass(student.tone)}`}>
+                        {student.initials}
+                      </span>
+                      <DemoTag tone={student.tone}>{student.age}</DemoTag>
+                    </div>
+                    <h2>{student.name}</h2>
+                    <p>{student.level}</p>
+                    <div className="demo-student-stats">
+                      <span><BookOpen size={15} /> {student.courses}</span>
+                      <span><CheckCircle2 size={15} /> {student.progress}</span>
+                    </div>
+                    <div className="demo-mini-insight">
+                      <Sparkles size={15} />
+                      <span>{student.note}</span>
+                    </div>
+                    <div className="demo-card-link">
+                      Открыть профиль <ArrowRight size={15} />
+                    </div>
+                  </button>
+                ))
+              : null}
+
+            {studentsScope === "groups"
+              ? filteredGroups.map((group) => (
+                  <article className="demo-group-card" key={group.id}>
+                    <div className="demo-group-card-heading">
+                      <div className="demo-overlap-avatars">
+                        {group.initials.slice(0, 3).map((initial) => (
+                          <span key={initial}>{initial}</span>
+                        ))}
+                        {group.members > 3 ? <span>+{group.members - 3}</span> : null}
+                      </div>
+                      <DemoTag tone={group.tone}>Группа</DemoTag>
+                    </div>
+                    <h2>{group.name}</h2>
+                    <p>{group.members} участника · {group.courses}</p>
+                    <div className="demo-group-method">
+                      <GraduationCap size={16} />
+                      <span>{group.methodology}</span>
+                    </div>
+                    <div className="demo-group-next">
+                      <CalendarDays size={17} />
+                      <div>
+                        <span>Следующее занятие</span>
+                        <strong>{group.next}</strong>
+                      </div>
+                    </div>
+                    <DemoButton
+                      variant="secondary"
+                      onClick={() => setToast(`Открыт состав группы ${group.name}`)}
+                    >
+                      Управлять группой
+                    </DemoButton>
+                  </article>
+                ))
+              : null}
+
+            {studentsScope === "archive"
+              ? filteredArchivedStudents.map((student) => (
+                  <article className="demo-student-card demo-archived-student-card" key={student.id}>
+                    <div className="demo-student-card-top">
+                      <span className={`demo-large-avatar ${toneClass(student.tone)}`}>
+                        {student.initials}
+                      </span>
+                      <DemoTag>В архиве</DemoTag>
+                    </div>
+                    <h2>{student.name}</h2>
+                    <p>{student.level}</p>
+                    <div className="demo-archive-meta">
+                      <span><CalendarDays size={15} /> {student.archivedAt}</span>
+                      <span>{student.archiveReason}</span>
+                    </div>
+                    <div className="demo-mini-insight">
+                      <Sparkles size={15} />
+                      <span>{student.note}</span>
+                    </div>
+                    <DemoButton
+                      variant="secondary"
+                      onClick={() => restoreStudent(student.id, student.name)}
+                    >
+                      Восстановить профиль
+                    </DemoButton>
+                  </article>
+                ))
+              : null}
+          </section>
+        ) : (
+          <section className="demo-people-table-wrap">
+            <table className="demo-people-table">
+              {studentsScope === "profiles" ? (
+                <>
+                  <thead>
+                    <tr>
+                      <th>Ученик</th>
+                      <th>Группа</th>
+                      <th>Курсы</th>
+                      <th>Прогресс</th>
+                      <th>Следующее занятие</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredStudents.map((student) => (
+                      <tr
+                        key={student.id}
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => navigate("student")}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault();
+                            navigate("student");
+                          }
+                        }}
+                      >
+                        <td>
+                          <div className="demo-table-person">
+                            <span className={`demo-table-avatar ${toneClass(student.tone)}`}>
+                              {student.initials}
+                            </span>
+                            <span>
+                              <strong>{student.name}</strong>
+                              <small>{student.age} · {student.level}</small>
+                            </span>
+                          </div>
+                        </td>
+                        <td>{student.group}</td>
+                        <td>{student.courses}</td>
+                        <td>{student.progress}</td>
+                        <td>
+                          <div className="demo-table-next-cell">
+                            <span className="demo-table-next">{student.next}</span>
+                            <ArrowRight size={15} />
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </>
+              ) : null}
+
+              {studentsScope === "groups" ? (
+                <>
+                  <thead>
+                    <tr>
+                      <th>Группа</th>
+                      <th>Методика</th>
+                      <th>Ученики</th>
+                      <th>Прогресс</th>
+                      <th>Следующее занятие</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredGroups.map((group) => (
+                      <tr
+                        key={group.id}
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => setToast(`Открыт состав группы ${group.name}`)}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault();
+                            setToast(`Открыт состав группы ${group.name}`);
+                          }
+                        }}
+                      >
+                        <td>
+                          <div className="demo-table-person">
+                            <span className="demo-table-group-icon"><Users size={17} /></span>
+                            <span>
+                              <strong>{group.name}</strong>
+                              <small>{group.courses}</small>
+                            </span>
+                          </div>
+                        </td>
+                        <td>{group.methodology}</td>
+                        <td>{group.members}</td>
+                        <td>{group.progress}</td>
+                        <td>
+                          <div className="demo-table-next-cell">
+                            <span className="demo-table-next">{group.next}</span>
+                            <ArrowRight size={15} />
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </>
+              ) : null}
+
+              {studentsScope === "archive" ? (
+                <>
+                  <thead>
+                    <tr>
+                      <th>Ученик</th>
+                      <th>Последний курс</th>
+                      <th>Архивирован</th>
+                      <th>Причина</th>
+                      <th>Действие</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredArchivedStudents.map((student) => (
+                      <tr key={student.id}>
+                        <td>
+                          <div className="demo-table-person">
+                            <span className={`demo-table-avatar ${toneClass(student.tone)}`}>
+                              {student.initials}
+                            </span>
+                            <span>
+                              <strong>{student.name}</strong>
+                              <small>{student.age}</small>
+                            </span>
+                          </div>
+                        </td>
+                        <td>{student.level}</td>
+                        <td>{student.archivedAt}</td>
+                        <td>{student.archiveReason}</td>
+                        <td>
+                          <button
+                            type="button"
+                            className="demo-table-action"
+                            onClick={() => restoreStudent(student.id, student.name)}
+                          >
+                            Восстановить
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </>
+              ) : null}
+            </table>
+          </section>
+        )}
+
+        {scopeResultCount === 0 ? (
+          <section className="demo-people-empty">
+            <Search size={24} />
+            <h2>Ничего не найдено</h2>
+            <p>Попробуйте изменить запрос или открыть другой раздел.</p>
+            <DemoButton variant="secondary" onClick={() => setStudentsSearch("")}>
+              Сбросить поиск
             </DemoButton>
-          </article>
-        </section>
+          </section>
+        ) : null}
       </>
     );
   }
