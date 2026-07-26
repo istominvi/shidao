@@ -108,7 +108,7 @@ const navItems: Array<{
   icon: typeof CalendarDays;
 }> = [
   { id: "schedule", label: "Расписание", icon: CalendarDays },
-  { id: "students", label: "Учащиеся", icon: Users },
+  { id: "students", label: "Ученики", icon: Users },
   { id: "courses", label: "Курсы", icon: BookOpen },
 ];
 
@@ -425,7 +425,9 @@ export function DemoExperience() {
   const [view, setView] = useState<DemoView>("schedule");
   const [mobileMenu, setMobileMenu] = useState(false);
   const [profileMenu, setProfileMenu] = useState(false);
-  const [scheduleFilter, setScheduleFilter] = useState("Все контексты");
+  const [notificationMenu, setNotificationMenu] = useState(false);
+  const [notificationsUnread, setNotificationsUnread] = useState(true);
+  const [scheduleFilter, setScheduleFilter] = useState("Все");
   const [calendarWeekOffset, setCalendarWeekOffset] = useState(0);
   const [selectedScheduleDate, setSelectedScheduleDate] = useState(dateKey(demoToday));
   const [studentTab, setStudentTab] = useState("Профиль");
@@ -458,6 +460,7 @@ export function DemoExperience() {
   const [toast, setToast] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const profileMenuRef = useRef<HTMLDivElement>(null);
+  const notificationMenuRef = useRef<HTMLDivElement>(null);
 
   const allCourses = useMemo(
     () =>
@@ -496,18 +499,29 @@ export function DemoExperience() {
   }, [toast]);
 
   useEffect(() => {
-    if (!profileMenu) return;
+    if (!profileMenu && !notificationMenu) return;
 
     const closeOnOutsideClick = (event: PointerEvent) => {
       if (
+        profileMenu &&
         profileMenuRef.current &&
         !profileMenuRef.current.contains(event.target as Node)
       ) {
         setProfileMenu(false);
       }
+      if (
+        notificationMenu &&
+        notificationMenuRef.current &&
+        !notificationMenuRef.current.contains(event.target as Node)
+      ) {
+        setNotificationMenu(false);
+      }
     };
     const closeOnEscape = (event: globalThis.KeyboardEvent) => {
-      if (event.key === "Escape") setProfileMenu(false);
+      if (event.key === "Escape") {
+        setProfileMenu(false);
+        setNotificationMenu(false);
+      }
     };
 
     document.addEventListener("pointerdown", closeOnOutsideClick);
@@ -516,12 +530,13 @@ export function DemoExperience() {
       document.removeEventListener("pointerdown", closeOnOutsideClick);
       document.removeEventListener("keydown", closeOnEscape);
     };
-  }, [profileMenu]);
+  }, [notificationMenu, profileMenu]);
 
   function navigate(next: DemoView) {
     setView(next);
     setMobileMenu(false);
     setProfileMenu(false);
+    setNotificationMenu(false);
     if (typeof window !== "undefined") {
       const isDemoHost = window.location.hostname === "demo.shidao.ru";
       const url = isDemoHost
@@ -692,15 +707,118 @@ export function DemoExperience() {
           </nav>
 
           <div className="demo-header-actions">
-            <button className="demo-icon-button demo-desktop-only" type="button" aria-label="Уведомления">
-              <Bell size={18} />
-              <span className="demo-notification-dot" />
-            </button>
+            <div className="demo-notification-menu-wrap" ref={notificationMenuRef}>
+              <button
+                className="demo-icon-button"
+                type="button"
+                aria-label={notificationsUnread ? "Уведомления, 4 новых" : "Уведомления"}
+                aria-expanded={notificationMenu}
+                onClick={() => {
+                  setNotificationMenu((open) => !open);
+                  setProfileMenu(false);
+                }}
+              >
+                <Bell size={18} />
+                {notificationsUnread ? <span className="demo-notification-dot" /> : null}
+              </button>
+              {notificationMenu ? (
+                <div className="demo-notification-popover" role="dialog" aria-label="Уведомления">
+                  <div className="demo-notification-heading">
+                    <div>
+                      <strong>Уведомления</strong>
+                      <span>{notificationsUnread ? "4 новых" : "Сегодня"}</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setNotificationsUnread(false);
+                        setToast("Все уведомления прочитаны");
+                      }}
+                    >
+                      Прочитать все
+                    </button>
+                  </div>
+                  <div className="demo-notification-list">
+                    <button
+                      type="button"
+                      className={notificationsUnread ? "is-unread" : ""}
+                      onClick={() => {
+                        setNotificationsUnread(false);
+                        navigate("lesson");
+                      }}
+                    >
+                      <span className="demo-notification-icon demo-tone-purple">
+                        <Brain size={17} />
+                      </span>
+                      <span className="demo-notification-copy">
+                        <small>AI-рекомендация · сейчас</small>
+                        <strong>Мише пригодится короткая опора</strong>
+                        <p>Он понимает правило, но путается в третьей форме глагола. Я подготовила карточку для практики.</p>
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      className={notificationsUnread ? "is-unread" : ""}
+                      onClick={() => {
+                        setNotificationsUnread(false);
+                        navigate("student");
+                      }}
+                    >
+                      <span className="demo-notification-icon demo-tone-blue">
+                        <Target size={17} />
+                      </span>
+                      <span className="demo-notification-copy">
+                        <small>Статистика · 18 минут назад</small>
+                        <strong>Аня стала увереннее отвечать сама</strong>
+                        <p>84% заданий без подсказок за неделю — на 12 пунктов больше предыдущего результата.</p>
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      className={notificationsUnread ? "is-unread" : ""}
+                      onClick={() => {
+                        setNotificationsUnread(false);
+                        navigate("students");
+                      }}
+                    >
+                      <span className="demo-notification-icon demo-tone-lime">
+                        <CheckCircle2 size={17} />
+                      </span>
+                      <span className="demo-notification-copy">
+                        <small>Прогресс · сегодня, 12:40</small>
+                        <strong>Лиза прошла четыре урока подряд</strong>
+                        <p>Последние два задания по дробям выполнены без подсказок. Можно повысить сложность.</p>
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      className={notificationsUnread ? "is-unread" : ""}
+                      onClick={() => {
+                        setNotificationsUnread(false);
+                        navigate("students");
+                      }}
+                    >
+                      <span className="demo-notification-icon demo-tone-pink">
+                        <Users size={17} />
+                      </span>
+                      <span className="demo-notification-copy">
+                        <small>Группа Teen Talk · вчера</small>
+                        <strong>Трое из четырёх сдали домашнюю работу</strong>
+                        <p>Остался ответ Пети. Средний результат группы — 78%.</p>
+                      </span>
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+            </div>
             <div className="demo-profile-menu-wrap" ref={profileMenuRef}>
               <button
                 type="button"
                 className="demo-profile-trigger"
-                onClick={() => setProfileMenu((open) => !open)}
+                onClick={() => {
+                  setProfileMenu((open) => !open);
+                  setNotificationMenu(false);
+                }}
                 aria-expanded={profileMenu}
               >
                 <span className="demo-avatar">АИ</span>
@@ -766,6 +884,7 @@ export function DemoExperience() {
       {
         time: "10:00",
         duration: "45 мин",
+        role: "Учитель",
         context: "Я провожу",
         title: "Present Perfect · жизненный опыт",
         course: "English B1 · Teen Talk",
@@ -777,6 +896,7 @@ export function DemoExperience() {
       {
         time: "14:30",
         duration: "35 мин",
+        role: "Родитель",
         context: "Лиза учится с AI",
         title: "Дроби вокруг нас",
         course: "Математика для Лизы",
@@ -788,6 +908,7 @@ export function DemoExperience() {
       {
         time: "18:00",
         duration: "25 мин",
+        role: "Ученик",
         context: "Я учусь",
         title: "认识你很高兴 · знакомство",
         course: "Китайский для себя",
@@ -799,9 +920,9 @@ export function DemoExperience() {
     ];
 
     const visibleCards =
-      scheduleFilter === "Все контексты"
+      scheduleFilter === "Все"
         ? contextCards
-        : contextCards.filter((card) => card.context === scheduleFilter);
+        : contextCards.filter((card) => card.role === scheduleFilter);
 
     return (
       <>
@@ -894,10 +1015,10 @@ export function DemoExperience() {
         <div className="demo-section-heading demo-section-heading-spaced">
           <div>
             <span className="demo-eyebrow">{formatScheduleDate(selectedDate)}</span>
-            <h2>Ваш образовательный день</h2>
+            <h2>Уроки сегодня</h2>
           </div>
           <div className="demo-filter-row">
-            {["Все контексты", "Я провожу", "Лиза учится с AI", "Я учусь"].map((filter) => (
+            {["Все", "Учитель", "Родитель", "Ученик"].map((filter) => (
               <button
                 type="button"
                 key={filter}
@@ -1003,7 +1124,7 @@ export function DemoExperience() {
         <section className="demo-page-hero">
           <div>
             <DemoTag tone="blue">Учебные профили</DemoTag>
-            <h1>Учащиеся</h1>
+            <h1>Ученики</h1>
             <p>
               Здесь хранится образовательный путь человека — независимо от конкретного курса,
               преподавателя или способа обучения.
