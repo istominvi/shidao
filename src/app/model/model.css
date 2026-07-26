@@ -907,7 +907,7 @@
 }
 
 .model-loop-copy h2 {
-  max-width: 14ch;
+  max-width: 13ch;
   margin: 0;
   font-family: var(--model-serif);
   font-size: clamp(2.5rem, 4.5vw, 4.5rem);
@@ -917,11 +917,11 @@
 }
 
 .model-loop-copy > p {
-  max-width: 520px;
+  max-width: 640px;
   margin: 0;
   color: rgba(255, 255, 255, 0.52);
-  font-size: 0.92rem;
-  line-height: 1.65;
+  font-size: 0.96rem;
+  line-height: 1.72;
 }
 
 .model-loop {
@@ -934,7 +934,9 @@
 
 .model-loop-item {
   position: relative;
-  min-height: 180px;
+  display: flex;
+  flex-direction: column;
+  min-height: 245px;
   padding: 1.2rem;
   border-right: 1px solid rgba(255, 255, 255, 0.12);
 }
@@ -960,12 +962,18 @@
 }
 
 .model-loop-item > strong {
-  position: absolute;
-  bottom: 1.3rem;
-  left: 1.2rem;
+  margin-top: auto;
   font-family: var(--model-serif);
   font-size: 1.55rem;
   font-weight: 400;
+}
+
+.model-loop-item > p {
+  min-height: 4.8em;
+  margin: 0.72rem 0 0;
+  color: rgba(255, 255, 255, 0.46);
+  font-size: 0.68rem;
+  line-height: 1.55;
 }
 
 .model-loop-arrow {
@@ -977,6 +985,45 @@
   border-radius: 50%;
   background: var(--model-navy-deep);
   color: rgba(255, 255, 255, 0.45);
+}
+
+.model-loop-explainer {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: 3.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.model-loop-explainer article {
+  padding: 1.75rem clamp(1.1rem, 2vw, 2rem) 2rem;
+}
+
+.model-loop-explainer article + article {
+  border-left: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.model-loop-explainer span {
+  color: var(--model-lime);
+  font-size: 0.59rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.model-loop-explainer h3 {
+  margin: 1.2rem 0 0.75rem;
+  font-family: var(--model-serif);
+  font-size: clamp(1.35rem, 2vw, 1.8rem);
+  font-weight: 400;
+  letter-spacing: -0.035em;
+  line-height: 1.05;
+}
+
+.model-loop-explainer p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.76rem;
+  line-height: 1.68;
 }
 
 .model-loop-equation {
@@ -3467,6 +3514,10 @@
     grid-template-columns: 1fr;
   }
 
+  .model-loop-copy h2 {
+    max-width: 15ch;
+  }
+
   .model-loop {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -3485,6 +3536,15 @@
 
   .model-loop-arrow {
     display: none;
+  }
+
+  .model-loop-explainer {
+    grid-template-columns: 1fr;
+  }
+
+  .model-loop-explainer article + article {
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+    border-left: 0;
   }
 
   .model-loop-equation {
