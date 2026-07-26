@@ -760,8 +760,8 @@ export function ModelPageClient() {
           text="Никакой панели администратора ради панели администратора. В каждый момент ShiDao отвечает на простой вопрос пользователя: что я делаю сейчас?"
         />
 
-        <div className="model-ui-story">
-          <div className="model-ui-copy">
+        <div className="model-ui-story model-ui-story-author">
+          <div className="model-ui-copy model-author-intro">
             <span className="model-card-label">РАБОЧЕЕ МЕСТО АВТОРА</span>
             <h3>Урок — центр связанной системы</h3>
             <p>
@@ -789,69 +789,73 @@ export function ModelPageClient() {
             className="model-author-map"
             aria-label="Карта связей документа урока"
           >
-            <div className="model-author-map-head">
-              <span>КАРТА ДОКУМЕНТА УРОКА</span>
-              <p>Контекст → живой документ → рабочие контуры</p>
-            </div>
-
             <div className="model-author-map-body">
               <div className="model-author-map-column model-author-map-inputs">
                 <span className="model-author-map-label">
                   01 · ЧТО ФОРМИРУЕТ УРОК
                 </span>
-                <article>
-                  <div>
-                    <Target size={18} />
-                  </div>
-                  <span>
-                    <strong>Цель и аудитория</strong>
-                    <small>Для кого и ради какого результата</small>
-                  </span>
-                </article>
-                <article>
-                  <div>
-                    <Route size={18} />
-                  </div>
-                  <span>
-                    <strong>Место в курсе</strong>
-                    <small>Что было раньше и что будет дальше</small>
-                  </span>
-                </article>
-                <article>
-                  <div>
-                    <Library size={18} />
-                  </div>
-                  <span>
-                    <strong>Материалы</strong>
-                    <small>Карточки, задания, медиа и ссылки</small>
-                  </span>
-                </article>
+                <div className="model-author-map-input-grid">
+                  <article>
+                    <div>
+                      <Target size={18} />
+                    </div>
+                    <span>
+                      <strong>Цель и аудитория</strong>
+                      <small>Для кого и ради какого результата</small>
+                    </span>
+                  </article>
+                  <article>
+                    <div>
+                      <Route size={18} />
+                    </div>
+                    <span>
+                      <strong>Место в курсе</strong>
+                      <small>Что было раньше и что будет дальше</small>
+                    </span>
+                  </article>
+                  <article>
+                    <div>
+                      <Library size={18} />
+                    </div>
+                    <span>
+                      <strong>Материалы</strong>
+                      <small>Карточки, задания, медиа и ссылки</small>
+                    </span>
+                  </article>
+                </div>
               </div>
 
               <div className="model-author-map-arrow" aria-hidden="true">
-                <ArrowRight size={20} />
+                <ArrowDown size={20} />
               </div>
 
               <div className="model-author-map-core">
-                <span>02 · РЕДАКТИРУЕМЫЙ ДОКУМЕНТ</span>
-                <div className="model-author-map-core-icon">
-                  <BookOpen size={30} />
+                <div className="model-author-map-core-main">
+                  <div className="model-author-map-core-icon">
+                    <BookOpen size={26} />
+                  </div>
+                  <div>
+                    <span>02 · РЕДАКТИРУЕМЫЙ ДОКУМЕНТ</span>
+                    <h4>Урок</h4>
+                    <p>
+                      Единая структура занятия: цель, шаги, содержание и
+                      настройки
+                    </p>
+                  </div>
                 </div>
-                <h4>Урок</h4>
-                <p>
-                  Единая структура занятия: цель, шаги, содержание и настройки
-                </p>
                 <div className="model-author-map-ai">
                   <Sparkles size={17} />
                   <span>
                     <strong>ИИ помогает автору</strong>
-                    <small>Создаёт, адаптирует и объясняет изменения</small>
+                    <small>
+                      Создаёт и адаптирует урок, показывает правки до применения
+                    </small>
                   </span>
                 </div>
               </div>
 
               <div className="model-author-map-arrow" aria-hidden="true">
-                <ArrowRight size={20} />
+                <ArrowDown size={20} />
               </div>
 
               <div className="model-author-map-column model-author-map-outputs">
@@ -881,17 +885,6 @@ export function ModelPageClient() {
                   </article>
                 </div>
               </div>
-            </div>
-
-            <div className="model-author-map-note">
-              <div>
-                <Sparkles size={19} />
-              </div>
-              <p>
-                <strong>ИИ предлагает — автор принимает решение.</strong>
-                Любое изменение сначала показано понятным набором правок и
-                применяется к документу только после подтверждения.
-              </p>
             </div>
           </div>
         </div>
@@ -997,40 +990,6 @@ export function ModelPageClient() {
               </div>
             </div>
           </div>
-        </div>
-
-        <div className="model-ux-rules">
-          {[
-            [
-              Users,
-              "Человек, не роль",
-              "Один интерфейс собирается из доступных человеку контекстов.",
-            ],
-            [
-              Target,
-              "Следующее действие",
-              "Главная страница показывает, что важно сегодня, а не все возможности сразу.",
-            ],
-            [
-              ShieldCheck,
-              "Приватность по умолчанию",
-              "Ученик не видит teacher notes, guardian — внутренний чат курса.",
-            ],
-            [
-              Sparkles,
-              "AI прозрачен",
-              "Стоимость, прогресс, изменения и возможность undo видны до применения.",
-            ],
-          ].map(([Icon, title, text]) => {
-            const RuleIcon = Icon as typeof Users;
-            return (
-              <article key={String(title)}>
-                <RuleIcon size={22} />
-                <h4>{String(title)}</h4>
-                <p>{String(text)}</p>
-              </article>
-            );
-          })}
         </div>
       </section>
 
