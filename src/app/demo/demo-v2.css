@@ -689,7 +689,42 @@
 
 .demo-week-controls {
   display: flex;
-  gap: 0.25rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.demo-calendar-arrows,
+.demo-calendar-view-switch {
+  display: flex;
+  align-items: center;
+  gap: 0.18rem;
+  border: 1px solid rgba(20, 20, 20, 0.07);
+  border-radius: 0.78rem;
+  background: rgba(244, 244, 245, 0.82);
+  padding: 0.18rem;
+}
+
+.demo-calendar-view-switch button {
+  min-height: 1.9rem;
+  border: 0;
+  border-radius: 0.58rem;
+  background: transparent;
+  padding: 0.4rem 0.62rem;
+  color: #6a6e78;
+  font-size: 0.66rem;
+  font-weight: 760;
+}
+
+.demo-calendar-view-switch button:hover {
+  background: rgba(255, 255, 255, 0.72);
+  color: #141414;
+}
+
+.demo-calendar-view-switch button.is-active {
+  background: #141414;
+  color: #fff;
 }
 
 .demo-week-days {
@@ -699,7 +734,8 @@
   margin-top: 0.85rem;
 }
 
-.demo-week-days button {
+.demo-week-days button,
+.demo-month-days button {
   position: relative;
   display: grid;
   min-height: 4.1rem;
@@ -710,30 +746,34 @@
   background: rgba(244, 244, 245, 0.75);
 }
 
-.demo-week-days button:hover {
+.demo-week-days button:hover,
+.demo-month-days button:hover {
   background: #ececef;
 }
 
-.demo-week-days span {
+.demo-week-days button > span {
   color: #8b8e97;
   font-size: 0.64rem;
   font-weight: 700;
 }
 
-.demo-week-days strong {
+.demo-week-days strong,
+.demo-month-days strong {
   font-size: 0.92rem;
 }
 
-.demo-week-days button.is-today {
+.demo-week-days button.is-today,
+.demo-month-days button.is-today {
   background: #141414;
   color: #fff;
 }
 
-.demo-week-days button.is-today span {
+.demo-week-days button.is-today > span {
   color: rgba(255, 255, 255, 0.68);
 }
 
-.demo-week-days button i {
+.demo-week-days button i,
+.demo-month-days button i {
   position: absolute;
   left: 50%;
   bottom: 0.42rem;
@@ -744,9 +784,70 @@
   background: #c9ff4f;
 }
 
-.demo-week-days button.is-selected:not(.is-today) {
+.demo-week-days button.is-selected:not(.is-today),
+.demo-month-days button.is-selected:not(.is-today) {
   background: #fff;
   box-shadow: inset 0 0 0 2px #141414;
+}
+
+.demo-day-count {
+  position: absolute;
+  top: 0.42rem;
+  right: 0.42rem;
+  display: grid;
+  min-width: 1.25rem;
+  height: 1.25rem;
+  place-items: center;
+  border-radius: 999px;
+  padding-inline: 0.24rem;
+  font-size: 0.6rem;
+  font-style: normal;
+  font-weight: 850;
+  line-height: 1;
+}
+
+.demo-day-count.is-past {
+  background: #dedee2;
+  color: #696d76;
+}
+
+.demo-day-count.is-upcoming {
+  background: #c9ff4f;
+  color: #141414;
+  box-shadow: 0 5px 12px rgba(141, 179, 51, 0.22);
+}
+
+.demo-month-calendar {
+  margin-top: 0.8rem;
+  overflow-x: auto;
+}
+
+.demo-month-weekdays,
+.demo-month-days {
+  display: grid;
+  min-width: 38rem;
+  grid-template-columns: repeat(7, minmax(4.5rem, 1fr));
+  gap: 0.35rem;
+}
+
+.demo-month-weekdays {
+  margin-bottom: 0.35rem;
+}
+
+.demo-month-weekdays span {
+  padding-block: 0.2rem;
+  color: #8b8e97;
+  font-size: 0.61rem;
+  font-weight: 760;
+  text-align: center;
+}
+
+.demo-month-days button {
+  min-height: 3.25rem;
+}
+
+.demo-month-days button.is-outside {
+  opacity: 0.35;
 }
 
 .demo-section-heading {
@@ -815,10 +916,6 @@
 }
 
 .demo-schedule-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 18.5rem;
-  align-items: start;
-  gap: 1rem;
   margin-top: 1rem;
 }
 
@@ -901,6 +998,30 @@
   color: #575b65;
   font-size: 0.68rem;
   font-weight: 650;
+}
+
+.demo-schedule-empty {
+  display: grid;
+  min-height: 13rem;
+  place-items: center;
+  align-content: center;
+  gap: 0.55rem;
+  border: 1px dashed rgba(20, 20, 20, 0.16);
+  border-radius: 1.25rem;
+  background: rgba(255, 255, 255, 0.64);
+  padding: 1.25rem;
+  text-align: center;
+}
+
+.demo-schedule-empty h3 {
+  margin: 0.2rem 0 0;
+  font-size: 1rem;
+}
+
+.demo-schedule-empty p {
+  margin: 0;
+  color: var(--demo-muted);
+  font-size: 0.74rem;
 }
 
 .demo-insight-card {
@@ -3964,11 +4085,14 @@
   }
 
   .demo-week-heading {
+    flex-direction: column;
     align-items: flex-start;
   }
 
   .demo-week-controls {
     display: flex;
+    width: 100%;
+    justify-content: space-between;
   }
 
   .demo-session-row {

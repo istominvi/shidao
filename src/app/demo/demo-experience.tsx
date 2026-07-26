@@ -5,6 +5,7 @@ import {
   ArrowRight,
   Bell,
   BookOpen,
+  BookOpenCheck,
   Bot,
   Brain,
   CalendarDays,
@@ -19,6 +20,8 @@ import {
   FileText,
   FolderOpen,
   GripVertical,
+  GraduationCap,
+  HeartHandshake,
   Image as ImageIcon,
   Layers3,
   Link2,
@@ -100,6 +103,19 @@ type AgentMessage = {
   id: number;
   from: "agent" | "user";
   text: string;
+};
+
+type ScheduleRole = "teacher" | "parent" | "student";
+
+type ScheduleLesson = {
+  id: string;
+  date: string;
+  time: string;
+  duration: number;
+  role: ScheduleRole;
+  title: string;
+  course: string;
+  people: string;
 };
 
 const navItems: Array<{
@@ -253,6 +269,94 @@ const initialLessonSteps: LessonStep[] = [
   },
 ];
 
+function scheduleLesson(
+  id: string,
+  date: string,
+  time: string,
+  duration: number,
+  role: ScheduleRole,
+  title: string,
+  course: string,
+  people: string,
+): ScheduleLesson {
+  return { id, date, time, duration, role, title, course, people };
+}
+
+const scheduleLessons: ScheduleLesson[] = [
+  scheduleLesson("0725-1", "2026-07-25", "09:30", 45, "teacher", "Food around the world", "English B1 · Teen Talk", "4 ученика"),
+  scheduleLesson("0725-2", "2026-07-25", "13:00", 35, "parent", "Равные дроби", "Математика для Лизы", "Лиза · 9 лет"),
+  scheduleLesson("0725-3", "2026-07-25", "18:20", 25, "student", "数字一到十 · числа от 1 до 10", "Китайский для себя", "Самостоятельно с AI"),
+
+  scheduleLesson("0726-1", "2026-07-26", "10:00", 45, "teacher", "Present Perfect · жизненный опыт", "English B1 · Teen Talk", "4 ученика"),
+  scheduleLesson("0726-2", "2026-07-26", "14:30", 35, "parent", "Дроби вокруг нас", "Математика для Лизы", "Лиза · 9 лет"),
+  scheduleLesson("0726-3", "2026-07-26", "18:00", 25, "student", "认识你很高兴 · знакомство", "Китайский для себя", "Самостоятельно с AI"),
+
+  scheduleLesson("0727-1", "2026-07-27", "09:00", 45, "teacher", "Past Simple · истории из путешествий", "English B1 · Teen Talk", "4 ученика"),
+  scheduleLesson("0727-2", "2026-07-27", "12:15", 35, "parent", "Фигуры в комнате", "Математика для Лизы", "Лиза · 9 лет"),
+  scheduleLesson("0727-3", "2026-07-27", "16:40", 25, "student", "我的家人 · моя семья", "Китайский для себя", "Самостоятельно с AI"),
+  scheduleLesson("0727-4", "2026-07-27", "19:00", 40, "teacher", "Проектная подача · первый питч", "English B1 · Teen Talk", "4 ученика"),
+
+  scheduleLesson("0728-1", "2026-07-28", "10:30", 50, "teacher", "Modal verbs · правила в поездке", "English B1 · Teen Talk", "4 ученика"),
+  scheduleLesson("0728-2", "2026-07-28", "15:00", 30, "parent", "Пицца и доли", "Математика для Лизы", "Лиза · 9 лет"),
+  scheduleLesson("0728-3", "2026-07-28", "18:30", 30, "student", "四声 · четыре тона", "Китайский для себя", "Самостоятельно с AI"),
+
+  scheduleLesson("0729-1", "2026-07-29", "09:45", 45, "teacher", "Speaking club · музыка и концерты", "English B1 · Teen Talk", "4 ученика"),
+  scheduleLesson("0729-2", "2026-07-29", "13:20", 40, "parent", "Задачи в два действия", "Математика для Лизы", "Лиза · 9 лет"),
+  scheduleLesson("0729-3", "2026-07-29", "17:00", 25, "student", "在咖啡馆 · заказ в кафе", "Китайский для себя", "Самостоятельно с AI"),
+  scheduleLesson("0729-4", "2026-07-29", "19:10", 35, "teacher", "Irregular verbs · тренировка Миши", "English A2+ · индивидуально", "Миша · 13 лет"),
+
+  scheduleLesson("0730-1", "2026-07-30", "10:00", 45, "teacher", "Going to · планы на каникулы", "English B1 · Teen Talk", "4 ученика"),
+  scheduleLesson("0730-2", "2026-07-30", "14:10", 35, "parent", "Таблица умножения без спешки", "Математика для Лизы", "Лиза · 9 лет"),
+  scheduleLesson("0730-3", "2026-07-30", "18:15", 30, "student", "汉字 人、口、大 · первые иероглифы", "Китайский для себя", "Самостоятельно с AI"),
+
+  scheduleLesson("0731-1", "2026-07-31", "09:20", 50, "teacher", "Reading · космический туризм", "English B1 · Teen Talk", "4 ученика"),
+  scheduleLesson("0731-2", "2026-07-31", "12:40", 35, "parent", "Периметр вокруг нас", "Математика для Лизы", "Лиза · 9 лет"),
+  scheduleLesson("0731-3", "2026-07-31", "16:30", 25, "student", "现在几点？· который час", "Китайский для себя", "Самостоятельно с AI"),
+  scheduleLesson("0731-4", "2026-07-31", "19:00", 35, "teacher", "Pronunciation lab · уверенная речь", "English B1 · индивидуально", "Аня · 14 лет"),
+
+  scheduleLesson("0801-1", "2026-08-01", "10:15", 45, "teacher", "First Conditional · экопривычки", "English B1 · Teen Talk", "4 ученика"),
+  scheduleLesson("0801-2", "2026-08-01", "14:00", 40, "parent", "Покупки и сдача", "Математика для Лизы", "Лиза · 9 лет"),
+  scheduleLesson("0801-3", "2026-08-01", "18:10", 25, "student", "我的爱好 · мои увлечения", "Китайский для себя", "Самостоятельно с AI"),
+
+  scheduleLesson("0802-1", "2026-08-02", "09:30", 50, "teacher", "Project rehearsal · генеральная репетиция", "English B1 · Teen Talk", "4 ученика"),
+  scheduleLesson("0802-2", "2026-08-02", "13:30", 30, "parent", "Мини-тест по дробям", "Математика для Лизы", "Лиза · 9 лет"),
+  scheduleLesson("0802-3", "2026-08-02", "17:45", 30, "student", "怎么走？· как пройти", "Китайский для себя", "Самостоятельно с AI"),
+
+  scheduleLesson("0803-1", "2026-08-03", "09:00", 45, "teacher", "Present Perfect или Past Simple", "English B1 · Teen Talk", "4 ученика"),
+  scheduleLesson("0803-2", "2026-08-03", "12:30", 35, "parent", "Деление с остатком", "Математика для Лизы", "Лиза · 9 лет"),
+  scheduleLesson("0803-3", "2026-08-03", "16:20", 25, "student", "今天天气怎么样？· погода", "Китайский для себя", "Самостоятельно с AI"),
+  scheduleLesson("0803-4", "2026-08-03", "18:50", 40, "teacher", "Visual vocabulary · игра для Пети", "English A2+ · индивидуально", "Петя · 13 лет"),
+
+  scheduleLesson("0804-1", "2026-08-04", "10:00", 50, "teacher", "Teen debate · технологии в школе", "English B1 · Teen Talk", "4 ученика"),
+  scheduleLesson("0804-2", "2026-08-04", "14:20", 35, "parent", "План комнаты и площадь", "Математика для Лизы", "Лиза · 9 лет"),
+  scheduleLesson("0804-3", "2026-08-04", "18:00", 30, "student", "我的周末 · прошлые выходные", "Китайский для себя", "Самостоятельно с AI"),
+
+  scheduleLesson("0805-1", "2026-08-05", "09:30", 55, "teacher", "Защита проекта · Space Expo", "English B1 · Teen Talk", "4 ученика"),
+  scheduleLesson("0805-2", "2026-08-05", "13:10", 40, "parent", "Финальная практика по дробям", "Математика для Лизы", "Лиза · 9 лет"),
+  scheduleLesson("0805-3", "2026-08-05", "17:30", 30, "student", "自我介绍 · рассказ о себе", "Китайский для себя", "Самостоятельно с AI"),
+];
+
+const scheduleRoleMeta = {
+  teacher: {
+    label: "Учитель",
+    tone: "blue" as Tone,
+    icon: GraduationCap,
+    action: "Начать занятие",
+  },
+  parent: {
+    label: "Родитель",
+    tone: "lime" as Tone,
+    icon: HeartHandshake,
+    action: "Открыть урок",
+  },
+  student: {
+    label: "Ученик",
+    tone: "purple" as Tone,
+    icon: BookOpenCheck,
+    action: "Продолжить",
+  },
+};
+
 const demoToday = new Date(2026, 6, 26, 12);
 
 function dateKey(date: Date) {
@@ -269,11 +373,33 @@ function addDays(date: Date, days: number) {
   return next;
 }
 
+function dateFromKey(value: string) {
+  const [year, month, day] = value.split("-").map(Number);
+  return new Date(year, month - 1, day, 12);
+}
+
+function addMonths(date: Date, months: number) {
+  const target = new Date(date.getFullYear(), date.getMonth() + months, 1, 12);
+  const lastDay = new Date(target.getFullYear(), target.getMonth() + 1, 0).getDate();
+  target.setDate(Math.min(date.getDate(), lastDay));
+  return target;
+}
+
 function startOfWeek(date: Date) {
   const start = new Date(date);
   const dayIndex = start.getDay() === 0 ? 6 : start.getDay() - 1;
   start.setDate(start.getDate() - dayIndex);
   return start;
+}
+
+function formatMonthTitle(date: Date) {
+  const value = new Intl.DateTimeFormat("ru-RU", {
+    month: "long",
+    year: "numeric",
+  })
+    .format(date)
+    .replace(" г.", "");
+  return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
 function formatWeekRange(start: Date, end: Date) {
@@ -309,6 +435,23 @@ function formatScheduleDate(date: Date) {
     month: "long",
   }).format(date);
   return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
+function formatLessonsHeading(date: Date) {
+  if (dateKey(date) === dateKey(demoToday)) return "Уроки сегодня";
+  const value = new Intl.DateTimeFormat("ru-RU", {
+    day: "numeric",
+    month: "long",
+  }).format(date);
+  return `Уроки на ${value}`;
+}
+
+function formatTotalDuration(minutes: number) {
+  const hours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+  if (!hours) return `${rest} мин`;
+  if (!rest) return `${hours} ч`;
+  return `${hours} ч ${rest} мин`;
 }
 
 const generationStages = [
@@ -428,7 +571,8 @@ export function DemoExperience() {
   const [notificationMenu, setNotificationMenu] = useState(false);
   const [notificationsUnread, setNotificationsUnread] = useState(true);
   const [scheduleFilter, setScheduleFilter] = useState("Все");
-  const [calendarWeekOffset, setCalendarWeekOffset] = useState(0);
+  const [calendarView, setCalendarView] = useState<"week" | "month">("week");
+  const [calendarCursorDate, setCalendarCursorDate] = useState(dateKey(demoToday));
   const [selectedScheduleDate, setSelectedScheduleDate] = useState(dateKey(demoToday));
   const [studentTab, setStudentTab] = useState("Профиль");
   const [courseTab, setCourseTab] = useState("Уроки");
@@ -871,64 +1015,131 @@ export function DemoExperience() {
   }
 
   function renderSchedule() {
-    const weekStart = addDays(startOfWeek(demoToday), calendarWeekOffset * 7);
-    const calendarDays = Array.from({ length: 7 }, (_, index) => addDays(weekStart, index));
-    const weekEnd = calendarDays[calendarDays.length - 1];
-    const selectedDate =
-      calendarDays.find((date) => dateKey(date) === selectedScheduleDate) ?? demoToday;
-    const contextCards = [
-      {
-        time: "10:00",
-        duration: "45 мин",
-        role: "Учитель",
-        context: "Я провожу",
-        title: "Present Perfect · жизненный опыт",
-        course: "English B1 · Teen Talk",
-        people: "4 учащихся",
-        action: "Начать занятие",
-        tone: "blue" as Tone,
-        onClick: () => navigate("lesson"),
+    const cursorDate = dateFromKey(calendarCursorDate);
+    const selectedDate = dateFromKey(selectedScheduleDate);
+    const weekStart = startOfWeek(cursorDate);
+    const weekDays = Array.from({ length: 7 }, (_, index) => addDays(weekStart, index));
+    const weekEnd = weekDays[weekDays.length - 1];
+    const monthStart = new Date(cursorDate.getFullYear(), cursorDate.getMonth(), 1, 12);
+    const monthGridStart = startOfWeek(monthStart);
+    const monthDays = Array.from({ length: 42 }, (_, index) =>
+      addDays(monthGridStart, index),
+    );
+    const lessonCountByDate = scheduleLessons.reduce<Record<string, number>>(
+      (counts, lesson) => {
+        counts[lesson.date] = (counts[lesson.date] ?? 0) + 1;
+        return counts;
       },
-      {
-        time: "14:30",
-        duration: "35 мин",
-        role: "Родитель",
-        context: "Лиза учится с AI",
-        title: "Дроби вокруг нас",
-        course: "Математика для Лизы",
-        people: "Лиза · 9 лет",
-        action: "Открыть урок",
-        tone: "lime" as Tone,
-        onClick: () => navigate("learner"),
-      },
-      {
-        time: "18:00",
-        duration: "25 мин",
-        role: "Ученик",
-        context: "Я учусь",
-        title: "认识你很高兴 · знакомство",
-        course: "Китайский для себя",
-        people: "Самостоятельно с AI",
-        action: "Продолжить",
-        tone: "purple" as Tone,
-        onClick: () => navigate("learner"),
-      },
-    ];
-
+      {},
+    );
+    const selectedLessons = scheduleLessons
+      .filter((lesson) => lesson.date === selectedScheduleDate)
+      .sort((a, b) => a.time.localeCompare(b.time));
     const visibleCards =
       scheduleFilter === "Все"
-        ? contextCards
-        : contextCards.filter((card) => card.role === scheduleFilter);
+        ? selectedLessons
+        : selectedLessons.filter(
+            (lesson) => scheduleRoleMeta[lesson.role].label === scheduleFilter,
+          );
+    const totalDuration = selectedLessons.reduce(
+      (total, lesson) => total + lesson.duration,
+      0,
+    );
+    const activeRoles = new Set(selectedLessons.map((lesson) => lesson.role)).size;
+    const lessonWord =
+      selectedLessons.length === 1
+        ? "урок"
+        : selectedLessons.length > 1 && selectedLessons.length < 5
+          ? "урока"
+          : "уроков";
+
+    function selectScheduleDate(date: Date) {
+      const key = dateKey(date);
+      setSelectedScheduleDate(key);
+      setCalendarCursorDate(key);
+    }
+
+    function moveCalendar(direction: -1 | 1) {
+      if (calendarView === "week") {
+        const nextCursor = addDays(cursorDate, direction * 7);
+        const nextSelected = addDays(selectedDate, direction * 7);
+        setCalendarCursorDate(dateKey(nextCursor));
+        setSelectedScheduleDate(dateKey(nextSelected));
+        return;
+      }
+
+      const nextMonth = addMonths(monthStart, direction);
+      const monthPrefix = `${nextMonth.getFullYear()}-${String(
+        nextMonth.getMonth() + 1,
+      ).padStart(2, "0")}`;
+      const firstLesson = scheduleLessons.find((lesson) =>
+        lesson.date.startsWith(monthPrefix),
+      );
+      const nextSelected = firstLesson
+        ? dateFromKey(firstLesson.date)
+        : new Date(nextMonth.getFullYear(), nextMonth.getMonth(), 1, 12);
+      setCalendarCursorDate(dateKey(nextSelected));
+      setSelectedScheduleDate(dateKey(nextSelected));
+    }
+
+    function renderCalendarDate(date: Date, mode: "week" | "month") {
+      const key = dateKey(date);
+      const count = lessonCountByDate[key] ?? 0;
+      const isToday = key === dateKey(demoToday);
+      const isSelected = key === selectedScheduleDate;
+      const isOutsideMonth =
+        mode === "month" && date.getMonth() !== cursorDate.getMonth();
+      const weekday = new Intl.DateTimeFormat("ru-RU", { weekday: "short" })
+        .format(date)
+        .replace(".", "");
+      const fullDate = new Intl.DateTimeFormat("ru-RU", {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+      }).format(date);
+      return (
+        <button
+          type="button"
+          key={key}
+          className={[
+            isToday ? "is-today" : "",
+            isSelected ? "is-selected" : "",
+            isOutsideMonth ? "is-outside" : "",
+          ]
+            .filter(Boolean)
+            .join(" ")}
+          aria-label={`${fullDate}, занятий: ${count}`}
+          aria-pressed={isSelected}
+          onClick={() => selectScheduleDate(date)}
+        >
+          {mode === "week" ? (
+            <span>{weekday.charAt(0).toUpperCase() + weekday.slice(1)}</span>
+          ) : null}
+          <strong>{date.getDate()}</strong>
+          {count ? (
+            <em
+              className={`demo-day-count ${
+                key < dateKey(demoToday) ? "is-past" : "is-upcoming"
+              }`}
+              aria-hidden="true"
+            >
+              {count}
+            </em>
+          ) : null}
+          {isToday ? <i /> : null}
+        </button>
+      );
+    }
 
     return (
       <>
         <section className="demo-page-hero demo-schedule-hero">
           <div>
             <h1>Добрый день, Агата</h1>
-            <div className="demo-hero-metrics" aria-label="Показатели на сегодня">
-              <span><strong>3</strong> занятия</span>
-              <span><strong>2 ч 45 мин</strong> в расписании</span>
-              <span><strong>1</strong> рекомендация</span>
+            <div className="demo-hero-metrics" aria-label="Показатели выбранного дня">
+              <span><strong>{selectedLessons.length}</strong> {lessonWord}</span>
+              <span><strong>{formatTotalDuration(totalDuration)}</strong> в расписании</span>
+              <span><strong>{activeRoles}</strong> контекста</span>
             </div>
           </div>
           <div className="demo-hero-actions">
@@ -944,74 +1155,91 @@ export function DemoExperience() {
         <section className="demo-week-card">
           <div className="demo-week-heading">
             <div>
-              <strong>{formatWeekRange(weekStart, weekEnd)}</strong>
+              <strong>
+                {calendarView === "week"
+                  ? formatWeekRange(weekStart, weekEnd)
+                  : formatMonthTitle(cursorDate)}
+              </strong>
             </div>
             <div className="demo-week-controls">
-              <DemoButton
-                size="sm"
-                variant="ghost"
-                aria-label="Предыдущая неделя"
-                onClick={() => {
-                  setCalendarWeekOffset((value) => value - 1);
-                  setSelectedScheduleDate(dateKey(addDays(selectedDate, -7)));
-                }}
-              >
-                <ArrowLeft size={15} />
-              </DemoButton>
+              <div className="demo-calendar-arrows">
+                <DemoButton
+                  size="sm"
+                  variant="ghost"
+                  aria-label={
+                    calendarView === "week" ? "Предыдущая неделя" : "Предыдущий месяц"
+                  }
+                  onClick={() => moveCalendar(-1)}
+                >
+                  <ArrowLeft size={15} />
+                </DemoButton>
+                <DemoButton
+                  size="sm"
+                  variant="ghost"
+                  aria-label={
+                    calendarView === "week" ? "Следующая неделя" : "Следующий месяц"
+                  }
+                  onClick={() => moveCalendar(1)}
+                >
+                  <ArrowRight size={15} />
+                </DemoButton>
+              </div>
               <DemoButton
                 size="sm"
                 variant="secondary"
                 onClick={() => {
-                  setCalendarWeekOffset(0);
+                  setCalendarCursorDate(dateKey(demoToday));
                   setSelectedScheduleDate(dateKey(demoToday));
                 }}
               >
                 Сегодня
               </DemoButton>
-              <DemoButton
-                size="sm"
-                variant="ghost"
-                aria-label="Следующая неделя"
-                onClick={() => {
-                  setCalendarWeekOffset((value) => value + 1);
-                  setSelectedScheduleDate(dateKey(addDays(selectedDate, 7)));
-                }}
-              >
-                <ArrowRight size={15} />
-              </DemoButton>
-            </div>
-          </div>
-          <div className="demo-week-days">
-            {calendarDays.map((date) => {
-              const key = dateKey(date);
-              const isToday = key === dateKey(demoToday);
-              const isSelected = key === selectedScheduleDate;
-              const weekday = new Intl.DateTimeFormat("ru-RU", { weekday: "short" })
-                .format(date)
-                .replace(".", "");
-              return (
+              <div className="demo-calendar-view-switch" role="group" aria-label="Вид календаря">
                 <button
                   type="button"
-                  key={key}
-                  className={`${isToday ? "is-today" : ""} ${isSelected ? "is-selected" : ""}`}
-                  aria-pressed={isSelected}
-                  onClick={() => setSelectedScheduleDate(key)}
+                  className={calendarView === "week" ? "is-active" : ""}
+                  onClick={() => {
+                    setCalendarView("week");
+                    setCalendarCursorDate(selectedScheduleDate);
+                  }}
                 >
-                  <span>
-                    {weekday.charAt(0).toUpperCase() + weekday.slice(1)}
-                  </span>
-                  <strong>{date.getDate()}</strong>
-                  {isToday ? <i /> : null}
+                  Неделя
                 </button>
-              );
-            })}
+                <button
+                  type="button"
+                  className={calendarView === "month" ? "is-active" : ""}
+                  onClick={() => {
+                    setCalendarView("month");
+                    setCalendarCursorDate(selectedScheduleDate);
+                  }}
+                >
+                  Месяц
+                </button>
+              </div>
+            </div>
           </div>
+          {calendarView === "week" ? (
+            <div className="demo-week-days">
+              {weekDays.map((date) => renderCalendarDate(date, "week"))}
+            </div>
+          ) : (
+            <div className="demo-month-calendar">
+              <div className="demo-month-weekdays" aria-hidden="true">
+                {["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"].map((day) => (
+                  <span key={day}>{day}</span>
+                ))}
+              </div>
+              <div className="demo-month-days">
+                {monthDays.map((date) => renderCalendarDate(date, "month"))}
+              </div>
+            </div>
+          )}
         </section>
 
         <div className="demo-section-heading demo-section-heading-spaced">
           <div>
             <span className="demo-eyebrow">{formatScheduleDate(selectedDate)}</span>
-            <h2>Уроки сегодня</h2>
+            <h2>{formatLessonsHeading(selectedDate)}</h2>
           </div>
           <div className="demo-filter-row">
             {["Все", "Учитель", "Родитель", "Ученик"].map((filter) => (
@@ -1029,43 +1257,59 @@ export function DemoExperience() {
 
         <section className="demo-schedule-grid">
           <div className="demo-timeline">
-            {visibleCards.map((card) => (
-              <article className="demo-session-row" key={card.context}>
-                <div className="demo-session-time">
-                  <strong>{card.time}</strong>
-                  <span>{card.duration}</span>
-                </div>
-                <div className={`demo-session-card ${toneClass(card.tone)}`}>
-                  <div className="demo-session-topline">
-                    <DemoTag tone={card.tone}>{card.context}</DemoTag>
-                    <button type="button" aria-label="Другие действия"><MoreHorizontal size={19} /></button>
+            {visibleCards.map((card) => {
+              const role = scheduleRoleMeta[card.role];
+              const RoleIcon = role.icon;
+              return (
+                <article className="demo-session-row" key={card.id}>
+                  <div className="demo-session-time">
+                    <strong>{card.time}</strong>
+                    <span>{card.duration} мин</span>
                   </div>
-                  <h3>{card.title}</h3>
-                  <p>{card.course}</p>
-                  <div className="demo-session-meta">
-                    <span><Users size={15} /> {card.people}</span>
-                    <span><Clock3 size={15} /> {card.duration}</span>
+                  <div
+                    className={`demo-session-card ${toneClass(role.tone)}`}
+                  >
+                    <div className="demo-session-topline">
+                      <DemoTag tone={role.tone}>
+                        <RoleIcon size={13} />
+                        {role.label}
+                      </DemoTag>
+                      <button type="button" aria-label="Другие действия"><MoreHorizontal size={19} /></button>
+                    </div>
+                    <h3>{card.title}</h3>
+                    <p>{card.course}</p>
+                    <div className="demo-session-meta">
+                      <span><Users size={15} /> {card.people}</span>
+                      <span><Clock3 size={15} /> {card.duration} мин</span>
+                    </div>
+                    <DemoButton
+                      variant="primary"
+                      onClick={() =>
+                        navigate(card.role === "teacher" ? "lesson" : "learner")
+                      }
+                    >
+                      <Play size={16} /> {role.action}
+                    </DemoButton>
                   </div>
-                  <DemoButton variant="primary" onClick={card.onClick}>
-                    <Play size={16} /> {card.action}
-                  </DemoButton>
-                </div>
-              </article>
-            ))}
+                </article>
+              );
+            })}
+            {!visibleCards.length ? (
+              <div className="demo-schedule-empty">
+                <CalendarDays size={24} />
+                <h3>На эту дату уроков нет</h3>
+                <p>
+                  Выберите другую дату или запланируйте новое занятие.
+                </p>
+                <DemoButton
+                  variant="secondary"
+                  onClick={() => setToast("Планирование открыто")}
+                >
+                  <CalendarPlus size={16} /> Запланировать
+                </DemoButton>
+              </div>
+            ) : null}
           </div>
-          <aside className="demo-insight-card">
-            <div className="demo-insight-icon"><Brain size={23} /></div>
-            <DemoTag tone="purple">AI-рекомендация</DemoTag>
-            <h3>Мише пригодится короткая опора</h3>
-            <p>
-              В двух последних занятиях он верно выбирал время, но путался в третьей форме
-              глагола. Я подготовила облегчённую карточку для сегодняшней практики.
-            </p>
-            <button type="button" onClick={() => { navigate("lesson"); setAgentOpen(true); }}>
-              Посмотреть предложение <ArrowRight size={15} />
-            </button>
-            <small>Основано на 2 занятиях · требует подтверждения</small>
-          </aside>
         </section>
       </>
     );
