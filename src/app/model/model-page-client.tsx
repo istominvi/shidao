@@ -822,18 +822,20 @@ export function ModelPageClient() {
                 <div className="model-author-map-core">
                   <div className="model-author-map-core-main">
                     <div className="model-author-map-core-icon">
-                      <BookOpen size={24} />
+                      <BookOpen size={18} />
                     </div>
-                    <div>
-                      <h4>Урок</h4>
-                      <p>
+                    <span>
+                      <strong>Урок</strong>
+                      <small>
                         Единая структура занятия: цель, шаги, содержание и
                         настройки
-                      </p>
-                    </div>
+                      </small>
+                    </span>
                   </div>
                   <div className="model-author-map-ai">
-                    <Sparkles size={18} />
+                    <div>
+                      <Sparkles size={18} />
+                    </div>
                     <span>
                       <strong>ИИ помогает автору</strong>
                       <small>
