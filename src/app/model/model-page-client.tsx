@@ -32,7 +32,7 @@ import {
   X,
   Zap,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 
 const personas = [
   {
@@ -180,11 +180,13 @@ function SectionIntro({
   eyebrow,
   title,
   text,
+  detail,
 }: {
   index: string;
   eyebrow: string;
   title: string;
   text: string;
+  detail?: ReactNode;
 }) {
   return (
     <div className="model-section-intro">
@@ -193,6 +195,7 @@ function SectionIntro({
         <p className="model-eyebrow">{eyebrow}</p>
         <h2>{title}</h2>
         <p>{text}</p>
+        {detail ? <div className="model-section-detail">{detail}</div> : null}
       </div>
     </div>
   );
@@ -334,41 +337,68 @@ export function ModelPageClient() {
         </div>
       </section>
 
-      <section
-        className="model-shift"
-        aria-label="Изменение модели образования"
-      >
-        <div className="model-shift-source">
-          <p>ОБРАЗОВАНИЕ СЕГОДНЯ</p>
-          <strong>Путь разбит между инструментами</strong>
-          <div className="model-shift-track">
-            <span>Школа</span>
-            <span>Преподаватель</span>
-            <span>Документы</span>
-            <span>Мессенджер</span>
-            <span>Календарь</span>
-            <span>AI-чат</span>
-          </div>
-        </div>
-        <div className="model-shift-bridge" aria-hidden="true">
-          <span>единый контекст</span>
-          <ArrowRight size={28} />
-        </div>
-        <div className="model-shift-result">
-          <Wordmark className="model-shift-wordmark" />
-          <span>
-            <small>ОБРАЗОВАТЕЛЬНАЯ СИСТЕМА</small>
-            <strong>Один управляемый путь</strong>
-          </span>
-        </div>
-      </section>
-
       <section className="model-section model-foundation" id="model">
         <SectionIntro
           index="01"
           eyebrow="Продуктовая модель"
           title="Главная сущность — образовательный путь человека"
           text="Курс может закончиться. Преподаватель — смениться. AI-модель — обновиться. Учебный профиль остаётся и делает каждое следующее занятие точнее."
+          detail={
+            <div className="model-foundation-story">
+              <div className="model-foundation-narrative">
+                <p>
+                  В новой модели ShiDao обучение организовано не вокруг школы,
+                  каталога контента или отдельного курса, а вокруг человека и
+                  его образовательной цели. Для каждого учащегося ведётся единый
+                  учебный профиль: в нём накапливаются проведённые занятия,
+                  ответы, ошибки, освоенные знания, интересы, темп и
+                  подтверждённые наблюдения о том, как человеку лучше учиться.
+                </p>
+                <p>
+                  Курс становится личным управляемым планом достижения цели. Он
+                  объединяет последовательность уроков, аудиторию и настройки,
+                  может быть создан вручную или вместе с AI и назначен одному
+                  учащемуся либо группе. Когда курс заканчивается, его результат
+                  не пропадает: важные данные переходят в учебный профиль и
+                  становятся контекстом для следующего решения.
+                </p>
+              </div>
+
+              <aside className="model-foundation-difference">
+                <div>
+                  <Sparkles size={18} />
+                  <span>Главное отличие</span>
+                </div>
+                <strong>
+                  Не просто показать следующий урок, а понять, каким он должен
+                  быть именно для этого человека.
+                </strong>
+                <p>
+                  Обычная платформа помнит прогресс внутри курса. ShiDao
+                  продолжает образовательный путь между курсами,
+                  преподавателями и AI-моделями.
+                </p>
+              </aside>
+
+              <div className="model-foundation-signals">
+                <div>
+                  <History size={18} />
+                  <span>Помнит</span>
+                  <strong>весь подтверждённый учебный опыт</strong>
+                </div>
+                <div>
+                  <Network size={18} />
+                  <span>Связывает</span>
+                  <strong>цель, курс, уроки и результаты</strong>
+                </div>
+                <div>
+                  <WandSparkles size={18} />
+                  <span>Адаптирует</span>
+                  <strong>следующий шаг на основе истории</strong>
+                </div>
+              </div>
+            </div>
+          }
         />
 
         <div className="model-entity-map">
@@ -387,7 +417,11 @@ export function ModelPageClient() {
             </div>
             <span>01</span>
             <h3>Учебный профиль</h3>
-            <p>Долговременная история знаний, ошибок, темпа и предпочтений.</p>
+            <p>
+              Единая долговременная запись человека: занятия, ответы, ошибки,
+              освоенные знания, темп, интересы и подтверждённые выводы. Не
+              исчезает вместе с курсом.
+            </p>
           </div>
 
           <div className="model-entity-card model-entity-course">
@@ -397,8 +431,9 @@ export function ModelPageClient() {
             <span>02</span>
             <h3>Курс</h3>
             <p>
-              Личный документ владельца для одного человека, группы или
-              будущего.
+              Личный управляемый план достижения цели. Принадлежит создателю,
+              собирается вручную или с AI и назначается одному учащемуся либо
+              группе.
             </p>
           </div>
 
@@ -408,7 +443,11 @@ export function ModelPageClient() {
             </div>
             <span>03</span>
             <h3>Урок</h3>
-            <p>Редактируемый сценарий, который можно проводить многократно.</p>
+            <p>
+              Редактируемый сценарий внутри курса, отделённый от проведения.
+              Один урок можно провести многократно, сохраняя каждую сессию
+              отдельно.
+            </p>
           </div>
 
           <div className="model-entity-card model-entity-material">
@@ -418,7 +457,8 @@ export function ModelPageClient() {
             <span>04</span>
             <h3>Материал</h3>
             <p>
-              Создаётся один раз, переиспользуется и улучшается централизованно.
+              Самостоятельный объект каталога: текст, карточка, тест, игра или
+              AI-блок. Подключается к разным урокам и обновляется в одном месте.
             </p>
           </div>
 
