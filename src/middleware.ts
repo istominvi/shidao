@@ -21,6 +21,12 @@ export function middleware(req: NextRequest) {
     return NextResponse.rewrite(modelUrl);
   }
 
+  if (requestHost === "demo.shidao.ru") {
+    const demoUrl = req.nextUrl.clone();
+    demoUrl.pathname = "/demo";
+    return NextResponse.rewrite(demoUrl);
+  }
+
   if (
     isUnsafeMethod(req.method) &&
     isCrossOriginRequest({
