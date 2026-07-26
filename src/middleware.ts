@@ -7,6 +7,20 @@ import { isCrossOriginRequest, isUnsafeMethod } from "@/lib/server/csrf";
  * decision logic. Safe (GET/HEAD/OPTIONS) requests pass through untouched.
  */
 export function middleware(req: NextRequest) {
+  const requestHost = (
+    req.headers.get("x-forwarded-host") ??
+    req.headers.get("host") ??
+    ""
+  )
+    .split(":")[0]
+    .toLowerCase();
+
+  if (requestHost === "model.shidao.ru" && req.nextUrl.pathname === "/") {
+    const modelUrl = req.nextUrl.clone();
+    modelUrl.pathname = "/model";
+    return NextResponse.rewrite(modelUrl);
+  }
+
   if (
     isUnsafeMethod(req.method) &&
     isCrossOriginRequest({

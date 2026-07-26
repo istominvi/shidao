@@ -17,3 +17,6 @@ tsconfig.tsbuildinfo
 
 # local Claude Code config
 .claude/
+
+# local Codex configs with credentials
+.codex/*.local.toml
