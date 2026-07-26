@@ -436,7 +436,7 @@ export function ModelPageClient() {
                     <History size={25} />
                   </div>
                   <div className="model-orbit-copy">
-                    <h3>Учебная история</h3>
+                    <h3>Учебный профиль</h3>
                     <p>
                       Долговременная история знаний, занятий, ошибок, темпа и
                       предпочтений человека.
