@@ -403,28 +403,31 @@ export function ModelPageClient() {
 
         <div
           className="model-entity-map"
-          aria-label="Сущности продуктовой модели вращаются вокруг человека"
+          aria-label="AI работает с ключевыми сущностями продуктовой модели"
         >
           <div className="model-entity-center">
             <div className="model-entity-person">
-              <CircleUserRound size={48} strokeWidth={1.25} />
+              <Bot size={42} strokeWidth={1.35} />
             </div>
-            <p>ЧЕЛОВЕК</p>
-            <strong>Один аккаунт на всю жизнь</strong>
+            <p>AI</p>
+            <strong>Интеллект образовательного процесса</strong>
           </div>
 
           <div className="model-entity-orbit model-orbit-profile">
             <div className="model-orbit-runner">
               <article className="model-orbit-node">
-                <div className="model-entity-icon is-lilac">
-                  <History size={22} />
+                <div className="model-orbit-content">
+                  <div className="model-entity-icon is-lilac">
+                    <History size={25} />
+                  </div>
+                  <div className="model-orbit-copy">
+                    <h3>Учебный профиль</h3>
+                    <p>
+                      Долговременная история знаний, занятий, ошибок, темпа и
+                      предпочтений человека.
+                    </p>
+                  </div>
                 </div>
-                <span>01</span>
-                <h3>Учебный профиль</h3>
-                <p>
-                  Долговременная история знаний, занятий, ошибок, темпа и
-                  предпочтений человека.
-                </p>
               </article>
             </div>
           </div>
@@ -432,15 +435,18 @@ export function ModelPageClient() {
           <div className="model-entity-orbit model-orbit-lesson">
             <div className="model-orbit-runner">
               <article className="model-orbit-node">
-                <div className="model-entity-icon is-blue">
-                  <BookOpen size={22} />
+                <div className="model-orbit-content">
+                  <div className="model-entity-icon is-blue">
+                    <BookOpen size={25} />
+                  </div>
+                  <div className="model-orbit-copy">
+                    <h3>Урок</h3>
+                    <p>
+                      Редактируемый сценарий, отделённый от каждого конкретного
+                      проведения.
+                    </p>
+                  </div>
                 </div>
-                <span>02</span>
-                <h3>Урок</h3>
-                <p>
-                  Редактируемый сценарий, отделённый от каждого конкретного
-                  проведения.
-                </p>
               </article>
             </div>
           </div>
@@ -448,15 +454,18 @@ export function ModelPageClient() {
           <div className="model-entity-orbit model-orbit-course">
             <div className="model-orbit-runner">
               <article className="model-orbit-node">
-                <div className="model-entity-icon is-lime">
-                  <Route size={22} />
+                <div className="model-orbit-content">
+                  <div className="model-entity-icon is-lime">
+                    <Route size={25} />
+                  </div>
+                  <div className="model-orbit-copy">
+                    <h3>Курс</h3>
+                    <p>
+                      Личный управляемый план достижения цели для учащегося или
+                      группы.
+                    </p>
+                  </div>
                 </div>
-                <span>03</span>
-                <h3>Курс</h3>
-                <p>
-                  Личный управляемый план достижения цели для учащегося или
-                  группы.
-                </p>
               </article>
             </div>
           </div>
@@ -464,15 +473,18 @@ export function ModelPageClient() {
           <div className="model-entity-orbit model-orbit-material">
             <div className="model-orbit-runner">
               <article className="model-orbit-node">
-                <div className="model-entity-icon is-coral">
-                  <Library size={22} />
+                <div className="model-orbit-content">
+                  <div className="model-entity-icon is-coral">
+                    <Library size={25} />
+                  </div>
+                  <div className="model-orbit-copy">
+                    <h3>Материал</h3>
+                    <p>
+                      Самостоятельный объект каталога, который подключается к
+                      разным урокам.
+                    </p>
+                  </div>
                 </div>
-                <span>04</span>
-                <h3>Материал</h3>
-                <p>
-                  Самостоятельный объект каталога, который подключается к
-                  разным урокам.
-                </p>
               </article>
             </div>
           </div>
