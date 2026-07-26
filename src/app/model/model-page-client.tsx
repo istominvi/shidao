@@ -5,7 +5,6 @@ import {
   ArrowRight,
   BookOpen,
   Bot,
-  Check,
   CheckCircle2,
   ChevronRight,
   CircleUserRound,
@@ -770,19 +769,6 @@ export function ModelPageClient() {
               преподавателя, Экраном ученика, домашним заданием и каждым
               проведением.
             </p>
-            <ul>
-              <li>
-                <Check size={16} /> План урока и Экран ученика остаются разными
-                рабочими контурами
-              </li>
-              <li>
-                <Check size={16} /> Материалы подключаются из единого каталога
-              </li>
-              <li>
-                <Check size={16} /> Один урок можно проводить многократно, не
-                дублируя содержание
-              </li>
-            </ul>
           </div>
 
           <div
@@ -829,28 +815,33 @@ export function ModelPageClient() {
                 <ArrowDown size={20} />
               </div>
 
-              <div className="model-author-map-core">
-                <div className="model-author-map-core-main">
-                  <div className="model-author-map-core-icon">
-                    <BookOpen size={26} />
+              <div className="model-author-map-core-section">
+                <span className="model-author-map-label">
+                  02 · РЕДАКТИРУЕМЫЙ ДОКУМЕНТ
+                </span>
+                <div className="model-author-map-core">
+                  <div className="model-author-map-core-main">
+                    <div className="model-author-map-core-icon">
+                      <BookOpen size={24} />
+                    </div>
+                    <div>
+                      <h4>Урок</h4>
+                      <p>
+                        Единая структура занятия: цель, шаги, содержание и
+                        настройки
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <span>02 · РЕДАКТИРУЕМЫЙ ДОКУМЕНТ</span>
-                    <h4>Урок</h4>
-                    <p>
-                      Единая структура занятия: цель, шаги, содержание и
-                      настройки
-                    </p>
+                  <div className="model-author-map-ai">
+                    <Sparkles size={18} />
+                    <span>
+                      <strong>ИИ помогает автору</strong>
+                      <small>
+                        Создаёт и адаптирует урок, показывает правки до
+                        применения
+                      </small>
+                    </span>
                   </div>
-                </div>
-                <div className="model-author-map-ai">
-                  <Sparkles size={17} />
-                  <span>
-                    <strong>ИИ помогает автору</strong>
-                    <small>
-                      Создаёт и адаптирует урок, показывает правки до применения
-                    </small>
-                  </span>
                 </div>
               </div>
 
@@ -864,24 +855,31 @@ export function ModelPageClient() {
                 </span>
                 <div className="model-author-map-output-grid">
                   <article>
-                    <FileStack size={18} />
-                    <strong>План урока</strong>
-                    <small>Сценарий и заметки автора</small>
+                    <div>
+                      <FileStack size={18} />
+                    </div>
+                    <span>
+                      <strong>План урока</strong>
+                      <small>Сценарий и заметки автора</small>
+                    </span>
                   </article>
                   <article>
-                    <PanelRightOpen size={18} />
-                    <strong>Экран ученика</strong>
-                    <small>Только нужный учащемуся шаг</small>
+                    <div>
+                      <PanelRightOpen size={18} />
+                    </div>
+                    <span>
+                      <strong>Экран ученика</strong>
+                      <small>Только нужный учащемуся шаг</small>
+                    </span>
                   </article>
                   <article>
-                    <CheckCircle2 size={18} />
-                    <strong>Домашнее задание</strong>
-                    <small>Общее или персональное</small>
-                  </article>
-                  <article>
-                    <History size={18} />
-                    <strong>Проведения</strong>
-                    <small>Новые сессии того же урока</small>
+                    <div>
+                      <CheckCircle2 size={18} />
+                    </div>
+                    <span>
+                      <strong>Домашнее задание</strong>
+                      <small>Общее или персональное</small>
+                    </span>
                   </article>
                 </div>
               </div>

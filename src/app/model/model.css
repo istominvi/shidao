@@ -1401,28 +1401,6 @@
   line-height: 1.65;
 }
 
-.model-ui-copy ul {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  margin: 1.5rem 0 0;
-  padding: 0;
-  list-style: none;
-}
-
-.model-ui-copy li {
-  display: flex;
-  gap: 0.55rem;
-  color: #4f5155;
-  font-size: 0.71rem;
-  line-height: 1.45;
-}
-
-.model-ui-copy li svg {
-  flex: 0 0 auto;
-  color: #457a09;
-}
-
 .model-ui-story-author {
   grid-template-columns: 1fr;
   gap: clamp(3.5rem, 6vw, 6rem);
@@ -1430,39 +1408,28 @@
 }
 
 .model-author-intro {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(340px, 1.1fr);
+  column-gap: clamp(3rem, 8vw, 9rem);
+  align-items: end;
   width: 100%;
   max-width: none;
 }
 
+.model-author-intro .model-card-label {
+  grid-column: 1 / -1;
+}
+
 .model-author-intro h3 {
+  grid-column: 1;
   max-width: 18ch;
+  margin-bottom: 0;
 }
 
 .model-author-intro > p {
-  max-width: 86ch;
-}
-
-.model-author-intro ul {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0;
-  margin-top: 2.2rem;
-  border-top: 1px solid var(--model-line);
-  border-bottom: 1px solid var(--model-line);
-}
-
-.model-author-intro li {
-  align-items: flex-start;
-  padding: 1.25rem 1.4rem;
-  font-size: 0.74rem;
-}
-
-.model-author-intro li:first-child {
-  padding-left: 0;
-}
-
-.model-author-intro li + li {
-  border-left: 1px solid var(--model-line);
+  grid-column: 2;
+  max-width: 68ch;
+  padding-bottom: 0.2rem;
 }
 
 .model-author-map {
@@ -1485,10 +1452,12 @@
 
 .model-author-map-label {
   display: block;
-  color: #77797e;
-  font-size: 0.6rem;
-  font-weight: 800;
-  letter-spacing: 0.14em;
+  color: var(--model-navy-deep);
+  font-family: var(--model-serif);
+  font-size: clamp(1.3rem, 2vw, 1.8rem);
+  font-weight: 400;
+  letter-spacing: -0.025em;
+  line-height: 1.1;
 }
 
 .model-author-map-input-grid {
@@ -1497,7 +1466,8 @@
   gap: 0.9rem;
 }
 
-.model-author-map-inputs article {
+.model-author-map-inputs article,
+.model-author-map-outputs article {
   display: flex;
   align-items: center;
   gap: 0.9rem;
@@ -1508,7 +1478,8 @@
   background: transparent;
 }
 
-.model-author-map-inputs article > div {
+.model-author-map-inputs article > div,
+.model-author-map-outputs article > div {
   display: grid;
   flex: 0 0 auto;
   place-items: center;
@@ -1520,6 +1491,7 @@
 }
 
 .model-author-map-inputs article > span,
+.model-author-map-outputs article > span,
 .model-author-map-ai span {
   display: flex;
   flex-direction: column;
@@ -1555,6 +1527,12 @@
   height: 42px;
   content: "";
   background: rgba(16, 30, 56, 0.22);
+}
+
+.model-author-map-core-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
 }
 
 .model-author-map-core {
@@ -1595,13 +1573,6 @@
   font-weight: 400;
 }
 
-.model-author-map-core-main span {
-  color: #77797e;
-  font-size: 0.52rem;
-  font-weight: 800;
-  letter-spacing: 0.12em;
-}
-
 .model-author-map-core-main p {
   max-width: 420px;
   margin: 0;
@@ -1631,32 +1602,19 @@
 
 .model-author-map-output-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.9rem;
 }
 
 .model-author-map-outputs article {
-  display: flex;
-  flex-direction: column;
-  min-height: 135px;
-  padding: 1rem 1.15rem;
-  border: 1px solid rgba(16, 30, 56, 0.18);
-  border-radius: 0.7rem;
-  background: transparent;
   color: var(--model-navy-deep);
 }
 
 .model-author-map-outputs article svg {
-  margin-bottom: auto;
   color: #64676d;
 }
 
-.model-author-map-outputs strong {
-  margin-top: 0.8rem;
-}
-
 .model-author-map-outputs small {
-  margin-top: 0.22rem;
   color: #77797e;
 }
 
@@ -3030,10 +2988,6 @@
     max-width: none;
   }
 
-  .model-author-map-output-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
   .model-author-map-core {
     width: 100%;
   }
@@ -3347,17 +3301,20 @@
     align-items: flex-start;
   }
 
-  .model-author-intro ul {
+  .model-author-intro {
     grid-template-columns: 1fr;
+    row-gap: 0;
   }
 
-  .model-author-intro li {
-    padding: 1rem 0;
+  .model-author-intro .model-card-label,
+  .model-author-intro h3,
+  .model-author-intro > p {
+    grid-column: 1;
   }
 
-  .model-author-intro li + li {
-    border-top: 1px solid var(--model-line);
-    border-left: 0;
+  .model-author-intro > p {
+    margin-top: 1.2rem;
+    padding-bottom: 0;
   }
 
   .model-author-map-input-grid,
