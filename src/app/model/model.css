@@ -804,7 +804,7 @@
 }
 
 .model-principle-feature {
-  grid-row: span 3;
+  grid-row: span 2;
   padding: clamp(2rem, 4vw, 4rem);
   background: var(--model-navy);
   color: #fff;
@@ -837,67 +837,16 @@
 }
 
 .model-principle-feature > p {
-  max-width: 44ch;
+  max-width: 48ch;
   margin: 0;
   color: rgba(255, 255, 255, 0.57);
-  font-size: 0.86rem;
-  line-height: 1.65;
-}
-
-.model-context-person {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  align-items: center;
-  gap: 0.65rem 0.8rem;
-  margin-top: 3rem;
-  padding: 1rem;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 1rem;
-  background: rgba(255, 255, 255, 0.04);
-}
-
-.model-mini-avatar {
-  display: grid;
-  grid-row: 1 / 3;
-  place-items: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  background: var(--model-lilac);
-  color: var(--model-navy);
-  font-size: 0.7rem;
-  font-weight: 800;
-}
-
-.model-context-person > span {
-  font-size: 0.76rem;
-  font-weight: 700;
-}
-
-.model-context-person > div:last-child {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem;
-}
-
-.model-context-person small {
-  width: 100%;
-  color: rgba(255, 255, 255, 0.35);
-  font-size: 0.5rem;
-  letter-spacing: 0.12em;
-}
-
-.model-context-person b {
-  padding: 0.32rem 0.5rem;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.09);
-  font-size: 0.54rem;
-  font-weight: 600;
+  font-size: 0.92rem;
+  line-height: 1.72;
 }
 
 .model-principle-card {
-  min-height: 180px;
-  padding: 1.6rem;
+  min-height: 240px;
+  padding: clamp(1.5rem, 2.2vw, 2rem);
   background: var(--model-paper);
 }
 
@@ -908,19 +857,20 @@
 }
 
 .model-principle-card h3 {
-  max-width: 15ch;
-  margin: 2.4rem 0 0.65rem;
+  max-width: 17ch;
+  margin: 2rem 0 0.8rem;
   font-family: var(--model-serif);
-  font-size: 1.45rem;
+  font-size: clamp(1.35rem, 1.8vw, 1.65rem);
   font-weight: 400;
   letter-spacing: -0.035em;
+  line-height: 1.05;
 }
 
 .model-principle-card p {
   margin: 0;
   color: #68696c;
-  font-size: 0.73rem;
-  line-height: 1.55;
+  font-size: 0.79rem;
+  line-height: 1.62;
 }
 
 .model-loop-section {
@@ -2603,6 +2553,76 @@
   font-size: 0.72rem;
 }
 
+.model-school-platform {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.75fr) minmax(320px, 1.25fr);
+  gap: 1.5rem 4rem;
+  align-items: center;
+  margin-top: 2rem;
+  padding: clamp(2rem, 4vw, 3.5rem);
+  border: 1px solid rgba(112, 183, 255, 0.3);
+  border-radius: 1.5rem;
+  background:
+    radial-gradient(
+      circle at 92% 15%,
+      rgba(112, 183, 255, 0.22),
+      transparent 28%
+    ),
+    var(--model-navy);
+  color: #fff;
+}
+
+.model-school-platform > div:first-child > span {
+  color: var(--model-lime);
+  font-size: 0.61rem;
+  font-weight: 800;
+  letter-spacing: 0.13em;
+}
+
+.model-school-platform h3 {
+  max-width: 14ch;
+  margin: 1rem 0 0;
+  font-family: var(--model-serif);
+  font-size: clamp(2rem, 3.4vw, 3.3rem);
+  font-weight: 400;
+  letter-spacing: -0.045em;
+  line-height: 1;
+}
+
+.model-school-platform > p {
+  max-width: 68ch;
+  margin: 0;
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 0.86rem;
+  line-height: 1.72;
+}
+
+.model-school-platform-features {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.13);
+}
+
+.model-school-platform-features span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 0.85rem;
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.76);
+  font-size: 0.69rem;
+  font-weight: 650;
+}
+
+.model-school-platform-features svg {
+  color: var(--model-lime);
+}
+
 .model-roadmap {
   margin-top: clamp(6rem, 10vw, 10rem);
 }
@@ -3058,7 +3078,7 @@
   }
 
   .model-principle-feature {
-    grid-row: span 5;
+    grid-row: span 4;
   }
 
   .model-window-body {
@@ -3292,6 +3312,14 @@
 
   .model-business-model {
     grid-template-columns: 1fr;
+  }
+
+  .model-school-platform {
+    grid-template-columns: 1fr;
+  }
+
+  .model-school-platform > p {
+    max-width: 760px;
   }
 
   .model-future {
@@ -3576,6 +3604,19 @@
 
   .model-business-model {
     gap: 3rem;
+  }
+
+  .model-school-platform {
+    padding: 2rem 1.4rem;
+  }
+
+  .model-school-platform-features {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .model-school-platform-features span {
+    justify-content: flex-start;
   }
 
   .model-roadmap article {
