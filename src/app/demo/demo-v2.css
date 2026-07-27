@@ -8,6 +8,9 @@
   --demo-space-1: 0.5rem;
   --demo-space-2: 1rem;
   --demo-space-3: 1.5rem;
+  --demo-control-height: 2.5rem;
+  --demo-control-inner-height: 2rem;
+  --demo-control-radius: 0.75rem;
   position: relative;
   min-height: 100vh;
   overflow-x: clip;
@@ -4040,6 +4043,103 @@
 
 .demo-teacher-remote button:disabled {
   opacity: 0.35;
+}
+
+/* Unified controls: 40 px surfaces, 32 px options inside compound toggles. */
+.demo-nav-item,
+.demo-icon-button,
+.demo-profile-trigger,
+.demo-button,
+.demo-search,
+.demo-table-action,
+.demo-session-topline > button,
+.demo-course-cover > button,
+.demo-profile-tabs button,
+.demo-course-tabs button,
+.demo-lesson-tabs button,
+.demo-mobile-nav button {
+  box-sizing: border-box;
+  height: var(--demo-control-height);
+  min-height: var(--demo-control-height);
+  border-radius: var(--demo-control-radius);
+}
+
+.demo-nav-item {
+  padding-block: 0.45rem;
+}
+
+.demo-icon-button {
+  width: var(--demo-control-height);
+}
+
+.demo-profile-trigger {
+  padding: 0.25rem 0.5rem;
+}
+
+.demo-avatar {
+  width: var(--demo-control-inner-height);
+  height: var(--demo-control-inner-height);
+}
+
+.demo-button-md,
+.demo-button-sm {
+  min-height: var(--demo-control-height);
+}
+
+.demo-button-md {
+  padding: 0.55rem 0.9rem;
+}
+
+.demo-button-sm {
+  padding: 0.5rem 0.7rem;
+}
+
+.demo-search {
+  padding-block: 0;
+}
+
+.demo-search input {
+  height: 100%;
+}
+
+.demo-filter-row,
+.demo-segmented,
+.demo-calendar-arrows,
+.demo-calendar-view-switch,
+.demo-view-toggle {
+  box-sizing: border-box;
+  height: var(--demo-control-height);
+  min-height: var(--demo-control-height);
+  border-radius: var(--demo-control-radius);
+  padding: 0.25rem;
+}
+
+.demo-filter-row button,
+.demo-segmented button,
+.demo-calendar-view-switch button,
+.demo-calendar-arrows .demo-button,
+.demo-view-toggle button {
+  box-sizing: border-box;
+  height: var(--demo-control-inner-height);
+  min-height: var(--demo-control-inner-height);
+  border-radius: var(--demo-control-radius);
+}
+
+.demo-filter-row button,
+.demo-segmented button,
+.demo-calendar-view-switch button {
+  padding: 0.4rem 0.68rem;
+}
+
+.demo-calendar-arrows .demo-button,
+.demo-view-toggle button {
+  width: var(--demo-control-inner-height);
+  padding: 0;
+}
+
+.demo-session-topline > button,
+.demo-course-cover > button {
+  width: var(--demo-control-height);
 }
 
 /* Unified page rhythm: every top-level block advances by one 16 px step. */
