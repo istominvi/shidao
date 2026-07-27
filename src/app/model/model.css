@@ -568,6 +568,59 @@
   line-height: 1.35;
 }
 
+/* Principles section styling for three-column layout */
+.model-principles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(1.5rem, 2.5vw, 2.5rem);
+  max-width: 1120px;
+  margin-top: 2rem;
+}
+
+.model-principle {
+  display: flex;
+  gap: 1.2rem;
+  flex-direction: column;
+}
+
+.model-principle-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 999px;
+  background: var(--model-lime);
+  color: var(--model-navy);
+  font-size: 1.75rem;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.model-principle-content h3 {
+  margin: 0 0 1rem;
+  color: var(--model-ink);
+  font-size: clamp(1.15rem, 1.5vw, 1.35rem);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+}
+
+.model-principle-content p {
+  margin: 0;
+  color: #42464d;
+  font-size: clamp(0.95rem, 1.1vw, 1.05rem);
+  line-height: 1.7;
+}
+
+/* Responsive: stack on narrower screens */
+@media (max-width: 768px) {
+  .model-principles {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+}
+
 .model-entity-map {
   --orbit-outer-size: clamp(600px, 54vw, 620px);
   position: relative;
