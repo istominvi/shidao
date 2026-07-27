@@ -432,7 +432,7 @@
 .demo-page {
   position: relative;
   z-index: 2;
-  width: min(1200px, calc(100% - 2rem));
+  width: min(1240px, calc(100% - 2rem));
   margin-inline: auto;
   padding: 1.25rem 0 8rem;
 }
@@ -482,16 +482,46 @@
   line-height: 1.55;
 }
 
+.demo-page-hero {
+  height: 10rem;
+  min-height: 10rem;
+  align-items: center;
+}
+
+.demo-page-hero h1,
+.demo-schedule-hero h1 {
+  margin: 0;
+  font-size: clamp(1.75rem, 3vw, 2.55rem);
+  line-height: 1;
+  letter-spacing: -0.045em;
+}
+
+.demo-page-hero p {
+  max-width: 43rem;
+  margin-top: 0.55rem;
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
 .demo-schedule-hero {
   background:
-    radial-gradient(circle at 88% 10%, rgba(201, 255, 79, 0.35), transparent 15rem),
-    radial-gradient(circle at 5% 110%, rgba(112, 183, 255, 0.19), transparent 18rem),
+    radial-gradient(circle at 96% 8%, rgba(112, 183, 255, 0.3), transparent 16rem),
+    radial-gradient(circle at 4% 108%, rgba(112, 183, 255, 0.2), transparent 17rem),
     rgba(255, 255, 255, 0.8);
 }
 
-.demo-schedule-hero h1 {
-  margin-top: 0;
-  font-size: clamp(2rem, 4vw, 3.25rem);
+.demo-students-hero {
+  background:
+    radial-gradient(circle at 96% 8%, rgba(201, 180, 255, 0.32), transparent 16rem),
+    radial-gradient(circle at 4% 108%, rgba(201, 180, 255, 0.22), transparent 17rem),
+    rgba(255, 255, 255, 0.8);
+}
+
+.demo-courses-page-hero {
+  background:
+    radial-gradient(circle at 96% 8%, rgba(201, 255, 79, 0.34), transparent 16rem),
+    radial-gradient(circle at 4% 108%, rgba(201, 255, 79, 0.22), transparent 17rem),
+    rgba(255, 255, 255, 0.8);
 }
 
 .demo-hero-metrics {
@@ -4165,6 +4195,11 @@
     gap: 1rem;
   }
 
+  .demo-page-hero {
+    height: auto;
+    min-height: 0;
+  }
+
   .demo-hero-actions,
   .demo-course-hero-actions {
     justify-content: flex-start;
@@ -4292,7 +4327,7 @@
   .demo-header-wrap,
   .demo-page,
   .demo-disclaimer {
-    width: min(100% - 1rem, 1200px);
+    width: min(100% - 1rem, 1240px);
   }
 
   .demo-header {
@@ -4309,12 +4344,16 @@
     padding: 1.1rem;
   }
 
-  .demo-page-hero h1,
   .demo-profile-hero h1,
   .demo-course-hero h1,
   .demo-lesson-hero h1,
   .demo-builder-hero h1 {
     font-size: 2.25rem;
+  }
+
+  .demo-page-hero h1,
+  .demo-schedule-hero h1 {
+    font-size: 1.8rem;
   }
 
   .demo-hero-actions,

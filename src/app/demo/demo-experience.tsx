@@ -1497,9 +1497,8 @@ export function DemoExperience() {
 
     return (
       <>
-        <section className="demo-page-hero">
+        <section className="demo-page-hero demo-students-hero">
           <div>
-            <DemoTag tone="blue">Учебные профили</DemoTag>
             <h1>Ученики</h1>
             <p>
               Здесь хранится образовательный путь человека — независимо от конкретного курса,
@@ -1993,9 +1992,8 @@ export function DemoExperience() {
   function renderCourses() {
     return (
       <>
-        <section className="demo-page-hero">
+        <section className="demo-page-hero demo-courses-page-hero">
           <div>
-            <DemoTag tone="purple">Личные документы</DemoTag>
             <h1>Курсы</h1>
             <p>
               Создавайте программу вручную, копируйте шаблон или попросите AI превратить цель в
