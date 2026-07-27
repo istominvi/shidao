@@ -19,7 +19,7 @@
   --demo-surface-padding: 0.875rem;
   --demo-surface-radius: 1.25rem;
   --demo-control-font-size: 0.88rem;
-  --demo-control-font-weight: 650;
+  --demo-control-font-weight: 600;
   position: relative;
   min-height: 100vh;
   overflow-x: clip;
