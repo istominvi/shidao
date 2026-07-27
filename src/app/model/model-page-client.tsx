@@ -310,11 +310,6 @@ export function ModelPageClient() {
               AI.
             </p>
           </div>
-          <div className="model-hero-signal">
-            <span className="model-signal-dot" />
-            <span>Не ещё один AI-чат</span>
-            <strong>Устойчивая инфраструктура обучения</strong>
-          </div>
         </div>
       </section>
 
