@@ -277,13 +277,13 @@ export function ModelPageClient() {
             <span>26 / 07 / 2026</span>
           </div>
           <h1>
-            AI умеет
+            ShiDao — <em className="model-hero-accent">образование
             <br />
-            объяснять.
+            будущего</em>
             <br />
-            <em>ShiDao превращает</em>
+            где ИИ — ассистент,
             <br />
-            объяснение в образование.
+            аналитик и автор контента
           </h1>
           <p className="model-hero-lead">
             Профессиональная образовательная система, в которой человек может

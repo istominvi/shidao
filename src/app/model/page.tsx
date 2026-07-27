@@ -29,7 +29,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "ShiDao — персональная образовательная система",
     description:
-      "AI умеет объяснять. ShiDao превращает объяснение в образование.",
+      "ShiDao — образование будущего, где ИИ — ассистент, аналитик и автор контента",
     images: ["https://model.shidao.ru/model/shidao-model-hero.png"],
   },
 };
