@@ -14,8 +14,8 @@
   --demo-header-height: 4.25rem;
   --demo-surface-padding: 0.875rem;
   --demo-surface-radius: 1.25rem;
-  --demo-control-font-size: 0.8125rem;
-  --demo-control-font-weight: 700;
+  --demo-control-font-size: 0.88rem;
+  --demo-control-font-weight: 650;
   position: relative;
   min-height: 100vh;
   overflow-x: clip;
@@ -814,6 +814,7 @@
 .demo-week-days strong,
 .demo-month-days strong {
   font-size: 0.92rem;
+  font-weight: 600;
 }
 
 .demo-week-days button.is-today,
