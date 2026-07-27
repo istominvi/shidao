@@ -228,20 +228,20 @@ export function ModelPageClient() {
           <a href="#model" onClick={closeMenu}>
             Модель
           </a>
-          <a href="#scenarios" onClick={closeMenu}>
-            Сценарии
-          </a>
-          <a href="#experience" onClick={closeMenu}>
-            UI / UX
-          </a>
           <a href="#ai" onClick={closeMenu}>
             ИИ
+          </a>
+          <a href="#profile" onClick={closeMenu}>
+            Профиль
+          </a>
+          <a href="#experience" onClick={closeMenu}>
+            Интерфейс
           </a>
           <a href="#strategy" onClick={closeMenu}>
             Стратегия
           </a>
           <a href="#principles" onClick={closeMenu}>
-            Компас
+            Критерии
           </a>
         </nav>
 
@@ -351,9 +351,11 @@ export function ModelPageClient() {
             </div>
           }
         />
+      </section>
 
+      <section className="model-section model-profile" id="profile">
         <SectionIntro
-          index="02"
+          index="03"
           eyebrow="Образовательный профиль"
           title="Главная сущность — образовательный профиль человека"
           text="Курс может закончиться. Преподаватель — смениться. AI-модель — обновиться. Учебный профиль остаётся и делает каждое следующее занятие точнее."
@@ -1016,8 +1018,8 @@ export function ModelPageClient() {
       <section className="model-ai-section" id="ai">
         <div className="model-ai-section-inner">
           <SectionIntro
-            index="04"
-            eyebrow="Глубоко интегрирован с ИИ"
+            index="02"
+            eyebrow="Искусственный интеллект"
             title="Модели ИИ заменяемы. Образовательная память — нет."
             text="ShiDao не конкурирует с моделью. Он даёт любой подходящей модели контекст, инструменты и безопасное место в реальном образовательном процессе."
           />

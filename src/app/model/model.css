@@ -568,49 +568,57 @@
   line-height: 1.35;
 }
 
-/* Principles section styling for three-column layout */
+/* Principles section styling - vertical layout */
 .model-principles {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: clamp(1.5rem, 2.5vw, 2.5rem);
+  grid-template-columns: 1fr;
+  gap: clamp(2rem, 3vw, 3.5rem);
   max-width: 1120px;
   margin-top: 2rem;
 }
 
 .model-principle {
-  display: flex;
-  gap: 1.2rem;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 1.5rem 2rem;
+  align-items: flex-start;
 }
 
 .model-principle-number {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 3.5rem;
-  height: 3.5rem;
+  width: 4rem;
+  height: 4rem;
   border-radius: 999px;
   background: var(--model-lime);
   color: var(--model-navy);
-  font-size: 1.75rem;
+  font-size: 1.85rem;
   font-weight: 800;
   flex-shrink: 0;
+  grid-row: 1 / -1;
+}
+
+.model-principle-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
 }
 
 .model-principle-content h3 {
-  margin: 0 0 1rem;
+  margin: 0;
   color: var(--model-ink);
-  font-size: clamp(1.15rem, 1.5vw, 1.35rem);
+  font-size: clamp(1.3rem, 1.8vw, 1.55rem);
   font-weight: 600;
   letter-spacing: -0.02em;
-  line-height: 1.25;
+  line-height: 1.2;
 }
 
 .model-principle-content p {
   margin: 0;
   color: #42464d;
-  font-size: clamp(0.95rem, 1.1vw, 1.05rem);
-  line-height: 1.7;
+  font-size: clamp(1rem, 1.15vw, 1.12rem);
+  line-height: 1.75;
 }
 
 /* Responsive: stack on narrower screens */
@@ -618,6 +626,15 @@
   .model-principles {
     grid-template-columns: 1fr;
     gap: 2rem;
+  }
+  
+  .model-principle {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .model-principle-number {
+    grid-row: auto;
   }
 }
 
