@@ -5,6 +5,9 @@
   --demo-shadow:
     0 20px 52px rgba(23, 26, 32, 0.08),
     inset 0 1px 0 rgba(255, 255, 255, 0.82);
+  --demo-space-1: 0.5rem;
+  --demo-space-2: 1rem;
+  --demo-space-3: 1.5rem;
   position: relative;
   min-height: 100vh;
   overflow-x: clip;
@@ -66,7 +69,7 @@
   z-index: 60;
   width: min(1240px, calc(100% - 2rem));
   margin-inline: auto;
-  padding-top: 1rem;
+  padding-top: var(--demo-space-2);
 }
 
 .demo-header {
@@ -434,7 +437,7 @@
   z-index: 2;
   width: min(1240px, calc(100% - 2rem));
   margin-inline: auto;
-  padding: 1.25rem 0 8rem;
+  padding: var(--demo-space-2) 0 8rem;
 }
 
 .demo-page-hero,
@@ -446,7 +449,7 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
-  gap: 2rem;
+  gap: var(--demo-space-3);
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.78);
   border-radius: 1.7rem;
@@ -454,7 +457,7 @@
     radial-gradient(circle at 97% 0%, rgba(112, 183, 255, 0.25), transparent 17rem),
     radial-gradient(circle at 0% 100%, rgba(255, 182, 232, 0.18), transparent 17rem),
     rgba(255, 255, 255, 0.78);
-  padding: 1.7rem;
+  padding: var(--demo-space-3);
   box-shadow: 0 26px 68px rgba(17, 24, 39, 0.08);
   backdrop-filter: blur(12px);
 }
@@ -691,8 +694,8 @@
 }
 
 .demo-week-card {
-  margin-top: 1rem;
-  padding: 1rem 1.1rem;
+  margin-top: var(--demo-space-2);
+  padding: var(--demo-space-2);
 }
 
 .demo-week-heading,
@@ -700,7 +703,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 1rem;
+  gap: var(--demo-space-2);
 }
 
 .demo-week-heading > div:first-child {
@@ -760,8 +763,8 @@
 .demo-week-days {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 0.35rem;
-  margin-top: 0.85rem;
+  gap: var(--demo-space-1);
+  margin-top: var(--demo-space-2);
 }
 
 .demo-week-days button,
@@ -848,7 +851,7 @@
 }
 
 .demo-month-calendar {
-  margin-top: 0.8rem;
+  margin-top: var(--demo-space-2);
   overflow-x: auto;
 }
 
@@ -857,11 +860,11 @@
   display: grid;
   min-width: 38rem;
   grid-template-columns: repeat(7, minmax(4.5rem, 1fr));
-  gap: 0.35rem;
+  gap: var(--demo-space-1);
 }
 
 .demo-month-weekdays {
-  margin-bottom: 0.35rem;
+  margin-bottom: var(--demo-space-1);
 }
 
 .demo-month-weekdays span {
@@ -884,7 +887,7 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
-  gap: 1.5rem;
+  gap: var(--demo-space-2);
 }
 
 .demo-section-heading-spaced {
@@ -946,18 +949,18 @@
 }
 
 .demo-schedule-grid {
-  margin-top: 1rem;
+  margin-top: var(--demo-space-2);
 }
 
 .demo-timeline {
   display: grid;
-  gap: 0.75rem;
+  gap: var(--demo-space-2);
 }
 
 .demo-session-row {
   display: grid;
   grid-template-columns: 4.4rem minmax(0, 1fr);
-  gap: 0.75rem;
+  gap: var(--demo-space-2);
 }
 
 .demo-session-time {
@@ -980,7 +983,7 @@
 .demo-session-card {
   border: 1px solid rgba(20, 20, 20, 0.08);
   border-radius: 1.25rem;
-  padding: 1.05rem;
+  padding: var(--demo-space-2);
   box-shadow:
     0 12px 26px rgba(20, 20, 20, 0.06),
     inset 0 1px 0 rgba(255, 255, 255, 0.6);
@@ -1115,8 +1118,8 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 1rem;
-  margin: 1rem 0;
+  gap: var(--demo-space-2);
+  margin: var(--demo-space-2) 0;
 }
 
 .demo-segmented {
@@ -1204,7 +1207,7 @@
 .demo-course-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.85rem;
+  gap: var(--demo-space-2);
 }
 
 .demo-student-card,
@@ -1219,7 +1222,7 @@
 
 .demo-student-card {
   display: block;
-  padding: 1rem;
+  padding: var(--demo-space-2);
   text-align: left;
   transition:
     transform 180ms ease,
@@ -1313,7 +1316,7 @@
 .demo-group-card {
   display: flex;
   flex-direction: column;
-  padding: 1rem;
+  padding: var(--demo-space-2);
 }
 
 .demo-group-card-heading {
@@ -1830,14 +1833,14 @@
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: 1.2rem;
-  margin-top: 1rem;
+  gap: var(--demo-space-2);
+  margin-top: var(--demo-space-2);
   border: 1px solid rgba(20, 20, 20, 0.08);
   border-radius: 1.35rem;
   background:
     radial-gradient(circle at 20% -20%, rgba(201, 255, 79, 0.42), transparent 17rem),
     #141414;
-  padding: 1.15rem;
+  padding: var(--demo-space-2);
   color: #fff;
   box-shadow: 0 22px 46px rgba(20, 20, 20, 0.14);
 }
@@ -1888,7 +1891,7 @@
 .demo-course-cover {
   position: relative;
   min-height: 8rem;
-  padding: 1rem;
+  padding: var(--demo-space-2);
 }
 
 .demo-course-cover::after {
@@ -1940,7 +1943,7 @@
   display: flex;
   flex: 1;
   flex-direction: column;
-  padding: 1rem;
+  padding: var(--demo-space-2);
 }
 
 .demo-course-card-body h2 {
@@ -4037,6 +4040,15 @@
 
 .demo-teacher-remote button:disabled {
   opacity: 0.35;
+}
+
+/* Unified page rhythm: every top-level block advances by one 16 px step. */
+.demo-page > * {
+  margin-block: 0;
+}
+
+.demo-page > * + * {
+  margin-top: var(--demo-space-2);
 }
 
 @keyframes demo-pop {
