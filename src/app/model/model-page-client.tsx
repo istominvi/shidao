@@ -3,6 +3,7 @@
 import {
   ArrowDown,
   ArrowRight,
+  ArrowUp,
   BookOpen,
   Bot,
   CheckCircle2,
@@ -297,7 +298,7 @@ export function ModelPageClient() {
               Понять модель <ArrowDown size={17} />
             </a>
             <a className="model-button model-button-ghost" href="https://demo.shidao.ru" target="_blank" rel="noopener noreferrer">
-              Увидеть в работе
+              Увидеть в работе <ArrowRight size={17} />
             </a>
           </div>
         </div>
@@ -1355,7 +1356,7 @@ export function ModelPageClient() {
           только доступ к учебным материалам.
         </p>
         <a href="#top" className="model-button model-button-light">
-          Вернуться к началу <ArrowRight size={17} />
+          Вернуться к началу <ArrowUp size={17} />
         </a>
       </section>
     </main>
