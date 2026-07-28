@@ -15,6 +15,7 @@
     "Segoe UI", sans-serif;
   /* Vertical padding used for hero and all sections (matches hero bottom) */
   --model-section-vertical-padding: clamp(4.5rem, 7vw, 7rem);
+  --model-brand-letter-spacing: -0.015em;
   --model-copy-size: clamp(1rem, 1.45vw, 1.24rem);
   --model-copy-line-height: 1.5;
   --model-copy-letter-spacing: -0.01em;
@@ -79,7 +80,7 @@
   color: currentColor;
   font-size: 1.25rem;
   font-weight: 900;
-  letter-spacing: -0.025em;
+  letter-spacing: var(--model-brand-letter-spacing);
   line-height: 1;
   white-space: nowrap;
 }
@@ -282,6 +283,7 @@
 
 .model-brand-emphasis {
   font-weight: 900;
+  letter-spacing: var(--model-brand-letter-spacing);
 }
 
 .model-hero-lead {
