@@ -404,7 +404,7 @@ export function ModelPageClient() {
                   <Bot size={19} />
                   <span>Модели ИИ</span>
                   <small>
-                    внутренняя модель · внешние чаты · другие модели
+                    внешние чаты · агенты · другие модели
                   </small>
                 </div>
                 <div className="model-stack-layer layer-tools">
