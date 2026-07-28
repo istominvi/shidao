@@ -97,26 +97,31 @@ const aiRoles = [
     number: "01",
     title: "Автор",
     text: "Создаёт структуру курса, первые уроки, материалы и задания.",
+    Icon: FileStack,
   },
   {
     number: "02",
     title: "Редактор",
     text: "Меняет существующий продукт по обычной человеческой просьбе.",
+    Icon: MousePointer2,
   },
   {
     number: "03",
     title: "Помощник",
     text: "Подсказывает преподавателю следующий вопрос, материал или объяснение.",
+    Icon: Sparkles,
   },
   {
     number: "04",
     title: "Преподаватель",
     text: "Ведёт экранный урок, проверяет ответы и меняет темп.",
+    Icon: GraduationCap,
   },
   {
     number: "05",
     title: "Аналитик",
     text: "Фиксирует поведенческие паттерны ученика в его профиле",
+    Icon: Network,
   },
 ];
 
@@ -376,7 +381,7 @@ export function ModelPageClient() {
               <article key={role.number}>
                 <span>{role.number}</span>
                 <div className="model-ai-role-icon">
-                  <Sparkles size={17} />
+                  <role.Icon size={17} />
                 </div>
                 <h3>{role.title}</h3>
                 <p className="model-copy-body">{role.text}</p>
@@ -390,10 +395,10 @@ export function ModelPageClient() {
                 <span className="model-card-label model-card-label-dark">
                   ЕДИНЫЙ И БЕЗОПАСНЫЙ КОНТУР
                 </span>
-                <h3>
+                <h2 className="model-ai-topic-heading">
                   ИИ встроен в архитектуру Shidao — но продукт не зависит от одной модели
-                </h3>
-                <p className="model-copy-body">
+                </h2>
+                <p className="model-ai-topic-lead">
                   Встроенный ИИ Shidao и подключаемые внешние ассистенты работают через единый контролируемый слой. Он предоставляет только разрешённые действия, проверяет права доступа и фиксирует историю операций. Поэтому модель можно заменить, не перестраивая образовательный процесс и не теряя накопленный контекст.
                 </p>
               </div>
@@ -433,10 +438,12 @@ export function ModelPageClient() {
 
             <div className="model-ai-operation">
               <div className="model-ai-operation-copy">
-                <span>КАК ИИ РАБОТАЕТ С Shidao</span>
-                <h4>
+                <span className="model-card-label model-card-label-dark">
+                  КАК ИИ РАБОТАЕТ С Shidao
+                </span>
+                <h2 className="model-ai-topic-heading">
                   ИИ действует через разрешённые инструменты, а не получает прямой доступ к продукту
-                </h4>
+                </h2>
                 <div className="model-ai-operation-points">
                   <div className="model-ai-operation-point">
                     <div className="model-ai-operation-icon">
@@ -472,7 +479,7 @@ export function ModelPageClient() {
               ПРОДУКТОВЫЙ ЦИКЛ
             </span>
             <h2>ИИ превращает результаты занятия в следующий урок</h2>
-            <p className="model-copy-body">
+            <p className="model-ai-topic-lead">
               Человек задаёт образовательную цель. Shidao превращает её в курс,
               уроки и отдельные занятия, а после каждого проведения сохраняет в
               образовательном профиле ответы, ошибки, темп, прогресс и наблюдения.
