@@ -15,10 +15,13 @@
     "Segoe UI", sans-serif;
   /* Vertical padding used for hero and all sections (matches hero bottom) */
   --model-section-vertical-padding: clamp(4.5rem, 7vw, 7rem);
-  --model-brand-letter-spacing: -0.015em;
+  --model-display-brand-letter-spacing: -0.06em;
   --model-copy-size: clamp(1rem, 1.45vw, 1.24rem);
   --model-copy-line-height: 1.5;
   --model-copy-letter-spacing: -0.01em;
+  --model-section-subtitle-size: var(--model-copy-size);
+  --model-section-subtitle-line-height: 1.45;
+  --model-section-subtitle-letter-spacing: -0.015em;
   position: relative;
   overflow: clip;
   min-height: 100vh;
@@ -80,7 +83,7 @@
   color: currentColor;
   font-size: 1.25rem;
   font-weight: 900;
-  letter-spacing: var(--model-brand-letter-spacing);
+  letter-spacing: -0.025em;
   line-height: 1;
   white-space: nowrap;
 }
@@ -283,7 +286,7 @@
 
 .model-brand-emphasis {
   font-weight: 900;
-  letter-spacing: var(--model-brand-letter-spacing);
+  letter-spacing: var(--model-display-brand-letter-spacing);
 }
 
 .model-hero-lead {
@@ -433,11 +436,18 @@
 .model-section-copy h2 {
   max-width: 20ch;
   margin: 0;
-  font-family: var(--model-serif);
+  font-family: var(--model-sans);
   font-size: clamp(2.7rem, 5vw, 5.2rem);
-  font-weight: 400;
+  font-weight: 590;
   letter-spacing: -0.055em;
   line-height: 0.98;
+}
+
+.model-section-title-accent {
+  color: #688a00;
+  font-family: var(--model-serif);
+  font-weight: 400;
+  font-style: italic;
 }
 
 .model-section-copy > h2 + p {
@@ -446,6 +456,20 @@
   color: #5b5d62;
   font-size: clamp(1rem, 1.3vw, 1.18rem);
   line-height: 1.65;
+}
+
+.model-page .model-section-copy > p.model-copy-lead {
+  font-family: var(--model-serif);
+  font-size: var(--model-section-subtitle-size);
+  font-weight: 400;
+  letter-spacing: var(--model-section-subtitle-letter-spacing);
+  line-height: var(--model-section-subtitle-line-height);
+}
+
+.model-ai-section .model-section-title-accent,
+.model-scenarios-dark .model-section-title-accent,
+.model-strategy .model-section-title-accent {
+  color: var(--model-lime);
 }
 
 .model-section-detail {
