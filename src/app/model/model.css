@@ -848,6 +848,18 @@
   color: var(--model-lime);
 }
 
+.model-mcp-link {
+  color: inherit;
+  text-decoration-line: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.18em;
+  transition: color 160ms ease;
+}
+
+.model-mcp-link:hover {
+  color: var(--model-lime);
+}
+
 .model-ai-section .model-loop-copy {
   display: block;
   margin-top: clamp(4.5rem, 8vw, 7rem);

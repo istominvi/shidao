@@ -136,7 +136,20 @@ const roadmap = [
     stage: "02",
     tag: "Подключения",
     title: "Внешняя экосистема",
-    text: "MCP и API превращают Shidao в образовательный backend для ChatGPT, Claude, Gemini, DeepSeek, Grok и других агентов.",
+    text: (
+      <>
+        <a
+          className="model-mcp-link"
+          href="https://ru.wikipedia.org/wiki/Model_Context_Protocol"
+          rel="noopener noreferrer"
+          target="_blank"
+        >
+          MCP
+        </a>{" "}
+        и API превращают Shidao в образовательный backend для ChatGPT, Claude,
+        Gemini, DeepSeek, Grok и других агентов.
+      </>
+    ),
   },
   {
     stage: "03",
@@ -416,7 +429,16 @@ export function ModelPageClient() {
                 </div>
                 <div className="model-stack-layer layer-tools">
                   <WandSparkles size={19} />
-                  <span>MCP-сервер</span>
+                  <span>
+                    <a
+                      className="model-mcp-link"
+                      href="https://ru.wikipedia.org/wiki/Model_Context_Protocol"
+                      rel="noopener noreferrer"
+                      target="_blank"
+                    >
+                      MCP-сервер
+                    </a>
+                  </span>
                   <small>
                     разрешённые действия · проверка прав · история операций
                   </small>
@@ -451,7 +473,15 @@ export function ModelPageClient() {
                     <Sparkles size={18} />
                   </div>
                   <p className="model-copy-body">
-                    MCP — это технический стандарт, на котором построен единый контур управления ИИ. Через него модель может получить разрешённый контекст, найти курс или материал, создать или изменить урок, назначить домашнее задание и сохранить результат занятия.
+                    <a
+                      className="model-mcp-link"
+                      href="https://ru.wikipedia.org/wiki/Model_Context_Protocol"
+                      rel="noopener noreferrer"
+                      target="_blank"
+                    >
+                      MCP
+                    </a>{" "}
+                    — это технический стандарт, на котором построен единый контур управления ИИ. Через него модель может получить разрешённый контекст, найти курс или материал, создать или изменить урок, назначить домашнее задание и сохранить результат занятия.
                   </p>
                 </div>
                 <div className="model-ai-operation-point">
