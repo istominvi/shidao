@@ -396,20 +396,6 @@ export function ModelPageClient() {
                   они получают только разрешённые инструменты, а ShiDao
                   проверяет права и сохраняет историю действий.
                 </p>
-                <div className="model-safety-pills">
-                  <span>
-                    <ShieldCheck size={14} /> Разрешённые инструменты
-                  </span>
-                  <span>
-                    <LockKeyhole size={14} /> Проверка прав
-                  </span>
-                  <span>
-                    <History size={14} /> История действий
-                  </span>
-                  <span>
-                    <Zap size={14} /> Лимиты расходов
-                  </span>
-                </div>
               </div>
 
               <div
@@ -418,14 +404,14 @@ export function ModelPageClient() {
               >
                 <div className="model-stack-layer layer-ai">
                   <Bot size={19} />
-                  <span>Сменяемые модели ИИ</span>
+                  <span>Модели ИИ</span>
                   <small>
                     внутренняя модель · внешние чаты · другие модели
                   </small>
                 </div>
                 <div className="model-stack-layer layer-tools">
                   <WandSparkles size={19} />
-                  <span>MCP-сервер и разрешённые инструменты</span>
+                  <span>MCP-сервер</span>
                   <small>
                     единые правила · проверка прав · история действий
                   </small>
@@ -437,9 +423,9 @@ export function ModelPageClient() {
                 </div>
                 <div className="model-stack-layer layer-memory">
                   <History size={19} />
-                  <span>Долговременная образовательная память</span>
+                  <span>Учебный профиль</span>
                   <small>
-                    профиль · события · слова · подтверждённые выводы
+                    события · слова · подтверждённые выводы
                   </small>
                 </div>
               </div>
