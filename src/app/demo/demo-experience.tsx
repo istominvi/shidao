@@ -187,6 +187,29 @@ const demoCourses: Course[] = [
   },
 ];
 
+const schedulableLessonsByCourse: Record<string, string[]> = {
+  "english-b1": [
+    "Past Simple · истории из путешествий",
+    "Modal verbs · правила в поездке",
+    "Speaking club · музыка и концерты",
+  ],
+  "math-lisa": [
+    "Равные дроби",
+    "Задачи в два действия",
+    "Периметр вокруг нас",
+  ],
+  "chinese-personal": [
+    "我的家人 · моя семья",
+    "四声 · четыре тона",
+    "在咖啡馆 · заказ в кафе",
+  ],
+  "reading-template": [
+    "Звуки и буквы",
+    "Собираем первые слова",
+    "Читаем короткие предложения",
+  ],
+};
+
 const materials: Material[] = [
   {
     id: "dialog",
@@ -431,33 +454,6 @@ function formatWeekRange(start: Date, end: Date) {
   return `${start.getDate()} ${startMonth} — ${end.getDate()} ${endMonth} ${end.getFullYear()}`;
 }
 
-function formatScheduleDate(date: Date) {
-  if (dateKey(date) === dateKey(demoToday)) return "Сегодня";
-  const value = new Intl.DateTimeFormat("ru-RU", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-  }).format(date);
-  return value.charAt(0).toUpperCase() + value.slice(1);
-}
-
-function formatLessonsHeading(date: Date) {
-  if (dateKey(date) === dateKey(demoToday)) return "Уроки сегодня";
-  const value = new Intl.DateTimeFormat("ru-RU", {
-    day: "numeric",
-    month: "long",
-  }).format(date);
-  return `Уроки на ${value}`;
-}
-
-function formatTotalDuration(minutes: number) {
-  const hours = Math.floor(minutes / 60);
-  const rest = minutes % 60;
-  if (!hours) return `${rest} мин`;
-  if (!rest) return `${hours} ч`;
-  return `${hours} ч ${rest} мин`;
-}
-
 const generationStages = [
   "Анализирую цель и учебный профиль",
   "Собираю структуру курса",
@@ -578,6 +574,13 @@ export function DemoExperience() {
   const [calendarView, setCalendarView] = useState<"week" | "month">("week");
   const [calendarCursorDate, setCalendarCursorDate] = useState(dateKey(demoToday));
   const [selectedScheduleDate, setSelectedScheduleDate] = useState(dateKey(demoToday));
+  const [scheduleModalOpen, setScheduleModalOpen] = useState(false);
+  const [plannedCourseId, setPlannedCourseId] = useState(demoCourses[0].id);
+  const [plannedLessonTitle, setPlannedLessonTitle] = useState(
+    schedulableLessonsByCourse[demoCourses[0].id][0],
+  );
+  const [plannedDate, setPlannedDate] = useState("2026-07-27");
+  const [plannedTime, setPlannedTime] = useState("10:00");
   const [studentsScope, setStudentsScope] = useState<StudentsScope>("profiles");
   const [studentsViewMode, setStudentsViewMode] = useState<StudentsViewMode>("cards");
   const [studentsSearch, setStudentsSearch] = useState("");
@@ -683,6 +686,27 @@ export function DemoExperience() {
       document.removeEventListener("keydown", closeOnEscape);
     };
   }, [notificationMenu, profileMenu]);
+
+  useEffect(() => {
+    if (!scheduleModalOpen) return;
+    const closeOnEscape = (event: globalThis.KeyboardEvent) => {
+      if (event.key === "Escape") setScheduleModalOpen(false);
+    };
+    document.addEventListener("keydown", closeOnEscape);
+    return () => document.removeEventListener("keydown", closeOnEscape);
+  }, [scheduleModalOpen]);
+
+  function confirmLessonSchedule() {
+    const course = demoCourses.find((item) => item.id === plannedCourseId);
+    const formattedDate = new Intl.DateTimeFormat("ru-RU", {
+      day: "numeric",
+      month: "long",
+    }).format(dateFromKey(plannedDate));
+    setScheduleModalOpen(false);
+    setToast(
+      `${plannedLessonTitle} · ${course?.title ?? "Курс"} · ${formattedDate}, ${plannedTime}`,
+    );
+  }
 
   function navigate(next: DemoView) {
     setView(next);
@@ -973,18 +997,16 @@ export function DemoExperience() {
                 }}
                 aria-expanded={profileMenu}
               >
-                <span className="demo-avatar">АИ</span>
                 <span className="demo-profile-copy">
-                  <strong>Агата Истомина</strong>
+                  <strong>Агата Владимировна</strong>
                 </span>
                 <ChevronDown size={15} />
               </button>
               {profileMenu ? (
                 <div className="demo-profile-popover">
                   <div className="demo-profile-summary">
-                    <span className="demo-avatar">АИ</span>
                     <div>
-                      <strong>Агата Истомина</strong>
+                      <strong>Агата Владимировна</strong>
                       <span>agata.istomina@gmail.com</span>
                     </div>
                   </div>
@@ -1049,18 +1071,6 @@ export function DemoExperience() {
         : selectedLessons.filter(
             (lesson) => scheduleRoleMeta[lesson.role].label === scheduleFilter,
           );
-    const totalDuration = selectedLessons.reduce(
-      (total, lesson) => total + lesson.duration,
-      0,
-    );
-    const activeRoles = new Set(selectedLessons.map((lesson) => lesson.role)).size;
-    const lessonWord =
-      selectedLessons.length === 1
-        ? "урок"
-        : selectedLessons.length > 1 && selectedLessons.length < 5
-          ? "урока"
-          : "уроков";
-
     function selectScheduleDate(date: Date) {
       const key = dateKey(date);
       setSelectedScheduleDate(key);
@@ -1144,17 +1154,13 @@ export function DemoExperience() {
         <section className="demo-page-hero demo-schedule-hero">
           <div>
             <h1>Добрый день, Агата</h1>
-            <div className="demo-hero-metrics" aria-label="Показатели выбранного дня">
-              <span><strong>{selectedLessons.length}</strong> {lessonWord}</span>
-              <span><strong>{formatTotalDuration(totalDuration)}</strong> в расписании</span>
-              <span><strong>{activeRoles}</strong> контекста</span>
+            <div className="demo-hero-metrics" aria-label="Общие показатели расписания">
+              <span>Всего запланировано <strong>{scheduleLessons.length} уроков</strong></span>
+              <span><strong>Следующий</strong> через 2 ч 30 мин</span>
             </div>
           </div>
           <div className="demo-hero-actions">
-            <DemoButton variant="secondary" onClick={() => navigate("builder")}>
-              <Plus size={17} /> Новый курс
-            </DemoButton>
-            <DemoButton variant="primary" onClick={() => setToast("Планирование открыто")}>
+            <DemoButton variant="primary" onClick={() => setScheduleModalOpen(true)}>
               <CalendarPlus size={17} /> Запланировать
             </DemoButton>
           </div>
@@ -1246,8 +1252,7 @@ export function DemoExperience() {
 
         <div className="demo-section-heading demo-section-heading-spaced">
           <div>
-            <span className="demo-eyebrow">{formatScheduleDate(selectedDate)}</span>
-            <h2>{formatLessonsHeading(selectedDate)}</h2>
+            <h2>Уроки</h2>
           </div>
           <div className="demo-filter-row">
             {["Все", "Учитель", "Родитель", "Ученик"].map((filter) => (
@@ -2973,6 +2978,95 @@ export function DemoExperience() {
       </main>
       {renderAgent()}
       {toast ? <div className="demo-toast"><CheckCircle2 size={17} /> {toast}</div> : null}
+      {scheduleModalOpen ? (
+        <div
+          className="demo-schedule-modal-overlay"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setScheduleModalOpen(false);
+          }}
+        >
+          <section
+            className="demo-schedule-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="demo-schedule-modal-title"
+          >
+            <header>
+              <div>
+                <span className="demo-eyebrow">Новое занятие</span>
+                <h2 id="demo-schedule-modal-title">Запланировать урок</h2>
+                <p>Выберите готовый урок из курса и поставьте его в расписание.</p>
+              </div>
+              <button
+                type="button"
+                aria-label="Закрыть планирование"
+                onClick={() => setScheduleModalOpen(false)}
+              >
+                <X size={18} />
+              </button>
+            </header>
+            <div className="demo-schedule-modal-form">
+              <label className="demo-field demo-field-wide">
+                <span>Курс</span>
+                <select
+                  value={plannedCourseId}
+                  onChange={(event) => {
+                    const courseId = event.target.value;
+                    setPlannedCourseId(courseId);
+                    setPlannedLessonTitle(schedulableLessonsByCourse[courseId][0]);
+                  }}
+                >
+                  {demoCourses.map((course) => (
+                    <option value={course.id} key={course.id}>
+                      {course.title}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="demo-field demo-field-wide">
+                <span>Урок</span>
+                <select
+                  value={plannedLessonTitle}
+                  onChange={(event) => setPlannedLessonTitle(event.target.value)}
+                >
+                  {schedulableLessonsByCourse[plannedCourseId].map((lesson) => (
+                    <option value={lesson} key={lesson}>
+                      {lesson}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="demo-field">
+                <span>Дата</span>
+                <input
+                  type="date"
+                  min="2026-07-25"
+                  max="2026-08-31"
+                  value={plannedDate}
+                  onChange={(event) => setPlannedDate(event.target.value)}
+                />
+              </label>
+              <label className="demo-field">
+                <span>Время</span>
+                <input
+                  type="time"
+                  value={plannedTime}
+                  onChange={(event) => setPlannedTime(event.target.value)}
+                />
+              </label>
+            </div>
+            <footer>
+              <DemoButton variant="secondary" onClick={() => setScheduleModalOpen(false)}>
+                Отмена
+              </DemoButton>
+              <DemoButton variant="primary" onClick={confirmLessonSchedule}>
+                <CalendarPlus size={17} /> Добавить в расписание
+              </DemoButton>
+            </footer>
+          </section>
+        </div>
+      ) : null}
       {generationStage !== null ? (
         <div className="demo-generation-overlay" role="status" aria-live="polite">
           <div className="demo-generation-modal">
