@@ -409,7 +409,7 @@
   display: grid;
   grid-template-columns: minmax(0, 780px);
   gap: 1rem;
-  margin-bottom: clamp(4rem, 7vw, 7rem);
+  margin-bottom: clamp(2rem, 5vw, 4rem);
 }
 
 .model-section-index {
@@ -422,11 +422,11 @@
 }
 
 .model-section-copy .model-eyebrow {
-  margin: 0 0 1.15rem;
+  margin: 0 0 clamp(2rem, 5vw, 4rem);
   color: #5f5c53;
-  font-size: 0.65rem;
-  font-weight: 800;
-  letter-spacing: 0.16em;
+  font-size: 0.66rem;
+  font-weight: 750;
+  letter-spacing: 0.15em;
   text-transform: uppercase;
 }
 
@@ -868,6 +868,12 @@
 
 .model-ai-section .model-loop-copy > span {
   grid-column: 1 / -1;
+  color: var(--model-lime);
+  font-size: 0.66rem;
+  font-weight: 750;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  margin-bottom: clamp(2rem, 5vw, 4rem);
 }
 
 .model-ai-section .model-loop-copy h2 {
