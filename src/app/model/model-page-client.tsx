@@ -171,9 +171,10 @@ function SectionIntro({
 }) {
   return (
     <div className="model-section-intro">
-      <div className="model-section-index">{index}</div>
       <div className="model-section-copy">
-        <p className="model-eyebrow">{eyebrow}</p>
+        <p className="model-eyebrow">
+          <span className="model-section-index">{index}</span> {eyebrow}
+        </p>
         <h2>{title}</h2>
         <p>{text}</p>
         {detail ? <div className="model-section-detail">{detail}</div> : null}
@@ -248,8 +249,8 @@ export function ModelPageClient() {
           </a>
         </nav>
 
-        <a className="model-header-cta" href="#north-star">
-          Куда идём <ArrowRight size={15} />
+        <a className="model-header-cta" href="https://demo.shidao.ru" target="_blank" rel="noopener noreferrer">
+          Демо <ArrowRight size={15} />
         </a>
 
         <button
@@ -297,7 +298,7 @@ export function ModelPageClient() {
             <a className="model-button model-button-primary" href="#model">
               Понять модель <ArrowDown size={17} />
             </a>
-            <a className="model-button model-button-ghost" href="#scenarios">
+            <a className="model-button model-button-ghost" href="https://demo.shidao.ru" target="_blank" rel="noopener noreferrer">
               Увидеть в работе
             </a>
           </div>
