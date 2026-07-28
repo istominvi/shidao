@@ -443,13 +443,11 @@
 }
 
 .model-foundation {
-  background:
-    radial-gradient(
-      circle at 88% 18%,
-      rgba(201, 180, 255, 0.18),
-      transparent 18%
-    ),
-    var(--model-ivory);
+  background: var(--model-ivory);
+}
+
+.model-profile {
+  background: var(--model-ivory);
 }
 
 .model-foundation .model-section-intro {
@@ -2844,7 +2842,7 @@
 }
 
 .model-decisions {
-  background: var(--model-paper);
+  background: var(--model-ivory);
 }
 
 .model-decision-list {
