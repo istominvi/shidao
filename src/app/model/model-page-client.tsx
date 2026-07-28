@@ -288,9 +288,9 @@ export function ModelPageClient() {
             аналитик и автор контента
           </h1>
           <p className="model-hero-lead model-copy-lead">
-            Профессиональная образовательная система, в которой человек может
-            создать курс, учить другого, учиться сам и передать процесс AI, не
-            теряя историю, структуру и контроль.
+            Умная образовательная система, в которой человек может создать курс,
+            учить другого, учиться сам и передать процесс AI, не теряя историю,
+            структуру и контроль.
           </p>
           <div className="model-hero-actions">
             <a className="model-button model-button-primary" href="#model">
@@ -323,10 +323,7 @@ export function ModelPageClient() {
             <>
               Shidao —{" "}
               <em className="model-section-title-accent">
-                адаптивная{" "}
-                <span className="model-section-title-nowrap">
-                  образовательная экосистема с ИИ
-                </span>
+                адаптивная образовательная экосистема с ИИ
               </em>
               ,
               <br />

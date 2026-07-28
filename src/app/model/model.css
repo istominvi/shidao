@@ -446,10 +446,6 @@
   font-style: italic;
 }
 
-.model-section-title-nowrap {
-  white-space: nowrap;
-}
-
 .model-section-copy > h2 + p {
   max-width: 720px;
   margin: 1.8rem 0 0;
