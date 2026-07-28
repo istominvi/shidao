@@ -280,9 +280,8 @@ export function ModelPageClient() {
             <span>26 / 07 / 2026</span>
           </div>
           <h1>
-            <strong className="model-brand-emphasis">Shidao</strong> — <em className="model-hero-accent">образование
-            <br />
-            будущего</em>
+            Shidao —{" "}
+            <em className="model-hero-accent">образование будущего,</em>
             <br />
             где ИИ — ассистент,
             <br />
@@ -324,9 +323,14 @@ export function ModelPageClient() {
             <>
               Shidao —{" "}
               <em className="model-section-title-accent">
-                адаптивная образовательная экосистема
-              </em>{" "}
-              с ИИ, сопровождающая человека на протяжении всей жизни.
+                адаптивная{" "}
+                <span className="model-section-title-nowrap">
+                  образовательная экосистема с ИИ
+                </span>
+              </em>
+              ,
+              <br />
+              сопровождающая человека на протяжении всей жизни.
             </>
           }
           text="Три фундаментальных технологических и гуманитарных принципа, которые превращают процесс получения знаний в увлекательный жизненный путь:"
@@ -371,7 +375,8 @@ export function ModelPageClient() {
             eyebrow="Искусственный интеллект"
             title={
               <>
-                Модели ИИ заменяемы.{" "}
+                Модели ИИ заменяемы.
+                <br />
                 <em className="model-section-title-accent">
                   Образовательная память — нет.
                 </em>
@@ -582,7 +587,8 @@ export function ModelPageClient() {
           eyebrow="Образовательный профиль"
           title={
             <>
-              Главная сущность —{" "}
+              Главная сущность —
+              <br />
               <em className="model-section-title-accent">
                 образовательный профиль человека
               </em>
@@ -758,7 +764,8 @@ export function ModelPageClient() {
           eyebrow="Аккаунт"
           title={
             <>
-              Один человек –{" "}
+              Один человек –
+              <br />
               <em className="model-section-title-accent">один аккаунт</em>
             </>
           }
@@ -915,8 +922,8 @@ export function ModelPageClient() {
           title={
             <>
               Интерфейс{" "}
-              <em className="model-section-title-accent">следует работе</em>, а
-              не структуре базы
+              <em className="model-section-title-accent">следует работе</em>,
+              <br />а не структуре базы
             </>
           }
           text="Никакой панели администратора ради панели администратора. В каждый момент Shidao отвечает на простой вопрос пользователя: что я делаю сейчас?"
@@ -1163,7 +1170,8 @@ export function ModelPageClient() {
             eyebrow="Стратегия"
             title={
               <>
-                Лёгкий вход.{" "}
+                Лёгкий вход.
+                <br />
                 <em className="model-section-title-accent">
                   Большая система за ним.
                 </em>
@@ -1348,9 +1356,10 @@ export function ModelPageClient() {
           eyebrow="Компас команды"
           title={
             <>
-              Что мы защищаем,{" "}
+              Что мы защищаем,
+              <br />
               <em className="model-section-title-accent">
-                когда принимаем решения
+                когда принимаем решения?
               </em>
             </>
           }
@@ -1392,7 +1401,7 @@ export function ModelPageClient() {
       <section className="model-north-star" id="north-star">
         <div className="model-north-star-grid" aria-hidden="true" />
         <h2>
-          Сегодня <strong className="model-brand-emphasis">Shidao</strong> продаёт
+          Сегодня Shidao продаёт
           <br />
           <span>систему для создания и проведения обучения с ИИ.</span>
           <br />

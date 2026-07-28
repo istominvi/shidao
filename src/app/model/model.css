@@ -15,13 +15,13 @@
     "Segoe UI", sans-serif;
   /* Vertical padding used for hero and all sections (matches hero bottom) */
   --model-section-vertical-padding: clamp(4.5rem, 7vw, 7rem);
-  --model-display-brand-letter-spacing: -0.06em;
   --model-copy-size: clamp(1rem, 1.45vw, 1.24rem);
   --model-copy-line-height: 1.5;
   --model-copy-letter-spacing: -0.01em;
-  --model-section-subtitle-size: var(--model-copy-size);
-  --model-section-subtitle-line-height: 1.45;
-  --model-section-subtitle-letter-spacing: -0.015em;
+  --model-section-subtitle-size: clamp(1.3rem, 1.8vw, 1.55rem);
+  --model-section-subtitle-line-height: 1.35;
+  --model-section-subtitle-letter-spacing: -0.02em;
+  --model-section-subtitle-weight: 550;
   position: relative;
   overflow: clip;
   min-height: 100vh;
@@ -284,11 +284,6 @@
   font-style: italic;
 }
 
-.model-brand-emphasis {
-  font-weight: 900;
-  letter-spacing: var(--model-display-brand-letter-spacing);
-}
-
 .model-hero-lead {
   max-width: 670px;
   margin: clamp(2rem, 4vw, 3.4rem) 0 0;
@@ -410,7 +405,7 @@
 
 .model-section-intro {
   display: grid;
-  grid-template-columns: minmax(0, 780px);
+  grid-template-columns: minmax(0, 1fr);
   gap: 1rem;
   margin-bottom: clamp(2rem, 5vw, 4rem);
 }
@@ -434,7 +429,8 @@
 }
 
 .model-section-copy h2 {
-  max-width: 20ch;
+  width: 100%;
+  max-width: none;
   margin: 0;
   font-family: var(--model-sans);
   font-size: clamp(2.7rem, 5vw, 5.2rem);
@@ -444,10 +440,14 @@
 }
 
 .model-section-title-accent {
-  color: #688a00;
+  color: #8d60ff;
   font-family: var(--model-serif);
   font-weight: 400;
   font-style: italic;
+}
+
+.model-section-title-nowrap {
+  white-space: nowrap;
 }
 
 .model-section-copy > h2 + p {
@@ -461,7 +461,7 @@
 .model-page .model-section-copy > p.model-copy-lead {
   font-family: var(--model-serif);
   font-size: var(--model-section-subtitle-size);
-  font-weight: 400;
+  font-weight: var(--model-section-subtitle-weight);
   letter-spacing: var(--model-section-subtitle-letter-spacing);
   line-height: var(--model-section-subtitle-line-height);
 }
