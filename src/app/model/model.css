@@ -1890,7 +1890,7 @@
 }
 
 .model-ai-section {
-  padding: clamp(6rem, 10vw, 10rem) 6vw;
+  padding: var(--model-section-vertical-padding) 6vw;
   background:
     radial-gradient(
       circle at 90% 16%,
@@ -2342,7 +2342,7 @@
   gap: clamp(3rem, 6vw, 7rem);
   align-items: start;
   min-height: 980px;
-  padding: clamp(6rem, 11vw, 11rem) 6vw;
+  padding: var(--model-section-vertical-padding) 6vw;
   overflow: hidden;
   background: var(--model-navy);
   color: #fff;
@@ -2646,7 +2646,7 @@
   align-items: center;
   justify-content: center;
   min-height: 790px;
-  padding: 7rem 6vw;
+  padding: var(--model-section-vertical-padding) 6vw;
   overflow: hidden;
   background:
     radial-gradient(
