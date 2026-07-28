@@ -431,7 +431,7 @@
 }
 
 .model-section-copy h2 {
-  max-width: 18ch;
+  max-width: 20ch;
   margin: 0;
   font-family: var(--model-serif);
   font-size: clamp(2.7rem, 5vw, 5.2rem);
@@ -464,10 +464,6 @@
 
 .model-foundation .model-section-intro {
   grid-template-columns: minmax(0, 1fr);
-}
-
-.model-foundation .model-section-copy h2 {
-  max-width: 20ch;
 }
 
 .model-foundation-story {
@@ -875,21 +871,21 @@
 }
 
 .model-ai-section .model-loop-copy h2 {
-  max-width: 13ch;
+  max-width: 20ch;
   margin: 0;
   font-family: var(--model-serif);
-  font-size: clamp(2.5rem, 4.5vw, 4.5rem);
+  font-size: clamp(2.7rem, 5vw, 5.2rem);
   font-weight: 400;
-  letter-spacing: -0.05em;
+  letter-spacing: -0.055em;
   line-height: 0.98;
 }
 
 .model-ai-section .model-loop-copy > p {
-  max-width: 640px;
+  max-width: 720px;
   margin: 0;
   color: rgba(255, 255, 255, 0.52);
-  font-size: 0.96rem;
-  line-height: 1.72;
+  font-size: clamp(1rem, 1.3vw, 1.18rem);
+  line-height: 1.65;
 }
 
 .model-ai-section .model-loop {
@@ -1911,6 +1907,10 @@
 
 .model-ai-section .model-section-copy .model-eyebrow {
   color: var(--model-lilac);
+}
+
+.model-ai-section .model-section-copy > h2 + p {
+  color: rgba(255, 255, 255, 0.52);
 }
 
 .model-ai-roles {
@@ -3033,7 +3033,7 @@
   }
 
   .model-ai-section .model-loop-copy h2 {
-    max-width: 15ch;
+    max-width: 20ch;
   }
 
   .model-ai-section .model-loop {
