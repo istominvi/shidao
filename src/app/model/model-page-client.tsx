@@ -14,6 +14,7 @@ import {
   Heart,
   History,
   Library,
+  LockKeyhole,
   Menu,
   MousePointer2,
   Network,
