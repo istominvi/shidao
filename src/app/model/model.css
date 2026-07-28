@@ -21,7 +21,7 @@
   --model-subheading-size: clamp(1.3rem, 1.8vw, 1.55rem);
   --model-subheading-line-height: 1.2;
   --model-subheading-letter-spacing: -0.02em;
-  --model-subheading-weight: 600;
+  --model-subheading-weight: 500;
   position: relative;
   overflow: clip;
   min-height: 100vh;
