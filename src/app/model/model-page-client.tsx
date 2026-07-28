@@ -14,20 +14,17 @@ import {
   Heart,
   History,
   Library,
-  LockKeyhole,
   Menu,
   MousePointer2,
   Network,
   PanelRightOpen,
   Play,
   Route,
-  ShieldCheck,
   Sparkles,
   Target,
   Users,
   WandSparkles,
   X,
-  Zap,
 } from "lucide-react";
 import { type ReactNode, useEffect, useState } from "react";
 
