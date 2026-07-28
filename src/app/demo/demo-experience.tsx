@@ -859,9 +859,9 @@ export function DemoExperience() {
             type="button"
             className="demo-brand"
             onClick={() => navigate("schedule")}
-            aria-label="ShiDao, открыть расписание"
+            aria-label="Shidao, открыть расписание"
           >
-            Shidao<span>™</span>
+            Shidao
           </button>
 
           <nav className="demo-main-nav" aria-label="Основная навигация">
@@ -2678,7 +2678,7 @@ export function DemoExperience() {
         </div>
         <div className="demo-device-frame">
           <div className="demo-device-topbar">
-            <span>Shidao™</span>
+            <span>Shidao</span>
             <div><strong>Teen Talk</strong><small>{screenMode === "live" ? "Урок идёт · управляет Агата" : "Повторение после урока"}</small></div>
             <span className="demo-avatar">М</span>
           </div>
@@ -2806,7 +2806,7 @@ export function DemoExperience() {
     return (
       <section className="demo-learner-fullscreen">
         <header>
-          <button type="button" className="demo-brand" onClick={() => navigate("lesson")}>Shidao<span>™</span></button>
+          <button type="button" className="demo-brand" onClick={() => navigate("lesson")}>Shidao</button>
           <div>
             <strong>Present Perfect · жизненный опыт</strong>
             <small>{screenMode === "live" ? "Урок идёт · шагом управляет Агата" : "Режим повторения"}</small>
@@ -2884,7 +2884,7 @@ export function DemoExperience() {
           <aside className="demo-agent-panel">
             <header>
               <span className="demo-agent-avatar"><WandSparkles size={20} /></span>
-              <div><strong>ShiDao AI</strong><small>Видит контекст текущей страницы</small></div>
+              <div><strong>Shidao AI</strong><small>Видит контекст текущей страницы</small></div>
               <button type="button" onClick={() => setAgentOpen(false)}><X size={18} /></button>
             </header>
             <div className="demo-agent-context">

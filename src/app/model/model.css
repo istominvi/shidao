@@ -15,9 +15,8 @@
     "Segoe UI", sans-serif;
   /* Vertical padding used for hero and all sections (matches hero bottom) */
   --model-section-vertical-padding: clamp(4.5rem, 7vw, 7rem);
-  --model-copy-lead-size: clamp(1rem, 1.45vw, 1.24rem);
-  --model-copy-body-size: clamp(0.96rem, 1.2vw, 1.08rem);
-  --model-copy-line-height: 1.65;
+  --model-copy-size: clamp(1rem, 1.45vw, 1.24rem);
+  --model-copy-line-height: 1.5;
   --model-copy-letter-spacing: -0.01em;
   position: relative;
   overflow: clip;
@@ -83,15 +82,6 @@
   letter-spacing: -0.025em;
   line-height: 1;
   white-space: nowrap;
-}
-
-.model-wordmark-mark {
-  position: relative;
-  top: -0.46em;
-  margin-left: 0.05em;
-  font-size: 0.52em;
-  font-weight: 800;
-  letter-spacing: 0;
 }
 
 .model-nav {
@@ -288,6 +278,10 @@
   font-family: var(--model-serif);
   font-weight: 400;
   font-style: italic;
+}
+
+.model-brand-emphasis {
+  font-weight: 900;
 }
 
 .model-hero-lead {
@@ -2933,17 +2927,10 @@
   color: var(--model-navy);
 }
 
-.model-page p.model-copy-lead {
-  font-family: var(--model-sans);
-  font-size: var(--model-copy-lead-size);
-  font-weight: 400;
-  letter-spacing: var(--model-copy-letter-spacing);
-  line-height: var(--model-copy-line-height);
-}
-
+.model-page p.model-copy-lead,
 .model-page p.model-copy-body {
   font-family: var(--model-sans);
-  font-size: var(--model-copy-body-size);
+  font-size: var(--model-copy-size);
   font-weight: 400;
   letter-spacing: var(--model-copy-letter-spacing);
   line-height: var(--model-copy-line-height);

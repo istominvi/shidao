@@ -155,7 +155,7 @@ export function LandingPage() {
           <article className="hero-product-shot" aria-label="Пример экранов продукта">
             <Image
               src="/landing/screen_8.png"
-              alt="Скриншоты интерфейса ShiDao"
+              alt="Скриншоты интерфейса Shidao"
               width={1491}
               height={1491}
               className="hero-product-shot-image"
@@ -168,7 +168,7 @@ export function LandingPage() {
       <section id="methodology" className="container mt-14 md:mt-16">
         <div className="px-5 md:px-8">
           <h2 className="text-3xl font-black tracking-tight md:text-5xl">
-            В ShiDao методика — не папка с файлами, а сценарий работы
+            В Shidao методика — не папка с файлами, а сценарий работы
           </h2>
           <p className="mt-4 max-w-[74ch] text-sm leading-relaxed text-neutral-700 md:text-base">
             Методика задаёт курс, уроки, Материалы, Домашнее задание, План урока и Экран ученика. А функционал
@@ -195,7 +195,7 @@ export function LandingPage() {
           <div className="methodology-intro">
             <div>
               <h2 className="text-3xl font-black tracking-tight md:text-5xl">
-                «Мир вокруг меня» — первая методика в ShiDao
+                «Мир вокруг меня» — первая методика в Shidao
               </h2>
               <p className="mt-4 max-w-[72ch] text-sm leading-relaxed text-neutral-700 md:text-base">
                 Курс построен вокруг героев Сяо Лон и Сяо Мей: они помогают ребёнку 5–6 лет входить в китайский через
@@ -315,7 +315,7 @@ export function LandingPage() {
             <div className="workflow-head">
               <p className="workflow-chip">Продуктовый сценарий</p>
               <h2 className="text-3xl font-black tracking-tight md:text-5xl">
-                Как работает ShiDao в реальном процессе
+                Как работает Shidao в реальном процессе
               </h2>
               <p className="workflow-subtitle">
                 От запуска группы до post-lesson коммуникации — каждый этап фиксируется внутри урока и не теряет
@@ -381,7 +381,7 @@ export function LandingPage() {
               Запустите первую группу по методике, а не с пустой страницы
             </h2>
             <p className="mx-auto mt-4 max-w-[62ch] text-sm leading-relaxed text-neutral-700 md:text-base">
-              ShiDao собирает курс, урок, материалы, домашнюю работу и обратную
+              Shidao собирает курс, урок, материалы, домашнюю работу и обратную
               связь в один рабочий контур.
             </p>
             <div className="mt-6 grid gap-3 sm:flex sm:justify-center">

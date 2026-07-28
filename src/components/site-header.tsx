@@ -34,7 +34,7 @@ type SiteHeaderProps = {
 export function SiteHeader({
   variant,
   brandHref,
-  brandLabel = "Shidao™",
+  brandLabel = "Shidao",
   navAriaLabel,
   navItems = [],
   actions,
@@ -44,8 +44,6 @@ export function SiteHeader({
   anchorOffset = 96,
 }: SiteHeaderProps) {
   const hasNav = navItems.length > 0;
-  const hasTrademarkMark = brandLabel.endsWith("™");
-  const brandText = hasTrademarkMark ? brandLabel.slice(0, -1) : brandLabel;
 
   const handleNavClick = (
     event: MouseEvent<HTMLAnchorElement>,
@@ -89,10 +87,7 @@ export function SiteHeader({
         )}
       >
         <Link href={brandHref} className="site-header-brand text-xl font-black tracking-tight">
-          {brandText}
-          {hasTrademarkMark ? (
-            <span className="site-header-brand-mark">™</span>
-          ) : null}
+          {brandLabel}
         </Link>
 
         {hasNav ? (

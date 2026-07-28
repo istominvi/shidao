@@ -124,14 +124,6 @@
   white-space: nowrap;
 }
 
-.demo-brand span {
-  margin-left: 0.05em;
-  font-size: 0.52em;
-  font-weight: 800;
-  letter-spacing: 0;
-  vertical-align: super;
-}
-
 .demo-main-nav {
   display: flex;
   justify-content: center;

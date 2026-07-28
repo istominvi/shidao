@@ -350,7 +350,7 @@ export async function getTeacherMethodologyDetailReadModel(
       availableLessonsCount: lessons.length,
       programLessonCount: metadata.programLessonCount ?? null,
       sourceRuntimeNote:
-        "Методика — это полный педагогический источник курса. В ShiDao ниже показаны импортированные source-уроки и канонические уроки из кода, которые ожидают синхронизации с БД.",
+        "Методика — это полный педагогический источник курса. В Shidao ниже показаны импортированные source-уроки и канонические уроки из кода, которые ожидают синхронизации с БД.",
     },
     descriptionContent: getMethodologyDescriptionContent(methodology.slug),
     lessons: lessonsWithHomework.map(({ lesson, canonicalHomework }) => {

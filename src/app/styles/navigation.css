@@ -60,11 +60,6 @@
   white-space: nowrap;
 }
 
-.site-header-brand-mark {
-  font-size: 0.68em;
-  vertical-align: super;
-}
-
 .site-header-nav-scroll {
   order: 3;
   width: 100%;

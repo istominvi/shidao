@@ -3,13 +3,13 @@ import { DemoExperience } from "./demo-experience";
 import "./demo-v2.css";
 
 export const metadata: Metadata = {
-  title: "ShiDao v2 — интерактивная продуктовая модель",
+  title: "Shidao v2 — интерактивная продуктовая модель",
   description:
-    "Кликабельный прототип второй версии ShiDao: курсы, учебные профили, конструктор уроков, Экран ученика и AI-помощник.",
+    "Кликабельный прототип второй версии Shidao: курсы, учебные профили, конструктор уроков, Экран ученика и AI-помощник.",
   openGraph: {
-    title: "ShiDao v2 — интерактивная продуктовая модель",
+    title: "Shidao v2 — интерактивная продуктовая модель",
     description:
-      "Цель → курс → урок → результат. Кликабельное демо новой продуктовой модели ShiDao.",
+      "Цель → курс → урок → результат. Кликабельное демо новой продуктовой модели Shidao.",
     type: "website",
     locale: "ru_RU",
     images: [
@@ -17,13 +17,13 @@ export const metadata: Metadata = {
         url: "https://demo.shidao.ru/og-demo-v2.png",
         width: 1734,
         height: 907,
-        alt: "ShiDao v2 — цель, курс, урок и результат",
+        alt: "Shidao v2 — цель, курс, урок и результат",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "ShiDao v2 — интерактивная продуктовая модель",
+    title: "Shidao v2 — интерактивная продуктовая модель",
     description: "Цель → курс → урок → результат.",
     images: ["https://demo.shidao.ru/og-demo-v2.png"],
   },
