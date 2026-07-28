@@ -849,10 +849,7 @@
 }
 
 .model-ai-section .model-loop-copy {
-  display: grid;
-  grid-template-columns: minmax(0, 0.8fr) minmax(300px, 1.2fr);
-  gap: 1.5rem 4rem;
-  align-items: end;
+  display: block;
   margin-top: clamp(4.5rem, 8vw, 7rem);
 }
 
@@ -867,21 +864,25 @@
 }
 
 .model-ai-section .model-loop-copy h2 {
-  max-width: 20ch;
+  width: 100%;
+  max-width: none;
   margin: 0;
-  font-family: var(--model-serif);
+  font-family: var(--model-sans);
   font-size: clamp(2.7rem, 5vw, 5.2rem);
-  font-weight: 400;
+  font-weight: 590;
   letter-spacing: -0.055em;
   line-height: 0.98;
 }
 
 .model-ai-section .model-loop-copy > p {
-  max-width: 720px;
-  margin: 0;
+  width: 100%;
+  max-width: none;
+  margin: 1.8rem 0 0;
   color: rgba(255, 255, 255, 0.52);
-  font-size: clamp(1rem, 1.3vw, 1.18rem);
-  line-height: 1.65;
+  font-size: var(--model-subheading-size);
+  font-weight: var(--model-subheading-weight);
+  letter-spacing: var(--model-subheading-letter-spacing);
+  line-height: var(--model-subheading-line-height);
 }
 
 .model-ai-section .model-loop {
@@ -2079,28 +2080,33 @@
 }
 
 .model-ai-safety-main {
-  display: grid;
-  grid-template-columns: 1fr 1.05fr;
-  gap: clamp(3rem, 7vw, 8rem);
-  align-items: center;
+  display: block;
+}
+
+.model-ai-safety-main .model-stack-layers {
+  margin-top: clamp(3rem, 5vw, 5rem);
 }
 
 .model-ai-topic-heading {
-  max-width: 15ch;
-  margin: 1.4rem 0 1.2rem;
-  font-family: var(--model-serif);
-  font-size: clamp(2.3rem, 4vw, 4rem);
-  font-weight: 400;
-  letter-spacing: -0.05em;
+  width: 100%;
+  max-width: none;
+  margin: 1.4rem 0 1.8rem;
+  font-family: var(--model-sans);
+  font-size: clamp(2.7rem, 5vw, 5.2rem);
+  font-weight: 590;
+  letter-spacing: -0.055em;
   line-height: 0.98;
 }
 
 .model-ai-topic-lead {
-  max-width: 540px;
+  width: 100%;
+  max-width: none;
   margin: 0;
   color: rgba(255, 255, 255, 0.48);
-  font-size: 0.84rem;
-  line-height: 1.65;
+  font-size: var(--model-subheading-size);
+  font-weight: var(--model-subheading-weight);
+  letter-spacing: var(--model-subheading-letter-spacing);
+  line-height: var(--model-subheading-line-height);
 }
 
 .model-safety-pills {
@@ -2132,7 +2138,8 @@
 }
 
 .model-ai-operation-copy {
-  max-width: 990px;
+  width: 100%;
+  max-width: none;
 }
 
 .model-ai-operation-copy > span {
@@ -2140,7 +2147,7 @@
 }
 
 .model-ai-operation-copy .model-ai-topic-heading {
-  max-width: 22ch;
+  max-width: none;
 }
 
 .model-ai-operation-points {
