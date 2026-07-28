@@ -302,17 +302,6 @@ export function ModelPageClient() {
           </div>
         </div>
 
-        <div className="model-hero-aside">
-          <div className="model-hero-definition">
-            <span className="model-hero-definition-label">
-              В одном предложении
-            </span>
-            <p>
-              Shidao — это образовательная система для обучения с человеком и
-              AI.
-            </p>
-          </div>
-        </div>
       </section>
 
       <section className="model-section model-foundation" id="model">
@@ -1404,7 +1393,7 @@ export function ModelPageClient() {
           <br />
           Завтра — само персональное образование.
         </h2>
-        <p className="model-copy-body">
+        <p className="model-copy-lead">
           У каждого человека должен быть собственный образовательный путь, а не
           только доступ к учебным материалам.
         </p>
