@@ -234,6 +234,9 @@ export function ModelPageClient() {
           <a href="#profile" onClick={closeMenu}>
             Профиль
           </a>
+          <a href="#scenarios" onClick={closeMenu}>
+            Аккаунт
+          </a>
           <a href="#experience" onClick={closeMenu}>
             Интерфейс
           </a>
@@ -351,6 +354,125 @@ export function ModelPageClient() {
             </div>
           }
         />
+      </section>
+
+      <section className="model-ai-section" id="ai">
+        <div className="model-ai-section-inner">
+          <SectionIntro
+            index="02"
+            eyebrow="Искусственный интеллект"
+            title="Модели ИИ заменяемы. Образовательная память — нет."
+            text="ShiDao не конкурирует с моделью. Он даёт любой подходящей модели контекст, инструменты и безопасное место в реальном образовательном процессе."
+          />
+
+          <div className="model-ai-roles">
+            {aiRoles.map((role) => (
+              <article key={role.number}>
+                <span>{role.number}</span>
+                <div className="model-ai-role-icon">
+                  <Sparkles size={17} />
+                </div>
+                <h3>{role.title}</h3>
+                <p>{role.text}</p>
+              </article>
+            ))}
+          </div>
+
+          <div className="model-ai-safety">
+            <div className="model-ai-safety-main">
+              <div className="model-ai-safety-copy">
+                <span className="model-card-label model-card-label-dark">
+                  ЕДИНЫЙ И БЕЗОПАСНЫЙ КОНТУР
+                </span>
+                <h3>
+                  ИИ не зашит в продукт: MCP-сервер задаёт единые правила всем
+                  моделям.
+                </h3>
+                <p>
+                  MCP — это защищённый вход к возможностям ShiDao. Внутренняя
+                  модель с самого начала работает через него; в дальнейшем к
+                  тому же серверу смогут подключаться внешние чаты и модели. Все
+                  они получают только разрешённые инструменты, а ShiDao
+                  проверяет права и сохраняет историю действий.
+                </p>
+                <div className="model-safety-pills">
+                  <span>
+                    <ShieldCheck size={14} /> Разрешённые инструменты
+                  </span>
+                  <span>
+                    <LockKeyhole size={14} /> Проверка прав
+                  </span>
+                  <span>
+                    <History size={14} /> История действий
+                  </span>
+                  <span>
+                    <Zap size={14} /> Лимиты расходов
+                  </span>
+                </div>
+              </div>
+
+              <div
+                className="model-stack-layers"
+                aria-label="Устройство контура ИИ"
+              >
+                <div className="model-stack-layer layer-ai">
+                  <Bot size={19} />
+                  <span>Сменяемые модели ИИ</span>
+                  <small>
+                    внутренняя модель · внешние чаты · другие модели
+                  </small>
+                </div>
+                <div className="model-stack-layer layer-tools">
+                  <WandSparkles size={19} />
+                  <span>MCP-сервер и разрешённые инструменты</span>
+                  <small>
+                    единые правила · проверка прав · история действий
+                  </small>
+                </div>
+                <div className="model-stack-layer layer-product">
+                  <Route size={19} />
+                  <span>Образовательный процесс</span>
+                  <small>курс · урок · занятие · ДЗ · общение</small>
+                </div>
+                <div className="model-stack-layer layer-memory">
+                  <History size={19} />
+                  <span>Долговременная образовательная память</span>
+                  <small>
+                    профиль · события · слова · подтверждённые выводы
+                  </small>
+                </div>
+              </div>
+            </div>
+
+            <div className="model-ai-operation">
+              <div className="model-ai-operation-copy">
+                <span>КАК РАБОТАЕТ MCP</span>
+                <h4>
+                  MCP-сервер — это понятный посредник между моделью ИИ и ShiDao.
+                </h4>
+                <p>
+                  Он даёт модели не свободный доступ ко всему продукту, а набор
+                  конкретных инструментов — словно руки, которыми она может
+                  выполнять разрешённые действия.
+                </p>
+                <p>
+                  Один инструмент запрашивает образовательный профиль и историю
+                  занятий, другой находит нужный курс или материал, третий
+                  создаёт урок и добавляет в него шаги, упражнения и материалы,
+                  четвёртый обновляет домашнее задание или сохраняет результат
+                  занятия.
+                </p>
+                <p>
+                  Модель выбирает нужный инструмент и передаёт ему понятную
+                  команду, а ShiDao проверяет, кому принадлежат данные и можно
+                  ли выполнить действие. Встроенная модель и подключённые
+                  внешние чаты работают через один и тот же MCP-сервер, поэтому
+                  правила и возможности для них едины.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
       </section>
 
       <section className="model-section model-profile" id="profile">
@@ -624,7 +746,7 @@ export function ModelPageClient() {
 
       <section className="model-section model-scenarios" id="scenarios">
         <SectionIntro
-          index="02"
+          index="04"
           eyebrow="Модель в работе"
           title="Роль пользователя (учитель / родитель / ученик) — это контекст, а не тип аккаунта"
           text="Один человек может одновременно создавать курсы, учиться сам, проводить занятия и помогать ребёнку. Поэтому в ShiDao нет отдельных типов аккаунта «учитель», «родитель» и «ученик»: возможности определяются владением и связями с конкретными курсами, группами и образовательными профилями. Интерфейс показывает нужный контекст для текущей задачи, а все три сценария продолжают единый образовательный профиль человека."
@@ -775,7 +897,7 @@ export function ModelPageClient() {
 
       <section className="model-section model-experience" id="experience">
         <SectionIntro
-          index="03"
+          index="05"
           eyebrow="UI / UX"
           title="Интерфейс следует работе, а не структуре базы"
           text="Никакой панели администратора ради панели администратора. В каждый момент ShiDao отвечает на простой вопрос пользователя: что я делаю сейчас?"
@@ -1015,128 +1137,9 @@ export function ModelPageClient() {
         </div>
       </section>
 
-      <section className="model-ai-section" id="ai">
-        <div className="model-ai-section-inner">
-          <SectionIntro
-            index="02"
-            eyebrow="Искусственный интеллект"
-            title="Модели ИИ заменяемы. Образовательная память — нет."
-            text="ShiDao не конкурирует с моделью. Он даёт любой подходящей модели контекст, инструменты и безопасное место в реальном образовательном процессе."
-          />
-
-          <div className="model-ai-roles">
-            {aiRoles.map((role) => (
-              <article key={role.number}>
-                <span>{role.number}</span>
-                <div className="model-ai-role-icon">
-                  <Sparkles size={17} />
-                </div>
-                <h3>{role.title}</h3>
-                <p>{role.text}</p>
-              </article>
-            ))}
-          </div>
-
-          <div className="model-ai-safety">
-            <div className="model-ai-safety-main">
-              <div className="model-ai-safety-copy">
-                <span className="model-card-label model-card-label-dark">
-                  ЕДИНЫЙ И БЕЗОПАСНЫЙ КОНТУР
-                </span>
-                <h3>
-                  ИИ не зашит в продукт: MCP-сервер задаёт единые правила всем
-                  моделям.
-                </h3>
-                <p>
-                  MCP — это защищённый вход к возможностям ShiDao. Внутренняя
-                  модель с самого начала работает через него; в дальнейшем к
-                  тому же серверу смогут подключаться внешние чаты и модели. Все
-                  они получают только разрешённые инструменты, а ShiDao
-                  проверяет права и сохраняет историю действий.
-                </p>
-                <div className="model-safety-pills">
-                  <span>
-                    <ShieldCheck size={14} /> Разрешённые инструменты
-                  </span>
-                  <span>
-                    <LockKeyhole size={14} /> Проверка прав
-                  </span>
-                  <span>
-                    <History size={14} /> История действий
-                  </span>
-                  <span>
-                    <Zap size={14} /> Лимиты расходов
-                  </span>
-                </div>
-              </div>
-
-              <div
-                className="model-stack-layers"
-                aria-label="Устройство контура ИИ"
-              >
-                <div className="model-stack-layer layer-ai">
-                  <Bot size={19} />
-                  <span>Сменяемые модели ИИ</span>
-                  <small>
-                    внутренняя модель · внешние чаты · другие модели
-                  </small>
-                </div>
-                <div className="model-stack-layer layer-tools">
-                  <WandSparkles size={19} />
-                  <span>MCP-сервер и разрешённые инструменты</span>
-                  <small>
-                    единые правила · проверка прав · история действий
-                  </small>
-                </div>
-                <div className="model-stack-layer layer-product">
-                  <Route size={19} />
-                  <span>Образовательный процесс</span>
-                  <small>курс · урок · занятие · ДЗ · общение</small>
-                </div>
-                <div className="model-stack-layer layer-memory">
-                  <History size={19} />
-                  <span>Долговременная образовательная память</span>
-                  <small>
-                    профиль · события · слова · подтверждённые выводы
-                  </small>
-                </div>
-              </div>
-            </div>
-
-            <div className="model-ai-operation">
-              <div className="model-ai-operation-copy">
-                <span>КАК РАБОТАЕТ MCP</span>
-                <h4>
-                  MCP-сервер — это понятный посредник между моделью ИИ и ShiDao.
-                </h4>
-                <p>
-                  Он даёт модели не свободный доступ ко всему продукту, а набор
-                  конкретных инструментов — словно руки, которыми она может
-                  выполнять разрешённые действия.
-                </p>
-                <p>
-                  Один инструмент запрашивает образовательный профиль и историю
-                  занятий, другой находит нужный курс или материал, третий
-                  создаёт урок и добавляет в него шаги, упражнения и материалы,
-                  четвёртый обновляет домашнее задание или сохраняет результат
-                  занятия.
-                </p>
-                <p>
-                  Модель выбирает нужный инструмент и передаёт ему понятную
-                  команду, а ShiDao проверяет, кому принадлежат данные и можно
-                  ли выполнить действие. Встроенная модель и подключённые
-                  внешние чаты работают через один и тот же MCP-сервер, поэтому
-                  правила и возможности для них едины.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
       <section className="model-section model-strategy" id="strategy">
         <SectionIntro
-          index="05"
+          index="06"
           eyebrow="Стратегия и тактика"
           title="Лёгкий вход. Большая система за ним."
           text="Мы не строим всё будущее одновременно. Первая версия решает конкретную ежедневную работу преподавателя — и закладывает модель, которая масштабируется до персонального обучения с ИИ."
@@ -1313,7 +1316,7 @@ export function ModelPageClient() {
 
       <section className="model-section model-decisions" id="principles">
         <SectionIntro
-          index="06"
+          index="07"
           eyebrow="Компас команды"
           title="Что мы защищаем, когда принимаем решения"
           text="Функции будут меняться. Эти критерии помогают не потерять продуктовую логику по дороге."
