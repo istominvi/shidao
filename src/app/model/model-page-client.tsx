@@ -381,7 +381,7 @@ export function ModelPageClient() {
               <article key={role.number}>
                 <span>{role.number}</span>
                 <div className="model-ai-role-icon">
-                  <role.Icon size={17} />
+                  <role.Icon size={24} />
                 </div>
                 <h3>{role.title}</h3>
                 <p className="model-copy-body">{role.text}</p>
@@ -439,36 +439,36 @@ export function ModelPageClient() {
             <div className="model-ai-operation">
               <div className="model-ai-operation-copy">
                 <span className="model-card-label model-card-label-dark">
-                  КАК ИИ РАБОТАЕТ С Shidao
+                  КАК ИИ РАБОТАЕТ С SHIDAO
                 </span>
                 <h2 className="model-ai-topic-heading">
                   ИИ действует через разрешённые инструменты, а не получает прямой доступ к продукту
                 </h2>
-                <div className="model-ai-operation-points">
-                  <div className="model-ai-operation-point">
-                    <div className="model-ai-operation-icon">
-                      <Sparkles size={18} />
-                    </div>
-                    <p className="model-copy-body">
-                      MCP — это технический стандарт, на котором построен единый контур управления ИИ. Через него модель может получить разрешённый контекст, найти курс или материал, создать или изменить урок, назначить домашнее задание и сохранить результат занятия.
-                    </p>
+              </div>
+              <div className="model-ai-operation-points">
+                <div className="model-ai-operation-point">
+                  <div className="model-ai-operation-icon">
+                    <Sparkles size={18} />
                   </div>
-                  <div className="model-ai-operation-point">
-                    <div className="model-ai-operation-icon">
-                      <Sparkles size={18} />
-                    </div>
-                    <p className="model-copy-body">
-                      Перед каждым действием Shidao проверяет пользователя, его права и корректность запроса. Важные или необратимые изменения требуют подтверждения, а выполненные операции сохраняются в истории.
-                    </p>
+                  <p className="model-copy-body">
+                    MCP — это технический стандарт, на котором построен единый контур управления ИИ. Через него модель может получить разрешённый контекст, найти курс или материал, создать или изменить урок, назначить домашнее задание и сохранить результат занятия.
+                  </p>
+                </div>
+                <div className="model-ai-operation-point">
+                  <div className="model-ai-operation-icon">
+                    <LockKeyhole size={18} />
                   </div>
-                  <div className="model-ai-operation-point">
-                    <div className="model-ai-operation-icon">
-                      <Sparkles size={18} />
-                    </div>
-                    <p className="model-copy-body">
-                      Один и тот же механизм используется встроенным ИИ Shidao и будущими внешними ассистентами. Набор доступных действий может отличаться, но проверка прав, контроль изменений и аудит остаются едиными.
-                    </p>
+                  <p className="model-copy-body">
+                    Перед каждым действием Shidao проверяет пользователя, его права и корректность запроса. Важные или необратимые изменения требуют подтверждения, а выполненные операции сохраняются в истории.
+                  </p>
+                </div>
+                <div className="model-ai-operation-point">
+                  <div className="model-ai-operation-icon">
+                    <History size={18} />
                   </div>
+                  <p className="model-copy-body">
+                    Один и тот же механизм используется встроенным ИИ Shidao и будущими внешними ассистентами. Набор доступных действий может отличаться, но проверка прав, контроль изменений и аудит остаются едиными.
+                  </p>
                 </div>
               </div>
             </div>
@@ -531,7 +531,7 @@ export function ModelPageClient() {
                   <Icon size={23} />
                 </div>
                 <strong>{String(label)}</strong>
-                <p>{String(description)}</p>
+                <p className="model-copy-body">{String(description)}</p>
                 {index < 5 && (
                   <ChevronRight className="model-loop-arrow" size={20} />
                 )}
@@ -553,23 +553,23 @@ export function ModelPageClient() {
                 "Следующий шаг меняется",
                 "На основе анализа ИИ предлагает обновить содержание урока, сложность, материалы, задания и домашнюю работу. Важные изменения применяются прозрачно и остаются под контролем человека.",
               ],
+              [
+                "Урок становится полезнее",
+                "Следующий урок точнее отвечает текущей цели и реальным потребностям человека, а его результаты снова пополняют профиль и продолжают цикл.",
+              ],
             ].map(([title, text], index) => (
               <article key={title}>
-                <span>0{index + 1}</span>
+                <div>
+                  <span>0{index + 1}</span>
+                  <Sparkles size={24} />
+                </div>
                 <h3>{title}</h3>
                 <p className="model-copy-body">{text}</p>
+                {index < 3 && (
+                  <ChevronRight className="model-loop-arrow" size={20} />
+                )}
               </article>
             ))}
-          </div>
-
-          <div className="model-loop-equation">
-            <span>Больше занятий</span>
-            <ArrowRight size={18} />
-            <span>Больше данных в профиле</span>
-            <ArrowRight size={18} />
-            <span>Точнее анализ ИИ</span>
-            <ArrowRight size={18} />
-            <span>Полезнее следующий урок</span>
           </div>
         </div>
       </section>
