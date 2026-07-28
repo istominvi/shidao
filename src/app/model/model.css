@@ -872,11 +872,11 @@
   width: 100%;
   max-width: none;
   margin: 0;
-  color: rgba(255, 255, 255, 0.48);
-  font-size: clamp(0.86rem, 1.15vw, 1rem);
+  color: rgba(255, 255, 255, 0.45);
+  font-size: var(--model-copy-size);
   font-weight: 400;
-  letter-spacing: -0.01em;
-  line-height: 1.68;
+  letter-spacing: var(--model-copy-letter-spacing);
+  line-height: var(--model-copy-line-height);
 }
 
 .model-ai-section .model-loop {
@@ -2098,11 +2098,11 @@
   width: 100%;
   max-width: none;
   margin: 0;
-  color: rgba(255, 255, 255, 0.48);
-  font-size: clamp(0.86rem, 1.15vw, 1rem);
+  color: rgba(255, 255, 255, 0.45);
+  font-size: var(--model-copy-size);
   font-weight: 400;
-  letter-spacing: -0.01em;
-  line-height: 1.68;
+  letter-spacing: var(--model-copy-letter-spacing);
+  line-height: var(--model-copy-line-height);
 }
 
 .model-safety-pills {
