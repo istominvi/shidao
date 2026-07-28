@@ -2253,8 +2253,30 @@
 
 .model-strategy {
   background:
-    linear-gradient(180deg, rgba(201, 180, 255, 0.12), transparent 25%),
-    var(--model-paper);
+    radial-gradient(
+      circle at 88% 9%,
+      rgba(201, 180, 255, 0.15),
+      transparent 22%
+    ),
+    radial-gradient(
+      circle at 10% 62%,
+      rgba(112, 183, 255, 0.1),
+      transparent 24%
+    ),
+    var(--model-navy-deep);
+  color: #fff;
+}
+
+.model-strategy .model-section-copy .model-eyebrow {
+  color: var(--model-lime);
+}
+
+.model-strategy .model-section-copy h2 {
+  color: #fff;
+}
+
+.model-strategy .model-section-copy > h2 + p {
+  color: rgba(255, 255, 255, 0.52);
 }
 
 .model-wedge {
@@ -2267,13 +2289,24 @@
   overflow: hidden;
 }
 
+.model-strategy .model-wedge {
+  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 28px 90px rgba(0, 0, 0, 0.2);
+}
+
 .model-wedge-now,
 .model-wedge-next {
   padding: clamp(2.3rem, 5vw, 5rem);
 }
 
 .model-wedge-now {
-  background: var(--model-navy);
+  background:
+    radial-gradient(
+      circle at 16% 8%,
+      rgba(112, 183, 255, 0.15),
+      transparent 32%
+    ),
+    linear-gradient(145deg, #14294b, #0d1b34);
   color: #fff;
 }
 
@@ -2287,6 +2320,10 @@
 
 .model-wedge-next > span {
   color: #7657d7;
+}
+
+.model-strategy .model-wedge-next > span {
+  color: var(--model-lilac);
 }
 
 .model-wedge-now h3 {
@@ -2334,12 +2371,25 @@
   background: var(--model-ivory);
 }
 
+.model-strategy .model-wedge-arrow {
+  border-color: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.025);
+}
+
 .model-wedge-arrow svg {
   color: #7657d7;
 }
 
+.model-strategy .model-wedge-arrow svg {
+  color: var(--model-lime);
+}
+
 .model-wedge-next {
   background: var(--model-ivory);
+}
+
+.model-strategy .model-wedge-next {
+  background: rgba(255, 255, 255, 0.045);
 }
 
 .model-market-rings {
@@ -2363,6 +2413,11 @@
   font-weight: 700;
 }
 
+.model-strategy .model-market-rings div {
+  border-color: rgba(255, 255, 255, 0.14);
+  color: rgba(255, 255, 255, 0.55);
+}
+
 .model-market-rings div:nth-child(1) {
   z-index: 4;
   width: 35%;
@@ -2381,11 +2436,19 @@
   background: rgba(201, 180, 255, 0.24);
 }
 
+.model-strategy .model-market-rings div:nth-child(2) {
+  background: rgba(201, 180, 255, 0.14);
+}
+
 .model-market-rings div:nth-child(3) {
   z-index: 2;
   width: 76%;
   height: 76%;
   background: rgba(112, 183, 255, 0.1);
+}
+
+.model-strategy .model-market-rings div:nth-child(3) {
+  background: rgba(112, 183, 255, 0.08);
 }
 
 .model-market-rings div:nth-child(4) {
@@ -2426,6 +2489,12 @@
   font-weight: 800;
 }
 
+.model-strategy .model-roadmap-marker span {
+  border-color: rgba(255, 255, 255, 0.15);
+  background: var(--model-navy-deep);
+  color: rgba(255, 255, 255, 0.48);
+}
+
 .model-roadmap article.is-current .model-roadmap-marker span {
   border-color: var(--model-lime);
   background: var(--model-lime);
@@ -2438,6 +2507,10 @@
   background: var(--model-line);
 }
 
+.model-strategy .model-roadmap-marker i {
+  background: rgba(255, 255, 255, 0.12);
+}
+
 .model-roadmap-card {
   display: grid;
   grid-template-columns: 130px minmax(230px, 0.45fr) minmax(300px, 0.55fr);
@@ -2445,6 +2518,10 @@
   align-items: start;
   padding: 0.7rem 0 3rem;
   border-top: 1px solid var(--model-line);
+}
+
+.model-strategy .model-roadmap-card {
+  border-top-color: rgba(255, 255, 255, 0.12);
 }
 
 .model-roadmap-card small {
@@ -2455,6 +2532,10 @@
   text-transform: uppercase;
 }
 
+.model-strategy .model-roadmap-card small {
+  color: rgba(255, 255, 255, 0.43);
+}
+
 .model-roadmap-card h3 {
   margin: 0;
   font-family: var(--model-serif);
@@ -2463,12 +2544,20 @@
   letter-spacing: -0.04em;
 }
 
+.model-strategy .model-roadmap-card h3 {
+  color: #fff;
+}
+
 .model-roadmap-card p {
   max-width: 46ch;
   margin: 0;
   color: #66686b;
   font-size: 0.75rem;
   line-height: 1.6;
+}
+
+.model-strategy .model-roadmap-card p {
+  color: rgba(255, 255, 255, 0.52);
 }
 
 .model-future {
@@ -2480,7 +2569,10 @@
   min-height: 980px;
   padding: var(--model-section-vertical-padding) 6vw;
   overflow: hidden;
-  background: var(--model-navy);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  background:
+    linear-gradient(180deg, rgba(112, 183, 255, 0.07), transparent 22%),
+    var(--model-navy);
   color: #fff;
 }
 
@@ -3010,6 +3102,11 @@
     border: 0;
     border-top: 1px solid var(--model-line);
     border-bottom: 1px solid var(--model-line);
+  }
+
+  .model-strategy .model-wedge-arrow {
+    border-top-color: rgba(255, 255, 255, 0.1);
+    border-bottom-color: rgba(255, 255, 255, 0.1);
   }
 
   .model-wedge-arrow svg {

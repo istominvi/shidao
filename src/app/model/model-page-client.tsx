@@ -1122,178 +1122,180 @@ export function ModelPageClient() {
         </div>
       </section>
 
-      <section className="model-section model-strategy" id="strategy">
-        <SectionIntro
-          index="06"
-          eyebrow="Стратегия и тактика"
-          title="Лёгкий вход. Большая система за ним."
-          text="Мы не строим всё будущее одновременно. Первая версия решает конкретную ежедневную работу преподавателя — и закладывает модель, которая масштабируется до персонального обучения с ИИ."
-        />
+      <section className="model-strategy" id="strategy">
+        <div className="model-section model-strategy-main">
+          <SectionIntro
+            index="06"
+            eyebrow="Стратегия"
+            title="Лёгкий вход. Большая система за ним."
+            text="Мы не строим всё будущее одновременно. Первая версия решает конкретную ежедневную работу преподавателя — и закладывает модель, которая масштабируется до персонального обучения с ИИ."
+          />
 
-        <div className="model-wedge">
-          <div className="model-wedge-now">
-            <span>ТАКТИКА · ПЕРВЫЙ РЫНОК</span>
-            <h3>Школы, преподаватели и репетиторы</h3>
+          <div className="model-wedge">
+            <div className="model-wedge-now">
+              <span>ТАКТИКА · ПЕРВЫЙ РЫНОК</span>
+              <h3>Школы, преподаватели и репетиторы</h3>
+              <p>
+                Уже работают с учащимися, каждую неделю готовят уроки и сразу
+                чувствуют ценность единого рабочего процесса.
+              </p>
+              <div>
+                <span>
+                  <Clock3 size={16} /> Экономия подготовки
+                </span>
+                <span>
+                  <FileStack size={16} /> Собственная библиотека
+                </span>
+                <span>
+                  <Sparkles size={16} /> ИИ в реальной работе
+                </span>
+              </div>
+            </div>
+            <div className="model-wedge-arrow">
+              <ArrowRight size={25} />
+            </div>
+            <div className="model-wedge-next">
+              <span>СТРАТЕГИЯ · МАСШТАБИРОВАНИЕ</span>
+              <div className="model-market-rings">
+                <div>Преподаватели</div>
+                <div>Агенты</div>
+                <div>ИИ-преподаватель</div>
+                <div>Самообучение</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="model-roadmap" aria-label="Этапы развития ShiDao">
+            {roadmap.map((item, index) => (
+              <article
+                className={index === 0 ? "is-current" : ""}
+                key={item.stage}
+              >
+                <div className="model-roadmap-marker">
+                  <span>{item.stage}</span>
+                  <i />
+                </div>
+                <div className="model-roadmap-card">
+                  <small>{item.tag}</small>
+                  <h3>{item.title}</h3>
+                  <p>{item.text}</p>
+                </div>
+              </article>
+            ))}
+          </div>
+        </div>
+
+        <div className="model-future">
+          <div className="model-future-glow" aria-hidden="true" />
+          <div className="model-future-copy">
+            <span>ВЗГЛЯД В БУДУЩЕЕ · НЕ ОБЕЩАНИЕ, А НАПРАВЛЕНИЕ</span>
+            <h2>
+              Школа может перестать быть единственным источником образования.
+            </h2>
             <p>
-              Уже работают с учащимися, каждую неделю готовят уроки и сразу
-              чувствуют ценность единого рабочего процесса.
+              Школы могут превратиться в пространства, которые отвечают за
+              безопасность, социализацию, совместные проекты, режим и
+              присутствие взрослых. Само обучение — объяснение, практика,
+              проверка знаний и выбор следующего шага — частично перейдёт к ИИ.
             </p>
-            <div>
-              <span>
-                <Clock3 size={16} /> Экономия подготовки
-              </span>
-              <span>
-                <FileStack size={16} /> Собственная библиотека
-              </span>
-              <span>
-                <Sparkles size={16} /> ИИ в реальной работе
-              </span>
-            </div>
-          </div>
-          <div className="model-wedge-arrow">
-            <ArrowRight size={25} />
-          </div>
-          <div className="model-wedge-next">
-            <span>СТРАТЕГИЯ · МАСШТАБИРОВАНИЕ</span>
-            <div className="model-market-rings">
-              <div>Преподаватели</div>
-              <div>Агенты</div>
-              <div>ИИ-преподаватель</div>
-              <div>Самообучение</div>
-            </div>
-          </div>
-        </div>
-
-        <div className="model-roadmap" aria-label="Этапы развития ShiDao">
-          {roadmap.map((item, index) => (
-            <article
-              className={index === 0 ? "is-current" : ""}
-              key={item.stage}
-            >
-              <div className="model-roadmap-marker">
-                <span>{item.stage}</span>
-                <i />
-              </div>
-              <div className="model-roadmap-card">
-                <small>{item.tag}</small>
-                <h3>{item.title}</h3>
-                <p>{item.text}</p>
-              </div>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <section className="model-future">
-        <div className="model-future-glow" aria-hidden="true" />
-        <div className="model-future-copy">
-          <span>ВЗГЛЯД В БУДУЩЕЕ · НЕ ОБЕЩАНИЕ, А НАПРАВЛЕНИЕ</span>
-          <h2>
-            Школа может перестать быть единственным источником образования.
-          </h2>
-          <p>
-            Школы могут превратиться в пространства, которые отвечают за
-            безопасность, социализацию, совместные проекты, режим и присутствие
-            взрослых. Само обучение — объяснение, практика, проверка знаний и
-            выбор следующего шага — частично перейдёт к ИИ.
-          </p>
-          <p>
-            В таком сценарии ShiDao становится цифровой образовательной средой
-            школы. Он ведёт профиль каждого ребёнка, сохраняет историю обучения,
-            подбирает программу, проводит занятия через ИИ-преподавателя,
-            анализирует результаты и адаптирует следующий урок под одного
-            ученика или целую группу.
-          </p>
-          <p>
-            Дети могут работать с планшетами, общим экраном, проектором или
-            новыми устройствами — конкретная техника не принципиальна. Взрослый
-            остаётся рядом как оператор пространства, наставник и человек,
-            который помогает, когда нужен живой контакт; всю последовательность
-            образовательного процесса удерживает ShiDao.
-          </p>
-        </div>
-        <div className="model-future-scene">
-          <div className="model-future-space-head">
-            <div>
-              <GraduationCap size={24} />
-              <div>
-                <small>ФИЗИЧЕСКОЕ ПРОСТРАНСТВО</small>
-                <strong>Школа</strong>
-              </div>
-            </div>
-            <span>безопасность · социализация · проекты · взрослые рядом</span>
-          </div>
-
-          <div className="model-future-platform">
-            <div className="model-future-platform-head">
-              <Wordmark className="model-future-wordmark" />
-              <div>
-                <span>ВЕДЁТ ВЕСЬ ОБРАЗОВАТЕЛЬНЫЙ ПРОЦЕСС</span>
-                <strong>Цифровая образовательная среда</strong>
-              </div>
-            </div>
             <p>
-              ShiDao связывает цели, уроки, материалы и историю ребёнка в одну
-              непрерывную систему.
+              В таком сценарии ShiDao становится цифровой образовательной средой
+              школы. Он ведёт профиль каждого ребёнка, сохраняет историю
+              обучения, подбирает программу, проводит занятия через
+              ИИ-преподавателя, анализирует результаты и адаптирует следующий
+              урок под одного ученика или целую группу.
             </p>
-
-            <div className="model-future-capabilities">
-              <div>
-                <Bot size={19} />
-                <div>
-                  <strong>ИИ-преподаватель</strong>
-                  <span>объясняет · тренирует · проверяет</span>
-                </div>
-              </div>
-              <div>
-                <History size={19} />
-                <div>
-                  <strong>Учебный профиль</strong>
-                  <span>хранит знания · ошибки · интересы · темп</span>
-                </div>
-              </div>
-              <div>
-                <Target size={19} />
-                <div>
-                  <strong>Адаптация</strong>
-                  <span>выбирает программу и следующий шаг</span>
-                </div>
-              </div>
-              <div>
-                <Network size={19} />
-                <div>
-                  <strong>Аналитика</strong>
-                  <span>видит прогресс и помогает принимать решения</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="model-future-modes">
-              <div>
-                <CircleUserRound size={20} />
-                <div>
-                  <strong>Один ребёнок</strong>
-                  <span>свой ИИ-преподаватель, программа и темп</span>
-                </div>
-              </div>
-              <div>
-                <Users size={20} />
-                <div>
-                  <strong>Группа детей</strong>
-                  <span>общий урок, адаптированный под эту группу</span>
-                </div>
-              </div>
-            </div>
+            <p>
+              Дети могут работать с планшетами, общим экраном, проектором или
+              новыми устройствами — конкретная техника не принципиальна.
+              Взрослый остаётся рядом как оператор пространства, наставник и
+              человек, который помогает, когда нужен живой контакт; всю
+              последовательность образовательного процесса удерживает ShiDao.
+            </p>
           </div>
+          <div className="model-future-scene">
+            <div className="model-future-space-head">
+              <div>
+                <GraduationCap size={24} />
+                <div>
+                  <small>ФИЗИЧЕСКОЕ ПРОСТРАНСТВО</small>
+                  <strong>Школа</strong>
+                </div>
+              </div>
+              <span>безопасность · социализация · проекты · взрослые рядом</span>
+            </div>
 
-          <div className="model-future-operator">
-            <Heart size={20} />
-            <div>
-              <strong>Взрослый внутри пространства</strong>
-              <span>
-                поддерживает ритм, помогает в сложных ситуациях и сохраняет
-                живой человеческий контакт
-              </span>
+            <div className="model-future-platform">
+              <div className="model-future-platform-head">
+                <Wordmark className="model-future-wordmark" />
+                <div>
+                  <span>ВЕДЁТ ВЕСЬ ОБРАЗОВАТЕЛЬНЫЙ ПРОЦЕСС</span>
+                  <strong>Цифровая образовательная среда</strong>
+                </div>
+              </div>
+              <p>
+                ShiDao связывает цели, уроки, материалы и историю ребёнка в одну
+                непрерывную систему.
+              </p>
+
+              <div className="model-future-capabilities">
+                <div>
+                  <Bot size={19} />
+                  <div>
+                    <strong>ИИ-преподаватель</strong>
+                    <span>объясняет · тренирует · проверяет</span>
+                  </div>
+                </div>
+                <div>
+                  <History size={19} />
+                  <div>
+                    <strong>Учебный профиль</strong>
+                    <span>хранит знания · ошибки · интересы · темп</span>
+                  </div>
+                </div>
+                <div>
+                  <Target size={19} />
+                  <div>
+                    <strong>Адаптация</strong>
+                    <span>выбирает программу и следующий шаг</span>
+                  </div>
+                </div>
+                <div>
+                  <Network size={19} />
+                  <div>
+                    <strong>Аналитика</strong>
+                    <span>видит прогресс и помогает принимать решения</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="model-future-modes">
+                <div>
+                  <CircleUserRound size={20} />
+                  <div>
+                    <strong>Один ребёнок</strong>
+                    <span>свой ИИ-преподаватель, программа и темп</span>
+                  </div>
+                </div>
+                <div>
+                  <Users size={20} />
+                  <div>
+                    <strong>Группа детей</strong>
+                    <span>общий урок, адаптированный под эту группу</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="model-future-operator">
+              <Heart size={20} />
+              <div>
+                <strong>Взрослый внутри пространства</strong>
+                <span>
+                  поддерживает ритм, помогает в сложных ситуациях и сохраняет
+                  живой человеческий контакт
+                </span>
+              </div>
             </div>
           </div>
         </div>
