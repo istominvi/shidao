@@ -729,7 +729,7 @@ export function ModelPageClient() {
         </div>
       </section>
 
-      <section className="model-section model-scenarios" id="scenarios">
+      <section className="model-section model-scenarios model-scenarios-dark" id="scenarios">
         <SectionIntro
           index="04"
           eyebrow="Аккаунт"

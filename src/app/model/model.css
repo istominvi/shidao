@@ -1015,9 +1015,43 @@
   background: var(--model-paper);
 }
 
+.model-scenarios-dark {
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background:
+    radial-gradient(
+      circle at 90% 16%,
+      rgba(201, 180, 255, 0.16),
+      transparent 22%
+    ),
+    radial-gradient(
+      circle at 12% 70%,
+      rgba(112, 183, 255, 0.1),
+      transparent 24%
+    ),
+    var(--model-navy-deep);
+  color: #fff;
+}
+
+.model-scenarios-dark .model-section-copy .model-eyebrow {
+  color: var(--model-lime);
+}
+
+.model-scenarios-dark .model-section-copy h2 {
+  color: #fff;
+}
+
+.model-scenarios-dark .model-section-copy > h2 + p {
+  color: rgba(255, 255, 255, 0.52);
+}
+
 .model-persona-tabs {
   display: flex;
   border-bottom: 1px solid var(--model-line);
+}
+
+.model-scenarios-dark .model-persona-tabs {
+  border-bottom-color: rgba(255, 255, 255, 0.12);
 }
 
 .model-persona-tabs button {
@@ -1033,6 +1067,15 @@
   cursor: pointer;
 }
 
+.model-scenarios-dark .model-persona-tabs button {
+  color: rgba(255, 255, 255, 0.38);
+}
+
+.model-scenarios-dark .model-persona-tabs button:hover,
+.model-scenarios-dark .model-persona-tabs button:focus-visible {
+  color: rgba(255, 255, 255, 0.72);
+}
+
 .model-persona-tabs button span {
   position: absolute;
   right: 0;
@@ -1046,8 +1089,16 @@
   transition: transform 220ms ease;
 }
 
+.model-scenarios-dark .model-persona-tabs button span {
+  background: var(--model-lime);
+}
+
 .model-persona-tabs button.is-active {
   color: var(--model-ink);
+}
+
+.model-scenarios-dark .model-persona-tabs button.is-active {
+  color: #fff;
 }
 
 .model-persona-tabs button.is-active span {
@@ -1063,6 +1114,22 @@
   border-radius: 1.5rem;
   overflow: hidden;
   background: var(--model-ivory);
+}
+
+.model-scenarios-dark .model-persona-panel {
+  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.045);
+  box-shadow: 0 28px 90px rgba(0, 0, 0, 0.2);
+}
+
+.model-scenarios-dark .model-persona-story {
+  background:
+    radial-gradient(
+      circle at 18% 10%,
+      rgba(112, 183, 255, 0.14),
+      transparent 30%
+    ),
+    linear-gradient(145deg, #14294b, #0d1b34);
 }
 
 .model-persona-story {
@@ -1146,6 +1213,10 @@
   border-bottom: 1px solid var(--model-line);
 }
 
+.model-scenarios-dark .model-persona-steps article {
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
 .model-persona-steps article:last-child {
   border-bottom: 0;
 }
@@ -1160,6 +1231,16 @@
   color: rgba(16, 24, 39, 0.45);
   font-size: 0.64rem;
   font-weight: 800;
+}
+
+.model-scenarios-dark .model-persona-steps article > span {
+  border-color: rgba(255, 255, 255, 0.18);
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.model-scenarios-dark .model-persona-steps article:hover > span {
+  border-color: transparent;
+  color: var(--model-navy-deep);
 }
 
 .accent-lime .model-persona-steps article:hover > span {
@@ -1181,10 +1262,18 @@
   font-weight: 400;
 }
 
+.model-scenarios-dark .model-persona-steps h4 {
+  color: #fff;
+}
+
 .model-persona-steps p {
   margin: 0;
   color: #68696c;
   font-size: 0.74rem;
+}
+
+.model-scenarios-dark .model-persona-steps p {
+  color: rgba(255, 255, 255, 0.5);
 }
 
 .model-context-case {
@@ -1194,6 +1283,14 @@
   overflow: hidden;
   background: var(--model-navy-deep);
   box-shadow: 0 22px 70px rgba(16, 30, 56, 0.1);
+}
+
+.model-scenarios-dark .model-context-case {
+  border-color: rgba(255, 255, 255, 0.12);
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.025), rgba(255, 255, 255, 0.025)),
+    var(--model-navy-deep);
+  box-shadow: 0 28px 90px rgba(0, 0, 0, 0.22);
 }
 
 .model-context-case-head {
@@ -1313,6 +1410,10 @@
   background: rgba(16, 30, 56, 0.14);
 }
 
+.model-scenarios-dark .model-context-cards {
+  background: rgba(255, 255, 255, 0.12);
+}
+
 .model-context-cards > article {
   display: flex;
   flex-direction: column;
@@ -1321,6 +1422,12 @@
   border-top: 5px solid var(--context-accent);
   background: var(--model-paper);
   color: var(--model-navy);
+}
+
+.model-scenarios-dark .model-context-cards > article {
+  background:
+    linear-gradient(155deg, rgba(112, 183, 255, 0.08), transparent 48%), #16233a;
+  color: #fff;
 }
 
 .model-context-cards > article.is-teacher {
@@ -1358,6 +1465,7 @@
   height: 44px;
   border-radius: 50%;
   background: var(--context-accent);
+  color: var(--model-navy-deep);
 }
 
 .model-context-cards small {
@@ -1383,6 +1491,15 @@
   color: #66686d;
   font-size: 0.72rem;
   line-height: 1.62;
+}
+
+.model-scenarios-dark .model-context-card-top > span,
+.model-scenarios-dark .model-context-cards small {
+  color: rgba(255, 255, 255, 0.43);
+}
+
+.model-scenarios-dark .model-context-cards p {
+  color: rgba(255, 255, 255, 0.54);
 }
 
 .model-context-summary {
