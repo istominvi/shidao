@@ -15,6 +15,10 @@
     "Segoe UI", sans-serif;
   /* Vertical padding used for hero and all sections (matches hero bottom) */
   --model-section-vertical-padding: clamp(4.5rem, 7vw, 7rem);
+  --model-copy-lead-size: clamp(1rem, 1.45vw, 1.24rem);
+  --model-copy-body-size: clamp(0.96rem, 1.2vw, 1.08rem);
+  --model-copy-line-height: 1.65;
+  --model-copy-letter-spacing: -0.01em;
   position: relative;
   overflow: clip;
   min-height: 100vh;
@@ -2902,15 +2906,18 @@
 .model-north-star h2 {
   max-width: 20ch;
   margin: 0;
-  font-family: var(--model-serif);
-  font-size: clamp(3rem, 6vw, 6.6rem);
-  font-weight: 400;
-  letter-spacing: -0.06em;
-  line-height: 0.95;
+  font-family: var(--model-sans);
+  font-size: clamp(3rem, 6.2vw, 6.5rem);
+  font-weight: 590;
+  letter-spacing: -0.065em;
+  line-height: 0.91;
 }
 
 .model-north-star h2 span {
   color: var(--model-lime);
+  font-family: var(--model-serif);
+  font-weight: 400;
+  font-style: italic;
 }
 
 .model-north-star > p {
@@ -2924,6 +2931,22 @@
 .model-button-light {
   background: #fff;
   color: var(--model-navy);
+}
+
+.model-page p.model-copy-lead {
+  font-family: var(--model-sans);
+  font-size: var(--model-copy-lead-size);
+  font-weight: 400;
+  letter-spacing: var(--model-copy-letter-spacing);
+  line-height: var(--model-copy-line-height);
+}
+
+.model-page p.model-copy-body {
+  font-family: var(--model-sans);
+  font-size: var(--model-copy-body-size);
+  font-weight: 400;
+  letter-spacing: var(--model-copy-letter-spacing);
+  line-height: var(--model-copy-line-height);
 }
 
 @media (max-width: 1180px) {
@@ -3503,7 +3526,7 @@
   }
 
   .model-north-star h2 {
-    font-size: clamp(3rem, 13vw, 4.7rem);
+    font-size: clamp(2.9rem, 14.2vw, 4.4rem);
   }
 }
 
