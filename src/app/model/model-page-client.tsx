@@ -282,16 +282,6 @@ export function ModelPageClient() {
       </header>
 
       <section className="model-hero" id="top">
-        <div className="model-hero-grid" aria-hidden="true" />
-        <div
-          className="model-hero-orbit model-hero-orbit-one"
-          aria-hidden="true"
-        />
-        <div
-          className="model-hero-orbit model-hero-orbit-two"
-          aria-hidden="true"
-        />
-
         <div className="model-hero-copy">
           <div className="model-hero-kicker">
             <span>Внутренняя продуктовая модель</span>

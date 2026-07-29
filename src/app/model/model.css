@@ -189,7 +189,6 @@
   color: #fff;
 }
 
-.model-hero-grid,
 .model-north-star-grid {
   position: absolute;
   inset: 0;
@@ -200,40 +199,6 @@
   background-size: 64px 64px;
   mask-image: linear-gradient(to bottom, black, transparent 70%);
   pointer-events: none;
-}
-
-.model-hero-orbit {
-  position: absolute;
-  border: 1px solid rgba(201, 255, 79, 0.14);
-  border-radius: 50%;
-  pointer-events: none;
-}
-
-.model-hero-orbit::after {
-  position: absolute;
-  top: 50%;
-  left: -5px;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  content: "";
-  background: var(--model-lime);
-  box-shadow: 0 0 25px rgba(201, 255, 79, 0.65);
-}
-
-.model-hero-orbit-one {
-  top: -12rem;
-  right: -8rem;
-  width: 42rem;
-  height: 42rem;
-}
-
-.model-hero-orbit-two {
-  top: 11rem;
-  right: 4rem;
-  width: 25rem;
-  height: 25rem;
-  transform: rotate(110deg);
 }
 
 .model-hero-copy {
