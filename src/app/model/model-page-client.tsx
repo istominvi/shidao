@@ -654,6 +654,10 @@ export function ModelPageClient() {
             </>
           }
           text="Курс может закончиться. Преподаватель — смениться. AI-модель — обновиться. Учебный профиль остаётся и делает каждое следующее занятие точнее."
+          illustration={{
+            src: "/model/3_1_v1.png",
+            alt: "Ученица рядом с визуализацией образовательного профиля",
+          }}
           detail={
             <div className="model-foundation-story">
               <div className="model-foundation-narrative">
