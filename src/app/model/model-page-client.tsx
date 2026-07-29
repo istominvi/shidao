@@ -326,6 +326,16 @@ export function ModelPageClient() {
           </div>
         </div>
 
+        <div className="model-hero-illustration" aria-hidden="true">
+          <Image
+            src="/model/0_1.png"
+            alt=""
+            width={1254}
+            height={1254}
+            sizes="(max-width: 960px) 100vw, 50vw"
+            priority
+          />
+        </div>
       </section>
 
       <section className="model-section model-foundation" id="model">

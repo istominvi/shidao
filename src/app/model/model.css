@@ -204,6 +204,23 @@
 .model-hero-copy {
   position: relative;
   z-index: 2;
+  width: 70%;
+}
+
+.model-hero-illustration {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  z-index: 1;
+  width: min(50vw, 720px);
+  line-height: 0;
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+.model-hero-illustration img {
+  width: 100%;
+  height: auto;
 }
 
 .model-hero-kicker {
@@ -3011,6 +3028,16 @@
   .model-hero {
     grid-template-columns: 1fr;
     padding-top: 5rem;
+  }
+
+  .model-hero-copy {
+    width: 100%;
+  }
+
+  .model-hero-illustration {
+    right: -20%;
+    width: min(100vw, 620px);
+    opacity: 0.45;
   }
 
   .model-section-intro-with-illustration {
