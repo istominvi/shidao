@@ -194,13 +194,9 @@ function SectionIntro({
       className={`model-section-intro${illustration ? " model-section-intro-with-illustration" : ""}`}
     >
       <div className="model-section-heading">
-        <div className="model-section-copy">
-          <p className="model-eyebrow">
-            <span className="model-section-index">{index}</span> {eyebrow}
-          </p>
-          <h2>{title}</h2>
-          <p className="model-copy-lead">{text}</p>
-        </div>
+        <p className="model-eyebrow">
+          <span className="model-section-index">{index}</span> {eyebrow}
+        </p>
         {illustration ? (
           <div className="model-section-illustration">
             <Image
@@ -213,6 +209,10 @@ function SectionIntro({
             />
           </div>
         ) : null}
+        <div className="model-section-copy">
+          <h2>{title}</h2>
+          <p className="model-copy-lead">{text}</p>
+        </div>
       </div>
       {detail ? <div className="model-section-detail">{detail}</div> : null}
     </div>
@@ -307,6 +307,18 @@ export function ModelPageClient() {
         </div>
 
         <div className="model-hero-heading">
+          <div className="model-hero-illustration" aria-hidden="true">
+            <Image
+              src="/model/0_1_v2.png"
+              alt=""
+              width={1080}
+              height={1080}
+              sizes="(max-width: 960px) 100vw, 50vw"
+              priority
+              unoptimized
+            />
+          </div>
+
           <div className="model-hero-copy">
             <h1>
               Shidao —{" "}
@@ -321,18 +333,6 @@ export function ModelPageClient() {
               курс, учить другого, учиться сам и передать процесс AI, не теряя
               историю, структуру и контроль.
             </p>
-          </div>
-
-          <div className="model-hero-illustration" aria-hidden="true">
-            <Image
-              src="/model/0_1_v2.png"
-              alt=""
-              width={1080}
-              height={1080}
-              sizes="(max-width: 960px) 100vw, 50vw"
-              priority
-              unoptimized
-            />
           </div>
         </div>
 
