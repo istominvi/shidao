@@ -208,6 +208,7 @@ function SectionIntro({
             width={1254}
             height={1254}
             sizes="(max-width: 960px) min(100vw - 2.3rem, 420px), 34vw"
+            unoptimized
           />
         </div>
       ) : null}
@@ -328,12 +329,13 @@ export function ModelPageClient() {
 
         <div className="model-hero-illustration" aria-hidden="true">
           <Image
-            src="/model/0_1.png"
+            src="/model/0_1_v2.png"
             alt=""
-            width={1254}
-            height={1254}
+            width={1080}
+            height={1080}
             sizes="(max-width: 960px) 100vw, 50vw"
             priority
+            unoptimized
           />
         </div>
       </section>
