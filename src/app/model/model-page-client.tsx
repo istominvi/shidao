@@ -302,12 +302,12 @@ export function ModelPageClient() {
       </header>
 
       <section className="model-hero" id="top">
-        <div className="model-hero-kicker">
-          <span>Внутренняя продуктовая модель</span>
-          <span>26 / 07 / 2026</span>
-        </div>
-
         <div className="model-hero-heading">
+          <div className="model-hero-kicker">
+            <span>Внутренняя продуктовая модель</span>
+            <span>26 / 07 / 2026</span>
+          </div>
+
           <div className="model-hero-illustration" aria-hidden="true">
             <Image
               src="/model/0_1_v2.png"
@@ -335,20 +335,20 @@ export function ModelPageClient() {
               историю, структуру и контроль.
             </p>
           </div>
-        </div>
 
-        <div className="model-hero-actions">
-          <a className="model-button model-button-primary" href="#model">
-            Понять модель <ArrowDown size={17} />
-          </a>
-          <a
-            className="model-button model-button-ghost"
-            href="https://demo.shidao.ru"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Увидеть в работе <ArrowRight size={17} />
-          </a>
+          <div className="model-hero-actions">
+            <a className="model-button model-button-primary" href="#model">
+              Понять модель <ArrowDown size={17} />
+            </a>
+            <a
+              className="model-button model-button-ghost"
+              href="https://demo.shidao.ru"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Увидеть в работе <ArrowRight size={17} />
+            </a>
+          </div>
         </div>
       </section>
 

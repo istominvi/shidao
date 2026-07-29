@@ -232,6 +232,8 @@
 }
 
 .model-hero-kicker {
+  position: relative;
+  z-index: 2;
   display: flex;
   align-items: center;
   gap: 1rem;
@@ -283,9 +285,12 @@
 }
 
 .model-hero-actions {
+  position: relative;
+  z-index: 2;
   display: flex;
   flex-wrap: wrap;
   gap: 0.8rem;
+  width: 70%;
   margin-top: 2rem;
 }
 
@@ -3308,6 +3313,15 @@
   }
 
   .model-hero-copy {
+    width: 100%;
+  }
+
+  .model-hero-kicker,
+  .model-section-heading > .model-eyebrow {
+    margin-bottom: 0;
+  }
+
+  .model-hero-actions {
     width: 100%;
   }
 
