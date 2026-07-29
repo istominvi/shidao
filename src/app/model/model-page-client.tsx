@@ -331,10 +331,10 @@ export function ModelPageClient() {
 
         <div className="model-hero-illustration" aria-hidden="true">
           <Image
-            src="/model/0_1_v2.png"
+            src="/model/0_1_v3.png"
             alt=""
-            width={1080}
-            height={1080}
+            width={1254}
+            height={1254}
             sizes="(max-width: 960px) 100vw, 50vw"
             priority
             unoptimized
@@ -363,7 +363,7 @@ export function ModelPageClient() {
           }
           text="Три фундаментальных технологических и гуманитарных принципа, которые превращают процесс получения знаний в увлекательный жизненный путь:"
           illustration={{
-            src: "/model/1_1_v3.png",
+            src: "/model/1_1_v4.png",
             alt: "Ребёнок с разноцветными обручами",
           }}
           detail={
@@ -415,6 +415,10 @@ export function ModelPageClient() {
               </>
             }
             text="Shidao не конкурирует с моделью. Система даёт любой подходящей модели контекст, инструменты и безопасное место в реальном образовательном процессе, чтобы ИИ мог исполнять следующие роли:"
+            illustration={{
+              src: "/model/02_1.png",
+              alt: "Ребёнок взаимодействует с роботом через цифровой экран",
+            }}
           />
 
           <div className="model-ai-roles">
