@@ -18,6 +18,7 @@
   --model-copy-size: clamp(1rem, 1.45vw, 1.24rem);
   --model-copy-line-height: 1.5;
   --model-copy-letter-spacing: -0.01em;
+  --model-heading-size: clamp(2.7rem, 5vw, 5.2rem);
   --model-subheading-size: clamp(1.3rem, 1.8vw, 1.55rem);
   --model-subheading-line-height: 1.2;
   --model-subheading-letter-spacing: -0.02em;
@@ -259,10 +260,10 @@
   width: 100%;
   max-width: none;
   margin: 0;
-  font-size: clamp(3rem, 6.2vw, 6.5rem);
+  font-size: var(--model-heading-size);
   font-weight: 590;
-  letter-spacing: -0.065em;
-  line-height: 0.91;
+  letter-spacing: -0.055em;
+  line-height: 0.98;
 }
 
 .model-hero h1 em {
@@ -430,7 +431,7 @@
   max-width: none;
   margin: 0;
   font-family: var(--model-sans);
-  font-size: clamp(2.7rem, 5vw, 5.2rem);
+  font-size: var(--model-heading-size);
   font-weight: 590;
   letter-spacing: -0.055em;
   line-height: 0.98;
@@ -3040,6 +3041,10 @@
 }
 
 @media (max-width: 960px) {
+  .model-page {
+    --model-heading-size: clamp(2.1rem, 10.5vw, 3.2rem);
+  }
+
   .model-header {
     min-height: 66px;
   }
@@ -3090,7 +3095,7 @@
     right: 0;
     width: 100%;
     height: auto;
-    margin-bottom: clamp(2rem, 5vw, 3.5rem);
+    margin-bottom: 0;
     opacity: 1;
   }
 
@@ -3110,7 +3115,7 @@
     position: static;
     width: 100%;
     height: auto;
-    margin-bottom: clamp(2rem, 5vw, 3.5rem);
+    margin-bottom: 0;
     opacity: 1;
   }
 
@@ -3282,14 +3287,11 @@
     flex-direction: column;
     align-items: flex-start;
     gap: 0.5rem;
+    margin-bottom: 0;
   }
 
   .model-hero-kicker span + span::before {
     display: none;
-  }
-
-  .model-hero h1 {
-    font-size: clamp(2.9rem, 14.2vw, 4.4rem);
   }
 
   .model-hero-actions {
@@ -3310,12 +3312,8 @@
     gap: 1.3rem;
   }
 
-  .model-section-copy h2 {
-    font-size: clamp(2.5rem, 12vw, 3.8rem);
-  }
-
-  .model-section-intro-with-illustration .model-section-copy h2 {
-    font-size: clamp(2.1rem, 10.5vw, 3.2rem);
+  .model-section-heading > .model-eyebrow {
+    margin-bottom: 0;
   }
 
   .model-profile-points article {
