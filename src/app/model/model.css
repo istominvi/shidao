@@ -346,15 +346,24 @@
 }
 
 .model-section-intro-with-illustration {
-  grid-template-columns: minmax(0, 1fr) minmax(260px, 34vw);
-  column-gap: clamp(1.5rem, 4vw, 5rem);
-  align-items: end;
+  position: relative;
+  min-height: min(50vw, 720px);
+}
+
+.model-section-intro-with-illustration .model-section-copy {
+  position: relative;
+  z-index: 1;
+  width: 70%;
 }
 
 .model-section-illustration {
-  width: min(100%, 500px);
-  justify-self: end;
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 0;
+  width: min(50vw, 720px);
   line-height: 0;
+  pointer-events: none;
 }
 
 .model-section-illustration img {
@@ -3006,9 +3015,15 @@
 
   .model-section-intro-with-illustration {
     grid-template-columns: 1fr;
+    min-height: 0;
+  }
+
+  .model-section-intro-with-illustration .model-section-copy {
+    width: 100%;
   }
 
   .model-section-illustration {
+    position: static;
     width: min(100%, 420px);
     justify-self: start;
   }
