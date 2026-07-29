@@ -466,7 +466,9 @@ export function ModelPageClient() {
           </div>
 
           <div className="model-ai-architecture">
-            <h2>Единая архитектура ИИ</h2>
+            <h2 className="model-card-label model-card-label-dark">
+              ЕДИНАЯ АРХИТЕКТУРА ИИ
+            </h2>
             <div className="model-ai-architecture-text">
               {[
                 {

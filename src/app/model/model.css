@@ -2147,24 +2147,14 @@
 
 .model-ai-architecture {
   margin-top: clamp(5rem, 9vw, 9rem);
-  padding-top: clamp(2.5rem, 5vw, 4.5rem);
-  border-top: 1px solid rgba(255, 255, 255, 0.14);
 }
 
 .model-ai-architecture > h2 {
   margin: 0;
-  color: var(--model-lime);
-  font-family: var(--model-sans);
-  font-size: clamp(1.15rem, 1.8vw, 1.55rem);
-  font-weight: 750;
-  letter-spacing: 0.08em;
-  line-height: 1.1;
-  text-transform: uppercase;
 }
 
 .model-ai-architecture-text {
   margin-top: clamp(1.8rem, 4vw, 3rem);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.13);
 }
 
 .model-ai-architecture-text article {
@@ -2173,7 +2163,6 @@
   align-items: start;
   gap: clamp(1.2rem, 2.5vw, 2.2rem);
   padding: clamp(1.8rem, 3.5vw, 3rem) 0;
-  border-top: 1px solid rgba(255, 255, 255, 0.13);
 }
 
 .model-ai-architecture-icon {
@@ -2190,15 +2179,10 @@
 .model-ai-architecture-text p {
   max-width: none;
   margin: 0;
-  color: rgba(255, 255, 255, 0.56);
+  color: rgba(255, 255, 255, 0.76);
   font-size: var(--model-copy-size);
   letter-spacing: var(--model-copy-letter-spacing);
   line-height: 1.7;
-}
-
-.model-ai-architecture-text article:first-child p,
-.model-ai-architecture-text article:last-child p {
-  color: rgba(255, 255, 255, 0.76);
 }
 
 .model-ai-safety {
