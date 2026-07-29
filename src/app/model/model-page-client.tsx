@@ -336,7 +336,11 @@ export function ModelPageClient() {
             <>
               Shidao —{" "}
               <em className="model-section-title-accent">
-                адаптивная образовательная экосистема с ИИ
+                адаптивная
+                <br />
+                образовательная
+                <br />
+                экосистема с ИИ
               </em>
               ,
               <br />
