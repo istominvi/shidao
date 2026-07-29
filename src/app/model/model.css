@@ -3054,7 +3054,7 @@
   }
 
   .model-section-intro-with-illustration .model-section-heading {
-    min-height: min(100vw, 620px);
+    min-height: min(88vw, 620px);
   }
 
   .model-section-intro-with-illustration .model-section-copy {
@@ -3063,8 +3063,8 @@
 
   .model-section-illustration {
     top: 0;
-    right: -20%;
-    width: min(100vw, 620px);
+    right: 0;
+    width: min(100%, 620px);
     opacity: 0.45;
   }
 
@@ -3262,6 +3262,10 @@
 
   .model-section-copy h2 {
     font-size: clamp(2.5rem, 12vw, 3.8rem);
+  }
+
+  .model-section-intro-with-illustration .model-section-copy h2 {
+    font-size: clamp(2.1rem, 10.5vw, 3.2rem);
   }
 
   .model-foundation-narrative {
