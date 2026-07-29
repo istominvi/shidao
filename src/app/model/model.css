@@ -345,6 +345,23 @@
   margin-bottom: clamp(2rem, 5vw, 4rem);
 }
 
+.model-section-intro-with-illustration {
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 34vw);
+  column-gap: clamp(1.5rem, 4vw, 5rem);
+  align-items: end;
+}
+
+.model-section-illustration {
+  width: min(100%, 500px);
+  justify-self: end;
+  line-height: 0;
+}
+
+.model-section-illustration img {
+  width: 100%;
+  height: auto;
+}
+
 .model-section-index {
   display: inline;
   margin-right: 0.5rem;
@@ -404,6 +421,7 @@
 }
 
 .model-section-detail {
+  grid-column: 1 / -1;
   margin-top: clamp(2.5rem, 5vw, 4.5rem);
 }
 
@@ -2984,6 +3002,15 @@
   .model-hero {
     grid-template-columns: 1fr;
     padding-top: 5rem;
+  }
+
+  .model-section-intro-with-illustration {
+    grid-template-columns: 1fr;
+  }
+
+  .model-section-illustration {
+    width: min(100%, 420px);
+    justify-self: start;
   }
 
   .model-foundation-story {

@@ -28,6 +28,7 @@ import {
   WandSparkles,
   X,
 } from "lucide-react";
+import Image from "next/image";
 import { type ReactNode, useEffect, useState } from "react";
 
 const personas = [
@@ -179,23 +180,38 @@ function SectionIntro({
   title,
   text,
   detail,
+  illustration,
 }: {
   index: string;
   eyebrow: string;
   title: ReactNode;
   text: string;
   detail?: ReactNode;
+  illustration?: { src: string; alt: string };
 }) {
   return (
-    <div className="model-section-intro">
+    <div
+      className={`model-section-intro${illustration ? " model-section-intro-with-illustration" : ""}`}
+    >
       <div className="model-section-copy">
         <p className="model-eyebrow">
           <span className="model-section-index">{index}</span> {eyebrow}
         </p>
         <h2>{title}</h2>
         <p className="model-copy-lead">{text}</p>
-        {detail ? <div className="model-section-detail">{detail}</div> : null}
       </div>
+      {illustration ? (
+        <div className="model-section-illustration">
+          <Image
+            src={illustration.src}
+            alt={illustration.alt}
+            width={1254}
+            height={1254}
+            sizes="(max-width: 960px) min(100vw - 2.3rem, 420px), 34vw"
+          />
+        </div>
+      ) : null}
+      {detail ? <div className="model-section-detail">{detail}</div> : null}
     </div>
   );
 }
@@ -328,6 +344,10 @@ export function ModelPageClient() {
             </>
           }
           text="Три фундаментальных технологических и гуманитарных принципа, которые превращают процесс получения знаний в увлекательный жизненный путь:"
+          illustration={{
+            src: "/model/1_1.png",
+            alt: "Ребёнок с разноцветными обручами",
+          }}
           detail={
             <div className="model-principles">
               <div className="model-principle">
