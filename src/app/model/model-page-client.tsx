@@ -301,44 +301,48 @@ export function ModelPageClient() {
       </header>
 
       <section className="model-hero" id="top">
-        <div className="model-hero-copy">
-          <div className="model-hero-kicker">
-            <span>Внутренняя продуктовая модель</span>
-            <span>26 / 07 / 2026</span>
+        <div className="model-hero-kicker">
+          <span>Внутренняя продуктовая модель</span>
+          <span>26 / 07 / 2026</span>
+        </div>
+
+        <div className="model-hero-heading">
+          <div className="model-hero-copy">
+            <h1>
+              Shidao —{" "}
+              <em className="model-hero-accent">образование будущего,</em>
+              <br />
+              где ИИ — ассистент,
+              <br />
+              аналитик и автор контента
+            </h1>
+            <p className="model-hero-lead model-copy-lead">
+              Умная образовательная система, в которой человек может создать
+              курс, учить другого, учиться сам и передать процесс AI, не теряя
+              историю, структуру и контроль.
+            </p>
           </div>
-          <h1>
-            Shidao —{" "}
-            <em className="model-hero-accent">образование будущего,</em>
-            <br />
-            где ИИ — ассистент,
-            <br />
-            аналитик и автор контента
-          </h1>
-          <p className="model-hero-lead model-copy-lead">
-            Умная образовательная система, в которой человек может создать курс,
-            учить другого, учиться сам и передать процесс AI, не теряя историю,
-            структуру и контроль.
-          </p>
-          <div className="model-hero-actions">
-            <a className="model-button model-button-primary" href="#model">
-              Понять модель <ArrowDown size={17} />
-            </a>
-            <a className="model-button model-button-ghost" href="https://demo.shidao.ru" target="_blank" rel="noopener noreferrer">
-              Увидеть в работе <ArrowRight size={17} />
-            </a>
+
+          <div className="model-hero-illustration" aria-hidden="true">
+            <Image
+              src="/model/0_1_v2.png"
+              alt=""
+              width={1080}
+              height={1080}
+              sizes="(max-width: 960px) 100vw, 50vw"
+              priority
+              unoptimized
+            />
           </div>
         </div>
 
-        <div className="model-hero-illustration" aria-hidden="true">
-          <Image
-            src="/model/0_1_v3.png"
-            alt=""
-            width={1254}
-            height={1254}
-            sizes="(max-width: 960px) 100vw, 50vw"
-            priority
-            unoptimized
-          />
+        <div className="model-hero-actions">
+          <a className="model-button model-button-primary" href="#model">
+            Понять модель <ArrowDown size={17} />
+          </a>
+          <a className="model-button model-button-ghost" href="https://demo.shidao.ru" target="_blank" rel="noopener noreferrer">
+            Увидеть в работе <ArrowRight size={17} />
+          </a>
         </div>
       </section>
 

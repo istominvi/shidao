@@ -167,9 +167,7 @@
 
 .model-hero {
   position: relative;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 0;
+  display: block;
   min-height: calc(100vh - 74px);
   /* Use the shared vertical padding variable for top and bottom */
   padding: var(--model-section-vertical-padding) 6vw var(--model-section-vertical-padding);
@@ -201,6 +199,11 @@
   pointer-events: none;
 }
 
+.model-hero-heading {
+  position: relative;
+  overflow: hidden;
+}
+
 .model-hero-copy {
   position: relative;
   z-index: 2;
@@ -209,18 +212,21 @@
 
 .model-hero-illustration {
   position: absolute;
-  top: 50%;
+  top: 0;
   right: 0;
+  bottom: 0;
   z-index: 1;
   width: min(50vw, 720px);
+  height: 100%;
   line-height: 0;
   pointer-events: none;
-  transform: translateY(-50%);
 }
 
 .model-hero-illustration img {
   width: 100%;
-  height: auto;
+  height: 100%;
+  object-fit: contain;
+  object-position: right center;
 }
 
 .model-hero-kicker {
@@ -367,12 +373,10 @@
 }
 
 .model-section-heading {
-  display: contents;
+  position: relative;
 }
 
 .model-section-intro-with-illustration .model-section-heading {
-  position: relative;
-  min-height: min(50vw, 720px);
   overflow: hidden;
 }
 
@@ -386,15 +390,19 @@
   position: absolute;
   top: 0;
   right: 0;
+  bottom: 0;
   z-index: 0;
   width: min(50vw, 720px);
+  height: 100%;
   line-height: 0;
   pointer-events: none;
 }
 
 .model-section-illustration img {
   width: 100%;
-  height: auto;
+  height: 100%;
+  object-fit: contain;
+  object-position: right center;
 }
 
 .model-section-index {
@@ -3044,17 +3052,13 @@
   }
 
   .model-hero-illustration {
-    right: -20%;
-    width: min(100vw, 620px);
+    right: 0;
+    width: min(100%, 620px);
     opacity: 0.45;
   }
 
   .model-section-intro-with-illustration {
     grid-template-columns: 1fr;
-  }
-
-  .model-section-intro-with-illustration .model-section-heading {
-    min-height: min(88vw, 620px);
   }
 
   .model-section-intro-with-illustration .model-section-copy {
