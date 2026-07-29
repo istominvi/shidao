@@ -659,166 +659,82 @@ export function ModelPageClient() {
             alt: "Ученица рядом с визуализацией образовательного профиля",
           }}
           detail={
-            <div className="model-foundation-story">
-              <div className="model-foundation-narrative">
-                <p className="model-copy-body">
-                  В новой модели Shidao обучение организовано не вокруг школы,
-                  каталога контента или отдельного курса, а вокруг человека и
-                  его образовательной цели. Для каждого учащегося ведётся единый
-                  учебный профиль: в нём накапливаются проведённые занятия,
-                  ответы, ошибки, освоенные знания, интересы, темп и
-                  подтверждённые наблюдения о том, как человеку лучше учиться.
-                </p>
-                <p className="model-copy-body">
-                  Курс становится личным управляемым планом достижения цели. Он
-                  объединяет последовательность уроков, аудиторию и настройки,
-                  может быть создан вручную или вместе с AI и назначен одному
-                  учащемуся либо группе. Когда курс заканчивается, его результат
-                  не пропадает: важные данные переходят в учебный профиль и
-                  становятся контекстом для следующего решения.
-                </p>
+            <div className="model-profile-story">
+              <div className="model-profile-overview">
+                <div className="model-profile-points">
+                  <article>
+                    <div className="model-profile-point-icon">
+                      <CircleUserRound size={29} strokeWidth={1.5} />
+                    </div>
+                    <div>
+                      <h3>Обучение строится вокруг человека</h3>
+                      <p className="model-copy-body">
+                        В новой модели Shidao обучение организовано не вокруг
+                        школы, каталога контента или отдельного курса, а вокруг
+                        человека и его образовательной цели. Для каждого
+                        учащегося ведётся единый учебный профиль: в нём
+                        накапливаются проведённые занятия, ответы, ошибки,
+                        освоенные знания, интересы, темп и подтверждённые
+                        наблюдения о том, как человеку лучше учиться.
+                      </p>
+                    </div>
+                  </article>
+
+                  <article>
+                    <div className="model-profile-point-icon">
+                      <Route size={27} strokeWidth={1.6} />
+                    </div>
+                    <div>
+                      <h3>Курс становится управляемым маршрутом</h3>
+                      <p className="model-copy-body">
+                        Курс объединяет последовательность уроков, аудиторию и
+                        настройки, может быть создан вручную или вместе с AI и
+                        назначен одному учащемуся либо группе. Когда курс
+                        заканчивается, его результат не пропадает: важные данные
+                        переходят в учебный профиль и становятся контекстом для
+                        следующего решения.
+                      </p>
+                    </div>
+                  </article>
+                </div>
+
+                <aside className="model-profile-difference">
+                  <div>
+                    <Sparkles size={18} />
+                    <span>Главное отличие</span>
+                  </div>
+                  <p>
+                    Не просто показать следующий урок, а понять, каким он должен
+                    быть именно для этого человека. Обычная платформа помнит
+                    прогресс внутри курса, а Shidao продолжает образовательный
+                    путь между курсами, преподавателями и AI-моделями.
+                  </p>
+                </aside>
               </div>
 
-              <aside className="model-foundation-difference">
-                <div>
-                  <Sparkles size={18} />
-                  <span>Главное отличие</span>
-                </div>
-                <strong>
-                  Не просто показать следующий урок, а понять, каким он должен
-                  быть именно для этого человека.
-                </strong>
-                <p className="model-copy-body">
-                  Обычная платформа помнит прогресс внутри курса. Shidao
-                  продолжает образовательный путь между курсами, преподавателями
-                  и AI-моделями.
-                </p>
-              </aside>
-
-              <div className="model-foundation-signals">
-                <div>
-                  <History size={18} />
-                  <span>Помнит</span>
-                  <strong>весь подтверждённый учебный опыт</strong>
-                </div>
-                <div>
-                  <Network size={18} />
-                  <span>Связывает</span>
-                  <strong>цель, курс, уроки и результаты</strong>
-                </div>
-                <div>
-                  <WandSparkles size={18} />
-                  <span>Адаптирует</span>
-                  <strong>следующий шаг на основе истории</strong>
-                </div>
+              <div className="model-profile-signals">
+                <article>
+                  <span>01</span>
+                  <History size={23} />
+                  <h3>Помнит</h3>
+                  <p>Весь подтверждённый учебный опыт человека.</p>
+                </article>
+                <article>
+                  <span>02</span>
+                  <Network size={23} />
+                  <h3>Связывает</h3>
+                  <p>Цель, курс, уроки и полученные результаты.</p>
+                </article>
+                <article>
+                  <span>03</span>
+                  <WandSparkles size={23} />
+                  <h3>Адаптирует</h3>
+                  <p>Следующий шаг на основе накопленной истории.</p>
+                </article>
               </div>
             </div>
           }
         />
-
-        <div
-          className="model-entity-map"
-          aria-label="Ключевые сущности продуктовой модели движутся по своим орбитам вокруг образовательного профиля человека"
-        >
-          <div className="model-entity-center">
-            <div className="model-entity-person">
-              <CircleUserRound size={68} strokeWidth={1.15} />
-            </div>
-            <strong>Образовательный профиль человека</strong>
-          </div>
-
-          <div className="model-entity-orbit model-orbit-ai">
-            <div className="model-orbit-runner">
-              <article className="model-orbit-node">
-                <div className="model-orbit-content">
-                  <div className="model-entity-icon is-ai">
-                    <Bot size={25} />
-                  </div>
-                  <div className="model-orbit-copy">
-                    <h3>ИИ</h3>
-                    <p>Создаёт, адаптирует и помогает проводить обучение.</p>
-                  </div>
-                </div>
-              </article>
-            </div>
-          </div>
-
-          <div className="model-entity-orbit model-orbit-profile">
-            <div className="model-orbit-runner">
-              <article className="model-orbit-node">
-                <div className="model-orbit-content">
-                  <div className="model-entity-icon is-lilac">
-                    <History size={25} />
-                  </div>
-                  <div className="model-orbit-copy">
-                    <h3>Учебный профиль</h3>
-                    <p>
-                      Долговременная история знаний, занятий, ошибок, темпа и
-                      предпочтений человека.
-                    </p>
-                  </div>
-                </div>
-              </article>
-            </div>
-          </div>
-
-          <div className="model-entity-orbit model-orbit-lesson">
-            <div className="model-orbit-runner">
-              <article className="model-orbit-node">
-                <div className="model-orbit-content">
-                  <div className="model-entity-icon is-blue">
-                    <BookOpen size={25} />
-                  </div>
-                  <div className="model-orbit-copy">
-                    <h3>Урок</h3>
-                    <p>
-                      Редактируемый сценарий, отделённый от каждого конкретного
-                      проведения.
-                    </p>
-                  </div>
-                </div>
-              </article>
-            </div>
-          </div>
-
-          <div className="model-entity-orbit model-orbit-course">
-            <div className="model-orbit-runner">
-              <article className="model-orbit-node">
-                <div className="model-orbit-content">
-                  <div className="model-entity-icon is-lime">
-                    <Route size={25} />
-                  </div>
-                  <div className="model-orbit-copy">
-                    <h3>Курс</h3>
-                    <p>
-                      Личный управляемый план достижения цели для учащегося или
-                      группы.
-                    </p>
-                  </div>
-                </div>
-              </article>
-            </div>
-          </div>
-
-          <div className="model-entity-orbit model-orbit-material">
-            <div className="model-orbit-runner">
-              <article className="model-orbit-node">
-                <div className="model-orbit-content">
-                  <div className="model-entity-icon is-coral">
-                    <Library size={25} />
-                  </div>
-                  <div className="model-orbit-copy">
-                    <h3>Материал</h3>
-                    <p>
-                      Самостоятельный объект каталога, который подключается к
-                      разным урокам.
-                    </p>
-                  </div>
-                </div>
-              </article>
-            </div>
-          </div>
-        </div>
       </section>
 
       <section className="model-section model-scenarios model-scenarios-dark" id="scenarios">
@@ -833,6 +749,10 @@ export function ModelPageClient() {
             </>
           }
           text="Один человек может одновременно создавать курсы, учиться сам, проводить занятия и помогать ребёнку. Поэтому в Shidao нет отдельных типов аккаунта «учитель», «родитель» и «ученик»: возможности определяются владением и связями с конкретными курсами, группами и образовательными профилями. Интерфейс показывает нужный контекст для текущей задачи, а все три сценария продолжают единый образовательный профиль человека."
+          illustration={{
+            src: "/model/4_1_v1.png",
+            alt: "Человек в разных образовательных ролях",
+          }}
         />
 
         <div
