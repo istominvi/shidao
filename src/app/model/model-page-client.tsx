@@ -193,25 +193,27 @@ function SectionIntro({
     <div
       className={`model-section-intro${illustration ? " model-section-intro-with-illustration" : ""}`}
     >
-      <div className="model-section-copy">
-        <p className="model-eyebrow">
-          <span className="model-section-index">{index}</span> {eyebrow}
-        </p>
-        <h2>{title}</h2>
-        <p className="model-copy-lead">{text}</p>
-      </div>
-      {illustration ? (
-        <div className="model-section-illustration">
-          <Image
-            src={illustration.src}
-            alt={illustration.alt}
-            width={1254}
-            height={1254}
-            sizes="(max-width: 960px) min(100vw - 2.3rem, 420px), 34vw"
-            unoptimized
-          />
+      <div className="model-section-heading">
+        <div className="model-section-copy">
+          <p className="model-eyebrow">
+            <span className="model-section-index">{index}</span> {eyebrow}
+          </p>
+          <h2>{title}</h2>
+          <p className="model-copy-lead">{text}</p>
         </div>
-      ) : null}
+        {illustration ? (
+          <div className="model-section-illustration">
+            <Image
+              src={illustration.src}
+              alt={illustration.alt}
+              width={1254}
+              height={1254}
+              sizes="(max-width: 960px) 100vw, 50vw"
+              unoptimized
+            />
+          </div>
+        ) : null}
+      </div>
       {detail ? <div className="model-section-detail">{detail}</div> : null}
     </div>
   );
