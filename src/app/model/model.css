@@ -538,7 +538,7 @@
 }
 
 .model-profile-difference {
-  align-self: stretch;
+  align-self: start;
   padding: clamp(1.6rem, 2.7vw, 2.5rem);
   border-radius: 1.2rem;
   background: var(--model-navy);
@@ -614,7 +614,7 @@
   max-width: 300px;
   margin: 0;
   color: rgba(16, 24, 39, 0.56);
-  font-size: 0.82rem;
+  font-size: var(--model-copy-size);
   line-height: 1.6;
 }
 
