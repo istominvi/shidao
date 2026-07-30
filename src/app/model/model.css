@@ -2646,10 +2646,7 @@
 
 .model-north-star {
   position: relative;
-  display: grid;
-  grid-template-columns: minmax(0, 1.08fr) minmax(360px, 0.92fr);
-  align-items: center;
-  gap: clamp(2.5rem, 5vw, 6rem);
+  display: block;
   padding: var(--model-section-vertical-padding) 6vw;
   overflow: hidden;
   background: var(--model-ivory);
@@ -2657,14 +2654,15 @@
   text-align: left;
 }
 
-.model-north-star-copy,
-.model-north-star-visual {
+.model-north-star-copy {
   position: relative;
-  z-index: 2;
+  z-index: 1;
+  width: 70%;
 }
 
 .model-north-star-copy h2 {
-  max-width: 22ch;
+  width: 100%;
+  max-width: none;
   margin: 0;
   font-family: var(--model-sans);
   font-size: var(--model-heading-size);
@@ -2681,7 +2679,7 @@
 }
 
 .model-north-star-copy > p {
-  max-width: 570px;
+  max-width: 720px;
   margin: 2rem 0;
   color: #5b5d62;
   font-size: 0.87rem;
@@ -2689,14 +2687,22 @@
 }
 
 .model-north-star-visual {
-  width: min(100%, 680px);
-  justify-self: end;
+  position: absolute;
+  top: var(--model-section-vertical-padding);
+  right: 6vw;
+  bottom: var(--model-section-vertical-padding);
+  z-index: 0;
+  width: min(50vw, 720px);
+  height: auto;
+  line-height: 0;
+  pointer-events: none;
 }
 
 .model-north-star-visual img {
-  display: block;
   width: 100%;
-  height: auto;
+  height: 100%;
+  object-fit: contain;
+  object-position: right center;
 }
 
 .model-button-light {
@@ -2967,16 +2973,23 @@
   }
 
   .model-north-star {
-    grid-template-columns: 1fr;
+    display: block;
   }
 
   .model-north-star-copy {
-    max-width: 760px;
+    width: 100%;
+    max-width: none;
   }
 
   .model-north-star-visual {
-    width: min(100%, 720px);
-    justify-self: center;
+    position: static;
+    width: 100%;
+    height: auto;
+    margin-bottom: 0;
+  }
+
+  .model-north-star-visual img {
+    height: auto;
   }
 }
 

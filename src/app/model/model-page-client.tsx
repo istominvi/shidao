@@ -1251,6 +1251,16 @@ export function ModelPageClient() {
       </section>
 
       <section className="model-north-star" id="north-star">
+        <div className="model-north-star-visual">
+          <Image
+            src="/model/7_1.png"
+            alt="Дети и ИИ-ассистент собирают общий образовательный маршрут Shidao"
+            width={1254}
+            height={1254}
+            sizes="(max-width: 960px) 100vw, 50vw"
+          />
+        </div>
+
         <div className="model-north-star-copy">
           <h2>
             Сегодня Shidao продаёт
@@ -1266,16 +1276,6 @@ export function ModelPageClient() {
           <a href="#top" className="model-button model-button-light">
             Вернуться к началу <ArrowUp size={17} />
           </a>
-        </div>
-
-        <div className="model-north-star-visual">
-          <Image
-            src="/model/7_1.png"
-            alt="Дети и ИИ-ассистент собирают общий образовательный маршрут Shidao"
-            width={1254}
-            height={1254}
-            sizes="(max-width: 960px) 88vw, 44vw"
-          />
         </div>
       </section>
     </main>
