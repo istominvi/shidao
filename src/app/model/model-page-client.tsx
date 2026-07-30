@@ -436,7 +436,7 @@ export function ModelPageClient() {
                   <div className="model-ai-architecture-icon">
                     <Icon size={21} />
                   </div>
-                  <p>{text}</p>
+                  <p className="model-copy-body">{text}</p>
                 </article>
               ))}
             </div>
@@ -447,7 +447,7 @@ export function ModelPageClient() {
               ПРОДУКТОВЫЙ ЦИКЛ
             </span>
             <h2>ИИ превращает результаты занятия в следующий урок</h2>
-            <p className="model-ai-topic-lead">
+            <p className="model-ai-topic-lead model-copy-body">
               Человек задаёт образовательную цель. Shidao превращает её в курс,
               уроки и отдельные занятия, а после каждого проведения сохраняет в
               образовательном профиле ответы, ошибки, темп, прогресс и
@@ -596,7 +596,7 @@ export function ModelPageClient() {
                     <Sparkles size={18} />
                     <span>Главное отличие</span>
                   </div>
-                  <p>
+                  <p className="model-copy-body">
                     Не просто показать следующий урок, а понять, каким он должен
                     быть именно для этого человека. Обычная платформа помнит
                     прогресс внутри курса, а Shidao продолжает образовательный
@@ -610,19 +610,25 @@ export function ModelPageClient() {
                   <span>01</span>
                   <History size={23} />
                   <h3>Помнит</h3>
-                  <p>Весь подтверждённый учебный опыт человека.</p>
+                  <p className="model-copy-body">
+                    Весь подтверждённый учебный опыт человека.
+                  </p>
                 </article>
                 <article>
                   <span>02</span>
                   <Network size={23} />
                   <h3>Связывает</h3>
-                  <p>Цель, курс, уроки и полученные результаты.</p>
+                  <p className="model-copy-body">
+                    Цель, курс, уроки и полученные результаты.
+                  </p>
                 </article>
                 <article>
                   <span>03</span>
                   <WandSparkles size={23} />
                   <h3>Адаптирует</h3>
-                  <p>Следующий шаг на основе накопленной истории.</p>
+                  <p className="model-copy-body">
+                    Следующий шаг на основе накопленной истории.
+                  </p>
                 </article>
               </div>
             </div>
@@ -1140,7 +1146,7 @@ export function ModelPageClient() {
                   <strong>Цифровая образовательная среда</strong>
                 </div>
               </div>
-              <p>
+              <p className="model-copy-body">
                 Shidao связывает цели, уроки, материалы и историю ребёнка в одну
                 непрерывную систему.
               </p>

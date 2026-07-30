@@ -562,9 +562,6 @@
 .model-profile-difference > p {
   margin: clamp(1.5rem, 2.5vw, 2.2rem) 0 0;
   color: #fff;
-  font-size: var(--model-copy-size);
-  font-weight: 400;
-  line-height: 1.7;
 }
 
 .model-profile-signals {
@@ -614,8 +611,6 @@
   max-width: 300px;
   margin: 0;
   color: rgba(16, 24, 39, 0.56);
-  font-size: var(--model-copy-size);
-  line-height: 1.6;
 }
 
 /* Principles section styling - vertical layout */
@@ -1833,9 +1828,6 @@
   max-width: none;
   margin: 0;
   color: rgba(255, 255, 255, 0.76);
-  font-size: var(--model-copy-size);
-  letter-spacing: var(--model-copy-letter-spacing);
-  line-height: 1.7;
 }
 
 .model-ai-safety {
@@ -2745,8 +2737,6 @@
   max-width: 54ch;
   margin: 1.25rem 0 0;
   color: rgba(255, 255, 255, 0.52);
-  font-size: 0.72rem;
-  line-height: 1.65;
 }
 
 .model-future-capabilities {
