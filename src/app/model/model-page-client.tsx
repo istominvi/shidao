@@ -1049,9 +1049,11 @@ export function ModelPageClient() {
               <>
                 От рабочего инструмента
                 <br />
-                преподавателя —
-                <br />к универсальной системе
+                преподавателя
                 <br />
+                к универсальной
+                <br />
+                системе{" "}
                 <em className="model-section-title-accent">
                   персонального
                   <br />
