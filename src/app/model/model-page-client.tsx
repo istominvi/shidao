@@ -269,14 +269,6 @@ export function ModelPageClient() {
             <a className="model-button model-button-primary" href="#model">
               Понять модель <ArrowDown size={17} />
             </a>
-            <a
-              className="model-button model-button-ghost"
-              href="https://demo.shidao.ru"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Увидеть в работе <ArrowRight size={17} />
-            </a>
           </div>
         </div>
       </section>
