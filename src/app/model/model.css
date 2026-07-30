@@ -561,11 +561,10 @@
 
 .model-profile-difference > p {
   margin: clamp(1.5rem, 2.5vw, 2.2rem) 0 0;
-  font-family: var(--model-serif);
-  font-size: clamp(1.45rem, 2.15vw, 2rem);
+  color: #fff;
+  font-size: var(--model-copy-size);
   font-weight: 400;
-  letter-spacing: -0.035em;
-  line-height: 1.18;
+  line-height: 1.7;
 }
 
 .model-profile-signals {
