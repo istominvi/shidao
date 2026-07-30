@@ -1047,10 +1047,15 @@ export function ModelPageClient() {
             eyebrow="Стратегия"
             title={
               <>
-                Лёгкий вход.
+                От рабочего инструмента
+                <br />
+                преподавателя —
+                <br />к универсальной системе
                 <br />
                 <em className="model-section-title-accent">
-                  Большая система за ним.
+                  персонального
+                  <br />
+                  обучения с ИИ
                 </em>
               </>
             }
