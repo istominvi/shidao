@@ -11,7 +11,6 @@ import {
   Clock3,
   FileStack,
   GraduationCap,
-  Heart,
   History,
   LockKeyhole,
   Menu,
@@ -22,7 +21,6 @@ import {
   Route,
   Sparkles,
   Target,
-  Users,
   WandSparkles,
   X,
 } from "lucide-react";
@@ -68,6 +66,7 @@ const roadmap = [
     tag: "Сейчас",
     title: "Инструмент преподавателя",
     text: "Конструктор курсов, Экран ученика, материалы, расписание, ДЗ и образовательный профиль.",
+    Icon: FileStack,
   },
   {
     stage: "02",
@@ -87,18 +86,21 @@ const roadmap = [
         Gemini, DeepSeek, Grok и других агентов.
       </>
     ),
+    Icon: Network,
   },
   {
     stage: "03",
     tag: "Следующий этап",
     title: "ИИ-преподаватель",
     text: "Занятия ведёт ИИ-преподаватель: объясняет материал, задаёт вопросы, проверяет ответы, меняет темп и сохраняет результаты в образовательный профиль.",
+    Icon: Bot,
   },
   {
     stage: "04",
     tag: "Будущее",
     title: "B2C-обучение",
     text: "Человек приходит в Shidao с целью и получает готовый персональный образовательный путь, а не набор отдельных инструментов.",
+    Icon: CircleUserRound,
   },
 ];
 
@@ -1068,6 +1070,29 @@ export function ModelPageClient() {
             }}
           />
 
+          <div
+            className="model-strategy-path"
+            aria-label="Этапы развития Shidao"
+          >
+            {roadmap.map((item, index) => (
+              <article className="model-strategy-path-item" key={item.stage}>
+                <div>
+                  <span>{item.stage}</span>
+                  <item.Icon size={23} />
+                </div>
+                <small>{item.tag}</small>
+                <strong>{item.title}</strong>
+                <p className="model-copy-body">{item.text}</p>
+                {index < roadmap.length - 1 && (
+                  <ChevronRight
+                    className="model-strategy-path-arrow"
+                    size={20}
+                  />
+                )}
+              </article>
+            ))}
+          </div>
+
           <div className="model-wedge">
             <div className="model-wedge-now">
               <span>ТАКТИКА · ПЕРВЫЙ РЫНОК</span>
@@ -1101,25 +1126,6 @@ export function ModelPageClient() {
               </div>
             </div>
           </div>
-
-          <div className="model-roadmap" aria-label="Этапы развития Shidao">
-            {roadmap.map((item, index) => (
-              <article
-                className={index === 0 ? "is-current" : ""}
-                key={item.stage}
-              >
-                <div className="model-roadmap-marker">
-                  <span>{item.stage}</span>
-                  <i />
-                </div>
-                <div className="model-roadmap-card">
-                  <small>{item.tag}</small>
-                  <h3>{item.title}</h3>
-                  <p className="model-copy-body">{item.text}</p>
-                </div>
-              </article>
-            ))}
-          </div>
         </div>
 
         <div className="model-future">
@@ -1149,93 +1155,6 @@ export function ModelPageClient() {
               человек, который помогает, когда нужен живой контакт; всю
               последовательность образовательного процесса удерживает Shidao.
             </p>
-          </div>
-          <div className="model-future-scene">
-            <div className="model-future-space-head">
-              <div>
-                <GraduationCap size={24} />
-                <div>
-                  <small>ФИЗИЧЕСКОЕ ПРОСТРАНСТВО</small>
-                  <strong>Школа</strong>
-                </div>
-              </div>
-              <span>
-                безопасность · социализация · проекты · взрослые рядом
-              </span>
-            </div>
-
-            <div className="model-future-platform">
-              <div className="model-future-platform-head">
-                <Wordmark className="model-future-wordmark" />
-                <div>
-                  <span>ВЕДЁТ ВЕСЬ ОБРАЗОВАТЕЛЬНЫЙ ПРОЦЕСС</span>
-                  <strong>Цифровая образовательная среда</strong>
-                </div>
-              </div>
-              <p className="model-copy-body">
-                Shidao связывает цели, уроки, материалы и историю ребёнка в одну
-                непрерывную систему.
-              </p>
-
-              <div className="model-future-capabilities">
-                <div>
-                  <Bot size={19} />
-                  <div>
-                    <strong>ИИ-преподаватель</strong>
-                    <span>объясняет · тренирует · проверяет</span>
-                  </div>
-                </div>
-                <div>
-                  <History size={19} />
-                  <div>
-                    <strong>Учебный профиль</strong>
-                    <span>хранит знания · ошибки · интересы · темп</span>
-                  </div>
-                </div>
-                <div>
-                  <Target size={19} />
-                  <div>
-                    <strong>Адаптация</strong>
-                    <span>выбирает программу и следующий шаг</span>
-                  </div>
-                </div>
-                <div>
-                  <Network size={19} />
-                  <div>
-                    <strong>Аналитика</strong>
-                    <span>видит прогресс и помогает принимать решения</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="model-future-modes">
-                <div>
-                  <CircleUserRound size={20} />
-                  <div>
-                    <strong>Один ребёнок</strong>
-                    <span>свой ИИ-преподаватель, программа и темп</span>
-                  </div>
-                </div>
-                <div>
-                  <Users size={20} />
-                  <div>
-                    <strong>Группа детей</strong>
-                    <span>общий урок, адаптированный под эту группу</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="model-future-operator">
-              <Heart size={20} />
-              <div>
-                <strong>Взрослый внутри пространства</strong>
-                <span>
-                  поддерживает ритм, помогает в сложных ситуациях и сохраняет
-                  живой человеческий контакт
-                </span>
-              </div>
-            </div>
           </div>
         </div>
       </section>

@@ -2179,6 +2179,78 @@
   color: rgba(255, 255, 255, 0.52);
 }
 
+.model-strategy-path {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-bottom: clamp(6rem, 10vw, 10rem);
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.model-strategy-path-item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 285px;
+  padding: 1.4rem;
+  border-right: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.model-strategy-path-item:last-child {
+  border-right: 0;
+}
+
+.model-strategy-path-item > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.model-strategy-path-item > div span {
+  color: rgba(255, 255, 255, 0.28);
+  font-size: 0.6rem;
+  font-weight: 800;
+}
+
+.model-strategy-path-item > div svg {
+  color: var(--model-lilac);
+}
+
+.model-strategy-path-item > small {
+  margin-top: 2.5rem;
+  color: var(--model-lime);
+  font-size: 0.55rem;
+  font-weight: 800;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+.model-strategy-path-item > strong {
+  margin: 0.55rem 0 0.8rem;
+  font-family: var(--model-sans);
+  font-size: var(--model-subheading-size);
+  font-weight: var(--model-subheading-weight);
+  letter-spacing: var(--model-subheading-letter-spacing);
+  line-height: var(--model-subheading-line-height);
+}
+
+.model-strategy-path-item > p {
+  min-height: 0;
+  margin: 0;
+  color: rgba(255, 255, 255, 0.46);
+}
+
+.model-strategy-path-arrow {
+  position: absolute;
+  z-index: 2;
+  top: 50%;
+  right: -11px;
+  padding: 2px;
+  border-radius: 50%;
+  background: var(--model-navy-deep);
+  color: rgba(255, 255, 255, 0.45);
+}
+
 .model-wedge {
   display: grid;
   grid-template-columns: 1fr auto 1fr;
@@ -2357,116 +2429,12 @@
   height: 98%;
 }
 
-.model-roadmap {
-  margin-top: clamp(6rem, 10vw, 10rem);
-}
-
-.model-roadmap article {
-  display: grid;
-  grid-template-columns: 120px 1fr;
-  min-height: 165px;
-}
-
-.model-roadmap-marker {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.model-roadmap-marker span {
-  position: relative;
-  z-index: 2;
-  display: grid;
-  place-items: center;
-  width: 58px;
-  height: 58px;
-  border: 1px solid var(--model-line);
-  border-radius: 50%;
-  background: var(--model-paper);
-  color: rgba(16, 24, 39, 0.43);
-  font-size: 0.64rem;
-  font-weight: 800;
-}
-
-.model-strategy .model-roadmap-marker span {
-  border-color: rgba(255, 255, 255, 0.15);
-  background: var(--model-navy-deep);
-  color: rgba(255, 255, 255, 0.48);
-}
-
-.model-roadmap article.is-current .model-roadmap-marker span {
-  border-color: var(--model-lime);
-  background: var(--model-lime);
-  color: var(--model-navy);
-}
-
-.model-roadmap-marker i {
-  width: 1px;
-  flex: 1;
-  background: var(--model-line);
-}
-
-.model-strategy .model-roadmap-marker i {
-  background: rgba(255, 255, 255, 0.12);
-}
-
-.model-roadmap-card {
-  display: grid;
-  grid-template-columns: 130px minmax(230px, 0.45fr) minmax(300px, 0.55fr);
-  gap: 2rem;
-  align-items: start;
-  padding: 0.7rem 0 3rem;
-  border-top: 1px solid var(--model-line);
-}
-
-.model-strategy .model-roadmap-card {
-  border-top-color: rgba(255, 255, 255, 0.12);
-}
-
-.model-roadmap-card small {
-  color: #7d7c78;
-  font-size: 0.59rem;
-  font-weight: 750;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-}
-
-.model-strategy .model-roadmap-card small {
-  color: rgba(255, 255, 255, 0.43);
-}
-
-.model-roadmap-card h3 {
-  margin: 0;
-  font-family: var(--model-serif);
-  font-size: 1.8rem;
-  font-weight: 400;
-  letter-spacing: -0.04em;
-}
-
-.model-strategy .model-roadmap-card h3 {
-  color: #fff;
-}
-
-.model-roadmap-card p {
-  max-width: 46ch;
-  margin: 0;
-  color: #66686b;
-  font-size: 0.75rem;
-  line-height: 1.6;
-}
-
-.model-strategy .model-roadmap-card p {
-  color: rgba(255, 255, 255, 0.52);
-}
-
 .model-future {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(360px, 0.85fr) minmax(540px, 1.15fr);
-  gap: clamp(3rem, 6vw, 7rem);
+  grid-template-columns: minmax(0, 760px);
   align-items: start;
-  min-height: 980px;
+  min-height: 0;
   padding: var(--model-section-vertical-padding) 6vw;
   overflow: hidden;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
@@ -2534,186 +2502,6 @@
 
 .model-future-copy p + p {
   margin-top: 1.15rem;
-}
-
-.model-future-scene {
-  position: relative;
-  z-index: 2;
-  padding: clamp(1.3rem, 2.5vw, 2rem);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 1.5rem;
-  background: rgba(255, 255, 255, 0.045);
-  backdrop-filter: blur(14px);
-}
-
-.model-future-space-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1.2rem;
-  padding: 0.25rem 0.15rem 1.35rem;
-}
-
-.model-future-space-head > div {
-  display: flex;
-  align-items: center;
-  gap: 0.8rem;
-}
-
-.model-future-space-head svg {
-  flex: 0 0 auto;
-  color: var(--model-lime);
-}
-
-.model-future-space-head > div > div {
-  display: flex;
-  flex-direction: column;
-  gap: 0.18rem;
-}
-
-.model-future-space-head small {
-  color: var(--model-lime);
-  font-size: 0.52rem;
-  font-weight: 800;
-  letter-spacing: 0.12em;
-}
-
-.model-future-space-head strong {
-  font-family: var(--model-serif);
-  font-size: 1.55rem;
-  font-weight: 400;
-}
-
-.model-future-space-head > span {
-  max-width: 31ch;
-  color: rgba(255, 255, 255, 0.46);
-  font-size: 0.61rem;
-  line-height: 1.5;
-  text-align: right;
-}
-
-.model-future-platform {
-  padding: clamp(1.4rem, 3vw, 2.4rem);
-  border: 1px solid rgba(201, 180, 255, 0.32);
-  border-radius: 1.1rem;
-  background:
-    radial-gradient(
-      circle at 92% 8%,
-      rgba(201, 180, 255, 0.2),
-      transparent 34%
-    ),
-    rgba(9, 19, 38, 0.72);
-}
-
-.model-future-platform-head {
-  display: flex;
-  align-items: center;
-  gap: 1.25rem;
-  padding-bottom: 1.35rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
-}
-
-.model-future-wordmark {
-  flex: 0 0 auto;
-  color: #fff;
-  font-size: clamp(1.7rem, 2.8vw, 2.4rem);
-}
-
-.model-future-platform-head > div {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.model-future-platform-head > div > span {
-  color: var(--model-lilac);
-  font-size: 0.52rem;
-  font-weight: 800;
-  letter-spacing: 0.11em;
-}
-
-.model-future-platform-head > div > strong {
-  font-family: var(--model-serif);
-  font-size: clamp(1.25rem, 2vw, 1.7rem);
-  font-weight: 400;
-}
-
-.model-future-platform > p {
-  max-width: 54ch;
-  margin: 1.25rem 0 0;
-  color: rgba(255, 255, 255, 0.52);
-}
-
-.model-future-capabilities {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 0.6rem;
-  margin-top: 1.35rem;
-}
-
-.model-future-capabilities > div,
-.model-future-modes > div {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.7rem;
-  padding: 0.85rem;
-  border: 1px solid rgba(255, 255, 255, 0.11);
-  border-radius: 0.8rem;
-  background: rgba(255, 255, 255, 0.045);
-}
-
-.model-future-capabilities svg,
-.model-future-modes svg,
-.model-future-operator svg {
-  flex: 0 0 auto;
-  color: var(--model-lime);
-}
-
-.model-future-capabilities > div > div,
-.model-future-modes > div > div,
-.model-future-operator > div {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.model-future-capabilities strong,
-.model-future-modes strong,
-.model-future-operator strong {
-  font-family: var(--model-serif);
-  font-size: 0.98rem;
-  font-weight: 400;
-}
-
-.model-future-capabilities span,
-.model-future-modes span,
-.model-future-operator span {
-  color: rgba(255, 255, 255, 0.4);
-  font-size: 0.53rem;
-  line-height: 1.5;
-}
-
-.model-future-modes {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 0.6rem;
-  margin-top: 0.6rem;
-}
-
-.model-future-modes > div {
-  border-color: rgba(112, 183, 255, 0.2);
-  background: rgba(112, 183, 255, 0.08);
-}
-
-.model-future-operator {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.75rem;
-  margin-top: 1rem;
-  padding: 1rem;
-  border: 1px solid rgba(201, 255, 79, 0.18);
-  border-radius: 0.9rem;
-  background: rgba(201, 255, 79, 0.06);
 }
 
 .model-north-star {
@@ -2802,10 +2590,6 @@
 
   .model-nav {
     justify-self: end;
-  }
-
-  .model-future {
-    grid-template-columns: 0.8fr 1.2fr;
   }
 }
 
@@ -3027,6 +2811,22 @@
     display: none;
   }
 
+  .model-strategy-path {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .model-strategy-path-item:nth-child(2n) {
+    border-right: 0;
+  }
+
+  .model-strategy-path-item:nth-child(-n + 2) {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  }
+
+  .model-strategy-path-item:nth-child(2) .model-strategy-path-arrow {
+    display: none;
+  }
+
   .model-wedge {
     grid-template-columns: 1fr;
   }
@@ -3054,10 +2854,6 @@
 
   .model-future-copy {
     max-width: 760px;
-  }
-
-  .model-future-scene {
-    min-height: auto;
   }
 
   .model-north-star {
@@ -3264,6 +3060,18 @@
     border-left: 0;
   }
 
+  .model-strategy-path-item {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  }
+
+  .model-strategy-path-item:nth-last-child(-n + 2) {
+    border-bottom: 0;
+  }
+
+  .model-strategy-path-arrow {
+    display: none;
+  }
+
   .model-ai-architecture-text article {
     grid-template-columns: 1fr;
   }
@@ -3358,42 +3166,8 @@
     padding: 2rem 1.4rem;
   }
 
-  .model-roadmap article {
-    grid-template-columns: 65px 1fr;
-  }
-
-  .model-roadmap-marker span {
-    width: 45px;
-    height: 45px;
-  }
-
-  .model-roadmap-card {
-    grid-template-columns: 1fr;
-    gap: 0.7rem;
-  }
-
   .model-future {
     min-height: auto;
-  }
-
-  .model-future-scene {
-    min-height: auto;
-  }
-
-  .model-future-space-head,
-  .model-future-platform-head {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
-  .model-future-space-head > span {
-    max-width: 42ch;
-    text-align: left;
-  }
-
-  .model-future-capabilities,
-  .model-future-modes {
-    grid-template-columns: 1fr;
   }
 }
 
