@@ -1240,30 +1240,31 @@
   line-height: 1.65;
 }
 
-.model-experience-narrative {
+.model-experience-story {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0 clamp(3rem, 6vw, 7rem);
+  grid-template-columns: minmax(0, 1.4fr) minmax(320px, 0.6fr);
+  align-items: start;
+  gap: clamp(2rem, 4vw, 5rem);
   margin-top: clamp(3rem, 6vw, 5.5rem);
 }
 
-.model-experience-narrative article {
+.model-experience-points {
+  display: grid;
+  gap: clamp(2.2rem, 3.5vw, 3.6rem);
+}
+
+.model-experience-points article {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   align-items: start;
-  gap: clamp(1.2rem, 2vw, 1.8rem);
-  padding: clamp(2rem, 4vw, 3.5rem) 0;
+  gap: clamp(1.25rem, 2vw, 2rem);
 }
 
-.model-experience-narrative article:last-child {
-  padding-bottom: 0;
-}
-
-.model-experience-narrative .model-principle-number {
+.model-experience-points .model-principle-number {
   grid-row: auto;
 }
 
-.model-experience-narrative h3 {
+.model-experience-points h3 {
   margin: 0;
   color: var(--model-ink);
   font-size: var(--model-subheading-size);
@@ -1272,18 +1273,50 @@
   line-height: var(--model-subheading-line-height);
 }
 
-.model-experience-narrative p {
+.model-experience-points p {
   margin: 0.8rem 0 0;
   color: #5b5d62;
 }
 
-.model-experience-narrative p + p {
-  margin-top: 1rem;
+.model-experience-principle {
+  align-self: start;
+  padding: clamp(1.6rem, 2.7vw, 2.5rem);
+  border-radius: 1.2rem;
+  background: var(--model-navy);
+  color: #fff;
+}
+
+.model-experience-principle > div {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  color: var(--model-lime);
+}
+
+.model-experience-principle > div span {
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.13em;
+}
+
+.model-experience-principle h3 {
+  margin: clamp(1.5rem, 2.5vw, 2.2rem) 0 0;
+  color: #fff;
+  font-size: var(--model-subheading-size);
+  font-weight: var(--model-subheading-weight);
+  letter-spacing: var(--model-subheading-letter-spacing);
+  line-height: var(--model-subheading-line-height);
+}
+
+.model-experience-principle > p {
+  margin: 1.2rem 0 0;
+  color: rgba(255, 255, 255, 0.68);
+  line-height: 1.7;
 }
 
 .model-ui-story-student {
   grid-template-columns: minmax(270px, 0.52fr) minmax(460px, 1.48fr);
-  margin-top: 1rem;
+  margin-top: clamp(4.5rem, 8vw, 8rem);
   padding: clamp(2.5rem, 5vw, 5rem);
   border-radius: 1.7rem;
   background: var(--model-navy-deep);
@@ -2864,6 +2897,14 @@
     max-width: 760px;
   }
 
+  .model-experience-story {
+    grid-template-columns: 1fr;
+  }
+
+  .model-experience-principle {
+    max-width: 760px;
+  }
+
   .model-ui-story {
     grid-template-columns: 1fr;
   }
@@ -3174,11 +3215,7 @@
     grid-template-columns: 1fr;
   }
 
-  .model-experience-narrative {
-    grid-template-columns: 1fr;
-  }
-
-  .model-experience-narrative article {
+  .model-experience-points article {
     grid-template-columns: 1fr;
   }
 
