@@ -16,7 +16,8 @@
   --demo-control-surface: rgba(239, 239, 242, 0.9);
   --demo-control-hover: rgba(255, 255, 255, 0.78);
   --demo-header-height: 4.25rem;
-  --demo-surface-padding: 0.875rem;
+  --demo-surface-padding: 0.75rem;
+  --demo-control-padding-inline: 0.75rem;
   --demo-surface-radius: 1.25rem;
   --demo-control-font-size: 0.88rem;
   --demo-control-font-weight: 600;
@@ -108,7 +109,7 @@
   appearance: none;
   border: 0;
   background: transparent;
-  padding: 0 0 0 0.75rem;
+  padding-inline: var(--demo-control-padding-inline);
   font-family:
     ui-sans-serif,
     system-ui,
@@ -140,7 +141,7 @@
   border: 0;
   border-radius: 0.95rem;
   background: transparent;
-  padding: 0.55rem 0.95rem;
+  padding: 0.55rem var(--demo-control-padding-inline);
   font-size: 0.88rem;
   font-weight: 700;
   transition:
@@ -241,7 +242,7 @@
   border: 0;
   border-radius: 0.65rem;
   background: transparent;
-  padding: 0.42rem 0.5rem;
+  padding: 0.42rem var(--demo-control-padding-inline);
   color: #5f6470;
   font-size: 0.68rem;
   font-weight: 760;
@@ -267,7 +268,7 @@
   border: 0;
   border-bottom: 1px solid rgba(20, 20, 20, 0.07);
   background: #fff;
-  padding: 0.82rem 0.95rem;
+  padding: 0.82rem var(--demo-control-padding-inline);
   text-align: left;
 }
 
@@ -335,7 +336,7 @@
   border: 0;
   border-radius: 1.05rem;
   background: transparent;
-  padding: 0.35rem 0.55rem;
+  padding: 0.35rem var(--demo-control-padding-inline);
 }
 
 .demo-profile-trigger:hover {
@@ -441,7 +442,7 @@
   border: 0;
   border-radius: 0.85rem;
   background: transparent;
-  padding: 0.75rem;
+  padding: 0.75rem var(--demo-control-padding-inline);
   text-align: left;
   font-size: 0.86rem;
   font-weight: 750;
@@ -521,6 +522,11 @@
   line-height: 1.45;
 }
 
+.demo-page-hero > div:first-child > h1,
+.demo-page-hero > div:first-child > p {
+  padding-inline: var(--demo-control-padding-inline);
+}
+
 .demo-schedule-hero {
   border: 0;
   background: transparent;
@@ -596,13 +602,13 @@
 
 .demo-button-md {
   min-height: 2.7rem;
-  padding: 0.65rem 0.95rem;
+  padding: 0.65rem var(--demo-control-padding-inline);
   font-size: 0.8rem;
 }
 
 .demo-button-sm {
   min-height: 2.2rem;
-  padding: 0.48rem 0.7rem;
+  padding: 0.48rem var(--demo-control-padding-inline);
   font-size: 0.72rem;
 }
 
@@ -727,6 +733,8 @@
 }
 
 .demo-week-heading strong {
+  display: inline-block;
+  padding-inline: var(--demo-control-padding-inline);
   font-size: 0.88rem;
 }
 
@@ -759,7 +767,7 @@
   border: 0;
   border-radius: 0.58rem;
   background: transparent;
-  padding: 0.4rem 0.62rem;
+  padding: 0.4rem var(--demo-control-padding-inline);
   color: #6a6e78;
   font-size: 0.66rem;
   font-weight: 760;
@@ -926,6 +934,10 @@
   letter-spacing: -0.035em;
 }
 
+.demo-section-heading > div:first-child > h2 {
+  padding-inline: var(--demo-control-padding-inline);
+}
+
 .demo-eyebrow {
   color: #737782;
   font-size: 0.65rem;
@@ -956,7 +968,7 @@
   border: 0;
   border-radius: 0.7rem;
   background: transparent;
-  padding: 0.5rem 0.68rem;
+  padding: 0.5rem var(--demo-control-padding-inline);
   color: #626670;
   font-size: 0.69rem;
   font-weight: 720;
@@ -1165,7 +1177,7 @@
   border: 1px solid var(--demo-border);
   border-radius: 0.9rem;
   background: rgba(255, 255, 255, 0.85);
-  padding: 0 0.75rem;
+  padding: 0 var(--demo-control-padding-inline);
 }
 
 .demo-search input {
@@ -1174,6 +1186,7 @@
   border: 0;
   outline: 0;
   background: transparent;
+  padding: 0;
   font-size: 0.76rem;
 }
 
@@ -1223,6 +1236,7 @@
 
 .demo-results-summary {
   margin: 0.15rem 0 0.65rem;
+  padding-inline: var(--demo-control-padding-inline);
   color: var(--demo-muted);
   font-size: 0.68rem;
   font-weight: 720;
@@ -1557,7 +1571,7 @@
   border: 1px solid rgba(20, 20, 20, 0.1);
   border-radius: 0.7rem;
   background: #fff;
-  padding: 0.48rem 0.65rem;
+  padding: 0.48rem var(--demo-control-padding-inline);
   color: #202124;
   font-size: 0.65rem;
   font-weight: 780;
@@ -1657,7 +1671,7 @@
   border: 0;
   border-bottom: 2px solid transparent;
   background: transparent;
-  padding: 0.65rem 0.75rem;
+  padding: 0.65rem var(--demo-control-padding-inline);
   color: #666a74;
   font-size: 0.72rem;
   font-weight: 750;
@@ -2455,7 +2469,7 @@
   border: 1px solid rgba(20, 20, 20, 0.13);
   border-radius: 0.85rem;
   background: rgba(255, 255, 255, 0.92);
-  padding: 0.72rem 0.78rem;
+  padding: 0.72rem var(--demo-control-padding-inline);
   color: #24262b;
   font-size: 0.72rem;
 }
@@ -4176,7 +4190,7 @@
 }
 
 .demo-profile-trigger {
-  padding: 0.25rem 0.5rem;
+  padding: 0.25rem var(--demo-control-padding-inline);
 }
 
 .demo-avatar {
@@ -4190,11 +4204,11 @@
 }
 
 .demo-button-md {
-  padding: 0.55rem 0.9rem;
+  padding: 0.55rem var(--demo-control-padding-inline);
 }
 
 .demo-button-sm {
-  padding: 0.5rem 0.7rem;
+  padding: 0.5rem var(--demo-control-padding-inline);
 }
 
 .demo-search {
@@ -4231,7 +4245,7 @@
 .demo-filter-row button,
 .demo-segmented button,
 .demo-calendar-view-switch button {
-  padding: 0.4rem 0.68rem;
+  padding: 0.4rem var(--demo-control-padding-inline);
 }
 
 .demo-calendar-arrows .demo-button,
@@ -4360,7 +4374,7 @@
   flex: 0 0 auto;
 }
 
-/* One surface language: 14 px insets and 20 px corners throughout the demo. */
+/* One surface language: 12 px insets and 20 px corners throughout the demo. */
 .demo-header,
 .demo-notification-popover,
 .demo-profile-popover,
