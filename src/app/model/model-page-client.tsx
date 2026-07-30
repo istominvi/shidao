@@ -1200,20 +1200,20 @@ export function ModelPageClient() {
             <span>
               систему для создания
               <br />
-              и проведения обучения с ИИ.
+              и проведения обучения.
               <br />
             </span>
             Завтра — само
             <br />
             персональное
             <br />
-            образование.
+            образование с ИИ.
           </h2>
           <p className="model-copy-lead">
             У каждого человека должен быть собственный образовательный путь, а
             не только доступ к учебным материалам.
           </p>
-          <a href="#top" className="model-button model-button-light">
+          <a href="#top" className="model-button model-button-primary">
             Вернуться к началу <ArrowUp size={17} />
           </a>
         </div>
