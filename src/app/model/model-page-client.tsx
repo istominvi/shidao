@@ -776,9 +776,14 @@ export function ModelPageClient() {
               <br />
               который{" "}
               <em className="model-section-title-accent">
-                растёт вместе с человеком
+                растёт
+                <br />
+                вместе с человеком
+                <br />
               </em>
-              <br />и его образовательными задачами
+              <span className="model-experience-title-last-line">
+                и его образовательными задачами
+              </span>
             </>
           }
           text="Shidao не заставляет выбирать и переключать роли. Расписание, ученики, курсы и новые возможности появляются естественно — тогда, когда они действительно нужны человеку."
@@ -790,7 +795,7 @@ export function ModelPageClient() {
 
         <div className="model-experience-narrative">
           <article>
-            <div className="model-experience-number">01</div>
+            <div className="model-principle-number">1</div>
             <div>
               <h3>Один человек — одно знакомое пространство</h3>
               <p className="model-copy-body">
@@ -814,7 +819,7 @@ export function ModelPageClient() {
           </article>
 
           <article>
-            <div className="model-experience-number">02</div>
+            <div className="model-principle-number">2</div>
             <div>
               <h3>Простота снаружи, глубина внутри</h3>
               <p className="model-copy-body">
@@ -835,7 +840,7 @@ export function ModelPageClient() {
           </article>
 
           <article>
-            <div className="model-experience-number">03</div>
+            <div className="model-principle-number">3</div>
             <div>
               <h3>От образовательной цели — к готовому курсу</h3>
               <p className="model-copy-body">
@@ -862,7 +867,7 @@ export function ModelPageClient() {
           </article>
 
           <article>
-            <div className="model-experience-number">04</div>
+            <div className="model-principle-number">4</div>
             <div>
               <h3>Урок одновременно является содержанием и событием</h3>
               <p className="model-copy-body">
@@ -885,7 +890,7 @@ export function ModelPageClient() {
           </article>
 
           <article>
-            <div className="model-experience-number">05</div>
+            <div className="model-principle-number">5</div>
             <div>
               <h3>ИИ создаёт, человек сохраняет контроль</h3>
               <p className="model-copy-body">
@@ -904,7 +909,7 @@ export function ModelPageClient() {
           </article>
 
           <article>
-            <div className="model-experience-number">06</div>
+            <div className="model-principle-number">6</div>
             <div>
               <h3>Урок собирается из понятных элементов</h3>
               <p className="model-copy-body">
@@ -925,7 +930,7 @@ export function ModelPageClient() {
           </article>
 
           <article>
-            <div className="model-experience-number">07</div>
+            <div className="model-principle-number">7</div>
             <div>
               <h3>Ученик видит только то, что нужно ему сейчас</h3>
               <p className="model-copy-body">
@@ -945,7 +950,7 @@ export function ModelPageClient() {
           </article>
 
           <article>
-            <div className="model-experience-number">08</div>
+            <div className="model-principle-number">8</div>
             <div>
               <h3>ИИ-ассистент всегда находится рядом</h3>
               <p className="model-copy-body">

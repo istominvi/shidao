@@ -1252,6 +1252,14 @@
   font-style: italic;
 }
 
+.model-experience .model-section-copy h2 {
+  font-size: clamp(2.2rem, 4.1vw, 3.3rem);
+}
+
+.model-experience-title-last-line {
+  white-space: nowrap;
+}
+
 .model-ui-story {
   display: grid;
   grid-template-columns: minmax(280px, 0.34fr) minmax(0, 1.66fr);
@@ -1282,7 +1290,6 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0 clamp(3rem, 6vw, 7rem);
   margin-top: clamp(3rem, 6vw, 5.5rem);
-  border-top: 1px solid var(--model-line);
 }
 
 .model-experience-narrative article {
@@ -1291,28 +1298,10 @@
   align-items: start;
   gap: clamp(1.2rem, 2vw, 1.8rem);
   padding: clamp(2rem, 4vw, 3.5rem) 0;
-  border-bottom: 1px solid var(--model-line);
 }
 
-.model-experience-number {
-  display: grid;
-  place-items: center;
-  width: 3.75rem;
-  height: 3.75rem;
-  border-radius: 50%;
-  background: var(--model-lilac);
-  color: var(--model-navy-deep);
-  font-size: 0.7rem;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-}
-
-.model-experience-narrative article:nth-child(3n + 2) .model-experience-number {
-  background: var(--model-blue);
-}
-
-.model-experience-narrative article:nth-child(3n) .model-experience-number {
-  background: var(--model-lime);
+.model-experience-narrative .model-principle-number {
+  grid-row: auto;
 }
 
 .model-experience-narrative h3 {
@@ -3197,6 +3186,10 @@
 
   .model-experience-narrative article {
     grid-template-columns: 1fr;
+  }
+
+  .model-experience-title-last-line {
+    font-size: 0.66em;
   }
 
   .model-ui-story-student {
