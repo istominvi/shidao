@@ -15,6 +15,12 @@ export function middleware(req: NextRequest) {
     .split(":")[0]
     .toLowerCase();
 
+  if (requestHost === "brand.shidao.ru" && req.nextUrl.pathname === "/") {
+    const brandUrl = req.nextUrl.clone();
+    brandUrl.pathname = "/brand";
+    return NextResponse.rewrite(brandUrl);
+  }
+
   if (requestHost === "model.shidao.ru" && req.nextUrl.pathname === "/") {
     const modelUrl = req.nextUrl.clone();
     modelUrl.pathname = "/model";
