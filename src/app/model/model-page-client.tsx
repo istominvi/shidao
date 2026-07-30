@@ -436,10 +436,15 @@ export function ModelPageClient() {
             eyebrow="Искусственный интеллект"
             title={
               <>
-                Модели ИИ заменяемы.
-                <br />
+                ИИ{" "}
                 <em className="model-section-title-accent">
-                  Образовательная память — нет.
+                  — как основа
+                  <br />
+                  адаптивного
+                  <br />
+                  образовательного
+                  <br />
+                  процесса
                 </em>
               </>
             }
