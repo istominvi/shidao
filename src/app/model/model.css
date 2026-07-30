@@ -485,6 +485,10 @@
   background: var(--model-ivory);
 }
 
+.model-profile .model-section-heading > .model-eyebrow {
+  color: var(--model-coral);
+}
+
 .model-foundation .model-section-intro {
   grid-template-columns: minmax(0, 1fr);
 }
@@ -2081,7 +2085,6 @@
   color: #fff;
 }
 
-.model-ai-section .model-section-index,
 .model-ai-section .model-section-copy > p:last-child {
   color: rgba(255, 255, 255, 0.44);
 }
