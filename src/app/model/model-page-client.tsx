@@ -32,68 +32,6 @@ import {
 import Image from "next/image";
 import { type ReactNode, useEffect, useState } from "react";
 
-const personas = [
-  {
-    id: "teacher",
-    tab: "Учитель",
-    kicker: "Первый рынок",
-    title: "Из цели ученика — в готовое занятие",
-    quote:
-      "«Сделай урок короче, добавь практику на эти слова и отдельный вариант для Миши».",
-    outcome:
-      "Меньше времени на подготовку и администрирование. Больше — на само обучение.",
-    steps: [
-      ["01", "Создаёт курс", "Вручную, из шаблона или вместе с AI"],
-      ["02", "Готовит урок", "План преподавателя, Экран ученика и материалы"],
-      ["03", "Проводит", "Сам, с AI-copilot или повторно по тому же уроку"],
-      [
-        "04",
-        "Получает результат",
-        "Ошибки, слова и наблюдения сохраняются в профиль",
-      ],
-    ],
-    accent: "lime",
-  },
-  {
-    id: "family",
-    tab: "Родитель",
-    kicker: "Следующий рынок",
-    title: "Обучение ребёнка без сборки из пяти сервисов",
-    quote:
-      "«Хочу программу чтения на три месяца: короткие занятия, динозавры и без перегруза».",
-    outcome:
-      "Родитель задаёт цель и ограничения, а Shidao помогает выстроить процесс — с человеком или AI.",
-    steps: [
-      ["01", "Создаёт профиль", "История ребёнка живёт отдельно от курсов"],
-      ["02", "Выбирает путь", "Готовый шаблон или персональная программа"],
-      ["03", "Определяет режим", "Заниматься самому, с преподавателем или AI"],
-      [
-        "04",
-        "Видит прогресс",
-        "Расписание, ДЗ, результаты и подтверждённые выводы",
-      ],
-    ],
-    accent: "lilac",
-  },
-  {
-    id: "learner",
-    tab: "Ученик",
-    kicker: "Личный путь",
-    title: "Простой экран сегодня — память на годы",
-    quote:
-      "«Покажи, что у меня сегодня, помоги пройти и напомни, что повторить».",
-    outcome:
-      "Курсы и преподаватели меняются. Образовательная память человека остаётся.",
-    steps: [
-      ["01", "Видит сегодня", "Ближайшее занятие без административного шума"],
-      ["02", "Проходит шаг", "Только Экран ученика и доступные действия"],
-      ["03", "Делает ДЗ", "Общее или персональное задание"],
-      ["04", "Растёт дальше", "Следующий урок учитывает прошлый опыт"],
-    ],
-    accent: "blue",
-  },
-] as const;
-
 const aiRoles = [
   {
     number: "01",
@@ -218,8 +156,6 @@ function SectionIntro({
 
 export function ModelPageClient() {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [persona, setPersona] =
-    useState<(typeof personas)[number]["id"]>("teacher");
   const [lessonMode, setLessonMode] = useState<"live" | "review">("live");
   const [scrollProgress, setScrollProgress] = useState(0);
 
@@ -236,9 +172,6 @@ export function ModelPageClient() {
     window.addEventListener("scroll", updateProgress, { passive: true });
     return () => window.removeEventListener("scroll", updateProgress);
   }, []);
-
-  const selectedPersona =
-    personas.find((item) => item.id === persona) ?? personas[0];
 
   const closeMenu = () => setMenuOpen(false);
 
@@ -718,146 +651,115 @@ export function ModelPageClient() {
           }}
         />
 
-        <div
-          className="model-persona-tabs"
-          role="tablist"
-          aria-label="Сценарии пользователей"
-        >
-          {personas.map((item) => (
-            <button
-              type="button"
-              role="tab"
-              aria-selected={persona === item.id}
-              className={persona === item.id ? "is-active" : ""}
-              onClick={() => setPersona(item.id)}
-              key={item.id}
-            >
-              {item.tab}
-              <span />
-            </button>
-          ))}
-        </div>
-
-        <div
-          className={`model-persona-panel accent-${selectedPersona.accent}`}
-          role="tabpanel"
-        >
-          <div className="model-persona-story">
-            <span className="model-card-label">{selectedPersona.kicker}</span>
-            <h3>{selectedPersona.title}</h3>
-            <blockquote>{selectedPersona.quote}</blockquote>
-            <div className="model-persona-outcome">
-              <CheckCircle2 size={21} />
-              <p>{selectedPersona.outcome}</p>
-            </div>
-          </div>
-          <div className="model-persona-steps">
-            {selectedPersona.steps.map(([number, title, text]) => (
-              <article key={number}>
-                <span>{number}</span>
-                <div>
-                  <h4>{title}</h4>
-                  <p>{text}</p>
-                </div>
-              </article>
-            ))}
-          </div>
-        </div>
-
-        <div className="model-context-case">
-          <div className="model-context-case-head">
-            <span>КЕЙС · ОДИН ЧЕЛОВЕК, ТРИ КОНТЕКСТА</span>
-            <strong>Агата преподаёт, помогает дочери и сама учится</strong>
-            <p className="model-copy-body">
-              В Shidao ей не нужны три аккаунта. Текущая задача и связи с
-              конкретными курсами и образовательными профилями определяют, какой
-              интерфейс и какие возможности она видит.
-            </p>
-          </div>
-
-          <div className="model-context-case-body">
-            <article className="model-context-identity">
-              <div className="model-context-avatar">
-                <CircleUserRound size={58} strokeWidth={1.2} />
+        <div className="model-account-story">
+          <div className="model-account-points">
+            <article>
+              <div className="model-account-point-icon">
+                <GraduationCap size={28} strokeWidth={1.5} />
               </div>
-              <span>ОДИН АККАУНТ Shidao</span>
-              <h3>Агата</h3>
-              <p className="model-copy-body">
-                Преподаватель английского, мама Лизы и ученица на курсе
-                китайского языка.
-              </p>
-              <div className="model-context-role-chips">
-                <span>
-                  <GraduationCap size={15} /> Учитель
-                </span>
-                <span>
-                  <Heart size={15} /> Родитель
-                </span>
-                <span>
-                  <BookOpen size={15} /> Ученик
-                </span>
+              <div>
+                <span>ПЕРВЫЙ РЫНОК · ПРЕПОДАВАТЕЛЬ</span>
+                <h3>Из цели ученика — в готовое занятие</h3>
+                <p className="model-copy-body">
+                  Преподаватель создаёт курс вручную, из шаблона или вместе с
+                  ИИ, готовит план урока, Экран ученика и материалы, а затем
+                  проводит занятие сам, с ИИ-помощником или повторно использует
+                  готовый урок. Он может попросить: «Сделай урок короче, добавь
+                  практику на эти слова и отдельный вариант для Миши». После
+                  занятия ошибки, новые слова и наблюдения сохраняются в
+                  образовательном профиле. Меньше времени уходит на подготовку и
+                  администрирование, больше — на само обучение.
+                </p>
               </div>
             </article>
 
-            <div className="model-context-cards">
-              <article className="is-teacher">
-                <div className="model-context-card-top">
-                  <span>КОНТЕКСТ 01 · УЧИТЕЛЬ</span>
-                  <div>
-                    <GraduationCap size={22} />
-                  </div>
-                </div>
-                <small>Курс «English B1» · группа подростков</small>
-                <h4>Проводит занятие</h4>
+            <article>
+              <div className="model-account-point-icon">
+                <Heart size={27} strokeWidth={1.5} />
+              </div>
+              <div>
+                <span>СЛЕДУЮЩИЙ РЫНОК · РОДИТЕЛЬ</span>
+                <h3>Обучение ребёнка без сборки из пяти сервисов</h3>
                 <p className="model-copy-body">
-                  Открывает план урока, управляет Экраном ученика и получает от
-                  ИИ подсказки по ходу занятия.
+                  Родитель создаёт отдельный образовательный профиль ребёнка,
+                  выбирает готовый путь или персональную программу и определяет,
+                  как будет проходить обучение: самостоятельно, с
+                  преподавателем или с ИИ. Запрос может звучать просто: «Хочу
+                  программу чтения на три месяца: короткие занятия, динозавры и
+                  без перегруза». Shidao связывает цель и ограничения с
+                  расписанием, домашними заданиями, результатами и
+                  подтверждёнными выводами, сохраняя историю ребёнка независимо
+                  от отдельных курсов.
                 </p>
-              </article>
+              </div>
+            </article>
 
-              <article className="is-parent">
-                <div className="model-context-card-top">
-                  <span>КОНТЕКСТ 02 · РОДИТЕЛЬ</span>
-                  <div>
-                    <Heart size={22} />
-                  </div>
-                </div>
-                <small>Образовательный профиль Лизы · 9 лет</small>
-                <h4>Организует обучение дочери</h4>
+            <article>
+              <div className="model-account-point-icon">
+                <BookOpen size={27} strokeWidth={1.5} />
+              </div>
+              <div>
+                <span>ЛИЧНЫЙ ПУТЬ · УЧЕНИК</span>
+                <h3>Простой экран сегодня — память на годы</h3>
+                <p className="model-copy-body">
+                  Ученик видит ближайшее занятие без административного шума,
+                  проходит доступные шаги на Экране ученика и выполняет общее
+                  или персональное домашнее задание. Он может попросить:
+                  «Покажи, что у меня сегодня, помоги пройти и напомни, что
+                  повторить». Следующий урок учитывает прошлый опыт: курсы и
+                  преподаватели меняются, а образовательная память человека
+                  остаётся.
+                </p>
+              </div>
+            </article>
+          </div>
+
+          <aside className="model-account-case">
+            <div className="model-account-case-label">
+              <CircleUserRound size={18} />
+              <span>ОДИН ЧЕЛОВЕК · ТРИ КОНТЕКСТА</span>
+            </div>
+            <h3>Агата преподаёт, помогает дочери и сама учится</h3>
+            <p className="model-copy-body">
+              Агата — преподаватель английского, мама девятилетней Лизы и
+              ученица на курсе китайского языка. Для этого ей не нужны три
+              аккаунта.
+            </p>
+
+            <div className="model-account-contexts">
+              <div>
+                <span>Учитель · English B1</span>
+                <p className="model-copy-body">
+                  Проводит занятие для группы подростков: открывает план,
+                  управляет Экраном ученика и получает подсказки ИИ.
+                </p>
+              </div>
+              <div>
+                <span>Родитель · профиль Лизы</span>
                 <p className="model-copy-body">
                   Выбирает курс по математике, видит расписание, домашние
                   задания, результаты и подтверждённые выводы.
                 </p>
-              </article>
-
-              <article className="is-learner">
-                <div className="model-context-card-top">
-                  <span>КОНТЕКСТ 03 · УЧЕНИК</span>
-                  <div>
-                    <Bot size={22} />
-                  </div>
-                </div>
-                <small>Личный курс · китайский язык</small>
-                <h4>Учится с ИИ-преподавателем</h4>
+              </div>
+              <div>
+                <span>Ученик · китайский язык</span>
                 <p className="model-copy-body">
-                  Проходит занятия в своём темпе. Ответы, ошибки и прогресс
-                  пополняют её собственный образовательный профиль.
+                  Учится с ИИ-преподавателем в своём темпе, а ответы, ошибки и
+                  прогресс пополняют её собственный профиль.
                 </p>
-              </article>
+              </div>
             </div>
-          </div>
 
-          <div className="model-context-summary">
-            <div>
-              <Network size={23} />
+            <div className="model-account-case-summary">
+              <Network size={21} />
+              <p className="model-copy-body">
+                <strong>Меняется контекст — не аккаунт.</strong> Для
+                собственного обучения у Агаты есть образовательный профиль, а к
+                профилю дочери она подключена как родитель. Курсы, группы и
+                связи определяют доступные действия.
+              </p>
             </div>
-            <span>
-              <strong>Меняется контекст — не аккаунт.</strong>
-              Для собственного обучения у Анны есть образовательный профиль, а к
-              профилю дочери она подключена как родитель. Курсы, группы и связи
-              определяют доступные действия.
-            </span>
-          </div>
+          </aside>
         </div>
       </section>
 

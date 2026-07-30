@@ -1101,490 +1101,146 @@
   color: rgba(255, 255, 255, 0.52);
 }
 
-.model-persona-tabs {
-  display: flex;
-  border-bottom: 1px solid var(--model-line);
-}
-
-.model-scenarios-dark .model-persona-tabs {
-  border-bottom-color: rgba(255, 255, 255, 0.12);
-}
-
-.model-persona-tabs button {
-  position: relative;
-  min-width: 200px;
-  padding: 1.15rem 0;
-  border: 0;
-  background: transparent;
-  color: rgba(16, 24, 39, 0.38);
-  font-size: clamp(0.95rem, 1.25vw, 1.1rem);
-  font-weight: 500;
-  text-align: left;
-  cursor: pointer;
-}
-
-.model-scenarios-dark .model-persona-tabs button {
-  color: rgba(255, 255, 255, 0.38);
-}
-
-.model-scenarios-dark .model-persona-tabs button:hover,
-.model-scenarios-dark .model-persona-tabs button:focus-visible {
-  color: rgba(255, 255, 255, 0.72);
-}
-
-.model-persona-tabs button span {
-  position: absolute;
-  right: 0;
-  bottom: -1px;
-  left: 0;
-  height: 2px;
-  border-radius: 0;
-  background: var(--model-navy);
-  transform: scaleX(0);
-  transform-origin: left;
-  transition: transform 220ms ease;
-}
-
-.model-scenarios-dark .model-persona-tabs button span {
-  background: var(--model-lime);
-}
-
-.model-persona-tabs button.is-active {
-  color: var(--model-ink);
-}
-
-.model-scenarios-dark .model-persona-tabs button.is-active {
-  color: #fff;
-}
-
-.model-persona-tabs button.is-active span {
-  transform: scaleX(1);
-}
-
-.model-persona-panel {
+.model-account-story {
   display: grid;
-  grid-template-columns: 0.85fr 1.15fr;
-  min-height: 530px;
-  margin-top: 2rem;
-  border: 1px solid var(--model-line);
-  border-radius: 1.5rem;
-  overflow: hidden;
-  background: var(--model-ivory);
+  grid-template-columns: minmax(0, 1.4fr) minmax(320px, 0.6fr);
+  align-items: start;
+  gap: clamp(2rem, 4vw, 5rem);
+  margin-top: clamp(3rem, 6vw, 5.5rem);
 }
 
-.model-scenarios-dark .model-persona-panel {
-  border-color: rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.045);
-  box-shadow: 0 28px 90px rgba(0, 0, 0, 0.2);
-}
-
-.model-scenarios-dark .model-persona-story {
-  background:
-    radial-gradient(
-      circle at 18% 10%,
-      rgba(112, 183, 255, 0.14),
-      transparent 30%
-    ),
-    linear-gradient(145deg, #14294b, #0d1b34);
-}
-
-.model-persona-story {
-  display: flex;
-  flex-direction: column;
-  padding: clamp(2.3rem, 5vw, 5rem);
-  background: var(--model-navy);
-  color: #fff;
-}
-
-.model-persona-story .model-card-label {
-  color: var(--model-lime);
-}
-
-.accent-lilac .model-persona-story .model-card-label {
-  color: var(--model-lilac);
-}
-
-.accent-blue .model-persona-story .model-card-label {
-  color: var(--model-blue);
-}
-
-.model-persona-story h3 {
-  max-width: 11ch;
-  margin: 1.4rem 0 3rem;
-  font-family: var(--model-serif);
-  font-size: clamp(2.3rem, 4vw, 4.3rem);
-  font-weight: 400;
-  letter-spacing: -0.055em;
-  line-height: 0.97;
-}
-
-.model-persona-story blockquote {
-  margin: auto 0 0;
-  padding: 1.3rem 0;
-  border-top: 1px solid rgba(255, 255, 255, 0.15);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
-  color: rgba(255, 255, 255, 0.73);
-  font-size: 0.88rem;
-  font-style: normal;
-  line-height: 1.55;
-}
-
-.model-persona-outcome {
-  display: flex;
-  gap: 0.7rem;
-  margin-top: 1.3rem;
-  color: rgba(255, 255, 255, 0.55);
-}
-
-.model-persona-outcome svg {
-  flex: 0 0 auto;
-  color: var(--model-lime);
-}
-
-.accent-lilac .model-persona-outcome svg {
-  color: var(--model-lilac);
-}
-
-.accent-blue .model-persona-outcome svg {
-  color: var(--model-blue);
-}
-
-.model-persona-outcome p {
-  margin: 0;
-  font-size: 0.73rem;
-  line-height: 1.55;
-}
-
-.model-persona-steps {
+.model-account-points {
   display: grid;
-  grid-template-rows: repeat(4, 1fr);
+  gap: clamp(2.2rem, 3.5vw, 3.6rem);
 }
 
-.model-persona-steps article {
+.model-account-points article {
   display: grid;
-  grid-template-columns: 80px 1fr;
-  align-items: center;
-  gap: 1.2rem;
-  padding: 1.4rem 2rem;
-  border-bottom: 1px solid var(--model-line);
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: clamp(1.25rem, 2vw, 2rem);
 }
 
-.model-scenarios-dark .model-persona-steps article {
-  border-bottom-color: rgba(255, 255, 255, 0.08);
-}
-
-.model-persona-steps article:last-child {
-  border-bottom: 0;
-}
-
-.model-persona-steps article > span {
+.model-account-point-icon {
   display: grid;
   place-items: center;
-  width: 48px;
-  height: 48px;
-  border: 1px solid var(--model-line);
+  width: 4rem;
+  height: 4rem;
   border-radius: 50%;
-  color: rgba(16, 24, 39, 0.45);
-  font-size: 0.64rem;
-  font-weight: 800;
-}
-
-.model-scenarios-dark .model-persona-steps article > span {
-  border-color: rgba(255, 255, 255, 0.18);
-  color: rgba(255, 255, 255, 0.5);
-}
-
-.model-scenarios-dark .model-persona-steps article:hover > span {
-  border-color: transparent;
+  background: var(--model-lime);
   color: var(--model-navy-deep);
 }
 
-.accent-lime .model-persona-steps article:hover > span {
-  background: var(--model-lime);
-}
-
-.accent-lilac .model-persona-steps article:hover > span {
-  background: var(--model-lilac);
-}
-
-.accent-blue .model-persona-steps article:hover > span {
+.model-account-points article:nth-child(2) .model-account-point-icon {
   background: var(--model-blue);
 }
 
-.model-persona-steps h4 {
-  margin: 0 0 0.35rem;
-  font-family: var(--model-serif);
-  font-size: 1.45rem;
-  font-weight: 400;
+.model-account-points article:nth-child(3) .model-account-point-icon {
+  background: var(--model-lilac);
 }
 
-.model-scenarios-dark .model-persona-steps h4 {
+.model-account-points article > div > span,
+.model-account-contexts span {
+  color: rgba(255, 255, 255, 0.42);
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.model-account-points h3 {
+  margin: 0.55rem 0 0;
+  color: #fff;
+  font-size: var(--model-subheading-size);
+  font-weight: var(--model-subheading-weight);
+  letter-spacing: var(--model-subheading-letter-spacing);
+  line-height: var(--model-subheading-line-height);
+}
+
+.model-account-points p {
+  margin: 0.8rem 0 0;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: var(--model-copy-size);
+  line-height: 1.7;
+}
+
+.model-account-case {
+  padding: clamp(1.6rem, 2.7vw, 2.5rem);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 1.2rem;
+  background: rgba(255, 255, 255, 0.055);
   color: #fff;
 }
 
-.model-persona-steps p {
-  margin: 0;
-  color: #68696c;
-  font-size: 0.74rem;
-}
-
-.model-scenarios-dark .model-persona-steps p {
-  color: rgba(255, 255, 255, 0.5);
-}
-
-.model-context-case {
-  margin-top: 2.5rem;
-  border: 1px solid rgba(16, 30, 56, 0.14);
-  border-radius: 1.6rem;
-  overflow: hidden;
-  background: var(--model-navy-deep);
-  box-shadow: 0 22px 70px rgba(16, 30, 56, 0.1);
-}
-
-.model-scenarios-dark .model-context-case {
-  border-color: rgba(255, 255, 255, 0.12);
-  background:
-    linear-gradient(rgba(255, 255, 255, 0.025), rgba(255, 255, 255, 0.025)),
-    var(--model-navy-deep);
-  box-shadow: 0 28px 90px rgba(0, 0, 0, 0.22);
-}
-
-.model-context-case-head {
-  display: grid;
-  grid-template-columns: minmax(240px, 0.8fr) minmax(300px, 1.2fr);
-  gap: 1.4rem clamp(2rem, 5vw, 5rem);
-  padding: clamp(1.7rem, 3vw, 2.6rem);
-  color: #fff;
-}
-
-.model-context-case-head > span {
-  grid-column: 1 / -1;
+.model-account-case-label {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
   color: var(--model-lime);
-  font-size: 0.59rem;
+}
+
+.model-account-case-label span {
+  font-size: 0.62rem;
   font-weight: 800;
   letter-spacing: 0.13em;
 }
 
-.model-context-case-head > strong {
-  font-family: var(--model-serif);
-  font-size: clamp(1.75rem, 3vw, 2.8rem);
-  font-weight: 400;
-  letter-spacing: -0.04em;
-  line-height: 1.02;
+.model-account-case > h3 {
+  margin: 1.5rem 0 0;
+  font-size: var(--model-subheading-size);
+  font-weight: var(--model-subheading-weight);
+  letter-spacing: var(--model-subheading-letter-spacing);
+  line-height: var(--model-subheading-line-height);
 }
 
-.model-context-case-head > p {
-  max-width: 62ch;
-  margin: 0;
-  color: rgba(255, 255, 255, 0.55);
-  font-size: 0.82rem;
-  line-height: 1.68;
+.model-account-case > p {
+  margin: 0.9rem 0 0;
+  color: rgba(255, 255, 255, 0.62);
+  font-size: var(--model-copy-size);
+  line-height: 1.7;
 }
 
-.model-context-case-body {
+.model-account-contexts {
   display: grid;
-  grid-template-columns: minmax(245px, 0.65fr) minmax(0, 1.35fr);
-  gap: 1px;
+  margin-top: 1.8rem;
   border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.model-account-contexts > div {
+  padding: 1.25rem 0;
   border-bottom: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.12);
 }
 
-.model-context-identity {
-  min-height: 360px;
-  padding: clamp(1.8rem, 3vw, 2.7rem);
-  background:
-    radial-gradient(
-      circle at 80% 12%,
-      rgba(112, 183, 255, 0.22),
-      transparent 34%
-    ),
-    linear-gradient(145deg, #152746, var(--model-navy-deep));
-  color: #fff;
-}
-
-.model-context-avatar {
-  display: grid;
-  place-items: center;
-  width: 84px;
-  height: 84px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--model-blue);
-}
-
-.model-context-identity > span {
-  display: block;
-  margin-top: 2rem;
-  color: var(--model-lime);
-  font-size: 0.57rem;
-  font-weight: 800;
-  letter-spacing: 0.13em;
-}
-
-.model-context-identity h3 {
-  margin: 0.65rem 0 0.8rem;
-  font-family: var(--model-serif);
-  font-size: clamp(2.8rem, 5vw, 4.7rem);
-  font-weight: 400;
-  letter-spacing: -0.055em;
-  line-height: 0.92;
-}
-
-.model-context-identity > p {
-  max-width: 35ch;
-  margin: 0;
+.model-account-contexts p {
+  margin: 0.55rem 0 0;
   color: rgba(255, 255, 255, 0.58);
-  font-size: 0.78rem;
+  font-size: var(--model-copy-size);
   line-height: 1.65;
 }
 
-.model-context-role-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.45rem;
-  margin-top: 1.6rem;
-}
-
-.model-context-role-chips span {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.38rem;
-  padding: 0.45rem 0.65rem;
-  border: 1px solid rgba(255, 255, 255, 0.13);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.06);
-  color: rgba(255, 255, 255, 0.76);
-  font-size: 0.66rem;
-}
-
-.model-context-cards {
+.model-account-case-summary {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 1px;
-  background: rgba(16, 30, 56, 0.14);
-}
-
-.model-scenarios-dark .model-context-cards {
-  background: rgba(255, 255, 255, 0.12);
-}
-
-.model-context-cards > article {
-  display: flex;
-  flex-direction: column;
-  min-height: 360px;
-  padding: clamp(1.35rem, 2vw, 2rem);
-  border-top: 5px solid var(--context-accent);
-  background: var(--model-paper);
-  color: var(--model-navy);
-}
-
-.model-scenarios-dark .model-context-cards > article {
-  background:
-    linear-gradient(155deg, rgba(112, 183, 255, 0.08), transparent 48%), #16233a;
-  color: #fff;
-}
-
-.model-context-cards > article.is-teacher {
-  --context-accent: var(--model-lime);
-}
-
-.model-context-cards > article.is-parent {
-  --context-accent: var(--model-blue);
-}
-
-.model-context-cards > article.is-learner {
-  --context-accent: var(--model-lilac);
-}
-
-.model-context-card-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-}
-
-.model-context-card-top > span {
-  color: rgba(16, 24, 39, 0.43);
-  font-size: 0.54rem;
-  font-weight: 800;
-  letter-spacing: 0.1em;
-  line-height: 1.45;
-}
-
-.model-context-card-top > div {
-  display: grid;
-  flex: 0 0 auto;
-  place-items: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  background: var(--context-accent);
-  color: var(--model-navy-deep);
-}
-
-.model-context-cards small {
-  display: block;
-  margin-top: auto;
-  color: rgba(16, 24, 39, 0.43);
-  font-size: 0.58rem;
-  font-weight: 650;
-  line-height: 1.45;
-}
-
-.model-context-cards h4 {
-  margin: 0.65rem 0 0.75rem;
-  font-family: var(--model-serif);
-  font-size: clamp(1.35rem, 2vw, 1.9rem);
-  font-weight: 400;
-  letter-spacing: -0.035em;
-  line-height: 1.04;
-}
-
-.model-context-cards p {
-  margin: 0;
-  color: #66686d;
-  font-size: 0.72rem;
-  line-height: 1.62;
-}
-
-.model-scenarios-dark .model-context-card-top > span,
-.model-scenarios-dark .model-context-cards small {
-  color: rgba(255, 255, 255, 0.43);
-}
-
-.model-scenarios-dark .model-context-cards p {
-  color: rgba(255, 255, 255, 0.54);
-}
-
-.model-context-summary {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 1.25rem clamp(1.5rem, 3vw, 2.6rem);
-  color: rgba(255, 255, 255, 0.58);
-  font-size: 0.75rem;
-  line-height: 1.6;
-}
-
-.model-context-summary > div {
-  display: grid;
-  flex: 0 0 auto;
-  place-items: center;
-  width: 42px;
-  height: 42px;
-  border: 1px solid rgba(185, 255, 48, 0.25);
-  border-radius: 50%;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.8rem;
+  margin-top: 1.5rem;
   color: var(--model-lime);
 }
 
-.model-context-summary strong {
+.model-account-case-summary svg {
+  margin-top: 0.15rem;
+}
+
+.model-account-case-summary p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.62);
+  font-size: var(--model-copy-size);
+  line-height: 1.65;
+}
+
+.model-account-case-summary strong {
   display: block;
+  margin-bottom: 0.25rem;
   color: #fff;
-  font-family: var(--model-serif);
-  font-size: 1.05rem;
-  font-weight: 400;
+  font-weight: 650;
 }
 
 .model-experience {
@@ -3367,20 +3023,12 @@
     display: none;
   }
 
-  .model-persona-panel {
+  .model-account-story {
     grid-template-columns: 1fr;
   }
 
-  .model-persona-story {
-    min-height: 450px;
-  }
-
-  .model-context-case-body {
-    grid-template-columns: 1fr;
-  }
-
-  .model-context-identity {
-    min-height: auto;
+  .model-account-case {
+    max-width: 760px;
   }
 
   .model-ui-story {
@@ -3674,43 +3322,12 @@
     border-left: 0;
   }
 
-  .model-persona-tabs {
-    overflow-x: auto;
-  }
-
-  .model-persona-tabs button {
-    flex: 0 0 150px;
-    min-width: 150px;
-  }
-
-  .model-persona-story {
-    min-height: 500px;
-    padding: 2rem 1.4rem;
-  }
-
-  .model-persona-steps article {
-    grid-template-columns: 50px 1fr;
-    padding: 1.2rem;
-  }
-
-  .model-context-case-head {
+  .model-account-points article {
     grid-template-columns: 1fr;
   }
 
-  .model-context-case-head > span {
-    grid-column: auto;
-  }
-
-  .model-context-cards {
+  .model-account-case-summary {
     grid-template-columns: 1fr;
-  }
-
-  .model-context-cards > article {
-    min-height: 285px;
-  }
-
-  .model-context-summary {
-    align-items: flex-start;
   }
 
   .model-author-intro {
