@@ -1179,17 +1179,9 @@
   letter-spacing: 0.13em;
 }
 
-.model-account-case > h3 {
-  margin: 1.5rem 0 0;
-  font-size: var(--model-subheading-size);
-  font-weight: var(--model-subheading-weight);
-  letter-spacing: var(--model-subheading-letter-spacing);
-  line-height: var(--model-subheading-line-height);
-}
-
 .model-account-case > p {
-  margin: 0.9rem 0 0;
-  color: rgba(255, 255, 255, 0.62);
+  margin: clamp(1.5rem, 2.5vw, 2.2rem) 0 0;
+  color: #fff;
   font-size: var(--model-copy-size);
   line-height: 1.7;
 }
@@ -1207,35 +1199,9 @@
 
 .model-account-contexts p {
   margin: 0.55rem 0 0;
-  color: rgba(255, 255, 255, 0.58);
-  font-size: var(--model-copy-size);
-  line-height: 1.65;
-}
-
-.model-account-case-summary {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: 0.8rem;
-  margin-top: 1.5rem;
-  color: var(--model-lime);
-}
-
-.model-account-case-summary svg {
-  margin-top: 0.15rem;
-}
-
-.model-account-case-summary p {
-  margin: 0;
-  color: rgba(255, 255, 255, 0.62);
-  font-size: var(--model-copy-size);
-  line-height: 1.65;
-}
-
-.model-account-case-summary strong {
-  display: block;
-  margin-bottom: 0.25rem;
   color: #fff;
-  font-weight: 650;
+  font-size: var(--model-copy-size);
+  line-height: 1.65;
 }
 
 .model-experience {
@@ -3172,10 +3138,6 @@
   }
 
   .model-account-points article {
-    grid-template-columns: 1fr;
-  }
-
-  .model-account-case-summary {
     grid-template-columns: 1fr;
   }
 
