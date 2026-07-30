@@ -846,6 +846,10 @@ export function ModelPageClient() {
             </>
           }
           text="Никакой панели администратора ради панели администратора. В каждый момент Shidao отвечает на простой вопрос пользователя: что я делаю сейчас?"
+          illustration={{
+            src: "/model/5_1.png",
+            alt: "Ученица взаимодействует с образовательным интерфейсом Shidao",
+          }}
         />
 
         <div className="model-ui-story model-ui-story-author">
