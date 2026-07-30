@@ -1292,6 +1292,10 @@
   padding: clamp(2rem, 4vw, 3.5rem) 0;
 }
 
+.model-experience-narrative article:nth-last-child(-n + 2) {
+  padding-bottom: 0;
+}
+
 .model-experience-narrative .model-principle-number {
   grid-row: auto;
 }
@@ -1316,7 +1320,7 @@
 
 .model-ui-story-student {
   grid-template-columns: minmax(270px, 0.52fr) minmax(460px, 1.48fr);
-  margin-top: clamp(7rem, 12vw, 12rem);
+  margin-top: 1rem;
   padding: clamp(2.5rem, 5vw, 5rem);
   border-radius: 1.7rem;
   background: var(--model-navy-deep);
@@ -3019,7 +3023,10 @@
     width: 100%;
   }
 
-  .model-section {
+  .model-section,
+  .model-ai-section,
+  .model-future,
+  .model-north-star {
     padding-top: 6rem;
     padding-bottom: 6rem;
   }
@@ -3178,6 +3185,10 @@
 
   .model-experience-narrative article {
     grid-template-columns: 1fr;
+  }
+
+  .model-experience-narrative article:nth-last-child(2) {
+    padding-bottom: clamp(2rem, 4vw, 3.5rem);
   }
 
   .model-ui-story-student {
