@@ -438,6 +438,13 @@
   font-style: italic;
 }
 
+.model-section-title-white {
+  color: #fff;
+  font-family: var(--model-serif);
+  font-weight: 400;
+  font-style: italic;
+}
+
 .model-section-copy > h2 + p {
   max-width: 720px;
   margin: 1.8rem 0 0;

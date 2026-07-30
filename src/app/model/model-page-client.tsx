@@ -436,10 +436,9 @@ export function ModelPageClient() {
             eyebrow="Искусственный интеллект"
             title={
               <>
-                ИИ{" "}
+                ИИ <em className="model-section-title-white">— как основа</em>
+                <br />
                 <em className="model-section-title-accent">
-                  — как основа
-                  <br />
                   адаптивного
                   <br />
                   образовательного
