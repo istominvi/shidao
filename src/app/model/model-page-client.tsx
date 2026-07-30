@@ -276,9 +276,6 @@ export function ModelPageClient() {
           <a href="#strategy" onClick={closeMenu}>
             Стратегия
           </a>
-          <a href="#principles" onClick={closeMenu}>
-            Критерии
-          </a>
         </nav>
 
         <a
@@ -1275,56 +1272,7 @@ export function ModelPageClient() {
         </div>
       </section>
 
-      <section className="model-section model-decisions" id="principles">
-        <SectionIntro
-          index="07"
-          eyebrow="Компас команды"
-          title={
-            <>
-              Что мы защищаем,
-              <br />
-              <em className="model-section-title-accent">
-                когда принимаем решения?
-              </em>
-            </>
-          }
-          text="Функции будут меняться. Эти критерии помогают не потерять продуктовую логику по дороге."
-        />
-        <div className="model-decision-list">
-          {[
-            [
-              "01",
-              "Человек важнее роли",
-              "Не создаём искусственных границ между «учусь», «обучаю» и «помогаю».",
-            ],
-            [
-              "02",
-              "Путь важнее курса",
-              "Проектируем так, чтобы история становилась ценнее после каждого занятия.",
-            ],
-            [
-              "03",
-              "Обновление важнее копий",
-              "Компоненты совершенствуются в каталоге и обновляются до последней версии во всех курсах — вместе с ними совершенствуются и сами курсы.",
-            ],
-            [
-              "04",
-              "Прозрачность важнее магии",
-              "ИИ постоянно работает рядом в режиме помощника: обсуждает предложение, показывает, что хочет изменить, и действует только после разрешения человека.",
-            ],
-          ].map(([number, title, text]) => (
-            <article key={number}>
-              <span>{number}</span>
-              <h3>{title}</h3>
-              <p className="model-copy-body">{text}</p>
-              <ArrowRight size={18} />
-            </article>
-          ))}
-        </div>
-      </section>
-
       <section className="model-north-star" id="north-star">
-        <div className="model-north-star-grid" aria-hidden="true" />
         <h2>
           Сегодня Shidao продаёт
           <br />
