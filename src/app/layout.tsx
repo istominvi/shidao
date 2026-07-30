@@ -1,11 +1,15 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import { SessionViewProvider } from "@/components/session-view-provider";
+import { GUEST_SESSION_VIEW } from "@/lib/session-view";
 import { readSessionViewServer } from "@/lib/server/session-view";
 import "./globals.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL(
-    process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_URL || "https://shidao.ru",
+    process.env.NEXT_PUBLIC_SITE_URL ||
+      process.env.SITE_URL ||
+      "https://shidao.ru",
   ),
   title: {
     default: "Shidao — платформа обучения китайскому по готовым методикам",
@@ -24,7 +28,8 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary",
     title: "Shidao — обучение китайскому по готовым методикам",
-    description: "Платформа преподавания китайского языка, где методика становится основой рабочего процесса.",
+    description:
+      "Платформа преподавания китайского языка, где методика становится основой рабочего процесса.",
   },
   icons: {
     icon: "/favicon.svg",
@@ -38,7 +43,12 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const initialSessionView = await readSessionViewServer();
+  const requestHeaders = await headers();
+  const isPublicBrandSurface =
+    requestHeaders.get("x-shidao-public-surface") === "brand";
+  const initialSessionView = isPublicBrandSurface
+    ? GUEST_SESSION_VIEW
+    : await readSessionViewServer();
 
   return (
     <html lang="ru">

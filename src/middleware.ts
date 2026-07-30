@@ -14,11 +14,18 @@ export function middleware(req: NextRequest) {
   )
     .split(":")[0]
     .toLowerCase();
+  const isDirectBrandRoute = req.nextUrl.pathname === "/brand";
 
   if (requestHost === "brand.shidao.ru" && req.nextUrl.pathname === "/") {
     const brandUrl = req.nextUrl.clone();
+    const requestHeaders = new Headers(req.headers);
+    requestHeaders.set("x-shidao-public-surface", "brand");
     brandUrl.pathname = "/brand";
-    return NextResponse.rewrite(brandUrl);
+    return NextResponse.rewrite(brandUrl, {
+      request: {
+        headers: requestHeaders,
+      },
+    });
   }
 
   if (requestHost === "model.shidao.ru" && req.nextUrl.pathname === "/") {
@@ -49,6 +56,16 @@ export function middleware(req: NextRequest) {
       { error: "Запрос отклонён: недопустимый источник." },
       { status: 403 },
     );
+  }
+
+  if (isDirectBrandRoute) {
+    const requestHeaders = new Headers(req.headers);
+    requestHeaders.set("x-shidao-public-surface", "brand");
+    return NextResponse.next({
+      request: {
+        headers: requestHeaders,
+      },
+    });
   }
 
   return NextResponse.next();
