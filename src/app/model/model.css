@@ -458,7 +458,7 @@
   font-size: var(--model-subheading-size);
   font-weight: var(--model-subheading-weight);
   letter-spacing: var(--model-subheading-letter-spacing);
-  line-height: var(--model-subheading-line-height);
+  line-height: var(--model-copy-line-height);
 }
 
 .model-ai-section .model-section-title-accent,
@@ -3532,11 +3532,18 @@
 }
 
 .model-page.model-page h3,
-.model-page.model-page h4,
-.model-page.model-page p.model-copy-lead {
+.model-page.model-page h4 {
   font-family: var(--model-sans);
   font-size: var(--model-subheading-size);
   font-weight: var(--model-subheading-weight);
   letter-spacing: var(--model-subheading-letter-spacing);
   line-height: var(--model-subheading-line-height);
+}
+
+.model-page.model-page p.model-copy-lead {
+  font-family: var(--model-sans);
+  font-size: var(--model-subheading-size);
+  font-weight: var(--model-subheading-weight);
+  letter-spacing: var(--model-subheading-letter-spacing);
+  line-height: var(--model-copy-line-height);
 }
