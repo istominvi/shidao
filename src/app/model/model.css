@@ -1252,14 +1252,6 @@
   font-style: italic;
 }
 
-.model-experience .model-section-copy h2 {
-  font-size: clamp(2.2rem, 4.1vw, 3.3rem);
-}
-
-.model-experience-title-last-line {
-  white-space: nowrap;
-}
-
 .model-ui-story {
   display: grid;
   grid-template-columns: minmax(280px, 0.34fr) minmax(0, 1.66fr);
@@ -3186,10 +3178,6 @@
 
   .model-experience-narrative article {
     grid-template-columns: 1fr;
-  }
-
-  .model-experience-title-last-line {
-    font-size: 0.66em;
   }
 
   .model-ui-story-student {
