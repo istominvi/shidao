@@ -1267,191 +1267,60 @@
   line-height: 1.65;
 }
 
-.model-ui-story-author {
-  grid-template-columns: 1fr;
-  gap: clamp(3.5rem, 6vw, 6rem);
-  align-items: start;
-}
-
-.model-author-intro {
-  display: grid;
-  grid-template-columns: minmax(0, 0.9fr) minmax(340px, 1.1fr);
-  column-gap: clamp(3rem, 8vw, 9rem);
-  align-items: end;
-  width: 100%;
-  max-width: none;
-}
-
-.model-author-intro .model-card-label {
-  grid-column: 1 / -1;
-}
-
-.model-author-intro h3 {
-  grid-column: 1;
-  max-width: 18ch;
-  margin-bottom: 0;
-}
-
-.model-author-intro > p {
-  grid-column: 2;
-  max-width: 68ch;
-  padding-bottom: 0.2rem;
-}
-
-.model-author-map {
-  width: 100%;
-  color: var(--model-navy-deep);
-}
-
-.model-author-map-body {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  align-items: stretch;
-}
-
-.model-author-map-column {
-  display: flex;
-  flex-direction: column;
-  gap: 1.1rem;
-}
-
-.model-author-map-label {
-  display: block;
-  color: #6f7278;
-  font-size: clamp(0.72rem, 0.85vw, 0.88rem);
-  font-weight: 750;
-  letter-spacing: 0.11em;
-  line-height: 1.25;
-}
-
-.model-author-map-input-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.9rem;
-}
-
-.model-author-map-inputs article,
-.model-author-map-outputs article {
-  display: flex;
-  align-items: center;
-  gap: 0.9rem;
-  min-height: 92px;
-  padding: 1rem 1.15rem;
-  border: 1px solid rgba(16, 30, 56, 0.18);
-  border-radius: 0.7rem;
-  background: transparent;
-}
-
-.model-author-map-core-main,
-.model-author-map-ai {
-  display: flex;
-  align-items: center;
-  gap: 0.9rem;
-  min-height: 92px;
-  padding: 1rem 1.15rem;
-}
-
-.model-author-map-inputs article > div,
-.model-author-map-outputs article > div,
-.model-author-map-core-icon,
-.model-author-map-ai > div {
-  display: grid;
-  flex: 0 0 auto;
-  place-items: center;
-  width: 38px;
-  height: 38px;
-  border: 1px solid rgba(16, 30, 56, 0.17);
-  border-radius: 50%;
-  color: #64676d;
-}
-
-.model-author-map-inputs article > span,
-.model-author-map-outputs article > span,
-.model-author-map-core-main > span,
-.model-author-map-ai span {
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-}
-
-.model-author-map-inputs strong,
-.model-author-map-outputs strong,
-.model-author-map-core-main strong,
-.model-author-map-ai strong {
-  color: var(--model-navy-deep);
-  font-size: 0.76rem;
-  font-weight: 700;
-  line-height: 1.25;
-}
-
-.model-author-map-inputs small,
-.model-author-map-outputs small,
-.model-author-map-core-main small,
-.model-author-map-ai small {
-  color: #77797e;
-  font-size: 0.6rem;
-  line-height: 1.35;
-}
-
-.model-author-map-arrow {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  height: 70px;
-  color: #77797e;
-}
-
-.model-author-map-arrow::before {
-  width: 1px;
-  height: 42px;
-  content: "";
-  background: rgba(16, 30, 56, 0.22);
-}
-
-.model-author-map-core-section {
-  display: flex;
-  flex-direction: column;
-  gap: 1.1rem;
-}
-
-.model-author-map-core {
+.model-experience-narrative {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0;
-  width: min(980px, calc(66.666% - 0.3rem));
-  margin: 0 auto;
-  overflow: hidden;
-  border: 1px solid rgba(16, 30, 56, 0.18);
-  border-radius: 0.7rem;
-  background: transparent;
+  gap: 0 clamp(3rem, 6vw, 7rem);
+  margin-top: clamp(3rem, 6vw, 5.5rem);
+  border-top: 1px solid var(--model-line);
 }
 
-.model-author-map-ai {
-  width: 100%;
-  border-left: 1px solid rgba(16, 30, 56, 0.17);
-}
-
-.model-author-map-ai svg {
-  flex: 0 0 auto;
-}
-
-.model-author-map-output-grid {
+.model-experience-narrative article {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.9rem;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: clamp(1.2rem, 2vw, 1.8rem);
+  padding: clamp(2rem, 4vw, 3.5rem) 0;
+  border-bottom: 1px solid var(--model-line);
 }
 
-.model-author-map-outputs article {
+.model-experience-number {
+  display: grid;
+  place-items: center;
+  width: 3.75rem;
+  height: 3.75rem;
+  border-radius: 50%;
+  background: var(--model-lilac);
   color: var(--model-navy-deep);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
 }
 
-.model-author-map-outputs article svg {
-  color: #64676d;
+.model-experience-narrative article:nth-child(3n + 2) .model-experience-number {
+  background: var(--model-blue);
 }
 
-.model-author-map-outputs small {
-  color: #77797e;
+.model-experience-narrative article:nth-child(3n) .model-experience-number {
+  background: var(--model-lime);
+}
+
+.model-experience-narrative h3 {
+  margin: 0;
+  color: var(--model-ink);
+  font-size: var(--model-subheading-size);
+  font-weight: var(--model-subheading-weight);
+  letter-spacing: var(--model-subheading-letter-spacing);
+  line-height: var(--model-subheading-line-height);
+}
+
+.model-experience-narrative p {
+  margin: 0.8rem 0 0;
+  color: #5b5d62;
+}
+
+.model-experience-narrative p + p {
+  margin-top: 1rem;
 }
 
 .model-ui-story-student {
@@ -3029,14 +2898,6 @@
     max-width: 620px;
   }
 
-  .model-author-intro {
-    max-width: none;
-  }
-
-  .model-author-map-core {
-    width: 100%;
-  }
-
   .model-ui-story-student {
     grid-template-columns: 1fr;
   }
@@ -3320,38 +3181,12 @@
     grid-template-columns: 1fr;
   }
 
-  .model-author-intro {
-    grid-template-columns: 1fr;
-    row-gap: 0;
-  }
-
-  .model-author-intro .model-card-label,
-  .model-author-intro h3,
-  .model-author-intro > p {
-    grid-column: 1;
-  }
-
-  .model-author-intro > p {
-    margin-top: 1.2rem;
-    padding-bottom: 0;
-  }
-
-  .model-author-map-input-grid,
-  .model-author-map-output-grid {
+  .model-experience-narrative {
     grid-template-columns: 1fr;
   }
 
-  .model-author-map-core {
+  .model-experience-narrative article {
     grid-template-columns: 1fr;
-    gap: 0;
-    min-height: 0;
-  }
-
-  .model-author-map-ai {
-    min-height: 0;
-    padding: 1rem 1.15rem;
-    border-top: 1px solid rgba(16, 30, 56, 0.17);
-    border-left: 0;
   }
 
   .model-ui-story-student {
