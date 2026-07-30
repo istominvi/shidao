@@ -1251,20 +1251,32 @@ export function ModelPageClient() {
       </section>
 
       <section className="model-north-star" id="north-star">
-        <h2>
-          Сегодня Shidao продаёт
-          <br />
-          <span>систему для создания и проведения обучения с ИИ.</span>
-          <br />
-          Завтра — само персональное образование.
-        </h2>
-        <p className="model-copy-lead">
-          У каждого человека должен быть собственный образовательный путь, а не
-          только доступ к учебным материалам.
-        </p>
-        <a href="#top" className="model-button model-button-light">
-          Вернуться к началу <ArrowUp size={17} />
-        </a>
+        <div className="model-north-star-copy">
+          <h2>
+            Сегодня Shidao продаёт
+            <br />
+            <span>систему для создания и проведения обучения с ИИ.</span>
+            <br />
+            Завтра — само персональное образование.
+          </h2>
+          <p className="model-copy-lead">
+            У каждого человека должен быть собственный образовательный путь, а
+            не только доступ к учебным материалам.
+          </p>
+          <a href="#top" className="model-button model-button-light">
+            Вернуться к началу <ArrowUp size={17} />
+          </a>
+        </div>
+
+        <div className="model-north-star-visual">
+          <Image
+            src="/model/7_1.png"
+            alt="Дети и ИИ-ассистент собирают общий образовательный маршрут Shidao"
+            width={1254}
+            height={1254}
+            sizes="(max-width: 960px) 88vw, 44vw"
+          />
+        </div>
       </section>
     </main>
   );
