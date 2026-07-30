@@ -1157,10 +1157,6 @@
   line-height: 1.7;
 }
 
-.model-account-points p + p {
-  margin-top: 1rem;
-}
-
 .model-account-case {
   padding: clamp(1.6rem, 2.7vw, 2.5rem);
   border: 1px solid rgba(255, 255, 255, 0.12);
@@ -1192,12 +1188,10 @@
 .model-account-contexts {
   display: grid;
   margin-top: 1.8rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.12);
 }
 
 .model-account-contexts > div {
   padding: 1.25rem 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
 }
 
 .model-account-contexts p {
