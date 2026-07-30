@@ -1242,6 +1242,16 @@
   background: var(--model-ivory);
 }
 
+.model-experience .model-section-heading > .model-eyebrow {
+  color: var(--model-coral);
+}
+
+.model-experience .model-section-title-accent {
+  color: #8d60ff;
+  font-family: var(--model-serif);
+  font-style: italic;
+}
+
 .model-ui-story {
   display: grid;
   grid-template-columns: minmax(280px, 0.34fr) minmax(0, 1.66fr);
