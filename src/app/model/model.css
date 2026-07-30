@@ -440,9 +440,9 @@
 
 .model-section-title-white {
   color: #fff;
-  font-family: var(--model-serif);
-  font-weight: 400;
-  font-style: italic;
+  font-family: inherit;
+  font-weight: inherit;
+  font-style: normal;
 }
 
 .model-section-copy > h2 + p {
