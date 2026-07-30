@@ -1661,8 +1661,17 @@
   margin: 0;
 }
 
-.model-ai-architecture-text {
+.model-ai-architecture-story {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(320px, 0.6fr);
+  align-items: start;
+  gap: clamp(2rem, 4vw, 5rem);
   margin-top: clamp(1.8rem, 4vw, 3rem);
+}
+
+.model-ai-architecture-text {
+  display: grid;
+  gap: clamp(2.2rem, 3.5vw, 3.6rem);
 }
 
 .model-ai-architecture-text article {
@@ -1670,7 +1679,6 @@
   grid-template-columns: auto minmax(0, 1fr);
   align-items: start;
   gap: clamp(1.2rem, 2.5vw, 2.2rem);
-  padding: clamp(1.8rem, 3.5vw, 3rem) 0;
 }
 
 .model-ai-architecture-icon {
@@ -1688,6 +1696,43 @@
   max-width: none;
   margin: 0;
   color: rgba(255, 255, 255, 0.76);
+}
+
+.model-ai-architecture-principle {
+  align-self: start;
+  padding: clamp(1.6rem, 2.7vw, 2.5rem);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 1.2rem;
+  background: rgba(255, 255, 255, 0.055);
+  color: #fff;
+}
+
+.model-ai-architecture-principle > div {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  color: var(--model-lime);
+}
+
+.model-ai-architecture-principle > div span {
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.13em;
+}
+
+.model-ai-architecture-principle h3 {
+  margin: clamp(1.5rem, 2.5vw, 2.2rem) 0 0;
+  color: #fff;
+  font-size: var(--model-subheading-size);
+  font-weight: var(--model-subheading-weight);
+  letter-spacing: var(--model-subheading-letter-spacing);
+  line-height: var(--model-subheading-line-height);
+}
+
+.model-ai-architecture-principle > p {
+  margin: 1.2rem 0 0;
+  color: rgba(255, 255, 255, 0.68);
+  line-height: 1.7;
 }
 
 .model-ai-safety {
@@ -2889,6 +2934,14 @@
     display: none;
   }
 
+  .model-ai-architecture-story {
+    grid-template-columns: 1fr;
+  }
+
+  .model-ai-architecture-principle {
+    max-width: 760px;
+  }
+
   .model-account-story {
     grid-template-columns: 1fr;
   }
@@ -3209,6 +3262,10 @@
   .model-ai-section .model-loop-explainer article + article {
     border-top: 1px solid rgba(255, 255, 255, 0.12);
     border-left: 0;
+  }
+
+  .model-ai-architecture-text article {
+    grid-template-columns: 1fr;
   }
 
   .model-account-points article {
