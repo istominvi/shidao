@@ -26,6 +26,61 @@ import {
 import Image from "next/image";
 import { type ReactNode, useEffect, useState } from "react";
 
+const modelImagePlaceholders = {
+  "/model/0_1_v2.png":
+    "data:image/webp;base64,UklGRjYBAABXRUJQVlA4WAoAAAAQAAAADwAADwAAQUxQSGkAAAARP6CgbRs2VCRnfxER4H/1DNzGtq0q+1n+PdYCDEkdUofYqYB/+x+0hIj+TwD/rJJ3m6GnX7KuVJCakywVEI7F+RAyEu1Dyemca0BtTkcfVovuYXy8p8ijUHhXkccAYFJmgeJt1uo3eBoAVlA4IKYAAADwAgCdASoQABAABABoJbACdDBICII0isxVsoDB4QEFAADNz8nzXzin3PTPYjTNp/nnAiX/WS0rXGKqrOfdeMofZ35AJSw8jg6xxAi8QVueghmfh7Ef11XORJyYhrBwMMB21/1HszYXbPPQqozt3+X66PiyUfVk0O811lsXVpog9cYAVn93/fU5bCLvAs9P5/5ydT/orgSnBtDlsg0BuB61lyUKluAA",
+  "/model/1_1_v4.png":
+    "data:image/webp;base64,UklGRiYBAABXRUJQVlA4WAoAAAAQAAAADwAADwAAQUxQSGgAAAARP6CmkRQ4ej4+oKMiRETAP7xtuI1tW1X20/jer+n9twKclKEC6cCpAPoPrIWI/k8A/wcIBCSI+GwLOi12i+0kntweVUyj8xr5VDBNzrsi3i7sOYCansZNADiUG0jgHI8RYI9kPge+AlZQOCCYAAAAcAIAnQEqEAAQAAQAaCWwAI8A3g8iHCE1EV6jMAD+lwvQKOf9JnZ+7Iy4NL7/hR9lVHlJ+fue0vk1y/X+bB1ZL2XSHlEvvKfUKJv+J7w+1EdKKwdtPPR0XM8wj2W8R6iCnAJgfkMIANUEsBpgRioKGO71EgCFF6Zv11DBQEU8cJ81NTjLXTCQT9+sqc2yZ9Bdh4CpK1YgAAA=",
+  "/model/02_1.png":
+    "data:image/webp;base64,UklGRjYBAABXRUJQVlA4WAoAAAAQAAAADwAADwAAQUxQSHQAAAARP6CgbSQUvxJmiIiARYkPhhvbtp1U4CHWGVqobLO0mdpsm7UH9Eb0PwCYG4BH9fdtvDyXfIfbrJRMuCWl1HPYOaX0JRuK8qUChmtz1BWG9C7JrMa0lC5WNbqlJIPJLaUr/J1SKvDkzKVrlH0Kqv/GwAvAA1ZQOCCcAAAAkAIAnQEqEAAQAAQAaCWwAnQ4jMeenm+3snPKVAAA4hSUATc3reXyzrKT75EY4cuO1OKkMxv6ZcQeZuV90CJCpncps942UxXhDV2o+rHInXc7QpH1/w/sfr8VYm6JUqa+bUTW5hOFj/DTZb991fLK8w1Hgp3Z9wAGebQJzvgpq6ed7eJnmxIKfn5hjR63TX88AMz5QgR46aEQRAAA",
+  "/model/3_1_v1.png":
+    "data:image/webp;base64,UklGRjABAABXRUJQVlA4WAoAAAAQAAAADwAADwAAQUxQSG4AAAARP6CgbSM3dzj2vnsCHxEB/Ta+INzYtq00F60dWofWk157T+tJj935L2QMEf2fACzVBA2ABr/YScBDzgYmAhqlJf8C2pgkZTT3kZO1+1F6fB8m8Jxw0awHkipapSMpeQfvRQ6ids3172ED5AKWA1ZQOCCcAAAAEAMAnQEqEAAQAAQAaCWwAnR/A9jlvgMeMytqWyEG49AAAP6khM3nyqfWCV8T5bDQBZpIu9EmsvfM7GFPn8s9SngHw9hcrq2qqypnGE+TibnxAqHHzDSdoaNnVbRnuc+F8uyZ3pdBcS2RV7wzevv05pMpckp84vJbasKukJso6HupH9NZMklnnrLiqifFcz3Fs6kMTGZKGbXbAAAA",
+  "/model/4_v3.png":
+    "data:image/webp;base64,UklGRgYBAABXRUJQVlA4WAoAAAAQAAAADwAADwAAQUxQSFsAAAARP6CmbSQ2eTC+t/X140dEQNf/aMAotq02n7Yndd0TARhIdZAoaA7g+x+qhIj+TwAkPHqlXg472gK05zKOBp314hof15xpRy1dojF4fj8KeTOQbGcW0A7kziEcAFZQOCCEAAAAkAIAnQEqEAAQAAQAaCWwAnRH/5dgi6SI1t+juIAA/uj8r5ayID1HvNXfPbbAu1bnMsStCBSV/8JdPM9hiCLEYswZAeNrOujmqG1RrhnCIV6ty9CPq9MXgGP/g05Tv99gWOwOkQ91Gw8J/P95rLLMfaAn4jZE/BHB/VDcDlKPGc2VEAAA",
+  "/model/5_v2.png":
+    "data:image/webp;base64,UklGRqQAAABXRUJQVlA4WAoAAAAQAAAADwAADwAAQUxQSDEAAAARJ6AmAAHGKK6iVxk1IiLuNVDUtg00EEVQDcIIXPxR5TkAEf2fgD5UGTcD568ybh8KAFZQOCBMAAAAkAEAnQEqEAAQAAQAaCWVMAEygIsAAP7wlQ+WHt00lpLxJVS9m2iDeVMOL4UrxLsanPoRh9RduO/q6l+sGmb0KNfP2pAjUUXPELUAAA==",
+  "/model/6_1.png":
+    "data:image/webp;base64,UklGRiYBAABXRUJQVlA4WAoAAAAQAAAADwAADwAAQUxQSGEAAAARP6CobSM2VCDrnjMiAu7q4cNtbdtKdL4UgDTguUPqkDoNyEwD03+kJUT0fwL4qyM/tOoNxo2hMgPxkoYewDkEUQlrCNNIfStwnvaaCYiC9NaGoJqf2hBwep0nLFgVhuCPAFZQOCCeAAAAsAIAnQEqEAAQAAQAaCWwAnQwSAiESxxIwhXZ9/iAAPsbLa3cmqFUA415gkv+V8j9b0elyei5i3Hmf/5/TorN3P1N7316Jo3JnfELkbzvVN+4SFkq5NWO8sgL7fGQ9vbdDgyGZKx+jf7BHr4HY6U31UMxGjcpeezFDW/OJ4uW7ExXRp+O1uah+5g00x+YY4691PU1hFrEYNHclqgAAAA=",
+  "/model/7_1.png":
+    "data:image/webp;base64,UklGRqIAAABXRUJQVlA4WAoAAAAQAAAADwAADwAAQUxQSCAAAAARFyAQSBwS259mjYiIBQINCxNXCnW8qgIR/Y9BLPUzCFZQOCBcAAAAEAIAnQEqEAAQAAQAaCWMAA+OUG99HR0RFgD+82+/pPSPhkS5YOV1ATCzSwtgMd8THGiOcfD6HzQuXqoO7b3LOal7pX9/XUV2hho5sv3mK6Y0hsCeJZS09hDgAAA=",
+} as const;
+
+type ModelImageSource = keyof typeof modelImagePlaceholders;
+
+function ProgressiveModelImage({
+  src,
+  alt,
+  width,
+  height,
+  sizes,
+  priority = false,
+}: {
+  src: ModelImageSource;
+  alt: string;
+  width: number;
+  height: number;
+  sizes: string;
+  priority?: boolean;
+}) {
+  const [loaded, setLoaded] = useState(false);
+
+  return (
+    <Image
+      className={`model-progressive-image${loaded ? " is-loaded" : ""}`}
+      src={src}
+      alt={alt}
+      width={width}
+      height={height}
+      sizes={sizes}
+      priority={priority}
+      placeholder="blur"
+      blurDataURL={modelImagePlaceholders[src]}
+      onLoad={() => setLoaded(true)}
+      style={{ objectFit: "contain", objectPosition: "right center" }}
+    />
+  );
+}
+
 const aiRoles = [
   {
     number: "01",
@@ -120,7 +175,7 @@ function SectionIntro({
   title: ReactNode;
   text: string;
   detail?: ReactNode;
-  illustration?: { src: string; alt: string };
+  illustration?: { src: ModelImageSource; alt: string };
 }) {
   return (
     <div
@@ -132,13 +187,12 @@ function SectionIntro({
         </p>
         {illustration ? (
           <div className="model-section-illustration">
-            <Image
+            <ProgressiveModelImage
               src={illustration.src}
               alt={illustration.alt}
               width={1254}
               height={1254}
               sizes="(max-width: 960px) 100vw, 50vw"
-              unoptimized
             />
           </div>
         ) : null}
@@ -238,14 +292,13 @@ export function ModelPageClient() {
           </div>
 
           <div className="model-hero-illustration" aria-hidden="true">
-            <Image
+            <ProgressiveModelImage
               src="/model/0_1_v2.png"
               alt=""
               width={1080}
               height={1080}
               sizes="(max-width: 960px) 100vw, 50vw"
               priority
-              unoptimized
             />
           </div>
 
@@ -1176,7 +1229,7 @@ export function ModelPageClient() {
 
       <section className="model-north-star" id="north-star">
         <div className="model-north-star-visual">
-          <Image
+          <ProgressiveModelImage
             src="/model/7_1.png"
             alt="Дети и ИИ-ассистент собирают общий образовательный маршрут Shidao"
             width={1254}

@@ -55,6 +55,25 @@ html:has(.model-page) {
   color: inherit;
 }
 
+.model-progressive-image {
+  opacity: 0.82;
+  filter: blur(14px);
+  transition:
+    filter 700ms ease,
+    opacity 450ms ease;
+}
+
+.model-progressive-image.is-loaded {
+  opacity: 1;
+  filter: blur(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .model-progressive-image {
+    transition: none;
+  }
+}
+
 .model-scroll-progress {
   position: fixed;
   inset: 0 auto auto 0;
