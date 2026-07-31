@@ -2449,19 +2449,11 @@ html:has(.model-page) {
   }
 
   .model-header {
-    min-height: 66px;
-  }
-
-  .model-header::before {
-    position: absolute;
-    right: 0;
-    bottom: 100%;
-    left: 0;
-    height: 50vh;
-    height: 50svh;
-    content: "";
-    background: var(--model-navy-deep);
-    pointer-events: none;
+    --model-header-overhang: 12rem;
+    top: calc(-1 * var(--model-header-overhang));
+    min-height: calc(66px + var(--model-header-overhang));
+    margin-top: calc(-1 * var(--model-header-overhang));
+    border-top: var(--model-header-overhang) solid var(--model-navy-deep);
   }
 
   .model-page section[id] {
