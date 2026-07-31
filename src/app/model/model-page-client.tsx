@@ -24,7 +24,7 @@ import {
   X,
 } from "lucide-react";
 import Image from "next/image";
-import { type ReactNode, useEffect, useState } from "react";
+import { type ReactNode, useEffect, useLayoutEffect, useState } from "react";
 
 const modelImagePlaceholders = {
   "/model/0_1_v2.png":
@@ -211,18 +211,40 @@ export function ModelPageClient() {
   const [lessonMode, setLessonMode] = useState<"live" | "review">("live");
   const [scrollProgress, setScrollProgress] = useState(0);
 
+  useLayoutEffect(() => {
+    const isTelegramBrowser = "TelegramWebviewProxy" in window;
+    document.documentElement.classList.toggle(
+      "model-telegram-browser",
+      isTelegramBrowser,
+    );
+
+    return () => {
+      document.documentElement.classList.remove("model-telegram-browser");
+    };
+  }, []);
+
   useEffect(() => {
+    const page = document.querySelector<HTMLElement>(".model-page");
+    const scrollContainer = document.documentElement.classList.contains(
+      "model-telegram-browser",
+    )
+      ? page
+      : null;
+
     const updateProgress = () => {
-      const scrollable =
-        document.documentElement.scrollHeight - window.innerHeight;
+      const scrollTop = scrollContainer?.scrollTop ?? window.scrollY;
+      const scrollable = scrollContainer
+        ? scrollContainer.scrollHeight - scrollContainer.clientHeight
+        : document.documentElement.scrollHeight - window.innerHeight;
       setScrollProgress(
-        scrollable > 0 ? Math.min(100, (window.scrollY / scrollable) * 100) : 0,
+        scrollable > 0 ? Math.min(100, (scrollTop / scrollable) * 100) : 0,
       );
     };
 
     updateProgress();
-    window.addEventListener("scroll", updateProgress, { passive: true });
-    return () => window.removeEventListener("scroll", updateProgress);
+    const scrollTarget = scrollContainer ?? window;
+    scrollTarget.addEventListener("scroll", updateProgress, { passive: true });
+    return () => scrollTarget.removeEventListener("scroll", updateProgress);
   }, []);
 
   const closeMenu = () => setMenuOpen(false);
