@@ -2452,6 +2452,18 @@ html:has(.model-page) {
     min-height: 66px;
   }
 
+  .model-header::before {
+    position: absolute;
+    right: 0;
+    bottom: 100%;
+    left: 0;
+    height: 50vh;
+    height: 50svh;
+    content: "";
+    background: var(--model-navy-deep);
+    pointer-events: none;
+  }
+
   .model-page section[id] {
     scroll-margin-top: 66px;
   }
