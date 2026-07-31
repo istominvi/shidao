@@ -6,6 +6,11 @@ html:has(.model-page) {
   scroll-behavior: smooth;
 }
 
+html:has(.model-page),
+body:has(.model-page) {
+  background: #091326;
+}
+
 .model-page {
   --model-navy: #101e38;
   --model-navy-deep: #091326;
@@ -2446,6 +2451,8 @@ html:has(.model-page) {
 @media (max-width: 960px) {
   .model-page {
     --model-heading-size: clamp(2.1rem, 10.5vw, 3.2rem);
+    overflow-x: clip;
+    overflow-y: visible;
   }
 
   .model-header {
