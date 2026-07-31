@@ -6,11 +6,6 @@ html:has(.model-page) {
   scroll-behavior: smooth;
 }
 
-html:has(.model-page),
-body:has(.model-page) {
-  background: #091326;
-}
-
 .model-page {
   --model-navy: #101e38;
   --model-navy-deep: #091326;
@@ -2451,16 +2446,28 @@ body:has(.model-page) {
 @media (max-width: 960px) {
   .model-page {
     --model-heading-size: clamp(2.1rem, 10.5vw, 3.2rem);
-    overflow-x: clip;
-    overflow-y: visible;
   }
 
   .model-header {
-    --model-header-overhang: 12rem;
-    top: calc(-1 * var(--model-header-overhang));
-    min-height: calc(66px + var(--model-header-overhang));
-    margin-top: calc(-1 * var(--model-header-overhang));
-    border-top: var(--model-header-overhang) solid var(--model-navy-deep);
+    min-height: 66px;
+  }
+
+  html.model-telegram-browser,
+  html.model-telegram-browser body {
+    height: 100%;
+    overflow: hidden;
+    background: #091326;
+  }
+
+  html.model-telegram-browser .model-page {
+    height: 100%;
+    height: 100dvh;
+    min-height: 0;
+    overflow-x: clip;
+    overflow-y: auto;
+    overscroll-behavior-y: none;
+    background: var(--model-navy-deep);
+    -webkit-overflow-scrolling: touch;
   }
 
   .model-page section[id] {
