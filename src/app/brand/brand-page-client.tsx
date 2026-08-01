@@ -179,9 +179,6 @@ export function BrandPageClient() {
       </header>
 
       <section className="brand-hero" id="top">
-        <div className="brand-grid" aria-hidden="true" />
-        <div className="brand-hero-glow" aria-hidden="true" />
-
         <div className="brand-hero-inner">
           <div className="brand-hero-main">
             <div className="brand-hero-kicker">
@@ -207,61 +204,11 @@ export function BrandPageClient() {
               <a className="brand-button brand-button-primary" href="#name">
                 Начать с названия <ArrowDown size={17} aria-hidden="true" />
               </a>
-              <a
-                className="brand-button brand-button-ghost"
-                href="https://model.shidao.ru"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Открыть продуктовую модель
-                <ExternalLink size={15} aria-hidden="true" />
-              </a>
             </div>
           </div>
 
-          <aside className="brand-hero-aside">
-            <div className="brand-orbit-system" aria-hidden="true">
-              <div className="brand-orbit brand-orbit-outer" />
-              <div className="brand-orbit brand-orbit-middle" />
-              <div className="brand-orbit brand-orbit-inner" />
-              <div className="brand-orbit-core">Shidao</div>
-              <div className="brand-orbit-node brand-orbit-name">
-                <span />
-                имя
-              </div>
-              <div className="brand-orbit-node brand-orbit-voice">
-                <span />
-                голос
-              </div>
-              <div className="brand-orbit-node brand-orbit-image">
-                <span />
-                образ
-              </div>
-            </div>
-
-            <div className="brand-aside-copy">
-              <p className="brand-micro-label">В одном предложении</p>
-              <p>
-                Брендбук Shidao — единый источник решений о том, как бренд
-                называется, звучит и выглядит.
-              </p>
-              <div className="brand-live-signal">
-                <span aria-hidden="true" />
-                Живой документ команды
-              </div>
-            </div>
-          </aside>
+          <div className="brand-hero-media-slot" aria-hidden="true" />
         </div>
-
-        <a
-          className="brand-hero-scroll-cue"
-          href="#name"
-          aria-label="Перейти к разделу «Название»"
-        >
-          <span>01</span>
-          <span className="brand-scroll-cue-line" aria-hidden="true" />
-          Название
-        </a>
       </section>
 
       <section className="brand-section brand-name-section" id="name">

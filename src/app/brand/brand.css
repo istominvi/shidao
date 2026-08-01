@@ -16,7 +16,6 @@ body:has(.brand-page) {
   --brand-ink: #302c36;
   --brand-muted: #6f6870;
   --brand-ivory: #faf4ea;
-  --brand-paper: #fffaf3;
   --brand-line: rgba(91, 72, 67, 0.14);
   --brand-lime: #d8ef58;
   --brand-lilac: #ad82ed;
@@ -106,13 +105,10 @@ body:has(.brand-page) {
 }
 
 .brand-logo-descriptor {
-  padding-left: 0.75rem;
-  border-left: 1px solid rgba(255, 255, 255, 0.18);
-  color: rgba(255, 255, 255, 0.38);
-  font-size: 0.58rem;
-  font-weight: 750;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 0.8rem;
+  font-weight: 400;
+  letter-spacing: 0.01em;
 }
 
 .brand-nav {
@@ -198,49 +194,8 @@ body:has(.brand-page) {
   position: relative;
   min-height: calc(100svh - 74px);
   overflow: hidden;
-  background:
-    radial-gradient(
-      circle at 88% 16%,
-      rgba(173, 130, 237, 0.2),
-      transparent 27%
-    ),
-    radial-gradient(
-      circle at 73% 83%,
-      rgba(216, 239, 88, 0.18),
-      transparent 25%
-    ),
-    radial-gradient(
-      circle at 8% 74%,
-      rgba(255, 129, 107, 0.12),
-      transparent 24%
-    ),
-    var(--brand-ivory);
+  background: var(--brand-ivory);
   color: var(--brand-ink);
-}
-
-.brand-grid {
-  position: absolute;
-  inset: 0;
-  opacity: 0.48;
-  background-image:
-    linear-gradient(rgba(126, 96, 157, 0.055) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(126, 96, 157, 0.055) 1px, transparent 1px);
-  background-size: 64px 64px;
-  mask-image: linear-gradient(to bottom, black, transparent 88%);
-}
-
-.brand-hero-glow {
-  position: absolute;
-  top: 14%;
-  right: 14%;
-  width: 34vw;
-  height: 34vw;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.58);
-  box-shadow:
-    -14vw 18vw 0 rgba(255, 129, 107, 0.06),
-    10vw 22vw 0 rgba(216, 239, 88, 0.09);
-  filter: blur(68px);
 }
 
 .brand-hero-inner {
@@ -358,154 +313,8 @@ body:has(.brand-page) {
     inset 0 1px 0 rgba(255, 255, 255, 0.4);
 }
 
-.brand-button-ghost {
-  border-color: rgba(128, 91, 184, 0.25);
-  background: rgba(255, 250, 243, 0.7);
-  color: #6f50aa;
-  box-shadow: 0 10px 28px rgba(92, 69, 57, 0.06);
-}
-
-.brand-button-ghost:hover {
-  border-color: var(--brand-lilac);
-  background: #fffaf3;
-  color: #66459f;
-}
-
-.brand-hero-aside {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
+.brand-hero-media-slot {
   min-height: 510px;
-}
-
-.brand-orbit-system {
-  position: absolute;
-  z-index: 0;
-  top: 50%;
-  left: 50%;
-  width: min(43vw, 610px);
-  aspect-ratio: 1;
-  transform: translate(-50%, -54%);
-}
-
-.brand-orbit {
-  position: absolute;
-  inset: 50%;
-  border: 1px solid rgba(126, 91, 183, 0.2);
-  border-radius: 50%;
-  transform: translate(-50%, -50%);
-}
-
-.brand-orbit-outer {
-  width: 100%;
-  height: 100%;
-  border-style: dashed;
-  animation: brand-spin 72s linear infinite;
-}
-
-.brand-orbit-middle {
-  width: 72%;
-  height: 72%;
-  border-color: rgba(173, 130, 237, 0.44);
-  animation: brand-spin-reverse 54s linear infinite;
-}
-
-.brand-orbit-inner {
-  width: 43%;
-  height: 43%;
-  border-color: rgba(179, 203, 54, 0.48);
-}
-
-.brand-orbit-core {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  display: grid;
-  place-items: center;
-  width: 108px;
-  height: 108px;
-  border: 1px solid rgba(255, 255, 255, 0.9);
-  border-radius: 50%;
-  background: rgba(255, 250, 243, 0.92);
-  box-shadow:
-    0 0 0 18px rgba(173, 130, 237, 0.055),
-    0 22px 70px rgba(99, 72, 60, 0.15),
-    inset 0 1px 0 #fff;
-  color: #7550b5;
-  font-size: 1rem;
-  font-weight: 850;
-  letter-spacing: -0.04em;
-  transform: translate(-50%, -50%);
-  backdrop-filter: blur(12px);
-}
-
-.brand-orbit-node {
-  position: absolute;
-  z-index: 2;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.45rem 0.7rem;
-  border: 1px solid rgba(255, 255, 255, 0.9);
-  border-radius: 999px;
-  background: rgba(255, 250, 243, 0.88);
-  color: #655b66;
-  font-size: 0.63rem;
-  font-weight: 720;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  backdrop-filter: blur(12px);
-  box-shadow: 0 12px 32px rgba(89, 66, 56, 0.1);
-}
-
-.brand-orbit-node > span {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-}
-
-.brand-orbit-name {
-  top: 5%;
-  left: 50%;
-  transform: translateX(-50%);
-}
-
-.brand-orbit-name > span {
-  background: var(--brand-lime);
-  box-shadow: 0 0 0 5px rgba(216, 239, 88, 0.2);
-}
-
-.brand-orbit-voice {
-  right: 0;
-  bottom: 26%;
-}
-
-.brand-orbit-voice > span {
-  background: var(--brand-coral);
-}
-
-.brand-orbit-image {
-  bottom: 18%;
-  left: 2%;
-}
-
-.brand-orbit-image > span {
-  background: var(--brand-lilac);
-}
-
-.brand-aside-copy {
-  position: relative;
-  z-index: 3;
-  width: min(100%, 320px);
-  margin-top: auto;
-  margin-left: auto;
-  padding: 1.6rem;
-  border: 1px solid rgba(255, 255, 255, 0.94);
-  border-radius: 1.1rem;
-  background: rgba(255, 250, 243, 0.86);
-  backdrop-filter: blur(16px);
-  box-shadow: var(--brand-warm-shadow);
 }
 
 .brand-micro-label {
@@ -517,32 +326,6 @@ body:has(.brand-page) {
   text-transform: uppercase;
 }
 
-.brand-aside-copy .brand-micro-label {
-  color: #8a7c7b;
-}
-
-.brand-aside-copy > p:nth-child(2) {
-  margin: 1.15rem 0 0;
-  color: #443c48;
-  font-family: var(--brand-serif);
-  font-size: clamp(1.35rem, 2vw, 1.75rem);
-  letter-spacing: -0.035em;
-  line-height: 1.12;
-}
-
-.brand-live-signal {
-  display: flex;
-  align-items: center;
-  gap: 0.62rem;
-  margin-top: 1.35rem;
-  color: #857b7b;
-  font-size: 0.62rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.brand-live-signal > span,
 .brand-note-status > span,
 .brand-decision-chip > span {
   width: 7px;
@@ -550,41 +333,6 @@ body:has(.brand-page) {
   border-radius: 50%;
   background: var(--brand-lime);
   box-shadow: 0 0 0 5px rgba(216, 239, 88, 0.2);
-}
-
-.brand-hero-scroll-cue {
-  position: absolute;
-  z-index: 3;
-  right: var(--brand-section-x);
-  bottom: 1.7rem;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.75rem;
-  color: #8b8181;
-  font-size: 0.59rem;
-  font-weight: 700;
-  letter-spacing: 0.13em;
-  text-transform: uppercase;
-}
-
-.brand-hero-scroll-cue > span:first-child {
-  color: #805bc4;
-}
-
-.brand-scroll-cue-line {
-  width: 46px;
-  height: 1px;
-  overflow: hidden;
-  background: rgba(103, 85, 99, 0.18);
-}
-
-.brand-scroll-cue-line::after {
-  display: block;
-  width: 20px;
-  height: 1px;
-  content: "";
-  background: var(--brand-lilac);
-  animation: brand-scroll-line 2.2s ease-in-out infinite;
 }
 
 .brand-section {
@@ -651,18 +399,7 @@ body:has(.brand-page) {
 }
 
 .brand-name-section {
-  background:
-    radial-gradient(
-      circle at 8% 28%,
-      rgba(173, 130, 237, 0.17),
-      transparent 20%
-    ),
-    radial-gradient(
-      circle at 94% 72%,
-      rgba(255, 129, 107, 0.09),
-      transparent 19%
-    ),
-    var(--brand-ivory);
+  background: var(--brand-ivory);
 }
 
 .brand-etymology {
@@ -912,18 +649,7 @@ body:has(.brand-page) {
 
 .brand-spelling-section {
   border-top: 1px solid var(--brand-line);
-  background:
-    radial-gradient(
-      circle at 92% 13%,
-      rgba(255, 129, 107, 0.1),
-      transparent 18%
-    ),
-    radial-gradient(
-      circle at 6% 76%,
-      rgba(216, 239, 88, 0.11),
-      transparent 18%
-    ),
-    var(--brand-paper);
+  background: var(--brand-ivory);
 }
 
 .brand-spelling-section .brand-section-title h2 em {
@@ -1188,36 +914,8 @@ body:has(.brand-page) {
 .brand-next-section {
   position: relative;
   overflow: hidden;
-  background:
-    radial-gradient(
-      circle at 86% 8%,
-      rgba(173, 130, 237, 0.2),
-      transparent 23%
-    ),
-    radial-gradient(
-      circle at 10% 90%,
-      rgba(216, 239, 88, 0.16),
-      transparent 25%
-    ),
-    radial-gradient(
-      circle at 68% 72%,
-      rgba(255, 129, 107, 0.1),
-      transparent 22%
-    ),
-    var(--brand-ivory);
+  background: var(--brand-ivory);
   color: var(--brand-ink);
-}
-
-.brand-next-section::before {
-  position: absolute;
-  inset: 0;
-  opacity: 0.5;
-  background-image:
-    linear-gradient(rgba(126, 96, 157, 0.045) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(126, 96, 157, 0.045) 1px, transparent 1px);
-  background-size: 64px 64px;
-  content: "";
-  mask-image: linear-gradient(to bottom, black, transparent);
 }
 
 .brand-next-heading,
@@ -1439,28 +1137,6 @@ body:has(.brand-page) {
   color: #fff;
 }
 
-@keyframes brand-spin {
-  to {
-    transform: translate(-50%, -50%) rotate(1turn);
-  }
-}
-
-@keyframes brand-spin-reverse {
-  to {
-    transform: translate(-50%, -50%) rotate(-1turn);
-  }
-}
-
-@keyframes brand-scroll-line {
-  0%,
-  100% {
-    transform: translateX(-100%);
-  }
-  50% {
-    transform: translateX(230%);
-  }
-}
-
 @media (max-width: 1120px) {
   .brand-header {
     grid-template-columns: minmax(170px, 1fr) auto minmax(170px, 1fr);
@@ -1476,10 +1152,6 @@ body:has(.brand-page) {
 
   .brand-hero h1 {
     font-size: clamp(3.4rem, 6vw, 4.7rem);
-  }
-
-  .brand-orbit-system {
-    width: min(48vw, 520px);
   }
 
   .brand-section-intro,
@@ -1558,19 +1230,9 @@ body:has(.brand-page) {
     font-size: clamp(3.5rem, 9.5vw, 6rem);
   }
 
-  .brand-hero-aside {
-    min-height: 520px;
+  .brand-hero-media-slot {
+    min-height: 420px;
     margin-top: 1rem;
-  }
-
-  .brand-orbit-system {
-    width: min(78vw, 570px);
-  }
-
-  .brand-aside-copy {
-    margin-top: auto;
-    margin-right: 0;
-    margin-left: auto;
   }
 
   .brand-etymology {
@@ -1695,23 +1357,8 @@ body:has(.brand-page) {
     width: 100%;
   }
 
-  .brand-hero-aside {
-    min-height: 430px;
-  }
-
-  .brand-orbit-system {
-    top: 43%;
-    width: min(95vw, 460px);
-  }
-
-  .brand-aside-copy {
-    width: min(100%, 290px);
-    margin-right: auto;
-    padding: 1.35rem;
-  }
-
-  .brand-hero-scroll-cue {
-    display: none;
+  .brand-hero-media-slot {
+    min-height: 260px;
   }
 
   .brand-section-intro,
@@ -1903,10 +1550,6 @@ body:has(.brand-page) {
 
   .brand-hero h1 {
     font-size: 2.55rem;
-  }
-
-  .brand-orbit-system {
-    width: 430px;
   }
 
   .brand-formula-meta span + span {
