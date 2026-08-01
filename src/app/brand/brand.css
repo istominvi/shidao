@@ -24,7 +24,7 @@ body:has(.brand-page) {
   --brand-coral: #ff816b;
   --brand-coral-soft: #ffe0d5;
   --brand-warm-shadow: 0 24px 70px rgba(92, 69, 57, 0.11);
-  --brand-header-text-size: 1.25rem;
+  --brand-header-text-size: 0.77rem;
   --brand-serif: Iowan Old Style, Baskerville, "Times New Roman", serif;
   --brand-sans:
     Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
@@ -107,7 +107,7 @@ body:has(.brand-page) {
 
 .brand-logo-descriptor {
   color: rgba(255, 255, 255, 0.62);
-  font-size: var(--brand-header-text-size);
+  font-size: 1.25rem;
   font-weight: 300;
   letter-spacing: -0.02em;
   line-height: 1;
@@ -1346,7 +1346,6 @@ body:has(.brand-page) {
   .brand-page {
     --brand-section-x: 1.25rem;
     --brand-section-y: 5.25rem;
-    --brand-header-text-size: 1.12rem;
   }
 
   .brand-header {
@@ -1363,7 +1362,8 @@ body:has(.brand-page) {
     padding: 0 0.78rem;
   }
 
-  .brand-wordmark {
+  .brand-wordmark,
+  .brand-logo-descriptor {
     font-size: 1.12rem;
   }
 
