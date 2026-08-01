@@ -16,8 +16,8 @@ export default function OpenGraphImage() {
         width: "100%",
         height: "100%",
         overflow: "hidden",
-        background: "#091326",
-        color: "#ffffff",
+        background: "#faf4ea",
+        color: "#302c36",
         fontFamily: "Arial, Helvetica, sans-serif",
       }}
     >
@@ -27,7 +27,7 @@ export default function OpenGraphImage() {
           inset: 0,
           display: "flex",
           backgroundImage:
-            "linear-gradient(rgba(255,255,255,.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px)",
+            "linear-gradient(rgba(126,96,157,.055) 1px, transparent 1px), linear-gradient(90deg, rgba(126,96,157,.055) 1px, transparent 1px)",
           backgroundSize: "56px 56px",
         }}
       />
@@ -39,7 +39,7 @@ export default function OpenGraphImage() {
           display: "flex",
           width: 600,
           height: 600,
-          border: "1px solid rgba(201,255,79,.32)",
+          border: "1px solid rgba(173,130,237,.42)",
           borderRadius: "50%",
         }}
       />
@@ -51,7 +51,7 @@ export default function OpenGraphImage() {
           display: "flex",
           width: 380,
           height: 380,
-          border: "1px solid rgba(201,180,255,.36)",
+          border: "1px solid rgba(216,239,88,.72)",
           borderRadius: "50%",
         }}
       />
@@ -64,8 +64,8 @@ export default function OpenGraphImage() {
           width: 26,
           height: 26,
           borderRadius: "50%",
-          background: "#c9ff4f",
-          boxShadow: "0 0 0 12px rgba(201,255,79,.10)",
+          background: "#ff816b",
+          boxShadow: "0 0 0 12px rgba(255,129,107,.12)",
         }}
       />
 
@@ -91,7 +91,7 @@ export default function OpenGraphImage() {
           <span>Shidao</span>
           <span
             style={{
-              color: "#c9ff4f",
+              color: "#7d5bc2",
               fontSize: 14,
               letterSpacing: "0.16em",
               textTransform: "uppercase",
@@ -105,7 +105,7 @@ export default function OpenGraphImage() {
           <div
             style={{
               display: "flex",
-              color: "rgba(255,255,255,.46)",
+              color: "#8a7e80",
               fontSize: 15,
               fontWeight: 700,
               letterSpacing: "0.15em",
@@ -134,7 +134,7 @@ export default function OpenGraphImage() {
             display: "flex",
             alignItems: "center",
             gap: 14,
-            color: "rgba(255,255,255,.5)",
+            color: "#81777a",
             fontSize: 15,
           }}
         >
@@ -144,7 +144,8 @@ export default function OpenGraphImage() {
               width: 9,
               height: 9,
               borderRadius: "50%",
-              background: "#c9ff4f",
+              background: "#d8ef58",
+              boxShadow: "0 0 0 7px rgba(216,239,88,.18)",
             }}
           />
           Версия 1.0 · 28 июля 2026
