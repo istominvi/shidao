@@ -258,8 +258,8 @@ export function BrandPageClient() {
 
             <h1>
               <span>Shidao —</span>
-              <em>имя, смысл</em>
-              <span>и единый язык</span>
+              <em>образ, смысл</em>
+              <em>и единый язык</em>
               <span>нашего продукта.</span>
             </h1>
 
