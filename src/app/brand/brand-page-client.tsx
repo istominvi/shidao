@@ -9,7 +9,25 @@ import {
   X,
   XIcon,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+
+const brandDestinations = [
+  {
+    href: "https://shidao.ru",
+    label: "shidao.ru",
+    description: "Главная страница Shidao",
+  },
+  {
+    href: "https://model.shidao.ru",
+    label: "model.shidao.ru",
+    description: "Продуктовая модель Shidao",
+  },
+  {
+    href: "https://demo.shidao.ru",
+    label: "demo.shidao.ru",
+    description: "Демонстрация продукта",
+  },
+] as const;
 
 const spellingRows = [
   {
@@ -81,7 +99,9 @@ function Wordmark() {
 
 export function BrandPageClient() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [moreMenuOpen, setMoreMenuOpen] = useState(false);
   const [scrollProgress, setScrollProgress] = useState(0);
+  const moreMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const updateProgress = () => {
@@ -103,19 +123,35 @@ export function BrandPageClient() {
   }, []);
 
   useEffect(() => {
-    if (!menuOpen) {
+    if (!menuOpen && !moreMenuOpen) {
       return;
     }
 
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         setMenuOpen(false);
+        setMoreMenuOpen(false);
+      }
+    };
+
+    const onPointerDown = (event: PointerEvent) => {
+      if (
+        moreMenuOpen &&
+        moreMenuRef.current &&
+        !moreMenuRef.current.contains(event.target as Node)
+      ) {
+        setMoreMenuOpen(false);
       }
     };
 
     window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [menuOpen]);
+    document.addEventListener("pointerdown", onPointerDown);
+
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      document.removeEventListener("pointerdown", onPointerDown);
+    };
+  }, [menuOpen, moreMenuOpen]);
 
   const closeMenu = () => setMenuOpen(false);
 
@@ -152,15 +188,46 @@ export function BrandPageClient() {
           </a>
         </nav>
 
-        <a
-          className="brand-header-cta"
-          href="https://model.shidao.ru"
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label="Открыть продуктовую модель Shidao в новой вкладке"
-        >
-          Модель <ArrowRight size={15} aria-hidden="true" />
-        </a>
+        <div className="brand-more" ref={moreMenuRef}>
+          <button
+            className="brand-header-cta"
+            type="button"
+            aria-haspopup="true"
+            aria-expanded={moreMenuOpen}
+            aria-controls="brand-more-menu"
+            onClick={() => {
+              setMoreMenuOpen((value) => !value);
+              setMenuOpen(false);
+            }}
+          >
+            Еще <ArrowRight size={15} aria-hidden="true" />
+          </button>
+
+          {moreMenuOpen ? (
+            <nav
+              className="brand-more-menu"
+              id="brand-more-menu"
+              aria-label="Другие сайты Shidao"
+            >
+              {brandDestinations.map((destination) => (
+                <a
+                  className="brand-more-link"
+                  href={destination.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => setMoreMenuOpen(false)}
+                  key={destination.href}
+                >
+                  <span>
+                    <strong>{destination.label}</strong>
+                    <small>{destination.description}</small>
+                  </span>
+                  <ExternalLink size={14} aria-hidden="true" />
+                </a>
+              ))}
+            </nav>
+          ) : null}
+        </div>
 
         <button
           className="brand-menu-button"
@@ -168,7 +235,10 @@ export function BrandPageClient() {
           aria-label={menuOpen ? "Закрыть меню" : "Открыть меню"}
           aria-expanded={menuOpen}
           aria-controls="brand-navigation"
-          onClick={() => setMenuOpen((value) => !value)}
+          onClick={() => {
+            setMenuOpen((value) => !value);
+            setMoreMenuOpen(false);
+          }}
         >
           {menuOpen ? (
             <X size={22} aria-hidden="true" />
@@ -182,7 +252,7 @@ export function BrandPageClient() {
         <div className="brand-hero-inner">
           <div className="brand-hero-main">
             <div className="brand-hero-kicker">
-              <span>Внутренний брендбук · Живой стандарт команды</span>
+              <span>Внутренний брендбук</span>
               <span>28 / 07 / 2026</span>
             </div>
 

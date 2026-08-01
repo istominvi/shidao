@@ -106,9 +106,11 @@ body:has(.brand-page) {
 
 .brand-logo-descriptor {
   color: rgba(255, 255, 255, 0.62);
-  font-size: 0.8rem;
+  font-size: 1.25rem;
   font-weight: 400;
-  letter-spacing: 0.01em;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  white-space: nowrap;
 }
 
 .brand-nav {
@@ -160,6 +162,7 @@ body:has(.brand-page) {
   padding: 0 1rem;
   border: 1px solid rgba(255, 255, 255, 0.25);
   border-radius: 999px;
+  background: transparent;
   color: #fff;
   font-size: 0.72rem;
   font-weight: 700;
@@ -168,12 +171,71 @@ body:has(.brand-page) {
     border-color 180ms ease,
     background 180ms ease,
     color 180ms ease;
+  cursor: pointer;
 }
 
 .brand-header-cta:hover {
   border-color: var(--brand-lime);
   background: var(--brand-lime);
   color: var(--brand-navy);
+}
+
+.brand-more {
+  position: relative;
+  justify-self: end;
+}
+
+.brand-more-menu {
+  position: absolute;
+  z-index: 120;
+  top: calc(100% + 0.75rem);
+  right: 0;
+  display: grid;
+  width: min(330px, calc(100vw - 2.5rem));
+  padding: 0.55rem;
+  border: 1px solid rgba(91, 72, 67, 0.14);
+  border-radius: 1.1rem;
+  background: #fffaf3;
+  box-shadow: 0 22px 60px rgba(9, 19, 38, 0.2);
+  color: var(--brand-ink);
+}
+
+.brand-more-link {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.9rem;
+  border-radius: 0.75rem;
+  transition: background 160ms ease;
+}
+
+.brand-more-link:hover,
+.brand-more-link:focus-visible {
+  background: var(--brand-lilac-soft);
+}
+
+.brand-more-link > span {
+  display: grid;
+  gap: 0.24rem;
+  min-width: 0;
+}
+
+.brand-more-link strong {
+  color: #4c4050;
+  font-size: 0.84rem;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.brand-more-link small {
+  color: var(--brand-muted);
+  font-size: 0.68rem;
+  line-height: 1.35;
+}
+
+.brand-more-link svg {
+  color: #805bc4;
 }
 
 .brand-menu-button {
@@ -1142,10 +1204,6 @@ body:has(.brand-page) {
     grid-template-columns: minmax(170px, 1fr) auto minmax(170px, 1fr);
   }
 
-  .brand-logo-descriptor {
-    display: none;
-  }
-
   .brand-hero-inner {
     grid-template-columns: minmax(0, 1.2fr) minmax(260px, 0.8fr);
   }
@@ -1214,6 +1272,10 @@ body:has(.brand-page) {
 
   .brand-menu-button {
     display: inline-flex;
+  }
+
+  .brand-more-menu {
+    right: calc(-42px - 0.7rem);
   }
 
   .brand-hero-inner {
@@ -1299,11 +1361,8 @@ body:has(.brand-page) {
     padding: 0 0.78rem;
   }
 
-  .brand-header-cta svg {
-    display: none;
-  }
-
-  .brand-wordmark {
+  .brand-wordmark,
+  .brand-logo-descriptor {
     font-size: 1.12rem;
   }
 
@@ -1532,12 +1591,16 @@ body:has(.brand-page) {
     --brand-section-x: 1rem;
   }
 
-  .brand-header-cta {
+  .brand-header {
+    grid-template-columns: 1fr auto auto;
+  }
+
+  .brand-logo-descriptor {
     display: none;
   }
 
-  .brand-header {
-    grid-template-columns: 1fr auto;
+  .brand-more-menu {
+    width: calc(100vw - 2rem);
   }
 
   .brand-hero-kicker {
