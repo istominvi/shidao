@@ -21,7 +21,8 @@
   --demo-control-padding-inline: 0.75rem;
   --demo-surface-radius: 1.25rem;
   --demo-control-font-size: 0.88rem;
-  --demo-control-font-weight: 600;
+  --demo-control-font-weight: 500;
+  --demo-control-line-height: 1.2;
   position: relative;
   min-height: 100vh;
   overflow-x: clip;
@@ -717,7 +718,9 @@
 .demo-week-heading strong {
   display: inline-block;
   padding-inline: var(--demo-control-padding-inline);
-  font-size: 0.88rem;
+  font-size: var(--demo-control-font-size);
+  font-weight: var(--demo-control-font-weight);
+  line-height: var(--demo-control-line-height);
 }
 
 .demo-week-heading span {
@@ -792,13 +795,13 @@
 .demo-week-days button > span {
   color: #8b8e97;
   font-size: 0.64rem;
-  font-weight: 700;
+  font-weight: var(--demo-control-font-weight);
 }
 
 .demo-week-days strong,
 .demo-month-days strong {
   font-size: 0.92rem;
-  font-weight: 600;
+  font-weight: var(--demo-control-font-weight);
 }
 
 .demo-week-days button.is-today,
@@ -829,7 +832,7 @@
   right: 0.42rem;
   color: rgba(20, 20, 20, 0.5);
   font-size: 0.64rem;
-  font-weight: 600;
+  font-weight: var(--demo-control-font-weight);
   line-height: 1;
 }
 
@@ -959,12 +962,16 @@
 }
 
 .demo-session-time strong {
-  font-size: 0.95rem;
+  font-size: var(--demo-control-font-size);
+  font-weight: var(--demo-control-font-weight);
+  line-height: var(--demo-control-line-height);
 }
 
 .demo-session-time span {
   color: var(--demo-muted);
-  font-size: 0.64rem;
+  font-size: var(--demo-control-font-size);
+  font-weight: var(--demo-control-font-weight);
+  line-height: var(--demo-control-line-height);
 }
 
 .demo-session-card {
@@ -4405,12 +4412,13 @@
   font-family: inherit;
   font-size: var(--demo-control-font-size) !important;
   font-weight: var(--demo-control-font-weight) !important;
-  line-height: 1.2;
+  line-height: var(--demo-control-line-height);
 }
 
 .demo-profile-copy strong {
   font-size: var(--demo-control-font-size);
   font-weight: var(--demo-control-font-weight);
+  line-height: var(--demo-control-line-height);
 }
 
 /* Unified page rhythm: every top-level block advances by one 16 px step. */
