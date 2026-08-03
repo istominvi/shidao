@@ -1135,14 +1135,9 @@ export function DemoExperience() {
           ) : null}
           <strong>{date.getDate()}</strong>
           {count ? (
-            <em
-              className={`demo-day-count ${
-                key < dateKey(demoToday) ? "is-past" : "is-upcoming"
-              }`}
-              aria-hidden="true"
-            >
+            <small className="demo-day-count" aria-hidden="true">
               {count}
-            </em>
+            </small>
           ) : null}
         </button>
       );
@@ -1153,10 +1148,9 @@ export function DemoExperience() {
         <section className="demo-page-hero demo-schedule-hero">
           <div>
             <h1>Добрый день, Агата</h1>
-            <div className="demo-hero-metrics" aria-label="Общие показатели расписания">
-              <span>Всего запланировано <strong>{scheduleLessons.length} уроков</strong></span>
-              <span><strong>Следующий</strong> через 2 ч 30 мин</span>
-            </div>
+            <p className="demo-hero-summary">
+              {scheduleLessons.length} уроков, следующий через 2 ч 30 мин
+            </p>
           </div>
           <div className="demo-hero-actions">
             <DemoButton variant="primary" onClick={() => setScheduleModalOpen(true)}>
