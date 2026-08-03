@@ -10,12 +10,19 @@
 - **Активный контур:** существующие web deployment и self-hosted Supabase
 - **Дата фиксации исходных решений:** 26 июля 2026 года
 - **Дата обновления стратегии реконструкции:** 3 августа 2026 года
+- **Первый milestone реализации:** teacher course builder demo, зафиксирован 3 августа 2026 года
 
 ---
 
 ## 1. Назначение документа
 
 Этот документ является единым источником требований для полного рефакторинга ShiDao.
+
+Связанные обязательные документы:
+
+- `docs/operations/v1-recovery-runbook.md` — проверка recovery set и безопасный возврат к V1;
+- `docs/v2/TEACHER_COURSE_BUILDER_DEMO_MILESTONE.md` — первая цель реализации и сценарий показа заказчику;
+- `docs/architecture/lesson-workflow-model.md` — каноническая модель Lesson Step, Teacher Side и Student Screen.
 
 Целевая система проектируется как новый продукт внутри существующего репозитория и существующего инфраструктурного контура. Разработка продолжается непосредственно в ветке `main`, а прикладная схема перестраивается в текущей базе данных. Отдельный репозиторий и отдельный Supabase-проект для V2 не создаются.
 
@@ -673,7 +680,11 @@ JSON Schema генерируется из того же источника дл�
 
 - rich text;
 - heading;
+- callout;
+- quote;
+- divider;
 - image;
+- slideshow;
 - audio;
 - video;
 - file;
@@ -683,9 +694,11 @@ JSON Schema генерируется из того же источника дл�
 - word card;
 - flashcards;
 - single-choice quiz;
+- single-choice poll;
 - multiple-choice quiz;
 - short text response;
 - matching task;
+- matching game;
 - ordering task;
 - fill-in-the-gap;
 - open task;
@@ -1925,16 +1938,30 @@ MVP:
 - создать и отправить архивную ветку и тег V1 — выполнено;
 - создать и проверить полный Git bundle — выполнено;
 - создать полный логический и физический snapshot Supabase/PostgreSQL/Storage — выполнено;
-- сохранить локальную и серверную копии recovery set с совпадающими SHA-256 — выполнено;
+- сохранить полный локальный recovery set и отдельную серверную копию критических DB/Supabase-архивов с совпадающими SHA-256 — выполнено;
 - исключить recovery set и локальную SSH-конфигурацию из Git — выполнено;
 - продолжить реконструкцию в `main` и существующем Supabase-контуре — принятое решение;
 - оставить на `shidao.ru` только лендинг и закрыть старые внутренние URL — выполнено;
 - подключить `v2.shidao.ru` к тому же Coolify application — выполнено;
 - разрешить `v2.shidao.ru/auth/confirm` в GoTrue без замены SMTP/Auth — выполнено;
+- задокументировать проверку и процедуру восстановления V1 — выполнено, см. `docs/operations/v1-recovery-runbook.md`;
 - настроить CI;
 - при необходимости настроить страницу «сервис в разработке»;
 - подготовить Account bootstrap для существующих `auth.users`;
 - до публичного production-запуска отрепетировать полное восстановление на одноразовом VDS.
+
+## 90.1 Первый вертикальный milestone — teacher course builder demo
+
+До расширения AI/RAG/live-функций реализуется короткий доказуемый workflow:
+
+```text
+Курсы → Новый курс → форма и вложения → persisted Course
+→ Lesson → Lesson Step → ordered registry components → Student Screen preview
+```
+
+Milestone включает минимальный code-first registry, Course workspace, десять базовых component types, простой assembler и development-only MCP adapter над общими application commands.
+
+Полный scope, ограничения и Definition of Done находятся в `docs/v2/TEACHER_COURSE_BUILDER_DEMO_MILESTONE.md`. Этот milestone разрешает реализовать минимальный сквозной срез фундамента, Course domain и Material platform до завершения всех возможностей соответствующих этапов. Он не разрешает обходить ownership/RLS, смешивать Teacher Side со Student Screen или публиковать внешний MCP endpoint.
 
 ## 91. Этап 1 — новый фундамент
 
@@ -2174,7 +2201,14 @@ audit_event
 ## P0
 
 - rich text;
+- heading;
+- callout;
+- quote;
+- divider;
 - image;
+- slideshow;
+- single-choice poll;
+- matching game;
 - teacher note;
 - instruction;
 - vocabulary list;
