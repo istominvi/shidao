@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { SessionViewProvider } from "@/components/session-view-provider";
+import {
+  LANDING_ONLY_SURFACE,
+  PUBLIC_SURFACE_HEADER,
+} from "@/lib/deployment-access";
 import { GUEST_SESSION_VIEW } from "@/lib/session-view";
 import { readSessionViewServer } from "@/lib/server/session-view";
 import "./globals.css";
@@ -44,9 +48,10 @@ export default async function RootLayout({
   children: React.ReactNode;
 }) {
   const requestHeaders = await headers();
-  const isPublicBrandSurface =
-    requestHeaders.get("x-shidao-public-surface") === "brand";
-  const initialSessionView = isPublicBrandSurface
+  const publicSurface = requestHeaders.get(PUBLIC_SURFACE_HEADER);
+  const mustUseGuestSession =
+    publicSurface === "brand" || publicSurface === LANDING_ONLY_SURFACE;
+  const initialSessionView = mustUseGuestSession
     ? GUEST_SESSION_VIEW
     : await readSessionViewServer();
 

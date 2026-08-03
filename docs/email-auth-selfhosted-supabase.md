@@ -16,15 +16,15 @@
 
 ## 2) Рабочая архитектура (end-to-end)
 
-Цепочка в текущем production/self-hosted режиме (`ENABLE_EMAIL_AUTOCONFIRM=false`):
+Цепочка в текущем self-hosted режиме V2 (`ENABLE_EMAIL_AUTOCONFIRM=false`):
 
-1. Пользователь регистрируется в Shidao (`/join`).
+1. Пользователь регистрируется в Shidao V2 (`https://v2.shidao.ru/join`).
 2. Shidao вызывает Supabase Auth signup.
 3. Supabase Auth создаёт user в состоянии «email не подтверждён».
 4. Supabase Auth отправляет письмо через SMTP (VK WorkSpace).
 5. Пользователь получает письмо и открывает verify link.
-6. Подтверждение обрабатывается callback-маршрутом приложения (`/auth/confirm`).
-7. После confirm пользователь может выполнить login (`/login`).
+6. Подтверждение обрабатывается callback-маршрутом приложения (`https://v2.shidao.ru/auth/confirm`).
+7. После confirm пользователь может выполнить login (`https://v2.shidao.ru/login`).
 8. Если это первый взрослый вход без профиля — переход на `/onboarding`.
 9. После onboarding — переход в единый `/dashboard`.
 
@@ -69,7 +69,7 @@ API_EXTERNAL_URL=https://supabase.shidao.ru
 SITE_URL=https://shidao.ru
 
 # Redirect/callback для confirm flow
-ADDITIONAL_REDIRECT_URLS=https://shidao.ru/auth/confirm,http://localhost:3000/auth/confirm
+ADDITIONAL_REDIRECT_URLS=https://shidao.ru/auth/confirm,https://v2.shidao.ru/auth/confirm,http://localhost:3000/auth/confirm
 
 # Email signup
 ENABLE_EMAIL_SIGNUP=true
@@ -84,8 +84,10 @@ SMTP_SENDER_NAME=ShiDao
 SMTP_PASS=<app-password>
 
 # Дополнительная host-валидация/линки mailer в GoTrue
-GOTRUE_MAILER_EXTERNAL_HOSTS=shidao.ru,supabase.shidao.ru,localhost
+GOTRUE_MAILER_EXTERNAL_HOSTS=shidao.ru,v2.shidao.ru,supabase.shidao.ru,localhost
 ```
+
+В Coolify для Next.js сохраняется публичный URL лендинга `NEXT_PUBLIC_SITE_URL=https://shidao.ru`, а callback/Auth URL задаётся отдельно: `NEXT_PUBLIC_APP_URL=https://v2.shidao.ru`.
 
 ---
 
@@ -93,7 +95,7 @@ GOTRUE_MAILER_EXTERNAL_HOSTS=shidao.ru,supabase.shidao.ru,localhost
 
 1. `SMTP_PASS` — это **пароль приложения** VK WorkSpace, не обычный пароль почтового ящика.
 2. `API_EXTERNAL_URL` и `SUPABASE_PUBLIC_URL` не должны указывать на некорректный HTTPS endpoint с `:8000`.
-3. `ADDITIONAL_REDIRECT_URLS` обязателен для корректного confirm callback.
+3. `ADDITIONAL_REDIRECT_URLS` должен содержать callback и основного домена, и `v2.shidao.ru`; активная V2 использует второй.
 4. Ошибочные URL/порты ломают verify/confirm flow даже при «живом» SMTP.
 
 ---

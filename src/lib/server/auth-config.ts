@@ -15,9 +15,10 @@ export function getSupabasePublicConfig() {
 
 export function getPublicSiteUrl() {
   const candidate =
+    process.env.NEXT_PUBLIC_APP_URL ||
+    process.env.APP_BASE_URL ||
     process.env.NEXT_PUBLIC_SITE_URL ||
     process.env.SITE_URL ||
-    process.env.NEXT_PUBLIC_APP_URL ||
     DEFAULT_PUBLIC_SITE_URL;
 
   return candidate.replace(/\/+$/, "");

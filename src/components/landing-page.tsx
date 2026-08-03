@@ -27,6 +27,38 @@ import {
   workflowSteps,
 } from "@/components/landing/content";
 
+function AccessLink({
+  locked,
+  href,
+  className,
+  children,
+}: {
+  locked: boolean;
+  href: string;
+  className: string;
+  children: React.ReactNode;
+}) {
+  if (locked) {
+    return (
+      <button
+        type="button"
+        disabled
+        aria-disabled="true"
+        title="Доступ временно закрыт"
+        className={`${className} nav-pill-unavailable`}
+      >
+        {children}
+      </button>
+    );
+  }
+
+  return (
+    <Link href={href} className={className}>
+      {children}
+    </Link>
+  );
+}
+
 function WordChip({
   hanzi,
   pinyin,
@@ -46,13 +78,34 @@ function WordChip({
   );
 }
 
-export function LandingPage() {
+export function LandingPage({ landingOnly = false }: { landingOnly?: boolean }) {
   const { state, sessionResolved } = useSessionView();
   const authCtaHref = resolveLandingAuthCtaHref(state);
   const marketingActiveId = useMarketingNavActive(
     PRIMARY_NAV_CONFIG.marketing.items.map((item) => item.href),
   );
   const navActions = (() => {
+    if (landingOnly) {
+      return (
+        <>
+          <AccessLink
+            locked
+            href={ROUTES.login}
+            className="nav-pill nav-pill-inactive header-action-btn flex-1 sm:flex-none"
+          >
+            Войти
+          </AccessLink>
+          <AccessLink
+            locked
+            href={ROUTES.join}
+            className="nav-pill nav-pill-accent header-action-btn flex-1 sm:flex-none"
+          >
+            Создать аккаунт
+          </AccessLink>
+        </>
+      );
+    }
+
     const action = resolveLandingNavAction(state, sessionResolved);
 
     switch (action) {
@@ -137,18 +190,20 @@ export function LandingPage() {
               после каждого занятия.
             </p>
             <div className="mt-7 grid gap-3 sm:flex sm:flex-wrap">
-              <Link
+              <AccessLink
+                locked={landingOnly}
                 href={ROUTES.join}
                 className="landing-btn landing-btn-primary min-h-12 w-full sm:w-auto"
               >
                 Создать аккаунт
-              </Link>
-              <Link
+              </AccessLink>
+              <AccessLink
+                locked={landingOnly}
                 href={authCtaHref}
                 className="landing-btn landing-btn-muted min-h-12 w-full sm:w-auto"
               >
                 У меня уже есть доступ
-              </Link>
+              </AccessLink>
             </div>
           </div>
 
@@ -385,12 +440,20 @@ export function LandingPage() {
               связь в один рабочий контур.
             </p>
             <div className="mt-6 grid gap-3 sm:flex sm:justify-center">
-              <Link href={ROUTES.join} className="landing-btn landing-btn-primary min-h-12 w-full sm:w-auto">
+              <AccessLink
+                locked={landingOnly}
+                href={ROUTES.join}
+                className="landing-btn landing-btn-primary min-h-12 w-full sm:w-auto"
+              >
                 Создать аккаунт
-              </Link>
-              <Link href={ROUTES.login} className="landing-btn landing-btn-muted min-h-12 w-full sm:w-auto">
+              </AccessLink>
+              <AccessLink
+                locked={landingOnly}
+                href={ROUTES.login}
+                className="landing-btn landing-btn-muted min-h-12 w-full sm:w-auto"
+              >
                 Войти
-              </Link>
+              </AccessLink>
             </div>
           </div>
         </div>
