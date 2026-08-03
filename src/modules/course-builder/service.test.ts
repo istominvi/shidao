@@ -1,0 +1,801 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+import {
+  CourseBuilderAccessError,
+  CourseBuilderConflictError,
+  CourseBuilderValidationError,
+  type AddLessonInput,
+  type AddLessonStepInput,
+  type CourseDraftInput,
+  type CourseUpdateInput,
+  type PrepareCourseAttachmentInput,
+  type UpdateLessonInput,
+  type UpdateLessonStepInput,
+} from "./contracts";
+import type {
+  CourseAsset,
+  CourseBuilderActor,
+  CourseDraftAssemblyPlan,
+  CourseLesson,
+  CourseSummary,
+  CourseWorkspace,
+  LessonComponent,
+  LessonStep,
+} from "./domain";
+import {
+  getComponentDefinition,
+  type ComponentTypeKey,
+} from "./registry/contracts";
+import type { CourseBuilderRepository } from "./repository";
+import { createCourseBuilderService } from "./service";
+
+const NOW = "2026-08-03T00:00:00.000Z";
+const ASSEMBLED_AT = "2026-08-03T00:05:00.000Z";
+
+function uuid(sequence: number) {
+  return `00000000-0000-4000-8000-${sequence.toString(16).padStart(12, "0")}`;
+}
+
+const ALICE_USER_ID = uuid(1);
+const BOB_USER_ID = uuid(2);
+const UNKNOWN_USER_ID = uuid(3);
+const ALICE_ACCOUNT_ID = uuid(101);
+const BOB_ACCOUNT_ID = uuid(102);
+
+const alice: CourseBuilderActor = {
+  authUserId: ALICE_USER_ID,
+  accessToken: "alice-access-token",
+};
+const bob: CourseBuilderActor = {
+  authUserId: BOB_USER_ID,
+  accessToken: "bob-access-token",
+};
+
+function courseInput(
+  overrides: Partial<CourseDraftInput> = {},
+): CourseDraftInput {
+  return {
+    title: "Китайский с нуля",
+    subject: "Базовый китайский язык",
+    goal: "Научиться представляться и понимать простые вопросы.",
+    level: "Начальный",
+    audienceDescription: "Взрослый ученик без подготовки",
+    targetLessonCount: 8,
+    teacherPreferences: "Начинайте с короткого устного разогрева.",
+    ...overrides,
+  };
+}
+
+type StoredAssetRecord = {
+  asset: CourseAsset;
+  ownerAccountId: string;
+  storageBucket: string;
+  storagePath: string;
+};
+
+class InMemoryCourseBuilderRepository implements CourseBuilderRepository {
+  readonly accounts = new Map([
+    [ALICE_USER_ID, ALICE_ACCOUNT_ID],
+    [BOB_USER_ID, BOB_ACCOUNT_ID],
+  ]);
+  readonly courses = new Map<string, CourseSummary>();
+  readonly lessons = new Map<string, CourseLesson>();
+  readonly steps = new Map<string, LessonStep>();
+  readonly components = new Map<string, LessonComponent>();
+  readonly assets = new Map<string, StoredAssetRecord>();
+  readonly courseAttachments = new Map<string, Set<string>>();
+  readonly calls = {
+    addComponent: 0,
+    updateComponent: 0,
+    reorderComponent: 0,
+    assembleDraft: 0,
+    deletePendingAttachment: 0,
+  };
+
+  private sequence = 1_000;
+
+  private createId() {
+    this.sequence += 1;
+    return uuid(this.sequence);
+  }
+
+  private lessonsForCourse(courseId: string) {
+    return [...this.lessons.values()]
+      .filter((lesson) => lesson.courseId === courseId)
+      .sort((left, right) => left.position - right.position);
+  }
+
+  private stepsForLesson(lessonId: string) {
+    return [...this.steps.values()]
+      .filter((step) => step.lessonId === lessonId)
+      .sort((left, right) => left.position - right.position);
+  }
+
+  private componentsForStep(stepId: string) {
+    return [...this.components.values()]
+      .filter((component) => component.stepId === stepId)
+      .sort((left, right) => left.position - right.position);
+  }
+
+  async getAccountId(authUserId: string) {
+    return this.accounts.get(authUserId) ?? null;
+  }
+
+  async getSessionInvalidBefore() {
+    return null;
+  }
+
+  async listCourses() {
+    return [...this.courses.values()];
+  }
+
+  async getCourseWorkspace(courseId: string): Promise<CourseWorkspace | null> {
+    const course = this.courses.get(courseId);
+    if (!course) return null;
+    const lessons = this.lessonsForCourse(courseId).map((lesson) => ({
+      ...lesson,
+      steps: this.stepsForLesson(lesson.id).map((step) => ({
+        ...step,
+        components: this.componentsForStep(step.id).map((component) => ({
+          ...component,
+          payload: { ...component.payload },
+          placement: { ...component.placement },
+        })),
+      })),
+    }));
+    const attachments = [...(this.courseAttachments.get(courseId) ?? [])]
+      .map((assetId) => this.assets.get(assetId)?.asset)
+      .filter((asset): asset is CourseAsset => Boolean(asset))
+      .map((asset) => ({ ...asset }));
+    return {
+      ...course,
+      lessonCount: lessons.length,
+      lessons,
+      attachments,
+    };
+  }
+
+  async createCourse(ownerAccountId: string, input: CourseDraftInput) {
+    const id = this.createId();
+    const course: CourseSummary = {
+      id,
+      ownerAccountId,
+      ...input,
+      status: "draft",
+      lessonCount: 0,
+      assembledAt: null,
+      createdAt: NOW,
+      updatedAt: NOW,
+    };
+    this.courses.set(id, course);
+    return { ...course };
+  }
+
+  async updateCourse(courseId: string, input: CourseUpdateInput) {
+    const course = this.courses.get(courseId);
+    if (!course) return null;
+    const updated = { ...course, ...input, updatedAt: NOW };
+    this.courses.set(courseId, updated);
+    return { ...updated };
+  }
+
+  async assembleDraft(input: CourseDraftAssemblyPlan) {
+    const course = this.courses.get(input.courseId);
+    if (!course) throw new Error("course not found");
+    this.calls.assembleDraft += 1;
+    const lesson = await this.addLesson(input.courseId, input.lesson);
+    const step = await this.addStep(lesson.id, input.step);
+    const componentIds: string[] = [];
+    for (const planned of input.components) {
+      const component = await this.addComponent({
+        stepId: step.id,
+        ...planned,
+        visibility: "learner_visible",
+      });
+      componentIds.push(component.id);
+    }
+    this.courses.set(input.courseId, {
+      ...course,
+      assembledAt: ASSEMBLED_AT,
+    });
+    return {
+      courseId: input.courseId,
+      lessonIds: [lesson.id],
+      stepIds: [step.id],
+      componentIds,
+      alreadyAssembled: false,
+    };
+  }
+
+  async addLesson(courseId: string, input: AddLessonInput) {
+    const lesson: CourseLesson = {
+      id: this.createId(),
+      courseId,
+      position: this.lessonsForCourse(courseId).length + 1,
+      title: input.title,
+      summary: input.summary,
+      steps: [],
+      createdAt: NOW,
+      updatedAt: NOW,
+    };
+    this.lessons.set(lesson.id, lesson);
+    return { ...lesson, steps: [] };
+  }
+
+  async getLesson(lessonId: string) {
+    const lesson = this.lessons.get(lessonId);
+    return lesson ? { ...lesson, steps: this.stepsForLesson(lesson.id) } : null;
+  }
+
+  async updateLesson(lessonId: string, input: UpdateLessonInput) {
+    const lesson = this.lessons.get(lessonId);
+    if (!lesson) return null;
+    const updated = { ...lesson, ...input, updatedAt: NOW };
+    this.lessons.set(lessonId, updated);
+    return { ...updated };
+  }
+
+  async deleteLesson(lessonId: string) {
+    if (!this.lessons.delete(lessonId)) return false;
+    for (const step of this.stepsForLesson(lessonId)) {
+      for (const component of this.componentsForStep(step.id)) {
+        this.components.delete(component.id);
+      }
+      this.steps.delete(step.id);
+    }
+    return true;
+  }
+
+  async addStep(lessonId: string, input: AddLessonStepInput) {
+    const step: LessonStep = {
+      id: this.createId(),
+      lessonId,
+      position: this.stepsForLesson(lessonId).length + 1,
+      title: input.title,
+      teacherInstructions: input.teacherInstructions,
+      learnerInstruction: input.learnerInstruction,
+      components: [],
+      createdAt: NOW,
+      updatedAt: NOW,
+    };
+    this.steps.set(step.id, step);
+    return { ...step, components: [] };
+  }
+
+  async getStep(stepId: string) {
+    const step = this.steps.get(stepId);
+    return step
+      ? { ...step, components: this.componentsForStep(step.id) }
+      : null;
+  }
+
+  async updateStep(stepId: string, input: UpdateLessonStepInput) {
+    const step = this.steps.get(stepId);
+    if (!step) return null;
+    const updated = { ...step, ...input, updatedAt: NOW };
+    this.steps.set(stepId, updated);
+    return { ...updated };
+  }
+
+  async addComponent(input: {
+    stepId: string;
+    typeKey: ComponentTypeKey;
+    schemaVersion: number;
+    payload: Record<string, unknown>;
+    placement: Record<string, unknown>;
+    visibility: "learner_visible" | "staff_only";
+  }) {
+    this.calls.addComponent += 1;
+    const component: LessonComponent = {
+      id: this.createId(),
+      stepId: input.stepId,
+      typeKey: input.typeKey,
+      schemaVersion: input.schemaVersion,
+      position: this.componentsForStep(input.stepId).length + 1,
+      payload: { ...input.payload },
+      placement: { ...input.placement },
+      visibility: input.visibility,
+      createdAt: NOW,
+      updatedAt: NOW,
+    };
+    this.components.set(component.id, component);
+    return { ...component };
+  }
+
+  async getComponent(componentId: string) {
+    const component = this.components.get(componentId);
+    return component ? { ...component } : null;
+  }
+
+  async updateComponent(input: {
+    componentId: string;
+    payload?: Record<string, unknown>;
+    placement?: Record<string, unknown>;
+  }) {
+    const component = this.components.get(input.componentId);
+    if (!component) return null;
+    this.calls.updateComponent += 1;
+    const updated: LessonComponent = {
+      ...component,
+      payload: input.payload ?? component.payload,
+      placement: input.placement ?? component.placement,
+      updatedAt: NOW,
+    };
+    this.components.set(component.id, updated);
+    return { ...updated };
+  }
+
+  async deleteComponent(componentId: string) {
+    return this.components.delete(componentId);
+  }
+
+  async reorderComponent(componentId: string, toPosition: number) {
+    const component = this.components.get(componentId);
+    if (!component) return null;
+    const siblings = this.componentsForStep(component.stepId);
+    if (toPosition < 1 || toPosition > siblings.length) return null;
+    this.calls.reorderComponent += 1;
+    const withoutMoved = siblings.filter((item) => item.id !== componentId);
+    withoutMoved.splice(toPosition - 1, 0, component);
+    withoutMoved.forEach((item, index) => {
+      this.components.set(item.id, { ...item, position: index + 1 });
+    });
+    return { ...this.components.get(componentId)! };
+  }
+
+  async createPendingAttachment(input: {
+    id: string;
+    ownerAccountId: string;
+    courseId: string;
+    storageBucket: string;
+    storagePath: string;
+    file: PrepareCourseAttachmentInput;
+  }) {
+    const asset: CourseAsset = {
+      id: input.id,
+      originalFilename: input.file.originalFilename,
+      mimeType: input.file.mimeType,
+      sizeBytes: input.file.sizeBytes,
+      checksumSha256: input.file.checksumSha256.toLowerCase(),
+      status: "pending",
+      signedUrl: null,
+      createdAt: NOW,
+    };
+    this.assets.set(asset.id, {
+      asset,
+      ownerAccountId: input.ownerAccountId,
+      storageBucket: input.storageBucket,
+      storagePath: input.storagePath,
+    });
+    const links = this.courseAttachments.get(input.courseId) ?? new Set();
+    links.add(asset.id);
+    this.courseAttachments.set(input.courseId, links);
+    return { ...asset };
+  }
+
+  async getAttachment(courseId: string, assetId: string) {
+    if (!this.courseAttachments.get(courseId)?.has(assetId)) return null;
+    const record = this.assets.get(assetId);
+    return record ? { ...record.asset } : null;
+  }
+
+  async getAttachmentStorageRef(courseId: string, assetId: string) {
+    const asset = await this.getAttachment(courseId, assetId);
+    const record = this.assets.get(assetId);
+    if (!asset || !record) return null;
+    return {
+      asset,
+      storageBucket: record.storageBucket,
+      storagePath: record.storagePath,
+    };
+  }
+
+  async completeAttachment(assetId: string) {
+    const record = this.assets.get(assetId);
+    if (!record || record.asset.status !== "pending") return null;
+    const asset: CourseAsset = { ...record.asset, status: "ready" };
+    this.assets.set(assetId, { ...record, asset });
+    return { ...asset };
+  }
+
+  async deletePendingAttachment(assetId: string) {
+    const record = this.assets.get(assetId);
+    if (!record || record.asset.status !== "pending") return;
+    this.calls.deletePendingAttachment += 1;
+    this.assets.delete(assetId);
+    for (const links of this.courseAttachments.values()) links.delete(assetId);
+  }
+}
+
+function createHarness(options: { failSignedUpload?: boolean } = {}) {
+  const repository = new InMemoryCourseBuilderRepository();
+  const uploads: Array<{
+    accessToken: string;
+    bucket: string;
+    path: string;
+  }> = [];
+  const downloads: Array<{
+    accessToken: string;
+    bucket: string;
+    path: string;
+    expiresInSeconds?: number;
+  }> = [];
+  const objectAssertions: Array<{
+    accessToken: string;
+    bucket: string;
+    path: string;
+    expectedSizeBytes: number;
+    expectedMimeType: string;
+  }> = [];
+  let serviceIdSequence = 8_000;
+  const service = createCourseBuilderService({
+    repository,
+    createId: () => uuid(++serviceIdSequence),
+    storage: {
+      async createSignedUpload(input) {
+        uploads.push(input);
+        if (options.failSignedUpload) throw new Error("signed upload failed");
+        return {
+          signedUrl: `https://storage.example/upload/${input.path}`,
+          token: `upload-token-${uploads.length}`,
+        };
+      },
+      async createSignedDownload(input) {
+        downloads.push(input);
+        return `https://storage.example/download/${input.path}`;
+      },
+      async assertObjectExists(input) {
+        objectAssertions.push(input);
+      },
+    },
+  });
+  return { repository, service, uploads, downloads, objectAssertions };
+}
+
+async function createLessonStep(
+  harness: ReturnType<typeof createHarness>,
+  actor: CourseBuilderActor,
+  courseId: string,
+) {
+  const lesson = await harness.service.addLesson(actor, courseId, {
+    title: "Урок",
+    summary: "Краткое описание",
+  });
+  const step = await harness.service.addStep(actor, lesson.id, {
+    title: "Шаг",
+    teacherInstructions: "Приватная инструкция",
+    learnerInstruction: "Инструкция ученику",
+  });
+  return { lesson, step };
+}
+
+async function prepareAttachment(
+  harness: ReturnType<typeof createHarness>,
+  courseId: string,
+  input: PrepareCourseAttachmentInput,
+) {
+  return harness.service.prepareAttachment(alice, courseId, input);
+}
+
+test("create/get enforce Account ownership and preserve normalized Course data", async () => {
+  const harness = createHarness();
+  const created = await harness.service.createDraft(
+    alice,
+    courseInput({ title: "  Китайский с нуля  " }),
+  );
+
+  assert.equal(created.ownerAccountId, ALICE_ACCOUNT_ID);
+  assert.equal(created.title, "Китайский с нуля");
+  assert.equal(created.status, "draft");
+  assert.deepEqual(
+    (await harness.service.getCourse(alice, created.id)).lessons,
+    [],
+  );
+
+  await assert.rejects(
+    () => harness.service.getCourse(bob, created.id),
+    (error: unknown) => error instanceof CourseBuilderAccessError,
+  );
+  await assert.rejects(
+    () =>
+      harness.service.createDraft(
+        { authUserId: UNKNOWN_USER_ID, accessToken: "unknown" },
+        courseInput(),
+      ),
+    (error: unknown) =>
+      error instanceof CourseBuilderAccessError &&
+      /Account/.test(error.message),
+  );
+});
+
+test("deterministic assembler is idempotent and describes attachments honestly", async () => {
+  const harness = createHarness();
+  const course = await harness.service.createDraft(alice, courseInput());
+  const image = await prepareAttachment(harness, course.id, {
+    originalFilename: "map.png",
+    mimeType: "image/png",
+    sizeBytes: 1_024,
+    checksumSha256: "a".repeat(64),
+  });
+  await harness.service.completeAttachment(alice, course.id, image.asset.id);
+  const file = await prepareAttachment(harness, course.id, {
+    originalFilename: "plan.pdf",
+    mimeType: "application/pdf",
+    sizeBytes: 2_048,
+    checksumSha256: "b".repeat(64),
+  });
+  await harness.service.completeAttachment(alice, course.id, file.asset.id);
+  const pending = await prepareAttachment(harness, course.id, {
+    originalFilename: "notes.txt",
+    mimeType: "text/plain",
+    sizeBytes: 256,
+    checksumSha256: "c".repeat(64),
+  });
+
+  const first = await harness.service.assembleCourse(alice, course.id);
+  assert.equal(first.alreadyAssembled, false);
+  assert.equal(first.lessonIds.length, 1);
+  assert.equal(first.stepIds.length, 1);
+  assert.equal(first.componentIds.length, 6);
+  assert.equal(harness.repository.calls.assembleDraft, 1);
+
+  const workspace = await harness.service.getCourse(alice, course.id);
+  assert.equal(workspace.assembledAt, ASSEMBLED_AT);
+  assert.equal(workspace.lessons[0]?.title, "Введение: Базовый китайский язык");
+  assert.equal(
+    workspace.lessons[0]?.steps[0]?.teacherInstructions,
+    courseInput().teacherPreferences,
+  );
+  const components = workspace.lessons[0]?.steps[0]?.components ?? [];
+  assert.deepEqual(
+    components.map((component) => component.typeKey),
+    ["heading", "rich_text", "callout", "divider", "image", "file"],
+  );
+  const imageComponent = components.find(
+    (component) => component.typeKey === "image",
+  );
+  const fileComponent = components.find(
+    (component) => component.typeKey === "file",
+  );
+  assert.match(
+    String(imageComponent?.payload.caption),
+    /без автоматического анализа/,
+  );
+  assert.match(
+    String(fileComponent?.payload.description),
+    /не анализировалось/,
+  );
+  assert.equal(
+    components.some(
+      (component) => component.payload.storedFileId === pending.asset.id,
+    ),
+    false,
+  );
+
+  const second = await harness.service.assembleCourse(alice, course.id);
+  assert.equal(second.alreadyAssembled, true);
+  assert.deepEqual(second.lessonIds, first.lessonIds);
+  assert.deepEqual(second.componentIds, first.componentIds);
+  assert.equal(harness.repository.calls.assembleDraft, 1);
+  assert.equal(
+    (await harness.service.getCourse(alice, course.id)).lessons.length,
+    1,
+  );
+
+  const studentPreview = await harness.service.getStudentPreview(
+    alice,
+    course.id,
+  );
+  const serializedPreview = JSON.stringify(studentPreview);
+  assert.doesNotMatch(serializedPreview, /teacherInstructions/);
+  assert.doesNotMatch(
+    serializedPreview,
+    /Начинайте с короткого устного разогрева/,
+  );
+  assert.equal(
+    studentPreview.lessons[0]?.steps[0]?.title,
+    workspace.lessons[0]?.steps[0]?.title,
+  );
+});
+
+test("assembler refuses to overwrite manually authored content", async () => {
+  const harness = createHarness();
+  const course = await harness.service.createDraft(alice, courseInput());
+  await harness.service.addLesson(alice, course.id, {
+    title: "Ручной урок",
+    summary: "",
+  });
+
+  await assert.rejects(
+    () => harness.service.assembleCourse(alice, course.id),
+    (error: unknown) =>
+      error instanceof CourseBuilderConflictError &&
+      /ручной контент/.test(error.message),
+  );
+});
+
+test("component add/update/reorder share registry validation and ownership", async () => {
+  const harness = createHarness();
+  const course = await harness.service.createDraft(alice, courseInput());
+  const { step } = await createLessonStep(harness, alice, course.id);
+  const quoteDefinition = getComponentDefinition("quote");
+  const quote = await harness.service.addComponent(alice, {
+    lessonStepId: step.id,
+    typeKey: "quote",
+    payload: { text: "Путь в тысячу ли начинается с первого шага." },
+    placement: quoteDefinition.defaultPlacement,
+  });
+  const headingDefinition = getComponentDefinition("heading");
+  const heading = await harness.service.addComponent(alice, {
+    lessonStepId: step.id,
+    typeKey: "heading",
+    payload: { text: "Начало", level: "h3" },
+    placement: headingDefinition.defaultPlacement,
+  });
+
+  assert.equal(heading.position, 2);
+  assert.equal(harness.repository.components.get(quote.id)?.position, 1);
+  assert.equal(quote.schemaVersion, quoteDefinition.version);
+  assert.equal(quote.visibility, "learner_visible");
+
+  const addCalls = harness.repository.calls.addComponent;
+  await assert.rejects(() =>
+    harness.service.addComponent(alice, {
+      lessonStepId: step.id,
+      typeKey: "quote",
+      payload: { text: "" },
+      placement: quoteDefinition.defaultPlacement,
+    }),
+  );
+  assert.equal(harness.repository.calls.addComponent, addCalls);
+
+  const updated = await harness.service.updateComponent(alice, quote.id, {
+    payload: { text: "Новая цитата", attribution: "Автор" },
+    placement: { width: "wide", textAlign: "center" },
+  });
+  assert.deepEqual(updated.payload, {
+    text: "Новая цитата",
+    attribution: "Автор",
+  });
+  assert.deepEqual(updated.placement, { width: "wide", textAlign: "center" });
+
+  const updateCalls = harness.repository.calls.updateComponent;
+  await assert.rejects(() =>
+    harness.service.updateComponent(alice, quote.id, {
+      payload: { text: "Допустимый текст", unexpected: true },
+    }),
+  );
+  assert.equal(harness.repository.calls.updateComponent, updateCalls);
+
+  const reordered = await harness.service.reorderComponent(alice, quote.id, {
+    toPosition: 1,
+  });
+  assert.equal(reordered.position, 1);
+  assert.equal(harness.repository.components.get(heading.id)?.position, 2);
+  await assert.rejects(
+    () => harness.service.reorderComponent(alice, quote.id, { toPosition: 0 }),
+    (error: unknown) => error instanceof CourseBuilderValidationError,
+  );
+  await assert.rejects(
+    () =>
+      harness.service.updateComponent(bob, quote.id, {
+        payload: { text: "Чужое изменение" },
+      }),
+    (error: unknown) => error instanceof CourseBuilderAccessError,
+  );
+});
+
+test("attachment prepare/complete uses private opaque path and verifies the object", async () => {
+  const harness = createHarness();
+  const course = await harness.service.createDraft(alice, courseInput());
+  const prepared = await prepareAttachment(harness, course.id, {
+    originalFilename: "My Lesson Plan.PDF",
+    mimeType: "application/pdf",
+    sizeBytes: 4_096,
+    checksumSha256: "ABCDEF".repeat(10) + "ABCD",
+  });
+
+  assert.equal(prepared.asset.status, "pending");
+  assert.equal(prepared.upload.bucket, "course-assets");
+  assert.equal(
+    prepared.upload.path.startsWith(`${ALICE_ACCOUNT_ID}/courses/`),
+    true,
+  );
+  assert.equal(prepared.upload.path.includes("My Lesson Plan"), false);
+  assert.equal(prepared.upload.path.endsWith(".pdf"), true);
+  assert.deepEqual(harness.uploads[0], {
+    accessToken: alice.accessToken,
+    bucket: "course-assets",
+    path: prepared.upload.path,
+  });
+
+  const completed = await harness.service.completeAttachment(
+    alice,
+    course.id,
+    prepared.asset.id,
+  );
+  assert.equal(completed.status, "ready");
+  assert.deepEqual(harness.objectAssertions[0], {
+    accessToken: alice.accessToken,
+    bucket: "course-assets",
+    path: prepared.upload.path,
+    expectedSizeBytes: 4_096,
+    expectedMimeType: "application/pdf",
+  });
+
+  const workspace = await harness.service.getCourse(alice, course.id);
+  assert.match(
+    workspace.attachments[0]?.signedUrl ?? "",
+    /^https:\/\/storage\.example\/download\//,
+  );
+  assert.equal(harness.downloads[0]?.expiresInSeconds, 600);
+});
+
+test("attachment operations deny cross-course references", async () => {
+  const harness = createHarness();
+  const firstCourse = await harness.service.createDraft(alice, courseInput());
+  const secondCourse = await harness.service.createDraft(
+    alice,
+    courseInput({ title: "Второй курс" }),
+  );
+  const pending = await prepareAttachment(harness, firstCourse.id, {
+    originalFilename: "private.png",
+    mimeType: "image/png",
+    sizeBytes: 1_024,
+    checksumSha256: "d".repeat(64),
+  });
+
+  await assert.rejects(
+    () =>
+      harness.service.completeAttachment(
+        alice,
+        secondCourse.id,
+        pending.asset.id,
+      ),
+    (error: unknown) => error instanceof CourseBuilderAccessError,
+  );
+  assert.equal(harness.objectAssertions.length, 0);
+
+  await harness.service.completeAttachment(
+    alice,
+    firstCourse.id,
+    pending.asset.id,
+  );
+  const { step } = await createLessonStep(harness, alice, secondCourse.id);
+  const imageDefinition = getComponentDefinition("image");
+  await assert.rejects(
+    () =>
+      harness.service.addComponent(alice, {
+        lessonStepId: step.id,
+        typeKey: "image",
+        payload: {
+          storedFileId: pending.asset.id,
+          alt: "Чужое вложение",
+        },
+        placement: imageDefinition.defaultPlacement,
+      }),
+    (error: unknown) => error instanceof CourseBuilderAccessError,
+  );
+});
+
+test("failed signed-upload preparation removes pending metadata", async () => {
+  const harness = createHarness({ failSignedUpload: true });
+  const course = await harness.service.createDraft(alice, courseInput());
+
+  await assert.rejects(
+    () =>
+      prepareAttachment(harness, course.id, {
+        originalFilename: "broken.txt",
+        mimeType: "text/plain",
+        sizeBytes: 100,
+        checksumSha256: "e".repeat(64),
+      }),
+    /signed upload failed/,
+  );
+  assert.equal(harness.repository.calls.deletePendingAttachment, 1);
+  assert.equal(harness.repository.assets.size, 0);
+  assert.equal(
+    (await harness.service.getCourse(alice, course.id)).attachments.length,
+    0,
+  );
+});

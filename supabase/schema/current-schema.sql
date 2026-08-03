@@ -134,6 +134,128 @@ create table if not exists public.user_security (
 );
 
 -- -----------------------------------------------------------------------------
+-- V2 account + teacher course-builder vertical slice
+-- -----------------------------------------------------------------------------
+
+create table if not exists public.account (
+  id uuid primary key default gen_random_uuid(),
+  auth_user_id uuid not null unique references auth.users(id) on delete cascade,
+  display_name text not null check (btrim(display_name) <> ''),
+  locale text not null default 'ru',
+  timezone text not null default 'Europe/Moscow',
+  status text not null default 'active' check (status in ('active', 'suspended', 'deleted')),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.course (
+  id uuid primary key default gen_random_uuid(),
+  owner_account_id uuid not null references public.account(id) on delete cascade,
+  title text not null check (btrim(title) <> ''),
+  subject text,
+  goal text,
+  level text,
+  audience_description text,
+  target_lesson_count integer check (target_lesson_count is null or target_lesson_count > 0),
+  teacher_preferences text,
+  audience_type text not null default 'none' check (audience_type = 'none'),
+  settings jsonb not null default '{}'::jsonb check (jsonb_typeof(settings) = 'object'),
+  assembled_at timestamptz,
+  archived_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.lesson (
+  id uuid primary key default gen_random_uuid(),
+  course_id uuid not null references public.course(id) on delete cascade,
+  position integer not null check (position > 0),
+  title text not null check (btrim(title) <> ''),
+  summary text,
+  estimated_duration_minutes integer check (
+    estimated_duration_minutes is null or estimated_duration_minutes > 0
+  ),
+  settings jsonb not null default '{}'::jsonb check (jsonb_typeof(settings) = 'object'),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint lesson_course_position_unique
+    unique (course_id, position) deferrable initially deferred
+);
+
+create table if not exists public.lesson_step (
+  id uuid primary key default gen_random_uuid(),
+  lesson_id uuid not null references public.lesson(id) on delete cascade,
+  position integer not null check (position > 0),
+  title text not null check (btrim(title) <> ''),
+  teacher_content jsonb not null default '{}'::jsonb check (
+    jsonb_typeof(teacher_content) = 'object'
+  ),
+  settings jsonb not null default '{}'::jsonb check (jsonb_typeof(settings) = 'object'),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint lesson_step_lesson_position_unique
+    unique (lesson_id, position) deferrable initially deferred
+);
+
+create table if not exists public.lesson_step_component (
+  id uuid primary key default gen_random_uuid(),
+  lesson_step_id uuid not null references public.lesson_step(id) on delete cascade,
+  position integer not null check (position > 0),
+  type_key text not null check (btrim(type_key) <> ''),
+  schema_version integer not null default 1 check (schema_version > 0),
+  payload jsonb not null default '{}'::jsonb check (jsonb_typeof(payload) = 'object'),
+  placement_config jsonb not null default '{}'::jsonb check (
+    jsonb_typeof(placement_config) = 'object'
+  ),
+  visibility text not null default 'learner_visible' check (
+    visibility in ('staff_only', 'learner_visible', 'guardian_visible')
+  ),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint lesson_step_component_step_position_unique
+    unique (lesson_step_id, position) deferrable initially deferred
+);
+
+create table if not exists public.stored_file (
+  id uuid primary key default gen_random_uuid(),
+  owner_account_id uuid not null references public.account(id) on delete cascade,
+  storage_bucket text not null default 'course-assets' check (storage_bucket = 'course-assets'),
+  storage_path text not null unique check (btrim(storage_path) <> ''),
+  original_filename text not null check (btrim(original_filename) <> ''),
+  mime_type text not null check (btrim(mime_type) <> ''),
+  size_bytes bigint not null check (size_bytes > 0 and size_bytes <= 10485760),
+  checksum_sha256 text check (
+    checksum_sha256 is null or checksum_sha256 ~ '^[0-9a-f]{64}$'
+  ),
+  status text not null default 'pending' check (status in ('pending', 'ready')),
+  metadata jsonb not null default '{}'::jsonb check (jsonb_typeof(metadata) = 'object'),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint stored_file_owner_path_check check (
+    split_part(storage_path, '/', 1) = owner_account_id::text
+  ),
+  constraint stored_file_ready_checksum_check check (
+    status = 'pending' or checksum_sha256 is not null
+  )
+);
+
+create table if not exists public.course_attachment (
+  id uuid primary key default gen_random_uuid(),
+  course_id uuid not null references public.course(id) on delete cascade,
+  stored_file_id uuid not null references public.stored_file(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (course_id, stored_file_id)
+);
+
+-- V2 document/file tables above have owner-scoped authenticated CRUD RLS;
+-- Account itself is self-readable only for ordinary authenticated requests.
+-- Ordered Lesson, Lesson Step, and component positions are deferrable unique
+-- constraints. The private `course-assets` Storage bucket accepts approved
+-- files up to 10 MiB; storage.objects policies require the owning Account UUID
+-- as path segment 1.
+
+-- -----------------------------------------------------------------------------
 -- Methodology source layer + lesson runtime layer
 -- -----------------------------------------------------------------------------
 
@@ -409,6 +531,291 @@ create table if not exists public.notification (
 -- -----------------------------------------------------------------------------
 -- Key DB functions used by app flows (non-exhaustive)
 -- -----------------------------------------------------------------------------
+
+-- V2 Account bootstrap for every future Supabase Auth user. EXECUTE is revoked
+-- from PUBLIC/anon/authenticated; the auth.users trigger invokes it.
+create or replace function public.handle_auth_user_account()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  insert into public.account (auth_user_id, display_name)
+  values (
+    new.id,
+    coalesce(
+      nullif(btrim(new.raw_user_meta_data ->> 'full_name'), ''),
+      nullif(btrim(new.raw_user_meta_data ->> 'name'), ''),
+      nullif(split_part(coalesce(new.email, ''), '@', 1), ''),
+      'Пользователь'
+    )
+  )
+  on conflict (auth_user_id) do nothing;
+
+  return new;
+end
+$$;
+
+drop trigger if exists trg_auth_user_create_account on auth.users;
+create trigger trg_auth_user_create_account
+after insert on auth.users
+for each row execute function public.handle_auth_user_account();
+
+-- Authenticated-only SECURITY INVOKER helper. Account's own RLS policy resolves
+-- auth.uid() without trusting user-editable JWT metadata.
+create or replace function public.current_account_id()
+returns uuid
+language sql
+stable
+security invoker
+set search_path = ''
+as $$
+  select account.id
+  from public.account
+  where account.auth_user_id = (select auth.uid())
+  limit 1;
+$$;
+
+-- Authenticated callers can read only their own app-session revocation cutoff;
+-- the helper avoids a service-role authorization read in V2 Course routes.
+create or replace function public.current_session_invalid_before()
+returns timestamptz
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select security.sessions_invalid_before
+  from public.user_security as security
+  where security.user_id = (select auth.uid())
+  limit 1;
+$$;
+
+-- Validated deterministic Course draft persistence boundary. The application
+-- service creates the registry plan; this SECURITY INVOKER function commits
+-- its Lesson, Lesson Step, components and assembled marker atomically.
+create or replace function public.assemble_course_draft(
+  p_course_id uuid,
+  p_lesson_title text,
+  p_lesson_summary text,
+  p_step_title text,
+  p_teacher_instructions text,
+  p_learner_instruction text,
+  p_components jsonb
+)
+returns jsonb
+language plpgsql
+security invoker
+set search_path = ''
+as $$
+declare
+  v_assembled_at timestamptz;
+  v_lesson_id uuid;
+  v_step_id uuid;
+  v_component_id uuid;
+  v_component jsonb;
+  v_position integer := 0;
+  v_lesson_ids uuid[] := '{}'::uuid[];
+  v_step_ids uuid[] := '{}'::uuid[];
+  v_component_ids uuid[] := '{}'::uuid[];
+begin
+  if p_components is null or jsonb_typeof(p_components) <> 'array' then
+    raise exception 'course_components_must_be_array' using errcode = '22023';
+  end if;
+
+  select course.assembled_at into v_assembled_at
+  from public.course
+  where course.id = p_course_id
+  for update;
+
+  if not found then
+    raise exception 'course_not_found' using errcode = 'P0002';
+  end if;
+
+  if v_assembled_at is not null then
+    select coalesce(array_agg(lesson.id order by lesson.position), '{}'::uuid[])
+    into v_lesson_ids from public.lesson where lesson.course_id = p_course_id;
+
+    select coalesce(array_agg(step.id order by lesson.position, step.position), '{}'::uuid[])
+    into v_step_ids
+    from public.lesson_step as step
+    join public.lesson on lesson.id = step.lesson_id
+    where lesson.course_id = p_course_id;
+
+    select coalesce(
+      array_agg(component.id order by lesson.position, step.position, component.position),
+      '{}'::uuid[]
+    )
+    into v_component_ids
+    from public.lesson_step_component as component
+    join public.lesson_step as step on step.id = component.lesson_step_id
+    join public.lesson on lesson.id = step.lesson_id
+    where lesson.course_id = p_course_id;
+
+    return jsonb_build_object(
+      'courseId', p_course_id,
+      'lessonIds', to_jsonb(v_lesson_ids),
+      'stepIds', to_jsonb(v_step_ids),
+      'componentIds', to_jsonb(v_component_ids),
+      'alreadyAssembled', true
+    );
+  end if;
+
+  if exists (select 1 from public.lesson where lesson.course_id = p_course_id) then
+    raise exception 'course_contains_manual_content' using errcode = '23505';
+  end if;
+
+  insert into public.lesson (course_id, position, title, summary)
+  values (p_course_id, 1, p_lesson_title, p_lesson_summary)
+  returning id into v_lesson_id;
+
+  insert into public.lesson_step (lesson_id, position, title, teacher_content, settings)
+  values (
+    v_lesson_id,
+    1,
+    p_step_title,
+    jsonb_build_object('teacherInstructions', coalesce(p_teacher_instructions, '')),
+    jsonb_build_object('learnerInstruction', coalesce(p_learner_instruction, ''))
+  )
+  returning id into v_step_id;
+
+  for v_component in
+    select component.value
+    from jsonb_array_elements(p_components) as component(value)
+  loop
+    v_position := v_position + 1;
+    insert into public.lesson_step_component (
+      lesson_step_id,
+      position,
+      type_key,
+      schema_version,
+      payload,
+      placement_config,
+      visibility
+    )
+    values (
+      v_step_id,
+      v_position,
+      v_component ->> 'typeKey',
+      (v_component ->> 'schemaVersion')::integer,
+      v_component -> 'payload',
+      v_component -> 'placement',
+      'learner_visible'
+    )
+    returning id into v_component_id;
+    v_component_ids := array_append(v_component_ids, v_component_id);
+  end loop;
+
+  update public.course set assembled_at = now() where id = p_course_id;
+
+  return jsonb_build_object(
+    'courseId', p_course_id,
+    'lessonIds', jsonb_build_array(v_lesson_id),
+    'stepIds', jsonb_build_array(v_step_id),
+    'componentIds', to_jsonb(v_component_ids),
+    'alreadyAssembled', false
+  );
+end
+$$;
+
+-- Ordered Course document children stay dense after any delete.
+create or replace function public.compact_course_lesson_positions()
+returns trigger language plpgsql security invoker set search_path = '' as $$
+begin
+  update public.lesson set position = position - 1
+  where course_id = old.course_id and position > old.position;
+  return old;
+end
+$$;
+
+create or replace function public.compact_lesson_step_positions()
+returns trigger language plpgsql security invoker set search_path = '' as $$
+begin
+  update public.lesson_step set position = position - 1
+  where lesson_id = old.lesson_id and position > old.position;
+  return old;
+end
+$$;
+
+create or replace function public.compact_step_component_positions()
+returns trigger language plpgsql security invoker set search_path = '' as $$
+begin
+  update public.lesson_step_component set position = position - 1
+  where lesson_step_id = old.lesson_step_id and position > old.position;
+  return old;
+end
+$$;
+
+-- Atomic reorder RPC used by the shared Course Builder application service.
+-- SECURITY INVOKER means lesson_step_component ownership RLS remains active.
+create or replace function public.reorder_lesson_step_component(
+  p_component_id uuid,
+  p_new_position integer
+)
+returns table (component_id uuid, "position" integer)
+language plpgsql
+security invoker
+set search_path = ''
+as $$
+declare
+  v_lesson_step_id uuid;
+  v_old_position integer;
+  v_component_count integer;
+begin
+  if p_new_position is null or p_new_position < 1 then
+    raise exception 'component_position_out_of_range' using errcode = '22023';
+  end if;
+
+  select component.lesson_step_id, component.position
+  into v_lesson_step_id, v_old_position
+  from public.lesson_step_component as component
+  where component.id = p_component_id
+  for update;
+
+  if not found then
+    raise exception 'component_not_found' using errcode = 'P0002';
+  end if;
+
+  perform 1
+  from public.lesson_step_component as component
+  where component.lesson_step_id = v_lesson_step_id
+  for update;
+
+  select count(*)::integer
+  into v_component_count
+  from public.lesson_step_component as component
+  where component.lesson_step_id = v_lesson_step_id;
+
+  if p_new_position > v_component_count then
+    raise exception 'component_position_out_of_range' using errcode = '22023';
+  end if;
+
+  if p_new_position < v_old_position then
+    update public.lesson_step_component as component
+    set position = component.position + 1
+    where component.lesson_step_id = v_lesson_step_id
+      and component.position >= p_new_position
+      and component.position < v_old_position;
+  elsif p_new_position > v_old_position then
+    update public.lesson_step_component as component
+    set position = component.position - 1
+    where component.lesson_step_id = v_lesson_step_id
+      and component.position > v_old_position
+      and component.position <= p_new_position;
+  end if;
+
+  update public.lesson_step_component
+  set position = p_new_position
+  where id = p_component_id;
+
+  return query
+  select component.id, component.position
+  from public.lesson_step_component as component
+  where component.lesson_step_id = v_lesson_step_id
+  order by component.position;
+end
+$$;
 
 -- Identity + membership helpers for RLS. ALL are SECURITY DEFINER (their internal
 -- reads bypass RLS) so policies built on them never read the mutually-recursive

@@ -26,6 +26,16 @@ This guide describes the **current** ShiDao database model.
 - `user_preference` — `last_active_profile`, selected school, theme/settings.
 - `user_security` — PIN hash + lock/attempt metadata, plus `sessions_invalid_before` (per-user app-session revocation cutoff).
 
+### V2 Account and teacher Course Builder slice
+
+- `account` — one application Account per `auth.users` row. Existing Auth users are bootstrapped by migration `20260803142924`; a locked-down Auth trigger creates future rows.
+- `course` — an Account-owned editable Course draft. The first slice stores title, subject, goal, level, audience description, target lesson count and `teacher_preferences`; `audience_type` is intentionally limited to `none`.
+- `lesson` — ordered Course lesson document.
+- `lesson_step` — canonical ordered Lesson Step. Its title/position are shared by Teacher Side and Student Screen; `teacher_content` remains teacher-private, while the optional learner instruction lives in `settings.learnerInstruction`.
+- `lesson_step_component` — ordered component placement with registry `type_key`, schema version, validated payload, placement config and visibility. Supported type keys are code-first and are not a database enum.
+- `stored_file` — Account-owned metadata for an object in the private `course-assets` bucket (`pending | ready`).
+- `course_attachment` — ownership-checked relation between a Course and a stored file.
+
 ### Methodology source layer
 
 - `methodology`
@@ -61,6 +71,11 @@ This guide describes the **current** ShiDao database model.
 - `school.kind = 'organization'` is a real school/org (shown as `Школа` in UI).
 - `user_preference.last_selected_school_id` stores selected organization; `null` means personal mode.
 - App sessions are stateless encrypted cookies carrying an `iat`. `user_security.sessions_invalid_before` is a per-user revocation cutoff: any session with `iat` before it is treated as logged out (enforced in `resolveAccessPolicy`). The `revoke_user_sessions(p_user_id, p_cutoff)` RPC bumps it (used on password reset / "log out everywhere"); the global `APP_SESSION_VERSION` env remains a separate all-users kill-switch.
+- Course, Lesson and Lesson Step positions are positive and unique within their parent through deferrable constraints. Component order is changed atomically by `reorder_lesson_step_component`; delete triggers compact Lesson, Step and component positions in the same transaction.
+- `course.assembled_at` records completion of the deterministic first-draft assembly. `assemble_course_draft` persists the validated Lesson/Step/component plan atomically and returns the same IDs on an idempotent repeat.
+- The Student Screen API returns an explicit learner-facing projection: only `learner_visible` component placements and the learner instruction are exposed; teacher-private instructions are omitted from the response contract.
+- `stored_file` is limited to 10 MiB, uses the `course-assets` bucket, and requires a SHA-256 checksum before becoming `ready`.
+- Storage object paths start with the owning Account UUID; private `storage.objects` policies enforce that first path segment.
 
 ## Demo organization behavior (MVP)
 
@@ -78,21 +93,26 @@ This guide describes the **current** ShiDao database model.
 
 ## Auth/profile model (current)
 
+- V2 identity uses `account`, linked one-to-one to every `auth.users` row; existing users are backfilled and future Auth signups are bootstrapped by a database trigger. Account has no global role, and Course ownership is based on `auth.uid()` rather than legacy teacher/parent/student profile membership or user-editable metadata.
 - Adult identity is split into explicit profile tables (`teacher`, `parent`) tied to `auth.users`.
 - Student can authenticate via internal login mapping (`student.internal_auth_email`) and may also have `student.user_id` when linked.
 - RLS identity/membership helpers are `SECURITY DEFINER` (their internal reads bypass RLS — required to avoid policy recursion): `current_teacher_id`, `current_parent_id`, `current_student_id`, plus membership predicates `is_class_teacher`, `is_class_student`, `parent_in_class`, `can_read_class`, `is_my_child`, `teaches_student`, `parent_in_school`, and the lookup `scheduled_homework_class_id`.
+- `current_account_id` is a least-privilege `SECURITY INVOKER` helper executable only by `authenticated`; it resolves the caller through the self-only Account policy.
+- `current_session_invalid_before` is an authenticated-only `SECURITY DEFINER` helper that returns only the current `auth.uid()` revocation cutoff, allowing V2 routes to enforce the existing app-session kill switch without a service-role read.
 
 ## Row-level security (RLS)
 
-RLS is enabled on all 24 application tables (off only on `user_preference`/`user_security`, reached exclusively via SECURITY DEFINER RPCs). Since migration `202606300002` **every** RLS-enabled table has at least one policy — there are no remaining "RLS-on / 0-policies" tables.
+RLS is enabled on 31 of 33 application tables (off only on `user_preference`/`user_security`, reached exclusively via SECURITY DEFINER RPCs). Every RLS-enabled table has at least one policy — there are no remaining "RLS-on / 0-policies" tables.
 
-- **Defense-in-depth, not the primary control.** The app always connects as `service_role` (`BYPASSRLS`), so policies do not change app behavior. They deliver real tenant isolation only if a PostgREST/Realtime surface is ever exposed with `anon`/`authenticated` keys. The primary access control remains `resolveAccessPolicy()` in app code.
-- **Reads only.** Policies are `FOR SELECT` (plus the pre-existing narrow self-`UPDATE` on `parent`/`teacher`/`student`/`notification`). No `INSERT`/`UPDATE`/`DELETE` policies on runtime/content tables — all writes go through `service_role` / SECURITY DEFINER RPCs.
-- **Grants.** Each policied table does `revoke all from anon, authenticated; grant select to authenticated`. `anon` has no table grants (schema-usage only) and sees nothing.
+- **V1 compatibility layer.** Existing V1 repositories still connect as `service_role` (`BYPASSRLS`), so their policies remain defense-in-depth and primary authorization remains `resolveAccessPolicy()` in app code.
+- **V2 Course Builder.** Course document/file tables grant owner-scoped CRUD only to `authenticated`; `account` itself is self-readable but cannot be inserted, updated, or deleted through an ordinary user JWT. Ordinary Course Builder UI and Storage requests must use the user's JWT, not `service_role`. The assembler and reorder RPCs are `SECURITY INVOKER`, so the same RLS remains active.
+- **V1 policies.** Existing runtime/content policies are primarily `FOR SELECT` (plus narrow self-`UPDATE` policies); existing writes still use the legacy server layer.
+- **Grants.** `anon` has no privileges on the new V2 tables. `authenticated` receives explicit CRUD grants constrained by RLS; helper/RPC `EXECUTE` is explicitly revoked from `PUBLIC`/`anon` and granted only where required.
 - **Membership model.** Visibility is computed via the SECURITY DEFINER helpers above, which bypass RLS internally so policies never read the mutually-recursive graph tables (`class_teacher`/`class_student`/`student`) directly:
   - Runtime layer (`scheduled_lesson`, homework assignments, conversations, messages, attachments) is scoped to the class/student: teacher of the class, the enrolled student, or the parent of an enrolled child (`can_read_class` / `is_class_teacher` / `is_my_child`). Messages/attachments are visible iff their parent conversation/message is.
   - Methodology/content layer (`methodology*`, `reusable_asset`) is a **shared global catalog**: readable by any `authenticated` user (`USING (true)`, scoped `to authenticated`), denied to `anon`. There is no school-ownership column, so per-school content isolation is not currently expressible (would require a schema change).
 - **Recursion fix (202606300002).** The identity helpers were `SECURITY INVOKER` and the covered-table policies referenced one another, so reads under `authenticated` raised `stack depth limit exceeded`. The migration converts the helpers to `SECURITY DEFINER` and rewrites the covered-table predicates to use them (behavior-preserving; `service_role` unaffected).
+- **Private Course Storage.** `course-assets` is private, capped at 10 MiB, MIME-restricted, and protected by owner policies on `storage.objects` for select/insert/update/delete.
 
 ## Compatibility / legacy notes
 

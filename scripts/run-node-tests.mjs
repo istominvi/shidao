@@ -73,9 +73,15 @@ async function main() {
     process.exit(1);
   }
 
-  const child = spawn(process.execPath, ["--test", ...filteredFiles], {
-    stdio: "inherit",
-  });
+  const aliasPreload = join(
+    process.cwd(),
+    "scripts/register-test-path-alias.cjs",
+  );
+  const child = spawn(
+    process.execPath,
+    ["--require", aliasPreload, "--test", ...filteredFiles],
+    { stdio: "inherit" },
+  );
 
   child.on("exit", (code, signal) => {
     if (typeof code === "number") {
