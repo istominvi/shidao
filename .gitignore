@@ -20,3 +20,6 @@ tsconfig.tsbuildinfo
 
 # local Codex configs with credentials
 .codex/*.local.toml
+
+# local recovery snapshots (database dumps, repository bundles, secrets)
+.local-backups/
