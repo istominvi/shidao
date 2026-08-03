@@ -7,6 +7,7 @@
   --demo-space-1: 0.5rem;
   --demo-space-2: 1rem;
   --demo-space-3: 1.5rem;
+  --demo-ui-unit: 0.75rem;
   --demo-control-height: 2.5rem;
   --demo-control-inner-height: 2rem;
   --demo-control-radius: 0.75rem;
@@ -16,8 +17,8 @@
   --demo-control-hover: rgba(0, 0, 0, 0.06);
   --demo-accent-lime-soft: #c9ff4f;
   --demo-header-height: 4.25rem;
-  --demo-surface-padding: 0.75rem;
-  --demo-control-padding-inline: 0.75rem;
+  --demo-surface-padding: var(--demo-ui-unit);
+  --demo-control-padding-inline: var(--demo-ui-unit);
   --demo-surface-radius: 1.25rem;
   --demo-control-font-size: 0.88rem;
   --demo-control-font-weight: 500;
@@ -128,7 +129,7 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 0.3rem;
+  gap: var(--demo-ui-unit);
   justify-self: center;
   width: fit-content;
   height: var(--demo-control-height);
@@ -164,7 +165,7 @@
 .demo-header-actions {
   display: flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: var(--demo-ui-unit);
   justify-self: end;
   width: fit-content;
   height: var(--demo-control-height);
@@ -332,7 +333,7 @@
 .demo-profile-trigger {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: var(--demo-ui-unit);
   min-height: 3rem;
   border: 0;
   border-radius: 1.05rem;
@@ -428,11 +429,11 @@
 
 .demo-mobile-nav {
   display: grid;
-  gap: 0.35rem;
-  margin-top: 0.5rem;
+  gap: var(--demo-ui-unit);
+  margin-top: var(--demo-ui-unit);
   border-radius: 1.2rem;
   background: rgba(255, 255, 255, 0.96);
-  padding: 0.6rem;
+  padding: var(--demo-ui-unit);
   box-shadow: var(--demo-shadow);
 }
 
@@ -946,7 +947,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: var(--demo-space-2);
+  gap: var(--demo-ui-unit);
   margin-top: var(--demo-space-2);
 }
 
@@ -1196,26 +1197,22 @@
   min-width: 0;
   align-items: center;
   justify-content: flex-end;
-  gap: 0.5rem;
-}
-
-.demo-schedule-results-summary {
-  margin: 0.85rem 0 0.5rem;
-  padding-inline: var(--demo-control-padding-inline);
-  color: var(--demo-muted);
-  font-size: 0.67rem;
-  font-weight: 650;
+  gap: var(--demo-ui-unit);
 }
 
 .demo-schedule-results {
   position: relative;
 }
 
+.demo-schedule-toolbar + .demo-schedule-results {
+  margin-top: var(--demo-ui-unit);
+}
+
 .demo-lessons-table-wrap {
   min-height: 22rem;
   overflow-x: auto;
   border: 1px solid rgba(255, 255, 255, 0.78);
-  border-radius: var(--demo-surface-radius);
+  border-radius: var(--demo-control-radius);
   background: rgba(255, 255, 255, 0.9);
   box-shadow: var(--demo-shadow);
 }
@@ -1232,7 +1229,7 @@
       1fr
     ) 7rem 2.75rem;
   align-items: center;
-  gap: 0.7rem;
+  gap: var(--demo-ui-unit);
   padding: 0 var(--demo-surface-padding);
 }
 
@@ -1324,7 +1321,7 @@
   min-height: 22rem;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   align-content: start;
-  gap: var(--demo-space-2);
+  gap: var(--demo-ui-unit);
 }
 
 .demo-lesson-card {

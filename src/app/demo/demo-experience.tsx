@@ -1120,16 +1120,6 @@ export function DemoExperience() {
       return `${weekday.charAt(0).toUpperCase() + weekday.slice(1)} · ${shortDateFormatter.format(selectedDate)}`;
     })();
 
-    const lessonWord = (count: number) => {
-      const mod10 = count % 10;
-      const mod100 = count % 100;
-      if (mod10 === 1 && mod100 !== 11) return "урок";
-      if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) {
-        return "урока";
-      }
-      return "уроков";
-    };
-
     function selectScheduleDate(date: Date) {
       const key = dateKey(date);
       setCalendarCursorDate(key);
@@ -1397,11 +1387,6 @@ export function DemoExperience() {
             </div>
           </div>
         </section>
-
-        <div className="demo-schedule-results-summary" aria-live="polite">
-          {visibleLessons.length} {lessonWord(visibleLessons.length)}
-          {scheduleFilter !== "Все" ? ` · ${scheduleFilter.toLowerCase()}` : ""}
-        </div>
 
         <section className="demo-schedule-results">
           {scheduleViewMode === "table" ? (
