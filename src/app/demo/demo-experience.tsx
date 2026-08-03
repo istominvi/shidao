@@ -14,7 +14,6 @@ import {
   CheckCircle2,
   ChevronDown,
   CirclePlay,
-  Clock3,
   Copy,
   FileAudio,
   FileText,
@@ -108,6 +107,8 @@ type AgentMessage = {
 };
 
 type ScheduleRole = "teacher" | "parent" | "student";
+type ScheduleDateMode = "day" | "range";
+type ScheduleViewMode = "cards" | "table";
 type StudentsScope = "profiles" | "groups" | "archive";
 type StudentsViewMode = "cards" | "table";
 
@@ -384,7 +385,8 @@ const scheduleRoleMeta = {
   },
 };
 
-const demoToday = new Date(2026, 6, 26, 12);
+const now = new Date();
+const demoToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12);
 
 function dateKey(date: Date) {
   return [
@@ -427,31 +429,6 @@ function formatMonthTitle(date: Date) {
     .format(date)
     .replace(" г.", "");
   return value.charAt(0).toUpperCase() + value.slice(1);
-}
-
-function formatWeekRange(start: Date, end: Date) {
-  const monthNames = [
-    "января",
-    "февраля",
-    "марта",
-    "апреля",
-    "мая",
-    "июня",
-    "июля",
-    "августа",
-    "сентября",
-    "октября",
-    "ноября",
-    "декабря",
-  ];
-  const startMonth = monthNames[start.getMonth()];
-  const endMonth = monthNames[end.getMonth()];
-
-  if (start.getMonth() === end.getMonth()) {
-    return `${start.getDate()}–${end.getDate()} ${endMonth} ${end.getFullYear()}`;
-  }
-
-  return `${start.getDate()} ${startMonth} — ${end.getDate()} ${endMonth} ${end.getFullYear()}`;
 }
 
 const generationStages = [
@@ -571,9 +548,12 @@ export function DemoExperience() {
   const [notificationMenu, setNotificationMenu] = useState(false);
   const [notificationsUnread, setNotificationsUnread] = useState(true);
   const [scheduleFilter, setScheduleFilter] = useState("Все");
-  const [calendarView, setCalendarView] = useState<"week" | "month">("week");
+  const [scheduleDateMode, setScheduleDateMode] = useState<ScheduleDateMode>("day");
+  const [scheduleViewMode, setScheduleViewMode] = useState<ScheduleViewMode>("table");
+  const [scheduleDatePickerOpen, setScheduleDatePickerOpen] = useState(false);
   const [calendarCursorDate, setCalendarCursorDate] = useState(dateKey(demoToday));
   const [selectedScheduleDate, setSelectedScheduleDate] = useState(dateKey(demoToday));
+  const [selectedScheduleEndDate, setSelectedScheduleEndDate] = useState<string | null>(null);
   const [scheduleModalOpen, setScheduleModalOpen] = useState(false);
   const [plannedCourseId, setPlannedCourseId] = useState(demoCourses[0].id);
   const [plannedLessonTitle, setPlannedLessonTitle] = useState(
@@ -616,6 +596,7 @@ export function DemoExperience() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const notificationMenuRef = useRef<HTMLDivElement>(null);
+  const scheduleDatePickerRef = useRef<HTMLDivElement>(null);
 
   const allCourses = useMemo(
     () =>
@@ -695,6 +676,29 @@ export function DemoExperience() {
     document.addEventListener("keydown", closeOnEscape);
     return () => document.removeEventListener("keydown", closeOnEscape);
   }, [scheduleModalOpen]);
+
+  useEffect(() => {
+    if (!scheduleDatePickerOpen) return;
+
+    const closeOnOutsideClick = (event: PointerEvent) => {
+      if (
+        scheduleDatePickerRef.current &&
+        !scheduleDatePickerRef.current.contains(event.target as Node)
+      ) {
+        setScheduleDatePickerOpen(false);
+      }
+    };
+    const closeOnEscape = (event: globalThis.KeyboardEvent) => {
+      if (event.key === "Escape") setScheduleDatePickerOpen(false);
+    };
+
+    document.addEventListener("pointerdown", closeOnOutsideClick);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeOnOutsideClick);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [scheduleDatePickerOpen]);
 
   function confirmLessonSchedule() {
     const course = demoCourses.find((item) => item.id === plannedCourseId);
@@ -1047,10 +1051,15 @@ export function DemoExperience() {
   function renderSchedule() {
     const cursorDate = dateFromKey(calendarCursorDate);
     const selectedDate = dateFromKey(selectedScheduleDate);
-    const weekStart = startOfWeek(cursorDate);
-    const weekDays = Array.from({ length: 7 }, (_, index) => addDays(weekStart, index));
-    const weekEnd = weekDays[weekDays.length - 1];
-    const monthStart = new Date(cursorDate.getFullYear(), cursorDate.getMonth(), 1, 12);
+    const selectedEndDate = selectedScheduleEndDate
+      ? dateFromKey(selectedScheduleEndDate)
+      : null;
+    const monthStart = new Date(
+      cursorDate.getFullYear(),
+      cursorDate.getMonth(),
+      1,
+      12,
+    );
     const monthGridStart = startOfWeek(monthStart);
     const monthDays = Array.from({ length: 42 }, (_, index) =>
       addDays(monthGridStart, index),
@@ -1062,54 +1071,124 @@ export function DemoExperience() {
       },
       {},
     );
+    const effectiveEndDate =
+      scheduleDateMode === "range" && selectedScheduleEndDate
+        ? selectedScheduleEndDate
+        : selectedScheduleDate;
     const selectedLessons = scheduleLessons
-      .filter((lesson) => lesson.date === selectedScheduleDate)
-      .sort((a, b) => a.time.localeCompare(b.time));
-    const visibleCards =
+      .filter(
+        (lesson) =>
+          lesson.date >= selectedScheduleDate &&
+          lesson.date <= effectiveEndDate,
+      )
+      .sort(
+        (a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time),
+      );
+    const visibleLessons =
       scheduleFilter === "Все"
         ? selectedLessons
         : selectedLessons.filter(
             (lesson) => scheduleRoleMeta[lesson.role].label === scheduleFilter,
           );
+
+    const todayKey = dateKey(demoToday);
+    const isTodaySelected =
+      scheduleDateMode === "day" && selectedScheduleDate === todayKey;
+    const shortDateFormatter = new Intl.DateTimeFormat("ru-RU", {
+      day: "numeric",
+      month: "long",
+    });
+    const selectedDateLabel = (() => {
+      if (isTodaySelected) {
+        return `Сегодня · ${shortDateFormatter.format(selectedDate)}`;
+      }
+      if (scheduleDateMode === "range") {
+        if (!selectedEndDate) {
+          return `${shortDateFormatter.format(selectedDate)} — …`;
+        }
+        if (
+          selectedDate.getMonth() === selectedEndDate.getMonth() &&
+          selectedDate.getFullYear() === selectedEndDate.getFullYear()
+        ) {
+          return `${selectedDate.getDate()}–${shortDateFormatter.format(selectedEndDate)}`;
+        }
+        return `${shortDateFormatter.format(selectedDate)} — ${shortDateFormatter.format(selectedEndDate)}`;
+      }
+      const weekday = new Intl.DateTimeFormat("ru-RU", {
+        weekday: "long",
+      }).format(selectedDate);
+      return `${weekday.charAt(0).toUpperCase() + weekday.slice(1)} · ${shortDateFormatter.format(selectedDate)}`;
+    })();
+
+    const lessonWord = (count: number) => {
+      const mod10 = count % 10;
+      const mod100 = count % 100;
+      if (mod10 === 1 && mod100 !== 11) return "урок";
+      if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) {
+        return "урока";
+      }
+      return "уроков";
+    };
+
     function selectScheduleDate(date: Date) {
       const key = dateKey(date);
-      setSelectedScheduleDate(key);
       setCalendarCursorDate(key);
-    }
 
-    function moveCalendar(direction: -1 | 1) {
-      if (calendarView === "week") {
-        const nextCursor = addDays(cursorDate, direction * 7);
-        const nextSelected = addDays(selectedDate, direction * 7);
-        setCalendarCursorDate(dateKey(nextCursor));
-        setSelectedScheduleDate(dateKey(nextSelected));
+      if (scheduleDateMode === "day") {
+        setSelectedScheduleDate(key);
+        setSelectedScheduleEndDate(null);
+        setScheduleDatePickerOpen(false);
         return;
       }
 
-      const nextMonth = addMonths(monthStart, direction);
-      const monthPrefix = `${nextMonth.getFullYear()}-${String(
-        nextMonth.getMonth() + 1,
-      ).padStart(2, "0")}`;
-      const firstLesson = scheduleLessons.find((lesson) =>
-        lesson.date.startsWith(monthPrefix),
-      );
-      const nextSelected = firstLesson
-        ? dateFromKey(firstLesson.date)
-        : new Date(nextMonth.getFullYear(), nextMonth.getMonth(), 1, 12);
-      setCalendarCursorDate(dateKey(nextSelected));
-      setSelectedScheduleDate(dateKey(nextSelected));
+      if (selectedScheduleEndDate) {
+        setSelectedScheduleDate(key);
+        setSelectedScheduleEndDate(null);
+        return;
+      }
+
+      if (key < selectedScheduleDate) {
+        setSelectedScheduleDate(key);
+        setSelectedScheduleEndDate(selectedScheduleDate);
+      } else {
+        setSelectedScheduleEndDate(key);
+      }
+      setScheduleDatePickerOpen(false);
     }
 
-    function renderCalendarDate(date: Date, mode: "week" | "month") {
+    function moveSelectedDate(direction: -1 | 1) {
+      const nextStart = addDays(selectedDate, direction);
+      setSelectedScheduleDate(dateKey(nextStart));
+      setCalendarCursorDate(dateKey(nextStart));
+      if (scheduleDateMode === "range" && selectedEndDate) {
+        setSelectedScheduleEndDate(
+          dateKey(addDays(selectedEndDate, direction)),
+        );
+      }
+    }
+
+    function resetToToday() {
+      setSelectedScheduleDate(todayKey);
+      setSelectedScheduleEndDate(null);
+      setCalendarCursorDate(todayKey);
+      if (scheduleDateMode === "day") setScheduleDatePickerOpen(false);
+    }
+
+    function renderCalendarDate(date: Date) {
       const key = dateKey(date);
       const count = lessonCountByDate[key] ?? 0;
-      const isToday = key === dateKey(demoToday);
-      const isSelected = key === selectedScheduleDate;
-      const isOutsideMonth =
-        mode === "month" && date.getMonth() !== cursorDate.getMonth();
-      const weekday = new Intl.DateTimeFormat("ru-RU", { weekday: "short" })
-        .format(date)
-        .replace(".", "");
+      const isToday = key === todayKey;
+      const isRangeStart = key === selectedScheduleDate;
+      const isRangeEnd = key === selectedScheduleEndDate;
+      const isInRange = Boolean(
+        scheduleDateMode === "range" &&
+        selectedScheduleEndDate &&
+        key > selectedScheduleDate &&
+        key < selectedScheduleEndDate,
+      );
+      const isSelected =
+        scheduleDateMode === "day" ? isRangeStart : isRangeStart || isRangeEnd;
+      const isOutsideMonth = date.getMonth() !== cursorDate.getMonth();
       const fullDate = new Intl.DateTimeFormat("ru-RU", {
         weekday: "long",
         day: "numeric",
@@ -1122,6 +1201,9 @@ export function DemoExperience() {
           className={[
             isToday ? "is-today" : "",
             isSelected ? "is-selected" : "",
+            isRangeStart ? "is-range-start" : "",
+            isRangeEnd ? "is-range-end" : "",
+            isInRange ? "is-in-range" : "",
             isOutsideMonth ? "is-outside" : "",
           ]
             .filter(Boolean)
@@ -1130,12 +1212,9 @@ export function DemoExperience() {
           aria-pressed={isSelected}
           onClick={() => selectScheduleDate(date)}
         >
-          {mode === "week" ? (
-            <span>{weekday.charAt(0).toUpperCase() + weekday.slice(1)}</span>
-          ) : null}
           <strong>{date.getDate()}</strong>
           {count ? (
-            <small className="demo-day-count" aria-hidden="true">
+            <small className="demo-date-count" aria-hidden="true">
               {count}
             </small>
           ) : null}
@@ -1153,173 +1232,317 @@ export function DemoExperience() {
             </p>
           </div>
           <div className="demo-hero-actions">
-            <DemoButton variant="primary" onClick={() => setScheduleModalOpen(true)}>
+            <DemoButton
+              variant="primary"
+              onClick={() => setScheduleModalOpen(true)}
+            >
               <CalendarPlus size={17} /> Запланировать
             </DemoButton>
           </div>
         </section>
 
-        <section className="demo-week-card">
-          <div className="demo-week-heading">
-            <div>
-              <strong>
-                {calendarView === "week"
-                  ? formatWeekRange(weekStart, weekEnd)
-                  : formatMonthTitle(cursorDate)}
-              </strong>
-            </div>
-            <div className="demo-week-controls">
-              <div className="demo-calendar-arrows">
-                <DemoButton
-                  size="sm"
-                  variant="ghost"
-                  aria-label={
-                    calendarView === "week" ? "Предыдущая неделя" : "Предыдущий месяц"
-                  }
-                  onClick={() => moveCalendar(-1)}
-                >
-                  <ArrowLeft size={15} />
-                </DemoButton>
-                <DemoButton
-                  size="sm"
-                  variant="ghost"
-                  aria-label={
-                    calendarView === "week" ? "Следующая неделя" : "Следующий месяц"
-                  }
-                  onClick={() => moveCalendar(1)}
-                >
-                  <ArrowRight size={15} />
-                </DemoButton>
-              </div>
-              <DemoButton
-                size="sm"
-                variant="secondary"
-                onClick={() => {
-                  setCalendarCursorDate(dateKey(demoToday));
-                  setSelectedScheduleDate(dateKey(demoToday));
-                }}
-              >
-                Сегодня
-              </DemoButton>
-              <div className="demo-calendar-view-switch" role="group" aria-label="Вид календаря">
-                <button
-                  type="button"
-                  className={calendarView === "week" ? "is-active" : ""}
-                  onClick={() => {
-                    setCalendarView("week");
-                    setCalendarCursorDate(selectedScheduleDate);
-                  }}
-                >
-                  Неделя
-                </button>
-                <button
-                  type="button"
-                  className={calendarView === "month" ? "is-active" : ""}
-                  onClick={() => {
-                    setCalendarView("month");
-                    setCalendarCursorDate(selectedScheduleDate);
-                  }}
-                >
-                  Месяц
-                </button>
-              </div>
-            </div>
-          </div>
-          {calendarView === "week" ? (
-            <div className="demo-week-days">
-              {weekDays.map((date) => renderCalendarDate(date, "week"))}
-            </div>
-          ) : (
-            <div className="demo-month-calendar">
-              <div className="demo-month-weekdays" aria-hidden="true">
-                {["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"].map((day) => (
-                  <span key={day}>{day}</span>
-                ))}
-              </div>
-              <div className="demo-month-days">
-                {monthDays.map((date) => renderCalendarDate(date, "month"))}
-              </div>
-            </div>
-          )}
-        </section>
-
-        <div className="demo-section-heading demo-section-heading-spaced">
-          <div>
-            <h2>Уроки</h2>
-          </div>
-          <div className="demo-filter-row">
-            {["Все", "Учитель", "Родитель", "Ученик"].map((filter) => (
+        <section
+          className="demo-schedule-toolbar"
+          aria-label="Фильтры расписания"
+        >
+          <div className="demo-date-picker" ref={scheduleDatePickerRef}>
+            <div className="demo-date-navigator">
               <button
                 type="button"
-                key={filter}
-                className={scheduleFilter === filter ? "is-active" : ""}
-                onClick={() => setScheduleFilter(filter)}
+                aria-label="Предыдущий день"
+                onClick={() => moveSelectedDate(-1)}
               >
-                {filter}
+                <ArrowLeft size={16} />
               </button>
-            ))}
+              <button
+                type="button"
+                className="demo-date-trigger"
+                aria-expanded={scheduleDatePickerOpen}
+                aria-haspopup="dialog"
+                onClick={() => {
+                  setCalendarCursorDate(selectedScheduleDate);
+                  setScheduleDatePickerOpen((open) => !open);
+                }}
+              >
+                <span>{selectedDateLabel}</span>
+                <ChevronDown size={15} />
+              </button>
+              <button
+                type="button"
+                aria-label="Следующий день"
+                onClick={() => moveSelectedDate(1)}
+              >
+                <ArrowRight size={16} />
+              </button>
+            </div>
+
+            {scheduleDatePickerOpen ? (
+              <div
+                className="demo-date-popover"
+                role="dialog"
+                aria-label="Выбор даты расписания"
+              >
+                <div
+                  className="demo-date-mode-switch"
+                  role="group"
+                  aria-label="Одна дата или период"
+                >
+                  <button
+                    type="button"
+                    className={scheduleDateMode === "day" ? "is-active" : ""}
+                    onClick={() => {
+                      setScheduleDateMode("day");
+                      setSelectedScheduleEndDate(null);
+                    }}
+                  >
+                    День
+                  </button>
+                  <button
+                    type="button"
+                    className={scheduleDateMode === "range" ? "is-active" : ""}
+                    onClick={() => {
+                      setScheduleDateMode("range");
+                      setSelectedScheduleEndDate(null);
+                    }}
+                  >
+                    Период
+                  </button>
+                </div>
+
+                <div className="demo-date-popover-heading">
+                  <button
+                    type="button"
+                    aria-label="Предыдущий месяц"
+                    onClick={() =>
+                      setCalendarCursorDate(dateKey(addMonths(cursorDate, -1)))
+                    }
+                  >
+                    <ArrowLeft size={16} />
+                  </button>
+                  <strong>{formatMonthTitle(cursorDate)}</strong>
+                  <button
+                    type="button"
+                    aria-label="Следующий месяц"
+                    onClick={() =>
+                      setCalendarCursorDate(dateKey(addMonths(cursorDate, 1)))
+                    }
+                  >
+                    <ArrowRight size={16} />
+                  </button>
+                </div>
+
+                <div className="demo-date-weekdays" aria-hidden="true">
+                  {["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"].map((day) => (
+                    <span key={day}>{day}</span>
+                  ))}
+                </div>
+                <div className="demo-date-grid">
+                  {monthDays.map((date) => renderCalendarDate(date))}
+                </div>
+
+                <div className="demo-date-popover-footer">
+                  <span>
+                    {scheduleDateMode === "range" && !selectedScheduleEndDate
+                      ? "Выберите последний день"
+                      : "Число в углу — уроки за день"}
+                  </span>
+                  <button type="button" onClick={resetToToday}>
+                    Сегодня
+                  </button>
+                </div>
+              </div>
+            ) : null}
           </div>
+
+          <div className="demo-schedule-toolbar-actions">
+            <div
+              className="demo-filter-row"
+              role="group"
+              aria-label="Роль в уроке"
+            >
+              {["Все", "Учитель", "Родитель", "Ученик"].map((filter) => (
+                <button
+                  type="button"
+                  key={filter}
+                  className={scheduleFilter === filter ? "is-active" : ""}
+                  onClick={() => setScheduleFilter(filter)}
+                >
+                  {filter}
+                </button>
+              ))}
+            </div>
+            <div
+              className="demo-view-toggle"
+              role="group"
+              aria-label="Вид уроков"
+            >
+              <button
+                type="button"
+                className={scheduleViewMode === "table" ? "is-active" : ""}
+                aria-label="Показать таблицей"
+                aria-pressed={scheduleViewMode === "table"}
+                onClick={() => setScheduleViewMode("table")}
+              >
+                <Table2 size={17} />
+              </button>
+              <button
+                type="button"
+                className={scheduleViewMode === "cards" ? "is-active" : ""}
+                aria-label="Показать карточками"
+                aria-pressed={scheduleViewMode === "cards"}
+                onClick={() => setScheduleViewMode("cards")}
+              >
+                <LayoutGrid size={17} />
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <div className="demo-schedule-results-summary" aria-live="polite">
+          {visibleLessons.length} {lessonWord(visibleLessons.length)}
+          {scheduleFilter !== "Все" ? ` · ${scheduleFilter.toLowerCase()}` : ""}
         </div>
 
-        <section className="demo-schedule-grid">
-          <div className="demo-timeline">
-            {visibleCards.map((card) => {
-              const role = scheduleRoleMeta[card.role];
-              const RoleIcon = role.icon;
-              return (
-                <article className="demo-session-row" key={card.id}>
-                  <div className="demo-session-time">
-                    <strong>{card.time}</strong>
-                    <span>{card.duration} мин</span>
-                  </div>
-                  <div
-                    className={`demo-session-card ${toneClass(role.tone)}`}
-                  >
-                    <div className="demo-session-topline">
-                      <DemoTag tone={role.tone}>
-                        <RoleIcon size={13} />
-                        {role.label}
-                      </DemoTag>
-                      <button type="button" aria-label="Другие действия"><MoreHorizontal size={19} /></button>
+        <section className="demo-schedule-results">
+          {scheduleViewMode === "table" ? (
+            <div className="demo-lessons-table-wrap">
+              <div
+                className="demo-lessons-table"
+                role="table"
+                aria-label="Уроки"
+              >
+                <div className="demo-lessons-table-head" role="row">
+                  <span role="columnheader">Время</span>
+                  <span role="columnheader">Урок</span>
+                  <span role="columnheader">Роль</span>
+                  <span role="columnheader">Участники</span>
+                  <span role="columnheader">Длительность</span>
+                  <span role="columnheader" aria-label="Действие" />
+                </div>
+                {visibleLessons.map((lesson) => {
+                  const role = scheduleRoleMeta[lesson.role];
+                  const RoleIcon = role.icon;
+                  return (
+                    <div
+                      className="demo-lessons-table-row"
+                      role="row"
+                      key={lesson.id}
+                    >
+                      <div className="demo-table-time" role="cell">
+                        <strong>{lesson.time}</strong>
+                        {scheduleDateMode === "range" ? (
+                          <span>
+                            {new Intl.DateTimeFormat("ru-RU", {
+                              day: "numeric",
+                              month: "short",
+                            })
+                              .format(dateFromKey(lesson.date))
+                              .replace(".", "")}
+                          </span>
+                        ) : null}
+                      </div>
+                      <div className="demo-table-lesson" role="cell">
+                        <strong>{lesson.title}</strong>
+                        <span>{lesson.course}</span>
+                      </div>
+                      <div role="cell">
+                        <DemoTag tone={role.tone}>
+                          <RoleIcon size={13} /> {role.label}
+                        </DemoTag>
+                      </div>
+                      <span role="cell">{lesson.people}</span>
+                      <span role="cell">{lesson.duration} мин</span>
+                      <div className="demo-table-lesson-action" role="cell">
+                        <button
+                          type="button"
+                          aria-label={`${role.action}: ${lesson.title}`}
+                          onClick={() =>
+                            navigate(
+                              lesson.role === "teacher" ? "lesson" : "learner",
+                            )
+                          }
+                        >
+                          <Play size={15} />
+                        </button>
+                      </div>
                     </div>
-                    <h3>{card.title}</h3>
-                    <p>{card.course}</p>
-                    <div className="demo-session-meta">
-                      <span><Users size={15} /> {card.people}</span>
-                      <span><Clock3 size={15} /> {card.duration} мин</span>
+                  );
+                })}
+                {!visibleLessons.length ? (
+                  <div className="demo-lessons-table-empty">
+                    <CalendarDays size={23} />
+                    <strong>На выбранную дату уроков не назначено</strong>
+                    <span>
+                      Выберите другой день или запланируйте новый урок.
+                    </span>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          ) : (
+            <div className="demo-lesson-cards">
+              {visibleLessons.map((lesson) => {
+                const role = scheduleRoleMeta[lesson.role];
+                const RoleIcon = role.icon;
+                return (
+                  <article className="demo-lesson-card" key={lesson.id}>
+                    <div className="demo-lesson-card-topline">
+                      <div
+                        className={`demo-lesson-card-time ${toneClass(role.tone)}`}
+                      >
+                        <strong>{lesson.time}</strong>
+                        <span>{lesson.duration} мин</span>
+                      </div>
+                      <DemoTag tone={role.tone}>
+                        <RoleIcon size={13} /> {role.label}
+                      </DemoTag>
+                    </div>
+                    <h3>{lesson.title}</h3>
+                    <p>{lesson.course}</p>
+                    <div className="demo-lesson-card-meta">
+                      <span>
+                        <Users size={15} /> {lesson.people}
+                      </span>
+                      {scheduleDateMode === "range" ? (
+                        <span>
+                          <CalendarDays size={15} />
+                          {shortDateFormatter.format(dateFromKey(lesson.date))}
+                        </span>
+                      ) : null}
                     </div>
                     <DemoButton
-                      variant="primary"
+                      variant="secondary"
                       onClick={() =>
-                        navigate(card.role === "teacher" ? "lesson" : "learner")
+                        navigate(
+                          lesson.role === "teacher" ? "lesson" : "learner",
+                        )
                       }
                     >
                       <Play size={16} /> {role.action}
                     </DemoButton>
-                  </div>
-                </article>
-              );
-            })}
-            {!visibleCards.length ? (
-              <div className="demo-schedule-empty">
-                <CalendarDays size={24} />
-                <h3>На эту дату уроков нет</h3>
-                <p>
-                  Выберите другую дату или запланируйте новое занятие.
-                </p>
-                <DemoButton
-                  variant="secondary"
-                  onClick={() => setToast("Планирование открыто")}
-                >
-                  <CalendarPlus size={16} /> Запланировать
-                </DemoButton>
-              </div>
-            ) : null}
-          </div>
+                  </article>
+                );
+              })}
+              {!visibleLessons.length ? (
+                <div className="demo-schedule-empty demo-schedule-empty-cards">
+                  <CalendarDays size={24} />
+                  <h3>На выбранную дату уроков не назначено</h3>
+                  <p>Выберите другой день или запланируйте новый урок.</p>
+                  <DemoButton
+                    variant="secondary"
+                    onClick={() => setScheduleModalOpen(true)}
+                  >
+                    <CalendarPlus size={16} /> Запланировать
+                  </DemoButton>
+                </div>
+              ) : null}
+            </div>
+          )}
         </section>
       </>
     );
   }
+
 
   function renderStudents() {
     const studentCards = [

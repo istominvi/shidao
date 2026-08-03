@@ -3,8 +3,7 @@
   --demo-muted: #6b7280;
   --demo-border: rgba(20, 20, 20, 0.11);
   --demo-shadow:
-    0 20px 52px rgba(23, 26, 32, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 0.82);
+    0 20px 52px rgba(23, 26, 32, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.82);
   --demo-space-1: 0.5rem;
   --demo-space-2: 1rem;
   --demo-space-3: 1.5rem;
@@ -472,8 +471,16 @@
   border: 1px solid rgba(255, 255, 255, 0.78);
   border-radius: 1.7rem;
   background:
-    radial-gradient(circle at 97% 0%, rgba(112, 183, 255, 0.25), transparent 17rem),
-    radial-gradient(circle at 0% 100%, rgba(255, 182, 232, 0.18), transparent 17rem),
+    radial-gradient(
+      circle at 97% 0%,
+      rgba(112, 183, 255, 0.25),
+      transparent 17rem
+    ),
+    radial-gradient(
+      circle at 0% 100%,
+      rgba(255, 182, 232, 0.18),
+      transparent 17rem
+    ),
     rgba(255, 255, 255, 0.78);
   padding: var(--demo-space-3);
   box-shadow: 0 26px 68px rgba(17, 24, 39, 0.08);
@@ -933,6 +940,466 @@
   color: #fff;
 }
 
+.demo-schedule-toolbar {
+  position: relative;
+  z-index: 18;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--demo-space-2);
+  margin-top: var(--demo-space-2);
+}
+
+.demo-date-picker {
+  position: relative;
+  flex: 0 1 23rem;
+  min-width: 18rem;
+}
+
+.demo-date-navigator {
+  display: grid;
+  width: 100%;
+  height: var(--demo-control-height);
+  grid-template-columns: var(--demo-control-height) minmax(0, 1fr) var(
+      --demo-control-height
+    );
+  overflow: hidden;
+  border-radius: var(--demo-control-radius);
+  background: #fff;
+  box-shadow:
+    inset 0 0 0 1px var(--demo-control-border),
+    0 8px 24px rgba(20, 20, 20, 0.05);
+}
+
+.demo-date-navigator > button {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: transparent;
+  color: #555a64;
+}
+
+.demo-date-navigator > button:hover {
+  background: var(--demo-control-hover);
+  color: #141414;
+}
+
+.demo-date-navigator .demo-date-trigger {
+  gap: 0.45rem;
+  border-right: 1px solid var(--demo-control-border);
+  border-left: 1px solid var(--demo-control-border);
+  padding: 0 0.7rem;
+  color: #141414;
+}
+
+.demo-date-trigger span {
+  overflow: hidden;
+  min-width: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.demo-date-trigger svg {
+  flex: 0 0 auto;
+  color: #8b8e97;
+  transition: transform 160ms ease;
+}
+
+.demo-date-trigger[aria-expanded="true"] svg {
+  transform: rotate(180deg);
+}
+
+.demo-date-popover {
+  position: absolute;
+  top: calc(100% + 0.55rem);
+  left: 0;
+  width: min(23rem, calc(100vw - 1rem));
+  border: 1px solid rgba(20, 20, 20, 0.09);
+  border-radius: var(--demo-surface-radius);
+  background: rgba(255, 255, 255, 0.98);
+  padding: var(--demo-surface-padding);
+  box-shadow: 0 24px 65px rgba(20, 20, 20, 0.18);
+  backdrop-filter: blur(20px);
+  animation: demo-pop 160ms ease-out;
+}
+
+.demo-date-mode-switch {
+  display: grid;
+  height: var(--demo-control-height);
+  grid-template-columns: 1fr 1fr;
+  gap: 0.25rem;
+  border-radius: var(--demo-control-radius);
+  background: var(--demo-control-surface);
+  padding: 0.25rem;
+  box-shadow: inset 0 0 0 1px var(--demo-control-border);
+}
+
+.demo-date-mode-switch button {
+  border: 0;
+  border-radius: var(--demo-control-inner-radius);
+  background: transparent;
+  color: #626670;
+}
+
+.demo-date-mode-switch button:hover {
+  background: var(--demo-control-hover);
+  color: #141414;
+}
+
+.demo-date-mode-switch button.is-active {
+  background: #fff;
+  color: #141414;
+  box-shadow:
+    0 1px 3px rgba(20, 20, 20, 0.1),
+    0 4px 12px rgba(20, 20, 20, 0.06);
+}
+
+.demo-date-popover-heading {
+  display: grid;
+  height: 2.8rem;
+  grid-template-columns: 2.25rem minmax(0, 1fr) 2.25rem;
+  align-items: center;
+  margin-top: 0.55rem;
+}
+
+.demo-date-popover-heading strong {
+  font-size: 0.86rem;
+  text-align: center;
+}
+
+.demo-date-popover-heading button {
+  display: grid;
+  width: 2.25rem;
+  height: 2.25rem;
+  place-items: center;
+  border: 0;
+  border-radius: 0.65rem;
+  background: transparent;
+  color: #626670;
+}
+
+.demo-date-popover-heading button:hover {
+  background: var(--demo-control-hover);
+  color: #141414;
+}
+
+.demo-date-weekdays,
+.demo-date-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.22rem;
+}
+
+.demo-date-weekdays span {
+  padding: 0.24rem 0;
+  color: #9699a1;
+  font-size: 0.62rem;
+  font-weight: 720;
+  text-align: center;
+}
+
+.demo-date-grid button {
+  position: relative;
+  display: grid;
+  aspect-ratio: 1;
+  min-width: 0;
+  place-items: center;
+  border: 0;
+  border-radius: 0.7rem;
+  background: transparent;
+  color: #454952;
+}
+
+.demo-date-grid button:hover {
+  background: #f0f0f2;
+  color: #141414;
+}
+
+.demo-date-grid button.is-outside {
+  opacity: 0.32;
+}
+
+.demo-date-grid button.is-today {
+  box-shadow: inset 0 0 0 1px rgba(20, 20, 20, 0.28);
+}
+
+.demo-date-grid button.is-in-range {
+  border-radius: 0.4rem;
+  background: rgba(201, 255, 79, 0.36);
+}
+
+.demo-date-grid button.is-selected {
+  background: #141414;
+  color: #fff;
+  box-shadow: none;
+}
+
+.demo-date-grid button.is-selected:hover {
+  background: #2d2d2d;
+  color: #fff;
+}
+
+.demo-date-grid button strong {
+  font-size: 0.76rem;
+  font-weight: 650;
+}
+
+.demo-date-count {
+  position: absolute;
+  top: 0.2rem;
+  right: 0.2rem;
+  display: grid;
+  min-width: 0.88rem;
+  height: 0.88rem;
+  place-items: center;
+  border-radius: 999px;
+  background: #141414;
+  color: #fff;
+  font-size: 0.48rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.demo-date-grid button.is-selected .demo-date-count {
+  background: var(--demo-accent-lime-soft);
+  color: #141414;
+}
+
+.demo-date-popover-footer {
+  display: flex;
+  min-height: 2.7rem;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.55rem;
+  border-top: 1px solid var(--demo-border);
+  padding: 0.55rem 0.2rem 0;
+}
+
+.demo-date-popover-footer span {
+  color: var(--demo-muted);
+  font-size: 0.61rem;
+}
+
+.demo-date-popover-footer button {
+  border: 0;
+  border-radius: 0.6rem;
+  background: var(--demo-accent-lime-soft);
+  padding: 0.5rem 0.65rem;
+  color: #141414;
+}
+
+.demo-schedule-toolbar-actions {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.demo-schedule-results-summary {
+  margin: 0.85rem 0 0.5rem;
+  padding-inline: var(--demo-control-padding-inline);
+  color: var(--demo-muted);
+  font-size: 0.67rem;
+  font-weight: 650;
+}
+
+.demo-schedule-results {
+  position: relative;
+}
+
+.demo-lessons-table-wrap {
+  min-height: 22rem;
+  overflow-x: auto;
+  border: 1px solid rgba(255, 255, 255, 0.78);
+  border-radius: var(--demo-surface-radius);
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: var(--demo-shadow);
+}
+
+.demo-lessons-table {
+  min-width: 58rem;
+}
+
+.demo-lessons-table-head,
+.demo-lessons-table-row {
+  display: grid;
+  grid-template-columns: 5rem minmax(16rem, 2fr) 8rem minmax(
+      10rem,
+      1fr
+    ) 7rem 2.75rem;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0 var(--demo-surface-padding);
+}
+
+.demo-lessons-table-head {
+  min-height: 3rem;
+  border-bottom: 1px solid var(--demo-border);
+  color: #8a8e97;
+  font-size: 0.62rem;
+  font-weight: 700;
+}
+
+.demo-lessons-table-row {
+  min-height: 4.75rem;
+  border-bottom: 1px solid rgba(20, 20, 20, 0.07);
+  color: #5e626c;
+  font-size: 0.68rem;
+}
+
+.demo-lessons-table-row:last-child {
+  border-bottom: 0;
+}
+
+.demo-table-time,
+.demo-table-lesson {
+  display: grid;
+  gap: 0.18rem;
+}
+
+.demo-table-time strong {
+  color: #141414;
+  font-size: 0.9rem;
+}
+
+.demo-table-time span,
+.demo-table-lesson span {
+  color: #898d96;
+  font-size: 0.61rem;
+}
+
+.demo-table-lesson strong {
+  color: #141414;
+  font-size: 0.76rem;
+  line-height: 1.35;
+}
+
+.demo-table-lesson-action {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.demo-table-lesson-action button {
+  display: grid;
+  width: 2.2rem;
+  height: 2.2rem;
+  place-items: center;
+  border: 0;
+  border-radius: 0.68rem;
+  background: #141414;
+  color: #fff;
+}
+
+.demo-table-lesson-action button:hover {
+  background: #2b2b2b;
+}
+
+.demo-lessons-table-empty {
+  display: grid;
+  min-height: 18.5rem;
+  place-items: center;
+  align-content: center;
+  gap: 0.45rem;
+  padding: 2rem;
+  color: #8a8e97;
+  text-align: center;
+}
+
+.demo-lessons-table-empty strong {
+  color: #34373e;
+  font-size: 0.88rem;
+}
+
+.demo-lessons-table-empty span {
+  color: var(--demo-muted);
+  font-size: 0.68rem;
+}
+
+.demo-lesson-cards {
+  display: grid;
+  min-height: 22rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-content: start;
+  gap: var(--demo-space-2);
+}
+
+.demo-lesson-card {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  border: 1px solid rgba(255, 255, 255, 0.78);
+  border-radius: var(--demo-surface-radius);
+  background: rgba(255, 255, 255, 0.88);
+  padding: var(--demo-surface-padding);
+  box-shadow: var(--demo-shadow);
+}
+
+.demo-lesson-card-topline {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.6rem;
+}
+
+.demo-lesson-card-time {
+  display: grid;
+  min-width: 4.3rem;
+  min-height: 3.25rem;
+  place-content: center;
+  gap: 0.1rem;
+  border-radius: 0.85rem;
+  text-align: center;
+}
+
+.demo-lesson-card-time strong {
+  font-size: 0.92rem;
+}
+
+.demo-lesson-card-time span {
+  color: rgba(20, 20, 20, 0.58);
+  font-size: 0.58rem;
+}
+
+.demo-lesson-card h3 {
+  margin: 1rem 0 0;
+  font-size: 0.94rem;
+  line-height: 1.35;
+}
+
+.demo-lesson-card > p {
+  margin: 0.3rem 0 0;
+  color: #6a6e78;
+  font-size: 0.68rem;
+}
+
+.demo-lesson-card-meta {
+  display: grid;
+  gap: 0.35rem;
+  margin: 1rem 0;
+}
+
+.demo-lesson-card-meta span {
+  display: flex;
+  align-items: center;
+  gap: 0.38rem;
+  color: #626670;
+  font-size: 0.64rem;
+}
+
+.demo-lesson-card > .demo-button {
+  width: 100%;
+  margin-top: auto;
+}
+
+.demo-schedule-empty-cards {
+  grid-column: 1 / -1;
+  min-height: 22rem;
+}
+
 .demo-segmented button span {
   margin-left: 0.25rem;
   opacity: 0.68;
@@ -1057,7 +1524,11 @@
   border: 1px solid rgba(20, 20, 20, 0.08);
   border-radius: 1.35rem;
   background:
-    radial-gradient(circle at 100% 0%, rgba(201, 180, 255, 0.5), transparent 10rem),
+    radial-gradient(
+      circle at 100% 0%,
+      rgba(201, 180, 255, 0.5),
+      transparent 10rem
+    ),
     rgba(255, 255, 255, 0.86);
   padding: 1.1rem;
   box-shadow: var(--demo-shadow);
@@ -1834,7 +2305,11 @@
   border: 1px solid rgba(20, 20, 20, 0.08);
   border-radius: 1.35rem;
   background:
-    radial-gradient(circle at 20% -20%, rgba(201, 255, 79, 0.42), transparent 17rem),
+    radial-gradient(
+      circle at 20% -20%,
+      rgba(201, 255, 79, 0.42),
+      transparent 17rem
+    ),
     #141414;
   padding: var(--demo-space-2);
   color: #fff;
@@ -2475,7 +2950,11 @@
   border: 1.5px dashed rgba(20, 20, 20, 0.22);
   border-radius: 1.2rem;
   background:
-    radial-gradient(circle at 50% 0%, rgba(112, 183, 255, 0.15), transparent 13rem),
+    radial-gradient(
+      circle at 50% 0%,
+      rgba(112, 183, 255, 0.15),
+      transparent 13rem
+    ),
     #f8f8f9;
   padding: 1.2rem;
   text-align: center;
@@ -2689,7 +3168,11 @@
 
 .demo-lesson-hero {
   background:
-    radial-gradient(circle at 98% 0%, rgba(201, 255, 79, 0.28), transparent 15rem),
+    radial-gradient(
+      circle at 98% 0%,
+      rgba(201, 255, 79, 0.28),
+      transparent 15rem
+    ),
     rgba(255, 255, 255, 0.8);
 }
 
@@ -3171,7 +3654,11 @@
   border: 1px solid rgba(20, 20, 20, 0.09);
   border-radius: 1.35rem;
   background:
-    radial-gradient(circle at 50% 0%, rgba(201, 255, 79, 0.3), transparent 13rem),
+    radial-gradient(
+      circle at 50% 0%,
+      rgba(201, 255, 79, 0.3),
+      transparent 13rem
+    ),
     #fff;
   padding: 1.2rem;
   box-shadow: 0 16px 38px rgba(20, 20, 20, 0.07);
@@ -3809,7 +4296,11 @@
   border: 1px solid rgba(255, 255, 255, 0.84);
   border-radius: 1.6rem;
   background:
-    radial-gradient(circle at 50% 0%, rgba(201, 255, 79, 0.34), transparent 14rem),
+    radial-gradient(
+      circle at 50% 0%,
+      rgba(201, 255, 79, 0.34),
+      transparent 14rem
+    ),
     #fff;
   padding: 1.5rem;
   box-shadow: 0 34px 90px rgba(20, 20, 20, 0.35);
@@ -3886,7 +4377,11 @@
 .demo-learner-fullscreen {
   min-height: 100vh;
   background:
-    radial-gradient(circle at 50% -10%, rgba(201, 255, 79, 0.27), transparent 30rem),
+    radial-gradient(
+      circle at 50% -10%,
+      rgba(201, 255, 79, 0.27),
+      transparent 30rem
+    ),
     linear-gradient(145deg, #f8f8f9, #ececef);
 }
 
@@ -3967,7 +4462,11 @@
   border: 1px solid rgba(255, 255, 255, 0.84);
   border-radius: 1.7rem;
   background:
-    radial-gradient(circle at 50% 0%, rgba(112, 183, 255, 0.2), transparent 20rem),
+    radial-gradient(
+      circle at 50% 0%,
+      rgba(112, 183, 255, 0.2),
+      transparent 20rem
+    ),
     rgba(255, 255, 255, 0.8);
   padding: clamp(1.2rem, 4vw, 2.8rem);
   box-shadow: 0 28px 70px rgba(20, 20, 20, 0.09);
@@ -4543,7 +5042,8 @@
   }
 
   .demo-student-grid,
-  .demo-course-grid {
+  .demo-course-grid,
+  .demo-lesson-cards {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
@@ -4594,6 +5094,22 @@
   .demo-hero-actions,
   .demo-course-hero-actions {
     justify-content: flex-start;
+  }
+
+  .demo-schedule-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .demo-date-picker {
+    width: 100%;
+    min-width: 0;
+    flex: none;
+  }
+
+  .demo-schedule-toolbar-actions {
+    width: 100%;
+    justify-content: space-between;
   }
 
   .demo-week-days {
@@ -4766,6 +5282,23 @@
     display: flex;
     width: 100%;
     justify-content: space-between;
+  }
+
+  .demo-date-popover {
+    width: min(23rem, calc(100vw - 1rem));
+  }
+
+  .demo-schedule-toolbar-actions .demo-filter-row {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .demo-schedule-toolbar-actions .demo-view-toggle {
+    flex: 0 0 auto;
+  }
+
+  .demo-lesson-cards {
+    grid-template-columns: 1fr;
   }
 
   .demo-session-row {
