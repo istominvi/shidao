@@ -13,8 +13,9 @@
   --demo-control-radius: 0.75rem;
   --demo-control-inner-radius: 0.5rem;
   --demo-control-border: rgba(20, 20, 20, 0.1);
-  --demo-control-surface: rgba(239, 239, 242, 0.9);
-  --demo-control-hover: rgba(255, 255, 255, 0.78);
+  --demo-control-surface: rgba(0, 0, 0, 0.05);
+  --demo-control-hover: rgba(0, 0, 0, 0.06);
+  --demo-accent-purple-soft: #c9b4ff;
   --demo-header-height: 4.25rem;
   --demo-surface-padding: 0.75rem;
   --demo-control-padding-inline: 0.75rem;
@@ -821,24 +822,12 @@
 
 .demo-week-days button.is-today,
 .demo-month-days button.is-today {
-  background: #141414;
-  color: #fff;
+  background: var(--demo-accent-purple-soft);
+  color: var(--demo-ink);
 }
 
 .demo-week-days button.is-today > span {
-  color: rgba(255, 255, 255, 0.68);
-}
-
-.demo-week-days button i,
-.demo-month-days button i {
-  position: absolute;
-  left: 50%;
-  bottom: 0.42rem;
-  width: 0.28rem;
-  height: 0.28rem;
-  transform: translateX(-50%);
-  border-radius: 50%;
-  background: #8d60ff;
+  color: rgba(20, 20, 20, 0.62);
 }
 
 .demo-week-days button.is-selected:not(.is-today),
@@ -851,9 +840,8 @@
 
 .demo-week-days button.is-today.is-selected,
 .demo-month-days button.is-today.is-selected {
-  background:
-    radial-gradient(ellipse at 50% 118%, rgba(141, 96, 255, 0.3), transparent 52%),
-    #141414;
+  background: var(--demo-accent-purple-soft);
+  box-shadow: none;
 }
 
 .demo-day-count {

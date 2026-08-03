@@ -1144,7 +1144,6 @@ export function DemoExperience() {
               {count}
             </em>
           ) : null}
-          {isToday ? <i /> : null}
         </button>
       );
     }
