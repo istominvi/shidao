@@ -1791,14 +1791,6 @@ export function DemoExperience() {
           </div>
         </section>
 
-        <div className="demo-results-summary" aria-live="polite">
-          {studentsScope === "profiles"
-            ? `${scopeResultCount} ${scopeResultCount === 1 ? "ученик" : "учеников"}`
-            : studentsScope === "groups"
-              ? `${scopeResultCount} ${scopeResultCount === 1 ? "группа" : "группы"}`
-              : `${scopeResultCount} ${scopeResultCount === 1 ? "профиль" : "профиля"} в архиве`}
-        </div>
-
         {studentsViewMode === "cards" ? (
           <section className="demo-student-grid">
             {studentsScope === "profiles"
