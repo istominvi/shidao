@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   afterConfirm,
   afterLogin,
+  resolveClientPostLoginRoute,
   onAuthPageWhenAuthenticated,
 } from "../auth-redirects";
 import { ROUTES } from "../auth";
@@ -20,9 +21,20 @@ test("afterLogin drops unsafe redirect path", () => {
     afterLogin("https://malicious.example/steal-session"),
     ROUTES.lessons,
   );
+  assert.equal(afterLogin("//malicious.example/steal-session"), ROUTES.lessons);
+});
+
+test("client login honors only a safe requested route", () => {
   assert.equal(
-    afterLogin("//malicious.example/steal-session"),
-    ROUTES.lessons,
+    resolveClientPostLoginRoute(ROUTES.lessons, "/courses/course-1"),
+    "/courses/course-1",
+  );
+  assert.equal(
+    resolveClientPostLoginRoute(
+      ROUTES.dashboard,
+      "https://malicious.example/steal-session",
+    ),
+    ROUTES.dashboard,
   );
 });
 
@@ -31,7 +43,10 @@ test("confirmation redirects stay coherent with session-authenticated flow", () 
   assert.equal(afterConfirm("email"), ROUTES.lessons);
   assert.equal(afterConfirm("invite"), ROUTES.onboarding);
   assert.equal(afterConfirm("recovery"), ROUTES.resetPassword);
-  assert.equal(afterConfirm("email_change"), `${ROUTES.settingsProfile}?emailChanged=1`);
+  assert.equal(
+    afterConfirm("email_change"),
+    `${ROUTES.settingsProfile}?emailChanged=1`,
+  );
 });
 
 test("guarded auth route redirect for authenticated users follows access policy", () => {

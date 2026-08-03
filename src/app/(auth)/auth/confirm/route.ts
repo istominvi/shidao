@@ -5,7 +5,10 @@ import {
   getSupabasePublicConfig,
   resolveSafeAuthRedirect,
 } from "@/lib/server/auth-config";
-import { writeAppSession } from "@/lib/server/app-session";
+import {
+  buildAppSessionSupabaseTokens,
+  writeAppSession,
+} from "@/lib/server/app-session";
 
 export const runtime = "nodejs";
 const ALLOWED_TYPES = new Set([
@@ -46,6 +49,10 @@ export async function GET(req: NextRequest) {
     });
 
     const payload = (await response.json().catch(() => null)) as {
+      access_token?: string | null;
+      refresh_token?: string | null;
+      expires_in?: number | null;
+      expires_at?: number | null;
       user?: {
         id?: string;
         email?: string | null;
@@ -63,6 +70,12 @@ export async function GET(req: NextRequest) {
         email: payload.user.email ?? null,
         fullName: payload.user.user_metadata?.full_name ?? null,
         recoveryVerifiedAt: type === "recovery" ? Date.now() : null,
+        supabaseSession: buildAppSessionSupabaseTokens({
+          accessToken: payload.access_token,
+          refreshToken: payload.refresh_token,
+          expiresInSeconds: payload.expires_in,
+          expiresAtEpochSeconds: payload.expires_at,
+        }),
       });
     }
 

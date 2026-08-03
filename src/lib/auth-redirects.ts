@@ -11,6 +11,16 @@ export function afterLogin(redirectTo?: string | null) {
   return toSafePath(redirectTo, ROUTES.lessons);
 }
 
+export function resolveClientPostLoginRoute(
+  serverRoute: string,
+  requestedRoute?: string | null,
+) {
+  return typeof requestedRoute === "string" &&
+    isSafeRelativePath(requestedRoute)
+    ? requestedRoute
+    : serverRoute;
+}
+
 export function afterSignup(params: {
   requiresEmailConfirmation: boolean;
   email: string;

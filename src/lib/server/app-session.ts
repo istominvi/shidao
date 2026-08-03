@@ -18,16 +18,93 @@ function resolveSessionTtlSeconds() {
 const SESSION_TTL_SECONDS = resolveSessionTtlSeconds();
 const SESSION_VERSION = Number(process.env.APP_SESSION_VERSION ?? "1");
 
-type SessionPayload = {
+export type AppSessionSupabaseTokens = {
+  accessToken: string | null;
+  refreshToken: string | null;
+  accessTokenExpiresAtMs: number | null;
+};
+
+export type AppSession = {
   v: number;
   sid: string;
   uid: string;
   email: string | null;
   fullName: string | null;
   recoveryVerifiedAt?: number | null;
+  supabaseSession?: AppSessionSupabaseTokens | null;
   iat: number;
   exp: number;
 };
+
+export type WriteAppSessionInput = {
+  uid: string;
+  email?: string | null;
+  fullName?: string | null;
+  recoveryVerifiedAt?: number | null;
+  supabaseSession?: AppSessionSupabaseTokens | null;
+};
+
+type SupabaseAuthTokensInput = {
+  accessToken?: string | null;
+  refreshToken?: string | null;
+  expiresInSeconds?: number | null;
+  expiresAtEpochSeconds?: number | null;
+};
+
+function normalizeOptionalToken(value: unknown) {
+  return typeof value === "string" && value.trim().length > 0 ? value : null;
+}
+
+export function resolveSupabaseAccessTokenExpiresAtMs(
+  input: Pick<
+    SupabaseAuthTokensInput,
+    "expiresInSeconds" | "expiresAtEpochSeconds"
+  >,
+  nowMs = Date.now(),
+) {
+  if (
+    typeof input.expiresAtEpochSeconds === "number" &&
+    Number.isFinite(input.expiresAtEpochSeconds) &&
+    input.expiresAtEpochSeconds > 0
+  ) {
+    return Math.trunc(input.expiresAtEpochSeconds * 1000);
+  }
+
+  if (
+    typeof input.expiresInSeconds === "number" &&
+    Number.isFinite(input.expiresInSeconds) &&
+    input.expiresInSeconds > 0
+  ) {
+    return nowMs + Math.trunc(input.expiresInSeconds * 1000);
+  }
+
+  return null;
+}
+
+export function buildAppSessionSupabaseTokens(
+  input: SupabaseAuthTokensInput,
+  nowMs = Date.now(),
+): AppSessionSupabaseTokens | null {
+  const accessToken = normalizeOptionalToken(input.accessToken);
+  const refreshToken = normalizeOptionalToken(input.refreshToken);
+  if (!accessToken && !refreshToken) return null;
+
+  return {
+    accessToken,
+    refreshToken,
+    accessTokenExpiresAtMs: resolveSupabaseAccessTokenExpiresAtMs(input, nowMs),
+  };
+}
+
+export function isSupabaseAccessTokenFresh(
+  session: AppSessionSupabaseTokens | null | undefined,
+  nowMs = Date.now(),
+  refreshSkewMs = 60_000,
+) {
+  if (!session?.accessToken || !session.accessTokenExpiresAtMs) return false;
+  const safeSkewMs = Math.max(0, refreshSkewMs);
+  return session.accessTokenExpiresAtMs - safeSkewMs > nowMs;
+}
 
 function getSecret() {
   const secret = process.env.APP_SESSION_SECRET;
@@ -48,7 +125,7 @@ function deriveKey() {
   return crypto.createHash("sha256").update(getSecret()).digest();
 }
 
-function encrypt(payload: SessionPayload) {
+export function sealAppSession(payload: AppSession) {
   const iv = crypto.randomBytes(12);
   const cipher = crypto.createCipheriv("aes-256-gcm", deriveKey(), iv);
   const plaintext = Buffer.from(JSON.stringify(payload), "utf8");
@@ -61,7 +138,7 @@ function encrypt(payload: SessionPayload) {
   ].join(".");
 }
 
-function decrypt(token: string): SessionPayload | null {
+function decrypt(token: string): AppSession | null {
   const [ivB64, encryptedB64, tagB64] = token.split(".");
   if (!ivB64 || !encryptedB64 || !tagB64) return null;
   try {
@@ -75,7 +152,7 @@ function decrypt(token: string): SessionPayload | null {
       decipher.update(Buffer.from(encryptedB64, "base64url")),
       decipher.final(),
     ]);
-    return JSON.parse(decrypted.toString("utf8")) as SessionPayload;
+    return JSON.parse(decrypted.toString("utf8")) as AppSession;
   } catch {
     return null;
   }
@@ -89,7 +166,7 @@ type LegacySessionPayload = {
   iat: number;
 };
 
-function verifyLegacyToken(token: string): SessionPayload | null {
+function verifyLegacyToken(token: string): AppSession | null {
   const [body, signature] = token.split(".");
   if (!body || !signature) return null;
   const expected = crypto
@@ -118,45 +195,93 @@ function verifyLegacyToken(token: string): SessionPayload | null {
   }
 }
 
-function normalizePayload(payload: SessionPayload | null) {
+function normalizeSupabaseSession(value: unknown) {
+  if (!value || typeof value !== "object") return null;
+  const candidate = value as Partial<AppSessionSupabaseTokens>;
+  const accessToken = normalizeOptionalToken(candidate.accessToken);
+  const refreshToken = normalizeOptionalToken(candidate.refreshToken);
+  if (!accessToken && !refreshToken) return null;
+
+  return {
+    accessToken,
+    refreshToken,
+    accessTokenExpiresAtMs:
+      typeof candidate.accessTokenExpiresAtMs === "number" &&
+      Number.isFinite(candidate.accessTokenExpiresAtMs) &&
+      candidate.accessTokenExpiresAtMs > 0
+        ? candidate.accessTokenExpiresAtMs
+        : null,
+  } satisfies AppSessionSupabaseTokens;
+}
+
+function normalizePayload(payload: AppSession | null, nowMs = Date.now()) {
   if (!payload) return null;
   if (!payload.uid || payload.v !== SESSION_VERSION) return null;
-  if (!payload.exp || payload.exp <= Date.now()) return null;
-  return payload;
+  if (!payload.exp || payload.exp <= nowMs) return null;
+  return {
+    ...payload,
+    supabaseSession: normalizeSupabaseSession(payload.supabaseSession),
+  } satisfies AppSession;
+}
+
+export function unsealAppSession(token: string, nowMs = Date.now()) {
+  return normalizePayload(decrypt(token) ?? verifyLegacyToken(token), nowMs);
 }
 
 export const readAppSession = cache(async () => {
   const jar = await cookies();
   const raw = jar.get(APP_SESSION_COOKIE)?.value;
   if (!raw) return null;
-  return normalizePayload(decrypt(raw) ?? verifyLegacyToken(raw));
+  return unsealAppSession(raw);
 });
 
-export async function writeAppSession(input: {
-  uid: string;
-  email?: string | null;
-  fullName?: string | null;
-  recoveryVerifiedAt?: number | null;
-}) {
-  const jar = await cookies();
-  const issuedAt = Date.now();
-  const token = encrypt({
+export function createAppSessionPayload(
+  input: WriteAppSessionInput,
+  issuedAt = Date.now(),
+): AppSession {
+  return {
     v: SESSION_VERSION,
     sid: crypto.randomUUID(),
     uid: input.uid,
     email: input.email ?? null,
     fullName: input.fullName ?? null,
     recoveryVerifiedAt: input.recoveryVerifiedAt ?? null,
+    supabaseSession: input.supabaseSession ?? null,
     iat: issuedAt,
     exp: issuedAt + SESSION_TTL_SECONDS * 1000,
-  });
+  };
+}
+
+async function persistAppSession(payload: AppSession) {
+  const jar = await cookies();
+  const maxAge = Math.max(1, Math.ceil((payload.exp - Date.now()) / 1000));
+  const token = sealAppSession(payload);
   jar.set(APP_SESSION_COOKIE, token, {
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
     path: "/",
-    maxAge: SESSION_TTL_SECONDS,
+    maxAge,
   });
+}
+
+export async function writeAppSession(input: WriteAppSessionInput) {
+  await persistAppSession(createAppSessionPayload(input));
+}
+
+export async function rotateAppSessionSupabaseTokens(
+  currentSession: AppSession,
+  supabaseSession: AppSessionSupabaseTokens,
+) {
+  const nextSession = normalizePayload({
+    ...currentSession,
+    supabaseSession,
+  });
+  if (!nextSession) {
+    throw new Error("Cannot rotate tokens for an expired app session.");
+  }
+  await persistAppSession(nextSession);
+  return nextSession;
 }
 
 export async function clearAppSession() {

@@ -77,6 +77,7 @@ export async function POST(req: NextRequest) {
       email: session.email,
       fullName: session.fullName,
       recoveryVerifiedAt: null,
+      supabaseSession: session.supabaseSession,
     });
 
     return NextResponse.json({ ok: true, redirectTo: afterRecovery() });

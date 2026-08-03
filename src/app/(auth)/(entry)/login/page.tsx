@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { useSessionView } from "@/components/use-session-view";
 import { loginWithIdentifier } from "@/lib/auth-flow";
 import { ROUTES } from "@/lib/auth";
+import { resolveClientPostLoginRoute } from "@/lib/auth-redirects";
 
 function LoginPageContent() {
   const router = useRouter();
@@ -46,7 +47,9 @@ function LoginPageContent() {
       setLoading(true);
       const route = await loginWithIdentifier(identifier, secret);
       await refetchSession();
-      router.push(route);
+      router.push(
+        resolveClientPostLoginRoute(route, searchParams.get("next")),
+      );
       router.refresh();
     } catch (submitError) {
       setError(

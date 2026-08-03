@@ -26,6 +26,8 @@ type SupabaseUser = {
 type AuthSession = {
   access_token: string;
   refresh_token: string;
+  expires_in?: number | null;
+  expires_at?: number | null;
   user: SupabaseUser;
 };
 

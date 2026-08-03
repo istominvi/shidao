@@ -2,7 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { AUTH_MESSAGES, isEmail } from "@/lib/auth";
 import { afterLogin } from "@/lib/auth-redirects";
 import { apiError, parseJsonWithSchema } from "@/lib/server/api";
-import { writeAppSession } from "@/lib/server/app-session";
+import {
+  buildAppSessionSupabaseTokens,
+  writeAppSession,
+} from "@/lib/server/app-session";
 import { logger } from "@/lib/server/logger";
 import { resolvePostLoginRedirectForContext } from "@/lib/server/post-login-redirect";
 import { hitRateLimit } from "@/lib/server/rate-limit";
@@ -83,6 +86,12 @@ export async function POST(req: NextRequest) {
         uid: userId,
         email: context.email,
         fullName: context.fullName,
+        supabaseSession: buildAppSessionSupabaseTokens({
+          accessToken: passwordSession.access_token,
+          refreshToken: passwordSession.refresh_token,
+          expiresInSeconds: passwordSession.expires_in,
+          expiresAtEpochSeconds: passwordSession.expires_at,
+        }),
       });
 
       if (context.actorKind === "adult") {
