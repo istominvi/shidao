@@ -7,7 +7,7 @@ import {
   isSafeRelativePath,
   isSettingsRoute,
 } from "../routes";
-import { ROUTES } from "../auth";
+import { ROUTES, toCourseRoute, toCourseStudentPreviewRoute } from "../auth";
 
 test("isRouteWithin matches exact route and nested route", () => {
   assert.equal(isRouteWithin(ROUTES.settings, ROUTES.settings), true);
@@ -30,9 +30,19 @@ test("isProtectedAppRoute covers private app trees", () => {
   assert.equal(isProtectedAppRoute("/lessons/scheduled-1"), true);
   assert.equal(isProtectedAppRoute("/methodologies"), true);
   assert.equal(isProtectedAppRoute("/groups/class-1"), true);
+  assert.equal(isProtectedAppRoute("/courses"), true);
+  assert.equal(isProtectedAppRoute("/courses/course-1/student-preview"), true);
   assert.equal(isProtectedAppRoute("/settings-security"), false);
   assert.equal(isProtectedAppRoute("/login"), false);
   assert.equal(isProtectedAppRoute(null), false);
+});
+
+test("course route helpers encode ids and share one workspace route", () => {
+  assert.equal(toCourseRoute("course/id"), "/courses/course%2Fid");
+  assert.equal(
+    toCourseStudentPreviewRoute("course/id"),
+    "/courses/course%2Fid/student-preview",
+  );
 });
 
 test("settings routes are recognized only via settings tree helper", () => {

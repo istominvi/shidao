@@ -7,6 +7,7 @@ export const PRIVATE_ROUTE_PREFIXES = [
   ROUTES.onboarding,
   ROUTES.settings,
   ROUTES.lessons,
+  ROUTES.courses,
   ROUTES.methodologies,
   ROUTES.groups,
 ] as const;
