@@ -412,7 +412,6 @@ function LessonNavigation({
 
               <section
                 className="flex flex-col rounded-2xl border border-violet-200 bg-violet-50 p-4"
-                aria-disabled="true"
               >
                 <div className="flex items-center gap-2 text-violet-950">
                   <WandSparkles className="h-4 w-4" aria-hidden="true" />
