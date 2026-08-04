@@ -6,6 +6,7 @@ import {
   resolveAuthEntryRedirect,
   resolveOnboardingRedirect,
   resolveProfileRequiredRedirect,
+  resolveTeacherRequiredRedirect,
 } from "../access-guards";
 
 test("app layout redirects guest/degraded to login", () => {
@@ -20,6 +21,39 @@ test("profile-required layout redirects adult-without-profile to onboarding", ()
   );
   assert.equal(resolveProfileRequiredRedirect("student"), null);
   assert.equal(resolveProfileRequiredRedirect("adult-with-profile"), null);
+});
+
+test("teacher-required layout permits only the active teacher profile", () => {
+  assert.equal(
+    resolveTeacherRequiredRedirect({
+      status: "adult-with-profile",
+      activeProfile: "teacher",
+    }),
+    null,
+  );
+  assert.equal(
+    resolveTeacherRequiredRedirect({
+      status: "adult-with-profile",
+      activeProfile: "parent",
+    }),
+    ROUTES.courses,
+  );
+  assert.equal(
+    resolveTeacherRequiredRedirect({ status: "student" }),
+    ROUTES.courses,
+  );
+  assert.equal(
+    resolveTeacherRequiredRedirect({ status: "adult-without-profile" }),
+    ROUTES.onboarding,
+  );
+  assert.equal(
+    resolveTeacherRequiredRedirect({ status: "guest" }),
+    ROUTES.login,
+  );
+  assert.equal(
+    resolveTeacherRequiredRedirect({ status: "degraded" }),
+    ROUTES.login,
+  );
 });
 
 test("auth entry routes redirect authenticated users deterministically", () => {

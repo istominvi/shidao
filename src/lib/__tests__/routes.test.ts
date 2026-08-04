@@ -23,7 +23,12 @@ test("isSettingsRoute matches settings tree only", () => {
 
 test("isProtectedAppRoute covers private app trees", () => {
   assert.equal(isProtectedAppRoute("/dashboard"), false);
-  assert.equal(isProtectedAppRoute("/schedule"), false);
+  assert.equal(isProtectedAppRoute(ROUTES.schedule), true);
+  assert.equal(isProtectedAppRoute(`${ROUTES.schedule}/day`), true);
+  assert.equal(isProtectedAppRoute("/schedule-old"), false);
+  assert.equal(isProtectedAppRoute(ROUTES.students), true);
+  assert.equal(isProtectedAppRoute(`${ROUTES.students}/student-1`), true);
+  assert.equal(isProtectedAppRoute("/studentship"), false);
   assert.equal(isProtectedAppRoute("/homework"), false);
   assert.equal(isProtectedAppRoute("/onboarding/step-2"), true);
   assert.equal(isProtectedAppRoute("/settings/team"), true);

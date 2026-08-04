@@ -59,6 +59,12 @@ git diff --check
 npm run test:browser:ci
 ```
 
+Release с teacher-only `/schedule` и `/students` обязан дополнительно проверить
+route guard для Guest, adult без профиля, Parent и transitional Student, а
+также desktop/mobile primary navigation. Этот UI-slice не содержит migration;
+появление schedule/student DDL в diff означает незапланированное расширение
+scope и должно остановить release.
+
 Обычный `npm run test:browser` может пропустить smoke, если browser недоступен;
 он не заменяет строгий release gate.
 
@@ -158,6 +164,21 @@ SMTP/GoTrue переменные настраиваются в Supabase environm
 - fullscreen preview открывается;
 - reload сохраняет данные;
 - signed attachment открывается только при разрешённом ownership/projection.
+
+### Teacher navigation shells
+
+- active Teacher видит меню `Расписание / Ученики / Курсы` и открывает
+  `/schedule` и `/students`;
+- Parent и transitional Student не видят teacher-only пункты и при прямом
+  открытии этих routes возвращаются в `/courses`;
+- взрослый без профиля уходит в `/onboarding`, Guest — в `/login`;
+- оба shell читают только реальные owner-scoped Course summaries через
+  существующий `/api/v2/courses`;
+- Schedule показывает честное отсутствие занятий и не сохраняет выбранную
+  дату как event/LessonSession;
+- Students показывает нулевые LearnerProfile/Group и не читает legacy
+  `student/class/class_student`;
+- нет фиктивных учеников, групп, progress/history или новых mutation requests.
 
 ### Console/logs
 

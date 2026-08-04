@@ -1,7 +1,8 @@
 # ShiDao V2
 
 ShiDao V2 — работающий teacher Course Builder на Next.js и текущем
-self-hosted Supabase. Каноническая авторская модель:
+self-hosted Supabase. Текущий source также содержит teacher-only navigation
+shells «Расписание» и «Ученики». Каноническая авторская модель:
 
 ```text
 Course
@@ -81,6 +82,8 @@ baseline debt; изменённую документацию проверяйт�
 - Приложение: `/onboarding`, `/courses`, `/courses/new`,
   `/courses/[courseId]`, `/courses/[courseId]/student-preview`,
   `/settings/profile`, `/settings/security`.
+- Только active teacher profile: `/schedule`, `/students`. Parent и
+  transitional Student перенаправляются с этих routes в `/courses`.
 - Рабочий app-домен: `v2.shidao.ru` — active deployed customer-demo contour.
 - `shidao.ru` остаётся landing-only.
 - `brand.shidao.ru` и `model.shidao.ru` — отдельные публичные reference
@@ -97,6 +100,13 @@ Lesson непосредственно владеет одним упорядоч
 - заголовок и комментарий преподавателя являются полями Lesson;
 - материалы хранятся как course-wide attachments в private Storage;
 - сущности Lesson Step/root Step в активной V2 нет.
+
+Teacher navigation содержит «Расписание / Ученики / Курсы». `/schedule` и
+`/students` используют реальные owner-scoped Course summaries и честные пустые
+состояния для ещё отсутствующих данных. Schedule events/LessonSession,
+LearnerProfile, Group, invitation и audience persistence не реализованы;
+transitional `student/class/class_student` для этих shells не используются.
+Новых таблиц или migrations этот UI-slice не добавляет.
 
 Десять типов компонентов определены в code-first registry. UI, application
 service и development-only MCP используют общие Zod contracts; MCP не работает

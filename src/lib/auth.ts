@@ -14,6 +14,8 @@ export const ROUTES = {
   forgotPassword: "/forgot-password",
   resetPassword: "/reset-password",
   onboarding: "/onboarding",
+  schedule: "/schedule",
+  students: "/students",
   courses: "/courses",
   coursesNew: "/courses/new",
   settings: "/settings",

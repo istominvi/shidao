@@ -4,13 +4,18 @@
 **Актуально на:** 5 августа 2026 года
 **Активная ветка:** `main`
 **Рабочее приложение:** `https://v2.shidao.ru`
-**Последний проверенный application release:** `65edf0d`
+**Последний проверенный application release:** `1e92ed4`
 
-Двухуровневая навигация Course → Lesson развёрнута и проверена на release
-`65edf0d`. Текущий локальный source дополнительно уточняет визуальный язык
-Course routes: сплошной бежевый фон без цветных градиентов, sticky demo header,
-единые контролы и облегчённая типографика заголовков. Этот visual refinement
-ещё не считается deployed до отдельного deploy/postflight.
+Двухуровневая навигация Course → Lesson и обновлённый визуальный язык Course
+routes развёрнуты и проверены на release `1e92ed4`: сплошной бежевый фон без
+цветных градиентов, sticky demo header, единые контролы и облегчённая
+типографика заголовков.
+
+Текущий локальный source дополнительно добавляет teacher-only UI-shells
+`/schedule` и `/students` и пункты «Расписание / Ученики / Курсы» в меню
+преподавателя. Этот slice ещё не считается deployed до push, Coolify deploy и
+postflight. Он не добавляет Schedule events, LessonSession, LearnerProfile,
+Group или новую persistence/schema.
 
 `v2.shidao.ru` — active deployed customer-demo contour на production-mode
 build, но публичный production launch и отдельный staging ещё не выполнены.
@@ -90,6 +95,29 @@ Account
 - Заголовочные секции Course и Lesson остаются прозрачными; заголовки списка,
   Course и Lesson используют системный sans-serif с demo-размерами и весом
   400, а кнопки и вкладки — единый шрифт `.88rem/500`.
+
+### Teacher navigation, Расписание и Ученики
+
+- В текущем локальном source основная навигация активного teacher profile
+  содержит пункты «Расписание / Ученики / Курсы». Parent profile и
+  transitional Student продолжают видеть только «Курсы».
+- `/schedule` и `/students` находятся под отдельным teacher-required layout.
+  Guest/degraded session перенаправляется в `/login`, взрослый без профиля — в
+  `/onboarding`, Parent и transitional Student — в `/courses`.
+- `/schedule` показывает навигацию по календарной дате и честное пустое
+  состояние занятий. Ни выбранная дата, ни Schedule event не сохраняются.
+- В нижней части `/schedule` читаются реальные owner-scoped Course summaries
+  через существующий `GET /api/v2/courses`: преподаватель может найти Course и
+  открыть его список Lessons. Course/Lesson не выдаются за запланированное
+  занятие.
+- `/students` показывает нулевые счётчики новых учебных профилей и групп и
+  отдельно выводит реальные Course summaries, для которых audience ещё не
+  назначена.
+- `/students` не читает transitional `student`, `class` или `class_student`, не
+  создаёт приглашения/профили/группы и не показывает фиктивные progress/history
+  данные.
+- Оба shell используют тот же плоский бежевый demo visual language, header,
+  кнопки, карточки и типографику, что и Course routes.
 
 ### Уроки и компоненты
 
@@ -178,8 +206,9 @@ MCP вызывает `CourseBuilderApplicationService`, использует п�
 - добавление новых материалов из модалки существующего Course;
 - persisted Homework editor;
 - Learner-facing кабинет, enrollment и настоящий доступ ученика к Course;
-- Groups, новое нейтральное LearnerProfile и Guardian relations;
-- Schedule, LessonSession, live sync и teacher-controlled runtime cursor;
+- persisted Groups, новое нейтральное LearnerProfile и Guardian relations;
+- persisted Schedule events, LessonSession, live sync и teacher-controlled
+  runtime cursor;
 - учебная история, прогресс и аналитика;
 - chat и notifications;
 - templates/marketplace;
@@ -212,7 +241,8 @@ identity milestone и forward migration.
 - Methodology domain и связанные страницы/API;
 - `lesson_step` и `lesson_step_component`;
 - scheduled-lesson, старый homework/runtime и коммуникационный слой;
-- dashboard, groups, schedule, notifications и старые lesson workspaces;
+- dashboard, старые groups/schedule/runtime pages, notifications и старые
+  lesson workspaces;
 - fixture fallback и renderers, зависящие от конкретной методики или Lesson ID.
 
 Старая методика «Мир вокруг меня» сохранена отдельно:
@@ -283,6 +313,9 @@ positions, а плотность поддерживают текущие service
 | Lesson editor/Slides        | `src/components/course-builder/lesson-authoring-workspace.tsx`                                     |
 | Component editors/renderers | `src/components/course-builder/component-payload-editor.tsx`, `component-renderers.tsx`            |
 | Fullscreen preview          | `src/components/course-builder/student-screen-preview.tsx`                                         |
+| Teacher Schedule shell      | `src/app/(app)/(teacher-required)/schedule/`, `src/components/teaching-hub/schedule-workspace.tsx` |
+| Teacher Students shell      | `src/app/(app)/(teacher-required)/students/`, `src/components/teaching-hub/students-workspace.tsx` |
+| Teacher route boundary      | `src/app/(app)/(teacher-required)/layout.tsx`, `src/lib/server/access-guards.ts`                   |
 | V2 API routes               | `src/app/api/v2/`                                                                                  |
 | Host boundary               | `src/middleware.ts`, `src/lib/deployment-access.ts`                                                |
 | Auth/session                | `src/lib/auth.ts`, `src/lib/server/`                                                               |
@@ -300,6 +333,8 @@ positions, а плотность поддерживают текущие service
 /reset-password
 /auth/confirm
 /onboarding
+/schedule                         # только active teacher profile
+/students                         # только active teacher profile
 /courses
 /courses/new
 /courses/[courseId]
@@ -308,8 +343,10 @@ positions, а плотность поддерживают текущие service
 /settings/security
 ```
 
-V2 Course API находится под `/api/v2/`. Старые dashboard/methodology/lesson
-routes не поддерживаются как compatibility URL.
+V2 Course API находится под `/api/v2/`. У `/schedule` и `/students` нет новых
+mutation API: оба shell переиспользуют только существующее owner-scoped чтение
+Course summaries. Старые dashboard/methodology/group/scheduled-lesson routes не
+поддерживаются как compatibility URL.
 
 Дополнительные project surfaces:
 
@@ -353,9 +390,11 @@ npm run mcp:course-builder
 Supabase access/refresh tokens. Строгий gate сам собирает production-приложение
 против локального mock Supabase, поэтому build-time `NEXT_PUBLIC_*` и runtime
 конфигурация совпадают и тест не обращается к рабочей базе. Воспроизводимый
-результат `npm run test:browser:ci`: 6 сценариев pass, включая авторизованный
-переход Course → Lesson → backlink обратно к Course, computed visual contract
-и mobile 375 px без document-level overflow.
+результат `npm run test:browser:ci` для текущего source candidate: 8 сценариев
+pass, включая teacher-навигацию Schedule → Students, мобильное меню
+«Расписание / Ученики / Курсы», авторизованный переход Course → Lesson →
+backlink обратно к Course, computed visual contract и mobile 375 px без
+document-level overflow.
 
 Repository-wide `npm run format:check` также пока не является зелёным baseline:
 он сообщает десятки ранее существовавших файлов, включая immutable content
@@ -364,12 +403,13 @@ Markdown files проходят targeted Prettier check и `git diff --check`. �
 обязательным global format gate нужен отдельный baseline/ignore change без
 переформатирования archive.
 
-Для текущего локального source подтверждены typecheck, lint, 175 unit tests,
-production build и строгие 6/6 browser smoke. На application release
-`65edf0d` подтверждены typecheck, lint, 174
-unit tests, production build, строгие 5/5 browser smoke и deployed-contour
-переход Course → Lesson → backlink. Browser console deployed-контура была без
-warning/error.
+На application release `1e92ed4` подтверждены typecheck, lint, 175 unit tests,
+production build и строгие 6/6 browser smoke, включая Course → Lesson →
+backlink, computed visual contract и mobile viewport. Teacher-only
+`/schedule`/`/students` source candidate отдельно прошёл typecheck, lint, 183
+unit tests, production build и строгие 8/8 browser smoke. До push и deployed
+authorization/navigation postflight он не входит в подтверждённый deployed
+baseline.
 
 ## 10. Правило обновления этого документа
 

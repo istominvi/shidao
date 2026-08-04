@@ -1,7 +1,7 @@
 import { ROUTES } from "@/lib/auth";
 import { isRouteWithin } from "@/lib/routes";
 import type { LucideIcon } from "lucide-react";
-import { Library } from "lucide-react";
+import { CalendarDays, Library, Users } from "lucide-react";
 
 export type PrimaryNavItem = {
   id: string;
@@ -17,7 +17,10 @@ export type PrimaryNavConfig = {
   items: PrimaryNavItem[];
 };
 
-export const PRIMARY_NAV_CONFIG: Record<PrimaryNavConfig["id"], PrimaryNavConfig> = {
+export const PRIMARY_NAV_CONFIG: Record<
+  PrimaryNavConfig["id"],
+  PrimaryNavConfig
+> = {
   marketing: {
     id: "marketing",
     ariaLabel: "Навигация по лендингу",
@@ -25,7 +28,12 @@ export const PRIMARY_NAV_CONFIG: Record<PrimaryNavConfig["id"], PrimaryNavConfig
       { id: "course", label: "Курс", href: "#course", isActive: () => false },
       { id: "lesson", label: "Урок", href: "#lesson", isActive: () => false },
       { id: "roles", label: "Роли", href: "#roles", isActive: () => false },
-      { id: "workflow", label: "Как работает", href: "#workflow", isActive: () => false },
+      {
+        id: "workflow",
+        label: "Как работает",
+        href: "#workflow",
+        isActive: () => false,
+      },
       { id: "faq", label: "Вопросы", href: "#faq", isActive: () => false },
     ],
   },
@@ -33,6 +41,20 @@ export const PRIMARY_NAV_CONFIG: Record<PrimaryNavConfig["id"], PrimaryNavConfig
     id: "teacher",
     ariaLabel: "Основная навигация кабинета преподавателя",
     items: [
+      {
+        id: "schedule",
+        label: "Расписание",
+        href: ROUTES.schedule,
+        icon: CalendarDays,
+        isActive: (pathname) => isRouteWithin(pathname, ROUTES.schedule),
+      },
+      {
+        id: "students",
+        label: "Ученики",
+        href: ROUTES.students,
+        icon: Users,
+        isActive: (pathname) => isRouteWithin(pathname, ROUTES.students),
+      },
       {
         id: "courses",
         label: "Курсы",

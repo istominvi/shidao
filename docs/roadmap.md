@@ -38,6 +38,13 @@
 - Course routes приведены к плоскому demo-фону `#f5f1e8` без marketing
   gradients; header, кнопки, вкладки и заголовочная типографика используют
   scoped demo-размеры, радиусы и веса, не затрагивая landing/Auth.
+- В текущем локальном source добавлены teacher-only `/schedule` и `/students`
+  и пункты «Расписание / Ученики / Курсы». Shells используют тот же demo-style
+  и показывают реальные Course summaries, но честно оставляют занятия,
+  LearnerProfile и Group пустыми до появления соответствующих доменов.
+- Teaching-hub shells не читают старые `student/class/class_student`, не
+  создают новую persistence и не считаются реализацией audience/scheduling
+  milestones.
 - Реализованы private-by-default Components и persisted Student Screen Slides.
 - Реализован fullscreen Student Screen preview.
 - Реализован development-only MCP из шести tools поверх application service.
@@ -163,9 +170,13 @@ compatibility login/profile flows. Новая модель проектируе�
 
 До этого этапа Course Builder остаётся owner-only. Нельзя использовать старую
 Class/School как новый parent Course только ради быстрого enrollment.
+Teacher-only `/students` до этого этапа остаётся навигационным shell с нулевым
+состоянием LearnerProfile/Group и read-only списком реальных owner Courses.
 
 ## P2: Session и live lesson
 
+- teacher-only `/schedule` до этого этапа остаётся shell: переключение даты
+  локально и не создаёт Schedule event;
 - `LessonSession` отделена от редактируемой Lesson;
 - один Lesson можно проводить многократно;
 - основной runtime cursor указывает на Student Screen Slide и не создаёт

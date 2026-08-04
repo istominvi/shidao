@@ -239,8 +239,28 @@ Visual contract Course routes не меняет эту навигационну�
   единым шрифтом `.88rem/500`;
 - заголовочные секции Course и Lesson прозрачны, а их H1 используют
   системный sans-serif, вес 400 и отдельный detail scale;
-- visual tokens scoped к Course routes и не меняют landing, Auth, Settings или
-  полноэкранный Student Screen.
+- visual tokens переиспользуются Course routes и teacher teaching-hub shells,
+  но не меняют landing, Auth, Settings или полноэкранный Student Screen.
+
+## Teaching hub navigation boundary
+
+Текущий локальный UI добавляет teacher-only `/schedule` и `/students` рядом с
+`/courses`. Это навигационный и визуальный slice, а не изменение canonical
+Course/Lesson model:
+
+- server layout допускает только active teacher profile; Parent и transitional
+  Student перенаправляются в `/courses`;
+- оба shell читают реальные owner-scoped Course summaries через существующий
+  Course Builder API;
+- `/schedule` показывает выбранную календарную дату и пустое состояние, но не
+  сохраняет Schedule event и не создаёт `LessonSession`;
+- Course и Lesson в очереди будущего планирования остаются авторскими
+  документами и не становятся проведёнными занятиями;
+- `/students` показывает нулевое состояние будущих LearnerProfile/Group и
+  Courses без persisted audience;
+- старые `student`, `class` и `class_student` не используются как источник
+  новой learning identity;
+- новых таблиц, migrations, API mutation или MCP tools этот slice не добавляет.
 
 ## Lesson creation
 
@@ -362,7 +382,7 @@ import/application layer. Он не возвращает Methodology в акти
 - обязательная AI-генерация;
 - parsing/RAG загруженных файлов;
 - persisted homework editor;
-- scheduling и live sync;
+- persisted scheduling, LessonSession и live sync;
 - drag-and-drop, если надёжные кнопки «выше/ниже» уже обеспечивают reorder;
 - внешняя публикация MCP;
 - compatibility layer для Step/Methodology не планируется;
@@ -370,7 +390,7 @@ import/application layer. Он не возвращает Methodology в акти
 
 ## Shipped acceptance baseline
 
-На release `65edf0d` проверено:
+На release `1e92ed4` проверено:
 
 1. Course, Lesson, ordered Components и attachments сохраняются в реальной
    базе/Storage и переживают reload.
@@ -390,8 +410,8 @@ import/application layer. Он не возвращает Methodology в акти
     выбранная Lesson показывает отдельный H1, backlink с названием Course и
     пять Lesson-вкладок.
 
-Также прошли typecheck, lint, 174 unit tests, production build, строгие 5/5
-browser smoke и deployed-contour E2E без console warning/error. Текущий
-visual refinement дополнительно проверяется computed-style и mobile browser
-контрактами до следующего deploy. Следующие срезы не должны ослаблять этот
-baseline.
+Также прошли typecheck, lint, 175 unit tests, production build и строгие 6/6
+browser smoke, включая computed-style и mobile contracts. Текущий source
+candidate с teacher-only `/schedule`/`/students` отдельно прошёл typecheck,
+lint, 183 unit tests, production build и строгие 8/8 browser smoke; до
+отдельного release/postflight он не меняет deployed baseline.

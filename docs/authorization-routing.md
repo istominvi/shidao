@@ -2,6 +2,10 @@
 
 **Статус:** current implementation
 **Канонический app host:** `v2.shidao.ru`
+**Последний deployed baseline:** `1e92ed4`
+
+Teacher-only `/schedule` и `/students` реализованы в текущем локальном source и
+не считаются deployed до следующего push/Coolify postflight.
 
 ## Host matrix
 
@@ -75,6 +79,19 @@ Session-protected application:
 /courses/[courseId]/student-preview
 ```
 
+Teacher-required application:
+
+```text
+/schedule
+/students
+```
+
+Оба маршрута доступны только `adult-with-profile` с активным profile
+`teacher`. Guest/degraded session перенаправляется в `/login`, взрослый без
+профиля — в `/onboarding`, active Parent и transitional Student — в `/courses`.
+Пункты «Расписание» и «Ученики» поэтому присутствуют только в teacher primary
+navigation; Parent и Student сохраняют пункт «Курсы».
+
 Profile-required settings:
 
 ```text
@@ -87,8 +104,11 @@ Profile-required settings:
 от старого parent/teacher profile. Onboarding/profile compatibility остаётся
 переходным identity flow.
 
-Dashboard, methodology, group, scheduled-lesson, notification и старые lesson
-pages удалены и не являются compatibility routes.
+Новые `/schedule` и `/students` являются UI-shells, а не восстановлением старых
+domain routes. Они читают только существующий owner-scoped
+`GET /api/v2/courses`; новых schedule/student mutation API нет. Dashboard,
+methodology, старые group/scheduled-lesson, notification и lesson pages удалены
+и не являются compatibility routes.
 
 ## V2 API namespaces
 
@@ -142,6 +162,12 @@ Serialized Student Screen assignment/reorder/delete RPC дополнительн
 - App session идентифицирует Auth user и содержит short-lived Supabase tokens.
 - Course принадлежит `account`, где `account.auth_user_id = auth.uid()`.
 - Lesson, Components, Slides и attachments наследуют Course ownership.
+- Teacher-only `/schedule` и `/students` дополнительно проходят server layout
+  guard по active teacher profile до render client workspace.
+- Данные Course в этих shells приходят через тот же owner-scoped
+  `/api/v2/courses`; выбранная дата Schedule остаётся локальным UI state.
+- `/students` не обращается к transitional `student/class/class_student` и не
+  выдаёт login compatibility identity за LearnerProfile/Group.
 - Learner preview сейчас является owner-only preview, а не публичным enrollment
   endpoint.
 - Student Screen response создаётся server-side и физически исключает

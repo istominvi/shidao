@@ -19,6 +19,26 @@ export function resolveProfileRequiredRedirect(
   return resolveAppLayoutRedirect(status);
 }
 
+export function resolveTeacherRequiredRedirect(
+  resolution: Pick<AccessResolution, "status"> & {
+    activeProfile?: "teacher" | "parent";
+  },
+) {
+  if (
+    resolution.status === "adult-with-profile" &&
+    resolution.activeProfile === "teacher"
+  ) {
+    return null;
+  }
+
+  if (resolution.status === "adult-without-profile") {
+    return ROUTES.onboarding;
+  }
+
+  const appRedirect = resolveAppLayoutRedirect(resolution.status);
+  return appRedirect ?? ROUTES.courses;
+}
+
 export function resolveAuthEntryRedirect(
   resolution: Pick<AccessResolution, "status"> & {
     activeProfile?: "teacher" | "parent";

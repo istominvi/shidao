@@ -17,6 +17,8 @@ import {
 const APP_SESSION_SECRET = "e2e-app-session-secret-value-with-minimum-32-chars";
 const E2E_ADULT_USER_ID = "11111111-1111-4111-8111-111111111111";
 const E2E_ACCOUNT_ID = "22222222-2222-4222-8222-222222222222";
+const E2E_TEACHER_ID = "55555555-5555-4555-8555-555555555555";
+const E2E_SCHOOL_ID = "66666666-6666-4666-8666-666666666666";
 const E2E_COURSE_ID = "33333333-3333-4333-8333-333333333333";
 const E2E_LESSON_ID = "44444444-4444-4444-8444-444444444444";
 const E2E_COURSE_TITLE = "Английский для жизни";
@@ -254,6 +256,11 @@ function handleMockSupabase(
     return;
   }
 
+  if (requestUrl.pathname === "/rest/v1/rpc/set_last_selected_school") {
+    json(response, 200, null);
+    return;
+  }
+
   if (requestUrl.pathname === "/rest/v1/rpc/current_session_invalid_before") {
     json(response, 200, null);
     return;
@@ -309,16 +316,16 @@ function handleMockSupabase(
   const isAdultUser = userId === E2E_ADULT_USER_ID;
 
   if (requestUrl.pathname === "/rest/v1/parent") {
-    json(
-      response,
-      200,
-      isAdultUser ? [{ id: "parent-e2e", full_name: "E2E Adult" }] : [],
-    );
+    json(response, 200, []);
     return;
   }
 
   if (requestUrl.pathname === "/rest/v1/teacher") {
-    json(response, 200, []);
+    json(
+      response,
+      200,
+      isAdultUser ? [{ id: E2E_TEACHER_ID, full_name: "E2E Adult" }] : [],
+    );
     return;
   }
 
@@ -334,7 +341,7 @@ function handleMockSupabase(
       isAdultUser
         ? [
             {
-              last_active_profile: "parent",
+              last_active_profile: "teacher",
               last_selected_school_id: null,
               theme: null,
               settings: {},
@@ -342,6 +349,30 @@ function handleMockSupabase(
           ]
         : [],
     );
+    return;
+  }
+
+  if (requestUrl.pathname === "/rest/v1/school_teacher") {
+    const select = requestUrl.searchParams.get("select") ?? "";
+    if (select === "teacher_id") {
+      json(response, 200, [{ teacher_id: E2E_TEACHER_ID }]);
+      return;
+    }
+
+    json(response, 200, [
+      {
+        id: "77777777-7777-4777-8777-777777777777",
+        school_id: E2E_SCHOOL_ID,
+        teacher_id: E2E_TEACHER_ID,
+        role: "owner",
+        school: {
+          id: E2E_SCHOOL_ID,
+          name: "Личное пространство E2E",
+          kind: "personal",
+          teacher_limit: 1,
+        },
+      },
+    ]);
     return;
   }
 
@@ -575,19 +606,20 @@ test("browser smoke: authenticated user on / sees auth-aware header", async (t) 
   }
 });
 
-test("browser smoke: guest on protected route is redirected to /login", async (t) => {
+test("browser smoke: guest on protected routes is redirected to /login", async (t) => {
   if (browserSmokeUnavailableReason) {
     t.skip(browserSmokeUnavailableReason);
     return;
   }
 
-  const runtime = await openPage();
-
-  try {
-    await runtime.page.goto("/courses", { waitUntil: "domcontentloaded" });
-    assert.equal(new URL(runtime.page.url()).pathname, "/login");
-  } finally {
-    await runtime.close();
+  for (const protectedPath of ["/courses", "/schedule", "/students"]) {
+    const runtime = await openPage();
+    try {
+      await runtime.page.goto(protectedPath, { waitUntil: "domcontentloaded" });
+      assert.equal(new URL(runtime.page.url()).pathname, "/login");
+    } finally {
+      await runtime.close();
+    }
   }
 });
 
@@ -606,6 +638,144 @@ test("browser smoke: authenticated /login redirects by access policy", async (t)
       waitUntil: "domcontentloaded",
     });
     assert.equal(new URL(runtime.page.url()).pathname, "/courses");
+  } finally {
+    await runtime.close();
+  }
+});
+
+test("browser smoke: teacher navigates Schedule → Students with honest V2 states", async (t) => {
+  if (browserSmokeUnavailableReason) {
+    t.skip(browserSmokeUnavailableReason);
+    return;
+  }
+
+  const runtime = await openPage({ cookie: authenticatedCookieValue() });
+
+  try {
+    await runtime.page.goto("/schedule", { waitUntil: "networkidle" });
+    await runtime.page
+      .getByRole("heading", { name: "Расписание", exact: true, level: 1 })
+      .waitFor();
+    await runtime.page
+      .getByRole("heading", { name: E2E_COURSE_TITLE, exact: true, level: 2 })
+      .waitFor();
+
+    const scheduleContract = await runtime.page.evaluate(() => {
+      const shell = document.querySelector<HTMLElement>(".course-demo-shell");
+      const title = document.querySelector<HTMLElement>(".app-page-title");
+      const navLinks = Array.from(
+        document.querySelectorAll<HTMLAnchorElement>(
+          ".site-header-shell-demo .site-header-nav-pill",
+        ),
+      ).map((link) => ({
+        label: link.textContent?.trim() ?? "",
+        href: link.getAttribute("href"),
+        current: link.getAttribute("aria-current"),
+      }));
+
+      if (!shell || !title) {
+        throw new Error("Schedule shell contract is missing");
+      }
+
+      return {
+        backgroundColor: getComputedStyle(shell).backgroundColor,
+        backgroundImage: getComputedStyle(shell).backgroundImage,
+        titleWeight: getComputedStyle(title).fontWeight,
+        navLinks,
+      };
+    });
+
+    assert.equal(scheduleContract.backgroundColor, "rgb(245, 241, 232)");
+    assert.equal(scheduleContract.backgroundImage, "none");
+    assert.equal(scheduleContract.titleWeight, "400");
+    assert.deepEqual(scheduleContract.navLinks, [
+      { label: "Расписание", href: "/schedule", current: "page" },
+      { label: "Ученики", href: "/students", current: null },
+      { label: "Курсы", href: "/courses", current: null },
+    ]);
+
+    let html = await runtime.page.content();
+    assert.match(html, /Занятия пока не назначены/);
+    assert.match(html, new RegExp(E2E_COURSE_TITLE));
+    assert.doesNotMatch(html, /Миша Орлов|Food around the world/);
+
+    const studentsLink = runtime.page.getByRole("link", {
+      name: "Ученики",
+      exact: true,
+    });
+    await Promise.all([
+      runtime.page.waitForURL(/\/students$/),
+      studentsLink.click(),
+    ]);
+    await runtime.page
+      .getByRole("heading", { name: "Ученики", exact: true, level: 1 })
+      .waitFor();
+    await runtime.page
+      .getByRole("heading", { name: E2E_COURSE_TITLE, exact: true, level: 2 })
+      .waitFor();
+
+    html = await runtime.page.content();
+    assert.match(html, /Ученики и группы появятся здесь/);
+    assert.match(html, /Курсы ожидают назначения аудитории/);
+    assert.match(html, new RegExp(E2E_COURSE_TITLE));
+    assert.doesNotMatch(html, /Миша Орлов|Teen Talk|11 занятий/);
+
+    const studentsCurrent = await runtime.page.evaluate(() =>
+      document
+        .querySelector<HTMLAnchorElement>(
+          '.site-header-nav-pill[href="/students"]',
+        )
+        ?.getAttribute("aria-current"),
+    );
+    assert.equal(studentsCurrent, "page");
+  } finally {
+    await runtime.close();
+  }
+});
+
+test("browser smoke: mobile teacher menu exposes Schedule, Students and Courses", async (t) => {
+  if (browserSmokeUnavailableReason) {
+    t.skip(browserSmokeUnavailableReason);
+    return;
+  }
+
+  const runtime = await openPage({
+    cookie: authenticatedCookieValue(),
+    viewport: { width: 375, height: 812 },
+  });
+
+  try {
+    await runtime.page.goto("/schedule", { waitUntil: "networkidle" });
+    await runtime.page
+      .getByRole("button", { name: "Открыть меню пользователя", exact: true })
+      .click();
+
+    await runtime.page
+      .getByRole("menuitem", { name: "Расписание", exact: true })
+      .waitFor();
+    await runtime.page
+      .getByRole("menuitem", { name: "Курсы", exact: true })
+      .waitFor();
+    const studentsMenuItem = runtime.page.getByRole("menuitem", {
+      name: "Ученики",
+      exact: true,
+    });
+    await Promise.all([
+      runtime.page.waitForURL(/\/students$/),
+      studentsMenuItem.click(),
+    ]);
+    await runtime.page
+      .getByRole("heading", { name: "Ученики", exact: true, level: 1 })
+      .waitFor();
+
+    const mobileContract = await runtime.page.evaluate(() => ({
+      clientWidth: document.documentElement.clientWidth,
+      scrollWidth: document.documentElement.scrollWidth,
+      heading: document.querySelector("h1")?.textContent?.trim() ?? "",
+    }));
+    assert.equal(mobileContract.clientWidth, 375);
+    assert.equal(mobileContract.scrollWidth, mobileContract.clientWidth);
+    assert.equal(mobileContract.heading, "Ученики");
   } finally {
     await runtime.close();
   }

@@ -47,8 +47,10 @@ test("TopNav: protected route keeps guest CTA hidden", () => {
     resolveTopNavAction(ROUTES.settingsSecurity, guest, true),
     "skeleton",
   );
+  assert.equal(resolveTopNavAction(ROUTES.courses, degraded, true), "skeleton");
+  assert.equal(resolveTopNavAction(ROUTES.schedule, guest, true), "skeleton");
   assert.equal(
-    resolveTopNavAction(ROUTES.courses, degraded, true),
+    resolveTopNavAction(ROUTES.students, degraded, true),
     "skeleton",
   );
 });

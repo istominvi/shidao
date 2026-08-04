@@ -3,6 +3,8 @@ import { ROUTES } from "./auth";
 export const PRIVATE_ROUTE_PREFIXES = [
   ROUTES.onboarding,
   ROUTES.settings,
+  ROUTES.schedule,
+  ROUTES.students,
   ROUTES.courses,
 ] as const;
 
