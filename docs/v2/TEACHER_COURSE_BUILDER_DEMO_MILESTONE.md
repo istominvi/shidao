@@ -1,13 +1,15 @@
 # ShiDao V2 — первый демонстрационный milestone
 
-- **Статус:** утверждённая первая цель реализации
-- **Приоритет:** выполнить до расширения AI/RAG/live-аналитики
+- **Статус:** реализован, развёрнут и проверен 4 августа 2026 года
+- **Роль:** acceptance baseline перед AI/RAG/Homework/live
 - **Целевая аудитория демонстрации:** заказчик
 - **Рабочий адрес:** `v2.shidao.ru`
+- **Проверенный application release:** `808510e`
 
 ## 1. Результат для заказчика
 
-Заказчик должен увидеть короткий реальный workflow преподавателя:
+Deployed customer-demo contour демонстрирует короткий реальный workflow
+преподавателя:
 
 ```text
 Курсы → Новый курс → заполнить форму → прикрепить материалы
@@ -18,17 +20,19 @@
 
 Это не статический макет и не hardcoded demo. После перезагрузки страницы
 Course, Lesson, course-wide материалы и единый порядок компонентов остаются в
-базе. Те же операции доступны через минимальный внутренний MCP-слой.
+базе. Пересекающиеся операции минимального MCP-subset используют те же
+application service и contracts; полный UI workflow через MCP не заявляется.
 
 ## 2. Принцип реализации
 
-Первая версия должна быть элементарной, но архитектурно честной:
+Реализованная первая версия элементарна, но архитектурно честна:
 
 - курс и уроки хранятся как данные;
 - урок не является отдельной захардкоженной React-страницей;
 - типы компонентов задаются code-first registry;
 - payload каждого типа проходит одну каноническую schema-валидацию;
-- UI, application service и MCP используют одни и те же команды и schemas;
+- UI и MCP вызывают один application service и общие schemas для операций,
+  которые входят в намеренно ограниченный MCP-subset;
 - renderers не зависят от ID конкретного курса или урока;
 - вложения действительно сохраняются в Storage и связываются с курсом;
 - неподдерживаемый файл не объявляется «проанализированным»;
@@ -105,7 +109,7 @@ component order. Во время будущего live-урока learner surfac
 - image/file component для подходящих вложений;
 - Student Screen preview.
 
-Для первого показа допустим простой детерминированный assembler. Он должен честно использовать данные формы, создавать реальные записи и проходить те же schemas, что будущий AI. Позднее planning-стратегия заменяется на AI без замены Course/Lesson/registry контрактов.
+Для первого показа допустим простой детерминированный assembler. Он должен честно использовать данные формы, создавать реальные записи и проходить те же schemas, что будущий AI. Позднее AI добавляется как альтернативная auto-assembly strategy без замены Course/Lesson/registry контрактов; ручной путь остаётся доступен всегда.
 
 Если semantic parsing вложений ещё не реализован, UI явно показывает, что файл «прикреплён», а не «проанализирован».
 
@@ -136,9 +140,11 @@ component order. Во время будущего live-урока learner surfac
 - payload schema;
 - placement schema;
 - capabilities;
-- teacher/editor preview;
-- Student Screen renderer;
 - JSON Schema, генерируемую из того же источника для MCP.
+
+Текущий payload editor реализован единым switch по `ComponentTypeKey`, а
+teacher/Student Screen renderers — отдельной exhaustive typed map. Оба слоя
+используют registry contracts.
 
 ## 6. Минимальный Course workspace
 
@@ -161,7 +167,7 @@ component order. Во время будущего live-урока learner surfac
 Component хранит прямой `lesson_id`; первый и последующие компоненты не создают
 скрытых сущностей или групп. Раздел «Домашнее задание» в этом milestone
 является честной навигационной заглушкой без fixture/localStorage; persisted
-homework editor остаётся отдельным следующим срезом.
+homework editor остаётся отдельным будущим P1 slice.
 
 Drag-and-drop не обязателен для первого показа. Кнопки «выше/ниже» допустимы, если они надёжнее и быстрее дают законченный workflow.
 
@@ -170,8 +176,8 @@ Drag-and-drop не обязателен для первого показа. Кн
 Минимальный контракт:
 
 - файл загружается в существующий private Storage-контур;
-- создаётся запись источника/asset с owner;
-- Course хранит связь с вложением;
+- создаётся Account-owned `StoredFile`;
+- Course хранит `CourseAttachment` к этому file;
 - image можно добавить как `image` или элемент `slideshow`;
 - другой файл можно добавить как `file`;
 - проверяются размер, MIME type, ownership и signed access;
@@ -238,24 +244,25 @@ OAuth, scoped external tokens, quotas, approvals/change sets и публичны
 - При изменении схемы обновляются оба current-schema snapshot.
 - Нельзя сохранять demo course только в TypeScript fixtures, localStorage или fallback-массивах.
 
-## 11. Рекомендуемый порядок реализации
+## 11. Delivered implementation chain
 
-1. Инвентаризировать текущие Course UI, auth/session, schema и Storage integration.
-2. Зафиксировать минимальные domain/application contracts для Course, Lesson и
-   непосредственно принадлежащих Lesson ordered Components.
-3. Создать code-first registry и schemas первых десяти типов.
-4. Добавить минимальную forward migration и RLS после read-only schema sanity check.
-5. Реализовать server-side application commands и тесты.
-6. Реализовать «Курсы → Новый курс» и Course workspace.
-7. Реализовать renderers и Student Screen preview.
-8. Подключить честное сохранение вложений.
-9. Добавить простой assembler.
-10. Подключить development-only MCP adapter над теми же commands.
-11. Пройти end-to-end demo и развернуть его на `v2.shidao.ru`.
+- `20260803142924_v2_course_builder_vertical_slice.sql` — persisted Course,
+  Lesson authoring, StoredFile/CourseAttachment и private Storage.
+- `20260804033421_course_lesson_components_remove_legacy_methodology.sql` —
+  direct Lesson Components и удаление active Methodology/Step/runtime.
+- `20260804044955_add_lesson_student_slides.sql` — persisted Slides,
+  assignment/reorder/delete RPC и tightened RLS/ACL.
+- `99dc9ea` + `db5e50b` — полный tracked archive «Мир вокруг меня».
+- `15a00c7` + `9b254b9` — flatten/active legacy cleanup.
+- `f5b9a57` — lesson/component card UX.
+- `808510e` — persisted Student Screen Slides и deployed application release.
 
-## 12. Definition of Done
+Архив находится в `archive/content/world-around-me-2026-08-04/` и не
+подключён к runtime.
 
-Milestone готов к показу, когда одновременно выполняются условия:
+## 12. Definition of Done — выполнено
+
+На проверенном release выполнены условия:
 
 1. Преподаватель входит существующим аккаунтом на `v2.shidao.ru`.
 2. Нажимает «Курсы» → «Новый курс».
@@ -277,7 +284,27 @@ Milestone готов к показу, когда одновременно вып
 13. Typecheck, unit/integration tests и production build проходят.
 14. `shidao.ru` остаётся landing-only, а демонстрация доступна только на `v2.shidao.ru`.
 
-## 13. Сценарий показа заказчику
+Verification evidence:
+
+- typecheck — pass;
+- lint — pass;
+- 169 tests — pass;
+- production build — pass;
+- deployed-contour E2E: create/edit/persist, private-by-default, two Slides, reorder
+  through Slide boundary, fullscreen preview, reload — pass;
+- deployed-contour browser console warning/error — none.
+
+## 13. Честные ограничения после milestone
+
+- AI button disabled; OpenRouter/provider call отсутствует.
+- MCP local/internal only.
+- Homework surface не сохраняет данные.
+- Course materials после создания можно просматривать, но пока нельзя
+  дозагрузить из workspace.
+- Attachments не parsed и не indexed.
+- Student Screen — owner preview, не learner enrollment/live runtime.
+
+## 14. Сценарий повторной проверки
 
 ```text
 1. Войти на v2.shidao.ru.

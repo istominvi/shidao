@@ -1,5 +1,8 @@
 # ShiDao V2 domain model
 
+**Статус:** current implemented domain
+**Актуально на:** 4 августа 2026 года
+
 ## Active product hierarchy
 
 ```text
@@ -14,10 +17,14 @@ Account
 - `Account` is the ownership identity linked one-to-one to `auth.users`.
 - `Course` is an editable owner-scoped draft.
 - `Lesson` is an ordered Course document with a required title and an optional
-  teacher comment (`summary`).
-- `LessonComponent` belongs directly to Lesson and has one dense position,
-  registry type/version, payload, placement, visibility, and an optional
-  Student Screen Slide assignment.
+  teacher comment (`summary`); the supported service path keeps its position
+  dense.
+- `LessonComponent` belongs directly to Lesson; the supported service/RPC path
+  keeps one dense position plus registry type/version, payload, placement,
+  visibility, and an optional
+  Student Screen Slide assignment. Physically these are
+  `lesson_component.placement_config` and `student_slide_id`; API/domain names
+  are `placement` and `studentSlideId`.
 - `StudentScreenSlide` is an ordered presentation grouping. It has no payload,
   title, instructions, or independent component order and is not a Lesson Step.
 - `CourseAttachment` links a Course to `StoredFile`; the object itself is kept
@@ -25,6 +32,10 @@ Account
 
 There is no active Methodology, Lesson Step/root Step, scheduled-lesson runtime,
 fixture fallback, or per-lesson hardcoded renderer.
+
+The database itself currently enforces positive+unique Lesson/Component
+positions, not gaplessness after arbitrary direct INSERT. Append serialization
+under concurrency is a documented next integrity hardening task.
 
 ## Authoring projections
 
@@ -34,7 +45,8 @@ fixture fallback, or per-lesson hardcoded renderer.
   components are teacher-only until explicitly assigned.
 - **Домашнее задание** is a separate Lesson surface and is not represented by a
   component group. Persisted homework is a later slice.
-- **Материалы курса** is a Course-level library, not a Lesson tab.
+- **Материалы курса** is a Course-scoped attachment collection, not a Lesson
+  tab or global reusable library.
 
 The canonical details and invariants live in
 `docs/architecture/lesson-workflow-model.md`.
@@ -59,6 +71,20 @@ file
 UI, application service and development MCP use the same Zod contracts. MCP
 JSON Schema is generated from those contracts.
 
+Registry definitions own keys/schemas/defaults/capabilities. The current
+payload editor is one switch over `ComponentTypeKey`; renderers use an
+exhaustive typed map. Neither React implementation is embedded in the current
+registry object.
+
+## Current physical naming
+
+- Product «Материалы курса» → `stored_file` + `course_attachment`.
+- Product «Слайд экрана ученика» → `lesson_student_slide`.
+- Component assignment → `lesson_component.student_slide_id`.
+- There is no physical/canonical entity named `course_asset`. The current
+  TypeScript read-model alias `CourseAsset` represents a linked `StoredFile`
+  returned inside Course attachments; it is not a separate persisted object.
+
 ## Retained compatibility identity tables
 
 The first forward migration deliberately does not reset `public` and does not
@@ -68,3 +94,19 @@ compatibility, but they are not parents of Course content.
 
 The authoritative physical schema is documented in
 `docs/database/current-schema.md` and `supabase/schema/current-schema.sql`.
+
+## Planned, not implemented
+
+The following are target domains, not current tables or product capabilities:
+
+- persisted Homework;
+- new neutral LearnerProfile/Guardian/Group audience model;
+- LessonSession/live runtime;
+- learning history/progress;
+- OpenRouter generation, quotas and AI change sets;
+- parsing/RAG sources;
+- reusable cross-Course material/template library;
+- chat/notifications and external MCP.
+
+Sequencing lives in `docs/roadmap.md`. Future domains must not add Step/root
+Step or make old School/Class/Methodology a parent of Course content.

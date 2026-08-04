@@ -1,15 +1,20 @@
 # Course Builder MCP (development/internal)
 
+**Статус:** реализован и протестирован; local `stdio`, без external endpoint
+**Application release:** `808510e`
+
 ShiDao Course Builder MCP is a local `stdio` server for development. It is not
-an HTTP endpoint and must not be published externally during the first V2
-milestone.
+an HTTP endpoint and must not be published externally without a separately
+implemented OAuth/scopes/audit/rate-limit security layer.
 
 The server is a thin adapter:
 
 `MCP tool → canonical Zod contract → CourseBuilderApplicationService → user-JWT repository → Supabase RLS`
 
 It does not query tables directly. Component JSON Schema is generated from the
-same code-first registry used by the application UI and service.
+same code-first registry contracts used by UI and service. The current React
+payload editor is switch-based; renderers use a separate exhaustive typed map
+over the same `ComponentTypeKey`. Neither becomes a duplicated MCP schema.
 
 ## Tools
 
@@ -92,7 +97,24 @@ node scripts/run-node-tests.mjs --include course-builder/mcp
 
 The tests use an in-memory MCP client/transport to verify exact six-tool
 registration, registry-derived JSON Schema and tool calls. They do not write to
-the production database.
+the live ShiDao database.
+
+## Implementation map
+
+```text
+scripts/course-builder-mcp.ts                 stdio entrypoint
+src/modules/course-builder/mcp/runtime.ts     actor/session resolution
+src/modules/course-builder/mcp/server.ts      MCP server registration
+src/modules/course-builder/mcp/tools.ts       six tools + generated schemas
+src/modules/course-builder/service.ts         application commands
+src/modules/course-builder/repository.ts      user-JWT Supabase adapter
+src/modules/course-builder/registry/contracts.ts
+.codex/config.toml                            project-local optional server
+```
+
+The MCP package has no HTTP route under `src/app/api`. Adding one is not a
+deployment shortcut: external access requires a separately approved security
+design.
 
 ## AI provider boundary
 
@@ -100,3 +122,6 @@ This MCP server does not call OpenRouter and does not generate lesson content.
 A future OpenRouter integration should orchestrate these same tools/application
 contracts with a server-side provider key. Until that adapter exists, the UI
 must not claim that a lesson was generated or an attachment was analyzed by AI.
+
+Planned provider work belongs to `docs/roadmap.md`. Do not add OpenRouter keys
+to MCP input schemas, browser environment, logs, or committed config.

@@ -4,6 +4,18 @@
 
 These instructions apply to the entire repository.
 
+## Required orientation
+
+Before broad product, architecture, or implementation work, read in order:
+
+1. `docs/project-state.md` — what is actually implemented and where;
+2. `docs/roadmap.md` — agreed direction and sequencing;
+3. the canonical document for the area being changed.
+
+Strategic/future documents do not prove that a capability exists. When they
+conflict with `docs/project-state.md`, inspect the code and current schema, then
+update the documentation in the same change.
+
 ## Database context policy (important)
 
 For database-related tasks, treat these as the **primary source of truth for current schema**:
@@ -28,6 +40,20 @@ Read migrations only when the task explicitly involves:
 
 - Never delete or rewrite old migrations unless explicitly requested.
 - Keep current-schema snapshot/docs updated when DB model changes.
+- Before any database write, run a read-only identity/schema sanity check and
+  confirm that the target is the current ShiDao database.
+- Use only project-local database access defined by this workspace. Never use a
+  random/global database MCP connection.
+- Never use the ignored legacy `enviromnent/db-mcp-cheatsheet.md`; it contains
+  stale V1 instructions and historical plaintext credentials pending separate
+  rotation. Do not print or copy its contents.
+- Do not mass-reset `public` as part of ordinary V2 development.
+- Do not change Auth, SMTP, JWT/API keys or base Storage configuration unless
+  the user explicitly expands the task.
+- `user_preference` and `user_security` retain documented broad legacy ACL/no
+  RLS debt. Do not copy that pattern. Treat its audited forward hardening and
+  Auth regression coverage as roadmap P0 before expanding identity/external
+  access.
 
 ## Lesson workflow policy
 
@@ -44,8 +70,10 @@ Policy:
 - The Lesson title and teacher comment are Lesson fields, not required heading
   components.
 - The teacher plan renders the complete ordered list. `Student Screen` /
-  `Экран ученика` renders only `learner_visible` components while preserving
-  their relative Lesson order.
+  `Экран ученика` renders persisted Slides in slide order and only their
+  assigned `learner_visible` components, preserving relative Lesson order
+  inside each Slide. Slides are a presentation projection, not authored Steps
+  or a second component order.
 - Keep teacher-private data out of learner projections; hiding it with CSS is
   not sufficient.
 - Course materials are course-wide attachments. They are not a lesson surface
@@ -60,3 +88,35 @@ Policy:
 - During a future live lesson, free learner navigation must not become the
   default merely because full-course preview offers lesson navigation.
 - Do not add migrations unless the task explicitly asks for DB implementation.
+
+## Current product boundary
+
+- Working application: `v2.shidao.ru`.
+- `shidao.ru` and `www.shidao.ru` remain landing-only; internal pages and APIs
+  are closed there.
+- Current middleware is not yet a full host allowlist: non-root `brand`/`model`
+  and unknown routed hosts pass through. Do not treat DNS/proxy isolation as a
+  finished security boundary; roadmap P0 tracks hardening.
+- Current CSRF guard also allows the configured landing host as an Origin for
+  V2 unsafe requests. Do not describe it as strict same-origin until the P0
+  app-host fix and cross-subdomain regression test land.
+- Continue in the current repository, `main`, Coolify application and
+  self-hosted Supabase unless the user explicitly decides otherwise.
+- V1 recovery refs and `.local-backups/v1-snapshot-2026-08-03` are immutable.
+  Never restore V1 without a separate explicit command.
+- The tracked archive `archive/content/world-around-me-2026-08-04/` is a source
+  for a future importer only. Active code must not import from it at runtime.
+
+## Documentation maintenance
+
+Every completed vertical slice must update, in the same work:
+
+- `docs/project-state.md` for implemented behavior and code/schema locations;
+- `docs/roadmap.md` for changed priorities;
+- the relevant architecture/product/operations document;
+- `docs/database/current-schema.md` and
+  `supabase/schema/current-schema.sql` when the physical schema changes.
+
+Use explicit status language: **current**, **next**, or **later**. Do not write
+planned AI, parsing, Homework, live, learner, billing, or external MCP behavior
+as if it already exists.

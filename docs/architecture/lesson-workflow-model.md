@@ -6,6 +6,9 @@
 
 **Область:** Course Builder / Lesson / Components / Student Screen / course materials / homework
 
+**Implementation state:** authoring, persisted Slides и preview развёрнуты на
+`v2.shidao.ru`; Homework/AI/live остаются будущими срезами
+
 ## Product decision
 
 Каноническая авторская модель ShiDao V2:
@@ -77,7 +80,7 @@ lesson_component
 - schema_version
 - position
 - payload
-- placement
+- placement (`placement_config` в PostgreSQL)
 - visibility: staff_only | learner_visible
 - student_slide_id: uuid | null
 - created_at
@@ -111,12 +114,21 @@ lesson_student_slide
 10. При проходе компонентов по `component.position` номер Slide не
     может уменьшаться.
 
+Это invariants поддерживаемого application/RPC path. Для Lesson/Component DB
+напрямую гарантирует positive+unique position; gapless append и concurrency
+пока зависят от service path и требуют запланированной сериализации.
+
 ## Code-first component registry
 
 Каждый тип компонента определяется один раз в code-first registry. Определение
 содержит стабильный key/version, категорию и русское название, payload schema,
-placement schema, default payload/placement, capabilities и renderers для
-teacher preview и Student Screen.
+placement schema, default payload/placement и capabilities.
+
+Текущий payload editor является единым switch-based React editor по
+`ComponentTypeKey`; teacher/Student Screen renderers собраны в отдельной
+exhaustive typed map. Оба слоя используют registry schemas/types и проверяются
+contract tests. Registry остаётся источником contracts/JSON Schema, а React
+implementation не встраивается в serializable definition.
 
 UI, application service и MCP используют эти же contracts. JSON Schema для MCP
 генерируется из того же источника. Добавление типа компонента не требует новой
@@ -161,7 +173,7 @@ Student Screen строится детерминированно:
 lesson.studentSlides by slide.position
 → components where student_slide_id == slide.id
 → preserve component.position inside every Slide
-→ render one active Slide through registry Student Screen renderers
+→ render one active Slide through the typed Student Screen renderer map
 ```
 
 Обязательный `lesson.title` всегда показывается над active Slide и не
@@ -192,7 +204,8 @@ Teacher-private компоненты и поля не должны присут�
 В header Course находятся отдельные действия:
 
 - **Настройки** — редактирование основных полей Course;
-- **Материалы курса** — просмотр и добавление course-wide attachments.
+- **Материалы курса** — сейчас просмотр course-wide attachments; добавление из
+  существующего Course относится к следующему authoring slice.
 
 Для выбранной Lesson используется переключатель:
 
@@ -205,15 +218,17 @@ Teacher-private компоненты и поля не должны присут�
 
 ## Lesson creation
 
-Кнопка «Добавить урок» открывает modal. Обязательное поле — название Lesson;
-дополнительный teacher comment сохраняется в `summary`.
+Кнопка «Добавить урок» открывает modal. Текущий manual create требует название
+Lesson и создаёт пустую Lesson. Teacher comment редактируется затем в модалке
+настроек Lesson и сохраняется в `summary`.
 
 Ручное создание сохраняет пустую Lesson и не расходует AI tokens. Будущая
 кнопка AI-generation вызывает orchestrator, который создаёт те же Component
 entities через application service. Она не создаёт альтернативный тип урока.
 
-До фактического подключения provider UI не утверждает, что Lesson
-сгенерирована AI.
+Кнопка «Заполнить с помощью ИИ» сейчас disabled и прямо сообщает, что
+OpenRouter не подключён. До фактического provider call UI не утверждает, что
+Lesson сгенерирована AI.
 
 ## Course materials and Storage
 
@@ -229,12 +244,16 @@ Course attachment:
 OCR, parsing, embeddings и RAG — отдельный pipeline. Отсутствие этого pipeline
 не блокирует ручное использование файла в Lesson.
 
+В текущем UI новые attachments загружаются при создании Course; modal
+существующего Course пока только показывает уже прикреплённые материалы.
+Добавление материалов после создания — следующий authoring slice.
+
 ## Homework
 
 Homework принадлежит выбранной Lesson, но не входит в `lesson.components`.
-Первая демонстрация может содержать честную заглушку редактора. Когда
-persisted homework будет реализовано, оно получит отдельные contracts,
-authorization и storage model без возврата групп/шагов в Lesson.
+Текущий deployed UI содержит честную заглушку редактора без fixture или
+localStorage. Persisted homework получит отдельные contracts, authorization и
+storage model без возврата групп/шагов в Lesson.
 
 ## Application service and MCP
 
@@ -262,7 +281,17 @@ MCP — development/internal thin adapter над теми же application servi
 - не регистрирует tool добавления шага;
 - использует actor JWT, ownership/RLS для обычных операций и явную
   Auth → Account → Course ownership-проверку в сериализованных component RPC;
-- не публикуется как внешний endpoint в первом milestone.
+- сейчас не публикуется как внешний endpoint.
+
+Implementation map:
+
+- contracts/registry: `src/modules/course-builder/registry/contracts.ts`;
+- application service: `src/modules/course-builder/service.ts`;
+- repository: `src/modules/course-builder/repository.ts`;
+- MCP: `src/modules/course-builder/mcp/`;
+- authoring UI: `src/components/course-builder/lesson-authoring-workspace.tsx`;
+- current schema: `supabase/schema/current-schema.sql`;
+- Slide migration: `20260804044955_add_lesson_student_slides.sql`.
 
 ## AI boundary
 
@@ -277,7 +306,7 @@ domain model или renderer contracts.
 
 ## Runtime and future live mode
 
-Текущий milestone реализует persisted authoring и preview, а не live sync.
+Shipped milestone реализовал persisted authoring и preview, а не live sync.
 Будущий `LessonSession` остаётся отдельным исполнением Lesson. Live-mode
 presentation cursor может ссылаться на текущий Student Screen Slide, не меняя
 authored hierarchy и не создавая Step entity.
@@ -289,15 +318,20 @@ authored hierarchy и не создавая Step entity.
 ## Active V2 versus archive
 
 Активная V2 не содержит Methodology domain, methodology tables, fixture
-fallback или lesson-specific renderer. V1 methodology и её recovery snapshot
-остаются неизменяемым историческим источником в архивных Git refs и
-`.local-backups`; они не являются runtime dependency.
+fallback или lesson-specific renderer. Исторический источник сохранён в трёх
+границах:
+
+- tracked content archive `archive/content/world-around-me-2026-08-04/`;
+- immutable V1 Git refs;
+- private `.local-backups` recovery snapshot.
+
+Ни одна из них не является runtime dependency.
 
 Импорт архивного содержания, если он будет отдельно одобрен, обязан создать
 обычные Course, Lesson, Component и attachment entities через валидируемый
 import/application layer. Он не возвращает Methodology в активную модель.
 
-## Non-goals for the first milestone
+## Not implemented yet
 
 - обязательная AI-генерация;
 - parsing/RAG загруженных файлов;
@@ -305,12 +339,12 @@ import/application layer. Он не возвращает Methodology в акти
 - scheduling и live sync;
 - drag-and-drop, если надёжные кнопки «выше/ниже» уже обеспечивают reorder;
 - внешняя публикация MCP;
-- compatibility layer для Step/Methodology;
+- compatibility layer для Step/Methodology не планируется;
 - отдельные renderers по Course/Lesson ID.
 
-## Acceptance criteria
+## Shipped acceptance baseline
 
-Канонический vertical slice считается работающим, когда:
+На release `808510e` проверено:
 
 1. Course, Lesson, ordered Components и attachments сохраняются в реальной
    базе/Storage и переживают reload.
@@ -326,3 +360,6 @@ import/application layer. Он не возвращает Methodology в акти
 9. В активном V2 нет Methodology/fixture/lesson-specific fallback.
 10. Fullscreen preview сохраняет выбранную Lesson, показывает один
     active Slide и после refresh читает persisted state.
+
+Также прошли typecheck, lint, 169 tests, production build и browser E2E без
+console warning/error. Следующие срезы не должны ослаблять этот baseline.

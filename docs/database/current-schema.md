@@ -1,137 +1,252 @@
-# Current database schema (agent-first guide)
+# Current database schema
 
-This guide describes the current ShiDao database model after migrations through
-`20260804044955_add_lesson_student_slides.sql`.
+**Статус:** agent-first current-state guide
+**Schema head:** `20260804044955_add_lesson_student_slides.sql`
+**SQL snapshot:** [`supabase/schema/current-schema.sql`](../../supabase/schema/current-schema.sql)
 
-## Read order for DB tasks
+Этот документ описывает только текущую физическую модель. История переходов и
+backfill находится в migrations; будущие таблицы — в roadmap/spec и не должны
+предполагаться существующими.
 
-1. `docs/database/current-schema.md` (this file)
-2. `supabase/schema/current-schema.sql`
-3. `supabase/migrations/*` (only for migration, compatibility, backfill, or rollback work)
+## Read order для DB-задач
 
-## Active entities
+1. этот документ;
+2. `supabase/schema/current-schema.sql`;
+3. `supabase/migrations/*` только для нового migration, compatibility/backfill,
+   rollback или debugging history.
 
-### Identity and school scope
+Политика изменений:
+[`docs/database/migration-guidelines.md`](./migration-guidelines.md).
 
-- `parent` — parent profile linked to `auth.users`.
-- `teacher` — teacher profile linked to `auth.users`.
-- `school` — personal or organization workspace.
-- `school_teacher` — teacher membership in a school (`owner | teacher`).
-- `class` — group inside a school. It no longer has a methodology binding.
-- `class_teacher` — teacher assignment to a class.
-- `student` — learner profile with internal login mapping and optional `auth.users`/parent links.
-- `class_student` — student membership in a class.
+## Current public tables
 
-### User preference and security
+### V2 Course Builder
 
-- `user_preference` — last active profile, selected school, theme, and settings.
-- `user_security` — PIN and lock metadata plus `sessions_invalid_before`, the per-user app-session revocation cutoff.
+| Table                  | Назначение                                                           |
+| ---------------------- | -------------------------------------------------------------------- |
+| `account`              | один V2 owner identity на `auth.users`                               |
+| `course`               | Account-owned draft Course и teacher input                           |
+| `lesson`               | упорядоченная Lesson с обязательным `title` и teacher-only `summary` |
+| `lesson_component`     | единственный ordered component list Lesson                           |
+| `lesson_student_slide` | бесконтентная persisted grouping для Student Screen                  |
+| `stored_file`          | Account-owned metadata private Storage object                        |
+| `course_attachment`    | ownership-checked связь Course ↔ StoredFile                          |
 
-### V2 Account and Course Builder
+`lesson_component` физически хранит:
 
-- `account` — one application Account per `auth.users` row. Course ownership is Account-based.
-- `course` — Account-owned editable Course draft with title, subject, goal, level, audience description, target lesson count, teacher preferences, and assembly/archive timestamps.
-- `lesson` — an ordered Course lesson. Its title is intrinsic and required; it is not represented by a component.
-- `lesson_component` — ordered component directly owned by a Lesson. It stores the code-first registry key/version, payload, placement, visibility, and nullable Student Screen slide assignment.
-- `lesson_student_slide` — ordered presentation grouping for learner-visible components of one Lesson. It does not own payload or a second component order.
-- `stored_file` — Account-owned metadata for an object in the private `course-assets` bucket (`pending | ready`).
-- `course_attachment` — ownership-checked relation between a Course and a stored file.
+```text
+id
+lesson_id
+type_key
+schema_version
+position
+payload
+placement_config
+visibility
+student_slide_id
+created_at
+updated_at
+```
 
-There is no active `lesson_step` layer. Teacher Plan and Student Screen read the same ordered Lesson components; Student Screen groups only explicitly assigned learner-visible components into presentation slides.
+В TypeScript/API поле `placement_config` отображается как `placement`.
+`student_slide_id` nullable: `null` для private Component, Slide ID той же
+Lesson для learner-visible Component.
 
-## Course document invariants
+### Transitional identity/profile compatibility
 
-- Lesson positions are positive and unique per Course through a deferrable constraint. Deletes compact positions with `compact_course_lesson_positions()`.
-- Component positions are positive and unique per Lesson through a deferrable constraint. Deletes compact positions with `compact_lesson_component_positions()`.
-- `reorder_lesson_component(component_id, new_position)` changes component order atomically, clamps a moved learner-visible component to the legal neighboring slide range, and returns that complete persisted Component row without a follow-up read.
-- `delete_lesson_component(component_id)` serializes on the parent Lesson before deleting, so component-position compaction and empty-slide cleanup cannot race each other.
-- Supported component type keys remain code-first and are not a database enum.
-- Component visibility is exactly `staff_only | learner_visible`:
-  - `staff_only` is the default, has no slide assignment, is available on the teacher surface, and is excluded from Student Screen;
-  - `learner_visible` is assigned to exactly one Slide from the same Lesson and is available on both teacher and learner surfaces.
-- Slide positions are positive, dense, and unique per Lesson. Empty slides are removed automatically.
-- Slide positions cannot decrease while components are traversed in `lesson_component.position` order. `set_lesson_component_student_screen(component_id, mode, slide_id)` atomically hides a component, assigns a legal existing Slide, or inserts a new legal Slide and returns the complete persisted Component row from the same statement. A new Slide cannot split predecessor and successor components already grouped on one Slide.
-- `course.assembled_at` records deterministic first-draft assembly. `assemble_course_draft(course_id, lesson_title, lesson_summary, components)` persists one Lesson and its validated component list atomically. New assembled components are `staff_only` and unassigned until the teacher explicitly publishes them. Idempotent responses contain `courseId`, `lessonIds`, `componentIds`, and `alreadyAssembled`; there are no Step arguments or `stepIds`.
-- The slide migration backfills every pre-existing learner-visible component to Slide 1 of its Lesson, preserving the previous learner projection without publishing any previously private component.
-- The Step-removal migration preserves every original component ID and field, then deterministically flattens order by Step position and component position.
-- For a former multi-Step lesson, or a former Step with non-empty instructions, the migration materializes:
-  - Step title as a learner-visible `heading`;
-  - teacher instructions as a `staff_only` `callout`;
-  - learner instructions as a learner-visible `callout`.
-- A single empty technical root is not materialized as an extra heading.
+Эти таблицы пока обслуживают существующий login/onboarding/profile/session
+контур:
 
-## Files and Storage
+```text
+parent
+teacher
+student
+school
+school_teacher
+class
+class_teacher
+class_student
+user_preference
+user_security
+```
 
-- `stored_file` is limited to 10 MiB and always points at the private `course-assets` bucket.
-- A file must have a lowercase SHA-256 checksum before its status can become `ready`.
-- Storage object paths start with the owning Account UUID; `storage.objects` policies enforce that first path segment.
-- `course_attachment` can only connect a Course and file owned by the same current Account through its RLS policy.
-- The migration does not change Storage buckets, object policies, Auth, SMTP, JWT secrets, or API keys.
+Они не являются родителями Course Builder content. `course` принадлежит
+`account`, а не Teacher/School/Class. Их будущая замена новой
+Account/LearnerProfile моделью требует отдельного milestone.
 
-## Archived V1 methodology/runtime model
+## Account fields
 
-The following tables are no longer part of the active `public` schema:
+`account` хранит уникальный `auth_user_id`, `display_name`, `locale`, `timezone`,
+status `active | suspended | deleted` и timestamps. Обычный authenticated JWT
+может читать только свой Account; bootstrap выполняет trigger на `auth.users`.
 
-- methodology source: `methodology`, `methodology_lesson`, `methodology_lesson_block`, `methodology_lesson_block_asset`, `methodology_lesson_homework`, `methodology_lesson_student_content`, `reusable_asset`;
-- lesson/homework runtime: `scheduled_lesson`, `scheduled_lesson_homework_assignment`, `student_homework_assignment`;
-- communication runtime: `group_student_conversation`, `group_student_message`, `lesson_group_conversation`, `lesson_group_message`, `communication_message_attachment`;
-- notifications: `notification`;
-- superseded Course Builder Step model: `lesson_step`, `lesson_step_component`.
+## Course fields
 
-The migration also removes `class.methodology_id`, its invariant trigger/function, and `scheduled_homework_class_id(uuid)`. V1 recovery remains in the archive Git refs and recovery snapshot; those archives are not represented as active tables and must not be restored without an explicit recovery request.
+`course` хранит:
 
-## Identity and session helpers
+- `owner_account_id`;
+- `title`, `subject`, `goal`, `level`;
+- `audience_description`;
+- `target_lesson_count`;
+- `teacher_preferences`;
+- `audience_type`, сейчас constraint допускает только `none`;
+- reserved object `settings`, сейчас по умолчанию `{}`;
+- `assembled_at`, `archived_at`, timestamps.
 
-- V2 identity uses `account`, linked one-to-one to `auth.users`; an Auth trigger bootstraps future Accounts.
-- Adult identity remains split into `teacher` and `parent` profiles.
-- A Student can authenticate through `student.internal_auth_email` and may also have `student.user_id`.
-- Membership helpers remain for the preserved school/class model: `current_teacher_id`, `current_parent_id`, `current_student_id`, `is_class_teacher`, `is_class_student`, `parent_in_class`, `can_read_class`, `is_my_child`, `teaches_student`, and `parent_in_school`.
-- `current_account_id()` is a least-privilege `SECURITY INVOKER` helper executable by `authenticated`; it resolves the caller through Account's self-read policy.
-- `current_session_invalid_before()` is an authenticated-only `SECURITY DEFINER` helper that returns only the current `auth.uid()` revocation cutoff.
-- `revoke_user_sessions(p_user_id, p_cutoff)` advances the cutoff; `APP_SESSION_VERSION` remains the independent all-users kill switch.
+Отдельной физической колонки `status` сейчас нет. Repository выбирает только
+`archived_at IS NULL` и возвращает такой активный Course как domain status
+`draft`.
 
-## Row-level security (RLS)
+Audience сейчас является описательным текстом, не persisted
+LearnerProfile/Group assignment.
 
-RLS is enabled on 15 of 17 active application tables. `user_preference` and `user_security` remain reachable through their existing security-definer boundaries rather than direct table policies.
+## Current invariants
 
-- Identity/school membership policies remain unchanged.
-- Course, Lesson, file, and attachment tables grant owner-scoped CRUD to `authenticated`.
-- Lesson Components are directly readable and insertable only through their authoring columns; direct updates are limited to `payload` and `placement_config`. Direct component deletion, position/visibility/slide updates, and all direct Slide mutations are revoked.
-- A restrictive insert policy additionally requires every directly inserted Component to use the database defaults `staff_only` and `student_slide_id = null`.
-- `account` is self-readable but cannot be inserted, updated, or deleted through an ordinary user JWT.
-- `lesson_component_course_owner_all` resolves ownership through Lesson → Course → Account.
-- `lesson_student_slide_course_owner_select` uses the same Lesson → Course → Account ownership chain for read access.
-- `anon` has no privileges on V2 document/file tables.
-- `assemble_course_draft` remains `SECURITY INVOKER`. Student Screen assignment, reorder, and component deletion use narrowly granted `SECURITY DEFINER` RPCs with an empty `search_path`, an explicit `auth.uid()` → Account → Course ownership check, and one Lesson-first lock order. Their direct table mutations remain unavailable to an authenticated JWT.
-- The slide migration sends a transactional PostgREST schema-cache reload notification so the new relationship and RPC return shapes are discovered after commit.
-- The private `course-assets` bucket remains protected by owner policies on `storage.objects`.
+### Lessons
 
-## Compatibility notes
+- DB гарантирует положительную и уникальную в Course position через deferrable
+  constraint; supported service path добавляет в конец.
+- Delete уплотняет позиции trigger/function, но отдельного DB constraint на
+  отсутствие gaps после произвольного direct INSERT нет.
+- `title` обязателен; `summary` teacher-only.
+- `estimated_duration_minutes` nullable и положителен при наличии;
+  `settings` — reserved JSON object.
+- Пустая Lesson допустима.
 
-- Identity/school tables and their historical migrations are intentionally preserved.
-- The migration chain still contains the deleted V1 methodology/runtime tables and seed data as historical upgrade records. Do not edit or delete those old migrations.
-- Snapshot files describe the current post-migration model and should be preferred for day-to-day schema reasoning.
+### Components
 
-## When to consult migrations
+- Component напрямую принадлежит Lesson; Step/root Step отсутствует.
+- DB гарантирует положительную и уникальную в Lesson position. Supported
+  service/RPC path поддерживает плотный порядок; direct INSERT сам по себе
+  может создать gap, а concurrent append сейчас может столкнуться по позиции.
+- `type_key` остаётся code-first string, не database enum.
+- Payload/placement проверяются application registry до обычной записи.
+- Visibility только `staff_only | learner_visible`.
+- `staff_only` обязан иметь `student_slide_id IS NULL`.
+- `learner_visible` обязан ссылаться на Slide той же Lesson.
 
-Use `supabase/migrations/*` when you need:
+### Student Screen Slides
 
-- to write a new migration;
-- to understand legacy behavior or backfills;
-- to debug migration order or compatibility;
-- to evaluate rollback/reset behavior;
-- to confirm when a constraint, function, or table was introduced or removed.
+- Slide position положительная, плотная и уникальная в Lesson.
+- Пустые Slides автоматически удаляются.
+- При проходе Components по `component.position` Slide position не может
+  уменьшаться.
+- Slide не содержит title/payload/instructions/собственный component order.
+- `set_lesson_component_student_screen` выполняет `hide | existing | new`
+  атомарно и не позволяет разорвать соседей, уже сгруппированных на одном
+  Slide.
+- `reorder_lesson_component` атомарно меняет общий порядок и ограничивает Slide
+  перемещённого learner-visible Component допустимым диапазоном соседей.
+- `delete_lesson_component` сериализует delete, compaction и cleanup через
+  единый Lesson-first lock order.
+
+### Deterministic assembler
+
+`assemble_course_draft(course_id, lesson_title, lesson_summary, components)`:
+
+- работает как `SECURITY INVOKER`;
+- создаёт одну Lesson и validated Components атомарно;
+- оставляет новые Components `staff_only` без Slide assignment;
+- идемпотентно возвращает Course/Lesson/Component IDs после `assembled_at`;
+- не имеет Step arguments или `stepIds`.
+
+## Files and private Storage
+
+- Bucket: `course-assets`, `public=false`.
+- Max object size: 10 MiB.
+- Allowed MIME types совпадают с application contract.
+- `stored_file` имеет status `pending | ready`, размер, MIME, lowercase SHA-256,
+  bucket/path, metadata JSON object и Account owner.
+- Path начинается с Account UUID; Storage policies проверяют первый segment.
+- `course_attachment` связывает только Course и file одного Account.
+- Upload/download выполняются signed operations пользовательского JWT.
+- Student preview получает только attachments, на которые ссылаются видимые
+  image/slideshow/file Components.
+
+Успешная загрузка не означает parsing/RAG.
+
+## Auth/session helpers
+
+- Trigger на `auth.users` создаёт `account` для нового Auth user.
+- `current_account_id()` — authenticated `SECURITY INVOKER` helper.
+- `current_session_invalid_before()` возвращает только cutoff текущего
+  `auth.uid()`; `PUBLIC/anon` execute revoked, ordinary caller —
+  `authenticated`, а `service_role` administrative grant сохранён.
+- `revoke_user_sessions()` и `APP_SESSION_VERSION` обеспечивают per-user и
+  global invalidation.
+- Старые profile/PIN helpers остаются частью transitional identity flow.
+
+## RLS and ACL: V2 tables
+
+RLS включён на Account/Course/Lesson/Component/Slide/File/Attachment и основных
+transitional profile/membership tables. Исключение текущего snapshot:
+`user_preference` и `user_security` не имеют RLS и сохраняют широкие legacy
+table/function grants, включая `anon`/`authenticated`. Application обращается к
+ним через существующие server-side privileged helpers, но сам ACL остаётся
+высокоприоритетным compatibility security debt. Его нужно исправить отдельной
+forward migration после инвентаризации login/onboarding/PIN/session callers.
+Аудит должен охватить не только две таблицы, но и legacy `SECURITY DEFINER` RPC
+с caller-supplied `p_user_id` и `anon` execute, включая preference/security,
+onboarding/settings и PIN helper families. Это не образец для новых таблиц.
+
+| Object                 | `authenticated` direct access                                                   | Дополнительная граница                           |
+| ---------------------- | ------------------------------------------------------------------------------- | ------------------------------------------------ |
+| `account`              | own `SELECT`                                                                    | Auth insert trigger; direct mutation отсутствует |
+| `course`               | owner-scoped CRUD                                                               | `current_account_id()`                           |
+| `lesson`               | owner-scoped CRUD                                                               | ownership через Course/Account                   |
+| `lesson_component`     | `SELECT`, restricted INSERT columns, UPDATE только `payload`/`placement_config` | visibility/order/delete через RPC                |
+| `lesson_student_slide` | owner-scoped `SELECT`                                                           | direct mutations revoked; только RPC             |
+| `stored_file`          | owner-scoped CRUD                                                               | Storage object policy отдельно                   |
+| `course_attachment`    | owner-scoped CRUD                                                               | Course/File same-owner check                     |
+
+`anon` не имеет table privileges на V2 Course Builder documents/files.
+
+Student Screen assignment, reorder и delete используют узкие
+`SECURITY DEFINER` functions с:
+
+- empty `search_path`;
+- explicit `auth.uid() → account → course` ownership check;
+- одинаковым not-found результатом для чужого ID;
+- revoked `PUBLIC/anon` execute;
+- authenticated-only execute;
+- сериализованным Lesson-first lock order.
+
+## Cross-schema objects в snapshot
+
+Snapshot дополнительно фиксирует объекты, которые не попадают в обычный
+`public` dump:
+
+- `trg_auth_user_create_account` на `auth.users`;
+- row/invariant private bucket `storage.buckets.course-assets`;
+- owner policies на `storage.objects` для SELECT/INSERT/UPDATE/DELETE.
+
+Любой refresh snapshot обязан сохранить этот раздел и ACL/default privileges.
+
+## Absent from active model
+
+В current public schema нет Methodology, methodology lessons/blocks,
+scheduled-lesson runtime, старого homework/communication/notification слоя,
+`lesson_step` или `lesson_step_component`.
+
+Старые migration files остаются неизменяемой forward history, а полный V1 — в
+recovery. Они не являются current schema и не должны импортироваться в runtime.
 
 ## Snapshot refresh workflow
 
-Preferred when DB access and `pg_dump` are available:
+Перед refresh обязательно выполнить read-only ShiDao sanity check.
 
 ```bash
 DATABASE_URL='postgresql://...' npm run db:snapshot
 ```
 
-When the target migration has not yet been applied:
+После команды обязательно review полного diff. Snapshot считается пригодным,
+только если не потеряны grants/default ACL, cross-schema Auth trigger,
+Storage bucket/policies и все current functions/RLS. Скрипт не применяет DDL и
+не меняет migrations. Перед `pg_dump` он сам выполняет read-only signature
+check обязательных ShiDao V2 tables/columns и отказывается перезаписывать файл
+при несовпадении; signature также проверяет current Student Screen RPC и
+отсутствие active Methodology table.
 
-- update `supabase/schema/current-schema.sql` from the forward migration and verify it on an isolated schema clone;
-- keep this guide synchronized with that snapshot;
-- do not rewrite migration history.
+Если целевая migration ещё не применена, snapshot обновляется через
+изолированный schema clone и review, а не копированием предположительной
+таблицы из roadmap.

@@ -21,5 +21,8 @@ tsconfig.tsbuildinfo
 # local Codex configs with credentials
 .codex/*.local.toml
 
+# deprecated local V1 operations material with historical plaintext secrets
+enviromnent/
+
 # local recovery snapshots (database dumps, repository bundles, secrets)
 .local-backups/
