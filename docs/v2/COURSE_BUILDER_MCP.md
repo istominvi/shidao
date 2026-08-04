@@ -17,19 +17,24 @@ same code-first registry used by the application UI and service.
 - `course.get`
 - `course.add_lesson`
 - `lesson.add_component`
+- `lesson.set_component_student_screen`
 - `lesson.reorder_component`
 
-Only these five tools are registered.
+Only these six tools are registered.
 
 The canonical authoring contract is `Course → Lesson → ordered Components`:
 
-- `lesson.add_component` accepts `lessonId`, the registry payload/placement and
-  `visibility` (`staff_only` by default or `learner_visible`);
+- `lesson.add_component` accepts `lessonId` and the registry payload/placement;
+  every new Component is contractually `staff_only` and has no Slide assignment;
 - the application service creates the Component directly in the Lesson and
   appends it to that Lesson's single ordered component list;
-- `lesson.reorder_component` moves a Component within the whole Lesson list;
-- learner projection returns only `learner_visible` Components and preserves
-  their relative order.
+- `lesson.set_component_student_screen` accepts `hide`, `existing + slideId`,
+  or `new` and delegates the atomic legal assignment to the application service;
+- `lesson.reorder_component` moves a Component within the whole Lesson list and
+  the database clamps any visible assignment to its legal neighboring Slides;
+- learner projection omits teacher fields and staff-only Components, then groups
+  visible Components by ordered Student Screen Slide while preserving Lesson
+  component order inside each Slide.
 
 There is no Lesson Step/root Step compatibility layer. MCP input/output does
 not expose `stepId`, and no step tool is registered. Active V2 does not expose
@@ -51,7 +56,10 @@ above.
 On every tool invocation the server calls `supabase.auth.getUser(accessToken)`,
 checks that the verified user ID equals `SHIDAO_MCP_AUTH_USER_ID`, checks the
 project-wide session cutoff, and then creates the existing user-JWT repository.
-All database authorization remains enforced by the current ownership RLS.
+Database authorization remains tied to the same user JWT. Ordinary reads and
+authoring fields use ownership RLS; the serialized Student Screen assignment
+and reorder RPCs use an explicit `auth.uid()` → Account → Course ownership
+check inside their narrow database boundary.
 
 Credentials are intentionally resolved lazily. The server can start and list
 tools without a token, but an actual call returns a configuration error until
@@ -82,7 +90,7 @@ npm run test:compile
 node scripts/run-node-tests.mjs --include course-builder/mcp
 ```
 
-The tests use an in-memory MCP client/transport to verify exact five-tool
+The tests use an in-memory MCP client/transport to verify exact six-tool
 registration, registry-derived JSON Schema and tool calls. They do not write to
 the production database.
 

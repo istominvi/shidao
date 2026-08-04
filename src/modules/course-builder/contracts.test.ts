@@ -6,6 +6,7 @@ import {
   courseDraftInputSchema,
   prepareCourseAttachmentInputSchema,
   reorderLessonComponentInputSchema,
+  setComponentStudentScreenInputSchema,
   updateLessonComponentInputSchema,
 } from "./contracts";
 
@@ -51,20 +52,30 @@ test("attachment contract rejects unsupported and oversized files", () => {
   );
 });
 
-test("component update accepts a visibility-only toggle and rejects unknown visibility", () => {
-  assert.deepEqual(
-    updateLessonComponentInputSchema.parse({
-      visibility: "learner_visible",
-    }),
-    { visibility: "learner_visible" },
-  );
+test("component payload edits and Student Screen placement have separate contracts", () => {
+  assert.deepEqual(updateLessonComponentInputSchema.parse({ payload: {} }), {
+    payload: {},
+  });
   assert.equal(
     updateLessonComponentInputSchema.safeParse({ visibility: "staff_only" })
       .success,
+    false,
+  );
+  assert.deepEqual(
+    setComponentStudentScreenInputSchema.parse({ mode: "new" }),
+    {
+      mode: "new",
+    },
+  );
+  assert.equal(
+    setComponentStudentScreenInputSchema.safeParse({
+      mode: "existing",
+      slideId: "00000000-0000-4000-8000-000000000001",
+    }).success,
     true,
   );
   assert.equal(
-    updateLessonComponentInputSchema.safeParse({ visibility: "public" })
+    setComponentStudentScreenInputSchema.safeParse({ mode: "existing" })
       .success,
     false,
   );

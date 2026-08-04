@@ -47,19 +47,24 @@ Course, Lesson, course-wide материалы и единый порядок к
 Course
 ├── course-wide attachments
 └── Lesson 1..N
-    └── ordered Components 1..N
+    ├── ordered Components 1..N
+    └── ordered Student Screen Slides 1..N
 ```
 
 У Lesson один канонический список компонентов:
 
 - План урока показывает все компоненты;
-- Student Screen показывает только `learner_visible` компоненты;
-- после фильтрации Student Screen сохраняет их относительный порядок;
+- каждый новый компонент по умолчанию остаётся `staff_only`;
+- преподаватель явно назначает компонент на existing или new Slide;
+- Student Screen показывает один active Slide и сохраняет единый
+  относительный component order;
 - teacher-private компоненты отсутствуют в learner API, а не только скрыты в
   интерфейсе.
 
 Между Lesson и Component нет `Lesson Step`, скрытого/root Step или compatibility
-group. Во время будущего live-урока learner surface управляется teacher;
+group. Student Screen Slide хранит только grouping/позицию проекции и не
+является Step: у него нет title, content, instructions или второго
+component order. Во время будущего live-урока learner surface управляется teacher;
 свободная learner-навигация не является поведением по умолчанию.
 
 ## 4. Workflow «Курсы → Новый»
@@ -146,7 +151,8 @@ group. Во время будущего live-урока learner surface упра
 - выбрать компонент в palette по категории;
 - заполнить payload компонента;
 - изменить порядок компонентов;
-- переключить видимость `Только преподавателю / Экран ученика`;
+- назначить компонент на допустимый Slide, создать new Slide или убрать
+  компонент с Student Screen;
 - удалить компонент;
 - переключаться между «План урока / Экран ученика / Домашнее задание»;
 - открыть Student Screen preview внутри курса или на весь экран;
@@ -175,7 +181,7 @@ OCR, parsing PDF/DOCX, embeddings и RAG не входят в первый miles
 
 ## 8. Минимальный MCP
 
-MCP является тонким адаптером над теми же application commands, что использует UI. Он не обращается к таблицам напрямую и не обходит ownership/RLS/validation.
+MCP является тонким адаптером над теми же application commands, что использует UI. Он не обращается к таблицам напрямую и не обходит ownership/RLS/validation; сериализованные component RPC дополнительно проверяют actor ownership по `auth.uid()` внутри транзакции.
 
 Минимальные tools:
 
@@ -184,6 +190,7 @@ course.create_draft
 course.get
 course.add_lesson
 lesson.add_component
+lesson.set_component_student_screen
 lesson.reorder_component
 ```
 
@@ -196,9 +203,11 @@ lesson.reorder_component
 - каждое изменение возвращает IDs и краткий результат;
 - действия логируются без secrets и полного содержимого private-вложений.
 
-`lesson.add_component` принимает `lessonId`, registry payload/placement и
-visibility и создаёт Component непосредственно в ordered list Lesson.
-`lesson.reorder_component` меняет позицию во всём списке выбранной Lesson.
+`lesson.add_component` принимает `lessonId` и registry payload/placement,
+создаёт Component в ordered list Lesson и оставляет его `staff_only`.
+`lesson.set_component_student_screen` выполняет `hide | existing | new`.
+`lesson.reorder_component` меняет позицию во всём списке выбранной Lesson и
+сохраняет допустимый Slide order.
 MCP не принимает `stepId` и не регистрирует tool добавления шага.
 
 OAuth, scoped external tokens, quotas, approvals/change sets и публичный remote MCP реализуются позднее.
@@ -256,12 +265,13 @@ Milestone готов к показу, когда одновременно вып
    непосредственно по `lesson_id`, без Step/root Step.
 6. В Course workspace видны ordered components из registry.
 7. Преподаватель может добавить, отредактировать, переставить и удалить компонент.
-8. Student Screen preview отображает learner-visible компоненты и не показывает teacher-private данные.
+8. Преподаватель назначает компоненты на Slides; Student Screen preview
+   показывает один Slide за раз и не возвращает teacher-private данные.
 9. После reload всё состояние сохраняется.
 10. Другой пользователь не может открыть или изменить чужой Course.
-11. Development MCP регистрирует ровно пять утверждённых tools; как минимум
-    `lesson.add_component` проверен через тот же application service и schema
-    contract, что UI.
+11. Development MCP регистрирует ровно шесть утверждённых tools;
+    `lesson.add_component` и `lesson.set_component_student_screen` проверены
+    через тот же application service и schema contract, что UI.
 12. В коде нет условий по ID demo Course/Lesson, Methodology dependency или
     fixture fallback.
 13. Typecheck, unit/integration tests и production build проходят.
@@ -278,7 +288,8 @@ Milestone готов к показу, когда одновременно вып
 6. Открыть созданный урок и показать ordered components.
 7. Добавить цитату, опрос и игру «Найди пару».
 8. Поменять два компонента местами.
-9. Открыть Student Screen preview и взаимодействовать с опросом/игрой.
+9. Назначить два компонента на один Slide, ещё один — на new Slide;
+   открыть Student Screen preview и пройти оба Slides.
 10. Обновить страницу и доказать, что это реальные сохранённые данные.
 11. Опционально вызвать MCP tool и показать новый компонент в том же Course после refresh.
 ```

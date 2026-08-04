@@ -1,11 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import {
   ArrowDown,
+  ArrowLeft,
+  ArrowRight,
   ArrowUp,
   BookOpenCheck,
+  Check,
   ClipboardCheck,
   Eye,
   EyeOff,
@@ -26,6 +29,7 @@ import {
   type SignedCourseComponentAssetMap,
 } from "@/components/course-builder/component-renderers";
 import { courseBuilderRequest } from "@/components/course-builder/course-builder-client";
+import { getStudentSlidePlacementOptions } from "@/components/course-builder/student-slide-placement";
 import { Button, productButtonClassName } from "@/components/ui/button";
 import { DialogShell } from "@/components/ui/dialog-shell";
 import { SegmentedControl } from "@/components/ui/segmented-control";
@@ -139,6 +143,8 @@ function ComponentCard({
   displayPosition,
   indexInLesson,
   componentCount,
+  lessonComponents,
+  studentSlides,
   assets,
   assetMap,
   initiallyEditing,
@@ -150,6 +156,8 @@ function ComponentCard({
   displayPosition: number;
   indexInLesson: number;
   componentCount: number;
+  lessonComponents: LessonComponent[];
+  studentSlides: CourseLesson["studentSlides"];
   assets: CourseAsset[];
   assetMap: SignedCourseComponentAssetMap;
   initiallyEditing: boolean;
@@ -158,9 +166,26 @@ function ComponentCard({
   onInitialEditorConsumed: () => void;
 }) {
   const [editing, setEditing] = useState(initiallyEditing);
+  const [studentScreenPopoverOpen, setStudentScreenPopoverOpen] =
+    useState(false);
   const initialEditorConsumedRef = useRef(false);
+  const studentScreenTriggerRef = useRef<HTMLButtonElement>(null);
+  const studentScreenPopoverRef = useRef<HTMLDivElement>(null);
+  const studentScreenPopoverId = useId();
   const definition = getComponentDefinition(component.typeKey);
-  const learnerVisible = component.visibility === "learner_visible";
+  const learnerVisible = component.studentSlideId !== null;
+  const currentStudentSlidePosition = studentSlides.find(
+    (slide) => slide.id === component.studentSlideId,
+  )?.position;
+  const placementOptions = useMemo(
+    () =>
+      getStudentSlidePlacementOptions(
+        lessonComponents,
+        component.id,
+        studentSlides,
+      ),
+    [component.id, lessonComponents, studentSlides],
+  );
   const hoverActionClass =
     "h-9 w-9 border border-neutral-200 bg-white/95 p-0 shadow-sm transition-opacity md:!opacity-0 md:group-hover:!opacity-100 md:group-focus-within:!opacity-100";
 
@@ -169,6 +194,60 @@ function ComponentCard({
     initialEditorConsumedRef.current = true;
     onInitialEditorConsumed();
   }, [initiallyEditing, onInitialEditorConsumed]);
+
+  useEffect(() => {
+    if (!studentScreenPopoverOpen) return;
+
+    window.requestAnimationFrame(() =>
+      studentScreenPopoverRef.current
+        ?.querySelector<HTMLButtonElement>("button:not([disabled])")
+        ?.focus(),
+    );
+
+    function handlePointerDown(event: PointerEvent) {
+      if (
+        event.target instanceof Node &&
+        !studentScreenPopoverRef.current?.contains(event.target) &&
+        !studentScreenTriggerRef.current?.contains(event.target)
+      ) {
+        setStudentScreenPopoverOpen(false);
+      }
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      setStudentScreenPopoverOpen(false);
+      studentScreenTriggerRef.current?.focus();
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [studentScreenPopoverOpen]);
+
+  async function updateStudentScreen(
+    input:
+      | { mode: "hide" }
+      | { mode: "existing"; slideId: string }
+      | { mode: "new" },
+  ) {
+    const saved = await runMutation("Обновляем экран ученика…", () =>
+      jsonRequest(
+        `/api/v2/components/${component.id}/student-screen`,
+        "POST",
+        input,
+      ),
+    );
+    if (!saved) return;
+    setStudentScreenPopoverOpen(false);
+    window.requestAnimationFrame(() =>
+      studentScreenTriggerRef.current?.focus(),
+    );
+  }
 
   return (
     <article className="group relative rounded-3xl border border-neutral-200 bg-white p-4 pt-16 shadow-sm transition hover:border-neutral-300 hover:shadow-md md:p-5 md:pt-5">
@@ -235,39 +314,99 @@ function ComponentCard({
         >
           <Trash2 className="h-4 w-4" aria-hidden="true" />
         </Button>
-        <Button
-          variant="ghost"
-          className={`h-9 w-9 border border-neutral-200 bg-white/95 p-0 shadow-sm transition ${
-            learnerVisible
-              ? "border-sky-200 bg-sky-100 text-sky-800 hover:bg-sky-200"
-              : "text-neutral-500 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100"
-          }`}
-          disabled={disabled}
-          aria-pressed={learnerVisible}
-          aria-label={
-            learnerVisible
-              ? `Убрать «${definition.title}» с экрана ученика`
-              : `Добавить «${definition.title}» на экран ученика`
-          }
-          title={
-            learnerVisible
-              ? "Убрать с экрана ученика"
-              : "Добавить на экран ученика"
-          }
-          onClick={() =>
-            void runMutation("Обновляем экран ученика…", () =>
-              jsonRequest(`/api/v2/components/${component.id}`, "PATCH", {
-                visibility: learnerVisible ? "staff_only" : "learner_visible",
-              }),
-            )
-          }
-        >
-          {learnerVisible ? (
-            <Eye className="h-4 w-4" aria-hidden="true" />
-          ) : (
-            <EyeOff className="h-4 w-4" aria-hidden="true" />
-          )}
-        </Button>
+        <div className="relative">
+          <Button
+            ref={studentScreenTriggerRef}
+            variant="ghost"
+            className={`h-9 w-9 border border-neutral-200 bg-white/95 p-0 shadow-sm transition ${
+              learnerVisible
+                ? "border-sky-200 bg-sky-100 text-sky-800 hover:bg-sky-200"
+                : "text-neutral-500 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100"
+            }`}
+            disabled={disabled}
+            aria-haspopup="dialog"
+            aria-expanded={studentScreenPopoverOpen}
+            aria-controls={
+              studentScreenPopoverOpen ? studentScreenPopoverId : undefined
+            }
+            aria-label={
+              learnerVisible
+                ? currentStudentSlidePosition === undefined
+                  ? `«${definition.title}» показывается ученику. Настроить`
+                  : `«${definition.title}» показывается на слайде ${currentStudentSlidePosition}. Настроить`
+                : `«${definition.title}» не показывается ученику. Настроить`
+            }
+            title="Настроить экран ученика"
+            onClick={() => setStudentScreenPopoverOpen((isOpen) => !isOpen)}
+          >
+            {learnerVisible ? (
+              <Eye className="h-4 w-4" aria-hidden="true" />
+            ) : (
+              <EyeOff className="h-4 w-4" aria-hidden="true" />
+            )}
+          </Button>
+
+          {studentScreenPopoverOpen ? (
+            <div
+              ref={studentScreenPopoverRef}
+              id={studentScreenPopoverId}
+              role="dialog"
+              aria-label={`Слайд для компонента «${definition.title}»`}
+              className="absolute right-0 top-11 z-30 w-72 rounded-2xl border border-neutral-200 bg-white p-2 text-left shadow-xl"
+            >
+              <p className="px-2 pb-2 pt-1 text-xs font-bold uppercase tracking-[0.12em] text-neutral-500">
+                Экран ученика
+              </p>
+              <div className="grid gap-1">
+                {placementOptions.existingSlides.map((slide) => {
+                  const selected = component.studentSlideId === slide.id;
+                  return (
+                    <button
+                      key={slide.id}
+                      type="button"
+                      disabled={disabled || selected}
+                      aria-pressed={selected}
+                      className="flex min-h-10 items-center justify-between gap-3 rounded-xl px-3 py-2 text-sm font-semibold text-neutral-800 transition hover:bg-neutral-100 disabled:cursor-default disabled:bg-sky-50 disabled:text-sky-800"
+                      onClick={() =>
+                        void updateStudentScreen({
+                          mode: "existing",
+                          slideId: slide.id,
+                        })
+                      }
+                    >
+                      <span>Слайд {slide.position}</span>
+                      {selected ? (
+                        <Check className="h-4 w-4" aria-hidden="true" />
+                      ) : null}
+                    </button>
+                  );
+                })}
+                {placementOptions.canCreateNew ? (
+                  <button
+                    type="button"
+                    disabled={disabled}
+                    className="flex min-h-10 items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-neutral-800 transition hover:bg-neutral-100"
+                    onClick={() => void updateStudentScreen({ mode: "new" })}
+                  >
+                    <Plus className="h-4 w-4" aria-hidden="true" />
+                    Новый слайд
+                  </button>
+                ) : null}
+                {learnerVisible ? (
+                  <button
+                    type="button"
+                    disabled={disabled}
+                    className="flex min-h-10 items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-50"
+                    onClick={() => void updateStudentScreen({ mode: "hide" })}
+                  >
+                    <EyeOff className="h-4 w-4" aria-hidden="true" />
+                    Убрать с экрана
+                  </button>
+                ) : null}
+              </div>
+            </div>
+          ) : null}
+        </div>
       </div>
 
       <div className="mb-3 md:pr-48">
@@ -342,7 +481,6 @@ function ComponentPickerDialog({
             typeKey,
             payload: structuredClone(definition.defaultPayload),
             placement: structuredClone(definition.defaultPlacement),
-            visibility: "staff_only",
           },
         );
         createdComponentId = response.component.id;
@@ -605,6 +743,8 @@ function LessonPlan({
             displayPosition={index + 1}
             indexInLesson={index}
             componentCount={components.length}
+            lessonComponents={components}
+            studentSlides={lesson.studentSlides}
             assets={course.attachments}
             assetMap={assetMap}
             initiallyEditing={component.id === editingComponentId}
@@ -639,13 +779,32 @@ function StudentLessonSurface({
   course: CourseWorkspace;
   lesson: CourseLesson;
 }) {
+  const [activeSlideIndex, setActiveSlideIndex] = useState(0);
   const assetMap = useMemo(
     () => assetMapFor(course.attachments),
     [course.attachments],
   );
-  const learnerComponents = lesson.components.filter(
-    (component) => component.visibility === "learner_visible",
+  const slides = useMemo(
+    () =>
+      [...lesson.studentSlides]
+        .sort((left, right) => left.position - right.position)
+        .map((slide) => ({
+          ...slide,
+          components: lesson.components.filter(
+            (component) => component.studentSlideId === slide.id,
+          ),
+        })),
+    [lesson.components, lesson.studentSlides],
   );
+  const safeActiveSlideIndex = Math.min(
+    activeSlideIndex,
+    Math.max(slides.length - 1, 0),
+  );
+  const activeSlide = slides[safeActiveSlideIndex];
+
+  useEffect(() => {
+    setActiveSlideIndex(0);
+  }, [lesson.id]);
 
   return (
     <section className="overflow-hidden rounded-[2rem] border border-sky-100 bg-[radial-gradient(circle_at_top_left,#e0f2fe_0%,#f5f3ff_42%,#ffffff_80%)] shadow-sm">
@@ -667,16 +826,19 @@ function StudentLessonSurface({
         </Link>
       </header>
 
-      <div className="grid min-h-[28rem] gap-6 p-5 md:p-8">
-        {learnerComponents.map((component) => (
-          <CourseComponentRenderer
-            key={component.id}
-            component={component}
-            assets={assetMap}
-            mode="student"
-          />
-        ))}
-        {learnerComponents.length === 0 ? (
+      <div className="flex min-h-[28rem] flex-col p-5 md:p-8">
+        {activeSlide ? (
+          <div className="grid flex-1 content-start gap-6">
+            {activeSlide.components.map((component) => (
+              <CourseComponentRenderer
+                key={component.id}
+                component={component}
+                assets={assetMap}
+                mode="student"
+              />
+            ))}
+          </div>
+        ) : (
           <div className="grid place-items-center rounded-3xl border border-dashed border-neutral-300 bg-white/70 px-6 py-12 text-center">
             <div>
               <EyeOff
@@ -687,11 +849,47 @@ function StudentLessonSurface({
                 Экран ученика пока пуст
               </h3>
               <p className="mt-2 max-w-xl text-sm leading-6 text-neutral-600">
-                В плане урока нажмите значок глаза у нужного компонента — он
-                появится здесь после сохранения.
+                В плане урока нажмите значок глаза у нужного компонента и
+                добавьте его на первый слайд.
               </p>
             </div>
           </div>
+        )}
+
+        {activeSlide ? (
+          <nav
+            className="mt-7 flex flex-wrap items-center justify-between gap-3 border-t border-white/90 pt-5"
+            aria-label="Навигация по слайдам в предпросмотре"
+          >
+            <Button
+              variant="secondary"
+              disabled={safeActiveSlideIndex === 0}
+              onClick={() =>
+                setActiveSlideIndex(Math.max(0, safeActiveSlideIndex - 1))
+              }
+            >
+              <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+              Предыдущий слайд
+            </Button>
+            <p
+              className="text-sm font-bold text-neutral-600"
+              aria-live="polite"
+            >
+              Слайд {safeActiveSlideIndex + 1} из {slides.length}
+            </p>
+            <Button
+              variant="secondary"
+              disabled={safeActiveSlideIndex === slides.length - 1}
+              onClick={() =>
+                setActiveSlideIndex(
+                  Math.min(slides.length - 1, safeActiveSlideIndex + 1),
+                )
+              }
+            >
+              Следующий слайд
+              <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            </Button>
+          </nav>
         ) : null}
       </div>
     </section>

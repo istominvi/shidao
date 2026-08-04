@@ -1,8 +1,8 @@
 -- CURRENT SCHEMA SNAPSHOT (post-migration reference)
 -- -----------------------------------------------------------------------------
 -- Public DDL below was generated from an isolated clone of the live ShiDao
--- schema after applying migration
--- 20260804033421_course_lesson_components_remove_legacy_methodology.sql.
+-- schema after applying migrations through
+-- 20260804044955_add_lesson_student_slides.sql.
 -- It includes active public tables, types, functions, constraints, indexes,
 -- triggers, RLS policies, grants, and default privileges. The final section
 -- records Course Builder's unchanged cross-schema Auth/Storage objects.
@@ -153,8 +153,7 @@ begin
       type_key,
       schema_version,
       payload,
-      placement_config,
-      visibility
+      placement_config
     )
     values (
       v_lesson_id,
@@ -162,8 +161,7 @@ begin
       v_component ->> 'typeKey',
       (v_component ->> 'schemaVersion')::integer,
       v_component -> 'payload',
-      v_component -> 'placement',
-      'learner_visible'
+      v_component -> 'placement'
     )
     returning id into v_component_id;
 
@@ -247,11 +245,175 @@ CREATE FUNCTION public.compact_lesson_component_positions() RETURNS trigger
     SET search_path TO ''
     AS $$
 begin
+  if not exists (
+    select 1
+    from public.lesson as lesson
+    where lesson.id = old.lesson_id
+  ) then
+    return old;
+  end if;
+
   update public.lesson_component
   set position = position - 1
   where lesson_id = old.lesson_id
     and position > old.position;
   return old;
+end
+$$;
+
+
+--
+-- Name: cleanup_empty_lesson_student_slide(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.cleanup_empty_lesson_student_slide() RETURNS trigger
+    LANGUAGE plpgsql
+    SET search_path TO ''
+    AS $$
+begin
+  if old.student_slide_id is null
+    or not exists (
+      select 1 from public.lesson where lesson.id = old.lesson_id
+    )
+  then
+    return old;
+  end if;
+
+  delete from public.lesson_student_slide as slide
+  where slide.id = old.student_slide_id
+    and slide.lesson_id = old.lesson_id
+    and not exists (
+      select 1
+      from public.lesson_component as component
+      where component.student_slide_id = slide.id
+        and component.visibility = 'learner_visible'
+    );
+
+  if found then
+    with ordered as (
+      select
+        slide.id,
+        row_number() over (order by slide.position, slide.id)::integer
+          as new_position
+      from public.lesson_student_slide as slide
+      where slide.lesson_id = old.lesson_id
+    )
+    update public.lesson_student_slide as slide
+    set position = ordered.new_position
+    from ordered
+    where slide.id = ordered.id
+      and slide.position <> ordered.new_position;
+  end if;
+
+  return old;
+end
+$$;
+
+
+--
+-- Name: enforce_lesson_student_screen_invariants(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.enforce_lesson_student_screen_invariants() RETURNS trigger
+    LANGUAGE plpgsql
+    SET search_path TO ''
+    AS $$
+declare
+  v_lesson_id uuid;
+begin
+  for v_lesson_id in
+    select distinct candidate.lesson_id
+    from (
+      select case when tg_op <> 'DELETE' then new.lesson_id end as lesson_id
+      union all
+      select case when tg_op <> 'INSERT' then old.lesson_id end
+    ) as candidate
+    where candidate.lesson_id is not null
+  loop
+    if not exists (
+      select 1 from public.lesson where lesson.id = v_lesson_id
+    ) then
+      continue;
+    end if;
+
+    if exists (
+      select 1
+      from public.lesson_component as component
+      left join public.lesson_student_slide as slide
+        on slide.id = component.student_slide_id
+      where component.lesson_id = v_lesson_id
+        and (
+          (component.visibility = 'staff_only'
+            and component.student_slide_id is not null)
+          or
+          (component.visibility = 'learner_visible'
+            and (
+              component.student_slide_id is null
+              or slide.id is null
+              or slide.lesson_id <> component.lesson_id
+            ))
+        )
+    ) then
+      raise exception
+        'lesson_student_screen_assignment_inconsistent'
+        using errcode = '23514';
+    end if;
+
+    if exists (
+      select 1
+      from public.lesson_student_slide as slide
+      where slide.lesson_id = v_lesson_id
+        and not exists (
+          select 1
+          from public.lesson_component as component
+          where component.student_slide_id = slide.id
+            and component.visibility = 'learner_visible'
+        )
+    ) then
+      raise exception
+        'lesson_student_screen_contains_empty_slide'
+        using errcode = '23514';
+    end if;
+
+    if exists (
+      select 1
+      from public.lesson_student_slide as slide
+      where slide.lesson_id = v_lesson_id
+      group by slide.lesson_id
+      having min(slide.position) <> 1
+        or max(slide.position) <> count(*)
+        or count(distinct slide.position) <> count(*)
+    ) then
+      raise exception
+        'lesson_student_slide_positions_are_not_dense'
+        using errcode = '23514';
+    end if;
+
+    if exists (
+      with visible_components as (
+        select
+          component.position,
+          slide.position as slide_position,
+          lag(slide.position) over (
+            order by component.position
+          ) as previous_slide_position
+        from public.lesson_component as component
+        join public.lesson_student_slide as slide
+          on slide.id = component.student_slide_id
+        where component.lesson_id = v_lesson_id
+          and component.visibility = 'learner_visible'
+      )
+      select 1
+      from visible_components
+      where previous_slide_position > slide_position
+    ) then
+      raise exception
+        'lesson_student_slide_order_conflict'
+        using errcode = '23514';
+    end if;
+  end loop;
+
+  return null;
 end
 $$;
 
@@ -671,51 +833,63 @@ $$;
 
 
 --
--- Name: reorder_lesson_component(uuid, integer); Type: FUNCTION; Schema: public; Owner: -
+-- Name: set_lesson_component_student_screen(uuid, text, uuid); Type: FUNCTION; Schema: public; Owner: -
 --
 
-CREATE FUNCTION public.reorder_lesson_component(p_component_id uuid, p_new_position integer) RETURNS TABLE(component_id uuid, "position" integer)
-    LANGUAGE plpgsql
+CREATE FUNCTION public.set_lesson_component_student_screen(p_component_id uuid, p_mode text, p_slide_id uuid DEFAULT NULL::uuid) RETURNS TABLE(id uuid, lesson_id uuid, type_key text, schema_version integer, "position" integer, payload jsonb, placement_config jsonb, visibility text, student_slide_id uuid, created_at timestamp with time zone, updated_at timestamp with time zone)
+    LANGUAGE plpgsql SECURITY DEFINER
     SET search_path TO ''
-    AS $$
+AS $$
 declare
+  v_actor_user_id uuid := (select auth.uid());
   v_lesson_id uuid;
-  v_old_position integer;
-  v_component_count integer;
+  v_component_position integer;
+  v_previous_slide_position integer;
+  v_next_slide_position integer;
+  v_target_slide_position integer;
+  v_target_slide_id uuid;
+  v_insert_position integer;
 begin
-  if p_new_position is null or p_new_position < 1 then
+  if v_actor_user_id is null then
+    raise exception 'component_not_found' using errcode = 'P0002';
+  end if;
+
+  if p_mode is null or p_mode not in ('hide', 'existing', 'new') then
     raise exception
-      'component_position_out_of_range'
+      'student_screen_mode_invalid'
+      using errcode = '22023';
+  end if;
+
+  if (p_mode = 'existing' and p_slide_id is null)
+    or (p_mode <> 'existing' and p_slide_id is not null)
+  then
+    raise exception
+      'student_screen_slide_argument_invalid'
       using errcode = '22023';
   end if;
 
   select component.lesson_id
   into v_lesson_id
   from public.lesson_component as component
-  where component.id = p_component_id;
+  join public.lesson as lesson on lesson.id = component.lesson_id
+  join public.course as course on course.id = lesson.course_id
+  join public.account as account on account.id = course.owner_account_id
+  where component.id = p_component_id
+    and account.auth_user_id = v_actor_user_id;
 
   if not found then
     raise exception 'component_not_found' using errcode = 'P0002';
   end if;
 
-  -- Serialize every reorder for one Lesson on its parent row before locking any
-  -- component. Two calls targeting different siblings therefore cannot acquire
-  -- the same component set in opposite orders and deadlock.
+  -- Parent-row serialization gives assignment and reorder one lock order per
+  -- Lesson, including when callers target different components.
   perform 1
   from public.lesson as lesson
+  join public.course as course on course.id = lesson.course_id
+  join public.account as account on account.id = course.owner_account_id
   where lesson.id = v_lesson_id
-  for update;
-
-  if not found then
-    raise exception 'component_not_found' using errcode = 'P0002';
-  end if;
-
-  select component.position
-  into v_old_position
-  from public.lesson_component as component
-  where component.id = p_component_id
-    and component.lesson_id = v_lesson_id
-  for update;
+    and account.auth_user_id = v_actor_user_id
+  for update of lesson;
 
   if not found then
     raise exception 'component_not_found' using errcode = 'P0002';
@@ -726,6 +900,215 @@ begin
   where component.lesson_id = v_lesson_id
   order by component.id
   for update;
+
+  perform 1
+  from public.lesson_student_slide as slide
+  where slide.lesson_id = v_lesson_id
+  order by slide.id
+  for update;
+
+  select component.position
+  into v_component_position
+  from public.lesson_component as component
+  where component.id = p_component_id
+    and component.lesson_id = v_lesson_id;
+
+  if not found then
+    raise exception 'component_not_found' using errcode = 'P0002';
+  end if;
+
+  if p_mode = 'hide' then
+    update public.lesson_component as component
+    set visibility = 'staff_only',
+        student_slide_id = null
+    where component.id = p_component_id;
+  else
+    select slide.position
+    into v_previous_slide_position
+    from public.lesson_component as component
+    join public.lesson_student_slide as slide
+      on slide.id = component.student_slide_id
+    where component.lesson_id = v_lesson_id
+      and component.id <> p_component_id
+      and component.visibility = 'learner_visible'
+      and component.position < v_component_position
+    order by component.position desc
+    limit 1;
+
+    select slide.position
+    into v_next_slide_position
+    from public.lesson_component as component
+    join public.lesson_student_slide as slide
+      on slide.id = component.student_slide_id
+    where component.lesson_id = v_lesson_id
+      and component.id <> p_component_id
+      and component.visibility = 'learner_visible'
+      and component.position > v_component_position
+    order by component.position
+    limit 1;
+
+    if p_mode = 'existing' then
+      select slide.position
+      into v_target_slide_position
+      from public.lesson_student_slide as slide
+      where slide.id = p_slide_id
+        and slide.lesson_id = v_lesson_id;
+
+      if not found then
+        raise exception
+          'student_slide_not_found'
+          using errcode = 'P0002';
+      end if;
+
+      if (
+        v_previous_slide_position is not null
+        and v_target_slide_position < v_previous_slide_position
+      ) or (
+        v_next_slide_position is not null
+        and v_target_slide_position > v_next_slide_position
+      ) then
+        raise exception
+          'student_slide_target_out_of_order'
+          using errcode = '23514';
+      end if;
+
+      v_target_slide_id := p_slide_id;
+    else
+      if v_previous_slide_position is not null
+        and v_next_slide_position is not null
+        and v_previous_slide_position = v_next_slide_position
+      then
+        raise exception
+          'student_slide_cannot_split_group'
+          using errcode = '23514';
+      end if;
+
+      v_insert_position := case
+        when v_next_slide_position is not null
+          then v_next_slide_position
+        when v_previous_slide_position is not null
+          then v_previous_slide_position + 1
+        else 1
+      end;
+
+      update public.lesson_student_slide as slide
+      set position = slide.position + 1
+      where slide.lesson_id = v_lesson_id
+        and slide.position >= v_insert_position;
+
+      insert into public.lesson_student_slide as inserted_slide (
+        lesson_id,
+        position
+      )
+      values (v_lesson_id, v_insert_position)
+      returning inserted_slide.id into v_target_slide_id;
+    end if;
+
+    update public.lesson_component as component
+    set visibility = 'learner_visible',
+        student_slide_id = v_target_slide_id
+    where component.id = p_component_id;
+  end if;
+
+  return query
+  select
+    component.id,
+    component.lesson_id,
+    component.type_key,
+    component.schema_version,
+    component.position,
+    component.payload,
+    component.placement_config,
+    component.visibility,
+    component.student_slide_id,
+    component.created_at,
+    component.updated_at
+  from public.lesson_component as component
+  where component.id = p_component_id;
+end
+$$;
+
+
+--
+-- Name: reorder_lesson_component(uuid, integer); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.reorder_lesson_component(p_component_id uuid, p_new_position integer) RETURNS TABLE(id uuid, lesson_id uuid, type_key text, schema_version integer, "position" integer, payload jsonb, placement_config jsonb, visibility text, student_slide_id uuid, created_at timestamp with time zone, updated_at timestamp with time zone)
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO ''
+AS $$
+declare
+  v_actor_user_id uuid := (select auth.uid());
+  v_lesson_id uuid;
+  v_old_position integer;
+  v_component_count integer;
+  v_visibility text;
+  v_student_slide_id uuid;
+  v_current_slide_position integer;
+  v_previous_slide_position integer;
+  v_next_slide_position integer;
+  v_clamped_slide_position integer;
+  v_clamped_slide_id uuid;
+begin
+  if v_actor_user_id is null then
+    raise exception 'component_not_found' using errcode = 'P0002';
+  end if;
+
+  if p_new_position is null or p_new_position < 1 then
+    raise exception
+      'component_position_out_of_range'
+      using errcode = '22023';
+  end if;
+
+  select component.lesson_id
+  into v_lesson_id
+  from public.lesson_component as component
+  join public.lesson as lesson on lesson.id = component.lesson_id
+  join public.course as course on course.id = lesson.course_id
+  join public.account as account on account.id = course.owner_account_id
+  where component.id = p_component_id
+    and account.auth_user_id = v_actor_user_id;
+
+  if not found then
+    raise exception 'component_not_found' using errcode = 'P0002';
+  end if;
+
+  perform 1
+  from public.lesson as lesson
+  join public.course as course on course.id = lesson.course_id
+  join public.account as account on account.id = course.owner_account_id
+  where lesson.id = v_lesson_id
+    and account.auth_user_id = v_actor_user_id
+  for update of lesson;
+
+  if not found then
+    raise exception 'component_not_found' using errcode = 'P0002';
+  end if;
+
+  perform 1
+  from public.lesson_component as component
+  where component.lesson_id = v_lesson_id
+  order by component.id
+  for update;
+
+  perform 1
+  from public.lesson_student_slide as slide
+  where slide.lesson_id = v_lesson_id
+  order by slide.id
+  for update;
+
+  select
+    component.position,
+    component.visibility,
+    component.student_slide_id
+  into v_old_position, v_visibility, v_student_slide_id
+  from public.lesson_component as component
+  where component.id = p_component_id
+    and component.lesson_id = v_lesson_id;
+
+  if not found then
+    raise exception 'component_not_found' using errcode = 'P0002';
+  end if;
 
   select count(*)::integer
   into v_component_count
@@ -752,15 +1135,148 @@ begin
       and component.position <= p_new_position;
   end if;
 
-  update public.lesson_component
+  update public.lesson_component as component
   set position = p_new_position
-  where id = p_component_id;
+  where component.id = p_component_id;
+
+  if v_visibility = 'learner_visible' then
+    select slide.position
+    into v_current_slide_position
+    from public.lesson_student_slide as slide
+    where slide.id = v_student_slide_id
+      and slide.lesson_id = v_lesson_id;
+
+    select slide.position
+    into v_previous_slide_position
+    from public.lesson_component as component
+    join public.lesson_student_slide as slide
+      on slide.id = component.student_slide_id
+    where component.lesson_id = v_lesson_id
+      and component.id <> p_component_id
+      and component.visibility = 'learner_visible'
+      and component.position < p_new_position
+    order by component.position desc
+    limit 1;
+
+    select slide.position
+    into v_next_slide_position
+    from public.lesson_component as component
+    join public.lesson_student_slide as slide
+      on slide.id = component.student_slide_id
+    where component.lesson_id = v_lesson_id
+      and component.id <> p_component_id
+      and component.visibility = 'learner_visible'
+      and component.position > p_new_position
+    order by component.position
+    limit 1;
+
+    v_clamped_slide_position := v_current_slide_position;
+
+    if v_previous_slide_position is not null
+      and v_clamped_slide_position < v_previous_slide_position
+    then
+      v_clamped_slide_position := v_previous_slide_position;
+    end if;
+
+    if v_next_slide_position is not null
+      and v_clamped_slide_position > v_next_slide_position
+    then
+      v_clamped_slide_position := v_next_slide_position;
+    end if;
+
+    if v_clamped_slide_position <> v_current_slide_position then
+      select slide.id
+      into v_clamped_slide_id
+      from public.lesson_student_slide as slide
+      where slide.lesson_id = v_lesson_id
+        and slide.position = v_clamped_slide_position;
+
+      update public.lesson_component as component
+      set student_slide_id = v_clamped_slide_id
+      where component.id = p_component_id;
+    end if;
+  end if;
 
   return query
-  select component.id, component.position
+  select
+    component.id,
+    component.lesson_id,
+    component.type_key,
+    component.schema_version,
+    component.position,
+    component.payload,
+    component.placement_config,
+    component.visibility,
+    component.student_slide_id,
+    component.created_at,
+    component.updated_at
+  from public.lesson_component as component
+  where component.id = p_component_id
+    and component.lesson_id = v_lesson_id;
+end
+$$;
+
+
+--
+-- Name: delete_lesson_component(uuid); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.delete_lesson_component(p_component_id uuid) RETURNS boolean
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO ''
+AS $$
+declare
+  v_actor_user_id uuid := (select auth.uid());
+  v_lesson_id uuid;
+  v_deleted_count integer;
+begin
+  if v_actor_user_id is null then
+    return false;
+  end if;
+
+  select component.lesson_id
+  into v_lesson_id
+  from public.lesson_component as component
+  join public.lesson as lesson on lesson.id = component.lesson_id
+  join public.course as course on course.id = lesson.course_id
+  join public.account as account on account.id = course.owner_account_id
+  where component.id = p_component_id
+    and account.auth_user_id = v_actor_user_id;
+
+  if not found then
+    return false;
+  end if;
+
+  perform 1
+  from public.lesson as lesson
+  join public.course as course on course.id = lesson.course_id
+  join public.account as account on account.id = course.owner_account_id
+  where lesson.id = v_lesson_id
+    and account.auth_user_id = v_actor_user_id
+  for update of lesson;
+
+  if not found then
+    return false;
+  end if;
+
+  perform 1
   from public.lesson_component as component
   where component.lesson_id = v_lesson_id
-  order by component.position;
+  order by component.id
+  for update;
+
+  perform 1
+  from public.lesson_student_slide as slide
+  where slide.lesson_id = v_lesson_id
+  order by slide.id
+  for update;
+
+  delete from public.lesson_component as component
+  where component.id = p_component_id
+    and component.lesson_id = v_lesson_id;
+
+  get diagnostics v_deleted_count = row_count;
+  return v_deleted_count = 1;
 end
 $$;
 
@@ -1098,15 +1614,31 @@ CREATE TABLE public.lesson_component (
     schema_version integer DEFAULT 1 NOT NULL,
     payload jsonb DEFAULT '{}'::jsonb NOT NULL,
     placement_config jsonb DEFAULT '{}'::jsonb NOT NULL,
-    visibility text DEFAULT 'learner_visible'::text NOT NULL,
+    visibility text DEFAULT 'staff_only'::text NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    student_slide_id uuid,
     CONSTRAINT lesson_component_payload_check CHECK ((jsonb_typeof(payload) = 'object'::text)),
     CONSTRAINT lesson_component_placement_config_check CHECK ((jsonb_typeof(placement_config) = 'object'::text)),
     CONSTRAINT lesson_component_position_check CHECK (("position" > 0)),
     CONSTRAINT lesson_component_schema_version_check CHECK ((schema_version > 0)),
+    CONSTRAINT lesson_component_student_screen_assignment_check CHECK ((((visibility = 'staff_only'::text) AND (student_slide_id IS NULL)) OR ((visibility = 'learner_visible'::text) AND (student_slide_id IS NOT NULL)))),
     CONSTRAINT lesson_component_type_key_check CHECK ((btrim(type_key) <> ''::text)),
     CONSTRAINT lesson_component_visibility_check CHECK ((visibility = ANY (ARRAY['staff_only'::text, 'learner_visible'::text])))
+);
+
+
+--
+-- Name: lesson_student_slide; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.lesson_student_slide (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    lesson_id uuid NOT NULL,
+    "position" integer NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT lesson_student_slide_position_check CHECK (("position" > 0))
 );
 
 
@@ -1318,6 +1850,30 @@ ALTER TABLE ONLY public.lesson_component
 
 
 --
+-- Name: lesson_student_slide lesson_student_slide_id_lesson_unique; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.lesson_student_slide
+    ADD CONSTRAINT lesson_student_slide_id_lesson_unique UNIQUE (id, lesson_id);
+
+
+--
+-- Name: lesson_student_slide lesson_student_slide_lesson_position_unique; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.lesson_student_slide
+    ADD CONSTRAINT lesson_student_slide_lesson_position_unique UNIQUE (lesson_id, "position") DEFERRABLE INITIALLY DEFERRED;
+
+
+--
+-- Name: lesson_student_slide lesson_student_slide_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.lesson_student_slide
+    ADD CONSTRAINT lesson_student_slide_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: lesson lesson_course_position_unique; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1487,6 +2043,13 @@ CREATE INDEX lesson_component_lesson_position_idx ON public.lesson_component USI
 
 
 --
+-- Name: lesson_component_student_slide_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX lesson_component_student_slide_id_idx ON public.lesson_component USING btree (student_slide_id) WHERE (student_slide_id IS NOT NULL);
+
+
+--
 -- Name: lesson_component_type_key_idx; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -1613,10 +2176,38 @@ CREATE TRIGGER trg_lesson_component_compact_positions AFTER DELETE ON public.les
 
 
 --
+-- Name: lesson_component trg_lesson_component_cleanup_empty_student_slide; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_lesson_component_cleanup_empty_student_slide AFTER DELETE OR UPDATE OF lesson_id, visibility, student_slide_id ON public.lesson_component FOR EACH ROW EXECUTE FUNCTION public.cleanup_empty_lesson_student_slide();
+
+
+--
+-- Name: lesson_component trg_lesson_component_student_screen_invariants; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE CONSTRAINT TRIGGER trg_lesson_component_student_screen_invariants AFTER INSERT OR DELETE OR UPDATE OF lesson_id, "position", visibility, student_slide_id ON public.lesson_component DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION public.enforce_lesson_student_screen_invariants();
+
+
+--
 -- Name: lesson_component trg_lesson_component_updated_at; Type: TRIGGER; Schema: public; Owner: -
 --
 
 CREATE TRIGGER trg_lesson_component_updated_at BEFORE UPDATE ON public.lesson_component FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+
+
+--
+-- Name: lesson_student_slide trg_lesson_student_slide_invariants; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE CONSTRAINT TRIGGER trg_lesson_student_slide_invariants AFTER INSERT OR DELETE OR UPDATE OF lesson_id, "position" ON public.lesson_student_slide DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION public.enforce_lesson_student_screen_invariants();
+
+
+--
+-- Name: lesson_student_slide trg_lesson_student_slide_updated_at; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_lesson_student_slide_updated_at BEFORE UPDATE ON public.lesson_student_slide FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
 
 --
@@ -1753,6 +2344,22 @@ ALTER TABLE ONLY public.course
 
 ALTER TABLE ONLY public.lesson_component
     ADD CONSTRAINT lesson_component_lesson_id_fkey FOREIGN KEY (lesson_id) REFERENCES public.lesson(id) ON DELETE CASCADE;
+
+
+--
+-- Name: lesson_component lesson_component_student_slide_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.lesson_component
+    ADD CONSTRAINT lesson_component_student_slide_id_fkey FOREIGN KEY (student_slide_id, lesson_id) REFERENCES public.lesson_student_slide(id, lesson_id) DEFERRABLE INITIALLY DEFERRED;
+
+
+--
+-- Name: lesson_student_slide lesson_student_slide_lesson_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.lesson_student_slide
+    ADD CONSTRAINT lesson_student_slide_lesson_id_fkey FOREIGN KEY (lesson_id) REFERENCES public.lesson(id) ON DELETE CASCADE;
 
 
 --
@@ -1970,6 +2577,29 @@ CREATE POLICY lesson_component_course_owner_all ON public.lesson_component TO au
 
 
 --
+-- Name: lesson_component lesson_component_staff_only_insert_guard; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY lesson_component_staff_only_insert_guard ON public.lesson_component AS RESTRICTIVE FOR INSERT TO authenticated WITH CHECK (((visibility = 'staff_only'::text) AND (student_slide_id IS NULL)));
+
+
+--
+-- Name: lesson_student_slide; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.lesson_student_slide ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: lesson_student_slide lesson_student_slide_course_owner_select; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY lesson_student_slide_course_owner_select ON public.lesson_student_slide FOR SELECT TO authenticated USING ((EXISTS ( SELECT 1
+   FROM (public.lesson
+     JOIN public.course ON ((course.id = lesson.course_id)))
+  WHERE ((lesson.id = lesson_student_slide.lesson_id) AND (course.owner_account_id = ( SELECT public.current_account_id() AS current_account_id))))));
+
+
+--
 -- Name: lesson lesson_course_owner_all; Type: POLICY; Schema: public; Owner: -
 --
 
@@ -2139,6 +2769,22 @@ GRANT ALL ON FUNCTION public.compact_course_lesson_positions() TO service_role;
 
 REVOKE ALL ON FUNCTION public.compact_lesson_component_positions() FROM PUBLIC;
 GRANT ALL ON FUNCTION public.compact_lesson_component_positions() TO service_role;
+
+
+--
+-- Name: FUNCTION cleanup_empty_lesson_student_slide(); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.cleanup_empty_lesson_student_slide() FROM PUBLIC;
+GRANT ALL ON FUNCTION public.cleanup_empty_lesson_student_slide() TO service_role;
+
+
+--
+-- Name: FUNCTION enforce_lesson_student_screen_invariants(); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.enforce_lesson_student_screen_invariants() FROM PUBLIC;
+GRANT ALL ON FUNCTION public.enforce_lesson_student_screen_invariants() TO service_role;
 
 
 --
@@ -2312,12 +2958,27 @@ GRANT ALL ON FUNCTION public.parent_in_school(p_school_id uuid) TO service_role;
 
 
 --
+-- Name: FUNCTION delete_lesson_component(p_component_id uuid); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.delete_lesson_component(p_component_id uuid) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.delete_lesson_component(p_component_id uuid) TO authenticated;
+
+
+--
 -- Name: FUNCTION reorder_lesson_component(p_component_id uuid, p_new_position integer); Type: ACL; Schema: public; Owner: -
 --
 
 REVOKE ALL ON FUNCTION public.reorder_lesson_component(p_component_id uuid, p_new_position integer) FROM PUBLIC;
 GRANT ALL ON FUNCTION public.reorder_lesson_component(p_component_id uuid, p_new_position integer) TO authenticated;
-GRANT ALL ON FUNCTION public.reorder_lesson_component(p_component_id uuid, p_new_position integer) TO service_role;
+
+
+--
+-- Name: FUNCTION set_lesson_component_student_screen(p_component_id uuid, p_mode text, p_slide_id uuid); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.set_lesson_component_student_screen(p_component_id uuid, p_mode text, p_slide_id uuid) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.set_lesson_component_student_screen(p_component_id uuid, p_mode text, p_slide_id uuid) TO authenticated;
 
 
 --
@@ -2465,7 +3126,23 @@ GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE public.lesson TO authenticated;
 --
 
 GRANT ALL ON TABLE public.lesson_component TO service_role;
-GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE public.lesson_component TO authenticated;
+GRANT SELECT ON TABLE public.lesson_component TO authenticated;
+GRANT INSERT(lesson_id) ON TABLE public.lesson_component TO authenticated;
+GRANT INSERT(type_key) ON TABLE public.lesson_component TO authenticated;
+GRANT INSERT(schema_version) ON TABLE public.lesson_component TO authenticated;
+GRANT INSERT("position") ON TABLE public.lesson_component TO authenticated;
+GRANT INSERT(payload) ON TABLE public.lesson_component TO authenticated;
+GRANT INSERT(placement_config) ON TABLE public.lesson_component TO authenticated;
+GRANT UPDATE(payload) ON TABLE public.lesson_component TO authenticated;
+GRANT UPDATE(placement_config) ON TABLE public.lesson_component TO authenticated;
+
+
+--
+-- Name: TABLE lesson_student_slide; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON TABLE public.lesson_student_slide TO service_role;
+GRANT SELECT ON TABLE public.lesson_student_slide TO authenticated;
 
 
 --

@@ -26,6 +26,14 @@
 - `docs/architecture/lesson-workflow-model.md` — каноническая модель
   `Course → Lesson → ordered Components` и Student Screen projection.
 
+Актуальное решение о Student Screen зафиксировано 4 августа 2026 года в
+`lesson-workflow-model.md`: единый порядок остаётся у Lesson Components,
+а learner-visible компоненты явно группируются в упорядоченные
+`Student Screen Slides`. Slide не является Lesson Step и не имеет
+собственного content или component order. Если более ранняя формулировка
+этого документа описывает Student Screen как только filter-only список,
+применяется более позднее каноническое решение.
+
 Целевая система проектируется как новый продукт внутри существующего репозитория и существующего инфраструктурного контура. Разработка продолжается непосредственно в ветке `main`, а прикладная схема перестраивается в текущей базе данных. Отдельный репозиторий и отдельный Supabase-проект для V2 не создаются.
 
 Состояние V1 до начала реконструкции зафиксировано Git-ссылками и полным recovery snapshot. Старые прикладные модели, таблицы, миграции, маршруты, компоненты, fallback-данные и совместимость с предыдущей архитектурой не сохраняются в активной версии `main`, но исходное состояние остаётся доступным в архиве для полного восстановления.
@@ -1140,7 +1148,7 @@ AI:
 
 AI не выполняет SQL и не получает service-role credentials.
 
-Минимальный development/internal MCP первого milestone регистрирует ровно пять
+Минимальный development/internal MCP первого milestone регистрирует ровно шесть
 tools:
 
 ```text
@@ -1148,6 +1156,7 @@ course.create_draft
 course.get
 course.add_lesson
 lesson.add_component
+lesson.set_component_student_screen
 lesson.reorder_component
 ```
 
@@ -1543,13 +1552,13 @@ Header Course содержит:
 Для выбранной Lesson доступны:
 
 1. План урока — полный ordered list Components;
-2. Student Screen — learner-visible projection того же списка;
+2. Student Screen — learner-visible Slide projection того же списка;
 3. Homework — отдельный Lesson contract;
 4. future Schedule/session history и AI panel по мере реализации.
 
 Component добавляется из registry palette, редактируется, удаляется,
-перемещается во всём Lesson list и переключается между `staff_only` и
-`learner_visible`.
+перемещается во всём Lesson list и явно назначается на existing/new
+Student Screen Slide либо убирается с экрана.
 
 ## 71. Student experience
 
@@ -1902,8 +1911,9 @@ Playwright smoke tests
 
 - Component непосредственно принадлежит Lesson;
 - у Lesson один плотный ordered component list;
-- add/update/delete/reorder не требуют Step/Slide/group ID;
-- Student Screen сохраняет порядок после фильтра `learner_visible`;
+- add/update/delete/reorder не требуют Step/group ID; отдельная Student
+  Screen assignment command принимает existing Slide ID либо создаёт new Slide;
+- Student Screen сохраняет единый component order внутри упорядоченных Slides;
 - `staff_only` отсутствует в learner projection;
 - payload/placement проходят registry schema validation;
 - Component не может сослаться на чужой или pending CourseAsset;
@@ -2088,11 +2098,14 @@ endpoint.
 11. LessonSession отделена от Lesson.
 12. Один Lesson имеет несколько sessions.
 13. Lesson непосредственно владеет одним ordered list LessonComponent без
-    Step/root Step, Slide или compatibility group.
+    Step/root Step или compatibility group; Student Screen Slide остаётся
+    бесконтентной проекцией, а не второй иерархией урока.
 14. План урока показывает полный список, а Student Screen server projection —
-    только `learner_visible` Components в том же относительном порядке.
-15. Add/update/delete/reorder Component работают через `lessonId`/`componentId`
-    и сохраняют плотные уникальные позиции в пределах Lesson.
+    только явно назначенные Components в том же относительном порядке,
+    сгруппированные в ordered Slides.
+15. Add/update/delete/reorder/Student Screen assignment работают через
+    `lessonId`/`componentId` и сохраняют плотные уникальные позиции в Lesson и
+    монотонный Slide order.
 16. CourseAsset хранится в private Storage, проверяется по ownership и не
     объявляется проанализированным без фактического parsing pipeline.
 17. UI, application service, MCP и future AI используют единый code-first
@@ -2167,7 +2180,8 @@ endpoint.
 13. История принадлежит LearnerProfile.
 14. Course/Lesson можно удалить без потери истории.
 15. Lesson непосредственно содержит один ordered list Components; Step/root
-    Step/Slide не являются active domain entities.
+    Step не являются active domain entities, а Student Screen Slide является
+    только persisted projection без собственного content/order.
 16. CourseAsset является course-wide private attachment; Component может
     ссылаться на него только после ownership/status validation.
 17. Homework поддерживает common и learner override.

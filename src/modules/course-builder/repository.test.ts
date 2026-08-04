@@ -13,6 +13,7 @@ const OWNER_ACCOUNT_ID = "00000000-0000-4000-8000-000000000101";
 const COURSE_ID = "00000000-0000-4000-8000-000000001001";
 const LESSON_ID = "00000000-0000-4000-8000-000000002001";
 const COMPONENT_ID = "00000000-0000-4000-8000-000000004001";
+const SLIDE_ID = "00000000-0000-4000-8000-000000005001";
 const NOW = "2026-08-03T00:00:00.000Z";
 
 type CapturedRequest = {
@@ -68,10 +69,57 @@ function componentRow() {
     payload: { text: "Путь начинается с первого шага." },
     placement_config: { width: "content", textAlign: "left" },
     visibility: "learner_visible",
+    student_slide_id: SLIDE_ID,
     created_at: NOW,
     updated_at: NOW,
   };
 }
+
+test("getCourseWorkspace loads ordered Student Screen slides beside the canonical component list", async () => {
+  await withMockSupabase(
+    [
+      { payload: [courseRow()] },
+      {
+        payload: [
+          {
+            id: LESSON_ID,
+            course_id: COURSE_ID,
+            position: 1,
+            title: "Первый урок",
+            summary: "Комментарий преподавателя",
+            created_at: NOW,
+            updated_at: NOW,
+            components: [componentRow()],
+            studentSlides: [
+              {
+                id: SLIDE_ID,
+                lesson_id: LESSON_ID,
+                position: 1,
+                created_at: NOW,
+                updated_at: NOW,
+              },
+            ],
+          },
+        ],
+      },
+      { payload: [] },
+    ],
+    async (repository, requests) => {
+      const workspace = await repository.getCourseWorkspace(COURSE_ID);
+
+      assert.equal(workspace?.lessons[0]?.studentSlides[0]?.id, SLIDE_ID);
+      assert.equal(
+        workspace?.lessons[0]?.components[0]?.studentSlideId,
+        SLIDE_ID,
+      );
+      assert.match(
+        requests[1]?.url ?? "",
+        /components:lesson_component\(\*\).*studentSlides:lesson_student_slide\(\*\)/,
+      );
+      assert.equal(requests.length, 3);
+    },
+  );
+});
 
 async function withMockSupabase<T>(
   replies: MockReply[],
@@ -237,7 +285,6 @@ test("addComponent persists an ordered component directly under Lesson", async (
         schemaVersion: 1,
         payload: { text: "Путь начинается с первого шага." },
         placement: { width: "content", textAlign: "left" },
-        visibility: "learner_visible",
       });
 
       assert.equal(component.lessonId, LESSON_ID);
@@ -253,38 +300,75 @@ test("addComponent persists an ordered component directly under Lesson", async (
         position: 1,
         payload: { text: "Путь начинается с первого шага." },
         placement_config: { width: "content", textAlign: "left" },
-        visibility: "learner_visible",
       });
     },
   );
 });
 
-test("updateComponent persists a visibility-only toggle", async () => {
+test("updateComponent persists payload fields without changing Student Screen assignment", async () => {
   await withMockSupabase(
     [
       {
-        payload: [{ ...componentRow(), visibility: "staff_only" }],
+        payload: [{ ...componentRow(), payload: { text: "Новая цитата" } }],
       },
     ],
     async (repository, requests) => {
       const component = await repository.updateComponent({
         componentId: COMPONENT_ID,
-        visibility: "staff_only",
+        payload: { text: "Новая цитата" },
       });
 
-      assert.equal(component?.visibility, "staff_only");
+      assert.deepEqual(component?.payload, { text: "Новая цитата" });
       assert.equal(requests[0]?.method, "PATCH");
-      assert.deepEqual(requests[0]?.body, { visibility: "staff_only" });
+      assert.deepEqual(requests[0]?.body, {
+        payload: { text: "Новая цитата" },
+      });
     },
   );
 });
 
-test("reorderComponent refetches the full component after the narrow RPC", async () => {
+test("setComponentStudentScreen delegates existing/new/hide semantics to the atomic RPC", async () => {
   await withMockSupabase(
-    [
-      { payload: [{ component_id: COMPONENT_ID, position: 1 }] },
-      { payload: [componentRow()] },
-    ],
+    [{ payload: [componentRow()] }],
+    async (repository, requests) => {
+      const component = await repository.setComponentStudentScreen(
+        COMPONENT_ID,
+        { mode: "new" },
+      );
+
+      assert.equal(component?.studentSlideId, componentRow().student_slide_id);
+      assert.equal(
+        requests[0]?.url,
+        `${API_URL}/rest/v1/rpc/set_lesson_component_student_screen`,
+      );
+      assert.deepEqual(requests[0]?.body, {
+        p_component_id: COMPONENT_ID,
+        p_mode: "new",
+        p_slide_id: null,
+      });
+      assert.equal(requests.length, 1);
+    },
+  );
+});
+
+test("deleteComponent delegates cleanup and serialization to the atomic RPC", async () => {
+  await withMockSupabase([{ payload: true }], async (repository, requests) => {
+    assert.equal(await repository.deleteComponent(COMPONENT_ID), true);
+    assert.equal(
+      requests[0]?.url,
+      `${API_URL}/rest/v1/rpc/delete_lesson_component`,
+    );
+    assert.equal(requests[0]?.method, "POST");
+    assert.deepEqual(requests[0]?.body, {
+      p_component_id: COMPONENT_ID,
+    });
+    assert.equal(requests.length, 1);
+  });
+});
+
+test("reorderComponent maps the full component returned atomically by the RPC", async () => {
+  await withMockSupabase(
+    [{ payload: [componentRow()] }],
     async (repository, requests) => {
       const component = await repository.reorderComponent(COMPONENT_ID, 1);
 
@@ -300,10 +384,7 @@ test("reorderComponent refetches the full component after the narrow RPC", async
         p_component_id: COMPONENT_ID,
         p_new_position: 1,
       });
-      assert.match(
-        requests[1]?.url ?? "",
-        /lesson_component\?select=\*&id=eq\./,
-      );
+      assert.equal(requests.length, 1);
     },
   );
 });

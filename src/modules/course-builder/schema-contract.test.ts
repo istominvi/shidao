@@ -10,7 +10,19 @@ const migration = readFileSync(
   "supabase/migrations/20260804033421_course_lesson_components_remove_legacy_methodology.sql",
   "utf8",
 );
+const studentSlidesMigration = readFileSync(
+  "supabase/migrations/20260804044955_add_lesson_student_slides.sql",
+  "utf8",
+);
 const snapshot = readFileSync("supabase/schema/current-schema.sql", "utf8");
+
+function migrationFunction(name: string) {
+  const start = studentSlidesMigration.indexOf(`function public.${name}(`);
+  assert.notEqual(start, -1, `missing function ${name}`);
+  const end = studentSlidesMigration.indexOf("\n$$;", start);
+  assert.notEqual(end, -1, `unterminated function ${name}`);
+  return studentSlidesMigration.slice(start, end + 4);
+}
 
 const preservedBuilderTables = [
   "account",
@@ -19,6 +31,158 @@ const preservedBuilderTables = [
   "stored_file",
   "course_attachment",
 ] as const;
+
+test("Student Screen slides are one transactional forward migration", () => {
+  assert.match(studentSlidesMigration, /^begin;\n/);
+  assert.match(studentSlidesMigration, /\ncommit;\n$/);
+  assert.doesNotMatch(
+    studentSlidesMigration,
+    /drop\s+(?:table|function|schema)[^;]*\bcascade\b/i,
+  );
+
+  for (const fragment of [
+    "create table public.lesson_student_slide (",
+    "add column student_slide_id uuid null",
+    "default 'staff_only'",
+    "lesson_component_student_screen_assignment_check",
+    "foreign key (student_slide_id, lesson_id)",
+    "references public.lesson_student_slide(id, lesson_id)",
+    "alter table public.lesson_student_slide enable row level security",
+    "create policy lesson_student_slide_course_owner_select",
+  ]) {
+    assert.equal(
+      studentSlidesMigration.includes(fragment),
+      true,
+      `Student Screen migration missing ${fragment}`,
+    );
+  }
+
+  assert.match(snapshot, /CREATE TABLE public\.lesson_student_slide \(/);
+  assert.match(snapshot, /student_slide_id uuid/);
+  assert.match(snapshot, /visibility text DEFAULT 'staff_only'::text NOT NULL/);
+});
+
+test("slide backfill preserves old learner visibility without publishing private components", () => {
+  assert.match(
+    studentSlidesMigration,
+    /where component\.visibility = 'learner_visible'/,
+  );
+  assert.match(
+    studentSlidesMigration,
+    /and component\.visibility = 'learner_visible'/,
+  );
+  assert.match(
+    studentSlidesMigration,
+    /Existing learner-visible rows were preserved by the backfill/,
+  );
+  const assembler = migrationFunction("assemble_course_draft");
+  assert.match(assembler, /v_component -> 'placement'\n    \)/);
+  assert.doesNotMatch(assembler, /\bvisibility\b|\bstudent_slide_id\b/);
+});
+
+test("Student Screen assignment and reorder preserve monotonic slide order atomically", () => {
+  for (const fragment of [
+    "function public.set_lesson_component_student_screen(",
+    "function public.delete_lesson_component(",
+    "student_slide_target_out_of_order",
+    "student_slide_cannot_split_group",
+    "previous_slide_position > slide_position",
+    "cleanup_empty_lesson_student_slide",
+    "row_number() over (order by slide.position, slide.id)",
+    "v_clamped_slide_position",
+    "notify pgrst, 'reload schema'",
+  ]) {
+    assert.equal(
+      studentSlidesMigration.includes(fragment),
+      true,
+      `Student Screen invariant missing ${fragment}`,
+    );
+  }
+
+  for (const functionName of [
+    "set_lesson_component_student_screen",
+    "reorder_lesson_component",
+    "delete_lesson_component",
+  ]) {
+    const body = migrationFunction(functionName);
+    assert.match(body, /security definer/);
+    assert.match(body, /set search_path = ''/);
+    assert.match(body, /v_actor_user_id uuid := \(select auth\.uid\(\)\)/);
+    assert.match(body, /account\.auth_user_id = v_actor_user_id/);
+
+    const parentLock = body.indexOf("for update of lesson;");
+    const componentLock = body.indexOf("order by component.id\n  for update;");
+    const slideLock = body.indexOf("order by slide.id\n  for update;");
+    assert.equal(parentLock >= 0 && parentLock < componentLock, true);
+    assert.equal(componentLock < slideLock, true);
+  }
+
+  assert.match(
+    migrationFunction("set_lesson_component_student_screen"),
+    /if p_mode is null or p_mode not in \('hide', 'existing', 'new'\)/,
+  );
+  assert.match(
+    migrationFunction("reorder_lesson_component"),
+    /returns table \([\s\S]*?student_slide_id uuid[\s\S]*?where component\.id = p_component_id/,
+  );
+  assert.match(
+    migrationFunction("delete_lesson_component"),
+    /returns boolean[\s\S]*?get diagnostics v_deleted_count = row_count/,
+  );
+
+  assert.match(
+    studentSlidesMigration,
+    /grant execute on function public\.set_lesson_component_student_screen\([\s\S]*?\) to authenticated;/,
+  );
+  for (const functionName of [
+    "set_lesson_component_student_screen",
+    "reorder_lesson_component",
+    "delete_lesson_component",
+  ]) {
+    assert.doesNotMatch(
+      studentSlidesMigration,
+      new RegExp(
+        `grant execute on function public\\.${functionName}\\([\\s\\S]*?\\) to service_role;`,
+      ),
+    );
+  }
+  assert.match(
+    snapshot,
+    /CREATE FUNCTION public\.set_lesson_component_student_screen/,
+  );
+  assert.match(snapshot, /CREATE FUNCTION public\.delete_lesson_component/);
+});
+
+test("Student Screen table access is least-privilege and private by default", () => {
+  assert.match(
+    studentSlidesMigration,
+    /create policy lesson_component_staff_only_insert_guard[\s\S]*?as restrictive[\s\S]*?visibility = 'staff_only'[\s\S]*?student_slide_id is null/,
+  );
+  assert.match(
+    studentSlidesMigration,
+    /grant insert \([\s\S]*?lesson_id,[\s\S]*?placement_config[\s\S]*?\) on table public\.lesson_component to authenticated;/,
+  );
+  assert.match(
+    studentSlidesMigration,
+    /grant update \(payload, placement_config\)[\s\S]*?to authenticated;/,
+  );
+  assert.doesNotMatch(
+    studentSlidesMigration,
+    /grant (?:delete|update) on table public\.lesson_component to authenticated;/,
+  );
+  assert.match(
+    studentSlidesMigration,
+    /grant select on table public\.lesson_student_slide to authenticated;/,
+  );
+  assert.doesNotMatch(
+    studentSlidesMigration,
+    /grant (?:insert|update|delete) on table public\.lesson_student_slide to authenticated;/,
+  );
+  assert.match(
+    studentSlidesMigration,
+    /compact_lesson_component_positions\(\)[\s\S]*?if not exists \([\s\S]*?from public\.lesson as lesson/,
+  );
+});
 
 test("component-first cutover is one transactional forward change", () => {
   assert.match(migration, /^begin;\n/);

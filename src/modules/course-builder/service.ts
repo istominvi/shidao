@@ -10,6 +10,7 @@ import {
   parseContract,
   prepareCourseAttachmentInputSchema,
   reorderLessonComponentInputSchema,
+  setComponentStudentScreenInputSchema,
   updateLessonComponentInputSchema,
   updateLessonInputSchema,
   uuidSchema,
@@ -18,6 +19,7 @@ import {
   type CourseUpdateInput,
   type PrepareCourseAttachmentInput,
   type ReorderLessonComponentInput,
+  type SetComponentStudentScreenInput,
   type UpdateLessonComponentInput,
   type UpdateLessonInput,
 } from "./contracts";
@@ -43,7 +45,10 @@ import {
   type ComponentTypeKey,
   type LessonAddComponentInput,
 } from "./registry/contracts";
-import type { CourseBuilderRepository } from "./repository";
+import {
+  CourseBuilderRepositoryError,
+  type CourseBuilderRepository,
+} from "./repository";
 import {
   assertCourseAssetObjectExists,
   courseAssetExtension,
@@ -238,7 +243,6 @@ export function createCourseBuilderService(
       typeKey: ComponentTypeKey;
       payload: unknown;
       placement: unknown;
-      visibility: "learner_visible" | "staff_only";
     },
   ) {
     const definition = getComponentDefinition(input.typeKey);
@@ -252,7 +256,6 @@ export function createCourseBuilderService(
     lessonId: string,
     input: {
       typeKey: ComponentTypeKey;
-      visibility: "learner_visible" | "staff_only";
     },
     validated: Awaited<ReturnType<typeof validateComponentForLesson>>,
   ) {
@@ -262,7 +265,6 @@ export function createCourseBuilderService(
       schemaVersion: validated.definition.version,
       payload: validated.payload as Record<string, unknown>,
       placement: validated.placement as Record<string, unknown>,
-      visibility: input.visibility,
     });
   }
 
@@ -307,14 +309,23 @@ export function createCourseBuilderService(
         title: lesson.title,
         createdAt: lesson.createdAt,
         updatedAt: lesson.updatedAt,
-        components: lesson.components.filter(
-          (component) => component.visibility === "learner_visible",
-        ),
+        slides: lesson.studentSlides
+          .map((slide) => ({
+            ...slide,
+            components: lesson.components.filter(
+              (component) =>
+                component.visibility === "learner_visible" &&
+                component.studentSlideId === slide.id,
+            ),
+          }))
+          .filter((slide) => slide.components.length > 0),
       }));
       const learnerAttachmentIds = new Set(
         lessons.flatMap((lesson) =>
-          lesson.components.flatMap((component) =>
-            fileReferences(component.typeKey, component.payload),
+          lesson.slides.flatMap((slide) =>
+            slide.components.flatMap((component) =>
+              fileReferences(component.typeKey, component.payload),
+            ),
           ),
         ),
       );
@@ -417,14 +428,46 @@ export function createCourseBuilderService(
         ...(placement === undefined
           ? {}
           : { placement: placement as Record<string, unknown> }),
-        ...(input.visibility === undefined
-          ? {}
-          : { visibility: input.visibility }),
       });
       if (!updated) {
         throw new CourseBuilderAccessError("Компонент не найден.");
       }
       return updated;
+    },
+
+    async setComponentStudentScreen(
+      actor: CourseBuilderActor,
+      componentId: string,
+      rawInput: SetComponentStudentScreenInput | unknown,
+    ) {
+      await requireOwnedComponent(actor, componentId);
+      const input = parseContract(
+        setComponentStudentScreenInputSchema,
+        rawInput,
+      );
+      try {
+        const updated = await repository.setComponentStudentScreen(
+          componentId,
+          input,
+        );
+        if (!updated) {
+          throw new CourseBuilderAccessError("Компонент не найден.");
+        }
+        return updated;
+      } catch (error) {
+        if (
+          error instanceof CourseBuilderRepositoryError &&
+          /student_slide_(?:target_out_of_order|cannot_split_group|not_found)/.test(
+            error.message,
+          )
+        ) {
+          throw new CourseBuilderConflictError(
+            "Этот компонент нельзя поместить на выбранный слайд без нарушения порядка плана урока.",
+            "student_slide_order_conflict",
+          );
+        }
+        throw error;
+      }
     },
 
     async deleteComponent(actor: CourseBuilderActor, componentId: string) {

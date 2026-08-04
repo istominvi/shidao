@@ -8,15 +8,16 @@ import type {
   CourseSummary,
   CourseWorkspace,
   LessonComponent,
+  LessonStudentSlide,
   StoredFileStatus,
 } from "./domain";
-import type { ComponentVisibility } from "./component-visibility";
 import type {
   AddLessonInput,
   CourseDraftInput,
   CourseUpdateInput,
   PrepareCourseAttachmentInput,
   UpdateLessonInput,
+  SetComponentStudentScreenInput,
 } from "./contracts";
 import type { ComponentTypeKey } from "./registry/contracts";
 
@@ -63,8 +64,22 @@ type LessonComponentRow = {
   payload: JsonObject;
   placement_config: JsonObject;
   visibility: "learner_visible" | "staff_only";
+  student_slide_id: string | null;
   created_at: string;
   updated_at: string;
+};
+
+type LessonStudentSlideRow = {
+  id: string;
+  lesson_id: string;
+  position: number;
+  created_at: string;
+  updated_at: string;
+};
+
+type LessonWorkspaceRow = LessonRow & {
+  components: LessonComponentRow[];
+  studentSlides: LessonStudentSlideRow[];
 };
 
 type StoredFileRow = {
@@ -127,15 +142,17 @@ export interface CourseBuilderRepository {
     schemaVersion: number;
     payload: JsonObject;
     placement: JsonObject;
-    visibility: ComponentVisibility;
   }): Promise<LessonComponent>;
   getComponent(componentId: string): Promise<LessonComponent | null>;
   updateComponent(input: {
     componentId: string;
     payload?: JsonObject;
     placement?: JsonObject;
-    visibility?: ComponentVisibility;
   }): Promise<LessonComponent | null>;
+  setComponentStudentScreen(
+    componentId: string,
+    input: SetComponentStudentScreenInput,
+  ): Promise<LessonComponent | null>;
   deleteComponent(componentId: string): Promise<boolean>;
   reorderComponent(
     componentId: string,
@@ -192,6 +209,7 @@ function mapCourse(row: CourseRow, lessonCount = 0): CourseSummary {
 function mapLesson(
   row: LessonRow,
   components: LessonComponent[] = [],
+  studentSlides: LessonStudentSlide[] = [],
 ): CourseLesson {
   return {
     id: row.id,
@@ -200,6 +218,7 @@ function mapLesson(
     title: row.title,
     summary: row.summary ?? "",
     components,
+    studentSlides,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -215,6 +234,17 @@ function mapComponent(row: LessonComponentRow): LessonComponent {
     payload: row.payload,
     placement: row.placement_config,
     visibility: row.visibility,
+    studentSlideId: row.student_slide_id,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+function mapStudentSlide(row: LessonStudentSlideRow): LessonStudentSlide {
+  return {
+    id: row.id,
+    lessonId: row.lesson_id,
+    position: row.position,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -340,16 +370,9 @@ export function createCourseBuilderRepository(
       const course = courseRows[0];
       if (!course) return null;
 
-      const lessons = await request<LessonRow[]>(
-        `/rest/v1/lesson?select=*&course_id=eq.${encodeFilter(courseId)}&order=position.asc`,
+      const lessons = await request<LessonWorkspaceRow[]>(
+        `/rest/v1/lesson?select=*,components:lesson_component(*),studentSlides:lesson_student_slide(*)&course_id=eq.${encodeFilter(courseId)}&order=position.asc&components.order=position.asc&studentSlides.order=position.asc`,
       );
-      const lessonIds = lessons.map((lesson) => lesson.id);
-      const components =
-        lessonIds.length === 0
-          ? []
-          : await request<LessonComponentRow[]>(
-              `/rest/v1/lesson_component?select=*&lesson_id=in.(${inFilter(lessonIds)})&order=position.asc`,
-            );
       const links = await request<CourseAttachmentRow[]>(
         `/rest/v1/course_attachment?select=*&course_id=eq.${encodeFilter(courseId)}&order=created_at.asc`,
       );
@@ -361,14 +384,12 @@ export function createCourseBuilderRepository(
               `/rest/v1/stored_file?select=*&id=in.(${inFilter(fileIds)})&order=created_at.asc`,
             );
 
-      const componentsByLesson = new Map<string, LessonComponent[]>();
-      for (const component of components) {
-        const list = componentsByLesson.get(component.lesson_id) ?? [];
-        list.push(mapComponent(component));
-        componentsByLesson.set(component.lesson_id, list);
-      }
       const mappedLessons = lessons.map((lesson) =>
-        mapLesson(lesson, componentsByLesson.get(lesson.id) ?? []),
+        mapLesson(
+          lesson,
+          lesson.components.map(mapComponent),
+          lesson.studentSlides.map(mapStudentSlide),
+        ),
       );
 
       return {
@@ -495,7 +516,6 @@ export function createCourseBuilderRepository(
             position,
             payload: input.payload,
             placement_config: input.placement,
-            visibility: input.visibility,
           },
         },
       );
@@ -515,7 +535,6 @@ export function createCourseBuilderRepository(
       if (input.payload !== undefined) body.payload = input.payload;
       if (input.placement !== undefined)
         body.placement_config = input.placement;
-      if (input.visibility !== undefined) body.visibility = input.visibility;
       const rows = await request<LessonComponentRow[]>(
         `/rest/v1/lesson_component?id=eq.${encodeFilter(input.componentId)}`,
         { method: "PATCH", body },
@@ -523,27 +542,38 @@ export function createCourseBuilderRepository(
       return rows[0] ? mapComponent(rows[0]) : null;
     },
 
-    async deleteComponent(componentId) {
+    async setComponentStudentScreen(componentId, input) {
       const rows = await request<LessonComponentRow[]>(
-        `/rest/v1/lesson_component?id=eq.${encodeFilter(componentId)}`,
-        { method: "DELETE" },
+        "/rest/v1/rpc/set_lesson_component_student_screen",
+        {
+          method: "POST",
+          body: {
+            p_component_id: componentId,
+            p_mode: input.mode,
+            p_slide_id: input.mode === "existing" ? input.slideId : null,
+          },
+        },
       );
-      return rows.length > 0;
+      return rows[0] ? mapComponent(rows[0]) : null;
+    },
+
+    async deleteComponent(componentId) {
+      return request<boolean>("/rest/v1/rpc/delete_lesson_component", {
+        method: "POST",
+        body: { p_component_id: componentId },
+      });
     },
 
     async reorderComponent(componentId, toPosition) {
-      const reordered = await request<
-        Array<{ component_id: string; position: number }>
-      >("/rest/v1/rpc/reorder_lesson_component", {
-        method: "POST",
-        body: {
-          p_component_id: componentId,
-          p_new_position: toPosition,
-        },
-      });
-      if (reordered.length === 0) return null;
       const rows = await request<LessonComponentRow[]>(
-        `/rest/v1/lesson_component?select=*&id=eq.${encodeFilter(componentId)}&limit=1`,
+        "/rest/v1/rpc/reorder_lesson_component",
+        {
+          method: "POST",
+          body: {
+            p_component_id: componentId,
+            p_new_position: toPosition,
+          },
+        },
       );
       return rows[0] ? mapComponent(rows[0]) : null;
     },

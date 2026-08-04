@@ -4,6 +4,7 @@ import {
   addLessonInputSchema,
   courseDraftInputSchema,
   reorderLessonComponentInputSchema,
+  setComponentStudentScreenCommandInputSchema,
   uuidSchema,
 } from "../contracts";
 import type { CourseBuilderActor } from "../domain";
@@ -19,6 +20,7 @@ export const courseBuilderMcpToolNames = [
   "course.get",
   "course.add_lesson",
   "lesson.add_component",
+  "lesson.set_component_student_screen",
   "lesson.reorder_component",
 ] as const;
 
@@ -47,6 +49,8 @@ export const courseBuilderMcpInputContracts = {
   "course.get": courseGetMcpInputSchema,
   "course.add_lesson": courseAddLessonMcpInputSchema,
   "lesson.add_component": lessonAddComponentInputSchema,
+  "lesson.set_component_student_screen":
+    setComponentStudentScreenCommandInputSchema,
   "lesson.reorder_component": lessonReorderComponentMcpInputSchema,
 } as const satisfies Record<CourseBuilderMcpToolName, z.ZodType>;
 
@@ -76,8 +80,9 @@ export const courseBuilderMcpToolDescriptions = {
   "course.create_draft": "Создать черновик курса преподавателя.",
   "course.get": "Получить доступный преподавателю Course workspace.",
   "course.add_lesson": "Добавить Lesson в Course.",
-  "lesson.add_component":
-    "Добавить компонент registry прямо в Lesson.",
+  "lesson.add_component": "Добавить компонент registry прямо в Lesson.",
+  "lesson.set_component_student_screen":
+    "Скрыть компонент или назначить его на существующий либо новый слайд Student Screen.",
   "lesson.reorder_component":
     "Переместить компонент на новую позицию внутри Lesson.",
 } as const satisfies Record<CourseBuilderMcpToolName, string>;
@@ -88,6 +93,7 @@ export type CourseBuilderMcpApplicationService = Pick<
   | "getCourse"
   | "addLesson"
   | "addComponent"
+  | "setComponentStudentScreen"
   | "reorderComponent"
 >;
 
@@ -251,6 +257,21 @@ export function createCourseBuilderMcpTools({
         execute("lesson.add_component", () => {
           const input = lessonAddComponentInputSchema.parse(rawInput);
           return service.addComponent(actor, input);
+        }),
+    },
+    {
+      name: "lesson.set_component_student_screen",
+      description:
+        courseBuilderMcpToolDescriptions["lesson.set_component_student_screen"],
+      inputContract:
+        courseBuilderMcpInputContracts["lesson.set_component_student_screen"],
+      inputSchema:
+        courseBuilderMcpInputJsonSchemas["lesson.set_component_student_screen"],
+      execute: (rawInput) =>
+        execute("lesson.set_component_student_screen", () => {
+          const { componentId, ...input } =
+            setComponentStudentScreenCommandInputSchema.parse(rawInput);
+          return service.setComponentStudentScreen(actor, componentId, input);
         }),
     },
     {

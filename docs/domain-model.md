@@ -7,7 +7,8 @@ Account
 └── Course
     ├── CourseAttachment → StoredFile → private Storage object
     └── Lesson 1..N
-        └── LessonComponent 1..N
+        ├── LessonComponent 1..N
+        └── StudentScreenSlide 1..N → component assignments
 ```
 
 - `Account` is the ownership identity linked one-to-one to `auth.users`.
@@ -15,7 +16,10 @@ Account
 - `Lesson` is an ordered Course document with a required title and an optional
   teacher comment (`summary`).
 - `LessonComponent` belongs directly to Lesson and has one dense position,
-  registry type/version, payload, placement, and visibility.
+  registry type/version, payload, placement, visibility, and an optional
+  Student Screen Slide assignment.
+- `StudentScreenSlide` is an ordered presentation grouping. It has no payload,
+  title, instructions, or independent component order and is not a Lesson Step.
 - `CourseAttachment` links a Course to `StoredFile`; the object itself is kept
   in the existing private `course-assets` bucket.
 
@@ -25,8 +29,9 @@ fixture fallback, or per-lesson hardcoded renderer.
 ## Authoring projections
 
 - **План урока** returns all Lesson components in `position` order.
-- **Экран ученика** returns only `learner_visible` components while preserving
-  relative order.
+- **Экран ученика** returns only explicitly assigned components, grouped into
+  ordered Slides while preserving the one canonical component order. New
+  components are teacher-only until explicitly assigned.
 - **Домашнее задание** is a separate Lesson surface and is not represented by a
   component group. Persisted homework is a later slice.
 - **Материалы курса** is a Course-level library, not a Lesson tab.

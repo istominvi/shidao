@@ -48,7 +48,7 @@ function serviceDouble(
   } as CourseBuilderApplicationService;
 }
 
-test("stdio MCP advertises exactly five tools with canonical JSON schemas", async () => {
+test("stdio MCP advertises exactly six tools with canonical JSON schemas", async () => {
   let contextCalls = 0;
   const { client, server } = await connectTestClient({
     resolveContext: async () => {

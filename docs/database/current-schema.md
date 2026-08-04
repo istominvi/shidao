@@ -1,7 +1,7 @@
 # Current database schema (agent-first guide)
 
-This guide describes the current ShiDao database model after migration
-`20260804033421_course_lesson_components_remove_legacy_methodology.sql`.
+This guide describes the current ShiDao database model after migrations through
+`20260804044955_add_lesson_student_slides.sql`.
 
 ## Read order for DB tasks
 
@@ -32,22 +32,27 @@ This guide describes the current ShiDao database model after migration
 - `account` — one application Account per `auth.users` row. Course ownership is Account-based.
 - `course` — Account-owned editable Course draft with title, subject, goal, level, audience description, target lesson count, teacher preferences, and assembly/archive timestamps.
 - `lesson` — an ordered Course lesson. Its title is intrinsic and required; it is not represented by a component.
-- `lesson_component` — ordered component directly owned by a Lesson. It stores the code-first registry key/version, payload, placement, and visibility.
+- `lesson_component` — ordered component directly owned by a Lesson. It stores the code-first registry key/version, payload, placement, visibility, and nullable Student Screen slide assignment.
+- `lesson_student_slide` — ordered presentation grouping for learner-visible components of one Lesson. It does not own payload or a second component order.
 - `stored_file` — Account-owned metadata for an object in the private `course-assets` bucket (`pending | ready`).
 - `course_attachment` — ownership-checked relation between a Course and a stored file.
 
-There is no active `lesson_step` layer. Teacher Plan and Student Screen read the same ordered Lesson components; Student Screen filters their visibility.
+There is no active `lesson_step` layer. Teacher Plan and Student Screen read the same ordered Lesson components; Student Screen groups only explicitly assigned learner-visible components into presentation slides.
 
 ## Course document invariants
 
 - Lesson positions are positive and unique per Course through a deferrable constraint. Deletes compact positions with `compact_course_lesson_positions()`.
 - Component positions are positive and unique per Lesson through a deferrable constraint. Deletes compact positions with `compact_lesson_component_positions()`.
-- `reorder_lesson_component(component_id, new_position)` changes component order atomically under caller RLS.
+- `reorder_lesson_component(component_id, new_position)` changes component order atomically, clamps a moved learner-visible component to the legal neighboring slide range, and returns that complete persisted Component row without a follow-up read.
+- `delete_lesson_component(component_id)` serializes on the parent Lesson before deleting, so component-position compaction and empty-slide cleanup cannot race each other.
 - Supported component type keys remain code-first and are not a database enum.
 - Component visibility is exactly `staff_only | learner_visible`:
-  - `staff_only` is available on the teacher surface and excluded from Student Screen;
-  - `learner_visible` is available on both teacher and learner surfaces.
-- `course.assembled_at` records deterministic first-draft assembly. `assemble_course_draft(course_id, lesson_title, lesson_summary, components)` persists one Lesson and its validated component list atomically. Idempotent responses contain `courseId`, `lessonIds`, `componentIds`, and `alreadyAssembled`; there are no Step arguments or `stepIds`.
+  - `staff_only` is the default, has no slide assignment, is available on the teacher surface, and is excluded from Student Screen;
+  - `learner_visible` is assigned to exactly one Slide from the same Lesson and is available on both teacher and learner surfaces.
+- Slide positions are positive, dense, and unique per Lesson. Empty slides are removed automatically.
+- Slide positions cannot decrease while components are traversed in `lesson_component.position` order. `set_lesson_component_student_screen(component_id, mode, slide_id)` atomically hides a component, assigns a legal existing Slide, or inserts a new legal Slide and returns the complete persisted Component row from the same statement. A new Slide cannot split predecessor and successor components already grouped on one Slide.
+- `course.assembled_at` records deterministic first-draft assembly. `assemble_course_draft(course_id, lesson_title, lesson_summary, components)` persists one Lesson and its validated component list atomically. New assembled components are `staff_only` and unassigned until the teacher explicitly publishes them. Idempotent responses contain `courseId`, `lessonIds`, `componentIds`, and `alreadyAssembled`; there are no Step arguments or `stepIds`.
+- The slide migration backfills every pre-existing learner-visible component to Slide 1 of its Lesson, preserving the previous learner projection without publishing any previously private component.
 - The Step-removal migration preserves every original component ID and field, then deterministically flattens order by Step position and component position.
 - For a former multi-Step lesson, or a former Step with non-empty instructions, the migration materializes:
   - Step title as a learner-visible `heading`;
@@ -87,14 +92,18 @@ The migration also removes `class.methodology_id`, its invariant trigger/functio
 
 ## Row-level security (RLS)
 
-RLS is enabled on 14 of 16 active application tables. `user_preference` and `user_security` remain reachable through their existing security-definer boundaries rather than direct table policies.
+RLS is enabled on 15 of 17 active application tables. `user_preference` and `user_security` remain reachable through their existing security-definer boundaries rather than direct table policies.
 
 - Identity/school membership policies remain unchanged.
-- Course, Lesson, Lesson Component, file, and attachment tables grant owner-scoped CRUD to `authenticated`.
+- Course, Lesson, file, and attachment tables grant owner-scoped CRUD to `authenticated`.
+- Lesson Components are directly readable and insertable only through their authoring columns; direct updates are limited to `payload` and `placement_config`. Direct component deletion, position/visibility/slide updates, and all direct Slide mutations are revoked.
+- A restrictive insert policy additionally requires every directly inserted Component to use the database defaults `staff_only` and `student_slide_id = null`.
 - `account` is self-readable but cannot be inserted, updated, or deleted through an ordinary user JWT.
 - `lesson_component_course_owner_all` resolves ownership through Lesson → Course → Account.
+- `lesson_student_slide_course_owner_select` uses the same Lesson → Course → Account ownership chain for read access.
 - `anon` has no privileges on V2 document/file tables.
-- `assemble_course_draft` and `reorder_lesson_component` are `SECURITY INVOKER`, so owner RLS remains active.
+- `assemble_course_draft` remains `SECURITY INVOKER`. Student Screen assignment, reorder, and component deletion use narrowly granted `SECURITY DEFINER` RPCs with an empty `search_path`, an explicit `auth.uid()` → Account → Course ownership check, and one Lesson-first lock order. Their direct table mutations remain unavailable to an authenticated JWT.
+- The slide migration sends a transactional PostgREST schema-cache reload notification so the new relationship and RPC return shapes are discovered after commit.
 - The private `course-assets` bucket remains protected by owner policies on `storage.objects`.
 
 ## Compatibility notes

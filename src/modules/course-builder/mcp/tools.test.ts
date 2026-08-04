@@ -36,11 +36,13 @@ function createServiceDouble(calls: RecordedCall[]) {
     getCourse: (...args: unknown[]) => record("getCourse", args),
     addLesson: (...args: unknown[]) => record("addLesson", args),
     addComponent: (...args: unknown[]) => record("addComponent", args),
+    setComponentStudentScreen: (...args: unknown[]) =>
+      record("setComponentStudentScreen", args),
     reorderComponent: (...args: unknown[]) => record("reorderComponent", args),
   } as unknown as CourseBuilderMcpApplicationService;
 }
 
-test("adapter exposes exactly the five internal milestone tools", () => {
+test("adapter exposes the internal Course Builder tools", () => {
   const tools = createCourseBuilderMcpTools({
     service: createServiceDouble([]),
     actor,
@@ -80,13 +82,25 @@ test("JSON Schema is generated from the canonical application and registry contr
   );
   assert.match(addComponentJson, /lessonId/);
   assert.doesNotMatch(addComponentJson, /lessonStepId/);
-  assert.match(addComponentJson, /staff_only/);
+  assert.doesNotMatch(
+    addComponentJson,
+    /visibility|learner_visible|staff_only/,
+  );
   for (const typeKey of Object.keys(componentRegistry)) {
     assert.match(addComponentJson, new RegExp(`"const":"${typeKey}"`));
   }
   assert.match(addComponentJson, /storedFileId/);
   assert.match(addComponentJson, /showResults/);
   assert.match(addComponentJson, /shuffle/);
+
+  const studentScreenJson = JSON.stringify(
+    courseBuilderMcpInputJsonSchemas["lesson.set_component_student_screen"],
+  );
+  assert.match(studentScreenJson, /componentId/);
+  assert.match(studentScreenJson, /existing/);
+  assert.match(studentScreenJson, /slideId/);
+  assert.match(studentScreenJson, /new/);
+  assert.match(studentScreenJson, /hide/);
 });
 
 test("each tool validates input and delegates once with the injected actor", async () => {
@@ -115,6 +129,10 @@ test("each tool validates input and delegates once with the injected actor", asy
     payload: componentRegistry.heading.defaultPayload,
     placement: componentRegistry.heading.defaultPlacement,
   });
+  await byName.get("lesson.set_component_student_screen")?.execute({
+    componentId: COMPONENT_ID,
+    mode: "new",
+  });
   await byName.get("lesson.reorder_component")?.execute({
     componentId: COMPONENT_ID,
     toPosition: 2,
@@ -127,6 +145,7 @@ test("each tool validates input and delegates once with the injected actor", asy
       "getCourse",
       "addLesson",
       "addComponent",
+      "setComponentStudentScreen",
       "reorderComponent",
     ],
   );
@@ -153,9 +172,9 @@ test("each tool validates input and delegates once with the injected actor", asy
     typeKey: "heading",
     payload: componentRegistry.heading.defaultPayload,
     placement: componentRegistry.heading.defaultPlacement,
-    visibility: "staff_only",
   });
-  assert.deepEqual(calls[4]?.args.slice(1), [COMPONENT_ID, { toPosition: 2 }]);
+  assert.deepEqual(calls[4]?.args.slice(1), [COMPONENT_ID, { mode: "new" }]);
+  assert.deepEqual(calls[5]?.args.slice(1), [COMPONENT_ID, { toPosition: 2 }]);
 });
 
 test("invalid tool input never reaches the application service", async () => {

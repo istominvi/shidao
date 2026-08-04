@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { componentVisibilitySchema } from "./component-visibility";
 
 export const COURSE_ASSET_BUCKET = "course-assets";
 export const COURSE_ASSET_MAX_BYTES = 10 * 1024 * 1024;
@@ -60,14 +59,11 @@ export const updateLessonComponentInputSchema = z
   .object({
     payload: z.unknown().optional(),
     placement: z.unknown().optional(),
-    visibility: componentVisibilitySchema.optional(),
   })
+  .strict()
   .refine(
-    (input) =>
-      input.payload !== undefined ||
-      input.placement !== undefined ||
-      input.visibility !== undefined,
-    { message: "Нужно передать payload, placement или visibility." },
+    (input) => input.payload !== undefined || input.placement !== undefined,
+    { message: "Нужно передать payload или placement." },
   );
 
 export type UpdateLessonComponentInput = z.infer<
@@ -80,6 +76,32 @@ export const reorderLessonComponentInputSchema = z.object({
 
 export type ReorderLessonComponentInput = z.infer<
   typeof reorderLessonComponentInputSchema
+>;
+
+function createComponentStudentScreenInputSchema<TShape extends z.ZodRawShape>(
+  commonShape: TShape,
+) {
+  return z.discriminatedUnion("mode", [
+    z.object({ ...commonShape, mode: z.literal("hide") }).strict(),
+    z
+      .object({
+        ...commonShape,
+        mode: z.literal("existing"),
+        slideId: z.uuid(),
+      })
+      .strict(),
+    z.object({ ...commonShape, mode: z.literal("new") }).strict(),
+  ]);
+}
+
+export const setComponentStudentScreenInputSchema =
+  createComponentStudentScreenInputSchema({});
+
+export const setComponentStudentScreenCommandInputSchema =
+  createComponentStudentScreenInputSchema({ componentId: z.uuid() });
+
+export type SetComponentStudentScreenInput = z.infer<
+  typeof setComponentStudentScreenInputSchema
 >;
 
 export const prepareCourseAttachmentInputSchema = z.object({
@@ -124,10 +146,11 @@ export class CourseBuilderAccessError extends Error {
 }
 
 export class CourseBuilderConflictError extends Error {
-  readonly code = "conflict";
+  readonly code: string;
 
-  constructor(message: string) {
+  constructor(message: string, code = "conflict") {
     super(message);
     this.name = "CourseBuilderConflictError";
+    this.code = code;
   }
 }

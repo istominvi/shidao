@@ -18,5 +18,6 @@ enabled_tools = [
   "course.get",
   "course.add_lesson",
   "lesson.add_component",
+  "lesson.set_component_student_screen",
   "lesson.reorder_component",
 ]

@@ -1,8 +1,4 @@
 import { z } from "zod";
-import {
-  componentVisibilitySchema,
-  type ComponentVisibility,
-} from "../component-visibility";
 
 export const componentTypeKeys = [
   "heading",
@@ -530,7 +526,6 @@ export type LessonAddComponentInput = {
     typeKey: TKey;
     payload: ComponentPayload<TKey>;
     placement: ComponentPlacement<TKey>;
-    visibility: ComponentVisibility;
   };
 }[ComponentTypeKey];
 
@@ -542,7 +537,6 @@ const addComponentVariantSchemas = componentTypeKeys.map((typeKey) => {
       typeKey: z.literal(typeKey),
       payload: definition.payloadSchema,
       placement: definition.placementSchema,
-      visibility: componentVisibilitySchema.default("staff_only"),
     })
     .strict();
 });

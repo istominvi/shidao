@@ -8,6 +8,7 @@ import {
   type CourseDraftInput,
   type CourseUpdateInput,
   type PrepareCourseAttachmentInput,
+  type SetComponentStudentScreenInput,
   type UpdateLessonInput,
 } from "./contracts";
 import type {
@@ -18,12 +19,16 @@ import type {
   CourseSummary,
   CourseWorkspace,
   LessonComponent,
+  LessonStudentSlide,
 } from "./domain";
 import {
   getComponentDefinition,
   type ComponentTypeKey,
 } from "./registry/contracts";
-import type { CourseBuilderRepository } from "./repository";
+import {
+  CourseBuilderRepositoryError,
+  type CourseBuilderRepository,
+} from "./repository";
 import { createCourseBuilderService } from "./service";
 
 const NOW = "2026-08-03T00:00:00.000Z";
@@ -78,11 +83,13 @@ class InMemoryCourseBuilderRepository implements CourseBuilderRepository {
   readonly courses = new Map<string, CourseSummary>();
   readonly lessons = new Map<string, CourseLesson>();
   readonly components = new Map<string, LessonComponent>();
+  readonly studentSlides = new Map<string, LessonStudentSlide>();
   readonly assets = new Map<string, StoredAssetRecord>();
   readonly courseAttachments = new Map<string, Set<string>>();
   readonly calls = {
     addComponent: 0,
     updateComponent: 0,
+    setComponentStudentScreen: 0,
     reorderComponent: 0,
     assembleDraft: 0,
     deletePendingAttachment: 0,
@@ -91,7 +98,6 @@ class InMemoryCourseBuilderRepository implements CourseBuilderRepository {
     componentId: string;
     payload?: Record<string, unknown>;
     placement?: Record<string, unknown>;
-    visibility?: "learner_visible" | "staff_only";
   } | null = null;
 
   private sequence = 1_000;
@@ -110,6 +116,12 @@ class InMemoryCourseBuilderRepository implements CourseBuilderRepository {
   private componentsForLesson(lessonId: string) {
     return [...this.components.values()]
       .filter((component) => component.lessonId === lessonId)
+      .sort((left, right) => left.position - right.position);
+  }
+
+  private studentSlidesForLesson(lessonId: string) {
+    return [...this.studentSlides.values()]
+      .filter((slide) => slide.lessonId === lessonId)
       .sort((left, right) => left.position - right.position);
   }
 
@@ -135,6 +147,7 @@ class InMemoryCourseBuilderRepository implements CourseBuilderRepository {
         payload: { ...component.payload },
         placement: { ...component.placement },
       })),
+      studentSlides: this.studentSlidesForLesson(lesson.id),
     }));
     const attachments = [...(this.courseAttachments.get(courseId) ?? [])]
       .map((assetId) => this.assets.get(assetId)?.asset)
@@ -182,7 +195,6 @@ class InMemoryCourseBuilderRepository implements CourseBuilderRepository {
       const component = await this.addComponent({
         lessonId: lesson.id,
         ...planned,
-        visibility: "learner_visible",
       });
       componentIds.push(component.id);
     }
@@ -206,11 +218,12 @@ class InMemoryCourseBuilderRepository implements CourseBuilderRepository {
       title: input.title,
       summary: input.summary,
       components: [],
+      studentSlides: [],
       createdAt: NOW,
       updatedAt: NOW,
     };
     this.lessons.set(lesson.id, lesson);
-    return { ...lesson, components: [] };
+    return { ...lesson, components: [], studentSlides: [] };
   }
 
   async getLesson(lessonId: string) {
@@ -233,6 +246,9 @@ class InMemoryCourseBuilderRepository implements CourseBuilderRepository {
     for (const component of this.componentsForLesson(lessonId)) {
       this.components.delete(component.id);
     }
+    for (const slide of this.studentSlidesForLesson(lessonId)) {
+      this.studentSlides.delete(slide.id);
+    }
     return true;
   }
 
@@ -242,7 +258,6 @@ class InMemoryCourseBuilderRepository implements CourseBuilderRepository {
     schemaVersion: number;
     payload: Record<string, unknown>;
     placement: Record<string, unknown>;
-    visibility: "learner_visible" | "staff_only";
   }) {
     this.calls.addComponent += 1;
     const component: LessonComponent = {
@@ -253,7 +268,8 @@ class InMemoryCourseBuilderRepository implements CourseBuilderRepository {
       position: this.componentsForLesson(input.lessonId).length + 1,
       payload: { ...input.payload },
       placement: { ...input.placement },
-      visibility: input.visibility,
+      visibility: "staff_only",
+      studentSlideId: null,
       createdAt: NOW,
       updatedAt: NOW,
     };
@@ -270,7 +286,6 @@ class InMemoryCourseBuilderRepository implements CourseBuilderRepository {
     componentId: string;
     payload?: Record<string, unknown>;
     placement?: Record<string, unknown>;
-    visibility?: "learner_visible" | "staff_only";
   }) {
     const component = this.components.get(input.componentId);
     if (!component) return null;
@@ -280,7 +295,68 @@ class InMemoryCourseBuilderRepository implements CourseBuilderRepository {
       ...component,
       payload: input.payload ?? component.payload,
       placement: input.placement ?? component.placement,
-      visibility: input.visibility ?? component.visibility,
+      updatedAt: NOW,
+    };
+    this.components.set(component.id, updated);
+    return { ...updated };
+  }
+
+  async setComponentStudentScreen(
+    componentId: string,
+    input: SetComponentStudentScreenInput,
+  ) {
+    const component = this.components.get(componentId);
+    if (!component) return null;
+    this.calls.setComponentStudentScreen += 1;
+
+    if (input.mode === "hide") {
+      const previousSlideId = component.studentSlideId;
+      const updated = {
+        ...component,
+        visibility: "staff_only" as const,
+        studentSlideId: null,
+        updatedAt: NOW,
+      };
+      this.components.set(component.id, updated);
+      if (
+        previousSlideId &&
+        ![...this.components.values()].some(
+          (candidate) => candidate.studentSlideId === previousSlideId,
+        )
+      ) {
+        this.studentSlides.delete(previousSlideId);
+        this.studentSlidesForLesson(component.lessonId).forEach(
+          (slide, index) =>
+            this.studentSlides.set(slide.id, {
+              ...slide,
+              position: index + 1,
+            }),
+        );
+      }
+      return { ...updated };
+    }
+
+    let slideId: string;
+    if (input.mode === "existing") {
+      const slide = this.studentSlides.get(input.slideId);
+      if (!slide || slide.lessonId !== component.lessonId) return null;
+      slideId = slide.id;
+    } else {
+      const slide: LessonStudentSlide = {
+        id: this.createId(),
+        lessonId: component.lessonId,
+        position: this.studentSlidesForLesson(component.lessonId).length + 1,
+        createdAt: NOW,
+        updatedAt: NOW,
+      };
+      this.studentSlides.set(slide.id, slide);
+      slideId = slide.id;
+    }
+
+    const updated = {
+      ...component,
+      visibility: "learner_visible" as const,
+      studentSlideId: slideId,
       updatedAt: NOW,
     };
     this.components.set(component.id, updated);
@@ -545,9 +621,14 @@ test("deterministic assembler is idempotent and describes attachments honestly",
     serializedPreview,
     /Начинайте с короткого устного разогрева/,
   );
-  assert.deepEqual(
-    studentPreview.lessons[0]?.components.map((component) => component.id),
-    workspace.lessons[0]?.components.map((component) => component.id),
+  assert.deepEqual(studentPreview.lessons[0]?.slides, []);
+  assert.equal(
+    workspace.lessons[0]?.components.every(
+      (component) =>
+        component.visibility === "staff_only" &&
+        component.studentSlideId === null,
+    ),
+    true,
   );
 });
 
@@ -684,16 +765,14 @@ test("component add/update/reorder share registry validation and ownership", asy
   });
   assert.deepEqual(updated.placement, { width: "wide", textAlign: "center" });
 
-  const learnerVisible = await harness.service.updateComponent(
+  const learnerVisible = await harness.service.setComponentStudentScreen(
     alice,
     quote.id,
-    { visibility: "learner_visible" },
+    { mode: "new" },
   );
   assert.equal(learnerVisible.visibility, "learner_visible");
-  assert.deepEqual(harness.repository.lastComponentUpdate, {
-    componentId: quote.id,
-    visibility: "learner_visible",
-  });
+  assert.notEqual(learnerVisible.studentSlideId, null);
+  assert.equal(harness.repository.calls.setComponentStudentScreen, 1);
 
   const updateCalls = harness.repository.calls.updateComponent;
   await assert.rejects(() =>
@@ -718,6 +797,38 @@ test("component add/update/reorder share registry validation and ownership", asy
         payload: { text: "Чужое изменение" },
       }),
     (error: unknown) => error instanceof CourseBuilderAccessError,
+  );
+});
+
+test("illegal Student Screen target becomes a stable friendly conflict", async () => {
+  const harness = createHarness();
+  const course = await harness.service.createDraft(alice, courseInput());
+  const lesson = await createLesson(harness, alice, course.id);
+  const definition = getComponentDefinition("heading");
+  const component = await harness.service.addComponent(alice, {
+    lessonId: lesson.id,
+    typeKey: "heading",
+    payload: definition.defaultPayload,
+    placement: definition.defaultPlacement,
+  });
+  harness.repository.setComponentStudentScreen = async () => {
+    throw new CourseBuilderRepositoryError(
+      "student_slide_target_out_of_order",
+      400,
+      "23514",
+    );
+  };
+
+  await assert.rejects(
+    () =>
+      harness.service.setComponentStudentScreen(alice, component.id, {
+        mode: "existing",
+        slideId: uuid(9_999),
+      }),
+    (error: unknown) =>
+      error instanceof CourseBuilderConflictError &&
+      error.code === "student_slide_order_conflict" &&
+      /порядка плана урока/.test(error.message),
   );
 });
 
@@ -797,11 +908,11 @@ test("student projection excludes staff-only components, comments, and their sig
     course.id,
   );
   assert.equal(hiddenPreview.attachments.length, 0);
-  assert.equal(hiddenPreview.lessons[0]?.components.length, 0);
+  assert.equal(hiddenPreview.lessons[0]?.slides.length, 0);
   assert.doesNotMatch(JSON.stringify(hiddenPreview), /Не показывать ученику/);
 
-  await harness.service.updateComponent(alice, image.id, {
-    visibility: "learner_visible",
+  await harness.service.setComponentStudentScreen(alice, image.id, {
+    mode: "new",
   });
   const visiblePreview = await harness.service.getStudentPreview(
     alice,
@@ -811,7 +922,10 @@ test("student projection excludes staff-only components, comments, and their sig
     visiblePreview.attachments.map((asset) => asset.id),
     [prepared.asset.id],
   );
-  assert.equal(visiblePreview.lessons[0]?.components[0]?.id, image.id);
+  assert.equal(
+    visiblePreview.lessons[0]?.slides[0]?.components[0]?.id,
+    image.id,
+  );
 });
 
 test("attachment operations deny cross-course references", async () => {

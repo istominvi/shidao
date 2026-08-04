@@ -22,7 +22,8 @@ export function StudentScreenPreview({
   initialLessonId,
 }: StudentScreenPreviewProps) {
   const [course, setCourse] = useState<StudentScreenCourse | null>(null);
-  const [activeIndex, setActiveIndex] = useState(0);
+  const [activeLessonIndex, setActiveLessonIndex] = useState(0);
+  const [activeSlideIndex, setActiveSlideIndex] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -36,7 +37,8 @@ export function StudentScreenPreview({
               (lesson) => lesson.id === initialLessonId,
             )
           : -1;
-        setActiveIndex(requestedIndex >= 0 ? requestedIndex : 0);
+        setActiveLessonIndex(requestedIndex >= 0 ? requestedIndex : 0);
+        setActiveSlideIndex(0);
       })
       .catch((caught: unknown) => {
         if (!active) return;
@@ -121,11 +123,16 @@ export function StudentScreenPreview({
     );
   }
 
-  const safeActiveIndex = Math.min(activeIndex, lessons.length - 1);
-  const activeLesson = lessons[safeActiveIndex];
-  const learnerComponents = activeLesson.components.filter(
-    (component) => component.visibility === "learner_visible",
+  const safeActiveLessonIndex = Math.min(activeLessonIndex, lessons.length - 1);
+  const activeLesson = lessons[safeActiveLessonIndex];
+  const slides = [...activeLesson.slides].sort(
+    (left, right) => left.position - right.position,
   );
+  const safeActiveSlideIndex = Math.min(
+    activeSlideIndex,
+    Math.max(slides.length - 1, 0),
+  );
+  const activeSlide = slides[safeActiveSlideIndex];
 
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,#e0f2fe_0%,#f5f3ff_36%,#fafafa_76%)] px-4 py-5 md:px-8 md:py-8">
@@ -169,10 +176,15 @@ export function StudentScreenPreview({
             <button
               key={lesson.id}
               type="button"
-              aria-current={index === safeActiveIndex ? "step" : undefined}
-              onClick={() => setActiveIndex(index)}
+              aria-current={
+                index === safeActiveLessonIndex ? "page" : undefined
+              }
+              onClick={() => {
+                setActiveLessonIndex(index);
+                setActiveSlideIndex(0);
+              }}
               className={`min-w-44 rounded-2xl border px-4 py-3 text-left transition ${
-                index === safeActiveIndex
+                index === safeActiveLessonIndex
                   ? "border-neutral-950 bg-neutral-950 text-white"
                   : "border-neutral-200 bg-white text-neutral-800 hover:border-neutral-400"
               }`}
@@ -197,44 +209,61 @@ export function StudentScreenPreview({
             </h2>
           </div>
 
-          <div className="mt-8 grid gap-6">
-            {learnerComponents.map((component) => (
-              <CourseComponentRenderer
-                key={component.id}
-                component={component}
-                assets={assetMap}
-                mode="student"
-              />
-            ))}
-            {learnerComponents.length === 0 ? (
+          <div className="mt-8 grid min-h-80 content-start gap-6">
+            {activeSlide ? (
+              activeSlide.components.map((component) => (
+                <CourseComponentRenderer
+                  key={component.id}
+                  component={component}
+                  assets={assetMap}
+                  mode="student"
+                />
+              ))
+            ) : (
               <p className="rounded-2xl border border-dashed border-neutral-300 bg-neutral-50 px-5 py-10 text-center text-sm text-neutral-600">
-                В этом уроке пока нет компонентов для ученика.
+                В этом уроке пока нет слайдов экрана ученика.
               </p>
-            ) : null}
+            )}
           </div>
         </section>
 
         <footer className="flex flex-wrap items-center justify-between gap-3 rounded-3xl border border-white/80 bg-white/80 p-4 shadow-sm backdrop-blur">
           <Button
             variant="secondary"
-            disabled={safeActiveIndex === 0}
-            onClick={() => setActiveIndex((index) => Math.max(0, index - 1))}
-          >
-            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-            Предыдущий урок
-          </Button>
-          <p className="text-center text-xs leading-5 text-neutral-500">
-            Свободная навигация доступна только при предпросмотре и повторе; во
-            время занятия экраном управляет преподаватель.
-          </p>
-          <Button
-            variant="secondary"
-            disabled={safeActiveIndex === lessons.length - 1}
+            disabled={!activeSlide || safeActiveSlideIndex === 0}
             onClick={() =>
-              setActiveIndex((index) => Math.min(lessons.length - 1, index + 1))
+              setActiveSlideIndex(Math.max(0, safeActiveSlideIndex - 1))
             }
           >
-            Следующий урок
+            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+            Предыдущий слайд
+          </Button>
+          <div className="text-center">
+            <p
+              className="text-sm font-bold text-neutral-700"
+              aria-live="polite"
+            >
+              {activeSlide
+                ? `Слайд ${safeActiveSlideIndex + 1} из ${slides.length}`
+                : "Нет слайдов"}
+            </p>
+            <p className="mt-1 text-xs leading-5 text-neutral-500">
+              Навигация доступна только в предпросмотре; во время занятия
+              экраном управляет преподаватель.
+            </p>
+          </div>
+          <Button
+            variant="secondary"
+            disabled={
+              !activeSlide || safeActiveSlideIndex === slides.length - 1
+            }
+            onClick={() =>
+              setActiveSlideIndex(
+                Math.min(slides.length - 1, safeActiveSlideIndex + 1),
+              )
+            }
+          >
+            Следующий слайд
             <ArrowRight className="h-4 w-4" aria-hidden="true" />
           </Button>
         </footer>

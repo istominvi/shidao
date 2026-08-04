@@ -43,6 +43,15 @@ export type LessonComponent = {
   payload: Record<string, unknown>;
   placement: Record<string, unknown>;
   visibility: ComponentVisibility;
+  studentSlideId: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type LessonStudentSlide = {
+  id: string;
+  lessonId: string;
+  position: number;
   createdAt: string;
   updatedAt: string;
 };
@@ -54,6 +63,7 @@ export type CourseLesson = {
   title: string;
   summary: string;
   components: LessonComponent[];
+  studentSlides: LessonStudentSlide[];
   createdAt: string;
   updatedAt: string;
 };
@@ -63,7 +73,16 @@ export type CourseWorkspace = CourseSummary & {
   attachments: CourseAsset[];
 };
 
-export type StudentScreenLesson = Omit<CourseLesson, "summary">;
+export type StudentScreenSlide = LessonStudentSlide & {
+  components: LessonComponent[];
+};
+
+export type StudentScreenLesson = Omit<
+  CourseLesson,
+  "summary" | "components" | "studentSlides"
+> & {
+  slides: StudentScreenSlide[];
+};
 
 /**
  * Explicit learner-facing projection used by Student Screen preview. Teacher

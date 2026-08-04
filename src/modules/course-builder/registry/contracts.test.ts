@@ -167,7 +167,18 @@ test("dynamic add-component schema selects payload and placement by type key", (
 
   assert.equal(parsed.typeKey, "heading");
   assert.equal(parsed.payload.text, "Новый заголовок");
-  assert.equal(parsed.visibility, "staff_only");
+  assert.equal("visibility" in parsed, false);
+
+  assert.equal(
+    lessonAddComponentInputSchema.safeParse({
+      lessonId: LESSON_ID,
+      typeKey: "heading",
+      payload: componentRegistry.heading.defaultPayload,
+      placement: componentRegistry.heading.defaultPlacement,
+      visibility: "learner_visible",
+    }).success,
+    false,
+  );
 
   assert.equal(
     lessonAddComponentInputSchema.safeParse({

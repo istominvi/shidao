@@ -109,11 +109,11 @@ test("component picker is registry-driven and grouped into Russian categories", 
   ]) {
     assert.match(authoring, new RegExp(category));
   }
-  assert.match(authoring, /visibility: "staff_only"/);
+  assert.doesNotMatch(authoring, /visibility: "staff_only"/);
   assert.match(authoring, /сразу перейти к редактированию/);
 });
 
-test("component cards persist edit, delete, order, and Student Screen visibility", () => {
+test("component cards persist edit, delete, order, and ordered Student Screen placement", () => {
   const authoring = source(lessonAuthoringPath);
 
   assert.match(authoring, /Сохраняем компонент…/);
@@ -122,9 +122,18 @@ test("component cards persist edit, delete, order, and Student Screen visibility
   assert.match(authoring, /Обновляем экран ученика…/);
   assert.match(
     authoring,
-    /visibility: learnerVisible \? "staff_only" : "learner_visible"/,
+    /\/api\/v2\/components\/\$\{component\.id\}\/student-screen/,
   );
-  assert.match(authoring, /aria-pressed=\{learnerVisible\}/);
+  for (const mode of ['mode: "existing"', 'mode: "new"', 'mode: "hide"']) {
+    assert.match(authoring, new RegExp(mode));
+  }
+  assert.match(authoring, /aria-haspopup="dialog"/);
+  assert.match(authoring, /aria-expanded=\{studentScreenPopoverOpen\}/);
+  assert.match(authoring, /показывается на слайде/);
+  assert.match(authoring, /не показывается ученику/);
+  assert.match(authoring, /getStudentSlidePlacementOptions/);
+  assert.match(authoring, /Новый слайд/);
+  assert.match(authoring, /Убрать с экрана/);
   assert.match(authoring, /group-hover:opacity-100/);
   assert.match(authoring, /if \(saved\) setEditing\(false\)/);
   assert.match(
@@ -135,18 +144,42 @@ test("component cards persist edit, delete, order, and Student Screen visibility
   assert.doesNotMatch(authoring, /border-b border-neutral-100 pb-3/);
 });
 
-test("lesson surfaces render the lesson component sequence without legacy step groups", () => {
+test("Student Screen surfaces render one ordered slide without legacy step groups", () => {
   const authoring = source(lessonAuthoringPath);
   const preview = source(
     "src/components/course-builder/student-screen-preview.tsx",
   );
   const combined = [authoring, preview].join("\n");
+  const inlineSurface =
+    /function StudentLessonSurface[\s\S]*?function HomeworkSurface/.exec(
+      authoring,
+    )?.[0];
 
+  assert.ok(inlineSurface, "inline Student Screen must remain discoverable");
   assert.match(authoring, /const components = lesson\.components/);
+  assert.match(authoring, /\[\.\.\.lesson\.studentSlides\]/);
   assert.match(authoring, /lesson\.components\.filter/);
-  assert.match(preview, /activeLesson\.components\.filter/);
-  assert.match(combined, /component\.visibility === "learner_visible"/);
+  assert.match(authoring, /component\.studentSlideId === slide\.id/);
+  assert.match(preview, /\[\.\.\.activeLesson\.slides\]/);
+  assert.match(combined, /activeSlide\.components\.map/);
   assert.match(combined, /mode="student"/);
+  assert.match(combined, /Предыдущий слайд/);
+  assert.match(combined, /Следующий слайд/);
+  assert.match(combined, /Слайд \$\{safeActiveSlideIndex \+ 1\} из/);
+  assert.doesNotMatch(combined, /component\.visibility/);
+  assert.match(inlineSurface, /lesson\.title/);
+  assert.doesNotMatch(inlineSurface, /lesson\.summary/);
+  assert.ok(
+    inlineSurface.indexOf("lesson.title") <
+      inlineSurface.indexOf("activeSlide.components.map"),
+    "Lesson title must render before the active slide",
+  );
+  assert.ok(
+    preview.indexOf("activeLesson.title") <
+      preview.indexOf("activeSlide.components.map"),
+    "fullscreen Lesson title must render before the active slide",
+  );
+  assert.doesNotMatch(preview, /activeLesson\.summary|lesson\.summary/);
   assert.doesNotMatch(combined, /lesson\.steps|activeLesson\.steps/);
   assert.doesNotMatch(combined, /learnerGroups|indexInGroup|groupSize/);
   assert.doesNotMatch(combined, /предыдущей версией редактора/i);

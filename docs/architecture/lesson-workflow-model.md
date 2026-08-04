@@ -14,12 +14,17 @@
 Course
 ├── course-wide attachments
 └── Lesson 1..N
-    └── ordered Components 1..N
+    ├── ordered Components 1..N
+    └── Student Screen projection
+        └── ordered Slides 1..N → component references
 ```
 
 `Lesson` непосредственно владеет одним упорядоченным списком компонентов.
 Между Lesson и Component нет сущности `Lesson Step`, скрытого/root step,
-группы совместимости или второго списка для Student Screen.
+группы совместимости или второго порядка компонентов. `Student Screen Slide` —
+это persisted-проекция: он только группирует learner-visible компоненты
+для показа и не имеет title, content, teacher instructions или
+независимого component order.
 
 Это решение относится к domain model, базе, UI, application service, MCP и
 AI-orchestration. Упрощённое отображение без шагов — не временная UI-проекция,
@@ -32,6 +37,9 @@ AI-orchestration. Упрощённое отображение без шагов 
 - **Lesson / Урок** — редактируемый документ внутри Course. Название обязательно
   и хранится в самой Lesson; комментарий преподавателя хранится в `summary`.
 - **Lesson Component / Компонент урока** — элемент единого ordered list Lesson.
+- **Student Screen Slide / Слайд экрана ученика** — упорядоченная
+  группа соседних по плану learner-visible компонентов; не является
+  Step или авторским блоком.
 - **План урока** — teacher-facing редактор полного списка компонентов.
 - **Student Screen / Экран ученика** — learner-facing проекция той же Lesson,
   содержащая только разрешённые ученику компоненты.
@@ -71,6 +79,18 @@ lesson_component
 - payload
 - placement
 - visibility: staff_only | learner_visible
+- student_slide_id: uuid | null
+- created_at
+- updated_at
+```
+
+Минимальная Student Screen Slide:
+
+```text
+lesson_student_slide
+- id
+- lesson_id
+- position
 - created_at
 - updated_at
 ```
@@ -85,6 +105,11 @@ lesson_component
 6. Пустая Lesson допустима.
 7. Component не может существовать без Lesson или одновременно принадлежать
    нескольким Lesson.
+8. `staff_only` всегда имеет `student_slide_id = null`, а `learner_visible`
+   всегда ссылается на Slide той же Lesson.
+9. Slide positions плотные и уникальные; пустых Slides нет.
+10. При проходе компонентов по `component.position` номер Slide не
+    может уменьшаться.
 
 ## Code-first component registry
 
@@ -121,7 +146,8 @@ file
 - изменить его payload и placement;
 - переместить выше или ниже во всём списке Lesson;
 - удалить компонент;
-- включить или выключить отображение на Student Screen.
+- назначить компонент на допустимый Slide, создать для него новый
+  Slide или убрать его с Student Screen.
 
 На карточке teacher видит состояние видимости. `staff_only` означает, что
 компонент остаётся частью плана преподавателя, но отсутствует в learner API.
@@ -132,15 +158,28 @@ file
 Student Screen строится детерминированно:
 
 ```text
-lesson.components
-→ filter visibility == learner_visible
-→ preserve relative position
-→ render through registry Student Screen renderer
+lesson.studentSlides by slide.position
+→ components where student_slide_id == slide.id
+→ preserve component.position inside every Slide
+→ render one active Slide through registry Student Screen renderers
 ```
 
-У Student Screen нет собственной копии порядка, инструкции группы или
-параллельной структуры. Изменение payload или порядка сохраняется один раз и
-после reload одинаково отражается в teacher preview и learner projection.
+Обязательный `lesson.title` всегда показывается над active Slide и не
+требует отдельного `heading` component. Teacher comment `lesson.summary`
+никогда не включается в learner response и не рендерится на Student Screen.
+
+Slide хранит только grouping и position самой группы. У Student Screen нет
+собственной копии payload или параллельного component order. Изменение payload
+или порядка сохраняется один раз и после reload одинаково отражается в
+teacher preview и learner projection. Новый Component всегда создаётся
+`staff_only`; публикация на Slide — отдельное явное действие.
+
+Для назначения на existing Slide UI и service предлагают только диапазон
+между ближайшими learner-visible соседями в плане. Новый Slide
+вставляется между этими границами; он не может разделить двух соседов,
+уже находящихся на одном Slide. Reorder оставляет `component.position`
+каноническим и при необходимости автоматически переносит перемещённый
+видимый компонент на ближайший допустимый Slide.
 
 Если learner-visible компонентов нет, отображается честное пустое состояние.
 Teacher-private компоненты и поля не должны присутствовать в learner response.
@@ -206,19 +245,23 @@ course.create_draft
 course.get
 course.add_lesson
 lesson.add_component
+lesson.set_component_student_screen
 lesson.reorder_component
 ```
 
-`lesson.add_component` принимает `lessonId`, registry type, payload, placement
-и visibility и создаёт Component непосредственно в конце Lesson. Reorder
-работает в пределах всего ordered list выбранной Lesson.
+`lesson.add_component` принимает `lessonId`, registry type, payload и placement,
+создаёт Component в конце Lesson и не публикует его ученику.
+`lesson.set_component_student_screen` выполняет `hide | existing | new` через
+тот же application service. Reorder работает в пределах всего ordered list
+выбранной Lesson и сохраняет Slide invariants.
 
 MCP — development/internal thin adapter над теми же application services. Он:
 
 - не обращается к таблицам напрямую;
 - не принимает и не возвращает `stepId`;
 - не регистрирует tool добавления шага;
-- использует actor JWT, ownership/RLS и общую schema validation;
+- использует actor JWT, ownership/RLS для обычных операций и явную
+  Auth → Account → Course ownership-проверку в сериализованных component RPC;
 - не публикуется как внешний endpoint в первом milestone.
 
 ## AI boundary
@@ -235,9 +278,9 @@ domain model или renderer contracts.
 ## Runtime and future live mode
 
 Текущий milestone реализует persisted authoring и preview, а не live sync.
-Будущий `LessonSession` остаётся отдельным исполнением Lesson. Если live mode
-потребует presentation cursor, runtime может хранить текущий component id или
-индекс, не меняя authored hierarchy и не создавая Step entity.
+Будущий `LessonSession` остаётся отдельным исполнением Lesson. Live-mode
+presentation cursor может ссылаться на текущий Student Screen Slide, не меняя
+authored hierarchy и не создавая Step entity.
 
 В live mode по умолчанию teacher управляет learner surface; свободная
 предыдущая/следующая навигация учащегося не включается автоматически. Review
@@ -274,11 +317,12 @@ import/application layer. Он не возвращает Methodology в акти
 2. Lesson создаётся без Step/root Step и может оставаться пустой.
 3. Component создаётся непосредственно по `lessonId`.
 4. Teacher plan показывает весь единый ordered list.
-5. Student Screen показывает только `learner_visible` components в том же
-   относительном порядке.
+5. Student Screen показывает только явно назначенные components,
+   сгруппированные в упорядоченные Slides без второго component order.
 6. Teacher-private данные отсутствуют в learner projection.
-7. Reorder изменяет порядок во всей Lesson, а не внутри скрытой группы.
+7. Reorder изменяет порядок во всей Lesson и автоматически не допускает
+   обратный порядок Slides.
 8. UI, service и MCP валидируют данные общими registry contracts.
 9. В активном V2 нет Methodology/fixture/lesson-specific fallback.
-10. Fullscreen preview сохраняет выбранную Lesson и после refresh читает
-    persisted state.
+10. Fullscreen preview сохраняет выбранную Lesson, показывает один
+    active Slide и после refresh читает persisted state.
