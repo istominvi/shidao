@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 200" role="img" aria-label="Мешочек с животными">
+  <rect width="320" height="200" rx="20" fill="#f8fafc"/>
+  <ellipse cx="160" cy="154" rx="86" ry="26" fill="#d97706"/>
+  <path d="M96 84h128l-14 54H110z" fill="#f59e0b"/>
+  <path d="M126 84c4-16 12-24 34-24s30 8 34 24" fill="none" stroke="#92400e" stroke-width="6" stroke-linecap="round"/>
+  <g font-family="Arial, sans-serif" font-size="18" fill="#0f172a" text-anchor="middle">
+    <text x="118" y="114">狗</text>
+    <text x="158" y="104">猫</text>
+    <text x="198" y="116">牛</text>
+  </g>
+</svg>

@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 760" role="img" aria-label="Рабочая тетрадь страницы 7-8">
+  <rect width="1200" height="760" rx="44" fill="#fff7ed"/>
+  <text x="600" y="76" text-anchor="middle" font-family="Arial, sans-serif" font-size="38" font-weight="800" fill="#111827">Рабочая тетрадь · стр. 7-8</text>
+  <text x="600" y="118" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" fill="#9a3412">Слушай преподавателя и раскрашивай животных нужным цветом</text>
+  <g transform="translate(110 180)">
+    <rect width="440" height="470" rx="28" fill="#ffffff" stroke="#fdba74" stroke-width="5"/>
+    <text x="220" y="58" text-anchor="middle" font-family="Noto Sans SC, Arial, sans-serif" font-size="34" font-weight="800" fill="#9a3412">这是黑色。</text>
+    <ellipse cx="220" cy="230" rx="130" ry="72" fill="#f3f4f6" stroke="#111827" stroke-width="7" stroke-dasharray="16 12"/>
+    <circle cx="326" cy="185" r="45" fill="#f3f4f6" stroke="#111827" stroke-width="7" stroke-dasharray="16 12"/>
+    <path d="M305 145 L325 112 L346 145 Z" fill="#f3f4f6" stroke="#111827" stroke-width="6"/>
+    <path d="M350 151 L387 130 L371 171 Z" fill="#f3f4f6" stroke="#111827" stroke-width="6"/>
+    <circle cx="335" cy="181" r="6" fill="#111827"/>
+    <rect x="145" y="294" width="25" height="85" rx="12" fill="#f3f4f6" stroke="#111827" stroke-width="5" stroke-dasharray="10 8"/>
+    <rect x="252" y="294" width="25" height="85" rx="12" fill="#f3f4f6" stroke="#111827" stroke-width="5" stroke-dasharray="10 8"/>
+    <text x="220" y="430" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" fill="#57534e">Раскрась кота</text>
+  </g>
+  <g transform="translate(650 180)">
+    <rect width="440" height="470" rx="28" fill="#ffffff" stroke="#fdba74" stroke-width="5"/>
+    <text x="220" y="58" text-anchor="middle" font-family="Noto Sans SC, Arial, sans-serif" font-size="34" font-weight="800" fill="#9a3412">这是橘色。</text>
+    <ellipse cx="205" cy="238" rx="135" ry="70" fill="#f3f4f6" stroke="#f97316" stroke-width="7" stroke-dasharray="16 12"/>
+    <circle cx="320" cy="199" r="45" fill="#f3f4f6" stroke="#f97316" stroke-width="7" stroke-dasharray="16 12"/>
+    <path d="M344 200 C390 190 398 222 354 230" fill="none" stroke="#f97316" stroke-width="14" stroke-linecap="round"/>
+    <rect x="124" y="298" width="24" height="82" rx="12" fill="#f3f4f6" stroke="#f97316" stroke-width="5" stroke-dasharray="10 8"/>
+    <rect x="248" y="298" width="24" height="82" rx="12" fill="#f3f4f6" stroke="#f97316" stroke-width="5" stroke-dasharray="10 8"/>
+    <text x="220" y="430" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" fill="#57534e">Раскрась собаку</text>
+  </g>
+</svg>

@@ -1,0 +1,1317 @@
+{
+  "fileCount": 187,
+  "totalBytes": 131518166,
+  "referencedPublicPathCount": 166,
+  "missingReferencedPublicPaths": [],
+  "files": [
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-1/appendix/appendix-1.pdf",
+      "archivePath": "assets/lesson-1/appendix/appendix-1.pdf",
+      "bytes": 501334,
+      "extension": ".pdf",
+      "sha256": "e942471459f33836aee82446dd910bb1bc550653777e2e8292461f5cff39138d"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-1/appendix/appendix-1.png",
+      "archivePath": "assets/lesson-1/appendix/appendix-1.png",
+      "bytes": 905185,
+      "extension": ".png",
+      "sha256": "67893abaca159cad091424fff75b02127a466c1b20197aab49b4973889963e88"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-1/audio/gou.mp3",
+      "archivePath": "assets/lesson-1/audio/gou.mp3",
+      "bytes": 12055,
+      "extension": ".mp3",
+      "sha256": "4afa1d82cb8765e3f49a7eec7f19e7579d5ea77cfec85a7738c9f03e10834120"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-1/audio/ma.mp3",
+      "archivePath": "assets/lesson-1/audio/ma.mp3",
+      "bytes": 12995,
+      "extension": ".mp3",
+      "sha256": "061b13bc328fe4715e4e2a4be110a012d7b14d34cfbdf5cf165e2959a7cdc223"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-1/audio/mao.mp3",
+      "archivePath": "assets/lesson-1/audio/mao.mp3",
+      "bytes": 8408,
+      "extension": ".mp3",
+      "sha256": "bd1da48f2a536b232e248ef4c1eb957215c9371a14c0fc730cf84803dda0cc7f"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-1/audio/nongchang.mp3",
+      "archivePath": "assets/lesson-1/audio/nongchang.mp3",
+      "bytes": 14663,
+      "extension": ".mp3",
+      "sha256": "5233cd8ff2f706a72ba9dc9d16a8dddaeeb43581c8311f46f7c3dd9b6c502857"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-1/audio/pao.mp3",
+      "archivePath": "assets/lesson-1/audio/pao.mp3",
+      "bytes": 11744,
+      "extension": ".mp3",
+      "sha256": "baba6b6b8e6b93d20a427c04975bc03d84b5dfe7d9d74e90160d5f24e8597651"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-1/audio/tiao.mp3",
+      "archivePath": "assets/lesson-1/audio/tiao.mp3",
+      "bytes": 10910,
+      "extension": ".mp3",
+      "sha256": "7b3e6cc26e0ecf2d6983add1ed15cbfcd3473b034870198cace98ec6843fe86a"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-1/audio/tuzi.mp3",
+      "archivePath": "assets/lesson-1/audio/tuzi.mp3",
+      "bytes": 15914,
+      "extension": ".mp3",
+      "sha256": "0a5313de9568e38a33f6788d40e82ffc5bcb2355a262c927b953e4bf95e8a803"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-1/audio/womenba.mp3",
+      "archivePath": "assets/lesson-1/audio/womenba.mp3",
+      "bytes": 22064,
+      "extension": ".mp3",
+      "sha256": "7b5906467bb59c0d396b0bc3240332ffed0b69069a88b5a6c92a26a5d86951bb"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-1/audio/woshi.mp3",
+      "archivePath": "assets/lesson-1/audio/woshi.mp3",
+      "bytes": 15914,
+      "extension": ".mp3",
+      "sha256": "18e14058fe4a3950dc339c3f8aff8985329f32a638889f21800ddc94db275607"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-1/audio/zai.mp3",
+      "archivePath": "assets/lesson-1/audio/zai.mp3",
+      "bytes": 16008,
+      "extension": ".mp3",
+      "sha256": "1fa71400773cf1b4ac48732a21a981235d9ae74d77b698db2dd651689b194a95"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-1/audio/zheshi.mp3",
+      "archivePath": "assets/lesson-1/audio/zheshi.mp3",
+      "bytes": 10910,
+      "extension": ".mp3",
+      "sha256": "a1b3a8f73d9b111febdaa61015623a472548b7b95a4b6df90a1c51f606e32454"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-1/flashcards/cat-card.png",
+      "archivePath": "assets/lesson-1/flashcards/cat-card.png",
+      "bytes": 36339,
+      "extension": ".png",
+      "sha256": "6d80061eb43523a0c15d35bd971ee2ded766dc6dcf1397f055b30fa036a1076a"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-1/flashcards/cat-card_2.png",
+      "archivePath": "assets/lesson-1/flashcards/cat-card_2.png",
+      "bytes": 24124,
+      "extension": ".png",
+      "sha256": "0dc525c95db1448283813bee5b9c6dc9b91774f5b15304ef96833eb843eea4d3"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-1/flashcards/dog-card.png",
+      "archivePath": "assets/lesson-1/flashcards/dog-card.png",
+      "bytes": 49363,
+      "extension": ".png",
+      "sha256": "1dd45f5b5e8a7b7caa195a3ad7deb549313d77a1f5868df32d978e933718b64b"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-1/flashcards/dog-card_2.png",
+      "archivePath": "assets/lesson-1/flashcards/dog-card_2.png",
+      "bytes": 23082,
+      "extension": ".png",
+      "sha256": "1669c3e00de03e467b0d389748902c08e94ad70987dce92b46464c36a3c02a56"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-1/flashcards/farm-card.png",
+      "archivePath": "assets/lesson-1/flashcards/farm-card.png",
+      "bytes": 94289,
+      "extension": ".png",
+      "sha256": "54d0a8551ae208ea5468590708cb6d1777a1aa7fab0d65be202e414819247a73"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-1/flashcards/farm-card_2.png",
+      "archivePath": "assets/lesson-1/flashcards/farm-card_2.png",
+      "bytes": 56064,
+      "extension": ".png",
+      "sha256": "080b3611623b477c6b805ab9c6428c592da9c584ff35ed0caf054e2a8d616dcb"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-1/flashcards/horse-card.png",
+      "archivePath": "assets/lesson-1/flashcards/horse-card.png",
+      "bytes": 31756,
+      "extension": ".png",
+      "sha256": "5d6df14abce14795dbc7c2339964749b82aebde4ef08e5554ae20d0c7bac44aa"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-1/flashcards/horse-card_2.png",
+      "archivePath": "assets/lesson-1/flashcards/horse-card_2.png",
+      "bytes": 17577,
+      "extension": ".png",
+      "sha256": "8b27b89b40ba73acebb04e4c679fe30b6ea6db16e774453b6b60f85c75eabb65"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-1/flashcards/lesson-1-flashcards.pdf",
+      "archivePath": "assets/lesson-1/flashcards/lesson-1-flashcards.pdf",
+      "bytes": 412989,
+      "extension": ".pdf",
+      "sha256": "1243dcad63856c70f5139c039b24426ff04f77998d61928535b0905db19927af"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-1/flashcards/rabbit-card.png",
+      "archivePath": "assets/lesson-1/flashcards/rabbit-card.png",
+      "bytes": 30373,
+      "extension": ".png",
+      "sha256": "cf9062fde3c0cfc7c28b621ff28622715ec9e23b836ba481d0518666a5f13a1d"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-1/flashcards/rabbit-card_2.png",
+      "archivePath": "assets/lesson-1/flashcards/rabbit-card_2.png",
+      "bytes": 41604,
+      "extension": ".png",
+      "sha256": "030c9e07261ef990b20ba5f7f1441ef0b5f6e09b1ff20ba0f0a21a8341e7ed5a"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-1/media/e.mp4",
+      "archivePath": "assets/lesson-1/media/e.mp4",
+      "bytes": 3646211,
+      "extension": ".mp4",
+      "sha256": "6198e89411693689734903a8d86a16b29f67d1586fa5aff78f9f1598de5a03f1"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-1/media/farm-animals-song-video.mp4",
+      "archivePath": "assets/lesson-1/media/farm-animals-song-video.mp4",
+      "bytes": 15717516,
+      "extension": ".mp4",
+      "sha256": "ca20099f7b503dad6a4fa3cfc5e5211be358ae6cdaa224d7c7c613c20c1b9183"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-1/media/farm-animals-song.mp3",
+      "archivePath": "assets/lesson-1/media/farm-animals-song.mp3",
+      "bytes": 2418476,
+      "extension": ".mp3",
+      "sha256": "5e7a03ae41a4dd344236c0a92520de001dca8a4cb1097d0c69cc20cffe26b4f5"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-1/media/gou.mp4",
+      "archivePath": "assets/lesson-1/media/gou.mp4",
+      "bytes": 3665835,
+      "extension": ".mp4",
+      "sha256": "d39e2ca2e5ad3f0a5a8b1c1aeea6b49363f7680c83028e2022987f2e2d6824c0"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-1/media/ji.mp4",
+      "archivePath": "assets/lesson-1/media/ji.mp4",
+      "bytes": 3733796,
+      "extension": ".mp4",
+      "sha256": "9cd13db49eabc8fbce40274bf4b719942a80bd232e32a57043f7964d123d88d2"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-1/media/ma.mp4",
+      "archivePath": "assets/lesson-1/media/ma.mp4",
+      "bytes": 5260411,
+      "extension": ".mp4",
+      "sha256": "595eaf495b97934a6a362f04c57ffec2e3ba9ac59e6752ad4f5970b5def5da9b"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-1/media/mao.mp4",
+      "archivePath": "assets/lesson-1/media/mao.mp4",
+      "bytes": 4417169,
+      "extension": ".mp4",
+      "sha256": "dd44527ff6f1082e8c8f8994487763d488e12eee2fde9905fad2cc43f25e0ceb"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-1/media/nainiu.mp4",
+      "archivePath": "assets/lesson-1/media/nainiu.mp4",
+      "bytes": 3625678,
+      "extension": ".mp4",
+      "sha256": "be5c401d80fd75c07e0966e2add37d52fd74c8153fbd2f0cef32ab5290aeaef4"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-1/media/tu.mp4",
+      "archivePath": "assets/lesson-1/media/tu.mp4",
+      "bytes": 4366558,
+      "extension": ".mp4",
+      "sha256": "cf836929d16af046ef395674bbc3b36e5735a55c222d89fc8f55c936129cdffd"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-1/media/ya.mp4",
+      "archivePath": "assets/lesson-1/media/ya.mp4",
+      "bytes": 5473262,
+      "extension": ".mp4",
+      "sha256": "9eb8640e944c23bfc46298413cbe24daac6b76c95c420c74a40b2ed75096fba6"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-1/media/yang.mp4",
+      "archivePath": "assets/lesson-1/media/yang.mp4",
+      "bytes": 4190498,
+      "extension": ".mp4",
+      "sha256": "bc8dc53343a305e4038be19d3e627bef8ddacfc6a085ca553debe5439a93ee53"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-1/media/zhu.mp4",
+      "archivePath": "assets/lesson-1/media/zhu.mp4",
+      "bytes": 3319066,
+      "extension": ".mp4",
+      "sha256": "61721c5e549016ca99c7861429a96eb96b2cf005a11bf0d353d95e1c639ffb3c"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-1/presentation/lesson-1-slide-01.png",
+      "archivePath": "assets/lesson-1/presentation/lesson-1-slide-01.png",
+      "bytes": 305595,
+      "extension": ".png",
+      "sha256": "baef523768c8f28405f774ec9eef92dc7cbbae0163ee00d553fe9f65f7d116de"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-1/presentation/lesson-1-slide-02.png",
+      "archivePath": "assets/lesson-1/presentation/lesson-1-slide-02.png",
+      "bytes": 155342,
+      "extension": ".png",
+      "sha256": "8e9cb3d24823fce4018b64f2d6d3f6c6968dc948a149bb23e260513bbaccd5f5"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-1/presentation/lesson-1-slide-03.png",
+      "archivePath": "assets/lesson-1/presentation/lesson-1-slide-03.png",
+      "bytes": 43137,
+      "extension": ".png",
+      "sha256": "deb01ed61106f10be04b4ab64dc299a4619d316c0d7e42739497d20e30320e02"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-1/presentation/lesson-1-slide-04.png",
+      "archivePath": "assets/lesson-1/presentation/lesson-1-slide-04.png",
+      "bytes": 48085,
+      "extension": ".png",
+      "sha256": "7f5eab9bd6976d163ff6e1a3fc44ae96615a5b52deb133fc8212d01251de532d"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-1/presentation/lesson-1-slide-05.png",
+      "archivePath": "assets/lesson-1/presentation/lesson-1-slide-05.png",
+      "bytes": 36414,
+      "extension": ".png",
+      "sha256": "0c4ce4017b59d0ecea84c50d821f1fe844de7538991f07bf9dbf0d1badd8a3ed"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-1/presentation/lesson-1-slide-06.png",
+      "archivePath": "assets/lesson-1/presentation/lesson-1-slide-06.png",
+      "bytes": 34430,
+      "extension": ".png",
+      "sha256": "e7235f96b4eecdd87c1b85c44124eb071e043ff7f61e031dd892d933cadaccc4"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-1/presentation/lesson-1-slide-07.png",
+      "archivePath": "assets/lesson-1/presentation/lesson-1-slide-07.png",
+      "bytes": 547496,
+      "extension": ".png",
+      "sha256": "c4bbf88f728e59166a8624afb3cb9f39b75765829a56dd924d085c9c03e0ced7"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-1/presentation/lesson-1-slide-08.png",
+      "archivePath": "assets/lesson-1/presentation/lesson-1-slide-08.png",
+      "bytes": 105748,
+      "extension": ".png",
+      "sha256": "e1208b8c79ad1c1415f774778a2cd486b1d7bee8866ebdbcc5d94dbf49c50e8d"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-1/presentation/lesson-1-slide-09.png",
+      "archivePath": "assets/lesson-1/presentation/lesson-1-slide-09.png",
+      "bytes": 81582,
+      "extension": ".png",
+      "sha256": "427def4c30c899e822790da704073f02bb21dcaeaf6305c3592bbd6978db3ef3"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-1/presentation/lesson-1-slide-10.png",
+      "archivePath": "assets/lesson-1/presentation/lesson-1-slide-10.png",
+      "bytes": 466849,
+      "extension": ".png",
+      "sha256": "23f90e44c497a73db01d9c2ad80e85cc5ff39fc39d929dcdb3e51e585cd98e00"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-1/presentation/lesson-1-slide-11.png",
+      "archivePath": "assets/lesson-1/presentation/lesson-1-slide-11.png",
+      "bytes": 418032,
+      "extension": ".png",
+      "sha256": "736ee339b7b6471f40920ce25c5e8d1e9e9466cf03ebe89682b1c799ad1b7451"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-1/presentation/lesson-1-slide-12.png",
+      "archivePath": "assets/lesson-1/presentation/lesson-1-slide-12.png",
+      "bytes": 445603,
+      "extension": ".png",
+      "sha256": "18bbd028d90fc0a989c5208a0eda1f3d2e3e14e8771b31ee65599d80e78bad9c"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-1/presentation/lesson-1-slide-13.png",
+      "archivePath": "assets/lesson-1/presentation/lesson-1-slide-13.png",
+      "bytes": 689041,
+      "extension": ".png",
+      "sha256": "593532c8582efa594217f3a6e29fa531542144cacd24de24189857cecaeaf580"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-1/presentation/lesson-1-slide-14.png",
+      "archivePath": "assets/lesson-1/presentation/lesson-1-slide-14.png",
+      "bytes": 227407,
+      "extension": ".png",
+      "sha256": "53918daa6dc7c28bdbc3d3f49086facc195982c0edff45bc4aba0b20a5fa7462"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-1/presentation/lesson-1-slide-15.png",
+      "archivePath": "assets/lesson-1/presentation/lesson-1-slide-15.png",
+      "bytes": 1089491,
+      "extension": ".png",
+      "sha256": "36d41033952d8ccecaeda4442ef943e1b717109e4e5a4da8ba7bc376c8a5c8e0"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-1/presentation/lesson-1-slide-16.png",
+      "archivePath": "assets/lesson-1/presentation/lesson-1-slide-16.png",
+      "bytes": 77942,
+      "extension": ".png",
+      "sha256": "6eec51955d7ba96c500127a9c4c004f9567ee786b8d7914aab18c62e30b91c70"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-1/presentation/lesson-1-slides.pdf",
+      "archivePath": "assets/lesson-1/presentation/lesson-1-slides.pdf",
+      "bytes": 2012437,
+      "extension": ".pdf",
+      "sha256": "a7d9cc204ed574a0cc969452a4b14fa58e3c0ee10970bbb22e1bb80c3390934d"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-1/presentation/lesson-1-slides.pptx",
+      "archivePath": "assets/lesson-1/presentation/lesson-1-slides.pptx",
+      "bytes": 7318882,
+      "extension": ".pptx",
+      "sha256": "2c33b361efd1b1ceb80e8c113b5f5b34860d450813b1f83e2897d98fddb18d41"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-1/step11/step11.png",
+      "archivePath": "assets/lesson-1/step11/step11.png",
+      "bytes": 416324,
+      "extension": ".png",
+      "sha256": "cf6cf75106af4eb55afedad6af8dde41bb4d05710e2aa64eb3c001e8c6c0ee1f"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-1/step7/step7_1.png",
+      "archivePath": "assets/lesson-1/step7/step7_1.png",
+      "bytes": 1233507,
+      "extension": ".png",
+      "sha256": "c70823683baa9b1c9c13313577e97df87d297b1beb254c8a38bf03374cd9cee5"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-1/step7/step7_10.png",
+      "archivePath": "assets/lesson-1/step7/step7_10.png",
+      "bytes": 1147634,
+      "extension": ".png",
+      "sha256": "7a1a730c6f50ac8905dfdee1e54e13de5d5917753f2f731c9d7b47e73d934ac2"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-1/step7/step7_2.png",
+      "archivePath": "assets/lesson-1/step7/step7_2.png",
+      "bytes": 1222403,
+      "extension": ".png",
+      "sha256": "c94c7a22c191b5768d2b3105f78bfc6eac81eea935b70172dfeac9788fab6649"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-1/step7/step7_3.png",
+      "archivePath": "assets/lesson-1/step7/step7_3.png",
+      "bytes": 1120132,
+      "extension": ".png",
+      "sha256": "b8abf959bcf61d6037bc27f155baee8130f477f9fb7bef3ae8785befa24a18b9"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-1/step7/step7_4.png",
+      "archivePath": "assets/lesson-1/step7/step7_4.png",
+      "bytes": 1077980,
+      "extension": ".png",
+      "sha256": "b24806abde968febdac53ea819350df98ae100cdc9b2378e1f471cc8210ef877"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-1/step7/step7_5.png",
+      "archivePath": "assets/lesson-1/step7/step7_5.png",
+      "bytes": 1156212,
+      "extension": ".png",
+      "sha256": "0b65d704b38ec93a0a152c786c76316983c347a6658979c8e490443fdce908a9"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-1/step7/step7_6.png",
+      "archivePath": "assets/lesson-1/step7/step7_6.png",
+      "bytes": 1114442,
+      "extension": ".png",
+      "sha256": "c620949b6193af365bc7827fb5a04672bcb1b76b3c9e2d0cb9fe38ff2cbe8627"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-1/step7/step7_7.png",
+      "archivePath": "assets/lesson-1/step7/step7_7.png",
+      "bytes": 1288437,
+      "extension": ".png",
+      "sha256": "2f8a3b0881dec9d2c6faa75f4e5ebf4a4326d27f9637be0eb77a4dd1eec54e99"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-1/step7/step7_8.png",
+      "archivePath": "assets/lesson-1/step7/step7_8.png",
+      "bytes": 1074098,
+      "extension": ".png",
+      "sha256": "03b15ab29c61f3f6922cfdee7f601a14d39b459c8a3bc25b54a0586767d7187d"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-1/step7/step7_9.png",
+      "archivePath": "assets/lesson-1/step7/step7_9.png",
+      "bytes": 1222452,
+      "extension": ".png",
+      "sha256": "0deb572a946fde956d6d965f5a99d28c6db8c1d8055d05cadd39e7a5ae459dae"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-1/visuals/cat-card.png",
+      "archivePath": "assets/lesson-1/visuals/cat-card.png",
+      "bytes": 1381790,
+      "extension": ".png",
+      "sha256": "821525dae03a82f23b725d3367a3de940ffeff11876c9c28a1481d1810f92987"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-1/visuals/counting-to-five.png",
+      "archivePath": "assets/lesson-1/visuals/counting-to-five.png",
+      "bytes": 1252020,
+      "extension": ".png",
+      "sha256": "f4a8cdea7fa71f649f48951c10cbd5acb55c70833c04b3d03cc534346f17df40"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-1/visuals/dog-card.png",
+      "archivePath": "assets/lesson-1/visuals/dog-card.png",
+      "bytes": 1385205,
+      "extension": ".png",
+      "sha256": "c4db4d7bbe5bf7e3b6dc0d3a0fe1fcfde7b343741d91e672e3ec9d85a00e1f22"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-1/visuals/farm-barn.png",
+      "archivePath": "assets/lesson-1/visuals/farm-barn.png",
+      "bytes": 2503570,
+      "extension": ".png",
+      "sha256": "0d73f91883cc4b237aa5fc1e76014531249dc1474a9881ebd162a9b2749a15bd"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-1/visuals/hero-farm.png",
+      "archivePath": "assets/lesson-1/visuals/hero-farm.png",
+      "bytes": 1628213,
+      "extension": ".png",
+      "sha256": "ff4199759a2b3b9b7ddca73bd06efb57d14e3767284cfc09b3ce882aecf4ed79"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-1/visuals/horse-card.png",
+      "archivePath": "assets/lesson-1/visuals/horse-card.png",
+      "bytes": 1501964,
+      "extension": ".png",
+      "sha256": "74a7f1c8b5d54f9eaa0b2ef75ff08794d6611e17be72c20e99e6e1aa4cf59454"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-1/visuals/jump-action.png",
+      "archivePath": "assets/lesson-1/visuals/jump-action.png",
+      "bytes": 1238875,
+      "extension": ".png",
+      "sha256": "cd0a0dbc40cbdfaf8ad93189d6ce1208117c8c848cd3249f338e2e541642cb28"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-1/visuals/rabbit-card.png",
+      "archivePath": "assets/lesson-1/visuals/rabbit-card.png",
+      "bytes": 1252564,
+      "extension": ".png",
+      "sha256": "9a7fed46b3300b34849d0f1faa649cce3640aa3f5a68de7e12d2ab489366783d"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-1/visuals/run-action.png",
+      "archivePath": "assets/lesson-1/visuals/run-action.png",
+      "bytes": 1163995,
+      "extension": ".png",
+      "sha256": "76f6a21428917d1eb965c06d82aea4b466f4dcfb4aaec62b73f334199a026ace"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-1/visuals/workbook-practice.png",
+      "archivePath": "assets/lesson-1/visuals/workbook-practice.png",
+      "bytes": 1367608,
+      "extension": ".png",
+      "sha256": "420a6ded93346c73e84fa5e48187dc14a5fe18372384c7d996b64ef3ad272f3e"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-2/chicken.svg",
+      "archivePath": "assets/lesson-2/chicken.svg",
+      "bytes": 449,
+      "extension": ".svg",
+      "sha256": "df6617d782e43b8b70b3dafec627376bf548c958eb88882d842d79b274fc6f2a"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-2/clap.svg",
+      "archivePath": "assets/lesson-2/clap.svg",
+      "bytes": 446,
+      "extension": ".svg",
+      "sha256": "6d08dd455c2697f14316733c07d86c1d4d22eee47a492a9a4a2393756c69afbf"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-2/count.svg",
+      "archivePath": "assets/lesson-2/count.svg",
+      "bytes": 333,
+      "extension": ".svg",
+      "sha256": "d9c6138a3d4ec9906f638594d890b56c050dde60c07a05ae818793c33ad200f6"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-2/cow.svg",
+      "archivePath": "assets/lesson-2/cow.svg",
+      "bytes": 447,
+      "extension": ".svg",
+      "sha256": "cfea9dffaa9f4877c9e442ba9c72dc8603cfab679bade2b416e34739b9cb3c23"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-2/duck.svg",
+      "archivePath": "assets/lesson-2/duck.svg",
+      "bytes": 402,
+      "extension": ".svg",
+      "sha256": "9205984520ecf5e9c3d0a133089160797693901384bfe315b88c70c75e953b4c"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-2/farm-scene-2.svg",
+      "archivePath": "assets/lesson-2/farm-scene-2.svg",
+      "bytes": 540,
+      "extension": ".svg",
+      "sha256": "d3bd7955ad029e5180a67903fa500b9b7320749b81696a999300e502c7776d1d"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-2/house.svg",
+      "archivePath": "assets/lesson-2/house.svg",
+      "bytes": 392,
+      "extension": ".svg",
+      "sha256": "92cbdb38b3c8da24ea19ce54ec0c7c2fd65ce63be9b8b9df2746d41cb9d81b85"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-2/masks.svg",
+      "archivePath": "assets/lesson-2/masks.svg",
+      "bytes": 563,
+      "extension": ".svg",
+      "sha256": "b96173ff43d4c8d91d4218c9d6b89473f5389ec35bc206fe12d06328781aeb3d"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-2/sheep.svg",
+      "archivePath": "assets/lesson-2/sheep.svg",
+      "bytes": 429,
+      "extension": ".svg",
+      "sha256": "994f33227bd5cd9e74cb8b906d8a25bcfff445f1d9dc4a605a276a547f42d592"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-2/sounds.svg",
+      "archivePath": "assets/lesson-2/sounds.svg",
+      "bytes": 453,
+      "extension": ".svg",
+      "sha256": "d390aef2f69838cc75d5948f2398a53a4259e7b40e4292b69ec5b7879dd9fb47"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-2/workbook.svg",
+      "archivePath": "assets/lesson-2/workbook.svg",
+      "bytes": 497,
+      "extension": ".svg",
+      "sha256": "ab989d4d40a053e4398eb7f053c01280816facf7ff1fd14c1a59e925a938fd5e"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-3/animals-bag.svg",
+      "archivePath": "assets/lesson-3/animals-bag.svg",
+      "bytes": 629,
+      "extension": ".svg",
+      "sha256": "c64861cad33600e06cb56fd7d69f941089a096f6c7ea1d147beba04bf0f43c88"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-3/car-silhouette.svg",
+      "archivePath": "assets/lesson-3/car-silhouette.svg",
+      "bytes": 558,
+      "extension": ".svg",
+      "sha256": "ded32864b4caf8aa16ce1bd4dacefe00a3b05f8fec7e62e5e5b711dd300e758a"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-3/color-cards.svg",
+      "archivePath": "assets/lesson-3/color-cards.svg",
+      "bytes": 739,
+      "extension": ".svg",
+      "sha256": "140cc1c5f956529c54f0c51532b9b990f41f7f63a53f05e32ff8cfc9c0fd9be6"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-3/color-die.svg",
+      "archivePath": "assets/lesson-3/color-die.svg",
+      "bytes": 651,
+      "extension": ".svg",
+      "sha256": "a1caf6edda66964957b73293a7b5bf3da171e677080fd36ce7e317f64d4e9a03"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-3/color-world.svg",
+      "archivePath": "assets/lesson-3/color-world.svg",
+      "bytes": 598,
+      "extension": ".svg",
+      "sha256": "a966769331311f8dae1e3d999be8a89b31aa230a4a46c28156d172316ced00e7"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-3/toy-car.svg",
+      "archivePath": "assets/lesson-3/toy-car.svg",
+      "bytes": 672,
+      "extension": ".svg",
+      "sha256": "7355536449b3f873b89b95ec0b4cd4966428189a43cac60caf27fbac3e63c256"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-3/workbook.svg",
+      "archivePath": "assets/lesson-3/workbook.svg",
+      "bytes": 720,
+      "extension": ".svg",
+      "sha256": "d96d7076dfaaf733aa5055ec13a4bbb0da52834f40e6335fd2d2d19888bb301a"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-4/abacus.svg",
+      "archivePath": "assets/lesson-4/abacus.svg",
+      "bytes": 1764,
+      "extension": ".svg",
+      "sha256": "98055c0a15aedf25935747611f1aa1101cd2919d25dade9bacbfd7a468f07823"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-4/action-cards.svg",
+      "archivePath": "assets/lesson-4/action-cards.svg",
+      "bytes": 2307,
+      "extension": ".svg",
+      "sha256": "e1d05972ab832ac299f269dcf0270240c319bd1909979c2b849c6fbb5b4f9105"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-4/color-animals-grassland.svg",
+      "archivePath": "assets/lesson-4/color-animals-grassland.svg",
+      "bytes": 2615,
+      "extension": ".svg",
+      "sha256": "d70d0ad5199f44335d8868e87e7d8ef5eb2da4807eba66520f6bdb17e0eb75f6"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-4/color-card-black.svg",
+      "archivePath": "assets/lesson-4/color-card-black.svg",
+      "bytes": 681,
+      "extension": ".svg",
+      "sha256": "92dcddc3ce8e334b275aef6a95cc93f915c130d4741ce357f110a9f801e4f471"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-4/color-card-brown.svg",
+      "archivePath": "assets/lesson-4/color-card-brown.svg",
+      "bytes": 683,
+      "extension": ".svg",
+      "sha256": "871b4614e9dd0c43d7e45b075205cc26a09c75974af4fca41de501ea12ef2d30"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-4/color-card-orange.svg",
+      "archivePath": "assets/lesson-4/color-card-orange.svg",
+      "bytes": 682,
+      "extension": ".svg",
+      "sha256": "323b66abd32ce6c0acdfdba703a8345c3daa8d93afd57c89d77c796c16dae1a2"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-4/color-card-white.svg",
+      "archivePath": "assets/lesson-4/color-card-white.svg",
+      "bytes": 702,
+      "extension": ".svg",
+      "sha256": "c57f15a4ff3cc40b6d3539a4c23a4e001ccf612369bd7f1eb92b2457fe15892c"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-4/color-cards.svg",
+      "archivePath": "assets/lesson-4/color-cards.svg",
+      "bytes": 2316,
+      "extension": ".svg",
+      "sha256": "a2eac366b8618625fd4d0ebe85655abe0ec6dca99cf19a4d98fe1585d5cd38d9"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-4/color-domino.svg",
+      "archivePath": "assets/lesson-4/color-domino.svg",
+      "bytes": 1851,
+      "extension": ".svg",
+      "sha256": "c5103dfae3048df482ad85c6af03b4354d2d0d63b1079d26a8b9069018f468f8"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-4/games/lesson-4-game-4-6.pptx",
+      "archivePath": "assets/lesson-4/games/lesson-4-game-4-6.pptx",
+      "bytes": 45254,
+      "extension": ".pptx",
+      "sha256": "734b2650aefb5d05ed0088749bebb0db783603df717b07d68c26001da7f1afdf"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-4/games/lesson-4-game-4-7.pptx",
+      "archivePath": "assets/lesson-4/games/lesson-4-game-4-7.pptx",
+      "bytes": 398446,
+      "extension": ".pptx",
+      "sha256": "a665b4df9484f3244caa9b996fff8d5bcef00aae989e70be49771f493a34435a"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-4/grassland.svg",
+      "archivePath": "assets/lesson-4/grassland.svg",
+      "bytes": 1732,
+      "extension": ".svg",
+      "sha256": "e05ac977f4b61db93bea25770f682a09ba1217f5d042f343d1741026f1971cb3"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-4/heart-color.svg",
+      "archivePath": "assets/lesson-4/heart-color.svg",
+      "bytes": 1597,
+      "extension": ".svg",
+      "sha256": "60d0e3b4826a09dfb43c74122ef4f9914ddc2111c73db6cba44493106162c229"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-4/workbook-pages-7-8.svg",
+      "archivePath": "assets/lesson-4/workbook-pages-7-8.svg",
+      "bytes": 2857,
+      "extension": ".svg",
+      "sha256": "3de0f89d004a7e46eb5381c7752f4c9ddf75a39b6815043d1153f68f0858031a"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-5/appendices/appendix-1-flashcards.pdf",
+      "archivePath": "assets/lesson-5/appendices/appendix-1-flashcards.pdf",
+      "bytes": 1096242,
+      "extension": ".pdf",
+      "sha256": "a80f8d03ad97f815edea7826d4a63f83350168feba45e302c464cfdbe8c8470d"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-5/appendices/appendix-1-page-1.png",
+      "archivePath": "assets/lesson-5/appendices/appendix-1-page-1.png",
+      "bytes": 42010,
+      "extension": ".png",
+      "sha256": "6e5836754bcc8dcfa73d87cc40e3b641dcd59b08dc06e2cdc97c557087baeb3a"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-5/appendices/appendix-1-page-2.png",
+      "archivePath": "assets/lesson-5/appendices/appendix-1-page-2.png",
+      "bytes": 89134,
+      "extension": ".png",
+      "sha256": "bc7337cd613296b0eb3334944d16255718a7b51b44d48d8ac3395ba89ee60508"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-5/appendices/appendix-1-page-3.png",
+      "archivePath": "assets/lesson-5/appendices/appendix-1-page-3.png",
+      "bytes": 43414,
+      "extension": ".png",
+      "sha256": "eebe2c227750a04aac80a722ae8936164295ec2fbaeb8eaa2fff15b28eee793d"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-5/appendices/appendix-1-page-4.png",
+      "archivePath": "assets/lesson-5/appendices/appendix-1-page-4.png",
+      "bytes": 104542,
+      "extension": ".png",
+      "sha256": "3da867bb854f72879eba6d6ff5b40de4e359a7181b5bdc5a0da02d9de167e2cb"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-5/appendices/appendix-1-page-5.png",
+      "archivePath": "assets/lesson-5/appendices/appendix-1-page-5.png",
+      "bytes": 39606,
+      "extension": ".png",
+      "sha256": "ee296d0e1f6f80ce87f0f10d3c0b552558eba6f32d26a3905ed969aa209ba58e"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-5/appendices/appendix-1-page-6.png",
+      "archivePath": "assets/lesson-5/appendices/appendix-1-page-6.png",
+      "bytes": 81673,
+      "extension": ".png",
+      "sha256": "4fdd48ea5b08f14fa8cf9f92d49aaf589d35bf0f695b8eb1f0e5d4ba1eff81bd"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-5/appendices/appendix-1-page-7.png",
+      "archivePath": "assets/lesson-5/appendices/appendix-1-page-7.png",
+      "bytes": 58184,
+      "extension": ".png",
+      "sha256": "6740f9f6084eade8ae760999bd4e3bca2cb06d05ac8cfcb5ceda8b1a350cf1bf"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-5/appendices/appendix-1-page-8.png",
+      "archivePath": "assets/lesson-5/appendices/appendix-1-page-8.png",
+      "bytes": 138381,
+      "extension": ".png",
+      "sha256": "bb1bf3a1bc6effde9cd6c8948b2f70d14ca516e62442ba5eb72c94df5d47dcaf"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-5/appendices/appendix-2-page-01.png",
+      "archivePath": "assets/lesson-5/appendices/appendix-2-page-01.png",
+      "bytes": 131559,
+      "extension": ".png",
+      "sha256": "ddc764550d22afc5e261499bedb44c22ebe3992709e227c6597b6653e62a4956"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-5/appendices/appendix-2-wheel.pdf",
+      "archivePath": "assets/lesson-5/appendices/appendix-2-wheel.pdf",
+      "bytes": 662296,
+      "extension": ".pdf",
+      "sha256": "25edeff78280aa34007ee9db23387583a049f4d61c043fa671a1e8e319a54dda"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-5/appendices/appendix-3-cards.pdf",
+      "archivePath": "assets/lesson-5/appendices/appendix-3-cards.pdf",
+      "bytes": 296288,
+      "extension": ".pdf",
+      "sha256": "6b389c2866882d8c18655062ecfb38efe66c39a272f2e016b6db491172e71e54"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-5/appendices/appendix-3-cards.pptx",
+      "archivePath": "assets/lesson-5/appendices/appendix-3-cards.pptx",
+      "bytes": 2143681,
+      "extension": ".pptx",
+      "sha256": "5a45d3349061b00f9b8f75c314ce3ce3d0a4e35ba5cf403bf90cefd31119d77b"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-5/appendices/appendix-3-page-1.png",
+      "archivePath": "assets/lesson-5/appendices/appendix-3-page-1.png",
+      "bytes": 133409,
+      "extension": ".png",
+      "sha256": "d9a64d457670c2acfc641e6e1d1fa95618aac22e062d898fc87f76965123cf52"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-5/appendices/appendix-3-page-2.png",
+      "archivePath": "assets/lesson-5/appendices/appendix-3-page-2.png",
+      "bytes": 8172,
+      "extension": ".png",
+      "sha256": "7c5eefda2546087ce64a6c57863584590279f3778f923900089e3579d76aa3b6"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-5/appendices/appendix-4-favorite-flowers.pdf",
+      "archivePath": "assets/lesson-5/appendices/appendix-4-favorite-flowers.pdf",
+      "bytes": 111274,
+      "extension": ".pdf",
+      "sha256": "49391270f5bc9f865bca2c46fadf831e68be1dd7b774e00c29a2843208c16045"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-5/appendices/appendix-4-page-1.png",
+      "archivePath": "assets/lesson-5/appendices/appendix-4-page-1.png",
+      "bytes": 137346,
+      "extension": ".png",
+      "sha256": "d47c45003b776f8cdc0c4f62779f1f3ea5586a2b45fa715582a5ab8464ea3a24"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-5/appendices/appendix-4-page-2.png",
+      "archivePath": "assets/lesson-5/appendices/appendix-4-page-2.png",
+      "bytes": 8186,
+      "extension": ".png",
+      "sha256": "67d9167753a1f4bf92354905cc364ba9490843806f31f156572aa0c16f574652"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-5/appendices/appendix-5-actions.pdf",
+      "archivePath": "assets/lesson-5/appendices/appendix-5-actions.pdf",
+      "bytes": 222539,
+      "extension": ".pdf",
+      "sha256": "d0a957678ba224091b0e6a89fdfd3a59f48cbfbc04dce5c76228c1ce85a620d2"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-5/appendices/appendix-5-page-1.png",
+      "archivePath": "assets/lesson-5/appendices/appendix-5-page-1.png",
+      "bytes": 138788,
+      "extension": ".png",
+      "sha256": "449ff83f50e60d73b68c7331d580c7456b506b069c002ff31f937e02bca9986c"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-5/appendices/appendix-5-page-2.png",
+      "archivePath": "assets/lesson-5/appendices/appendix-5-page-2.png",
+      "bytes": 124648,
+      "extension": ".png",
+      "sha256": "e23d4261d9090ce6bbbc64bf022005623a0e7c73bd28217318b9a4beffbd6372"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-5/appendices/appendix-5-page-3.png",
+      "archivePath": "assets/lesson-5/appendices/appendix-5-page-3.png",
+      "bytes": 136549,
+      "extension": ".png",
+      "sha256": "72ece8bba149f20ae1af23bd8ee38e5e0bfa5dad5ba24bcdb4b1e599fbcd1e3f"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-5/appendices/appendix-5-page-4.png",
+      "archivePath": "assets/lesson-5/appendices/appendix-5-page-4.png",
+      "bytes": 65493,
+      "extension": ".png",
+      "sha256": "ed59729dd57c27a1dd44b391e7c18c759141b53e1e0dccd858f1ca0252dfe31d"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-5/appendices/appendix-5-page-5.png",
+      "archivePath": "assets/lesson-5/appendices/appendix-5-page-5.png",
+      "bytes": 110259,
+      "extension": ".png",
+      "sha256": "80e5366b1fb521f230c9c50a39ef1b100f5657a75f2cd470043ab9dd939b87ef"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-5/appendices/appendix-6-meadow-count.pdf",
+      "archivePath": "assets/lesson-5/appendices/appendix-6-meadow-count.pdf",
+      "bytes": 587895,
+      "extension": ".pdf",
+      "sha256": "4c4ac8cbb5dabc9d2b2d840361791b5dc8cbf5981020b693169020638c5df81e"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-5/appendices/appendix-6-page-1.png",
+      "archivePath": "assets/lesson-5/appendices/appendix-6-page-1.png",
+      "bytes": 151379,
+      "extension": ".png",
+      "sha256": "aad8fd8b1e879a624b7f242c89c0f23ef43610a6594a9b777d500a313b002b7c"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-5/appendices/appendix-6-page-2.png",
+      "archivePath": "assets/lesson-5/appendices/appendix-6-page-2.png",
+      "bytes": 152967,
+      "extension": ".png",
+      "sha256": "a29b831912f9f9d35bd5f6b0e343e78264d76426df0ec94f50f25bf293e9b6cf"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-5/appendices/appendix-6-page-3.png",
+      "archivePath": "assets/lesson-5/appendices/appendix-6-page-3.png",
+      "bytes": 275350,
+      "extension": ".png",
+      "sha256": "929d8fe05dc639e5beb4a41e0e1ed8aaf3d2232c3e0da5554dbc7f7e9ec66afd"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-5/appendices/appendix-7-flower-coloring.pdf",
+      "archivePath": "assets/lesson-5/appendices/appendix-7-flower-coloring.pdf",
+      "bytes": 232918,
+      "extension": ".pdf",
+      "sha256": "a2a5edc48ac6192bd01bfc43214a3e54480c5a826942403a27fe3bc98ee963c9"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-5/appendices/appendix-7-page-01.png",
+      "archivePath": "assets/lesson-5/appendices/appendix-7-page-01.png",
+      "bytes": 243087,
+      "extension": ".png",
+      "sha256": "0fbb9c28cb79ea556a550cd76e0a625a03e973cff6c59cc141bc2629dee6253d"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-5/appendices/appendix-8-homework-meadow.pdf",
+      "archivePath": "assets/lesson-5/appendices/appendix-8-homework-meadow.pdf",
+      "bytes": 153389,
+      "extension": ".pdf",
+      "sha256": "707938c5572200c9f8e85997d7a0ead2354140cd07d33c499de1ccf26ca5fdee"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-5/appendices/appendix-8-page-01.png",
+      "archivePath": "assets/lesson-5/appendices/appendix-8-page-01.png",
+      "bytes": 135862,
+      "extension": ".png",
+      "sha256": "aa1d779be356ebc217194634e6b8ed7eb036cd4874d8f19d1846f3d493a0e716"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-5/appendices/homework-lesson-5.pdf",
+      "archivePath": "assets/lesson-5/appendices/homework-lesson-5.pdf",
+      "bytes": 153283,
+      "extension": ".pdf",
+      "sha256": "4011860aba5bc211e4563cb7c58eb31d0e13809ca5e4cec356c51374dc78c510"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-5/appendices/homework-page-01.png",
+      "archivePath": "assets/lesson-5/appendices/homework-page-01.png",
+      "bytes": 135793,
+      "extension": ".png",
+      "sha256": "5822a5f74240c5248bf85b4ea59b17474ee3a989d048f59b3d55ababc76ce5eb"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-5/assets/action-fly.jpeg",
+      "archivePath": "assets/lesson-5/assets/action-fly.jpeg",
+      "bytes": 63225,
+      "extension": ".jpeg",
+      "sha256": "ecdef10eddc3dfd97cdb014d843079f1128743cb479ba27e3907983104edf845"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-5/assets/colored-flowers.png",
+      "archivePath": "assets/lesson-5/assets/colored-flowers.png",
+      "bytes": 282311,
+      "extension": ".png",
+      "sha256": "e8f6401ad4a1ecf10cc9cd24e1b3ded5e52b0ec1c4f37e6a10dc0d13fbb90b4d"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-5/assets/count-hands.png",
+      "archivePath": "assets/lesson-5/assets/count-hands.png",
+      "bytes": 101139,
+      "extension": ".png",
+      "sha256": "66d708a1281e7e1992643d4caf275171a64a678d41f90b4696f8b32914987bd3"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-5/assets/flower-blue.jpeg",
+      "archivePath": "assets/lesson-5/assets/flower-blue.jpeg",
+      "bytes": 15010,
+      "extension": ".jpeg",
+      "sha256": "7e012b05afa0eba3169c8c3b61dac43ffbb408a81cd9beb9f04f798189feacc2"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-5/assets/flower-outline.jpeg",
+      "archivePath": "assets/lesson-5/assets/flower-outline.jpeg",
+      "bytes": 195723,
+      "extension": ".jpeg",
+      "sha256": "12d2222985f08a02ba6b20b0876200f165dc1c82bc8f7ecc2eb27ca6a3450d65"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-5/assets/flower-purple.png",
+      "archivePath": "assets/lesson-5/assets/flower-purple.png",
+      "bytes": 87100,
+      "extension": ".png",
+      "sha256": "332bfdabcce44771c7220542107a68e42c0f67aca9ebf01ae53851aa5c29d9d7"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-5/assets/flower-red.jpeg",
+      "archivePath": "assets/lesson-5/assets/flower-red.jpeg",
+      "bytes": 10291,
+      "extension": ".jpeg",
+      "sha256": "7b6f839ae131874f04e1678ceac700cca17ced3edd63fc7b368ba13711709422"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-5/assets/grass.png",
+      "archivePath": "assets/lesson-5/assets/grass.png",
+      "bytes": 427040,
+      "extension": ".png",
+      "sha256": "b6afe89c32ef331717a493c1c18d2fc80fc5d1e9a40a985a962e8ce279c165cd"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-5/assets/heroes.png",
+      "archivePath": "assets/lesson-5/assets/heroes.png",
+      "bytes": 1047970,
+      "extension": ".png",
+      "sha256": "59f7444e92209f411caa0a79760d61e41e7ea1a83e7202b7b383bf124814f95c"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-5/assets/homework-meadow.jpeg",
+      "archivePath": "assets/lesson-5/assets/homework-meadow.jpeg",
+      "bytes": 32470,
+      "extension": ".jpeg",
+      "sha256": "17b6e71d09255410df4b69a1b14c7c2501a9f3ae382bf19fc901688ab721a677"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-5/assets/meadow-bg.jpeg",
+      "archivePath": "assets/lesson-5/assets/meadow-bg.jpeg",
+      "bytes": 12357,
+      "extension": ".jpeg",
+      "sha256": "0499d94810991176fd2ccc92c79a71282e6905954b85eb55140af65d4c6a0fd0"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-5/assets/tree.png",
+      "archivePath": "assets/lesson-5/assets/tree.png",
+      "bytes": 58065,
+      "extension": ".png",
+      "sha256": "93ed1f585027d341bcd10f5b32264f90443e23e0b71c6c6b924fa0b3ce6b8ec7"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-5/audio/lesson-5-audio-1.wav",
+      "archivePath": "assets/lesson-5/audio/lesson-5-audio-1.wav",
+      "bytes": 28074,
+      "extension": ".wav",
+      "sha256": "99e4b705d0c8b756c697e73426bd9bdb46b8e0eb9c1c317c77552d10e1c6bedc"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-5/presentation/lesson-5-slide-01.png",
+      "archivePath": "assets/lesson-5/presentation/lesson-5-slide-01.png",
+      "bytes": 19790,
+      "extension": ".png",
+      "sha256": "8e120456710bf7ee17117dfb7ed0ed71f03a375286726ac6089635cf97712a66"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-5/presentation/lesson-5-slide-02.png",
+      "archivePath": "assets/lesson-5/presentation/lesson-5-slide-02.png",
+      "bytes": 211172,
+      "extension": ".png",
+      "sha256": "3057228473f8a6d78854264b454c73a20db3c505fbe6d75891c741a8c7319908"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-5/presentation/lesson-5-slide-03.png",
+      "archivePath": "assets/lesson-5/presentation/lesson-5-slide-03.png",
+      "bytes": 11952,
+      "extension": ".png",
+      "sha256": "2e5dde588083f4d82f6fa2c79c006a851086bfd84b96c75c197a352dcca7057b"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-5/presentation/lesson-5-slide-04.png",
+      "archivePath": "assets/lesson-5/presentation/lesson-5-slide-04.png",
+      "bytes": 159549,
+      "extension": ".png",
+      "sha256": "02e4ac5614741a457192dadb9461a8b219d548cfac9dfe90414dc52bcad49062"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-5/presentation/lesson-5-slide-05.png",
+      "archivePath": "assets/lesson-5/presentation/lesson-5-slide-05.png",
+      "bytes": 11842,
+      "extension": ".png",
+      "sha256": "53a9f8bfd0b73bf7822488c4a050d26a153dd1bf05d8583df7be51c74e0c4f16"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-5/presentation/lesson-5-slide-06.png",
+      "archivePath": "assets/lesson-5/presentation/lesson-5-slide-06.png",
+      "bytes": 139726,
+      "extension": ".png",
+      "sha256": "102c833c65aaa30be1c960d764de8b11f6dd17e12ce48893db501f1bf1cbeff2"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-5/presentation/lesson-5-slide-07.png",
+      "archivePath": "assets/lesson-5/presentation/lesson-5-slide-07.png",
+      "bytes": 84118,
+      "extension": ".png",
+      "sha256": "d4db336a0fa93734f050346a69856bb952c7865f915b651ec3e194c369a81c85"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-5/presentation/lesson-5-slide-08.png",
+      "archivePath": "assets/lesson-5/presentation/lesson-5-slide-08.png",
+      "bytes": 124537,
+      "extension": ".png",
+      "sha256": "329bd20fb014f8c3c4e2d9df5d41eb41637f6a4bda69157dc8682710ae553977"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-5/presentation/lesson-5-slide-09.png",
+      "archivePath": "assets/lesson-5/presentation/lesson-5-slide-09.png",
+      "bytes": 89403,
+      "extension": ".png",
+      "sha256": "675514b2676797bbf0dd1da2bd0f319dddc76b38d0d0fd9d7d9cdebd66d45fe0"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-5/presentation/lesson-5-slide-10.png",
+      "archivePath": "assets/lesson-5/presentation/lesson-5-slide-10.png",
+      "bytes": 196321,
+      "extension": ".png",
+      "sha256": "dc00b9120c83da1b011c86673dd72ea03c17b7630568952a473201bb534e903b"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-5/presentation/lesson-5-slide-11.png",
+      "archivePath": "assets/lesson-5/presentation/lesson-5-slide-11.png",
+      "bytes": 132318,
+      "extension": ".png",
+      "sha256": "8bd59c7a4be8918064bab9ea6066ebe99fcd46c190c4a33796783dc52f3112ca"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-5/presentation/lesson-5-slide-12.png",
+      "archivePath": "assets/lesson-5/presentation/lesson-5-slide-12.png",
+      "bytes": 147033,
+      "extension": ".png",
+      "sha256": "4d345a208f078f86a0302ea08e2dec4faca9018bd13f4c6d2bf7f58c7fd24e96"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-5/presentation/lesson-5-slide-13.png",
+      "archivePath": "assets/lesson-5/presentation/lesson-5-slide-13.png",
+      "bytes": 138180,
+      "extension": ".png",
+      "sha256": "be69bb930131da730c38994a215ed69bac65e0be3f42e7bb114945f4c6101f63"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-5/presentation/lesson-5-slide-14.png",
+      "archivePath": "assets/lesson-5/presentation/lesson-5-slide-14.png",
+      "bytes": 123478,
+      "extension": ".png",
+      "sha256": "dbcfdb3eee08a894b73d18487cea01db8ce5054ff0a39b98dc3548fe1b879a62"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-5/presentation/lesson-5-slide-15.png",
+      "archivePath": "assets/lesson-5/presentation/lesson-5-slide-15.png",
+      "bytes": 137281,
+      "extension": ".png",
+      "sha256": "be5a07225c478e8859a7e9d7dd1381ad8ccc48415c7f02e6e65436a80d09ef83"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-5/presentation/lesson-5-slide-16.png",
+      "archivePath": "assets/lesson-5/presentation/lesson-5-slide-16.png",
+      "bytes": 74839,
+      "extension": ".png",
+      "sha256": "dfa4a4a68418017f4b70d9a927aa90a52b4d09d373743256b63d3ece1b23beef"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-5/presentation/lesson-5-slide-17.png",
+      "archivePath": "assets/lesson-5/presentation/lesson-5-slide-17.png",
+      "bytes": 111912,
+      "extension": ".png",
+      "sha256": "ad375fd1eb727f37e83ed6c37d16b3ca1a344249016cb4f8c882eddfd5fd1511"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-5/presentation/lesson-5-slide-18.png",
+      "archivePath": "assets/lesson-5/presentation/lesson-5-slide-18.png",
+      "bytes": 89403,
+      "extension": ".png",
+      "sha256": "675514b2676797bbf0dd1da2bd0f319dddc76b38d0d0fd9d7d9cdebd66d45fe0"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-5/presentation/lesson-5-slide-19.png",
+      "archivePath": "assets/lesson-5/presentation/lesson-5-slide-19.png",
+      "bytes": 260287,
+      "extension": ".png",
+      "sha256": "57886924c33022755150a3554bbacd81457bfd79caafea52d6f6094913608dac"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-5/presentation/lesson-5-slide-20.png",
+      "archivePath": "assets/lesson-5/presentation/lesson-5-slide-20.png",
+      "bytes": 300838,
+      "extension": ".png",
+      "sha256": "a8898a15309f50aa23aa8141b73b19908b454f8abcc3b6472a1731aa6aaa425c"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-5/presentation/lesson-5-slide-21.png",
+      "archivePath": "assets/lesson-5/presentation/lesson-5-slide-21.png",
+      "bytes": 332570,
+      "extension": ".png",
+      "sha256": "8955eb13f53a3a7d5d4f2fdf1a3565fd1542c135045357ef239784ae1704aa96"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-5/presentation/lesson-5-slide-22.png",
+      "archivePath": "assets/lesson-5/presentation/lesson-5-slide-22.png",
+      "bytes": 72584,
+      "extension": ".png",
+      "sha256": "423d16e9f43fc269d3893f15bdf5e9b4f60089283dd376a8fe6104d23d0bbf36"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-5/presentation/lesson-5-slide-23.png",
+      "archivePath": "assets/lesson-5/presentation/lesson-5-slide-23.png",
+      "bytes": 64199,
+      "extension": ".png",
+      "sha256": "81965e8a0767109a2682889a634c4538ec50fef949ff8c6cd266aaf98c7cf583"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-5/presentation/lesson-5-slide-24.png",
+      "archivePath": "assets/lesson-5/presentation/lesson-5-slide-24.png",
+      "bytes": 120977,
+      "extension": ".png",
+      "sha256": "fbad497b3d0bb929e1a67cb7a92ebdd34d3ebe4de8e55f3a2f8f00b47372fa36"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-5/presentation/lesson-5-slide-25.png",
+      "archivePath": "assets/lesson-5/presentation/lesson-5-slide-25.png",
+      "bytes": 133008,
+      "extension": ".png",
+      "sha256": "27ca0ccc8d470d22169b9e3db1cca4e0a8976d8d67d73ecd8af52ce5d7ad4972"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-5/presentation/lesson-5-slide-26.png",
+      "archivePath": "assets/lesson-5/presentation/lesson-5-slide-26.png",
+      "bytes": 11850,
+      "extension": ".png",
+      "sha256": "d5b4742ab90ca41f6882219afff444ab2614baffd6ddb8f434b2830d8a26625e"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-5/presentation/lesson-5-slide-27.png",
+      "archivePath": "assets/lesson-5/presentation/lesson-5-slide-27.png",
+      "bytes": 207084,
+      "extension": ".png",
+      "sha256": "484a880e6b5f79fcb769284149bc46747704f9673f0d6177ef82c349936d64c2"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-5/presentation/lesson-5-slide-28.png",
+      "archivePath": "assets/lesson-5/presentation/lesson-5-slide-28.png",
+      "bytes": 94440,
+      "extension": ".png",
+      "sha256": "949a304c5669cd48e02095e8e4e684df617f81831480ea2c35c230578fd6ed27"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-5/presentation/lesson-5-slide-29.png",
+      "archivePath": "assets/lesson-5/presentation/lesson-5-slide-29.png",
+      "bytes": 139726,
+      "extension": ".png",
+      "sha256": "102c833c65aaa30be1c960d764de8b11f6dd17e12ce48893db501f1bf1cbeff2"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-5/presentation/lesson-5-slide-30.png",
+      "archivePath": "assets/lesson-5/presentation/lesson-5-slide-30.png",
+      "bytes": 135588,
+      "extension": ".png",
+      "sha256": "b9018492b49283a220e10f5838f6fb9ed95c0a92306e7d8deeed2eefa2b087f4"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-5/presentation/lesson-5-visual.pdf",
+      "archivePath": "assets/lesson-5/presentation/lesson-5-visual.pdf",
+      "bytes": 1807297,
+      "extension": ".pdf",
+      "sha256": "ad2ef7dfe003840f4424d67b3f1eee53fb58389d7eddfe2ae6d9ceab58ce8e96"
+    },
+    {
+      "originalPath": "public/methodologies/world-around-me/lesson-5/presentation/lesson-5-visual.pptx",
+      "archivePath": "assets/lesson-5/presentation/lesson-5-visual.pptx",
+      "bytes": 10176361,
+      "extension": ".pptx",
+      "sha256": "c08f8b9efa3bd82c64c942ebe6e68e4353613c0c8012adb9d1428a34198735bc"
+    },
+    {
+      "originalPath": "public/methodologies/01.png",
+      "archivePath": "assets/methodology-cover.png",
+      "bytes": 1416049,
+      "extension": ".png",
+      "sha256": "f4f6343b9c1e5d0ed20ca0f5c09dbcdb6c2b6dc82679bf5b4ef4b1cb30fee325"
+    }
+  ]
+}

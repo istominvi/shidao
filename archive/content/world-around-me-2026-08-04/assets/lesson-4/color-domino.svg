@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 760" role="img" aria-label="Приложение 4: домино цветов">
+  <rect width="1200" height="760" rx="44" fill="#f8fafc"/>
+  <text x="600" y="70" text-anchor="middle" font-family="Arial, sans-serif" font-size="38" font-weight="800" fill="#111827">Домино цветов · найди пару</text>
+  <g font-family="Noto Sans SC, Arial, sans-serif" font-size="52" font-weight="800">
+    <rect x="90" y="125" width="360" height="110" rx="22" fill="#fff7ed" stroke="#fb923c" stroke-width="5"/>
+    <text x="270" y="198" text-anchor="middle" fill="#9a3412">橘色</text>
+    <rect x="90" y="270" width="360" height="110" rx="22" fill="#f5f5f4" stroke="#262626" stroke-width="5"/>
+    <text x="270" y="343" text-anchor="middle" fill="#111111">黑色</text>
+    <rect x="90" y="415" width="360" height="110" rx="22" fill="#eff6ff" stroke="#93c5fd" stroke-width="5"/>
+    <text x="270" y="488" text-anchor="middle" fill="#1d4ed8">白色</text>
+    <rect x="90" y="560" width="360" height="110" rx="22" fill="#fef3c7" stroke="#92400e" stroke-width="5"/>
+    <text x="270" y="633" text-anchor="middle" fill="#78350f">棕色</text>
+  </g>
+  <g>
+    <rect x="750" y="125" width="250" height="110" rx="22" fill="#111111"/>
+    <rect x="750" y="270" width="250" height="110" rx="22" fill="#ffffff" stroke="#60a5fa" stroke-width="5"/>
+    <rect x="750" y="415" width="250" height="110" rx="22" fill="#f97316"/>
+    <rect x="750" y="560" width="250" height="110" rx="22" fill="#8b5e34"/>
+  </g>
+  <g stroke="#94a3b8" stroke-width="4" stroke-dasharray="12 12" fill="none">
+    <path d="M455 180 C570 180 615 470 745 470"/>
+    <path d="M455 325 C585 325 620 180 745 180"/>
+    <path d="M455 470 C585 470 620 325 745 325"/>
+    <path d="M455 615 C585 615 620 615 745 615"/>
+  </g>
+</svg>

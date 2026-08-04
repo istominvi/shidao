@@ -1,0 +1,3905 @@
+{
+  "lessons": [
+    {
+      "blocks": [
+        {
+          "block": {
+            "id": "555bd2cc-9a2f-2517-9384-2c9cec7f6cbc",
+            "title": "Приветствие и запуск урока",
+            "content": {
+              "goal": "Познакомить детей со словами 狗, 猫, 兔子, 马, 农场 и базовыми фразами урока.",
+              "title": "Урок 1. Животные на ферме",
+              "timeboxMinutes": 3,
+              "teacherScriptShort": "Поприветствовать детей и героев курса, обозначить тему и формат игровой работы."
+            },
+            "block_type": "intro_framing",
+            "created_at": "2026-04-06T21:49:31.837583+00:00",
+            "sort_order": 1,
+            "updated_at": "2026-04-07T11:09:42.02478+00:00",
+            "methodology_lesson_id": "b62b2f3d-c16f-6f3a-4a90-c124439690cf"
+          },
+          "assetLinks": []
+        },
+        {
+          "block": {
+            "id": "d69acffa-87c7-ccf4-f58c-39d14c944335",
+            "title": "Материалы и реквизит урока",
+            "content": {
+              "roomSetupNotes": "Подготовить свободное пространство для движения и разложить мягкие игрушки в разных частях класса к середине урока.",
+              "materialsChecklist": [
+                "герои курса",
+                "карточки 狗, 猫, 兔子, 马",
+                "карточка 农场",
+                "малярный скотч",
+                "мяч",
+                "палочки для счета",
+                "приложение 1",
+                "указка",
+                "мягкие игрушки: собака, кот, кролик, лошадь",
+                "рабочая тетрадь",
+                "игрушечная ферма"
+              ]
+            },
+            "block_type": "materials_prep",
+            "created_at": "2026-04-06T21:49:31.837583+00:00",
+            "sort_order": 2,
+            "updated_at": "2026-04-07T11:09:42.02478+00:00",
+            "methodology_lesson_id": "b62b2f3d-c16f-6f3a-4a90-c124439690cf"
+          },
+          "assetLinks": [
+            {
+              "link": {
+                "id": "a3aa9c83-225d-adc9-d308-311546ce5350",
+                "sort_order": 0,
+                "reusable_asset_id": "72714b05-f0e9-11e2-0d76-6778ddd46bfc",
+                "methodology_lesson_block_id": "d69acffa-87c7-ccf4-f58c-39d14c944335"
+              },
+              "asset": {
+                "id": "72714b05-f0e9-11e2-0d76-6778ddd46bfc",
+                "kind": "worksheet_pdf",
+                "slug": "worksheet:appendix-1",
+                "title": "Приложение 1",
+                "file_ref": "/methodologies/world-around-me/lesson-1/appendix/appendix-1.pdf",
+                "metadata": {
+                  "previewImageRef": "/methodologies/world-around-me/lesson-1/appendix/appendix-1.png"
+                },
+                "created_at": "2026-04-06T21:49:31.711731+00:00",
+                "source_url": "https://drive.google.com/file/d/1hNwwBZ0S7SNmSbAAt-vz1aPanAluSTrC/view?usp=drive_link",
+                "updated_at": "2026-04-18T14:09:52.287359+00:00",
+                "description": "Материал для счёта и указки."
+              }
+            }
+          ]
+        },
+        {
+          "block": {
+            "id": "4ba6e49b-0903-59d3-e756-79fd5c3c65ec",
+            "title": "Видео farm animals",
+            "content": {
+              "focusPoints": [
+                "狗",
+                "猫",
+                "兔子",
+                "马"
+              ],
+              "promptBeforeWatch": "Смотрим видео farm animals и слушаем названия животных.",
+              "questionsAfterWatch": [
+                "Каких животных дети запомнили?"
+              ]
+            },
+            "block_type": "video_segment",
+            "created_at": "2026-04-06T21:49:31.837583+00:00",
+            "sort_order": 3,
+            "updated_at": "2026-04-07T11:09:42.02478+00:00",
+            "methodology_lesson_id": "b62b2f3d-c16f-6f3a-4a90-c124439690cf"
+          },
+          "assetLinks": [
+            {
+              "link": {
+                "id": "c64bddd5-b21a-d447-4c1c-bc4bd3376c91",
+                "sort_order": 0,
+                "reusable_asset_id": "277bac77-dff4-fc5f-9074-f6fd73bcc077",
+                "methodology_lesson_block_id": "4ba6e49b-0903-59d3-e756-79fd5c3c65ec"
+              },
+              "asset": {
+                "id": "277bac77-dff4-fc5f-9074-f6fd73bcc077",
+                "kind": "video",
+                "slug": "video:farm-animals",
+                "title": "farm animals",
+                "file_ref": "/methodologies/world-around-me/lesson-1/media/e.mp4",
+                "metadata": {},
+                "created_at": "2026-04-06T21:49:31.711731+00:00",
+                "source_url": "https://drive.google.com/file/d/1NXyngOuT9WIwvgA0gvvSzZc9-BUuKT7k/view?usp=drive_link",
+                "updated_at": "2026-04-20T19:15:07.328959+00:00",
+                "description": "Видео урока 1."
+              }
+            }
+          ]
+        },
+        {
+          "block": {
+            "id": "8587f6ab-62d9-4c77-5b7d-26d171265e4f",
+            "title": "Новые слова и выражения",
+            "content": {
+              "items": [
+                {
+                  "term": "狗",
+                  "pinyin": "gǒu",
+                  "meaning": "собака"
+                },
+                {
+                  "term": "猫",
+                  "pinyin": "māo",
+                  "meaning": "кот / кошка"
+                },
+                {
+                  "term": "兔子",
+                  "pinyin": "tùzi",
+                  "meaning": "кролик"
+                },
+                {
+                  "term": "马",
+                  "pinyin": "mǎ",
+                  "meaning": "лошадь"
+                },
+                {
+                  "term": "农场",
+                  "pinyin": "nóngchǎng",
+                  "meaning": "ферма"
+                },
+                {
+                  "term": "我是…",
+                  "pinyin": "wǒ shì…",
+                  "meaning": "Я…"
+                },
+                {
+                  "term": "这是…",
+                  "pinyin": "zhè shì…",
+                  "meaning": "Это…"
+                },
+                {
+                  "term": "跑",
+                  "pinyin": "pǎo",
+                  "meaning": "бежать"
+                },
+                {
+                  "term": "跳",
+                  "pinyin": "tiào",
+                  "meaning": "прыгать"
+                },
+                {
+                  "term": "我们…吧！",
+                  "pinyin": "wǒmen…ba!",
+                  "meaning": "Давайте…!"
+                },
+                {
+                  "term": "在",
+                  "pinyin": "zài",
+                  "meaning": "в / находиться в"
+                }
+              ],
+              "miniDrill": "Первый проход: только слово. Второй проход: паттерн 这是… с карточкой.",
+              "practiceMode": "cards_two_passes_then_actions"
+            },
+            "block_type": "vocabulary_focus",
+            "created_at": "2026-04-06T21:49:31.837583+00:00",
+            "sort_order": 4,
+            "updated_at": "2026-04-07T11:09:42.02478+00:00",
+            "methodology_lesson_id": "b62b2f3d-c16f-6f3a-4a90-c124439690cf"
+          },
+          "assetLinks": []
+        },
+        {
+          "block": {
+            "id": "3bc0f661-cb45-f655-3b8b-f9f595fc3c05",
+            "title": "Паттерны: знакомство и называние",
+            "content": {
+              "fallbackRu": "Поддержать полный ответ в модели «我是…» и «这是…».",
+              "promptPatterns": [
+                "你是谁？",
+                "我是…",
+                "这是狗",
+                "这是猫",
+                "这是兔子",
+                "这是马"
+              ],
+              "expectedStudentResponses": [
+                "我是…",
+                "这是…"
+              ]
+            },
+            "block_type": "teacher_prompt_pattern",
+            "created_at": "2026-04-06T21:49:31.837583+00:00",
+            "sort_order": 5,
+            "updated_at": "2026-04-07T11:09:42.02478+00:00",
+            "methodology_lesson_id": "b62b2f3d-c16f-6f3a-4a90-c124439690cf"
+          },
+          "assetLinks": []
+        },
+        {
+          "block": {
+            "id": "0f6b01e4-7b58-237c-288c-11b6d4645495",
+            "title": "Имитация животных по карточкам",
+            "content": {
+              "steps": [
+                "Дети встают и по карточкам имитируют животных (лают, как собака, и т.д.).",
+                "Преподаватель сопровождает действия комментарием «我是狗» и другими вариантами с карточками."
+              ],
+              "activityType": "movement_imitation",
+              "successCriteria": [
+                "Дети связывают карточку с действием животного.",
+                "Дети повторяют модель «我是…» во время движения."
+              ]
+            },
+            "block_type": "guided_activity",
+            "created_at": "2026-04-06T21:49:31.837583+00:00",
+            "sort_order": 6,
+            "updated_at": "2026-04-07T11:09:42.02478+00:00",
+            "methodology_lesson_id": "b62b2f3d-c16f-6f3a-4a90-c124439690cf"
+          },
+          "assetLinks": []
+        },
+        {
+          "block": {
+            "id": "18fca24e-7c19-757c-476d-f2f894d28528",
+            "title": "Карточки на стене + мяч",
+            "content": {
+              "steps": [
+                "Закрепить карточки 狗, 猫, 兔子, 马 на стене с помощью скотча.",
+                "Преподаватель называет животное, ребёнок бросает мяч в нужную карточку.",
+                "После броска ребёнок проговаривает, что изображено на карточке."
+              ],
+              "activityType": "target_throw_and_name",
+              "successCriteria": [
+                "Ребёнок выбирает правильную карточку по слову преподавателя.",
+                "Ребёнок произносит название или фразу «这是…» после броска."
+              ]
+            },
+            "block_type": "guided_activity",
+            "created_at": "2026-04-06T21:49:31.837583+00:00",
+            "sort_order": 7,
+            "updated_at": "2026-04-07T11:09:42.02478+00:00",
+            "methodology_lesson_id": "b62b2f3d-c16f-6f3a-4a90-c124439690cf"
+          },
+          "assetLinks": []
+        },
+        {
+          "block": {
+            "id": "206d1a71-c6ec-a1cc-0bf4-a88b9e3e120d",
+            "title": "Счёт до 5: палочки и Приложение 1",
+            "content": {
+              "steps": [
+                "Сесть, показать счёт палочками до 5, затем раздать палочки детям и считать вместе.",
+                "Открыть Приложение 1, использовать указку: дети показывают, считают и называют животных хором."
+              ],
+              "activityType": "count_and_point",
+              "successCriteria": [
+                "Дети считают до 5 вместе с преподавателем.",
+                "Дети указывают и называют животных по материалу приложения."
+              ]
+            },
+            "block_type": "guided_activity",
+            "created_at": "2026-04-06T21:49:31.837583+00:00",
+            "sort_order": 8,
+            "updated_at": "2026-04-07T11:09:42.02478+00:00",
+            "methodology_lesson_id": "b62b2f3d-c16f-6f3a-4a90-c124439690cf"
+          },
+          "assetLinks": [
+            {
+              "link": {
+                "id": "7e3f5da9-03d6-5735-c88f-7adb294118bc",
+                "sort_order": 0,
+                "reusable_asset_id": "72714b05-f0e9-11e2-0d76-6778ddd46bfc",
+                "methodology_lesson_block_id": "206d1a71-c6ec-a1cc-0bf4-a88b9e3e120d"
+              },
+              "asset": {
+                "id": "72714b05-f0e9-11e2-0d76-6778ddd46bfc",
+                "kind": "worksheet_pdf",
+                "slug": "worksheet:appendix-1",
+                "title": "Приложение 1",
+                "file_ref": "/methodologies/world-around-me/lesson-1/appendix/appendix-1.pdf",
+                "metadata": {
+                  "previewImageRef": "/methodologies/world-around-me/lesson-1/appendix/appendix-1.png"
+                },
+                "created_at": "2026-04-06T21:49:31.711731+00:00",
+                "source_url": "https://drive.google.com/file/d/1hNwwBZ0S7SNmSbAAt-vz1aPanAluSTrC/view?usp=drive_link",
+                "updated_at": "2026-04-18T14:09:52.287359+00:00",
+                "description": "Материал для счёта и указки."
+              }
+            }
+          ]
+        },
+        {
+          "block": {
+            "id": "a92d4ba4-2404-2879-06a0-2951aa855142",
+            "title": "Паттерны: движение и вопросы",
+            "content": {
+              "promptPatterns": [
+                "我们跑吧！",
+                "我们跳吧！",
+                "跑到狗！",
+                "跳到兔子！",
+                "跑到马！",
+                "跳到猫！",
+                "狗在做什么？",
+                "这是什么？"
+              ],
+              "expectedStudentResponses": [
+                "狗在跳",
+                "这是…"
+              ]
+            },
+            "block_type": "teacher_prompt_pattern",
+            "created_at": "2026-04-06T21:49:31.837583+00:00",
+            "sort_order": 9,
+            "updated_at": "2026-04-07T11:09:42.02478+00:00",
+            "methodology_lesson_id": "b62b2f3d-c16f-6f3a-4a90-c124439690cf"
+          },
+          "assetLinks": []
+        },
+        {
+          "block": {
+            "id": "0ae4b276-0efe-bc17-8f4d-10432ea3556f",
+            "title": "Движение к игрушкам + глаголы 跑/跳",
+            "content": {
+              "steps": [
+                "Ввести глаголы 跑 и 跳 в командах «我们跑吧！» и «我们跳吧！».",
+                "Разместить мягкие игрушки по классу, давать команды «跑到狗！», «跳到兔子！», «跑到马！», «跳到猫！».",
+                "Повторно использовать игрушки для вопросов «狗在做什么？» и комментариев вида «狗在跳»."
+              ],
+              "activityType": "movement_commands_with_toys",
+              "successCriteria": [
+                "Дети различают команды с 跑 и 跳.",
+                "Дети дают короткий ответ или комментарий о действии животного."
+              ]
+            },
+            "block_type": "guided_activity",
+            "created_at": "2026-04-06T21:49:31.837583+00:00",
+            "sort_order": 10,
+            "updated_at": "2026-04-07T11:09:42.02478+00:00",
+            "methodology_lesson_id": "b62b2f3d-c16f-6f3a-4a90-c124439690cf"
+          },
+          "assetLinks": []
+        },
+        {
+          "block": {
+            "id": "2b75b1ba-797a-8d69-b6aa-d72b323359bf",
+            "title": "Рабочая тетрадь: стр. 3–4",
+            "content": {
+              "answerKeyHint": "Проверка устно в группе после выполнения.",
+              "completionMode": "in_class",
+              "taskInstruction": "Выполнить страницы 3–4: раскрасить животных, затем назвать картинки по вопросу «这是什么？»."
+            },
+            "block_type": "worksheet_task",
+            "created_at": "2026-04-06T21:49:31.837583+00:00",
+            "sort_order": 11,
+            "updated_at": "2026-04-07T11:09:42.02478+00:00",
+            "methodology_lesson_id": "b62b2f3d-c16f-6f3a-4a90-c124439690cf"
+          },
+          "assetLinks": [
+            {
+              "link": {
+                "id": "47b522e1-74a0-54cb-2546-dbaad7b45fe3",
+                "sort_order": 0,
+                "reusable_asset_id": "620f4670-30be-4adb-45a1-3b8ce2acb3db",
+                "methodology_lesson_block_id": "2b75b1ba-797a-8d69-b6aa-d72b323359bf"
+              },
+              "asset": {
+                "id": "620f4670-30be-4adb-45a1-3b8ce2acb3db",
+                "kind": "worksheet",
+                "slug": "worksheet:workbook-pages-3-4",
+                "title": "Рабочая тетрадь, стр. 3–4",
+                "file_ref": null,
+                "metadata": {},
+                "created_at": "2026-04-06T21:49:31.711731+00:00",
+                "source_url": "https://drive.google.com/file/d/1bS3KP_wRQSrAu9faPhyqkNdxeTul9bi0/view?usp=drive_link",
+                "updated_at": "2026-04-18T14:09:52.287359+00:00",
+                "description": "Закрепление урока 1."
+              }
+            }
+          ]
+        },
+        {
+          "block": {
+            "id": "153364d5-42da-7b7b-981c-d0a9587a6942",
+            "title": "Карточка 农场 и игрушечная ферма",
+            "content": {
+              "steps": [
+                "Ввести слово 农场 с карточкой.",
+                "На игрушечной ферме закрепить слова 农场, 狗, 猫, 兔子, 马.",
+                "Отработать паттерн 在…里 на примере «猫住在农场里»."
+              ],
+              "activityType": "toy_farm_language_reinforcement",
+              "successCriteria": [
+                "Дети узнают и проговаривают слово 农场.",
+                "Дети повторяют модель 在…里 на примере фермы."
+              ]
+            },
+            "block_type": "guided_activity",
+            "created_at": "2026-04-06T21:49:31.837583+00:00",
+            "sort_order": 12,
+            "updated_at": "2026-04-07T11:09:42.02478+00:00",
+            "methodology_lesson_id": "b62b2f3d-c16f-6f3a-4a90-c124439690cf"
+          },
+          "assetLinks": []
+        },
+        {
+          "block": {
+            "id": "2288687d-e2b6-424a-e51f-60e0eedff436",
+            "title": "Песня farm animals",
+            "content": {
+              "repeatCount": 1,
+              "activityGoal": "Закрепить лексику животных в конце урока.",
+              "teacherActions": [
+                "Включить песню farm animals и пропеть вместе с детьми.",
+                "Поддерживать движения и указания на знакомых животных."
+              ]
+            },
+            "block_type": "song_segment",
+            "created_at": "2026-04-06T21:49:31.837583+00:00",
+            "sort_order": 13,
+            "updated_at": "2026-04-07T11:09:42.02478+00:00",
+            "methodology_lesson_id": "b62b2f3d-c16f-6f3a-4a90-c124439690cf"
+          },
+          "assetLinks": [
+            {
+              "link": {
+                "id": "13bd32a1-622e-a12d-7eb4-88d2ecf52d75",
+                "sort_order": 0,
+                "reusable_asset_id": "c1524b37-e317-82fc-eaf9-370d1def8842",
+                "methodology_lesson_block_id": "2288687d-e2b6-424a-e51f-60e0eedff436"
+              },
+              "asset": {
+                "id": "c1524b37-e317-82fc-eaf9-370d1def8842",
+                "kind": "song_audio",
+                "slug": "song:farm-animals",
+                "title": "farm animals",
+                "file_ref": "/methodologies/world-around-me/lesson-1/media/farm-animals-song.mp3",
+                "metadata": {},
+                "created_at": "2026-04-06T21:49:31.711731+00:00",
+                "source_url": "https://drive.google.com/file/d/1RewHJRdd6oqSfX506A7ABt6VMDhDzJRP/view?usp=drive_link",
+                "updated_at": "2026-04-18T14:09:52.287359+00:00",
+                "description": "Песня урока 1."
+              }
+            }
+          ]
+        },
+        {
+          "block": {
+            "id": "e12b084e-01ea-1399-ffa4-02e269293477",
+            "title": "Прощание",
+            "content": {
+              "exitCheck": "Коротко назвать 1 животное и 1 действие перед прощанием.",
+              "recapPoints": [
+                "狗",
+                "猫",
+                "兔子",
+                "马",
+                "农场",
+                "我是…",
+                "这是…",
+                "跑",
+                "跳",
+                "在…里"
+              ],
+              "teacherReflectionPrompt": "Попрощаться с детьми и героями курса, отметить вовлечённость в активностях."
+            },
+            "block_type": "wrap_up_closure",
+            "created_at": "2026-04-06T21:49:31.837583+00:00",
+            "sort_order": 14,
+            "updated_at": "2026-04-07T11:09:42.02478+00:00",
+            "methodology_lesson_id": "b62b2f3d-c16f-6f3a-4a90-c124439690cf"
+          },
+          "assetLinks": []
+        }
+      ],
+      "lesson": {
+        "id": "b62b2f3d-c16f-6f3a-4a90-c124439690cf",
+        "title": "Урок 1. Животные на ферме",
+        "created_at": "2026-04-06T21:49:31.585436+00:00",
+        "unit_index": 1,
+        "updated_at": "2026-04-07T11:09:42.014856+00:00",
+        "lesson_index": 1,
+        "module_index": 1,
+        "methodology_id": "bde3aba6-94e2-0cee-0b87-8b25493a3742",
+        "phrase_summary": [
+          "我是…",
+          "这是…",
+          "我们…吧！",
+          "在…里"
+        ],
+        "readiness_status": "ready",
+        "vocabulary_summary": [
+          "狗",
+          "猫",
+          "兔子",
+          "马",
+          "农场",
+          "跑",
+          "跳"
+        ],
+        "estimated_duration_minutes": 45
+      },
+      "homework": {
+        "id": "f71455be-0d5d-4dcc-8bfa-74687a7a5747",
+        "kind": "quiz_single_choice",
+        "title": "Практика дома: ферма, слова и команды",
+        "created_at": "2026-04-07T18:30:09.00658+00:00",
+        "updated_at": "2026-04-18T11:55:58.624591+00:00",
+        "instructions": "Сначала сопоставь животных и иероглифы, затем повтори слова с аудио, и после этого пройди короткий квиз.",
+        "quiz_payload": {
+          "id": "world-around-me-lesson-1-quiz",
+          "title": "Домашняя мини-миссия: Животные на ферме",
+          "version": 2,
+          "subtitle": "Сопоставь, послушай, затем выбери правильный вариант.",
+          "introText": "Повтори слова урока вместе с карточками и аудио.",
+          "questions": [
+            {
+              "id": "q1",
+              "prompt": "Как по-китайски «собака»?",
+              "options": [
+                {
+                  "id": "a",
+                  "label": "狗"
+                },
+                {
+                  "id": "b",
+                  "label": "猫"
+                },
+                {
+                  "id": "c",
+                  "label": "马"
+                }
+              ],
+              "helperText": "Выбери карточку со словом.",
+              "correctOptionId": "a"
+            },
+            {
+              "id": "q2",
+              "prompt": "Как по-китайски «кролик»?",
+              "options": [
+                {
+                  "id": "a",
+                  "label": "兔子"
+                },
+                {
+                  "id": "b",
+                  "label": "农场"
+                },
+                {
+                  "id": "c",
+                  "label": "狗"
+                }
+              ],
+              "correctOptionId": "a"
+            },
+            {
+              "id": "q3",
+              "prompt": "Что значит «农场»?",
+              "options": [
+                {
+                  "id": "a",
+                  "label": "кошка"
+                },
+                {
+                  "id": "b",
+                  "label": "ферма"
+                },
+                {
+                  "id": "c",
+                  "label": "лошадь"
+                }
+              ],
+              "correctOptionId": "b"
+            },
+            {
+              "id": "q4",
+              "prompt": "Выбери фразу «Это…»",
+              "options": [
+                {
+                  "id": "a",
+                  "label": "我是…"
+                },
+                {
+                  "id": "b",
+                  "label": "这是…"
+                },
+                {
+                  "id": "c",
+                  "label": "我们…吧！"
+                }
+              ],
+              "correctOptionId": "b"
+            },
+            {
+              "id": "q5",
+              "prompt": "Какое слово значит «прыгать»?",
+              "options": [
+                {
+                  "id": "a",
+                  "label": "跑"
+                },
+                {
+                  "id": "b",
+                  "label": "在"
+                },
+                {
+                  "id": "c",
+                  "label": "跳"
+                }
+              ],
+              "correctOptionId": "c"
+            }
+          ],
+          "completionText": "Ты повторил(а) слова, команды и фразы урока 1.",
+          "completionTitle": "Отличная работа!",
+          "practiceSections": [
+            {
+              "id": "matching-l1",
+              "type": "matching",
+              "items": [
+                {
+                  "id": "dog",
+                  "label": "狗",
+                  "illustrationSrc": "/methodologies/world-around-me/lesson-1/visuals/dog-card.png"
+                },
+                {
+                  "id": "cat",
+                  "label": "猫",
+                  "illustrationSrc": "/methodologies/world-around-me/lesson-1/visuals/cat-card.png"
+                },
+                {
+                  "id": "rabbit",
+                  "label": "兔子",
+                  "illustrationSrc": "/methodologies/world-around-me/lesson-1/visuals/rabbit-card.png"
+                },
+                {
+                  "id": "horse",
+                  "label": "马",
+                  "illustrationSrc": "/methodologies/world-around-me/lesson-1/visuals/horse-card.png"
+                }
+              ],
+              "title": "Соедини картинку и иероглиф",
+              "prompt": "Перетащи слово к правильной карточке животного."
+            },
+            {
+              "id": "audio-review-l1",
+              "type": "audio_review",
+              "title": "Слушай и повторяй слова",
+              "groups": [
+                {
+                  "id": "animals",
+                  "title": "Животные и ферма",
+                  "entries": [
+                    {
+                      "id": "狗",
+                      "hanzi": "狗",
+                      "pinyin": "gǒu",
+                      "meaning": "собака",
+                      "audioUrl": "/methodologies/world-around-me/lesson-1/audio/gou.mp3",
+                      "audioAssetId": "pronunciation:dog"
+                    },
+                    {
+                      "id": "猫",
+                      "hanzi": "猫",
+                      "pinyin": "māo",
+                      "meaning": "кошка",
+                      "audioUrl": "/methodologies/world-around-me/lesson-1/audio/mao.mp3",
+                      "audioAssetId": "pronunciation:cat"
+                    },
+                    {
+                      "id": "兔子",
+                      "hanzi": "兔子",
+                      "pinyin": "tùzi",
+                      "meaning": "кролик",
+                      "audioUrl": "/methodologies/world-around-me/lesson-1/audio/tuzi.mp3",
+                      "audioAssetId": "pronunciation:rabbit"
+                    },
+                    {
+                      "id": "马",
+                      "hanzi": "马",
+                      "pinyin": "mǎ",
+                      "meaning": "лошадь",
+                      "audioUrl": "/methodologies/world-around-me/lesson-1/audio/ma.mp3",
+                      "audioAssetId": "pronunciation:horse"
+                    },
+                    {
+                      "id": "农场",
+                      "hanzi": "农场",
+                      "pinyin": "nóngchǎng",
+                      "meaning": "ферма",
+                      "audioUrl": "/methodologies/world-around-me/lesson-1/audio/nongchang.mp3",
+                      "audioAssetId": "pronunciation:farm"
+                    }
+                  ]
+                },
+                {
+                  "id": "phrases-actions",
+                  "title": "Фразы, действия и грамматика",
+                  "entries": [
+                    {
+                      "id": "我是",
+                      "hanzi": "我是…",
+                      "pinyin": "wǒ shì…",
+                      "meaning": "Я…",
+                      "audioUrl": "/methodologies/world-around-me/lesson-1/audio/woshi.mp3",
+                      "audioAssetId": "pronunciation:wo-shi"
+                    },
+                    {
+                      "id": "这是",
+                      "hanzi": "这是…",
+                      "pinyin": "zhè shì…",
+                      "meaning": "Это…",
+                      "audioUrl": "/methodologies/world-around-me/lesson-1/audio/zheshi.mp3",
+                      "audioAssetId": "pronunciation:zhe-shi"
+                    },
+                    {
+                      "id": "跑",
+                      "hanzi": "跑",
+                      "pinyin": "pǎo",
+                      "meaning": "бежать",
+                      "audioUrl": "/methodologies/world-around-me/lesson-1/audio/pao.mp3",
+                      "audioAssetId": "pronunciation:run"
+                    },
+                    {
+                      "id": "跳",
+                      "hanzi": "跳",
+                      "pinyin": "tiào",
+                      "meaning": "прыгать",
+                      "audioUrl": "/methodologies/world-around-me/lesson-1/audio/tiao.mp3",
+                      "audioAssetId": "pronunciation:jump"
+                    },
+                    {
+                      "id": "我们吧",
+                      "hanzi": "我们…吧!",
+                      "pinyin": "wǒmen … ba!",
+                      "meaning": "Давайте…!",
+                      "audioUrl": "/methodologies/world-around-me/lesson-1/audio/womenba.mp3",
+                      "audioAssetId": "pronunciation:lets"
+                    },
+                    {
+                      "id": "在",
+                      "hanzi": "在",
+                      "pinyin": "zài",
+                      "meaning": "в / внутри",
+                      "audioUrl": "/methodologies/world-around-me/lesson-1/audio/zai.mp3",
+                      "audioAssetId": "pronunciation:zai"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        "material_links": [
+          "Рабочая тетрадь, стр. 3–4",
+          "Карточки животных",
+          "Презентация урока 1"
+        ],
+        "estimated_minutes": 10,
+        "answer_format_hint": "Интерактивная практика + квиз из 5 вопросов.",
+        "methodology_lesson_id": "b62b2f3d-c16f-6f3a-4a90-c124439690cf"
+      },
+      "studentContent": {
+        "id": "95b1af44-0e9d-7b43-27d9-fa546e05ccfe",
+        "title": "Урок 1. Животные на ферме",
+        "subtitle": "Полноценный урок-хаб: презентация, карточки, счёт, движение, ферма и практика.",
+        "created_at": "2026-04-12T04:53:33.320134+00:00",
+        "updated_at": "2026-04-18T11:55:58.624591+00:00",
+        "content_payload": {
+          "sections": [
+            {
+              "body": "Поздороваемся, посмотрим презентацию, потренируем слова и команды, поработаем с приложением 1 и закрепим урок песней.",
+              "tone": "sky",
+              "type": "lesson_focus",
+              "chips": [
+                "狗",
+                "猫",
+                "兔子",
+                "马",
+                "农场"
+              ],
+              "title": "Урок 1 · Животные на ферме",
+              "layout": "hero",
+              "sceneId": "scene-hero",
+              "subtitle": "Сяо Лон и Сяо Мей приглашают в фермерское приключение.",
+              "illustrationSrc": "/methodologies/world-around-me/lesson-1/visuals/hero-farm.png"
+            },
+            {
+              "note": "Материал только для просмотра. Скачать презентацию можно в кабинете преподавателя.",
+              "tone": "sky",
+              "type": "presentation",
+              "title": "Презентация урока",
+              "layout": "presentation",
+              "assetId": "presentation:world-around-me-lesson-1",
+              "sceneId": "scene-presentation",
+              "readOnly": true,
+              "subtitle": "Онлайн-версия для просмотра во время занятия.",
+              "studentCtaLabel": "Открыть слайды"
+            },
+            {
+              "tone": "amber",
+              "type": "vocabulary_cards",
+              "items": [
+                {
+                  "term": "狗",
+                  "pinyin": "gǒu",
+                  "meaning": "собака",
+                  "visualHint": "Скажи: 这是狗。",
+                  "audioAssetId": "pronunciation:dog",
+                  "illustrationSrc": "/methodologies/world-around-me/lesson-1/visuals/dog-card.png"
+                },
+                {
+                  "term": "猫",
+                  "pinyin": "māo",
+                  "meaning": "кошка",
+                  "visualHint": "Покажи мягкие лапки.",
+                  "audioAssetId": "pronunciation:cat",
+                  "illustrationSrc": "/methodologies/world-around-me/lesson-1/visuals/cat-card.png"
+                },
+                {
+                  "term": "兔子",
+                  "pinyin": "tùzi",
+                  "meaning": "кролик",
+                  "visualHint": "Прыгни как кролик.",
+                  "audioAssetId": "pronunciation:rabbit",
+                  "illustrationSrc": "/methodologies/world-around-me/lesson-1/visuals/rabbit-card.png"
+                },
+                {
+                  "term": "马",
+                  "pinyin": "mǎ",
+                  "meaning": "лошадь",
+                  "visualHint": "Покажи, как скачет лошадка.",
+                  "audioAssetId": "pronunciation:horse",
+                  "illustrationSrc": "/methodologies/world-around-me/lesson-1/visuals/horse-card.png"
+                },
+                {
+                  "term": "农场",
+                  "pinyin": "nóngchǎng",
+                  "meaning": "ферма",
+                  "visualHint": "Покажи ферму на картинке.",
+                  "audioAssetId": "pronunciation:farm",
+                  "illustrationSrc": "/methodologies/world-around-me/lesson-1/visuals/farm-barn.png"
+                }
+              ],
+              "title": "Большие карточки слов",
+              "layout": "vocabulary",
+              "sceneId": "scene-flashcards",
+              "subtitle": "Листай карточки, слушай и повторяй.",
+              "displayMode": "carousel"
+            },
+            {
+              "tone": "violet",
+              "type": "phrase_cards",
+              "items": [
+                {
+                  "phrase": "你是谁？",
+                  "pinyin": "nǐ shì shéi?",
+                  "meaning": "Кто ты?",
+                  "speaker": "Сяо Лон"
+                },
+                {
+                  "phrase": "我是…",
+                  "pinyin": "wǒ shì…",
+                  "example": "我是小猫。",
+                  "meaning": "Я…",
+                  "speaker": "Сяо Мей",
+                  "audioAssetId": "pronunciation:wo-shi"
+                },
+                {
+                  "phrase": "这是…",
+                  "pinyin": "zhè shì…",
+                  "example": "这是狗。",
+                  "meaning": "Это…",
+                  "speaker": "Сяо Лон",
+                  "audioAssetId": "pronunciation:zhe-shi"
+                }
+              ],
+              "title": "Диалог Сяо Лона и Сяо Мей",
+              "layout": "phrases",
+              "sceneId": "scene-phrases",
+              "subtitle": "Повторяем ключевые фразы урока.",
+              "displayMode": "dialogue"
+            },
+            {
+              "tone": "sky",
+              "type": "count_board",
+              "title": "Приложение 1: считаем и называем",
+              "groups": [
+                {
+                  "id": "g1",
+                  "cue": "一只狗",
+                  "count": 1,
+                  "label": "1 × 狗"
+                },
+                {
+                  "id": "g2",
+                  "cue": "两只猫",
+                  "count": 2,
+                  "label": "2 × 猫"
+                },
+                {
+                  "id": "g3",
+                  "cue": "三只兔子",
+                  "count": 3,
+                  "label": "3 × 兔子"
+                },
+                {
+                  "id": "g4",
+                  "cue": "四匹马",
+                  "count": 4,
+                  "label": "4 × 马"
+                },
+                {
+                  "id": "g5",
+                  "cue": "五只动物",
+                  "count": 5,
+                  "label": "5 × 动物"
+                }
+              ],
+              "layout": "counting",
+              "prompt": "Покажи группу, посчитай животных и назови их вслух.",
+              "assetId": "worksheet:appendix-1",
+              "sceneId": "scene-counting",
+              "subtitle": "Нажимай группы и проговаривай число + животное."
+            },
+            {
+              "tone": "emerald",
+              "type": "action_cards",
+              "items": [
+                {
+                  "term": "跑",
+                  "pinyin": "pǎo",
+                  "meaning": "бежать",
+                  "audioAssetId": "pronunciation:run",
+                  "movementHint": "Побежали вместе по команде.",
+                  "commandExample": "我们跑吧！ / 跑到狗！",
+                  "illustrationSrc": "/methodologies/world-around-me/lesson-1/visuals/run-action.png"
+                },
+                {
+                  "term": "跳",
+                  "pinyin": "tiào",
+                  "meaning": "прыгать",
+                  "audioAssetId": "pronunciation:jump",
+                  "movementHint": "Прыгаем на месте и к карточке.",
+                  "commandExample": "我们跳吧！ / 跳到兔子！",
+                  "illustrationSrc": "/methodologies/world-around-me/lesson-1/visuals/jump-action.png"
+                },
+                {
+                  "term": "我们…吧!",
+                  "pinyin": "wǒmen … ba!",
+                  "meaning": "Давайте…!",
+                  "audioAssetId": "pronunciation:lets",
+                  "movementHint": "Скажи команду всей группе.",
+                  "commandExample": "我们跑吧！"
+                }
+              ],
+              "title": "Движение и команды",
+              "layout": "movement",
+              "sceneId": "scene-actions",
+              "subtitle": "Мини-дрилл по действиям и командам.",
+              "displayMode": "slider"
+            },
+            {
+              "tone": "amber",
+              "type": "farm_placement",
+              "title": "Кто живёт на ферме",
+              "layout": "farm",
+              "animals": [
+                {
+                  "id": "dog",
+                  "hanzi": "狗",
+                  "pinyin": "gǒu",
+                  "meaning": "собака"
+                },
+                {
+                  "id": "cat",
+                  "hanzi": "猫",
+                  "pinyin": "māo",
+                  "meaning": "кошка"
+                },
+                {
+                  "id": "rabbit",
+                  "hanzi": "兔子",
+                  "pinyin": "tùzi",
+                  "meaning": "кролик"
+                },
+                {
+                  "id": "horse",
+                  "hanzi": "马",
+                  "pinyin": "mǎ",
+                  "meaning": "лошадь"
+                }
+              ],
+              "sceneId": "scene-farm",
+              "subtitle": "Выбери животное и собери фразу с 在…里.",
+              "illustrationSrc": "/methodologies/world-around-me/lesson-1/visuals/farm-barn.png",
+              "defaultZoneLabel": "农场里",
+              "targetPhraseTemplate": "{animal} 在{zone}。"
+            },
+            {
+              "tone": "neutral",
+              "type": "word_list",
+              "title": "Новые слова и фразы",
+              "groups": [
+                {
+                  "id": "animals",
+                  "title": "Животные и ферма",
+                  "entries": [
+                    {
+                      "hanzi": "狗",
+                      "pinyin": "gǒu",
+                      "meaning": "собака",
+                      "audioAssetId": "pronunciation:dog"
+                    },
+                    {
+                      "hanzi": "猫",
+                      "pinyin": "māo",
+                      "meaning": "кошка",
+                      "audioAssetId": "pronunciation:cat"
+                    },
+                    {
+                      "hanzi": "兔子",
+                      "pinyin": "tùzi",
+                      "meaning": "кролик",
+                      "audioAssetId": "pronunciation:rabbit"
+                    },
+                    {
+                      "hanzi": "马",
+                      "pinyin": "mǎ",
+                      "meaning": "лошадь",
+                      "audioAssetId": "pronunciation:horse"
+                    },
+                    {
+                      "hanzi": "农场",
+                      "pinyin": "nóngchǎng",
+                      "meaning": "ферма",
+                      "audioAssetId": "pronunciation:farm"
+                    }
+                  ]
+                },
+                {
+                  "id": "phrases",
+                  "title": "Фразы и действия",
+                  "entries": [
+                    {
+                      "hanzi": "我是…",
+                      "pinyin": "wǒ shì…",
+                      "meaning": "Я…",
+                      "audioAssetId": "pronunciation:wo-shi"
+                    },
+                    {
+                      "hanzi": "这是…",
+                      "pinyin": "zhè shì…",
+                      "meaning": "Это…",
+                      "audioAssetId": "pronunciation:zhe-shi"
+                    },
+                    {
+                      "hanzi": "跑",
+                      "pinyin": "pǎo",
+                      "meaning": "бежать",
+                      "audioAssetId": "pronunciation:run"
+                    },
+                    {
+                      "hanzi": "跳",
+                      "pinyin": "tiào",
+                      "meaning": "прыгать",
+                      "audioAssetId": "pronunciation:jump"
+                    },
+                    {
+                      "hanzi": "我们…吧!",
+                      "pinyin": "wǒmen … ba!",
+                      "meaning": "давайте…",
+                      "audioAssetId": "pronunciation:lets"
+                    },
+                    {
+                      "hanzi": "在",
+                      "pinyin": "zài",
+                      "meaning": "в / внутри",
+                      "audioAssetId": "pronunciation:zai"
+                    }
+                  ]
+                }
+              ],
+              "layout": "recap",
+              "sceneId": "scene-review",
+              "subtitle": "Повтор перед домашней практикой."
+            },
+            {
+              "tone": "rose",
+              "type": "worksheet",
+              "title": "Тетрадь и песня",
+              "layout": "practice",
+              "assetId": "worksheet:workbook-pages-3-4",
+              "sceneId": "scene-materials",
+              "subtitle": "Финальный блок урока.",
+              "pageLabel": "Рабочая тетрадь · стр. 3–4",
+              "teacherHint": "После тетради дайте детям 1 минуту на повтор слов перед песней.",
+              "instructions": "Раскрась животных, ответь «这是什么？», затем спой песню farm animals. PDF будет добавлен позже — пока открой внешний ресурс.",
+              "illustrationSrc": "/methodologies/world-around-me/lesson-1/visuals/workbook-practice.png"
+            },
+            {
+              "tone": "rose",
+              "type": "resource_links",
+              "title": "Материалы урока",
+              "layout": "resources",
+              "sceneId": "scene-materials",
+              "audience": "both",
+              "subtitle": "Видео, карточки, приложение и песня.",
+              "resources": [
+                {
+                  "id": "video",
+                  "title": "Видео farm animals",
+                  "assetId": "video:farm-animals",
+                  "previewable": true
+                },
+                {
+                  "id": "cards",
+                  "title": "Карточки урока",
+                  "assetId": "flashcards:world-around-me-lesson-1",
+                  "downloadable": false
+                },
+                {
+                  "id": "appendix",
+                  "title": "Приложение 1",
+                  "assetId": "worksheet:appendix-1",
+                  "previewable": true
+                },
+                {
+                  "id": "song",
+                  "title": "Песня farm animals",
+                  "assetId": "song:farm-animals",
+                  "previewable": true
+                }
+              ]
+            },
+            {
+              "tone": "violet",
+              "type": "matching_practice",
+              "pairs": [
+                {
+                  "id": "dog",
+                  "label": "狗",
+                  "illustrationSrc": "/methodologies/world-around-me/lesson-1/visuals/dog-card.png"
+                },
+                {
+                  "id": "cat",
+                  "label": "猫",
+                  "illustrationSrc": "/methodologies/world-around-me/lesson-1/visuals/cat-card.png"
+                },
+                {
+                  "id": "rabbit",
+                  "label": "兔子",
+                  "illustrationSrc": "/methodologies/world-around-me/lesson-1/visuals/rabbit-card.png"
+                },
+                {
+                  "id": "horse",
+                  "label": "马",
+                  "illustrationSrc": "/methodologies/world-around-me/lesson-1/visuals/horse-card.png"
+                }
+              ],
+              "title": "Практика перед домашним заданием",
+              "layout": "homework",
+              "prompt": "Перед домашкой потренируйся: найди пару картинка ↔ иероглиф.",
+              "sceneId": "scene-homework-practice",
+              "subtitle": "Сопоставь картинку и слово."
+            }
+          ]
+        },
+        "methodology_lesson_id": "b62b2f3d-c16f-6f3a-4a90-c124439690cf"
+      },
+      "scheduledLessonCount": 13
+    },
+    {
+      "blocks": [
+        {
+          "block": {
+            "id": "6124ad9b-3f6f-43bb-a6ab-957ee8be9d7a",
+            "title": "Приветствие детей и героев курса",
+            "content": {
+              "goal": "Активно включить детей в урок и напомнить формат «играем и говорим по-китайски».",
+              "title": "Урок 2. Что это за животное?",
+              "timeboxMinutes": 3,
+              "warmupQuestion": "你是谁？",
+              "teacherScriptShort": "Поприветствуйте детей и героев курса, посадите группу в круг, задайте позитивный ритм."
+            },
+            "block_type": "intro_framing",
+            "created_at": "2026-04-17T05:48:06.903477+00:00",
+            "sort_order": 1,
+            "updated_at": "2026-04-17T05:48:06.903477+00:00",
+            "methodology_lesson_id": "bec29a68-92cf-4813-8503-b802cd0f2839"
+          },
+          "assetLinks": []
+        },
+        {
+          "block": {
+            "id": "181d8479-5cba-4edd-a257-a9c3cb1ac9c3",
+            "title": "Видео farm animals",
+            "content": {
+              "focusPoints": [
+                "鸭子",
+                "鸡子",
+                "羊",
+                "牛"
+              ],
+              "promptBeforeWatch": "Смотрим farm animals и слушаем новые слова про животных фермы.",
+              "questionsAfterWatch": [
+                "Кого ты услышал?",
+                "Кто говорит «му-у»?",
+                "Что ты запомнил?"
+              ]
+            },
+            "block_type": "video_segment",
+            "created_at": "2026-04-17T05:48:06.903477+00:00",
+            "sort_order": 2,
+            "updated_at": "2026-04-17T05:48:06.903477+00:00",
+            "methodology_lesson_id": "bec29a68-92cf-4813-8503-b802cd0f2839"
+          },
+          "assetLinks": [
+            {
+              "link": {
+                "id": "ff9af899-d225-474b-9afa-7f6efb832db7",
+                "sort_order": 0,
+                "reusable_asset_id": "277bac77-dff4-fc5f-9074-f6fd73bcc077",
+                "methodology_lesson_block_id": "181d8479-5cba-4edd-a257-a9c3cb1ac9c3"
+              },
+              "asset": {
+                "id": "277bac77-dff4-fc5f-9074-f6fd73bcc077",
+                "kind": "video",
+                "slug": "video:farm-animals",
+                "title": "farm animals",
+                "file_ref": "/methodologies/world-around-me/lesson-1/media/e.mp4",
+                "metadata": {},
+                "created_at": "2026-04-06T21:49:31.711731+00:00",
+                "source_url": "https://drive.google.com/file/d/1NXyngOuT9WIwvgA0gvvSzZc9-BUuKT7k/view?usp=drive_link",
+                "updated_at": "2026-04-20T19:15:07.328959+00:00",
+                "description": "Видео урока 1."
+              }
+            }
+          ]
+        },
+        {
+          "block": {
+            "id": "209e7a76-2338-489e-8e42-001aa44cb3e8",
+            "title": "Круговой паттерн «你是谁？— 我是…»",
+            "content": {
+              "fallbackRu": "Если ребёнок теряется, предложите выбрать маску/картинку и договорить «我是…» вместе с вами.",
+              "promptPatterns": [
+                "你是谁？",
+                "我是…"
+              ],
+              "expectedStudentResponses": [
+                "我是小鸭子。",
+                "我是小牛。"
+              ]
+            },
+            "block_type": "teacher_prompt_pattern",
+            "created_at": "2026-04-17T05:48:06.903477+00:00",
+            "sort_order": 3,
+            "updated_at": "2026-04-17T05:48:06.903477+00:00",
+            "methodology_lesson_id": "bec29a68-92cf-4813-8503-b802cd0f2839"
+          },
+          "assetLinks": []
+        },
+        {
+          "block": {
+            "id": "62c03367-0e6d-461b-92ca-c5b9ab8b3b05",
+            "title": "Песня hello",
+            "content": {
+              "repeatCount": 1,
+              "activityGoal": "Закрепить ритуал начала занятия и настроить группу на совместную речь.",
+              "movementHint": "Добавьте хлопки в ладоши и жест «привет» каждому ребёнку.",
+              "teacherActions": [
+                "Включите песню hello и спойте её вместе с детьми в круге."
+              ]
+            },
+            "block_type": "song_segment",
+            "created_at": "2026-04-17T05:48:06.903477+00:00",
+            "sort_order": 4,
+            "updated_at": "2026-04-17T05:48:06.903477+00:00",
+            "methodology_lesson_id": "bec29a68-92cf-4813-8503-b802cd0f2839"
+          },
+          "assetLinks": [
+            {
+              "link": {
+                "id": "0944ee97-d940-4075-800f-178e0fefcbf2",
+                "sort_order": 0,
+                "reusable_asset_id": "b5eba775-325d-4be3-b03f-e2ff4da7e82e",
+                "methodology_lesson_block_id": "62c03367-0e6d-461b-92ca-c5b9ab8b3b05"
+              },
+              "asset": {
+                "id": "b5eba775-325d-4be3-b03f-e2ff4da7e82e",
+                "kind": "song",
+                "slug": "song:hello",
+                "title": "hello",
+                "file_ref": null,
+                "metadata": {},
+                "created_at": "2026-04-17T05:48:06.903477+00:00",
+                "source_url": null,
+                "updated_at": "2026-04-17T06:13:47.593952+00:00",
+                "description": "Песня-приветствие для начала урока 2."
+              }
+            }
+          ]
+        },
+        {
+          "block": {
+            "id": "0a20848a-ef60-4202-84f6-ef84c742fa6f",
+            "title": "Новые слова: животные фермы",
+            "content": {
+              "items": [
+                {
+                  "term": "鸭子",
+                  "pinyin": "yāzi",
+                  "meaning": "утка"
+                },
+                {
+                  "term": "鸡子",
+                  "pinyin": "jīzi",
+                  "meaning": "курица"
+                },
+                {
+                  "term": "羊",
+                  "pinyin": "yáng",
+                  "meaning": "овца"
+                },
+                {
+                  "term": "牛",
+                  "pinyin": "niú",
+                  "meaning": "корова"
+                }
+              ],
+              "miniDrill": "Проход 1: называем слово. Проход 2: с каждой карточкой говорим полную модель «这是…».",
+              "practiceMode": "cards_two_passes_then_sentence_model"
+            },
+            "block_type": "vocabulary_focus",
+            "created_at": "2026-04-17T05:48:06.903477+00:00",
+            "sort_order": 5,
+            "updated_at": "2026-04-17T05:48:06.903477+00:00",
+            "methodology_lesson_id": "bec29a68-92cf-4813-8503-b802cd0f2839"
+          },
+          "assetLinks": []
+        },
+        {
+          "block": {
+            "id": "4bf82beb-9bdc-4eeb-b042-a227a221b701",
+            "title": "Прыжки по карточкам",
+            "content": {
+              "steps": [
+                "Разложите карточки 鸭子/鸡子/羊/牛 в ряд на полу.",
+                "Ребёнок прыгает на карточку, показывает на неё и говорит: «这是…».",
+                "Группа повторяет фразу хором после каждого прыжка."
+              ],
+              "activityType": "jump_and_name_cards",
+              "timeboxMinutes": 4,
+              "successCriteria": [
+                "Ребёнок уверенно соотносит карточку и слово.",
+                "Ребёнок произносит модель «这是…» в активном движении."
+              ]
+            },
+            "block_type": "guided_activity",
+            "created_at": "2026-04-17T05:48:06.903477+00:00",
+            "sort_order": 6,
+            "updated_at": "2026-04-17T05:48:06.903477+00:00",
+            "methodology_lesson_id": "bec29a68-92cf-4813-8503-b802cd0f2839"
+          },
+          "assetLinks": []
+        },
+        {
+          "block": {
+            "id": "5313ae07-81f7-4c3d-bed2-29dd403bfc55",
+            "title": "Угадай животное по звуку",
+            "content": {
+              "steps": [
+                "Дети садятся в круг и слушают звуки животных.",
+                "После каждого звука задайте вопрос: «这是什么？».",
+                "Дети отвечают словом животного или фразой «这是牛。»."
+              ],
+              "activityType": "animal_sound_guessing",
+              "timeboxMinutes": 3,
+              "successCriteria": [
+                "Дети распознают животное на слух.",
+                "Дети пробуют отвечать словами урока без подсказки на карточке."
+              ]
+            },
+            "block_type": "guided_activity",
+            "created_at": "2026-04-17T05:48:06.903477+00:00",
+            "sort_order": 7,
+            "updated_at": "2026-04-17T05:48:06.903477+00:00",
+            "methodology_lesson_id": "bec29a68-92cf-4813-8503-b802cd0f2839"
+          },
+          "assetLinks": []
+        },
+        {
+          "block": {
+            "id": "a879a407-7e93-445d-b041-d3591a11489a",
+            "title": "Команды 跑 / 跳 / 拍手 / 数",
+            "content": {
+              "fallbackRu": "Сначала выполните команду сами, затем подключите группу и добавьте счёт «一、二、三、四、五».",
+              "promptPatterns": [
+                "我们跑吧！",
+                "我们跳吧！",
+                "拍手吧！",
+                "我们数吧！"
+              ],
+              "expectedStudentResponses": [
+                "Дети выполняют движение и проговаривают глагол.",
+                "Дети считают до 5, хлопая и прыгая."
+              ]
+            },
+            "block_type": "teacher_prompt_pattern",
+            "created_at": "2026-04-17T05:48:06.903477+00:00",
+            "sort_order": 8,
+            "updated_at": "2026-04-17T05:48:06.903477+00:00",
+            "methodology_lesson_id": "bec29a68-92cf-4813-8503-b802cd0f2839"
+          },
+          "assetLinks": []
+        },
+        {
+          "block": {
+            "id": "4b2fdee3-f778-4ba8-8769-8016ecc6c83a",
+            "title": "Считаем игрушки животных",
+            "content": {
+              "steps": [
+                "Посадите детей в круг и разложите игрушки (собака, кот, кролик, лошадь).",
+                "Считайте вместе до 5, по очереди показывая игрушки и называя животных.",
+                "Попросите детей повторить счёт и назвать одно животное самостоятельно."
+              ],
+              "activityType": "counting_with_soft_toys",
+              "timeboxMinutes": 3,
+              "successCriteria": [
+                "Дети держат ритм счёта до 5.",
+                "Дети совмещают счёт с называнием животного."
+              ]
+            },
+            "block_type": "guided_activity",
+            "created_at": "2026-04-17T05:48:06.903477+00:00",
+            "sort_order": 9,
+            "updated_at": "2026-04-17T05:48:06.903477+00:00",
+            "methodology_lesson_id": "bec29a68-92cf-4813-8503-b802cd0f2839"
+          },
+          "assetLinks": []
+        },
+        {
+          "block": {
+            "id": "e31e3d70-e996-4f19-b4be-9603c9139a61",
+            "title": "Приложение 2: пазлы животных",
+            "content": {
+              "steps": [
+                "Раздайте детям элементы Приложения 2.",
+                "Попросите собрать пазл и назвать животное на картинке.",
+                "После сборки дети считают животных вслух по одному."
+              ],
+              "activityType": "appendix_puzzle_count_and_name",
+              "timeboxMinutes": 4,
+              "successCriteria": [
+                "Ребёнок называет хотя бы 1–2 животных из урока.",
+                "Ребёнок участвует в счёте и слышит ответы одногруппников."
+              ]
+            },
+            "block_type": "guided_activity",
+            "created_at": "2026-04-17T05:48:06.903477+00:00",
+            "sort_order": 10,
+            "updated_at": "2026-04-17T05:48:06.903477+00:00",
+            "methodology_lesson_id": "bec29a68-92cf-4813-8503-b802cd0f2839"
+          },
+          "assetLinks": [
+            {
+              "link": {
+                "id": "8d37ba80-86da-4403-ba1b-1cae891b8840",
+                "sort_order": 0,
+                "reusable_asset_id": "95a5c6f7-78f4-4d0d-8a37-6746ecffb85a",
+                "methodology_lesson_block_id": "e31e3d70-e996-4f19-b4be-9603c9139a61"
+              },
+              "asset": {
+                "id": "95a5c6f7-78f4-4d0d-8a37-6746ecffb85a",
+                "kind": "worksheet",
+                "slug": "worksheet:appendix-2",
+                "title": "Приложение 2",
+                "file_ref": null,
+                "metadata": {},
+                "created_at": "2026-04-17T05:48:06.903477+00:00",
+                "source_url": null,
+                "updated_at": "2026-04-17T05:48:06.903477+00:00",
+                "description": "Пазлы с животными для счёта и называния."
+              }
+            }
+          ]
+        },
+        {
+          "block": {
+            "id": "668961cf-f059-49c4-9f07-a5b6daea34ff",
+            "title": "Маски и команды",
+            "content": {
+              "steps": [
+                "Раздайте маски утки, курицы, овцы и коровы.",
+                "Давайте команды в игровом формате: «鸭子，跑吧！», «鸡子，拍手吧！».",
+                "Меняйте роли, чтобы каждый ребёнок выполнил минимум 2 команды."
+              ],
+              "activityType": "mask_roleplay_commands",
+              "timeboxMinutes": 4,
+              "successCriteria": [
+                "Дети реагируют на адресную команду.",
+                "Дети закрепляют глаголы 跑 / 跳 / 拍手."
+              ]
+            },
+            "block_type": "guided_activity",
+            "created_at": "2026-04-17T05:48:06.903477+00:00",
+            "sort_order": 11,
+            "updated_at": "2026-04-17T05:48:06.903477+00:00",
+            "methodology_lesson_id": "bec29a68-92cf-4813-8503-b802cd0f2839"
+          },
+          "assetLinks": [
+            {
+              "link": {
+                "id": "9de654b5-7192-40d1-b243-d95f36d4a3b2",
+                "sort_order": 0,
+                "reusable_asset_id": "8d51c0d4-d9a2-4fc5-9c19-52e601197b07",
+                "methodology_lesson_block_id": "668961cf-f059-49c4-9f07-a5b6daea34ff"
+              },
+              "asset": {
+                "id": "8d51c0d4-d9a2-4fc5-9c19-52e601197b07",
+                "kind": "media_file",
+                "slug": "media:masks-farm-animals",
+                "title": "Маски животных фермы",
+                "file_ref": "/methodologies/world-around-me/lesson-2/masks.svg",
+                "metadata": {},
+                "created_at": "2026-04-17T05:48:06.903477+00:00",
+                "source_url": null,
+                "updated_at": "2026-04-17T05:48:06.903477+00:00",
+                "description": "Набор масок: 鸭子、鸡子、羊、牛 для командных игр."
+              }
+            }
+          ]
+        },
+        {
+          "block": {
+            "id": "7640a13b-7ce5-4f46-bf33-0a81944c36e8",
+            "title": "Рабочая тетрадь: страница 5",
+            "content": {
+              "answerKeyHint": "Проверяйте устно: ребёнок показывает линию и произносит название животного.",
+              "completionMode": "in_class",
+              "taskInstruction": "Откройте стр. 5 и соедините числа с животными. После соединения проговорите «这是…»."
+            },
+            "block_type": "worksheet_task",
+            "created_at": "2026-04-17T05:48:06.903477+00:00",
+            "sort_order": 12,
+            "updated_at": "2026-04-17T05:48:06.903477+00:00",
+            "methodology_lesson_id": "bec29a68-92cf-4813-8503-b802cd0f2839"
+          },
+          "assetLinks": [
+            {
+              "link": {
+                "id": "0e630bdd-5f3b-4060-af86-1e0b088ebe5c",
+                "sort_order": 0,
+                "reusable_asset_id": "c7c0870b-c5ce-4704-a45b-9ef6d26f47d0",
+                "methodology_lesson_block_id": "7640a13b-7ce5-4f46-bf33-0a81944c36e8"
+              },
+              "asset": {
+                "id": "c7c0870b-c5ce-4704-a45b-9ef6d26f47d0",
+                "kind": "worksheet",
+                "slug": "worksheet:workbook-page-5",
+                "title": "Рабочая тетрадь, стр. 5",
+                "file_ref": null,
+                "metadata": {},
+                "created_at": "2026-04-17T05:48:06.903477+00:00",
+                "source_url": null,
+                "updated_at": "2026-04-17T05:48:06.903477+00:00",
+                "description": "Соедини числа и животных, назови вслух по модели «这是…»."
+              }
+            }
+          ]
+        },
+        {
+          "block": {
+            "id": "a3b39f34-fba4-47e0-8de9-d6809e212315",
+            "title": "Слово 房子",
+            "content": {
+              "items": [
+                {
+                  "term": "房子",
+                  "pinyin": "fángzi",
+                  "meaning": "дом"
+                }
+              ],
+              "miniDrill": "Покажите карточку 房子 и попросите детей повторить слово с жестом «домик» руками.",
+              "practiceMode": "single_card_with_context"
+            },
+            "block_type": "vocabulary_focus",
+            "created_at": "2026-04-17T05:48:06.903477+00:00",
+            "sort_order": 13,
+            "updated_at": "2026-04-17T05:48:06.903477+00:00",
+            "methodology_lesson_id": "bec29a68-92cf-4813-8503-b802cd0f2839"
+          },
+          "assetLinks": []
+        },
+        {
+          "block": {
+            "id": "0011b750-0ce1-465b-b464-6047f048f956",
+            "title": "Игрушечный дом: 我 / 你 / 在…里",
+            "content": {
+              "steps": [
+                "Поставьте игрушечный дом и маленькие фигурки.",
+                "Моделируйте фразы: «我住在房子里。», «你在房子里吗？».",
+                "Попросите детей по очереди поместить фигурку в дом и проговорить короткую фразу."
+              ],
+              "activityType": "toy_house_phrase_practice",
+              "timeboxMinutes": 4,
+              "successCriteria": [
+                "Дети распознают слова 我 / 你 / 房子.",
+                "Дети повторяют модель 在…里 в мини-ситуации."
+              ]
+            },
+            "block_type": "guided_activity",
+            "created_at": "2026-04-17T05:48:06.903477+00:00",
+            "sort_order": 14,
+            "updated_at": "2026-04-17T05:48:06.903477+00:00",
+            "methodology_lesson_id": "bec29a68-92cf-4813-8503-b802cd0f2839"
+          },
+          "assetLinks": []
+        },
+        {
+          "block": {
+            "id": "636d5736-37bd-49af-a349-2a8266bf8ee0",
+            "title": "Песня farm animals",
+            "content": {
+              "repeatCount": 1,
+              "activityGoal": "Завершить урок в знакомом ритуале и закрепить новые слова о животных.",
+              "movementHint": "Добавьте хлопки и прыжки на знакомых словах.",
+              "teacherActions": [
+                "Включите farm animals, пойте вместе и показывайте карточки животных."
+              ]
+            },
+            "block_type": "song_segment",
+            "created_at": "2026-04-17T05:48:06.903477+00:00",
+            "sort_order": 15,
+            "updated_at": "2026-04-17T05:48:06.903477+00:00",
+            "methodology_lesson_id": "bec29a68-92cf-4813-8503-b802cd0f2839"
+          },
+          "assetLinks": [
+            {
+              "link": {
+                "id": "48e42204-5b8c-49a0-8fda-5402a5e79346",
+                "sort_order": 0,
+                "reusable_asset_id": "c1524b37-e317-82fc-eaf9-370d1def8842",
+                "methodology_lesson_block_id": "636d5736-37bd-49af-a349-2a8266bf8ee0"
+              },
+              "asset": {
+                "id": "c1524b37-e317-82fc-eaf9-370d1def8842",
+                "kind": "song_audio",
+                "slug": "song:farm-animals",
+                "title": "farm animals",
+                "file_ref": "/methodologies/world-around-me/lesson-1/media/farm-animals-song.mp3",
+                "metadata": {},
+                "created_at": "2026-04-06T21:49:31.711731+00:00",
+                "source_url": "https://drive.google.com/file/d/1RewHJRdd6oqSfX506A7ABt6VMDhDzJRP/view?usp=drive_link",
+                "updated_at": "2026-04-18T14:09:52.287359+00:00",
+                "description": "Песня урока 1."
+              }
+            }
+          ]
+        },
+        {
+          "block": {
+            "id": "f5b1c538-d09f-4175-9291-715e88588c0a",
+            "title": "Прощание с детьми и героями",
+            "content": {
+              "exitCheck": "Перед прощанием каждый ребёнок называет 1 животное и 1 действие, затем говорит короткую фразу с «这是…».",
+              "recapPoints": [
+                "鸭子",
+                "鸡子",
+                "羊",
+                "牛",
+                "房子",
+                "我是…",
+                "这是…",
+                "拍手",
+                "数",
+                "在…里"
+              ],
+              "teacherReflectionPrompt": "Попрощайтесь вместе с героями курса и отметьте детей за участие в играх."
+            },
+            "block_type": "wrap_up_closure",
+            "created_at": "2026-04-17T05:48:06.903477+00:00",
+            "sort_order": 16,
+            "updated_at": "2026-04-17T05:48:06.903477+00:00",
+            "methodology_lesson_id": "bec29a68-92cf-4813-8503-b802cd0f2839"
+          },
+          "assetLinks": []
+        },
+        {
+          "block": {
+            "id": "55129423-9e89-4a94-8a75-b3e3328d8fc6",
+            "title": "Материалы урока 2",
+            "content": {
+              "roomSetupNotes": "Подготовьте две зоны: активную (прыжки/команды) и спокойную (пазлы/тетрадь), чтобы сохранить чередование темпа урока.",
+              "materialsChecklist": [
+                "герои курса",
+                "карточки 鸭子/鸡子/羊/牛",
+                "карточка 房子",
+                "аудио со звуками животных",
+                "мягкие игрушки: собака, кот, кролик, лошадь",
+                "Приложение 2 (пазлы)",
+                "маски утки/курицы/овцы/коровы",
+                "рабочая тетрадь (стр. 5)",
+                "игрушечный дом"
+              ]
+            },
+            "block_type": "materials_prep",
+            "created_at": "2026-04-17T05:48:06.903477+00:00",
+            "sort_order": 17,
+            "updated_at": "2026-04-17T05:48:06.903477+00:00",
+            "methodology_lesson_id": "bec29a68-92cf-4813-8503-b802cd0f2839"
+          },
+          "assetLinks": [
+            {
+              "link": {
+                "id": "7ed5310b-2de0-42b9-92e1-5660ad271797",
+                "sort_order": 0,
+                "reusable_asset_id": "95a5c6f7-78f4-4d0d-8a37-6746ecffb85a",
+                "methodology_lesson_block_id": "55129423-9e89-4a94-8a75-b3e3328d8fc6"
+              },
+              "asset": {
+                "id": "95a5c6f7-78f4-4d0d-8a37-6746ecffb85a",
+                "kind": "worksheet",
+                "slug": "worksheet:appendix-2",
+                "title": "Приложение 2",
+                "file_ref": null,
+                "metadata": {},
+                "created_at": "2026-04-17T05:48:06.903477+00:00",
+                "source_url": null,
+                "updated_at": "2026-04-17T05:48:06.903477+00:00",
+                "description": "Пазлы с животными для счёта и называния."
+              }
+            },
+            {
+              "link": {
+                "id": "a77008e7-8052-4e1e-86e6-9af2ec68f481",
+                "sort_order": 1,
+                "reusable_asset_id": "c7c0870b-c5ce-4704-a45b-9ef6d26f47d0",
+                "methodology_lesson_block_id": "55129423-9e89-4a94-8a75-b3e3328d8fc6"
+              },
+              "asset": {
+                "id": "c7c0870b-c5ce-4704-a45b-9ef6d26f47d0",
+                "kind": "worksheet",
+                "slug": "worksheet:workbook-page-5",
+                "title": "Рабочая тетрадь, стр. 5",
+                "file_ref": null,
+                "metadata": {},
+                "created_at": "2026-04-17T05:48:06.903477+00:00",
+                "source_url": null,
+                "updated_at": "2026-04-17T05:48:06.903477+00:00",
+                "description": "Соедини числа и животных, назови вслух по модели «这是…»."
+              }
+            },
+            {
+              "link": {
+                "id": "3ba65090-b389-4cdd-9a33-159294380471",
+                "sort_order": 2,
+                "reusable_asset_id": "8d51c0d4-d9a2-4fc5-9c19-52e601197b07",
+                "methodology_lesson_block_id": "55129423-9e89-4a94-8a75-b3e3328d8fc6"
+              },
+              "asset": {
+                "id": "8d51c0d4-d9a2-4fc5-9c19-52e601197b07",
+                "kind": "media_file",
+                "slug": "media:masks-farm-animals",
+                "title": "Маски животных фермы",
+                "file_ref": "/methodologies/world-around-me/lesson-2/masks.svg",
+                "metadata": {},
+                "created_at": "2026-04-17T05:48:06.903477+00:00",
+                "source_url": null,
+                "updated_at": "2026-04-17T05:48:06.903477+00:00",
+                "description": "Набор масок: 鸭子、鸡子、羊、牛 для командных игр."
+              }
+            }
+          ]
+        }
+      ],
+      "lesson": {
+        "id": "bec29a68-92cf-4813-8503-b802cd0f2839",
+        "title": "Урок 2. Что это за животное?",
+        "created_at": "2026-04-17T05:48:06.903477+00:00",
+        "unit_index": 1,
+        "updated_at": "2026-04-17T05:48:06.903477+00:00",
+        "lesson_index": 2,
+        "module_index": 1,
+        "methodology_id": "bde3aba6-94e2-0cee-0b87-8b25493a3742",
+        "phrase_summary": [
+          "你是谁？",
+          "我是…",
+          "这是…",
+          "在…里",
+          "我住在房子里。"
+        ],
+        "readiness_status": "ready",
+        "vocabulary_summary": [
+          "鸭子",
+          "鸡子",
+          "羊",
+          "牛",
+          "房子",
+          "拍手",
+          "数",
+          "我",
+          "你"
+        ],
+        "estimated_duration_minutes": 45
+      },
+      "homework": {
+        "id": "74c8b6b7-0004-4841-9b07-f4f07730800b",
+        "kind": "quiz_single_choice",
+        "title": "Мини-миссия: Угадай животное и дом",
+        "created_at": "2026-04-17T05:48:06.903477+00:00",
+        "updated_at": "2026-04-17T05:48:06.903477+00:00",
+        "instructions": "Повтори слова урока 2. Слушай вопрос, выбирай правильный ответ и помоги героям найти животных и дом.",
+        "quiz_payload": {
+          "id": "world-around-me-lesson-2-quiz",
+          "version": 1,
+          "questions": [
+            {
+              "id": "q1",
+              "prompt": "Как по-китайски «утка»?",
+              "options": [
+                {
+                  "id": "a",
+                  "label": "鸭子"
+                },
+                {
+                  "id": "b",
+                  "label": "羊"
+                },
+                {
+                  "id": "c",
+                  "label": "牛"
+                }
+              ],
+              "correctOptionId": "a"
+            },
+            {
+              "id": "q2",
+              "prompt": "Что значит 房子?",
+              "options": [
+                {
+                  "id": "a",
+                  "label": "овца"
+                },
+                {
+                  "id": "b",
+                  "label": "дом"
+                },
+                {
+                  "id": "c",
+                  "label": "курица"
+                }
+              ],
+              "correctOptionId": "b"
+            },
+            {
+              "id": "q3",
+              "prompt": "Выбери фразу «Это корова».",
+              "options": [
+                {
+                  "id": "a",
+                  "label": "我是牛。"
+                },
+                {
+                  "id": "b",
+                  "label": "这是牛。"
+                },
+                {
+                  "id": "c",
+                  "label": "你是牛。"
+                }
+              ],
+              "correctOptionId": "b"
+            },
+            {
+              "id": "q4",
+              "prompt": "Какое слово — команда «хлопай»?",
+              "options": [
+                {
+                  "id": "a",
+                  "label": "拍手"
+                },
+                {
+                  "id": "b",
+                  "label": "数"
+                },
+                {
+                  "id": "c",
+                  "label": "跳"
+                }
+              ],
+              "correctOptionId": "a"
+            },
+            {
+              "id": "q5",
+              "prompt": "Какое слово значит «считать»?",
+              "options": [
+                {
+                  "id": "a",
+                  "label": "你"
+                },
+                {
+                  "id": "b",
+                  "label": "我"
+                },
+                {
+                  "id": "c",
+                  "label": "数"
+                }
+              ],
+              "correctOptionId": "c"
+            },
+            {
+              "id": "q6",
+              "prompt": "Выбери правильную фразу про дом.",
+              "options": [
+                {
+                  "id": "a",
+                  "label": "我住在房子里。"
+                },
+                {
+                  "id": "b",
+                  "label": "你住在羊里。"
+                },
+                {
+                  "id": "c",
+                  "label": "这是我里。"
+                }
+              ],
+              "helperText": "Где я живу?",
+              "correctOptionId": "a"
+            }
+          ]
+        },
+        "material_links": [
+          "Рабочая тетрадь, стр. 5",
+          "Карточки 鸭子/鸡子/羊/牛/房子"
+        ],
+        "estimated_minutes": 6,
+        "answer_format_hint": "6 коротких вопросов, по одному ответу.",
+        "methodology_lesson_id": "bec29a68-92cf-4813-8503-b802cd0f2839"
+      },
+      "studentContent": {
+        "id": "f064ad79-7007-42f2-aa9e-089d405b5815",
+        "title": "Урок 2. Что это за животное?",
+        "subtitle": "Новые животные фермы: слушаем, угадываем, двигаемся и говорим фразами.",
+        "created_at": "2026-04-17T05:48:06.903477+00:00",
+        "updated_at": "2026-04-18T11:55:58.624591+00:00",
+        "content_payload": {
+          "sections": [
+            {
+              "body": "Сегодня мы будем говорить, двигаться, угадывать звуки и играть с масками животных.",
+              "tone": "sky",
+              "type": "lesson_focus",
+              "chips": [
+                "鸭子",
+                "鸡子",
+                "羊",
+                "牛"
+              ],
+              "title": "Урок 2 · Что это за животное?",
+              "layout": "hero",
+              "sceneId": "scene-hero",
+              "subtitle": "Сяо Лон и Сяо Мей зовут нас на ферму знакомиться с новыми друзьями.",
+              "illustrationSrc": "/methodologies/world-around-me/lesson-2/farm-scene-2.svg"
+            },
+            {
+              "body": "Смотрим видео, угадываем звуки, хлопаем и считаем, играем с масками, делаем страницу 5 и поём.",
+              "tone": "violet",
+              "type": "lesson_focus",
+              "chips": [
+                "смотреть",
+                "угадывать",
+                "хлопать",
+                "считать",
+                "петь"
+              ],
+              "title": "Что мы делаем сегодня",
+              "layout": "roadmap",
+              "sceneId": "scene-roadmap"
+            },
+            {
+              "tone": "amber",
+              "type": "vocabulary_cards",
+              "items": [
+                {
+                  "term": "鸭子",
+                  "pinyin": "yāzi",
+                  "meaning": "утка",
+                  "visualHint": "Покажи крылышки и скажи: yāzi!",
+                  "illustrationSrc": "/methodologies/world-around-me/lesson-2/duck.svg"
+                },
+                {
+                  "term": "鸡子",
+                  "pinyin": "jīzi",
+                  "meaning": "курица",
+                  "visualHint": "Скажи громко: jīzi!",
+                  "illustrationSrc": "/methodologies/world-around-me/lesson-2/chicken.svg"
+                },
+                {
+                  "term": "羊",
+                  "pinyin": "yáng",
+                  "meaning": "овца",
+                  "visualHint": "Сложи руки как пушистую овечку.",
+                  "illustrationSrc": "/methodologies/world-around-me/lesson-2/sheep.svg"
+                },
+                {
+                  "term": "牛",
+                  "pinyin": "niú",
+                  "meaning": "корова",
+                  "visualHint": "Покажи рога и скажи: niú!",
+                  "illustrationSrc": "/methodologies/world-around-me/lesson-2/cow.svg"
+                }
+              ],
+              "title": "Новые животные фермы",
+              "layout": "vocabulary",
+              "sceneId": "scene-vocabulary",
+              "subtitle": "Слушай, повторяй и покажи карточку."
+            },
+            {
+              "tone": "violet",
+              "type": "phrase_cards",
+              "items": [
+                {
+                  "phrase": "我是…",
+                  "pinyin": "wǒ shì…",
+                  "example": "我是小羊。",
+                  "meaning": "Я…",
+                  "usageHint": "Выбери животное и представься."
+                },
+                {
+                  "phrase": "这是…",
+                  "pinyin": "zhè shì…",
+                  "example": "这是鸭子。",
+                  "meaning": "Это…",
+                  "usageHint": "Покажи карточку и назови животное."
+                }
+              ],
+              "title": "Говорим фразами",
+              "layout": "phrases",
+              "sceneId": "scene-speaking",
+              "subtitle": "Скажи кто ты и что на карточке."
+            },
+            {
+              "body": "Слушай звук внимательно и отвечай: «这是…».",
+              "tone": "sky",
+              "type": "lesson_focus",
+              "chips": [
+                "слушай",
+                "угадывай",
+                "отвечай"
+              ],
+              "title": "Слушай звук и угадай",
+              "layout": "practice",
+              "sceneId": "scene-sounds",
+              "subtitle": "Какое животное так звучит?",
+              "illustrationSrc": "/methodologies/world-around-me/lesson-2/sounds.svg"
+            },
+            {
+              "tone": "emerald",
+              "type": "action_cards",
+              "items": [
+                {
+                  "term": "跑",
+                  "pinyin": "pǎo",
+                  "meaning": "бежать",
+                  "movementHint": "我们跑吧！",
+                  "illustrationSrc": "/methodologies/world-around-me/lesson-1/visuals/run-action.png"
+                },
+                {
+                  "term": "跳",
+                  "pinyin": "tiào",
+                  "meaning": "прыгать",
+                  "movementHint": "我们跳吧！",
+                  "illustrationSrc": "/methodologies/world-around-me/lesson-1/visuals/jump-action.png"
+                },
+                {
+                  "term": "拍手",
+                  "pinyin": "pāishǒu",
+                  "meaning": "хлопать в ладоши",
+                  "movementHint": "拍手吧！ 一、二、三、四、五。",
+                  "illustrationSrc": "/methodologies/world-around-me/lesson-2/clap.svg"
+                },
+                {
+                  "term": "数",
+                  "pinyin": "shǔ",
+                  "meaning": "считать",
+                  "movementHint": "我们数吧！",
+                  "illustrationSrc": "/methodologies/world-around-me/lesson-2/count.svg"
+                }
+              ],
+              "title": "Двигаемся и считаем",
+              "layout": "movement",
+              "sceneId": "scene-actions",
+              "subtitle": "跑 · 跳 · 拍手 · 数"
+            },
+            {
+              "body": "Надень маску и выполняй: «鸭子，跑吧！», «鸡子，拍手吧！».",
+              "tone": "amber",
+              "type": "lesson_focus",
+              "chips": [
+                "маска",
+                "команда",
+                "игра"
+              ],
+              "title": "Маски и команды",
+              "layout": "practice",
+              "sceneId": "scene-masks",
+              "subtitle": "Играй роль животного и слушай команду.",
+              "illustrationSrc": "/methodologies/world-around-me/lesson-2/masks.svg"
+            },
+            {
+              "tone": "amber",
+              "type": "phrase_cards",
+              "items": [
+                {
+                  "phrase": "房子",
+                  "pinyin": "fángzi",
+                  "meaning": "дом",
+                  "usageHint": "Покажи карточку домика."
+                },
+                {
+                  "phrase": "我",
+                  "pinyin": "wǒ",
+                  "meaning": "я",
+                  "usageHint": "Скажи о себе."
+                },
+                {
+                  "phrase": "你",
+                  "pinyin": "nǐ",
+                  "meaning": "ты",
+                  "usageHint": "Спроси друга: «你是谁？»."
+                },
+                {
+                  "phrase": "在…里",
+                  "pinyin": "zài…lǐ",
+                  "example": "我住在房子里。",
+                  "meaning": "внутри / в",
+                  "usageHint": "Покажи, кто находится в домике."
+                }
+              ],
+              "title": "Домик и новые слова",
+              "layout": "farm",
+              "sceneId": "scene-house",
+              "subtitle": "我 · 你 · 房子 · 在…里",
+              "illustrationSrc": "/methodologies/world-around-me/lesson-2/house.svg"
+            },
+            {
+              "tone": "rose",
+              "type": "worksheet",
+              "title": "Тетрадь и песня",
+              "layout": "practice",
+              "assetId": "worksheet:workbook-page-5",
+              "sceneId": "scene-workbook-song",
+              "subtitle": "Спокойное закрепление перед финалом.",
+              "pageLabel": "Рабочая тетрадь · стр. 5",
+              "teacherHint": "После задания попросите каждого ребёнка назвать одну пару «число + животное».",
+              "instructions": "Соедини числа с животными, назови их, а потом спой песню farm animals с группой.",
+              "illustrationSrc": "/methodologies/world-around-me/lesson-2/workbook.svg"
+            },
+            {
+              "tone": "neutral",
+              "type": "recap",
+              "title": "Повтор дома",
+              "layout": "recap",
+              "bullets": [
+                "Назови 4 животных: 鸭子, 鸡子, 羊, 牛.",
+                "Скажи 2 фразы: 我是… и 这是…",
+                "Покажи действия: 跑, 跳, 拍手.",
+                "Скажи слово 数 и посчитай до 5.",
+                "Произнеси: 我住在房子里。"
+              ],
+              "sceneId": "scene-home-review",
+              "subtitle": "Мини-итог после урока."
+            }
+          ]
+        },
+        "methodology_lesson_id": "bec29a68-92cf-4813-8503-b802cd0f2839"
+      },
+      "scheduledLessonCount": 1
+    },
+    {
+      "blocks": [
+        {
+          "block": {
+            "id": "86db9dd0-550c-48ba-8a09-90557ef70fc0",
+            "title": "Приветствие детей и героев курса",
+            "content": {
+              "goal": "Включить детей в тему цветов и напомнить игровой ритм урока.",
+              "title": "Урок 3. Этот разноцветный мир",
+              "timeboxMinutes": 3,
+              "teacherScriptShort": "Поприветствуйте детей и героев курса, соберите группу в круг и объявите цветное приключение."
+            },
+            "block_type": "intro_framing",
+            "created_at": "2026-04-17T06:13:47.593952+00:00",
+            "sort_order": 1,
+            "updated_at": "2026-04-17T06:13:47.593952+00:00",
+            "methodology_lesson_id": "219e6416-bcd4-491b-9076-95300bd17d05"
+          },
+          "assetLinks": []
+        },
+        {
+          "block": {
+            "id": "34865b6c-76a8-40f1-9e82-b3eb292e4200",
+            "title": "Видео colors",
+            "content": {
+              "focusPoints": [
+                "红色",
+                "绿色",
+                "蓝色",
+                "黄色"
+              ],
+              "promptBeforeWatch": "Смотрим видео colors и слушаем названия цветов.",
+              "questionsAfterWatch": [
+                "Какой цвет ты услышал?",
+                "Покажи любимый цвет руками."
+              ]
+            },
+            "block_type": "video_segment",
+            "created_at": "2026-04-17T06:13:47.593952+00:00",
+            "sort_order": 2,
+            "updated_at": "2026-04-17T06:13:47.593952+00:00",
+            "methodology_lesson_id": "219e6416-bcd4-491b-9076-95300bd17d05"
+          },
+          "assetLinks": [
+            {
+              "link": {
+                "id": "c16b10c8-bd00-4bf3-bb91-d29d28ae0468",
+                "sort_order": 0,
+                "reusable_asset_id": "6796162d-c8e3-4442-865c-13d17f1794bb",
+                "methodology_lesson_block_id": "34865b6c-76a8-40f1-9e82-b3eb292e4200"
+              },
+              "asset": {
+                "id": "6796162d-c8e3-4442-865c-13d17f1794bb",
+                "kind": "video",
+                "slug": "video:colors",
+                "title": "colors",
+                "file_ref": null,
+                "metadata": {},
+                "created_at": "2026-04-17T06:13:47.593952+00:00",
+                "source_url": null,
+                "updated_at": "2026-04-17T06:13:47.593952+00:00",
+                "description": "Видео-сегмент урока 3: знакомство с цветами."
+              }
+            }
+          ]
+        },
+        {
+          "block": {
+            "id": "8492ed62-ad88-45bd-8a6c-c9e5024188ce",
+            "title": "Круг «你是… / 我是谁？»",
+            "content": {
+              "fallbackRu": "Покажите на ребёнка и мягко дайте начало фразы, чтобы он завершил «你是…».",
+              "promptPatterns": [
+                "你是…",
+                "我是谁？"
+              ],
+              "expectedStudentResponses": [
+                "你是…"
+              ]
+            },
+            "block_type": "teacher_prompt_pattern",
+            "created_at": "2026-04-17T06:13:47.593952+00:00",
+            "sort_order": 3,
+            "updated_at": "2026-04-17T06:13:47.593952+00:00",
+            "methodology_lesson_id": "219e6416-bcd4-491b-9076-95300bd17d05"
+          },
+          "assetLinks": []
+        },
+        {
+          "block": {
+            "id": "9a87f8e0-e5b1-49b1-9a1d-b169f9b61a73",
+            "title": "Песня hello",
+            "content": {
+              "repeatCount": 1,
+              "activityGoal": "Сохранить ритуал начала урока и общий темп группы.",
+              "movementHint": "Добавьте мягкие жесты приветствия и хлопки в ритме песни.",
+              "teacherActions": [
+                "Спойте hello song в круге вместе с детьми и героями курса."
+              ]
+            },
+            "block_type": "song_segment",
+            "created_at": "2026-04-17T06:13:47.593952+00:00",
+            "sort_order": 4,
+            "updated_at": "2026-04-17T06:13:47.593952+00:00",
+            "methodology_lesson_id": "219e6416-bcd4-491b-9076-95300bd17d05"
+          },
+          "assetLinks": [
+            {
+              "link": {
+                "id": "3315be1b-6d03-4f72-be0d-8b4da9cb1432",
+                "sort_order": 0,
+                "reusable_asset_id": "b5eba775-325d-4be3-b03f-e2ff4da7e82e",
+                "methodology_lesson_block_id": "9a87f8e0-e5b1-49b1-9a1d-b169f9b61a73"
+              },
+              "asset": {
+                "id": "b5eba775-325d-4be3-b03f-e2ff4da7e82e",
+                "kind": "song",
+                "slug": "song:hello",
+                "title": "hello",
+                "file_ref": null,
+                "metadata": {},
+                "created_at": "2026-04-17T05:48:06.903477+00:00",
+                "source_url": null,
+                "updated_at": "2026-04-17T06:13:47.593952+00:00",
+                "description": "Песня-приветствие для начала урока 2."
+              }
+            }
+          ]
+        },
+        {
+          "block": {
+            "id": "2a38ccd6-f4fb-4f4b-a33b-b2b2f31dace3",
+            "title": "Цвета: 红色 / 绿色 / 蓝色 / 黄色",
+            "content": {
+              "items": [
+                {
+                  "term": "红色",
+                  "pinyin": "hóngsè",
+                  "meaning": "красный"
+                },
+                {
+                  "term": "绿色",
+                  "pinyin": "lǜsè",
+                  "meaning": "зелёный"
+                },
+                {
+                  "term": "蓝色",
+                  "pinyin": "lánsè",
+                  "meaning": "синий"
+                },
+                {
+                  "term": "黄色",
+                  "pinyin": "huángsè",
+                  "meaning": "жёлтый"
+                }
+              ],
+              "miniDrill": "Проход 1: называем слово. Проход 2: говорим полной фразой «这是红色。» и аналогично для других цветов.",
+              "practiceMode": "cards_two_passes_then_phrase_model"
+            },
+            "block_type": "vocabulary_focus",
+            "created_at": "2026-04-17T06:13:47.593952+00:00",
+            "sort_order": 5,
+            "updated_at": "2026-04-17T06:13:47.593952+00:00",
+            "methodology_lesson_id": "219e6416-bcd4-491b-9076-95300bd17d05"
+          },
+          "assetLinks": [
+            {
+              "link": {
+                "id": "eb2bc1b5-95fd-452f-aa0c-fe5222688c8e",
+                "sort_order": 0,
+                "reusable_asset_id": "6d8bbe15-0e0b-4102-993e-ce6a5975aaaf",
+                "methodology_lesson_block_id": "2a38ccd6-f4fb-4f4b-a33b-b2b2f31dace3"
+              },
+              "asset": {
+                "id": "6d8bbe15-0e0b-4102-993e-ce6a5975aaaf",
+                "kind": "media_file",
+                "slug": "media:color-cards",
+                "title": "Карточки цветов",
+                "file_ref": "/methodologies/world-around-me/lesson-3/color-cards.svg",
+                "metadata": {},
+                "created_at": "2026-04-17T06:13:47.593952+00:00",
+                "source_url": null,
+                "updated_at": "2026-04-17T06:13:47.593952+00:00",
+                "description": "Набор карточек 红色、绿色、蓝色、黄色."
+              }
+            }
+          ]
+        },
+        {
+          "block": {
+            "id": "f54378d6-9234-4099-b7ae-c483269fd10c",
+            "title": "Палочки и карточки: коснись нужного цвета",
+            "content": {
+              "steps": [
+                "Разложите карточки 红色/绿色/蓝色/黄色 в ряд.",
+                "Раздайте детям цветные палочки.",
+                "Называйте цвет: ребёнок касается карточки палочкой и повторяет слово."
+              ],
+              "activityType": "color_touch_with_sticks",
+              "timeboxMinutes": 4,
+              "successCriteria": [
+                "Ребёнок находит нужный цвет по аудиокоманде.",
+                "Ребёнок проговаривает цвет после действия."
+              ]
+            },
+            "block_type": "guided_activity",
+            "created_at": "2026-04-17T06:13:47.593952+00:00",
+            "sort_order": 6,
+            "updated_at": "2026-04-17T06:13:47.593952+00:00",
+            "methodology_lesson_id": "219e6416-bcd4-491b-9076-95300bd17d05"
+          },
+          "assetLinks": [
+            {
+              "link": {
+                "id": "b0d6db6f-72c6-4854-b1e1-a86bfb8da811",
+                "sort_order": 0,
+                "reusable_asset_id": "6d8bbe15-0e0b-4102-993e-ce6a5975aaaf",
+                "methodology_lesson_block_id": "f54378d6-9234-4099-b7ae-c483269fd10c"
+              },
+              "asset": {
+                "id": "6d8bbe15-0e0b-4102-993e-ce6a5975aaaf",
+                "kind": "media_file",
+                "slug": "media:color-cards",
+                "title": "Карточки цветов",
+                "file_ref": "/methodologies/world-around-me/lesson-3/color-cards.svg",
+                "metadata": {},
+                "created_at": "2026-04-17T06:13:47.593952+00:00",
+                "source_url": null,
+                "updated_at": "2026-04-17T06:13:47.593952+00:00",
+                "description": "Набор карточек 红色、绿色、蓝色、黄色."
+              }
+            }
+          ]
+        },
+        {
+          "block": {
+            "id": "105e5760-d9ba-4e8e-8ff4-6531ba7123b6",
+            "title": "Найди в классе предмет нужного цвета",
+            "content": {
+              "steps": [
+                "Разместите по классу предметы зелёного, синего, жёлтого и красного цветов.",
+                "Называйте цвет, дети находят предмет и приносят в корзину.",
+                "Перед тем как положить предмет, ребёнок самостоятельно называет цвет."
+              ],
+              "activityType": "bring_objects_by_color",
+              "timeboxMinutes": 4,
+              "successCriteria": [
+                "Ребёнок узнаёт и приносит предмет нужного цвета.",
+                "Ребёнок произносит цвет без подсказки."
+              ]
+            },
+            "block_type": "guided_activity",
+            "created_at": "2026-04-17T06:13:47.593952+00:00",
+            "sort_order": 7,
+            "updated_at": "2026-04-17T06:13:47.593952+00:00",
+            "methodology_lesson_id": "219e6416-bcd4-491b-9076-95300bd17d05"
+          },
+          "assetLinks": []
+        },
+        {
+          "block": {
+            "id": "d207685f-3293-49fc-af0f-cf0f55df1805",
+            "title": "Мешочек животных: 这是狗 / 两只狗 / 三只猫",
+            "content": {
+              "steps": [
+                "Повторите животных по карточкам: 狗、猫、兔子、马、鸭子、鸡子、羊、牛.",
+                "Дети по очереди достают игрушки из мешочка и говорят: «这是狗。»",
+                "В конце мини-раунда ребёнок считает и подводит итог с 只: «两只狗», «三只猫»."
+              ],
+              "activityType": "animal_bag_classifier_count",
+              "timeboxMinutes": 5,
+              "successCriteria": [
+                "Ребёнок называет животное по модели «这是…».",
+                "Ребёнок использует классификатор 只 в короткой счётной фразе."
+              ]
+            },
+            "block_type": "guided_activity",
+            "created_at": "2026-04-17T06:13:47.593952+00:00",
+            "sort_order": 8,
+            "updated_at": "2026-04-17T06:13:47.593952+00:00",
+            "methodology_lesson_id": "219e6416-bcd4-491b-9076-95300bd17d05"
+          },
+          "assetLinks": [
+            {
+              "link": {
+                "id": "c41c5eb4-ad9c-4a9b-98e1-63ef6e4c723d",
+                "sort_order": 0,
+                "reusable_asset_id": "549b7e5a-46c8-4353-9f38-23626d1c0e46",
+                "methodology_lesson_block_id": "d207685f-3293-49fc-af0f-cf0f55df1805"
+              },
+              "asset": {
+                "id": "549b7e5a-46c8-4353-9f38-23626d1c0e46",
+                "kind": "media_file",
+                "slug": "media:animals-bag",
+                "title": "Мешочек с игрушечными животными",
+                "file_ref": "/methodologies/world-around-me/lesson-3/animals-bag.svg",
+                "metadata": {},
+                "created_at": "2026-04-17T06:13:47.593952+00:00",
+                "source_url": null,
+                "updated_at": "2026-04-17T06:13:47.593952+00:00",
+                "description": "Игровой реквизит для модели «两只狗 / 三只猫»."
+              }
+            }
+          ]
+        },
+        {
+          "block": {
+            "id": "b7588dc0-29f5-4acc-803b-eaa0b84cd5d9",
+            "title": "Новое слово 车",
+            "content": {
+              "items": [
+                {
+                  "term": "车",
+                  "pinyin": "chē",
+                  "meaning": "машина"
+                }
+              ],
+              "miniDrill": "Покажите карточку 车, затем игрушечную машину и проговорите слово хором.",
+              "practiceMode": "single_card_with_object_link"
+            },
+            "block_type": "vocabulary_focus",
+            "created_at": "2026-04-17T06:13:47.593952+00:00",
+            "sort_order": 9,
+            "updated_at": "2026-04-17T06:13:47.593952+00:00",
+            "methodology_lesson_id": "219e6416-bcd4-491b-9076-95300bd17d05"
+          },
+          "assetLinks": []
+        },
+        {
+          "block": {
+            "id": "9b134cc1-2914-4dc1-ab10-9109201386c7",
+            "title": "Игра с машинками: 我们在做什么？我们在开车。",
+            "content": {
+              "steps": [
+                "Раздайте детям игрушечные машинки и задайте вопрос: «我们在做什么？».",
+                "Смоделируйте ответ: «我们在开车。».",
+                "Попросите детей катать машинки и повторять полную фразу."
+              ],
+              "activityType": "toy_car_action_commentary",
+              "timeboxMinutes": 4,
+              "successCriteria": [
+                "Дети отвечают на вопрос готовой моделью.",
+                "Дети связывают действие и фразу «我们在开车。»."
+              ]
+            },
+            "block_type": "guided_activity",
+            "created_at": "2026-04-17T06:13:47.593952+00:00",
+            "sort_order": 10,
+            "updated_at": "2026-04-17T06:13:47.593952+00:00",
+            "methodology_lesson_id": "219e6416-bcd4-491b-9076-95300bd17d05"
+          },
+          "assetLinks": []
+        },
+        {
+          "block": {
+            "id": "4665de9e-7518-4c47-b4a6-836ce7126137",
+            "title": "Силуэт машины и модель «…的车»",
+            "content": {
+              "steps": [
+                "Покажите картонный силуэт машины с окошком.",
+                "По очереди вставляйте цветные карточки в силуэт.",
+                "Комментируйте и просите повторить: «红色的车。», «绿色的车。»."
+              ],
+              "activityType": "car_silhouette_color_phrase",
+              "timeboxMinutes": 4,
+              "successCriteria": [
+                "Ребёнок повторяет модель «…的车».",
+                "Ребёнок соединяет цвет и предмет в единую фразу."
+              ]
+            },
+            "block_type": "guided_activity",
+            "created_at": "2026-04-17T06:13:47.593952+00:00",
+            "sort_order": 11,
+            "updated_at": "2026-04-17T06:13:47.593952+00:00",
+            "methodology_lesson_id": "219e6416-bcd4-491b-9076-95300bd17d05"
+          },
+          "assetLinks": [
+            {
+              "link": {
+                "id": "4df8fb58-136a-4d61-b7bf-af11e54f48a3",
+                "sort_order": 0,
+                "reusable_asset_id": "bc35b008-a823-403d-a013-46e012e09372",
+                "methodology_lesson_block_id": "4665de9e-7518-4c47-b4a6-836ce7126137"
+              },
+              "asset": {
+                "id": "bc35b008-a823-403d-a013-46e012e09372",
+                "kind": "media_file",
+                "slug": "media:car-silhouette",
+                "title": "Силуэт машины",
+                "file_ref": "/methodologies/world-around-me/lesson-3/car-silhouette.svg",
+                "metadata": {},
+                "created_at": "2026-04-17T06:13:47.593952+00:00",
+                "source_url": null,
+                "updated_at": "2026-04-17T06:13:47.593952+00:00",
+                "description": "Картонный силуэт машины для моделей «…的车»."
+              }
+            }
+          ]
+        },
+        {
+          "block": {
+            "id": "0788c23f-02e4-4117-b119-97515d613eee",
+            "title": "Приложение 3: сортировка животных по цвету",
+            "content": {
+              "steps": [
+                "Используйте Приложение 3 и цветной кубик.",
+                "Ребёнок бросает кубик и узнаёт целевой цвет.",
+                "Ребёнок выбирает животных нужного цвета и называет: «黄色的猫。», «绿色的牛。»."
+              ],
+              "activityType": "appendix_color_sorting_with_die",
+              "timeboxMinutes": 5,
+              "successCriteria": [
+                "Ребёнок сортирует карточки животных по цвету.",
+                "Ребёнок проговаривает словосочетание с «…的…»."
+              ]
+            },
+            "block_type": "guided_activity",
+            "created_at": "2026-04-17T06:13:47.593952+00:00",
+            "sort_order": 12,
+            "updated_at": "2026-04-17T06:13:47.593952+00:00",
+            "methodology_lesson_id": "219e6416-bcd4-491b-9076-95300bd17d05"
+          },
+          "assetLinks": [
+            {
+              "link": {
+                "id": "7ca9f86a-6295-4d84-a6dc-75cf23aecead",
+                "sort_order": 0,
+                "reusable_asset_id": "d0e84bd0-11ff-4f72-bcd2-6955524883df",
+                "methodology_lesson_block_id": "0788c23f-02e4-4117-b119-97515d613eee"
+              },
+              "asset": {
+                "id": "d0e84bd0-11ff-4f72-bcd2-6955524883df",
+                "kind": "worksheet",
+                "slug": "worksheet:appendix-3",
+                "title": "Приложение 3",
+                "file_ref": null,
+                "metadata": {},
+                "created_at": "2026-04-17T06:13:47.593952+00:00",
+                "source_url": null,
+                "updated_at": "2026-04-17T06:13:47.593952+00:00",
+                "description": "Сортировка животных по цветам с цветным кубиком."
+              }
+            },
+            {
+              "link": {
+                "id": "b6445631-f006-4aed-b675-6833aec42ad3",
+                "sort_order": 1,
+                "reusable_asset_id": "bdfe735e-045f-4fe9-bef1-39b03c83cc7c",
+                "methodology_lesson_block_id": "0788c23f-02e4-4117-b119-97515d613eee"
+              },
+              "asset": {
+                "id": "bdfe735e-045f-4fe9-bef1-39b03c83cc7c",
+                "kind": "media_file",
+                "slug": "media:color-die",
+                "title": "Цветной кубик",
+                "file_ref": "/methodologies/world-around-me/lesson-3/color-die.svg",
+                "metadata": {},
+                "created_at": "2026-04-17T06:13:47.593952+00:00",
+                "source_url": null,
+                "updated_at": "2026-04-17T06:13:47.593952+00:00",
+                "description": "Кубик цветов для сортировки животных по цвету."
+              }
+            }
+          ]
+        },
+        {
+          "block": {
+            "id": "551069fe-f331-4b66-9844-1c1bc5e00b06",
+            "title": "Движение и счёт с 次",
+            "content": {
+              "steps": [
+                "Повторите знакомые глаголы движения и хлопков.",
+                "Давайте команды с числом: «跳五次。», «拍手三次。».",
+                "Дети выполняют действие и считают вслух до 5."
+              ],
+              "activityType": "counted_actions_with_ci",
+              "timeboxMinutes": 4,
+              "successCriteria": [
+                "Ребёнок понимает модель «число + 次».",
+                "Ребёнок выполняет и считает нужное количество раз."
+              ]
+            },
+            "block_type": "guided_activity",
+            "created_at": "2026-04-17T06:13:47.593952+00:00",
+            "sort_order": 13,
+            "updated_at": "2026-04-17T06:13:47.593952+00:00",
+            "methodology_lesson_id": "219e6416-bcd4-491b-9076-95300bd17d05"
+          },
+          "assetLinks": []
+        },
+        {
+          "block": {
+            "id": "034ff3e1-329f-4ee8-941a-655b84a4d109",
+            "title": "Рабочая тетрадь: страница 6",
+            "content": {
+              "answerKeyHint": "Проверка устно: ребёнок показывает цвет и произносит «这是红色。» или аналогичную фразу.",
+              "completionMode": "in_class",
+              "taskInstruction": "Раскрась цвета на странице 6 и назови каждый цвет по-китайски."
+            },
+            "block_type": "worksheet_task",
+            "created_at": "2026-04-17T06:13:47.593952+00:00",
+            "sort_order": 14,
+            "updated_at": "2026-04-17T06:13:47.593952+00:00",
+            "methodology_lesson_id": "219e6416-bcd4-491b-9076-95300bd17d05"
+          },
+          "assetLinks": [
+            {
+              "link": {
+                "id": "0256bbea-53e3-43c5-b074-0bf59afa7595",
+                "sort_order": 0,
+                "reusable_asset_id": "96bec8cb-4a48-4587-8afe-bdeb17e34f82",
+                "methodology_lesson_block_id": "034ff3e1-329f-4ee8-941a-655b84a4d109"
+              },
+              "asset": {
+                "id": "96bec8cb-4a48-4587-8afe-bdeb17e34f82",
+                "kind": "worksheet",
+                "slug": "worksheet:workbook-page-6",
+                "title": "Рабочая тетрадь, стр. 6",
+                "file_ref": null,
+                "metadata": {},
+                "created_at": "2026-04-17T06:13:47.593952+00:00",
+                "source_url": null,
+                "updated_at": "2026-04-17T06:13:47.593952+00:00",
+                "description": "Раскрась цвета и назови их по-китайски."
+              }
+            }
+          ]
+        },
+        {
+          "block": {
+            "id": "aa33bdf2-8c65-4d38-9ddc-b3d8c67e8122",
+            "title": "Песня my favorite color is blue",
+            "content": {
+              "repeatCount": 1,
+              "activityGoal": "Закрепить цвета и завершить урок эмоционально.",
+              "movementHint": "Поднимайте карточку того цвета, который звучит в песне.",
+              "teacherActions": [
+                "Включите песню my favorite color is blue и подпевайте с детьми."
+              ]
+            },
+            "block_type": "song_segment",
+            "created_at": "2026-04-17T06:13:47.593952+00:00",
+            "sort_order": 15,
+            "updated_at": "2026-04-17T06:13:47.593952+00:00",
+            "methodology_lesson_id": "219e6416-bcd4-491b-9076-95300bd17d05"
+          },
+          "assetLinks": [
+            {
+              "link": {
+                "id": "8c8771f2-c384-4f08-aa46-2a44eae8e45a",
+                "sort_order": 0,
+                "reusable_asset_id": "d94271be-6dee-4d8b-9adc-f8eb6a6d3b85",
+                "methodology_lesson_block_id": "aa33bdf2-8c65-4d38-9ddc-b3d8c67e8122"
+              },
+              "asset": {
+                "id": "d94271be-6dee-4d8b-9adc-f8eb6a6d3b85",
+                "kind": "song",
+                "slug": "song:my-favorite-color-is-blue",
+                "title": "my favorite color is blue",
+                "file_ref": null,
+                "metadata": {},
+                "created_at": "2026-04-17T06:13:47.593952+00:00",
+                "source_url": null,
+                "updated_at": "2026-04-17T06:13:47.593952+00:00",
+                "description": "Песня для финала урока 3 о любимом цвете."
+              }
+            }
+          ]
+        },
+        {
+          "block": {
+            "id": "554ab32b-83cc-4e4e-b82f-630939015426",
+            "title": "Прощание с детьми и героями",
+            "content": {
+              "exitCheck": "Перед прощанием каждый ребёнок называет один цвет, одну фразу с «…的…» и выполняет короткую команду с 次.",
+              "recapPoints": [
+                "红色",
+                "绿色",
+                "蓝色",
+                "黄色",
+                "车",
+                "你是…",
+                "我是谁？",
+                "…的…",
+                "只",
+                "次"
+              ],
+              "teacherReflectionPrompt": "Попрощайтесь вместе с героями и отметьте детей за смелую речь полными фразами."
+            },
+            "block_type": "wrap_up_closure",
+            "created_at": "2026-04-17T06:13:47.593952+00:00",
+            "sort_order": 16,
+            "updated_at": "2026-04-17T06:13:47.593952+00:00",
+            "methodology_lesson_id": "219e6416-bcd4-491b-9076-95300bd17d05"
+          },
+          "assetLinks": []
+        },
+        {
+          "block": {
+            "id": "45355403-878b-43bc-b8e5-cb4d907b2e4c",
+            "title": "Материалы урока 3",
+            "content": {
+              "roomSetupNotes": "Подготовьте активную зону поиска предметов и спокойную зону для сортировки/тетради; заранее проверьте, что цветные карточки видны всем детям.",
+              "materialsChecklist": [
+                "герои курса",
+                "видео colors",
+                "карточки 红色/绿色/蓝色/黄色/车",
+                "цветные палочки",
+                "предметы 4 цветов для игры по классу",
+                "карточки и игрушки животных в мешочке",
+                "игрушечные машинки",
+                "картонный силуэт машины",
+                "Приложение 3",
+                "цветной кубик",
+                "рабочая тетрадь (стр. 6)"
+              ]
+            },
+            "block_type": "materials_prep",
+            "created_at": "2026-04-17T06:13:47.593952+00:00",
+            "sort_order": 17,
+            "updated_at": "2026-04-17T06:13:47.593952+00:00",
+            "methodology_lesson_id": "219e6416-bcd4-491b-9076-95300bd17d05"
+          },
+          "assetLinks": [
+            {
+              "link": {
+                "id": "7f0112ff-17e2-4650-889a-f0b1348b75f0",
+                "sort_order": 0,
+                "reusable_asset_id": "6d8bbe15-0e0b-4102-993e-ce6a5975aaaf",
+                "methodology_lesson_block_id": "45355403-878b-43bc-b8e5-cb4d907b2e4c"
+              },
+              "asset": {
+                "id": "6d8bbe15-0e0b-4102-993e-ce6a5975aaaf",
+                "kind": "media_file",
+                "slug": "media:color-cards",
+                "title": "Карточки цветов",
+                "file_ref": "/methodologies/world-around-me/lesson-3/color-cards.svg",
+                "metadata": {},
+                "created_at": "2026-04-17T06:13:47.593952+00:00",
+                "source_url": null,
+                "updated_at": "2026-04-17T06:13:47.593952+00:00",
+                "description": "Набор карточек 红色、绿色、蓝色、黄色."
+              }
+            },
+            {
+              "link": {
+                "id": "6363dff6-e81c-459f-843b-cbbe4ccca9e1",
+                "sort_order": 1,
+                "reusable_asset_id": "549b7e5a-46c8-4353-9f38-23626d1c0e46",
+                "methodology_lesson_block_id": "45355403-878b-43bc-b8e5-cb4d907b2e4c"
+              },
+              "asset": {
+                "id": "549b7e5a-46c8-4353-9f38-23626d1c0e46",
+                "kind": "media_file",
+                "slug": "media:animals-bag",
+                "title": "Мешочек с игрушечными животными",
+                "file_ref": "/methodologies/world-around-me/lesson-3/animals-bag.svg",
+                "metadata": {},
+                "created_at": "2026-04-17T06:13:47.593952+00:00",
+                "source_url": null,
+                "updated_at": "2026-04-17T06:13:47.593952+00:00",
+                "description": "Игровой реквизит для модели «两只狗 / 三只猫»."
+              }
+            },
+            {
+              "link": {
+                "id": "d91a62df-4e13-4590-bdd4-7c75db5584f5",
+                "sort_order": 2,
+                "reusable_asset_id": "bc35b008-a823-403d-a013-46e012e09372",
+                "methodology_lesson_block_id": "45355403-878b-43bc-b8e5-cb4d907b2e4c"
+              },
+              "asset": {
+                "id": "bc35b008-a823-403d-a013-46e012e09372",
+                "kind": "media_file",
+                "slug": "media:car-silhouette",
+                "title": "Силуэт машины",
+                "file_ref": "/methodologies/world-around-me/lesson-3/car-silhouette.svg",
+                "metadata": {},
+                "created_at": "2026-04-17T06:13:47.593952+00:00",
+                "source_url": null,
+                "updated_at": "2026-04-17T06:13:47.593952+00:00",
+                "description": "Картонный силуэт машины для моделей «…的车»."
+              }
+            },
+            {
+              "link": {
+                "id": "7d230e3f-df6e-4fcd-b627-7fba52c7b299",
+                "sort_order": 3,
+                "reusable_asset_id": "d0e84bd0-11ff-4f72-bcd2-6955524883df",
+                "methodology_lesson_block_id": "45355403-878b-43bc-b8e5-cb4d907b2e4c"
+              },
+              "asset": {
+                "id": "d0e84bd0-11ff-4f72-bcd2-6955524883df",
+                "kind": "worksheet",
+                "slug": "worksheet:appendix-3",
+                "title": "Приложение 3",
+                "file_ref": null,
+                "metadata": {},
+                "created_at": "2026-04-17T06:13:47.593952+00:00",
+                "source_url": null,
+                "updated_at": "2026-04-17T06:13:47.593952+00:00",
+                "description": "Сортировка животных по цветам с цветным кубиком."
+              }
+            },
+            {
+              "link": {
+                "id": "da3b697a-f782-43b6-8cb0-d9192130ee77",
+                "sort_order": 4,
+                "reusable_asset_id": "96bec8cb-4a48-4587-8afe-bdeb17e34f82",
+                "methodology_lesson_block_id": "45355403-878b-43bc-b8e5-cb4d907b2e4c"
+              },
+              "asset": {
+                "id": "96bec8cb-4a48-4587-8afe-bdeb17e34f82",
+                "kind": "worksheet",
+                "slug": "worksheet:workbook-page-6",
+                "title": "Рабочая тетрадь, стр. 6",
+                "file_ref": null,
+                "metadata": {},
+                "created_at": "2026-04-17T06:13:47.593952+00:00",
+                "source_url": null,
+                "updated_at": "2026-04-17T06:13:47.593952+00:00",
+                "description": "Раскрась цвета и назови их по-китайски."
+              }
+            },
+            {
+              "link": {
+                "id": "0770f1b8-f4b1-4c6f-9b12-ccf394b5d513",
+                "sort_order": 5,
+                "reusable_asset_id": "bdfe735e-045f-4fe9-bef1-39b03c83cc7c",
+                "methodology_lesson_block_id": "45355403-878b-43bc-b8e5-cb4d907b2e4c"
+              },
+              "asset": {
+                "id": "bdfe735e-045f-4fe9-bef1-39b03c83cc7c",
+                "kind": "media_file",
+                "slug": "media:color-die",
+                "title": "Цветной кубик",
+                "file_ref": "/methodologies/world-around-me/lesson-3/color-die.svg",
+                "metadata": {},
+                "created_at": "2026-04-17T06:13:47.593952+00:00",
+                "source_url": null,
+                "updated_at": "2026-04-17T06:13:47.593952+00:00",
+                "description": "Кубик цветов для сортировки животных по цвету."
+              }
+            }
+          ]
+        }
+      ],
+      "lesson": {
+        "id": "219e6416-bcd4-491b-9076-95300bd17d05",
+        "title": "Урок 3. Этот разноцветный мир",
+        "created_at": "2026-04-17T06:13:47.593952+00:00",
+        "unit_index": 1,
+        "updated_at": "2026-04-17T06:13:47.593952+00:00",
+        "lesson_index": 3,
+        "module_index": 1,
+        "methodology_id": "bde3aba6-94e2-0cee-0b87-8b25493a3742",
+        "phrase_summary": [
+          "你是…",
+          "我是谁？",
+          "这是红色。",
+          "这是狗。",
+          "我们在做什么？",
+          "我们在开车。",
+          "红色的车。"
+        ],
+        "readiness_status": "ready",
+        "vocabulary_summary": [
+          "红色",
+          "绿色",
+          "蓝色",
+          "黄色",
+          "车",
+          "只",
+          "…的…",
+          "次"
+        ],
+        "estimated_duration_minutes": 45
+      },
+      "homework": {
+        "id": "0880ec79-c99e-42f5-a14f-6e657e73d08c",
+        "kind": "quiz_single_choice",
+        "title": "Мини-миссия: Вспоминаем цвета и машинки",
+        "created_at": "2026-04-17T06:13:47.593952+00:00",
+        "updated_at": "2026-04-17T06:13:47.593952+00:00",
+        "instructions": "Повтори цвета, машинки и короткие фразы урока 3. Выбери правильный ответ в каждом вопросе.",
+        "quiz_payload": {
+          "id": "world-around-me-lesson-3-quiz",
+          "version": 1,
+          "questions": [
+            {
+              "id": "q1",
+              "prompt": "Как по-китайски «красный»?",
+              "options": [
+                {
+                  "id": "a",
+                  "label": "红色"
+                },
+                {
+                  "id": "b",
+                  "label": "绿色"
+                },
+                {
+                  "id": "c",
+                  "label": "蓝色"
+                }
+              ],
+              "correctOptionId": "a"
+            },
+            {
+              "id": "q2",
+              "prompt": "Какое слово значит «машина»?",
+              "options": [
+                {
+                  "id": "a",
+                  "label": "只"
+                },
+                {
+                  "id": "b",
+                  "label": "车"
+                },
+                {
+                  "id": "c",
+                  "label": "次"
+                }
+              ],
+              "correctOptionId": "b"
+            },
+            {
+              "id": "q3",
+              "prompt": "Выбери правильную фразу:",
+              "options": [
+                {
+                  "id": "a",
+                  "label": "我们在开车。"
+                },
+                {
+                  "id": "b",
+                  "label": "我们在跳车。"
+                },
+                {
+                  "id": "c",
+                  "label": "我们是谁？"
+                }
+              ],
+              "helperText": "«Мы ведём машину.»",
+              "correctOptionId": "a"
+            },
+            {
+              "id": "q4",
+              "prompt": "Выбери словосочетание «зелёная машина».",
+              "options": [
+                {
+                  "id": "a",
+                  "label": "绿色的车"
+                },
+                {
+                  "id": "b",
+                  "label": "车的绿色"
+                },
+                {
+                  "id": "c",
+                  "label": "绿色在车"
+                }
+              ],
+              "correctOptionId": "a"
+            },
+            {
+              "id": "q5",
+              "prompt": "В какой фразе правильно используется 只?",
+              "options": [
+                {
+                  "id": "a",
+                  "label": "三次猫"
+                },
+                {
+                  "id": "b",
+                  "label": "两只狗"
+                },
+                {
+                  "id": "c",
+                  "label": "狗的两"
+                }
+              ],
+              "correctOptionId": "b"
+            },
+            {
+              "id": "q6",
+              "prompt": "Выбери команду «Прыгни пять раз».",
+              "options": [
+                {
+                  "id": "a",
+                  "label": "拍手三次。"
+                },
+                {
+                  "id": "b",
+                  "label": "跳五次。"
+                },
+                {
+                  "id": "c",
+                  "label": "跳五只。"
+                }
+              ],
+              "correctOptionId": "b"
+            }
+          ]
+        },
+        "material_links": [
+          "Рабочая тетрадь, стр. 6",
+          "Карточки 红色/绿色/蓝色/黄色/车"
+        ],
+        "estimated_minutes": 6,
+        "answer_format_hint": "6 коротких вопросов, по одному ответу.",
+        "methodology_lesson_id": "219e6416-bcd4-491b-9076-95300bd17d05"
+      },
+      "studentContent": {
+        "id": "7bd97f61-505a-4782-a1a4-2a18674ed81c",
+        "title": "Урок 3. Этот разноцветный мир",
+        "subtitle": "Изучаем цвета, играем с животными и машинками, считаем и поём.",
+        "created_at": "2026-04-17T06:13:47.593952+00:00",
+        "updated_at": "2026-04-17T06:13:47.593952+00:00",
+        "content_payload": {
+          "sections": [
+            {
+              "body": "Сегодня мы смотрим видео colors, играем с карточками и учимся говорить цветные фразы.",
+              "tone": "sky",
+              "type": "lesson_focus",
+              "chips": [
+                "红色",
+                "绿色",
+                "蓝色",
+                "黄色"
+              ],
+              "title": "Урок 3 · Этот разноцветный мир",
+              "layout": "hero",
+              "sceneId": "scene-hero",
+              "subtitle": "Сяо Лон и Сяо Мей приглашают нас в мир ярких цветов.",
+              "illustrationSrc": "/methodologies/world-around-me/lesson-3/color-world.svg"
+            },
+            {
+              "body": "Смотрим видео, называем цвета, ищем цвета в классе, сортируем животных, играем с машинками и поём.",
+              "tone": "violet",
+              "type": "lesson_focus",
+              "chips": [
+                "смотреть",
+                "называть",
+                "искать",
+                "сортировать",
+                "петь"
+              ],
+              "title": "Что мы делаем сегодня",
+              "layout": "roadmap",
+              "sceneId": "scene-roadmap"
+            },
+            {
+              "tone": "amber",
+              "type": "vocabulary_cards",
+              "items": [
+                {
+                  "term": "红色",
+                  "pinyin": "hóngsè",
+                  "meaning": "красный",
+                  "visualHint": "Покажи красный цвет вокруг себя."
+                },
+                {
+                  "term": "绿色",
+                  "pinyin": "lǜsè",
+                  "meaning": "зелёный",
+                  "visualHint": "Найди что-то зелёное."
+                },
+                {
+                  "term": "蓝色",
+                  "pinyin": "lánsè",
+                  "meaning": "синий",
+                  "visualHint": "Покажи синий предмет."
+                },
+                {
+                  "term": "黄色",
+                  "pinyin": "huángsè",
+                  "meaning": "жёлтый",
+                  "visualHint": "Улыбнись как жёлтое солнышко."
+                }
+              ],
+              "title": "Главные цвета",
+              "layout": "vocabulary",
+              "sceneId": "scene-colors",
+              "subtitle": "Слушай и повторяй каждый цвет."
+            },
+            {
+              "tone": "violet",
+              "type": "phrase_cards",
+              "items": [
+                {
+                  "phrase": "你是…",
+                  "pinyin": "nǐ shì…",
+                  "meaning": "Ты…",
+                  "usageHint": "Покажи на друга и начни фразу."
+                },
+                {
+                  "phrase": "我是谁？",
+                  "pinyin": "wǒ shì shéi?",
+                  "meaning": "Кто я?",
+                  "usageHint": "Спроси и послушай ответ друга."
+                }
+              ],
+              "title": "Говорим и показываем",
+              "layout": "phrases",
+              "sceneId": "scene-speaking",
+              "subtitle": "Играем в кругу с вопросом и ответом."
+            },
+            {
+              "tone": "emerald",
+              "type": "phrase_cards",
+              "items": [
+                {
+                  "phrase": "这是狗。",
+                  "pinyin": "zhè shì gǒu.",
+                  "meaning": "Это собака.",
+                  "usageHint": "Скажи, когда достаёшь игрушку из мешочка."
+                },
+                {
+                  "phrase": "两只狗。",
+                  "pinyin": "liǎng zhī gǒu.",
+                  "meaning": "Две собаки.",
+                  "usageHint": "Посчитай, сколько собак у тебя."
+                },
+                {
+                  "phrase": "三只猫。",
+                  "pinyin": "sān zhī māo.",
+                  "meaning": "Три кошки.",
+                  "usageHint": "Назови итог с числом и 只."
+                }
+              ],
+              "title": "Животные и счёт",
+              "layout": "farm",
+              "sceneId": "scene-animals",
+              "subtitle": "Называем и считаем с 只.",
+              "illustrationSrc": "/methodologies/world-around-me/lesson-3/animals-bag.svg"
+            },
+            {
+              "tone": "amber",
+              "type": "phrase_cards",
+              "items": [
+                {
+                  "phrase": "车",
+                  "pinyin": "chē",
+                  "meaning": "машина",
+                  "usageHint": "Покажи игрушечную машину."
+                },
+                {
+                  "phrase": "我们在开车。",
+                  "pinyin": "wǒmen zài kāichē.",
+                  "meaning": "Мы ведём машину.",
+                  "usageHint": "Скажи, когда играешь с машинкой."
+                },
+                {
+                  "phrase": "红色的车。",
+                  "pinyin": "hóngsè de chē.",
+                  "meaning": "Красная машина.",
+                  "usageHint": "Подбери цвет и назови машину."
+                },
+                {
+                  "phrase": "绿色的车。",
+                  "pinyin": "lǜsè de chē.",
+                  "meaning": "Зелёная машина.",
+                  "usageHint": "Сравни с другой машиной."
+                }
+              ],
+              "title": "Машинки",
+              "layout": "practice",
+              "sceneId": "scene-cars",
+              "subtitle": "Учимся говорить о машинах и цветах.",
+              "illustrationSrc": "/methodologies/world-around-me/lesson-3/toy-car.svg"
+            },
+            {
+              "tone": "sky",
+              "type": "phrase_cards",
+              "items": [
+                {
+                  "phrase": "黄色的猫。",
+                  "pinyin": "huángsè de māo.",
+                  "meaning": "Жёлтая кошка.",
+                  "usageHint": "Назови животное нужного цвета."
+                },
+                {
+                  "phrase": "绿色的牛。",
+                  "pinyin": "lǜsè de niú.",
+                  "meaning": "Зелёная корова.",
+                  "usageHint": "Скажи фразу после броска кубика."
+                }
+              ],
+              "title": "Сортируем по цветам",
+              "layout": "practice",
+              "sceneId": "scene-sorting",
+              "subtitle": "Бросаем кубик цвета и ищем животных.",
+              "illustrationSrc": "/methodologies/world-around-me/lesson-3/color-die.svg"
+            },
+            {
+              "tone": "emerald",
+              "type": "action_cards",
+              "items": [
+                {
+                  "term": "跳五次",
+                  "pinyin": "tiào wǔ cì",
+                  "meaning": "прыгни 5 раз",
+                  "movementHint": "Прыгаем и считаем до пяти."
+                },
+                {
+                  "term": "拍手三次",
+                  "pinyin": "pāishǒu sān cì",
+                  "meaning": "хлопни 3 раза",
+                  "movementHint": "Хлопай в ладоши и считай до трёх."
+                }
+              ],
+              "title": "Считаем действия",
+              "layout": "movement",
+              "sceneId": "scene-actions",
+              "subtitle": "Двигаемся с числом и 次."
+            },
+            {
+              "tone": "rose",
+              "type": "worksheet",
+              "title": "Тетрадь и песня",
+              "layout": "practice",
+              "assetId": "worksheet:workbook-page-6",
+              "sceneId": "scene-workbook-song",
+              "subtitle": "Спокойный финал перед прощанием.",
+              "pageLabel": "Рабочая тетрадь · стр. 6",
+              "teacherHint": "Попросите детей показать любимый цвет и назвать его вслух.",
+              "instructions": "Раскрась цвета на стр. 6, произнеси каждый цвет и вместе спой my favorite color is blue.",
+              "illustrationSrc": "/methodologies/world-around-me/lesson-3/workbook.svg"
+            },
+            {
+              "tone": "neutral",
+              "type": "recap",
+              "title": "Повтор дома",
+              "layout": "recap",
+              "bullets": [
+                "Назови 4 цвета: 红色, 绿色, 蓝色, 黄色.",
+                "Скажи фразу: 这是红色。",
+                "Скажи про машинку: 红色的车 / 绿色的车.",
+                "Повтори счёт с 只: 两只狗, 三只猫.",
+                "Сделай 2 команды: 跳五次, 拍手三次."
+              ],
+              "sceneId": "scene-home-review",
+              "subtitle": "Мини-итог перед домашней мини-миссией."
+            }
+          ]
+        },
+        "methodology_lesson_id": "219e6416-bcd4-491b-9076-95300bd17d05"
+      },
+      "scheduledLessonCount": 0
+    }
+  ],
+  "extractedAt": "2026-08-04T03:32:11.307753+00:00",
+  "methodology": {
+    "id": "bde3aba6-94e2-0cee-0b87-8b25493a3742",
+    "slug": "world-around-me",
+    "title": "Мир вокруг меня – 我周围的世界",
+    "metadata": {
+      "level": "age-5-6",
+      "locale": "zh-CN",
+      "titleRu": "Мир вокруг меня",
+      "coverImage": {
+        "alt": "Обложка методики «Мир вокруг меня»",
+        "src": "/methodologies/01.png"
+      },
+      "titleNative": "我周围的世界"
+    },
+    "created_at": "2026-04-06T21:49:31.46051+00:00",
+    "updated_at": "2026-04-15T08:17:00.664296+00:00",
+    "short_description": "Китайский для детей 5–6 лет, 45-минутные занятия с песнями, видео и активной игровой практикой."
+  },
+  "reusableAssets": [
+    {
+      "id": "688c389d-55ef-4c5e-9ed5-f802101a5c7e",
+      "kind": "flashcards_pdf",
+      "slug": "flashcards:world-around-me-lesson-1",
+      "title": "Карточки урока 1 (PDF)",
+      "file_ref": "/methodologies/world-around-me/lesson-1/flashcards/lesson-1-flashcards.pdf",
+      "metadata": {
+        "cardImageRefs": [
+          "/methodologies/world-around-me/lesson-1/flashcards/dog-card.png",
+          "/methodologies/world-around-me/lesson-1/flashcards/dog-card_2.png",
+          "/methodologies/world-around-me/lesson-1/flashcards/cat-card.png",
+          "/methodologies/world-around-me/lesson-1/flashcards/cat-card_2.png",
+          "/methodologies/world-around-me/lesson-1/flashcards/rabbit-card.png",
+          "/methodologies/world-around-me/lesson-1/flashcards/rabbit-card_2.png",
+          "/methodologies/world-around-me/lesson-1/flashcards/horse-card.png",
+          "/methodologies/world-around-me/lesson-1/flashcards/horse-card_2.png",
+          "/methodologies/world-around-me/lesson-1/flashcards/farm-card.png",
+          "/methodologies/world-around-me/lesson-1/flashcards/farm-card_2.png"
+        ]
+      },
+      "created_at": "2026-04-18T10:30:52.339622+00:00",
+      "source_url": "https://drive.google.com/file/d/11LTKea4ui3_xB5ZBc6WbEanwlxfoO_GY/view?usp=drive_link",
+      "updated_at": "2026-04-18T14:09:52.287359+00:00",
+      "description": "Карточки для работы на уроке 1"
+    },
+    {
+      "id": "549b7e5a-46c8-4353-9f38-23626d1c0e46",
+      "kind": "media_file",
+      "slug": "media:animals-bag",
+      "title": "Мешочек с игрушечными животными",
+      "file_ref": "/methodologies/world-around-me/lesson-3/animals-bag.svg",
+      "metadata": {},
+      "created_at": "2026-04-17T06:13:47.593952+00:00",
+      "source_url": null,
+      "updated_at": "2026-04-17T06:13:47.593952+00:00",
+      "description": "Игровой реквизит для модели «两只狗 / 三只猫»."
+    },
+    {
+      "id": "bc35b008-a823-403d-a013-46e012e09372",
+      "kind": "media_file",
+      "slug": "media:car-silhouette",
+      "title": "Силуэт машины",
+      "file_ref": "/methodologies/world-around-me/lesson-3/car-silhouette.svg",
+      "metadata": {},
+      "created_at": "2026-04-17T06:13:47.593952+00:00",
+      "source_url": null,
+      "updated_at": "2026-04-17T06:13:47.593952+00:00",
+      "description": "Картонный силуэт машины для моделей «…的车»."
+    },
+    {
+      "id": "6d8bbe15-0e0b-4102-993e-ce6a5975aaaf",
+      "kind": "media_file",
+      "slug": "media:color-cards",
+      "title": "Карточки цветов",
+      "file_ref": "/methodologies/world-around-me/lesson-3/color-cards.svg",
+      "metadata": {},
+      "created_at": "2026-04-17T06:13:47.593952+00:00",
+      "source_url": null,
+      "updated_at": "2026-04-17T06:13:47.593952+00:00",
+      "description": "Набор карточек 红色、绿色、蓝色、黄色."
+    },
+    {
+      "id": "bdfe735e-045f-4fe9-bef1-39b03c83cc7c",
+      "kind": "media_file",
+      "slug": "media:color-die",
+      "title": "Цветной кубик",
+      "file_ref": "/methodologies/world-around-me/lesson-3/color-die.svg",
+      "metadata": {},
+      "created_at": "2026-04-17T06:13:47.593952+00:00",
+      "source_url": null,
+      "updated_at": "2026-04-17T06:13:47.593952+00:00",
+      "description": "Кубик цветов для сортировки животных по цвету."
+    },
+    {
+      "id": "8d51c0d4-d9a2-4fc5-9c19-52e601197b07",
+      "kind": "media_file",
+      "slug": "media:masks-farm-animals",
+      "title": "Маски животных фермы",
+      "file_ref": "/methodologies/world-around-me/lesson-2/masks.svg",
+      "metadata": {},
+      "created_at": "2026-04-17T05:48:06.903477+00:00",
+      "source_url": null,
+      "updated_at": "2026-04-17T05:48:06.903477+00:00",
+      "description": "Набор масок: 鸭子、鸡子、羊、牛 для командных игр."
+    },
+    {
+      "id": "d5619a2b-4c6a-45ec-bfb5-db19748793c7",
+      "kind": "presentation",
+      "slug": "presentation:world-around-me-lesson-1",
+      "title": "Презентация урока 1",
+      "file_ref": "/methodologies/world-around-me/lesson-1/presentation/lesson-1-slides.pdf",
+      "metadata": {
+        "pptxFileRef": "/methodologies/world-around-me/lesson-1/presentation/lesson-1-slides.pptx",
+        "slideImageRefs": [
+          "/methodologies/world-around-me/lesson-1/presentation/lesson-1-slide-01.png",
+          "/methodologies/world-around-me/lesson-1/presentation/lesson-1-slide-02.png",
+          "/methodologies/world-around-me/lesson-1/presentation/lesson-1-slide-03.png",
+          "/methodologies/world-around-me/lesson-1/presentation/lesson-1-slide-04.png",
+          "/methodologies/world-around-me/lesson-1/presentation/lesson-1-slide-05.png",
+          "/methodologies/world-around-me/lesson-1/presentation/lesson-1-slide-06.png",
+          "/methodologies/world-around-me/lesson-1/presentation/lesson-1-slide-07.png",
+          "/methodologies/world-around-me/lesson-1/presentation/lesson-1-slide-08.png",
+          "/methodologies/world-around-me/lesson-1/presentation/lesson-1-slide-09.png",
+          "/methodologies/world-around-me/lesson-1/presentation/lesson-1-slide-10.png",
+          "/methodologies/world-around-me/lesson-1/presentation/lesson-1-slide-11.png",
+          "/methodologies/world-around-me/lesson-1/presentation/lesson-1-slide-12.png",
+          "/methodologies/world-around-me/lesson-1/presentation/lesson-1-slide-13.png",
+          "/methodologies/world-around-me/lesson-1/presentation/lesson-1-slide-14.png",
+          "/methodologies/world-around-me/lesson-1/presentation/lesson-1-slide-15.png",
+          "/methodologies/world-around-me/lesson-1/presentation/lesson-1-slide-16.png"
+        ]
+      },
+      "created_at": "2026-04-18T10:30:52.339622+00:00",
+      "source_url": "https://docs.google.com/presentation/d/1o-LCuePhdVq39oBPqHgtHpJUREJNz4dS/edit?usp=drive_link&ouid=102261836036017130249&rtpof=true&sd=true",
+      "updated_at": "2026-04-18T14:09:52.287359+00:00",
+      "description": "Локальная презентация урока 1 для проведения и демонстрации слайдов."
+    },
+    {
+      "id": "0f3ce9d5-b45c-49c5-a4a8-281139920534",
+      "kind": "pronunciation_audio",
+      "slug": "pronunciation:cat",
+      "title": "猫 · māo",
+      "file_ref": "/methodologies/world-around-me/lesson-1/audio/mao.mp3",
+      "metadata": {},
+      "created_at": "2026-04-18T10:30:52.339622+00:00",
+      "source_url": null,
+      "updated_at": "2026-04-18T14:09:52.287359+00:00",
+      "description": null
+    },
+    {
+      "id": "bd6a308d-0c03-4952-adee-dca6f04fe65f",
+      "kind": "pronunciation_audio",
+      "slug": "pronunciation:dog",
+      "title": "狗 · gǒu",
+      "file_ref": "/methodologies/world-around-me/lesson-1/audio/gou.mp3",
+      "metadata": {},
+      "created_at": "2026-04-18T10:30:52.339622+00:00",
+      "source_url": null,
+      "updated_at": "2026-04-18T14:09:52.287359+00:00",
+      "description": null
+    },
+    {
+      "id": "30fad101-6b95-440b-bd80-5443c9669ad3",
+      "kind": "pronunciation_audio",
+      "slug": "pronunciation:farm",
+      "title": "农场 · nóngchǎng",
+      "file_ref": "/methodologies/world-around-me/lesson-1/audio/nongchang.mp3",
+      "metadata": {},
+      "created_at": "2026-04-18T10:30:52.339622+00:00",
+      "source_url": null,
+      "updated_at": "2026-04-18T14:09:52.287359+00:00",
+      "description": null
+    },
+    {
+      "id": "6a92aca3-8462-4498-bd97-96200e887fba",
+      "kind": "pronunciation_audio",
+      "slug": "pronunciation:horse",
+      "title": "马 · mǎ",
+      "file_ref": "/methodologies/world-around-me/lesson-1/audio/ma.mp3",
+      "metadata": {},
+      "created_at": "2026-04-18T10:30:52.339622+00:00",
+      "source_url": null,
+      "updated_at": "2026-04-18T14:09:52.287359+00:00",
+      "description": null
+    },
+    {
+      "id": "8ce2c867-95fa-45be-9c25-462af56f71fb",
+      "kind": "pronunciation_audio",
+      "slug": "pronunciation:jump",
+      "title": "跳 · tiào",
+      "file_ref": "/methodologies/world-around-me/lesson-1/audio/tiao.mp3",
+      "metadata": {},
+      "created_at": "2026-04-18T10:30:52.339622+00:00",
+      "source_url": null,
+      "updated_at": "2026-04-18T14:09:52.287359+00:00",
+      "description": null
+    },
+    {
+      "id": "0cd58527-594d-4b5a-bf95-854d67d0d745",
+      "kind": "pronunciation_audio",
+      "slug": "pronunciation:lets",
+      "title": "我们…吧! · wǒmen … ba!",
+      "file_ref": "/methodologies/world-around-me/lesson-1/audio/womenba.mp3",
+      "metadata": {},
+      "created_at": "2026-04-18T10:30:52.339622+00:00",
+      "source_url": null,
+      "updated_at": "2026-04-18T14:09:52.287359+00:00",
+      "description": null
+    },
+    {
+      "id": "da90f9d1-f6e3-423a-bdbd-af4a6a511266",
+      "kind": "pronunciation_audio",
+      "slug": "pronunciation:rabbit",
+      "title": "兔子 · tùzi",
+      "file_ref": "/methodologies/world-around-me/lesson-1/audio/tuzi.mp3",
+      "metadata": {},
+      "created_at": "2026-04-18T10:30:52.339622+00:00",
+      "source_url": null,
+      "updated_at": "2026-04-18T14:09:52.287359+00:00",
+      "description": null
+    },
+    {
+      "id": "0a30295f-cce3-4c67-8422-cdc3878d39a2",
+      "kind": "pronunciation_audio",
+      "slug": "pronunciation:run",
+      "title": "跑 · pǎo",
+      "file_ref": "/methodologies/world-around-me/lesson-1/audio/pao.mp3",
+      "metadata": {},
+      "created_at": "2026-04-18T10:30:52.339622+00:00",
+      "source_url": null,
+      "updated_at": "2026-04-18T14:09:52.287359+00:00",
+      "description": null
+    },
+    {
+      "id": "89c3dc2a-31ec-48e3-88db-d6a7e30341f7",
+      "kind": "pronunciation_audio",
+      "slug": "pronunciation:wo-shi",
+      "title": "我是… · wǒ shì…",
+      "file_ref": "/methodologies/world-around-me/lesson-1/audio/woshi.mp3",
+      "metadata": {},
+      "created_at": "2026-04-18T10:30:52.339622+00:00",
+      "source_url": null,
+      "updated_at": "2026-04-18T14:09:52.287359+00:00",
+      "description": null
+    },
+    {
+      "id": "d96fb8e4-08c0-47ca-b473-d05b33089396",
+      "kind": "pronunciation_audio",
+      "slug": "pronunciation:zai",
+      "title": "在 · zài",
+      "file_ref": "/methodologies/world-around-me/lesson-1/audio/zai.mp3",
+      "metadata": {},
+      "created_at": "2026-04-18T10:30:52.339622+00:00",
+      "source_url": null,
+      "updated_at": "2026-04-18T14:09:52.287359+00:00",
+      "description": null
+    },
+    {
+      "id": "9366fc47-eb3a-434f-8f23-141fc8f891d6",
+      "kind": "pronunciation_audio",
+      "slug": "pronunciation:zhe-shi",
+      "title": "这是… · zhè shì…",
+      "file_ref": "/methodologies/world-around-me/lesson-1/audio/zheshi.mp3",
+      "metadata": {},
+      "created_at": "2026-04-18T10:30:52.339622+00:00",
+      "source_url": null,
+      "updated_at": "2026-04-18T14:09:52.287359+00:00",
+      "description": null
+    },
+    {
+      "id": "c1524b37-e317-82fc-eaf9-370d1def8842",
+      "kind": "song_audio",
+      "slug": "song:farm-animals",
+      "title": "farm animals",
+      "file_ref": "/methodologies/world-around-me/lesson-1/media/farm-animals-song.mp3",
+      "metadata": {},
+      "created_at": "2026-04-06T21:49:31.711731+00:00",
+      "source_url": "https://drive.google.com/file/d/1RewHJRdd6oqSfX506A7ABt6VMDhDzJRP/view?usp=drive_link",
+      "updated_at": "2026-04-18T14:09:52.287359+00:00",
+      "description": "Песня урока 1."
+    },
+    {
+      "id": "b5eba775-325d-4be3-b03f-e2ff4da7e82e",
+      "kind": "song",
+      "slug": "song:hello",
+      "title": "hello",
+      "file_ref": null,
+      "metadata": {},
+      "created_at": "2026-04-17T05:48:06.903477+00:00",
+      "source_url": null,
+      "updated_at": "2026-04-17T06:13:47.593952+00:00",
+      "description": "Песня-приветствие для начала урока 2."
+    },
+    {
+      "id": "d94271be-6dee-4d8b-9adc-f8eb6a6d3b85",
+      "kind": "song",
+      "slug": "song:my-favorite-color-is-blue",
+      "title": "my favorite color is blue",
+      "file_ref": null,
+      "metadata": {},
+      "created_at": "2026-04-17T06:13:47.593952+00:00",
+      "source_url": null,
+      "updated_at": "2026-04-17T06:13:47.593952+00:00",
+      "description": "Песня для финала урока 3 о любимом цвете."
+    },
+    {
+      "id": "464c45dd-3498-4193-87a0-9d0191e25049",
+      "kind": "song_video",
+      "slug": "song-video:farm-animals-movement",
+      "title": "farm animals (movement version)",
+      "file_ref": "/methodologies/world-around-me/lesson-1/media/farm-animals-song-video.mp4",
+      "metadata": {},
+      "created_at": "2026-04-18T10:30:52.339622+00:00",
+      "source_url": "https://drive.google.com/file/d/1RdZLmZHFnxflYuYkSNvhclrfYuNxAnSC/view?usp=drive_link",
+      "updated_at": "2026-04-18T14:09:52.287359+00:00",
+      "description": "Видео-версия песни с движением."
+    },
+    {
+      "id": "7f44702b-2b6c-4ddd-8fec-658d2fb15018",
+      "kind": "video",
+      "slug": "video-clip:farm-animals-cat",
+      "title": "Клип: кошка на ферме",
+      "file_ref": "/methodologies/world-around-me/lesson-1/media/mao.mp4",
+      "metadata": {
+        "scope": "lesson-1-optional-clip"
+      },
+      "created_at": "2026-04-20T19:15:07.328959+00:00",
+      "source_url": null,
+      "updated_at": "2026-04-20T19:15:07.328959+00:00",
+      "description": "Короткое видео для шага 1: cat."
+    },
+    {
+      "id": "db5d07c9-b4dc-45ca-bec0-2c4bf552f22c",
+      "kind": "video",
+      "slug": "video-clip:farm-animals-chicken",
+      "title": "Клип: курица на ферме",
+      "file_ref": "/methodologies/world-around-me/lesson-1/media/ji.mp4",
+      "metadata": {
+        "scope": "lesson-1-optional-clip"
+      },
+      "created_at": "2026-04-20T19:15:07.328959+00:00",
+      "source_url": null,
+      "updated_at": "2026-04-20T19:15:07.328959+00:00",
+      "description": "Короткое видео для шага 1: chicken."
+    },
+    {
+      "id": "10739ab7-ecaf-4979-b93c-ec16ca54b19d",
+      "kind": "video",
+      "slug": "video-clip:farm-animals-cow",
+      "title": "Клип: корова на ферме",
+      "file_ref": "/methodologies/world-around-me/lesson-1/media/nainiu.mp4",
+      "metadata": {
+        "scope": "lesson-1-optional-clip"
+      },
+      "created_at": "2026-04-20T19:15:07.328959+00:00",
+      "source_url": null,
+      "updated_at": "2026-04-20T19:15:07.328959+00:00",
+      "description": "Короткое видео для шага 1: cow."
+    },
+    {
+      "id": "51ce957f-f7fa-41bb-9617-88dab8268b29",
+      "kind": "video",
+      "slug": "video-clip:farm-animals-dog",
+      "title": "Клип: собака на ферме",
+      "file_ref": "/methodologies/world-around-me/lesson-1/media/gou.mp4",
+      "metadata": {
+        "scope": "lesson-1-optional-clip"
+      },
+      "created_at": "2026-04-20T19:15:07.328959+00:00",
+      "source_url": null,
+      "updated_at": "2026-04-20T19:15:07.328959+00:00",
+      "description": "Короткое видео для шага 1: dog."
+    },
+    {
+      "id": "8f43bb0a-d2f9-4699-b557-2c34b0e36ae3",
+      "kind": "video",
+      "slug": "video-clip:farm-animals-duck",
+      "title": "Клип: утка на ферме",
+      "file_ref": "/methodologies/world-around-me/lesson-1/media/ya.mp4",
+      "metadata": {
+        "scope": "lesson-1-optional-clip"
+      },
+      "created_at": "2026-04-20T19:15:07.328959+00:00",
+      "source_url": null,
+      "updated_at": "2026-04-20T19:15:07.328959+00:00",
+      "description": "Короткое видео для шага 1: duck."
+    },
+    {
+      "id": "f3371567-6d7b-437a-8fd8-baa1fee7ec79",
+      "kind": "video",
+      "slug": "video-clip:farm-animals-horse",
+      "title": "Клип: лошадь на ферме",
+      "file_ref": "/methodologies/world-around-me/lesson-1/media/ma.mp4",
+      "metadata": {
+        "scope": "lesson-1-optional-clip"
+      },
+      "created_at": "2026-04-20T19:15:07.328959+00:00",
+      "source_url": null,
+      "updated_at": "2026-04-20T19:15:07.328959+00:00",
+      "description": "Короткое видео для шага 1: horse."
+    },
+    {
+      "id": "ca13b063-8981-41b8-9a2e-ac6c31f1118e",
+      "kind": "video",
+      "slug": "video-clip:farm-animals-pig",
+      "title": "Клип: свинка на ферме",
+      "file_ref": "/methodologies/world-around-me/lesson-1/media/zhu.mp4",
+      "metadata": {
+        "scope": "lesson-1-optional-clip"
+      },
+      "created_at": "2026-04-20T19:15:07.328959+00:00",
+      "source_url": null,
+      "updated_at": "2026-04-20T19:15:07.328959+00:00",
+      "description": "Короткое видео для шага 1: pig."
+    },
+    {
+      "id": "af92cd1a-5181-4719-bcee-561d2f91bcf8",
+      "kind": "video",
+      "slug": "video-clip:farm-animals-rabbit",
+      "title": "Клип: кролик на ферме",
+      "file_ref": "/methodologies/world-around-me/lesson-1/media/tu.mp4",
+      "metadata": {
+        "scope": "lesson-1-optional-clip"
+      },
+      "created_at": "2026-04-20T19:15:07.328959+00:00",
+      "source_url": null,
+      "updated_at": "2026-04-20T19:15:07.328959+00:00",
+      "description": "Короткое видео для шага 1: rabbit."
+    },
+    {
+      "id": "50b54522-e3c4-4eca-a93b-1b4acc717f44",
+      "kind": "video",
+      "slug": "video-clip:farm-animals-sheep",
+      "title": "Клип: овечка на ферме",
+      "file_ref": "/methodologies/world-around-me/lesson-1/media/yang.mp4",
+      "metadata": {
+        "scope": "lesson-1-optional-clip"
+      },
+      "created_at": "2026-04-20T19:15:07.328959+00:00",
+      "source_url": null,
+      "updated_at": "2026-04-20T19:15:07.328959+00:00",
+      "description": "Короткое видео для шага 1: sheep."
+    },
+    {
+      "id": "6796162d-c8e3-4442-865c-13d17f1794bb",
+      "kind": "video",
+      "slug": "video:colors",
+      "title": "colors",
+      "file_ref": null,
+      "metadata": {},
+      "created_at": "2026-04-17T06:13:47.593952+00:00",
+      "source_url": null,
+      "updated_at": "2026-04-17T06:13:47.593952+00:00",
+      "description": "Видео-сегмент урока 3: знакомство с цветами."
+    },
+    {
+      "id": "277bac77-dff4-fc5f-9074-f6fd73bcc077",
+      "kind": "video",
+      "slug": "video:farm-animals",
+      "title": "farm animals",
+      "file_ref": "/methodologies/world-around-me/lesson-1/media/e.mp4",
+      "metadata": {},
+      "created_at": "2026-04-06T21:49:31.711731+00:00",
+      "source_url": "https://drive.google.com/file/d/1NXyngOuT9WIwvgA0gvvSzZc9-BUuKT7k/view?usp=drive_link",
+      "updated_at": "2026-04-20T19:15:07.328959+00:00",
+      "description": "Видео урока 1."
+    },
+    {
+      "id": "72714b05-f0e9-11e2-0d76-6778ddd46bfc",
+      "kind": "worksheet_pdf",
+      "slug": "worksheet:appendix-1",
+      "title": "Приложение 1",
+      "file_ref": "/methodologies/world-around-me/lesson-1/appendix/appendix-1.pdf",
+      "metadata": {
+        "previewImageRef": "/methodologies/world-around-me/lesson-1/appendix/appendix-1.png"
+      },
+      "created_at": "2026-04-06T21:49:31.711731+00:00",
+      "source_url": "https://drive.google.com/file/d/1hNwwBZ0S7SNmSbAAt-vz1aPanAluSTrC/view?usp=drive_link",
+      "updated_at": "2026-04-18T14:09:52.287359+00:00",
+      "description": "Материал для счёта и указки."
+    },
+    {
+      "id": "95a5c6f7-78f4-4d0d-8a37-6746ecffb85a",
+      "kind": "worksheet",
+      "slug": "worksheet:appendix-2",
+      "title": "Приложение 2",
+      "file_ref": null,
+      "metadata": {},
+      "created_at": "2026-04-17T05:48:06.903477+00:00",
+      "source_url": null,
+      "updated_at": "2026-04-17T05:48:06.903477+00:00",
+      "description": "Пазлы с животными для счёта и называния."
+    },
+    {
+      "id": "d0e84bd0-11ff-4f72-bcd2-6955524883df",
+      "kind": "worksheet",
+      "slug": "worksheet:appendix-3",
+      "title": "Приложение 3",
+      "file_ref": null,
+      "metadata": {},
+      "created_at": "2026-04-17T06:13:47.593952+00:00",
+      "source_url": null,
+      "updated_at": "2026-04-17T06:13:47.593952+00:00",
+      "description": "Сортировка животных по цветам с цветным кубиком."
+    },
+    {
+      "id": "c7c0870b-c5ce-4704-a45b-9ef6d26f47d0",
+      "kind": "worksheet",
+      "slug": "worksheet:workbook-page-5",
+      "title": "Рабочая тетрадь, стр. 5",
+      "file_ref": null,
+      "metadata": {},
+      "created_at": "2026-04-17T05:48:06.903477+00:00",
+      "source_url": null,
+      "updated_at": "2026-04-17T05:48:06.903477+00:00",
+      "description": "Соедини числа и животных, назови вслух по модели «这是…»."
+    },
+    {
+      "id": "96bec8cb-4a48-4587-8afe-bdeb17e34f82",
+      "kind": "worksheet",
+      "slug": "worksheet:workbook-page-6",
+      "title": "Рабочая тетрадь, стр. 6",
+      "file_ref": null,
+      "metadata": {},
+      "created_at": "2026-04-17T06:13:47.593952+00:00",
+      "source_url": null,
+      "updated_at": "2026-04-17T06:13:47.593952+00:00",
+      "description": "Раскрась цвета и назови их по-китайски."
+    },
+    {
+      "id": "620f4670-30be-4adb-45a1-3b8ce2acb3db",
+      "kind": "worksheet",
+      "slug": "worksheet:workbook-pages-3-4",
+      "title": "Рабочая тетрадь, стр. 3–4",
+      "file_ref": null,
+      "metadata": {},
+      "created_at": "2026-04-06T21:49:31.711731+00:00",
+      "source_url": "https://drive.google.com/file/d/1bS3KP_wRQSrAu9faPhyqkNdxeTul9bi0/view?usp=drive_link",
+      "updated_at": "2026-04-18T14:09:52.287359+00:00",
+      "description": "Закрепление урока 1."
+    }
+  ],
+  "storageObjects": [],
+  "databaseIdentity": {
+    "schema": "public",
+    "database": "postgres",
+    "knownCourseTable": "course",
+    "knownMethodologySlug": "world-around-me"
+  }
+}
