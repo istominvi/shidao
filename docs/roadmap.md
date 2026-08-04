@@ -35,12 +35,16 @@
 - Реализована двухуровневая Course → Lesson навигация в визуальном языке demo:
   пять Course tabs, пять Lesson tabs, прозрачные detail headers и отдельный
   список Lesson до открытия редактора.
+- Course routes приведены к плоскому demo-фону `#f5f1e8` без marketing
+  gradients; header, кнопки, вкладки и заголовочная типографика используют
+  scoped demo-размеры, радиусы и веса, не затрагивая landing/Auth.
 - Реализованы private-by-default Components и persisted Student Screen Slides.
 - Реализован fullscreen Student Screen preview.
 - Реализован development-only MCP из шести tools поверх application service.
 - Browser-smoke переведён на актуальную AES-GCM app-session; строгий
-  production-mode gate покрывает guest/auth redirects и Course → Lesson →
-  backlink без обращения к рабочей базе.
+  production-mode gate покрывает guest/auth redirects, Course → Lesson →
+  backlink, computed visual contract и mobile overflow без обращения к
+  рабочей базе.
 - Первый Course Builder milestone проверен на deployed customer-demo контуре.
 
 ## P0.1: legacy identity/security hardening

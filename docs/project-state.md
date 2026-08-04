@@ -4,11 +4,13 @@
 **Актуально на:** 5 августа 2026 года
 **Активная ветка:** `main`
 **Рабочее приложение:** `https://v2.shidao.ru`
-**Последний проверенный application release:** `808510e`
+**Последний проверенный application release:** `65edf0d`
 
-Новая двухуровневая навигация Course → Lesson реализована в текущем source и
-проверяется локально; release `808510e` остаётся последним развёрнутым
-baseline до отдельного deploy/postflight.
+Двухуровневая навигация Course → Lesson развёрнута и проверена на release
+`65edf0d`. Текущий локальный source дополнительно уточняет визуальный язык
+Course routes: сплошной бежевый фон без цветных градиентов, sticky demo header,
+единые контролы и облегчённая типографика заголовков. Этот visual refinement
+ещё не считается deployed до отдельного deploy/postflight.
 
 `v2.shidao.ru` — active deployed customer-demo contour на production-mode
 build, но публичный production launch и отдельный staging ещё не выполнены.
@@ -80,6 +82,14 @@ Account
 - «Материалы» показывают course-wide список уже прикреплённых файлов.
 - «Источники» и «История» честно показывают пустое состояние: parsing/RAG и
   change history ещё не реализованы.
+- В текущем source страницы `/courses`, Course и Lesson используют один
+  сплошной фон `#f5f1e8`; marketing noise и цветные page gradients на этих
+  маршрутах отсутствуют.
+- Course header следует demo-контракту: sticky shell высотой 68 px, белая
+  полупрозрачная поверхность, радиус 20 px и контролы 40 px с радиусом 12 px.
+- Заголовочные секции Course и Lesson остаются прозрачными; заголовки списка,
+  Course и Lesson используют системный sans-serif с demo-размерами и весом
+  400, а кнопки и вкладки — единый шрифт `.88rem/500`.
 
 ### Уроки и компоненты
 
@@ -343,8 +353,9 @@ npm run mcp:course-builder
 Supabase access/refresh tokens. Строгий gate сам собирает production-приложение
 против локального mock Supabase, поэтому build-time `NEXT_PUBLIC_*` и runtime
 конфигурация совпадают и тест не обращается к рабочей базе. Воспроизводимый
-результат `npm run test:browser:ci`: 5 сценариев pass, включая авторизованный
-переход Course → Lesson → backlink обратно к Course.
+результат `npm run test:browser:ci`: 6 сценариев pass, включая авторизованный
+переход Course → Lesson → backlink обратно к Course, computed visual contract
+и mobile 375 px без document-level overflow.
 
 Repository-wide `npm run format:check` также пока не является зелёным baseline:
 он сообщает десятки ранее существовавших файлов, включая immutable content
@@ -353,12 +364,12 @@ Markdown files проходят targeted Prettier check и `git diff --check`. �
 обязательным global format gate нужен отдельный baseline/ignore change без
 переформатирования archive.
 
-Для текущего локального source подтверждены typecheck, lint, 174 unit tests,
-production build и строгие 5/5 browser smoke. На application release `808510e`
-ранее подтверждены typecheck, lint, 169 unit/tests, production build и ручной
-deployed-contour E2E: edit Lesson, private-by-default Components, два Slides,
-reorder через границу Slide, fullscreen preview и сохранение после reload.
-Browser console deployed-контура была без warning/error.
+Для текущего локального source подтверждены typecheck, lint, 175 unit tests,
+production build и строгие 6/6 browser smoke. На application release
+`65edf0d` подтверждены typecheck, lint, 174
+unit tests, production build, строгие 5/5 browser smoke и deployed-contour
+переход Course → Lesson → backlink. Browser console deployed-контура была без
+warning/error.
 
 ## 10. Правило обновления этого документа
 

@@ -4,7 +4,9 @@
 - **Роль:** acceptance baseline перед AI/RAG/Homework/live
 - **Целевая аудитория демонстрации:** заказчик
 - **Рабочий адрес:** `v2.shidao.ru`
-- **Проверенный application release:** `808510e`
+- **Проверенный application release:** `65edf0d`
+- **Current visual refinement:** flat demo background/header/type проверены
+  локально и ожидают отдельного deploy/postflight
 
 ## 1. Результат для заказчика
 
@@ -179,11 +181,14 @@ lesson-owned files. «Источники» и обе «Истории» оста
 состояниями до появления соответствующих application/storage contracts.
 
 Detail headers Course и Lesson остаются прозрачными на фоне страницы без
-белой или градиентной карточки. Demo-токены фона, header, controls и surfaces
-ограничены Course routes и не меняют landing или auth screens. Tabs имеют
-roving keyboard navigation и явные `tab` → `tabpanel` ARIA-связи; переход
-Course ↔ Lesson переносит focus в новый рабочий контекст и восстанавливает его
-на строке Lesson при возврате.
+белой или градиентной карточки. В текущем source page background Course routes
+является сплошным `#f5f1e8`: marketing noise и цветные gradients удалены.
+Sticky header повторяет demo shell 68 px / 20 px, основные controls и tabs —
+40 px / 12 px / `.88rem 500`, а Courses и detail H1 используют отдельные
+demo-scales с весом 400. Эти токены ограничены Course routes и не меняют
+landing или auth screens. Tabs имеют roving keyboard navigation и явные `tab`
+→ `tabpanel` ARIA-связи; переход Course ↔ Lesson переносит focus в новый
+рабочий контекст и восстанавливает его на строке Lesson при возврате.
 
 Drag-and-drop не обязателен для первого показа. Кнопки «выше/ниже» допустимы, если они надёжнее и быстрее дают законченный workflow.
 
@@ -272,6 +277,8 @@ OAuth, scoped external tokens, quotas, approvals/change sets и публичны
 - `15a00c7` + `9b254b9` — flatten/active legacy cleanup.
 - `f5b9a57` — lesson/component card UX.
 - `808510e` — persisted Student Screen Slides и deployed application release.
+- `65edf0d` — двухуровневая Course → Lesson навигация и проверенный deployed
+  application release.
 
 Архив находится в `archive/content/world-around-me-2026-08-04/` и не
 подключён к runtime.

@@ -6,7 +6,6 @@ import { ROUTES } from "@/lib/auth";
 export default function NewCoursePage() {
   return (
     <main className="course-demo-shell pb-12">
-      <div className="landing-noise" aria-hidden="true" />
       <TopNav demoStyle />
       <div className="container app-page-container space-y-6">
         <AppPageHeader

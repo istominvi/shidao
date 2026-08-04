@@ -90,7 +90,13 @@ export function TopNav({ demoStyle = false }: { demoStyle?: boolean }) {
   })();
 
   return (
-    <div className="container relative z-50 pt-4 md:pt-5">
+    <div
+      className={
+        demoStyle
+          ? "container course-top-nav"
+          : "container relative z-50 pt-4 md:pt-5"
+      }
+    >
       <SiteHeader
         variant="product"
         shellClassName={demoStyle ? "site-header-shell-demo" : undefined}

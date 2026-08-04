@@ -63,7 +63,10 @@ type PlaywrightLocator = {
 type PlaywrightChromium = {
   launch: () => Promise<{
     close: () => Promise<void>;
-    newContext: (options?: { baseURL?: string }) => Promise<{
+    newContext: (options?: {
+      baseURL?: string;
+      viewport?: { width: number; height: number };
+    }) => Promise<{
       addCookies: (
         cookies: Array<{
           name: string;
@@ -77,6 +80,7 @@ type PlaywrightChromium = {
           options?: { waitUntil?: "domcontentloaded" | "networkidle" },
         ) => Promise<void>;
         content: () => Promise<string>;
+        evaluate: <T>(pageFunction: () => T) => Promise<T>;
         getByRole: (
           role: string,
           options?: {
@@ -397,7 +401,10 @@ async function buildProductionApp(env: NodeJS.ProcessEnv) {
   }
 }
 
-async function openPage(options?: { cookie?: string }) {
+async function openPage(options?: {
+  cookie?: string;
+  viewport?: { width: number; height: number };
+}) {
   if (!chromium || !appPort) {
     throw new Error("browser smoke is not ready");
   }
@@ -406,6 +413,7 @@ async function openPage(options?: { cookie?: string }) {
   const baseURL = `http://127.0.0.1:${appPort}`;
   const context = await browser.newContext({
     baseURL,
+    viewport: options?.viewport,
   });
   if (options?.cookie) {
     await context.addCookies([
@@ -618,6 +626,79 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       exact: true,
     });
     await courseLink.waitFor();
+    const coursesVisual = await runtime.page.evaluate(() => {
+      const shell = document.querySelector<HTMLElement>(".course-demo-shell");
+      const topNav = document.querySelector<HTMLElement>(".course-top-nav");
+      const header = document.querySelector<HTMLElement>(
+        ".site-header-shell-demo",
+      );
+      const title = document.querySelector<HTMLElement>(".app-page-title");
+      const primaryButton = document.querySelector<HTMLElement>(
+        ".product-btn-primary",
+      );
+      const navPill = document.querySelector<HTMLElement>(
+        ".site-header-shell-demo .site-header-nav-pill",
+      );
+      const userTrigger = document.querySelector<HTMLElement>(
+        ".site-header-shell-demo .nav-user-trigger",
+      );
+
+      if (
+        !shell ||
+        !topNav ||
+        !header ||
+        !title ||
+        !primaryButton ||
+        !navPill ||
+        !userTrigger
+      ) {
+        throw new Error("Course visual contract elements are missing");
+      }
+
+      const shellStyle = getComputedStyle(shell);
+      const titleStyle = getComputedStyle(title);
+      const buttonStyle = getComputedStyle(primaryButton);
+      const headerStyle = getComputedStyle(header);
+      const navPillStyle = getComputedStyle(navPill);
+      const userTriggerStyle = getComputedStyle(userTrigger);
+
+      return {
+        shellBackgroundColor: shellStyle.backgroundColor,
+        shellBackgroundImage: shellStyle.backgroundImage,
+        topNavPosition: getComputedStyle(topNav).position,
+        headerHeight: headerStyle.height,
+        headerRadius: headerStyle.borderRadius,
+        titleFontFamily: titleStyle.fontFamily,
+        titleFontSize: titleStyle.fontSize,
+        titleFontWeight: titleStyle.fontWeight,
+        bodyFontFamily: getComputedStyle(document.body).fontFamily,
+        buttonRadius: buttonStyle.borderRadius,
+        buttonFontSize: buttonStyle.fontSize,
+        buttonFontWeight: buttonStyle.fontWeight,
+        navPillRadius: navPillStyle.borderRadius,
+        navPillFontWeight: navPillStyle.fontWeight,
+        userTriggerRadius: userTriggerStyle.borderRadius,
+        userTriggerFontWeight: userTriggerStyle.fontWeight,
+      };
+    });
+
+    assert.equal(coursesVisual.shellBackgroundColor, "rgb(245, 241, 232)");
+    assert.equal(coursesVisual.shellBackgroundImage, "none");
+    assert.equal(coursesVisual.topNavPosition, "sticky");
+    assert.equal(coursesVisual.headerHeight, "68px");
+    assert.equal(coursesVisual.headerRadius, "20px");
+    assert.equal(coursesVisual.titleFontFamily, coursesVisual.bodyFontFamily);
+    assert.equal(coursesVisual.titleFontWeight, "400");
+    assert.equal(coursesVisual.buttonRadius, "12px");
+    assert.equal(coursesVisual.buttonFontWeight, "500");
+    assert.equal(coursesVisual.navPillRadius, "12px");
+    assert.equal(coursesVisual.navPillFontWeight, "500");
+    assert.equal(coursesVisual.userTriggerRadius, "12px");
+    assert.equal(coursesVisual.userTriggerFontWeight, "500");
+    assert.ok(
+      Math.abs(Number.parseFloat(coursesVisual.buttonFontSize) - 14.08) < 0.1,
+    );
+
     await Promise.all([
       runtime.page.waitForURL(new RegExp(`/courses/${E2E_COURSE_ID}$`)),
       courseLink.click(),
@@ -629,6 +710,51 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       level: 1,
     });
     await courseHeading.waitFor();
+    const courseVisual = await runtime.page.evaluate(() => {
+      const pageHeader = document.querySelector<HTMLElement>(
+        ".workspace-page-header",
+      );
+      const title = pageHeader?.querySelector<HTMLElement>(".app-page-title");
+      const tab = document.querySelector<HTMLElement>(".workspace-tab");
+
+      if (!pageHeader || !title || !tab) {
+        throw new Error(
+          "Course workspace visual contract elements are missing",
+        );
+      }
+
+      const headerStyle = getComputedStyle(pageHeader);
+      const titleStyle = getComputedStyle(title);
+      const tabStyle = getComputedStyle(tab);
+
+      return {
+        headerBackgroundColor: headerStyle.backgroundColor,
+        headerBackgroundImage: headerStyle.backgroundImage,
+        headerBorderWidth: headerStyle.borderWidth,
+        headerShadow: headerStyle.boxShadow,
+        titleFontFamily: titleStyle.fontFamily,
+        titleFontSize: titleStyle.fontSize,
+        titleFontWeight: titleStyle.fontWeight,
+        tabHeight: tabStyle.height,
+        tabRadius: tabStyle.borderRadius,
+        tabFontWeight: tabStyle.fontWeight,
+      };
+    });
+
+    assert.equal(courseVisual.headerBackgroundColor, "rgba(0, 0, 0, 0)");
+    assert.equal(courseVisual.headerBackgroundImage, "none");
+    assert.equal(courseVisual.headerBorderWidth, "0px");
+    assert.equal(courseVisual.headerShadow, "none");
+    assert.equal(courseVisual.titleFontFamily, coursesVisual.titleFontFamily);
+    assert.equal(courseVisual.titleFontWeight, "400");
+    assert.ok(
+      Number.parseFloat(courseVisual.titleFontSize) >
+        Number.parseFloat(coursesVisual.titleFontSize),
+    );
+    assert.equal(courseVisual.tabHeight, "40px");
+    assert.equal(courseVisual.tabRadius, "12px");
+    assert.equal(courseVisual.tabFontWeight, "500");
+
     let html = await runtime.page.content();
     assert.match(html, /aria-label="Разделы курса"/);
     assert.match(html, /Уроки/);
@@ -648,6 +774,28 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       level: 1,
     });
     await lessonHeading.waitFor();
+    const lessonVisual = await runtime.page.evaluate(() => {
+      const shell = document.querySelector<HTMLElement>(".course-demo-shell");
+      const title = document.querySelector<HTMLElement>(
+        ".workspace-page-header .app-page-title",
+      );
+
+      if (!shell || !title) {
+        throw new Error("Lesson visual contract elements are missing");
+      }
+
+      const titleStyle = getComputedStyle(title);
+      return {
+        shellBackgroundImage: getComputedStyle(shell).backgroundImage,
+        titleFontFamily: titleStyle.fontFamily,
+        titleFontWeight: titleStyle.fontWeight,
+      };
+    });
+
+    assert.equal(lessonVisual.shellBackgroundImage, "none");
+    assert.equal(lessonVisual.titleFontFamily, coursesVisual.titleFontFamily);
+    assert.equal(lessonVisual.titleFontWeight, "400");
+
     html = await runtime.page.content();
     assert.match(html, /aria-label="Разделы урока"/);
     assert.match(html, /План/);
@@ -665,6 +813,91 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
     html = await runtime.page.content();
     assert.match(html, /aria-label="Разделы курса"/);
     assert.match(html, new RegExp(E2E_LESSON_TITLE));
+  } finally {
+    await runtime.close();
+  }
+});
+
+test("browser smoke: mobile Course and Lesson keep the demo rhythm without page overflow", async (t) => {
+  if (browserSmokeUnavailableReason) {
+    t.skip(browserSmokeUnavailableReason);
+    return;
+  }
+
+  const runtime = await openPage({
+    cookie: authenticatedCookieValue(),
+    viewport: { width: 375, height: 812 },
+  });
+
+  try {
+    await runtime.page.goto(`/courses/${E2E_COURSE_ID}`, {
+      waitUntil: "networkidle",
+    });
+    await runtime.page
+      .getByRole("heading", {
+        name: E2E_COURSE_TITLE,
+        exact: true,
+        level: 1,
+      })
+      .waitFor();
+    await runtime.page
+      .getByRole("button", { name: new RegExp(E2E_LESSON_TITLE) })
+      .click();
+    await runtime.page
+      .getByRole("heading", {
+        name: `Урок 4. ${E2E_LESSON_TITLE}`,
+        exact: true,
+        level: 1,
+      })
+      .waitFor();
+
+    const mobileVisual = await runtime.page.evaluate(() => {
+      const title = document.querySelector<HTMLElement>(
+        ".workspace-page-header .app-page-title",
+      );
+      const header = document.querySelector<HTMLElement>(
+        ".site-header-shell-demo",
+      );
+      const tabStrip = document.querySelector<HTMLElement>(
+        ".workspace-tabs-scroll",
+      );
+
+      if (!title || !header || !tabStrip) {
+        throw new Error("Mobile Course visual contract elements are missing");
+      }
+
+      const titleStyle = getComputedStyle(title);
+      const titleRect = title.getBoundingClientRect();
+      const headerRect = header.getBoundingClientRect();
+
+      return {
+        documentClientWidth: document.documentElement.clientWidth,
+        documentScrollWidth: document.documentElement.scrollWidth,
+        headerLeft: headerRect.left,
+        headerRight: headerRect.right,
+        titleLeft: titleRect.left,
+        titleRight: titleRect.right,
+        titleFontSize: titleStyle.fontSize,
+        titleFontWeight: titleStyle.fontWeight,
+        tabStripClientWidth: tabStrip.clientWidth,
+        tabStripScrollWidth: tabStrip.scrollWidth,
+      };
+    });
+
+    assert.equal(mobileVisual.documentClientWidth, 375);
+    assert.equal(
+      mobileVisual.documentScrollWidth,
+      mobileVisual.documentClientWidth,
+    );
+    assert.ok(mobileVisual.headerLeft >= 0);
+    assert.ok(mobileVisual.headerRight <= mobileVisual.documentClientWidth);
+    assert.ok(mobileVisual.titleLeft >= 0);
+    assert.ok(mobileVisual.titleRight <= mobileVisual.documentClientWidth);
+    assert.equal(mobileVisual.titleFontSize, "36px");
+    assert.equal(mobileVisual.titleFontWeight, "400");
+    assert.ok(
+      mobileVisual.tabStripScrollWidth >= mobileVisual.tabStripClientWidth,
+    );
   } finally {
     await runtime.close();
   }

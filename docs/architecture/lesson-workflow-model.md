@@ -231,6 +231,17 @@ course-wide каталога. Она не создаёт lesson attachment, не
 и вкладки переключаются внутри `/courses/[courseId]`. После reload снова
 открывается Course → **Уроки**.
 
+Visual contract Course routes не меняет эту навигационную или доменную модель:
+
+- page background — сплошной `#f5f1e8` без цветных marketing gradients;
+- product header — sticky demo shell высотой 68 px с радиусом 20 px;
+- основные кнопки, header controls и tabs — высотой 40 px с радиусом 12 px и
+  единым шрифтом `.88rem/500`;
+- заголовочные секции Course и Lesson прозрачны, а их H1 используют
+  системный sans-serif, вес 400 и отдельный detail scale;
+- visual tokens scoped к Course routes и не меняют landing, Auth, Settings или
+  полноэкранный Student Screen.
+
 ## Lesson creation
 
 Кнопка «Добавить урок» открывает modal. Текущий manual create требует название
@@ -359,7 +370,7 @@ import/application layer. Он не возвращает Methodology в акти
 
 ## Shipped acceptance baseline
 
-На release `808510e` проверено:
+На release `65edf0d` проверено:
 
 1. Course, Lesson, ordered Components и attachments сохраняются в реальной
    базе/Storage и переживают reload.
@@ -375,6 +386,12 @@ import/application layer. Он не возвращает Methodology в акти
 9. В активном V2 нет Methodology/fixture/lesson-specific fallback.
 10. Fullscreen preview сохраняет выбранную Lesson, показывает один
     active Slide и после refresh читает persisted state.
+11. Course сначала показывает пять собственных вкладок и список Lessons;
+    выбранная Lesson показывает отдельный H1, backlink с названием Course и
+    пять Lesson-вкладок.
 
-Также прошли typecheck, lint, 169 tests, production build и browser E2E без
-console warning/error. Следующие срезы не должны ослаблять этот baseline.
+Также прошли typecheck, lint, 174 unit tests, production build, строгие 5/5
+browser smoke и deployed-contour E2E без console warning/error. Текущий
+visual refinement дополнительно проверяется computed-style и mobile browser
+контрактами до следующего deploy. Следующие срезы не должны ослаблять этот
+baseline.

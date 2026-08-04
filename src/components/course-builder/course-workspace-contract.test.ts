@@ -142,6 +142,51 @@ test("lesson metadata moves into a transparent page header and remains editable"
   assert.match(authoring, />\s*Сохранить\s*</);
 });
 
+test("course routes use the flat demo background and unified visual controls", () => {
+  const styles = source("src/app/globals.css");
+  const navigationStyles = source("src/app/styles/navigation.css");
+  const topNav = source("src/components/top-nav.tsx");
+  const routeSources = [
+    source("src/app/(app)/courses/page.tsx"),
+    source("src/app/(app)/courses/new/page.tsx"),
+    source("src/app/(app)/courses/[courseId]/page.tsx"),
+  ].join("\n");
+  const courseShellStyles = /\.course-demo-shell\s*\{[\s\S]*?\n\}/.exec(
+    styles,
+  )?.[0];
+
+  assert.ok(courseShellStyles, "Course shell styles must remain discoverable");
+  assert.match(courseShellStyles, /background: #f5f1e8;/);
+  assert.doesNotMatch(courseShellStyles, /gradient/i);
+  assert.doesNotMatch(routeSources, /landing-noise/);
+
+  assert.match(
+    styles,
+    /\.course-demo-shell \.app-page-title\s*\{[\s\S]*?font-weight: 400;[\s\S]*?letter-spacing: -0\.045em;/,
+  );
+  assert.match(
+    styles,
+    /\.course-demo-shell \.workspace-page-header\s*\{[\s\S]*?clamp\(2rem, 4\.3vw, 3\.55rem\)[\s\S]*?0\.96/,
+  );
+  assert.match(
+    styles,
+    /\.course-demo-shell \.product-btn\s*\{[\s\S]*?--course-demo-control-radius[\s\S]*?--course-demo-control-font-weight/,
+  );
+  assert.match(
+    styles,
+    /\.workspace-tab\s*\{[\s\S]*?--course-demo-control-height[\s\S]*?--course-demo-control-radius/,
+  );
+  assert.match(topNav, /container course-top-nav/);
+  assert.match(
+    navigationStyles,
+    /\.course-top-nav\s*\{[\s\S]*?position: sticky;[\s\S]*?top: 0;/,
+  );
+  assert.match(
+    navigationStyles,
+    /\.site-header-shell-demo\s*\{[\s\S]*?height: 4\.25rem;[\s\S]*?border-radius: 1\.25rem;/,
+  );
+});
+
 test("component picker is registry-driven and grouped into Russian categories", () => {
   const authoring = source(lessonAuthoringPath);
 

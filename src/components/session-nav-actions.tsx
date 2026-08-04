@@ -4,15 +4,13 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import type { LucideIcon } from "lucide-react";
-import {
-  GraduationCap,
-  LogOut,
-  Menu,
-  Settings,
-  UserRound,
-} from "lucide-react";
+import { GraduationCap, LogOut, Menu, Settings, UserRound } from "lucide-react";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
-import { isStudentInternalAuthEmail, ROUTES, type ProfileKind } from "@/lib/auth";
+import {
+  isStudentInternalAuthEmail,
+  ROUTES,
+  type ProfileKind,
+} from "@/lib/auth";
 import { signOutViaServer } from "@/lib/auth-flow";
 import { useSessionView } from "@/components/use-session-view";
 import type { SessionAdultView, SessionStudentView } from "@/lib/session-view";
@@ -39,10 +37,7 @@ type SessionNavItem = {
 };
 
 type MenuPosition = { top: number; left: number; width: number };
-type ActionLoadingState =
-  | `switch:${ProfileKind}`
-  | "signout"
-  | null;
+type ActionLoadingState = `switch:${ProfileKind}` | "signout" | null;
 
 const MENU_WIDTH = 288;
 const MENU_GAP = 8;
@@ -61,9 +56,9 @@ async function readActionError(
   response: Response,
   fallback: string,
 ): Promise<never> {
-  const payload = (await response.json().catch(() => null)) as
-    | { error?: string }
-    | null;
+  const payload = (await response.json().catch(() => null)) as {
+    error?: string;
+  } | null;
   throw new Error(payload?.error ?? fallback);
 }
 
@@ -117,7 +112,10 @@ export function SessionNavActions({
     const maxLeft = window.innerWidth - menuWidth - VIEWPORT_PADDING;
     setMenuPosition({
       top: rect.bottom + MENU_GAP,
-      left: Math.min(Math.max(rect.right - menuWidth, VIEWPORT_PADDING), maxLeft),
+      left: Math.min(
+        Math.max(rect.right - menuWidth, VIEWPORT_PADDING),
+        maxLeft,
+      ),
       width: menuWidth,
     });
   }, [portalMenu]);
@@ -222,7 +220,9 @@ export function SessionNavActions({
       router.refresh();
     } catch (error) {
       setActionError(
-        error instanceof Error ? error.message : "Не удалось выйти из аккаунта.",
+        error instanceof Error
+          ? error.message
+          : "Не удалось выйти из аккаунта.",
       );
     } finally {
       setActionLoading(null);
@@ -325,7 +325,10 @@ export function SessionNavActions({
           </div>
         ) : null}
         {mobileNavItems.length > 0 ? (
-          <div className="my-0.5 border-t border-black/5 md:hidden" aria-hidden="true" />
+          <div
+            className="my-0.5 border-t border-black/5 md:hidden"
+            aria-hidden="true"
+          />
         ) : null}
         <Link
           href={ROUTES.settingsProfile}
@@ -334,7 +337,11 @@ export function SessionNavActions({
           role="menuitem"
         >
           <span className="inline-flex items-center gap-2.5">
-            <Settings size={16} className="text-neutral-500" aria-hidden="true" />
+            <Settings
+              size={16}
+              className="text-neutral-500"
+              aria-hidden="true"
+            />
             Настройки
           </span>
         </Link>
@@ -364,7 +371,9 @@ export function SessionNavActions({
         aria-haspopup="menu"
         aria-expanded={open}
         aria-controls={menuId}
-        aria-label={variant === "top-nav" ? "Открыть меню пользователя" : undefined}
+        aria-label={
+          variant === "top-nav" ? "Открыть меню пользователя" : undefined
+        }
         className={`nav-user-trigger inline-flex cursor-pointer items-center gap-1.5 ${variant === "landing" ? "w-full justify-center sm:w-auto" : ""}`}
       >
         {variant === "top-nav" ? (
@@ -373,7 +382,7 @@ export function SessionNavActions({
           </span>
         ) : null}
         <span
-          className={`size-6 items-center justify-center rounded-full bg-black text-[11px] font-bold text-white ${variant === "top-nav" ? "hidden md:inline-flex" : "inline-flex"}`}
+          className={`nav-user-trigger-avatar size-6 items-center justify-center rounded-full bg-black text-[11px] font-bold text-white ${variant === "top-nav" ? "hidden md:inline-flex" : "inline-flex"}`}
         >
           {state.initials ?? "U"}
         </span>
@@ -383,7 +392,7 @@ export function SessionNavActions({
         {variant === "top-nav" ? (
           <span className="sr-only md:hidden">Открыть меню пользователя</span>
         ) : null}
-        <span className="hidden max-w-[16ch] truncate text-sm font-semibold leading-tight text-neutral-900 md:block">
+        <span className="nav-user-trigger-name hidden max-w-[16ch] truncate text-sm font-semibold leading-tight text-neutral-900 md:block">
           {state.fullName ?? "Пользователь"}
         </span>
       </button>

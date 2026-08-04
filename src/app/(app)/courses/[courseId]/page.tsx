@@ -10,7 +10,6 @@ export default async function CourseWorkspacePage({
 
   return (
     <main className="course-demo-shell pb-12">
-      <div className="landing-noise" aria-hidden="true" />
       <TopNav demoStyle />
       <CourseWorkspaceClient key={courseId} courseId={courseId} />
     </main>

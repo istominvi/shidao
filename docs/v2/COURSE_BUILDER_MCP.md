@@ -1,7 +1,7 @@
 # Course Builder MCP (development/internal)
 
 **Статус:** реализован и протестирован; local `stdio`, без external endpoint
-**Application release:** `808510e`
+**MCP implementation baseline:** `808510e`
 
 ShiDao Course Builder MCP is a local `stdio` server for development. It is not
 an HTTP endpoint and must not be published externally without a separately
