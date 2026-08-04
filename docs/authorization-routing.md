@@ -2,10 +2,10 @@
 
 **Статус:** current implementation
 **Канонический app host:** `v2.shidao.ru`
-**Последний deployed baseline:** `1e92ed4`
+**Последний deployed baseline:** `fea7f80`
 
-Teacher-only `/schedule` и `/students` реализованы в текущем локальном source и
-не считаются deployed до следующего push/Coolify postflight.
+Teacher-only `/schedule` и `/students` развёрнуты и проверены на release
+`fea7f80`.
 
 ## Host matrix
 

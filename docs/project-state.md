@@ -4,18 +4,17 @@
 **Актуально на:** 5 августа 2026 года
 **Активная ветка:** `main`
 **Рабочее приложение:** `https://v2.shidao.ru`
-**Последний проверенный application release:** `1e92ed4`
+**Последний проверенный application release:** `fea7f80`
 
-Двухуровневая навигация Course → Lesson и обновлённый визуальный язык Course
-routes развёрнуты и проверены на release `1e92ed4`: сплошной бежевый фон без
-цветных градиентов, sticky demo header, единые контролы и облегчённая
-типографика заголовков.
+Двухуровневая навигация Course → Lesson, teacher-only `/schedule` и `/students`
+и обновлённый визуальный язык app routes развёрнуты и проверены на release
+`fea7f80`: сплошной бежевый фон без цветных градиентов, sticky demo header,
+единые контролы и облегчённая типографика заголовков.
 
-Текущий локальный source дополнительно добавляет teacher-only UI-shells
-`/schedule` и `/students` и пункты «Расписание / Ученики / Курсы» в меню
-преподавателя. Этот slice ещё не считается deployed до push, Coolify deploy и
-postflight. Он не добавляет Schedule events, LessonSession, LearnerProfile,
-Group или новую persistence/schema.
+Release `fea7f80` добавляет пункты «Расписание / Ученики / Курсы» в меню
+преподавателя и честные UI-shells для двух новых разделов. Он не добавляет
+Schedule events, LessonSession, LearnerProfile, Group или новую
+persistence/schema.
 
 `v2.shidao.ru` — active deployed customer-demo contour на production-mode
 build, но публичный production launch и отдельный staging ещё не выполнены.
@@ -98,7 +97,7 @@ Account
 
 ### Teacher navigation, Расписание и Ученики
 
-- В текущем локальном source основная навигация активного teacher profile
+- Начиная с release `fea7f80` основная навигация активного teacher profile
   содержит пункты «Расписание / Ученики / Курсы». Parent profile и
   transitional Student продолжают видеть только «Курсы».
 - `/schedule` и `/students` находятся под отдельным teacher-required layout.
@@ -390,8 +389,8 @@ npm run mcp:course-builder
 Supabase access/refresh tokens. Строгий gate сам собирает production-приложение
 против локального mock Supabase, поэтому build-time `NEXT_PUBLIC_*` и runtime
 конфигурация совпадают и тест не обращается к рабочей базе. Воспроизводимый
-результат `npm run test:browser:ci` для текущего source candidate: 8 сценариев
-pass, включая teacher-навигацию Schedule → Students, мобильное меню
+результат `npm run test:browser:ci` для release `fea7f80`: 8 сценариев pass,
+включая teacher-навигацию Schedule → Students, мобильное меню
 «Расписание / Ученики / Курсы», авторизованный переход Course → Lesson →
 backlink обратно к Course, computed visual contract и mobile 375 px без
 document-level overflow.
@@ -403,13 +402,12 @@ Markdown files проходят targeted Prettier check и `git diff --check`. �
 обязательным global format gate нужен отдельный baseline/ignore change без
 переформатирования archive.
 
-На application release `1e92ed4` подтверждены typecheck, lint, 175 unit tests,
-production build и строгие 6/6 browser smoke, включая Course → Lesson →
-backlink, computed visual contract и mobile viewport. Teacher-only
-`/schedule`/`/students` source candidate отдельно прошёл typecheck, lint, 183
-unit tests, production build и строгие 8/8 browser smoke. До push и deployed
-authorization/navigation postflight он не входит в подтверждённый deployed
-baseline.
+На application release `fea7f80` подтверждены typecheck, lint, 183 unit tests,
+production build и строгие 8/8 browser smoke. Coolify deployment точного SHA
+завершился со статусом Success; deployed postflight подтвердил guest redirect
+`/schedule` → `/login`, teacher-only меню «Расписание / Ученики / Курсы», обе
+новые страницы, чтение реальных Course summaries, прозрачный page header,
+плоский фон `#f5f1e8` и переход обратно в `/courses`.
 
 ## 10. Правило обновления этого документа
 

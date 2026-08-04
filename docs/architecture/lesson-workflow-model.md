@@ -244,7 +244,7 @@ Visual contract Course routes не меняет эту навигационну�
 
 ## Teaching hub navigation boundary
 
-Текущий локальный UI добавляет teacher-only `/schedule` и `/students` рядом с
+Release `fea7f80` добавляет teacher-only `/schedule` и `/students` рядом с
 `/courses`. Это навигационный и визуальный slice, а не изменение canonical
 Course/Lesson model:
 
@@ -390,7 +390,7 @@ import/application layer. Он не возвращает Methodology в акти
 
 ## Shipped acceptance baseline
 
-На release `1e92ed4` проверено:
+На release `fea7f80` проверено:
 
 1. Course, Lesson, ordered Components и attachments сохраняются в реальной
    базе/Storage и переживают reload.
@@ -409,9 +409,10 @@ import/application layer. Он не возвращает Methodology в акти
 11. Course сначала показывает пять собственных вкладок и список Lessons;
     выбранная Lesson показывает отдельный H1, backlink с названием Course и
     пять Lesson-вкладок.
+12. Teacher header показывает «Расписание / Ученики / Курсы», а server guard
+    не открывает teacher-only shells Guest, Parent или transitional Student.
 
-Также прошли typecheck, lint, 175 unit tests, production build и строгие 6/6
-browser smoke, включая computed-style и mobile contracts. Текущий source
-candidate с teacher-only `/schedule`/`/students` отдельно прошёл typecheck,
-lint, 183 unit tests, production build и строгие 8/8 browser smoke; до
-отдельного release/postflight он не меняет deployed baseline.
+Также прошли typecheck, lint, 183 unit tests, production build и строгие 8/8
+browser smoke, включая teacher navigation, computed-style и mobile contracts.
+Coolify и deployed browser postflight подтвердили точный SHA `fea7f80`, guest
+redirect и авторизованные `/schedule`, `/students` и `/courses`.

@@ -38,9 +38,9 @@
 - Course routes приведены к плоскому demo-фону `#f5f1e8` без marketing
   gradients; header, кнопки, вкладки и заголовочная типографика используют
   scoped demo-размеры, радиусы и веса, не затрагивая landing/Auth.
-- В текущем локальном source добавлены teacher-only `/schedule` и `/students`
-  и пункты «Расписание / Ученики / Курсы». Shells используют тот же demo-style
-  и показывают реальные Course summaries, но честно оставляют занятия,
+- На release `fea7f80` развёрнуты teacher-only `/schedule` и `/students` и
+  пункты «Расписание / Ученики / Курсы». Shells используют тот же demo-style и
+  показывают реальные Course summaries, но честно оставляют занятия,
   LearnerProfile и Group пустыми до появления соответствующих доменов.
 - Teaching-hub shells не читают старые `student/class/class_student`, не
   создают новую persistence и не считаются реализацией audience/scheduling
