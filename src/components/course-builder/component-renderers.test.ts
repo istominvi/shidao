@@ -38,3 +38,11 @@ test("renderers stay generic, learner-visible and free of hardcoded entity ids",
   );
   assert.doesNotMatch(source, /english-b1|present-perfect|world-around-me/i);
 });
+
+test("teacher cards do not center component content while Student Screen keeps placement", () => {
+  assert.match(
+    source,
+    /const alignment = mode === "teacher" \? "" : "mx-auto ";/,
+  );
+  assert.match(source, /widthClass\(placement\.width, mode\)/);
+});

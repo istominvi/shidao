@@ -69,6 +69,33 @@ test("selected lesson uses the three requested authoring surfaces", () => {
   assert.doesNotMatch(authoring, /\/api\/teacher\//);
 });
 
+test("lesson metadata is a compact system card edited in a modal", () => {
+  const authoring = source(lessonAuthoringPath);
+  const lessonCard =
+    /<section className="group relative rounded-3xl border border-violet-200[\s\S]*?<\/section>/.exec(
+      authoring,
+    )?.[0];
+
+  assert.ok(lessonCard, "lesson system card must remain discoverable");
+  assert.match(lessonCard, /aria-label=\{`Редактировать урок/);
+  assert.match(lessonCard, /aria-label=\{`Удалить урок/);
+  assert.match(lessonCard, /lesson\.title/);
+  assert.match(lessonCard, /lesson\.summary/);
+  assert.doesNotMatch(lessonCard, /<input|<textarea|ArrowUp|ArrowDown|Eye/);
+
+  assert.match(authoring, /title="Редактировать урок"/);
+  assert.match(
+    authoring,
+    /Название урока[\s\S]*?<input[\s\S]*?required[\s\S]*?maxLength=\{180\}/,
+  );
+  assert.match(
+    authoring,
+    /Комментарий преподавателя[\s\S]*?<textarea[\s\S]*?maxLength=\{1200\}/,
+  );
+  assert.match(authoring, /if \(saved\) onClose\(\)/);
+  assert.match(authoring, />\s*Сохранить\s*</);
+});
+
 test("component picker is registry-driven and grouped into Russian categories", () => {
   const authoring = source(lessonAuthoringPath);
 
@@ -100,6 +127,12 @@ test("component cards persist edit, delete, order, and Student Screen visibility
   assert.match(authoring, /aria-pressed=\{learnerVisible\}/);
   assert.match(authoring, /group-hover:opacity-100/);
   assert.match(authoring, /if \(saved\) setEditing\(false\)/);
+  assert.match(
+    authoring,
+    /learnerVisible[\s\S]*?border-sky-200 bg-sky-100 text-sky-800/,
+  );
+  assert.doesNotMatch(authoring, /На экране ученика|Только преподавателю/);
+  assert.doesNotMatch(authoring, /border-b border-neutral-100 pb-3/);
 });
 
 test("lesson surfaces render the lesson component sequence without legacy step groups", () => {

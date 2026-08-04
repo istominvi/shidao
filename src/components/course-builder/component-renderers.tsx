@@ -43,9 +43,13 @@ export type CourseComponentRendererProps = {
 
 type RegisteredRendererProps = CourseComponentRendererProps;
 
-function widthClass(width: "content" | "wide" | "full") {
-  if (width === "content") return "mx-auto w-full max-w-3xl";
-  if (width === "wide") return "mx-auto w-full max-w-5xl";
+function widthClass(
+  width: "content" | "wide" | "full",
+  mode: CourseComponentRenderMode,
+) {
+  const alignment = mode === "teacher" ? "" : "mx-auto ";
+  if (width === "content") return `${alignment}w-full max-w-3xl`;
+  if (width === "wide") return `${alignment}w-full max-w-5xl`;
   return "w-full";
 }
 
@@ -146,7 +150,7 @@ function SafeRichText({ content }: { content: string }) {
   );
 }
 
-function HeadingRenderer({ component }: RegisteredRendererProps) {
+function HeadingRenderer({ component, mode }: RegisteredRendererProps) {
   const payload = componentRegistry.heading.payloadSchema.parse(
     component.payload,
   );
@@ -157,14 +161,14 @@ function HeadingRenderer({ component }: RegisteredRendererProps) {
 
   return (
     <Tag
-      className={`${widthClass(placement.width)} ${textAlignClass(placement.textAlign)} text-2xl font-black tracking-tight text-neutral-950 md:text-3xl`}
+      className={`${widthClass(placement.width, mode)} ${textAlignClass(placement.textAlign)} text-2xl font-black tracking-tight text-neutral-950 md:text-3xl`}
     >
       {payload.text}
     </Tag>
   );
 }
 
-function RichTextRenderer({ component }: RegisteredRendererProps) {
+function RichTextRenderer({ component, mode }: RegisteredRendererProps) {
   const payload = componentRegistry.rich_text.payloadSchema.parse(
     component.payload,
   );
@@ -174,7 +178,7 @@ function RichTextRenderer({ component }: RegisteredRendererProps) {
 
   return (
     <div
-      className={`${widthClass(placement.width)} ${textAlignClass(placement.textAlign)}`}
+      className={`${widthClass(placement.width, mode)} ${textAlignClass(placement.textAlign)}`}
     >
       <SafeRichText content={payload.content} />
     </div>
@@ -188,7 +192,7 @@ const calloutToneClass = {
   warning: "border-amber-200 bg-amber-50 text-amber-950",
 } as const;
 
-function CalloutRenderer({ component }: RegisteredRendererProps) {
+function CalloutRenderer({ component, mode }: RegisteredRendererProps) {
   const payload = componentRegistry.callout.payloadSchema.parse(
     component.payload,
   );
@@ -198,7 +202,7 @@ function CalloutRenderer({ component }: RegisteredRendererProps) {
 
   return (
     <aside
-      className={`${widthClass(placement.width)} ${calloutToneClass[payload.tone]} rounded-2xl border px-5 py-4 ${placement.emphasis === "strong" ? "shadow-sm" : ""}`}
+      className={`${widthClass(placement.width, mode)} ${calloutToneClass[payload.tone]} rounded-2xl border px-5 py-4 ${placement.emphasis === "strong" ? "shadow-sm" : ""}`}
     >
       {payload.title ? (
         <p className="font-bold text-current">{payload.title}</p>
@@ -210,7 +214,7 @@ function CalloutRenderer({ component }: RegisteredRendererProps) {
   );
 }
 
-function QuoteRenderer({ component }: RegisteredRendererProps) {
+function QuoteRenderer({ component, mode }: RegisteredRendererProps) {
   const payload = componentRegistry.quote.payloadSchema.parse(
     component.payload,
   );
@@ -220,7 +224,7 @@ function QuoteRenderer({ component }: RegisteredRendererProps) {
 
   return (
     <blockquote
-      className={`${widthClass(placement.width)} ${textAlignClass(placement.textAlign)} border-l-4 border-violet-300 bg-violet-50/60 px-5 py-4 text-lg italic leading-7 text-neutral-800`}
+      className={`${widthClass(placement.width, mode)} ${textAlignClass(placement.textAlign)} border-l-4 border-violet-300 bg-violet-50/60 px-5 py-4 text-lg italic leading-7 text-neutral-800`}
     >
       <p>«{payload.text}»</p>
       {payload.attribution ? (
@@ -238,14 +242,14 @@ const dividerStyleClass = {
   dotted: "border-dotted",
 } as const;
 
-function DividerRenderer({ component }: RegisteredRendererProps) {
+function DividerRenderer({ component, mode }: RegisteredRendererProps) {
   const placement = componentRegistry.divider.placementSchema.parse(
     component.placement,
   );
 
   return (
     <hr
-      className={`${widthClass(placement.width)} ${dividerStyleClass[placement.style]} border-0 border-t border-neutral-300`}
+      className={`${widthClass(placement.width, mode)} ${dividerStyleClass[placement.style]} border-0 border-t border-neutral-300`}
     />
   );
 }
@@ -298,7 +302,7 @@ function SignedImage({
   );
 }
 
-function ImageRenderer({ component, assets }: RegisteredRendererProps) {
+function ImageRenderer({ component, assets, mode }: RegisteredRendererProps) {
   const payload = componentRegistry.image.payloadSchema.parse(
     component.payload,
   );
@@ -309,7 +313,7 @@ function ImageRenderer({ component, assets }: RegisteredRendererProps) {
 
   return (
     <figure
-      className={`${widthClass(placement.width)} ${blockAlignClass(placement.align)}`}
+      className={`${widthClass(placement.width, mode)} ${blockAlignClass(placement.align)}`}
     >
       {asset ? (
         <SignedImage
@@ -329,7 +333,11 @@ function ImageRenderer({ component, assets }: RegisteredRendererProps) {
   );
 }
 
-function SlideshowRenderer({ component, assets }: RegisteredRendererProps) {
+function SlideshowRenderer({
+  component,
+  assets,
+  mode,
+}: RegisteredRendererProps) {
   const payload = componentRegistry.slideshow.payloadSchema.parse(
     component.payload,
   );
@@ -348,7 +356,7 @@ function SlideshowRenderer({ component, assets }: RegisteredRendererProps) {
 
   if (!currentSlide) {
     return (
-      <div className={widthClass(placement.width)}>
+      <div className={widthClass(placement.width, mode)}>
         <UnavailableAsset kind="image" />
       </div>
     );
@@ -356,7 +364,7 @@ function SlideshowRenderer({ component, assets }: RegisteredRendererProps) {
 
   return (
     <section
-      className={`${widthClass(placement.width)} ${blockAlignClass(placement.align)} space-y-3`}
+      className={`${widthClass(placement.width, mode)} ${blockAlignClass(placement.align)} space-y-3`}
       aria-label="Слайдшоу"
     >
       <figure>
@@ -440,7 +448,7 @@ function SingleChoicePollRenderer({
 
   return (
     <section
-      className={`${widthClass(placement.width)} rounded-3xl border border-sky-200 bg-sky-50/60 ${placement.compact ? "p-4" : "p-5 md:p-6"}`}
+      className={`${widthClass(placement.width, mode)} rounded-3xl border border-sky-200 bg-sky-50/60 ${placement.compact ? "p-4" : "p-5 md:p-6"}`}
       aria-label="Опрос с одним вариантом ответа"
     >
       <fieldset>
@@ -556,7 +564,7 @@ function MatchingGameRenderer({ component, mode }: RegisteredRendererProps) {
 
   return (
     <section
-      className={`${widthClass(placement.width)} rounded-3xl border border-violet-200 bg-violet-50/60 ${placement.compact ? "p-4" : "p-5 md:p-6"}`}
+      className={`${widthClass(placement.width, mode)} rounded-3xl border border-violet-200 bg-violet-50/60 ${placement.compact ? "p-4" : "p-5 md:p-6"}`}
       aria-label="Игра Найди пару"
     >
       <h3 className="text-lg font-bold text-neutral-950">
@@ -622,7 +630,7 @@ function MatchingGameRenderer({ component, mode }: RegisteredRendererProps) {
   );
 }
 
-function FileRenderer({ component, assets }: RegisteredRendererProps) {
+function FileRenderer({ component, assets, mode }: RegisteredRendererProps) {
   const payload = componentRegistry.file.payloadSchema.parse(component.payload);
   const placement = componentRegistry.file.placementSchema.parse(
     component.placement,
@@ -631,7 +639,7 @@ function FileRenderer({ component, assets }: RegisteredRendererProps) {
 
   if (!asset) {
     return (
-      <div className={widthClass(placement.width)}>
+      <div className={widthClass(placement.width, mode)}>
         <UnavailableAsset kind="file" />
       </div>
     );
@@ -646,7 +654,7 @@ function FileRenderer({ component, assets }: RegisteredRendererProps) {
     <a
       href={asset.signedUrl}
       {...linkProps}
-      className={`${widthClass(placement.width)} ${
+      className={`${widthClass(placement.width, mode)} ${
         placement.display === "link"
           ? "inline-flex text-sky-700 underline underline-offset-4"
           : "flex items-center justify-between gap-4 rounded-2xl border border-neutral-200 bg-white px-5 py-4 shadow-sm transition hover:border-sky-300"

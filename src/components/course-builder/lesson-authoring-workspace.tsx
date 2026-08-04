@@ -270,24 +270,10 @@ function ComponentCard({
         </Button>
       </div>
 
-      <div className="mb-4 border-b border-neutral-100 pb-3 md:pr-48">
+      <div className="mb-3 md:pr-48">
         <p className="text-xs font-bold uppercase tracking-[0.14em] text-neutral-500">
           {displayPosition}. {definition.title}
         </p>
-        <span
-          className={`mt-2 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold ${
-            learnerVisible
-              ? "bg-sky-100 text-sky-800"
-              : "bg-neutral-100 text-neutral-600"
-          }`}
-        >
-          {learnerVisible ? (
-            <Eye className="h-3.5 w-3.5" aria-hidden="true" />
-          ) : (
-            <EyeOff className="h-3.5 w-3.5" aria-hidden="true" />
-          )}
-          {learnerVisible ? "На экране ученика" : "Только преподавателю"}
-        </span>
       </div>
 
       {editing ? (
@@ -438,6 +424,96 @@ function ComponentPickerDialog({
   );
 }
 
+function LessonEditorDialog({
+  lesson,
+  disabled,
+  runMutation,
+  onClose,
+}: {
+  lesson: CourseLesson;
+  disabled: boolean;
+  runMutation: CourseBuilderMutationRunner;
+  onClose: () => void;
+}) {
+  const [title, setTitle] = useState(lesson.title);
+  const [summary, setSummary] = useState(lesson.summary);
+
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key !== "Escape" || disabled) return;
+      event.preventDefault();
+      onClose();
+    }
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [disabled, onClose]);
+
+  return (
+    <DialogShell
+      title="Редактировать урок"
+      description="Название показывается ученику автоматически. Комментарий остаётся только у преподавателя."
+      onClose={() => {
+        if (!disabled) onClose();
+      }}
+      panelClassName="max-w-2xl"
+    >
+      <form
+        className="grid gap-5"
+        onSubmit={(event) => {
+          event.preventDefault();
+          const nextTitle = title.trim();
+          if (!nextTitle || disabled) return;
+          void (async () => {
+            const saved = await runMutation("Сохраняем урок…", () =>
+              jsonRequest(`/api/v2/lessons/${lesson.id}`, "PATCH", {
+                title: nextTitle,
+                summary,
+              }),
+            );
+            if (saved) onClose();
+          })();
+        }}
+      >
+        <label className="block">
+          <span className="field-label">Название урока</span>
+          <input
+            autoFocus
+            required
+            maxLength={180}
+            className="field-input"
+            value={title}
+            onChange={(event) => setTitle(event.target.value)}
+          />
+        </label>
+        <label className="block">
+          <span className="field-label">Комментарий преподавателя</span>
+          <textarea
+            maxLength={1200}
+            className="field-input min-h-28 resize-y"
+            placeholder="Необязательно. Ученик этот комментарий не увидит."
+            value={summary}
+            onChange={(event) => setSummary(event.target.value)}
+          />
+        </label>
+        <div className="dialog-shell-actions">
+          <Button
+            type="button"
+            variant="ghost"
+            disabled={disabled}
+            onClick={onClose}
+          >
+            Отмена
+          </Button>
+          <Button type="submit" disabled={disabled || !title.trim()}>
+            <Save className="h-4 w-4" aria-hidden="true" />
+            Сохранить
+          </Button>
+        </div>
+      </form>
+    </DialogShell>
+  );
+}
+
 function LessonPlan({
   course,
   lesson,
@@ -453,8 +529,7 @@ function LessonPlan({
   runMutation: CourseBuilderMutationRunner;
   onEditingComponentConsumed: () => void;
 }) {
-  const [title, setTitle] = useState(lesson.title);
-  const [summary, setSummary] = useState(lesson.summary);
+  const [lessonEditorOpen, setLessonEditorOpen] = useState(false);
   const assetMap = useMemo(
     () => assetMapFor(course.attachments),
     [course.attachments],
@@ -463,20 +538,24 @@ function LessonPlan({
 
   return (
     <div className="grid gap-5">
-      <section className="rounded-3xl border border-neutral-200 bg-white/90 p-5 shadow-sm">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-[0.14em] text-violet-700">
-              Урок {lesson.position}
-            </p>
-            <h2 className="mt-1 text-2xl font-black text-neutral-950">
-              {lesson.title}
-            </h2>
-          </div>
+      <section className="group relative rounded-3xl border border-violet-200 bg-violet-50/45 p-4 pt-16 shadow-sm transition hover:border-violet-300 hover:shadow-md md:p-5 md:pt-5">
+        <div className="absolute right-3 top-3 z-10 flex gap-1">
           <Button
             variant="ghost"
-            className="text-rose-700"
+            className="h-9 w-9 border border-neutral-200 bg-white/95 p-0 text-neutral-700 shadow-sm transition-opacity md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100"
             disabled={disabled}
+            aria-label={`Редактировать урок «${lesson.title}»`}
+            title="Редактировать урок"
+            onClick={() => setLessonEditorOpen(true)}
+          >
+            <Pencil className="h-4 w-4" aria-hidden="true" />
+          </Button>
+          <Button
+            variant="ghost"
+            className="h-9 w-9 border border-neutral-200 bg-white/95 p-0 text-rose-700 shadow-sm transition-opacity md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100"
+            disabled={disabled}
+            aria-label={`Удалить урок «${lesson.title}»`}
+            title="Удалить урок"
             onClick={() => {
               if (
                 !window.confirm(
@@ -490,46 +569,33 @@ function LessonPlan({
             }}
           >
             <Trash2 className="h-4 w-4" aria-hidden="true" />
-            Удалить урок
           </Button>
         </div>
 
-        <form
-          className="mt-5 grid gap-4 md:grid-cols-[1fr_1fr_auto] md:items-end"
-          onSubmit={(event) => {
-            event.preventDefault();
-            void runMutation("Сохраняем урок…", () =>
-              jsonRequest(`/api/v2/lessons/${lesson.id}`, "PATCH", {
-                title,
-                summary,
-              }),
-            );
-          }}
-        >
-          <label className="block">
-            <span className="field-label">Название урока</span>
-            <input
-              required
-              className="field-input"
-              value={title}
-              onChange={(event) => setTitle(event.target.value)}
-            />
-          </label>
-          <label className="block">
-            <span className="field-label">Комментарий преподавателя</span>
-            <input
-              className="field-input"
-              placeholder="Необязательно"
-              value={summary}
-              onChange={(event) => setSummary(event.target.value)}
-            />
-          </label>
-          <Button type="submit" disabled={disabled}>
-            <Save className="h-4 w-4" aria-hidden="true" />
-            Сохранить
-          </Button>
-        </form>
+        <div className="md:pr-24">
+          <p className="text-xs font-bold uppercase tracking-[0.14em] text-violet-700">
+            Урок {lesson.position}
+          </p>
+          <h2 className="mt-1 text-2xl font-black text-neutral-950">
+            {lesson.title}
+          </h2>
+          {lesson.summary ? (
+            <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-neutral-600">
+              {lesson.summary}
+            </p>
+          ) : null}
+        </div>
       </section>
+
+      {lessonEditorOpen ? (
+        <LessonEditorDialog
+          key={`${lesson.id}:${lesson.updatedAt}`}
+          lesson={lesson}
+          disabled={disabled}
+          runMutation={runMutation}
+          onClose={() => setLessonEditorOpen(false)}
+        />
+      ) : null}
 
       <section className="grid gap-4" aria-label="Компоненты плана урока">
         {components.map((component, index) => (
