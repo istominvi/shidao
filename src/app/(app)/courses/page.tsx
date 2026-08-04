@@ -8,9 +8,9 @@ import { ROUTES } from "@/lib/auth";
 
 export default function CoursesPage() {
   return (
-    <main className="pb-12">
+    <main className="course-demo-shell pb-12">
       <div className="landing-noise" aria-hidden="true" />
-      <TopNav />
+      <TopNav demoStyle />
       <div className="container app-page-container space-y-6">
         <AppPageHeader
           title="Курсы"

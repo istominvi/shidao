@@ -1,7 +1,7 @@
 # Roadmap ShiDao V2
 
 **Статус:** приоритеты после первого работающего Course Builder milestone
-**Актуально на:** 4 августа 2026 года
+**Актуально на:** 5 августа 2026 года
 
 Фактически реализованное состояние находится в
 [`docs/project-state.md`](./project-state.md). Этот документ описывает только
@@ -32,10 +32,15 @@
 - Каноническая модель стала `Course → Lesson → ordered Components`.
 - Реализованы persisted Course, Lesson, 10 Component types и private
   course-wide attachments.
-- Реализованы Course settings/materials actions и русская навигация Lesson.
+- Реализована двухуровневая Course → Lesson навигация в визуальном языке demo:
+  пять Course tabs, пять Lesson tabs, прозрачные detail headers и отдельный
+  список Lesson до открытия редактора.
 - Реализованы private-by-default Components и persisted Student Screen Slides.
 - Реализован fullscreen Student Screen preview.
 - Реализован development-only MCP из шести tools поверх application service.
+- Browser-smoke переведён на актуальную AES-GCM app-session; строгий
+  production-mode gate покрывает guest/auth redirects и Course → Lesson →
+  backlink без обращения к рабочей базе.
 - Первый Course Builder milestone проверен на deployed customer-demo контуре.
 
 ## P0.1: legacy identity/security hardening
@@ -58,8 +63,6 @@ identity, learner access или внешних интеграций необхо
   `brand`/`model` и неизвестные routed hosts не должны получать app/API;
 - исправить CSRF allowlist: landing origin не должен считаться same-origin для
   unsafe V2 request; добавить cross-subdomain negative test;
-- обновить browser-smoke session helper под актуальный AES-GCM cookie contract
-  и вернуть строгий `test:browser:ci` в зелёное состояние;
 - определить Prettier baseline: исключить immutable archive и отдельно
   отформатировать active source, чтобы repository-wide `format:check` стал
   честным gate;
@@ -73,7 +76,7 @@ read-only ShiDao sanity check и отдельного deployed-contour postfligh
 Цель — превратить рабочий технический редактор в уверенный ежедневный
 инструмент преподавателя без изменения доменной модели.
 
-- последовательно улучшить visual design и responsive layout Course workspace;
+- продолжить responsive/accessibility полировку обновлённого Course workspace;
 - добавить загрузку новых материалов из открытого существующего Course;
 - улучшить выбор/поиск Components в palette;
 - проверить все десять editors/renderers отдельными production-safe сценариями;

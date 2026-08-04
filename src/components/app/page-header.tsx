@@ -1,5 +1,5 @@
 import Link from "next/link";
-import type { ReactNode } from "react";
+import type { ReactNode, Ref } from "react";
 import { classNames } from "@/lib/ui/classnames";
 
 type AppPageHeaderProps = {
@@ -9,9 +9,11 @@ type AppPageHeaderProps = {
   backHref?: string;
   backLabel?: ReactNode;
   backAriaLabel?: string;
+  onBack?: () => void;
   meta?: ReactNode;
   actions?: ReactNode;
   className?: string;
+  headingRef?: Ref<HTMLHeadingElement>;
 };
 
 export function AppPageHeader({
@@ -21,9 +23,11 @@ export function AppPageHeader({
   backHref,
   backLabel,
   backAriaLabel,
+  onBack,
   meta,
   actions,
   className,
+  headingRef,
 }: AppPageHeaderProps) {
   const resolvedBackLabel = backLabel ?? "Назад";
   const hasHeadingBlock = Boolean(eyebrow || title || description);
@@ -41,14 +45,39 @@ export function AppPageHeader({
               : undefined)
           }
         >
-          <span className="app-page-back-link-icon" aria-hidden="true">←</span>
+          <span className="app-page-back-link-icon" aria-hidden="true">
+            ←
+          </span>
           <span>{resolvedBackLabel}</span>
         </Link>
+      ) : onBack ? (
+        <button
+          type="button"
+          className="app-page-back-link"
+          aria-label={
+            backAriaLabel ??
+            (typeof resolvedBackLabel === "string"
+              ? `Вернуться: ${resolvedBackLabel}`
+              : undefined)
+          }
+          onClick={onBack}
+        >
+          <span className="app-page-back-link-icon" aria-hidden="true">
+            ←
+          </span>
+          <span>{resolvedBackLabel}</span>
+        </button>
       ) : null}
       {hasHeadingBlock ? (
         <div className="app-page-heading">
           {eyebrow ? <p className="app-page-eyebrow">{eyebrow}</p> : null}
-          <h1 className="app-page-title">{title}</h1>
+          <h1
+            ref={headingRef}
+            className="app-page-title"
+            tabIndex={headingRef ? -1 : undefined}
+          >
+            {title}
+          </h1>
           {description ? (
             <p className="app-page-description">{description}</p>
           ) : null}

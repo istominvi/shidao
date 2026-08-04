@@ -54,7 +54,7 @@ export function CoursesIndex() {
 
   if (error) {
     return (
-      <SurfaceCard className="border border-rose-200 bg-rose-50/80">
+      <SurfaceCard className="course-index-error border border-rose-200">
         <p className="text-sm font-medium text-rose-800" role="alert">
           {error}
         </p>
@@ -64,7 +64,7 @@ export function CoursesIndex() {
 
   if (!courses) {
     return (
-      <SurfaceCard className="flex items-center gap-3 border border-neutral-200 bg-white/75">
+      <SurfaceCard className="course-index-status flex items-center gap-3 border border-neutral-200">
         <LoaderCircle className="h-5 w-5 animate-spin" aria-hidden="true" />
         <p className="text-sm font-medium text-neutral-700" role="status">
           Загружаем личные курсы из базы…
@@ -75,7 +75,7 @@ export function CoursesIndex() {
 
   if (courses.length === 0) {
     return (
-      <SurfaceCard className="border border-dashed border-neutral-300 bg-white/75 text-center">
+      <SurfaceCard className="course-index-status border border-dashed border-neutral-300 text-center">
         <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-lime-100 text-lime-900">
           <FolderOpen className="h-7 w-7" aria-hidden="true" />
         </div>

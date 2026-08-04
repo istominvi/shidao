@@ -3,8 +3,10 @@
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  FileText,
-  FolderOpen,
+  ArrowRight,
+  BookOpen,
+  FileSearch,
+  History,
   LoaderCircle,
   Pencil,
   Plus,
@@ -17,12 +19,23 @@ import {
   courseBuilderRequest,
   loadCourseWorkspace,
 } from "@/components/course-builder/course-builder-client";
+import { CourseMaterialsPanel } from "@/components/course-builder/course-materials-panel";
 import {
-  LessonAuthoringWorkspace,
-  type LessonAuthoringSurface,
-} from "@/components/course-builder/lesson-authoring-workspace";
+  COURSE_WORKSPACE_TABS,
+  createCourseWorkspaceNavigation,
+  openCourseWorkspaceLesson,
+  reconcileCourseWorkspaceNavigation,
+  returnToCourseWorkspace,
+  type CourseWorkspaceSurface,
+} from "@/components/course-builder/course-workspace-navigation";
+import { LessonAuthoringWorkspace } from "@/components/course-builder/lesson-authoring-workspace";
 import { Button, productButtonClassName } from "@/components/ui/button";
 import { DialogShell } from "@/components/ui/dialog-shell";
+import {
+  WorkspaceTabs,
+  workspaceTabId,
+  workspaceTabPanelId,
+} from "@/components/ui/workspace-tabs";
 import { ROUTES } from "@/lib/auth";
 import type {
   CourseLesson,
@@ -32,6 +45,8 @@ import type {
 type CourseWorkspaceClientProps = {
   courseId: string;
 };
+
+const COURSE_WORKSPACE_TABS_ID = "course-workspace";
 
 type RunMutation = (
   label: string,
@@ -253,109 +268,41 @@ function CourseSettingsDialog({
   );
 }
 
-function CourseMaterialsDialog({
-  course,
-  onClose,
-}: {
-  course: CourseWorkspace;
-  onClose: () => void;
-}) {
-  return (
-    <DialogShell
-      title="Материалы курса"
-      description="Все файлы и изображения, прикреплённые к этому курсу."
-      onClose={onClose}
-      panelClassName="max-w-3xl"
-    >
-      <p className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-900">
-        Материалы сохранены в закрытом Storage. Они прикреплены к курсу, но их
-        содержимое пока не анализировалось.
-      </p>
-
-      {course.attachments.length > 0 ? (
-        <ul className="mt-4 grid gap-3 sm:grid-cols-2">
-          {course.attachments.map((asset) => (
-            <li
-              key={asset.id}
-              className="flex min-w-0 flex-col rounded-2xl border border-neutral-200 bg-white p-4"
-            >
-              <div className="flex min-w-0 items-start gap-3">
-                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-neutral-100 text-neutral-600">
-                  <FileText className="h-4 w-4" aria-hidden="true" />
-                </span>
-                <div className="min-w-0">
-                  <span className="block truncate font-bold text-neutral-950">
-                    {asset.originalFilename}
-                  </span>
-                  <span className="mt-1 block text-xs leading-5 text-neutral-500">
-                    {asset.mimeType} · {Math.ceil(asset.sizeBytes / 1024)} КБ
-                  </span>
-                </div>
-              </div>
-              <div className="mt-4 flex items-center justify-between gap-3">
-                <span
-                  className={`rounded-full px-2.5 py-1 text-xs font-bold ${
-                    asset.status === "ready"
-                      ? "bg-emerald-100 text-emerald-800"
-                      : "bg-amber-100 text-amber-800"
-                  }`}
-                >
-                  {asset.status === "ready" ? "Готово" : "Ожидает загрузки"}
-                </span>
-                {asset.status === "ready" && asset.signedUrl ? (
-                  <a
-                    href={asset.signedUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className={productButtonClassName(
-                      "ghost",
-                      "h-9 px-3 text-xs",
-                    )}
-                  >
-                    Открыть
-                  </a>
-                ) : null}
-              </div>
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <div className="mt-4 rounded-3xl border border-dashed border-neutral-300 bg-neutral-50 px-6 py-12 text-center">
-          <FolderOpen
-            className="mx-auto h-7 w-7 text-neutral-400"
-            aria-hidden="true"
-          />
-          <h3 className="mt-3 font-black text-neutral-950">
-            Материалов пока нет
-          </h3>
-          <p className="mt-2 text-sm text-neutral-600">
-            Прикреплённые к курсу файлы и изображения появятся здесь.
-          </p>
-        </div>
-      )}
-    </DialogShell>
-  );
-}
-
-function LessonNavigation({
+function CourseLessonsPanel({
   lessons,
-  selectedLessonId,
   disabled,
   onSelect,
   runMutation,
   courseId,
+  focusLessonId,
+  onFocusRestored,
 }: {
   lessons: CourseLesson[];
-  selectedLessonId: string | null;
   disabled: boolean;
   onSelect: (lessonId: string) => void;
   runMutation: RunMutation;
   courseId: string;
+  focusLessonId: string | null;
+  onFocusRestored: () => void;
 }) {
   const [newLessonTitle, setNewLessonTitle] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [submissionFailed, setSubmissionFailed] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const lessonRowRefs = useRef(new Map<string, HTMLButtonElement>());
+
+  useEffect(() => {
+    if (!focusLessonId) return;
+    const frame = window.requestAnimationFrame(() => {
+      const target =
+        lessonRowRefs.current.get(focusLessonId) ?? headingRef.current;
+      target?.focus();
+      target?.scrollIntoView({ block: "nearest" });
+      onFocusRestored();
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [focusLessonId, onFocusRestored]);
 
   function closeDialog() {
     if (disabled) return;
@@ -399,47 +346,21 @@ function LessonNavigation({
     onSelect(createdLessonId);
     setNewLessonTitle("");
     setDialogOpen(false);
-    window.requestAnimationFrame(() => triggerRef.current?.focus());
   }
 
   return (
     <>
-      <aside className="rounded-3xl border border-neutral-200 bg-white/90 p-4 shadow-sm">
-        <div className="flex items-center justify-between gap-3">
-          <h2 className="font-bold text-neutral-950">Уроки</h2>
-          <span className="text-xs font-semibold text-neutral-500">
-            {lessons.length}
-          </span>
-        </div>
-        <div className="mt-3 grid gap-2">
-          {lessons.map((lesson) => {
-            const active = selectedLessonId === lesson.id;
-            return (
-              <button
-                key={lesson.id}
-                type="button"
-                onClick={() => onSelect(lesson.id)}
-                className={`rounded-2xl border px-3 py-3 text-left transition ${
-                  active
-                    ? "border-neutral-950 bg-neutral-950 text-white"
-                    : "border-neutral-200 bg-white text-neutral-800 hover:border-neutral-400"
-                }`}
-              >
-                <span className="block text-xs font-semibold opacity-70">
-                  Урок {lesson.position}
-                </span>
-                <span className="mt-1 block text-sm font-bold">
-                  {lesson.title}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-        <div className="mt-4 border-t border-neutral-200 pt-4">
-          <button
+      <section className="workspace-surface">
+        <div className="workspace-panel-heading">
+          <div>
+            <p className="workspace-eyebrow">Структура курса</p>
+            <h2 ref={headingRef} tabIndex={-1}>
+              Уроки
+            </h2>
+          </div>
+          <Button
             ref={triggerRef}
             type="button"
-            className={productButtonClassName("primary", "w-full")}
             disabled={disabled}
             onClick={() => {
               setSubmissionFailed(false);
@@ -448,9 +369,60 @@ function LessonNavigation({
           >
             <Plus className="h-4 w-4" aria-hidden="true" />
             Добавить урок
-          </button>
+          </Button>
         </div>
-      </aside>
+
+        {lessons.length > 0 ? (
+          <div className="workspace-lesson-list">
+            {lessons.map((lesson) => {
+              return (
+                <button
+                  key={lesson.id}
+                  type="button"
+                  ref={(node) => {
+                    if (node) lessonRowRefs.current.set(lesson.id, node);
+                    else lessonRowRefs.current.delete(lesson.id);
+                  }}
+                  onClick={() => onSelect(lesson.id)}
+                  className="workspace-lesson-row"
+                >
+                  <BookOpen
+                    className="workspace-lesson-leading-icon"
+                    aria-hidden="true"
+                  />
+                  <span className="workspace-lesson-number">
+                    {lesson.position}
+                  </span>
+                  <span className="workspace-lesson-title">
+                    <strong>{lesson.title}</strong>
+                    <small>
+                      Слайдов экрана ученика: {lesson.studentSlides.length}
+                    </small>
+                  </span>
+                  <span className="workspace-lesson-status">
+                    Компонентов: {lesson.components.length}
+                  </span>
+                  <ArrowRight
+                    className="workspace-lesson-arrow"
+                    aria-hidden="true"
+                  />
+                </button>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="workspace-empty-state">
+            <BookOpen
+              className="mx-auto h-7 w-7 text-neutral-400"
+              aria-hidden="true"
+            />
+            <h3>В курсе пока нет уроков</h3>
+            <p>
+              Добавьте первый урок — он сохранится в базе как пустой черновик.
+            </p>
+          </div>
+        )}
+      </section>
 
       {dialogOpen ? (
         <DialogShell
@@ -551,6 +523,74 @@ function LessonNavigation({
   );
 }
 
+function CourseDescriptionPanel({ course }: { course: CourseWorkspace }) {
+  const details = [
+    ["Предмет или тема", course.subject],
+    ["Уровень", course.level],
+    ["План уроков", String(course.targetLessonCount)],
+    ["Целевая аудитория", course.audienceDescription || "Не указана"],
+  ] as const;
+
+  return (
+    <section className="workspace-surface">
+      <div className="workspace-panel-heading">
+        <div>
+          <p className="workspace-eyebrow">Основные сведения</p>
+          <h2>Описание курса</h2>
+        </div>
+      </div>
+
+      <dl className="course-description-grid">
+        {details.map(([label, value]) => (
+          <div key={label}>
+            <dt>{label}</dt>
+            <dd>{value}</dd>
+          </div>
+        ))}
+        <div className="course-description-wide">
+          <dt>Цель курса</dt>
+          <dd>{course.goal}</dd>
+        </div>
+        <div className="course-description-wide course-description-private">
+          <dt>Пожелания преподавателя · только для вас</dt>
+          <dd>{course.teacherPreferences || "Пожелания пока не добавлены."}</dd>
+        </div>
+      </dl>
+    </section>
+  );
+}
+
+function CourseSourcesPanel() {
+  return (
+    <section className="workspace-surface workspace-empty-panel">
+      <span className="workspace-empty-icon workspace-empty-icon-blue">
+        <FileSearch aria-hidden="true" />
+      </span>
+      <h2>Источники ещё не подключены</h2>
+      <p>
+        Здесь появятся документы и ссылки после запуска безопасного извлечения
+        текста. Прикреплённый файл пока считается материалом, а не изученным
+        источником.
+      </p>
+    </section>
+  );
+}
+
+function CourseHistoryPanel() {
+  return (
+    <section className="workspace-surface workspace-empty-panel">
+      <span className="workspace-empty-icon workspace-empty-icon-pink">
+        <History aria-hidden="true" />
+      </span>
+      <h2>История курса пока пуста</h2>
+      <p>
+        Журнал изменений будет подключён отдельным срезом. Сейчас интерфейс не
+        показывает вымышленные события и не сохраняет их локально.
+      </p>
+    </section>
+  );
+}
+
 function WorkspaceSkeleton() {
   return (
     <div className="container app-page-container py-12" role="status">
@@ -566,23 +606,24 @@ export function CourseWorkspaceClient({
   courseId,
 }: CourseWorkspaceClientProps) {
   const [course, setCourse] = useState<CourseWorkspace | null>(null);
-  const [selectedLessonId, setSelectedLessonId] = useState<string | null>(null);
-  const [surface, setSurface] = useState<LessonAuthoringSurface>("plan");
+  const [navigation, setNavigation] = useState(createCourseWorkspaceNavigation);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [materialsOpen, setMaterialsOpen] = useState(false);
+  const [returnFocusLessonId, setReturnFocusLessonId] = useState<string | null>(
+    null,
+  );
   const [error, setError] = useState<string | null>(null);
   const [busyLabel, setBusyLabel] = useState<string | null>(null);
   const settingsTriggerRef = useRef<HTMLButtonElement>(null);
-  const materialsTriggerRef = useRef<HTMLButtonElement>(null);
   const mutationInFlightRef = useRef(false);
 
   const reload = useCallback(async () => {
     const workspace = await loadCourseWorkspace(courseId);
     setCourse(workspace);
-    setSelectedLessonId((current) =>
-      workspace.lessons.some((lesson) => lesson.id === current)
-        ? current
-        : (workspace.lessons[0]?.id ?? null),
+    setNavigation((current) =>
+      reconcileCourseWorkspaceNavigation(
+        current,
+        workspace.lessons.map((lesson) => lesson.id),
+      ),
     );
     return workspace;
   }, [courseId]);
@@ -593,7 +634,6 @@ export function CourseWorkspaceClient({
       .then((workspace) => {
         if (!active) return;
         setCourse(workspace);
-        setSelectedLessonId(workspace.lessons[0]?.id ?? null);
       })
       .catch((caught: unknown) => {
         if (!active) return;
@@ -637,26 +677,18 @@ export function CourseWorkspaceClient({
     window.requestAnimationFrame(() => settingsTriggerRef.current?.focus());
   }, [busyLabel]);
 
-  const closeMaterials = useCallback(() => {
-    setMaterialsOpen(false);
-    window.requestAnimationFrame(() => materialsTriggerRef.current?.focus());
-  }, []);
-
   useEffect(() => {
-    if (!settingsOpen && !materialsOpen) return;
+    if (!settingsOpen) return;
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key !== "Escape") return;
       if (settingsOpen && !busyLabel) {
         event.preventDefault();
         closeSettings();
-      } else if (materialsOpen) {
-        event.preventDefault();
-        closeMaterials();
       }
     }
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [busyLabel, closeMaterials, closeSettings, materialsOpen, settingsOpen]);
+  }, [busyLabel, closeSettings, settingsOpen]);
 
   if (!course) {
     if (error) {
@@ -676,81 +708,122 @@ export function CourseWorkspaceClient({
   }
 
   const selectedLesson =
-    course.lessons.find((lesson) => lesson.id === selectedLessonId) ?? null;
+    course.lessons.find(
+      (lesson) => lesson.id === navigation.selectedLessonId,
+    ) ?? null;
   const readyAttachmentCount = course.attachments.filter(
     (asset) => asset.status === "ready",
   ).length;
+  const courseTabs = COURSE_WORKSPACE_TABS.map((item) =>
+    item.value === "lessons" ? { ...item, count: course.lessons.length } : item,
+  );
 
   return (
-    <div className="container app-page-container space-y-6 pb-16">
-      <AppPageHeader
-        className="course-builder-page-header"
-        backHref={ROUTES.courses}
-        backLabel="Курсы"
-        eyebrow="Редактор курса"
-        title={course.title}
-        description={`Создано уроков: ${course.lessonCount} из ${course.targetLessonCount} · готовых вложений: ${readyAttachmentCount}`}
-        actions={
-          <>
-            <Button
-              ref={materialsTriggerRef}
-              variant="secondary"
-              onClick={() => setMaterialsOpen(true)}
-            >
-              <FolderOpen className="h-4 w-4" aria-hidden="true" />
-              Материалы курса
-              {course.attachments.length > 0 ? (
-                <span className="rounded-full bg-neutral-200 px-2 py-0.5 text-[0.7rem] font-black text-neutral-700">
-                  {course.attachments.length}
-                </span>
-              ) : null}
-            </Button>
-            <Button
-              ref={settingsTriggerRef}
-              variant="secondary"
-              onClick={() => setSettingsOpen(true)}
-            >
-              <Settings className="h-4 w-4" aria-hidden="true" />
-              Настройки
-            </Button>
-          </>
-        }
-      />
-
-      <StatusMessage error={error} busyLabel={busyLabel} />
-
-      <div className="grid gap-5 lg:grid-cols-[18rem_minmax(0,1fr)] lg:items-start">
-        <LessonNavigation
-          lessons={course.lessons}
-          selectedLessonId={selectedLessonId}
+    <div className="container app-page-container course-workspace-container pb-16">
+      {selectedLesson ? (
+        <LessonAuthoringWorkspace
+          key={selectedLesson.id}
+          course={course}
+          lesson={selectedLesson}
+          surface={navigation.lessonSurface}
+          onSurfaceChange={(lessonSurface) =>
+            setNavigation((current) => ({ ...current, lessonSurface }))
+          }
+          onBackToCourse={() => {
+            setReturnFocusLessonId(selectedLesson.id);
+            setNavigation((current) => returnToCourseWorkspace(current));
+          }}
+          status={
+            error || busyLabel ? (
+              <StatusMessage error={error} busyLabel={busyLabel} />
+            ) : undefined
+          }
           disabled={Boolean(busyLabel)}
-          onSelect={(lessonId) => setSelectedLessonId(lessonId)}
           runMutation={runMutation}
-          courseId={course.id}
         />
-
-        {selectedLesson ? (
-          <LessonAuthoringWorkspace
-            key={selectedLesson.id}
-            course={course}
-            lesson={selectedLesson}
-            surface={surface}
-            onSurfaceChange={setSurface}
-            disabled={Boolean(busyLabel)}
-            runMutation={runMutation}
+      ) : (
+        <>
+          <AppPageHeader
+            className="course-builder-page-header workspace-page-header"
+            backHref={ROUTES.courses}
+            backLabel="Курсы"
+            title={course.title}
+            description={`Создано уроков: ${course.lessonCount} из ${course.targetLessonCount} · готовых вложений: ${readyAttachmentCount}`}
+            actions={
+              <Button
+                ref={settingsTriggerRef}
+                variant="secondary"
+                onClick={() => setSettingsOpen(true)}
+              >
+                <Settings className="h-4 w-4" aria-hidden="true" />
+                Настройки
+              </Button>
+            }
           />
-        ) : (
-          <section className="rounded-3xl border border-dashed border-neutral-300 bg-white/70 px-6 py-16 text-center">
-            <h2 className="text-xl font-black text-neutral-950">
-              В курсе пока нет уроков
-            </h2>
-            <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-neutral-600">
-              Добавьте первый урок слева. Он сохранится в базе и будет доступен
-              после обновления страницы.
-            </p>
-          </section>
-        )}
-      </div>
+
+          <WorkspaceTabs
+            idBase={COURSE_WORKSPACE_TABS_ID}
+            ariaLabel="Разделы курса"
+            value={navigation.courseSurface}
+            items={courseTabs}
+            onChange={(courseSurface: CourseWorkspaceSurface) =>
+              setNavigation((current) => ({ ...current, courseSurface }))
+            }
+          />
+        </>
+      )}
+
+      {!selectedLesson ? (
+        <StatusMessage error={error} busyLabel={busyLabel} />
+      ) : null}
+
+      {!selectedLesson
+        ? COURSE_WORKSPACE_TABS.map((item) => {
+            const active = item.value === navigation.courseSurface;
+
+            return (
+              <div
+                key={item.value}
+                id={workspaceTabPanelId(COURSE_WORKSPACE_TABS_ID, item.value)}
+                role="tabpanel"
+                aria-labelledby={workspaceTabId(
+                  COURSE_WORKSPACE_TABS_ID,
+                  item.value,
+                )}
+                hidden={!active}
+                tabIndex={0}
+              >
+                {active && item.value === "lessons" ? (
+                  <CourseLessonsPanel
+                    lessons={course.lessons}
+                    disabled={Boolean(busyLabel)}
+                    onSelect={(lessonId) =>
+                      setNavigation((current) =>
+                        openCourseWorkspaceLesson(current, lessonId),
+                      )
+                    }
+                    runMutation={runMutation}
+                    courseId={course.id}
+                    focusLessonId={returnFocusLessonId}
+                    onFocusRestored={() => setReturnFocusLessonId(null)}
+                  />
+                ) : null}
+                {active && item.value === "description" ? (
+                  <CourseDescriptionPanel course={course} />
+                ) : null}
+                {active && item.value === "sources" ? (
+                  <CourseSourcesPanel />
+                ) : null}
+                {active && item.value === "materials" ? (
+                  <CourseMaterialsPanel course={course} />
+                ) : null}
+                {active && item.value === "history" ? (
+                  <CourseHistoryPanel />
+                ) : null}
+              </div>
+            );
+          })
+        : null}
 
       {settingsOpen ? (
         <CourseSettingsDialog
@@ -759,10 +832,6 @@ export function CourseWorkspaceClient({
           runMutation={runMutation}
           onClose={closeSettings}
         />
-      ) : null}
-
-      {materialsOpen ? (
-        <CourseMaterialsDialog course={course} onClose={closeMaterials} />
       ) : null}
     </div>
   );

@@ -1,10 +1,14 @@
 # Текущее состояние ShiDao V2
 
 **Статус:** главный входной документ для разработки
-**Актуально на:** 4 августа 2026 года
+**Актуально на:** 5 августа 2026 года
 **Активная ветка:** `main`
 **Рабочее приложение:** `https://v2.shidao.ru`
 **Последний проверенный application release:** `808510e`
+
+Новая двухуровневая навигация Course → Lesson реализована в текущем source и
+проверяется локально; release `808510e` остаётся последним развёрнутым
+baseline до отдельного deploy/postflight.
 
 `v2.shidao.ru` — active deployed customer-demo contour на production-mode
 build, но публичный production launch и отдельный staging ещё не выполнены.
@@ -44,7 +48,7 @@ Account
 Полные инварианты зафиксированы в
 [`docs/architecture/lesson-workflow-model.md`](./architecture/lesson-workflow-model.md).
 
-## 2. Что работает в deployed demo-контуре
+## 2. Что реализовано в текущем коде
 
 ### Auth и домены
 
@@ -71,11 +75,22 @@ Account
 - Успешная загрузка означает только «прикреплено». Parsing, OCR, embeddings и
   RAG не реализованы.
 - Настройки существующего Course редактируются в модальном окне.
-- «Материалы курса» открывают course-wide список уже прикреплённых файлов.
+- Course открывается без автоматического выбора первого Lesson и содержит
+  вкладки «Уроки / Описание / Источники / Материалы / История».
+- «Материалы» показывают course-wide список уже прикреплённых файлов.
+- «Источники» и «История» честно показывают пустое состояние: parsing/RAG и
+  change history ещё не реализованы.
 
 ### Уроки и компоненты
 
-- Слева отображается список Lessons и кнопка «Добавить урок».
+- На Course → «Уроки» отображается полный список Lessons и кнопка «Добавить
+  урок»; редактор не открывается до явного выбора Lesson.
+- После выбора Lesson backlink содержит название Course, а заголовок имеет
+  формат `Урок {position}. {title}`.
+- Lesson содержит вкладки «План / Экран ученика / Домашнее задание / Материалы
+  / История».
+- Lesson → «Материалы» является read-only проекцией course-wide attachments и
+  не вводит владение файлами на уровне Lesson; «История» пока заглушка.
 - Создание вручную требует только название и создаёт пустую Lesson без AI и
   без списания токенов.
 - Кнопка AI в модальном окне намеренно disabled: OpenRouter ещё не подключён.
@@ -241,26 +256,28 @@ positions, а плотность поддерживают текущие service
 
 ## 7. Карта реализации
 
-| Область                     | Каноническое место                                                                      |
-| --------------------------- | --------------------------------------------------------------------------------------- |
-| Course/Lesson contracts     | `src/modules/course-builder/contracts.ts`                                               |
-| Domain/read models          | `src/modules/course-builder/domain.ts`                                                  |
-| Application service         | `src/modules/course-builder/service.ts`                                                 |
-| Supabase repository         | `src/modules/course-builder/repository.ts`                                              |
-| Storage adapter             | `src/modules/course-builder/storage.ts`                                                 |
-| Component registry          | `src/modules/course-builder/registry/contracts.ts`                                      |
-| MCP tools/server            | `src/modules/course-builder/mcp/`                                                       |
-| Course browser client       | `src/components/course-builder/course-builder-client.ts`                                |
-| New Course flow             | `src/components/course-builder/new-course-form.tsx`                                     |
-| Course workspace            | `src/components/course-builder/course-workspace.tsx`                                    |
-| Lesson editor/Slides        | `src/components/course-builder/lesson-authoring-workspace.tsx`                          |
-| Component editors/renderers | `src/components/course-builder/component-payload-editor.tsx`, `component-renderers.tsx` |
-| Fullscreen preview          | `src/components/course-builder/student-screen-preview.tsx`                              |
-| V2 API routes               | `src/app/api/v2/`                                                                       |
-| Host boundary               | `src/middleware.ts`, `src/lib/deployment-access.ts`                                     |
-| Auth/session                | `src/lib/auth.ts`, `src/lib/server/`                                                    |
-| Current schema              | `supabase/schema/current-schema.sql`                                                    |
-| Forward history             | `supabase/migrations/`                                                                  |
+| Область                     | Каноническое место                                                                                 |
+| --------------------------- | -------------------------------------------------------------------------------------------------- |
+| Course/Lesson contracts     | `src/modules/course-builder/contracts.ts`                                                          |
+| Domain/read models          | `src/modules/course-builder/domain.ts`                                                             |
+| Application service         | `src/modules/course-builder/service.ts`                                                            |
+| Supabase repository         | `src/modules/course-builder/repository.ts`                                                         |
+| Storage adapter             | `src/modules/course-builder/storage.ts`                                                            |
+| Component registry          | `src/modules/course-builder/registry/contracts.ts`                                                 |
+| MCP tools/server            | `src/modules/course-builder/mcp/`                                                                  |
+| Course browser client       | `src/components/course-builder/course-builder-client.ts`                                           |
+| New Course flow             | `src/components/course-builder/new-course-form.tsx`                                                |
+| Course workspace            | `src/components/course-builder/course-workspace.tsx`                                               |
+| Course/Lesson navigation    | `src/components/course-builder/course-workspace-navigation.ts`                                     |
+| Workspace tabs/materials    | `src/components/ui/workspace-tabs.tsx`, `src/components/course-builder/course-materials-panel.tsx` |
+| Lesson editor/Slides        | `src/components/course-builder/lesson-authoring-workspace.tsx`                                     |
+| Component editors/renderers | `src/components/course-builder/component-payload-editor.tsx`, `component-renderers.tsx`            |
+| Fullscreen preview          | `src/components/course-builder/student-screen-preview.tsx`                                         |
+| V2 API routes               | `src/app/api/v2/`                                                                                  |
+| Host boundary               | `src/middleware.ts`, `src/lib/deployment-access.ts`                                                |
+| Auth/session                | `src/lib/auth.ts`, `src/lib/server/`                                                               |
+| Current schema              | `supabase/schema/current-schema.sql`                                                               |
+| Forward history             | `supabase/migrations/`                                                                             |
 
 ## 8. Активные пользовательские маршруты
 
@@ -322,14 +339,12 @@ npm run mcp:course-builder
 `test:browser` допускает локальный skip без browser, а `test:browser:ci`
 является строгим production-mode gate.
 
-Известный check debt на дату snapshot: текущий browser-smoke helper генерирует
-app-session cookie старого формата и поэтому автоматический browser suite не
-доходит до полного пользовательского сценария с актуальной AES-GCM session.
-Это не отменяет историческую ручную/deployed E2E-проверку release `808510e`, но
-автоматический browser test нельзя отмечать pass до обновления helper. Следующий
-browser-sensitive release должен сначала исправить harness и пройти
-`test:browser:ci`. Текущий воспроизводимый результат `npm run test:browser`:
-2 guest сценария pass, 2 authenticated сценария fail.
+Текущий browser-smoke helper использует актуальную AES-GCM app-session с
+Supabase access/refresh tokens. Строгий gate сам собирает production-приложение
+против локального mock Supabase, поэтому build-time `NEXT_PUBLIC_*` и runtime
+конфигурация совпадают и тест не обращается к рабочей базе. Воспроизводимый
+результат `npm run test:browser:ci`: 5 сценариев pass, включая авторизованный
+переход Course → Lesson → backlink обратно к Course.
 
 Repository-wide `npm run format:check` также пока не является зелёным baseline:
 он сообщает десятки ранее существовавших файлов, включая immutable content
@@ -338,10 +353,12 @@ Markdown files проходят targeted Prettier check и `git diff --check`. �
 обязательным global format gate нужен отдельный baseline/ignore change без
 переформатирования archive.
 
-На application release `808510e` подтверждены typecheck, lint, 169 unit/tests,
-production build и ручной deployed-contour E2E: edit Lesson, private-by-default Components,
-два Slides, reorder через границу Slide, fullscreen preview и сохранение после
-reload. Browser console deployed-контура была без warning/error.
+Для текущего локального source подтверждены typecheck, lint, 174 unit tests,
+production build и строгие 5/5 browser smoke. На application release `808510e`
+ранее подтверждены typecheck, lint, 169 unit/tests, production build и ручной
+deployed-contour E2E: edit Lesson, private-by-default Components, два Slides,
+reorder через границу Slide, fullscreen preview и сохранение после reload.
+Browser console deployed-контура была без warning/error.
 
 ## 10. Правило обновления этого документа
 

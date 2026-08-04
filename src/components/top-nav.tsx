@@ -9,22 +9,31 @@ import {
   canRenderSessionNavActions,
   resolveTopNavAction,
 } from "@/lib/navigation-contract";
-import { PRIMARY_NAV_CONFIG, type PrimaryNavConfig } from "@/lib/navigation/primary-nav";
+import {
+  PRIMARY_NAV_CONFIG,
+  type PrimaryNavConfig,
+} from "@/lib/navigation/primary-nav";
 import { SiteHeader, type SiteHeaderNavItem } from "@/components/site-header";
 
-function resolvePrimaryNavId(state: ReturnType<typeof useSessionView>["state"]): PrimaryNavConfig["id"] | null {
+function resolvePrimaryNavId(
+  state: ReturnType<typeof useSessionView>["state"],
+): PrimaryNavConfig["id"] | null {
   if (state.kind === "student") return "student";
-  if (state.kind === "adult" && state.activeProfile === "teacher") return "teacher";
-  if (state.kind === "adult" && state.activeProfile === "parent") return "parent";
+  if (state.kind === "adult" && state.activeProfile === "teacher")
+    return "teacher";
+  if (state.kind === "adult" && state.activeProfile === "parent")
+    return "parent";
   return null;
 }
 
-export function TopNav() {
+export function TopNav({ demoStyle = false }: { demoStyle?: boolean }) {
   const pathname = usePathname();
   const { state, sessionResolved } = useSessionView();
 
   const primaryNavId = resolvePrimaryNavId(state);
-  const primaryNavConfig = primaryNavId ? PRIMARY_NAV_CONFIG[primaryNavId] : null;
+  const primaryNavConfig = primaryNavId
+    ? PRIMARY_NAV_CONFIG[primaryNavId]
+    : null;
 
   const navItems: SiteHeaderNavItem[] = primaryNavConfig
     ? primaryNavConfig.items.map((item) => ({
@@ -45,9 +54,7 @@ export function TopNav() {
           return null;
         }
 
-        return (
-          <SessionNavActions state={state} mobileNavItems={navItems} />
-        );
+        return <SessionNavActions state={state} mobileNavItems={navItems} />;
       case "guest-join":
         return (
           <Link
@@ -86,6 +93,7 @@ export function TopNav() {
     <div className="container relative z-50 pt-4 md:pt-5">
       <SiteHeader
         variant="product"
+        shellClassName={demoStyle ? "site-header-shell-demo" : undefined}
         brandHref={ROUTES.home}
         navAriaLabel={primaryNavConfig?.ariaLabel}
         navItems={navItems}

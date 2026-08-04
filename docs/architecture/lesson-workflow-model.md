@@ -2,7 +2,7 @@
 
 **Статус:** canonical V2 product architecture
 
-**Дата решения:** 4 августа 2026 года
+**Дата решения:** 5 августа 2026 года
 
 **Область:** Course Builder / Lesson / Components / Student Screen / course materials / homework
 
@@ -201,20 +201,35 @@ Teacher-private компоненты и поля не должны присут�
 
 ## Course workspace navigation
 
-В header Course находятся отдельные действия:
+Course и Lesson образуют два последовательных уровня навигации. Открытие
+`/courses/[courseId]` не выбирает первый Lesson автоматически: сначала
+показывается Course header и список уроков.
 
-- **Настройки** — редактирование основных полей Course;
-- **Материалы курса** — сейчас просмотр course-wide attachments; добавление из
-  существующего Course относится к следующему authoring slice.
+Вкладки Course:
 
-Для выбранной Lesson используется переключатель:
+1. **Уроки** — полный ordered list Lesson и создание нового Lesson;
+2. **Описание** — текущие поля Course;
+3. **Источники** — честное пустое состояние до parsing/RAG;
+4. **Материалы** — course-wide attachments;
+5. **История** — честное пустое состояние до появления change history.
 
-1. **План урока**;
+После явного выбора Lesson header показывает backlink с названием Course и
+заголовок `Урок {position}. {lesson.title}`. Вкладки Lesson:
+
+1. **План**;
 2. **Экран ученика**;
-3. **Домашнее задание**.
+3. **Домашнее задание**;
+4. **Материалы**;
+5. **История**.
 
-Список Lesson остаётся course navigation. Course materials не становятся
-четвёртой вкладкой конкретной Lesson.
+Lesson-вкладка **Материалы** является только read-only проекцией того же
+course-wide каталога. Она не создаёт lesson attachment, не копирует StoredFile
+и не означает, что материал назначен конкретному Lesson. **История** пока не
+записывает фиктивные события, а Homework остаётся отдельной честной заглушкой.
+
+Текущий slice не добавляет отдельный Lesson URL или schema: Course/Lesson view
+и вкладки переключаются внутри `/courses/[courseId]`. После reload снова
+открывается Course → **Уроки**.
 
 ## Lesson creation
 

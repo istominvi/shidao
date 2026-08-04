@@ -42,46 +42,92 @@ test("lesson creation stays title-first and no longer asks for a step", () => {
   assert.doesNotMatch(workspace, /Добавить шаг|Новый шаг урока|new-step-title/);
 });
 
-test("course header opens persisted settings and course-wide materials dialogs", () => {
+test("course navigation keeps settings persisted and materials course-wide", () => {
   const workspace = source(workspacePath);
+  const materials = source(
+    "src/components/course-builder/course-materials-panel.tsx",
+  );
 
   assert.match(workspace, />\s*Настройки\s*</);
-  assert.match(workspace, />\s*Материалы курса/);
   assert.match(workspace, /title="Настройки курса"/);
-  assert.match(workspace, /title="Материалы курса"/);
-  assert.match(workspace, /course\.attachments\.map/);
-  assert.match(workspace, /содержимое пока не анализировалось/);
+  assert.match(workspace, /COURSE_WORKSPACE_TABS/);
+  assert.match(workspace, /CourseMaterialsPanel course=\{course\}/);
+  assert.match(materials, /course\.attachments\.map/);
+  assert.match(materials, /прикреплены ко всему курсу/);
+  assert.match(materials, /Урок не получает собственную копию файла/);
+  assert.match(materials, /содержимое пока не анализировалось/);
   assert.match(
     workspace,
     /const saved = await runMutation\("Сохраняем настройки курса…"[\s\S]*?if \(saved\) onSaved\(\)/,
   );
 });
 
-test("selected lesson uses the three requested authoring surfaces", () => {
+test("course and lesson use the requested five-tab hierarchy", () => {
+  const workspace = source(workspacePath);
   const authoring = source(lessonAuthoringPath);
+  const tabs = source("src/components/ui/workspace-tabs.tsx");
+  const navigation = source(
+    "src/components/course-builder/course-workspace-navigation.ts",
+  );
 
-  for (const label of ["План урока", "Экран ученика", "Домашнее задание"]) {
-    assert.match(authoring, new RegExp(label));
+  for (const label of [
+    "Уроки",
+    "Описание",
+    "Источники",
+    "Материалы",
+    "История",
+  ]) {
+    assert.match(navigation, new RegExp(`label: "${label}"`));
   }
-  assert.match(authoring, /ariaLabel="Раздел выбранного урока"/);
+  for (const label of [
+    "План",
+    "Экран ученика",
+    "Домашнее задание",
+    "Материалы",
+    "История",
+  ]) {
+    assert.match(navigation, new RegExp(`label: "${label}"`));
+  }
+  assert.match(workspace, /ariaLabel="Разделы курса"/);
+  assert.match(authoring, /ariaLabel="Разделы урока"/);
+  assert.match(tabs, /role="tablist"/);
+  assert.match(tabs, /aria-controls=\{workspaceTabPanelId/);
+  assert.match(tabs, /tabIndex=\{active \? 0 : -1\}/);
+  assert.match(workspace, /role="tabpanel"/);
+  assert.match(workspace, /aria-labelledby=\{workspaceTabId/);
+  assert.match(authoring, /role="tabpanel"/);
+  assert.match(authoring, /aria-labelledby=\{workspaceTabId/);
   assert.match(authoring, />\s*Компонент\s*</);
   assert.match(authoring, /Редактор домашнего задания будет/);
+  assert.match(
+    authoring,
+    /CourseMaterialsPanel course=\{course\} context="lesson"/,
+  );
+  assert.match(authoring, /История урока пока пуста/);
   assert.doesNotMatch(authoring, /\/api\/teacher\//);
 });
 
-test("lesson metadata is a compact system card edited in a modal", () => {
+test("lesson metadata moves into a transparent page header and remains editable", () => {
+  const workspace = source(workspacePath);
   const authoring = source(lessonAuthoringPath);
-  const lessonCard =
-    /<section className="group relative rounded-3xl border border-violet-200[\s\S]*?<\/section>/.exec(
-      authoring,
-    )?.[0];
+  const styles = source("src/app/globals.css");
 
-  assert.ok(lessonCard, "lesson system card must remain discoverable");
-  assert.match(lessonCard, /aria-label=\{`Редактировать урок/);
-  assert.match(lessonCard, /aria-label=\{`Удалить урок/);
-  assert.match(lessonCard, /lesson\.title/);
-  assert.match(lessonCard, /lesson\.summary/);
-  assert.doesNotMatch(lessonCard, /<input|<textarea|ArrowUp|ArrowDown|Eye/);
+  assert.match(authoring, /<AppPageHeader/);
+  assert.match(authoring, /backLabel=\{course\.title\}/);
+  assert.match(authoring, /formatLessonWorkspaceTitle/);
+  assert.match(authoring, /onBack=\{onBackToCourse\}/);
+  assert.match(authoring, /headingRef=\{lessonHeadingRef\}/);
+  assert.match(authoring, /closest\("header"\)\?\.scrollIntoView/);
+  assert.match(authoring, /focus\(\{ preventScroll: true \}\)/);
+  assert.match(workspace, /lessonRowRefs\.current\.get\(focusLessonId\)/);
+  assert.doesNotMatch(
+    authoring,
+    /rounded-3xl border border-violet-200 bg-violet-50\/45/,
+  );
+  assert.match(
+    styles,
+    /\.workspace-page-header\s*\{[\s\S]*?background: transparent;[\s\S]*?border: 0;[\s\S]*?border-radius: 0;[\s\S]*?box-shadow: none;/,
+  );
 
   assert.match(authoring, /title="Редактировать урок"/);
   assert.match(

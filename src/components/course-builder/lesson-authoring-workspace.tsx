@@ -7,15 +7,17 @@ import {
   ArrowLeft,
   ArrowRight,
   ArrowUp,
-  BookOpenCheck,
   Check,
   ClipboardCheck,
   Eye,
   EyeOff,
   FileText,
+  FolderOpen,
   Gamepad2,
+  History,
   Image as ImageIcon,
   Layers3,
+  ListChecks,
   MonitorPlay,
   Pencil,
   Plus,
@@ -23,6 +25,13 @@ import {
   Trash2,
   Type,
 } from "lucide-react";
+import { AppPageHeader } from "@/components/app/page-header";
+import { CourseMaterialsPanel } from "@/components/course-builder/course-materials-panel";
+import {
+  LESSON_WORKSPACE_TABS,
+  formatLessonWorkspaceTitle,
+  type LessonAuthoringSurface,
+} from "@/components/course-builder/course-workspace-navigation";
 import { ComponentPayloadEditor } from "@/components/course-builder/component-payload-editor";
 import {
   CourseComponentRenderer,
@@ -32,7 +41,11 @@ import { courseBuilderRequest } from "@/components/course-builder/course-builder
 import { getStudentSlidePlacementOptions } from "@/components/course-builder/student-slide-placement";
 import { Button, productButtonClassName } from "@/components/ui/button";
 import { DialogShell } from "@/components/ui/dialog-shell";
-import { SegmentedControl } from "@/components/ui/segmented-control";
+import {
+  WorkspaceTabs,
+  workspaceTabId,
+  workspaceTabPanelId,
+} from "@/components/ui/workspace-tabs";
 import { toCourseStudentPreviewRoute } from "@/lib/auth";
 import type {
   CourseAsset,
@@ -52,26 +65,18 @@ export type CourseBuilderMutationRunner = (
   action: () => Promise<unknown>,
 ) => Promise<boolean>;
 
-export type LessonAuthoringSurface = "plan" | "student" | "homework";
+const LESSON_WORKSPACE_TABS_ID = "lesson-workspace";
 
 type LessonAuthoringWorkspaceProps = {
   course: CourseWorkspace;
   lesson: CourseLesson;
   surface: LessonAuthoringSurface;
   onSurfaceChange: (surface: LessonAuthoringSurface) => void;
+  onBackToCourse: () => void;
+  status?: React.ReactNode;
   disabled: boolean;
   runMutation: CourseBuilderMutationRunner;
 };
-
-const SURFACE_ITEMS = [
-  { value: "plan", label: "План урока", icon: BookOpenCheck },
-  { value: "student", label: "Экран ученика", icon: MonitorPlay },
-  { value: "homework", label: "Домашнее задание", icon: ClipboardCheck },
-] satisfies Array<{
-  value: LessonAuthoringSurface;
-  label: string;
-  icon: typeof BookOpenCheck;
-}>;
 
 const CATEGORY_ITEMS = [
   {
@@ -187,7 +192,7 @@ function ComponentCard({
     [component.id, lessonComponents, studentSlides],
   );
   const hoverActionClass =
-    "h-9 w-9 border border-neutral-200 bg-white/95 p-0 shadow-sm transition-opacity md:!opacity-0 md:group-hover:!opacity-100 md:group-focus-within:!opacity-100";
+    "component-card-action transition-opacity md:!opacity-0 md:group-hover:!opacity-100 md:group-focus-within:!opacity-100";
 
   useEffect(() => {
     if (!initiallyEditing || initialEditorConsumedRef.current) return;
@@ -250,7 +255,7 @@ function ComponentCard({
   }
 
   return (
-    <article className="group relative rounded-3xl border border-neutral-200 bg-white p-4 pt-16 shadow-sm transition hover:border-neutral-300 hover:shadow-md md:p-5 md:pt-5">
+    <article className="group relative rounded-[1.25rem] border border-neutral-200 bg-white p-4 pt-16 shadow-sm transition hover:border-neutral-300 hover:shadow-md md:p-5 md:pt-5">
       <div className="absolute right-3 top-3 z-10 flex max-w-[calc(100%-1.5rem)] flex-wrap justify-end gap-1">
         <Button
           variant="ghost"
@@ -300,7 +305,7 @@ function ComponentCard({
         </Button>
         <Button
           variant="ghost"
-          className={`${hoverActionClass} text-rose-700`}
+          className={`${hoverActionClass} component-card-action-danger`}
           disabled={disabled}
           aria-label={`Удалить «${definition.title}»`}
           title="Удалить"
@@ -318,10 +323,10 @@ function ComponentCard({
           <Button
             ref={studentScreenTriggerRef}
             variant="ghost"
-            className={`h-9 w-9 border border-neutral-200 bg-white/95 p-0 shadow-sm transition ${
+            className={`component-card-visibility-action transition ${
               learnerVisible
-                ? "border-sky-200 bg-sky-100 text-sky-800 hover:bg-sky-200"
-                : "text-neutral-500 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100"
+                ? "component-card-visibility-action-active border-sky-200 bg-sky-100 text-sky-800 hover:bg-sky-200"
+                : "component-card-visibility-action-inactive text-neutral-500 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100"
             }`}
             disabled={disabled}
             aria-haspopup="dialog"
@@ -667,7 +672,6 @@ function LessonPlan({
   runMutation: CourseBuilderMutationRunner;
   onEditingComponentConsumed: () => void;
 }) {
-  const [lessonEditorOpen, setLessonEditorOpen] = useState(false);
   const assetMap = useMemo(
     () => assetMapFor(course.attachments),
     [course.attachments],
@@ -675,100 +679,39 @@ function LessonPlan({
   const components = lesson.components;
 
   return (
-    <div className="grid gap-5">
-      <section className="group relative rounded-3xl border border-violet-200 bg-violet-50/45 p-4 pt-16 shadow-sm transition hover:border-violet-300 hover:shadow-md md:p-5 md:pt-5">
-        <div className="absolute right-3 top-3 z-10 flex gap-1">
-          <Button
-            variant="ghost"
-            className="h-9 w-9 border border-neutral-200 bg-white/95 p-0 text-neutral-700 shadow-sm transition-opacity md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100"
-            disabled={disabled}
-            aria-label={`Редактировать урок «${lesson.title}»`}
-            title="Редактировать урок"
-            onClick={() => setLessonEditorOpen(true)}
-          >
-            <Pencil className="h-4 w-4" aria-hidden="true" />
-          </Button>
-          <Button
-            variant="ghost"
-            className="h-9 w-9 border border-neutral-200 bg-white/95 p-0 text-rose-700 shadow-sm transition-opacity md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100"
-            disabled={disabled}
-            aria-label={`Удалить урок «${lesson.title}»`}
-            title="Удалить урок"
-            onClick={() => {
-              if (
-                !window.confirm(
-                  `Удалить урок «${lesson.title}» со всем содержимым?`,
-                )
-              )
-                return;
-              void runMutation("Удаляем урок…", () =>
-                jsonRequest(`/api/v2/lessons/${lesson.id}`, "DELETE"),
-              );
-            }}
-          >
-            <Trash2 className="h-4 w-4" aria-hidden="true" />
-          </Button>
-        </div>
-
-        <div className="md:pr-24">
-          <p className="text-xs font-bold uppercase tracking-[0.14em] text-violet-700">
-            Урок {lesson.position}
-          </p>
-          <h2 className="mt-1 text-2xl font-black text-neutral-950">
-            {lesson.title}
-          </h2>
-          {lesson.summary ? (
-            <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-neutral-600">
-              {lesson.summary}
-            </p>
-          ) : null}
-        </div>
-      </section>
-
-      {lessonEditorOpen ? (
-        <LessonEditorDialog
-          key={`${lesson.id}:${lesson.updatedAt}`}
-          lesson={lesson}
+    <section className="grid gap-4" aria-label="Компоненты плана урока">
+      {components.map((component, index) => (
+        <ComponentCard
+          key={component.id}
+          component={component}
+          displayPosition={index + 1}
+          indexInLesson={index}
+          componentCount={components.length}
+          lessonComponents={components}
+          studentSlides={lesson.studentSlides}
+          assets={course.attachments}
+          assetMap={assetMap}
+          initiallyEditing={component.id === editingComponentId}
           disabled={disabled}
           runMutation={runMutation}
-          onClose={() => setLessonEditorOpen(false)}
+          onInitialEditorConsumed={onEditingComponentConsumed}
         />
-      ) : null}
-
-      <section className="grid gap-4" aria-label="Компоненты плана урока">
-        {components.map((component, index) => (
-          <ComponentCard
-            key={component.id}
-            component={component}
-            displayPosition={index + 1}
-            indexInLesson={index}
-            componentCount={components.length}
-            lessonComponents={components}
-            studentSlides={lesson.studentSlides}
-            assets={course.attachments}
-            assetMap={assetMap}
-            initiallyEditing={component.id === editingComponentId}
-            disabled={disabled}
-            runMutation={runMutation}
-            onInitialEditorConsumed={onEditingComponentConsumed}
+      ))}
+      {components.length === 0 ? (
+        <div className="rounded-[1.25rem] border border-dashed border-neutral-300 bg-white/70 px-6 py-14 text-center">
+          <Layers3
+            className="mx-auto h-7 w-7 text-neutral-400"
+            aria-hidden="true"
           />
-        ))}
-        {components.length === 0 ? (
-          <div className="rounded-3xl border border-dashed border-neutral-300 bg-white/70 px-6 py-14 text-center">
-            <Layers3
-              className="mx-auto h-7 w-7 text-neutral-400"
-              aria-hidden="true"
-            />
-            <h3 className="mt-3 font-black text-neutral-950">
-              План урока пока пуст
-            </h3>
-            <p className="mt-2 text-sm leading-6 text-neutral-600">
-              Нажмите «Компонент» выше и выберите первый элемент плана.
-            </p>
-          </div>
-        ) : null}
-      </section>
-    </div>
+          <h3 className="mt-3 font-black text-neutral-950">
+            План урока пока пуст
+          </h3>
+          <p className="mt-2 text-sm leading-6 text-neutral-600">
+            Нажмите «Компонент» выше и выберите первый элемент плана.
+          </p>
+        </div>
+      ) : null}
+    </section>
   );
 }
 
@@ -807,7 +750,7 @@ function StudentLessonSurface({
   }, [lesson.id]);
 
   return (
-    <section className="overflow-hidden rounded-[2rem] border border-sky-100 bg-[radial-gradient(circle_at_top_left,#e0f2fe_0%,#f5f3ff_42%,#ffffff_80%)] shadow-sm">
+    <section className="overflow-hidden rounded-[1.25rem] border border-sky-100 bg-[radial-gradient(circle_at_top_left,#e0f2fe_0%,#f5f3ff_42%,#ffffff_80%)] shadow-sm">
       <header className="flex flex-wrap items-start justify-between gap-4 border-b border-white/80 bg-white/70 p-5 backdrop-blur md:p-7">
         <div>
           <p className="text-xs font-bold uppercase tracking-[0.16em] text-sky-700">
@@ -839,7 +782,7 @@ function StudentLessonSurface({
             ))}
           </div>
         ) : (
-          <div className="grid place-items-center rounded-3xl border border-dashed border-neutral-300 bg-white/70 px-6 py-12 text-center">
+          <div className="grid place-items-center rounded-[1.25rem] border border-dashed border-neutral-300 bg-white/70 px-6 py-12 text-center">
             <div>
               <EyeOff
                 className="mx-auto h-7 w-7 text-neutral-400"
@@ -898,7 +841,7 @@ function StudentLessonSurface({
 
 function HomeworkSurface({ lesson }: { lesson: CourseLesson }) {
   return (
-    <section className="rounded-3xl border border-neutral-200 bg-white/90 px-6 py-14 text-center shadow-sm">
+    <section className="rounded-[1.25rem] border border-neutral-200 bg-white/90 px-6 py-14 text-center shadow-sm">
       <ClipboardCheck
         className="mx-auto h-8 w-8 text-violet-500"
         aria-hidden="true"
@@ -918,19 +861,50 @@ function HomeworkSurface({ lesson }: { lesson: CourseLesson }) {
   );
 }
 
+function LessonHistorySurface({ lesson }: { lesson: CourseLesson }) {
+  return (
+    <section className="workspace-surface workspace-empty-panel">
+      <span className="workspace-empty-icon workspace-empty-icon-pink">
+        <History aria-hidden="true" />
+      </span>
+      <p className="workspace-eyebrow">Урок {lesson.position}</p>
+      <h2>История урока пока пуста</h2>
+      <p>
+        Журнал изменений и проведений будет подключён отдельным срезом. Сейчас
+        здесь нет фиктивных событий или локальной истории.
+      </p>
+    </section>
+  );
+}
+
 export function LessonAuthoringWorkspace({
   course,
   lesson,
   surface,
   onSurfaceChange,
+  onBackToCourse,
+  status,
   disabled,
   runMutation,
 }: LessonAuthoringWorkspaceProps) {
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [lessonEditorOpen, setLessonEditorOpen] = useState(false);
   const [editingComponentId, setEditingComponentId] = useState<string | null>(
     null,
   );
   const pickerTriggerRef = useRef<HTMLButtonElement>(null);
+  const lessonSettingsTriggerRef = useRef<HTMLButtonElement>(null);
+  const lessonHeadingRef = useRef<HTMLHeadingElement>(null);
+  const lessonTabs = LESSON_WORKSPACE_TABS.map((item) => ({
+    ...item,
+    icon: {
+      plan: ListChecks,
+      student: MonitorPlay,
+      homework: ClipboardCheck,
+      materials: FolderOpen,
+      history: History,
+    }[item.value],
+  }));
 
   function closePicker() {
     if (disabled) return;
@@ -938,44 +912,155 @@ export function LessonAuthoringWorkspace({
     window.requestAnimationFrame(() => pickerTriggerRef.current?.focus());
   }
 
+  function closeLessonEditor() {
+    if (disabled) return;
+    setLessonEditorOpen(false);
+    window.requestAnimationFrame(() =>
+      lessonSettingsTriggerRef.current?.focus(),
+    );
+  }
+
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => {
+      const heading = lessonHeadingRef.current;
+      heading?.closest("header")?.scrollIntoView({ block: "start" });
+      heading?.focus({ preventScroll: true });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, []);
+
   return (
     <div className="min-w-0">
-      <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-neutral-200 bg-white/80 p-2 shadow-sm">
-        <Button
-          ref={pickerTriggerRef}
-          type="button"
-          disabled={disabled}
-          onClick={() => {
-            onSurfaceChange("plan");
-            setPickerOpen(true);
-          }}
-        >
-          <Plus className="h-4 w-4" aria-hidden="true" />
-          Компонент
-        </Button>
-        <SegmentedControl
-          ariaLabel="Раздел выбранного урока"
-          value={surface}
-          onChange={onSurfaceChange}
-          items={SURFACE_ITEMS}
-          className="max-w-full overflow-x-auto"
-        />
-      </div>
+      <AppPageHeader
+        className="course-builder-page-header workspace-page-header"
+        headingRef={lessonHeadingRef}
+        backLabel={course.title}
+        onBack={onBackToCourse}
+        title={formatLessonWorkspaceTitle(lesson.position, lesson.title)}
+        description={
+          lesson.summary ||
+          `Компонентов: ${lesson.components.length} · слайдов экрана ученика: ${lesson.studentSlides.length}`
+        }
+        actions={
+          <>
+            <Button
+              ref={lessonSettingsTriggerRef}
+              variant="secondary"
+              disabled={disabled}
+              onClick={() => setLessonEditorOpen(true)}
+            >
+              <Pencil className="h-4 w-4" aria-hidden="true" />
+              Настройки урока
+            </Button>
+            <Button
+              variant="ghost"
+              className="product-btn-danger"
+              disabled={disabled}
+              onClick={() => {
+                if (
+                  !window.confirm(
+                    `Удалить урок «${lesson.title}» со всем содержимым?`,
+                  )
+                ) {
+                  return;
+                }
+                void (async () => {
+                  const deleted = await runMutation("Удаляем урок…", () =>
+                    jsonRequest(`/api/v2/lessons/${lesson.id}`, "DELETE"),
+                  );
+                  if (deleted) onBackToCourse();
+                })();
+              }}
+            >
+              <Trash2 className="h-4 w-4" aria-hidden="true" />
+              Удалить
+            </Button>
+          </>
+        }
+      />
 
-      {surface === "plan" ? (
-        <LessonPlan
-          course={course}
+      <WorkspaceTabs
+        idBase={LESSON_WORKSPACE_TABS_ID}
+        ariaLabel="Разделы урока"
+        value={surface}
+        onChange={onSurfaceChange}
+        items={lessonTabs}
+      />
+
+      {status ? <div className="mt-4">{status}</div> : null}
+
+      {LESSON_WORKSPACE_TABS.map((item) => {
+        const active = item.value === surface;
+
+        return (
+          <div
+            key={item.value}
+            className="mt-4"
+            id={workspaceTabPanelId(LESSON_WORKSPACE_TABS_ID, item.value)}
+            role="tabpanel"
+            aria-labelledby={workspaceTabId(
+              LESSON_WORKSPACE_TABS_ID,
+              item.value,
+            )}
+            hidden={!active}
+            tabIndex={0}
+          >
+            {active && item.value === "plan" ? (
+              <section className="workspace-surface">
+                <div className="workspace-panel-heading">
+                  <div>
+                    <p className="workspace-eyebrow">Структура урока</p>
+                    <h2>План</h2>
+                  </div>
+                  <Button
+                    ref={pickerTriggerRef}
+                    type="button"
+                    disabled={disabled}
+                    onClick={() => setPickerOpen(true)}
+                  >
+                    <Plus className="h-4 w-4" aria-hidden="true" />
+                    Компонент
+                  </Button>
+                </div>
+                <div className="mt-4">
+                  <LessonPlan
+                    course={course}
+                    lesson={lesson}
+                    editingComponentId={editingComponentId}
+                    disabled={disabled}
+                    runMutation={runMutation}
+                    onEditingComponentConsumed={() =>
+                      setEditingComponentId(null)
+                    }
+                  />
+                </div>
+              </section>
+            ) : null}
+            {active && item.value === "student" ? (
+              <StudentLessonSurface course={course} lesson={lesson} />
+            ) : null}
+            {active && item.value === "homework" ? (
+              <HomeworkSurface lesson={lesson} />
+            ) : null}
+            {active && item.value === "materials" ? (
+              <CourseMaterialsPanel course={course} context="lesson" />
+            ) : null}
+            {active && item.value === "history" ? (
+              <LessonHistorySurface lesson={lesson} />
+            ) : null}
+          </div>
+        );
+      })}
+
+      {lessonEditorOpen ? (
+        <LessonEditorDialog
+          key={`${lesson.id}:${lesson.updatedAt}`}
           lesson={lesson}
-          editingComponentId={editingComponentId}
           disabled={disabled}
           runMutation={runMutation}
-          onEditingComponentConsumed={() => setEditingComponentId(null)}
+          onClose={closeLessonEditor}
         />
       ) : null}
-      {surface === "student" ? (
-        <StudentLessonSurface course={course} lesson={lesson} />
-      ) : null}
-      {surface === "homework" ? <HomeworkSurface lesson={lesson} /> : null}
 
       {pickerOpen ? (
         <ComponentPickerDialog

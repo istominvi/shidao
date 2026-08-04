@@ -1,7 +1,7 @@
 # ShiDao V2 domain model
 
 **Статус:** current implemented domain
-**Актуально на:** 4 августа 2026 года
+**Актуально на:** 5 августа 2026 года
 
 ## Active product hierarchy
 
@@ -45,8 +45,9 @@ under concurrency is a documented next integrity hardening task.
   components are teacher-only until explicitly assigned.
 - **Домашнее задание** is a separate Lesson surface and is not represented by a
   component group. Persisted homework is a later slice.
-- **Материалы курса** is a Course-scoped attachment collection, not a Lesson
-  tab or global reusable library.
+- **Материалы курса** is a Course-scoped attachment collection, not a global
+  reusable library. Lesson-вкладка «Материалы» показывает read-only проекцию
+  этой же коллекции и не вводит lesson-owned attachment relation.
 
 The canonical details and invariants live in
 `docs/architecture/lesson-workflow-model.md`.

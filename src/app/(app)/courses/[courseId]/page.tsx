@@ -9,10 +9,10 @@ export default async function CourseWorkspacePage({
   const { courseId } = await params;
 
   return (
-    <main className="pb-12">
+    <main className="course-demo-shell pb-12">
       <div className="landing-noise" aria-hidden="true" />
-      <TopNav />
-      <CourseWorkspaceClient courseId={courseId} />
+      <TopNav demoStyle />
+      <CourseWorkspaceClient key={courseId} courseId={courseId} />
     </main>
   );
 }

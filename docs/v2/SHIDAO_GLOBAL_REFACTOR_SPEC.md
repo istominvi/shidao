@@ -313,6 +313,9 @@ domain.
   ошибочно входит в V2 Origin allowlist; strict cross-subdomain protection —
   P0 debt.
 - V2 не индексируется.
+- Browser-smoke использует current AES-GCM app-session и проходит строгий
+  production-mode gate на isolated mock Supabase, включая Course → Lesson →
+  backlink.
 - Legacy exception: `user_preference` и `user_security` пока не имеют RLS и
   сохраняют broad grants; это зафиксированный P0 debt, а не образец V2 ACL.
 
@@ -330,7 +333,6 @@ domain.
 - заменить proxy-dependent host routing на explicit production host allowlist;
 - привязать CSRF allowlist к actual V2 app host и отклонять landing/subdomain
   Origins для unsafe requests;
-- обновить browser-smoke helper под current app-session contract;
 - доставить compatible forward migration с Auth regression/postflight.
 
 Это tightening существующей authorization boundary, а не redesign
