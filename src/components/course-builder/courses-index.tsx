@@ -83,8 +83,8 @@ export function CoursesIndex() {
           Здесь появятся ваши курсы
         </h2>
         <p className="mx-auto mt-2 max-w-xl text-sm leading-relaxed text-neutral-600">
-          Создайте первый реальный draft: он сохранится в базе, а вложения — в
-          приватном Storage.
+          Создайте первый реальный черновик: он сохранится в базе, а вложения —
+          в закрытом файловом хранилище.
         </p>
         <Link
           href={ROUTES.coursesNew}
@@ -128,7 +128,7 @@ export function CoursesIndex() {
             {course.assembledAt ? (
               <Chip tone="emerald">Черновик собран</Chip>
             ) : (
-              <Chip tone="sky">Пустой Course</Chip>
+              <Chip tone="sky">Пустой курс</Chip>
             )}
           </div>
           <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-neutral-100 pt-4">

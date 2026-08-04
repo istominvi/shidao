@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { StudentScreenPreview } from "@/components/course-builder/student-screen-preview";
 
 export const metadata: Metadata = {
-  title: "Student Screen preview",
+  title: "Предпросмотр экрана ученика",
   robots: { index: false, follow: false },
 };
 

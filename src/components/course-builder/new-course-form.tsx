@@ -268,7 +268,7 @@ export function NewCourseForm() {
         await assembleCourseDraft(courseId);
       }
 
-      setProgressMessage("Курс сохранён. Открываем workspace…");
+      setProgressMessage("Курс сохранён. Открываем редактор…");
       router.push(toCourseRoute(courseId));
       router.refresh();
     } catch (error) {
@@ -292,7 +292,7 @@ export function NewCourseForm() {
           <p>{errorMessage}</p>
           {createdCourseId ? (
             <p className="mt-2">
-              Сам Course уже сохранён. Вторая копия не будет создана.{" "}
+              Сам курс уже сохранён. Вторая копия не будет создана.{" "}
               <Link
                 className="font-semibold underline underline-offset-2"
                 href={toCourseRoute(createdCourseId)}
@@ -306,7 +306,7 @@ export function NewCourseForm() {
 
       <SurfaceCard
         title="Основа курса"
-        description="Эти данные сохраняются в Course и используются детерминированным сборщиком черновика."
+        description="Эти данные сохраняются в курсе и используются детерминированным сборщиком черновика."
       >
         <div className="grid gap-4 md:grid-cols-2">
           <FormField>
@@ -413,8 +413,8 @@ export function NewCourseForm() {
               placeholder="Необязательно: темп, формат заданий, методические акценты"
             />
             <FieldHint>
-              Это приватный контекст преподавателя: он не показывается на
-              Student Screen.
+              Это приватный контекст преподавателя: он не показывается на экране
+              ученика.
             </FieldHint>
           </FormField>
         </div>
@@ -422,11 +422,11 @@ export function NewCourseForm() {
 
       <SurfaceCard
         title="Файлы и изображения"
-        description="Материалы сохраняются в приватном Storage и связываются с курсом."
+        description="Материалы сохраняются в закрытом файловом хранилище и связываются с курсом."
       >
         <Alert tone="info" title="Без автоматического анализа">
           Файл будет прикреплён к курсу, но не проанализирован: OCR, parsing и
-          RAG не входят в этот milestone.
+          RAG не входят в этот этап.
         </Alert>
 
         <label className="mt-4 flex cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-neutral-300 bg-neutral-50/80 px-5 py-7 text-center transition hover:border-neutral-500 hover:bg-white">
@@ -497,7 +497,7 @@ export function NewCourseForm() {
           </ul>
         ) : (
           <p className="mt-3 text-sm text-neutral-500">
-            Вложения необязательны: пустой draft можно создать без них.
+            Вложения необязательны: пустой черновик можно создать без них.
           </p>
         )}
       </SurfaceCard>

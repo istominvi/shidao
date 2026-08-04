@@ -312,7 +312,7 @@ function PayloadFields({
                 onChange({ ...payload, autoplay: event.target.checked })
               }
             />
-            Автоматически переключать (на preview пока ручное управление)
+            Автоматически переключать (в предпросмотре пока ручное управление)
           </label>
         </div>
       );

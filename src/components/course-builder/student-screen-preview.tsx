@@ -33,7 +33,7 @@ export function StudentScreenPreview({ courseId }: StudentScreenPreviewProps) {
         setError(
           caught instanceof Error
             ? caught.message
-            : "Не удалось открыть Student Screen preview.",
+            : "Не удалось открыть предпросмотр экрана ученика.",
         );
       });
     return () => {
@@ -75,7 +75,7 @@ export function StudentScreenPreview({ courseId }: StudentScreenPreviewProps) {
             href={toCourseRoute(courseId)}
             className={`${productButtonClassName("secondary")} mt-4`}
           >
-            Вернуться в Course workspace
+            Вернуться в редактор курса
           </Link>
         </div>
       </main>
@@ -87,7 +87,7 @@ export function StudentScreenPreview({ courseId }: StudentScreenPreviewProps) {
       <main className="grid min-h-screen place-items-center bg-neutral-100 px-4">
         <div className="flex items-center gap-3 rounded-3xl bg-white px-6 py-5 text-sm font-semibold text-neutral-700 shadow-sm">
           <LoaderCircle className="h-5 w-5 animate-spin" aria-hidden="true" />
-          Загружаем Student Screen из сохранённого Course…
+          Загружаем экран ученика из сохранённого курса…
         </div>
       </main>
     );
@@ -98,19 +98,19 @@ export function StudentScreenPreview({ courseId }: StudentScreenPreviewProps) {
       <main className="grid min-h-screen place-items-center bg-neutral-100 px-4">
         <div className="w-full max-w-3xl rounded-[2rem] border border-neutral-200 bg-white p-8 text-center shadow-sm">
           <p className="text-xs font-bold uppercase tracking-[0.16em] text-sky-700">
-            Student Screen preview
+            Предпросмотр экрана ученика
           </p>
           <h1 className="mt-3 text-2xl font-black text-neutral-950">
-            В курсе пока нет Lesson Steps
+            В курсе пока нет шагов урока
           </h1>
           <p className="mt-2 text-sm leading-6 text-neutral-600">
-            Вернитесь в workspace и добавьте Lesson и Lesson Step.
+            Вернитесь в редактор курса и добавьте урок, а затем шаг.
           </p>
           <Link
             href={toCourseRoute(course.id)}
             className={`${productButtonClassName("primary")} mt-5`}
           >
-            Вернуться в workspace
+            Вернуться в редактор курса
           </Link>
         </div>
       </main>
@@ -130,13 +130,13 @@ export function StudentScreenPreview({ courseId }: StudentScreenPreviewProps) {
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.16em] text-sky-700">
-                Student Screen preview · режим проверки
+                Экран ученика · режим предпросмотра
               </p>
               <h1 className="mt-1 text-xl font-black text-neutral-950 md:text-2xl">
                 {course.title}
               </h1>
               <p className="mt-1 text-sm text-neutral-600">
-                Lesson {active.lesson.position}: {active.lesson.title}
+                Урок {active.lesson.position}: {active.lesson.title}
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -151,7 +151,7 @@ export function StudentScreenPreview({ courseId }: StudentScreenPreviewProps) {
                 href={toCourseRoute(course.id)}
                 className={productButtonClassName("secondary")}
               >
-                Вернуться в workspace
+                Вернуться в редактор курса
               </Link>
             </div>
           </div>
@@ -159,7 +159,7 @@ export function StudentScreenPreview({ courseId }: StudentScreenPreviewProps) {
 
         <nav
           className="flex gap-2 overflow-x-auto rounded-3xl border border-white/80 bg-white/75 p-3 shadow-sm backdrop-blur"
-          aria-label="Шаги Student Screen preview"
+          aria-label="Шаги в предпросмотре экрана ученика"
         >
           {slides.map(({ lesson, step }, index) => (
             <button
@@ -174,7 +174,7 @@ export function StudentScreenPreview({ courseId }: StudentScreenPreviewProps) {
               }`}
             >
               <span className="block text-[0.68rem] font-bold uppercase tracking-[0.12em] opacity-70">
-                Lesson {lesson.position} · Шаг {step.position}
+                Урок {lesson.position} · Шаг {step.position}
               </span>
               <span className="mt-1 block text-sm font-bold">{step.title}</span>
             </button>
@@ -207,7 +207,7 @@ export function StudentScreenPreview({ courseId }: StudentScreenPreviewProps) {
             ))}
             {learnerComponents.length === 0 ? (
               <p className="rounded-2xl border border-dashed border-neutral-300 bg-neutral-50 px-5 py-10 text-center text-sm text-neutral-600">
-                На этом шаге пока нет learner-visible компонентов.
+                На этом шаге пока нет компонентов для ученика.
               </p>
             ) : null}
           </div>
@@ -223,8 +223,8 @@ export function StudentScreenPreview({ courseId }: StudentScreenPreviewProps) {
             Предыдущий шаг
           </Button>
           <p className="text-center text-xs leading-5 text-neutral-500">
-            Свободная навигация доступна только в preview/review; в live-уроке
-            шагом управляет преподаватель.
+            Свободная навигация доступна только при предпросмотре и повторе; во
+            время урока шагом управляет преподаватель.
           </p>
           <Button
             variant="secondary"

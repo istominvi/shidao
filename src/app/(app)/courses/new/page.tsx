@@ -10,9 +10,9 @@ export default function NewCoursePage() {
       <TopNav />
       <div className="container app-page-container space-y-6">
         <AppPageHeader
-          eyebrow="Course builder"
+          eyebrow="Конструктор курса"
           title="Новый курс"
-          description="Сохраните пустой Course или сразу соберите первый осмысленный Lesson с упорядоченными Lesson Steps и компонентами."
+          description="Сохраните пустой курс или сразу соберите первый осмысленный урок с упорядоченными шагами и компонентами."
           backHref={ROUTES.courses}
           backLabel="К курсам"
         />

@@ -21,8 +21,32 @@ test("workspace edits persisted entities through the v2 application API", () => 
     assert.match(workspace, new RegExp(endpoint.replaceAll("/", "\\/")));
   }
   assert.match(workspace, /componentDefinitions\.map/);
-  assert.match(workspace, /Student Screen preview/);
+  assert.match(workspace, /Предпросмотр экрана ученика/);
   assert.doesNotMatch(workspace, /localStorage|fixture/i);
+});
+
+test("lesson creation opens a persisted manual-or-AI dialog", () => {
+  const workspace = source(
+    "src/components/course-builder/course-workspace.tsx",
+  );
+
+  assert.match(workspace, /<DialogShell[\s\S]*?title="Новый урок"/);
+  assert.match(workspace, />\s*Добавить урок\s*</);
+  assert.match(
+    workspace,
+    /id="new-lesson-title"[\s\S]*?required[\s\S]*?maxLength=\{180\}/,
+  );
+  assert.match(workspace, /не отдельный компонент/);
+  assert.match(workspace, /без ИИ и без списания токенов/);
+  assert.match(
+    workspace,
+    /<Button[\s\S]*?disabled[\s\S]*?>\s*Заполнить с помощью ИИ\s*<\/Button>/,
+  );
+  assert.match(workspace, /OpenRouter/);
+  assert.match(
+    workspace,
+    /const saved = await runMutation\("Создаём пустой урок…"[\s\S]*?createdLessonId = response\.lesson\.id;[\s\S]*?if \(!saved \|\| !createdLessonId\)[\s\S]*?onSelect\(createdLessonId\);[\s\S]*?setDialogOpen\(false\);/,
+  );
 });
 
 test("component editor closes only after a successful persisted mutation", () => {
@@ -41,7 +65,7 @@ test("component editor closes only after a successful persisted mutation", () =>
   );
 });
 
-test("new Lesson Step title has an explicit accessible label", () => {
+test("new lesson step title has an explicit accessible label", () => {
   const workspace = source(
     "src/components/course-builder/course-workspace.tsx",
   );
@@ -52,7 +76,7 @@ test("new Lesson Step title has an explicit accessible label", () => {
   );
 });
 
-test("Student Screen preview keeps canonical step titles and filters visibility", () => {
+test("student screen preview keeps canonical step titles and filters visibility", () => {
   const preview = source(
     "src/components/course-builder/student-screen-preview.tsx",
   );
@@ -62,5 +86,29 @@ test("Student Screen preview keeps canonical step titles and filters visibility"
   assert.match(preview, /component\.visibility === "learner_visible"/);
   assert.match(preview, /mode="student"/);
   assert.doesNotMatch(preview, /teacherInstructions/);
-  assert.match(preview, /preview\/review/);
+  assert.match(preview, /предпросмотре и повторе/);
+});
+
+test("course builder surfaces use Russian product vocabulary", () => {
+  const combined = [
+    source("src/components/course-builder/course-workspace.tsx"),
+    source("src/components/course-builder/student-screen-preview.tsx"),
+    source("src/components/course-builder/new-course-form.tsx"),
+    source("src/components/course-builder/courses-index.tsx"),
+    source("src/app/(app)/courses/page.tsx"),
+    source("src/app/(app)/courses/new/page.tsx"),
+  ].join("\n");
+
+  for (const visibleEnglishPhrase of [
+    "Course workspace",
+    "Course builder",
+    "Student Screen preview",
+    "Teacher Side",
+    "learner-visible",
+    "Пустой Course",
+    "Добавить Lesson",
+    "Новый Lesson Step",
+  ]) {
+    assert.doesNotMatch(combined, new RegExp(visibleEnglishPhrase));
+  }
 });

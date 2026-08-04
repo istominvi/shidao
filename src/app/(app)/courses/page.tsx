@@ -14,7 +14,7 @@ export default function CoursesPage() {
       <div className="container app-page-container space-y-6">
         <AppPageHeader
           title="Курсы"
-          description="Создавайте собственные курсы, собирайте уроки из шагов и проверяйте learner-visible материалы на Student Screen."
+          description="Создавайте собственные курсы, собирайте уроки из шагов и проверяйте видимые ученику материалы на экране ученика."
           actions={
             <Link
               href={ROUTES.coursesNew}
