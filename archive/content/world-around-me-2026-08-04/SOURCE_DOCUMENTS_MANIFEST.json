@@ -1,0 +1,94 @@
+{
+  "fileCount": 12,
+  "totalBytes": 15647259,
+  "notes": [
+    "Два DOCX являются исходными документами методики.",
+    "Десять файлов lesson_5 сохранены с исходными русскими именами; их содержимое byte-identical нормализованным копиям в assets/."
+  ],
+  "files": [
+    {
+      "originalPath": "docs/methodologies/rabochaya_programma.docx",
+      "archivePath": "source-documents/docs/methodologies/rabochaya_programma.docx",
+      "bytes": 52581,
+      "sha256": "2ea35912e801ed72f49fd45ea989b7aeef423f106480a1cb0688778257bb6aa6",
+      "duplicateAssetPath": null
+    },
+    {
+      "originalPath": "docs/methodologies/我周围的世界.docx",
+      "archivePath": "source-documents/docs/methodologies/我周围的世界.docx",
+      "bytes": 54800,
+      "sha256": "6f8b40f865a2e4dccfd5e81ae50decf93f0c1ab838554be00d7c585687a2aa85",
+      "duplicateAssetPath": null
+    },
+    {
+      "originalPath": "lesson_5/ВИЗУАЛ.pptx",
+      "archivePath": "source-documents/raw/lesson_5/ВИЗУАЛ.pptx",
+      "bytes": 10176361,
+      "sha256": "c08f8b9efa3bd82c64c942ebe6e68e4353613c0c8012adb9d1428a34198735bc",
+      "duplicateAssetPath": "assets/lesson-5/presentation/lesson-5-visual.pptx"
+    },
+    {
+      "originalPath": "lesson_5/Домашее задание Урок 5.pdf",
+      "archivePath": "source-documents/raw/lesson_5/Домашее задание Урок 5.pdf",
+      "bytes": 153283,
+      "sha256": "4011860aba5bc211e4563cb7c58eb31d0e13809ca5e4cec356c51374dc78c510",
+      "duplicateAssetPath": "assets/lesson-5/appendices/homework-lesson-5.pdf"
+    },
+    {
+      "originalPath": "lesson_5/Приложение 1.pdf",
+      "archivePath": "source-documents/raw/lesson_5/Приложение 1.pdf",
+      "bytes": 1096242,
+      "sha256": "a80f8d03ad97f815edea7826d4a63f83350168feba45e302c464cfdbe8c8470d",
+      "duplicateAssetPath": "assets/lesson-5/appendices/appendix-1-flashcards.pdf"
+    },
+    {
+      "originalPath": "lesson_5/Приложение 2.pdf",
+      "archivePath": "source-documents/raw/lesson_5/Приложение 2.pdf",
+      "bytes": 662296,
+      "sha256": "25edeff78280aa34007ee9db23387583a049f4d61c043fa671a1e8e319a54dda",
+      "duplicateAssetPath": "assets/lesson-5/appendices/appendix-2-wheel.pdf"
+    },
+    {
+      "originalPath": "lesson_5/Приложение 3.pptx",
+      "archivePath": "source-documents/raw/lesson_5/Приложение 3.pptx",
+      "bytes": 2143681,
+      "sha256": "5a45d3349061b00f9b8f75c314ce3ce3d0a4e35ba5cf403bf90cefd31119d77b",
+      "duplicateAssetPath": "assets/lesson-5/appendices/appendix-3-cards.pptx"
+    },
+    {
+      "originalPath": "lesson_5/Приложение 4.pdf",
+      "archivePath": "source-documents/raw/lesson_5/Приложение 4.pdf",
+      "bytes": 111274,
+      "sha256": "49391270f5bc9f865bca2c46fadf831e68be1dd7b774e00c29a2843208c16045",
+      "duplicateAssetPath": "assets/lesson-5/appendices/appendix-4-favorite-flowers.pdf"
+    },
+    {
+      "originalPath": "lesson_5/Приложение 5.pdf",
+      "archivePath": "source-documents/raw/lesson_5/Приложение 5.pdf",
+      "bytes": 222539,
+      "sha256": "d0a957678ba224091b0e6a89fdfd3a59f48cbfbc04dce5c76228c1ce85a620d2",
+      "duplicateAssetPath": "assets/lesson-5/appendices/appendix-5-actions.pdf"
+    },
+    {
+      "originalPath": "lesson_5/Приложение 6.pdf",
+      "archivePath": "source-documents/raw/lesson_5/Приложение 6.pdf",
+      "bytes": 587895,
+      "sha256": "4c4ac8cbb5dabc9d2b2d840361791b5dc8cbf5981020b693169020638c5df81e",
+      "duplicateAssetPath": "assets/lesson-5/appendices/appendix-6-meadow-count.pdf"
+    },
+    {
+      "originalPath": "lesson_5/Приложение 7.pdf",
+      "archivePath": "source-documents/raw/lesson_5/Приложение 7.pdf",
+      "bytes": 232918,
+      "sha256": "a2a5edc48ac6192bd01bfc43214a3e54480c5a826942403a27fe3bc98ee963c9",
+      "duplicateAssetPath": "assets/lesson-5/appendices/appendix-7-flower-coloring.pdf"
+    },
+    {
+      "originalPath": "lesson_5/Приложение 8.pdf",
+      "archivePath": "source-documents/raw/lesson_5/Приложение 8.pdf",
+      "bytes": 153389,
+      "sha256": "707938c5572200c9f8e85997d7a0ead2354140cd07d33c499de1ccf26ca5fdee",
+      "duplicateAssetPath": "assets/lesson-5/appendices/appendix-8-homework-meadow.pdf"
+    }
+  ]
+}
