@@ -14,6 +14,7 @@
     "test:browser": "npm run test:compile && node scripts/run-node-tests.mjs --include browser-smoke",
     "test:browser:ci": "REQUIRE_BROWSER_SMOKE=1 BROWSER_SMOKE_SERVER_MODE=prod npm run test:browser",
     "test:all": "npm run test:unit && npm run test:browser",
+    "mcp:course-builder": "tsx scripts/course-builder-mcp.ts",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "db:snapshot": "scripts/refresh-schema-snapshot.sh"
@@ -26,6 +27,8 @@
     "zod": "4.4.3"
   },
   "devDependencies": {
+    "@modelcontextprotocol/sdk": "1.30.0",
+    "@supabase/supabase-js": "2.112.0",
     "@tailwindcss/postcss": "^4.1.4",
     "@types/node": "^22",
     "@types/react": "^19",
@@ -35,6 +38,7 @@
     "playwright": "^1.53.0",
     "prettier": "^3.6.0",
     "tailwindcss": "^4.1.4",
+    "tsx": "4.23.5",
     "typescript": "^5"
   }
 }

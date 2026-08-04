@@ -59,17 +59,27 @@ export const courseBuilderMcpInputContracts = {
 
 export type CourseBuilderMcpInputJsonSchema = z.core.JSONSchema.JSONSchema;
 
+function toMcpInputJsonSchema(contract: z.ZodType) {
+  const generated = z.toJSONSchema(contract);
+  // MCP tool input schemas are object schemas. A Zod discriminated union is
+  // emitted with a top-level oneOf, so retain that generated union and add the
+  // common object type required by the protocol.
+  return generated.type === "object"
+    ? generated
+    : { ...generated, type: "object" as const };
+}
+
 export const courseBuilderMcpInputJsonSchemas = Object.fromEntries(
   courseBuilderMcpToolNames.map((name) => [
     name,
-    z.toJSONSchema(courseBuilderMcpInputContracts[name]),
+    toMcpInputJsonSchema(courseBuilderMcpInputContracts[name]),
   ]),
 ) as unknown as Record<
   CourseBuilderMcpToolName,
   CourseBuilderMcpInputJsonSchema
 >;
 
-const descriptions = {
+export const courseBuilderMcpToolDescriptions = {
   "course.create_draft": "Создать черновик курса преподавателя.",
   "course.get": "Получить доступный преподавателю Course workspace.",
   "course.add_lesson": "Добавить Lesson в Course.",
@@ -209,7 +219,7 @@ export function createCourseBuilderMcpTools({
   return [
     {
       name: "course.create_draft",
-      description: descriptions["course.create_draft"],
+      description: courseBuilderMcpToolDescriptions["course.create_draft"],
       inputContract: courseBuilderMcpInputContracts["course.create_draft"],
       inputSchema: courseBuilderMcpInputJsonSchemas["course.create_draft"],
       execute: (rawInput) =>
@@ -220,7 +230,7 @@ export function createCourseBuilderMcpTools({
     },
     {
       name: "course.get",
-      description: descriptions["course.get"],
+      description: courseBuilderMcpToolDescriptions["course.get"],
       inputContract: courseBuilderMcpInputContracts["course.get"],
       inputSchema: courseBuilderMcpInputJsonSchemas["course.get"],
       execute: async (rawInput) => {
@@ -233,7 +243,7 @@ export function createCourseBuilderMcpTools({
     },
     {
       name: "course.add_lesson",
-      description: descriptions["course.add_lesson"],
+      description: courseBuilderMcpToolDescriptions["course.add_lesson"],
       inputContract: courseBuilderMcpInputContracts["course.add_lesson"],
       inputSchema: courseBuilderMcpInputJsonSchemas["course.add_lesson"],
       execute: (rawInput) =>
@@ -245,7 +255,7 @@ export function createCourseBuilderMcpTools({
     },
     {
       name: "lesson.add_step",
-      description: descriptions["lesson.add_step"],
+      description: courseBuilderMcpToolDescriptions["lesson.add_step"],
       inputContract: courseBuilderMcpInputContracts["lesson.add_step"],
       inputSchema: courseBuilderMcpInputJsonSchemas["lesson.add_step"],
       execute: (rawInput) =>
@@ -257,7 +267,7 @@ export function createCourseBuilderMcpTools({
     },
     {
       name: "lesson.add_component",
-      description: descriptions["lesson.add_component"],
+      description: courseBuilderMcpToolDescriptions["lesson.add_component"],
       inputContract: courseBuilderMcpInputContracts["lesson.add_component"],
       inputSchema: courseBuilderMcpInputJsonSchemas["lesson.add_component"],
       execute: (rawInput) =>
@@ -268,7 +278,7 @@ export function createCourseBuilderMcpTools({
     },
     {
       name: "lesson.reorder_component",
-      description: descriptions["lesson.reorder_component"],
+      description: courseBuilderMcpToolDescriptions["lesson.reorder_component"],
       inputContract: courseBuilderMcpInputContracts["lesson.reorder_component"],
       inputSchema: courseBuilderMcpInputJsonSchemas["lesson.reorder_component"],
       execute: (rawInput) =>

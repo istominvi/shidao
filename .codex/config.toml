@@ -1,0 +1,23 @@
+[mcp_servers.shidao_course_builder]
+command = "npm"
+args = ["run", "--silent", "mcp:course-builder"]
+cwd = "/Users/user/Documents/shidao"
+enabled = true
+required = false
+startup_timeout_sec = 20
+tool_timeout_sec = 60
+default_tools_approval_mode = "writes"
+env_vars = [
+  "NEXT_PUBLIC_SUPABASE_URL",
+  "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+  "SHIDAO_MCP_SUPABASE_ACCESS_TOKEN",
+  "SHIDAO_MCP_AUTH_USER_ID",
+]
+enabled_tools = [
+  "course.create_draft",
+  "course.get",
+  "course.add_lesson",
+  "lesson.add_step",
+  "lesson.add_component",
+  "lesson.reorder_component",
+]
