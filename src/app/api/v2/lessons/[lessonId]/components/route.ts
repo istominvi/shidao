@@ -9,15 +9,15 @@ export const runtime = "nodejs";
 
 export async function POST(
   request: Request,
-  { params }: { params: Promise<{ stepId: string }> },
+  { params }: { params: Promise<{ lessonId: string }> },
 ) {
   try {
-    const { stepId } = await params;
+    const { lessonId } = await params;
     const body = await readJson(request);
     const { actor, service } = await getCourseBuilderContext();
-    const component = await service.addComponentToStep(actor, {
+    const component = await service.addComponent(actor, {
       ...(typeof body === "object" && body !== null ? body : {}),
-      lessonStepId: stepId,
+      lessonId,
     });
     return NextResponse.json({ component }, { status: 201 });
   } catch (error) {

@@ -1,4 +1,8 @@
 import { z } from "zod";
+import {
+  componentVisibilitySchema,
+  type ComponentVisibility,
+} from "../component-visibility";
 
 export const componentTypeKeys = [
   "heading",
@@ -522,10 +526,21 @@ export function parseComponentPlacement<TKey extends ComponentTypeKey>(
 
 export type LessonAddComponentInput = {
   [TKey in ComponentTypeKey]: {
+    lessonId: string;
+    typeKey: TKey;
+    payload: ComponentPayload<TKey>;
+    placement: ComponentPlacement<TKey>;
+    visibility: ComponentVisibility;
+  };
+}[ComponentTypeKey];
+
+export type LessonStepAddComponentInput = {
+  [TKey in ComponentTypeKey]: {
     lessonStepId: string;
     typeKey: TKey;
     payload: ComponentPayload<TKey>;
     placement: ComponentPlacement<TKey>;
+    visibility: ComponentVisibility;
   };
 }[ComponentTypeKey];
 
@@ -533,10 +548,24 @@ const addComponentVariantSchemas = componentTypeKeys.map((typeKey) => {
   const definition = componentRegistry[typeKey];
   return z
     .object({
+      lessonId: z.uuid(),
+      typeKey: z.literal(typeKey),
+      payload: definition.payloadSchema,
+      placement: definition.placementSchema,
+      visibility: componentVisibilitySchema.default("staff_only"),
+    })
+    .strict();
+});
+
+const addStepComponentVariantSchemas = componentTypeKeys.map((typeKey) => {
+  const definition = componentRegistry[typeKey];
+  return z
+    .object({
       lessonStepId: z.uuid(),
       typeKey: z.literal(typeKey),
       payload: definition.payloadSchema,
       placement: definition.placementSchema,
+      visibility: componentVisibilitySchema.default("learner_visible"),
     })
     .strict();
 });
@@ -551,6 +580,18 @@ export const lessonAddComponentInputSchema = z.discriminatedUnion(
     ...AddComponentVariantSchema[],
   ],
 ) as unknown as z.ZodType<LessonAddComponentInput>;
+
+type AddStepComponentVariantSchema =
+  (typeof addStepComponentVariantSchemas)[number];
+
+export const lessonStepAddComponentInputSchema = z.discriminatedUnion(
+  "typeKey",
+  addStepComponentVariantSchemas as [
+    AddStepComponentVariantSchema,
+    AddStepComponentVariantSchema,
+    ...AddStepComponentVariantSchema[],
+  ],
+) as unknown as z.ZodType<LessonStepAddComponentInput>;
 
 export function parseLessonAddComponentInput(
   input: unknown,

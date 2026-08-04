@@ -10,6 +10,7 @@ import {
   getComponentDefinition,
   lessonAddComponentInputJsonSchema,
   lessonAddComponentInputSchema,
+  lessonStepAddComponentInputSchema,
   parseComponentPayload,
   parseLessonAddComponentInput,
   type ComponentTypeKey,
@@ -28,7 +29,7 @@ const EXPECTED_KEYS = [
   "file",
 ] as const;
 
-const STEP_ID = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+const LESSON_ID = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 
 test("registry exposes exactly the ten milestone component keys", () => {
   assert.deepEqual(componentTypeKeys, EXPECTED_KEYS);
@@ -159,7 +160,7 @@ test("poll and matching item identifiers are UUIDs and unique", () => {
 
 test("dynamic add-component schema selects payload and placement by type key", () => {
   const parsed = parseLessonAddComponentInput({
-    lessonStepId: STEP_ID,
+    lessonId: LESSON_ID,
     typeKey: "heading",
     payload: componentRegistry.heading.defaultPayload,
     placement: componentRegistry.heading.defaultPlacement,
@@ -167,10 +168,19 @@ test("dynamic add-component schema selects payload and placement by type key", (
 
   assert.equal(parsed.typeKey, "heading");
   assert.equal(parsed.payload.text, "Новый заголовок");
+  assert.equal(parsed.visibility, "staff_only");
+
+  const compatibilityParsed = lessonStepAddComponentInputSchema.parse({
+    lessonStepId: LESSON_ID,
+    typeKey: "heading",
+    payload: componentRegistry.heading.defaultPayload,
+    placement: componentRegistry.heading.defaultPlacement,
+  });
+  assert.equal(compatibilityParsed.visibility, "learner_visible");
 
   assert.equal(
     lessonAddComponentInputSchema.safeParse({
-      lessonStepId: STEP_ID,
+      lessonId: LESSON_ID,
       typeKey: "heading",
       position: 1,
       payload: componentRegistry.heading.defaultPayload,
@@ -181,7 +191,7 @@ test("dynamic add-component schema selects payload and placement by type key", (
 
   assert.equal(
     lessonAddComponentInputSchema.safeParse({
-      lessonStepId: STEP_ID,
+      lessonId: LESSON_ID,
       typeKey: "heading",
       payload: componentRegistry.file.defaultPayload,
       placement: componentRegistry.file.defaultPlacement,

@@ -43,10 +43,12 @@ import {
   findComponentDefinition,
   getComponentDefinition,
   lessonAddComponentInputSchema,
+  lessonStepAddComponentInputSchema,
   parseComponentPayload,
   parseComponentPlacement,
   type ComponentTypeKey,
   type LessonAddComponentInput,
+  type LessonStepAddComponentInput,
 } from "./registry/contracts";
 import type { CourseBuilderRepository } from "./repository";
 import {
@@ -71,6 +73,8 @@ export type CourseBuilderServiceDependencies = {
 export type CourseBuilderApplicationService = ReturnType<
   typeof createCourseBuilderService
 >;
+
+const IMPLICIT_LESSON_STEP_TITLE = "Основной план";
 
 function fileReferences(typeKey: ComponentTypeKey, payload: unknown) {
   const parsed = parseComponentPayload(typeKey, payload);
@@ -250,24 +254,73 @@ export function createCourseBuilderService(
     return hydrateSignedUrls(actor, workspace);
   }
 
+  async function validateComponentForLesson(
+    lesson: CourseLesson,
+    input: {
+      typeKey: ComponentTypeKey;
+      payload: unknown;
+      placement: unknown;
+      visibility: "learner_visible" | "staff_only";
+    },
+  ) {
+    const definition = getComponentDefinition(input.typeKey);
+    const payload = parseComponentPayload(input.typeKey, input.payload);
+    const placement = parseComponentPlacement(input.typeKey, input.placement);
+    await assertAttachedFiles(lesson.courseId, input.typeKey, payload);
+    return { definition, payload, placement };
+  }
+
+  async function persistValidatedComponent(
+    stepId: string,
+    input: {
+      typeKey: ComponentTypeKey;
+      visibility: "learner_visible" | "staff_only";
+    },
+    validated: Awaited<ReturnType<typeof validateComponentForLesson>>,
+  ) {
+    return repository.addComponent({
+      stepId,
+      typeKey: input.typeKey,
+      schemaVersion: validated.definition.version,
+      payload: validated.payload as Record<string, unknown>,
+      placement: validated.placement as Record<string, unknown>,
+      visibility: input.visibility,
+    });
+  }
+
   async function addValidatedComponent(
     actor: CourseBuilderActor,
     rawInput: unknown,
   ) {
     const input = parseContract(lessonAddComponentInputSchema, rawInput);
+    const lesson = await requireOwnedLesson(actor, input.lessonId);
+    const validated = await validateComponentForLesson(lesson, input);
+    let step = await repository.getAuthoringStep(lesson.id);
+    if (!step) {
+      try {
+        step = await repository.addStep(lesson.id, {
+          title: IMPLICIT_LESSON_STEP_TITLE,
+          teacherInstructions: "",
+          learnerInstruction: "",
+        });
+      } catch (error) {
+        // Two authoring commands may race on the first component. Reuse the
+        // root Step created by the winner, but preserve unrelated failures.
+        step = await repository.getAuthoringStep(lesson.id);
+        if (!step) throw error;
+      }
+    }
+    return persistValidatedComponent(step.id, input, validated);
+  }
+
+  async function addValidatedStepComponent(
+    actor: CourseBuilderActor,
+    rawInput: unknown,
+  ) {
+    const input = parseContract(lessonStepAddComponentInputSchema, rawInput);
     const { lesson } = await requireOwnedStep(actor, input.lessonStepId);
-    const definition = getComponentDefinition(input.typeKey);
-    const payload = parseComponentPayload(input.typeKey, input.payload);
-    const placement = parseComponentPlacement(input.typeKey, input.placement);
-    await assertAttachedFiles(lesson.courseId, input.typeKey, payload);
-    return repository.addComponent({
-      stepId: input.lessonStepId,
-      typeKey: input.typeKey,
-      schemaVersion: definition.version,
-      payload: payload as Record<string, unknown>,
-      placement: placement as Record<string, unknown>,
-      visibility: "learner_visible",
-    });
+    const validated = await validateComponentForLesson(lesson, input);
+    return persistValidatedComponent(input.lessonStepId, input, validated);
   }
 
   return {
@@ -294,31 +347,42 @@ export function createCourseBuilderService(
       courseId: string,
     ): Promise<StudentScreenCourse> {
       const workspace = await getValidatedWorkspace(actor, courseId);
+      const lessons = workspace.lessons.map((lesson) => ({
+        id: lesson.id,
+        courseId: lesson.courseId,
+        position: lesson.position,
+        title: lesson.title,
+        createdAt: lesson.createdAt,
+        updatedAt: lesson.updatedAt,
+        steps: lesson.steps.map((step) => ({
+          id: step.id,
+          lessonId: step.lessonId,
+          position: step.position,
+          title: step.title,
+          learnerInstruction: step.learnerInstruction,
+          components: step.components.filter(
+            (component) => component.visibility === "learner_visible",
+          ),
+          createdAt: step.createdAt,
+          updatedAt: step.updatedAt,
+        })),
+      }));
+      const learnerAttachmentIds = new Set(
+        lessons.flatMap((lesson) =>
+          lesson.steps.flatMap((step) =>
+            step.components.flatMap((component) =>
+              fileReferences(component.typeKey, component.payload),
+            ),
+          ),
+        ),
+      );
       return {
         id: workspace.id,
         title: workspace.title,
-        attachments: workspace.attachments,
-        lessons: workspace.lessons.map((lesson) => ({
-          id: lesson.id,
-          courseId: lesson.courseId,
-          position: lesson.position,
-          title: lesson.title,
-          summary: lesson.summary,
-          createdAt: lesson.createdAt,
-          updatedAt: lesson.updatedAt,
-          steps: lesson.steps.map((step) => ({
-            id: step.id,
-            lessonId: step.lessonId,
-            position: step.position,
-            title: step.title,
-            learnerInstruction: step.learnerInstruction,
-            components: step.components.filter(
-              (component) => component.visibility === "learner_visible",
-            ),
-            createdAt: step.createdAt,
-            updatedAt: step.updatedAt,
-          })),
-        })),
+        attachments: workspace.attachments.filter((attachment) =>
+          learnerAttachmentIds.has(attachment.id),
+        ),
+        lessons,
       };
     },
 
@@ -401,6 +465,13 @@ export function createCourseBuilderService(
       return addValidatedComponent(actor, input);
     },
 
+    addComponentToStep(
+      actor: CourseBuilderActor,
+      input: LessonStepAddComponentInput | unknown,
+    ) {
+      return addValidatedStepComponent(actor, input);
+    },
+
     async updateComponent(
       actor: CourseBuilderActor,
       componentId: string,
@@ -414,23 +485,32 @@ export function createCourseBuilderService(
       const definition = getComponentDefinition(component.typeKey);
       const payload =
         input.payload === undefined
-          ? component.payload
+          ? undefined
           : parseContract(
               definition.payloadSchema as ZodType<unknown>,
               input.payload,
             );
       const placement =
         input.placement === undefined
-          ? component.placement
+          ? undefined
           : parseContract(
               definition.placementSchema as ZodType<unknown>,
               input.placement,
             );
-      await assertAttachedFiles(lesson.courseId, component.typeKey, payload);
+      if (payload !== undefined) {
+        await assertAttachedFiles(lesson.courseId, component.typeKey, payload);
+      }
       const updated = await repository.updateComponent({
         componentId,
-        payload: payload as Record<string, unknown>,
-        placement: placement as Record<string, unknown>,
+        ...(payload === undefined
+          ? {}
+          : { payload: payload as Record<string, unknown> }),
+        ...(placement === undefined
+          ? {}
+          : { placement: placement as Record<string, unknown> }),
+        ...(input.visibility === undefined
+          ? {}
+          : { visibility: input.visibility }),
       });
       if (!updated) {
         throw new CourseBuilderAccessError("Компонент не найден.");

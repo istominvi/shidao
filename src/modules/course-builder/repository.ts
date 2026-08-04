@@ -11,6 +11,7 @@ import type {
   LessonStep,
   StoredFileStatus,
 } from "./domain";
+import type { ComponentVisibility } from "./component-visibility";
 import type {
   AddLessonInput,
   AddLessonStepInput,
@@ -135,6 +136,7 @@ export interface CourseBuilderRepository {
   ): Promise<CourseLesson | null>;
   deleteLesson(lessonId: string): Promise<boolean>;
   addStep(lessonId: string, input: AddLessonStepInput): Promise<LessonStep>;
+  getAuthoringStep(lessonId: string): Promise<LessonStep | null>;
   getStep(stepId: string): Promise<LessonStep | null>;
   updateStep(
     stepId: string,
@@ -146,13 +148,14 @@ export interface CourseBuilderRepository {
     schemaVersion: number;
     payload: JsonObject;
     placement: JsonObject;
-    visibility: "learner_visible" | "staff_only";
+    visibility: ComponentVisibility;
   }): Promise<LessonComponent>;
   getComponent(componentId: string): Promise<LessonComponent | null>;
   updateComponent(input: {
     componentId: string;
     payload?: JsonObject;
     placement?: JsonObject;
+    visibility?: ComponentVisibility;
   }): Promise<LessonComponent | null>;
   deleteComponent(componentId: string): Promise<boolean>;
   reorderComponent(
@@ -548,6 +551,13 @@ export function createCourseBuilderRepository(
       return mapStep(rows[0]);
     },
 
+    async getAuthoringStep(lessonId) {
+      const rows = await request<LessonStepRow[]>(
+        `/rest/v1/lesson_step?select=*&lesson_id=eq.${encodeFilter(lessonId)}&order=position.desc&limit=1`,
+      );
+      return rows[0] ? mapStep(rows[0]) : null;
+    },
+
     async getStep(stepId) {
       const rows = await request<LessonStepRow[]>(
         `/rest/v1/lesson_step?select=*&id=eq.${encodeFilter(stepId)}&limit=1`,
@@ -624,6 +634,7 @@ export function createCourseBuilderRepository(
       if (input.payload !== undefined) body.payload = input.payload;
       if (input.placement !== undefined)
         body.placement_config = input.placement;
+      if (input.visibility !== undefined) body.visibility = input.visibility;
       const rows = await request<LessonComponentRow[]>(
         `/rest/v1/lesson_step_component?id=eq.${encodeFilter(input.componentId)}`,
         { method: "PATCH", body },

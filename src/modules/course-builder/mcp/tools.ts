@@ -83,9 +83,10 @@ export const courseBuilderMcpToolDescriptions = {
   "course.create_draft": "Создать черновик курса преподавателя.",
   "course.get": "Получить доступный преподавателю Course workspace.",
   "course.add_lesson": "Добавить Lesson в Course.",
-  "lesson.add_step": "Добавить упорядоченный Lesson Step в Lesson.",
+  "lesson.add_step":
+    "Compatibility tool: добавить явный Lesson Step для многошагового сценария.",
   "lesson.add_component":
-    "Добавить learner-visible компонент из Course Builder registry.",
+    "Добавить компонент registry прямо в Lesson; внутренний root Step создаётся автоматически.",
   "lesson.reorder_component":
     "Переместить компонент на новую позицию внутри Lesson Step.",
 } as const satisfies Record<CourseBuilderMcpToolName, string>;

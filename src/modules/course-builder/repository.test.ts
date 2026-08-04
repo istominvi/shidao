@@ -321,6 +321,42 @@ test("updateStep safely merges a partial instruction update", async () => {
   );
 });
 
+test("getAuthoringStep resolves the final internal step for lesson-level authoring", async () => {
+  await withMockSupabase(
+    [{ payload: [stepRow()] }],
+    async (repository, requests) => {
+      const step = await repository.getAuthoringStep(LESSON_ID);
+
+      assert.equal(step?.id, STEP_ID);
+      assert.equal(requests[0]?.method, "GET");
+      assert.equal(
+        requests[0]?.url,
+        `${API_URL}/rest/v1/lesson_step?select=*&lesson_id=eq.${LESSON_ID}&order=position.desc&limit=1`,
+      );
+    },
+  );
+});
+
+test("updateComponent persists a visibility-only toggle", async () => {
+  await withMockSupabase(
+    [
+      {
+        payload: [{ ...componentRow(), visibility: "staff_only" }],
+      },
+    ],
+    async (repository, requests) => {
+      const component = await repository.updateComponent({
+        componentId: COMPONENT_ID,
+        visibility: "staff_only",
+      });
+
+      assert.equal(component?.visibility, "staff_only");
+      assert.equal(requests[0]?.method, "PATCH");
+      assert.deepEqual(requests[0]?.body, { visibility: "staff_only" });
+    },
+  );
+});
+
 test("reorderComponent refetches the full component after the narrow RPC", async () => {
   await withMockSupabase(
     [

@@ -91,6 +91,12 @@ class InMemoryCourseBuilderRepository implements CourseBuilderRepository {
     assembleDraft: 0,
     deletePendingAttachment: 0,
   };
+  lastComponentUpdate: {
+    componentId: string;
+    payload?: Record<string, unknown>;
+    placement?: Record<string, unknown>;
+    visibility?: "learner_visible" | "staff_only";
+  } | null = null;
 
   private sequence = 1_000;
 
@@ -262,6 +268,14 @@ class InMemoryCourseBuilderRepository implements CourseBuilderRepository {
     return { ...step, components: [] };
   }
 
+  async getAuthoringStep(lessonId: string) {
+    const steps = this.stepsForLesson(lessonId);
+    const step = steps[steps.length - 1];
+    return step
+      ? { ...step, components: this.componentsForStep(step.id) }
+      : null;
+  }
+
   async getStep(stepId: string) {
     const step = this.steps.get(stepId);
     return step
@@ -311,14 +325,17 @@ class InMemoryCourseBuilderRepository implements CourseBuilderRepository {
     componentId: string;
     payload?: Record<string, unknown>;
     placement?: Record<string, unknown>;
+    visibility?: "learner_visible" | "staff_only";
   }) {
     const component = this.components.get(input.componentId);
     if (!component) return null;
     this.calls.updateComponent += 1;
+    this.lastComponentUpdate = { ...input };
     const updated: LessonComponent = {
       ...component,
       payload: input.payload ?? component.payload,
       placement: input.placement ?? component.placement,
+      visibility: input.visibility ?? component.visibility,
       updatedAt: NOW,
     };
     this.components.set(component.id, updated);
@@ -588,6 +605,7 @@ test("deterministic assembler is idempotent and describes attachments honestly",
   );
   const serializedPreview = JSON.stringify(studentPreview);
   assert.doesNotMatch(serializedPreview, /teacherInstructions/);
+  assert.equal("summary" in (studentPreview.lessons[0] ?? {}), false);
   assert.doesNotMatch(
     serializedPreview,
     /Начинайте с короткого устного разогрева/,
@@ -596,6 +614,104 @@ test("deterministic assembler is idempotent and describes attachments honestly",
     studentPreview.lessons[0]?.steps[0]?.title,
     workspace.lessons[0]?.steps[0]?.title,
   );
+});
+
+test("direct component authoring validates before creating one implicit step", async () => {
+  const harness = createHarness();
+  const course = await harness.service.createDraft(alice, courseInput());
+  const lesson = await harness.service.addLesson(alice, course.id, {
+    title: "Урок без шагов в интерфейсе",
+    summary: "Приватный комментарий",
+  });
+  const headingDefinition = getComponentDefinition("heading");
+
+  await assert.rejects(() =>
+    harness.service.addComponent(alice, {
+      lessonId: lesson.id,
+      typeKey: "heading",
+      payload: { text: "", level: "h2" },
+      placement: headingDefinition.defaultPlacement,
+    }),
+  );
+  assert.equal(harness.repository.steps.size, 0);
+
+  const pending = await prepareAttachment(harness, course.id, {
+    originalFilename: "pending.png",
+    mimeType: "image/png",
+    sizeBytes: 1_024,
+    checksumSha256: "a".repeat(64),
+  });
+  const imageDefinition = getComponentDefinition("image");
+  await assert.rejects(() =>
+    harness.service.addComponent(alice, {
+      lessonId: lesson.id,
+      typeKey: "image",
+      payload: {
+        storedFileId: pending.asset.id,
+        alt: "Ещё не загружено",
+      },
+      placement: imageDefinition.defaultPlacement,
+    }),
+  );
+  assert.equal(harness.repository.steps.size, 0);
+
+  await assert.rejects(
+    () =>
+      harness.service.addComponent(bob, {
+        lessonId: lesson.id,
+        typeKey: "heading",
+        payload: headingDefinition.defaultPayload,
+        placement: headingDefinition.defaultPlacement,
+      }),
+    (error: unknown) => error instanceof CourseBuilderAccessError,
+  );
+  assert.equal(harness.repository.steps.size, 0);
+
+  await harness.service.addComponent(alice, {
+    lessonId: lesson.id,
+    typeKey: "heading",
+    payload: headingDefinition.defaultPayload,
+    placement: headingDefinition.defaultPlacement,
+  });
+  await harness.service.addComponent(alice, {
+    lessonId: lesson.id,
+    typeKey: "heading",
+    payload: { text: "Второй заголовок", level: "h3" },
+    placement: headingDefinition.defaultPlacement,
+  });
+
+  assert.equal(harness.repository.steps.size, 1);
+  assert.equal(harness.repository.components.size, 2);
+});
+
+test("direct component authoring appends to the final legacy content group", async () => {
+  const harness = createHarness();
+  const course = await harness.service.createDraft(alice, courseInput());
+  const lesson = await harness.service.addLesson(alice, course.id, {
+    title: "Урок из предыдущего сборщика",
+    summary: "",
+  });
+  await harness.service.addStep(alice, lesson.id, {
+    title: "Первая группа",
+    teacherInstructions: "",
+    learnerInstruction: "",
+  });
+  const finalStep = await harness.service.addStep(alice, lesson.id, {
+    title: "Финальная группа",
+    teacherInstructions: "",
+    learnerInstruction: "",
+  });
+  const headingDefinition = getComponentDefinition("heading");
+
+  const component = await harness.service.addComponent(alice, {
+    lessonId: lesson.id,
+    typeKey: "heading",
+    payload: headingDefinition.defaultPayload,
+    placement: headingDefinition.defaultPlacement,
+  });
+
+  assert.equal(component.stepId, finalStep.id);
+  assert.equal(harness.repository.steps.size, 2);
 });
 
 test("assembler refuses to overwrite manually authored content", async () => {
@@ -617,31 +733,39 @@ test("assembler refuses to overwrite manually authored content", async () => {
 test("component add/update/reorder share registry validation and ownership", async () => {
   const harness = createHarness();
   const course = await harness.service.createDraft(alice, courseInput());
-  const { step } = await createLessonStep(harness, alice, course.id);
+  const lesson = await harness.service.addLesson(alice, course.id, {
+    title: "Ручной урок",
+    summary: "",
+  });
   const quoteDefinition = getComponentDefinition("quote");
   const quote = await harness.service.addComponent(alice, {
-    lessonStepId: step.id,
+    lessonId: lesson.id,
     typeKey: "quote",
     payload: { text: "Путь в тысячу ли начинается с первого шага." },
     placement: quoteDefinition.defaultPlacement,
   });
   const headingDefinition = getComponentDefinition("heading");
   const heading = await harness.service.addComponent(alice, {
-    lessonStepId: step.id,
+    lessonId: lesson.id,
     typeKey: "heading",
     payload: { text: "Начало", level: "h3" },
     placement: headingDefinition.defaultPlacement,
   });
 
+  const implicitSteps = [...harness.repository.steps.values()].filter(
+    (step) => step.lessonId === lesson.id,
+  );
+  assert.equal(implicitSteps.length, 1);
+  assert.equal(implicitSteps[0]?.title, "Основной план");
   assert.equal(heading.position, 2);
   assert.equal(harness.repository.components.get(quote.id)?.position, 1);
   assert.equal(quote.schemaVersion, quoteDefinition.version);
-  assert.equal(quote.visibility, "learner_visible");
+  assert.equal(quote.visibility, "staff_only");
 
   const addCalls = harness.repository.calls.addComponent;
   await assert.rejects(() =>
     harness.service.addComponent(alice, {
-      lessonStepId: step.id,
+      lessonId: lesson.id,
       typeKey: "quote",
       payload: { text: "" },
       placement: quoteDefinition.defaultPlacement,
@@ -658,6 +782,17 @@ test("component add/update/reorder share registry validation and ownership", asy
     attribution: "Автор",
   });
   assert.deepEqual(updated.placement, { width: "wide", textAlign: "center" });
+
+  const learnerVisible = await harness.service.updateComponent(
+    alice,
+    quote.id,
+    { visibility: "learner_visible" },
+  );
+  assert.equal(learnerVisible.visibility, "learner_visible");
+  assert.deepEqual(harness.repository.lastComponentUpdate, {
+    componentId: quote.id,
+    visibility: "learner_visible",
+  });
 
   const updateCalls = harness.repository.calls.updateComponent;
   await assert.rejects(() =>
@@ -731,6 +866,56 @@ test("attachment prepare/complete uses private opaque path and verifies the obje
   assert.equal(harness.downloads[0]?.expiresInSeconds, 600);
 });
 
+test("student projection excludes staff-only components, comments, and their signed materials", async () => {
+  const harness = createHarness();
+  const course = await harness.service.createDraft(alice, courseInput());
+  const prepared = await prepareAttachment(harness, course.id, {
+    originalFilename: "teacher-only.png",
+    mimeType: "image/png",
+    sizeBytes: 2_048,
+    checksumSha256: "f".repeat(64),
+  });
+  await harness.service.completeAttachment(alice, course.id, prepared.asset.id);
+  const lesson = await harness.service.addLesson(alice, course.id, {
+    title: "Приватный план",
+    summary: "Не показывать ученику",
+  });
+  const imageDefinition = getComponentDefinition("image");
+  const image = await harness.service.addComponent(alice, {
+    lessonId: lesson.id,
+    typeKey: "image",
+    payload: {
+      storedFileId: prepared.asset.id,
+      alt: "Материал преподавателя",
+    },
+    placement: imageDefinition.defaultPlacement,
+  });
+
+  const hiddenPreview = await harness.service.getStudentPreview(
+    alice,
+    course.id,
+  );
+  assert.equal(hiddenPreview.attachments.length, 0);
+  assert.equal(hiddenPreview.lessons[0]?.steps[0]?.components.length, 0);
+  assert.doesNotMatch(JSON.stringify(hiddenPreview), /Не показывать ученику/);
+
+  await harness.service.updateComponent(alice, image.id, {
+    visibility: "learner_visible",
+  });
+  const visiblePreview = await harness.service.getStudentPreview(
+    alice,
+    course.id,
+  );
+  assert.deepEqual(
+    visiblePreview.attachments.map((asset) => asset.id),
+    [prepared.asset.id],
+  );
+  assert.equal(
+    visiblePreview.lessons[0]?.steps[0]?.components[0]?.id,
+    image.id,
+  );
+});
+
 test("attachment operations deny cross-course references", async () => {
   const harness = createHarness();
   const firstCourse = await harness.service.createDraft(alice, courseInput());
@@ -761,12 +946,12 @@ test("attachment operations deny cross-course references", async () => {
     firstCourse.id,
     pending.asset.id,
   );
-  const { step } = await createLessonStep(harness, alice, secondCourse.id);
+  const { lesson } = await createLessonStep(harness, alice, secondCourse.id);
   const imageDefinition = getComponentDefinition("image");
   await assert.rejects(
     () =>
       harness.service.addComponent(alice, {
-        lessonStepId: step.id,
+        lessonId: lesson.id,
         typeKey: "image",
         payload: {
           storedFileId: pending.asset.id,

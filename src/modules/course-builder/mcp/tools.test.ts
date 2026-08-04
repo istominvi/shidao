@@ -13,7 +13,6 @@ import {
 
 const COURSE_ID = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const LESSON_ID = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
-const STEP_ID = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
 const COMPONENT_ID = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
 
 const actor: CourseBuilderActor = {
@@ -80,6 +79,9 @@ test("JSON Schema is generated from the canonical application and registry contr
   const addComponentJson = JSON.stringify(
     courseBuilderMcpInputJsonSchemas["lesson.add_component"],
   );
+  assert.match(addComponentJson, /lessonId/);
+  assert.doesNotMatch(addComponentJson, /lessonStepId/);
+  assert.match(addComponentJson, /staff_only/);
   for (const typeKey of Object.keys(componentRegistry)) {
     assert.match(addComponentJson, new RegExp(`"const":"${typeKey}"`));
   }
@@ -113,7 +115,7 @@ test("each tool validates input and delegates once with the injected actor", asy
     title: "Приветствие",
   });
   await byName.get("lesson.add_component")?.execute({
-    lessonStepId: STEP_ID,
+    lessonId: LESSON_ID,
     typeKey: "heading",
     payload: componentRegistry.heading.defaultPayload,
     placement: componentRegistry.heading.defaultPlacement,
@@ -160,6 +162,13 @@ test("each tool validates input and delegates once with the injected actor", asy
       learnerInstruction: "",
     },
   ]);
+  assert.deepEqual(calls[4]?.args[1], {
+    lessonId: LESSON_ID,
+    typeKey: "heading",
+    payload: componentRegistry.heading.defaultPayload,
+    placement: componentRegistry.heading.defaultPlacement,
+    visibility: "staff_only",
+  });
   assert.deepEqual(calls[5]?.args.slice(1), [COMPONENT_ID, { toPosition: 2 }]);
 });
 
@@ -179,7 +188,7 @@ test("invalid tool input never reaches the application service", async () => {
 
   await assert.rejects(
     addComponent?.execute({
-      lessonStepId: STEP_ID,
+      lessonId: LESSON_ID,
       typeKey: "heading",
       payload: componentRegistry.file.defaultPayload,
       placement: componentRegistry.file.defaultPlacement,

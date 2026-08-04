@@ -1,7 +1,9 @@
 import type { ComponentTypeKey } from "./registry/contracts";
+import type { ComponentVisibility } from "./component-visibility";
+
+export type { ComponentVisibility } from "./component-visibility";
 
 export type CourseStatus = "draft";
-export type ComponentVisibility = "learner_visible" | "staff_only";
 export type StoredFileStatus = "pending" | "ready";
 
 export type CourseSummary = {
@@ -75,7 +77,7 @@ export type CourseWorkspace = CourseSummary & {
 
 export type StudentScreenStep = Omit<LessonStep, "teacherInstructions">;
 
-export type StudentScreenLesson = Omit<CourseLesson, "steps"> & {
+export type StudentScreenLesson = Omit<CourseLesson, "steps" | "summary"> & {
   steps: StudentScreenStep[];
 };
 

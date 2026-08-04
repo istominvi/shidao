@@ -22,6 +22,19 @@ same code-first registry used by the application UI and service.
 
 Only these six tools are registered.
 
+The normal simplified authoring contract is `Lesson → Components`:
+
+- `lesson.add_component` accepts `lessonId`, the registry payload/placement and
+  `visibility` (`staff_only` by default or `learner_visible`);
+- the application service appends to the final compatibility Step of existing
+  multi-step data, or lazily creates one internal root Step for a new lesson;
+- `lesson.add_step` remains a compatibility tool for explicit multi-step
+  lessons, but the regular teacher UI and future AI orchestrator do not need a
+  `stepId` to add content.
+
+Existing multi-step data is preserved. No component is stored outside the
+canonical Step-backed database structure.
+
 ## Credentials
 
 The server requires four environment variables for a tool call:

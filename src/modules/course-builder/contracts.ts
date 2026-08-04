@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { componentVisibilitySchema } from "./component-visibility";
 
 export const COURSE_ASSET_BUCKET = "course-assets";
 export const COURSE_ASSET_MAX_BYTES = 10 * 1024 * 1024;
@@ -75,10 +76,14 @@ export const updateLessonComponentInputSchema = z
   .object({
     payload: z.unknown().optional(),
     placement: z.unknown().optional(),
+    visibility: componentVisibilitySchema.optional(),
   })
   .refine(
-    (input) => input.payload !== undefined || input.placement !== undefined,
-    { message: "Нужно передать payload или placement." },
+    (input) =>
+      input.payload !== undefined ||
+      input.placement !== undefined ||
+      input.visibility !== undefined,
+    { message: "Нужно передать payload, placement или visibility." },
   );
 
 export type UpdateLessonComponentInput = z.infer<

@@ -59,6 +59,27 @@ ShiDao — methodology-driven продукт. Канонический урок 
 - менять названия шагов между teacher и learner представлениями;
 - смешивать teacher-private инструкции прямо на learner экране.
 
+## Simplified Course Builder authoring surface
+
+Для ручной сборки черновика Course Builder допускается упрощённая проекция
+`Lesson → ordered Components`, без обязательного создания и выбора Step в UI.
+Это authoring-проекция, а не второй независимый lesson runtime:
+
+- при добавлении первого компонента application service лениво создаёт один
+  внутренний root `Lesson Step`;
+- UI, Student Screen preview и будущий AI-orchestrator работают с `lessonId` и
+  не требуют от преподавателя знания внутреннего `stepId`;
+- teacher-private компоненты сохраняются как `staff_only`; в Student Screen API
+  попадают только `learner_visible` компоненты и используемые ими материалы;
+- существующие многошаговые уроки не объединяются и не перезаписываются;
+- явный `lesson.add_step` временно остаётся compatibility tool для уже
+  существующей канонической и runtime-модели.
+
+Если в дальнейшем продукт вернёт явные педагогические этапы в Course Builder,
+они должны снова соблюдать parity Teacher Side / Student Screen. Упрощённый UI
+не разрешает хранить компоненты вне канонической структуры базы и не требует
+разрушительной миграции существующих уроков.
+
 ## Teacher-side step
 
 Teacher Side шага включает:

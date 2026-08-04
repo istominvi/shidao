@@ -4,6 +4,7 @@ import {
   COURSE_ASSET_MAX_BYTES,
   courseDraftInputSchema,
   prepareCourseAttachmentInputSchema,
+  updateLessonComponentInputSchema,
 } from "./contracts";
 
 test("course draft contract normalizes the complete teacher form", () => {
@@ -46,4 +47,24 @@ test("attachment contract rejects unsupported and oversized files", () => {
     }).success,
     false,
   );
+});
+
+test("component update accepts a visibility-only toggle and rejects unknown visibility", () => {
+  assert.deepEqual(
+    updateLessonComponentInputSchema.parse({
+      visibility: "learner_visible",
+    }),
+    { visibility: "learner_visible" },
+  );
+  assert.equal(
+    updateLessonComponentInputSchema.safeParse({ visibility: "staff_only" })
+      .success,
+    true,
+  );
+  assert.equal(
+    updateLessonComponentInputSchema.safeParse({ visibility: "public" })
+      .success,
+    false,
+  );
+  assert.equal(updateLessonComponentInputSchema.safeParse({}).success, false);
 });

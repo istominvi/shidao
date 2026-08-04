@@ -75,6 +75,11 @@ test("stdio MCP advertises exactly six tools with canonical JSON schemas", async
       JSON.stringify(addComponent?.inputSchema),
       /single_choice_poll/,
     );
+    assert.match(JSON.stringify(addComponent?.inputSchema), /lessonId/);
+    assert.doesNotMatch(
+      JSON.stringify(addComponent?.inputSchema),
+      /lessonStepId/,
+    );
   } finally {
     await client.close();
     await server.close().catch(() => undefined);
