@@ -1,545 +1,464 @@
--- CURRENT SCHEMA SNAPSHOT (read-only reference)
+-- CURRENT SCHEMA SNAPSHOT (post-migration reference)
 -- -----------------------------------------------------------------------------
--- This file describes the CURRENT database structure for developer/agent context.
--- It is NOT a replacement for migration history and should not be treated as one.
+-- Public DDL below was generated from an isolated clone of the live ShiDao
+-- schema after applying migration
+-- 20260804033421_course_lesson_components_remove_legacy_methodology.sql.
+-- It includes active public tables, types, functions, constraints, indexes,
+-- triggers, RLS policies, grants, and default privileges. The final section
+-- records Course Builder's unchanged cross-schema Auth/Storage objects.
 --
--- Canonical migration history remains in: supabase/migrations/*
--- Refresh workflow: see scripts/refresh-schema-snapshot.sh and docs/database/current-schema.md
+-- This file is read-only developer/agent context, not migration history.
+-- Canonical forward history remains in supabase/migrations/*.
 -- -----------------------------------------------------------------------------
 
-create extension if not exists pgcrypto;
+--
+-- PostgreSQL database dump
+--
 
--- Shared helper trigger function
-create or replace function public.set_updated_at()
-returns trigger
-language plpgsql
-as $$
+
+
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET client_encoding = 'UTF8';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config('search_path', '', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+--
+-- Name: public; Type: SCHEMA; Schema: -; Owner: -
+--
+
+CREATE SCHEMA public;
+
+
+--
+-- Name: SCHEMA public; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON SCHEMA public IS 'standard public schema';
+
+
+--
+-- Name: guardian_relation; Type: TYPE; Schema: public; Owner: -
+--
+
+CREATE TYPE public.guardian_relation AS ENUM (
+    'mother',
+    'father',
+    'guardian',
+    'other'
+);
+
+
+--
+-- Name: guardian_status; Type: TYPE; Schema: public; Owner: -
+--
+
+CREATE TYPE public.guardian_status AS ENUM (
+    'invited',
+    'active',
+    'revoked'
+);
+
+
+--
+-- Name: assemble_course_draft(uuid, text, text, jsonb); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.assemble_course_draft(p_course_id uuid, p_lesson_title text, p_lesson_summary text, p_components jsonb) RETURNS jsonb
+    LANGUAGE plpgsql
+    SET search_path TO ''
+    AS $$
+declare
+  v_assembled_at timestamptz;
+  v_lesson_id uuid;
+  v_component_id uuid;
+  v_component jsonb;
+  v_position integer := 0;
+  v_lesson_ids uuid[] := '{}'::uuid[];
+  v_component_ids uuid[] := '{}'::uuid[];
 begin
-  new.updated_at = now();
-  return new;
-end;
+  if p_components is null or jsonb_typeof(p_components) <> 'array' then
+    raise exception
+      'course_components_must_be_array'
+      using errcode = '22023';
+  end if;
+
+  select course.assembled_at
+  into v_assembled_at
+  from public.course
+  where course.id = p_course_id
+  for update;
+
+  if not found then
+    raise exception 'course_not_found' using errcode = 'P0002';
+  end if;
+
+  if v_assembled_at is not null then
+    select coalesce(
+      array_agg(lesson.id order by lesson.position),
+      '{}'::uuid[]
+    )
+    into v_lesson_ids
+    from public.lesson
+    where lesson.course_id = p_course_id;
+
+    select coalesce(
+      array_agg(
+        component.id
+        order by lesson.position, component.position
+      ),
+      '{}'::uuid[]
+    )
+    into v_component_ids
+    from public.lesson_component as component
+    join public.lesson on lesson.id = component.lesson_id
+    where lesson.course_id = p_course_id;
+
+    return jsonb_build_object(
+      'courseId', p_course_id,
+      'lessonIds', to_jsonb(v_lesson_ids),
+      'componentIds', to_jsonb(v_component_ids),
+      'alreadyAssembled', true
+    );
+  end if;
+
+  if exists (
+    select 1
+    from public.lesson
+    where lesson.course_id = p_course_id
+  ) then
+    raise exception
+      'course_contains_manual_content'
+      using errcode = '23505';
+  end if;
+
+  insert into public.lesson (course_id, position, title, summary)
+  values (p_course_id, 1, p_lesson_title, p_lesson_summary)
+  returning id into v_lesson_id;
+
+  for v_component in
+    select component.value
+    from jsonb_array_elements(p_components) as component(value)
+  loop
+    v_position := v_position + 1;
+
+    insert into public.lesson_component (
+      lesson_id,
+      position,
+      type_key,
+      schema_version,
+      payload,
+      placement_config,
+      visibility
+    )
+    values (
+      v_lesson_id,
+      v_position,
+      v_component ->> 'typeKey',
+      (v_component ->> 'schemaVersion')::integer,
+      v_component -> 'payload',
+      v_component -> 'placement',
+      'learner_visible'
+    )
+    returning id into v_component_id;
+
+    v_component_ids := array_append(v_component_ids, v_component_id);
+  end loop;
+
+  update public.course
+  set assembled_at = now()
+  where id = p_course_id;
+
+  return jsonb_build_object(
+    'courseId', p_course_id,
+    'lessonIds', jsonb_build_array(v_lesson_id),
+    'componentIds', to_jsonb(v_component_ids),
+    'alreadyAssembled', false
+  );
+end
 $$;
 
--- -----------------------------------------------------------------------------
--- Identity and school scope
--- -----------------------------------------------------------------------------
 
-create table if not exists public.parent (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid not null unique references auth.users(id) on delete cascade,
-  full_name text,
-  timezone text default 'Europe/Moscow',
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+--
+-- Name: can_read_class(uuid); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.can_read_class(p_class_id uuid) RETURNS boolean
+    LANGUAGE sql STABLE SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+  select public.is_class_teacher(p_class_id)
+      or public.is_class_student(p_class_id)
+      or public.parent_in_class(p_class_id);
+$$;
+
+
+--
+-- Name: clear_user_pin(uuid); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.clear_user_pin(p_user_id uuid) RETURNS void
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+begin
+  perform public.ensure_user_security(p_user_id);
+
+  update public.user_security
+  set pin_hash = null,
+      pin_failed_attempts = 0,
+      pin_locked_until = null,
+      pin_updated_at = now(),
+      updated_at = now()
+  where user_id = p_user_id;
+end
+$$;
+
+
+--
+-- Name: compact_course_lesson_positions(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.compact_course_lesson_positions() RETURNS trigger
+    LANGUAGE plpgsql
+    SET search_path TO ''
+    AS $$
+begin
+  update public.lesson
+  set position = position - 1
+  where course_id = old.course_id
+    and position > old.position;
+  return old;
+end
+$$;
+
+
+--
+-- Name: compact_lesson_component_positions(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.compact_lesson_component_positions() RETURNS trigger
+    LANGUAGE plpgsql
+    SET search_path TO ''
+    AS $$
+begin
+  update public.lesson_component
+  set position = position - 1
+  where lesson_id = old.lesson_id
+    and position > old.position;
+  return old;
+end
+$$;
+
+
+--
+-- Name: current_account_id(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.current_account_id() RETURNS uuid
+    LANGUAGE sql STABLE
+    SET search_path TO ''
+    AS $$
+  select account.id
+  from public.account
+  where account.auth_user_id = (select auth.uid())
+  limit 1;
+$$;
+
+
+--
+-- Name: current_parent_id(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.current_parent_id() RETURNS uuid
+    LANGUAGE sql STABLE SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+  select p.id from public.parent p where p.user_id = auth.uid() limit 1;
+$$;
+
+
+--
+-- Name: current_session_invalid_before(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.current_session_invalid_before() RETURNS timestamp with time zone
+    LANGUAGE sql STABLE SECURITY DEFINER
+    SET search_path TO ''
+    AS $$
+  select security.sessions_invalid_before
+  from public.user_security as security
+  where security.user_id = (select auth.uid())
+  limit 1;
+$$;
+
+
+--
+-- Name: current_student_id(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.current_student_id() RETURNS uuid
+    LANGUAGE sql STABLE SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+  select s.id from public.student s where s.user_id = auth.uid() limit 1;
+$$;
+
+
+--
+-- Name: current_teacher_id(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.current_teacher_id() RETURNS uuid
+    LANGUAGE sql STABLE SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+  select t.id from public.teacher t where t.user_id = auth.uid() limit 1;
+$$;
+
+
+SET default_tablespace = '';
+
+SET default_table_access_method = heap;
+
+--
+-- Name: user_preference; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.user_preference (
+    user_id uuid NOT NULL,
+    last_active_profile text,
+    last_selected_school_id uuid,
+    theme text,
+    settings jsonb DEFAULT '{}'::jsonb NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT user_preference_last_active_profile_check CHECK ((last_active_profile = ANY (ARRAY['parent'::text, 'teacher'::text])))
 );
 
-create table if not exists public.teacher (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid not null unique references auth.users(id) on delete cascade,
-  full_name text,
-  timezone text default 'Europe/Moscow',
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+
+--
+-- Name: TABLE user_preference; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.user_preference IS 'Persistent user UI preferences and routing hints.';
+
+
+--
+-- Name: COLUMN user_preference.last_active_profile; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.user_preference.last_active_profile IS 'Last active adult cabinet profile.';
+
+
+--
+-- Name: COLUMN user_preference.last_selected_school_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.user_preference.last_selected_school_id IS 'Last selected school for future multi-school UX.';
+
+
+--
+-- Name: ensure_user_preference(uuid); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.ensure_user_preference(p_user_id uuid) RETURNS public.user_preference
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+declare
+  v_row public.user_preference;
+begin
+  insert into public.user_preference (user_id)
+  values (p_user_id)
+  on conflict (user_id) do nothing;
+
+  select * into v_row from public.user_preference up where up.user_id = p_user_id;
+  return v_row;
+end
+$$;
+
+
+--
+-- Name: user_security; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.user_security (
+    user_id uuid NOT NULL,
+    pin_hash text,
+    pin_failed_attempts integer DEFAULT 0 NOT NULL,
+    pin_locked_until timestamp with time zone,
+    pin_created_at timestamp with time zone,
+    pin_updated_at timestamp with time zone,
+    last_pin_login_at timestamp with time zone,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    sessions_invalid_before timestamp with time zone
 );
 
-create table if not exists public.school (
-  id uuid primary key default gen_random_uuid(),
-  name text not null,
-  slug text not null unique,
-  kind text not null default 'personal' check (kind in ('personal', 'organization')),
-  owner_teacher_id uuid references public.teacher(id) on delete set null,
-  teacher_limit integer not null default 1 check (teacher_limit > 0),
-  plan_code text not null default 'demo',
-  subscription_status text not null default 'active',
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
 
-create table if not exists public.school_teacher (
-  id uuid primary key default gen_random_uuid(),
-  school_id uuid not null references public.school(id) on delete cascade,
-  teacher_id uuid not null references public.teacher(id) on delete cascade,
-  role text not null check (role in ('owner', 'teacher')),
-  created_at timestamptz not null default now(),
-  unique (school_id, teacher_id)
-);
+--
+-- Name: TABLE user_security; Type: COMMENT; Schema: public; Owner: -
+--
 
-create table if not exists public.class (
-  id uuid primary key default gen_random_uuid(),
-  school_id uuid not null references public.school(id) on delete cascade,
-  methodology_id uuid null references public.methodology(id) on delete set null,
-  name text not null,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
-  unique (school_id, name)
-);
+COMMENT ON TABLE public.user_security IS 'Security settings: hashed PIN and lock state.';
 
-create table if not exists public.class_teacher (
-  id uuid primary key default gen_random_uuid(),
-  class_id uuid not null references public.class(id) on delete cascade,
-  teacher_id uuid not null references public.teacher(id) on delete cascade,
-  created_at timestamptz not null default now(),
-  unique (class_id, teacher_id)
-);
 
-create table if not exists public.student (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid unique references auth.users(id) on delete set null,
-  parent_id uuid references public.parent(id) on delete set null,
-  first_name text not null,
-  last_name text,
-  birth_date date,
-  status text not null default 'active',
-  login text not null,
-  internal_auth_email text not null,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
-  unique (login),
-  unique (internal_auth_email)
-);
+--
+-- Name: COLUMN user_security.sessions_invalid_before; Type: COMMENT; Schema: public; Owner: -
+--
 
-create table if not exists public.class_student (
-  id uuid primary key default gen_random_uuid(),
-  class_id uuid not null references public.class(id) on delete cascade,
-  student_id uuid not null references public.student(id) on delete cascade,
-  created_at timestamptz not null default now(),
-  unique (class_id, student_id)
-);
+COMMENT ON COLUMN public.user_security.sessions_invalid_before IS 'App sessions whose issued-at (iat) precedes this instant are treated as revoked. Null = no revocation.';
 
--- -----------------------------------------------------------------------------
--- User preference and security
--- -----------------------------------------------------------------------------
 
-create table if not exists public.user_preference (
-  user_id uuid primary key references auth.users(id) on delete cascade,
-  last_active_profile text null check (last_active_profile in ('parent', 'teacher')),
-  last_selected_school_id uuid null references public.school(id) on delete set null,
-  theme text null,
-  settings jsonb not null default '{}'::jsonb,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
+--
+-- Name: ensure_user_security(uuid); Type: FUNCTION; Schema: public; Owner: -
+--
 
-create table if not exists public.user_security (
-  user_id uuid primary key references auth.users(id) on delete cascade,
-  pin_hash text null,
-  pin_failed_attempts integer not null default 0,
-  pin_locked_until timestamptz null,
-  pin_created_at timestamptz null,
-  pin_updated_at timestamptz null,
-  last_pin_login_at timestamptz null,
-  sessions_invalid_before timestamptz null,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
+CREATE FUNCTION public.ensure_user_security(p_user_id uuid) RETURNS public.user_security
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+declare
+  v_row public.user_security;
+begin
+  insert into public.user_security (user_id)
+  values (p_user_id)
+  on conflict (user_id) do nothing;
 
--- -----------------------------------------------------------------------------
--- V2 account + teacher course-builder vertical slice
--- -----------------------------------------------------------------------------
+  select * into v_row from public.user_security us where us.user_id = p_user_id;
+  return v_row;
+end
+$$;
 
-create table if not exists public.account (
-  id uuid primary key default gen_random_uuid(),
-  auth_user_id uuid not null unique references auth.users(id) on delete cascade,
-  display_name text not null check (btrim(display_name) <> ''),
-  locale text not null default 'ru',
-  timezone text not null default 'Europe/Moscow',
-  status text not null default 'active' check (status in ('active', 'suspended', 'deleted')),
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
 
-create table if not exists public.course (
-  id uuid primary key default gen_random_uuid(),
-  owner_account_id uuid not null references public.account(id) on delete cascade,
-  title text not null check (btrim(title) <> ''),
-  subject text,
-  goal text,
-  level text,
-  audience_description text,
-  target_lesson_count integer check (target_lesson_count is null or target_lesson_count > 0),
-  teacher_preferences text,
-  audience_type text not null default 'none' check (audience_type = 'none'),
-  settings jsonb not null default '{}'::jsonb check (jsonb_typeof(settings) = 'object'),
-  assembled_at timestamptz,
-  archived_at timestamptz,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
+--
+-- Name: get_last_active_profile(uuid); Type: FUNCTION; Schema: public; Owner: -
+--
 
-create table if not exists public.lesson (
-  id uuid primary key default gen_random_uuid(),
-  course_id uuid not null references public.course(id) on delete cascade,
-  position integer not null check (position > 0),
-  title text not null check (btrim(title) <> ''),
-  summary text,
-  estimated_duration_minutes integer check (
-    estimated_duration_minutes is null or estimated_duration_minutes > 0
-  ),
-  settings jsonb not null default '{}'::jsonb check (jsonb_typeof(settings) = 'object'),
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
-  constraint lesson_course_position_unique
-    unique (course_id, position) deferrable initially deferred
-);
+CREATE FUNCTION public.get_last_active_profile(p_user_id uuid) RETURNS text
+    LANGUAGE sql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+  select up.last_active_profile
+  from public.user_preference up
+  where up.user_id = p_user_id;
+$$;
 
-create table if not exists public.lesson_step (
-  id uuid primary key default gen_random_uuid(),
-  lesson_id uuid not null references public.lesson(id) on delete cascade,
-  position integer not null check (position > 0),
-  title text not null check (btrim(title) <> ''),
-  teacher_content jsonb not null default '{}'::jsonb check (
-    jsonb_typeof(teacher_content) = 'object'
-  ),
-  settings jsonb not null default '{}'::jsonb check (jsonb_typeof(settings) = 'object'),
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
-  constraint lesson_step_lesson_position_unique
-    unique (lesson_id, position) deferrable initially deferred
-);
 
-create table if not exists public.lesson_step_component (
-  id uuid primary key default gen_random_uuid(),
-  lesson_step_id uuid not null references public.lesson_step(id) on delete cascade,
-  position integer not null check (position > 0),
-  type_key text not null check (btrim(type_key) <> ''),
-  schema_version integer not null default 1 check (schema_version > 0),
-  payload jsonb not null default '{}'::jsonb check (jsonb_typeof(payload) = 'object'),
-  placement_config jsonb not null default '{}'::jsonb check (
-    jsonb_typeof(placement_config) = 'object'
-  ),
-  visibility text not null default 'learner_visible' check (
-    visibility in ('staff_only', 'learner_visible', 'guardian_visible')
-  ),
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
-  constraint lesson_step_component_step_position_unique
-    unique (lesson_step_id, position) deferrable initially deferred
-);
+--
+-- Name: handle_auth_user_account(); Type: FUNCTION; Schema: public; Owner: -
+--
 
-create table if not exists public.stored_file (
-  id uuid primary key default gen_random_uuid(),
-  owner_account_id uuid not null references public.account(id) on delete cascade,
-  storage_bucket text not null default 'course-assets' check (storage_bucket = 'course-assets'),
-  storage_path text not null unique check (btrim(storage_path) <> ''),
-  original_filename text not null check (btrim(original_filename) <> ''),
-  mime_type text not null check (btrim(mime_type) <> ''),
-  size_bytes bigint not null check (size_bytes > 0 and size_bytes <= 10485760),
-  checksum_sha256 text check (
-    checksum_sha256 is null or checksum_sha256 ~ '^[0-9a-f]{64}$'
-  ),
-  status text not null default 'pending' check (status in ('pending', 'ready')),
-  metadata jsonb not null default '{}'::jsonb check (jsonb_typeof(metadata) = 'object'),
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
-  constraint stored_file_owner_path_check check (
-    split_part(storage_path, '/', 1) = owner_account_id::text
-  ),
-  constraint stored_file_ready_checksum_check check (
-    status = 'pending' or checksum_sha256 is not null
-  )
-);
-
-create table if not exists public.course_attachment (
-  id uuid primary key default gen_random_uuid(),
-  course_id uuid not null references public.course(id) on delete cascade,
-  stored_file_id uuid not null references public.stored_file(id) on delete cascade,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
-  unique (course_id, stored_file_id)
-);
-
--- V2 document/file tables above have owner-scoped authenticated CRUD RLS;
--- Account itself is self-readable only for ordinary authenticated requests.
--- Ordered Lesson, Lesson Step, and component positions are deferrable unique
--- constraints. The private `course-assets` Storage bucket accepts approved
--- files up to 10 MiB; storage.objects policies require the owning Account UUID
--- as path segment 1.
-
--- -----------------------------------------------------------------------------
--- Methodology source layer + lesson runtime layer
--- -----------------------------------------------------------------------------
-
-create table if not exists public.methodology (
-  id uuid primary key default gen_random_uuid(),
-  slug text not null unique,
-  title text not null,
-  short_description text,
-  metadata jsonb not null default '{}'::jsonb,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
-
-create table if not exists public.methodology_lesson (
-  id uuid primary key default gen_random_uuid(),
-  methodology_id uuid not null references public.methodology(id) on delete cascade,
-  title text not null,
-  module_index integer not null,
-  unit_index integer,
-  lesson_index integer not null,
-  vocabulary_summary jsonb not null default '[]'::jsonb,
-  phrase_summary jsonb not null default '[]'::jsonb,
-  estimated_duration_minutes integer not null check (estimated_duration_minutes > 0),
-  readiness_status text not null check (readiness_status in ('draft', 'ready', 'archived')),
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
-  unique (methodology_id, module_index, unit_index, lesson_index)
-);
-
-create table if not exists public.reusable_asset (
-  id uuid primary key default gen_random_uuid(),
-  kind text not null check (
-    kind in (
-      'video',
-      'song',
-      'worksheet',
-      'vocabulary_set',
-      'activity_template',
-      'media_file',
-      'presentation',
-      'flashcards_pdf',
-      'lesson_video',
-      'worksheet_pdf',
-      'song_audio',
-      'song_video',
-      'pronunciation_audio'
-    )
-  ),
-  slug text unique,
-  title text not null,
-  description text,
-  source_url text,
-  file_ref text,
-  metadata jsonb not null default '{}'::jsonb,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
-
-create table if not exists public.methodology_lesson_block (
-  id uuid primary key default gen_random_uuid(),
-  methodology_lesson_id uuid not null references public.methodology_lesson(id) on delete cascade,
-  block_type text not null,
-  sort_order integer not null,
-  title text,
-  content jsonb not null,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
-  unique (methodology_lesson_id, sort_order)
-);
-
-create table if not exists public.methodology_lesson_block_asset (
-  id uuid primary key default gen_random_uuid(),
-  methodology_lesson_block_id uuid not null references public.methodology_lesson_block(id) on delete cascade,
-  reusable_asset_id uuid not null references public.reusable_asset(id) on delete restrict,
-  sort_order integer not null default 0,
-  unique (methodology_lesson_block_id, reusable_asset_id)
-);
-
-create table if not exists public.methodology_lesson_student_content (
-  id uuid primary key default gen_random_uuid(),
-  methodology_lesson_id uuid not null unique references public.methodology_lesson(id) on delete cascade,
-  title text not null,
-  subtitle text,
-  content_payload jsonb not null default '{}'::jsonb,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
-
-create table if not exists public.scheduled_lesson (
-  id uuid primary key default gen_random_uuid(),
-  class_id uuid not null references public.class(id) on delete cascade,
-  methodology_lesson_id uuid not null references public.methodology_lesson(id) on delete restrict,
-  starts_at timestamptz not null,
-  format text not null check (format in ('online', 'offline')),
-  meeting_link text,
-  place text,
-  runtime_status text not null check (runtime_status in ('planned', 'in_progress', 'completed', 'cancelled')),
-  runtime_current_step_id text,
-  runtime_current_step_order integer,
-  runtime_student_navigation_locked boolean not null default true,
-  runtime_step_updated_at timestamptz,
-  runtime_started_at timestamptz,
-  runtime_completed_at timestamptz,
-  runtime_notes_summary text,
-  runtime_notes text,
-  outcome_notes text,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
-
--- -----------------------------------------------------------------------------
--- Homework runtime layer
--- -----------------------------------------------------------------------------
-
-create table if not exists public.methodology_lesson_homework (
-  id uuid primary key default gen_random_uuid(),
-  methodology_lesson_id uuid not null unique references public.methodology_lesson(id) on delete cascade,
-  title text not null,
-  instructions text not null,
-  material_links jsonb not null default '[]'::jsonb,
-  answer_format_hint text,
-  kind text not null default 'practice_text' check (kind in ('practice_text', 'quiz_single_choice')),
-  estimated_minutes integer,
-  quiz_payload jsonb,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
-
-create table if not exists public.scheduled_lesson_homework_assignment (
-  id uuid primary key default gen_random_uuid(),
-  scheduled_lesson_id uuid not null unique references public.scheduled_lesson(id) on delete cascade,
-  methodology_homework_id uuid not null references public.methodology_lesson_homework(id) on delete restrict,
-  assigned_by_teacher_id uuid not null references public.teacher(id) on delete restrict,
-  recipient_mode text not null check (recipient_mode in ('all', 'selected')),
-  assignment_comment text,
-  due_at timestamptz,
-  issued_at timestamptz not null default now(),
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
-
-create table if not exists public.student_homework_assignment (
-  id uuid primary key default gen_random_uuid(),
-  scheduled_homework_assignment_id uuid not null references public.scheduled_lesson_homework_assignment(id) on delete cascade,
-  student_id uuid not null references public.student(id) on delete cascade,
-  status text not null check (status in ('assigned', 'submitted', 'reviewed', 'needs_revision')),
-  submission_text text,
-  submission_payload jsonb,
-  auto_score integer,
-  auto_max_score integer,
-  auto_checked_at timestamptz,
-  submitted_at timestamptz,
-  review_note text,
-  reviewed_at timestamptz,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
-  unique (scheduled_homework_assignment_id, student_id)
-);
-
--- -----------------------------------------------------------------------------
--- Communication runtime layer
--- -----------------------------------------------------------------------------
-
-create table if not exists public.group_student_conversation (
-  id uuid primary key default gen_random_uuid(),
-  class_id uuid not null references public.class(id) on delete cascade,
-  student_id uuid not null references public.student(id) on delete cascade,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
-  unique (class_id, student_id)
-);
-
-create table if not exists public.group_student_message (
-  id uuid primary key default gen_random_uuid(),
-  conversation_id uuid not null references public.group_student_conversation(id) on delete cascade,
-  author_user_id uuid references auth.users(id) on delete set null,
-  author_role text not null check (author_role in ('teacher', 'student', 'parent')),
-  body text,
-  scheduled_lesson_id uuid references public.scheduled_lesson(id) on delete set null,
-  scheduled_lesson_homework_assignment_id uuid references public.scheduled_lesson_homework_assignment(id) on delete set null,
-  topic_kind text check (topic_kind in ('general', 'lesson', 'homework', 'progress', 'organizational')),
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
-
-create table if not exists public.lesson_group_conversation (
-  id uuid primary key default gen_random_uuid(),
-  scheduled_lesson_id uuid not null unique references public.scheduled_lesson(id) on delete cascade,
-  class_id uuid not null references public.class(id) on delete cascade,
-  title text not null,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
-
-create table if not exists public.lesson_group_message (
-  id uuid primary key default gen_random_uuid(),
-  conversation_id uuid not null references public.lesson_group_conversation(id) on delete cascade,
-  author_user_id uuid references auth.users(id) on delete set null,
-  author_role text not null check (author_role in ('teacher', 'student')),
-  author_teacher_id uuid references public.teacher(id) on delete set null,
-  author_student_id uuid references public.student(id) on delete set null,
-  author_login text not null,
-  author_name text not null,
-  body text,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
-
-create table if not exists public.communication_message_attachment (
-  id uuid primary key default gen_random_uuid(),
-  group_student_message_id uuid references public.group_student_message(id) on delete cascade,
-  lesson_group_message_id uuid references public.lesson_group_message(id) on delete cascade,
-  kind text not null check (kind in ('voice', 'file')),
-  storage_bucket text not null,
-  storage_path text not null unique,
-  mime_type text not null,
-  size_bytes integer not null check (size_bytes > 0),
-  duration_ms integer check (duration_ms is null or duration_ms >= 0),
-  original_filename text,
-  created_by_user_id uuid references auth.users(id) on delete set null,
-  created_at timestamptz not null default now(),
-  metadata jsonb not null default '{}'::jsonb,
-  constraint communication_message_attachment_one_parent_check check (
-    (
-      group_student_message_id is not null
-      and lesson_group_message_id is null
-    )
-    or (
-      group_student_message_id is null
-      and lesson_group_message_id is not null
-    )
-  )
-);
-
--- -----------------------------------------------------------------------------
--- Notification runtime layer
--- -----------------------------------------------------------------------------
-
-create table if not exists public.notification (
-  id uuid primary key default gen_random_uuid(),
-  recipient_user_id uuid null references auth.users(id) on delete cascade,
-  recipient_role text not null check (recipient_role in ('teacher', 'parent', 'student')),
-  recipient_teacher_id uuid null references public.teacher(id) on delete cascade,
-  recipient_parent_id uuid null references public.parent(id) on delete cascade,
-  recipient_student_id uuid null references public.student(id) on delete cascade,
-  actor_user_id uuid null references auth.users(id) on delete set null,
-  actor_role text null check (actor_role in ('teacher', 'parent', 'student', 'system')),
-  event_type text not null check (
-    event_type in (
-      'homework_assigned',
-      'homework_submitted',
-      'homework_reviewed',
-      'homework_needs_revision',
-      'message_created',
-      'lesson_group_message_created',
-      'lesson_status_changed'
-    )
-  ),
-  title text not null,
-  body text,
-  href text not null,
-  scheduled_lesson_id uuid null references public.scheduled_lesson(id) on delete set null,
-  scheduled_homework_assignment_id uuid null references public.scheduled_lesson_homework_assignment(id) on delete set null,
-  student_homework_assignment_id uuid null references public.student_homework_assignment(id) on delete set null,
-  conversation_id uuid null,
-  message_id uuid null,
-  metadata jsonb not null default '{}'::jsonb,
-  dedupe_key text null,
-  read_at timestamptz null,
-  created_at timestamptz not null default now()
-);
-
--- -----------------------------------------------------------------------------
--- Key DB functions used by app flows (non-exhaustive)
--- -----------------------------------------------------------------------------
-
--- V2 Account bootstrap for every future Supabase Auth user. EXECUTE is revoked
--- from PUBLIC/anon/authenticated; the auth.users trigger invokes it.
-create or replace function public.handle_auth_user_account()
-returns trigger
-language plpgsql
-security definer
-set search_path = ''
-as $$
+CREATE FUNCTION public.handle_auth_user_account() RETURNS trigger
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO ''
+    AS $$
 begin
   insert into public.account (auth_user_id, display_name)
   values (
@@ -557,220 +476,245 @@ begin
 end
 $$;
 
-drop trigger if exists trg_auth_user_create_account on auth.users;
-create trigger trg_auth_user_create_account
-after insert on auth.users
-for each row execute function public.handle_auth_user_account();
 
--- Authenticated-only SECURITY INVOKER helper. Account's own RLS policy resolves
--- auth.uid() without trusting user-editable JWT metadata.
-create or replace function public.current_account_id()
-returns uuid
-language sql
-stable
-security invoker
-set search_path = ''
-as $$
-  select account.id
-  from public.account
-  where account.auth_user_id = (select auth.uid())
-  limit 1;
-$$;
+--
+-- Name: is_class_student(uuid); Type: FUNCTION; Schema: public; Owner: -
+--
 
--- Authenticated callers can read only their own app-session revocation cutoff;
--- the helper avoids a service-role authorization read in V2 Course routes.
-create or replace function public.current_session_invalid_before()
-returns timestamptz
-language sql
-stable
-security definer
-set search_path = ''
-as $$
-  select security.sessions_invalid_before
-  from public.user_security as security
-  where security.user_id = (select auth.uid())
-  limit 1;
-$$;
-
--- Validated deterministic Course draft persistence boundary. The application
--- service creates the registry plan; this SECURITY INVOKER function commits
--- its Lesson, Lesson Step, components and assembled marker atomically.
-create or replace function public.assemble_course_draft(
-  p_course_id uuid,
-  p_lesson_title text,
-  p_lesson_summary text,
-  p_step_title text,
-  p_teacher_instructions text,
-  p_learner_instruction text,
-  p_components jsonb
-)
-returns jsonb
-language plpgsql
-security invoker
-set search_path = ''
-as $$
-declare
-  v_assembled_at timestamptz;
-  v_lesson_id uuid;
-  v_step_id uuid;
-  v_component_id uuid;
-  v_component jsonb;
-  v_position integer := 0;
-  v_lesson_ids uuid[] := '{}'::uuid[];
-  v_step_ids uuid[] := '{}'::uuid[];
-  v_component_ids uuid[] := '{}'::uuid[];
-begin
-  if p_components is null or jsonb_typeof(p_components) <> 'array' then
-    raise exception 'course_components_must_be_array' using errcode = '22023';
-  end if;
-
-  select course.assembled_at into v_assembled_at
-  from public.course
-  where course.id = p_course_id
-  for update;
-
-  if not found then
-    raise exception 'course_not_found' using errcode = 'P0002';
-  end if;
-
-  if v_assembled_at is not null then
-    select coalesce(array_agg(lesson.id order by lesson.position), '{}'::uuid[])
-    into v_lesson_ids from public.lesson where lesson.course_id = p_course_id;
-
-    select coalesce(array_agg(step.id order by lesson.position, step.position), '{}'::uuid[])
-    into v_step_ids
-    from public.lesson_step as step
-    join public.lesson on lesson.id = step.lesson_id
-    where lesson.course_id = p_course_id;
-
-    select coalesce(
-      array_agg(component.id order by lesson.position, step.position, component.position),
-      '{}'::uuid[]
-    )
-    into v_component_ids
-    from public.lesson_step_component as component
-    join public.lesson_step as step on step.id = component.lesson_step_id
-    join public.lesson on lesson.id = step.lesson_id
-    where lesson.course_id = p_course_id;
-
-    return jsonb_build_object(
-      'courseId', p_course_id,
-      'lessonIds', to_jsonb(v_lesson_ids),
-      'stepIds', to_jsonb(v_step_ids),
-      'componentIds', to_jsonb(v_component_ids),
-      'alreadyAssembled', true
-    );
-  end if;
-
-  if exists (select 1 from public.lesson where lesson.course_id = p_course_id) then
-    raise exception 'course_contains_manual_content' using errcode = '23505';
-  end if;
-
-  insert into public.lesson (course_id, position, title, summary)
-  values (p_course_id, 1, p_lesson_title, p_lesson_summary)
-  returning id into v_lesson_id;
-
-  insert into public.lesson_step (lesson_id, position, title, teacher_content, settings)
-  values (
-    v_lesson_id,
-    1,
-    p_step_title,
-    jsonb_build_object('teacherInstructions', coalesce(p_teacher_instructions, '')),
-    jsonb_build_object('learnerInstruction', coalesce(p_learner_instruction, ''))
-  )
-  returning id into v_step_id;
-
-  for v_component in
-    select component.value
-    from jsonb_array_elements(p_components) as component(value)
-  loop
-    v_position := v_position + 1;
-    insert into public.lesson_step_component (
-      lesson_step_id,
-      position,
-      type_key,
-      schema_version,
-      payload,
-      placement_config,
-      visibility
-    )
-    values (
-      v_step_id,
-      v_position,
-      v_component ->> 'typeKey',
-      (v_component ->> 'schemaVersion')::integer,
-      v_component -> 'payload',
-      v_component -> 'placement',
-      'learner_visible'
-    )
-    returning id into v_component_id;
-    v_component_ids := array_append(v_component_ids, v_component_id);
-  end loop;
-
-  update public.course set assembled_at = now() where id = p_course_id;
-
-  return jsonb_build_object(
-    'courseId', p_course_id,
-    'lessonIds', jsonb_build_array(v_lesson_id),
-    'stepIds', jsonb_build_array(v_step_id),
-    'componentIds', to_jsonb(v_component_ids),
-    'alreadyAssembled', false
+CREATE FUNCTION public.is_class_student(p_class_id uuid) RETURNS boolean
+    LANGUAGE sql STABLE SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+  select exists (
+    select 1 from public.class_student cs
+    where cs.class_id = p_class_id and cs.student_id = public.current_student_id()
   );
-end
 $$;
 
--- Ordered Course document children stay dense after any delete.
-create or replace function public.compact_course_lesson_positions()
-returns trigger language plpgsql security invoker set search_path = '' as $$
+
+--
+-- Name: is_class_teacher(uuid); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.is_class_teacher(p_class_id uuid) RETURNS boolean
+    LANGUAGE sql STABLE SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+  select exists (
+    select 1 from public.class_teacher ct
+    where ct.class_id = p_class_id and ct.teacher_id = public.current_teacher_id()
+  );
+$$;
+
+
+--
+-- Name: is_my_child(uuid); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.is_my_child(p_student_id uuid) RETURNS boolean
+    LANGUAGE sql STABLE SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+  select exists (
+    select 1 from public.student s
+    where s.id = p_student_id and s.parent_id = public.current_parent_id()
+  );
+$$;
+
+
+--
+-- Name: merge_user_settings(uuid, jsonb); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.merge_user_settings(p_user_id uuid, p_settings jsonb) RETURNS void
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
 begin
-  update public.lesson set position = position - 1
-  where course_id = old.course_id and position > old.position;
-  return old;
+  perform public.ensure_user_preference(p_user_id);
+
+  update public.user_preference
+  set settings = coalesce(settings, '{}'::jsonb) || coalesce(p_settings, '{}'::jsonb),
+      updated_at = now()
+  where user_id = p_user_id;
 end
 $$;
 
-create or replace function public.compact_lesson_step_positions()
-returns trigger language plpgsql security invoker set search_path = '' as $$
-begin
-  update public.lesson_step set position = position - 1
-  where lesson_id = old.lesson_id and position > old.position;
-  return old;
-end
-$$;
 
-create or replace function public.compact_step_component_positions()
-returns trigger language plpgsql security invoker set search_path = '' as $$
-begin
-  update public.lesson_step_component set position = position - 1
-  where lesson_step_id = old.lesson_step_id and position > old.position;
-  return old;
-end
-$$;
+--
+-- Name: onboard_parent(uuid, text); Type: FUNCTION; Schema: public; Owner: -
+--
 
--- Atomic reorder RPC used by the shared Course Builder application service.
--- SECURITY INVOKER means lesson_step_component ownership RLS remains active.
-create or replace function public.reorder_lesson_step_component(
-  p_component_id uuid,
-  p_new_position integer
-)
-returns table (component_id uuid, "position" integer)
-language plpgsql
-security invoker
-set search_path = ''
-as $$
+CREATE FUNCTION public.onboard_parent(p_user_id uuid, p_full_name text DEFAULT NULL::text) RETURNS uuid
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
 declare
-  v_lesson_step_id uuid;
+  v_parent_id uuid;
+begin
+  insert into public.parent (user_id, full_name)
+  values (p_user_id, p_full_name)
+  on conflict (user_id) do update
+    set full_name = coalesce(excluded.full_name, public.parent.full_name),
+        updated_at = now()
+  returning id into v_parent_id;
+
+  return v_parent_id;
+end
+$$;
+
+
+--
+-- Name: onboard_teacher(uuid, text); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.onboard_teacher(p_user_id uuid, p_full_name text DEFAULT NULL::text) RETURNS TABLE(teacher_id uuid, school_id uuid, class_id uuid)
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+declare
+  v_teacher_id uuid;
+  v_school_id uuid;
+  v_class_id uuid;
+  base_slug text;
+  slug_candidate text;
+  i integer;
+begin
+  insert into public.teacher (user_id, full_name)
+  values (p_user_id, p_full_name)
+  on conflict (user_id) do update
+    set full_name = coalesce(excluded.full_name, public.teacher.full_name),
+        updated_at = now()
+  returning id into v_teacher_id;
+
+  select st.school_id into v_school_id
+  from public.school_teacher st
+  where st.teacher_id = v_teacher_id
+  order by case when st.role = 'owner' then 0 else 1 end, st.created_at
+  limit 1;
+
+  if v_school_id is null then
+    base_slug := lower(regexp_replace(coalesce(nullif(p_full_name, ''), 'teacher') || '-' || left(v_teacher_id::text, 8), '[^a-z0-9]+', '-', 'g'));
+    base_slug := trim(both '-' from base_slug);
+    if base_slug = '' then
+      base_slug := 'school-' || left(v_teacher_id::text, 8);
+    end if;
+
+    slug_candidate := base_slug;
+    i := 1;
+    while exists (select 1 from public.school s where s.slug = slug_candidate) loop
+      i := i + 1;
+      slug_candidate := base_slug || '-' || i::text;
+    end loop;
+
+    insert into public.school (name, slug)
+    values (coalesce(nullif(p_full_name, ''), 'Преподаватель') || ' — школа', slug_candidate)
+    returning id into v_school_id;
+
+    insert into public.school_teacher (school_id, teacher_id, role)
+    values (v_school_id, v_teacher_id, 'owner')
+    on conflict (school_id, teacher_id) do update set role = 'owner';
+  end if;
+
+  select c.id into v_class_id
+  from public."class" c
+  where c.school_id = v_school_id
+  order by c.created_at asc, c.id asc
+  limit 1;
+
+  if v_class_id is null then
+    insert into public."class" (school_id, name)
+    values (v_school_id, 'Основной класс')
+    returning id into v_class_id;
+  end if;
+
+  insert into public.class_teacher (class_id, teacher_id)
+  values (v_class_id, v_teacher_id)
+  on conflict (class_id, teacher_id) do nothing;
+
+  return query select v_teacher_id, v_school_id, v_class_id;
+end
+$$;
+
+
+--
+-- Name: parent_in_class(uuid); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.parent_in_class(p_class_id uuid) RETURNS boolean
+    LANGUAGE sql STABLE SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+  select exists (
+    select 1 from public.class_student cs
+    join public.student s on s.id = cs.student_id
+    where cs.class_id = p_class_id and s.parent_id = public.current_parent_id()
+  );
+$$;
+
+
+--
+-- Name: parent_in_school(uuid); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.parent_in_school(p_school_id uuid) RETURNS boolean
+    LANGUAGE sql STABLE SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+  select exists (
+    select 1 from public.class_student cs
+    join public.student s on s.id = cs.student_id
+    join public.class c on c.id = cs.class_id
+    where c.school_id = p_school_id and s.parent_id = public.current_parent_id()
+  );
+$$;
+
+
+--
+-- Name: reorder_lesson_component(uuid, integer); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.reorder_lesson_component(p_component_id uuid, p_new_position integer) RETURNS TABLE(component_id uuid, "position" integer)
+    LANGUAGE plpgsql
+    SET search_path TO ''
+    AS $$
+declare
+  v_lesson_id uuid;
   v_old_position integer;
   v_component_count integer;
 begin
   if p_new_position is null or p_new_position < 1 then
-    raise exception 'component_position_out_of_range' using errcode = '22023';
+    raise exception
+      'component_position_out_of_range'
+      using errcode = '22023';
   end if;
 
-  select component.lesson_step_id, component.position
-  into v_lesson_step_id, v_old_position
-  from public.lesson_step_component as component
+  select component.lesson_id
+  into v_lesson_id
+  from public.lesson_component as component
+  where component.id = p_component_id;
+
+  if not found then
+    raise exception 'component_not_found' using errcode = 'P0002';
+  end if;
+
+  -- Serialize every reorder for one Lesson on its parent row before locking any
+  -- component. Two calls targeting different siblings therefore cannot acquire
+  -- the same component set in opposite orders and deadlock.
+  perform 1
+  from public.lesson as lesson
+  where lesson.id = v_lesson_id
+  for update;
+
+  if not found then
+    raise exception 'component_not_found' using errcode = 'P0002';
+  end if;
+
+  select component.position
+  into v_old_position
+  from public.lesson_component as component
   where component.id = p_component_id
+    and component.lesson_id = v_lesson_id
   for update;
 
   if not found then
@@ -778,95 +722,1944 @@ begin
   end if;
 
   perform 1
-  from public.lesson_step_component as component
-  where component.lesson_step_id = v_lesson_step_id
+  from public.lesson_component as component
+  where component.lesson_id = v_lesson_id
+  order by component.id
   for update;
 
   select count(*)::integer
   into v_component_count
-  from public.lesson_step_component as component
-  where component.lesson_step_id = v_lesson_step_id;
+  from public.lesson_component as component
+  where component.lesson_id = v_lesson_id;
 
   if p_new_position > v_component_count then
-    raise exception 'component_position_out_of_range' using errcode = '22023';
+    raise exception
+      'component_position_out_of_range'
+      using errcode = '22023';
   end if;
 
   if p_new_position < v_old_position then
-    update public.lesson_step_component as component
+    update public.lesson_component as component
     set position = component.position + 1
-    where component.lesson_step_id = v_lesson_step_id
+    where component.lesson_id = v_lesson_id
       and component.position >= p_new_position
       and component.position < v_old_position;
   elsif p_new_position > v_old_position then
-    update public.lesson_step_component as component
+    update public.lesson_component as component
     set position = component.position - 1
-    where component.lesson_step_id = v_lesson_step_id
+    where component.lesson_id = v_lesson_id
       and component.position > v_old_position
       and component.position <= p_new_position;
   end if;
 
-  update public.lesson_step_component
+  update public.lesson_component
   set position = p_new_position
   where id = p_component_id;
 
   return query
   select component.id, component.position
-  from public.lesson_step_component as component
-  where component.lesson_step_id = v_lesson_step_id
+  from public.lesson_component as component
+  where component.lesson_id = v_lesson_id
   order by component.position;
 end
 $$;
 
--- Identity + membership helpers for RLS. ALL are SECURITY DEFINER (their internal
--- reads bypass RLS) so policies built on them never read the mutually-recursive
--- graph tables (class_teacher/class_student/student) directly. See migration
--- 202606300002.
-create or replace function public.current_teacher_id() returns uuid language sql stable security definer set search_path = public as $$
-  select t.id from public.teacher t where t.user_id = auth.uid() limit 1;
+
+--
+-- Name: reset_pin_attempts(uuid); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.reset_pin_attempts(p_user_id uuid) RETURNS void
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+begin
+  perform public.ensure_user_security(p_user_id);
+
+  update public.user_security
+  set pin_failed_attempts = 0,
+      pin_locked_until = null,
+      updated_at = now()
+  where user_id = p_user_id;
+end
 $$;
 
-create or replace function public.current_parent_id() returns uuid language sql stable security definer set search_path = public as $$
-  select p.id from public.parent p where p.user_id = auth.uid() limit 1;
+
+--
+-- Name: revoke_user_sessions(uuid, timestamp with time zone); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.revoke_user_sessions(p_user_id uuid, p_cutoff timestamp with time zone DEFAULT now()) RETURNS timestamp with time zone
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+declare
+  v_cutoff timestamptz;
+begin
+  perform public.ensure_user_security(p_user_id);
+
+  update public.user_security
+  set sessions_invalid_before =
+        greatest(coalesce(sessions_invalid_before, p_cutoff), p_cutoff),
+      updated_at = now()
+  where user_id = p_user_id
+  returning sessions_invalid_before into v_cutoff;
+
+  return v_cutoff;
+end
 $$;
 
-create or replace function public.current_student_id() returns uuid language sql stable security definer set search_path = public as $$
-  select s.id from public.student s where s.user_id = auth.uid() limit 1;
+
+--
+-- Name: set_last_active_profile(uuid, text); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.set_last_active_profile(p_user_id uuid, p_profile text) RETURNS void
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+begin
+  perform public.ensure_user_preference(p_user_id);
+
+  update public.user_preference
+  set last_active_profile = p_profile,
+      updated_at = now()
+  where user_id = p_user_id;
+end
 $$;
 
-create or replace function public.is_class_teacher(p_class_id uuid) returns boolean language sql stable security definer set search_path = public as $$
-  select exists (select 1 from public.class_teacher ct where ct.class_id = p_class_id and ct.teacher_id = public.current_teacher_id());
+
+--
+-- Name: set_last_selected_school(uuid, uuid); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.set_last_selected_school(p_user_id uuid, p_school_id uuid) RETURNS void
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+begin
+  perform public.ensure_user_preference(p_user_id);
+
+  update public.user_preference
+  set last_selected_school_id = p_school_id,
+      updated_at = now()
+  where user_id = p_user_id;
+end
 $$;
 
-create or replace function public.is_class_student(p_class_id uuid) returns boolean language sql stable security definer set search_path = public as $$
-  select exists (select 1 from public.class_student cs where cs.class_id = p_class_id and cs.student_id = public.current_student_id());
+
+--
+-- Name: set_updated_at(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.set_updated_at() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+begin
+  new.updated_at = now();
+  return new;
+end;
 $$;
 
-create or replace function public.parent_in_class(p_class_id uuid) returns boolean language sql stable security definer set search_path = public as $$
-  select exists (select 1 from public.class_student cs join public.student s on s.id = cs.student_id where cs.class_id = p_class_id and s.parent_id = public.current_parent_id());
+
+--
+-- Name: set_user_pin(uuid, text); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.set_user_pin(p_user_id uuid, p_raw_pin text) RETURNS void
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+begin
+  perform public.ensure_user_security(p_user_id);
+
+  update public.user_security
+  set pin_hash = crypt(p_raw_pin, gen_salt('bf')),
+      pin_failed_attempts = 0,
+      pin_locked_until = null,
+      pin_created_at = coalesce(pin_created_at, now()),
+      pin_updated_at = now(),
+      updated_at = now()
+  where user_id = p_user_id;
+end
 $$;
 
-create or replace function public.can_read_class(p_class_id uuid) returns boolean language sql stable security definer set search_path = public as $$
-  select public.is_class_teacher(p_class_id) or public.is_class_student(p_class_id) or public.parent_in_class(p_class_id);
+
+--
+-- Name: teaches_student(uuid); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.teaches_student(p_student_id uuid) RETURNS boolean
+    LANGUAGE sql STABLE SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+  select exists (
+    select 1 from public.class_student cs
+    join public.class_teacher ct on ct.class_id = cs.class_id
+    where cs.student_id = p_student_id and ct.teacher_id = public.current_teacher_id()
+  );
 $$;
 
-create or replace function public.is_my_child(p_student_id uuid) returns boolean language sql stable security definer set search_path = public as $$
-  select exists (select 1 from public.student s where s.id = p_student_id and s.parent_id = public.current_parent_id());
+
+--
+-- Name: upsert_user_theme(uuid, text); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.upsert_user_theme(p_user_id uuid, p_theme text) RETURNS void
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+begin
+  perform public.ensure_user_preference(p_user_id);
+
+  update public.user_preference
+  set theme = p_theme,
+      updated_at = now()
+  where user_id = p_user_id;
+end
 $$;
 
-create or replace function public.teaches_student(p_student_id uuid) returns boolean language sql stable security definer set search_path = public as $$
-  select exists (select 1 from public.class_student cs join public.class_teacher ct on ct.class_id = cs.class_id where cs.student_id = p_student_id and ct.teacher_id = public.current_teacher_id());
+
+--
+-- Name: verify_user_pin(uuid, text); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.verify_user_pin(p_user_id uuid, p_raw_pin text) RETURNS boolean
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+declare
+  v_sec public.user_security;
+  v_ok boolean := false;
+  v_max_attempts constant integer := 5;
+  v_lock_minutes constant integer := 15;
+begin
+  select * into v_sec from public.ensure_user_security(p_user_id);
+
+  if v_sec.pin_hash is null then
+    return false;
+  end if;
+
+  if v_sec.pin_locked_until is not null and v_sec.pin_locked_until > now() then
+    return false;
+  end if;
+
+  v_ok := crypt(p_raw_pin, v_sec.pin_hash) = v_sec.pin_hash;
+
+  if v_ok then
+    update public.user_security
+    set pin_failed_attempts = 0,
+        pin_locked_until = null,
+        last_pin_login_at = now(),
+        updated_at = now()
+    where user_id = p_user_id;
+    return true;
+  end if;
+
+  update public.user_security
+  set pin_failed_attempts = pin_failed_attempts + 1,
+      pin_locked_until = case
+        when pin_failed_attempts + 1 >= v_max_attempts then now() + make_interval(mins => v_lock_minutes)
+        else null
+      end,
+      updated_at = now()
+  where user_id = p_user_id;
+
+  return false;
+end
 $$;
 
-create or replace function public.parent_in_school(p_school_id uuid) returns boolean language sql stable security definer set search_path = public as $$
-  select exists (select 1 from public.class_student cs join public.student s on s.id = cs.student_id join public.class c on c.id = cs.class_id where c.school_id = p_school_id and s.parent_id = public.current_parent_id());
-$$;
 
-create or replace function public.scheduled_homework_class_id(p_slha_id uuid) returns uuid language sql stable security definer set search_path = public as $$
-  select sl.class_id from public.scheduled_lesson_homework_assignment sha join public.scheduled_lesson sl on sl.id = sha.scheduled_lesson_id where sha.id = p_slha_id;
-$$;
+--
+-- Name: account; Type: TABLE; Schema: public; Owner: -
+--
 
--- Note: RLS is enabled on all 24 application tables and (since 202606300002) every
--- RLS table has SELECT policies — runtime/content tables are membership-scoped via
--- the helpers above; methodology/content is a shared catalog (USING(true) to
--- authenticated). Full policy text, all indexes, and operational RPCs live in
--- migrations. This snapshot is optimized for CURRENT model readability.
+CREATE TABLE public.account (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    auth_user_id uuid NOT NULL,
+    display_name text NOT NULL,
+    locale text DEFAULT 'ru'::text NOT NULL,
+    timezone text DEFAULT 'Europe/Moscow'::text NOT NULL,
+    status text DEFAULT 'active'::text NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT account_display_name_check CHECK ((btrim(display_name) <> ''::text)),
+    CONSTRAINT account_status_check CHECK ((status = ANY (ARRAY['active'::text, 'suspended'::text, 'deleted'::text])))
+);
+
+
+--
+-- Name: class; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.class (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    school_id uuid NOT NULL,
+    name text NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
+-- Name: class_student; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.class_student (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    class_id uuid NOT NULL,
+    student_id uuid NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
+-- Name: class_teacher; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.class_teacher (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    class_id uuid NOT NULL,
+    teacher_id uuid NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
+-- Name: course; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.course (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    owner_account_id uuid NOT NULL,
+    title text NOT NULL,
+    subject text,
+    goal text,
+    level text,
+    audience_description text,
+    target_lesson_count integer,
+    teacher_preferences text,
+    audience_type text DEFAULT 'none'::text NOT NULL,
+    settings jsonb DEFAULT '{}'::jsonb NOT NULL,
+    assembled_at timestamp with time zone,
+    archived_at timestamp with time zone,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT course_audience_type_check CHECK ((audience_type = 'none'::text)),
+    CONSTRAINT course_settings_check CHECK ((jsonb_typeof(settings) = 'object'::text)),
+    CONSTRAINT course_target_lesson_count_check CHECK (((target_lesson_count IS NULL) OR (target_lesson_count > 0))),
+    CONSTRAINT course_title_check CHECK ((btrim(title) <> ''::text))
+);
+
+
+--
+-- Name: course_attachment; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.course_attachment (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    course_id uuid NOT NULL,
+    stored_file_id uuid NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
+-- Name: lesson; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.lesson (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    course_id uuid NOT NULL,
+    "position" integer NOT NULL,
+    title text NOT NULL,
+    summary text,
+    estimated_duration_minutes integer,
+    settings jsonb DEFAULT '{}'::jsonb NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT lesson_estimated_duration_minutes_check CHECK (((estimated_duration_minutes IS NULL) OR (estimated_duration_minutes > 0))),
+    CONSTRAINT lesson_position_check CHECK (("position" > 0)),
+    CONSTRAINT lesson_settings_check CHECK ((jsonb_typeof(settings) = 'object'::text)),
+    CONSTRAINT lesson_title_check CHECK ((btrim(title) <> ''::text))
+);
+
+
+--
+-- Name: lesson_component; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.lesson_component (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    lesson_id uuid NOT NULL,
+    "position" integer NOT NULL,
+    type_key text NOT NULL,
+    schema_version integer DEFAULT 1 NOT NULL,
+    payload jsonb DEFAULT '{}'::jsonb NOT NULL,
+    placement_config jsonb DEFAULT '{}'::jsonb NOT NULL,
+    visibility text DEFAULT 'learner_visible'::text NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT lesson_component_payload_check CHECK ((jsonb_typeof(payload) = 'object'::text)),
+    CONSTRAINT lesson_component_placement_config_check CHECK ((jsonb_typeof(placement_config) = 'object'::text)),
+    CONSTRAINT lesson_component_position_check CHECK (("position" > 0)),
+    CONSTRAINT lesson_component_schema_version_check CHECK ((schema_version > 0)),
+    CONSTRAINT lesson_component_type_key_check CHECK ((btrim(type_key) <> ''::text)),
+    CONSTRAINT lesson_component_visibility_check CHECK ((visibility = ANY (ARRAY['staff_only'::text, 'learner_visible'::text])))
+);
+
+
+--
+-- Name: parent; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.parent (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    user_id uuid NOT NULL,
+    full_name text,
+    timezone text DEFAULT 'Europe/Moscow'::text,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
+-- Name: school; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.school (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    name text NOT NULL,
+    slug text NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    kind text DEFAULT 'personal'::text NOT NULL,
+    owner_teacher_id uuid,
+    teacher_limit integer DEFAULT 1 NOT NULL,
+    plan_code text DEFAULT 'demo'::text NOT NULL,
+    subscription_status text DEFAULT 'active'::text NOT NULL,
+    CONSTRAINT school_kind_check CHECK ((kind = ANY (ARRAY['personal'::text, 'organization'::text]))),
+    CONSTRAINT school_teacher_limit_positive_check CHECK ((teacher_limit > 0))
+);
+
+
+--
+-- Name: school_teacher; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.school_teacher (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    school_id uuid NOT NULL,
+    teacher_id uuid NOT NULL,
+    role text NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT school_teacher_role_check CHECK ((role = ANY (ARRAY['owner'::text, 'teacher'::text])))
+);
+
+
+--
+-- Name: stored_file; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.stored_file (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    owner_account_id uuid NOT NULL,
+    storage_bucket text DEFAULT 'course-assets'::text NOT NULL,
+    storage_path text NOT NULL,
+    original_filename text NOT NULL,
+    mime_type text NOT NULL,
+    size_bytes bigint NOT NULL,
+    checksum_sha256 text,
+    status text DEFAULT 'pending'::text NOT NULL,
+    metadata jsonb DEFAULT '{}'::jsonb NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT stored_file_checksum_sha256_check CHECK (((checksum_sha256 IS NULL) OR (checksum_sha256 ~ '^[0-9a-f]{64}$'::text))),
+    CONSTRAINT stored_file_metadata_check CHECK ((jsonb_typeof(metadata) = 'object'::text)),
+    CONSTRAINT stored_file_mime_type_check CHECK ((btrim(mime_type) <> ''::text)),
+    CONSTRAINT stored_file_original_filename_check CHECK ((btrim(original_filename) <> ''::text)),
+    CONSTRAINT stored_file_owner_path_check CHECK ((split_part(storage_path, '/'::text, 1) = (owner_account_id)::text)),
+    CONSTRAINT stored_file_ready_checksum_check CHECK (((status = 'pending'::text) OR (checksum_sha256 IS NOT NULL))),
+    CONSTRAINT stored_file_size_bytes_check CHECK (((size_bytes > 0) AND (size_bytes <= 10485760))),
+    CONSTRAINT stored_file_status_check CHECK ((status = ANY (ARRAY['pending'::text, 'ready'::text]))),
+    CONSTRAINT stored_file_storage_bucket_check CHECK ((storage_bucket = 'course-assets'::text)),
+    CONSTRAINT stored_file_storage_path_check CHECK ((btrim(storage_path) <> ''::text))
+);
+
+
+--
+-- Name: student; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.student (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    first_name text NOT NULL,
+    last_name text,
+    birth_date date,
+    status text DEFAULT 'active'::text NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    user_id uuid,
+    login text NOT NULL,
+    parent_id uuid,
+    internal_auth_email text
+);
+
+
+--
+-- Name: teacher; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.teacher (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    user_id uuid NOT NULL,
+    full_name text,
+    timezone text DEFAULT 'Europe/Moscow'::text,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
+-- Name: account account_auth_user_id_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.account
+    ADD CONSTRAINT account_auth_user_id_key UNIQUE (auth_user_id);
+
+
+--
+-- Name: account account_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.account
+    ADD CONSTRAINT account_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: class class_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.class
+    ADD CONSTRAINT class_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: class_student class_student_class_id_student_id_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.class_student
+    ADD CONSTRAINT class_student_class_id_student_id_key UNIQUE (class_id, student_id);
+
+
+--
+-- Name: class_student class_student_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.class_student
+    ADD CONSTRAINT class_student_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: class_teacher class_teacher_class_id_teacher_id_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.class_teacher
+    ADD CONSTRAINT class_teacher_class_id_teacher_id_key UNIQUE (class_id, teacher_id);
+
+
+--
+-- Name: class_teacher class_teacher_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.class_teacher
+    ADD CONSTRAINT class_teacher_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: course_attachment course_attachment_course_id_stored_file_id_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.course_attachment
+    ADD CONSTRAINT course_attachment_course_id_stored_file_id_key UNIQUE (course_id, stored_file_id);
+
+
+--
+-- Name: course_attachment course_attachment_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.course_attachment
+    ADD CONSTRAINT course_attachment_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: course course_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.course
+    ADD CONSTRAINT course_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: lesson_component lesson_component_lesson_position_unique; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.lesson_component
+    ADD CONSTRAINT lesson_component_lesson_position_unique UNIQUE (lesson_id, "position") DEFERRABLE INITIALLY DEFERRED;
+
+
+--
+-- Name: lesson_component lesson_component_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.lesson_component
+    ADD CONSTRAINT lesson_component_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: lesson lesson_course_position_unique; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.lesson
+    ADD CONSTRAINT lesson_course_position_unique UNIQUE (course_id, "position") DEFERRABLE INITIALLY DEFERRED;
+
+
+--
+-- Name: lesson lesson_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.lesson
+    ADD CONSTRAINT lesson_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: school organization_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.school
+    ADD CONSTRAINT organization_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: school organization_slug_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.school
+    ADD CONSTRAINT organization_slug_key UNIQUE (slug);
+
+
+--
+-- Name: parent parent_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.parent
+    ADD CONSTRAINT parent_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: parent parent_user_id_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.parent
+    ADD CONSTRAINT parent_user_id_key UNIQUE (user_id);
+
+
+--
+-- Name: school_teacher school_teacher_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.school_teacher
+    ADD CONSTRAINT school_teacher_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: school_teacher school_teacher_school_id_teacher_id_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.school_teacher
+    ADD CONSTRAINT school_teacher_school_id_teacher_id_key UNIQUE (school_id, teacher_id);
+
+
+--
+-- Name: stored_file stored_file_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.stored_file
+    ADD CONSTRAINT stored_file_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: stored_file stored_file_storage_path_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.stored_file
+    ADD CONSTRAINT stored_file_storage_path_key UNIQUE (storage_path);
+
+
+--
+-- Name: student student_profile_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.student
+    ADD CONSTRAINT student_profile_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: teacher teacher_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.teacher
+    ADD CONSTRAINT teacher_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: teacher teacher_user_id_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.teacher
+    ADD CONSTRAINT teacher_user_id_key UNIQUE (user_id);
+
+
+--
+-- Name: user_preference user_preference_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.user_preference
+    ADD CONSTRAINT user_preference_pkey PRIMARY KEY (user_id);
+
+
+--
+-- Name: user_security user_security_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.user_security
+    ADD CONSTRAINT user_security_pkey PRIMARY KEY (user_id);
+
+
+--
+-- Name: class_school_name_unique_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX class_school_name_unique_idx ON public.class USING btree (school_id, lower(name));
+
+
+--
+-- Name: class_student_student_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX class_student_student_id_idx ON public.class_student USING btree (student_id);
+
+
+--
+-- Name: class_teacher_class_teacher_unique_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX class_teacher_class_teacher_unique_idx ON public.class_teacher USING btree (class_id, teacher_id);
+
+
+--
+-- Name: class_teacher_teacher_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX class_teacher_teacher_id_idx ON public.class_teacher USING btree (teacher_id);
+
+
+--
+-- Name: course_attachment_file_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX course_attachment_file_idx ON public.course_attachment USING btree (stored_file_id);
+
+
+--
+-- Name: course_owner_updated_at_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX course_owner_updated_at_idx ON public.course USING btree (owner_account_id, updated_at DESC);
+
+
+--
+-- Name: lesson_component_lesson_position_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX lesson_component_lesson_position_idx ON public.lesson_component USING btree (lesson_id, "position");
+
+
+--
+-- Name: lesson_component_type_key_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX lesson_component_type_key_idx ON public.lesson_component USING btree (type_key);
+
+
+--
+-- Name: lesson_course_position_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX lesson_course_position_idx ON public.lesson USING btree (course_id, "position");
+
+
+--
+-- Name: school_teacher_school_teacher_unique_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX school_teacher_school_teacher_unique_idx ON public.school_teacher USING btree (school_id, teacher_id);
+
+
+--
+-- Name: school_teacher_teacher_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX school_teacher_teacher_id_idx ON public.school_teacher USING btree (teacher_id);
+
+
+--
+-- Name: stored_file_owner_created_at_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX stored_file_owner_created_at_idx ON public.stored_file USING btree (owner_account_id, created_at DESC);
+
+
+--
+-- Name: student_internal_auth_email_unique_ci; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX student_internal_auth_email_unique_ci ON public.student USING btree (lower(internal_auth_email));
+
+
+--
+-- Name: student_login_unique_ci; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX student_login_unique_ci ON public.student USING btree (lower(login));
+
+
+--
+-- Name: student_parent_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX student_parent_id_idx ON public.student USING btree (parent_id);
+
+
+--
+-- Name: teacher_user_id_unique_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX teacher_user_id_unique_idx ON public.teacher USING btree (user_id);
+
+
+--
+-- Name: user_preference_last_active_profile_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX user_preference_last_active_profile_idx ON public.user_preference USING btree (last_active_profile) WHERE (last_active_profile IS NOT NULL);
+
+
+--
+-- Name: user_preference_last_selected_school_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX user_preference_last_selected_school_idx ON public.user_preference USING btree (last_selected_school_id) WHERE (last_selected_school_id IS NOT NULL);
+
+
+--
+-- Name: user_security_pin_locked_until_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX user_security_pin_locked_until_idx ON public.user_security USING btree (pin_locked_until) WHERE (pin_locked_until IS NOT NULL);
+
+
+--
+-- Name: account trg_account_updated_at; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_account_updated_at BEFORE UPDATE ON public.account FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+
+
+--
+-- Name: class trg_class_updated_at; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_class_updated_at BEFORE UPDATE ON public.class FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+
+
+--
+-- Name: course_attachment trg_course_attachment_updated_at; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_course_attachment_updated_at BEFORE UPDATE ON public.course_attachment FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+
+
+--
+-- Name: course trg_course_updated_at; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_course_updated_at BEFORE UPDATE ON public.course FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+
+
+--
+-- Name: lesson trg_lesson_compact_positions; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_lesson_compact_positions AFTER DELETE ON public.lesson FOR EACH ROW EXECUTE FUNCTION public.compact_course_lesson_positions();
+
+
+--
+-- Name: lesson_component trg_lesson_component_compact_positions; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_lesson_component_compact_positions AFTER DELETE ON public.lesson_component FOR EACH ROW EXECUTE FUNCTION public.compact_lesson_component_positions();
+
+
+--
+-- Name: lesson_component trg_lesson_component_updated_at; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_lesson_component_updated_at BEFORE UPDATE ON public.lesson_component FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+
+
+--
+-- Name: lesson trg_lesson_updated_at; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_lesson_updated_at BEFORE UPDATE ON public.lesson FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+
+
+--
+-- Name: parent trg_parent_updated_at; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_parent_updated_at BEFORE UPDATE ON public.parent FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+
+
+--
+-- Name: school trg_school_updated_at; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_school_updated_at BEFORE UPDATE ON public.school FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+
+
+--
+-- Name: stored_file trg_stored_file_updated_at; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_stored_file_updated_at BEFORE UPDATE ON public.stored_file FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+
+
+--
+-- Name: student trg_student_updated_at; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_student_updated_at BEFORE UPDATE ON public.student FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+
+
+--
+-- Name: teacher trg_teacher_updated_at; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_teacher_updated_at BEFORE UPDATE ON public.teacher FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+
+
+--
+-- Name: user_preference trg_user_preference_updated_at; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_user_preference_updated_at BEFORE UPDATE ON public.user_preference FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+
+
+--
+-- Name: user_security trg_user_security_updated_at; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_user_security_updated_at BEFORE UPDATE ON public.user_security FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+
+
+--
+-- Name: account account_auth_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.account
+    ADD CONSTRAINT account_auth_user_id_fkey FOREIGN KEY (auth_user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
+
+
+--
+-- Name: class class_school_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.class
+    ADD CONSTRAINT class_school_id_fkey FOREIGN KEY (school_id) REFERENCES public.school(id) ON DELETE CASCADE;
+
+
+--
+-- Name: class_student class_student_class_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.class_student
+    ADD CONSTRAINT class_student_class_id_fkey FOREIGN KEY (class_id) REFERENCES public.class(id) ON DELETE CASCADE;
+
+
+--
+-- Name: class_student class_student_student_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.class_student
+    ADD CONSTRAINT class_student_student_id_fkey FOREIGN KEY (student_id) REFERENCES public.student(id) ON DELETE CASCADE;
+
+
+--
+-- Name: class_teacher class_teacher_class_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.class_teacher
+    ADD CONSTRAINT class_teacher_class_id_fkey FOREIGN KEY (class_id) REFERENCES public.class(id) ON DELETE CASCADE;
+
+
+--
+-- Name: class_teacher class_teacher_teacher_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.class_teacher
+    ADD CONSTRAINT class_teacher_teacher_id_fkey FOREIGN KEY (teacher_id) REFERENCES public.teacher(id) ON DELETE CASCADE;
+
+
+--
+-- Name: course_attachment course_attachment_course_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.course_attachment
+    ADD CONSTRAINT course_attachment_course_id_fkey FOREIGN KEY (course_id) REFERENCES public.course(id) ON DELETE CASCADE;
+
+
+--
+-- Name: course_attachment course_attachment_stored_file_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.course_attachment
+    ADD CONSTRAINT course_attachment_stored_file_id_fkey FOREIGN KEY (stored_file_id) REFERENCES public.stored_file(id) ON DELETE CASCADE;
+
+
+--
+-- Name: course course_owner_account_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.course
+    ADD CONSTRAINT course_owner_account_id_fkey FOREIGN KEY (owner_account_id) REFERENCES public.account(id) ON DELETE CASCADE;
+
+
+--
+-- Name: lesson_component lesson_component_lesson_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.lesson_component
+    ADD CONSTRAINT lesson_component_lesson_id_fkey FOREIGN KEY (lesson_id) REFERENCES public.lesson(id) ON DELETE CASCADE;
+
+
+--
+-- Name: lesson lesson_course_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.lesson
+    ADD CONSTRAINT lesson_course_id_fkey FOREIGN KEY (course_id) REFERENCES public.course(id) ON DELETE CASCADE;
+
+
+--
+-- Name: parent parent_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.parent
+    ADD CONSTRAINT parent_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
+
+
+--
+-- Name: school school_owner_teacher_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.school
+    ADD CONSTRAINT school_owner_teacher_id_fkey FOREIGN KEY (owner_teacher_id) REFERENCES public.teacher(id) ON DELETE SET NULL;
+
+
+--
+-- Name: school_teacher school_teacher_school_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.school_teacher
+    ADD CONSTRAINT school_teacher_school_id_fkey FOREIGN KEY (school_id) REFERENCES public.school(id) ON DELETE CASCADE;
+
+
+--
+-- Name: school_teacher school_teacher_teacher_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.school_teacher
+    ADD CONSTRAINT school_teacher_teacher_id_fkey FOREIGN KEY (teacher_id) REFERENCES public.teacher(id) ON DELETE CASCADE;
+
+
+--
+-- Name: stored_file stored_file_owner_account_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.stored_file
+    ADD CONSTRAINT stored_file_owner_account_id_fkey FOREIGN KEY (owner_account_id) REFERENCES public.account(id) ON DELETE CASCADE;
+
+
+--
+-- Name: student student_parent_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.student
+    ADD CONSTRAINT student_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES public.parent(id) ON DELETE SET NULL;
+
+
+--
+-- Name: student student_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.student
+    ADD CONSTRAINT student_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE SET NULL;
+
+
+--
+-- Name: teacher teacher_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.teacher
+    ADD CONSTRAINT teacher_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
+
+
+--
+-- Name: user_preference user_preference_last_selected_school_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.user_preference
+    ADD CONSTRAINT user_preference_last_selected_school_id_fkey FOREIGN KEY (last_selected_school_id) REFERENCES public.school(id) ON DELETE SET NULL;
+
+
+--
+-- Name: user_preference user_preference_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.user_preference
+    ADD CONSTRAINT user_preference_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
+
+
+--
+-- Name: user_security user_security_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.user_security
+    ADD CONSTRAINT user_security_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
+
+
+--
+-- Name: account; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.account ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: account account_self_select; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY account_self_select ON public.account FOR SELECT TO authenticated USING ((auth_user_id = ( SELECT auth.uid() AS uid)));
+
+
+--
+-- Name: class; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.class ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: class class_parent_context_select; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY class_parent_context_select ON public.class FOR SELECT USING (public.parent_in_class(id));
+
+
+--
+-- Name: class_student; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.class_student ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: class_student class_student_related_select; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY class_student_related_select ON public.class_student FOR SELECT USING (((student_id = public.current_student_id()) OR public.is_my_child(student_id) OR public.is_class_teacher(class_id)));
+
+
+--
+-- Name: class_teacher; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.class_teacher ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: class class_teacher_or_student_select; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY class_teacher_or_student_select ON public.class FOR SELECT USING ((public.is_class_teacher(id) OR public.is_class_student(id)));
+
+
+--
+-- Name: class_teacher class_teacher_self_or_student_select; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY class_teacher_self_or_student_select ON public.class_teacher FOR SELECT USING (((teacher_id = public.current_teacher_id()) OR public.is_class_student(class_id)));
+
+
+--
+-- Name: course; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.course ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: course_attachment; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.course_attachment ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: course_attachment course_attachment_owner_all; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY course_attachment_owner_all ON public.course_attachment TO authenticated USING (((EXISTS ( SELECT 1
+   FROM public.course
+  WHERE ((course.id = course_attachment.course_id) AND (course.owner_account_id = ( SELECT public.current_account_id() AS current_account_id))))) AND (EXISTS ( SELECT 1
+   FROM public.stored_file
+  WHERE ((stored_file.id = course_attachment.stored_file_id) AND (stored_file.owner_account_id = ( SELECT public.current_account_id() AS current_account_id))))))) WITH CHECK (((EXISTS ( SELECT 1
+   FROM public.course
+  WHERE ((course.id = course_attachment.course_id) AND (course.owner_account_id = ( SELECT public.current_account_id() AS current_account_id))))) AND (EXISTS ( SELECT 1
+   FROM public.stored_file
+  WHERE ((stored_file.id = course_attachment.stored_file_id) AND (stored_file.owner_account_id = ( SELECT public.current_account_id() AS current_account_id)))))));
+
+
+--
+-- Name: course course_owner_all; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY course_owner_all ON public.course TO authenticated USING ((owner_account_id = ( SELECT public.current_account_id() AS current_account_id))) WITH CHECK ((owner_account_id = ( SELECT public.current_account_id() AS current_account_id)));
+
+
+--
+-- Name: lesson; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.lesson ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: lesson_component; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.lesson_component ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: lesson_component lesson_component_course_owner_all; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY lesson_component_course_owner_all ON public.lesson_component TO authenticated USING ((EXISTS ( SELECT 1
+   FROM (public.lesson
+     JOIN public.course ON ((course.id = lesson.course_id)))
+  WHERE ((lesson.id = lesson_component.lesson_id) AND (course.owner_account_id = ( SELECT public.current_account_id() AS current_account_id)))))) WITH CHECK ((EXISTS ( SELECT 1
+   FROM (public.lesson
+     JOIN public.course ON ((course.id = lesson.course_id)))
+  WHERE ((lesson.id = lesson_component.lesson_id) AND (course.owner_account_id = ( SELECT public.current_account_id() AS current_account_id))))));
+
+
+--
+-- Name: lesson lesson_course_owner_all; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY lesson_course_owner_all ON public.lesson TO authenticated USING ((EXISTS ( SELECT 1
+   FROM public.course
+  WHERE ((course.id = lesson.course_id) AND (course.owner_account_id = ( SELECT public.current_account_id() AS current_account_id)))))) WITH CHECK ((EXISTS ( SELECT 1
+   FROM public.course
+  WHERE ((course.id = lesson.course_id) AND (course.owner_account_id = ( SELECT public.current_account_id() AS current_account_id))))));
+
+
+--
+-- Name: parent; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.parent ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: parent parent_self_select; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY parent_self_select ON public.parent FOR SELECT USING ((id = public.current_parent_id()));
+
+
+--
+-- Name: parent parent_self_update; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY parent_self_update ON public.parent FOR UPDATE USING ((id = public.current_parent_id())) WITH CHECK ((id = public.current_parent_id()));
+
+
+--
+-- Name: school; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.school ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: school school_parent_context_select; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY school_parent_context_select ON public.school FOR SELECT USING (public.parent_in_school(id));
+
+
+--
+-- Name: school_teacher; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.school_teacher ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: school school_teacher_membership_select; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY school_teacher_membership_select ON public.school FOR SELECT USING ((EXISTS ( SELECT 1
+   FROM public.school_teacher st
+  WHERE ((st.school_id = school.id) AND (st.teacher_id = public.current_teacher_id())))));
+
+
+--
+-- Name: school_teacher school_teacher_self_select; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY school_teacher_self_select ON public.school_teacher FOR SELECT USING ((teacher_id = public.current_teacher_id()));
+
+
+--
+-- Name: stored_file; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.stored_file ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: stored_file stored_file_owner_all; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY stored_file_owner_all ON public.stored_file TO authenticated USING ((owner_account_id = ( SELECT public.current_account_id() AS current_account_id))) WITH CHECK ((owner_account_id = ( SELECT public.current_account_id() AS current_account_id)));
+
+
+--
+-- Name: student; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.student ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: student student_self_parent_teacher_select; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY student_self_parent_teacher_select ON public.student FOR SELECT USING (((user_id = auth.uid()) OR (parent_id = public.current_parent_id()) OR public.teaches_student(id)));
+
+
+--
+-- Name: student student_self_update; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY student_self_update ON public.student FOR UPDATE USING ((user_id = auth.uid())) WITH CHECK ((user_id = auth.uid()));
+
+
+--
+-- Name: teacher; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.teacher ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: teacher teacher_self_select; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY teacher_self_select ON public.teacher FOR SELECT USING ((id = public.current_teacher_id()));
+
+
+--
+-- Name: teacher teacher_self_update; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY teacher_self_update ON public.teacher FOR UPDATE USING ((id = public.current_teacher_id())) WITH CHECK ((id = public.current_teacher_id()));
+
+
+--
+-- Name: SCHEMA public; Type: ACL; Schema: -; Owner: -
+--
+
+REVOKE USAGE ON SCHEMA public FROM PUBLIC;
+GRANT USAGE ON SCHEMA public TO anon;
+GRANT USAGE ON SCHEMA public TO authenticated;
+GRANT USAGE ON SCHEMA public TO service_role;
+
+
+--
+-- Name: FUNCTION assemble_course_draft(p_course_id uuid, p_lesson_title text, p_lesson_summary text, p_components jsonb); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.assemble_course_draft(p_course_id uuid, p_lesson_title text, p_lesson_summary text, p_components jsonb) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.assemble_course_draft(p_course_id uuid, p_lesson_title text, p_lesson_summary text, p_components jsonb) TO authenticated;
+GRANT ALL ON FUNCTION public.assemble_course_draft(p_course_id uuid, p_lesson_title text, p_lesson_summary text, p_components jsonb) TO service_role;
+
+
+--
+-- Name: FUNCTION can_read_class(p_class_id uuid); Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON FUNCTION public.can_read_class(p_class_id uuid) TO anon;
+GRANT ALL ON FUNCTION public.can_read_class(p_class_id uuid) TO authenticated;
+GRANT ALL ON FUNCTION public.can_read_class(p_class_id uuid) TO service_role;
+
+
+--
+-- Name: FUNCTION clear_user_pin(p_user_id uuid); Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON FUNCTION public.clear_user_pin(p_user_id uuid) TO anon;
+GRANT ALL ON FUNCTION public.clear_user_pin(p_user_id uuid) TO authenticated;
+GRANT ALL ON FUNCTION public.clear_user_pin(p_user_id uuid) TO service_role;
+
+
+--
+-- Name: FUNCTION compact_course_lesson_positions(); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.compact_course_lesson_positions() FROM PUBLIC;
+GRANT ALL ON FUNCTION public.compact_course_lesson_positions() TO service_role;
+
+
+--
+-- Name: FUNCTION compact_lesson_component_positions(); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.compact_lesson_component_positions() FROM PUBLIC;
+GRANT ALL ON FUNCTION public.compact_lesson_component_positions() TO service_role;
+
+
+--
+-- Name: FUNCTION current_account_id(); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.current_account_id() FROM PUBLIC;
+GRANT ALL ON FUNCTION public.current_account_id() TO authenticated;
+GRANT ALL ON FUNCTION public.current_account_id() TO service_role;
+
+
+--
+-- Name: FUNCTION current_parent_id(); Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON FUNCTION public.current_parent_id() TO anon;
+GRANT ALL ON FUNCTION public.current_parent_id() TO authenticated;
+GRANT ALL ON FUNCTION public.current_parent_id() TO service_role;
+
+
+--
+-- Name: FUNCTION current_session_invalid_before(); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.current_session_invalid_before() FROM PUBLIC;
+GRANT ALL ON FUNCTION public.current_session_invalid_before() TO authenticated;
+GRANT ALL ON FUNCTION public.current_session_invalid_before() TO service_role;
+
+
+--
+-- Name: FUNCTION current_student_id(); Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON FUNCTION public.current_student_id() TO anon;
+GRANT ALL ON FUNCTION public.current_student_id() TO authenticated;
+GRANT ALL ON FUNCTION public.current_student_id() TO service_role;
+
+
+--
+-- Name: FUNCTION current_teacher_id(); Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON FUNCTION public.current_teacher_id() TO anon;
+GRANT ALL ON FUNCTION public.current_teacher_id() TO authenticated;
+GRANT ALL ON FUNCTION public.current_teacher_id() TO service_role;
+
+
+--
+-- Name: TABLE user_preference; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON TABLE public.user_preference TO anon;
+GRANT ALL ON TABLE public.user_preference TO authenticated;
+GRANT ALL ON TABLE public.user_preference TO service_role;
+
+
+--
+-- Name: FUNCTION ensure_user_preference(p_user_id uuid); Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON FUNCTION public.ensure_user_preference(p_user_id uuid) TO anon;
+GRANT ALL ON FUNCTION public.ensure_user_preference(p_user_id uuid) TO authenticated;
+GRANT ALL ON FUNCTION public.ensure_user_preference(p_user_id uuid) TO service_role;
+
+
+--
+-- Name: TABLE user_security; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON TABLE public.user_security TO anon;
+GRANT ALL ON TABLE public.user_security TO authenticated;
+GRANT ALL ON TABLE public.user_security TO service_role;
+
+
+--
+-- Name: FUNCTION ensure_user_security(p_user_id uuid); Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON FUNCTION public.ensure_user_security(p_user_id uuid) TO anon;
+GRANT ALL ON FUNCTION public.ensure_user_security(p_user_id uuid) TO authenticated;
+GRANT ALL ON FUNCTION public.ensure_user_security(p_user_id uuid) TO service_role;
+
+
+--
+-- Name: FUNCTION get_last_active_profile(p_user_id uuid); Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON FUNCTION public.get_last_active_profile(p_user_id uuid) TO anon;
+GRANT ALL ON FUNCTION public.get_last_active_profile(p_user_id uuid) TO authenticated;
+GRANT ALL ON FUNCTION public.get_last_active_profile(p_user_id uuid) TO service_role;
+
+
+--
+-- Name: FUNCTION handle_auth_user_account(); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.handle_auth_user_account() FROM PUBLIC;
+GRANT ALL ON FUNCTION public.handle_auth_user_account() TO service_role;
+
+
+--
+-- Name: FUNCTION is_class_student(p_class_id uuid); Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON FUNCTION public.is_class_student(p_class_id uuid) TO anon;
+GRANT ALL ON FUNCTION public.is_class_student(p_class_id uuid) TO authenticated;
+GRANT ALL ON FUNCTION public.is_class_student(p_class_id uuid) TO service_role;
+
+
+--
+-- Name: FUNCTION is_class_teacher(p_class_id uuid); Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON FUNCTION public.is_class_teacher(p_class_id uuid) TO anon;
+GRANT ALL ON FUNCTION public.is_class_teacher(p_class_id uuid) TO authenticated;
+GRANT ALL ON FUNCTION public.is_class_teacher(p_class_id uuid) TO service_role;
+
+
+--
+-- Name: FUNCTION is_my_child(p_student_id uuid); Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON FUNCTION public.is_my_child(p_student_id uuid) TO anon;
+GRANT ALL ON FUNCTION public.is_my_child(p_student_id uuid) TO authenticated;
+GRANT ALL ON FUNCTION public.is_my_child(p_student_id uuid) TO service_role;
+
+
+--
+-- Name: FUNCTION merge_user_settings(p_user_id uuid, p_settings jsonb); Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON FUNCTION public.merge_user_settings(p_user_id uuid, p_settings jsonb) TO anon;
+GRANT ALL ON FUNCTION public.merge_user_settings(p_user_id uuid, p_settings jsonb) TO authenticated;
+GRANT ALL ON FUNCTION public.merge_user_settings(p_user_id uuid, p_settings jsonb) TO service_role;
+
+
+--
+-- Name: FUNCTION onboard_parent(p_user_id uuid, p_full_name text); Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON FUNCTION public.onboard_parent(p_user_id uuid, p_full_name text) TO anon;
+GRANT ALL ON FUNCTION public.onboard_parent(p_user_id uuid, p_full_name text) TO authenticated;
+GRANT ALL ON FUNCTION public.onboard_parent(p_user_id uuid, p_full_name text) TO service_role;
+
+
+--
+-- Name: FUNCTION onboard_teacher(p_user_id uuid, p_full_name text); Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON FUNCTION public.onboard_teacher(p_user_id uuid, p_full_name text) TO anon;
+GRANT ALL ON FUNCTION public.onboard_teacher(p_user_id uuid, p_full_name text) TO authenticated;
+GRANT ALL ON FUNCTION public.onboard_teacher(p_user_id uuid, p_full_name text) TO service_role;
+
+
+--
+-- Name: FUNCTION parent_in_class(p_class_id uuid); Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON FUNCTION public.parent_in_class(p_class_id uuid) TO anon;
+GRANT ALL ON FUNCTION public.parent_in_class(p_class_id uuid) TO authenticated;
+GRANT ALL ON FUNCTION public.parent_in_class(p_class_id uuid) TO service_role;
+
+
+--
+-- Name: FUNCTION parent_in_school(p_school_id uuid); Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON FUNCTION public.parent_in_school(p_school_id uuid) TO anon;
+GRANT ALL ON FUNCTION public.parent_in_school(p_school_id uuid) TO authenticated;
+GRANT ALL ON FUNCTION public.parent_in_school(p_school_id uuid) TO service_role;
+
+
+--
+-- Name: FUNCTION reorder_lesson_component(p_component_id uuid, p_new_position integer); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.reorder_lesson_component(p_component_id uuid, p_new_position integer) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.reorder_lesson_component(p_component_id uuid, p_new_position integer) TO authenticated;
+GRANT ALL ON FUNCTION public.reorder_lesson_component(p_component_id uuid, p_new_position integer) TO service_role;
+
+
+--
+-- Name: FUNCTION reset_pin_attempts(p_user_id uuid); Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON FUNCTION public.reset_pin_attempts(p_user_id uuid) TO anon;
+GRANT ALL ON FUNCTION public.reset_pin_attempts(p_user_id uuid) TO authenticated;
+GRANT ALL ON FUNCTION public.reset_pin_attempts(p_user_id uuid) TO service_role;
+
+
+--
+-- Name: FUNCTION revoke_user_sessions(p_user_id uuid, p_cutoff timestamp with time zone); Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON FUNCTION public.revoke_user_sessions(p_user_id uuid, p_cutoff timestamp with time zone) TO anon;
+GRANT ALL ON FUNCTION public.revoke_user_sessions(p_user_id uuid, p_cutoff timestamp with time zone) TO authenticated;
+GRANT ALL ON FUNCTION public.revoke_user_sessions(p_user_id uuid, p_cutoff timestamp with time zone) TO service_role;
+
+
+--
+-- Name: FUNCTION set_last_active_profile(p_user_id uuid, p_profile text); Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON FUNCTION public.set_last_active_profile(p_user_id uuid, p_profile text) TO anon;
+GRANT ALL ON FUNCTION public.set_last_active_profile(p_user_id uuid, p_profile text) TO authenticated;
+GRANT ALL ON FUNCTION public.set_last_active_profile(p_user_id uuid, p_profile text) TO service_role;
+
+
+--
+-- Name: FUNCTION set_last_selected_school(p_user_id uuid, p_school_id uuid); Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON FUNCTION public.set_last_selected_school(p_user_id uuid, p_school_id uuid) TO anon;
+GRANT ALL ON FUNCTION public.set_last_selected_school(p_user_id uuid, p_school_id uuid) TO authenticated;
+GRANT ALL ON FUNCTION public.set_last_selected_school(p_user_id uuid, p_school_id uuid) TO service_role;
+
+
+--
+-- Name: FUNCTION set_updated_at(); Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON FUNCTION public.set_updated_at() TO anon;
+GRANT ALL ON FUNCTION public.set_updated_at() TO authenticated;
+GRANT ALL ON FUNCTION public.set_updated_at() TO service_role;
+
+
+--
+-- Name: FUNCTION set_user_pin(p_user_id uuid, p_raw_pin text); Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON FUNCTION public.set_user_pin(p_user_id uuid, p_raw_pin text) TO anon;
+GRANT ALL ON FUNCTION public.set_user_pin(p_user_id uuid, p_raw_pin text) TO authenticated;
+GRANT ALL ON FUNCTION public.set_user_pin(p_user_id uuid, p_raw_pin text) TO service_role;
+
+
+--
+-- Name: FUNCTION teaches_student(p_student_id uuid); Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON FUNCTION public.teaches_student(p_student_id uuid) TO anon;
+GRANT ALL ON FUNCTION public.teaches_student(p_student_id uuid) TO authenticated;
+GRANT ALL ON FUNCTION public.teaches_student(p_student_id uuid) TO service_role;
+
+
+--
+-- Name: FUNCTION upsert_user_theme(p_user_id uuid, p_theme text); Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON FUNCTION public.upsert_user_theme(p_user_id uuid, p_theme text) TO anon;
+GRANT ALL ON FUNCTION public.upsert_user_theme(p_user_id uuid, p_theme text) TO authenticated;
+GRANT ALL ON FUNCTION public.upsert_user_theme(p_user_id uuid, p_theme text) TO service_role;
+
+
+--
+-- Name: FUNCTION verify_user_pin(p_user_id uuid, p_raw_pin text); Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON FUNCTION public.verify_user_pin(p_user_id uuid, p_raw_pin text) TO anon;
+GRANT ALL ON FUNCTION public.verify_user_pin(p_user_id uuid, p_raw_pin text) TO authenticated;
+GRANT ALL ON FUNCTION public.verify_user_pin(p_user_id uuid, p_raw_pin text) TO service_role;
+
+
+--
+-- Name: TABLE account; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON TABLE public.account TO service_role;
+GRANT SELECT ON TABLE public.account TO authenticated;
+
+
+--
+-- Name: TABLE class; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON TABLE public.class TO anon;
+GRANT ALL ON TABLE public.class TO authenticated;
+GRANT ALL ON TABLE public.class TO service_role;
+
+
+--
+-- Name: TABLE class_student; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON TABLE public.class_student TO anon;
+GRANT ALL ON TABLE public.class_student TO authenticated;
+GRANT ALL ON TABLE public.class_student TO service_role;
+
+
+--
+-- Name: TABLE class_teacher; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON TABLE public.class_teacher TO anon;
+GRANT ALL ON TABLE public.class_teacher TO authenticated;
+GRANT ALL ON TABLE public.class_teacher TO service_role;
+
+
+--
+-- Name: TABLE course; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON TABLE public.course TO service_role;
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE public.course TO authenticated;
+
+
+--
+-- Name: TABLE course_attachment; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON TABLE public.course_attachment TO service_role;
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE public.course_attachment TO authenticated;
+
+
+--
+-- Name: TABLE lesson; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON TABLE public.lesson TO service_role;
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE public.lesson TO authenticated;
+
+
+--
+-- Name: TABLE lesson_component; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON TABLE public.lesson_component TO service_role;
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE public.lesson_component TO authenticated;
+
+
+--
+-- Name: TABLE parent; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON TABLE public.parent TO anon;
+GRANT ALL ON TABLE public.parent TO authenticated;
+GRANT ALL ON TABLE public.parent TO service_role;
+
+
+--
+-- Name: TABLE school; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON TABLE public.school TO anon;
+GRANT ALL ON TABLE public.school TO authenticated;
+GRANT ALL ON TABLE public.school TO service_role;
+
+
+--
+-- Name: TABLE school_teacher; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON TABLE public.school_teacher TO anon;
+GRANT ALL ON TABLE public.school_teacher TO authenticated;
+GRANT ALL ON TABLE public.school_teacher TO service_role;
+
+
+--
+-- Name: TABLE stored_file; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON TABLE public.stored_file TO service_role;
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE public.stored_file TO authenticated;
+
+
+--
+-- Name: TABLE student; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON TABLE public.student TO service_role;
+GRANT SELECT,UPDATE ON TABLE public.student TO authenticated;
+
+
+--
+-- Name: TABLE teacher; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON TABLE public.teacher TO anon;
+GRANT ALL ON TABLE public.teacher TO authenticated;
+GRANT ALL ON TABLE public.teacher TO service_role;
+
+
+--
+-- Name: DEFAULT PRIVILEGES FOR SEQUENCES; Type: DEFAULT ACL; Schema: public; Owner: -
+--
+
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT ALL ON SEQUENCES TO postgres;
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT ALL ON SEQUENCES TO anon;
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT ALL ON SEQUENCES TO authenticated;
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT ALL ON SEQUENCES TO service_role;
+
+
+--
+-- Name: DEFAULT PRIVILEGES FOR SEQUENCES; Type: DEFAULT ACL; Schema: public; Owner: -
+--
+
+ALTER DEFAULT PRIVILEGES FOR ROLE supabase_admin IN SCHEMA public GRANT ALL ON SEQUENCES TO postgres;
+ALTER DEFAULT PRIVILEGES FOR ROLE supabase_admin IN SCHEMA public GRANT ALL ON SEQUENCES TO anon;
+ALTER DEFAULT PRIVILEGES FOR ROLE supabase_admin IN SCHEMA public GRANT ALL ON SEQUENCES TO authenticated;
+ALTER DEFAULT PRIVILEGES FOR ROLE supabase_admin IN SCHEMA public GRANT ALL ON SEQUENCES TO service_role;
+
+
+--
+-- Name: DEFAULT PRIVILEGES FOR FUNCTIONS; Type: DEFAULT ACL; Schema: public; Owner: -
+--
+
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT ALL ON FUNCTIONS TO postgres;
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT ALL ON FUNCTIONS TO anon;
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT ALL ON FUNCTIONS TO authenticated;
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT ALL ON FUNCTIONS TO service_role;
+
+
+--
+-- Name: DEFAULT PRIVILEGES FOR FUNCTIONS; Type: DEFAULT ACL; Schema: public; Owner: -
+--
+
+ALTER DEFAULT PRIVILEGES FOR ROLE supabase_admin IN SCHEMA public GRANT ALL ON FUNCTIONS TO postgres;
+ALTER DEFAULT PRIVILEGES FOR ROLE supabase_admin IN SCHEMA public GRANT ALL ON FUNCTIONS TO anon;
+ALTER DEFAULT PRIVILEGES FOR ROLE supabase_admin IN SCHEMA public GRANT ALL ON FUNCTIONS TO authenticated;
+ALTER DEFAULT PRIVILEGES FOR ROLE supabase_admin IN SCHEMA public GRANT ALL ON FUNCTIONS TO service_role;
+
+
+--
+-- Name: DEFAULT PRIVILEGES FOR TABLES; Type: DEFAULT ACL; Schema: public; Owner: -
+--
+
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT ALL ON TABLES TO postgres;
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT ALL ON TABLES TO anon;
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT ALL ON TABLES TO authenticated;
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT ALL ON TABLES TO service_role;
+
+
+--
+-- Name: DEFAULT PRIVILEGES FOR TABLES; Type: DEFAULT ACL; Schema: public; Owner: -
+--
+
+ALTER DEFAULT PRIVILEGES FOR ROLE supabase_admin IN SCHEMA public GRANT ALL ON TABLES TO postgres;
+ALTER DEFAULT PRIVILEGES FOR ROLE supabase_admin IN SCHEMA public GRANT ALL ON TABLES TO anon;
+ALTER DEFAULT PRIVILEGES FOR ROLE supabase_admin IN SCHEMA public GRANT ALL ON TABLES TO authenticated;
+ALTER DEFAULT PRIVILEGES FOR ROLE supabase_admin IN SCHEMA public GRANT ALL ON TABLES TO service_role;
+
+
+-- -----------------------------------------------------------------------------
+-- Cross-schema Supabase objects owned by the active Course Builder model
+-- -----------------------------------------------------------------------------
+
+-- Auth Account bootstrap trigger. Its function and ACL are part of the public
+-- dump above; the trigger itself belongs to auth.users and is recorded here.
+CREATE TRIGGER trg_auth_user_create_account
+AFTER INSERT ON auth.users
+FOR EACH ROW EXECUTE FUNCTION public.handle_auth_user_account();
+
+-- Private Storage bucket data invariant. This does not change the base Storage
+-- schema; it records the current bucket row that accompanies the public model.
+INSERT INTO storage.buckets (
+    id,
+    name,
+    public,
+    file_size_limit,
+    allowed_mime_types
+)
+VALUES (
+    'course-assets',
+    'course-assets',
+    false,
+    10485760,
+    ARRAY[
+        'image/jpeg',
+        'image/png',
+        'image/webp',
+        'image/gif',
+        'application/pdf',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+        'text/plain',
+        'text/markdown'
+    ]::text[]
+)
+ON CONFLICT (id) DO UPDATE
+SET name = EXCLUDED.name,
+    public = EXCLUDED.public,
+    file_size_limit = EXCLUDED.file_size_limit,
+    allowed_mime_types = EXCLUDED.allowed_mime_types;
+
+-- storage.objects is supplied by Supabase Storage and already has RLS enabled.
+CREATE POLICY course_assets_owner_select ON storage.objects
+FOR SELECT TO authenticated
+USING (
+    bucket_id = 'course-assets'
+    AND (storage.foldername(name))[1] =
+        (SELECT public.current_account_id())::text
+);
+
+CREATE POLICY course_assets_owner_insert ON storage.objects
+FOR INSERT TO authenticated
+WITH CHECK (
+    bucket_id = 'course-assets'
+    AND (storage.foldername(name))[1] =
+        (SELECT public.current_account_id())::text
+);
+
+CREATE POLICY course_assets_owner_update ON storage.objects
+FOR UPDATE TO authenticated
+USING (
+    bucket_id = 'course-assets'
+    AND (storage.foldername(name))[1] =
+        (SELECT public.current_account_id())::text
+)
+WITH CHECK (
+    bucket_id = 'course-assets'
+    AND (storage.foldername(name))[1] =
+        (SELECT public.current_account_id())::text
+);
+
+CREATE POLICY course_assets_owner_delete ON storage.objects
+FOR DELETE TO authenticated
+USING (
+    bucket_id = 'course-assets'
+    AND (storage.foldername(name))[1] =
+        (SELECT public.current_account_id())::text
+);
+
+--
+-- PostgreSQL database dump complete
+--

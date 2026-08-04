@@ -52,7 +52,7 @@ export function resolveLandingNavAction(
 }
 
 export function resolveLandingAuthCtaHref(session: SessionView) {
-  return canRenderSessionNavActions(session) ? ROUTES.lessons : ROUTES.login;
+  return canRenderSessionNavActions(session) ? ROUTES.courses : ROUTES.login;
 }
 
 export function shouldRedirectSecuritySettingsToLogin(

@@ -685,10 +685,10 @@ export async function resolvePostLoginRedirect(userId: string) {
     });
   } catch (error) {
     logger.error(
-      "[auth-login] failed to resolve post-login route, fallback to lessons",
+      "[auth-login] failed to resolve post-login route, fallback to courses",
       { userId, error },
     );
-    return ROUTES.lessons;
+    return ROUTES.courses;
   }
 }
 
@@ -1483,78 +1483,6 @@ export async function assertTeacherCanUseClassInActiveSchoolAdmin(input: {
   await assertTeacherAssignedToClassAdmin(input.teacherId, input.classId);
 }
 
-
-export async function createClassForTeacherAdmin(input: {
-  teacherId: string;
-  userId: string;
-  teacherFullName: string | null;
-  name: string;
-  methodologyId: string;
-}) {
-  const contextRows = await request<
-    Array<{
-      last_selected_school_id: string | null;
-    }>
-  >(
-    `/rest/v1/user_preference?select=last_selected_school_id&user_id=eq.${input.userId}&limit=1`,
-    "GET",
-    { admin: true },
-  );
-  const selectedSchool = await resolveTeacherSchoolSelectionAdmin({
-    userId: input.userId,
-    teacherId: input.teacherId,
-    teacherFullName: input.teacherFullName,
-    preferredSchoolId: contextRows[0]?.last_selected_school_id ?? null,
-  });
-  const schoolId =
-    selectedSchool.mode === "organization"
-      ? selectedSchool.selectedSchoolId
-      : selectedSchool.personalSchoolId;
-
-  const name = input.name.trim();
-  const methodologyId = input.methodologyId.trim();
-  if (!name) {
-    throw new Error("Укажите название группы.");
-  }
-  if (!methodologyId) {
-    throw new Error("Выберите методику для группы.");
-  }
-
-  const classRows = await request<Array<{ id: string; name: string | null }>>(
-    "/rest/v1/class",
-    "POST",
-    {
-      admin: true,
-      payload: {
-        school_id: schoolId,
-        name,
-        methodology_id: methodologyId,
-      },
-    },
-  );
-
-  const classId = classRows[0]?.id;
-  if (!classId) {
-    throw new Error("Не удалось создать группу.");
-  }
-
-  try {
-    await request("/rest/v1/class_teacher", "POST", {
-      admin: true,
-      payload: {
-        class_id: classId,
-        teacher_id: input.teacherId,
-      },
-    });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown class_teacher insert error";
-    if (!isUniqueViolationError(message)) {
-      throw error;
-    }
-  }
-
-  return { classId };
-}
 
 export async function createOrganizationSchoolAdmin(input: {
   userId: string;

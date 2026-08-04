@@ -16,24 +16,24 @@ same code-first registry used by the application UI and service.
 - `course.create_draft`
 - `course.get`
 - `course.add_lesson`
-- `lesson.add_step`
 - `lesson.add_component`
 - `lesson.reorder_component`
 
-Only these six tools are registered.
+Only these five tools are registered.
 
-The normal simplified authoring contract is `Lesson → Components`:
+The canonical authoring contract is `Course → Lesson → ordered Components`:
 
 - `lesson.add_component` accepts `lessonId`, the registry payload/placement and
   `visibility` (`staff_only` by default or `learner_visible`);
-- the application service appends to the final compatibility Step of existing
-  multi-step data, or lazily creates one internal root Step for a new lesson;
-- `lesson.add_step` remains a compatibility tool for explicit multi-step
-  lessons, but the regular teacher UI and future AI orchestrator do not need a
-  `stepId` to add content.
+- the application service creates the Component directly in the Lesson and
+  appends it to that Lesson's single ordered component list;
+- `lesson.reorder_component` moves a Component within the whole Lesson list;
+- learner projection returns only `learner_visible` Components and preserves
+  their relative order.
 
-Existing multi-step data is preserved. No component is stored outside the
-canonical Step-backed database structure.
+There is no Lesson Step/root Step compatibility layer. MCP input/output does
+not expose `stepId`, and no step tool is registered. Active V2 does not expose
+Methodology entities through this server.
 
 ## Credentials
 
@@ -82,8 +82,9 @@ npm run test:compile
 node scripts/run-node-tests.mjs --include course-builder/mcp
 ```
 
-The tests use an in-memory MCP client/transport to verify registration and tool
-calls. They do not write to the production database.
+The tests use an in-memory MCP client/transport to verify exact five-tool
+registration, registry-derived JSON Schema and tool calls. They do not write to
+the production database.
 
 ## AI provider boundary
 

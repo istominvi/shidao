@@ -68,7 +68,7 @@
   color: #4b5563;
 }
 
-.methodology-flow {
+.course-flow {
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem;
@@ -76,13 +76,13 @@
   padding: 0;
 }
 
-.methodology-node-wrap {
+.course-node-wrap {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
 }
 
-.methodology-node {
+.course-node {
   border-radius: 999px;
   padding: 0.52rem 0.8rem;
   font-size: 0.88rem;
@@ -93,53 +93,40 @@
   border: 1px solid rgba(20, 20, 20, 0.08);
 }
 
-.methodology-flow-arrow {
+.course-flow-arrow {
   color: rgba(20, 20, 20, 0.42);
 }
 
-.methodology-node-lime {
+.course-node-lime {
   background: rgba(217, 249, 157, 0.7);
 }
 
-.methodology-node-sky {
+.course-node-sky {
   background: rgba(186, 230, 253, 0.68);
 }
 
-.methodology-node-violet {
+.course-node-violet {
   background: rgba(221, 214, 254, 0.72);
 }
 
-.methodology-node-amber {
+.course-node-amber {
   background: rgba(254, 215, 170, 0.62);
 }
 
-.methodology-node-rose {
+.course-node-rose {
   background: rgba(254, 205, 211, 0.7);
 }
 
-.methodology-node-emerald {
+.course-node-emerald {
   background: rgba(167, 243, 208, 0.62);
 }
 
-.methodology-intro {
+.course-intro {
   display: grid;
   gap: 1rem;
 }
 
-.methodology-cover {
-  width: fit-content;
-  border-radius: 1rem;
-  background: rgba(255, 255, 255, 0.84);
-  padding: 0.4rem;
-  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.1);
-}
-
-.methodology-cover-image {
-  display: block;
-  border-radius: 0.75rem;
-}
-
-.methodology-stat-card {
+.course-stat-card {
   border: 1px solid rgba(20, 20, 20, 0.06);
 }
 
@@ -309,13 +296,8 @@
     z-index: 1;
   }
 
-  .methodology-intro {
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: center;
-  }
-
-  .methodology-cover {
-    margin-left: 0.6rem;
+  .course-intro {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .workflow-steps {

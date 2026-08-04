@@ -56,7 +56,7 @@ test("smoke: authenticated user on /login is redirected by access policy", () =>
       status: "adult-with-profile",
       activeProfile: "teacher",
     }),
-    ROUTES.lessons,
+    ROUTES.courses,
   );
   assert.equal(
     resolveAuthEntryRedirect({ status: "adult-without-profile" }),

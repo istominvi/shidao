@@ -35,13 +35,12 @@ function createServiceDouble(calls: RecordedCall[]) {
     createDraft: (...args: unknown[]) => record("createDraft", args),
     getCourse: (...args: unknown[]) => record("getCourse", args),
     addLesson: (...args: unknown[]) => record("addLesson", args),
-    addStep: (...args: unknown[]) => record("addStep", args),
     addComponent: (...args: unknown[]) => record("addComponent", args),
     reorderComponent: (...args: unknown[]) => record("reorderComponent", args),
   } as unknown as CourseBuilderMcpApplicationService;
 }
 
-test("adapter exposes exactly the six internal milestone tools", () => {
+test("adapter exposes exactly the five internal milestone tools", () => {
   const tools = createCourseBuilderMcpTools({
     service: createServiceDouble([]),
     actor,
@@ -110,10 +109,6 @@ test("each tool validates input and delegates once with the injected actor", asy
     courseId: COURSE_ID,
     title: "Знакомство",
   });
-  await byName.get("lesson.add_step")?.execute({
-    lessonId: LESSON_ID,
-    title: "Приветствие",
-  });
   await byName.get("lesson.add_component")?.execute({
     lessonId: LESSON_ID,
     typeKey: "heading",
@@ -131,7 +126,6 @@ test("each tool validates input and delegates once with the injected actor", asy
       "createDraft",
       "getCourse",
       "addLesson",
-      "addStep",
       "addComponent",
       "reorderComponent",
     ],
@@ -154,22 +148,14 @@ test("each tool validates input and delegates once with the injected actor", asy
       summary: "",
     },
   ]);
-  assert.deepEqual(calls[3]?.args.slice(1), [
-    LESSON_ID,
-    {
-      title: "Приветствие",
-      teacherInstructions: "",
-      learnerInstruction: "",
-    },
-  ]);
-  assert.deepEqual(calls[4]?.args[1], {
+  assert.deepEqual(calls[3]?.args[1], {
     lessonId: LESSON_ID,
     typeKey: "heading",
     payload: componentRegistry.heading.defaultPayload,
     placement: componentRegistry.heading.defaultPlacement,
     visibility: "staff_only",
   });
-  assert.deepEqual(calls[5]?.args.slice(1), [COMPONENT_ID, { toPosition: 2 }]);
+  assert.deepEqual(calls[4]?.args.slice(1), [COMPONENT_ID, { toPosition: 2 }]);
 });
 
 test("invalid tool input never reaches the application service", async () => {

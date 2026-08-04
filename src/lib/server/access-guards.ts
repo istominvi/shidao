@@ -30,13 +30,11 @@ export function resolveAuthEntryRedirect(
   }
 
   if (status === "student") {
-    return ROUTES.lessons;
+    return ROUTES.courses;
   }
 
   if (status === "adult-with-profile") {
-    return resolution.activeProfile === "parent"
-      ? ROUTES.dashboard
-      : ROUTES.lessons;
+    return ROUTES.courses;
   }
 
   return null;
@@ -51,7 +49,7 @@ export function resolveOnboardingRedirect(
   }
 
   if (status === "student") {
-    return ROUTES.lessons;
+    return ROUTES.courses;
   }
 
   if (
@@ -60,7 +58,7 @@ export function resolveOnboardingRedirect(
       options?.mode === undefined ||
       options.mode !== "add-profile")
   ) {
-    return ROUTES.dashboard;
+    return ROUTES.courses;
   }
 
   return null;

@@ -36,7 +36,7 @@ export type CourseAsset = {
 
 export type LessonComponent = {
   id: string;
-  stepId: string;
+  lessonId: string;
   typeKey: ComponentTypeKey;
   schemaVersion: number;
   position: number;
@@ -47,25 +47,13 @@ export type LessonComponent = {
   updatedAt: string;
 };
 
-export type LessonStep = {
-  id: string;
-  lessonId: string;
-  position: number;
-  title: string;
-  teacherInstructions: string;
-  learnerInstruction: string;
-  components: LessonComponent[];
-  createdAt: string;
-  updatedAt: string;
-};
-
 export type CourseLesson = {
   id: string;
   courseId: string;
   position: number;
   title: string;
   summary: string;
-  steps: LessonStep[];
+  components: LessonComponent[];
   createdAt: string;
   updatedAt: string;
 };
@@ -75,15 +63,11 @@ export type CourseWorkspace = CourseSummary & {
   attachments: CourseAsset[];
 };
 
-export type StudentScreenStep = Omit<LessonStep, "teacherInstructions">;
-
-export type StudentScreenLesson = Omit<CourseLesson, "steps" | "summary"> & {
-  steps: StudentScreenStep[];
-};
+export type StudentScreenLesson = Omit<CourseLesson, "summary">;
 
 /**
  * Explicit learner-facing projection used by Student Screen preview. Teacher
- * methodology fields are absent from this contract, not merely hidden by CSS.
+ * Teacher-only fields are absent from this contract, not merely hidden by CSS.
  */
 export type StudentScreenCourse = Pick<CourseWorkspace, "id" | "title"> & {
   lessons: StudentScreenLesson[];
@@ -108,7 +92,6 @@ export type PreparedCourseAttachment = {
 export type AssembleCourseResult = {
   courseId: string;
   lessonIds: string[];
-  stepIds: string[];
   componentIds: string[];
   alreadyAssembled: boolean;
 };
@@ -125,11 +108,6 @@ export type CourseDraftAssemblyPlan = {
   lesson: {
     title: string;
     summary: string;
-  };
-  step: {
-    title: string;
-    teacherInstructions: string;
-    learnerInstruction: string;
   };
   components: CourseDraftAssemblyComponent[];
 };

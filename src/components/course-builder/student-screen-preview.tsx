@@ -123,15 +123,8 @@ export function StudentScreenPreview({
 
   const safeActiveIndex = Math.min(activeIndex, lessons.length - 1);
   const activeLesson = lessons[safeActiveIndex];
-  const learnerGroups = activeLesson.steps.map((step) => ({
-    id: step.id,
-    instruction: step.learnerInstruction.trim(),
-    components: step.components.filter(
-      (component) => component.visibility === "learner_visible",
-    ),
-  }));
-  const hasLearnerContent = learnerGroups.some(
-    (group) => group.instruction || group.components.length > 0,
+  const learnerComponents = activeLesson.components.filter(
+    (component) => component.visibility === "learner_visible",
   );
 
   return (
@@ -205,24 +198,15 @@ export function StudentScreenPreview({
           </div>
 
           <div className="mt-8 grid gap-6">
-            {learnerGroups.map((group) => (
-              <div key={group.id} className="grid gap-6">
-                {group.instruction ? (
-                  <p className="max-w-3xl text-base leading-7 text-neutral-600">
-                    {group.instruction}
-                  </p>
-                ) : null}
-                {group.components.map((component) => (
-                  <CourseComponentRenderer
-                    key={component.id}
-                    component={component}
-                    assets={assetMap}
-                    mode="student"
-                  />
-                ))}
-              </div>
+            {learnerComponents.map((component) => (
+              <CourseComponentRenderer
+                key={component.id}
+                component={component}
+                assets={assetMap}
+                mode="student"
+              />
             ))}
-            {!hasLearnerContent ? (
+            {learnerComponents.length === 0 ? (
               <p className="rounded-2xl border border-dashed border-neutral-300 bg-neutral-50 px-5 py-10 text-center text-sm text-neutral-600">
                 В этом уроке пока нет компонентов для ученика.
               </p>

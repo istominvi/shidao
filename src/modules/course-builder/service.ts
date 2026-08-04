@@ -2,7 +2,6 @@ import crypto from "node:crypto";
 import type { ZodType } from "zod";
 import {
   addLessonInputSchema,
-  addLessonStepInputSchema,
   COURSE_ASSET_BUCKET,
   CourseBuilderAccessError,
   CourseBuilderConflictError,
@@ -13,17 +12,14 @@ import {
   reorderLessonComponentInputSchema,
   updateLessonComponentInputSchema,
   updateLessonInputSchema,
-  updateLessonStepInputSchema,
   uuidSchema,
   type AddLessonInput,
-  type AddLessonStepInput,
   type CourseDraftInput,
   type CourseUpdateInput,
   type PrepareCourseAttachmentInput,
   type ReorderLessonComponentInput,
   type UpdateLessonComponentInput,
   type UpdateLessonInput,
-  type UpdateLessonStepInput,
 } from "./contracts";
 import type {
   AssembleCourseResult,
@@ -34,7 +30,6 @@ import type {
   CourseSummary,
   CourseWorkspace,
   LessonComponent,
-  LessonStep,
   PreparedCourseAttachment,
   StudentScreenCourse,
 } from "./domain";
@@ -43,12 +38,10 @@ import {
   findComponentDefinition,
   getComponentDefinition,
   lessonAddComponentInputSchema,
-  lessonStepAddComponentInputSchema,
   parseComponentPayload,
   parseComponentPlacement,
   type ComponentTypeKey,
   type LessonAddComponentInput,
-  type LessonStepAddComponentInput,
 } from "./registry/contracts";
 import type { CourseBuilderRepository } from "./repository";
 import {
@@ -73,8 +66,6 @@ export type CourseBuilderServiceDependencies = {
 export type CourseBuilderApplicationService = ReturnType<
   typeof createCourseBuilderService
 >;
-
-const IMPLICIT_LESSON_STEP_TITLE = "Основной план";
 
 function fileReferences(typeKey: ComponentTypeKey, payload: unknown) {
   const parsed = parseComponentPayload(typeKey, payload);
@@ -162,17 +153,6 @@ export function createCourseBuilderService(
     return lesson;
   }
 
-  async function requireOwnedStep(
-    actor: CourseBuilderActor,
-    stepIdValue: string,
-  ) {
-    const stepId = parseContract(uuidSchema, stepIdValue);
-    const step = await repository.getStep(stepId);
-    if (!step) throw new CourseBuilderAccessError("Шаг урока не найден.");
-    const lesson = await requireOwnedLesson(actor, step.lessonId);
-    return { step, lesson };
-  }
-
   async function requireOwnedComponent(
     actor: CourseBuilderActor,
     componentIdValue: string,
@@ -182,7 +162,7 @@ export function createCourseBuilderService(
     if (!component) {
       throw new CourseBuilderAccessError("Компонент не найден.");
     }
-    const { lesson } = await requireOwnedStep(actor, component.stepId);
+    const lesson = await requireOwnedLesson(actor, component.lessonId);
     assertRegistryComponent(component);
     return { component, lesson };
   }
@@ -245,10 +225,8 @@ export function createCourseBuilderService(
   ) {
     const workspace = await requireOwnedCourse(actor, courseId);
     for (const lesson of workspace.lessons) {
-      for (const step of lesson.steps) {
-        for (const component of step.components) {
-          assertRegistryComponent(component);
-        }
+      for (const component of lesson.components) {
+        assertRegistryComponent(component);
       }
     }
     return hydrateSignedUrls(actor, workspace);
@@ -271,7 +249,7 @@ export function createCourseBuilderService(
   }
 
   async function persistValidatedComponent(
-    stepId: string,
+    lessonId: string,
     input: {
       typeKey: ComponentTypeKey;
       visibility: "learner_visible" | "staff_only";
@@ -279,7 +257,7 @@ export function createCourseBuilderService(
     validated: Awaited<ReturnType<typeof validateComponentForLesson>>,
   ) {
     return repository.addComponent({
-      stepId,
+      lessonId,
       typeKey: input.typeKey,
       schemaVersion: validated.definition.version,
       payload: validated.payload as Record<string, unknown>,
@@ -295,32 +273,7 @@ export function createCourseBuilderService(
     const input = parseContract(lessonAddComponentInputSchema, rawInput);
     const lesson = await requireOwnedLesson(actor, input.lessonId);
     const validated = await validateComponentForLesson(lesson, input);
-    let step = await repository.getAuthoringStep(lesson.id);
-    if (!step) {
-      try {
-        step = await repository.addStep(lesson.id, {
-          title: IMPLICIT_LESSON_STEP_TITLE,
-          teacherInstructions: "",
-          learnerInstruction: "",
-        });
-      } catch (error) {
-        // Two authoring commands may race on the first component. Reuse the
-        // root Step created by the winner, but preserve unrelated failures.
-        step = await repository.getAuthoringStep(lesson.id);
-        if (!step) throw error;
-      }
-    }
-    return persistValidatedComponent(step.id, input, validated);
-  }
-
-  async function addValidatedStepComponent(
-    actor: CourseBuilderActor,
-    rawInput: unknown,
-  ) {
-    const input = parseContract(lessonStepAddComponentInputSchema, rawInput);
-    const { lesson } = await requireOwnedStep(actor, input.lessonStepId);
-    const validated = await validateComponentForLesson(lesson, input);
-    return persistValidatedComponent(input.lessonStepId, input, validated);
+    return persistValidatedComponent(lesson.id, input, validated);
   }
 
   return {
@@ -354,25 +307,14 @@ export function createCourseBuilderService(
         title: lesson.title,
         createdAt: lesson.createdAt,
         updatedAt: lesson.updatedAt,
-        steps: lesson.steps.map((step) => ({
-          id: step.id,
-          lessonId: step.lessonId,
-          position: step.position,
-          title: step.title,
-          learnerInstruction: step.learnerInstruction,
-          components: step.components.filter(
-            (component) => component.visibility === "learner_visible",
-          ),
-          createdAt: step.createdAt,
-          updatedAt: step.updatedAt,
-        })),
+        components: lesson.components.filter(
+          (component) => component.visibility === "learner_visible",
+        ),
       }));
       const learnerAttachmentIds = new Set(
         lessons.flatMap((lesson) =>
-          lesson.steps.flatMap((step) =>
-            step.components.flatMap((component) =>
-              fileReferences(component.typeKey, component.payload),
-            ),
+          lesson.components.flatMap((component) =>
+            fileReferences(component.typeKey, component.payload),
           ),
         ),
       );
@@ -432,44 +374,11 @@ export function createCourseBuilderService(
       return { lessonId };
     },
 
-    async addStep(
-      actor: CourseBuilderActor,
-      lessonId: string,
-      rawInput: AddLessonStepInput | unknown,
-    ): Promise<LessonStep> {
-      await requireOwnedLesson(actor, lessonId);
-      return repository.addStep(
-        lessonId,
-        parseContract(addLessonStepInputSchema, rawInput),
-      );
-    },
-
-    async updateStep(
-      actor: CourseBuilderActor,
-      stepId: string,
-      rawInput: UpdateLessonStepInput | unknown,
-    ) {
-      await requireOwnedStep(actor, stepId);
-      const updated = await repository.updateStep(
-        stepId,
-        parseContract(updateLessonStepInputSchema, rawInput),
-      );
-      if (!updated) throw new CourseBuilderAccessError("Шаг урока не найден.");
-      return updated;
-    },
-
     addComponent(
       actor: CourseBuilderActor,
       input: LessonAddComponentInput | unknown,
     ) {
       return addValidatedComponent(actor, input);
-    },
-
-    addComponentToStep(
-      actor: CourseBuilderActor,
-      input: LessonStepAddComponentInput | unknown,
-    ) {
-      return addValidatedStepComponent(actor, input);
     },
 
     async updateComponent(
@@ -619,13 +528,8 @@ export function createCourseBuilderService(
         return {
           courseId: course.id,
           lessonIds: course.lessons.map((lesson) => lesson.id),
-          stepIds: course.lessons.flatMap((lesson) =>
-            lesson.steps.map((step) => step.id),
-          ),
           componentIds: course.lessons.flatMap((lesson) =>
-            lesson.steps.flatMap((step) =>
-              step.components.map((component) => component.id),
-            ),
+            lesson.components.map((component) => component.id),
           ),
           alreadyAssembled: true,
         };
@@ -639,14 +543,6 @@ export function createCourseBuilderService(
       const lesson = {
         title: `Введение: ${course.subject}`,
         summary: `Первый из ${course.targetLessonCount} запланированных уроков курса «${course.title}».`,
-      };
-      const step = {
-        title: "Знакомство с темой",
-        teacherInstructions:
-          course.teacherPreferences ||
-          "Коротко обозначьте цель курса и проверьте исходное понимание темы.",
-        learnerInstruction:
-          "Познакомьтесь с темой и выберите ответ в завершающем вопросе.",
       };
 
       const components: CourseDraftAssemblyComponent[] = [];
@@ -708,7 +604,6 @@ export function createCourseBuilderService(
       return repository.assembleDraft({
         courseId: course.id,
         lesson,
-        step,
         components,
       });
     },

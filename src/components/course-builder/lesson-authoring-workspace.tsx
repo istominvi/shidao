@@ -137,8 +137,8 @@ function assetMapFor(assets: CourseAsset[]) {
 function ComponentCard({
   component,
   displayPosition,
-  indexInGroup,
-  groupSize,
+  indexInLesson,
+  componentCount,
   assets,
   assetMap,
   initiallyEditing,
@@ -148,8 +148,8 @@ function ComponentCard({
 }: {
   component: LessonComponent;
   displayPosition: number;
-  indexInGroup: number;
-  groupSize: number;
+  indexInLesson: number;
+  componentCount: number;
   assets: CourseAsset[];
   assetMap: SignedCourseComponentAssetMap;
   initiallyEditing: boolean;
@@ -176,7 +176,7 @@ function ComponentCard({
         <Button
           variant="ghost"
           className={hoverActionClass}
-          disabled={disabled || indexInGroup === 0}
+          disabled={disabled || indexInLesson === 0}
           aria-label={`Переместить «${definition.title}» выше`}
           title="Переместить выше"
           onClick={() =>
@@ -194,7 +194,7 @@ function ComponentCard({
         <Button
           variant="ghost"
           className={hoverActionClass}
-          disabled={disabled || indexInGroup === groupSize - 1}
+          disabled={disabled || indexInLesson === componentCount - 1}
           aria-label={`Переместить «${definition.title}» ниже`}
           title="Переместить ниже"
           onClick={() =>
@@ -459,16 +459,7 @@ function LessonPlan({
     () => assetMapFor(course.attachments),
     [course.attachments],
   );
-  const components = lesson.steps.flatMap((step) =>
-    step.components.map((component, indexInGroup) => ({
-      component,
-      indexInGroup,
-      groupSize: step.components.length,
-    })),
-  );
-  const populatedLegacyGroupCount = lesson.steps.filter(
-    (step) => step.components.length > 0,
-  ).length;
+  const components = lesson.components;
 
   return (
     <div className="grid gap-5">
@@ -541,20 +532,13 @@ function LessonPlan({
       </section>
 
       <section className="grid gap-4" aria-label="Компоненты плана урока">
-        {populatedLegacyGroupCount > 1 ? (
-          <p className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-900">
-            Этот урок собран предыдущей версией редактора: исходные группы
-            сохраняют порядок. Компоненты можно перемещать внутри группы, а
-            новые элементы добавляются в конец плана.
-          </p>
-        ) : null}
-        {components.map(({ component, indexInGroup, groupSize }, index) => (
+        {components.map((component, index) => (
           <ComponentCard
             key={component.id}
             component={component}
             displayPosition={index + 1}
-            indexInGroup={indexInGroup}
-            groupSize={groupSize}
+            indexInLesson={index}
+            componentCount={components.length}
             assets={course.attachments}
             assetMap={assetMap}
             initiallyEditing={component.id === editingComponentId}
@@ -593,15 +577,8 @@ function StudentLessonSurface({
     () => assetMapFor(course.attachments),
     [course.attachments],
   );
-  const learnerGroups = lesson.steps.map((step) => ({
-    id: step.id,
-    instruction: step.learnerInstruction.trim(),
-    components: step.components.filter(
-      (component) => component.visibility === "learner_visible",
-    ),
-  }));
-  const hasLearnerContent = learnerGroups.some(
-    (group) => group.instruction || group.components.length > 0,
+  const learnerComponents = lesson.components.filter(
+    (component) => component.visibility === "learner_visible",
   );
 
   return (
@@ -625,24 +602,15 @@ function StudentLessonSurface({
       </header>
 
       <div className="grid min-h-[28rem] gap-6 p-5 md:p-8">
-        {learnerGroups.map((group) => (
-          <div key={group.id} className="grid gap-6">
-            {group.instruction ? (
-              <p className="max-w-3xl text-base leading-7 text-neutral-600">
-                {group.instruction}
-              </p>
-            ) : null}
-            {group.components.map((component) => (
-              <CourseComponentRenderer
-                key={component.id}
-                component={component}
-                assets={assetMap}
-                mode="student"
-              />
-            ))}
-          </div>
+        {learnerComponents.map((component) => (
+          <CourseComponentRenderer
+            key={component.id}
+            component={component}
+            assets={assetMap}
+            mode="student"
+          />
         ))}
-        {!hasLearnerContent ? (
+        {learnerComponents.length === 0 ? (
           <div className="grid place-items-center rounded-3xl border border-dashed border-neutral-300 bg-white/70 px-6 py-12 text-center">
             <div>
               <EyeOff

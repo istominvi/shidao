@@ -12,7 +12,6 @@ const ACCESS_TOKEN = "test-access-token";
 const OWNER_ACCOUNT_ID = "00000000-0000-4000-8000-000000000101";
 const COURSE_ID = "00000000-0000-4000-8000-000000001001";
 const LESSON_ID = "00000000-0000-4000-8000-000000002001";
-const STEP_ID = "00000000-0000-4000-8000-000000003001";
 const COMPONENT_ID = "00000000-0000-4000-8000-000000004001";
 const NOW = "2026-08-03T00:00:00.000Z";
 
@@ -59,30 +58,10 @@ function courseRow() {
   };
 }
 
-function stepRow(
-  input: {
-    teacherContent?: Record<string, unknown>;
-    settings?: Record<string, unknown>;
-  } = {},
-) {
-  return {
-    id: STEP_ID,
-    lesson_id: LESSON_ID,
-    position: 1,
-    title: "Знакомство",
-    teacher_content: input.teacherContent ?? {
-      teacherInstructions: "Сначала покажите пример.",
-    },
-    settings: input.settings ?? { learnerInstruction: "Повторите фразу." },
-    created_at: NOW,
-    updated_at: NOW,
-  };
-}
-
 function componentRow() {
   return {
     id: COMPONENT_ID,
-    lesson_step_id: STEP_ID,
+    lesson_id: LESSON_ID,
     type_key: "quote",
     schema_version: 1,
     position: 1,
@@ -205,7 +184,6 @@ test("assembleDraft sends one validated plan to the transactional RPC", async ()
   const resultPayload = {
     courseId: COURSE_ID,
     lessonIds: [LESSON_ID],
-    stepIds: [STEP_ID],
     componentIds: [COMPONENT_ID],
     alreadyAssembled: false,
   };
@@ -215,11 +193,6 @@ test("assembleDraft sends one validated plan to the transactional RPC", async ()
       const result = await repository.assembleDraft({
         courseId: COURSE_ID,
         lesson: { title: "Введение", summary: "Первый урок" },
-        step: {
-          title: "Знакомство",
-          teacherInstructions: "Покажите пример",
-          learnerInstruction: "Прочитайте текст",
-        },
         components: [
           {
             typeKey: "heading",
@@ -241,9 +214,6 @@ test("assembleDraft sends one validated plan to the transactional RPC", async ()
         p_course_id: COURSE_ID,
         p_lesson_title: "Введение",
         p_lesson_summary: "Первый урок",
-        p_step_title: "Знакомство",
-        p_teacher_instructions: "Покажите пример",
-        p_learner_instruction: "Прочитайте текст",
         p_components: [
           {
             typeKey: "heading",
@@ -257,82 +227,34 @@ test("assembleDraft sends one validated plan to the transactional RPC", async ()
   );
 });
 
-test("addStep keeps learner settings separate from teacher-private content", async () => {
+test("addComponent persists an ordered component directly under Lesson", async () => {
   await withMockSupabase(
-    [{ payload: [] }, { payload: [stepRow()] }],
+    [{ payload: [] }, { payload: [componentRow()] }],
     async (repository, requests) => {
-      const step = await repository.addStep(LESSON_ID, {
-        title: "Знакомство",
-        teacherInstructions: "Сначала покажите пример.",
-        learnerInstruction: "Повторите фразу.",
+      const component = await repository.addComponent({
+        lessonId: LESSON_ID,
+        typeKey: "quote",
+        schemaVersion: 1,
+        payload: { text: "Путь начинается с первого шага." },
+        placement: { width: "content", textAlign: "left" },
+        visibility: "learner_visible",
       });
 
-      assert.equal(step.teacherInstructions, "Сначала покажите пример.");
-      assert.equal(step.learnerInstruction, "Повторите фразу.");
-      assert.deepEqual(requests[1]?.body, {
-        lesson_id: LESSON_ID,
-        position: 1,
-        title: "Знакомство",
-        teacher_content: {
-          teacherInstructions: "Сначала покажите пример.",
-        },
-        settings: { learnerInstruction: "Повторите фразу." },
-      });
-      assert.equal("teacher_instructions" in (requests[1]?.body ?? {}), false);
-      assert.equal("learner_instruction" in (requests[1]?.body ?? {}), false);
-    },
-  );
-});
-
-test("updateStep safely merges a partial instruction update", async () => {
-  const current = stepRow({
-    teacherContent: {
-      teacherInstructions: "Старый текст",
-      futureContractField: { preserved: true },
-    },
-    settings: { learnerInstruction: "Текст ученику" },
-  });
-  const updated = stepRow({
-    teacherContent: {
-      teacherInstructions: "Новый текст",
-      futureContractField: { preserved: true },
-    },
-    settings: { learnerInstruction: "Текст ученику" },
-  });
-
-  await withMockSupabase(
-    [{ payload: [current] }, { payload: [updated] }],
-    async (repository, requests) => {
-      const result = await repository.updateStep(STEP_ID, {
-        teacherInstructions: "Новый текст",
-      });
-
-      assert.equal(result?.teacherInstructions, "Новый текст");
-      assert.equal(result?.learnerInstruction, "Текст ученику");
-      assert.match(requests[0]?.url ?? "", /lesson_step\?select=\*/);
-      assert.equal(requests[1]?.method, "PATCH");
-      assert.deepEqual(requests[1]?.body, {
-        teacher_content: {
-          teacherInstructions: "Новый текст",
-          futureContractField: { preserved: true },
-        },
-      });
-    },
-  );
-});
-
-test("getAuthoringStep resolves the final internal step for lesson-level authoring", async () => {
-  await withMockSupabase(
-    [{ payload: [stepRow()] }],
-    async (repository, requests) => {
-      const step = await repository.getAuthoringStep(LESSON_ID);
-
-      assert.equal(step?.id, STEP_ID);
-      assert.equal(requests[0]?.method, "GET");
+      assert.equal(component.lessonId, LESSON_ID);
       assert.equal(
         requests[0]?.url,
-        `${API_URL}/rest/v1/lesson_step?select=*&lesson_id=eq.${LESSON_ID}&order=position.desc&limit=1`,
+        `${API_URL}/rest/v1/lesson_component?select=position&lesson_id=eq.${LESSON_ID}&order=position.desc&limit=1`,
       );
+      assert.equal(requests[1]?.url, `${API_URL}/rest/v1/lesson_component`);
+      assert.deepEqual(requests[1]?.body, {
+        lesson_id: LESSON_ID,
+        type_key: "quote",
+        schema_version: 1,
+        position: 1,
+        payload: { text: "Путь начинается с первого шага." },
+        placement_config: { width: "content", textAlign: "left" },
+        visibility: "learner_visible",
+      });
     },
   );
 });
@@ -372,7 +294,7 @@ test("reorderComponent refetches the full component after the narrow RPC", async
       });
       assert.equal(
         requests[0]?.url,
-        `${API_URL}/rest/v1/rpc/reorder_lesson_step_component`,
+        `${API_URL}/rest/v1/rpc/reorder_lesson_component`,
       );
       assert.deepEqual(requests[0]?.body, {
         p_component_id: COMPONENT_ID,
@@ -380,7 +302,7 @@ test("reorderComponent refetches the full component after the narrow RPC", async
       });
       assert.match(
         requests[1]?.url ?? "",
-        /lesson_step_component\?select=\*&id=eq\./,
+        /lesson_component\?select=\*&id=eq\./,
       );
     },
   );

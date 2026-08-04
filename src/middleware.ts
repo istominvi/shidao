@@ -117,9 +117,7 @@ export function middleware(req: NextRequest) {
   }
 
   if (requestHost === "demo.shidao.ru") {
-    const demoUrl = req.nextUrl.clone();
-    demoUrl.pathname = "/demo";
-    return NextResponse.rewrite(demoUrl);
+    return NextResponse.redirect("https://v2.shidao.ru/courses", 308);
   }
 
   if (

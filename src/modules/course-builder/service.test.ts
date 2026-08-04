@@ -5,12 +5,10 @@ import {
   CourseBuilderConflictError,
   CourseBuilderValidationError,
   type AddLessonInput,
-  type AddLessonStepInput,
   type CourseDraftInput,
   type CourseUpdateInput,
   type PrepareCourseAttachmentInput,
   type UpdateLessonInput,
-  type UpdateLessonStepInput,
 } from "./contracts";
 import type {
   CourseAsset,
@@ -20,7 +18,6 @@ import type {
   CourseSummary,
   CourseWorkspace,
   LessonComponent,
-  LessonStep,
 } from "./domain";
 import {
   getComponentDefinition,
@@ -80,7 +77,6 @@ class InMemoryCourseBuilderRepository implements CourseBuilderRepository {
   ]);
   readonly courses = new Map<string, CourseSummary>();
   readonly lessons = new Map<string, CourseLesson>();
-  readonly steps = new Map<string, LessonStep>();
   readonly components = new Map<string, LessonComponent>();
   readonly assets = new Map<string, StoredAssetRecord>();
   readonly courseAttachments = new Map<string, Set<string>>();
@@ -111,15 +107,9 @@ class InMemoryCourseBuilderRepository implements CourseBuilderRepository {
       .sort((left, right) => left.position - right.position);
   }
 
-  private stepsForLesson(lessonId: string) {
-    return [...this.steps.values()]
-      .filter((step) => step.lessonId === lessonId)
-      .sort((left, right) => left.position - right.position);
-  }
-
-  private componentsForStep(stepId: string) {
+  private componentsForLesson(lessonId: string) {
     return [...this.components.values()]
-      .filter((component) => component.stepId === stepId)
+      .filter((component) => component.lessonId === lessonId)
       .sort((left, right) => left.position - right.position);
   }
 
@@ -140,13 +130,10 @@ class InMemoryCourseBuilderRepository implements CourseBuilderRepository {
     if (!course) return null;
     const lessons = this.lessonsForCourse(courseId).map((lesson) => ({
       ...lesson,
-      steps: this.stepsForLesson(lesson.id).map((step) => ({
-        ...step,
-        components: this.componentsForStep(step.id).map((component) => ({
-          ...component,
-          payload: { ...component.payload },
-          placement: { ...component.placement },
-        })),
+      components: this.componentsForLesson(lesson.id).map((component) => ({
+        ...component,
+        payload: { ...component.payload },
+        placement: { ...component.placement },
       })),
     }));
     const attachments = [...(this.courseAttachments.get(courseId) ?? [])]
@@ -190,11 +177,10 @@ class InMemoryCourseBuilderRepository implements CourseBuilderRepository {
     if (!course) throw new Error("course not found");
     this.calls.assembleDraft += 1;
     const lesson = await this.addLesson(input.courseId, input.lesson);
-    const step = await this.addStep(lesson.id, input.step);
     const componentIds: string[] = [];
     for (const planned of input.components) {
       const component = await this.addComponent({
-        stepId: step.id,
+        lessonId: lesson.id,
         ...planned,
         visibility: "learner_visible",
       });
@@ -207,7 +193,6 @@ class InMemoryCourseBuilderRepository implements CourseBuilderRepository {
     return {
       courseId: input.courseId,
       lessonIds: [lesson.id],
-      stepIds: [step.id],
       componentIds,
       alreadyAssembled: false,
     };
@@ -220,17 +205,19 @@ class InMemoryCourseBuilderRepository implements CourseBuilderRepository {
       position: this.lessonsForCourse(courseId).length + 1,
       title: input.title,
       summary: input.summary,
-      steps: [],
+      components: [],
       createdAt: NOW,
       updatedAt: NOW,
     };
     this.lessons.set(lesson.id, lesson);
-    return { ...lesson, steps: [] };
+    return { ...lesson, components: [] };
   }
 
   async getLesson(lessonId: string) {
     const lesson = this.lessons.get(lessonId);
-    return lesson ? { ...lesson, steps: this.stepsForLesson(lesson.id) } : null;
+    return lesson
+      ? { ...lesson, components: this.componentsForLesson(lesson.id) }
+      : null;
   }
 
   async updateLesson(lessonId: string, input: UpdateLessonInput) {
@@ -243,56 +230,14 @@ class InMemoryCourseBuilderRepository implements CourseBuilderRepository {
 
   async deleteLesson(lessonId: string) {
     if (!this.lessons.delete(lessonId)) return false;
-    for (const step of this.stepsForLesson(lessonId)) {
-      for (const component of this.componentsForStep(step.id)) {
-        this.components.delete(component.id);
-      }
-      this.steps.delete(step.id);
+    for (const component of this.componentsForLesson(lessonId)) {
+      this.components.delete(component.id);
     }
     return true;
   }
 
-  async addStep(lessonId: string, input: AddLessonStepInput) {
-    const step: LessonStep = {
-      id: this.createId(),
-      lessonId,
-      position: this.stepsForLesson(lessonId).length + 1,
-      title: input.title,
-      teacherInstructions: input.teacherInstructions,
-      learnerInstruction: input.learnerInstruction,
-      components: [],
-      createdAt: NOW,
-      updatedAt: NOW,
-    };
-    this.steps.set(step.id, step);
-    return { ...step, components: [] };
-  }
-
-  async getAuthoringStep(lessonId: string) {
-    const steps = this.stepsForLesson(lessonId);
-    const step = steps[steps.length - 1];
-    return step
-      ? { ...step, components: this.componentsForStep(step.id) }
-      : null;
-  }
-
-  async getStep(stepId: string) {
-    const step = this.steps.get(stepId);
-    return step
-      ? { ...step, components: this.componentsForStep(step.id) }
-      : null;
-  }
-
-  async updateStep(stepId: string, input: UpdateLessonStepInput) {
-    const step = this.steps.get(stepId);
-    if (!step) return null;
-    const updated = { ...step, ...input, updatedAt: NOW };
-    this.steps.set(stepId, updated);
-    return { ...updated };
-  }
-
   async addComponent(input: {
-    stepId: string;
+    lessonId: string;
     typeKey: ComponentTypeKey;
     schemaVersion: number;
     payload: Record<string, unknown>;
@@ -302,10 +247,10 @@ class InMemoryCourseBuilderRepository implements CourseBuilderRepository {
     this.calls.addComponent += 1;
     const component: LessonComponent = {
       id: this.createId(),
-      stepId: input.stepId,
+      lessonId: input.lessonId,
       typeKey: input.typeKey,
       schemaVersion: input.schemaVersion,
-      position: this.componentsForStep(input.stepId).length + 1,
+      position: this.componentsForLesson(input.lessonId).length + 1,
       payload: { ...input.payload },
       placement: { ...input.placement },
       visibility: input.visibility,
@@ -349,7 +294,7 @@ class InMemoryCourseBuilderRepository implements CourseBuilderRepository {
   async reorderComponent(componentId: string, toPosition: number) {
     const component = this.components.get(componentId);
     if (!component) return null;
-    const siblings = this.componentsForStep(component.stepId);
+    const siblings = this.componentsForLesson(component.lessonId);
     if (toPosition < 1 || toPosition > siblings.length) return null;
     this.calls.reorderComponent += 1;
     const withoutMoved = siblings.filter((item) => item.id !== componentId);
@@ -469,7 +414,7 @@ function createHarness(options: { failSignedUpload?: boolean } = {}) {
   return { repository, service, uploads, downloads, objectAssertions };
 }
 
-async function createLessonStep(
+async function createLesson(
   harness: ReturnType<typeof createHarness>,
   actor: CourseBuilderActor,
   courseId: string,
@@ -478,12 +423,7 @@ async function createLessonStep(
     title: "Урок",
     summary: "Краткое описание",
   });
-  const step = await harness.service.addStep(actor, lesson.id, {
-    title: "Шаг",
-    teacherInstructions: "Приватная инструкция",
-    learnerInstruction: "Инструкция ученику",
-  });
-  return { lesson, step };
+  return lesson;
 }
 
 async function prepareAttachment(
@@ -552,18 +492,13 @@ test("deterministic assembler is idempotent and describes attachments honestly",
   const first = await harness.service.assembleCourse(alice, course.id);
   assert.equal(first.alreadyAssembled, false);
   assert.equal(first.lessonIds.length, 1);
-  assert.equal(first.stepIds.length, 1);
   assert.equal(first.componentIds.length, 6);
   assert.equal(harness.repository.calls.assembleDraft, 1);
 
   const workspace = await harness.service.getCourse(alice, course.id);
   assert.equal(workspace.assembledAt, ASSEMBLED_AT);
   assert.equal(workspace.lessons[0]?.title, "Введение: Базовый китайский язык");
-  assert.equal(
-    workspace.lessons[0]?.steps[0]?.teacherInstructions,
-    courseInput().teacherPreferences,
-  );
-  const components = workspace.lessons[0]?.steps[0]?.components ?? [];
+  const components = workspace.lessons[0]?.components ?? [];
   assert.deepEqual(
     components.map((component) => component.typeKey),
     ["heading", "rich_text", "callout", "divider", "image", "file"],
@@ -610,13 +545,13 @@ test("deterministic assembler is idempotent and describes attachments honestly",
     serializedPreview,
     /Начинайте с короткого устного разогрева/,
   );
-  assert.equal(
-    studentPreview.lessons[0]?.steps[0]?.title,
-    workspace.lessons[0]?.steps[0]?.title,
+  assert.deepEqual(
+    studentPreview.lessons[0]?.components.map((component) => component.id),
+    workspace.lessons[0]?.components.map((component) => component.id),
   );
 });
 
-test("direct component authoring validates before creating one implicit step", async () => {
+test("direct component authoring validates before persistence", async () => {
   const harness = createHarness();
   const course = await harness.service.createDraft(alice, courseInput());
   const lesson = await harness.service.addLesson(alice, course.id, {
@@ -633,7 +568,7 @@ test("direct component authoring validates before creating one implicit step", a
       placement: headingDefinition.defaultPlacement,
     }),
   );
-  assert.equal(harness.repository.steps.size, 0);
+  assert.equal(harness.repository.components.size, 0);
 
   const pending = await prepareAttachment(harness, course.id, {
     originalFilename: "pending.png",
@@ -653,7 +588,7 @@ test("direct component authoring validates before creating one implicit step", a
       placement: imageDefinition.defaultPlacement,
     }),
   );
-  assert.equal(harness.repository.steps.size, 0);
+  assert.equal(harness.repository.components.size, 0);
 
   await assert.rejects(
     () =>
@@ -665,7 +600,7 @@ test("direct component authoring validates before creating one implicit step", a
       }),
     (error: unknown) => error instanceof CourseBuilderAccessError,
   );
-  assert.equal(harness.repository.steps.size, 0);
+  assert.equal(harness.repository.components.size, 0);
 
   await harness.service.addComponent(alice, {
     lessonId: lesson.id,
@@ -680,38 +615,7 @@ test("direct component authoring validates before creating one implicit step", a
     placement: headingDefinition.defaultPlacement,
   });
 
-  assert.equal(harness.repository.steps.size, 1);
   assert.equal(harness.repository.components.size, 2);
-});
-
-test("direct component authoring appends to the final legacy content group", async () => {
-  const harness = createHarness();
-  const course = await harness.service.createDraft(alice, courseInput());
-  const lesson = await harness.service.addLesson(alice, course.id, {
-    title: "Урок из предыдущего сборщика",
-    summary: "",
-  });
-  await harness.service.addStep(alice, lesson.id, {
-    title: "Первая группа",
-    teacherInstructions: "",
-    learnerInstruction: "",
-  });
-  const finalStep = await harness.service.addStep(alice, lesson.id, {
-    title: "Финальная группа",
-    teacherInstructions: "",
-    learnerInstruction: "",
-  });
-  const headingDefinition = getComponentDefinition("heading");
-
-  const component = await harness.service.addComponent(alice, {
-    lessonId: lesson.id,
-    typeKey: "heading",
-    payload: headingDefinition.defaultPayload,
-    placement: headingDefinition.defaultPlacement,
-  });
-
-  assert.equal(component.stepId, finalStep.id);
-  assert.equal(harness.repository.steps.size, 2);
 });
 
 test("assembler refuses to overwrite manually authored content", async () => {
@@ -752,11 +656,8 @@ test("component add/update/reorder share registry validation and ownership", asy
     placement: headingDefinition.defaultPlacement,
   });
 
-  const implicitSteps = [...harness.repository.steps.values()].filter(
-    (step) => step.lessonId === lesson.id,
-  );
-  assert.equal(implicitSteps.length, 1);
-  assert.equal(implicitSteps[0]?.title, "Основной план");
+  assert.equal(quote.lessonId, lesson.id);
+  assert.equal(heading.lessonId, lesson.id);
   assert.equal(heading.position, 2);
   assert.equal(harness.repository.components.get(quote.id)?.position, 1);
   assert.equal(quote.schemaVersion, quoteDefinition.version);
@@ -896,7 +797,7 @@ test("student projection excludes staff-only components, comments, and their sig
     course.id,
   );
   assert.equal(hiddenPreview.attachments.length, 0);
-  assert.equal(hiddenPreview.lessons[0]?.steps[0]?.components.length, 0);
+  assert.equal(hiddenPreview.lessons[0]?.components.length, 0);
   assert.doesNotMatch(JSON.stringify(hiddenPreview), /Не показывать ученику/);
 
   await harness.service.updateComponent(alice, image.id, {
@@ -910,10 +811,7 @@ test("student projection excludes staff-only components, comments, and their sig
     visiblePreview.attachments.map((asset) => asset.id),
     [prepared.asset.id],
   );
-  assert.equal(
-    visiblePreview.lessons[0]?.steps[0]?.components[0]?.id,
-    image.id,
-  );
+  assert.equal(visiblePreview.lessons[0]?.components[0]?.id, image.id);
 });
 
 test("attachment operations deny cross-course references", async () => {
@@ -946,7 +844,7 @@ test("attachment operations deny cross-course references", async () => {
     firstCourse.id,
     pending.asset.id,
   );
-  const { lesson } = await createLessonStep(harness, alice, secondCourse.id);
+  const lesson = await createLesson(harness, alice, secondCourse.id);
   const imageDefinition = getComponentDefinition("image");
   await assert.rejects(
     () =>

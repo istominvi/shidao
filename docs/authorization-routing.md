@@ -1,55 +1,49 @@
-# Авторизация и маршрутизация (актуально на 19 апреля 2026)
+# Auth and routing
 
-## Канонический routing-контракт
+## Domains
 
-- Единая публичная точка входа: `/login`.
-- Единый callback подтверждений: `/auth/confirm`.
-- Единый приватный вход для взрослых: `/dashboard`.
-- Выбор роли для взрослого без профиля: `/onboarding`.
+- `shidao.ru` and `www.shidao.ru` expose only the public landing and its
+  landing assets. Auth, API, and internal pages are unavailable there.
+- `v2.shidao.ru` is the working application.
+- Local development uses the same application routes without the host split.
 
-## Login flow
+## Entry flow
 
-`POST /api/auth/login`:
+1. A guest opens `/login` or `/join`.
+2. An authenticated adult without a profile is sent to `/onboarding`.
+3. An authenticated user with a profile is sent to `/courses`.
+4. A student identity is also sent to `/courses`; learner-specific course
+   enrollment is a later product slice.
 
-- `identifier` = email взрослого **или** логин ученика;
-- `secret` = пароль **или** PIN (fallback только для ученика).
+Safe relative `next` values are preserved. Absolute and protocol-relative
+redirect targets are rejected.
 
-Порядок:
-1. Нормализация `identifier`.
-2. Email → взрослый password login.
-3. Не email → поиск `student.login`, затем auth через `student.internal_auth_email`.
-4. Если пароль не подошёл для ученика → проверка PIN.
-5. После успеха пишется app-session и вычисляется redirect:
-   - `student` actor → `/lessons` (и при password, и при PIN);
-   - взрослый с хотя бы одним профилем (`teacher` или `parent`) → `/dashboard`;
-   - взрослый без профилей → `/onboarding`.
+## Active private routes
 
-Важно:
-- ученик никогда не классифицируется как «взрослый без профиля»;
-- вход ученика по `student.login + password`, `student.login + PIN` и `student.internal_auth_email + password` всегда ведёт на `/lessons`.
+- `/onboarding`
+- `/courses`
+- `/courses/new`
+- `/courses/[courseId]`
+- `/courses/[courseId]/student-preview`
+- `/settings/profile`
+- `/settings/security`
 
-## Confirm flow
+The removed dashboard, group, scheduled-lesson, methodology, notification and
+team-management pages are not compatibility routes.
 
-`/auth/confirm` принимает `token_hash`, `type`, `next`.
+## Authorization boundaries
 
-- `signup` / `email` → `/login?confirmed=1`
-- `recovery` → `/reset-password`
-- `invite` → `/onboarding`
-- `email_change` → `/settings/profile?emailChanged=1`
+- The app session identifies the Auth user and existing profile context.
+- Course Builder obtains a short-lived Supabase user JWT and performs normal
+  browser/database operations under RLS.
+- Course ownership is resolved through `account.auth_user_id = auth.uid()`.
+- Student Screen is an explicit server-side projection; teacher-only fields and
+  `staff_only` components are not returned.
+- A service-role key is never used by ordinary Course Builder browser or MCP
+  requests.
 
-`next` принимается только как безопасный внутренний путь (`/...`).
+## Session revocation
 
-## Access boundaries
-
-- Guest/degraded не получают доступ к protected-app маршрутам.
-- Parent: read-only видимость детей.
-- Student: только собственный контекст.
-- Teacher: только собственные группы/уроки.
-- `/onboarding` доступен только взрослому без профиля (или взрослому с `?mode=add-profile` при добавлении второй роли). Для ученика `/onboarding` серверно редиректится на `/lessons`.
-
-## Профиль и сессия
-
-- Переключение teacher/parent: `POST /api/preferences/profile`.
-- Переключение teacher-режима `Лично/Школа`: `POST /api/preferences/school`.
-- Logout: `/api/auth/logout`.
-- Управление PIN: `/api/settings/security/pin`.
+Encrypted app sessions carry an issue time. `user_security.sessions_invalid_before`
+is the per-user cutoff used by the current access policy and Course Builder MCP.
+`APP_SESSION_VERSION` remains the global all-user invalidation mechanism.

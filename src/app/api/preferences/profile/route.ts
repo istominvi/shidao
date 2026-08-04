@@ -31,5 +31,5 @@ export async function POST(req: NextRequest) {
   }
 
   await setLastActiveProfile(session.uid, profile);
-  return NextResponse.json({ redirectTo: profile === "parent" ? ROUTES.dashboard : ROUTES.lessons });
+  return NextResponse.json({ redirectTo: ROUTES.courses });
 }

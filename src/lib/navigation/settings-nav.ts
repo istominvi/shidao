@@ -32,17 +32,4 @@ export const SETTINGS_NAV_SECTIONS: SettingsNavSection[] = [
       },
     ],
   },
-  {
-    id: "admin",
-    title: "Администрирование",
-    adultOnly: true,
-    items: [
-      {
-        id: "team",
-        label: "Команда и приглашения",
-        href: ROUTES.settingsTeam,
-        isActive: (pathname) => isRouteWithin(pathname, ROUTES.settingsTeam),
-      },
-    ],
-  },
 ];

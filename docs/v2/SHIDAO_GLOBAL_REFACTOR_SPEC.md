@@ -10,6 +10,7 @@
 - **Активный контур:** существующие web deployment и self-hosted Supabase
 - **Дата фиксации исходных решений:** 26 июля 2026 года
 - **Дата обновления стратегии реконструкции:** 3 августа 2026 года
+- **Дата подтверждения канонической Lesson-модели:** 4 августа 2026 года
 - **Первый milestone реализации:** teacher course builder demo, зафиксирован 3 августа 2026 года
 
 ---
@@ -22,7 +23,8 @@
 
 - `docs/operations/v1-recovery-runbook.md` — проверка recovery set и безопасный возврат к V1;
 - `docs/v2/TEACHER_COURSE_BUILDER_DEMO_MILESTONE.md` — первая цель реализации и сценарий показа заказчику;
-- `docs/architecture/lesson-workflow-model.md` — каноническая модель Lesson Step, Teacher Side и Student Screen.
+- `docs/architecture/lesson-workflow-model.md` — каноническая модель
+  `Course → Lesson → ordered Components` и Student Screen projection.
 
 Целевая система проектируется как новый продукт внутри существующего репозитория и существующего инфраструктурного контура. Разработка продолжается непосредственно в ветке `main`, а прикладная схема перестраивается в текущей базе данных. Отдельный репозиторий и отдельный Supabase-проект для V2 не создаются.
 
@@ -35,8 +37,9 @@
 - учебная история хранится отдельно от изменяемого контента;
 - курс является личным документом владельца;
 - курс содержит уроки;
-- уроки используют материалы из единого каталога;
-- один материал применяется повторно и обновляется централизованно;
+- каждый урок непосредственно содержит один ordered list компонентов;
+- course-wide файлы хранятся как private attachments и используются
+  компонентами по проверенным ссылкам;
 - курс назначается одному учащемуся, одной группе либо никому;
 - проведение урока отделено от документа урока;
 - AI изменяет продукт только через типизированные инструменты;
@@ -100,7 +103,9 @@
 8. Физические серверы и их проверенные версии образов, если они подходят целевой архитектуре.
 9. Coolify как платформа развёртывания и текущие параметры deployment.
 10. Домен `shidao.ru`.
-11. Текущая методика как основа нового системного шаблона ShiDao после конвертации.
+11. Текущая методика только как неизменяемый исторический source в архивных
+    refs/recovery snapshot; её возможный импорт в обычный direct-component
+    Template требует отдельного решения.
 
 Пароли не извлекаются, не расшифровываются и не переносятся в открытом виде. Сохраняются существующие записи Supabase Auth и их password hashes.
 
@@ -226,12 +231,13 @@ MCP_SERVER_SECRET=
 8. У курса один владелец.
 9. У курса одна аудитория или аудитория отсутствует.
 10. Курс не изменяется автоматически при изменении группы.
-11. Урок является редактируемым документом.
-12. Проведение урока является отдельной сущностью.
-13. Один урок может проводиться неоднократно.
-14. Материал хранится в каталоге один раз.
-15. Урок хранит ссылки и размещения материалов.
-16. Изменение материала распространяется на все уроки, которые на него ссылаются.
+11. Урок является редактируемым документом с одним ordered list компонентов.
+12. Между Lesson и Component нет Step, скрытой root-группы или Slide.
+13. Проведение урока является отдельной сущностью.
+14. Один урок может проводиться неоднократно.
+15. Course-wide attachment хранится один раз и проверяется по ownership.
+16. Component непосредственно принадлежит одной Lesson; его payload и
+    placement валидируются code-first registry.
 17. История прохождения не зависит от удаления курса или урока.
 18. AI не получает прямой доступ к базе данных.
 19. Любое AI-изменение выполняется через валидируемые инструменты.
@@ -248,7 +254,7 @@ MCP_SERVER_SECRET=
 Любой Account потенциально может:
 
 - создавать курсы и группы;
-- создавать материалы;
+- создавать Lesson Components и загружать CourseAsset;
 - создавать учебные профили;
 - быть guardian для учебных профилей;
 - получить собственный учебный профиль;
@@ -324,7 +330,8 @@ learner_guardian
 
 Guardian по умолчанию может видеть профиль, расписание, домашние задания и учебную историю, а при соответствующем permission — управлять детским входом.
 
-Guardian не получает доступ к закрытым материалам владельца курса и не участвует в чатах курса в MVP.
+Guardian не получает доступ к `staff_only` Components и private CourseAsset
+владельца курса и не участвует в чатах курса в MVP.
 
 ## 13. Профиль без Account и детский вход
 
@@ -454,7 +461,7 @@ learner_group_member
 - не изменяет Course;
 - не изменяет Lesson;
 - не запускает AI;
-- не перегенерирует материалы;
+- не перегенерирует Lesson Components;
 - не меняет существующую учебную историю;
 - не создаёт индивидуальное ДЗ автоматически;
 - применяет существующее общее ДЗ, если оно есть;
@@ -529,25 +536,25 @@ course
 - копирует Course;
 - либо создаёт Course из Template.
 
-Копирование создаёт новые Course, Lesson, LessonSlide, Placement и HomeworkDefinition.
+Копирование создаёт новые Course, Lesson, LessonComponent и
+HomeworkDefinition. Course attachments копируются или переиспользуются только
+через отдельную явную storage operation с проверкой ownership; неявной общей
+глобальной библиотеки в активной модели нет.
 
-CatalogMaterial по умолчанию не копируются: новый Course ссылается на те же материалы.
+## 22. Архивная методика и будущий системный Template
 
-## 22. Системный шаблон ShiDao
+Methodology не является активной V2-сущностью и не является обязательной
+runtime dependency. Снимок V1, включая прежнюю методику и её файлы, сохраняется
+в архивных Git refs и recovery snapshot как исторический источник.
 
-Текущая методика конвертируется в новый системный Template `ShiDao`.
+Если отдельной задачей будет одобрен системный Template `ShiDao`, importer:
 
-Требования:
-
-- удалить старые methodology IDs;
-- преобразовать контент в Lesson;
-- преобразовать элементы в CatalogMaterial;
-- преобразовать ученический экран в LessonSlide и Placement;
-- преобразовать педагогические заметки в teacher-surface placements;
-- удалить уникальные renderer'ы;
-- использовать только универсальный registry;
-- проверить шаблон в активном контуре реконструкции;
-- включить его в новую baseline до запуска V2.
+- читает только явно выбранный архивный source;
+- создаёт обычные Course, Lesson, ordered LessonComponent и course attachments;
+- прогоняет payload/placement через универсальный registry;
+- не переносит methodology IDs в активные сущности;
+- не создаёт fixture fallback или уникальные lesson renderers;
+- не является prerequisite первого Course Builder milestone или baseline.
 
 ---
 
@@ -585,7 +592,7 @@ lesson_session
 - ended_at TIMESTAMPTZ NULL
 - cancelled_at TIMESTAMPTZ NULL
 - mode ENUM(live, ai_lesson, homework, self_practice, review)
-- current_slide_id UUID NULL
+- current_component_id UUID NULL
 - created_by_account_id UUID NOT NULL
 - created_at TIMESTAMPTZ
 - updated_at TIMESTAMPTZ
@@ -613,7 +620,7 @@ ended_at != null                        → completed
 ```text
 lesson_session_runtime
 - lesson_session_id UUID PK
-- current_slide_id UUID NULL
+- current_component_id UUID NULL
 - runtime_state JSONB
 - version BIGINT
 - updated_at TIMESTAMPTZ
@@ -623,9 +630,9 @@ lesson_session_runtime
 
 ```text
 start_session
-set_current_slide
-next_slide
-previous_slide
+set_current_component
+next_component
+previous_component
 end_session
 cancel_session
 ```
@@ -634,20 +641,22 @@ cancel_session
 
 ---
 
-# Часть VIII. Материалы и реестр компонентов
+# Часть VIII. Course assets и реестр компонентов
 
-## 27. Material Type Registry
+## 27. Component Type Registry
 
-Реестр типов материалов является code-first.
+Реестр типов Lesson Component является code-first.
 
 ```ts
-interface MaterialTypeDefinition<TPayload, TPlacement> {
+interface ComponentDefinition<TPayload, TPlacement> {
   key: string;
   version: number;
   category: string;
   title: string;
   payloadSchema: ZodSchema<TPayload>;
   placementSchema: ZodSchema<TPlacement>;
+  defaultPayload: TPayload;
+  defaultPlacement: TPlacement;
   capabilities: {
     teacherSurface: boolean;
     studentSurface: boolean;
@@ -658,146 +667,124 @@ interface MaterialTypeDefinition<TPayload, TPlacement> {
   };
   aiInstructions: string;
   renderers: {
-    teacher?: React.ComponentType;
+    teacher: React.ComponentType;
     student?: React.ComponentType;
     preview?: React.ComponentType;
   };
 }
 ```
 
-JSON Schema генерируется из того же источника для MCP и AI tools.
+JSON Schema генерируется из того же источника для UI, application service, MCP
+и future AI orchestrator.
 
 Не допускаются:
 
 - дублирующиеся schema definitions;
-- renderer, зависящий от ID конкретного Lesson;
-- условия по названию методики;
-- fallback на TypeScript fixture.
+- renderer, зависящий от ID конкретного Course или Lesson;
+- условия по названию архивной методики;
+- fallback на TypeScript fixture;
+- отдельный table/entity на каждый component type.
 
-## 28. Начальные типы материалов
+## 28. Начальные типы компонентов
 
-Минимальный набор:
-
-- rich text;
-- heading;
-- callout;
-- quote;
-- divider;
-- image;
-- slideshow;
-- audio;
-- video;
-- file;
-- teacher note;
-- instruction;
-- vocabulary list;
-- word card;
-- flashcards;
-- single-choice quiz;
-- single-choice poll;
-- multiple-choice quiz;
-- short text response;
-- matching task;
-- matching game;
-- ordering task;
-- fill-in-the-gap;
-- open task;
-- AI assistant block.
-
-## 29. CatalogMaterial
-
-Материал хранится в личном каталоге пользователя и не принадлежит конкретному Course.
+Обязательный P0 registry первого milestone:
 
 ```text
-catalog_material
+heading
+rich_text
+callout
+quote
+divider
+image
+slideshow
+single_choice_poll
+matching_game
+file
+```
+
+Audio, video, flashcards, quiz, short response, ordering, fill-in-the-gap и AI
+assistant могут добавляться позднее как отдельные registry keys с тем же
+contract. Абстрактный универсальный `game` не используется.
+
+## 29. CourseAsset
+
+Файл или изображение хранится как private course-wide attachment.
+
+```text
+course_asset
 - id UUID PK
-- owner_account_id UUID NULL
-- ownership_scope ENUM(personal, system)
+- owner_account_id UUID NOT NULL
+- course_id UUID NOT NULL
+- storage_bucket TEXT NOT NULL
+- storage_path TEXT NOT NULL
+- original_filename TEXT NOT NULL
+- mime_type TEXT NOT NULL
+- size_bytes BIGINT NOT NULL
+- checksum_sha256 TEXT NOT NULL
+- status ENUM(pending, ready)
+- created_at TIMESTAMPTZ
+```
+
+Course workspace открывает assets отдельным действием «Материалы курса».
+Успешная загрузка не означает semantic parsing. Browser flow использует signed
+access и пользовательский JWT, а не service role.
+
+## 30. LessonComponent
+
+Lesson непосредственно владеет одним ordered list компонентов.
+
+```text
+lesson_component
+- id UUID PK
+- lesson_id UUID NOT NULL
 - type_key TEXT NOT NULL
-- title TEXT NOT NULL
-- current_revision_id UUID NOT NULL
-- archived_at TIMESTAMPTZ NULL
+- schema_version INT NOT NULL
+- position INT NOT NULL
+- payload JSONB NOT NULL
+- placement JSONB NOT NULL DEFAULT {}
+- visibility ENUM(staff_only, learner_visible)
 - created_at TIMESTAMPTZ
 - updated_at TIMESTAMPTZ
 ```
 
-Отдельный раздел «материалы уровня курса» не создаётся.
+Между Lesson и LessonComponent нет Step, root Step, Slide, Placement entity или
+compatibility group. `(lesson_id, position)` уникален; mutations сохраняют
+плотный порядок.
 
-## 30. MaterialRevision
+## 31. Ownership and reuse
 
-```text
-material_revision
-- id UUID PK
-- material_id UUID NOT NULL
-- revision_number INT NOT NULL
-- schema_version INT NOT NULL
-- payload JSONB NOT NULL
-- created_by_account_id UUID NULL
-- created_by_ai_job_id UUID NULL
-- change_summary TEXT NULL
-- created_at TIMESTAMPTZ
-```
+LessonComponent принадлежит ровно одной Lesson. Для повторного использования
+пользователь или AI явно копирует валидированный component payload в другую
+Lesson; последующее редактирование не меняет независимые копии автоматически.
 
-Lesson всегда отображает `current_revision_id`.
+CourseAsset может использоваться несколькими компонентами того же Course через
+asset ID внутри валидированного payload. Service проверяет, что asset имеет
+`ready` status и принадлежит Course текущего actor.
 
-Ревизии нужны для undo, восстановления, AI-аудита, расследования ошибок и фиксации версии материала в учебной истории. Пользователь не выбирает ревизию в обычном flow.
-
-## 31. Повторное использование
-
-Один CatalogMaterial может использоваться:
-
-- в нескольких Course;
-- в нескольких Lesson;
-- на нескольких Student Slides;
-- несколько раз на одном Slide;
-- в teacher document;
-- в homework.
-
-Обновление CatalogMaterial меняет отображение во всех текущих местах использования.
+Future reusable library может быть добавлена отдельным решением, но она не
+вставляет новую обязательную сущность между Lesson и ordered Components и не
+является частью текущего Definition of Done.
 
 ## 32. Lesson surfaces
 
-В Lesson есть две независимые поверхности:
+Для выбранной Lesson существуют три UI-поверхности:
 
-1. `teacher_document`;
-2. `student_screen`.
+1. **План урока** — полный ordered list LessonComponent;
+2. **Student Screen** — та же последовательность после server-side фильтра
+   `visibility=learner_visible`;
+3. **Домашнее задание** — отдельный persisted contract, не компонентная группа.
 
-Teacher document не обязан повторять структуру Student Screen. Student Screen состоит из слайдов.
+Название Lesson и teacher comment — поля Lesson. Course materials находятся в
+header Course и не являются четвёртой Lesson tab.
 
-```text
-lesson_slide
-- id UUID PK
-- lesson_id UUID NOT NULL
-- position INT NOT NULL
-- title TEXT NULL
-- settings JSONB
-- created_at TIMESTAMPTZ
-- updated_at TIMESTAMPTZ
-```
+## 33. Component mutations
 
-## 33. Placement
+Application service предоставляет операции create/update/delete/reorder через
+`lessonId` или `componentId`. Payload и placement валидируются соответствующим
+registry definition до записи. Reorder работает во всём списке Lesson.
 
-```text
-material_placement
-- id UUID PK
-- lesson_id UUID NOT NULL
-- surface ENUM(teacher_document, student_screen)
-- slide_id UUID NULL
-- material_id UUID NOT NULL
-- position INT NOT NULL
-- visibility ENUM(staff_only, learner_visible, guardian_visible)
-- placement_config JSONB NOT NULL DEFAULT {}
-- created_at TIMESTAMPTZ
-- updated_at TIMESTAMPTZ
-```
-
-Правила:
-
-- для `student_screen` обязателен `slide_id`;
-- для `teacher_document` `slide_id` равен NULL;
-- payload хранится в MaterialRevision;
-- layout, размер, подпись и параметры показа хранятся в `placement_config`;
-- assessment-логика материала хранится в payload.
+Детерминированный assembler и future AI используют эти же operations. Ни UI,
+ни MCP не передают внутренний parent/group ID помимо `lessonId`.
 
 ## 34. Visibility
 
@@ -806,12 +793,13 @@ MVP использует:
 ```text
 staff_only
 learner_visible
-guardian_visible
 ```
 
-- `staff_only`: только владелец Course;
-- `learner_visible`: владелец и учащиеся аудитории;
-- `guardian_visible`: владелец, учащийся и guardians именно этого учащегося.
+- `staff_only`: component доступен только владельцу Course;
+- `learner_visible`: component доступен владельцу и learner projection.
+
+Student Screen API физически исключает `staff_only` rows и не полагается на
+CSS. После фильтра сохраняется относительный Lesson order.
 
 ---
 
@@ -848,13 +836,18 @@ homework_definition
 - `learner_profile_id` обязателен только для `learner_override`.
 
 ```text
-homework_material_placement
+homework_component
 - id UUID PK
 - homework_definition_id UUID NOT NULL
-- material_id UUID NOT NULL
+- type_key TEXT NOT NULL
+- schema_version INT NOT NULL
 - position INT NOT NULL
-- placement_config JSONB
+- payload JSONB NOT NULL
+- placement JSONB NOT NULL DEFAULT {}
 ```
+
+Homework может переиспользовать component registry, но его ordered list
+принадлежит HomeworkDefinition и не смешивается с `lesson_component`.
 
 ## 37. Effective homework
 
@@ -920,7 +913,7 @@ learner_homework_assignment
 - принадлежит LearnerProfile;
 - не удаляется при удалении Lesson, Course или Group;
 - не зависит от текущего названия курса;
-- не зависит от текущего содержимого материала;
+- не зависит от текущего содержимого компонента;
 - сохраняет snapshot фактов на момент обучения.
 
 Связи с Course/Lesson могут использовать `ON DELETE SET NULL`, но snapshots обязательны.
@@ -954,14 +947,14 @@ learning_event
 - learning_record_id UUID NOT NULL
 - event_type TEXT NOT NULL
 - occurred_at TIMESTAMPTZ NOT NULL
-- material_id UUID NULL
-- material_revision_id UUID NULL
+- lesson_component_id UUID NULL
+- component_snapshot JSONB NULL
 - payload JSONB NOT NULL
 ```
 
 Примеры событий:
 
-- material_shown;
+- component_shown;
 - answer_submitted;
 - answer_checked;
 - hint_requested;
@@ -1102,7 +1095,7 @@ Guardian-чат в MVP отсутствует.
 
 - course planning;
 - lesson generation;
-- material generation;
+- component generation;
 - editing;
 - AI lesson;
 - teacher copilot;
@@ -1118,7 +1111,7 @@ AI:
 - пишет сообщения;
 - задаёт вопросы;
 - проверяет ответы;
-- выбирает следующий доступный материал;
+- выбирает следующий доступный learner-visible Component;
 - предлагает подсказки;
 - сохраняет события;
 - формирует proposed inferences.
@@ -1129,10 +1122,10 @@ AI:
 
 - видит разрешённый контекст;
 - предлагает следующую реплику;
-- предлагает материал или слайд;
+- предлагает следующий learner-visible Component;
 - помогает сформулировать обратную связь;
 - подготавливает заметки;
-- не переключает слайды без tool action;
+- не меняет runtime component cursor без tool action;
 - не отправляет сообщения учащемуся без разрешённого режима автодействий.
 
 ### 51.3 Не входит в MVP
@@ -1147,22 +1140,26 @@ AI:
 
 AI не выполняет SQL и не получает service-role credentials.
 
-Примеры tools:
+Минимальный development/internal MCP первого milestone регистрирует ровно пять
+tools:
 
 ```text
-get_course
-list_course_lessons
-create_lesson
-update_lesson
-reorder_lessons
-delete_lesson
-create_material
-update_material
-place_material
-move_placement
-remove_placement
-create_slide
-update_slide
+course.create_draft
+course.get
+course.add_lesson
+lesson.add_component
+lesson.reorder_component
+```
+
+Он не регистрирует tool создания Step и не принимает `stepId`. Более поздний
+AI/tool registry может добавить, например:
+
+```text
+course.update
+lesson.update
+lesson.delete
+lesson.update_component
+lesson.delete_component
 set_common_homework
 set_learner_homework_override
 create_learning_note
@@ -1178,7 +1175,7 @@ undo_change_set
 - имеет Zod schema и JSON Schema;
 - проверяет actor и ownership;
 - проверяет доступ к аудитории;
-- валидирует material payload;
+- валидирует component payload и placement через code-first registry;
 - принимает idempotency key там, где нужно;
 - пишет audit event.
 
@@ -1204,7 +1201,7 @@ ai_change_set
 
 Подтверждение обязательно для:
 
-- удаления Lesson или Material;
+- удаления Lesson, Component или CourseAsset;
 - массовой замены;
 - изменения большого числа Lesson;
 - перегенерации целого Course;
@@ -1215,7 +1212,10 @@ ai_change_set
 
 MCP является единым программным слоем AI-инструментов.
 
-Первый потребитель — внутренний AI ShiDao. В дальнейшем тот же registry используется для Codex, ChatGPT и внешних AI-клиентов.
+Первый сервер — локальный `stdio` adapter для development. Он вызывает тот же
+CourseBuilderApplicationService, что UI, и не обращается к таблицам напрямую.
+В дальнейшем тот же registry используется внутренним AI ShiDao, Codex, ChatGPT
+и внешними AI-клиентами.
 
 Внешний MCP-доступ не включается до появления OAuth/scoped tokens, rate limits, per-tool permissions, audit и revocation.
 
@@ -1381,9 +1381,12 @@ AI может видеть данные, к которым текущий пол
 
 ## 62. Ownership policies
 
-Account имеет полный доступ к своим Course, Group, CatalogMaterial, SourceDocument и AI jobs.
+Account имеет полный доступ к своим Course, Group, CourseAsset, SourceDocument и
+AI jobs.
 
-LearnerProfile session имеет доступ только к собственному profile, назначенным занятиям, Student Screen, Homework, LearningRecord, доступным chat threads и разрешённым materials.
+LearnerProfile session имеет доступ только к собственному profile, назначенным
+занятиям, learner-visible Student Screen Components, Homework, LearningRecord,
+доступным chat threads и разрешённым CourseAsset.
 
 Guardian имеет доступ только к связанным LearnerProfile и разрешённым данным.
 
@@ -1451,7 +1454,8 @@ src/
     courses/
     lessons/
     sessions/
-    materials/
+    components/
+    course-assets/
     homework/
     learning-history/
     chat/
@@ -1478,6 +1482,9 @@ src/
 ```text
 methodology
 methodology_lesson
+lesson_step
+lesson_slide
+catalog_material как обязательный parent Lesson content
 scheduled_lesson как копия урока
 parent table
 teacher table
@@ -1501,7 +1508,6 @@ legacy lesson renderer
 - Курсы;
 - Группы;
 - Учащиеся;
-- Материалы;
 - Источники;
 - Календарь;
 - Чат;
@@ -1525,17 +1531,25 @@ legacy lesson renderer
 
 ## 70. Редактор урока
 
-Основные области:
+Header Course содержит:
 
-1. Teacher document.
-2. Student Screen slides.
-3. Homework.
-4. Schedule и session history.
-5. AI panel.
+- название и основные сведения Course;
+- действие «Настройки»;
+- действие «Материалы курса» для private course-wide attachments.
 
-Материал перетаскивается из каталога или создаётся AI.
+Слева пользователь выбирает Lesson или открывает modal «Добавить урок».
+Название Lesson обязательно и хранится как поле Lesson, а не как Component.
 
-Редактирование CatalogMaterial предупреждает, что изменение появится во всех references, и показывает количество мест использования.
+Для выбранной Lesson доступны:
+
+1. План урока — полный ordered list Components;
+2. Student Screen — learner-visible projection того же списка;
+3. Homework — отдельный Lesson contract;
+4. future Schedule/session history и AI panel по мере реализации.
+
+Component добавляется из registry palette, редактируется, удаляется,
+перемещается во всём Lesson list и переключается между `staff_only` и
+`learner_visible`.
 
 ## 71. Student experience
 
@@ -1549,7 +1563,8 @@ legacy lesson renderer
 - сообщения;
 - уведомления.
 
-Учащийся не видит teacher document, staff-only materials, private AI notes, данные других учащихся и Course как редактируемый документ.
+Учащийся не видит staff-only Components, private Course attachments, private AI
+notes, данные других учащихся и Course как редактируемый документ.
 
 ## 72. Guardian experience
 
@@ -1563,7 +1578,8 @@ Guardian видит:
 - подтверждённые AI-выводы;
 - настройки детского входа.
 
-Guardian не видит teacher document, staff-only materials, внутренний chat Course, данные других учащихся и provider prompts.
+Guardian не видит staff-only Components, private Course attachments, внутренний
+chat Course, данные других учащихся и provider prompts.
 
 ## 73. Chat
 
@@ -1599,9 +1615,10 @@ Chat:
 Удаление Course:
 
 - удаляет его Lesson;
+- удаляет принадлежащие им LessonComponent;
 - удаляет будущие LessonSession;
-- удаляет placements;
-- не удаляет CatalogMaterial;
+- удаляет или архивирует принадлежащие CourseAsset после проверки storage
+  references;
 - не удаляет LearningRecord;
 - не удаляет LearnerWordState;
 - не удаляет issued Homework snapshots;
@@ -1609,23 +1626,22 @@ Chat:
 
 Удаление Lesson:
 
-- удаляет документ и будущие sessions;
+- удаляет документ, его LessonComponent и будущие sessions;
 - не удаляет LearningRecord;
-- не удаляет CatalogMaterial;
 - не удаляет выданное Homework.
 
 ## 76. Удаление LearnerProfile
 
 В MVP используется archive вместо обычного физического удаления. Физическое удаление требует отдельного privacy flow.
 
-## 77. Удаление Material
+## 77. Удаление CourseAsset
 
 При попытке удаления:
 
-- UI показывает references;
-- предлагается archive;
-- hard delete запрещён, пока существуют placements;
-- AI не удаляет используемый Material без подтверждения.
+- UI показывает Components, payload которых ссылается на asset;
+- service не оставляет сломанные references;
+- storage object удаляется только после успешной авторизованной DB mutation;
+- AI не удаляет используемый CourseAsset без подтверждения.
 
 ---
 
@@ -1664,7 +1680,8 @@ Git bundle, SQL gzip, custom dump, cold data archive, db-config, Storage и Comp
 - изменять прикладные таблицы текущей базы миграциями;
 - перед каждой миграцией сверять проект по read-only schema sanity check;
 - после изменения модели обновлять `docs/database/current-schema.md` и `supabase/schema/current-schema.sql`;
-- конвертировать текущую методику в системный шаблон ShiDao до удаления исходных прикладных таблиц.
+- сохранить архивную методику только в неизменяемом recovery set; не делать её
+  dependency активной V2 или prerequisite удаления legacy tables.
 
 Отдельный репозиторий, отдельная ветка V2 и отдельный Supabase-проект не создаются. Архивные refs и backup V1 остаются неизменяемой точкой возврата.
 
@@ -1684,7 +1701,9 @@ Git bundle, SQL gzip, custom dump, cold data archive, db-config, Storage и Comp
 - создать Account для каждого существующего `auth.users`;
 - создать LearnerProfile для пользователей, которые ранее были учащимися;
 - не создавать LearnerProfile автоматически для остальных;
-- загрузить системный ShiDao template;
+- при наличии отдельно подготовленного и проверенного direct-component seed
+  загрузить его как обычный Course/Template; отсутствие такого seed не
+  возвращает Methodology в baseline;
 - выполнить smoke tests;
 - включить новое приложение.
 
@@ -1722,10 +1741,10 @@ Git bundle, SQL gzip, custom dump, cold data archive, db-config, Storage и Comp
 supabase/migrations/
   00000000000000_baseline.sql
   00000000000001_seed_system_data.sql
-  00000000000002_seed_shidao_template.sql
 ```
 
-Seed шаблона может быть отдельным idempotent script.
+Будущий direct-component Template seed может быть отдельным idempotent script,
+но не является частью active schema model.
 
 Эти файлы становятся активной baseline только после проверки на текущем Supabase-контуре. Старые migrations можно удалить из `main`, потому что их неизменённая копия уже зафиксирована в архивной ветке, теге и Git bundle.
 
@@ -1754,8 +1773,7 @@ Seed шаблона может быть отдельным idempotent script.
 - нескольких тысяч LearnerProfile;
 - 300–500 одновременных live sessions как целевого запаса;
 - 15–30 Lesson в среднем Course;
-- большого числа файлов;
-- повторного использования Materials;
+- большого числа private CourseAsset и LessonComponent;
 - фоновой AI-генерации;
 - будущего появления сотен организаций без их реализации в MVP.
 
@@ -1779,6 +1797,8 @@ Seed шаблона может быть отдельным idempotent script.
 - owner IDs;
 - Course audience FKs;
 - Lesson `(course_id, position)`;
+- LessonComponent `(lesson_id, position)`;
+- CourseAsset `(course_id, created_at)`;
 - Session `(lesson_id, scheduled_at)`;
 - active Group membership;
 - Chat `(thread_id, created_at)`;
@@ -1878,14 +1898,16 @@ Playwright smoke tests
 - повторное проведение;
 - удаление Lesson не удаляет LearningRecord.
 
-### Materials
+### Components и Course assets
 
-- единый CatalogMaterial;
-- использование в нескольких Lesson;
-- update появляется во всех placements;
-- revision и undo;
-- visibility;
-- schema validation.
+- Component непосредственно принадлежит Lesson;
+- у Lesson один плотный ordered component list;
+- add/update/delete/reorder не требуют Step/Slide/group ID;
+- Student Screen сохраняет порядок после фильтра `learner_visible`;
+- `staff_only` отсутствует в learner projection;
+- payload/placement проходят registry schema validation;
+- Component не может сослаться на чужой или pending CourseAsset;
+- signed Storage access проверяет ownership.
 
 ### Homework
 
@@ -1910,7 +1932,7 @@ Playwright smoke tests
 - RLS IDOR tests;
 - learner не читает другого learner;
 - guardian видит только связанного learner;
-- learner не видит staff material;
+- learner не видит `staff_only` Components и private CourseAsset;
 - service role не используется в обычном user flow.
 
 ## 89. Accessibility и locale
@@ -1956,12 +1978,18 @@ MVP:
 
 ```text
 Курсы → Новый курс → форма и вложения → persisted Course
-→ Lesson → Lesson Step → ordered registry components → Student Screen preview
+→ Lesson → ordered registry Components → Student Screen preview
 ```
 
 Milestone включает минимальный code-first registry, Course workspace, десять базовых component types, простой assembler и development-only MCP adapter над общими application commands.
 
-Полный scope, ограничения и Definition of Done находятся в `docs/v2/TEACHER_COURSE_BUILDER_DEMO_MILESTONE.md`. Этот milestone разрешает реализовать минимальный сквозной срез фундамента, Course domain и Material platform до завершения всех возможностей соответствующих этапов. Он не разрешает обходить ownership/RLS, смешивать Teacher Side со Student Screen или публиковать внешний MCP endpoint.
+Полный scope, ограничения и Definition of Done находятся в
+`docs/v2/TEACHER_COURSE_BUILDER_DEMO_MILESTONE.md`. Этот milestone разрешает
+реализовать минимальный сквозной срез Course domain, Component platform и
+CourseAsset Storage до завершения всех возможностей соответствующих этапов. Он
+не разрешает обходить ownership/RLS, возвращать Step/Methodology compatibility,
+смешивать teacher-private данные со Student Screen или публиковать внешний MCP
+endpoint.
 
 ## 91. Этап 1 — новый фундамент
 
@@ -1984,23 +2012,23 @@ Milestone включает минимальный code-first registry, Course wo
 - LessonSession;
 - calendar;
 - copy Course;
-- ShiDao template converter.
+- optional archive-to-direct-component importer как отдельная будущая задача.
 
-## 93. Этап 3 — Material platform
+## 93. Этап 3 — Component platform
 
-- registry;
-- CatalogMaterial;
-- revisions;
-- teacher surface;
-- slides;
-- placements;
+- code-first registry;
+- direct LessonComponent;
+- dense ordered mutations;
+- teacher plan;
+- learner-visible Student Screen projection;
 - universal renderers;
-- file storage.
+- private CourseAsset Storage.
 
 ## 94. Этап 4 — обучение
 
 - live runtime;
 - Student Screen;
+- optional current-component cursor without authored Step entity;
 - LearningRecord;
 - LearningEvent;
 - WordState;
@@ -2037,7 +2065,7 @@ Milestone включает минимальный code-first registry, Course wo
 - baseline;
 - Account bootstrap;
 - student-profile bootstrap;
-- system template;
+- optional direct-component seed только если он отдельно подготовлен и проверен;
 - smoke tests;
 - launch.
 
@@ -2059,12 +2087,18 @@ Milestone включает минимальный code-first registry, Course wo
 10. Lesson не имеет preparation status.
 11. LessonSession отделена от Lesson.
 12. Один Lesson имеет несколько sessions.
-13. Student Screen работает через Slides.
-14. Teacher document независим от Student Screen.
-15. Materials хранятся в каталоге.
-16. Lesson ссылаются на Materials.
-17. Изменение Material распространяется на references.
-18. Уникальных lesson renderers и fixture fallback нет.
+13. Lesson непосредственно владеет одним ordered list LessonComponent без
+    Step/root Step, Slide или compatibility group.
+14. План урока показывает полный список, а Student Screen server projection —
+    только `learner_visible` Components в том же относительном порядке.
+15. Add/update/delete/reorder Component работают через `lessonId`/`componentId`
+    и сохраняют плотные уникальные позиции в пределах Lesson.
+16. CourseAsset хранится в private Storage, проверяется по ownership и не
+    объявляется проанализированным без фактического parsing pipeline.
+17. UI, application service, MCP и future AI используют единый code-first
+    component registry и сгенерированные из него schemas.
+18. В active V2 нет Methodology domain, уникальных lesson renderers или fixture
+    fallback; исторический source остаётся только в архиве.
 19. Common Homework работает.
 20. Individual Homework override работает.
 21. Learning history переживает удаление Course/Lesson.
@@ -2073,7 +2107,10 @@ Milestone включает минимальный code-first registry, Course wo
 24. Guardian не включён в course Chat.
 25. AI lesson без голоса работает.
 26. Teacher copilot работает.
-27. MCP используется внутренним AI.
+27. Development MCP регистрирует канонические пять tools
+    (`course.create_draft`, `course.get`, `course.add_lesson`,
+    `lesson.add_component`, `lesson.reorder_component`), работает поверх
+    application service и не публикуется внешне без security layer.
 28. AI использует только typed tools.
 29. AI quota видна пользователю.
 30. Реконструкция выполнена в текущем контуре без замены Auth-проекта и повторной настройки SMTP/email confirmation; будущий staging, если он создан, изолирован.
@@ -2129,8 +2166,10 @@ Milestone включает минимальный code-first registry, Course wo
 12. Один Lesson может проводиться многократно.
 13. История принадлежит LearnerProfile.
 14. Course/Lesson можно удалить без потери истории.
-15. Material является общей ссылочной сущностью.
-16. Обновление Material применяется во всех references.
+15. Lesson непосредственно содержит один ordered list Components; Step/root
+    Step/Slide не являются active domain entities.
+16. CourseAsset является course-wide private attachment; Component может
+    ссылаться на него только после ownership/status validation.
 17. Homework поддерживает common и learner override.
 18. Guardian не участвует в course Chat.
 19. AI lesson MVP не использует realtime voice.
@@ -2160,16 +2199,13 @@ learner_group_member
 
 course
 lesson
+lesson_component
+course_asset
 lesson_session
 lesson_session_runtime
-lesson_slide
-
-catalog_material
-material_revision
-material_placement
 
 homework_definition
-homework_material_placement
+homework_component
 learner_homework_assignment
 
 learning_record
@@ -2196,12 +2232,12 @@ audit_event
 
 ---
 
-# Приложение B. Приоритет material types
+# Приложение B. Приоритет component types
 
 ## P0
 
-- rich text;
 - heading;
+- rich text;
 - callout;
 - quote;
 - divider;
@@ -2209,13 +2245,6 @@ audit_event
 - slideshow;
 - single-choice poll;
 - matching game;
-- teacher note;
-- instruction;
-- vocabulary list;
-- word card;
-- single-choice quiz;
-- short text response;
-- open task;
 - file.
 
 ## P1
@@ -2223,6 +2252,13 @@ audit_event
 - audio;
 - video;
 - flashcards;
+- teacher note;
+- instruction;
+- vocabulary list;
+- word card;
+- single-choice quiz;
+- short text response;
+- open task;
 - multiple-choice quiz;
 - matching;
 - ordering;
@@ -2231,7 +2267,7 @@ audit_event
 ## P2
 
 - AI assistant block;
-- сложные интерактивные materials;
+- сложные интерактивные components;
 - специализированные предметные компоненты.
 
 ---
@@ -2247,3 +2283,6 @@ audit_event
 5. Зафиксированного снимка V1 на commit `51a8bdaf177e5803f0f2aa5f9bc1f9d3b14c4842`, branch `archive/v1-2026-08-03` и tag `v1-snapshot-2026-08-03`.
 6. Проверенного recovery set `.local-backups/v1-snapshot-2026-08-03` и его серверной копии на DB VDS.
 7. Решения владельца продукта от 3 августа 2026 года продолжить реконструкцию в `main` и в текущем Supabase/PostgreSQL-контуре.
+8. Решения владельца продукта от 4 августа 2026 года использовать каноническую
+   модель `Course → Lesson → ordered Components` без Step/root Step и без
+   активного Methodology domain.

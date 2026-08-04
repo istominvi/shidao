@@ -2,8 +2,10 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   COURSE_ASSET_MAX_BYTES,
+  addLessonInputSchema,
   courseDraftInputSchema,
   prepareCourseAttachmentInputSchema,
+  reorderLessonComponentInputSchema,
   updateLessonComponentInputSchema,
 } from "./contracts";
 
@@ -67,4 +69,18 @@ test("component update accepts a visibility-only toggle and rejects unknown visi
     false,
   );
   assert.equal(updateLessonComponentInputSchema.safeParse({}).success, false);
+});
+
+test("Lesson contracts expose direct document metadata and component ordering", () => {
+  assert.deepEqual(Object.keys(addLessonInputSchema.shape), [
+    "title",
+    "summary",
+  ]);
+  assert.deepEqual(reorderLessonComponentInputSchema.parse({ toPosition: 3 }), {
+    toPosition: 3,
+  });
+  assert.equal(
+    reorderLessonComponentInputSchema.safeParse({ toPosition: 0 }).success,
+    false,
+  );
 });

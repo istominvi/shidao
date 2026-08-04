@@ -10,7 +10,6 @@ import {
   getComponentDefinition,
   lessonAddComponentInputJsonSchema,
   lessonAddComponentInputSchema,
-  lessonStepAddComponentInputSchema,
   parseComponentPayload,
   parseLessonAddComponentInput,
   type ComponentTypeKey,
@@ -169,14 +168,6 @@ test("dynamic add-component schema selects payload and placement by type key", (
   assert.equal(parsed.typeKey, "heading");
   assert.equal(parsed.payload.text, "Новый заголовок");
   assert.equal(parsed.visibility, "staff_only");
-
-  const compatibilityParsed = lessonStepAddComponentInputSchema.parse({
-    lessonStepId: LESSON_ID,
-    typeKey: "heading",
-    payload: componentRegistry.heading.defaultPayload,
-    placement: componentRegistry.heading.defaultPlacement,
-  });
-  assert.equal(compatibilityParsed.visibility, "learner_visible");
 
   assert.equal(
     lessonAddComponentInputSchema.safeParse({

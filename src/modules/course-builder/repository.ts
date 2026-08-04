@@ -8,18 +8,15 @@ import type {
   CourseSummary,
   CourseWorkspace,
   LessonComponent,
-  LessonStep,
   StoredFileStatus,
 } from "./domain";
 import type { ComponentVisibility } from "./component-visibility";
 import type {
   AddLessonInput,
-  AddLessonStepInput,
   CourseDraftInput,
   CourseUpdateInput,
   PrepareCourseAttachmentInput,
   UpdateLessonInput,
-  UpdateLessonStepInput,
 } from "./contracts";
 import type { ComponentTypeKey } from "./registry/contracts";
 
@@ -57,20 +54,9 @@ type LessonRow = {
   updated_at: string;
 };
 
-type LessonStepRow = {
-  id: string;
-  lesson_id: string;
-  position: number;
-  title: string;
-  teacher_content: JsonObject;
-  settings: JsonObject;
-  created_at: string;
-  updated_at: string;
-};
-
 type LessonComponentRow = {
   id: string;
-  lesson_step_id: string;
+  lesson_id: string;
   type_key: string;
   schema_version: number;
   position: number;
@@ -135,15 +121,8 @@ export interface CourseBuilderRepository {
     input: UpdateLessonInput,
   ): Promise<CourseLesson | null>;
   deleteLesson(lessonId: string): Promise<boolean>;
-  addStep(lessonId: string, input: AddLessonStepInput): Promise<LessonStep>;
-  getAuthoringStep(lessonId: string): Promise<LessonStep | null>;
-  getStep(stepId: string): Promise<LessonStep | null>;
-  updateStep(
-    stepId: string,
-    input: UpdateLessonStepInput,
-  ): Promise<LessonStep | null>;
   addComponent(input: {
-    stepId: string;
+    lessonId: string;
     typeKey: ComponentTypeKey;
     schemaVersion: number;
     payload: JsonObject;
@@ -210,34 +189,16 @@ function mapCourse(row: CourseRow, lessonCount = 0): CourseSummary {
   };
 }
 
-function mapLesson(row: LessonRow, steps: LessonStep[] = []): CourseLesson {
+function mapLesson(
+  row: LessonRow,
+  components: LessonComponent[] = [],
+): CourseLesson {
   return {
     id: row.id,
     courseId: row.course_id,
     position: row.position,
     title: row.title,
     summary: row.summary ?? "",
-    steps,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-  };
-}
-
-function mapStep(
-  row: LessonStepRow,
-  components: LessonComponent[] = [],
-): LessonStep {
-  const teacherInstructions = row.teacher_content.teacherInstructions;
-  const learnerInstruction = row.settings.learnerInstruction;
-  return {
-    id: row.id,
-    lessonId: row.lesson_id,
-    position: row.position,
-    title: row.title,
-    teacherInstructions:
-      typeof teacherInstructions === "string" ? teacherInstructions : "",
-    learnerInstruction:
-      typeof learnerInstruction === "string" ? learnerInstruction : "",
     components,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -247,7 +208,7 @@ function mapStep(
 function mapComponent(row: LessonComponentRow): LessonComponent {
   return {
     id: row.id,
-    stepId: row.lesson_step_id,
+    lessonId: row.lesson_id,
     typeKey: row.type_key as ComponentTypeKey,
     schemaVersion: row.schema_version,
     position: row.position,
@@ -383,18 +344,11 @@ export function createCourseBuilderRepository(
         `/rest/v1/lesson?select=*&course_id=eq.${encodeFilter(courseId)}&order=position.asc`,
       );
       const lessonIds = lessons.map((lesson) => lesson.id);
-      const steps =
+      const components =
         lessonIds.length === 0
           ? []
-          : await request<LessonStepRow[]>(
-              `/rest/v1/lesson_step?select=*&lesson_id=in.(${inFilter(lessonIds)})&order=position.asc`,
-            );
-      const stepIds = steps.map((step) => step.id);
-      const components =
-        stepIds.length === 0
-          ? []
           : await request<LessonComponentRow[]>(
-              `/rest/v1/lesson_step_component?select=*&lesson_step_id=in.(${inFilter(stepIds)})&order=position.asc`,
+              `/rest/v1/lesson_component?select=*&lesson_id=in.(${inFilter(lessonIds)})&order=position.asc`,
             );
       const links = await request<CourseAttachmentRow[]>(
         `/rest/v1/course_attachment?select=*&course_id=eq.${encodeFilter(courseId)}&order=created_at.asc`,
@@ -407,20 +361,14 @@ export function createCourseBuilderRepository(
               `/rest/v1/stored_file?select=*&id=in.(${inFilter(fileIds)})&order=created_at.asc`,
             );
 
-      const componentsByStep = new Map<string, LessonComponent[]>();
+      const componentsByLesson = new Map<string, LessonComponent[]>();
       for (const component of components) {
-        const list = componentsByStep.get(component.lesson_step_id) ?? [];
+        const list = componentsByLesson.get(component.lesson_id) ?? [];
         list.push(mapComponent(component));
-        componentsByStep.set(component.lesson_step_id, list);
-      }
-      const stepsByLesson = new Map<string, LessonStep[]>();
-      for (const step of steps) {
-        const list = stepsByLesson.get(step.lesson_id) ?? [];
-        list.push(mapStep(step, componentsByStep.get(step.id) ?? []));
-        stepsByLesson.set(step.lesson_id, list);
+        componentsByLesson.set(component.lesson_id, list);
       }
       const mappedLessons = lessons.map((lesson) =>
-        mapLesson(lesson, stepsByLesson.get(lesson.id) ?? []),
+        mapLesson(lesson, componentsByLesson.get(lesson.id) ?? []),
       );
 
       return {
@@ -478,9 +426,6 @@ export function createCourseBuilderRepository(
             p_course_id: input.courseId,
             p_lesson_title: input.lesson.title,
             p_lesson_summary: input.lesson.summary,
-            p_step_title: input.step.title,
-            p_teacher_instructions: input.step.teacherInstructions,
-            p_learner_instruction: input.step.learnerInstruction,
             p_components: input.components.map((component) => ({
               typeKey: component.typeKey,
               schemaVersion: component.schemaVersion,
@@ -533,82 +478,18 @@ export function createCourseBuilderRepository(
       return rows.length > 0;
     },
 
-    async addStep(lessonId, input) {
-      const position = await nextPosition("lesson_step", "lesson_id", lessonId);
-      const rows = await request<LessonStepRow[]>("/rest/v1/lesson_step", {
-        method: "POST",
-        body: {
-          lesson_id: lessonId,
-          position,
-          title: input.title,
-          teacher_content: {
-            teacherInstructions: input.teacherInstructions,
-          },
-          settings: { learnerInstruction: input.learnerInstruction },
-        },
-      });
-      if (!rows[0]) throw new Error("Не удалось добавить шаг.");
-      return mapStep(rows[0]);
-    },
-
-    async getAuthoringStep(lessonId) {
-      const rows = await request<LessonStepRow[]>(
-        `/rest/v1/lesson_step?select=*&lesson_id=eq.${encodeFilter(lessonId)}&order=position.desc&limit=1`,
-      );
-      return rows[0] ? mapStep(rows[0]) : null;
-    },
-
-    async getStep(stepId) {
-      const rows = await request<LessonStepRow[]>(
-        `/rest/v1/lesson_step?select=*&id=eq.${encodeFilter(stepId)}&limit=1`,
-      );
-      return rows[0] ? mapStep(rows[0]) : null;
-    },
-
-    async updateStep(stepId, input) {
-      const body: JsonObject = {};
-      if (input.title !== undefined) body.title = input.title;
-      if (
-        input.teacherInstructions !== undefined ||
-        input.learnerInstruction !== undefined
-      ) {
-        const currentRows = await request<LessonStepRow[]>(
-          `/rest/v1/lesson_step?select=*&id=eq.${encodeFilter(stepId)}&limit=1`,
-        );
-        const current = currentRows[0];
-        if (!current) return null;
-        if (input.teacherInstructions !== undefined) {
-          body.teacher_content = {
-            ...current.teacher_content,
-            teacherInstructions: input.teacherInstructions,
-          };
-        }
-        if (input.learnerInstruction !== undefined) {
-          body.settings = {
-            ...current.settings,
-            learnerInstruction: input.learnerInstruction,
-          };
-        }
-      }
-      const rows = await request<LessonStepRow[]>(
-        `/rest/v1/lesson_step?id=eq.${encodeFilter(stepId)}`,
-        { method: "PATCH", body },
-      );
-      return rows[0] ? mapStep(rows[0]) : null;
-    },
-
     async addComponent(input) {
       const position = await nextPosition(
-        "lesson_step_component",
-        "lesson_step_id",
-        input.stepId,
+        "lesson_component",
+        "lesson_id",
+        input.lessonId,
       );
       const rows = await request<LessonComponentRow[]>(
-        "/rest/v1/lesson_step_component",
+        "/rest/v1/lesson_component",
         {
           method: "POST",
           body: {
-            lesson_step_id: input.stepId,
+            lesson_id: input.lessonId,
             type_key: input.typeKey,
             schema_version: input.schemaVersion,
             position,
@@ -624,7 +505,7 @@ export function createCourseBuilderRepository(
 
     async getComponent(componentId) {
       const rows = await request<LessonComponentRow[]>(
-        `/rest/v1/lesson_step_component?select=*&id=eq.${encodeFilter(componentId)}&limit=1`,
+        `/rest/v1/lesson_component?select=*&id=eq.${encodeFilter(componentId)}&limit=1`,
       );
       return rows[0] ? mapComponent(rows[0]) : null;
     },
@@ -636,7 +517,7 @@ export function createCourseBuilderRepository(
         body.placement_config = input.placement;
       if (input.visibility !== undefined) body.visibility = input.visibility;
       const rows = await request<LessonComponentRow[]>(
-        `/rest/v1/lesson_step_component?id=eq.${encodeFilter(input.componentId)}`,
+        `/rest/v1/lesson_component?id=eq.${encodeFilter(input.componentId)}`,
         { method: "PATCH", body },
       );
       return rows[0] ? mapComponent(rows[0]) : null;
@@ -644,7 +525,7 @@ export function createCourseBuilderRepository(
 
     async deleteComponent(componentId) {
       const rows = await request<LessonComponentRow[]>(
-        `/rest/v1/lesson_step_component?id=eq.${encodeFilter(componentId)}`,
+        `/rest/v1/lesson_component?id=eq.${encodeFilter(componentId)}`,
         { method: "DELETE" },
       );
       return rows.length > 0;
@@ -653,7 +534,7 @@ export function createCourseBuilderRepository(
     async reorderComponent(componentId, toPosition) {
       const reordered = await request<
         Array<{ component_id: string; position: number }>
-      >("/rest/v1/rpc/reorder_lesson_step_component", {
+      >("/rest/v1/rpc/reorder_lesson_component", {
         method: "POST",
         body: {
           p_component_id: componentId,
@@ -662,7 +543,7 @@ export function createCourseBuilderRepository(
       });
       if (reordered.length === 0) return null;
       const rows = await request<LessonComponentRow[]>(
-        `/rest/v1/lesson_step_component?select=*&id=eq.${encodeFilter(componentId)}&limit=1`,
+        `/rest/v1/lesson_component?select=*&id=eq.${encodeFilter(componentId)}&limit=1`,
       );
       return rows[0] ? mapComponent(rows[0]) : null;
     },

@@ -1,229 +1,284 @@
 # Lesson workflow model
 
-**Статус:** Canonical product architecture (documentation baseline)  
-**Дата:** 18 апреля 2026  
-**Область:** lesson plan / student screen / materials / homework / runtime execution
+**Статус:** canonical V2 product architecture
+
+**Дата решения:** 4 августа 2026 года
+
+**Область:** Course Builder / Lesson / Components / Student Screen / course materials / homework
 
 ## Product decision
 
-ShiDao — methodology-driven продукт. Канонический урок в онлайн/оффлайн формате описывается как **единая упорядоченная последовательность Lesson Step (Шаг)**.
+Каноническая авторская модель ShiDao V2:
 
-Каждый Шаг имеет две согласованные стороны:
+```text
+Course
+├── course-wide attachments
+└── Lesson 1..N
+    └── ordered Components 1..N
+```
 
-1. **Teacher Side** — приватный методический план преподавателя (как вести шаг).
-2. **Learner Side (Student Screen / Экран ученика)** — что видит ученик на текущем шаге.
+`Lesson` непосредственно владеет одним упорядоченным списком компонентов.
+Между Lesson и Component нет сущности `Lesson Step`, скрытого/root step,
+группы совместимости или второго списка для Student Screen.
 
-Ключевая продуктовая договорённость:
-
-- у Teacher Side и Learner Side одинаковые номера шагов;
-- у Teacher Side и Learner Side одинаковые названия шагов;
-- teacher управляет переходами между шагами во время live-урока;
-- learner может взаимодействовать только внутри текущего шага (если шаг это разрешает).
+Это решение относится к domain model, базе, UI, application service, MCP и
+AI-orchestration. Упрощённое отображение без шагов — не временная UI-проекция,
+а каноническая структура V2.
 
 ## Vocabulary
 
-- **Lesson Step / Шаг** — каноническая продуктовая единица урока.
-- **Teacher Side** — педагогические инструкции и сценарий для преподавателя.
-- **Learner Side / Student Screen / Экран ученика** — экран ученика для live и review режимов.
-- **Materials Library / Материалы** — библиотека открываемых/скачиваемых ресурсов (PDF, презентации, видео, аудио, карточки, worksheet и т.д.).
-- **Live Lesson Mode / Live-урок** — teacher-controlled режим проведения scheduled lesson.
-- **Review Mode / Повторение после урока** — режим после завершения урока, где ученик может свободно переходить между шагами.
-- **Source Layer** — методический read-only слой (методология, канонические шаги, learner content, homework definition).
-- **Runtime Layer** — scheduled lesson исполнение (status, teacher actions, future current step sync, homework issue/review, communication, future attendance/telemetry).
+- **Course / Курс** — личный persisted-документ владельца с уроками и
+  course-wide вложениями.
+- **Lesson / Урок** — редактируемый документ внутри Course. Название обязательно
+  и хранится в самой Lesson; комментарий преподавателя хранится в `summary`.
+- **Lesson Component / Компонент урока** — элемент единого ordered list Lesson.
+- **План урока** — teacher-facing редактор полного списка компонентов.
+- **Student Screen / Экран ученика** — learner-facing проекция той же Lesson,
+  содержащая только разрешённые ученику компоненты.
+- **Материалы курса** — course-wide файлы и изображения, загруженные в private
+  Storage и связанные с Course.
+- **Домашнее задание** — отдельная поверхность выбранной Lesson.
+- **Preview / Предпросмотр** — режим проверки Student Screen внутри Course или
+  на отдельной полноэкранной странице.
 
-## Canonical teacher tabs
+Термины `Content` для Student Screen, `Lesson Step`, `root step`, `stepId` и
+`Methodology` как активная V2-модель не используются.
 
-Канонические teacher-facing вкладки для урока:
+## Canonical data contract
 
-1. **План урока** — Teacher Side (приватная методическая опора, шаги, инструкции).
-2. **Экран ученика** — Learner Side player (что показывается ученикам шаг за шагом).
-3. **Материалы** — библиотека файлов/ресурсов урока.
-4. **Домашнее задание** — post-lesson задание и проверка.
+Минимальная Lesson:
 
-Дополнительные runtime-вкладки (например, чат, проведение) допустимы по контексту, но не заменяют четыре базовые педагогические поверхности.
-
-Термин **«Контент / Content» как название learner-facing вкладки является deprecated** для этого продуктового сценария.
-
-## Lesson step model
-
-Каноническая модель урока:
-
-- урок = ordered list of Steps (`1..N`);
-- каждый Step имеет `title` и `order`;
-- у каждого Step есть Teacher Side и Learner Side;
-- обе стороны описывают один и тот же педагогический момент, а не разные независимые структуры.
-
-Недопустимо по умолчанию:
-
-- разрывать parity (например, 16 teacher steps против 8 несвязанных learner scenes);
-- менять названия шагов между teacher и learner представлениями;
-- смешивать teacher-private инструкции прямо на learner экране.
-
-## Simplified Course Builder authoring surface
-
-Для ручной сборки черновика Course Builder допускается упрощённая проекция
-`Lesson → ordered Components`, без обязательного создания и выбора Step в UI.
-Это authoring-проекция, а не второй независимый lesson runtime:
-
-- при добавлении первого компонента application service лениво создаёт один
-  внутренний root `Lesson Step`;
-- UI, Student Screen preview и будущий AI-orchestrator работают с `lessonId` и
-  не требуют от преподавателя знания внутреннего `stepId`;
-- teacher-private компоненты сохраняются как `staff_only`; в Student Screen API
-  попадают только `learner_visible` компоненты и используемые ими материалы;
-- существующие многошаговые уроки не объединяются и не перезаписываются;
-- явный `lesson.add_step` временно остаётся compatibility tool для уже
-  существующей канонической и runtime-модели.
-
-Если в дальнейшем продукт вернёт явные педагогические этапы в Course Builder,
-они должны снова соблюдать parity Teacher Side / Student Screen. Упрощённый UI
-не разрешает хранить компоненты вне канонической структуры базы и не требует
-разрушительной миграции существующих уроков.
-
-## Teacher-side step
-
-Teacher Side шага включает:
-
-- педагогическую цель шага;
-- действия преподавателя;
-- ожидаемые ответы/реакции учеников;
-- методические подсказки;
-- список нужных материалов для шага.
-
-Teacher Side остаётся приватным представлением для преподавателя и не копируется дословно в Student Screen.
-
-## Learner-side step / Student Screen
-
-Learner Side шага включает:
-
-- текущий номер и название шага;
-- визуальные и аудио блоки для ученика;
-- интерактивные блоки (когда предусмотрено): play/pause/rewind, выбор ответов, нажатия на изображения, прослушивание аудио и т.д.;
-- краткую понятную формулировку задания на текущий шаг.
-
-Даже если шаг преимущественно офлайн/физический, в Student Screen всё равно должен быть learner-side блок-плейсхолдер с тем же номером и названием шага (например: «Шаг 6 · Игра с карточками»).
-
-## Live lesson mode
-
-В live mode (во время scheduled lesson):
-
-- teacher определяет текущий step;
-- ожидается, что все ученики находятся на одном текущем step;
-- learner previous/next navigation отключена по умолчанию;
-- learner взаимодействует только внутри текущего шага;
-- teacher может вести урок из двух control surfaces:
-  - из **Плана урока** (например, «Показать этот шаг ученикам», «Следующий шаг»);
-  - из **Экрана ученика** (presentation-like режим);
-- обе control surfaces управляют одним и тем же runtime current step (target architecture).
-
-## Post-lesson review mode
-
-После завершения урока:
-
-- тот же Student Screen открывается ученику как материал повторения;
-- learner получает свободную навигацию по шагам (previous/next);
-- содержание шага не дублируется в отдельный «другой» экран: используется тот же Learner Side, но в другом режиме доступа.
-
-## Materials library
-
-**Материалы (Materials Library)** — отдельный продуктовый контур от Student Screen.
-
-Материалы включают:
-
-- презентации;
-- PDF-карточки;
-- видео/аудио файлы;
-- песни;
-- worksheet/appendix.
-
-Материалы — это ресурсная библиотека для открытия/скачивания и подготовки к уроку. Это не равно live/review player для ученика.
-
-## Runtime state and future live sync
-
-Текущий runtime слой хранит scheduled lesson и связанные runtime-сущности (homework assignments, communication). В целевой архитектуре live execution дополнительно потребует runtime-состояние синхронизации шага.
-
-Target direction (план):
-
-- runtime `current_step_index`/`current_step_id` для live lesson;
-- режимные флаги live vs review;
-- аудит изменений шага и управляющих действий teacher;
-- права доступа к навигации в зависимости от режима.
-
-В рамках этого документа изменения БД **не выполняются**.
-
-## Telemetry and teacher monitoring
-
-Планируемые (future) возможности teacher monitoring:
-
-- присутствие учащихся на уроке;
-- какой шаг открыт у каждого ученика;
-- события взаимодействия (просмотр видео, выбранные ответы, отправленные действия);
-- агрегированные interaction events по шагам.
-
-Это описано как целевая архитектура. Не следует утверждать, что полноценная live-аналитика уже реализована, если она не подтверждена кодом/схемой.
-
-## Source layer vs runtime layer
-
-- **Source Layer (methodology):** определяет канонические шаги урока, teacher guidance, learner-side наполнение, homework definition, материалы.
-- **Runtime Layer (scheduled lesson):** хранит исполнение урока (status, teacher operations, future live current-step state, homework issuance/review, коммуникации, future attendance/telemetry).
-
-Source слой read-only для MVP-проведения, runtime слой — изменяемый операционный контур.
-
-## Simple implementation contract
-
-Для ближайшей реализации не усложняем БД и не вводим отдельный движок уроков.
-
-Текущий `methodology_lesson_block` трактуется как канонический **Lesson Step**:
-
-- одна строка `methodology_lesson_block` = один шаг урока;
-- `sort_order` = номер шага;
-- `title` = название шага;
-- `content` хранит teacher-side данные и learner-side routing/payload;
-- сложная интерактивная логика не описывается таблицами.
-
-Минимальный learner-side контракт внутри шага:
-
-```json
-{
-  "student": {
-    "componentKey": "placeholder_v1",
-    "instruction": "Короткая инструкция ученику",
-    "payload": {}
-  }
-}
+```text
+lesson
+- id
+- course_id
+- position
+- title
+- summary
+- created_at
+- updated_at
 ```
 
-`componentKey` выбирает React-компонент из кода. `payload` передаёт только данные для этого компонента: слова, asset ids, настройки задания, варианты и т.п. Поведение компонента, анимации, drag-and-drop, проверки, состояние и визуальная механика остаются в коде.
+Минимальный Component:
 
-Если уроку нужен уникальный интерактив, добавляется новый React-renderer и новый `componentKey`; схема БД при этом не меняется.
+```text
+lesson_component
+- id
+- lesson_id
+- type_key
+- schema_version
+- position
+- payload
+- placement
+- visibility: staff_only | learner_visible
+- created_at
+- updated_at
+```
 
-## Current implementation notes
+Инварианты:
 
-На текущем срезе кода и схемы:
+1. `lesson_id` указывает непосредственно на Lesson.
+2. `position` задаёт единственный порядок компонентов внутри Lesson.
+3. Позиции после mutation остаются плотными и уникальными в пределах Lesson.
+4. Payload и placement валидируются schema выбранного registry type.
+5. Заголовок Lesson не создаётся автоматически как компонент `heading`.
+6. Пустая Lesson допустима.
+7. Component не может существовать без Lesson или одновременно принадлежать
+   нескольким Lesson.
 
-- source learner content хранится в `methodology_lesson_student_content`;
-- learner deck в реализации группирует секции по `sceneId`.
-- learner read model поддерживает `componentKey`, но старые уроки могут ещё использовать legacy `screenType`/sections mapping.
+## Code-first component registry
 
-Это допустимо как внутреннее текущее состояние, но продуктовая терминология в документации должна использовать **Шаг / Student Screen**, а не «Контент» как имя вкладки.
+Каждый тип компонента определяется один раз в code-first registry. Определение
+содержит стабильный key/version, категорию и русское название, payload schema,
+placement schema, default payload/placement, capabilities и renderers для
+teacher preview и Student Screen.
 
-## Non-goals for MVP
+UI, application service и MCP используют эти же contracts. JSON Schema для MCP
+генерируется из того же источника. Добавление типа компонента не требует новой
+таблицы и не создаёт отдельную React-страницу для конкретной Lesson.
 
-- встроенный видео-провайдер внутри ShiDao (Zoom/Meet/Telegram не интегрируются нативно);
-- обещание production-ready live sync/analytics при отсутствии полной реализации;
-- свободное learner переключение шагов во время live урока по умолчанию;
-- смешивание teacher-private методики и learner UI в одну неразделённую поверхность.
+Обязательный первый registry:
 
-## Acceptance criteria for future implementation
+```text
+heading
+rich_text
+callout
+quote
+divider
+image
+slideshow
+single_choice_poll
+matching_game
+file
+```
 
-Считаем целевую модель реализованной, когда одновременно соблюдены условия:
+## Teacher plan
 
-1. Teacher и learner используют один и тот же ordered Lesson Step list (номер + заголовок).
-2. В live mode teacher контролирует переход шагов для всех учеников.
-3. Ученик не может по умолчанию произвольно переключать шаги в live mode.
-4. В review mode после completion ученик получает свободную навигацию.
-5. План урока и Экран ученика управляют одним runtime current step.
-6. Материалы остаются отдельной библиотекой ресурсов, не подменяющей Student Screen.
-7. Для офлайн/физических шагов есть learner-side placeholder c тем же номером/заголовком.
-8. Telemetry/monitoring документированы как capability roadmap и внедряются через runtime слой.
-9. Видео-звонок остаётся внешним: ShiDao хранит/открывает meeting link, teacher может screen-share Student Screen.
+План выбранной Lesson показывает `lesson.components` в ascending `position`.
+Преподаватель может:
+
+- добавить компонент из palette;
+- изменить его payload и placement;
+- переместить выше или ниже во всём списке Lesson;
+- удалить компонент;
+- включить или выключить отображение на Student Screen.
+
+На карточке teacher видит состояние видимости. `staff_only` означает, что
+компонент остаётся частью плана преподавателя, но отсутствует в learner API.
+Приватность обеспечивается server projection и authorization, а не только CSS.
+
+## Student Screen
+
+Student Screen строится детерминированно:
+
+```text
+lesson.components
+→ filter visibility == learner_visible
+→ preserve relative position
+→ render through registry Student Screen renderer
+```
+
+У Student Screen нет собственной копии порядка, инструкции группы или
+параллельной структуры. Изменение payload или порядка сохраняется один раз и
+после reload одинаково отражается в teacher preview и learner projection.
+
+Если learner-visible компонентов нет, отображается честное пустое состояние.
+Teacher-private компоненты и поля не должны присутствовать в learner response.
+
+Полноэкранный preview может позволять преподавателю переключать Lesson для
+проверки курса. Это не задаёт правила будущего live-режима для учащегося.
+
+## Course workspace navigation
+
+В header Course находятся отдельные действия:
+
+- **Настройки** — редактирование основных полей Course;
+- **Материалы курса** — просмотр и добавление course-wide attachments.
+
+Для выбранной Lesson используется переключатель:
+
+1. **План урока**;
+2. **Экран ученика**;
+3. **Домашнее задание**.
+
+Список Lesson остаётся course navigation. Course materials не становятся
+четвёртой вкладкой конкретной Lesson.
+
+## Lesson creation
+
+Кнопка «Добавить урок» открывает modal. Обязательное поле — название Lesson;
+дополнительный teacher comment сохраняется в `summary`.
+
+Ручное создание сохраняет пустую Lesson и не расходует AI tokens. Будущая
+кнопка AI-generation вызывает orchestrator, который создаёт те же Component
+entities через application service. Она не создаёт альтернативный тип урока.
+
+До фактического подключения provider UI не утверждает, что Lesson
+сгенерирована AI.
+
+## Course materials and Storage
+
+Course attachment:
+
+- загружается в существующий private Storage;
+- имеет owner/course relation, MIME type, размер и checksum;
+- открывается через ограниченный signed access;
+- может быть указан в payload `image`, `slideshow` или `file` после проверки
+  ownership;
+- не считается проанализированным только из-за успешной загрузки.
+
+OCR, parsing, embeddings и RAG — отдельный pipeline. Отсутствие этого pipeline
+не блокирует ручное использование файла в Lesson.
+
+## Homework
+
+Homework принадлежит выбранной Lesson, но не входит в `lesson.components`.
+Первая демонстрация может содержать честную заглушку редактора. Когда
+persisted homework будет реализовано, оно получит отдельные contracts,
+authorization и storage model без возврата групп/шагов в Lesson.
+
+## Application service and MCP
+
+Канонические минимальные commands/tools:
+
+```text
+course.create_draft
+course.get
+course.add_lesson
+lesson.add_component
+lesson.reorder_component
+```
+
+`lesson.add_component` принимает `lessonId`, registry type, payload, placement
+и visibility и создаёт Component непосредственно в конце Lesson. Reorder
+работает в пределах всего ordered list выбранной Lesson.
+
+MCP — development/internal thin adapter над теми же application services. Он:
+
+- не обращается к таблицам напрямую;
+- не принимает и не возвращает `stepId`;
+- не регистрирует tool добавления шага;
+- использует actor JWT, ownership/RLS и общую schema validation;
+- не публикуется как внешний endpoint в первом milestone.
+
+## AI boundary
+
+AI не получает SQL/service-role доступ. Future OpenRouter adapter планирует
+Lesson и вызывает typed application commands. Детерминированный assembler и AI
+создают одинаковые Lesson/Component entities; смена planning strategy не меняет
+domain model или renderer contracts.
+
+Без реально выполненного parsing нельзя утверждать, что attachment был
+прочитан или использован моделью. Без provider call нельзя списывать tokens и
+называть операцию AI-generation.
+
+## Runtime and future live mode
+
+Текущий milestone реализует persisted authoring и preview, а не live sync.
+Будущий `LessonSession` остаётся отдельным исполнением Lesson. Если live mode
+потребует presentation cursor, runtime может хранить текущий component id или
+индекс, не меняя authored hierarchy и не создавая Step entity.
+
+В live mode по умолчанию teacher управляет learner surface; свободная
+предыдущая/следующая навигация учащегося не включается автоматически. Review
+может разрешить свободное изучение learner-visible компонентов.
+
+## Active V2 versus archive
+
+Активная V2 не содержит Methodology domain, methodology tables, fixture
+fallback или lesson-specific renderer. V1 methodology и её recovery snapshot
+остаются неизменяемым историческим источником в архивных Git refs и
+`.local-backups`; они не являются runtime dependency.
+
+Импорт архивного содержания, если он будет отдельно одобрен, обязан создать
+обычные Course, Lesson, Component и attachment entities через валидируемый
+import/application layer. Он не возвращает Methodology в активную модель.
+
+## Non-goals for the first milestone
+
+- обязательная AI-генерация;
+- parsing/RAG загруженных файлов;
+- persisted homework editor;
+- scheduling и live sync;
+- drag-and-drop, если надёжные кнопки «выше/ниже» уже обеспечивают reorder;
+- внешняя публикация MCP;
+- compatibility layer для Step/Methodology;
+- отдельные renderers по Course/Lesson ID.
+
+## Acceptance criteria
+
+Канонический vertical slice считается работающим, когда:
+
+1. Course, Lesson, ordered Components и attachments сохраняются в реальной
+   базе/Storage и переживают reload.
+2. Lesson создаётся без Step/root Step и может оставаться пустой.
+3. Component создаётся непосредственно по `lessonId`.
+4. Teacher plan показывает весь единый ordered list.
+5. Student Screen показывает только `learner_visible` components в том же
+   относительном порядке.
+6. Teacher-private данные отсутствуют в learner projection.
+7. Reorder изменяет порядок во всей Lesson, а не внутри скрытой группы.
+8. UI, service и MCP валидируют данные общими registry contracts.
+9. В активном V2 нет Methodology/fixture/lesson-specific fallback.
+10. Fullscreen preview сохраняет выбранную Lesson и после refresh читает
+    persisted state.

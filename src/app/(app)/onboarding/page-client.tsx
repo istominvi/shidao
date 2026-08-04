@@ -27,9 +27,9 @@ const PROFILE_OPTIONS: Array<{
     title: "Я учитель",
     description: "Веду группы, уроки и домашнюю работу в рабочем кабинете.",
     bullets: [
-      "Планирование уроков по методике",
-      "Назначение и проверка домашней работы",
-      "Коммуникация по уроку и заданию",
+      "Создание курсов и уроков",
+      "Сборка плана из компонентов",
+      "Настройка Экрана ученика",
     ],
   },
 ];
@@ -78,7 +78,7 @@ export function OnboardingPageClient({ manageMode }: { manageMode: boolean }) {
       }
 
       await refetchSession();
-      router.push(payload?.redirectTo ?? ROUTES.lessons);
+      router.push(payload?.redirectTo ?? ROUTES.courses);
       router.refresh();
     } catch (selectError) {
       setError(

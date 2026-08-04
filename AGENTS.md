@@ -29,17 +29,34 @@ Read migrations only when the task explicitly involves:
 - Never delete or rewrite old migrations unless explicitly requested.
 - Keep current-schema snapshot/docs updated when DB model changes.
 
-
 ## Lesson workflow policy
 
-Before changing lesson plan/student screen/homework/materials docs or code, read:
+Before changing Course, lesson plan, Student Screen, homework, component, or
+course-material docs/code, read:
 
 - `docs/architecture/lesson-workflow-model.md`
 
 Policy:
 
-- Use `Student Screen` / `Экран ученика` for learner-facing live/review player; do not use `Content` as the canonical product term for this surface.
-- Keep step numbering and step titles aligned across teacher and learner views.
-- During live lessons, learner free previous/next navigation must not be the default.
-- Do not mix teacher-private methodology instructions into learner-facing screens.
+- The canonical authored hierarchy is `Course → Lesson → ordered Components`.
+- A Lesson owns one ordered component list. Do not introduce `Lesson Step`, a
+  hidden/root step, `stepId`, or step-backed compatibility behavior.
+- The Lesson title and teacher comment are Lesson fields, not required heading
+  components.
+- The teacher plan renders the complete ordered list. `Student Screen` /
+  `Экран ученика` renders only `learner_visible` components while preserving
+  their relative Lesson order.
+- Keep teacher-private data out of learner projections; hiding it with CSS is
+  not sufficient.
+- Course materials are course-wide attachments. They are not a lesson surface
+  and must not be described as analyzed until parsing/RAG actually succeeded.
+- Homework is a separate Lesson surface and is not encoded as a component
+  group.
+- Active V2 code and docs must not depend on Methodology entities, fixtures, or
+  lesson-specific renderers. V1 methodology data exists only in immutable
+  archive/recovery sources unless an explicit import task is approved.
+- UI, application services, and development MCP use the same component
+  registry contracts. MCP remains an adapter over services, never tables.
+- During a future live lesson, free learner navigation must not become the
+  default merely because full-course preview offers lesson navigation.
 - Do not add migrations unless the task explicitly asks for DB implementation.

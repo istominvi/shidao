@@ -421,7 +421,7 @@ test("browser smoke: guest on protected route is redirected to /login", async (t
   const runtime = await openPage();
 
   try {
-    await runtime.page.goto("/dashboard", { waitUntil: "domcontentloaded" });
+    await runtime.page.goto("/courses", { waitUntil: "domcontentloaded" });
     assert.equal(new URL(runtime.page.url()).pathname, "/login");
   } finally {
     await runtime.close();
@@ -438,7 +438,7 @@ test("browser smoke: authenticated /login redirects by access policy", async (t)
 
   try {
     await runtime.page.goto("/login", { waitUntil: "domcontentloaded" });
-    assert.equal(new URL(runtime.page.url()).pathname, "/dashboard");
+    assert.equal(new URL(runtime.page.url()).pathname, "/courses");
   } finally {
     await runtime.close();
   }

@@ -48,7 +48,7 @@ test("TopNav: protected route keeps guest CTA hidden", () => {
     "skeleton",
   );
   assert.equal(
-    resolveTopNavAction(ROUTES.dashboard, degraded, true),
+    resolveTopNavAction(ROUTES.courses, degraded, true),
     "skeleton",
   );
 });
@@ -69,9 +69,9 @@ test("Landing header: guest/degraded is auth-aware and depends on session resolv
   assert.equal(resolveLandingNavAction(degraded, true), "guest-cta-pair");
 });
 
-test("Landing hero auth CTA points authenticated users to lessons", () => {
-  assert.equal(resolveLandingAuthCtaHref(adult), ROUTES.lessons);
-  assert.equal(resolveLandingAuthCtaHref(student), ROUTES.lessons);
+test("Landing hero auth CTA points authenticated users to courses", () => {
+  assert.equal(resolveLandingAuthCtaHref(adult), ROUTES.courses);
+  assert.equal(resolveLandingAuthCtaHref(student), ROUTES.courses);
   assert.equal(resolveLandingAuthCtaHref(guest), ROUTES.login);
 });
 

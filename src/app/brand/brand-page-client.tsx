@@ -23,9 +23,9 @@ const brandDestinations = [
     description: "Продуктовая модель Shidao",
   },
   {
-    href: "https://demo.shidao.ru",
-    label: "demo.shidao.ru",
-    description: "Демонстрация продукта",
+    href: "https://v2.shidao.ru",
+    label: "v2.shidao.ru",
+    description: "Рабочее приложение Shidao",
   },
 ] as const;
 
@@ -43,7 +43,7 @@ const spellingRows = [
   {
     context: "Домены",
     form: "shidao.ru",
-    rule: "Всегда lowercase: brand.shidao.ru, model.shidao.ru, demo.shidao.ru.",
+    rule: "Всегда lowercase: brand.shidao.ru, model.shidao.ru, v2.shidao.ru.",
   },
   {
     context: "Технические ID",

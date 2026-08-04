@@ -56,22 +56,6 @@ export const updateLessonInputSchema = addLessonInputSchema
 
 export type UpdateLessonInput = z.infer<typeof updateLessonInputSchema>;
 
-export const addLessonStepInputSchema = z.object({
-  title: z.string().trim().min(1).max(180),
-  teacherInstructions: optionalTrimmedText(4_000),
-  learnerInstruction: optionalTrimmedText(1_200),
-});
-
-export type AddLessonStepInput = z.infer<typeof addLessonStepInputSchema>;
-
-export const updateLessonStepInputSchema = addLessonStepInputSchema
-  .partial()
-  .refine((input) => Object.keys(input).length > 0, {
-    message: "Нужно передать хотя бы одно поле шага.",
-  });
-
-export type UpdateLessonStepInput = z.infer<typeof updateLessonStepInputSchema>;
-
 export const updateLessonComponentInputSchema = z
   .object({
     payload: z.unknown().optional(),

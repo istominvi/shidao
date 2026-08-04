@@ -3,35 +3,35 @@ import test from "node:test";
 import { ROUTES } from "../../auth";
 import { resolvePostLoginRedirectForContext } from "../post-login-redirect";
 
-test("post-login redirect sends student to lessons", () => {
+test("post-login redirect sends student to courses", () => {
   assert.equal(
     resolvePostLoginRedirectForContext({
       actorKind: "student",
       hasAnyAdultProfile: false,
     }),
-    ROUTES.lessons,
+    ROUTES.courses,
   );
 });
 
-test("post-login redirect sends teacher profile to lessons", () => {
+test("post-login redirect sends teacher profile to courses", () => {
   assert.equal(
     resolvePostLoginRedirectForContext({
       actorKind: "adult",
       hasAnyAdultProfile: true,
       activeAdultProfile: "teacher",
     }),
-    ROUTES.lessons,
+    ROUTES.courses,
   );
 });
 
-test("post-login redirect sends parent profile to dashboard", () => {
+test("post-login redirect sends parent profile to courses", () => {
   assert.equal(
     resolvePostLoginRedirectForContext({
       actorKind: "adult",
       hasAnyAdultProfile: true,
       activeAdultProfile: "parent",
     }),
-    ROUTES.dashboard,
+    ROUTES.courses,
   );
 });
 

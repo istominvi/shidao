@@ -17,7 +17,6 @@ enabled_tools = [
   "course.create_draft",
   "course.get",
   "course.add_lesson",
-  "lesson.add_step",
   "lesson.add_component",
   "lesson.reorder_component",
 ]

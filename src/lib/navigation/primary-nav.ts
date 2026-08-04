@@ -1,7 +1,7 @@
 import { ROUTES } from "@/lib/auth";
 import { isRouteWithin } from "@/lib/routes";
 import type { LucideIcon } from "lucide-react";
-import { BookOpen, CalendarDays, Library, Users } from "lucide-react";
+import { Library } from "lucide-react";
 
 export type PrimaryNavItem = {
   id: string;
@@ -22,7 +22,7 @@ export const PRIMARY_NAV_CONFIG: Record<PrimaryNavConfig["id"], PrimaryNavConfig
     id: "marketing",
     ariaLabel: "Навигация по лендингу",
     items: [
-      { id: "methodology", label: "Методика", href: "#methodology", isActive: () => false },
+      { id: "course", label: "Курс", href: "#course", isActive: () => false },
       { id: "lesson", label: "Урок", href: "#lesson", isActive: () => false },
       { id: "roles", label: "Роли", href: "#roles", isActive: () => false },
       { id: "workflow", label: "Как работает", href: "#workflow", isActive: () => false },
@@ -34,32 +34,11 @@ export const PRIMARY_NAV_CONFIG: Record<PrimaryNavConfig["id"], PrimaryNavConfig
     ariaLabel: "Основная навигация кабинета преподавателя",
     items: [
       {
-        id: "lessons",
-        label: "Расписание",
-        href: ROUTES.lessons,
-        icon: CalendarDays,
-        isActive: (pathname) => isRouteWithin(pathname, ROUTES.lessons),
-      },
-      {
-        id: "groups",
-        label: "Группы",
-        href: ROUTES.groups,
-        icon: Users,
-        isActive: (pathname) => isRouteWithin(pathname, ROUTES.groups),
-      },
-      {
         id: "courses",
         label: "Курсы",
         href: ROUTES.courses,
         icon: Library,
         isActive: (pathname) => isRouteWithin(pathname, ROUTES.courses),
-      },
-      {
-        id: "methodologies",
-        label: "Методики",
-        href: ROUTES.methodologies,
-        icon: BookOpen,
-        isActive: (pathname) => isRouteWithin(pathname, ROUTES.methodologies),
       },
     ],
   },
@@ -68,11 +47,11 @@ export const PRIMARY_NAV_CONFIG: Record<PrimaryNavConfig["id"], PrimaryNavConfig
     ariaLabel: "Основная навигация кабинета родителя",
     items: [
       {
-        id: "overview",
-        label: "Обзор",
-        href: ROUTES.dashboard,
-        icon: Users,
-        isActive: (pathname) => isRouteWithin(pathname, ROUTES.dashboard),
+        id: "courses",
+        label: "Курсы",
+        href: ROUTES.courses,
+        icon: Library,
+        isActive: (pathname) => isRouteWithin(pathname, ROUTES.courses),
       },
     ],
   },
@@ -81,11 +60,11 @@ export const PRIMARY_NAV_CONFIG: Record<PrimaryNavConfig["id"], PrimaryNavConfig
     ariaLabel: "Основная навигация кабинета ученика",
     items: [
       {
-        id: "schedule",
-        label: "Расписание",
-        href: ROUTES.lessons,
-        icon: CalendarDays,
-        isActive: (pathname) => isRouteWithin(pathname, ROUTES.lessons),
+        id: "courses",
+        label: "Курсы",
+        href: ROUTES.courses,
+        icon: Library,
+        isActive: (pathname) => isRouteWithin(pathname, ROUTES.courses),
       },
     ],
   },

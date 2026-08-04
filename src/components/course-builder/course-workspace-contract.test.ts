@@ -102,19 +102,24 @@ test("component cards persist edit, delete, order, and Student Screen visibility
   assert.match(authoring, /if \(saved\) setEditing\(false\)/);
 });
 
-test("student surfaces filter teacher-only data and expose no step UI", () => {
-  const combined = [
-    source(lessonAuthoringPath),
-    source("src/components/course-builder/student-screen-preview.tsx"),
-  ].join("\n");
+test("lesson surfaces render the lesson component sequence without legacy step groups", () => {
+  const authoring = source(lessonAuthoringPath);
+  const preview = source(
+    "src/components/course-builder/student-screen-preview.tsx",
+  );
+  const combined = [authoring, preview].join("\n");
 
+  assert.match(authoring, /const components = lesson\.components/);
+  assert.match(authoring, /lesson\.components\.filter/);
+  assert.match(preview, /activeLesson\.components\.filter/);
   assert.match(combined, /component\.visibility === "learner_visible"/);
   assert.match(combined, /mode="student"/);
+  assert.doesNotMatch(combined, /lesson\.steps|activeLesson\.steps/);
+  assert.doesNotMatch(combined, /learnerGroups|indexInGroup|groupSize/);
+  assert.doesNotMatch(combined, /предыдущей версией редактора/i);
+  assert.doesNotMatch(combined, /learnerInstruction/);
   assert.doesNotMatch(combined, /teacherInstructions/);
-  assert.doesNotMatch(
-    source("src/components/course-builder/student-screen-preview.tsx"),
-    /Шаг|шага|шагом/,
-  );
+  assert.doesNotMatch(preview, /Шаг|шага|шагом/);
 });
 
 test("course builder surfaces keep Russian product vocabulary", () => {

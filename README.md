@@ -1,6 +1,7 @@
 # ShiDao
 
-ShiDao — Next.js-приложение для операционной работы школы/преподавателя: методики, группы, уроки, домашние задания и role-aware кабинеты (teacher/parent/student).
+ShiDao V2 — Next.js-приложение для создания курсов и уроков преподавателем.
+Рабочая модель: `Course → Lesson → ordered Components`.
 
 ## Быстрый старт
 
@@ -33,18 +34,26 @@ npm run build
 ## Канонические пользовательские поверхности
 
 - Публично: `/`, `/login`, `/join`, `/forgot-password`, `/reset-password`, `/auth/confirm`.
-- Приложение: `/onboarding`, `/dashboard`, `/groups`, `/lessons`, `/methodologies`, `/settings/*`.
-- Канонический runtime-урок для всех ролей: `/lessons/[scheduledLessonId]`.
+- Приложение: `/onboarding`, `/courses`, `/courses/new`,
+  `/courses/[courseId]`, `/courses/[courseId]/student-preview`, `/settings/*`.
+- Рабочий production-домен: `v2.shidao.ru`.
+- `shidao.ru` остаётся landing-only.
 
 
 ## Product architecture (lesson workflow)
 
-ShiDao — methodology-driven платформа: урок строится как единая последовательность шагов, где синхронизированы:
+Lesson непосредственно владеет одним упорядоченным списком компонентов:
 
-- teacher side (`План урока`),
-- learner side (`Экран ученика`).
+- `План урока` показывает полный список;
+- `Экран ученика` получает только `learner_visible` компоненты в том же
+  относительном порядке;
+- заголовок и комментарий преподавателя являются полями Lesson;
+- материалы хранятся как course-wide attachments в private Storage;
+- сущности Lesson Step/root Step в активной V2 нет.
 
-В live-уроке переходы между шагами контролирует преподаватель; ученик не должен свободно переключать шаги по умолчанию. После завершения урока тот же `Экран ученика` становится режимом повторения с свободной навигацией. Видеозвонок сейчас внешний (Zoom/Meet/Telegram и т.д.): ShiDao хранит/открывает meeting link и поддерживает сценарий screen-share student screen.
+Десять типов компонентов определены в code-first registry. UI, application
+service и development-only MCP используют общие Zod contracts; MCP не работает
+с таблицами напрямую.
 
 Подробная каноническая модель: `docs/architecture/lesson-workflow-model.md`.
 
@@ -52,7 +61,9 @@ ShiDao — methodology-driven платформа: урок строится ка
 
 - Индекс: `docs/index.md`
 - Auth и routing: `docs/authorization-routing.md`
-- Доменная модель: `docs/domain-model.md`
+- Модель урока: `docs/architecture/lesson-workflow-model.md`
+- Первый milestone: `docs/v2/TEACHER_COURSE_BUILDER_DEMO_MILESTONE.md`
+- Development MCP: `docs/v2/COURSE_BUILDER_MCP.md`
 - Текущая схема БД: `docs/database/current-schema.md`, `supabase/schema/current-schema.sql`
 - История миграций: `docs/database/migration-history.md`, `supabase/migrations/*`
 

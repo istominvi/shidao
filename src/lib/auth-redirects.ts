@@ -8,7 +8,7 @@ function toSafePath(input: string | null | undefined, fallback: string) {
 }
 
 export function afterLogin(redirectTo?: string | null) {
-  return toSafePath(redirectTo, ROUTES.lessons);
+  return toSafePath(redirectTo, ROUTES.courses);
 }
 
 export function resolveClientPostLoginRoute(
@@ -36,7 +36,7 @@ export function afterConfirm(type: string) {
   switch (type) {
     case "signup":
     case "email":
-      return ROUTES.lessons;
+      return ROUTES.courses;
     case "invite":
       return ROUTES.onboarding;
     case "recovery":
@@ -65,7 +65,7 @@ export function onAuthPageWhenAuthenticated(resolution: AccessResolution) {
     resolution.status === "adult-with-profile" ||
     resolution.status === "student"
   ) {
-    return ROUTES.lessons;
+    return ROUTES.courses;
   }
 
   return null;

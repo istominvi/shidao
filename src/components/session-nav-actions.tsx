@@ -5,8 +5,6 @@ import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import type { LucideIcon } from "lucide-react";
 import {
-  Building2,
-  ChevronDown,
   GraduationCap,
   LogOut,
   Menu,
@@ -44,8 +42,6 @@ type MenuPosition = { top: number; left: number; width: number };
 type ActionLoadingState =
   | `switch:${ProfileKind}`
   | "signout"
-  | "switch-school:personal"
-  | `switch-school:${string}`
   | null;
 
 const MENU_WIDTH = 288;
@@ -57,8 +53,8 @@ const ADULT_PROFILE_TOGGLE_LABELS: Record<ProfileKind, string> = {
   parent: "Родитель",
 };
 const PROFILE_HOME_ROUTE: Record<ProfileKind, string> = {
-  teacher: ROUTES.lessons,
-  parent: ROUTES.dashboard,
+  teacher: ROUTES.courses,
+  parent: ROUTES.courses,
 };
 
 async function readActionError(
@@ -109,30 +105,6 @@ export function SessionNavActions({
           };
         })
       : [];
-  const organizationSchoolOptions =
-    state.kind === "adult"
-      ? (state.schoolOptions ?? []).filter(
-          (option) => option.kind === "organization",
-        )
-      : [];
-  const showTeacherSchoolControl =
-    state.kind === "adult" && state.activeProfile === "teacher";
-  const selectedOrganizationId =
-    state.kind === "adult" && state.selectedSchool?.mode === "organization"
-      ? state.selectedSchool.schoolId
-      : null;
-  const showPersonalOption =
-    state.kind === "adult" && state.selectedSchool?.mode === "organization";
-  const schoolOptionsForMenu = organizationSchoolOptions.filter(
-    (option) => option.id !== selectedOrganizationId,
-  );
-  const schoolTriggerLabel =
-    state.kind === "adult" &&
-    state.selectedSchool?.mode === "organization" &&
-    state.selectedSchool.schoolName
-      ? state.selectedSchool.schoolName
-      : "Выбрать школу";
-
   const updateMenuPosition = useCallback(() => {
     if (!portalMenu || !containerRef.current) return;
 
@@ -257,36 +229,6 @@ export function SessionNavActions({
     }
   }
 
-  async function handleSwitchSchool(target: "personal" | string) {
-    if (state.kind !== "adult") return;
-    const loadingKey: ActionLoadingState =
-      target === "personal" ? "switch-school:personal" : `switch-school:${target}`;
-    setActionLoading(loadingKey);
-    setActionError(null);
-    try {
-      const response = await fetch("/api/preferences/school", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body:
-          target === "personal"
-            ? JSON.stringify({ mode: "personal" })
-            : JSON.stringify({ schoolId: target }),
-      });
-      if (!response.ok) {
-        await readActionError(response, "Не удалось переключить школу.");
-      }
-      await refetchSession();
-      setOpen(false);
-      router.refresh();
-    } catch (error) {
-      setActionError(
-        error instanceof Error ? error.message : "Не удалось переключить школу.",
-      );
-    } finally {
-      setActionLoading(null);
-    }
-  }
-
   const menu = (
     <NavigationDropdownPanel
       ref={menuRef}
@@ -351,63 +293,7 @@ export function SessionNavActions({
         </div>
       ) : null}
 
-      {showTeacherSchoolControl ? (
-        <div className="px-1 py-1">
-          {organizationSchoolOptions.length === 0 ? (
-            <Link
-              href={`${ROUTES.school}?create=1`}
-              className={navigationDropdownItemClass()}
-              onClick={() => setOpen(false)}
-            >
-              <span className="inline-flex items-center gap-2.5">
-                <Building2 size={16} className="text-neutral-500" aria-hidden="true" />
-                Создать школу
-              </span>
-            </Link>
-          ) : (
-            <details className="group">
-              <summary
-                className={navigationDropdownItemClass(
-                  "nav-dropdown-item-inline list-none marker:hidden",
-                )}
-              >
-                <span className="inline-flex items-center gap-2.5">
-                  <Building2 size={16} className="text-neutral-500" aria-hidden="true" />
-                  {schoolTriggerLabel}
-                </span>
-                <ChevronDown
-                  size={16}
-                  className="text-neutral-500 transition group-open:rotate-180"
-                  aria-hidden="true"
-                />
-              </summary>
-              <div className="mt-1 space-y-0.5 px-2 pb-1">
-                {showPersonalOption ? (
-                  <button
-                    type="button"
-                    className={navigationDropdownItemClass("pl-6 text-sm")}
-                    onClick={() => void handleSwitchSchool("personal")}
-                  >
-                    Лично
-                  </button>
-                ) : null}
-                {schoolOptionsForMenu.map((option) => (
-                  <button
-                    key={option.id}
-                    type="button"
-                    className={navigationDropdownItemClass("pl-6 text-sm")}
-                    onClick={() => void handleSwitchSchool(option.id)}
-                  >
-                    {option.label}
-                  </button>
-                ))}
-              </div>
-            </details>
-          )}
-        </div>
-      ) : null}
-
-      <div className={`${showTeacherSchoolControl || state.kind === "adult" ? "" : "border-t border-black/5"} px-1 py-1.5`}>
+      <div className="border-t border-black/5 px-1 py-1.5">
         {mobileNavItems.length > 0 ? (
           <div className="mb-1 md:hidden">
             {mobileNavItems.map((item) => (

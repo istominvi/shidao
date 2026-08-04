@@ -1,66 +1,65 @@
-# Доменная модель ShiDao (текущий срез)
+# ShiDao V2 domain model
 
-## 1) Канонические сущности
+## Active product hierarchy
 
-### Identity и доступ
-- `parent`
-- `teacher`
-- `student`
-- `user_preference`
-- `user_security`
+```text
+Account
+└── Course
+    ├── CourseAttachment → StoredFile → private Storage object
+    └── Lesson 1..N
+        └── LessonComponent 1..N
+```
 
-### School/group контекст
-- `school`
-- `school_teacher`
-- `class`
-- `class_teacher`
-- `class_student`
+- `Account` is the ownership identity linked one-to-one to `auth.users`.
+- `Course` is an editable owner-scoped draft.
+- `Lesson` is an ordered Course document with a required title and an optional
+  teacher comment (`summary`).
+- `LessonComponent` belongs directly to Lesson and has one dense position,
+  registry type/version, payload, placement, and visibility.
+- `CourseAttachment` links a Course to `StoredFile`; the object itself is kept
+  in the existing private `course-assets` bucket.
 
-### Методический source layer
-- `methodology`
-- `methodology_lesson`
-- `methodology_lesson_block`
-- `methodology_lesson_block_asset`
-- `reusable_asset`
-- `methodology_lesson_student_content`
-- `methodology_lesson_homework`
+There is no active Methodology, Lesson Step/root Step, scheduled-lesson runtime,
+fixture fallback, or per-lesson hardcoded renderer.
 
-### Runtime layer
-- `scheduled_lesson`
-- `scheduled_lesson_homework_assignment`
-- `student_homework_assignment`
-- `group_student_conversation`
-- `group_student_message`
-- `lesson_group_conversation`
-- `lesson_group_message`
-- `notification`
+## Authoring projections
 
-Источник истины по таблицам и ограничениям: `supabase/schema/current-schema.sql`.
+- **План урока** returns all Lesson components in `position` order.
+- **Экран ученика** returns only `learner_visible` components while preserving
+  relative order.
+- **Домашнее задание** is a separate Lesson surface and is not represented by a
+  component group. Persisted homework is a later slice.
+- **Материалы курса** is a Course-level library, not a Lesson tab.
 
-## 2) Продуктовые инварианты
+The canonical details and invariants live in
+`docs/architecture/lesson-workflow-model.md`.
 
-- Роль в URL не кодируется: основной вход — `/dashboard`.
-- Teacher/parent переключаются через `user_preference.last_active_profile`.
-- Для teacher дополнительно поддерживается режим работы:
-  - `Лично` (personal school `school.kind='personal'`, `user_preference.last_selected_school_id = null`);
-  - `Школа` (selected organization school id в `user_preference.last_selected_school_id`).
-- Ученик логинится по `student.login` (с internal auth email внутри контура).
-- Канонический runtime-маршрут урока для всех ролей: `/lessons/[scheduledLessonId]`.
-- Parent видит read-only проекции по своим детям.
+## Component registry
 
-## 3) Source vs runtime
+The first code-first registry contains:
 
-- Методический source определяет канонические Lesson Step (Шаги), teacher-side инструкции, learner-side наполнение (`Student Screen`), материалы и source-homework.
-- `scheduled_lesson` и связанные runtime-сущности хранят/производят состояние исполнения: статус урока, выдачу и проверку homework, коммуникации; live current step, attendance и telemetry — целевое расширение runtime-слоя.
-- Teacher workspace работает с runtime-объектом, а не редактирует source урока в обход методики.
-- `План урока` (Teacher Side) и `Экран ученика` (Learner Side) — это две проекции одной и той же ordered последовательности шагов.
-- `Экран ученика` не равен `Материалам`: learner player и ресурсная библиотека — отдельные продуктовые поверхности.
+```text
+heading
+rich_text
+callout
+quote
+divider
+image
+slideshow
+single_choice_poll
+matching_game
+file
+```
 
-## 4) Что считать историческим слоем
+UI, application service and development MCP use the same Zod contracts. MCP
+JSON Schema is generated from those contracts.
 
-- `supabase/migrations/*` — журнал эволюции и совместимости.
-- Исторические волны изменений и их причины — в `docs/database/migration-history.md`.
-- Для текущей разработки читать сначала snapshot: `docs/database/current-schema.md` и `supabase/schema/current-schema.sql`.
+## Retained compatibility identity tables
 
+The first forward migration deliberately does not reset `public` and does not
+change Auth. Existing `parent`, `teacher`, `student`, `school`, membership and
+preference/security tables remain temporarily for login/onboarding/session
+compatibility, but they are not parents of Course content.
 
-См. канонический workflow-документ: `docs/architecture/lesson-workflow-model.md`.
+The authoritative physical schema is documented in
+`docs/database/current-schema.md` and `supabase/schema/current-schema.sql`.

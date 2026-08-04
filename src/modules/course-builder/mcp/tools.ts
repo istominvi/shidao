@@ -2,7 +2,6 @@ import { z } from "zod";
 import { logger } from "@/lib/server/logger";
 import {
   addLessonInputSchema,
-  addLessonStepInputSchema,
   courseDraftInputSchema,
   reorderLessonComponentInputSchema,
   uuidSchema,
@@ -19,7 +18,6 @@ export const courseBuilderMcpToolNames = [
   "course.create_draft",
   "course.get",
   "course.add_lesson",
-  "lesson.add_step",
   "lesson.add_component",
   "lesson.reorder_component",
 ] as const;
@@ -35,10 +33,6 @@ export const courseAddLessonMcpInputSchema = addLessonInputSchema.extend({
   courseId: uuidSchema,
 });
 
-export const lessonAddStepMcpInputSchema = addLessonStepInputSchema.extend({
-  lessonId: uuidSchema,
-});
-
 export const lessonReorderComponentMcpInputSchema =
   reorderLessonComponentInputSchema.extend({
     componentId: uuidSchema,
@@ -52,7 +46,6 @@ export const courseBuilderMcpInputContracts = {
   "course.create_draft": courseDraftInputSchema,
   "course.get": courseGetMcpInputSchema,
   "course.add_lesson": courseAddLessonMcpInputSchema,
-  "lesson.add_step": lessonAddStepMcpInputSchema,
   "lesson.add_component": lessonAddComponentInputSchema,
   "lesson.reorder_component": lessonReorderComponentMcpInputSchema,
 } as const satisfies Record<CourseBuilderMcpToolName, z.ZodType>;
@@ -83,12 +76,10 @@ export const courseBuilderMcpToolDescriptions = {
   "course.create_draft": "Создать черновик курса преподавателя.",
   "course.get": "Получить доступный преподавателю Course workspace.",
   "course.add_lesson": "Добавить Lesson в Course.",
-  "lesson.add_step":
-    "Compatibility tool: добавить явный Lesson Step для многошагового сценария.",
   "lesson.add_component":
-    "Добавить компонент registry прямо в Lesson; внутренний root Step создаётся автоматически.",
+    "Добавить компонент registry прямо в Lesson.",
   "lesson.reorder_component":
-    "Переместить компонент на новую позицию внутри Lesson Step.",
+    "Переместить компонент на новую позицию внутри Lesson.",
 } as const satisfies Record<CourseBuilderMcpToolName, string>;
 
 export type CourseBuilderMcpApplicationService = Pick<
@@ -96,7 +87,6 @@ export type CourseBuilderMcpApplicationService = Pick<
   | "createDraft"
   | "getCourse"
   | "addLesson"
-  | "addStep"
   | "addComponent"
   | "reorderComponent"
 >;
@@ -131,10 +121,8 @@ function resultIdentifiers(value: unknown) {
     "id",
     "courseId",
     "lessonId",
-    "stepId",
     "componentId",
     "lessonIds",
-    "stepIds",
     "componentIds",
   ]) {
     const candidate = record[key];
@@ -252,18 +240,6 @@ export function createCourseBuilderMcpTools({
           const { courseId, ...input } =
             courseAddLessonMcpInputSchema.parse(rawInput);
           return service.addLesson(actor, courseId, input);
-        }),
-    },
-    {
-      name: "lesson.add_step",
-      description: courseBuilderMcpToolDescriptions["lesson.add_step"],
-      inputContract: courseBuilderMcpInputContracts["lesson.add_step"],
-      inputSchema: courseBuilderMcpInputJsonSchemas["lesson.add_step"],
-      execute: (rawInput) =>
-        execute("lesson.add_step", () => {
-          const { lessonId, ...input } =
-            lessonAddStepMcpInputSchema.parse(rawInput);
-          return service.addStep(actor, lessonId, input);
         }),
     },
     {

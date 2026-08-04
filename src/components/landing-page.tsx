@@ -16,12 +16,12 @@ import { SiteHeader } from "@/components/site-header";
 import { useMarketingNavActive } from "@/components/navigation/use-marketing-nav-active";
 import {
   beforeAfter,
+  courseBuilderStats,
+  courseFlow,
   faq,
   lessonProps,
   lessonStepsPreview,
   lessonWords,
-  methodologyFlow,
-  methodologyStats,
   roleCards,
   studentScreenItems,
   workflowSteps,
@@ -179,15 +179,15 @@ export function LandingPage({ landingOnly = false }: { landingOnly?: boolean }) 
         <div className="landing-surface premium-hero-grid rounded-[2rem] bg-white/80 p-5 md:p-8">
           <div className="hero-copy">
             <p className="landing-chip bg-lime-100/90 text-sm">
-              Методико-ориентированная платформа для китайского
+              Конструктор курсов и уроков для преподавателя
             </p>
             <h1 className="mt-5 max-w-[16ch] text-4xl font-black leading-[1.02] tracking-[-0.03em] md:max-w-none md:text-7xl">
-              Китайский для детей — урок за уроком по готовой методике
+              Соберите курс, урок за уроком
             </h1>
             <p className="mt-5 max-w-[68ch] text-base leading-relaxed text-neutral-700 md:text-lg">
-              Shidao превращает методику в рабочий цифровой контур, где преподаватель ведёт группу по Плану
-              урока, ученик работает через Экран ученика, родитель видит домашнюю работу, комментарий и статус
-              после каждого занятия.
+              Shidao хранит курс, уроки, материалы и компоненты в едином рабочем
+              пространстве. Преподаватель собирает План урока, выбирает содержимое
+              Экрана ученика и готовит Домашнее задание.
             </p>
             <div className="mt-7 grid gap-3 sm:flex sm:flex-wrap">
               <AccessLink
@@ -220,24 +220,25 @@ export function LandingPage({ landingOnly = false }: { landingOnly?: boolean }) 
         </div>
       </section>
 
-      <section id="methodology" className="container mt-14 md:mt-16">
+      <section id="course" className="container mt-14 md:mt-16">
         <div className="px-5 md:px-8">
           <h2 className="text-3xl font-black tracking-tight md:text-5xl">
-            В Shidao методика — не папка с файлами, а сценарий работы
+            Один курс — единое рабочее пространство
           </h2>
           <p className="mt-4 max-w-[74ch] text-sm leading-relaxed text-neutral-700 md:text-base">
-            Методика задаёт курс, уроки, Материалы, Домашнее задание, План урока и Экран ученика. А функционал
-            позволяет добавлять урок в расписание, проводить онлайн занятие и коммуникацию в контексте урока
+            В курсе находятся уроки, а внутри каждого урока — упорядоченные
+            компоненты. Материалы доступны на уровне всего курса, а приватные
+            заметки преподавателя не попадают на Экран ученика.
           </p>
-          <ol className="methodology-flow mt-6" aria-label="Поток работы по методике">
-            {methodologyFlow.map((item, index) => (
-              <li key={item.label} className="methodology-node-wrap">
-                <article className={`methodology-node methodology-node-${item.tone}`}>
+          <ol className="course-flow mt-6" aria-label="Структура курса">
+            {courseFlow.map((item, index) => (
+              <li key={item.label} className="course-node-wrap">
+                <article className={`course-node course-node-${item.tone}`}>
                   <item.icon className="size-4" />
                   <span>{item.label}</span>
                 </article>
-                {index < methodologyFlow.length - 1 ? (
-                  <ArrowRight className="methodology-flow-arrow size-4" aria-hidden="true" />
+                {index < courseFlow.length - 1 ? (
+                  <ArrowRight className="course-flow-arrow size-4" aria-hidden="true" />
                 ) : null}
               </li>
             ))}
@@ -247,29 +248,21 @@ export function LandingPage({ landingOnly = false }: { landingOnly?: boolean }) 
 
       <section className="container mt-14 md:mt-16">
         <div className="px-5 md:px-8">
-          <div className="methodology-intro">
+          <div className="course-intro">
             <div>
               <h2 className="text-3xl font-black tracking-tight md:text-5xl">
-                «Мир вокруг меня» — первая методика в Shidao
+                Начните с пустого урока или черновика курса
               </h2>
               <p className="mt-4 max-w-[72ch] text-sm leading-relaxed text-neutral-700 md:text-base">
-                Курс построен вокруг героев Сяо Лон и Сяо Мей: они помогают ребёнку 5–6 лет входить в китайский через
-                песни, видео и игровые активности, сохраняя ритм урока и предсказуемый сценарий для преподавателя.
+                Ручная сборка всегда доступна без ИИ и без расхода токенов.
+                Заголовок урока обязателен, а текст, изображения, файлы, опросы и
+                игры добавляются как компоненты в нужном порядке.
               </p>
             </div>
-            <article className="methodology-cover" aria-label="Обложка методики Мир вокруг меня">
-              <Image
-                src="/methodologies/01.png"
-                alt="Обложка методики Мир вокруг меня"
-                width={220}
-                height={280}
-                className="methodology-cover-image"
-              />
-            </article>
           </div>
           <div className="mt-7 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {methodologyStats.map((item) => (
-              <article key={item.label} className={`landing-card methodology-stat-card stat-${item.tone} p-5`}>
+            {courseBuilderStats.map((item) => (
+              <article key={item.label} className={`landing-card course-stat-card stat-${item.tone} p-5`}>
                 <div className="flex items-center gap-2">
                   <item.icon className="size-4.5" />
                   <p className="text-lg font-black tracking-tight">{item.label}</p>
@@ -286,8 +279,8 @@ export function LandingPage({ landingOnly = false }: { landingOnly?: boolean }) 
             Как выглядит один урок внутри продукта
           </h2>
           <p className="mt-4 max-w-[74ch] text-sm leading-relaxed text-neutral-700 md:text-base">
-            Урок 1 «Животные на ферме» показывает, как Shidao разделяет преподавательскую методическую опору и Экран
-            ученика, сохраняя единые шаги занятия.
+            Урок 1 «Животные на ферме» показывает, как Shidao разделяет полный
+            преподавательский план и learner-facing Экран ученика.
           </p>
 
           <div className="mt-8 grid gap-4 xl:grid-cols-2">
@@ -308,12 +301,12 @@ export function LandingPage({ landingOnly = false }: { landingOnly?: boolean }) 
               ))}
             </ul>
 
-            <h3 className="mt-6 text-lg font-bold">Шаги занятия (фрагмент)</h3>
+            <h3 className="mt-6 text-lg font-bold">Компоненты урока (фрагмент)</h3>
             <ol className="mt-2 space-y-2 text-sm text-neutral-700">
-              {lessonStepsPreview.map((step, idx) => (
-                <li key={step} className="rounded-xl bg-white px-3 py-2">
-                  <span className="mr-2 text-xs font-bold text-neutral-500">Шаг {idx + 1}.</span>
-                  {step}
+              {lessonStepsPreview.map((component, idx) => (
+                <li key={component} className="rounded-xl bg-white px-3 py-2">
+                  <span className="mr-2 text-xs font-bold text-neutral-500">{idx + 1}.</span>
+                  {component}
                 </li>
               ))}
             </ol>
@@ -322,13 +315,13 @@ export function LandingPage({ landingOnly = false }: { landingOnly?: boolean }) 
             <article className="landing-surface rounded-[1.6rem] bg-gradient-to-b from-sky-50/80 to-white p-5 md:p-6">
             <p className="text-xs font-bold uppercase tracking-[0.12em] text-sky-900/70">Экран ученика</p>
             <div className="student-screen-preview mt-4">
-              <p className="text-sm font-semibold">Урок 1 · Шаг 3 «Карточки животных»</p>
+              <p className="text-sm font-semibold">Урок 1 · Животные на ферме</p>
               <div className="mt-3 grid grid-cols-2 gap-2">
                 {lessonWords.slice(0, 4).map((word) => (
                   <WordChip key={`student-${word.hanzi}`} {...word} />
                 ))}
               </div>
-              <p className="mt-3 text-sm text-neutral-700">Задание шага: нажми карточку, которую назвал преподаватель.</p>
+              <p className="mt-3 text-sm text-neutral-700">Задание: нажми карточку, которую назвал преподаватель.</p>
             </div>
             <ul className="mt-4 space-y-2 text-sm text-neutral-700">
               {studentScreenItems.map((item) => (
@@ -373,8 +366,8 @@ export function LandingPage({ landingOnly = false }: { landingOnly?: boolean }) 
                 Как работает Shidao в реальном процессе
               </h2>
               <p className="workflow-subtitle">
-                От запуска группы до post-lesson коммуникации — каждый этап фиксируется внутри урока и не теряет
-                контекст.
+                От создания курса до проверки Экрана ученика — изменения
+                сохраняются в базе и переживают обновление страницы.
               </p>
             </div>
             <ol className="workflow-steps mt-8 md:mt-10">
@@ -433,7 +426,7 @@ export function LandingPage({ landingOnly = false }: { landingOnly?: boolean }) 
         <div className="px-5 md:px-8">
           <div className="landing-surface rounded-[2rem] bg-white/85 px-4 py-8 text-center md:px-10 md:py-10">
             <h2 className="mx-auto max-w-[20ch] text-3xl font-black tracking-tight md:max-w-none md:text-5xl">
-              Запустите первую группу по методике, а не с пустой страницы
+              Соберите первый курс в одном рабочем пространстве
             </h2>
             <p className="mx-auto mt-4 max-w-[62ch] text-sm leading-relaxed text-neutral-700 md:text-base">
               Shidao собирает курс, урок, материалы, домашнюю работу и обратную

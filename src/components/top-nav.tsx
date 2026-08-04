@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Building2 } from "lucide-react";
 import { ROUTES } from "@/lib/auth";
 import { SessionNavActions } from "@/components/session-nav-actions";
 import { useSessionView } from "@/components/use-session-view";
@@ -12,7 +11,6 @@ import {
 } from "@/lib/navigation-contract";
 import { PRIMARY_NAV_CONFIG, type PrimaryNavConfig } from "@/lib/navigation/primary-nav";
 import { SiteHeader, type SiteHeaderNavItem } from "@/components/site-header";
-import { NotificationBell } from "@/components/notifications/notification-bell";
 
 function resolvePrimaryNavId(state: ReturnType<typeof useSessionView>["state"]): PrimaryNavConfig["id"] | null {
   if (state.kind === "student") return "student";
@@ -38,21 +36,6 @@ export function TopNav() {
         scroll: false,
       }))
     : [];
-  if (
-    state.kind === "adult" &&
-    state.activeProfile === "teacher" &&
-    state.selectedSchool?.mode === "organization"
-  ) {
-    navItems.push({
-      id: "school",
-      label: "Школа",
-      href: ROUTES.school,
-      icon: Building2,
-      active: pathname === ROUTES.school,
-      scroll: false,
-    });
-  }
-
   const navAction = (() => {
     const action = resolveTopNavAction(pathname, state, sessionResolved);
 
@@ -63,10 +46,7 @@ export function TopNav() {
         }
 
         return (
-          <div className="flex items-center gap-2">
-            <NotificationBell />
-            <SessionNavActions state={state} mobileNavItems={navItems} />
-          </div>
+          <SessionNavActions state={state} mobileNavItems={navItems} />
         );
       case "guest-join":
         return (

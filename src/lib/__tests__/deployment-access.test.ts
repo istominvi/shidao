@@ -22,7 +22,7 @@ test("primary domain exposes only the landing and its public assets", () => {
   );
   assert.equal(
     resolvePrimaryHostRequestPolicy("shidao.ru", "/methodologies/01.png"),
-    "pass-through",
+    "maintenance",
   );
   assert.equal(
     resolvePrimaryHostRequestPolicy("shidao.ru", "/dashboard"),

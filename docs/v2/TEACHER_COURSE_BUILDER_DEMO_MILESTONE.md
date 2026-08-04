@@ -16,7 +16,9 @@
 → открыть Student Screen preview
 ```
 
-Это не статический макет и не hardcoded demo. После перезагрузки страницы курс, уроки, шаги, материалы и порядок компонентов остаются в базе. Те же операции доступны через минимальный внутренний MCP-слой.
+Это не статический макет и не hardcoded demo. После перезагрузки страницы
+Course, Lesson, course-wide материалы и единый порядок компонентов остаются в
+базе. Те же операции доступны через минимальный внутренний MCP-слой.
 
 ## 2. Принцип реализации
 
@@ -32,6 +34,8 @@
 - неподдерживаемый файл не объявляется «проанализированным»;
 - teacher-private инструкции не попадают на Student Screen;
 - добавление следующего типа компонента не требует новой таблицы.
+- active V2 не использует Methodology entity, fixture fallback или
+  lesson-specific renderer; архив V1 не является runtime dependency.
 
 Сложность добавляется после работающего vertical slice, а не до него.
 
@@ -41,19 +45,22 @@
 
 ```text
 Course
+├── course-wide attachments
 └── Lesson 1..N
-    └── Lesson Step 1..N
-        ├── Teacher Side — приватные инструкции преподавателю
-        └── Student Screen — learner-visible компоненты
+    └── ordered Components 1..N
 ```
 
-У Teacher Side и Student Screen одного шага всегда совпадают:
+У Lesson один канонический список компонентов:
 
-- номер;
-- заголовок;
-- порядок.
+- План урока показывает все компоненты;
+- Student Screen показывает только `learner_visible` компоненты;
+- после фильтрации Student Screen сохраняет их относительный порядок;
+- teacher-private компоненты отсутствуют в learner API, а не только скрыты в
+  интерфейсе.
 
-Компоненты Student Screen находятся внутри текущего Lesson Step. Во время будущего live-урока переходами управляет teacher; свободная learner-навигация не является поведением по умолчанию.
+Между Lesson и Component нет `Lesson Step`, скрытого/root Step или compatibility
+group. Во время будущего live-урока learner surface управляется teacher;
+свободная learner-навигация не является поведением по умолчанию.
 
 ## 4. Workflow «Курсы → Новый»
 
@@ -89,8 +96,7 @@ Course
 
 - Course;
 - минимум один Lesson;
-- минимум один Lesson Step;
-- ordered component placements;
+- ordered Components, непосредственно принадлежащие Lesson;
 - image/file component для подходящих вложений;
 - Student Screen preview.
 
@@ -104,7 +110,7 @@ Course
 
 | Key                  | Название в UI     | Назначение                                    |
 | -------------------- | ----------------- | --------------------------------------------- |
-| `heading`            | Заголовок         | Заголовок секции внутри шага                  |
+| `heading`            | Заголовок         | Необязательный заголовок внутри Lesson        |
 | `rich_text`          | Текст             | Абзацы и базовое форматирование               |
 | `callout`            | Сноска            | Короткое выделенное пояснение/заметка         |
 | `quote`              | Цитата            | Цитата с необязательным автором               |
@@ -136,7 +142,7 @@ Course
 - открыть «Настройки» и изменить основные поля Course;
 - открыть course-wide «Материалы курса»;
 - добавить, переименовать и удалить Lesson;
-- добавить компонент прямо в Lesson без ручного создания Lesson Step;
+- добавить компонент прямо в Lesson;
 - выбрать компонент в palette по категории;
 - заполнить payload компонента;
 - изменить порядок компонентов;
@@ -146,12 +152,10 @@ Course
 - открыть Student Screen preview внутри курса или на весь экран;
 - обновить страницу и получить то же сохранённое состояние.
 
-Для совместимости с канонической storage/runtime-моделью первый компонент
-лениво создаёт один внутренний root Lesson Step. Этот Step не является
-обязательным действием преподавателя и не показывается в упрощённом authoring
-UI. Раздел «Домашнее задание» в этом milestone является честной навигационной
-заглушкой без fixture/localStorage; persisted homework editor остаётся
-отдельным следующим срезом.
+Component хранит прямой `lesson_id`; первый и последующие компоненты не создают
+скрытых сущностей или групп. Раздел «Домашнее задание» в этом milestone
+является честной навигационной заглушкой без fixture/localStorage; persisted
+homework editor остаётся отдельным следующим срезом.
 
 Drag-and-drop не обязателен для первого показа. Кнопки «выше/ниже» допустимы, если они надёжнее и быстрее дают законченный workflow.
 
@@ -179,7 +183,6 @@ MCP является тонким адаптером над теми же applic
 course.create_draft
 course.get
 course.add_lesson
-lesson.add_step
 lesson.add_component
 lesson.reorder_component
 ```
@@ -194,9 +197,9 @@ lesson.reorder_component
 - действия логируются без secrets и полного содержимого private-вложений.
 
 `lesson.add_component` принимает `lessonId`, registry payload/placement и
-visibility; application service сам разрешает или создаёт внутренний root
-Step. `lesson.add_step` сохраняется как compatibility tool для явных
-многошаговых сценариев и не используется обычным ручным UI.
+visibility и создаёт Component непосредственно в ordered list Lesson.
+`lesson.reorder_component` меняет позицию во всём списке выбранной Lesson.
+MCP не принимает `stepId` и не регистрирует tool добавления шага.
 
 OAuth, scoped external tokens, quotas, approvals/change sets и публичный remote MCP реализуются позднее.
 
@@ -229,7 +232,8 @@ OAuth, scoped external tokens, quotas, approvals/change sets и публичны
 ## 11. Рекомендуемый порядок реализации
 
 1. Инвентаризировать текущие Course UI, auth/session, schema и Storage integration.
-2. Зафиксировать минимальные domain/application contracts для Course, Lesson, Lesson Step и component placement.
+2. Зафиксировать минимальные domain/application contracts для Course, Lesson и
+   непосредственно принадлежащих Lesson ordered Components.
 3. Создать code-first registry и schemas первых десяти типов.
 4. Добавить минимальную forward migration и RLS после read-only schema sanity check.
 5. Реализовать server-side application commands и тесты.
@@ -248,14 +252,18 @@ Milestone готов к показу, когда одновременно вып
 2. Нажимает «Курсы» → «Новый курс».
 3. Заполняет форму и прикрепляет минимум один файл или изображение.
 4. Создаёт Course и получает настоящий persisted draft.
-5. «Собрать черновик» создаёт минимум один Lesson и Lesson Step из данных формы.
+5. «Собрать черновик» создаёт минимум один Lesson и его ordered Components
+   непосредственно по `lesson_id`, без Step/root Step.
 6. В Course workspace видны ordered components из registry.
 7. Преподаватель может добавить, отредактировать, переставить и удалить компонент.
 8. Student Screen preview отображает learner-visible компоненты и не показывает teacher-private данные.
 9. После reload всё состояние сохраняется.
 10. Другой пользователь не может открыть или изменить чужой Course.
-11. Минимум один MCP tool создаёт или добавляет компонент через тот же application service и тот же schema contract.
-12. В коде нет условий по ID demo Course/Lesson и нет fixture fallback.
+11. Development MCP регистрирует ровно пять утверждённых tools; как минимум
+    `lesson.add_component` проверен через тот же application service и schema
+    contract, что UI.
+12. В коде нет условий по ID demo Course/Lesson, Methodology dependency или
+    fixture fallback.
 13. Typecheck, unit/integration tests и production build проходят.
 14. `shidao.ru` остаётся landing-only, а демонстрация доступна только на `v2.shidao.ru`.
 

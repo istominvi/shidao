@@ -1453,12 +1453,12 @@ html:has(.model-page) {
   box-shadow: 0 0 0 4px rgba(93, 170, 39, 0.12);
 }
 
-.model-student-stepmeta {
+.model-student-contentmeta {
   margin-top: 2.5rem;
   text-align: center;
 }
 
-.model-student-stepmeta span {
+.model-student-contentmeta span {
   display: block;
   color: #8e8b82;
   font-size: 0.48rem;
@@ -1466,7 +1466,7 @@ html:has(.model-page) {
   letter-spacing: 0.13em;
 }
 
-.model-student-stepmeta strong {
+.model-student-contentmeta strong {
   display: block;
   margin-top: 0.5rem;
   font-family: var(--model-serif);
@@ -1581,19 +1581,19 @@ html:has(.model-page) {
   color: #c4c2bc;
 }
 
-.model-step-dots {
+.model-content-dots {
   display: flex;
   gap: 0.35rem;
 }
 
-.model-step-dots span {
+.model-content-dots span {
   width: 5px;
   height: 5px;
   border-radius: 50%;
   background: #d5d2ca;
 }
 
-.model-step-dots span.is-active {
+.model-content-dots span.is-active {
   width: 15px;
   border-radius: 5px;
   background: var(--model-navy);

@@ -14,21 +14,11 @@ export const ROUTES = {
   forgotPassword: "/forgot-password",
   resetPassword: "/reset-password",
   onboarding: "/onboarding",
-  dashboard: "/dashboard",
-  schedule: "/schedule",
-  homework: "/homework",
-  groups: "/groups",
-  groupsNew: "/groups/new",
   courses: "/courses",
   coursesNew: "/courses/new",
-  lessons: "/lessons",
-  methodologies: "/methodologies",
-  school: "/school",
   settings: "/settings",
   settingsSecurity: "/settings/security",
   settingsProfile: "/settings/profile",
-  settingsTeam: "/settings/team",
-  notifications: "/notifications",
 } as const;
 
 export const AUTH_MESSAGES = {
@@ -73,30 +63,10 @@ export function toInitials(fullName?: string | null, email?: string | null) {
   return local.slice(0, 2).toUpperCase();
 }
 
-export function toGroupRoute(groupId: string) {
-  return `${ROUTES.groups}/${encodeURIComponent(groupId)}`;
-}
-
-export function toScheduledLessonRoute(scheduledLessonId: string) {
-  return `${ROUTES.lessons}/${encodeURIComponent(scheduledLessonId)}`;
-}
-
-export function toLessonWorkspaceRoute(scheduledLessonId: string) {
-  return toScheduledLessonRoute(scheduledLessonId);
-}
-
 export function toCourseRoute(courseId: string) {
   return `${ROUTES.courses}/${encodeURIComponent(courseId)}`;
 }
 
 export function toCourseStudentPreviewRoute(courseId: string) {
   return `${toCourseRoute(courseId)}/student-preview`;
-}
-
-export function toMethodologyRoute(methodologySlug: string) {
-  return `${ROUTES.methodologies}/${encodeURIComponent(methodologySlug)}`;
-}
-
-export function toMethodologyLessonRoute(methodologySlug: string, lessonId: string) {
-  return `${toMethodologyRoute(methodologySlug)}/lessons/${encodeURIComponent(lessonId)}`;
 }

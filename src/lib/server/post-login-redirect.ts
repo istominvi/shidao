@@ -7,14 +7,12 @@ export function resolvePostLoginRedirectForContext(context: {
   activeAdultProfile?: ProfileKind | null;
 }) {
   if (context.actorKind === "student") {
-    return ROUTES.lessons;
+    return ROUTES.courses;
   }
 
   if (!context.hasAnyAdultProfile) {
     return ROUTES.onboarding;
   }
 
-  return context.activeAdultProfile === "teacher"
-    ? ROUTES.lessons
-    : ROUTES.dashboard;
+  return ROUTES.courses;
 }

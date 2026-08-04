@@ -4,7 +4,7 @@ export const PROJECT_IN_DEVELOPMENT_PATH = "/project-in-development";
 export const PUBLIC_SURFACE_HEADER = "x-shidao-public-surface";
 export const LANDING_ONLY_SURFACE = "landing-only";
 
-const PUBLIC_ASSET_PREFIXES = ["/landing/", "/methodologies/"];
+const PUBLIC_ASSET_PREFIXES = ["/landing/"];
 const PUBLIC_ASSET_PATHS = new Set([
   "/favicon.svg",
   "/manifest.webmanifest",
