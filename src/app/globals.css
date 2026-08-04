@@ -266,6 +266,28 @@ a {
   align-items: center;
 }
 
+@media (min-width: 900px) {
+  .course-builder-page-header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+    column-gap: 1.5rem;
+  }
+
+  .course-builder-page-header > .app-page-back-link {
+    grid-column: 1 / -1;
+  }
+
+  .course-builder-page-header > .app-page-heading {
+    grid-column: 1;
+  }
+
+  .course-builder-page-header > .app-page-actions {
+    grid-column: 2;
+    justify-self: end;
+  }
+}
+
 @media (max-width: 768px) {
   .app-page-header {
     --app-page-header-space: 0.5rem;

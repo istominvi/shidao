@@ -7,28 +7,29 @@ function source(path: string) {
   return readFileSync(join(process.cwd(), path), "utf8");
 }
 
-test("workspace edits persisted entities through the v2 application API", () => {
-  const workspace = source(
-    "src/components/course-builder/course-workspace.tsx",
+const workspacePath = "src/components/course-builder/course-workspace.tsx";
+const lessonAuthoringPath =
+  "src/components/course-builder/lesson-authoring-workspace.tsx";
+
+test("workspace writes persisted course, lesson, and component entities", () => {
+  const combined = [source(workspacePath), source(lessonAuthoringPath)].join(
+    "\n",
   );
 
   for (const endpoint of [
     "/api/v2/courses/",
     "/api/v2/lessons/",
-    "/api/v2/steps/",
     "/api/v2/components/",
   ]) {
-    assert.match(workspace, new RegExp(endpoint.replaceAll("/", "\\/")));
+    assert.match(combined, new RegExp(endpoint.replaceAll("/", "\\/")));
   }
-  assert.match(workspace, /componentDefinitions\.map/);
-  assert.match(workspace, /Предпросмотр экрана ученика/);
-  assert.doesNotMatch(workspace, /localStorage|fixture/i);
+  assert.match(combined, /\/api\/v2\/lessons\/\$\{lessonId\}\/components/);
+  assert.match(combined, /method: "DELETE"|, "DELETE"/);
+  assert.doesNotMatch(combined, /localStorage|fixture/i);
 });
 
-test("lesson creation opens a persisted manual-or-AI dialog", () => {
-  const workspace = source(
-    "src/components/course-builder/course-workspace.tsx",
-  );
+test("lesson creation stays title-first and no longer asks for a step", () => {
+  const workspace = source(workspacePath);
 
   assert.match(workspace, /<DialogShell[\s\S]*?title="Новый урок"/);
   assert.match(workspace, />\s*Добавить урок\s*</);
@@ -38,65 +39,91 @@ test("lesson creation opens a persisted manual-or-AI dialog", () => {
   );
   assert.match(workspace, /не отдельный компонент/);
   assert.match(workspace, /без ИИ и без списания токенов/);
+  assert.doesNotMatch(workspace, /Добавить шаг|Новый шаг урока|new-step-title/);
+});
+
+test("course header opens persisted settings and course-wide materials dialogs", () => {
+  const workspace = source(workspacePath);
+
+  assert.match(workspace, />\s*Настройки\s*</);
+  assert.match(workspace, />\s*Материалы курса/);
+  assert.match(workspace, /title="Настройки курса"/);
+  assert.match(workspace, /title="Материалы курса"/);
+  assert.match(workspace, /course\.attachments\.map/);
+  assert.match(workspace, /содержимое пока не анализировалось/);
   assert.match(
     workspace,
-    /<Button[\s\S]*?disabled[\s\S]*?>\s*Заполнить с помощью ИИ\s*<\/Button>/,
-  );
-  assert.match(workspace, /OpenRouter/);
-  assert.match(
-    workspace,
-    /const saved = await runMutation\("Создаём пустой урок…"[\s\S]*?createdLessonId = response\.lesson\.id;[\s\S]*?if \(!saved \|\| !createdLessonId\)[\s\S]*?onSelect\(createdLessonId\);[\s\S]*?setDialogOpen\(false\);/,
+    /const saved = await runMutation\("Сохраняем настройки курса…"[\s\S]*?if \(saved\) onSaved\(\)/,
   );
 });
 
-test("component editor closes only after a successful persisted mutation", () => {
-  const workspace = source(
-    "src/components/course-builder/course-workspace.tsx",
-  );
+test("selected lesson uses the three requested authoring surfaces", () => {
+  const authoring = source(lessonAuthoringPath);
 
-  assert.match(workspace, /type RunMutation =[\s\S]*?Promise<boolean>;/);
-  assert.match(
-    workspace,
-    /const saved = await runMutation\("Сохраняем компонент…",[\s\S]*?\/api\/v2\/components\/\$\{component\.id\}[\s\S]*?if \(saved\) setEditing\(false\);/,
-  );
-  assert.match(
-    workspace,
-    /const runMutation = useCallback<RunMutation>\([\s\S]*?await action\(\);[\s\S]*?await reload\(\);\s*return true;[\s\S]*?catch \(caught\)[\s\S]*?return false;/,
-  );
+  for (const label of ["План урока", "Экран ученика", "Домашнее задание"]) {
+    assert.match(authoring, new RegExp(label));
+  }
+  assert.match(authoring, /ariaLabel="Раздел выбранного урока"/);
+  assert.match(authoring, />\s*Компонент\s*</);
+  assert.match(authoring, /Редактор домашнего задания будет/);
+  assert.doesNotMatch(authoring, /\/api\/teacher\//);
 });
 
-test("new lesson step title has an explicit accessible label", () => {
-  const workspace = source(
-    "src/components/course-builder/course-workspace.tsx",
-  );
+test("component picker is registry-driven and grouped into Russian categories", () => {
+  const authoring = source(lessonAuthoringPath);
 
+  assert.match(authoring, /componentDefinitions\.filter/);
+  for (const category of [
+    "Текст",
+    "Изображения",
+    "Игры и активности",
+    "Оформление",
+    "Файлы",
+  ]) {
+    assert.match(authoring, new RegExp(category));
+  }
+  assert.match(authoring, /visibility: "staff_only"/);
+  assert.match(authoring, /сразу перейти к редактированию/);
+});
+
+test("component cards persist edit, delete, order, and Student Screen visibility", () => {
+  const authoring = source(lessonAuthoringPath);
+
+  assert.match(authoring, /Сохраняем компонент…/);
+  assert.match(authoring, /Удаляем компонент…/);
+  assert.match(authoring, /Меняем порядок компонентов…/);
+  assert.match(authoring, /Обновляем экран ученика…/);
   assert.match(
-    workspace,
-    /<label[^>]*htmlFor="new-step-title"[^>]*>\s*Название нового шага\s*<\/label>[\s\S]*?<input\s+id="new-step-title"/,
+    authoring,
+    /visibility: learnerVisible \? "staff_only" : "learner_visible"/,
   );
+  assert.match(authoring, /aria-pressed=\{learnerVisible\}/);
+  assert.match(authoring, /group-hover:opacity-100/);
+  assert.match(authoring, /if \(saved\) setEditing\(false\)/);
 });
 
-test("student screen preview keeps canonical step titles and filters visibility", () => {
-  const preview = source(
-    "src/components/course-builder/student-screen-preview.tsx",
-  );
-
-  assert.match(preview, /Шаг \{active\.step\.position\}/);
-  assert.match(preview, /\{active\.step\.title\}/);
-  assert.match(preview, /component\.visibility === "learner_visible"/);
-  assert.match(preview, /mode="student"/);
-  assert.doesNotMatch(preview, /teacherInstructions/);
-  assert.match(preview, /предпросмотре и повторе/);
-});
-
-test("course builder surfaces use Russian product vocabulary", () => {
+test("student surfaces filter teacher-only data and expose no step UI", () => {
   const combined = [
-    source("src/components/course-builder/course-workspace.tsx"),
+    source(lessonAuthoringPath),
+    source("src/components/course-builder/student-screen-preview.tsx"),
+  ].join("\n");
+
+  assert.match(combined, /component\.visibility === "learner_visible"/);
+  assert.match(combined, /mode="student"/);
+  assert.doesNotMatch(combined, /teacherInstructions/);
+  assert.doesNotMatch(
+    source("src/components/course-builder/student-screen-preview.tsx"),
+    /Шаг|шага|шагом/,
+  );
+});
+
+test("course builder surfaces keep Russian product vocabulary", () => {
+  const combined = [
+    source(workspacePath),
+    source(lessonAuthoringPath),
     source("src/components/course-builder/student-screen-preview.tsx"),
     source("src/components/course-builder/new-course-form.tsx"),
     source("src/components/course-builder/courses-index.tsx"),
-    source("src/app/(app)/courses/page.tsx"),
-    source("src/app/(app)/courses/new/page.tsx"),
   ].join("\n");
 
   for (const visibleEnglishPhrase of [
@@ -105,9 +132,7 @@ test("course builder surfaces use Russian product vocabulary", () => {
     "Student Screen preview",
     "Teacher Side",
     "learner-visible",
-    "Пустой Course",
     "Добавить Lesson",
-    "Новый Lesson Step",
   ]) {
     assert.doesNotMatch(combined, new RegExp(visibleEnglishPhrase));
   }

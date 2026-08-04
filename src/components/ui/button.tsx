@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes } from "react";
+import { forwardRef, type ButtonHTMLAttributes } from "react";
 import { classNames } from "@/lib/ui/classnames";
 
 type ProductButtonVariant = "primary" | "secondary" | "ghost";
@@ -14,17 +14,18 @@ export function productButtonClassName(
   return classNames("product-btn", `product-btn-${variant}`, className);
 }
 
-export function Button({
-  variant = "primary",
-  className,
-  type = "button",
-  ...props
-}: ProductButtonProps) {
-  return (
-    <button
-      type={type}
-      className={productButtonClassName(variant, className)}
-      {...props}
-    />
-  );
-}
+export const Button = forwardRef<HTMLButtonElement, ProductButtonProps>(
+  function Button(
+    { variant = "primary", className, type = "button", ...props },
+    ref,
+  ) {
+    return (
+      <button
+        ref={ref}
+        type={type}
+        className={productButtonClassName(variant, className)}
+        {...props}
+      />
+    );
+  },
+);

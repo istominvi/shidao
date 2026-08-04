@@ -8,9 +8,20 @@ export const metadata: Metadata = {
 
 export default async function CourseStudentPreviewPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ courseId: string }>;
+  searchParams: Promise<{ lesson?: string | string[] }>;
 }) {
   const { courseId } = await params;
-  return <StudentScreenPreview courseId={courseId} />;
+  const query = await searchParams;
+  const initialLessonId = Array.isArray(query.lesson)
+    ? query.lesson[0]
+    : query.lesson;
+  return (
+    <StudentScreenPreview
+      courseId={courseId}
+      initialLessonId={initialLessonId}
+    />
+  );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import type {
   CourseAsset,
@@ -639,10 +639,17 @@ export function ComponentPayloadEditor({
   const [validationMessage, setValidationMessage] = useState<string | null>(
     null,
   );
+  const editorRef = useRef<HTMLDivElement>(null);
   const definition = useMemo(
     () => getComponentDefinition(component.typeKey),
     [component.typeKey],
   );
+
+  useEffect(() => {
+    editorRef.current
+      ?.querySelector<HTMLElement>("input, textarea, select, button")
+      ?.focus();
+  }, []);
 
   async function save() {
     const parsedPayload = definition.payloadSchema.safeParse(payload);
@@ -669,7 +676,10 @@ export function ComponentPayloadEditor({
   }
 
   return (
-    <div className="grid gap-4 rounded-2xl border border-sky-200 bg-sky-50/50 p-4">
+    <div
+      ref={editorRef}
+      className="grid gap-4 rounded-2xl border border-sky-200 bg-sky-50/50 p-4"
+    >
       <PayloadFields
         typeKey={component.typeKey}
         payload={payload}

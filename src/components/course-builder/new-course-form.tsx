@@ -264,7 +264,7 @@ export function NewCourseForm() {
       activeFileId = null;
 
       if (intent === "assemble") {
-        setProgressMessage("Собираем первый урок и шаг…");
+        setProgressMessage("Собираем первый урок и компоненты…");
         await assembleCourseDraft(courseId);
       }
 

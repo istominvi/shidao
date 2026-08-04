@@ -14,9 +14,13 @@ import type { StudentScreenCourse } from "@/modules/course-builder/domain";
 
 type StudentScreenPreviewProps = {
   courseId: string;
+  initialLessonId?: string;
 };
 
-export function StudentScreenPreview({ courseId }: StudentScreenPreviewProps) {
+export function StudentScreenPreview({
+  courseId,
+  initialLessonId,
+}: StudentScreenPreviewProps) {
   const [course, setCourse] = useState<StudentScreenCourse | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -27,6 +31,12 @@ export function StudentScreenPreview({ courseId }: StudentScreenPreviewProps) {
       .then((workspace) => {
         if (!active) return;
         setCourse(workspace);
+        const requestedIndex = initialLessonId
+          ? workspace.lessons.findIndex(
+              (lesson) => lesson.id === initialLessonId,
+            )
+          : -1;
+        setActiveIndex(requestedIndex >= 0 ? requestedIndex : 0);
       })
       .catch((caught: unknown) => {
         if (!active) return;
@@ -39,15 +49,9 @@ export function StudentScreenPreview({ courseId }: StudentScreenPreviewProps) {
     return () => {
       active = false;
     };
-  }, [courseId]);
+  }, [courseId, initialLessonId]);
 
-  const slides = useMemo(
-    () =>
-      course?.lessons.flatMap((lesson) =>
-        lesson.steps.map((step) => ({ lesson, step })),
-      ) ?? [],
-    [course],
-  );
+  const lessons = useMemo(() => course?.lessons ?? [], [course]);
   const assetMap = useMemo<SignedCourseComponentAssetMap>(
     () =>
       Object.fromEntries(
@@ -93,7 +97,7 @@ export function StudentScreenPreview({ courseId }: StudentScreenPreviewProps) {
     );
   }
 
-  if (slides.length === 0) {
+  if (lessons.length === 0) {
     return (
       <main className="grid min-h-screen place-items-center bg-neutral-100 px-4">
         <div className="w-full max-w-3xl rounded-[2rem] border border-neutral-200 bg-white p-8 text-center shadow-sm">
@@ -101,10 +105,10 @@ export function StudentScreenPreview({ courseId }: StudentScreenPreviewProps) {
             Предпросмотр экрана ученика
           </p>
           <h1 className="mt-3 text-2xl font-black text-neutral-950">
-            В курсе пока нет шагов урока
+            В курсе пока нет уроков
           </h1>
           <p className="mt-2 text-sm leading-6 text-neutral-600">
-            Вернитесь в редактор курса и добавьте урок, а затем шаг.
+            Вернитесь в редактор курса и добавьте первый урок.
           </p>
           <Link
             href={toCourseRoute(course.id)}
@@ -117,10 +121,17 @@ export function StudentScreenPreview({ courseId }: StudentScreenPreviewProps) {
     );
   }
 
-  const safeActiveIndex = Math.min(activeIndex, slides.length - 1);
-  const active = slides[safeActiveIndex];
-  const learnerComponents = active.step.components.filter(
-    (component) => component.visibility === "learner_visible",
+  const safeActiveIndex = Math.min(activeIndex, lessons.length - 1);
+  const activeLesson = lessons[safeActiveIndex];
+  const learnerGroups = activeLesson.steps.map((step) => ({
+    id: step.id,
+    instruction: step.learnerInstruction.trim(),
+    components: step.components.filter(
+      (component) => component.visibility === "learner_visible",
+    ),
+  }));
+  const hasLearnerContent = learnerGroups.some(
+    (group) => group.instruction || group.components.length > 0,
   );
 
   return (
@@ -136,7 +147,7 @@ export function StudentScreenPreview({ courseId }: StudentScreenPreviewProps) {
                 {course.title}
               </h1>
               <p className="mt-1 text-sm text-neutral-600">
-                Урок {active.lesson.position}: {active.lesson.title}
+                Урок {activeLesson.position}: {activeLesson.title}
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -159,11 +170,11 @@ export function StudentScreenPreview({ courseId }: StudentScreenPreviewProps) {
 
         <nav
           className="flex gap-2 overflow-x-auto rounded-3xl border border-white/80 bg-white/75 p-3 shadow-sm backdrop-blur"
-          aria-label="Шаги в предпросмотре экрана ученика"
+          aria-label="Уроки в предпросмотре экрана ученика"
         >
-          {slides.map(({ lesson, step }, index) => (
+          {lessons.map((lesson, index) => (
             <button
-              key={step.id}
+              key={lesson.id}
               type="button"
               aria-current={index === safeActiveIndex ? "step" : undefined}
               onClick={() => setActiveIndex(index)}
@@ -174,9 +185,11 @@ export function StudentScreenPreview({ courseId }: StudentScreenPreviewProps) {
               }`}
             >
               <span className="block text-[0.68rem] font-bold uppercase tracking-[0.12em] opacity-70">
-                Урок {lesson.position} · Шаг {step.position}
+                Урок {lesson.position}
               </span>
-              <span className="mt-1 block text-sm font-bold">{step.title}</span>
+              <span className="mt-1 block text-sm font-bold">
+                {lesson.title}
+              </span>
             </button>
           ))}
         </nav>
@@ -184,30 +197,34 @@ export function StudentScreenPreview({ courseId }: StudentScreenPreviewProps) {
         <section className="min-h-[32rem] rounded-[2.25rem] border border-white/90 bg-white p-5 shadow-[0_24px_60px_rgba(15,23,42,0.10)] md:p-10">
           <div className="mx-auto max-w-5xl">
             <p className="text-xs font-bold uppercase tracking-[0.16em] text-violet-700">
-              Шаг {active.step.position}
+              Урок {activeLesson.position}
             </p>
             <h2 className="mt-2 text-3xl font-black tracking-tight text-neutral-950 md:text-4xl">
-              {active.step.title}
+              {activeLesson.title}
             </h2>
-            {active.step.learnerInstruction ? (
-              <p className="mt-3 max-w-3xl text-base leading-7 text-neutral-600">
-                {active.step.learnerInstruction}
-              </p>
-            ) : null}
           </div>
 
           <div className="mt-8 grid gap-6">
-            {learnerComponents.map((component) => (
-              <CourseComponentRenderer
-                key={component.id}
-                component={component}
-                assets={assetMap}
-                mode="student"
-              />
+            {learnerGroups.map((group) => (
+              <div key={group.id} className="grid gap-6">
+                {group.instruction ? (
+                  <p className="max-w-3xl text-base leading-7 text-neutral-600">
+                    {group.instruction}
+                  </p>
+                ) : null}
+                {group.components.map((component) => (
+                  <CourseComponentRenderer
+                    key={component.id}
+                    component={component}
+                    assets={assetMap}
+                    mode="student"
+                  />
+                ))}
+              </div>
             ))}
-            {learnerComponents.length === 0 ? (
+            {!hasLearnerContent ? (
               <p className="rounded-2xl border border-dashed border-neutral-300 bg-neutral-50 px-5 py-10 text-center text-sm text-neutral-600">
-                На этом шаге пока нет компонентов для ученика.
+                В этом уроке пока нет компонентов для ученика.
               </p>
             ) : null}
           </div>
@@ -220,20 +237,20 @@ export function StudentScreenPreview({ courseId }: StudentScreenPreviewProps) {
             onClick={() => setActiveIndex((index) => Math.max(0, index - 1))}
           >
             <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-            Предыдущий шаг
+            Предыдущий урок
           </Button>
           <p className="text-center text-xs leading-5 text-neutral-500">
             Свободная навигация доступна только при предпросмотре и повторе; во
-            время урока шагом управляет преподаватель.
+            время занятия экраном управляет преподаватель.
           </p>
           <Button
             variant="secondary"
-            disabled={safeActiveIndex === slides.length - 1}
+            disabled={safeActiveIndex === lessons.length - 1}
             onClick={() =>
-              setActiveIndex((index) => Math.min(slides.length - 1, index + 1))
+              setActiveIndex((index) => Math.min(lessons.length - 1, index + 1))
             }
           >
-            Следующий шаг
+            Следующий урок
             <ArrowRight className="h-4 w-4" aria-hidden="true" />
           </Button>
         </footer>

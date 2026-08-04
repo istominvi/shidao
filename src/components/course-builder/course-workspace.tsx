@@ -1,43 +1,33 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  ArrowDown,
-  ArrowUp,
-  Eye,
+  FileText,
+  FolderOpen,
   LoaderCircle,
   Pencil,
   Plus,
   Save,
-  Trash2,
+  Settings,
   WandSparkles,
 } from "lucide-react";
 import { AppPageHeader } from "@/components/app/page-header";
-import { ComponentPayloadEditor } from "@/components/course-builder/component-payload-editor";
-import {
-  CourseComponentRenderer,
-  type SignedCourseComponentAssetMap,
-} from "@/components/course-builder/component-renderers";
 import {
   courseBuilderRequest,
   loadCourseWorkspace,
 } from "@/components/course-builder/course-builder-client";
+import {
+  LessonAuthoringWorkspace,
+  type LessonAuthoringSurface,
+} from "@/components/course-builder/lesson-authoring-workspace";
 import { Button, productButtonClassName } from "@/components/ui/button";
 import { DialogShell } from "@/components/ui/dialog-shell";
-import { ROUTES, toCourseStudentPreviewRoute } from "@/lib/auth";
+import { ROUTES } from "@/lib/auth";
 import type {
-  CourseAsset,
   CourseLesson,
   CourseWorkspace,
-  LessonComponent,
-  LessonStep,
 } from "@/modules/course-builder/domain";
-import {
-  componentDefinitions,
-  getComponentDefinition,
-  type ComponentTypeKey,
-} from "@/modules/course-builder/registry/contracts";
 
 type CourseWorkspaceClientProps = {
   courseId: string;
@@ -118,10 +108,12 @@ function CourseBasicsForm({
   course,
   disabled,
   runMutation,
+  onSaved,
 }: {
   course: CourseWorkspace;
   disabled: boolean;
   runMutation: RunMutation;
+  onSaved: () => void;
 }) {
   const [title, setTitle] = useState(course.title);
   const [subject, setSubject] = useState(course.subject);
@@ -138,15 +130,12 @@ function CourseBasicsForm({
   );
 
   return (
-    <details className="rounded-3xl border border-neutral-200 bg-white/90 p-5 shadow-sm">
-      <summary className="cursor-pointer text-base font-bold text-neutral-950">
-        Основные поля курса
-      </summary>
-      <form
-        className="mt-5 grid gap-4"
-        onSubmit={(event) => {
-          event.preventDefault();
-          void runMutation("Сохраняем поля курса…", () =>
+    <form
+      className="grid gap-4"
+      onSubmit={(event) => {
+        event.preventDefault();
+        void (async () => {
+          const saved = await runMutation("Сохраняем настройки курса…", () =>
             jsonRequest(`/api/v2/courses/${course.id}`, "PATCH", {
               title,
               subject,
@@ -157,79 +146,194 @@ function CourseBasicsForm({
               teacherPreferences,
             }),
           );
-        }}
-      >
-        <div className="grid gap-4 md:grid-cols-2">
-          <Field label="Название">
-            <input
-              required
-              minLength={2}
-              className="field-input"
-              value={title}
-              onChange={(event) => setTitle(event.target.value)}
-            />
-          </Field>
-          <Field label="Предмет или тема">
-            <input
-              required
-              minLength={2}
-              className="field-input"
-              value={subject}
-              onChange={(event) => setSubject(event.target.value)}
-            />
-          </Field>
-        </div>
-        <Field label="Цель курса">
-          <textarea
+          if (saved) onSaved();
+        })();
+      }}
+    >
+      <div className="grid gap-4 md:grid-cols-2">
+        <Field label="Название">
+          <input
+            autoFocus
             required
-            className="field-input min-h-24 resize-y"
-            value={goal}
-            onChange={(event) => setGoal(event.target.value)}
+            minLength={2}
+            className="field-input"
+            value={title}
+            onChange={(event) => setTitle(event.target.value)}
           />
         </Field>
-        <div className="grid gap-4 md:grid-cols-2">
-          <Field label="Уровень / исходная подготовка">
-            <input
-              required
-              className="field-input"
-              value={level}
-              onChange={(event) => setLevel(event.target.value)}
-            />
-          </Field>
-          <Field label="Планируемое число уроков">
-            <input
-              required
-              type="number"
-              min={1}
-              max={60}
-              className="field-input"
-              value={targetLessonCount}
-              onChange={(event) => setTargetLessonCount(event.target.value)}
-            />
-          </Field>
+        <Field label="Предмет или тема">
+          <input
+            required
+            minLength={2}
+            className="field-input"
+            value={subject}
+            onChange={(event) => setSubject(event.target.value)}
+          />
+        </Field>
+      </div>
+      <Field label="Цель курса">
+        <textarea
+          required
+          className="field-input min-h-24 resize-y"
+          value={goal}
+          onChange={(event) => setGoal(event.target.value)}
+        />
+      </Field>
+      <div className="grid gap-4 md:grid-cols-2">
+        <Field label="Уровень / исходная подготовка">
+          <input
+            required
+            className="field-input"
+            value={level}
+            onChange={(event) => setLevel(event.target.value)}
+          />
+        </Field>
+        <Field label="Планируемое число уроков">
+          <input
+            required
+            type="number"
+            min={1}
+            max={60}
+            className="field-input"
+            value={targetLessonCount}
+            onChange={(event) => setTargetLessonCount(event.target.value)}
+          />
+        </Field>
+      </div>
+      <Field label="Целевая аудитория">
+        <textarea
+          className="field-input min-h-20 resize-y"
+          value={audienceDescription}
+          onChange={(event) => setAudienceDescription(event.target.value)}
+        />
+      </Field>
+      <Field label="Пожелания преподавателя">
+        <textarea
+          className="field-input min-h-24 resize-y"
+          value={teacherPreferences}
+          onChange={(event) => setTeacherPreferences(event.target.value)}
+        />
+      </Field>
+      <div className="dialog-shell-actions">
+        <Button type="submit" disabled={disabled}>
+          <Save className="h-4 w-4" aria-hidden="true" />
+          Сохранить настройки
+        </Button>
+      </div>
+    </form>
+  );
+}
+
+function CourseSettingsDialog({
+  course,
+  disabled,
+  runMutation,
+  onClose,
+}: {
+  course: CourseWorkspace;
+  disabled: boolean;
+  runMutation: RunMutation;
+  onClose: () => void;
+}) {
+  return (
+    <DialogShell
+      title="Настройки курса"
+      description="Основные сведения, цель и пожелания преподавателя."
+      onClose={onClose}
+      panelClassName="max-w-3xl"
+    >
+      <CourseBasicsForm
+        key={course.updatedAt}
+        course={course}
+        disabled={disabled}
+        runMutation={runMutation}
+        onSaved={onClose}
+      />
+    </DialogShell>
+  );
+}
+
+function CourseMaterialsDialog({
+  course,
+  onClose,
+}: {
+  course: CourseWorkspace;
+  onClose: () => void;
+}) {
+  return (
+    <DialogShell
+      title="Материалы курса"
+      description="Все файлы и изображения, прикреплённые к этому курсу."
+      onClose={onClose}
+      panelClassName="max-w-3xl"
+    >
+      <p className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-900">
+        Материалы сохранены в закрытом Storage. Они прикреплены к курсу, но их
+        содержимое пока не анализировалось.
+      </p>
+
+      {course.attachments.length > 0 ? (
+        <ul className="mt-4 grid gap-3 sm:grid-cols-2">
+          {course.attachments.map((asset) => (
+            <li
+              key={asset.id}
+              className="flex min-w-0 flex-col rounded-2xl border border-neutral-200 bg-white p-4"
+            >
+              <div className="flex min-w-0 items-start gap-3">
+                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-neutral-100 text-neutral-600">
+                  <FileText className="h-4 w-4" aria-hidden="true" />
+                </span>
+                <div className="min-w-0">
+                  <span className="block truncate font-bold text-neutral-950">
+                    {asset.originalFilename}
+                  </span>
+                  <span className="mt-1 block text-xs leading-5 text-neutral-500">
+                    {asset.mimeType} · {Math.ceil(asset.sizeBytes / 1024)} КБ
+                  </span>
+                </div>
+              </div>
+              <div className="mt-4 flex items-center justify-between gap-3">
+                <span
+                  className={`rounded-full px-2.5 py-1 text-xs font-bold ${
+                    asset.status === "ready"
+                      ? "bg-emerald-100 text-emerald-800"
+                      : "bg-amber-100 text-amber-800"
+                  }`}
+                >
+                  {asset.status === "ready" ? "Готово" : "Ожидает загрузки"}
+                </span>
+                {asset.status === "ready" && asset.signedUrl ? (
+                  <a
+                    href={asset.signedUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className={productButtonClassName(
+                      "ghost",
+                      "h-9 px-3 text-xs",
+                    )}
+                  >
+                    Открыть
+                  </a>
+                ) : null}
+              </div>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <div className="mt-4 rounded-3xl border border-dashed border-neutral-300 bg-neutral-50 px-6 py-12 text-center">
+          <FolderOpen
+            className="mx-auto h-7 w-7 text-neutral-400"
+            aria-hidden="true"
+          />
+          <h3 className="mt-3 font-black text-neutral-950">
+            Материалов пока нет
+          </h3>
+          <p className="mt-2 text-sm text-neutral-600">
+            Прикреплённые к курсу файлы и изображения появятся здесь.
+          </p>
         </div>
-        <Field label="Целевая аудитория">
-          <textarea
-            className="field-input min-h-20 resize-y"
-            value={audienceDescription}
-            onChange={(event) => setAudienceDescription(event.target.value)}
-          />
-        </Field>
-        <Field label="Пожелания преподавателя">
-          <textarea
-            className="field-input min-h-24 resize-y"
-            value={teacherPreferences}
-            onChange={(event) => setTeacherPreferences(event.target.value)}
-          />
-        </Field>
-        <div>
-          <Button type="submit" disabled={disabled}>
-            <Save className="h-4 w-4" aria-hidden="true" />
-            Сохранить курс
-          </Button>
-        </div>
-      </form>
-    </details>
+      )}
+    </DialogShell>
   );
 }
 
@@ -397,7 +501,7 @@ function LessonNavigation({
                   <h3 className="font-bold">Собрать вручную</h3>
                 </div>
                 <p className="mt-2 flex-1 text-sm leading-6 text-neutral-300">
-                  Создастся пустой урок. Вы сами добавите шаги и компоненты —
+                  Создастся пустой урок. Вы сами добавите нужные компоненты —
                   без ИИ и без списания токенов.
                 </p>
                 <Button
@@ -410,9 +514,7 @@ function LessonNavigation({
                 </Button>
               </section>
 
-              <section
-                className="flex flex-col rounded-2xl border border-violet-200 bg-violet-50 p-4"
-              >
+              <section className="flex flex-col rounded-2xl border border-violet-200 bg-violet-50 p-4">
                 <div className="flex items-center gap-2 text-violet-950">
                   <WandSparkles className="h-4 w-4" aria-hidden="true" />
                   <h3 className="font-bold">Заполнить с помощью ИИ</h3>
@@ -449,446 +551,12 @@ function LessonNavigation({
   );
 }
 
-function ComponentCard({
-  component,
-  index,
-  total,
-  assets,
-  assetMap,
-  disabled,
-  runMutation,
-}: {
-  component: LessonComponent;
-  index: number;
-  total: number;
-  assets: CourseAsset[];
-  assetMap: SignedCourseComponentAssetMap;
-  disabled: boolean;
-  runMutation: RunMutation;
-}) {
-  const [editing, setEditing] = useState(false);
-  const definition = getComponentDefinition(component.typeKey);
-
-  return (
-    <article className="rounded-3xl border border-neutral-200 bg-white p-4 shadow-sm md:p-5">
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-neutral-100 pb-3">
-        <div>
-          <p className="text-xs font-bold uppercase tracking-[0.14em] text-neutral-500">
-            {component.position}. {definition.title}
-          </p>
-          <p className="mt-1 font-mono text-xs text-neutral-400">
-            Версия схемы: {component.schemaVersion}
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-1">
-          <Button
-            variant="ghost"
-            className="h-9 px-3 text-xs"
-            disabled={disabled || index === 0}
-            aria-label={`Переместить компонент «${definition.title}» выше`}
-            onClick={() =>
-              void runMutation("Меняем порядок компонентов…", () =>
-                jsonRequest(
-                  `/api/v2/components/${component.id}/reorder`,
-                  "POST",
-                  { toPosition: component.position - 1 },
-                ),
-              )
-            }
-          >
-            <ArrowUp className="h-4 w-4" aria-hidden="true" />
-            Выше
-          </Button>
-          <Button
-            variant="ghost"
-            className="h-9 px-3 text-xs"
-            disabled={disabled || index === total - 1}
-            aria-label={`Переместить компонент «${definition.title}» ниже`}
-            onClick={() =>
-              void runMutation("Меняем порядок компонентов…", () =>
-                jsonRequest(
-                  `/api/v2/components/${component.id}/reorder`,
-                  "POST",
-                  { toPosition: component.position + 1 },
-                ),
-              )
-            }
-          >
-            <ArrowDown className="h-4 w-4" aria-hidden="true" />
-            Ниже
-          </Button>
-          <Button
-            variant="ghost"
-            className="h-9 px-3 text-xs"
-            disabled={disabled}
-            onClick={() => setEditing((value) => !value)}
-          >
-            <Pencil className="h-4 w-4" aria-hidden="true" />
-            {editing ? "Закрыть" : "Редактировать"}
-          </Button>
-          <Button
-            variant="ghost"
-            className="h-9 px-3 text-xs text-rose-700"
-            disabled={disabled}
-            onClick={() => {
-              if (!window.confirm(`Удалить компонент «${definition.title}»?`))
-                return;
-              void runMutation("Удаляем компонент…", () =>
-                jsonRequest(`/api/v2/components/${component.id}`, "DELETE"),
-              );
-            }}
-          >
-            <Trash2 className="h-4 w-4" aria-hidden="true" />
-            Удалить
-          </Button>
-        </div>
-      </div>
-
-      {editing ? (
-        <ComponentPayloadEditor
-          key={`${component.id}:${component.updatedAt}`}
-          component={component}
-          assets={assets}
-          disabled={disabled}
-          onCancel={() => setEditing(false)}
-          onSave={async (input) => {
-            const saved = await runMutation("Сохраняем компонент…", () =>
-              jsonRequest(`/api/v2/components/${component.id}`, "PATCH", input),
-            );
-            if (saved) setEditing(false);
-          }}
-        />
-      ) : (
-        <CourseComponentRenderer
-          component={component}
-          assets={assetMap}
-          mode="teacher"
-        />
-      )}
-    </article>
-  );
-}
-
-function ComponentPalette({
-  stepId,
-  disabled,
-  runMutation,
-}: {
-  stepId: string;
-  disabled: boolean;
-  runMutation: RunMutation;
-}) {
-  async function add(typeKey: ComponentTypeKey) {
-    const definition = getComponentDefinition(typeKey);
-    await runMutation(`Добавляем «${definition.title}»…`, () =>
-      jsonRequest(`/api/v2/steps/${stepId}/components`, "POST", {
-        typeKey,
-        payload: structuredClone(definition.defaultPayload),
-        placement: structuredClone(definition.defaultPlacement),
-      }),
-    );
-  }
-
-  return (
-    <section className="rounded-3xl border border-dashed border-neutral-300 bg-neutral-50/80 p-4">
-      <h4 className="text-sm font-bold text-neutral-900">
-        Добавить компонент для ученика
-      </h4>
-      <div
-        className="mt-3 flex flex-wrap gap-2"
-        aria-label="Палитра компонентов"
-      >
-        {componentDefinitions.map((definition) => (
-          <Button
-            key={definition.key}
-            variant="secondary"
-            className="h-auto min-h-10 py-2 text-xs"
-            disabled={disabled}
-            onClick={() => void add(definition.key)}
-          >
-            <Plus className="h-3.5 w-3.5" aria-hidden="true" />
-            {definition.title}
-          </Button>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function StepEditor({
-  step,
-  assets,
-  assetMap,
-  disabled,
-  runMutation,
-}: {
-  step: LessonStep;
-  assets: CourseAsset[];
-  assetMap: SignedCourseComponentAssetMap;
-  disabled: boolean;
-  runMutation: RunMutation;
-}) {
-  const [title, setTitle] = useState(step.title);
-  const [teacherInstructions, setTeacherInstructions] = useState(
-    step.teacherInstructions,
-  );
-  const [learnerInstruction, setLearnerInstruction] = useState(
-    step.learnerInstruction,
-  );
-
-  return (
-    <section className="rounded-[1.75rem] border border-neutral-200 bg-white/70 p-4 md:p-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <p className="text-xs font-bold uppercase tracking-[0.15em] text-sky-700">
-            Шаг {step.position}
-          </p>
-          <h3 className="mt-1 text-xl font-black text-neutral-950">
-            {step.title}
-          </h3>
-        </div>
-        <span className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-semibold text-neutral-600">
-          {step.components.length} компонентов
-        </span>
-      </div>
-
-      <form
-        className="mt-5 grid gap-4 rounded-2xl border border-amber-200 bg-amber-50/70 p-4"
-        onSubmit={(event) => {
-          event.preventDefault();
-          void runMutation("Сохраняем шаг урока…", () =>
-            jsonRequest(`/api/v2/steps/${step.id}`, "PATCH", {
-              title,
-              teacherInstructions,
-              learnerInstruction,
-            }),
-          );
-        }}
-      >
-        <div className="flex items-center justify-between gap-3">
-          <h4 className="font-bold text-amber-950">Для преподавателя</h4>
-          <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-bold text-amber-900">
-            Приватно
-          </span>
-        </div>
-        <Field label="Название шага (совпадает на обеих сторонах)">
-          <input
-            required
-            className="field-input"
-            value={title}
-            onChange={(event) => setTitle(event.target.value)}
-          />
-        </Field>
-        <Field
-          label="Инструкции преподавателю"
-          hint="Этот текст никогда не показывается на экране ученика."
-        >
-          <textarea
-            className="field-input min-h-24 resize-y"
-            value={teacherInstructions}
-            onChange={(event) => setTeacherInstructions(event.target.value)}
-          />
-        </Field>
-        <Field label="Инструкция ученику (необязательно)">
-          <textarea
-            className="field-input min-h-20 resize-y"
-            value={learnerInstruction}
-            onChange={(event) => setLearnerInstruction(event.target.value)}
-          />
-        </Field>
-        <div>
-          <Button type="submit" disabled={disabled}>
-            <Save className="h-4 w-4" aria-hidden="true" />
-            Сохранить шаг
-          </Button>
-        </div>
-      </form>
-
-      <div className="mt-5 grid gap-4">
-        {step.components.map((component, index) => (
-          <ComponentCard
-            key={component.id}
-            component={component}
-            index={index}
-            total={step.components.length}
-            assets={assets}
-            assetMap={assetMap}
-            disabled={disabled}
-            runMutation={runMutation}
-          />
-        ))}
-        {step.components.length === 0 ? (
-          <p className="rounded-2xl border border-dashed border-neutral-300 bg-white px-4 py-8 text-center text-sm text-neutral-600">
-            На экране ученика для этого шага пока нет компонентов.
-          </p>
-        ) : null}
-        <ComponentPalette
-          stepId={step.id}
-          disabled={disabled}
-          runMutation={runMutation}
-        />
-      </div>
-    </section>
-  );
-}
-
-function LessonEditor({
-  lesson,
-  course,
-  disabled,
-  runMutation,
-}: {
-  lesson: CourseLesson;
-  course: CourseWorkspace;
-  disabled: boolean;
-  runMutation: RunMutation;
-}) {
-  const [title, setTitle] = useState(lesson.title);
-  const [summary, setSummary] = useState(lesson.summary);
-  const [newStepTitle, setNewStepTitle] = useState("");
-  const assetMap = useMemo<SignedCourseComponentAssetMap>(
-    () =>
-      Object.fromEntries(
-        course.attachments.map((asset) => [
-          asset.id,
-          {
-            id: asset.id,
-            originalFilename: asset.originalFilename,
-            mimeType: asset.mimeType,
-            signedUrl: asset.signedUrl,
-          },
-        ]),
-      ),
-    [course.attachments],
-  );
-
-  return (
-    <div className="grid gap-5">
-      <section className="rounded-3xl border border-neutral-200 bg-white/90 p-5 shadow-sm">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-[0.14em] text-violet-700">
-              Урок {lesson.position}
-            </p>
-            <h2 className="mt-1 text-2xl font-black text-neutral-950">
-              {lesson.title}
-            </h2>
-          </div>
-          <Button
-            variant="ghost"
-            className="text-rose-700"
-            disabled={disabled}
-            onClick={() => {
-              if (
-                !window.confirm(
-                  `Удалить урок «${lesson.title}» со всеми шагами?`,
-                )
-              )
-                return;
-              void runMutation("Удаляем урок…", () =>
-                jsonRequest(`/api/v2/lessons/${lesson.id}`, "DELETE"),
-              );
-            }}
-          >
-            <Trash2 className="h-4 w-4" aria-hidden="true" />
-            Удалить урок
-          </Button>
-        </div>
-        <form
-          className="mt-5 grid gap-4 md:grid-cols-[1fr_1fr_auto] md:items-end"
-          onSubmit={(event) => {
-            event.preventDefault();
-            void runMutation("Сохраняем урок…", () =>
-              jsonRequest(`/api/v2/lessons/${lesson.id}`, "PATCH", {
-                title,
-                summary,
-              }),
-            );
-          }}
-        >
-          <Field label="Название урока">
-            <input
-              required
-              className="field-input"
-              value={title}
-              onChange={(event) => setTitle(event.target.value)}
-            />
-          </Field>
-          <Field label="Краткое описание">
-            <input
-              className="field-input"
-              value={summary}
-              onChange={(event) => setSummary(event.target.value)}
-            />
-          </Field>
-          <Button type="submit" disabled={disabled}>
-            <Save className="h-4 w-4" aria-hidden="true" />
-            Сохранить
-          </Button>
-        </form>
-      </section>
-
-      <section className="grid gap-5">
-        {lesson.steps.map((step) => (
-          <StepEditor
-            key={`${step.id}:${step.updatedAt}`}
-            step={step}
-            assets={course.attachments}
-            assetMap={assetMap}
-            disabled={disabled}
-            runMutation={runMutation}
-          />
-        ))}
-      </section>
-
-      <form
-        className="rounded-3xl border border-dashed border-neutral-300 bg-white/70 p-5"
-        onSubmit={(event) => {
-          event.preventDefault();
-          const stepTitle = newStepTitle.trim();
-          if (!stepTitle) return;
-          void runMutation("Добавляем шаг урока…", async () => {
-            await jsonRequest(`/api/v2/lessons/${lesson.id}/steps`, "POST", {
-              title: stepTitle,
-              teacherInstructions: "",
-              learnerInstruction: "",
-            });
-            setNewStepTitle("");
-          });
-        }}
-      >
-        <h3 className="font-bold text-neutral-950">Новый шаг урока</h3>
-        <div className="mt-3 flex flex-col gap-2 sm:flex-row">
-          <label className="sr-only" htmlFor="new-step-title">
-            Название нового шага
-          </label>
-          <input
-            id="new-step-title"
-            className="field-input"
-            placeholder="Название шага"
-            value={newStepTitle}
-            onChange={(event) => setNewStepTitle(event.target.value)}
-          />
-          <Button
-            type="submit"
-            className="shrink-0"
-            disabled={disabled || !newStepTitle.trim()}
-          >
-            <Plus className="h-4 w-4" aria-hidden="true" />
-            Добавить шаг
-          </Button>
-        </div>
-      </form>
-    </div>
-  );
-}
-
 function WorkspaceSkeleton() {
   return (
     <div className="container app-page-container py-12" role="status">
       <div className="flex items-center gap-3 rounded-3xl border border-neutral-200 bg-white/80 p-6 text-neutral-700 shadow-sm">
         <LoaderCircle className="h-5 w-5 animate-spin" aria-hidden="true" />
-        Загружаем курс, уроки и шаги из базы…
+        Загружаем курс, уроки и компоненты из базы…
       </div>
     </div>
   );
@@ -899,8 +567,14 @@ export function CourseWorkspaceClient({
 }: CourseWorkspaceClientProps) {
   const [course, setCourse] = useState<CourseWorkspace | null>(null);
   const [selectedLessonId, setSelectedLessonId] = useState<string | null>(null);
+  const [surface, setSurface] = useState<LessonAuthoringSurface>("plan");
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [materialsOpen, setMaterialsOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busyLabel, setBusyLabel] = useState<string | null>(null);
+  const settingsTriggerRef = useRef<HTMLButtonElement>(null);
+  const materialsTriggerRef = useRef<HTMLButtonElement>(null);
+  const mutationInFlightRef = useRef(false);
 
   const reload = useCallback(async () => {
     const workspace = await loadCourseWorkspace(courseId);
@@ -934,6 +608,8 @@ export function CourseWorkspaceClient({
 
   const runMutation = useCallback<RunMutation>(
     async (label, action) => {
+      if (mutationInFlightRef.current) return false;
+      mutationInFlightRef.current = true;
       setBusyLabel(label);
       setError(null);
       try {
@@ -948,11 +624,39 @@ export function CourseWorkspaceClient({
         );
         return false;
       } finally {
+        mutationInFlightRef.current = false;
         setBusyLabel(null);
       }
     },
     [reload],
   );
+
+  const closeSettings = useCallback(() => {
+    if (busyLabel) return;
+    setSettingsOpen(false);
+    window.requestAnimationFrame(() => settingsTriggerRef.current?.focus());
+  }, [busyLabel]);
+
+  const closeMaterials = useCallback(() => {
+    setMaterialsOpen(false);
+    window.requestAnimationFrame(() => materialsTriggerRef.current?.focus());
+  }, []);
+
+  useEffect(() => {
+    if (!settingsOpen && !materialsOpen) return;
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key !== "Escape") return;
+      if (settingsOpen && !busyLabel) {
+        event.preventDefault();
+        closeSettings();
+      } else if (materialsOpen) {
+        event.preventDefault();
+        closeMaterials();
+      }
+    }
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [busyLabel, closeMaterials, closeSettings, materialsOpen, settingsOpen]);
 
   if (!course) {
     if (error) {
@@ -980,72 +684,58 @@ export function CourseWorkspaceClient({
   return (
     <div className="container app-page-container space-y-6 pb-16">
       <AppPageHeader
+        className="course-builder-page-header"
         backHref={ROUTES.courses}
         backLabel="Курсы"
         eyebrow="Редактор курса"
         title={course.title}
         description={`Создано уроков: ${course.lessonCount} из ${course.targetLessonCount} · готовых вложений: ${readyAttachmentCount}`}
         actions={
-          <Link
-            href={toCourseStudentPreviewRoute(course.id)}
-            className={productButtonClassName("primary")}
-          >
-            <Eye className="h-4 w-4" aria-hidden="true" />
-            Предпросмотр экрана ученика
-          </Link>
+          <>
+            <Button
+              ref={materialsTriggerRef}
+              variant="secondary"
+              onClick={() => setMaterialsOpen(true)}
+            >
+              <FolderOpen className="h-4 w-4" aria-hidden="true" />
+              Материалы курса
+              {course.attachments.length > 0 ? (
+                <span className="rounded-full bg-neutral-200 px-2 py-0.5 text-[0.7rem] font-black text-neutral-700">
+                  {course.attachments.length}
+                </span>
+              ) : null}
+            </Button>
+            <Button
+              ref={settingsTriggerRef}
+              variant="secondary"
+              onClick={() => setSettingsOpen(true)}
+            >
+              <Settings className="h-4 w-4" aria-hidden="true" />
+              Настройки
+            </Button>
+          </>
         }
       />
 
       <StatusMessage error={error} busyLabel={busyLabel} />
-
-      <CourseBasicsForm
-        key={course.updatedAt}
-        course={course}
-        disabled={Boolean(busyLabel)}
-        runMutation={runMutation}
-      />
-
-      {course.attachments.length > 0 ? (
-        <section className="rounded-3xl border border-neutral-200 bg-white/80 p-5">
-          <h2 className="font-bold text-neutral-950">Вложения курса</h2>
-          <p className="mt-1 text-sm text-neutral-600">
-            Вложения сохранены в закрытом файловом хранилище. Они прикреплены,
-            но их содержимое не анализировалось.
-          </p>
-          <ul className="mt-3 grid gap-2 sm:grid-cols-2">
-            {course.attachments.map((asset) => (
-              <li
-                key={asset.id}
-                className="rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm"
-              >
-                <span className="block truncate font-semibold">
-                  {asset.originalFilename}
-                </span>
-                <span className="mt-1 block text-xs text-neutral-500">
-                  {asset.mimeType} · {Math.ceil(asset.sizeBytes / 1024)} КБ ·{" "}
-                  {asset.status === "ready" ? "готово" : "ожидает загрузки"}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
 
       <div className="grid gap-5 lg:grid-cols-[18rem_minmax(0,1fr)] lg:items-start">
         <LessonNavigation
           lessons={course.lessons}
           selectedLessonId={selectedLessonId}
           disabled={Boolean(busyLabel)}
-          onSelect={setSelectedLessonId}
+          onSelect={(lessonId) => setSelectedLessonId(lessonId)}
           runMutation={runMutation}
           courseId={course.id}
         />
 
         {selectedLesson ? (
-          <LessonEditor
+          <LessonAuthoringWorkspace
             key={selectedLesson.id}
-            lesson={selectedLesson}
             course={course}
+            lesson={selectedLesson}
+            surface={surface}
+            onSurfaceChange={setSurface}
             disabled={Boolean(busyLabel)}
             runMutation={runMutation}
           />
@@ -1061,6 +751,19 @@ export function CourseWorkspaceClient({
           </section>
         )}
       </div>
+
+      {settingsOpen ? (
+        <CourseSettingsDialog
+          course={course}
+          disabled={Boolean(busyLabel)}
+          runMutation={runMutation}
+          onClose={closeSettings}
+        />
+      ) : null}
+
+      {materialsOpen ? (
+        <CourseMaterialsDialog course={course} onClose={closeMaterials} />
+      ) : null}
     </div>
   );
 }
