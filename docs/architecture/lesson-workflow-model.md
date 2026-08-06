@@ -4,11 +4,15 @@
 
 **Дата решения:** 5 августа 2026 года
 
+**Актуально на:** 6 августа 2026 года
+
 **Область:** Course Builder / Lesson / Components / Student Screen / course materials / homework
 
-**Implementation state:** authoring, persisted Slides и preview развёрнуты на
-`v2.shidao.ru`; RouterAI authoring реализован как текущий source candidate, но
-ещё не deployed; Homework/live остаются будущими срезами
+**Implementation state:** authoring, persisted Slides, preview и RouterAI
+Course/Lesson/assistant surfaces развёрнуты на `v2.shidao.ru`; runtime API key
+настроен server-side. Provider postflight нового default
+`google/gemini-2.5-flash-lite` ещё pending; Homework/live остаются будущими
+срезами
 
 ## Product decision
 
@@ -269,9 +273,8 @@ Course/Lesson model:
 Lesson и создаёт пустую Lesson. Teacher comment редактируется затем в модалке
 настроек Lesson и сохраняется в `summary`.
 
-Ручное создание сохраняет пустую Lesson и не расходует AI tokens. В deployed
-release `fea7f80` кнопка AI ещё disabled. Текущий source candidate включает два
-AI-flow, которые пока не развёрнуты на `v2.shidao.ru`:
+Ручное создание сохраняет пустую Lesson и не расходует AI tokens. Начиная с
+release `3a94878` production UI включает два AI-flow:
 
 - новая Lesson: provider готовит preview comment + Components, а Lesson
   создаётся только после отдельного Apply;
@@ -279,11 +282,12 @@ AI-flow, которые пока не развёрнуты на `v2.shidao.ru`:
   teacher comment и добавляет Components в конец текущего ordered list, не
   заменяя существующие.
 
-До Apply provider call не выполняет persistence mutation. План повторно
-валидируется registry contracts, сверяется с исходными Lesson/Component IDs и
-создаёт те же Lesson/Component entities через application service. Новые
-Components остаются `staff_only`; AI не создаёт Student Screen Slide и не
-публикует материал ученику автоматически.
+До Apply provider call не выполняет persistence mutation. Provider-compatible
+flat transport output сначала преобразуется в canonical AI plan, затем payload
+повторно валидируется registry contracts, сверяется с исходными
+Lesson/Component IDs и создаёт те же Lesson/Component entities через application
+service. Новые Components остаются `staff_only`; AI не создаёт Student Screen
+Slide и не публикует материал ученику автоматически.
 
 ## Course materials and Storage
 
@@ -352,7 +356,7 @@ Implementation map:
 
 ## AI boundary
 
-AI не получает SQL/service-role доступ. Текущий source candidate использует
+AI не получает SQL/service-role доступ. Текущий production AI-срез использует
 server-only RouterAI adapter и per-request actor из authenticated Course Builder
 context. Production web не запускает локальный `stdio` MCP: после explicit
 teacher Apply AI-service вызывает typed application commands напрямую.
@@ -413,7 +417,8 @@ import/application layer. Он не возвращает Methodology в акти
 
 ## Not implemented yet
 
-- deployment/postflight текущего RouterAI source candidate на `v2.shidao.ru`;
+- подтверждённый provider postflight нового default
+  `google/gemini-2.5-flash-lite`;
 - write-capable AI assistant, persisted assistant history и tool calling;
 - persistent AI quota/ledger, billing и change sets/undo;
 - parsing/RAG загруженных файлов;
@@ -453,6 +458,9 @@ browser smoke, включая teacher navigation, computed-style и mobile contr
 Coolify и deployed browser postflight подтвердили точный SHA `fea7f80`, guest
 redirect и авторизованные `/schedule`, `/students` и `/courses`.
 
-RouterAI source candidate не входит в этот shipped acceptance baseline. До
-отдельного deployment/postflight его нельзя считать доступным пользователям
-`v2.shidao.ru`.
+Release `3a94878` дополнительно развёрнул RouterAI routes/UI и server-only
+runtime configuration для Course/Lesson preview → Apply и read-only assistant.
+Это делает AI application boundary текущим production behavior, но не добавляет
+к baseline утверждение об успешном provider smoke нового default
+`google/gemini-2.5-flash-lite`: такой postflight фиксируется отдельно после
+соответствующего deployment.

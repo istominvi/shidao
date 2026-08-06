@@ -146,7 +146,7 @@ function inMemoryService(
 
 const METADATA = {
   requestId: "request-1",
-  model: "qwen/qwen3-30b-a3b-instruct-2507",
+  model: "google/gemini-2.5-flash-lite",
   provider: "test-provider",
   finishReason: "stop",
   usage: {
@@ -194,6 +194,33 @@ const LESSON_PLAN: AiLessonPlan = {
         text: "Сначала произнесите фразу медленно.",
         tone: "info",
       },
+    },
+  ],
+};
+
+const LESSON_PROVIDER_PLAN = {
+  summary: LESSON_PLAN.summary,
+  blocks: [
+    {
+      kind: "heading",
+      title: "",
+      body: "Приветствие",
+      choices: [],
+      matches: [],
+    },
+    {
+      kind: "rich_text",
+      title: "",
+      body: "Разберите короткий диалог знакомства.",
+      choices: [],
+      matches: [],
+    },
+    {
+      kind: "callout",
+      title: "Подсказка",
+      body: "Сначала произнесите фразу медленно.",
+      choices: [],
+      matches: [],
     },
   ],
 };
@@ -288,7 +315,7 @@ test("lesson plan applies canonical private components after preview", async () 
   const ai = createAiCourseBuilderService({
     actor: ACTOR,
     service: state.service,
-    provider: jsonProvider(LESSON_PLAN),
+    provider: jsonProvider(LESSON_PROVIDER_PLAN),
     audit: () => undefined,
   });
 
@@ -297,6 +324,8 @@ test("lesson plan applies canonical private components after preview", async () 
     title: lesson.title,
     instruction: "",
   });
+  assert.equal("blocks" in preview.plan, false);
+  assert.deepEqual(preview.plan, LESSON_PLAN);
   assert.equal(state.course.lessons[0]?.components.length, 0);
   const result = await ai.applyLessonPlan(COURSE_ID, {
     lessonId: preview.lessonId,
@@ -321,7 +350,7 @@ test("failed new lesson apply compensates the partial database writes", async ()
   const ai = createAiCourseBuilderService({
     actor: ACTOR,
     service: state.service,
-    provider: jsonProvider(LESSON_PLAN),
+    provider: jsonProvider(LESSON_PROVIDER_PLAN),
     audit: () => undefined,
   });
   const preview = await ai.planLesson(COURSE_ID, {
@@ -353,7 +382,7 @@ test("lesson apply rejects a preview after the lesson content changes", async ()
   const ai = createAiCourseBuilderService({
     actor: ACTOR,
     service: state.service,
-    provider: jsonProvider(LESSON_PLAN),
+    provider: jsonProvider(LESSON_PROVIDER_PLAN),
     audit: () => undefined,
   });
   const preview = await ai.planLesson(COURSE_ID, {

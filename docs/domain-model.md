@@ -1,7 +1,7 @@
 # ShiDao V2 domain model
 
 **Статус:** current implemented domain
-**Актуально на:** 5 августа 2026 года
+**Актуально на:** 6 августа 2026 года
 
 ## Active product hierarchy
 
@@ -72,10 +72,16 @@ file
 UI, application service and development MCP use the same Zod contracts. MCP
 JSON Schema is generated from those contracts.
 
-The current, not-yet-deployed RouterAI source candidate also validates generated
-Lesson content against a deliberately limited subset of these same registry
-contracts before explicit Apply. It introduces no new domain entity or physical
-schema.
+The current production RouterAI slice validates generated Lesson content
+against a deliberately limited subset of these same registry contracts before
+explicit Apply. Its provider-compatible flat transport schema is converted to a
+canonical typed plan and then validated again by registry payload contracts and
+`lessonAddComponentInputSchema`. It introduces no new domain entity, second
+registry, or physical schema.
+
+Operational acceptance of the new default
+`google/gemini-2.5-flash-lite` remains pending provider postflight; that release
+status does not alter the implemented domain model.
 
 Registry definitions own keys/schemas/defaults/capabilities. The current
 payload editor is one switch over `ComponentTypeKey`; renderers use an
@@ -109,7 +115,6 @@ The following are target domains, not current tables or product capabilities:
 - new neutral LearnerProfile/Guardian/Group audience model;
 - LessonSession/live runtime;
 - learning history/progress;
-- deployment of the current RouterAI authoring source candidate;
 - persistent AI quotas/usage ledger and AI change sets/undo;
 - parsing/RAG sources;
 - reusable cross-Course material/template library;

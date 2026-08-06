@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const DEFAULT_ROUTERAI_BASE_URL = "https://routerai.ru/api/v1";
-export const DEFAULT_ROUTERAI_MODEL = "qwen/qwen3-30b-a3b-instruct-2507";
+export const DEFAULT_ROUTERAI_MODEL = "google/gemini-2.5-flash-lite";
 export const DEFAULT_ROUTERAI_TIMEOUT_MS = 300_000;
 
 const MAX_ROUTERAI_TIMEOUT_MS = 600_000;

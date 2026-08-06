@@ -51,6 +51,7 @@ function successfulResponse(
 }
 
 test("text completion uses the server key and normalized default config", async () => {
+  assert.equal(DEFAULT_ROUTERAI_MODEL, "google/gemini-2.5-flash-lite");
   assert.equal(DEFAULT_ROUTERAI_TIMEOUT_MS, 300_000);
   let capturedInput: RequestInfo | URL | undefined;
   let capturedInit: RequestInit | undefined;
@@ -107,13 +108,13 @@ test("model, base URL and timeout are configurable through injected env", async 
     capturedInput = input;
     capturedBody = JSON.parse(String(init?.body)) as Record<string, unknown>;
     return successfulResponse("Ответ", {
-      model: "google/gemini-2.5-flash-lite",
+      model: "test/alternate-model",
     });
   }) as typeof fetch;
   const client = createRouterAiClient({
     env: {
       ROUTERAI_API_KEY: TEST_API_KEY,
-      ROUTERAI_MODEL: "google/gemini-2.5-flash-lite",
+      ROUTERAI_MODEL: "test/alternate-model",
       ROUTERAI_BASE_URL: "https://routerai.test/custom/v1/",
       ROUTERAI_TIMEOUT_MS: "2500",
     },
@@ -128,9 +129,9 @@ test("model, base URL and timeout are configurable through injected env", async 
     capturedInput,
     "https://routerai.test/custom/v1/chat/completions",
   );
-  assert.equal(capturedBody?.model, "google/gemini-2.5-flash-lite");
+  assert.equal(capturedBody?.model, "test/alternate-model");
   assert.equal(capturedBody?.max_tokens, 16_384);
-  assert.equal(result.model, "google/gemini-2.5-flash-lite");
+  assert.equal(result.model, "test/alternate-model");
 });
 
 test("JSON completion sends json_schema and validates the parsed value", async () => {

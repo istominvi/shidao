@@ -1,10 +1,11 @@
 # Текущее состояние ShiDao V2
 
 **Статус:** главный входной документ для разработки
-**Актуально на:** 5 августа 2026 года
+**Актуально на:** 6 августа 2026 года
 **Активная ветка:** `main`
 **Рабочее приложение:** `https://v2.shidao.ru`
-**Последний проверенный application release:** `fea7f80`
+**Текущий deployed application release:** `3a94878`
+**Последний полный browser/postflight baseline:** `fea7f80`
 
 Двухуровневая навигация Course → Lesson, teacher-only `/schedule` и `/students`
 и обновлённый визуальный язык app routes развёрнуты и проверены на release
@@ -16,11 +17,13 @@ Release `fea7f80` добавляет пункты «Расписание / Уч�
 Schedule events, LessonSession, LearnerProfile, Group или новую
 persistence/schema.
 
-В текущем source candidate дополнительно реализован RouterAI-срез: preview/apply
-для программы Course и наполнения Lesson, а также read-only ephemeral
-AI-assistant. Этот source candidate ещё не развёрнут и не проверен postflight на
-`v2.shidao.ru`; verified deployed state ниже по-прежнему относится к release
-`fea7f80` без рабочего AI. Подробная граница зафиксирована в
+Release `3a94878` дополнительно развёртывает RouterAI-срез: preview/apply для
+программы Course и наполнения Lesson, а также read-only ephemeral AI-assistant.
+Production runtime получает `ROUTERAI_API_KEY` только из server-side secret
+environment; browser и repository значения ключа не содержат. Переход default
+model на `google/gemini-2.5-flash-lite` ещё не прошёл отдельный authenticated
+provider postflight, поэтому успешность генерации новой моделью здесь пока не
+утверждается. Подробная граница зафиксирована в
 [`docs/architecture/ai-provider-integration.md`](./architecture/ai-provider-integration.md).
 
 `v2.shidao.ru` — active deployed customer-demo contour на production-mode
@@ -79,9 +82,9 @@ Account
 ### Курсы
 
 - `/courses` показывает реальные Course текущего Account.
-- В release `fea7f80` `/courses/new` создаёт пустой persisted draft или запускает
-  простой детерминированный assembler. Текущий source candidate добавляет третий
-  вариант: запросить AI-программу, проверить preview и отдельно применить её.
+- `/courses/new` создаёт пустой persisted draft, запускает простой
+  детерминированный assembler или позволяет запросить AI-программу, проверить
+  preview и отдельно применить её.
 - Форма сохраняет название, тему, цель, уровень, описание аудитории,
   планируемое число уроков и приватные пожелания преподавателя.
 - На форме можно загрузить изображения и документы до 10 MiB в private bucket
@@ -138,9 +141,8 @@ Account
   не вводит владение файлами на уровне Lesson; «История» пока заглушка.
 - Создание вручную требует только название и создаёт пустую Lesson без AI и
   без списания токенов.
-- В release `fea7f80` кнопка AI в модальном окне disabled. Текущий source
-  candidate включает preview/apply для новой Lesson и дополнения существующей,
-  но ещё не развёрнут на `v2.shidao.ru`.
+- В текущем production UI кнопка AI открывает preview/apply для новой Lesson или
+  дополнения существующей; ручное создание пустой Lesson остаётся доступным.
 - Название и комментарий Lesson редактируются отдельной модалкой.
 - Карточку Lesson нельзя перемещать или назначать на Student Screen.
 - Lesson можно удалить; оставшиеся позиции уплотняются.
@@ -205,14 +207,15 @@ lesson.reorder_component
 
 MCP вызывает `CourseBuilderApplicationService`, использует проверенный
 пользовательский JWT и не обращается к таблицам напрямую. RouterAI не
-подключается к `stdio` transport: production AI source candidate вызывает те же
+подключается к `stdio` transport: production AI orchestration вызывает те же
 application service/contracts внутри authenticated web request.
 
-### AI provider integration — source candidate, ещё не deployed
+### AI provider integration — current production boundary
 
 - Server-only adapter вызывает OpenAI-compatible RouterAI endpoint. Default
-  model в source — `qwen/qwen3-30b-a3b-instruct-2507`; key, model, base URL и
-  timeout задаются server environment и не отправляются browser.
+  model в source — `google/gemini-2.5-flash-lite`; key, model, base URL и timeout
+  задаются server environment и не отправляются browser. Фактическая модель
+  определяется runtime config; postflight нового default ещё pending.
 - New Course flow сначала сохраняет обычный пустой Course и attachments, затем
   получает ровно `targetLessonCount` titles/comments. Provider call ничего не
   записывает; UI показывает preview, model и token usage, а Lessons появляются
@@ -221,6 +224,11 @@ application service/contracts внутри authenticated web request.
   ограничен типами `heading`, `rich_text`, `callout`, `divider`,
   `single_choice_poll`, `matching_game` и повторно валидируется registry/Zod
   contracts до первой записи.
+- Provider-facing structured-output schema является плоским transport adapter.
+  После ответа она преобразуется в canonical AI plan, а payload каждого
+  Component повторно проходит соответствующую registry schema и обычный
+  `lessonAddComponentInputSchema`; transport shape не становится вторым
+  Component registry.
 - Lesson Apply проверяет, что Course/Lesson не изменились после preview. Для
   существующей Lesson он обновляет teacher comment и добавляет Components, не
   заменяя уже существующие. Новые Components остаются `staff_only`; Student
@@ -238,14 +246,15 @@ application service/contracts внутри authenticated web request.
   server log event. Persistent quota/ledger, billing, balance и AI change sets
   отсутствуют; process-local rate limit не является пользовательской квотой.
 
-Source files и тесты существуют в текущем source tree, но этот раздел не означает
-deployment. Release acceptance описан в
+Routes, UI и server-only secret boundary этого среза развёрнуты в production.
+Отдельный provider postflight нового default model всё ещё pending. Release
+acceptance описан в
 [`docs/architecture/ai-provider-integration.md`](./architecture/ai-provider-integration.md).
 
 ## 3. Что ещё не реализовано
 
-- deployment и authenticated postflight текущего RouterAI source candidate на
-  `v2.shidao.ru`;
+- authenticated provider postflight нового default
+  `google/gemini-2.5-flash-lite` и фиксация фактической model/usage;
 - пользовательский выбор модели и persisted provider settings;
 - persistent assistant/Course chat, write-capable assistant и tool calling;
 - persistent token quota/ledger, billing units, balance и AI change sets/undo;
@@ -317,7 +326,7 @@ stored_file
 course_attachment
 ```
 
-Текущий AI source candidate переиспользует эти сущности после explicit Apply и
+Текущий production AI-срез переиспользует эти сущности после explicit Apply и
 не изменяет physical schema: новых tables, columns, RPC, Storage buckets или
 migrations нет. Assistant history, provider requests и quota state в БД не
 сохраняются.
@@ -357,7 +366,9 @@ positions, а плотность поддерживают текущие service
 | Storage adapter             | `src/modules/course-builder/storage.ts`                                                                                  |
 | Component registry          | `src/modules/course-builder/registry/contracts.ts`                                                                       |
 | MCP tools/server            | `src/modules/course-builder/mcp/`                                                                                        |
-| AI provider/contracts       | `src/modules/ai/routerai.ts`, `src/modules/ai/course-builder-contracts.ts`                                               |
+| AI provider adapter         | `src/modules/ai/routerai.ts`                                                                                             |
+| AI provider transport       | `src/modules/ai/lesson-provider-contracts.ts`                                                                            |
+| AI request/contracts        | `src/modules/ai/course-builder-contracts.ts`                                                                             |
 | AI context/service          | `src/modules/ai/course-context.ts`, `src/modules/ai/course-builder-service.ts`                                           |
 | AI API/error boundary       | `src/app/api/v2/courses/[courseId]/ai-*/`, `assistant/`, `src/modules/ai/server-context.ts`                              |
 | AI dialogs                  | `src/components/course-builder/ai-course-plan-dialog.tsx`, `ai-lesson-plan-dialog.tsx`, `ai-course-assistant-dialog.tsx` |
@@ -404,11 +415,10 @@ mutation API: оба shell переиспользуют только сущес�
 Course summaries. Старые dashboard/methodology/group/scheduled-lesson routes не
 поддерживаются как compatibility URL.
 
-Текущий, ещё не deployed AI source candidate добавляет authenticated `POST`
-routes `ai-plan`, `ai-apply`, `ai-lesson-plan`, `ai-lesson-apply` и `assistant`
-под `/api/v2/courses/[courseId]/`. Planning/chat routes вызывают provider;
-apply routes только валидируют preview и выполняют существующие application
-commands.
+Текущий production AI-срез добавляет authenticated `POST` routes `ai-plan`,
+`ai-apply`, `ai-lesson-plan`, `ai-lesson-apply` и `assistant` под
+`/api/v2/courses/[courseId]/`. Planning/chat routes вызывают provider; apply
+routes только валидируют preview и выполняют существующие application commands.
 
 Дополнительные project surfaces:
 
@@ -420,10 +430,8 @@ Known host-boundary debt: middleware переписывает только `/` �
 и пропускает unknown hosts; noindex применяется только к exact V2 host.
 Изоляция дополнительных paths сейчас зависит от proxy/DNS. До публичного
 launch нужен explicit production host allowlist или закрытие non-canonical
-hosts/paths. Кроме того, CSRF guard сейчас включает configured landing host
-`shidao.ru` в allowlist запроса к V2, поэтому cross-subdomain Origin не
-отклоняется как strict cross-origin. P0 должен привязать guard к actual app host
-и добавить negative regression test.
+hosts/paths. CSRF guard уже привязан к configured app host, а landing
+cross-subdomain Origin покрыт negative regression test.
 
 ## 9. Проверка текущего состояния
 
@@ -472,9 +480,12 @@ production build и строгие 8/8 browser smoke. Coolify deployment точ�
 новые страницы, чтение реальных Course summaries, прозрачный page header,
 плоский фон `#f5f1e8` и переход обратно в `/courses`.
 
-AI source candidate не входит в эти deployed assertions. До отдельного
-deployment его нельзя описывать как доступный пользователям `v2.shidao.ru`,
-даже если локальные unit/contract tests и production build проходят.
+Release `3a94878` развёрнул AI routes/UI и server-only RouterAI configuration с
+runtime secret. Для его source gate подтверждены typecheck, lint, 214 unit/
+contract tests, production build и строгие 8/8 browser smoke. Эти assertions не
+подменяют ещё не выполненный provider postflight нового default
+`google/gemini-2.5-flash-lite`: до него нельзя утверждать, что полный
+Course/Lesson/assistant smoke успешно завершён именно этой моделью.
 
 ## 10. Правило обновления этого документа
 

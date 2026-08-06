@@ -1,7 +1,7 @@
 # Roadmap ShiDao V2
 
 **Статус:** приоритеты после первого работающего Course Builder milestone
-**Актуально на:** 5 августа 2026 года
+**Актуально на:** 6 августа 2026 года
 
 Фактически реализованное состояние находится в
 [`docs/project-state.md`](./project-state.md). Этот документ описывает только
@@ -48,9 +48,10 @@
 - Реализованы private-by-default Components и persisted Student Screen Slides.
 - Реализован fullscreen Student Screen preview.
 - Реализован development-only MCP из шести tools поверх application service.
-- В текущем source candidate реализованы RouterAI provider adapter,
-  Course/Lesson preview → explicit apply и read-only ephemeral assistant. Этот
-  срез ещё не deployed и поэтому не входит в проверенный release `fea7f80`.
+- В release `3a94878` развёрнуты RouterAI provider adapter, Course/Lesson
+  preview → explicit apply и read-only ephemeral assistant; production runtime
+  получает API key из server-side secret environment. Новый default
+  `google/gemini-2.5-flash-lite` ещё требует отдельного provider postflight.
 - Browser-smoke переведён на актуальную AES-GCM app-session; строгий
   production-mode gate покрывает guest/auth redirects, Course → Lesson →
   backlink, computed visual contract и mobile overflow без обращения к
@@ -113,12 +114,13 @@ Definition of Done:
 Цель — дать преподавателю работающую AI-сборку Course/Lesson без второй
 архитектуры урока и без неконтролируемой записи из чата.
 
-**Current source candidate (ещё не deployed):**
+**Current production boundary:**
 
 - server-only OpenAI-compatible RouterAI adapter с default
-  `qwen/qwen3-30b-a3b-instruct-2507`, конфигурируемой моделью, timeout и abort;
-- bounded provider input и structured output, повторно валидируемый теми же
-  Zod/registry contracts;
+  `google/gemini-2.5-flash-lite`, конфигурируемой моделью, timeout и abort;
+- bounded provider input и provider-compatible flat structured output, который
+  преобразуется в canonical AI plan и повторно валидируется теми же
+  Zod/registry contracts перед первой записью;
 - Course outline ровно на `targetLessonCount` Lessons;
 - создание новой или дополнение существующей Lesson ограниченным набором
   registry Components;
@@ -134,17 +136,18 @@ Definition of Done:
 - attachment metadata без скачивания/парсинга file contents;
 - отсутствие schema migration, quota/ledger и billing.
 
-**Next, чтобы считать срез shipped:**
+**Next для закрытия provider-model transition:**
 
-- создать новый ротированный provider key для deployment; ранее показанный в
-  чате/логе key не использовать;
-- задать server-only production config и проверить совместимость/cost выбранной
-  модели реальными bounded prompts;
-- пройти typecheck, lint, unit/contract tests и production build;
+- после deployment явно подтвердить configured model/base URL/timeout без
+  вывода runtime secret;
 - выполнить authenticated postflight Course preview/apply, Lesson
   preview/apply, assistant и provider-error fallback на `v2.shidao.ru`;
 - подтвердить в postflight, что assistant read-only, generated Components
   остаются private и attachment contents не передаются provider;
+- сверить фактическую model/usage/latency в response metadata и RouterAI
+  dashboard, затем зафиксировать deployed SHA и результат в current-state docs;
+- ротировать временный demo key до публичного production launch, особенно если
+  его значение когда-либо передавалось через чат, log или screenshot;
 - при нескольких application replicas заменить process-local protection
   распределённым rate limit;
 - спроектировать persistent quota/usage ledger до введения платного ограничения,

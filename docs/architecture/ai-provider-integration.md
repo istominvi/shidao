@@ -1,18 +1,19 @@
 # AI provider integration
 
-**Статус:** canonical contract для текущего source candidate
+**Статус:** canonical contract для текущего production AI-среза
 
-**Дата решения:** 5 августа 2026 года
+**Актуально на:** 6 августа 2026 года
 
-**Deployment state:** source реализован локально, но ещё не развёрнут и не
-проверен postflight на `v2.shidao.ru`; последний проверенный application release
-остаётся `fea7f80`
+**Deployment state:** AI application slice развёрнут на `v2.shidao.ru` в release
+`3a94878`; server runtime получает `ROUTERAI_API_KEY` из production secret
+environment. Переход default model на `google/gemini-2.5-flash-lite` ещё требует
+отдельного authenticated provider postflight после нового deployment
 
 **Schema state:** AI-срез не добавляет таблицы, RPC или migrations
 
 ## Граница текущего среза
 
-Текущий source candidate подключает RouterAI к существующему Course Builder и
+Текущий production slice подключает RouterAI к существующему Course Builder и
 даёт преподавателю три отдельные возможности:
 
 1. получить программу нового Course и явно применить её после preview;
@@ -32,7 +33,8 @@ authenticated browser
 → per-request actor from getCourseBuilderContext()
 → AiCourseBuilderService
 → server-only RouterAI adapter
-→ structured output + Zod/registry validation
+→ provider-compatible structured output
+→ transport conversion + canonical Zod/registry validation
 → preview returned to browser
 → explicit teacher Apply
 → existing CourseBuilderApplicationService commands
@@ -49,7 +51,7 @@ actor. MCP остаётся development adapter над тем же application s
 `POST /chat/completions`:
 
 - default base URL — `https://routerai.ru/api/v1`;
-- default model — `qwen/qwen3-30b-a3b-instruct-2507`;
+- default model — `google/gemini-2.5-flash-lite`;
 - обязательный secret — `ROUTERAI_API_KEY`;
 - `ROUTERAI_MODEL`, `ROUTERAI_BASE_URL` и `ROUTERAI_TIMEOUT_MS` позволяют
   изменить модель, endpoint и timeout без изменения domain model;
@@ -63,9 +65,31 @@ actor. MCP остаётся development adapter над тем же application s
 
 API key существует только в server environment. Browser, provider context,
 ответ API и application logs не должны содержать secret, JWT или service-role
-credentials. Значение, однажды опубликованное в чате, логе или issue, не
-считается допустимым production secret и должно быть заменено новым ключом до
-deployment.
+credentials. На текущем demo-контуре secret уже настроен как runtime-only
+переменная и не фиксируется в repository. Значение, однажды опубликованное в
+чате, логе или issue, необходимо ротировать до публичного production launch.
+
+### Provider transport schema и canonical validation
+
+JSON Schema, отправляемая конкретному provider, является transport adapter, а
+не новым источником истины для Component domain. Lesson transport использует
+плоский список `blocks`, где у каждого блока обязательны одинаковые поля
+`kind`, `title`, `body`, `choices` и `matches`; неиспользуемые поля остаются
+пустыми. Provider-facing schema не содержит сложной discriminated union и
+удаляет несовместимые transport keywords длины/размера, но runtime Zod limits
+остаются обязательными.
+
+После ответа AI-layer преобразует transport blocks в канонический
+`AiLessonComponentPlan`, проверяет discriminated Zod contracts по `typeKey`, а
+перед первой записью строит обычный `lessonAddComponentInputSchema` с registry
+payload schema и default placement. UUID для poll options и matching pairs
+создаёт server conversion layer, а не provider.
+
+Таким образом, provider-flat schema не ослабляет application boundary:
+неизвестный type, несовместимый payload или лишние поля отклоняются до Apply.
+UI, application service и development MCP продолжают использовать canonical
+registry contracts; provider transport не копируется в MCP и не становится
+вторым Component registry.
 
 ## Course generation: preview → apply
 
@@ -193,7 +217,8 @@ course_attachment
 
 ## Не входит в текущий срез
 
-- deployment и postflight source candidate на `v2.shidao.ru`;
+- подтверждённый provider postflight нового default
+  `google/gemini-2.5-flash-lite` до следующего deployment;
 - UI выбора модели пользователем;
 - persistent assistant history, Course chat и notifications;
 - write-capable assistant, tool calling и AI change sets/undo;
@@ -208,6 +233,7 @@ course_attachment
 | Область                       | Каноническое место                                             |
 | ----------------------------- | -------------------------------------------------------------- |
 | Provider adapter              | `src/modules/ai/routerai.ts`                                   |
+| Provider lesson transport     | `src/modules/ai/lesson-provider-contracts.ts`                  |
 | AI request/response contracts | `src/modules/ai/course-builder-contracts.ts`                   |
 | Bounded model context         | `src/modules/ai/course-context.ts`                             |
 | Planning/apply/chat service   | `src/modules/ai/course-builder-service.ts`                     |
@@ -220,14 +246,18 @@ course_attachment
 
 ## Release acceptance
 
-До deployment документация должна продолжать различать source candidate и
-проверенный release. Чтобы перевести AI-срез в deployed current, нужны:
+Release `3a94878` зафиксировал production routes/UI, server-only RouterAI
+boundary и наличие runtime secret без раскрытия его значения. Это делает
+preview/apply/assistant текущими production-поверхностями, но не является
+утверждением об успешном postflight нового default provider model.
 
-1. новый ротированный production secret и server-only provider config;
-2. typecheck, lint, unit/contract tests и production build;
-3. authenticated postflight course preview/apply, lesson preview/apply и
-   read-only assistant на `v2.shidao.ru`;
-4. проверка ручного fallback при configuration/provider errors;
-5. подтверждение, что assistant chat не пишет данные, generated Components
+Для закрытия перехода на `google/gemini-2.5-flash-lite` после deployment нужны:
+
+1. подтвердить configured model/base URL/timeout без вывода API key;
+2. выполнить authenticated postflight Course preview/apply, Lesson
+   preview/apply и read-only assistant на `v2.shidao.ru`;
+3. проверить ручной fallback при configuration/provider errors;
+4. подтвердить, что assistant chat не пишет данные, generated Components
    остаются private, а attachment contents не уходят модели;
-6. фиксация точного deployed SHA в `docs/project-state.md`.
+5. зафиксировать точный deployed SHA, фактическую provider model и результат
+   smoke в `docs/project-state.md`.

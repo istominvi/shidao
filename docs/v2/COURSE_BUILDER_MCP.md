@@ -119,15 +119,17 @@ design.
 ## AI provider boundary
 
 This MCP server still does not call an AI provider or generate lesson content.
-The current, not-yet-deployed RouterAI source candidate is a separate
-server-side web orchestration layer: it reuses the same application
-service/registry contracts directly, without starting this `stdio` transport or
-inventing a static MCP actor.
+The current production RouterAI integration is a separate server-side web
+orchestration layer: it reuses the same application service/registry contracts
+directly, without starting this `stdio` transport or inventing a static MCP
+actor.
 
 Course and Lesson generation use validated preview → explicit Apply; the
 assistant is read-only and does not call MCP tools. Attachments remain metadata
-only until a separate parsing pipeline succeeds. The canonical boundary and
-deployment state are documented in
+only until a separate parsing pipeline succeeds. Provider-compatible flat
+structured output is an AI transport detail: it is converted back into the
+canonical registry-backed plan before Apply and is not reused as an MCP schema.
+The canonical boundary and deployment state are documented in
 [`docs/architecture/ai-provider-integration.md`](../architecture/ai-provider-integration.md).
 
 Do not add RouterAI keys to MCP input schemas, browser environment, logs or

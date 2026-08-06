@@ -135,7 +135,7 @@ ROUTERAI_API_KEY
 Optional RouterAI config с текущими defaults приложения:
 
 ```text
-ROUTERAI_MODEL=qwen/qwen3-30b-a3b-instruct-2507
+ROUTERAI_MODEL=google/gemini-2.5-flash-lite
 ROUTERAI_BASE_URL=https://routerai.ru/api/v1
 ROUTERAI_TIMEOUT_MS=300000
 ```
@@ -164,6 +164,13 @@ TTL не позволяет незаметно зависеть от смены 
 SMTP/GoTrue переменные настраиваются в Supabase environment, а не в Next.js.
 
 ### RouterAI secret в Coolify
+
+На текущем production demo-контуре `ROUTERAI_API_KEY` уже подключён как
+server-only runtime secret, а AI routes/UI доступны в release `3a94878`.
+Значение secret не проверяется выводом и не хранится в repository. Новый default
+`google/gemini-2.5-flash-lite` считается принятым только после отдельного
+authenticated smoke из следующего раздела; до него deployment AI-поверхностей
+не следует описывать как успешный Gemini provider postflight.
 
 Первичная настройка выполняется только в environment editor существующего
 ShiDao V2 application:
