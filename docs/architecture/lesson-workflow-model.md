@@ -475,3 +475,8 @@ runtime configuration и model `google/gemini-2.5-flash-lite`. Provider smoke
 проверил строгие Course/Lesson outputs, а authenticated `v2.shidao.ru` smoke —
 assistant и Lesson preview без Apply. Preview был отменён, поэтому production
 Course data не изменились.
+
+Release `7021801` отдельно подтвердил standalone demo boundary: 224
+unit/contract tests, production build и строгие 9/9 browser smoke прошли;
+deployed root/deep links, reload, Guest/read-only/noindex policy и cache recovery
+старого `308` проверены без обращения к V2 persistence.

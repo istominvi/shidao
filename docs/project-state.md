@@ -4,8 +4,8 @@
 **Актуально на:** 6 августа 2026 года
 **Активная ветка:** `main`
 **Рабочее приложение:** `https://v2.shidao.ru`
-**Текущий deployed application release:** `0276aed`
-**Последний полный automated/browser gate:** `0276aed`
+**Текущий deployed application release:** `7021801`
+**Последний полный automated/browser gate:** `7021801`
 
 Двухуровневая навигация Course → Lesson, teacher-only `/schedule` и `/students`
 и обновлённый визуальный язык app routes развёрнуты и проверены на release
@@ -28,12 +28,14 @@ server-side secret environment; browser и repository значения ключ�
 граница зафиксирована в
 [`docs/architecture/ai-provider-integration.md`](./architecture/ai-provider-integration.md).
 
-Текущий source снова обслуживает `demo.shidao.ru` как отдельный исторический
-кликабельный UI-прототип вместо redirect в Course Builder. Он использует только
-локальные фиктивные данные и React state, сохраняет clean-path навигацию после
-reload, работает с Guest session и не вызывает V2 API/Supabase. Это reference
-surface для дизайна, а не active V2 domain, compatibility fallback или
-доказательство реализации показанных в нём будущих возможностей.
+Releases `8514441` и `7021801` снова обслуживают `demo.shidao.ru` как отдельный
+исторический кликабельный UI-прототип вместо redirect в Course Builder. Он
+использует только локальные фиктивные данные и React state, сохраняет clean-path
+навигацию после reload, работает с Guest session и не вызывает V2 API/Supabase.
+Это reference surface для дизайна, а не active V2 domain, compatibility fallback
+или доказательство реализации показанных в нём будущих возможностей. Финальный
+release дополнительно снимает ранее закэшированный permanent `308` через
+одноразовый `/?restored=1`.
 
 `v2.shidao.ru` — active deployed customer-demo contour на production-mode
 build, но публичный production launch и отдельный staging ещё не выполнены.
@@ -508,6 +510,16 @@ Lesson preview со всеми шестью Component types примерно з�
 нажимался: число Lessons до и после проверки осталось равным 1. Live Apply и
 искусственно вызванный provider-error fallback не выполнялись на пользовательских
 данных; их validation, stale protection и compensation покрыты automated tests.
+
+Release `7021801` прошёл typecheck, lint, 224 unit/contract tests, production
+build и строгие 9/9 browser smoke. Coolify развернул exact SHA со статусом
+Success. HTTP postflight подтвердил demo root/deep-link `200` без `Location`,
+`image/png` для OG asset, `robots.txt`/noindex, read-only `405`, сохранность
+landing `503` и V2 guest redirect. В browser profile с реально закэшированным
+старым `308` вход `/?restored=1` очистил cache и заменил адрес на `/`; обычный
+root после этого не редиректит. Интерактивно проверены «Расписание / Ученики /
+Курсы», reload `/courses`, прямой Lesson deep link и его reload; browser console
+не содержит warning/error.
 
 ## 10. Правило обновления этого документа
 

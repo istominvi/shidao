@@ -2,10 +2,13 @@
 
 **Статус:** current implementation
 **Канонический app host:** `v2.shidao.ru`
-**Последний deployed baseline:** `0276aed`
+**Последний deployed baseline:** `7021801`
 
 Teacher-only `/schedule` и `/students` развёрнуты и проверены на release
 `fea7f80`.
+
+Standalone `demo.shidao.ru` и cache recovery старого permanent redirect
+развёрнуты и проверены на release `7021801`.
 
 ## Host matrix
 
