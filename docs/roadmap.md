@@ -48,10 +48,11 @@
 - Реализованы private-by-default Components и persisted Student Screen Slides.
 - Реализован fullscreen Student Screen preview.
 - Реализован development-only MCP из шести tools поверх application service.
-- В release `3a94878` развёрнуты RouterAI provider adapter, Course/Lesson
+- В release `0276aed` развёрнуты и проверены RouterAI provider adapter,
+  Course/Lesson
   preview → explicit apply и read-only ephemeral assistant; production runtime
-  получает API key из server-side secret environment. Новый default
-  `google/gemini-2.5-flash-lite` ещё требует отдельного provider postflight.
+  получает API key из server-side secret environment и использует проверенный
+  default `google/gemini-2.5-flash-lite`.
 - Browser-smoke переведён на актуальную AES-GCM app-session; строгий
   production-mode gate покрывает guest/auth redirects, Course → Lesson →
   backlink, computed visual contract и mobile overflow без обращения к
@@ -136,16 +137,12 @@ Definition of Done:
 - attachment metadata без скачивания/парсинга file contents;
 - отсутствие schema migration, quota/ledger и billing.
 
-**Next для закрытия provider-model transition:**
+**Next — operational hardening:**
 
-- после deployment явно подтвердить configured model/base URL/timeout без
-  вывода runtime secret;
-- выполнить authenticated postflight Course preview/apply, Lesson
-  preview/apply, assistant и provider-error fallback на `v2.shidao.ru`;
-- подтвердить в postflight, что assistant read-only, generated Components
-  остаются private и attachment contents не передаются provider;
-- сверить фактическую model/usage/latency в response metadata и RouterAI
-  dashboard, затем зафиксировать deployed SHA и результат в current-state docs;
+- наблюдать первый реальный teacher Apply по metadata-only logs; не создавать
+  отдельные production test entities без явной необходимости;
+- проверить provider-error fallback во время планового fault-injection окна, не
+  нарушая доступность demo-контура;
 - ротировать временный demo key до публичного production launch, особенно если
   его значение когда-либо передавалось через чат, log или screenshot;
 - при нескольких application replicas заменить process-local protection

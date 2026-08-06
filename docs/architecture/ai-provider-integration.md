@@ -5,9 +5,9 @@
 **Актуально на:** 6 августа 2026 года
 
 **Deployment state:** AI application slice развёрнут на `v2.shidao.ru` в release
-`3a94878`; server runtime получает `ROUTERAI_API_KEY` из production secret
-environment. Переход default model на `google/gemini-2.5-flash-lite` ещё требует
-отдельного authenticated provider postflight после нового deployment
+`0276aed`; server runtime получает `ROUTERAI_API_KEY` из production secret
+environment и использует `google/gemini-2.5-flash-lite`. Provider и
+authenticated no-write postflight завершены
 
 **Schema state:** AI-срез не добавляет таблицы, RPC или migrations
 
@@ -217,8 +217,6 @@ course_attachment
 
 ## Не входит в текущий срез
 
-- подтверждённый provider postflight нового default
-  `google/gemini-2.5-flash-lite` до следующего deployment;
 - UI выбора модели пользователем;
 - persistent assistant history, Course chat и notifications;
 - write-capable assistant, tool calling и AI change sets/undo;
@@ -246,18 +244,23 @@ course_attachment
 
 ## Release acceptance
 
-Release `3a94878` зафиксировал production routes/UI, server-only RouterAI
-boundary и наличие runtime secret без раскрытия его значения. Это делает
-preview/apply/assistant текущими production-поверхностями, но не является
-утверждением об успешном postflight нового default provider model.
+Release `0276aed` подтвердил production routes/UI, server-only RouterAI
+boundary и наличие runtime secret без раскрытия его значения. Runtime закреплён
+на `google/gemini-2.5-flash-lite`.
 
-Для закрытия перехода на `google/gemini-2.5-flash-lite` после deployment нужны:
+Пройденный acceptance:
 
-1. подтвердить configured model/base URL/timeout без вывода API key;
-2. выполнить authenticated postflight Course preview/apply, Lesson
-   preview/apply и read-only assistant на `v2.shidao.ru`;
-3. проверить ручной fallback при configuration/provider errors;
-4. подтвердить, что assistant chat не пишет данные, generated Components
-   остаются private, а attachment contents не уходят модели;
-5. зафиксировать точный deployed SHA, фактическую provider model и результат
-   smoke в `docs/project-state.md`.
+1. typecheck, lint, 218 unit/contract tests, production build и 8/8 browser
+   smoke;
+2. bounded provider smoke строгих Course и Lesson schemas с фактической
+   задержкой 2,8–3,8 с;
+3. authenticated assistant и Lesson preview через `v2.shidao.ru` с задержкой
+   7,3–8,3 с, usage metadata и без provider errors;
+4. preview вернул все шесть разрешённых Component types, после Cancel число
+   Lessons осталось неизменным;
+5. guest/auth/CSRF probes сохранили 405/401/403 и redirect/noindex contracts.
+
+Live Apply намеренно не запускался на пользовательских Course данных, а
+configuration/provider failure не индуцировался на production. Apply validation,
+stale protection, rollback compensation и safe error mapping покрыты automated
+tests; первый реальный Apply следует наблюдать по metadata-only logs.

@@ -4,8 +4,8 @@
 **Актуально на:** 6 августа 2026 года
 **Активная ветка:** `main`
 **Рабочее приложение:** `https://v2.shidao.ru`
-**Текущий deployed application release:** `3a94878`
-**Последний полный browser/postflight baseline:** `fea7f80`
+**Текущий deployed application release:** `0276aed`
+**Последний полный automated/browser gate:** `0276aed`
 
 Двухуровневая навигация Course → Lesson, teacher-only `/schedule` и `/students`
 и обновлённый визуальный язык app routes развёрнуты и проверены на release
@@ -17,13 +17,15 @@ Release `fea7f80` добавляет пункты «Расписание / Уч�
 Schedule events, LessonSession, LearnerProfile, Group или новую
 persistence/schema.
 
-Release `3a94878` дополнительно развёртывает RouterAI-срез: preview/apply для
+Release `3a94878` первоначально развернул RouterAI-срез: preview/apply для
 программы Course и наполнения Lesson, а также read-only ephemeral AI-assistant.
-Production runtime получает `ROUTERAI_API_KEY` только из server-side secret
-environment; browser и repository значения ключа не содержат. Переход default
-model на `google/gemini-2.5-flash-lite` ещё не прошёл отдельный authenticated
-provider postflight, поэтому успешность генерации новой моделью здесь пока не
-утверждается. Подробная граница зафиксирована в
+Release `0276aed` переключил runtime на `google/gemini-2.5-flash-lite` и добавил
+provider-flat transport для быстрой генерации Lesson с последующей canonical
+validation. Production runtime получает `ROUTERAI_API_KEY` только из
+server-side secret environment; browser и repository значения ключа не
+содержат. Authenticated postflight подтвердил assistant и Lesson preview через
+`v2.shidao.ru`; Apply не нажимался, тестовые данные не сохранялись. Подробная
+граница зафиксирована в
 [`docs/architecture/ai-provider-integration.md`](./architecture/ai-provider-integration.md).
 
 `v2.shidao.ru` — active deployed customer-demo contour на production-mode
@@ -214,8 +216,8 @@ application service/contracts внутри authenticated web request.
 
 - Server-only adapter вызывает OpenAI-compatible RouterAI endpoint. Default
   model в source — `google/gemini-2.5-flash-lite`; key, model, base URL и timeout
-  задаются server environment и не отправляются browser. Фактическая модель
-  определяется runtime config; postflight нового default ещё pending.
+  задаются server environment и не отправляются browser. Runtime release
+  `0276aed` проверен с этой моделью без вывода secret.
 - New Course flow сначала сохраняет обычный пустой Course и attachments, затем
   получает ровно `targetLessonCount` titles/comments. Provider call ничего не
   записывает; UI показывает preview, model и token usage, а Lessons появляются
@@ -246,15 +248,12 @@ application service/contracts внутри authenticated web request.
   server log event. Persistent quota/ledger, billing, balance и AI change sets
   отсутствуют; process-local rate limit не является пользовательской квотой.
 
-Routes, UI и server-only secret boundary этого среза развёрнуты в production.
-Отдельный provider postflight нового default model всё ещё pending. Release
-acceptance описан в
+Routes, UI, server-only secret boundary и provider postflight no-write flows
+этого среза развёрнуты и проверены в production. Release acceptance описан в
 [`docs/architecture/ai-provider-integration.md`](./architecture/ai-provider-integration.md).
 
 ## 3. Что ещё не реализовано
 
-- authenticated provider postflight нового default
-  `google/gemini-2.5-flash-lite` и фиксация фактической model/usage;
 - пользовательский выбор модели и persisted provider settings;
 - persistent assistant/Course chat, write-capable assistant и tool calling;
 - persistent token quota/ledger, billing units, balance и AI change sets/undo;
@@ -480,12 +479,16 @@ production build и строгие 8/8 browser smoke. Coolify deployment точ�
 новые страницы, чтение реальных Course summaries, прозрачный page header,
 плоский фон `#f5f1e8` и переход обратно в `/courses`.
 
-Release `3a94878` развёрнул AI routes/UI и server-only RouterAI configuration с
-runtime secret. Для его source gate подтверждены typecheck, lint, 214 unit/
-contract tests, production build и строгие 8/8 browser smoke. Эти assertions не
-подменяют ещё не выполненный provider postflight нового default
-`google/gemini-2.5-flash-lite`: до него нельзя утверждать, что полный
-Course/Lesson/assistant smoke успешно завершён именно этой моделью.
+Release `0276aed` прошёл typecheck, lint, 218 unit/contract tests, production
+build и строгие 8/8 browser smoke. Coolify развернул точный SHA; runtime check
+подтвердил наличие закрытого key и model
+`google/gemini-2.5-flash-lite`. Bounded provider smoke вернул Course outline из
+трёх Lessons за 2,8 с и Lesson из шести canonical Component types за 3,8 с.
+Authenticated `v2.shidao.ru` smoke получил ответ assistant примерно за 7,3 с и
+Lesson preview со всеми шестью Component types примерно за 8,3 с. Apply не
+нажимался: число Lessons до и после проверки осталось равным 1. Live Apply и
+искусственно вызванный provider-error fallback не выполнялись на пользовательских
+данных; их validation, stale protection и compensation покрыты automated tests.
 
 ## 10. Правило обновления этого документа
 

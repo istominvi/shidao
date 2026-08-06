@@ -79,9 +79,9 @@ canonical typed plan and then validated again by registry payload contracts and
 `lessonAddComponentInputSchema`. It introduces no new domain entity, second
 registry, or physical schema.
 
-Operational acceptance of the new default
-`google/gemini-2.5-flash-lite` remains pending provider postflight; that release
-status does not alter the implemented domain model.
+Operational acceptance release `0276aed` подтвердил default
+`google/gemini-2.5-flash-lite` через provider и authenticated no-write smoke;
+это не изменило domain model.
 
 Registry definitions own keys/schemas/defaults/capabilities. The current
 payload editor is one switch over `ComponentTypeKey`; renderers use an

@@ -166,18 +166,17 @@ SMTP/GoTrue переменные настраиваются в Supabase environm
 ### RouterAI secret в Coolify
 
 На текущем production demo-контуре `ROUTERAI_API_KEY` уже подключён как
-server-only runtime secret, а AI routes/UI доступны в release `3a94878`.
-Значение secret не проверяется выводом и не хранится в repository. Новый default
-`google/gemini-2.5-flash-lite` считается принятым только после отдельного
-authenticated smoke из следующего раздела; до него deployment AI-поверхностей
-не следует описывать как успешный Gemini provider postflight.
+server-only runtime secret, а AI routes/UI и default
+`google/gemini-2.5-flash-lite` проверены в release `0276aed`. Значение secret не
+проверяется выводом и не хранится в repository.
 
 Первичная настройка выполняется только в environment editor существующего
 ShiDao V2 application:
 
-1. Создать новый ключ в RouterAI. Ключ, который когда-либо попал в чат, issue,
-   screenshot, shell history или открытый log, считать раскрытым и сначала
-   отозвать; не переносить его в production.
+1. Для публичного production создать новый ключ в RouterAI. Временный demo key,
+   использование которого явно одобрено владельцем, допустим только как locked
+   runtime secret и подлежит ротации до публичного launch, если он когда-либо
+   попадал в чат, issue, screenshot, shell history или открытый log.
 2. Добавить `ROUTERAI_API_KEY` в Coolify как masked/secret runtime variable.
    Не включать её как build variable и не сохранять значение в repository,
    Dockerfile, `.env.example` или operational runbook.

@@ -10,8 +10,8 @@
 
 **Implementation state:** authoring, persisted Slides, preview и RouterAI
 Course/Lesson/assistant surfaces развёрнуты на `v2.shidao.ru`; runtime API key
-настроен server-side. Provider postflight нового default
-`google/gemini-2.5-flash-lite` ещё pending; Homework/live остаются будущими
+настроен server-side. Release `0276aed` и authenticated no-write postflight
+подтвердили `google/gemini-2.5-flash-lite`; Homework/live остаются будущими
 срезами
 
 ## Product decision
@@ -417,8 +417,6 @@ import/application layer. Он не возвращает Methodology в акти
 
 ## Not implemented yet
 
-- подтверждённый provider postflight нового default
-  `google/gemini-2.5-flash-lite`;
 - write-capable AI assistant, persisted assistant history и tool calling;
 - persistent AI quota/ledger, billing и change sets/undo;
 - parsing/RAG загруженных файлов;
@@ -458,9 +456,8 @@ browser smoke, включая teacher navigation, computed-style и mobile contr
 Coolify и deployed browser postflight подтвердили точный SHA `fea7f80`, guest
 redirect и авторизованные `/schedule`, `/students` и `/courses`.
 
-Release `3a94878` дополнительно развёрнул RouterAI routes/UI и server-only
-runtime configuration для Course/Lesson preview → Apply и read-only assistant.
-Это делает AI application boundary текущим production behavior, но не добавляет
-к baseline утверждение об успешном provider smoke нового default
-`google/gemini-2.5-flash-lite`: такой postflight фиксируется отдельно после
-соответствующего deployment.
+Release `0276aed` дополнительно подтвердил RouterAI routes/UI, server-only
+runtime configuration и model `google/gemini-2.5-flash-lite`. Provider smoke
+проверил строгие Course/Lesson outputs, а authenticated `v2.shidao.ru` smoke —
+assistant и Lesson preview без Apply. Preview был отменён, поэтому production
+Course data не изменились.
