@@ -4,15 +4,15 @@
 **Актуально на:** 7 августа 2026 года
 **Активная ветка:** `main`
 **Рабочее приложение:** `https://v2.shidao.ru`
-**Текущий deployed application release:** `7021801`
-**Последний полный automated/browser gate:** `7021801`
+**Текущий deployed application release:** `fa91371`
+**Последний полный automated/browser gate:** `fa91371`
 
-**Current repository, web release pending:** реализован LessonRun vertical
-slice с forward migration
+**Current и deployed:** реализован LessonRun vertical slice с forward migration
 `20260806190044_lesson_runs_learning_records.sql`. Migration применена к
 production ShiDao DB 7 августа 2026 года и прошла DB/RLS/PostgREST postflight;
-локальные application/browser gates также зелёные. Пока новый application SHA
-не развёрнут, deployed SHA `7021801` эту UI/API-возможность не содержит.
+локальные application/browser gates также зелёные. Coolify развернул точный
+application SHA `fa91371`, а HTTP и authenticated browser postflight подтвердили
+новые UI/API-поверхности без записи тестовых данных.
 
 Двухуровневая навигация Course → Lesson, teacher-only `/schedule` и `/students`
 и обновлённый визуальный язык app routes развёрнуты и проверены на release
@@ -557,8 +557,10 @@ npm run mcp:course-builder
 Это acceptance current repository и isolated clone. Production migration
 дополнительно применена 7 августа 2026 года: четыре таблицы и шесть RPC видны
 PostgREST, RLS/ACL прошли проверку, owner workflow прошёл внутри rollback-probe,
-а cross-account probe увидел 0 чужих строк. Deployed browser postflight нового
-application SHA ещё не выполнялся.
+а cross-account probe увидел 0 чужих строк. Coolify deployment точного SHA
+`fa91371` завершился за 224 секунды; deployed browser postflight подтвердил
+реальные Course, пустые Schedule/Students, Course audience/run/history UI и
+чистую console без создания тестовых данных.
 
 Текущий browser-smoke helper использует актуальную AES-GCM app-session с
 Supabase access/refresh tokens. Строгий gate сам собирает production-приложение
@@ -604,6 +606,15 @@ landing `503` и V2 guest redirect. В browser profile с реально зак�
 root после этого не редиректит. Интерактивно проверены «Расписание / Ученики /
 Курсы», reload `/courses`, прямой Lesson deep link и его reload; browser console
 не содержит warning/error.
+
+Release `fa91371` прошёл typecheck, lint, 256 unit/contract tests, production
+build и строгие 9/9 browser smoke до публикации. Production ShiDao migration
+применена транзакционно и проверена через RLS/ACL, rollback owner/cross-account
+probe и authenticated PostgREST OpenAPI. Coolify развернул exact SHA со статусом
+`finished`; HTTP postflight сохранил landing/demo/guest/noindex boundaries, а
+authenticated browser postflight подтвердил реальные `/courses`, `/schedule`,
+`/students`, Course audience, назначение и историю без сохранения тестовых
+данных. Browser console не содержит warning/error.
 
 ## 10. Правило обновления этого документа
 

@@ -45,8 +45,9 @@
   LearnerProfile, прямая Course audience, LessonRun, LearningRecord,
   расписание, повторное проведение и Lesson/Course/Profile history. Срез не
   читает старые `student/class/class_student`; migration применена к production
-  ShiDao DB и прошла DB/RLS/PostgREST postflight 7 августа 2026 года. Пока
-  application deploy ожидается, release `7021801` его UI/API не содержит.
+  ShiDao DB и прошла DB/RLS/PostgREST postflight 7 августа 2026 года. Release
+  `fa91371` развёрнут Coolify и прошёл HTTP/authenticated browser postflight без
+  записи тестовых данных.
 - Реализованы private-by-default Components и persisted Student Screen Slides.
 - Реализован fullscreen Student Screen preview.
 - Реализован development-only MCP из шести tools поверх application service.

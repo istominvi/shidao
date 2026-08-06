@@ -14,8 +14,8 @@ Course/Lesson/assistant surfaces развёрнуты на `v2.shidao.ru`; runti
 подтвердили `google/gemini-2.5-flash-lite`. В current repository реализованы
 LearnerProfile, прямая Course audience, LessonRun и LearningRecord; migration
 применена к production ShiDao DB 7 августа 2026 года и прошла
-DB/RLS/PostgREST postflight. Пока новый application SHA не развёрнут, deployed
-release `7021801` UI/API этого среза не содержит. Homework и live Student Screen
+DB/RLS/PostgREST postflight. Application release `fa91371` развёрнут Coolify и
+прошёл HTTP/authenticated browser postflight. Homework и live Student Screen
 sync остаются будущими срезами
 
 ## Product decision
@@ -580,5 +580,7 @@ Current local LessonRun slice дополнительно прошёл 256/256 un
 typecheck, lint, production build, 9/9 browser smoke и isolated PostgreSQL 16
 workflow `audience → schedule → reschedule → complete → repeat → cancel →
 delete` с негативными stale/empty/timestamp/ACL checks. Production migration
-применена отдельно и прошла owner/cross-account/PostgREST postflight; web
-deployment и его browser postflight пока ожидаются.
+применена отдельно и прошла owner/cross-account/PostgREST postflight. Coolify
+развернул exact SHA `fa91371` со статусом `finished`; authenticated browser
+подтвердил Course audience/run/history, `/schedule` и `/students` без записи
+тестовых данных и без warning/error в console.
