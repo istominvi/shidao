@@ -1,24 +1,33 @@
 # ShiDao V2 domain model
 
 **Статус:** current implemented domain
-**Актуально на:** 6 августа 2026 года
+**Актуально на:** 7 августа 2026 года
 
 ## Active product hierarchy
 
 ```text
 Account
-└── Course
+├── LearnerProfile 0..N
+└── Course 0..N
+    ├── CourseLearner 0..N → LearnerProfile
     ├── CourseAttachment → StoredFile → private Storage object
     └── Lesson 1..N
         ├── LessonComponent 1..N
-        └── StudentScreenSlide 1..N → component assignments
+        ├── StudentScreenSlide 1..N → component assignments
+        └── LessonRun 0..N
+            └── LearningRecord 0..N → LearnerProfile
 ```
 
 - `Account` is the ownership identity linked one-to-one to `auth.users`.
 - `Course` is an editable owner-scoped draft.
+- `LearnerProfile` is a neutral Account-owned learning identity. It does not
+  reuse transitional `student`, `class` or `class_student`.
+- `CourseLearner` is the direct Course audience. Group, Guardian and invitation
+  flows are not required for the current scheduling slice.
 - `Lesson` is an ordered Course document with a required title and an optional
   teacher comment (`summary`); the supported service path keeps its position
-  dense.
+  dense. It is also the entity that can be scheduled repeatedly; there is no
+  second runtime or methodological Lesson with copied content.
 - `LessonComponent` belongs directly to Lesson; the supported service/RPC path
   keeps one dense position plus registry type/version, payload, placement,
   visibility, and an optional
@@ -29,9 +38,26 @@ Account
   title, instructions, or independent component order and is not a Lesson Step.
 - `CourseAttachment` links a Course to `StoredFile`; the object itself is kept
   in the existing private `course-assets` bucket.
+- `LessonRun` is one concrete appointment/conducting attempt of the same
+  Lesson. One open row acts as the editable appointment; completed/cancelled
+  rows form history. Its UI state is derived from `scheduled_at`, `started_at`,
+  `ended_at` and `cancelled_at`; no `status` column exists.
+- `LearningRecord` is the expected learner row while `occurred_at IS NULL` and
+  the durable individual result after completion. It stores attendance,
+  repeat recommendation, teacher comment and only small title/subject context,
+  not a Lesson content snapshot.
+- An open or completed Run has at least one LearningRecord. Cancellation
+  deletes its drafts, so a retained cancelled Run legitimately has zero.
 
-There is no active Methodology, Lesson Step/root Step, scheduled-lesson runtime,
-fixture fallback, or per-lesson hardcoded renderer.
+There is no active Methodology, Lesson Step/root Step, parallel scheduled-lesson
+content model, `lesson_run_participant`, Lesson snapshot, fixture fallback, or
+per-lesson hardcoded renderer.
+
+Deleting a Lesson removes its Components, Slides and Runs. Draft
+`LearningRecord` rows are removed; finalized rows remain attached to their
+LearnerProfile with `lesson_run_id` and `source_lesson_id` cleared. The compact
+`course_title_at_time`, `lesson_title_at_time` and `subject_at_time` fields keep
+the result understandable without retaining Lesson payload.
 
 The database itself currently enforces positive+unique Lesson/Component
 positions, not gaplessness after arbitrary direct INSERT. Append serialization
@@ -83,6 +109,11 @@ Operational acceptance release `0276aed` подтвердил default
 `google/gemini-2.5-flash-lite` через provider и authenticated no-write smoke;
 это не изменило domain model.
 
+Lesson planning and the read-only assistant now also receive a bounded
+projection of completed Runs and finalized LearningRecords. Absence is marked
+as absence, not interpreted as lack of understanding. Metrics beyond
+attendance/repeat/comments remain a later additive extension.
+
 Registry definitions own keys/schemas/defaults/capabilities. The current
 payload editor is one switch over `ComponentTypeKey`; renderers use an
 exhaustive typed map. Neither React implementation is embedded in the current
@@ -93,16 +124,20 @@ registry object.
 - Product «Материалы курса» → `stored_file` + `course_attachment`.
 - Product «Слайд экрана ученика» → `lesson_student_slide`.
 - Component assignment → `lesson_component.student_slide_id`.
+- Product «Проведение урока» → `lesson_run`.
+- Product «Индивидуальная учебная запись» → `learning_record`.
+- Course audience → `course_learner` → `learner_profile`.
 - There is no physical/canonical entity named `course_asset`. The current
   TypeScript read-model alias `CourseAsset` represents a linked `StoredFile`
   returned inside Course attachments; it is not a separate persisted object.
 
 ## Retained compatibility identity tables
 
-The first forward migration deliberately does not reset `public` and does not
-change Auth. Existing `parent`, `teacher`, `student`, `school`, membership and
+Forward migrations deliberately do not reset `public` and do not change Auth.
+Existing `parent`, `teacher`, `student`, `school`, membership and
 preference/security tables remain temporarily for login/onboarding/session
-compatibility, but they are not parents of Course content.
+compatibility, but they are not parents of Course content or the source of the
+new Course audience.
 
 The authoritative physical schema is documented in
 `docs/database/current-schema.md` and `supabase/schema/current-schema.sql`.
@@ -112,9 +147,11 @@ The authoritative physical schema is documented in
 The following are target domains, not current tables or product capabilities:
 
 - persisted Homework;
-- new neutral LearnerProfile/Guardian/Group audience model;
-- LessonSession/live runtime;
-- learning history/progress;
+- Guardian, Group and invitation/claim flows around the implemented neutral
+  LearnerProfile;
+- live Student Screen synchronization/runtime cursor for an open LessonRun;
+- automatic subject metrics and richer progress models on top of finalized
+  LearningRecord;
 - persistent AI quotas/usage ledger and AI change sets/undo;
 - parsing/RAG sources;
 - reusable cross-Course material/template library;

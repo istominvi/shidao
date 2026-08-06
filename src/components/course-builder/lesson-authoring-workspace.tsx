@@ -42,6 +42,12 @@ import {
 } from "@/components/course-builder/component-renderers";
 import { courseBuilderRequest } from "@/components/course-builder/course-builder-client";
 import { getStudentSlidePlacementOptions } from "@/components/course-builder/student-slide-placement";
+import {
+  LessonRunDialog,
+  LessonRunStatusButton,
+} from "@/components/lesson-runs/lesson-run-dialog";
+import { completedLessonRunCount } from "@/components/lesson-runs/lesson-run-format";
+import { RunHistoryList } from "@/components/lesson-runs/run-history-list";
 import { Button, productButtonClassName } from "@/components/ui/button";
 import { DialogShell } from "@/components/ui/dialog-shell";
 import {
@@ -56,6 +62,7 @@ import type {
   CourseWorkspace,
   LessonComponent,
 } from "@/modules/course-builder/domain";
+import type { LearnerProfile, LessonRun } from "@/modules/lesson-runs/domain";
 import {
   componentDefinitions,
   getComponentDefinition,
@@ -78,7 +85,10 @@ type LessonAuthoringWorkspaceProps = {
   onBackToCourse: () => void;
   status?: React.ReactNode;
   disabled: boolean;
+  mutationError: string | null;
   runMutation: CourseBuilderMutationRunner;
+  runs: LessonRun[];
+  learners: LearnerProfile[];
 };
 
 const CATEGORY_ITEMS = [
@@ -864,19 +874,19 @@ function HomeworkSurface({ lesson }: { lesson: CourseLesson }) {
   );
 }
 
-function LessonHistorySurface({ lesson }: { lesson: CourseLesson }) {
+function LessonHistorySurface({
+  lesson,
+  runs,
+}: {
+  lesson: CourseLesson;
+  runs: LessonRun[];
+}) {
   return (
-    <section className="workspace-surface workspace-empty-panel">
-      <span className="workspace-empty-icon workspace-empty-icon-pink">
-        <History aria-hidden="true" />
-      </span>
-      <p className="workspace-eyebrow">Урок {lesson.position}</p>
-      <h2>История урока пока пуста</h2>
-      <p>
-        Журнал изменений и проведений будет подключён отдельным срезом. Сейчас
-        здесь нет фиктивных событий или локальной истории.
-      </p>
-    </section>
+    <RunHistoryList
+      runs={runs.filter((run) => Boolean(run.endedAt))}
+      emptyTitle={`Урок ${lesson.position} ещё не проводился`}
+      emptyDescription="Назначьте дату урока. После завершения здесь сохранятся отчёт преподавателя, посещаемость и индивидуальные результаты."
+    />
   );
 }
 
@@ -888,12 +898,16 @@ export function LessonAuthoringWorkspace({
   onBackToCourse,
   status,
   disabled,
+  mutationError,
   runMutation,
+  runs,
+  learners,
 }: LessonAuthoringWorkspaceProps) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [aiPlannerOpen, setAiPlannerOpen] = useState(false);
   const [assistantOpen, setAssistantOpen] = useState(false);
   const [lessonEditorOpen, setLessonEditorOpen] = useState(false);
+  const [lessonRunDialogOpen, setLessonRunDialogOpen] = useState(false);
   const [editingComponentId, setEditingComponentId] = useState<string | null>(
     null,
   );
@@ -902,6 +916,9 @@ export function LessonAuthoringWorkspace({
   const lessonHeadingRef = useRef<HTMLHeadingElement>(null);
   const lessonTabs = LESSON_WORKSPACE_TABS.map((item) => ({
     ...item,
+    ...(item.value === "history"
+      ? { count: completedLessonRunCount(runs) }
+      : {}),
     icon: {
       plan: ListChecks,
       student: MonitorPlay,
@@ -948,6 +965,11 @@ export function LessonAuthoringWorkspace({
         }
         actions={
           <>
+            <LessonRunStatusButton
+              runs={runs}
+              disabled={disabled}
+              onClick={() => setLessonRunDialogOpen(true)}
+            />
             <Button
               variant="secondary"
               disabled={disabled}
@@ -980,7 +1002,7 @@ export function LessonAuthoringWorkspace({
               onClick={() => {
                 if (
                   !window.confirm(
-                    `Удалить урок «${lesson.title}» со всем содержимым?`,
+                    `Удалить урок «${lesson.title}»? План, назначение и история проведений будут удалены. Завершённые индивидуальные результаты сохранятся в учебных профилях.`,
                   )
                 ) {
                   return;
@@ -1076,7 +1098,7 @@ export function LessonAuthoringWorkspace({
               <CourseMaterialsPanel course={course} context="lesson" />
             ) : null}
             {active && item.value === "history" ? (
-              <LessonHistorySurface lesson={lesson} />
+              <LessonHistorySurface lesson={lesson} runs={runs} />
             ) : null}
           </div>
         );
@@ -1089,6 +1111,18 @@ export function LessonAuthoringWorkspace({
           disabled={disabled}
           runMutation={runMutation}
           onClose={closeLessonEditor}
+        />
+      ) : null}
+
+      {lessonRunDialogOpen ? (
+        <LessonRunDialog
+          lesson={lesson}
+          runs={runs}
+          learners={learners}
+          disabled={disabled}
+          mutationError={mutationError}
+          runMutation={runMutation}
+          onClose={() => setLessonRunDialogOpen(false)}
         />
       ) : null}
 

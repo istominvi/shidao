@@ -1,7 +1,7 @@
 # ShiDao V2 — актуальная глобальная спецификация
 
 **Статус:** нормативные границы текущей архитектуры и будущего развития
-**Актуально на:** 4 августа 2026 года
+**Актуально на:** 7 августа 2026 года
 **Repository/branch:** `istominvi/shidao`, `main`
 **Рабочее приложение:** `v2.shidao.ru`
 **Публичный домен:** `shidao.ru` — landing-only
@@ -15,7 +15,7 @@
   приоритет P0/P1 указывается в заголовке;
 - **LATER** — целевая модель, не существующая сейчас.
 
-Факты о deployed системе находятся в
+Факты о deployed и ещё не развёрнутом repository scope находятся в
 [`docs/project-state.md`](../project-state.md). Порядок следующих работ — в
 [`docs/roadmap.md`](../roadmap.md). Если будущая модель ниже отсутствует в
 project-state/current schema, она не реализована.
@@ -82,11 +82,14 @@ IDs в active model.
 ```text
 Auth User
 └── Account
+    ├── LearnerProfile 0..N
     └── Course
+        ├── CourseLearner → LearnerProfile
         ├── CourseAttachment → StoredFile
         └── Lesson 1..N
             ├── LessonComponent 1..N
-            └── LessonStudentSlide 1..N
+            ├── LessonStudentSlide 1..N
+            └── LessonRun 0..N → LearningRecord 0..N
 ```
 
 Каноническая authored hierarchy:
@@ -111,8 +114,8 @@ Course:
 - открывает Settings и course-scoped Materials отдельными actions;
 - не принадлежит Teacher/School/Class/Methodology.
 
-Текущий `audience_description` — текстовый teacher input. Persisted назначение
-LearnerProfile/Group ещё не реализовано.
+`audience_description` остаётся текстовым teacher input. Persisted audience
+реализована как простой owner-scoped список `course_learner`; Group пока нет.
 
 ## 7. Lesson
 
@@ -390,16 +393,23 @@ provenance/version/checksum. Embeddings и retrieval добавляются по
 
 OCR, broad web crawling, DRM и audio transcription — LATER.
 
-# LATER target model
+# Audience, scheduling и дальнейшая target model
 
-## 22. Neutral Account and LearnerProfile
+## 22. CURRENT LearnerProfile
 
-Target decisions:
+Текущий repository slice:
 
-- один Account соответствует одному человеку;
-- Account не имеет глобальной роли;
-- возможности определяются ownership/relations;
-- LearnerProfile хранит образовательную identity/history отдельно от Account;
+- LearnerProfile принадлежит owner Account и может существовать без отдельного
+  login;
+- Course получает прямую audience через `course_learner`;
+- один owner не может назначить чужой LearnerProfile;
+- базовая образовательная история хранится отдельно от editable Lesson;
+- UI создания профиля, настройки audience и просмотра истории работает через
+  owner-scoped services/API.
+
+LATER:
+
+- Account не будет иметь глобальной продуктовой роли;
 - LearnerProfile может существовать для ребёнка без Account;
 - Guardian relation связывает несколько взрослых с profile;
 - claim/invitation предотвращают дубли.
@@ -407,9 +417,10 @@ Target decisions:
 Текущие parent/teacher/student tables не объявляются этой моделью и не
 расширяются как её shortcut.
 
-## 23. Group and Course audience
+## 23. LATER Group and expanded audience
 
-Target Course имеет не более одной audience:
+Текущий Course хранит один прямой список LearnerProfile. Позднее может появиться
+альтернативный Group-based режим:
 
 ```text
 none | learner_profile | group
@@ -421,13 +432,30 @@ none | learner_profile | group
 - Group может участвовать в нескольких Courses.
 - Shared ownership/multiple teachers не входят в first target.
 
-## 24. LessonSession and live runtime
+## 24. CURRENT LessonRun; LATER live runtime
 
-Lesson — editable document. LessonSession — отдельное проведение:
+Lesson одновременно является editable content и точкой планирования. LessonRun
+хранит только отдельное проведение:
 
 - одна Lesson может проводиться многократно;
-- scheduled/started/ended/cancelled выводятся из timestamps;
-- history сохраняет snapshot момента проведения;
+- планирование можно повторить для всей audience или её подмножества;
+- состояние выводится из `scheduled_at`, `started_at`, `ended_at` и
+  `cancelled_at`; persisted status отсутствует;
+- при планировании создаётся по одному draft LearningRecord на ожидаемого
+  учащегося;
+- при завершении преподаватель фиксирует отчёт, посещаемость, per-learner
+  comment и `needs_repeat`;
+- finalized LearningRecord переживает удаление Lesson, а LessonRun и drafts
+  удаляются;
+- история не хранит snapshot содержимого Lesson: только минимальный title/subject
+  context, необходимый после удаления;
+- AI authoring получает ограниченную выборку завершённых результатов.
+
+Открытый/завершённый Run имеет хотя бы одну LearningRecord; отменённый Run
+может иметь ноль, потому что cancellation удаляет draft rows.
+
+Live runtime остаётся LATER:
+
 - runtime cursor ориентирован на Student Screen Slide;
 - teacher управляет learner screen по умолчанию;
 - review может разрешить learner navigation;
@@ -443,21 +471,24 @@ Target Homework поддерживает:
 - immutable assignment snapshot при выдаче;
 - изменение definition не переписывает issued work.
 
-## 26. Learning history
+## 26. CURRENT base learning history; LATER metrics
 
-Learning history принадлежит LearnerProfile и переживает удаление Course/Lesson.
+Базовая Learning history принадлежит LearnerProfile и переживает удаление
+Lesson. Сейчас `learning_record` хранит attendance, comment, `needs_repeat`,
+время проведения и минимальный Course/Lesson context. Удаление LearnerProfile
+остаётся отдельным privacy lifecycle и может удалить его историю.
 
-Target entities:
+Позднее поверх базовой записи могут появиться:
 
 ```text
-learning_record
 learning_event
 learner_word_state
 learner_inference
 ```
 
-Records сохраняют title/component context snapshots. Постоянные AI inferences,
-влияющие на персонализацию, имеют evidence/confidence и human confirmation.
+Полный snapshot Lesson/Components не добавляется. Постоянные AI inferences,
+влияющие на персонализацию, должны иметь evidence/confidence и human
+confirmation.
 
 ## 27. Chat and notifications
 
@@ -499,8 +530,8 @@ success/latency/usage, Storage/parsing failures, auth failures.
 
 ## 30. Lifecycle
 
-- Delete Course удаляет editable document children, но не issued learning
-  history/snapshots.
+- Delete Course удаляет editable document children, но не finalized learning
+  records.
 - Delete Lesson не удаляет LearningRecord.
 - Delete material не оставляет broken Component references.
 - LearnerProfile использует archive/privacy flow, а не случайный cascade.
@@ -508,19 +539,16 @@ success/latency/usage, Storage/parsing failures, auth failures.
 
 ## 31. Future physical objects
 
-Следующие имена являются direction, а не current schema:
+`learner_profile`, `course_learner`, `lesson_run` и `learning_record` уже входят
+в current repository schema. Следующие имена остаются direction:
 
 ```text
-learner_profile
 learner_guardian
 learner_group
-course_audience
-lesson_session
-lesson_session_runtime
+lesson_run_runtime
 homework_definition
 homework_component
 learner_homework_assignment
-learning_record
 learning_event
 learner_word_state
 learner_inference

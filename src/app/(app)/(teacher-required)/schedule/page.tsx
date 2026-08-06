@@ -10,7 +10,7 @@ export default function SchedulePage() {
         <AppPageHeader
           className="course-index-page-header teaching-hub-page-header"
           title="Расписание"
-          description="Раздел для будущего планирования занятий. Пока здесь можно открыть подготовленные курсы и уроки."
+          description="Все назначенные уроки по дням. Отдельных событий расписания нет: время принадлежит конкретному проведению урока."
         />
         <ScheduleWorkspace />
       </div>

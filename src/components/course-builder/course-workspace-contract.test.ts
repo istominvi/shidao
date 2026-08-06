@@ -103,7 +103,12 @@ test("course and lesson use the requested five-tab hierarchy", () => {
     authoring,
     /CourseMaterialsPanel course=\{course\} context="lesson"/,
   );
-  assert.match(authoring, /История урока пока пуста/);
+  assert.match(
+    authoring,
+    /LessonHistorySurface lesson=\{lesson\} runs=\{runs\}/,
+  );
+  assert.match(authoring, /LessonRunStatusButton/);
+  assert.match(authoring, /Завершённые индивидуальные результаты сохранятся/);
   assert.doesNotMatch(authoring, /\/api\/teacher\//);
 });
 

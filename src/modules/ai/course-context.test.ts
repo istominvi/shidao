@@ -4,7 +4,9 @@ import type {
   CourseWorkspace,
   LessonComponent,
 } from "@/modules/course-builder/domain";
+import type { LearningRecord, LessonRun } from "@/modules/lesson-runs/domain";
 import {
+  MAX_AI_CONTEXT_CHARACTERS,
   buildAssistantContext,
   buildCoursePlanningContext,
   buildLessonPlanningContext,
@@ -76,6 +78,52 @@ function workspace(): CourseWorkspace {
   };
 }
 
+function learningRecord(
+  overrides: Partial<LearningRecord> = {},
+): LearningRecord {
+  return {
+    id: "30000000-0000-4000-8000-000000000001",
+    learnerProfileId: "30000000-0000-4000-8000-000000000002",
+    learnerDisplayName: "Анна",
+    lessonRunId: "30000000-0000-4000-8000-000000000003",
+    sourceCourseId: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+    sourceLessonId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+    occurredAt: "2026-08-06T11:00:00.000Z",
+    wasPresent: true,
+    needsRepeat: true,
+    teacherComment: "Путает знаменатель и числитель.",
+    courseTitleAtTime: "Дроби",
+    lessonTitleAtTime: "Сравнение дробей",
+    subjectAtTime: "Математика",
+    createdAt: "2026-08-06T10:00:00.000Z",
+    updatedAt: "2026-08-06T11:00:00.000Z",
+    ...overrides,
+  };
+}
+
+function lessonRun(
+  records: LearningRecord[],
+  overrides: Partial<LessonRun> = {},
+): LessonRun {
+  return {
+    id: "30000000-0000-4000-8000-000000000003",
+    lessonId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+    courseId: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+    lessonTitle: "Сравнение дробей",
+    courseTitle: "Дроби",
+    scheduledAt: "2026-08-06T10:00:00.000Z",
+    plannedDurationMinutes: 60,
+    startedAt: "2026-08-06T10:00:00.000Z",
+    endedAt: "2026-08-06T11:00:00.000Z",
+    cancelledAt: null,
+    teacherReport: "Повторили общий знаменатель.",
+    records,
+    createdAt: "2026-08-06T09:00:00.000Z",
+    updatedAt: "2026-08-06T11:00:00.000Z",
+    ...overrides,
+  };
+}
+
 test("AI context excludes storage credentials, file IDs and file contents", () => {
   const course = workspace();
   const serialized = JSON.stringify(buildCoursePlanningContext(course));
@@ -98,12 +146,70 @@ test("assistant context explicitly marks component truncation", () => {
   assert.doesNotMatch(JSON.stringify(context), /storedFileId/);
 });
 
-test("maximum-sized course context leaves room for bounded chat history", () => {
+test("lesson planning context contains bounded finalized learner history without technical IDs", () => {
+  const course = workspace();
+  const present = learningRecord();
+  const absent = learningRecord({
+    id: "30000000-0000-4000-8000-000000000004",
+    learnerProfileId: "30000000-0000-4000-8000-000000000005",
+    learnerDisplayName: "Борис",
+    wasPresent: false,
+    needsRepeat: false,
+    teacherComment: "Не присутствовал.",
+  });
+  const draft = learningRecord({
+    id: "30000000-0000-4000-8000-000000000006",
+    occurredAt: null,
+    wasPresent: null,
+    needsRepeat: null,
+  });
+  const context = buildLessonPlanningContext(
+    course,
+    course.lessons[0]!,
+    course.lessons[0]!.title,
+    {
+      runs: [
+        lessonRun([present, absent]),
+        lessonRun([draft], {
+          id: "30000000-0000-4000-8000-000000000007",
+          startedAt: null,
+          endedAt: null,
+          teacherReport: "",
+        }),
+      ],
+      records: [present, absent, draft],
+    },
+  );
+  const serialized = JSON.stringify(context.learningHistory);
+
+  assert.equal(context.learningHistory.completedRunsIncluded, 1);
+  assert.equal(context.learningHistory.learnerResultsIncluded, 2);
+  assert.match(serialized, /Анна|Борис|Путает знаменатель/);
+  assert.match(serialized, /Отсутствие ученика не является результатом/);
+  assert.doesNotMatch(
+    serialized,
+    /30000000-0000-4000-8000|learnerProfileId|lessonRunId/,
+  );
+  assert.equal(
+    context.learningHistory.recentLearnerResults.find(
+      (record) => record.learner === "Борис",
+    )?.needsRepeat,
+    null,
+  );
+});
+
+test("maximum-sized course and learning history stay inside one safe context budget", () => {
   const course = workspace();
   const richComponents = Array.from({ length: 20 }, (_, index) => ({
     ...component(index + 1),
     payload: { content: "я".repeat(20_000), format: "markdown" },
   }));
+  course.title = "к".repeat(160);
+  course.subject = "п".repeat(160);
+  course.goal = "ц".repeat(1_200);
+  course.level = "у".repeat(240);
+  course.audienceDescription = "а".repeat(1_200);
+  course.teacherPreferences = "н".repeat(2_000);
   course.lessons = Array.from({ length: 60 }, (_, index) => ({
     ...course.lessons[0]!,
     id: `10000000-0000-4000-8000-${String(index + 1).padStart(12, "0")}`,
@@ -114,18 +220,51 @@ test("maximum-sized course context leaves room for bounded chat history", () => 
   }));
   course.lessonCount = course.lessons.length;
   course.targetLessonCount = course.lessons.length;
+  course.attachments = Array.from({ length: 30 }, (_, index) => ({
+    ...course.attachments[0]!,
+    id: `40000000-0000-4000-8000-${String(index + 1).padStart(12, "0")}`,
+    originalFilename: `${"ф".repeat(251)}.pdf`,
+  }));
 
-  const assistantCharacters = JSON.stringify(
-    buildAssistantContext(course, course.lessons[0]!),
-  ).length;
-  const lessonCharacters = JSON.stringify(
-    buildLessonPlanningContext(
-      course,
-      course.lessons[0]!,
-      course.lessons[0]!.title,
-    ),
-  ).length;
+  const records = Array.from({ length: 40 }, (_, index) =>
+    learningRecord({
+      id: `50000000-0000-4000-8000-${String(index + 1).padStart(12, "0")}`,
+      learnerProfileId: `60000000-0000-4000-8000-${String(index + 1).padStart(12, "0")}`,
+      learnerDisplayName: "у".repeat(160),
+      teacherComment: "к".repeat(2_000),
+      courseTitleAtTime: "к".repeat(160),
+      lessonTitleAtTime: "л".repeat(180),
+      subjectAtTime: "п".repeat(160),
+    }),
+  );
+  const runs = Array.from({ length: 8 }, (_, index) =>
+    lessonRun(records.slice(index * 5, index * 5 + 5), {
+      id: `70000000-0000-4000-8000-${String(index + 1).padStart(12, "0")}`,
+      lessonTitle: "л".repeat(180),
+      courseTitle: "к".repeat(160),
+      teacherReport: "о".repeat(4_000),
+    }),
+  );
+  const history = { runs, records };
 
-  assert.ok(assistantCharacters < 100_000, String(assistantCharacters));
-  assert.ok(lessonCharacters < 100_000, String(lessonCharacters));
+  const assistant = buildAssistantContext(course, course.lessons[0]!, history);
+  const lesson = buildLessonPlanningContext(
+    course,
+    course.lessons[0]!,
+    course.lessons[0]!.title,
+    history,
+  );
+  const coursePlan = buildCoursePlanningContext(course);
+
+  for (const context of [assistant, lesson, coursePlan]) {
+    const characters = JSON.stringify(context).length;
+    assert.ok(
+      characters <= MAX_AI_CONTEXT_CHARACTERS,
+      `${characters} > ${MAX_AI_CONTEXT_CHARACTERS}`,
+    );
+  }
+  assert.equal(assistant.learningHistory.completedRunsIncluded, 8);
+  assert.equal(assistant.learningHistory.learnerResultsIncluded, 40);
+  assert.equal(assistant.learningHistory.recentRuns.length, 8);
+  assert.equal(assistant.learningHistory.recentLearnerResults.length, 40);
 });

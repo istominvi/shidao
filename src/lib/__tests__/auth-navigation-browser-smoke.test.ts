@@ -312,6 +312,26 @@ function handleMockSupabase(
     return;
   }
 
+  if (requestUrl.pathname === "/rest/v1/learner_profile") {
+    json(response, 200, []);
+    return;
+  }
+
+  if (requestUrl.pathname === "/rest/v1/course_learner") {
+    json(response, 200, []);
+    return;
+  }
+
+  if (requestUrl.pathname === "/rest/v1/lesson_run") {
+    json(response, 200, []);
+    return;
+  }
+
+  if (requestUrl.pathname === "/rest/v1/learning_record") {
+    json(response, 200, []);
+    return;
+  }
+
   const userId = readUserId(requestUrl);
   const isAdultUser = userId === E2E_ADULT_USER_ID;
 
@@ -712,7 +732,7 @@ test("browser smoke: teacher navigates Schedule → Students with honest V2 stat
       .getByRole("heading", { name: "Расписание", exact: true, level: 1 })
       .waitFor();
     await runtime.page
-      .getByRole("heading", { name: E2E_COURSE_TITLE, exact: true, level: 2 })
+      .getByRole("heading", { name: "Занятий нет", exact: true, level: 2 })
       .waitFor();
 
     const scheduleContract = await runtime.page.evaluate(() => {
@@ -750,8 +770,8 @@ test("browser smoke: teacher navigates Schedule → Students with honest V2 stat
     ]);
 
     let html = await runtime.page.content();
-    assert.match(html, /Занятия пока не назначены/);
-    assert.match(html, new RegExp(E2E_COURSE_TITLE));
+    assert.match(html, /Занятий нет/);
+    assert.match(html, /Назначить урок в курсе/);
     assert.doesNotMatch(html, /Миша Орлов|Food around the world/);
 
     const studentsLink = runtime.page.getByRole("link", {
@@ -770,8 +790,8 @@ test("browser smoke: teacher navigates Schedule → Students with honest V2 stat
       .waitFor();
 
     html = await runtime.page.content();
-    assert.match(html, /Ученики и группы появятся здесь/);
-    assert.match(html, /Курсы ожидают назначения аудитории/);
+    assert.match(html, /Добавьте первого ученика/);
+    assert.match(html, /Аудитории курсов/);
     assert.match(html, new RegExp(E2E_COURSE_TITLE));
     assert.doesNotMatch(html, /Миша Орлов|Teen Talk|11 занятий/);
 

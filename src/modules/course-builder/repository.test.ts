@@ -228,6 +228,17 @@ test("session revocation cutoff is read through the auth.uid-scoped RPC", async 
   );
 });
 
+test("deleteLesson uses the history-preserving RPC", async () => {
+  await withMockSupabase([{ payload: true }], async (repository, requests) => {
+    assert.equal(await repository.deleteLesson(LESSON_ID), true);
+    assert.equal(
+      requests[0]?.url,
+      `${API_URL}/rest/v1/rpc/delete_lesson_with_history`,
+    );
+    assert.deepEqual(requests[0]?.body, { p_lesson_id: LESSON_ID });
+  });
+});
+
 test("assembleDraft sends one validated plan to the transactional RPC", async () => {
   const resultPayload = {
     courseId: COURSE_ID,

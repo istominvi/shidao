@@ -8,6 +8,7 @@ import type {
 } from "@/modules/course-builder/domain";
 import { CourseBuilderAccessError } from "@/modules/course-builder/contracts";
 import type { LessonAddComponentInput } from "@/modules/course-builder/registry/contracts";
+import type { LearningRecord, LessonRun } from "@/modules/lesson-runs/domain";
 import type { RouterAiClient, RouterAiJsonCompletionInput } from "./routerai";
 import {
   createAiCourseBuilderService,
@@ -158,13 +159,16 @@ const METADATA = {
   },
 } as const;
 
-function jsonProvider(value: unknown, onCall?: () => void): RouterAiClient {
+function jsonProvider(
+  value: unknown,
+  onCall?: (input: RouterAiJsonCompletionInput<unknown>) => void,
+): RouterAiClient {
   return {
     async completeText() {
       throw new Error("Unexpected text completion");
     },
     async completeJson<T>(input: RouterAiJsonCompletionInput<T>) {
-      onCall?.();
+      onCall?.(input as RouterAiJsonCompletionInput<unknown>);
       return {
         ...METADATA,
         value: input.outputSchema.parse(value) as T,
@@ -343,6 +347,77 @@ test("lesson plan applies canonical private components after preview", async () 
     ),
     ["staff_only", "staff_only", "staff_only"],
   );
+});
+
+test("lesson planning receives finalized learner history through the application service", async () => {
+  const course = emptyCourse(1);
+  const state = inMemoryService(course);
+  const lesson = await state.service.addLesson(ACTOR, COURSE_ID, {
+    title: "Знакомство",
+    summary: "",
+  });
+  const record: LearningRecord = {
+    id: "30000000-0000-4000-8000-000000000001",
+    learnerProfileId: "30000000-0000-4000-8000-000000000002",
+    learnerDisplayName: "Анна",
+    lessonRunId: "30000000-0000-4000-8000-000000000003",
+    sourceCourseId: COURSE_ID,
+    sourceLessonId: lesson.id,
+    occurredAt: "2026-08-06T11:00:00.000Z",
+    wasPresent: true,
+    needsRepeat: true,
+    teacherComment: "Нужно ещё раз отработать приветствие.",
+    courseTitleAtTime: course.title,
+    lessonTitleAtTime: lesson.title,
+    subjectAtTime: course.subject,
+    createdAt: NOW,
+    updatedAt: NOW,
+  };
+  const run: LessonRun = {
+    id: record.lessonRunId!,
+    lessonId: lesson.id,
+    courseId: COURSE_ID,
+    lessonTitle: lesson.title,
+    courseTitle: course.title,
+    scheduledAt: "2026-08-06T10:00:00.000Z",
+    plannedDurationMinutes: 60,
+    startedAt: "2026-08-06T10:00:00.000Z",
+    endedAt: record.occurredAt,
+    cancelledAt: null,
+    teacherReport: "Диалог дался не сразу.",
+    records: [record],
+    createdAt: NOW,
+    updatedAt: NOW,
+  };
+  let providerInput = "";
+  const ai = createAiCourseBuilderService({
+    actor: ACTOR,
+    service: state.service,
+    learningHistoryService: {
+      async listCourseHistory() {
+        return [run];
+      },
+      async listCourseLearningRecords() {
+        return [record];
+      },
+    },
+    provider: jsonProvider(LESSON_PROVIDER_PLAN, (input) => {
+      providerInput = JSON.stringify(input.messages);
+    }),
+    audit: () => undefined,
+  });
+
+  await ai.planLesson(COURSE_ID, {
+    lessonId: lesson.id,
+    title: lesson.title,
+    instruction: "",
+  });
+
+  assert.match(providerInput, /Анна/);
+  assert.match(providerInput, /Нужно ещё раз отработать приветствие/);
+  assert.match(providerInput, /Диалог дался не сразу/);
+  assert.match(providerInput, /Отсутствие ученика не является результатом/);
+  assert.doesNotMatch(providerInput, /30000000-0000-4000-8000/);
 });
 
 test("failed new lesson apply compensates the partial database writes", async () => {

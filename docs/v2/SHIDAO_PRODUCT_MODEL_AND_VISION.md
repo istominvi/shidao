@@ -3,24 +3,26 @@
 **Формат:** стратегическое видение и основа для презентации
 **Аудитория:** команда, партнёры, преподаватели, родители, потенциальные инвесторы
 **Версия:** 2.0
-**Актуально на:** 4 августа 2026 года
+**Актуально на:** 7 августа 2026 года
 **Статус:** целевая продуктовая модель; не является перечнем уже запущенных функций
 
 ## Как читать этот документ
 
-Сейчас на `v2.shidao.ru` развёрнут первый рабочий teacher Course Builder:
-Course, Lesson, единый упорядоченный список Components, приватные материалы и
-Student Screen Slides/preview. Development-only MCP реализован отдельно в
-repository как local `stdio` process; он не является частью web deployment или
-внешним endpoint. Точный deployed scope, ограничения и implementation map
-зафиксированы в
+Сейчас на `v2.shidao.ru` развёрнут первый рабочий teacher Course Builder. В
+текущем repository дополнительно реализован, но ещё не развёрнут следующий
+vertical slice: owner-managed LearnerProfile, прямая audience Course,
+планирование повторяемых LessonRun и долговременные LearningRecord. Lesson
+остаётся единственной content-сущностью; LessonRun не хранит снимок её
+содержимого. Development-only MCP реализован отдельно как local `stdio`
+process; он не является частью web deployment или внешним endpoint. Точный
+deployed и repository scope, ограничения и implementation map зафиксированы в
 [`docs/project-state.md`](../project-state.md), а последовательность работ — в
 [`docs/roadmap.md`](../roadmap.md).
 
-Всё, что ниже относится к LearnerProfile, Group/audience, LessonSession/live,
-persisted Homework, AI/OpenRouter, parsing/RAG, подпискам, billing и внешнему
-MCP/API, является **будущим направлением**, пока соответствующая возможность не
-появилась в project-state и current schema. Настоящее время в стратегических
+Group/guardian relations, live-проведение, расширенные учебные метрики,
+persisted Homework, parsing/RAG, подписки, billing и внешний MCP/API остаются
+**будущим направлением**, пока соответствующая возможность не появилась в
+project-state и current schema. Настоящее время в остальных стратегических
 формулировках описывает желаемый продукт, а не подтверждает готовность функции.
 
 ---
@@ -525,9 +527,11 @@ AI-генерация Homework и индивидуальных заданий д
 
 ## Шаг 3. Запланировать занятие
 
-Это будущая возможность. Преподаватель выберет дату и время.
-
-Один и тот же документ урока можно провести повторно. Каждое проведение сохраняется отдельно.
+В текущем repository преподаватель выбирает дату и время Lesson. Один и тот же
+Lesson можно провести повторно для всей audience Course или её подмножества.
+Каждое проведение хранится отдельным LessonRun, но не копирует content Lesson.
+Состояние проведения вычисляется по времени начала, завершения и отмены, а не
+хранится отдельным status.
 
 ## Шаг 4. Провести урок
 
@@ -535,7 +539,7 @@ AI-генерация Homework и индивидуальных заданий д
 разрешает навигацию для проверки автором и переживает reload. Это ещё не live
 lesson.
 
-В будущем во время LessonSession преподаватель будет видеть:
+В будущем во время открытого LessonRun преподаватель будет видеть:
 
 - свои заметки;
 - план;
@@ -559,8 +563,11 @@ persisted Homework можно будет:
 
 ## Шаг 6. Получить результат
 
-После появления LessonSession и LearnerProfile ShiDao будет сохранять
-результаты в учебный профиль каждого учащегося.
+В текущем repository завершение LessonRun уже сохраняет посещаемость,
+teacher-comment и необходимость повторения в LearningRecord каждого ожидаемого
+учащегося. Эти записи переживают удаление Lesson и дают AI ограниченный контекст
+предыдущих занятий. Автоматические метрики понимания и полноценный progress
+analysis появятся позднее.
 
 Преподаватель видит:
 
@@ -944,16 +951,18 @@ ShiDao строится не как оболочка над одной модн�
    accessibility и UX polish.
 2. Подключить server-only OpenRouter adapter с validated structured output,
    audit и честным token accounting.
-3. Реализовать persisted common Homework как отдельную Lesson surface.
-4. Добавить parsing статуса/текста загруженных источников; RAG — только после
+3. Развернуть и стабилизировать реализованные audience, scheduling и history;
+   затем добавить live-проведение поверх LessonRun.
+4. Реализовать persisted common Homework как отдельную Lesson surface.
+5. Добавить parsing статуса/текста загруженных источников; RAG — только после
    проверяемого extraction baseline.
 
 ## Позднее
 
-- LearnerProfile, guardian relations, Group и persisted Course audience;
-- LessonSession, scheduling, live sync и AI-conducted lesson;
+- guardian relations и Group audience поверх уже существующей прямой audience;
+- live sync и AI-conducted lesson поверх LessonRun;
 - individual Homework assignments и immutable snapshots;
-- chat, notifications, learning history и vocabulary progress;
+- расширенные learning metrics/events, chat, notifications и vocabulary progress;
 - subscriptions, billing, quota ledger и дополнительные AI-пакеты;
 - external MCP/API security layer;
 - школы/организации, shared ownership, marketplace, voice AI teacher и
@@ -1164,15 +1173,17 @@ materials и Student Screen Slides/preview. Local internal MCP реализов�
 repository отдельно от web deployment. Это рабочий persisted vertical slice,
 но ещё не полный инструмент проведения занятий.
 
-## Этап 1B. Инструмент преподавателя — следующий
+## Этап 1B. Инструмент преподавателя — в разработке
 
 Центральная ценность:
 
 - улучшенный ручной Course Builder;
 - OpenRouter-assisted authoring;
+- прямая audience, scheduling, LessonRun и базовая учебная история —
+  реализованы в repository и ожидают deployment;
 - загрузка и parsing источников;
 - persisted Homework;
-- затем scheduling, LessonSession/live и учебный профиль.
+- затем live-проведение и расширенные метрики учебного профиля.
 
 ## Этап 2. Инструмент семьи
 
@@ -1502,26 +1513,30 @@ ShiDao как инфраструктура между человеком, обр
 
 # 32. Краткое резюме продуктовой модели
 
-Текущее работающее ядро строится вокруг:
+Текущее repository-ядро строится вокруг:
 
 ```text
 Account
+├── LearnerProfile
 └── Course
+    ├── direct audience → LearnerProfile
     ├── course-scoped Materials
     └── Lesson
         ├── ordered Components
-        └── Student Screen Slides
+        ├── Student Screen Slides
+        └── LessonRun → LearningRecord
 ```
 
-Course принадлежит одному Account. Lesson непосредственно владеет единым
-ordered Component list. Slides являются learner presentation projection, а не
-Step или вторым authoring hierarchy. Материалы сейчас приватны и принадлежат
-Course. Manual authoring работает без AI.
+Course принадлежит одному Account и получает прямую audience из принадлежащих
+ему LearnerProfile. Lesson непосредственно владеет единым ordered Component
+list и может иметь несколько LessonRun. Slides являются learner presentation
+projection, а не Step или вторым authoring hierarchy. LearningRecord хранит
+минимальный контекст и результат конкретного учащегося, но не snapshot Lesson.
 
-Целевая модель добавит LearnerProfile и долговременную историю, Course audience,
-Group, многократные LessonSession, Homework, reusable source library, AI для
-создания/проведения/анализа и прозрачные usage limits. Эти возможности нельзя
-выдавать за current implementation до их появления в project-state/schema.
+Целевая модель добавит Group/guardian relations, live runtime, Homework,
+reusable source library, расширенные метрики, AI для проведения/анализа и
+прозрачные usage limits. Эти возможности нельзя выдавать за current
+implementation до их появления в project-state/schema.
 
 Преподаватель использует ShiDao как профессиональный инструмент.
 

@@ -1,11 +1,18 @@
 # Текущее состояние ShiDao V2
 
 **Статус:** главный входной документ для разработки
-**Актуально на:** 6 августа 2026 года
+**Актуально на:** 7 августа 2026 года
 **Активная ветка:** `main`
 **Рабочее приложение:** `https://v2.shidao.ru`
 **Текущий deployed application release:** `7021801`
 **Последний полный automated/browser gate:** `7021801`
+
+**Current repository, web release pending:** реализован LessonRun vertical
+slice с forward migration
+`20260806190044_lesson_runs_learning_records.sql`. Migration применена к
+production ShiDao DB 7 августа 2026 года и прошла DB/RLS/PostgREST postflight;
+локальные application/browser gates также зелёные. Пока новый application SHA
+не развёрнут, deployed SHA `7021801` эту UI/API-возможность не содержит.
 
 Двухуровневая навигация Course → Lesson, teacher-only `/schedule` и `/students`
 и обновлённый визуальный язык app routes развёрнуты и проверены на release
@@ -53,12 +60,16 @@ build, но публичный production launch и отдельный staging �
 
 ```text
 Account
+├── LearnerProfile 0..N
 └── Course
+    ├── audience → LearnerProfile 0..N
     ├── course-wide Attachments
     └── Lesson 1..N
         ├── ordered Components 1..N
-        └── Student Screen projection
-            └── ordered Slides 1..N → ссылки на Components
+        ├── Student Screen projection
+        │   └── ordered Slides 1..N → ссылки на Components
+        └── LessonRun 0..N
+            └── LearningRecord 0..N → LearnerProfile
 ```
 
 - Lesson непосредственно владеет одним упорядоченным списком Components.
@@ -71,6 +82,16 @@ Account
 - Homework является отдельной поверхностью Lesson. Сейчас это честная
   заглушка без сохранения данных.
 - Материалы принадлежат Course целиком, а не отдельной Lesson.
+- Lesson является и редактируемым содержанием, и точкой назначения. LessonRun
+  хранит только конкретное время/проведение, а не копию контента или второй
+  runtime-урок.
+- Один открытый LessonRun можно переносить; после completion/cancel ту же
+  Lesson можно назначить повторно всей аудитории или её части.
+- LearningRecord до completion является ожидаемым участником, а после —
+  долговечной индивидуальной историей. Отдельных participant/snapshot/status
+  tables нет.
+- Открытый/завершённый Run имеет хотя бы одну запись; cancel удаляет drafts,
+  поэтому сохранённый отменённый Run может иметь ноль LearningRecord.
 
 Полные инварианты зафиксированы в
 [`docs/architecture/lesson-workflow-model.md`](./architecture/lesson-workflow-model.md).
@@ -110,8 +131,9 @@ Account
 - Course открывается без автоматического выбора первого Lesson и содержит
   вкладки «Уроки / Описание / Источники / Материалы / История».
 - «Материалы» показывают course-wide список уже прикреплённых файлов.
-- «Источники» и «История» честно показывают пустое состояние: parsing/RAG и
-  change history ещё не реализованы.
+- «Источники» честно показывают пустое состояние до parsing/RAG. «История»
+  показывает завершённые проведения всех Lessons; change history авторских
+  правок ещё не реализована.
 - В текущем source страницы `/courses`, Course и Lesson используют один
   сплошной фон `#f5f1e8`; marketing noise и цветные page gradients на этих
   маршрутах отсутствуют.
@@ -121,7 +143,7 @@ Account
   Course и Lesson используют системный sans-serif с demo-размерами и весом
   400, а кнопки и вкладки — единый шрифт `.88rem/500`.
 
-### Teacher navigation, Расписание и Ученики
+### Teacher navigation, Расписание, Ученики и аудитория
 
 - Начиная с release `fea7f80` основная навигация активного teacher profile
   содержит пункты «Расписание / Ученики / Курсы». Parent profile и
@@ -129,19 +151,24 @@ Account
 - `/schedule` и `/students` находятся под отдельным teacher-required layout.
   Guest/degraded session перенаправляется в `/login`, взрослый без профиля — в
   `/onboarding`, Parent и transitional Student — в `/courses`.
-- `/schedule` показывает навигацию по календарной дате и честное пустое
-  состояние занятий. Ни выбранная дата, ни Schedule event не сохраняются.
-- В нижней части `/schedule` читаются реальные owner-scoped Course summaries
-  через существующий `GET /api/v2/courses`: преподаватель может найти Course и
-  открыть его список Lessons. Course/Lesson не выдаются за запланированное
-  занятие.
-- `/students` показывает нулевые счётчики новых учебных профилей и групп и
-  отдельно выводит реальные Course summaries, для которых audience ещё не
-  назначена.
-- `/students` не читает transitional `student`, `class` или `class_student`, не
-  создаёт приглашения/профили/группы и не показывает фиктивные progress/history
-  данные.
-- Оба shell используют тот же плоский бежевый demo visual language, header,
+- `/schedule` показывает реальные LessonRun выбранного локального дня. Это
+  проекция тех же проведений, а не отдельная таблица Schedule events.
+- `/students` создаёт нейтральный owner-scoped LearnerProfile и открывает его
+  завершённые LearningRecord, включая records, пережившие удаление Lesson.
+- Course header открывает настройку прямой аудитории через `course_learner`;
+  `/students` ведёт к той же настройке без N+1 чтения аудиторий.
+- Legacy `student`, `class`, `class_student` не читаются. Group, Guardian,
+  invitation и learner access не реализованы.
+- Из Course/Lesson можно назначить или перенести время, выбрать subset
+  аудитории, начать, завершить постфактум или отменить проведение.
+- Completion сохраняет общий teacher report и для каждого ожидаемого ученика:
+  attendance, repeat recommendation и индивидуальный comment.
+- Attendance нельзя сохранить значением по умолчанию: преподаватель явно
+  выбирает «Был» или «Не был» для каждого ожидаемого ученика. Активный Run
+  можно отменить, а закрытие заполненного отчёта требует подтверждения.
+- Статусы интерфейса вычисляются из timestamps; отдельной persisted state
+  machine нет.
+- Все surfaces используют тот же плоский бежевый demo visual language, header,
   кнопки, карточки и типографику, что и Course routes.
 
 ### Уроки и компоненты
@@ -153,14 +180,18 @@ Account
 - Lesson содержит вкладки «План / Экран ученика / Домашнее задание / Материалы
   / История».
 - Lesson → «Материалы» является read-only проекцией course-wide attachments и
-  не вводит владение файлами на уровне Lesson; «История» пока заглушка.
+  не вводит владение файлами на уровне Lesson; «История» показывает реально
+  завершённые LessonRun.
 - Создание вручную требует только название и создаёт пустую Lesson без AI и
   без списания токенов.
 - В текущем production UI кнопка AI открывает preview/apply для новой Lesson или
   дополнения существующей; ручное создание пустой Lesson остаётся доступным.
 - Название и комментарий Lesson редактируются отдельной модалкой.
 - Карточку Lesson нельзя перемещать или назначать на Student Screen.
-- Lesson можно удалить; оставшиеся позиции уплотняются.
+- Lesson можно удалить; оставшиеся позиции уплотняются. UI предупреждает, что
+  Components/Slides/Runs и незавершённые records будут удалены, а finalized
+  LearningRecord сохранятся в LearnerProfile с компактным title/subject
+  context.
 - Компоненты добавляются прямо в Lesson через palette по категориям.
 - Компонент можно редактировать, удалить или переместить кнопками
   «выше/ниже».
@@ -254,6 +285,12 @@ application service/contracts внутри authenticated web request.
 - Assistant читает bounded Course/selected Lesson context и отвечает текстом,
   но не вызывает mutation commands, MCP tools или apply routes. История живёт
   только в React state dialog и исчезает после close/reload.
+- Lesson planning и Assistant дополнительно читают до 8 завершённых Runs и до
+  40 finalized LearningRecords через owner-scoped application service.
+  Технические IDs исключены; отсутствие не трактуется как непонимание. History
+  входит в Lesson preview fingerprint. Полный provider context имеет единый
+  hard budget 96 000 символов и детерминированно сокращает только oversized
+  значения.
 - Attachment contents, signed URLs и Storage identifiers модели не передаются:
   доступны только filename/MIME/status. Parsing, OCR, embeddings и RAG не
   реализованы.
@@ -264,6 +301,8 @@ application service/contracts внутри authenticated web request.
 Routes, UI, server-only secret boundary и provider postflight no-write flows
 этого среза развёрнуты и проверены в production. Release acceptance описан в
 [`docs/architecture/ai-provider-integration.md`](./architecture/ai-provider-integration.md).
+Это утверждение относится к base RouterAI flow release `0276aed`;
+history-aware context current repository ещё не развёрнут.
 
 ## 3. Что ещё не реализовано
 
@@ -274,10 +313,12 @@ Routes, UI, server-only secret boundary и provider postflight no-write flows
 - добавление новых материалов из модалки существующего Course;
 - persisted Homework editor;
 - Learner-facing кабинет, enrollment и настоящий доступ ученика к Course;
-- persisted Groups, новое нейтральное LearnerProfile и Guardian relations;
-- persisted Schedule events, LessonSession, live sync и teacher-controlled
-  runtime cursor;
-- учебная история, прогресс и аналитика;
+- persisted Groups, Guardian relations, invitation/claim и перенос legacy
+  identity в новую модель;
+- live Student Screen sync, realtime presence и teacher-controlled runtime
+  cursor поверх открытого LessonRun;
+- автоматические предметные metrics, progress aggregation и аналитика сверх
+  текущих attendance/repeat/comments;
 - persisted communication chat и notifications;
 - templates/marketplace;
 - внешний remote MCP/API для сторонних агентов;
@@ -288,15 +329,17 @@ Routes, UI, server-only secret boundary и provider postflight no-write flows
 
 ## 4. Переходное состояние identity
 
-Новая Course-модель уже использует `account`, связанный один-к-одному с
-`auth.users`. При этом старые таблицы `teacher`, `parent`, `student`, `school`,
-`school_teacher`, `class`, `class_teacher` и `class_student` временно сохранены
-для текущего login/onboarding/profile/session поведения.
+Новая Course-модель использует `account`, связанный один-к-одному с
+`auth.users`, а LessonRun slice добавляет независимый `learner_profile` и
+прямую Course audience. При этом старые таблицы `teacher`, `parent`, `student`,
+`school`, `school_teacher`, `class`, `class_teacher` и `class_student` временно
+сохранены для текущего login/onboarding/profile/session поведения.
 
 Это compatibility identity scope, а не новая иерархия Course. Новый код
-Course Builder не должен делать Course дочерним объектом School, Class,
-Teacher или Methodology. Удаление или замена этих таблиц требует отдельного
-identity milestone и forward migration.
+Course Builder не делает Course дочерним объектом School, Class, Teacher или
+Methodology и не превращает legacy Student в LearnerProfile. Удаление или
+замена compatibility tables требует отдельного identity milestone и forward
+migration.
 
 Известный приоритетный security debt: `user_preference` и `user_security` в
 текущем snapshot не имеют RLS и унаследовали широкие legacy grants. Новый код
@@ -336,12 +379,20 @@ lesson_component
 lesson_student_slide
 stored_file
 course_attachment
+learner_profile
+course_learner
+lesson_run
+learning_record
 ```
 
-Текущий production AI-срез переиспользует эти сущности после explicit Apply и
-не изменяет physical schema: новых tables, columns, RPC, Storage buckets или
-migrations нет. Assistant history, provider requests и quota state в БД не
-сохраняются.
+Новые четыре tables принадлежат audience/scheduling/history slice, а не
+provider accounting. `lesson_run` не содержит Lesson content; один partial
+unique index допускает один открытый Run на Lesson. `learning_record` заменяет
+participant table: `occurred_at IS NULL` означает expected row, non-null —
+finalized durable result. Persisted status и full Lesson snapshot отсутствуют.
+
+Текущий AI-срез читает bounded finalized history, но по-прежнему не сохраняет
+provider requests, assistant dialog history или quota state в БД.
 
 Последние структурные migrations:
 
@@ -349,7 +400,10 @@ migrations нет. Assistant history, provider requests и quota state в БД �
   удаление активного Methodology/Step/runtime слоя и переход к direct Lesson
   Components;
 - `20260804044955_add_lesson_student_slides.sql` — persisted Student Screen
-  Slides, assignment/reorder/delete RPC и RLS/ACL.
+  Slides, assignment/reorder/delete RPC и RLS/ACL;
+- `20260806190044_lesson_runs_learning_records.sql` — neutral LearnerProfile,
+  direct Course audience, LessonRun/LearningRecord, lifecycle RPC, deletion
+  retention, RLS/ACL.
 
 Источники истины для текущего состояния:
 
@@ -369,38 +423,42 @@ positions, а плотность поддерживают текущие service
 
 ## 7. Карта реализации
 
-| Область                     | Каноническое место                                                                                                       |
-| --------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| Course/Lesson contracts     | `src/modules/course-builder/contracts.ts`                                                                                |
-| Domain/read models          | `src/modules/course-builder/domain.ts`                                                                                   |
-| Application service         | `src/modules/course-builder/service.ts`                                                                                  |
-| Supabase repository         | `src/modules/course-builder/repository.ts`                                                                               |
-| Storage adapter             | `src/modules/course-builder/storage.ts`                                                                                  |
-| Component registry          | `src/modules/course-builder/registry/contracts.ts`                                                                       |
-| MCP tools/server            | `src/modules/course-builder/mcp/`                                                                                        |
-| AI provider adapter         | `src/modules/ai/routerai.ts`                                                                                             |
-| AI provider transport       | `src/modules/ai/lesson-provider-contracts.ts`                                                                            |
-| AI request/contracts        | `src/modules/ai/course-builder-contracts.ts`                                                                             |
-| AI context/service          | `src/modules/ai/course-context.ts`, `src/modules/ai/course-builder-service.ts`                                           |
-| AI API/error boundary       | `src/app/api/v2/courses/[courseId]/ai-*/`, `assistant/`, `src/modules/ai/server-context.ts`                              |
-| AI dialogs                  | `src/components/course-builder/ai-course-plan-dialog.tsx`, `ai-lesson-plan-dialog.tsx`, `ai-course-assistant-dialog.tsx` |
-| Course browser client       | `src/components/course-builder/course-builder-client.ts`                                                                 |
-| New Course flow             | `src/components/course-builder/new-course-form.tsx`                                                                      |
-| Course workspace            | `src/components/course-builder/course-workspace.tsx`                                                                     |
-| Course/Lesson navigation    | `src/components/course-builder/course-workspace-navigation.ts`                                                           |
-| Workspace tabs/materials    | `src/components/ui/workspace-tabs.tsx`, `src/components/course-builder/course-materials-panel.tsx`                       |
-| Lesson editor/Slides        | `src/components/course-builder/lesson-authoring-workspace.tsx`                                                           |
-| Component editors/renderers | `src/components/course-builder/component-payload-editor.tsx`, `component-renderers.tsx`                                  |
-| Fullscreen preview          | `src/components/course-builder/student-screen-preview.tsx`                                                               |
-| Teacher Schedule shell      | `src/app/(app)/(teacher-required)/schedule/`, `src/components/teaching-hub/schedule-workspace.tsx`                       |
-| Teacher Students shell      | `src/app/(app)/(teacher-required)/students/`, `src/components/teaching-hub/students-workspace.tsx`                       |
-| Teacher route boundary      | `src/app/(app)/(teacher-required)/layout.tsx`, `src/lib/server/access-guards.ts`                                         |
-| V2 API routes               | `src/app/api/v2/`                                                                                                        |
-| Standalone historical demo  | `src/app/demo/`, `public/og-demo-v2.png`                                                                                 |
-| Host boundary               | `src/middleware.ts`, `src/lib/deployment-access.ts`                                                                      |
-| Auth/session                | `src/lib/auth.ts`, `src/lib/server/`                                                                                     |
-| Current schema              | `supabase/schema/current-schema.sql`                                                                                     |
-| Forward history             | `supabase/migrations/`                                                                                                   |
+| Область                      | Каноническое место                                                                                                       |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| Course/Lesson contracts      | `src/modules/course-builder/contracts.ts`                                                                                |
+| Domain/read models           | `src/modules/course-builder/domain.ts`                                                                                   |
+| Application service          | `src/modules/course-builder/service.ts`                                                                                  |
+| Supabase repository          | `src/modules/course-builder/repository.ts`                                                                               |
+| Storage adapter              | `src/modules/course-builder/storage.ts`                                                                                  |
+| Component registry           | `src/modules/course-builder/registry/contracts.ts`                                                                       |
+| MCP tools/server             | `src/modules/course-builder/mcp/`                                                                                        |
+| AI provider adapter          | `src/modules/ai/routerai.ts`                                                                                             |
+| AI provider transport        | `src/modules/ai/lesson-provider-contracts.ts`                                                                            |
+| AI request/contracts         | `src/modules/ai/course-builder-contracts.ts`                                                                             |
+| AI context/service           | `src/modules/ai/course-context.ts`, `src/modules/ai/course-builder-service.ts`                                           |
+| AI API/error boundary        | `src/app/api/v2/courses/[courseId]/ai-*/`, `assistant/`, `src/modules/ai/server-context.ts`                              |
+| AI dialogs                   | `src/components/course-builder/ai-course-plan-dialog.tsx`, `ai-lesson-plan-dialog.tsx`, `ai-course-assistant-dialog.tsx` |
+| LessonRun domain/contracts   | `src/modules/lesson-runs/domain.ts`, `contracts.ts`                                                                      |
+| LessonRun service/repository | `src/modules/lesson-runs/service.ts`, `repository.ts`, `server-context.ts`                                               |
+| LessonRun API                | `src/app/api/v2/lesson-runs/`, `learner-profiles/`, Course/Lesson audience/history/runs routes                           |
+| LessonRun UI                 | `src/components/lesson-runs/`                                                                                            |
+| Course browser client        | `src/components/course-builder/course-builder-client.ts`                                                                 |
+| New Course flow              | `src/components/course-builder/new-course-form.tsx`                                                                      |
+| Course workspace             | `src/components/course-builder/course-workspace.tsx`                                                                     |
+| Course/Lesson navigation     | `src/components/course-builder/course-workspace-navigation.ts`                                                           |
+| Workspace tabs/materials     | `src/components/ui/workspace-tabs.tsx`, `src/components/course-builder/course-materials-panel.tsx`                       |
+| Lesson editor/Slides         | `src/components/course-builder/lesson-authoring-workspace.tsx`                                                           |
+| Component editors/renderers  | `src/components/course-builder/component-payload-editor.tsx`, `component-renderers.tsx`                                  |
+| Fullscreen preview           | `src/components/course-builder/student-screen-preview.tsx`                                                               |
+| Teacher Schedule             | `src/app/(app)/(teacher-required)/schedule/`, `src/components/teaching-hub/schedule-workspace.tsx`                       |
+| Teacher Students             | `src/app/(app)/(teacher-required)/students/`, `src/components/teaching-hub/students-workspace.tsx`                       |
+| Teacher route boundary       | `src/app/(app)/(teacher-required)/layout.tsx`, `src/lib/server/access-guards.ts`                                         |
+| V2 API routes                | `src/app/api/v2/`                                                                                                        |
+| Standalone historical demo   | `src/app/demo/`, `public/og-demo-v2.png`                                                                                 |
+| Host boundary                | `src/middleware.ts`, `src/lib/deployment-access.ts`                                                                      |
+| Auth/session                 | `src/lib/auth.ts`, `src/lib/server/`                                                                                     |
+| Current schema               | `supabase/schema/current-schema.sql`                                                                                     |
+| Forward history              | `supabase/migrations/`                                                                                                   |
 
 ## 8. Активные пользовательские маршруты
 
@@ -423,10 +481,16 @@ positions, а плотность поддерживают текущие service
 /settings/security
 ```
 
-V2 Course API находится под `/api/v2/`. У `/schedule` и `/students` нет новых
-mutation API: оба shell переиспользуют только существующее owner-scoped чтение
-Course summaries. Старые dashboard/methodology/group/scheduled-lesson routes не
-поддерживаются как compatibility URL.
+V2 API находится под `/api/v2/`. Current repository добавляет
+`learner-profiles`, Course `audience|history`, Lesson `runs|history` и
+`lesson-runs` schedule/lifecycle routes. Все используют per-request actor,
+application service и user JWT/RLS; старые
+dashboard/methodology/group/scheduled-lesson routes не поддерживаются как
+compatibility URL.
+
+Schedule reads ограничены 500 Runs на окно. Lesson/Course/Profile history
+возвращает последние 100 элементов; Course read всегда включает открытые Runs.
+Длинные `IN` hydration-запросы разбиваются на bounded batches.
 
 Текущий production AI-срез добавляет authenticated `POST` routes `ai-plan`,
 `ai-apply`, `ai-lesson-plan`, `ai-lesson-apply` и `assistant` под
@@ -475,6 +539,26 @@ npm run mcp:course-builder
 
 `test:browser` допускает локальный skip без browser, а `test:browser:ci`
 является строгим production-mode gate.
+
+Для current LessonRun slice локально подтверждены:
+
+- typecheck и lint;
+- 256/256 unit/contract tests;
+- production build;
+- 9/9 browser smoke с mock Supabase, включая новые пустые
+  `/schedule`/`students` и Course history/audience reads;
+- isolated PostgreSQL 16 apply и owner flow
+  `audience → schedule → reschedule → complete → repeat → cancel → delete`;
+- после удаления Lesson 3/3 finalized LearningRecord сохранились, draft rows
+  удалились; cross-owner, empty-audience, stale reschedule, empty completion и
+  cancel-before-start paths были отклонены; authenticated Profile DELETE
+  отсутствует.
+
+Это acceptance current repository и isolated clone. Production migration
+дополнительно применена 7 августа 2026 года: четыре таблицы и шесть RPC видны
+PostgREST, RLS/ACL прошли проверку, owner workflow прошёл внутри rollback-probe,
+а cross-account probe увидел 0 чужих строк. Deployed browser postflight нового
+application SHA ещё не выполнялся.
 
 Текущий browser-smoke helper использует актуальную AES-GCM app-session с
 Supabase access/refresh tokens. Строгий gate сам собирает production-приложение

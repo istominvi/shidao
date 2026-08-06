@@ -38,7 +38,7 @@ type CourseRow = {
   audience_description: string | null;
   target_lesson_count: number;
   teacher_preferences: string | null;
-  audience_type: "none";
+  audience_type: "none" | "learner_profile";
   assembled_at: string | null;
   archived_at: string | null;
   created_at: string;
@@ -492,11 +492,10 @@ export function createCourseBuilderRepository(
     },
 
     async deleteLesson(lessonId) {
-      const rows = await request<LessonRow[]>(
-        `/rest/v1/lesson?id=eq.${encodeFilter(lessonId)}`,
-        { method: "DELETE" },
-      );
-      return rows.length > 0;
+      return request<boolean>("/rest/v1/rpc/delete_lesson_with_history", {
+        method: "POST",
+        body: { p_lesson_id: lessonId },
+      });
     },
 
     async addComponent(input) {

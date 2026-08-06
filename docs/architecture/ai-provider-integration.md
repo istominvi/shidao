@@ -2,14 +2,16 @@
 
 **Статус:** canonical contract для текущего production AI-среза
 
-**Актуально на:** 6 августа 2026 года
+**Актуально на:** 7 августа 2026 года
 
 **Deployment state:** AI application slice развёрнут на `v2.shidao.ru` в release
 `0276aed`; server runtime получает `ROUTERAI_API_KEY` из production secret
 environment и использует `google/gemini-2.5-flash-lite`. Provider и
-authenticated no-write postflight завершены
+authenticated no-write postflight завершены. History-aware context реализован
+в current repository, но ещё не развернут и не применён к production schema
 
-**Schema state:** AI-срез не добавляет таблицы, RPC или migrations
+**Schema state:** AI не добавляет собственную persistence; он читает bounded
+projection из `lesson_run`/`learning_record`, добавленных scheduling slice
 
 ## Граница текущего среза
 
@@ -32,6 +34,7 @@ authenticated browser
 → Node.js /api/v2/courses/[courseId]/ai-* route
 → per-request actor from getCourseBuilderContext()
 → AiCourseBuilderService
+→ owner-scoped LessonRunsApplicationService (completed history only)
 → server-only RouterAI adapter
 → provider-compatible structured output
 → transport conversion + canonical Zod/registry validation
@@ -138,7 +141,8 @@ Components`; Step, root Step и Methodology не создаются.
 - сравнивает исходный ordered list Lesson IDs;
 - для существующей Lesson сравнивает исходный list Component IDs;
 - сравнивает fingerprint bounded Course/Lesson/component context, поэтому
-  правка title/comment/payload при прежних IDs также делает preview stale;
+  правка title/comment/payload или появление нового финального LearningRecord
+  при прежних IDs также делает preview stale;
 - валидирует каждый payload теми же registry contracts и default placement,
   которые использует ручной редактор.
 
@@ -152,9 +156,9 @@ Components в конец существующего плана. Существу
 ## Assistant boundary
 
 `POST .../assistant` выполняет только provider completion после owner-scoped
-`getCourse`. У AI-service для этого flow нет вызова mutation command, tool
-execution или MCP transport. System contract прямо запрещает утверждать, что
-ассистент уже изменил Course.
+`getCourse` и чтения завершённой learning history. У AI-service для этого flow
+нет вызова mutation command, tool execution или MCP transport. System contract
+прямо запрещает утверждать, что ассистент уже изменил Course.
 
 История текущего диалога хранится только в React state открытого dialog:
 
@@ -171,7 +175,25 @@ change history или автономный editor.
 Модель получает ограниченный teacher context: основные поля Course, course
 outline, а для выбранной Lesson — comment и до 20 ordered Components. Из
 component payload удаляются технические IDs, signed URLs, checksum и Storage
-bucket/path; длинные строки и массивы сокращаются.
+bucket/path; длинные строки и массивы сокращаются. Весь сериализованный context
+имеет единый hard budget 96 000 символов, оставляя место system instructions и
+bounded conversation в общем provider limit.
+
+Для Lesson planning и Assistant дополнительно передаются:
+
+- до 8 последних завершённых LessonRun с датой, названием, общим teacher
+  report и агрегатами attendance/repeat;
+- до 40 последних finalized LearningRecord с LearnerProfile display name,
+  минимальным Course/Lesson/subject context, attendance, repeat и
+  индивидуальным teacher comment;
+- surviving LearningRecord после удаления Lesson/Run, пока он связан с текущим
+  Course.
+
+ID LearnerProfile/Run/Record и Auth identity в provider context не попадают.
+Draft expected-participant rows, будущие/активные/отменённые Runs исключены.
+System и context boundary отдельно указывают, что `wasPresent=false` означает
+только отсутствие и не доказывает непонимание; `needsRepeat` интерпретируется
+только для присутствовавшего ученика.
 
 Для course-wide attachments передаются только filename, MIME type и текущий
 status с явным предупреждением, что содержимое не извлекалось. AI-срез не
@@ -199,7 +221,7 @@ subscription enforcement**. Нулевой или отсутствующий usa
 
 ## Schema и persistence
 
-AI-срез переиспользует существующие:
+AI authoring переиспользует существующие:
 
 ```text
 course
@@ -208,12 +230,16 @@ lesson_component
 lesson_student_slide
 stored_file
 course_attachment
+lesson_run
+learning_record
 ```
 
-Новых таблиц, columns, RPC, Storage buckets или migrations нет. Persisted
-результат AI после Apply не отличается по domain contract от результата ручного
-редактора. Provider request/response, assistant history и quota state в БД не
-сохраняются.
+`lesson_run` и `learning_record` принадлежат scheduling/learning-history
+domain, а не provider accounting. AI читает их только через application
+service; SQL и service-role credentials модели не доступны. Persisted результат
+AI после Apply не отличается по domain contract от результата ручного
+редактора. Provider request/response, assistant dialog history и quota state в
+БД не сохраняются.
 
 ## Не входит в текущий срез
 
@@ -223,6 +249,7 @@ course_attachment
 - attachment parsing/OCR/RAG и citation provenance;
 - Homework generation;
 - learner-facing AI teacher, live lesson и Student Screen control;
+- automatic subject metrics beyond current attendance/repeat/comments;
 - persistent distributed quota, cost ledger, billing и subscriptions;
 - внешний remote MCP/API.
 
@@ -234,6 +261,7 @@ course_attachment
 | Provider lesson transport     | `src/modules/ai/lesson-provider-contracts.ts`                  |
 | AI request/response contracts | `src/modules/ai/course-builder-contracts.ts`                   |
 | Bounded model context         | `src/modules/ai/course-context.ts`                             |
+| Learning history service      | `src/modules/lesson-runs/service.ts`                           |
 | Planning/apply/chat service   | `src/modules/ai/course-builder-service.ts`                     |
 | Rate/error boundary           | `src/modules/ai/server-context.ts`                             |
 | API routes                    | `src/app/api/v2/courses/[courseId]/ai-*/`, `assistant/`        |
@@ -259,6 +287,11 @@ boundary и наличие runtime secret без раскрытия его зн�
 4. preview вернул все шесть разрешённых Component types, после Cancel число
    Lessons осталось неизменным;
 5. guest/auth/CSRF probes сохранили 405/401/403 и redirect/noindex contracts.
+
+Current repository tests дополнительно проверяют, что Lesson planning получает
+bounded finalized history без технических IDs, draft/cancelled data не попадают
+в context, а отсутствие не превращается в негативную учебную оценку. Это ещё
+не production provider postflight нового history-aware контекста.
 
 Live Apply намеренно не запускался на пользовательских Course данных, а
 configuration/provider failure не индуцировался на production. Apply validation,

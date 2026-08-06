@@ -22,6 +22,26 @@ const studentsWorkspaceSource = readFileSync(
   "src/components/teaching-hub/students-workspace.tsx",
   "utf8",
 );
+const lessonRunClientSource = readFileSync(
+  "src/components/lesson-runs/lesson-run-client.ts",
+  "utf8",
+);
+const lessonRunDialogSource = readFileSync(
+  "src/components/lesson-runs/lesson-run-dialog.tsx",
+  "utf8",
+);
+const lessonRunFormatSource = readFileSync(
+  "src/components/lesson-runs/lesson-run-format.ts",
+  "utf8",
+);
+const learnerHistorySource = readFileSync(
+  "src/components/lesson-runs/learner-history-dialog.tsx",
+  "utf8",
+);
+const courseAudienceDialogSource = readFileSync(
+  "src/components/lesson-runs/course-audience-dialog.tsx",
+  "utf8",
+);
 
 const pageSources = `${schedulePageSource}\n${studentsPageSource}`;
 const workspaceSources = `${scheduleWorkspaceSource}\n${studentsWorkspaceSource}`;
@@ -41,22 +61,67 @@ test("teaching hub pages share the demo shell and transparent list header", () =
   assert.match(teacherLayoutSource, /resolveTeacherRequiredRedirect/);
 });
 
-test("schedule is an honest empty scheduling surface over real Course documents", () => {
-  assert.match(scheduleWorkspaceSource, /\/api\/v2\/courses/);
-  assert.match(scheduleWorkspaceSource, /Занятия пока не назначены/);
-  assert.match(scheduleWorkspaceSource, /Даты и время занятий ещё не/);
-  assert.match(scheduleWorkspaceSource, /Ваши курсы/);
-  assert.match(scheduleWorkspaceSource, /Готово к будущему планированию/);
-  assert.doesNotMatch(scheduleWorkspaceSource, /Запланировать/);
+test("schedule projects persisted LessonRun appointments without a parallel event", () => {
+  assert.match(lessonRunClientSource, /\/api\/v2\/lesson-runs\?/);
+  assert.match(scheduleWorkspaceSource, /loadSchedule/);
+  assert.match(scheduleWorkspaceSource, /Занятий нет/);
+  assert.match(scheduleWorkspaceSource, /Назначить урок в курсе/);
+  assert.match(scheduleWorkspaceSource, /lessonRunStateLabel/);
+  assert.match(scheduleWorkspaceSource, /selectedRunId/);
+  assert.doesNotMatch(scheduleWorkspaceSource, /ScheduleEvent|LessonSession/);
 });
 
-test("students keeps the new learner directory separate from compatibility identity", () => {
+test("students persists neutral learner profiles and opens their durable history", () => {
   assert.match(studentsWorkspaceSource, /\/api\/v2\/courses/);
-  assert.match(studentsWorkspaceSource, /Ученики и группы появятся здесь/);
-  assert.match(studentsWorkspaceSource, /Данные\s+старой версии/);
-  assert.match(studentsWorkspaceSource, /Ученики не назначены/);
+  assert.match(lessonRunClientSource, /\/api\/v2\/learner-profiles/);
+  assert.match(studentsWorkspaceSource, /Новый ученик/);
+  assert.match(studentsWorkspaceSource, /createLearnerProfile/);
+  assert.match(
+    studentsWorkspaceSource,
+    /const created = await createLearnerProfile\(displayName\)/,
+  );
+  assert.match(studentsWorkspaceSource, /setProfiles\(\(current\) =>/);
+  assert.doesNotMatch(studentsWorkspaceSource, /await reload\(\)/);
+  assert.match(studentsWorkspaceSource, /LearnerHistoryDialog/);
+  assert.match(learnerHistorySource, /courseTitleAtTime/);
+  assert.match(learnerHistorySource, /lessonTitleAtTime/);
+  assert.match(learnerHistorySource, /wasPresent/);
+  assert.match(learnerHistorySource, /needsRepeat/);
+  assert.match(learnerHistorySource, /teacherComment/);
   assert.doesNotMatch(studentsWorkspaceSource, /\/rest\/v1\/student/);
-  assert.doesNotMatch(studentsWorkspaceSource, /Новый профиль|Пригласить/);
+  assert.doesNotMatch(studentsWorkspaceSource, /\/rest\/v1\/class/);
+});
+
+test("lesson run controls derive state from timestamps and capture individual results", () => {
+  const runUiSources = `${lessonRunDialogSource}\n${lessonRunFormatSource}`;
+  for (const field of ["scheduledAt", "startedAt", "endedAt", "cancelledAt"]) {
+    assert.match(runUiSources, new RegExp(field));
+  }
+  assert.match(lessonRunDialogSource, /wasPresent/);
+  assert.match(lessonRunDialogSource, /needsRepeat/);
+  assert.match(lessonRunDialogSource, /teacherComment/);
+  assert.match(lessonRunDialogSource, /Как прошёл урок/);
+  assert.match(lessonRunDialogSource, /Урок не состоялся/);
+  assert.match(lessonRunDialogSource, /Перенести/);
+  assert.match(lessonRunDialogSource, /Отменить проведение/);
+  assert.match(
+    lessonRunDialogSource,
+    /runState === "active" \|\| runState === "attention"/,
+  );
+  assert.match(lessonRunDialogSource, /type="radio"/);
+  assert.match(lessonRunDialogSource, /draft\.wasPresent === true/);
+  assert.match(lessonRunDialogSource, /draft\.wasPresent === false/);
+  assert.match(lessonRunDialogSource, /completionReady/);
+  assert.match(
+    lessonRunDialogSource,
+    /disabled=\{disabled \|\| !completionReady\}/,
+  );
+  assert.doesNotMatch(lessonRunDialogSource, /record\.wasPresent \?\? true/);
+  assert.match(lessonRunDialogSource, /Закрыть без сохранения/);
+  assert.match(lessonRunDialogSource, /mutationError/);
+  assert.match(courseAudienceDialogSource, /mutationError/);
+  assert.match(studentsWorkspaceSource, /createError/);
+  assert.doesNotMatch(lessonRunDialogSource, /lessonRunParticipant|status:/i);
 });
 
 test("teaching hub never restores demo fixtures or local persistence", () => {

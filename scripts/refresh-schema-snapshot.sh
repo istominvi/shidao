@@ -45,9 +45,24 @@ SHIDAO_SCHEMA_SIGNATURE="$({
          and to_regclass('public.lesson') is not null
          and to_regclass('public.lesson_component') is not null
          and to_regclass('public.lesson_student_slide') is not null
+         and to_regclass('public.learner_profile') is not null
+         and to_regclass('public.course_learner') is not null
+         and to_regclass('public.lesson_run') is not null
+         and to_regclass('public.learning_record') is not null
          and to_regclass('public.methodology') is null
+         and to_regclass('public.lesson_run_participant') is null
+         and to_regclass('public.lesson_snapshot') is null
          and to_regprocedure(
            'public.set_lesson_component_student_screen(uuid,text,uuid)'
+         ) is not null
+         and to_regprocedure(
+           'public.schedule_lesson_run(uuid,timestamptz,integer,uuid[],uuid)'
+         ) is not null
+         and to_regprocedure(
+           'public.complete_lesson_run(uuid,jsonb,text,timestamptz)'
+         ) is not null
+         and to_regprocedure(
+           'public.delete_lesson_with_history(uuid)'
          ) is not null
          and exists (
            select 1
@@ -56,6 +71,30 @@ SHIDAO_SCHEMA_SIGNATURE="$({
              and table_name = 'lesson_component'
              and column_name = 'student_slide_id'
          )
+         and not exists (
+           select 1
+           from information_schema.columns
+           where table_schema = 'public'
+             and table_name in ('lesson_run', 'learning_record')
+             and column_name = 'status'
+         )
+         and exists (
+           select 1
+           from pg_constraint
+           where conrelid = 'public.lesson_run'::regclass
+             and conname = 'lesson_run_cancellation_time_check'
+         )
+         and not has_table_privilege(
+           'authenticated',
+           'public.learner_profile',
+           'DELETE'
+         )
+         and pg_get_functiondef(
+           'public.schedule_lesson_run(uuid,timestamptz,integer,uuid[],uuid)'::regprocedure
+         ) like '%lesson_run_changed%'
+         and pg_get_functiondef(
+           'public.complete_lesson_run(uuid,jsonb,text,timestamptz)'::regprocedure
+         ) like '%jsonb_array_length(p_records) = 0%'
         then 'shidao-v2-current'
         else 'schema-mismatch'
       end;
@@ -78,11 +117,12 @@ trap cleanup EXIT
 
 awk -v marker="${CROSS_SCHEMA_MARKER}" '
   $0 == marker { keep = 1 }
-  keep && $0 == "-- PostgreSQL database dump complete --" { exit }
+  keep && ($0 == "-- PostgreSQL database dump complete" ||
+    $0 == "-- PostgreSQL database dump complete --") { exit }
   keep { print }
 ' "${OUT_FILE}" > "${TMP_CROSS}"
 
-if ! grep -Fq "${CROSS_SCHEMA_MARKER}" "${TMP_CROSS}"; then
+if ! grep -Fq -- "${CROSS_SCHEMA_MARKER}" "${TMP_CROSS}"; then
   echo "Refusing to refresh: reviewed cross-schema Auth/Storage section is missing." >&2
   exit 1
 fi
@@ -90,6 +130,7 @@ fi
 pg_dump \
   --schema-only \
   --no-owner \
+  --restrict-key=shidaoSchemaSnapshot20260807 \
   --schema=public \
   "${DATABASE_URL}" > "${TMP_PUBLIC}"
 
@@ -100,11 +141,12 @@ pg_dump \
   echo "-- Review the complete diff before committing; this file is not a migration."
   echo
   awk '
-    $0 == "-- PostgreSQL database dump complete --" { exit }
+    /^\\(un)?restrict / { next }
+    $0 == "-- PostgreSQL database dump complete" ||
+      $0 == "-- PostgreSQL database dump complete --" { exit }
     { print }
   ' "${TMP_PUBLIC}"
   cat "${TMP_CROSS}"
-  echo "--"
   echo "-- PostgreSQL database dump complete"
   echo "--"
 } > "${TMP_RESULT}"
@@ -113,7 +155,11 @@ for required in \
   "GRANT" \
   "ALTER DEFAULT PRIVILEGES" \
   "trg_auth_user_create_account" \
-  "course_assets_owner_select"; do
+  "course_assets_owner_select" \
+  "CREATE TABLE public.lesson_run" \
+  "CREATE TABLE public.learning_record" \
+  "CREATE FUNCTION public.schedule_lesson_run" \
+  "CREATE FUNCTION public.delete_lesson_with_history"; do
   if ! grep -Fq "${required}" "${TMP_RESULT}"; then
     echo "Refusing to replace snapshot: generated result is missing ${required}." >&2
     exit 1

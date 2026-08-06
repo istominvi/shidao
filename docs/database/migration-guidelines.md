@@ -1,7 +1,7 @@
 # Правила изменений базы ShiDao
 
 **Статус:** обязательная политика для всех новых DB changes
-**Текущий schema head:** `20260804044955_add_lesson_student_slides.sql`
+**Текущий schema head:** `20260806190044_lesson_runs_learning_records.sql`
 
 ## 1. Источники истины
 

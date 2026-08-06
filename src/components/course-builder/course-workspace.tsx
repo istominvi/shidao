@@ -6,12 +6,12 @@ import {
   ArrowRight,
   BookOpen,
   FileSearch,
-  History,
   LoaderCircle,
   Pencil,
   Plus,
   Save,
   Settings,
+  Users,
   WandSparkles,
 } from "lucide-react";
 import { AppPageHeader } from "@/components/app/page-header";
@@ -31,6 +31,17 @@ import {
   type CourseWorkspaceSurface,
 } from "@/components/course-builder/course-workspace-navigation";
 import { LessonAuthoringWorkspace } from "@/components/course-builder/lesson-authoring-workspace";
+import { CourseAudienceDialog } from "@/components/lesson-runs/course-audience-dialog";
+import {
+  loadCourseAudience,
+  loadCourseHistory,
+} from "@/components/lesson-runs/lesson-run-client";
+import {
+  LessonRunDialog,
+  LessonRunStatusButton,
+} from "@/components/lesson-runs/lesson-run-dialog";
+import { completedLessonRunCount } from "@/components/lesson-runs/lesson-run-format";
+import { RunHistoryList } from "@/components/lesson-runs/run-history-list";
 import { Button, productButtonClassName } from "@/components/ui/button";
 import { DialogShell } from "@/components/ui/dialog-shell";
 import {
@@ -43,6 +54,7 @@ import type {
   CourseLesson,
   CourseWorkspace,
 } from "@/modules/course-builder/domain";
+import type { LearnerProfile, LessonRun } from "@/modules/lesson-runs/domain";
 
 type CourseWorkspaceClientProps = {
   courseId: string;
@@ -272,7 +284,10 @@ function CourseSettingsDialog({
 
 function CourseLessonsPanel({
   lessons,
+  runs,
+  audience,
   disabled,
+  mutationError,
   onSelect,
   runMutation,
   courseId,
@@ -280,7 +295,10 @@ function CourseLessonsPanel({
   onFocusRestored,
 }: {
   lessons: CourseLesson[];
+  runs: LessonRun[];
+  audience: LearnerProfile[];
   disabled: boolean;
+  mutationError: string | null;
   onSelect: (lessonId: string) => void;
   runMutation: RunMutation;
   courseId: string;
@@ -291,6 +309,9 @@ function CourseLessonsPanel({
   const [dialogOpen, setDialogOpen] = useState(false);
   const [aiLessonTitle, setAiLessonTitle] = useState<string | null>(null);
   const [submissionFailed, setSubmissionFailed] = useState(false);
+  const [scheduledLessonId, setScheduledLessonId] = useState<string | null>(
+    null,
+  );
   const triggerRef = useRef<HTMLButtonElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const lessonRowRefs = useRef(new Map<string, HTMLButtonElement>());
@@ -378,38 +399,46 @@ function CourseLessonsPanel({
         {lessons.length > 0 ? (
           <div className="workspace-lesson-list">
             {lessons.map((lesson) => {
+              const lessonRuns = runs.filter(
+                (run) => run.lessonId === lesson.id,
+              );
               return (
-                <button
-                  key={lesson.id}
-                  type="button"
-                  ref={(node) => {
-                    if (node) lessonRowRefs.current.set(lesson.id, node);
-                    else lessonRowRefs.current.delete(lesson.id);
-                  }}
-                  onClick={() => onSelect(lesson.id)}
-                  className="workspace-lesson-row"
-                >
-                  <BookOpen
-                    className="workspace-lesson-leading-icon"
-                    aria-hidden="true"
+                <div key={lesson.id} className="workspace-lesson-item">
+                  <button
+                    type="button"
+                    ref={(node) => {
+                      if (node) lessonRowRefs.current.set(lesson.id, node);
+                      else lessonRowRefs.current.delete(lesson.id);
+                    }}
+                    onClick={() => onSelect(lesson.id)}
+                    className="workspace-lesson-row"
+                  >
+                    <BookOpen
+                      className="workspace-lesson-leading-icon"
+                      aria-hidden="true"
+                    />
+                    <span className="workspace-lesson-number">
+                      {lesson.position}
+                    </span>
+                    <span className="workspace-lesson-title">
+                      <strong>{lesson.title}</strong>
+                      <small>
+                        Компонентов: {lesson.components.length} · проведений:{" "}
+                        {completedLessonRunCount(lessonRuns)}
+                      </small>
+                    </span>
+                    <ArrowRight
+                      className="workspace-lesson-arrow"
+                      aria-hidden="true"
+                    />
+                  </button>
+                  <LessonRunStatusButton
+                    runs={lessonRuns}
+                    disabled={disabled}
+                    className="workspace-lesson-schedule"
+                    onClick={() => setScheduledLessonId(lesson.id)}
                   />
-                  <span className="workspace-lesson-number">
-                    {lesson.position}
-                  </span>
-                  <span className="workspace-lesson-title">
-                    <strong>{lesson.title}</strong>
-                    <small>
-                      Слайдов экрана ученика: {lesson.studentSlides.length}
-                    </small>
-                  </span>
-                  <span className="workspace-lesson-status">
-                    Компонентов: {lesson.components.length}
-                  </span>
-                  <ArrowRight
-                    className="workspace-lesson-arrow"
-                    aria-hidden="true"
-                  />
-                </button>
+                </div>
               );
             })}
           </div>
@@ -547,6 +576,18 @@ function CourseLessonsPanel({
           }}
         />
       ) : null}
+
+      {scheduledLessonId ? (
+        <LessonRunDialog
+          lesson={lessons.find((lesson) => lesson.id === scheduledLessonId)!}
+          runs={runs.filter((run) => run.lessonId === scheduledLessonId)}
+          learners={audience}
+          disabled={disabled}
+          mutationError={mutationError}
+          runMutation={runMutation}
+          onClose={() => setScheduledLessonId(null)}
+        />
+      ) : null}
     </>
   );
 }
@@ -604,18 +645,14 @@ function CourseSourcesPanel() {
   );
 }
 
-function CourseHistoryPanel() {
+function CourseHistoryPanel({ runs }: { runs: LessonRun[] }) {
   return (
-    <section className="workspace-surface workspace-empty-panel">
-      <span className="workspace-empty-icon workspace-empty-icon-pink">
-        <History aria-hidden="true" />
-      </span>
-      <h2>История курса пока пуста</h2>
-      <p>
-        Журнал изменений будет подключён отдельным срезом. Сейчас интерфейс не
-        показывает вымышленные события и не сохраняет их локально.
-      </p>
-    </section>
+    <RunHistoryList
+      runs={runs.filter((run) => Boolean(run.endedAt))}
+      showLessonTitle
+      emptyTitle="Курс ещё не проводился"
+      emptyDescription="Назначьте время любому уроку. После завершения здесь появятся проведения всего курса, отчёты и результаты учеников."
+    />
   );
 }
 
@@ -634,8 +671,11 @@ export function CourseWorkspaceClient({
   courseId,
 }: CourseWorkspaceClientProps) {
   const [course, setCourse] = useState<CourseWorkspace | null>(null);
+  const [courseRuns, setCourseRuns] = useState<LessonRun[]>([]);
+  const [courseAudience, setCourseAudience] = useState<LearnerProfile[]>([]);
   const [navigation, setNavigation] = useState(createCourseWorkspaceNavigation);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [audienceOpen, setAudienceOpen] = useState(false);
   const [assistantOpen, setAssistantOpen] = useState(false);
   const [returnFocusLessonId, setReturnFocusLessonId] = useState<string | null>(
     null,
@@ -643,11 +683,18 @@ export function CourseWorkspaceClient({
   const [error, setError] = useState<string | null>(null);
   const [busyLabel, setBusyLabel] = useState<string | null>(null);
   const settingsTriggerRef = useRef<HTMLButtonElement>(null);
+  const audienceTriggerRef = useRef<HTMLButtonElement>(null);
   const mutationInFlightRef = useRef(false);
 
   const reload = useCallback(async () => {
-    const workspace = await loadCourseWorkspace(courseId);
+    const [workspace, runs, audience] = await Promise.all([
+      loadCourseWorkspace(courseId),
+      loadCourseHistory(courseId),
+      loadCourseAudience(courseId),
+    ]);
     setCourse(workspace);
+    setCourseRuns(runs);
+    setCourseAudience(audience);
     setNavigation((current) =>
       reconcileCourseWorkspaceNavigation(
         current,
@@ -659,10 +706,30 @@ export function CourseWorkspaceClient({
 
   useEffect(() => {
     let active = true;
-    void loadCourseWorkspace(courseId)
-      .then((workspace) => {
+    void Promise.all([
+      loadCourseWorkspace(courseId),
+      loadCourseHistory(courseId),
+      loadCourseAudience(courseId),
+    ])
+      .then(([workspace, runs, audience]) => {
         if (!active) return;
         setCourse(workspace);
+        setCourseRuns(runs);
+        setCourseAudience(audience);
+        const searchParams = new URL(window.location.href).searchParams;
+        const requestedLessonId = searchParams.get("lesson");
+        if (searchParams.get("audience") === "1") setAudienceOpen(true);
+        if (
+          requestedLessonId &&
+          workspace.lessons.some((lesson) => lesson.id === requestedLessonId)
+        ) {
+          setNavigation((current) =>
+            openCourseWorkspaceLesson(current, requestedLessonId),
+          );
+        }
+        if (requestedLessonId || searchParams.get("audience") === "1") {
+          window.history.replaceState(null, "", window.location.pathname);
+        }
       })
       .catch((caught: unknown) => {
         if (!active) return;
@@ -704,6 +771,12 @@ export function CourseWorkspaceClient({
     if (busyLabel) return;
     setSettingsOpen(false);
     window.requestAnimationFrame(() => settingsTriggerRef.current?.focus());
+  }, [busyLabel]);
+
+  const closeAudience = useCallback(() => {
+    if (busyLabel) return;
+    setAudienceOpen(false);
+    window.requestAnimationFrame(() => audienceTriggerRef.current?.focus());
   }, [busyLabel]);
 
   useEffect(() => {
@@ -768,7 +841,10 @@ export function CourseWorkspaceClient({
             ) : undefined
           }
           disabled={Boolean(busyLabel)}
+          mutationError={error}
           runMutation={runMutation}
+          runs={courseRuns.filter((run) => run.lessonId === selectedLesson.id)}
+          learners={courseAudience}
         />
       ) : (
         <>
@@ -786,6 +862,14 @@ export function CourseWorkspaceClient({
                 >
                   <WandSparkles className="h-4 w-4" aria-hidden="true" />
                   ИИ-ассистент
+                </Button>
+                <Button
+                  ref={audienceTriggerRef}
+                  variant="secondary"
+                  onClick={() => setAudienceOpen(true)}
+                >
+                  <Users className="h-4 w-4" aria-hidden="true" />
+                  Аудитория · {courseAudience.length}
                 </Button>
                 <Button
                   ref={settingsTriggerRef}
@@ -834,7 +918,10 @@ export function CourseWorkspaceClient({
                 {active && item.value === "lessons" ? (
                   <CourseLessonsPanel
                     lessons={course.lessons}
+                    runs={courseRuns}
+                    audience={courseAudience}
                     disabled={Boolean(busyLabel)}
+                    mutationError={error}
                     onSelect={(lessonId) =>
                       setNavigation((current) =>
                         openCourseWorkspaceLesson(current, lessonId),
@@ -856,7 +943,7 @@ export function CourseWorkspaceClient({
                   <CourseMaterialsPanel course={course} />
                 ) : null}
                 {active && item.value === "history" ? (
-                  <CourseHistoryPanel />
+                  <CourseHistoryPanel runs={courseRuns} />
                 ) : null}
               </div>
             );
@@ -869,6 +956,18 @@ export function CourseWorkspaceClient({
           disabled={Boolean(busyLabel)}
           runMutation={runMutation}
           onClose={closeSettings}
+        />
+      ) : null}
+
+      {audienceOpen ? (
+        <CourseAudienceDialog
+          courseId={course.id}
+          courseTitle={course.title}
+          audience={courseAudience}
+          disabled={Boolean(busyLabel)}
+          mutationError={error}
+          runMutation={runMutation}
+          onClose={closeAudience}
         />
       ) : null}
 

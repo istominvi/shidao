@@ -1,7 +1,7 @@
 # Roadmap ShiDao V2
 
 **Статус:** приоритеты после первого работающего Course Builder milestone
-**Актуально на:** 6 августа 2026 года
+**Актуально на:** 7 августа 2026 года
 
 Фактически реализованное состояние находится в
 [`docs/project-state.md`](./project-state.md). Этот документ описывает только
@@ -15,8 +15,9 @@
 3. Учитель может работать вручную без обязательного расхода AI tokens.
 4. AI не получает SQL или service-role credentials.
 5. Attachment не считается прочитанным до фактического parsing результата.
-6. Homework, live runtime и learning history остаются отдельными доменами и не
-   возвращают Lesson Step.
+6. Homework остаётся отдельной Lesson surface; LessonRun/LearningRecord
+   расширяют Lesson без второго authored/runtime content model и не возвращают
+   Lesson Step.
 7. Новая schema появляется только forward migration; current-schema snapshots
    обновляются в том же изменении.
 8. Нельзя расширять scope за счёт Auth, SMTP, JWT/API keys, базового Storage или
@@ -39,15 +40,18 @@
   gradients; header, кнопки, вкладки и заголовочная типографика используют
   scoped demo-размеры, радиусы и веса, не затрагивая landing/Auth.
 - На release `fea7f80` развёрнуты teacher-only `/schedule` и `/students` и
-  пункты «Расписание / Ученики / Курсы». Shells используют тот же demo-style и
-  показывают реальные Course summaries, но честно оставляют занятия,
-  LearnerProfile и Group пустыми до появления соответствующих доменов.
-- Teaching-hub shells не читают старые `student/class/class_student`, не
-  создают новую persistence и не считаются реализацией audience/scheduling
-  milestones.
+  пункты «Расписание / Ученики / Курсы» как исходные shells.
+- В current repository эти shells превращены в vertical slice: нейтральные
+  LearnerProfile, прямая Course audience, LessonRun, LearningRecord,
+  расписание, повторное проведение и Lesson/Course/Profile history. Срез не
+  читает старые `student/class/class_student`; migration применена к production
+  ShiDao DB и прошла DB/RLS/PostgREST postflight 7 августа 2026 года. Пока
+  application deploy ожидается, release `7021801` его UI/API не содержит.
 - Реализованы private-by-default Components и persisted Student Screen Slides.
 - Реализован fullscreen Student Screen preview.
 - Реализован development-only MCP из шести tools поверх application service.
+- Lesson planning и read-only Assistant получают bounded finalized learning
+  history без технических IDs; отсутствие не трактуется как непонимание.
 - В release `0276aed` развёрнуты и проверены RouterAI provider adapter,
   Course/Lesson
   preview → explicit apply и read-only ephemeral assistant; production runtime
@@ -101,7 +105,8 @@ read-only ShiDao sanity check и отдельного deployed-contour postfligh
 - улучшить выбор/поиск Components в palette;
 - проверить все десять editors/renderers отдельными production-safe сценариями;
 - добавить drag-and-drop только если он не ухудшает доступность и надёжность;
-- определить поведение удаления Lesson/Course с понятным подтверждением;
+- завершить поведение удаления Course; Lesson уже предупреждает об удалении
+  Runs и сохраняет finalized LearningRecord в учебных профилях;
 - добавить autosave/draft feedback там, где это уменьшает риск потери ввода;
 - сериализовать append Lesson/Component на owner parent, чтобы concurrent
   create не сталкивался по position и supported path всегда оставался dense;
@@ -192,39 +197,59 @@ override. Overrides и immutable issued snapshots добавляются пос�
 
 OCR, web crawling и audio transcription не входят в первый parsing slice.
 
-## P2: новая audience и learning identity
+## P2: audience и learning identity
 
 Текущие `teacher/parent/student/school/class` сохранены только для
-compatibility login/profile flows. Новая модель проектируется отдельно:
+compatibility login/profile flows.
+
+**Current repository slice:**
+
+- независимый owner-scoped `LearnerProfile`;
+- прямая Course audience через `course_learner`;
+- teacher-only `/students` для создания профиля, просмотра индивидуальной
+  истории и перехода к настройке Course;
+- Course Builder остаётся owner-only, а старые Class/School не используются.
+
+**Next:**
 
 - один `Account` на человека без глобального типа пользователя;
-- независимый `LearnerProfile`;
 - Guardian relation;
-- Group и Course audience `none | learner_profile | group`;
+- Group как дополнительный способ собрать ту же Course audience;
 - invitation/claim flow;
 - миграция существующих identity данных отдельным планом.
 
-До этого этапа Course Builder остаётся owner-only. Нельзя использовать старую
-Class/School как новый parent Course только ради быстрого enrollment.
-Teacher-only `/students` до этого этапа остаётся навигационным shell с нулевым
-состоянием LearnerProfile/Group и read-only списком реальных owner Courses.
+Нельзя использовать старую Class/School как новый parent Course только ради
+быстрого enrollment. Learner login/access не следует из наличия
+LearnerProfile.
 
-## P2: Session и live lesson
+## P2: LessonRun и live lesson
 
-- teacher-only `/schedule` до этого этапа остаётся shell: переключение даты
-  локально и не создаёт Schedule event;
-- `LessonSession` отделена от редактируемой Lesson;
-- один Lesson можно проводить многократно;
+**Current repository slice:**
+
+- `/schedule` проецирует LessonRun по календарному дню без параллельной таблицы
+  Schedule events;
+- Lesson остаётся единственным content entity; один открытый LessonRun является
+  изменяемым назначением, а закрытые Runs — историей;
+- Lesson можно проводить многократно, в том числе повторно для subset audience;
+- completion сохраняет teacher report и точные LearningRecord каждого
+  ожидаемого ученика;
+- UI state выводится из timestamps, persisted status отсутствует.
+
+**Next — live:**
+
 - основной runtime cursor указывает на Student Screen Slide и не создаёт
   authored Step; внутреннее состояние интерактивного Component при
   необходимости хранится отдельно;
 - teacher управляет learner screen по умолчанию;
 - Realtime используется после явной authorization модели;
-- результаты записываются как отдельные immutable learning events.
+- Realtime/presence и learner authorization проектируются поверх открытого
+  LessonRun, а не через второй content-bearing LessonSession.
 
-## P3: learning history, communication и product scale
+## P3: richer learning history, communication и product scale
 
-- LearningRecord/LearningEvent и измеримые предметные progress models;
+- автоматические subject metrics и измеримые progress models поверх текущих
+  finalized LearningRecord;
+- pagination/aggregation для длинной Lesson/Course/Profile history;
 - common/individual Homework assignment snapshots;
 - course chat и notifications;
 - templates и контролируемый importer repository archive;

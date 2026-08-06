@@ -4,27 +4,36 @@
 
 **Дата решения:** 5 августа 2026 года
 
-**Актуально на:** 6 августа 2026 года
+**Актуально на:** 7 августа 2026 года
 
-**Область:** Course Builder / Lesson / Components / Student Screen / course materials / homework
+**Область:** Course Builder / Lesson / Components / Student Screen / audience / scheduling / learning history / course materials / homework
 
 **Implementation state:** authoring, persisted Slides, preview и RouterAI
 Course/Lesson/assistant surfaces развёрнуты на `v2.shidao.ru`; runtime API key
 настроен server-side. Release `0276aed` и authenticated no-write postflight
-подтвердили `google/gemini-2.5-flash-lite`; Homework/live остаются будущими
-срезами
+подтвердили `google/gemini-2.5-flash-lite`. В current repository реализованы
+LearnerProfile, прямая Course audience, LessonRun и LearningRecord; migration
+применена к production ShiDao DB 7 августа 2026 года и прошла
+DB/RLS/PostgREST postflight. Пока новый application SHA не развёрнут, deployed
+release `7021801` UI/API этого среза не содержит. Homework и live Student Screen
+sync остаются будущими срезами
 
 ## Product decision
 
 Каноническая авторская модель ShiDao V2:
 
 ```text
-Course
-├── course-wide attachments
-└── Lesson 1..N
-    ├── ordered Components 1..N
-    └── Student Screen projection
-        └── ordered Slides 1..N → component references
+Account
+├── LearnerProfile 0..N
+└── Course
+    ├── audience → LearnerProfile 0..N
+    ├── course-wide attachments
+    └── Lesson 1..N
+        ├── ordered Components 1..N
+        ├── Student Screen projection
+        │   └── ordered Slides 1..N → component references
+        └── LessonRun 0..N
+            └── LearningRecord 0..N → LearnerProfile
 ```
 
 `Lesson` непосредственно владеет одним упорядоченным списком компонентов.
@@ -38,12 +47,26 @@ Course
 AI-orchestration. Упрощённое отображение без шагов — не временная UI-проекция,
 а каноническая структура V2.
 
+Lesson остаётся одной сущностью содержания и точкой назначения. `LessonRun` не
+копирует её content и не является вторым «runtime-уроком»: это только одно
+конкретное время/проведение и его общий отчёт. Закрытые Runs образуют историю,
+а новый Run позволяет повторить ту же Lesson для всей аудитории или её части.
+
 ## Vocabulary
 
 - **Course / Курс** — личный persisted-документ владельца с уроками и
   course-wide вложениями.
 - **Lesson / Урок** — редактируемый документ внутри Course. Название обязательно
   и хранится в самой Lesson; комментарий преподавателя хранится в `summary`.
+  Эту же Lesson можно назначать и проводить многократно.
+- **LearnerProfile / Учебный профиль** — нейтральная Account-owned identity,
+  на которой накапливается индивидуальная история; не legacy Student.
+- **Course audience / Аудитория курса** — прямой набор LearnerProfile. Group не
+  требуется для базового Course и остаётся будущей надстройкой.
+- **LessonRun / Проведение урока** — одно назначение той же Lesson с
+  `scheduled/started/ended/cancelled` timestamps и общим teacher report.
+- **LearningRecord / Учебная запись** — ожидаемый участник Run до завершения и
+  его компактный индивидуальный результат после завершения.
 - **Lesson Component / Компонент урока** — элемент единого ordered list Lesson.
 - **Student Screen Slide / Слайд экрана ученика** — упорядоченная
   группа соседних по плану learner-visible компонентов; не является
@@ -58,7 +81,8 @@ AI-orchestration. Упрощённое отображение без шагов 
   на отдельной полноэкранной странице.
 
 Термины `Content` для Student Screen, `Lesson Step`, `root step`, `stepId` и
-`Methodology` как активная V2-модель не используются.
+`Methodology` как активная V2-модель не используются. Также нет отдельной
+`LessonRunParticipant`, persisted run status или таблицы Lesson snapshots.
 
 ## Canonical data contract
 
@@ -101,6 +125,25 @@ lesson_student_slide
 - position
 - created_at
 - updated_at
+```
+
+Минимальное проведение и индивидуальная запись:
+
+```text
+lesson_run
+- lesson_id
+- scheduled_at
+- planned_duration_minutes
+- started_at | ended_at | cancelled_at
+- teacher_report
+
+learning_record
+- learner_profile_id
+- lesson_run_id | source_course_id | source_lesson_id
+- occurred_at
+- was_present | needs_repeat
+- teacher_comment
+- course_title_at_time | lesson_title_at_time | subject_at_time
 ```
 
 Инварианты:
@@ -216,7 +259,8 @@ Course и Lesson образуют два последовательных уро
 2. **Описание** — текущие поля Course;
 3. **Источники** — честное пустое состояние до parsing/RAG;
 4. **Материалы** — course-wide attachments;
-5. **История** — честное пустое состояние до появления change history.
+5. **История** — завершённые проведения всех Lessons; change log авторских
+   правок по-прежнему не реализован.
 
 После явного выбора Lesson header показывает backlink с названием Course и
 заголовок `Урок {position}. {lesson.title}`. Вкладки Lesson:
@@ -229,8 +273,9 @@ Course и Lesson образуют два последовательных уро
 
 Lesson-вкладка **Материалы** является только read-only проекцией того же
 course-wide каталога. Она не создаёт lesson attachment, не копирует StoredFile
-и не означает, что материал назначен конкретному Lesson. **История** пока не
-записывает фиктивные события, а Homework остаётся отдельной честной заглушкой.
+и не означает, что материал назначен конкретному Lesson. **История** показывает
+только завершённые LessonRun с teacher report и результатами; Homework остаётся
+отдельной честной заглушкой.
 
 Текущий slice не добавляет отдельный Lesson URL или schema: Course/Lesson view
 и вкладки переключаются внутри `/courses/[courseId]`. После reload снова
@@ -249,23 +294,48 @@ Visual contract Course routes не меняет эту навигационну�
 
 ## Teaching hub navigation boundary
 
-Release `fea7f80` добавляет teacher-only `/schedule` и `/students` рядом с
-`/courses`. Это навигационный и визуальный slice, а не изменение canonical
-Course/Lesson model:
+Current repository развивает teacher-only `/schedule` и `/students`, впервые
+добавленные как shells в `fea7f80`, в реальный owner-scoped workflow:
 
 - server layout допускает только active teacher profile; Parent и transitional
   Student перенаправляются в `/courses`;
-- оба shell читают реальные owner-scoped Course summaries через существующий
-  Course Builder API;
-- `/schedule` показывает выбранную календарную дату и пустое состояние, но не
-  сохраняет Schedule event и не создаёт `LessonSession`;
-- Course и Lesson в очереди будущего планирования остаются авторскими
-  документами и не становятся проведёнными занятиями;
-- `/students` показывает нулевое состояние будущих LearnerProfile/Group и
-  Courses без persisted audience;
+- `/schedule` проецирует LessonRun выбранного дня; отдельной таблицы Schedule
+  event нет;
+- `/students` создаёт нейтральные LearnerProfile, открывает их долговечную
+  историю и ведёт к настройке прямой аудитории Course;
+- назначить/перенести Lesson можно из её строки или header; прошедшее назначение
+  можно сразу завершить постфактум, не создавая обязательную live-session;
+- завершение фиксирует общий отчёт и посещаемость/repeat/comment каждого
+  ожидаемого ученика; присутствие выбирается явно, без положительного значения
+  по умолчанию; повтор допускает subset Course audience;
 - старые `student`, `class` и `class_student` не используются как источник
   новой learning identity;
-- новых таблиц, migrations, API mutation или MCP tools этот slice не добавляет.
+- Group, Guardian, invitation/claim и learner login этот slice не добавляет.
+
+## Scheduling, completion and deletion
+
+Один открытый LessonRun является редактируемым «будильником» Lesson. Его время
+и состав можно менять; отдельный Run создаётся только после завершения или
+отмены предыдущего. UI-метки «назначен / нужно отметить / идёт / проведён /
+отменён» вычисляются из timestamps, а не сохраняются как state machine.
+
+До завершения `LearningRecord.occurred_at IS NULL`, поэтому эти же rows задают
+ожидаемый состав без `lesson_run_participant`. Completion обязан покрыть его
+ровно один раз и превращает rows в долговечную историю. Отсутствие не считается
+непониманием материала; repeat recommendation применима только к
+присутствовавшему ученику.
+
+Открытый и завершённый Run имеет хотя бы одну LearningRecord. Cancel удаляет
+draft rows, поэтому сохранённый отменённый Run может иметь ноль записей.
+Reschedule передаёт expected Run ID и проверяет его под Lesson lock: устаревший
+PATCH не может изменить новый Run, созданный в другой вкладке. Время
+completion/cancel не может предшествовать `started_at`.
+
+Полного snapshot Lesson нет. После удаления Lesson её Components, Slides, Runs
+и незавершённые LearningRecords удаляются. Завершённые LearningRecords остаются
+в LearnerProfile, теряют Run/Lesson FK и сохраняют только дату, attendance,
+repeat/comment и компактные Course/Lesson/subject titles. UI предупреждает об
+этом до удаления.
 
 ## Lesson creation
 
@@ -333,6 +403,16 @@ lesson.reorder_component
 тот же application service. Reorder работает в пределах всего ordered list
 выбранной Lesson и сохраняет Slide invariants.
 
+Scheduling/history web API использует отдельный `LessonRunsApplicationService`
+и owner-scoped repository. Он предоставляет LearnerProfile, Course audience,
+schedule/reschedule/start/complete/cancel и Lesson/Course/Profile history.
+Mutations выполняются узкими authenticated RPC; MCP остаётся Course authoring
+adapter и не получает параллельный доступ к таблицам.
+
+Schedule window имеет hard limit 500 Runs. Lesson/Course/Profile history
+ограничена последними 100 строками; Course read всегда резервирует место для
+открытых Runs. Более длинная pagination/aggregation остаётся следующим слоем.
+
 MCP — development/internal thin adapter над теми же application services. Он:
 
 - не обращается к таблицам напрямую;
@@ -351,8 +431,14 @@ Implementation map:
 - AI provider/contracts/service: `src/modules/ai/`;
 - AI routes: `src/app/api/v2/courses/[courseId]/ai-*/` и `assistant/`;
 - authoring UI: `src/components/course-builder/lesson-authoring-workspace.tsx`;
+- scheduling domain/service: `src/modules/lesson-runs/`;
+- scheduling/history UI: `src/components/lesson-runs/`,
+  `src/components/teaching-hub/`;
+- scheduling API: `src/app/api/v2/lesson-runs/`, `learner-profiles/` и
+  Course/Lesson `audience|history|runs` routes;
 - current schema: `supabase/schema/current-schema.sql`;
-- Slide migration: `20260804044955_add_lesson_student_slides.sql`.
+- Slide migration: `20260804044955_add_lesson_student_slides.sql`;
+- LessonRun migration: `20260806190044_lesson_runs_learning_records.sql`.
 
 ## AI boundary
 
@@ -375,6 +461,12 @@ Assistant является отдельным read-only ephemeral flow. Он м�
 не утверждает, что изменил данные. Dialog history хранится только в React state
 и не переживает close/reload.
 
+Lesson planning и Assistant получают до 8 завершённых Runs и до 40 финальных
+LearningRecords через application service. Технические IDs не передаются;
+индивидуальный context ограничен attendance, repeat и teacher comment. Эти
+данные входят в Lesson preview fingerprint, поэтому новый результат после
+preview делает Apply stale. Автоматических subject metrics пока нет.
+
 Модель получает teacher context, но не file contents, signed URLs или Storage
 credentials. Для attachments передаются только filename/MIME/status; parsing,
 OCR, embeddings и RAG отсутствуют. Поэтому нельзя утверждать, что attachment
@@ -390,10 +482,11 @@ process-local rate limit не является балансом пользова
 
 ## Runtime and future live mode
 
-Shipped milestone реализовал persisted authoring и preview, а не live sync.
-Будущий `LessonSession` остаётся отдельным исполнением Lesson. Live-mode
-presentation cursor может ссылаться на текущий Student Screen Slide, не меняя
-authored hierarchy и не создавая Step entity.
+Current repository реализует appointment/completion history, но не live sync.
+Открытый LessonRun уже является конкретным проведением; второй content-bearing
+`LessonSession` не нужен. Будущий operational presentation cursor может быть
+связан с открытым Run и текущим Student Screen Slide, не меняя authored
+hierarchy и не создавая Step entity.
 
 В live mode по умолчанию teacher управляет learner surface; свободная
 предыдущая/следующая навигация учащегося не включается автоматически. Review
@@ -435,7 +528,9 @@ application services и MCP не импортируют demo fixtures; все н
 - persistent AI quota/ledger, billing и change sets/undo;
 - parsing/RAG загруженных файлов;
 - persisted homework editor;
-- persisted scheduling, LessonSession и live sync;
+- live Student Screen sync, realtime presence и runtime cursor;
+- automatic metrics/progress beyond attendance, repeat and comments;
+- Group/Guardian/invitation and learner-facing access;
 - drag-and-drop, если надёжные кнопки «выше/ниже» уже обеспечивают reorder;
 - внешняя публикация MCP;
 - compatibility layer для Step/Methodology не планируется;
@@ -480,3 +575,10 @@ Release `7021801` отдельно подтвердил standalone demo boundary
 unit/contract tests, production build и строгие 9/9 browser smoke прошли;
 deployed root/deep links, reload, Guest/read-only/noindex policy и cache recovery
 старого `308` проверены без обращения к V2 persistence.
+
+Current local LessonRun slice дополнительно прошёл 256/256 unit/contract tests,
+typecheck, lint, production build, 9/9 browser smoke и isolated PostgreSQL 16
+workflow `audience → schedule → reschedule → complete → repeat → cancel →
+delete` с негативными stale/empty/timestamp/ACL checks. Production migration
+применена отдельно и прошла owner/cross-account/PostgREST postflight; web
+deployment и его browser postflight пока ожидаются.

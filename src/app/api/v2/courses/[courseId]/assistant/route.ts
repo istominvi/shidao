@@ -6,6 +6,7 @@ import {
   getCourseBuilderContext,
   readJson,
 } from "@/modules/course-builder/server-context";
+import { createLessonRunsServiceForActor } from "@/modules/lesson-runs/server-context";
 
 export const runtime = "nodejs";
 
@@ -28,6 +29,7 @@ export async function POST(
         createAiCourseBuilderService({
           actor,
           service,
+          learningHistoryService: createLessonRunsServiceForActor(actor),
           createProvider: createRouterAiClient,
         }).chat(courseId, await readJson(request), request.signal),
     );
