@@ -59,6 +59,11 @@ git diff --check
 npm run test:browser:ci
 ```
 
+Provider tests в AI-release используют только fake credentials и локальный
+mock. CI/build не получают реальный `ROUTERAI_API_KEY`; если сборка требует
+production secret, release останавливается как нарушение server-runtime
+boundary.
+
 Release с teacher-only `/schedule` и `/students` обязан дополнительно проверить
 route guard для Guest, adult без профиля, Parent и transitional Student, а
 также desktop/mobile primary navigation. Этот UI-slice не содержит migration;
@@ -121,20 +126,80 @@ APP_SESSION_VERSION=1
 APP_SESSION_TTL_HOURS=48
 ```
 
-Обе optional переменные имеют эти defaults в коде. Явный
+Для включения AI-поверхностей обязателен отдельный server-only secret:
+
+```text
+ROUTERAI_API_KEY
+```
+
+Optional RouterAI config с текущими defaults приложения:
+
+```text
+ROUTERAI_MODEL=qwen/qwen3-30b-a3b-instruct-2507
+ROUTERAI_BASE_URL=https://routerai.ru/api/v1
+ROUTERAI_TIMEOUT_MS=300000
+```
+
+Обе optional app-session переменные имеют эти defaults в коде. Явный
 `APP_SESSION_VERSION` нужен для управляемой глобальной invalidation, а явный
 TTL не позволяет незаметно зависеть от смены default.
 
 - `NEXT_PUBLIC_SITE_URL` описывает landing/canonical public URL.
 - `NEXT_PUBLIC_APP_URL` должен указывать на `https://v2.shidao.ru` и имеет
-  приоритет для Auth callback.
+  приоритет для Auth callback. Этот же app URL является configured origin для
+  unsafe V2 requests; landing URL не должен попадать в этот allowlist.
 - Любая `NEXT_PUBLIC_*` переменная доступна browser bundle; secret key туда не
   помещается.
 - `NEXT_PUBLIC_*` должны быть доступны на build stage. Их изменение требует
   нового build/redeploy; runtime-only смена environment не переписывает уже
   inlined client bundle.
+- Все `ROUTERAI_*` читаются только Node.js server runtime. Их нельзя добавлять
+  с префиксом `NEXT_PUBLIC_`, передавать через Docker build arguments или
+  включать в client config.
+- `ROUTERAI_API_KEY` не нужен build stage. После его изменения нужен новый
+  runtime container/redeploy, чтобы процесс получил новую environment.
+- Production `ROUTERAI_BASE_URL` должен оставаться HTTPS URL без credentials,
+  query и fragment. Модель и timeout можно менять отдельно от ключа.
 
 SMTP/GoTrue переменные настраиваются в Supabase environment, а не в Next.js.
+
+### RouterAI secret в Coolify
+
+Первичная настройка выполняется только в environment editor существующего
+ShiDao V2 application:
+
+1. Создать новый ключ в RouterAI. Ключ, который когда-либо попал в чат, issue,
+   screenshot, shell history или открытый log, считать раскрытым и сначала
+   отозвать; не переносить его в production.
+2. Добавить `ROUTERAI_API_KEY` в Coolify как masked/secret runtime variable.
+   Не включать её как build variable и не сохранять значение в repository,
+   Dockerfile, `.env.example` или operational runbook.
+3. Явно закрепить `ROUTERAI_MODEL`, а при необходимости также base URL и
+   timeout. Эти значения не являются credentials, но должны соответствовать
+   проверенному release.
+4. Сохранить environment и redeploy существующего application. Не создавать
+   новый Coolify app и не менять домены, Supabase или Auth environment.
+5. В terminal нового container проверить только наличие переменной, не её
+   значение:
+
+   ```bash
+   node -e 'process.exit(process.env.ROUTERAI_API_KEY ? 0 : 1)'
+   ```
+
+   Команда при успехе ничего не печатает. Не использовать `env`, `printenv`,
+   `docker inspect ...Config.Env`, `curl -v` или другие команды, выводящие
+   credentials.
+
+Плановая ротация без признаков компрометации:
+
+1. создать новый RouterAI key;
+2. заменить masked secret в Coolify и поднять новый runtime container;
+3. пройти AI smoke ниже и сверить usage в RouterAI;
+4. только после успешной проверки отозвать прежний ключ.
+
+При раскрытии старый ключ отзывается сразу, до deploy. Если новый ключ не
+проходит smoke, выпуск остаётся на ручном Course Builder; раскрытый или уже
+отозванный ключ не возвращается ради rollback.
 
 ## 7. Smoke после deploy
 
@@ -164,6 +229,40 @@ SMTP/GoTrue переменные настраиваются в Supabase environm
 - fullscreen preview открывается;
 - reload сохраняет данные;
 - signed attachment открывается только при разрешённом ownership/projection.
+
+### RouterAI и AI-поверхности
+
+- войти на `v2.shidao.ru` как Teacher и открыть `/courses/new`;
+- на disposable Course выбрать «Создать с ИИ» и получить preview программы с
+  ожидаемым числом Lessons, configured model и ненулевым token usage;
+- подтвердить preview, открыть Course и после reload увидеть ту же persisted
+  последовательность Lessons без дублей;
+- создать или дополнить один Lesson через «Заполнить с помощью ИИ»: сначала
+  проверить preview, затем применить и после reload увидеть Components;
+- подтвердить, что AI Components созданы `staff_only` и не попали на Student
+  Screen без явного назначения преподавателем;
+- открыть «ИИ-ассистент», отправить один безопасный вопрос и получить ответ с
+  token usage; чат консультирует и не меняет Course/Lesson;
+- AI-вызовы в browser Network должны идти только в same-origin `/api/v2/...`:
+  RouterAI URL, Authorization header и API key не появляются в browser bundle,
+  request или console;
+- содержимое attachments не отправляется провайдеру и UI не утверждает, что
+  файл проанализирован, пока parsing/RAG отдельно не реализован;
+- не исчерпывать production rate limit намеренно: timeout/rate-limit paths
+  покрываются release tests; если ошибка возникает в smoke, ручное
+  редактирование остаётся доступно, а preview не применяется повторно;
+- при наличии второго test owner подтвердить, что чужой Course недоступен и
+  rejected request не создаёт новый RouterAI usage;
+- в web logs допускается только ограниченная audit metadata: operation,
+  actor/Course/Lesson IDs, provider/request ID, model и token usage. Не выводить
+  совпавшие строки при secret scan; проверять только факт отсутствия API keys,
+  Authorization/Cookie, full prompts и private payloads;
+- в RouterAI dashboard сверить, что smoke создал ожидаемые запросы/usage и не
+  вызвал неожиданный всплеск расхода.
+
+После smoke disposable Course удалить только через обычный подтверждённый UI,
+если такой delete flow входит в текущий release; иначе оставить его явно
+помеченным как smoke, не удаляя данные напрямую из БД.
 
 ### Teacher navigation shells
 
@@ -238,5 +337,8 @@ versions, volumes, gateway name/config, создать проверенный ba
 - применённые migrations и их postflight;
 - running deployed SHA/image;
 - deployed-contour smoke results;
+- configured RouterAI model/base URL/timeout без API key, provider request IDs
+  и token usage от smoke;
+- факт успешной ротации/отзыва старого ключа без значения secret;
 - известные ограничения;
 - какие current-state/roadmap/docs обновлены.

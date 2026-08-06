@@ -19,6 +19,8 @@ import {
   courseBuilderRequest,
   loadCourseWorkspace,
 } from "@/components/course-builder/course-builder-client";
+import { AiLessonPlanDialog } from "@/components/course-builder/ai-lesson-plan-dialog";
+import { AiCourseAssistantDialog } from "@/components/course-builder/ai-course-assistant-dialog";
 import { CourseMaterialsPanel } from "@/components/course-builder/course-materials-panel";
 import {
   COURSE_WORKSPACE_TABS,
@@ -287,6 +289,7 @@ function CourseLessonsPanel({
 }) {
   const [newLessonTitle, setNewLessonTitle] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [aiLessonTitle, setAiLessonTitle] = useState<string | null>(null);
   const [submissionFailed, setSubmissionFailed] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -492,14 +495,20 @@ function CourseLessonsPanel({
                   <h3 className="font-bold">Заполнить с помощью ИИ</h3>
                 </div>
                 <p className="mt-2 flex-1 text-sm leading-6 text-violet-900/75">
-                  Автоматическая сборка станет доступна после подключения
-                  OpenRouter и выбора модели. Сейчас ИИ не вызывается.
+                  ИИ предложит комментарий преподавателя и компоненты урока. Вы
+                  увидите план до сохранения.
                 </p>
                 <Button
                   type="button"
                   variant="secondary"
                   className="mt-4 w-full"
-                  disabled
+                  disabled={disabled || !newLessonTitle.trim()}
+                  onClick={() => {
+                    const title = newLessonTitle.trim();
+                    if (!title) return;
+                    setDialogOpen(false);
+                    setAiLessonTitle(title);
+                  }}
                 >
                   Заполнить с помощью ИИ
                 </Button>
@@ -518,6 +527,25 @@ function CourseLessonsPanel({
             </div>
           </form>
         </DialogShell>
+      ) : null}
+
+      {aiLessonTitle ? (
+        <AiLessonPlanDialog
+          courseId={courseId}
+          lessonId={null}
+          title={aiLessonTitle}
+          disabled={disabled}
+          runMutation={runMutation}
+          onClose={() => {
+            setAiLessonTitle(null);
+            setDialogOpen(true);
+          }}
+          onApplied={(lessonId) => {
+            setAiLessonTitle(null);
+            setNewLessonTitle("");
+            onSelect(lessonId);
+          }}
+        />
       ) : null}
     </>
   );
@@ -608,6 +636,7 @@ export function CourseWorkspaceClient({
   const [course, setCourse] = useState<CourseWorkspace | null>(null);
   const [navigation, setNavigation] = useState(createCourseWorkspaceNavigation);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [assistantOpen, setAssistantOpen] = useState(false);
   const [returnFocusLessonId, setReturnFocusLessonId] = useState<string | null>(
     null,
   );
@@ -750,14 +779,23 @@ export function CourseWorkspaceClient({
             title={course.title}
             description={`Создано уроков: ${course.lessonCount} из ${course.targetLessonCount} · готовых вложений: ${readyAttachmentCount}`}
             actions={
-              <Button
-                ref={settingsTriggerRef}
-                variant="secondary"
-                onClick={() => setSettingsOpen(true)}
-              >
-                <Settings className="h-4 w-4" aria-hidden="true" />
-                Настройки
-              </Button>
+              <>
+                <Button
+                  variant="secondary"
+                  onClick={() => setAssistantOpen(true)}
+                >
+                  <WandSparkles className="h-4 w-4" aria-hidden="true" />
+                  ИИ-ассистент
+                </Button>
+                <Button
+                  ref={settingsTriggerRef}
+                  variant="secondary"
+                  onClick={() => setSettingsOpen(true)}
+                >
+                  <Settings className="h-4 w-4" aria-hidden="true" />
+                  Настройки
+                </Button>
+              </>
             }
           />
 
@@ -831,6 +869,15 @@ export function CourseWorkspaceClient({
           disabled={Boolean(busyLabel)}
           runMutation={runMutation}
           onClose={closeSettings}
+        />
+      ) : null}
+
+      {assistantOpen ? (
+        <AiCourseAssistantDialog
+          courseId={course.id}
+          courseTitle={course.title}
+          lessonId={null}
+          onClose={() => setAssistantOpen(false)}
         />
       ) : null}
     </div>

@@ -128,8 +128,10 @@ export function middleware(req: NextRequest) {
       secFetchSite: req.headers.get("sec-fetch-site"),
       host: req.headers.get("host"),
       forwardedHost: req.headers.get("x-forwarded-host"),
-      configuredSiteUrl:
-        process.env.NEXT_PUBLIC_SITE_URL ?? process.env.SITE_URL ?? null,
+      // Only the working application URL is an allowed configured origin.
+      // When it is absent (for example in local development), csrf.ts falls
+      // back to the request Host / X-Forwarded-Host values above.
+      configuredAppUrl: process.env.NEXT_PUBLIC_APP_URL ?? null,
     })
   ) {
     return NextResponse.json(

@@ -72,6 +72,11 @@ file
 UI, application service and development MCP use the same Zod contracts. MCP
 JSON Schema is generated from those contracts.
 
+The current, not-yet-deployed RouterAI source candidate also validates generated
+Lesson content against a deliberately limited subset of these same registry
+contracts before explicit Apply. It introduces no new domain entity or physical
+schema.
+
 Registry definitions own keys/schemas/defaults/capabilities. The current
 payload editor is one switch over `ComponentTypeKey`; renderers use an
 exhaustive typed map. Neither React implementation is embedded in the current
@@ -104,7 +109,8 @@ The following are target domains, not current tables or product capabilities:
 - new neutral LearnerProfile/Guardian/Group audience model;
 - LessonSession/live runtime;
 - learning history/progress;
-- OpenRouter generation, quotas and AI change sets;
+- deployment of the current RouterAI authoring source candidate;
+- persistent AI quotas/usage ledger and AI change sets/undo;
 - parsing/RAG sources;
 - reusable cross-Course material/template library;
 - chat/notifications and external MCP.

@@ -6,13 +6,24 @@ const SENSITIVE_KEYS = new Set([
   "password",
   "secret",
   "token",
-  "accessToken",
-  "refreshToken",
+  "accesstoken",
+  "refreshtoken",
+  "apikey",
+  "api_key",
+  "api-key",
+  "x-api-key",
+  "routerai_api_key",
   "authorization",
+  "proxy-authorization",
   "cookie",
+  "set-cookie",
   "pin",
   "p_raw_pin",
 ]);
+
+function isSensitiveKey(key: string) {
+  return SENSITIVE_KEYS.has(key.toLowerCase());
+}
 
 function sanitize(value: unknown): unknown {
   if (Array.isArray(value)) {
@@ -23,7 +34,7 @@ function sanitize(value: unknown): unknown {
     return Object.fromEntries(
       Object.entries(value as Record<string, unknown>).map(([key, nested]) => [
         key,
-        SENSITIVE_KEYS.has(key) ? "[redacted]" : sanitize(nested),
+        isSensitiveKey(key) ? "[redacted]" : sanitize(nested),
       ]),
     );
   }

@@ -7,7 +7,8 @@
 **Область:** Course Builder / Lesson / Components / Student Screen / course materials / homework
 
 **Implementation state:** authoring, persisted Slides и preview развёрнуты на
-`v2.shidao.ru`; Homework/AI/live остаются будущими срезами
+`v2.shidao.ru`; RouterAI authoring реализован как текущий source candidate, но
+ещё не deployed; Homework/live остаются будущими срезами
 
 ## Product decision
 
@@ -268,13 +269,21 @@ Course/Lesson model:
 Lesson и создаёт пустую Lesson. Teacher comment редактируется затем в модалке
 настроек Lesson и сохраняется в `summary`.
 
-Ручное создание сохраняет пустую Lesson и не расходует AI tokens. Будущая
-кнопка AI-generation вызывает orchestrator, который создаёт те же Component
-entities через application service. Она не создаёт альтернативный тип урока.
+Ручное создание сохраняет пустую Lesson и не расходует AI tokens. В deployed
+release `fea7f80` кнопка AI ещё disabled. Текущий source candidate включает два
+AI-flow, которые пока не развёрнуты на `v2.shidao.ru`:
 
-Кнопка «Заполнить с помощью ИИ» сейчас disabled и прямо сообщает, что
-OpenRouter не подключён. До фактического provider call UI не утверждает, что
-Lesson сгенерирована AI.
+- новая Lesson: provider готовит preview comment + Components, а Lesson
+  создаётся только после отдельного Apply;
+- существующая Lesson: provider готовит preview дополнения, а Apply обновляет
+  teacher comment и добавляет Components в конец текущего ordered list, не
+  заменяя существующие.
+
+До Apply provider call не выполняет persistence mutation. План повторно
+валидируется registry contracts, сверяется с исходными Lesson/Component IDs и
+создаёт те же Lesson/Component entities через application service. Новые
+Components остаются `staff_only`; AI не создаёт Student Screen Slide и не
+публикует материал ученику автоматически.
 
 ## Course materials and Storage
 
@@ -335,20 +344,45 @@ Implementation map:
 - application service: `src/modules/course-builder/service.ts`;
 - repository: `src/modules/course-builder/repository.ts`;
 - MCP: `src/modules/course-builder/mcp/`;
+- AI provider/contracts/service: `src/modules/ai/`;
+- AI routes: `src/app/api/v2/courses/[courseId]/ai-*/` и `assistant/`;
 - authoring UI: `src/components/course-builder/lesson-authoring-workspace.tsx`;
 - current schema: `supabase/schema/current-schema.sql`;
 - Slide migration: `20260804044955_add_lesson_student_slides.sql`.
 
 ## AI boundary
 
-AI не получает SQL/service-role доступ. Future OpenRouter adapter планирует
-Lesson и вызывает typed application commands. Детерминированный assembler и AI
-создают одинаковые Lesson/Component entities; смена planning strategy не меняет
-domain model или renderer contracts.
+AI не получает SQL/service-role доступ. Текущий source candidate использует
+server-only RouterAI adapter и per-request actor из authenticated Course Builder
+context. Production web не запускает локальный `stdio` MCP: после explicit
+teacher Apply AI-service вызывает typed application commands напрямую.
+Детерминированный assembler, ручной редактор и AI создают одинаковые
+Lesson/Component entities; смена planning strategy не меняет domain model или
+renderer contracts.
 
-Без реально выполненного parsing нельзя утверждать, что attachment был
-прочитан или использован моделью. Без provider call нельзя списывать tokens и
-называть операцию AI-generation.
+Course/Lesson generation строго разделяет read-only planning и persistence:
+
+```text
+provider call → validated preview → teacher confirmation → application commands
+```
+
+Assistant является отдельным read-only ephemeral flow. Он может видеть
+ограниченный Course context и выбранную Lesson, но не вызывает commands/tools и
+не утверждает, что изменил данные. Dialog history хранится только в React state
+и не переживает close/reload.
+
+Модель получает teacher context, но не file contents, signed URLs или Storage
+credentials. Для attachments передаются только filename/MIME/status; parsing,
+OCR, embeddings и RAG отсутствуют. Поэтому нельзя утверждать, что attachment
+прочитан или использован моделью.
+
+Provider request ID/model/token usage возвращаются UI и пишутся в ограниченный
+metadata log. Persistent quota/ledger, billing и AI change sets не реализованы;
+process-local rate limit не является балансом пользователя. AI-срез не добавляет
+таблицы, RPC или migration.
+
+Полный provider, security, preview/apply и deployment contract находится в
+[`ai-provider-integration.md`](./ai-provider-integration.md).
 
 ## Runtime and future live mode
 
@@ -379,7 +413,9 @@ import/application layer. Он не возвращает Methodology в акти
 
 ## Not implemented yet
 
-- обязательная AI-генерация;
+- deployment/postflight текущего RouterAI source candidate на `v2.shidao.ru`;
+- write-capable AI assistant, persisted assistant history и tool calling;
+- persistent AI quota/ledger, billing и change sets/undo;
 - parsing/RAG загруженных файлов;
 - persisted homework editor;
 - persisted scheduling, LessonSession и live sync;
@@ -416,3 +452,7 @@ import/application layer. Он не возвращает Methodology в акти
 browser smoke, включая teacher navigation, computed-style и mobile contracts.
 Coolify и deployed browser postflight подтвердили точный SHA `fea7f80`, guest
 redirect и авторизованные `/schedule`, `/students` и `/courses`.
+
+RouterAI source candidate не входит в этот shipped acceptance baseline. До
+отдельного deployment/postflight его нельзя считать доступным пользователям
+`v2.shidao.ru`.

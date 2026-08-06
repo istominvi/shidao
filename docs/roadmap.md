@@ -48,6 +48,9 @@
 - Реализованы private-by-default Components и persisted Student Screen Slides.
 - Реализован fullscreen Student Screen preview.
 - Реализован development-only MCP из шести tools поверх application service.
+- В текущем source candidate реализованы RouterAI provider adapter,
+  Course/Lesson preview → explicit apply и read-only ephemeral assistant. Этот
+  срез ещё не deployed и поэтому не входит в проверенный release `fea7f80`.
 - Browser-smoke переведён на актуальную AES-GCM app-session; строгий
   production-mode gate покрывает guest/auth redirects, Course → Lesson →
   backlink, computed visual contract и mobile overflow без обращения к
@@ -105,27 +108,56 @@ Definition of Done:
 - keyboard/focus/dialog behavior проходит accessibility smoke;
 - reload и повторный вход не меняют состояние.
 
-## P0.3: OpenRouter lesson assembler
+## P0.3: RouterAI Course/Lesson authoring
 
-Цель — включить кнопку «Заполнить с помощью ИИ» без создания второй архитектуры
-урока.
+Цель — дать преподавателю работающую AI-сборку Course/Lesson без второй
+архитектуры урока и без неконтролируемой записи из чата.
 
-- server-only OpenRouter-compatible provider adapter;
-- конфигурируемая модель, таймауты и отмена;
-- structured planning output, валидируемый теми же Zod/registry contracts;
-- вызовы только application service commands;
-- preview предлагаемых изменений до применения при массовой генерации;
-- idempotency и аудит IDs без private payload/secrets;
-- понятная ошибка и возможность продолжить вручную;
-- фактический token usage и quota ledger до появления платного ограничения.
+**Current source candidate (ещё не deployed):**
 
-MCP остаётся development adapter. Внутренний AI может переиспользовать его
-tool definitions/contracts, но не обязан поднимать внешний MCP endpoint внутри
-production web.
+- server-only OpenAI-compatible RouterAI adapter с default
+  `qwen/qwen3-30b-a3b-instruct-2507`, конфигурируемой моделью, timeout и abort;
+- bounded provider input и structured output, повторно валидируемый теми же
+  Zod/registry contracts;
+- Course outline ровно на `targetLessonCount` Lessons;
+- создание новой или дополнение существующей Lesson ограниченным набором
+  registry Components;
+- отдельные preview и explicit Apply; provider planning не выполняет записи;
+- stale-plan checks, idempotent Course retry и compensating cleanup для
+  поддерживаемых apply paths;
+- новые AI Components private-by-default и не публикуются на Student Screen;
+- read-only ephemeral assistant с Course/selected Lesson context, без tools,
+  mutation commands и persisted chat history;
+- понятные provider errors и сохранение ручного workflow;
+- фактические request ID/model/token usage в ответе и metadata-only server log;
+- process-local rate/concurrency limit без новой persistence;
+- attachment metadata без скачивания/парсинга file contents;
+- отсутствие schema migration, quota/ledger и billing.
 
-На этом этапе attachment может использоваться только как метаданные и явно
-введённый teacher context. Нельзя писать «AI изучил файл», пока следующий
-pipeline не вернул подтверждённый extracted text.
+**Next, чтобы считать срез shipped:**
+
+- создать новый ротированный provider key для deployment; ранее показанный в
+  чате/логе key не использовать;
+- задать server-only production config и проверить совместимость/cost выбранной
+  модели реальными bounded prompts;
+- пройти typecheck, lint, unit/contract tests и production build;
+- выполнить authenticated postflight Course preview/apply, Lesson
+  preview/apply, assistant и provider-error fallback на `v2.shidao.ru`;
+- подтвердить в postflight, что assistant read-only, generated Components
+  остаются private и attachment contents не передаются provider;
+- при нескольких application replicas заменить process-local protection
+  распределённым rate limit;
+- спроектировать persistent quota/usage ledger до введения платного ограничения,
+  но не выдавать текущий metadata usage за balance или billing.
+
+MCP остаётся development adapter. Production web вызывает application
+service/contracts напрямую и не поднимает внешний MCP endpoint или статический
+MCP actor. Полный current/source/deployment contract находится в
+[`docs/architecture/ai-provider-integration.md`](./architecture/ai-provider-integration.md).
+
+На этом этапе attachment используется только как metadata и явно введённый
+teacher context. Нельзя писать «AI изучил файл», пока отдельный parsing pipeline
+не вернул подтверждённый extracted text.
 
 ## P1.1: persisted Homework
 

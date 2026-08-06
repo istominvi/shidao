@@ -28,8 +28,11 @@ export type CsrfCheckInput = {
   host: string | null;
   /** `X-Forwarded-Host` request header (host presented by the edge proxy). */
   forwardedHost: string | null;
-  /** Configured public site URL (NEXT_PUBLIC_SITE_URL / SITE_URL). */
-  configuredSiteUrl?: string | null;
+  /**
+   * Configured application URL (NEXT_PUBLIC_APP_URL). Its host is
+   * authoritative when valid; request hosts are the local/dev fallback.
+   */
+  configuredAppUrl?: string | null;
 };
 
 function hostFromUrl(value: string | null | undefined): string | null {
@@ -42,12 +45,13 @@ function hostFromUrl(value: string | null | undefined): string | null {
 }
 
 function collectAllowedHosts(input: CsrfCheckInput): Set<string> {
+  const configuredHost = hostFromUrl(input.configuredAppUrl);
+  if (configuredHost) return new Set([configuredHost]);
+
   const hosts = new Set<string>();
   for (const raw of [input.forwardedHost, input.host]) {
     if (raw) hosts.add(raw.trim().toLowerCase());
   }
-  const configuredHost = hostFromUrl(input.configuredSiteUrl);
-  if (configuredHost) hosts.add(configuredHost);
   return hosts;
 }
 

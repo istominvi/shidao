@@ -16,6 +16,13 @@ Release `fea7f80` добавляет пункты «Расписание / Уч�
 Schedule events, LessonSession, LearnerProfile, Group или новую
 persistence/schema.
 
+В текущем source candidate дополнительно реализован RouterAI-срез: preview/apply
+для программы Course и наполнения Lesson, а также read-only ephemeral
+AI-assistant. Этот source candidate ещё не развёрнут и не проверен postflight на
+`v2.shidao.ru`; verified deployed state ниже по-прежнему относится к release
+`fea7f80` без рабочего AI. Подробная граница зафиксирована в
+[`docs/architecture/ai-provider-integration.md`](./architecture/ai-provider-integration.md).
+
 `v2.shidao.ru` — active deployed customer-demo contour на production-mode
 build, но публичный production launch и отдельный staging ещё не выполнены.
 
@@ -72,8 +79,9 @@ Account
 ### Курсы
 
 - `/courses` показывает реальные Course текущего Account.
-- `/courses/new` создаёт пустой persisted draft или запускает простой
-  детерминированный assembler.
+- В release `fea7f80` `/courses/new` создаёт пустой persisted draft или запускает
+  простой детерминированный assembler. Текущий source candidate добавляет третий
+  вариант: запросить AI-программу, проверить preview и отдельно применить её.
 - Форма сохраняет название, тему, цель, уровень, описание аудитории,
   планируемое число уроков и приватные пожелания преподавателя.
 - На форме можно загрузить изображения и документы до 10 MiB в private bucket
@@ -130,7 +138,9 @@ Account
   не вводит владение файлами на уровне Lesson; «История» пока заглушка.
 - Создание вручную требует только название и создаёт пустую Lesson без AI и
   без списания токенов.
-- Кнопка AI в модальном окне намеренно disabled: OpenRouter ещё не подключён.
+- В release `fea7f80` кнопка AI в модальном окне disabled. Текущий source
+  candidate включает preview/apply для новой Lesson и дополнения существующей,
+  но ещё не развёрнут на `v2.shidao.ru`.
 - Название и комментарий Lesson редактируются отдельной модалкой.
 - Карточку Lesson нельзя перемещать или назначать на Student Screen.
 - Lesson можно удалить; оставшиеся позиции уплотняются.
@@ -194,13 +204,51 @@ lesson.reorder_component
 ```
 
 MCP вызывает `CourseBuilderApplicationService`, использует проверенный
-пользовательский JWT и не обращается к таблицам напрямую. OpenRouter к нему
-пока не подключён.
+пользовательский JWT и не обращается к таблицам напрямую. RouterAI не
+подключается к `stdio` transport: production AI source candidate вызывает те же
+application service/contracts внутри authenticated web request.
+
+### AI provider integration — source candidate, ещё не deployed
+
+- Server-only adapter вызывает OpenAI-compatible RouterAI endpoint. Default
+  model в source — `qwen/qwen3-30b-a3b-instruct-2507`; key, model, base URL и
+  timeout задаются server environment и не отправляются browser.
+- New Course flow сначала сохраняет обычный пустой Course и attachments, затем
+  получает ровно `targetLessonCount` titles/comments. Provider call ничего не
+  записывает; UI показывает preview, model и token usage, а Lessons появляются
+  только после отдельного Apply.
+- Lesson planning поддерживает новую или существующую Lesson. Provider output
+  ограничен типами `heading`, `rich_text`, `callout`, `divider`,
+  `single_choice_poll`, `matching_game` и повторно валидируется registry/Zod
+  contracts до первой записи.
+- Lesson Apply проверяет, что Course/Lesson не изменились после preview. Для
+  существующей Lesson он обновляет teacher comment и добавляет Components, не
+  заменяя уже существующие. Новые Components остаются `staff_only`; Student
+  Screen не публикуется автоматически.
+- Course/Lesson apply использует существующий `CourseBuilderApplicationService`
+  с per-request actor, ownership и пользовательским JWT. SQL, service role,
+  отдельная AI-таблица или migration не добавлены.
+- Assistant читает bounded Course/selected Lesson context и отвечает текстом,
+  но не вызывает mutation commands, MCP tools или apply routes. История живёт
+  только в React state dialog и исчезает после close/reload.
+- Attachment contents, signed URLs и Storage identifiers модели не передаются:
+  доступны только filename/MIME/status. Parsing, OCR, embeddings и RAG не
+  реализованы.
+- Provider request ID/model/usage возвращаются UI и попадают в ограниченный
+  server log event. Persistent quota/ledger, billing, balance и AI change sets
+  отсутствуют; process-local rate limit не является пользовательской квотой.
+
+Source files и тесты существуют в текущем source tree, но этот раздел не означает
+deployment. Release acceptance описан в
+[`docs/architecture/ai-provider-integration.md`](./architecture/ai-provider-integration.md).
 
 ## 3. Что ещё не реализовано
 
-- рабочая AI-генерация Lesson/Course и выбор модели;
-- token quota, billing units и AI change sets;
+- deployment и authenticated postflight текущего RouterAI source candidate на
+  `v2.shidao.ru`;
+- пользовательский выбор модели и persisted provider settings;
+- persistent assistant/Course chat, write-capable assistant и tool calling;
+- persistent token quota/ledger, billing units, balance и AI change sets/undo;
 - parsing/RAG прикреплённых материалов;
 - добавление новых материалов из модалки существующего Course;
 - persisted Homework editor;
@@ -209,7 +257,7 @@ MCP вызывает `CourseBuilderApplicationService`, использует п�
 - persisted Schedule events, LessonSession, live sync и teacher-controlled
   runtime cursor;
 - учебная история, прогресс и аналитика;
-- chat и notifications;
+- persisted communication chat и notifications;
 - templates/marketplace;
 - внешний remote MCP/API для сторонних агентов;
 - отдельный staging-контур.
@@ -269,6 +317,11 @@ stored_file
 course_attachment
 ```
 
+Текущий AI source candidate переиспользует эти сущности после explicit Apply и
+не изменяет physical schema: новых tables, columns, RPC, Storage buckets или
+migrations нет. Assistant history, provider requests и quota state в БД не
+сохраняются.
+
 Последние структурные migrations:
 
 - `20260804033421_course_lesson_components_remove_legacy_methodology.sql` —
@@ -295,31 +348,35 @@ positions, а плотность поддерживают текущие service
 
 ## 7. Карта реализации
 
-| Область                     | Каноническое место                                                                                 |
-| --------------------------- | -------------------------------------------------------------------------------------------------- |
-| Course/Lesson contracts     | `src/modules/course-builder/contracts.ts`                                                          |
-| Domain/read models          | `src/modules/course-builder/domain.ts`                                                             |
-| Application service         | `src/modules/course-builder/service.ts`                                                            |
-| Supabase repository         | `src/modules/course-builder/repository.ts`                                                         |
-| Storage adapter             | `src/modules/course-builder/storage.ts`                                                            |
-| Component registry          | `src/modules/course-builder/registry/contracts.ts`                                                 |
-| MCP tools/server            | `src/modules/course-builder/mcp/`                                                                  |
-| Course browser client       | `src/components/course-builder/course-builder-client.ts`                                           |
-| New Course flow             | `src/components/course-builder/new-course-form.tsx`                                                |
-| Course workspace            | `src/components/course-builder/course-workspace.tsx`                                               |
-| Course/Lesson navigation    | `src/components/course-builder/course-workspace-navigation.ts`                                     |
-| Workspace tabs/materials    | `src/components/ui/workspace-tabs.tsx`, `src/components/course-builder/course-materials-panel.tsx` |
-| Lesson editor/Slides        | `src/components/course-builder/lesson-authoring-workspace.tsx`                                     |
-| Component editors/renderers | `src/components/course-builder/component-payload-editor.tsx`, `component-renderers.tsx`            |
-| Fullscreen preview          | `src/components/course-builder/student-screen-preview.tsx`                                         |
-| Teacher Schedule shell      | `src/app/(app)/(teacher-required)/schedule/`, `src/components/teaching-hub/schedule-workspace.tsx` |
-| Teacher Students shell      | `src/app/(app)/(teacher-required)/students/`, `src/components/teaching-hub/students-workspace.tsx` |
-| Teacher route boundary      | `src/app/(app)/(teacher-required)/layout.tsx`, `src/lib/server/access-guards.ts`                   |
-| V2 API routes               | `src/app/api/v2/`                                                                                  |
-| Host boundary               | `src/middleware.ts`, `src/lib/deployment-access.ts`                                                |
-| Auth/session                | `src/lib/auth.ts`, `src/lib/server/`                                                               |
-| Current schema              | `supabase/schema/current-schema.sql`                                                               |
-| Forward history             | `supabase/migrations/`                                                                             |
+| Область                     | Каноническое место                                                                                                       |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| Course/Lesson contracts     | `src/modules/course-builder/contracts.ts`                                                                                |
+| Domain/read models          | `src/modules/course-builder/domain.ts`                                                                                   |
+| Application service         | `src/modules/course-builder/service.ts`                                                                                  |
+| Supabase repository         | `src/modules/course-builder/repository.ts`                                                                               |
+| Storage adapter             | `src/modules/course-builder/storage.ts`                                                                                  |
+| Component registry          | `src/modules/course-builder/registry/contracts.ts`                                                                       |
+| MCP tools/server            | `src/modules/course-builder/mcp/`                                                                                        |
+| AI provider/contracts       | `src/modules/ai/routerai.ts`, `src/modules/ai/course-builder-contracts.ts`                                               |
+| AI context/service          | `src/modules/ai/course-context.ts`, `src/modules/ai/course-builder-service.ts`                                           |
+| AI API/error boundary       | `src/app/api/v2/courses/[courseId]/ai-*/`, `assistant/`, `src/modules/ai/server-context.ts`                              |
+| AI dialogs                  | `src/components/course-builder/ai-course-plan-dialog.tsx`, `ai-lesson-plan-dialog.tsx`, `ai-course-assistant-dialog.tsx` |
+| Course browser client       | `src/components/course-builder/course-builder-client.ts`                                                                 |
+| New Course flow             | `src/components/course-builder/new-course-form.tsx`                                                                      |
+| Course workspace            | `src/components/course-builder/course-workspace.tsx`                                                                     |
+| Course/Lesson navigation    | `src/components/course-builder/course-workspace-navigation.ts`                                                           |
+| Workspace tabs/materials    | `src/components/ui/workspace-tabs.tsx`, `src/components/course-builder/course-materials-panel.tsx`                       |
+| Lesson editor/Slides        | `src/components/course-builder/lesson-authoring-workspace.tsx`                                                           |
+| Component editors/renderers | `src/components/course-builder/component-payload-editor.tsx`, `component-renderers.tsx`                                  |
+| Fullscreen preview          | `src/components/course-builder/student-screen-preview.tsx`                                                               |
+| Teacher Schedule shell      | `src/app/(app)/(teacher-required)/schedule/`, `src/components/teaching-hub/schedule-workspace.tsx`                       |
+| Teacher Students shell      | `src/app/(app)/(teacher-required)/students/`, `src/components/teaching-hub/students-workspace.tsx`                       |
+| Teacher route boundary      | `src/app/(app)/(teacher-required)/layout.tsx`, `src/lib/server/access-guards.ts`                                         |
+| V2 API routes               | `src/app/api/v2/`                                                                                                        |
+| Host boundary               | `src/middleware.ts`, `src/lib/deployment-access.ts`                                                                      |
+| Auth/session                | `src/lib/auth.ts`, `src/lib/server/`                                                                                     |
+| Current schema              | `supabase/schema/current-schema.sql`                                                                                     |
+| Forward history             | `supabase/migrations/`                                                                                                   |
 
 ## 8. Активные пользовательские маршруты
 
@@ -346,6 +403,12 @@ V2 Course API находится под `/api/v2/`. У `/schedule` и `/students
 mutation API: оба shell переиспользуют только существующее owner-scoped чтение
 Course summaries. Старые dashboard/methodology/group/scheduled-lesson routes не
 поддерживаются как compatibility URL.
+
+Текущий, ещё не deployed AI source candidate добавляет authenticated `POST`
+routes `ai-plan`, `ai-apply`, `ai-lesson-plan`, `ai-lesson-apply` и `assistant`
+под `/api/v2/courses/[courseId]/`. Planning/chat routes вызывают provider;
+apply routes только валидируют preview и выполняют существующие application
+commands.
 
 Дополнительные project surfaces:
 
@@ -408,6 +471,10 @@ production build и строгие 8/8 browser smoke. Coolify deployment точ�
 `/schedule` → `/login`, teacher-only меню «Расписание / Ученики / Курсы», обе
 новые страницы, чтение реальных Course summaries, прозрачный page header,
 плоский фон `#f5f1e8` и переход обратно в `/courses`.
+
+AI source candidate не входит в эти deployed assertions. До отдельного
+deployment его нельзя описывать как доступный пользователям `v2.shidao.ru`,
+даже если локальные unit/contract tests и production build проходят.
 
 ## 10. Правило обновления этого документа
 

@@ -5,7 +5,7 @@ import { isCrossOriginRequest, isUnsafeMethod } from "../csrf";
 const base = {
   host: "app.example.com",
   forwardedHost: "app.example.com",
-  configuredSiteUrl: "https://app.example.com",
+  configuredAppUrl: "https://app.example.com",
 };
 
 test("safe methods are never treated as cross-origin", () => {
@@ -28,15 +28,31 @@ test("isUnsafeMethod flags mutating verbs", () => {
   assert.equal(isUnsafeMethod("get"), false);
 });
 
-test("same-origin POST is allowed", () => {
+test("same V2 app origin POST is allowed", () => {
   assert.equal(
     isCrossOriginRequest({
-      ...base,
+      host: "v2.shidao.ru",
+      forwardedHost: "v2.shidao.ru",
+      configuredAppUrl: "https://v2.shidao.ru",
       method: "POST",
-      origin: "https://app.example.com",
+      origin: "https://v2.shidao.ru",
       secFetchSite: "same-origin",
     }),
     false,
+  );
+});
+
+test("landing origin is rejected for an unsafe V2 app request", () => {
+  assert.equal(
+    isCrossOriginRequest({
+      host: "v2.shidao.ru",
+      forwardedHost: "v2.shidao.ru",
+      configuredAppUrl: "https://v2.shidao.ru",
+      method: "POST",
+      origin: "https://shidao.ru",
+      secFetchSite: "same-site",
+    }),
+    true,
   );
 });
 
@@ -72,7 +88,21 @@ test("Origin matched against X-Forwarded-Host behind a proxy", () => {
       secFetchSite: null,
       host: "internal-app:3000",
       forwardedHost: "shidao.ru",
-      configuredSiteUrl: null,
+      configuredAppUrl: null,
+    }),
+    false,
+  );
+});
+
+test("localhost falls back to the request host when app URL is not configured", () => {
+  assert.equal(
+    isCrossOriginRequest({
+      method: "POST",
+      origin: "http://localhost:49892",
+      secFetchSite: "same-origin",
+      host: "localhost:49892",
+      forwardedHost: null,
+      configuredAppUrl: null,
     }),
     false,
   );
@@ -86,7 +116,7 @@ test("Origin port must match (different port is cross-origin)", () => {
       secFetchSite: null,
       host: "localhost:49892",
       forwardedHost: null,
-      configuredSiteUrl: "http://localhost:49892",
+      configuredAppUrl: "http://localhost:49892",
     }),
     true,
   );

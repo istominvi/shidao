@@ -125,8 +125,10 @@ export function CoursesIndex() {
             <Chip icon={CalendarClock} tone="slate">
               План: {course.targetLessonCount}
             </Chip>
-            {course.assembledAt ? (
-              <Chip tone="emerald">Черновик собран</Chip>
+            {course.lessonCount > 0 ? (
+              <Chip tone="emerald">
+                {course.assembledAt ? "Черновик собран" : "Программа создана"}
+              </Chip>
             ) : (
               <Chip tone="sky">Пустой курс</Chip>
             )}

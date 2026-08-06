@@ -118,10 +118,18 @@ design.
 
 ## AI provider boundary
 
-This MCP server does not call OpenRouter and does not generate lesson content.
-A future OpenRouter integration should orchestrate these same tools/application
-contracts with a server-side provider key. Until that adapter exists, the UI
-must not claim that a lesson was generated or an attachment was analyzed by AI.
+This MCP server still does not call an AI provider or generate lesson content.
+The current, not-yet-deployed RouterAI source candidate is a separate
+server-side web orchestration layer: it reuses the same application
+service/registry contracts directly, without starting this `stdio` transport or
+inventing a static MCP actor.
 
-Planned provider work belongs to `docs/roadmap.md`. Do not add OpenRouter keys
-to MCP input schemas, browser environment, logs, or committed config.
+Course and Lesson generation use validated preview → explicit Apply; the
+assistant is read-only and does not call MCP tools. Attachments remain metadata
+only until a separate parsing pipeline succeeds. The canonical boundary and
+deployment state are documented in
+[`docs/architecture/ai-provider-integration.md`](../architecture/ai-provider-integration.md).
+
+Do not add RouterAI keys to MCP input schemas, browser environment, logs or
+committed config. `ROUTERAI_API_KEY` belongs only in the production web
+runtime's server-side secret environment.

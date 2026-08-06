@@ -13,6 +13,12 @@ import type {
   CourseDraftInput,
   PrepareCourseAttachmentInput,
 } from "@/modules/course-builder/contracts";
+import type {
+  AiAssistantMessage,
+  AiAssistantReply,
+  AiCoursePlanPreview,
+  AiLessonPlanPreview,
+} from "@/modules/ai/course-builder-contracts";
 
 type CourseBuilderErrorPayload = {
   error?: string;
@@ -119,6 +125,20 @@ export async function createCourseDraft(input: CourseDraftInput) {
   return payload.course;
 }
 
+export async function updateCourseDraft(
+  courseId: string,
+  input: CourseDraftInput,
+) {
+  const payload = await courseBuilderRequest<{ course: CourseSummary }>(
+    `/api/v2/courses/${encodeURIComponent(courseId)}`,
+    {
+      method: "PATCH",
+      body: JSON.stringify(input),
+    },
+  );
+  return payload.course;
+}
+
 export async function prepareCourseAttachment(
   courseId: string,
   input: PrepareCourseAttachmentInput,
@@ -185,6 +205,84 @@ export async function assembleCourseDraft(courseId: string) {
   const payload = await courseBuilderRequest<{ result: AssembleCourseResult }>(
     `/api/v2/courses/${encodeURIComponent(courseId)}/assemble`,
     { method: "POST" },
+  );
+  return payload.result;
+}
+
+export async function generateAiCoursePlan(courseId: string, instruction = "") {
+  const payload = await courseBuilderRequest<{ result: AiCoursePlanPreview }>(
+    `/api/v2/courses/${encodeURIComponent(courseId)}/ai-plan`,
+    {
+      method: "POST",
+      body: JSON.stringify({ instruction }),
+    },
+  );
+  return payload.result;
+}
+
+export async function applyAiCoursePlan(
+  courseId: string,
+  preview: Pick<AiCoursePlanPreview, "baseContextFingerprint" | "plan">,
+) {
+  const payload = await courseBuilderRequest<{
+    result: {
+      courseId: string;
+      lessonIds: string[];
+      createdLessonIds: string[];
+      alreadyApplied: boolean;
+    };
+  }>(`/api/v2/courses/${encodeURIComponent(courseId)}/ai-apply`, {
+    method: "POST",
+    body: JSON.stringify(preview),
+  });
+  return payload.result;
+}
+
+export async function generateAiLessonPlan(
+  courseId: string,
+  input: { lessonId: string | null; title: string; instruction?: string },
+) {
+  const payload = await courseBuilderRequest<{ result: AiLessonPlanPreview }>(
+    `/api/v2/courses/${encodeURIComponent(courseId)}/ai-lesson-plan`,
+    {
+      method: "POST",
+      body: JSON.stringify({ instruction: "", ...input }),
+    },
+  );
+  return payload.result;
+}
+
+export async function applyAiLessonPlan(
+  courseId: string,
+  preview: AiLessonPlanPreview,
+) {
+  const payload = await courseBuilderRequest<{
+    result: { courseId: string; lessonId: string; componentIds: string[] };
+  }>(`/api/v2/courses/${encodeURIComponent(courseId)}/ai-lesson-apply`, {
+    method: "POST",
+    body: JSON.stringify({
+      lessonId: preview.lessonId,
+      title: preview.title,
+      baseContextFingerprint: preview.baseContextFingerprint,
+      baseLessonIds: preview.baseLessonIds,
+      baseComponentIds: preview.baseComponentIds,
+      plan: preview.plan,
+    }),
+  });
+  return payload.result;
+}
+
+export async function sendCourseAssistantMessage(
+  courseId: string,
+  lessonId: string | null,
+  messages: AiAssistantMessage[],
+) {
+  const payload = await courseBuilderRequest<{ result: AiAssistantReply }>(
+    `/api/v2/courses/${encodeURIComponent(courseId)}/assistant`,
+    {
+      method: "POST",
+      body: JSON.stringify({ lessonId, messages }),
+    },
   );
   return payload.result;
 }

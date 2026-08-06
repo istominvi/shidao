@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { ROUTES, toCourseRoute } from "@/lib/auth";
 import { Alert } from "@/components/ui/alert";
+import { AiCoursePlanDialog } from "@/components/course-builder/ai-course-plan-dialog";
 import { Button, productButtonClassName } from "@/components/ui/button";
 import { FieldHint, FieldLabel, FormField } from "@/components/ui/form-field";
 import { Input, productControlClassName } from "@/components/ui/input";
@@ -25,13 +26,17 @@ import {
 } from "@/modules/course-builder/contracts";
 import {
   assembleCourseDraft,
+  applyAiCoursePlan,
   completeCourseAttachment,
   createCourseDraft,
+  generateAiCoursePlan,
   prepareCourseAttachment,
+  updateCourseDraft,
   uploadPreparedCourseAttachment,
 } from "./course-builder-client";
+import type { AiCoursePlanPreview } from "@/modules/ai/course-builder-contracts";
 
-type SubmitIntent = "create" | "assemble";
+type SubmitIntent = "create" | "assemble" | "ai";
 type UploadStatus = "queued" | "hashing" | "uploading" | "ready" | "error";
 type CourseAssetMimeType = (typeof COURSE_ASSET_MIME_TYPES)[number];
 
@@ -173,6 +178,7 @@ export function NewCourseForm() {
   const [progressMessage, setProgressMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [createdCourseId, setCreatedCourseId] = useState<string | null>(null);
+  const [aiPreview, setAiPreview] = useState<AiCoursePlanPreview | null>(null);
 
   function addFiles(files: FileList | null) {
     if (!files?.length) return;
@@ -235,7 +241,11 @@ export function NewCourseForm() {
     const submitter = (event.nativeEvent as SubmitEvent)
       .submitter as HTMLButtonElement | null;
     const intent: SubmitIntent =
-      submitter?.value === "assemble" ? "assemble" : "create";
+      submitter?.value === "assemble"
+        ? "assemble"
+        : submitter?.value === "ai"
+          ? "ai"
+          : "create";
     let activeFileId: string | null = null;
 
     setIsSubmitting(true);
@@ -251,6 +261,9 @@ export function NewCourseForm() {
         const course = await createCourseDraft(draftInput);
         courseId = course.id;
         setCreatedCourseId(courseId);
+      } else {
+        setProgressMessage("Обновляем сохранённый курс…");
+        await updateCourseDraft(courseId, draftInput);
       }
 
       for (const selectedFile of validatedFiles) {
@@ -268,6 +281,13 @@ export function NewCourseForm() {
         await assembleCourseDraft(courseId);
       }
 
+      if (intent === "ai") {
+        setProgressMessage("ИИ составляет программу курса…");
+        setAiPreview(await generateAiCoursePlan(courseId));
+        setProgressMessage("");
+        return;
+      }
+
       setProgressMessage("Курс сохранён. Открываем редактор…");
       router.push(toCourseRoute(courseId));
       router.refresh();
@@ -280,6 +300,24 @@ export function NewCourseForm() {
       }
       setErrorMessage(formatError(error));
       setProgressMessage("");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  async function applyGeneratedCoursePlan() {
+    if (!createdCourseId || !aiPreview || isSubmitting) return;
+    setIsSubmitting(true);
+    setErrorMessage("");
+    setProgressMessage("Сохраняем программу курса…");
+    try {
+      await applyAiCoursePlan(createdCourseId, aiPreview);
+      router.push(toCourseRoute(createdCourseId));
+      router.refresh();
+    } catch (error) {
+      setErrorMessage(formatError(error));
+      setProgressMessage("");
+      setAiPreview(null);
     } finally {
       setIsSubmitting(false);
     }
@@ -306,7 +344,7 @@ export function NewCourseForm() {
 
       <SurfaceCard
         title="Основа курса"
-        description="Эти данные сохраняются в курсе и используются детерминированным сборщиком черновика."
+        description="Эти данные сохраняются в курсе и задают контекст для ручной, быстрой или AI-сборки."
       >
         <div className="grid gap-4 md:grid-cols-2">
           <FormField>
@@ -528,7 +566,17 @@ export function NewCourseForm() {
             className="w-full gap-2 sm:w-auto"
           >
             <WandSparkles className="h-4 w-4" aria-hidden="true" />
-            Собрать черновик
+            Собрать черновик без ИИ
+          </Button>
+          <Button
+            type="submit"
+            name="intent"
+            value="ai"
+            disabled={isSubmitting}
+            className="w-full gap-2 sm:w-auto"
+          >
+            <WandSparkles className="h-4 w-4" aria-hidden="true" />
+            Создать с ИИ
           </Button>
         </div>
       </div>
@@ -541,6 +589,15 @@ export function NewCourseForm() {
         >
           {progressMessage}
         </p>
+      ) : null}
+
+      {aiPreview ? (
+        <AiCoursePlanDialog
+          preview={aiPreview}
+          applying={isSubmitting}
+          onClose={() => setAiPreview(null)}
+          onApply={() => void applyGeneratedCoursePlan()}
+        />
       ) : null}
     </form>
   );

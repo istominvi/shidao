@@ -63,8 +63,12 @@ test("new course form exposes the complete persisted milestone flow", () => {
   assert.match(formSource, /globalThis\.crypto\.subtle\.digest/);
   assert.match(formSource, />\s*Создать курс\s*</);
   assert.match(formSource, /Собрать черновик/);
+  assert.match(formSource, /Создать с ИИ/);
   assert.match(formSource, /Прикреплён, не проанализирован/);
   assert.match(formSource, /assembleCourseDraft\(courseId\)/);
+  assert.match(formSource, /generateAiCoursePlan\(courseId/);
+  assert.match(formSource, /applyAiCoursePlan\(createdCourseId, aiPreview\)/);
+  assert.match(formSource, /updateCourseDraft\(courseId, draftInput\)/);
 });
 
 test("new course creation resumes the persisted Course after a partial failure", () => {
@@ -101,8 +105,8 @@ test("new course creation resumes the persisted Course after a partial failure",
   const submitButtons = Array.from(
     formSource.matchAll(/<Button[\s\S]*?<\/Button>/g),
     (match) => match[0],
-  ).filter((button) => /value="(?:create|assemble)"/.test(button));
-  assert.equal(submitButtons.length, 2);
+  ).filter((button) => /value="(?:create|assemble|ai)"/.test(button));
+  assert.equal(submitButtons.length, 3);
   for (const button of submitButtons) {
     assert.match(button, /disabled=\{isSubmitting\}/);
     assert.doesNotMatch(button, /createdCourseId/);

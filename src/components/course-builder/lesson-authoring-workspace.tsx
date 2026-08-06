@@ -24,8 +24,11 @@ import {
   Save,
   Trash2,
   Type,
+  WandSparkles,
 } from "lucide-react";
 import { AppPageHeader } from "@/components/app/page-header";
+import { AiLessonPlanDialog } from "@/components/course-builder/ai-lesson-plan-dialog";
+import { AiCourseAssistantDialog } from "@/components/course-builder/ai-course-assistant-dialog";
 import { CourseMaterialsPanel } from "@/components/course-builder/course-materials-panel";
 import {
   LESSON_WORKSPACE_TABS,
@@ -888,6 +891,8 @@ export function LessonAuthoringWorkspace({
   runMutation,
 }: LessonAuthoringWorkspaceProps) {
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [aiPlannerOpen, setAiPlannerOpen] = useState(false);
+  const [assistantOpen, setAssistantOpen] = useState(false);
   const [lessonEditorOpen, setLessonEditorOpen] = useState(false);
   const [editingComponentId, setEditingComponentId] = useState<string | null>(
     null,
@@ -943,6 +948,22 @@ export function LessonAuthoringWorkspace({
         }
         actions={
           <>
+            <Button
+              variant="secondary"
+              disabled={disabled}
+              onClick={() => setAssistantOpen(true)}
+            >
+              <WandSparkles className="h-4 w-4" aria-hidden="true" />
+              ИИ-ассистент
+            </Button>
+            <Button
+              variant="secondary"
+              disabled={disabled}
+              onClick={() => setAiPlannerOpen(true)}
+            >
+              <WandSparkles className="h-4 w-4" aria-hidden="true" />
+              Дополнить с ИИ
+            </Button>
             <Button
               ref={lessonSettingsTriggerRef}
               variant="secondary"
@@ -1013,6 +1034,15 @@ export function LessonAuthoringWorkspace({
                     <h2>План</h2>
                   </div>
                   <Button
+                    type="button"
+                    variant="secondary"
+                    disabled={disabled}
+                    onClick={() => setAiPlannerOpen(true)}
+                  >
+                    <WandSparkles className="h-4 w-4" aria-hidden="true" />
+                    Заполнить с ИИ
+                  </Button>
+                  <Button
                     ref={pickerTriggerRef}
                     type="button"
                     disabled={disabled}
@@ -1072,6 +1102,28 @@ export function LessonAuthoringWorkspace({
             setEditingComponentId(componentId);
             setPickerOpen(false);
           }}
+        />
+      ) : null}
+
+      {aiPlannerOpen ? (
+        <AiLessonPlanDialog
+          courseId={course.id}
+          lessonId={lesson.id}
+          title={lesson.title}
+          disabled={disabled}
+          runMutation={runMutation}
+          onClose={() => setAiPlannerOpen(false)}
+          onApplied={() => setAiPlannerOpen(false)}
+        />
+      ) : null}
+
+      {assistantOpen ? (
+        <AiCourseAssistantDialog
+          courseId={course.id}
+          courseTitle={course.title}
+          lessonId={lesson.id}
+          lessonTitle={lesson.title}
+          onClose={() => setAssistantOpen(false)}
         />
       ) : null}
     </div>
