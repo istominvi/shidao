@@ -58,6 +58,10 @@
   backlink, computed visual contract и mobile overflow без обращения к
   рабочей базе.
 - Первый Course Builder milestone проверен на deployed customer-demo контуре.
+- Восстановлен отдельный `demo.shidao.ru` с прежним интерактивным
+  client-only UI-прототипом и clean-path навигацией. Это изолированная
+  reference surface с фиктивными данными, а не возврат Step/Methodology в V2,
+  не runtime fallback и не реализация schedule/learner/AI milestones.
 
 ## P0.1: legacy identity/security hardening
 

@@ -1,8 +1,12 @@
 export const PRIMARY_PUBLIC_HOSTS = new Set(["shidao.ru", "www.shidao.ru"]);
 export const V2_APP_HOST = "v2.shidao.ru";
+export const DEMO_HOST = "demo.shidao.ru";
 export const PROJECT_IN_DEVELOPMENT_PATH = "/project-in-development";
 export const PUBLIC_SURFACE_HEADER = "x-shidao-public-surface";
 export const LANDING_ONLY_SURFACE = "landing-only";
+export const DEMO_PUBLIC_SURFACE = "standalone-demo";
+
+const DEMO_PUBLIC_ASSET_PATHS = new Set(["/favicon.svg", "/og-demo-v2.png"]);
 
 const PUBLIC_ASSET_PREFIXES = ["/landing/"];
 const PUBLIC_ASSET_PATHS = new Set([
@@ -29,6 +33,14 @@ export function isPrimaryPublicHost(host: string) {
 
 export function isV2AppHost(host: string) {
   return normalizeRequestHost(host) === V2_APP_HOST;
+}
+
+export function isDemoHost(host: string) {
+  return normalizeRequestHost(host) === DEMO_HOST;
+}
+
+export function isDemoPublicAsset(pathname: string) {
+  return DEMO_PUBLIC_ASSET_PATHS.has(pathname);
 }
 
 function isPublicLandingAsset(pathname: string) {

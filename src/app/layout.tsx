@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { SessionViewProvider } from "@/components/session-view-provider";
 import {
+  DEMO_PUBLIC_SURFACE,
   LANDING_ONLY_SURFACE,
   PUBLIC_SURFACE_HEADER,
 } from "@/lib/deployment-access";
@@ -50,7 +51,9 @@ export default async function RootLayout({
   const requestHeaders = await headers();
   const publicSurface = requestHeaders.get(PUBLIC_SURFACE_HEADER);
   const mustUseGuestSession =
-    publicSurface === "brand" || publicSurface === LANDING_ONLY_SURFACE;
+    publicSurface === "brand" ||
+    publicSurface === DEMO_PUBLIC_SURFACE ||
+    publicSurface === LANDING_ONLY_SURFACE;
   const initialSessionView = mustUseGuestSession
     ? GUEST_SESSION_VIEW
     : await readSessionViewServer();

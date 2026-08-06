@@ -2,30 +2,36 @@
 
 **Статус:** current implementation
 **Канонический app host:** `v2.shidao.ru`
-**Последний deployed baseline:** `fea7f80`
+**Последний deployed baseline:** `0276aed`
 
 Teacher-only `/schedule` и `/students` развёрнуты и проверены на release
 `fea7f80`.
 
 ## Host matrix
 
-| Host                         | Поведение                                                                                                              |
-| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `shidao.ru`, `www.shidao.ru` | `/` и landing assets доступны; внутренние pages переписываются на maintenance с HTTP 503; `/api/*` возвращает JSON 503 |
-| `v2.shidao.ru`               | Полное Auth и приложение; `X-Robots-Tag: noindex, nofollow, noarchive`; `robots.txt` запрещает crawling                |
-| `brand.shidao.ru`            | только `/` переписывается на `/brand`; другие paths сейчас проходят обычный routing                                    |
-| `model.shidao.ru`            | только `/` переписывается на `/model`; другие paths сейчас проходят обычный routing                                    |
-| `demo.shidao.ru`             | 308 redirect на `https://v2.shidao.ru/courses`                                                                         |
-| localhost/любой другой host  | Обычный route handling без host split                                                                                  |
+| Host                         | Поведение                                                                                                                      |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `shidao.ru`, `www.shidao.ru` | `/` и landing assets доступны; внутренние pages переписываются на maintenance с HTTP 503; `/api/*` возвращает JSON 503         |
+| `v2.shidao.ru`               | Полное Auth и приложение; `X-Robots-Tag: noindex, nofollow, noarchive`; `robots.txt` запрещает crawling                        |
+| `brand.shidao.ru`            | только `/` переписывается на `/brand`; другие paths сейчас проходят обычный routing                                            |
+| `model.shidao.ru`            | только `/` переписывается на `/model`; другие paths сейчас проходят обычный routing                                            |
+| `demo.shidao.ru`             | Safe root/deep links переписываются на standalone `/demo` с Guest session и noindex; unsafe methods возвращают 405; V2 API нет |
+| localhost/любой другой host  | Обычный route handling без host split                                                                                          |
 
 Каноническая реализация находится в `src/middleware.ts` и
 `src/lib/deployment-access.ts`.
 
 Текущая защита не является полной application-host allowlist: неизвестные
-hosts и non-root paths `brand`/`model` проходят в приложение, а noindex header
-ставится только для exact `v2.shidao.ru`. Сейчас изоляция зависит также от
+hosts и non-root paths `brand`/`model` проходят в приложение. Standalone demo
+имеет отдельную read-only/noindex границу, но общая изоляция всё ещё зависит от
 proxy/DNS routing. Это известный P0 hardening debt; до исправления нельзя
-направлять на web application дополнительные публичные hosts.
+направлять на web application новые публичные hosts.
+
+`demo.shidao.ru` содержит только исторический UI-прототип с фиктивными
+client-only данными. Clean paths сохраняются в адресной строке и после reload,
+но middleware всегда обслуживает их через `/demo`. Demo не получает V2 session,
+не вызывает Supabase/application API и не является compatibility layer для
+Step/Methodology или подтверждением persistence показанных сценариев.
 
 ## Public/Auth routes V2
 
@@ -177,14 +183,12 @@ Serialized Student Screen assignment/reorder/delete RPC дополнительн
 
 ## CSRF and session revocation
 
-Global middleware выполняет Origin/Sec-Fetch-Site guard до route handler, но
-текущая production-конфигурация передаёт в allowed hosts
-`NEXT_PUBLIC_SITE_URL=https://shidao.ru`, а не отдельный app URL. Поэтому unsafe
-request с Origin `shidao.ru` к `v2.shidao.ru` сейчас не считается cross-origin
-этим guard. Это известный P0 CSRF hardening debt рядом с host allowlist:
-реализация должна доверять actual forwarded/app host, а regression test —
-отклонять cross-subdomain Origin. Нельзя описывать текущую границу как strict
-same-origin до этого исправления.
+Global middleware выполняет Origin/Sec-Fetch-Site guard до route handler и
+использует `NEXT_PUBLIC_APP_URL=https://v2.shidao.ru` как configured app origin;
+без него применяется request Host/X-Forwarded-Host fallback. Regression test
+отклоняет unsafe request с Origin `shidao.ru` к `v2.shidao.ru`. На demo host
+unsafe methods блокируются отдельной read-only policy до CSRF/application
+routes. Полный production host allowlist остаётся отдельным P0 hardening debt.
 
 Encrypted app sessions содержат issue time и version:
 

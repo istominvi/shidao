@@ -15,7 +15,8 @@
 - `v2.shidao.ru` — рабочее приложение и Auth;
 - `brand.shidao.ru` — root brand reference;
 - `model.shidao.ru` — root public product model;
-- `demo.shidao.ru` — redirect на V2 Course Builder;
+- `demo.shidao.ru` — отдельный historical UI-прототип с фиктивными данными,
+  Guest session, clean-path rewrite и без V2 API/persistence;
 - один repository/branch `main`;
 - один текущий Coolify application для web;
 - один текущий self-hosted Supabase для Postgres/Auth/Storage/SMTP.
@@ -69,6 +70,11 @@ route guard для Guest, adult без профиля, Parent и transitional St
 также desktop/mobile primary navigation. Этот UI-slice не содержит migration;
 появление schedule/student DDL в diff означает незапланированное расширение
 scope и должно остановить release.
+
+Release standalone demo обязан проверить root и прямые `/students`, `/courses`,
+Course/Lesson deep links, reload без redirect, OG asset, `robots.txt`/noindex и
+отказ unsafe methods. Demo source не должен получать imports application
+services/Supabase или новую schema.
 
 Обычный `npm run test:browser` может пропустить smoke, если browser недоступен;
 он не заменяет строгий release gate.
@@ -215,7 +221,13 @@ ShiDao V2 application:
 - `https://shidao.ru/login` → maintenance 503;
 - `https://shidao.ru/api/...` → JSON 503;
 - `https://v2.shidao.ru/robots.txt` запрещает indexing;
-- V2 responses имеют `X-Robots-Tag`.
+- V2 responses имеют `X-Robots-Tag`;
+- `https://demo.shidao.ru/` открывает прежний standalone UI без redirect;
+- demo navigation ведёт на clean `/students`, `/courses` и Course/Lesson paths,
+  а прямое открытие/reload этих URL остаётся внутри demo;
+- demo responses и `robots.txt` запрещают indexing, `/og-demo-v2.png` имеет
+  image content type, unsafe request получает 405;
+- demo не читает V2 session/data и не отправляет API/Supabase requests.
 
 ### Auth
 

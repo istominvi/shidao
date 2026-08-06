@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
+  DEMO_PUBLIC_SURFACE,
   LANDING_ONLY_SURFACE,
   PROJECT_IN_DEVELOPMENT_PATH,
   PUBLIC_SURFACE_HEADER,
+  isDemoHost,
+  isDemoPublicAsset,
   isV2AppHost,
   normalizeRequestHost,
   resolvePrimaryHostRequestPolicy,
@@ -17,11 +20,16 @@ function withV2NoIndex(response: NextResponse, requestHost: string) {
   return response;
 }
 
-function publicSurfaceHeaders(req: NextRequest) {
+function publicSurfaceHeaders(
+  req: NextRequest,
+  surface = LANDING_ONLY_SURFACE,
+) {
   const requestHeaders = new Headers(req.headers);
-  requestHeaders.set(PUBLIC_SURFACE_HEADER, LANDING_ONLY_SURFACE);
+  requestHeaders.set(PUBLIC_SURFACE_HEADER, surface);
   return requestHeaders;
 }
+
+const PRIVATE_SURFACE_ROBOTS_POLICY = "noindex, nofollow, noarchive";
 
 /**
  * Global CSRF guard: rejects cross-origin state-changing requests before they
@@ -116,8 +124,47 @@ export function middleware(req: NextRequest) {
     return NextResponse.rewrite(modelUrl);
   }
 
-  if (requestHost === "demo.shidao.ru") {
-    return NextResponse.redirect("https://v2.shidao.ru/courses", 308);
+  if (isDemoHost(requestHost)) {
+    if (req.nextUrl.pathname === "/robots.txt") {
+      return new NextResponse("User-agent: *\nDisallow: /\n", {
+        status: 200,
+        headers: {
+          "Content-Type": "text/plain; charset=utf-8",
+          "Cache-Control": "public, max-age=3600",
+          "X-Robots-Tag": PRIVATE_SURFACE_ROBOTS_POLICY,
+        },
+      });
+    }
+
+    if (isDemoPublicAsset(req.nextUrl.pathname)) {
+      const response = NextResponse.next();
+      response.headers.set("X-Robots-Tag", PRIVATE_SURFACE_ROBOTS_POLICY);
+      return response;
+    }
+
+    if (isUnsafeMethod(req.method)) {
+      return NextResponse.json(
+        { error: "Демо доступно только для просмотра." },
+        {
+          status: 405,
+          headers: {
+            Allow: "GET, HEAD, OPTIONS",
+            "Cache-Control": "no-store",
+            "X-Robots-Tag": PRIVATE_SURFACE_ROBOTS_POLICY,
+          },
+        },
+      );
+    }
+
+    const demoUrl = req.nextUrl.clone();
+    demoUrl.pathname = "/demo";
+    const response = NextResponse.rewrite(demoUrl, {
+      request: {
+        headers: publicSurfaceHeaders(req, DEMO_PUBLIC_SURFACE),
+      },
+    });
+    response.headers.set("X-Robots-Tag", PRIVATE_SURFACE_ROBOTS_POLICY);
+    return response;
   }
 
   if (

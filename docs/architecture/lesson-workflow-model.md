@@ -415,6 +415,20 @@ fallback или lesson-specific renderer. Исторический источн�
 обычные Course, Lesson, Component и attachment entities через валидируемый
 import/application layer. Он не возвращает Methodology в активную модель.
 
+### Standalone demo boundary
+
+`demo.shidao.ru` отдельно обслуживает восстановленный исторический
+кликабельный UI-прототип. Его фиктивные Course/Lesson, локальные Lesson Step,
+Methodology, schedule/group, AI и live-сценарии существуют только в
+`src/app/demo/demo-experience.tsx` и React state. Demo использует Guest session,
+не обращается к V2 API/Supabase и после reload теряет локальные изменения.
+
+Этот public reference surface не является частью active V2 domain, runtime
+fallback, importer или acceptance evidence. Активные Course/Lesson routes,
+application services и MCP не импортируют demo fixtures; все новые product
+возможности по-прежнему обязаны следовать canonical
+`Course → Lesson → ordered Components` contract.
+
 ## Not implemented yet
 
 - write-capable AI assistant, persisted assistant history и tool calling;

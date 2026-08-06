@@ -1,7 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
+  DEMO_HOST,
   PROJECT_IN_DEVELOPMENT_PATH,
+  isDemoHost,
+  isDemoPublicAsset,
   isPrimaryPublicHost,
   isV2AppHost,
   normalizeRequestHost,
@@ -12,6 +15,15 @@ test("deployment access normalizes forwarded hosts", () => {
   assert.equal(normalizeRequestHost("Shidao.Ru:443"), "shidao.ru");
   assert.equal(isPrimaryPublicHost("www.shidao.ru"), true);
   assert.equal(isV2AppHost("v2.shidao.ru:443"), true);
+  assert.equal(isDemoHost("Demo.Shidao.Ru:443"), true);
+  assert.equal(DEMO_HOST, "demo.shidao.ru");
+});
+
+test("standalone demo recognizes only its dedicated public assets", () => {
+  assert.equal(isDemoPublicAsset("/og-demo-v2.png"), true);
+  assert.equal(isDemoPublicAsset("/favicon.svg"), true);
+  assert.equal(isDemoPublicAsset("/api/auth/session"), false);
+  assert.equal(isDemoPublicAsset("/courses"), false);
 });
 
 test("primary domain exposes only the landing and its public assets", () => {

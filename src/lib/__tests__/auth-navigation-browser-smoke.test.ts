@@ -584,6 +584,61 @@ test("browser smoke: guest opens / and sees guest header CTA", async (t) => {
   }
 });
 
+test("browser smoke: restored standalone demo navigates across its local views", async (t) => {
+  if (browserSmokeUnavailableReason) {
+    t.skip(browserSmokeUnavailableReason);
+    return;
+  }
+
+  const runtime = await openPage();
+
+  try {
+    await runtime.page.goto("/demo?view=schedule", {
+      waitUntil: "networkidle",
+    });
+    await runtime.page
+      .getByRole("heading", { name: "Добрый день, Агата", level: 1 })
+      .waitFor();
+
+    const scheduleContract = await runtime.page.evaluate(() => {
+      const root = document.querySelector<HTMLElement>(".demo-v2-root");
+      const navLabels = Array.from(
+        document.querySelectorAll<HTMLButtonElement>(
+          ".demo-main-nav .demo-nav-item",
+        ),
+      ).map((button) => button.textContent?.trim() ?? "");
+
+      if (!root) throw new Error("Standalone demo root is missing");
+
+      return {
+        backgroundColor: getComputedStyle(root).backgroundColor,
+        navLabels,
+      };
+    });
+
+    assert.equal(scheduleContract.backgroundColor, "rgb(245, 241, 232)");
+    assert.deepEqual(scheduleContract.navLabels, [
+      "Расписание",
+      "Ученики",
+      "Курсы",
+    ]);
+
+    await runtime.page
+      .getByRole("button", { name: "Курсы", exact: true })
+      .click();
+    await runtime.page.waitForURL(/\/demo\?view=courses$/);
+    await runtime.page
+      .getByRole("heading", { name: "Курсы", exact: true, level: 1 })
+      .waitFor();
+
+    const html = await runtime.page.content();
+    assert.match(html, /English B1 · подростки/);
+    assert.match(html, /Открыть курс/);
+  } finally {
+    await runtime.close();
+  }
+});
+
 test("browser smoke: authenticated user on / sees auth-aware header", async (t) => {
   if (browserSmokeUnavailableReason) {
     t.skip(browserSmokeUnavailableReason);

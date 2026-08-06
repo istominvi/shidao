@@ -87,7 +87,10 @@ baseline debt; изменённую документацию проверяйт�
 - Рабочий app-домен: `v2.shidao.ru` — active deployed customer-demo contour.
 - `shidao.ru` остаётся landing-only.
 - `brand.shidao.ru` и `model.shidao.ru` — отдельные публичные reference
-  surfaces; `demo.shidao.ru` перенаправляет в Course Builder.
+  surfaces.
+- `demo.shidao.ru` обслуживает восстановленный standalone UI-прототип с
+  фиктивными данными. Его clean paths работают после reload, но он не читает и
+  не записывает данные V2 и не является описанием текущей domain model.
 
 ## Текущее состояние продукта
 

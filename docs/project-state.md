@@ -28,6 +28,13 @@ server-side secret environment; browser и repository значения ключ�
 граница зафиксирована в
 [`docs/architecture/ai-provider-integration.md`](./architecture/ai-provider-integration.md).
 
+Текущий source снова обслуживает `demo.shidao.ru` как отдельный исторический
+кликабельный UI-прототип вместо redirect в Course Builder. Он использует только
+локальные фиктивные данные и React state, сохраняет clean-path навигацию после
+reload, работает с Guest session и не вызывает V2 API/Supabase. Это reference
+surface для дизайна, а не active V2 domain, compatibility fallback или
+доказательство реализации показанных в нём будущих возможностей.
+
 `v2.shidao.ru` — active deployed customer-demo contour на production-mode
 build, но публичный production launch и отдельный staging ещё не выполнены.
 
@@ -74,6 +81,10 @@ Account
 - Любая внутренняя page/API-ссылка на основном домене закрыта middleware.
 - `v2.shidao.ru` обслуживает Auth и рабочее приложение.
 - `v2.shidao.ru` закрыт от индексации.
+- `demo.shidao.ru` внутренне переписывает root и clean deep links на
+  standalone `/demo`, закрыт от индексации и не принимает unsafe HTTP methods.
+- Standalone demo использует Guest session и фиктивное client-only состояние;
+  V2 API, Supabase и persistence к нему не подключены.
 - Email signup, confirm, login, recovery и reset используют существующий
   self-hosted Supabase Auth и SMTP.
 - После первого взрослого входа без профиля открывается `/onboarding`, затем
@@ -383,6 +394,7 @@ positions, а плотность поддерживают текущие service
 | Teacher Students shell      | `src/app/(app)/(teacher-required)/students/`, `src/components/teaching-hub/students-workspace.tsx`                       |
 | Teacher route boundary      | `src/app/(app)/(teacher-required)/layout.tsx`, `src/lib/server/access-guards.ts`                                         |
 | V2 API routes               | `src/app/api/v2/`                                                                                                        |
+| Standalone historical demo  | `src/app/demo/`, `public/og-demo-v2.png`                                                                                 |
 | Host boundary               | `src/middleware.ts`, `src/lib/deployment-access.ts`                                                                      |
 | Auth/session                | `src/lib/auth.ts`, `src/lib/server/`                                                                                     |
 | Current schema              | `supabase/schema/current-schema.sql`                                                                                     |
@@ -423,14 +435,21 @@ routes только валидируют preview и выполняют суще�
 
 - `brand.shidao.ru` → brand reference;
 - `model.shidao.ru` → публичное объяснение модели;
-- `demo.shidao.ru` → redirect на `v2.shidao.ru/courses`.
+- `demo.shidao.ru` → изолированный исторический UI-прототип с clean-path
+  навигацией (`/`, `/students`, `/courses`, Course/Lesson и `/lesson/live`).
+
+Demo не импортируется активными Course/Lesson routes, не вызывает application
+services/API и не сохраняет изменения. Его локальные Step/Methodology,
+schedule/group и AI fixtures не входят в текущую V2-модель и не могут
+использоваться как acceptance evidence.
 
 Known host-boundary debt: middleware переписывает только `/` у `brand`/`model`
-и пропускает unknown hosts; noindex применяется только к exact V2 host.
-Изоляция дополнительных paths сейчас зависит от proxy/DNS. До публичного
-launch нужен explicit production host allowlist или закрытие non-canonical
-hosts/paths. CSRF guard уже привязан к configured app host, а landing
-cross-subdomain Origin покрыт negative regression test.
+и пропускает unknown hosts; noindex применяется к exact V2 и demo hosts.
+Standalone demo имеет собственную read-only границу, но изоляция остальных
+дополнительных paths всё ещё зависит от proxy/DNS. До публичного launch нужен
+explicit production host allowlist или закрытие non-canonical hosts/paths.
+CSRF guard уже привязан к configured app host, а landing cross-subdomain Origin
+покрыт negative regression test.
 
 ## 9. Проверка текущего состояния
 
