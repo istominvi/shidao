@@ -63,6 +63,12 @@ test("middleware serves the standalone demo on root and clean deep links", () =>
     new URL(queriedResponse.headers.get("x-middleware-rewrite") ?? "").search,
     "?source=model",
   );
+
+  const recoveryResponse = middleware(
+    demoRequest("/", { search: "?restored=1" }),
+  );
+  assert.equal(recoveryResponse.headers.get("clear-site-data"), '"cache"');
+  assert.equal(recoveryResponse.headers.get("cache-control"), "no-store");
 });
 
 test("middleware keeps demo assets readable and blocks demo mutations", async () => {

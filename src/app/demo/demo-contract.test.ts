@@ -24,7 +24,11 @@ test("standalone demo keeps its restored navigation and visual entry point", () 
     experienceSource,
     /case "lesson":\s+return "\/courses\/english-b1\/lessons\/present-perfect"/,
   );
-  assert.match(modelPageSource, /href="https:\/\/demo\.shidao\.ru"/);
+  assert.match(
+    modelPageSource,
+    /href="https:\/\/demo\.shidao\.ru\/\?restored=1"/,
+  );
+  assert.match(experienceSource, /history\.replaceState/);
 });
 
 test("standalone demo remains a client-only fictional prototype", () => {

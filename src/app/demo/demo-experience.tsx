@@ -1002,7 +1002,14 @@ export function DemoExperience() {
   );
 
   useEffect(() => {
-    setView(viewFromLocation());
+    const initialView = viewFromLocation();
+    setView(initialView);
+    if (
+      window.location.hostname === "demo.shidao.ru" &&
+      new URLSearchParams(window.location.search).has("restored")
+    ) {
+      window.history.replaceState({}, "", formatViewPath(initialView));
+    }
     const handlePopState = () => setView(viewFromLocation());
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);

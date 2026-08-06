@@ -288,7 +288,7 @@ export function ModelPageClient() {
 
         <a
           className="model-header-cta"
-          href="https://demo.shidao.ru"
+          href="https://demo.shidao.ru/?restored=1"
           target="_blank"
           rel="noopener noreferrer"
         >

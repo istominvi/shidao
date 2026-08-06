@@ -163,6 +163,10 @@ export function middleware(req: NextRequest) {
         headers: publicSurfaceHeaders(req, DEMO_PUBLIC_SURFACE),
       },
     });
+    response.headers.set("Cache-Control", "no-store");
+    if (req.nextUrl.searchParams.has("restored")) {
+      response.headers.set("Clear-Site-Data", '"cache"');
+    }
     response.headers.set("X-Robots-Tag", PRIVATE_SURFACE_ROBOTS_POLICY);
     return response;
   }

@@ -228,6 +228,9 @@ ShiDao V2 application:
 - demo responses и `robots.txt` запрещают indexing, `/og-demo-v2.png` имеет
   image content type, unsafe request получает 405;
 - demo не читает V2 session/data и не отправляет API/Supabase requests.
+- В браузере, ранее видевшем permanent `308`, один раз открыть
+  `https://demo.shidao.ru/?restored=1`: response очищает cache origin, после
+  hydration адрес становится `/`, а повторное открытие root не редиректит.
 
 ### Auth
 

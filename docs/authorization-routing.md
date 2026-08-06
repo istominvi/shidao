@@ -32,6 +32,9 @@ client-only данными. Clean paths сохраняются в адресно
 но middleware всегда обслуживает их через `/demo`. Demo не получает V2 session,
 не вызывает Supabase/application API и не является compatibility layer для
 Step/Methodology или подтверждением persistence показанных сценариев.
+Одноразовый вход `/?restored=1` отправляет `Clear-Site-Data: "cache"` и после
+hydration заменяет URL на `/`: это снимает ранее закэшированный permanent `308`
+у браузеров, которые открывали demo во время redirect-периода.
 
 ## Public/Auth routes V2
 
