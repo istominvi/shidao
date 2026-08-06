@@ -309,6 +309,55 @@ test("course apply rejects a preview after the course context changes", async ()
   assert.equal(state.course.lessons.length, 0);
 });
 
+test("course apply rejects a preview after the effective audience changes", async () => {
+  const state = inMemoryService(emptyCourse(1));
+  const outline = {
+    lessons: [{ title: "Знакомство", summary: "Базовые фразы знакомства." }],
+  };
+  let displayName = "Анна";
+  const learningHistoryService = {
+    async getCourseAudience() {
+      const learner = {
+        id: "30000000-0000-4000-8000-000000000002",
+        ownerAccountId: state.course.ownerAccountId,
+        displayName,
+        archivedAt: null,
+        createdAt: NOW,
+        updatedAt: NOW,
+      };
+      return {
+        directLearners: [learner],
+        groups: [],
+        effectiveLearners: [learner],
+      };
+    },
+    async listCourseHistory() {
+      return [];
+    },
+    async getCourseAudienceLearningRecords() {
+      return { audience: await this.getCourseAudience(), records: [] };
+    },
+  };
+  const ai = createAiCourseBuilderService({
+    actor: ACTOR,
+    service: state.service,
+    learningHistoryService,
+    provider: jsonProvider(outline),
+    audit: () => undefined,
+  });
+  const preview = await ai.planCourse(COURSE_ID, { instruction: "" });
+  displayName = "Анна Петрова";
+
+  await assert.rejects(
+    ai.applyCoursePlan(COURSE_ID, {
+      baseContextFingerprint: preview.baseContextFingerprint,
+      plan: preview.plan,
+    }),
+    /изменился после предпросмотра/,
+  );
+  assert.equal(state.course.lessons.length, 0);
+});
+
 test("lesson plan applies canonical private components after preview", async () => {
   const course = emptyCourse(1);
   const state = inMemoryService(course);
@@ -389,16 +438,34 @@ test("lesson planning receives finalized learner history through the application
     createdAt: NOW,
     updatedAt: NOW,
   };
+  const learner = {
+    id: record.learnerProfileId,
+    ownerAccountId: course.ownerAccountId,
+    displayName: record.learnerDisplayName,
+    archivedAt: null,
+    createdAt: NOW,
+    updatedAt: NOW,
+  };
+  const audience = {
+    directLearners: [learner],
+    groups: [],
+    effectiveLearners: [learner],
+  };
+  let standaloneAudienceReads = 0;
   let providerInput = "";
   const ai = createAiCourseBuilderService({
     actor: ACTOR,
     service: state.service,
     learningHistoryService: {
+      async getCourseAudience() {
+        standaloneAudienceReads += 1;
+        return audience;
+      },
       async listCourseHistory() {
         return [run];
       },
-      async listCourseLearningRecords() {
-        return [record];
+      async getCourseAudienceLearningRecords() {
+        return { audience, records: [record] };
       },
     },
     provider: jsonProvider(LESSON_PROVIDER_PLAN, (input) => {
@@ -418,6 +485,7 @@ test("lesson planning receives finalized learner history through the application
   assert.match(providerInput, /Диалог дался не сразу/);
   assert.match(providerInput, /Отсутствие ученика не является результатом/);
   assert.doesNotMatch(providerInput, /30000000-0000-4000-8000/);
+  assert.equal(standaloneAudienceReads, 0);
 });
 
 test("failed new lesson apply compensates the partial database writes", async () => {

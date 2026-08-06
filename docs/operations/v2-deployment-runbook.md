@@ -68,10 +68,11 @@ boundary.
 Release с teacher-only `/schedule` и `/students` обязан дополнительно проверить
 route guard для Guest, adult без профиля, Parent и transitional Student, а
 также desktop/mobile primary navigation. Исторический shell-only release
-`fea7f80` не содержал migration. Текущий LessonRun release, напротив, явно
-зависит от forward migration
-`20260806190044_lesson_runs_learning_records.sql`; случайное DDL вне неё должно
-остановить release.
+`fea7f80` не содержал migration. LessonRun release зависит от
+`20260806190044_lesson_runs_learning_records.sql`, а Groups/mixed audience — от
+следующей forward migration
+`20260806220726_learner_groups_mixed_course_audience.sql`; случайное DDL вне
+них должно остановить release.
 
 Release standalone demo обязан проверить root и прямые `/students`, `/courses`,
 Course/Lesson deep links, reload без redirect, OG asset, `robots.txt`/noindex и
@@ -86,10 +87,10 @@ Worktree должен содержать только изменения тек�
 
 ## 4. Если release содержит DB migration
 
-Для текущего LessonRun slice web нельзя выпускать раньше успешного применения
-`20260806190044_lesson_runs_learning_records.sql`: Course Builder delete уже
-вызывает новый history-preserving RPC, а schedule/students routes читают новые
-таблицы.
+Web с Groups/mixed audience нельзя выпускать раньше последовательного успешного
+применения `20260806190044_lesson_runs_learning_records.sql` и
+`20260806220726_learner_groups_mixed_course_audience.sql`: students/audience
+routes вызывают новые aggregate RPC и читают новые group tables.
 
 Порядок строгий:
 
@@ -302,9 +303,14 @@ ShiDao V2 application:
 - оба shell читают только реальные owner-scoped данные через V2 services/API;
 - Schedule показывает реальные LessonRun, позволяет запланировать, завершить,
   перенести или отменить проведение и не хранит отдельный status;
-- Students создаёт owner-scoped LearnerProfile, открывает их долговременную
-  LearningRecord history и не читает legacy `student/class/class_student`;
-- Course audience настраивается прямым списком LearnerProfile без скрытой Group;
+- Students создаёт/редактирует/архивирует owner-scoped LearnerProfile,
+  открывает долговременную LearningRecord history, управляет reusable Groups и
+  не читает legacy `student/class/class_student`;
+- один ученик может быть без группы или состоять в нескольких; поиск, фильтр,
+  сортировка и режим «По группам» не дублируют его профиль;
+- Course audience независимо сохраняет Groups и отдельных LearnerProfile,
+  показывает дедуплицированный effective count и не меняет уже назначенный Run
+  после редактирования membership;
 - нет фиктивных учеников, групп, progress или history.
 
 ### Console/logs

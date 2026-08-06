@@ -8,8 +8,12 @@
 ```text
 Account
 ├── LearnerProfile 0..N
+├── LearnerGroup 0..N
+│   └── LearnerGroupMember 0..N → LearnerProfile
 └── Course 0..N
-    ├── CourseLearner 0..N → LearnerProfile
+    ├── direct audience → CourseLearner 0..N → LearnerProfile
+    ├── group audience → CourseLearnerGroup 0..N → LearnerGroup
+    ├── effective audience = unique(active direct learners ∪ group members)
     ├── CourseAttachment → StoredFile → private Storage object
     └── Lesson 1..N
         ├── LessonComponent 1..N
@@ -21,9 +25,16 @@ Account
 - `Account` is the ownership identity linked one-to-one to `auth.users`.
 - `Course` is an editable owner-scoped draft.
 - `LearnerProfile` is a neutral Account-owned learning identity. It does not
-  reuse transitional `student`, `class` or `class_student`.
-- `CourseLearner` is the direct Course audience. Group, Guardian and invitation
-  flows are not required for the current scheduling slice.
+  reuse transitional `student`, `class` or `class_student`. Product delete
+  archives the profile, removes it from future group/Course audiences and keeps
+  its finalized LearningRecords and already scheduled Run membership.
+- `LearnerGroup` is a reusable Account-owned set of existing LearnerProfiles.
+  A profile may belong to zero, one or several groups; deleting a group deletes
+  only its membership and Course links.
+- Course audience persists two independent source sets: direct
+  `CourseLearner` links and `CourseLearnerGroup` links. Its effective audience
+  is their active, deduplicated learner union. Source order is deliberately not
+  persisted because audience is a set, not a lesson sequence.
 - `Lesson` is an ordered Course document with a required title and an optional
   teacher comment (`summary`); the supported service path keeps its position
   dense. It is also the entity that can be scheduled repeatedly; there is no
@@ -48,6 +59,9 @@ Account
   not a Lesson content snapshot.
 - An open or completed Run has at least one LearningRecord. Cancellation
   deletes its drafts, so a retained cancelled Run legitimately has zero.
+- Scheduling resolves the current effective Course audience only for a new
+  Run. Its draft LearningRecords freeze the concrete learners, so later group
+  edits affect future appointments but never rewrite an existing one.
 
 There is no active Methodology, Lesson Step/root Step, parallel scheduled-lesson
 content model, `lesson_run_participant`, Lesson snapshot, fixture fallback, or
@@ -110,8 +124,10 @@ Operational acceptance release `0276aed` подтвердил default
 это не изменило domain model.
 
 Lesson planning and the read-only assistant now also receive a bounded
-projection of completed Runs and finalized LearningRecords. Absence is marked
-as absence, not interpreted as lack of understanding. Metrics beyond
+projection of completed Course Runs, the selected groups/direct learners and
+finalized LearningRecords of the effective learners across their courses.
+Overlap between audience sources is deduplicated. Absence is marked as absence,
+not interpreted as lack of understanding. Metrics beyond
 attendance/repeat/comments remain a later additive extension.
 
 Registry definitions own keys/schemas/defaults/capabilities. The current
@@ -126,7 +142,9 @@ registry object.
 - Component assignment → `lesson_component.student_slide_id`.
 - Product «Проведение урока» → `lesson_run`.
 - Product «Индивидуальная учебная запись» → `learning_record`.
-- Course audience → `course_learner` → `learner_profile`.
+- Learner directory groups → `learner_group` + `learner_group_member`.
+- Course audience sources → `course_learner` + `course_learner_group`;
+  effective learners are a query projection, not another table.
 - There is no physical/canonical entity named `course_asset`. The current
   TypeScript read-model alias `CourseAsset` represents a linked `StoredFile`
   returned inside Course attachments; it is not a separate persisted object.
@@ -147,7 +165,7 @@ The authoritative physical schema is documented in
 The following are target domains, not current tables or product capabilities:
 
 - persisted Homework;
-- Guardian, Group and invitation/claim flows around the implemented neutral
+- Guardian and invitation/claim flows around the implemented neutral
   LearnerProfile;
 - live Student Screen synchronization/runtime cursor for an open LessonRun;
 - automatic subject metrics and richer progress models on top of finalized

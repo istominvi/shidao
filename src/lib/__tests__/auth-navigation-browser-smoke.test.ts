@@ -21,6 +21,11 @@ const E2E_TEACHER_ID = "55555555-5555-4555-8555-555555555555";
 const E2E_SCHOOL_ID = "66666666-6666-4666-8666-666666666666";
 const E2E_COURSE_ID = "33333333-3333-4333-8333-333333333333";
 const E2E_LESSON_ID = "44444444-4444-4444-8444-444444444444";
+const E2E_LEARNER_ANNA_ID = "88888888-8888-4888-8888-888888888881";
+const E2E_LEARNER_BORIS_ID = "88888888-8888-4888-8888-888888888882";
+const E2E_LEARNER_CLARA_ID = "88888888-8888-4888-8888-888888888883";
+const E2E_GROUP_TEEN_ID = "99999999-9999-4999-8999-999999999991";
+const E2E_GROUP_EXAM_ID = "99999999-9999-4999-8999-999999999992";
 const E2E_COURSE_TITLE = "Английский для жизни";
 const E2E_LESSON_TITLE = "Present Perfect · жизненный опыт";
 const E2E_SUPABASE_ACCESS_TOKEN = "e2e-supabase-user-access-token";
@@ -53,6 +58,73 @@ const E2E_LESSON_ROW = {
   created_at: "2026-08-05T08:30:00.000Z",
   updated_at: "2026-08-05T09:00:00.000Z",
 };
+
+const E2E_LEARNER_ROWS = [
+  {
+    id: E2E_LEARNER_ANNA_ID,
+    owner_account_id: E2E_ACCOUNT_ID,
+    display_name: "Анна Петрова",
+    archived_at: null,
+    created_at: "2026-08-05T10:00:00.000Z",
+    updated_at: "2026-08-05T10:00:00.000Z",
+  },
+  {
+    id: E2E_LEARNER_BORIS_ID,
+    owner_account_id: E2E_ACCOUNT_ID,
+    display_name: "Борис Волков",
+    archived_at: null,
+    created_at: "2026-08-05T10:01:00.000Z",
+    updated_at: "2026-08-05T10:01:00.000Z",
+  },
+  {
+    id: E2E_LEARNER_CLARA_ID,
+    owner_account_id: E2E_ACCOUNT_ID,
+    display_name: "Клара Смирнова",
+    archived_at: null,
+    created_at: "2026-08-05T10:02:00.000Z",
+    updated_at: "2026-08-05T10:02:00.000Z",
+  },
+];
+
+const E2E_LEARNER_GROUP_ROWS = [
+  {
+    id: E2E_GROUP_TEEN_ID,
+    owner_account_id: E2E_ACCOUNT_ID,
+    name: "Teen Talk",
+    created_at: "2026-08-05T11:00:00.000Z",
+    updated_at: "2026-08-05T11:00:00.000Z",
+  },
+  {
+    id: E2E_GROUP_EXAM_ID,
+    owner_account_id: E2E_ACCOUNT_ID,
+    name: "Подготовка к экзамену",
+    created_at: "2026-08-05T11:01:00.000Z",
+    updated_at: "2026-08-05T11:01:00.000Z",
+  },
+];
+
+const E2E_LEARNER_GROUP_MEMBER_ROWS = [
+  {
+    learner_group_id: E2E_GROUP_TEEN_ID,
+    learner_profile_id: E2E_LEARNER_ANNA_ID,
+    created_at: "2026-08-05T11:10:00.000Z",
+  },
+  {
+    learner_group_id: E2E_GROUP_TEEN_ID,
+    learner_profile_id: E2E_LEARNER_BORIS_ID,
+    created_at: "2026-08-05T11:11:00.000Z",
+  },
+  {
+    learner_group_id: E2E_GROUP_EXAM_ID,
+    learner_profile_id: E2E_LEARNER_BORIS_ID,
+    created_at: "2026-08-05T11:12:00.000Z",
+  },
+  {
+    learner_group_id: E2E_GROUP_EXAM_ID,
+    learner_profile_id: E2E_LEARNER_CLARA_ID,
+    created_at: "2026-08-05T11:13:00.000Z",
+  },
+];
 
 type PlaywrightLocator = {
   click: () => Promise<void>;
@@ -222,6 +294,14 @@ function readEqFilter(requestUrl: URL, key: string) {
   return match?.[1] ?? null;
 }
 
+function readInFilter(requestUrl: URL, key: string) {
+  const raw = requestUrl.searchParams.get(key);
+  if (!raw) return null;
+
+  const match = /^in\.\((.*)\)$/.exec(raw);
+  return match?.[1] ? match[1].split(",").map((value) => value.trim()) : [];
+}
+
 function handleMockSupabase(
   request: IncomingMessage,
   response: ServerResponse,
@@ -262,6 +342,39 @@ function handleMockSupabase(
   }
 
   if (requestUrl.pathname === "/rest/v1/rpc/current_session_invalid_before") {
+    json(response, 200, null);
+    return;
+  }
+
+  if (
+    requestUrl.pathname === "/rest/v1/rpc/create_learner_profile_with_groups" ||
+    requestUrl.pathname === "/rest/v1/rpc/update_learner_profile_with_groups"
+  ) {
+    json(response, 200, E2E_LEARNER_ROWS[0]);
+    return;
+  }
+
+  if (requestUrl.pathname === "/rest/v1/rpc/archive_learner_profile") {
+    json(response, 200, {
+      ...E2E_LEARNER_ROWS[0],
+      archived_at: "2026-08-07T12:00:00.000Z",
+    });
+    return;
+  }
+
+  if (
+    requestUrl.pathname === "/rest/v1/rpc/create_learner_group" ||
+    requestUrl.pathname === "/rest/v1/rpc/update_learner_group"
+  ) {
+    json(response, 200, E2E_LEARNER_GROUP_ROWS[0]);
+    return;
+  }
+
+  if (
+    requestUrl.pathname === "/rest/v1/rpc/delete_learner_group" ||
+    requestUrl.pathname === "/rest/v1/rpc/replace_course_audience" ||
+    requestUrl.pathname === "/rest/v1/rpc/replace_course_learners"
+  ) {
     json(response, 200, null);
     return;
   }
@@ -313,12 +426,83 @@ function handleMockSupabase(
   }
 
   if (requestUrl.pathname === "/rest/v1/learner_profile") {
-    json(response, 200, []);
+    const requestedId = readEqFilter(requestUrl, "id");
+    const requestedIds = readInFilter(requestUrl, "id");
+    json(
+      response,
+      200,
+      E2E_LEARNER_ROWS.filter(
+        (row) =>
+          (!requestedId || row.id === requestedId) &&
+          (!requestedIds || requestedIds.includes(row.id)),
+      ),
+    );
+    return;
+  }
+
+  if (requestUrl.pathname === "/rest/v1/learner_group") {
+    const requestedId = readEqFilter(requestUrl, "id");
+    const requestedIds = readInFilter(requestUrl, "id");
+    json(
+      response,
+      200,
+      E2E_LEARNER_GROUP_ROWS.filter(
+        (row) =>
+          (!requestedId || row.id === requestedId) &&
+          (!requestedIds || requestedIds.includes(row.id)),
+      ),
+    );
+    return;
+  }
+
+  if (requestUrl.pathname === "/rest/v1/learner_group_member") {
+    const requestedGroupIds = readInFilter(requestUrl, "learner_group_id");
+    json(
+      response,
+      200,
+      E2E_LEARNER_GROUP_MEMBER_ROWS.filter(
+        (row) =>
+          !requestedGroupIds ||
+          requestedGroupIds.includes(row.learner_group_id),
+      ).map(({ learner_group_id, learner_profile_id }) => ({
+        learner_group_id,
+        learner_profile_id,
+      })),
+    );
     return;
   }
 
   if (requestUrl.pathname === "/rest/v1/course_learner") {
-    json(response, 200, []);
+    const requestedCourseId = readEqFilter(requestUrl, "course_id");
+    json(
+      response,
+      200,
+      !requestedCourseId || requestedCourseId === E2E_COURSE_ID
+        ? [
+            {
+              course_id: E2E_COURSE_ID,
+              learner_profile_id: E2E_LEARNER_BORIS_ID,
+            },
+          ]
+        : [],
+    );
+    return;
+  }
+
+  if (requestUrl.pathname === "/rest/v1/course_learner_group") {
+    const requestedCourseId = readEqFilter(requestUrl, "course_id");
+    json(
+      response,
+      200,
+      !requestedCourseId || requestedCourseId === E2E_COURSE_ID
+        ? [
+            {
+              course_id: E2E_COURSE_ID,
+              learner_group_id: E2E_GROUP_TEEN_ID,
+            },
+          ]
+        : [],
+    );
     return;
   }
 
@@ -786,14 +970,26 @@ test("browser smoke: teacher navigates Schedule → Students with honest V2 stat
       .getByRole("heading", { name: "Ученики", exact: true, level: 1 })
       .waitFor();
     await runtime.page
-      .getByRole("heading", { name: E2E_COURSE_TITLE, exact: true, level: 2 })
+      .getByRole("table", { name: "Ученики и их группы", exact: true })
       .waitFor();
 
     html = await runtime.page.content();
-    assert.match(html, /Добавьте первого ученика/);
-    assert.match(html, /Аудитории курсов/);
-    assert.match(html, new RegExp(E2E_COURSE_TITLE));
-    assert.doesNotMatch(html, /Миша Орлов|Teen Talk|11 занятий/);
+    assert.match(html, /Анна Петрова/);
+    assert.match(html, /Борис Волков/);
+    assert.match(html, /Teen Talk/);
+    assert.match(html, /Новый ученик/);
+    assert.match(html, /Новая группа/);
+    assert.doesNotMatch(html, /Миша Орлов|Food around the world|11 занятий/);
+
+    await runtime.page
+      .getByRole("button", { name: "По группам · 2", exact: true })
+      .click();
+    await runtime.page
+      .getByRole("table", { name: "Группы учеников", exact: true })
+      .waitFor();
+    html = await runtime.page.content();
+    assert.match(html, /Подготовка к экзамену/);
+    assert.match(html, /2 ученика/);
 
     const studentsCurrent = await runtime.page.evaluate(() =>
       document
@@ -803,6 +999,82 @@ test("browser smoke: teacher navigates Schedule → Students with honest V2 stat
         ?.getAttribute("aria-current"),
     );
     assert.equal(studentsCurrent, "page");
+  } finally {
+    await runtime.close();
+  }
+});
+
+test("browser smoke: mixed Course audience deduplicates direct and grouped learners", async (t) => {
+  if (browserSmokeUnavailableReason) {
+    t.skip(browserSmokeUnavailableReason);
+    return;
+  }
+
+  const runtime = await openPage({ cookie: authenticatedCookieValue() });
+
+  try {
+    await runtime.page.goto(`/courses/${E2E_COURSE_ID}`, {
+      waitUntil: "networkidle",
+    });
+    const audienceButton = runtime.page.getByRole("button", {
+      name: "Аудитория · 2",
+      exact: true,
+    });
+    await audienceButton.waitFor();
+    await audienceButton.click();
+    await runtime.page
+      .getByRole("heading", {
+        name: "Аудитория курса",
+        exact: true,
+        level: 2,
+      })
+      .waitFor();
+    await runtime.page
+      .getByRole("group", { name: "Группы", exact: true })
+      .waitFor();
+
+    const audienceContract = await runtime.page.evaluate(() => {
+      const summary = document
+        .querySelector<HTMLElement>(".course-audience-summary strong")
+        ?.textContent?.replace(/\s+/g, " ")
+        .trim();
+      const selectedGroups = Array.from(
+        document.querySelectorAll<HTMLInputElement>(
+          ".course-audience-picker:first-of-type input[type='checkbox']:checked",
+        ),
+      ).length;
+      const selectedDirectLearners = Array.from(
+        document.querySelectorAll<HTMLInputElement>(
+          ".course-audience-picker:nth-of-type(2) input[type='checkbox']:checked",
+        ),
+      ).length;
+      const dialogText = document
+        .querySelector<HTMLElement>("[role='dialog']")
+        ?.textContent?.replace(/\s+/g, " ")
+        .trim();
+
+      return {
+        summary,
+        selectedGroups,
+        selectedDirectLearners,
+        dialogText,
+      };
+    });
+
+    assert.equal(
+      audienceContract.summary,
+      "Выбрано: 1 группа, 1 ученик отдельно · 2 ученика в курсе",
+    );
+    assert.equal(audienceContract.selectedGroups, 1);
+    assert.equal(audienceContract.selectedDirectLearners, 1);
+    assert.match(
+      audienceContract.dialogText ?? "",
+      /Уже входит через: Teen Talk/,
+    );
+    assert.match(
+      audienceContract.dialogText ?? "",
+      /ИИ будет учитывать уникальные профили/,
+    );
   } finally {
     await runtime.close();
   }

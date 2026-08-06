@@ -6,6 +6,10 @@ const migration = readFileSync(
   "supabase/migrations/20260806190044_lesson_runs_learning_records.sql",
   "utf8",
 );
+const groupsMigration = readFileSync(
+  "supabase/migrations/20260806220726_learner_groups_mixed_course_audience.sql",
+  "utf8",
+);
 const snapshot = readFileSync("supabase/schema/current-schema.sql", "utf8");
 
 function functionBody(name: string) {
@@ -22,6 +26,26 @@ function tableBody(name: string) {
   const end = migration.indexOf("\n);", start);
   assert.notEqual(end, -1, `unterminated table ${name}`);
   return migration.slice(start, end + 3);
+}
+
+function groupsFunctionBody(name: string) {
+  const start = groupsMigration.indexOf(`create function public.${name}(`);
+  const replaceStart = groupsMigration.indexOf(
+    `create or replace function public.${name}(`,
+  );
+  const resolvedStart = start === -1 ? replaceStart : start;
+  assert.notEqual(resolvedStart, -1, `missing groups function ${name}`);
+  const end = groupsMigration.indexOf("\n$$;", resolvedStart);
+  assert.notEqual(end, -1, `unterminated groups function ${name}`);
+  return groupsMigration.slice(resolvedStart, end + 4);
+}
+
+function groupsTableBody(name: string) {
+  const start = groupsMigration.indexOf(`create table public.${name} (`);
+  assert.notEqual(start, -1, `missing groups table ${name}`);
+  const end = groupsMigration.indexOf("\n);", start);
+  assert.notEqual(end, -1, `unterminated groups table ${name}`);
+  return groupsMigration.slice(start, end + 3);
 }
 
 test("lesson scheduling is one forward-only transactional migration", () => {
@@ -239,10 +263,207 @@ test("current schema snapshot preserves the hardened scheduling contract", () =>
   assert.match(snapshot, /jsonb_array_length\(p_records\) = 0/);
   assert.match(
     snapshot,
-    /GRANT SELECT,INSERT,UPDATE ON TABLE public\.learner_profile TO authenticated;/,
+    /GRANT SELECT ON TABLE public\.learner_profile TO authenticated;/,
+  );
+  assert.match(
+    snapshot,
+    /GRANT INSERT\(display_name\),UPDATE\(display_name\) ON TABLE public\.learner_profile TO authenticated;/,
   );
   assert.doesNotMatch(
     snapshot,
     /GRANT [^;]*DELETE[^;]*ON TABLE public\.learner_profile TO authenticated;/,
   );
+});
+
+test("learner groups are a forward-only unordered collection model", () => {
+  assert.match(groupsMigration, /^begin;\n/);
+  assert.match(groupsMigration, /\ncommit;\n$/);
+  assert.doesNotMatch(
+    groupsMigration,
+    /drop\s+(?:table|function|schema)[^;]*\bcascade\b/i,
+  );
+  assert.match(
+    groupsMigration,
+    /alter table public\.learner_profile[\s\S]*?add column archived_at timestamptz null;/,
+  );
+
+  for (const table of [
+    "learner_group",
+    "learner_group_member",
+    "course_learner_group",
+  ]) {
+    assert.match(
+      groupsMigration,
+      new RegExp(`alter table public\\.${table} enable row level security;`),
+    );
+  }
+
+  const member = groupsTableBody("learner_group_member");
+  const courseGroup = groupsTableBody("course_learner_group");
+  assert.match(
+    member,
+    /references public\.learner_group\(id\) on delete cascade/,
+  );
+  assert.match(
+    member,
+    /references public\.learner_profile\(id\) on delete cascade/,
+  );
+  assert.match(
+    courseGroup,
+    /references public\.course\(id\) on delete cascade/,
+  );
+  assert.match(
+    courseGroup,
+    /references public\.learner_group\(id\) on delete cascade/,
+  );
+  assert.doesNotMatch(member, /\bposition\b|\bstatus\b/);
+  assert.doesNotMatch(courseGroup, /\bposition\b|\bstatus\b/);
+});
+
+test("mixed Course audience is deduplicated while an open Run stays frozen", () => {
+  const schedule = groupsFunctionBody("schedule_lesson_run");
+  assert.match(
+    schedule,
+    /public\.course_learner[\s\S]*?union[\s\S]*?public\.course_learner_group[\s\S]*?public\.learner_group_member/,
+  );
+  assert.match(schedule, /profile\.archived_at is null/);
+  assert.match(
+    schedule,
+    /p_learner_profile_ids is null and v_run\.id is not null[\s\S]*?public\.learning_record/,
+  );
+  assert.match(
+    schedule,
+    /public\.learner_group_member[\s\S]*?union[\s\S]*?select record\.learner_profile_id as id/,
+  );
+  assert.match(schedule, /cardinality\(v_selected_ids\) > 200/);
+  assert.doesNotMatch(schedule, /lesson_run_participant|lesson_snapshot/);
+
+  const replacement = groupsFunctionBody("replace_course_audience");
+  assert.match(replacement, /select distinct requested_id as id/);
+  assert.match(
+    replacement,
+    /from unnest\(v_direct_ids\)[\s\S]*?union[\s\S]*?public\.learner_group_member/,
+  );
+  assert.match(replacement, /v_effective_count > 200/);
+
+  const compatibility = groupsFunctionBody("replace_course_learners");
+  assert.match(compatibility, /public\.replace_course_audience/);
+  assert.match(compatibility, /public\.course_learner_group/);
+});
+
+test("learner deletion is soft archive and Group deletion removes only links", () => {
+  const archive = groupsFunctionBody("archive_learner_profile");
+  const detach = groupsFunctionBody("detach_archived_learner_profile_links");
+  const deleteGroup = groupsFunctionBody("delete_learner_group");
+
+  assert.match(
+    archive,
+    /set archived_at = coalesce\(profile\.archived_at, now\(\)\)/,
+  );
+  assert.doesNotMatch(archive, /delete from public\.learner_profile/);
+  assert.match(detach, /delete from public\.course_learner/);
+  assert.match(detach, /delete from public\.learner_group_member/);
+  assert.doesNotMatch(detach, /learning_record|lesson_run/);
+  assert.match(deleteGroup, /delete from public\.learner_group/);
+  assert.doesNotMatch(
+    deleteGroup,
+    /learner_profile|learning_record|lesson_run/,
+  );
+});
+
+test("profile membership cannot overflow an attached Course or reveal a foreign Group", () => {
+  for (const name of [
+    "create_learner_profile_with_groups",
+    "update_learner_profile_with_groups",
+  ]) {
+    const body = groupsFunctionBody(name);
+    const ownershipValidation = body.indexOf("if cardinality(v_group_ids) <>");
+    const capacityFailure = body.indexOf("course_audience_too_large");
+    assert.notEqual(
+      ownershipValidation,
+      -1,
+      `${name} lacks Group ownership validation`,
+    );
+    assert.notEqual(
+      capacityFailure,
+      -1,
+      `${name} lacks Course capacity validation`,
+    );
+    assert.equal(
+      ownershipValidation < capacityFailure,
+      true,
+      `${name} must reject a foreign Group before checking Course capacity`,
+    );
+    assert.match(body, /public\.course_learner_group/);
+    assert.match(body, />= 200/);
+  }
+
+  assert.match(
+    groupsFunctionBody("update_learner_profile_with_groups"),
+    /not exists[\s\S]*?current_effective\.learner_profile_id = p_learner_profile_id/,
+  );
+});
+
+test("group and mixed-audience RPCs are owner-scoped and closed by default", () => {
+  const rpcNames = [
+    "create_learner_profile_with_groups",
+    "update_learner_profile_with_groups",
+    "archive_learner_profile",
+    "create_learner_group",
+    "update_learner_group",
+    "delete_learner_group",
+    "replace_course_audience",
+  ];
+
+  for (const name of rpcNames) {
+    const body = groupsFunctionBody(name);
+    assert.match(body, /security definer/);
+    assert.match(body, /set search_path = ''/);
+    assert.match(body, /v_actor_user_id uuid := \(select auth\.uid\(\)\)/);
+    assert.match(body, /account\.auth_user_id = v_actor_user_id/);
+    assert.match(
+      groupsMigration,
+      new RegExp(
+        `revoke all on function public\\.${name}\\([\\s\\S]*?from public, anon, authenticated, service_role;`,
+      ),
+    );
+    assert.match(
+      groupsMigration,
+      new RegExp(
+        `grant execute on function public\\.${name}\\([\\s\\S]*?to authenticated;`,
+      ),
+    );
+  }
+
+  assert.match(
+    groupsMigration,
+    /revoke insert, update on table public\.learner_profile from authenticated;/,
+  );
+  assert.match(
+    groupsMigration,
+    /grant update \(display_name\)[\s\S]*?public\.learner_profile to authenticated;/,
+  );
+  assert.doesNotMatch(
+    groupsMigration,
+    /grant update \([^)]*archived_at[^)]*\)[\s\S]*?to authenticated;/,
+  );
+});
+
+test("current snapshot includes active Groups without a parallel Run model", () => {
+  for (const table of [
+    "learner_group",
+    "learner_group_member",
+    "course_learner_group",
+  ]) {
+    assert.match(snapshot, new RegExp(`CREATE TABLE public\\.${table} \\(`));
+  }
+  assert.match(snapshot, /archived_at timestamp with time zone/);
+  assert.match(snapshot, /CREATE FUNCTION public\.replace_course_audience/);
+  assert.match(snapshot, /CREATE FUNCTION public\.archive_learner_profile/);
+  assert.match(
+    snapshot,
+    /CREATE FUNCTION public\.schedule_lesson_run[\s\S]*?public\.course_learner_group/,
+  );
+  assert.doesNotMatch(snapshot, /CREATE TABLE public\.lesson_run_participant/);
+  assert.doesNotMatch(snapshot, /CREATE TABLE public\.lesson_snapshot/);
 });

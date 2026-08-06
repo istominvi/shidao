@@ -7,34 +7,37 @@ import { getLessonRunsContext } from "@/modules/lesson-runs/server-context";
 
 export const runtime = "nodejs";
 
-type RouteContext = { params: Promise<{ courseId: string }> };
+type RouteContext = {
+  params: Promise<{ learnerProfileId: string }>;
+};
 
-export async function GET(_request: Request, { params }: RouteContext) {
+export async function PATCH(request: Request, { params }: RouteContext) {
   try {
-    const { courseId } = await params;
+    const { learnerProfileId } = await params;
     const { actor, service } = await getLessonRunsContext();
-    const audience = await service.getCourseAudience(actor, courseId);
     return NextResponse.json({
-      audience,
-      learnerProfiles: audience.directLearners,
+      learnerProfile: await service.updateLearnerProfile(
+        actor,
+        learnerProfileId,
+        await readJson(request),
+      ),
     });
   } catch (error) {
     return courseBuilderApiError(error);
   }
 }
 
-export async function PUT(request: Request, { params }: RouteContext) {
+export async function DELETE(_request: Request, { params }: RouteContext) {
   try {
-    const { courseId } = await params;
+    const { learnerProfileId } = await params;
     const { actor, service } = await getLessonRunsContext();
-    const audience = await service.replaceCourseAudience(
+    const learnerProfile = await service.archiveLearnerProfile(
       actor,
-      courseId,
-      await readJson(request),
+      learnerProfileId,
     );
     return NextResponse.json({
-      audience,
-      learnerProfiles: audience.directLearners,
+      deleted: true,
+      learnerProfile,
     });
   } catch (error) {
     return courseBuilderApiError(error);

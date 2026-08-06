@@ -14,6 +14,7 @@ import type {
 } from "@/modules/course-builder/domain";
 import type { CourseBuilderApplicationService } from "@/modules/course-builder/service";
 import type { LessonRunsApplicationService } from "@/modules/lesson-runs/service";
+import type { CourseAudience } from "@/modules/lesson-runs/domain";
 import {
   aiAssistantRequestSchema,
   aiCoursePlanApplyRequestSchema,
@@ -82,7 +83,9 @@ export type AiCourseBuilderDependencies = {
   service: AiCourseBuilderApplicationService;
   learningHistoryService?: Pick<
     LessonRunsApplicationService,
-    "listCourseHistory" | "listCourseLearningRecords"
+    | "getCourseAudience"
+    | "listCourseHistory"
+    | "getCourseAudienceLearningRecords"
   >;
   provider?: RouterAiClient;
   createProvider?: () => RouterAiClient;
@@ -149,10 +152,20 @@ function contextFingerprint(value: unknown) {
   return createHash("sha256").update(JSON.stringify(value)).digest("hex");
 }
 
-function coursePlanningFingerprint(course: CourseWorkspace) {
-  const context = buildCoursePlanningContext(course);
+const EMPTY_COURSE_AUDIENCE: CourseAudience = {
+  directLearners: [],
+  groups: [],
+  effectiveLearners: [],
+};
+
+function coursePlanningFingerprint(
+  course: CourseWorkspace,
+  audience: CourseAudience = EMPTY_COURSE_AUDIENCE,
+) {
+  const context = buildCoursePlanningContext(course, audience);
   return contextFingerprint({
     course: context.course,
+    currentAudience: context.currentAudience,
     attachmentMetadata: context.attachmentMetadata,
   });
 }
@@ -172,17 +185,29 @@ export function createAiCourseBuilderService({
   async function loadLearningHistory(
     courseId: string,
   ): Promise<CourseLearningHistory> {
-    if (!learningHistoryService) return { runs: [], records: [] };
-    const [runs, records] = await Promise.all([
+    if (!learningHistoryService) {
+      return { audience: EMPTY_COURSE_AUDIENCE, runs: [], records: [] };
+    }
+    const [audienceHistory, runs] = await Promise.all([
+      learningHistoryService.getCourseAudienceLearningRecords(actor, courseId, {
+        limit: 40,
+      }),
       learningHistoryService.listCourseHistory(actor, courseId, {
         limit: 8,
         completedOnly: true,
       }),
-      learningHistoryService.listCourseLearningRecords(actor, courseId, {
-        limit: 40,
-      }),
     ]);
-    return { runs, records };
+    return {
+      audience: audienceHistory.audience,
+      runs,
+      records: audienceHistory.records,
+    };
+  }
+
+  async function loadCourseAudience(courseId: string) {
+    return learningHistoryService
+      ? learningHistoryService.getCourseAudience(actor, courseId)
+      : EMPTY_COURSE_AUDIENCE;
   }
 
   async function emitAudit(
@@ -220,7 +245,8 @@ export function createAiCourseBuilderService({
       const outputSchema = createAiCourseOutlinePlanSchema(
         course.targetLessonCount,
       );
-      const planningContext = buildCoursePlanningContext(course);
+      const audience = await loadCourseAudience(courseId);
+      const planningContext = buildCoursePlanningContext(course, audience);
       const completion = await requireProvider(
         provider,
         createProvider,
@@ -259,7 +285,7 @@ export function createAiCourseBuilderService({
         ...metadata,
       });
       return {
-        baseContextFingerprint: coursePlanningFingerprint(course),
+        baseContextFingerprint: coursePlanningFingerprint(course, audience),
         plan: completion.value,
         ...metadata,
       };
@@ -272,6 +298,7 @@ export function createAiCourseBuilderService({
         rawInput,
       );
       const course = await service.getCourse(actor, courseId);
+      const audience = await loadCourseAudience(courseId);
       if (plan.lessons.length !== course.targetLessonCount) {
         throw new CourseBuilderValidationError(
           `План должен содержать ровно ${course.targetLessonCount} уроков.`,
@@ -307,7 +334,9 @@ export function createAiCourseBuilderService({
         };
       }
 
-      if (coursePlanningFingerprint(course) !== baseContextFingerprint) {
+      if (
+        coursePlanningFingerprint(course, audience) !== baseContextFingerprint
+      ) {
         throw new CourseBuilderConflictError(
           "Курс изменился после предпросмотра. Сформируйте новый план.",
           "ai_plan_stale",

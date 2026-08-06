@@ -61,8 +61,10 @@ build, но публичный production launch и отдельный staging �
 ```text
 Account
 ├── LearnerProfile 0..N
+├── LearnerGroup 0..N → LearnerProfile 0..N
 └── Course
-    ├── audience → LearnerProfile 0..N
+    ├── audience sources → direct LearnerProfile + LearnerGroup
+    ├── effective audience → unique active LearnerProfile 0..N
     ├── course-wide Attachments
     └── Lesson 1..N
         ├── ordered Components 1..N
@@ -90,6 +92,12 @@ Account
 - LearningRecord до completion является ожидаемым участником, а после —
   долговечной индивидуальной историей. Отдельных participant/snapshot/status
   tables нет.
+- LearnerGroup — переиспользуемый набор тех же LearnerProfile, а не второй вид
+  ученика. Профиль может не иметь группы или входить в несколько групп.
+- Course хранит direct learners и groups как независимые источники; scheduling
+  и AI используют их дедуплицированную эффективную аудиторию.
+- Состав уже открытого LessonRun зафиксирован draft LearningRecords. Изменение
+  группы влияет на будущие назначения, но не переписывает существующее.
 - Открытый/завершённый Run имеет хотя бы одну запись; cancel удаляет drafts,
   поэтому сохранённый отменённый Run может иметь ноль LearningRecord.
 
@@ -153,12 +161,16 @@ Account
   `/onboarding`, Parent и transitional Student — в `/courses`.
 - `/schedule` показывает реальные LessonRun выбранного локального дня. Это
   проекция тех же проведений, а не отдельная таблица Schedule events.
-- `/students` создаёт нейтральный owner-scoped LearnerProfile и открывает его
-  завершённые LearningRecord, включая records, пережившие удаление Lesson.
-- Course header открывает настройку прямой аудитории через `course_learner`;
-  `/students` ведёт к той же настройке без N+1 чтения аудиторий.
-- Legacy `student`, `class`, `class_student` не читаются. Group, Guardian,
-  invitation и learner access не реализованы.
+- `/students` показывает единый owner-scoped справочник LearnerProfile с
+  группами в строке, поиском, фильтрацией, сортировкой и режимом «По группам»;
+  учеников и reusable groups можно создавать, редактировать и удалять.
+- Product delete ученика архивирует профиль: он исчезает из групп и будущих
+  Course audiences, а его LearningRecord и состав уже назначенного Run
+  сохраняются. Удаление группы не удаляет учеников или историю.
+- Course header независимо прикрепляет группы и отдельных учеников; overlap
+  учитывается один раз, а header показывает число уникальных effective learners.
+- Legacy `student`, `class`, `class_student` не читаются. Guardian, invitation
+  и learner access не реализованы.
 - Из Course/Lesson можно назначить или перенести время, выбрать subset
   аудитории, начать, завершить постфактум или отменить проведение.
 - Completion сохраняет общий teacher report и для каждого ожидаемого ученика:
@@ -285,12 +297,13 @@ application service/contracts внутри authenticated web request.
 - Assistant читает bounded Course/selected Lesson context и отвечает текстом,
   но не вызывает mutation commands, MCP tools или apply routes. История живёт
   только в React state dialog и исчезает после close/reload.
-- Lesson planning и Assistant дополнительно читают до 8 завершённых Runs и до
-  40 finalized LearningRecords через owner-scoped application service.
-  Технические IDs исключены; отсутствие не трактуется как непонимание. History
-  входит в Lesson preview fingerprint. Полный provider context имеет единый
-  hard budget 96 000 символов и детерминированно сокращает только oversized
-  значения.
+- Lesson planning и Assistant дополнительно читают direct learners, группы и
+  дедуплицированную effective audience, до 8 завершённых Runs текущего Course и
+  до 40 finalized LearningRecords этих учеников по всем курсам через
+  owner-scoped application service. Технические IDs исключены; отсутствие не
+  трактуется как непонимание. Audience/history входят в Lesson preview
+  fingerprint. Полный provider context имеет единый hard budget 96 000
+  символов и детерминированно сокращает только oversized значения.
 - Attachment contents, signed URLs и Storage identifiers модели не передаются:
   доступны только filename/MIME/status. Parsing, OCR, embeddings и RAG не
   реализованы.
@@ -313,7 +326,7 @@ history-aware context current repository ещё не развёрнут.
 - добавление новых материалов из модалки существующего Course;
 - persisted Homework editor;
 - Learner-facing кабинет, enrollment и настоящий доступ ученика к Course;
-- persisted Groups, Guardian relations, invitation/claim и перенос legacy
+- Guardian relations, invitation/claim и перенос legacy
   identity в новую модель;
 - live Student Screen sync, realtime presence и teacher-controlled runtime
   cursor поверх открытого LessonRun;
@@ -330,8 +343,8 @@ history-aware context current repository ещё не развёрнут.
 ## 4. Переходное состояние identity
 
 Новая Course-модель использует `account`, связанный один-к-одному с
-`auth.users`, а LessonRun slice добавляет независимый `learner_profile` и
-прямую Course audience. При этом старые таблицы `teacher`, `parent`, `student`,
+`auth.users`, а teaching-hub slice добавляет независимые `learner_profile`,
+`learner_group` и смешанную Course audience. При этом старые таблицы `teacher`, `parent`, `student`,
 `school`, `school_teacher`, `class`, `class_teacher` и `class_student` временно
 сохранены для текущего login/onboarding/profile/session поведения.
 
@@ -380,12 +393,15 @@ lesson_student_slide
 stored_file
 course_attachment
 learner_profile
+learner_group
+learner_group_member
 course_learner
+course_learner_group
 lesson_run
 learning_record
 ```
 
-Новые четыре tables принадлежат audience/scheduling/history slice, а не
+Эти tables принадлежат audience/scheduling/history slice, а не
 provider accounting. `lesson_run` не содержит Lesson content; один partial
 unique index допускает один открытый Run на Lesson. `learning_record` заменяет
 participant table: `occurred_at IS NULL` означает expected row, non-null —
@@ -404,6 +420,9 @@ provider requests, assistant dialog history или quota state в БД.
 - `20260806190044_lesson_runs_learning_records.sql` — neutral LearnerProfile,
   direct Course audience, LessonRun/LearningRecord, lifecycle RPC, deletion
   retention, RLS/ACL.
+- `20260806220726_learner_groups_mixed_course_audience.sql` — reusable Groups,
+  mixed/deduplicated Course audience, safe LearnerProfile archive, group CRUD,
+  dynamic future scheduling и RLS/ACL.
 
 Источники истины для текущего состояния:
 
@@ -440,7 +459,7 @@ positions, а плотность поддерживают текущие service
 | AI dialogs                   | `src/components/course-builder/ai-course-plan-dialog.tsx`, `ai-lesson-plan-dialog.tsx`, `ai-course-assistant-dialog.tsx` |
 | LessonRun domain/contracts   | `src/modules/lesson-runs/domain.ts`, `contracts.ts`                                                                      |
 | LessonRun service/repository | `src/modules/lesson-runs/service.ts`, `repository.ts`, `server-context.ts`                                               |
-| LessonRun API                | `src/app/api/v2/lesson-runs/`, `learner-profiles/`, Course/Lesson audience/history/runs routes                           |
+| LessonRun API                | `src/app/api/v2/lesson-runs/`, `learner-profiles/`, `learner-groups/`, Course/Lesson audience/history/runs routes        |
 | LessonRun UI                 | `src/components/lesson-runs/`                                                                                            |
 | Course browser client        | `src/components/course-builder/course-builder-client.ts`                                                                 |
 | New Course flow              | `src/components/course-builder/new-course-form.tsx`                                                                      |

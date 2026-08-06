@@ -7,10 +7,13 @@ import {
 import {
   assertSameLearnerSet,
   completeLessonRunInputSchema,
+  createLearnerGroupInputSchema,
   createLearnerProfileInputSchema,
   lessonRunWindowInputSchema,
   parseLessonRunsContract,
+  replaceCourseAudienceInputSchema,
   scheduleLessonRunInputSchema,
+  updateLearnerProfileInputSchema,
 } from "./contracts";
 
 function uuid(sequence: number) {
@@ -22,7 +25,7 @@ test("learner profile and schedule contracts trim user text and can use the Cour
     parseLessonRunsContract(createLearnerProfileInputSchema, {
       displayName: "  Анна  ",
     }),
-    { displayName: "Анна" },
+    { displayName: "Анна", learnerGroupIds: [] },
   );
 
   assert.deepEqual(
@@ -34,6 +37,49 @@ test("learner profile and schedule contracts trim user text and can use the Cour
       scheduledAt: "2026-08-08T10:00:00+09:00",
       plannedDurationMinutes: 45,
     },
+  );
+});
+
+test("learner groups and mixed Course audience accept overlap but reject duplicates", () => {
+  assert.deepEqual(
+    parseLessonRunsContract(createLearnerGroupInputSchema, {
+      name: "  Teen Talk  ",
+    }),
+    { name: "Teen Talk", learnerProfileIds: [] },
+  );
+  assert.deepEqual(
+    parseLessonRunsContract(updateLearnerProfileInputSchema, {
+      displayName: "  Анна  ",
+      learnerGroupIds: [uuid(10), uuid(11)],
+    }),
+    {
+      displayName: "Анна",
+      learnerGroupIds: [uuid(10), uuid(11)],
+    },
+  );
+  assert.deepEqual(
+    parseLessonRunsContract(replaceCourseAudienceInputSchema, {
+      directLearnerProfileIds: [uuid(1)],
+      learnerGroupIds: [uuid(10)],
+    }),
+    {
+      directLearnerProfileIds: [uuid(1)],
+      learnerGroupIds: [uuid(10)],
+    },
+  );
+  assert.deepEqual(
+    parseLessonRunsContract(replaceCourseAudienceInputSchema, {
+      learnerProfileIds: [uuid(1)],
+    }),
+    { learnerProfileIds: [uuid(1)] },
+  );
+  assert.throws(
+    () =>
+      parseLessonRunsContract(replaceCourseAudienceInputSchema, {
+        directLearnerProfileIds: [],
+        learnerGroupIds: [uuid(10), uuid(10)],
+      }),
+    /Одна группа не может быть указана дважды/,
   );
 });
 

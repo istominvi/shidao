@@ -8,18 +8,18 @@
 
 ## Как читать этот документ
 
-Сейчас на `v2.shidao.ru` развёрнут первый рабочий teacher Course Builder. В
-текущем repository дополнительно реализован, но ещё не развёрнут следующий
-vertical slice: owner-managed LearnerProfile, прямая audience Course,
-планирование повторяемых LessonRun и долговременные LearningRecord. Lesson
-остаётся единственной content-сущностью; LessonRun не хранит снимок её
-содержимого. Development-only MCP реализован отдельно как local `stdio`
-process; он не является частью web deployment или внешним endpoint. Точный
+Сейчас на `v2.shidao.ru` развёрнут teacher Course Builder и базовый LessonRun
+slice. В текущем repository LearnerProfile дополнен reusable Groups и
+смешанной Course audience: группы и отдельные ученики являются независимыми
+источниками одного дедуплицированного состава. Lesson остаётся единственной
+content-сущностью; LessonRun не хранит снимок её содержимого. Development-only
+MCP реализован отдельно как local `stdio` process; он не является частью web
+deployment или внешним endpoint. Точный
 deployed и repository scope, ограничения и implementation map зафиксированы в
 [`docs/project-state.md`](../project-state.md), а последовательность работ — в
 [`docs/roadmap.md`](../roadmap.md).
 
-Group/guardian relations, live-проведение, расширенные учебные метрики,
+Guardian relations, live-проведение, расширенные учебные метрики,
 persisted Homework, parsing/RAG, подписки, billing и внешний MCP/API остаются
 **будущим направлением**, пока соответствующая возможность не появилась в
 project-state и current schema. Настоящее время в остальных стратегических
@@ -951,15 +951,16 @@ ShiDao строится не как оболочка над одной модн�
    accessibility и UX polish.
 2. Подключить server-only OpenRouter adapter с validated structured output,
    audit и честным token accounting.
-3. Развернуть и стабилизировать реализованные audience, scheduling и history;
-   затем добавить live-проведение поверх LessonRun.
+3. Стабилизировать mixed audience, scheduling и history; затем добавить
+   live-проведение поверх LessonRun.
 4. Реализовать persisted common Homework как отдельную Lesson surface.
 5. Добавить parsing статуса/текста загруженных источников; RAG — только после
    проверяемого extraction baseline.
 
 ## Позднее
 
-- guardian relations и Group audience поверх уже существующей прямой audience;
+- guardian relations и invitation/claim поверх уже существующих учебных
+  профилей;
 - live sync и AI-conducted lesson поверх LessonRun;
 - individual Homework assignments и immutable snapshots;
 - расширенные learning metrics/events, chat, notifications и vocabulary progress;
@@ -1179,8 +1180,7 @@ repository отдельно от web deployment. Это рабочий persisted
 
 - улучшенный ручной Course Builder;
 - OpenRouter-assisted authoring;
-- прямая audience, scheduling, LessonRun и базовая учебная история —
-  реализованы в repository и ожидают deployment;
+- mixed group/direct audience, scheduling, LessonRun и базовая учебная история;
 - загрузка и parsing источников;
 - persisted Homework;
 - затем live-проведение и расширенные метрики учебного профиля.
@@ -1518,8 +1518,10 @@ ShiDao как инфраструктура между человеком, обр
 ```text
 Account
 ├── LearnerProfile
+├── LearnerGroup → LearnerProfile 0..N
 └── Course
-    ├── direct audience → LearnerProfile
+    ├── audience sources → direct LearnerProfile + LearnerGroup
+    ├── effective audience → unique active LearnerProfile
     ├── course-scoped Materials
     └── Lesson
         ├── ordered Components
@@ -1527,13 +1529,13 @@ Account
         └── LessonRun → LearningRecord
 ```
 
-Course принадлежит одному Account и получает прямую audience из принадлежащих
-ему LearnerProfile. Lesson непосредственно владеет единым ordered Component
+Course принадлежит одному Account и получает аудиторию из отдельных
+LearnerProfile и reusable Groups того же владельца. Lesson непосредственно владеет единым ordered Component
 list и может иметь несколько LessonRun. Slides являются learner presentation
 projection, а не Step или вторым authoring hierarchy. LearningRecord хранит
 минимальный контекст и результат конкретного учащегося, но не snapshot Lesson.
 
-Целевая модель добавит Group/guardian relations, live runtime, Homework,
+Целевая модель добавит guardian relations, live runtime, Homework,
 reusable source library, расширенные метрики, AI для проведения/анализа и
 прозрачные usage limits. Эти возможности нельзя выдавать за current
 implementation до их появления в project-state/schema.

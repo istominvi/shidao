@@ -7,20 +7,26 @@ import type { CourseBuilderActor } from "@/modules/course-builder/domain";
 import {
   assertSameLearnerSet,
   completeLessonRunInputSchema,
+  createLearnerGroupInputSchema,
   createLearnerProfileInputSchema,
   lessonRunWindowInputSchema,
   parseLessonRunsContract,
   replaceCourseAudienceInputSchema,
   rescheduleLessonRunInputSchema,
   scheduleLessonRunInputSchema,
+  updateLearnerGroupInputSchema,
+  updateLearnerProfileInputSchema,
   type CompleteLessonRunInput,
+  type CreateLearnerGroupInput,
   type CreateLearnerProfileInput,
   type LessonRunWindowInput,
   type ReplaceCourseAudienceInput,
   type RescheduleLessonRunInput,
   type ScheduleLessonRunInput,
+  type UpdateLearnerGroupInput,
+  type UpdateLearnerProfileInput,
 } from "./contracts";
-import type { LessonRun, LearnerProfile } from "./domain";
+import type { LearnerGroup, LearnerProfile, LessonRun } from "./domain";
 import type {
   CourseHistoryOptions,
   LearningRecordHistoryOptions,
@@ -100,6 +106,24 @@ export function createLessonRunsService(
     return { accountId, learnerProfile };
   }
 
+  async function requireOwnedLearnerGroup(
+    actor: CourseBuilderActor,
+    learnerGroupIdValue: string,
+  ) {
+    const learnerGroupId = parseLessonRunsContract(
+      uuidSchema,
+      learnerGroupIdValue,
+    );
+    const [accountId, learnerGroup] = await Promise.all([
+      requireAccountId(actor),
+      repository.getLearnerGroup(learnerGroupId),
+    ]);
+    if (!learnerGroup || learnerGroup.ownerAccountId !== accountId) {
+      throw new CourseBuilderAccessError("Группа учеников не найдена.");
+    }
+    return { accountId, learnerGroup };
+  }
+
   async function requireOwnedRun(
     actor: CourseBuilderActor,
     lessonRunIdValue: string,
@@ -115,27 +139,6 @@ export function createLessonRunsService(
     return context.run;
   }
 
-  async function requireAudienceSubset(
-    courseId: string,
-    requestedIds: string[] | undefined,
-  ) {
-    const audience = await repository.listCourseAudience(courseId);
-    const audienceIds = new Set(audience.map((profile) => profile.id));
-    const selectedIds = requestedIds ?? [...audienceIds];
-    if (selectedIds.some((learnerId) => !audienceIds.has(learnerId))) {
-      throw new CourseBuilderAccessError(
-        "Для занятия можно выбрать только учеников аудитории курса.",
-      );
-    }
-    if (selectedIds.length === 0) {
-      throw new CourseBuilderConflictError(
-        "Сначала добавьте хотя бы одного ученика в аудиторию курса.",
-        "lesson_run_audience_required",
-      );
-    }
-    return selectedIds;
-  }
-
   async function requireOwnedLearnerIds(
     ownerAccountId: string,
     learnerProfileIds: string[],
@@ -148,6 +151,22 @@ export function createLessonRunsService(
     if (learnerProfileIds.some((learnerId) => !ownedIds.has(learnerId))) {
       throw new CourseBuilderAccessError(
         "Один или несколько профилей ученика недоступны.",
+      );
+    }
+  }
+
+  async function requireOwnedLearnerGroupIds(
+    ownerAccountId: string,
+    learnerGroupIds: string[],
+  ) {
+    const ownedIds = new Set(
+      (await repository.listLearnerGroups(ownerAccountId)).map(
+        (group) => group.id,
+      ),
+    );
+    if (learnerGroupIds.some((groupId) => !ownedIds.has(groupId))) {
+      throw new CourseBuilderAccessError(
+        "Одна или несколько групп учеников недоступны.",
       );
     }
   }
@@ -180,6 +199,24 @@ export function createLessonRunsService(
       return await operation();
     } catch (error) {
       if (error instanceof CourseBuilderRepositoryError) {
+        if (/learner_group_name_taken/.test(error.message)) {
+          throw new CourseBuilderConflictError(
+            "Группа с таким названием уже существует.",
+            "learner_group_name_taken",
+          );
+        }
+        if (/course_audience_too_large/.test(error.message)) {
+          throw new CourseBuilderConflictError(
+            "В аудитории курса может быть не более 200 учеников.",
+            "course_audience_too_large",
+          );
+        }
+        if (/learner_group_not_found/.test(error.message)) {
+          throw new CourseBuilderAccessError("Группа учеников не найдена.");
+        }
+        if (/learner_profile_not_found/.test(error.message)) {
+          throw new CourseBuilderAccessError("Профиль ученика не найден.");
+        }
         if (/_(?:not_found|not_in_course)/.test(error.message)) {
           throw new CourseBuilderAccessError(
             "Занятие или один из его учеников больше недоступны.",
@@ -239,12 +276,98 @@ export function createLessonRunsService(
         createLearnerProfileInputSchema,
         rawInput,
       );
-      return repository.createLearnerProfile(accountId, input);
+      await requireOwnedLearnerGroupIds(accountId, input.learnerGroupIds);
+      return runMutation(() =>
+        repository.createLearnerProfile(accountId, input),
+      );
     },
 
-    async listCourseAudience(actor: CourseBuilderActor, courseId: string) {
+    async updateLearnerProfile(
+      actor: CourseBuilderActor,
+      learnerProfileId: string,
+      rawInput: UpdateLearnerProfileInput | unknown,
+    ) {
+      const { accountId, learnerProfile } = await requireOwnedLearner(
+        actor,
+        learnerProfileId,
+      );
+      const input = parseLessonRunsContract(
+        updateLearnerProfileInputSchema,
+        rawInput,
+      );
+      await requireOwnedLearnerGroupIds(accountId, input.learnerGroupIds);
+      return runMutation(() =>
+        repository.updateLearnerProfile(learnerProfile.id, input),
+      );
+    },
+
+    async archiveLearnerProfile(
+      actor: CourseBuilderActor,
+      learnerProfileId: string,
+    ) {
+      const { learnerProfile } = await requireOwnedLearner(
+        actor,
+        learnerProfileId,
+      );
+      if (learnerProfile.archivedAt) return learnerProfile;
+      return runMutation(() =>
+        repository.archiveLearnerProfile(learnerProfile.id),
+      );
+    },
+
+    async listLearnerGroups(
+      actor: CourseBuilderActor,
+    ): Promise<LearnerGroup[]> {
+      const accountId = await requireAccountId(actor);
+      return repository.listLearnerGroups(accountId);
+    },
+
+    async createLearnerGroup(
+      actor: CourseBuilderActor,
+      rawInput: CreateLearnerGroupInput | unknown,
+    ) {
+      const accountId = await requireAccountId(actor);
+      const input = parseLessonRunsContract(
+        createLearnerGroupInputSchema,
+        rawInput,
+      );
+      await requireOwnedLearnerIds(accountId, input.learnerProfileIds);
+      return runMutation(() => repository.createLearnerGroup(accountId, input));
+    },
+
+    async updateLearnerGroup(
+      actor: CourseBuilderActor,
+      learnerGroupId: string,
+      rawInput: UpdateLearnerGroupInput | unknown,
+    ) {
+      const { accountId, learnerGroup } = await requireOwnedLearnerGroup(
+        actor,
+        learnerGroupId,
+      );
+      const input = parseLessonRunsContract(
+        updateLearnerGroupInputSchema,
+        rawInput,
+      );
+      await requireOwnedLearnerIds(accountId, input.learnerProfileIds);
+      return runMutation(() =>
+        repository.updateLearnerGroup(learnerGroup.id, input),
+      );
+    },
+
+    async deleteLearnerGroup(
+      actor: CourseBuilderActor,
+      learnerGroupId: string,
+    ) {
+      const { learnerGroup } = await requireOwnedLearnerGroup(
+        actor,
+        learnerGroupId,
+      );
+      await runMutation(() => repository.deleteLearnerGroup(learnerGroup.id));
+    },
+
+    async getCourseAudience(actor: CourseBuilderActor, courseId: string) {
       const { course } = await requireOwnedCourse(actor, courseId);
-      return repository.listCourseAudience(course.id);
+      return repository.getCourseAudience(course.id);
     },
 
     async replaceCourseAudience(
@@ -257,10 +380,25 @@ export function createLessonRunsService(
         replaceCourseAudienceInputSchema,
         rawInput,
       );
-      await requireOwnedLearnerIds(accountId, input.learnerProfileIds);
-      return repository.replaceCourseAudience(
-        course.id,
-        input.learnerProfileIds,
+      if ("learnerProfileIds" in input) {
+        await requireOwnedLearnerIds(accountId, input.learnerProfileIds);
+        return runMutation(() =>
+          repository.replaceDirectCourseAudience(
+            course.id,
+            input.learnerProfileIds,
+          ),
+        );
+      }
+      await Promise.all([
+        requireOwnedLearnerIds(accountId, input.directLearnerProfileIds),
+        requireOwnedLearnerGroupIds(accountId, input.learnerGroupIds),
+      ]);
+      return runMutation(() =>
+        repository.replaceCourseAudience(
+          course.id,
+          input.directLearnerProfileIds,
+          input.learnerGroupIds,
+        ),
       );
     },
 
@@ -309,6 +447,24 @@ export function createLessonRunsService(
       });
     },
 
+    async getCourseAudienceLearningRecords(
+      actor: CourseBuilderActor,
+      courseId: string,
+      options?: LearningRecordHistoryOptions,
+    ) {
+      const { course } = await requireOwnedCourse(actor, courseId);
+      assertHistoryLimit(options?.limit);
+      const audience = await repository.getCourseAudience(course.id);
+      const records = await repository.listLearningRecordsForLearners(
+        audience.effectiveLearners.map((profile) => profile.id),
+        {
+          ...options,
+          limit: options?.limit ?? LESSON_RUN_HISTORY_HARD_LIMIT,
+        },
+      );
+      return { audience, records };
+    },
+
     async listLearnerHistory(
       actor: CourseBuilderActor,
       learnerProfileId: string,
@@ -332,16 +488,12 @@ export function createLessonRunsService(
         scheduleLessonRunInputSchema,
         rawInput,
       );
-      const learnerProfileIds = await requireAudienceSubset(
-        lesson.courseId,
-        input.learnerProfileIds,
-      );
       return runMutation(() =>
         repository.scheduleRun({
           lessonId: lesson.id,
           scheduledAt: input.scheduledAt,
           plannedDurationMinutes: input.plannedDurationMinutes ?? null,
-          learnerProfileIds,
+          learnerProfileIds: input.learnerProfileIds ?? null,
         }),
       );
     },
@@ -363,11 +515,6 @@ export function createLessonRunsService(
         rescheduleLessonRunInputSchema,
         rawInput,
       );
-      const learnerProfileIds = await requireAudienceSubset(
-        current.courseId,
-        input.learnerProfileIds ??
-          current.records.map((record) => record.learnerProfileId),
-      );
       return runMutation(() =>
         repository.rescheduleRun({
           runId: current.id,
@@ -375,7 +522,7 @@ export function createLessonRunsService(
           scheduledAt: input.scheduledAt ?? current.scheduledAt,
           plannedDurationMinutes:
             input.plannedDurationMinutes ?? current.plannedDurationMinutes,
-          learnerProfileIds,
+          learnerProfileIds: input.learnerProfileIds ?? null,
         }),
       );
     },

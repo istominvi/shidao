@@ -10,8 +10,34 @@ export type LearnerProfile = {
   id: string;
   ownerAccountId: string;
   displayName: string;
+  archivedAt: string | null;
   createdAt: string;
   updatedAt: string;
+};
+
+/**
+ * An Account-owned address-book group. Groups are dynamic audience sources:
+ * changing membership affects future LessonRuns, never an already scheduled
+ * Run's expected learner records.
+ */
+export type LearnerGroup = {
+  id: string;
+  ownerAccountId: string;
+  name: string;
+  members: LearnerProfile[];
+  createdAt: string;
+  updatedAt: string;
+};
+
+/**
+ * The persisted Course selection and its deduplicated learner projection.
+ * A learner may be selected directly and through any number of groups, but is
+ * present only once in `effectiveLearners`.
+ */
+export type CourseAudience = {
+  directLearners: LearnerProfile[];
+  groups: LearnerGroup[];
+  effectiveLearners: LearnerProfile[];
 };
 
 /**

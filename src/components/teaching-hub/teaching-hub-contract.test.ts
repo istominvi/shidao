@@ -22,6 +22,18 @@ const studentsWorkspaceSource = readFileSync(
   "src/components/teaching-hub/students-workspace.tsx",
   "utf8",
 );
+const studentDirectoryTableSource = readFileSync(
+  "src/components/teaching-hub/student-directory-table.tsx",
+  "utf8",
+);
+const learnerProfileDialogSource = readFileSync(
+  "src/components/teaching-hub/learner-profile-dialog.tsx",
+  "utf8",
+);
+const learnerGroupDialogSource = readFileSync(
+  "src/components/teaching-hub/learner-group-dialog.tsx",
+  "utf8",
+);
 const lessonRunClientSource = readFileSync(
   "src/components/lesson-runs/lesson-run-client.ts",
   "utf8",
@@ -40,6 +52,10 @@ const learnerHistorySource = readFileSync(
 );
 const courseAudienceDialogSource = readFileSync(
   "src/components/lesson-runs/course-audience-dialog.tsx",
+  "utf8",
+);
+const courseAudienceRouteSource = readFileSync(
+  "src/app/api/v2/courses/[courseId]/audience/route.ts",
   "utf8",
 );
 
@@ -71,17 +87,30 @@ test("schedule projects persisted LessonRun appointments without a parallel even
   assert.doesNotMatch(scheduleWorkspaceSource, /ScheduleEvent|LessonSession/);
 });
 
-test("students persists neutral learner profiles and opens their durable history", () => {
-  assert.match(studentsWorkspaceSource, /\/api\/v2\/courses/);
+test("students manages one learner and group directory with durable history", () => {
   assert.match(lessonRunClientSource, /\/api\/v2\/learner-profiles/);
+  assert.match(lessonRunClientSource, /\/api\/v2\/learner-groups/);
   assert.match(studentsWorkspaceSource, /Новый ученик/);
+  assert.match(studentsWorkspaceSource, /Новая группа/);
   assert.match(studentsWorkspaceSource, /createLearnerProfile/);
+  assert.match(studentsWorkspaceSource, /updateLearnerProfile/);
+  assert.match(studentsWorkspaceSource, /deleteLearnerProfile/);
+  assert.match(studentsWorkspaceSource, /createLearnerGroup/);
+  assert.match(studentsWorkspaceSource, /updateLearnerGroup/);
+  assert.match(studentsWorkspaceSource, /deleteLearnerGroup/);
+  assert.match(studentsWorkspaceSource, /По группам/);
+  assert.match(studentsWorkspaceSource, /Без группы/);
+  assert.match(studentDirectoryTableSource, /<ProductTable/);
+  assert.match(studentDirectoryTableSource, /<caption className="sr-only"/);
+  assert.match(studentDirectoryTableSource, /История/);
+  assert.match(studentDirectoryTableSource, /Редактировать/);
+  assert.match(studentDirectoryTableSource, /Удалить/);
+  assert.doesNotMatch(studentDirectoryTableSource, /role="button"/);
   assert.match(
-    studentsWorkspaceSource,
-    /const created = await createLearnerProfile\(displayName\)/,
+    learnerProfileDialogSource,
+    /Учебная история и уже назначенные уроки сохранятся/,
   );
-  assert.match(studentsWorkspaceSource, /setProfiles\(\(current\) =>/);
-  assert.doesNotMatch(studentsWorkspaceSource, /await reload\(\)/);
+  assert.match(learnerGroupDialogSource, /Уже назначенные уроки не изменятся/);
   assert.match(studentsWorkspaceSource, /LearnerHistoryDialog/);
   assert.match(learnerHistorySource, /courseTitleAtTime/);
   assert.match(learnerHistorySource, /lessonTitleAtTime/);
@@ -90,6 +119,33 @@ test("students persists neutral learner profiles and opens their durable history
   assert.match(learnerHistorySource, /teacherComment/);
   assert.doesNotMatch(studentsWorkspaceSource, /\/rest\/v1\/student/);
   assert.doesNotMatch(studentsWorkspaceSource, /\/rest\/v1\/class/);
+});
+
+test("course audience keeps group and direct selections with one effective learner count", () => {
+  assert.match(courseAudienceDialogSource, /Группы/);
+  assert.match(courseAudienceDialogSource, /Отдельные ученики/);
+  assert.match(courseAudienceDialogSource, /selectedGroupIds/);
+  assert.match(courseAudienceDialogSource, /selectedDirectIds/);
+  assert.match(courseAudienceDialogSource, /effectiveIds/);
+  assert.match(courseAudienceDialogSource, /directLearnerProfileIds/);
+  assert.match(courseAudienceDialogSource, /learnerGroupIds/);
+  assert.match(courseAudienceDialogSource, /Один ученик учитывается один раз/);
+  assert.match(courseAudienceDialogSource, /aria-live="polite"/);
+  assert.match(
+    courseAudienceDialogSource,
+    /Уже назначенные уроки не изменятся/,
+  );
+  assert.match(lessonRunClientSource, /effectiveLearners/);
+  assert.equal(
+    courseAudienceRouteSource.match(
+      /learnerProfiles: audience\.directLearners/g,
+    )?.length,
+    2,
+  );
+  assert.doesNotMatch(
+    courseAudienceRouteSource,
+    /learnerProfiles: audience\.effectiveLearners/,
+  );
 });
 
 test("lesson run controls derive state from timestamps and capture individual results", () => {
@@ -120,7 +176,7 @@ test("lesson run controls derive state from timestamps and capture individual re
   assert.match(lessonRunDialogSource, /Закрыть без сохранения/);
   assert.match(lessonRunDialogSource, /mutationError/);
   assert.match(courseAudienceDialogSource, /mutationError/);
-  assert.match(studentsWorkspaceSource, /createError/);
+  assert.match(studentsWorkspaceSource, /mutationError/);
   assert.doesNotMatch(lessonRunDialogSource, /lessonRunParticipant|status:/i);
 });
 

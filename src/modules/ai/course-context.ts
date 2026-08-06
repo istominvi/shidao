@@ -3,12 +3,27 @@ import type {
   CourseWorkspace,
   LessonComponent,
 } from "@/modules/course-builder/domain";
-import type { LearningRecord, LessonRun } from "@/modules/lesson-runs/domain";
+import type {
+  CourseAudience,
+  LearningRecord,
+  LessonRun,
+} from "@/modules/lesson-runs/domain";
 
 export type CourseLearningHistory = {
   runs: LessonRun[];
   records: LearningRecord[];
+  audience?: CourseAudience;
 };
+
+const EMPTY_COURSE_AUDIENCE: CourseAudience = {
+  directLearners: [],
+  groups: [],
+  effectiveLearners: [],
+};
+
+const MAX_AI_AUDIENCE_GROUPS = 40;
+const MAX_AI_GROUP_MEMBERS = 25;
+const MAX_AI_EFFECTIVE_LEARNERS = 200;
 
 function clip(value: string, maxLength: number) {
   if (value.length <= maxLength) return value;
@@ -199,6 +214,43 @@ function courseBasics(course: CourseWorkspace) {
   };
 }
 
+function courseAudienceContext(
+  audience: CourseAudience = EMPTY_COURSE_AUDIENCE,
+) {
+  const groups = audience.groups.slice(0, MAX_AI_AUDIENCE_GROUPS);
+  const effectiveLearners = audience.effectiveLearners.slice(
+    0,
+    MAX_AI_EFFECTIVE_LEARNERS,
+  );
+  return {
+    directLearnerCount: audience.directLearners.length,
+    directLearners: audience.directLearners
+      .slice(0, MAX_AI_EFFECTIVE_LEARNERS)
+      .map((profile) => clip(profile.displayName, 160)),
+    groupCount: audience.groups.length,
+    groupsIncluded: groups.length,
+    groupsTruncated: groups.length < audience.groups.length,
+    groups: groups.map((group) => ({
+      name: clip(group.name, 160),
+      memberCount: group.members.length,
+      membersIncluded: Math.min(group.members.length, MAX_AI_GROUP_MEMBERS),
+      membersTruncated: group.members.length > MAX_AI_GROUP_MEMBERS,
+      members: group.members
+        .slice(0, MAX_AI_GROUP_MEMBERS)
+        .map((profile) => clip(profile.displayName, 160)),
+    })),
+    effectiveLearnerCount: audience.effectiveLearners.length,
+    effectiveLearnersIncluded: effectiveLearners.length,
+    effectiveLearnersTruncated:
+      effectiveLearners.length < audience.effectiveLearners.length,
+    effectiveLearners: effectiveLearners.map((profile) =>
+      clip(profile.displayName, 160),
+    ),
+    interpretationBoundary:
+      "Эффективная аудитория уже дедуплицирована: ученик, выбранный напрямую и через одну или несколько групп, учитывается один раз. Изменение состава группы влияет только на будущие назначения.",
+  };
+}
+
 function attachmentMetadata(course: CourseWorkspace) {
   return course.attachments.slice(0, 30).map((attachment) => ({
     filename: attachment.originalFilename,
@@ -272,9 +324,13 @@ function learningHistoryContext(
   };
 }
 
-export function buildCoursePlanningContext(course: CourseWorkspace) {
+export function buildCoursePlanningContext(
+  course: CourseWorkspace,
+  audience: CourseAudience = EMPTY_COURSE_AUDIENCE,
+) {
   return boundedContext({
     course: courseBasics(course),
+    currentAudience: courseAudienceContext(audience),
     existingLessons: course.lessons.map((lesson) => ({
       position: lesson.position,
       title: lesson.title,
@@ -292,6 +348,7 @@ export function buildLessonPlanningContext(
 ) {
   return boundedContext({
     course: courseBasics(course),
+    currentAudience: courseAudienceContext(learningHistory.audience),
     lesson: lesson
       ? selectedLessonContext(lesson)
       : {
@@ -317,6 +374,7 @@ export function buildAssistantContext(
 ) {
   return boundedContext({
     course: courseBasics(course),
+    currentAudience: courseAudienceContext(learningHistory.audience),
     courseOutline: course.lessons.map((lesson) => ({
       position: lesson.position,
       title: lesson.title,

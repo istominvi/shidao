@@ -42,7 +42,8 @@
 - На release `fea7f80` развёрнуты teacher-only `/schedule` и `/students` и
   пункты «Расписание / Ученики / Курсы» как исходные shells.
 - В current repository эти shells превращены в vertical slice: нейтральные
-  LearnerProfile, прямая Course audience, LessonRun, LearningRecord,
+  LearnerProfile, переиспользуемые группы, смешанная Course audience,
+  LessonRun, LearningRecord,
   расписание, повторное проведение и Lesson/Course/Profile history. Срез не
   читает старые `student/class/class_student`; migration применена к production
   ShiDao DB и прошла DB/RLS/PostgREST postflight 7 августа 2026 года. Release
@@ -51,8 +52,9 @@
 - Реализованы private-by-default Components и persisted Student Screen Slides.
 - Реализован fullscreen Student Screen preview.
 - Реализован development-only MCP из шести tools поверх application service.
-- Lesson planning и read-only Assistant получают bounded finalized learning
-  history без технических IDs; отсутствие не трактуется как непонимание.
+- Lesson planning и read-only Assistant получают состав выбранных групп и
+  отдельных учеников, а также bounded finalized learning history эффективной
+  аудитории без технических IDs; отсутствие не трактуется как непонимание.
 - В release `0276aed` развёрнуты и проверены RouterAI provider adapter,
   Course/Lesson
   preview → explicit apply и read-only ephemeral assistant; production runtime
@@ -206,16 +208,22 @@ compatibility login/profile flows.
 **Current repository slice:**
 
 - независимый owner-scoped `LearnerProfile`;
-- прямая Course audience через `course_learner`;
-- teacher-only `/students` для создания профиля, просмотра индивидуальной
-  истории и перехода к настройке Course;
+- reusable `learner_group` с many-to-many membership: один LearnerProfile может
+  быть без группы или входить сразу в несколько;
+- смешанная Course audience через независимые direct learner и group links;
+  effective audience — дедуплицированное объединение активных профилей;
+- teacher-only `/students` как единый sortable/filterable справочник с CRUD
+  учеников и групп и просмотром индивидуальной истории;
+- безопасное product delete ученика архивирует профиль и отсоединяет его от
+  будущих аудиторий, не удаляя LearningRecord и уже назначенные Runs;
+- изменение membership прикреплённой группы влияет на новые назначения и AI
+  context, но не переписывает состав уже открытого LessonRun;
 - Course Builder остаётся owner-only, а старые Class/School не используются.
 
 **Next:**
 
 - один `Account` на человека без глобального типа пользователя;
 - Guardian relation;
-- Group как дополнительный способ собрать ту же Course audience;
 - invitation/claim flow;
 - миграция существующих identity данных отдельным планом.
 

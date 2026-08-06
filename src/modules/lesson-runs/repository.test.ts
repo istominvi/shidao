@@ -20,6 +20,7 @@ const LESSON_ID = uuid(301);
 const RUN_ID = uuid(401);
 const LEARNER_ID = uuid(501);
 const RECORD_ID = uuid(601);
+const GROUP_ID = uuid(701);
 
 type CapturedRequest = {
   url: string;
@@ -38,6 +39,7 @@ function profileRow() {
     id: LEARNER_ID,
     owner_account_id: ACCOUNT_ID,
     display_name: "Анна",
+    archived_at: null,
     created_at: NOW,
     updated_at: NOW,
   };
@@ -53,6 +55,16 @@ function runRow() {
     ended_at: null,
     cancelled_at: null,
     teacher_report: null,
+    created_at: NOW,
+    updated_at: NOW,
+  };
+}
+
+function groupRow() {
+  return {
+    id: GROUP_ID,
+    owner_account_id: ACCOUNT_ID,
+    name: "Teen Talk",
     created_at: NOW,
     updated_at: NOW,
   };
@@ -132,23 +144,27 @@ async function withMockSupabase<T>(
 
 test("createLearnerProfile persists a neutral owner-scoped learner", async () => {
   await withMockSupabase(
-    [{ payload: [profileRow()] }],
+    [{ payload: profileRow() }],
     async (repository, requests) => {
       const profile = await repository.createLearnerProfile(ACCOUNT_ID, {
         displayName: "Анна",
+        learnerGroupIds: [],
       });
 
       assert.equal(profile.displayName, "Анна");
       assert.equal(profile.ownerAccountId, ACCOUNT_ID);
-      assert.equal(requests[0]?.url, `${API_URL}/rest/v1/learner_profile`);
+      assert.equal(
+        requests[0]?.url,
+        `${API_URL}/rest/v1/rpc/create_learner_profile_with_groups`,
+      );
       assert.equal(requests[0]?.method, "POST");
       assert.equal(
         requests[0]?.headers.get("authorization"),
         `Bearer ${ACCESS_TOKEN}`,
       );
       assert.deepEqual(requests[0]?.body, {
-        owner_account_id: ACCOUNT_ID,
-        display_name: "Анна",
+        p_display_name: "Анна",
+        p_learner_group_ids: [],
       });
     },
   );
@@ -156,15 +172,65 @@ test("createLearnerProfile persists a neutral owner-scoped learner", async () =>
 
 test("replaceCourseAudience delegates the complete set to the atomic RPC", async () => {
   await withMockSupabase(
-    [{ payload: [profileRow()] }],
+    [
+      { payload: true },
+      {
+        payload: [{ course_id: COURSE_ID, learner_profile_id: LEARNER_ID }],
+      },
+      { payload: [] },
+      { payload: [profileRow()] },
+    ],
     async (repository, requests) => {
-      await repository.replaceCourseAudience(COURSE_ID, [LEARNER_ID]);
+      const audience = await repository.replaceCourseAudience(
+        COURSE_ID,
+        [LEARNER_ID],
+        [],
+      );
       assert.equal(
         requests[0]?.url,
-        `${API_URL}/rest/v1/rpc/replace_course_learners`,
+        `${API_URL}/rest/v1/rpc/replace_course_audience`,
       );
       assert.deepEqual(requests[0]?.body, {
         p_course_id: COURSE_ID,
+        p_direct_learner_profile_ids: [LEARNER_ID],
+        p_learner_group_ids: [],
+      });
+      assert.deepEqual(
+        audience.effectiveLearners.map((profile) => profile.id),
+        [LEARNER_ID],
+      );
+    },
+  );
+});
+
+test("createLearnerGroup hydrates the atomic RPC result with active members", async () => {
+  await withMockSupabase(
+    [
+      { payload: groupRow() },
+      {
+        payload: [
+          {
+            learner_group_id: GROUP_ID,
+            learner_profile_id: LEARNER_ID,
+          },
+        ],
+      },
+      { payload: [profileRow()] },
+    ],
+    async (repository, requests) => {
+      const group = await repository.createLearnerGroup(ACCOUNT_ID, {
+        name: "Teen Talk",
+        learnerProfileIds: [LEARNER_ID],
+      });
+
+      assert.equal(group.name, "Teen Talk");
+      assert.equal(group.members[0]?.displayName, "Анна");
+      assert.equal(
+        requests[0]?.url,
+        `${API_URL}/rest/v1/rpc/create_learner_group`,
+      );
+      assert.deepEqual(requests[0]?.body, {
+        p_name: "Teen Talk",
         p_learner_profile_ids: [LEARNER_ID],
       });
     },
@@ -327,6 +393,38 @@ test("course learning history reads bounded durable records independently of del
       assert.match(requests[0]?.url ?? "", /occurred_at=not\.is\.null/);
       assert.match(requests[0]?.url ?? "", /order=occurred_at\.desc,id\.desc/);
       assert.match(requests[0]?.url ?? "", /limit=8/);
+    },
+  );
+});
+
+test("AI learner history is bounded by effective learner IDs across Courses", async () => {
+  const completedRecord = {
+    ...recordRow(),
+    source_course_id: uuid(999),
+    occurred_at: "2026-08-08T01:45:00.000Z",
+    was_present: true,
+    needs_repeat: false,
+    course_title_at_time: "Другой курс",
+    lesson_title_at_time: "Прошлый урок",
+    subject_at_time: "Китайский язык",
+  };
+  await withMockSupabase(
+    [{ payload: [completedRecord] }, { payload: [profileRow()] }],
+    async (repository, requests) => {
+      const records = await repository.listLearningRecordsForLearners(
+        [LEARNER_ID],
+        { limit: 40 },
+      );
+
+      assert.equal(records[0]?.courseTitleAtTime, "Другой курс");
+      assert.equal(
+        (requests[0]?.url ?? "").includes(
+          `learner_profile_id=in.(${LEARNER_ID})`,
+        ),
+        true,
+      );
+      assert.doesNotMatch(requests[0]?.url ?? "", /source_course_id/);
+      assert.match(requests[0]?.url ?? "", /limit=40/);
     },
   );
 });

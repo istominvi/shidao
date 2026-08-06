@@ -2,7 +2,9 @@
 
 import { courseBuilderRequest } from "@/components/course-builder/course-builder-client";
 import type {
+  CourseAudience,
   LearningRecord,
+  LearnerGroup,
   LearnerProfile,
   LessonRun,
 } from "@/modules/lesson-runs/domain";
@@ -18,36 +20,112 @@ export async function loadLearnerProfiles() {
   return payload.learnerProfiles;
 }
 
-export async function createLearnerProfile(displayName: string) {
+export async function createLearnerProfile(
+  displayName: string,
+  learnerGroupIds: string[] = [],
+) {
   const payload = await courseBuilderRequest<{
     learnerProfile: LearnerProfile;
   }>("/api/v2/learner-profiles", {
     method: "POST",
-    body: JSON.stringify({ displayName }),
+    body: JSON.stringify({ displayName, learnerGroupIds }),
   });
   return payload.learnerProfile;
 }
 
+export async function updateLearnerProfile(
+  learnerProfileId: string,
+  input: { displayName: string; learnerGroupIds: string[] },
+) {
+  const payload = await courseBuilderRequest<{
+    learnerProfile: LearnerProfile;
+  }>(`/api/v2/learner-profiles/${encoded(learnerProfileId)}`, {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  });
+  return payload.learnerProfile;
+}
+
+export async function deleteLearnerProfile(learnerProfileId: string) {
+  await courseBuilderRequest<{ deleted: boolean }>(
+    `/api/v2/learner-profiles/${encoded(learnerProfileId)}`,
+    { method: "DELETE" },
+  );
+}
+
+export async function loadLearnerGroups() {
+  const payload = await courseBuilderRequest<{
+    learnerGroups: LearnerGroup[];
+  }>("/api/v2/learner-groups", { cache: "no-store" });
+  return payload.learnerGroups;
+}
+
+export async function createLearnerGroup(input: {
+  name: string;
+  learnerProfileIds: string[];
+}) {
+  const payload = await courseBuilderRequest<{ learnerGroup: LearnerGroup }>(
+    "/api/v2/learner-groups",
+    { method: "POST", body: JSON.stringify(input) },
+  );
+  return payload.learnerGroup;
+}
+
+export async function updateLearnerGroup(
+  learnerGroupId: string,
+  input: { name: string; learnerProfileIds: string[] },
+) {
+  const payload = await courseBuilderRequest<{ learnerGroup: LearnerGroup }>(
+    `/api/v2/learner-groups/${encoded(learnerGroupId)}`,
+    { method: "PUT", body: JSON.stringify(input) },
+  );
+  return payload.learnerGroup;
+}
+
+export async function deleteLearnerGroup(learnerGroupId: string) {
+  await courseBuilderRequest<{ deleted: boolean }>(
+    `/api/v2/learner-groups/${encoded(learnerGroupId)}`,
+    { method: "DELETE" },
+  );
+}
+
 export async function loadCourseAudience(courseId: string) {
   const payload = await courseBuilderRequest<{
+    audience?: CourseAudience;
     learnerProfiles: LearnerProfile[];
   }>(`/api/v2/courses/${encoded(courseId)}/audience`, {
     cache: "no-store",
   });
-  return payload.learnerProfiles;
+  return (
+    payload.audience ?? {
+      directLearners: payload.learnerProfiles,
+      groups: [],
+      effectiveLearners: payload.learnerProfiles,
+    }
+  );
 }
 
 export async function replaceCourseAudience(
   courseId: string,
-  learnerProfileIds: string[],
+  input: {
+    directLearnerProfileIds: string[];
+    learnerGroupIds: string[];
+  },
 ) {
   const payload = await courseBuilderRequest<{
+    audience?: CourseAudience;
     learnerProfiles: LearnerProfile[];
   }>(`/api/v2/courses/${encoded(courseId)}/audience`, {
     method: "PUT",
-    body: JSON.stringify({ learnerProfileIds }),
+    body: JSON.stringify(input),
   });
-  return payload.learnerProfiles;
+  return (
+    payload.audience ?? {
+      directLearners: payload.learnerProfiles,
+      groups: [],
+      effectiveLearners: payload.learnerProfiles,
+    }
+  );
 }
 
 export async function scheduleLessonRun(

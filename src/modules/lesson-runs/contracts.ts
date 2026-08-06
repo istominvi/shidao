@@ -7,18 +7,26 @@ import {
 const optionalTrimmedText = (max: number) =>
   z.string().trim().max(max).default("");
 
-const uniqueUuidList = (options?: { allowEmpty?: boolean }) =>
+const uniqueUuidList = (options?: {
+  allowEmpty?: boolean;
+  duplicateMessage?: string;
+}) =>
   z
     .array(z.uuid())
     .min(options?.allowEmpty ? 0 : 1)
     .max(200)
     .refine((ids) => new Set(ids).size === ids.length, {
-      message: "Один ученик не может быть указан дважды.",
+      message:
+        options?.duplicateMessage ?? "Один ученик не может быть указан дважды.",
     });
 
 export const createLearnerProfileInputSchema = z
   .object({
     displayName: z.string().trim().min(1).max(160),
+    learnerGroupIds: uniqueUuidList({
+      allowEmpty: true,
+      duplicateMessage: "Одна группа не может быть указана дважды.",
+    }).default([]),
   })
   .strict();
 
@@ -26,11 +34,62 @@ export type CreateLearnerProfileInput = z.infer<
   typeof createLearnerProfileInputSchema
 >;
 
-export const replaceCourseAudienceInputSchema = z
+export const updateLearnerProfileInputSchema = z
+  .object({
+    displayName: z.string().trim().min(1).max(160),
+    learnerGroupIds: uniqueUuidList({
+      allowEmpty: true,
+      duplicateMessage: "Одна группа не может быть указана дважды.",
+    }),
+  })
+  .strict();
+
+export type UpdateLearnerProfileInput = z.infer<
+  typeof updateLearnerProfileInputSchema
+>;
+
+export const createLearnerGroupInputSchema = z
+  .object({
+    name: z.string().trim().min(1).max(160),
+    learnerProfileIds: uniqueUuidList({ allowEmpty: true }).default([]),
+  })
+  .strict();
+
+export type CreateLearnerGroupInput = z.infer<
+  typeof createLearnerGroupInputSchema
+>;
+
+export const updateLearnerGroupInputSchema = z
+  .object({
+    name: z.string().trim().min(1).max(160),
+    learnerProfileIds: uniqueUuidList({ allowEmpty: true }),
+  })
+  .strict();
+
+export type UpdateLearnerGroupInput = z.infer<
+  typeof updateLearnerGroupInputSchema
+>;
+
+export const mixedCourseAudienceInputSchema = z
+  .object({
+    directLearnerProfileIds: uniqueUuidList({ allowEmpty: true }),
+    learnerGroupIds: uniqueUuidList({
+      allowEmpty: true,
+      duplicateMessage: "Одна группа не может быть указана дважды.",
+    }),
+  })
+  .strict();
+
+export const legacyCourseAudienceInputSchema = z
   .object({
     learnerProfileIds: uniqueUuidList({ allowEmpty: true }),
   })
   .strict();
+
+export const replaceCourseAudienceInputSchema = z.union([
+  mixedCourseAudienceInputSchema,
+  legacyCourseAudienceInputSchema,
+]);
 
 export type ReplaceCourseAudienceInput = z.infer<
   typeof replaceCourseAudienceInputSchema

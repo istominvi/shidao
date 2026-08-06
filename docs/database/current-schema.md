@@ -1,7 +1,7 @@
 # Current database schema
 
 **Статус:** agent-first current-state guide
-**Schema head:** `20260806190044_lesson_runs_learning_records.sql`
+**Schema head:** `20260806220726_learner_groups_mixed_course_audience.sql`
 **SQL snapshot:** [`supabase/schema/current-schema.sql`](../../supabase/schema/current-schema.sql)
 
 Этот документ описывает только текущую физическую модель. История переходов и
@@ -32,7 +32,10 @@ backfill находится в migrations; будущие таблицы — в 
 | `stored_file`          | Account-owned metadata private Storage object                        |
 | `course_attachment`    | ownership-checked связь Course ↔ StoredFile                          |
 | `learner_profile`      | нейтральный Account-owned учебный профиль                            |
-| `course_learner`       | прямая аудитория Course ↔ LearnerProfile                             |
+| `learner_group`        | переиспользуемая Account-owned группа учеников                       |
+| `learner_group_member` | many-to-many связь LearnerGroup ↔ LearnerProfile                     |
+| `course_learner`       | отдельные LearnerProfile в аудитории Course                          |
+| `course_learner_group` | LearnerGroup как динамический источник аудитории Course              |
 | `lesson_run`           | одно назначение/проведение существующей Lesson                       |
 | `learning_record`      | ожидаемый участник, затем долговечный индивидуальный результат       |
 
@@ -77,7 +80,7 @@ user_security
 Они не являются родителями Course Builder content. `course` принадлежит
 `account`, а не Teacher/School/Class. Их будущая замена новой
 Account/LearnerProfile моделью уже начата новыми `learner_profile` и
-`course_learner`; перенос legacy identity, Guardian/Group и invitation flow
+групповыми/audience-связями; перенос legacy identity, Guardian и invitation flow
 остаются отдельными milestones.
 
 ## Account fields
@@ -103,9 +106,11 @@ status `active | suspended | deleted` и timestamps. Обычный authenticate
 `archived_at IS NULL` и возвращает такой активный Course как domain status
 `draft`.
 
-`audience_description` остаётся свободным описанием. Фактическая прямая
-аудитория хранится в `course_learner`; `audience_type` синхронизируется из этих
-связей и не является отдельным источником истины. Group пока нет.
+`audience_description` остаётся свободным описанием. Источники фактической
+аудитории хранятся независимо в `course_learner` и `course_learner_group`;
+`audience_type` синхронизируется из обоих наборов и не является отдельным
+источником истины. Значение `learner_profile` означает наличие хотя бы одного
+direct/group link, а не отдельный вид аудитории.
 
 ## Current invariants
 
@@ -150,24 +155,40 @@ status `active | suspended | deleted` и timestamps. Обычный authenticate
 ### Course audience
 
 - `learner_profile` принадлежит Account и не ссылается на legacy
-  `student/class`.
+  `student/class`; `archived_at` скрывает профиль из справочника и будущей
+  эффективной аудитории, но не удаляет его историю.
+- `learner_group` принадлежит Account; membership many-to-many, пустая группа
+  допустима, а имя уникально для владельца без учёта регистра/краевых пробелов.
 - `course_learner` связывает только Course и LearnerProfile одного владельца;
   trigger сохраняет same-owner invariant и для privileged maintenance writes.
-- `replace_course_learners(course_id, learner_profile_ids)` атомарно заменяет
-  весь набор и синхронизирует derived `course.audience_type`.
+- `learner_group_member` и `course_learner_group` также физически проверяют
+  same-owner chain; direct mutations для authenticated отсутствуют.
+- `replace_course_audience(course_id, direct_ids, group_ids)` атомарно заменяет
+  оба набора источников. Compatibility RPC `replace_course_learners` заменяет
+  только direct links и не стирает уже прикреплённые группы.
+- Effective audience не хранится отдельно: это уникальное объединение активных
+  direct learners и активных members прикреплённых групп.
 - Пустая аудитория Course допустима, но назначить LessonRun без хотя бы одного
   ожидаемого ученика нельзя.
-- Прямой `DELETE learner_profile` для authenticated закрыт: удаление учебного
-  профиля требует отдельного будущего privacy flow, чтобы не вычеркнуть
-  ожидаемого ученика из уже открытого/начатого Run через FK cascade.
+- Product delete вызывает `archive_learner_profile`: direct Course links и
+  group membership удаляются, но профиль, finalized history и draft rows уже
+  назначенного Run остаются. Необратимое privacy erasure — отдельный future
+  flow.
+- `delete_learner_group` физически удаляет только группу, membership и Course
+  links; LearnerProfile, LearningRecord и LessonRun не удаляются.
 
 ### LessonRun and LearningRecord
 
 - Lesson остаётся единственным редактируемым контентом. `lesson_run` не хранит
   копию Lesson и не образует вторую иерархию.
 - Partial unique index допускает ровно один открытый Run на Lesson. Повторный
-  `schedule_lesson_run` переносит этот Run и заменяет его ожидаемый состав;
+  `schedule_lesson_run` переносит этот Run; без явного learner subset он
+  сохраняет уже зафиксированный ожидаемый состав, а для нового Run вычисляет
+  текущую effective Course audience;
   после completion/cancel можно создать следующий Run той же Lesson.
+- Явный subset нового Run ограничен текущей effective audience. При переносе к
+  ней добавляются уже зафиксированные участники данного Run, поэтому удаление
+  группы или архивирование профиля не делает назначение непереносимым.
 - Перенос передаёт expected Run ID. RPC проверяет его под Lesson lock и не
   позволяет запоздалому PATCH изменить более новый открытый Run той же Lesson.
 - Persisted `status` отсутствует. Состояние выводится из `scheduled_at`,
@@ -249,8 +270,11 @@ onboarding/settings и PIN helper families. Это не образец для н
 | `lesson_student_slide` | owner-scoped `SELECT`                                                           | direct mutations revoked; только RPC             |
 | `stored_file`          | owner-scoped CRUD                                                               | Storage object policy отдельно                   |
 | `course_attachment`    | owner-scoped CRUD                                                               | Course/File same-owner check                     |
-| `learner_profile`      | owner-scoped `SELECT/INSERT/UPDATE`                                             | delete только через будущий privacy flow         |
+| `learner_profile`      | owner-scoped `SELECT`; compatibility column INSERT/UPDATE name                  | archive/membership только через RPC              |
+| `learner_group`        | owner-scoped `SELECT`                                                           | CRUD только через aggregate RPC                  |
+| `learner_group_member` | owner-scoped `SELECT` через LearnerGroup                                        | replace-only aggregate RPC                       |
 | `course_learner`       | owner-scoped `SELECT`                                                           | replace-only authenticated RPC                   |
+| `course_learner_group` | owner-scoped `SELECT` через Course                                              | replace-only authenticated RPC                   |
 | `lesson_run`           | owner-scoped `SELECT`                                                           | lifecycle mutations только через RPC             |
 | `learning_record`      | owner-scoped `SELECT` через LearnerProfile                                      | finalize/delete invariants через Run RPC/trigger |
 
@@ -266,11 +290,12 @@ Student Screen assignment, reorder и delete используют узкие
 - authenticated-only execute;
 - сериализованным Lesson-first lock order.
 
-Ту же границу используют `replace_course_learners`,
+Ту же границу используют learner/group aggregate RPC,
+`replace_course_audience`, compatibility `replace_course_learners`,
 `schedule_lesson_run`, `start_lesson_run`, `complete_lesson_run`,
 `cancel_lesson_run` и `delete_lesson_with_history`. `PUBLIC/anon` execute
-отозван; прямые mutations `course_learner`, `lesson_run` и `learning_record`
-для authenticated отсутствуют.
+отозван; прямые mutations membership/audience, `lesson_run` и
+`learning_record` для authenticated отсутствуют.
 
 ## Cross-schema objects в snapshot
 
@@ -288,8 +313,8 @@ Snapshot дополнительно фиксирует объекты, кото�
 В current public schema нет Methodology, methodology lessons/blocks,
 scheduled-lesson runtime, старого homework/communication/notification слоя,
 `lesson_step`, `lesson_step_component`, `lesson_run_participant`, Lesson
-snapshot или persisted Run/Record `status`. Также пока нет Group, Guardian,
-invitation flow и автоматических subject metrics.
+snapshot или persisted Run/Record `status`. Также пока нет Guardian,
+invitation/claim flow и автоматических subject metrics.
 
 Старые migration files остаются неизменяемой forward history, а полный V1 — в
 recovery. Они не являются current schema и не должны импортироваться в runtime.
@@ -310,7 +335,8 @@ check обязательных ShiDao V2 tables/columns и отказывает�
 при несовпадении; signature также проверяет current Student Screen RPC и
 отсутствие active Methodology, `lesson_run_participant`, Lesson snapshot и
 persisted Run/Record status; после этого migration signature также требует все
-четыре audience/history tables и основные lifecycle RPC.
+семь learner/group/audience/history tables, aggregate RPC и основные lifecycle
+RPC.
 
 Если целевая migration ещё не применена, snapshot обновляется через
 изолированный schema clone и review, а не копированием предположительной

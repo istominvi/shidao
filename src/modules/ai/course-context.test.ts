@@ -4,7 +4,12 @@ import type {
   CourseWorkspace,
   LessonComponent,
 } from "@/modules/course-builder/domain";
-import type { LearningRecord, LessonRun } from "@/modules/lesson-runs/domain";
+import type {
+  CourseAudience,
+  LearnerProfile,
+  LearningRecord,
+  LessonRun,
+} from "@/modules/lesson-runs/domain";
 import {
   MAX_AI_CONTEXT_CHARACTERS,
   buildAssistantContext,
@@ -98,6 +103,17 @@ function learningRecord(
     createdAt: "2026-08-06T10:00:00.000Z",
     updatedAt: "2026-08-06T11:00:00.000Z",
     ...overrides,
+  };
+}
+
+function learnerProfile(id: string, displayName: string): LearnerProfile {
+  return {
+    id,
+    ownerAccountId: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+    displayName,
+    archivedAt: null,
+    createdAt: "2026-08-05T00:00:00.000Z",
+    updatedAt: "2026-08-05T00:00:00.000Z",
   };
 }
 
@@ -196,6 +212,37 @@ test("lesson planning context contains bounded finalized learner history without
     )?.needsRepeat,
     null,
   );
+});
+
+test("AI context describes mixed audience without duplicating technical identity", () => {
+  const course = workspace();
+  const anna = learnerProfile("30000000-0000-4000-8000-000000000002", "Анна");
+  const boris = learnerProfile("30000000-0000-4000-8000-000000000005", "Борис");
+  const audience: CourseAudience = {
+    directLearners: [anna],
+    groups: [
+      {
+        id: "30000000-0000-4000-8000-000000000010",
+        ownerAccountId: course.ownerAccountId,
+        name: "Teen Talk",
+        members: [anna, boris],
+        createdAt: "2026-08-05T00:00:00.000Z",
+        updatedAt: "2026-08-05T00:00:00.000Z",
+      },
+    ],
+    effectiveLearners: [anna, boris],
+  };
+  const context = buildAssistantContext(course, null, {
+    audience,
+    runs: [],
+    records: [],
+  });
+  const serialized = JSON.stringify(context.currentAudience);
+
+  assert.equal(context.currentAudience.directLearnerCount, 1);
+  assert.equal(context.currentAudience.effectiveLearnerCount, 2);
+  assert.match(serialized, /Teen Talk|Анна|Борис|дедуплицирована/);
+  assert.doesNotMatch(serialized, /30000000-0000-4000-8000|ownerAccountId/);
 });
 
 test("maximum-sized course and learning history stay inside one safe context budget", () => {

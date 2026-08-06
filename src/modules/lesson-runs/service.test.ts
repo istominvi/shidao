@@ -8,10 +8,15 @@ import type { CourseBuilderActor } from "@/modules/course-builder/domain";
 import { CourseBuilderRepositoryError } from "@/modules/course-builder/repository";
 import type {
   CompleteLessonRunInput,
+  CreateLearnerGroupInput,
   CreateLearnerProfileInput,
+  UpdateLearnerGroupInput,
+  UpdateLearnerProfileInput,
 } from "./contracts";
 import type {
+  CourseAudience,
   CourseReference,
+  LearnerGroup,
   LearnerProfile,
   LearningRecord,
   LessonReference,
@@ -40,6 +45,9 @@ const BOB_LESSON_ID = uuid(302);
 const ANNA_ID = uuid(401);
 const IVAN_ID = uuid(402);
 const BOB_LEARNER_ID = uuid(403);
+const ALICE_GROUP_ID = uuid(501);
+const ALICE_GROUP_2_ID = uuid(502);
+const BOB_GROUP_ID = uuid(503);
 
 const alice: CourseBuilderActor = {
   authUserId: ALICE_USER_ID,
@@ -99,11 +107,57 @@ class InMemoryLessonRunsRepository implements LessonRunsRepository {
     [BOB_LEARNER_ID, this.profile(BOB_LEARNER_ID, BOB_ACCOUNT_ID, "Борис")],
   ]);
   readonly audiences = new Map<string, string[]>();
+  readonly courseGroups = new Map<string, string[]>();
+  readonly groups = new Map<string, LearnerGroup>([
+    [
+      ALICE_GROUP_ID,
+      this.group(ALICE_GROUP_ID, ALICE_ACCOUNT_ID, "Teen Talk", [ANNA_ID]),
+    ],
+    [
+      ALICE_GROUP_2_ID,
+      this.group(ALICE_GROUP_2_ID, ALICE_ACCOUNT_ID, "Практика", [ANNA_ID]),
+    ],
+    [
+      BOB_GROUP_ID,
+      this.group(BOB_GROUP_ID, BOB_ACCOUNT_ID, "Чужая группа", [
+        BOB_LEARNER_ID,
+      ]),
+    ],
+  ]);
   readonly runs = new Map<string, LessonRunContext>();
   sequence = 900;
 
-  private profile(id: string, ownerAccountId: string, displayName: string) {
-    return { id, ownerAccountId, displayName, createdAt: NOW, updatedAt: NOW };
+  private profile(
+    id: string,
+    ownerAccountId: string,
+    displayName: string,
+  ): LearnerProfile {
+    return {
+      id,
+      ownerAccountId,
+      displayName,
+      archivedAt: null,
+      createdAt: NOW,
+      updatedAt: NOW,
+    };
+  }
+
+  private group(
+    id: string,
+    ownerAccountId: string,
+    name: string,
+    learnerProfileIds: string[],
+  ): LearnerGroup {
+    return {
+      id,
+      ownerAccountId,
+      name,
+      members: learnerProfileIds
+        .map((profileId) => this.profiles.get(profileId))
+        .filter((profile): profile is LearnerProfile => Boolean(profile)),
+      createdAt: NOW,
+      updatedAt: NOW,
+    };
   }
 
   private nextId() {
@@ -154,7 +208,8 @@ class InMemoryLessonRunsRepository implements LessonRunsRepository {
 
   async listLearnerProfiles(ownerAccountId: string) {
     return [...this.profiles.values()].filter(
-      (profile) => profile.ownerAccountId === ownerAccountId,
+      (profile) =>
+        profile.ownerAccountId === ownerAccountId && !profile.archivedAt,
     );
   }
 
@@ -168,18 +223,140 @@ class InMemoryLessonRunsRepository implements LessonRunsRepository {
       input.displayName,
     );
     this.profiles.set(profile.id, profile);
+    for (const groupId of input.learnerGroupIds) {
+      const group = this.groups.get(groupId);
+      if (group) group.members.push(profile);
+    }
     return profile;
   }
 
-  async listCourseAudience(courseId: string) {
-    return (this.audiences.get(courseId) ?? [])
-      .map((id) => this.profiles.get(id))
-      .filter((profile): profile is LearnerProfile => Boolean(profile));
+  async updateLearnerProfile(
+    learnerProfileId: string,
+    input: UpdateLearnerProfileInput,
+  ) {
+    const current = this.profiles.get(learnerProfileId);
+    if (!current) throw new Error("profile not found");
+    const profile = { ...current, displayName: input.displayName };
+    this.profiles.set(profile.id, profile);
+    for (const group of this.groups.values()) {
+      group.members = group.members.filter(
+        (member) => member.id !== profile.id,
+      );
+      if (input.learnerGroupIds.includes(group.id)) group.members.push(profile);
+    }
+    return profile;
   }
 
-  async replaceCourseAudience(courseId: string, learnerProfileIds: string[]) {
+  async archiveLearnerProfile(learnerProfileId: string) {
+    const current = this.profiles.get(learnerProfileId);
+    if (!current) throw new Error("profile not found");
+    const profile = { ...current, archivedAt: NOW };
+    this.profiles.set(profile.id, profile);
+    for (const group of this.groups.values()) {
+      group.members = group.members.filter(
+        (member) => member.id !== profile.id,
+      );
+    }
+    for (const [courseId, ids] of this.audiences) {
+      this.audiences.set(
+        courseId,
+        ids.filter((id) => id !== profile.id),
+      );
+    }
+    return profile;
+  }
+
+  async getLearnerGroup(learnerGroupId: string) {
+    return this.groups.get(learnerGroupId) ?? null;
+  }
+
+  async listLearnerGroups(ownerAccountId: string) {
+    return [...this.groups.values()].filter(
+      (group) => group.ownerAccountId === ownerAccountId,
+    );
+  }
+
+  async createLearnerGroup(
+    ownerAccountId: string,
+    input: CreateLearnerGroupInput,
+  ) {
+    const group = this.group(
+      this.nextId(),
+      ownerAccountId,
+      input.name,
+      input.learnerProfileIds,
+    );
+    this.groups.set(group.id, group);
+    return group;
+  }
+
+  async updateLearnerGroup(
+    learnerGroupId: string,
+    input: UpdateLearnerGroupInput,
+  ) {
+    const current = this.groups.get(learnerGroupId);
+    if (!current) throw new Error("group not found");
+    const group = this.group(
+      current.id,
+      current.ownerAccountId,
+      input.name,
+      input.learnerProfileIds,
+    );
+    this.groups.set(group.id, group);
+    return group;
+  }
+
+  async deleteLearnerGroup(learnerGroupId: string) {
+    this.groups.delete(learnerGroupId);
+    for (const [courseId, ids] of this.courseGroups) {
+      this.courseGroups.set(
+        courseId,
+        ids.filter((id) => id !== learnerGroupId),
+      );
+    }
+  }
+
+  async getCourseAudience(courseId: string): Promise<CourseAudience> {
+    const directLearners = (this.audiences.get(courseId) ?? [])
+      .map((id) => this.profiles.get(id))
+      .filter(
+        (profile): profile is LearnerProfile =>
+          Boolean(profile) && !profile?.archivedAt,
+      );
+    const groups = (this.courseGroups.get(courseId) ?? [])
+      .map((id) => this.groups.get(id))
+      .filter((group): group is LearnerGroup => Boolean(group));
+    const effective = new Map(
+      directLearners.map((profile) => [profile.id, profile]),
+    );
+    for (const group of groups) {
+      for (const profile of group.members) {
+        if (!profile.archivedAt) effective.set(profile.id, profile);
+      }
+    }
+    return {
+      directLearners,
+      groups,
+      effectiveLearners: [...effective.values()],
+    };
+  }
+
+  async replaceCourseAudience(
+    courseId: string,
+    directLearnerProfileIds: string[],
+    learnerGroupIds: string[],
+  ) {
+    this.audiences.set(courseId, [...directLearnerProfileIds]);
+    this.courseGroups.set(courseId, [...learnerGroupIds]);
+    return this.getCourseAudience(courseId);
+  }
+
+  async replaceDirectCourseAudience(
+    courseId: string,
+    learnerProfileIds: string[],
+  ) {
     this.audiences.set(courseId, [...learnerProfileIds]);
-    return this.listCourseAudience(courseId);
+    return this.getCourseAudience(courseId);
   }
 
   async listSchedule(ownerAccountId: string, from: string, to: string) {
@@ -227,6 +404,19 @@ class InMemoryLessonRunsRepository implements LessonRunsRepository {
       .slice(0, options?.limit);
   }
 
+  async listLearningRecordsForLearners(
+    learnerProfileIds: string[],
+    options?: { limit?: number },
+  ) {
+    const selected = new Set(learnerProfileIds);
+    return [...this.runs.values()]
+      .flatMap(({ run }) => run.records)
+      .filter(
+        (record) => selected.has(record.learnerProfileId) && record.occurredAt,
+      )
+      .slice(0, options?.limit);
+  }
+
   async listLearnerHistory(learnerProfileId: string) {
     return [...this.runs.values()].flatMap(({ run }) =>
       run.records.filter(
@@ -244,7 +434,7 @@ class InMemoryLessonRunsRepository implements LessonRunsRepository {
     lessonId: string;
     scheduledAt: string;
     plannedDurationMinutes: number | null;
-    learnerProfileIds: string[];
+    learnerProfileIds: string[] | null;
   }) {
     const lesson = this.lessons.get(input.lessonId);
     if (!lesson) throw new Error("lesson not found");
@@ -258,6 +448,20 @@ class InMemoryLessonRunsRepository implements LessonRunsRepository {
         !run.cancelledAt,
     );
     const runId = current?.run.id ?? this.nextId();
+    const learnerProfileIds =
+      input.learnerProfileIds ??
+      (current
+        ? current.run.records.map((record) => record.learnerProfileId)
+        : (await this.getCourseAudience(course.id)).effectiveLearners.map(
+            (profile) => profile.id,
+          ));
+    if (learnerProfileIds.length === 0) {
+      throw new CourseBuilderRepositoryError(
+        "lesson_run_requires_expected_learner",
+        400,
+        "23514",
+      );
+    }
     const run: LessonRun = {
       id: runId,
       lessonId: lesson.id,
@@ -270,7 +474,7 @@ class InMemoryLessonRunsRepository implements LessonRunsRepository {
       endedAt: null,
       cancelledAt: null,
       teacherReport: "",
-      records: input.learnerProfileIds.map((id) => this.record(runId, id)),
+      records: learnerProfileIds.map((id) => this.record(runId, id)),
       createdAt: current?.run.createdAt ?? NOW,
       updatedAt: NOW,
     };
@@ -283,7 +487,7 @@ class InMemoryLessonRunsRepository implements LessonRunsRepository {
     lessonId: string;
     scheduledAt: string;
     plannedDurationMinutes: number;
-    learnerProfileIds: string[];
+    learnerProfileIds: string[] | null;
   }) {
     return this.scheduleRun(input);
   }
@@ -341,27 +545,83 @@ class InMemoryLessonRunsRepository implements LessonRunsRepository {
   }
 }
 
-test("course audience accepts only learner profiles owned by the Course owner", async () => {
+test("mixed Course audience deduplicates direct learners and group members", async () => {
   const repository = new InMemoryLessonRunsRepository();
   const service = createLessonRunsService({ repository });
 
   const audience = await service.replaceCourseAudience(alice, ALICE_COURSE_ID, {
-    learnerProfileIds: [ANNA_ID, IVAN_ID],
+    directLearnerProfileIds: [ANNA_ID, IVAN_ID],
+    learnerGroupIds: [ALICE_GROUP_ID, ALICE_GROUP_2_ID],
   });
   assert.deepEqual(
-    audience.map((profile) => profile.id),
+    audience.effectiveLearners.map((profile) => profile.id),
     [ANNA_ID, IVAN_ID],
   );
+  assert.equal(audience.groups.length, 2);
 
   await assert.rejects(
     service.replaceCourseAudience(alice, ALICE_COURSE_ID, {
-      learnerProfileIds: [BOB_LEARNER_ID],
+      directLearnerProfileIds: [],
+      learnerGroupIds: [BOB_GROUP_ID],
     }),
     CourseBuilderAccessError,
   );
   await assert.rejects(
-    service.listCourseAudience(bob, ALICE_COURSE_ID),
+    service.getCourseAudience(bob, ALICE_COURSE_ID),
     CourseBuilderAccessError,
+  );
+});
+
+test("learner and group CRUD is owner-scoped and archive removes future audience only", async () => {
+  const repository = new InMemoryLessonRunsRepository();
+  const service = createLessonRunsService({ repository });
+
+  const group = await service.createLearnerGroup(alice, {
+    name: "Разговорная практика",
+    learnerProfileIds: [ANNA_ID, IVAN_ID],
+  });
+  const created = await service.createLearnerProfile(alice, {
+    displayName: "Мария",
+    learnerGroupIds: [group.id],
+  });
+  const updated = await service.updateLearnerProfile(alice, created.id, {
+    displayName: "Мария П.",
+    learnerGroupIds: [ALICE_GROUP_ID, group.id],
+  });
+  assert.equal(updated.displayName, "Мария П.");
+  assert.equal(
+    (await service.listLearnerGroups(alice))
+      .find((candidate) => candidate.id === group.id)
+      ?.members.some((member) => member.id === created.id),
+    true,
+  );
+
+  await service.replaceCourseAudience(alice, ALICE_COURSE_ID, {
+    directLearnerProfileIds: [created.id],
+    learnerGroupIds: [group.id],
+  });
+  const archived = await service.archiveLearnerProfile(alice, created.id);
+  assert.equal(archived.archivedAt, NOW);
+  assert.equal(
+    (await service.getCourseAudience(alice, ALICE_COURSE_ID)).effectiveLearners
+      .map((profile) => profile.id)
+      .includes(created.id),
+    false,
+  );
+
+  await assert.rejects(
+    service.updateLearnerGroup(bob, group.id, {
+      name: "Чужое изменение",
+      learnerProfileIds: [],
+    }),
+    CourseBuilderAccessError,
+  );
+  await service.deleteLearnerGroup(alice, group.id);
+  assert.equal(
+    (await service.listLearnerGroups(alice)).some(
+      (candidate) => candidate.id === group.id,
+    ),
+    false,
   );
 });
 
@@ -400,6 +660,43 @@ test("schedule uses the Course audience, requires at least one learner and resch
   assert.deepEqual(
     rescheduled.records.map((record) => record.learnerProfileId),
     [ANNA_ID],
+  );
+});
+
+test("group changes affect future Runs while an existing Run keeps its learners", async () => {
+  const repository = new InMemoryLessonRunsRepository();
+  const service = createLessonRunsService({ repository });
+  await service.replaceCourseAudience(alice, ALICE_COURSE_ID, {
+    directLearnerProfileIds: [],
+    learnerGroupIds: [ALICE_GROUP_ID],
+  });
+  const scheduled = await service.scheduleRun(alice, ALICE_LESSON_ID, {
+    scheduledAt: "2026-08-08T01:00:00Z",
+  });
+  assert.deepEqual(
+    scheduled.records.map((record) => record.learnerProfileId),
+    [ANNA_ID],
+  );
+
+  await service.updateLearnerGroup(alice, ALICE_GROUP_ID, {
+    name: "Teen Talk",
+    learnerProfileIds: [IVAN_ID],
+  });
+  const rescheduled = await service.rescheduleRun(alice, scheduled.id, {
+    scheduledAt: "2026-08-09T01:00:00Z",
+  });
+  assert.deepEqual(
+    rescheduled.records.map((record) => record.learnerProfileId),
+    [ANNA_ID],
+  );
+
+  await service.cancelRun(alice, rescheduled.id);
+  const next = await service.scheduleRun(alice, ALICE_LESSON_ID, {
+    scheduledAt: "2026-08-10T01:00:00Z",
+  });
+  assert.deepEqual(
+    next.records.map((record) => record.learnerProfileId),
+    [IVAN_ID],
   );
 });
 

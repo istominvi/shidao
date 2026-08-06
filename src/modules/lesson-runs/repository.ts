@@ -2,10 +2,15 @@ import { getSupabasePublicConfig } from "@/lib/server/auth-config";
 import { CourseBuilderRepositoryError } from "@/modules/course-builder/repository";
 import type {
   CompleteLessonRunInput,
+  CreateLearnerGroupInput,
   CreateLearnerProfileInput,
+  UpdateLearnerGroupInput,
+  UpdateLearnerProfileInput,
 } from "./contracts";
 import type {
+  CourseAudience,
   CourseReference,
+  LearnerGroup,
   LearnerProfile,
   LearningRecord,
   LessonReference,
@@ -37,13 +42,32 @@ type LearnerProfileRow = {
   id: string;
   owner_account_id: string;
   display_name: string;
+  archived_at: string | null;
   created_at: string;
   updated_at: string;
+};
+
+type LearnerGroupRow = {
+  id: string;
+  owner_account_id: string;
+  name: string;
+  created_at: string;
+  updated_at: string;
+};
+
+type LearnerGroupMemberRow = {
+  learner_group_id: string;
+  learner_profile_id: string;
 };
 
 type CourseLearnerRow = {
   course_id: string;
   learner_profile_id: string;
+};
+
+type CourseLearnerGroupRow = {
+  course_id: string;
+  learner_group_id: string;
 };
 
 type LessonRunRow = {
@@ -87,11 +111,32 @@ export interface LessonRunsRepository {
     ownerAccountId: string,
     input: CreateLearnerProfileInput,
   ): Promise<LearnerProfile>;
-  listCourseAudience(courseId: string): Promise<LearnerProfile[]>;
+  updateLearnerProfile(
+    learnerProfileId: string,
+    input: UpdateLearnerProfileInput,
+  ): Promise<LearnerProfile>;
+  archiveLearnerProfile(learnerProfileId: string): Promise<LearnerProfile>;
+  getLearnerGroup(learnerGroupId: string): Promise<LearnerGroup | null>;
+  listLearnerGroups(ownerAccountId: string): Promise<LearnerGroup[]>;
+  createLearnerGroup(
+    ownerAccountId: string,
+    input: CreateLearnerGroupInput,
+  ): Promise<LearnerGroup>;
+  updateLearnerGroup(
+    learnerGroupId: string,
+    input: UpdateLearnerGroupInput,
+  ): Promise<LearnerGroup>;
+  deleteLearnerGroup(learnerGroupId: string): Promise<void>;
+  getCourseAudience(courseId: string): Promise<CourseAudience>;
   replaceCourseAudience(
     courseId: string,
+    directLearnerProfileIds: string[],
+    learnerGroupIds: string[],
+  ): Promise<CourseAudience>;
+  replaceDirectCourseAudience(
+    courseId: string,
     learnerProfileIds: string[],
-  ): Promise<LearnerProfile[]>;
+  ): Promise<CourseAudience>;
   listSchedule(
     ownerAccountId: string,
     from: string,
@@ -109,6 +154,10 @@ export interface LessonRunsRepository {
     courseId: string,
     options?: LearningRecordHistoryOptions,
   ): Promise<LearningRecord[]>;
+  listLearningRecordsForLearners(
+    learnerProfileIds: string[],
+    options?: LearningRecordHistoryOptions,
+  ): Promise<LearningRecord[]>;
   listLearnerHistory(
     learnerProfileId: string,
     options?: LearningRecordHistoryOptions,
@@ -118,14 +167,14 @@ export interface LessonRunsRepository {
     lessonId: string;
     scheduledAt: string;
     plannedDurationMinutes: number | null;
-    learnerProfileIds: string[];
+    learnerProfileIds: string[] | null;
   }): Promise<LessonRun>;
   rescheduleRun(input: {
     runId: string;
     lessonId: string;
     scheduledAt: string;
     plannedDurationMinutes: number;
-    learnerProfileIds: string[];
+    learnerProfileIds: string[] | null;
   }): Promise<LessonRun>;
   startRun(runId: string): Promise<LessonRun>;
   completeRun(runId: string, input: CompleteLessonRunInput): Promise<LessonRun>;
@@ -207,9 +256,23 @@ function mapLearnerProfile(row: LearnerProfileRow): LearnerProfile {
     id: row.id,
     ownerAccountId: row.owner_account_id,
     displayName: row.display_name,
+    archivedAt: row.archived_at,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
+}
+
+function compareLearnerProfiles(left: LearnerProfile, right: LearnerProfile) {
+  return (
+    left.displayName.localeCompare(right.displayName, "ru") ||
+    left.id.localeCompare(right.id)
+  );
+}
+
+function compareLearnerGroups(left: LearnerGroup, right: LearnerGroup) {
+  return (
+    left.name.localeCompare(right.name, "ru") || left.id.localeCompare(right.id)
+  );
 }
 
 function mapLearningRecord(
@@ -308,6 +371,115 @@ export function createLessonRunsRepository(
       )
     ).flat();
     return new Map(rows.map((row) => [row.id, mapLearnerProfile(row)]));
+  }
+
+  async function hydrateLearnerGroups(rows: LearnerGroupRow[]) {
+    if (rows.length === 0) return [];
+    const memberships = (
+      await Promise.all(
+        chunks(
+          rows.map((row) => row.id),
+          POSTGREST_IN_FILTER_CHUNK_SIZE,
+        ).map((batch) =>
+          request<LearnerGroupMemberRow[]>(
+            `/rest/v1/learner_group_member?select=learner_group_id,learner_profile_id&learner_group_id=in.(${inFilter(batch)})&order=created_at.asc,learner_profile_id.asc`,
+          ),
+        ),
+      )
+    ).flat();
+    const profiles = await learnerProfilesByIds(
+      memberships.map((membership) => membership.learner_profile_id),
+    );
+    const memberIdsByGroup = new Map<string, string[]>();
+    for (const membership of memberships) {
+      const current = memberIdsByGroup.get(membership.learner_group_id) ?? [];
+      current.push(membership.learner_profile_id);
+      memberIdsByGroup.set(membership.learner_group_id, current);
+    }
+    return rows
+      .map((row): LearnerGroup => ({
+        id: row.id,
+        ownerAccountId: row.owner_account_id,
+        name: row.name,
+        members: (memberIdsByGroup.get(row.id) ?? [])
+          .map((id) => profiles.get(id))
+          .filter(
+            (profile): profile is LearnerProfile =>
+              profile !== undefined && profile.archivedAt === null,
+          )
+          .sort(compareLearnerProfiles),
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+      }))
+      .sort(compareLearnerGroups);
+  }
+
+  async function learnerGroupsByIds(ids: string[]) {
+    if (ids.length === 0) return new Map<string, LearnerGroup>();
+    const rows = (
+      await Promise.all(
+        chunks([...new Set(ids)], POSTGREST_IN_FILTER_CHUNK_SIZE).map((batch) =>
+          request<LearnerGroupRow[]>(
+            `/rest/v1/learner_group?select=*&id=in.(${inFilter(batch)})&order=name.asc,id.asc`,
+          ),
+        ),
+      )
+    ).flat();
+    const groups = await hydrateLearnerGroups(rows);
+    return new Map(groups.map((group) => [group.id, group]));
+  }
+
+  async function entityFromRpc<T>(
+    path: string,
+    body: JsonObject,
+    missingMessage: string,
+  ) {
+    const payload = await request<T | T[]>(path, { method: "POST", body });
+    const row = Array.isArray(payload) ? payload[0] : payload;
+    if (!row) {
+      throw new CourseBuilderRepositoryError(missingMessage, 502, null);
+    }
+    return row;
+  }
+
+  async function readCourseAudience(courseId: string): Promise<CourseAudience> {
+    const [directLinks, groupLinks] = await Promise.all([
+      request<CourseLearnerRow[]>(
+        `/rest/v1/course_learner?select=course_id,learner_profile_id&course_id=eq.${encodeFilter(courseId)}&order=created_at.asc,learner_profile_id.asc`,
+      ),
+      request<CourseLearnerGroupRow[]>(
+        `/rest/v1/course_learner_group?select=course_id,learner_group_id&course_id=eq.${encodeFilter(courseId)}&order=created_at.asc,learner_group_id.asc`,
+      ),
+    ]);
+    const [profiles, groups] = await Promise.all([
+      learnerProfilesByIds(directLinks.map((link) => link.learner_profile_id)),
+      learnerGroupsByIds(groupLinks.map((link) => link.learner_group_id)),
+    ]);
+    const directLearners = directLinks
+      .map((link) => profiles.get(link.learner_profile_id))
+      .filter(
+        (profile): profile is LearnerProfile =>
+          profile !== undefined && profile.archivedAt === null,
+      )
+      .sort(compareLearnerProfiles);
+    const selectedGroups = groupLinks
+      .map((link) => groups.get(link.learner_group_id))
+      .filter((group): group is LearnerGroup => Boolean(group))
+      .sort(compareLearnerGroups);
+    const effectiveById = new Map<string, LearnerProfile>();
+    for (const profile of directLearners)
+      effectiveById.set(profile.id, profile);
+    for (const group of selectedGroups) {
+      for (const profile of group.members)
+        effectiveById.set(profile.id, profile);
+    }
+    return {
+      directLearners,
+      groups: selectedGroups,
+      effectiveLearners: [...effectiveById.values()].sort(
+        compareLearnerProfiles,
+      ),
+    };
   }
 
   async function hydrateRecords(rows: LearningRecordRow[]) {
@@ -472,54 +644,123 @@ export function createLessonRunsRepository(
 
     async listLearnerProfiles(ownerAccountId) {
       const rows = await request<LearnerProfileRow[]>(
-        `/rest/v1/learner_profile?select=*&owner_account_id=eq.${encodeFilter(ownerAccountId)}&order=display_name.asc`,
+        `/rest/v1/learner_profile?select=*&owner_account_id=eq.${encodeFilter(ownerAccountId)}&archived_at=is.null&order=display_name.asc,id.asc`,
       );
       return rows.map(mapLearnerProfile);
     },
 
-    async createLearnerProfile(ownerAccountId, input) {
-      const rows = await request<LearnerProfileRow[]>(
-        "/rest/v1/learner_profile",
+    async createLearnerProfile(_ownerAccountId, input) {
+      const row = await entityFromRpc<LearnerProfileRow>(
+        "/rest/v1/rpc/create_learner_profile_with_groups",
         {
-          method: "POST",
-          body: {
-            owner_account_id: ownerAccountId,
-            display_name: input.displayName,
-          },
+          p_display_name: input.displayName,
+          p_learner_group_ids: input.learnerGroupIds,
         },
+        "Не удалось создать профиль ученика.",
       );
-      const row = rows[0];
-      if (!row) throw new Error("Не удалось создать профиль ученика.");
       return mapLearnerProfile(row);
     },
 
-    async listCourseAudience(courseId) {
-      const links = await request<CourseLearnerRow[]>(
-        `/rest/v1/course_learner?select=course_id,learner_profile_id&course_id=eq.${encodeFilter(courseId)}`,
+    async updateLearnerProfile(learnerProfileId, input) {
+      const row = await entityFromRpc<LearnerProfileRow>(
+        "/rest/v1/rpc/update_learner_profile_with_groups",
+        {
+          p_learner_profile_id: learnerProfileId,
+          p_display_name: input.displayName,
+          p_learner_group_ids: input.learnerGroupIds,
+        },
+        "Не удалось обновить профиль ученика.",
       );
-      const profiles = await learnerProfilesByIds(
-        links.map((link) => link.learner_profile_id),
-      );
-      return links
-        .map((link) => profiles.get(link.learner_profile_id))
-        .filter((profile): profile is LearnerProfile => Boolean(profile))
-        .sort((left, right) =>
-          left.displayName.localeCompare(right.displayName, "ru"),
-        );
+      return mapLearnerProfile(row);
     },
 
-    async replaceCourseAudience(courseId, learnerProfileIds) {
-      const rows = await request<LearnerProfileRow[]>(
-        "/rest/v1/rpc/replace_course_learners",
-        {
-          method: "POST",
-          body: {
-            p_course_id: courseId,
-            p_learner_profile_ids: learnerProfileIds,
-          },
-        },
+    async archiveLearnerProfile(learnerProfileId) {
+      const row = await entityFromRpc<LearnerProfileRow>(
+        "/rest/v1/rpc/archive_learner_profile",
+        { p_learner_profile_id: learnerProfileId },
+        "Не удалось архивировать профиль ученика.",
       );
-      return rows.map(mapLearnerProfile);
+      return mapLearnerProfile(row);
+    },
+
+    async getLearnerGroup(learnerGroupId) {
+      const rows = await request<LearnerGroupRow[]>(
+        `/rest/v1/learner_group?select=*&id=eq.${encodeFilter(learnerGroupId)}&limit=1`,
+      );
+      return (await hydrateLearnerGroups(rows))[0] ?? null;
+    },
+
+    async listLearnerGroups(ownerAccountId) {
+      const rows = await request<LearnerGroupRow[]>(
+        `/rest/v1/learner_group?select=*&owner_account_id=eq.${encodeFilter(ownerAccountId)}&order=name.asc,id.asc`,
+      );
+      return hydrateLearnerGroups(rows);
+    },
+
+    async createLearnerGroup(_ownerAccountId, input) {
+      const row = await entityFromRpc<LearnerGroupRow>(
+        "/rest/v1/rpc/create_learner_group",
+        {
+          p_name: input.name,
+          p_learner_profile_ids: input.learnerProfileIds,
+        },
+        "Не удалось создать группу.",
+      );
+      return (await hydrateLearnerGroups([row]))[0]!;
+    },
+
+    async updateLearnerGroup(learnerGroupId, input) {
+      const row = await entityFromRpc<LearnerGroupRow>(
+        "/rest/v1/rpc/update_learner_group",
+        {
+          p_learner_group_id: learnerGroupId,
+          p_name: input.name,
+          p_learner_profile_ids: input.learnerProfileIds,
+        },
+        "Не удалось обновить группу.",
+      );
+      return (await hydrateLearnerGroups([row]))[0]!;
+    },
+
+    async deleteLearnerGroup(learnerGroupId) {
+      await request<unknown>("/rest/v1/rpc/delete_learner_group", {
+        method: "POST",
+        body: { p_learner_group_id: learnerGroupId },
+        allowEmpty: true,
+      });
+    },
+
+    getCourseAudience(courseId) {
+      return readCourseAudience(courseId);
+    },
+
+    async replaceCourseAudience(
+      courseId,
+      directLearnerProfileIds,
+      learnerGroupIds,
+    ) {
+      await request<unknown>("/rest/v1/rpc/replace_course_audience", {
+        method: "POST",
+        body: {
+          p_course_id: courseId,
+          p_direct_learner_profile_ids: directLearnerProfileIds,
+          p_learner_group_ids: learnerGroupIds,
+        },
+        allowEmpty: true,
+      });
+      return readCourseAudience(courseId);
+    },
+
+    async replaceDirectCourseAudience(courseId, learnerProfileIds) {
+      await request<unknown>("/rest/v1/rpc/replace_course_learners", {
+        method: "POST",
+        body: {
+          p_course_id: courseId,
+          p_learner_profile_ids: learnerProfileIds,
+        },
+        allowEmpty: true,
+      });
+      return readCourseAudience(courseId);
     },
 
     async listSchedule(ownerAccountId, from, to) {
@@ -603,6 +844,31 @@ export function createLessonRunsRepository(
       const rows = await request<LearningRecordRow[]>(
         `/rest/v1/learning_record?select=*&source_course_id=eq.${encodeFilter(courseId)}&occurred_at=not.is.null&order=occurred_at.desc,id.desc&limit=${limit}`,
       );
+      return hydrateRecords(rows);
+    },
+
+    async listLearningRecordsForLearners(learnerProfileIds, options) {
+      if (learnerProfileIds.length === 0) return [];
+      const limit = historyLimit(options?.limit);
+      const rows = (
+        await Promise.all(
+          chunks(
+            [...new Set(learnerProfileIds)],
+            POSTGREST_IN_FILTER_CHUNK_SIZE,
+          ).map((batch) =>
+            request<LearningRecordRow[]>(
+              `/rest/v1/learning_record?select=*&learner_profile_id=in.(${inFilter(batch)})&occurred_at=not.is.null&order=occurred_at.desc,id.desc&limit=${limit}`,
+            ),
+          ),
+        )
+      )
+        .flat()
+        .sort(
+          (left, right) =>
+            compareNullableIsoDesc(left.occurred_at, right.occurred_at) ||
+            right.id.localeCompare(left.id),
+        )
+        .slice(0, limit);
       return hydrateRecords(rows);
     },
 

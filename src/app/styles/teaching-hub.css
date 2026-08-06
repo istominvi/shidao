@@ -777,6 +777,275 @@
   font-size: 0.9rem;
 }
 
+.student-directory-toolbar {
+  display: grid;
+  grid-template-columns: auto minmax(14rem, 1fr) auto auto;
+  align-items: center;
+  gap: 0.65rem;
+  border: 1px solid rgba(255, 255, 255, 0.78);
+  border-radius: 1.25rem;
+  background: rgba(255, 255, 255, 0.82);
+  padding: 0.75rem;
+  box-shadow:
+    0 20px 52px rgba(23, 26, 32, 0.07),
+    inset 0 1px 0 rgba(255, 255, 255, 0.84);
+}
+
+.student-directory-search {
+  width: 100%;
+  min-width: 0;
+}
+
+.student-directory-controls,
+.student-directory-create-actions,
+.student-directory-actions,
+.student-directory-chips {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.student-directory-select {
+  height: var(--course-demo-control-height);
+  min-width: 9.5rem;
+  border: 1px solid var(--teaching-control-border);
+  border-radius: var(--course-demo-control-radius);
+  background: rgba(255, 255, 255, 0.92);
+  padding: 0 2rem 0 0.75rem;
+  color: #30333a;
+  font: inherit;
+  font-size: var(--course-demo-control-font-size);
+  font-weight: var(--course-demo-control-font-weight);
+}
+
+.student-directory-select:focus-visible {
+  outline: 2px solid rgba(20, 20, 20, 0.24);
+  outline-offset: 2px;
+}
+
+.student-directory-table-wrap {
+  overflow-x: auto;
+  border: 1px solid rgba(255, 255, 255, 0.82);
+  border-radius: 1.25rem;
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 20px 52px rgba(23, 26, 32, 0.07);
+}
+
+.student-directory-table {
+  min-width: 62rem;
+}
+
+.student-directory-table th {
+  height: 2.8rem;
+}
+
+.student-directory-table td {
+  height: 4rem;
+  padding-block: 0.55rem;
+}
+
+.student-directory-person {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.student-directory-person > strong {
+  overflow: hidden;
+  color: #141414;
+  font-size: 0.86rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.student-directory-group-icon {
+  display: grid;
+  width: 2.8rem;
+  height: 2.8rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 0.9rem;
+  background: rgba(255, 216, 106, 0.58);
+  color: #4d4015;
+}
+
+.student-directory-chips {
+  flex-wrap: wrap;
+}
+
+.student-directory-muted,
+.student-directory-members small {
+  color: #737780;
+  font-size: 0.74rem;
+}
+
+.student-directory-members {
+  display: grid;
+  gap: 0.12rem;
+}
+
+.student-directory-members strong {
+  color: #343840;
+  font-size: 0.8rem;
+}
+
+.student-directory-actions {
+  justify-content: flex-end;
+  white-space: nowrap;
+}
+
+.student-directory-action.product-btn {
+  height: 2rem;
+  padding-inline: 0.45rem;
+  font-size: 0.7rem;
+}
+
+.student-directory-picker {
+  min-width: 0;
+  border: 1px solid rgba(20, 20, 20, 0.1);
+  border-radius: 1rem;
+  padding: 0.85rem;
+}
+
+.student-directory-picker legend {
+  padding-inline: 0.3rem;
+  color: #343840;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.student-directory-picker-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+  margin-bottom: 0.65rem;
+}
+
+.student-directory-picker-toolbar > span {
+  flex: 0 0 auto;
+  color: #646873;
+  font-size: 0.72rem;
+  font-weight: 650;
+}
+
+.student-directory-picker-search {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+}
+
+.student-directory-picker-search input {
+  width: 100%;
+  height: 2.5rem;
+  border: 1px solid rgba(20, 20, 20, 0.1);
+  border-radius: 0.75rem;
+  background: #fff;
+  padding-inline: 0.7rem;
+  color: #141414;
+  font: inherit;
+  font-size: 0.8rem;
+}
+
+.student-directory-picker-search input:focus-visible {
+  outline: 2px solid rgba(20, 20, 20, 0.24);
+  outline-offset: 2px;
+}
+
+.student-directory-picker-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.45rem;
+  max-height: 18rem;
+  overflow-y: auto;
+}
+
+.student-directory-picker-options > label {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 0.75rem;
+  background: #f7f7f8;
+  padding: 0.65rem 0.7rem;
+  color: #343840;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.student-directory-picker-options input {
+  width: 1rem;
+  height: 1rem;
+  flex: 0 0 auto;
+  accent-color: #141414;
+}
+
+.student-directory-picker-empty {
+  margin: 0;
+  color: #737780;
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.student-directory-picker-empty a {
+  color: #075985;
+  font-weight: 650;
+  text-decoration: underline;
+  text-underline-offset: 0.16em;
+}
+
+.student-directory-dialog-actions .student-directory-delete-action {
+  margin-right: auto;
+}
+
+.course-audience-search {
+  width: 100%;
+}
+
+.course-audience-options label {
+  align-items: flex-start;
+}
+
+.course-audience-option-copy {
+  display: grid;
+  min-width: 0;
+  gap: 0.12rem;
+}
+
+.course-audience-option-copy strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.course-audience-option-copy small {
+  color: #737780;
+  font-size: 0.68rem;
+  font-weight: 500;
+  line-height: 1.35;
+}
+
+.course-audience-summary {
+  border-radius: 1rem;
+  background: rgba(201, 255, 79, 0.2);
+  padding: 0.85rem;
+}
+
+.course-audience-summary strong {
+  color: #2f371d;
+  font-size: 0.82rem;
+}
+
+.course-audience-summary p {
+  margin: 0.35rem 0 0;
+  color: #596044;
+  font-size: 0.75rem;
+  line-height: 1.55;
+}
+
 @media (max-width: 900px) {
   .teaching-hub-page-header {
     min-height: auto;
@@ -794,6 +1063,19 @@
 
   .teaching-stat-grid {
     grid-template-columns: 1fr;
+  }
+
+  .student-directory-toolbar {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .student-directory-search {
+    grid-column: 1 / -1;
+  }
+
+  .student-directory-controls,
+  .student-directory-create-actions {
+    flex-wrap: wrap;
   }
 
   .teaching-learner-grid {
@@ -827,6 +1109,32 @@
 
   .workspace-lesson-schedule {
     min-height: var(--course-demo-control-height);
+  }
+
+  .student-directory-toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .student-directory-search,
+  .student-directory-controls,
+  .student-directory-create-actions {
+    grid-column: auto;
+  }
+
+  .student-directory-controls,
+  .student-directory-create-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .student-directory-select,
+  .student-directory-create-actions .product-btn {
+    width: 100%;
+  }
+
+  .student-directory-picker-options,
+  .course-audience-options {
+    grid-template-columns: 1fr;
   }
 
   .teaching-date-navigator {
@@ -867,6 +1175,14 @@
 
   .lesson-run-dialog-actions .product-btn {
     width: 100%;
+  }
+
+  .student-directory-dialog-actions .product-btn {
+    width: 100%;
+  }
+
+  .student-directory-dialog-actions .student-directory-delete-action {
+    margin-right: 0;
   }
 
   .learner-history-heading {

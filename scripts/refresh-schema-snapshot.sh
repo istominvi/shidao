@@ -47,6 +47,9 @@ SHIDAO_SCHEMA_SIGNATURE="$({
          and to_regclass('public.lesson_student_slide') is not null
          and to_regclass('public.learner_profile') is not null
          and to_regclass('public.course_learner') is not null
+         and to_regclass('public.learner_group') is not null
+         and to_regclass('public.learner_group_member') is not null
+         and to_regclass('public.course_learner_group') is not null
          and to_regclass('public.lesson_run') is not null
          and to_regclass('public.learning_record') is not null
          and to_regclass('public.methodology') is null
@@ -62,6 +65,12 @@ SHIDAO_SCHEMA_SIGNATURE="$({
            'public.complete_lesson_run(uuid,jsonb,text,timestamptz)'
          ) is not null
          and to_regprocedure(
+           'public.replace_course_audience(uuid,uuid[],uuid[])'
+         ) is not null
+         and to_regprocedure(
+           'public.archive_learner_profile(uuid)'
+         ) is not null
+         and to_regprocedure(
            'public.delete_lesson_with_history(uuid)'
          ) is not null
          and exists (
@@ -70,6 +79,15 @@ SHIDAO_SCHEMA_SIGNATURE="$({
            where table_schema = 'public'
              and table_name = 'lesson_component'
              and column_name = 'student_slide_id'
+         )
+         and exists (
+           select 1
+           from information_schema.columns
+           where table_schema = 'public'
+             and table_name = 'learner_profile'
+             and column_name = 'archived_at'
+             and data_type = 'timestamp with time zone'
+             and is_nullable = 'YES'
          )
          and not exists (
            select 1
@@ -92,6 +110,12 @@ SHIDAO_SCHEMA_SIGNATURE="$({
          and pg_get_functiondef(
            'public.schedule_lesson_run(uuid,timestamptz,integer,uuid[],uuid)'::regprocedure
          ) like '%lesson_run_changed%'
+         and pg_get_functiondef(
+           'public.schedule_lesson_run(uuid,timestamptz,integer,uuid[],uuid)'::regprocedure
+         ) like '%public.course_learner_group%'
+         and pg_get_functiondef(
+           'public.schedule_lesson_run(uuid,timestamptz,integer,uuid[],uuid)'::regprocedure
+         ) like '%p_learner_profile_ids is null and v_run.id is not null%'
          and pg_get_functiondef(
            'public.complete_lesson_run(uuid,jsonb,text,timestamptz)'::regprocedure
          ) like '%jsonb_array_length(p_records) = 0%'
@@ -158,6 +182,11 @@ for required in \
   "course_assets_owner_select" \
   "CREATE TABLE public.lesson_run" \
   "CREATE TABLE public.learning_record" \
+  "CREATE TABLE public.learner_group" \
+  "CREATE TABLE public.learner_group_member" \
+  "CREATE TABLE public.course_learner_group" \
+  "CREATE FUNCTION public.replace_course_audience" \
+  "CREATE FUNCTION public.archive_learner_profile" \
   "CREATE FUNCTION public.schedule_lesson_run" \
   "CREATE FUNCTION public.delete_lesson_with_history"; do
   if ! grep -Fq "${required}" "${TMP_RESULT}"; then

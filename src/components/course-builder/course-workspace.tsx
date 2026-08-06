@@ -54,13 +54,23 @@ import type {
   CourseLesson,
   CourseWorkspace,
 } from "@/modules/course-builder/domain";
-import type { LearnerProfile, LessonRun } from "@/modules/lesson-runs/domain";
+import type {
+  CourseAudience,
+  LearnerProfile,
+  LessonRun,
+} from "@/modules/lesson-runs/domain";
 
 type CourseWorkspaceClientProps = {
   courseId: string;
 };
 
 const COURSE_WORKSPACE_TABS_ID = "course-workspace";
+
+const EMPTY_COURSE_AUDIENCE: CourseAudience = {
+  directLearners: [],
+  groups: [],
+  effectiveLearners: [],
+};
 
 type RunMutation = (
   label: string,
@@ -672,7 +682,9 @@ export function CourseWorkspaceClient({
 }: CourseWorkspaceClientProps) {
   const [course, setCourse] = useState<CourseWorkspace | null>(null);
   const [courseRuns, setCourseRuns] = useState<LessonRun[]>([]);
-  const [courseAudience, setCourseAudience] = useState<LearnerProfile[]>([]);
+  const [courseAudience, setCourseAudience] = useState<CourseAudience>(
+    EMPTY_COURSE_AUDIENCE,
+  );
   const [navigation, setNavigation] = useState(createCourseWorkspaceNavigation);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [audienceOpen, setAudienceOpen] = useState(false);
@@ -844,7 +856,7 @@ export function CourseWorkspaceClient({
           mutationError={error}
           runMutation={runMutation}
           runs={courseRuns.filter((run) => run.lessonId === selectedLesson.id)}
-          learners={courseAudience}
+          learners={courseAudience.effectiveLearners}
         />
       ) : (
         <>
@@ -869,7 +881,7 @@ export function CourseWorkspaceClient({
                   onClick={() => setAudienceOpen(true)}
                 >
                   <Users className="h-4 w-4" aria-hidden="true" />
-                  Аудитория · {courseAudience.length}
+                  Аудитория · {courseAudience.effectiveLearners.length}
                 </Button>
                 <Button
                   ref={settingsTriggerRef}
@@ -919,7 +931,7 @@ export function CourseWorkspaceClient({
                   <CourseLessonsPanel
                     lessons={course.lessons}
                     runs={courseRuns}
-                    audience={courseAudience}
+                    audience={courseAudience.effectiveLearners}
                     disabled={Boolean(busyLabel)}
                     mutationError={error}
                     onSelect={(lessonId) =>

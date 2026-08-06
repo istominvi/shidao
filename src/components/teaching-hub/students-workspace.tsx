@@ -1,9 +1,6 @@
 "use client";
 
-import Link from "next/link";
 import {
-  BookOpen,
-  FolderOpen,
   GraduationCap,
   LoaderCircle,
   Plus,
@@ -11,155 +8,84 @@ import {
   UserPlus,
   Users,
 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { courseBuilderRequest } from "@/components/course-builder/course-builder-client";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  createLearnerGroup,
   createLearnerProfile,
+  deleteLearnerGroup,
+  deleteLearnerProfile,
+  loadLearnerGroups,
   loadLearnerProfiles,
+  updateLearnerGroup,
+  updateLearnerProfile,
 } from "@/components/lesson-runs/lesson-run-client";
 import { LearnerHistoryDialog } from "@/components/lesson-runs/learner-history-dialog";
-import { Button, productButtonClassName } from "@/components/ui/button";
-import { Chip } from "@/components/ui/chip";
-import { DialogShell } from "@/components/ui/dialog-shell";
+import { LearnerGroupDialog } from "@/components/teaching-hub/learner-group-dialog";
+import { LearnerProfileDialog } from "@/components/teaching-hub/learner-profile-dialog";
+import {
+  LearnerGroupsDirectoryTable,
+  LearnersDirectoryTable,
+  type LearnerDirectoryEntry,
+} from "@/components/teaching-hub/student-directory-table";
+import { Button } from "@/components/ui/button";
+import { SegmentedControl } from "@/components/ui/segmented-control";
 import { SurfaceCard } from "@/components/ui/surface-card";
-import { toCourseRoute } from "@/lib/auth";
-import type { CourseSummary } from "@/modules/course-builder/domain";
-import type { LearnerProfile } from "@/modules/lesson-runs/domain";
+import type {
+  LearnerGroup,
+  LearnerProfile,
+} from "@/modules/lesson-runs/domain";
 
-function lessonCountLabel(count: number) {
-  const mod10 = count % 10;
-  const mod100 = count % 100;
-  if (mod10 === 1 && mod100 !== 11) return `${count} урок`;
-  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) {
-    return `${count} урока`;
-  }
-  return `${count} уроков`;
-}
+type DirectoryView = "learners" | "groups";
+type LearnerSort = "name-asc" | "name-desc" | "group-count";
+type GroupSort = "name-asc" | "name-desc" | "member-count";
 
-function initials(displayName: string) {
-  return displayName
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toLocaleUpperCase("ru-RU"))
-    .join("");
-}
-
-function NewLearnerDialog({
-  busy,
-  error,
-  onClose,
-  onCreate,
-}: {
-  busy: boolean;
-  error: string | null;
-  onClose: () => void;
-  onCreate: (displayName: string) => Promise<void>;
-}) {
-  const [displayName, setDisplayName] = useState("");
-
-  useEffect(() => {
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key !== "Escape" || busy) return;
-      event.preventDefault();
-      onClose();
-    }
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [busy, onClose]);
-
-  return (
-    <DialogShell
-      title="Новый ученик"
-      description="Создайте нейтральный учебный профиль. Его можно назначить одному или нескольким курсам."
-      onClose={() => {
-        if (!busy) onClose();
-      }}
-    >
-      <form
-        className="grid gap-4"
-        onSubmit={(event) => {
-          event.preventDefault();
-          const name = displayName.trim();
-          if (name) void onCreate(name);
-        }}
-      >
-        <label>
-          <span className="field-label">Имя ученика</span>
-          <input
-            autoFocus
-            required
-            minLength={2}
-            maxLength={160}
-            className="field-input"
-            placeholder="Например, Анна Петрова"
-            value={displayName}
-            onChange={(event) => setDisplayName(event.target.value)}
-          />
-        </label>
-        {error ? (
-          <p className="app-alert app-alert-error" role="alert">
-            {error}
-          </p>
-        ) : null}
-        <div className="dialog-shell-actions">
-          <Button
-            type="button"
-            variant="ghost"
-            disabled={busy}
-            onClick={onClose}
-          >
-            Отмена
-          </Button>
-          <Button type="submit" disabled={busy || !displayName.trim()}>
-            {busy ? (
-              <LoaderCircle
-                className="h-4 w-4 animate-spin"
-                aria-hidden="true"
-              />
-            ) : (
-              <Plus className="h-4 w-4" aria-hidden="true" />
-            )}
-            Создать профиль
-          </Button>
-        </div>
-      </form>
-    </DialogShell>
-  );
+function errorMessage(caught: unknown, fallback: string) {
+  return caught instanceof Error ? caught.message : fallback;
 }
 
 export function StudentsWorkspace() {
   const [profiles, setProfiles] = useState<LearnerProfile[] | null>(null);
-  const [courses, setCourses] = useState<CourseSummary[] | null>(null);
+  const [groups, setGroups] = useState<LearnerGroup[] | null>(null);
+  const [view, setView] = useState<DirectoryView>("learners");
   const [query, setQuery] = useState("");
-  const [createOpen, setCreateOpen] = useState(false);
+  const [groupFilter, setGroupFilter] = useState("all");
+  const [learnerSort, setLearnerSort] = useState<LearnerSort>("name-asc");
+  const [groupSort, setGroupSort] = useState<GroupSort>("name-asc");
+  const [learnerEditor, setLearnerEditor] = useState<{
+    profile: LearnerProfile | null;
+  } | null>(null);
+  const [groupEditor, setGroupEditor] = useState<{
+    group: LearnerGroup | null;
+  } | null>(null);
   const [historyProfile, setHistoryProfile] = useState<LearnerProfile | null>(
     null,
   );
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [createError, setCreateError] = useState<string | null>(null);
-  const createTriggerRef = useRef<HTMLButtonElement>(null);
+  const [busyLabel, setBusyLabel] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [mutationError, setMutationError] = useState<string | null>(null);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+
+  const reloadDirectory = useCallback(async () => {
+    const [nextProfiles, nextGroups] = await Promise.all([
+      loadLearnerProfiles(),
+      loadLearnerGroups(),
+    ]);
+    setProfiles(nextProfiles.filter((profile) => !profile.archivedAt));
+    setGroups(nextGroups);
+  }, []);
 
   useEffect(() => {
     let active = true;
-    void Promise.all([
-      loadLearnerProfiles(),
-      courseBuilderRequest<{ courses: CourseSummary[] }>("/api/v2/courses", {
-        cache: "no-store",
-      }),
-    ])
-      .then(([learnerProfiles, coursePayload]) => {
+    void Promise.all([loadLearnerProfiles(), loadLearnerGroups()])
+      .then(([nextProfiles, nextGroups]) => {
         if (!active) return;
-        setProfiles(learnerProfiles);
-        setCourses(coursePayload.courses);
+        setProfiles(nextProfiles.filter((profile) => !profile.archivedAt));
+        setGroups(nextGroups);
       })
       .catch((caught: unknown) => {
         if (!active) return;
-        setError(
-          caught instanceof Error
-            ? caught.message
-            : "Не удалось загрузить учебные профили.",
+        setLoadError(
+          errorMessage(caught, "Не удалось загрузить учеников и группы."),
         );
       });
     return () => {
@@ -167,258 +93,385 @@ export function StudentsWorkspace() {
     };
   }, []);
 
-  const normalizedQuery = query.trim().toLocaleLowerCase("ru-RU");
-  const visibleProfiles = useMemo(
-    () =>
-      (profiles ?? []).filter((profile) =>
-        profile.displayName
-          .toLocaleLowerCase("ru-RU")
-          .includes(normalizedQuery),
-      ),
-    [normalizedQuery, profiles],
-  );
-  const visibleCourses = useMemo(
-    () =>
-      (courses ?? []).filter((course) =>
-        [course.title, course.subject, course.audienceDescription].some(
-          (value) =>
-            String(value ?? "")
-              .toLocaleLowerCase("ru-RU")
-              .includes(normalizedQuery),
-        ),
-      ),
-    [courses, normalizedQuery],
-  );
-  const lessonCount = (courses ?? []).reduce(
-    (total, course) => total + course.lessonCount,
-    0,
-  );
-
-  async function create(displayName: string) {
-    if (busy) return;
-    setBusy(true);
-    setCreateError(null);
-    try {
-      const created = await createLearnerProfile(displayName);
-      setProfiles((current) =>
-        [...(current ?? []), created].sort((left, right) =>
-          left.displayName.localeCompare(right.displayName, "ru"),
-        ),
-      );
-      setCreateOpen(false);
-      window.requestAnimationFrame(() => createTriggerRef.current?.focus());
-    } catch (caught) {
-      setCreateError(
-        caught instanceof Error
-          ? caught.message
-          : "Не удалось создать учебный профиль.",
-      );
-    } finally {
-      setBusy(false);
+  useEffect(() => {
+    if (
+      groups &&
+      groupFilter !== "all" &&
+      groupFilter !== "ungrouped" &&
+      !groups.some((group) => group.id === groupFilter)
+    ) {
+      setGroupFilter("all");
     }
+  }, [groupFilter, groups]);
+
+  const normalizedQuery = query.trim().toLocaleLowerCase("ru-RU");
+  const learnerEntries = useMemo<LearnerDirectoryEntry[]>(() => {
+    const entries = (profiles ?? []).map((profile) => ({
+      profile,
+      groups: (groups ?? []).filter((group) =>
+        group.members.some((member) => member.id === profile.id),
+      ),
+    }));
+    const filtered = entries.filter((entry) => {
+      const matchesQuery =
+        !normalizedQuery ||
+        entry.profile.displayName
+          .toLocaleLowerCase("ru-RU")
+          .includes(normalizedQuery) ||
+        entry.groups.some((group) =>
+          group.name.toLocaleLowerCase("ru-RU").includes(normalizedQuery),
+        );
+      const matchesGroup =
+        groupFilter === "all" ||
+        (groupFilter === "ungrouped"
+          ? entry.groups.length === 0
+          : entry.groups.some((group) => group.id === groupFilter));
+      return matchesQuery && matchesGroup;
+    });
+    return filtered.sort((left, right) => {
+      if (learnerSort === "group-count") {
+        const countDifference = right.groups.length - left.groups.length;
+        if (countDifference !== 0) return countDifference;
+      }
+      const direction = learnerSort === "name-desc" ? -1 : 1;
+      return (
+        direction *
+        left.profile.displayName.localeCompare(right.profile.displayName, "ru")
+      );
+    });
+  }, [groupFilter, groups, learnerSort, normalizedQuery, profiles]);
+
+  const visibleGroups = useMemo(() => {
+    const filtered = (groups ?? []).filter(
+      (group) =>
+        !normalizedQuery ||
+        group.name.toLocaleLowerCase("ru-RU").includes(normalizedQuery) ||
+        group.members.some((member) =>
+          member.displayName
+            .toLocaleLowerCase("ru-RU")
+            .includes(normalizedQuery),
+        ),
+    );
+    return filtered.sort((left, right) => {
+      if (groupSort === "member-count") {
+        const countDifference = right.members.length - left.members.length;
+        if (countDifference !== 0) return countDifference;
+      }
+      const direction = groupSort === "name-desc" ? -1 : 1;
+      return direction * left.name.localeCompare(right.name, "ru");
+    });
+  }, [groupSort, groups, normalizedQuery]);
+
+  const ready = profiles !== null && groups !== null;
+  const busy = Boolean(busyLabel);
+  const hasFilters =
+    Boolean(normalizedQuery) || (view === "learners" && groupFilter !== "all");
+
+  async function mutate(
+    label: string,
+    successMessage: string,
+    action: () => Promise<unknown>,
+    onSuccess: () => void,
+  ) {
+    if (busy) return;
+    setBusyLabel(label);
+    setMutationError(null);
+    setStatusMessage(null);
+    try {
+      await action();
+      await reloadDirectory();
+      onSuccess();
+      setStatusMessage(successMessage);
+    } catch (caught) {
+      setMutationError(errorMessage(caught, "Не удалось сохранить изменение."));
+    } finally {
+      setBusyLabel(null);
+    }
+  }
+
+  function confirmLearnerDelete(profile: LearnerProfile) {
+    return window.confirm(
+      `Удалить ученика «${profile.displayName}»? Ученик исчезнет из списка, групп и будущей аудитории курсов. Учебная история и уже назначенные уроки сохранятся.`,
+    );
+  }
+
+  function confirmGroupDelete(group: LearnerGroup) {
+    return window.confirm(
+      `Удалить группу «${group.name}»? Она исчезнет из курсов, но ученики и их учебная история сохранятся. Уже назначенные уроки не изменятся.`,
+    );
+  }
+
+  async function removeLearner(
+    profile: LearnerProfile,
+    alreadyConfirmed = false,
+  ) {
+    if (!alreadyConfirmed && !confirmLearnerDelete(profile)) return;
+    await mutate(
+      "Удаляем ученика…",
+      "Ученик удалён. Учебная история сохранена.",
+      () => deleteLearnerProfile(profile.id),
+      () => setLearnerEditor(null),
+    );
+  }
+
+  async function removeGroup(group: LearnerGroup, alreadyConfirmed = false) {
+    if (!alreadyConfirmed && !confirmGroupDelete(group)) return;
+    await mutate(
+      "Удаляем группу…",
+      "Группа удалена. Ученики и их история сохранены.",
+      () => deleteLearnerGroup(group.id),
+      () => setGroupEditor(null),
+    );
   }
 
   return (
     <div className="teaching-hub-stack">
-      <section className="teaching-stat-grid" aria-label="Состояние аудитории">
-        <SurfaceCard as="div" className="teaching-stat-card">
-          <span className="teaching-stat-icon teaching-empty-icon-sky">
-            <GraduationCap className="h-5 w-5" aria-hidden="true" />
-          </span>
-          <strong>{profiles?.length ?? "—"}</strong>
-          <span>учебных профилей</span>
-        </SurfaceCard>
-        <SurfaceCard as="div" className="teaching-stat-card">
-          <span className="teaching-stat-icon teaching-empty-icon-lime">
-            <Users className="h-5 w-5" aria-hidden="true" />
-          </span>
-          <strong>{courses?.length ?? "—"}</strong>
-          <span>курсов</span>
-        </SurfaceCard>
-        <SurfaceCard as="div" className="teaching-stat-card">
-          <span className="teaching-stat-icon teaching-empty-icon-violet">
-            <FolderOpen className="h-5 w-5" aria-hidden="true" />
-          </span>
-          <strong>{courses ? lessonCount : "—"}</strong>
-          <span>уроков в курсах</span>
-        </SurfaceCard>
-      </section>
-
       <section
-        className="teaching-hub-toolbar"
+        className="student-directory-toolbar"
         aria-label="Управление учениками"
       >
-        <label className="teaching-hub-search">
+        <SegmentedControl
+          ariaLabel="Показывать в таблице"
+          value={view}
+          onChange={setView}
+          disabled={!ready || busy}
+          items={[
+            {
+              value: "learners",
+              label: `Ученики · ${profiles?.length ?? 0}`,
+              icon: GraduationCap,
+            },
+            {
+              value: "groups",
+              label: `По группам · ${groups?.length ?? 0}`,
+              icon: Users,
+            },
+          ]}
+        />
+
+        <label className="teaching-hub-search student-directory-search">
           <Search className="h-4 w-4" aria-hidden="true" />
-          <span className="sr-only">Найти ученика или курс</span>
+          <span className="sr-only">Найти ученика или группу</span>
           <input
             value={query}
+            disabled={!ready}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Найти ученика или курс"
+            placeholder="Найти ученика или группу"
           />
         </label>
-        <Button
-          ref={createTriggerRef}
-          type="button"
-          disabled={!profiles || busy}
-          onClick={() => {
-            setCreateError(null);
-            setCreateOpen(true);
-          }}
-        >
-          <UserPlus className="h-4 w-4" aria-hidden="true" />
-          Новый ученик
-        </Button>
+
+        <div className="student-directory-controls">
+          {view === "learners" ? (
+            <select
+              className="student-directory-select"
+              aria-label="Фильтр по группе"
+              value={groupFilter}
+              disabled={!ready}
+              onChange={(event) => setGroupFilter(event.target.value)}
+            >
+              <option value="all">Все группы</option>
+              <option value="ungrouped">Без группы</option>
+              {(groups ?? []).map((group) => (
+                <option key={group.id} value={group.id}>
+                  {group.name}
+                </option>
+              ))}
+            </select>
+          ) : null}
+
+          <select
+            className="student-directory-select"
+            aria-label="Сортировка"
+            value={view === "learners" ? learnerSort : groupSort}
+            disabled={!ready}
+            onChange={(event) => {
+              if (view === "learners") {
+                setLearnerSort(event.target.value as LearnerSort);
+              } else {
+                setGroupSort(event.target.value as GroupSort);
+              }
+            }}
+          >
+            {view === "learners" ? (
+              <>
+                <option value="name-asc">Имя: А—Я</option>
+                <option value="name-desc">Имя: Я—А</option>
+                <option value="group-count">По количеству групп</option>
+              </>
+            ) : (
+              <>
+                <option value="name-asc">Название: А—Я</option>
+                <option value="name-desc">Название: Я—А</option>
+                <option value="member-count">Сначала самые большие</option>
+              </>
+            )}
+          </select>
+
+          {hasFilters ? (
+            <Button
+              type="button"
+              variant="ghost"
+              disabled={busy}
+              onClick={() => {
+                setQuery("");
+                setGroupFilter("all");
+              }}
+            >
+              Сбросить фильтры
+            </Button>
+          ) : null}
+        </div>
+
+        <div className="student-directory-create-actions">
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={!ready || busy}
+            onClick={() => {
+              setMutationError(null);
+              setGroupEditor({ group: null });
+            }}
+          >
+            <Plus className="h-4 w-4" aria-hidden="true" />
+            Новая группа
+          </Button>
+          <Button
+            type="button"
+            disabled={!ready || busy}
+            onClick={() => {
+              setMutationError(null);
+              setLearnerEditor({ profile: null });
+            }}
+          >
+            <UserPlus className="h-4 w-4" aria-hidden="true" />
+            Новый ученик
+          </Button>
+        </div>
       </section>
 
-      {error ? (
+      {loadError ? (
         <SurfaceCard className="border border-rose-200">
           <p className="text-sm font-medium text-rose-800" role="alert">
-            {error}
+            {loadError}
           </p>
         </SurfaceCard>
       ) : null}
 
-      {!error && (!profiles || !courses) ? (
+      {!loadError && !ready ? (
         <SurfaceCard className="flex items-center gap-3 border border-neutral-200">
           <LoaderCircle className="h-5 w-5 animate-spin" aria-hidden="true" />
           <p className="text-sm font-medium text-neutral-700" role="status">
-            Загружаем учеников и курсы…
+            Загружаем учеников и группы…
           </p>
         </SurfaceCard>
       ) : null}
 
-      {profiles && profiles.length === 0 ? (
-        <SurfaceCard className="teaching-students-empty" as="section">
-          <div className="teaching-empty-icon teaching-empty-icon-lime">
-            <Users className="h-6 w-6" aria-hidden="true" />
-          </div>
-          <div>
-            <p className="teaching-empty-eyebrow">Учебные профили</p>
-            <h2>Добавьте первого ученика</h2>
-            <p>
-              Профиль хранит индивидуальные результаты завершённых уроков и не
-              зависит от старых сущностей Student или Class.
-            </p>
-          </div>
-        </SurfaceCard>
+      {busyLabel ? (
+        <p className="app-alert app-alert-info" role="status">
+          <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden="true" />
+          {busyLabel}
+        </p>
+      ) : null}
+      {!learnerEditor && !groupEditor && mutationError ? (
+        <p className="app-alert app-alert-error" role="alert">
+          {mutationError}
+        </p>
+      ) : null}
+      {statusMessage ? (
+        <p className="app-alert app-alert-success" role="status">
+          {statusMessage}
+        </p>
       ) : null}
 
-      {profiles && profiles.length > 0 ? (
-        <section
-          className="teaching-hub-section"
-          aria-labelledby="learners-title"
-        >
-          <div className="teaching-section-heading">
-            <div>
-              <p className="teaching-section-eyebrow">Учебные профили</p>
-              <h2 id="learners-title">Ученики</h2>
-            </div>
-            <Chip icon={GraduationCap} tone="sky">
-              {visibleProfiles.length}
-            </Chip>
-          </div>
-          {visibleProfiles.length ? (
-            <div className="teaching-learner-grid">
-              {visibleProfiles.map((profile) => (
-                <SurfaceCard
-                  key={profile.id}
-                  as="article"
-                  className="teaching-learner-card"
-                >
-                  <span className="teaching-learner-avatar" aria-hidden="true">
-                    {initials(profile.displayName)}
-                  </span>
-                  <div>
-                    <h3>{profile.displayName}</h3>
-                    <p>Индивидуальная учебная история</p>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      className="mt-3"
-                      onClick={() => setHistoryProfile(profile)}
-                    >
-                      Открыть историю
-                    </Button>
-                  </div>
-                </SurfaceCard>
-              ))}
-            </div>
-          ) : (
-            <SurfaceCard className="teaching-filter-empty">
-              <Search className="h-6 w-6" aria-hidden="true" />
-              <h3>Ученики не найдены</h3>
-              <p>Измените запрос.</p>
-            </SurfaceCard>
-          )}
-        </section>
-      ) : null}
-
-      {courses ? (
-        <section
-          className="teaching-hub-section"
-          aria-labelledby="audience-title"
-        >
-          <div className="teaching-section-heading">
-            <div>
-              <p className="teaching-section-eyebrow">Аудитория</p>
-              <h2 id="audience-title">Аудитории курсов</h2>
-            </div>
-          </div>
-
-          {visibleCourses.length > 0 ? (
-            <div className="teaching-course-grid">
-              {visibleCourses.map((course) => (
-                <SurfaceCard
-                  key={course.id}
-                  as="article"
-                  className="teaching-course-card"
-                  title={course.title}
-                  description={[course.subject, course.level]
-                    .filter(Boolean)
-                    .join(" · ")}
-                  actions={<Chip tone="neutral">Настроить</Chip>}
-                >
-                  <p className="teaching-course-audience">
-                    <BookOpen className="h-4 w-4" aria-hidden="true" />
-                    <span>{lessonCountLabel(course.lessonCount)}</span>
-                  </p>
-                  <p className="teaching-course-goal">
-                    {course.audienceDescription ||
-                      "Откройте курс и выберите его аудиторию."}
-                  </p>
-                  <Link
-                    href={`${toCourseRoute(course.id)}?audience=1`}
-                    className={productButtonClassName("secondary", "mt-5")}
-                  >
-                    Настроить аудиторию
-                  </Link>
-                </SurfaceCard>
-              ))}
-            </div>
-          ) : (
-            <SurfaceCard className="teaching-filter-empty">
-              <Search className="h-6 w-6" aria-hidden="true" />
-              <h3>{courses.length ? "Курсы не найдены" : "Пока нет курсов"}</h3>
-              <p>
-                {courses.length
-                  ? "Измените запрос."
-                  : "После создания курса здесь можно будет назначить ему учеников."}
-              </p>
-            </SurfaceCard>
-          )}
-        </section>
-      ) : null}
-
-      {createOpen ? (
-        <NewLearnerDialog
-          busy={busy}
-          error={createError}
-          onClose={() => {
-            setCreateError(null);
-            setCreateOpen(false);
+      {ready && view === "learners" ? (
+        <LearnersDirectoryTable
+          entries={learnerEntries}
+          hasFilters={hasFilters}
+          disabled={busy}
+          onHistory={setHistoryProfile}
+          onEdit={(profile) => {
+            setMutationError(null);
+            setLearnerEditor({ profile });
           }}
-          onCreate={create}
+          onDelete={(profile) => void removeLearner(profile)}
+        />
+      ) : null}
+
+      {ready && view === "groups" ? (
+        <LearnerGroupsDirectoryTable
+          groups={visibleGroups}
+          hasFilters={hasFilters}
+          disabled={busy}
+          onEdit={(group) => {
+            setMutationError(null);
+            setGroupEditor({ group });
+          }}
+          onDelete={(group) => void removeGroup(group)}
+        />
+      ) : null}
+
+      {learnerEditor && profiles && groups ? (
+        <LearnerProfileDialog
+          key={learnerEditor.profile?.id ?? "new-learner"}
+          profile={learnerEditor.profile}
+          groups={groups}
+          busy={busy}
+          error={mutationError}
+          onClose={() => {
+            setMutationError(null);
+            setLearnerEditor(null);
+          }}
+          onSave={async (displayName, learnerGroupIds) => {
+            const profile = learnerEditor.profile;
+            await mutate(
+              profile ? "Сохраняем ученика…" : "Создаём ученика…",
+              profile ? "Изменения ученика сохранены." : "Ученик создан.",
+              () =>
+                profile
+                  ? updateLearnerProfile(profile.id, {
+                      displayName,
+                      learnerGroupIds,
+                    })
+                  : createLearnerProfile(displayName, learnerGroupIds),
+              () => setLearnerEditor(null),
+            );
+          }}
+          onDelete={
+            learnerEditor.profile
+              ? () => removeLearner(learnerEditor.profile!, true)
+              : null
+          }
+        />
+      ) : null}
+
+      {groupEditor && profiles && groups ? (
+        <LearnerGroupDialog
+          key={groupEditor.group?.id ?? "new-group"}
+          group={groupEditor.group}
+          profiles={profiles}
+          busy={busy}
+          error={mutationError}
+          onClose={() => {
+            setMutationError(null);
+            setGroupEditor(null);
+          }}
+          onSave={async (name, learnerProfileIds) => {
+            const group = groupEditor.group;
+            await mutate(
+              group ? "Сохраняем группу…" : "Создаём группу…",
+              group ? "Изменения группы сохранены." : "Группа создана.",
+              () =>
+                group
+                  ? updateLearnerGroup(group.id, { name, learnerProfileIds })
+                  : createLearnerGroup({ name, learnerProfileIds }),
+              () => setGroupEditor(null),
+            );
+          }}
+          onDelete={
+            groupEditor.group
+              ? () => removeGroup(groupEditor.group!, true)
+              : null
+          }
         />
       ) : null}
 
