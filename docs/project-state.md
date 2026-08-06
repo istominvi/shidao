@@ -4,15 +4,19 @@
 **Актуально на:** 7 августа 2026 года
 **Активная ветка:** `main`
 **Рабочее приложение:** `https://v2.shidao.ru`
-**Текущий deployed application release:** `fa91371`
-**Последний полный automated/browser gate:** `fa91371`
+**Текущий deployed application release:** `9393080`
+**Последний полный automated/browser gate:** `9393080`
 
-**Current и deployed:** реализован LessonRun vertical slice с forward migration
-`20260806190044_lesson_runs_learning_records.sql`. Migration применена к
-production ShiDao DB 7 августа 2026 года и прошла DB/RLS/PostgREST postflight;
-локальные application/browser gates также зелёные. Coolify развернул точный
-application SHA `fa91371`, а HTTP и authenticated browser postflight подтвердили
-новые UI/API-поверхности без записи тестовых данных.
+**Current и deployed:** поверх базового LessonRun slice добавлены reusable
+LearnerGroup, каталог учеников, смешанная Course audience и history-aware
+AI-context. Forward migration
+`20260806220726_learner_groups_mixed_course_audience.sql` применена к production
+ShiDao DB 7 августа 2026 года и прошла DB/RLS/ACL/PostgREST postflight. Coolify
+развернул точный application SHA `9393080`; HTTP и authenticated browser
+postflight подтвердили новые UI/API-поверхности без сохранения тестовых данных.
+
+Базовый LessonRun/LearningRecord slice был развёрнут ранее в release `fa91371`
+с migration `20260806190044_lesson_runs_learning_records.sql`.
 
 Двухуровневая навигация Course → Lesson, teacher-only `/schedule` и `/students`
 и обновлённый визуальный язык app routes развёрнуты и проверены на release
@@ -314,8 +318,9 @@ application service/contracts внутри authenticated web request.
 Routes, UI, server-only secret boundary и provider postflight no-write flows
 этого среза развёрнуты и проверены в production. Release acceptance описан в
 [`docs/architecture/ai-provider-integration.md`](./architecture/ai-provider-integration.md).
-Это утверждение относится к base RouterAI flow release `0276aed`;
-history-aware context current repository ещё не развёрнут.
+Это утверждение относится к base RouterAI flow release `0276aed`.
+History-aware context развёрнут в release `9393080`; production provider smoke
+с непустой учебной историей ещё не выполнялся.
 
 ## 3. Что ещё не реализовано
 
@@ -559,7 +564,7 @@ npm run mcp:course-builder
 `test:browser` допускает локальный skip без browser, а `test:browser:ci`
 является строгим production-mode gate.
 
-Для current LessonRun slice локально подтверждены:
+Для базового LessonRun slice локально подтверждены:
 
 - typecheck и lint;
 - 256/256 unit/contract tests;
@@ -634,6 +639,18 @@ probe и authenticated PostgREST OpenAPI. Coolify развернул exact SHA �
 authenticated browser postflight подтвердил реальные `/courses`, `/schedule`,
 `/students`, Course audience, назначение и историю без сохранения тестовых
 данных. Browser console не содержит warning/error.
+
+Release `9393080` прошёл typecheck, lint, 270/270 unit/contract tests,
+production build и строгие 10/10 browser smoke. Миграция групп и смешанной
+аудитории успешно применена к isolated PostgreSQL 16 и production ShiDao DB;
+проверены ownership, RLS/ACL, лимит 200 уникальных учеников, дедупликация
+пересекающихся групп, неизменность уже назначенной аудитории, мягкая архивация
+ученика и сохранность finalized LearningRecord. Production rollback-probe
+подтвердил authenticated CRUD без остаточных записей, а PostgREST OpenAPI и
+relationship queries увидели все три новые таблицы. Coolify запустил exact image
+`939308070323b6e920a870b503a2911dd32c654a` без restart; authenticated browser
+прочитал каталог, формы ученика/группы и mixed Course audience без console или
+runtime errors и без изменения пользовательских данных.
 
 ## 10. Правило обновления этого документа
 

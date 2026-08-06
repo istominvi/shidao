@@ -13,9 +13,9 @@ Course/Lesson/assistant surfaces развёрнуты на `v2.shidao.ru`; runti
 настроен server-side. Release `0276aed` и authenticated no-write postflight
 подтвердили `google/gemini-2.5-flash-lite`. В current repository реализованы
 LearnerProfile, reusable LearnerGroup, смешанная Course audience, LessonRun и
-LearningRecord. Базовый LessonRun release `fa91371` развёрнут и проверен;
-group/audience release проходит отдельный migration/deployment gate. Homework
-и live Student Screen sync остаются будущими срезами.
+LearningRecord. Базовый LessonRun release `fa91371` и group/audience release
+`9393080` развёрнуты и проверены. Homework и live Student Screen sync остаются
+будущими срезами.
 
 ## Product decision
 
@@ -633,3 +633,12 @@ delete` с негативными stale/empty/timestamp/ACL checks. Production m
 развернул exact SHA `fa91371` со статусом `finished`; authenticated browser
 подтвердил Course audience/run/history, `/schedule` и `/students` без записи
 тестовых данных и без warning/error в console.
+
+Group/mixed-audience release `9393080` прошёл 270/270 unit/contract tests,
+typecheck, lint, production build, строгие 10/10 browser smoke и isolated
+PostgreSQL 16 сценарии overlap/freeze/archive/capacity/ownership. Forward
+migration применена к production, authenticated CRUD проверен внутри rollback,
+PostgREST увидел новые relationships. Coolify запустил exact image
+`939308070323b6e920a870b503a2911dd32c654a`; deployed browser подтвердил каталог
+учеников, обе CRUD-формы и mixed Course audience без сохранения тестовых данных
+и без console/runtime errors.

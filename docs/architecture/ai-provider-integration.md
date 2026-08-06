@@ -8,10 +8,12 @@
 `0276aed`; server runtime получает `ROUTERAI_API_KEY` из production secret
 environment и использует `google/gemini-2.5-flash-lite`. Provider и
 authenticated no-write postflight завершены. History-aware context реализован
-в current repository, но ещё не развернут и не применён к production schema
+и развёрнут в release `9393080` вместе с mixed Course audience; production
+schema и read-only UI postflight завершены. Provider smoke с непустой учебной
+историей ещё не выполнялся.
 
 **Schema state:** AI не добавляет собственную persistence; он читает bounded
-projection из `lesson_run`/`learning_record`, добавленных scheduling slice
+projection из `lesson_run`/`learning_record`, добавленных scheduling slice.
 
 ## Граница текущего среза
 
@@ -288,10 +290,11 @@ boundary и наличие runtime secret без раскрытия его зн�
    Lessons осталось неизменным;
 5. guest/auth/CSRF probes сохранили 405/401/403 и redirect/noindex contracts.
 
-Current repository tests дополнительно проверяют, что Lesson planning получает
+Release `9393080` tests дополнительно проверяют, что Lesson planning получает
 bounded finalized history без технических IDs, draft/cancelled data не попадают
-в context, а отсутствие не превращается в негативную учебную оценку. Это ещё
-не production provider postflight нового history-aware контекста.
+в context, а отсутствие не превращается в негативную учебную оценку. Код и
+schema этого контекста развёрнуты; отдельный production provider postflight с
+непустой учебной историей ещё не выполнялся.
 
 Live Apply намеренно не запускался на пользовательских Course данных, а
 configuration/provider failure не индуцировался на production. Apply validation,

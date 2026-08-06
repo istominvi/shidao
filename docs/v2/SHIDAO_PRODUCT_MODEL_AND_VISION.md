@@ -8,13 +8,12 @@
 
 ## Как читать этот документ
 
-Сейчас на `v2.shidao.ru` развёрнут teacher Course Builder и базовый LessonRun
-slice. В текущем repository LearnerProfile дополнен reusable Groups и
-смешанной Course audience: группы и отдельные ученики являются независимыми
-источниками одного дедуплицированного состава. Lesson остаётся единственной
-content-сущностью; LessonRun не хранит снимок её содержимого. Development-only
-MCP реализован отдельно как local `stdio` process; он не является частью web
-deployment или внешним endpoint. Точный
+Сейчас на `v2.shidao.ru` развёрнуты teacher Course Builder, LessonRun,
+LearnerProfile, reusable Groups и смешанная Course audience: группы и отдельные
+ученики являются независимыми источниками одного дедуплицированного состава.
+Lesson остаётся единственной content-сущностью; LessonRun не хранит снимок её
+содержимого. Development-only MCP реализован отдельно как local `stdio`
+process; он не является частью web deployment или внешним endpoint. Точный
 deployed и repository scope, ограничения и implementation map зафиксированы в
 [`docs/project-state.md`](../project-state.md), а последовательность работ — в
 [`docs/roadmap.md`](../roadmap.md).

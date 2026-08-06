@@ -41,14 +41,15 @@
   scoped demo-размеры, радиусы и веса, не затрагивая landing/Auth.
 - На release `fea7f80` развёрнуты teacher-only `/schedule` и `/students` и
   пункты «Расписание / Ученики / Курсы» как исходные shells.
-- В current repository эти shells превращены в vertical slice: нейтральные
+- Эти shells превращены в deployed vertical slice: нейтральные
   LearnerProfile, переиспользуемые группы, смешанная Course audience,
   LessonRun, LearningRecord,
   расписание, повторное проведение и Lesson/Course/Profile history. Срез не
   читает старые `student/class/class_student`; migration применена к production
-  ShiDao DB и прошла DB/RLS/PostgREST postflight 7 августа 2026 года. Release
-  `fa91371` развёрнут Coolify и прошёл HTTP/authenticated browser postflight без
-  записи тестовых данных.
+  ShiDao DB и прошла DB/RLS/ACL/PostgREST postflight 7 августа 2026 года.
+  Базовый LessonRun был выпущен в `fa91371`, а reusable Groups, mixed audience
+  и history-aware AI-context — в `9393080`; оба release прошли
+  HTTP/authenticated browser postflight без записи тестовых данных.
 - Реализованы private-by-default Components и persisted Student Screen Slides.
 - Реализован fullscreen Student Screen preview.
 - Реализован development-only MCP из шести tools поверх application service.
