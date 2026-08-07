@@ -12,7 +12,6 @@ export default function CoursesPage() {
       <TopNav demoStyle />
       <div className="container app-page-container space-y-6">
         <AppPageHeader
-          className="course-index-page-header"
           title="Курсы"
           description="Создавайте собственные курсы, собирайте уроки из компонентов и проверяйте видимые ученику материалы на экране ученика."
           actions={

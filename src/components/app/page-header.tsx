@@ -1,18 +1,27 @@
 import Link from "next/link";
 import type { ReactNode, Ref } from "react";
-import { classNames } from "@/lib/ui/classnames";
+
+type AppPageHeaderBack =
+  | {
+      type: "link";
+      href: string;
+      label?: ReactNode;
+      ariaLabel?: string;
+    }
+  | {
+      type: "button";
+      onClick: () => void;
+      label?: ReactNode;
+      ariaLabel?: string;
+    };
 
 type AppPageHeaderProps = {
   title: ReactNode;
   description?: ReactNode;
   eyebrow?: ReactNode;
-  backHref?: string;
-  backLabel?: ReactNode;
-  backAriaLabel?: string;
-  onBack?: () => void;
+  back?: AppPageHeaderBack;
   meta?: ReactNode;
   actions?: ReactNode;
-  className?: string;
   headingRef?: Ref<HTMLHeadingElement>;
 };
 
@@ -20,47 +29,38 @@ export function AppPageHeader({
   title,
   description,
   eyebrow,
-  backHref,
-  backLabel,
-  backAriaLabel,
-  onBack,
+  back,
   meta,
   actions,
-  className,
   headingRef,
 }: AppPageHeaderProps) {
-  const resolvedBackLabel = backLabel ?? "Назад";
+  const resolvedBackLabel = back?.label ?? "Назад";
+  const resolvedBackAriaLabel =
+    back?.ariaLabel ??
+    (typeof resolvedBackLabel === "string"
+      ? `Вернуться: ${resolvedBackLabel}`
+      : undefined);
   const hasHeadingBlock = Boolean(eyebrow || title || description);
 
   return (
-    <header className={classNames("app-page-header", className)}>
-      {backHref ? (
+    <header className="app-page-header">
+      {back?.type === "link" ? (
         <Link
-          href={backHref}
+          href={back.href}
           className="app-page-back-link"
-          aria-label={
-            backAriaLabel ??
-            (typeof resolvedBackLabel === "string"
-              ? `Вернуться: ${resolvedBackLabel}`
-              : undefined)
-          }
+          aria-label={resolvedBackAriaLabel}
         >
           <span className="app-page-back-link-icon" aria-hidden="true">
             ←
           </span>
           <span>{resolvedBackLabel}</span>
         </Link>
-      ) : onBack ? (
+      ) : back ? (
         <button
           type="button"
           className="app-page-back-link"
-          aria-label={
-            backAriaLabel ??
-            (typeof resolvedBackLabel === "string"
-              ? `Вернуться: ${resolvedBackLabel}`
-              : undefined)
-          }
-          onClick={onBack}
+          aria-label={resolvedBackAriaLabel}
+          onClick={back.onClick}
         >
           <span className="app-page-back-link-icon" aria-hidden="true">
             ←

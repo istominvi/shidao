@@ -166,6 +166,7 @@ const E2E_LEARNING_RECORD_ROWS = [
 
 type PlaywrightLocator = {
   click: () => Promise<void>;
+  press: (key: string) => Promise<void>;
   getByRole: (
     role: string,
     options?: {
@@ -995,6 +996,14 @@ test("browser smoke: teacher navigates Schedule → Students with honest V2 stat
     const scheduleContract = await runtime.page.evaluate(() => {
       const shell = document.querySelector<HTMLElement>(".course-demo-shell");
       const title = document.querySelector<HTMLElement>(".app-page-title");
+      const description = document.querySelector<HTMLElement>(
+        ".app-page-description",
+      );
+      const headerActions =
+        document.querySelector<HTMLElement>(".app-page-actions");
+      const toolbar = document.querySelector<HTMLElement>(
+        ".teaching-hub-toolbar",
+      );
       const navLinks = Array.from(
         document.querySelectorAll<HTMLAnchorElement>(
           ".site-header-shell-demo .site-header-nav-pill",
@@ -1005,21 +1014,36 @@ test("browser smoke: teacher navigates Schedule → Students with honest V2 stat
         current: link.getAttribute("aria-current"),
       }));
 
-      if (!shell || !title) {
+      if (!shell || !title || !description || !headerActions || !toolbar) {
         throw new Error("Schedule shell contract is missing");
       }
+
+      const titleStyle = getComputedStyle(title);
+      const descriptionStyle = getComputedStyle(description);
 
       return {
         backgroundColor: getComputedStyle(shell).backgroundColor,
         backgroundImage: getComputedStyle(shell).backgroundImage,
-        titleWeight: getComputedStyle(title).fontWeight,
+        headerSignature: {
+          titleFontFamily: titleStyle.fontFamily,
+          titleFontSize: titleStyle.fontSize,
+          titleFontWeight: titleStyle.fontWeight,
+          titleLineHeight: titleStyle.lineHeight,
+          titleLetterSpacing: titleStyle.letterSpacing,
+          descriptionFontSize: descriptionStyle.fontSize,
+          descriptionLineHeight: descriptionStyle.lineHeight,
+        },
+        headerActions: headerActions.textContent?.trim() ?? "",
+        toolbarText: toolbar.textContent?.trim() ?? "",
         navLinks,
       };
     });
 
     assert.equal(scheduleContract.backgroundColor, "rgb(245, 241, 232)");
     assert.equal(scheduleContract.backgroundImage, "none");
-    assert.equal(scheduleContract.titleWeight, "400");
+    assert.equal(scheduleContract.headerSignature.titleFontWeight, "400");
+    assert.match(scheduleContract.headerActions, /Назначить урок в курсе/);
+    assert.doesNotMatch(scheduleContract.toolbarText, /Назначить урок в курсе/);
     assert.deepEqual(scheduleContract.navLinks, [
       { label: "Расписание", href: "/schedule", current: "page" },
       { label: "Ученики", href: "/students", current: null },
@@ -1053,6 +1077,80 @@ test("browser smoke: teacher navigates Schedule → Students with honest V2 stat
     assert.match(html, /Новый ученик/);
     assert.doesNotMatch(html, /Новая группа/);
     assert.doesNotMatch(html, /Миша Орлов|Food around the world|11 занятий/);
+
+    const studentsVisual = await runtime.page.evaluate(() => {
+      const title = document.querySelector<HTMLElement>(".app-page-title");
+      const description = document.querySelector<HTMLElement>(
+        ".app-page-description",
+      );
+      const activeTab = document.querySelector<HTMLElement>(
+        ".workspace-tab-active",
+      );
+      const tabs = document.querySelector<HTMLElement>(".workspace-tabs");
+      const headerActions =
+        document.querySelector<HTMLElement>(".app-page-actions");
+      const toolbar = document.querySelector<HTMLElement>(
+        ".student-directory-toolbar",
+      );
+
+      if (
+        !title ||
+        !description ||
+        !activeTab ||
+        !tabs ||
+        !headerActions ||
+        !toolbar
+      ) {
+        throw new Error("Students visual contract is missing");
+      }
+
+      const titleStyle = getComputedStyle(title);
+      const descriptionStyle = getComputedStyle(description);
+      const tabStyle = getComputedStyle(activeTab);
+      const markerStyle = getComputedStyle(activeTab, "::after");
+      const baselineStyle = getComputedStyle(tabs, "::before");
+
+      return {
+        headerSignature: {
+          titleFontFamily: titleStyle.fontFamily,
+          titleFontSize: titleStyle.fontSize,
+          titleFontWeight: titleStyle.fontWeight,
+          titleLineHeight: titleStyle.lineHeight,
+          titleLetterSpacing: titleStyle.letterSpacing,
+          descriptionFontSize: descriptionStyle.fontSize,
+          descriptionLineHeight: descriptionStyle.lineHeight,
+        },
+        tabSignature: {
+          height: tabStyle.height,
+          radius: tabStyle.borderRadius,
+          fontWeight: tabStyle.fontWeight,
+          baselineHeight: baselineStyle.height,
+          markerHeight: markerStyle.height,
+          markerColor: markerStyle.backgroundColor,
+          markerRadius: markerStyle.borderRadius,
+          markerBottom: markerStyle.bottom,
+        },
+        headerActions: headerActions.textContent?.trim() ?? "",
+        toolbarText: toolbar.textContent?.trim() ?? "",
+      };
+    });
+
+    assert.deepEqual(
+      studentsVisual.headerSignature,
+      scheduleContract.headerSignature,
+    );
+    assert.deepEqual(studentsVisual.tabSignature, {
+      height: "40px",
+      radius: "0px",
+      fontWeight: "500",
+      baselineHeight: "1px",
+      markerHeight: "3px",
+      markerColor: "rgb(20, 20, 20)",
+      markerRadius: "0px",
+      markerBottom: "0px",
+    });
+    assert.match(studentsVisual.headerActions, /Новый ученик/);
+    assert.doesNotMatch(studentsVisual.toolbarText, /Новый ученик/);
 
     await runtime.page
       .getByRole("button", {
@@ -1264,6 +1362,9 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
         ".site-header-shell-demo",
       );
       const title = document.querySelector<HTMLElement>(".app-page-title");
+      const description = document.querySelector<HTMLElement>(
+        ".app-page-description",
+      );
       const primaryButton = document.querySelector<HTMLElement>(
         ".product-btn-primary",
       );
@@ -1279,6 +1380,7 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
         !topNav ||
         !header ||
         !title ||
+        !description ||
         !primaryButton ||
         !navPill ||
         !userTrigger
@@ -1288,6 +1390,7 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
 
       const shellStyle = getComputedStyle(shell);
       const titleStyle = getComputedStyle(title);
+      const descriptionStyle = getComputedStyle(description);
       const buttonStyle = getComputedStyle(primaryButton);
       const headerStyle = getComputedStyle(header);
       const navPillStyle = getComputedStyle(navPill);
@@ -1302,6 +1405,15 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
         titleFontFamily: titleStyle.fontFamily,
         titleFontSize: titleStyle.fontSize,
         titleFontWeight: titleStyle.fontWeight,
+        headerSignature: {
+          titleFontFamily: titleStyle.fontFamily,
+          titleFontSize: titleStyle.fontSize,
+          titleFontWeight: titleStyle.fontWeight,
+          titleLineHeight: titleStyle.lineHeight,
+          titleLetterSpacing: titleStyle.letterSpacing,
+          descriptionFontSize: descriptionStyle.fontSize,
+          descriptionLineHeight: descriptionStyle.lineHeight,
+        },
         bodyFontFamily: getComputedStyle(document.body).fontFamily,
         buttonRadius: buttonStyle.borderRadius,
         buttonFontSize: buttonStyle.fontSize,
@@ -1342,13 +1454,16 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
     });
     await courseHeading.waitFor();
     const courseVisual = await runtime.page.evaluate(() => {
-      const pageHeader = document.querySelector<HTMLElement>(
-        ".workspace-page-header",
-      );
+      const pageHeader =
+        document.querySelector<HTMLElement>(".app-page-header");
       const title = pageHeader?.querySelector<HTMLElement>(".app-page-title");
-      const tab = document.querySelector<HTMLElement>(".workspace-tab");
+      const description = pageHeader?.querySelector<HTMLElement>(
+        ".app-page-description",
+      );
+      const tab = document.querySelector<HTMLElement>(".workspace-tab-active");
+      const tabs = document.querySelector<HTMLElement>(".workspace-tabs");
 
-      if (!pageHeader || !title || !tab) {
+      if (!pageHeader || !title || !description || !tab || !tabs) {
         throw new Error(
           "Course workspace visual contract elements are missing",
         );
@@ -1356,19 +1471,39 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
 
       const headerStyle = getComputedStyle(pageHeader);
       const titleStyle = getComputedStyle(title);
+      const descriptionStyle = getComputedStyle(description);
       const tabStyle = getComputedStyle(tab);
+      const markerStyle = getComputedStyle(tab, "::after");
+      const baselineStyle = getComputedStyle(tabs, "::before");
+      const tabRect = tab.getBoundingClientRect();
+      const tabsRect = tabs.getBoundingClientRect();
 
       return {
         headerBackgroundColor: headerStyle.backgroundColor,
         headerBackgroundImage: headerStyle.backgroundImage,
         headerBorderWidth: headerStyle.borderWidth,
         headerShadow: headerStyle.boxShadow,
-        titleFontFamily: titleStyle.fontFamily,
-        titleFontSize: titleStyle.fontSize,
-        titleFontWeight: titleStyle.fontWeight,
-        tabHeight: tabStyle.height,
-        tabRadius: tabStyle.borderRadius,
-        tabFontWeight: tabStyle.fontWeight,
+        headerSignature: {
+          titleFontFamily: titleStyle.fontFamily,
+          titleFontSize: titleStyle.fontSize,
+          titleFontWeight: titleStyle.fontWeight,
+          titleLineHeight: titleStyle.lineHeight,
+          titleLetterSpacing: titleStyle.letterSpacing,
+          descriptionFontSize: descriptionStyle.fontSize,
+          descriptionLineHeight: descriptionStyle.lineHeight,
+        },
+        tabSignature: {
+          height: tabStyle.height,
+          radius: tabStyle.borderRadius,
+          fontWeight: tabStyle.fontWeight,
+          baselineHeight: baselineStyle.height,
+          markerHeight: markerStyle.height,
+          markerColor: markerStyle.backgroundColor,
+          markerRadius: markerStyle.borderRadius,
+          markerBottom: markerStyle.bottom,
+        },
+        tabBottom: tabRect.bottom,
+        tabsBottom: tabsRect.bottom,
       };
     });
 
@@ -1376,15 +1511,21 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
     assert.equal(courseVisual.headerBackgroundImage, "none");
     assert.equal(courseVisual.headerBorderWidth, "0px");
     assert.equal(courseVisual.headerShadow, "none");
-    assert.equal(courseVisual.titleFontFamily, coursesVisual.titleFontFamily);
-    assert.equal(courseVisual.titleFontWeight, "400");
-    assert.ok(
-      Number.parseFloat(courseVisual.titleFontSize) >
-        Number.parseFloat(coursesVisual.titleFontSize),
+    assert.deepEqual(
+      courseVisual.headerSignature,
+      coursesVisual.headerSignature,
     );
-    assert.equal(courseVisual.tabHeight, "40px");
-    assert.equal(courseVisual.tabRadius, "12px");
-    assert.equal(courseVisual.tabFontWeight, "500");
+    assert.deepEqual(courseVisual.tabSignature, {
+      height: "40px",
+      radius: "0px",
+      fontWeight: "500",
+      baselineHeight: "1px",
+      markerHeight: "3px",
+      markerColor: "rgb(20, 20, 20)",
+      markerRadius: "0px",
+      markerBottom: "0px",
+    });
+    assert.ok(Math.abs(courseVisual.tabBottom - courseVisual.tabsBottom) < 0.5);
 
     let html = await runtime.page.content();
     assert.match(html, /aria-label="Разделы курса"/);
@@ -1408,24 +1549,53 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
     const lessonVisual = await runtime.page.evaluate(() => {
       const shell = document.querySelector<HTMLElement>(".course-demo-shell");
       const title = document.querySelector<HTMLElement>(
-        ".workspace-page-header .app-page-title",
+        ".app-page-header .app-page-title",
       );
+      const description = document.querySelector<HTMLElement>(
+        ".app-page-header .app-page-description",
+      );
+      const tab = document.querySelector<HTMLElement>(".workspace-tab-active");
+      const tabs = document.querySelector<HTMLElement>(".workspace-tabs");
 
-      if (!shell || !title) {
+      if (!shell || !title || !description || !tab || !tabs) {
         throw new Error("Lesson visual contract elements are missing");
       }
 
       const titleStyle = getComputedStyle(title);
+      const descriptionStyle = getComputedStyle(description);
+      const tabStyle = getComputedStyle(tab);
+      const markerStyle = getComputedStyle(tab, "::after");
+      const baselineStyle = getComputedStyle(tabs, "::before");
       return {
         shellBackgroundImage: getComputedStyle(shell).backgroundImage,
-        titleFontFamily: titleStyle.fontFamily,
-        titleFontWeight: titleStyle.fontWeight,
+        headerSignature: {
+          titleFontFamily: titleStyle.fontFamily,
+          titleFontSize: titleStyle.fontSize,
+          titleFontWeight: titleStyle.fontWeight,
+          titleLineHeight: titleStyle.lineHeight,
+          titleLetterSpacing: titleStyle.letterSpacing,
+          descriptionFontSize: descriptionStyle.fontSize,
+          descriptionLineHeight: descriptionStyle.lineHeight,
+        },
+        tabSignature: {
+          height: tabStyle.height,
+          radius: tabStyle.borderRadius,
+          fontWeight: tabStyle.fontWeight,
+          baselineHeight: baselineStyle.height,
+          markerHeight: markerStyle.height,
+          markerColor: markerStyle.backgroundColor,
+          markerRadius: markerStyle.borderRadius,
+          markerBottom: markerStyle.bottom,
+        },
       };
     });
 
     assert.equal(lessonVisual.shellBackgroundImage, "none");
-    assert.equal(lessonVisual.titleFontFamily, coursesVisual.titleFontFamily);
-    assert.equal(lessonVisual.titleFontWeight, "400");
+    assert.deepEqual(
+      lessonVisual.headerSignature,
+      coursesVisual.headerSignature,
+    );
+    assert.deepEqual(lessonVisual.tabSignature, courseVisual.tabSignature);
 
     html = await runtime.page.content();
     assert.match(html, /aria-label="Разделы урока"/);
@@ -1481,10 +1651,15 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
         level: 1,
       })
       .waitFor();
+    await runtime.page
+      .getByRole("tab", { name: "План", exact: true })
+      .press("End");
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    await runtime.page.getByRole("tab", { name: /^История/ }).waitFor();
 
     const mobileVisual = await runtime.page.evaluate(() => {
       const title = document.querySelector<HTMLElement>(
-        ".workspace-page-header .app-page-title",
+        ".app-page-header .app-page-title",
       );
       const header = document.querySelector<HTMLElement>(
         ".site-header-shell-demo",
@@ -1492,14 +1667,19 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
       const tabStrip = document.querySelector<HTMLElement>(
         ".workspace-tabs-scroll",
       );
+      const selectedTab = document.querySelector<HTMLElement>(
+        '.workspace-tab[aria-selected="true"]',
+      );
 
-      if (!title || !header || !tabStrip) {
+      if (!title || !header || !tabStrip || !selectedTab) {
         throw new Error("Mobile Course visual contract elements are missing");
       }
 
       const titleStyle = getComputedStyle(title);
       const titleRect = title.getBoundingClientRect();
       const headerRect = header.getBoundingClientRect();
+      const tabStripRect = tabStrip.getBoundingClientRect();
+      const selectedTabRect = selectedTab.getBoundingClientRect();
 
       return {
         documentClientWidth: document.documentElement.clientWidth,
@@ -1512,6 +1692,14 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
         titleFontWeight: titleStyle.fontWeight,
         tabStripClientWidth: tabStrip.clientWidth,
         tabStripScrollWidth: tabStrip.scrollWidth,
+        tabStripScrollLeft: tabStrip.scrollLeft,
+        tabStripOverflowX: getComputedStyle(tabStrip).overflowX,
+        selectedTab: selectedTab.textContent?.trim() ?? "",
+        selectedTabAriaSelected: selectedTab.getAttribute("aria-selected"),
+        selectedTabLeft: selectedTabRect.left,
+        selectedTabRight: selectedTabRect.right,
+        tabStripLeft: tabStripRect.left,
+        tabStripRight: tabStripRect.right,
       };
     });
 
@@ -1526,9 +1714,15 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
     assert.ok(mobileVisual.titleRight <= mobileVisual.documentClientWidth);
     assert.equal(mobileVisual.titleFontSize, "36px");
     assert.equal(mobileVisual.titleFontWeight, "400");
+    assert.equal(mobileVisual.tabStripOverflowX, "auto");
     assert.ok(
-      mobileVisual.tabStripScrollWidth >= mobileVisual.tabStripClientWidth,
+      mobileVisual.tabStripScrollWidth > mobileVisual.tabStripClientWidth,
     );
+    assert.ok(mobileVisual.tabStripScrollLeft > 0);
+    assert.match(mobileVisual.selectedTab, /^История/);
+    assert.equal(mobileVisual.selectedTabAriaSelected, "true");
+    assert.ok(mobileVisual.selectedTabLeft >= mobileVisual.tabStripLeft - 1);
+    assert.ok(mobileVisual.selectedTabRight <= mobileVisual.tabStripRight + 1);
   } finally {
     await runtime.close();
   }

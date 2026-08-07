@@ -110,6 +110,7 @@ test("course and lesson use the requested five-tab hierarchy", () => {
   assert.match(authoring, /LessonRunStatusButton/);
   assert.match(authoring, /Завершённые индивидуальные результаты сохранятся/);
   assert.doesNotMatch(authoring, /\/api\/teacher\//);
+  assert.match(tabs, /aria-orientation="horizontal"/);
 });
 
 test("lesson metadata moves into a transparent page header and remains editable", () => {
@@ -118,9 +119,11 @@ test("lesson metadata moves into a transparent page header and remains editable"
   const styles = source("src/app/globals.css");
 
   assert.match(authoring, /<AppPageHeader/);
-  assert.match(authoring, /backLabel=\{course\.title\}/);
+  assert.match(
+    authoring,
+    /back=\{\{[\s\S]*?type: "button"[\s\S]*?onClick: onBackToCourse[\s\S]*?label: course\.title/,
+  );
   assert.match(authoring, /formatLessonWorkspaceTitle/);
-  assert.match(authoring, /onBack=\{onBackToCourse\}/);
   assert.match(authoring, /headingRef=\{lessonHeadingRef\}/);
   assert.match(authoring, /closest\("header"\)\?\.scrollIntoView/);
   assert.match(authoring, /focus\(\{ preventScroll: true \}\)/);
@@ -131,7 +134,7 @@ test("lesson metadata moves into a transparent page header and remains editable"
   );
   assert.match(
     styles,
-    /\.workspace-page-header\s*\{[\s\S]*?background: transparent;[\s\S]*?border: 0;[\s\S]*?border-radius: 0;[\s\S]*?box-shadow: none;/,
+    /\.app-page-header\s*\{[\s\S]*?border: 0;[\s\S]*?border-radius: 0;[\s\S]*?background: transparent;[\s\S]*?box-shadow: none;/,
   );
 
   assert.match(authoring, /title="Редактировать урок"/);
@@ -167,11 +170,11 @@ test("course routes use the flat demo background and unified visual controls", (
 
   assert.match(
     styles,
-    /\.course-demo-shell \.app-page-title\s*\{[\s\S]*?font-weight: 400;[\s\S]*?letter-spacing: -0\.045em;/,
+    /\.course-demo-shell \.app-page-title\s*\{[\s\S]*?font-weight: 400;[\s\S]*?letter-spacing: -0\.055em;/,
   );
   assert.match(
     styles,
-    /\.course-demo-shell \.workspace-page-header\s*\{[\s\S]*?clamp\(2rem, 4\.3vw, 3\.55rem\)[\s\S]*?0\.96/,
+    /\.course-demo-shell \.app-page-header\s*\{[\s\S]*?clamp\(2rem, 4\.3vw, 3\.55rem\)[\s\S]*?0\.96/,
   );
   assert.match(
     styles,
@@ -179,7 +182,15 @@ test("course routes use the flat demo background and unified visual controls", (
   );
   assert.match(
     styles,
-    /\.workspace-tab\s*\{[\s\S]*?--course-demo-control-height[\s\S]*?--course-demo-control-radius/,
+    /\.workspace-tabs::before\s*\{[\s\S]*?height: 1px;[\s\S]*?rgba\(20, 20, 20, 0\.1\)/,
+  );
+  assert.match(
+    styles,
+    /\.workspace-tab\s*\{[\s\S]*?--course-demo-control-height[\s\S]*?flex: 0 0 auto;[\s\S]*?border-radius: 0;/,
+  );
+  assert.match(
+    styles,
+    /\.workspace-tab-active::after\s*\{[\s\S]*?bottom: 0;[\s\S]*?height: 3px;[\s\S]*?border-radius: 0;[\s\S]*?background: #141414;/,
   );
   assert.match(topNav, /container course-top-nav/);
   assert.match(

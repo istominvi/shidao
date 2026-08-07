@@ -9,6 +9,7 @@ import {
   Users,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { AppPageHeader } from "@/components/app/page-header";
 import {
   createLearnerGroup,
   createLearnerProfile,
@@ -241,6 +242,38 @@ export function StudentsWorkspace() {
 
   return (
     <div className="teaching-hub-stack">
+      <AppPageHeader
+        title="Ученики"
+        description="Ученики и группы, с которыми вы работаете. История показана только в рамках ваших курсов."
+        actions={
+          view === "learners" ? (
+            <Button
+              type="button"
+              disabled={!ready || busy}
+              onClick={() => {
+                setMutationError(null);
+                setLearnerEditor({ profile: null });
+              }}
+            >
+              <UserPlus className="h-4 w-4" aria-hidden="true" />
+              Новый ученик
+            </Button>
+          ) : (
+            <Button
+              type="button"
+              disabled={!ready || busy}
+              onClick={() => {
+                setMutationError(null);
+                setGroupEditor({ group: null });
+              }}
+            >
+              <Plus className="h-4 w-4" aria-hidden="true" />
+              Новая группа
+            </Button>
+          )
+        }
+      />
+
       <WorkspaceTabs
         idBase={STUDENTS_DIRECTORY_TABS_ID}
         ariaLabel="Разделы учеников"
@@ -349,34 +382,6 @@ export function StudentsWorkspace() {
               Сбросить фильтры
             </Button>
           ) : null}
-        </div>
-
-        <div className="student-directory-create-actions">
-          {view === "learners" ? (
-            <Button
-              type="button"
-              disabled={!ready || busy}
-              onClick={() => {
-                setMutationError(null);
-                setLearnerEditor({ profile: null });
-              }}
-            >
-              <UserPlus className="h-4 w-4" aria-hidden="true" />
-              Новый ученик
-            </Button>
-          ) : (
-            <Button
-              type="button"
-              disabled={!ready || busy}
-              onClick={() => {
-                setMutationError(null);
-                setGroupEditor({ group: null });
-              }}
-            >
-              <Plus className="h-4 w-4" aria-hidden="true" />
-              Новая группа
-            </Button>
-          )}
         </div>
       </section>
 

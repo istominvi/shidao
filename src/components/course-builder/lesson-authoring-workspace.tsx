@@ -954,10 +954,12 @@ export function LessonAuthoringWorkspace({
   return (
     <div className="min-w-0">
       <AppPageHeader
-        className="course-builder-page-header workspace-page-header"
         headingRef={lessonHeadingRef}
-        backLabel={course.title}
-        onBack={onBackToCourse}
+        back={{
+          type: "button",
+          onClick: onBackToCourse,
+          label: course.title,
+        }}
         title={formatLessonWorkspaceTitle(lesson.position, lesson.title)}
         description={
           lesson.summary ||

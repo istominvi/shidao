@@ -180,15 +180,20 @@ Lesson-вкладка «Материалы» показывает только c
 lesson-owned files. «Источники» и обе «Истории» остаются честными пустыми
 состояниями до появления соответствующих application/storage contracts.
 
-Detail headers Course и Lesson остаются прозрачными на фоне страницы без
-белой или градиентной карточки. В текущем source page background Course routes
-является сплошным `#f5f1e8`: marketing noise и цветные gradients удалены.
-Sticky header повторяет demo shell 68 px / 20 px, основные controls и tabs —
-40 px / 12 px / `.88rem 500`, а Courses и detail H1 используют отдельные
-demo-scales с весом 400. Эти токены ограничены Course routes и не меняют
-landing или auth screens. Tabs имеют roving keyboard navigation и явные `tab`
-→ `tabpanel` ARIA-связи; переход Course ↔ Lesson переносит focus в новый
-рабочий контекст и восстанавливает его на строке Lesson при возврате.
+Page headers `/courses`, `/students`, `/schedule`, Course и Lesson используют
+один прозрачный `AppPageHeader` без белой или градиентной карточки: крупный H1,
+подзаголовок, optional backlink и правая action-секция. Page background active
+routes является сплошным `#f5f1e8`: marketing noise и цветные gradients
+удалены. Sticky product header повторяет demo shell 68 px / 20 px; кнопки и
+header controls — 40 px / 12 px / `.88rem 500`.
+
+Course, Lesson, Students и profile dialog используют один `WorkspaceTabs`.
+Tabs имеют высоту 40 px, roving keyboard navigation, horizontal scroll и явные
+`tab` → `tabpanel` ARIA-связи. Общая нижняя линия имеет толщину 1 px, а active
+tab утолщает её квадратным чёрным сегментом 3 px без rounded underline.
+Переход Course ↔ Lesson переносит focus в новый рабочий контекст и
+восстанавливает его на строке Lesson при возврате. Эти токены не меняют landing
+или auth screens.
 
 Drag-and-drop не обязателен для первого показа. Кнопки «выше/ниже» допустимы, если они надёжнее и быстрее дают законченный workflow.
 

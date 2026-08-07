@@ -282,6 +282,10 @@ ShiDao V2 application:
 ### Course Builder
 
 - `/courses` читает реальные данные;
+- `/courses`, Course и Lesson показывают одинаковые computed H1/description
+  metrics через один `AppPageHeader`; Course/Lesson сохраняют backlink и actions;
+- Course и Lesson tabs используют одну baseline 1 px и квадратный чёрный active
+  segment 3 px, а на mobile скроллятся внутри strip без document overflow;
 - owner открывает Course, другой owner не может;
 - Lesson/Components загружаются;
 - private Component отсутствует в Student Screen;
@@ -327,6 +331,9 @@ ShiDao V2 application:
 
 - active Teacher видит меню `Расписание / Ученики / Курсы` и открывает
   `/schedule` и `/students`;
+- `/schedule` и `/students` используют те же computed page-header metrics, что
+  `/courses`, Course и Lesson; «Назначить урок в курсе» и contextual
+  «Новый ученик / Новая группа» находятся в header action-секции;
 - Parent и transitional Student не видят teacher-only пункты и при прямом
   открытии этих routes возвращаются в `/courses`;
 - взрослый без профиля уходит в `/onboarding`, Guest — в `/login`;
@@ -339,7 +346,8 @@ ShiDao V2 application:
   не читает legacy `student/class/class_student`;
 - вкладки «Ученики / Группы» переключают таблицы без создания второго типа
   ученика; поиск, фильтр по группе и сортировка работают, а строка ученика
-  показывает максимум две группы и корректный счётчик «ещё N»;
+  показывает максимум две группы и корректный счётчик «ещё N»; tabs повторяют
+  тот же 1 px baseline / square 3 px active-segment contract, что Course/Lesson;
 - клик по строке ученика открывает dialog «Профиль / История»; профиль можно
   включить сразу в несколько групп, а история содержит только записи текущего
   teacher;

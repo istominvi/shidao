@@ -861,9 +861,7 @@ export function CourseWorkspaceClient({
       ) : (
         <>
           <AppPageHeader
-            className="course-builder-page-header workspace-page-header"
-            backHref={ROUTES.courses}
-            backLabel="Курсы"
+            back={{ type: "link", href: ROUTES.courses, label: "Курсы" }}
             title={course.title}
             description={`Создано уроков: ${course.lessonCount} из ${course.targetLessonCount} · готовых вложений: ${readyAttachmentCount}`}
             actions={

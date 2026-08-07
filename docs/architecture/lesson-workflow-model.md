@@ -330,12 +330,16 @@ Visual contract Course routes не меняет эту навигационну�
 
 - page background — сплошной `#f5f1e8` без цветных marketing gradients;
 - product header — sticky demo shell высотой 68 px с радиусом 20 px;
-- основные кнопки, header controls и tabs — высотой 40 px с радиусом 12 px и
-  единым шрифтом `.88rem/500`;
-- заголовочные секции Course и Lesson прозрачны, а их H1 используют
-  системный sans-serif, вес 400 и отдельный detail scale;
-- visual tokens переиспользуются Course routes и teacher teaching-hub shells,
-  но не меняют landing, Auth, Settings или полноэкранный Student Screen.
+- `AppPageHeader` задаёт один прозрачный layout для `/courses`, `/students`,
+  `/schedule`, Course и Lesson: крупный системный H1 веса 400, подзаголовок,
+  optional backlink и правую action-секцию;
+- основные кнопки и header controls — высотой 40 px с радиусом 12 px и шрифтом
+  `.88rem/500`;
+- `WorkspaceTabs` задаёт общий 40 px tab/tabpanel contract для Course, Lesson,
+  Students и profile dialog: roving keyboard focus, horizontal scroll, базовая
+  линия 1 px и квадратный чёрный active-сегмент 3 px на этой же линии;
+- visual tokens не меняют landing, Auth, Settings или полноэкранный Student
+  Screen.
 
 ## Teaching hub navigation boundary
 
@@ -345,13 +349,15 @@ Current repository развивает teacher-only `/schedule` и `/students`, �
 - server layout допускает только active teacher profile; Parent и transitional
   Student перенаправляются в `/courses`;
 - `/schedule` проецирует LessonRun выбранного дня; отдельной таблицы Schedule
-  event нет;
+  event нет; action перехода к назначению находится в общей header
+  action-секции, а date navigator — ниже;
 - `/students` является единым справочником TeacherLearner/LearnerProfile и
   LearnerGroup: вкладки «Ученики / Группы», поиск, фильтр по группе, сортировка
   и управление relation не создают второй тип ученика; строка ученика показывает
   до двух групп и «ещё N», а имя и archive state принадлежат relation конкретного
   преподавателя; ученика можно создать, изменить и убрать из списка, а для групп
-  доступен CRUD;
+  доступен CRUD; header action меняется между «Новый ученик» и «Новая группа»
+  вместе с выбранной вкладкой;
 - клик по строке открывает dialog «Профиль / История»; membership допускает
   несколько групп, а history panel читает только LearningRecord, записанные
   текущим преподавателем;

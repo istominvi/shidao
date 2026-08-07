@@ -164,14 +164,19 @@ Account
 - «Источники» честно показывают пустое состояние до parsing/RAG. «История»
   показывает завершённые проведения всех Lessons; change history авторских
   правок ещё не реализована.
-- В текущем source страницы `/courses`, Course и Lesson используют один
-  сплошной фон `#f5f1e8`; marketing noise и цветные page gradients на этих
-  маршрутах отсутствуют.
+- В текущем source страницы `/courses`, `/students`, `/schedule`, Course и
+  Lesson используют один сплошной фон `#f5f1e8`; marketing noise и цветные page
+  gradients на этих маршрутах отсутствуют.
 - Course header следует demo-контракту: sticky shell высотой 68 px, белая
   полупрозрачная поверхность, радиус 20 px и контролы 40 px с радиусом 12 px.
-- Заголовочные секции Course и Lesson остаются прозрачными; заголовки списка,
-  Course и Lesson используют системный sans-serif с demo-размерами и весом
-  400, а кнопки и вкладки — единый шрифт `.88rem/500`.
+- Один `AppPageHeader` задаёт прозрачную заголовочную секцию, единый крупный H1,
+  подзаголовок, optional backlink и правую action-секцию для `/courses`,
+  `/students`, `/schedule`, Course и Lesson. Course/Lesson сохраняют backlink,
+  а top-level разделы не создают искусственную обратную ссылку.
+- Один `WorkspaceTabs` используется в Course, Lesson, Students и profile dialog,
+  сохраняет roving keyboard/ARIA contract и горизонтальный scroll. Выбранная
+  вкладка утолщает общую нижнюю линию квадратным чёрным сегментом 3 px без
+  скруглённой рамки; кнопки и вкладки используют шрифт `.88rem/500`.
 
 ### Teacher navigation, Расписание, Ученики и аудитория
 
@@ -183,6 +188,8 @@ Account
   `/onboarding`, Parent и transitional Student — в `/courses`.
 - `/schedule` показывает реальные LessonRun выбранного локального дня. Это
   проекция тех же проведений, а не отдельная таблица Schedule events.
+- Action «Назначить урок в курсе» находится в общей page-header action-секции;
+  переключение дня остаётся отдельным toolbar ниже заголовка.
 - `/students` показывает единый teacher-scoped projection
   `TeacherLearner + LearnerProfile` во вкладках «Ученики / Группы». Таблица
   учеников поддерживает поиск, фильтр по группе и сортировку; в строке видны до
@@ -193,6 +200,8 @@ Account
   ограничена LearningRecord текущего преподавателя. Ученика можно создать,
   изменить и убрать из своего списка; для групп доступен полный CRUD. Видимое
   имя принадлежит relation текущего преподавателя, а не глобальной identity.
+- Header action на `/students` следует выбранной вкладке: «Новый ученик» или
+  «Новая группа»; поиск, фильтры и сортировка остаются в directory toolbar.
 - Product delete ученика архивирует только `teacher_learner` текущего Account:
   relation исчезает из активного справочника, групп и будущих Course audiences,
   а canonical LearnerProfile, его LearningRecord и состав уже назначенного Run
