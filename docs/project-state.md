@@ -4,10 +4,19 @@
 **Актуально на:** 7 августа 2026 года
 **Активная ветка:** `main`
 **Рабочее приложение:** `https://v2.shidao.ru`
-**Текущий функциональный application release:** `757044c`
-**Последний полный automated/browser gate:** `757044c`
+**Текущий функциональный application release:** `0c426ff`
+**Последний полный automated/browser gate:** `0c426ff`
 
-**Current deployed slice:** поверх group/audience baseline введены canonical
+**Current deployed visual slice:** `/courses`, `/students`, `/schedule`, Course
+и Lesson используют единый `AppPageHeader`; Course, Lesson и Students используют
+единый `WorkspaceTabs` с baseline 1 px и квадратным active-сегментом 3 px.
+Coolify развернул точный application SHA
+`0c426ffdae4f16fab1c77b8070b51a887b387992`; authenticated browser postflight
+подтвердил одинаковые computed header metrics на пяти поверхностях, contextual
+actions Students/Schedule, общий tab contract и пустую browser console. Схема БД
+в этом visual slice не менялась.
+
+**Current data slice:** поверх group/audience baseline введены canonical
 `LearnerProfile`, teacher-local relation `teacher_learner` и явный provenance
 `learning_record.recorded_by_account_id`. Существующие профили сохраняются 1:1,
 но teacher ownership/name/archive перенесены в relation; account claim, merge и
