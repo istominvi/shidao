@@ -344,8 +344,8 @@ Visual contract Course routes не меняет эту навигационну�
 - visual tokens не меняют landing, Auth, Settings или полноэкранный Student
   Screen.
 
-Этот visual contract описывает current source implementation; production
-release и authenticated browser postflight для follow-up ещё pending.
+Этот visual contract развёрнут и подтверждён authenticated browser postflight
+на точном application release `77870e3`.
 
 ## Teaching hub navigation boundary
 

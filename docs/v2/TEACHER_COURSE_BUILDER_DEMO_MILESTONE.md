@@ -193,8 +193,8 @@ Course, Lesson, Students и profile dialog используют один `Worksp
 Tabs имеют высоту 40 px, roving keyboard navigation, horizontal scroll и явные
 `tab` → `tabpanel` ARIA-связи. Общая нижняя линия чёрная, имеет толщину 1 px и
 inline-inset 12 px; active tab утолщает её квадратным чёрным сегментом 4 px без
-radius. Это current source acceptance contract; release и browser postflight follow-up ещё
-pending.
+radius. Это current deployed acceptance contract, подтверждённый browser
+postflight точного application release `77870e3`.
 Переход Course ↔ Lesson переносит focus в новый рабочий контекст и
 восстанавливает его на строке Lesson при возврате. Эти токены не меняют landing
 или auth screens.
