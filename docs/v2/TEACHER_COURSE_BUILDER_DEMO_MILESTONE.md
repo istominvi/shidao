@@ -4,9 +4,9 @@
 - **Роль:** acceptance baseline перед AI/RAG/Homework/live
 - **Целевая аудитория демонстрации:** заказчик
 - **Рабочий адрес:** `v2.shidao.ru`
-- **Проверенный application release:** `65edf0d`
-- **Current visual refinement:** flat demo background/header/type проверены
-  локально и ожидают отдельного deploy/postflight
+- **Проверенный application release:** `0c426ff`
+- **Current visual refinement:** единые `AppPageHeader` и `WorkspaceTabs`
+  развёрнуты в Coolify и прошли authenticated production postflight
 
 ## 1. Результат для заказчика
 
