@@ -4,22 +4,25 @@
 **Актуально на:** 7 августа 2026 года
 **Активная ветка:** `main`
 **Рабочее приложение:** `https://v2.shidao.ru`
-**Текущий deployed application release:** `9393080`
-**Последний полный automated/browser gate:** `9393080`
+**Текущий функциональный application release:** `757044c`
+**Последний полный automated/browser gate:** `757044c`
 
-**Current repository:** поверх deployed group/audience slice введены canonical
+**Current deployed slice:** поверх group/audience baseline введены canonical
 `LearnerProfile`, teacher-local relation `teacher_learner` и явный provenance
 `learning_record.recorded_by_account_id`. Существующие профили сохраняются 1:1,
 но teacher ownership/name/archive перенесены в relation; account claim, merge и
 observer access не добавлены.
 
-**Последний подтверждённый deployed baseline:** поверх базового LessonRun slice
-добавлены reusable LearnerGroup, каталог учеников, смешанная Course audience и
-history-aware AI-context. Forward migration
-`20260806220726_learner_groups_mixed_course_audience.sql` применена к production
-ShiDao DB 7 августа 2026 года и прошла DB/RLS/ACL/PostgREST postflight. Coolify
-развернул точный application SHA `9393080`; HTTP и authenticated browser
-postflight подтвердили новые UI/API-поверхности без сохранения тестовых данных.
+Forward migration `20260807033034_canonical_learner_profile.sql` применена к
+production ShiDao DB 7 августа 2026 года после создания backup и прошла
+DB/RLS/ACL/PostgREST postflight. Coolify развернул точный application SHA
+`757044cf6f8c70aca329e52d48915f6d5b5b5844`; authenticated browser postflight
+подтвердил вкладки и реальные данные Students, формы ученика и группы без
+изменения пользовательских данных и без console warning/error.
+
+Предыдущий reusable Groups/mixed audience baseline был развёрнут в release
+`9393080` с migration
+`20260806220726_learner_groups_mixed_course_audience.sql`.
 
 Базовый LessonRun/LearningRecord slice был развёрнут ранее в release `fa91371`
 с migration `20260806190044_lesson_runs_learning_records.sql`.
@@ -704,6 +707,25 @@ relationship queries увидели все три новые таблицы. Coo
 `939308070323b6e920a870b503a2911dd32c654a` без restart; authenticated browser
 прочитал каталог, формы ученика/группы и mixed Course audience без console или
 runtime errors и без изменения пользовательских данных.
+
+Release `757044c` прошёл typecheck, lint, 275/275 unit/contract tests,
+production build и строгие 10/10 browser smoke. Canonical learner migration
+проверена на isolated PostgreSQL, включая сохранение исторического
+`learning_record.updated_at`, а затем применена транзакционно к production
+PostgreSQL 15.8 от имени владельца таблиц. Перед изменением создан backup
+`/root/shidao-db-backups/shidao-public-before-canonical-learner-20260807T042327Z.dump`;
+SHA-256 применённого migration file —
+`5cadc8e09834151dff0a2c05f3c24dca5a2c1d94fed9a3224bfb7e7ad43494b2`.
+Postflight подтвердил `teacher_learner`, nullable unique
+`learner_profile.account_id`, обязательный
+`learning_record.recorded_by_account_id`, backfill существующей связи 1:1,
+RLS/ACL и недоступность чужой relation/history для второго JWT. PostgREST
+увидел новую relation и canonical profile shape. Coolify завершил deployment и
+запустил exact image
+`g9x4d9zn60jv35r7zf0xl6xj:757044cf6f8c70aca329e52d48915f6d5b5b5844`.
+Authenticated browser прочитал реального ученика и группу, переключил обе
+вкладки и открыл формы управления без сохранения данных; console warning/error
+не обнаружены.
 
 ## 10. Правило обновления этого документа
 

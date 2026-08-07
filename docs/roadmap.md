@@ -50,7 +50,7 @@
   Базовый LessonRun был выпущен в `fa91371`, а reusable Groups, mixed audience
   и history-aware AI-context — в `9393080`; оба release прошли
   HTTP/authenticated browser postflight без записи тестовых данных.
-- Current repository поверх этого baseline разделяет canonical
+- Deployed release `757044c` поверх этого baseline разделяет canonical
   `learner_profile` и teacher-local `teacher_learner`, а
   `learning_record.recorded_by_account_id` сохраняет recorder. Существующие
   profiles backfilled 1:1; account claim, merge и observer access не входят в

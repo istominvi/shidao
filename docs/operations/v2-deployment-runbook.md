@@ -76,11 +76,12 @@ route guard для Guest, adult без профиля, Parent и transitional St
 
 Canonical learner identity release является coupled DB+web change: repository
 перестаёт читать teacher ownership/name/archive из `learner_profile`, использует
-`teacher_learner`, а LearningRecord требует `recorded_by_account_id`. До его
-деплоя migration `20260807033034_canonical_learner_profile.sql` и её checksum
-фиксируются в hand-off; старый web нельзя
-считать автоматически совместимым с contracted schema после удаления прежних
-columns.
+`teacher_learner`, а LearningRecord требует `recorded_by_account_id`. Release
+`757044c` применён после migration
+`20260807033034_canonical_learner_profile.sql`; её checksum и postflight
+зафиксированы в `docs/project-state.md`. При повторении процедуры migration
+должна предшествовать новому web image: старый web нельзя считать автоматически
+совместимым с contracted schema после удаления прежних columns.
 
 Release standalone demo обязан проверить root и прямые `/students`, `/courses`,
 Course/Lesson deep links, reload без redirect, OG asset, `robots.txt`/noindex и
