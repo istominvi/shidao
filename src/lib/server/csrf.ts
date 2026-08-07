@@ -1,16 +1,4 @@
-/**
- * Stateless CSRF defense for state-changing requests.
- *
- * The app authenticates via the `shidao_session` cookie (SameSite=Lax), which
- * already blocks most cross-site cookie-bearing POSTs in modern browsers. This
- * module adds defense-in-depth by validating the request `Origin` (and, as a
- * fallback, `Sec-Fetch-Site`) against the application's own host for every
- * unsafe HTTP method. It is pure and Edge-safe so it can run in middleware.
- *
- * Next.js server actions already perform an equivalent Origin/Host check
- * internally; this guard primarily protects the `/api/*` route handlers and
- * plain HTML form posts, which have no built-in protection.
- */
+import { V2_APP_ORIGIN } from "@/lib/deployment-access";
 
 const UNSAFE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
@@ -20,65 +8,58 @@ export function isUnsafeMethod(method: string): boolean {
 
 export type CsrfCheckInput = {
   method: string;
-  /** `Origin` request header, if any. */
   origin: string | null;
-  /** `Sec-Fetch-Site` request header, if any. */
   secFetchSite: string | null;
-  /** `Host` request header (origin server host). */
   host: string | null;
-  /** `X-Forwarded-Host` request header (host presented by the edge proxy). */
   forwardedHost: string | null;
-  /**
-   * Configured application URL (NEXT_PUBLIC_APP_URL). Its host is
-   * authoritative when valid; request hosts are the local/dev fallback.
-   */
   configuredAppUrl?: string | null;
+  requestUrl?: string | null;
+  environment?: string;
 };
 
-function hostFromUrl(value: string | null | undefined): string | null {
+function originFromUrl(value: string | null | undefined): string | null {
   if (!value) return null;
   try {
-    return new URL(value).host.toLowerCase();
+    const parsed = new URL(value);
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+      return null;
+    }
+    return parsed.origin.toLowerCase();
   } catch {
     return null;
   }
 }
 
-function collectAllowedHosts(input: CsrfCheckInput): Set<string> {
-  const configuredHost = hostFromUrl(input.configuredAppUrl);
-  if (configuredHost) return new Set([configuredHost]);
-
-  const hosts = new Set<string>();
-  for (const raw of [input.forwardedHost, input.host]) {
-    if (raw) hosts.add(raw.trim().toLowerCase());
+function resolveAllowedOrigin(input: CsrfCheckInput): string | null {
+  if ((input.environment ?? process.env.NODE_ENV) === "production") {
+    // Production has one application origin. Runtime configuration may never
+    // widen this boundary to landing, demo, brand/model, or an unknown host.
+    return V2_APP_ORIGIN;
   }
-  return hosts;
+
+  return (
+    originFromUrl(input.configuredAppUrl) ?? originFromUrl(input.requestUrl)
+  );
 }
 
-/**
- * Returns true when an unsafe request must be rejected as cross-origin.
- *
- * Decision order:
- *  1. Safe methods (GET/HEAD/OPTIONS) are always allowed.
- *  2. If an `Origin` header is present, its host must match an allowed host.
- *     A malformed `Origin` is rejected.
- *  3. Otherwise, if `Sec-Fetch-Site` is present, reject only `cross-site`.
- *  4. If neither header is present (non-browser client), allow — the
- *     SameSite=Lax session cookie remains the backstop. This is a deliberate,
- *     documented tradeoff, not an oversight.
- */
+/** Returns true when an unsafe request must be rejected. */
 export function isCrossOriginRequest(input: CsrfCheckInput): boolean {
   if (!isUnsafeMethod(input.method)) return false;
 
+  const environment = input.environment ?? process.env.NODE_ENV;
   if (input.origin) {
-    const originHost = hostFromUrl(input.origin);
-    if (!originHost) return true;
-    return !collectAllowedHosts(input).has(originHost);
+    const origin = originFromUrl(input.origin);
+    const allowedOrigin = resolveAllowedOrigin(input);
+    return !origin || !allowedOrigin || origin !== allowedOrigin;
   }
+
+  // Browsers send Origin for mutating fetch/form requests. Missing Origin in
+  // production is therefore rejected instead of trusting spoofable Host or
+  // Sec-Fetch-Site headers.
+  if (environment === "production") return true;
 
   if (input.secFetchSite) {
     return input.secFetchSite.trim().toLowerCase() === "cross-site";
   }
-
   return false;
 }

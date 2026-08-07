@@ -18,9 +18,12 @@ export const ROUTES = {
   students: "/students",
   courses: "/courses",
   coursesNew: "/courses/new",
+  learningProfile: "/learning-profile",
+  observing: "/observing",
   settings: "/settings",
   settingsSecurity: "/settings/security",
   settingsProfile: "/settings/profile",
+  settingsObservers: "/settings/observers",
 } as const;
 
 export const AUTH_MESSAGES = {
@@ -47,6 +50,12 @@ export function isStudentInternalAuthEmail(email: string | null | undefined) {
   if (!email) return false;
   const [, domain = ""] = normalizeIdentifier(email).split("@");
   return domain === STUDENT_AUTH_DOMAIN;
+}
+
+export function isInternalAuthEmail(email: string | null | undefined) {
+  if (!email) return false;
+  const [, domain = ""] = normalizeIdentifier(email).split("@");
+  return domain.endsWith(".shidao.internal");
 }
 
 export function toProfileLabel(profile: ProfileKind) {

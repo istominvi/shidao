@@ -21,12 +21,14 @@ deployed и repository scope, ограничения и implementation map за�
 [`docs/project-state.md`](../project-state.md), а последовательность работ — в
 [`docs/roadmap.md`](../roadmap.md).
 
-Account claim, profile merge, observer relations, live-проведение,
-расширенные учебные метрики, persisted Homework, parsing/RAG, подписки, billing
-и внешний MCP/API остаются
-**будущим направлением**, пока соответствующая возможность не появилась в
-project-state и current schema. Настоящее время в остальных стратегических
-формулировках описывает желаемый продукт, а не подтверждает готовность функции.
+Current repository candidate завершает roleless Account/profile identity,
+recipient-bound claim/child activation, physical merge, archive/restore,
+self/observer history/progress и subject-controlled AI consent. Он ещё не
+production: deployed status появится только после phased M1–M4 rollout, exact
+Coolify SHA и postflight в project-state. Learner Course consumption,
+live-проведение, richer Component metrics, persisted Homework, parsing/RAG,
+подписки, billing и внешний MCP/API остаются **later**. Настоящее время в
+стратегических разделах не заменяет implementation/deployment evidence.
 
 ---
 
@@ -405,12 +407,14 @@ ShiDao можно воспринимать как сочетание:
 
 Это проще для пользователя и лучше соответствует будущему, в котором границы между преподаванием, родительским участием и самостоятельным обучением становятся менее жёсткими.
 
-Current architecture уже проводит эту границу физически: canonical
-LearnerProfile не принадлежит преподавателю, а `TeacherLearner` хранит только
-его локальное имя и состояние работы. `LearningRecord` отдельно знает, какой
-Account записал наблюдение. При этом автоматическое объединение людей, claim
-аккаунта и доступ к чужим observations намеренно ещё не включены: единая
-identity не является автоматическим согласием на общий доступ.
+Current repository candidate проводит эту границу физически: каждый Account
+имеет ровно один canonical LearnerProfile, `TeacherLearner` хранит только
+teacher-local имя/state, а `LearningRecord` отдельно знает recorder. Discovery
+создаёт pending request, physical merge требует recipient consent, observer —
+отдельный read-only grant, а cross-provider history — отдельный Course-scoped
+consent. Единая identity по-прежнему не является автоматическим согласием на
+общий доступ. Production contour получит эту модель только после phased
+rollout/postflight.
 
 ---
 
@@ -590,6 +594,12 @@ analysis появятся позднее.
 ---
 
 # 11. Как работает родитель: короткий workflow
+
+Identity-часть этих сценариев уже реализована в repository candidate без
+Parent role: отдельный child Account login/PIN, recovery delegate, observer
+invite/read-only progress и revoke. Назначение/потребление Course ребёнком,
+Homework и AI-conducted lesson остаются later, поэтому полный сценарий ниже —
+целевая продуктовая последовательность, а не текущий production smoke.
 
 ## Сценарий A. Родитель занимается сам
 
@@ -938,7 +948,7 @@ ShiDao строится не как оболочка над одной модн�
 
 # 18. Текущее ядро и границы следующих версий
 
-## Уже работает
+## Уже работает в deployed baseline
 
 1. Auth и один current Account на пользователя.
 2. Реальные Course в PostgreSQL и draft creation form.
@@ -950,7 +960,7 @@ ShiDao строится не как оболочка над одной модн�
    Screen Slides.
 8. Teacher plan и Student Screen preview с reload persistence.
 9. Settings и просмотр Course materials в отдельных dialogs/actions.
-10. Teacher-only «Ученики»: canonical LearnerProfile, teacher-local
+10. «Ученики»: canonical LearnerProfile, teacher-local
     TeacherLearner names/archive, вкладки «Ученики / Группы», профиль с
     teacher-scoped history, reusable Groups и direct+group Course audience.
 11. LessonRun, повторное назначение и teacher-scoped LearningRecord history с
@@ -960,20 +970,29 @@ ShiDao строится не как оболочка над одной модн�
     `lesson.add_component`, `lesson.set_component_student_screen`,
     `lesson.reorder_component`.
 
-## Следующая продуктовая версия
+## Current repository candidate, production release next
 
-1. Закрыть legacy identity/security ACL, host allowlist и app-origin CSRF debt.
-2. Завершить universal roleless Account: один canonical profile на active
-   Account, safe discovery, offline invitation/claim, physical duplicate merge,
-   archive/restore и self-managed observers.
-3. Добавить learner-safe full history, progress из реальных records,
-   actual-duration projection и отдельный subject-controlled consent для
-   cross-provider AI без открытия teacher raw records других преподавателей.
-4. Завершить ручной teacher authoring: upload из существующего Course,
+1. Universal roleless Account с exactly-one canonical profile, Account
+   login/PIN/session boundary и одинаковой navigation.
+2. Share-code/blind-email discovery, recipient-bound offline claim/child
+   activation, physical duplicate merge и stale-safe lineage.
+3. Archive/restore, safe empty-offline delete, subject unlink/erasure reset,
+   self-managed observers и recovery delegates.
+4. Learner-safe cursor history/progress, explicit shared comments, actual
+   duration и subject-controlled cross-provider AI consent без foreign raw rows.
+5. Legacy identity/security ACL, explicit host allowlist и exact app-origin
+   CSRF hardening.
+
+Эти пункты реализованы в code/M1–M3, но должны пройти backup, phased M1–M4,
+две roleless deployments и production DB/API/browser postflight.
+
+## Следующая продуктовая версия после identity rollout
+
+1. Завершить ручной teacher authoring: upload из существующего Course,
    accessibility и UX polish.
-5. Добавить live-проведение поверх LessonRun, не создавая второй content Lesson.
-6. Реализовать persisted common Homework как отдельную Lesson surface.
-7. Добавить parsing статуса/текста загруженных источников; RAG — только после
+2. Добавить live-проведение поверх LessonRun, не создавая второй content Lesson.
+3. Реализовать persisted common Homework как отдельную Lesson surface.
+4. Добавить parsing статуса/текста загруженных источников; RAG — только после
    проверяемого extraction baseline.
 
 ## Позднее
@@ -1200,6 +1219,8 @@ repository отдельно от web deployment. Это рабочий persisted
 - улучшенный ручной Course Builder;
 - OpenRouter-assisted authoring;
 - mixed group/direct audience, scheduling, LessonRun и базовая учебная история;
+- roleless identity/observer candidate с safe connection/merge, self history,
+  real-record progress и consented AI; production rollout pending;
 - загрузка и parsing источников;
 - persisted Homework;
 - затем live-проведение и расширенные метрики учебного профиля.
@@ -1536,7 +1557,8 @@ ShiDao как инфраструктура между человеком, обр
 
 ```text
 Account
-├── claimed LearnerProfile 0..1 (claim later)
+├── canonical LearnerProfile exactly 1
+├── ObserverGrant → LearnerProfile 0..N
 ├── TeacherLearner → LearnerProfile
 ├── LearnerGroup → LearnerProfile 0..N
 └── Course
@@ -1547,6 +1569,8 @@ Account
         ├── ordered Components
         ├── Student Screen Slides
         └── LessonRun → LearningRecord
+
+Offline LearnerProfile 0..N → recipient-bound claim/child activation
 ```
 
 Course принадлежит одному Account и получает аудиторию из отдельных
@@ -1558,11 +1582,12 @@ Lesson непосредственно владеет единым ordered Compon
 или вторым authoring hierarchy. LearningRecord хранит минимальный контекст и
 результат конкретного учащегося, но не snapshot Lesson.
 
-Целевая модель добавит account claim/merge, subject-controlled observer
-access, live runtime, Homework, reusable source library, расширенные метрики, AI
-для проведения/анализа и прозрачные usage limits. Canonical ID сам по себе не
-разрешает cross-provider history или AI access. Эти возможности нельзя выдавать
-за current implementation до их появления в project-state/schema.
+Repository candidate уже добавляет account claim/merge, subject-controlled
+observer access, safe real-record progress и separate consented cross-provider
+AI; production evidence появится только после phased rollout. Live runtime,
+Homework, reusable source library, richer Component metrics, AI для проведения
+и прозрачные usage limits остаются later. Canonical ID сам по себе не разрешает
+Course access, observer access или cross-provider history.
 
 Преподаватель использует ShiDao как профессиональный инструмент.
 

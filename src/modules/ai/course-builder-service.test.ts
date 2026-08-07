@@ -177,6 +177,17 @@ function jsonProvider(
   };
 }
 
+function textProvider(value: string): RouterAiClient {
+  return {
+    async completeText() {
+      return { ...METADATA, text: value };
+    },
+    async completeJson() {
+      throw new Error("Unexpected JSON completion");
+    },
+  };
+}
+
 const LESSON_PLAN: AiLessonPlan = {
   summary: "Научиться знакомиться и представляться.",
   components: [
@@ -396,6 +407,135 @@ test("lesson plan applies canonical private components after preview", async () 
     ),
     ["staff_only", "staff_only", "staff_only"],
   );
+});
+
+test("lesson apply fails closed when shared-history consent revision changes", async () => {
+  const course = emptyCourse(1);
+  const state = inMemoryService(course);
+  const lesson = await state.service.addLesson(ACTOR, COURSE_ID, {
+    title: "Знакомство",
+    summary: "",
+  });
+  let revision = "a".repeat(64);
+  const sharedHistoryProvider = {
+    async load() {
+      return {
+        used: true,
+        revision,
+        projectionVersion: 1 as const,
+        aggregates: {
+          conductedCount: 1,
+          presentCount: 1,
+          absentCount: 0,
+          repeatCount: 0,
+          knownDurationCount: 1,
+          actualDurationMinutes: 45,
+          subjectBreakdown: [],
+        },
+        sharedCommentSummaries: ["Материал усвоен уверенно."],
+      };
+    },
+  };
+  const ai = createAiCourseBuilderService({
+    actor: ACTOR,
+    service: state.service,
+    sharedHistoryProvider,
+    provider: jsonProvider(LESSON_PROVIDER_PLAN),
+    audit: () => undefined,
+  });
+  const preview = await ai.planLesson(COURSE_ID, {
+    lessonId: lesson.id,
+    title: lesson.title,
+    instruction: "",
+  });
+  assert.equal(preview.sharedHistoryUsed, true);
+  assert.equal(preview.sharedHistoryRevision, revision);
+
+  revision = "b".repeat(64);
+  await assert.rejects(
+    ai.applyLessonPlan(COURSE_ID, {
+      lessonId: preview.lessonId,
+      title: preview.title,
+      baseContextFingerprint: preview.baseContextFingerprint,
+      sharedHistoryRevision: preview.sharedHistoryRevision,
+      baseLessonIds: preview.baseLessonIds,
+      baseComponentIds: preview.baseComponentIds,
+      plan: preview.plan,
+    }),
+    /Разрешение на общую учебную историю изменилось/,
+  );
+  assert.equal(state.course.lessons[0]?.components.length, 0);
+});
+
+test("teacher-facing AI output cannot quote a shared learner comment", async () => {
+  const sharedComment = "Материал усвоен уверенно.";
+  const sharedHistoryProvider = {
+    async load() {
+      return {
+        used: true,
+        revision: "a".repeat(64),
+        projectionVersion: 1 as const,
+        aggregates: {
+          conductedCount: 1,
+          presentCount: 1,
+          absentCount: 0,
+          repeatCount: 0,
+          knownDurationCount: 1,
+          actualDurationMinutes: 45,
+          subjectBreakdown: [],
+        },
+        sharedCommentSummaries: [sharedComment],
+      };
+    },
+  };
+  const lessonPlanWithQuote = structuredClone(LESSON_PROVIDER_PLAN);
+  lessonPlanWithQuote.summary = `Вывод: ${sharedComment}`;
+  lessonPlanWithQuote.blocks[1]!.body =
+    "Отдельный вывод: УСВОЕН — УВЕРЕННО, можно двигаться дальше.";
+
+  const lessonAi = createAiCourseBuilderService({
+    actor: ACTOR,
+    service: inMemoryService(emptyCourse()).service,
+    sharedHistoryProvider,
+    provider: jsonProvider(lessonPlanWithQuote),
+    audit: () => undefined,
+  });
+  const preview = await lessonAi.planLesson(COURSE_ID, {
+    lessonId: null,
+    title: "Знакомство",
+    instruction: "",
+  });
+  assert.doesNotMatch(
+    JSON.stringify(preview.plan).toLocaleLowerCase("ru"),
+    /материал усвоен уверенно/,
+  );
+  assert.doesNotMatch(
+    JSON.stringify(preview.plan).toLocaleLowerCase("ru"),
+    /усвоен[^а-яё0-9]+уверенно/u,
+  );
+
+  const assistantAi = createAiCourseBuilderService({
+    actor: ACTOR,
+    service: inMemoryService(emptyCourse()).service,
+    sharedHistoryProvider,
+    provider: textProvider(
+      `Рекомендация: материал усвоен уверенно. Ещё раз: усвоен — уверенно.`,
+    ),
+    audit: () => undefined,
+  });
+  const reply = await assistantAi.chat(COURSE_ID, {
+    lessonId: null,
+    messages: [{ role: "user", content: "Что делать дальше?" }],
+  });
+  assert.doesNotMatch(
+    reply.message.content.toLocaleLowerCase("ru"),
+    /материал усвоен уверенно/,
+  );
+  assert.doesNotMatch(
+    reply.message.content.toLocaleLowerCase("ru"),
+    /усвоен[^а-яё0-9]+уверенно/u,
+  );
+  assert.match(reply.message.content, /обобщённый вывод/);
 });
 
 test("lesson planning receives finalized learner history through the application service", async () => {

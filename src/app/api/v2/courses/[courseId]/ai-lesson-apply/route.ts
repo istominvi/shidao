@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAiCourseBuilderService } from "@/modules/ai/course-builder-service";
+import { sharedHistoryProvider } from "@/modules/ai/shared-history";
 import { aiApiError, runExclusiveAiApply } from "@/modules/ai/server-context";
 import {
   getCourseBuilderContext,
@@ -22,6 +23,7 @@ export async function POST(
         actor,
         service,
         learningHistoryService: createLessonRunsServiceForActor(actor),
+        sharedHistoryProvider,
       }).applyLessonPlan(courseId, input),
     );
     return NextResponse.json({ result });

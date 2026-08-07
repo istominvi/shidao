@@ -24,12 +24,20 @@ export function resolveClientPostLoginRoute(
 export function afterSignup(params: {
   requiresEmailConfirmation: boolean;
   email: string;
+  next?: string | null;
+  hasSession?: boolean;
 }) {
+  const next = toSafePath(params.next, ROUTES.courses);
+
   if (params.requiresEmailConfirmation) {
-    return `${ROUTES.joinCheckEmail}?email=${encodeURIComponent(params.email)}`;
+    const search = new URLSearchParams({ email: params.email, next });
+    return `${ROUTES.joinCheckEmail}?${search.toString()}`;
   }
 
-  return `${ROUTES.login}?registered=1`;
+  if (params.hasSession) return next;
+
+  const search = new URLSearchParams({ registered: "1", next });
+  return `${ROUTES.login}?${search.toString()}`;
 }
 
 export function afterConfirm(type: string) {
@@ -57,16 +65,5 @@ export function afterLogout() {
 }
 
 export function onAuthPageWhenAuthenticated(resolution: AccessResolution) {
-  if (resolution.status === "adult-without-profile") {
-    return ROUTES.onboarding;
-  }
-
-  if (
-    resolution.status === "adult-with-profile" ||
-    resolution.status === "student"
-  ) {
-    return ROUTES.courses;
-  }
-
-  return null;
+  return resolution.status === "account" ? ROUTES.courses : null;
 }

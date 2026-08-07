@@ -16,10 +16,15 @@ export function Alert({
   role,
   ...props
 }: AlertProps) {
-  const semanticRole = role ?? (tone === "error" || tone === "warning" ? "alert" : "status");
+  const semanticRole =
+    role ?? (tone === "error" || tone === "warning" ? "alert" : "status");
 
   return (
-    <div className={classNames("app-alert", `app-alert-${tone}`, className)} role={semanticRole} {...props}>
+    <div
+      className={classNames("app-alert", `app-alert-${tone}`, className)}
+      role={semanticRole}
+      {...props}
+    >
       {title ? <p className="app-alert-title">{title}</p> : null}
       {children ? <div className="app-alert-content">{children}</div> : null}
     </div>

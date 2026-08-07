@@ -1,13 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
   DEMO_PUBLIC_SURFACE,
+  BRAND_HOST,
   LANDING_ONLY_SURFACE,
+  MODEL_HOST,
   PROJECT_IN_DEVELOPMENT_PATH,
   PUBLIC_SURFACE_HEADER,
   isDemoHost,
   isDemoPublicAsset,
+  isIdentityInvitationPage,
   isV2AppHost,
   normalizeRequestHost,
+  resolveDeploymentHostPolicy,
   resolvePrimaryHostRequestPolicy,
 } from "@/lib/deployment-access";
 import { isCrossOriginRequest, isUnsafeMethod } from "@/lib/server/csrf";
@@ -31,16 +35,51 @@ function publicSurfaceHeaders(
 
 const PRIVATE_SURFACE_ROBOTS_POLICY = "noindex, nofollow, noarchive";
 
+function blockedHostResponse() {
+  return NextResponse.json(
+    { error: "Недопустимый адрес запроса." },
+    {
+      status: 421,
+      headers: {
+        "Cache-Control": "no-store",
+        "X-Robots-Tag": PRIVATE_SURFACE_ROBOTS_POLICY,
+      },
+    },
+  );
+}
+
 /**
  * Global CSRF guard: rejects cross-origin state-changing requests before they
  * reach any route handler or server action. See `@/lib/server/csrf` for the
  * decision logic. Safe (GET/HEAD/OPTIONS) requests pass through untouched.
  */
 export function middleware(req: NextRequest) {
-  const requestHost = normalizeRequestHost(
-    req.headers.get("x-forwarded-host") ?? req.headers.get("host") ?? "",
+  const directHost = normalizeRequestHost(req.headers.get("host"));
+  const forwardedHost = normalizeRequestHost(
+    req.headers.get("x-forwarded-host"),
   );
+
+  if (
+    process.env.NODE_ENV === "production" &&
+    directHost &&
+    forwardedHost &&
+    directHost !== forwardedHost
+  ) {
+    return blockedHostResponse();
+  }
+
+  const requestHost = forwardedHost || directHost;
   const isDirectBrandRoute = req.nextUrl.pathname === "/brand";
+
+  if (
+    resolveDeploymentHostPolicy(
+      requestHost,
+      req.nextUrl.pathname,
+      process.env.NODE_ENV,
+    ) === "blocked"
+  ) {
+    return blockedHostResponse();
+  }
 
   const primaryHostPolicy = resolvePrimaryHostRequestPolicy(
     requestHost,
@@ -106,7 +145,7 @@ export function middleware(req: NextRequest) {
     });
   }
 
-  if (requestHost === "brand.shidao.ru" && req.nextUrl.pathname === "/") {
+  if (requestHost === BRAND_HOST && req.nextUrl.pathname === "/") {
     const brandUrl = req.nextUrl.clone();
     const requestHeaders = new Headers(req.headers);
     requestHeaders.set("x-shidao-public-surface", "brand");
@@ -118,7 +157,7 @@ export function middleware(req: NextRequest) {
     });
   }
 
-  if (requestHost === "model.shidao.ru" && req.nextUrl.pathname === "/") {
+  if (requestHost === MODEL_HOST && req.nextUrl.pathname === "/") {
     const modelUrl = req.nextUrl.clone();
     modelUrl.pathname = "/model";
     return NextResponse.rewrite(modelUrl);
@@ -183,6 +222,8 @@ export function middleware(req: NextRequest) {
       // When it is absent (for example in local development), csrf.ts falls
       // back to the request Host / X-Forwarded-Host values above.
       configuredAppUrl: process.env.NEXT_PUBLIC_APP_URL ?? null,
+      requestUrl: req.nextUrl.toString(),
+      environment: process.env.NODE_ENV,
     })
   ) {
     return NextResponse.json(
@@ -201,7 +242,15 @@ export function middleware(req: NextRequest) {
     });
   }
 
-  return withV2NoIndex(NextResponse.next(), requestHost);
+  const response = withV2NoIndex(NextResponse.next(), requestHost);
+  if (
+    isV2AppHost(requestHost) &&
+    isIdentityInvitationPage(req.nextUrl.pathname)
+  ) {
+    response.headers.set("Cache-Control", "no-store");
+    response.headers.set("Referrer-Policy", "no-referrer");
+  }
+  return response;
 }
 
 export const config = {

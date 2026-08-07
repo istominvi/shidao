@@ -2,10 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { ROUTES } from "@/lib/auth";
 import { apiError, parseJsonWithSchema } from "@/lib/server/api";
 import { getPublicSiteUrl } from "@/lib/server/auth-config";
+import { requestCurrentAccountEmailChange } from "@/lib/server/account-auth";
 import { readAppSession } from "@/lib/server/app-session";
 import { hitRateLimit } from "@/lib/server/rate-limit";
 import { changeEmailPayloadSchema } from "@/lib/server/validation";
-import { requestEmailChangeForUser } from "@/lib/server/supabase-admin";
 
 export const runtime = "nodejs";
 
@@ -45,7 +45,8 @@ export async function POST(req: NextRequest) {
       `${ROUTES.settingsProfile}?emailChangeRequested=1`,
     );
 
-    await requestEmailChangeForUser({
+    await requestCurrentAccountEmailChange({
+      actorAuthUserId: session.uid,
       currentEmail: session.email,
       currentPassword,
       newEmail,
@@ -54,11 +55,14 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ ok: true });
   } catch (error) {
-    const message =
-      error instanceof Error
-        ? error.message
-        : "Не удалось запросить смену email.";
-    const status = message.includes("подтвердить текущий пароль") ? 400 : 503;
-    return apiError(status, message);
+    const invalidCredential =
+      error instanceof Error &&
+      error.message === "Не удалось подтвердить текущий пароль.";
+    return apiError(
+      invalidCredential ? 400 : 503,
+      invalidCredential
+        ? "Не удалось подтвердить текущий пароль."
+        : "Не удалось запросить смену email.",
+    );
   }
 }

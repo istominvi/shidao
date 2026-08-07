@@ -1,3 +1,4 @@
+import { isIP } from "node:net";
 import { NextRequest } from "next/server";
 
 type RateLimitConfig = {
@@ -12,20 +13,49 @@ type Bucket = {
 };
 
 const buckets = new Map<string, Bucket>();
+const MAX_BUCKETS = 10_000;
+
+function normalizeIp(value: string | null | undefined) {
+  const candidate = value?.trim();
+  if (!candidate || candidate.length > 64) return null;
+  if (isIP(candidate)) return candidate.toLowerCase();
+
+  const bracketed = /^\[([^\]]+)](?::\d{1,5})?$/.exec(candidate);
+  if (bracketed?.[1] && isIP(bracketed[1])) {
+    return bracketed[1].toLowerCase();
+  }
+
+  const ipv4WithPort = /^(\d{1,3}(?:\.\d{1,3}){3}):\d{1,5}$/.exec(candidate);
+  return ipv4WithPort?.[1] && isIP(ipv4WithPort[1]) ? ipv4WithPort[1] : null;
+}
 
 function getClientIp(req: NextRequest) {
-  const forwardedFor = req.headers.get("x-forwarded-for");
-  if (forwardedFor) {
-    const first = forwardedFor.split(",")[0]?.trim();
-    if (first) return first;
+  const realIp = normalizeIp(req.headers.get("x-real-ip"));
+  if (realIp) return realIp;
+
+  const forwardedFor = req.headers.get("x-forwarded-for")?.split(",");
+  if (!forwardedFor) return "unknown";
+  for (let index = forwardedFor.length - 1; index >= 0; index -= 1) {
+    const ip = normalizeIp(forwardedFor[index]);
+    if (ip) return ip;
   }
-  const realIp = req.headers.get("x-real-ip")?.trim();
-  return realIp || "unknown";
+  return "unknown";
+}
+
+function bucketKey(scope: string, clientIp: string, now: number) {
+  const desired = `${scope}:${clientIp}`;
+  if (buckets.has(desired)) return desired;
+  if (buckets.size < MAX_BUCKETS) return desired;
+
+  for (const [key, bucket] of buckets) {
+    if (bucket.resetAt <= now) buckets.delete(key);
+  }
+  return buckets.size < MAX_BUCKETS ? desired : `${scope}:overflow`;
 }
 
 export function hitRateLimit(req: NextRequest, config: RateLimitConfig) {
   const now = Date.now();
-  const key = `${config.key}:${getClientIp(req)}`;
+  const key = bucketKey(config.key, getClientIp(req), now);
   const existing = buckets.get(key);
 
   if (!existing || existing.resetAt <= now) {
@@ -34,7 +64,10 @@ export function hitRateLimit(req: NextRequest, config: RateLimitConfig) {
   }
 
   if (existing.count >= config.limit) {
-    const retryAfterSeconds = Math.max(1, Math.ceil((existing.resetAt - now) / 1000));
+    const retryAfterSeconds = Math.max(
+      1,
+      Math.ceil((existing.resetAt - now) / 1000),
+    );
     return { limited: true, retryAfterSeconds };
   }
 

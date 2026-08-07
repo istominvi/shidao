@@ -9,5 +9,8 @@ export type TeacherSchoolMembershipLite = {
 export function pickTeacherPersonalSchoolMembership(
   memberships: TeacherSchoolMembershipLite[],
 ): TeacherSchoolMembershipLite | null {
-  return memberships.find((membership) => membership.schoolKind === "personal") ?? null;
+  return (
+    memberships.find((membership) => membership.schoolKind === "personal") ??
+    null
+  );
 }

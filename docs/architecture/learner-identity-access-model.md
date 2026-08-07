@@ -1,411 +1,345 @@
 # Learner identity and access model
 
-**Статус:** canonical V2 architecture для учебной identity, teacher directory и
-learning history
+**Статус:** canonical V2 architecture для roleless Account, canonical learning
+identity, teacher directory, observer access и consented AI history
 
 **Дата решения:** 7 августа 2026 года
 
-**Область:** LearnerProfile / TeacherLearner / LearnerGroup / Course audience /
-LearningRecord / AI context / будущий learner access
-
-**Implementation state:** deployed release `757044c` реализует physical
-relation, backfill, RPC/RLS и teacher read model. Точный running image и
-postflight всегда сверяются по `docs/project-state.md`; будущие разделы этого
-документа не доказывают наличие schema/API в production.
+**Implementation state:** current repository содержит полный application/API/UI
+candidate и additive migrations M1–M3. Production остаётся на предыдущем
+canonical-profile release до backup, phased migration, exact Coolify deploy и
+postflight. Final M4 contract cleanup намеренно withheld до двух roleless web
+releases и read-only dependency audit. Точные deployed SHA и migration stage
+всегда сверяются по [`docs/project-state.md`](../project-state.md).
 
 ## Product decision
 
-`LearnerProfile` обозначает одного учащегося в образовательной памяти ShiDao.
-Он больше не принадлежит конкретному преподавателю. Контекст работы конкретного
-преподавателя хранится в отдельной связи `TeacherLearner`.
+`Account` — единственная login identity. «Преподаватель», «учащийся» и
+«наблюдатель» определяются отношениями/capabilities, а не взаимоисключающей
+глобальной ролью.
 
 ```text
-Account (преподаватель)
-└── TeacherLearner 0..N
-    ├── local display name
-    ├── active | archived для этого преподавателя
-    └── LearnerProfile
-        └── LearningRecord 0..N
-            └── recorded by Account
+Account
+├── exactly one linked canonical LearnerProfile
+├── owns Course 0..N
+├── TeacherLearner 0..N → LearnerProfile
+└── ObserverGrant 0..N → LearnerProfile
 
-Account (сам учащийся, позже после claim)
-└── LearnerProfile 0..1 через nullable unique account_id
+Offline LearnerProfile
+└── account_id IS NULL до recipient-bound claim/activation
 ```
 
-Это разделяет три разных факта:
+Модель разделяет четыре факта:
 
-- `learner_profile` отвечает на вопрос «о каком человеке накапливается учебная
-  история?»;
-- `teacher_learner` отвечает на вопрос «с каким учеником работает этот
-  преподаватель и как он называет его в своём справочнике?»;
-- `learning_record.recorded_by_account_id` отвечает на вопрос «кто зафиксировал
-  это наблюдение?».
+- `learner_profile` — о каком человеке накапливается учебная история;
+- `teacher_learner` — с каким человеком работает конкретный Account и как он
+  называет его в своём справочнике;
+- `learning_record.recorded_by_account_id` — кто записал raw observation;
+- `learner_observer_grant` — кому subject явно дал learner-safe read access.
 
-Один и тот же canonical profile сможет позднее быть связан с несколькими
-преподавателями без копирования учебной identity. Текущий slice не пытается
-угадать такие совпадения и не объединяет существующие профили автоматически.
+Canonical identity сама по себе не открывает Course, чужой teacher directory,
+raw history или cross-provider AI. Каждая capability имеет отдельный explicit
+boundary.
 
-## Target completion contract — next, not current
+## Universal Account invariant
 
-Целевая модель фиксирует договорённости для следующей реализации и не является
-описанием уже доступного UI.
+Current repository candidate обеспечивает:
 
-### Один Account без глобальной роли
+- Auth trigger атомарно создаёт Account, AccountSecurity/Preference и один
+  linked LearnerProfile;
+- deterministic backfill добавляет профиль каждому existing
+  `active | provisional` Account без fuzzy matching;
+- nullable unique `learner_profile.account_id` разрешает много offline profiles,
+  но не два linked profiles одному Account;
+- deferred constraint triggers на `account` и `learner_profile` требуют ровно
+  одну связь на commit для active/provisional Account;
+- direct link/unlink/delete обход запрещён trigger guard;
+- merge, safe unlink, subject erasure/reset и Auth bootstrap используют
+  lock-safe supported transaction boundary;
+- postflight `active_accounts_without_exactly_one_profile` обязан быть `0`, в
+  том числе после concurrent signup/bootstrap/reset/claim.
 
-- `Account` — единственная login identity.
-- В active V2 нет взаимоисключающих ролей Teacher/Parent/Student/Observer.
-- Любой Account может одновременно владеть Course, работать с учениками,
-  учиться сам и наблюдать несколько других LearnerProfile.
-- «Преподаватель» означает, что Account владеет Course и/или имеет
-  `teacher_learner`; «наблюдатель» означает active read-only access grant. Это
-  отношения и capabilities, а не типы пользователя.
-- Каждый active Account после bootstrap имеет ровно один linked canonical
-  LearnerProfile. Offline LearnerProfile продолжает существовать с
-  `account_id IS NULL` до claim. Это превращает правило «один Account — один
-  учебный профиль» в проверяемый invariant, а не только unique upper bound.
-- Invariant обеспечивается в DB: Account и profile создаются атомарно, deferred
-  constraint trigger или эквивалентная transaction-safe проверка требует ровно
-  один profile на commit, а direct unlink/delete запрещён. Bootstrap, merge и
-  reset используют lock-safe RPC; postflight проверяет нулевое число active
-  Account без ровно одного profile.
+Onboarding редактирует общие `display_name/locale/timezone` Account и не просит
+выбрать постоянную роль. `/courses`, `/schedule`, `/students`,
+`/learning-profile` и `/observing` доступны любому authenticated Account;
+authoring Course по-прежнему owner-only и не означает learner enrollment.
 
-### Добавление ученика и claim
+## Account credential boundary
 
-Product flow «Добавить ученика» сначала предлагает безопасно подключить
-существующий Account и только затем создать offline profile.
-
-- Основной способ discovery — rotating one-time share code/QR; opt-in exact
-  handle допустим с rate limit. Fuzzy search по имени запрещён. Код только
-  создаёт pending connection request и никогда сам не активирует relation.
-- Email создаёт blind invitation и не сообщает, зарегистрирован ли адрес.
-- Teacher connection становится active только после consent получателя.
-- Offline profile получает expiring one-time claim link. Teacher не создаёт
-  пароль и не заполняет `account_id` от имени учащегося. Claim invitation всегда
-  recipient-bound к verified email digest или target Account; unbound bearer
-  claim запрещён.
-- Для offline learner без email recipient может активировать отдельный
-  provisional learner Account и задать ему unique login + PIN/password через
-  Account credential/recovery boundary. Уже открытый Account взрослого никогда
-  не используется как learner merge target; observer request оформляется
-  отдельно. Teacher не получает secrets, а provisional Account/profile
-  активируются атомарно.
-- Token хранится только как digest, является one-time, revocable и auditable.
-- Email invitation привязан к digest verified адреса либо конкретному recipient
-  Account и не может быть перепривязан после accept. Claim screen явно сообщает,
-  что пользователь подтверждает отдельную identity учащегося; другой Account
-  получает generic fail-closed response.
-- Если Account уже имеет canonical profile, claim обязательно переходит в
-  merge preview; второго active profile у Account не появляется.
-- Pending invitations не входят в Course audience.
-
-### Physical canonical merge
-
-Merge физически переносит active data в один target profile и удаляет source
-profile row. Старый UUID сохраняется только в immutable alias/lineage metadata
-для idempotency, audit и разрешения старых ссылок.
-
-- Обычный target — linked profile Account, подтвердившего claim/merge; source
-  обязан быть unclaimed. Claimed → claimed merge запрещён в этом scope и требует
-  отдельного dual-reauth/dual-consent recovery процесса.
-- Teacher relations, group membership и Course audience дедуплицируются. Если
-  один teacher связан с обоими profiles, target name сохраняется, relation
-  active при хотя бы одной active связи, а source name остаётся только в private
-  merge audit.
-- Unclaimed source не может иметь observer/AI grants; неожиданное наличие fail
-  closed, а target grants не изменяются.
-- LearningRecord переносятся с неизменным recorder и timestamps.
-- Конфликт двух finalized records одного LessonRun всегда показывается в
-  preview. Primary сохраняет `lesson_run_id`; losing record переносится в target
-  с `lesson_run_id = NULL` и `superseded_by_record_id = primary.id`. Его
-  pedagogical/provenance поля сохраняются, metadata-only conflict audit хранит
-  record IDs, исходный LessonRun ID и resolution, а history/progress/AI
-  исключают superseded record.
-- Open/draft Run, stale preview, concurrent merge, cycle и merge чужих claimed
-  profiles должны fail closed. Пользователь сначала завершает/отменяет Run и
-  finalize/discard draft; rejected merge ничего в них не меняет.
-- Auto-merge по имени, email, телефону или похожести запрещён.
-- До merge claim можно cancel без mutation. Subject-only unlink допустим только
-  для ошибочной direct link без merge lineage, records и dependent grants; в той
-  же transaction Account получает новый пустой profile. После physical merge
-  generic split/unlink запрещён: данные source уже смешаны с target, а erasure
-  всей lineage не является undo.
-
-### Observer и self access
-
-Observer — Account с отзываемым read-only grant на конкретный LearnerProfile.
-
-- Только Account, связанный с profile через `learner_profile.account_id`, может
-  выдать или отозвать observer access.
-- Teacher relation никогда не создаёт observer access автоматически.
-- Один Account может наблюдать несколько profiles; один profile может иметь
-  несколько observers.
-- Subject может дать связи свободную подпись вроде «мама», «бабушка» или
-  «тренер». Это только display label и никогда не участвует в authorization.
-- Recipient может принять/отклонить invitation и отказаться от собственного
-  observer access; это lifecycle своей relation, а не право менять учебные
-  данные.
-- Subject/observer видят finalized attendance, repeat, titles-at-time,
-  actual-duration/progress и только comments с explicit
-  `shared_with_learner_at` всей canonical lineage. Existing comments остаются
-  private после migration. Completion UI
-  обязан называть явное действие «Комментарий в учебный профиль» и объяснять
-  преподавателю видимость до публикации.
-- Это сознательная privacy-граница: recorder-scoped AI teacher может использовать
-  собственные private comments, но self/observer/cross-provider projection —
-  только explicit shared comments.
-- Observer не видит drafts, непубличные comments, recorder/Auth IDs,
-  teacher-local directory, групповой `lesson_run.teacher_report`, roster или
-  данные других учащихся и не имеет mutation capabilities.
-- Subject/observer reads идут через узкую learner-safe projection/RPC; нельзя
-  просто расширить raw `learning_record SELECT` условием `OR subject/observer`.
-
-### Progress и AI consent
-
-- V1 не создаёт пустые generic metrics JSON. Nullable ordinary
-  `lesson_run.actual_duration_minutes` заполняется только из explicit start до
-  completion либо явного teacher input для post-factum отчёта. Scheduled-time
-  fallback текущего RPC не считается реальным start; existing/unknown values
-  остаются `NULL`. Run/Course/Profile history и progress UI — consumer и не
-  подменяют unknown нулём.
-- Per-learner progress использует finalized attendance/repeat/comment и
-  `shared_with_learner_at`. `LearningRecord.metrics` появится только вместе с
-  первым реальным allowlisted Component/runtime producer; richer learner metrics
-  остаются later.
-- Progress вычисляется из finalized, non-superseded records и canonical
-  lineage; отдельная копия «профиля-истории» не нужна.
-- Teacher по-прежнему видит raw records только своего recorder Account.
-- Teacher может создать AI-consent request только для effective Course audience;
-  subject видит узкую projection безопасных Course/owner metadata и controls,
-  но не получает Course content/enrollment/Student Screen access.
-- Cross-provider AI использует отдельный subject-controlled consent для ключа
-  `profile + Course + owner`, с проверкой current Course owner, expiry и
-  revision. Observer grant его не включает. Смена owner, удаление из audience,
-  expiry или revoke делает consent недействительным; apply отклоняет stale
-  preview revision.
-- Internal server-only function строит deterministic bounded sanitized
-  projection: aggregates, allowlisted metrics и PII-redacted, de-attributed
-  explicitly shared comments без raw row structure, foreign Course/Lesson
-  titles, exact timestamps, contacts, recorder identity, private teacher data и
-  технических IDs. Comments не цитируются и не атрибутируются; foreign raw rows
-  не возвращаются teacher browser/API.
-- UI предупреждает, что разрешённые обобщённые сведения повлияют на материал,
-  который увидит преподаватель; полностью скрыть такое влияние невозможно.
-- Revoke проверяется по DB-state на каждый новый AI request и немедленно
-  прекращает дальнейшее использование.
-
-### Lifecycle
-
-- «Убрать из списка» остаётся обратимым archive только teacher relation.
-- Restore активирует relation без скрытого восстановления старых Group/Course
-  links.
-- Пустой unclaimed profile можно удалить физически только при отсутствии
-  records, invitations, других teacher relations и Account link.
-- Global learning-data erasure может инициировать только linked subject после
-  recent reauthentication, preview и повторного подтверждения. Оно не должно
-  каскадно удалять историю других learners, записанную тем же Account как
-  teacher; recorder при необходимости остаётся обезличенным tombstone. Reset
-  очищает current profile и всю source lineage, links/invitations/grants/consents
-  и private content. Alias immutable для обычных операций; erasure-only RPC
-  физически удаляет lineage aliases и удаляет либо необратимо псевдонимизирует
-  source/target/profile IDs в audit без PII. Старый UUID не резолвится в новый
-  profile. В той же lock-safe transaction Account получает новый пустой profile,
-  чтобы exactly-one invariant выполнялся на commit.
-
-## Current physical contract
+Existing learner login/PIN перенесены из active legacy Student path в:
 
 ```text
-learner_profile
-- id
-- account_id: uuid | null, unique
-- display_name: canonical/offline fallback name
-- created_at
-- updated_at
-
-teacher_learner
-- teacher_account_id
-- learner_profile_id
-- display_name: имя только в справочнике этого преподавателя
-- archived_at: archive только для этого преподавателя
-- created_at
-- updated_at
-- primary key (teacher_account_id, learner_profile_id)
-
-learning_record
-- learner_profile_id
-- recorded_by_account_id
-- lesson_run_id | source_course_id | source_lesson_id
-- occurred_at
-- was_present | needs_repeat
-- teacher_comment
-- course_title_at_time | lesson_title_at_time | subject_at_time
+account_login_alias(normalized_login, account_id)
+account_security(pin_hash, lockout, sessions_invalid_before, ...)
+account_preference(...)
 ```
 
-`learner_profile.account_id` является nullable one-to-one точкой будущего claim:
-несколько неавторизованных/offline профилей могут иметь `NULL`, но один Account
-не может быть связан с несколькими canonical LearnerProfile. Наличие колонки не
-означает, что claim, invitation или learner login уже реализованы.
+- alias lookup и PIN verification выполняются server-only;
+- PIN хранится только как bcrypt hash, после пяти ошибок действует lockout;
+- internal Auth email не возвращается browser;
+- one-time activation/reset secrets не пишутся в audit/logs;
+- session invalidation читает AccountSecurity;
+- M1 закрывает direct browser access; expand сохраняет только необходимую
+  server-side rollback compatibility;
+- M4 удаляет active legacy helpers/grants и rollback-only security dual-write
+  только после roleless cutover.
 
-FK lifecycle намеренно сохраняет образовательную память: удаление linked
-subject Account обнуляет `learner_profile.account_id`; canonical profile нельзя
-удалить, пока на него ссылается LearningRecord; recorder Account нельзя удалить,
-пока существуют записанные им rows. `recorded_by_account_id` дополнительно
-защищён от изменения trigger. Privacy erasure поэтому требует отдельного
-явного flow, а не случайного cascade.
+## Discovery и teacher connection
 
-При создании ученика текущим teacher RPC создаются и `learner_profile`, и
-`teacher_learner`; исходные global/local display names совпадают. Дальнейшее
-редактирование в разделе «Ученики» меняет teacher-local display name, а не
-переписывает имя для других будущих преподавателей. Существующие данные
-мигрируются без дедупликации: каждому прежнему owner-scoped профилю соответствует
-ровно одна backfilled `teacher_learner` relation, а `account_id` остаётся `NULL`.
+«Добавить ученика» предлагает два безопасных пути до создания offline profile:
 
-## Teacher directory, groups and Course audience
+1. rotating share code/QR;
+2. blind email invitation.
 
-`/students` остаётся единым teacher-only справочником. Его строка — projection
-`teacher_learner + learner_profile`; UI и существующие learner-profile route/RPC
-names сохранены как совместимый product/API boundary.
+Share code — expiring one-time digest. Он только создаёт pending
+`learner_connection_request`; subject сам принимает или отклоняет request.
+Email token и recipient email хранятся только как keyed digests; один и тот же
+generic response используется независимо от наличия Account. Pending request
+не входит в Course audience.
+
+После accept создаётся/активируется только `teacher_learner` с local display
+name этого teacher. Teacher не становится observer и не получает raw records
+других recorder Accounts.
+
+Если connection невозможен, teacher создаёт обычный offline LearnerProfile и
+может отправить recipient-bound приглашение:
+
+- `claim` — recipient подтверждает merge offline source в свой existing
+  canonical profile;
+- `child_activation` — доверенный recipient активирует отдельный learner
+  Account, а не превращает собственный взрослый Account в target.
+
+Token одноразовый, expiring и bound к verified email digest либо заранее
+определённому recipient Account. Другой Account получает generic fail-closed
+error. Auth callback переносит identity intent в короткоживущий encrypted
+HttpOnly handoff cookie; raw invitation token удаляется из URL до page work и
+не попадает в Referer.
+
+### Separate learner Account activation
+
+Child activation требует recent reauthentication и явного подтверждения, что
+recipient получает отдельное право восстановления login/PIN:
+
+1. server создаёт deterministic provisional Auth user;
+2. Auth trigger создаёт его empty target profile;
+3. recipient задаёт unique login и PIN, которые teacher не видит;
+4. offline source проходит обычный merge в новый target;
+5. provisional Account становится active;
+6. recovery-delegate grant создаётся атомарно;
+7. optional observer invitation создаётся отдельно и требует accept.
+
+Retry идемпотентен: потерянный response не создаёт второй Account и не
+реактивирует отозванного recovery delegate. Delegate может reset login/PIN
+только после recent reauth; learner может отозвать delegate немедленно.
+
+## Physical canonical merge
+
+Обычный merge разрешён только `unclaimed source → actor-owned claimed target`.
+Claimed → claimed требует отдельного dual-consent recovery contract и в current
+scope запрещён.
+
+Preview под locks возвращает fingerprint, counts, blockers и explicit
+same-LessonRun conflict resolutions. Confirm повторно проверяет fingerprint и:
+
+- переносит LearningRecord без изменения recorder/pedagogical timestamps;
+- дедуплицирует teacher relations, group membership и Course audience;
+- сохраняет target teacher-local name, source local name только в private
+  metadata audit;
+- переносит source data в target и физически удаляет source profile;
+- создаёт immutable `learner_profile_alias` для старого UUID;
+- не изменяет observer/AI grants target;
+- fail closed, если source неожиданно имеет grants, open/running Run или draft
+  records.
+
+Если два finalized records относятся к одному LessonRun, primary сохраняет
+`lesson_run_id`. Losing row получает `lesson_run_id = NULL` и
+`superseded_by_record_id = primary.id`; остальные поля и recorder сохраняются.
+Metadata-only conflict audit хранит IDs/resolution без private text. Обычные
+history/progress/AI исключают superseded row.
+
+До confirm recipient может cancel без data mutation. Generic split после
+physical merge не обещается.
+
+### Stale UUID behavior
+
+- Одиночные поддерживаемые teacher URLs — profile PATCH/archive/history,
+  invitation list/create и permanent delete — резолвят source UUID только
+  через actor-scoped alias RPC. Чужой source UUID не раскрывает target.
+- Restore резолвит alias внутри DB под тем же teacher boundary.
+- Bulk Group/Course/Run payloads не принимают произвольный alias. Старый UUID
+  возвращает generic «профиль недоступен»; UI должен reload directory и
+  reselect learners.
+- Subject erasure удаляет alias физически. После reset старый UUID не резолвит
+  и не раскрывает новый profile.
+
+## Teacher directory lifecycle
+
+`/students` показывает `TeacherLearner + LearnerProfile` во вкладках
+«Ученики / Группы» и добавляет active/archive filter.
+
+- «Убрать из списка» архивирует только relation данного Account и удаляет его
+  mutable Group/Course links; canonical profile, finalized history и roster
+  уже открытого Run сохраняются.
+- Restore активирует только relation. Старые Group/Course memberships скрыто
+  не возвращаются.
+- Archive/restore одного teacher не меняет relation другого.
+- Permanent delete разрешён только для действительно пустого unclaimed
+  profile без records, Account link, invitations, grants или других teacher
+  relations.
+
+## Self history, progress и comments
+
+Teacher raw history остаётся recorder-scoped. Subject и active observer читают
+только отдельную learner-safe projection:
 
 ```text
-LearnerProfile teacher read model
-- id = teacher_learner.learner_profile_id
-- teacherAccountId
-- displayName = teacher_learner.display_name
-- archivedAt
-- createdAt
-- updatedAt
+finalized + non-superseded LearningRecord
+→ attendance/repeat/titles-at-time
+→ known actual duration
+→ teacher comment только если shared_with_learner_at IS NOT NULL
+→ opaque projection key + cursor pagination
 ```
 
-Физические create/update/archive RPC сохраняют прежние имена, но возвращают row
-`teacher_learner`; repository преобразует её в этот публичный read model и не
-читает canonical table для teacher directory.
+Historical comments остаются private. Completion UI использует одно comment
+field и отдельное явное действие «Добавить в учебный профиль»; только оно
+выставляет `shared_with_learner_at`. Group `teacher_report`, drafts, recorder
+identity, teacher-local directory, roster и другие learners не входят в safe
+projection.
 
-Current UI разделяет один справочник на вкладки «Ученики» и «Группы». Таблица
-учеников поддерживает поиск, фильтр по группе и сортировку, показывает до двух
-group chips и «ещё N»; отдельная вкладка показывает только reusable groups и их
-состав. Клик по строке открывает dialog «Профиль / История», где membership
-можно менять сразу для нескольких групп, а history ограничена текущим teacher.
+Progress вычисляется из реальных finalized non-superseded records: число
+проведений/посещений/повторов, last activity, subject breakdown и сумма только
+известной actual duration. `NULL` не превращается в ноль; speculative mastery,
+понимание и generic metrics JSON не создаются.
 
-- Активная строка имеет `teacher_learner.archived_at IS NULL`.
-- Имя, сортировка и поиск используют `teacher_learner.display_name`.
-- `LearnerGroup` по-прежнему принадлежит Account преподавателя.
-- Group membership и direct Course audience хранят canonical
-  `learner_profile_id`, но поддерживаемый DB/RPC path допускает только активную
-  `teacher_learner` relation того же Account.
-- Course effective audience остаётся distinct union direct learners и members
-  выбранных groups.
-- Изменение группы или архивация relation влияет на будущие назначения, но не
-  переписывает draft LearningRecord уже открытого LessonRun.
+`lesson_run.started_at_is_actual` отличает explicit start от старого scheduled
+fallback. Duration вычисляется из explicit start → end либо вводится teacher
+для post-factum completion; existing/unknown values остаются `NULL`.
 
-Действие UI называется «Убрать из списка» и архивирует только
-`teacher_learner` текущего преподавателя и удаляет только его mutable
-group/Course links. Оно не архивирует canonical LearnerProfile глобально и не
-удаляет его LearningRecord. Archived relation и локальное имя остаются в БД,
-но current `/students` показывает только active relations; списка архива,
-restore UI и unarchive RPC пока нет. Поэтому сохранность данных не означает,
-что преподаватель может снова открыть убранного ученика через текущий UI.
+## Observer ecosystem
 
-Текущие operational limits не меняются: до 200 unique learners в effective
-Course/Run audience, до 100 rows в Lesson/Course/Profile history и PostgREST
-hydration batches по 50 IDs.
+Observer — explicit read-only grant, не Parent/Guardian role.
 
-## LearningRecord authorship and history
+- только linked subject создаёт/revokes invitations и меняет free display label;
+- recipient принимает/отклоняет invitation либо позже leaves grant;
+- один Account может наблюдать несколько profiles, один profile — иметь
+  несколько observers;
+- teacher relation ничего не выдаёт observer автоматически;
+- observer видит те же safe history/progress fields, что subject;
+- observer не создаёт Course, relation, Run или learning data от имени subject;
+- revoke проверяется по DB-state и действует на следующий request немедленно;
+- invitation/accept/reject/revoke/leave/read события дают metadata-only audit.
 
-`LearningRecord` остаётся единственной per-learner сущностью проведения: draft
-row задаёт ожидаемого участника, finalized row хранит результат. Новая колонка
-`recorded_by_account_id` фиксируется при scheduling вместе с
-`learner_profile_id` и не выводится позднее из mutable Course/Profile relations.
+UI surfaces:
 
-Текущий history boundary teacher-scoped:
+- `/settings/observers` — мои observers/pending invitations;
+- `/observing` — profiles, на которые текущему Account дан active grant;
+- `/learning-profile` — self history/progress/share code, AI consents и
+  destructive self lifecycle.
 
-- преподаватель читает только rows, где `recorded_by_account_id` равен его
-  Account;
-- Course/Lesson/Profile history и AI context используют эту же границу;
-- запись сохраняется после удаления Lesson и остаётся понятной благодаря
-  компактным title/subject fields;
-- archive teacher relation не удаляет уже назначенные или finalized rows;
-- физического Lesson snapshot и отдельного `lesson_run_participant` по-прежнему
-  нет.
+## Subject-only unlink и erasure
 
-Такой provenance нужен даже после появления learner/observer access: связь
-профиля с Account не должна превращать наблюдения разных преподавателей в
-неразличимый общий поток.
+Safe unlink — узкий recovery для ошибочной direct link. Он возможен только без
+merge lineage, LearningRecord и dependent grants. В одной transaction прежний
+profile становится offline, а Account получает новый empty profile, сохраняя
+exactly-one.
 
-## Current authorization boundary
+Learning-data erasure/reset требует recent reauthentication, preview counts,
+expiring fingerprint и повторного confirm. Оно охватывает current target и всю
+source lineage:
 
-Текущий browser workflow остаётся teacher-only и использует user JWT, narrow
-`SECURITY DEFINER` RPC, explicit Account checks, RLS и закрытые table mutation
-grants.
+- удаляет subject LearningRecord, teacher/group/Course links, invitations,
+  observer grants, AI consents и credential-recovery grants;
+- физически удаляет aliases;
+- удаляет/pseudonymizes subject/profile IDs в audit без PII/private text;
+- не удаляет LearningRecord других learners, где Account был recorder;
+- создаёт новый empty linked profile в той же lock-safe transaction.
 
-- Canonical `learner_profile` не становится публичным из-за отсутствия owner
-  column; teacher directory получает только projection своей
-  `teacher_learner` relation. Если `account_id` позднее заполнен, этот Account
-  может выбрать собственную canonical identity row, но не teacher relation или
-  LearningRecord.
-- `teacher_learner` виден только своему `teacher_account_id`.
-- `learner_group_member` и `course_learner` видны через owner Group/Course и
-  принимают только canonical profile с активной relation этого teacher.
-- `learning_record` виден преподавателю только по
-  `recorded_by_account_id = current_account_id()`.
-- `account_id`, даже если будет заполнен служебно, пока не открывает learner
-  routes, Course, teacher comments или историю.
-- `anon` не получает доступ к этим таблицам или RPC.
+Account/Auth deletion, owned Course/File и legal retention не смешиваются с
+этим reset.
 
-Прямой authenticated INSERT/UPDATE/DELETE identity rows не является product
-API. Атомарные create/update/archive operations остаются RPC, чтобы profile,
-teacher relation, memberships и audience invariants не расходились.
+## Subject-controlled cross-provider AI
 
-## AI boundary
+AI consent — отдельный grant для `profile + Course + current owner`.
 
-Текущий Lesson planning и read-only Assistant получают только effective
-audience текущего Course и teacher-scoped finalized history текущего Account.
-Для имени используется teacher-local projection. Технические profile/account/
-record IDs и Auth identity не передаются provider.
+1. Course owner может запросить consent только для effective audience.
+2. Subject видит bounded Course title/owner metadata, purpose и expiry, но не
+   Course content/enrollment/Student Screen.
+3. Subject grants/revokes с expected revision.
+4. Owner change, audience removal, expiry или revoke инвалидируют consent.
+5. Server-only function проверяет DB-state на каждый request.
 
-Canonical profile сам по себе не разрешает AI читать наблюдения другого
-преподавателя. Cross-provider history и AI personalization требуют отдельного
-subject-controlled consent и безопасной projection; они не входят в current
-slice.
+Без consent teacher AI получает только собственную recorder-scoped history. С
+consent provider получает deterministic bounded sanitized projection всей
+canonical lineage:
 
-## Not implemented by this slice
+- aggregates и coarse subject/month buckets;
+- bounded categorical signals из explicitly shared comments после PII scrub;
+- без row structure, raw IDs, contacts, exact timestamps, foreign Course/Lesson
+  titles, recorder identity, private comments и какого-либо comment text/
+  summary/quote.
 
-- automatic exactly-one profile bootstrap для каждого Account;
-- roleless onboarding/navigation/access вместо transitional role switch;
-- safe Account discovery, invitation или claim существующего offline profile;
-- automatic link по имени, email, телефону или другому эвристическому признаку;
-- physical merge preview/RPC/UI, lineage alias и conflict resolution;
-- self/observed finalized history UI и управление access;
-- learner access к Course и live Student Screen;
-- archive list/restore и subject-only erasure;
-- доступ одного преподавателя к record другого преподавателя;
-- subject-controlled cross-provider AI context;
-- actual-duration/progress projection и pagination; richer per-learner metrics.
+Teacher browser/API не получает foreign raw rows. Assistant дополнительно
+scrubs direct quotation of shared summaries. Preview сообщает
+`sharedHistoryUsed` и revision; Apply с изменившейся consent revision fail
+closed как stale.
 
-## Next and later
+## Authorization boundary
 
-**Next execution program:** legacy identity/security hardening → universal
-Account/profile bootstrap → discovery/invitation/claim → physical merge →
-archive/restore → observer access → progress → cross-provider AI consent
-→ legacy role cutover. Каждый этап требует forward migration, actor-matrix
-tests, schema snapshot, docs и deployed postflight.
+- Actor обычного browser request определяется через encrypted app session,
+  current Supabase JWT и `auth.uid()`.
+- Caller-supplied Auth/Account UUID не является authority.
+- Identity/observer/AI/credential tables имеют RLS и нулевые direct privileges
+  `anon/authenticated`.
+- User-facing RPC возвращают strict allowlisted DTO. Repository валидирует
+  nested output `.strict()` и fail closed при unexpected field, включая
+  `auth_user_id`, email/token digest, internal email, PIN/session cutoff.
+- Administrative RPC доступны только server-side service role и требуют
+  explicit actor Auth UUID плюс recipient/secret digest, вычисленные сервером.
+- `learning_record SELECT` остаётся producer-scoped; self/observer используют
+  projection RPC, а не расширенную raw policy.
+- Email/link acceptance pages имеют `Cache-Control: no-store` и
+  `Referrer-Policy: no-referrer`.
 
-Полный copy-paste hand-off, acceptance matrix и terminal condition находятся в
-[`LEARNER_IDENTITY_COMPLETION_PROMPT.md`](../v2/LEARNER_IDENTITY_COMPLETION_PROMPT.md).
+## Physical implementation map
 
-**Later, вне этой программы:** learner Course consumption/live Student Screen,
-persisted Homework, vocabulary/inferences, communication и billing.
+- migrations:
+  `20260807065017_identity_security_hardening.sql`,
+  `20260807065026_learner_identity_primitives_backfill_invariant.sql`,
+  `20260807065032_learner_identity_workflows_progress_observer_ai.sql`;
+- final withheld contract:
+  `20260807065038_learner_identity_legacy_contract_cleanup.sql`;
+- domain/contracts/service/repositories:
+  `src/modules/learner-identity/`;
+- learner-safe AI adapter:
+  `src/modules/ai/shared-history.ts`, `course-context.ts`,
+  `course-builder-service.ts`;
+- UI: `src/components/learner-identity/`, `/learning-profile`, `/observing`,
+  `/settings/observers`, `/identity/invitations/[invitationId]`;
+- API: `/api/v2/me/learning-profile/*`, `/api/v2/learner-directory/*`,
+  `/api/v2/learner-connections/*`, `/api/v2/identity-invitations/*`,
+  `/api/v2/learner-merges/*`, `/api/v2/observers/*`,
+  `/api/v2/observations/*`, `/api/v2/ai-consents/*` and recipient email routes;
+- current schema guide: `docs/database/current-schema.md`;
+- physical snapshot: `supabase/schema/current-schema.sql` after the applicable
+  verified expand/contract refresh.
 
-## Canonical implementation map
+## Current / next / later
 
-- domain/contracts/service/repository: `src/modules/lesson-runs/`;
-- teacher directory UI: `src/components/teaching-hub/`;
-- history UI: `src/components/lesson-runs/`;
-- API: `src/app/api/v2/learner-profiles/`, `learner-groups/` и Course/Lesson
-  audience/history/run routes;
-- physical schema snapshot: `supabase/schema/current-schema.sql`;
-- schema documentation: `docs/database/current-schema.md`;
-- forward migrations: `supabase/migrations/`.
+**Current repository candidate:** весь identity/observer contract выше,
+including roleless navigation, Account credential boundary, discovery,
+recipient-bound claim/child activation, merge, archive/restore, self/observer
+history/progress, erasure and AI consent.
 
-Lesson/Run invariants remain canonical in
-[`lesson-workflow-model.md`](./lesson-workflow-model.md). Provider handling and
-context limits remain canonical in
+**Next release work:** finish full local/DB/browser gate, production read-only
+sanity + verified backup, apply M1–M3, deploy two exact roleless web releases,
+run dependency audit, apply M4, refresh final snapshot and complete production
+DB/API/browser postflight. До этого features не называются production-current.
+
+**Later, вне identity completion:** learner Course consumption/enrollment,
+live Student Screen, persisted Homework, richer Component-produced metrics,
+communication, billing and external MCP.
+
+Lesson/Run authored invariants remain canonical in
+[`lesson-workflow-model.md`](./lesson-workflow-model.md). Provider transport and
+budgets remain canonical in
 [`ai-provider-integration.md`](./ai-provider-integration.md).

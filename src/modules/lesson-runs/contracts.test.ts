@@ -132,9 +132,55 @@ test("completion requires participants and rejects duplicate learner results", (
           wasPresent: true,
           needsRepeat: false,
           teacherComment: "",
+          shareWithLearner: false,
         },
       ],
     },
+  );
+
+  assert.deepEqual(
+    parseLessonRunsContract(completeLessonRunInputSchema, {
+      teacherReport: "",
+      actualDurationMinutes: 47,
+      records: [
+        {
+          learnerProfileId: uuid(2),
+          wasPresent: true,
+          needsRepeat: true,
+          teacherComment: "Повторить правило.",
+          shareWithLearner: true,
+        },
+      ],
+    }),
+    {
+      teacherReport: "",
+      actualDurationMinutes: 47,
+      records: [
+        {
+          learnerProfileId: uuid(2),
+          wasPresent: true,
+          needsRepeat: true,
+          teacherComment: "Повторить правило.",
+          shareWithLearner: true,
+        },
+      ],
+    },
+  );
+
+  assert.throws(
+    () =>
+      parseLessonRunsContract(completeLessonRunInputSchema, {
+        records: [
+          {
+            learnerProfileId: uuid(3),
+            wasPresent: true,
+            needsRepeat: false,
+            teacherComment: "",
+            shareWithLearner: true,
+          },
+        ],
+      }),
+    /Сначала добавьте комментарий/,
   );
 
   assert.throws(

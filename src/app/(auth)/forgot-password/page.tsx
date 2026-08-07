@@ -55,8 +55,8 @@ export default function ForgotPasswordPage() {
     <ProductShell>
       <PageHero
         eyebrow="Восстановление доступа"
-        title="Забыли пароль?"
-        description="Введите email взрослого аккаунта. Мы отправим письмо со ссылкой для безопасного сброса пароля."
+        title="Забыли пароль или PIN?"
+        description="Для аккаунта с email отправим ссылку сброса. Доступ к отдельному аккаунту учащегося без email восстанавливает назначенный при активации доверенный взрослый."
       />
 
       <div className="mx-auto mt-4 w-full max-w-xl">
@@ -87,6 +87,13 @@ export default function ForgotPasswordPage() {
           </form>
 
           <p className="mt-5 text-sm text-neutral-600">
+            Если учащийся входит по отдельному логину и PIN без собственного
+            email, попросите доверенного взрослого открыть «Настройки →
+            Безопасность → Доступ учащегося». ShiDao не показывает, существует
+            ли введённый логин или email.
+          </p>
+
+          <p className="mt-3 text-sm text-neutral-600">
             Вспомнили пароль?{" "}
             <Link
               href={ROUTES.login}

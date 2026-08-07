@@ -75,7 +75,9 @@ type LessonRunRow = {
   lesson_id: string;
   scheduled_at: string;
   planned_duration_minutes: number;
+  actual_duration_minutes?: number | null;
   started_at: string | null;
+  started_at_is_actual?: boolean;
   ended_at: string | null;
   cancelled_at: string | null;
   teacher_report: string | null;
@@ -94,6 +96,9 @@ type LearningRecordRow = {
   was_present: boolean | null;
   needs_repeat: boolean | null;
   teacher_comment: string | null;
+  shared_with_learner_at?: string | null;
+  actual_duration_minutes_at_time?: number | null;
+  superseded_by_record_id?: string | null;
   course_title_at_time: string | null;
   lesson_title_at_time: string | null;
   subject_at_time: string | null;
@@ -312,6 +317,9 @@ function mapLearningRecord(
     wasPresent: row.was_present,
     needsRepeat: row.needs_repeat,
     teacherComment: row.teacher_comment ?? "",
+    sharedWithLearnerAt: row.shared_with_learner_at ?? null,
+    actualDurationMinutesAtTime: row.actual_duration_minutes_at_time ?? null,
+    supersededByRecordId: row.superseded_by_record_id ?? null,
     courseTitleAtTime: row.course_title_at_time,
     lessonTitleAtTime: row.lesson_title_at_time,
     subjectAtTime: row.subject_at_time,
@@ -605,7 +613,9 @@ export function createLessonRunsRepository(
             courseTitle: course.title,
             scheduledAt: row.scheduled_at,
             plannedDurationMinutes: row.planned_duration_minutes,
+            actualDurationMinutes: row.actual_duration_minutes ?? null,
             startedAt: row.started_at,
+            startedAtIsActual: row.started_at_is_actual ?? false,
             endedAt: row.ended_at,
             cancelledAt: row.cancelled_at,
             teacherReport: row.teacher_report ?? "",
@@ -899,7 +909,7 @@ export function createLessonRunsRepository(
     async listCourseLearningRecords(teacherAccountId, courseId, options) {
       const limit = historyLimit(options?.limit);
       const rows = await request<LearningRecordRow[]>(
-        `/rest/v1/learning_record?select=*&recorded_by_account_id=eq.${encodeFilter(teacherAccountId)}&source_course_id=eq.${encodeFilter(courseId)}&occurred_at=not.is.null&order=occurred_at.desc,id.desc&limit=${limit}`,
+        `/rest/v1/learning_record?select=*&recorded_by_account_id=eq.${encodeFilter(teacherAccountId)}&source_course_id=eq.${encodeFilter(courseId)}&occurred_at=not.is.null&superseded_by_record_id=is.null&order=occurred_at.desc,id.desc&limit=${limit}`,
       );
       return hydrateRecords(teacherAccountId, rows);
     },
@@ -918,7 +928,7 @@ export function createLessonRunsRepository(
             POSTGREST_IN_FILTER_CHUNK_SIZE,
           ).map((batch) =>
             request<LearningRecordRow[]>(
-              `/rest/v1/learning_record?select=*&recorded_by_account_id=eq.${encodeFilter(teacherAccountId)}&learner_profile_id=in.(${inFilter(batch)})&occurred_at=not.is.null&order=occurred_at.desc,id.desc&limit=${limit}`,
+              `/rest/v1/learning_record?select=*&recorded_by_account_id=eq.${encodeFilter(teacherAccountId)}&learner_profile_id=in.(${inFilter(batch)})&occurred_at=not.is.null&superseded_by_record_id=is.null&order=occurred_at.desc,id.desc&limit=${limit}`,
             ),
           ),
         )
@@ -936,7 +946,7 @@ export function createLessonRunsRepository(
     async listLearnerHistory(teacherAccountId, learnerProfileId, options) {
       const limit = historyLimit(options?.limit);
       const rows = await request<LearningRecordRow[]>(
-        `/rest/v1/learning_record?select=*&recorded_by_account_id=eq.${encodeFilter(teacherAccountId)}&learner_profile_id=eq.${encodeFilter(learnerProfileId)}&occurred_at=not.is.null&order=occurred_at.desc,id.desc&limit=${limit}`,
+        `/rest/v1/learning_record?select=*&recorded_by_account_id=eq.${encodeFilter(teacherAccountId)}&learner_profile_id=eq.${encodeFilter(learnerProfileId)}&occurred_at=not.is.null&superseded_by_record_id=is.null&order=occurred_at.desc,id.desc&limit=${limit}`,
       );
       return hydrateRecords(teacherAccountId, rows);
     },
@@ -974,14 +984,16 @@ export function createLessonRunsRepository(
     },
 
     completeRun(runId, input) {
-      return runFromRpc("/rest/v1/rpc/complete_lesson_run", {
+      return runFromRpc("/rest/v1/rpc/complete_lesson_run_v2", {
         p_lesson_run_id: runId,
         p_teacher_report: input.teacherReport,
+        p_actual_duration_minutes: input.actualDurationMinutes ?? null,
         p_records: input.records.map((record) => ({
           learnerProfileId: record.learnerProfileId,
           wasPresent: record.wasPresent,
           needsRepeat: record.needsRepeat,
           teacherComment: record.teacherComment,
+          shareWithLearner: record.shareWithLearner,
         })),
       });
     },

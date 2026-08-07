@@ -383,6 +383,7 @@ test("learner history keeps its snapshot context when Run links are null", async
       assert.equal(records[0]?.lessonRunId, null);
       assert.equal(records[0]?.lessonTitleAtTime, "Знакомство");
       assert.match(requests[0]?.url ?? "", /occurred_at=not\.is\.null/);
+      assert.match(requests[0]?.url ?? "", /superseded_by_record_id=is\.null/);
       assert.match(
         requests[0]?.url ?? "",
         new RegExp(`recorded_by_account_id=eq\\.${ACCOUNT_ID}`),
@@ -421,6 +422,7 @@ test("course learning history reads bounded durable records independently of del
         new RegExp(`source_course_id=eq\\.${COURSE_ID}`),
       );
       assert.match(requests[0]?.url ?? "", /occurred_at=not\.is\.null/);
+      assert.match(requests[0]?.url ?? "", /superseded_by_record_id=is\.null/);
       assert.match(requests[0]?.url ?? "", /order=occurred_at\.desc,id\.desc/);
       assert.match(requests[0]?.url ?? "", /limit=8/);
     },
@@ -459,6 +461,7 @@ test("AI learner history is bounded by effective learner IDs and the current tea
         requests[0]?.url ?? "",
         new RegExp(`recorded_by_account_id=eq\\.${ACCOUNT_ID}`),
       );
+      assert.match(requests[0]?.url ?? "", /superseded_by_record_id=is\.null/);
       assert.match(requests[0]?.url ?? "", /limit=40/);
     },
   );

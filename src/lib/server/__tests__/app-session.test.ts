@@ -4,6 +4,8 @@ import {
   buildAppSessionSupabaseTokens,
   createAppSessionPayload,
   isSessionRevoked,
+  isRecentReauthentication,
+  requireRecentReauthentication,
   isSupabaseAccessTokenFresh,
   resolveSupabaseAccessTokenExpiresAtMs,
   sealAppSession,
@@ -33,8 +35,31 @@ test("cutoff accepted as ISO string, epoch ms, and Date", () => {
   assert.equal(isSessionRevoked(cutoffMs - 1000, new Date(cutoffMs)), true);
 });
 
-test("unparseable cutoff fails open (not revoked) to avoid lockout", () => {
-  assert.equal(isSessionRevoked(cutoffMs, "not-a-date"), false);
+test("unparseable non-null cutoff fails closed", () => {
+  assert.equal(isSessionRevoked(cutoffMs, "not-a-date"), true);
+});
+
+test("recent reauthentication uses an inclusive five-minute boundary", () => {
+  const nowMs = Date.parse("2026-08-07T12:00:00.000Z");
+  assert.equal(
+    isRecentReauthentication({ reauthenticatedAt: nowMs - 5 * 60_000 }, nowMs),
+    true,
+  );
+  assert.equal(
+    isRecentReauthentication(
+      { reauthenticatedAt: nowMs - 5 * 60_000 - 1 },
+      nowMs,
+    ),
+    false,
+  );
+  assert.equal(
+    isRecentReauthentication({ reauthenticatedAt: nowMs + 1 }, nowMs),
+    false,
+  );
+  assert.throws(
+    () => requireRecentReauthentication({ reauthenticatedAt: null }, nowMs),
+    /RECENT_REAUTHENTICATION_REQUIRED/,
+  );
 });
 
 test("Supabase token expiry prefers expires_at and otherwise uses expires_in", () => {
@@ -137,6 +162,42 @@ test("encrypted legacy-shaped session remains valid without Supabase tokens", ()
 
     assert.equal(roundtrip?.uid, "legacy-user");
     assert.equal(roundtrip?.supabaseSession, null);
+  } finally {
+    if (previousSecret === undefined) {
+      delete process.env.APP_SESSION_SECRET;
+    } else {
+      process.env.APP_SESSION_SECRET = previousSecret;
+    }
+  }
+});
+
+test("app session strips synthetic internal auth email aliases", () => {
+  const session = createAppSessionPayload({
+    uid: "learner-user",
+    email: "opaque@learners.shidao.internal",
+  });
+
+  assert.equal(session.email, null);
+});
+
+test("unsealing an older session also strips its synthetic auth email", () => {
+  const previousSecret = process.env.APP_SESSION_SECRET;
+  process.env.APP_SESSION_SECRET =
+    "unit-test-app-session-secret-with-at-least-32-characters";
+  const issuedAt = Date.parse("2026-08-03T12:00:00.000Z");
+
+  try {
+    const olderSession = createAppSessionPayload(
+      { uid: "learner-user", email: "public@example.test" },
+      issuedAt,
+    );
+    olderSession.email = "opaque@students.shidao.internal";
+
+    const roundtrip = unsealAppSession(
+      sealAppSession(olderSession),
+      issuedAt + 1_000,
+    );
+    assert.equal(roundtrip?.email, null);
   } finally {
     if (previousSecret === undefined) {
       delete process.env.APP_SESSION_SECRET;

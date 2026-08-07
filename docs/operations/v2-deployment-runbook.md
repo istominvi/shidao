@@ -23,10 +23,11 @@
 
 V2 deployment не создаёт новый repository или Supabase project.
 
-Known current debt: middleware ещё не закрывает non-root `brand`/`model` и
-unknown routed hosts explicit allowlist. До hardening изоляция зависит от
-Coolify/proxy/DNS, поэтому не добавлять новые host routes и проверять их при
-каждом routing release.
+Deployed contour до learner-identity release сохраняет прежний host debt.
+Repository candidate закрывает его explicit allowlist: non-root `brand`/
+`model`, unknown hosts и mismatched Host/X-Forwarded-Host получают 421, unsafe
+V2 requests принимают только exact `https://v2.shidao.ru` Origin. Считать эту
+boundary current можно только после exact candidate deploy/postflight.
 
 ## 2. Private operational config
 
@@ -51,23 +52,33 @@ npm run typecheck
 npm run lint
 npm test
 npm run build
+npm run test:browser:ci
+npm run format:check
 git diff --check
 ```
 
-Для auth/routing/browser-sensitive изменений дополнительно:
+Для learner-identity release дополнительно обязательны isolated fresh/upgrade
+PostgreSQL и multi-session concurrency harnesses:
 
 ```bash
-npm run test:browser:ci
+./scripts/db-identity-tests.sh
+./scripts/db-identity-concurrency-tests.sh
 ```
+
+Harness должен покрывать signup/bootstrap/reset/claim exactly-one, два Account
+на один profile, один Account на два profiles, repeat accept, concurrent merge,
+overlapping Group/Course links, finalized same-Run conflict, open/draft blocker
+и erasure всей lineage. Простая последовательная SQL transaction не заменяет
+multi-session race test.
 
 Provider tests в AI-release используют только fake credentials и локальный
 mock. CI/build не получают реальный `ROUTERAI_API_KEY`; если сборка требует
 production secret, release останавливается как нарушение server-runtime
 boundary.
 
-Release с teacher-only `/schedule` и `/students` обязан дополнительно проверить
-route guard для Guest, adult без профиля, Parent и transitional Student, а
-также desktop/mobile primary navigation. Исторический shell-only release
+Исторический teacher-only release `/schedule` и `/students` дополнительно
+проверял route guard для Guest, adult без профиля, Parent и transitional
+Student, а также desktop/mobile primary navigation. Shell-only release
 `fea7f80` не содержал migration. LessonRun release зависит от
 `20260806190044_lesson_runs_learning_records.sql`, а Groups/mixed audience — от
 следующей forward migration
@@ -116,10 +127,20 @@ routes вызывают новые aggregate RPC и читают новые grou
 - PostgREST schema reload и проверка новых relation/table/RPC return shapes;
 - согласованный rollout web, который читает teacher directory projection.
 
-Следующая identity-completion программа не выпускается одной big-bang
-migration. Для bootstrap, invitation/claim, merge, observer, metrics/AI consent
-и legacy contract используются отдельные expand → backfill → deploy → contract
-этапы. Каждый этап обязан дополнительно подтвердить:
+Learner-identity candidate использует exact files:
+
+```text
+M1 20260807065017_identity_security_hardening.sql
+M2 20260807065026_learner_identity_primitives_backfill_invariant.sql
+M3 20260807065032_learner_identity_workflows_progress_observer_ai.sql
+M4 20260807065038_learner_identity_legacy_contract_cleanup.sql
+```
+
+M1–M3 применяются одним протестированным expand set после backup. M4 физически
+не удаляет legacy rows/tables, но завершает cutover: удаляет helpers/types/
+grants и rollback-only `user_security` dual-write dependency из поддерживаемых
+Account RPC. Поэтому он withheld из первого commit/deploy. Каждый этап обязан
+дополнительно подтвердить:
 
 - actor matrix `anon / teacher A / teacher B / subject / active observer /
 revoked observer / outsider`;
@@ -140,14 +161,30 @@ revoked observer / outsider`;
 - отсутствие foreign raw LearningRecord в teacher browser/API;
 - Auth/session/onboarding regression до удаления active role dependencies.
 
-Несовместимый identity rollout делится на самостоятельные deployable stages:
+Phased rollout для этого exact candidate:
 
-1. additive schema expand, совместимый с текущим web image;
-2. dual-compatible web, умеющий пережить old/new shape;
-3. backfill и read-only verification;
-4. переключение reads/writes в следующем exact web image;
-5. contract cleanup только когда ни running, ни допустимый rollback image не
-   использует старую shape.
+1. read-only production identity/schema sanity; подтвердить ShiDao tables и
+   текущий migration head;
+2. timestamped full-format backup; проверить nonzero size, `pg_restore --list`
+   и SHA-256;
+3. применить exact M1–M3 owner connection с `ON_ERROR_STOP`;
+4. DB/RLS/ACL/PostgREST postflight, включая
+   `active_accounts_without_exactly_one_profile = 0`;
+5. refresh `expand` snapshot через `scripts/refresh-schema-snapshot.sh`;
+6. push/deploy exact roleless web SHA A, дождаться health и подтвердить running
+   container/image SHA;
+7. push/deploy второй exact roleless SHA B и повторить postflight, чтобы
+   допустимый rollback image тоже был roleless;
+8. выполнить read-only dependency audit всех 23 удаляемых helpers, 13 policies,
+   двух enums и legacy grants;
+9. только затем применить exact M4 `DROP ... RESTRICT` contract;
+10. refresh `contract` snapshot, push/deploy final exact SHA и повторить
+    DB/API/HTTP/authenticated browser postflight.
+
+Snapshot helper auto-detects only two complete states. `expand` requires every
+M1–M3 identity object/invariant plus полный known compatibility helper/type/ACL
+set. `contract` требует те же identity objects/invariants и полное отсутствие
+M4 targets. Частично применённый cleanup отклоняется.
 
 Для каждого stage фиксируются commit SHA, migration set и production postflight.
 Нельзя оставлять старый Coolify image как rollback-кандидат после применения
@@ -166,11 +203,9 @@ revoked observer / outsider`;
 6. подтвердить PostgREST schema cache/relationships;
 7. только затем выпускать web, который зависит от новой shape.
 
-Если migration содержит contract phase (drop прежнего
-`learner_profile.owner_account_id/archived_at` или меняет RPC composite return),
-не выполнять обычный rollback web на несовместимый старый image. Остановить
-rollout и доставить совместимый forward fix либо заранее использовать
-expand/deploy/contract sequence.
+После M4 нельзя откатывать web на legacy-role image. При ошибке остановить
+rollout и доставить совместимый forward fix; применённые migration files не
+редактировать.
 
 Полная политика:
 [`docs/database/migration-guidelines.md`](../database/migration-guidelines.md).
@@ -300,6 +335,10 @@ ShiDao V2 application:
 - `https://shidao.ru/api/...` → JSON 503;
 - `https://v2.shidao.ru/robots.txt` запрещает indexing;
 - V2 responses имеют `X-Robots-Tag`;
+- unknown Host и non-root `brand.shidao.ru`/`model.shidao.ru` получают 421;
+- несовпадающие Host/X-Forwarded-Host получают 421;
+- unsafe request с landing/cross-site/missing Origin отклоняется, exact
+  `https://v2.shidao.ru` Origin проходит до route authorization;
 - `https://demo.shidao.ru/` открывает прежний standalone UI без redirect;
 - demo navigation ведёт на clean `/students`, `/courses` и Course/Lesson paths,
   а прямое открытие/reload этих URL остаётся внутри demo;
@@ -314,8 +353,8 @@ ShiDao V2 application:
 
 - login page открывается;
 - существующий пользователь входит;
-- post-login route — `/courses`, `/onboarding` для взрослого без legacy profile
-  или safe relative `next`;
+- post-login route — `/courses` или safe relative `next`; permanent role
+  selection отсутствует;
 - signup/confirm/recovery проверяются при изменении Auth flow;
 - секреты и токены не появляются в client/logs.
 
@@ -370,42 +409,48 @@ ShiDao V2 application:
 если такой delete flow входит в текущий release; иначе оставить его явно
 помеченным как smoke, не удаляя данные напрямую из БД.
 
-### Teacher navigation shells
+### Roleless navigation and learner identity
 
-- active Teacher видит меню `Расписание / Ученики / Курсы` и открывает
-  `/schedule` и `/students`;
-- `/schedule` и `/students` используют те же computed page-header metrics, что
-  `/courses`, Course и Lesson; «Назначить урок в курсе» и contextual
-  «Новый ученик / Новая группа» находятся в header action-секции;
-- Parent и transitional Student не видят teacher-only пункты и при прямом
-  открытии этих routes возвращаются в `/courses`;
-- взрослый без профиля уходит в `/onboarding`, Guest — в `/login`;
-- оба shell читают только реальные teacher-scoped данные через V2 services/API;
-- Schedule показывает реальные LessonRun, позволяет запланировать, завершить,
-  перенести или отменить проведение и не хранит отдельный status;
-- Students создаёт canonical LearnerProfile вместе с teacher-local relation,
-  редактирует/архивирует только локальное имя/state, открывает собственную
-  `recorded_by_account_id` LearningRecord history, управляет reusable Groups и
-  не читает legacy `student/class/class_student`;
-- вкладки «Ученики / Группы» переключают таблицы без создания второго типа
-  ученика; поиск, фильтр по группе и сортировка работают, а строка ученика
-  показывает максимум две группы и корректный счётчик «ещё N»; tabs повторяют
-  тот же black 1 px baseline с inline-inset 12 px / square 4 px active-segment
-  без radius contract, что Course/Lesson;
-- клик по строке ученика открывает dialog «Профиль / История»; профиль можно
-  включить сразу в несколько групп, а история содержит только записи текущего
-  teacher;
-- «Убрать из списка» предупреждает о локальном archive и после подтверждения
-  не удаляет canonical profile или историю; один ученик может оставаться без
-  группы или состоять в нескольких; список архива и restore action не должны
-  появляться в smoke, потому что пока не реализованы;
-- Course audience независимо сохраняет Groups и отдельных LearnerProfile,
-  показывает дедуплицированный effective count и не меняет уже назначенный Run
-  после редактирования membership;
-- archive одного teacher не удаляет canonical profile/draft/final history и не
-  меняет будущую relation другого teacher; `account_id`, claim/merge/observer и
-  cross-provider access в этом smoke отсутствуют;
-- нет фиктивных учеников, групп, progress или history.
+- любой authenticated Account видит `Курсы / Расписание / Ученики / Мой
+учебный профиль / Наблюдение`; Guest на каждом private route уходит в login;
+- `/schedule` и `/students` сохраняют единый computed page-header contract с
+  `/courses`, Course и Lesson; contextual actions находятся в header, а
+  date/filter controls — ниже него;
+- вкладки «Ученики / Группы» сохраняют общий black 1 px baseline и square
+  active-segment; поиск, group filter, keyboard focus и dialogs проверяются без
+  возврата teacher-only route gate;
+- existing email и learner login/PIN создают одну Account session и не выводят
+  internal Auth email/browser secret;
+- `/students` переключает active/archive и «Ученики / Группы»; archive/restore
+  одного teacher не меняет relation другого и не возвращает старые memberships;
+- share code/QR создаёт только pending connection, recipient принимает сам;
+- blind email invitation даёт одинаковый response для existing/new address;
+  tokenless acceptance page имеет no-store/no-referrer и не оставляет token в
+  URL/Referer;
+- offline learner claim показывает recipient-bound preview. Cancel до merge не
+  меняет profiles; confirm сохраняет counts/records и старый individual teacher
+  URL actor-scoped открывает target;
+- stale UUID в bulk Group/Course/Run request даёт generic inaccessible-profile;
+  после reload/reselect текущий UUID работает;
+- child activation создаёт отдельный learner Account с login/PIN, требует
+  recovery acknowledgement; adult recipient Account не становится learner
+  target; отдельный login открывает новый Account profile;
+- `/learning-profile` показывает self safe history/progress; private comment
+  отсутствует, explicit shared comment виден; known duration не подменяет
+  unknown нулём;
+- `/settings/observers` создаёт/accepts/revokes invitation, `/observing`
+  показывает read-only profile; после revoke следующий read немедленно fail
+  closed;
+- subject может отозвать recovery delegate; delegate reset login/PIN требует
+  recent reauth и инвалидирует прежние sessions;
+- AI consent request виден subject, grant включает только sanitized aggregate
+  shared history, revoke прекращает дальнейшее использование, stale preview
+  Apply отклоняется;
+- permanent delete работает только для empty unclaimed profile; destructive
+  self erasure проверяется на disposable data через preview/recent-reauth/
+  confirm и поддерживаемый cleanup. После него old alias не резолвится;
+- teacher raw history другого recorder, observer mutations, raw token/email
+  digests, Auth IDs и private comments не появляются в Network/API/console.
 
 ### Console/logs
 

@@ -2,84 +2,29 @@ import { ROUTES } from "../auth";
 import type { AccessResolution } from "./access-policy";
 
 export function resolveAppLayoutRedirect(status: AccessResolution["status"]) {
-  if (status === "guest" || status === "degraded") {
-    return ROUTES.login;
-  }
-
-  return null;
+  return status === "guest" || status === "degraded" ? ROUTES.login : null;
 }
 
+/** Compatibility name for the existing route-group folder; it is Account-only. */
 export function resolveProfileRequiredRedirect(
   status: AccessResolution["status"],
 ) {
-  if (status === "adult-without-profile") {
-    return ROUTES.onboarding;
-  }
-
   return resolveAppLayoutRedirect(status);
 }
 
+/** Compatibility name for the existing route-group folder; no teacher role is checked. */
 export function resolveTeacherRequiredRedirect(
-  resolution: Pick<AccessResolution, "status"> & {
-    activeProfile?: "teacher" | "parent";
-  },
+  resolution: Pick<AccessResolution, "status">,
 ) {
-  if (
-    resolution.status === "adult-with-profile" &&
-    resolution.activeProfile === "teacher"
-  ) {
-    return null;
-  }
-
-  if (resolution.status === "adult-without-profile") {
-    return ROUTES.onboarding;
-  }
-
-  const appRedirect = resolveAppLayoutRedirect(resolution.status);
-  return appRedirect ?? ROUTES.courses;
+  return resolveAppLayoutRedirect(resolution.status);
 }
 
 export function resolveAuthEntryRedirect(
-  resolution: Pick<AccessResolution, "status"> & {
-    activeProfile?: "teacher" | "parent";
-  },
+  resolution: Pick<AccessResolution, "status">,
 ) {
-  const { status } = resolution;
-  if (status === "adult-without-profile") {
-    return ROUTES.onboarding;
-  }
-
-  if (status === "student") {
-    return ROUTES.courses;
-  }
-
-  if (status === "adult-with-profile") {
-    return ROUTES.courses;
-  }
-
-  return null;
+  return resolution.status === "account" ? ROUTES.courses : null;
 }
 
-export function resolveOnboardingRedirect(
-  status: AccessResolution["status"],
-  options?: { mode?: string | null },
-) {
-  if (status === "guest" || status === "degraded") {
-    return ROUTES.login;
-  }
-
-  if (status === "student") {
-    return ROUTES.courses;
-  }
-
-  if (
-    status === "adult-with-profile" &&
-    (options?.mode === null ||
-      options?.mode === undefined ||
-      options.mode !== "add-profile")
-  ) {
-    return ROUTES.courses;
-  }
-
-  return null;
+export function resolveOnboardingRedirect(status: AccessResolution["status"]) {
+  return resolveAppLayoutRedirect(status);
 }

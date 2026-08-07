@@ -121,15 +121,15 @@ test("students manages one learner and group directory with durable history", ()
     /ProductTableActionCell|Действия|onDelete/,
   );
   assert.doesNotMatch(studentDirectoryTableSource, /role="button"/);
-  assert.match(
-    learnerProfileDialogSource,
-    /Учебный профиль и история сохранятся/,
-  );
+  assert.match(learnerProfileDialogSource, /Учебная история сохранится/);
   assert.match(learnerProfileDialogSource, /Имя в моём списке/);
   assert.match(
     learnerProfileDialogSource,
-    /Вернуть ученика через интерфейс пока нельзя/,
+    /восстановить связь можно будет во вкладке «Архив»/,
   );
+  assert.match(studentsWorkspaceSource, /Восстановить/);
+  assert.match(studentsWorkspaceSource, /Ожидают ответа/);
+  assert.match(learnerProfileDialogSource, /LearnerIdentityPanel/);
   assert.match(learnerProfileDialogSource, /data-dialog-initial-focus/);
   assert.match(learnerGroupDialogSource, /data-dialog-initial-focus/);
   assert.match(studentsWorkspaceSource, />\s*Повторить\s*</);

@@ -29,7 +29,9 @@ export function DashboardShell({
   const normalizedRoleLabel = roleLabel?.trim() ?? "";
   const normalizedTitle = title?.trim() ?? "";
   const normalizedSubtitle = subtitle?.trim() ?? "";
-  const hasHeroHeader = Boolean(normalizedRoleLabel || normalizedTitle || normalizedSubtitle);
+  const hasHeroHeader = Boolean(
+    normalizedRoleLabel || normalizedTitle || normalizedSubtitle,
+  );
 
   return (
     <main className="pb-10">

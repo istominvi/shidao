@@ -45,6 +45,7 @@ const BOB_LESSON_ID = uuid(302);
 const ANNA_ID = uuid(401);
 const IVAN_ID = uuid(402);
 const BOB_LEARNER_ID = uuid(403);
+const STALE_MERGED_LEARNER_ID = uuid(404);
 const ALICE_GROUP_ID = uuid(501);
 const ALICE_GROUP_2_ID = uuid(502);
 const BOB_GROUP_ID = uuid(503);
@@ -628,6 +629,34 @@ test("mixed Course audience deduplicates direct learners and group members", asy
   await assert.rejects(
     service.getCourseAudience(bob, ALICE_COURSE_ID),
     CourseBuilderAccessError,
+  );
+});
+
+test("bulk learner inputs reject stale merged UUIDs with one refresh-required access error", async () => {
+  const repository = new InMemoryLessonRunsRepository();
+  const service = createLessonRunsService({ repository });
+  const expectedMessage = "Один или несколько профилей ученика недоступны.";
+
+  const assertRefreshRequired = (error: unknown) => {
+    assert.ok(error instanceof CourseBuilderAccessError);
+    assert.equal(error.code, "access_denied");
+    assert.equal(error.message, expectedMessage);
+    return true;
+  };
+
+  await assert.rejects(
+    service.createLearnerGroup(alice, {
+      name: "Устаревшая группа",
+      learnerProfileIds: [STALE_MERGED_LEARNER_ID],
+    }),
+    assertRefreshRequired,
+  );
+  await assert.rejects(
+    service.replaceCourseAudience(alice, ALICE_COURSE_ID, {
+      directLearnerProfileIds: [STALE_MERGED_LEARNER_ID],
+      learnerGroupIds: [],
+    }),
+    assertRefreshRequired,
   );
 });
 

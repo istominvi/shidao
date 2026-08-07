@@ -121,6 +121,12 @@ export function LearnerHistoryPanel({ profile }: { profile: LearnerProfile }) {
                 )}
               </div>
               {record.teacherComment ? <p>{record.teacherComment}</p> : null}
+              {record.actualDurationMinutesAtTime != null ? (
+                <p className="text-sm text-neutral-500">
+                  Фактическая длительность: {record.actualDurationMinutesAtTime}{" "}
+                  мин.
+                </p>
+              ) : null}
             </li>
           ))}
         </ol>

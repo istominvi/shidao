@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { apiError, parseJsonWithSchema } from "@/lib/server/api";
-import { readAppSession } from "@/lib/server/app-session";
-import { hitRateLimit } from "@/lib/server/rate-limit";
-import { securityPinPayloadSchema } from "@/lib/server/validation";
 import {
-  hasUserPin,
-  setUserPin,
-  trySignInWithPassword,
-  verifyUserPin,
-} from "@/lib/server/supabase-admin";
+  getCurrentAccountAuthContext,
+  setCurrentAccountPin,
+  trySignInAccountWithPassword,
+  verifyCurrentAccountPin,
+} from "@/lib/server/account-auth";
+import { isSessionRevoked, readAppSession } from "@/lib/server/app-session";
+import { hitRateLimit } from "@/lib/server/rate-limit";
+import { requireSupabaseUserAccessToken } from "@/lib/server/supabase-user-session";
+import { securityPinPayloadSchema } from "@/lib/server/validation";
 
 export const runtime = "nodejs";
 
@@ -38,23 +39,37 @@ export async function POST(req: NextRequest) {
   );
   if (!parsed.ok) return parsed.response;
   const { newPin, currentSecret } = parsed.data;
+  if (!currentSecret) {
+    return apiError(400, "Подтвердите действие текущим паролем или PIN.");
+  }
 
-  const alreadyConfigured = await hasUserPin(session.uid);
-  if (alreadyConfigured) {
-    if (!currentSecret) {
-      return apiError(400, "Нужно подтвердить текущим паролем или PIN.");
+  try {
+    const accessToken = await requireSupabaseUserAccessToken();
+    const context = await getCurrentAccountAuthContext(accessToken);
+    if (
+      context.authUserId !== session.uid ||
+      isSessionRevoked(session.iat, context.sessionsInvalidBefore)
+    ) {
+      return apiError(401, "Требуется повторный вход.");
     }
 
     const passwordAuth = session.email
-      ? await trySignInWithPassword(session.email, currentSecret)
+      ? await trySignInAccountWithPassword(session.email, currentSecret)
       : null;
-    const pinAuth = await verifyUserPin(session.uid, currentSecret);
+    const passwordConfirmed = passwordAuth?.user?.id === session.uid;
 
-    if (!passwordAuth && !pinAuth) {
+    // A correct password is sufficient and must not increment the PIN failure
+    // counter. Only consult the PIN verifier after password auth is rejected.
+    const pinConfirmed = passwordConfirmed
+      ? false
+      : await verifyCurrentAccountPin(accessToken, currentSecret);
+    if (!passwordConfirmed && !pinConfirmed) {
       return apiError(401, "Подтверждение не прошло.");
     }
-  }
 
-  await setUserPin(session.uid, newPin);
-  return NextResponse.json({ ok: true });
+    await setCurrentAccountPin(session.uid, newPin);
+    return NextResponse.json({ ok: true });
+  } catch {
+    return apiError(503, "Не удалось сохранить PIN. Попробуйте позже.");
+  }
 }

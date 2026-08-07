@@ -1,13 +1,18 @@
 import Link from "next/link";
 import { ProductShell } from "@/components/product-shell";
 import { ROUTES } from "@/lib/auth";
+import { afterLogin } from "@/lib/auth-redirects";
 
 export default async function JoinCheckEmailPage({
   searchParams,
 }: {
-  searchParams: Promise<{ email?: string }>;
+  searchParams: Promise<{ email?: string; next?: string }>;
 }) {
   const params = await searchParams;
+  const loginSearch = new URLSearchParams({
+    registered: "1",
+    next: afterLogin(params.next),
+  });
 
   return (
     <ProductShell contentClassName="mt-10">
@@ -18,13 +23,16 @@ export default async function JoinCheckEmailPage({
           </h1>
           <p className="surface-card-description mt-2 text-black">
             Мы отправили письмо с подтверждением на{" "}
-            <span className="font-semibold">{params.email ?? "ваш email"}</span>.
-            Если письмо не видно, проверьте папки «Спам» и «Промоакции». После
+            <span className="font-semibold">{params.email ?? "ваш email"}</span>
+            . Если письмо не видно, проверьте папки «Спам» и «Промоакции». После
             подтверждения вернитесь к входу.
           </p>
 
           <div className="mt-6 flex justify-center">
-            <Link href={ROUTES.login} className="landing-btn landing-btn-primary min-h-12 px-8">
+            <Link
+              href={`${ROUTES.login}?${loginSearch.toString()}`}
+              className="landing-btn landing-btn-primary min-h-12 px-8"
+            >
               Перейти ко входу
             </Link>
           </div>

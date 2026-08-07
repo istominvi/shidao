@@ -9,10 +9,9 @@ import {
 } from "../../lib/navigation-contract";
 import { ROUTES } from "../../lib/auth";
 import type {
-  SessionAdultView,
+  SessionAccountView,
   SessionDegradedView,
   SessionGuestView,
-  SessionStudentView,
 } from "../../lib/session-view";
 
 const guest: SessionGuestView = { kind: "guest", authenticated: false };
@@ -21,71 +20,45 @@ const degraded: SessionDegradedView = {
   authenticated: true,
   reason: "context_unavailable",
 };
-const adult: SessionAdultView = {
-  kind: "adult",
-  authenticated: true,
-  hasPin: false,
-  activeProfile: null,
-  availableProfiles: [],
-};
-const student: SessionStudentView = {
-  kind: "student",
+const account: SessionAccountView = {
+  kind: "account",
   authenticated: true,
   hasPin: true,
+  locale: "ru",
+  timezone: "Asia/Chita",
 };
 
-test("TopNav: guest on login sees join CTA after session resolves", () => {
+test("TopNav resolves guest actions without exposing them on private routes", () => {
   assert.equal(resolveTopNavAction(ROUTES.login, guest, true), "guest-join");
-});
-
-test("TopNav: guest on public page sees login CTA after session resolves", () => {
   assert.equal(resolveTopNavAction(ROUTES.home, guest, true), "guest-login");
+  for (const route of [
+    ROUTES.settingsSecurity,
+    ROUTES.courses,
+    ROUTES.schedule,
+    ROUTES.students,
+    ROUTES.learningProfile,
+    ROUTES.observing,
+  ]) {
+    assert.equal(resolveTopNavAction(route, guest, true), "skeleton");
+  }
 });
 
-test("TopNav: protected route keeps guest CTA hidden", () => {
+test("authenticated Account always renders Account session actions", () => {
   assert.equal(
-    resolveTopNavAction(ROUTES.settingsSecurity, guest, true),
-    "skeleton",
-  );
-  assert.equal(resolveTopNavAction(ROUTES.courses, degraded, true), "skeleton");
-  assert.equal(resolveTopNavAction(ROUTES.schedule, guest, true), "skeleton");
-  assert.equal(
-    resolveTopNavAction(ROUTES.students, degraded, true),
-    "skeleton",
-  );
-});
-
-test("TopNav: authenticated session always renders session actions", () => {
-  assert.equal(
-    resolveTopNavAction(ROUTES.login, adult, true),
+    resolveTopNavAction(ROUTES.home, account, false),
     "session-actions",
   );
-  assert.equal(
-    resolveTopNavAction(ROUTES.home, student, false),
-    "session-actions",
-  );
+  assert.equal(resolveLandingAuthCtaHref(account), ROUTES.courses);
+  assert.equal(canRenderSessionNavActions(account), true);
+  assert.equal(shouldRedirectSecuritySettingsToLogin(account), false);
 });
 
-test("Landing header: guest/degraded is auth-aware and depends on session resolve", () => {
+test("guest and degraded states remain fail-closed", () => {
   assert.equal(resolveLandingNavAction(guest, false), "skeleton");
   assert.equal(resolveLandingNavAction(degraded, true), "guest-cta-pair");
-});
-
-test("Landing hero auth CTA points authenticated users to courses", () => {
-  assert.equal(resolveLandingAuthCtaHref(adult), ROUTES.courses);
-  assert.equal(resolveLandingAuthCtaHref(student), ROUTES.courses);
   assert.equal(resolveLandingAuthCtaHref(guest), ROUTES.login);
-});
-
-test("Security settings contract is server-first and redirects unauthenticated states", () => {
   assert.equal(shouldRedirectSecuritySettingsToLogin(guest), true);
   assert.equal(shouldRedirectSecuritySettingsToLogin(degraded), true);
-  assert.equal(shouldRedirectSecuritySettingsToLogin(adult), false);
-  assert.equal(shouldRedirectSecuritySettingsToLogin(student), false);
-});
-
-test("session action guard accepts only authenticated student/adult states", () => {
   assert.equal(canRenderSessionNavActions(guest), false);
   assert.equal(canRenderSessionNavActions(degraded), false);
-  assert.equal(canRenderSessionNavActions(adult), true);
 });

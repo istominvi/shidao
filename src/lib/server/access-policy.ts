@@ -1,108 +1,64 @@
-import { type ProfileKind } from "@/lib/auth";
-import { logger } from "@/lib/server/logger";
-import { isSessionRevoked, readAppSession } from "@/lib/server/app-session";
-import {
-  ensureUserPreference,
-  getUserContextById,
-  setLastActiveProfile,
-} from "@/lib/server/supabase-admin";
 import { cache } from "react";
+import { getCurrentAccountAuthContext } from "@/lib/server/account-auth";
+import { isSessionRevoked, readAppSession } from "@/lib/server/app-session";
+import { logger } from "@/lib/server/logger";
+import { requireSupabaseUserAccessToken } from "@/lib/server/supabase-user-session";
 
-export type UserContext = Awaited<ReturnType<typeof getUserContextById>>;
+export type AccountContext = Awaited<
+  ReturnType<typeof getCurrentAccountAuthContext>
+> & {
+  userId: string;
+  email: string | null;
+  fullName: string;
+};
 
 export type AccessResolution =
   | { status: "guest" }
-  | { status: "student"; context: UserContext }
-  | {
-      status: "adult-with-profile";
-      context: UserContext;
-      activeProfile: ProfileKind;
-    }
-  | { status: "adult-without-profile"; context: UserContext }
+  | { status: "account"; context: AccountContext }
   | { status: "degraded"; reason: string };
 
-function deriveActiveProfile(context: UserContext): ProfileKind | null {
-  if (context.activeProfile) return context.activeProfile;
+/**
+ * Resolves every authenticated request through the universal Account boundary.
+ * No legacy parent/teacher/student table, profile preference, or role metadata
+ * participates in authentication or route authorization.
+ */
+export const resolveAccessPolicy = cache(
+  async (): Promise<AccessResolution> => {
+    const session = await readAppSession();
+    if (!session) return { status: "guest" };
 
-  const fallback = context.availableAdultProfiles.at(0) ?? null;
-  if (fallback) {
-    context.activeProfile = fallback;
-    return fallback;
-  }
-
-  return null;
-}
-
-async function normalizeAdultContext(context: UserContext) {
-  try {
-    await ensureUserPreference(context.userId);
-  } catch (error) {
-    logger.error("[access-policy] ensureUserPreference failed", {
-      userId: context.userId,
-      error,
-    });
-  }
-
-  if (
-    context.availableAdultProfiles.length === 2 &&
-    !context.preferences?.last_active_profile
-  ) {
     try {
-      await setLastActiveProfile(context.userId, "parent");
-      context.activeProfile = "parent";
+      const accessToken = await requireSupabaseUserAccessToken();
+      const account = await getCurrentAccountAuthContext(accessToken);
+      if (account.authUserId !== session.uid) {
+        throw new Error(
+          "Account context does not match the authenticated session.",
+        );
+      }
+
+      if (isSessionRevoked(session.iat, account.sessionsInvalidBefore)) {
+        return { status: "guest" };
+      }
+
+      return {
+        status: "account",
+        context: {
+          ...account,
+          userId: session.uid,
+          email: session.email,
+          fullName: account.displayName,
+        },
+      };
     } catch (error) {
-      logger.error("[access-policy] setLastActiveProfile failed", {
-        userId: context.userId,
+      const reason =
+        error instanceof Error
+          ? error.message
+          : "Unknown Account access resolution error";
+      logger.error("[access-policy] Account resolution failed", {
+        reason,
         error,
       });
+      return { status: "degraded", reason };
     }
-  }
-}
-
-export const resolveAccessPolicy = cache(async (): Promise<AccessResolution> => {
-  const session = await readAppSession();
-  if (!session) {
-    return { status: "guest" };
-  }
-
-  try {
-    const context = await getUserContextById(session.uid, {
-      email: session.email,
-      fullName: session.fullName,
-    });
-
-    // Per-user server-side revocation: a session whose iat predates the user's
-    // revocation cutoff is treated as logged out (e.g. after password reset or
-    // "log out everywhere"). See migration 202606300001.
-    if (isSessionRevoked(session.iat, context.sessionsInvalidBefore)) {
-      return { status: "guest" };
-    }
-
-    if (context.actorKind === "student") {
-      return { status: "student", context };
-    }
-
-    await normalizeAdultContext(context);
-
-    if (!context.hasAnyAdultProfile) {
-      return { status: "adult-without-profile", context };
-    }
-
-    const activeProfile = deriveActiveProfile(context);
-    if (!activeProfile) {
-      return {
-        status: "degraded",
-        reason: "adult profile exists but active profile is unavailable",
-      };
-    }
-
-    return { status: "adult-with-profile", context, activeProfile };
-  } catch (error) {
-    const reason =
-      error instanceof Error
-        ? error.message
-        : "Unknown access resolution error";
-    logger.error("[access-policy] resolve failed", { reason, error });
-    return { status: "degraded", reason };
-  }
-});
+  },
+);

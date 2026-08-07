@@ -6,17 +6,17 @@ import {
   buildAppSessionSupabaseTokens,
   writeAppSession,
 } from "@/lib/server/app-session";
+import {
+  getCurrentAccountAuthContext,
+  mintSupabaseSessionForAccount,
+  resolveAccountLoginAlias,
+  trySignInAccountWithPassword,
+  verifyAccountPinCredential,
+  type SupabaseAuthSession,
+} from "@/lib/server/account-auth";
 import { logger } from "@/lib/server/logger";
-import { resolvePostLoginRedirectForContext } from "@/lib/server/post-login-redirect";
 import { hitRateLimit } from "@/lib/server/rate-limit";
 import { loginPayloadSchema } from "@/lib/server/validation";
-import {
-  ensureUserPreference,
-  findStudentAuthEmail,
-  getUserContextById,
-  trySignInWithPassword,
-  verifyUserPin,
-} from "@/lib/server/supabase-admin";
 
 export const runtime = "nodejs";
 
@@ -54,116 +54,84 @@ export async function POST(req: NextRequest) {
     if (!parsed.ok) return parsed.response;
     const { identifier, secret } = parsed.data;
 
-    let resolvedEmail = "";
-    let candidateUserId: string | null = null;
+    let resolvedEmail = identifier;
+    let aliasUserId: string | null = null;
 
     stage = "resolve-identifier";
-    if (isEmail(identifier)) {
-      resolvedEmail = identifier;
-    } else {
-      const studentMatch = await findStudentAuthEmail(identifier);
-      if (!studentMatch) {
+    if (!isEmail(identifier)) {
+      const alias = await resolveAccountLoginAlias(identifier);
+      if (!alias) {
         return fail();
       }
-      resolvedEmail = studentMatch.email;
-      candidateUserId = studentMatch.userId;
+      resolvedEmail = alias.authEmail;
+      aliasUserId = alias.userId;
     }
 
     stage = "password-login";
-    const passwordSession = await trySignInWithPassword(resolvedEmail, secret);
+    let authSession: SupabaseAuthSession | null =
+      await trySignInAccountWithPassword(resolvedEmail, secret);
 
-    if (passwordSession?.user?.id) {
-      const userId = passwordSession.user.id;
-      stage = "load-user-context-password";
-      const context = await getUserContextById(userId, {
-        email: passwordSession.user.email ?? resolvedEmail,
-        fullName: passwordSession.user.user_metadata?.full_name ?? null,
-        expectedActorKind: candidateUserId ? "student" : "adult",
-      });
+    if (
+      authSession?.user?.id &&
+      aliasUserId &&
+      authSession.user.id !== aliasUserId
+    ) {
+      // Alias resolution and GoTrue must agree on the exact Account identity.
+      return fail();
+    }
 
-      stage = "write-session-password";
-      await writeAppSession({
-        uid: userId,
-        email: context.email,
-        fullName: context.fullName,
-        supabaseSession: buildAppSessionSupabaseTokens({
-          accessToken: passwordSession.access_token,
-          refreshToken: passwordSession.refresh_token,
-          expiresInSeconds: passwordSession.expires_in,
-          expiresAtEpochSeconds: passwordSession.expires_at,
-        }),
-      });
-
-      if (context.actorKind === "adult") {
-        stage = "ensure-user-preference-password";
-        try {
-          await ensureUserPreference(userId);
-        } catch (error) {
-          logger.error(
-            "[auth-login] ensureUserPreference failed after successful password auth",
-            { userId, error },
-          );
-        }
-      }
-
-      stage = "resolve-post-login-route-password";
-      const redirectTo = afterLogin(
-        resolvePostLoginRedirectForContext({
-          actorKind: context.actorKind,
-          hasAnyAdultProfile: context.hasAnyAdultProfile,
-          activeAdultProfile: context.activeProfile ?? context.availableAdultProfiles[0] ?? null,
-        }),
+    if (!authSession && aliasUserId) {
+      stage = "account-pin-verify";
+      const verifiedAlias = await verifyAccountPinCredential(
+        identifier,
+        secret,
       );
-      return NextResponse.json({ redirectTo });
-    }
-
-    if (candidateUserId) {
-      stage = "student-pin-verify";
-      const pinOk = await verifyUserPin(candidateUserId, secret);
-      if (pinOk) {
-        stage = "load-student-context";
-        const context = await getUserContextById(candidateUserId, {
-          email: resolvedEmail,
-          expectedActorKind: "student",
-        });
-
-        stage = "write-session-pin";
-        await writeAppSession({
-          uid: candidateUserId,
-          email: context.email,
-          fullName: context.fullName,
-        });
-
-        if (context.actorKind === "adult") {
-          stage = "ensure-user-preference-pin";
-          try {
-            await ensureUserPreference(candidateUserId);
-          } catch (error) {
-            logger.error(
-              "[auth-login] ensureUserPreference failed after successful pin auth",
-              { userId: candidateUserId, error },
-            );
-          }
-        }
-
-        return NextResponse.json({
-          redirectTo: afterLogin(
-            resolvePostLoginRedirectForContext({
-              actorKind: context.actorKind,
-              hasAnyAdultProfile: context.hasAnyAdultProfile,
-              activeAdultProfile:
-                context.activeProfile ?? context.availableAdultProfiles[0] ?? null,
-            }),
-          ),
-        });
+      if (
+        verifiedAlias?.userId !== aliasUserId ||
+        verifiedAlias.authEmail !== resolvedEmail
+      ) {
+        return fail();
       }
+
+      stage = "mint-pin-user-session";
+      authSession = await mintSupabaseSessionForAccount(verifiedAlias);
     }
 
-    return fail();
+    if (!authSession?.user?.id) return fail();
+
+    stage = "load-account-context";
+    const context = await getCurrentAccountAuthContext(
+      authSession.access_token,
+    );
+    if (context.authUserId !== authSession.user.id) return fail();
+
+    stage = "write-session";
+    const supabaseSession = buildAppSessionSupabaseTokens({
+      accessToken: authSession.access_token,
+      refreshToken: authSession.refresh_token,
+      expiresInSeconds: authSession.expires_in,
+      expiresAtEpochSeconds: authSession.expires_at,
+    });
+    if (!supabaseSession?.accessToken || !supabaseSession.refreshToken) {
+      throw new Error(
+        "Supabase login did not return a renewable user session.",
+      );
+    }
+    await writeAppSession({
+      uid: context.authUserId,
+      // Only the confirmed public Account address belongs in browser-visible
+      // session projections. Synthetic learner auth aliases stay server-only.
+      email: context.verifiedEmail,
+      fullName: context.displayName,
+      reauthenticatedAt: Date.now(),
+      supabaseSession,
+    });
+
+    return NextResponse.json({ redirectTo: afterLogin() });
   } catch (error) {
     logger.error("[auth-login] unexpected error", { stage, error });
 
-    if (stage === "write-session-password" || stage === "write-session-pin") {
+    if (stage === "write-session") {
       return fail(
         500,
         "Не удалось сохранить сессию входа. Попробуйте ещё раз.",

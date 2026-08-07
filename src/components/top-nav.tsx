@@ -18,12 +18,7 @@ import { SiteHeader, type SiteHeaderNavItem } from "@/components/site-header";
 function resolvePrimaryNavId(
   state: ReturnType<typeof useSessionView>["state"],
 ): PrimaryNavConfig["id"] | null {
-  if (state.kind === "student") return "student";
-  if (state.kind === "adult" && state.activeProfile === "teacher")
-    return "teacher";
-  if (state.kind === "adult" && state.activeProfile === "parent")
-    return "parent";
-  return null;
+  return state.kind === "account" ? "account" : null;
 }
 
 export function TopNav({ demoStyle = false }: { demoStyle?: boolean }) {

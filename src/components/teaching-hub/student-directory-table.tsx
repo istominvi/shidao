@@ -1,6 +1,7 @@
 "use client";
 
 import { Users } from "lucide-react";
+import { IdentityStateBadge } from "@/components/learner-identity/identity-ui";
 import { Chip } from "@/components/ui/chip";
 import {
   ProductTable,
@@ -16,10 +17,12 @@ import type {
   LearnerGroup,
   LearnerProfile,
 } from "@/modules/lesson-runs/domain";
+import type { TeacherLearnerDirectoryItem } from "@/modules/learner-identity/domain";
 
 export type LearnerDirectoryEntry = {
   profile: LearnerProfile;
   groups: LearnerGroup[];
+  identity?: TeacherLearnerDirectoryItem;
 };
 
 function initials(displayName: string) {
@@ -83,7 +86,7 @@ export function LearnersDirectoryTable({
               message={hasFilters ? "Ничего не найдено" : "Учеников пока нет"}
             />
           ) : (
-            entries.map(({ profile, groups }) => {
+            entries.map(({ profile, groups, identity }) => {
               const orderedGroups = [...groups].sort((left, right) =>
                 left.name.localeCompare(right.name, "ru"),
               );
@@ -116,7 +119,12 @@ export function LearnersDirectoryTable({
                       >
                         {initials(profile.displayName)}
                       </span>
-                      <strong>{profile.displayName}</strong>
+                      <span className="flex flex-wrap items-center gap-2">
+                        <strong>{profile.displayName}</strong>
+                        {identity ? (
+                          <IdentityStateBadge state={identity.identityState} />
+                        ) : null}
+                      </span>
                     </button>
                   </ProductTablePrimaryCell>
                   <ProductTableCell>

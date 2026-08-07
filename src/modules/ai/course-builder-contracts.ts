@@ -117,6 +117,7 @@ export const aiLessonPlanApplyRequestSchema = z
     lessonId: z.uuid().nullable(),
     title: z.string().trim().min(1).max(180),
     baseContextFingerprint: contextFingerprintSchema,
+    sharedHistoryRevision: contextFingerprintSchema.default("0".repeat(64)),
     baseLessonIds: z.array(z.uuid()).max(60),
     baseComponentIds: z.array(z.uuid()).max(200),
     plan: aiLessonPlanSchema,
@@ -195,6 +196,8 @@ export type AiLessonPlanPreview = AiProviderMetadata & {
   lessonId: string | null;
   title: string;
   baseContextFingerprint: string;
+  sharedHistoryUsed: boolean;
+  sharedHistoryRevision: string;
   baseLessonIds: string[];
   baseComponentIds: string[];
   plan: AiLessonPlan;
@@ -202,6 +205,7 @@ export type AiLessonPlanPreview = AiProviderMetadata & {
 
 export type AiAssistantReply = AiProviderMetadata & {
   message: AiAssistantMessage & { role: "assistant" };
+  sharedHistoryUsed: boolean;
 };
 
 export function toLessonAddComponentInput(

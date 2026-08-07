@@ -1,56 +1,56 @@
 # Auth, domains and routing
 
-**Статус:** current implementation
+**Статус:** current repository roleless release candidate; production cutover
+pending
+
 **Канонический app host:** `v2.shidao.ru`
-**Последний подтверждённый functional release:** `757044c`
 
-Teacher-only `/schedule` и `/students` развёрнуты и проверены на release
-`fea7f80`.
-
-Standalone `demo.shidao.ru` и cache recovery старого permanent redirect
-развёрнуты и проверены на release `7021801`.
-
-Deployed canonical learner slice не добавляет новые public routes:
-существующие teacher-only URLs и learner-profile API сохраняются, но доступ к
-canonical profile идёт через `teacher_learner`, а history — через
-`learning_record.recorded_by_account_id`.
-
-Target roleless navigation, self/observer routes и invitation/claim access
-остаются **next**. Их полный execution contract находится в
-[`LEARNER_IDENTITY_COMPLETION_PROMPT.md`](./v2/LEARNER_IDENTITY_COMPLETION_PROMPT.md);
-до фактического cutover описанные ниже teacher/parent/student guards являются
-current behavior.
+**Последний подтверждённый production release:** см.
+[`docs/project-state.md`](./project-state.md). Описанные ниже roleless routes,
+host/CSRF hardening и identity invitation flows не считаются deployed до exact
+Coolify SHA и production browser/API postflight.
 
 ## Host matrix
 
-| Host                         | Поведение                                                                                                                      |
-| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `shidao.ru`, `www.shidao.ru` | `/` и landing assets доступны; внутренние pages переписываются на maintenance с HTTP 503; `/api/*` возвращает JSON 503         |
-| `v2.shidao.ru`               | Полное Auth и приложение; `X-Robots-Tag: noindex, nofollow, noarchive`; `robots.txt` запрещает crawling                        |
-| `brand.shidao.ru`            | только `/` переписывается на `/brand`; другие paths сейчас проходят обычный routing                                            |
-| `model.shidao.ru`            | только `/` переписывается на `/model`; другие paths сейчас проходят обычный routing                                            |
-| `demo.shidao.ru`             | Safe root/deep links переписываются на standalone `/demo` с Guest session и noindex; unsafe methods возвращают 405; V2 API нет |
-| localhost/любой другой host  | Обычный route handling без host split                                                                                          |
+Production middleware использует explicit allowlist:
 
-Каноническая реализация находится в `src/middleware.ts` и
-`src/lib/deployment-access.ts`.
+| Host                         | Поведение candidate                                                                           |
+| ---------------------------- | --------------------------------------------------------------------------------------------- |
+| `shidao.ru`, `www.shidao.ru` | landing root/assets/email templates; internal pages → maintenance 503, `/api/*` → JSON 503    |
+| `v2.shidao.ru`               | Auth, roleless application, identity invitation pages/API; global noindex                     |
+| `demo.shidao.ru`             | standalone read-only historical demo; safe clean paths, no V2 session/API, unsafe methods 405 |
+| `brand.shidao.ru`            | только `/`; non-root 421                                                                      |
+| `model.shidao.ru`            | только `/`; non-root 421                                                                      |
+| localhost/loopback           | разрешён только вне production                                                                |
+| любой другой routed host     | 421 `Misdirected Request`, no-store/noindex                                                   |
 
-Текущая защита не является полной application-host allowlist: неизвестные
-hosts и non-root paths `brand`/`model` проходят в приложение. Standalone demo
-имеет отдельную read-only/noindex границу, но общая изоляция всё ещё зависит от
-proxy/DNS routing. Это известный P0 hardening debt; до исправления нельзя
-направлять на web application новые публичные hosts.
+Если production `Host` и `X-Forwarded-Host` одновременно заданы и различаются,
+request отклоняется 421. Таким образом DNS/proxy routing не является
+единственной security boundary.
 
-`demo.shidao.ru` содержит только исторический UI-прототип с фиктивными
-client-only данными. Clean paths сохраняются в адресной строке и после reload,
-но middleware всегда обслуживает их через `/demo`. Demo не получает V2 session,
-не вызывает Supabase/application API и не является compatibility layer для
-Step/Methodology или подтверждением persistence показанных сценариев.
-Одноразовый вход `/?restored=1` отправляет `Clear-Site-Data: "cache"` и после
-hydration заменяет URL на `/`: это снимает ранее закэшированный permanent `308`
-у браузеров, которые открывали demo во время redirect-периода.
+Canonical implementation:
+`src/middleware.ts`, `src/lib/deployment-access.ts`.
 
-## Public/Auth routes V2
+Landing exact-allowlist включает четыре public GoTrue email templates. Они
+ведут на `RedirectTo` app callback и не открывают остальные app routes на
+landing host.
+
+## CSRF boundary
+
+Для unsafe `POST | PUT | PATCH | DELETE` в production допускается ровно Origin
+`https://v2.shidao.ru`:
+
+- landing/demo/brand/model/unknown origin отклоняются;
+- missing или malformed Origin в production отклоняется;
+- `NEXT_PUBLIC_SITE_URL` не расширяет allowlist;
+- runtime `NEXT_PUBLIC_APP_URL` не может расширить production origin за пределы
+  canonical app host;
+- cross-subdomain и forwarded-host mismatch покрыты regression tests.
+
+Demo по-прежнему блокирует unsafe methods собственной read-only policy до
+application routing. Реализация: `src/lib/server/csrf.ts` и middleware.
+
+## Public/Auth routes
 
 ```text
 /
@@ -60,39 +60,62 @@ hydration заменяет URL на `/`: это снимает ранее зак
 /forgot-password
 /reset-password
 /auth/confirm
+/identity/invitations/[invitationId]
 ```
 
-Auth callback принимает только поддерживаемые token types, проверяет
-`token_hash` через Supabase Auth, записывает encrypted app session и принимает
-только safe relative `next`.
+Identity invitation page требует authenticated recipient, но является
+route-level entry из email. Ее responses имеют:
 
-## Entry flow
+```text
+Cache-Control: no-store
+Referrer-Policy: no-referrer
+```
 
-### Signup с подтверждением email
+Raw application invitation token приходит только во fragment, удаляется через
+History API до network work и никогда не отправляется серверу в URL/Referer.
 
-1. Guest отправляет форму `/join`.
-2. Supabase Auth создаёт неподтверждённого пользователя и отправляет письмо.
-3. Пользователь открывает `https://v2.shidao.ru/auth/confirm`.
-4. Callback верифицирует token server-side и записывает app session.
-5. Для `signup/email` redirect по умолчанию ведёт в `/courses`.
+### Email callback и tokenless handoff
 
-Повторный login после успешного confirm не обязателен.
+1. GoTrue email содержит только Auth `token_hash`, supported type и safe
+   `/auth/confirm?...` redirect.
+2. Callback server-side вызывает Auth verify, записывает encrypted app session
+   и не доверяет arbitrary absolute `next`.
+3. Для identity email callback создаёт короткоживущий encrypted HttpOnly
+   handoff cookie, привязанный к invitation id/kind, Auth user и verified email
+   digest.
+4. Browser попадает на tokenless `/identity/invitations/[id]`; Auth token hash
+   и application bearer token не остаются в адресе страницы.
+5. Wrong Account/email получает один generic fail-closed response.
 
-### Обычный login
+Signup/login/recovery используют тот же self-hosted Supabase Auth/SMTP. Auth,
+SMTP, JWT/API keys и base Storage config candidate не меняет.
 
-1. Guest открывает `/login`.
-2. Server проверяет credentials через Supabase Auth и создаёт app session.
-3. Transitional V1 `student` identity направляется в `/courses`; это routing
-   compatibility, а не уже реализованный learner product V2.
-4. Adult без parent/teacher profile направляется в `/onboarding`.
-5. Adult с профилем направляется в `/courses`.
+## Login and Account entry
 
-Safe relative `next` сохраняется. Absolute и protocol-relative redirect targets
-отклоняются.
+Обычный email login и existing learner login/PIN сходятся к одному roleless
+Account:
 
-## Active private routes
+```text
+identifier
+→ email login OR server-only account_login_alias lookup
+→ optional Account PIN verification
+→ Supabase session
+→ encrypted app session
+→ /courses or safe relative next
+```
 
-Session-protected application:
+Active login path не читает legacy `student.login/internal_auth_email` и не
+выбирает actor kind `adult | student`. Internal Auth email остаётся server-only.
+Rate limit/lockout и session cutoff находятся на Account credential boundary.
+
+Onboarding собирает display name/locale/timezone Account. Он не создаёт
+Teacher/Parent profile и не предлагает role switch. Existing account может
+сразу работать в пустых sections; `/courses` означает authoring ownership, а не
+learner enrollment.
+
+## Roleless private routes
+
+Любому authenticated Account доступны:
 
 ```text
 /onboarding
@@ -100,153 +123,173 @@ Session-protected application:
 /courses/new
 /courses/[courseId]
 /courses/[courseId]/student-preview
-```
-
-Teacher-required application:
-
-```text
 /schedule
 /students
-```
-
-Оба маршрута доступны только `adult-with-profile` с активным profile
-`teacher`. Guest/degraded session перенаправляется в `/login`, взрослый без
-профиля — в `/onboarding`, active Parent и transitional Student — в `/courses`.
-Пункты «Расписание» и «Ученики» поэтому присутствуют только в teacher primary
-navigation; Parent и Student сохраняют пункт «Курсы».
-
-Profile-required settings:
-
-```text
+/learning-profile
+/observing
 /settings/profile
 /settings/security
+/settings/observers
 ```
 
-`/courses` намеренно находится под общим authenticated layout, а не под
-`(profile-required)`: новый `account` bootstraps Course ownership независимо
-от старого parent/teacher profile. Onboarding/profile compatibility остаётся
-переходным identity flow.
+Guest/degraded session redirectится на `/login`. Folder names
+`(teacher-required)` и `(profile-required)` остаются только filesystem
+compatibility; их layouts проверяют Account session и не читают legacy
+Teacher/Parent/Student role.
 
-`/schedule` и `/students` являются реальными teacher workflows, а не
-восстановлением старых domain routes. Schedule читает и изменяет LessonRun через
-V2 application service. Students читает projection
-`teacher_learner + learner_profile`, управляет teacher-local profiles/groups и
-историей через существующие learner-profile API/RPC. Dashboard, methodology,
-старые group/scheduled-lesson, notification и lesson pages удалены и не являются
-compatibility routes.
+Resource access остаётся relation/ownership-scoped:
+
+- Course authoring — owner Account only;
+- `/students` — teacher-local `teacher_learner`, groups и recorder-scoped raw
+  history текущего Account;
+- `/learning-profile` — linked subject safe history/progress, share code,
+  consent и subject lifecycle;
+- `/observing` — только active observer grants и safe read-only projection;
+- `/settings/observers` — subject-controlled invitations/grants;
+- Student Screen по-прежнему owner preview, не learner Course access.
+
+Primary navigation для каждого Account:
+
+```text
+Курсы / Расписание / Ученики / Мой учебный профиль / Наблюдение
+```
+
+Settings navigation:
+
+```text
+Профиль и email / Безопасность / Наблюдатели
+```
 
 ## V2 API namespaces
 
-Auth/session:
+### Auth/session
 
 ```text
-/api/auth/*
+/api/auth/login
+/api/auth/signup
+/api/auth/recovery
+/api/auth/reset-password
+/api/auth/session
+/api/auth/reauth
 /api/onboarding
 /api/preferences/*
 /api/settings/*
 ```
 
-Course Builder:
+`/api/auth/reauth` записывает recent-reauth time только в sealed app session.
+Client-supplied timestamp не является authority для credential reset, unlink
+или erasure.
+
+### Course Builder, schedule and teacher directory
+
+Existing `/api/v2/courses`, Lessons, Components, attachments, audience,
+history, LessonRun and LearnerGroup routes сохраняются. Teacher profile routes:
 
 ```text
-/api/v2/courses
-/api/v2/courses/[courseId]
-/api/v2/courses/[courseId]/assemble
-/api/v2/courses/[courseId]/attachments/*
-/api/v2/courses/[courseId]/lessons
-/api/v2/courses/[courseId]/student-preview
-/api/v2/lessons/[lessonId]
-/api/v2/lessons/[lessonId]/components
-/api/v2/components/[componentId]
-/api/v2/components/[componentId]/reorder
-/api/v2/components/[componentId]/student-screen
 /api/v2/learner-profiles
 /api/v2/learner-profiles/[learnerProfileId]
 /api/v2/learner-profiles/[learnerProfileId]/history
-/api/v2/learner-groups
-/api/v2/learner-groups/[learnerGroupId]
-/api/v2/lesson-runs
-/api/v2/lesson-runs/[lessonRunId]
-/api/v2/lesson-runs/[lessonRunId]/{start,complete,cancel}
-/api/v2/courses/[courseId]/audience
-/api/v2/courses/[courseId]/history
-/api/v2/lessons/[lessonId]/runs
-/api/v2/lessons/[lessonId]/history
+/api/v2/learner-profiles/[learnerProfileId]/identity-invitations
+/api/v2/learner-directory
+/api/v2/learner-directory/[learnerProfileId]/[restore|delete]
+```
+
+### Discovery, invitation and merge
+
+```text
+/api/v2/learner-connections
+/api/v2/learner-connections/[connectionId]/[accept|reject|cancel]
+/api/v2/email-connections/[connectionId]/[preview|accept|reject]
+/api/v2/identity-invitations/[invitationId]/[preview|accept|reject|activate]
+/api/v2/learner-merges/[mergeOperationId]/[preview|confirm|cancel]
+/api/v2/learner-credential-recovery
+/api/v2/learner-credential-recovery/[grantId]/[reset|revoke]
+```
+
+Server returns only generic delivery-attempted/not-found errors; browser never
+receives recipient email digest, token digest, Auth UUID, internal email or raw
+PIN/session cutoff.
+
+### Self, observer and AI consent
+
+```text
+/api/v2/me/learning-profile
+/api/v2/me/learning-profile/history
+/api/v2/me/learning-profile/progress
+/api/v2/me/learning-profile/share-code
+/api/v2/me/learning-profile/unlink/[preview|confirm]
+/api/v2/me/learning-profile/erasure/[preview|confirm]
+/api/v2/observers
+/api/v2/observers/[relationshipId]/[accept|reject|revoke|leave|rename]
+/api/v2/email-observer-invitations/[relationshipId]/[preview|accept|reject]
+/api/v2/observations
+/api/v2/observations/[learnerProfileId]/history
+/api/v2/observations/[learnerProfileId]/progress
+/api/v2/courses/[courseId]/ai-consent-requests
+/api/v2/me/ai-consents
+/api/v2/ai-consents/[consentId]/[grant|revoke]
 ```
 
 ## Request/data flow
 
 ```text
-browser UI
-→ same-origin Next.js route handler
-→ encrypted app session
-→ short-lived Supabase user access token
-→ CourseBuilderApplicationService | LessonRunsApplicationService
-→ repository / Storage adapter
-→ Supabase Data/Storage API
-→ RLS + ownership checks
+browser
+→ same-origin Next route
+→ encrypted app session + recent-reauth state
+→ short-lived Supabase user JWT
+→ strict Zod input
+→ application service
+→ user-JWT repository OR narrow server-only admin adapter
+→ strict allowlisted RPC output
+→ RLS / auth.uid() / recipient digest / ownership checks
 ```
 
-Browser components не получают database credentials и не выполняют прямой SQL.
-`service_role` не используется в обычном Course Builder browser flow или
-development MCP.
+Administrative adapter uses service role only for Auth Admin, verified email
+binding, keyed token digest and server-only AI projection. It always passes an
+actor Auth UUID verified from the app session; browser cannot choose this
+principal.
 
-Serialized Student Screen assignment/reorder/delete RPC дополнительно
-проверяют `auth.uid() → account → course` внутри узкой transaction boundary.
+All identity RPC outputs are parsed through strict nested schemas. Unexpected
+DB fields fail closed as generic API error instead of being serialized.
 
-## Authorization boundaries
+## Alias and stale URL contract
 
-- App session идентифицирует Auth user и содержит short-lived Supabase tokens.
-- Course принадлежит `account`, где `account.auth_user_id = auth.uid()`.
-- Lesson, Components, Slides и attachments наследуют Course ownership.
-- Teacher-only `/schedule` и `/students` дополнительно проходят server layout
-  guard по active teacher profile до render client workspace.
-- Canonical `learner_profile` не имеет teacher owner. Текущий teacher видит его
-  только через собственную `teacher_learner` relation; локальное имя и archive
-  state принадлежат этой relation.
-- Group membership и direct Course audience принимают только profile с активной
-  relation owner Account; другой teacher не может назначить canonical ID без
-  своей relation.
-- `LearningRecord` history текущего teacher ограничена
-  `recorded_by_account_id = current_account_id()`.
-- `/students` не обращается к transitional `student/class/class_student` и не
-  выдаёт login compatibility identity за LearnerProfile/Group.
-- Nullable `learner_profile.account_id` не создаёт learner session, route access
-  или право читать teacher comments/history; linked Account может выбрать
-  только собственную canonical profile row. Claim/invitation/observer flows ещё
-  не реализованы.
-- Learner preview сейчас является owner-only preview, а не публичным enrollment
-  endpoint.
-- Student Screen response создаётся server-side и физически исключает
-  `lesson.summary`, `staff_only` Components и attachments, на которые не
-  ссылается learner-visible Component.
-- MCP использует тот же пользовательский JWT и application service.
+- Individual teacher profile URLs resolve merged source UUID through
+  actor-scoped alias lookup and continue on the canonical target.
+- The resolver never exposes a target without the current teacher relation.
+- Bulk Group/Course/Run UUID payloads fail with one generic inaccessible-profile
+  error; client must reload/reselect current rows rather than globally resolving
+  arbitrary aliases.
+- Erasure deletes lineage aliases, so an old UUID no longer redirects or
+  reveals the new empty profile.
 
-Полный identity/access contract находится в
+## Authorization summary
+
+- Account/profile exactly-one is a deferred DB invariant, not a UI convention.
+- Teacher raw LearningRecord remains recorder-scoped.
+- Subject/observer have no raw table SELECT and read only finalized,
+  non-superseded safe projections with explicitly shared comments.
+- Teacher relation never grants observer access; observer relation never grants
+  teacher mutations.
+- AI consent is separate from observer and Course access and is checked on every
+  request against owner/audience/expiry/revision.
+- Invitation/claim/observer tokens are one-time digests; wrong recipient fails
+  closed.
+- Destructive subject flows require recent reauth plus expiring preview
+  fingerprint.
+
+Full contract:
 [`docs/architecture/learner-identity-access-model.md`](./architecture/learner-identity-access-model.md).
 
-## CSRF and session revocation
+## Current / next / later
 
-Global middleware выполняет Origin/Sec-Fetch-Site guard до route handler, но
-текущая configured-origin policy всё ещё допускает landing host как Origin для
-unsafe V2 requests. Строгая app-host boundary и cross-subdomain regression test
-остаются P0 hardening debt. На demo host unsafe methods блокируются отдельной
-read-only policy до CSRF/application routes; полный production host allowlist
-тоже ещё не реализован.
+**Current repository candidate:** roleless routes/navigation, Account login/PIN,
+strict host/CSRF boundary, all identity/observer APIs and UI above.
 
-Encrypted app sessions содержат issue time и version:
+**Next release work:** M1–M3 production backup/apply/postflight, two roleless
+exact web deploys, M4 dependency audit/apply, final snapshot, exact Coolify SHA
+and authenticated browser postflight.
 
-- `user_security.sessions_invalid_before` — per-user cutoff;
-- `APP_SESSION_VERSION` — global all-user invalidation;
-- recovery session отдельно ограничивает reset-password flow.
-
-## Изменения, требующие совместного обновления
-
-При добавлении route/host/Auth behavior обновить вместе:
-
-- `src/lib/auth.ts` и route helpers;
-- layouts/access guards;
-- middleware/CSRF policy;
-- Auth redirect tests и browser smoke;
-- этот документ и `docs/project-state.md`;
-- GoTrue allowlist/Next environment только если это действительно требуется.
+**Later:** learner Course consumption/enrollment, live Student Screen,
+Homework/RAG, communication, billing and external MCP. Identity completion does
+not imply any of those capabilities.

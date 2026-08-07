@@ -29,7 +29,9 @@ export function useMarketingNavActive(sectionHrefs: string[]) {
 
     const sections = sectionIds
       .map((id) => document.getElementById(id))
-      .filter((section): section is HTMLElement => section instanceof HTMLElement);
+      .filter(
+        (section): section is HTMLElement => section instanceof HTMLElement,
+      );
 
     const observer = new IntersectionObserver(
       (entries) => {

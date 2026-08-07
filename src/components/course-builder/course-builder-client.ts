@@ -264,6 +264,7 @@ export async function applyAiLessonPlan(
       lessonId: preview.lessonId,
       title: preview.title,
       baseContextFingerprint: preview.baseContextFingerprint,
+      sharedHistoryRevision: preview.sharedHistoryRevision,
       baseLessonIds: preview.baseLessonIds,
       baseComponentIds: preview.baseComponentIds,
       plan: preview.plan,

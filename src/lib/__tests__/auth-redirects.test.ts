@@ -3,42 +3,33 @@ import assert from "node:assert/strict";
 import {
   afterConfirm,
   afterLogin,
+  afterSignup,
   resolveClientPostLoginRoute,
   onAuthPageWhenAuthenticated,
 } from "../auth-redirects";
 import { ROUTES } from "../auth";
 
-test("afterLogin sends users to courses by default", () => {
+test("post-auth redirects default to Account courses and reject external paths", () => {
   assert.equal(afterLogin(), ROUTES.courses);
-});
-
-test("afterLogin keeps safe relative path", () => {
   assert.equal(afterLogin(ROUTES.settingsProfile), ROUTES.settingsProfile);
-});
-
-test("afterLogin drops unsafe redirect path", () => {
-  assert.equal(
-    afterLogin("https://malicious.example/steal-session"),
-    ROUTES.courses,
-  );
-  assert.equal(afterLogin("//malicious.example/steal-session"), ROUTES.courses);
-});
-
-test("client login honors only a safe requested route", () => {
+  assert.equal(afterLogin("https://malicious.example/steal"), ROUTES.courses);
+  assert.equal(afterLogin("//malicious.example/steal"), ROUTES.courses);
+  assert.equal(afterLogin("/\\malicious.example/steal"), ROUTES.courses);
   assert.equal(
     resolveClientPostLoginRoute(ROUTES.courses, "/courses/course-1"),
     "/courses/course-1",
   );
   assert.equal(
-    resolveClientPostLoginRoute(
-      ROUTES.courses,
-      "https://malicious.example/steal-session",
-    ),
+    resolveClientPostLoginRoute(ROUTES.courses, "https://malicious.example"),
+    ROUTES.courses,
+  );
+  assert.equal(
+    resolveClientPostLoginRoute(ROUTES.courses, "/\\malicious.example"),
     ROUTES.courses,
   );
 });
 
-test("confirmation redirects stay coherent with session-authenticated flow", () => {
+test("confirmation redirects remain coherent", () => {
   assert.equal(afterConfirm("signup"), ROUTES.courses);
   assert.equal(afterConfirm("email"), ROUTES.courses);
   assert.equal(afterConfirm("invite"), ROUTES.onboarding);
@@ -49,24 +40,40 @@ test("confirmation redirects stay coherent with session-authenticated flow", () 
   );
 });
 
-test("guarded auth route redirect for authenticated users follows access policy", () => {
+test("signup preserves only a safe post-confirmation destination", () => {
+  const invitationPath = "/identity/invitations/invitation-1";
+
   assert.equal(
-    onAuthPageWhenAuthenticated({
-      status: "adult-without-profile",
-      context: {} as never,
+    afterSignup({
+      requiresEmailConfirmation: false,
+      email: "user@example.com",
+      next: invitationPath,
+      hasSession: true,
     }),
-    ROUTES.onboarding,
+    invitationPath,
   );
+
+  const checkEmailPath = afterSignup({
+    requiresEmailConfirmation: true,
+    email: "user@example.com",
+    next: invitationPath,
+  });
+  const checkEmailUrl = new URL(checkEmailPath, "https://v2.shidao.ru");
+  assert.equal(checkEmailUrl.pathname, ROUTES.joinCheckEmail);
+  assert.equal(checkEmailUrl.searchParams.get("next"), invitationPath);
+
+  const rejected = afterSignup({
+    requiresEmailConfirmation: false,
+    email: "user@example.com",
+    next: "/\\attacker.example/steal",
+    hasSession: true,
+  });
+  assert.equal(rejected, ROUTES.courses);
+});
+
+test("guarded auth route redirects only a resolved Account", () => {
   assert.equal(
-    onAuthPageWhenAuthenticated({
-      status: "adult-with-profile",
-      context: {} as never,
-      activeProfile: "parent",
-    }),
-    ROUTES.courses,
-  );
-  assert.equal(
-    onAuthPageWhenAuthenticated({ status: "student", context: {} as never }),
+    onAuthPageWhenAuthenticated({ status: "account", context: {} as never }),
     ROUTES.courses,
   );
   assert.equal(onAuthPageWhenAuthenticated({ status: "guest" }), null);

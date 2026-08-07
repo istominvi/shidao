@@ -1,7 +1,4 @@
-import type { ProfileKind } from "@/lib/auth";
-
 type SessionIdentity = {
-  userId?: string;
   fullName?: string | null;
   email?: string | null;
   initials?: string;
@@ -12,29 +9,12 @@ export type SessionGuestView = {
   authenticated: false;
 };
 
-export type SessionStudentView = SessionIdentity & {
-  kind: "student";
+export type SessionAccountView = SessionIdentity & {
+  kind: "account";
   authenticated: true;
   hasPin: boolean;
-};
-
-export type SessionAdultView = SessionIdentity & {
-  kind: "adult";
-  authenticated: true;
-  hasPin: boolean;
-  activeProfile: ProfileKind | null;
-  availableProfiles: ProfileKind[];
-  schoolOptions?: Array<{
-    id: string;
-    label: string;
-    kind: "personal" | "organization";
-    role: "owner" | "teacher";
-  }>;
-  selectedSchool?: {
-    mode: "personal" | "organization";
-    schoolId: string | null;
-    schoolName: string | null;
-  };
+  locale: string;
+  timezone: string;
 };
 
 export type SessionDegradedView = SessionIdentity & {
@@ -44,10 +24,7 @@ export type SessionDegradedView = SessionIdentity & {
 };
 
 export type SessionView =
-  | SessionGuestView
-  | SessionStudentView
-  | SessionAdultView
-  | SessionDegradedView;
+  SessionGuestView | SessionAccountView | SessionDegradedView;
 
 export const GUEST_SESSION_VIEW: SessionGuestView = {
   kind: "guest",
@@ -60,7 +37,6 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function pickIdentity(input: Record<string, unknown>): SessionIdentity {
   return {
-    userId: typeof input.userId === "string" ? input.userId : undefined,
     fullName:
       typeof input.fullName === "string" || input.fullName === null
         ? input.fullName
@@ -73,10 +49,6 @@ function pickIdentity(input: Record<string, unknown>): SessionIdentity {
   };
 }
 
-function isProfileKind(value: unknown): value is ProfileKind {
-  return value === "parent" || value === "teacher";
-}
-
 export function toSessionView(input: unknown): SessionView {
   if (!isRecord(input) || typeof input.kind !== "string") {
     return GUEST_SESSION_VIEW;
@@ -85,62 +57,21 @@ export function toSessionView(input: unknown): SessionView {
   switch (input.kind) {
     case "guest":
       return GUEST_SESSION_VIEW;
-    case "student":
-      if (input.authenticated !== true || typeof input.hasPin !== "boolean")
-        return GUEST_SESSION_VIEW;
-      return {
-        kind: "student",
-        authenticated: true,
-        hasPin: input.hasPin,
-        ...pickIdentity(input),
-      };
-    case "adult":
+    case "account":
       if (
         input.authenticated !== true ||
         typeof input.hasPin !== "boolean" ||
-        !Array.isArray(input.availableProfiles)
+        typeof input.locale !== "string" ||
+        typeof input.timezone !== "string"
       ) {
         return GUEST_SESSION_VIEW;
       }
-      const schoolOptions = Array.isArray(input.schoolOptions)
-        ? input.schoolOptions.filter((option): option is NonNullable<SessionAdultView["schoolOptions"]>[number] => {
-            if (!isRecord(option)) return false;
-            return (
-              typeof option.id === "string" &&
-              typeof option.label === "string" &&
-              (option.kind === "personal" || option.kind === "organization") &&
-              (option.role === "owner" || option.role === "teacher")
-            );
-          })
-        : undefined;
-      const selectedSchool = isRecord(input.selectedSchool) &&
-          (input.selectedSchool.mode === "personal" ||
-            input.selectedSchool.mode === "organization")
-        ? {
-            mode: input.selectedSchool.mode as "personal" | "organization",
-            schoolId:
-              typeof input.selectedSchool.schoolId === "string" ||
-              input.selectedSchool.schoolId === null
-                ? input.selectedSchool.schoolId
-                : null,
-            schoolName:
-              typeof input.selectedSchool.schoolName === "string" ||
-              input.selectedSchool.schoolName === null
-                ? input.selectedSchool.schoolName
-                : null,
-          }
-        : undefined;
-
       return {
-        kind: "adult",
+        kind: "account",
         authenticated: true,
         hasPin: input.hasPin,
-        activeProfile: isProfileKind(input.activeProfile)
-          ? input.activeProfile
-          : null,
-        availableProfiles: input.availableProfiles.filter(isProfileKind),
-        ...(schoolOptions ? { schoolOptions } : {}),
-        ...(selectedSchool ? { selectedSchool } : {}),
+        locale: input.locale,
+        timezone: input.timezone,
         ...pickIdentity(input),
       };
     case "degraded":

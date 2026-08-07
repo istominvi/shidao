@@ -1,10 +1,12 @@
 import crypto from "node:crypto";
 import { cache } from "react";
 import { cookies } from "next/headers";
+import { isInternalAuthEmail } from "@/lib/auth";
 
 export const APP_SESSION_COOKIE = "shidao_session";
 const MIN_APP_SESSION_SECRET_LENGTH = 32;
 const DEFAULT_SESSION_TTL_HOURS = 48;
+export const RECENT_REAUTHENTICATION_MAX_AGE_MS = 5 * 60 * 1000;
 
 function resolveSessionTtlSeconds() {
   const raw = process.env.APP_SESSION_TTL_HOURS;
@@ -31,6 +33,7 @@ export type AppSession = {
   email: string | null;
   fullName: string | null;
   recoveryVerifiedAt?: number | null;
+  reauthenticatedAt?: number | null;
   supabaseSession?: AppSessionSupabaseTokens | null;
   iat: number;
   exp: number;
@@ -41,6 +44,7 @@ export type WriteAppSessionInput = {
   email?: string | null;
   fullName?: string | null;
   recoveryVerifiedAt?: number | null;
+  reauthenticatedAt?: number | null;
   supabaseSession?: AppSessionSupabaseTokens | null;
 };
 
@@ -220,6 +224,16 @@ function normalizePayload(payload: AppSession | null, nowMs = Date.now()) {
   if (!payload.exp || payload.exp <= nowMs) return null;
   return {
     ...payload,
+    email:
+      typeof payload.email === "string" && !isInternalAuthEmail(payload.email)
+        ? payload.email
+        : null,
+    reauthenticatedAt:
+      typeof payload.reauthenticatedAt === "number" &&
+      Number.isFinite(payload.reauthenticatedAt) &&
+      payload.reauthenticatedAt > 0
+        ? payload.reauthenticatedAt
+        : null,
     supabaseSession: normalizeSupabaseSession(payload.supabaseSession),
   } satisfies AppSession;
 }
@@ -243,9 +257,13 @@ export function createAppSessionPayload(
     v: SESSION_VERSION,
     sid: crypto.randomUUID(),
     uid: input.uid,
-    email: input.email ?? null,
+    email:
+      typeof input.email === "string" && !isInternalAuthEmail(input.email)
+        ? input.email
+        : null,
     fullName: input.fullName ?? null,
     recoveryVerifiedAt: input.recoveryVerifiedAt ?? null,
+    reauthenticatedAt: input.reauthenticatedAt ?? null,
     supabaseSession: input.supabaseSession ?? null,
     iat: issuedAt,
     exp: issuedAt + SESSION_TTL_SECONDS * 1000,
@@ -289,11 +307,41 @@ export async function clearAppSession() {
   jar.delete(APP_SESSION_COOKIE);
 }
 
+export function isRecentReauthentication(
+  session: Pick<AppSession, "reauthenticatedAt"> | null | undefined,
+  nowMs = Date.now(),
+  maxAgeMs = RECENT_REAUTHENTICATION_MAX_AGE_MS,
+) {
+  const verifiedAt = session?.reauthenticatedAt;
+  if (
+    typeof verifiedAt !== "number" ||
+    !Number.isFinite(verifiedAt) ||
+    !Number.isFinite(nowMs) ||
+    !Number.isFinite(maxAgeMs) ||
+    maxAgeMs < 0
+  ) {
+    return false;
+  }
+  const ageMs = nowMs - verifiedAt;
+  return ageMs >= 0 && ageMs <= maxAgeMs;
+}
+
+export function requireRecentReauthentication(
+  session: Pick<AppSession, "reauthenticatedAt"> | null | undefined,
+  nowMs = Date.now(),
+  maxAgeMs = RECENT_REAUTHENTICATION_MAX_AGE_MS,
+) {
+  if (!isRecentReauthentication(session, nowMs, maxAgeMs)) {
+    throw new Error("RECENT_REAUTHENTICATION_REQUIRED");
+  }
+}
+
 /**
  * A session is revoked when it was issued (`iat`) strictly before the user's
  * `sessions_invalid_before` cutoff (see migration 202606300001). Pure and
  * testable; the cutoff may arrive as an ISO string (PostgREST), epoch ms, or
- * Date. A null/unparseable cutoff means "not revoked".
+ * Date. A null cutoff means "not revoked"; a malformed non-null cutoff fails
+ * closed because session validity cannot be established safely.
  */
 export function isSessionRevoked(
   issuedAtMs: number,
@@ -306,6 +354,6 @@ export function isSessionRevoked(
       : typeof sessionsInvalidBefore === "number"
         ? sessionsInvalidBefore
         : Date.parse(sessionsInvalidBefore);
-  if (!Number.isFinite(cutoffMs)) return false;
+  if (!Number.isFinite(cutoffMs)) return true;
   return issuedAtMs < cutoffMs;
 }

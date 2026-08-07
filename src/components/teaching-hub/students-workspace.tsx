@@ -4,9 +4,12 @@ import {
   GraduationCap,
   LoaderCircle,
   Plus,
+  RotateCcw,
   Search,
+  Trash2,
   UserPlus,
   Users,
+  XCircle,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AppPageHeader } from "@/components/app/page-header";
@@ -22,6 +25,20 @@ import {
 } from "@/components/lesson-runs/lesson-run-client";
 import { LearnerGroupDialog } from "@/components/teaching-hub/learner-group-dialog";
 import { LearnerProfileDialog } from "@/components/teaching-hub/learner-profile-dialog";
+import { AddLearnerDialog } from "@/components/learner-identity/add-learner-dialog";
+import {
+  actOnConnection,
+  IdentityClientError,
+  loadConnections,
+  loadTeacherDirectory,
+  permanentlyDeleteOfflineLearner,
+  restoreTeacherLearner,
+} from "@/components/learner-identity/identity-client";
+import {
+  IdentityEmpty,
+  IdentityStateBadge,
+  RequestStatusBadge,
+} from "@/components/learner-identity/identity-ui";
 import {
   LearnerGroupsDirectoryTable,
   LearnersDirectoryTable,
@@ -38,10 +55,15 @@ import type {
   LearnerGroup,
   LearnerProfile,
 } from "@/modules/lesson-runs/domain";
+import type {
+  LearnerConnectionRequest,
+  TeacherLearnerDirectoryItem,
+} from "@/modules/learner-identity/domain";
 
 type DirectoryView = "learners" | "groups";
 type LearnerSort = "name-asc" | "name-desc" | "group-count";
 type GroupSort = "name-asc" | "name-desc" | "member-count";
+type DirectoryStatus = "active" | "archived" | "pending";
 
 const STUDENTS_DIRECTORY_TABS_ID = "students-directory";
 
@@ -49,10 +71,51 @@ function errorMessage(caught: unknown, fallback: string) {
   return caught instanceof Error ? caught.message : fallback;
 }
 
+function toLessonRunsProfile(
+  item: TeacherLearnerDirectoryItem,
+): LearnerProfile {
+  return {
+    id: item.learnerProfileId,
+    teacherAccountId: item.teacherAccountId,
+    displayName: item.displayName,
+    archivedAt: item.archivedAt,
+    createdAt: item.createdAt,
+    updatedAt: item.updatedAt,
+  };
+}
+
+function fallbackIdentity(
+  profile: LearnerProfile,
+): TeacherLearnerDirectoryItem {
+  return {
+    learnerProfileId: profile.id,
+    teacherAccountId: profile.teacherAccountId,
+    displayName: profile.displayName,
+    archivedAt: profile.archivedAt,
+    identityState: "offline",
+    pendingRequestCount: 0,
+    canInvite: true,
+    canPermanentlyDelete: false,
+    createdAt: profile.createdAt,
+    updatedAt: profile.updatedAt,
+  };
+}
+
 export function StudentsWorkspace() {
   const [profiles, setProfiles] = useState<LearnerProfile[] | null>(null);
+  const [activeDirectory, setActiveDirectory] = useState<
+    TeacherLearnerDirectoryItem[] | null
+  >(null);
+  const [archivedDirectory, setArchivedDirectory] = useState<
+    TeacherLearnerDirectoryItem[] | null
+  >(null);
+  const [connections, setConnections] = useState<
+    LearnerConnectionRequest[] | null
+  >(null);
   const [groups, setGroups] = useState<LearnerGroup[] | null>(null);
   const [view, setView] = useState<DirectoryView>("learners");
+  const [directoryStatus, setDirectoryStatus] =
+    useState<DirectoryStatus>("active");
   const [learnerQuery, setLearnerQuery] = useState("");
   const [groupQuery, setGroupQuery] = useState("");
   const [groupFilter, setGroupFilter] = useState("all");
@@ -61,6 +124,8 @@ export function StudentsWorkspace() {
   const [learnerEditor, setLearnerEditor] = useState<{
     profile: LearnerProfile | null;
   } | null>(null);
+  const [addLearnerOpen, setAddLearnerOpen] = useState(false);
+  const [initialShareCode, setInitialShareCode] = useState("");
   const [groupEditor, setGroupEditor] = useState<{
     group: LearnerGroup | null;
   } | null>(null);
@@ -70,21 +135,42 @@ export function StudentsWorkspace() {
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
   const reloadDirectory = useCallback(async () => {
-    const [nextProfiles, nextGroups] = await Promise.all([
+    const [legacyProfiles, nextGroups] = await Promise.all([
       loadLearnerProfiles(),
       loadLearnerGroups(),
     ]);
-    setProfiles(nextProfiles.filter((profile) => !profile.archivedAt));
+    const nextActive = await loadTeacherDirectory("active").catch((caught) => {
+      if (caught instanceof IdentityClientError && caught.status === 404) {
+        return legacyProfiles
+          .filter((profile) => !profile.archivedAt)
+          .map(fallbackIdentity);
+      }
+      throw caught;
+    });
+    const [nextArchived, nextConnections] = await Promise.all([
+      loadTeacherDirectory("archived").catch((caught) => {
+        if (caught instanceof IdentityClientError && caught.status === 404)
+          return [];
+        throw caught;
+      }),
+      loadConnections().catch((caught) => {
+        if (caught instanceof IdentityClientError && caught.status === 404)
+          return [];
+        throw caught;
+      }),
+    ]);
+    setActiveDirectory(nextActive);
+    setArchivedDirectory(nextArchived);
+    setConnections(nextConnections);
+    setProfiles(nextActive.map(toLessonRunsProfile));
     setGroups(nextGroups);
   }, []);
 
   useEffect(() => {
     let active = true;
-    void Promise.all([loadLearnerProfiles(), loadLearnerGroups()])
-      .then(([nextProfiles, nextGroups]) => {
+    void reloadDirectory()
+      .then(() => {
         if (!active) return;
-        setProfiles(nextProfiles.filter((profile) => !profile.archivedAt));
-        setGroups(nextGroups);
       })
       .catch((caught: unknown) => {
         if (!active) return;
@@ -95,6 +181,21 @@ export function StudentsWorkspace() {
     return () => {
       active = false;
     };
+  }, [reloadDirectory]);
+
+  useEffect(() => {
+    const fragment = new URLSearchParams(window.location.hash.slice(1));
+    const scannedCode = fragment.get("connect-code")?.trim() ?? "";
+    if (!scannedCode) return;
+    window.history.replaceState(
+      null,
+      "",
+      `${window.location.pathname}${window.location.search}`,
+    );
+    setView("learners");
+    setDirectoryStatus("active");
+    setInitialShareCode(scannedCode);
+    setAddLearnerOpen(true);
   }, []);
 
   useEffect(() => {
@@ -111,10 +212,11 @@ export function StudentsWorkspace() {
   const activeQuery = view === "learners" ? learnerQuery : groupQuery;
   const normalizedQuery = activeQuery.trim().toLocaleLowerCase("ru-RU");
   const learnerEntries = useMemo<LearnerDirectoryEntry[]>(() => {
-    const entries = (profiles ?? []).map((profile) => ({
-      profile,
+    const entries = (activeDirectory ?? []).map((identity) => ({
+      profile: toLessonRunsProfile(identity),
+      identity,
       groups: (groups ?? []).filter((group) =>
-        group.members.some((member) => member.id === profile.id),
+        group.members.some((member) => member.id === identity.learnerProfileId),
       ),
     }));
     const filtered = entries.filter((entry) => {
@@ -144,7 +246,40 @@ export function StudentsWorkspace() {
         left.profile.displayName.localeCompare(right.profile.displayName, "ru")
       );
     });
-  }, [groupFilter, groups, learnerSort, normalizedQuery, profiles]);
+  }, [activeDirectory, groupFilter, groups, learnerSort, normalizedQuery]);
+
+  const visibleArchived = useMemo(() => {
+    return [...(archivedDirectory ?? [])]
+      .filter(
+        (learner) =>
+          !normalizedQuery ||
+          learner.displayName
+            .toLocaleLowerCase("ru-RU")
+            .includes(normalizedQuery),
+      )
+      .sort((left, right) => {
+        const direction = learnerSort === "name-desc" ? -1 : 1;
+        return (
+          direction * left.displayName.localeCompare(right.displayName, "ru")
+        );
+      });
+  }, [archivedDirectory, learnerSort, normalizedQuery]);
+
+  const pendingConnections = useMemo(() => {
+    return (connections ?? [])
+      .filter(
+        (request) =>
+          request.status === "pending" && request.direction === "outgoing",
+      )
+      .filter((request) => {
+        if (!normalizedQuery) return true;
+        return [request.localDisplayName, request.counterpartyLabel]
+          .filter(Boolean)
+          .some((value) =>
+            value!.toLocaleLowerCase("ru-RU").includes(normalizedQuery),
+          );
+      });
+  }, [connections, normalizedQuery]);
 
   const visibleGroups = useMemo(() => {
     const filtered = (groups ?? []).filter(
@@ -167,10 +302,18 @@ export function StudentsWorkspace() {
     });
   }, [groupSort, groups, normalizedQuery]);
 
-  const ready = profiles !== null && groups !== null;
+  const ready =
+    profiles !== null &&
+    groups !== null &&
+    activeDirectory !== null &&
+    archivedDirectory !== null &&
+    connections !== null;
   const busy = Boolean(busyLabel);
   const hasFilters =
-    Boolean(normalizedQuery) || (view === "learners" && groupFilter !== "all");
+    Boolean(normalizedQuery) ||
+    (view === "learners" &&
+      directoryStatus === "active" &&
+      groupFilter !== "all");
 
   async function mutate(
     label: string,
@@ -196,7 +339,7 @@ export function StudentsWorkspace() {
 
   function confirmLearnerDelete(profile: LearnerProfile) {
     return window.confirm(
-      `Убрать ученика «${profile.displayName}» из вашего списка? Он исчезнет из ваших групп и будущей аудитории ваших курсов. Учебный профиль и история сохранятся; у других преподавателей ничего не изменится. Вернуть ученика через интерфейс пока нельзя.`,
+      `Переместить ученика «${profile.displayName}» в архив? Он исчезнет из ваших групп и будущей аудитории ваших курсов. Учебная история сохранится, а восстановить связь можно будет во вкладке «Архив».`,
     );
   }
 
@@ -224,7 +367,7 @@ export function StudentsWorkspace() {
     if (!alreadyConfirmed && !confirmLearnerDelete(profile)) return;
     await mutate(
       "Удаляем ученика…",
-      "Ученик убран из вашего списка. Учебный профиль и история сохранены.",
+      "Ученик перемещён в архив. Учебный профиль и история сохранены.",
       () => deleteLearnerProfile(profile.id),
       () => setLearnerEditor(null),
     );
@@ -240,6 +383,45 @@ export function StudentsWorkspace() {
     );
   }
 
+  async function restoreLearner(learner: TeacherLearnerDirectoryItem) {
+    await mutate(
+      "Восстанавливаем ученика…",
+      "Ученик снова в активном списке. Добавьте его в нужные группы и курсы заново.",
+      () => restoreTeacherLearner(learner.learnerProfileId),
+      () => setDirectoryStatus("active"),
+    );
+  }
+
+  async function permanentlyDeleteLearner(
+    learner: TeacherLearnerDirectoryItem,
+  ) {
+    const confirmation = window.prompt(
+      `Пустой профиль «${learner.displayName}» будет удалён без возможности восстановления. Учебные профили с результатами, приглашениями, аккаунтом или другими связями удалить здесь нельзя. Для подтверждения введите имя ученика.`,
+    );
+    if (confirmation !== learner.displayName) return;
+    await mutate(
+      "Удаляем пустой профиль…",
+      "Пустой профиль без аккаунта удалён.",
+      () => permanentlyDeleteOfflineLearner(learner.learnerProfileId),
+      () => undefined,
+    );
+  }
+
+  async function cancelConnection(request: LearnerConnectionRequest) {
+    if (
+      !window.confirm(
+        `Отменить запрос для «${request.localDisplayName ?? request.counterpartyLabel}»?`,
+      )
+    )
+      return;
+    await mutate(
+      "Отменяем запрос…",
+      "Запрос отменён.",
+      () => actOnConnection(request.id, "cancel"),
+      () => undefined,
+    );
+  }
+
   return (
     <div className="teaching-hub-stack">
       <AppPageHeader
@@ -252,7 +434,8 @@ export function StudentsWorkspace() {
               disabled={!ready || busy}
               onClick={() => {
                 setMutationError(null);
-                setLearnerEditor({ profile: null });
+                setInitialShareCode("");
+                setAddLearnerOpen(true);
               }}
             >
               <UserPlus className="h-4 w-4" aria-hidden="true" />
@@ -283,7 +466,7 @@ export function StudentsWorkspace() {
           {
             value: "learners",
             label: "Ученики",
-            count: profiles?.length ?? 0,
+            count: activeDirectory?.length ?? 0,
             icon: GraduationCap,
           },
           {
@@ -294,6 +477,39 @@ export function StudentsWorkspace() {
           },
         ]}
       />
+
+      {view === "learners" ? (
+        <nav
+          className="flex flex-wrap gap-2"
+          aria-label="Состояние списка учеников"
+        >
+          {(
+            [
+              ["active", "Активные", activeDirectory?.length ?? 0],
+              ["archived", "Архив", archivedDirectory?.length ?? 0],
+              ["pending", "Ожидают ответа", pendingConnections.length],
+            ] as const
+          ).map(([status, label, count]) => (
+            <button
+              key={status}
+              type="button"
+              aria-current={directoryStatus === status ? "page" : undefined}
+              className={`rounded-full border px-4 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 ${
+                directoryStatus === status
+                  ? "border-neutral-950 bg-neutral-950 text-white"
+                  : "border-neutral-200 bg-white text-neutral-700 hover:border-neutral-400"
+              }`}
+              onClick={() => {
+                setDirectoryStatus(status);
+                setLearnerQuery("");
+                setGroupFilter("all");
+              }}
+            >
+              {label} · {count}
+            </button>
+          ))}
+        </nav>
+      ) : null}
 
       <section
         className="student-directory-toolbar"
@@ -319,7 +535,7 @@ export function StudentsWorkspace() {
         </label>
 
         <div className="student-directory-controls">
-          {view === "learners" ? (
+          {view === "learners" && directoryStatus === "active" ? (
             <select
               className="student-directory-select"
               aria-label="Фильтр по группе"
@@ -337,33 +553,35 @@ export function StudentsWorkspace() {
             </select>
           ) : null}
 
-          <select
-            className="student-directory-select"
-            aria-label="Сортировка"
-            value={view === "learners" ? learnerSort : groupSort}
-            disabled={!ready}
-            onChange={(event) => {
-              if (view === "learners") {
-                setLearnerSort(event.target.value as LearnerSort);
-              } else {
-                setGroupSort(event.target.value as GroupSort);
-              }
-            }}
-          >
-            {view === "learners" ? (
-              <>
-                <option value="name-asc">Имя: А—Я</option>
-                <option value="name-desc">Имя: Я—А</option>
-                <option value="group-count">По количеству групп</option>
-              </>
-            ) : (
-              <>
-                <option value="name-asc">Название: А—Я</option>
-                <option value="name-desc">Название: Я—А</option>
-                <option value="member-count">Сначала самые большие</option>
-              </>
-            )}
-          </select>
+          {view === "groups" || directoryStatus !== "pending" ? (
+            <select
+              className="student-directory-select"
+              aria-label="Сортировка"
+              value={view === "learners" ? learnerSort : groupSort}
+              disabled={!ready}
+              onChange={(event) => {
+                if (view === "learners") {
+                  setLearnerSort(event.target.value as LearnerSort);
+                } else {
+                  setGroupSort(event.target.value as GroupSort);
+                }
+              }}
+            >
+              {view === "learners" ? (
+                <>
+                  <option value="name-asc">Имя: А—Я</option>
+                  <option value="name-desc">Имя: Я—А</option>
+                  <option value="group-count">По количеству групп</option>
+                </>
+              ) : (
+                <>
+                  <option value="name-asc">Название: А—Я</option>
+                  <option value="name-desc">Название: Я—А</option>
+                  <option value="member-count">Сначала самые большие</option>
+                </>
+              )}
+            </select>
+          ) : null}
 
           {hasFilters ? (
             <Button
@@ -415,7 +633,7 @@ export function StudentsWorkspace() {
           {busyLabel}
         </p>
       ) : null}
-      {!learnerEditor && !groupEditor && mutationError ? (
+      {!learnerEditor && !groupEditor && !addLearnerOpen && mutationError ? (
         <p className="app-alert app-alert-error" role="alert">
           {mutationError}
         </p>
@@ -433,7 +651,7 @@ export function StudentsWorkspace() {
         hidden={view !== "learners"}
         tabIndex={0}
       >
-        {ready && view === "learners" ? (
+        {ready && view === "learners" && directoryStatus === "active" ? (
           <LearnersDirectoryTable
             entries={learnerEntries}
             hasFilters={hasFilters}
@@ -443,6 +661,103 @@ export function StudentsWorkspace() {
               setLearnerEditor({ profile });
             }}
           />
+        ) : null}
+        {ready && view === "learners" && directoryStatus === "archived" ? (
+          visibleArchived.length > 0 ? (
+            <ul className="grid gap-3" aria-label="Архив учеников">
+              {visibleArchived.map((learner) => (
+                <li
+                  key={learner.learnerProfileId}
+                  className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-neutral-200 bg-white p-5"
+                >
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <strong className="text-neutral-950">
+                        {learner.displayName}
+                      </strong>
+                      <IdentityStateBadge state={learner.identityState} />
+                    </div>
+                    <p className="mt-1 text-sm text-neutral-600">
+                      Связь с вами в архиве. Группы и будущие назначения не
+                      восстанавливаются автоматически.
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      disabled={busy}
+                      onClick={() => void restoreLearner(learner)}
+                    >
+                      <RotateCcw className="h-4 w-4" aria-hidden="true" />
+                      Восстановить
+                    </Button>
+                    {learner.canPermanentlyDelete ? (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        className="product-btn-danger"
+                        disabled={busy}
+                        onClick={() => void permanentlyDeleteLearner(learner)}
+                      >
+                        <Trash2 className="h-4 w-4" aria-hidden="true" />
+                        Удалить пустой профиль
+                      </Button>
+                    ) : null}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <IdentityEmpty
+              title={hasFilters ? "Ничего не найдено" : "Архив пуст"}
+              description="Перемещённые в архив связи появятся здесь. Их можно восстановить без возврата прежних групп и курсов."
+            />
+          )
+        ) : null}
+        {ready && view === "learners" && directoryStatus === "pending" ? (
+          pendingConnections.length > 0 ? (
+            <ul className="grid gap-3" aria-label="Запросы на подключение">
+              {pendingConnections.map((request) => (
+                <li
+                  key={request.id}
+                  className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-neutral-200 bg-white p-5"
+                >
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <strong className="text-neutral-950">
+                        {request.localDisplayName ?? "Новый ученик"}
+                      </strong>
+                      <RequestStatusBadge status={request.status} />
+                    </div>
+                    <p className="mt-1 text-sm text-neutral-600">
+                      {request.method === "share_code"
+                        ? "Запрос по одноразовому коду"
+                        : "Адресованное приглашение по email"}
+                      . Ученик появится в активном списке только после
+                      подтверждения.
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    disabled={busy}
+                    onClick={() => void cancelConnection(request)}
+                  >
+                    <XCircle className="h-4 w-4" aria-hidden="true" />
+                    Отменить запрос
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <IdentityEmpty
+              title={
+                hasFilters ? "Ничего не найдено" : "Нет ожидающих запросов"
+              }
+              description="Запросы по коду и email остаются здесь до ответа получателя, отмены или окончания срока действия."
+            />
+          )
         ) : null}
       </div>
 
@@ -470,6 +785,13 @@ export function StudentsWorkspace() {
         <LearnerProfileDialog
           key={learnerEditor.profile?.id ?? "new-learner"}
           profile={learnerEditor.profile}
+          identity={
+            learnerEditor.profile
+              ? (activeDirectory?.find(
+                  (item) => item.learnerProfileId === learnerEditor.profile?.id,
+                ) ?? fallbackIdentity(learnerEditor.profile))
+              : null
+          }
           groups={groups}
           busy={busy}
           error={mutationError}
@@ -497,6 +819,31 @@ export function StudentsWorkspace() {
               ? () => removeLearner(learnerEditor.profile!, true)
               : null
           }
+        />
+      ) : null}
+
+      {addLearnerOpen && groups ? (
+        <AddLearnerDialog
+          key={initialShareCode || "add-learner"}
+          groups={groups}
+          initialShareCode={initialShareCode}
+          onClose={() => {
+            setAddLearnerOpen(false);
+            setInitialShareCode("");
+          }}
+          onCreateOffline={async (displayName, learnerGroupIds) => {
+            setMutationError(null);
+            await createLearnerProfile(displayName, learnerGroupIds);
+            await reloadDirectory();
+            setAddLearnerOpen(false);
+            setInitialShareCode("");
+            setDirectoryStatus("active");
+            setStatusMessage("Профиль без аккаунта создан.");
+          }}
+          onPendingCreated={async () => {
+            await reloadDirectory();
+            setDirectoryStatus("pending");
+          }}
         />
       ) : null}
 

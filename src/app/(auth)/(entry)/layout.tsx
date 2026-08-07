@@ -8,13 +8,7 @@ export default async function AuthEntryLayout({
   children: React.ReactNode;
 }) {
   const resolution = await resolveAccessPolicy();
-  const redirectPath = resolveAuthEntryRedirect({
-    status: resolution.status,
-    activeProfile:
-      resolution.status === "adult-with-profile"
-        ? resolution.activeProfile
-        : undefined,
-  });
+  const redirectPath = resolveAuthEntryRedirect(resolution);
 
   if (redirectPath) {
     redirect(redirectPath);

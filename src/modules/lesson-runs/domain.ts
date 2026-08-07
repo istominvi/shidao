@@ -59,6 +59,9 @@ export type LearningRecord = {
   wasPresent: boolean | null;
   needsRepeat: boolean | null;
   teacherComment: string;
+  sharedWithLearnerAt?: string | null;
+  actualDurationMinutesAtTime?: number | null;
+  supersededByRecordId?: string | null;
   courseTitleAtTime: string | null;
   lessonTitleAtTime: string | null;
   subjectAtTime: string | null;
@@ -79,7 +82,9 @@ export type LessonRun = {
   courseTitle: string;
   scheduledAt: string;
   plannedDurationMinutes: number;
+  actualDurationMinutes?: number | null;
   startedAt: string | null;
+  startedAtIsActual?: boolean;
   endedAt: string | null;
   cancelledAt: string | null;
   teacherReport: string;

@@ -37,6 +37,10 @@ test("isProtectedAppRoute covers private app trees", () => {
   assert.equal(isProtectedAppRoute("/groups/class-1"), false);
   assert.equal(isProtectedAppRoute("/courses"), true);
   assert.equal(isProtectedAppRoute("/courses/course-1/student-preview"), true);
+  assert.equal(isProtectedAppRoute(ROUTES.learningProfile), true);
+  assert.equal(isProtectedAppRoute(`${ROUTES.learningProfile}/history`), true);
+  assert.equal(isProtectedAppRoute(ROUTES.observing), true);
+  assert.equal(isProtectedAppRoute(`${ROUTES.observing}/profile-1`), true);
   assert.equal(isProtectedAppRoute("/settings-security"), false);
   assert.equal(isProtectedAppRoute("/login"), false);
   assert.equal(isProtectedAppRoute(null), false);
@@ -68,5 +72,8 @@ test("isSafeRelativePath rejects external and protocol-relative redirects", () =
   assert.equal(isSafeRelativePath("/settings/profile?emailChanged=1"), true);
   assert.equal(isSafeRelativePath("https://malicious.example"), false);
   assert.equal(isSafeRelativePath("//malicious.example"), false);
+  assert.equal(isSafeRelativePath("/\\malicious.example"), false);
+  assert.equal(isSafeRelativePath("/%5cmalicious.example"), false);
+  assert.equal(isSafeRelativePath("/safe%0d%0aLocation:evil"), false);
   assert.equal(isSafeRelativePath("dashboard"), false);
 });

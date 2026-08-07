@@ -2,104 +2,63 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { GUEST_SESSION_VIEW, toSessionView } from "../session-view";
 
-test("toSessionView keeps student hasPin and identity fields", () => {
-  const actual = toSessionView({
-    kind: "student",
-    authenticated: true,
-    hasPin: true,
-    userId: "user-1",
-    fullName: "Test Student",
-    email: "student@example.com",
-    initials: "TS",
-    ignored: "field",
-  });
-
-  assert.deepEqual(actual, {
-    kind: "student",
-    authenticated: true,
-    hasPin: true,
-    userId: "user-1",
-    fullName: "Test Student",
-    email: "student@example.com",
-    initials: "TS",
-  });
-});
-
-test("toSessionView keeps adult profile contract strict", () => {
-  const actual = toSessionView({
-    kind: "adult",
-    authenticated: true,
-    hasPin: false,
-    activeProfile: "teacher",
-    availableProfiles: ["teacher", "invalid"],
-  });
-
-  assert.deepEqual(actual, {
-    kind: "adult",
-    authenticated: true,
-    hasPin: false,
-    activeProfile: "teacher",
-    availableProfiles: ["teacher"],
-    userId: undefined,
-    fullName: undefined,
-    email: undefined,
-    initials: undefined,
-  });
-});
-
-test("toSessionView keeps optional school selection for adult teacher", () => {
-  const actual = toSessionView({
-    kind: "adult",
-    authenticated: true,
-    hasPin: false,
-    activeProfile: "teacher",
-    availableProfiles: ["teacher"],
-    schoolOptions: [
-      { id: "personal", label: "Лично", kind: "personal", role: "owner" },
-      { id: "org-1", label: "Школа №12", kind: "organization", role: "teacher" },
-    ],
-    selectedSchool: { mode: "organization", schoolId: "org-1", schoolName: "Школа №12" },
-  });
-
-  assert.equal(actual.kind, "adult");
-  if (actual.kind !== "adult") return;
-  assert.equal(actual.schoolOptions?.length, 2);
-  assert.equal(actual.selectedSchool?.mode, "organization");
-  assert.equal(actual.selectedSchool?.schoolId, "org-1");
-});
-
-test("toSessionView falls back to guest on invalid payload", () => {
+test("toSessionView keeps only the roleless Account contract", () => {
   assert.deepEqual(
-    toSessionView({ kind: "adult", authenticated: true }),
-    GUEST_SESSION_VIEW,
-  );
-  assert.deepEqual(
-    toSessionView({ kind: "student", authenticated: true, userId: "u-1" }),
-    GUEST_SESSION_VIEW,
-  );
-  assert.deepEqual(toSessionView(null), GUEST_SESSION_VIEW);
-  assert.deepEqual(
-    toSessionView({ kind: "unknown", authenticated: true }),
-    GUEST_SESSION_VIEW,
+    toSessionView({
+      kind: "account",
+      authenticated: true,
+      hasPin: true,
+      userId: "must-not-leave-the-server",
+      accountId: "must-not-leave-the-server",
+      fullName: "Test Account",
+      email: "account@example.com",
+      initials: "TA",
+      locale: "ru",
+      timezone: "Asia/Chita",
+      activeProfile: "teacher",
+      ignored: "field",
+    }),
+    {
+      kind: "account",
+      authenticated: true,
+      hasPin: true,
+      fullName: "Test Account",
+      email: "account@example.com",
+      initials: "TA",
+      locale: "ru",
+      timezone: "Asia/Chita",
+    },
   );
 });
 
-test("toSessionView keeps degraded contract without introducing hasPin", () => {
-  const actual = toSessionView({
-    kind: "degraded",
-    authenticated: true,
-    reason: "context_unavailable",
-    hasPin: true,
-    email: "degraded@example.com",
-  });
+test("legacy role-shaped or incomplete payloads fail closed to guest", () => {
+  for (const payload of [
+    { kind: "account", authenticated: true, hasPin: false },
+    { kind: "adult", authenticated: true, hasPin: false },
+    { kind: "student", authenticated: true, hasPin: true },
+    null,
+    { kind: "unknown", authenticated: true },
+  ]) {
+    assert.deepEqual(toSessionView(payload), GUEST_SESSION_VIEW);
+  }
+});
 
-  assert.deepEqual(actual, {
-    kind: "degraded",
-    authenticated: true,
-    reason: "context_unavailable",
-    email: "degraded@example.com",
-    userId: undefined,
-    fullName: undefined,
-    initials: undefined,
-  });
+test("toSessionView keeps degraded identity without security fields", () => {
+  assert.deepEqual(
+    toSessionView({
+      kind: "degraded",
+      authenticated: true,
+      reason: "context_unavailable",
+      hasPin: true,
+      email: "degraded@example.com",
+    }),
+    {
+      kind: "degraded",
+      authenticated: true,
+      reason: "context_unavailable",
+      email: "degraded@example.com",
+      fullName: undefined,
+      initials: undefined,
+    },
+  );
 });

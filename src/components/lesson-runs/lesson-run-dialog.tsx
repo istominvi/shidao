@@ -51,6 +51,7 @@ type CompletionDraft = {
   wasPresent: boolean | null;
   needsRepeat: boolean;
   teacherComment: string;
+  shareWithLearner: boolean;
 };
 
 function runLearnerOptions(
@@ -78,6 +79,7 @@ function completionDraftFor(record: LearningRecord): CompletionDraft {
     wasPresent: record.wasPresent,
     needsRepeat: record.needsRepeat ?? false,
     teacherComment: record.teacherComment ?? "",
+    shareWithLearner: Boolean(record.sharedWithLearnerAt),
   };
 }
 
@@ -178,6 +180,9 @@ export function LessonRunDialog({
       : learners.map((learner) => learner.id),
   );
   const [teacherReport, setTeacherReport] = useState(run?.teacherReport ?? "");
+  const [actualDurationMinutes, setActualDurationMinutes] = useState(
+    run?.actualDurationMinutes?.toString() ?? "",
+  );
   const [editingAttention, setEditingAttention] = useState(false);
   const [mutationFailed, setMutationFailed] = useState(false);
   const [completion, setCompletion] = useState<Record<string, CompletionDraft>>(
@@ -195,6 +200,7 @@ export function LessonRunDialog({
     setScheduledAt(toLocalDateTimeInput(run.scheduledAt));
     setSelectedLearnerIds(run.records.map((record) => record.learnerProfileId));
     setTeacherReport(run.teacherReport ?? "");
+    setActualDurationMinutes(run.actualDurationMinutes?.toString() ?? "");
     setCompletion(
       Object.fromEntries(
         run.records.map((record) => [
@@ -217,13 +223,15 @@ export function LessonRunDialog({
     });
   const hasUnsavedCompletionDraft =
     teacherReport !== (run?.teacherReport ?? "") ||
+    actualDurationMinutes !== (run?.actualDurationMinutes?.toString() ?? "") ||
     activeRecords.some((record) => {
       const initial = completionDraftFor(record);
       const current = completion[record.learnerProfileId] ?? initial;
       return (
         current.wasPresent !== initial.wasPresent ||
         current.needsRepeat !== initial.needsRepeat ||
-        current.teacherComment !== initial.teacherComment
+        current.teacherComment !== initial.teacherComment ||
+        current.shareWithLearner !== initial.shareWithLearner
       );
     });
   const requestClose = useCallback(() => {
@@ -312,6 +320,9 @@ export function LessonRunDialog({
     const saved = await runDialogMutation("Сохраняем результаты урока…", () =>
       completeLessonRun(run.id, {
         teacherReport,
+        actualDurationMinutes: actualDurationMinutes
+          ? Number(actualDurationMinutes)
+          : null,
         records: activeRecords.map((record) => {
           const draft =
             completion[record.learnerProfileId] ?? completionDraftFor(record);
@@ -323,6 +334,7 @@ export function LessonRunDialog({
             wasPresent: draft.wasPresent,
             needsRepeat: draft.wasPresent && draft.needsRepeat,
             teacherComment: draft.teacherComment,
+            shareWithLearner: draft.shareWithLearner,
           };
         }),
       }),
@@ -377,6 +389,29 @@ export function LessonRunDialog({
               value={teacherReport}
               onChange={(event) => setTeacherReport(event.target.value)}
             />
+          </label>
+
+          <label className="block">
+            <span className="field-label">Фактическая длительность, минут</span>
+            <input
+              type="number"
+              min={1}
+              max={720}
+              inputMode="numeric"
+              className="field-input"
+              placeholder={
+                run?.startedAtIsActual
+                  ? "Рассчитается по времени запуска"
+                  : "Укажите, если время известно"
+              }
+              value={actualDurationMinutes}
+              onChange={(event) => setActualDurationMinutes(event.target.value)}
+            />
+            <span className="form-field-hint mt-1 block">
+              Если урок запускали в ShiDao, длительность рассчитается
+              автоматически. Для отчёта задним числом укажите её вручную;
+              неизвестное время останется пустым.
+            </span>
           </label>
 
           <fieldset className="lesson-run-participants">
@@ -464,10 +499,37 @@ export function LessonRunDialog({
                           [record.learnerProfileId]: {
                             ...draft,
                             teacherComment: event.target.value,
+                            shareWithLearner: event.target.value.trim()
+                              ? draft.shareWithLearner
+                              : false,
                           },
                         }))
                       }
                     />
+                  </label>
+                  <label className="lesson-run-profile-share">
+                    <input
+                      type="checkbox"
+                      aria-label={`Добавить комментарий ${record.learnerDisplayName} в учебный профиль`}
+                      checked={draft.shareWithLearner}
+                      disabled={!draft.teacherComment.trim()}
+                      onChange={(event) =>
+                        setCompletion((current) => ({
+                          ...current,
+                          [record.learnerProfileId]: {
+                            ...draft,
+                            shareWithLearner: event.target.checked,
+                          },
+                        }))
+                      }
+                    />
+                    <span>
+                      <strong>Добавить в учебный профиль</strong>
+                      <small>
+                        Комментарий увидят учащийся и его наблюдатели. Без этой
+                        отметки он останется только у преподавателя.
+                      </small>
+                    </span>
                   </label>
                 </div>
               );

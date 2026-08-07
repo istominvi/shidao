@@ -61,7 +61,9 @@ export function Chip({
         className,
       )}
     >
-      {Icon ? <Icon className={chipIconSizeClass[size]} aria-hidden="true" /> : null}
+      {Icon ? (
+        <Icon className={chipIconSizeClass[size]} aria-hidden="true" />
+      ) : null}
       <span>{children}</span>
     </span>
   );

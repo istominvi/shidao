@@ -9,85 +9,22 @@ import {
   resolveTeacherRequiredRedirect,
 } from "../access-guards";
 
-test("app layout redirects guest/degraded to login", () => {
-  assert.equal(resolveAppLayoutRedirect("guest"), ROUTES.login);
-  assert.equal(resolveAppLayoutRedirect("degraded"), ROUTES.login);
+test("all existing private route groups enforce only Account authentication", () => {
+  for (const status of ["guest", "degraded"] as const) {
+    assert.equal(resolveAppLayoutRedirect(status), ROUTES.login);
+    assert.equal(resolveProfileRequiredRedirect(status), ROUTES.login);
+    assert.equal(resolveTeacherRequiredRedirect({ status }), ROUTES.login);
+    assert.equal(resolveOnboardingRedirect(status), ROUTES.login);
+  }
+
+  assert.equal(resolveAppLayoutRedirect("account"), null);
+  assert.equal(resolveProfileRequiredRedirect("account"), null);
+  assert.equal(resolveTeacherRequiredRedirect({ status: "account" }), null);
+  assert.equal(resolveOnboardingRedirect("account"), null);
 });
 
-test("profile-required layout redirects adult-without-profile to onboarding", () => {
-  assert.equal(
-    resolveProfileRequiredRedirect("adult-without-profile"),
-    ROUTES.onboarding,
-  );
-  assert.equal(resolveProfileRequiredRedirect("student"), null);
-  assert.equal(resolveProfileRequiredRedirect("adult-with-profile"), null);
-});
-
-test("teacher-required layout permits only the active teacher profile", () => {
-  assert.equal(
-    resolveTeacherRequiredRedirect({
-      status: "adult-with-profile",
-      activeProfile: "teacher",
-    }),
-    null,
-  );
-  assert.equal(
-    resolveTeacherRequiredRedirect({
-      status: "adult-with-profile",
-      activeProfile: "parent",
-    }),
-    ROUTES.courses,
-  );
-  assert.equal(
-    resolveTeacherRequiredRedirect({ status: "student" }),
-    ROUTES.courses,
-  );
-  assert.equal(
-    resolveTeacherRequiredRedirect({ status: "adult-without-profile" }),
-    ROUTES.onboarding,
-  );
-  assert.equal(
-    resolveTeacherRequiredRedirect({ status: "guest" }),
-    ROUTES.login,
-  );
-  assert.equal(
-    resolveTeacherRequiredRedirect({ status: "degraded" }),
-    ROUTES.login,
-  );
-});
-
-test("auth entry routes redirect authenticated users deterministically", () => {
-  assert.equal(
-    resolveAuthEntryRedirect({ status: "adult-without-profile" }),
-    ROUTES.onboarding,
-  );
-  assert.equal(
-    resolveAuthEntryRedirect({
-      status: "adult-with-profile",
-      activeProfile: "teacher",
-    }),
-    ROUTES.courses,
-  );
-  assert.equal(
-    resolveAuthEntryRedirect({
-      status: "adult-with-profile",
-      activeProfile: "parent",
-    }),
-    ROUTES.courses,
-  );
-  assert.equal(resolveAuthEntryRedirect({ status: "student" }), ROUTES.courses);
+test("auth entry routes redirect a resolved Account to courses", () => {
+  assert.equal(resolveAuthEntryRedirect({ status: "account" }), ROUTES.courses);
   assert.equal(resolveAuthEntryRedirect({ status: "guest" }), null);
   assert.equal(resolveAuthEntryRedirect({ status: "degraded" }), null);
-});
-
-test("onboarding route blocks guest/degraded/student and preserves add-profile flow", () => {
-  assert.equal(resolveOnboardingRedirect("guest"), ROUTES.login);
-  assert.equal(resolveOnboardingRedirect("degraded"), ROUTES.login);
-  assert.equal(resolveOnboardingRedirect("student"), ROUTES.courses);
-  assert.equal(resolveOnboardingRedirect("adult-without-profile"), null);
-  assert.equal(resolveOnboardingRedirect("adult-with-profile"), ROUTES.courses);
-  assert.equal(
-    resolveOnboardingRedirect("adult-with-profile", { mode: "add-profile" }),
-    null,
-  );
 });

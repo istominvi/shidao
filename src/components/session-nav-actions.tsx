@@ -4,24 +4,19 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import type { LucideIcon } from "lucide-react";
-import { GraduationCap, LogOut, Menu, Settings, UserRound } from "lucide-react";
+import { LogOut, Menu, Settings } from "lucide-react";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
-import {
-  isStudentInternalAuthEmail,
-  ROUTES,
-  type ProfileKind,
-} from "@/lib/auth";
+import { isInternalAuthEmail, ROUTES } from "@/lib/auth";
 import { signOutViaServer } from "@/lib/auth-flow";
 import { useSessionView } from "@/components/use-session-view";
-import type { SessionAdultView, SessionStudentView } from "@/lib/session-view";
-import { SegmentedControl } from "@/components/ui/segmented-control";
+import type { SessionAccountView } from "@/lib/session-view";
 import {
   NavigationDropdownPanel,
   navigationDropdownItemClass,
 } from "@/components/navigation/primitives";
 
 type SessionNavActionsProps = {
-  state: SessionAdultView | SessionStudentView;
+  state: SessionAccountView;
   variant?: "top-nav" | "landing";
   portalMenu?: boolean;
   mobileNavItems?: SessionNavItem[];
@@ -37,20 +32,11 @@ type SessionNavItem = {
 };
 
 type MenuPosition = { top: number; left: number; width: number };
-type ActionLoadingState = `switch:${ProfileKind}` | "signout" | null;
+type ActionLoadingState = "signout" | null;
 
 const MENU_WIDTH = 288;
 const MENU_GAP = 8;
 const VIEWPORT_PADDING = 8;
-const ADULT_PROFILE_ORDER: ProfileKind[] = ["teacher", "parent"];
-const ADULT_PROFILE_TOGGLE_LABELS: Record<ProfileKind, string> = {
-  teacher: "Учитель",
-  parent: "Родитель",
-};
-const PROFILE_HOME_ROUTE: Record<ProfileKind, string> = {
-  teacher: ROUTES.courses,
-  parent: ROUTES.courses,
-};
 
 async function readActionError(
   response: Response,
@@ -77,29 +63,7 @@ export function SessionNavActions({
   const [menuPosition, setMenuPosition] = useState<MenuPosition | null>(null);
   const [actionLoading, setActionLoading] = useState<ActionLoadingState>(null);
   const [actionError, setActionError] = useState<string | null>(null);
-  const isSwitchBusy = actionLoading?.startsWith("switch:") ?? false;
-  const shouldHideStudentInternalEmail =
-    state.kind === "student" && isStudentInternalAuthEmail(state.email);
-  const emailLabel = shouldHideStudentInternalEmail ? null : state.email;
-  const profileItems: Array<{
-    value: ProfileKind;
-    label: string;
-    disabled: boolean;
-    busy: boolean;
-  }> =
-    state.kind === "adult"
-      ? ADULT_PROFILE_ORDER.map((profile) => {
-          const available = state.availableProfiles.includes(profile);
-          const isSwitchLoading = actionLoading === `switch:${profile}`;
-          return {
-            value: profile,
-            label: ADULT_PROFILE_TOGGLE_LABELS[profile],
-            icon: profile === "teacher" ? GraduationCap : UserRound,
-            disabled: !available || (isSwitchBusy && !isSwitchLoading),
-            busy: isSwitchLoading,
-          };
-        })
-      : [];
+  const emailLabel = isInternalAuthEmail(state.email) ? null : state.email;
   const updateMenuPosition = useCallback(() => {
     if (!portalMenu || !containerRef.current) return;
 
@@ -166,44 +130,6 @@ export function SessionNavActions({
     };
   }, [open, portalMenu, updateMenuPosition]);
 
-  async function handleSwitch(profile: ProfileKind) {
-    if (
-      state.kind !== "adult" ||
-      state.activeProfile === profile ||
-      !state.availableProfiles.includes(profile)
-    ) {
-      return;
-    }
-
-    const loadingKey = `switch:${profile}` as const;
-    setActionLoading(loadingKey);
-    setActionError(null);
-
-    try {
-      const response = await fetch("/api/preferences/profile", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ profile }),
-      });
-      if (!response.ok) {
-        await readActionError(response, "Не удалось переключить профиль.");
-      }
-
-      await refetchSession();
-      setOpen(false);
-      router.replace(PROFILE_HOME_ROUTE[profile]);
-      router.refresh();
-    } catch (error) {
-      setActionError(
-        error instanceof Error
-          ? error.message
-          : "Не удалось переключить профиль.",
-      );
-    } finally {
-      setActionLoading(null);
-    }
-  }
-
   async function handleSignOut() {
     setActionLoading("signout");
     setActionError(null);
@@ -267,29 +193,6 @@ export function SessionNavActions({
           role="alert"
         >
           {actionError}
-        </div>
-      ) : null}
-
-      {state.kind === "adult" ? (
-        <div className="border-t border-black/5 px-3 py-2.5">
-          <SegmentedControl
-            ariaLabel="Активный профиль"
-            value={state.activeProfile}
-            onChange={(profile) => {
-              if (profile === state.activeProfile) {
-                setOpen(false);
-                router.replace(PROFILE_HOME_ROUTE[profile]);
-                router.refresh();
-                return;
-              }
-
-              const available = state.availableProfiles.includes(profile);
-              if (available && !isSwitchBusy) {
-                void handleSwitch(profile);
-              }
-            }}
-            items={profileItems}
-          />
         </div>
       ) : null}
 

@@ -1,57 +1,69 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ROUTES } from "@/lib/auth";
-import { apiError, parseJsonWithSchema } from "@/lib/server/api";
-import { readAppSession } from "@/lib/server/app-session";
-import { logger } from "@/lib/server/logger";
-import { mapOnboardingFailureToUserMessage } from "@/lib/server/onboarding-errors";
+import { apiError } from "@/lib/server/api";
 import {
-  ensureUserPreference,
-  getUserContextById,
-  setLastActiveProfile,
-  upsertParentProfile,
-  upsertTeacherProfile,
-} from "@/lib/server/supabase-admin";
-import { onboardingPayloadSchema } from "@/lib/server/validation";
+  getCurrentAccountAuthContext,
+  updateCurrentAccountProfile,
+} from "@/lib/server/account-auth";
+import {
+  clearAppSession,
+  isSessionRevoked,
+  readAppSession,
+} from "@/lib/server/app-session";
+import { logger } from "@/lib/server/logger";
+import { requireSupabaseUserAccessToken } from "@/lib/server/supabase-user-session";
 
 export const runtime = "nodejs";
+
+const LOCALE_PATTERN = /^[a-z]{2}(?:-[A-Z]{2})?$/;
+const TIMEZONE_PATTERN = /^[A-Za-z_]+(?:\/[A-Za-z0-9_+\-]+)+$/;
 
 export async function POST(req: NextRequest) {
   const session = await readAppSession();
   if (!session) return apiError(401, "Не авторизовано.");
 
-  const parsed = await parseJsonWithSchema(
-    req,
-    onboardingPayloadSchema,
-    "Некорректный профиль.",
-  );
-  if (!parsed.ok) return parsed.response;
-  const { profile } = parsed.data;
-
-  const context = await getUserContextById(session.uid);
-  if (context.actorKind === "student") {
-    return apiError(403, "Онбординг недоступен для ученика.");
+  const body = (await req.json().catch(() => null)) as {
+    displayName?: unknown;
+    locale?: unknown;
+    timezone?: unknown;
+  } | null;
+  const displayName =
+    typeof body?.displayName === "string" ? body.displayName.trim() : "";
+  const locale = typeof body?.locale === "string" ? body.locale.trim() : "";
+  const timezone =
+    typeof body?.timezone === "string" ? body.timezone.trim() : "";
+  if (
+    displayName.length < 1 ||
+    displayName.length > 160 ||
+    !LOCALE_PATTERN.test(locale) ||
+    timezone.length > 64 ||
+    !TIMEZONE_PATTERN.test(timezone)
+  ) {
+    return apiError(400, "Проверьте имя, язык и часовой пояс.");
   }
 
   try {
-    if (profile === "parent") {
-      await upsertParentProfile(session.uid, context.fullName);
-    } else {
-      await upsertTeacherProfile(session.uid, context.fullName);
+    const accessToken = await requireSupabaseUserAccessToken();
+    const context = await getCurrentAccountAuthContext(accessToken);
+    if (
+      context.authUserId !== session.uid ||
+      isSessionRevoked(session.iat, context.sessionsInvalidBefore)
+    ) {
+      await clearAppSession();
+      return apiError(401, "Требуется повторный вход.");
     }
+    await updateCurrentAccountProfile(accessToken, {
+      displayName,
+      locale,
+      timezone,
+    });
 
-    await ensureUserPreference(session.uid);
-    await setLastActiveProfile(session.uid, profile);
+    return NextResponse.json({ redirectTo: ROUTES.courses });
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Unknown onboarding error";
-    logger.error("[api/onboarding] onboarding failed", {
+    logger.error("[api/onboarding] Account update failed", {
       userId: session.uid,
-      profile,
-      message,
       error,
     });
-    return apiError(500, mapOnboardingFailureToUserMessage(error));
+    return apiError(503, "Не удалось сохранить профиль. Попробуйте позже.");
   }
-
-  return NextResponse.json({ redirectTo: ROUTES.courses });
 }

@@ -11,8 +11,7 @@ export async function GET() {
         return 401;
       case "degraded":
         return 503;
-      case "student":
-      case "adult":
+      case "account":
         return 200;
       default: {
         const _exhaustive: never = sessionView;
@@ -21,5 +20,8 @@ export async function GET() {
     }
   })();
 
-  return NextResponse.json(sessionView, { status });
+  return NextResponse.json(sessionView, {
+    status,
+    headers: { "Cache-Control": "private, no-store" },
+  });
 }

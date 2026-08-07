@@ -6,6 +6,8 @@ export const PRIVATE_ROUTE_PREFIXES = [
   ROUTES.schedule,
   ROUTES.students,
   ROUTES.courses,
+  ROUTES.learningProfile,
+  ROUTES.observing,
 ] as const;
 
 export function isRouteWithin(
@@ -32,7 +34,20 @@ export function isGuardedAuthRoute(pathname: string | null | undefined) {
 export function isSafeRelativePath(
   pathname: string | null | undefined,
 ): pathname is `/${string}` {
-  return Boolean(
-    pathname && pathname.startsWith("/") && !pathname.startsWith("//"),
-  );
+  if (
+    !pathname ||
+    !pathname.startsWith("/") ||
+    pathname.startsWith("//") ||
+    /[\\\u0000-\u001f\u007f]/.test(pathname) ||
+    /%(?:0a|0d|5c)/i.test(pathname)
+  ) {
+    return false;
+  }
+
+  try {
+    const base = "https://safe-redirect.invalid";
+    return new URL(pathname, base).origin === base;
+  } catch {
+    return false;
+  }
 }

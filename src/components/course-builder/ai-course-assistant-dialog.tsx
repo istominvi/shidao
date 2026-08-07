@@ -34,6 +34,7 @@ export function AiCourseAssistantDialog({
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastUsage, setLastUsage] = useState<AiProviderUsage | null>(null);
+  const [sharedHistoryUsed, setSharedHistoryUsed] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   async function send(content: string) {
@@ -55,6 +56,7 @@ export function AiCourseAssistantDialog({
       );
       setMessages((current) => [...current, reply.message].slice(-16));
       setLastUsage(reply.usage);
+      setSharedHistoryUsed(reply.sharedHistoryUsed);
     } catch (caught) {
       setError(
         caught instanceof Error
@@ -90,6 +92,9 @@ export function AiCourseAssistantDialog({
           Ассистент видит сохранённую структуру курса и выбранного урока. Он
           консультирует, но не меняет данные из чата. Содержимое прикреплённых
           файлов пока ему недоступно.
+          {sharedHistoryUsed
+            ? " В последнем ответе использована разрешённая общая учебная история в обезличенном виде; чужие исходные записи и комментарии здесь не показываются."
+            : " Общая история других преподавателей без отдельного разрешения не используется."}
         </div>
 
         {messages.length === 0 ? (

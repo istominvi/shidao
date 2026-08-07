@@ -284,7 +284,10 @@ test("current schema snapshot preserves the hardened scheduling contract", () =>
   );
   assert.match(snapshot, /lesson_run_cancellation_time_check/);
   assert.match(snapshot, /'lesson_run_changed'/);
-  assert.match(snapshot, /jsonb_array_length\(p_records\) = 0/);
+  assert.match(
+    snapshot,
+    /jsonb_array_length\(p_records\) not between 1 and 200/,
+  );
   assert.match(
     snapshot,
     /GRANT SELECT ON TABLE public\.learner_profile TO authenticated;/,

@@ -31,7 +31,10 @@ type PageHeroProps = {
 export function PageHero({ eyebrow, title, description }: PageHeroProps) {
   return (
     <header className="product-hero-card">
-      <Chip tone="neutral" className="w-fit bg-white/85 text-xs uppercase tracking-[0.14em] text-neutral-700">
+      <Chip
+        tone="neutral"
+        className="w-fit bg-white/85 text-xs uppercase tracking-[0.14em] text-neutral-700"
+      >
         {eyebrow}
       </Chip>
       <h1 className="mt-4 text-4xl font-black leading-[0.95] tracking-[-0.03em] text-neutral-950 md:text-6xl">

@@ -132,6 +132,7 @@ export const completeLearningRecordInputSchema = z
     wasPresent: z.boolean(),
     needsRepeat: z.boolean(),
     teacherComment: optionalTrimmedText(2_000),
+    shareWithLearner: z.boolean().default(false),
   })
   .strict()
   .superRefine((record, context) => {
@@ -142,11 +143,25 @@ export const completeLearningRecordInputSchema = z
         message: "Повторение оценивается только для присутствовавшего ученика.",
       });
     }
+    if (record.shareWithLearner && !record.teacherComment) {
+      context.addIssue({
+        code: "custom",
+        path: ["shareWithLearner"],
+        message: "Сначала добавьте комментарий для учебного профиля.",
+      });
+    }
   });
 
 export const completeLessonRunInputSchema = z
   .object({
     teacherReport: optionalTrimmedText(4_000),
+    actualDurationMinutes: z
+      .number()
+      .int()
+      .min(1)
+      .max(720)
+      .nullable()
+      .optional(),
     records: z.array(completeLearningRecordInputSchema).min(1).max(200),
   })
   .strict()

@@ -1,77 +1,41 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-
 import { ROUTES } from "../auth";
 import {
-  resolveAddProfileHref,
   resolveTopNavAction,
   shouldRedirectSecuritySettingsToLogin,
 } from "../navigation-contract";
-import { resolveAppLayoutRedirect, resolveAuthEntryRedirect } from "../server/access-guards";
-import type {
-  SessionAdultView,
-  SessionGuestView,
-  SessionStudentView,
-} from "../session-view";
+import {
+  resolveAppLayoutRedirect,
+  resolveAuthEntryRedirect,
+} from "../server/access-guards";
+import type { SessionAccountView, SessionGuestView } from "../session-view";
 
 const guest: SessionGuestView = { kind: "guest", authenticated: false };
-const student: SessionStudentView = {
-  kind: "student",
+const account: SessionAccountView = {
+  kind: "account",
   authenticated: true,
   hasPin: true,
-};
-const adult: SessionAdultView = {
-  kind: "adult",
-  authenticated: true,
-  hasPin: true,
-  activeProfile: "parent",
-  availableProfiles: ["parent", "teacher"],
+  locale: "ru",
+  timezone: "Asia/Chita",
 };
 
-test("smoke: guest opens / and sees guest CTA contract in header", () => {
+test("smoke: guest and Account header contracts are deterministic", () => {
   assert.equal(resolveTopNavAction(ROUTES.home, guest, true), "guest-login");
-});
-
-test("smoke: authenticated user opens / and sees auth-aware header contract", () => {
   assert.equal(
-    resolveTopNavAction(ROUTES.home, adult, true),
-    "session-actions",
-  );
-  assert.equal(
-    resolveTopNavAction(ROUTES.home, student, true),
+    resolveTopNavAction(ROUTES.home, account, true),
     "session-actions",
   );
 });
 
-test("smoke: guest on protected route is redirected to /login by server guard", () => {
-  assert.equal(
-    resolveAppLayoutRedirect("guest"),
-    ROUTES.login,
-  );
+test("smoke: only Account authentication gates private and auth-entry routes", () => {
+  assert.equal(resolveAppLayoutRedirect("guest"), ROUTES.login);
+  assert.equal(resolveAppLayoutRedirect("account"), null);
+  assert.equal(resolveAuthEntryRedirect({ status: "account" }), ROUTES.courses);
+  assert.equal(resolveAuthEntryRedirect({ status: "guest" }), null);
 });
 
-test("smoke: authenticated user on /login is redirected by access policy", () => {
-  assert.equal(
-    resolveAuthEntryRedirect({
-      status: "adult-with-profile",
-      activeProfile: "teacher",
-    }),
-    ROUTES.courses,
-  );
-  assert.equal(
-    resolveAuthEntryRedirect({ status: "adult-without-profile" }),
-    ROUTES.onboarding,
-  );
-});
-
-test("smoke: /settings/security follows server-first contract (no extra client fetch needed)", () => {
+test("smoke: security settings use the Account session", () => {
   assert.equal(shouldRedirectSecuritySettingsToLogin(guest), true);
-  assert.equal(shouldRedirectSecuritySettingsToLogin(adult), false);
-});
-
-test("smoke: profile switching flow exposes canonical add-profile redirect contract", () => {
-  assert.equal(
-    resolveAddProfileHref(),
-    `${ROUTES.onboarding}?mode=add-profile`,
-  );
+  assert.equal(shouldRedirectSecuritySettingsToLogin(account), false);
 });

@@ -8,7 +8,9 @@ import {
 test("isSchemaDriftError detects missing RPC function errors", () => {
   assert.equal(
     isSchemaDriftError(
-      new Error('Could not find the function public.onboard_teacher(p_user_id)'),
+      new Error(
+        "Could not find the function public.onboard_teacher(p_user_id)",
+      ),
     ),
     true,
   );
@@ -16,7 +18,9 @@ test("isSchemaDriftError detects missing RPC function errors", () => {
 
 test("isSchemaDriftError detects missing relation/column errors", () => {
   assert.equal(
-    isSchemaDriftError(new Error('relation "public.class_teacher" does not exist')),
+    isSchemaDriftError(
+      new Error('relation "public.class_teacher" does not exist'),
+    ),
     true,
   );
   assert.equal(
@@ -28,7 +32,7 @@ test("isSchemaDriftError detects missing relation/column errors", () => {
 test("mapOnboardingFailureToUserMessage returns safe schema message", () => {
   assert.equal(
     mapOnboardingFailureToUserMessage(
-      new Error('function public.onboard_teacher(uuid, text) does not exist'),
+      new Error("function public.onboard_teacher(uuid, text) does not exist"),
     ),
     "Не удалось завершить онбординг: проблема схемы БД (миграции не применены или устарели).",
   );

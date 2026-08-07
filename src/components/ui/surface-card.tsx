@@ -34,7 +34,9 @@ export function SurfaceCard({
               <p className="surface-card-description">{description}</p>
             ) : null}
           </div>
-          {actions ? <div className="surface-card-actions">{actions}</div> : null}
+          {actions ? (
+            <div className="surface-card-actions">{actions}</div>
+          ) : null}
         </div>
       ) : null}
       {children ? (

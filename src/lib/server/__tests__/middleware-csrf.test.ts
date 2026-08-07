@@ -150,3 +150,80 @@ test("middleware uses the app URL for CSRF and request host as local fallback", 
     else process.env.NEXT_PUBLIC_SITE_URL = previousSiteUrl;
   }
 });
+
+test("production allowlist blocks unknown and deep brand/model hosts before routing", () => {
+  const previousNodeEnv = process.env.NODE_ENV;
+  try {
+    Object.defineProperty(process.env, "NODE_ENV", {
+      value: "production",
+      configurable: true,
+      enumerable: true,
+      writable: true,
+    });
+    for (const [host, pathname] of [
+      ["unknown.shidao.ru", "/"],
+      ["brand.shidao.ru", "/api/auth/session"],
+      ["model.shidao.ru", "/courses"],
+      ["localhost", "/login"],
+    ]) {
+      const response = middleware(
+        new NextRequest(`https://${host}${pathname}`, {
+          headers: { host, "x-forwarded-host": host },
+        }),
+      );
+      assert.equal(response.status, 421, `${host}${pathname}`);
+    }
+    const forgedForwardedV2Host = middleware(
+      new NextRequest("https://unknown.shidao.ru/courses", {
+        headers: {
+          host: "unknown.shidao.ru",
+          "x-forwarded-host": "v2.shidao.ru",
+        },
+      }),
+    );
+    assert.equal(forgedForwardedV2Host.status, 421);
+
+    const foreignForwardedHost = middleware(
+      new NextRequest("https://v2.shidao.ru/courses", {
+        headers: {
+          host: "v2.shidao.ru",
+          "x-forwarded-host": "foreign.example",
+        },
+      }),
+    );
+    assert.equal(foreignForwardedHost.status, 421);
+
+    const equivalentNormalizedHosts = middleware(
+      new NextRequest("https://v2.shidao.ru/courses", {
+        headers: {
+          host: "V2.Shidao.Ru:443",
+          "x-forwarded-host": "v2.shidao.ru",
+        },
+      }),
+    );
+    assert.equal(equivalentNormalizedHosts.status, 200);
+
+    const missingOrigin = middleware(
+      new NextRequest("https://v2.shidao.ru/api/v2/test", {
+        method: "POST",
+        headers: {
+          host: "v2.shidao.ru",
+          "x-forwarded-host": "v2.shidao.ru",
+          "sec-fetch-site": "same-origin",
+        },
+      }),
+    );
+    assert.equal(missingOrigin.status, 403);
+  } finally {
+    if (previousNodeEnv === undefined) {
+      Reflect.deleteProperty(process.env, "NODE_ENV");
+    } else {
+      Object.defineProperty(process.env, "NODE_ENV", {
+        value: previousNodeEnv,
+        configurable: true,
+        enumerable: true,
+        writable: true,
+      });
+    }
+  }
+});

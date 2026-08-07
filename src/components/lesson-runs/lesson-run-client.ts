@@ -178,11 +178,13 @@ export async function completeLessonRun(
   runId: string,
   input: {
     teacherReport: string;
+    actualDurationMinutes?: number | null;
     records: Array<{
       learnerProfileId: string;
       wasPresent: boolean;
       needsRepeat: boolean;
       teacherComment: string;
+      shareWithLearner: boolean;
     }>;
   },
 ) {

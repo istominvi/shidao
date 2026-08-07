@@ -1,12 +1,17 @@
 import assert from "node:assert/strict";
 import { spawn, type ChildProcess } from "node:child_process";
 import { once } from "node:events";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
 import {
   createServer,
+  request as httpRequest,
   type IncomingMessage,
   type ServerResponse,
 } from "node:http";
+import { createServer as createHttpsServer } from "node:https";
 import net from "node:net";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { after, before, test } from "node:test";
 import {
   buildAppSessionSupabaseTokens,
@@ -24,12 +29,34 @@ const E2E_LESSON_ID = "44444444-4444-4444-8444-444444444444";
 const E2E_LEARNER_ANNA_ID = "88888888-8888-4888-8888-888888888881";
 const E2E_LEARNER_BORIS_ID = "88888888-8888-4888-8888-888888888882";
 const E2E_LEARNER_CLARA_ID = "88888888-8888-4888-8888-888888888883";
+const E2E_SELF_LEARNER_ID = "88888888-8888-4888-8888-888888888884";
+const E2E_ARCHIVED_LEARNER_ID = "88888888-8888-4888-8888-888888888885";
+const E2E_CONNECTION_ID = "88888888-8888-4888-8888-888888888886";
+const E2E_OBSERVER_GRANT_ID = "88888888-8888-4888-8888-888888888887";
+const E2E_OBSERVER_INVITATION_ID = "88888888-8888-4888-8888-888888888888";
+const E2E_OUTGOING_OBSERVER_INVITATION_ID =
+  "88888888-8888-4888-8888-888888888897";
+const E2E_AI_CONSENT_ID = "88888888-8888-4888-8888-888888888889";
+const E2E_PROFILE_INVITATION_ID = "88888888-8888-4888-8888-888888888890";
+const E2E_CHILD_INVITATION_ID = "88888888-8888-4888-8888-888888888891";
+const E2E_MERGE_INVITATION_ID = "88888888-8888-4888-8888-888888888892";
+const E2E_MERGE_OPERATION_ID = "88888888-8888-4888-8888-888888888893";
+const E2E_RECOVERY_GRANT_ID = "88888888-8888-4888-8888-888888888894";
+const E2E_COMPLETION_PRIVATE_RUN_ID = "88888888-8888-4888-8888-888888888895";
+const E2E_COMPLETION_PUBLISHED_RUN_ID = "88888888-8888-4888-8888-888888888896";
 const E2E_GROUP_TEEN_ID = "99999999-9999-4999-8999-999999999991";
 const E2E_GROUP_EXAM_ID = "99999999-9999-4999-8999-999999999992";
 const E2E_COURSE_TITLE = "Английский для жизни";
 const E2E_LESSON_TITLE = "Present Perfect · жизненный опыт";
 const E2E_SUPABASE_ACCESS_TOKEN = "e2e-supabase-user-access-token";
 const E2E_FOREIGN_ACCOUNT_ID = "22222222-2222-4222-8222-222222222229";
+const E2E_PRIVATE_SELF_COMMENT = "PRIVATE SELF COMMENT — только преподавателю";
+const E2E_PUBLISHED_OBSERVED_COMMENT =
+  "Опубликованный комментарий Бориса из completion UI.";
+const E2E_PUBLISHED_SELF_COMMENT =
+  "Опубликованный комментарий E2E Adult из completion UI.";
+const E2E_PRIVATE_OBSERVED_COMMENT =
+  "PRIVATE OBSERVED COMMENT — только преподавателю";
 
 const E2E_COURSE_ROW = {
   id: E2E_COURSE_ID,
@@ -85,6 +112,14 @@ const E2E_TEACHER_LEARNER_ROWS = [
     created_at: "2026-08-05T10:02:00.000Z",
     updated_at: "2026-08-05T10:02:00.000Z",
   },
+  {
+    teacher_account_id: E2E_ACCOUNT_ID,
+    learner_profile_id: E2E_SELF_LEARNER_ID,
+    display_name: "E2E Adult",
+    archived_at: null,
+    created_at: "2026-08-05T10:03:00.000Z",
+    updated_at: "2026-08-05T10:03:00.000Z",
+  },
 ];
 
 const E2E_LEARNER_GROUP_ROWS = [
@@ -127,7 +162,58 @@ const E2E_LEARNER_GROUP_MEMBER_ROWS = [
   },
 ];
 
-const E2E_LEARNING_RECORD_ROWS = [
+type E2ELearningRecordRow = {
+  id: string;
+  learner_profile_id: string;
+  recorded_by_account_id: string;
+  lesson_run_id: string | null;
+  source_course_id: string | null;
+  source_lesson_id: string | null;
+  occurred_at: string | null;
+  was_present: boolean | null;
+  needs_repeat: boolean | null;
+  teacher_comment: string | null;
+  shared_with_learner_at?: string | null;
+  actual_duration_minutes_at_time?: number | null;
+  superseded_by_record_id?: string | null;
+  course_title_at_time: string | null;
+  lesson_title_at_time: string | null;
+  subject_at_time: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+type E2ELessonRunRow = {
+  id: string;
+  lesson_id: string;
+  scheduled_at: string;
+  planned_duration_minutes: number;
+  actual_duration_minutes: number | null;
+  started_at: string | null;
+  started_at_is_actual: boolean;
+  ended_at: string | null;
+  cancelled_at: string | null;
+  teacher_report: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+type E2ECompletionRecordInput = {
+  learnerProfileId: string;
+  wasPresent: boolean;
+  needsRepeat: boolean;
+  teacherComment: string;
+  shareWithLearner: boolean;
+};
+
+type E2ECompletionPayload = {
+  p_lesson_run_id: string;
+  p_teacher_report: string;
+  p_actual_duration_minutes: number | null;
+  p_records: E2ECompletionRecordInput[];
+};
+
+const E2E_LEARNING_RECORD_ROWS: E2ELearningRecordRow[] = [
   {
     id: "77777777-7777-4777-8777-777777777771",
     learner_profile_id: E2E_LEARNER_ANNA_ID,
@@ -164,8 +250,200 @@ const E2E_LEARNING_RECORD_ROWS = [
   },
 ];
 
+const E2E_SAFE_HISTORY = {
+  items: [
+    {
+      key: "safe-e2e-result",
+      occurred_at: "2026-08-06T09:00:00.000Z",
+      course_title: E2E_COURSE_TITLE,
+      lesson_title: E2E_LESSON_TITLE,
+      subject: "Английский язык",
+      was_present: true,
+      needs_repeat: false,
+      actual_duration_minutes: 47,
+      comment: {
+        text: "Опубликованный комментарий для учебного профиля.",
+        shared_at: "2026-08-06T09:05:00.000Z",
+      },
+    },
+  ],
+  next_cursor: null,
+};
+
+const E2E_PROGRESS = {
+  finalized_run_count: 3,
+  attended_run_count: 2,
+  repeat_recommended_count: 1,
+  known_actual_duration_minutes: 92,
+  known_actual_duration_run_count: 2,
+  last_activity_at: "2026-08-06T09:00:00.000Z",
+  subjects: [
+    {
+      subject: "Английский язык",
+      completed_run_count: 3,
+      attended_run_count: 2,
+      repeat_recommended_count: 1,
+      known_actual_duration_minutes: 92,
+    },
+  ],
+};
+
+const E2E_COMPLETION_RECORD_IDS = [
+  [
+    "77777777-7777-4777-8777-777777777781",
+    "77777777-7777-4777-8777-777777777782",
+  ],
+  [
+    "77777777-7777-4777-8777-777777777783",
+    "77777777-7777-4777-8777-777777777784",
+  ],
+] as const;
+
+let e2eCompletionPhase: 0 | 1 | 2 | null = null;
+const e2eCompletionPayloads: E2ECompletionPayload[] = [];
+const e2eCompletedLearningRecordRows: E2ELearningRecordRow[] = [];
+
+function resetE2eCompletionFlow() {
+  e2eCompletionPhase = 0;
+  e2eCompletionPayloads.length = 0;
+  e2eCompletedLearningRecordRows.length = 0;
+}
+
+function e2eCompletionRunRow(
+  index: 0 | 1,
+  completed: boolean,
+): E2ELessonRunRow {
+  const id =
+    index === 0
+      ? E2E_COMPLETION_PRIVATE_RUN_ID
+      : E2E_COMPLETION_PUBLISHED_RUN_ID;
+  const payload = e2eCompletionPayloads.find(
+    (candidate) => candidate.p_lesson_run_id === id,
+  );
+  const scheduledAt =
+    index === 0 ? "2026-08-07T07:00:00.000Z" : "2026-08-07T08:00:00.000Z";
+  const startedAt =
+    index === 0 ? "2026-08-07T07:05:00.000Z" : "2026-08-07T08:05:00.000Z";
+  const endedAt =
+    index === 0 ? "2026-08-07T07:50:00.000Z" : "2026-08-07T08:50:00.000Z";
+
+  return {
+    id,
+    lesson_id: E2E_LESSON_ID,
+    scheduled_at: scheduledAt,
+    planned_duration_minutes: 45,
+    actual_duration_minutes: completed
+      ? (payload?.p_actual_duration_minutes ?? 45)
+      : null,
+    started_at: startedAt,
+    started_at_is_actual: true,
+    ended_at: completed ? endedAt : null,
+    cancelled_at: null,
+    teacher_report: completed ? (payload?.p_teacher_report ?? "") : null,
+    created_at: scheduledAt,
+    updated_at: completed ? endedAt : startedAt,
+  };
+}
+
+function e2eCompletionRunRows(): E2ELessonRunRow[] {
+  if (e2eCompletionPhase === null) return [];
+  if (e2eCompletionPhase === 0) return [e2eCompletionRunRow(0, false)];
+  if (e2eCompletionPhase === 1) {
+    return [e2eCompletionRunRow(1, false), e2eCompletionRunRow(0, true)];
+  }
+  return [e2eCompletionRunRow(1, true), e2eCompletionRunRow(0, true)];
+}
+
+function e2eExpectedCompletionRecords(): E2ELearningRecordRow[] {
+  if (e2eCompletionPhase !== 0 && e2eCompletionPhase !== 1) return [];
+  const index = e2eCompletionPhase;
+  const runId =
+    index === 0
+      ? E2E_COMPLETION_PRIVATE_RUN_ID
+      : E2E_COMPLETION_PUBLISHED_RUN_ID;
+  const createdAt =
+    index === 0 ? "2026-08-07T07:00:00.000Z" : "2026-08-07T08:00:00.000Z";
+
+  return [E2E_SELF_LEARNER_ID, E2E_LEARNER_BORIS_ID].map(
+    (learnerProfileId, learnerIndex): E2ELearningRecordRow => ({
+      id: E2E_COMPLETION_RECORD_IDS[index][learnerIndex]!,
+      learner_profile_id: learnerProfileId,
+      recorded_by_account_id: E2E_ACCOUNT_ID,
+      lesson_run_id: runId,
+      source_course_id: E2E_COURSE_ID,
+      source_lesson_id: E2E_LESSON_ID,
+      occurred_at: null,
+      was_present: null,
+      needs_repeat: null,
+      teacher_comment: null,
+      shared_with_learner_at: null,
+      actual_duration_minutes_at_time: null,
+      superseded_by_record_id: null,
+      course_title_at_time: E2E_COURSE_TITLE,
+      lesson_title_at_time: E2E_LESSON_TITLE,
+      subject_at_time: "Английский язык",
+      created_at: createdAt,
+      updated_at: createdAt,
+    }),
+  );
+}
+
+function e2eAllLearningRecordRows() {
+  return [
+    ...E2E_LEARNING_RECORD_ROWS,
+    ...e2eCompletedLearningRecordRows,
+    ...e2eExpectedCompletionRecords(),
+  ];
+}
+
+function e2eCompletionSafeHistory(learnerProfileId: string) {
+  const rows = e2eCompletedLearningRecordRows
+    .filter((row) => row.learner_profile_id === learnerProfileId)
+    .sort(
+      (left, right) =>
+        new Date(right.occurred_at ?? 0).getTime() -
+        new Date(left.occurred_at ?? 0).getTime(),
+    );
+  return {
+    items: rows.map((row) => ({
+      key: row.id,
+      occurred_at: row.occurred_at,
+      course_title: row.course_title_at_time,
+      lesson_title: row.lesson_title_at_time,
+      subject: row.subject_at_time,
+      was_present: row.was_present,
+      needs_repeat: row.needs_repeat,
+      actual_duration_minutes: row.actual_duration_minutes_at_time ?? null,
+      comment: row.shared_with_learner_at
+        ? {
+            text: row.teacher_comment,
+            shared_at: row.shared_with_learner_at,
+          }
+        : null,
+    })),
+    next_cursor: null,
+  };
+}
+
+let e2eArchivedLearnerRestored = false;
+let e2eOfflineProfileCreated = false;
+let e2eAiConsentStatus: "pending" | "active" | "revoked" = "pending";
+let e2eAiConsentRequested = false;
+let e2eObserverInviteCreated = false;
+let e2eObserverInvitationAccepted = false;
+let e2eObserverGrantRevoked = false;
+let e2eObservedGrantLeft = false;
+let e2eMergeStatus: "pending" | "cancelled" | "completed" = "pending";
+let e2eChildActivationAcknowledged = false;
+let e2eRecoveryResetCompleted = false;
+let e2eRecoveryDelegateRevoked = false;
+const e2eSupabaseReferers: string[] = [];
+
 type PlaywrightLocator = {
   click: () => Promise<void>;
+  check: () => Promise<void>;
+  fill: (value: string) => Promise<void>;
+  inputValue: () => Promise<string>;
   press: (key: string) => Promise<void>;
   getByRole: (
     role: string,
@@ -175,6 +453,7 @@ type PlaywrightLocator = {
       level?: number;
     },
   ) => PlaywrightLocator;
+  getByLabel: (text: string | RegExp) => PlaywrightLocator;
   waitFor: (options?: {
     state?: "attached" | "detached" | "visible" | "hidden";
     timeout?: number;
@@ -182,11 +461,13 @@ type PlaywrightLocator = {
 };
 
 type PlaywrightChromium = {
-  launch: () => Promise<{
+  launch: (options?: { args?: string[] }) => Promise<{
     close: () => Promise<void>;
     newContext: (options?: {
       baseURL?: string;
       viewport?: { width: number; height: number };
+      extraHTTPHeaders?: Record<string, string>;
+      ignoreHTTPSErrors?: boolean;
     }) => Promise<{
       addCookies: (
         cookies: Array<{
@@ -210,6 +491,7 @@ type PlaywrightChromium = {
             level?: number;
           },
         ) => PlaywrightLocator;
+        getByLabel: (text: string | RegExp) => PlaywrightLocator;
         getByText: (
           text: string | RegExp,
           options?: { exact?: boolean },
@@ -230,8 +512,11 @@ type PlaywrightChromium = {
 
 let appPort = 0;
 let mockPort = 0;
+let browserProxyPort = 0;
 let appServerProcess: ChildProcess | null = null;
 let mockServer: ReturnType<typeof createServer> | null = null;
+let browserProxyServer: ReturnType<typeof createHttpsServer> | null = null;
+let browserProxyTempDir: string | null = null;
 let chromium: PlaywrightChromium | null = null;
 let browserSmokeUnavailableReason: string | null = null;
 
@@ -354,7 +639,163 @@ function readInFilter(requestUrl: URL, key: string) {
   return match[1] ? match[1].split(",").map((value) => value.trim()) : [];
 }
 
-function handleMockSupabase(
+async function readJsonBody(request: IncomingMessage) {
+  const chunks: Buffer[] = [];
+  for await (const chunk of request) {
+    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+  }
+  if (chunks.length === 0) return {} as Record<string, unknown>;
+  return JSON.parse(Buffer.concat(chunks).toString("utf8")) as Record<
+    string,
+    unknown
+  >;
+}
+
+function e2eDirectoryItem(
+  learnerProfileId: string,
+  displayName: string,
+  identityState: "offline" | "pending" | "claimed" | "merged",
+  archivedAt: string | null = null,
+) {
+  return {
+    learner_profile_id: learnerProfileId,
+    teacher_account_id: E2E_ACCOUNT_ID,
+    display_name: displayName,
+    archived_at: archivedAt,
+    identity_state: identityState,
+    pending_request_count: identityState === "pending" ? 1 : 0,
+    can_invite: identityState === "offline",
+    can_permanently_delete: identityState === "offline" && archivedAt !== null,
+    created_at: "2026-08-05T10:00:00.000Z",
+    updated_at: "2026-08-07T10:00:00.000Z",
+  };
+}
+
+function e2eConnectionRequests() {
+  return [
+    {
+      id: E2E_CONNECTION_ID,
+      direction: "outgoing",
+      status: "pending",
+      method: "share_code",
+      counterparty_label: "Ученик с аккаунтом",
+      local_display_name: "Новый по QR",
+      learner_profile_id: null,
+      expires_at: "2026-08-14T10:00:00.000Z",
+      created_at: "2026-08-07T10:00:00.000Z",
+      accepted_at: null,
+    },
+    {
+      id: "88888888-8888-4888-8888-888888888896",
+      direction: "incoming",
+      status: "pending",
+      method: "share_code",
+      counterparty_label: "Преподаватель Ирина",
+      local_display_name: "E2E Adult",
+      learner_profile_id: E2E_SELF_LEARNER_ID,
+      expires_at: "2026-08-14T10:00:00.000Z",
+      created_at: "2026-08-07T10:00:00.000Z",
+      accepted_at: null,
+    },
+  ];
+}
+
+function e2eAiConsent() {
+  return {
+    id: E2E_AI_CONSENT_ID,
+    learner_profile_id: E2E_SELF_LEARNER_ID,
+    course_id: E2E_COURSE_ID,
+    course_title: E2E_COURSE_TITLE,
+    owner_label: "Преподаватель Ирина",
+    purpose: "Персонализировать следующий урок",
+    status: e2eAiConsentStatus,
+    revision:
+      e2eAiConsentStatus === "pending"
+        ? 1
+        : e2eAiConsentStatus === "active"
+          ? 2
+          : 3,
+    expires_at: "2026-11-07T10:00:00.000Z",
+    created_at: "2026-08-07T10:00:00.000Z",
+    granted_at:
+      e2eAiConsentStatus === "active" ? "2026-08-07T11:00:00.000Z" : null,
+    revoked_at:
+      e2eAiConsentStatus === "revoked" ? "2026-08-07T12:00:00.000Z" : null,
+  };
+}
+
+function e2eObserverOverview() {
+  return {
+    grants: !e2eObserverGrantRevoked
+      ? [
+          {
+            id: E2E_OBSERVER_GRANT_ID,
+            learner_profile_id: E2E_SELF_LEARNER_ID,
+            subject_label: "E2E Adult",
+            observer_label: "Доверенный наблюдатель",
+            relationship_label: "тренер",
+            direction: "observed_by",
+            created_at: "2026-08-06T10:00:00.000Z",
+          },
+        ]
+      : [],
+    invitations: [
+      {
+        id: E2E_OBSERVER_INVITATION_ID,
+        direction: "incoming",
+        status: e2eObserverInvitationAccepted ? "accepted" : "pending",
+        subject_label: "Мария Соколова",
+        observer_label: "E2E Adult",
+        relationship_label: "наставник",
+        expires_at: "2026-08-14T10:00:00.000Z",
+        created_at: "2026-08-07T10:00:00.000Z",
+      },
+      {
+        id: E2E_OUTGOING_OBSERVER_INVITATION_ID,
+        direction: "outgoing",
+        status: "pending",
+        subject_label: "E2E Adult",
+        observer_label: "Новый наблюдатель",
+        relationship_label: "бабушка",
+        expires_at: "2026-08-14T10:00:00.000Z",
+        created_at: "2026-08-07T10:00:00.000Z",
+      },
+    ],
+  };
+}
+
+function e2eProfileInvitation(
+  invitationId: string,
+  kind: "claim" | "child_activation",
+) {
+  return {
+    id: invitationId,
+    kind,
+    status: "bound",
+    learner_profile_id:
+      kind === "child_activation" ? E2E_LEARNER_BORIS_ID : E2E_LEARNER_ANNA_ID,
+    learner_label: kind === "child_activation" ? "Борис" : "Анна",
+    inviter_label: "Преподаватель Ирина",
+    expires_at: "2026-08-14T10:00:00.000Z",
+    created_at: "2026-08-07T10:00:00.000Z",
+    accepted_at: null,
+  };
+}
+
+function e2eInvitationAcceptance(
+  invitationId: string,
+  kind: "claim" | "child_activation",
+) {
+  return {
+    invitation: e2eProfileInvitation(invitationId, kind),
+    merge_preview: null,
+    completed: false,
+    child_account_login: null,
+    observer_invitation_id: null,
+  };
+}
+
+async function handleMockSupabase(
   request: IncomingMessage,
   response: ServerResponse,
 ) {
@@ -364,6 +805,526 @@ function handleMockSupabase(
   }
 
   const requestUrl = new URL(request.url, `http://127.0.0.1:${mockPort}`);
+  if (typeof request.headers.referer === "string") {
+    e2eSupabaseReferers.push(request.headers.referer);
+  }
+
+  if (requestUrl.pathname === "/auth/v1/verify") {
+    json(response, 200, {
+      access_token: E2E_SUPABASE_ACCESS_TOKEN,
+      refresh_token: "e2e-supabase-user-refresh-token",
+      expires_in: 3600,
+      user: {
+        id: E2E_ADULT_USER_ID,
+        email: "adult-e2e@example.test",
+        user_metadata: { full_name: "E2E Adult" },
+      },
+    });
+    return;
+  }
+
+  if (
+    requestUrl.pathname === "/auth/v1/token" &&
+    requestUrl.searchParams.get("grant_type") === "password"
+  ) {
+    const body = await readJsonBody(request);
+    if (
+      body.email !== "adult-e2e@example.test" ||
+      body.password !== "adult-secret"
+    ) {
+      json(response, 400, { message: "invalid credentials" });
+      return;
+    }
+    json(response, 200, {
+      access_token: E2E_SUPABASE_ACCESS_TOKEN,
+      refresh_token: "e2e-supabase-user-refresh-token",
+      expires_in: 3600,
+      user: {
+        id: E2E_ADULT_USER_ID,
+        email: "adult-e2e@example.test",
+        user_metadata: { full_name: "E2E Adult" },
+      },
+    });
+    return;
+  }
+
+  if (
+    requestUrl.pathname === "/auth/v1/admin/users" &&
+    request.method === "POST"
+  ) {
+    const body = await readJsonBody(request);
+    json(response, 200, {
+      id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      email: body.email,
+      app_metadata: body.app_metadata,
+      user_metadata: body.user_metadata,
+    });
+    return;
+  }
+
+  if (requestUrl.pathname === "/rest/v1/rpc/current_account_auth_context") {
+    json(response, 200, [
+      {
+        account_id: E2E_ACCOUNT_ID,
+        auth_user_id: E2E_ADULT_USER_ID,
+        verified_email: "adult-e2e@example.test",
+        display_name: "E2E Adult",
+        locale: "ru",
+        timezone: "Asia/Chita",
+        has_pin: true,
+        sessions_invalid_before: null,
+      },
+    ]);
+    return;
+  }
+
+  if (
+    requestUrl.pathname === "/rest/v1/rpc/resolve_teacher_learner_profile_alias"
+  ) {
+    const body = await readJsonBody(request);
+    json(response, 200, body.p_learner_profile_id ?? E2E_LEARNER_ANNA_ID);
+    return;
+  }
+
+  if (requestUrl.pathname === "/rest/v1/rpc/list_teacher_learner_directory") {
+    const body = await readJsonBody(request);
+    if (body.p_status === "archived") {
+      json(
+        response,
+        200,
+        e2eArchivedLearnerRestored
+          ? []
+          : [
+              e2eDirectoryItem(
+                E2E_ARCHIVED_LEARNER_ID,
+                "Архивная Ольга",
+                "offline",
+                "2026-08-07T09:00:00.000Z",
+              ),
+            ],
+      );
+      return;
+    }
+    json(response, 200, [
+      e2eDirectoryItem(E2E_LEARNER_ANNA_ID, "Анна Петрова", "claimed"),
+      e2eDirectoryItem(E2E_LEARNER_BORIS_ID, "Борис Волков", "offline"),
+      e2eDirectoryItem(E2E_LEARNER_CLARA_ID, "Клара Смирнова", "pending"),
+      ...(e2eArchivedLearnerRestored
+        ? [
+            e2eDirectoryItem(
+              E2E_ARCHIVED_LEARNER_ID,
+              "Архивная Ольга",
+              "offline",
+            ),
+          ]
+        : []),
+      ...(e2eOfflineProfileCreated
+        ? [
+            e2eDirectoryItem(
+              E2E_PROFILE_INVITATION_ID,
+              "Ева без аккаунта",
+              "offline",
+            ),
+          ]
+        : []),
+    ]);
+    return;
+  }
+
+  if (requestUrl.pathname === "/rest/v1/rpc/restore_teacher_learner") {
+    e2eArchivedLearnerRestored = true;
+    json(
+      response,
+      200,
+      e2eDirectoryItem(E2E_ARCHIVED_LEARNER_ID, "Архивная Ольга", "offline"),
+    );
+    return;
+  }
+
+  if (requestUrl.pathname === "/rest/v1/rpc/list_learner_connection_requests") {
+    json(response, 200, e2eConnectionRequests());
+    return;
+  }
+
+  if (
+    requestUrl.pathname === "/rest/v1/rpc/create_learner_connection_request"
+  ) {
+    const body = await readJsonBody(request);
+    json(response, 200, {
+      ...e2eConnectionRequests()[0],
+      method: body.p_method,
+      local_display_name: body.p_local_display_name,
+    });
+    return;
+  }
+
+  if (
+    requestUrl.pathname === "/rest/v1/rpc/act_on_learner_connection_request"
+  ) {
+    const body = await readJsonBody(request);
+    json(response, 200, {
+      ...e2eConnectionRequests()[0],
+      status:
+        body.p_action === "accept"
+          ? "accepted"
+          : body.p_action === "reject"
+            ? "rejected"
+            : "cancelled",
+    });
+    return;
+  }
+
+  if (requestUrl.pathname === "/rest/v1/rpc/get_my_learning_profile") {
+    json(response, 200, {
+      learner_profile_id: E2E_SELF_LEARNER_ID,
+      display_name: "E2E Adult",
+      created_at: "2026-08-01T10:00:00.000Z",
+      merged_lineage_count: 2,
+      can_safe_unlink: false,
+      pending_connections: e2eConnectionRequests().filter(
+        (item) => item.direction === "incoming",
+      ),
+    });
+    return;
+  }
+
+  if (requestUrl.pathname === "/rest/v1/rpc/get_my_learning_history") {
+    json(
+      response,
+      200,
+      e2eCompletionPhase === null
+        ? E2E_SAFE_HISTORY
+        : e2eCompletionSafeHistory(E2E_SELF_LEARNER_ID),
+    );
+    return;
+  }
+
+  if (requestUrl.pathname === "/rest/v1/rpc/get_my_learning_progress") {
+    json(response, 200, E2E_PROGRESS);
+    return;
+  }
+
+  if (requestUrl.pathname === "/rest/v1/rpc/list_my_learner_ai_consents") {
+    json(response, 200, [e2eAiConsent()]);
+    return;
+  }
+
+  if (requestUrl.pathname === "/rest/v1/rpc/act_on_learner_ai_consent") {
+    const body = await readJsonBody(request);
+    e2eAiConsentStatus = body.p_action === "grant" ? "active" : "revoked";
+    json(response, 200, e2eAiConsent());
+    return;
+  }
+
+  if (requestUrl.pathname === "/rest/v1/rpc/request_learner_ai_consent") {
+    const body = await readJsonBody(request);
+    e2eAiConsentRequested =
+      body.p_course_id === E2E_COURSE_ID &&
+      body.p_learner_profile_id === E2E_LEARNER_ANNA_ID &&
+      typeof body.p_purpose === "string" &&
+      body.p_purpose.length > 0;
+    e2eAiConsentStatus = "pending";
+    json(response, 200, {
+      ...e2eAiConsent(),
+      learner_profile_id: E2E_LEARNER_ANNA_ID,
+    });
+    return;
+  }
+
+  if (requestUrl.pathname === "/rest/v1/rpc/rotate_my_learner_share_code") {
+    json(response, 200, {
+      expires_at: "2026-08-07T12:15:00.000Z",
+      created_at: "2026-08-07T12:00:00.000Z",
+    });
+    return;
+  }
+
+  if (
+    requestUrl.pathname === "/rest/v1/rpc/list_my_observed_learner_profiles"
+  ) {
+    json(
+      response,
+      200,
+      e2eObservedGrantLeft
+        ? []
+        : [
+            {
+              id: E2E_OBSERVER_GRANT_ID,
+              learner_profile_id: E2E_LEARNER_BORIS_ID,
+              subject_label: "Борис Волков",
+              observer_label: "E2E Adult",
+              relationship_label: "наставник",
+              direction: "observing",
+              created_at: "2026-08-06T10:00:00.000Z",
+            },
+          ],
+    );
+    return;
+  }
+
+  if (requestUrl.pathname === "/rest/v1/rpc/get_observed_learner_history") {
+    json(
+      response,
+      200,
+      e2eCompletionPhase === null
+        ? E2E_SAFE_HISTORY
+        : e2eCompletionSafeHistory(E2E_LEARNER_BORIS_ID),
+    );
+    return;
+  }
+
+  if (requestUrl.pathname === "/rest/v1/rpc/get_observed_learner_progress") {
+    json(response, 200, E2E_PROGRESS);
+    return;
+  }
+
+  if (
+    requestUrl.pathname === "/rest/v1/rpc/list_my_learner_observer_overview"
+  ) {
+    json(response, 200, e2eObserverOverview());
+    return;
+  }
+
+  if (
+    requestUrl.pathname === "/rest/v1/rpc/create_learner_observer_invitation"
+  ) {
+    const body = await readJsonBody(request);
+    e2eObserverInviteCreated =
+      typeof body.p_recipient_email_digest === "string" &&
+      typeof body.p_token_digest === "string" &&
+      body.p_relationship_label === "бабушка";
+    json(response, 200, {
+      created_invitation_id: E2E_OUTGOING_OBSERVER_INVITATION_ID,
+      overview: e2eObserverOverview(),
+    });
+    return;
+  }
+
+  if (
+    requestUrl.pathname === "/rest/v1/rpc/act_on_learner_observer_relationship"
+  ) {
+    const body = await readJsonBody(request);
+    if (body.p_relationship_id === E2E_OBSERVER_INVITATION_ID) {
+      e2eObserverInvitationAccepted = body.p_action === "accept";
+    }
+    if (
+      body.p_relationship_id === E2E_OBSERVER_GRANT_ID &&
+      body.p_action === "revoke"
+    ) {
+      e2eObserverGrantRevoked = true;
+    }
+    if (
+      body.p_relationship_id === E2E_OBSERVER_GRANT_ID &&
+      body.p_action === "leave"
+    ) {
+      e2eObservedGrantLeft = true;
+    }
+    json(response, 200, e2eObserverOverview());
+    return;
+  }
+
+  if (
+    requestUrl.pathname ===
+    "/rest/v1/rpc/list_my_learner_credential_recovery_delegates"
+  ) {
+    json(
+      response,
+      200,
+      e2eRecoveryDelegateRevoked
+        ? [
+            {
+              grant_id: E2E_RECOVERY_GRANT_ID,
+              delegate_label: "Доверенный взрослый Пётр",
+              status: "revoked",
+              granted_at: "2026-08-07T10:00:00.000Z",
+              revoked_at: "2026-08-07T12:30:00.000Z",
+            },
+          ]
+        : [
+            {
+              grant_id: E2E_RECOVERY_GRANT_ID,
+              delegate_label: "Доверенный взрослый Пётр",
+              status: "active",
+              granted_at: "2026-08-07T10:00:00.000Z",
+              revoked_at: null,
+            },
+          ],
+    );
+    return;
+  }
+
+  if (
+    requestUrl.pathname === "/rest/v1/rpc/list_recoverable_learner_credentials"
+  ) {
+    json(response, 200, [
+      {
+        grant_id: E2E_RECOVERY_GRANT_ID,
+        learner_label: "Борис Волков",
+        child_account_login: e2eRecoveryResetCompleted
+          ? "boris-new-login"
+          : "boris-child",
+        can_reset: true,
+        granted_at: "2026-08-07T10:00:00.000Z",
+      },
+    ]);
+    return;
+  }
+
+  if (
+    requestUrl.pathname === "/rest/v1/rpc/reset_recoverable_learner_credentials"
+  ) {
+    const body = await readJsonBody(request);
+    e2eRecoveryResetCompleted =
+      body.p_grant_id === E2E_RECOVERY_GRANT_ID &&
+      body.p_new_child_login === "boris-new-login" &&
+      body.p_raw_pin === "1357" &&
+      typeof body.p_reauthenticated_at === "string" &&
+      typeof body.p_idempotency_key === "string";
+    json(response, 200, {
+      grant_id: E2E_RECOVERY_GRANT_ID,
+      learner_label: "Борис Волков",
+      child_account_login: "boris-new-login",
+      completed: true,
+    });
+    return;
+  }
+
+  if (
+    requestUrl.pathname ===
+    "/rest/v1/rpc/revoke_my_learner_credential_recovery_delegate"
+  ) {
+    e2eRecoveryDelegateRevoked = true;
+    json(response, 200, {
+      grant_id: E2E_RECOVERY_GRANT_ID,
+      status: "revoked",
+      revoked_at: "2026-08-07T12:30:00.000Z",
+    });
+    return;
+  }
+
+  if (requestUrl.pathname === "/rest/v1/rpc/list_learner_profile_invitations") {
+    json(response, 200, []);
+    return;
+  }
+
+  if (
+    requestUrl.pathname === "/rest/v1/rpc/preview_learner_profile_invitation" ||
+    requestUrl.pathname ===
+      "/rest/v1/rpc/preview_verified_learner_profile_invitation"
+  ) {
+    const body = await readJsonBody(request);
+    const invitationId = String(body.p_invitation_id);
+    const kind =
+      invitationId === E2E_CHILD_INVITATION_ID
+        ? ("child_activation" as const)
+        : ("claim" as const);
+    json(response, 200, e2eInvitationAcceptance(invitationId, kind));
+    return;
+  }
+
+  if (
+    requestUrl.pathname === "/rest/v1/rpc/act_on_learner_profile_invitation" ||
+    requestUrl.pathname ===
+      "/rest/v1/rpc/act_on_verified_learner_profile_invitation"
+  ) {
+    const body = await readJsonBody(request);
+    const invitationId = String(body.p_invitation_id);
+    const acceptance = e2eInvitationAcceptance(invitationId, "claim");
+    if (body.p_action === "reject") {
+      json(response, 200, {
+        ...acceptance,
+        invitation: { ...acceptance.invitation, status: "rejected" },
+        completed: true,
+      });
+      return;
+    }
+    json(response, 200, {
+      ...acceptance,
+      invitation: { ...acceptance.invitation, status: "accepted" },
+      merge_preview: {
+        operation_id: E2E_MERGE_OPERATION_ID,
+        source_learner_profile_id: E2E_LEARNER_ANNA_ID,
+        target_learner_profile_id: E2E_SELF_LEARNER_ID,
+        preview_fingerprint: "a".repeat(64),
+        finalized_record_count: 3,
+        teacher_relation_count: 1,
+        group_membership_count: 2,
+        course_audience_count: 1,
+        conflicts: [],
+        blockers: [],
+        can_confirm: true,
+        expires_at: "2026-08-07T12:15:00.000Z",
+      },
+    });
+    return;
+  }
+
+  if (requestUrl.pathname === "/rest/v1/rpc/preview_learner_profile_merge") {
+    json(response, 200, {
+      operation_id: E2E_MERGE_OPERATION_ID,
+      source_learner_profile_id: E2E_LEARNER_ANNA_ID,
+      target_learner_profile_id: E2E_SELF_LEARNER_ID,
+      preview_fingerprint: "a".repeat(64),
+      finalized_record_count: 3,
+      teacher_relation_count: 1,
+      group_membership_count: 2,
+      course_audience_count: 1,
+      conflicts: [],
+      blockers: [],
+      can_confirm: true,
+      expires_at: "2026-08-07T12:15:00.000Z",
+    });
+    return;
+  }
+
+  if (requestUrl.pathname === "/rest/v1/rpc/cancel_learner_profile_merge") {
+    e2eMergeStatus = "cancelled";
+    json(response, 200, null);
+    return;
+  }
+
+  if (requestUrl.pathname === "/rest/v1/rpc/confirm_learner_profile_merge") {
+    e2eMergeStatus = "completed";
+    json(response, 200, {
+      operation_id: E2E_MERGE_OPERATION_ID,
+      target_learner_profile_id: E2E_SELF_LEARNER_ID,
+      completed: true,
+    });
+    return;
+  }
+
+  if (
+    requestUrl.pathname === "/rest/v1/rpc/activate_offline_learner_account" ||
+    requestUrl.pathname ===
+      "/rest/v1/rpc/activate_verified_offline_learner_account"
+  ) {
+    const body = await readJsonBody(request);
+    e2eChildActivationAcknowledged =
+      body.p_acknowledge_recovery_delegate === true;
+    if (!e2eChildActivationAcknowledged) {
+      json(response, 400, {
+        code: "55000",
+        message: "learner_activation_recovery_acknowledgement_required",
+      });
+      return;
+    }
+    json(response, 200, {
+      ...e2eInvitationAcceptance(E2E_CHILD_INVITATION_ID, "child_activation"),
+      invitation: {
+        ...e2eProfileInvitation(E2E_CHILD_INVITATION_ID, "child_activation"),
+        status: "accepted",
+      },
+      completed: true,
+      child_account_login: body.p_learner_login ?? body.p_child_login,
+      observer_invitation_id: body.p_request_observer_invitation
+        ? E2E_OBSERVER_INVITATION_ID
+        : null,
+      provisional_auth_user_consumed: true,
+      recovery_delegate_id: "88888888-8888-4888-8888-888888888898",
+      recovery_delegate_active: true,
+    });
+    return;
+  }
 
   if (requestUrl.pathname.startsWith("/auth/v1/admin/users/")) {
     const userId = requestUrl.pathname.split("/").at(-1);
@@ -380,6 +1341,11 @@ function handleMockSupabase(
         user_metadata: { full_name: "E2E Adult" },
       },
     });
+    return;
+  }
+
+  if (requestUrl.pathname === "/auth/v1/otp") {
+    json(response, 200, {});
     return;
   }
 
@@ -402,6 +1368,18 @@ function handleMockSupabase(
     requestUrl.pathname === "/rest/v1/rpc/create_learner_profile_with_groups" ||
     requestUrl.pathname === "/rest/v1/rpc/update_learner_profile_with_groups"
   ) {
+    if (requestUrl.pathname.includes("create_")) {
+      e2eOfflineProfileCreated = true;
+      json(response, 200, {
+        teacher_account_id: E2E_ACCOUNT_ID,
+        learner_profile_id: E2E_PROFILE_INVITATION_ID,
+        display_name: "Ева без аккаунта",
+        archived_at: null,
+        created_at: "2026-08-07T12:00:00.000Z",
+        updated_at: "2026-08-07T12:00:00.000Z",
+      });
+      return;
+    }
     json(response, 200, E2E_TEACHER_LEARNER_ROWS[0]);
     return;
   }
@@ -561,8 +1539,89 @@ function handleMockSupabase(
     return;
   }
 
+  if (
+    requestUrl.pathname === "/rest/v1/rpc/complete_lesson_run_v2" &&
+    request.method === "POST"
+  ) {
+    const payload = (await readJsonBody(
+      request,
+    )) as unknown as E2ECompletionPayload;
+    if (e2eCompletionPhase !== 0 && e2eCompletionPhase !== 1) {
+      json(response, 409, { message: "completion flow is not active" });
+      return;
+    }
+    const index = e2eCompletionPhase;
+    const expectedRunId =
+      index === 0
+        ? E2E_COMPLETION_PRIVATE_RUN_ID
+        : E2E_COMPLETION_PUBLISHED_RUN_ID;
+    if (
+      payload.p_lesson_run_id !== expectedRunId ||
+      !Array.isArray(payload.p_records)
+    ) {
+      json(response, 400, { message: "unexpected completion payload" });
+      return;
+    }
+
+    e2eCompletionPayloads.push(payload);
+    const completedRun = e2eCompletionRunRow(index, true);
+    const completedAt = completedRun.ended_at!;
+    const learnerIds = [E2E_SELF_LEARNER_ID, E2E_LEARNER_BORIS_ID];
+    for (const [learnerIndex, learnerProfileId] of learnerIds.entries()) {
+      const result = payload.p_records.find(
+        (record) => record.learnerProfileId === learnerProfileId,
+      );
+      if (!result) {
+        json(response, 400, { message: "missing learner result" });
+        return;
+      }
+      e2eCompletedLearningRecordRows.push({
+        id: E2E_COMPLETION_RECORD_IDS[index][learnerIndex]!,
+        learner_profile_id: learnerProfileId,
+        recorded_by_account_id: E2E_ACCOUNT_ID,
+        lesson_run_id: expectedRunId,
+        source_course_id: E2E_COURSE_ID,
+        source_lesson_id: E2E_LESSON_ID,
+        occurred_at: completedAt,
+        was_present: result.wasPresent,
+        needs_repeat: result.needsRepeat,
+        teacher_comment: result.teacherComment,
+        shared_with_learner_at: result.shareWithLearner ? completedAt : null,
+        actual_duration_minutes_at_time:
+          payload.p_actual_duration_minutes ?? 45,
+        superseded_by_record_id: null,
+        course_title_at_time: E2E_COURSE_TITLE,
+        lesson_title_at_time: E2E_LESSON_TITLE,
+        subject_at_time: "Английский язык",
+        created_at: completedAt,
+        updated_at: completedAt,
+      });
+    }
+    e2eCompletionPhase = index === 0 ? 1 : 2;
+    json(response, 200, completedRun);
+    return;
+  }
+
   if (requestUrl.pathname === "/rest/v1/lesson_run") {
-    json(response, 200, []);
+    const requestedId = readEqFilter(requestUrl, "id");
+    const requestedLessonId = readEqFilter(requestUrl, "lesson_id");
+    const requestedLessonIds = readInFilter(requestUrl, "lesson_id");
+    const endedFilter = requestUrl.searchParams.get("ended_at");
+    const cancelledFilter = requestUrl.searchParams.get("cancelled_at");
+    json(
+      response,
+      200,
+      e2eCompletionRunRows().filter(
+        (row) =>
+          (!requestedId || row.id === requestedId) &&
+          (!requestedLessonId || row.lesson_id === requestedLessonId) &&
+          (!requestedLessonIds || requestedLessonIds.includes(row.lesson_id)) &&
+          (endedFilter !== "is.null" || row.ended_at === null) &&
+          (endedFilter !== "not.is.null" || row.ended_at !== null) &&
+          (cancelledFilter !== "is.null" || row.cancelled_at === null) &&
+          (cancelledFilter !== "not.is.null" || row.cancelled_at !== null),
+      ),
+    );
     return;
   }
 
@@ -573,17 +1632,33 @@ function handleMockSupabase(
     );
     const requestedLearnerId = readEqFilter(requestUrl, "learner_profile_id");
     const requestedLearnerIds = readInFilter(requestUrl, "learner_profile_id");
+    const requestedRunId = readEqFilter(requestUrl, "lesson_run_id");
+    const requestedRunIds = readInFilter(requestUrl, "lesson_run_id");
+    const requestedCourseId = readEqFilter(requestUrl, "source_course_id");
+    const occurredFilter = requestUrl.searchParams.get("occurred_at");
+    const supersededFilter = requestUrl.searchParams.get(
+      "superseded_by_record_id",
+    );
     json(
       response,
       200,
-      E2E_LEARNING_RECORD_ROWS.filter(
+      e2eAllLearningRecordRows().filter(
         (row) =>
           (!requestedRecorderId ||
             row.recorded_by_account_id === requestedRecorderId) &&
           (!requestedLearnerId ||
             row.learner_profile_id === requestedLearnerId) &&
           (!requestedLearnerIds ||
-            requestedLearnerIds.includes(row.learner_profile_id)),
+            requestedLearnerIds.includes(row.learner_profile_id)) &&
+          (!requestedRunId || row.lesson_run_id === requestedRunId) &&
+          (!requestedRunIds ||
+            (row.lesson_run_id !== null &&
+              requestedRunIds.includes(row.lesson_run_id))) &&
+          (!requestedCourseId || row.source_course_id === requestedCourseId) &&
+          (occurredFilter !== "is.null" || row.occurred_at === null) &&
+          (occurredFilter !== "not.is.null" || row.occurred_at !== null) &&
+          (supersededFilter !== "is.null" ||
+            (row.superseded_by_record_id ?? null) === null),
       ),
     );
     return;
@@ -667,12 +1742,11 @@ async function waitForAppReady(baseUrl: string) {
 
   while (Date.now() < timeoutAt) {
     try {
-      const response = await fetch(`${baseUrl}/`, {
-        redirect: "manual",
-        signal: AbortSignal.timeout(5_000),
+      const response = await requestLocalApp(new URL(baseUrl).pathname, {
+        timeoutMs: 5_000,
       });
 
-      if (response.status >= 200 && response.status < 500) {
+      if (response.status >= 200 && response.status < 400) {
         return;
       }
     } catch (error) {
@@ -683,6 +1757,144 @@ async function waitForAppReady(baseUrl: string) {
   }
 
   throw new Error(`app did not start in time: ${String(lastError)}`);
+}
+
+type LocalAppResponse = {
+  status: number;
+  headers: Record<string, string>;
+  body: Buffer;
+};
+
+function requestLocalApp(
+  path: string,
+  options: {
+    method?: string;
+    headers?: Record<string, string>;
+    body?: Buffer | null;
+    timeoutMs?: number;
+  } = {},
+): Promise<LocalAppResponse> {
+  return new Promise((resolve, reject) => {
+    const headers: Record<string, string> = {
+      ...options.headers,
+      host: "v2.shidao.ru",
+      "x-forwarded-host": "v2.shidao.ru",
+      "x-forwarded-proto": "https",
+      "accept-encoding": "identity",
+    };
+    delete headers.connection;
+
+    const request = httpRequest(
+      {
+        hostname: "127.0.0.1",
+        port: appPort,
+        path,
+        method: options.method ?? "GET",
+        headers,
+        timeout: options.timeoutMs ?? 30_000,
+      },
+      (response) => {
+        const chunks: Buffer[] = [];
+        response.on("data", (chunk: Buffer) => chunks.push(chunk));
+        response.once("end", () => {
+          const responseHeaders: Record<string, string> = {};
+          for (const [name, value] of Object.entries(response.headers)) {
+            if (value === undefined) continue;
+            responseHeaders[name] = Array.isArray(value)
+              ? value.join(name === "set-cookie" ? "\n" : ", ")
+              : value;
+          }
+          delete responseHeaders.connection;
+          delete responseHeaders["keep-alive"];
+          delete responseHeaders["transfer-encoding"];
+          resolve({
+            status: response.statusCode ?? 500,
+            headers: responseHeaders,
+            body: Buffer.concat(chunks),
+          });
+        });
+      },
+    );
+    request.once("timeout", () =>
+      request.destroy(new Error("local app request timed out")),
+    );
+    request.once("error", reject);
+    request.end(options.body ?? undefined);
+  });
+}
+
+async function startBrowserProxy() {
+  browserProxyTempDir = await mkdtemp(join(tmpdir(), "shidao-browser-smoke-"));
+  const keyPath = join(browserProxyTempDir, "key.pem");
+  const certPath = join(browserProxyTempDir, "cert.pem");
+  const openssl = spawn(
+    "openssl",
+    [
+      "req",
+      "-x509",
+      "-newkey",
+      "rsa:2048",
+      "-sha256",
+      "-nodes",
+      "-keyout",
+      keyPath,
+      "-out",
+      certPath,
+      "-days",
+      "1",
+      "-subj",
+      "/CN=v2.shidao.ru",
+    ],
+    { stdio: "ignore" },
+  );
+  await new Promise<void>((resolve, reject) => {
+    openssl.once("error", reject);
+    openssl.once("exit", (code) => {
+      if (code === 0) resolve();
+      else reject(new Error(`openssl exited with code ${String(code)}`));
+    });
+  });
+
+  const [key, cert] = await Promise.all([
+    readFile(keyPath),
+    readFile(certPath),
+  ]);
+  browserProxyServer = createHttpsServer({ key, cert }, (request, response) => {
+    const headers: Record<string, string | string[] | undefined> = {
+      ...request.headers,
+      host: "v2.shidao.ru",
+      "x-forwarded-host": "v2.shidao.ru",
+      "x-forwarded-proto": "https",
+    };
+    if (headers.origin && browserSmokeServerMode === "prod") {
+      headers.origin = "https://v2.shidao.ru";
+    }
+    delete headers.connection;
+
+    const upstream = httpRequest(
+      {
+        hostname: "127.0.0.1",
+        port: appPort,
+        path: request.url,
+        method: request.method,
+        headers,
+      },
+      (upstreamResponse) => {
+        response.writeHead(
+          upstreamResponse.statusCode ?? 502,
+          upstreamResponse.headers,
+        );
+        upstreamResponse.pipe(response);
+      },
+    );
+    upstream.once("error", (error) => {
+      if (!response.headersSent) response.writeHead(502);
+      response.end(String(error));
+    });
+    request.pipe(upstream);
+  });
+  browserProxyServer.listen(browserProxyPort, "127.0.0.1");
+  await once(browserProxyServer, "listening");
 }
 
 async function buildProductionApp(env: NodeJS.ProcessEnv) {
@@ -717,11 +1929,17 @@ async function openPage(options?: {
     throw new Error("browser smoke is not ready");
   }
 
-  const browser = await chromium.launch();
-  const baseURL = `http://127.0.0.1:${appPort}`;
+  const browser = await chromium.launch({
+    args: [
+      "--host-resolver-rules=MAP v2.shidao.ru 127.0.0.1",
+      "--no-proxy-server",
+    ],
+  });
+  const baseURL = `https://v2.shidao.ru:${browserProxyPort}`;
   const context = await browser.newContext({
     baseURL,
     viewport: options?.viewport,
+    ignoreHTTPSErrors: true,
   });
   if (options?.cookie) {
     await context.addCookies([
@@ -777,6 +1995,7 @@ before(async () => {
 
   mockPort = await allocatePort();
   appPort = await allocatePort();
+  browserProxyPort = await allocatePort();
 
   mockServer = createServer(handleMockSupabase);
   mockServer.listen(mockPort, "127.0.0.1");
@@ -785,6 +2004,9 @@ before(async () => {
   const serverEnv = {
     ...process.env,
     APP_SESSION_SECRET,
+    LEARNER_IDENTITY_DIGEST_KEY:
+      "e2e-learner-identity-digest-key-with-minimum-32-chars",
+    NEXT_PUBLIC_APP_URL: `https://v2.shidao.ru:${browserProxyPort}`,
     NEXT_PUBLIC_SUPABASE_URL: `http://127.0.0.1:${mockPort}`,
     NEXT_PUBLIC_SUPABASE_ANON_KEY: "e2e-anon-key",
     SUPABASE_SERVICE_ROLE_KEY: "e2e-service-role-key",
@@ -813,9 +2035,19 @@ before(async () => {
   appServerProcess.unref();
 
   await waitForAppReady(`http://127.0.0.1:${appPort}`);
+  await startBrowserProxy();
 });
 
 after(async () => {
+  if (browserProxyServer) {
+    browserProxyServer.closeAllConnections?.();
+    browserProxyServer.close();
+    await Promise.race([
+      once(browserProxyServer, "close"),
+      new Promise((resolve) => setTimeout(resolve, 2_000)),
+    ]);
+  }
+
   if (appServerProcess?.pid) {
     try {
       process.kill(-appServerProcess.pid, "SIGTERM");
@@ -837,6 +2069,10 @@ after(async () => {
       once(mockServer, "close"),
       new Promise((resolve) => setTimeout(resolve, 2_000)),
     ]);
+  }
+
+  if (browserProxyTempDir) {
+    await rm(browserProxyTempDir, { recursive: true, force: true });
   }
 });
 
@@ -975,12 +2211,13 @@ test("browser smoke: authenticated /login redirects by access policy", async (t)
   }
 });
 
-test("browser smoke: teacher navigates Schedule → Students with honest V2 states", async (t) => {
+test("browser smoke: Account navigates Schedule → Students with honest V2 states", async (t) => {
   if (browserSmokeUnavailableReason) {
     t.skip(browserSmokeUnavailableReason);
     return;
   }
 
+  e2eAiConsentRequested = false;
   const teacherCookie = authenticatedCookieValue();
   const runtime = await openPage({ cookie: teacherCookie });
 
@@ -1069,9 +2306,15 @@ test("browser smoke: teacher navigates Schedule → Students with honest V2 stat
     assert.match(scheduleContract.headerActions, /Назначить урок в курсе/);
     assert.doesNotMatch(scheduleContract.toolbarText, /Назначить урок в курсе/);
     assert.deepEqual(scheduleContract.navLinks, [
+      { label: "Курсы", href: "/courses", current: null },
       { label: "Расписание", href: "/schedule", current: "page" },
       { label: "Ученики", href: "/students", current: null },
-      { label: "Курсы", href: "/courses", current: null },
+      {
+        label: "Мой учебный профиль",
+        href: "/learning-profile",
+        current: null,
+      },
+      { label: "Наблюдение", href: "/observing", current: null },
     ]);
 
     let html = await runtime.page.content();
@@ -1252,11 +2495,11 @@ test("browser smoke: teacher navigates Schedule → Students with honest V2 stat
         level: 2,
       })
       .waitFor();
-    const historyApiResponse = await fetch(
-      `http://127.0.0.1:${appPort}/api/v2/learner-profiles/${E2E_LEARNER_ANNA_ID}/history`,
+    const historyApiResponse = await requestLocalApp(
+      `/api/v2/learner-profiles/${E2E_LEARNER_ANNA_ID}/history`,
       { headers: { Cookie: `shidao_session=${teacherCookie}` } },
     );
-    const historyApiPayload = await historyApiResponse.text();
+    const historyApiPayload = historyApiResponse.body.toString("utf8");
     assert.equal(historyApiResponse.status, 200, historyApiPayload);
     assert.match(historyApiPayload, /Уверенно использует Present Perfect\./);
     assert.doesNotMatch(historyApiPayload, /FOREIGN TRAP RECORD|Чужой курс/);
@@ -1274,6 +2517,23 @@ test("browser smoke: teacher navigates Schedule → Students with honest V2 stat
       .waitFor();
     html = await runtime.page.content();
     assert.doesNotMatch(html, /FOREIGN TRAP RECORD|Чужой курс/);
+    await runtime.page
+      .getByRole("tab", { name: "Аккаунт", exact: true })
+      .click();
+    await runtime.page
+      .getByRole("heading", {
+        name: "Запросить разрешение для помощника",
+        exact: true,
+        level: 3,
+      })
+      .waitFor();
+    await runtime.page
+      .getByRole("button", { name: "Отправить запрос", exact: true })
+      .click();
+    await runtime.page
+      .getByText(/ Разрешение начнёт действовать только после подтверждения/)
+      .waitFor();
+    assert.equal(e2eAiConsentRequested, true);
     await runtime.page
       .getByRole("dialog", { name: "Редактировать ученика", exact: true })
       .getByRole("button", { name: "Закрыть", exact: true })
@@ -1298,6 +2558,277 @@ test("browser smoke: teacher navigates Schedule → Students with honest V2 stat
         ?.getAttribute("aria-current"),
     );
     assert.equal(studentsCurrent, "page");
+  } finally {
+    await runtime.close();
+  }
+});
+
+test("browser smoke: self profile exposes only learner-safe history and controls AI consent", async (t) => {
+  if (browserSmokeUnavailableReason) {
+    t.skip(browserSmokeUnavailableReason);
+    return;
+  }
+
+  e2eAiConsentStatus = "pending";
+  const runtime = await openPage({ cookie: authenticatedCookieValue() });
+  try {
+    await runtime.page.goto("/learning-profile", { waitUntil: "networkidle" });
+    await runtime.page
+      .getByRole("heading", {
+        name: "Мой учебный профиль",
+        exact: true,
+        level: 1,
+      })
+      .waitFor();
+    let html = await runtime.page.content();
+    assert.match(html, /1 ч 32 мин/);
+    assert.match(html, /Известное фактическое время/);
+
+    await runtime.page.getByRole("tab", { name: /^История/ }).click();
+    await runtime.page
+      .getByText("Опубликованный комментарий для учебного профиля.", {
+        exact: true,
+      })
+      .waitFor();
+    html = await runtime.page.content();
+    assert.doesNotMatch(html, /FOREIGN TRAP RECORD|Чужой курс/);
+
+    await runtime.page
+      .getByRole("tab", { name: /Связи и помощник/, exact: false })
+      .click();
+    await runtime.page
+      .getByText("Персонализация с общей историей", { exact: true })
+      .waitFor();
+    await runtime.page
+      .getByRole("button", { name: "Разрешить", exact: true })
+      .click();
+    await runtime.page.getByText("Разрешено", { exact: true }).waitFor();
+    assert.equal(e2eAiConsentStatus, "active");
+    await runtime.page
+      .getByRole("button", { name: "Отозвать", exact: true })
+      .click();
+    await runtime.page.getByText("Отозвано", { exact: true }).waitFor();
+    assert.equal(e2eAiConsentStatus, "revoked");
+  } finally {
+    await runtime.close();
+  }
+});
+
+test("browser smoke: observer reads published history only and can leave immediately", async (t) => {
+  if (browserSmokeUnavailableReason) {
+    t.skip(browserSmokeUnavailableReason);
+    return;
+  }
+
+  e2eObservedGrantLeft = false;
+  const runtime = await openPage({ cookie: authenticatedCookieValue() });
+  try {
+    await runtime.page.goto("/observing", { waitUntil: "networkidle" });
+    await runtime.page
+      .getByRole("heading", { name: "Наблюдение", exact: true, level: 1 })
+      .waitFor();
+    await runtime.page
+      .getByRole("heading", { name: "Борис Волков", exact: true, level: 2 })
+      .waitFor();
+    await runtime.page.getByRole("tab", { name: /^История/ }).click();
+    await runtime.page
+      .getByText("Опубликованный комментарий для учебного профиля.", {
+        exact: true,
+      })
+      .waitFor();
+    const html = await runtime.page.content();
+    assert.doesNotMatch(
+      html,
+      /FOREIGN TRAP RECORD|Чужой курс|Редактировать результат|Назначить урок|Запустить урок/,
+    );
+
+    await runtime.page.evaluate(() => {
+      window.confirm = () => true;
+    });
+    await runtime.page
+      .getByRole("button", { name: "Отказаться от доступа", exact: true })
+      .click();
+    await runtime.page
+      .getByText("Нет активного наблюдения", { exact: true })
+      .waitFor();
+    assert.equal(e2eObservedGrantLeft, true);
+  } finally {
+    await runtime.close();
+  }
+});
+
+test("browser smoke: observer settings accepts an incoming request and revokes owned access", async (t) => {
+  if (browserSmokeUnavailableReason) {
+    t.skip(browserSmokeUnavailableReason);
+    return;
+  }
+
+  e2eObserverInvitationAccepted = false;
+  e2eObserverGrantRevoked = false;
+  e2eObserverInviteCreated = false;
+  const runtime = await openPage({ cookie: authenticatedCookieValue() });
+  try {
+    await runtime.page.goto("/settings/observers", {
+      waitUntil: "networkidle",
+    });
+    await runtime.page
+      .getByRole("heading", { name: "Наблюдатели", exact: true, level: 1 })
+      .waitFor();
+    await runtime.page
+      .getByLabel("Email получателя")
+      .fill("observer-e2e@example.test");
+    await runtime.page.getByLabel("Свободная подпись").fill("бабушка");
+    await runtime.page
+      .getByRole("button", { name: "Отправить приглашение", exact: true })
+      .click();
+    await runtime.page.getByText(/ резервную ссылку сейчас/).waitFor();
+    assert.equal(e2eObserverInviteCreated, true);
+    await runtime.page.getByText("Мария Соколова", { exact: true }).waitFor();
+    await runtime.page
+      .getByRole("button", { name: "Принять", exact: true })
+      .click();
+    await runtime.page.getByText("Принято", { exact: true }).waitFor();
+    assert.equal(e2eObserverInvitationAccepted, true);
+
+    await runtime.page.evaluate(() => {
+      window.confirm = () => true;
+      const card = Array.from(document.querySelectorAll("li")).find((item) =>
+        item.textContent?.includes("Доверенный наблюдатель"),
+      );
+      const button = Array.from(card?.querySelectorAll("button") ?? []).find(
+        (candidate) => candidate.textContent?.includes("Отозвать"),
+      );
+      button?.click();
+    });
+    await runtime.page
+      .getByText("Наблюдателей пока нет", { exact: true })
+      .waitFor();
+    assert.equal(e2eObserverGrantRevoked, true);
+  } finally {
+    await runtime.close();
+  }
+});
+
+test("browser smoke: trusted adult resets child credentials and learner revokes recovery delegate", async (t) => {
+  if (browserSmokeUnavailableReason) {
+    t.skip(browserSmokeUnavailableReason);
+    return;
+  }
+
+  e2eRecoveryResetCompleted = false;
+  e2eRecoveryDelegateRevoked = false;
+  const runtime = await openPage({ cookie: authenticatedCookieValue() });
+  try {
+    await runtime.page.goto("/settings/security", {
+      waitUntil: "networkidle",
+    });
+    await runtime.page
+      .getByRole("heading", { name: "Безопасность", exact: true, level: 1 })
+      .waitFor();
+    await runtime.page.getByText("boris-child", { exact: false }).waitFor();
+    await runtime.page
+      .getByRole("button", { name: "Сменить логин и PIN", exact: true })
+      .click();
+    await runtime.page
+      .getByLabel("Новый логин учащегося")
+      .fill("boris-new-login");
+    await runtime.page
+      .getByLabel("Новый PIN учащегося (4–8 цифр)")
+      .fill("1357");
+    await runtime.page
+      .getByLabel("Ваш текущий пароль или PIN")
+      .fill("adult-secret");
+    await runtime.page
+      .getByRole("button", { name: "Сохранить новые данные", exact: true })
+      .click();
+    await runtime.page
+      .getByText(/Доступ для «Борис Волков» обновлён/)
+      .waitFor();
+    assert.equal(e2eRecoveryResetCompleted, true);
+
+    await runtime.page.evaluate(() => {
+      window.confirm = () => true;
+    });
+    await runtime.page
+      .getByRole("button", { name: "Отозвать право", exact: true })
+      .click();
+    await runtime.page
+      .getByText("Право восстановления отозвано.", { exact: true })
+      .waitFor();
+    await runtime.page.getByText("Право отозвано", { exact: true }).waitFor();
+    assert.equal(e2eRecoveryDelegateRevoked, true);
+  } finally {
+    await runtime.close();
+  }
+});
+
+test("browser smoke: QR creates only pending connection, archive restores, and offline creation remains explicit", async (t) => {
+  if (browserSmokeUnavailableReason) {
+    t.skip(browserSmokeUnavailableReason);
+    return;
+  }
+
+  e2eArchivedLearnerRestored = false;
+  e2eOfflineProfileCreated = false;
+  const runtime = await openPage({ cookie: authenticatedCookieValue() });
+  try {
+    await runtime.page.goto("/students#connect-code=ABCDE-FGHIJ", {
+      waitUntil: "networkidle",
+    });
+    await runtime.page
+      .getByRole("heading", { name: "Добавить ученика", exact: true, level: 2 })
+      .waitFor();
+    const fragmentContract = await runtime.page.evaluate(() => ({
+      hash: window.location.hash,
+      code:
+        document.querySelector<HTMLInputElement>("input.font-mono")?.value ??
+        "",
+    }));
+    assert.equal(fragmentContract.hash, "");
+    assert.equal(fragmentContract.code, "ABCDE-FGHIJ");
+    await runtime.page.getByLabel("Имя в моём списке").fill("Ученик по QR");
+    await runtime.page
+      .getByRole("button", { name: "Отправить запрос", exact: true })
+      .click();
+    await runtime.page
+      .getByText(/Запрос отправлен\. Ученик появится в активном списке/)
+      .waitFor();
+    await runtime.page
+      .getByRole("button", { name: "Готово", exact: true })
+      .click();
+    await runtime.page.getByText("Новый по QR", { exact: true }).waitFor();
+
+    await runtime.page
+      .getByRole("button", { name: "Архив · 1", exact: true })
+      .click();
+    await runtime.page.getByText("Архивная Ольга", { exact: true }).waitFor();
+    await runtime.page
+      .getByRole("button", { name: "Восстановить", exact: true })
+      .click();
+    await runtime.page.getByText(/Ученик снова в активном списке/).waitFor();
+    assert.equal(e2eArchivedLearnerRestored, true);
+
+    await runtime.page
+      .getByRole("button", { name: "Новый ученик", exact: true })
+      .click();
+    await runtime.page
+      .getByRole("button", {
+        name: /Создать без аккаунта/,
+        exact: false,
+      })
+      .click();
+    await runtime.page.getByLabel("Имя в моём списке").fill("Ева без аккаунта");
+    await runtime.page
+      .getByRole("button", {
+        name: "Создать профиль без аккаунта",
+        exact: true,
+      })
+      .click();
+    await runtime.page
+      .getByText("Профиль без аккаунта создан.", { exact: true })
+      .waitFor();
+    await runtime.page.getByText("Ева без аккаунта", { exact: true }).waitFor();
+    assert.equal(e2eOfflineProfileCreated, true);
   } finally {
     await runtime.close();
   }
@@ -1379,7 +2910,395 @@ test("browser smoke: mixed Course audience deduplicates direct and grouped learn
   }
 });
 
-test("browser smoke: mobile teacher menu exposes Schedule, Students and Courses", async (t) => {
+test("browser smoke: completion UI keeps private comments teacher-only and publishes explicit comments", async (t) => {
+  if (browserSmokeUnavailableReason) {
+    t.skip(browserSmokeUnavailableReason);
+    return;
+  }
+
+  resetE2eCompletionFlow();
+  e2eObservedGrantLeft = false;
+  const runtime = await openPage({ cookie: authenticatedCookieValue() });
+
+  async function completeVisibleRun(input: {
+    report: string;
+    selfComment: string;
+    publishSelf: boolean;
+    observedComment: string;
+    publishObserved: boolean;
+  }) {
+    await runtime.page
+      .getByRole("button", {
+        name: "Идёт сейчас. Настроить проведение урока",
+        exact: true,
+      })
+      .click();
+    const dialog = runtime.page.getByRole("dialog", {
+      name: "Завершить урок",
+      exact: true,
+    });
+    await dialog.waitFor();
+    await dialog.getByLabel("Как прошёл урок").fill(input.report);
+    await dialog.getByLabel("Фактическая длительность, минут").fill("45");
+
+    for (const learnerLabel of ["E2E Adult", "Борис Волков"]) {
+      await dialog
+        .getByRole("group", {
+          name: `Посещаемость: ${learnerLabel}`,
+          exact: true,
+        })
+        .getByRole("radio", { name: "Был на уроке", exact: true })
+        .check();
+    }
+    await dialog
+      .getByLabel("Комментарий об ученике E2E Adult")
+      .fill(input.selfComment);
+    await dialog
+      .getByLabel("Комментарий об ученике Борис Волков")
+      .fill(input.observedComment);
+    if (input.publishSelf) {
+      await dialog
+        .getByLabel("Добавить комментарий E2E Adult в учебный профиль")
+        .check();
+    }
+    if (input.publishObserved) {
+      await dialog
+        .getByLabel("Добавить комментарий Борис Волков в учебный профиль")
+        .check();
+    }
+    await dialog
+      .getByRole("button", { name: "Завершить и сохранить", exact: true })
+      .click();
+    try {
+      await dialog.waitFor({ state: "hidden", timeout: 10_000 });
+    } catch {
+      const alert = await runtime.page.evaluate(
+        () =>
+          document
+            .querySelector<HTMLElement>("[role='dialog'] [role='alert']")
+            ?.textContent?.trim() ?? "completion dialog stayed open",
+      );
+      assert.fail(alert);
+    }
+  }
+
+  try {
+    await runtime.page.goto(`/courses/${E2E_COURSE_ID}`, {
+      waitUntil: "networkidle",
+    });
+    await runtime.page
+      .getByRole("heading", { name: E2E_COURSE_TITLE, exact: true, level: 1 })
+      .waitFor();
+
+    await completeVisibleRun({
+      report: "Первое завершение: приватный self, опубликованный observer.",
+      selfComment: E2E_PRIVATE_SELF_COMMENT,
+      publishSelf: false,
+      observedComment: E2E_PUBLISHED_OBSERVED_COMMENT,
+      publishObserved: true,
+    });
+    await completeVisibleRun({
+      report: "Второе завершение: опубликованный self, приватный observer.",
+      selfComment: E2E_PUBLISHED_SELF_COMMENT,
+      publishSelf: true,
+      observedComment: E2E_PRIVATE_OBSERVED_COMMENT,
+      publishObserved: false,
+    });
+
+    assert.equal(e2eCompletionPayloads.length, 2);
+    assert.deepEqual(
+      e2eCompletionPayloads.map((payload) => ({
+        runId: payload.p_lesson_run_id,
+        actualDurationMinutes: payload.p_actual_duration_minutes,
+        records: [...payload.p_records]
+          .map((record) => ({
+            learnerProfileId: record.learnerProfileId,
+            teacherComment: record.teacherComment,
+            shareWithLearner: record.shareWithLearner,
+          }))
+          .sort((left, right) =>
+            left.learnerProfileId.localeCompare(right.learnerProfileId),
+          ),
+      })),
+      [
+        {
+          runId: E2E_COMPLETION_PRIVATE_RUN_ID,
+          actualDurationMinutes: 45,
+          records: [
+            {
+              learnerProfileId: E2E_LEARNER_BORIS_ID,
+              teacherComment: E2E_PUBLISHED_OBSERVED_COMMENT,
+              shareWithLearner: true,
+            },
+            {
+              learnerProfileId: E2E_SELF_LEARNER_ID,
+              teacherComment: E2E_PRIVATE_SELF_COMMENT,
+              shareWithLearner: false,
+            },
+          ],
+        },
+        {
+          runId: E2E_COMPLETION_PUBLISHED_RUN_ID,
+          actualDurationMinutes: 45,
+          records: [
+            {
+              learnerProfileId: E2E_LEARNER_BORIS_ID,
+              teacherComment: E2E_PRIVATE_OBSERVED_COMMENT,
+              shareWithLearner: false,
+            },
+            {
+              learnerProfileId: E2E_SELF_LEARNER_ID,
+              teacherComment: E2E_PUBLISHED_SELF_COMMENT,
+              shareWithLearner: true,
+            },
+          ],
+        },
+      ],
+    );
+
+    await runtime.page
+      .getByRole("tab", { name: "История", exact: true })
+      .click();
+    await runtime.page
+      .getByText(E2E_PRIVATE_SELF_COMMENT, { exact: false })
+      .waitFor();
+    let html = await runtime.page.content();
+    assert.match(html, new RegExp(E2E_PRIVATE_SELF_COMMENT));
+    assert.match(html, new RegExp(E2E_PRIVATE_OBSERVED_COMMENT));
+    assert.match(html, new RegExp(E2E_PUBLISHED_SELF_COMMENT));
+    assert.match(html, new RegExp(E2E_PUBLISHED_OBSERVED_COMMENT));
+    assert.match(html, /Только преподавателю/);
+    assert.match(html, /Опубликован в учебном профиле/);
+
+    await runtime.page.goto("/learning-profile", { waitUntil: "networkidle" });
+    await runtime.page.getByRole("tab", { name: /^История/ }).click();
+    await runtime.page
+      .getByText(E2E_PUBLISHED_SELF_COMMENT, { exact: true })
+      .waitFor();
+    html = await runtime.page.content();
+    assert.doesNotMatch(
+      html,
+      new RegExp(
+        `${E2E_PRIVATE_SELF_COMMENT}|${E2E_PRIVATE_OBSERVED_COMMENT}|${E2E_PUBLISHED_OBSERVED_COMMENT}`,
+      ),
+    );
+
+    await runtime.page.goto("/observing", { waitUntil: "networkidle" });
+    await runtime.page
+      .getByRole("heading", { name: "Борис Волков", exact: true, level: 2 })
+      .waitFor();
+    await runtime.page.getByRole("tab", { name: /^История/ }).click();
+    await runtime.page
+      .getByText(E2E_PUBLISHED_OBSERVED_COMMENT, { exact: true })
+      .waitFor();
+    html = await runtime.page.content();
+    assert.doesNotMatch(
+      html,
+      new RegExp(
+        `${E2E_PRIVATE_SELF_COMMENT}|${E2E_PRIVATE_OBSERVED_COMMENT}|${E2E_PUBLISHED_SELF_COMMENT}`,
+      ),
+    );
+  } finally {
+    e2eCompletionPhase = null;
+    e2eCompletionPayloads.length = 0;
+    e2eCompletedLearningRecordRows.length = 0;
+    await runtime.close();
+  }
+});
+
+test("browser smoke: copied invitation strips its fragment and supports merge cancel and confirm", async (t) => {
+  if (browserSmokeUnavailableReason) {
+    t.skip(browserSmokeUnavailableReason);
+    return;
+  }
+
+  const rawToken = "browser-manual-secret-1234567890";
+  e2eMergeStatus = "pending";
+  e2eSupabaseReferers.length = 0;
+  {
+    const runtime = await openPage({ cookie: authenticatedCookieValue() });
+    try {
+      await runtime.page.goto(
+        `/identity/invitations/${E2E_MERGE_INVITATION_ID}#kind=profile&token=${rawToken}`,
+        { waitUntil: "networkidle" },
+      );
+      await runtime.page.getByText("Анна", { exact: true }).waitFor();
+      const secretContract = await runtime.page.evaluate(() => ({
+        hash: window.location.hash,
+        search: window.location.search,
+        stored: window.sessionStorage.getItem(
+          `shidao.identity-invitation.${window.location.pathname.split("/").at(-1)}`,
+        ),
+      }));
+      assert.equal(secretContract.hash, "");
+      assert.equal(secretContract.search, "");
+      assert.match(secretContract.stored ?? "", new RegExp(rawToken));
+      await runtime.page
+        .getByRole("button", {
+          name: "Проверить объединение",
+          exact: true,
+        })
+        .click();
+      await runtime.page
+        .getByRole("heading", {
+          name: "Проверка необратимого объединения",
+          exact: true,
+          level: 2,
+        })
+        .waitFor();
+      await runtime.page
+        .getByRole("button", { name: "Не объединять", exact: true })
+        .click();
+      await runtime.page
+        .getByRole("heading", {
+          name: "Объединение отменено",
+          exact: true,
+          level: 2,
+        })
+        .waitFor();
+      assert.equal(e2eMergeStatus, "cancelled");
+    } finally {
+      await runtime.close();
+    }
+  }
+
+  e2eMergeStatus = "pending";
+  {
+    const runtime = await openPage({ cookie: authenticatedCookieValue() });
+    try {
+      await runtime.page.goto(
+        `/identity/invitations/${E2E_MERGE_INVITATION_ID}#kind=profile&token=${rawToken}`,
+        { waitUntil: "networkidle" },
+      );
+      await runtime.page
+        .getByRole("button", {
+          name: "Проверить объединение",
+          exact: true,
+        })
+        .click();
+      await runtime.page
+        .getByRole("button", {
+          name: "Подтвердить объединение",
+          exact: true,
+        })
+        .click();
+      await runtime.page
+        .getByRole("heading", {
+          name: "Учебные результаты объединены",
+          exact: true,
+          level: 2,
+        })
+        .waitFor();
+      assert.equal(e2eMergeStatus, "completed");
+    } finally {
+      await runtime.close();
+    }
+  }
+
+  assert.equal(
+    e2eSupabaseReferers.some((referer) => referer.includes(rawToken)),
+    false,
+  );
+});
+
+test("browser smoke: verified email handoff survives navigation and is consumed on terminal action", async (t) => {
+  if (browserSmokeUnavailableReason) {
+    t.skip(browserSmokeUnavailableReason);
+    return;
+  }
+
+  const runtime = await openPage();
+  try {
+    const next = `/identity/invitations/${E2E_PROFILE_INVITATION_ID}`;
+    const callback = new URL(
+      "/auth/confirm",
+      `https://v2.shidao.ru:${browserProxyPort}`,
+    );
+    callback.searchParams.set("token_hash", "browser-verified-email-hash");
+    callback.searchParams.set("type", "invite");
+    callback.searchParams.set("next", next);
+    callback.searchParams.set("identity_invitation", E2E_PROFILE_INVITATION_ID);
+    callback.searchParams.set("identity_kind", "profile");
+    await runtime.page.goto(callback.toString(), { waitUntil: "networkidle" });
+    await runtime.page.getByText("Анна", { exact: true }).waitFor();
+    assert.equal(new URL(runtime.page.url()).hash, "");
+    assert.equal(new URL(runtime.page.url()).searchParams.has("token"), false);
+
+    await runtime.page.goto("/schedule", { waitUntil: "networkidle" });
+    await runtime.page.goto(`${next}?kind=profile`, {
+      waitUntil: "networkidle",
+    });
+    await runtime.page.getByText("Анна", { exact: true }).waitFor();
+    await runtime.page
+      .getByRole("button", { name: "Отклонить", exact: true })
+      .click();
+    await runtime.page
+      .getByRole("heading", { name: "Готово", exact: true, level: 2 })
+      .waitFor();
+
+    await runtime.page.goto(`${next}?kind=profile`, {
+      waitUntil: "networkidle",
+    });
+    await runtime.page
+      .getByText("Запрос недоступен или больше не существует.", {
+        exact: true,
+      })
+      .waitFor();
+
+    const pageResponse = await requestLocalApp(next);
+    assert.match(pageResponse.headers["cache-control"] ?? "", /no-store/);
+    assert.equal(pageResponse.headers["referrer-policy"], "no-referrer");
+  } finally {
+    await runtime.close();
+  }
+});
+
+test("browser smoke: child activation creates a separate login with acknowledged recovery delegate", async (t) => {
+  if (browserSmokeUnavailableReason) {
+    t.skip(browserSmokeUnavailableReason);
+    return;
+  }
+
+  e2eChildActivationAcknowledged = false;
+  const runtime = await openPage({ cookie: authenticatedCookieValue() });
+  try {
+    await runtime.page.goto(
+      `/identity/invitations/${E2E_CHILD_INVITATION_ID}#kind=profile&token=browser-child-secret-1234567890`,
+      { waitUntil: "networkidle" },
+    );
+    await runtime.page.getByText("Борис", { exact: true }).waitFor();
+    await runtime.page
+      .getByLabel("Уникальный login учащегося")
+      .fill("boris-child");
+    await runtime.page.getByLabel("PIN учащегося (4–8 цифр)").fill("2468");
+    await runtime.page
+      .getByRole("checkbox", {
+        name: /Я понимаю, что стану доверенным взрослым/,
+      })
+      .check();
+    await runtime.page
+      .getByLabel("Подтвердите вход текущим паролем или PIN")
+      .fill("adult-secret");
+    await runtime.page
+      .getByRole("button", {
+        name: "Создать отдельный аккаунт",
+        exact: true,
+      })
+      .click();
+    await runtime.page.getByText("boris-child", { exact: true }).waitFor();
+    await runtime.page
+      .getByText(/Вы стали доверенным взрослым для восстановления/)
+      .waitFor();
+    const html = await runtime.page.content();
+    assert.match(html, /наблюдение подключается отдельно/i);
+    assert.match(html, /E2E Adult/);
+    assert.equal(e2eChildActivationAcknowledged, true);
+  } finally {
+    await runtime.close();
+  }
+});
+
+test("browser smoke: mobile Account menu exposes every universal section", async (t) => {
   if (browserSmokeUnavailableReason) {
     t.skip(browserSmokeUnavailableReason);
     return;
@@ -1401,6 +3320,12 @@ test("browser smoke: mobile teacher menu exposes Schedule, Students and Courses"
       .waitFor();
     await runtime.page
       .getByRole("menuitem", { name: "Курсы", exact: true })
+      .waitFor();
+    await runtime.page
+      .getByRole("menuitem", { name: "Мой учебный профиль", exact: true })
+      .waitFor();
+    await runtime.page
+      .getByRole("menuitem", { name: "Наблюдение", exact: true })
       .waitFor();
     const studentsMenuItem = runtime.page.getByRole("menuitem", {
       name: "Ученики",

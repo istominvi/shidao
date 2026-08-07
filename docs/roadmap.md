@@ -63,6 +63,11 @@
   `learning_record.recorded_by_account_id` сохраняет recorder. Существующие
   profiles backfilled 1:1; account claim, merge и observer access не входят в
   этот slice.
+- Current repository candidate поверх deployed baseline завершает P0.Identity:
+  roleless exactly-one Account profile, Account login/PIN, discovery/claim/
+  child activation/merge, archive/restore, self/observer history/progress,
+  erasure и consented AI. Production release остаётся next до phased M1–M4 и
+  exact Coolify/DB/API/browser postflight.
 - Реализованы private-by-default Components и persisted Student Screen Slides.
 - Реализован fullscreen Student Screen preview.
 - Реализован development-only MCP из шести tools поверх application service.
@@ -86,40 +91,42 @@
 
 ## P0.1: legacy identity/security hardening
 
-Текущий snapshot честно фиксирует, что `user_preference` и `user_security` не
-имеют RLS и сохраняют слишком широкие legacy grants. Перед расширением
-identity, learner access или внешних интеграций необходимо:
+**Current repository candidate:** M1 включает RLS/ACL hardening
+`user_preference`/`user_security`, active callers перенесены на Account
+boundary, production middleware использует explicit host allowlist и exact
+`v2.shidao.ru` CSRF Origin. Negative Auth/host/output tests входят в release
+gate. **Production status:** next — backup, M1–M3 apply, exact web deployments
+и postflight; до этого deployed contour сохраняет прежний debt.
 
-CSRF guard пока допускает configured landing host как Origin для unsafe V2
-requests. Перед расширением identity/external access нужны строгая app-host
-boundary и cross-subdomain regression test; явный production allowlist для
-routed hosts также остаётся P0-задачей.
-
-- инвентаризировать все server callers login/onboarding/profile/PIN/session и
-  legacy `SECURITY DEFINER` RPC с caller-supplied `p_user_id`/`anon` execute;
+- [x] инвентаризировать server callers login/onboarding/profile/PIN/session и
+      legacy `SECURITY DEFINER` RPC с caller-supplied `p_user_id`/`anon` execute;
 - проверить фактический Data API exposure read-only и составить negative tests;
 - отдельной approved ops-задачей ротировать historical plaintext credentials
   из ignored `enviromnent/db-mcp-cheatsheet.md`, затем оставить только safe
   deprecation stub; не печатать текущие значения;
-- заменить broad table/function grants узкими authenticated/service
-  boundaries и owner checks;
-- включить RLS там, где прямой доступ действительно нужен, либо полностью
-  закрыть direct table access;
-- закрыть middleware host boundary явным production allowlist: non-root
-  `brand`/`model` и неизвестные routed hosts не должны получать app/API;
+- [x] заменить broad table/function grants узкими authenticated/service
+      boundaries и owner checks;
+- [x] включить RLS там, где прямой доступ действительно нужен, либо полностью
+      закрыть direct table access;
+- [x] закрыть middleware host boundary явным production allowlist: non-root
+      `brand`/`model` и неизвестные routed hosts не должны получать app/API;
 - определить Prettier baseline: исключить immutable archive и отдельно
   отформатировать active source, чтобы repository-wide `format:check` стал
   честным gate;
-- доставить исправление новой forward migration с Auth regression smoke.
+- [x] подготовить исправление новой forward migration с Auth regression smoke;
+      production delivery остаётся release terminal condition.
 
 Этот пункт не разрешает менять Auth/SMTP/JWT или применять migration без
 read-only ShiDao sanity check и отдельного deployed-contour postflight.
 
 ## P0.Identity: завершить universal Account и canonical learner ecosystem
 
-Это следующая сквозная программа после P0.1. Она завершает именно обсуждённую
-identity/access модель; Homework, RAG, billing, templates и live Student Screen
-в неё не входят.
+**Current repository candidate:** все девять vertical slices реализованы через
+M1–M3, `src/modules/learner-identity/`, API/UI и roleless navigation. Это ещё не
+production: remaining **next release work** — full gates, verified backup,
+M1–M3 postflight, два exact roleless Coolify deploy, M4 dependency
+audit/contract cleanup, final snapshot и DB/API/browser postflight. Homework,
+RAG, billing, templates и live Student Screen по-прежнему не входят.
 
 Согласованный target:
 
@@ -138,14 +145,14 @@ identity/access модель; Homework, RAG, billing, templates и live Student 
   без потери LearningRecord и teacher-local names;
 - full Lesson snapshot и `lesson_run_participant` не возвращаются.
 
-Последовательность vertical slices:
+Реализованная последовательность vertical slices:
 
-1. **Security gate:** закрыть legacy ACL, host allowlist и app-origin CSRF из
+1. **Security gate:** закрыты legacy ACL, host allowlist и app-origin CSRF из
    P0.1 с Auth regression и negative actor tests.
 2. **Universal Account bootstrap:** один profile на каждый Account, roleless
    onboarding/navigation и отсутствие active dependency от
    `teacher/parent/student`.
-3. **Discovery/connection:** rotating one-time share code/QR, optional opt-in
+3. **Discovery/connection:** rotating one-time share code/QR и blind email
    exact handle, blind recipient-bound email invitation, accept/revoke/expiry и
    flow «сначала найти Account, затем создать offline profile». Discovery
    создаёт только pending request; active relation требует accept subject. Для
@@ -168,9 +175,9 @@ identity/access модель; Homework, RAG, billing, templates и live Student 
    metadata projection без Course access, deterministic bounded sanitized
    context, immediate revoke/expiry/owner-change invalidation, audit и
    stale-preview protection.
-9. **Legacy cutover:** удалить active role switch/callers; physical legacy table
-   cleanup выполнять отдельной contract migration только после доказанного
-   отсутствия зависимостей.
+9. **Legacy cutover:** active role switch/callers удалены из candidate; final
+   role helpers/types/grants и rollback-only security dual-writes удаляет
+   отдельная withheld M4 только после доказанного отсутствия зависимостей.
 
 Каждый slice проходит цепочку contracts → service → repository → API → UI →
 tests → migration/snapshot → docs → production postflight. Нельзя объявлять
@@ -186,6 +193,9 @@ Definition of Done программы:
 - offline learner без email получает отдельный Account/login/PIN; взрослый
   recipient не становится learner identity;
 - invitation/claim/merge/archive/restore доступны в UI и конкурентно безопасны;
+- stale merged UUID в одиночных teacher URLs actor-scoped резолвится в target;
+  bulk Group/Course/Run UUID fail generic и требуют reload/reselect, а erasure
+  удаляет alias полностью;
 - subject управляет наблюдателями, observer ничего не мутирует;
 - subject/observer видят всю разрешённую finalized lineage, teacher — только
   свои raw observations;
@@ -306,8 +316,8 @@ OCR, web crawling и audio transcription не входят в первый parsi
 
 ## P2: audience и learning identity
 
-Текущие `teacher/parent/student/school/class` сохранены только для
-compatibility login/profile flows.
+Legacy `teacher/parent/student/school/class` rows сохраняются только как dormant
+compatibility/recovery data; active roleless candidate их не читает.
 
 **Current deployed slice:**
 
@@ -334,16 +344,17 @@ compatibility login/profile flows.
   context, но не переписывает состав уже открытого LessonRun;
 - Course Builder остаётся owner-only, а старые Class/School не используются.
 
-**Next — выполняется программой P0.Identity:**
+**Current repository candidate, production rollout next:**
 
-- invitation/claim flow для привязки существующего offline profile к одному
-  Account без эвристики по имени/email;
-- subject-controlled visibility и observer relation с grant/revoke audit;
-- безопасный merge duplicate profiles только после определения authorization и
-  конфликтов двух records одного LessonRun;
-- self/observer кабинет с learner-safe finalized history и progress;
-- cross-provider history и AI context только поверх отдельного разрешения, а не
-  автоматически из canonical profile ID.
+- exactly-one Account/profile invariant, roleless navigation и Account
+  login/PIN boundary;
+- share-code/email connection, offline claim/child activation и physical merge;
+- archive list/restore, permanent empty-offline delete, safe unlink и subject
+  erasure;
+- self/observer learner-safe history/progress и explicit shared comments;
+- subject-controlled cross-provider AI consent с bounded sanitized projection;
+- stale source UUID actor-scoped resolution для одиночных teacher URLs; bulk
+  UUID fail generic + reload/reselect; erasure deletes alias.
 
 Нельзя использовать старую Class/School как новый parent Course только ради
 быстрого enrollment. Learner login/access не следует ни из наличия
@@ -353,7 +364,8 @@ claim/access slice. Заполненный `account_id` позволяет Accou
 открываются. Полный current/next/later boundary находится в
 [`docs/architecture/learner-identity-access-model.md`](./architecture/learner-identity-access-model.md).
 Learner Course consumption и live Student Screen остаются отдельным later slice
-и не входят в P0.Identity.
+и не входят в P0.Identity. Наличие linked profile/observer grant/AI consent не
+создаёт Course enrollment.
 
 ## P2: LessonRun и live lesson
 
@@ -368,6 +380,11 @@ Learner Course consumption и live Student Screen остаются отдель�
   ожидаемого ученика;
 - UI state выводится из timestamps, persisted status отсутствует.
 
+**Current repository candidate дополнительно:** verified actual duration,
+explicit shared individual comment, cursor-paginated self/observer history и
+real-record progress без speculative metrics. Production rollout следует
+P0.Identity sequence выше.
+
 **Next — live:**
 
 - основной runtime cursor указывает на Student Screen Slide и не создаёт
@@ -380,9 +397,8 @@ Learner Course consumption и live Student Screen остаются отдель�
 
 ## P3: richer learning history, communication и product scale
 
-- автоматические subject metrics и измеримые progress models поверх текущих
-  finalized LearningRecord;
-- pagination/aggregation для длинной Lesson/Course/Profile history;
+- Component/runtime-produced subject metrics и richer progress signals поверх
+  текущих finalized LearningRecord;
 - common/individual Homework assignment snapshots;
 - course chat и notifications;
 - templates и контролируемый importer repository archive;

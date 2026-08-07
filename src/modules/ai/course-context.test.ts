@@ -215,6 +215,41 @@ test("lesson planning context contains bounded finalized learner history without
   );
 });
 
+test("consented shared history is bounded, de-attributed and separate from raw recorder history", () => {
+  const course = workspace();
+  const context = buildLessonPlanningContext(
+    course,
+    course.lessons[0]!,
+    course.lessons[0]!.title,
+    { runs: [], records: [] },
+    {
+      used: true,
+      revision: "a".repeat(64),
+      projectionVersion: 1,
+      aggregates: {
+        conductedCount: 5,
+        presentCount: 4,
+        absentCount: 1,
+        repeatCount: 2,
+        knownDurationCount: 3,
+        actualDurationMinutes: 135,
+        lastActivityMonth: "2026-08",
+        subjectBreakdown: [{ subjectBucket: "Математика", count: 5 }],
+      },
+      sharedCommentSummaries: ["Стоит повторить работу с дробями."],
+    },
+  );
+  const serialized = JSON.stringify(context.sharedCanonicalHistory);
+
+  assert.equal(context.sharedCanonicalHistory?.aggregates.conductedCount, 5);
+  assert.match(serialized, /Стоит повторить работу с дробями/);
+  assert.doesNotMatch(
+    serialized,
+    /recordedBy|learnerProfile|lessonRun|teacherReport|occurredAt|courseTitle|lessonTitle/,
+  );
+  assert.doesNotMatch(serialized, /aaaaaaaa-aaaa|cccccccc-cccc/);
+});
+
 test("AI context describes mixed audience without duplicating technical identity", () => {
   const course = workspace();
   const anna = learnerProfile("30000000-0000-4000-8000-000000000002", "Анна");

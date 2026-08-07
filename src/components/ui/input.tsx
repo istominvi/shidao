@@ -11,11 +11,18 @@ export function productControlClassName(
 type InputProps = InputHTMLAttributes<HTMLInputElement>;
 
 export function Input({ className, ...props }: InputProps) {
-  return <input className={productControlClassName("input", className)} {...props} />;
+  return (
+    <input className={productControlClassName("input", className)} {...props} />
+  );
 }
 
 type SelectProps = SelectHTMLAttributes<HTMLSelectElement>;
 
 export function Select({ className, ...props }: SelectProps) {
-  return <select className={productControlClassName("select", className)} {...props} />;
+  return (
+    <select
+      className={productControlClassName("select", className)}
+      {...props}
+    />
+  );
 }

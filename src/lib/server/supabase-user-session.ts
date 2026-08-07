@@ -72,6 +72,13 @@ function reauthenticationRequired(): never {
 export async function requireSupabaseUserAccessToken(
   dependencies: SupabaseUserSessionDependencies = {},
 ) {
+  const result = await requireSupabaseUserSession(dependencies);
+  return result.accessToken;
+}
+
+export async function requireSupabaseUserSession(
+  dependencies: SupabaseUserSessionDependencies = {},
+) {
   const readSession = dependencies.readSession ?? readAppSession;
   const rotateSession =
     dependencies.rotateSession ?? rotateAppSessionSupabaseTokens;
@@ -85,7 +92,10 @@ export async function requireSupabaseUserAccessToken(
 
   const currentSupabaseSession = session.supabaseSession;
   if (isSupabaseAccessTokenFresh(currentSupabaseSession, nowMs)) {
-    return currentSupabaseSession!.accessToken!;
+    return {
+      accessToken: currentSupabaseSession!.accessToken!,
+      session,
+    };
   }
 
   const refreshToken = currentSupabaseSession?.refreshToken;
@@ -139,5 +149,8 @@ export async function requireSupabaseUserAccessToken(
     return reauthenticationRequired();
   }
 
-  return refreshedSession.accessToken;
+  return {
+    accessToken: refreshedSession.accessToken,
+    session: { ...session, supabaseSession: refreshedSession },
+  };
 }

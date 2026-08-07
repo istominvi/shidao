@@ -4,8 +4,13 @@ import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { ProductShell, StatusMessage } from "@/components/product-shell";
 import { Button } from "@/components/ui/button";
-import { FieldControl, FieldLabel, FormField } from "@/components/ui/form-field";
+import {
+  FieldControl,
+  FieldLabel,
+  FormField,
+} from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
+import { afterLogin } from "@/lib/auth-redirects";
 
 export default function JoinPage() {
   const router = useRouter();
@@ -39,6 +44,9 @@ export default function JoinPage() {
     try {
       setLoading(true);
       const normalizedEmail = email.trim().toLowerCase();
+      const safeNext = afterLogin(
+        new URLSearchParams(window.location.search).get("next"),
+      );
       const response = await fetch("/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -46,7 +54,9 @@ export default function JoinPage() {
           name: name.trim(),
           email: normalizedEmail,
           password,
+          next: safeNext,
         }),
+        cache: "no-store",
       });
 
       const payload = (await response.json().catch(() => null)) as {
@@ -98,55 +108,68 @@ export default function JoinPage() {
 
           <form className="mt-5 space-y-4" onSubmit={onSubmit}>
             <FormField>
-              <FieldLabel htmlFor="join-name" className="text-black">Имя</FieldLabel>
+              <FieldLabel htmlFor="join-name" className="text-black">
+                Имя
+              </FieldLabel>
               <FieldControl>
                 <Input
                   id="join-name"
                   name="name"
                   type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="w-full"
-                placeholder="Как к вам обращаться"
-                autoComplete="name"
-                required
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full"
+                  placeholder="Как к вам обращаться"
+                  autoComplete="name"
+                  maxLength={160}
+                  required
                 />
               </FieldControl>
             </FormField>
             <FormField>
-              <FieldLabel htmlFor="join-email" className="text-black">Email</FieldLabel>
+              <FieldLabel htmlFor="join-email" className="text-black">
+                Email
+              </FieldLabel>
               <FieldControl>
                 <Input
                   id="join-email"
                   name="email"
                   type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full"
-                placeholder="you@example.com"
-                autoComplete="email"
-                required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full"
+                  placeholder="you@example.com"
+                  autoComplete="email"
+                  maxLength={254}
+                  required
                 />
               </FieldControl>
             </FormField>
             <FormField>
-              <FieldLabel htmlFor="join-password" className="text-black">Пароль</FieldLabel>
+              <FieldLabel htmlFor="join-password" className="text-black">
+                Пароль
+              </FieldLabel>
               <FieldControl>
                 <Input
                   id="join-password"
                   name="password"
                   type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full"
-                placeholder="Минимум 8 символов"
-                autoComplete="new-password"
-                required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full"
+                  placeholder="Минимум 8 символов"
+                  autoComplete="new-password"
+                  minLength={8}
+                  maxLength={256}
+                  required
                 />
               </FieldControl>
             </FormField>
             <FormField>
-              <FieldLabel htmlFor="join-confirm-password" className="text-black">
+              <FieldLabel
+                htmlFor="join-confirm-password"
+                className="text-black"
+              >
                 Подтверждение пароля
               </FieldLabel>
               <FieldControl>
@@ -154,11 +177,13 @@ export default function JoinPage() {
                   id="join-confirm-password"
                   name="confirmPassword"
                   type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full"
-                autoComplete="new-password"
-                required
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="w-full"
+                  autoComplete="new-password"
+                  minLength={8}
+                  maxLength={256}
+                  required
                 />
               </FieldControl>
             </FormField>
@@ -185,11 +210,7 @@ export default function JoinPage() {
             {error && <StatusMessage kind="error">{error}</StatusMessage>}
 
             <div className="flex justify-center">
-              <Button
-                disabled={loading}
-                className="px-8"
-                type="submit"
-              >
+              <Button disabled={loading} className="px-8" type="submit">
                 {loading ? "Создаём аккаунт…" : "Создать аккаунт"}
               </Button>
             </div>

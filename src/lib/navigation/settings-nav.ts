@@ -4,7 +4,6 @@ import { isRouteWithin } from "@/lib/routes";
 export type SettingsNavSection = {
   id: string;
   title: string;
-  adultOnly?: boolean;
   items: Array<{
     id: string;
     label: string;
@@ -28,7 +27,15 @@ export const SETTINGS_NAV_SECTIONS: SettingsNavSection[] = [
         id: "security",
         label: "Безопасность",
         href: ROUTES.settingsSecurity,
-        isActive: (pathname) => isRouteWithin(pathname, ROUTES.settingsSecurity),
+        isActive: (pathname) =>
+          isRouteWithin(pathname, ROUTES.settingsSecurity),
+      },
+      {
+        id: "observers",
+        label: "Наблюдатели",
+        href: ROUTES.settingsObservers,
+        isActive: (pathname) =>
+          isRouteWithin(pathname, ROUTES.settingsObservers),
       },
     ],
   },

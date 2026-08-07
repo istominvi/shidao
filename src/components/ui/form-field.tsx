@@ -12,7 +12,8 @@ export function FormField<T extends ElementType = "div">({
   className,
   children,
   ...props
-}: FormFieldProps<T> & Omit<ComponentPropsWithoutRef<T>, keyof FormFieldProps<T>>) {
+}: FormFieldProps<T> &
+  Omit<ComponentPropsWithoutRef<T>, keyof FormFieldProps<T>>) {
   const Component = as ?? "div";
   return (
     <Component className={classNames("form-field", className)} {...props}>
@@ -24,7 +25,9 @@ export function FormField<T extends ElementType = "div">({
 type FieldLabelProps = ComponentPropsWithoutRef<"label">;
 
 export function FieldLabel({ className, ...props }: FieldLabelProps) {
-  return <label className={classNames("form-field-label", className)} {...props} />;
+  return (
+    <label className={classNames("form-field-label", className)} {...props} />
+  );
 }
 
 type FieldHintProps = ComponentPropsWithoutRef<"p">;
@@ -36,11 +39,19 @@ export function FieldHint({ className, ...props }: FieldHintProps) {
 type FieldErrorProps = ComponentPropsWithoutRef<"p">;
 
 export function FieldError({ className, ...props }: FieldErrorProps) {
-  return <p className={classNames("form-field-error", className)} role="alert" {...props} />;
+  return (
+    <p
+      className={classNames("form-field-error", className)}
+      role="alert"
+      {...props}
+    />
+  );
 }
 
 type FieldControlProps = ComponentPropsWithoutRef<"div">;
 
 export function FieldControl({ className, ...props }: FieldControlProps) {
-  return <div className={classNames("form-field-control", className)} {...props} />;
+  return (
+    <div className={classNames("form-field-control", className)} {...props} />
+  );
 }

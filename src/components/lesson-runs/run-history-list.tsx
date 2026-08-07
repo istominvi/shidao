@@ -81,7 +81,11 @@ export function RunHistoryList({
                 <Users className="h-4 w-4" aria-hidden="true" />
                 {participantSummary(run)}
               </span>
-              <span>{run.plannedDurationMinutes} мин.</span>
+              <span>
+                {run.actualDurationMinutes != null
+                  ? `${run.actualDurationMinutes} мин. фактически`
+                  : `${run.plannedDurationMinutes} мин. по плану`}
+              </span>
             </div>
 
             {run.teacherReport ? (
@@ -123,7 +127,18 @@ export function RunHistoryList({
                       ) : null}
                     </div>
                     {record.teacherComment ? (
-                      <p>{record.teacherComment}</p>
+                      <p>
+                        {record.teacherComment}
+                        {record.sharedWithLearnerAt ? (
+                          <small className="ml-2 text-neutral-500">
+                            Опубликован в учебном профиле
+                          </small>
+                        ) : (
+                          <small className="ml-2 text-neutral-500">
+                            Только преподавателю
+                          </small>
+                        )}
+                      </p>
                     ) : null}
                   </li>
                 ))}

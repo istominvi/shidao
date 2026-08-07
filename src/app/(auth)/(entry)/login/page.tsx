@@ -5,7 +5,11 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, Suspense, useMemo, useState } from "react";
 import { ProductShell, StatusMessage } from "@/components/product-shell";
 import { Button } from "@/components/ui/button";
-import { FieldControl, FieldLabel, FormField } from "@/components/ui/form-field";
+import {
+  FieldControl,
+  FieldLabel,
+  FormField,
+} from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
 import { useSessionView } from "@/components/use-session-view";
 import { loginWithIdentifier } from "@/lib/auth-flow";
@@ -47,9 +51,7 @@ function LoginPageContent() {
       setLoading(true);
       const route = await loginWithIdentifier(identifier, secret);
       await refetchSession();
-      router.push(
-        resolveClientPostLoginRoute(route, searchParams.get("next")),
-      );
+      router.push(resolveClientPostLoginRoute(route, searchParams.get("next")));
       router.refresh();
     } catch (submitError) {
       setError(
@@ -66,12 +68,9 @@ function LoginPageContent() {
     <ProductShell contentClassName="mt-10">
       <div className="mx-auto w-full max-w-[500px]">
         <div className="surface-card">
-          <h1 className="surface-card-title text-2xl text-black">
-            Войти
-          </h1>
+          <h1 className="surface-card-title text-2xl text-black">Войти</h1>
           <p className="surface-card-description mt-2 text-black">
-            Введите данные доступа, которые вы получили при регистрации или от
-            учителя/родителя
+            Введите email или логин и свой пароль или PIN-код.
           </p>
 
           {successHint && (
@@ -83,19 +82,19 @@ function LoginPageContent() {
           <form className="mt-5 space-y-4" onSubmit={onSubmit}>
             <FormField>
               <FieldLabel htmlFor="login-identifier" className="text-black">
-                Email или логин ученика
+                Email или логин
               </FieldLabel>
               <FieldControl>
                 <Input
                   id="login-identifier"
                   name="identifier"
                   type="text"
-                value={identifier}
-                onChange={(e) => setIdentifier(e.target.value)}
-                placeholder="Например, parent@school.com или login ученика"
-                className="w-full"
-                autoComplete="username"
-                required
+                  value={identifier}
+                  onChange={(e) => setIdentifier(e.target.value)}
+                  placeholder="Например, name@example.com или learner-login"
+                  className="w-full"
+                  autoComplete="username"
+                  required
                 />
               </FieldControl>
             </FormField>
@@ -108,7 +107,7 @@ function LoginPageContent() {
                   href={ROUTES.forgotPassword}
                   className="text-sm font-medium text-neutral-500 underline decoration-neutral-400/50 underline-offset-2 hover:text-neutral-600"
                 >
-                  Забыли пароль?
+                  Забыли пароль или PIN?
                 </Link>
               </div>
               <FieldControl>
@@ -116,12 +115,12 @@ function LoginPageContent() {
                   id="login-secret"
                   name="secret"
                   type="password"
-                value={secret}
-                onChange={(e) => setSecret(e.target.value)}
-                placeholder="Введите пароль или PIN"
-                className="w-full"
-                autoComplete="current-password"
-                required
+                  value={secret}
+                  onChange={(e) => setSecret(e.target.value)}
+                  placeholder="Введите пароль или PIN"
+                  className="w-full"
+                  autoComplete="current-password"
+                  required
                 />
               </FieldControl>
             </FormField>
@@ -129,11 +128,7 @@ function LoginPageContent() {
             {error && <StatusMessage kind="error">{error}</StatusMessage>}
 
             <div className="flex justify-center">
-              <Button
-                disabled={loading}
-                className="px-8"
-                type="submit"
-              >
+              <Button disabled={loading} className="px-8" type="submit">
                 {loading ? "Входим…" : "Войти"}
               </Button>
             </div>

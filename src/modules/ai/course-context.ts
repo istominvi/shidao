@@ -15,6 +15,39 @@ export type CourseLearningHistory = {
   audience?: CourseAudience;
 };
 
+export type SharedLearnerHistoryContext = {
+  used: boolean;
+  revision: string;
+  projectionVersion: number;
+  aggregates: {
+    conductedCount: number;
+    presentCount: number;
+    absentCount: number;
+    repeatCount: number;
+    knownDurationCount: number;
+    actualDurationMinutes: number;
+    lastActivityMonth?: string | null;
+    subjectBreakdown: Array<{ subjectBucket: string; count: number }>;
+  };
+  sharedCommentSummaries: string[];
+};
+
+export const EMPTY_SHARED_LEARNER_HISTORY: SharedLearnerHistoryContext = {
+  used: false,
+  revision: "0".repeat(64),
+  projectionVersion: 1,
+  aggregates: {
+    conductedCount: 0,
+    presentCount: 0,
+    absentCount: 0,
+    repeatCount: 0,
+    knownDurationCount: 0,
+    actualDurationMinutes: 0,
+    subjectBreakdown: [],
+  },
+  sharedCommentSummaries: [],
+};
+
 const EMPTY_COURSE_AUDIENCE: CourseAudience = {
   directLearners: [],
   groups: [],
@@ -345,6 +378,7 @@ export function buildLessonPlanningContext(
   lesson: CourseLesson | null,
   proposedTitle: string,
   learningHistory: CourseLearningHistory = { runs: [], records: [] },
+  sharedHistory: SharedLearnerHistoryContext = EMPTY_SHARED_LEARNER_HISTORY,
 ) {
   return boundedContext({
     course: courseBasics(course),
@@ -363,6 +397,16 @@ export function buildLessonPlanningContext(
       teacherComment: clip(item.summary, 300),
     })),
     learningHistory: learningHistoryContext(learningHistory),
+    sharedCanonicalHistory: sharedHistory.used
+      ? {
+          projectionVersion: sharedHistory.projectionVersion,
+          aggregates: sharedHistory.aggregates,
+          deAttributedSharedCommentSummaries:
+            sharedHistory.sharedCommentSummaries,
+          privacyBoundary:
+            "Агрегированная история разрешена владельцами профилей. Она не содержит строк записей, точных дат, идентификаторов, контактов, названий чужих курсов/уроков или автора комментария.",
+        }
+      : null,
     attachmentMetadata: attachmentMetadata(course),
   });
 }
@@ -371,6 +415,7 @@ export function buildAssistantContext(
   course: CourseWorkspace,
   selectedLesson: CourseLesson | null,
   learningHistory: CourseLearningHistory = { runs: [], records: [] },
+  sharedHistory: SharedLearnerHistoryContext = EMPTY_SHARED_LEARNER_HISTORY,
 ) {
   return boundedContext({
     course: courseBasics(course),
@@ -386,6 +431,16 @@ export function buildAssistantContext(
       ? selectedLessonContext(selectedLesson)
       : null,
     learningHistory: learningHistoryContext(learningHistory),
+    sharedCanonicalHistory: sharedHistory.used
+      ? {
+          projectionVersion: sharedHistory.projectionVersion,
+          aggregates: sharedHistory.aggregates,
+          deAttributedSharedCommentSummaries:
+            sharedHistory.sharedCommentSummaries,
+          privacyBoundary:
+            "Это разрешённая владельцами профилей, агрегированная и обезличенная история. Не цитируй комментарии и не пытайся восстановить личность или автора.",
+        }
+      : null,
     attachmentMetadata: attachmentMetadata(course),
     boundary:
       "Ассистент видит только метаданные вложений, но не содержимое файлов. Он не должен утверждать, что прочитал или проанализировал их.",

@@ -86,7 +86,10 @@ export function SiteHeader({
           shellClassName,
         )}
       >
-        <Link href={brandHref} className="site-header-brand text-xl font-black tracking-tight">
+        <Link
+          href={brandHref}
+          className="site-header-brand text-xl font-black tracking-tight"
+        >
           {brandLabel}
         </Link>
 

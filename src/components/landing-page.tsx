@@ -78,7 +78,11 @@ function WordChip({
   );
 }
 
-export function LandingPage({ landingOnly = false }: { landingOnly?: boolean }) {
+export function LandingPage({
+  landingOnly = false,
+}: {
+  landingOnly?: boolean;
+}) {
   const { state, sessionResolved } = useSessionView();
   const authCtaHref = resolveLandingAuthCtaHref(state);
   const marketingActiveId = useMarketingNavActive(
@@ -186,8 +190,8 @@ export function LandingPage({ landingOnly = false }: { landingOnly?: boolean }) 
             </h1>
             <p className="mt-5 max-w-[68ch] text-base leading-relaxed text-neutral-700 md:text-lg">
               Shidao хранит курс, уроки, материалы и компоненты в едином рабочем
-              пространстве. Преподаватель собирает План урока, выбирает содержимое
-              Экрана ученика и готовит Домашнее задание.
+              пространстве. Преподаватель собирает План урока, выбирает
+              содержимое Экрана ученика и готовит Домашнее задание.
             </p>
             <div className="mt-7 grid gap-3 sm:flex sm:flex-wrap">
               <AccessLink
@@ -207,7 +211,10 @@ export function LandingPage({ landingOnly = false }: { landingOnly?: boolean }) 
             </div>
           </div>
 
-          <article className="hero-product-shot" aria-label="Пример экранов продукта">
+          <article
+            className="hero-product-shot"
+            aria-label="Пример экранов продукта"
+          >
             <Image
               src="/landing/screen_8.png"
               alt="Скриншоты интерфейса Shidao"
@@ -238,7 +245,10 @@ export function LandingPage({ landingOnly = false }: { landingOnly?: boolean }) 
                   <span>{item.label}</span>
                 </article>
                 {index < courseFlow.length - 1 ? (
-                  <ArrowRight className="course-flow-arrow size-4" aria-hidden="true" />
+                  <ArrowRight
+                    className="course-flow-arrow size-4"
+                    aria-hidden="true"
+                  />
                 ) : null}
               </li>
             ))}
@@ -255,17 +265,22 @@ export function LandingPage({ landingOnly = false }: { landingOnly?: boolean }) 
               </h2>
               <p className="mt-4 max-w-[72ch] text-sm leading-relaxed text-neutral-700 md:text-base">
                 Ручная сборка всегда доступна без ИИ и без расхода токенов.
-                Заголовок урока обязателен, а текст, изображения, файлы, опросы и
-                игры добавляются как компоненты в нужном порядке.
+                Заголовок урока обязателен, а текст, изображения, файлы, опросы
+                и игры добавляются как компоненты в нужном порядке.
               </p>
             </div>
           </div>
           <div className="mt-7 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {courseBuilderStats.map((item) => (
-              <article key={item.label} className={`landing-card course-stat-card stat-${item.tone} p-5`}>
+              <article
+                key={item.label}
+                className={`landing-card course-stat-card stat-${item.tone} p-5`}
+              >
                 <div className="flex items-center gap-2">
                   <item.icon className="size-4.5" />
-                  <p className="text-lg font-black tracking-tight">{item.label}</p>
+                  <p className="text-lg font-black tracking-tight">
+                    {item.label}
+                  </p>
                 </div>
               </article>
             ))}
@@ -285,51 +300,66 @@ export function LandingPage({ landingOnly = false }: { landingOnly?: boolean }) 
 
           <div className="mt-8 grid gap-4 xl:grid-cols-2">
             <article className="landing-surface rounded-[1.6rem] bg-white/90 p-5 md:p-6">
-            <p className="text-xs font-bold uppercase tracking-[0.12em] text-neutral-500">План урока преподавателя</p>
-            <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              {lessonWords.slice(0, 8).map((word) => (
-                <WordChip key={`${word.hanzi}-${word.pinyin}`} {...word} />
-              ))}
-            </div>
+              <p className="text-xs font-bold uppercase tracking-[0.12em] text-neutral-500">
+                План урока преподавателя
+              </p>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                {lessonWords.slice(0, 8).map((word) => (
+                  <WordChip key={`${word.hanzi}-${word.pinyin}`} {...word} />
+                ))}
+              </div>
 
-            <h3 className="mt-6 text-lg font-bold">Реквизит и материалы</h3>
-            <ul className="mt-2 grid gap-2 text-sm text-neutral-700 sm:grid-cols-2">
-              {lessonProps.map((item) => (
-                <li key={item} className="rounded-xl bg-neutral-50 px-3 py-2">
-                  {item}
-                </li>
-              ))}
-            </ul>
+              <h3 className="mt-6 text-lg font-bold">Реквизит и материалы</h3>
+              <ul className="mt-2 grid gap-2 text-sm text-neutral-700 sm:grid-cols-2">
+                {lessonProps.map((item) => (
+                  <li key={item} className="rounded-xl bg-neutral-50 px-3 py-2">
+                    {item}
+                  </li>
+                ))}
+              </ul>
 
-            <h3 className="mt-6 text-lg font-bold">Компоненты урока (фрагмент)</h3>
-            <ol className="mt-2 space-y-2 text-sm text-neutral-700">
-              {lessonStepsPreview.map((component, idx) => (
-                <li key={component} className="rounded-xl bg-white px-3 py-2">
-                  <span className="mr-2 text-xs font-bold text-neutral-500">{idx + 1}.</span>
-                  {component}
-                </li>
-              ))}
-            </ol>
+              <h3 className="mt-6 text-lg font-bold">
+                Компоненты урока (фрагмент)
+              </h3>
+              <ol className="mt-2 space-y-2 text-sm text-neutral-700">
+                {lessonStepsPreview.map((component, idx) => (
+                  <li key={component} className="rounded-xl bg-white px-3 py-2">
+                    <span className="mr-2 text-xs font-bold text-neutral-500">
+                      {idx + 1}.
+                    </span>
+                    {component}
+                  </li>
+                ))}
+              </ol>
             </article>
 
             <article className="landing-surface rounded-[1.6rem] bg-gradient-to-b from-sky-50/80 to-white p-5 md:p-6">
-            <p className="text-xs font-bold uppercase tracking-[0.12em] text-sky-900/70">Экран ученика</p>
-            <div className="student-screen-preview mt-4">
-              <p className="text-sm font-semibold">Урок 1 · Животные на ферме</p>
-              <div className="mt-3 grid grid-cols-2 gap-2">
-                {lessonWords.slice(0, 4).map((word) => (
-                  <WordChip key={`student-${word.hanzi}`} {...word} />
-                ))}
+              <p className="text-xs font-bold uppercase tracking-[0.12em] text-sky-900/70">
+                Экран ученика
+              </p>
+              <div className="student-screen-preview mt-4">
+                <p className="text-sm font-semibold">
+                  Урок 1 · Животные на ферме
+                </p>
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  {lessonWords.slice(0, 4).map((word) => (
+                    <WordChip key={`student-${word.hanzi}`} {...word} />
+                  ))}
+                </div>
+                <p className="mt-3 text-sm text-neutral-700">
+                  Задание: нажми карточку, которую назвал преподаватель.
+                </p>
               </div>
-              <p className="mt-3 text-sm text-neutral-700">Задание: нажми карточку, которую назвал преподаватель.</p>
-            </div>
-            <ul className="mt-4 space-y-2 text-sm text-neutral-700">
-              {studentScreenItems.map((item) => (
-                <li key={item} className="rounded-xl border border-sky-200/70 bg-white/90 px-3 py-2">
-                  {item}
-                </li>
-              ))}
-            </ul>
+              <ul className="mt-4 space-y-2 text-sm text-neutral-700">
+                {studentScreenItems.map((item) => (
+                  <li
+                    key={item}
+                    className="rounded-xl border border-sky-200/70 bg-white/90 px-3 py-2"
+                  >
+                    {item}
+                  </li>
+                ))}
+              </ul>
             </article>
           </div>
         </div>
@@ -337,22 +367,31 @@ export function LandingPage({ landingOnly = false }: { landingOnly?: boolean }) 
 
       <section id="roles" className="container mt-14 md:mt-16">
         <div className="px-5 md:px-8">
-          <h2 className="text-3xl font-black tracking-tight md:text-5xl">Три роли — один учебный контур</h2>
+          <h2 className="text-3xl font-black tracking-tight md:text-5xl">
+            Три роли — один учебный контур
+          </h2>
           <div className="mt-8 grid gap-4 lg:grid-cols-3">
-            {roleCards.map(({ title, icon: Icon, tone, description, points }) => (
-              <article key={title} className={`landing-surface role-card role-${tone} rounded-[1.6rem] p-5`}>
-                <div className="flex items-center gap-2">
-                  <Icon className="size-5" />
-                  <h3 className="text-xl font-black">{title}</h3>
-                </div>
-                <p className="mt-3 text-sm leading-relaxed text-neutral-700">{description}</p>
-                <ul className="mt-4 space-y-2 text-sm text-neutral-700">
-                  {points.map((point) => (
-                    <li key={point}>• {point}</li>
-                  ))}
-                </ul>
-              </article>
-            ))}
+            {roleCards.map(
+              ({ title, icon: Icon, tone, description, points }) => (
+                <article
+                  key={title}
+                  className={`landing-surface role-card role-${tone} rounded-[1.6rem] p-5`}
+                >
+                  <div className="flex items-center gap-2">
+                    <Icon className="size-5" />
+                    <h3 className="text-xl font-black">{title}</h3>
+                  </div>
+                  <p className="mt-3 text-sm leading-relaxed text-neutral-700">
+                    {description}
+                  </p>
+                  <ul className="mt-4 space-y-2 text-sm text-neutral-700">
+                    {points.map((point) => (
+                      <li key={point}>• {point}</li>
+                    ))}
+                  </ul>
+                </article>
+              ),
+            )}
           </div>
         </div>
       </section>
@@ -389,7 +428,9 @@ export function LandingPage({ landingOnly = false }: { landingOnly?: boolean }) 
         <div className="px-5 md:px-8">
           <div className="grid gap-4 lg:grid-cols-2">
             <article className="landing-surface rounded-[1.6rem] bg-white/85 p-5">
-              <p className="text-sm font-bold uppercase tracking-[0.12em] text-neutral-500">До</p>
+              <p className="text-sm font-bold uppercase tracking-[0.12em] text-neutral-500">
+                До
+              </p>
               <ul className="mt-3 space-y-2 text-sm text-neutral-700">
                 {beforeAfter.before.map((item) => (
                   <li key={item}>• {item}</li>
@@ -397,7 +438,9 @@ export function LandingPage({ landingOnly = false }: { landingOnly?: boolean }) 
               </ul>
             </article>
             <article className="landing-surface rounded-[1.6rem] bg-lime-50/70 p-5">
-              <p className="text-sm font-bold uppercase tracking-[0.12em] text-neutral-700">После</p>
+              <p className="text-sm font-bold uppercase tracking-[0.12em] text-neutral-700">
+                После
+              </p>
               <ul className="mt-3 space-y-2 text-sm text-neutral-800">
                 {beforeAfter.after.map((item) => (
                   <li key={item}>• {item}</li>
@@ -410,12 +453,21 @@ export function LandingPage({ landingOnly = false }: { landingOnly?: boolean }) 
 
       <section id="faq" className="container mt-14 md:mt-16">
         <div className="px-5 md:px-8">
-          <h2 className="text-3xl font-black tracking-tight md:text-5xl">Вопросы о продукте</h2>
+          <h2 className="text-3xl font-black tracking-tight md:text-5xl">
+            Вопросы о продукте
+          </h2>
           <div className="mt-7 space-y-3">
             {faq.map(({ q, a }) => (
-              <details key={q} className="landing-surface rounded-2xl bg-white/90 p-4 md:p-5">
-                <summary className="cursor-pointer text-base font-semibold">{q}</summary>
-                <p className="mt-3 text-sm leading-relaxed text-neutral-700">{a}</p>
+              <details
+                key={q}
+                className="landing-surface rounded-2xl bg-white/90 p-4 md:p-5"
+              >
+                <summary className="cursor-pointer text-base font-semibold">
+                  {q}
+                </summary>
+                <p className="mt-3 text-sm leading-relaxed text-neutral-700">
+                  {a}
+                </p>
               </details>
             ))}
           </div>

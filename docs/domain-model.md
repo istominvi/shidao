@@ -164,36 +164,41 @@ registry object.
   TypeScript read-model alias `CourseAsset` represents a linked `StoredFile`
   returned inside Course attachments; it is not a separate persisted object.
 
-## Retained compatibility identity tables
+## Retained legacy identity tables
 
 Forward migrations deliberately do not reset `public` and do not change Auth.
-Existing `parent`, `teacher`, `student`, `school`, membership and
-preference/security tables remain temporarily for login/onboarding/session
-compatibility, but they are not parents of Course content or the source of the
-new Course audience.
+The current repository candidate has moved login, onboarding, PIN/session
+invalidation and learner identity workflows to the roleless Account boundary.
+Existing `parent`, `teacher`, `student`, `school` and membership tables remain
+as dormant legacy/recovery data; active V2 routes and services do not use them
+as identity authorities, Course parents or audience sources. The final M4
+contract cleanup removes obsolete active-role helpers and enums only after two
+verified roleless web releases and a read-only dependency audit; it does not
+delete historical rows or rewrite old migrations.
 
 The canonical identity/access contract is documented in
 `docs/architecture/learner-identity-access-model.md`. The authoritative physical
 schema is documented in `docs/database/current-schema.md` and
 `supabase/schema/current-schema.sql`.
 
-The agreed target, still **not implemented**, removes global product roles:
-every active Account receives exactly one linked canonical LearnerProfile, while
-offline profiles remain unclaimed; teaching and observer access are relations.
-The staged implementation and acceptance prompt is
-`docs/v2/LEARNER_IDENTITY_COMPLETION_PROMPT.md`.
+The repository candidate implements the roleless target: every active Account
+has exactly one linked canonical LearnerProfile, offline profiles may remain
+unclaimed, and teaching/observer access is expressed through relations rather
+than global product roles. Discovery, recipient-bound activation, safe merge,
+archive/restore, learner-safe history/progress, observer grants, subject reset
+and Course-scoped AI consent are implemented as projections and transactional
+workflows over that model. Production remains on the previous release until the
+M1–M3 backup/apply/postflight and staged Coolify rollout recorded in the
+deployment runbook are complete.
 
 ## Planned, not implemented
 
-The following are target domains, not current tables or product capabilities:
+The following remain later domains, not current tables or product capabilities:
 
 - persisted Homework;
-- observer, safe discovery and invitation/claim flows around the implemented
-  canonical LearnerProfile;
-- merge of duplicate offline profiles and cross-provider access to records;
 - live Student Screen synchronization/runtime cursor for an open LessonRun;
-- automatic subject metrics and richer progress models on top of finalized
-  LearningRecord;
+- automatic component-produced learner metrics and richer progress models on
+  top of finalized LearningRecord;
 - persistent AI quotas/usage ledger and AI change sets/undo;
 - parsing/RAG sources;
 - reusable cross-Course material/template library;

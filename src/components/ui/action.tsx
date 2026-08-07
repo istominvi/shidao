@@ -8,8 +8,18 @@ export function productActionClassName(className?: string) {
 
 type ActionButtonProps = ButtonHTMLAttributes<HTMLButtonElement>;
 
-export function ActionButton({ className, type = "button", ...props }: ActionButtonProps) {
-  return <button type={type} className={productActionClassName(className)} {...props} />;
+export function ActionButton({
+  className,
+  type = "button",
+  ...props
+}: ActionButtonProps) {
+  return (
+    <button
+      type={type}
+      className={productActionClassName(className)}
+      {...props}
+    />
+  );
 }
 
 type ActionLinkProps = ComponentPropsWithoutRef<typeof Link>;

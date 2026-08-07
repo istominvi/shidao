@@ -1,27 +1,21 @@
 import { ROUTES } from "./auth";
 import { isProtectedAppRoute } from "./routes";
 import type {
-  SessionAdultView,
+  SessionAccountView,
   SessionDegradedView,
   SessionGuestView,
-  SessionStudentView,
   SessionView,
 } from "./session-view";
 
 export type HeaderNavAction =
-  | "session-actions"
-  | "guest-login"
-  | "guest-join"
-  | "skeleton";
+  "session-actions" | "guest-login" | "guest-join" | "skeleton";
 export type LandingNavAction =
-  | "session-actions"
-  | "guest-cta-pair"
-  | "skeleton";
+  "session-actions" | "guest-cta-pair" | "skeleton";
 
 export function canRenderSessionNavActions(
   session: SessionView,
-): session is SessionAdultView | SessionStudentView {
-  return session.kind === "adult" || session.kind === "student";
+): session is SessionAccountView {
+  return session.kind === "account";
 }
 
 export function resolveTopNavAction(
@@ -59,8 +53,4 @@ export function shouldRedirectSecuritySettingsToLogin(
   session: SessionView,
 ): session is SessionGuestView | SessionDegradedView {
   return session.kind === "guest" || session.kind === "degraded";
-}
-
-export function resolveAddProfileHref() {
-  return `${ROUTES.onboarding}?mode=add-profile`;
 }

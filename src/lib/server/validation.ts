@@ -1,8 +1,7 @@
-import { normalizeIdentifier, type ProfileKind } from "../auth";
+import { normalizeIdentifier } from "../auth";
 
 export type ValidationResult<T> =
-  | { success: true; data: T }
-  | { success: false; message: string };
+  { success: true; data: T } | { success: false; message: string };
 
 export type Parser<T> = (payload: unknown) => ValidationResult<T>;
 
@@ -16,9 +15,12 @@ function ensureString(value: unknown) {
   return typeof value === "string" ? value : "";
 }
 
-export function validateEmail(value: string, message = "Укажите корректный email.") {
+export function validateEmail(
+  value: string,
+  message = "Укажите корректный email.",
+) {
   const normalized = value.trim().toLowerCase();
-  if (!/.+@.+\..+/.test(normalized)) {
+  if (normalized.length > 254 || !/.+@.+\..+/.test(normalized)) {
     return { success: false as const, message };
   }
   return { success: true as const, value: normalized };
@@ -27,18 +29,18 @@ export function validateEmail(value: string, message = "Укажите корр�
 export function validatePin(value: string) {
   const pin = value.trim();
   if (!/^\d{4,8}$/.test(pin)) {
-    return { success: false as const, message: "PIN должен состоять из 4-8 цифр." };
+    return {
+      success: false as const,
+      message: "PIN должен состоять из 4-8 цифр.",
+    };
   }
   return { success: true as const, value: pin };
 }
 
-function parseProfile(value: unknown): ProfileKind | null {
-  return value === "parent" || value === "teacher" ? value : null;
-}
-
-export const loginPayloadSchema: Parser<{ identifier: string; secret: string }> = (
-  payload,
-) => {
+export const loginPayloadSchema: Parser<{
+  identifier: string;
+  secret: string;
+}> = (payload) => {
   const record = asRecord(payload);
   if (!record) {
     return { success: false, message: "Неверные данные для входа." };
@@ -46,7 +48,12 @@ export const loginPayloadSchema: Parser<{ identifier: string; secret: string }> 
 
   const identifier = normalizeIdentifier(ensureString(record.identifier));
   const secret = ensureString(record.secret).trim();
-  if (!identifier || !secret) {
+  if (
+    !identifier ||
+    identifier.length > 320 ||
+    !secret ||
+    secret.length > 256
+  ) {
     return { success: false, message: "Неверные данные для входа." };
   }
 
@@ -62,57 +69,30 @@ export const invitePayloadSchema: Parser<{ email: string }> = (payload) => {
   return { success: true, data: { email: email.value } };
 };
 
-export const profileSwitchPayloadSchema: Parser<{ profile: ProfileKind }> = (
-  payload,
-) => {
+export const securityPinPayloadSchema: Parser<{
+  newPin: string;
+  currentSecret: string;
+}> = (payload) => {
   const record = asRecord(payload);
-  if (!record) return { success: false, message: "Некорректный профиль." };
-
-  const profile = parseProfile(record.profile);
-  if (!profile) return { success: false, message: "Некорректный профиль." };
-  return { success: true, data: { profile } };
-};
-
-export const onboardingPayloadSchema = profileSwitchPayloadSchema;
-
-export const schoolSwitchPayloadSchema: Parser<
-  | { mode: "personal" }
-  | { schoolId: string }
-> = (payload) => {
-  const record = asRecord(payload);
-  if (!record) return { success: false, message: "Некорректный выбор школы." };
-  if (record.mode === "personal") {
-    return { success: true, data: { mode: "personal" } };
-  }
-  const schoolId = ensureString(record.schoolId).trim();
-  if (!schoolId) {
-    return { success: false, message: "Некорректный выбор школы." };
-  }
-  return { success: true, data: { schoolId } };
-};
-
-export const createSchoolPayloadSchema: Parser<{ name: string }> = (payload) => {
-  const record = asRecord(payload);
-  if (!record) return { success: false, message: "Укажите название школы." };
-  const name = ensureString(record.name).trim();
-  if (!name) return { success: false, message: "Укажите название школы." };
-  return { success: true, data: { name } };
-};
-
-export const securityPinPayloadSchema: Parser<{ newPin: string; currentSecret: string }> = (
-  payload,
-) => {
-  const record = asRecord(payload);
-  if (!record) return { success: false, message: "PIN должен состоять из 4-8 цифр." };
+  if (!record)
+    return { success: false, message: "PIN должен состоять из 4-8 цифр." };
 
   const newPin = validatePin(ensureString(record.newPin));
   if (!newPin.success) return { success: false, message: newPin.message };
+
+  const currentSecret = ensureString(record.currentSecret).trim();
+  if (!currentSecret || currentSecret.length > 256) {
+    return {
+      success: false,
+      message: "Подтвердите действие текущим паролем или PIN.",
+    };
+  }
 
   return {
     success: true,
     data: {
       newPin: newPin.value,
-      currentSecret: ensureString(record.currentSecret).trim(),
+      currentSecret,
     },
   };
 };
@@ -122,7 +102,8 @@ export const changeEmailPayloadSchema: Parser<{
   currentPassword: string;
 }> = (payload) => {
   const record = asRecord(payload);
-  if (!record) return { success: false, message: "Проверьте корректность данных." };
+  if (!record)
+    return { success: false, message: "Проверьте корректность данных." };
 
   const email = validateEmail(
     ensureString(record.newEmail),
@@ -131,7 +112,7 @@ export const changeEmailPayloadSchema: Parser<{
   if (!email.success) return { success: false, message: email.message };
 
   const currentPassword = ensureString(record.currentPassword);
-  if (!currentPassword) {
+  if (!currentPassword || currentPassword.length > 256) {
     return {
       success: false,
       message: "Введите текущий пароль для подтверждения действия.",

@@ -1,7 +1,15 @@
 "use client";
 
-import { History, LoaderCircle, Save, Trash2, UserPlus } from "lucide-react";
+import {
+  History,
+  Link2,
+  LoaderCircle,
+  Save,
+  Trash2,
+  UserPlus,
+} from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { LearnerIdentityPanel } from "@/components/learner-identity/learner-identity-panel";
 import { LearnerHistoryPanel } from "@/components/lesson-runs/learner-history-dialog";
 import { Button } from "@/components/ui/button";
 import { DialogShell } from "@/components/ui/dialog-shell";
@@ -14,6 +22,7 @@ import type {
   LearnerGroup,
   LearnerProfile,
 } from "@/modules/lesson-runs/domain";
+import type { TeacherLearnerDirectoryItem } from "@/modules/learner-identity/domain";
 
 function sameIds(left: string[], right: string[]) {
   if (left.length !== right.length) return false;
@@ -21,12 +30,13 @@ function sameIds(left: string[], right: string[]) {
   return left.every((id) => rightSet.has(id));
 }
 
-type LearnerDialogSurface = "profile" | "history";
+type LearnerDialogSurface = "profile" | "history" | "connection";
 
 const LEARNER_DIALOG_TABS_ID = "learner-dialog";
 
 export function LearnerProfileDialog({
   profile,
+  identity,
   groups,
   busy,
   error,
@@ -35,6 +45,7 @@ export function LearnerProfileDialog({
   onDelete,
 }: {
   profile: LearnerProfile | null;
+  identity: TeacherLearnerDirectoryItem | null;
   groups: LearnerGroup[];
   busy: boolean;
   error: string | null;
@@ -109,6 +120,7 @@ export function LearnerProfileDialog({
           items={[
             { value: "profile", label: "Профиль" },
             { value: "history", label: "История", icon: History },
+            { value: "connection", label: "Аккаунт", icon: Link2 },
           ]}
         />
       ) : null}
@@ -207,7 +219,7 @@ export function LearnerProfileDialog({
               onClick={() => {
                 if (
                   window.confirm(
-                    `Убрать ученика «${profile.displayName}» из вашего списка? Он исчезнет из ваших групп и будущей аудитории ваших курсов. Учебный профиль и история сохранятся; у других преподавателей ничего не изменится. Вернуть ученика через интерфейс пока нельзя.`,
+                    `Переместить ученика «${profile.displayName}» в архив? Он исчезнет из ваших групп и будущей аудитории ваших курсов. Учебная история сохранится, а восстановить связь можно будет во вкладке «Архив».`,
                   )
                 ) {
                   void onDelete();
@@ -215,7 +227,7 @@ export function LearnerProfileDialog({
               }}
             >
               <Trash2 className="h-4 w-4" aria-hidden="true" />
-              Убрать из списка
+              Переместить в архив
             </Button>
           ) : null}
           <Button
@@ -252,6 +264,20 @@ export function LearnerProfileDialog({
         >
           {surface === "history" ? (
             <LearnerHistoryPanel profile={profile} />
+          ) : null}
+        </div>
+      ) : null}
+
+      {profile && identity ? (
+        <div
+          id={workspaceTabPanelId(LEARNER_DIALOG_TABS_ID, "connection")}
+          role="tabpanel"
+          aria-labelledby={workspaceTabId(LEARNER_DIALOG_TABS_ID, "connection")}
+          hidden={surface !== "connection"}
+          tabIndex={0}
+        >
+          {surface === "connection" ? (
+            <LearnerIdentityPanel learner={identity} />
           ) : null}
         </div>
       ) : null}

@@ -15,12 +15,10 @@ type Json = Record<string, unknown>;
 type SupabaseUser = {
   id: string;
   email?: string | null;
-  user_metadata?:
-    | {
-        full_name?: string | null;
-        role?: string | null;
-      }
-    | null;
+  user_metadata?: {
+    full_name?: string | null;
+    role?: string | null;
+  } | null;
 };
 
 type AuthSession = {
@@ -74,7 +72,10 @@ function isMissingSchoolColumnsError(message: string) {
   );
 }
 
-function buildTeacherSchoolSlugBase(teacherId: string, fullName: string | null) {
+function buildTeacherSchoolSlugBase(
+  teacherId: string,
+  fullName: string | null,
+) {
   const seed = `${fullName?.trim() || "teacher"}-${teacherId.slice(0, 8)}`;
   const slug = seed
     .toLowerCase()
@@ -384,17 +385,17 @@ async function ensureTeacherPersonalSchoolAdmin(input: {
   }> = [];
   try {
     memberships = await request<
-    Array<{
-      id: string;
-      school_id: string;
-      role: "owner" | "teacher";
-      school: { id: string; name: string | null; kind: string | null } | null;
-    }>
-  >(
-    `/rest/v1/school_teacher?select=id,school_id,role,school:school_id(id,name,kind)&teacher_id=eq.${input.teacherId}&order=created_at.asc`,
-    "GET",
-    { admin: true },
-  );
+      Array<{
+        id: string;
+        school_id: string;
+        role: "owner" | "teacher";
+        school: { id: string; name: string | null; kind: string | null } | null;
+      }>
+    >(
+      `/rest/v1/school_teacher?select=id,school_id,role,school:school_id(id,name,kind)&teacher_id=eq.${input.teacherId}&order=created_at.asc`,
+      "GET",
+      { admin: true },
+    );
   } catch {
     memberships = [];
   }
@@ -431,7 +432,8 @@ async function ensureTeacherPersonalSchoolAdmin(input: {
       schoolId: membership.school_id,
       role: membership.role,
       schoolKind:
-        membership.school?.kind === "personal" || membership.school?.kind === "organization"
+        membership.school?.kind === "personal" ||
+        membership.school?.kind === "organization"
           ? membership.school.kind
           : null,
       schoolName: membership.school?.name ?? null,
@@ -439,15 +441,20 @@ async function ensureTeacherPersonalSchoolAdmin(input: {
   );
   if (personalMembership?.schoolId) {
     if (personalMembership.role !== "owner") {
-      await request(`/rest/v1/school_teacher?id=eq.${personalMembership.id}`, "PATCH", {
-        admin: true,
-        payload: { role: "owner" },
-        allowEmpty: true,
-      });
+      await request(
+        `/rest/v1/school_teacher?id=eq.${personalMembership.id}`,
+        "PATCH",
+        {
+          admin: true,
+          payload: { role: "owner" },
+          allowEmpty: true,
+        },
+      );
     }
     return {
       schoolId: personalMembership.schoolId,
-      schoolName: personalMembership.schoolName?.trim() || "Личное пространство",
+      schoolName:
+        personalMembership.schoolName?.trim() || "Личное пространство",
     };
   }
 
@@ -459,28 +466,38 @@ async function ensureTeacherPersonalSchoolAdmin(input: {
     try {
       let schoolRows: Array<{ id: string }> = [];
       try {
-        schoolRows = await request<Array<{ id: string }>>("/rest/v1/school", "POST", {
-          admin: true,
-          payload: {
-            name: schoolName,
-            slug,
-            kind: "personal",
-            owner_teacher_id: input.teacherId,
-            teacher_limit: 1,
-            plan_code: "demo",
-            subscription_status: "active",
+        schoolRows = await request<Array<{ id: string }>>(
+          "/rest/v1/school",
+          "POST",
+          {
+            admin: true,
+            payload: {
+              name: schoolName,
+              slug,
+              kind: "personal",
+              owner_teacher_id: input.teacherId,
+              teacher_limit: 1,
+              plan_code: "demo",
+              subscription_status: "active",
+            },
           },
-        });
+        );
       } catch (error) {
         const message =
-          error instanceof Error ? error.message : "Unknown school insert error";
+          error instanceof Error
+            ? error.message
+            : "Unknown school insert error";
         if (!isMissingSchoolColumnsError(message)) {
           throw error;
         }
-        schoolRows = await request<Array<{ id: string }>>("/rest/v1/school", "POST", {
-          admin: true,
-          payload: { name: schoolName, slug },
-        });
+        schoolRows = await request<Array<{ id: string }>>(
+          "/rest/v1/school",
+          "POST",
+          {
+            admin: true,
+            payload: { name: schoolName, slug },
+          },
+        );
       }
       schoolId = schoolRows[0]?.id ?? "";
       break;
@@ -506,7 +523,9 @@ async function ensureTeacherPersonalSchoolAdmin(input: {
     });
   } catch (error) {
     const message =
-      error instanceof Error ? error.message : "Unknown school_teacher insert error";
+      error instanceof Error
+        ? error.message
+        : "Unknown school_teacher insert error";
     if (!isUniqueViolationError(message)) throw error;
   }
 
@@ -534,21 +553,21 @@ export async function listTeacherSchoolChoicesAdmin(input: {
   }> = [];
   try {
     rows = await request<
-    Array<{
-      school_id: string;
-      role: "owner" | "teacher";
-      school: {
-        id: string;
-        name: string | null;
-        kind: string | null;
-        teacher_limit: number | null;
-      } | null;
-    }>
-  >(
-    `/rest/v1/school_teacher?select=school_id,role,school:school_id(id,name,kind,teacher_limit)&teacher_id=eq.${input.teacherId}&order=created_at.asc`,
-    "GET",
-    { admin: true },
-  );
+      Array<{
+        school_id: string;
+        role: "owner" | "teacher";
+        school: {
+          id: string;
+          name: string | null;
+          kind: string | null;
+          teacher_limit: number | null;
+        } | null;
+      }>
+    >(
+      `/rest/v1/school_teacher?select=school_id,role,school:school_id(id,name,kind,teacher_limit)&teacher_id=eq.${input.teacherId}&order=created_at.asc`,
+      "GET",
+      { admin: true },
+    );
   } catch {
     rows = [];
   }
@@ -600,7 +619,8 @@ export async function listTeacherSchoolChoicesAdmin(input: {
         name: row.school.name?.trim() || "Школа",
         kind,
         role: row.role,
-        teacherLimit: row.school.teacher_limit ?? (kind === "organization" ? 5 : 1),
+        teacherLimit:
+          row.school.teacher_limit ?? (kind === "organization" ? 5 : 1),
         teacherCount: countBySchoolId[row.school_id] ?? 0,
       } as TeacherSchoolChoice;
     })
@@ -636,7 +656,8 @@ export async function resolveTeacherSchoolSelectionAdmin(input: {
   }
 
   const preferred = choices.find(
-    (item) => item.id === input.preferredSchoolId && item.kind === "organization",
+    (item) =>
+      item.id === input.preferredSchoolId && item.kind === "organization",
   );
   if (!preferred) {
     await setLastSelectedSchool(input.userId, null);
@@ -681,7 +702,11 @@ export async function resolvePostLoginRedirect(userId: string) {
     return resolvePostLoginRedirectForContext({
       actorKind: studentRows[0]?.id ? "student" : "adult",
       hasAnyAdultProfile: Boolean(parentRows[0]?.id || teacherRows[0]?.id),
-      activeAdultProfile: teacherRows[0]?.id ? "teacher" : parentRows[0]?.id ? "parent" : null,
+      activeAdultProfile: teacherRows[0]?.id
+        ? "teacher"
+        : parentRows[0]?.id
+          ? "parent"
+          : null,
     });
   } catch (error) {
     logger.error(
@@ -915,7 +940,8 @@ export async function getUserContextById(
   }
 
   const authFullNameRaw = authUser?.user_metadata?.full_name;
-  const authFullName = typeof authFullNameRaw === "string" ? authFullNameRaw : null;
+  const authFullName =
+    typeof authFullNameRaw === "string" ? authFullNameRaw : null;
   const fallbackFullName =
     typeof fallback?.fullName === "string" ? fallback.fullName : null;
   const resolvedFullName =
@@ -932,7 +958,8 @@ export async function getUserContextById(
 
   const authEmailRaw = authUser?.email;
   const authEmail = typeof authEmailRaw === "string" ? authEmailRaw : null;
-  const fallbackEmail = typeof fallback?.email === "string" ? fallback.email : null;
+  const fallbackEmail =
+    typeof fallback?.email === "string" ? fallback.email : null;
   const resolvedEmail = authEmail ?? fallbackEmail ?? null;
   const metadataRoleRaw = authUser?.user_metadata?.role;
   const metadataRole =
@@ -1036,11 +1063,9 @@ export async function findAuthUserByEmailAdmin(email: string): Promise<{
     const payload = await request<{
       users?: SupabaseUser[];
       next_page?: number | null;
-    }>(
-      `/auth/v1/admin/users?page=${page}&per_page=${perPage}`,
-      "GET",
-      { admin: true },
-    );
+    }>(`/auth/v1/admin/users?page=${page}&per_page=${perPage}`, "GET", {
+      admin: true,
+    });
 
     const users = Array.isArray(payload?.users) ? payload.users : [];
     const matched = users.find(
@@ -1065,7 +1090,11 @@ export async function findAuthUserByEmailAdmin(email: string): Promise<{
 export async function getAuthUsersByIdsAdmin(userIds: string[]): Promise<
   Record<
     string,
-    { id: string; email: string | null; user_metadata?: { full_name?: string | null } | null }
+    {
+      id: string;
+      email: string | null;
+      user_metadata?: { full_name?: string | null } | null;
+    }
   >
 > {
   const normalizedIds = Array.from(
@@ -1074,14 +1103,22 @@ export async function getAuthUsersByIdsAdmin(userIds: string[]): Promise<
 
   const result: Record<
     string,
-    { id: string; email: string | null; user_metadata?: { full_name?: string | null } | null }
+    {
+      id: string;
+      email: string | null;
+      user_metadata?: { full_name?: string | null } | null;
+    }
   > = {};
 
   for (const userId of normalizedIds) {
     try {
-      const payload = await request<unknown>(`/auth/v1/admin/users/${userId}`, "GET", {
-        admin: true,
-      });
+      const payload = await request<unknown>(
+        `/auth/v1/admin/users/${userId}`,
+        "GET",
+        {
+          admin: true,
+        },
+      );
       const user = parseAuthAdminUser(payload);
       result[userId] = {
         id: user.id,
@@ -1125,10 +1162,14 @@ export async function ensureParentProfileForUserAdmin(input: {
     return { parentId: existing.id };
   }
 
-  const inserted = await request<Array<{ id: string }>>("/rest/v1/parent", "POST", {
-    admin: true,
-    payload: { user_id: userId, full_name: fullName },
-  }).catch(async (error) => {
+  const inserted = await request<Array<{ id: string }>>(
+    "/rest/v1/parent",
+    "POST",
+    {
+      admin: true,
+      payload: { user_id: userId, full_name: fullName },
+    },
+  ).catch(async (error) => {
     const message =
       error instanceof Error ? error.message : "Unknown parent insert error";
     if (!isUniqueViolationError(message)) {
@@ -1180,7 +1221,9 @@ export async function updateStudentParentLinkAsAdmin(input: {
   studentId: string;
   parentId: string | null;
 }): Promise<void> {
-  const membershipRows = await request<Array<{ class_id: string; student_id: string }>>(
+  const membershipRows = await request<
+    Array<{ class_id: string; student_id: string }>
+  >(
     `/rest/v1/class_student?select=class_id,student_id&class_id=eq.${input.classId}&student_id=eq.${input.studentId}&limit=1`,
     "GET",
     { admin: true },
@@ -1248,10 +1291,14 @@ export async function ensureTeacherProfileForUserAdmin(input: {
     return { teacherId: existing.id };
   }
 
-  const inserted = await request<Array<{ id: string }>>("/rest/v1/teacher", "POST", {
-    admin: true,
-    payload: { user_id: userId, full_name: fullName },
-  }).catch(async (error) => {
+  const inserted = await request<Array<{ id: string }>>(
+    "/rest/v1/teacher",
+    "POST",
+    {
+      admin: true,
+      payload: { user_id: userId, full_name: fullName },
+    },
+  ).catch(async (error) => {
     const message =
       error instanceof Error ? error.message : "Unknown teacher insert error";
     if (!isUniqueViolationError(message)) throw error;
@@ -1330,7 +1377,13 @@ async function upsertTeacherProfileFallback(
     fullName,
   });
 
-  return [{ teacher_id: teacherId, school_id: personalSchool.schoolId, class_id: null }];
+  return [
+    {
+      teacher_id: teacherId,
+      school_id: personalSchool.schoolId,
+      class_id: null,
+    },
+  ];
 }
 
 export async function loadParentLearningContextsByUser(userId: string) {
@@ -1366,12 +1419,18 @@ export async function loadParentLearningContextsByUser(userId: string) {
       { admin: true },
     );
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown parent context query error";
-    logger.warn("[parent-dashboard] failed to load school relation for parent contexts, fallback to class-only shape", {
-      userId,
-      parentId,
-      message,
-    });
+    const message =
+      error instanceof Error
+        ? error.message
+        : "Unknown parent context query error";
+    logger.warn(
+      "[parent-dashboard] failed to load school relation for parent contexts, fallback to class-only shape",
+      {
+        userId,
+        parentId,
+        message,
+      },
+    );
 
     rows = await request<ParentStudentContextRow[]>(
       `/rest/v1/student?select=id,first_name,last_name,login,class_student(class:class_id(id,name))&parent_id=eq.${parentId}&order=created_at.asc`,
@@ -1466,7 +1525,9 @@ export async function assertTeacherCanUseClassInActiveSchoolAdmin(input: {
   classId: string;
   activeSchoolId: string;
 }) {
-  const classRows = await request<Array<{ id: string; school_id: string | null }>>(
+  const classRows = await request<
+    Array<{ id: string; school_id: string | null }>
+  >(
     `/rest/v1/class?select=id,school_id&id=eq.${input.classId}&limit=1`,
     "GET",
     { admin: true },
@@ -1483,7 +1544,6 @@ export async function assertTeacherCanUseClassInActiveSchoolAdmin(input: {
   await assertTeacherAssignedToClassAdmin(input.teacherId, input.classId);
 }
 
-
 export async function createOrganizationSchoolAdmin(input: {
   userId: string;
   teacherId: string;
@@ -1498,7 +1558,8 @@ export async function createOrganizationSchoolAdmin(input: {
   const baseSlug = buildTeacherSchoolSlugBase(input.teacherId, schoolName);
   let schoolId = "";
   for (let attempt = 0; attempt < 25; attempt += 1) {
-    const slug = attempt === 0 ? `${baseSlug}-org` : `${baseSlug}-org-${attempt + 1}`;
+    const slug =
+      attempt === 0 ? `${baseSlug}-org` : `${baseSlug}-org-${attempt + 1}`;
     try {
       let rows: Array<{ id: string }> = [];
       try {
@@ -1516,7 +1577,9 @@ export async function createOrganizationSchoolAdmin(input: {
         });
       } catch (error) {
         const message =
-          error instanceof Error ? error.message : "Unknown school insert error";
+          error instanceof Error
+            ? error.message
+            : "Unknown school insert error";
         if (!isMissingSchoolColumnsError(message)) {
           throw error;
         }
@@ -1540,7 +1603,11 @@ export async function createOrganizationSchoolAdmin(input: {
 
   await request("/rest/v1/school_teacher", "POST", {
     admin: true,
-    payload: { school_id: schoolId, teacher_id: input.teacherId, role: "owner" },
+    payload: {
+      school_id: schoolId,
+      teacher_id: input.teacherId,
+      role: "owner",
+    },
   });
   await setLastSelectedSchool(input.userId, schoolId);
 
@@ -1558,22 +1625,26 @@ export async function listSchoolMembersAdmin(input: {
   }>
 > {
   const rows = await request<
-    Array<{ teacher_id: string; role: "owner" | "teacher"; teacher: { user_id: string | null; full_name: string | null } | null }>
+    Array<{
+      teacher_id: string;
+      role: "owner" | "teacher";
+      teacher: { user_id: string | null; full_name: string | null } | null;
+    }>
   >(
     `/rest/v1/school_teacher?select=teacher_id,role,teacher:teacher_id(user_id,full_name)&school_id=eq.${input.schoolId}&order=created_at.asc`,
     "GET",
     { admin: true },
   );
   const authByUser = await getAuthUsersByIdsAdmin(
-    rows
-      .map((row) => row.teacher?.user_id ?? "")
-      .filter(Boolean),
+    rows.map((row) => row.teacher?.user_id ?? "").filter(Boolean),
   );
   return rows.map((row) => ({
     teacherId: row.teacher_id,
     role: row.role,
     fullName: row.teacher?.full_name?.trim() || null,
-    email: row.teacher?.user_id ? authByUser[row.teacher.user_id]?.email ?? null : null,
+    email: row.teacher?.user_id
+      ? (authByUser[row.teacher.user_id]?.email ?? null)
+      : null,
   }));
 }
 
@@ -1584,9 +1655,13 @@ export async function addTeacherToSchoolByEmailAdmin(input: {
 }) {
   const schoolRows = await request<
     Array<{ id: string; kind: string | null; teacher_limit: number | null }>
-  >(`/rest/v1/school?select=id,kind,teacher_limit&id=eq.${input.schoolId}&limit=1`, "GET", {
-    admin: true,
-  });
+  >(
+    `/rest/v1/school?select=id,kind,teacher_limit&id=eq.${input.schoolId}&limit=1`,
+    "GET",
+    {
+      admin: true,
+    },
+  );
   const school = schoolRows[0];
   if (!school?.id || school.kind !== "organization") {
     throw new Error("Управление преподавателями доступно только для школы.");
@@ -1775,7 +1850,9 @@ export async function updateStudentProfileAsAdmin(input: {
   fullName?: string | null;
   password?: string | null;
 }) {
-  const membershipRows = await request<Array<{ class_id: string; student_id: string }>>(
+  const membershipRows = await request<
+    Array<{ class_id: string; student_id: string }>
+  >(
     `/rest/v1/class_student?select=class_id,student_id&class_id=eq.${input.classId}&student_id=eq.${input.studentId}&limit=1`,
     "GET",
     { admin: true },

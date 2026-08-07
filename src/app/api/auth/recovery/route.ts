@@ -6,14 +6,30 @@ import {
   getSupabasePublicConfig,
 } from "@/lib/server/auth-config";
 import { logger } from "@/lib/server/logger";
+import { hitRateLimit } from "@/lib/server/rate-limit";
 
 export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
+  const rateLimit = hitRateLimit(req, {
+    key: "auth-recovery",
+    limit: 5,
+    windowMs: 60_000,
+  });
+  if (rateLimit.limited) {
+    return NextResponse.json(
+      { error: "Слишком много запросов. Попробуйте позже." },
+      {
+        status: 429,
+        headers: { "Retry-After": String(rateLimit.retryAfterSeconds) },
+      },
+    );
+  }
+
   try {
     const body = (await req.json()) as { email?: string };
     const email = (body.email ?? "").trim().toLowerCase();
-    if (!isEmail(email)) {
+    if (!isEmail(email) || email.length > 254) {
       return NextResponse.json(
         { error: "Укажите корректный email." },
         { status: 400 },
@@ -39,10 +55,8 @@ export async function POST(req: NextRequest) {
     });
 
     if (!response.ok) {
-      const detail = await response.text().catch(() => "");
       logger.error("[auth-recovery] supabase /recover rejected", {
         status: response.status,
-        detail: detail.slice(0, 500),
       });
       // 5xx — реальный сбой доставки (SMTP/инфраструктура). Несуществующий
       // email GoTrue и так отдаёт 200, поэтому 503 здесь не раскрывает,

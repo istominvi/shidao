@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAiCourseBuilderService } from "@/modules/ai/course-builder-service";
 import { createRouterAiClient } from "@/modules/ai/routerai";
+import { sharedHistoryProvider } from "@/modules/ai/shared-history";
 import { aiApiError, runBoundedAiRequest } from "@/modules/ai/server-context";
 import {
   getCourseBuilderContext,
@@ -30,6 +31,7 @@ export async function POST(
           actor,
           service,
           learningHistoryService: createLessonRunsServiceForActor(actor),
+          sharedHistoryProvider,
           createProvider: createRouterAiClient,
         }).chat(courseId, await readJson(request), request.signal),
     );
