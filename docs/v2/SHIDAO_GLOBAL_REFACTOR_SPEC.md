@@ -444,14 +444,22 @@ OCR, broad web crawling, DRM и audio transcription — LATER.
 
 NEXT/LATER:
 
+- universal Account bootstrap создаёт ровно один linked LearnerProfile каждому
+  active Account, а active navigation/access перестаёт зависеть от глобальной
+  роли;
 - invitation/claim связывает offline profile с Account без эвристики по
   имени/email;
-- subject-controlled Guardian/observer relation открывает только разрешённую
-  часть истории;
-- merge получает отдельную authorization/conflict модель и не выполняется
-  автоматически;
-- learner-facing access и cross-provider AI context появляются только поверх
-  явных grants.
+- subject-controlled observer relation открывает только learner-safe read-only
+  projection;
+- physical merge получает отдельную authorization/conflict/lineage модель и не
+  выполняется автоматически;
+- self history открывается самому Account по canonical ownership; observer
+  history и cross-provider AI context требуют разных узких явных grants. Learner
+  Course consumption и live Student Screen остаются отдельным later slice.
+
+Полный P0.Identity execution/acceptance contract находится в
+[`LEARNER_IDENTITY_COMPLETION_PROMPT.md`](./LEARNER_IDENTITY_COMPLETION_PROMPT.md)
+и описывает **NEXT**, а не current schema.
 
 Текущие parent/teacher/student tables не объявляются этой моделью и не
 расширяются как её shortcut.
@@ -508,7 +516,7 @@ Target Homework поддерживает:
 - immutable assignment snapshot при выдаче;
 - изменение definition не переписывает issued work.
 
-## 26. CURRENT base learning history; LATER metrics
+## 26. CURRENT base history; NEXT progress; LATER learner metrics
 
 Базовая Learning history относится к canonical LearnerProfile и переживает
 удаление Lesson. Сейчас `learning_record` хранит recorder Account, attendance,
@@ -516,6 +524,13 @@ comment, `needs_repeat`, время проведения и минимальны
 Current teacher reads только rows собственного `recorded_by_account_id`;
 canonical profile не означает cross-provider access. Archive teacher relation
 не удаляет history. Global privacy/erasure lifecycle остаётся отдельным решением.
+
+NEXT identity-program строит learner-safe self/observer progress из уже
+сохранённых attendance/repeat/comments. Nullable actual duration фиксируется
+только из explicit start либо явного teacher input; scheduled fallback и старые
+rows остаются unknown. Пустой generic metrics JSON не добавляется. Отдельный
+`LearningRecord.metrics` появится только одновременно с первым реальным
+allowlisted Component/runtime producer и consumer.
 
 Позднее поверх базовой записи могут появиться:
 
@@ -531,7 +546,7 @@ confirmation.
 
 ## 27. Chat and notifications
 
-Target course thread включает owner и текущую audience; Guardian не входит в
+Target course thread включает owner и текущую audience; Observer не входит в
 course chat автоматически. Membership history нужна для корректного доступа к
 старым/новым сообщениям.
 
@@ -585,8 +600,13 @@ success/latency/usage, Storage/parsing failures, auth failures.
 остаются direction:
 
 ```text
-learner_guardian
-learner_access_grant
+teacher_learner_invitation
+learner_profile_claim_invitation
+learner_profile_merge_operation
+learner_profile_alias
+learner_observer_grant
+learner_ai_consent
+identity_access_event
 lesson_run_runtime
 homework_definition
 homework_component

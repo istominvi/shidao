@@ -112,6 +112,93 @@ routed hosts также остаётся P0-задачей.
 Этот пункт не разрешает менять Auth/SMTP/JWT или применять migration без
 read-only ShiDao sanity check и отдельного deployed-contour postflight.
 
+## P0.Identity: завершить universal Account и canonical learner ecosystem
+
+Это следующая сквозная программа после P0.1. Она завершает именно обсуждённую
+identity/access модель; Homework, RAG, billing, templates и live Student Screen
+в неё не входят.
+
+Согласованный target:
+
+- один roleless Account может одновременно преподавать, учиться и наблюдать;
+- каждый active Account имеет ровно один canonical LearnerProfile как
+  transaction-safe DB invariant, а offline profiles остаются unclaimed до
+  consented connection;
+- преподавание и observer access являются отношениями, а не глобальными ролями;
+- teacher raw history остаётся recorder-scoped;
+- subject/observer получают learner-safe finalized history и progress;
+- cross-provider AI использует deterministic sanitized projection только по
+  отдельному отзываемому consent на `profile + Course + owner` с проверкой
+  current owner и не
+  открывает teacher browser чужие raw records;
+- duplicate profiles физически сводятся к одному active target с lineage/audit,
+  без потери LearningRecord и teacher-local names;
+- full Lesson snapshot и `lesson_run_participant` не возвращаются.
+
+Последовательность vertical slices:
+
+1. **Security gate:** закрыть legacy ACL, host allowlist и app-origin CSRF из
+   P0.1 с Auth regression и negative actor tests.
+2. **Universal Account bootstrap:** один profile на каждый Account, roleless
+   onboarding/navigation и отсутствие active dependency от
+   `teacher/parent/student`.
+3. **Discovery/connection:** rotating one-time share code/QR, optional opt-in
+   exact handle, blind recipient-bound email invitation, accept/revoke/expiry и
+   flow «сначала найти Account, затем создать offline profile». Discovery
+   создаёт только pending request; active relation требует accept subject. Для
+   learner без email recipient активирует отдельный learner Account с login/PIN,
+   а не использует собственный взрослый Account.
+4. **Claim и physical merge:** merge preview, conflicts одного LessonRun,
+   transactional locks, lineage alias, audit и один canonical target. Обычный
+   путь — только unclaimed source в actor-owned target; open Run/draft и
+   claimed-to-claimed merge fail closed.
+5. **Archive/lifecycle:** архивный список, restore без скрытого возврата прежних
+   memberships, permanent delete только пустого unclaimed profile и
+   subject-only learning-data erasure/reset.
+6. **Observer:** self-managed invite/accept/revoke, раздел «Наблюдение» и узкая
+   read-only finalized projection. Teacher relation не выдаёт observer access.
+7. **Progress:** nullable verified actual duration, pagination и aggregate
+   projection из реальных LearningRecord по canonical lineage. Scheduled
+   fallback не считается фактическим start; generic learner metrics ждут
+   реального Component/runtime producer.
+8. **AI consent:** request + grant на `profile + Course + owner`, безопасная
+   metadata projection без Course access, deterministic bounded sanitized
+   context, immediate revoke/expiry/owner-change invalidation, audit и
+   stale-preview protection.
+9. **Legacy cutover:** удалить active role switch/callers; physical legacy table
+   cleanup выполнять отдельной contract migration только после доказанного
+   отсутствия зависимостей.
+
+Каждый slice проходит цепочку contracts → service → repository → API → UI →
+tests → migration/snapshot → docs → production postflight. Нельзя объявлять
+программу завершённой после одной схемы или claim UI.
+
+Definition of Done программы:
+
+- новый пользователь автоматически получает Account и один canonical profile;
+- DB postflight подтверждает exactly-one invariant, включая concurrent
+  signup/claim/reset;
+- один и тот же profile безопасно используется несколькими преподавателями;
+- «Добавить ученика» поддерживает existing Account и offline path;
+- offline learner без email получает отдельный Account/login/PIN; взрослый
+  recipient не становится learner identity;
+- invitation/claim/merge/archive/restore доступны в UI и конкурентно безопасны;
+- subject управляет наблюдателями, observer ничего не мутирует;
+- subject/observer видят всю разрешённую finalized lineage, teacher — только
+  свои raw observations;
+- self-profile/history и observer projection работают независимо; progress и
+  actual duration основаны только на сохранённых данных;
+- AI без consent не получает foreign history, с consent получает только
+  безопасную projection, а revoke действует немедленно;
+- role choice больше не определяет active V2 navigation/access;
+- существующие student login/PIN работают через Account credential boundary без
+  active dependency от legacy role tables;
+- migrations, RLS/ACL actor matrix, Auth/browser regression, docs и production
+  postflight зелёные.
+
+Полный execution/acceptance prompt:
+[`LEARNER_IDENTITY_COMPLETION_PROMPT.md`](./v2/LEARNER_IDENTITY_COMPLETION_PROMPT.md).
+
 ## P0.2: завершить базовый teacher authoring
 
 Цель — превратить рабочий технический редактор в уверенный ежедневный
@@ -219,7 +306,7 @@ OCR, web crawling и audio transcription не входят в первый parsi
 Текущие `teacher/parent/student/school/class` сохранены только для
 compatibility login/profile flows.
 
-**Current repository slice:**
+**Current deployed slice:**
 
 - canonical `LearnerProfile` без teacher owner: nullable unique `account_id`
   резервирует one-to-one claim point, а global `display_name` остаётся
@@ -244,15 +331,14 @@ compatibility login/profile flows.
   context, но не переписывает состав уже открытого LessonRun;
 - Course Builder остаётся owner-only, а старые Class/School не используются.
 
-**Next:**
+**Next — выполняется программой P0.Identity:**
 
 - invitation/claim flow для привязки существующего offline profile к одному
   Account без эвристики по имени/email;
-- subject-controlled visibility и Guardian/observer relation с grant/revoke
-  audit;
+- subject-controlled visibility и observer relation с grant/revoke audit;
 - безопасный merge duplicate profiles только после определения authorization и
   конфликтов двух records одного LessonRun;
-- learner-facing кабинет и явный доступ к Course/Student Screen;
+- self/observer кабинет с learner-safe finalized history и progress;
 - cross-provider history и AI context только поверх отдельного разрешения, а не
   автоматически из canonical profile ID.
 
@@ -263,10 +349,12 @@ claim/access slice. Заполненный `account_id` позволяет Accou
 собственную canonical identity row; Course, records и teacher-local data этим не
 открываются. Полный current/next/later boundary находится в
 [`docs/architecture/learner-identity-access-model.md`](./architecture/learner-identity-access-model.md).
+Learner Course consumption и live Student Screen остаются отдельным later slice
+и не входят в P0.Identity.
 
 ## P2: LessonRun и live lesson
 
-**Current repository slice:**
+**Current deployed slice:**
 
 - `/schedule` проецирует LessonRun по календарному дню без параллельной таблицы
   Schedule events;

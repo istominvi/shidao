@@ -253,6 +253,10 @@ service; teacher-local relation и `recorded_by_account_id` ограничива
 
 Identity, provenance и future access boundary зафиксированы в
 [`learner-identity-access-model.md`](./learner-identity-access-model.md).
+Согласованный next flow допускает cross-provider context только по отдельному
+subject consent и через sanitized server projection; teacher API не получает
+foreign raw records. Acceptance contract находится в
+[`LEARNER_IDENTITY_COMPLETION_PROMPT.md`](../v2/LEARNER_IDENTITY_COMPLETION_PROMPT.md).
 
 ## Не входит в текущий срез
 

@@ -177,13 +177,19 @@ The canonical identity/access contract is documented in
 schema is documented in `docs/database/current-schema.md` and
 `supabase/schema/current-schema.sql`.
 
+The agreed target, still **not implemented**, removes global product roles:
+every active Account receives exactly one linked canonical LearnerProfile, while
+offline profiles remain unclaimed; teaching and observer access are relations.
+The staged implementation and acceptance prompt is
+`docs/v2/LEARNER_IDENTITY_COMPLETION_PROMPT.md`.
+
 ## Planned, not implemented
 
 The following are target domains, not current tables or product capabilities:
 
 - persisted Homework;
-- Guardian/observer and invitation/claim flows around the implemented canonical
-  LearnerProfile;
+- observer, safe discovery and invitation/claim flows around the implemented
+  canonical LearnerProfile;
 - merge of duplicate offline profiles and cross-provider access to records;
 - live Student Screen synchronization/runtime cursor for an open LessonRun;
 - automatic subject metrics and richer progress models on top of finalized

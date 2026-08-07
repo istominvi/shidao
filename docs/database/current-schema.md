@@ -99,6 +99,12 @@ status `active | suspended | deleted` и timestamps. Обычный authenticate
 умеет искать или подключать Account, а одна эта ссылка не открывает историю
 занятий.
 
+Согласованный **next**, которого в snapshot ещё нет: каждый active Account
+получает ровно один linked profile; offline profiles остаются с `NULL`; claim
+при уже существующем profile запускает physical merge, а observer/AI access
+оформляется отдельными отзываемыми grants. План и actor matrix находятся в
+[`LEARNER_IDENTITY_COMPLETION_PROMPT.md`](../v2/LEARNER_IDENTITY_COMPLETION_PROMPT.md).
+
 Каталог преподавателя хранится отдельно в `teacher_learner`:
 
 ```text
@@ -354,8 +360,9 @@ Snapshot дополнительно фиксирует объекты, кото�
 scheduled-lesson runtime, старого homework/communication/notification слоя,
 `lesson_step`, `lesson_step_component`, `lesson_run_participant`, Lesson
 snapshot или persisted Run/Record `status`. Также пока нет Observer,
-invitation/claim/merge flow, full-profile history projection и автоматических
-subject metrics.
+invitation/claim/merge flow, observer grants, full-profile history projection,
+actual-duration/progress projection, richer learner metrics и cross-provider AI
+consent.
 
 Старые migration files остаются неизменяемой forward history, а полный V1 — в
 recovery. Они не являются current schema и не должны импортироваться в runtime.

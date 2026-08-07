@@ -35,6 +35,13 @@
 
 - [Продуктовая модель и стратегическое видение](./v2/SHIDAO_PRODUCT_MODEL_AND_VISION.md)
 
+## Next execution hand-off
+
+- [Copy-paste prompt: завершить learner identity и observer ecosystem](./v2/LEARNER_IDENTITY_COMPLETION_PROMPT.md)
+
+Этот prompt описывает план и terminal condition будущей реализации. Он не
+является доказательством наличия перечисленных schema/API/UI.
+
 ## Архивная граница
 
 - `archive/content/world-around-me-2026-08-04/` — tracked source archive для

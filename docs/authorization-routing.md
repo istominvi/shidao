@@ -2,7 +2,7 @@
 
 **Статус:** current implementation
 **Канонический app host:** `v2.shidao.ru`
-**Последний подтверждённый deployed baseline:** `9393080`
+**Последний подтверждённый functional release:** `757044c`
 
 Teacher-only `/schedule` и `/students` развёрнуты и проверены на release
 `fea7f80`.
@@ -10,10 +10,16 @@ Teacher-only `/schedule` и `/students` развёрнуты и проверен
 Standalone `demo.shidao.ru` и cache recovery старого permanent redirect
 развёрнуты и проверены на release `7021801`.
 
-Current repository canonical learner slice не добавляет новые public routes:
+Deployed canonical learner slice не добавляет новые public routes:
 существующие teacher-only URLs и learner-profile API сохраняются, но доступ к
 canonical profile идёт через `teacher_learner`, а history — через
 `learning_record.recorded_by_account_id`.
+
+Target roleless navigation, self/observer routes и invitation/claim access
+остаются **next**. Их полный execution contract находится в
+[`LEARNER_IDENTITY_COMPLETION_PROMPT.md`](./v2/LEARNER_IDENTITY_COMPLETION_PROMPT.md);
+до фактического cutover описанные ниже teacher/parent/student guards являются
+current behavior.
 
 ## Host matrix
 

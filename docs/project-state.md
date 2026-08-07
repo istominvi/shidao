@@ -220,7 +220,7 @@ Account
   учитывается один раз, а header показывает число уникальных effective learners.
 - Legacy `student`, `class`, `class_student` не читаются. Nullable
   `learner_profile.account_id` уже резервирует one-to-one claim point, но
-  linking/invitation, duplicate merge, Guardian/observer и learner access не
+  linking/invitation, duplicate merge, observer access и learner access не
   реализованы.
 - Если `account_id` будет заполнен будущим trusted flow, RLS уже позволяет
   Account выбрать только свою canonical profile row. Teacher relation, Course и
@@ -385,13 +385,17 @@ History-aware context развёрнут в release `9393080`; production provid
 - добавление новых материалов из модалки существующего Course;
 - persisted Homework editor;
 - Learner-facing кабинет, enrollment и настоящий доступ ученика к Course;
-- Guardian/observer relations, invitation/claim, duplicate-profile merge и
-  перенос legacy identity в canonical profile;
+- automatic one-profile bootstrap для каждого Account, roleless onboarding и
+  отказ active V2 от `teacher/parent/student` role switch;
+- safe Account discovery/share code, invitation/claim и duplicate-profile
+  physical merge;
+- observer grants, self/observed history, archive restore и subject-only
+  learning-data erasure/reset;
 - cross-provider history/AI access без явной subject-controlled grant model;
 - live Student Screen sync, realtime presence и teacher-controlled runtime
   cursor поверх открытого LessonRun;
-- автоматические предметные metrics, progress aggregation и аналитика сверх
-  текущих attendance/repeat/comments;
+- actual-duration/progress projection и pagination из текущих records; richer
+  per-learner metrics ждут реального Component/runtime producer;
 - persisted communication chat и notifications;
 - templates/marketplace;
 - внешний remote MCP/API для сторонних агентов;
@@ -399,6 +403,11 @@ History-aware context развёрнут в release `9393080`; production provid
 
 Перечень не является разрешением реализовать всё сразу. Приоритеты и границы
 следующих срезов находятся в [`docs/roadmap.md`](./roadmap.md).
+
+Согласованный порядок полного identity/observer завершения, actor matrix и
+terminal condition подготовлены как copy-paste hand-off:
+[`LEARNER_IDENTITY_COMPLETION_PROMPT.md`](./v2/LEARNER_IDENTITY_COMPLETION_PROMPT.md).
+Он описывает **next**, а не уже доступные возможности.
 
 ## 4. Переходное состояние identity
 
@@ -411,6 +420,12 @@ nullable unique `account_id` является будущей связью сам
 profiles с активной relation этого преподавателя. Полный current/later contract
 находится в
 [`learner-identity-access-model.md`](./architecture/learner-identity-access-model.md).
+
+Согласованный target после завершения следующей программы: каждый active
+Account имеет ровно один linked LearnerProfile; offline profiles остаются
+nullable до consented claim; преподавание и наблюдение определяются связями, а
+не глобальной ролью. Этот invariant пока не реализован: current DB обеспечивает
+только upper bound `0..1`.
 
 При этом старые таблицы `teacher`, `parent`, `student`, `school`,
 `school_teacher`, `class`, `class_teacher` и `class_student` временно сохранены
@@ -539,6 +554,7 @@ positions, а плотность поддерживают текущие service
 | LessonRun API                | `src/app/api/v2/lesson-runs/`, `learner-profiles/`, `learner-groups/`, Course/Lesson audience/history/runs routes        |
 | LessonRun UI                 | `src/components/lesson-runs/`                                                                                            |
 | Learner identity/access      | `docs/architecture/learner-identity-access-model.md`, `src/modules/lesson-runs/`                                         |
+| Identity completion hand-off | `docs/v2/LEARNER_IDENTITY_COMPLETION_PROMPT.md`                                                                          |
 | Course browser client        | `src/components/course-builder/course-builder-client.ts`                                                                 |
 | New Course flow              | `src/components/course-builder/new-course-form.tsx`                                                                      |
 | Course workspace             | `src/components/course-builder/course-workspace.tsx`                                                                     |

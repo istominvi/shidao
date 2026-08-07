@@ -116,6 +116,46 @@ routes вызывают новые aggregate RPC и читают новые grou
 - PostgREST schema reload и проверка новых relation/table/RPC return shapes;
 - согласованный rollout web, который читает teacher directory projection.
 
+Следующая identity-completion программа не выпускается одной big-bang
+migration. Для bootstrap, invitation/claim, merge, observer, metrics/AI consent
+и legacy contract используются отдельные expand → backfill → deploy → contract
+этапы. Каждый этап обязан дополнительно подтвердить:
+
+- actor matrix `anon / teacher A / teacher B / subject / active observer /
+revoked observer / outsider`;
+- отсутствие Account/email enumeration и raw invitation tokens в DB/logs;
+- claim invitations recipient-bound; share code создаёт pending request, а не
+  active relation;
+- merge с open/running Run или draft record fail closed и оставляет их без
+  изменений; после явного завершения/отмены сохраняются counts,
+  recorder/timestamps и group/Course links;
+- migration не публикует historical `teacher_comment`: subject/observer читают
+  только learner-safe projection и explicit `shared_with_learner_at`;
+- historical/scheduled-fallback timestamps не backfill в
+  `actual_duration_minutes`; unknown остаётся `NULL`, а positive test покрывает
+  explicit start и explicit post-factum duration;
+- немедленный revoke observer/AI consent по DB-state;
+- erasure всей lineage удаляет aliases/PII linkage и не резолвит старый UUID в
+  новый пустой profile;
+- отсутствие foreign raw LearningRecord в teacher browser/API;
+- Auth/session/onboarding regression до удаления active role dependencies.
+
+Несовместимый identity rollout делится на самостоятельные deployable stages:
+
+1. additive schema expand, совместимый с текущим web image;
+2. dual-compatible web, умеющий пережить old/new shape;
+3. backfill и read-only verification;
+4. переключение reads/writes в следующем exact web image;
+5. contract cleanup только когда ни running, ни допустимый rollback image не
+   использует старую shape.
+
+Для каждого stage фиксируются commit SHA, migration set и production postflight.
+Нельзя оставлять старый Coolify image как rollback-кандидат после применения
+несовместимой contract migration.
+
+Полный terminal condition:
+[`LEARNER_IDENTITY_COMPLETION_PROMPT.md`](../v2/LEARNER_IDENTITY_COMPLETION_PROMPT.md).
+
 Порядок строгий:
 
 1. прочитать current schema snapshots;

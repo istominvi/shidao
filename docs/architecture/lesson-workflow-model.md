@@ -371,7 +371,7 @@ Current repository развивает teacher-only `/schedule` и `/students`, �
 - старые `student`, `class` и `class_student` не используются как источник
   новой learning identity;
 - `learner_profile.account_id` уже является nullable unique точкой будущего
-  claim, но Guardian, invitation/claim, merge и learner login этот slice не
+  claim, но observer, invitation/claim, merge и learner login этот slice не
   добавляет.
 
 ## Scheduling, completion and deletion
@@ -616,14 +616,22 @@ application services и MCP не импортируют demo fixtures; все н
 - parsing/RAG загруженных файлов;
 - persisted homework editor;
 - live Student Screen sync, realtime presence и runtime cursor;
-- automatic metrics/progress beyond attendance, repeat and comments;
-- account claim/invitation, duplicate-profile merge, Guardian/observer и
-  learner-facing access;
+- actual-duration/progress projection; richer learner metrics без реального
+  Component/runtime producer не добавляются;
+- account claim/invitation, duplicate-profile merge, observer/self history;
+- learner Course consumption и live Student Screen access;
 - cross-provider history projection или AI context без явного subject grant;
 - drag-and-drop, если надёжные кнопки «выше/ниже» уже обеспечивают reorder;
 - внешняя публикация MCP;
 - compatibility layer для Step/Methodology не планируется;
 - отдельные renderers по Course/Lesson ID.
+
+Roleless Account bootstrap, invitation/claim, physical profile merge,
+self/observer history, real-record progress и consented cross-provider AI входят в
+следующую identity-программу, но не меняют authored hierarchy Lesson. Полный
+execution contract находится в
+[`LEARNER_IDENTITY_COMPLETION_PROMPT.md`](../v2/LEARNER_IDENTITY_COMPLETION_PROMPT.md).
+Learner Course consumption и live Student Screen остаются later.
 
 ## Shipped acceptance baseline
 

@@ -12,7 +12,7 @@
 LearnerProfile, reusable Groups и смешанная Course audience: группы и отдельные
 ученики являются независимыми источниками одного дедуплицированного состава.
 Lesson остаётся единственной content-сущностью; LessonRun не хранит снимок её
-содержимого. Current repository дополнительно делает LearnerProfile canonical,
+содержимого. Deployed release `757044c` дополнительно делает LearnerProfile canonical,
 выносит teacher-local name/archive в `TeacherLearner` и фиксирует автора каждой
 LearningRecord. Nullable account link не означает, что invitation/claim или
 learner access уже работают. Development-only MCP реализован отдельно как local `stdio`
@@ -21,7 +21,7 @@ deployed и repository scope, ограничения и implementation map за�
 [`docs/project-state.md`](../project-state.md), а последовательность работ — в
 [`docs/roadmap.md`](../roadmap.md).
 
-Account claim, profile merge, Guardian/observer relations, live-проведение,
+Account claim, profile merge, observer relations, live-проведение,
 расширенные учебные метрики, persisted Homework, parsing/RAG, подписки, billing
 и внешний MCP/API остаются
 **будущим направлением**, пока соответствующая возможность не появилась в
@@ -962,19 +962,24 @@ ShiDao строится не как оболочка над одной модн�
 
 ## Следующая продуктовая версия
 
-1. Завершить ручной teacher authoring: upload из существующего Course,
+1. Закрыть legacy identity/security ACL, host allowlist и app-origin CSRF debt.
+2. Завершить universal roleless Account: один canonical profile на active
+   Account, safe discovery, offline invitation/claim, physical duplicate merge,
+   archive/restore и self-managed observers.
+3. Добавить learner-safe full history, progress из реальных records,
+   actual-duration projection и отдельный subject-controlled consent для
+   cross-provider AI без открытия teacher raw records других преподавателей.
+4. Завершить ручной teacher authoring: upload из существующего Course,
    accessibility и UX polish.
-2. Стабилизировать canonical identity migration и затем спроектировать
-   invitation/claim, observer grants и безопасный duplicate merge.
-3. Добавить live-проведение поверх LessonRun, не создавая второй content Lesson.
-4. Реализовать persisted common Homework как отдельную Lesson surface.
-5. Добавить parsing статуса/текста загруженных источников; RAG — только после
+5. Добавить live-проведение поверх LessonRun, не создавая второй content Lesson.
+6. Реализовать persisted common Homework как отдельную Lesson surface.
+7. Добавить parsing статуса/текста загруженных источников; RAG — только после
    проверяемого extraction baseline.
 
 ## Позднее
 
-- learner-facing access и cross-provider history/AI projection поверх явных
-  subject-controlled grants;
+- learner Course consumption и live Student Screen access поверх явных
+  enrollment/capability boundaries;
 - live sync и AI-conducted lesson поверх LessonRun;
 - individual Homework assignments и immutable snapshots;
 - расширенные learning metrics/events, chat, notifications и vocabulary progress;
@@ -1043,7 +1048,7 @@ ShiDao строится не как оболочка над одной модн�
 
 - несколько LearnerProfile;
 - несколько активных Course;
-- семейные связи guardian;
+- observer-связи;
 - AI-создание курсов;
 - AI-уроки;
 - история обучения;
@@ -1553,7 +1558,7 @@ Lesson непосредственно владеет единым ordered Compon
 или вторым authoring hierarchy. LearningRecord хранит минимальный контекст и
 результат конкретного учащегося, но не snapshot Lesson.
 
-Целевая модель добавит account claim/merge, subject-controlled Guardian/observer
+Целевая модель добавит account claim/merge, subject-controlled observer
 access, live runtime, Homework, reusable source library, расширенные метрики, AI
 для проведения/анализа и прозрачные usage limits. Canonical ID сам по себе не
 разрешает cross-provider history или AI access. Эти возможности нельзя выдавать
