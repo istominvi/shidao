@@ -191,8 +191,12 @@ a {
   display: flex;
   flex-direction: column;
   gap: var(--app-page-header-space);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
   padding-block: var(--app-page-header-padding-block);
   padding-inline: var(--app-page-header-padding-inline);
+  box-shadow: none;
 }
 
 .app-page-heading {
@@ -278,10 +282,10 @@ a {
 .course-demo-shell .app-page-header {
   --app-page-header-padding-block: 24px 12px;
   --app-page-header-padding-inline: 12px;
-  --app-page-header-title-size: clamp(1.75rem, 3vw, 2.55rem);
-  --app-page-header-title-line-height: 1;
-  --app-page-header-description-size: 0.78rem;
-  --app-page-header-description-line-height: 1.45;
+  --app-page-header-title-size: clamp(2rem, 4.3vw, 3.55rem);
+  --app-page-header-title-line-height: 0.96;
+  --app-page-header-description-size: 0.9rem;
+  --app-page-header-description-line-height: 1.55;
   scroll-margin-top: 6.25rem;
 }
 
@@ -300,11 +304,11 @@ a {
 .course-demo-shell .app-page-title {
   color: #141414;
   font-weight: 400;
-  letter-spacing: -0.045em;
+  letter-spacing: -0.055em;
 }
 
 .course-demo-shell .app-page-description {
-  max-width: 43rem;
+  max-width: 44rem;
   color: #646873;
 }
 
@@ -318,36 +322,14 @@ a {
   margin-top: 1rem;
 }
 
-.workspace-page-header {
-  background: transparent;
-  border: 0;
-  border-radius: 0;
-  box-shadow: none;
-}
-
-.course-demo-shell .workspace-page-header {
-  --app-page-header-title-size: clamp(2rem, 4.3vw, 3.55rem);
-  --app-page-header-title-line-height: 0.96;
-  --app-page-header-description-size: 0.9rem;
-  --app-page-header-description-line-height: 1.55;
-}
-
-.course-demo-shell .workspace-page-header .app-page-title {
-  letter-spacing: -0.055em;
-}
-
-.course-demo-shell .workspace-page-header .app-page-description {
-  max-width: 44rem;
-}
-
 .workspace-tabs-scroll {
   max-width: 100%;
   overflow-x: auto;
-  border-bottom: 1px solid rgba(20, 20, 20, 0.1);
   scrollbar-width: thin;
 }
 
 .workspace-tabs {
+  position: relative;
   display: flex;
   width: max-content;
   min-width: 100%;
@@ -355,7 +337,19 @@ a {
   padding-inline: 0.4rem;
 }
 
+.workspace-tabs::before {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 1px;
+  background: rgba(20, 20, 20, 0.1);
+  content: "";
+}
+
 .workspace-tab {
+  position: relative;
+  z-index: 1;
   display: inline-flex;
   height: var(--course-demo-control-height, 2.5rem);
   min-height: var(--course-demo-control-height, 2.5rem);
@@ -363,8 +357,7 @@ a {
   align-items: center;
   gap: 0.38rem;
   border: 0;
-  border-bottom: 2px solid transparent;
-  border-radius: var(--course-demo-control-radius, 0.75rem);
+  border-radius: 0;
   background: transparent;
   padding: 0.55rem var(--course-demo-control-padding-inline, 0.75rem);
   color: #666a74;
@@ -375,7 +368,6 @@ a {
   cursor: pointer;
   transition:
     color 180ms ease,
-    border-color 180ms ease,
     background-color 180ms ease;
 }
 
@@ -390,8 +382,18 @@ a {
 }
 
 .workspace-tab-active {
-  border-bottom-color: #141414;
   color: #141414;
+}
+
+.workspace-tab-active::after {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  border-radius: 0;
+  background: #141414;
+  content: "";
 }
 
 .workspace-tab-icon {
@@ -715,10 +717,6 @@ a {
   }
 
   .course-demo-shell .app-page-header {
-    --app-page-header-title-size: 1.8rem;
-  }
-
-  .course-demo-shell .workspace-page-header {
     --app-page-header-title-size: 2.25rem;
   }
 
@@ -751,27 +749,23 @@ a {
   align-items: center;
 }
 
-@media (min-width: 900px) {
-  .course-builder-page-header,
-  .course-index-page-header {
+@media (min-width: 1120px) {
+  .course-demo-shell .app-page-header {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: end;
     column-gap: 1.5rem;
   }
 
-  .course-builder-page-header > .app-page-back-link,
-  .course-index-page-header > .app-page-back-link {
+  .course-demo-shell .app-page-header > .app-page-back-link {
     grid-column: 1 / -1;
   }
 
-  .course-builder-page-header > .app-page-heading,
-  .course-index-page-header > .app-page-heading {
+  .course-demo-shell .app-page-header > .app-page-heading {
     grid-column: 1;
   }
 
-  .course-builder-page-header > .app-page-actions,
-  .course-index-page-header > .app-page-actions {
+  .course-demo-shell .app-page-header > .app-page-actions {
     grid-column: 2;
     justify-self: end;
   }

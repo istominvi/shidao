@@ -34,11 +34,16 @@
 - Реализованы persisted Course, Lesson, 10 Component types и private
   course-wide attachments.
 - Реализована двухуровневая Course → Lesson навигация в визуальном языке demo:
-  пять Course tabs, пять Lesson tabs, прозрачные detail headers и отдельный
-  список Lesson до открытия редактора.
-- Course routes приведены к плоскому demo-фону `#f5f1e8` без marketing
+  пять Course tabs, пять Lesson tabs, прозрачные headers и отдельный список
+  Lesson до открытия редактора.
+- `/courses`, `/students`, `/schedule`, Course и Lesson используют один
+  `AppPageHeader` с общим крупным H1, подзаголовком, optional backlink и правой
+  action-секцией. Course, Lesson, Students и profile dialog используют один
+  `WorkspaceTabs`: 40 px, roving keyboard/ARIA, horizontal scroll и квадратный
+  чёрный active-сегмент 3 px поверх общей baseline.
+- Active app routes приведены к плоскому demo-фону `#f5f1e8` без marketing
   gradients; header, кнопки, вкладки и заголовочная типографика используют
-  scoped demo-размеры, радиусы и веса, не затрагивая landing/Auth.
+  scoped demo-размеры и веса, не затрагивая landing/Auth.
 - На release `fea7f80` развёрнуты teacher-only `/schedule` и `/students` и
   пункты «Расписание / Ученики / Курсы» как исходные shells.
 - Эти shells превращены в deployed vertical slice: нейтральные

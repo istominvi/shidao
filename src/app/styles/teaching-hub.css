@@ -3,11 +3,6 @@
   --teaching-muted: #646873;
 }
 
-.teaching-hub-page-header {
-  min-height: 10rem;
-  align-content: center;
-}
-
 .teaching-hub-stack,
 .teaching-hub-section {
   display: grid;
@@ -795,7 +790,7 @@
 
 .student-directory-toolbar {
   display: grid;
-  grid-template-columns: minmax(14rem, 1fr) auto auto;
+  grid-template-columns: minmax(14rem, 1fr) auto;
   align-items: center;
   gap: 0.65rem;
   border: 1px solid rgba(255, 255, 255, 0.78);
@@ -813,7 +808,6 @@
 }
 
 .student-directory-controls,
-.student-directory-create-actions,
 .student-directory-actions,
 .student-directory-chips {
   display: flex;
@@ -1093,10 +1087,6 @@
 }
 
 @media (max-width: 900px) {
-  .teaching-hub-page-header {
-    min-height: auto;
-  }
-
   .teaching-hub-toolbar,
   .teaching-section-heading-with-search {
     align-items: stretch;
@@ -1112,15 +1102,15 @@
   }
 
   .student-directory-toolbar {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr;
   }
 
-  .student-directory-search {
+  .student-directory-search,
+  .student-directory-controls {
     grid-column: 1 / -1;
   }
 
-  .student-directory-controls,
-  .student-directory-create-actions {
+  .student-directory-controls {
     flex-wrap: wrap;
   }
 
@@ -1162,19 +1152,16 @@
   }
 
   .student-directory-search,
-  .student-directory-controls,
-  .student-directory-create-actions {
+  .student-directory-controls {
     grid-column: auto;
   }
 
-  .student-directory-controls,
-  .student-directory-create-actions {
+  .student-directory-controls {
     align-items: stretch;
     flex-direction: column;
   }
 
-  .student-directory-select,
-  .student-directory-create-actions .product-btn {
+  .student-directory-select {
     width: 100%;
   }
 

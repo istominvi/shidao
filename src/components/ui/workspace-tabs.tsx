@@ -70,7 +70,12 @@ export function WorkspaceTabs<T extends string>({
 
   return (
     <div className={classNames("workspace-tabs-scroll", className)}>
-      <div className="workspace-tabs" role="tablist" aria-label={ariaLabel}>
+      <div
+        className="workspace-tabs"
+        role="tablist"
+        aria-label={ariaLabel}
+        aria-orientation="horizontal"
+      >
         {items.map((item, index) => {
           const active = item.value === value;
           const Icon = item.icon;

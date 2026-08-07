@@ -12,8 +12,7 @@ export default function NewCoursePage() {
           eyebrow="Конструктор курса"
           title="Новый курс"
           description="Сохраните пустой курс или сразу соберите первый осмысленный урок с упорядоченными компонентами."
-          backHref={ROUTES.courses}
-          backLabel="К курсам"
+          back={{ type: "link", href: ROUTES.courses, label: "К курсам" }}
         />
         <NewCourseForm />
       </div>

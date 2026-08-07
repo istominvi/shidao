@@ -63,17 +63,24 @@ const pageSources = `${schedulePageSource}\n${studentsPageSource}`;
 const workspaceSources = `${scheduleWorkspaceSource}\n${studentsWorkspaceSource}`;
 const combinedSources = `${pageSources}\n${teacherLayoutSource}\n${workspaceSources}`;
 
-test("teaching hub pages share the demo shell and transparent list header", () => {
+test("teaching hub pages share the demo shell and canonical page header", () => {
   for (const source of [schedulePageSource, studentsPageSource]) {
     assert.match(source, /course-demo-shell teaching-hub-shell/);
     assert.match(source, /<TopNav demoStyle \/>/);
-    assert.match(source, /<AppPageHeader/);
-    assert.match(source, /course-index-page-header teaching-hub-page-header/);
     assert.doesNotMatch(source, /landing-noise/);
+    assert.doesNotMatch(
+      source,
+      /course-index-page-header|course-builder-page-header|teaching-hub-page-header|workspace-page-header/,
+    );
   }
 
   assert.match(schedulePageSource, /title="Расписание"/);
-  assert.match(studentsPageSource, /title="Ученики"/);
+  assert.match(schedulePageSource, /<AppPageHeader/);
+  assert.match(schedulePageSource, /Назначить урок в курсе/);
+  assert.match(studentsWorkspaceSource, /<AppPageHeader/);
+  assert.match(studentsWorkspaceSource, /title="Ученики"/);
+  assert.match(studentsWorkspaceSource, /Новый ученик/);
+  assert.match(studentsWorkspaceSource, /Новая группа/);
   assert.match(teacherLayoutSource, /resolveTeacherRequiredRedirect/);
 });
 
@@ -81,7 +88,7 @@ test("schedule projects persisted LessonRun appointments without a parallel even
   assert.match(lessonRunClientSource, /\/api\/v2\/lesson-runs\?/);
   assert.match(scheduleWorkspaceSource, /loadSchedule/);
   assert.match(scheduleWorkspaceSource, /Занятий нет/);
-  assert.match(scheduleWorkspaceSource, /Назначить урок в курсе/);
+  assert.match(schedulePageSource, /Назначить урок в курсе/);
   assert.match(scheduleWorkspaceSource, /lessonRunStateLabel/);
   assert.match(scheduleWorkspaceSource, /selectedRunId/);
   assert.doesNotMatch(scheduleWorkspaceSource, /ScheduleEvent|LessonSession/);

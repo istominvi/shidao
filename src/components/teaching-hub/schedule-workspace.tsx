@@ -4,7 +4,6 @@ import Link from "next/link";
 import {
   ArrowLeft,
   ArrowRight,
-  BookOpen,
   CalendarDays,
   Clock3,
   LoaderCircle,
@@ -27,7 +26,7 @@ import { Button, productButtonClassName } from "@/components/ui/button";
 import { Chip, type ChipTone } from "@/components/ui/chip";
 import { DialogShell } from "@/components/ui/dialog-shell";
 import { SurfaceCard } from "@/components/ui/surface-card";
-import { ROUTES, toCourseRoute } from "@/lib/auth";
+import { toCourseRoute } from "@/lib/auth";
 import type { LessonRun } from "@/modules/lesson-runs/domain";
 
 const dateFormatter = new Intl.DateTimeFormat("ru-RU", {
@@ -215,13 +214,6 @@ export function ScheduleWorkspace() {
             Сегодня
           </button>
         </div>
-        <Link
-          href={ROUTES.courses}
-          className={productButtonClassName("secondary")}
-        >
-          <BookOpen className="h-4 w-4" aria-hidden="true" />
-          Назначить урок в курсе
-        </Link>
       </section>
 
       {error ? (
