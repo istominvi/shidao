@@ -43,7 +43,7 @@
   Course, Lesson, Students и profile dialog используют один `WorkspaceTabs`:
   40 px, roving keyboard/ARIA, horizontal scroll, чёрная baseline 1 px с
   inline-inset 12 px и квадратный чёрный active-сегмент 4 px без radius.
-  Follow-up выполнен в current source; release и browser postflight ещё pending.
+  Follow-up развёрнут и подтверждён browser postflight в release `77870e3`.
 - Active app routes приведены к плоскому demo-фону `#f5f1e8` без marketing
   gradients; header, кнопки, вкладки и заголовочная типографика используют
   scoped demo-размеры и веса, не затрагивая landing/Auth.

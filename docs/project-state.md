@@ -4,23 +4,19 @@
 **Актуально на:** 7 августа 2026 года
 **Активная ветка:** `main`
 **Рабочее приложение:** `https://v2.shidao.ru`
-**Текущий функциональный application release:** `0c426ff`
-**Последний полный automated/browser gate:** `0c426ff`
+**Текущий функциональный application release:** `77870e3`
+**Последний полный automated/browser gate:** `77870e3`
 
-**Current source visual follow-up (pending release):** `/courses`, `/students`,
-`/schedule`, Course и Lesson используют единый `AppPageHeader` с H1 не
-крупнее 48 px на desktop и 32 px на mobile, `min-height: 200px` с
-ростом по контенту и вертикально центрированными actions. Course,
-Lesson, Students и profile dialog используют единый `WorkspaceTabs`:
-чёрная baseline 1 px с inline-inset 12 px и квадратный чёрный active-
-сегмент 4 px без radius. Это source/current implementation; Coolify deployment
-и authenticated browser postflight для follow-up ещё не выполнены. Схема
-БД в visual follow-up не менялась.
-
-**Last deployed visual baseline:** Coolify развернул точный application
-SHA `0c426ffdae4f16fab1c77b8070b51a887b387992`; authenticated browser postflight
-подтвердил общие `AppPageHeader` / `WorkspaceTabs`, contextual actions
-Students/Schedule и пустую browser console.
+**Current deployed visual slice:** `/courses`, `/students`, `/schedule`, Course
+и Lesson используют единый `AppPageHeader` с H1 не крупнее 48 px на desktop и
+32 px на mobile, `min-height: 200px` с ростом по контенту и вертикально
+центрированными actions. Course, Lesson, Students и profile dialog используют
+единый `WorkspaceTabs`: чёрная baseline 1 px с inline-inset 12 px и квадратный
+чёрный active-сегмент 4 px без radius. Coolify развернул точный application SHA
+`77870e37c361d9bc8e016defd331f630d85596de` со статусом Success за 3 минуты
+47 секунд; authenticated browser postflight подтвердил `48px / 200px / 0px`
+для title/header/action-center на пяти поверхностях, `12px / 1px / 4px`
+для tabs и пустую browser console. Схема БД в visual slice не менялась.
 
 **Current data slice:** поверх group/audience baseline введены canonical
 `LearnerProfile`, teacher-local relation `teacher_learner` и явный provenance
@@ -194,8 +190,7 @@ Account
   сохраняет roving keyboard/ARIA contract и горизонтальный scroll. Выбранная
   вкладка утолщает чёрную baseline 1 px с inline-inset 12 px
   квадратным чёрным сегментом 4 px без radius; кнопки и вкладки используют шрифт
-  `.88rem/500`. Этот follow-up уже в current source, но его release/postflight ещё
-  pending.
+  `.88rem/500`. Контракт подтверждён production postflight release `77870e3`.
 
 ### Teacher navigation, Расписание, Ученики и аудитория
 
