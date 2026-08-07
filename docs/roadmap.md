@@ -37,10 +37,13 @@
   пять Course tabs, пять Lesson tabs, прозрачные headers и отдельный список
   Lesson до открытия редактора.
 - `/courses`, `/students`, `/schedule`, Course и Lesson используют один
-  `AppPageHeader` с общим крупным H1, подзаголовком, optional backlink и правой
-  action-секцией. Course, Lesson, Students и profile dialog используют один
-  `WorkspaceTabs`: 40 px, roving keyboard/ARIA, horizontal scroll и квадратный
-  чёрный active-сегмент 3 px поверх общей baseline.
+  `AppPageHeader` с H1 не крупнее 48 px на desktop и 32 px на mobile,
+  подзаголовком, optional backlink и правой action-секцией. Header имеет
+  `min-height: 200px`, растёт по контенту и вертикально центрирует actions.
+  Course, Lesson, Students и profile dialog используют один `WorkspaceTabs`:
+  40 px, roving keyboard/ARIA, horizontal scroll, чёрная baseline 1 px с
+  inline-inset 12 px и квадратный чёрный active-сегмент 4 px без radius.
+  Follow-up выполнен в current source; release и browser postflight ещё pending.
 - Active app routes приведены к плоскому demo-фону `#f5f1e8` без marketing
   gradients; header, кнопки, вкладки и заголовочная типографика используют
   scoped demo-размеры и веса, не затрагивая landing/Auth.

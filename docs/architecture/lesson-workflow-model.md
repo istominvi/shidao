@@ -331,15 +331,21 @@ Visual contract Course routes не меняет эту навигационну�
 - page background — сплошной `#f5f1e8` без цветных marketing gradients;
 - product header — sticky demo shell высотой 68 px с радиусом 20 px;
 - `AppPageHeader` задаёт один прозрачный layout для `/courses`, `/students`,
-  `/schedule`, Course и Lesson: крупный системный H1 веса 400, подзаголовок,
-  optional backlink и правую action-секцию;
+  `/schedule`, Course и Lesson: системный H1 веса 400 с максимумом 48 px
+  на desktop и 32 px на mobile, подзаголовок, optional backlink и правую
+  action-секцию; header имеет минимальную высоту 200 px, растёт по контенту,
+  а actions вертикально центрированы;
 - основные кнопки и header controls — высотой 40 px с радиусом 12 px и шрифтом
   `.88rem/500`;
 - `WorkspaceTabs` задаёт общий 40 px tab/tabpanel contract для Course, Lesson,
   Students и profile dialog: roving keyboard focus, horizontal scroll, базовая
-  линия 1 px и квадратный чёрный active-сегмент 3 px на этой же линии;
+  чёрная линия 1 px с inline-inset 12 px и квадратный чёрный active-
+  сегмент 4 px без radius на этой же линии;
 - visual tokens не меняют landing, Auth, Settings или полноэкранный Student
   Screen.
+
+Этот visual contract описывает current source implementation; production
+release и authenticated browser postflight для follow-up ещё pending.
 
 ## Teaching hub navigation boundary
 

@@ -280,12 +280,14 @@ a {
 }
 
 .course-demo-shell .app-page-header {
-  --app-page-header-padding-block: 24px 12px;
+  --app-page-header-padding-block: 20px;
   --app-page-header-padding-inline: 12px;
-  --app-page-header-title-size: clamp(2rem, 4.3vw, 3.55rem);
+  --app-page-header-title-size: clamp(2rem, 3.8vw, 3rem);
   --app-page-header-title-line-height: 0.96;
   --app-page-header-description-size: 0.9rem;
   --app-page-header-description-line-height: 1.55;
+  min-height: 200px;
+  justify-content: center;
   scroll-margin-top: 6.25rem;
 }
 
@@ -329,21 +331,23 @@ a {
 }
 
 .workspace-tabs {
+  --workspace-tabs-inline-offset: 12px;
+
   position: relative;
   display: flex;
   width: max-content;
   min-width: 100%;
   gap: 0.25rem;
-  padding-inline: 0.4rem;
+  padding-inline: var(--workspace-tabs-inline-offset);
 }
 
 .workspace-tabs::before {
   position: absolute;
-  right: 0;
+  right: var(--workspace-tabs-inline-offset);
   bottom: 0;
-  left: 0;
+  left: var(--workspace-tabs-inline-offset);
   height: 1px;
-  background: rgba(20, 20, 20, 0.1);
+  background: #141414;
   content: "";
 }
 
@@ -390,7 +394,7 @@ a {
   right: 0;
   bottom: 0;
   left: 0;
-  height: 3px;
+  height: 4px;
   border-radius: 0;
   background: #141414;
   content: "";
@@ -680,7 +684,7 @@ a {
 
 @media (max-width: 640px) {
   .course-demo-shell .app-page-header {
-    --app-page-header-padding-block: 16px 8px;
+    --app-page-header-padding-block: 16px;
     --app-page-header-padding-inline: 8px;
   }
 
@@ -717,7 +721,7 @@ a {
   }
 
   .course-demo-shell .app-page-header {
-    --app-page-header-title-size: 2.25rem;
+    --app-page-header-title-size: 2rem;
   }
 
   .course-demo-shell .app-page-actions {
@@ -752,21 +756,34 @@ a {
 @media (min-width: 1120px) {
   .course-demo-shell .app-page-header {
     display: grid;
+    grid-template-areas:
+      "back actions"
+      "heading actions"
+      "meta actions";
     grid-template-columns: minmax(0, 1fr) auto;
-    align-items: end;
+    grid-template-rows: auto 1fr auto;
+    align-items: start;
     column-gap: 1.5rem;
+    row-gap: 0;
   }
 
   .course-demo-shell .app-page-header > .app-page-back-link {
-    grid-column: 1 / -1;
+    grid-area: back;
   }
 
   .course-demo-shell .app-page-header > .app-page-heading {
-    grid-column: 1;
+    grid-area: heading;
+    align-self: center;
+  }
+
+  .course-demo-shell .app-page-header > .app-page-meta {
+    grid-area: meta;
+    align-self: end;
   }
 
   .course-demo-shell .app-page-header > .app-page-actions {
-    grid-column: 2;
+    grid-area: actions;
+    align-self: center;
     justify-self: end;
   }
 }

@@ -162,8 +162,14 @@ test("course routes use the flat demo background and unified visual controls", (
   const courseShellStyles = /\.course-demo-shell\s*\{[\s\S]*?\n\}/.exec(
     styles,
   )?.[0];
+  const demoPageHeaderStyles =
+    /\.course-demo-shell \.app-page-header\s*\{[^}]*\}/.exec(styles)?.[0];
 
   assert.ok(courseShellStyles, "Course shell styles must remain discoverable");
+  assert.ok(
+    demoPageHeaderStyles,
+    "Demo page-header styles must remain discoverable",
+  );
   assert.match(courseShellStyles, /background: #f5f1e8;/);
   assert.doesNotMatch(courseShellStyles, /gradient/i);
   assert.doesNotMatch(routeSources, /landing-noise/);
@@ -173,8 +179,14 @@ test("course routes use the flat demo background and unified visual controls", (
     /\.course-demo-shell \.app-page-title\s*\{[\s\S]*?font-weight: 400;[\s\S]*?letter-spacing: -0\.055em;/,
   );
   assert.match(
-    styles,
-    /\.course-demo-shell \.app-page-header\s*\{[\s\S]*?clamp\(2rem, 4\.3vw, 3\.55rem\)[\s\S]*?0\.96/,
+    demoPageHeaderStyles,
+    /--app-page-header-title-size: clamp\(2rem, 3\.8vw, 3rem\);/,
+  );
+  assert.match(demoPageHeaderStyles, /min-height: 200px;/);
+  assert.doesNotMatch(
+    demoPageHeaderStyles,
+    /(?:^|\n)\s*height:\s*200px;/,
+    "The canonical header must be able to grow beyond its 200px minimum",
   );
   assert.match(
     styles,
@@ -182,7 +194,11 @@ test("course routes use the flat demo background and unified visual controls", (
   );
   assert.match(
     styles,
-    /\.workspace-tabs::before\s*\{[\s\S]*?height: 1px;[\s\S]*?rgba\(20, 20, 20, 0\.1\)/,
+    /\.workspace-tabs\s*\{[^}]*--workspace-tabs-inline-offset: 12px;[^}]*padding-inline: var\(--workspace-tabs-inline-offset\);/,
+  );
+  assert.match(
+    styles,
+    /\.workspace-tabs::before\s*\{[^}]*right: var\(--workspace-tabs-inline-offset\);[^}]*left: var\(--workspace-tabs-inline-offset\);[^}]*height: 1px;[^}]*background: #141414;/,
   );
   assert.match(
     styles,
@@ -190,7 +206,7 @@ test("course routes use the flat demo background and unified visual controls", (
   );
   assert.match(
     styles,
-    /\.workspace-tab-active::after\s*\{[\s\S]*?bottom: 0;[\s\S]*?height: 3px;[\s\S]*?border-radius: 0;[\s\S]*?background: #141414;/,
+    /\.workspace-tab-active::after\s*\{[^}]*bottom: 0;[^}]*height: 4px;[^}]*border-radius: 0;[^}]*background: #141414;/,
   );
   assert.match(topNav, /container course-top-nav/);
   assert.match(

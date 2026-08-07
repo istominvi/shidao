@@ -181,16 +181,20 @@ lesson-owned files. «Источники» и обе «Истории» оста
 состояниями до появления соответствующих application/storage contracts.
 
 Page headers `/courses`, `/students`, `/schedule`, Course и Lesson используют
-один прозрачный `AppPageHeader` без белой или градиентной карточки: крупный H1,
-подзаголовок, optional backlink и правая action-секция. Page background active
+один прозрачный `AppPageHeader` без белой или градиентной карточки: H1 с
+максимумом 48 px на desktop и 32 px на mobile, подзаголовок, optional
+backlink и правая action-секция. Минимальная высота header равна 200 px,
+больший контент расширяет его, а actions вертикально центрированы. Page background active
 routes является сплошным `#f5f1e8`: marketing noise и цветные gradients
 удалены. Sticky product header повторяет demo shell 68 px / 20 px; кнопки и
 header controls — 40 px / 12 px / `.88rem 500`.
 
 Course, Lesson, Students и profile dialog используют один `WorkspaceTabs`.
 Tabs имеют высоту 40 px, roving keyboard navigation, horizontal scroll и явные
-`tab` → `tabpanel` ARIA-связи. Общая нижняя линия имеет толщину 1 px, а active
-tab утолщает её квадратным чёрным сегментом 3 px без rounded underline.
+`tab` → `tabpanel` ARIA-связи. Общая нижняя линия чёрная, имеет толщину 1 px и
+inline-inset 12 px; active tab утолщает её квадратным чёрным сегментом 4 px без
+radius. Это current source acceptance contract; release и browser postflight follow-up ещё
+pending.
 Переход Course ↔ Lesson переносит focus в новый рабочий контекст и
 восстанавливает его на строке Lesson при возврате. Эти токены не меняют landing
 или auth screens.

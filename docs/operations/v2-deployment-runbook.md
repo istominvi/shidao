@@ -323,9 +323,12 @@ ShiDao V2 application:
 
 - `/courses` читает реальные данные;
 - `/courses`, Course и Lesson показывают одинаковые computed H1/description
-  metrics через один `AppPageHeader`; Course/Lesson сохраняют backlink и actions;
-- Course и Lesson tabs используют одну baseline 1 px и квадратный чёрный active
-  segment 3 px, а на mobile скроллятся внутри strip без document overflow;
+  metrics через один `AppPageHeader`: H1 не крупнее 48 px на desktop и 32 px
+  на mobile, `min-height: 200px` с ростом по контенту, actions вертикально
+  центрированы; Course/Lesson сохраняют backlink;
+- Course и Lesson tabs используют чёрную baseline 1 px с inline-inset 12 px и
+  квадратный чёрный active segment 4 px без radius, а на mobile скроллятся внутри
+  strip без document overflow;
 - owner открывает Course, другой owner не может;
 - Lesson/Components загружаются;
 - private Component отсутствует в Student Screen;
@@ -387,7 +390,8 @@ ShiDao V2 application:
 - вкладки «Ученики / Группы» переключают таблицы без создания второго типа
   ученика; поиск, фильтр по группе и сортировка работают, а строка ученика
   показывает максимум две группы и корректный счётчик «ещё N»; tabs повторяют
-  тот же 1 px baseline / square 3 px active-segment contract, что Course/Lesson;
+  тот же black 1 px baseline с inline-inset 12 px / square 4 px active-segment
+  без radius contract, что Course/Lesson;
 - клик по строке ученика открывает dialog «Профиль / История»; профиль можно
   включить сразу в несколько групп, а история содержит только записи текущего
   teacher;
