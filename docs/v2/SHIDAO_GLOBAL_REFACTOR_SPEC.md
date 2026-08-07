@@ -23,6 +23,7 @@ project-state/current schema, она не реализована.
 Обязательные связанные документы:
 
 - [`docs/architecture/lesson-workflow-model.md`](../architecture/lesson-workflow-model.md)
+- [`docs/architecture/learner-identity-access-model.md`](../architecture/learner-identity-access-model.md)
 - [`docs/database/current-schema.md`](../database/current-schema.md)
 - [`docs/v2/COURSE_BUILDER_MCP.md`](./COURSE_BUILDER_MCP.md)
 - [`docs/operations/v2-deployment-runbook.md`](../operations/v2-deployment-runbook.md)
@@ -35,7 +36,8 @@ ShiDao развивается как персональная образоват
 сам либо передать часть работы AI и сохранить долгосрочную учебную историю.
 
 Текущий продукт доказывает первый фундамент: teacher Course Builder с реальными
-данными, private materials, code-first Components, Student Screen preview и
+данными, private materials, code-first Components, Student Screen preview,
+canonical learner directory, scheduling/history, RouterAI preview/assistant и
 internal MCP.
 
 ## 3. Неподвижные границы реконструкции
@@ -82,14 +84,18 @@ IDs в active model.
 ```text
 Auth User
 └── Account
-    ├── LearnerProfile 0..N
+    ├── claimed LearnerProfile 0..1 (optional; claim later)
+    ├── TeacherLearner 0..N → LearnerProfile
+    ├── LearnerGroup 0..N → LearnerProfile 0..N
     └── Course
-        ├── CourseLearner → LearnerProfile
+        ├── direct CourseLearner → LearnerProfile
+        ├── CourseLearnerGroup → LearnerGroup
         ├── CourseAttachment → StoredFile
         └── Lesson 1..N
             ├── LessonComponent 1..N
             ├── LessonStudentSlide 1..N
             └── LessonRun 0..N → LearningRecord 0..N
+                └── recorded-by Account
 ```
 
 Каноническая authored hierarchy:
@@ -115,7 +121,9 @@ Course:
 - не принадлежит Teacher/School/Class/Methodology.
 
 `audience_description` остаётся текстовым teacher input. Persisted audience
-реализована как простой owner-scoped список `course_learner`; Group пока нет.
+содержит независимые direct `course_learner` и group `course_learner_group`
+sources; effective audience является distinct union активных TeacherLearner
+relations.
 
 ## 7. Lesson
 
@@ -291,11 +299,19 @@ lesson.reorder_component
 ```
 
 Он использует user access token, session cutoff, application service и те же
-contracts. External endpoint отсутствует. OpenRouter/provider call отсутствует.
+contracts. External endpoint отсутствует. Production RouterAI вызывается
+server-side AI service напрямую и не использует MCP transport.
 
 ## 15. Current Auth and identity transition
 
 Course owner identity — `account`, один на `auth.users`.
+
+Canonical `learner_profile` не принадлежит Course owner. Optional unique
+`account_id` является будущей one-to-one claim point, а `teacher_learner`
+содержит relation, local display name и archive state конкретного teacher
+Account. `learning_record.recorded_by_account_id` сохраняет provenance даже
+после удаления Lesson. Current learner-profile API names остаются стабильными и
+возвращают teacher-directory projection.
 
 Старые `parent`, `teacher`, `student`, `school`, membership и preference/security
 tables временно обслуживают login/onboarding/profile/session compatibility.
@@ -305,6 +321,14 @@ domain.
 ## 16. Current security
 
 - Course documents owner-scoped through Account and RLS.
+- Canonical LearnerProfile teacher-visible only through `teacher_learner`;
+  teacher-local directory rows are scoped by `teacher_account_id`.
+- Linked subject Account can select only its canonical LearnerProfile row;
+  nullable `account_id` does not expose Course, TeacherLearner or
+  LearningRecord.
+- Group/Course audience accepts only profiles with an active relation of the
+  same owner Account; LearningRecord history is scoped by
+  `recorded_by_account_id`.
 - Account direct mutation обычному JWT закрыта.
 - Component direct UPDATE ограничен payload/placement.
 - Slide mutations и visibility/order/delete выполняются narrow RPC.
@@ -312,9 +336,9 @@ domain.
   execute grants и Lesson-first locks.
 - `anon` не имеет privileges на V2 document/file tables.
 - Storage policy проверяет bucket и Account path.
-- Origin/Sec-Fetch-Site guard существует, но configured landing host пока
-  ошибочно входит в V2 Origin allowlist; strict cross-subdomain protection —
-  P0 debt.
+- Origin/Sec-Fetch-Site guard пока допускает configured landing host как Origin
+  для unsafe V2 requests; строгая app-host boundary и cross-subdomain regression
+  test остаются P0 hardening debt.
 - V2 не индексируется.
 - Browser-smoke использует current AES-GCM app-session и проходит строгий
   production-mode gate на isolated mock Supabase, включая Course → Lesson →
@@ -322,7 +346,7 @@ domain.
 - Legacy exception: `user_preference` и `user_security` пока не имеют RLS и
   сохраняют broad grants; это зафиксированный P0 debt, а не образец V2 ACL.
 
-# NEXT architecture
+# Current hardening and NEXT architecture
 
 ## 17. P0.1 Legacy identity/security hardening
 
@@ -334,8 +358,6 @@ domain.
 - закрыть broad grants/RPC defaults;
 - ввести owner-scoped RLS или полностью закрытые server boundaries;
 - заменить proxy-dependent host routing на explicit production host allowlist;
-- привязать CSRF allowlist к actual V2 app host и отклонять landing/subdomain
-  Origins для unsafe requests;
 - доставить compatible forward migration с Auth regression/postflight.
 
 Это tightening существующей authorization boundary, а не redesign
@@ -352,18 +374,24 @@ NEXT улучшает существующий Course Builder, не меняя h
 - ясные destructive confirmations;
 - optional drag-and-drop только поверх canonical reorder service.
 
-## 19. P0.3 OpenRouter adapter
+## 19. CURRENT RouterAI adapter; NEXT operational hardening
 
-NEXT AI integration:
+CURRENT AI integration использует server-only OpenAI-compatible RouterAI adapter
+с default `google/gemini-2.5-flash-lite`, validated preview → explicit Apply и
+read-only ephemeral Assistant:
 
-- server-only provider key;
-- provider/model adapter вне domain contracts;
-- structured output validated registry/application schemas;
-- no SQL/service-role access;
+- provider/model adapter находится вне domain contracts;
+- structured output повторно валидируется registry/application schemas;
+- provider не получает SQL/service-role access;
 - manual authoring всегда доступен;
-- audit/idempotency/error recovery;
-- truthful token usage;
-- no claim of file analysis before parsing result.
+- preview fingerprint, stale checks и supported compensation покрывают Apply;
+- request/model/token usage возвращаются честно, но persistent quota/billing нет;
+- attachment не считается прочитанным до отдельного parsing result.
+
+NEXT operational hardening добавляет distributed rate limit/usage ledger только
+когда они действительно нужны, наблюдает первый real Apply по metadata-only logs
+и не превращает Assistant в write-capable agent без отдельного change-set
+contract.
 
 Internal AI может переиспользовать tool definitions/contracts. Production web
 не обязан публиковать MCP transport.
@@ -399,38 +427,47 @@ OCR, broad web crawling, DRM и audio transcription — LATER.
 
 Текущий repository slice:
 
-- LearnerProfile принадлежит owner Account и может существовать без отдельного
-  login;
-- Course получает прямую audience через `course_learner`;
-- один owner не может назначить чужой LearnerProfile;
-- базовая образовательная история хранится отдельно от editable Lesson;
-- UI создания профиля, настройки audience и просмотра истории работает через
-  owner-scoped services/API.
+- LearnerProfile является canonical identity без teacher owner и может
+  существовать без отдельного login;
+- nullable unique `learner_profile.account_id` резервирует one-to-one claim
+  point, но текущие rows не линкуются автоматически; linked Account может
+  выбрать только собственную identity row, не Course/records;
+- global `learner_profile.display_name` остаётся canonical/offline fallback;
+- `teacher_learner` хранит teacher Account, local display name и archive state;
+- existing profile CRUD route/RPC names сохранены, но teacher read model
+  проецируется из `teacher_learner`, а edit/archive не меняет identity другого
+  будущего teacher;
+- базовая образовательная история хранится отдельно от editable Lesson и явно
+  фиксирует `recorded_by_account_id`;
+- один Account не может добавить profile в Group/Course без своей активной
+  TeacherLearner relation.
 
-LATER:
+NEXT/LATER:
 
-- Account не будет иметь глобальной продуктовой роли;
-- LearnerProfile может существовать для ребёнка без Account;
-- Guardian relation связывает несколько взрослых с profile;
-- claim/invitation предотвращают дубли.
+- invitation/claim связывает offline profile с Account без эвристики по
+  имени/email;
+- subject-controlled Guardian/observer relation открывает только разрешённую
+  часть истории;
+- merge получает отдельную authorization/conflict модель и не выполняется
+  автоматически;
+- learner-facing access и cross-provider AI context появляются только поверх
+  явных grants.
 
 Текущие parent/teacher/student tables не объявляются этой моделью и не
 расширяются как её shortcut.
 
-## 23. LATER Group and expanded audience
-
-Текущий Course хранит один прямой список LearnerProfile. Позднее может появиться
-альтернативный Group-based режим:
-
-```text
-none | learner_profile | group
-```
+## 23. CURRENT Group and mixed audience
 
 - Course остаётся документом одного owner.
-- Для другой Group создаётся copy Course.
-- Изменение membership Group не переписывает Course автоматически.
-- Group может участвовать в нескольких Courses.
-- Shared ownership/multiple teachers не входят в first target.
+- Он хранит direct learners и Groups как два независимых source sets; effective
+  audience — их distinct union.
+- Один LearnerProfile может быть без Group или состоять в нескольких Groups.
+- Group может участвовать в нескольких Courses одного owner.
+- Изменение membership влияет на будущие назначения/AI context, но не
+  переписывает draft LearningRecord уже открытого Run.
+- Direct/group overlap учитывается один раз; effective audience ограничена 200
+  profiles.
+- Shared Course ownership/multiple teachers не входят в current target.
 
 ## 24. CURRENT LessonRun; LATER live runtime
 
@@ -473,10 +510,12 @@ Target Homework поддерживает:
 
 ## 26. CURRENT base learning history; LATER metrics
 
-Базовая Learning history принадлежит LearnerProfile и переживает удаление
-Lesson. Сейчас `learning_record` хранит attendance, comment, `needs_repeat`,
-время проведения и минимальный Course/Lesson context. Удаление LearnerProfile
-остаётся отдельным privacy lifecycle и может удалить его историю.
+Базовая Learning history относится к canonical LearnerProfile и переживает
+удаление Lesson. Сейчас `learning_record` хранит recorder Account, attendance,
+comment, `needs_repeat`, время проведения и минимальный Course/Lesson context.
+Current teacher reads только rows собственного `recorded_by_account_id`;
+canonical profile не означает cross-provider access. Archive teacher relation
+не удаляет history. Global privacy/erasure lifecycle остаётся отдельным решением.
 
 Позднее поверх базовой записи могут появиться:
 
@@ -534,17 +573,20 @@ success/latency/usage, Storage/parsing failures, auth failures.
   records.
 - Delete Lesson не удаляет LearningRecord.
 - Delete material не оставляет broken Component references.
-- LearnerProfile использует archive/privacy flow, а не случайный cascade.
+- Product archive изменяет TeacherLearner конкретного teacher, а не canonical
+  LearnerProfile; global privacy/erasure требует отдельного audited flow.
 - Destructive AI actions требуют confirmation/change set.
 
 ## 31. Future physical objects
 
-`learner_profile`, `course_learner`, `lesson_run` и `learning_record` уже входят
-в current repository schema. Следующие имена остаются direction:
+`learner_profile`, `teacher_learner`, `learner_group`,
+`learner_group_member`, `course_learner`, `course_learner_group`, `lesson_run` и
+`learning_record` уже входят в current repository schema. Следующие имена
+остаются direction:
 
 ```text
 learner_guardian
-learner_group
+learner_access_grant
 lesson_run_runtime
 homework_definition
 homework_component
@@ -630,6 +672,10 @@ lesson_component
 lesson_student_slide
 stored_file
 course_attachment
+learner_profile / teacher_learner
+learner_group / learner_group_member
+course_learner / course_learner_group
+lesson_run / learning_record
 
 parent / teacher / student
 school / school_teacher

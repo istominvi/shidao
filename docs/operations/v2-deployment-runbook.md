@@ -74,6 +74,14 @@ route guard для Guest, adult без профиля, Parent и transitional St
 `20260806220726_learner_groups_mixed_course_audience.sql`; случайное DDL вне
 них должно остановить release.
 
+Canonical learner identity release является coupled DB+web change: repository
+перестаёт читать teacher ownership/name/archive из `learner_profile`, использует
+`teacher_learner`, а LearningRecord требует `recorded_by_account_id`. До его
+деплоя migration `20260807033034_canonical_learner_profile.sql` и её checksum
+фиксируются в hand-off; старый web нельзя
+считать автоматически совместимым с contracted schema после удаления прежних
+columns.
+
 Release standalone demo обязан проверить root и прямые `/students`, `/courses`,
 Course/Lesson deep links, reload без redirect, OG asset, `robots.txt`/noindex и
 отказ unsafe methods. Demo source не должен получать imports application
@@ -92,6 +100,21 @@ Web с Groups/mixed audience нельзя выпускать раньше пос
 `20260806220726_learner_groups_mixed_course_audience.sql`: students/audience
 routes вызывают новые aggregate RPC и читают новые group tables.
 
+Для canonical learner identity поверх этого baseline дополнительно обязательны:
+
+- 1:1 backfill `teacher_learner` для каждого существующего LearnerProfile без
+  дедупликации и без заполнения `learner_profile.account_id`;
+- полный backfill `learning_record.recorded_by_account_id` до `NOT NULL`;
+- сохранность Course/group links, draft/finalized records и teacher-local names;
+- FK/trigger contract: subject Account delete sets `account_id` NULL, canonical
+  profile/recorder hard delete is restricted by history, recorder mutation
+  rejected;
+- RLS/ACL negative probes для второго Account: canonical profile не становится
+  общедоступным, relation/history другого recorder возвращают ноль rows; linked
+  subject видит только свою canonical row и по-прежнему не видит records;
+- PostgREST schema reload и проверка новых relation/table/RPC return shapes;
+- согласованный rollout web, который читает teacher directory projection.
+
 Порядок строгий:
 
 1. прочитать current schema snapshots;
@@ -101,6 +124,12 @@ routes вызывают новые aggregate RPC и читают новые grou
 5. выполнить migration postflight, RLS/ACL и representative user-JWT tests;
 6. подтвердить PostgREST schema cache/relationships;
 7. только затем выпускать web, который зависит от новой shape.
+
+Если migration содержит contract phase (drop прежнего
+`learner_profile.owner_account_id/archived_at` или меняет RPC composite return),
+не выполнять обычный rollback web на несовместимый старый image. Остановить
+rollout и доставить совместимый forward fix либо заранее использовать
+expand/deploy/contract sequence.
 
 Полная политика:
 [`docs/database/migration-guidelines.md`](../database/migration-guidelines.md).
@@ -300,17 +329,29 @@ ShiDao V2 application:
 - Parent и transitional Student не видят teacher-only пункты и при прямом
   открытии этих routes возвращаются в `/courses`;
 - взрослый без профиля уходит в `/onboarding`, Guest — в `/login`;
-- оба shell читают только реальные owner-scoped данные через V2 services/API;
+- оба shell читают только реальные teacher-scoped данные через V2 services/API;
 - Schedule показывает реальные LessonRun, позволяет запланировать, завершить,
   перенести или отменить проведение и не хранит отдельный status;
-- Students создаёт/редактирует/архивирует owner-scoped LearnerProfile,
-  открывает долговременную LearningRecord history, управляет reusable Groups и
+- Students создаёт canonical LearnerProfile вместе с teacher-local relation,
+  редактирует/архивирует только локальное имя/state, открывает собственную
+  `recorded_by_account_id` LearningRecord history, управляет reusable Groups и
   не читает legacy `student/class/class_student`;
-- один ученик может быть без группы или состоять в нескольких; поиск, фильтр,
-  сортировка и режим «По группам» не дублируют его профиль;
+- вкладки «Ученики / Группы» переключают таблицы без создания второго типа
+  ученика; поиск, фильтр по группе и сортировка работают, а строка ученика
+  показывает максимум две группы и корректный счётчик «ещё N»;
+- клик по строке ученика открывает dialog «Профиль / История»; профиль можно
+  включить сразу в несколько групп, а история содержит только записи текущего
+  teacher;
+- «Убрать из списка» предупреждает о локальном archive и после подтверждения
+  не удаляет canonical profile или историю; один ученик может оставаться без
+  группы или состоять в нескольких; список архива и restore action не должны
+  появляться в smoke, потому что пока не реализованы;
 - Course audience независимо сохраняет Groups и отдельных LearnerProfile,
   показывает дедуплицированный effective count и не меняет уже назначенный Run
   после редактирования membership;
+- archive одного teacher не удаляет canonical profile/draft/final history и не
+  меняет будущую relation другого teacher; `account_id`, claim/merge/observer и
+  cross-provider access в этом smoke отсутствуют;
 - нет фиктивных учеников, групп, progress или history.
 
 ### Console/logs

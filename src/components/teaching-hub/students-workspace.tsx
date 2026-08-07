@@ -19,7 +19,6 @@ import {
   updateLearnerGroup,
   updateLearnerProfile,
 } from "@/components/lesson-runs/lesson-run-client";
-import { LearnerHistoryDialog } from "@/components/lesson-runs/learner-history-dialog";
 import { LearnerGroupDialog } from "@/components/teaching-hub/learner-group-dialog";
 import { LearnerProfileDialog } from "@/components/teaching-hub/learner-profile-dialog";
 import {
@@ -28,8 +27,12 @@ import {
   type LearnerDirectoryEntry,
 } from "@/components/teaching-hub/student-directory-table";
 import { Button } from "@/components/ui/button";
-import { SegmentedControl } from "@/components/ui/segmented-control";
 import { SurfaceCard } from "@/components/ui/surface-card";
+import {
+  WorkspaceTabs,
+  workspaceTabId,
+  workspaceTabPanelId,
+} from "@/components/ui/workspace-tabs";
 import type {
   LearnerGroup,
   LearnerProfile,
@@ -39,6 +42,8 @@ type DirectoryView = "learners" | "groups";
 type LearnerSort = "name-asc" | "name-desc" | "group-count";
 type GroupSort = "name-asc" | "name-desc" | "member-count";
 
+const STUDENTS_DIRECTORY_TABS_ID = "students-directory";
+
 function errorMessage(caught: unknown, fallback: string) {
   return caught instanceof Error ? caught.message : fallback;
 }
@@ -47,7 +52,8 @@ export function StudentsWorkspace() {
   const [profiles, setProfiles] = useState<LearnerProfile[] | null>(null);
   const [groups, setGroups] = useState<LearnerGroup[] | null>(null);
   const [view, setView] = useState<DirectoryView>("learners");
-  const [query, setQuery] = useState("");
+  const [learnerQuery, setLearnerQuery] = useState("");
+  const [groupQuery, setGroupQuery] = useState("");
   const [groupFilter, setGroupFilter] = useState("all");
   const [learnerSort, setLearnerSort] = useState<LearnerSort>("name-asc");
   const [groupSort, setGroupSort] = useState<GroupSort>("name-asc");
@@ -57,9 +63,6 @@ export function StudentsWorkspace() {
   const [groupEditor, setGroupEditor] = useState<{
     group: LearnerGroup | null;
   } | null>(null);
-  const [historyProfile, setHistoryProfile] = useState<LearnerProfile | null>(
-    null,
-  );
   const [busyLabel, setBusyLabel] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [mutationError, setMutationError] = useState<string | null>(null);
@@ -104,7 +107,8 @@ export function StudentsWorkspace() {
     }
   }, [groupFilter, groups]);
 
-  const normalizedQuery = query.trim().toLocaleLowerCase("ru-RU");
+  const activeQuery = view === "learners" ? learnerQuery : groupQuery;
+  const normalizedQuery = activeQuery.trim().toLocaleLowerCase("ru-RU");
   const learnerEntries = useMemo<LearnerDirectoryEntry[]>(() => {
     const entries = (profiles ?? []).map((profile) => ({
       profile,
@@ -191,8 +195,19 @@ export function StudentsWorkspace() {
 
   function confirmLearnerDelete(profile: LearnerProfile) {
     return window.confirm(
-      `Удалить ученика «${profile.displayName}»? Ученик исчезнет из списка, групп и будущей аудитории курсов. Учебная история и уже назначенные уроки сохранятся.`,
+      `Убрать ученика «${profile.displayName}» из вашего списка? Он исчезнет из ваших групп и будущей аудитории ваших курсов. Учебный профиль и история сохранятся; у других преподавателей ничего не изменится. Вернуть ученика через интерфейс пока нельзя.`,
     );
+  }
+
+  async function retryLoad() {
+    setLoadError(null);
+    try {
+      await reloadDirectory();
+    } catch (caught) {
+      setLoadError(
+        errorMessage(caught, "Не удалось загрузить учеников и группы."),
+      );
+    }
   }
 
   function confirmGroupDelete(group: LearnerGroup) {
@@ -208,7 +223,7 @@ export function StudentsWorkspace() {
     if (!alreadyConfirmed && !confirmLearnerDelete(profile)) return;
     await mutate(
       "Удаляем ученика…",
-      "Ученик удалён. Учебная история сохранена.",
+      "Ученик убран из вашего списка. Учебный профиль и история сохранены.",
       () => deleteLearnerProfile(profile.id),
       () => setLearnerEditor(null),
     );
@@ -226,37 +241,47 @@ export function StudentsWorkspace() {
 
   return (
     <div className="teaching-hub-stack">
+      <WorkspaceTabs
+        idBase={STUDENTS_DIRECTORY_TABS_ID}
+        ariaLabel="Разделы учеников"
+        value={view}
+        onChange={setView}
+        items={[
+          {
+            value: "learners",
+            label: "Ученики",
+            count: profiles?.length ?? 0,
+            icon: GraduationCap,
+          },
+          {
+            value: "groups",
+            label: "Группы",
+            count: groups?.length ?? 0,
+            icon: Users,
+          },
+        ]}
+      />
+
       <section
         className="student-directory-toolbar"
-        aria-label="Управление учениками"
+        aria-label={
+          view === "learners" ? "Управление учениками" : "Управление группами"
+        }
       >
-        <SegmentedControl
-          ariaLabel="Показывать в таблице"
-          value={view}
-          onChange={setView}
-          disabled={!ready || busy}
-          items={[
-            {
-              value: "learners",
-              label: `Ученики · ${profiles?.length ?? 0}`,
-              icon: GraduationCap,
-            },
-            {
-              value: "groups",
-              label: `По группам · ${groups?.length ?? 0}`,
-              icon: Users,
-            },
-          ]}
-        />
-
         <label className="teaching-hub-search student-directory-search">
           <Search className="h-4 w-4" aria-hidden="true" />
-          <span className="sr-only">Найти ученика или группу</span>
+          <span className="sr-only">
+            {view === "learners" ? "Найти ученика" : "Найти группу"}
+          </span>
           <input
-            value={query}
+            value={activeQuery}
             disabled={!ready}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Найти ученика или группу"
+            onChange={(event) =>
+              view === "learners"
+                ? setLearnerQuery(event.target.value)
+                : setGroupQuery(event.target.value)
+            }
+            placeholder={view === "learners" ? "Найти ученика" : "Найти группу"}
           />
         </label>
 
@@ -313,8 +338,12 @@ export function StudentsWorkspace() {
               variant="ghost"
               disabled={busy}
               onClick={() => {
-                setQuery("");
-                setGroupFilter("all");
+                if (view === "learners") {
+                  setLearnerQuery("");
+                  setGroupFilter("all");
+                } else {
+                  setGroupQuery("");
+                }
               }}
             >
               Сбросить фильтры
@@ -323,37 +352,46 @@ export function StudentsWorkspace() {
         </div>
 
         <div className="student-directory-create-actions">
-          <Button
-            type="button"
-            variant="secondary"
-            disabled={!ready || busy}
-            onClick={() => {
-              setMutationError(null);
-              setGroupEditor({ group: null });
-            }}
-          >
-            <Plus className="h-4 w-4" aria-hidden="true" />
-            Новая группа
-          </Button>
-          <Button
-            type="button"
-            disabled={!ready || busy}
-            onClick={() => {
-              setMutationError(null);
-              setLearnerEditor({ profile: null });
-            }}
-          >
-            <UserPlus className="h-4 w-4" aria-hidden="true" />
-            Новый ученик
-          </Button>
+          {view === "learners" ? (
+            <Button
+              type="button"
+              disabled={!ready || busy}
+              onClick={() => {
+                setMutationError(null);
+                setLearnerEditor({ profile: null });
+              }}
+            >
+              <UserPlus className="h-4 w-4" aria-hidden="true" />
+              Новый ученик
+            </Button>
+          ) : (
+            <Button
+              type="button"
+              disabled={!ready || busy}
+              onClick={() => {
+                setMutationError(null);
+                setGroupEditor({ group: null });
+              }}
+            >
+              <Plus className="h-4 w-4" aria-hidden="true" />
+              Новая группа
+            </Button>
+          )}
         </div>
       </section>
 
       {loadError ? (
-        <SurfaceCard className="border border-rose-200">
+        <SurfaceCard className="flex items-center justify-between gap-4 border border-rose-200">
           <p className="text-sm font-medium text-rose-800" role="alert">
             {loadError}
           </p>
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => void retryLoad()}
+          >
+            Повторить
+          </Button>
         </SurfaceCard>
       ) : null}
 
@@ -383,32 +421,45 @@ export function StudentsWorkspace() {
         </p>
       ) : null}
 
-      {ready && view === "learners" ? (
-        <LearnersDirectoryTable
-          entries={learnerEntries}
-          hasFilters={hasFilters}
-          disabled={busy}
-          onHistory={setHistoryProfile}
-          onEdit={(profile) => {
-            setMutationError(null);
-            setLearnerEditor({ profile });
-          }}
-          onDelete={(profile) => void removeLearner(profile)}
-        />
-      ) : null}
+      <div
+        id={workspaceTabPanelId(STUDENTS_DIRECTORY_TABS_ID, "learners")}
+        role="tabpanel"
+        aria-labelledby={workspaceTabId(STUDENTS_DIRECTORY_TABS_ID, "learners")}
+        hidden={view !== "learners"}
+        tabIndex={0}
+      >
+        {ready && view === "learners" ? (
+          <LearnersDirectoryTable
+            entries={learnerEntries}
+            hasFilters={hasFilters}
+            disabled={busy}
+            onOpen={(profile) => {
+              setMutationError(null);
+              setLearnerEditor({ profile });
+            }}
+          />
+        ) : null}
+      </div>
 
-      {ready && view === "groups" ? (
-        <LearnerGroupsDirectoryTable
-          groups={visibleGroups}
-          hasFilters={hasFilters}
-          disabled={busy}
-          onEdit={(group) => {
-            setMutationError(null);
-            setGroupEditor({ group });
-          }}
-          onDelete={(group) => void removeGroup(group)}
-        />
-      ) : null}
+      <div
+        id={workspaceTabPanelId(STUDENTS_DIRECTORY_TABS_ID, "groups")}
+        role="tabpanel"
+        aria-labelledby={workspaceTabId(STUDENTS_DIRECTORY_TABS_ID, "groups")}
+        hidden={view !== "groups"}
+        tabIndex={0}
+      >
+        {ready && view === "groups" ? (
+          <LearnerGroupsDirectoryTable
+            groups={visibleGroups}
+            hasFilters={hasFilters}
+            disabled={busy}
+            onOpen={(group) => {
+              setMutationError(null);
+              setGroupEditor({ group });
+            }}
+          />
+        ) : null}
+      </div>
 
       {learnerEditor && profiles && groups ? (
         <LearnerProfileDialog
@@ -472,13 +523,6 @@ export function StudentsWorkspace() {
               ? () => removeGroup(groupEditor.group!, true)
               : null
           }
-        />
-      ) : null}
-
-      {historyProfile ? (
-        <LearnerHistoryDialog
-          profile={historyProfile}
-          onClose={() => setHistoryProfile(null)}
         />
       ) : null}
     </div>

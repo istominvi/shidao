@@ -2,13 +2,18 @@
 
 **Статус:** current implementation
 **Канонический app host:** `v2.shidao.ru`
-**Последний deployed baseline:** `7021801`
+**Последний подтверждённый deployed baseline:** `9393080`
 
 Teacher-only `/schedule` и `/students` развёрнуты и проверены на release
 `fea7f80`.
 
 Standalone `demo.shidao.ru` и cache recovery старого permanent redirect
 развёрнуты и проверены на release `7021801`.
+
+Current repository canonical learner slice не добавляет новые public routes:
+существующие teacher-only URLs и learner-profile API сохраняются, но доступ к
+canonical profile идёт через `teacher_learner`, а history — через
+`learning_record.recorded_by_account_id`.
 
 ## Host matrix
 
@@ -116,11 +121,13 @@ Profile-required settings:
 от старого parent/teacher profile. Onboarding/profile compatibility остаётся
 переходным identity flow.
 
-Новые `/schedule` и `/students` являются UI-shells, а не восстановлением старых
-domain routes. Они читают только существующий owner-scoped
-`GET /api/v2/courses`; новых schedule/student mutation API нет. Dashboard,
-methodology, старые group/scheduled-lesson, notification и lesson pages удалены
-и не являются compatibility routes.
+`/schedule` и `/students` являются реальными teacher workflows, а не
+восстановлением старых domain routes. Schedule читает и изменяет LessonRun через
+V2 application service. Students читает projection
+`teacher_learner + learner_profile`, управляет teacher-local profiles/groups и
+историей через существующие learner-profile API/RPC. Dashboard, methodology,
+старые group/scheduled-lesson, notification и lesson pages удалены и не являются
+compatibility routes.
 
 ## V2 API namespaces
 
@@ -147,6 +154,18 @@ Course Builder:
 /api/v2/components/[componentId]
 /api/v2/components/[componentId]/reorder
 /api/v2/components/[componentId]/student-screen
+/api/v2/learner-profiles
+/api/v2/learner-profiles/[learnerProfileId]
+/api/v2/learner-profiles/[learnerProfileId]/history
+/api/v2/learner-groups
+/api/v2/learner-groups/[learnerGroupId]
+/api/v2/lesson-runs
+/api/v2/lesson-runs/[lessonRunId]
+/api/v2/lesson-runs/[lessonRunId]/{start,complete,cancel}
+/api/v2/courses/[courseId]/audience
+/api/v2/courses/[courseId]/history
+/api/v2/lessons/[lessonId]/runs
+/api/v2/lessons/[lessonId]/history
 ```
 
 ## Request/data flow
@@ -156,7 +175,7 @@ browser UI
 → same-origin Next.js route handler
 → encrypted app session
 → short-lived Supabase user access token
-→ CourseBuilderApplicationService
+→ CourseBuilderApplicationService | LessonRunsApplicationService
 → repository / Storage adapter
 → Supabase Data/Storage API
 → RLS + ownership checks
@@ -176,10 +195,20 @@ Serialized Student Screen assignment/reorder/delete RPC дополнительн
 - Lesson, Components, Slides и attachments наследуют Course ownership.
 - Teacher-only `/schedule` и `/students` дополнительно проходят server layout
   guard по active teacher profile до render client workspace.
-- Данные Course в этих shells приходят через тот же owner-scoped
-  `/api/v2/courses`; выбранная дата Schedule остаётся локальным UI state.
+- Canonical `learner_profile` не имеет teacher owner. Текущий teacher видит его
+  только через собственную `teacher_learner` relation; локальное имя и archive
+  state принадлежат этой relation.
+- Group membership и direct Course audience принимают только profile с активной
+  relation owner Account; другой teacher не может назначить canonical ID без
+  своей relation.
+- `LearningRecord` history текущего teacher ограничена
+  `recorded_by_account_id = current_account_id()`.
 - `/students` не обращается к transitional `student/class/class_student` и не
   выдаёт login compatibility identity за LearnerProfile/Group.
+- Nullable `learner_profile.account_id` не создаёт learner session, route access
+  или право читать teacher comments/history; linked Account может выбрать
+  только собственную canonical profile row. Claim/invitation/observer flows ещё
+  не реализованы.
 - Learner preview сейчас является owner-only preview, а не публичным enrollment
   endpoint.
 - Student Screen response создаётся server-side и физически исключает
@@ -187,14 +216,17 @@ Serialized Student Screen assignment/reorder/delete RPC дополнительн
   ссылается learner-visible Component.
 - MCP использует тот же пользовательский JWT и application service.
 
+Полный identity/access contract находится в
+[`docs/architecture/learner-identity-access-model.md`](./architecture/learner-identity-access-model.md).
+
 ## CSRF and session revocation
 
-Global middleware выполняет Origin/Sec-Fetch-Site guard до route handler и
-использует `NEXT_PUBLIC_APP_URL=https://v2.shidao.ru` как configured app origin;
-без него применяется request Host/X-Forwarded-Host fallback. Regression test
-отклоняет unsafe request с Origin `shidao.ru` к `v2.shidao.ru`. На demo host
-unsafe methods блокируются отдельной read-only policy до CSRF/application
-routes. Полный production host allowlist остаётся отдельным P0 hardening debt.
+Global middleware выполняет Origin/Sec-Fetch-Site guard до route handler, но
+текущая configured-origin policy всё ещё допускает landing host как Origin для
+unsafe V2 requests. Строгая app-host boundary и cross-subdomain regression test
+остаются P0 hardening debt. На demo host unsafe methods блокируются отдельной
+read-only policy до CSRF/application routes; полный production host allowlist
+тоже ещё не реализован.
 
 Encrypted app sessions содержат issue time и version:
 

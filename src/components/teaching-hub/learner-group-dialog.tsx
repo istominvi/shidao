@@ -92,7 +92,7 @@ export function LearnerGroupDialog({
         <label>
           <span className="field-label">Название группы</span>
           <input
-            autoFocus
+            data-dialog-initial-focus
             required
             minLength={1}
             maxLength={160}

@@ -1,9 +1,15 @@
 "use client";
 
-import { LoaderCircle, Save, Trash2, UserPlus } from "lucide-react";
+import { History, LoaderCircle, Save, Trash2, UserPlus } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { LearnerHistoryPanel } from "@/components/lesson-runs/learner-history-dialog";
 import { Button } from "@/components/ui/button";
 import { DialogShell } from "@/components/ui/dialog-shell";
+import {
+  WorkspaceTabs,
+  workspaceTabId,
+  workspaceTabPanelId,
+} from "@/components/ui/workspace-tabs";
 import type {
   LearnerGroup,
   LearnerProfile,
@@ -14,6 +20,10 @@ function sameIds(left: string[], right: string[]) {
   const rightSet = new Set(right);
   return left.every((id) => rightSet.has(id));
 }
+
+type LearnerDialogSurface = "profile" | "history";
+
+const LEARNER_DIALOG_TABS_ID = "learner-dialog";
 
 export function LearnerProfileDialog({
   profile,
@@ -46,6 +56,7 @@ export function LearnerProfileDialog({
   const [displayName, setDisplayName] = useState(profile?.displayName ?? "");
   const [selectedGroupIds, setSelectedGroupIds] = useState(initialGroupIds);
   const [groupQuery, setGroupQuery] = useState("");
+  const [surface, setSurface] = useState<LearnerDialogSurface>("profile");
   const normalizedGroupQuery = groupQuery.trim().toLocaleLowerCase("ru-RU");
   const visibleGroups = groups.filter((group) =>
     group.name.toLocaleLowerCase("ru-RU").includes(normalizedGroupQuery),
@@ -82,14 +93,41 @@ export function LearnerProfileDialog({
       title={profile ? "Редактировать ученика" : "Новый ученик"}
       description={
         profile
-          ? "Измените имя или группы ученика. Учебная история останется связана с этим профилем."
+          ? "Локальное имя, группы и история, доступные вам как преподавателю. Другие пользователи не увидят это имя, а данные других преподавателей здесь не показываются."
           : "Создайте ученика и при необходимости сразу добавьте его в несколько групп."
       }
       onClose={requestClose}
       panelClassName="max-w-2xl"
     >
+      {profile ? (
+        <WorkspaceTabs
+          idBase={LEARNER_DIALOG_TABS_ID}
+          ariaLabel="Разделы ученика"
+          value={surface}
+          onChange={setSurface}
+          className="student-directory-dialog-tabs"
+          items={[
+            { value: "profile", label: "Профиль" },
+            { value: "history", label: "История", icon: History },
+          ]}
+        />
+      ) : null}
+
       <form
         className="grid gap-5"
+        id={
+          profile
+            ? workspaceTabPanelId(LEARNER_DIALOG_TABS_ID, "profile")
+            : undefined
+        }
+        role={profile ? "tabpanel" : undefined}
+        aria-labelledby={
+          profile
+            ? workspaceTabId(LEARNER_DIALOG_TABS_ID, "profile")
+            : undefined
+        }
+        hidden={Boolean(profile && surface !== "profile")}
+        tabIndex={profile ? 0 : undefined}
         onSubmit={(event) => {
           event.preventDefault();
           const name = displayName.trim();
@@ -97,9 +135,9 @@ export function LearnerProfileDialog({
         }}
       >
         <label>
-          <span className="field-label">Имя ученика</span>
+          <span className="field-label">Имя в моём списке</span>
           <input
-            autoFocus
+            data-dialog-initial-focus
             required
             minLength={1}
             maxLength={160}
@@ -169,7 +207,7 @@ export function LearnerProfileDialog({
               onClick={() => {
                 if (
                   window.confirm(
-                    `Удалить ученика «${profile.displayName}»? Ученик исчезнет из списка, групп и будущей аудитории курсов. Учебная история и уже назначенные уроки сохранятся.`,
+                    `Убрать ученика «${profile.displayName}» из вашего списка? Он исчезнет из ваших групп и будущей аудитории ваших курсов. Учебный профиль и история сохранятся; у других преподавателей ничего не изменится. Вернуть ученика через интерфейс пока нельзя.`,
                   )
                 ) {
                   void onDelete();
@@ -177,7 +215,7 @@ export function LearnerProfileDialog({
               }}
             >
               <Trash2 className="h-4 w-4" aria-hidden="true" />
-              Удалить
+              Убрать из списка
             </Button>
           ) : null}
           <Button
@@ -203,6 +241,20 @@ export function LearnerProfileDialog({
           </Button>
         </div>
       </form>
+
+      {profile ? (
+        <div
+          id={workspaceTabPanelId(LEARNER_DIALOG_TABS_ID, "history")}
+          role="tabpanel"
+          aria-labelledby={workspaceTabId(LEARNER_DIALOG_TABS_ID, "history")}
+          hidden={surface !== "history"}
+          tabIndex={0}
+        >
+          {surface === "history" ? (
+            <LearnerHistoryPanel profile={profile} />
+          ) : null}
+        </div>
+      ) : null}
     </DialogShell>
   );
 }

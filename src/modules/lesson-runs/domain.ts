@@ -3,12 +3,14 @@ import type { CourseBuilderActor } from "@/modules/course-builder/domain";
 export type { CourseBuilderActor as LessonRunsActor };
 
 /**
- * A neutral learner identity owned by the same Account as its Courses.
- * It intentionally does not reuse the legacy student/class tables.
+ * The current teacher's directory projection of one canonical learner
+ * identity. `id` is the stable `learner_profile.id`; the name and archive
+ * state belong to the `teacher_learner` relation and may therefore differ for
+ * another teacher without splitting the learner's history.
  */
 export type LearnerProfile = {
   id: string;
-  ownerAccountId: string;
+  teacherAccountId: string;
   displayName: string;
   archivedAt: string | null;
   createdAt: string;
@@ -48,6 +50,7 @@ export type CourseAudience = {
 export type LearningRecord = {
   id: string;
   learnerProfileId: string;
+  recordedByAccountId: string;
   learnerDisplayName: string;
   lessonRunId: string | null;
   sourceCourseId: string | null;

@@ -46,6 +46,7 @@ SHIDAO_SCHEMA_SIGNATURE="$({
          and to_regclass('public.lesson_component') is not null
          and to_regclass('public.lesson_student_slide') is not null
          and to_regclass('public.learner_profile') is not null
+         and to_regclass('public.teacher_learner') is not null
          and to_regclass('public.course_learner') is not null
          and to_regclass('public.learner_group') is not null
          and to_regclass('public.learner_group_member') is not null
@@ -85,9 +86,25 @@ SHIDAO_SCHEMA_SIGNATURE="$({
            from information_schema.columns
            where table_schema = 'public'
              and table_name = 'learner_profile'
-             and column_name = 'archived_at'
-             and data_type = 'timestamp with time zone'
+             and column_name = 'account_id'
+             and data_type = 'uuid'
              and is_nullable = 'YES'
+         )
+         and not exists (
+           select 1
+           from information_schema.columns
+           where table_schema = 'public'
+             and table_name = 'learner_profile'
+             and column_name in ('owner_account_id', 'archived_at')
+         )
+         and exists (
+           select 1
+           from information_schema.columns
+           where table_schema = 'public'
+             and table_name = 'learning_record'
+             and column_name = 'recorded_by_account_id'
+             and data_type = 'uuid'
+             and is_nullable = 'NO'
          )
          and not exists (
            select 1
@@ -105,20 +122,37 @@ SHIDAO_SCHEMA_SIGNATURE="$({
          and not has_table_privilege(
            'authenticated',
            'public.learner_profile',
-           'DELETE'
+           'INSERT,UPDATE,DELETE'
+         )
+         and not has_table_privilege(
+           'authenticated',
+           'public.teacher_learner',
+           'INSERT,UPDATE,DELETE'
          )
          and pg_get_functiondef(
            'public.schedule_lesson_run(uuid,timestamptz,integer,uuid[],uuid)'::regprocedure
          ) like '%lesson_run_changed%'
          and pg_get_functiondef(
            'public.schedule_lesson_run(uuid,timestamptz,integer,uuid[],uuid)'::regprocedure
-         ) like '%public.course_learner_group%'
+         ) like '%public.teacher_learner%'
+         and pg_get_functiondef(
+           'public.schedule_lesson_run(uuid,timestamptz,integer,uuid[],uuid)'::regprocedure
+         ) like '%recorded_by_account_id%'
          and pg_get_functiondef(
            'public.schedule_lesson_run(uuid,timestamptz,integer,uuid[],uuid)'::regprocedure
          ) like '%p_learner_profile_ids is null and v_run.id is not null%'
          and pg_get_functiondef(
            'public.complete_lesson_run(uuid,jsonb,text,timestamptz)'::regprocedure
          ) like '%jsonb_array_length(p_records) = 0%'
+         and pg_get_function_result(
+           'public.create_learner_profile_with_groups(text,uuid[])'::regprocedure
+         ) like '%teacher_learner%'
+         and pg_get_function_result(
+           'public.update_learner_profile_with_groups(uuid,text,uuid[])'::regprocedure
+         ) like '%teacher_learner%'
+         and pg_get_function_result(
+           'public.archive_learner_profile(uuid)'::regprocedure
+         ) like '%teacher_learner%'
         then 'shidao-v2-current'
         else 'schema-mismatch'
       end;
@@ -182,11 +216,16 @@ for required in \
   "course_assets_owner_select" \
   "CREATE TABLE public.lesson_run" \
   "CREATE TABLE public.learning_record" \
+  "CREATE TABLE public.teacher_learner" \
   "CREATE TABLE public.learner_group" \
   "CREATE TABLE public.learner_group_member" \
   "CREATE TABLE public.course_learner_group" \
   "CREATE FUNCTION public.replace_course_audience" \
   "CREATE FUNCTION public.archive_learner_profile" \
+  "CREATE FUNCTION public.detach_archived_teacher_learner_links" \
+  "CREATE FUNCTION public.enforce_course_learner_teacher_relation" \
+  "CREATE FUNCTION public.enforce_learner_group_member_teacher_relation" \
+  "CREATE FUNCTION public.enforce_learning_record_producer_immutable" \
   "CREATE FUNCTION public.schedule_lesson_run" \
   "CREATE FUNCTION public.delete_lesson_with_history"; do
   if ! grep -Fq "${required}" "${TMP_RESULT}"; then

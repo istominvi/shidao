@@ -88,7 +88,7 @@ export function createLessonRunsService(
     return { accountId, course, lesson };
   }
 
-  async function requireOwnedLearner(
+  async function requireTeacherLearner(
     actor: CourseBuilderActor,
     learnerProfileIdValue: string,
   ) {
@@ -96,11 +96,12 @@ export function createLessonRunsService(
       uuidSchema,
       learnerProfileIdValue,
     );
-    const [accountId, learnerProfile] = await Promise.all([
-      requireAccountId(actor),
-      repository.getLearnerProfile(learnerProfileId),
-    ]);
-    if (!learnerProfile || learnerProfile.ownerAccountId !== accountId) {
+    const accountId = await requireAccountId(actor);
+    const learnerProfile = await repository.getLearnerProfile(
+      accountId,
+      learnerProfileId,
+    );
+    if (!learnerProfile || learnerProfile.teacherAccountId !== accountId) {
       throw new CourseBuilderAccessError("Профиль ученика не найден.");
     }
     return { accountId, learnerProfile };
@@ -129,22 +130,20 @@ export function createLessonRunsService(
     lessonRunIdValue: string,
   ) {
     const lessonRunId = parseLessonRunsContract(uuidSchema, lessonRunIdValue);
-    const [accountId, context] = await Promise.all([
-      requireAccountId(actor),
-      repository.getRun(lessonRunId),
-    ]);
+    const accountId = await requireAccountId(actor);
+    const context = await repository.getRun(accountId, lessonRunId);
     if (!context || context.ownerAccountId !== accountId) {
       throw new CourseBuilderAccessError("Занятие не найдено.");
     }
     return context.run;
   }
 
-  async function requireOwnedLearnerIds(
-    ownerAccountId: string,
+  async function requireTeacherLearnerIds(
+    teacherAccountId: string,
     learnerProfileIds: string[],
   ) {
     const ownedIds = new Set(
-      (await repository.listLearnerProfiles(ownerAccountId)).map(
+      (await repository.listLearnerProfiles(teacherAccountId)).map(
         (profile) => profile.id,
       ),
     );
@@ -287,7 +286,7 @@ export function createLessonRunsService(
       learnerProfileId: string,
       rawInput: UpdateLearnerProfileInput | unknown,
     ) {
-      const { accountId, learnerProfile } = await requireOwnedLearner(
+      const { accountId, learnerProfile } = await requireTeacherLearner(
         actor,
         learnerProfileId,
       );
@@ -297,7 +296,7 @@ export function createLessonRunsService(
       );
       await requireOwnedLearnerGroupIds(accountId, input.learnerGroupIds);
       return runMutation(() =>
-        repository.updateLearnerProfile(learnerProfile.id, input),
+        repository.updateLearnerProfile(accountId, learnerProfile.id, input),
       );
     },
 
@@ -305,13 +304,13 @@ export function createLessonRunsService(
       actor: CourseBuilderActor,
       learnerProfileId: string,
     ) {
-      const { learnerProfile } = await requireOwnedLearner(
+      const { accountId, learnerProfile } = await requireTeacherLearner(
         actor,
         learnerProfileId,
       );
       if (learnerProfile.archivedAt) return learnerProfile;
       return runMutation(() =>
-        repository.archiveLearnerProfile(learnerProfile.id),
+        repository.archiveLearnerProfile(accountId, learnerProfile.id),
       );
     },
 
@@ -331,7 +330,7 @@ export function createLessonRunsService(
         createLearnerGroupInputSchema,
         rawInput,
       );
-      await requireOwnedLearnerIds(accountId, input.learnerProfileIds);
+      await requireTeacherLearnerIds(accountId, input.learnerProfileIds);
       return runMutation(() => repository.createLearnerGroup(accountId, input));
     },
 
@@ -348,7 +347,7 @@ export function createLessonRunsService(
         updateLearnerGroupInputSchema,
         rawInput,
       );
-      await requireOwnedLearnerIds(accountId, input.learnerProfileIds);
+      await requireTeacherLearnerIds(accountId, input.learnerProfileIds);
       return runMutation(() =>
         repository.updateLearnerGroup(learnerGroup.id, input),
       );
@@ -366,8 +365,8 @@ export function createLessonRunsService(
     },
 
     async getCourseAudience(actor: CourseBuilderActor, courseId: string) {
-      const { course } = await requireOwnedCourse(actor, courseId);
-      return repository.getCourseAudience(course.id);
+      const { accountId, course } = await requireOwnedCourse(actor, courseId);
+      return repository.getCourseAudience(accountId, course.id);
     },
 
     async replaceCourseAudience(
@@ -381,20 +380,22 @@ export function createLessonRunsService(
         rawInput,
       );
       if ("learnerProfileIds" in input) {
-        await requireOwnedLearnerIds(accountId, input.learnerProfileIds);
+        await requireTeacherLearnerIds(accountId, input.learnerProfileIds);
         return runMutation(() =>
           repository.replaceDirectCourseAudience(
+            accountId,
             course.id,
             input.learnerProfileIds,
           ),
         );
       }
       await Promise.all([
-        requireOwnedLearnerIds(accountId, input.directLearnerProfileIds),
+        requireTeacherLearnerIds(accountId, input.directLearnerProfileIds),
         requireOwnedLearnerGroupIds(accountId, input.learnerGroupIds),
       ]);
       return runMutation(() =>
         repository.replaceCourseAudience(
+          accountId,
           course.id,
           input.directLearnerProfileIds,
           input.learnerGroupIds,
@@ -415,8 +416,8 @@ export function createLessonRunsService(
     },
 
     async listLessonHistory(actor: CourseBuilderActor, lessonId: string) {
-      const { lesson } = await requireOwnedLesson(actor, lessonId);
-      return repository.listLessonHistory(lesson.id, {
+      const { accountId, lesson } = await requireOwnedLesson(actor, lessonId);
+      return repository.listLessonHistory(accountId, lesson.id, {
         limit: LESSON_RUN_HISTORY_HARD_LIMIT,
       });
     },
@@ -426,9 +427,9 @@ export function createLessonRunsService(
       courseId: string,
       options?: CourseHistoryOptions,
     ) {
-      const { course } = await requireOwnedCourse(actor, courseId);
+      const { accountId, course } = await requireOwnedCourse(actor, courseId);
       assertHistoryLimit(options?.limit);
-      return repository.listCourseHistory(course.id, {
+      return repository.listCourseHistory(accountId, course.id, {
         ...options,
         limit: options?.limit ?? LESSON_RUN_HISTORY_HARD_LIMIT,
       });
@@ -439,9 +440,9 @@ export function createLessonRunsService(
       courseId: string,
       options?: LearningRecordHistoryOptions,
     ) {
-      const { course } = await requireOwnedCourse(actor, courseId);
+      const { accountId, course } = await requireOwnedCourse(actor, courseId);
       assertHistoryLimit(options?.limit);
-      return repository.listCourseLearningRecords(course.id, {
+      return repository.listCourseLearningRecords(accountId, course.id, {
         ...options,
         limit: options?.limit ?? LESSON_RUN_HISTORY_HARD_LIMIT,
       });
@@ -452,10 +453,11 @@ export function createLessonRunsService(
       courseId: string,
       options?: LearningRecordHistoryOptions,
     ) {
-      const { course } = await requireOwnedCourse(actor, courseId);
+      const { accountId, course } = await requireOwnedCourse(actor, courseId);
       assertHistoryLimit(options?.limit);
-      const audience = await repository.getCourseAudience(course.id);
+      const audience = await repository.getCourseAudience(accountId, course.id);
       const records = await repository.listLearningRecordsForLearners(
+        accountId,
         audience.effectiveLearners.map((profile) => profile.id),
         {
           ...options,
@@ -469,11 +471,11 @@ export function createLessonRunsService(
       actor: CourseBuilderActor,
       learnerProfileId: string,
     ) {
-      const { learnerProfile } = await requireOwnedLearner(
+      const { accountId, learnerProfile } = await requireTeacherLearner(
         actor,
         learnerProfileId,
       );
-      return repository.listLearnerHistory(learnerProfile.id, {
+      return repository.listLearnerHistory(accountId, learnerProfile.id, {
         limit: LESSON_RUN_HISTORY_HARD_LIMIT,
       });
     },

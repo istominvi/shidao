@@ -98,20 +98,39 @@ test("students manages one learner and group directory with durable history", ()
   assert.match(studentsWorkspaceSource, /createLearnerGroup/);
   assert.match(studentsWorkspaceSource, /updateLearnerGroup/);
   assert.match(studentsWorkspaceSource, /deleteLearnerGroup/);
-  assert.match(studentsWorkspaceSource, /По группам/);
+  assert.match(studentsWorkspaceSource, /<WorkspaceTabs/);
+  assert.match(studentsWorkspaceSource, /label: "Ученики"/);
+  assert.match(studentsWorkspaceSource, /label: "Группы"/);
+  assert.match(studentsWorkspaceSource, /role="tabpanel"/);
+  assert.match(studentsWorkspaceSource, /workspaceTabPanelId/);
   assert.match(studentsWorkspaceSource, /Без группы/);
   assert.match(studentDirectoryTableSource, /<ProductTable/);
   assert.match(studentDirectoryTableSource, /<caption className="sr-only"/);
-  assert.match(studentDirectoryTableSource, /История/);
-  assert.match(studentDirectoryTableSource, /Редактировать/);
-  assert.match(studentDirectoryTableSource, /Удалить/);
+  assert.match(studentDirectoryTableSource, /onOpen/);
+  assert.match(studentDirectoryTableSource, /slice\(0, 2\)/);
+  assert.match(studentDirectoryTableSource, /ещё \{hiddenGroupCount\}/);
+  assert.doesNotMatch(
+    studentDirectoryTableSource,
+    /ProductTableActionCell|Действия|onDelete/,
+  );
   assert.doesNotMatch(studentDirectoryTableSource, /role="button"/);
   assert.match(
     learnerProfileDialogSource,
-    /Учебная история и уже назначенные уроки сохранятся/,
+    /Учебный профиль и история сохранятся/,
   );
+  assert.match(learnerProfileDialogSource, /Имя в моём списке/);
+  assert.match(
+    learnerProfileDialogSource,
+    /Вернуть ученика через интерфейс пока нельзя/,
+  );
+  assert.match(learnerProfileDialogSource, /data-dialog-initial-focus/);
+  assert.match(learnerGroupDialogSource, /data-dialog-initial-focus/);
+  assert.match(studentsWorkspaceSource, />\s*Повторить\s*</);
   assert.match(learnerGroupDialogSource, /Уже назначенные уроки не изменятся/);
-  assert.match(studentsWorkspaceSource, /LearnerHistoryDialog/);
+  assert.match(learnerProfileDialogSource, /LearnerHistoryPanel/);
+  assert.match(learnerProfileDialogSource, /label: "История"/);
+  assert.match(learnerHistorySource, /только завершённые уроки в ваших курсах/);
+  assert.match(learnerHistorySource, /Данные других\s+преподавателей/);
   assert.match(learnerHistorySource, /courseTitleAtTime/);
   assert.match(learnerHistorySource, /lessonTitleAtTime/);
   assert.match(learnerHistorySource, /wasPresent/);

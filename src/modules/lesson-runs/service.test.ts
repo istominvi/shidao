@@ -102,9 +102,22 @@ class InMemoryLessonRunsRepository implements LessonRunsRepository {
     ],
   ]);
   readonly profiles = new Map<string, LearnerProfile>([
-    [ANNA_ID, this.profile(ANNA_ID, ALICE_ACCOUNT_ID, "Анна")],
-    [IVAN_ID, this.profile(IVAN_ID, ALICE_ACCOUNT_ID, "Иван")],
-    [BOB_LEARNER_ID, this.profile(BOB_LEARNER_ID, BOB_ACCOUNT_ID, "Борис")],
+    [
+      this.profileKey(ALICE_ACCOUNT_ID, ANNA_ID),
+      this.profile(ANNA_ID, ALICE_ACCOUNT_ID, "Анна"),
+    ],
+    [
+      this.profileKey(BOB_ACCOUNT_ID, ANNA_ID),
+      this.profile(ANNA_ID, BOB_ACCOUNT_ID, "Anna for Bob"),
+    ],
+    [
+      this.profileKey(ALICE_ACCOUNT_ID, IVAN_ID),
+      this.profile(IVAN_ID, ALICE_ACCOUNT_ID, "Иван"),
+    ],
+    [
+      this.profileKey(BOB_ACCOUNT_ID, BOB_LEARNER_ID),
+      this.profile(BOB_LEARNER_ID, BOB_ACCOUNT_ID, "Борис"),
+    ],
   ]);
   readonly audiences = new Map<string, string[]>();
   readonly courseGroups = new Map<string, string[]>();
@@ -129,17 +142,21 @@ class InMemoryLessonRunsRepository implements LessonRunsRepository {
 
   private profile(
     id: string,
-    ownerAccountId: string,
+    teacherAccountId: string,
     displayName: string,
   ): LearnerProfile {
     return {
       id,
-      ownerAccountId,
+      teacherAccountId,
       displayName,
       archivedAt: null,
       createdAt: NOW,
       updatedAt: NOW,
     };
+  }
+
+  private profileKey(teacherAccountId: string, learnerProfileId: string) {
+    return `${teacherAccountId}:${learnerProfileId}`;
   }
 
   private group(
@@ -153,7 +170,9 @@ class InMemoryLessonRunsRepository implements LessonRunsRepository {
       ownerAccountId,
       name,
       members: learnerProfileIds
-        .map((profileId) => this.profiles.get(profileId))
+        .map((profileId) =>
+          this.profiles.get(this.profileKey(ownerAccountId, profileId)),
+        )
         .filter((profile): profile is LearnerProfile => Boolean(profile)),
       createdAt: NOW,
       updatedAt: NOW,
@@ -165,11 +184,18 @@ class InMemoryLessonRunsRepository implements LessonRunsRepository {
     return uuid(this.sequence);
   }
 
-  private record(runId: string, learnerProfileId: string): LearningRecord {
-    const profile = this.profiles.get(learnerProfileId);
+  private record(
+    runId: string,
+    teacherAccountId: string,
+    learnerProfileId: string,
+  ): LearningRecord {
+    const profile = this.profiles.get(
+      this.profileKey(teacherAccountId, learnerProfileId),
+    );
     return {
       id: this.nextId(),
       learnerProfileId,
+      recordedByAccountId: teacherAccountId,
       learnerDisplayName: profile?.displayName ?? "",
       lessonRunId: runId,
       sourceCourseId: null,
@@ -202,14 +228,17 @@ class InMemoryLessonRunsRepository implements LessonRunsRepository {
     return this.lessons.get(lessonId) ?? null;
   }
 
-  async getLearnerProfile(learnerProfileId: string) {
-    return this.profiles.get(learnerProfileId) ?? null;
+  async getLearnerProfile(teacherAccountId: string, learnerProfileId: string) {
+    return (
+      this.profiles.get(this.profileKey(teacherAccountId, learnerProfileId)) ??
+      null
+    );
   }
 
-  async listLearnerProfiles(ownerAccountId: string) {
+  async listLearnerProfiles(teacherAccountId: string) {
     return [...this.profiles.values()].filter(
       (profile) =>
-        profile.ownerAccountId === ownerAccountId && !profile.archivedAt,
+        profile.teacherAccountId === teacherAccountId && !profile.archivedAt,
     );
   }
 
@@ -222,7 +251,7 @@ class InMemoryLessonRunsRepository implements LessonRunsRepository {
       ownerAccountId,
       input.displayName,
     );
-    this.profiles.set(profile.id, profile);
+    this.profiles.set(this.profileKey(ownerAccountId, profile.id), profile);
     for (const groupId of input.learnerGroupIds) {
       const group = this.groups.get(groupId);
       if (group) group.members.push(profile);
@@ -231,14 +260,17 @@ class InMemoryLessonRunsRepository implements LessonRunsRepository {
   }
 
   async updateLearnerProfile(
+    teacherAccountId: string,
     learnerProfileId: string,
     input: UpdateLearnerProfileInput,
   ) {
-    const current = this.profiles.get(learnerProfileId);
+    const key = this.profileKey(teacherAccountId, learnerProfileId);
+    const current = this.profiles.get(key);
     if (!current) throw new Error("profile not found");
     const profile = { ...current, displayName: input.displayName };
-    this.profiles.set(profile.id, profile);
+    this.profiles.set(key, profile);
     for (const group of this.groups.values()) {
+      if (group.ownerAccountId !== teacherAccountId) continue;
       group.members = group.members.filter(
         (member) => member.id !== profile.id,
       );
@@ -247,17 +279,24 @@ class InMemoryLessonRunsRepository implements LessonRunsRepository {
     return profile;
   }
 
-  async archiveLearnerProfile(learnerProfileId: string) {
-    const current = this.profiles.get(learnerProfileId);
+  async archiveLearnerProfile(
+    teacherAccountId: string,
+    learnerProfileId: string,
+  ) {
+    const key = this.profileKey(teacherAccountId, learnerProfileId);
+    const current = this.profiles.get(key);
     if (!current) throw new Error("profile not found");
     const profile = { ...current, archivedAt: NOW };
-    this.profiles.set(profile.id, profile);
+    this.profiles.set(key, profile);
     for (const group of this.groups.values()) {
+      if (group.ownerAccountId !== teacherAccountId) continue;
       group.members = group.members.filter(
         (member) => member.id !== profile.id,
       );
     }
     for (const [courseId, ids] of this.audiences) {
+      if (this.courses.get(courseId)?.ownerAccountId !== teacherAccountId)
+        continue;
       this.audiences.set(
         courseId,
         ids.filter((id) => id !== profile.id),
@@ -316,9 +355,12 @@ class InMemoryLessonRunsRepository implements LessonRunsRepository {
     }
   }
 
-  async getCourseAudience(courseId: string): Promise<CourseAudience> {
+  async getCourseAudience(
+    teacherAccountId: string,
+    courseId: string,
+  ): Promise<CourseAudience> {
     const directLearners = (this.audiences.get(courseId) ?? [])
-      .map((id) => this.profiles.get(id))
+      .map((id) => this.profiles.get(this.profileKey(teacherAccountId, id)))
       .filter(
         (profile): profile is LearnerProfile =>
           Boolean(profile) && !profile?.archivedAt,
@@ -342,21 +384,23 @@ class InMemoryLessonRunsRepository implements LessonRunsRepository {
   }
 
   async replaceCourseAudience(
+    teacherAccountId: string,
     courseId: string,
     directLearnerProfileIds: string[],
     learnerGroupIds: string[],
   ) {
     this.audiences.set(courseId, [...directLearnerProfileIds]);
     this.courseGroups.set(courseId, [...learnerGroupIds]);
-    return this.getCourseAudience(courseId);
+    return this.getCourseAudience(teacherAccountId, courseId);
   }
 
   async replaceDirectCourseAudience(
+    teacherAccountId: string,
     courseId: string,
     learnerProfileIds: string[],
   ) {
     this.audiences.set(courseId, [...learnerProfileIds]);
-    return this.getCourseAudience(courseId);
+    return this.getCourseAudience(teacherAccountId, courseId);
   }
 
   async listSchedule(ownerAccountId: string, from: string, to: string) {
@@ -371,17 +415,20 @@ class InMemoryLessonRunsRepository implements LessonRunsRepository {
       .map(({ run }) => run);
   }
 
-  async listLessonHistory(lessonId: string) {
+  async listLessonHistory(teacherAccountId: string, lessonId: string) {
     return [...this.runs.values()]
+      .filter(({ ownerAccountId }) => ownerAccountId === teacherAccountId)
       .map(({ run }) => run)
       .filter((run) => run.lessonId === lessonId);
   }
 
   async listCourseHistory(
+    teacherAccountId: string,
     courseId: string,
     options?: { limit?: number; completedOnly?: boolean },
   ) {
     return [...this.runs.values()]
+      .filter(({ ownerAccountId }) => ownerAccountId === teacherAccountId)
       .map(({ run }) => run)
       .filter(
         (run) =>
@@ -392,6 +439,7 @@ class InMemoryLessonRunsRepository implements LessonRunsRepository {
   }
 
   async listCourseLearningRecords(
+    teacherAccountId: string,
     courseId: string,
     options?: { limit?: number },
   ) {
@@ -399,12 +447,15 @@ class InMemoryLessonRunsRepository implements LessonRunsRepository {
       .flatMap(({ run }) => run.records)
       .filter(
         (record) =>
-          record.sourceCourseId === courseId && Boolean(record.occurredAt),
+          record.recordedByAccountId === teacherAccountId &&
+          record.sourceCourseId === courseId &&
+          Boolean(record.occurredAt),
       )
       .slice(0, options?.limit);
   }
 
   async listLearningRecordsForLearners(
+    teacherAccountId: string,
     learnerProfileIds: string[],
     options?: { limit?: number },
   ) {
@@ -412,22 +463,28 @@ class InMemoryLessonRunsRepository implements LessonRunsRepository {
     return [...this.runs.values()]
       .flatMap(({ run }) => run.records)
       .filter(
-        (record) => selected.has(record.learnerProfileId) && record.occurredAt,
+        (record) =>
+          record.recordedByAccountId === teacherAccountId &&
+          selected.has(record.learnerProfileId) &&
+          record.occurredAt,
       )
       .slice(0, options?.limit);
   }
 
-  async listLearnerHistory(learnerProfileId: string) {
+  async listLearnerHistory(teacherAccountId: string, learnerProfileId: string) {
     return [...this.runs.values()].flatMap(({ run }) =>
       run.records.filter(
         (record) =>
-          record.learnerProfileId === learnerProfileId && record.occurredAt,
+          record.recordedByAccountId === teacherAccountId &&
+          record.learnerProfileId === learnerProfileId &&
+          record.occurredAt,
       ),
     );
   }
 
-  async getRun(runId: string) {
-    return this.runs.get(runId) ?? null;
+  async getRun(teacherAccountId: string, runId: string) {
+    const context = this.runs.get(runId);
+    return context?.ownerAccountId === teacherAccountId ? context : null;
   }
 
   async scheduleRun(input: {
@@ -452,9 +509,9 @@ class InMemoryLessonRunsRepository implements LessonRunsRepository {
       input.learnerProfileIds ??
       (current
         ? current.run.records.map((record) => record.learnerProfileId)
-        : (await this.getCourseAudience(course.id)).effectiveLearners.map(
-            (profile) => profile.id,
-          ));
+        : (
+            await this.getCourseAudience(course.ownerAccountId, course.id)
+          ).effectiveLearners.map((profile) => profile.id));
     if (learnerProfileIds.length === 0) {
       throw new CourseBuilderRepositoryError(
         "lesson_run_requires_expected_learner",
@@ -474,7 +531,9 @@ class InMemoryLessonRunsRepository implements LessonRunsRepository {
       endedAt: null,
       cancelledAt: null,
       teacherReport: "",
-      records: learnerProfileIds.map((id) => this.record(runId, id)),
+      records: learnerProfileIds.map((id) =>
+        this.record(runId, course.ownerAccountId, id),
+      ),
       createdAt: current?.run.createdAt ?? NOW,
       updatedAt: NOW,
     };
@@ -572,7 +631,7 @@ test("mixed Course audience deduplicates direct learners and group members", asy
   );
 });
 
-test("learner and group CRUD is owner-scoped and archive removes future audience only", async () => {
+test("learner directory and group CRUD is teacher-scoped and archive removes future audience only", async () => {
   const repository = new InMemoryLessonRunsRepository();
   const service = createLessonRunsService({ repository });
 
@@ -622,6 +681,88 @@ test("learner and group CRUD is owner-scoped and archive removes future audience
       (candidate) => candidate.id === group.id,
     ),
     false,
+  );
+});
+
+test("one canonical learner can keep isolated directory names and history for two teachers", async () => {
+  const repository = new InMemoryLessonRunsRepository();
+  const service = createLessonRunsService({ repository });
+
+  const aliceProfile = await service.updateLearnerProfile(alice, ANNA_ID, {
+    displayName: "Анна Петрова",
+    learnerGroupIds: [],
+  });
+  assert.equal(aliceProfile.teacherAccountId, ALICE_ACCOUNT_ID);
+  assert.equal(
+    (await service.listLearnerProfiles(bob)).find(
+      (profile) => profile.id === ANNA_ID,
+    )?.displayName,
+    "Anna for Bob",
+  );
+
+  await service.replaceCourseAudience(alice, ALICE_COURSE_ID, {
+    learnerProfileIds: [ANNA_ID],
+  });
+  const aliceRun = await service.scheduleRun(alice, ALICE_LESSON_ID, {
+    scheduledAt: "2026-08-08T01:00:00Z",
+  });
+  await service.completeRun(alice, aliceRun.id, {
+    records: [
+      {
+        learnerProfileId: ANNA_ID,
+        wasPresent: true,
+        needsRepeat: false,
+        teacherComment: "Alice-only observation",
+      },
+    ],
+  });
+
+  await service.replaceCourseAudience(bob, BOB_COURSE_ID, {
+    learnerProfileIds: [ANNA_ID],
+  });
+  const bobRun = await service.scheduleRun(bob, BOB_LESSON_ID, {
+    scheduledAt: "2026-08-09T01:00:00Z",
+  });
+  await service.completeRun(bob, bobRun.id, {
+    records: [
+      {
+        learnerProfileId: ANNA_ID,
+        wasPresent: true,
+        needsRepeat: true,
+        teacherComment: "Bob-only observation",
+      },
+    ],
+  });
+
+  const aliceHistory = await service.listLearnerHistory(alice, ANNA_ID);
+  const bobHistory = await service.listLearnerHistory(bob, ANNA_ID);
+  assert.deepEqual(
+    aliceHistory.map((record) => record.teacherComment),
+    ["Alice-only observation"],
+  );
+  assert.deepEqual(
+    bobHistory.map((record) => record.teacherComment),
+    ["Bob-only observation"],
+  );
+  assert.equal(aliceHistory[0]?.recordedByAccountId, ALICE_ACCOUNT_ID);
+  assert.equal(bobHistory[0]?.recordedByAccountId, BOB_ACCOUNT_ID);
+
+  await service.archiveLearnerProfile(alice, ANNA_ID);
+  assert.equal(
+    (await service.listLearnerProfiles(alice)).some(
+      (profile) => profile.id === ANNA_ID,
+    ),
+    false,
+  );
+  assert.equal(
+    (await service.listLearnerProfiles(bob)).some(
+      (profile) => profile.id === ANNA_ID,
+    ),
+    true,
+  );
+  assert.equal(
+    (await service.listLearnerHistory(alice, ANNA_ID))[0]?.teacherComment,
+    "Alice-only observation",
   );
 });
 

@@ -10,7 +10,7 @@ export default function StudentsPage() {
         <AppPageHeader
           className="course-index-page-header teaching-hub-page-header"
           title="Ученики"
-          description="Все ученики и группы, с которыми вы работаете. Здесь хранится индивидуальная история обучения."
+          description="Ученики и группы, с которыми вы работаете. История показана только в рамках ваших курсов."
         />
         <StudentsWorkspace />
       </div>

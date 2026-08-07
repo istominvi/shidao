@@ -1,7 +1,7 @@
 # Правила изменений базы ShiDao
 
 **Статус:** обязательная политика для всех новых DB changes
-**Текущий schema head:** `20260806220726_learner_groups_mixed_course_audience.sql`
+**Текущий schema head:** `20260807033034_canonical_learner_profile.sql`
 
 ## 1. Источники истины
 

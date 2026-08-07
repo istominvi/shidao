@@ -1,11 +1,9 @@
 "use client";
 
-import { History, Pencil, Trash2, Users } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Users } from "lucide-react";
 import { Chip } from "@/components/ui/chip";
 import {
   ProductTable,
-  ProductTableActionCell,
   ProductTableBody,
   ProductTableCell,
   ProductTableHead,
@@ -47,7 +45,7 @@ function EmptyTableRow({ message }: { message: string }) {
   return (
     <ProductTableRow className="hover:bg-transparent">
       <ProductTableCell
-        colSpan={3}
+        colSpan={2}
         className="h-28 text-center text-neutral-500"
       >
         {message}
@@ -60,16 +58,12 @@ export function LearnersDirectoryTable({
   entries,
   hasFilters,
   disabled,
-  onHistory,
-  onEdit,
-  onDelete,
+  onOpen,
 }: {
   entries: LearnerDirectoryEntry[];
   hasFilters: boolean;
   disabled: boolean;
-  onHistory: (profile: LearnerProfile) => void;
-  onEdit: (profile: LearnerProfile) => void;
-  onDelete: (profile: LearnerProfile) => void;
+  onOpen: (profile: LearnerProfile) => void;
 }) {
   return (
     <div className="student-directory-table-wrap">
@@ -77,13 +71,10 @@ export function LearnersDirectoryTable({
         <caption className="sr-only">Ученики и их группы</caption>
         <ProductTableHead>
           <ProductTableHeaderRow>
-            <ProductTableHeaderCell className="w-[34%]">
+            <ProductTableHeaderCell className="w-[42%]">
               Ученик
             </ProductTableHeaderCell>
             <ProductTableHeaderCell>Группы</ProductTableHeaderCell>
-            <ProductTableHeaderCell className="w-[22%] text-right">
-              Действия
-            </ProductTableHeaderCell>
           </ProductTableHeaderRow>
         </ProductTableHead>
         <ProductTableBody>
@@ -92,71 +83,71 @@ export function LearnersDirectoryTable({
               message={hasFilters ? "Ничего не найдено" : "Учеников пока нет"}
             />
           ) : (
-            entries.map(({ profile, groups }) => (
-              <ProductTableRow key={profile.id}>
-                <ProductTablePrimaryCell>
-                  <span className="student-directory-person">
-                    <span
-                      className="teaching-learner-avatar"
-                      aria-hidden="true"
-                    >
-                      {initials(profile.displayName)}
-                    </span>
-                    <strong>{profile.displayName}</strong>
-                  </span>
-                </ProductTablePrimaryCell>
-                <ProductTableCell>
-                  {groups.length > 0 ? (
-                    <span className="student-directory-chips">
-                      {groups.map((group) => (
-                        <Chip key={group.id} tone="sky">
-                          {group.name}
-                        </Chip>
-                      ))}
-                    </span>
-                  ) : (
-                    <span className="student-directory-muted">Без группы</span>
-                  )}
-                </ProductTableCell>
-                <ProductTableActionCell>
-                  <span className="student-directory-actions">
-                    <Button
+            entries.map(({ profile, groups }) => {
+              const orderedGroups = [...groups].sort((left, right) =>
+                left.name.localeCompare(right.name, "ru"),
+              );
+              const visibleGroups = orderedGroups.slice(0, 2);
+              const hiddenGroupCount =
+                orderedGroups.length - visibleGroups.length;
+
+              return (
+                <ProductTableRow
+                  key={profile.id}
+                  className="student-directory-clickable-row"
+                  onClick={() => {
+                    if (!disabled) onOpen(profile);
+                  }}
+                >
+                  <ProductTablePrimaryCell>
+                    <button
                       type="button"
-                      variant="ghost"
-                      className="student-directory-action"
+                      className="student-directory-person student-directory-row-trigger"
                       disabled={disabled}
-                      aria-label={`История ученика ${profile.displayName}`}
-                      onClick={() => onHistory(profile)}
+                      aria-label={`Профиль ученика ${profile.displayName}`}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onOpen(profile);
+                      }}
                     >
-                      <History className="h-4 w-4" aria-hidden="true" />
-                      История
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      className="student-directory-action"
-                      disabled={disabled}
-                      aria-label={`Редактировать ученика ${profile.displayName}`}
-                      onClick={() => onEdit(profile)}
-                    >
-                      <Pencil className="h-4 w-4" aria-hidden="true" />
-                      Редактировать
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      className="student-directory-action product-btn-danger"
-                      disabled={disabled}
-                      aria-label={`Удалить ученика ${profile.displayName}`}
-                      onClick={() => onDelete(profile)}
-                    >
-                      <Trash2 className="h-4 w-4" aria-hidden="true" />
-                      Удалить
-                    </Button>
-                  </span>
-                </ProductTableActionCell>
-              </ProductTableRow>
-            ))
+                      <span
+                        className="teaching-learner-avatar"
+                        aria-hidden="true"
+                      >
+                        {initials(profile.displayName)}
+                      </span>
+                      <strong>{profile.displayName}</strong>
+                    </button>
+                  </ProductTablePrimaryCell>
+                  <ProductTableCell>
+                    {groups.length > 0 ? (
+                      <span
+                        className="student-directory-chips"
+                        title={orderedGroups
+                          .map((group) => group.name)
+                          .join(", ")}
+                        aria-label={`Группы: ${orderedGroups
+                          .map((group) => group.name)
+                          .join(", ")}`}
+                      >
+                        {visibleGroups.map((group) => (
+                          <Chip key={group.id} tone="sky">
+                            {group.name}
+                          </Chip>
+                        ))}
+                        {hiddenGroupCount > 0 ? (
+                          <Chip tone="neutral">ещё {hiddenGroupCount}</Chip>
+                        ) : null}
+                      </span>
+                    ) : (
+                      <span className="student-directory-muted">
+                        Без группы
+                      </span>
+                    )}
+                  </ProductTableCell>
+                </ProductTableRow>
+              );
+            })
           )}
         </ProductTableBody>
       </ProductTable>
@@ -168,14 +159,12 @@ export function LearnerGroupsDirectoryTable({
   groups,
   hasFilters,
   disabled,
-  onEdit,
-  onDelete,
+  onOpen,
 }: {
   groups: LearnerGroup[];
   hasFilters: boolean;
   disabled: boolean;
-  onEdit: (group: LearnerGroup) => void;
-  onDelete: (group: LearnerGroup) => void;
+  onOpen: (group: LearnerGroup) => void;
 }) {
   return (
     <div className="student-directory-table-wrap">
@@ -183,13 +172,10 @@ export function LearnerGroupsDirectoryTable({
         <caption className="sr-only">Группы учеников</caption>
         <ProductTableHead>
           <ProductTableHeaderRow>
-            <ProductTableHeaderCell className="w-[34%]">
+            <ProductTableHeaderCell className="w-[42%]">
               Группа
             </ProductTableHeaderCell>
             <ProductTableHeaderCell>Ученики</ProductTableHeaderCell>
-            <ProductTableHeaderCell className="w-[22%] text-right">
-              Действия
-            </ProductTableHeaderCell>
           </ProductTableHeaderRow>
         </ProductTableHead>
         <ProductTableBody>
@@ -207,9 +193,24 @@ export function LearnerGroupsDirectoryTable({
                 .map((member) => member.displayName)
                 .join(", ");
               return (
-                <ProductTableRow key={group.id}>
+                <ProductTableRow
+                  key={group.id}
+                  className="student-directory-clickable-row"
+                  onClick={() => {
+                    if (!disabled) onOpen(group);
+                  }}
+                >
                   <ProductTablePrimaryCell>
-                    <span className="student-directory-person">
+                    <button
+                      type="button"
+                      className="student-directory-person student-directory-row-trigger"
+                      disabled={disabled}
+                      aria-label={`Группа ${group.name}`}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onOpen(group);
+                      }}
+                    >
                       <span
                         className="student-directory-group-icon"
                         aria-hidden="true"
@@ -217,7 +218,7 @@ export function LearnerGroupsDirectoryTable({
                         <Users className="h-4 w-4" />
                       </span>
                       <strong>{group.name}</strong>
-                    </span>
+                    </button>
                   </ProductTablePrimaryCell>
                   <ProductTableCell>
                     <span className="student-directory-members">
@@ -234,32 +235,6 @@ export function LearnerGroupsDirectoryTable({
                       )}
                     </span>
                   </ProductTableCell>
-                  <ProductTableActionCell>
-                    <span className="student-directory-actions">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        className="student-directory-action"
-                        disabled={disabled}
-                        aria-label={`Редактировать группу ${group.name}`}
-                        onClick={() => onEdit(group)}
-                      >
-                        <Pencil className="h-4 w-4" aria-hidden="true" />
-                        Редактировать
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        className="student-directory-action product-btn-danger"
-                        disabled={disabled}
-                        aria-label={`Удалить группу ${group.name}`}
-                        onClick={() => onDelete(group)}
-                      >
-                        <Trash2 className="h-4 w-4" aria-hidden="true" />
-                        Удалить
-                      </Button>
-                    </span>
-                  </ProductTableActionCell>
                 </ProductTableRow>
               );
             })

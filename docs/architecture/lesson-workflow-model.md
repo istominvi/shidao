@@ -14,8 +14,10 @@ Course/Lesson/assistant surfaces развёрнуты на `v2.shidao.ru`; runti
 подтвердили `google/gemini-2.5-flash-lite`. В current repository реализованы
 LearnerProfile, reusable LearnerGroup, смешанная Course audience, LessonRun и
 LearningRecord. Базовый LessonRun release `fa91371` и group/audience release
-`9393080` развёрнуты и проверены. Homework и live Student Screen sync остаются
-будущими срезами.
+`9393080` развёрнуты и проверены. Current repository дополнительно разделяет
+canonical LearnerProfile и teacher-local `teacher_learner`, а provenance
+LearningRecord фиксирует `recorded_by_account_id`. Homework, account claim и
+live Student Screen sync остаются будущими срезами.
 
 ## Product decision
 
@@ -23,7 +25,8 @@ LearningRecord. Базовый LessonRun release `fa91371` и group/audience rel
 
 ```text
 Account
-├── LearnerProfile 0..N
+├── claimed LearnerProfile 0..1 (optional; claim flow later)
+├── TeacherLearner 0..N → LearnerProfile
 ├── LearnerGroup 0..N → LearnerProfile 0..N
 └── Course
     ├── audience sources
@@ -36,7 +39,7 @@ Account
         ├── Student Screen projection
         │   └── ordered Slides 1..N → component references
         └── LessonRun 0..N
-            └── LearningRecord 0..N → LearnerProfile
+            └── LearningRecord 0..N → LearnerProfile + recorded-by Account
 ```
 
 `Lesson` непосредственно владеет одним упорядоченным списком компонентов.
@@ -62,8 +65,13 @@ Lesson остаётся одной сущностью содержания и т
 - **Lesson / Урок** — редактируемый документ внутри Course. Название обязательно
   и хранится в самой Lesson; комментарий преподавателя хранится в `summary`.
   Эту же Lesson можно назначать и проводить многократно.
-- **LearnerProfile / Учебный профиль** — нейтральная Account-owned identity,
-  на которой накапливается индивидуальная история; не legacy Student.
+- **LearnerProfile / Учебный профиль** — canonical identity, на которой
+  накапливается индивидуальная история; она не принадлежит преподавателю и не
+  является legacy Student. Nullable unique `account_id` предназначен для
+  будущего claim, но current slice не реализует linking/login.
+- **TeacherLearner / Ученик преподавателя** — связь Account преподавателя с
+  LearnerProfile, содержащая локальное имя и archive state только в его
+  справочнике.
 - **LearnerGroup / Группа учеников** — Account-owned именованный набор уже
   существующих LearnerProfile. Профиль может состоять в нескольких группах.
 - **Course audience / Аудитория курса** — два независимых набора источников:
@@ -72,7 +80,8 @@ Lesson остаётся одной сущностью содержания и т
 - **LessonRun / Проведение урока** — одно назначение той же Lesson с
   `scheduled/started/ended/cancelled` timestamps и общим teacher report.
 - **LearningRecord / Учебная запись** — ожидаемый участник Run до завершения и
-  его компактный индивидуальный результат после завершения.
+  его компактный индивидуальный результат после завершения; recorder Account
+  сохраняется явно и определяет текущую teacher-history boundary.
 - **Lesson Component / Компонент урока** — элемент единого ordered list Lesson.
 - **Student Screen Slide / Слайд экрана ученика** — упорядоченная
   группа соседних по плану learner-visible компонентов; не является
@@ -145,6 +154,7 @@ lesson_run
 
 learning_record
 - learner_profile_id
+- recorded_by_account_id
 - lesson_run_id | source_course_id | source_lesson_id
 - occurred_at
 - was_present | needs_repeat
@@ -156,7 +166,11 @@ learning_record
 
 ```text
 learner_profile
-- owner_account_id | display_name | archived_at
+- account_id (nullable unique) | display_name
+
+teacher_learner
+- teacher_account_id | learner_profile_id
+- display_name | archived_at
 
 learner_group
 - owner_account_id | name
@@ -173,7 +187,9 @@ course_learner_group
 
 Группа не копирует LearnerProfile и не становится runtime-участником. Источник
 аудитории не записывается в LearningRecord: конкретный состав открытого Run уже
-зафиксирован его draft LearningRecords.
+зафиксирован его draft LearningRecords. При этом recorder не выводится из
+mutable Course/profile links: `recorded_by_account_id` записывается при
+scheduling.
 
 Инварианты:
 
@@ -324,15 +340,21 @@ Visual contract Course routes не меняет эту навигационну�
 ## Teaching hub navigation boundary
 
 Current repository развивает teacher-only `/schedule` и `/students`, впервые
-добавленные как shells в `fea7f80`, в реальный owner-scoped workflow:
+добавленные как shells в `fea7f80`, в реальный teacher-scoped workflow:
 
 - server layout допускает только active teacher profile; Parent и transitional
   Student перенаправляются в `/courses`;
 - `/schedule` проецирует LessonRun выбранного дня; отдельной таблицы Schedule
   event нет;
-- `/students` является единым справочником LearnerProfile и LearnerGroup:
-  поиск, фильтр, сортировка, режим группировки и CRUD не создают второй тип
-  ученика;
+- `/students` является единым справочником TeacherLearner/LearnerProfile и
+  LearnerGroup: вкладки «Ученики / Группы», поиск, фильтр по группе, сортировка
+  и управление relation не создают второй тип ученика; строка ученика показывает
+  до двух групп и «ещё N», а имя и archive state принадлежат relation конкретного
+  преподавателя; ученика можно создать, изменить и убрать из списка, а для групп
+  доступен CRUD;
+- клик по строке открывает dialog «Профиль / История»; membership допускает
+  несколько групп, а history panel читает только LearningRecord, записанные
+  текущим преподавателем;
 - Course выбирает группы и отдельных учеников независимо; пересечения
   отображаются и назначаются один раз;
 - назначить/перенести Lesson можно из её строки или header; прошедшее назначение
@@ -342,7 +364,9 @@ Current repository развивает teacher-only `/schedule` и `/students`, �
   по умолчанию; повтор допускает subset Course audience;
 - старые `student`, `class` и `class_student` не используются как источник
   новой learning identity;
-- Guardian, invitation/claim и learner login этот slice не добавляет.
+- `learner_profile.account_id` уже является nullable unique точкой будущего
+  claim, но Guardian, invitation/claim, merge и learner login этот slice не
+  добавляет.
 
 ## Scheduling, completion and deletion
 
@@ -370,10 +394,13 @@ Direct/group overlap устраняется до создания LearningRecord
 этот состав, а явный reschedule разрешает текущую аудиторию плюс уже
 зафиксированных участников данного Run.
 
-Product delete LearnerProfile является soft archive: direct Course links и
-group memberships удаляются, но профиль, finalized LearningRecords и draft
-records уже назначенных Runs сохраняются. Удаление LearnerGroup физическое и
-удаляет только membership/Course links, не учеников и не историю.
+Product delete ученика является soft archive его `teacher_learner` relation:
+direct Course links и group memberships этого преподавателя удаляются, но
+canonical LearnerProfile, finalized LearningRecords и draft records уже
+назначенных Runs сохраняются. Он не архивирует identity глобально. Удаление
+LearnerGroup физическое и удаляет только membership/Course links, не учеников и
+не историю. Active `/students` скрывает archived relation; archive list/restore
+в current UI/API отсутствуют.
 
 Полного snapshot Lesson нет. После удаления Lesson её Components, Slides, Runs
 и незавершённые LearningRecords удаляются. Завершённые LearningRecords остаются
@@ -448,8 +475,8 @@ lesson.reorder_component
 выбранной Lesson и сохраняет Slide invariants.
 
 Scheduling/history web API использует отдельный `LessonRunsApplicationService`
-и owner-scoped repository. Он предоставляет LearnerProfile, LearnerGroup,
-mixed Course audience,
+и teacher-scoped repository. Он предоставляет TeacherLearner directory
+projection, LearnerGroup, mixed Course audience,
 schedule/reschedule/start/complete/cancel и Lesson/Course/Profile history.
 Mutations выполняются узкими authenticated RPC; MCP остаётся Course authoring
 adapter и не получает параллельный доступ к таблицам.
@@ -481,11 +508,15 @@ Implementation map:
   `src/components/teaching-hub/`;
 - scheduling API: `src/app/api/v2/lesson-runs/`, `learner-profiles/` и
   `learner-groups/`, Course/Lesson `audience|history|runs` routes;
+- canonical learner identity/access contract:
+  `docs/architecture/learner-identity-access-model.md`;
 - current schema: `supabase/schema/current-schema.sql`;
 - Slide migration: `20260804044955_add_lesson_student_slides.sql`;
 - LessonRun migration: `20260806190044_lesson_runs_learning_records.sql`.
 - Groups/mixed audience migration:
   `20260806220726_learner_groups_mixed_course_audience.sql`.
+- Canonical learner identity migration:
+  `20260807033034_canonical_learner_profile.sql`.
 
 ## AI boundary
 
@@ -508,10 +539,11 @@ Assistant является отдельным read-only ephemeral flow. Он м�
 не утверждает, что изменил данные. Dialog history хранится только в React state
 и не переживает close/reload.
 
-Lesson planning и Assistant получают выбранные direct learners, названия и
-состав групп, дедуплицированную effective audience, до 8 завершённых Runs
-текущего Course и до 40 последних финальных LearningRecords этих учеников по
-всем их курсам через application service. Технические IDs не передаются;
+Lesson planning и Assistant получают выбранные direct learners, teacher-local
+названия и состав групп, дедуплицированную effective audience, до 8 завершённых
+Runs текущего Course и до 40 последних финальных LearningRecords, записанных
+текущим преподавателем об этих учениках по его курсам. Canonical identity не
+открывает AI чужие teacher records. Технические IDs не передаются;
 индивидуальный context ограничен attendance, repeat и teacher comment. Audience
 и история входят в Lesson preview fingerprint, поэтому изменение membership
 после preview делает Apply stale. Автоматических subject metrics пока нет.
@@ -579,7 +611,9 @@ application services и MCP не импортируют demo fixtures; все н
 - persisted homework editor;
 - live Student Screen sync, realtime presence и runtime cursor;
 - automatic metrics/progress beyond attendance, repeat and comments;
-- Guardian/invitation and learner-facing access;
+- account claim/invitation, duplicate-profile merge, Guardian/observer и
+  learner-facing access;
+- cross-provider history projection или AI context без явного subject grant;
 - drag-and-drop, если надёжные кнопки «выше/ниже» уже обеспечивают reorder;
 - внешняя публикация MCP;
 - compatibility layer для Step/Methodology не планируется;

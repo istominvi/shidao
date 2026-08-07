@@ -38,9 +38,9 @@ type LessonRow = {
   title: string;
 };
 
-type LearnerProfileRow = {
-  id: string;
-  owner_account_id: string;
+type TeacherLearnerRow = {
+  teacher_account_id: string;
+  learner_profile_id: string;
   display_name: string;
   archived_at: string | null;
   created_at: string;
@@ -86,6 +86,7 @@ type LessonRunRow = {
 type LearningRecordRow = {
   id: string;
   learner_profile_id: string;
+  recorded_by_account_id: string;
   lesson_run_id: string | null;
   source_course_id: string | null;
   source_lesson_id: string | null;
@@ -105,17 +106,24 @@ export interface LessonRunsRepository {
   getAccountId(authUserId: string): Promise<string | null>;
   getCourse(courseId: string): Promise<CourseReference | null>;
   getLesson(lessonId: string): Promise<LessonReference | null>;
-  getLearnerProfile(learnerProfileId: string): Promise<LearnerProfile | null>;
-  listLearnerProfiles(ownerAccountId: string): Promise<LearnerProfile[]>;
+  getLearnerProfile(
+    teacherAccountId: string,
+    learnerProfileId: string,
+  ): Promise<LearnerProfile | null>;
+  listLearnerProfiles(teacherAccountId: string): Promise<LearnerProfile[]>;
   createLearnerProfile(
-    ownerAccountId: string,
+    teacherAccountId: string,
     input: CreateLearnerProfileInput,
   ): Promise<LearnerProfile>;
   updateLearnerProfile(
+    teacherAccountId: string,
     learnerProfileId: string,
     input: UpdateLearnerProfileInput,
   ): Promise<LearnerProfile>;
-  archiveLearnerProfile(learnerProfileId: string): Promise<LearnerProfile>;
+  archiveLearnerProfile(
+    teacherAccountId: string,
+    learnerProfileId: string,
+  ): Promise<LearnerProfile>;
   getLearnerGroup(learnerGroupId: string): Promise<LearnerGroup | null>;
   listLearnerGroups(ownerAccountId: string): Promise<LearnerGroup[]>;
   createLearnerGroup(
@@ -127,13 +135,18 @@ export interface LessonRunsRepository {
     input: UpdateLearnerGroupInput,
   ): Promise<LearnerGroup>;
   deleteLearnerGroup(learnerGroupId: string): Promise<void>;
-  getCourseAudience(courseId: string): Promise<CourseAudience>;
+  getCourseAudience(
+    teacherAccountId: string,
+    courseId: string,
+  ): Promise<CourseAudience>;
   replaceCourseAudience(
+    teacherAccountId: string,
     courseId: string,
     directLearnerProfileIds: string[],
     learnerGroupIds: string[],
   ): Promise<CourseAudience>;
   replaceDirectCourseAudience(
+    teacherAccountId: string,
     courseId: string,
     learnerProfileIds: string[],
   ): Promise<CourseAudience>;
@@ -143,26 +156,34 @@ export interface LessonRunsRepository {
     to: string,
   ): Promise<LessonRun[]>;
   listLessonHistory(
+    teacherAccountId: string,
     lessonId: string,
     options?: LearningRecordHistoryOptions,
   ): Promise<LessonRun[]>;
   listCourseHistory(
+    teacherAccountId: string,
     courseId: string,
     options?: CourseHistoryOptions,
   ): Promise<LessonRun[]>;
   listCourseLearningRecords(
+    teacherAccountId: string,
     courseId: string,
     options?: LearningRecordHistoryOptions,
   ): Promise<LearningRecord[]>;
   listLearningRecordsForLearners(
+    teacherAccountId: string,
     learnerProfileIds: string[],
     options?: LearningRecordHistoryOptions,
   ): Promise<LearningRecord[]>;
   listLearnerHistory(
+    teacherAccountId: string,
     learnerProfileId: string,
     options?: LearningRecordHistoryOptions,
   ): Promise<LearningRecord[]>;
-  getRun(runId: string): Promise<LessonRunContext | null>;
+  getRun(
+    teacherAccountId: string,
+    runId: string,
+  ): Promise<LessonRunContext | null>;
   scheduleRun(input: {
     lessonId: string;
     scheduledAt: string;
@@ -251,10 +272,10 @@ function compareClosedRunRows(left: LessonRunRow, right: LessonRunRow) {
   return byDate || right.id.localeCompare(left.id);
 }
 
-function mapLearnerProfile(row: LearnerProfileRow): LearnerProfile {
+function mapLearnerProfile(row: TeacherLearnerRow): LearnerProfile {
   return {
-    id: row.id,
-    ownerAccountId: row.owner_account_id,
+    id: row.learner_profile_id,
+    teacherAccountId: row.teacher_account_id,
     displayName: row.display_name,
     archivedAt: row.archived_at,
     createdAt: row.created_at,
@@ -282,6 +303,7 @@ function mapLearningRecord(
   return {
     id: row.id,
     learnerProfileId: row.learner_profile_id,
+    recordedByAccountId: row.recorded_by_account_id,
     learnerDisplayName,
     lessonRunId: row.lesson_run_id,
     sourceCourseId: row.source_course_id,
@@ -359,18 +381,20 @@ export function createLessonRunsRepository(
     return JSON.parse(text) as T;
   }
 
-  async function learnerProfilesByIds(ids: string[]) {
+  async function learnerProfilesByIds(teacherAccountId: string, ids: string[]) {
     if (ids.length === 0) return new Map<string, LearnerProfile>();
     const rows = (
       await Promise.all(
         chunks([...new Set(ids)], POSTGREST_IN_FILTER_CHUNK_SIZE).map((batch) =>
-          request<LearnerProfileRow[]>(
-            `/rest/v1/learner_profile?select=*&id=in.(${inFilter(batch)})&order=display_name.asc,id.asc`,
+          request<TeacherLearnerRow[]>(
+            `/rest/v1/teacher_learner?select=*&teacher_account_id=eq.${encodeFilter(teacherAccountId)}&learner_profile_id=in.(${inFilter(batch)})&order=display_name.asc,learner_profile_id.asc`,
           ),
         ),
       )
     ).flat();
-    return new Map(rows.map((row) => [row.id, mapLearnerProfile(row)]));
+    return new Map(
+      rows.map((row) => [row.learner_profile_id, mapLearnerProfile(row)]),
+    );
   }
 
   async function hydrateLearnerGroups(rows: LearnerGroupRow[]) {
@@ -387,8 +411,19 @@ export function createLessonRunsRepository(
         ),
       )
     ).flat();
-    const profiles = await learnerProfilesByIds(
-      memberships.map((membership) => membership.learner_profile_id),
+    const memberIds = memberships.map(
+      (membership) => membership.learner_profile_id,
+    );
+    const profilesByTeacher = new Map(
+      await Promise.all(
+        [...new Set(rows.map((row) => row.owner_account_id))].map(
+          async (teacherAccountId) =>
+            [
+              teacherAccountId,
+              await learnerProfilesByIds(teacherAccountId, memberIds),
+            ] as const,
+        ),
+      ),
     );
     const memberIdsByGroup = new Map<string, string[]>();
     for (const membership of memberships) {
@@ -402,7 +437,7 @@ export function createLessonRunsRepository(
         ownerAccountId: row.owner_account_id,
         name: row.name,
         members: (memberIdsByGroup.get(row.id) ?? [])
-          .map((id) => profiles.get(id))
+          .map((id) => profilesByTeacher.get(row.owner_account_id)?.get(id))
           .filter(
             (profile): profile is LearnerProfile =>
               profile !== undefined && profile.archivedAt === null,
@@ -442,7 +477,10 @@ export function createLessonRunsRepository(
     return row;
   }
 
-  async function readCourseAudience(courseId: string): Promise<CourseAudience> {
+  async function readCourseAudience(
+    teacherAccountId: string,
+    courseId: string,
+  ): Promise<CourseAudience> {
     const [directLinks, groupLinks] = await Promise.all([
       request<CourseLearnerRow[]>(
         `/rest/v1/course_learner?select=course_id,learner_profile_id&course_id=eq.${encodeFilter(courseId)}&order=created_at.asc,learner_profile_id.asc`,
@@ -452,7 +490,10 @@ export function createLessonRunsRepository(
       ),
     ]);
     const [profiles, groups] = await Promise.all([
-      learnerProfilesByIds(directLinks.map((link) => link.learner_profile_id)),
+      learnerProfilesByIds(
+        teacherAccountId,
+        directLinks.map((link) => link.learner_profile_id),
+      ),
       learnerGroupsByIds(groupLinks.map((link) => link.learner_group_id)),
     ]);
     const directLearners = directLinks
@@ -482,8 +523,11 @@ export function createLessonRunsRepository(
     };
   }
 
-  async function hydrateRecords(rows: LearningRecordRow[]) {
-    const profiles = await learnerProfilesByIds([
+  async function hydrateRecords(
+    teacherAccountId: string,
+    rows: LearningRecordRow[],
+  ) {
+    const profiles = await learnerProfilesByIds(teacherAccountId, [
       ...new Set(rows.map((row) => row.learner_profile_id)),
     ]);
     return rows.map((row) =>
@@ -494,7 +538,7 @@ export function createLessonRunsRepository(
     );
   }
 
-  async function hydrateRuns(rows: LessonRunRow[]) {
+  async function hydrateRuns(rows: LessonRunRow[], teacherAccountId?: string) {
     if (rows.length === 0) return [];
 
     const lessons = (
@@ -527,13 +571,17 @@ export function createLessonRunsRepository(
           POSTGREST_IN_FILTER_CHUNK_SIZE,
         ).map((batch) =>
           request<LearningRecordRow[]>(
-            `/rest/v1/learning_record?select=*&lesson_run_id=in.(${inFilter(batch)})&order=created_at.asc,id.asc`,
+            `/rest/v1/learning_record?select=*&lesson_run_id=in.(${inFilter(batch)})${teacherAccountId ? `&recorded_by_account_id=eq.${encodeFilter(teacherAccountId)}` : ""}&order=created_at.asc,id.asc`,
           ),
         ),
       ).then((batches) => batches.flat()),
     ]);
     const coursesById = new Map(courses.map((course) => [course.id, course]));
-    const hydratedRecords = await hydrateRecords(records);
+    const recordTeacherAccountId =
+      teacherAccountId ?? courses[0]?.owner_account_id;
+    const hydratedRecords = recordTeacherAccountId
+      ? await hydrateRecords(recordTeacherAccountId, records)
+      : [];
     const recordsByRun = new Map<string, LearningRecord[]>();
     for (const record of hydratedRecords) {
       if (!record.lessonRunId) continue;
@@ -635,22 +683,22 @@ export function createLessonRunsRepository(
         : null;
     },
 
-    async getLearnerProfile(learnerProfileId) {
-      const rows = await request<LearnerProfileRow[]>(
-        `/rest/v1/learner_profile?select=*&id=eq.${encodeFilter(learnerProfileId)}&limit=1`,
+    async getLearnerProfile(teacherAccountId, learnerProfileId) {
+      const rows = await request<TeacherLearnerRow[]>(
+        `/rest/v1/teacher_learner?select=*&teacher_account_id=eq.${encodeFilter(teacherAccountId)}&learner_profile_id=eq.${encodeFilter(learnerProfileId)}&limit=1`,
       );
       return rows[0] ? mapLearnerProfile(rows[0]) : null;
     },
 
-    async listLearnerProfiles(ownerAccountId) {
-      const rows = await request<LearnerProfileRow[]>(
-        `/rest/v1/learner_profile?select=*&owner_account_id=eq.${encodeFilter(ownerAccountId)}&archived_at=is.null&order=display_name.asc,id.asc`,
+    async listLearnerProfiles(teacherAccountId) {
+      const rows = await request<TeacherLearnerRow[]>(
+        `/rest/v1/teacher_learner?select=*&teacher_account_id=eq.${encodeFilter(teacherAccountId)}&archived_at=is.null&order=display_name.asc,learner_profile_id.asc`,
       );
       return rows.map(mapLearnerProfile);
     },
 
-    async createLearnerProfile(_ownerAccountId, input) {
-      const row = await entityFromRpc<LearnerProfileRow>(
+    async createLearnerProfile(_teacherAccountId, input) {
+      const row = await entityFromRpc<TeacherLearnerRow>(
         "/rest/v1/rpc/create_learner_profile_with_groups",
         {
           p_display_name: input.displayName,
@@ -661,8 +709,8 @@ export function createLessonRunsRepository(
       return mapLearnerProfile(row);
     },
 
-    async updateLearnerProfile(learnerProfileId, input) {
-      const row = await entityFromRpc<LearnerProfileRow>(
+    async updateLearnerProfile(_teacherAccountId, learnerProfileId, input) {
+      const row = await entityFromRpc<TeacherLearnerRow>(
         "/rest/v1/rpc/update_learner_profile_with_groups",
         {
           p_learner_profile_id: learnerProfileId,
@@ -674,8 +722,8 @@ export function createLessonRunsRepository(
       return mapLearnerProfile(row);
     },
 
-    async archiveLearnerProfile(learnerProfileId) {
-      const row = await entityFromRpc<LearnerProfileRow>(
+    async archiveLearnerProfile(_teacherAccountId, learnerProfileId) {
+      const row = await entityFromRpc<TeacherLearnerRow>(
         "/rest/v1/rpc/archive_learner_profile",
         { p_learner_profile_id: learnerProfileId },
         "Не удалось архивировать профиль ученика.",
@@ -730,11 +778,12 @@ export function createLessonRunsRepository(
       });
     },
 
-    getCourseAudience(courseId) {
-      return readCourseAudience(courseId);
+    getCourseAudience(teacherAccountId, courseId) {
+      return readCourseAudience(teacherAccountId, courseId);
     },
 
     async replaceCourseAudience(
+      teacherAccountId,
       courseId,
       directLearnerProfileIds,
       learnerGroupIds,
@@ -748,10 +797,14 @@ export function createLessonRunsRepository(
         },
         allowEmpty: true,
       });
-      return readCourseAudience(courseId);
+      return readCourseAudience(teacherAccountId, courseId);
     },
 
-    async replaceDirectCourseAudience(courseId, learnerProfileIds) {
+    async replaceDirectCourseAudience(
+      teacherAccountId,
+      courseId,
+      learnerProfileIds,
+    ) {
       await request<unknown>("/rest/v1/rpc/replace_course_learners", {
         method: "POST",
         body: {
@@ -760,28 +813,30 @@ export function createLessonRunsRepository(
         },
         allowEmpty: true,
       });
-      return readCourseAudience(courseId);
+      return readCourseAudience(teacherAccountId, courseId);
     },
 
     async listSchedule(ownerAccountId, from, to) {
       const rows = await request<LessonRunRow[]>(
         `/rest/v1/lesson_run?select=*&scheduled_at=gte.${encodeFilter(from)}&scheduled_at=lt.${encodeFilter(to)}&cancelled_at=is.null&order=scheduled_at.asc,id.asc&limit=${LESSON_RUN_SCHEDULE_HARD_LIMIT}`,
       );
-      const contexts = await hydrateRuns(rows);
+      const contexts = await hydrateRuns(rows, ownerAccountId);
       return contexts
         .filter((context) => context.ownerAccountId === ownerAccountId)
         .map((context) => context.run);
     },
 
-    async listLessonHistory(lessonId, options) {
+    async listLessonHistory(teacherAccountId, lessonId, options) {
       const limit = historyLimit(options?.limit);
       const rows = await request<LessonRunRow[]>(
         `/rest/v1/lesson_run?select=*&lesson_id=eq.${encodeFilter(lessonId)}&order=scheduled_at.desc,id.desc&limit=${limit}`,
       );
-      return (await hydrateRuns(rows)).map((context) => context.run);
+      return (await hydrateRuns(rows, teacherAccountId)).map(
+        (context) => context.run,
+      );
     },
 
-    async listCourseHistory(courseId, options) {
+    async listCourseHistory(teacherAccountId, courseId, options) {
       const limit = historyLimit(options?.limit);
       const lessons = await request<LessonRow[]>(
         `/rest/v1/lesson?select=id,course_id,title&course_id=eq.${encodeFilter(courseId)}`,
@@ -836,18 +891,24 @@ export function createLessonRunsRepository(
           ...recentClosedRows.slice(0, limit - openRows.length),
         ];
       }
-      return (await hydrateRuns(rows)).map((context) => context.run);
+      return (await hydrateRuns(rows, teacherAccountId)).map(
+        (context) => context.run,
+      );
     },
 
-    async listCourseLearningRecords(courseId, options) {
+    async listCourseLearningRecords(teacherAccountId, courseId, options) {
       const limit = historyLimit(options?.limit);
       const rows = await request<LearningRecordRow[]>(
-        `/rest/v1/learning_record?select=*&source_course_id=eq.${encodeFilter(courseId)}&occurred_at=not.is.null&order=occurred_at.desc,id.desc&limit=${limit}`,
+        `/rest/v1/learning_record?select=*&recorded_by_account_id=eq.${encodeFilter(teacherAccountId)}&source_course_id=eq.${encodeFilter(courseId)}&occurred_at=not.is.null&order=occurred_at.desc,id.desc&limit=${limit}`,
       );
-      return hydrateRecords(rows);
+      return hydrateRecords(teacherAccountId, rows);
     },
 
-    async listLearningRecordsForLearners(learnerProfileIds, options) {
+    async listLearningRecordsForLearners(
+      teacherAccountId,
+      learnerProfileIds,
+      options,
+    ) {
       if (learnerProfileIds.length === 0) return [];
       const limit = historyLimit(options?.limit);
       const rows = (
@@ -857,7 +918,7 @@ export function createLessonRunsRepository(
             POSTGREST_IN_FILTER_CHUNK_SIZE,
           ).map((batch) =>
             request<LearningRecordRow[]>(
-              `/rest/v1/learning_record?select=*&learner_profile_id=in.(${inFilter(batch)})&occurred_at=not.is.null&order=occurred_at.desc,id.desc&limit=${limit}`,
+              `/rest/v1/learning_record?select=*&recorded_by_account_id=eq.${encodeFilter(teacherAccountId)}&learner_profile_id=in.(${inFilter(batch)})&occurred_at=not.is.null&order=occurred_at.desc,id.desc&limit=${limit}`,
             ),
           ),
         )
@@ -869,22 +930,22 @@ export function createLessonRunsRepository(
             right.id.localeCompare(left.id),
         )
         .slice(0, limit);
-      return hydrateRecords(rows);
+      return hydrateRecords(teacherAccountId, rows);
     },
 
-    async listLearnerHistory(learnerProfileId, options) {
+    async listLearnerHistory(teacherAccountId, learnerProfileId, options) {
       const limit = historyLimit(options?.limit);
       const rows = await request<LearningRecordRow[]>(
-        `/rest/v1/learning_record?select=*&learner_profile_id=eq.${encodeFilter(learnerProfileId)}&occurred_at=not.is.null&order=occurred_at.desc,id.desc&limit=${limit}`,
+        `/rest/v1/learning_record?select=*&recorded_by_account_id=eq.${encodeFilter(teacherAccountId)}&learner_profile_id=eq.${encodeFilter(learnerProfileId)}&occurred_at=not.is.null&order=occurred_at.desc,id.desc&limit=${limit}`,
       );
-      return hydrateRecords(rows);
+      return hydrateRecords(teacherAccountId, rows);
     },
 
-    async getRun(runId) {
+    async getRun(teacherAccountId, runId) {
       const rows = await request<LessonRunRow[]>(
         `/rest/v1/lesson_run?select=*&id=eq.${encodeFilter(runId)}&limit=1`,
       );
-      return (await hydrateRuns(rows))[0] ?? null;
+      return (await hydrateRuns(rows, teacherAccountId))[0] ?? null;
     },
 
     scheduleRun(input) {

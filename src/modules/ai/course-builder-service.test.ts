@@ -319,7 +319,7 @@ test("course apply rejects a preview after the effective audience changes", asyn
     async getCourseAudience() {
       const learner = {
         id: "30000000-0000-4000-8000-000000000002",
-        ownerAccountId: state.course.ownerAccountId,
+        teacherAccountId: state.course.ownerAccountId,
         displayName,
         archivedAt: null,
         createdAt: NOW,
@@ -408,6 +408,7 @@ test("lesson planning receives finalized learner history through the application
   const record: LearningRecord = {
     id: "30000000-0000-4000-8000-000000000001",
     learnerProfileId: "30000000-0000-4000-8000-000000000002",
+    recordedByAccountId: course.ownerAccountId,
     learnerDisplayName: "Анна",
     lessonRunId: "30000000-0000-4000-8000-000000000003",
     sourceCourseId: COURSE_ID,
@@ -440,7 +441,7 @@ test("lesson planning receives finalized learner history through the application
   };
   const learner = {
     id: record.learnerProfileId,
-    ownerAccountId: course.ownerAccountId,
+    teacherAccountId: course.ownerAccountId,
     displayName: record.learnerDisplayName,
     archivedAt: null,
     createdAt: NOW,

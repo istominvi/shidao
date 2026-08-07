@@ -13,7 +13,9 @@ schema и read-only UI postflight завершены. Provider smoke с непу
 историей ещё не выполнялся.
 
 **Schema state:** AI не добавляет собственную persistence; он читает bounded
-projection из `lesson_run`/`learning_record`, добавленных scheduling slice.
+projection из `teacher_learner`, `lesson_run` и `learning_record`, добавленных
+identity/scheduling slices. Current repository фиксирует recorder каждой записи;
+это не расширяет provider access.
 
 ## Граница текущего среза
 
@@ -36,7 +38,7 @@ authenticated browser
 → Node.js /api/v2/courses/[courseId]/ai-* route
 → per-request actor from getCourseBuilderContext()
 → AiCourseBuilderService
-→ owner-scoped LessonRunsApplicationService (completed history only)
+→ teacher-scoped LessonRunsApplicationService (completed history only)
 → server-only RouterAI adapter
 → provider-compatible structured output
 → transport conversion + canonical Zod/registry validation
@@ -185,14 +187,17 @@ bounded conversation в общем provider limit.
 
 - до 8 последних завершённых LessonRun с датой, названием, общим teacher
   report и агрегатами attendance/repeat;
-- до 40 последних finalized LearningRecord с LearnerProfile display name,
-  минимальным Course/Lesson/subject context, attendance, repeat и
-  индивидуальным teacher comment;
+- до 40 последних finalized LearningRecord, где
+  `recorded_by_account_id` — текущий teacher Account, с его локальным
+  TeacherLearner display name, минимальным Course/Lesson/subject context,
+  attendance, repeat и индивидуальным teacher comment;
 - surviving LearningRecord после удаления Lesson/Run, пока он связан с текущим
   Course.
 
 ID LearnerProfile/Run/Record и Auth identity в provider context не попадают.
 Draft expected-participant rows, будущие/активные/отменённые Runs исключены.
+Canonical LearnerProfile не объединяет provider context разных преподавателей:
+другой recorder остаётся невидимым без будущего subject-controlled grant.
 System и context boundary отдельно указывают, что `wasPresent=false` означает
 только отсутствие и не доказывает непонимание; `needsRepeat` интерпретируется
 только для присутствовавшего ученика.
@@ -232,16 +237,22 @@ lesson_component
 lesson_student_slide
 stored_file
 course_attachment
+learner_profile
+teacher_learner
 lesson_run
 learning_record
 ```
 
 `lesson_run` и `learning_record` принадлежат scheduling/learning-history
 domain, а не provider accounting. AI читает их только через application
-service; SQL и service-role credentials модели не доступны. Persisted результат
-AI после Apply не отличается по domain contract от результата ручного
+service; teacher-local relation и `recorded_by_account_id` ограничивают history
+текущим actor. SQL и service-role credentials модели не доступны. Persisted
+результат AI после Apply не отличается по domain contract от результата ручного
 редактора. Provider request/response, assistant dialog history и quota state в
 БД не сохраняются.
+
+Identity, provenance и future access boundary зафиксированы в
+[`learner-identity-access-model.md`](./learner-identity-access-model.md).
 
 ## Не входит в текущий срез
 
@@ -251,6 +262,7 @@ AI после Apply не отличается по domain contract от резу
 - attachment parsing/OCR/RAG и citation provenance;
 - Homework generation;
 - learner-facing AI teacher, live lesson и Student Screen control;
+- account claim/observer grants и cross-provider learner history/AI context;
 - automatic subject metrics beyond current attendance/repeat/comments;
 - persistent distributed quota, cost ledger, billing и subscriptions;
 - внешний remote MCP/API.

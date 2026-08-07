@@ -36,8 +36,8 @@ type MockReply = {
 
 function profileRow() {
   return {
-    id: LEARNER_ID,
-    owner_account_id: ACCOUNT_ID,
+    teacher_account_id: ACCOUNT_ID,
+    learner_profile_id: LEARNER_ID,
     display_name: "Анна",
     archived_at: null,
     created_at: NOW,
@@ -74,6 +74,7 @@ function recordRow() {
   return {
     id: RECORD_ID,
     learner_profile_id: LEARNER_ID,
+    recorded_by_account_id: ACCOUNT_ID,
     lesson_run_id: RUN_ID,
     source_course_id: null,
     source_lesson_id: null,
@@ -142,7 +143,7 @@ async function withMockSupabase<T>(
   }
 }
 
-test("createLearnerProfile persists a neutral owner-scoped learner", async () => {
+test("createLearnerProfile returns the teacher directory projection of a canonical learner", async () => {
   await withMockSupabase(
     [{ payload: profileRow() }],
     async (repository, requests) => {
@@ -152,7 +153,7 @@ test("createLearnerProfile persists a neutral owner-scoped learner", async () =>
       });
 
       assert.equal(profile.displayName, "Анна");
-      assert.equal(profile.ownerAccountId, ACCOUNT_ID);
+      assert.equal(profile.teacherAccountId, ACCOUNT_ID);
       assert.equal(
         requests[0]?.url,
         `${API_URL}/rest/v1/rpc/create_learner_profile_with_groups`,
@@ -170,6 +171,25 @@ test("createLearnerProfile persists a neutral owner-scoped learner", async () =>
   );
 });
 
+test("listLearnerProfiles reads active teacher_learner relations, not canonical identity rows", async () => {
+  await withMockSupabase(
+    [{ payload: [profileRow()] }],
+    async (repository, requests) => {
+      const profiles = await repository.listLearnerProfiles(ACCOUNT_ID);
+
+      assert.equal(profiles[0]?.id, LEARNER_ID);
+      assert.equal(profiles[0]?.teacherAccountId, ACCOUNT_ID);
+      assert.match(requests[0]?.url ?? "", /\/rest\/v1\/teacher_learner\?/);
+      assert.match(
+        requests[0]?.url ?? "",
+        new RegExp(`teacher_account_id=eq\\.${ACCOUNT_ID}`),
+      );
+      assert.match(requests[0]?.url ?? "", /archived_at=is\.null/);
+      assert.doesNotMatch(requests[0]?.url ?? "", /\/learner_profile\?/);
+    },
+  );
+});
+
 test("replaceCourseAudience delegates the complete set to the atomic RPC", async () => {
   await withMockSupabase(
     [
@@ -182,6 +202,7 @@ test("replaceCourseAudience delegates the complete set to the atomic RPC", async
     ],
     async (repository, requests) => {
       const audience = await repository.replaceCourseAudience(
+        ACCOUNT_ID,
         COURSE_ID,
         [LEARNER_ID],
         [],
@@ -355,10 +376,17 @@ test("learner history keeps its snapshot context when Run links are null", async
   await withMockSupabase(
     [{ payload: [completedRecord] }, { payload: [profileRow()] }],
     async (repository, requests) => {
-      const records = await repository.listLearnerHistory(LEARNER_ID);
+      const records = await repository.listLearnerHistory(
+        ACCOUNT_ID,
+        LEARNER_ID,
+      );
       assert.equal(records[0]?.lessonRunId, null);
       assert.equal(records[0]?.lessonTitleAtTime, "Знакомство");
       assert.match(requests[0]?.url ?? "", /occurred_at=not\.is\.null/);
+      assert.match(
+        requests[0]?.url ?? "",
+        new RegExp(`recorded_by_account_id=eq\\.${ACCOUNT_ID}`),
+      );
       assert.match(requests[0]?.url ?? "", /order=occurred_at\.desc,id\.desc/);
       assert.match(requests[0]?.url ?? "", /limit=100/);
     },
@@ -381,9 +409,11 @@ test("course learning history reads bounded durable records independently of del
   await withMockSupabase(
     [{ payload: [completedRecord] }, { payload: [profileRow()] }],
     async (repository, requests) => {
-      const records = await repository.listCourseLearningRecords(COURSE_ID, {
-        limit: 8,
-      });
+      const records = await repository.listCourseLearningRecords(
+        ACCOUNT_ID,
+        COURSE_ID,
+        { limit: 8 },
+      );
       assert.equal(records[0]?.sourceCourseId, COURSE_ID);
       assert.equal(records[0]?.lessonRunId, null);
       assert.match(
@@ -397,7 +427,7 @@ test("course learning history reads bounded durable records independently of del
   );
 });
 
-test("AI learner history is bounded by effective learner IDs across Courses", async () => {
+test("AI learner history is bounded by effective learner IDs and the current teacher", async () => {
   const completedRecord = {
     ...recordRow(),
     source_course_id: uuid(999),
@@ -412,6 +442,7 @@ test("AI learner history is bounded by effective learner IDs across Courses", as
     [{ payload: [completedRecord] }, { payload: [profileRow()] }],
     async (repository, requests) => {
       const records = await repository.listLearningRecordsForLearners(
+        ACCOUNT_ID,
         [LEARNER_ID],
         { limit: 40 },
       );
@@ -424,6 +455,10 @@ test("AI learner history is bounded by effective learner IDs across Courses", as
         true,
       );
       assert.doesNotMatch(requests[0]?.url ?? "", /source_course_id/);
+      assert.match(
+        requests[0]?.url ?? "",
+        new RegExp(`recorded_by_account_id=eq\\.${ACCOUNT_ID}`),
+      );
       assert.match(requests[0]?.url ?? "", /limit=40/);
     },
   );
@@ -438,7 +473,7 @@ test("completed Course history is selected by completion time with a stable tie-
       { payload: [] },
     ],
     async (repository, requests) => {
-      await repository.listCourseHistory(COURSE_ID, {
+      await repository.listCourseHistory(ACCOUNT_ID, COURSE_ID, {
         completedOnly: true,
         limit: 8,
       });
@@ -490,7 +525,7 @@ test("bounded Course history keeps an overdue open Run ahead of recent closed Ru
       { payload: [] },
     ],
     async (repository, requests) => {
-      const runs = await repository.listCourseHistory(COURSE_ID);
+      const runs = await repository.listCourseHistory(ACCOUNT_ID, COURSE_ID);
       assert.equal(runs.length, 100);
       assert.equal(runs[0]?.id, RUN_ID);
       assert.ok(runs.some((run) => run.id === completedRows[99]?.id));
@@ -530,7 +565,7 @@ test("Lesson history has a hard limit and hydrates Run IDs in bounded chunks", a
       { payload: [] },
     ],
     async (repository, requests) => {
-      const runs = await repository.listLessonHistory(LESSON_ID);
+      const runs = await repository.listLessonHistory(ACCOUNT_ID, LESSON_ID);
       assert.equal(runs.length, 51);
       assert.match(
         requests[0]?.url ?? "",

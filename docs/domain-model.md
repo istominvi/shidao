@@ -7,7 +7,8 @@
 
 ```text
 Account
-├── LearnerProfile 0..N
+├── claimed identity → LearnerProfile 0..1 (nullable account_id)
+├── TeacherLearner 0..N → LearnerProfile
 ├── LearnerGroup 0..N
 │   └── LearnerGroupMember 0..N → LearnerProfile
 └── Course 0..N
@@ -20,17 +21,24 @@ Account
         ├── StudentScreenSlide 1..N → component assignments
         └── LessonRun 0..N
             └── LearningRecord 0..N → LearnerProfile
+                └── recorded_by_account_id → Account
 ```
 
 - `Account` is the ownership identity linked one-to-one to `auth.users`.
 - `Course` is an editable owner-scoped draft.
-- `LearnerProfile` is a neutral Account-owned learning identity. It does not
-  reuse transitional `student`, `class` or `class_student`. Product delete
-  archives the profile, removes it from future group/Course audiences and keeps
-  its finalized LearningRecords and already scheduled Run membership.
+- `LearnerProfile` is the canonical learning identity and is not owned by a
+  teacher. Its nullable unique `account_id` is a future claim point; current
+  creation/backfill leaves it unlinked. The global `display_name` is a
+  canonical/offline fallback, not the teacher's editable directory label.
+- `TeacherLearner` links an Account acting as teacher to a LearnerProfile. It
+  owns that teacher's local `display_name` and `archived_at`. Product delete
+  archives this relation, removes only that teacher's future group/Course links
+  and keeps the canonical profile, finalized LearningRecords and already
+  scheduled Run membership.
 - `LearnerGroup` is a reusable Account-owned set of existing LearnerProfiles.
   A profile may belong to zero, one or several groups; deleting a group deletes
-  only its membership and Course links.
+  only its membership and Course links. Membership and direct Course audience
+  require an active TeacherLearner relation for the same Account.
 - Course audience persists two independent source sets: direct
   `CourseLearner` links and `CourseLearnerGroup` links. Its effective audience
   is their active, deduplicated learner union. Source order is deliberately not
@@ -56,7 +64,9 @@ Account
 - `LearningRecord` is the expected learner row while `occurred_at IS NULL` and
   the durable individual result after completion. It stores attendance,
   repeat recommendation, teacher comment and only small title/subject context,
-  not a Lesson content snapshot.
+  not a Lesson content snapshot. `recorded_by_account_id` permanently records
+  which Account created the observation; current teacher history and AI reads
+  are filtered by that provenance.
 - An open or completed Run has at least one LearningRecord. Cancellation
   deletes its drafts, so a retained cancelled Run legitimately has zero.
 - Scheduling resolves the current effective Course audience only for a new
@@ -71,7 +81,8 @@ Deleting a Lesson removes its Components, Slides and Runs. Draft
 `LearningRecord` rows are removed; finalized rows remain attached to their
 LearnerProfile with `lesson_run_id` and `source_lesson_id` cleared. The compact
 `course_title_at_time`, `lesson_title_at_time` and `subject_at_time` fields keep
-the result understandable without retaining Lesson payload.
+the result understandable without retaining Lesson payload, while
+`recorded_by_account_id` keeps its author explicit.
 
 The database itself currently enforces positive+unique Lesson/Component
 positions, not gaplessness after arbitrary direct INSERT. Append serialization
@@ -125,10 +136,12 @@ Operational acceptance release `0276aed` подтвердил default
 
 Lesson planning and the read-only assistant now also receive a bounded
 projection of completed Course Runs, the selected groups/direct learners and
-finalized LearningRecords of the effective learners across their courses.
-Overlap between audience sources is deduplicated. Absence is marked as absence,
-not interpreted as lack of understanding. Metrics beyond
-attendance/repeat/comments remain a later additive extension.
+finalized LearningRecords recorded by the current teacher for the effective
+learners across that teacher's courses. Names come from TeacherLearner, overlap
+between audience sources is deduplicated, and another teacher's observations
+are not included merely because the canonical LearnerProfile is the same.
+Absence is marked as absence, not interpreted as lack of understanding. Metrics
+beyond attendance/repeat/comments remain a later additive extension.
 
 Registry definitions own keys/schemas/defaults/capabilities. The current
 payload editor is one switch over `ComponentTypeKey`; renderers use an
@@ -142,6 +155,8 @@ registry object.
 - Component assignment → `lesson_component.student_slide_id`.
 - Product «Проведение урока» → `lesson_run`.
 - Product «Индивидуальная учебная запись» → `learning_record`.
+- Canonical learner identity → `learner_profile`; teacher-local directory
+  context → `teacher_learner`.
 - Learner directory groups → `learner_group` + `learner_group_member`.
 - Course audience sources → `course_learner` + `course_learner_group`;
   effective learners are a query projection, not another table.
@@ -157,16 +172,19 @@ preference/security tables remain temporarily for login/onboarding/session
 compatibility, but they are not parents of Course content or the source of the
 new Course audience.
 
-The authoritative physical schema is documented in
-`docs/database/current-schema.md` and `supabase/schema/current-schema.sql`.
+The canonical identity/access contract is documented in
+`docs/architecture/learner-identity-access-model.md`. The authoritative physical
+schema is documented in `docs/database/current-schema.md` and
+`supabase/schema/current-schema.sql`.
 
 ## Planned, not implemented
 
 The following are target domains, not current tables or product capabilities:
 
 - persisted Homework;
-- Guardian and invitation/claim flows around the implemented neutral
+- Guardian/observer and invitation/claim flows around the implemented canonical
   LearnerProfile;
+- merge of duplicate offline profiles and cross-provider access to records;
 - live Student Screen synchronization/runtime cursor for an open LessonRun;
 - automatic subject metrics and richer progress models on top of finalized
   LearningRecord;

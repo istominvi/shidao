@@ -12,14 +12,18 @@
 LearnerProfile, reusable Groups и смешанная Course audience: группы и отдельные
 ученики являются независимыми источниками одного дедуплицированного состава.
 Lesson остаётся единственной content-сущностью; LessonRun не хранит снимок её
-содержимого. Development-only MCP реализован отдельно как local `stdio`
+содержимого. Current repository дополнительно делает LearnerProfile canonical,
+выносит teacher-local name/archive в `TeacherLearner` и фиксирует автора каждой
+LearningRecord. Nullable account link не означает, что invitation/claim или
+learner access уже работают. Development-only MCP реализован отдельно как local `stdio`
 process; он не является частью web deployment или внешним endpoint. Точный
 deployed и repository scope, ограничения и implementation map зафиксированы в
 [`docs/project-state.md`](../project-state.md), а последовательность работ — в
 [`docs/roadmap.md`](../roadmap.md).
 
-Guardian relations, live-проведение, расширенные учебные метрики,
-persisted Homework, parsing/RAG, подписки, billing и внешний MCP/API остаются
+Account claim, profile merge, Guardian/observer relations, live-проведение,
+расширенные учебные метрики, persisted Homework, parsing/RAG, подписки, billing
+и внешний MCP/API остаются
 **будущим направлением**, пока соответствующая возможность не появилась в
 project-state и current schema. Настоящее время в остальных стратегических
 формулировках описывает желаемый продукт, а не подтверждает готовность функции.
@@ -400,6 +404,13 @@ ShiDao можно воспринимать как сочетание:
 - кому доступен материал.
 
 Это проще для пользователя и лучше соответствует будущему, в котором границы между преподаванием, родительским участием и самостоятельным обучением становятся менее жёсткими.
+
+Current architecture уже проводит эту границу физически: canonical
+LearnerProfile не принадлежит преподавателю, а `TeacherLearner` хранит только
+его локальное имя и состояние работы. `LearningRecord` отдельно знает, какой
+Account записал наблюдение. При этом автоматическое объединение людей, claim
+аккаунта и доступ к чужим observations намеренно ещё не включены: единая
+identity не является автоматическим согласием на общий доступ.
 
 ---
 
@@ -939,7 +950,12 @@ ShiDao строится не как оболочка над одной модн�
    Screen Slides.
 8. Teacher plan и Student Screen preview с reload persistence.
 9. Settings и просмотр Course materials в отдельных dialogs/actions.
-10. Internal local `stdio` MCP с шестью tools:
+10. Teacher-only «Ученики»: canonical LearnerProfile, teacher-local
+    TeacherLearner names/archive, вкладки «Ученики / Группы», профиль с
+    teacher-scoped history, reusable Groups и direct+group Course audience.
+11. LessonRun, повторное назначение и teacher-scoped LearningRecord history с
+    явным recorder Account, attendance/repeat/comments и без Lesson snapshot.
+12. Internal local `stdio` MCP с шестью tools:
     `course.create_draft`, `course.get`, `course.add_lesson`,
     `lesson.add_component`, `lesson.set_component_student_screen`,
     `lesson.reorder_component`.
@@ -948,18 +964,17 @@ ShiDao строится не как оболочка над одной модн�
 
 1. Завершить ручной teacher authoring: upload из существующего Course,
    accessibility и UX polish.
-2. Подключить server-only OpenRouter adapter с validated structured output,
-   audit и честным token accounting.
-3. Стабилизировать mixed audience, scheduling и history; затем добавить
-   live-проведение поверх LessonRun.
+2. Стабилизировать canonical identity migration и затем спроектировать
+   invitation/claim, observer grants и безопасный duplicate merge.
+3. Добавить live-проведение поверх LessonRun, не создавая второй content Lesson.
 4. Реализовать persisted common Homework как отдельную Lesson surface.
 5. Добавить parsing статуса/текста загруженных источников; RAG — только после
    проверяемого extraction baseline.
 
 ## Позднее
 
-- guardian relations и invitation/claim поверх уже существующих учебных
-  профилей;
+- learner-facing access и cross-provider history/AI projection поверх явных
+  subject-controlled grants;
 - live sync и AI-conducted lesson поверх LessonRun;
 - individual Homework assignments и immutable snapshots;
 - расширенные learning metrics/events, chat, notifications и vocabulary progress;
@@ -1516,7 +1531,8 @@ ShiDao как инфраструктура между человеком, обр
 
 ```text
 Account
-├── LearnerProfile
+├── claimed LearnerProfile 0..1 (claim later)
+├── TeacherLearner → LearnerProfile
 ├── LearnerGroup → LearnerProfile 0..N
 └── Course
     ├── audience sources → direct LearnerProfile + LearnerGroup
@@ -1529,15 +1545,19 @@ Account
 ```
 
 Course принадлежит одному Account и получает аудиторию из отдельных
-LearnerProfile и reusable Groups того же владельца. Lesson непосредственно владеет единым ordered Component
-list и может иметь несколько LessonRun. Slides являются learner presentation
-projection, а не Step или вторым authoring hierarchy. LearningRecord хранит
-минимальный контекст и результат конкретного учащегося, но не snapshot Lesson.
+LearnerProfile и reusable Groups, с которыми этот Account связан через активный
+TeacherLearner. Canonical profile не принадлежит преподавателю; relation хранит
+его local name/archive, а LearningRecord — Account, записавший наблюдение.
+Lesson непосредственно владеет единым ordered Component list и может иметь
+несколько LessonRun. Slides являются learner presentation projection, а не Step
+или вторым authoring hierarchy. LearningRecord хранит минимальный контекст и
+результат конкретного учащегося, но не snapshot Lesson.
 
-Целевая модель добавит guardian relations, live runtime, Homework,
-reusable source library, расширенные метрики, AI для проведения/анализа и
-прозрачные usage limits. Эти возможности нельзя выдавать за current
-implementation до их появления в project-state/schema.
+Целевая модель добавит account claim/merge, subject-controlled Guardian/observer
+access, live runtime, Homework, reusable source library, расширенные метрики, AI
+для проведения/анализа и прозрачные usage limits. Canonical ID сам по себе не
+разрешает cross-provider history или AI access. Эти возможности нельзя выдавать
+за current implementation до их появления в project-state/schema.
 
 Преподаватель использует ShiDao как профессиональный инструмент.
 

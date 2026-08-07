@@ -50,6 +50,11 @@
   Базовый LessonRun был выпущен в `fa91371`, а reusable Groups, mixed audience
   и history-aware AI-context — в `9393080`; оба release прошли
   HTTP/authenticated browser postflight без записи тестовых данных.
+- Current repository поверх этого baseline разделяет canonical
+  `learner_profile` и teacher-local `teacher_learner`, а
+  `learning_record.recorded_by_account_id` сохраняет recorder. Существующие
+  profiles backfilled 1:1; account claim, merge и observer access не входят в
+  этот slice.
 - Реализованы private-by-default Components и persisted Student Screen Slides.
 - Реализован fullscreen Student Screen preview.
 - Реализован development-only MCP из шести tools поверх application service.
@@ -77,6 +82,11 @@
 имеют RLS и сохраняют слишком широкие legacy grants. Перед расширением
 identity, learner access или внешних интеграций необходимо:
 
+CSRF guard пока допускает configured landing host как Origin для unsafe V2
+requests. Перед расширением identity/external access нужны строгая app-host
+boundary и cross-subdomain regression test; явный production allowlist для
+routed hosts также остаётся P0-задачей.
+
 - инвентаризировать все server callers login/onboarding/profile/PIN/session и
   legacy `SECURITY DEFINER` RPC с caller-supplied `p_user_id`/`anon` execute;
 - проверить фактический Data API exposure read-only и составить negative tests;
@@ -89,8 +99,6 @@ identity, learner access или внешних интеграций необхо
   закрыть direct table access;
 - закрыть middleware host boundary явным production allowlist: non-root
   `brand`/`model` и неизвестные routed hosts не должны получать app/API;
-- исправить CSRF allowlist: landing origin не должен считаться same-origin для
-  unsafe V2 request; добавить cross-subdomain negative test;
 - определить Prettier baseline: исключить immutable archive и отдельно
   отформатировать active source, чтобы repository-wide `format:check` стал
   честным gate;
@@ -208,29 +216,48 @@ compatibility login/profile flows.
 
 **Current repository slice:**
 
-- независимый owner-scoped `LearnerProfile`;
+- canonical `LearnerProfile` без teacher owner: nullable unique `account_id`
+  резервирует one-to-one claim point, а global `display_name` остаётся
+  canonical/offline fallback;
+- `teacher_learner` хранит teacher-local display name и archive state; создание,
+  редактирование и product delete ученика продолжают использовать существующие
+  learner-profile routes/RPC, но меняют relation конкретного преподавателя;
 - reusable `learner_group` с many-to-many membership: один LearnerProfile может
   быть без группы или входить сразу в несколько;
 - смешанная Course audience через независимые direct learner и group links;
   effective audience — дедуплицированное объединение активных профилей;
-- teacher-only `/students` как единый sortable/filterable справочник с CRUD
-  учеников и групп и просмотром индивидуальной истории;
-- безопасное product delete ученика архивирует профиль и отсоединяет его от
-  будущих аудиторий, не удаляя LearningRecord и уже назначенные Runs;
+- teacher-only `/students` как единый sortable/filterable справочник: ученика
+  можно создать, изменить и убрать из своего списка, для групп доступен CRUD, а
+  dialog ученика показывает индивидуальную историю;
+- безопасное product delete ученика архивирует только teacher relation и
+  отсоединяет её от будущих аудиторий этого Account, не удаляя canonical
+  LearnerProfile, LearningRecord и уже назначенные Runs; archive list/restore
+  пока не реализованы;
+- `LearningRecord.recorded_by_account_id` фиксируется при scheduling;
+  teacher-history и текущий AI context читают только записи текущего recorder;
 - изменение membership прикреплённой группы влияет на новые назначения и AI
   context, но не переписывает состав уже открытого LessonRun;
 - Course Builder остаётся owner-only, а старые Class/School не используются.
 
 **Next:**
 
-- один `Account` на человека без глобального типа пользователя;
-- Guardian relation;
-- invitation/claim flow;
-- миграция существующих identity данных отдельным планом.
+- invitation/claim flow для привязки существующего offline profile к одному
+  Account без эвристики по имени/email;
+- subject-controlled visibility и Guardian/observer relation с grant/revoke
+  audit;
+- безопасный merge duplicate profiles только после определения authorization и
+  конфликтов двух records одного LessonRun;
+- learner-facing кабинет и явный доступ к Course/Student Screen;
+- cross-provider history и AI context только поверх отдельного разрешения, а не
+  автоматически из canonical profile ID.
 
 Нельзя использовать старую Class/School как новый parent Course только ради
-быстрого enrollment. Learner login/access не следует из наличия
-LearnerProfile.
+быстрого enrollment. Learner login/access не следует ни из наличия
+LearnerProfile, ни из nullable `learner_profile.account_id` до завершённого
+claim/access slice. Заполненный `account_id` позволяет Account выбрать только
+собственную canonical identity row; Course, records и teacher-local data этим не
+открываются. Полный current/next/later boundary находится в
+[`docs/architecture/learner-identity-access-model.md`](./architecture/learner-identity-access-model.md).
 
 ## P2: LessonRun и live lesson
 

@@ -17,11 +17,36 @@ export function LearnerHistoryDialog({
   profile: LearnerProfile;
   onClose: () => void;
 }) {
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      onClose();
+    }
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
+
+  return (
+    <DialogShell
+      title={profile.displayName}
+      description="История обучения в курсах, где вы работаете с этим учеником."
+      onClose={onClose}
+      panelClassName="max-w-3xl"
+    >
+      <LearnerHistoryPanel profile={profile} />
+    </DialogShell>
+  );
+}
+
+export function LearnerHistoryPanel({ profile }: { profile: LearnerProfile }) {
   const [records, setRecords] = useState<LearningRecord[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
+    setRecords(null);
+    setError(null);
     void loadLearnerHistory(profile.id)
       .then((items) => {
         if (active) setRecords(items);
@@ -39,23 +64,12 @@ export function LearnerHistoryDialog({
     };
   }, [profile.id]);
 
-  useEffect(() => {
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key !== "Escape") return;
-      event.preventDefault();
-      onClose();
-    }
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [onClose]);
-
   return (
-    <DialogShell
-      title={profile.displayName}
-      description="Индивидуальные итоги завершённых уроков. Они сохраняются в учебном профиле, даже если исходный урок позже удалён."
-      onClose={onClose}
-      panelClassName="max-w-3xl"
-    >
+    <div className="learner-history-panel">
+      <p className="learner-history-scope">
+        Показаны только завершённые уроки в ваших курсах. Данные других
+        преподавателей здесь недоступны.
+      </p>
       {error ? (
         <p className="app-alert app-alert-error" role="alert">
           {error}
@@ -111,6 +125,6 @@ export function LearnerHistoryDialog({
           ))}
         </ol>
       ) : null}
-    </DialogShell>
+    </div>
   );
 }

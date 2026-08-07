@@ -745,6 +745,22 @@
   margin-top: 0;
 }
 
+.learner-history-panel {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.learner-history-scope {
+  margin: 0;
+  border: 1px solid rgba(7, 89, 133, 0.12);
+  border-radius: 0.85rem;
+  background: rgba(240, 249, 255, 0.72);
+  padding: 0.7rem 0.8rem;
+  color: #315166;
+  font-size: 0.76rem;
+  line-height: 1.5;
+}
+
 .learner-history-list li {
   border: 1px solid rgba(20, 20, 20, 0.08);
   border-radius: 0.9rem;
@@ -779,7 +795,7 @@
 
 .student-directory-toolbar {
   display: grid;
-  grid-template-columns: auto minmax(14rem, 1fr) auto auto;
+  grid-template-columns: minmax(14rem, 1fr) auto auto;
   align-items: center;
   gap: 0.65rem;
   border: 1px solid rgba(255, 255, 255, 0.78);
@@ -833,7 +849,8 @@
 }
 
 .student-directory-table {
-  min-width: 62rem;
+  width: 100%;
+  min-width: 0;
 }
 
 .student-directory-table th {
@@ -845,11 +862,36 @@
   padding-block: 0.55rem;
 }
 
+.student-directory-clickable-row {
+  cursor: pointer;
+}
+
 .student-directory-person {
   display: flex;
   min-width: 0;
   align-items: center;
   gap: 0.7rem;
+}
+
+.student-directory-row-trigger {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.student-directory-row-trigger:disabled {
+  cursor: default;
+}
+
+.student-directory-row-trigger:focus-visible {
+  border-radius: 0.75rem;
+  outline: 2px solid rgba(7, 89, 133, 0.38);
+  outline-offset: 0.2rem;
 }
 
 .student-directory-person > strong {
@@ -999,6 +1041,10 @@
 
 .student-directory-dialog-actions .student-directory-delete-action {
   margin-right: auto;
+}
+
+.student-directory-dialog-tabs {
+  margin-bottom: 1rem;
 }
 
 .course-audience-search {

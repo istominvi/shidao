@@ -1,14 +1,16 @@
 # ShiDao V2
 
 ShiDao V2 — работающий teacher Course Builder на Next.js и текущем
-self-hosted Supabase. Текущий source также содержит teacher-only navigation
-shells «Расписание» и «Ученики». Каноническая авторская модель:
+self-hosted Supabase. Текущий source содержит teacher-only «Расписание» и
+«Ученики», reusable Groups, смешанную аудиторию Course и историю проведений.
+Каноническая модель:
 
 ```text
-Course
-└── Lesson
-    ├── ordered Components
-    └── Student Screen Slides (presentation projection)
+Account → TeacherLearner → canonical LearnerProfile
+        ├── LearnerGroup
+        └── Course → Lesson → ordered Components
+                            ├── Student Screen Slides
+                            └── LessonRun → LearningRecord
 ```
 
 Фактическое состояние приложения и карта кода:
@@ -105,17 +107,23 @@ Lesson непосредственно владеет одним упорядоч
 - сущности Lesson Step/root Step в активной V2 нет.
 
 Teacher navigation содержит «Расписание / Ученики / Курсы». `/schedule` и
-`/students` используют реальные owner-scoped Course summaries и честные пустые
-состояния для ещё отсутствующих данных. Schedule events/LessonSession,
-LearnerProfile, Group, invitation и audience persistence не реализованы;
-transitional `student/class/class_student` для этих shells не используются.
-Новых таблиц или migrations этот UI-slice не добавляет.
+`/students` используют persisted LessonRun, canonical LearnerProfile,
+teacher-local `teacher_learner`, Groups и LearningRecord. В Course независимо
+прикрепляются отдельные ученики и группы; пересечения дедуплицируются. Один
+профиль может быть связан с несколькими преподавателями, но локальные имена,
+архивирование, история и AI-context каждого преподавателя изолированы через
+`teacher_learner` и `recorded_by_account_id`. Transitional
+`student/class/class_student` для этой модели не используются.
+
+Account claim, invitations, observers, duplicate-profile merge и общий
+cross-provider history/AI access пока не реализованы. Nullable
+`learner_profile.account_id` является только безопасной точкой будущей связи.
 
 Десять типов компонентов определены в code-first registry. UI, application
 service и development-only MCP используют общие Zod contracts; MCP не работает
-с таблицами напрямую и не опубликован как внешний endpoint. OpenRouter,
-parsing/RAG, persisted Homework, live sessions и learner product пока не
-реализованы.
+с таблицами напрямую и не опубликован как внешний endpoint. Server-only
+RouterAI preview/apply и read-only Assistant уже реализованы; parsing/RAG,
+persisted Homework, live sessions и learner-facing product пока отсутствуют.
 
 Подробная каноническая модель: `docs/architecture/lesson-workflow-model.md`.
 
@@ -125,6 +133,7 @@ parsing/RAG, persisted Homework, live sessions и learner product пока не
 - Roadmap: `docs/roadmap.md`
 - Auth и routing: `docs/authorization-routing.md`
 - Модель урока: `docs/architecture/lesson-workflow-model.md`
+- Identity и доступ: `docs/architecture/learner-identity-access-model.md`
 - Реализованный первый milestone: `docs/v2/TEACHER_COURSE_BUILDER_DEMO_MILESTONE.md`
 - Development MCP: `docs/v2/COURSE_BUILDER_MCP.md`
 - Текущая схема БД: `docs/database/current-schema.md`, `supabase/schema/current-schema.sql`

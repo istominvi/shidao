@@ -29,6 +29,7 @@ const E2E_GROUP_EXAM_ID = "99999999-9999-4999-8999-999999999992";
 const E2E_COURSE_TITLE = "Английский для жизни";
 const E2E_LESSON_TITLE = "Present Perfect · жизненный опыт";
 const E2E_SUPABASE_ACCESS_TOKEN = "e2e-supabase-user-access-token";
+const E2E_FOREIGN_ACCOUNT_ID = "22222222-2222-4222-8222-222222222229";
 
 const E2E_COURSE_ROW = {
   id: E2E_COURSE_ID,
@@ -59,26 +60,26 @@ const E2E_LESSON_ROW = {
   updated_at: "2026-08-05T09:00:00.000Z",
 };
 
-const E2E_LEARNER_ROWS = [
+const E2E_TEACHER_LEARNER_ROWS = [
   {
-    id: E2E_LEARNER_ANNA_ID,
-    owner_account_id: E2E_ACCOUNT_ID,
+    teacher_account_id: E2E_ACCOUNT_ID,
+    learner_profile_id: E2E_LEARNER_ANNA_ID,
     display_name: "Анна Петрова",
     archived_at: null,
     created_at: "2026-08-05T10:00:00.000Z",
     updated_at: "2026-08-05T10:00:00.000Z",
   },
   {
-    id: E2E_LEARNER_BORIS_ID,
-    owner_account_id: E2E_ACCOUNT_ID,
+    teacher_account_id: E2E_ACCOUNT_ID,
+    learner_profile_id: E2E_LEARNER_BORIS_ID,
     display_name: "Борис Волков",
     archived_at: null,
     created_at: "2026-08-05T10:01:00.000Z",
     updated_at: "2026-08-05T10:01:00.000Z",
   },
   {
-    id: E2E_LEARNER_CLARA_ID,
-    owner_account_id: E2E_ACCOUNT_ID,
+    teacher_account_id: E2E_ACCOUNT_ID,
+    learner_profile_id: E2E_LEARNER_CLARA_ID,
     display_name: "Клара Смирнова",
     archived_at: null,
     created_at: "2026-08-05T10:02:00.000Z",
@@ -126,8 +127,53 @@ const E2E_LEARNER_GROUP_MEMBER_ROWS = [
   },
 ];
 
+const E2E_LEARNING_RECORD_ROWS = [
+  {
+    id: "77777777-7777-4777-8777-777777777771",
+    learner_profile_id: E2E_LEARNER_ANNA_ID,
+    recorded_by_account_id: E2E_ACCOUNT_ID,
+    lesson_run_id: null,
+    source_course_id: E2E_COURSE_ID,
+    source_lesson_id: E2E_LESSON_ID,
+    occurred_at: "2026-08-06T09:00:00.000Z",
+    was_present: true,
+    needs_repeat: false,
+    teacher_comment: "Уверенно использует Present Perfect.",
+    course_title_at_time: E2E_COURSE_TITLE,
+    lesson_title_at_time: E2E_LESSON_TITLE,
+    subject_at_time: "Английский язык",
+    created_at: "2026-08-06T09:00:00.000Z",
+    updated_at: "2026-08-06T09:00:00.000Z",
+  },
+  {
+    id: "77777777-7777-4777-8777-777777777772",
+    learner_profile_id: E2E_LEARNER_ANNA_ID,
+    recorded_by_account_id: E2E_FOREIGN_ACCOUNT_ID,
+    lesson_run_id: null,
+    source_course_id: null,
+    source_lesson_id: null,
+    occurred_at: "2026-08-06T10:00:00.000Z",
+    was_present: true,
+    needs_repeat: true,
+    teacher_comment: "FOREIGN TRAP RECORD",
+    course_title_at_time: "Чужой курс",
+    lesson_title_at_time: "Чужой урок",
+    subject_at_time: null,
+    created_at: "2026-08-06T10:00:00.000Z",
+    updated_at: "2026-08-06T10:00:00.000Z",
+  },
+];
+
 type PlaywrightLocator = {
   click: () => Promise<void>;
+  getByRole: (
+    role: string,
+    options?: {
+      name?: string | RegExp;
+      exact?: boolean;
+      level?: number;
+    },
+  ) => PlaywrightLocator;
   waitFor: (options?: {
     state?: "attached" | "detached" | "visible" | "hidden";
     timeout?: number;
@@ -162,6 +208,10 @@ type PlaywrightChromium = {
             exact?: boolean;
             level?: number;
           },
+        ) => PlaywrightLocator;
+        getByText: (
+          text: string | RegExp,
+          options?: { exact?: boolean },
         ) => PlaywrightLocator;
         url: () => string;
         waitForURL: (
@@ -299,7 +349,8 @@ function readInFilter(requestUrl: URL, key: string) {
   if (!raw) return null;
 
   const match = /^in\.\((.*)\)$/.exec(raw);
-  return match?.[1] ? match[1].split(",").map((value) => value.trim()) : [];
+  if (!match) return null;
+  return match[1] ? match[1].split(",").map((value) => value.trim()) : [];
 }
 
 function handleMockSupabase(
@@ -350,13 +401,13 @@ function handleMockSupabase(
     requestUrl.pathname === "/rest/v1/rpc/create_learner_profile_with_groups" ||
     requestUrl.pathname === "/rest/v1/rpc/update_learner_profile_with_groups"
   ) {
-    json(response, 200, E2E_LEARNER_ROWS[0]);
+    json(response, 200, E2E_TEACHER_LEARNER_ROWS[0]);
     return;
   }
 
   if (requestUrl.pathname === "/rest/v1/rpc/archive_learner_profile") {
     json(response, 200, {
-      ...E2E_LEARNER_ROWS[0],
+      ...E2E_TEACHER_LEARNER_ROWS[0],
       archived_at: "2026-08-07T12:00:00.000Z",
     });
     return;
@@ -425,16 +476,19 @@ function handleMockSupabase(
     return;
   }
 
-  if (requestUrl.pathname === "/rest/v1/learner_profile") {
-    const requestedId = readEqFilter(requestUrl, "id");
-    const requestedIds = readInFilter(requestUrl, "id");
+  if (requestUrl.pathname === "/rest/v1/teacher_learner") {
+    const requestedTeacherId = readEqFilter(requestUrl, "teacher_account_id");
+    const requestedId = readEqFilter(requestUrl, "learner_profile_id");
+    const requestedIds = readInFilter(requestUrl, "learner_profile_id");
     json(
       response,
       200,
-      E2E_LEARNER_ROWS.filter(
+      E2E_TEACHER_LEARNER_ROWS.filter(
         (row) =>
-          (!requestedId || row.id === requestedId) &&
-          (!requestedIds || requestedIds.includes(row.id)),
+          (!requestedTeacherId ||
+            row.teacher_account_id === requestedTeacherId) &&
+          (!requestedId || row.learner_profile_id === requestedId) &&
+          (!requestedIds || requestedIds.includes(row.learner_profile_id)),
       ),
     );
     return;
@@ -512,7 +566,25 @@ function handleMockSupabase(
   }
 
   if (requestUrl.pathname === "/rest/v1/learning_record") {
-    json(response, 200, []);
+    const requestedRecorderId = readEqFilter(
+      requestUrl,
+      "recorded_by_account_id",
+    );
+    const requestedLearnerId = readEqFilter(requestUrl, "learner_profile_id");
+    const requestedLearnerIds = readInFilter(requestUrl, "learner_profile_id");
+    json(
+      response,
+      200,
+      E2E_LEARNING_RECORD_ROWS.filter(
+        (row) =>
+          (!requestedRecorderId ||
+            row.recorded_by_account_id === requestedRecorderId) &&
+          (!requestedLearnerId ||
+            row.learner_profile_id === requestedLearnerId) &&
+          (!requestedLearnerIds ||
+            requestedLearnerIds.includes(row.learner_profile_id)),
+      ),
+    );
     return;
   }
 
@@ -908,7 +980,8 @@ test("browser smoke: teacher navigates Schedule → Students with honest V2 stat
     return;
   }
 
-  const runtime = await openPage({ cookie: authenticatedCookieValue() });
+  const teacherCookie = authenticatedCookieValue();
+  const runtime = await openPage({ cookie: teacherCookie });
 
   try {
     await runtime.page.goto("/schedule", { waitUntil: "networkidle" });
@@ -978,11 +1051,51 @@ test("browser smoke: teacher navigates Schedule → Students with honest V2 stat
     assert.match(html, /Борис Волков/);
     assert.match(html, /Teen Talk/);
     assert.match(html, /Новый ученик/);
-    assert.match(html, /Новая группа/);
+    assert.doesNotMatch(html, /Новая группа/);
     assert.doesNotMatch(html, /Миша Орлов|Food around the world|11 занятий/);
 
     await runtime.page
-      .getByRole("button", { name: "По группам · 2", exact: true })
+      .getByRole("button", {
+        name: "Профиль ученика Анна Петрова",
+        exact: true,
+      })
+      .click();
+    await runtime.page
+      .getByRole("heading", {
+        name: "Редактировать ученика",
+        exact: true,
+        level: 2,
+      })
+      .waitFor();
+    const historyApiResponse = await fetch(
+      `http://127.0.0.1:${appPort}/api/v2/learner-profiles/${E2E_LEARNER_ANNA_ID}/history`,
+      { headers: { Cookie: `shidao_session=${teacherCookie}` } },
+    );
+    const historyApiPayload = await historyApiResponse.text();
+    assert.equal(historyApiResponse.status, 200, historyApiPayload);
+    assert.match(historyApiPayload, /Уверенно использует Present Perfect\./);
+    assert.doesNotMatch(historyApiPayload, /FOREIGN TRAP RECORD|Чужой курс/);
+    await runtime.page
+      .getByRole("tab", { name: "История", exact: true })
+      .click();
+    await runtime.page
+      .getByText(
+        "Показаны только завершённые уроки в ваших курсах. Данные других преподавателей здесь недоступны.",
+        { exact: true },
+      )
+      .waitFor();
+    await runtime.page
+      .getByText("Уверенно использует Present Perfect.", { exact: true })
+      .waitFor();
+    html = await runtime.page.content();
+    assert.doesNotMatch(html, /FOREIGN TRAP RECORD|Чужой курс/);
+    await runtime.page
+      .getByRole("dialog", { name: "Редактировать ученика", exact: true })
+      .getByRole("button", { name: "Закрыть", exact: true })
+      .click();
+
+    await runtime.page
+      .getByRole("tab", { name: "Группы 2", exact: true })
       .click();
     await runtime.page
       .getByRole("table", { name: "Группы учеников", exact: true })
@@ -990,6 +1103,7 @@ test("browser smoke: teacher navigates Schedule → Students with honest V2 stat
     html = await runtime.page.content();
     assert.match(html, /Подготовка к экзамену/);
     assert.match(html, /2 ученика/);
+    assert.match(html, /Новая группа/);
 
     const studentsCurrent = await runtime.page.evaluate(() =>
       document

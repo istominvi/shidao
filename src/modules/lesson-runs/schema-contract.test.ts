@@ -10,6 +10,10 @@ const groupsMigration = readFileSync(
   "supabase/migrations/20260806220726_learner_groups_mixed_course_audience.sql",
   "utf8",
 );
+const canonicalMigration = readFileSync(
+  "supabase/migrations/20260807033034_canonical_learner_profile.sql",
+  "utf8",
+);
 const snapshot = readFileSync("supabase/schema/current-schema.sql", "utf8");
 
 function functionBody(name: string) {
@@ -46,6 +50,26 @@ function groupsTableBody(name: string) {
   const end = groupsMigration.indexOf("\n);", start);
   assert.notEqual(end, -1, `unterminated groups table ${name}`);
   return groupsMigration.slice(start, end + 3);
+}
+
+function canonicalFunctionBody(name: string) {
+  const start = canonicalMigration.indexOf(`create function public.${name}(`);
+  const replaceStart = canonicalMigration.indexOf(
+    `create or replace function public.${name}(`,
+  );
+  const resolvedStart = start === -1 ? replaceStart : start;
+  assert.notEqual(resolvedStart, -1, `missing canonical function ${name}`);
+  const end = canonicalMigration.indexOf("\n$$;", resolvedStart);
+  assert.notEqual(end, -1, `unterminated canonical function ${name}`);
+  return canonicalMigration.slice(resolvedStart, end + 4);
+}
+
+function snapshotTableBody(name: string) {
+  const start = snapshot.indexOf(`CREATE TABLE public.${name} (`);
+  assert.notEqual(start, -1, `missing snapshot table ${name}`);
+  const end = snapshot.indexOf("\n);", start);
+  assert.notEqual(end, -1, `unterminated snapshot table ${name}`);
+  return snapshot.slice(start, end + 3);
 }
 
 test("lesson scheduling is one forward-only transactional migration", () => {
@@ -265,13 +289,130 @@ test("current schema snapshot preserves the hardened scheduling contract", () =>
     snapshot,
     /GRANT SELECT ON TABLE public\.learner_profile TO authenticated;/,
   );
-  assert.match(
-    snapshot,
-    /GRANT INSERT\(display_name\),UPDATE\(display_name\) ON TABLE public\.learner_profile TO authenticated;/,
-  );
   assert.doesNotMatch(
     snapshot,
-    /GRANT [^;]*DELETE[^;]*ON TABLE public\.learner_profile TO authenticated;/,
+    /GRANT [^;]*(?:INSERT|UPDATE|DELETE)[^;]*ON TABLE public\.learner_profile TO authenticated;/,
+  );
+});
+
+test("canonical learner identity is a forward-only backfilled relation model", () => {
+  assert.match(canonicalMigration, /\nbegin;\n/);
+  assert.match(canonicalMigration, /\ncommit;\n$/);
+  assert.doesNotMatch(
+    canonicalMigration,
+    /drop\s+(?:table|function|schema)[^;]*\bcascade\b/i,
+  );
+
+  assert.match(
+    canonicalMigration,
+    /create table public\.teacher_learner \([\s\S]*?teacher_account_id uuid not null[\s\S]*?learner_profile_id uuid not null[\s\S]*?primary key \(teacher_account_id, learner_profile_id\)/,
+  );
+  assert.match(
+    canonicalMigration,
+    /insert into public\.teacher_learner[\s\S]*?profile\.owner_account_id[\s\S]*?profile\.id[\s\S]*?profile\.archived_at/,
+  );
+  assert.match(
+    canonicalMigration,
+    /disable trigger trg_learning_record_updated_at;[\s\S]*?update public\.learning_record as record[\s\S]*?recorded_by_account_id = profile\.owner_account_id[\s\S]*?enable trigger trg_learning_record_updated_at;/,
+  );
+  assert.match(
+    canonicalMigration,
+    /alter column recorded_by_account_id set not null[\s\S]*?references public\.account\(id\)[\s\S]*?on delete restrict/,
+  );
+  assert.match(
+    canonicalMigration,
+    /add constraint learner_profile_account_id_key unique \(account_id\)[\s\S]*?on delete set null/,
+  );
+  assert.match(
+    canonicalMigration,
+    /drop column owner_account_id,[\s\S]*?drop column archived_at/,
+  );
+});
+
+test("teacher directory, history and future audience are isolated per Account", () => {
+  const schedule = canonicalFunctionBody("schedule_lesson_run");
+  assert.match(schedule, /public\.teacher_learner/);
+  assert.match(
+    schedule,
+    /teacher_learner\.teacher_account_id = v_teacher_account_id/,
+  );
+  assert.match(schedule, /recorded_by_account_id/);
+  assert.match(schedule, /selected\.id,[\s\S]*?v_teacher_account_id/);
+
+  const archive = canonicalFunctionBody("archive_learner_profile");
+  assert.match(archive, /returns public\.teacher_learner/);
+  assert.match(
+    archive,
+    /teacher_learner\.teacher_account_id = v_teacher_account_id/,
+  );
+  assert.doesNotMatch(archive, /delete from public\.learner_profile/);
+
+  const detach = canonicalFunctionBody("detach_archived_teacher_learner_links");
+  assert.match(detach, /course\.owner_account_id = new\.teacher_account_id/);
+  assert.match(
+    detach,
+    /learner_group\.owner_account_id = new\.teacher_account_id/,
+  );
+  assert.doesNotMatch(
+    detach,
+    /learning_record|delete from public\.learner_profile/,
+  );
+
+  const updateProfile = canonicalFunctionBody(
+    "update_learner_profile_with_groups",
+  );
+  assert.match(updateProfile, /update public\.teacher_learner/);
+  assert.match(updateProfile, /set display_name = btrim\(p_display_name\)/);
+  assert.doesNotMatch(updateProfile, /update public\.learner_profile/);
+
+  for (const name of [
+    "enforce_course_learner_teacher_relation",
+    "enforce_learner_group_member_teacher_relation",
+  ]) {
+    const body = canonicalFunctionBody(name);
+    assert.match(body, /public\.teacher_learner/);
+    assert.match(body, /teacher_learner\.archived_at is null/);
+  }
+
+  assert.match(
+    canonicalMigration,
+    /create policy learning_record_producer_select[\s\S]*?recorded_by_account_id = \(select public\.current_account_id\(\)\)[\s\S]*?;/,
+  );
+  assert.match(
+    canonicalMigration,
+    /create trigger trg_learning_record_producer_immutable/,
+  );
+  assert.match(
+    canonicalMigration,
+    /revoke all on table public\.teacher_learner from public, anon, authenticated;[\s\S]*?grant select on table public\.teacher_learner to authenticated;/,
+  );
+  assert.doesNotMatch(
+    canonicalMigration,
+    /create (?:table|function|view)[^;]*(?:observer|guardian|invitation|merge)/i,
+  );
+});
+
+test("current snapshot exposes canonical identity without cross-teacher history", () => {
+  const profile = snapshotTableBody("learner_profile");
+  const relation = snapshotTableBody("teacher_learner");
+  const record = snapshotTableBody("learning_record");
+
+  assert.match(profile, /account_id uuid/);
+  assert.doesNotMatch(profile, /owner_account_id|archived_at/);
+  assert.match(relation, /teacher_account_id uuid NOT NULL/);
+  assert.match(relation, /learner_profile_id uuid NOT NULL/);
+  assert.match(relation, /archived_at timestamp with time zone/);
+  assert.match(record, /recorded_by_account_id uuid NOT NULL/);
+  assert.match(
+    snapshot,
+    /CREATE POLICY learning_record_producer_select[\s\S]*?recorded_by_account_id = \( SELECT public\.current_account_id\(\)/,
+  );
+  assert.match(snapshot, /learning_record_recorded_by_account_id_fkey/);
+  assert.match(snapshot, /ON DELETE RESTRICT/);
+  assert.match(snapshot, /teacher_learner_teacher_select/);
+  assert.doesNotMatch(
+    snapshot,
+    /GRANT [^;]*(?:INSERT|UPDATE|DELETE)[^;]*ON TABLE public\.teacher_learner TO authenticated;/,
   );
 });
 
