@@ -7,14 +7,20 @@
 **Текущий функциональный application release:** `0c426ff`
 **Последний полный automated/browser gate:** `0c426ff`
 
-**Current deployed visual slice:** `/courses`, `/students`, `/schedule`, Course
-и Lesson используют единый `AppPageHeader`; Course, Lesson и Students используют
-единый `WorkspaceTabs` с baseline 1 px и квадратным active-сегментом 3 px.
-Coolify развернул точный application SHA
-`0c426ffdae4f16fab1c77b8070b51a887b387992`; authenticated browser postflight
-подтвердил одинаковые computed header metrics на пяти поверхностях, contextual
-actions Students/Schedule, общий tab contract и пустую browser console. Схема БД
-в этом visual slice не менялась.
+**Current source visual follow-up (pending release):** `/courses`, `/students`,
+`/schedule`, Course и Lesson используют единый `AppPageHeader` с H1 не
+крупнее 48 px на desktop и 32 px на mobile, `min-height: 200px` с
+ростом по контенту и вертикально центрированными actions. Course,
+Lesson, Students и profile dialog используют единый `WorkspaceTabs`:
+чёрная baseline 1 px с inline-inset 12 px и квадратный чёрный active-
+сегмент 4 px без radius. Это source/current implementation; Coolify deployment
+и authenticated browser postflight для follow-up ещё не выполнены. Схема
+БД в visual follow-up не менялась.
+
+**Last deployed visual baseline:** Coolify развернул точный application
+SHA `0c426ffdae4f16fab1c77b8070b51a887b387992`; authenticated browser postflight
+подтвердил общие `AppPageHeader` / `WorkspaceTabs`, contextual actions
+Students/Schedule и пустую browser console.
 
 **Current data slice:** поверх group/audience baseline введены canonical
 `LearnerProfile`, teacher-local relation `teacher_learner` и явный provenance
@@ -178,14 +184,18 @@ Account
   gradients на этих маршрутах отсутствуют.
 - Course header следует demo-контракту: sticky shell высотой 68 px, белая
   полупрозрачная поверхность, радиус 20 px и контролы 40 px с радиусом 12 px.
-- Один `AppPageHeader` задаёт прозрачную заголовочную секцию, единый крупный H1,
-  подзаголовок, optional backlink и правую action-секцию для `/courses`,
-  `/students`, `/schedule`, Course и Lesson. Course/Lesson сохраняют backlink,
-  а top-level разделы не создают искусственную обратную ссылку.
+- Один `AppPageHeader` задаёт прозрачную заголовочную секцию, единый H1 с
+  максимумом 48 px на desktop и 32 px на mobile, подзаголовок, optional
+  backlink и правую action-секцию для `/courses`, `/students`, `/schedule`, Course
+  и Lesson. Контейнер имеет минимальную высоту 200 px, растёт по контенту, а
+  actions вертикально центрированы. Course/Lesson сохраняют backlink, а
+  top-level разделы не создают искусственную обратную ссылку.
 - Один `WorkspaceTabs` используется в Course, Lesson, Students и profile dialog,
   сохраняет roving keyboard/ARIA contract и горизонтальный scroll. Выбранная
-  вкладка утолщает общую нижнюю линию квадратным чёрным сегментом 3 px без
-  скруглённой рамки; кнопки и вкладки используют шрифт `.88rem/500`.
+  вкладка утолщает чёрную baseline 1 px с inline-inset 12 px
+  квадратным чёрным сегментом 4 px без radius; кнопки и вкладки используют шрифт
+  `.88rem/500`. Этот follow-up уже в current source, но его release/postflight ещё
+  pending.
 
 ### Teacher navigation, Расписание, Ученики и аудитория
 
