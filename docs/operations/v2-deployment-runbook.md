@@ -181,6 +181,21 @@ Phased rollout для этого exact candidate:
 10. refresh `contract` snapshot, push/deploy final exact SHA и повторить
     DB/API/HTTP/authenticated browser postflight.
 
+Production execution log, 9 августа 2026 года (current expand stage):
+
+- read-only sanity подтвердил ShiDao tables, PostgreSQL 15.8 и owner
+  `supabase_admin`;
+- full-format backup
+  `/root/shidao-db-backups/shidao-before-learner-identity-20260809T081005Z.dump`
+  проверен через nonzero size, `pg_restore --list` и SHA-256
+  `3974af7cffd2c5e7e62d872be5923ccf64638640d56160a947a2d68011e70ae7`;
+- exact M1–M3 применены, strict signature вернула `shidao-v2-expand`, exactly-one
+  postflight вернул `0` нарушений;
+- Coolify завершил первый roleless deployment exact SHA
+  `5944d31f86f7d3795ec9f17928cb311ecbdfdd21`;
+- steps 7–10 остаются **next** и должны быть дополнены здесь теми же exact
+  evidence после выполнения.
+
 Snapshot helper auto-detects only two complete states. `expand` requires every
 M1–M3 identity object/invariant plus полный known compatibility helper/type/ACL
 set. `contract` требует те же identity objects/invariants и полное отсутствие

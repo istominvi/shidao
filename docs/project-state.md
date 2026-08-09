@@ -1,25 +1,27 @@
 # Текущее состояние ShiDao V2
 
 **Статус:** главный входной документ для разработки
-**Актуально на:** 7 августа 2026 года
+**Актуально на:** 9 августа 2026 года
 **Активная ветка:** `main`
 **Рабочее приложение:** `https://v2.shidao.ru`
-**Текущий функциональный application release:** `77870e3`
-**Последний полный automated/browser gate:** `77870e3`
+**Текущий функциональный application release:** `5944d31`
+**Последний полный automated/browser gate:** `5944d31`
 
-**Current repository candidate (ещё не production):** реализована полная
-roleless learner identity / observer программа. Additive migrations M1–M3
-добавляют atomic exactly-one Account/Profile bootstrap, Account login/PIN
+**Current production expand stage:** реализована и развёрнута полная roleless
+learner identity / observer программа. Additive migrations M1–M3 применены к
+production после проверенного backup и добавляют atomic exactly-one
+Account/Profile bootstrap, Account login/PIN
 boundary, safe discovery/recipient-bound claim и child activation, physical
 merge/lineage, archive/restore, self/observer history/progress, subject erasure
 и consented cross-provider AI. Application/API/UI находятся в
 `src/modules/learner-identity/`, `src/components/learner-identity/` и новых
 routes `/learning-profile`, `/observing`, `/settings/observers`,
-`/identity/invitations/[invitationId]`. Security candidate также закрывает production
-host allowlist и CSRF до exact `v2.shidao.ru` Origin. Эти возможности не
-называются deployed, пока не завершены backup, production M1–M3, два exact
-roleless Coolify releases, dependency audit, M4 contract cleanup и финальный
-postflight.
+`/identity/invitations/[invitationId]`. Security slice также закрывает production
+host allowlist и CSRF до exact `v2.shidao.ru` Origin. Coolify завершил первый
+roleless deployment точного SHA
+`5944d31f86f7d3795ec9f17928cb311ecbdfdd21`. Contract cleanup M4 и финальный
+production postflight остаются **next** только после второго подтверждённого
+roleless release и read-only dependency audit.
 
 **Current deployed visual slice:** `/courses`, `/students`, `/schedule`, Course
 и Lesson используют единый `AppPageHeader` с H1 не крупнее 48 px на desktop и
@@ -275,7 +277,7 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
 - Все surfaces используют тот же плоский бежевый demo visual language, header,
   кнопки, карточки и типографику, что и Course routes.
 
-### Learner identity, self profile и observer — repository candidate
+### Learner identity, self profile и observer — current production expand
 
 - `/students` → «Добавить ученика» сначала поддерживает rotating one-time share
   code/QR и blind email connection, затем explicit offline profile path. Share
@@ -482,13 +484,15 @@ History-aware context развёрнут в release `9393080`; production provid
 Identity/observer execution contract и actor matrix сохранены как acceptance
 source:
 [`LEARNER_IDENTITY_COMPLETION_PROMPT.md`](./v2/LEARNER_IDENTITY_COMPLETION_PROMPT.md).
-В repository candidate требования реализованы; production terminal condition
-остаётся **next release work** до финального rollout/postflight.
+В production expand-stage требования реализованы и доступны в первом roleless
+release; полный terminal condition остаётся **next release work** до второго
+roleless release, M4 и финального rollout/postflight.
 
 ## 4. Identity rollout state
 
-M1–M3 repository migrations сохраняют legacy rows для compatibility, но active
-web использует roleless `account`, Account credential/preference boundary и
+M1–M3 production migrations сохраняют legacy rows для compatibility, но active
+web release `5944d31` использует roleless `account`, Account
+credential/preference boundary и
 exactly-one canonical profile. Однозначные legacy student credentials
 backfill-ятся без fuzzy matching; parent/student edges становятся pending
 reconciliation, а не observer grant.
@@ -525,7 +529,7 @@ role. Полный contract находится в
 обычные Course, Lesson, Component и attachment entities через отдельный
 валидируемый importer.
 
-## 6. Фактическая schema candidate и migrations
+## 6. Фактическая production expand-schema и migrations
 
 Repository M1–M3 shape расширяет текущие V2 document tables:
 

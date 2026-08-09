@@ -3,14 +3,14 @@
 **Статус:** canonical V2 architecture для roleless Account, canonical learning
 identity, teacher directory, observer access и consented AI history
 
-**Дата решения:** 7 августа 2026 года
+**Дата решения:** 9 августа 2026 года
 
-**Implementation state:** current repository содержит полный application/API/UI
-candidate и additive migrations M1–M3. Production остаётся на предыдущем
-canonical-profile release до backup, phased migration, exact Coolify deploy и
-postflight. Final M4 contract cleanup намеренно withheld до двух roleless web
-releases и read-only dependency audit. Точные deployed SHA и migration stage
-всегда сверяются по [`docs/project-state.md`](../project-state.md).
+**Implementation state:** production содержит полный application/API/UI slice и
+additive migrations M1–M3. Verified backup, strict expand postflight и первый
+roleless Coolify image `5944d31` завершены. Final M4 contract cleanup намеренно
+withheld до второго roleless web release и read-only dependency audit. Точные
+deployed SHA и migration stage всегда сверяются по
+[`docs/project-state.md`](../project-state.md).
 
 ## Product decision
 
@@ -43,7 +43,7 @@ boundary.
 
 ## Universal Account invariant
 
-Current repository candidate обеспечивает:
+Current production expand обеспечивает:
 
 - Auth trigger атомарно создаёт Account, AccountSecurity/Preference и один
   linked LearnerProfile;
@@ -325,15 +325,15 @@ closed как stale.
 
 ## Current / next / later
 
-**Current repository candidate:** весь identity/observer contract выше,
+**Current production expand:** весь identity/observer contract выше,
 including roleless navigation, Account credential boundary, discovery,
 recipient-bound claim/child activation, merge, archive/restore, self/observer
 history/progress, erasure and AI consent.
 
-**Next release work:** finish full local/DB/browser gate, production read-only
-sanity + verified backup, apply M1–M3, deploy two exact roleless web releases,
-run dependency audit, apply M4, refresh final snapshot and complete production
-DB/API/browser postflight. До этого features не называются production-current.
+**Next release work:** deploy второй exact roleless web release, run dependency
+audit, apply M4, refresh final snapshot and complete production DB/API/browser
+postflight. До этого expand features уже production-current, но terminal
+condition всей identity программы ещё не закрыт.
 
 **Later, вне identity completion:** learner Course consumption/enrollment,
 live Student Screen, persisted Homework, richer Component-produced metrics,

@@ -1,8 +1,9 @@
 # Current database schema
 
-**Статус:** agent-first guide для learner-identity release candidate
+**Статус:** agent-first guide для production learner-identity expand stage
 
-**Production schema head:** `20260807033034_canonical_learner_profile.sql`
+**Production schema head:**
+`20260807065032_learner_identity_workflows_progress_observer_ai.sql`
 
 **Repository expand head:**
 `20260807065032_learner_identity_workflows_progress_observer_ai.sql`
@@ -13,10 +14,10 @@
 
 **SQL snapshot:**
 [`supabase/schema/current-schema.sql`](../../supabase/schema/current-schema.sql)
-в repository зафиксирован из проверенной M1–M3 expand-базы.
-Это не доказывает production apply: production остаётся на предыдущем head до
-выполнения release runbook. После contract стадии snapshot нужно обновить
-ещё раз из проверенной post-M4 базы.
+в repository зафиксирован из проверенной M1–M3 expand-базы. Production strict
+signature `shidao-v2-expand` подтверждена после применения того же exact set
+9 августа 2026 года. После contract стадии snapshot нужно обновить ещё раз из
+проверенной post-M4 production базы.
 
 ## Read order для DB-задач
 
@@ -42,6 +43,19 @@
 M1–M3 являются additive/compatible expand для roleless web candidate. M4 не
 коммитится в первый deploy и не применяется, пока running и rollback images не
 доказаны независимыми от старого contract.
+
+Production expand evidence 9 августа 2026 года:
+
+- verified full-format backup:
+  `/root/shidao-db-backups/shidao-before-learner-identity-20260809T081005Z.dump`;
+- backup size `671605` bytes, SHA-256
+  `3974af7cffd2c5e7e62d872be5923ccf64638640d56160a947a2d68011e70ae7`;
+- M1–M3 применены owner connection с `ON_ERROR_STOP`;
+- `active_accounts_without_exactly_one_profile = 0`, все 18 новых identity
+  tables имеют RLS, sensitive `PUBLIC EXECUTE = 0`;
+- PostgREST schema cache видит Account/self/observer/AI RPC;
+- первый roleless image: exact SHA
+  `5944d31f86f7d3795ec9f17928cb311ecbdfdd21`, Coolify status `finished`.
 
 ## Current repository tables
 

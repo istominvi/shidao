@@ -1,7 +1,7 @@
 # Roadmap ShiDao V2
 
 **Статус:** приоритеты после первого работающего Course Builder milestone
-**Актуально на:** 7 августа 2026 года
+**Актуально на:** 9 августа 2026 года
 
 Фактически реализованное состояние находится в
 [`docs/project-state.md`](./project-state.md). Этот документ описывает только
@@ -63,11 +63,12 @@
   `learning_record.recorded_by_account_id` сохраняет recorder. Существующие
   profiles backfilled 1:1; account claim, merge и observer access не входят в
   этот slice.
-- Current repository candidate поверх deployed baseline завершает P0.Identity:
+- Current production expand release поверх deployed baseline завершает P0.Identity:
   roleless exactly-one Account profile, Account login/PIN, discovery/claim/
   child activation/merge, archive/restore, self/observer history/progress,
-  erasure и consented AI. Production release остаётся next до phased M1–M4 и
-  exact Coolify/DB/API/browser postflight.
+  erasure и consented AI. M1–M3 и первый exact roleless Coolify SHA
+  `5944d31` уже подтверждены; second roleless release, M4 и финальный
+  DB/API/browser postflight остаются **next**.
 - Реализованы private-by-default Components и persisted Student Screen Slides.
 - Реализован fullscreen Student Screen preview.
 - Реализован development-only MCP из шести tools поверх application service.
@@ -91,12 +92,13 @@
 
 ## P0.1: legacy identity/security hardening
 
-**Current repository candidate:** M1 включает RLS/ACL hardening
+**Current production expand:** M1 включает RLS/ACL hardening
 `user_preference`/`user_security`, active callers перенесены на Account
 boundary, production middleware использует explicit host allowlist и exact
 `v2.shidao.ru` CSRF Origin. Negative Auth/host/output tests входят в release
-gate. **Production status:** next — backup, M1–M3 apply, exact web deployments
-и postflight; до этого deployed contour сохраняет прежний debt.
+gate. **Production status:** M1–M3, verified backup и первый exact roleless web
+deployment завершены 9 августа 2026 года; второй roleless SHA, M4 cleanup и
+финальный postflight остаются **next**.
 
 - [x] инвентаризировать server callers login/onboarding/profile/PIN/session и
       legacy `SECURITY DEFINER` RPC с caller-supplied `p_user_id`/`anon` execute;
@@ -121,10 +123,10 @@ read-only ShiDao sanity check и отдельного deployed-contour postfligh
 
 ## P0.Identity: завершить universal Account и canonical learner ecosystem
 
-**Current repository candidate:** все девять vertical slices реализованы через
-M1–M3, `src/modules/learner-identity/`, API/UI и roleless navigation. Это ещё не
-production: remaining **next release work** — full gates, verified backup,
-M1–M3 postflight, два exact roleless Coolify deploy, M4 dependency
+**Current production expand:** все девять vertical slices реализованы через
+M1–M3, `src/modules/learner-identity/`, API/UI и roleless navigation. Verified
+backup, M1–M3 postflight и первый exact roleless Coolify deploy завершены.
+Remaining **next release work** — второй exact roleless deploy, M4 dependency
 audit/contract cleanup, final snapshot и DB/API/browser postflight. Homework,
 RAG, billing, templates и live Student Screen по-прежнему не входят.
 
