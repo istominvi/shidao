@@ -8,9 +8,10 @@ identity, teacher directory, observer access и consented AI history
 **Implementation state:** production содержит полный application/API/UI slice и
 M1–M6 contract schema. Четыре verified backup, strict expand/contract postflight,
 два roleless Coolify images (`5944d31`, `5d650a3`), read-only dependency audit и
-production Auth-trigger postflight завершены. Final exact web deploy и
-authenticated browser postflight остаются release terminal condition. Точные
-deployed SHA и migration stage сверяются по
+production Auth-trigger postflight завершены. Coolify exact functional SHA
+`01aa88a` и authenticated production browser postflight также завершены;
+identity release terminal condition закрыт. Точные deployed SHA и migration
+stage сверяются по
 [`docs/project-state.md`](../project-state.md).
 
 ## Product decision
@@ -400,11 +401,12 @@ recipient-bound claim/child activation, M5 deferred invariant boundary, M6
 two-phase Auth metadata sync, merge, archive/restore, self/observer
 history/progress, erasure and AI consent.
 
-**Next release work:** deploy final exact web SHA и complete authenticated
-production browser postflight. DB contract и API cache уже production-current,
-но terminal condition всей identity программы ещё не закрыт.
+**Current acceptance:** exact functional web SHA `01aa88a` развернут, roleless
+Account прошёл authenticated browser navigation/self/observer/security surfaces,
+disposable fixture удалён без orphan rows, а stale session закрыта. Identity
+terminal condition выполнен.
 
-**Later, вне identity completion:** learner Course consumption/enrollment,
+**Next / later, вне identity completion:** learner Course consumption/enrollment,
 live Student Screen, persisted Homework, richer Component-produced metrics,
 communication, billing and external MCP.
 

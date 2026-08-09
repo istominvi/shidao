@@ -4,8 +4,8 @@
 **Актуально на:** 9 августа 2026 года
 **Активная ветка:** `main`
 **Рабочее приложение:** `https://v2.shidao.ru`
-**Текущий функциональный application release:** `5d650a3`
-**Последний полный automated/browser gate:** `5944d31`
+**Текущий функциональный application release:** `01aa88a`
+**Последний полный automated/browser gate:** `01aa88a`
 
 **Current production contract stage:** реализована и развёрнута полная roleless
 learner identity / observer программа. Migrations M1–M6 применены к production
@@ -27,8 +27,22 @@ post-commit downgrade. Strict DB/RLS/ACL/PostgREST postflight и реальны�
 disposable GoTrue Admin create/delete probe зелёные; production snapshot
 SHA-256 —
 `584ebb96dc8d96f1eb508e7eae836edb8125a9fefe2a59e9cb362af54bba5a26`.
-Финальный exact web deploy и authenticated browser postflight остаются
-**next**.
+Coolify deployment `887` завершил exact functional SHA
+`01aa88a042ad38d744c6f33a44bc216c91815e59`; running container использует тот
+же `SOURCE_COMMIT`, image digest
+`sha256:cf8b6400187d880ab6c6f73a9af037b92cb476b09dd4832e6fd52ea13a132389`,
+restart count `0`, HTTPS `200`.
+
+Authenticated production browser postflight подтвердил roleless navigation и
+реальные пустые состояния `/courses`, `/schedule`, `/students`, всех вкладок
+`/learning-profile`, `/observing`, `/settings/profile`,
+`/settings/security` и `/settings/observers`; browser console пуста. CSRF
+отклонил cross-subdomain и missing Origin (`403`), same-origin malformed body
+дошёл до validation (`400`). Disposable Account после полного dependency audit
+удалён поддерживаемым Auth cleanup flow: fixture Auth/Account/Profile counts
+`0/0/0`, production counts вернулись к `19/19/20`, exactly-one violations и
+trusted provisional mismatches `0`, старая session перенаправлена на `/login`.
+Terminal condition identity программы закрыт.
 
 **Current deployed visual slice:** `/courses`, `/students`, `/schedule`, Course
 и Lesson используют единый `AppPageHeader` с H1 не крупнее 48 px на desktop и
@@ -177,9 +191,10 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
   standalone `/demo`, закрыт от индексации и не принимает unsafe HTTP methods.
 - Standalone demo использует Guest session и фиктивное client-only состояние;
   V2 API, Supabase и persistence к нему не подключены.
-- Current production release использует explicit host allowlist: unknown hosts и
-  non-root `brand`/`model` получают 421; mismatched Host/X-Forwarded-Host также
-  fail closed.
+- Current production release использует explicit app host allowlist: routed
+  non-root `brand`/`model` и routed unknown hosts получают `421`, mismatched
+  Host/X-Forwarded-Host fail closed. Unrouteable unknown/deep landing hosts
+  могут закрываться раньше edge proxy текущим `503`; app/API они не получают.
 - Unsafe production requests принимают только exact app Origin
   `https://v2.shidao.ru`; landing/cross-subdomain/missing Origin отклоняются.
 - Email signup, confirm, login, recovery и reset используют существующий
@@ -491,15 +506,15 @@ History-aware context развёрнут в release `9393080`; production provid
 Identity/observer execution contract и actor matrix сохранены как acceptance
 source:
 [`LEARNER_IDENTITY_COMPLETION_PROMPT.md`](./v2/LEARNER_IDENTITY_COMPLETION_PROMPT.md).
-В production contract-stage требования реализованы; полный terminal condition
-остаётся **next release work** только до финального exact web deploy и
-authenticated browser postflight.
+В production contract-stage требования и полный terminal condition выполнены:
+final exact functional web deploy, DB/API/HTTP и authenticated browser
+postflight завершены 9 августа 2026 года.
 
 ## 4. Identity rollout state
 
 M1–M3 production migrations сохранили legacy rows для recovery, но active web
-releases `5944d31` и `5d650a3` используют roleless `account`, Account
-credential/preference boundary и
+releases `5944d31`, `5d650a3` и final functional `01aa88a` используют roleless
+`account`, Account credential/preference boundary и
 exactly-one canonical profile. Однозначные legacy student credentials
 backfill-ятся без fuzzy matching; parent/student edges становятся pending
 reconciliation, а не observer grant.
@@ -789,9 +804,9 @@ production shape, RLS/ACL actor matrix, true multi-session
 signup/claim/merge/reset concurrency, strict output-injection tests и browser
 matrix discovery/child activation/merge/archive/observer/self/AI consent.
 Повторный final gate дал 321/321 unit/API tests, 19/19 strict browser tests и
-зелёный DB acceptance на M1–M6 clone. Production DB/GoTrue postflight уже
-зафиксирован выше; authenticated browser postflight записывается после final
-exact web deploy. Наличие scripts само по себе acceptance result не заменяет.
+зелёный DB acceptance на M1–M6 clone. Production DB/GoTrue и authenticated
+browser postflight exact functional SHA зафиксированы выше. Наличие scripts само
+по себе acceptance result не заменяет.
 
 `test:browser` допускает локальный skip без browser, а `test:browser:ci`
 является строгим production-mode gate.

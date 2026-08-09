@@ -24,10 +24,11 @@
 V2 deployment не создаёт новый repository или Supabase project.
 
 Current deployed contour закрывает прежний host debt explicit allowlist:
-non-root `brand`/
-`model`, unknown hosts и mismatched Host/X-Forwarded-Host получают 421, unsafe
-V2 requests принимают только exact `https://v2.shidao.ru` Origin. Boundary
-подтверждена exact roleless deploy и HTTP/browser regression.
+app-routed non-root `brand`/`model`, unknown hosts и mismatched
+Host/X-Forwarded-Host получают `421`; unrouteable unknown/deep landing hosts
+закрываются edge proxy до app текущим `503`. Unsafe V2 requests принимают только
+exact `https://v2.shidao.ru` Origin. Boundary подтверждена exact roleless deploy
+и HTTP/browser regression.
 
 ## 2. Private operational config
 
@@ -249,8 +250,20 @@ Production execution log, 9 августа 2026 года (current M6 stage):
   удалил disposable Auth/Account/Profile fixture; post-cleanup counts равны `0`;
 - финальный проверенный post-M6 production snapshot SHA-256:
   `584ebb96dc8d96f1eb508e7eae836edb8125a9fefe2a59e9cb362af54bba5a26`;
-- final exact web deployment и authenticated browser postflight остаются
-  **next**.
+- Coolify deployment `887` exact functional SHA
+  `01aa88a042ad38d744c6f33a44bc216c91815e59` завершился `finished`; running
+  container имеет совпадающий image tag и `SOURCE_COMMIT`, image digest
+  `sha256:cf8b6400187d880ab6c6f73a9af037b92cb476b09dd4832e6fd52ea13a132389`,
+  restart count `0`, HTTPS `200`;
+- authenticated browser postflight прошёл roleless courses/schedule/students,
+  self-profile, observer и settings surfaces без console errors. Disposable
+  Account удалён после dependency audit: fixture counts `0/0/0`, production
+  Auth/Account/Profile counts `19/19/20`, exactly-one и trusted mismatch counts
+  `0`; stale session перенаправлена на `/login`;
+- host/CSRF postflight: app-level non-root brand/model routes закрыты `421`,
+  unrouteable unknown/deep landing hosts закрыты edge proxy до app (`503`),
+  cross-subdomain/missing Origin отклонены `403`, same-origin malformed request
+  дошёл до application validation `400`.
 
 Snapshot helper auto-detects only two complete states. `expand` requires every
 M1–M3 identity object/invariant plus полный known compatibility helper/type/ACL

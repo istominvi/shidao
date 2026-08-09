@@ -68,8 +68,8 @@
   child activation/merge, archive/restore, self/observer history/progress,
   erasure и consented AI. M1–M6, четыре verified backup, два exact roleless
   Coolify SHA, финальный DB/RLS/ACL/PostgREST postflight и реальный GoTrue
-  create/delete probe подтверждены; final exact web deploy и authenticated
-  browser postflight остаются **next**.
+  create/delete probe подтверждены; exact functional web SHA `01aa88a` и
+  authenticated production browser postflight завершены. P0.Identity закрыт.
 - Реализованы private-by-default Components и persisted Student Screen Slides.
 - Реализован fullscreen Student Screen preview.
 - Реализован development-only MCP из шести tools поверх application service.
@@ -98,13 +98,14 @@
 boundary, production middleware использует explicit host allowlist и exact
 `v2.shidao.ru` CSRF Origin. Negative Auth/host/output tests входят в release
 gate. **Production status:** M1–M6, четыре verified backup, два exact roleless
-web deployment, contract DB postflight и Auth Admin lifecycle probe завершены
-9 августа 2026 года. Final exact web deploy и authenticated browser postflight
-остаются **next**.
+web deployment, contract DB postflight, Auth Admin lifecycle probe, exact
+functional SHA `01aa88a` и authenticated browser postflight завершены 9 августа
+2026 года.
 
 - [x] инвентаризировать server callers login/onboarding/profile/PIN/session и
       legacy `SECURITY DEFINER` RPC с caller-supplied `p_user_id`/`anon` execute;
-- проверить фактический Data API exposure read-only и составить negative tests;
+- [x] проверить фактический Data API exposure read-only и составить negative
+      tests;
 - отдельной approved ops-задачей ротировать historical plaintext credentials
   из ignored `enviromnent/db-mcp-cheatsheet.md`, затем оставить только safe
   deprecation stub; не печатать текущие значения;
@@ -114,12 +115,11 @@ web deployment, contract DB postflight и Auth Admin lifecycle probe завер�
       закрыть direct table access;
 - [x] закрыть middleware host boundary явным production allowlist: non-root
       `brand`/`model` и неизвестные routed hosts не должны получать app/API;
-- определить Prettier baseline: исключить immutable archive и отдельно
-  отформатировать active source, чтобы repository-wide `format:check` стал
-  честным gate;
-- [x] доставить M5/M6 forward hardening с restricted Auth regression, backup и
-      production GoTrue lifecycle smoke; final exact web/browser verification
-      остаётся release terminal condition.
+- [x] определить Prettier baseline: исключить immutable archive и отдельно
+      отформатировать active source, чтобы repository-wide `format:check` стал
+      честным gate;
+- [x] доставить M5/M6 forward hardening с restricted Auth regression, backup,
+      production GoTrue lifecycle smoke и exact web/browser verification.
 
 Этот пункт не разрешает менять Auth/SMTP/JWT или применять migration без
 read-only ShiDao sanity check и отдельного deployed-contour postflight.
@@ -129,9 +129,9 @@ read-only ShiDao sanity check и отдельного deployed-contour postfligh
 **Current production contract:** все vertical slices реализованы через M1–M6,
 `src/modules/learner-identity/`, API/UI и roleless navigation. Четыре verified
 backup, два roleless deploy, dependency audit, contract cleanup, Auth hardening,
-final snapshot и DB/API/GoTrue postflight завершены. Remaining **next release
-work** — final exact web deploy и authenticated browser postflight. Homework,
-RAG, billing, templates и live Student Screen по-прежнему не входят.
+final snapshot, DB/API/GoTrue postflight, exact functional web SHA `01aa88a` и
+authenticated browser acceptance завершены. Identity program complete.
+Homework, RAG, billing, templates и live Student Screen по-прежнему не входят.
 
 Согласованный target:
 

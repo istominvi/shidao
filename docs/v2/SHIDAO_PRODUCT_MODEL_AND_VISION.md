@@ -24,9 +24,9 @@ deployed и repository scope, ограничения и implementation map за�
 Current production contract завершает roleless Account/profile identity,
 recipient-bound claim/child activation, physical merge, archive/restore,
 self/observer history/progress и subject-controlled AI consent. M1–M6, четыре
-verified backup, два roleless Coolify release, DB/API postflight и реальный
-GoTrue Admin create/delete probe завершены; final exact web deploy и
-authenticated browser postflight сверяются в project-state. Learner Course consumption,
+verified backup, DB/API postflight, реальный GoTrue Admin create/delete probe,
+exact functional Coolify SHA `01aa88a` и authenticated browser acceptance
+завершены. Learner Course consumption,
 live-проведение, richer Component metrics, persisted Homework, parsing/RAG,
 подписки, billing и внешний MCP/API остаются **later**. Настоящее время в
 стратегических разделах не заменяет implementation/deployment evidence.
@@ -987,8 +987,8 @@ ShiDao строится не как оболочка над одной модн�
 roleless deployments, dependency audit, production DB/API postflight и реальный
 GoTrue Admin lifecycle probe. M5 закрывает deferred exactly-one Auth boundary,
 а M6 безопасно поддерживает двухфазную запись provisional metadata без позднего
-downgrade. Финальный exact web deploy и authenticated browser postflight
-фиксируются в project-state.
+downgrade. Exact functional web SHA `01aa88a` и authenticated browser postflight
+завершены и зафиксированы в project-state.
 
 ## Следующая продуктовая версия после identity rollout
 
