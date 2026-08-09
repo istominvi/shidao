@@ -3,9 +3,11 @@ set -euo pipefail
 
 # Executable learner-identity DB acceptance harness.
 #
-# This is deliberately destructive only inside one transaction which is rolled
-# back. Point it at an isolated upgraded clone, never production. The explicit
-# name guard makes an accidental production invocation fail closed.
+# The main matrix is destructive only inside a transaction which is rolled
+# back. A small xmin matrix crosses commits, uses fixed fixture UUIDs, and has
+# an EXIT cleanup trap. Point this only at an isolated upgraded clone, never
+# production. The explicit name guard makes an accidental invocation fail
+# closed.
 
 if [[ -z "${DATABASE_URL:-}" ]]; then
   echo "DATABASE_URL is required (isolated upgraded test database)." >&2
@@ -29,6 +31,20 @@ begin
   end if;
 end
 $$;
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_roles where rolname = 'shidao_identity_auth_harness'
+  ) then
+    execute 'create role shidao_identity_auth_harness nologin';
+  end if;
+end
+$$;
+grant usage on schema auth, public to shidao_identity_auth_harness;
+grant select, insert, delete on auth.users to shidao_identity_auth_harness;
+grant update (raw_app_meta_data, email) on auth.users
+  to shidao_identity_auth_harness;
 
 select pg_temp.assert_true(
   to_regprocedure('public.build_cross_provider_learner_context(uuid,uuid)') is not null,
@@ -124,14 +140,66 @@ where namespace.nspname = 'public'
     'learner_identity_reconciliation', 'learner_identity_rate_limit'
   );
 
+-- GoTrue executes deferred constraint triggers as supabase_auth_admin after
+-- the SECURITY DEFINER bootstrap function has returned. Exercise that exact
+-- commit boundary instead of only inserting auth.users as the database owner.
+set local role shidao_identity_auth_harness;
+insert into auth.users (
+  id, email, email_confirmed_at, raw_user_meta_data, raw_app_meta_data
+) values (
+  'f1000000-0000-0000-0000-000000000099',
+  'restricted-auth@test.invalid',
+  now(),
+  '{"full_name":"Restricted Auth Actor"}',
+  '{"identity_status":"provisional"}'
+);
+set constraints all immediate;
+reset role;
+set constraints all deferred;
+
+select pg_temp.assert_true(
+  exists (
+    select 1
+    from public.account as account
+    where account.auth_user_id = 'f1000000-0000-0000-0000-000000000099'
+      and account.status = 'provisional'
+      and (
+        select count(*)
+        from public.learner_profile as profile
+        where profile.account_id = account.id
+      ) = 1
+  ),
+  'restricted Auth bootstrap did not create exactly one canonical profile'
+);
+
+set local role shidao_identity_auth_harness;
+delete from auth.users
+where id = 'f1000000-0000-0000-0000-000000000099';
+set constraints all immediate;
+reset role;
+set constraints all deferred;
+
+select pg_temp.assert_true(
+  not exists (
+    select 1
+    from public.account as account
+    where account.auth_user_id = 'f1000000-0000-0000-0000-000000000099'
+  )
+  and not exists (
+    select 1
+    from public.learner_profile as profile
+    where profile.display_name = 'Restricted Auth Actor'
+  ),
+  'restricted Auth cleanup left provisional Account/Profile data'
+);
+
 insert into auth.users (
   id, email, email_confirmed_at, raw_user_meta_data, raw_app_meta_data
 ) values
   ('f1000000-0000-0000-0000-000000000001', 'teacher@test.invalid', now(), '{"full_name":"Teacher A"}', '{}'),
   ('f1000000-0000-0000-0000-000000000002', 'subject@test.invalid', now(), '{"full_name":"Subject"}', '{}'),
   ('f1000000-0000-0000-0000-000000000003', 'observer@test.invalid', now(), '{"full_name":"Observer"}', '{}'),
-  ('f1000000-0000-0000-0000-000000000004', 'outsider@test.invalid', now(), '{"full_name":"Outsider"}', '{}'),
-  ('f1000000-0000-0000-0000-000000000005', 'child@learners.shidao.internal', now(), '{"full_name":"Child"}', '{"identity_status":"provisional"}');
+  ('f1000000-0000-0000-0000-000000000004', 'outsider@test.invalid', now(), '{"full_name":"Outsider"}', '{}');
 
 select pg_temp.assert_true(
   not exists (
@@ -141,8 +209,7 @@ select pg_temp.assert_true(
       'f1000000-0000-0000-0000-000000000001',
       'f1000000-0000-0000-0000-000000000002',
       'f1000000-0000-0000-0000-000000000003',
-      'f1000000-0000-0000-0000-000000000004',
-      'f1000000-0000-0000-0000-000000000005'
+      'f1000000-0000-0000-0000-000000000004'
     ) and (
       select count(*) from public.learner_profile as profile
       where profile.account_id = account.id
@@ -165,23 +232,33 @@ select pg_temp.assert_true(
     where account.auth_user_id = 'f1000000-0000-0000-0000-000000000004'
       and security.sessions_invalid_before = '2032-01-01T00:00:00Z'
   )
-  and exists (
-    select 1 from public.user_security as security
-    where security.user_id = 'f1000000-0000-0000-0000-000000000004'
-      and security.sessions_invalid_before = '2032-01-01T00:00:00Z'
-  ),
-  'expand session revocation did not create a missing legacy cutoff row'
+  and case
+    when to_regprocedure('public.verify_user_pin(uuid,text)') is not null then
+      exists (
+        select 1 from public.user_security as security
+        where security.user_id = 'f1000000-0000-0000-0000-000000000004'
+          and security.sessions_invalid_before = '2032-01-01T00:00:00Z'
+      )
+    else
+      not exists (
+        select 1 from public.user_security as security
+        where security.user_id = 'f1000000-0000-0000-0000-000000000004'
+      )
+      and not exists (
+        select 1
+        from pg_proc as procedure
+        join pg_namespace as namespace
+          on namespace.oid = procedure.pronamespace
+        where namespace.nspname = 'public'
+          and lower(procedure.prosrc) like '%user_security%'
+      )
+  end,
+  'session revocation violated the current expand/contract boundary'
 );
 
 -- Auth trigger intentionally uses a transaction-local trusted mutation flag;
 -- clear it in this long, synthetic test transaction before adversarial checks.
 select set_config('app.learner_profile_link_mutation', 'off', true);
-
-select set_config('request.jwt.claim.sub', 'f1000000-0000-0000-0000-000000000005', true);
-select pg_temp.assert_true(
-  (select verified_email is null from public.current_account_auth_context()),
-  'synthetic learner Auth e-mail leaked as verified recipient e-mail'
-);
 
 do $$
 declare v_profile_id uuid;
@@ -215,6 +292,219 @@ select public.create_learner_profile_invitation(
   'child_activation', decode(repeat('11', 32), 'hex'),
   decode(repeat('12', 32), 'hex'), now() + interval '1 day'
 ) as child_invitation \gset child_
+
+-- Wrong-kind and expired invitations remain negative Auth-sync evidence.
+insert into public.learner_profile (id, display_name)
+values
+  ('f2000000-0000-0000-0000-000000000020', 'Claim-only Source'),
+  ('f2000000-0000-0000-0000-000000000021', 'Expired Child Source');
+insert into public.teacher_learner (
+  teacher_account_id, learner_profile_id, display_name
+)
+select
+  account.id,
+  fixture.learner_profile_id,
+  fixture.display_name
+from public.account as account
+cross join (
+  values
+    ('f2000000-0000-0000-0000-000000000020'::uuid, 'Claim-only Source'),
+    ('f2000000-0000-0000-0000-000000000021'::uuid, 'Expired Child Source')
+) as fixture(learner_profile_id, display_name)
+where account.auth_user_id = 'f1000000-0000-0000-0000-000000000001';
+
+select public.create_learner_profile_invitation(
+  'f1000000-0000-0000-0000-000000000001',
+  'f2000000-0000-0000-0000-000000000020',
+  'claim', decode(repeat('13', 32), 'hex'),
+  decode(repeat('14', 32), 'hex'), now() + interval '1 day'
+) as claim_only_invitation \gset claim_only_
+select public.create_learner_profile_invitation(
+  'f1000000-0000-0000-0000-000000000001',
+  'f2000000-0000-0000-0000-000000000021',
+  'child_activation', decode(repeat('15', 32), 'hex'),
+  decode(repeat('16', 32), 'hex'), now() + interval '1 day'
+) as expired_child_invitation \gset expired_child_
+update public.learner_claim_invitation
+set created_at = clock_timestamp() - interval '2 days',
+    expires_at = clock_timestamp() - interval '1 day'
+where id = (:'expired_child_expired_child_invitation'::jsonb ->> 'id')::uuid;
+
+-- Reproduce GoTrue Admin create exactly: INSERT first carries only provider
+-- metadata, then the custom app_metadata arrives in an UPDATE in the same
+-- transaction.  Only a strict internal address plus this live child-activation
+-- invitation may turn the pristine bootstrap Account provisional.
+set local role shidao_identity_auth_harness;
+
+-- A normal external Account cannot borrow a valid invitation marker.
+update auth.users
+set raw_app_meta_data = raw_app_meta_data || jsonb_build_object(
+  'identity_status', 'provisional',
+  'activation_invitation_id',
+  :'child_child_invitation'::jsonb ->> 'id'
+)
+where id = 'f1000000-0000-0000-0000-000000000004';
+
+-- Malformed invitation metadata must fail closed without breaking signup.
+insert into auth.users (
+  id, email, email_confirmed_at, raw_user_meta_data, raw_app_meta_data
+) values (
+  'f1000000-0000-0000-0000-000000000007',
+  repeat('c', 64) || '@learners.shidao.internal', now(),
+  '{"full_name":"Malformed provisional marker"}',
+  '{"provider":"email","providers":["email"]}'
+);
+update auth.users
+set raw_app_meta_data = raw_app_meta_data || jsonb_build_object(
+  'identity_status', 'provisional',
+  'activation_invitation_id', 'not-a-uuid'
+)
+where id = 'f1000000-0000-0000-0000-000000000007';
+
+-- A valid live invitation without the explicit provisional marker must stay
+-- active; SQL NULL from a missing JSON key is never treated as authorization.
+insert into auth.users (
+  id, email, email_confirmed_at, raw_user_meta_data, raw_app_meta_data
+) values (
+  'f1000000-0000-0000-0000-000000000011',
+  repeat('7', 64) || '@learners.shidao.internal', now(),
+  '{"full_name":"Marker-less internal actor"}',
+  '{"provider":"email","providers":["email"]}'
+);
+update auth.users
+set raw_app_meta_data = raw_app_meta_data || jsonb_build_object(
+  'activation_invitation_id',
+  :'child_child_invitation'::jsonb ->> 'id'
+)
+where id = 'f1000000-0000-0000-0000-000000000011';
+
+-- A valid UUID is still untrusted when it points to the wrong invitation kind.
+insert into auth.users (
+  id, email, email_confirmed_at, raw_user_meta_data, raw_app_meta_data
+) values (
+  'f1000000-0000-0000-0000-000000000008',
+  repeat('d', 64) || '@learners.shidao.internal', now(),
+  '{"full_name":"Claim marker actor"}',
+  '{"provider":"email","providers":["email"]}'
+);
+update auth.users
+set raw_app_meta_data = raw_app_meta_data || jsonb_build_object(
+  'identity_status', 'provisional',
+  'activation_invitation_id',
+  :'claim_only_claim_only_invitation'::jsonb ->> 'id'
+)
+where id = 'f1000000-0000-0000-0000-000000000008';
+
+-- An expired child invitation cannot provision a learner Account.
+insert into auth.users (
+  id, email, email_confirmed_at, raw_user_meta_data, raw_app_meta_data
+) values (
+  'f1000000-0000-0000-0000-000000000009',
+  repeat('e', 64) || '@learners.shidao.internal', now(),
+  '{"full_name":"Expired marker actor"}',
+  '{"provider":"email","providers":["email"]}'
+);
+update auth.users
+set raw_app_meta_data = raw_app_meta_data || jsonb_build_object(
+  'identity_status', 'provisional',
+  'activation_invitation_id',
+  :'expired_child_expired_child_invitation'::jsonb ->> 'id'
+)
+where id = 'f1000000-0000-0000-0000-000000000009';
+
+insert into auth.users (
+  id, email, email_confirmed_at, raw_user_meta_data, raw_app_meta_data
+) values (
+  'f1000000-0000-0000-0000-000000000005',
+  repeat('a', 64) || '@learners.shidao.internal', now(),
+  '{"full_name":"Child"}',
+  '{"provider":"email","providers":["email"]}'
+);
+update auth.users
+set raw_app_meta_data = raw_app_meta_data || jsonb_build_object(
+  'identity_status', 'provisional',
+  'activation_invitation_id',
+  :'child_child_invitation'::jsonb ->> 'id'
+)
+where id = 'f1000000-0000-0000-0000-000000000005';
+
+-- Create a second provisional user before the invitation becomes terminal.
+-- It exercises compensating Auth deletion after the winner consumes the flow.
+insert into auth.users (
+  id, email, email_confirmed_at, raw_user_meta_data, raw_app_meta_data
+) values (
+  'f1000000-0000-0000-0000-000000000006',
+  repeat('b', 64) || '@learners.shidao.internal', now(),
+  '{"full_name":"Losing provisional"}',
+  '{"provider":"email","providers":["email"]}'
+);
+update auth.users
+set raw_app_meta_data = raw_app_meta_data || jsonb_build_object(
+  'identity_status', 'provisional',
+  'activation_invitation_id',
+  :'child_child_invitation'::jsonb ->> 'id'
+)
+where id = 'f1000000-0000-0000-0000-000000000006';
+
+set constraints all immediate;
+reset role;
+set constraints all deferred;
+
+select pg_temp.assert_true(
+  (select account.status = 'active'
+   from public.account as account
+   where account.auth_user_id = 'f1000000-0000-0000-0000-000000000004')
+  and (select account.status = 'active'
+       from public.account as account
+       where account.auth_user_id = 'f1000000-0000-0000-0000-000000000007')
+  and (select account.status = 'active'
+       from public.account as account
+       where account.auth_user_id = 'f1000000-0000-0000-0000-000000000011')
+  and not exists (
+    select 1
+    from public.account as account
+    where account.auth_user_id in (
+      'f1000000-0000-0000-0000-000000000008',
+      'f1000000-0000-0000-0000-000000000009'
+    )
+      and account.status <> 'active'
+  )
+  and (
+    select count(*) = 2
+    from public.account as account
+    where account.auth_user_id in (
+      'f1000000-0000-0000-0000-000000000008',
+      'f1000000-0000-0000-0000-000000000009'
+    )
+  )
+  and not exists (
+    select 1
+    from public.account as account
+    where account.auth_user_id in (
+      'f1000000-0000-0000-0000-000000000005',
+      'f1000000-0000-0000-0000-000000000006'
+    )
+      and (
+        account.status <> 'provisional'
+        or (
+          select count(*)
+          from public.learner_profile as profile
+          where profile.account_id = account.id
+        ) <> 1
+      )
+  ),
+  'two-phase Auth metadata sync widened trust or missed a provisional Account'
+);
+
+select set_config(
+  'request.jwt.claim.sub',
+  'f1000000-0000-0000-0000-000000000005',
+  true
+);
+select pg_temp.assert_true(
+  (select verified_email is null from public.current_account_auth_context()),
+  'synthetic learner Auth e-mail leaked as verified recipient e-mail'
+);
 
 do $$
 begin
@@ -283,16 +573,41 @@ select pg_temp.assert_true(
   'token child activation retry lost recovery parity'
 );
 
+-- Reintroducing the same Auth marker after activation is terminal must never
+-- downgrade the now-established child Account.  Toggling the invitation key
+-- forces both guarded UPDATE-trigger branches in this synthetic transaction.
+set local role shidao_identity_auth_harness;
+update auth.users
+set raw_app_meta_data = raw_app_meta_data - 'activation_invitation_id'
+where id = 'f1000000-0000-0000-0000-000000000005';
+update auth.users
+set raw_app_meta_data = raw_app_meta_data || jsonb_build_object(
+  'activation_invitation_id',
+  :'child_child_invitation'::jsonb ->> 'id',
+  'post_activation_refresh', true
+)
+where id = 'f1000000-0000-0000-0000-000000000005';
+set constraints all immediate;
+reset role;
+set constraints all deferred;
+select pg_temp.assert_true(
+  exists (
+    select 1
+    from public.account as account
+    where account.auth_user_id = 'f1000000-0000-0000-0000-000000000005'
+      and account.status = 'active'
+      and (
+        select count(*)
+        from public.learner_profile as profile
+        where profile.account_id = account.id
+      ) = 1
+  ),
+  'terminal Auth metadata refresh downgraded the active child Account'
+);
+
 -- A racing/losing provisional Auth user is not reported as consumed and Auth
 -- Admin cleanup removes its empty bootstrap Account/profile without producing
 -- a stray offline learner.
-insert into auth.users (
-  id, email, email_confirmed_at, raw_user_meta_data, raw_app_meta_data
-) values (
-  'f1000000-0000-0000-0000-000000000006',
-  'loser@learners.shidao.internal', now(),
-  '{"full_name":"Losing provisional"}', '{"identity_status":"provisional"}'
-);
 select public.activate_verified_offline_learner_account(
   'f1000000-0000-0000-0000-000000000003',
   (:'child_child_invitation'::jsonb ->> 'id')::uuid,
@@ -303,8 +618,12 @@ select pg_temp.assert_true(
   not (:'losing_losing_activation'::jsonb ->> 'provisionalAuthUserConsumed')::boolean,
   'terminal child activation incorrectly consumed the racing loser'
 );
+set local role shidao_identity_auth_harness;
 delete from auth.users
 where id = 'f1000000-0000-0000-0000-000000000006';
+set constraints all immediate;
+reset role;
+set constraints all deferred;
 select pg_temp.assert_true(
   not exists (
     select 1 from public.account
@@ -362,15 +681,22 @@ select pg_temp.assert_true(
         and extensions.crypt('5678', security.pin_hash) = security.pin_hash
         and security.sessions_invalid_before is not null
     )
-    and exists (
-      -- Expand-stage rollback compatibility is tested separately from the
-      -- M4 contract clone, where this row must remain frozen.
-      select 1
-      from public.user_security as security
-      where security.user_id = 'f1000000-0000-0000-0000-000000000005'
-        and extensions.crypt('5678', security.pin_hash) = security.pin_hash
-        and security.sessions_invalid_before is not null
-    ),
+    and case
+      when to_regprocedure('public.verify_user_pin(uuid,text)') is not null then
+        exists (
+          select 1
+          from public.user_security as security
+          where security.user_id = 'f1000000-0000-0000-0000-000000000005'
+            and extensions.crypt('5678', security.pin_hash) = security.pin_hash
+            and security.sessions_invalid_before is not null
+        )
+      else
+        not exists (
+          select 1
+          from public.user_security as security
+          where security.user_id = 'f1000000-0000-0000-0000-000000000005'
+        )
+    end,
   'credential recovery did not rotate alias/PIN/session state safely'
 );
 select pg_temp.assert_true(
@@ -1127,5 +1453,249 @@ select pg_temp.assert_true(
 
 rollback;
 SQL
+
+# The main matrix stays in one rollback-only transaction.  This compact second
+# matrix deliberately crosses real commits to prove that a later Admin metadata
+# refresh cannot reuse a still-live invitation to downgrade an active Account.
+cleanup_identity_transaction_fixtures() {
+  psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 >/dev/null 2>&1 <<'SQL' || true
+begin;
+delete from public.learner_claim_invitation
+where id = 'f5000000-0000-0000-0000-000000000090';
+delete from public.teacher_learner
+where learner_profile_id = 'f2000000-0000-0000-0000-000000000090';
+delete from public.account_login_alias
+where normalized_login = 'rejected.nonpristine';
+update public.account
+set status = 'provisional'
+where auth_user_id in (
+  'f1000000-0000-0000-0000-000000000090',
+  'f1000000-0000-0000-0000-000000000091',
+  'f1000000-0000-0000-0000-000000000092'
+);
+delete from auth.users
+where id in (
+  'f1000000-0000-0000-0000-000000000090',
+  'f1000000-0000-0000-0000-000000000091',
+  'f1000000-0000-0000-0000-000000000092'
+);
+set constraints all immediate;
+delete from public.learner_profile
+where id = 'f2000000-0000-0000-0000-000000000090';
+commit;
+SQL
+}
+trap cleanup_identity_transaction_fixtures EXIT
+cleanup_identity_transaction_fixtures
+
+psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 <<'SQL'
+begin;
+
+create function pg_temp.assert_true(p_value boolean, p_message text)
+returns void language plpgsql as $$
+begin
+  if not coalesce(p_value, false) then
+    raise exception 'identity_acceptance_failed: %', p_message;
+  end if;
+end
+$$;
+
+insert into auth.users (
+  id, email, email_confirmed_at, raw_user_meta_data, raw_app_meta_data
+) values (
+  'f1000000-0000-0000-0000-000000000090',
+  'metadata-guard-teacher@test.invalid', now(),
+  '{"full_name":"Metadata Guard Teacher"}', '{}'
+);
+
+insert into public.learner_profile (id, display_name)
+values ('f2000000-0000-0000-0000-000000000090', 'Metadata Guard Source');
+insert into public.teacher_learner (
+  teacher_account_id, learner_profile_id, display_name
+)
+select
+  account.id,
+  'f2000000-0000-0000-0000-000000000090',
+  'Metadata Guard Source'
+from public.account as account
+where account.auth_user_id = 'f1000000-0000-0000-0000-000000000090';
+insert into public.learner_claim_invitation (
+  id, source_learner_profile_id, inviter_account_id,
+  recipient_email_digest, token_digest, kind, status, expires_at
+)
+select
+  'f5000000-0000-0000-0000-000000000090',
+  'f2000000-0000-0000-0000-000000000090',
+  account.id,
+  decode(repeat('81', 32), 'hex'),
+  decode(repeat('82', 32), 'hex'),
+  'child_activation', 'pending', now() + interval '1 day'
+from public.account as account
+where account.auth_user_id = 'f1000000-0000-0000-0000-000000000090';
+
+commit;
+SQL
+
+if pristine_failure_output="$(
+  psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 2>&1 <<'SQL'
+begin;
+insert into auth.users (
+  id, email, email_confirmed_at, raw_user_meta_data, raw_app_meta_data
+) values (
+  'f1000000-0000-0000-0000-000000000092',
+  repeat('8', 64) || '@learners.shidao.internal', now(),
+  '{"full_name":"Rejected Non-pristine Child"}',
+  '{"provider":"email","providers":["email"]}'
+);
+insert into public.account_login_alias (account_id, normalized_login)
+select account.id, 'rejected.nonpristine'
+from public.account as account
+where account.auth_user_id = 'f1000000-0000-0000-0000-000000000092';
+update auth.users
+set raw_app_meta_data = raw_app_meta_data || jsonb_build_object(
+  'identity_status', 'provisional',
+  'activation_invitation_id',
+  'f5000000-0000-0000-0000-000000000090'
+)
+where id = 'f1000000-0000-0000-0000-000000000092';
+commit;
+SQL
+)"; then
+  echo "Expected non-pristine provisional Auth sync to fail closed." >&2
+  exit 1
+fi
+if [[ "$pristine_failure_output" != *"learner_identity_provisional_auth_sync_pristine_mismatch"* ]]; then
+  echo "Non-pristine Auth sync failed for an unexpected reason." >&2
+  exit 1
+fi
+
+psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 <<'SQL'
+begin;
+
+create function pg_temp.assert_true(p_value boolean, p_message text)
+returns void language plpgsql as $$
+begin
+  if not coalesce(p_value, false) then
+    raise exception 'identity_acceptance_failed: %', p_message;
+  end if;
+end
+$$;
+
+select pg_temp.assert_true(
+  not exists (
+    select 1 from auth.users
+    where id = 'f1000000-0000-0000-0000-000000000092'
+  )
+  and not exists (
+    select 1 from public.account
+    where auth_user_id = 'f1000000-0000-0000-0000-000000000092'
+  )
+  and not exists (
+    select 1 from public.learner_profile
+    where display_name = 'Rejected Non-pristine Child'
+  ),
+  'failed non-pristine Auth transaction did not roll back completely'
+);
+
+insert into auth.users (
+  id, email, email_confirmed_at, raw_user_meta_data, raw_app_meta_data
+) values (
+  'f1000000-0000-0000-0000-000000000091',
+  repeat('f', 64) || '@learners.shidao.internal', now(),
+  '{"full_name":"Metadata Guard Child"}',
+  '{"provider":"email","providers":["email"]}'
+);
+update auth.users
+set raw_app_meta_data = raw_app_meta_data || jsonb_build_object(
+  'identity_status', 'provisional',
+  'activation_invitation_id',
+  'f5000000-0000-0000-0000-000000000090'
+)
+where id = 'f1000000-0000-0000-0000-000000000091';
+set constraints all immediate;
+select pg_temp.assert_true(
+  exists (
+    select 1
+    from public.account as account
+    where account.auth_user_id = 'f1000000-0000-0000-0000-000000000091'
+      and account.status = 'provisional'
+  ),
+  'same-transaction metadata sync did not provision the Account'
+);
+commit;
+
+begin;
+update public.account
+set status = 'active'
+where auth_user_id = 'f1000000-0000-0000-0000-000000000091';
+set constraints all immediate;
+commit;
+
+begin;
+update auth.users
+set raw_app_meta_data = raw_app_meta_data - 'activation_invitation_id'
+where id = 'f1000000-0000-0000-0000-000000000091';
+update auth.users
+set raw_app_meta_data = raw_app_meta_data || jsonb_build_object(
+  'activation_invitation_id',
+  'f5000000-0000-0000-0000-000000000090'
+)
+where id = 'f1000000-0000-0000-0000-000000000091';
+set constraints all immediate;
+select pg_temp.assert_true(
+  exists (
+    select 1
+    from public.account as account
+    where account.auth_user_id = 'f1000000-0000-0000-0000-000000000091'
+      and account.status = 'active'
+  ),
+  'post-commit metadata refresh downgraded an active Account'
+);
+commit;
+
+begin;
+update public.account
+set status = 'provisional'
+where auth_user_id in (
+  'f1000000-0000-0000-0000-000000000090',
+  'f1000000-0000-0000-0000-000000000091'
+);
+delete from auth.users
+where id in (
+  'f1000000-0000-0000-0000-000000000090',
+  'f1000000-0000-0000-0000-000000000091'
+);
+set constraints all immediate;
+delete from public.learner_profile
+where id = 'f2000000-0000-0000-0000-000000000090';
+select pg_temp.assert_true(
+  not exists (
+    select 1 from auth.users
+    where id in (
+      'f1000000-0000-0000-0000-000000000090',
+      'f1000000-0000-0000-0000-000000000091'
+    )
+  )
+  and not exists (
+    select 1 from public.account
+    where auth_user_id in (
+      'f1000000-0000-0000-0000-000000000090',
+      'f1000000-0000-0000-0000-000000000091'
+    )
+  )
+  and not exists (
+    select 1 from public.learner_profile
+    where id = 'f2000000-0000-0000-0000-000000000090'
+      or display_name in (
+        'Metadata Guard Teacher',
+        'Metadata Guard Child'
+      )
+  ),
+  'metadata transaction guard cleanup left committed fixtures'
+);
+commit;
+SQL
+
+trap - EXIT
 
 echo "Learner identity DB acceptance passed on $db_name"

@@ -1,29 +1,34 @@
 # Current database schema
 
-**Статус:** agent-first guide для production learner-identity contract stage
+**Статус:** agent-first guide для production learner-identity M6 stage
 
 **Production schema head:**
-`20260807065038_learner_identity_legacy_contract_cleanup.sql`
+`20260809090000_learner_identity_provisional_auth_metadata_sync.sql`
 
-**Repository contract head:**
-`20260807065038_learner_identity_legacy_contract_cleanup.sql`
+**Repository schema head:**
+`20260809090000_learner_identity_provisional_auth_metadata_sync.sql`
 
-**Final contract migration:**
+**Legacy contract migration:**
 `20260807065038_learner_identity_legacy_contract_cleanup.sql` — применена после
 двух подтверждённых roleless web releases и read-only dependency audit
 
+**Production Auth hardening head:**
+`20260809090000_learner_identity_provisional_auth_metadata_sync.sql` — применена
+после M5 deferred-invariant fix, отдельных verified backups и реального GoTrue
+Admin create/delete probe
+
 **SQL snapshot:**
 [`supabase/schema/current-schema.sql`](../../supabase/schema/current-schema.sql)
-в repository зафиксирован из проверенной post-M4 production базы. Strict
+в repository зафиксирован из проверенной post-M6 production базы. Strict
 signature `shidao-v2-contract` подтверждена 9 августа 2026 года; snapshot
-SHA-256 — `a9c983f8c6403d0816fda9afc7f42241be7cfa9a661abf5f8dde22f502fab30c`.
+SHA-256 — `584ebb96dc8d96f1eb508e7eae836edb8125a9fefe2a59e9cb362af54bba5a26`.
 
 ## Read order для DB-задач
 
 1. этот документ;
 2. `supabase/schema/current-schema.sql` для последнего подтверждённого snapshot;
-3. четыре learner-identity migrations ниже, если задача касается candidate,
-   rollout/backfill или contract cleanup;
+3. шесть learner-identity migrations ниже, если задача касается
+   rollout/backfill, compatibility или contract cleanup;
 4. остальные `supabase/migrations/*` только для compatibility, rollback или
    debugging history.
 
@@ -32,22 +37,25 @@ SHA-256 — `a9c983f8c6403d0816fda9afc7f42241be7cfa9a661abf5f8dde22f502fab30c`.
 
 ## Release sequence и migration set
 
-| Stage | Migration                                                            | Назначение                                                                                                                                     |
-| ----- | -------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| M1    | `20260807065017_identity_security_hardening.sql`                     | RLS/ACL hardening `user_preference`/`user_security`, сужение legacy table/function grants                                                      |
-| M2    | `20260807065026_learner_identity_primitives_backfill_invariant.sql`  | roleless Account, Account credential boundary, exactly-one profile bootstrap/backfill и default-deny identity primitives                       |
-| M3    | `20260807065032_learner_identity_workflows_progress_observer_ai.sql` | discovery/claim/merge, archive/restore, self/observer projections, erasure, actual duration и AI consent                                       |
-| M4    | `20260807065038_learner_identity_legacy_contract_cleanup.sql`        | final RESTRICT cleanup dormant role helpers/types/Data API grants и rollback-only legacy security dual-writes; без удаления legacy rows/tables |
+| Stage | Migration                                                              | Назначение                                                                                                                                     |
+| ----- | ---------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| M1    | `20260807065017_identity_security_hardening.sql`                       | RLS/ACL hardening `user_preference`/`user_security`, сужение legacy table/function grants                                                      |
+| M2    | `20260807065026_learner_identity_primitives_backfill_invariant.sql`    | roleless Account, Account credential boundary, exactly-one profile bootstrap/backfill и default-deny identity primitives                       |
+| M3    | `20260807065032_learner_identity_workflows_progress_observer_ai.sql`   | discovery/claim/merge, archive/restore, self/observer projections, erasure, actual duration и AI consent                                       |
+| M4    | `20260807065038_learner_identity_legacy_contract_cleanup.sql`          | final RESTRICT cleanup dormant role helpers/types/Data API grants и rollback-only legacy security dual-writes; без удаления legacy rows/tables |
+| M5    | `20260809084500_learner_identity_auth_deferred_invariant_security.sql` | узкий `SECURITY DEFINER` boundary для deferred exactly-one invariant при реальном GoTrue commit; без расширения Auth table privileges          |
+| M6    | `20260809090000_learner_identity_provisional_auth_metadata_sync.sql`   | trusted two-phase GoTrue `app_metadata` sync для pristine provisional child Account с fail-closed защитой от позднего downgrade                |
 
 M1–M3 являются additive/compatible expand для roleless web. M4 была withheld из
 первого deploy и применена только после доказательства, что running и rollback
-images не зависят от старого contract.
+images не зависят от старого contract. M5 и M6 — атомарные forward security
+fixes поверх post-M4 contract; они не восстанавливают legacy role/ACL surface.
 
 Production expand evidence 9 августа 2026 года:
 
 - verified full-format backup:
   `/root/shidao-db-backups/shidao-before-learner-identity-20260809T081005Z.dump`;
-- backup size `671605` bytes, SHA-256
+- backup size `671605` bytes, 1014 restore-list entries, SHA-256
   `3974af7cffd2c5e7e62d872be5923ccf64638640d56160a947a2d68011e70ae7`;
 - M1–M3 применены owner connection с `ON_ERROR_STOP`;
 - `active_accounts_without_exactly_one_profile = 0`, все 18 новых identity
@@ -73,6 +81,38 @@ Production contract evidence 9 августа 2026 года:
   `user_security` отсутствуют; 4 root→impl edges сохранены, impl ACL закрыты;
 - `active_accounts_without_exactly_one_profile = 0`, duplicate links `0`,
   PostgREST cache видит новые RPC и не видит удалённые legacy RPC.
+
+Production Auth hardening evidence 9 августа 2026 года:
+
+- verified pre-M5 full-format backup
+  `/root/shidao-db-backups/shidao-before-auth-deferred-invariant-fix-20260809T085613Z.dump`:
+  size `858088` bytes, 1003 restore-list entries, SHA-256
+  `a0c67c77cfc5d819678d4682dd340e4ed052cefcf4d4d4a985758b34d7894dcc`;
+- M5 checksum
+  `126e412c3949a8e649638522e52e1d98288c7b779b3fbc13dcd2747d9aa31e7c`
+  применена owner connection с `ON_ERROR_STOP` одной транзакцией;
+- M5 postflight подтвердил `SECURITY DEFINER` и пустой `search_path` у
+  `enforce_account_exactly_one_learner_profile`, owner/RLS boundary, ровно два
+  deferred constraint triggers и отсутствие `EXECUTE` у `PUBLIC`, `anon`,
+  `authenticated`, `service_role`, `supabase_auth_admin`;
+- verified pre-M6 full-format backup
+  `/root/shidao-db-backups/shidao-before-provisional-auth-sync-20260809T093520Z.dump`:
+  size `1013144` bytes, 1339 restore-list entries, SHA-256
+  `f56df63680abbc10b1b0eafa686800a7a2cddd34430185d566462d38ce04be41`;
+- M6 checksum
+  `133dafcea4ff4f54bfeb3e58bb7eb2bf98947b79d422ab44f7e90a6430ecaada`
+  применена owner connection с `ON_ERROR_STOP` одной транзакцией;
+- M6 postflight подтвердил enabled row-level
+  `AFTER UPDATE OF raw_app_meta_data` trigger с key-change predicate, закрытый
+  function ACL, owner/RLS boundary, fail-closed pristine/xmin guard, ноль
+  trusted `Auth provisional / Account active` mismatches и exactly-one count `0`;
+- реальный GoTrue Admin create с internal learner email, explicit
+  `identity_status=provisional` и live child-activation invitation завершился
+  успешно: Account стал `provisional` и получил ровно один bootstrap Profile;
+  последующий Auth Admin delete удалил disposable Auth user и его пустые
+  provisional Account/Profile rows, post-cleanup counts равны `0`;
+- финальный проверенный post-M6 production snapshot имеет SHA-256
+  `584ebb96dc8d96f1eb508e7eae836edb8125a9fefe2a59e9cb362af54bba5a26`.
 
 ## Current repository tables
 
@@ -153,7 +193,7 @@ Admin, keyed digest или verified recipient email.
 
 ## Exactly-one Account/Profile invariant
 
-После M2:
+После M2–M6:
 
 - Auth trigger атомарно создаёт `account`, `account_security`,
   `account_preference` и один linked `learner_profile`;
@@ -166,7 +206,15 @@ Admin, keyed digest или verified recipient email.
   включают узкий transaction-local mutation mode;
 - удаление действительно пустого provisional Auth user очищает только его
   пустой bootstrap profile. Profile с application dependencies требует явного
-  lifecycle workflow.
+  lifecycle workflow;
+- M5 исполняет deferred exactly-one checks в собственном узком
+  `SECURITY DEFINER` boundary, когда GoTrue на commit уже снова работает как
+  `supabase_auth_admin`; прямые Account/Profile grants Auth-роли не выдаются;
+- M6 наблюдает только изменение trusted provisional keys в
+  `auth.users.raw_app_meta_data`. В `provisional` переводится лишь pristine
+  bootstrap Account с тем же creation `xmin`, strict internal email и live
+  `child_activation` invitation. Любой последующий metadata refresh после
+  commit не может перевести established `active` Account обратно.
 
 Обязательный postflight:
 
@@ -259,7 +307,11 @@ list/reset/revoke learner credential recovery
 Child activation создаёт отдельный provisional learner Account, unique login и
 PIN, переносит offline source в его canonical target, требует явного
 подтверждения recovery-delegate authority и не превращает открытый Account
-взрослого в learner target. Observer invitation — отдельное opt-in действие.
+взрослого в learner target. GoTrue создаёт Auth row и записывает custom
+`app_metadata` двумя операциями в одной transaction; M6 связывает их только для
+trusted pristine child bootstrap и fail closed для malformed, expired,
+wrong-kind или marker-less metadata. Observer invitation — отдельное opt-in
+действие.
 
 ### Merge/archive/erasure
 
@@ -341,13 +393,15 @@ Snapshot обязан сохранить:
 
 - `trg_auth_user_create_account` на `auth.users`, вызывающий обновлённый
   atomic Account/profile bootstrap;
+- `trg_auth_user_sync_provisional_account` на `auth.users.raw_app_meta_data`,
+  вызывающий narrow trusted same-transaction M6 sync;
 - private bucket `storage.buckets.course-assets`;
 - owner policies `storage.objects` SELECT/INSERT/UPDATE/DELETE;
 - grants/default ACL.
 
 ## Absent from active model
 
-В candidate по-прежнему нет Methodology, Lesson Step/root Step,
+В active model по-прежнему нет Methodology, Lesson Step/root Step,
 `lesson_run_participant`, Lesson snapshot, persisted Run/Record status,
 Homework persistence, parsing/RAG, learner Course consumption/enrollment или
 live Student Screen. Observer capability не является Parent/Guardian role, а
@@ -355,10 +409,14 @@ AI consent не является Course access.
 
 ## Snapshot refresh workflow
 
-`scripts/refresh-schema-snapshot.sh` принимает ровно два строгих stage:
-`expand` после M1–M3 и `contract` после M4. В обоих signature проверяет:
+`scripts/refresh-schema-snapshot.sh` принимает ровно два строгих compatibility
+stage: `expand` сохраняет полный legacy compatibility contract, `contract`
+требует завершённый M4 cleanup. Оба stage дополнительно требуют полный M1–M3
+identity contract и M5/M6 Auth hardening. В обоих signature проверяет:
 
 - все M1–M3 tables/functions/columns и exactly-one invariant;
+- M5/M6 `SECURITY DEFINER` owner/ACL boundaries, exact Auth trigger shape и
+  отсутствие trusted live provisional mismatch;
 - default-deny identity tables;
 - полный известный compatibility helper/type/ACL set на `expand` либо его
   полное отсутствие на `contract`; частично применённый cleanup отклоняется;
@@ -372,7 +430,7 @@ DATABASE_URL='postgresql://...' npm run db:snapshot
 ```
 
 После команды review полного diff обязателен. Скрипт не применяет DDL и не
-меняет migrations. Первый roleless release фиксирует проверенный M1–M3
-`expand` snapshot. После успешного contract rollout тот же script фиксирует
-финальный `contract` snapshot; ручное редактирование dump вместо refresh не
-допускается.
+меняет migrations. Первый roleless release исторически зафиксировал проверенный
+M1–M3 `expand` snapshot. После M4 contract rollout и M5/M6 Auth hardening тот же
+script зафиксировал текущий финальный `contract` snapshot; ручное редактирование
+dump вместо refresh не допускается.

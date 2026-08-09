@@ -8,10 +8,11 @@ set -euo pipefail
 # auth.users/storage.*. Their reviewed section is preserved from the existing
 # snapshot and must be updated deliberately when those objects change.
 #
-# The signature accepts exactly two learner-identity release stages. Both must
-# contain every M1-M3 object and invariant. The expand stage also requires the
-# complete, known legacy compatibility contract; the final stage requires the
-# complete M4 helper/type/ACL cleanup. A partial stage is rejected.
+# The signature accepts exactly two learner-identity compatibility stages. Both
+# must contain every M1-M3 object/invariant plus the M5/M6 Auth hardening. The
+# expand stage also requires the complete, known legacy compatibility contract;
+# the final stage requires the complete M4 helper/type/ACL cleanup. A partial
+# stage is rejected.
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
@@ -356,17 +357,219 @@ SHIDAO_SCHEMA_SIGNATURE="$({
          )
          and exists (
            select 1
-           from pg_trigger
-           where tgrelid = 'public.account'::regclass
-             and tgname = 'trg_account_exactly_one_learner_profile'
-             and tgconstraint <> 0
+           from pg_trigger as trigger
+           where trigger.tgrelid = 'auth.users'::regclass
+             and trigger.tgname = 'trg_auth_user_create_account'
+             and trigger.tgfoid = to_regprocedure(
+               'public.handle_auth_user_account()'
+             )
+             and not trigger.tgisinternal
+             and trigger.tgenabled = 'O'
+             -- ROW + AFTER INSERT, with no other event bits or WHEN clause.
+             and trigger.tgtype = 5
+             and trigger.tgqual is null
          )
          and exists (
            select 1
-           from pg_trigger
-           where tgrelid = 'public.learner_profile'::regclass
-             and tgname = 'trg_learner_profile_exactly_one_account'
-             and tgconstraint <> 0
+           from pg_trigger as trg
+           where trg.tgrelid = 'public.account'::regclass
+             and trg.tgname = 'trg_account_exactly_one_learner_profile'
+             and not trg.tgisinternal
+             and trg.tgenabled = 'O'
+             -- ROW + AFTER INSERT/DELETE/UPDATE, no other event bits.
+             and trg.tgtype = 29
+             and trg.tgconstraint <> 0
+             and trg.tgfoid = to_regprocedure(
+               'public.enforce_account_exactly_one_learner_profile()'
+             )
+             and trg.tgdeferrable
+             and trg.tginitdeferred
+         )
+         and exists (
+           select 1
+           from pg_trigger as trg
+           where trg.tgrelid = 'public.learner_profile'::regclass
+             and trg.tgname = 'trg_learner_profile_exactly_one_account'
+             and not trg.tgisinternal
+             and trg.tgenabled = 'O'
+             -- ROW + AFTER INSERT/DELETE/UPDATE, no other event bits.
+             and trg.tgtype = 29
+             and trg.tgconstraint <> 0
+             and trg.tgfoid = to_regprocedure(
+               'public.enforce_account_exactly_one_learner_profile()'
+             )
+             and trg.tgdeferrable
+             and trg.tginitdeferred
+         )
+         and exists (
+           select 1
+           from pg_proc as procedure
+           where procedure.oid = to_regprocedure(
+             'public.enforce_account_exactly_one_learner_profile()'
+           )
+             and procedure.prosecdef
+             and procedure.proconfig @> array['search_path=\"\"']
+             and not exists (
+               select 1
+               from pg_class as relation
+               where relation.oid in (
+                 'public.account'::regclass,
+                 'public.learner_profile'::regclass
+               )
+                 and (
+                   relation.relowner <> procedure.proowner
+                   or relation.relforcerowsecurity
+                 )
+             )
+             and not exists (
+               select 1
+               from aclexplode(
+                 coalesce(
+                   procedure.proacl,
+                   acldefault('f', procedure.proowner)
+                 )
+               ) as acl_entry
+               where acl_entry.grantee = 0
+                 and acl_entry.privilege_type = 'EXECUTE'
+             )
+         )
+         and not exists (
+           select 1
+           from unnest(
+             array['anon', 'authenticated', 'service_role'] || case
+               when exists (
+                 select 1 from pg_roles
+                 where rolname = 'supabase_auth_admin'
+               ) then array['supabase_auth_admin']
+               else array[]::text[]
+             end
+           )
+             as actor(role_name)
+           where has_function_privilege(
+             actor.role_name,
+             'public.enforce_account_exactly_one_learner_profile()',
+             'EXECUTE'
+           )
+         )
+         and exists (
+           select 1
+           from pg_proc as procedure
+           join pg_roles as owner on owner.oid = procedure.proowner
+           where procedure.oid = to_regprocedure(
+             'public.sync_provisional_account_from_auth_metadata()'
+           )
+             and procedure.prosecdef
+             and procedure.proconfig @> array['search_path=\"\"']
+             and has_table_privilege(owner.rolname, 'auth.users', 'SELECT')
+             and (
+               owner.rolsuper
+               or owner.rolbypassrls
+               or exists (
+                 select 1
+                 from pg_class as auth_relation
+                 where auth_relation.oid = 'auth.users'::regclass
+                   and auth_relation.relowner = procedure.proowner
+                 and not auth_relation.relforcerowsecurity
+               )
+             )
+             and not exists (
+               select 1
+               from pg_class as relation
+               where relation.oid in (
+                 'public.account'::regclass,
+                 'public.account_login_alias'::regclass,
+                 'public.account_security'::regclass,
+                 'public.account_preference'::regclass,
+                 'public.learner_profile'::regclass,
+                 'public.learner_claim_invitation'::regclass
+               )
+                 and (
+                   relation.relowner <> procedure.proowner
+                   or relation.relforcerowsecurity
+                 )
+             )
+             and lower(procedure.prosrc) like
+               '%account.xmin = v_auth_xmin%'
+             and lower(procedure.prosrc) like
+               '%learner_identity_provisional_auth_sync_pristine_mismatch%'
+             and not exists (
+               select 1
+               from aclexplode(
+                 coalesce(
+                   procedure.proacl,
+                   acldefault('f', procedure.proowner)
+                 )
+               ) as acl_entry
+               where acl_entry.grantee = 0
+                 and acl_entry.privilege_type = 'EXECUTE'
+             )
+         )
+         and exists (
+           select 1
+           from pg_trigger as trigger
+           where trigger.tgrelid = 'auth.users'::regclass
+             and trigger.tgname = 'trg_auth_user_sync_provisional_account'
+             and trigger.tgfoid = to_regprocedure(
+               'public.sync_provisional_account_from_auth_metadata()'
+             )
+             and not trigger.tgisinternal
+             and trigger.tgenabled = 'O'
+             and trigger.tgtype = 17
+             and trigger.tgattr::text = (
+               select attribute.attnum::text
+               from pg_attribute as attribute
+               where attribute.attrelid = 'auth.users'::regclass
+                 and attribute.attname = 'raw_app_meta_data'
+                 and not attribute.attisdropped
+             )
+             and trigger.tgqual is not null
+             and lower(pg_get_triggerdef(trigger.oid, true)) like
+               '%identity_status%'
+             and lower(pg_get_triggerdef(trigger.oid, true)) like
+               '%activation_invitation_id%'
+             and (
+               select count(*)
+               from regexp_matches(
+                 lower(pg_get_triggerdef(trigger.oid, true)),
+                 'is distinct from',
+                 'g'
+               )
+             ) = 2
+         )
+         and not exists (
+           select 1
+           from unnest(
+             array['anon', 'authenticated', 'service_role'] || case
+               when exists (
+                 select 1 from pg_roles
+                 where rolname = 'supabase_auth_admin'
+               ) then array['supabase_auth_admin']
+               else array[]::text[]
+             end
+           ) as actor(role_name)
+           where has_function_privilege(
+             actor.role_name,
+             'public.sync_provisional_account_from_auth_metadata()',
+             'EXECUTE'
+           )
+         )
+         and not exists (
+           select 1
+           from public.account as account
+           join auth.users as auth_user on auth_user.id = account.auth_user_id
+           join public.learner_claim_invitation as invitation
+             on invitation.id::text =
+               auth_user.raw_app_meta_data ->> 'activation_invitation_id'
+           join public.learner_profile as source
+             on source.id = invitation.source_learner_profile_id
+           where account.status = 'active'
+             and auth_user.raw_app_meta_data ->> 'identity_status' = 'provisional'
+             and coalesce(lower(auth_user.email), '')
+               ~ '^[0-9a-f]{64}@learners[.]shidao[.]internal$'
+             and invitation.kind = 'child_activation'
+             and invitation.status in ('pending', 'bound')
+             and invitation.expires_at > clock_timestamp()
+             and source.account_id is null
          )
          and pg_get_functiondef(
            'public.schedule_lesson_run(uuid,timestamptz,integer,uuid[],uuid)'::regprocedure
@@ -577,6 +780,26 @@ if ! grep -Fq -- "${CROSS_SCHEMA_MARKER}" "${TMP_CROSS}"; then
   exit 1
 fi
 
+for required_cross_schema_line in \
+  "CREATE TRIGGER trg_auth_user_create_account" \
+  "AFTER INSERT ON auth.users" \
+  "FOR EACH ROW EXECUTE FUNCTION public.handle_auth_user_account();" \
+  "CREATE TRIGGER trg_auth_user_sync_provisional_account" \
+  "AFTER UPDATE OF raw_app_meta_data ON auth.users" \
+  "(OLD.raw_app_meta_data ->> 'identity_status') IS DISTINCT FROM" \
+  "(OLD.raw_app_meta_data ->> 'activation_invitation_id') IS DISTINCT FROM" \
+  "EXECUTE FUNCTION public.sync_provisional_account_from_auth_metadata();"; do
+  if ! grep -Fq -- "${required_cross_schema_line}" "${TMP_CROSS}"; then
+    echo "Refusing to refresh: reviewed cross-schema section is missing ${required_cross_schema_line}." >&2
+    exit 1
+  fi
+done
+
+if [[ "$(grep -Fc -- "IS DISTINCT FROM" "${TMP_CROSS}")" -ne 2 ]]; then
+  echo "Refusing to refresh: reviewed provisional Auth trigger predicate is not exact." >&2
+  exit 1
+fi
+
 PG_DUMP_RESTRICT_KEY_ARGS=()
 if pg_dump --help 2>&1 | grep -Fq -- "--restrict-key"; then
   PG_DUMP_RESTRICT_KEY_ARGS+=(
@@ -613,6 +836,7 @@ for required in \
   "GRANT" \
   "ALTER DEFAULT PRIVILEGES" \
   "trg_auth_user_create_account" \
+  "trg_auth_user_sync_provisional_account" \
   "course_assets_owner_select" \
   "CREATE TABLE public.lesson_run" \
   "CREATE TABLE public.learning_record" \
@@ -645,6 +869,7 @@ for required in \
   "CREATE FUNCTION public.enforce_learner_group_member_teacher_relation" \
   "CREATE FUNCTION public.enforce_learning_record_producer_immutable" \
   "CREATE FUNCTION public.enforce_account_exactly_one_learner_profile" \
+  "CREATE FUNCTION public.sync_provisional_account_from_auth_metadata" \
   "CREATE FUNCTION public.current_account_auth_context" \
   "CREATE FUNCTION public.resolve_account_login_alias" \
   "CREATE FUNCTION public.verify_account_pin_credential" \

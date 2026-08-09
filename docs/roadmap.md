@@ -66,9 +66,10 @@
 - Current production contract release поверх deployed baseline завершает P0.Identity:
   roleless exactly-one Account profile, Account login/PIN, discovery/claim/
   child activation/merge, archive/restore, self/observer history/progress,
-  erasure и consented AI. M1–M4, два exact roleless Coolify SHA и финальный
-  DB/RLS/ACL/PostgREST postflight подтверждены; final exact web deploy и
-  authenticated browser postflight остаются **next**.
+  erasure и consented AI. M1–M6, четыре verified backup, два exact roleless
+  Coolify SHA, финальный DB/RLS/ACL/PostgREST postflight и реальный GoTrue
+  create/delete probe подтверждены; final exact web deploy и authenticated
+  browser postflight остаются **next**.
 - Реализованы private-by-default Components и persisted Student Screen Slides.
 - Реализован fullscreen Student Screen preview.
 - Реализован development-only MCP из шести tools поверх application service.
@@ -96,9 +97,10 @@
 `user_preference`/`user_security`, active callers перенесены на Account
 boundary, production middleware использует explicit host allowlist и exact
 `v2.shidao.ru` CSRF Origin. Negative Auth/host/output tests входят в release
-gate. **Production status:** M1–M4, два verified backup, два exact roleless web
-deployment и contract DB postflight завершены 9 августа 2026 года. Final exact
-web deploy и authenticated browser postflight остаются **next**.
+gate. **Production status:** M1–M6, четыре verified backup, два exact roleless
+web deployment, contract DB postflight и Auth Admin lifecycle probe завершены
+9 августа 2026 года. Final exact web deploy и authenticated browser postflight
+остаются **next**.
 
 - [x] инвентаризировать server callers login/onboarding/profile/PIN/session и
       legacy `SECURITY DEFINER` RPC с caller-supplied `p_user_id`/`anon` execute;
@@ -115,19 +117,20 @@ web deploy и authenticated browser postflight остаются **next**.
 - определить Prettier baseline: исключить immutable archive и отдельно
   отформатировать active source, чтобы repository-wide `format:check` стал
   честным gate;
-- [x] подготовить исправление новой forward migration с Auth regression smoke;
-      production delivery остаётся release terminal condition.
+- [x] доставить M5/M6 forward hardening с restricted Auth regression, backup и
+      production GoTrue lifecycle smoke; final exact web/browser verification
+      остаётся release terminal condition.
 
 Этот пункт не разрешает менять Auth/SMTP/JWT или применять migration без
 read-only ShiDao sanity check и отдельного deployed-contour postflight.
 
 ## P0.Identity: завершить universal Account и canonical learner ecosystem
 
-**Current production contract:** все девять vertical slices реализованы через
-M1–M4, `src/modules/learner-identity/`, API/UI и roleless navigation. Verified
-backups, два roleless deploy, dependency audit, contract cleanup, final snapshot
-и DB/API postflight завершены. Remaining **next release work** — final exact web
-deploy и authenticated browser postflight. Homework,
+**Current production contract:** все vertical slices реализованы через M1–M6,
+`src/modules/learner-identity/`, API/UI и roleless navigation. Четыре verified
+backup, два roleless deploy, dependency audit, contract cleanup, Auth hardening,
+final snapshot и DB/API/GoTrue postflight завершены. Remaining **next release
+work** — final exact web deploy и authenticated browser postflight. Homework,
 RAG, billing, templates и live Student Screen по-прежнему не входят.
 
 Согласованный target:
@@ -180,6 +183,10 @@ RAG, billing, templates и live Student Screen по-прежнему не вхо
 9. **Legacy cutover:** active role switch/callers удалены; final role
    helpers/types/grants и rollback-only security dual-writes удалены отдельной
    M4 после доказанного отсутствия зависимостей.
+10. **Auth transaction hardening:** M5 выполняет deferred exactly-one invariant
+    под закрытой owner boundary; M6 распознаёт только trusted pristine
+    child-activation metadata в той же GoTrue creation transaction и запрещает
+    late `active → provisional` downgrade.
 
 Каждый slice проходит цепочку contracts → service → repository → API → UI →
 tests → migration/snapshot → docs → production postflight. Нельзя объявлять
@@ -319,7 +326,7 @@ OCR, web crawling и audio transcription не входят в первый parsi
 ## P2: audience и learning identity
 
 Legacy `teacher/parent/student/school/class` rows сохраняются только как dormant
-compatibility/recovery data; active roleless candidate их не читает.
+compatibility/recovery data; active roleless contract их не читает.
 
 **Current deployed slice:**
 

@@ -23,9 +23,10 @@ deployed и repository scope, ограничения и implementation map за�
 
 Current production contract завершает roleless Account/profile identity,
 recipient-bound claim/child activation, physical merge, archive/restore,
-self/observer history/progress и subject-controlled AI consent. M1–M4, два
-roleless Coolify release и DB/API postflight завершены; final exact web deploy
-и authenticated browser postflight сверяются в project-state. Learner Course consumption,
+self/observer history/progress и subject-controlled AI consent. M1–M6, четыре
+verified backup, два roleless Coolify release, DB/API postflight и реальный
+GoTrue Admin create/delete probe завершены; final exact web deploy и
+authenticated browser postflight сверяются в project-state. Learner Course consumption,
 live-проведение, richer Component metrics, persisted Homework, parsing/RAG,
 подписки, billing и внешний MCP/API остаются **later**. Настоящее время в
 стратегических разделах не заменяет implementation/deployment evidence.
@@ -982,9 +983,12 @@ ShiDao строится не как оболочка над одной модн�
 5. Legacy identity/security ACL, explicit host allowlist и exact app-origin
    CSRF hardening.
 
-Эти пункты реализованы в code/M1–M4 и прошли backup, две roleless deployments,
-dependency audit и production DB/API postflight. Финальный exact web deploy и
-authenticated browser postflight фиксируются в project-state.
+Эти пункты реализованы в code/M1–M6 и прошли четыре verified backup, две
+roleless deployments, dependency audit, production DB/API postflight и реальный
+GoTrue Admin lifecycle probe. M5 закрывает deferred exactly-one Auth boundary,
+а M6 безопасно поддерживает двухфазную запись provisional metadata без позднего
+downgrade. Финальный exact web deploy и authenticated browser postflight
+фиксируются в project-state.
 
 ## Следующая продуктовая версия после identity rollout
 
@@ -1219,8 +1223,9 @@ repository отдельно от web deployment. Это рабочий persisted
 - улучшенный ручной Course Builder;
 - OpenRouter-assisted authoring;
 - mixed group/direct audience, scheduling, LessonRun и базовая учебная история;
-- roleless identity/observer candidate с safe connection/merge, self history,
-  real-record progress и consented AI; production rollout pending;
+- roleless identity/observer contract с safe connection/merge, self history,
+  real-record progress и consented AI; M1–M6 и production DB/GoTrue rollout
+  завершены, exact web/browser confirmation фиксируется в project-state;
 - загрузка и parsing источников;
 - persisted Homework;
 - затем live-проведение и расширенные метрики учебного профиля.
@@ -1582,9 +1587,10 @@ Lesson непосредственно владеет единым ordered Compon
 или вторым authoring hierarchy. LearningRecord хранит минимальный контекст и
 результат конкретного учащегося, но не snapshot Lesson.
 
-Repository candidate уже добавляет account claim/merge, subject-controlled
-observer access, safe real-record progress и separate consented cross-provider
-AI; production evidence появится только после phased rollout. Live runtime,
+Current production contract уже добавляет account claim/merge,
+subject-controlled observer access, safe real-record progress и separate
+consented cross-provider AI; M1–M6, backups и DB/GoTrue evidence зафиксированы в
+project-state. Live runtime,
 Homework, reusable source library, richer Component metrics, AI для проведения
 и прозрачные usage limits остаются later. Canonical ID сам по себе не разрешает
 Course access, observer access или cross-provider history.

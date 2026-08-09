@@ -23,11 +23,11 @@
 
 V2 deployment не создаёт новый repository или Supabase project.
 
-Deployed contour до learner-identity release сохраняет прежний host debt.
-Repository candidate закрывает его explicit allowlist: non-root `brand`/
+Current deployed contour закрывает прежний host debt explicit allowlist:
+non-root `brand`/
 `model`, unknown hosts и mismatched Host/X-Forwarded-Host получают 421, unsafe
-V2 requests принимают только exact `https://v2.shidao.ru` Origin. Считать эту
-boundary current можно только после exact candidate deploy/postflight.
+V2 requests принимают только exact `https://v2.shidao.ru` Origin. Boundary
+подтверждена exact roleless deploy и HTTP/browser regression.
 
 ## 2. Private operational config
 
@@ -127,20 +127,25 @@ routes вызывают новые aggregate RPC и читают новые grou
 - PostgREST schema reload и проверка новых relation/table/RPC return shapes;
 - согласованный rollout web, который читает teacher directory projection.
 
-Learner-identity candidate использует exact files:
+Current learner-identity rollout использует exact files:
 
 ```text
 M1 20260807065017_identity_security_hardening.sql
 M2 20260807065026_learner_identity_primitives_backfill_invariant.sql
 M3 20260807065032_learner_identity_workflows_progress_observer_ai.sql
 M4 20260807065038_learner_identity_legacy_contract_cleanup.sql
+M5 20260809084500_learner_identity_auth_deferred_invariant_security.sql
+M6 20260809090000_learner_identity_provisional_auth_metadata_sync.sql
 ```
 
 M1–M3 применяются одним протестированным expand set после backup. M4 физически
 не удаляет legacy rows/tables, но завершает cutover: удаляет helpers/types/
 grants и rollback-only `user_security` dual-write dependency из поддерживаемых
-Account RPC. Поэтому он withheld из первого commit/deploy. Каждый этап обязан
-дополнительно подтвердить:
+Account RPC. Поэтому он withheld из первого commit/deploy. M5 и M6 являются
+последовательными forward security fixes поверх post-M4 contract: M5 закрывает
+real-GoTrue deferred invariant boundary, M6 обрабатывает двухфазную запись
+trusted provisional `app_metadata`, не разрешая post-commit
+`active -> provisional` downgrade. Каждый этап обязан дополнительно подтвердить:
 
 - actor matrix `anon / teacher A / teacher B / subject / active observer /
 revoked observer / outsider`;
@@ -161,7 +166,7 @@ revoked observer / outsider`;
 - отсутствие foreign raw LearningRecord в teacher browser/API;
 - Auth/session/onboarding regression до удаления active role dependencies.
 
-Phased rollout для этого exact candidate:
+Phased rollout для этого exact migration set:
 
 1. read-only production identity/schema sanity; подтвердить ShiDao tables и
    текущий migration head;
@@ -178,16 +183,22 @@ Phased rollout для этого exact candidate:
 8. выполнить read-only dependency audit всех 23 удаляемых helpers, 13 policies,
    двух enums и legacy grants;
 9. только затем применить exact M4 `DROP ... RESTRICT` contract;
-10. refresh `contract` snapshot, push/deploy final exact SHA и повторить
-    DB/API/HTTP/authenticated browser postflight.
+10. сделать отдельный verified backup и применить exact M5; проверить deferred
+    function owner/search-path/ACL boundary и реальный GoTrue commit;
+11. сделать новый verified backup и применить exact M6; проверить точную форму
+    Auth UPDATE trigger, pristine/xmin guard, ACL/RLS и trusted mismatch count;
+12. выполнить disposable real GoTrue Admin create/delete probe и доказать нулевой
+    остаток Auth/Account/bootstrap Profile fixtures;
+13. refresh финального `contract` snapshot, затем push/deploy final exact web SHA
+    и повторить DB/API/HTTP/authenticated browser postflight.
 
-Production execution log, 9 августа 2026 года (current contract stage):
+Production execution log, 9 августа 2026 года (current M6 stage):
 
 - read-only sanity подтвердил ShiDao tables, PostgreSQL 15.8 и owner
   `supabase_admin`;
 - full-format backup
   `/root/shidao-db-backups/shidao-before-learner-identity-20260809T081005Z.dump`
-  проверен через nonzero size, `pg_restore --list` и SHA-256
+  проверен: size `671605`, 1014 restore-list entries и SHA-256
   `3974af7cffd2c5e7e62d872be5923ccf64638640d56160a947a2d68011e70ae7`;
 - exact M1–M3 применены, strict signature вернула `shidao-v2-expand`, exactly-one
   postflight вернул `0` нарушений;
@@ -203,15 +214,49 @@ Production execution log, 9 августа 2026 года (current contract stage
   `257d6a6f4a102e630ca9d6321c86beb67b1cea0befa7049865a8bfb4e511b0b4`;
 - exact M4 применена одной транзакцией; strict signature вернула
   `shidao-v2-contract`, PostgREST cache подтвердил новые и удаление legacy RPC;
-- production snapshot SHA-256:
-  `a9c983f8c6403d0816fda9afc7f42241be7cfa9a661abf5f8dde22f502fab30c`;
+- verified pre-M5 full-format backup
+  `/root/shidao-db-backups/shidao-before-auth-deferred-invariant-fix-20260809T085613Z.dump`
+  (local mirror
+  `/Users/user/Documents/shidao/.local-backups/shidao-before-auth-deferred-invariant-fix-20260809T085613Z.dump`)
+  имеет size `858088`, 1003 restore-list entries и SHA-256
+  `a0c67c77cfc5d819678d4682dd340e4ed052cefcf4d4d4a985758b34d7894dcc`;
+- exact M5 checksum
+  `126e412c3949a8e649638522e52e1d98288c7b779b3fbc13dcd2747d9aa31e7c`
+  применена одной транзакцией. Postflight подтвердил `SECURITY DEFINER`, пустой
+  `search_path`, корректного owner, две привязки deferred constraint triggers и
+  отсутствие execute у browser/service/Auth roles;
+- real GoTrue Admin create после M5 успешно прошёл deferred exactly-one commit.
+  Наблюдение, что GoTrue записывает caller `app_metadata` отдельным UPDATE после
+  INSERT и bootstrap Account остаётся `active`, стало основанием для узкого M6,
+  а не для расширения Auth privileges или ослабления invariant;
+- verified pre-M6 full-format backup
+  `/root/shidao-db-backups/shidao-before-provisional-auth-sync-20260809T093520Z.dump`
+  (local mirror
+  `/Users/user/Documents/shidao/.local-backups/shidao-before-provisional-auth-sync-20260809T093520Z.dump`)
+  имеет size `1013144`, 1339 restore-list entries и SHA-256
+  `f56df63680abbc10b1b0eafa686800a7a2cddd34430185d566462d38ce04be41`;
+- exact M6 checksum
+  `133dafcea4ff4f54bfeb3e58bb7eb2bf98947b79d422ab44f7e90a6430ecaada`
+  применена одной транзакцией. Postflight подтвердил enabled row-level
+  `AFTER UPDATE OF raw_app_meta_data` trigger с key-change predicate,
+  `SECURITY DEFINER`/empty-search-path owner boundary, закрытый ACL,
+  pristine/same-creation-`xmin` guard, ноль trusted active/provisional
+  mismatches и exactly-one count `0`;
+- реальный GoTrue Admin create с strict internal learner email, explicit
+  `identity_status=provisional`, `activation_invitation_id` и live
+  child-activation invitation успешно создал
+  `provisional` Account с одним bootstrap Profile. Auth Admin delete затем
+  удалил disposable Auth/Account/Profile fixture; post-cleanup counts равны `0`;
+- финальный проверенный post-M6 production snapshot SHA-256:
+  `584ebb96dc8d96f1eb508e7eae836edb8125a9fefe2a59e9cb362af54bba5a26`;
 - final exact web deployment и authenticated browser postflight остаются
   **next**.
 
 Snapshot helper auto-detects only two complete states. `expand` requires every
 M1–M3 identity object/invariant plus полный known compatibility helper/type/ACL
-set. `contract` требует те же identity objects/invariants и полное отсутствие
-M4 targets. Частично применённый cleanup отклоняется.
+set. Обе допустимые signature требуют M5/M6 Auth hardening; `contract`
+дополнительно требует полное отсутствие M4 targets. Частично применённый
+cleanup или Auth hardening отклоняется.
 
 Для каждого stage фиксируются commit SHA, migration set и production postflight.
 Нельзя оставлять старый Coolify image как rollback-кандидат после применения

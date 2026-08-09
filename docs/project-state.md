@@ -8,8 +8,8 @@
 **Последний полный automated/browser gate:** `5944d31`
 
 **Current production contract stage:** реализована и развёрнута полная roleless
-learner identity / observer программа. Additive migrations M1–M3 применены к
-production после проверенного backup и добавили atomic exactly-one
+learner identity / observer программа. Migrations M1–M6 применены к production
+после четырёх проверенных backup и добавили atomic exactly-one
 Account/Profile bootstrap, Account login/PIN
 boundary, safe discovery/recipient-bound claim и child activation, physical
 merge/lineage, archive/restore, self/observer history/progress, subject erasure
@@ -20,7 +20,13 @@ routes `/learning-profile`, `/observing`, `/settings/observers`,
 host allowlist и CSRF до exact `v2.shidao.ru` Origin. Coolify завершил roleless
 deployments точных SHA `5944d31f86f7d3795ec9f17928cb311ecbdfdd21` и
 `5d650a390abcc944780a716f909248f5493c10a9`. После read-only dependency audit
-применена M4 contract cleanup; strict DB/RLS/ACL/PostgREST postflight зелёный.
+применена M4 contract cleanup. M5 закрыла deferred exactly-one trigger на
+реальном GoTrue commit через owner-only `SECURITY DEFINER`; M6 добавила узкую
+same-transaction синхронизацию trusted provisional child metadata без
+post-commit downgrade. Strict DB/RLS/ACL/PostgREST postflight и реальный
+disposable GoTrue Admin create/delete probe зелёные; production snapshot
+SHA-256 —
+`584ebb96dc8d96f1eb508e7eae836edb8125a9fefe2a59e9cb362af54bba5a26`.
 Финальный exact web deploy и authenticated browser postflight остаются
 **next**.
 
@@ -35,12 +41,12 @@ deployments точных SHA `5944d31f86f7d3795ec9f17928cb311ecbdfdd21` и
 для title/header/action-center на пяти поверхностях, `12px / 1px / 4px`
 для tabs и пустую browser console. Схема БД в visual slice не менялась.
 
-**Current deployed data slice:** поверх group/audience baseline введены canonical
+**Previous deployed data baseline:** поверх group/audience baseline были введены canonical
 `LearnerProfile`, teacher-local relation `teacher_learner` и явный provenance
 `learning_record.recorded_by_account_id`. Существующие профили сохраняются 1:1,
-но teacher ownership/name/archive перенесены в relation; account claim, merge и
-observer access в этом deployed baseline отсутствуют и входят в repository
-candidate выше.
+но teacher ownership/name/archive перенесены в relation. В том historical
+baseline account claim, merge и observer access отсутствовали; теперь они
+входят в current production contract, описанный выше.
 
 Forward migration `20260807033034_canonical_learner_profile.sql` применена к
 production ShiDao DB 7 августа 2026 года после создания backup и прошла
@@ -171,7 +177,7 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
   standalone `/demo`, закрыт от индексации и не принимает unsafe HTTP methods.
 - Standalone demo использует Guest session и фиктивное client-only состояние;
   V2 API, Supabase и persistence к нему не подключены.
-- Production-mode candidate использует explicit host allowlist: unknown hosts и
+- Current production release использует explicit host allowlist: unknown hosts и
   non-root `brand`/`model` получают 421; mismatched Host/X-Forwarded-Host также
   fail closed.
 - Unsafe production requests принимают только exact app Origin
@@ -440,7 +446,7 @@ application service/contracts внутри authenticated web request.
   не трактуется как непонимание. Audience/history входят в Lesson preview
   fingerprint. Полный provider context имеет единый hard budget 96 000 символов
   и детерминированно сокращает только oversized значения.
-- Identity candidate отдельно проверяет active `profile + Course + owner`
+- Current identity adapter отдельно проверяет active `profile + Course + owner`
   consent server-only RPC. Без consent context выше остаётся recorder-scoped; с
   consent добавляются только bounded sanitized aggregates и categorical
   signals из explicit shared comments после PII scrub. Comment text/summary/
@@ -505,6 +511,15 @@ enums. Сами legacy tables/rows не удалены; rollback-only `user_secu
 dual-writes исчезли из supported Account RPC, а tables стали dormant recovery
 data.
 
+M5 не выдала GoTrue прямых прав на Account/Profile: deferred exactly-one
+invariant получил собственную owner-only `SECURITY DEFINER` boundary с пустым
+`search_path` и закрытым execute ACL. M6 учитывает фактический двухфазный GoTrue
+Admin create (`INSERT`, затем custom `raw_app_meta_data UPDATE`) и переводит
+bootstrap Account в `provisional` только для live `child_activation`, strict
+internal email, pristine rows и совпадающего creation `xmin`. Поздний metadata
+refresh не может понизить established active Account. Production probe создал
+ровно один provisional Account/Profile и затем удалил все disposable fixtures.
+
 Это не новая иерархия Course: Course не становится дочерним School/Class,
 LearnerProfile не превращается в legacy Student, а observer не является Parent
 role. Полный contract находится в
@@ -532,7 +547,8 @@ role. Полный contract находится в
 
 ## 6. Фактическая production contract-schema и migrations
 
-Repository M1–M3 shape расширяет текущие V2 document tables:
+Repository M1–M6 shape расширяет и затем безопасно завершает текущий V2
+identity contract:
 
 ```text
 account
@@ -612,6 +628,11 @@ provider requests, assistant dialog history или quota state в БД.
 - `20260807065038_learner_identity_legacy_contract_cleanup.sql` — финальный M4,
   применённый после двух roleless releases/dependency audit; RESTRICT cleanup
   helpers, enums и legacy Data API grants без удаления rows/tables.
+- `20260809084500_learner_identity_auth_deferred_invariant_security.sql` — M5
+  owner-only deferred exactly-one trigger boundary для реального GoTrue commit.
+- `20260809090000_learner_identity_provisional_auth_metadata_sync.sql` — M6
+  trusted two-phase provisional metadata sync с pristine/same-`xmin`
+  fail-closed guard и защитой от late downgrade.
 
 Источники истины для текущего состояния:
 
@@ -706,7 +727,7 @@ backing projection на `teacher_learner`. Все используют per-reque
 application service и user JWT/RLS; старые dashboard/methodology/group/
 scheduled-lesson routes не поддерживаются как compatibility URL.
 
-Identity candidate добавляет namespaces `me/learning-profile`,
+Current identity API добавляет namespaces `me/learning-profile`,
 `learner-directory`, `learner-connections`, `identity-invitations`,
 `learner-merges`, `learner-credential-recovery`, `observers`, `observations`,
 `ai-consents` и recipient-bound email acceptance routes. Sensitive admin RPC
@@ -735,10 +756,11 @@ services/API и не сохраняет изменения. Его локаль�
 schedule/group и AI fixtures не входят в текущую V2-модель и не могут
 использоваться как acceptance evidence.
 
-Repository candidate закрывает прежний host/CSRF debt: production allowlist
+Current production release закрывает прежний host/CSRF debt: allowlist
 принимает только canonical hosts, non-root `brand`/`model` и unknown hosts
-получают 421, а unsafe V2 requests допускают только exact app Origin. До
-production deploy эти свойства являются candidate, а не текущей proxy boundary.
+получают 421, а unsafe V2 requests допускают только exact app Origin. Это
+подтверждено deployed HTTP/browser regression, а не считается свойством только
+proxy isolation.
 
 ## 9. Проверка текущего состояния
 
@@ -762,12 +784,14 @@ npm run mcp:course-builder
 ./scripts/db-identity-concurrency-tests.sh
 ```
 
-Identity candidate release дополнительно требует fresh migration chain,
-upgrade от previous production shape, RLS/ACL actor matrix, true multi-session
+Current identity release прошёл fresh migration chain, upgrade от previous
+production shape, RLS/ACL actor matrix, true multi-session
 signup/claim/merge/reset concurrency, strict output-injection tests и browser
 matrix discovery/child activation/merge/archive/observer/self/AI consent.
-Фактические final counts и production postflight добавляются только после их
-успешного выполнения; наличие scripts не считается acceptance result.
+Повторный final gate дал 321/321 unit/API tests, 19/19 strict browser tests и
+зелёный DB acceptance на M1–M6 clone. Production DB/GoTrue postflight уже
+зафиксирован выше; authenticated browser postflight записывается после final
+exact web deploy. Наличие scripts само по себе acceptance result не заменяет.
 
 `test:browser` допускает локальный skip без browser, а `test:browser:ci`
 является строгим production-mode gate.

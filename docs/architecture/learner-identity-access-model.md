@@ -6,10 +6,11 @@ identity, teacher directory, observer access и consented AI history
 **Дата решения:** 9 августа 2026 года
 
 **Implementation state:** production содержит полный application/API/UI slice и
-M1–M4 contract schema. Два verified backup, strict expand/contract postflight,
-два roleless Coolify images (`5944d31`, `5d650a3`) и read-only dependency audit
-завершены. Final exact web deploy и authenticated browser postflight остаются
-release terminal condition. Точные deployed SHA и migration stage сверяются по
+M1–M6 contract schema. Четыре verified backup, strict expand/contract postflight,
+два roleless Coolify images (`5944d31`, `5d650a3`), read-only dependency audit и
+production Auth-trigger postflight завершены. Final exact web deploy и
+authenticated browser postflight остаются release terminal condition. Точные
+deployed SHA и migration stage сверяются по
 [`docs/project-state.md`](../project-state.md).
 
 ## Product decision
@@ -53,6 +54,12 @@ Current production contract обеспечивает:
   но не два linked profiles одному Account;
 - deferred constraint triggers на `account` и `learner_profile` требуют ровно
   одну связь на commit для active/provisional Account;
+- M5 выполняет exactly-one deferred invariant через узкий internal
+  `SECURITY DEFINER`: GoTrue достигает commit boundary уже после возврата из
+  Auth bootstrap и снова работает как непривилегированный Auth DB actor;
+  владелец invariant-функции обязан владеть обеими таблицами, `FORCE RLS`
+  запрещён, `search_path` пуст, а direct `EXECUTE` закрыт для `PUBLIC`,
+  `anon`, `authenticated`, `service_role` и `supabase_auth_admin`;
 - direct link/unlink/delete обход запрещён trigger guard;
 - merge, safe unlink, subject erasure/reset и Auth bootstrap используют
   lock-safe supported transaction boundary;
@@ -131,6 +138,40 @@ recipient получает отдельное право восстановле�
 Retry идемпотентен: потерянный response не создаёт второй Account и не
 реактивирует отозванного recovery delegate. Delegate может reset login/PIN
 только после recent reauth; learner может отозвать delegate немедленно.
+
+GoTrue Admin создаёт такого пользователя двумя SQL-действиями в одной
+transaction: initial `auth.users INSERT` содержит provider metadata, а custom
+`raw_app_meta_data` появляется последующим `UPDATE`. M6 не расширяет обычный
+INSERT bootstrap и не считает произвольный metadata field authority. Отдельный
+`AFTER UPDATE OF raw_app_meta_data` trigger синхронизирует
+`Account.status: active → provisional` только при одновременном выполнении всех
+условий:
+
+- `identity_status = provisional`, exact internal learner email и валидный
+  `activation_invitation_id`;
+- invitation существует, имеет kind `child_activation`, остаётся
+  `pending | bound`, не истёк и указывает на offline source profile;
+- `auth.users.xmin = account.xmin`, то есть обе строки созданы текущей
+  GoTrue transaction;
+- bootstrap остаётся pristine: Account не менялся после создания, связан ровно
+  с одним profile, не имеет login alias, а AccountSecurity/Preference содержат
+  только начальные пустые значения.
+
+Функция trigger — `SECURITY DEFINER` с пустым `search_path`, согласованным
+owner/RLS boundary и закрытым direct `EXECUTE`. Trigger реагирует только на
+изменение `identity_status` либо `activation_invitation_id`; external email,
+отсутствующий/malformed marker, claim invitation, expired invitation или
+non-pristine Account не дают provisional capability. Если trusted
+same-transaction marker найден, но pristine shape нарушен, вся Auth transaction
+abort-ится, а не оставляет частично созданный active Account.
+
+Late downgrade невозможен: после commit любое новое Auth metadata UPDATE
+получает другой `auth.users.xmin`, тогда как `account.xmin` сохраняет creation
+transaction. Дополнительно established Account уже не pristine, а после
+activation invitation/source переходят в terminal state. Повторное добавление
+marker поэтому не меняет active Account. M6 backfill применяет тот же exact
+predicate и fail closed при unsafe pre-existing mismatch; fuzzy или массового
+metadata-driven исправления нет.
 
 ## Physical canonical merge
 
@@ -295,6 +336,11 @@ closed как stale.
   `auth_user_id`, email/token digest, internal email, PIN/session cutoff.
 - Administrative RPC доступны только server-side service role и требуют
   explicit actor Auth UUID плюс recipient/secret digest, вычисленные сервером.
+- Deferred exactly-one invariant и metadata-sync trigger functions не являются
+  RPC surface: direct `EXECUTE` закрыт, table grants Auth actor не выдаются, а
+  privileged boundary ограничен проверенным trigger shape и owner/RLS
+  invariants. Bootstrap handler отдельно сохраняет узкий server-only
+  `service_role EXECUTE` contract для поддерживаемого Auth/application flow.
 - `learning_record SELECT` остаётся producer-scoped; self/observer используют
   projection RPC, а не расширенную raw policy.
 - Email/link acceptance pages имеют `Cache-Control: no-store` и
@@ -306,8 +352,10 @@ closed как stale.
   `20260807065017_identity_security_hardening.sql`,
   `20260807065026_learner_identity_primitives_backfill_invariant.sql`,
   `20260807065032_learner_identity_workflows_progress_observer_ai.sql`;
-- final applied contract:
-  `20260807065038_learner_identity_legacy_contract_cleanup.sql`;
+- applied contract and Auth-trigger forward fixes:
+  `20260807065038_learner_identity_legacy_contract_cleanup.sql`,
+  `20260809084500_learner_identity_auth_deferred_invariant_security.sql`,
+  `20260809090000_learner_identity_provisional_auth_metadata_sync.sql`;
 - domain/contracts/service/repositories:
   `src/modules/learner-identity/`;
 - learner-safe AI adapter:
@@ -323,11 +371,33 @@ closed как stale.
 - physical snapshot: `supabase/schema/current-schema.sql` after the applicable
   verified expand/contract refresh.
 
+## Production verification
+
+M5 и M6 применены к production отдельными transactions и завершились
+`COMMIT`. Strict production signature подтвердил:
+
+- обе internal Auth-related функции — `SECURITY DEFINER`, owner
+  `supabase_admin`, `search_path = ""`;
+- `PUBLIC`, `anon`, `authenticated`, `service_role` и
+  `supabase_auth_admin` не имеют direct `EXECUTE`;
+- M6 trigger включён и имеет exact `AFTER UPDATE OF raw_app_meta_data` shape
+  (`tgtype = 17`) с `WHEN` predicate;
+- exactly-one violations и trusted live provisional mismatches равны `0`.
+
+Реальный GoTrue Admin probe прошёл полный lifecycle disposable activation:
+create вернул HTTP `200`, после чего DB показала одну Auth row, один
+`provisional` Account, ровно один linked bootstrap profile и exact invitation
+metadata. Admin delete также вернул HTTP `200`; cleanup assertions дали
+`0|0|0|0`, без residue Auth/Account/bootstrap profile и disposable
+source/invitation fixtures. Fresh install, production-shape upgrade,
+concurrency, strict signature и DB acceptance matrices зелёные.
+
 ## Current / next / later
 
 **Current production contract:** весь identity/observer contract выше,
 including roleless navigation, Account credential boundary, discovery,
-recipient-bound claim/child activation, merge, archive/restore, self/observer
+recipient-bound claim/child activation, M5 deferred invariant boundary, M6
+two-phase Auth metadata sync, merge, archive/restore, self/observer
 history/progress, erasure and AI consent.
 
 **Next release work:** deploy final exact web SHA и complete authenticated
