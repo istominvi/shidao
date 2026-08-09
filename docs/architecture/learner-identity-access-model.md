@@ -6,10 +6,10 @@ identity, teacher directory, observer access и consented AI history
 **Дата решения:** 9 августа 2026 года
 
 **Implementation state:** production содержит полный application/API/UI slice и
-additive migrations M1–M3. Verified backup, strict expand postflight и первый
-roleless Coolify image `5944d31` завершены. Final M4 contract cleanup намеренно
-withheld до второго roleless web release и read-only dependency audit. Точные
-deployed SHA и migration stage всегда сверяются по
+M1–M4 contract schema. Два verified backup, strict expand/contract postflight,
+два roleless Coolify images (`5944d31`, `5d650a3`) и read-only dependency audit
+завершены. Final exact web deploy и authenticated browser postflight остаются
+release terminal condition. Точные deployed SHA и migration stage сверяются по
 [`docs/project-state.md`](../project-state.md).
 
 ## Product decision
@@ -43,7 +43,7 @@ boundary.
 
 ## Universal Account invariant
 
-Current production expand обеспечивает:
+Current production contract обеспечивает:
 
 - Auth trigger атомарно создаёт Account, AccountSecurity/Preference и один
   linked LearnerProfile;
@@ -306,7 +306,7 @@ closed как stale.
   `20260807065017_identity_security_hardening.sql`,
   `20260807065026_learner_identity_primitives_backfill_invariant.sql`,
   `20260807065032_learner_identity_workflows_progress_observer_ai.sql`;
-- final withheld contract:
+- final applied contract:
   `20260807065038_learner_identity_legacy_contract_cleanup.sql`;
 - domain/contracts/service/repositories:
   `src/modules/learner-identity/`;
@@ -325,15 +325,14 @@ closed как stale.
 
 ## Current / next / later
 
-**Current production expand:** весь identity/observer contract выше,
+**Current production contract:** весь identity/observer contract выше,
 including roleless navigation, Account credential boundary, discovery,
 recipient-bound claim/child activation, merge, archive/restore, self/observer
 history/progress, erasure and AI consent.
 
-**Next release work:** deploy второй exact roleless web release, run dependency
-audit, apply M4, refresh final snapshot and complete production DB/API/browser
-postflight. До этого expand features уже production-current, но terminal
-condition всей identity программы ещё не закрыт.
+**Next release work:** deploy final exact web SHA и complete authenticated
+production browser postflight. DB contract и API cache уже production-current,
+но terminal condition всей identity программы ещё не закрыт.
 
 **Later, вне identity completion:** learner Course consumption/enrollment,
 live Student Screen, persisted Homework, richer Component-produced metrics,

@@ -181,7 +181,7 @@ Phased rollout для этого exact candidate:
 10. refresh `contract` snapshot, push/deploy final exact SHA и повторить
     DB/API/HTTP/authenticated browser postflight.
 
-Production execution log, 9 августа 2026 года (current expand stage):
+Production execution log, 9 августа 2026 года (current contract stage):
 
 - read-only sanity подтвердил ShiDao tables, PostgreSQL 15.8 и owner
   `supabase_admin`;
@@ -193,8 +193,20 @@ Production execution log, 9 августа 2026 года (current expand stage):
   postflight вернул `0` нарушений;
 - Coolify завершил первый roleless deployment exact SHA
   `5944d31f86f7d3795ec9f17928cb311ecbdfdd21`;
-- steps 7–10 остаются **next** и должны быть дополнены здесь теми же exact
-  evidence после выполнения.
+- Coolify завершил второй roleless deployment exact SHA
+  `5d650a390abcc944780a716f909248f5493c10a9`; оба roleless images сохранены;
+- read-only dependency audit подтвердил полный expected set и ноль внешних
+  dependencies;
+- pre-contract backup
+  `/root/shidao-db-backups/shidao-before-identity-contract-20260809T082938Z.dump`
+  имеет size `883168`, 1041 restore-list entries и SHA-256
+  `257d6a6f4a102e630ca9d6321c86beb67b1cea0befa7049865a8bfb4e511b0b4`;
+- exact M4 применена одной транзакцией; strict signature вернула
+  `shidao-v2-contract`, PostgREST cache подтвердил новые и удаление legacy RPC;
+- production snapshot SHA-256:
+  `a9c983f8c6403d0816fda9afc7f42241be7cfa9a661abf5f8dde22f502fab30c`;
+- final exact web deployment и authenticated browser postflight остаются
+  **next**.
 
 Snapshot helper auto-detects only two complete states. `expand` requires every
 M1–M3 identity object/invariant plus полный known compatibility helper/type/ACL

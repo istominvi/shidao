@@ -3,7 +3,7 @@
 **Формат:** стратегическое видение и основа для презентации
 **Аудитория:** команда, партнёры, преподаватели, родители, потенциальные инвесторы
 **Версия:** 2.0
-**Актуально на:** 7 августа 2026 года
+**Актуально на:** 9 августа 2026 года
 **Статус:** целевая продуктовая модель; не является перечнем уже запущенных функций
 
 ## Как читать этот документ
@@ -21,11 +21,11 @@ deployed и repository scope, ограничения и implementation map за�
 [`docs/project-state.md`](../project-state.md), а последовательность работ — в
 [`docs/roadmap.md`](../roadmap.md).
 
-Current repository candidate завершает roleless Account/profile identity,
+Current production contract завершает roleless Account/profile identity,
 recipient-bound claim/child activation, physical merge, archive/restore,
-self/observer history/progress и subject-controlled AI consent. Он ещё не
-production: deployed status появится только после phased M1–M4 rollout, exact
-Coolify SHA и postflight в project-state. Learner Course consumption,
+self/observer history/progress и subject-controlled AI consent. M1–M4, два
+roleless Coolify release и DB/API postflight завершены; final exact web deploy
+и authenticated browser postflight сверяются в project-state. Learner Course consumption,
 live-проведение, richer Component metrics, persisted Homework, parsing/RAG,
 подписки, billing и внешний MCP/API остаются **later**. Настоящее время в
 стратегических разделах не заменяет implementation/deployment evidence.
@@ -407,14 +407,13 @@ ShiDao можно воспринимать как сочетание:
 
 Это проще для пользователя и лучше соответствует будущему, в котором границы между преподаванием, родительским участием и самостоятельным обучением становятся менее жёсткими.
 
-Current repository candidate проводит эту границу физически: каждый Account
+Current production contract проводит эту границу физически: каждый Account
 имеет ровно один canonical LearnerProfile, `TeacherLearner` хранит только
 teacher-local имя/state, а `LearningRecord` отдельно знает recorder. Discovery
 создаёт pending request, physical merge требует recipient consent, observer —
 отдельный read-only grant, а cross-provider history — отдельный Course-scoped
 consent. Единая identity по-прежнему не является автоматическим согласием на
-общий доступ. Production contour получит эту модель только после phased
-rollout/postflight.
+общий доступ.
 
 ---
 
@@ -595,7 +594,7 @@ analysis появятся позднее.
 
 # 11. Как работает родитель: короткий workflow
 
-Identity-часть этих сценариев уже реализована в repository candidate без
+Identity-часть этих сценариев уже реализована в production contract без
 Parent role: отдельный child Account login/PIN, recovery delegate, observer
 invite/read-only progress и revoke. Назначение/потребление Course ребёнком,
 Homework и AI-conducted lesson остаются later, поэтому полный сценарий ниже —
@@ -970,7 +969,7 @@ ShiDao строится не как оболочка над одной модн�
     `lesson.add_component`, `lesson.set_component_student_screen`,
     `lesson.reorder_component`.
 
-## Current repository candidate, production release next
+## Current production identity contract
 
 1. Universal roleless Account с exactly-one canonical profile, Account
    login/PIN/session boundary и одинаковой navigation.
@@ -983,8 +982,9 @@ ShiDao строится не как оболочка над одной модн�
 5. Legacy identity/security ACL, explicit host allowlist и exact app-origin
    CSRF hardening.
 
-Эти пункты реализованы в code/M1–M3, но должны пройти backup, phased M1–M4,
-две roleless deployments и production DB/API/browser postflight.
+Эти пункты реализованы в code/M1–M4 и прошли backup, две roleless deployments,
+dependency audit и production DB/API postflight. Финальный exact web deploy и
+authenticated browser postflight фиксируются в project-state.
 
 ## Следующая продуктовая версия после identity rollout
 

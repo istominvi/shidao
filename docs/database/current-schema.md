@@ -1,23 +1,22 @@
 # Current database schema
 
-**Статус:** agent-first guide для production learner-identity expand stage
+**Статус:** agent-first guide для production learner-identity contract stage
 
 **Production schema head:**
-`20260807065032_learner_identity_workflows_progress_observer_ai.sql`
+`20260807065038_learner_identity_legacy_contract_cleanup.sql`
 
-**Repository expand head:**
-`20260807065032_learner_identity_workflows_progress_observer_ai.sql`
+**Repository contract head:**
+`20260807065038_learner_identity_legacy_contract_cleanup.sql`
 
 **Final contract migration:**
-`20260807065038_learner_identity_legacy_contract_cleanup.sql` — применять только
-после двух подтверждённых roleless web releases и read-only dependency audit
+`20260807065038_learner_identity_legacy_contract_cleanup.sql` — применена после
+двух подтверждённых roleless web releases и read-only dependency audit
 
 **SQL snapshot:**
 [`supabase/schema/current-schema.sql`](../../supabase/schema/current-schema.sql)
-в repository зафиксирован из проверенной M1–M3 expand-базы. Production strict
-signature `shidao-v2-expand` подтверждена после применения того же exact set
-9 августа 2026 года. После contract стадии snapshot нужно обновить ещё раз из
-проверенной post-M4 production базы.
+в repository зафиксирован из проверенной post-M4 production базы. Strict
+signature `shidao-v2-contract` подтверждена 9 августа 2026 года; snapshot
+SHA-256 — `a9c983f8c6403d0816fda9afc7f42241be7cfa9a661abf5f8dde22f502fab30c`.
 
 ## Read order для DB-задач
 
@@ -40,9 +39,9 @@ signature `shidao-v2-expand` подтверждена после примене�
 | M3    | `20260807065032_learner_identity_workflows_progress_observer_ai.sql` | discovery/claim/merge, archive/restore, self/observer projections, erasure, actual duration и AI consent                                       |
 | M4    | `20260807065038_learner_identity_legacy_contract_cleanup.sql`        | final RESTRICT cleanup dormant role helpers/types/Data API grants и rollback-only legacy security dual-writes; без удаления legacy rows/tables |
 
-M1–M3 являются additive/compatible expand для roleless web candidate. M4 не
-коммитится в первый deploy и не применяется, пока running и rollback images не
-доказаны независимыми от старого contract.
+M1–M3 являются additive/compatible expand для roleless web. M4 была withheld из
+первого deploy и применена только после доказательства, что running и rollback
+images не зависят от старого contract.
 
 Production expand evidence 9 августа 2026 года:
 
@@ -56,6 +55,24 @@ Production expand evidence 9 августа 2026 года:
 - PostgREST schema cache видит Account/self/observer/AI RPC;
 - первый roleless image: exact SHA
   `5944d31f86f7d3795ec9f17928cb311ecbdfdd21`, Coolify status `finished`.
+
+Production contract evidence 9 августа 2026 года:
+
+- второй roleless image: exact SHA
+  `5d650a390abcc944780a716f909248f5493c10a9`, Coolify status `finished`;
+- read-only audit подтвердил 23 expected helpers, 13 policies и 2 enums без
+  внешних dependencies;
+- verified pre-contract backup:
+  `/root/shidao-db-backups/shidao-before-identity-contract-20260809T082938Z.dump`;
+- backup size `883168` bytes, 1041 restore-list entries, SHA-256
+  `257d6a6f4a102e630ca9d6321c86beb67b1cea0befa7049865a8bfb4e511b0b4`;
+- M4 checksum
+  `4539025f2b109addf4296ec3b60430648ac086ed33969dcccfd17e3c0d05eaae`
+  применена owner connection с `ON_ERROR_STOP` одной транзакцией;
+- helpers/types/policies/legacy Data API grants и public function references к
+  `user_security` отсутствуют; 4 root→impl edges сохранены, impl ACL закрыты;
+- `active_accounts_without_exactly_one_profile = 0`, duplicate links `0`,
+  PostgREST cache видит новые RPC и не видит удалённые legacy RPC.
 
 ## Current repository tables
 

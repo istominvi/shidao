@@ -63,12 +63,12 @@
   `learning_record.recorded_by_account_id` сохраняет recorder. Существующие
   profiles backfilled 1:1; account claim, merge и observer access не входят в
   этот slice.
-- Current production expand release поверх deployed baseline завершает P0.Identity:
+- Current production contract release поверх deployed baseline завершает P0.Identity:
   roleless exactly-one Account profile, Account login/PIN, discovery/claim/
   child activation/merge, archive/restore, self/observer history/progress,
-  erasure и consented AI. M1–M3 и первый exact roleless Coolify SHA
-  `5944d31` уже подтверждены; second roleless release, M4 и финальный
-  DB/API/browser postflight остаются **next**.
+  erasure и consented AI. M1–M4, два exact roleless Coolify SHA и финальный
+  DB/RLS/ACL/PostgREST postflight подтверждены; final exact web deploy и
+  authenticated browser postflight остаются **next**.
 - Реализованы private-by-default Components и persisted Student Screen Slides.
 - Реализован fullscreen Student Screen preview.
 - Реализован development-only MCP из шести tools поверх application service.
@@ -92,13 +92,13 @@
 
 ## P0.1: legacy identity/security hardening
 
-**Current production expand:** M1 включает RLS/ACL hardening
+**Current production contract:** M1 включает RLS/ACL hardening
 `user_preference`/`user_security`, active callers перенесены на Account
 boundary, production middleware использует explicit host allowlist и exact
 `v2.shidao.ru` CSRF Origin. Negative Auth/host/output tests входят в release
-gate. **Production status:** M1–M3, verified backup и первый exact roleless web
-deployment завершены 9 августа 2026 года; второй roleless SHA, M4 cleanup и
-финальный postflight остаются **next**.
+gate. **Production status:** M1–M4, два verified backup, два exact roleless web
+deployment и contract DB postflight завершены 9 августа 2026 года. Final exact
+web deploy и authenticated browser postflight остаются **next**.
 
 - [x] инвентаризировать server callers login/onboarding/profile/PIN/session и
       legacy `SECURITY DEFINER` RPC с caller-supplied `p_user_id`/`anon` execute;
@@ -123,11 +123,11 @@ read-only ShiDao sanity check и отдельного deployed-contour postfligh
 
 ## P0.Identity: завершить universal Account и canonical learner ecosystem
 
-**Current production expand:** все девять vertical slices реализованы через
-M1–M3, `src/modules/learner-identity/`, API/UI и roleless navigation. Verified
-backup, M1–M3 postflight и первый exact roleless Coolify deploy завершены.
-Remaining **next release work** — второй exact roleless deploy, M4 dependency
-audit/contract cleanup, final snapshot и DB/API/browser postflight. Homework,
+**Current production contract:** все девять vertical slices реализованы через
+M1–M4, `src/modules/learner-identity/`, API/UI и roleless navigation. Verified
+backups, два roleless deploy, dependency audit, contract cleanup, final snapshot
+и DB/API postflight завершены. Remaining **next release work** — final exact web
+deploy и authenticated browser postflight. Homework,
 RAG, billing, templates и live Student Screen по-прежнему не входят.
 
 Согласованный target:
@@ -177,9 +177,9 @@ RAG, billing, templates и live Student Screen по-прежнему не вхо
    metadata projection без Course access, deterministic bounded sanitized
    context, immediate revoke/expiry/owner-change invalidation, audit и
    stale-preview protection.
-9. **Legacy cutover:** active role switch/callers удалены из candidate; final
-   role helpers/types/grants и rollback-only security dual-writes удаляет
-   отдельная withheld M4 только после доказанного отсутствия зависимостей.
+9. **Legacy cutover:** active role switch/callers удалены; final role
+   helpers/types/grants и rollback-only security dual-writes удалены отдельной
+   M4 после доказанного отсутствия зависимостей.
 
 Каждый slice проходит цепочку contracts → service → repository → API → UI →
 tests → migration/snapshot → docs → production postflight. Нельзя объявлять
@@ -339,14 +339,14 @@ compatibility/recovery data; active roleless candidate их не читает.
 - безопасное product delete ученика архивирует только teacher relation и
   отсоединяет её от будущих аудиторий этого Account, не удаляя canonical
   LearnerProfile, LearningRecord и уже назначенные Runs; archive list/restore
-  пока не реализованы;
+  реализованы;
 - `LearningRecord.recorded_by_account_id` фиксируется при scheduling;
   teacher-history и текущий AI context читают только записи текущего recorder;
 - изменение membership прикреплённой группы влияет на новые назначения и AI
   context, но не переписывает состав уже открытого LessonRun;
 - Course Builder остаётся owner-only, а старые Class/School не используются.
 
-**Current repository candidate, production rollout next:**
+**Current production contract:**
 
 - exactly-one Account/profile invariant, roleless navigation и Account
   login/PIN boundary;
@@ -382,10 +382,9 @@ Learner Course consumption и live Student Screen остаются отдель�
   ожидаемого ученика;
 - UI state выводится из timestamps, persisted status отсутствует.
 
-**Current repository candidate дополнительно:** verified actual duration,
+**Current production contract дополнительно:** verified actual duration,
 explicit shared individual comment, cursor-paginated self/observer history и
-real-record progress без speculative metrics. Production rollout следует
-P0.Identity sequence выше.
+real-record progress без speculative metrics.
 
 **Next — live:**
 

@@ -4,12 +4,12 @@
 **Актуально на:** 9 августа 2026 года
 **Активная ветка:** `main`
 **Рабочее приложение:** `https://v2.shidao.ru`
-**Текущий функциональный application release:** `5944d31`
+**Текущий функциональный application release:** `5d650a3`
 **Последний полный automated/browser gate:** `5944d31`
 
-**Current production expand stage:** реализована и развёрнута полная roleless
+**Current production contract stage:** реализована и развёрнута полная roleless
 learner identity / observer программа. Additive migrations M1–M3 применены к
-production после проверенного backup и добавляют atomic exactly-one
+production после проверенного backup и добавили atomic exactly-one
 Account/Profile bootstrap, Account login/PIN
 boundary, safe discovery/recipient-bound claim и child activation, physical
 merge/lineage, archive/restore, self/observer history/progress, subject erasure
@@ -17,11 +17,12 @@ merge/lineage, archive/restore, self/observer history/progress, subject erasure
 `src/modules/learner-identity/`, `src/components/learner-identity/` и новых
 routes `/learning-profile`, `/observing`, `/settings/observers`,
 `/identity/invitations/[invitationId]`. Security slice также закрывает production
-host allowlist и CSRF до exact `v2.shidao.ru` Origin. Coolify завершил первый
-roleless deployment точного SHA
-`5944d31f86f7d3795ec9f17928cb311ecbdfdd21`. Contract cleanup M4 и финальный
-production postflight остаются **next** только после второго подтверждённого
-roleless release и read-only dependency audit.
+host allowlist и CSRF до exact `v2.shidao.ru` Origin. Coolify завершил roleless
+deployments точных SHA `5944d31f86f7d3795ec9f17928cb311ecbdfdd21` и
+`5d650a390abcc944780a716f909248f5493c10a9`. После read-only dependency audit
+применена M4 contract cleanup; strict DB/RLS/ACL/PostgREST postflight зелёный.
+Финальный exact web deploy и authenticated browser postflight остаются
+**next**.
 
 **Current deployed visual slice:** `/courses`, `/students`, `/schedule`, Course
 и Lesson используют единый `AppPageHeader` с H1 не крупнее 48 px на desktop и
@@ -225,7 +226,7 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
 
 ### Roleless navigation, Расписание, Ученики и аудитория
 
-- В repository candidate основная навигация любого Account содержит «Курсы /
+- В current production основная навигация любого Account содержит «Курсы /
   Расписание / Ученики / Мой учебный профиль / Наблюдение» без role switch.
 - `/schedule` и `/students` filesystem-совместимо остаются под прежним route
   group, но layout проверяет только Account session. Guest/degraded session
@@ -277,7 +278,7 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
 - Все surfaces используют тот же плоский бежевый demo visual language, header,
   кнопки, карточки и типографику, что и Course routes.
 
-### Learner identity, self profile и observer — current production expand
+### Learner identity, self profile и observer — current production contract
 
 - `/students` → «Добавить ученика» сначала поддерживает rotating one-time share
   code/QR и blind email connection, затем explicit offline profile path. Share
@@ -484,25 +485,25 @@ History-aware context развёрнут в release `9393080`; production provid
 Identity/observer execution contract и actor matrix сохранены как acceptance
 source:
 [`LEARNER_IDENTITY_COMPLETION_PROMPT.md`](./v2/LEARNER_IDENTITY_COMPLETION_PROMPT.md).
-В production expand-stage требования реализованы и доступны в первом roleless
-release; полный terminal condition остаётся **next release work** до второго
-roleless release, M4 и финального rollout/postflight.
+В production contract-stage требования реализованы; полный terminal condition
+остаётся **next release work** только до финального exact web deploy и
+authenticated browser postflight.
 
 ## 4. Identity rollout state
 
-M1–M3 production migrations сохраняют legacy rows для compatibility, но active
-web release `5944d31` использует roleless `account`, Account
+M1–M3 production migrations сохранили legacy rows для recovery, но active web
+releases `5944d31` и `5d650a3` используют roleless `account`, Account
 credential/preference boundary и
 exactly-one canonical profile. Однозначные legacy student credentials
 backfill-ятся без fuzzy matching; parent/student edges становятся pending
 reconciliation, а не observer grant.
 
-Все новые identity tables default-deny для `anon/authenticated`. M1 временно
-оставляет только узкий known ACL старому compatibility web; после двух exact
-roleless releases M4 через dependency audit и `DROP ... RESTRICT` отзывает
-legacy Data API grants, удаляет 23 active helpers и unused guardian enums. Сами
-legacy tables/rows не удаляются; rollback-only `user_security` dual-writes
-исчезают из supported Account RPC, а tables становятся dormant recovery data.
+Все новые identity tables default-deny для `anon/authenticated`. M4 после двух
+exact roleless releases и read-only dependency audit через `DROP ... RESTRICT`
+отозвала legacy Data API grants, удалила 23 active helpers и unused guardian
+enums. Сами legacy tables/rows не удалены; rollback-only `user_security`
+dual-writes исчезли из supported Account RPC, а tables стали dormant recovery
+data.
 
 Это не новая иерархия Course: Course не становится дочерним School/Class,
 LearnerProfile не превращается в legacy Student, а observer не является Parent
@@ -529,7 +530,7 @@ role. Полный contract находится в
 обычные Course, Lesson, Component и attachment entities через отдельный
 валидируемый importer.
 
-## 6. Фактическая production expand-schema и migrations
+## 6. Фактическая production contract-schema и migrations
 
 Repository M1–M3 shape расширяет текущие V2 document tables:
 
@@ -609,8 +610,8 @@ provider requests, assistant dialog history или quota state в БД.
   discovery/claim/merge/lifecycle, safe history/progress, observer и separate
   AI consent workflows.
 - `20260807065038_learner_identity_legacy_contract_cleanup.sql` — финальный M4,
-  withheld до двух roleless releases/dependency audit; RESTRICT cleanup helpers,
-  enums и legacy Data API grants без удаления rows/tables.
+  применённый после двух roleless releases/dependency audit; RESTRICT cleanup
+  helpers, enums и legacy Data API grants без удаления rows/tables.
 
 Источники истины для текущего состояния:
 

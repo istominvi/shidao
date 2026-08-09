@@ -577,10 +577,17 @@ if ! grep -Fq -- "${CROSS_SCHEMA_MARKER}" "${TMP_CROSS}"; then
   exit 1
 fi
 
+PG_DUMP_RESTRICT_KEY_ARGS=()
+if pg_dump --help 2>&1 | grep -Fq -- "--restrict-key"; then
+  PG_DUMP_RESTRICT_KEY_ARGS+=(
+    "--restrict-key=shidaoSchemaSnapshot20260807"
+  )
+fi
+
 pg_dump \
   --schema-only \
   --no-owner \
-  --restrict-key=shidaoSchemaSnapshot20260807 \
+  "${PG_DUMP_RESTRICT_KEY_ARGS[@]}" \
   --schema=public \
   "${DATABASE_URL}" > "${TMP_PUBLIC}"
 
