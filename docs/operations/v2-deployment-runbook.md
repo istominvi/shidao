@@ -496,14 +496,20 @@ ShiDao V2 application:
 
 ### Roleless navigation and learner identity
 
-- любой authenticated Account видит `Курсы / Расписание / Ученики / Мой
-учебный профиль / Наблюдение`; Guest на каждом private route уходит в login;
+- любой authenticated Account видит primary navigation `Расписание / Ученики /
+Курсы`, а Account menu — `Учебный профиль / Настройки / Выход`; Guest на
+  каждом private route уходит в login;
 - `/schedule` и `/students` сохраняют единый computed page-header contract с
   `/courses`, Course и Lesson; contextual actions находятся в header, а
   date/filter controls — ниже него;
-- вкладки «Ученики / Группы» сохраняют общий black 1 px baseline и square
+- вкладки «Ученики / Группы / Наблюдение» сохраняют общий black 1 px baseline и square
   active-segment; поиск, group filter, keyboard focus и dialogs проверяются без
   возврата teacher-only route gate;
+- `/observing` перенаправляет на `/students?tab=observing`, reload сохраняет
+  выбранную вкладку, а main navigation подсвечивает «Ученики»;
+- `/courses` проверяется в режимах «Плитки / Таблица»: поиск и combined filters
+  меняют только client projection owner-scoped списка, reset возвращает все
+  курсы, filtered-empty не подменяется пустым persisted каталогом;
 - existing email и learner login/PIN создают одну Account session и не выводят
   internal Auth email/browser secret;
 - `/students` переключает active/archive и «Ученики / Группы»; archive/restore
@@ -523,9 +529,9 @@ ShiDao V2 application:
 - `/learning-profile` показывает self safe history/progress; private comment
   отсутствует, explicit shared comment виден; known duration не подменяет
   unknown нулём;
-- `/settings/observers` создаёт/accepts/revokes invitation, `/observing`
-  показывает read-only profile; после revoke следующий read немедленно fail
-  closed;
+- `/settings/observers` создаёт/accepts/revokes invitation, вкладка
+  `/students?tab=observing` показывает read-only profile; после revoke следующий
+  read немедленно fail closed;
 - subject может отозвать recovery delegate; delegate reset login/PIN требует
   recent reauth и инвалидирует прежние sessions;
 - AI consent request виден subject, grant включает только sanitized aggregate

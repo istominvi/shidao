@@ -1,8 +1,9 @@
 # ShiDao V2
 
 ShiDao V2 — работающий teacher Course Builder на Next.js и текущем
-self-hosted Supabase. Текущий source содержит teacher-only «Расписание» и
-«Ученики», reusable Groups, смешанную аудиторию Course и историю проведений.
+self-hosted Supabase. Текущий source содержит roleless Account-разделы
+«Расписание» и «Ученики», reusable Groups, смешанную аудиторию Course и историю
+проведений.
 Каноническая модель:
 
 ```text
@@ -115,9 +116,11 @@ teacher-local `teacher_learner`, Groups и LearningRecord. В Course незав�
 `teacher_learner` и `recorded_by_account_id`. Transitional
 `student/class/class_student` для этой модели не используются.
 
-Account claim, invitations, observers, duplicate-profile merge и общий
-cross-provider history/AI access пока не реализованы. Nullable
-`learner_profile.account_id` является только безопасной точкой будущей связи.
+Account claim, invitations, observers, duplicate-profile merge, learner-safe
+history/progress и consented cross-provider AI context реализованы в roleless
+Account/learner identity slice. Primary navigation содержит «Расписание /
+Ученики / Курсы»; учебный профиль находится в Account menu, а observer
+projection — во вкладке «Наблюдение» внутри «Ученики».
 
 Десять типов компонентов определены в code-first registry. UI, application
 service и development-only MCP используют общие Zod contracts; MCP не работает

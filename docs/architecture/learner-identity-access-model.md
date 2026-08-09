@@ -68,9 +68,11 @@ Current production contract обеспечивает:
   том числе после concurrent signup/bootstrap/reset/claim.
 
 Onboarding редактирует общие `display_name/locale/timezone` Account и не просит
-выбрать постоянную роль. `/courses`, `/schedule`, `/students`,
-`/learning-profile` и `/observing` доступны любому authenticated Account;
-authoring Course по-прежнему owner-only и не означает learner enrollment.
+выбрать постоянную роль. `/courses`, `/schedule`, `/students` и
+`/learning-profile` доступны любому authenticated Account; `/observing`
+сохранён как protected compatibility redirect на
+`/students?tab=observing`. Authoring Course по-прежнему owner-only и не
+означает learner enrollment.
 
 ## Account credential boundary
 
@@ -274,7 +276,8 @@ Observer — explicit read-only grant, не Parent/Guardian role.
 UI surfaces:
 
 - `/settings/observers` — мои observers/pending invitations;
-- `/observing` — profiles, на которые текущему Account дан active grant;
+- `/students?tab=observing` — profiles, на которые текущему Account дан active
+  grant; прежний `/observing` перенаправляет сюда;
 - `/learning-profile` — self history/progress/share code, AI consents и
   destructive self lifecycle.
 

@@ -203,15 +203,21 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
   LearnerProfile. Onboarding меняет общие Account fields и не выбирает роль.
 - Existing learner login/PIN работает через `account_login_alias` и
   `account_security`; active login path не читает legacy Student.
-- Primary navigation одинакова для каждого Account: «Курсы / Расписание /
-  Ученики / Мой учебный профиль / Наблюдение».
+- Primary navigation одинакова для каждого Account и содержит только рабочие
+  разделы в порядке «Расписание / Ученики / Курсы». «Учебный профиль» находится
+  в меню Account справа перед «Настройки / Выход»; observer projection открыт
+  третьей вкладкой «Наблюдение» внутри «Ученики».
 - Существующая app-session поддерживает глобальную и пользовательскую
   инвалидизацию; destructive identity/credential flows дополнительно требуют
   recent reauthentication из sealed session.
 
 ### Курсы
 
-- `/courses` показывает реальные Course текущего Account.
+- `/courses` показывает реальные Course текущего Account. Каталог поддерживает
+  поиск по открытым полям Course, динамические фильтры по предмету и уровню,
+  фильтр наполнения, сортировку и переключение «Плитки / Таблица». Фильтрация
+  выполняется поверх owner-scoped API response и не индексирует приватные
+  пожелания преподавателя.
 - `/courses/new` создаёт пустой persisted draft, запускает простой
   детерминированный assembler или позволяет запросить AI-программу, проверить
   preview и отдельно применить её.
@@ -247,8 +253,9 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
 
 ### Roleless navigation, Расписание, Ученики и аудитория
 
-- В current production основная навигация любого Account содержит «Курсы /
-  Расписание / Ученики / Мой учебный профиль / Наблюдение» без role switch.
+- В current source основная навигация любого Account содержит «Расписание /
+  Ученики / Курсы» без role switch. Персональное меню справа содержит
+  «Учебный профиль / Настройки / Выход».
 - `/schedule` и `/students` filesystem-совместимо остаются под прежним route
   group, но layout проверяет только Account session. Guest/degraded session
   перенаправляется в `/login`.
@@ -257,7 +264,10 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
 - Action «Назначить урок в курсе» находится в общей page-header action-секции;
   переключение дня остаётся отдельным toolbar ниже заголовка.
 - `/students` показывает единый teacher-scoped projection
-  `TeacherLearner + LearnerProfile` во вкладках «Ученики / Группы». Таблица
+  `TeacherLearner + LearnerProfile` во вкладках «Ученики / Группы» и
+  независимую learner-safe вкладку «Наблюдение». Canonical observer URL —
+  `/students?tab=observing`; прежний `/observing` остаётся protected
+  compatibility redirect. Таблица
   учеников поддерживает поиск, фильтр по группе и сортировку; в строке видны до
   двух групп и счётчик «ещё N». Отдельная вкладка групп показывает только
   reusable groups и их состав.
@@ -323,9 +333,10 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
   learner-safe history, real-record progress, share code, AI consents и
   preview/confirm destructive actions.
 - `/settings/observers` управляет pending/active observers, free display labels
-  и revoke; `/observing` показывает несколько observed profiles и только
-  read-only learner-safe history/progress. Teacher relation и observer grant не
-  создают друг друга.
+  и revoke; вкладка `/students?tab=observing` показывает несколько observed
+  profiles и только read-only learner-safe history/progress. `/observing`
+  перенаправляет на эту вкладку. Teacher relation и observer grant не создают
+  друг друга.
 - Subject/observer не имеют raw `learning_record SELECT`; safe projection
   физически исключает drafts, superseded rows, private comments, recorder IDs,
   teacher-local directory, roster и group teacher report.

@@ -22,7 +22,13 @@ import { SafeHistoryList } from "./safe-history-list";
 
 type Surface = "progress" | "history";
 
-export function ObservingWorkspace() {
+type ObservingWorkspaceProps = {
+  embedded?: boolean;
+};
+
+export function ObservingWorkspace({
+  embedded = false,
+}: ObservingWorkspaceProps) {
   const [profiles, setProfiles] = useState<ObserverGrant[] | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [surface, setSurface] = useState<Surface>("progress");
@@ -138,10 +144,12 @@ export function ObservingWorkspace() {
 
   return (
     <div className="space-y-6">
-      <AppPageHeader
-        title="Наблюдение"
-        description="История людей, которые явно дали вам доступ, доступна только для чтения. Наблюдатель не может менять учебные данные."
-      />
+      {!embedded ? (
+        <AppPageHeader
+          title="Наблюдение"
+          description="История людей, которые явно дали вам доступ, доступна только для чтения. Наблюдатель не может менять учебные данные."
+        />
+      ) : null}
       {error ? (
         <IdentityError message={error} onRetry={() => void loadProfiles()} />
       ) : null}

@@ -2306,15 +2306,9 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
     assert.match(scheduleContract.headerActions, /Назначить урок в курсе/);
     assert.doesNotMatch(scheduleContract.toolbarText, /Назначить урок в курсе/);
     assert.deepEqual(scheduleContract.navLinks, [
-      { label: "Курсы", href: "/courses", current: null },
       { label: "Расписание", href: "/schedule", current: "page" },
       { label: "Ученики", href: "/students", current: null },
-      {
-        label: "Мой учебный профиль",
-        href: "/learning-profile",
-        current: null,
-      },
-      { label: "Наблюдение", href: "/observing", current: null },
+      { label: "Курсы", href: "/courses", current: null },
     ]);
 
     let html = await runtime.page.content();
@@ -2623,10 +2617,37 @@ test("browser smoke: observer reads published history only and can leave immedia
   e2eObservedGrantLeft = false;
   const runtime = await openPage({ cookie: authenticatedCookieValue() });
   try {
+    await runtime.page.goto("/students", { waitUntil: "networkidle" });
+    const observingEntryTab = runtime.page.getByRole("tab", {
+      name: "Наблюдение",
+      exact: true,
+    });
+    await Promise.all([
+      runtime.page.waitForURL(/\/students\?tab=observing$/),
+      observingEntryTab.click(),
+    ]);
     await runtime.page.goto("/observing", { waitUntil: "networkidle" });
+    await runtime.page.waitForURL(/\/students\?tab=observing$/);
     await runtime.page
-      .getByRole("heading", { name: "Наблюдение", exact: true, level: 1 })
+      .getByRole("heading", { name: "Ученики", exact: true, level: 1 })
       .waitFor();
+    const observingTab = runtime.page.getByRole("tab", {
+      name: "Наблюдение",
+      exact: true,
+    });
+    await observingTab.waitFor();
+    const observingIa = await runtime.page.evaluate(() => ({
+      tabSelected: document
+        .querySelector("#students-directory-tab-observing")
+        ?.getAttribute("aria-selected"),
+      studentsCurrent: document
+        .querySelector('.site-header-nav-pill[href="/students"]')
+        ?.getAttribute("aria-current"),
+    }));
+    assert.deepEqual(observingIa, {
+      tabSelected: "true",
+      studentsCurrent: "page",
+    });
     await runtime.page
       .getByRole("heading", { name: "Борис Волков", exact: true, level: 2 })
       .waitFor();
@@ -3298,7 +3319,7 @@ test("browser smoke: child activation creates a separate login with acknowledged
   }
 });
 
-test("browser smoke: mobile Account menu exposes every universal section", async (t) => {
+test("browser smoke: mobile Account menu exposes primary sections and account actions", async (t) => {
   if (browserSmokeUnavailableReason) {
     t.skip(browserSmokeUnavailableReason);
     return;
@@ -3321,12 +3342,33 @@ test("browser smoke: mobile Account menu exposes every universal section", async
     await runtime.page
       .getByRole("menuitem", { name: "Курсы", exact: true })
       .waitFor();
+    const learningProfileMenuItem = runtime.page.getByRole("menuitem", {
+      name: "Учебный профиль",
+      exact: true,
+    });
+    await learningProfileMenuItem.waitFor();
     await runtime.page
-      .getByRole("menuitem", { name: "Мой учебный профиль", exact: true })
+      .getByRole("menuitem", { name: "Настройки", exact: true })
       .waitFor();
     await runtime.page
-      .getByRole("menuitem", { name: "Наблюдение", exact: true })
+      .getByRole("menuitem", { name: "Выход", exact: true })
       .waitFor();
+
+    await Promise.all([
+      runtime.page.waitForURL(/\/learning-profile$/),
+      learningProfileMenuItem.click(),
+    ]);
+    await runtime.page
+      .getByRole("heading", {
+        name: "Мой учебный профиль",
+        exact: true,
+        level: 1,
+      })
+      .waitFor();
+
+    await runtime.page
+      .getByRole("button", { name: "Открыть меню пользователя", exact: true })
+      .click();
     const studentsMenuItem = runtime.page.getByRole("menuitem", {
       name: "Ученики",
       exact: true,
@@ -3475,6 +3517,36 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
     assert.ok(
       Math.abs(Number.parseFloat(coursesVisual.buttonFontSize) - 14.08) < 0.1,
     );
+
+    const courseSearch = runtime.page.getByRole("searchbox", {
+      name: "Поиск",
+      exact: true,
+    });
+    await courseSearch.fill("курс которого нет");
+    await runtime.page
+      .getByRole("heading", { name: "Ничего не найдено", exact: true })
+      .waitFor();
+    await runtime.page
+      .getByRole("button", { name: "Показать все курсы", exact: true })
+      .click();
+    await courseLink.waitFor();
+
+    await runtime.page
+      .getByRole("button", { name: "Таблица", exact: true })
+      .click();
+    await runtime.page
+      .getByRole("region", { name: "Таблица курсов", exact: true })
+      .waitFor();
+    const tableViewPressed = await runtime.page.evaluate(() =>
+      Array.from(document.querySelectorAll("button"))
+        .find((button) => button.textContent?.trim() === "Таблица")
+        ?.getAttribute("aria-pressed"),
+    );
+    assert.equal(tableViewPressed, "true");
+    await runtime.page
+      .getByRole("button", { name: "Плитки", exact: true })
+      .click();
+    await courseLink.waitFor();
 
     await Promise.all([
       runtime.page.waitForURL(new RegExp(`/courses/${E2E_COURSE_ID}$`)),

@@ -1,20 +1,19 @@
 # Auth, domains and routing
 
-**Статус:** current repository roleless release candidate; production cutover
-pending
+**Статус:** current production roleless release
 
 **Канонический app host:** `v2.shidao.ru`
 
 **Последний подтверждённый production release:** см.
 [`docs/project-state.md`](./project-state.md). Описанные ниже roleless routes,
-host/CSRF hardening и identity invitation flows не считаются deployed до exact
-Coolify SHA и production browser/API postflight.
+host/CSRF hardening и identity invitation flows прошли M1–M6 production apply,
+exact Coolify SHA и browser/API postflight.
 
 ## Host matrix
 
 Production middleware использует explicit allowlist:
 
-| Host                         | Поведение candidate                                                                           |
+| Host                         | Текущее поведение                                                                             |
 | ---------------------------- | --------------------------------------------------------------------------------------------- |
 | `shidao.ru`, `www.shidao.ru` | landing root/assets/email templates; internal pages → maintenance 503, `/api/*` → JSON 503    |
 | `v2.shidao.ru`               | Auth, roleless application, identity invitation pages/API; global noindex                     |
@@ -88,7 +87,7 @@ History API до network work и никогда не отправляется с
 5. Wrong Account/email получает один generic fail-closed response.
 
 Signup/login/recovery используют тот же self-hosted Supabase Auth/SMTP. Auth,
-SMTP, JWT/API keys и base Storage config candidate не меняет.
+SMTP, JWT/API keys и base Storage config этот release не меняет.
 
 ## Login and Account entry
 
@@ -141,17 +140,25 @@ Resource access остаётся relation/ownership-scoped:
 
 - Course authoring — owner Account only;
 - `/students` — teacher-local `teacher_learner`, groups и recorder-scoped raw
-  history текущего Account;
+  history текущего Account; вкладка `?tab=observing` использует отдельные
+  active observer grants и safe projection;
 - `/learning-profile` — linked subject safe history/progress, share code,
   consent и subject lifecycle;
-- `/observing` — только active observer grants и safe read-only projection;
+- `/observing` — protected compatibility redirect на
+  `/students?tab=observing`;
 - `/settings/observers` — subject-controlled invitations/grants;
 - Student Screen по-прежнему owner preview, не learner Course access.
 
 Primary navigation для каждого Account:
 
 ```text
-Курсы / Расписание / Ученики / Мой учебный профиль / Наблюдение
+Расписание / Ученики / Курсы
+```
+
+Account menu:
+
+```text
+Учебный профиль / Настройки / Выход
 ```
 
 Settings navigation:
@@ -283,12 +290,12 @@ Full contract:
 
 ## Current / next / later
 
-**Current repository candidate:** roleless routes/navigation, Account login/PIN,
-strict host/CSRF boundary, all identity/observer APIs and UI above.
+**Current:** roleless routes/navigation, Account login/PIN, strict host/CSRF
+boundary, all identity/observer APIs and UI above. M1–M6, backups, schema
+snapshot, Coolify deploy и authenticated browser/API postflight завершены.
 
-**Next release work:** M1–M3 production backup/apply/postflight, two roleless
-exact web deploys, M4 dependency audit/apply, final snapshot, exact Coolify SHA
-and authenticated browser postflight.
+**Next:** дальнейшая authoring/accessibility полировка по roadmap без возврата
+role switch или отдельной identity-модели.
 
 **Later:** learner Course consumption/enrollment, live Student Screen,
 Homework/RAG, communication, billing and external MCP. Identity completion does

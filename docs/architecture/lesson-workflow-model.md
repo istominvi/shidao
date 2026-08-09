@@ -10,12 +10,12 @@
 
 **Implementation state:** deployed baseline включает authoring, persisted
 Slides/preview, RouterAI, groups/audience, LessonRun и recorder-scoped history.
-Current repository дополнительно содержит roleless learner-identity release
-candidate: exactly-one Account profile, claim/merge/observer, learner-safe
+Current production дополнительно содержит roleless learner identity:
+exactly-one Account profile, claim/merge/observer, learner-safe
 history/progress, explicit shared comments, actual duration и consented
-cross-provider AI. Этот candidate не считается production-current до phased
-migrations, exact Coolify deploy и postflight. Homework, learner Course
-consumption и live Student Screen sync остаются later.
+cross-provider AI. Phased M1–M6 migrations, exact Coolify deploy и postflight
+завершены. Homework, learner Course consumption и live Student Screen sync
+остаются later.
 
 ## Product decision
 
@@ -372,7 +372,7 @@ Visual contract Course routes не меняет эту навигационну�
 
 ## Roleless teaching hub navigation boundary
 
-Current repository candidate делает `/schedule` и `/students` доступными
+Current production делает `/schedule` и `/students` доступными
 любому authenticated Account. «Преподаватель» здесь означает владельца Course
 и/или `teacher_learner`, а не legacy role:
 
@@ -381,8 +381,10 @@ Current repository candidate делает `/schedule` и `/students` досту�
 - `/schedule` проецирует LessonRun выбранного дня; отдельной таблицы Schedule
   event нет; action перехода к назначению находится в общей header
   action-секции, а date navigator — ниже;
-- `/students` является единым справочником TeacherLearner/LearnerProfile и
-  LearnerGroup: вкладки «Ученики / Группы», поиск, фильтр по группе, сортировка
+- `/students` объединяет справочник TeacherLearner/LearnerProfile и
+  LearnerGroup во вкладках «Ученики / Группы» с learner-safe observer
+  projection во вкладке «Наблюдение»; справочник сохраняет поиск, фильтр по
+  группе и сортировку
   и управление relation не создают второй тип ученика; строка ученика показывает
   до двух групп и «ещё N», а имя и archive state принадлежат relation конкретного
   преподавателя; ученика можно создать, изменить и убрать из списка, а для групп
@@ -405,9 +407,12 @@ Current repository candidate делает `/schedule` и `/students` досту�
   self/observer surfaces и subject lifecycle реализованы отдельным
   learner-identity service/API, не внутри Course Builder.
 
-Primary navigation для roleless Account содержит «Курсы / Расписание /
-Ученики / Мой учебный профиль / Наблюдение». Пустой `/courses` позволяет начать
-authoring; он не является Course enrollment учащегося.
+Primary navigation для roleless Account содержит «Расписание / Ученики /
+Курсы». «Учебный профиль» находится в Account menu, а «Наблюдение» — третья
+вкладка `/students`; `/observing` служит compatibility redirect. Пустой
+`/courses` позволяет начать authoring; он не является Course enrollment
+учащегося. Каталог Course поддерживает поиск, фильтры, сортировку и режимы
+«Плитки / Таблица» поверх того же owner-scoped CourseSummary без второй модели.
 
 ## Scheduling, completion and deletion
 
@@ -619,8 +624,8 @@ Runs текущего Course и до 40 последних финальных Le
 и история входят в Lesson preview fingerprint, поэтому изменение membership
 после preview делает Apply stale.
 
-Repository identity candidate добавляет отдельный subject-controlled consent
-`profile + Course + current owner`. Без него behavior выше не меняется. С
+Current production identity contract добавляет отдельный subject-controlled
+consent `profile + Course + current owner`. Без него behavior выше не меняется. С
 active consent server-only function добавляет только deterministic bounded
 sanitized aggregates всей canonical lineage и categorical signals из explicit
 shared comments после PII scrub. Comment text/summary/quote, foreign raw rows,
@@ -703,9 +708,9 @@ application services и MCP не импортируют demo fixtures; все н
 
 Roleless Account bootstrap, invitation/claim, physical profile merge,
 self/observer history, real-record progress и consented cross-provider AI уже
-реализованы в repository candidate и не меняют authored hierarchy Lesson. Их
-production status определяется phased release/postflight, а не наличием кода.
-Learner Course consumption и live Student Screen остаются later.
+реализованы в current production и не меняют authored hierarchy Lesson. Phased
+release/postflight завершены. Learner Course consumption и live Student Screen
+остаются later.
 
 ## Shipped acceptance baseline
 

@@ -10,6 +10,10 @@ const studentsPageSource = readFileSync(
   "src/app/(app)/(teacher-required)/students/page.tsx",
   "utf8",
 );
+const observingPageSource = readFileSync(
+  "src/app/(app)/observing/page.tsx",
+  "utf8",
+);
 const teacherLayoutSource = readFileSync(
   "src/app/(app)/(teacher-required)/layout.tsx",
   "utf8",
@@ -20,6 +24,10 @@ const scheduleWorkspaceSource = readFileSync(
 );
 const studentsWorkspaceSource = readFileSync(
   "src/components/teaching-hub/students-workspace.tsx",
+  "utf8",
+);
+const observingWorkspaceSource = readFileSync(
+  "src/components/learner-identity/observing-workspace.tsx",
   "utf8",
 );
 const studentDirectoryTableSource = readFileSync(
@@ -81,6 +89,9 @@ test("teaching hub pages share the demo shell and canonical page header", () => 
   assert.match(studentsWorkspaceSource, /title="Ученики"/);
   assert.match(studentsWorkspaceSource, /Новый ученик/);
   assert.match(studentsWorkspaceSource, /Новая группа/);
+  assert.match(studentsPageSource, /tab === "observing"/);
+  assert.match(observingPageSource, /redirect\(`/);
+  assert.match(observingPageSource, /ROUTES\.students}\?tab=observing/);
   assert.match(teacherLayoutSource, /resolveTeacherRequiredRedirect/);
 });
 
@@ -108,6 +119,9 @@ test("students manages one learner and group directory with durable history", ()
   assert.match(studentsWorkspaceSource, /<WorkspaceTabs/);
   assert.match(studentsWorkspaceSource, /label: "Ученики"/);
   assert.match(studentsWorkspaceSource, /label: "Группы"/);
+  assert.match(studentsWorkspaceSource, /label: "Наблюдение"/);
+  assert.match(studentsWorkspaceSource, /<ObservingWorkspace embedded \/>/);
+  assert.match(observingWorkspaceSource, /!embedded \? \(/);
   assert.match(studentsWorkspaceSource, /role="tabpanel"/);
   assert.match(studentsWorkspaceSource, /workspaceTabPanelId/);
   assert.match(studentsWorkspaceSource, /Без группы/);

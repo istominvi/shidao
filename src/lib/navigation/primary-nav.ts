@@ -1,7 +1,7 @@
 import { ROUTES } from "@/lib/auth";
 import { isRouteWithin } from "@/lib/routes";
 import type { LucideIcon } from "lucide-react";
-import { BookOpenCheck, CalendarDays, Eye, Library, Users } from "lucide-react";
+import { CalendarDays, Library, Users } from "lucide-react";
 
 export type PrimaryNavItem = {
   id: string;
@@ -42,13 +42,6 @@ export const PRIMARY_NAV_CONFIG: Record<
     ariaLabel: "Основная навигация аккаунта",
     items: [
       {
-        id: "courses",
-        label: "Курсы",
-        href: ROUTES.courses,
-        icon: Library,
-        isActive: (pathname) => isRouteWithin(pathname, ROUTES.courses),
-      },
-      {
         id: "schedule",
         label: "Расписание",
         href: ROUTES.schedule,
@@ -60,21 +53,16 @@ export const PRIMARY_NAV_CONFIG: Record<
         label: "Ученики",
         href: ROUTES.students,
         icon: Users,
-        isActive: (pathname) => isRouteWithin(pathname, ROUTES.students),
+        isActive: (pathname) =>
+          isRouteWithin(pathname, ROUTES.students) ||
+          isRouteWithin(pathname, ROUTES.observing),
       },
       {
-        id: "learning-profile",
-        label: "Мой учебный профиль",
-        href: ROUTES.learningProfile,
-        icon: BookOpenCheck,
-        isActive: (pathname) => isRouteWithin(pathname, ROUTES.learningProfile),
-      },
-      {
-        id: "observing",
-        label: "Наблюдение",
-        href: ROUTES.observing,
-        icon: Eye,
-        isActive: (pathname) => isRouteWithin(pathname, ROUTES.observing),
+        id: "courses",
+        label: "Курсы",
+        href: ROUTES.courses,
+        icon: Library,
+        isActive: (pathname) => isRouteWithin(pathname, ROUTES.courses),
       },
     ],
   },

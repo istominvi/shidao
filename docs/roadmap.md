@@ -171,7 +171,9 @@ Homework, RAG, billing, templates и live Student Screen по-прежнему �
    memberships, permanent delete только пустого unclaimed profile и
    subject-only learning-data erasure/reset.
 6. **Observer:** self-managed invite/accept/revoke, раздел «Наблюдение» и узкая
-   read-only finalized projection. Teacher relation не выдаёт observer access.
+   read-only finalized projection. В current UI это третья вкладка раздела
+   «Ученики», а не отдельный primary navigation item. Teacher relation не
+   выдаёт observer access.
 7. **Progress:** nullable verified actual duration, pagination и aggregate
    projection из реальных LearningRecord по canonical lineage. Scheduled
    fallback не считается фактическим start; generic learner metrics ждут
@@ -225,6 +227,12 @@ Definition of Done программы:
 
 Цель — превратить рабочий технический редактор в уверенный ежедневный
 инструмент преподавателя без изменения доменной модели.
+
+**Current:** primary navigation упрощена до «Расписание / Ученики / Курсы»;
+учебный профиль перенесён в Account menu, observer projection — во вкладку
+«Наблюдение» внутри «Ученики». Каталог `/courses` получил поиск, реальные
+Course-фильтры, сортировку и переключение «Плитки / Таблица» без новой schema
+или параллельного Course API.
 
 - продолжить responsive/accessibility полировку обновлённого Course workspace;
 - добавить загрузку новых материалов из открытого существующего Course;
@@ -340,9 +348,10 @@ compatibility/recovery data; active roleless contract их не читает.
   быть без группы или входить сразу в несколько;
 - смешанная Course audience через независимые direct learner и group links;
   effective audience — дедуплицированное объединение активных профилей;
-- teacher-only `/students` как единый sortable/filterable справочник: ученика
-  можно создать, изменить и убрать из своего списка, для групп доступен CRUD, а
-  dialog ученика показывает индивидуальную историю;
+- Account-accessible `/students` как единый sortable/filterable справочник с
+  teacher-scoped данными: ученика можно создать, изменить и убрать из своего
+  списка, для групп доступен CRUD, а dialog ученика показывает индивидуальную
+  историю;
 - безопасное product delete ученика архивирует только teacher relation и
   отсоединяет её от будущих аудиторий этого Account, не удаляя canonical
   LearnerProfile, LearningRecord и уже назначенные Runs; archive list/restore

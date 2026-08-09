@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import type { LucideIcon } from "lucide-react";
-import { LogOut, Menu, Settings } from "lucide-react";
+import { BookOpenCheck, LogOut, Menu, Settings } from "lucide-react";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { isInternalAuthEmail, ROUTES } from "@/lib/auth";
 import { signOutViaServer } from "@/lib/auth-flow";
@@ -233,6 +233,21 @@ export function SessionNavActions({
             aria-hidden="true"
           />
         ) : null}
+        <Link
+          href={ROUTES.learningProfile}
+          className={navigationDropdownItemClass()}
+          onClick={() => setOpen(false)}
+          role="menuitem"
+        >
+          <span className="inline-flex items-center gap-2.5">
+            <BookOpenCheck
+              size={16}
+              className="text-neutral-500"
+              aria-hidden="true"
+            />
+            Учебный профиль
+          </span>
+        </Link>
         <Link
           href={ROUTES.settingsProfile}
           className={navigationDropdownItemClass()}

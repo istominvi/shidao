@@ -2,6 +2,7 @@
 
 import {
   GraduationCap,
+  Eye,
   LoaderCircle,
   Plus,
   RotateCcw,
@@ -11,8 +12,10 @@ import {
   Users,
   XCircle,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AppPageHeader } from "@/components/app/page-header";
+import { ObservingWorkspace } from "@/components/learner-identity/observing-workspace";
 import {
   createLearnerGroup,
   createLearnerProfile,
@@ -59,13 +62,18 @@ import type {
   LearnerConnectionRequest,
   TeacherLearnerDirectoryItem,
 } from "@/modules/learner-identity/domain";
+import { ROUTES } from "@/lib/auth";
 
-type DirectoryView = "learners" | "groups";
+type DirectoryView = "learners" | "groups" | "observing";
 type LearnerSort = "name-asc" | "name-desc" | "group-count";
 type GroupSort = "name-asc" | "name-desc" | "member-count";
 type DirectoryStatus = "active" | "archived" | "pending";
 
 const STUDENTS_DIRECTORY_TABS_ID = "students-directory";
+
+type StudentsWorkspaceProps = {
+  initialView?: DirectoryView;
+};
 
 function errorMessage(caught: unknown, fallback: string) {
   return caught instanceof Error ? caught.message : fallback;
@@ -101,7 +109,10 @@ function fallbackIdentity(
   };
 }
 
-export function StudentsWorkspace() {
+export function StudentsWorkspace({
+  initialView = "learners",
+}: StudentsWorkspaceProps) {
+  const router = useRouter();
   const [profiles, setProfiles] = useState<LearnerProfile[] | null>(null);
   const [activeDirectory, setActiveDirectory] = useState<
     TeacherLearnerDirectoryItem[] | null
@@ -113,7 +124,7 @@ export function StudentsWorkspace() {
     LearnerConnectionRequest[] | null
   >(null);
   const [groups, setGroups] = useState<LearnerGroup[] | null>(null);
-  const [view, setView] = useState<DirectoryView>("learners");
+  const [view, setView] = useState<DirectoryView>(initialView);
   const [directoryStatus, setDirectoryStatus] =
     useState<DirectoryStatus>("active");
   const [learnerQuery, setLearnerQuery] = useState("");
@@ -182,6 +193,10 @@ export function StudentsWorkspace() {
       active = false;
     };
   }, [reloadDirectory]);
+
+  useEffect(() => {
+    setView(initialView);
+  }, [initialView]);
 
   useEffect(() => {
     const fragment = new URLSearchParams(window.location.hash.slice(1));
@@ -422,11 +437,20 @@ export function StudentsWorkspace() {
     );
   }
 
+  function changeView(nextView: DirectoryView) {
+    setView(nextView);
+    const href =
+      nextView === "learners"
+        ? ROUTES.students
+        : `${ROUTES.students}?tab=${nextView}`;
+    router.replace(href, { scroll: false });
+  }
+
   return (
     <div className="teaching-hub-stack">
       <AppPageHeader
         title="Ученики"
-        description="Ученики и группы, с которыми вы работаете. История показана только в рамках ваших курсов."
+        description="Ученики и группы, с которыми вы работаете, а также учебные профили, за которыми вы наблюдаете."
         actions={
           view === "learners" ? (
             <Button
@@ -441,7 +465,7 @@ export function StudentsWorkspace() {
               <UserPlus className="h-4 w-4" aria-hidden="true" />
               Новый ученик
             </Button>
-          ) : (
+          ) : view === "groups" ? (
             <Button
               type="button"
               disabled={!ready || busy}
@@ -453,7 +477,7 @@ export function StudentsWorkspace() {
               <Plus className="h-4 w-4" aria-hidden="true" />
               Новая группа
             </Button>
-          )
+          ) : null
         }
       />
 
@@ -461,7 +485,7 @@ export function StudentsWorkspace() {
         idBase={STUDENTS_DIRECTORY_TABS_ID}
         ariaLabel="Разделы учеников"
         value={view}
-        onChange={setView}
+        onChange={changeView}
         items={[
           {
             value: "learners",
@@ -474,6 +498,11 @@ export function StudentsWorkspace() {
             label: "Группы",
             count: groups?.length ?? 0,
             icon: Users,
+          },
+          {
+            value: "observing",
+            label: "Наблюдение",
+            icon: Eye,
           },
         ]}
       />
@@ -516,6 +545,7 @@ export function StudentsWorkspace() {
         aria-label={
           view === "learners" ? "Управление учениками" : "Управление группами"
         }
+        hidden={view === "observing"}
       >
         <label className="teaching-hub-search student-directory-search">
           <Search className="h-4 w-4" aria-hidden="true" />
@@ -603,7 +633,7 @@ export function StudentsWorkspace() {
         </div>
       </section>
 
-      {loadError ? (
+      {view !== "observing" && loadError ? (
         <SurfaceCard className="flex items-center justify-between gap-4 border border-rose-200">
           <p className="text-sm font-medium text-rose-800" role="alert">
             {loadError}
@@ -618,7 +648,7 @@ export function StudentsWorkspace() {
         </SurfaceCard>
       ) : null}
 
-      {!loadError && !ready ? (
+      {view !== "observing" && !loadError && !ready ? (
         <SurfaceCard className="flex items-center gap-3 border border-neutral-200">
           <LoaderCircle className="h-5 w-5 animate-spin" aria-hidden="true" />
           <p className="text-sm font-medium text-neutral-700" role="status">
@@ -627,18 +657,22 @@ export function StudentsWorkspace() {
         </SurfaceCard>
       ) : null}
 
-      {busyLabel ? (
+      {view !== "observing" && busyLabel ? (
         <p className="app-alert app-alert-info" role="status">
           <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden="true" />
           {busyLabel}
         </p>
       ) : null}
-      {!learnerEditor && !groupEditor && !addLearnerOpen && mutationError ? (
+      {view !== "observing" &&
+      !learnerEditor &&
+      !groupEditor &&
+      !addLearnerOpen &&
+      mutationError ? (
         <p className="app-alert app-alert-error" role="alert">
           {mutationError}
         </p>
       ) : null}
-      {statusMessage ? (
+      {view !== "observing" && statusMessage ? (
         <p className="app-alert app-alert-success" role="status">
           {statusMessage}
         </p>
@@ -779,6 +813,19 @@ export function StudentsWorkspace() {
             }}
           />
         ) : null}
+      </div>
+
+      <div
+        id={workspaceTabPanelId(STUDENTS_DIRECTORY_TABS_ID, "observing")}
+        role="tabpanel"
+        aria-labelledby={workspaceTabId(
+          STUDENTS_DIRECTORY_TABS_ID,
+          "observing",
+        )}
+        hidden={view !== "observing"}
+        tabIndex={0}
+      >
+        {view === "observing" ? <ObservingWorkspace embedded /> : null}
       </div>
 
       {learnerEditor && profiles && groups ? (
