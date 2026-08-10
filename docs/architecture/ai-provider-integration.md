@@ -1,6 +1,7 @@
 # AI provider integration
 
-**Статус:** canonical contract для текущего production AI-среза
+**Статус:** canonical contract для deployed Course AI и current unreleased
+global System Assistant
 
 **Актуально на:** 10 августа 2026 года
 
@@ -14,10 +15,17 @@ schema и read-only UI postflight завершены. Provider smoke с непу
 в roleless functional release `01aa88a` после M1–M6 и identity/browser
 postflight.
 
+Global System Assistant, protected floating UI и routes
+`/api/v2/assistant*` реализованы в current source, но ещё не объявлены
+развёрнутыми и не имеют production postflight. Все deployment утверждения ниже
+относятся только к перечисленным released Course/Lesson AI baselines.
+
 **Schema state:** AI authoring не добавляет provider/quota persistence; он читает
 bounded projection из `teacher_learner`, `lesson_run` и `learning_record`.
 Identity slice отдельно хранит course-scoped authorization в
 `learner_ai_consent`; это не открывает provider raw history или teacher API.
+Unreleased System Assistant также не меняет PostgreSQL schema и не добавляет
+таблицу dialog/action/idempotency.
 
 ## Граница текущего среза
 
@@ -32,6 +40,14 @@ Identity slice отдельно хранит course-scoped authorization в
 Это authoring assistance, а не AI-преподаватель и не автономный агент. Ассистент
 не проводит занятия, не управляет Student Screen, не вызывает tools и не меняет
 Course из чата.
+
+Current unreleased follow-up заменяет course-owned dialog в UI одним global
+System Assistant внутри protected Account layout. Он отвечает по bounded
+authorized данным текущего Account и открытой страницы и имеет ровно две
+подтверждаемые команды: создать обычный Course draft или добавить пустую Lesson
+без Components/Slides. Provider только формирует proposal; mutation начинается
+после отдельного явного Apply пользователя. Это не generalized tool calling и
+не автономная запись из текста чата.
 
 ## Архитектурный поток
 
@@ -54,6 +70,27 @@ authenticated browser
 Production web не запускает локальный `stdio` MCP и не передаёт ему статический
 actor. MCP остаётся development adapter над тем же application service; AI-срез
 переиспользует domain/service contracts напрямую.
+
+Unreleased global flow:
+
+```text
+protected (app) layout + floating widget
+→ strict allowlisted page context + bounded React-state dialog
+→ POST /api/v2/assistant
+→ universal active/provisional Account gate
+→ per-request actor + user-JWT Course/LessonRuns services
+→ bounded owner/recorder/consent-scoped context
+→ RouterAI strict JSON turn
+→ text reply OR one create proposal (no write)
+→ explicit Apply in action card
+→ POST /api/v2/assistant/actions/apply
+→ strict action validation + process-local replay/mutex guard
+→ CourseBuilderApplicationService.createDraft | addLesson
+→ user JWT / ownership / RLS
+```
+
+Новый flow не вызывает старый HTTP route изнутри приложения, не запускает MCP и
+не конструирует publication service-role adapters.
 
 ## Provider contract
 
@@ -162,12 +199,15 @@ Components в конец существующего плана. Существу
 
 ## Assistant boundary
 
-`POST .../assistant` выполняет только provider completion после owner-scoped
-`getCourse` и чтения завершённой learning history. У AI-service для этого flow
-нет вызова mutation command, tool execution или MCP transport. System contract
-прямо запрещает утверждать, что ассистент уже изменил Course.
+Развёрнутый `POST /api/v2/courses/[courseId]/assistant` выполняет только provider
+completion после owner-scoped `getCourse` и чтения завершённой learning history.
+У AI-service этого compatibility flow нет вызова mutation command, tool
+execution или MCP transport. System contract прямо запрещает утверждать, что
+ассистент уже изменил Course.
 
-История текущего диалога хранится только в React state открытого dialog:
+Прежний Course/Lesson dialog удалён из current unreleased UI. Сам route пока
+может оставаться для compatibility, но global widget его не вызывает. История
+этого старого dialog по контракту была ephemeral:
 
 - сообщения не записываются в PostgreSQL, Storage или browser persistence;
 - закрытие dialog или reload начинает новый диалог;
@@ -176,6 +216,100 @@ Components в конец существующего плана. Существу
 
 Следовательно, это **read-only ephemeral assistant**, а не persisted Course chat,
 change history или автономный editor.
+
+## Global System Assistant — current unreleased boundary
+
+`SystemAssistantProvider` и единственный floating `SystemAssistant` монтируются
+в `src/app/(app)/layout.tsx` после Account guard. Public landing, Auth и
+standalone demo его не получают. Panel остаётся non-modal, поддерживает Escape,
+focus return, mobile safe area и reduced motion. Диалог хранится только в React
+state protected layout: закрытие panel его не удаляет, явный «Новый диалог» или
+reload сбрасывает; PostgreSQL, localStorage и durable browser persistence не
+используются.
+
+### Allowlisted page context
+
+Browser request обязан пройти strict schema и содержит только:
+
+```text
+surface
+view | null
+courseId | null
+lessonId | null
+localDate
+utcOffsetMinutes
+```
+
+`surface` выбирается из закрытого списка Schedule, Students, Courses, new
+Course, Course, Lesson, Student preview, learning/profile/security/observer
+settings, onboarding или other. `view` — также закрытый enum текущей вкладки
+Courses/Course/Lesson/Students и обязан соответствовать surface. Lesson требует
+Course; Course/Lesson IDs запрещены на несвязанных surfaces. Arbitrary `href`,
+pathname/search/hash, DOM, innerText, unsaved form values и page label не
+являются provider context.
+
+Client registration улучшает подсказку открытой поверхности, но не является
+authorization. Server повторно вызывает owner-scoped `getCourse`; выбранная
+Lesson ищется только внутри уже разрешённого Course. Foreign Course/Lesson
+останавливается до provider call.
+
+### Bounded authorized reads
+
+Каждый turn получает compact account Course catalog максимум из 60 Course без
+технических IDs в provider projection. Дополнительные данные загружаются только
+по surface:
+
+- Course/Lesson/Student preview: current owner Course, selected Lesson, до 8
+  completed Runs и 40 recorder-scoped finalized records, effective audience и
+  consent-gated sanitized shared history;
+- Students Learners/Groups views: до 100 active teacher-local learner names, 40
+  groups и 25 names на группу; Observing view не открывает модели observer/self
+  history;
+- Schedule: только локальный день, до 60 Runs и до 25 learner names на Run;
+- остальные surfaces: Course catalog и безопасная page label без чтения DOM,
+  account security fields или несохранённых форм.
+
+Все проекции проходят общий hard budget 96 000 символов. Auth/account/recorder
+IDs, JWT, PIN/email/security state, signed URLs, checksums, Storage paths и file
+contents модели не передаются. Строки из Course, Lesson, comments, learner/group
+names и filenames объявлены user data, а не инструкциями.
+
+Оба global routes используют `getActiveCourseBuilderContext`: сначала
+`resolveAccessPolicy` принимает только universal Account context
+`active/provisional`, затем actor сверяется с app session и создаётся обычный
+user-JWT/RLS Course service. Suspended/deleted, revoked или mismatched session
+не доходят до provider/action.
+
+### Proposal → explicit apply
+
+Provider возвращает strict flat turn и может выбрать максимум один kind:
+
+```text
+answer
+create_course  → course.create_draft
+add_lesson     → course.add_lesson
+```
+
+Chat route ничего не записывает. Server преобразует provider fields в strict
+canonical `courseDraftInputSchema` или `addLessonInputSchema`, разрешает
+`add_lesson` только по opaque reference из текущего owner-scoped Course catalog
+и перед возвратом применяет deterministic shared-comment redaction ко всему
+proposal. Action card получает новый UUID idempotency key.
+
+Mutation выполняется только после отдельного клика пользователя и строгого
+`POST /api/v2/assistant/actions/apply`. Apply повторно проходит Account/session
+gate и вызывает ровно `CourseBuilderApplicationService.createDraft` либо
+`addLesson`; actor/account ID не являются action arguments. Lesson создаётся с
+title и optional teacher comment, но без Components и Student Screen Slides.
+Update/delete, Auth/security, Students/Groups, audience, Schedule/Run,
+publication, attachments и arbitrary API calls в allowlist отсутствуют.
+
+Action result строится из фактического service commit и даёт ссылку на созданный
+Course/Lesson; текст provider не считается доказательством mutation.
+Proposal и action сейчас не подписываются и не сохраняются server-side: Apply
+строго валидирует body и заново проверяет actor/ownership, но UUID служит ключом
+process-local replay cache, а не криптографической привязкой аргументов к
+предыдущему provider turn. Такая привязка требует later durable action ledger.
 
 ## Контекст и attachments
 
@@ -186,7 +320,8 @@ bucket/path; длинные строки и массивы сокращаютс�
 имеет единый hard budget 96 000 символов, оставляя место system instructions и
 bounded conversation в общем provider limit.
 
-Для Lesson planning и Assistant дополнительно передаются:
+Для Lesson planning, compatibility course-scoped Assistant и global Course
+surfaces дополнительно передаются:
 
 - до 8 последних завершённых LessonRun с датой, названием, общим teacher
   report и агрегатами attendance/repeat;
@@ -233,6 +368,18 @@ process-local mutex на actor + Course, чтобы двойной submit в о�
 распределённая квота или DB transaction; несколько replicas всё ещё требуют
 отдельного distributed limiter/idempotency boundary.
 
+Global assistant использует тот же process-local chat rate/concurrency guard
+(сейчас 30 turns на 10 минут на actor, не более двух concurrent requests).
+Новые uncached Apply ограничены 20 действиями на 10 минут на actor и
+сериализуются в одном process по actor + target; create Course использует
+отдельный actor lock. UUID idempotency key кеширует успешный result на 10 минут,
+максимум 500 results на process, и объединяет concurrent retry только внутри
+этого процесса. Cached retry возвращается до повторного списания action rate.
+Restart, eviction или другая replica кеш не видят, поэтому механизм не является
+durable action ledger или гарантией exactly-once. `addLesson` дополнительно
+сохраняет известный read-next-position ordering debt до отдельной DB/service
+serialization.
+
 В текущем срезе **нет persistent quota/ledger, billing units, balance или
 subscription enforcement**. Нулевой или отсутствующий usage в provider response
 нормализуется для UI, но не превращается в подтверждённое списание. Платные
@@ -265,6 +412,11 @@ projection. SQL и service-role credentials модели не доступны. 
 редактора. Provider request/response, assistant dialog history и quota state в
 БД не сохраняются.
 
+Global System Assistant также не добавляет физические сущности: proposal,
+action UUID, in-flight lock и idempotency result существуют только в response,
+React state или process memory. Созданные после Apply Course/Lesson являются
+обычными существующими domain rows; отдельного AI-owned Course/Lesson типа нет.
+
 Identity, provenance и current access boundary зафиксированы в
 [`learner-identity-access-model.md`](./learner-identity-access-model.md).
 Current cross-provider flow допускает context только по отдельному
@@ -276,7 +428,10 @@ course-scoped subject consent и через sanitized server projection; teacher
 
 - UI выбора модели пользователем;
 - persistent assistant history, Course chat и notifications;
-- write-capable assistant, tool calling и AI change sets/undo;
+- generalized/native tool calling, mutations кроме подтверждаемого Course draft
+  и пустой Lesson, durable action history и AI change sets/undo;
+- distributed rate limit, durable idempotency/action ledger и exactly-once
+  mutations между replicas;
 - attachment parsing/OCR/RAG и citation provenance;
 - Homework generation;
 - learner-facing AI teacher, live lesson и Student Screen control;
@@ -286,23 +441,29 @@ course-scoped subject consent и через sanitized server projection; teacher
 
 ## Карта реализации
 
-| Область                       | Каноническое место                                             |
-| ----------------------------- | -------------------------------------------------------------- |
-| Provider adapter              | `src/modules/ai/routerai.ts`                                   |
-| Provider lesson transport     | `src/modules/ai/lesson-provider-contracts.ts`                  |
-| AI request/response contracts | `src/modules/ai/course-builder-contracts.ts`                   |
-| Bounded model context         | `src/modules/ai/course-context.ts`                             |
-| Consented safe history        | `src/modules/ai/shared-history.ts`                             |
-| Learning history service      | `src/modules/lesson-runs/service.ts`                           |
-| Planning/apply/chat service   | `src/modules/ai/course-builder-service.ts`                     |
-| Rate/error boundary           | `src/modules/ai/server-context.ts`                             |
-| API routes                    | `src/app/api/v2/courses/[courseId]/ai-*/`, `assistant/`        |
-| Browser client                | `src/components/course-builder/course-builder-client.ts`       |
-| Course preview UI             | `src/components/course-builder/ai-course-plan-dialog.tsx`      |
-| Lesson preview UI             | `src/components/course-builder/ai-lesson-plan-dialog.tsx`      |
-| Assistant UI                  | `src/components/course-builder/ai-course-assistant-dialog.tsx` |
+| Область                            | Каноническое место                                                                                 |
+| ---------------------------------- | -------------------------------------------------------------------------------------------------- |
+| Provider adapter                   | `src/modules/ai/routerai.ts`                                                                       |
+| Provider lesson transport          | `src/modules/ai/lesson-provider-contracts.ts`                                                      |
+| AI request/response contracts      | `src/modules/ai/course-builder-contracts.ts`                                                       |
+| Bounded model context              | `src/modules/ai/course-context.ts`                                                                 |
+| Consented safe history             | `src/modules/ai/shared-history.ts`                                                                 |
+| Learning history service           | `src/modules/lesson-runs/service.ts`                                                               |
+| Planning/apply/chat service        | `src/modules/ai/course-builder-service.ts`                                                         |
+| System Assistant contracts/service | `src/modules/ai/system-assistant-contracts.ts`, `src/modules/ai/system-assistant-service.ts`       |
+| Rate/error boundary                | `src/modules/ai/server-context.ts`                                                                 |
+| API routes                         | `src/app/api/v2/courses/[courseId]/ai-*/`, compatibility `assistant/`, `src/app/api/v2/assistant/` |
+| Browser client                     | `src/components/course-builder/course-builder-client.ts`                                           |
+| Course preview UI                  | `src/components/course-builder/ai-course-plan-dialog.tsx`                                          |
+| Lesson preview UI                  | `src/components/course-builder/ai-lesson-plan-dialog.tsx`                                          |
+| System Assistant UI/context        | `src/components/assistant/`, `src/app/(app)/layout.tsx`, `src/app/styles/system-assistant.css`     |
 
 ## Release acceptance
+
+Current global System Assistant code не входит в перечисленные ниже releases.
+Для него добавлены strict contract/service/UI-boundary tests, но deployment,
+production provider smoke и authenticated browser postflight пока не
+заявляются.
 
 Release `0276aed` подтвердил production routes/UI, server-only RouterAI
 boundary и наличие runtime secret без раскрытия его значения. Runtime закреплён

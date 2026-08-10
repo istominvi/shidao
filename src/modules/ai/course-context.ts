@@ -114,7 +114,7 @@ function contextCharacters(value: unknown) {
  * contexts are untouched; only an oversized context gets a shared adaptive
  * string cap, preserving the bounded Course/Lesson/history array structure.
  */
-function boundedContext<T>(value: T): T {
+export function boundAiContext<T>(value: T): T {
   if (contextCharacters(value) <= MAX_AI_CONTEXT_CHARACTERS) return value;
 
   let lower = 0;
@@ -361,7 +361,7 @@ export function buildCoursePlanningContext(
   course: CourseWorkspace,
   audience: CourseAudience = EMPTY_COURSE_AUDIENCE,
 ) {
-  return boundedContext({
+  return boundAiContext({
     course: courseBasics(course),
     currentAudience: courseAudienceContext(audience),
     existingLessons: course.lessons.map((lesson) => ({
@@ -380,7 +380,7 @@ export function buildLessonPlanningContext(
   learningHistory: CourseLearningHistory = { runs: [], records: [] },
   sharedHistory: SharedLearnerHistoryContext = EMPTY_SHARED_LEARNER_HISTORY,
 ) {
-  return boundedContext({
+  return boundAiContext({
     course: courseBasics(course),
     currentAudience: courseAudienceContext(learningHistory.audience),
     lesson: lesson
@@ -417,7 +417,7 @@ export function buildAssistantContext(
   learningHistory: CourseLearningHistory = { runs: [], records: [] },
   sharedHistory: SharedLearnerHistoryContext = EMPTY_SHARED_LEARNER_HISTORY,
 ) {
-  return boundedContext({
+  return boundAiContext({
     course: courseBasics(course),
     currentAudience: courseAudienceContext(learningHistory.audience),
     courseOutline: course.lessons.map((lesson) => ({

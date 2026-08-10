@@ -14,7 +14,7 @@ export class AiRequestLimitError extends Error {
 
 export class AiApplyInFlightError extends Error {
   constructor() {
-    super("Изменения ИИ уже применяются к этому курсу.");
+    super("Действие ИИ уже выполняется.");
     this.name = "AiApplyInFlightError";
   }
 }
@@ -24,10 +24,17 @@ type RateBucket = { resetAt: number; count: number };
 const rateByActor = new Map<string, RateBucket>();
 const inFlightByActor = new Map<string, number>();
 const applyingCourses = new Set<string>();
+const assistantActionResults = new Map<
+  string,
+  { expiresAt: number; value: unknown }
+>();
+const assistantActionsInFlight = new Map<string, Promise<unknown>>();
+const ASSISTANT_ACTION_RESULT_TTL_MS = 10 * 60 * 1_000;
+const MAX_ASSISTANT_ACTION_RESULTS = 500;
 
 function hitActorRateLimit(options: {
   actorAuthUserId: string;
-  scope: "course-plan" | "lesson-plan" | "assistant";
+  scope: "course-plan" | "lesson-plan" | "assistant" | "assistant-action";
   limit: number;
   windowMs: number;
 }) {
@@ -55,7 +62,7 @@ export async function runBoundedAiRequest<T>(
   _request: NextRequest,
   options: {
     actorAuthUserId: string;
-    scope: "course-plan" | "lesson-plan" | "assistant";
+    scope: "course-plan" | "lesson-plan" | "assistant" | "assistant-action";
     limit: number;
     windowMs: number;
     maxInFlight?: number;
@@ -93,6 +100,47 @@ export async function runExclusiveAiApply<T>(
     return await operation();
   } finally {
     applyingCourses.delete(key);
+  }
+}
+
+/**
+ * Protects a confirmed assistant proposal from browser retries and double
+ * clicks in the current application process. It is deliberately not described
+ * as durable or distributed idempotency; multiple replicas still require a
+ * persisted action ledger in a later slice.
+ */
+export async function runIdempotentAiAssistantAction<T>(
+  actorAuthUserId: string,
+  idempotencyKey: string,
+  operation: () => Promise<T>,
+): Promise<T> {
+  const now = Date.now();
+  for (const [key, cached] of assistantActionResults) {
+    if (cached.expiresAt <= now) assistantActionResults.delete(key);
+  }
+
+  const key = `${actorAuthUserId.toLowerCase()}:${idempotencyKey.toLowerCase()}`;
+  const cached = assistantActionResults.get(key);
+  if (cached) return cached.value as T;
+
+  const pending = assistantActionsInFlight.get(key);
+  if (pending) return (await pending) as T;
+
+  const next = operation();
+  assistantActionsInFlight.set(key, next);
+  try {
+    const value = await next;
+    if (assistantActionResults.size >= MAX_ASSISTANT_ACTION_RESULTS) {
+      const oldestKey = assistantActionResults.keys().next().value;
+      if (oldestKey) assistantActionResults.delete(oldestKey);
+    }
+    assistantActionResults.set(key, {
+      expiresAt: Date.now() + ASSISTANT_ACTION_RESULT_TTL_MS,
+      value,
+    });
+    return value;
+  } finally {
+    assistantActionsInFlight.delete(key);
   }
 }
 

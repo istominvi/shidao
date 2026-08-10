@@ -484,8 +484,12 @@ ShiDao V2 application:
   проверить preview, затем применить и после reload увидеть Components;
 - подтвердить, что AI Components созданы `staff_only` и не попали на Student
   Screen без явного назначения преподавателем;
-- открыть «ИИ-ассистент», отправить один безопасный вопрос и получить ответ с
-  token usage; чат консультирует и не меняет Course/Lesson;
+- открыть global «ИИ» в правом нижнем углу защищённой страницы, проверить
+  корректный context chip, отправить один безопасный вопрос и получить ответ с
+  token usage;
+- запросить создание disposable Course draft или пустой Lesson, убедиться, что
+  до клика по action card данные не изменились, затем явно подтвердить и после
+  reload проверить ровно один созданный объект и рабочую result-ссылку;
 - AI-вызовы в browser Network должны идти только в same-origin `/api/v2/...`:
   RouterAI URL, Authorization header и API key не появляются в browser bundle,
   request или console;

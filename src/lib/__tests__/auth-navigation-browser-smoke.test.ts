@@ -466,6 +466,7 @@ type PlaywrightLocator = {
   count: () => Promise<number>;
   fill: (value: string) => Promise<void>;
   inputValue: () => Promise<string>;
+  textContent: () => Promise<string | null>;
   press: (key: string) => Promise<void>;
   getByRole: (
     role: string,
@@ -2266,6 +2267,70 @@ test("browser smoke: guest on protected routes is redirected to /login", async (
     } finally {
       await runtime.close();
     }
+  }
+});
+
+test("browser smoke: protected pages expose the global assistant with keyboard focus recovery", async (t) => {
+  if (browserSmokeUnavailableReason) {
+    t.skip(browserSmokeUnavailableReason);
+    return;
+  }
+
+  const runtime = await openPage({ cookie: authenticatedCookieValue() });
+
+  try {
+    await runtime.page.goto("/schedule", { waitUntil: "networkidle" });
+
+    const launcher = runtime.page.getByRole("button", {
+      name: "Открыть ИИ-ассистента",
+      exact: true,
+    });
+    await launcher.waitFor();
+    await launcher.press("Enter");
+
+    const panel = runtime.page.getByRole("dialog", {
+      name: "Shidao ИИ",
+      exact: true,
+    });
+    await panel.waitFor();
+    const composer = panel.getByLabel("Сообщение ИИ-ассистенту");
+    await composer.waitFor();
+    await runtime.page.evaluate(
+      () =>
+        new Promise<void>((resolve) => requestAnimationFrame(() => resolve())),
+    );
+    assert.equal(
+      await runtime.page.evaluate(
+        () => document.activeElement?.id === "system-assistant-message",
+      ),
+      true,
+    );
+
+    await composer.fill("Черновик вопроса");
+    await Promise.all([
+      runtime.page.waitForURL(/\/students$/),
+      runtime.page.getByRole("link", { name: "Ученики", exact: true }).click(),
+    ]);
+    await runtime.page
+      .getByRole("heading", { name: "Ученики", exact: true, level: 1 })
+      .waitFor();
+    assert.match((await panel.textContent()) ?? "", /Контекст: Ученики/);
+    assert.equal(await composer.inputValue(), "Черновик вопроса");
+
+    await composer.press("Escape");
+    await panel.waitFor({ state: "hidden" });
+    await runtime.page.evaluate(
+      () =>
+        new Promise<void>((resolve) => requestAnimationFrame(() => resolve())),
+    );
+    assert.equal(
+      await runtime.page.evaluate(() =>
+        document.activeElement?.classList.contains("system-assistant-launcher"),
+      ),
+      true,
+    );
+  } finally {
+    await runtime.close();
   }
 });
 

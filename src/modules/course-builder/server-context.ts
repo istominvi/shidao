@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { resolveAccessPolicy } from "@/lib/server/access-policy";
 import {
   clearAppSession,
   isSessionRevoked,
@@ -33,7 +34,7 @@ import {
 } from "@/modules/course-publications/errors";
 import { createCoursePublicationService } from "@/modules/course-publications/service";
 
-export async function getCourseBuilderContext() {
+async function getCourseBuilderActorContext() {
   const session = await readAppSession();
   if (!session) throw new SupabaseUserReauthenticationRequiredError();
   const accessToken = await requireSupabaseUserAccessToken();
@@ -47,6 +48,29 @@ export async function getCourseBuilderContext() {
     accessToken,
   };
   const service = createCourseBuilderService({ repository });
+  return { actor, service };
+}
+
+/**
+ * Account-wide surfaces need the universal active/provisional Account gate in
+ * addition to the legacy Course Builder session check. Keeping this helper
+ * separate also avoids constructing elevated publication adapters for routes
+ * that only use the user's JWT/RLS-backed Course service.
+ */
+export async function getActiveCourseBuilderContext() {
+  const resolution = await resolveAccessPolicy();
+  if (resolution.status !== "account") {
+    throw new SupabaseUserReauthenticationRequiredError();
+  }
+  const context = await getCourseBuilderActorContext();
+  if (context.actor.authUserId !== resolution.context.authUserId) {
+    throw new SupabaseUserReauthenticationRequiredError();
+  }
+  return context;
+}
+
+export async function getCourseBuilderContext() {
+  const { actor, service } = await getCourseBuilderActorContext();
   // Keep service-role adapters behind the server context call. Importing this
   // shared module for pure helpers/tests must not evaluate elevated adapters.
   const [

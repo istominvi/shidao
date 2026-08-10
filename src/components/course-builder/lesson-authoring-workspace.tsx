@@ -28,7 +28,6 @@ import {
 } from "lucide-react";
 import { AppPageHeader } from "@/components/app/page-header";
 import { AiLessonPlanDialog } from "@/components/course-builder/ai-lesson-plan-dialog";
-import { AiCourseAssistantDialog } from "@/components/course-builder/ai-course-assistant-dialog";
 import { CourseMaterialsPanel } from "@/components/course-builder/course-materials-panel";
 import {
   LESSON_WORKSPACE_TABS,
@@ -905,7 +904,6 @@ export function LessonAuthoringWorkspace({
 }: LessonAuthoringWorkspaceProps) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [aiPlannerOpen, setAiPlannerOpen] = useState(false);
-  const [assistantOpen, setAssistantOpen] = useState(false);
   const [lessonEditorOpen, setLessonEditorOpen] = useState(false);
   const [lessonRunDialogOpen, setLessonRunDialogOpen] = useState(false);
   const [editingComponentId, setEditingComponentId] = useState<string | null>(
@@ -972,14 +970,6 @@ export function LessonAuthoringWorkspace({
               disabled={disabled}
               onClick={() => setLessonRunDialogOpen(true)}
             />
-            <Button
-              variant="secondary"
-              disabled={disabled}
-              onClick={() => setAssistantOpen(true)}
-            >
-              <WandSparkles className="h-4 w-4" aria-hidden="true" />
-              ИИ-ассистент
-            </Button>
             <Button
               variant="secondary"
               disabled={disabled}
@@ -1150,16 +1140,6 @@ export function LessonAuthoringWorkspace({
           runMutation={runMutation}
           onClose={() => setAiPlannerOpen(false)}
           onApplied={() => setAiPlannerOpen(false)}
-        />
-      ) : null}
-
-      {assistantOpen ? (
-        <AiCourseAssistantDialog
-          courseId={course.id}
-          courseTitle={course.title}
-          lessonId={lesson.id}
-          lessonTitle={lesson.title}
-          onClose={() => setAssistantOpen(false)}
         />
       ) : null}
     </div>

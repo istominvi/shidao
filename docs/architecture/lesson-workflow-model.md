@@ -17,6 +17,12 @@ cross-provider AI. Phased M1–M6 migrations, exact Coolify deploy и postflight
 завершены. Homework, learner Course consumption и live Student Screen sync
 остаются later.
 
+Current unreleased application follow-up добавляет global System Assistant в
+protected `(app)` layout. Он не меняет Lesson hierarchy или schema: по
+allowlisted page context читает bounded authorized проекции, а после отдельного
+explicit Apply может только создать обычный Course draft либо пустую Lesson без
+Components/Slides. Этот follow-up ещё не заявлен как deployed.
+
 ## Product decision
 
 Каноническая авторская модель ShiDao V2:
@@ -366,6 +372,14 @@ course-wide каталога. Она не создаёт lesson attachment, не
 reload. Перестройка navigation, inline settings/audience и pre-persistence shell
 не меняют Course/Audience/attachment contracts или физическую schema.
 
+Current unreleased UI не размещает отдельную кнопку assistant в Course или
+Lesson header. Один floating widget смонтирован выше этих workspace в protected
+Account layout; Course workspace регистрирует только typed `courseId` и
+optional selected `lessonId`, а fullscreen preview — текущую preview Lesson.
+Произвольный URL, DOM, search/hash и несохранённые поля Lesson в page context не
+передаются. Старый course-scoped assistant route может временно оставаться как
+compatibility, но его dialog больше не является частью Course/Lesson UI.
+
 ## Course catalog and publication boundary
 
 `/courses` разделяет рабочие Course и каталог вкладками **Мои** и
@@ -550,6 +564,14 @@ Lesson/Component IDs и создаёт те же Lesson/Component entities че�
 service. Новые Components остаются `staff_only`; AI не создаёт Student Screen
 Slide и не публикует материал ученику автоматически.
 
+Current unreleased System Assistant добавляет ещё один, более узкий create
+flow: chat может только подготовить proposal обычной пустой Lesson для точного
+owner-scoped Course. Карточка показывает Course, title и optional teacher
+comment; только отдельный Apply вызывает canonical `addLesson`. Этот flow не
+генерирует Components, не заменяет Lesson planning preview/apply и не публикует
+Student Screen. Аналогично создание Course через assistant создаёт только
+обычный Course draft, а не скрыто собранную программу.
+
 ## Course materials and Storage
 
 Course attachment:
@@ -631,7 +653,10 @@ Implementation map:
 - repository: `src/modules/course-builder/repository.ts`;
 - MCP: `src/modules/course-builder/mcp/`;
 - AI provider/contracts/service: `src/modules/ai/`;
-- AI routes: `src/app/api/v2/courses/[courseId]/ai-*/` и `assistant/`;
+- AI routes: `src/app/api/v2/courses/[courseId]/ai-*/`, compatibility
+  `assistant/` и current unreleased `src/app/api/v2/assistant/`;
+- System Assistant UI/context: `src/components/assistant/`,
+  `src/app/(app)/layout.tsx`, `src/app/styles/system-assistant.css`;
 - authoring UI: `src/components/course-builder/lesson-authoring-workspace.tsx`;
 - scheduling domain/service: `src/modules/lesson-runs/`;
 - scheduling/history UI: `src/components/lesson-runs/`,
@@ -678,12 +703,40 @@ Course/Lesson generation строго разделяет read-only planning и p
 provider call → validated preview → teacher confirmation → application commands
 ```
 
-Assistant является отдельным read-only ephemeral flow. Он может видеть
-ограниченный Course context и выбранную Lesson, но не вызывает commands/tools и
-не утверждает, что изменил данные. Dialog history хранится только в React state
-и не переживает close/reload.
+Развёрнутый course-scoped Assistant является отдельным read-only ephemeral
+flow. Он может видеть ограниченный Course context и выбранную Lesson, но не
+вызывает commands/tools и не утверждает, что изменил данные. Его старый route
+может временно оставаться compatibility boundary, но Course/Lesson dialog и
+header actions удалены из current unreleased UI.
 
-Lesson planning и Assistant получают выбранные direct learners, teacher-local
+Current unreleased global System Assistant монтируется один раз только в
+protected `(app)` layout. Browser передаёт strict allowlisted surface и typed
+view текущей вкладки, Course/Lesson IDs при допустимости, локальную дату и UTC offset; DOM,
+произвольный URL/search/hash и несохранённые form values не передаются. Server
+повторно проходит universal active/provisional Account gate, user-JWT/RLS и
+owner check. Он даёт provider bounded compact Course catalog и только
+surface-specific projection: current Course/Lesson с разрешённой history,
+Students/Groups либо Schedule выбранного дня. Technical/Auth/Storage IDs и file
+contents исключены.
+
+Global chat возвращает ответ или максимум одно strict proposal. Provider ничего
+не записывает. Action card и отдельный explicit Apply разрешают только
+`course.create_draft` либо `course.add_lesson`; второй создаёт Lesson без
+Components/Slides. Это не open-ended tool calling: update/delete,
+Auth/security, audience, Students/Groups, Schedule/Run, publication и Student
+Screen mutations не входят в allowlist. Apply вызывает те же canonical
+application commands с per-request actor, поэтому результат не вводит второй
+AI-owned Course/Lesson тип и не меняет authored hierarchy.
+
+История global dialog остаётся в React state до reload/явного сброса. Rate и
+concurrency guard, actor+target mutex и 10-минутный idempotency result cache
+живут только в одном Node process. Restart или другая replica их не видят;
+durable action ledger, distributed exactly-once и сериализация concurrent
+Lesson append остаются next hardening. Новая schema/migration в System
+Assistant slice отсутствует, а deployment/postflight не заявлены.
+
+Lesson planning, compatibility course-scoped Assistant и global Course context
+получают выбранные direct learners, teacher-local
 названия и состав групп, дедуплицированную effective audience, до 8 завершённых
 Runs текущего Course и до 40 последних финальных LearningRecords, записанных
 текущим преподавателем об этих учениках по его курсам. Canonical identity не
@@ -761,7 +814,10 @@ application services и MCP не импортируют demo fixtures; все н
 
 ## Not implemented yet
 
-- write-capable AI assistant, persisted assistant history и tool calling;
+- persisted assistant history, generalized tool calling, mutations кроме
+  подтверждаемого Course draft/пустой Lesson и durable action history;
+- distributed assistant rate/idempotency ledger и exactly-once mutations между
+  replicas;
 - persistent AI quota/ledger, billing и change sets/undo;
 - parsing/RAG загруженных файлов;
 - persisted homework editor;

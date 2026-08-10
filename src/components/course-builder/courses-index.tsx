@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useSystemAssistantPageContext } from "@/components/assistant/system-assistant-provider";
 import { CourseCatalogPanel } from "@/components/course-builder/course-catalog-panel";
 import { OwnedCoursesPanel } from "@/components/course-builder/owned-courses-panel";
 import {
@@ -35,6 +36,14 @@ export function CoursesIndex({
   const [selectedCatalogCourseId, setSelectedCatalogCourseId] = useState<
     string | null
   >(initialCatalogCourseId);
+
+  useSystemAssistantPageContext({
+    surface: "courses",
+    view: `courses_${activeTab}`,
+    courseId: null,
+    lessonId: null,
+    label: activeTab === "catalog" ? "Курсы · Каталог" : "Курсы · Мои",
+  });
 
   useEffect(() => {
     setActiveTab(initialTab);

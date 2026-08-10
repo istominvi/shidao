@@ -15,6 +15,7 @@ import {
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AppPageHeader } from "@/components/app/page-header";
+import { useSystemAssistantPageContext } from "@/components/assistant/system-assistant-provider";
 import { ObservingWorkspace } from "@/components/learner-identity/observing-workspace";
 import {
   createLearnerGroup,
@@ -144,6 +145,19 @@ export function StudentsWorkspace({
   const [loadError, setLoadError] = useState<string | null>(null);
   const [mutationError, setMutationError] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+
+  useSystemAssistantPageContext({
+    surface: "students",
+    view: `students_${view}`,
+    courseId: null,
+    lessonId: null,
+    label:
+      view === "groups"
+        ? "Ученики · Группы"
+        : view === "observing"
+          ? "Ученики · Наблюдение"
+          : "Ученики",
+  });
 
   const reloadDirectory = useCallback(async () => {
     const [legacyProfiles, nextGroups] = await Promise.all([

@@ -13,12 +13,12 @@ import {
   WandSparkles,
 } from "lucide-react";
 import { AppPageHeader } from "@/components/app/page-header";
+import { useSystemAssistantPageContext } from "@/components/assistant/system-assistant-provider";
 import {
   courseBuilderRequest,
   loadCourseWorkspace,
 } from "@/components/course-builder/course-builder-client";
 import { AiLessonPlanDialog } from "@/components/course-builder/ai-lesson-plan-dialog";
-import { AiCourseAssistantDialog } from "@/components/course-builder/ai-course-assistant-dialog";
 import {
   CourseActions,
   CoursePublicationBadges,
@@ -26,6 +26,7 @@ import {
 import { CourseMaterialsPanel } from "@/components/course-builder/course-materials-panel";
 import {
   COURSE_WORKSPACE_TABS,
+  LESSON_WORKSPACE_TABS,
   createCourseWorkspaceNavigation,
   openCourseWorkspaceLesson,
   reconcileCourseWorkspaceNavigation,
@@ -61,6 +62,7 @@ import type {
   LearnerProfile,
   LessonRun,
 } from "@/modules/lesson-runs/domain";
+import type { SystemAssistantActionResult } from "@/modules/ai/system-assistant-contracts";
 
 type CourseWorkspaceClientProps = {
   courseId: string;
@@ -730,7 +732,6 @@ export function CourseWorkspaceClient({
   const [mountedCourseSurfaces, setMountedCourseSurfaces] = useState<
     ReadonlySet<CourseWorkspaceSurface>
   >(() => new Set(["lessons"]));
-  const [assistantOpen, setAssistantOpen] = useState(false);
   const [returnFocusLessonId, setReturnFocusLessonId] = useState<string | null>(
     null,
   );
@@ -854,6 +855,46 @@ export function CourseWorkspaceClient({
     [reload],
   );
 
+  const selectedLesson =
+    course?.lessons.find(
+      (lesson) => lesson.id === navigation.selectedLessonId,
+    ) ?? null;
+  const handleAssistantActionApplied = useCallback(
+    async (result: SystemAssistantActionResult) => {
+      if (result.type !== "course.add_lesson" || result.courseId !== courseId) {
+        return;
+      }
+      const workspace = await reload();
+      if (!workspace.lessons.some((lesson) => lesson.id === result.lessonId)) {
+        return;
+      }
+      setNavigation((current) =>
+        openCourseWorkspaceLesson(current, result.lessonId),
+      );
+      const url = new URL(window.location.href);
+      url.searchParams.delete("lesson");
+      url.searchParams.delete("tab");
+      window.history.replaceState(null, "", `${url.pathname}${url.search}`);
+    },
+    [courseId, reload],
+  );
+  useSystemAssistantPageContext(
+    course
+      ? {
+          surface: selectedLesson ? "lesson" : "course",
+          view: selectedLesson
+            ? (`lesson_${navigation.lessonSurface}` as const)
+            : (`course_${navigation.courseSurface}` as const),
+          courseId: course.id,
+          lessonId: selectedLesson?.id ?? null,
+          label: selectedLesson
+            ? `${course.title} · Урок ${selectedLesson.position}. ${selectedLesson.title} · ${LESSON_WORKSPACE_TABS.find((item) => item.value === navigation.lessonSurface)?.label ?? "План"}`
+            : `Курс «${course.title}» · ${COURSE_WORKSPACE_TABS.find((item) => item.value === navigation.courseSurface)?.label ?? "Уроки"}`,
+          onActionApplied: handleAssistantActionApplied,
+        }
+      : null,
+  );
+
   if (!course) {
     if (error) {
       return (
@@ -871,10 +912,6 @@ export function CourseWorkspaceClient({
     return <WorkspaceSkeleton />;
   }
 
-  const selectedLesson =
-    course.lessons.find(
-      (lesson) => lesson.id === navigation.selectedLessonId,
-    ) ?? null;
   const readyAttachmentCount = course.attachments.filter(
     (asset) => asset.status === "ready",
   ).length;
@@ -940,13 +977,6 @@ export function CourseWorkspaceClient({
             actions={
               <>
                 <CoursePublicationBadges publication={course.publication} />
-                <Button
-                  variant="secondary"
-                  onClick={() => setAssistantOpen(true)}
-                >
-                  <WandSparkles className="h-4 w-4" aria-hidden="true" />
-                  ИИ-ассистент
-                </Button>
                 <CourseActions course={course} onChanged={reload} />
               </>
             }
@@ -1015,15 +1045,6 @@ export function CourseWorkspaceClient({
           </div>
         );
       })}
-
-      {assistantOpen ? (
-        <AiCourseAssistantDialog
-          courseId={course.id}
-          courseTitle={course.title}
-          lessonId={null}
-          onClose={() => setAssistantOpen(false)}
-        />
-      ) : null}
     </div>
   );
 }

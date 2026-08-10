@@ -73,6 +73,17 @@ Terminal condition identity программы закрыт.
 для title/header/action-center на пяти поверхностях, `12px / 1px / 4px`
 для tabs и пустую browser console. Схема БД в visual slice не менялась.
 
+**Current unreleased System Assistant slice:** в рабочем дереве реализован один
+глобальный floating widget «ИИ» внутри protected `(app)` layout. Он доступен на
+Account surfaces, сохраняет диалог только в React state до reload/явного сброса
+и получает не DOM/URL, а строгий allowlisted page context. Server-side
+orchestration читает bounded owner/recorder/consent-scoped проекции текущего
+Account и открытой Course/Lesson, Students или выбранного дня Schedule.
+Ассистент может подготовить только два предложения: создать обычный Course
+draft либо добавить пустую Lesson без Components; запись выполняется отдельным
+explicit Apply после проверки action card. Этот срез ещё не развёрнут и не
+проходил production postflight. Он не добавляет migration или физическую schema.
+
 **Previous deployed data baseline:** поверх group/audience baseline были введены canonical
 `LearnerProfile`, teacher-local relation `teacher_learner` и явный provenance
 `learning_record.recorded_by_account_id`. Существующие профили сохраняются 1:1,
@@ -531,10 +542,13 @@ application service/contracts внутри authenticated web request.
   с per-request actor, ownership и пользовательским JWT. Provider/quota
   persistence этот authoring baseline не добавляет; identity consent/audit
   tables принадлежат отдельному M2–M3 contract.
-- Assistant читает bounded Course/selected Lesson context и отвечает текстом,
-  но не вызывает mutation commands, MCP tools или apply routes. История живёт
-  только в React state dialog и исчезает после close/reload.
-- Lesson planning и Assistant дополнительно читают direct learners, группы и
+- Развёрнутый course-scoped Assistant route читает bounded Course/selected
+  Lesson context и отвечает текстом без mutation commands, MCP tools или apply
+  routes. Его прежний Course/Lesson dialog удалён из current unreleased UI;
+  старый `/api/v2/courses/[courseId]/assistant` пока может оставаться
+  compatibility route, но не является интерфейсом нового System Assistant.
+- Lesson planning, compatibility course-scoped Assistant и global Course
+  context дополнительно читают direct learners, группы и
   дедуплицированную effective audience с teacher-local именами, до 8 завершённых
   Runs текущего Course и до 40 finalized LearningRecords, записанных текущим
   преподавателем об этих учениках по его курсам. Canonical profile не открывает
@@ -557,8 +571,54 @@ application service/contracts внутри authenticated web request.
   server log event. Persistent quota/ledger, billing, balance и AI change sets
   отсутствуют; process-local rate limit не является пользовательской квотой.
 
-Routes, UI, server-only secret boundary и provider postflight no-write flows
-этого среза развёрнуты и проверены в production. Release acceptance описан в
+#### System Assistant — current unreleased code boundary
+
+- `SystemAssistantProvider` и один floating `SystemAssistant` монтируются в
+  protected `src/app/(app)/layout.tsx`, а не в public landing/Auth/demo и не в
+  Course/Lesson header. Кнопки прежнего course-scoped dialog из Course и Lesson
+  удалены.
+- Browser передаёт только strict поля `surface`, typed `view`, optional
+  `courseId`/`lessonId`, `localDate` и `utcOffsetMinutes`. Surface и вкладка
+  выбираются из закрытых согласованных списков;
+  произвольный URL,
+  DOM, search/hash, значения форм и page text в provider context не входят.
+  Course/Lesson IDs повторно проверяются обычным owner-scoped application
+  service до provider call.
+- Каждому запросу доступен bounded compact Course catalog; full current Course,
+  recorder-scoped finalized history и consented sanitized shared projection
+  загружаются только для Course surfaces. Student directory/groups читаются
+  только на Students Learners/Groups views; Observing не открывает модели
+  observer/self history. Schedule читается только на выбранный локальный день.
+  Технические IDs, JWT/Auth/Storage secrets и file contents в provider
+  projection отсутствуют; общий context сохраняет hard budget 96 000 символов.
+- Оба `/api/v2/assistant` routes проходят universal active/provisional Account
+  gate через `resolveAccessPolicy`, затем используют только per-request user JWT,
+  Course/Lesson ownership и RLS. Локальный `stdio` MCP и publication service-role
+  adapters в этот flow не входят.
+- Chat возвращает либо текст, либо максимум одно strict proposal:
+  `course.create_draft` или `course.add_lesson`. Provider не пишет данные.
+  Shared-comment scrubber применяется и к тексту, и ко всем полям proposal,
+  поэтому consented чужая фраза не может быть процитирована или сохранена через
+  action. Browser показывает параметры action card; только отдельный
+  `POST /api/v2/assistant/actions/apply` после явного клика вызывает canonical
+  `createDraft`/`addLesson`. Новый Lesson может иметь title/teacher comment, но
+  остаётся пустым: Components и Student Screen Slides не создаются.
+- Диалог не persisted. Chat ограничен 30 turns, новые uncached Apply — 20
+  действиями на actor за 10 минут; concurrency guard, actor+target apply mutex и
+  replay cache idempotency key существуют только в памяти одного Node process.
+  Cache живёт до 10 минут и ограничен 500 результатами; restart или другая
+  replica его не видит. Это не distributed quota, durable action ledger или
+  гарантия exactly-once между replicas. Proposal/action не подписаны и не
+  сохраняются server-side: Apply повторно валидирует body и ownership, но UUID
+  привязан только к process-local cache. Обычный concurrent Lesson append также
+  сохраняет известный ordering debt.
+- Контракты/service/routes/UI и contract tests находятся в
+  `src/modules/ai/system-assistant-*`, `src/app/api/v2/assistant/` и
+  `src/components/assistant/`. Срез реализован в source, но deployment и
+  production acceptance не заявляются.
+
+Base RouterAI routes/UI, server-only secret boundary и provider postflight
+no-write flows развёрнуты и проверены в production. Release acceptance описан в
 [`docs/architecture/ai-provider-integration.md`](./architecture/ai-provider-integration.md).
 Это утверждение относится к base RouterAI flow release `0276aed`.
 History-aware context развёрнут в release `9393080`; production provider smoke
@@ -567,7 +627,11 @@ History-aware context развёрнут в release `9393080`; production provid
 ## 3. Что ещё не реализовано
 
 - пользовательский выбор модели и persisted provider settings;
-- persistent assistant/Course chat, write-capable assistant и tool calling;
+- persistent assistant/Course chat, durable action history и generalized
+  tool calling; System Assistant пока умеет только подтверждаемое создание
+  Course draft и пустой Lesson;
+- distributed rate limit, durable idempotency/action ledger и exactly-once
+  assistant mutations между replicas;
 - persistent token quota/ledger, billing units, balance и AI change sets/undo;
 - parsing/RAG прикреплённых материалов;
 - persisted Homework editor;
@@ -766,9 +830,9 @@ positions, а плотность поддерживают текущие service
 | AI provider adapter                  | `src/modules/ai/routerai.ts`                                                                                                                                                                                                                                                      |
 | AI provider transport                | `src/modules/ai/lesson-provider-contracts.ts`                                                                                                                                                                                                                                     |
 | AI request/contracts                 | `src/modules/ai/course-builder-contracts.ts`                                                                                                                                                                                                                                      |
-| AI context/service                   | `src/modules/ai/course-context.ts`, `src/modules/ai/course-builder-service.ts`                                                                                                                                                                                                    |
-| AI API/error boundary                | `src/app/api/v2/courses/[courseId]/ai-*/`, `assistant/`, `src/modules/ai/server-context.ts`                                                                                                                                                                                       |
-| AI dialogs                           | `src/components/course-builder/ai-course-plan-dialog.tsx`, `ai-lesson-plan-dialog.tsx`, `ai-course-assistant-dialog.tsx`                                                                                                                                                          |
+| AI context/service                   | `src/modules/ai/course-context.ts`, `src/modules/ai/course-builder-service.ts`, `src/modules/ai/system-assistant-contracts.ts`, `src/modules/ai/system-assistant-service.ts`                                                                                                      |
+| AI API/error boundary                | `src/app/api/v2/courses/[courseId]/ai-*/`, compatibility `assistant/`, `src/app/api/v2/assistant/`, `src/modules/ai/server-context.ts`                                                                                                                                            |
+| AI UI                                | `src/components/course-builder/ai-course-plan-dialog.tsx`, `ai-lesson-plan-dialog.tsx`, `src/components/assistant/`, `src/app/styles/system-assistant.css`                                                                                                                        |
 | LessonRun domain/contracts           | `src/modules/lesson-runs/domain.ts`, `contracts.ts`                                                                                                                                                                                                                               |
 | LessonRun service/repository         | `src/modules/lesson-runs/service.ts`, `repository.ts`, `server-context.ts`                                                                                                                                                                                                        |
 | LessonRun API                        | `src/app/api/v2/lesson-runs/`, `learner-profiles/`, `learner-groups/`, Course/Lesson audience/history/runs routes                                                                                                                                                                 |
@@ -853,6 +917,12 @@ items. Длинные `IN` hydration-запросы разбиваются на 
 `ai-apply`, `ai-lesson-plan`, `ai-lesson-apply` и `assistant` под
 `/api/v2/courses/[courseId]/`. Planning/chat routes вызывают provider; apply
 routes только валидируют preview и выполняют существующие application commands.
+
+Current unreleased System Assistant добавляет authenticated
+`POST /api/v2/assistant` и `POST /api/v2/assistant/actions/apply`. Они не
+заменяют Course/Lesson planning routes: первый отвечает или возвращает одно
+подтверждаемое create proposal, второй после explicit Apply вызывает обычный
+Course Builder service. Эти routes и floating UI ещё не заявлены как deployed.
 
 Дополнительные project surfaces:
 

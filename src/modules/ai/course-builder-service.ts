@@ -199,7 +199,7 @@ function sharedCommentPatterns(comment: string) {
  * whitespace, and case variants) cannot be quoted back to the teacher in a
  * lesson preview or assistant reply.
  */
-function redactSharedCommentQuotes<T>(
+export function redactSharedCommentQuotes<T>(
   value: T,
   sharedHistory: SharedLearnerHistoryContext,
 ): T {

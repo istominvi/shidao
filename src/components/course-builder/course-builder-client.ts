@@ -14,8 +14,6 @@ import type {
   PrepareCourseAttachmentInput,
 } from "@/modules/course-builder/contracts";
 import type {
-  AiAssistantMessage,
-  AiAssistantReply,
   AiCoursePlanPreview,
   AiLessonPlanPreview,
 } from "@/modules/ai/course-builder-contracts";
@@ -270,20 +268,5 @@ export async function applyAiLessonPlan(
       plan: preview.plan,
     }),
   });
-  return payload.result;
-}
-
-export async function sendCourseAssistantMessage(
-  courseId: string,
-  lessonId: string | null,
-  messages: AiAssistantMessage[],
-) {
-  const payload = await courseBuilderRequest<{ result: AiAssistantReply }>(
-    `/api/v2/courses/${encodeURIComponent(courseId)}/assistant`,
-    {
-      method: "POST",
-      body: JSON.stringify({ lessonId, messages }),
-    },
-  );
   return payload.result;
 }

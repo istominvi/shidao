@@ -11,6 +11,7 @@ import {
   Users,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useSystemAssistantPageContext } from "@/components/assistant/system-assistant-provider";
 import { loadSchedule } from "@/components/lesson-runs/lesson-run-client";
 import {
   LessonRunDialog,
@@ -53,6 +54,13 @@ function shiftDate(value: Date, amount: number) {
 function formatSelectedDate(value: Date) {
   const label = dateFormatter.format(value);
   return label.charAt(0).toUpperCase() + label.slice(1);
+}
+
+function formatAssistantLocalDate(value: Date) {
+  const year = value.getFullYear();
+  const month = String(value.getMonth() + 1).padStart(2, "0");
+  const day = String(value.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 function statusTone(run: LessonRun): ChipTone {
@@ -100,6 +108,18 @@ export function ScheduleWorkspace() {
   const [error, setError] = useState<string | null>(null);
   const [busyLabel, setBusyLabel] = useState<string | null>(null);
   const mutationInFlightRef = useRef(false);
+
+  useSystemAssistantPageContext({
+    surface: "schedule",
+    courseId: null,
+    lessonId: null,
+    label: selectedDate
+      ? `Расписание · ${formatSelectedDate(selectedDate)}`
+      : "Расписание",
+    ...(selectedDate
+      ? { localDate: formatAssistantLocalDate(selectedDate) }
+      : {}),
+  });
 
   const reload = useCallback(async (date: Date) => {
     const range = localDayRange(date);

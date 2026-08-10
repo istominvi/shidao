@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { useSystemAssistantPageContext } from "@/components/assistant/system-assistant-provider";
 import { ArrowLeft, ArrowRight, LoaderCircle, RefreshCw } from "lucide-react";
 import {
   CourseComponentRenderer,
@@ -69,6 +70,18 @@ export function StudentScreenPreview({
       ),
     [course],
   );
+  const registeredLesson =
+    course?.lessons[
+      Math.min(activeLessonIndex, Math.max(course.lessons.length - 1, 0))
+    ] ?? null;
+  useSystemAssistantPageContext({
+    surface: "student_preview",
+    courseId,
+    lessonId: registeredLesson?.id ?? null,
+    label: registeredLesson
+      ? `Экран ученика · Урок ${registeredLesson.position}. ${registeredLesson.title}`
+      : "Экран ученика",
+  });
 
   if (error) {
     return (

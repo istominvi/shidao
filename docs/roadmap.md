@@ -86,6 +86,13 @@
   preview → explicit apply и read-only ephemeral assistant; production runtime
   получает API key из server-side secret environment и использует проверенный
   default `google/gemini-2.5-flash-lite`.
+- **Current unreleased follow-up:** один global System Assistant смонтирован в
+  protected `(app)` layout вместо Course/Lesson header dialog. Он получает
+  allowlisted page context, читает bounded authorized проекции Account и
+  открытой страницы и может только подготовить action card для создания Course
+  draft или пустой Lesson. Запись выполняется отдельным explicit Apply через
+  canonical Course Builder service. Код и tests реализованы без schema change;
+  deployment/postflight этого follow-up не заявлены.
 - Browser-smoke переведён на актуальную AES-GCM app-session; строгий
   production-mode gate покрывает guest/auth redirects, Course → Lesson →
   backlink, computed visual contract и mobile overflow без обращения к
@@ -292,6 +299,29 @@ Definition of Done:
 - attachment metadata без скачивания/парсинга file contents;
 - отсутствие schema migration, quota/ledger и billing.
 
+**Current unreleased System Assistant follow-up:**
+
+- один floating widget живёт в protected Account layout и не показывается на
+  landing/Auth/demo; прежние кнопки course-scoped assistant удалены из Course и
+  Lesson headers, а старый Course route может пока оставаться compatibility;
+- browser передаёт strict allowlisted surface, согласованный typed view и
+  optional Course/Lesson IDs, локальную дату/UTC offset; arbitrary URL, DOM,
+  search/hash и значения форм не входят в page context;
+- server повторно проходит active/provisional Account gate, ownership и
+  user-JWT/RLS, затем даёт модели bounded Course catalog и только нужную
+  surface-проекцию: current Course/Lesson + разрешённую history, Students/Groups
+  либо Schedule выбранного дня;
+- provider может вернуть текст или максимум одно strict proposal
+  `course.create_draft | course.add_lesson`; chat ничего не записывает;
+- отдельный explicit Apply вызывает только canonical `createDraft` либо
+  `addLesson`. Добавленная Lesson пуста: Components/Slides не генерируются;
+- dialog history остаётся только в React state. Rate/concurrency guard,
+  actor+target mutex и 10-минутный idempotency result cache работают только в
+  памяти одного process; restart/другая replica их не видят. Proposal/action не
+  имеют persisted/signature binding с предыдущим provider turn;
+- новая DB migration, provider/quota persistence и deployment в этот follow-up
+  не входят.
+
 **Next — operational hardening:**
 
 - наблюдать первый реальный teacher Apply по metadata-only logs; не создавать
@@ -300,8 +330,14 @@ Definition of Done:
   нарушая доступность production-контура;
 - использовать отдельный runtime-only production key и немедленно ротировать
   его, если значение когда-либо попало в чат, log, issue или screenshot;
-- при нескольких application replicas заменить process-local protection
-  распределённым rate limit;
+- до нескольких application replicas заменить process-local rate/mutex и
+  assistant replay cache на distributed limiter + durable idempotency/action
+  ledger; отдельно сериализовать concurrent append Lesson;
+- решить срок удаления compatibility Course assistant route после подтверждения
+  отсутствия callers; не возвращать его dialog в Course/Lesson headers;
+- расширять mutation allowlist только отдельными reversible slices с explicit
+  confirmation; delete, Auth/security, audience, schedule и публикация не
+  становятся общими tools автоматически;
 - спроектировать persistent quota/usage ledger до введения платного ограничения,
   но не выдавать текущий metadata usage за balance или billing.
 

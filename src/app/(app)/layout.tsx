@@ -1,4 +1,6 @@
 import { redirect } from "next/navigation";
+import { SystemAssistant } from "@/components/assistant/system-assistant";
+import { SystemAssistantProvider } from "@/components/assistant/system-assistant-provider";
 import { resolveAccessPolicy } from "@/lib/server/access-policy";
 import { resolveAppLayoutRedirect } from "@/lib/server/access-guards";
 
@@ -14,5 +16,10 @@ export default async function AppLayout({
     redirect(redirectPath);
   }
 
-  return children;
+  return (
+    <SystemAssistantProvider>
+      {children}
+      <SystemAssistant />
+    </SystemAssistantProvider>
+  );
 }
