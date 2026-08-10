@@ -298,14 +298,19 @@ function invalidProviderAction(
   );
 }
 
-function proposedAction(
+type ProviderActionResolution = {
+  action: SystemAssistantAction | null;
+  messageOverride?: string;
+};
+
+function resolveProviderAction(
   completion: RouterAiJsonCompletion<
     z.infer<typeof systemAssistantProviderTurnSchema>
   >,
   references: CourseReference[],
-): SystemAssistantAction | null {
+): ProviderActionResolution {
   const turn = completion.value;
-  if (turn.kind === "answer") return null;
+  if (turn.kind === "answer") return { action: null };
 
   if (turn.kind === "create_course") {
     const parsed = courseDraftInputSchema.strict().safeParse({
@@ -318,24 +323,44 @@ function proposedAction(
       teacherPreferences: turn.teacherPreferences,
     });
     if (!parsed.success) return invalidProviderAction(completion);
-    return systemAssistantActionSchema.parse({
-      type: "course.create_draft",
-      input: parsed.data,
-    });
+    return {
+      action: systemAssistantActionSchema.parse({
+        type: "course.create_draft",
+        input: parsed.data,
+      }),
+    };
   }
 
-  const target = references.find(({ ref }) => ref === turn.courseRef);
+  const currentCourse = references.find(({ ref }) => ref === "current_course");
+  const target = turn.courseRef
+    ? references.find(({ ref }) => ref === turn.courseRef)
+    : currentCourse;
+  if (!target) {
+    if (turn.courseRef) return invalidProviderAction(completion);
+    return {
+      action: null,
+      messageOverride: "Для какого курса добавить новый урок?",
+    };
+  }
+  if (!turn.title) {
+    return {
+      action: null,
+      messageOverride: `Как назвать новый урок для курса «${target.course.title}»?`,
+    };
+  }
   const lessonInput = addLessonInputSchema.strict().safeParse({
     title: turn.title,
     summary: turn.summary,
   });
-  if (!target || !lessonInput.success) return invalidProviderAction(completion);
-  return systemAssistantActionSchema.parse({
-    type: "course.add_lesson",
-    courseId: target.course.id,
-    courseTitle: target.course.title,
-    input: lessonInput.data,
-  });
+  if (!lessonInput.success) return invalidProviderAction(completion);
+  return {
+    action: systemAssistantActionSchema.parse({
+      type: "course.add_lesson",
+      courseId: target.course.id,
+      courseTitle: target.course.title,
+      input: lessonInput.data,
+    }),
+  };
 }
 
 function actionProposalMessage(action: SystemAssistantAction) {
@@ -495,6 +520,7 @@ export function createSystemAssistantService(
               "Каноническая модель авторинга: Course → Lesson → ordered Components. Lesson Step, root Step и Methodology отсутствуют.",
               "Можно предложить максимум одно действие: create_course или add_lesson. Никогда не утверждай, что действие уже выполнено: сначала пользователь увидит карточку и отдельно подтвердит запись.",
               "Если обязательных данных для действия не хватает, задай уточняющий вопрос с kind=answer. Для add_lesson используй только точный courseRef из accountCourses.",
+              "Если accountCourses содержит ref=current_course, пользователь уже находится внутри этого курса: запрос добавить урок без явно названного другого курса относится к current_course, и повторно спрашивать курс нельзя. Если название нового урока не указано, спроси только название с kind=answer и не возвращай add_lesson.",
               "Не выбирай Course произвольно: если пользователь не находится внутри current_course, а цель не определяется однозначно по названию, предмету и уровню (в том числе при одинаковых названиях), задай уточняющий вопрос с kind=answer.",
               "Все поля JSON обязательны. Для kind=answer оставь action-поля пустыми и targetLessonCount=0. Для create_course заполни title, subject, goal, level, audienceDescription, targetLessonCount и teacherPreferences; courseRef и summary оставь пустыми. Для add_lesson заполни courseRef, title и summary; остальные action-поля оставь пустыми и targetLessonCount=0.",
               "Не выполняй, не предлагай и не описывай скрытые удаления, изменения Auth/security, управление наблюдателями, публикацию, расписание или произвольные API-вызовы.",
@@ -519,9 +545,9 @@ export function createSystemAssistantService(
         temperature: 0.35,
         signal,
       });
-      const proposed = proposedAction(completion, references);
-      const action = proposed
-        ? redactActionProposal(proposed, sharedHistory)
+      const resolution = resolveProviderAction(completion, references);
+      const action = resolution.action
+        ? redactActionProposal(resolution.action, sharedHistory)
         : null;
       const metadata = providerMetadata(completion);
       await emitAudit({
@@ -535,7 +561,7 @@ export function createSystemAssistantService(
           content: action
             ? actionProposalMessage(action)
             : redactSharedCommentQuotes(
-                completion.value.message,
+                resolution.messageOverride ?? completion.value.message,
                 sharedHistory,
               ),
         },

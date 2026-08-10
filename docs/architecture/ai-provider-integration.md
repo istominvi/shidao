@@ -71,7 +71,7 @@ Production web не запускает локальный `stdio` MCP и не п
 actor. MCP остаётся development adapter над тем же application service; AI-срез
 переиспользует domain/service contracts напрямую.
 
-Unreleased global flow:
+Current global flow:
 
 ```text
 protected (app) layout + floating widget
@@ -295,6 +295,15 @@ canonical `courseDraftInputSchema` или `addLessonInputSchema`, разреша
 `add_lesson` только по opaque reference из текущего owner-scoped Course catalog
 и перед возвратом применяет deterministic shared-comment redaction ко всему
 proposal. Action card получает новый UUID idempotency key.
+
+На Course surface server-issued ref `current_course` является единственным
+допустимым fallback для пустого `courseRef`: raw Course UUID/title, fuzzy match,
+case-folded alias или индекс не принимаются. Если provider преждевременно вернул
+`add_lesson` без обязательного title, server не превращает это в 502 и не
+создаёт proposal, а возвращает детерминированное уточнение названия. Следующий
+turn с title может подготовить обычную action card; до explicit Apply ни один
+Course Builder command не вызывается. Неизвестный непустой ref отклоняется fail
+closed даже при пустом title.
 
 Mutation выполняется только после отдельного клика пользователя и строгого
 `POST /api/v2/assistant/actions/apply`. Apply повторно проходит Account/session

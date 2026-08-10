@@ -574,6 +574,12 @@ comment; только отдельный Apply вызывает canonical `addLe
 Student Screen. Аналогично создание Course через assistant создаёт только
 обычный Course draft, а не скрыто собранную программу.
 
+Если пользователь просит добавить Lesson внутри открытого Course без названия,
+server связывает запрос только с opaque `current_course` и возвращает уточнение
+title без proposal или записи. Ответ с названием может подготовить action card;
+сам Lesson всё равно появляется только после explicit Apply. Неизвестный
+непустой Course ref отклоняется fail closed и не подменяется текущим Course.
+
 ## Course materials and Storage
 
 Course attachment:
@@ -729,6 +735,11 @@ Auth/security, audience, Students/Groups, Schedule/Run, publication и Student
 Screen mutations не входят в allowlist. Apply вызывает те же canonical
 application commands с per-request actor, поэтому результат не вводит второй
 AI-owned Course/Lesson тип и не меняет authored hierarchy.
+
+Неполный `add_lesson` без title является conversational clarification, а не
+mutation и не provider-output 502. Пустой ref может означать `current_course`
+только на уже проверенной Course surface; неизвестный непустой ref остаётся
+ошибкой строгого контракта.
 
 История global dialog остаётся в React state до reload/явного сброса. Rate и
 concurrency guard, actor+target mutex и 10-минутный idempotency result cache

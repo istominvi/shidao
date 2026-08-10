@@ -314,6 +314,9 @@ Definition of Done:
   либо Schedule выбранного дня;
 - provider может вернуть текст или максимум одно strict proposal
   `course.create_draft | course.add_lesson`; chat ничего не записывает;
+- запрос добавить Lesson внутри открытого Course использует только server-issued
+  `current_course`; отсутствующий title превращается в уточнение названия без
+  502/proposal/write, а неизвестный непустой ref отклоняется fail closed;
 - отдельный explicit Apply вызывает только canonical `createDraft` либо
   `addLesson`. Добавленная Lesson пуста: Components/Slides не генерируются;
 - dialog history остаётся только в React state. Rate/concurrency guard,

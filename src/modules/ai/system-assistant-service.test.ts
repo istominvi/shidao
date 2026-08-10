@@ -575,6 +575,127 @@ test("lesson proposal resolves an opaque owned Course ref and creates an empty L
   }
 });
 
+test("an incomplete lesson turn asks for a title and a follow-up can prepare the proposal", async () => {
+  const state = inMemoryCourseService();
+  const turns: SystemAssistantProviderTurn[] = [
+    {
+      kind: "add_lesson",
+      message: "Добавлю урок.",
+      courseRef: "",
+      title: "   ",
+      subject: "",
+      goal: "",
+      level: "",
+      audienceDescription: "",
+      targetLessonCount: 0,
+      teacherPreferences: "",
+      summary: "",
+    },
+    {
+      kind: "add_lesson",
+      message: "Предлагаю новый урок.",
+      courseRef: "",
+      title: "Счёт до 10",
+      subject: "",
+      goal: "",
+      level: "",
+      audienceDescription: "",
+      targetLessonCount: 0,
+      teacherPreferences: "",
+      summary: "Знакомство с числами от одного до десяти.",
+    },
+  ];
+  let providerCalls = 0;
+  let followUpProviderMessages = "";
+  const assistant = createSystemAssistantService({
+    actor: ACTOR,
+    courseService: state.service,
+    provider: {
+      async completeText() {
+        throw new Error("Unexpected text completion");
+      },
+      async completeJson<T>(input: RouterAiJsonCompletionInput<T>) {
+        const turn = turns[providerCalls];
+        if (!turn) throw new Error("Unexpected JSON completion");
+        if (providerCalls === 1) {
+          followUpProviderMessages = JSON.stringify(input.messages);
+        }
+        providerCalls += 1;
+        return {
+          ...METADATA,
+          requestId: `request-system-${providerCalls}`,
+          value: input.outputSchema.parse(turn) as T,
+        };
+      },
+    },
+    audit: () => undefined,
+  });
+  const initialRequest = {
+    ...request("course"),
+    messages: [{ role: "user" as const, content: "Добавь новый урок" }],
+  };
+
+  const clarification = await assistant.chat(initialRequest);
+
+  assert.equal(clarification.message.role, "assistant");
+  assert.match(
+    clarification.message.content,
+    /назв.{0,40}урок|урок.{0,40}назв/iu,
+  );
+  assert.equal(clarification.proposedAction, null);
+  assert.equal(state.createCalls, 0);
+  assert.equal(state.addLessonCalls, 0);
+
+  const proposal = await assistant.chat({
+    ...initialRequest,
+    messages: [
+      ...initialRequest.messages,
+      clarification.message,
+      { role: "user", content: "Назови его «Счёт до 10»" },
+    ],
+  });
+
+  assert.equal(providerCalls, 2);
+  assert.match(followUpProviderMessages, /Добавь новый урок/u);
+  assert.match(followUpProviderMessages, /Счёт до 10/u);
+  assert.equal(proposal.proposedAction?.action.type, "course.add_lesson");
+  if (proposal.proposedAction?.action.type === "course.add_lesson") {
+    assert.equal(proposal.proposedAction.action.courseId, COURSE_ID);
+    assert.equal(proposal.proposedAction.action.input.title, "Счёт до 10");
+  }
+  assert.equal(state.createCalls, 0);
+  assert.equal(state.addLessonCalls, 0);
+});
+
+test("an incomplete lesson turn without current Course asks which Course to use", async () => {
+  const state = inMemoryCourseService();
+  const assistant = createSystemAssistantService({
+    actor: ACTOR,
+    courseService: state.service,
+    provider: provider({
+      kind: "add_lesson",
+      message: "Добавлю урок.",
+      courseRef: "",
+      title: "",
+      subject: "",
+      goal: "",
+      level: "",
+      audienceDescription: "",
+      targetLessonCount: 0,
+      teacherPreferences: "",
+      summary: "",
+    }),
+    audit: () => undefined,
+  });
+
+  const clarification = await assistant.chat(request("courses"));
+
+  assert.match(clarification.message.content, /какого курса/iu);
+  assert.equal(clarification.proposedAction, null);
+  assert.equal(state.createCalls, 0);
+  assert.equal(state.addLessonCalls, 0);
+});
+
 test("unknown Course ref and forged action fields fail closed without writes", async () => {
   const state = inMemoryCourseService();
   await assert.rejects(
@@ -596,6 +717,29 @@ test("unknown Course ref and forged action fields fail closed without writes", a
       }),
       audit: () => undefined,
     }).chat(request("courses")),
+    RouterAiError,
+  );
+  assert.equal(state.addLessonCalls, 0);
+
+  await assert.rejects(
+    createSystemAssistantService({
+      actor: ACTOR,
+      courseService: state.service,
+      provider: provider({
+        kind: "add_lesson",
+        message: "Добавлю урок.",
+        courseRef: "foreign_course",
+        title: "",
+        subject: "",
+        goal: "",
+        level: "",
+        audienceDescription: "",
+        targetLessonCount: 0,
+        teacherPreferences: "",
+        summary: "",
+      }),
+      audit: () => undefined,
+    }).chat(request("course")),
     RouterAiError,
   );
   assert.equal(state.addLessonCalls, 0);

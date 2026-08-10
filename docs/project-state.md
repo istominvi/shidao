@@ -81,7 +81,11 @@ orchestration читает bounded owner/recorder/consent-scoped проекци�
 Account и открытой Course/Lesson, Students или выбранного дня Schedule.
 Ассистент может подготовить только два предложения: создать обычный Course
 draft либо добавить пустую Lesson без Components; запись выполняется отдельным
-explicit Apply после проверки action card. Coolify развернул exact functional
+explicit Apply после проверки action card. Для запроса «добавить урок» внутри
+открытого Course server использует только opaque `current_course`; если модель
+вернула action без обязательного title, chat отвечает уточнением названия вместо
+`ai_invalid_output`, proposal не создаётся и запись не выполняется. Неизвестный
+непустой Course ref по-прежнему отклоняется fail closed. Coolify развернул exact functional
 SHA `8912dac0def7c2ba67bb4eeb240c52bfd0a55192`; running container использует тот
 же `SOURCE_COMMIT`, image digest
 `sha256:5c6870c2513ea4075664026207db9b80db9fbdefd89e419a96ddbda38b4c2bb9`,
@@ -605,6 +609,12 @@ application service/contracts внутри authenticated web request.
   adapters в этот flow не входят.
 - Chat возвращает либо текст, либо максимум одно strict proposal:
   `course.create_draft` или `course.add_lesson`. Provider не пишет данные.
+  На Course surface пустой provider `courseRef` однозначно нормализуется только
+  в server-issued `current_course`. Если для `add_lesson` отсутствует title,
+  server возвращает обычный уточняющий вопрос о названии без proposal/записи;
+  после ответа пользователя следующий turn может подготовить action card.
+  Любой неизвестный непустой ref остаётся `ai_invalid_output`, без fuzzy lookup
+  по UUID, title или индексу Course.
   Shared-comment scrubber применяется и к тексту, и ко всем полям proposal,
   поэтому consented чужая фраза не может быть процитирована или сохранена через
   action. Browser показывает параметры action card; только отдельный
