@@ -22,6 +22,10 @@ const scheduleWorkspaceSource = readFileSync(
   "src/components/teaching-hub/schedule-workspace.tsx",
   "utf8",
 );
+const schedulePeriodSource = readFileSync(
+  "src/components/teaching-hub/schedule-period.ts",
+  "utf8",
+);
 const studentsWorkspaceSource = readFileSync(
   "src/components/teaching-hub/students-workspace.tsx",
   "utf8",
@@ -102,6 +106,27 @@ test("teaching hub pages share the demo shell and canonical page header", () => 
 test("schedule projects persisted LessonRun appointments without a parallel event", () => {
   assert.match(lessonRunClientSource, /\/api\/v2\/lesson-runs\?/);
   assert.match(scheduleWorkspaceSource, /loadSchedule/);
+  assert.match(scheduleWorkspaceSource, /schedulePeriodRange/);
+  assert.match(scheduleWorkspaceSource, /shiftSchedulePeriod/);
+  assert.match(scheduleWorkspaceSource, /useState<SchedulePeriod>\("week"\)/);
+  assert.match(scheduleWorkspaceSource, /aria-label="Период расписания"/);
+  assert.match(scheduleWorkspaceSource, />\s*Неделя\s*</);
+  assert.match(scheduleWorkspaceSource, />\s*Месяц\s*</);
+  assert.match(scheduleWorkspaceSource, /aria-pressed=\{period === "week"\}/);
+  assert.match(scheduleWorkspaceSource, /aria-pressed=\{period === "month"\}/);
+  assert.match(scheduleWorkspaceSource, /<ProductTable/);
+  assert.match(scheduleWorkspaceSource, /Показать таблицей/);
+  assert.match(scheduleWorkspaceSource, /Показать карточками/);
+  assert.match(scheduleWorkspaceSource, /SCHEDULE_RESULT_LIMIT = 500/);
+  assert.match(scheduleWorkspaceSource, /Эта неделя может быть показана не полностью/);
+  assert.match(scheduleWorkspaceSource, /Переключитесь на неделю, чтобы сузить окно/);
+  assert.doesNotMatch(
+    scheduleWorkspaceSource,
+    />\s*(?:Все|Учитель|Родитель|Ученик)\s*</,
+  );
+  assert.match(schedulePeriodSource, /startOfLocalWeek/);
+  assert.match(schedulePeriodSource, /from\.toISOString\(\)/);
+  assert.match(schedulePeriodSource, /to\.toISOString\(\)/);
   assert.match(scheduleWorkspaceSource, /Занятий нет/);
   assert.match(schedulePageSource, /Назначить урок в курсе/);
   assert.match(scheduleWorkspaceSource, /lessonRunStateLabel/);

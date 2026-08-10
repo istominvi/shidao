@@ -10,28 +10,32 @@
 }
 
 .teaching-hub-toolbar {
+  position: relative;
+  z-index: 2;
   display: flex;
   min-width: 0;
   align-items: center;
   justify-content: space-between;
-  gap: 0.75rem;
-  border: 1px solid rgba(255, 255, 255, 0.78);
-  border-radius: 1.25rem;
-  background: rgba(255, 255, 255, 0.82);
-  padding: 0.75rem;
-  box-shadow:
-    0 20px 52px rgba(23, 26, 32, 0.07),
-    inset 0 1px 0 rgba(255, 255, 255, 0.84);
+  gap: 1rem;
 }
 
 .teaching-date-navigator {
-  display: flex;
+  display: grid;
+  width: min(23rem, 100%);
+  height: var(--course-demo-control-height);
+  flex: 0 1 23rem;
   min-width: 0;
-  align-items: center;
-  gap: 0.25rem;
+  grid-template-columns:
+    var(--course-demo-control-height) minmax(0, 1fr)
+    var(--course-demo-control-height);
+  overflow: hidden;
+  border-radius: var(--course-demo-control-radius);
+  background: #fff;
+  box-shadow:
+    inset 0 0 0 1px var(--teaching-control-border),
+    0 8px 24px rgba(20, 20, 20, 0.05);
 }
 
-.teaching-date-navigator > button,
 .teaching-hub-search {
   height: var(--course-demo-control-height);
   border: 1px solid var(--teaching-control-border);
@@ -40,41 +44,154 @@
 }
 
 .teaching-date-navigator > button {
-  display: inline-grid;
-  min-width: var(--course-demo-control-height);
-  place-items: center;
-  padding-inline: var(--course-demo-control-padding-inline);
-  color: #30333a;
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: #555a64;
   font: inherit;
-  font-size: var(--course-demo-control-font-size);
-  font-weight: var(--course-demo-control-font-weight);
   cursor: pointer;
 }
 
-.teaching-date-navigator > strong {
-  min-width: 15rem;
-  padding-inline: 0.65rem;
-  color: #141414;
-  font-size: 0.88rem;
-  font-weight: 500;
-  text-align: center;
-}
-
-.teaching-date-navigator .teaching-today-button {
-  display: inline-flex;
+.teaching-date-trigger {
+  position: relative;
+  display: flex;
+  min-width: 0;
   align-items: center;
   justify-content: center;
+  gap: 0.45rem;
+  border-right: 1px solid var(--teaching-control-border);
+  border-left: 1px solid var(--teaching-control-border);
+  padding-inline: var(--course-demo-control-padding-inline);
+  color: #141414;
+  font-size: var(--course-demo-control-font-size);
+  font-weight: var(--course-demo-control-font-weight);
+  text-align: center;
+  cursor: pointer;
 }
 
-.teaching-date-navigator > button:hover,
+.teaching-date-trigger > span {
+  overflow: hidden;
+  min-width: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.teaching-date-trigger > svg {
+  flex: 0 0 auto;
+  color: #8b8e97;
+}
+
+.teaching-date-trigger input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.teaching-date-navigator > button:hover {
+  background: rgba(20, 20, 20, 0.05);
+  color: #141414;
+}
+
 .teaching-hub-search:focus-within {
   border-color: rgba(20, 20, 20, 0.2);
   background: #fff;
 }
 
 .teaching-date-navigator > button:focus-visible,
+.teaching-date-trigger:focus-within {
+  z-index: 1;
+  outline: 0;
+  box-shadow: inset 0 0 0 2px rgba(20, 20, 20, 0.58);
+}
+
 .teaching-hub-search:focus-within {
   outline: 2px solid rgba(20, 20, 20, 0.24);
+  outline-offset: 2px;
+}
+
+.teaching-schedule-toolbar-actions,
+.teaching-schedule-period-switch,
+.teaching-schedule-view-toggle {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+}
+
+.teaching-schedule-toolbar-actions {
+  justify-content: flex-end;
+  gap: 1rem;
+}
+
+.teaching-schedule-period-switch,
+.teaching-schedule-view-toggle {
+  box-sizing: border-box;
+  height: var(--course-demo-control-height);
+  min-height: var(--course-demo-control-height);
+  gap: 0.25rem;
+  border-radius: var(--course-demo-control-radius);
+  background: rgba(20, 20, 20, 0.05);
+  padding: 0.25rem;
+  box-shadow: inset 0 0 0 1px var(--teaching-control-border);
+}
+
+.teaching-schedule-period-switch button,
+.teaching-schedule-view-toggle button {
+  display: inline-flex;
+  box-sizing: border-box;
+  height: 2rem;
+  min-height: 2rem;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 0.5rem;
+  background: transparent;
+  color: #626670;
+  font: inherit;
+  font-size: var(--course-demo-control-font-size);
+  font-weight: var(--course-demo-control-font-weight);
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    background 160ms ease,
+    color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.teaching-schedule-period-switch button {
+  padding-inline: var(--course-demo-control-padding-inline);
+}
+
+.teaching-schedule-view-toggle button {
+  width: 2rem;
+  padding: 0;
+}
+
+.teaching-schedule-period-switch button:hover,
+.teaching-schedule-view-toggle button:hover {
+  background: rgba(20, 20, 20, 0.06);
+  color: #141414;
+}
+
+.teaching-schedule-period-switch button.is-active,
+.teaching-schedule-view-toggle button.is-active {
+  background: #fff;
+  color: #141414;
+  box-shadow:
+    0 1px 3px rgba(20, 20, 20, 0.1),
+    0 4px 12px rgba(20, 20, 20, 0.06);
+}
+
+.teaching-schedule-period-switch button:focus-visible,
+.teaching-schedule-view-toggle button:focus-visible {
+  outline: 2px solid rgba(20, 20, 20, 0.58);
   outline-offset: 2px;
 }
 
@@ -631,16 +748,20 @@
 
 .teaching-run-list {
   display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.65rem;
 }
 
 .course-demo-shell .teaching-run-card {
-  display: grid;
-  grid-template-columns: 5.2rem minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 1rem;
   border: 1px solid rgba(255, 255, 255, 0.82);
   padding: 0.9rem;
+}
+
+.teaching-run-card-body {
+  display: grid;
+  grid-template-columns: 5.4rem minmax(0, 1fr);
+  align-items: center;
+  gap: 1rem;
 }
 
 .teaching-run-time {
@@ -650,6 +771,21 @@
   background: #141414;
   padding: 0.75rem 0.4rem;
   color: #fff;
+  text-align: center;
+}
+
+.teaching-run-time > span {
+  max-width: 100%;
+  overflow: hidden;
+  color: #d4d4d8;
+  font-size: 0.58rem;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.teaching-run-time > strong {
+  margin-top: 0.12rem;
   font-size: 1rem;
   font-weight: 700;
 }
@@ -661,17 +797,23 @@
   font-weight: 600;
 }
 
+.teaching-run-content {
+  min-width: 0;
+}
+
 .teaching-run-content > p {
   margin: 0;
   color: #737780;
   font-size: 0.7rem;
   font-weight: 650;
+  overflow-wrap: anywhere;
 }
 
 .teaching-run-content h3 {
   margin: 0.16rem 0 0;
   color: #141414;
   font-size: 1rem;
+  overflow-wrap: anywhere;
 }
 
 .teaching-run-content > span {
@@ -684,11 +826,60 @@
 }
 
 .teaching-run-actions {
+  grid-column: 1 / -1;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: flex-start;
   gap: 0.45rem;
+}
+
+.teaching-run-table-wrap {
+  overflow-x: auto;
+  border: 1px solid rgba(255, 255, 255, 0.82);
+  border-radius: 1.25rem;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 20px 52px rgba(23, 26, 32, 0.07);
+}
+
+.teaching-run-table {
+  width: 100%;
+  min-width: 64rem;
+}
+
+.teaching-run-table-time,
+.teaching-run-table-lesson {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.teaching-run-table-time strong,
+.teaching-run-table-lesson strong {
+  color: #141414;
+  font-size: 0.82rem;
+  font-weight: 650;
+}
+
+.teaching-run-table-time span,
+.teaching-run-table-lesson small {
+  color: #737780;
+  font-size: 0.7rem;
+  font-weight: 500;
+}
+
+.teaching-run-table-participants,
+.teaching-run-table-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.teaching-run-table-participants {
+  color: #646873;
+}
+
+.teaching-run-table-actions {
+  justify-content: flex-end;
 }
 
 .teaching-learner-grid {
@@ -1093,6 +1284,16 @@
     flex-direction: column;
   }
 
+  .teaching-date-navigator {
+    width: 100%;
+    flex: none;
+  }
+
+  .teaching-schedule-toolbar-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
   .teaching-hub-search {
     width: 100%;
   }
@@ -1118,7 +1319,11 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .course-demo-shell .teaching-run-card {
+  .teaching-run-list {
+    grid-template-columns: 1fr;
+  }
+
+  .teaching-run-card-body {
     grid-template-columns: 4.8rem minmax(0, 1fr);
   }
 
@@ -1170,18 +1375,12 @@
     grid-template-columns: 1fr;
   }
 
-  .teaching-date-navigator {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr) auto;
-    width: 100%;
+  .teaching-schedule-period-switch {
+    flex: 1;
   }
 
-  .teaching-date-navigator > strong {
-    min-width: 0;
-  }
-
-  .teaching-date-navigator .teaching-today-button {
-    grid-column: 1 / -1;
+  .teaching-schedule-period-switch button {
+    flex: 1;
   }
 }
 

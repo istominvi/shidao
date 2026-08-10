@@ -539,7 +539,9 @@ ShiDao V2 application:
   каждом private route уходит в login;
 - `/schedule` и `/students` сохраняют единый computed page-header contract с
   `/courses`, Course и Lesson; contextual actions находятся в header, а
-  date/filter controls — ниже него;
+  date/period/view controls — ниже него прямо на page background без внешней
+  toolbar-card; для Schedule проверить «Неделя / Месяц», шаг стрелок,
+  date picker и оба вида «Таблица / Карточки»;
 - вкладки «Ученики / Группы / Наблюдение» сохраняют общий black 1 px baseline и square
   active-segment; поиск, group filter, keyboard focus и dialogs проверяются без
   возврата teacher-only route gate;

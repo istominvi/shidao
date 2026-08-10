@@ -456,9 +456,12 @@ Current production делает `/schedule` и `/students` доступными
 
 - server layout проверяет только Account session; Guest/degraded session
   перенаправляется в `/login`;
-- `/schedule` проецирует LessonRun выбранного дня; отдельной таблицы Schedule
-  event нет; action перехода к назначению находится в общей header
-  action-секции, а date navigator — ниже;
+- current source `/schedule` проецирует LessonRun выбранной локальной недели
+  или календарного месяца; отдельной таблицы Schedule event нет. Action
+  перехода к назначению находится в общей header action-секции. Ниже прямо на
+  page background расположены compound date navigator, «Неделя / Месяц» и
+  «Таблица / Карточки»; внешней toolbar-card у controls нет. Стрелки двигают
+  целый период, а выбор даты задаёт его опорный день;
 - `/students` объединяет справочник TeacherLearner/LearnerProfile и
   LearnerGroup во вкладках «Ученики / Группы» с learner-safe observer
   projection во вкладке «Наблюдение»; справочник сохраняет поиск, фильтр по
@@ -726,6 +729,11 @@ owner check. Он даёт provider bounded compact Course catalog и тольк
 surface-specific projection: current Course/Lesson с разрешённой history,
 Students/Groups либо Schedule выбранного дня. Technical/Auth/Storage IDs и file
 contents исключены.
+
+Schedule week/month follow-up не расширяет этот AI boundary: assistant получает
+только опорную `localDate` текущего period control и server-side по-прежнему
+читает один разрешённый день. Видимое календарное окно нельзя описывать модели
+как полностью загруженный week/month context без отдельного contract change.
 
 Global chat возвращает ответ или максимум одно strict proposal. Provider ничего
 не записывает. Action card и отдельный explicit Apply разрешают только

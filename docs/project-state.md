@@ -73,6 +73,18 @@ Terminal condition identity программы закрыт.
 для title/header/action-center на пяти поверхностях, `12px / 1px / 4px`
 для tabs и пустую browser console. Схема БД в visual slice не менялась.
 
+**Current source Schedule presentation follow-up (next deployment):**
+`/schedule` загружает реальные LessonRun за локальную неделю (понедельник–
+понедельник) или календарный месяц. Внешняя поверхность toolbar удалена:
+составные date navigator, переключатель «Неделя / Месяц» и независимый выбор
+«Таблица / Карточки» расположены прямо на бежевом фоне страницы, как в
+standalone demo. Стрелки двигают активный период, центральный native date
+control выбирает опорную дату, а mutation reload сохраняет текущее окно. Это
+application/UI change без новой таблицы Schedule events, schema или migration;
+при достижении server hard limit в 500 Runs интерфейс честно предупреждает о
+сокращённом окне, а в month mode предлагает сузить его переключением на неделю.
+Production deployment/postflight этого follow-up пока не выполнены.
+
 **Current deployed System Assistant slice:** реализован один
 глобальный floating widget «ИИ» внутри protected `(app)` layout. Он доступен на
 Account surfaces, сохраняет диалог только в React state до reload/явного сброса
@@ -353,10 +365,14 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
 - `/schedule` и `/students` filesystem-совместимо остаются под прежним route
   group, но layout проверяет только Account session. Guest/degraded session
   перенаправляется в `/login`.
-- `/schedule` показывает реальные LessonRun выбранного локального дня. Это
-  проекция тех же проведений, а не отдельная таблица Schedule events.
+- В current source `/schedule` показывает реальные LessonRun выбранной
+  локальной недели или календарного месяца. Это проекция тех же проведений, а
+  не отдельная таблица Schedule events.
 - Action «Назначить урок в курсе» находится в общей page-header action-секции;
-  переключение дня остаётся отдельным toolbar ниже заголовка.
+  прозрачная панель периода/вида находится ниже заголовка прямо на фоне
+  страницы. «Неделя / Месяц» меняет фактическое API-окно, а соседний control —
+  таблицу или карточки. System Assistant намеренно продолжает получать только
+  опорную локальную дату, а не всё видимое окно.
 - `/students` показывает единый teacher-scoped projection
   `TeacherLearner + LearnerProfile` во вкладках «Ученики / Группы» и
   независимую learner-safe вкладку «Наблюдение». Canonical observer URL —
@@ -875,7 +891,7 @@ positions, а плотность поддерживают текущие service
 | Lesson editor/Slides                 | `src/components/course-builder/lesson-authoring-workspace.tsx`                                                                                                                                                                                                                    |
 | Component editors/renderers          | `src/components/course-builder/component-payload-editor.tsx`, `component-renderers.tsx`                                                                                                                                                                                           |
 | Fullscreen preview                   | `src/components/course-builder/student-screen-preview.tsx`                                                                                                                                                                                                                        |
-| Account Schedule                     | `src/app/(app)/(teacher-required)/schedule/`, `src/components/teaching-hub/schedule-workspace.tsx`                                                                                                                                                                                |
+| Account Schedule                     | `src/app/(app)/(teacher-required)/schedule/`, `src/components/teaching-hub/schedule-workspace.tsx`, `src/components/teaching-hub/schedule-period.ts`                                                                                                                              |
 | Account Students                     | `src/app/(app)/(teacher-required)/students/`, `src/components/teaching-hub/students-workspace.tsx`                                                                                                                                                                                |
 | Legacy-named Account route boundary  | `src/app/(app)/(teacher-required)/layout.tsx`, `src/lib/server/access-guards.ts`                                                                                                                                                                                                  |
 | V2 API routes                        | `src/app/api/v2/`                                                                                                                                                                                                                                                                 |
@@ -1035,6 +1051,13 @@ document-level overflow.
 Repository-wide `npm run format:check` теперь проходит. Для текущего
 navigation/catalog release также подтверждены `326/326` unit tests, `19/19`
 production-mode browser scenarios и `git diff --check`.
+
+Для current source Schedule presentation follow-up локально подтверждены
+typecheck, lint, format check, `git diff --check`, `411/411` unit/contract tests
+и `21/21` strict production-mode browser scenarios. Browser gate собрал
+production app, проверил прозрачный toolbar, реальные week/month API windows,
+непустую таблицу, переключение на карточки и mobile 375 px без document-level
+overflow. Production deployment/postflight этим результатом не подменяется.
 
 Для current Course publication/catalog source slice локально подтверждены
 `381/381` unit tests, `19/19` строгих production-mode browser scenarios,

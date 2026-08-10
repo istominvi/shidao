@@ -13,7 +13,7 @@ export default function SchedulePage() {
       <div className="container app-page-container space-y-6">
         <AppPageHeader
           title="Расписание"
-          description="Все назначенные уроки по дням. Отдельных событий расписания нет: время принадлежит конкретному проведению урока."
+          description="Все назначенные уроки за выбранную неделю или месяц. Отдельных событий расписания нет: время принадлежит конкретному проведению урока."
           actions={
             <Link
               href={ROUTES.courses}
