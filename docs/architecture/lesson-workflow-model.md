@@ -21,9 +21,9 @@ Current deployed application follow-up добавляет global System Assistan
 protected `(app)` layout. Он не меняет Lesson hierarchy или schema: по
 allowlisted page context читает bounded authorized проекции, а после отдельного
 explicit Apply может только создать обычный Course draft либо пустую Lesson без
-Components/Slides. Exact functional release `8912dac` развёрнут; HTTP/guest/API
-boundary postflight зелёный, authenticated provider/action smoke ещё не
-выполнен.
+Components/Slides. Exact functional release `b7c6cfe` развёрнут; HTTP/guest/API
+boundary и RouterAI no-write smoke зелёные, authenticated production Apply ещё
+не выполнен.
 
 ## Product decision
 
@@ -746,8 +746,9 @@ concurrency guard, actor+target mutex и 10-минутный idempotency result 
 живут только в одном Node process. Restart или другая replica их не видят;
 durable action ledger, distributed exactly-once и сериализация concurrent
 Lesson append остаются next hardening. Новая schema/migration в System
-Assistant slice отсутствует. Exact functional release `8912dac` развёрнут;
-authenticated provider/action postflight пока не выполнен.
+Assistant slice отсутствует. Exact functional release `b7c6cfe` развёрнут;
+RouterAI no-write smoke с synthetic current Course пройден, authenticated
+production Apply пока не выполнен.
 
 Lesson planning, compatibility course-scoped Assistant и global Course context
 получают выбранные direct learners, teacher-local

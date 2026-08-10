@@ -92,8 +92,9 @@
   открытой страницы и может только подготовить action card для создания Course
   draft или пустой Lesson. Запись выполняется отдельным explicit Apply через
   canonical Course Builder service. Код и tests реализованы без schema change;
-  exact functional SHA `8912dac` развёрнут в Coolify. HTTP/guest/API boundary
-  postflight зелёный; authenticated provider/action smoke ещё не выполнен.
+  exact functional SHA `b7c6cfe` развёрнут в Coolify. HTTP/guest/API boundary
+  postflight и RouterAI no-write smoke с synthetic current Course зелёные;
+  authenticated production Apply ещё не выполнен.
 - Browser-smoke переведён на актуальную AES-GCM app-session; строгий
   production-mode gate покрывает guest/auth redirects, Course → Lesson →
   backlink, computed visual contract и mobile overflow без обращения к
@@ -324,8 +325,9 @@ Definition of Done:
   памяти одного process; restart/другая replica их не видят. Proposal/action не
   имеют persisted/signature binding с предыдущим provider turn;
 - новая DB migration и provider/quota persistence в этот follow-up не входят;
-  deployment exact functional SHA `8912dac` завершён, authenticated
-  provider/action smoke остаётся next operational check.
+  deployment exact functional SHA `b7c6cfe` завершён; RouterAI no-write smoke
+  с synthetic current Course пройден, authenticated production Apply остаётся
+  next operational check.
 
 **Next — operational hardening:**
 

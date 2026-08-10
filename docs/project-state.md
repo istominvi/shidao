@@ -4,8 +4,8 @@
 **Актуально на:** 10 августа 2026 года
 **Активная ветка:** `main`
 **Рабочее приложение:** `https://v2.shidao.ru`
-**Текущий функциональный application release:** `8912dac`
-**Последний полный automated/browser gate:** `8912dac`
+**Текущий функциональный application release:** `b7c6cfe`
+**Последний полный automated/browser gate:** `b7c6cfe`
 
 **Current production Course catalog slice:** реализует reusable Course catalog,
 immutable publication revisions, независимое копирование Course и private
@@ -85,15 +85,17 @@ explicit Apply после проверки action card. Для запроса «
 открытого Course server использует только opaque `current_course`; если модель
 вернула action без обязательного title, chat отвечает уточнением названия вместо
 `ai_invalid_output`, proposal не создаётся и запись не выполняется. Неизвестный
-непустой Course ref по-прежнему отклоняется fail closed. Coolify развернул exact functional
-SHA `8912dac0def7c2ba67bb4eeb240c52bfd0a55192`; running container использует тот
+непустой Course ref по-прежнему отклоняется fail closed. Coolify deployment
+`nl5p1nuxnvdi392vwfopmab2` развернул exact functional SHA
+`b7c6cfe73809d2006d7fb4fafc833a93a905f4af`; running container использует тот
 же `SOURCE_COMMIT`, image digest
-`sha256:5c6870c2513ea4075664026207db9b80db9fbdefd89e419a96ddbda38b4c2bb9`,
-restart count `0`. HTTPS/login/guest redirect и новые assistant routes прошли
+`sha256:42e0767f3848f6d61322b893edf528c79fab9c2e450de0fa303231202f61d8e8`,
+restart count `0`. HTTPS/login/guest redirect и assistant routes прошли
 production postflight: `/login` и `robots.txt` отвечают `200`, guest `/courses`
 перенаправляется в `/login`, оба `POST /api/v2/assistant*` fail closed с `401`.
-Authenticated provider/action smoke не выполнялся из-за отсутствия production
-Account session и не заявляется пройденным. Срез не добавляет migration или
+Реальный RouterAI no-write smoke на synthetic current Course подтвердил
+уточнение title и follow-up proposal; authenticated production Apply не
+выполнялся и не заявляется пройденным. Срез не добавляет migration или
 физическую schema.
 
 **Previous deployed data baseline:** поверх group/audience baseline были введены canonical
@@ -632,9 +634,10 @@ application service/contracts внутри authenticated web request.
   сохраняет известный ordering debt.
 - Контракты/service/routes/UI и contract tests находятся в
   `src/modules/ai/system-assistant-*`, `src/app/api/v2/assistant/` и
-  `src/components/assistant/`. Exact functional release `8912dac` развёрнут;
-  authenticated provider/action acceptance остаётся отдельным непройденным
-  postflight, а не подразумевается из HTTP availability.
+  `src/components/assistant/`. Exact functional release `b7c6cfe` развёрнут;
+  RouterAI no-write smoke с synthetic current Course пройден, authenticated
+  production Apply остаётся отдельным непройденным postflight и не
+  подразумевается из HTTP availability.
 
 Base RouterAI routes/UI, server-only secret boundary и provider postflight
 no-write flows развёрнуты и проверены в production. Release acceptance описан в
@@ -941,8 +944,9 @@ Current deployed System Assistant добавляет authenticated
 `POST /api/v2/assistant` и `POST /api/v2/assistant/actions/apply`. Они не
 заменяют Course/Lesson planning routes: первый отвечает или возвращает одно
 подтверждаемое create proposal, второй после explicit Apply вызывает обычный
-Course Builder service. Routes и floating UI развёрнуты в release `8912dac`;
-authenticated provider/action smoke пока не выполнен.
+Course Builder service. Routes и floating UI развёрнуты в release `b7c6cfe`;
+RouterAI no-write smoke с synthetic current Course пройден, authenticated
+production Apply пока не выполнен.
 
 Дополнительные project surfaces:
 

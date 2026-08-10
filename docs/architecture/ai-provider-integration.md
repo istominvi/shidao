@@ -16,9 +16,10 @@ schema и read-only UI postflight завершены. Provider smoke с непу
 postflight.
 
 Global System Assistant, protected floating UI и routes
-`/api/v2/assistant*` развёрнуты в exact functional release `8912dac`.
+`/api/v2/assistant*` развёрнуты в exact functional release `b7c6cfe`.
 Coolify/running-container SHA и HTTP/guest/API boundary postflight подтверждены;
-authenticated provider/action smoke ещё не выполнен и не заявляется пройденным.
+RouterAI no-write smoke с synthetic current Course подтверждён, authenticated
+production Apply ещё не выполнен и не заявляется пройденным.
 
 **Schema state:** AI authoring не добавляет provider/quota persistence; он читает
 bounded projection из `teacher_learner`, `lesson_run` и `learning_record`.
@@ -470,15 +471,17 @@ course-scoped subject consent и через sanitized server projection; teacher
 ## Release acceptance
 
 Global System Assistant входит в functional release
-`8912dac0def7c2ba67bb4eeb240c52bfd0a55192`. Release gate прошёл typecheck,
-lint, 405/405 unit/contract tests, production build, 21/21 browser smoke,
-format и diff checks. Coolify завершил rollout со статусом `Finished`; running
-container имеет тот же `SOURCE_COMMIT`, image digest
-`sha256:5c6870c2513ea4075664026207db9b80db9fbdefd89e419a96ddbda38b4c2bb9` и
+`b7c6cfe73809d2006d7fb4fafc833a93a905f4af`. Release gate прошёл typecheck,
+lint, 407/407 unit/contract tests, production build, 21/21 browser smoke,
+format и diff checks. Coolify deployment `nl5p1nuxnvdi392vwfopmab2` завершил
+rollout со статусом `Success` за 2 мин 31 с; running container имеет тот же
+`SOURCE_COMMIT`, image digest
+`sha256:42e0767f3848f6d61322b893edf528c79fab9c2e450de0fa303231202f61d8e8` и
 restart count `0`. Production `/login`/`robots.txt` отвечают `200`, guest
 `/courses` перенаправляется в `/login`, а оба новых POST route без Account
-session возвращают `401`. Authenticated provider/action smoke не выполнялся и
-не считается пройденным.
+session возвращают `401`. Реальный RouterAI no-write smoke с synthetic current
+Course вернул уточнение title, затем proposal без Course Builder write;
+authenticated production Apply не выполнялся и не считается пройденным.
 
 Release `0276aed` подтвердил production routes/UI, server-only RouterAI
 boundary и наличие runtime secret без раскрытия его значения. Runtime закреплён

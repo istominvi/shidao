@@ -276,6 +276,15 @@ Production execution log, 9 августа 2026 года (current M6 stage):
   restart count `0`. `/login` и `robots.txt` отвечают `200`, guest `/courses`
   перенаправляется в `/login`, оба новых assistant POST routes без Account
   session возвращают `401`; authenticated provider/action smoke не выполнялся;
+- System Assistant clarification fix exact SHA
+  `b7c6cfe73809d2006d7fb4fafc833a93a905f4af` автоматически подхвачен webhook;
+  deployment `nl5p1nuxnvdi392vwfopmab2` завершился `Success` за 2 мин 31 с.
+  Running container имеет совпадающие image tag и `SOURCE_COMMIT`, image digest
+  `sha256:42e0767f3848f6d61322b893edf528c79fab9c2e450de0fa303231202f61d8e8`,
+  restart count `0`. `/login` и `robots.txt` отвечают `200`, guest `/courses`
+  возвращает redirect, оба assistant POST routes без Account session — `401`;
+  real RouterAI no-write smoke с synthetic current Course подтвердил
+  clarification → follow-up proposal без mutation;
 - authenticated browser postflight прошёл roleless courses/schedule/students,
   self-profile, observer и settings surfaces без console errors. Disposable
   Account удалён после dependency audit: fixture counts `0/0/0`, production
