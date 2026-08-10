@@ -4,7 +4,7 @@
 
 **Дата решения:** 5 августа 2026 года
 
-**Актуально на:** 7 августа 2026 года
+**Актуально на:** 10 августа 2026 года
 
 **Область:** Course Builder / Lesson / Components / Student Screen / audience / scheduling / learning history / course materials / homework
 
@@ -384,12 +384,11 @@ Current production делает `/schedule` и `/students` доступными
 - `/students` объединяет справочник TeacherLearner/LearnerProfile и
   LearnerGroup во вкладках «Ученики / Группы» с learner-safe observer
   projection во вкладке «Наблюдение»; справочник сохраняет поиск, фильтр по
-  группе и сортировку
-  и управление relation не создают второй тип ученика; строка ученика показывает
+  группе и сортировку; управление relation не создаёт второй тип ученика; строка ученика показывает
   до двух групп и «ещё N», а имя и archive state принадлежат relation конкретного
   преподавателя; ученика можно создать, изменить и убрать из списка, а для групп
-  доступен CRUD; header action меняется между «Новый ученик» и «Новая группа»
-  вместе с выбранной вкладкой;
+  доступен CRUD; header action меняется между «Новый ученик» и «Новая группа»,
+  а на вкладке «Наблюдение» mutation action отсутствует;
 - клик по строке открывает dialog «Профиль / История»; membership допускает
   несколько групп, а history panel читает только LearningRecord, записанные
   текущим преподавателем;
@@ -576,7 +575,8 @@ Implementation map:
   `learner-groups/`, Course/Lesson `audience|history|runs` routes;
 - identity contracts/service/repositories: `src/modules/learner-identity/`;
 - identity/self/observer UI: `src/components/learner-identity/`,
-  `/learning-profile`, `/observing`, `/settings/observers`;
+  `/learning-profile`, `/students?tab=observing`, `/settings/observers`;
+  `/observing` — compatibility redirect;
 - consented AI projection: `src/modules/ai/shared-history.ts`;
 - canonical learner identity/access contract:
   `docs/architecture/learner-identity-access-model.md`;
@@ -591,8 +591,11 @@ Implementation map:
   `20260807065017_identity_security_hardening.sql`,
   `20260807065026_learner_identity_primitives_backfill_invariant.sql`,
   `20260807065032_learner_identity_workflows_progress_observer_ai.sql`.
-- Final contract cleanup, only after verified roleless releases:
+- Final contract cleanup after verified roleless releases:
   `20260807065038_learner_identity_legacy_contract_cleanup.sql`.
+- Auth deferred-invariant and two-phase metadata fixes:
+  `20260809084500_learner_identity_auth_deferred_invariant_security.sql`,
+  `20260809090000_learner_identity_provisional_auth_metadata_sync.sql`.
 
 ## AI boundary
 

@@ -35,12 +35,14 @@
 
 - [Продуктовая модель и стратегическое видение](./v2/SHIDAO_PRODUCT_MODEL_AND_VISION.md)
 
-## Next execution hand-off
+## Completed identity execution hand-off (historical)
 
 - [Copy-paste prompt: завершить learner identity и observer ecosystem](./v2/LEARNER_IDENTITY_COMPLETION_PROMPT.md)
 
-Этот prompt описывает план и terminal condition будущей реализации. Он не
-является доказательством наличия перечисленных schema/API/UI.
+Этот prompt сохраняет план и terminal condition, завершённые current M1–M6
+production identity release. Он не является current-state source of truth:
+реализованные schema/API/UI сверяются по project-state, identity architecture и
+current-schema snapshot.
 
 ## Архивная граница
 

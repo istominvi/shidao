@@ -1,13 +1,13 @@
 # ShiDao V2 domain model
 
 **Статус:** current implemented domain
-**Актуально на:** 7 августа 2026 года
+**Актуально на:** 10 августа 2026 года
 
 ## Active product hierarchy
 
 ```text
 Account
-├── claimed identity → LearnerProfile 0..1 (nullable account_id)
+├── own identity → LearnerProfile exactly 1
 ├── TeacherLearner 0..N → LearnerProfile
 ├── LearnerGroup 0..N
 │   └── LearnerGroupMember 0..N → LearnerProfile
@@ -27,9 +27,10 @@ Account
 - `Account` is the ownership identity linked one-to-one to `auth.users`.
 - `Course` is an editable owner-scoped draft.
 - `LearnerProfile` is the canonical learning identity and is not owned by a
-  teacher. Its nullable unique `account_id` is a future claim point; current
-  creation/backfill leaves it unlinked. The global `display_name` is a
-  canonical/offline fallback, not the teacher's editable directory label.
+  teacher. Every Account has exactly one linked profile; teacher-created
+  offline profiles keep nullable `account_id` until recipient-bound claim or
+  child activation. The global `display_name` is a canonical/offline fallback,
+  not the teacher's editable directory label.
 - `TeacherLearner` links an Account acting as teacher to a LearnerProfile. It
   owns that teacher's local `display_name` and `archived_at`. Product delete
   archives this relation, removes only that teacher's future group/Course links
@@ -166,14 +167,14 @@ registry object.
 
 ## Retained legacy identity tables
 
-Forward migrations deliberately do not reset `public` and do not change Auth.
-The current repository candidate has moved login, onboarding, PIN/session
-invalidation and learner identity workflows to the roleless Account boundary.
+Forward migrations deliberately did not reset `public` or replace Auth. The
+current production contract moved login, onboarding, PIN/session invalidation
+and learner identity workflows to the roleless Account boundary.
 Existing `parent`, `teacher`, `student`, `school` and membership tables remain
 as dormant legacy/recovery data; active V2 routes and services do not use them
 as identity authorities, Course parents or audience sources. The final M4
-contract cleanup removes obsolete active-role helpers and enums only after two
-verified roleless web releases and a read-only dependency audit; it does not
+contract cleanup removed obsolete active-role helpers and enums after two
+verified roleless web releases and a read-only dependency audit; it did not
 delete historical rows or rewrite old migrations.
 
 The canonical identity/access contract is documented in
@@ -181,15 +182,14 @@ The canonical identity/access contract is documented in
 schema is documented in `docs/database/current-schema.md` and
 `supabase/schema/current-schema.sql`.
 
-The repository candidate implements the roleless target: every active Account
-has exactly one linked canonical LearnerProfile, offline profiles may remain
+Current production implements the roleless target: every active Account has
+exactly one linked canonical LearnerProfile, offline profiles may remain
 unclaimed, and teaching/observer access is expressed through relations rather
 than global product roles. Discovery, recipient-bound activation, safe merge,
 archive/restore, learner-safe history/progress, observer grants, subject reset
 and Course-scoped AI consent are implemented as projections and transactional
-workflows over that model. Production remains on the previous release until the
-M1–M3 backup/apply/postflight and staged Coolify rollout recorded in the
-deployment runbook are complete.
+workflows over that model. M1–M6, verified backups, DB/API/GoTrue postflight and
+the staged Coolify rollout recorded in the deployment runbook are complete.
 
 ## Planned, not implemented
 

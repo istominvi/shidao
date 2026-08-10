@@ -3,19 +3,19 @@
 **Формат:** стратегическое видение и основа для презентации
 **Аудитория:** команда, партнёры, преподаватели, родители, потенциальные инвесторы
 **Версия:** 2.0
-**Актуально на:** 9 августа 2026 года
+**Актуально на:** 10 августа 2026 года
 **Статус:** целевая продуктовая модель; не является перечнем уже запущенных функций
 
 ## Как читать этот документ
 
-Сейчас на `v2.shidao.ru` развёрнуты teacher Course Builder, LessonRun,
-LearnerProfile, reusable Groups и смешанная Course audience: группы и отдельные
-ученики являются независимыми источниками одного дедуплицированного состава.
-Lesson остаётся единственной content-сущностью; LessonRun не хранит снимок её
-содержимого. Deployed release `757044c` дополнительно делает LearnerProfile canonical,
-выносит teacher-local name/archive в `TeacherLearner` и фиксирует автора каждой
-LearningRecord. Nullable account link не означает, что invitation/claim или
-learner access уже работают. Development-only MCP реализован отдельно как local `stdio`
+Сейчас на `v2.shidao.ru` развёрнуты roleless Account application, teacher Course
+Builder, LessonRun, canonical LearnerProfile, reusable Groups и смешанная Course
+audience: группы и отдельные ученики являются независимыми источниками одного
+дедуплицированного состава. Lesson остаётся единственной content-сущностью;
+LessonRun не хранит снимок её содержимого, `TeacherLearner` хранит teacher-local
+name/archive, а LearningRecord фиксирует recorder Account. Invitation/claim,
+merge, observer и learner-safe self surfaces входят в current production
+identity contract. Development-only MCP реализован отдельно как local `stdio`
 process; он не является частью web deployment или внешним endpoint. Точный
 deployed и repository scope, ограничения и implementation map зафиксированы в
 [`docs/project-state.md`](../project-state.md), а последовательность работ — в
@@ -26,7 +26,9 @@ recipient-bound claim/child activation, physical merge, archive/restore,
 self/observer history/progress и subject-controlled AI consent. M1–M6, четыре
 verified backup, DB/API postflight, реальный GoTrue Admin create/delete probe,
 exact functional Coolify SHA `01aa88a` и authenticated browser acceptance
-завершены. Learner Course consumption,
+завершены. Navigation/catalog follow-up `bafc984` добавил итоговую Account IA,
+поиск/фильтры и «Плитки / Таблица» для Course и прошёл `326/326` unit,
+`19/19` production-mode browser gate и exact Coolify deployment `889`. Learner Course consumption,
 live-проведение, richer Component metrics, persisted Homework, parsing/RAG,
 подписки, billing и внешний MCP/API остаются **later**. Настоящее время в
 стратегических разделах не заменяет implementation/deployment evidence.
@@ -506,7 +508,9 @@ ShiDao должен со временем понимать больше:
   Course;
 - после сохранения открыть Settings и просмотреть Materials.
 
-Шаблоны, назначение реальному учащемуся/Group и AI-сборка появятся позднее.
+Прикрепление learners/Groups к Course audience, назначение LessonRun и RouterAI
+preview/apply уже работают. Learner Course enrollment/consumption и reusable
+Course templates остаются later.
 
 ## Шаг 2. Подготовить урок
 
@@ -520,19 +524,18 @@ ShiDao должен со временем понимать больше:
 учащемуся, преподаватель явно назначает Component на существующий или новый
 Student Screen Slide. Title Lesson показывается ученику автоматически.
 
-Следующий AI-слой сможет предлагать:
+Текущий RouterAI Lesson planning уже может предлагать после preview:
 
-- текстовые объяснения;
-- изображения;
-- поддерживаемые registry Components;
-- группировку Components по Student Screen Slides;
-- заметки для преподавателя.
+- title и teacher comment Lesson;
+- `heading`, `rich_text`, `callout` и `divider` Components;
+- `single_choice_poll` и `matching_game` Components.
 
-AI-генерация Homework и индивидуальных заданий добавляется только после
-появления соответствующих persisted Homework и audience contracts.
+Новые AI Components остаются private-by-default и записываются только после
+явного Apply; image/slideshow/file типы и назначение на Student Screen Slides AI
+не генерирует. AI-генерация Homework и индивидуальных заданий добавляется
+только после появления соответствующих persisted Homework и audience contracts.
 
-После подключения provider преподаватель сможет редактировать всё обычным
-языком:
+Свободные write-capable команды редактирования обычным языком остаются later:
 
 > Сделай упражнение проще.
 > Добавь больше примеров.
@@ -579,11 +582,12 @@ persisted Homework можно будет:
 
 В текущем repository завершение LessonRun уже сохраняет посещаемость,
 teacher-comment и необходимость повторения в LearningRecord каждого ожидаемого
-учащегося. Эти записи переживают удаление Lesson и дают AI ограниченный контекст
-предыдущих занятий. Автоматические метрики понимания и полноценный progress
-analysis появятся позднее.
+учащегося. Эти записи переживают удаление Lesson, питают current real-record
+progress и дают AI ограниченный контекст предыдущих занятий. Автоматические
+метрики понимания, word-state producers и более глубокий progress analysis
+появятся позднее.
 
-Преподаватель видит:
+В target richer analysis преподаватель увидит:
 
 - что получилось;
 - где возникли ошибки;
@@ -951,7 +955,8 @@ ShiDao строится не как оболочка над одной модн�
 ## Уже работает в deployed baseline
 
 1. Auth и один current Account на пользователя.
-2. Реальные Course в PostgreSQL и draft creation form.
+2. Реальные Course в PostgreSQL, draft creation form и owner-scoped каталог с
+   поиском, фильтрами, сортировкой и режимами «Плитки / Таблица».
 3. Приватная загрузка Course materials в Storage при создании Course.
 4. Lesson с обязательным title, teacher-only summary и плотным порядком.
 5. Один ordered Component list без Step/root Step/Methodology.
@@ -960,8 +965,8 @@ ShiDao строится не как оболочка над одной модн�
    Screen Slides.
 8. Teacher plan и Student Screen preview с reload persistence.
 9. Settings и просмотр Course materials в отдельных dialogs/actions.
-10. «Ученики»: canonical LearnerProfile, teacher-local
-    TeacherLearner names/archive, вкладки «Ученики / Группы», профиль с
+10. «Ученики»: canonical LearnerProfile, teacher-local TeacherLearner
+    names/archive, вкладки «Ученики / Группы / Наблюдение», профиль с
     teacher-scoped history, reusable Groups и direct+group Course audience.
 11. LessonRun, повторное назначение и teacher-scoped LearningRecord history с
     явным recorder Account, attendance/repeat/comments и без Lesson snapshot.
@@ -973,7 +978,8 @@ ShiDao строится не как оболочка над одной модн�
 ## Current production identity contract
 
 1. Universal roleless Account с exactly-one canonical profile, Account
-   login/PIN/session boundary и одинаковой navigation.
+   login/PIN/session boundary, primary navigation «Расписание / Ученики /
+   Курсы» и Account menu «Учебный профиль / Настройки / Выход».
 2. Share-code/blind-email discovery, recipient-bound offline claim/child
    activation, physical duplicate merge и stale-safe lineage.
 3. Archive/restore, safe empty-offline delete, subject unlink/erasure reset,
@@ -1216,16 +1222,16 @@ materials и Student Screen Slides/preview. Local internal MCP реализов�
 repository отдельно от web deployment. Это рабочий persisted vertical slice,
 но ещё не полный инструмент проведения занятий.
 
-## Этап 1B. Инструмент преподавателя — в разработке
+## Этап 1B. Инструмент преподавателя — current foundation и next extensions
 
 Центральная ценность:
 
 - улучшенный ручной Course Builder;
-- OpenRouter-assisted authoring;
+- RouterAI-assisted authoring;
 - mixed group/direct audience, scheduling, LessonRun и базовая учебная история;
 - roleless identity/observer contract с safe connection/merge, self history,
-  real-record progress и consented AI; M1–M6 и production DB/GoTrue rollout
-  завершены, exact web/browser confirmation фиксируется в project-state;
+  real-record progress и consented AI; M1–M6, production DB/GoTrue rollout и
+  exact web/browser confirmation завершены и зафиксированы в project-state;
 - загрузка и parsing источников;
 - persisted Homework;
 - затем live-проведение и расширенные метрики учебного профиля.

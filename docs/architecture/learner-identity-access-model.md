@@ -5,6 +5,8 @@ identity, teacher directory, observer access и consented AI history
 
 **Дата решения:** 9 августа 2026 года
 
+**Актуально на:** 10 августа 2026 года
+
 **Implementation state:** production содержит полный application/API/UI slice и
 M1–M6 contract schema. Четыре verified backup, strict expand/contract postflight,
 два roleless Coolify images (`5944d31`, `5d650a3`), read-only dependency audit и
@@ -219,7 +221,8 @@ physical merge не обещается.
 ## Teacher directory lifecycle
 
 `/students` показывает `TeacherLearner + LearnerProfile` во вкладках
-«Ученики / Группы» и добавляет active/archive filter.
+«Ученики / Группы» с active/archive filter и отдельную learner-safe вкладку
+«Наблюдение» по active observer grants.
 
 - «Убрать из списка» архивирует только relation данного Account и удаляет его
   mutable Group/Course links; canonical profile, finalized history и roster
@@ -365,8 +368,9 @@ closed как stale.
 - learner-safe AI adapter:
   `src/modules/ai/shared-history.ts`, `course-context.ts`,
   `course-builder-service.ts`;
-- UI: `src/components/learner-identity/`, `/learning-profile`, `/observing`,
-  `/settings/observers`, `/identity/invitations/[invitationId]`;
+- UI: `src/components/learner-identity/`, `/learning-profile`,
+  `/students?tab=observing`, `/settings/observers`,
+  `/identity/invitations/[invitationId]`; `/observing` — compatibility redirect;
 - API: `/api/v2/me/learning-profile/*`, `/api/v2/learner-directory/*`,
   `/api/v2/learner-connections/*`, `/api/v2/identity-invitations/*`,
   `/api/v2/learner-merges/*`, `/api/v2/observers/*`,

@@ -2,7 +2,7 @@
 
 **Статус:** canonical contract для текущего production AI-среза
 
-**Актуально на:** 7 августа 2026 года
+**Актуально на:** 10 августа 2026 года
 
 **Deployment state:** AI application slice развёрнут на `v2.shidao.ru` в release
 `0276aed`; server runtime получает `ROUTERAI_API_KEY` из production secret
@@ -10,12 +10,14 @@ environment и использует `google/gemini-2.5-flash-lite`. Provider и
 authenticated no-write postflight завершены. History-aware context реализован
 и развёрнут в release `9393080` вместе с mixed Course audience; production
 schema и read-only UI postflight завершены. Provider smoke с непустой учебной
-историей ещё не выполнялся.
+историей ещё не выполнялся. Consent-gated cross-provider projection развёрнута
+в roleless functional release `01aa88a` после M1–M6 и identity/browser
+postflight.
 
-**Schema state:** AI не добавляет собственную persistence; он читает bounded
-projection из `teacher_learner`, `lesson_run` и `learning_record`, добавленных
-identity/scheduling slices. Current repository фиксирует recorder каждой записи;
-это не расширяет provider access.
+**Schema state:** AI authoring не добавляет provider/quota persistence; он читает
+bounded projection из `teacher_learner`, `lesson_run` и `learning_record`.
+Identity slice отдельно хранит course-scoped authorization в
+`learner_ai_consent`; это не открывает provider raw history или teacher API.
 
 ## Граница текущего среза
 
@@ -38,7 +40,8 @@ authenticated browser
 → Node.js /api/v2/courses/[courseId]/ai-* route
 → per-request actor from getCourseBuilderContext()
 → AiCourseBuilderService
-→ teacher-scoped LessonRunsApplicationService (completed history only)
+→ recorder-scoped LessonRunsApplicationService (completed history only)
+  + consent-gated sharedHistoryProvider learner-safe projection
 → server-only RouterAI adapter
 → provider-compatible structured output
 → transport conversion + canonical Zod/registry validation
@@ -72,9 +75,9 @@ actor. MCP остаётся development adapter над тем же application s
 
 API key существует только в server environment. Browser, provider context,
 ответ API и application logs не должны содержать secret, JWT или service-role
-credentials. На текущем demo-контуре secret уже настроен как runtime-only
+credentials. На текущем production-контуре secret уже настроен как runtime-only
 переменная и не фиксируется в repository. Значение, однажды опубликованное в
-чате, логе или issue, необходимо ротировать до публичного production launch.
+чате, логе или issue, необходимо немедленно ротировать.
 
 ### Provider transport schema и canonical validation
 
@@ -197,10 +200,19 @@ bounded conversation в общем provider limit.
 ID LearnerProfile/Run/Record и Auth identity в provider context не попадают.
 Draft expected-participant rows, будущие/активные/отменённые Runs исключены.
 Canonical LearnerProfile не объединяет provider context разных преподавателей:
-другой recorder остаётся невидимым без будущего subject-controlled grant.
+другой recorder остаётся невидимым без current course-scoped subject consent и
+sanitized safe projection.
 System и context boundary отдельно указывают, что `wasPresent=false` означает
 только отсутствие и не доказывает непонимание; `needsRepeat` интерпретируется
 только для присутствовавшего ученика.
+
+При действующем consent `profile + Course + current owner` shared projection
+добавляет только агрегаты, month-level last activity, subject buckets и
+closed-vocabulary categorical signals, derived from explicitly shared comments.
+Raw LearningRecord, recorder, teacher-local names, roster, exact timestamps,
+comment text/summary/quotes и private comments исключены.
+Отсутствие consent даёт empty optional context; consent revision фиксируется в
+preview, а revoke/expiry/owner/audience change делает Apply stale.
 
 Для course-wide attachments передаются только filename, MIME type и текущий
 status с явным предупреждением, что содержимое не извлекалось. AI-срез не
@@ -241,21 +253,23 @@ learner_profile
 teacher_learner
 lesson_run
 learning_record
+learner_ai_consent
 ```
 
-`lesson_run` и `learning_record` принадлежат scheduling/learning-history
-domain, а не provider accounting. AI читает их только через application
-service; teacher-local relation и `recorded_by_account_id` ограничивают history
-текущим actor. SQL и service-role credentials модели не доступны. Persisted
+`lesson_run` и `learning_record` принадлежат scheduling/learning-history domain,
+а `learner_ai_consent` — identity authorization, не provider accounting. Base
+history ограничена `recorded_by_account_id`; foreign history входит только
+через `build_cross_provider_learner_context` как consent-gated sanitized
+projection. SQL и service-role credentials модели не доступны. Persisted
 результат AI после Apply не отличается по domain contract от результата ручного
 редактора. Provider request/response, assistant dialog history и quota state в
 БД не сохраняются.
 
-Identity, provenance и future access boundary зафиксированы в
+Identity, provenance и current access boundary зафиксированы в
 [`learner-identity-access-model.md`](./learner-identity-access-model.md).
-Согласованный next flow допускает cross-provider context только по отдельному
-subject consent и через sanitized server projection; teacher API не получает
-foreign raw records. Acceptance contract находится в
+Current cross-provider flow допускает context только по отдельному
+course-scoped subject consent и через sanitized server projection; teacher API
+не получает foreign raw records. Historical execution contract находится в
 [`LEARNER_IDENTITY_COMPLETION_PROMPT.md`](../v2/LEARNER_IDENTITY_COMPLETION_PROMPT.md).
 
 ## Не входит в текущий срез
@@ -266,7 +280,6 @@ foreign raw records. Acceptance contract находится в
 - attachment parsing/OCR/RAG и citation provenance;
 - Homework generation;
 - learner-facing AI teacher, live lesson и Student Screen control;
-- account claim/observer grants и cross-provider learner history/AI context;
 - automatic subject metrics beyond current attendance/repeat/comments;
 - persistent distributed quota, cost ledger, billing и subscriptions;
 - внешний remote MCP/API.
@@ -279,6 +292,7 @@ foreign raw records. Acceptance contract находится в
 | Provider lesson transport     | `src/modules/ai/lesson-provider-contracts.ts`                  |
 | AI request/response contracts | `src/modules/ai/course-builder-contracts.ts`                   |
 | Bounded model context         | `src/modules/ai/course-context.ts`                             |
+| Consented safe history        | `src/modules/ai/shared-history.ts`                             |
 | Learning history service      | `src/modules/lesson-runs/service.ts`                           |
 | Planning/apply/chat service   | `src/modules/ai/course-builder-service.ts`                     |
 | Rate/error boundary           | `src/modules/ai/server-context.ts`                             |
@@ -311,6 +325,12 @@ bounded finalized history без технических IDs, draft/cancelled dat
 в context, а отсутствие не превращается в негативную учебную оценку. Код и
 schema этого контекста развёрнуты; отдельный production provider postflight с
 непустой учебной историей ещё не выполнялся.
+
+Roleless functional release `01aa88a` и M1–M6 добавили course-scoped subject
+consent, sanitized shared-history adapter, revision-pinned Apply и UI для
+grant/revoke. Automated tests и authenticated browser postflight подтвердили,
+что private/foreign raw rows не раскрываются. Отдельный реальный provider smoke
+с непустой consented history по-прежнему не выполнялся.
 
 Live Apply намеренно не запускался на пользовательских Course данных, а
 configuration/provider failure не индуцировался на production. Apply validation,

@@ -1,7 +1,7 @@
 # ShiDao V2 — актуальная глобальная спецификация
 
 **Статус:** нормативные границы текущей архитектуры и будущего развития
-**Актуально на:** 7 августа 2026 года
+**Актуально на:** 10 августа 2026 года
 **Repository/branch:** `istominvi/shidao`, `main`
 **Рабочее приложение:** `v2.shidao.ru`
 **Публичный домен:** `shidao.ru` — landing-only
@@ -35,10 +35,14 @@ ShiDao развивается как персональная образоват
 может создать Course, подготовить Lessons вручную или с AI, провести обучение
 сам либо передать часть работы AI и сохранить долгосрочную учебную историю.
 
-Текущий продукт доказывает первый фундамент: teacher Course Builder с реальными
-данными, private materials, code-first Components, Student Screen preview,
-canonical learner directory, scheduling/history, RouterAI preview/assistant и
-internal MCP.
+Текущий продукт уже содержит roleless Account foundation: owner-scoped Course
+Builder с реальными данными, private materials, code-first Components и Student
+Screen preview; canonical learner directory, Groups, Course audience,
+LessonRun/history; learner-safe self/observer profile и consented AI context;
+RouterAI preview/assistant и internal MCP. Primary navigation содержит
+«Расписание / Ученики / Курсы», Account menu — «Учебный профиль / Настройки /
+Выход», а `/courses` поддерживает поиск, фильтры, сортировку и режимы «Плитки /
+Таблица».
 
 ## 3. Неподвижные границы реконструкции
 
@@ -55,11 +59,16 @@ internal MCP.
 - `shidao.ru` остаётся landing-only, приложение работает на `v2.shidao.ru`;
 - V1 refs/recovery snapshot не меняются и не восстанавливаются без явной
   команды владельца.
+- `Account` является единственной login identity; преподавание, обучение и
+  наблюдение задаются relations/capabilities, а не глобальной ролью;
+- каждый `active | provisional` Account имеет ровно один linked
+  LearnerProfile; offline profiles сохраняют `account_id IS NULL` до
+  recipient-bound claim/activation.
 
 ### LATER
 
-Отдельный staging может появиться перед публичным production launch. Он должен
-иметь отдельные logical data, Auth, Storage, secrets и синтетические данные.
+Отдельный staging пока не настроен. Если он появится, он должен иметь отдельные
+logical data, Auth, Storage, secrets и синтетические данные.
 
 ## 4. Архивная граница
 
@@ -84,8 +93,9 @@ IDs в active model.
 ```text
 Auth User
 └── Account
-    ├── claimed LearnerProfile 0..1 (optional; claim later)
+    ├── linked LearnerProfile exactly 1 for active/provisional Account
     ├── TeacherLearner 0..N → LearnerProfile
+    ├── ObserverGrant 0..N → LearnerProfile
     ├── LearnerGroup 0..N → LearnerProfile 0..N
     └── Course
         ├── direct CourseLearner → LearnerProfile
@@ -96,6 +106,9 @@ Auth User
             ├── LessonStudentSlide 1..N
             └── LessonRun 0..N → LearningRecord 0..N
                 └── recorded-by Account
+
+Offline LearnerProfile
+└── account_id IS NULL до recipient-bound claim/activation
 ```
 
 Каноническая authored hierarchy:
@@ -124,6 +137,11 @@ Course:
 содержит независимые direct `course_learner` и group `course_learner_group`
 sources; effective audience является distinct union активных TeacherLearner
 relations.
+
+Current `/courses` каталог выполняет client-side поиск по публичным Course
+полям, фильтрует по предмету, уровню и наполнению, сортирует результаты и
+переключается между «Плитки / Таблица». Это не добавляет новую schema или
+параллельный Course API.
 
 ## 7. Lesson
 
@@ -302,30 +320,34 @@ lesson.reorder_component
 contracts. External endpoint отсутствует. Production RouterAI вызывается
 server-side AI service напрямую и не использует MCP transport.
 
-## 15. Current Auth and identity transition
+## 15. CURRENT roleless Account and canonical learner identity
 
-Course owner identity — `account`, один на `auth.users`.
+`Account` — единственная login identity, один на `auth.users`. Auth bootstrap
+атомарно создаёт Account, AccountSecurity/Preference и ровно один linked
+LearnerProfile; deterministic backfill обеспечивает тот же invariant для
+existing `active | provisional` Accounts. Nullable unique
+`learner_profile.account_id` разрешает offline profiles, но не второй linked
+profile одному Account.
 
-Canonical `learner_profile` не принадлежит Course owner. Optional unique
-`account_id` является будущей one-to-one claim point, а `teacher_learner`
-содержит relation, local display name и archive state конкретного teacher
-Account. `learning_record.recorded_by_account_id` сохраняет provenance даже
-после удаления Lesson. Current learner-profile API names остаются стабильными и
-возвращают teacher-directory projection.
+`teacher_learner` хранит отдельную teacher-local relation, display name и
+archive state. `learning_record.recorded_by_account_id` сохраняет recorder
+provenance. Subject и active observer читают только learner-safe projections;
+teacher raw history остаётся recorder-scoped.
 
-Старые `parent`, `teacher`, `student`, `school`, membership и preference/security
-tables временно обслуживают login/onboarding/profile/session compatibility.
-Они не являются целевой Account model и не должны проникать в новый Course
-domain.
+Active login/PIN/onboarding/profile/session используют Account boundary. Legacy
+`parent`, `teacher`, `student`, `school`, membership, `user_preference` и
+`user_security` физически сохранены только как dormant recovery data: active
+web callers и Data API grants после M4 от них не зависят.
 
 ## 16. Current security
 
 - Course documents owner-scoped through Account and RLS.
 - Canonical LearnerProfile teacher-visible only through `teacher_learner`;
   teacher-local directory rows are scoped by `teacher_account_id`.
-- Linked subject Account can select only its canonical LearnerProfile row;
-  nullable `account_id` does not expose Course, TeacherLearner or
-  LearningRecord.
+- Linked subject Account может выбирать свою canonical identity row и читать
+  self history/progress только через learner-safe RPC; active observer получает
+  ту же safe projection по отдельному grant. Ни link, ни observer grant не
+  открывают Course, teacher directory или raw LearningRecord.
 - Group/Course audience accepts only profiles with an active relation of the
   same owner Account; LearningRecord history is scoped by
   `recorded_by_account_id`.
@@ -336,41 +358,43 @@ domain.
   execute grants и Lesson-first locks.
 - `anon` не имеет privileges на V2 document/file tables.
 - Storage policy проверяет bucket и Account path.
-- Origin/Sec-Fetch-Site guard пока допускает configured landing host как Origin
-  для unsafe V2 requests; строгая app-host boundary и cross-subdomain regression
-  test остаются P0 hardening debt.
+- Production middleware использует explicit routed-host allowlist, а unsafe V2
+  requests принимает только с exact Origin `https://v2.shidao.ru`;
+  landing/cross-subdomain/missing Origin fail closed и покрыты regression tests.
 - V2 не индексируется.
-- Browser-smoke использует current AES-GCM app-session и проходит строгий
-  production-mode gate на isolated mock Supabase, включая Course → Lesson →
-  backlink.
-- Legacy exception: `user_preference` и `user_security` пока не имеют RLS и
-  сохраняют broad grants; это зафиксированный P0 debt, а не образец V2 ACL.
+- Browser-smoke использует current AES-GCM app-session; latest functional gate
+  прошёл `326/326` unit tests и `19/19` production-mode scenarios, включая
+  roleless navigation, identity/observer flows и Course catalog.
+- M1 закрыла broad `user_preference`/`user_security` ACL и active callers
+  перенесены на `account_preference`/`account_security`; M4 отозвала legacy Data
+  API grants и оставила legacy rows только для recovery.
 
 # Current hardening and NEXT architecture
 
-## 17. P0.1 Legacy identity/security hardening
+## 17. CURRENT P0.1 Legacy identity/security hardening
 
-До расширения identity/learner/external access необходимо:
+P0.1 завершён: M1 закрыла legacy preference/security ACL, active callers
+перенесены на Account boundary; M4 удалила active role helpers/types/grants;
+M5/M6 закрыли deferred Auth invariant и trusted provisional metadata sync.
+Production host allowlist, exact app-origin CSRF, Auth/negative actor tests,
+DB/RLS/ACL/PostgREST postflight и GoTrue lifecycle probe зелёные.
 
-- инвентаризировать login/onboarding/profile/PIN/session callers и legacy
-  `SECURITY DEFINER` user-id RPC с broad execute;
-- проверить реальный Data API exposure и добавить negative tests;
-- закрыть broad grants/RPC defaults;
-- ввести owner-scoped RLS или полностью закрытые server boundaries;
-- заменить proxy-dependent host routing на explicit production host allowlist;
-- доставить compatible forward migration с Auth regression/postflight.
+Отдельной approved operations-задачей остаётся ротация historical plaintext
+credentials из ignored legacy cheatsheet; это не расширяет Auth/SMTP/JWT scope.
 
-Это tightening существующей authorization boundary, а не redesign
-Auth/SMTP/JWT.
+## 18. CURRENT navigation/catalog; NEXT P0.2 authoring completion
 
-## 18. P0.2 Teacher authoring completion
+CURRENT primary navigation: «Расписание / Ученики / Курсы». «Учебный профиль»
+находится в Account menu перед «Настройки / Выход», observer projection —
+третья вкладка «Наблюдение» внутри `/students`; `/observing` является protected
+compatibility redirect. `/courses` уже имеет поиск, реальные фильтры, сортировку
+и «Плитки / Таблица» без новой schema/API.
 
 NEXT улучшает существующий Course Builder, не меняя hierarchy:
 
 - upload Materials из existing Course;
-- visual/responsive/accessibility polish;
-- production coverage всех десяти component editors/renderers;
-- более удобный palette/search;
+- дальнейший visual/responsive/accessibility polish;
+- более удобный Component palette/search;
 - ясные destructive confirmations;
 - optional drag-and-drop только поверх canonical reorder service.
 
@@ -402,7 +426,8 @@ Homework принадлежит Lesson, но не `lesson.components` и не St
 Slide group.
 
 Первый slice может поддержать одно common Homework на Lesson. Individual
-override и assignment snapshot добавляются после новой audience identity.
+override и assignment snapshot добавляются в отдельном persisted Homework /
+learner-consumption contract поверх уже существующей canonical identity.
 
 Решение о reuse Component registry фиксируется отдельным contract: Homework
 получает собственный ordered owner, authorization и learner projection.
@@ -423,46 +448,33 @@ OCR, broad web crawling, DRM и audio transcription — LATER.
 
 # Audience, scheduling и дальнейшая target model
 
-## 22. CURRENT LearnerProfile
+## 22. CURRENT roleless Account and canonical LearnerProfile
 
-Текущий repository slice:
+- `Account` — единственная login identity; global role не определяет navigation
+  или access.
+- Каждый `active | provisional` Account transaction-safe связан ровно с одним
+  canonical LearnerProfile; offline profiles имеют `account_id IS NULL`.
+- Auth bootstrap и deterministic backfill обеспечивают exactly-one invariant
+  без fuzzy matching.
+- `teacher_learner` хранит teacher-local name и reversible archive relation;
+  Group/Course audience принимает только active relation того же owner.
+- Discovery использует one-time share code/QR или blind email request.
+  Recipient-bound `claim` физически сводит offline source с actor-owned target;
+  `child_activation` создаёт отдельный provisional learner Account.
+- Physical merge, conflict resolution, lineage alias, archive/restore,
+  permanent delete пустого unclaimed profile и subject erasure реализованы.
+- Subject управляет observer invitations/grants; subject и active observer
+  получают только learner-safe finalized history/progress.
+- Cross-provider AI требует отдельного consent `profile + Course + owner`;
+  teacher raw history остаётся recorder-scoped.
+- Legacy role tables не участвуют в active identity/navigation contract.
 
-- LearnerProfile является canonical identity без teacher owner и может
-  существовать без отдельного login;
-- nullable unique `learner_profile.account_id` резервирует one-to-one claim
-  point, но текущие rows не линкуются автоматически; linked Account может
-  выбрать только собственную identity row, не Course/records;
-- global `learner_profile.display_name` остаётся canonical/offline fallback;
-- `teacher_learner` хранит teacher Account, local display name и archive state;
-- existing profile CRUD route/RPC names сохранены, но teacher read model
-  проецируется из `teacher_learner`, а edit/archive не меняет identity другого
-  будущего teacher;
-- базовая образовательная история хранится отдельно от editable Lesson и явно
-  фиксирует `recorded_by_account_id`;
-- один Account не может добавить profile в Group/Course без своей активной
-  TeacherLearner relation.
-
-NEXT/LATER:
-
-- universal Account bootstrap создаёт ровно один linked LearnerProfile каждому
-  active Account, а active navigation/access перестаёт зависеть от глобальной
-  роли;
-- invitation/claim связывает offline profile с Account без эвристики по
-  имени/email;
-- subject-controlled observer relation открывает только learner-safe read-only
-  projection;
-- physical merge получает отдельную authorization/conflict/lineage модель и не
-  выполняется автоматически;
-- self history открывается самому Account по canonical ownership; observer
-  history и cross-provider AI context требуют разных узких явных grants. Learner
-  Course consumption и live Student Screen остаются отдельным later slice.
-
-Полный P0.Identity execution/acceptance contract находится в
 [`LEARNER_IDENTITY_COMPLETION_PROMPT.md`](./LEARNER_IDENTITY_COMPLETION_PROMPT.md)
-и описывает **NEXT**, а не current schema.
+теперь является историческим execution/acceptance contract с выполненным
+terminal condition, а не описанием NEXT schema.
 
-Текущие parent/teacher/student tables не объявляются этой моделью и не
-расширяются как её shortcut.
+NEXT/LATER вне identity completion: learner Course consumption/enrollment, live
+Student Screen runtime и richer Component-produced learner metrics.
 
 ## 23. CURRENT Group and mixed audience
 
@@ -516,21 +528,29 @@ Target Homework поддерживает:
 - immutable assignment snapshot при выдаче;
 - изменение definition не переписывает issued work.
 
-## 26. CURRENT base history; NEXT progress; LATER learner metrics
+## 26. CURRENT base history/progress; LATER richer learner metrics
 
-Базовая Learning history относится к canonical LearnerProfile и переживает
-удаление Lesson. Сейчас `learning_record` хранит recorder Account, attendance,
-comment, `needs_repeat`, время проведения и минимальный Course/Lesson context.
-Current teacher reads только rows собственного `recorded_by_account_id`;
-canonical profile не означает cross-provider access. Archive teacher relation
-не удаляет history. Global privacy/erasure lifecycle остаётся отдельным решением.
+Learning history относится к canonical LearnerProfile и переживает удаление
+Lesson. `learning_record` хранит recorder Account, attendance, comment,
+`needs_repeat`, minimal Course/Lesson context, `shared_with_learner_at`,
+`actual_duration_minutes_at_time` и merge provenance
+`superseded_by_record_id`.
 
-NEXT identity-program строит learner-safe self/observer progress из уже
-сохранённых attendance/repeat/comments. Nullable actual duration фиксируется
-только из explicit start либо явного teacher input; scheduled fallback и старые
-rows остаются unknown. Пустой generic metrics JSON не добавляется. Отдельный
-`LearningRecord.metrics` появится только одновременно с первым реальным
-allowlisted Component/runtime producer и consumer.
+Teacher raw reads остаются scoped по `recorded_by_account_id`. Subject и active
+observer читают отдельную learner-safe projection только finalized,
+non-superseded rows; private comments, recorder identity, roster и teacher-local
+directory исключены. Comment появляется в учебном профиле только после explicit
+share.
+
+Current progress вычисляет реальные counts, attendance, repeat, last activity,
+subject breakdown и сумму только известных actual durations. Duration берётся
+из explicit start либо явного post-factum teacher input; scheduled fallback и
+unknown не превращаются в ноль. Subject erasure/reset уже реализован; отдельными
+решениями остаются Account/Auth deletion и legal retention.
+
+LATER `LearningRecord.metrics` либо отдельные learning events появляются только
+с первым реальным allowlisted Component/runtime producer и consumer. Пустой
+generic metrics JSON не добавляется.
 
 Позднее поверх базовой записи могут появиться:
 
@@ -582,31 +602,51 @@ Structured logs не содержат secrets/full prompts/private attachment bo
 Минимальные future metrics: web errors/latency, job depth/age, provider
 success/latency/usage, Storage/parsing failures, auth failures.
 
-## 30. Lifecycle
+## 30. CURRENT lifecycle
 
-- Delete Course удаляет editable document children, но не finalized learning
-  records.
-- Delete Lesson не удаляет LearningRecord.
+- Delete Course/Lesson удаляет editable document children, но не finalized
+  LearningRecord.
 - Delete material не оставляет broken Component references.
-- Product archive изменяет TeacherLearner конкретного teacher, а не canonical
-  LearnerProfile; global privacy/erasure требует отдельного audited flow.
-- Destructive AI actions требуют confirmation/change set.
+- Archive/restore изменяет только TeacherLearner текущего Account; restore не
+  возвращает прежние Group/Course links.
+- Permanent delete разрешён только для пустого unclaimed profile.
+- Physical merge удаляет source profile после переноса данных и сохраняет
+  actor-safe lineage alias; generic split не обещается.
+- Safe unlink разрешён только без lineage, records и dependent grants.
+- Subject erasure/reset требует recent reauth + fingerprint, удаляет всю
+  subject lineage/grants/consents и атомарно создаёт новый empty linked profile;
+  Account/Auth deletion и legal retention остаются отдельными решениями.
+- Current AI mutations требуют preview и explicit confirmation; persisted
+  `ai_change_set` остаётся LATER.
 
-## 31. Future physical objects
+## 31. CURRENT identity objects; LATER physical objects
 
-`learner_profile`, `teacher_learner`, `learner_group`,
-`learner_group_member`, `course_learner`, `course_learner_group`, `lesson_run` и
-`learning_record` уже входят в current repository schema. Следующие имена
-остаются direction:
+Помимо Course/Lesson/audience/history tables, current M1–M6 contract содержит:
 
 ```text
-teacher_learner_invitation
-learner_profile_claim_invitation
-learner_profile_merge_operation
+account_login_alias
+account_security
+account_preference
+learner_profile_share_code
+learner_connection_request
+learner_claim_invitation
+learner_profile_merge
+learner_profile_merge_conflict
+learner_profile_merge_private_detail
 learner_profile_alias
+learner_observer_invitation
 learner_observer_grant
 learner_ai_consent
-identity_access_event
+learner_identity_audit_event
+learner_identity_rate_limit
+learner_erasure_request
+learner_credential_recovery_delegate
+learner_identity_reconciliation
+```
+
+Следующие имена остаются direction:
+
+```text
 lesson_run_runtime
 homework_definition
 homework_component
@@ -686,6 +726,7 @@ Current authoritative objects:
 
 ```text
 account
+account_login_alias / account_security / account_preference
 course
 lesson
 lesson_component
@@ -696,6 +737,14 @@ learner_profile / teacher_learner
 learner_group / learner_group_member
 course_learner / course_learner_group
 lesson_run / learning_record
+learner_profile_share_code / learner_connection_request
+learner_claim_invitation
+learner_profile_merge / learner_profile_merge_conflict
+learner_profile_merge_private_detail / learner_profile_alias
+learner_observer_invitation / learner_observer_grant
+learner_ai_consent / learner_identity_audit_event
+learner_identity_rate_limit / learner_erasure_request
+learner_credential_recovery_delegate / learner_identity_reconciliation
 
 parent / teacher / student
 school / school_teacher
@@ -703,9 +752,12 @@ class / class_teacher / class_student
 user_preference / user_security
 ```
 
-Первая группа — active V2 Course Builder. Вторая — transitional identity
-compatibility. Полная DDL/ACL/RLS shape находится только в current schema
-snapshots.
+Course/lesson/file, audience/history, Account credential и identity/
+observer/AI-consent groups выше являются active V2 contract. Legacy
+`parent`/`teacher`/`student`, school/class membership, `user_preference` и
+`user_security` физически сохранены как dormant recovery data без active web
+callers и ordinary Data API grants; это не active compatibility model. Полная
+DDL/ACL/RLS shape находится только в current schema snapshots.
 
 ## 37. Decisions that require explicit owner approval to change
 
@@ -725,6 +777,11 @@ snapshots.
 13. AI не получает SQL/service-role и использует typed application commands.
 14. External MCP не публикуется без полноценного security layer.
 15. V1 restore выполняется только по отдельной явной команде владельца.
+16. `Account` остаётся единственной login identity; global role switch не
+    возвращается.
+17. Каждый `active | provisional` Account имеет ровно один linked
+    LearnerProfile; teacher и observer access остаются отдельными explicit
+    relations.
 
 ## 38. Update rule
 

@@ -42,6 +42,19 @@ ShiDao хранит два обязательных слоя:
   direct Lesson Components; удаление active Methodology/Step/runtime schema.
 - `20260804044955_add_lesson_student_slides.sql` — persisted Student Screen
   Slides, atomic assignment/reorder/delete и tightened RLS/ACL.
+- `20260806190044_lesson_runs_learning_records.sql` — scheduling, LessonRun и
+  recorder-scoped LearningRecord history.
+- `20260806220726_learner_groups_mixed_course_audience.sql` — reusable Groups
+  и deduplicated direct+group Course audience.
+- `20260807033034_canonical_learner_profile.sql` — canonical LearnerProfile,
+  teacher-local directory relation и explicit record provenance.
+- `20260807065017_identity_security_hardening.sql` —
+  `20260807065038_learner_identity_legacy_contract_cleanup.sql`: M1–M4
+  roleless identity expand/backfill/workflows/contract cutover.
+- `20260809084500_learner_identity_auth_deferred_invariant_security.sql` — M5
+  Auth-safe exactly-one deferred invariant boundary.
+- `20260809090000_learner_identity_provisional_auth_metadata_sync.sql` — M6
+  trusted two-phase GoTrue provisional metadata synchronization.
 
 Backfill details являются историей этих migrations и не должны повторяться в
 current-schema guide как действующая domain model.

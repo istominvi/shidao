@@ -51,7 +51,8 @@ The server requires four environment variables for a tool call:
 
 - `NEXT_PUBLIC_SUPABASE_URL` — current self-hosted ShiDao Supabase URL;
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY` — public anon/publishable key;
-- `SHIDAO_MCP_SUPABASE_ACCESS_TOKEN` — short-lived access token of the teacher;
+- `SHIDAO_MCP_SUPABASE_ACCESS_TOKEN` — short-lived access token of the Course
+  owner Account;
 - `SHIDAO_MCP_AUTH_USER_ID` — UUID of that same Supabase Auth user.
 
 Never use or pass a secret/service-role key. Never commit a user token. Avoid

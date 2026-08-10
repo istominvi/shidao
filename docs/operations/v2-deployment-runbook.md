@@ -1,6 +1,6 @@
 # ShiDao V2 — deployment runbook
 
-**Статус:** активный рабочий demo-контур
+**Статус:** current production-контур
 **Ветка:** `main`
 **Web:** один Coolify application
 **Database/Auth/Storage:** текущий self-hosted Supabase
@@ -255,6 +255,11 @@ Production execution log, 9 августа 2026 года (current M6 stage):
   container имеет совпадающий image tag и `SOURCE_COMMIT`, image digest
   `sha256:cf8b6400187d880ab6c6f73a9af037b92cb476b09dd4832e6fd52ea13a132389`,
   restart count `0`, HTTPS `200`;
+- navigation/catalog deployment `889` exact SHA
+  `bafc984d0bc7bfb6cb795170a09ba2aabfb98441` завершился `finished`; running
+  container имеет совпадающий image tag и `SOURCE_COMMIT`, image digest
+  `sha256:06e273096fcf2f385782aeb6e1552235e1ac516b2a9dfd45f65f6f9a056b02cd`,
+  restart count `0`, HTTPS `200`; DB/API/schema этот follow-up не менял;
 - authenticated browser postflight прошёл roleless courses/schedule/students,
   self-profile, observer и settings surfaces без console errors. Disposable
   Account удалён после dependency audit: fixture counts `0/0/0`, production
@@ -369,7 +374,7 @@ SMTP/GoTrue переменные настраиваются в Supabase environm
 
 ### RouterAI secret в Coolify
 
-На текущем production demo-контуре `ROUTERAI_API_KEY` уже подключён как
+На текущем production-контуре `ROUTERAI_API_KEY` уже подключён как
 server-only runtime secret, а AI routes/UI и default
 `google/gemini-2.5-flash-lite` проверены в release `0276aed`. Значение secret не
 проверяется выводом и не хранится в repository.
@@ -377,10 +382,10 @@ server-only runtime secret, а AI routes/UI и default
 Первичная настройка выполняется только в environment editor существующего
 ShiDao V2 application:
 
-1. Для публичного production создать новый ключ в RouterAI. Временный demo key,
-   использование которого явно одобрено владельцем, допустим только как locked
-   runtime secret и подлежит ротации до публичного launch, если он когда-либо
-   попадал в чат, issue, screenshot, shell history или открытый log.
+1. Для active production использовать отдельный ключ RouterAI только как locked
+   runtime secret. Временный demo key в production не использовать; любой ключ,
+   попавший в чат, issue, screenshot, shell history или открытый log,
+   немедленно ротировать.
 2. Добавить `ROUTERAI_API_KEY` в Coolify как masked/secret runtime variable.
    Не включать её как build variable и не сохранять значение в repository,
    Dockerfile, `.env.example` или operational runbook.
@@ -462,7 +467,7 @@ ShiDao V2 application:
 
 ### RouterAI и AI-поверхности
 
-- войти на `v2.shidao.ru` как Teacher и открыть `/courses/new`;
+- войти на `v2.shidao.ru` как Account-владелец Course и открыть `/courses/new`;
 - на disposable Course выбрать «Создать с ИИ» и получить preview программы с
   ожидаемым числом Lessons, configured model и ненулевым token usage;
 - подтвердить preview, открыть Course и после reload увидеть ту же persisted
@@ -512,8 +517,10 @@ ShiDao V2 application:
   курсы, filtered-empty не подменяется пустым persisted каталогом;
 - existing email и learner login/PIN создают одну Account session и не выводят
   internal Auth email/browser secret;
-- `/students` переключает active/archive и «Ученики / Группы»; archive/restore
-  одного teacher не меняет relation другого и не возвращает старые memberships;
+- внутри directory-вкладок `/students` переключает active/archive и «Ученики /
+  Группы»; соседняя вкладка «Наблюдение» остаётся независимой learner-safe
+  projection. Archive/restore одного teacher не меняет relation другого и не
+  возвращает старые memberships;
 - share code/QR создаёт только pending connection, recipient принимает сам;
 - blind email invitation даёт одинаковый response для existing/new address;
   tokenless acceptance page имеет no-store/no-referrer и не оставляет token в

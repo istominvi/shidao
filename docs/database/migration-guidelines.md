@@ -1,7 +1,7 @@
 # Правила изменений базы ShiDao
 
 **Статус:** обязательная политика для всех новых DB changes
-**Текущий schema head:** `20260807033034_canonical_learner_profile.sql`
+**Текущий schema head:** `20260809090000_learner_identity_provisional_auth_metadata_sync.sql`
 
 ## 1. Источники истины
 

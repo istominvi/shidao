@@ -1,9 +1,9 @@
 # ShiDao V2
 
-ShiDao V2 — работающий teacher Course Builder на Next.js и текущем
-self-hosted Supabase. Текущий source содержит roleless Account-разделы
-«Расписание» и «Ученики», reusable Groups, смешанную аудиторию Course и историю
-проведений.
+ShiDao V2 — работающее roleless Account-приложение с Course Builder на Next.js
+и текущем self-hosted Supabase. Текущий source содержит разделы «Расписание»,
+«Ученики» и «Курсы», reusable Groups, смешанную аудиторию Course, историю
+проведений и learner identity/self/observer surfaces.
 Каноническая модель:
 
 ```text
@@ -73,21 +73,24 @@ npm run mcp:course-builder
 
 `test:browser` удобен локально и может пропустить smoke без доступного browser;
 `test:browser:ci` требует полноценного production-mode browser smoke и падает,
-если окружение к нему не готово. Известный текущий harness debt описан в
-[`docs/project-state.md`](docs/project-state.md); до исправления этот gate нельзя
-считать пройденным. Там же зафиксирован существующий repository-wide Prettier
-baseline debt; изменённую документацию проверяйте targeted `prettier --check`.
+если окружение к нему не готово. Последний полный gate на functional release
+`bafc984` прошёл `326/326` unit tests и `19/19` production-mode browser
+scenarios; exact evidence хранится в
+[`docs/project-state.md`](docs/project-state.md).
 
 ## Канонические пользовательские поверхности
 
 - Публично: `/`, `/login`, `/join`, `/join/check-email`,
   `/forgot-password`, `/reset-password`, `/auth/confirm`.
-- Приложение: `/onboarding`, `/courses`, `/courses/new`,
-  `/courses/[courseId]`, `/courses/[courseId]/student-preview`,
-  `/settings/profile`, `/settings/security`.
-- Только active teacher profile: `/schedule`, `/students`. Parent и
-  transitional Student перенаправляются с этих routes в `/courses`.
-- Рабочий app-домен: `v2.shidao.ru` — active deployed customer-demo contour.
+- Приложение: `/onboarding`, `/schedule`, `/students`, `/courses`,
+  `/courses/new`, `/courses/[courseId]`,
+  `/courses/[courseId]/student-preview`, `/learning-profile`,
+  `/settings/profile`, `/settings/security`, `/settings/observers` и
+  `/identity/invitations/[invitationId]`. Все эти shells используют Account
+  session; resource access остаётся relation/ownership-scoped.
+- Canonical observer surface — `/students?tab=observing`; `/observing` сохранён
+  как protected compatibility redirect.
+- Рабочий app-домен: `v2.shidao.ru` — active production-контур.
 - `shidao.ru` остаётся landing-only.
 - `brand.shidao.ru` и `model.shidao.ru` — отдельные публичные reference
   surfaces.
@@ -107,8 +110,8 @@ Lesson непосредственно владеет одним упорядоч
 - материалы хранятся как course-wide attachments в private Storage;
 - сущности Lesson Step/root Step в активной V2 нет.
 
-Teacher navigation содержит «Расписание / Ученики / Курсы». `/schedule` и
-`/students` используют persisted LessonRun, canonical LearnerProfile,
+Primary Account navigation содержит «Расписание / Ученики / Курсы».
+`/schedule` и `/students` используют persisted LessonRun, canonical LearnerProfile,
 teacher-local `teacher_learner`, Groups и LearningRecord. В Course независимо
 прикрепляются отдельные ученики и группы; пересечения дедуплицируются. Один
 профиль может быть связан с несколькими преподавателями, но локальные имена,
@@ -126,7 +129,8 @@ projection — во вкладке «Наблюдение» внутри «Уч�
 service и development-only MCP используют общие Zod contracts; MCP не работает
 с таблицами напрямую и не опубликован как внешний endpoint. Server-only
 RouterAI preview/apply и read-only Assistant уже реализованы; parsing/RAG,
-persisted Homework, live sessions и learner-facing product пока отсутствуют.
+persisted Homework, live sessions и learner-facing Course consumption пока
+отсутствуют.
 
 Подробная каноническая модель: `docs/architecture/lesson-workflow-model.md`.
 

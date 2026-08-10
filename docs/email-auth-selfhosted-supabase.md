@@ -35,9 +35,13 @@
 
 Отдельный обычный login работает так:
 
-- взрослый без parent/teacher profile → `/onboarding`;
-- взрослый с профилем или transitional V1 `student` identity → `/courses`;
+- email или learner login/PIN создают одну и ту же roleless Account session;
+- после login любой Account попадает в `/courses`;
 - safe relative `next` может переопределить стандартный маршрут.
+
+`/onboarding` редактирует общие `display_name/locale/timezone` Account и не
+создаёт Parent/Teacher profile, не выбирает роль и не является post-login role
+gate.
 
 ### Зоны ответственности
 
@@ -143,7 +147,8 @@ NEXT_PUBLIC_APP_URL=https://v2.shidao.ru
 - callback валидирует token hash server-side и создаёт app session;
 - пользователь без подтверждения email не может пройти обычный login;
 - signup/email callback ведёт в `/courses`;
-- обычный login при необходимости ведёт в `/onboarding`, затем в `/courses`.
+- обычный login ведёт в `/courses` или в validated safe relative `next`;
+- `/onboarding` остаётся отдельной roleless Account form, а не login gate.
 
 ---
 

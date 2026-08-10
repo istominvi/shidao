@@ -50,10 +50,9 @@ Read migrations only when the task explicitly involves:
 - Do not mass-reset `public` as part of ordinary V2 development.
 - Do not change Auth, SMTP, JWT/API keys or base Storage configuration unless
   the user explicitly expands the task.
-- `user_preference` and `user_security` retain documented broad legacy ACL/no
-  RLS debt. Do not copy that pattern. Treat its audited forward hardening and
-  Auth regression coverage as roadmap P0 before expanding identity/external
-  access.
+- Current Account preference/security and learner-identity relations use the
+  audited RLS/closed-ACL contract. Do not restore legacy `user_preference` /
+  `user_security` dual-write or copy their historical broad-grant pattern.
 
 ## Lesson workflow policy
 
@@ -94,12 +93,12 @@ Policy:
 - Working application: `v2.shidao.ru`.
 - `shidao.ru` and `www.shidao.ru` remain landing-only; internal pages and APIs
   are closed there.
-- Current middleware is not yet a full host allowlist: non-root `brand`/`model`
-  and unknown routed hosts pass through. Do not treat DNS/proxy isolation as a
-  finished security boundary; roadmap P0 tracks hardening.
-- Current CSRF guard also allows the configured landing host as an Origin for
-  V2 unsafe requests. Do not describe it as strict same-origin until the P0
-  app-host fix and cross-subdomain regression test land.
+- Current middleware enforces the explicit host allowlist: V2 application/API
+  only on `v2.shidao.ru`, landing-only behavior on `shidao.ru`/www, isolated
+  reference/demo hosts, and fail-closed unknown routed hosts.
+- Current CSRF guard accepts unsafe production requests only from exact Origin
+  `https://v2.shidao.ru`; landing, cross-subdomain and missing Origin fail
+  closed. Preserve the host/Origin regression coverage when changing routing.
 - Continue in the current repository, `main`, Coolify application and
   self-hosted Supabase unless the user explicitly decides otherwise.
 - V1 recovery refs and `.local-backups/v1-snapshot-2026-08-03` are immutable.

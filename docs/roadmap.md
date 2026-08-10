@@ -1,7 +1,7 @@
 # Roadmap ShiDao V2
 
-**Статус:** приоритеты после первого работающего Course Builder milestone
-**Актуально на:** 9 августа 2026 года
+**Статус:** current / next / later priorities после production identity release
+**Актуально на:** 10 августа 2026 года
 
 Фактически реализованное состояние находится в
 [`docs/project-state.md`](./project-state.md). Этот документ описывает только
@@ -285,9 +285,9 @@ Definition of Done:
 - наблюдать первый реальный teacher Apply по metadata-only logs; не создавать
   отдельные production test entities без явной необходимости;
 - проверить provider-error fallback во время планового fault-injection окна, не
-  нарушая доступность demo-контура;
-- ротировать временный demo key до публичного production launch, особенно если
-  его значение когда-либо передавалось через чат, log или screenshot;
+  нарушая доступность production-контура;
+- использовать отдельный runtime-only production key и немедленно ротировать
+  его, если значение когда-либо попало в чат, log, issue или screenshot;
 - при нескольких application replicas заменить process-local protection
   распределённым rate limit;
 - спроектировать persistent quota/usage ledger до введения платного ограничения,

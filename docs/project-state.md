@@ -1,11 +1,11 @@
 # Текущее состояние ShiDao V2
 
 **Статус:** главный входной документ для разработки
-**Актуально на:** 9 августа 2026 года
+**Актуально на:** 10 августа 2026 года
 **Активная ветка:** `main`
 **Рабочее приложение:** `https://v2.shidao.ru`
-**Текущий функциональный application release:** `01aa88a`
-**Последний полный automated/browser gate:** `01aa88a`
+**Текущий функциональный application release:** `bafc984`
+**Последний полный automated/browser gate:** `bafc984`
 
 **Current production contract stage:** реализована и развёрнута полная roleless
 learner identity / observer программа. Migrations M1–M6 применены к production
@@ -15,8 +15,9 @@ boundary, safe discovery/recipient-bound claim и child activation, physical
 merge/lineage, archive/restore, self/observer history/progress, subject erasure
 и consented cross-provider AI. Application/API/UI находятся в
 `src/modules/learner-identity/`, `src/components/learner-identity/` и новых
-routes `/learning-profile`, `/observing`, `/settings/observers`,
-`/identity/invitations/[invitationId]`. Security slice также закрывает production
+routes `/learning-profile`, `/students?tab=observing`, `/settings/observers`,
+`/identity/invitations/[invitationId]`; прежний `/observing` сохранён только как
+protected compatibility redirect. Security slice также закрывает production
 host allowlist и CSRF до exact `v2.shidao.ru` Origin. Coolify завершил roleless
 deployments точных SHA `5944d31f86f7d3795ec9f17928cb311ecbdfdd21` и
 `5d650a390abcc944780a716f909248f5493c10a9`. После read-only dependency audit
@@ -33,9 +34,21 @@ Coolify deployment `887` завершил exact functional SHA
 `sha256:cf8b6400187d880ab6c6f73a9af037b92cb476b09dd4832e6fd52ea13a132389`,
 restart count `0`, HTTPS `200`.
 
+Navigation/catalog follow-up `bafc984d0bc7bfb6cb795170a09ba2aabfb98441`
+упростил primary Account navigation до «Расписание / Ученики / Курсы», перенёс
+«Учебный профиль» в Account menu, а observer projection — в третью вкладку
+«Наблюдение» внутри `/students`. `/courses` получил поиск по публичным полям,
+реальные фильтры по предмету/уровню/наполнению, сортировку и режимы «Плитки /
+Таблица». DB/API/schema не менялись. Automated gate прошёл `326/326` unit и
+`19/19` production-mode browser scenarios. Coolify deployment `889` завершился
+`finished`; image tag и `SOURCE_COMMIT` совпадают с exact SHA, image digest
+`sha256:06e273096fcf2f385782aeb6e1552235e1ac516b2a9dfd45f65f6f9a056b02cd`,
+restart count `0`. Production `/` и `/login` отвечают `200`, guest `/observing`
+fail-closed перенаправляется в `/login`, browser console пуста.
+
 Authenticated production browser postflight подтвердил roleless navigation и
 реальные пустые состояния `/courses`, `/schedule`, `/students`, всех вкладок
-`/learning-profile`, `/observing`, `/settings/profile`,
+`/learning-profile`, `/students?tab=observing`, `/settings/profile`,
 `/settings/security` и `/settings/observers`; browser console пуста. CSRF
 отклонил cross-subdomain и missing Origin (`403`), same-origin malformed body
 дошёл до validation (`400`). Disposable Account после полного dependency audit
@@ -106,8 +119,8 @@ Releases `8514441` и `7021801` снова обслуживают `demo.shidao.r
 release дополнительно снимает ранее закэшированный permanent `308` через
 одноразовый `/?restored=1`.
 
-`v2.shidao.ru` — active deployed customer-demo contour на production-mode
-build, но публичный production launch и отдельный staging ещё не выполнены.
+`v2.shidao.ru` — active production application. Landing остаётся на
+`shidao.ru`; отдельный staging-контур пока не настроен.
 
 Этот документ отвечает только на два вопроса: что действительно работает
 сейчас и где это находится. Целевое развитие вынесено в
@@ -459,8 +472,9 @@ application service/contracts внутри authenticated web request.
   заменяя уже существующие. Новые Components остаются `staff_only`; Student
   Screen не публикуется автоматически.
 - Course/Lesson apply использует существующий `CourseBuilderApplicationService`
-  с per-request actor, ownership и пользовательским JWT. SQL, service role,
-  отдельная AI-таблица или migration не добавлены.
+  с per-request actor, ownership и пользовательским JWT. Provider/quota
+  persistence этот authoring baseline не добавляет; identity consent/audit
+  tables принадлежат отдельному M2–M3 contract.
 - Assistant читает bounded Course/selected Lesson context и отвечает текстом,
   но не вызывает mutation commands, MCP tools или apply routes. История живёт
   только в React state dialog и исчезает после close/reload.
@@ -679,47 +693,47 @@ positions, а плотность поддерживают текущие service
 
 ## 7. Карта реализации
 
-| Область                            | Каноническое место                                                                                                       |
-| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| Course/Lesson contracts            | `src/modules/course-builder/contracts.ts`                                                                                |
-| Domain/read models                 | `src/modules/course-builder/domain.ts`                                                                                   |
-| Application service                | `src/modules/course-builder/service.ts`                                                                                  |
-| Supabase repository                | `src/modules/course-builder/repository.ts`                                                                               |
-| Storage adapter                    | `src/modules/course-builder/storage.ts`                                                                                  |
-| Component registry                 | `src/modules/course-builder/registry/contracts.ts`                                                                       |
-| MCP tools/server                   | `src/modules/course-builder/mcp/`                                                                                        |
-| AI provider adapter                | `src/modules/ai/routerai.ts`                                                                                             |
-| AI provider transport              | `src/modules/ai/lesson-provider-contracts.ts`                                                                            |
-| AI request/contracts               | `src/modules/ai/course-builder-contracts.ts`                                                                             |
-| AI context/service                 | `src/modules/ai/course-context.ts`, `src/modules/ai/course-builder-service.ts`                                           |
-| AI API/error boundary              | `src/app/api/v2/courses/[courseId]/ai-*/`, `assistant/`, `src/modules/ai/server-context.ts`                              |
-| AI dialogs                         | `src/components/course-builder/ai-course-plan-dialog.tsx`, `ai-lesson-plan-dialog.tsx`, `ai-course-assistant-dialog.tsx` |
-| LessonRun domain/contracts         | `src/modules/lesson-runs/domain.ts`, `contracts.ts`                                                                      |
-| LessonRun service/repository       | `src/modules/lesson-runs/service.ts`, `repository.ts`, `server-context.ts`                                               |
-| LessonRun API                      | `src/app/api/v2/lesson-runs/`, `learner-profiles/`, `learner-groups/`, Course/Lesson audience/history/runs routes        |
-| LessonRun UI                       | `src/components/lesson-runs/`                                                                                            |
-| Learner identity contracts/service | `src/modules/learner-identity/`                                                                                          |
-| Learner identity UI/routes         | `src/components/learner-identity/`, `/learning-profile`, `/observing`, `/settings/observers`, `/identity/invitations/*`  |
-| Learner identity access doc        | `docs/architecture/learner-identity-access-model.md`                                                                     |
-| Consented AI safe history          | `src/modules/ai/shared-history.ts`, `course-context.ts`, `course-builder-service.ts`                                     |
-| Identity completion hand-off       | `docs/v2/LEARNER_IDENTITY_COMPLETION_PROMPT.md`                                                                          |
-| Course browser client              | `src/components/course-builder/course-builder-client.ts`                                                                 |
-| New Course flow                    | `src/components/course-builder/new-course-form.tsx`                                                                      |
-| Course workspace                   | `src/components/course-builder/course-workspace.tsx`                                                                     |
-| Course/Lesson navigation           | `src/components/course-builder/course-workspace-navigation.ts`                                                           |
-| Workspace tabs/materials           | `src/components/ui/workspace-tabs.tsx`, `src/components/course-builder/course-materials-panel.tsx`                       |
-| Lesson editor/Slides               | `src/components/course-builder/lesson-authoring-workspace.tsx`                                                           |
-| Component editors/renderers        | `src/components/course-builder/component-payload-editor.tsx`, `component-renderers.tsx`                                  |
-| Fullscreen preview                 | `src/components/course-builder/student-screen-preview.tsx`                                                               |
-| Teacher Schedule                   | `src/app/(app)/(teacher-required)/schedule/`, `src/components/teaching-hub/schedule-workspace.tsx`                       |
-| Teacher Students                   | `src/app/(app)/(teacher-required)/students/`, `src/components/teaching-hub/students-workspace.tsx`                       |
-| Teacher route boundary             | `src/app/(app)/(teacher-required)/layout.tsx`, `src/lib/server/access-guards.ts`                                         |
-| V2 API routes                      | `src/app/api/v2/`                                                                                                        |
-| Standalone historical demo         | `src/app/demo/`, `public/og-demo-v2.png`                                                                                 |
-| Host boundary                      | `src/middleware.ts`, `src/lib/deployment-access.ts`                                                                      |
-| Auth/session                       | `src/lib/auth.ts`, `src/lib/server/`                                                                                     |
-| Current schema                     | `supabase/schema/current-schema.sql`                                                                                     |
-| Forward history                    | `supabase/migrations/`                                                                                                   |
+| Область                              | Каноническое место                                                                                                                                                          |
+| ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Course/Lesson contracts              | `src/modules/course-builder/contracts.ts`                                                                                                                                   |
+| Domain/read models                   | `src/modules/course-builder/domain.ts`                                                                                                                                      |
+| Application service                  | `src/modules/course-builder/service.ts`                                                                                                                                     |
+| Supabase repository                  | `src/modules/course-builder/repository.ts`                                                                                                                                  |
+| Storage adapter                      | `src/modules/course-builder/storage.ts`                                                                                                                                     |
+| Component registry                   | `src/modules/course-builder/registry/contracts.ts`                                                                                                                          |
+| MCP tools/server                     | `src/modules/course-builder/mcp/`                                                                                                                                           |
+| AI provider adapter                  | `src/modules/ai/routerai.ts`                                                                                                                                                |
+| AI provider transport                | `src/modules/ai/lesson-provider-contracts.ts`                                                                                                                               |
+| AI request/contracts                 | `src/modules/ai/course-builder-contracts.ts`                                                                                                                                |
+| AI context/service                   | `src/modules/ai/course-context.ts`, `src/modules/ai/course-builder-service.ts`                                                                                              |
+| AI API/error boundary                | `src/app/api/v2/courses/[courseId]/ai-*/`, `assistant/`, `src/modules/ai/server-context.ts`                                                                                 |
+| AI dialogs                           | `src/components/course-builder/ai-course-plan-dialog.tsx`, `ai-lesson-plan-dialog.tsx`, `ai-course-assistant-dialog.tsx`                                                    |
+| LessonRun domain/contracts           | `src/modules/lesson-runs/domain.ts`, `contracts.ts`                                                                                                                         |
+| LessonRun service/repository         | `src/modules/lesson-runs/service.ts`, `repository.ts`, `server-context.ts`                                                                                                  |
+| LessonRun API                        | `src/app/api/v2/lesson-runs/`, `learner-profiles/`, `learner-groups/`, Course/Lesson audience/history/runs routes                                                           |
+| LessonRun UI                         | `src/components/lesson-runs/`                                                                                                                                               |
+| Learner identity contracts/service   | `src/modules/learner-identity/`                                                                                                                                             |
+| Learner identity UI/routes           | `src/components/learner-identity/`, `/learning-profile`, `/students?tab=observing`, `/settings/observers`, `/identity/invitations/*`; `/observing` — compatibility redirect |
+| Learner identity access doc          | `docs/architecture/learner-identity-access-model.md`                                                                                                                        |
+| Consented AI safe history            | `src/modules/ai/shared-history.ts`, `course-context.ts`, `course-builder-service.ts`                                                                                        |
+| Historical identity execution prompt | `docs/v2/LEARNER_IDENTITY_COMPLETION_PROMPT.md`                                                                                                                             |
+| Course browser client                | `src/components/course-builder/course-builder-client.ts`                                                                                                                    |
+| New Course flow                      | `src/components/course-builder/new-course-form.tsx`                                                                                                                         |
+| Course workspace                     | `src/components/course-builder/course-workspace.tsx`                                                                                                                        |
+| Course/Lesson navigation             | `src/components/course-builder/course-workspace-navigation.ts`                                                                                                              |
+| Workspace tabs/materials             | `src/components/ui/workspace-tabs.tsx`, `src/components/course-builder/course-materials-panel.tsx`                                                                          |
+| Lesson editor/Slides                 | `src/components/course-builder/lesson-authoring-workspace.tsx`                                                                                                              |
+| Component editors/renderers          | `src/components/course-builder/component-payload-editor.tsx`, `component-renderers.tsx`                                                                                     |
+| Fullscreen preview                   | `src/components/course-builder/student-screen-preview.tsx`                                                                                                                  |
+| Account Schedule                     | `src/app/(app)/(teacher-required)/schedule/`, `src/components/teaching-hub/schedule-workspace.tsx`                                                                          |
+| Account Students                     | `src/app/(app)/(teacher-required)/students/`, `src/components/teaching-hub/students-workspace.tsx`                                                                          |
+| Legacy-named Account route boundary  | `src/app/(app)/(teacher-required)/layout.tsx`, `src/lib/server/access-guards.ts`                                                                                            |
+| V2 API routes                        | `src/app/api/v2/`                                                                                                                                                           |
+| Standalone historical demo           | `src/app/demo/`, `public/og-demo-v2.png`                                                                                                                                    |
+| Host boundary                        | `src/middleware.ts`, `src/lib/deployment-access.ts`                                                                                                                         |
+| Auth/session                         | `src/lib/auth.ts`, `src/lib/server/`                                                                                                                                        |
+| Current schema                       | `supabase/schema/current-schema.sql`                                                                                                                                        |
+| Forward history                      | `supabase/migrations/`                                                                                                                                                      |
 
 ## 8. Активные пользовательские маршруты
 
@@ -740,7 +754,7 @@ positions, а плотность поддерживают текущие service
 /courses/[courseId]
 /courses/[courseId]/student-preview
 /learning-profile
-/observing
+/observing                        # compatibility redirect → /students?tab=observing
 /settings/profile
 /settings/security
 /settings/observers
@@ -854,12 +868,9 @@ Supabase access/refresh tokens. Строгий gate сам собирает prod
 backlink обратно к Course, computed visual contract и mobile 375 px без
 document-level overflow.
 
-Repository-wide `npm run format:check` также пока не является зелёным baseline:
-он сообщает десятки ранее существовавших файлов, включая immutable content
-archive и unrelated application sources. Все изменённые в этом documentation slice
-Markdown files проходят targeted Prettier check и `git diff --check`. Перед
-обязательным global format gate нужен отдельный baseline/ignore change без
-переформатирования archive.
+Repository-wide `npm run format:check` теперь проходит. Для текущего
+navigation/catalog release также подтверждены `326/326` unit tests, `19/19`
+production-mode browser scenarios и `git diff --check`.
 
 На application release `fea7f80` подтверждены typecheck, lint, 183 unit tests,
 production build и строгие 8/8 browser smoke. Coolify deployment точного SHA
