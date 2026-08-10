@@ -456,7 +456,7 @@ Current production делает `/schedule` и `/students` доступными
 
 - server layout проверяет только Account session; Guest/degraded session
   перенаправляется в `/login`;
-- current source `/schedule` проецирует LessonRun выбранной локальной недели
+- current production `/schedule` проецирует LessonRun выбранной локальной недели
   или календарного месяца; отдельной таблицы Schedule event нет. Action
   перехода к назначению находится в общей header action-секции. Ниже прямо на
   page background расположены compound date navigator, «Неделя / Месяц» и

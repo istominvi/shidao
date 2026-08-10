@@ -3731,8 +3731,12 @@ test("browser smoke: mobile Account menu exposes primary sections and account ac
       if (!courseTitle || !lessonTitle) {
         throw new Error("Mobile schedule card titles are missing");
       }
-      courseTitle.textContent = "ОченьДлинноеНазваниеКурсаБезПробелов".repeat(4);
-      lessonTitle.textContent = "ОченьДлинноеНазваниеУрокаБезПробелов".repeat(4);
+      courseTitle.textContent = "ОченьДлинноеНазваниеКурсаБезПробелов".repeat(
+        4,
+      );
+      lessonTitle.textContent = "ОченьДлинноеНазваниеУрокаБезПробелов".repeat(
+        4,
+      );
       return {
         clientWidth: document.documentElement.clientWidth,
         scrollWidth: document.documentElement.scrollWidth,

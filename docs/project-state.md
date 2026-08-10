@@ -73,7 +73,7 @@ Terminal condition identity программы закрыт.
 для title/header/action-center на пяти поверхностях, `12px / 1px / 4px`
 для tabs и пустую browser console. Схема БД в visual slice не менялась.
 
-**Current source Schedule presentation follow-up (next deployment):**
+**Current deployed Schedule presentation slice:**
 `/schedule` загружает реальные LessonRun за локальную неделю (понедельник–
 понедельник) или календарный месяц. Внешняя поверхность toolbar удалена:
 составные date navigator, переключатель «Неделя / Месяц» и независимый выбор
@@ -83,7 +83,9 @@ control выбирает опорную дату, а mutation reload сохра�
 application/UI change без новой таблицы Schedule events, schema или migration;
 при достижении server hard limit в 500 Runs интерфейс честно предупреждает о
 сокращённом окне, а в month mode предлагает сузить его переключением на неделю.
-Production deployment/postflight этого follow-up пока не выполнены.
+Coolify webhook deployment exact functional SHA `587bb21` завершён со статусом
+Success за 2 минуты 33 секунды; running application указывает на тот же SHA.
+Authenticated production browser postflight этого slice пока не выполнен.
 
 **Current deployed System Assistant slice:** реализован один
 глобальный floating widget «ИИ» внутри protected `(app)` layout. Он доступен на
@@ -365,7 +367,7 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
 - `/schedule` и `/students` filesystem-совместимо остаются под прежним route
   group, но layout проверяет только Account session. Guest/degraded session
   перенаправляется в `/login`.
-- В current source `/schedule` показывает реальные LessonRun выбранной
+- Current production `/schedule` показывает реальные LessonRun выбранной
   локальной недели или календарного месяца. Это проекция тех же проведений, а
   не отдельная таблица Schedule events.
 - Action «Назначить урок в курсе» находится в общей page-header action-секции;
@@ -1052,12 +1054,14 @@ Repository-wide `npm run format:check` теперь проходит. Для т�
 navigation/catalog release также подтверждены `326/326` unit tests, `19/19`
 production-mode browser scenarios и `git diff --check`.
 
-Для current source Schedule presentation follow-up локально подтверждены
+Для current Schedule presentation release локально подтверждены
 typecheck, lint, format check, `git diff --check`, `411/411` unit/contract tests
 и `21/21` strict production-mode browser scenarios. Browser gate собрал
 production app, проверил прозрачный toolbar, реальные week/month API windows,
 непустую таблицу, переключение на карточки и mobile 375 px без document-level
-overflow. Production deployment/postflight этим результатом не подменяется.
+overflow. Coolify webhook deployment exact functional SHA `587bb21` завершён
+Success за 2 минуты 33 секунды, running reference совпадает; authenticated
+production browser postflight остаётся отдельным незавершённым gate.
 
 Для current Course publication/catalog source slice локально подтверждены
 `381/381` unit tests, `19/19` строгих production-mode browser scenarios,

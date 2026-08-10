@@ -486,12 +486,13 @@ Learner Course consumption и live Student Screen остаются отдель�
   ожидаемого ученика;
 - UI state выводится из timestamps, persisted status отсутствует.
 
-**Current source follow-up (next deployment):** Schedule UI проецирует те же
+**Current deployed follow-up:** Schedule UI проецирует те же
 LessonRun за выбранную локальную неделю или календарный месяц. Панель без
 внешней карточки повторяет demo-композицию: date navigator, «Неделя / Месяц» и
 «Таблица / Карточки». API/schema не меняются; System Assistant остаётся
-ограничен опорным выбранным днём. Deployment и authenticated browser postflight
-этого follow-up ещё не выполнены.
+ограничен опорным выбранным днём. Coolify webhook deployment exact functional
+SHA `587bb21` завершён со статусом Success; authenticated production browser
+postflight этого follow-up ещё не выполнен.
 
 **Current production contract дополнительно:** verified actual duration,
 explicit shared individual comment, cursor-paginated self/observer history и

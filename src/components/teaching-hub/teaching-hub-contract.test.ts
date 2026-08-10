@@ -118,8 +118,14 @@ test("schedule projects persisted LessonRun appointments without a parallel even
   assert.match(scheduleWorkspaceSource, /Показать таблицей/);
   assert.match(scheduleWorkspaceSource, /Показать карточками/);
   assert.match(scheduleWorkspaceSource, /SCHEDULE_RESULT_LIMIT = 500/);
-  assert.match(scheduleWorkspaceSource, /Эта неделя может быть показана не полностью/);
-  assert.match(scheduleWorkspaceSource, /Переключитесь на неделю, чтобы сузить окно/);
+  assert.match(
+    scheduleWorkspaceSource,
+    /Эта неделя может быть показана не полностью/,
+  );
+  assert.match(
+    scheduleWorkspaceSource,
+    /Переключитесь на неделю, чтобы сузить окно/,
+  );
   assert.doesNotMatch(
     scheduleWorkspaceSource,
     />\s*(?:Все|Учитель|Родитель|Ученик)\s*</,
