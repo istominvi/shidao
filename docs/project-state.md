@@ -4,8 +4,8 @@
 **Актуально на:** 10 августа 2026 года
 **Активная ветка:** `main`
 **Рабочее приложение:** `https://v2.shidao.ru`
-**Текущий функциональный application release:** `9a55308`
-**Последний полный automated/browser gate:** `9a55308`
+**Текущий функциональный application release:** `8912dac`
+**Последний полный automated/browser gate:** `8912dac`
 
 **Current production Course catalog slice:** реализует reusable Course catalog,
 immutable publication revisions, независимое копирование Course и private
@@ -73,7 +73,7 @@ Terminal condition identity программы закрыт.
 для title/header/action-center на пяти поверхностях, `12px / 1px / 4px`
 для tabs и пустую browser console. Схема БД в visual slice не менялась.
 
-**Current unreleased System Assistant slice:** в рабочем дереве реализован один
+**Current deployed System Assistant slice:** реализован один
 глобальный floating widget «ИИ» внутри protected `(app)` layout. Он доступен на
 Account surfaces, сохраняет диалог только в React state до reload/явного сброса
 и получает не DOM/URL, а строгий allowlisted page context. Server-side
@@ -81,8 +81,16 @@ orchestration читает bounded owner/recorder/consent-scoped проекци�
 Account и открытой Course/Lesson, Students или выбранного дня Schedule.
 Ассистент может подготовить только два предложения: создать обычный Course
 draft либо добавить пустую Lesson без Components; запись выполняется отдельным
-explicit Apply после проверки action card. Этот срез ещё не развёрнут и не
-проходил production postflight. Он не добавляет migration или физическую schema.
+explicit Apply после проверки action card. Coolify развернул exact functional
+SHA `8912dac0def7c2ba67bb4eeb240c52bfd0a55192`; running container использует тот
+же `SOURCE_COMMIT`, image digest
+`sha256:5c6870c2513ea4075664026207db9b80db9fbdefd89e419a96ddbda38b4c2bb9`,
+restart count `0`. HTTPS/login/guest redirect и новые assistant routes прошли
+production postflight: `/login` и `robots.txt` отвечают `200`, guest `/courses`
+перенаправляется в `/login`, оба `POST /api/v2/assistant*` fail closed с `401`.
+Authenticated provider/action smoke не выполнялся из-за отсутствия production
+Account session и не заявляется пройденным. Срез не добавляет migration или
+физическую schema.
 
 **Previous deployed data baseline:** поверх group/audience baseline были введены canonical
 `LearnerProfile`, teacher-local relation `teacher_learner` и явный provenance
@@ -544,7 +552,7 @@ application service/contracts внутри authenticated web request.
   tables принадлежат отдельному M2–M3 contract.
 - Развёрнутый course-scoped Assistant route читает bounded Course/selected
   Lesson context и отвечает текстом без mutation commands, MCP tools или apply
-  routes. Его прежний Course/Lesson dialog удалён из current unreleased UI;
+  routes. Его прежний Course/Lesson dialog удалён из current deployed UI;
   старый `/api/v2/courses/[courseId]/assistant` пока может оставаться
   compatibility route, но не является интерфейсом нового System Assistant.
 - Lesson planning, compatibility course-scoped Assistant и global Course
@@ -571,7 +579,7 @@ application service/contracts внутри authenticated web request.
   server log event. Persistent quota/ledger, billing, balance и AI change sets
   отсутствуют; process-local rate limit не является пользовательской квотой.
 
-#### System Assistant — current unreleased code boundary
+#### System Assistant — current deployed boundary
 
 - `SystemAssistantProvider` и один floating `SystemAssistant` монтируются в
   protected `src/app/(app)/layout.tsx`, а не в public landing/Auth/demo и не в
@@ -614,8 +622,9 @@ application service/contracts внутри authenticated web request.
   сохраняет известный ordering debt.
 - Контракты/service/routes/UI и contract tests находятся в
   `src/modules/ai/system-assistant-*`, `src/app/api/v2/assistant/` и
-  `src/components/assistant/`. Срез реализован в source, но deployment и
-  production acceptance не заявляются.
+  `src/components/assistant/`. Exact functional release `8912dac` развёрнут;
+  authenticated provider/action acceptance остаётся отдельным непройденным
+  postflight, а не подразумевается из HTTP availability.
 
 Base RouterAI routes/UI, server-only secret boundary и provider postflight
 no-write flows развёрнуты и проверены в production. Release acceptance описан в
@@ -902,7 +911,7 @@ Current identity API добавляет namespaces `me/learning-profile`,
 вызываются только server adapter; browser DTO проходят strict output schemas и
 не содержат Auth IDs, token/email digests, internal email или credential state.
 
-Current unreleased catalog API добавляет authenticated
+Current deployed catalog API добавляет authenticated
 `GET /api/v2/course-catalog`, detail по publication ID, `POST .../copy`,
 а также Course-owned `publication` и `duplicate` routes. Все elevated
 table/Storage operations остаются за server context после обычной
@@ -918,11 +927,12 @@ items. Длинные `IN` hydration-запросы разбиваются на 
 `/api/v2/courses/[courseId]/`. Planning/chat routes вызывают provider; apply
 routes только валидируют preview и выполняют существующие application commands.
 
-Current unreleased System Assistant добавляет authenticated
+Current deployed System Assistant добавляет authenticated
 `POST /api/v2/assistant` и `POST /api/v2/assistant/actions/apply`. Они не
 заменяют Course/Lesson planning routes: первый отвечает или возвращает одно
 подтверждаемое create proposal, второй после explicit Apply вызывает обычный
-Course Builder service. Эти routes и floating UI ещё не заявлены как deployed.
+Course Builder service. Routes и floating UI развёрнуты в release `8912dac`;
+authenticated provider/action smoke пока не выполнен.
 
 Дополнительные project surfaces:
 

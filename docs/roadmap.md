@@ -86,13 +86,14 @@
   preview → explicit apply и read-only ephemeral assistant; production runtime
   получает API key из server-side secret environment и использует проверенный
   default `google/gemini-2.5-flash-lite`.
-- **Current unreleased follow-up:** один global System Assistant смонтирован в
+- **Current deployed follow-up:** один global System Assistant смонтирован в
   protected `(app)` layout вместо Course/Lesson header dialog. Он получает
   allowlisted page context, читает bounded authorized проекции Account и
   открытой страницы и может только подготовить action card для создания Course
   draft или пустой Lesson. Запись выполняется отдельным explicit Apply через
   canonical Course Builder service. Код и tests реализованы без schema change;
-  deployment/postflight этого follow-up не заявлены.
+  exact functional SHA `8912dac` развёрнут в Coolify. HTTP/guest/API boundary
+  postflight зелёный; authenticated provider/action smoke ещё не выполнен.
 - Browser-smoke переведён на актуальную AES-GCM app-session; строгий
   production-mode gate покрывает guest/auth redirects, Course → Lesson →
   backlink, computed visual contract и mobile overflow без обращения к
@@ -299,7 +300,7 @@ Definition of Done:
 - attachment metadata без скачивания/парсинга file contents;
 - отсутствие schema migration, quota/ledger и billing.
 
-**Current unreleased System Assistant follow-up:**
+**Current deployed System Assistant follow-up:**
 
 - один floating widget живёт в protected Account layout и не показывается на
   landing/Auth/demo; прежние кнопки course-scoped assistant удалены из Course и
@@ -319,8 +320,9 @@ Definition of Done:
   actor+target mutex и 10-минутный idempotency result cache работают только в
   памяти одного process; restart/другая replica их не видят. Proposal/action не
   имеют persisted/signature binding с предыдущим provider turn;
-- новая DB migration, provider/quota persistence и deployment в этот follow-up
-  не входят.
+- новая DB migration и provider/quota persistence в этот follow-up не входят;
+  deployment exact functional SHA `8912dac` завершён, authenticated
+  provider/action smoke остаётся next operational check.
 
 **Next — operational hardening:**
 

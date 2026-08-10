@@ -17,11 +17,13 @@ cross-provider AI. Phased M1–M6 migrations, exact Coolify deploy и postflight
 завершены. Homework, learner Course consumption и live Student Screen sync
 остаются later.
 
-Current unreleased application follow-up добавляет global System Assistant в
+Current deployed application follow-up добавляет global System Assistant в
 protected `(app)` layout. Он не меняет Lesson hierarchy или schema: по
 allowlisted page context читает bounded authorized проекции, а после отдельного
 explicit Apply может только создать обычный Course draft либо пустую Lesson без
-Components/Slides. Этот follow-up ещё не заявлен как deployed.
+Components/Slides. Exact functional release `8912dac` развёрнут; HTTP/guest/API
+boundary postflight зелёный, authenticated provider/action smoke ещё не
+выполнен.
 
 ## Product decision
 
@@ -372,7 +374,7 @@ course-wide каталога. Она не создаёт lesson attachment, не
 reload. Перестройка navigation, inline settings/audience и pre-persistence shell
 не меняют Course/Audience/attachment contracts или физическую schema.
 
-Current unreleased UI не размещает отдельную кнопку assistant в Course или
+Current deployed UI не размещает отдельную кнопку assistant в Course или
 Lesson header. Один floating widget смонтирован выше этих workspace в protected
 Account layout; Course workspace регистрирует только typed `courseId` и
 optional selected `lessonId`, а fullscreen preview — текущую preview Lesson.
@@ -564,7 +566,7 @@ Lesson/Component IDs и создаёт те же Lesson/Component entities че�
 service. Новые Components остаются `staff_only`; AI не создаёт Student Screen
 Slide и не публикует материал ученику автоматически.
 
-Current unreleased System Assistant добавляет ещё один, более узкий create
+Current deployed System Assistant добавляет ещё один, более узкий create
 flow: chat может только подготовить proposal обычной пустой Lesson для точного
 owner-scoped Course. Карточка показывает Course, title и optional teacher
 comment; только отдельный Apply вызывает canonical `addLesson`. Этот flow не
@@ -654,7 +656,7 @@ Implementation map:
 - MCP: `src/modules/course-builder/mcp/`;
 - AI provider/contracts/service: `src/modules/ai/`;
 - AI routes: `src/app/api/v2/courses/[courseId]/ai-*/`, compatibility
-  `assistant/` и current unreleased `src/app/api/v2/assistant/`;
+  `assistant/` и deployed `src/app/api/v2/assistant/`;
 - System Assistant UI/context: `src/components/assistant/`,
   `src/app/(app)/layout.tsx`, `src/app/styles/system-assistant.css`;
 - authoring UI: `src/components/course-builder/lesson-authoring-workspace.tsx`;
@@ -707,9 +709,9 @@ provider call → validated preview → teacher confirmation → application com
 flow. Он может видеть ограниченный Course context и выбранную Lesson, но не
 вызывает commands/tools и не утверждает, что изменил данные. Его старый route
 может временно оставаться compatibility boundary, но Course/Lesson dialog и
-header actions удалены из current unreleased UI.
+header actions удалены из current deployed UI.
 
-Current unreleased global System Assistant монтируется один раз только в
+Current deployed global System Assistant монтируется один раз только в
 protected `(app)` layout. Browser передаёт strict allowlisted surface и typed
 view текущей вкладки, Course/Lesson IDs при допустимости, локальную дату и UTC offset; DOM,
 произвольный URL/search/hash и несохранённые form values не передаются. Server
@@ -733,7 +735,8 @@ concurrency guard, actor+target mutex и 10-минутный idempotency result 
 живут только в одном Node process. Restart или другая replica их не видят;
 durable action ledger, distributed exactly-once и сериализация concurrent
 Lesson append остаются next hardening. Новая schema/migration в System
-Assistant slice отсутствует, а deployment/postflight не заявлены.
+Assistant slice отсутствует. Exact functional release `8912dac` развёрнут;
+authenticated provider/action postflight пока не выполнен.
 
 Lesson planning, compatibility course-scoped Assistant и global Course context
 получают выбранные direct learners, teacher-local

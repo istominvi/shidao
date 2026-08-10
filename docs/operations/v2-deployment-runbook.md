@@ -268,6 +268,14 @@ Production execution log, 9 августа 2026 года (current M6 stage):
   `20260810035033_course_publication_catalog.sql` применена после full-format
   backup; HTTP postflight сохранил landing/demo/guest/CSRF boundaries и не
   обнаружил runtime warning/error;
+- System Assistant exact functional SHA
+  `8912dac0def7c2ba67bb4eeb240c52bfd0a55192` автоматически подхвачен после
+  push `main`; Coolify завершил rolling update со статусом `Finished`. Running
+  container имеет совпадающие image tag и `SOURCE_COMMIT`, image digest
+  `sha256:5c6870c2513ea4075664026207db9b80db9fbdefd89e419a96ddbda38b4c2bb9`,
+  restart count `0`. `/login` и `robots.txt` отвечают `200`, guest `/courses`
+  перенаправляется в `/login`, оба новых assistant POST routes без Account
+  session возвращают `401`; authenticated provider/action smoke не выполнялся;
 - authenticated browser postflight прошёл roleless courses/schedule/students,
   self-profile, observer и settings surfaces без console errors. Disposable
   Account удалён после dependency audit: fixture counts `0/0/0`, production

@@ -1,7 +1,7 @@
 # AI provider integration
 
-**Статус:** canonical contract для deployed Course AI и current unreleased
-global System Assistant
+**Статус:** canonical contract для deployed Course AI и deployed global System
+Assistant
 
 **Актуально на:** 10 августа 2026 года
 
@@ -16,15 +16,15 @@ schema и read-only UI postflight завершены. Provider smoke с непу
 postflight.
 
 Global System Assistant, protected floating UI и routes
-`/api/v2/assistant*` реализованы в current source, но ещё не объявлены
-развёрнутыми и не имеют production postflight. Все deployment утверждения ниже
-относятся только к перечисленным released Course/Lesson AI baselines.
+`/api/v2/assistant*` развёрнуты в exact functional release `8912dac`.
+Coolify/running-container SHA и HTTP/guest/API boundary postflight подтверждены;
+authenticated provider/action smoke ещё не выполнен и не заявляется пройденным.
 
 **Schema state:** AI authoring не добавляет provider/quota persistence; он читает
 bounded projection из `teacher_learner`, `lesson_run` и `learning_record`.
 Identity slice отдельно хранит course-scoped authorization в
 `learner_ai_consent`; это не открывает provider raw history или teacher API.
-Unreleased System Assistant также не меняет PostgreSQL schema и не добавляет
+System Assistant также не меняет PostgreSQL schema и не добавляет
 таблицу dialog/action/idempotency.
 
 ## Граница текущего среза
@@ -41,7 +41,7 @@ Unreleased System Assistant также не меняет PostgreSQL schema и н
 не проводит занятия, не управляет Student Screen, не вызывает tools и не меняет
 Course из чата.
 
-Current unreleased follow-up заменяет course-owned dialog в UI одним global
+Current deployed follow-up заменяет course-owned dialog в UI одним global
 System Assistant внутри protected Account layout. Он отвечает по bounded
 authorized данным текущего Account и открытой страницы и имеет ровно две
 подтверждаемые команды: создать обычный Course draft или добавить пустую Lesson
@@ -205,7 +205,7 @@ completion после owner-scoped `getCourse` и чтения завершён�
 execution или MCP transport. System contract прямо запрещает утверждать, что
 ассистент уже изменил Course.
 
-Прежний Course/Lesson dialog удалён из current unreleased UI. Сам route пока
+Прежний Course/Lesson dialog удалён из current deployed UI. Сам route пока
 может оставаться для compatibility, но global widget его не вызывает. История
 этого старого dialog по контракту была ephemeral:
 
@@ -217,7 +217,7 @@ execution или MCP transport. System contract прямо запрещает у
 Следовательно, это **read-only ephemeral assistant**, а не persisted Course chat,
 change history или автономный editor.
 
-## Global System Assistant — current unreleased boundary
+## Global System Assistant — current deployed boundary
 
 `SystemAssistantProvider` и единственный floating `SystemAssistant` монтируются
 в `src/app/(app)/layout.tsx` после Account guard. Public landing, Auth и
@@ -460,10 +460,16 @@ course-scoped subject consent и через sanitized server projection; teacher
 
 ## Release acceptance
 
-Current global System Assistant code не входит в перечисленные ниже releases.
-Для него добавлены strict contract/service/UI-boundary tests, но deployment,
-production provider smoke и authenticated browser postflight пока не
-заявляются.
+Global System Assistant входит в functional release
+`8912dac0def7c2ba67bb4eeb240c52bfd0a55192`. Release gate прошёл typecheck,
+lint, 405/405 unit/contract tests, production build, 21/21 browser smoke,
+format и diff checks. Coolify завершил rollout со статусом `Finished`; running
+container имеет тот же `SOURCE_COMMIT`, image digest
+`sha256:5c6870c2513ea4075664026207db9b80db9fbdefd89e419a96ddbda38b4c2bb9` и
+restart count `0`. Production `/login`/`robots.txt` отвечают `200`, guest
+`/courses` перенаправляется в `/login`, а оба новых POST route без Account
+session возвращают `401`. Authenticated provider/action smoke не выполнялся и
+не считается пройденным.
 
 Release `0276aed` подтвердил production routes/UI, server-only RouterAI
 boundary и наличие runtime secret без раскрытия его значения. Runtime закреплён
