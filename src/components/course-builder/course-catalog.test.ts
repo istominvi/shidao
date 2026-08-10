@@ -23,8 +23,10 @@ function course(
     teacherPreferences: "Приватная заметка",
     status: "draft",
     lessonCount: 0,
+    publication: null,
     assembledAt: null,
     createdAt: "2026-08-01T10:00:00.000Z",
+    publicationContentUpdatedAt: "2026-08-01T10:00:00.000Z",
     updatedAt: "2026-08-01T10:00:00.000Z",
     ...overrides,
     id: overrides.id,
@@ -145,10 +147,12 @@ test("course catalog reports active filters and Russian result labels", () => {
 });
 
 test("course catalog UI exposes accessible search, filters, views, and states", () => {
-  const source = readFileSync(
+  const source = [
     "src/components/course-builder/courses-index.tsx",
-    "utf8",
-  );
+    "src/components/course-builder/owned-courses-panel.tsx",
+  ]
+    .map((path) => readFileSync(path, "utf8"))
+    .join("\n");
 
   assert.match(source, /type="search"/);
   assert.match(source, />\s*Предмет\s*</);

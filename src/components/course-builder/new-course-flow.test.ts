@@ -18,6 +18,10 @@ const coursesIndexSource = readFileSync(
   "src/components/course-builder/courses-index.tsx",
   "utf8",
 );
+const ownedCoursesSource = readFileSync(
+  "src/components/course-builder/owned-courses-panel.tsx",
+  "utf8",
+);
 const newCoursePageSource = readFileSync(
   "src/app/(app)/courses/new/page.tsx",
   "utf8",
@@ -119,17 +123,20 @@ test("new course creation resumes the persisted Course after a partial failure",
 });
 
 test("courses pages read persisted data inside the roleless Account tree", () => {
-  assert.match(coursesPageSource, /<CoursesIndex \/>/);
-  assert.match(coursesIndexSource, /courseBuilderRequest/);
-  assert.match(coursesIndexSource, /\/api\/v2\/courses/);
-  assert.match(coursesIndexSource, /toCourseRoute\(course\.id\)/);
+  assert.match(
+    coursesPageSource,
+    /<CoursesIndex[\s\S]*?initialTab=\{initialTab\}/,
+  );
+  assert.match(ownedCoursesSource, /courseBuilderRequest/);
+  assert.match(ownedCoursesSource, /\/api\/v2\/courses/);
+  assert.match(ownedCoursesSource, /toCourseRoute\(course\.id\)/);
   assert.match(newCoursePageSource, /<NewCourseForm \/>/);
   assert.match(appLayoutSource, /resolveAppLayoutRedirect/);
   assert.doesNotMatch(appLayoutSource, /activeProfile !== "teacher"/);
   assert.match(primaryNavSource, /label: "Курсы"/);
   assert.match(primaryNavSource, /href: ROUTES\.courses/);
 
-  const combined = `${clientSource}\n${formSource}\n${coursesPageSource}\n${coursesIndexSource}`;
+  const combined = `${clientSource}\n${formSource}\n${coursesPageSource}\n${coursesIndexSource}\n${ownedCoursesSource}`;
   assert.doesNotMatch(combined, /localStorage/);
   assert.doesNotMatch(combined, /fixtures?/i);
 });

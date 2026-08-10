@@ -279,6 +279,10 @@ export function createCourseBuilderService(
   }
 
   return {
+    async getActorAccountId(actor: CourseBuilderActor) {
+      return requireAccountId(actor);
+    },
+
     async listCourses(actor: CourseBuilderActor): Promise<CourseSummary[]> {
       await requireAccountId(actor);
       return repository.listCourses();

@@ -51,7 +51,14 @@ test("course navigation keeps settings persisted and materials course-wide", () 
   assert.match(workspace, />\s*Настройки\s*</);
   assert.match(workspace, /title="Настройки курса"/);
   assert.match(workspace, /COURSE_WORKSPACE_TABS/);
-  assert.match(workspace, /CourseMaterialsPanel course=\{course\}/);
+  assert.match(
+    workspace,
+    /function CourseAboutPanel[\s\S]*?CourseDescriptionPanel course=\{course\}[\s\S]*?CourseSourcesPanel[\s\S]*?CourseMaterialsPanel course=\{course\}/,
+  );
+  assert.match(
+    workspace,
+    /aria-label="Описание, источники и материалы курса"[\s\S]*?tabIndex=\{0\}/,
+  );
   assert.match(materials, /course\.attachments\.map/);
   assert.match(materials, /прикреплены ко всему курсу/);
   assert.match(materials, /Урок не получает собственную копию файла/);
@@ -62,7 +69,7 @@ test("course navigation keeps settings persisted and materials course-wide", () 
   );
 });
 
-test("course and lesson use the requested five-tab hierarchy", () => {
+test("course uses three consolidated tabs while lesson keeps five surfaces", () => {
   const workspace = source(workspacePath);
   const authoring = source(lessonAuthoringPath);
   const tabs = source("src/components/ui/workspace-tabs.tsx");
@@ -70,15 +77,10 @@ test("course and lesson use the requested five-tab hierarchy", () => {
     "src/components/course-builder/course-workspace-navigation.ts",
   );
 
-  for (const label of [
-    "Уроки",
-    "Описание",
-    "Источники",
-    "Материалы",
-    "История",
-  ]) {
+  for (const label of ["Уроки", "О курсе", "История"]) {
     assert.match(navigation, new RegExp(`label: "${label}"`));
   }
+  assert.doesNotMatch(navigation, /label: "Описание"|label: "Источники"/);
   for (const label of [
     "План",
     "Экран ученика",

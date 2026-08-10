@@ -73,6 +73,7 @@ const E2E_COURSE_ROW = {
   archived_at: null,
   created_at: "2026-08-05T08:00:00.000Z",
   updated_at: "2026-08-05T09:00:00.000Z",
+  publication_content_updated_at: "2026-08-05T09:00:00.000Z",
 };
 
 const E2E_LESSON_ROW = {
@@ -1410,11 +1411,24 @@ async function handleMockSupabase(
   }
 
   if (requestUrl.pathname === "/rest/v1/account") {
+    const requestedAuthUserId = readEqFilter(requestUrl, "auth_user_id");
+    const requestedAccountId = readEqFilter(requestUrl, "id");
+    const requestedStatus = readEqFilter(requestUrl, "status");
+    const matchesFixture =
+      (!requestedAuthUserId || requestedAuthUserId === E2E_ADULT_USER_ID) &&
+      (!requestedAccountId || requestedAccountId === E2E_ACCOUNT_ID) &&
+      (!requestedStatus || requestedStatus === "active");
     json(
       response,
       200,
-      readEqFilter(requestUrl, "auth_user_id") === E2E_ADULT_USER_ID
-        ? [{ id: E2E_ACCOUNT_ID, auth_user_id: E2E_ADULT_USER_ID }]
+      matchesFixture
+        ? [
+            {
+              id: E2E_ACCOUNT_ID,
+              auth_user_id: E2E_ADULT_USER_ID,
+              status: "active",
+            },
+          ]
         : [],
     );
     return;
@@ -1429,6 +1443,22 @@ async function handleMockSupabase(
         ? []
         : [E2E_COURSE_ROW],
     );
+    return;
+  }
+
+  if (requestUrl.pathname === "/rest/v1/course_publication") {
+    json(response, 200, []);
+    return;
+  }
+
+  if (
+    requestUrl.pathname === "/rest/v1/rpc/list_course_publication_catalog_admin"
+  ) {
+    json(response, 200, {
+      courses: [],
+      facets: { subjects: [], levels: [] },
+      nextOffset: null,
+    });
     return;
   }
 
@@ -3518,6 +3548,23 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       Math.abs(Number.parseFloat(coursesVisual.buttonFontSize) - 14.08) < 0.1,
     );
 
+    await runtime.page
+      .getByRole("tab", { name: "Каталог", exact: true })
+      .click();
+    await runtime.page.waitForURL(/\/courses\?tab=catalog$/);
+    await runtime.page
+      .getByRole("heading", { name: "Готовые курсы", exact: true, level: 2 })
+      .waitFor();
+    await runtime.page
+      .getByRole("heading", {
+        name: "В каталоге пока нет курсов",
+        exact: true,
+      })
+      .waitFor();
+    await runtime.page.getByRole("tab", { name: "Мои", exact: true }).click();
+    await runtime.page.waitForURL(/\/courses$/);
+    await courseLink.waitFor();
+
     const courseSearch = runtime.page.getByRole("searchbox", {
       name: "Поиск",
       exact: true,
@@ -3674,10 +3721,22 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
     let html = await runtime.page.content();
     assert.match(html, /aria-label="Разделы курса"/);
     assert.match(html, /Уроки/);
-    assert.match(html, /Описание/);
-    assert.match(html, /Источники/);
-    assert.match(html, /Материалы/);
+    assert.match(html, /О курсе/);
     assert.match(html, /История/);
+
+    await runtime.page
+      .getByRole("tab", { name: "О курсе", exact: true })
+      .click();
+    await runtime.page
+      .getByRole("heading", { name: "Описание курса", exact: true, level: 2 })
+      .waitFor();
+    await runtime.page
+      .getByRole("heading", { name: "Источники", exact: true, level: 2 })
+      .waitFor();
+    await runtime.page
+      .getByRole("heading", { name: "Материалы", exact: true, level: 2 })
+      .waitFor();
+    await runtime.page.getByRole("tab", { name: /^Уроки/ }).click();
 
     const lessonButton = runtime.page.getByRole("button", {
       name: new RegExp(E2E_LESSON_TITLE),

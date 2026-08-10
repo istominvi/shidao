@@ -43,6 +43,7 @@ type CourseRow = {
   archived_at: string | null;
   created_at: string;
   updated_at: string;
+  publication_content_updated_at: string;
 };
 
 type LessonRow = {
@@ -51,6 +52,7 @@ type LessonRow = {
   position: number;
   title: string;
   summary: string | null;
+  estimated_duration_minutes?: number | null;
   created_at: string;
   updated_at: string;
 };
@@ -203,6 +205,8 @@ function mapCourse(row: CourseRow, lessonCount = 0): CourseSummary {
     assembledAt: row.assembled_at,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    publicationContentUpdatedAt: row.publication_content_updated_at,
+    publication: null,
   };
 }
 
@@ -217,6 +221,7 @@ function mapLesson(
     position: row.position,
     title: row.title,
     summary: row.summary ?? "",
+    estimatedDurationMinutes: row.estimated_duration_minutes ?? null,
     components,
     studentSlides,
     createdAt: row.created_at,

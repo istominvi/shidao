@@ -1,5 +1,6 @@
 import type { ComponentTypeKey } from "./registry/contracts";
 import type { ComponentVisibility } from "./component-visibility";
+import type { OwnedCoursePublication } from "@/modules/course-publications/domain";
 
 export type { ComponentVisibility } from "./component-visibility";
 
@@ -21,6 +22,8 @@ export type CourseSummary = {
   assembledAt: string | null;
   createdAt: string;
   updatedAt: string;
+  publicationContentUpdatedAt: string;
+  publication?: OwnedCoursePublication | null;
 };
 
 export type CourseAsset = {
@@ -62,6 +65,7 @@ export type CourseLesson = {
   position: number;
   title: string;
   summary: string;
+  estimatedDurationMinutes?: number | null;
   components: LessonComponent[];
   studentSlides: LessonStudentSlide[];
   createdAt: string;

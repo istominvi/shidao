@@ -13,7 +13,7 @@ import {
 test("course and lesson tabs follow the product hierarchy", () => {
   assert.deepEqual(
     COURSE_WORKSPACE_TABS.map((item) => item.label),
-    ["Уроки", "Описание", "Источники", "Материалы", "История"],
+    ["Уроки", "О курсе", "История"],
   );
   assert.deepEqual(
     LESSON_WORKSPACE_TABS.map((item) => item.label),

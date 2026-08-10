@@ -39,6 +39,7 @@ function emptyCourse(targetLessonCount = 2): CourseWorkspace {
     lessonCount: 0,
     assembledAt: null,
     createdAt: NOW,
+    publicationContentUpdatedAt: NOW,
     updatedAt: NOW,
     lessons: [],
     attachments: [],

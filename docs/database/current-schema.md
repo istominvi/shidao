@@ -1,12 +1,14 @@
 # Current database schema
 
-**Статус:** agent-first guide для production learner-identity M6 stage
+**Статус:** current production learner-identity M6 + Course publication
+catalog schema
 
 **Production schema head:**
-`20260809090000_learner_identity_provisional_auth_metadata_sync.sql`
+`20260810035033_course_publication_catalog.sql`
 
 **Repository schema head:**
-`20260809090000_learner_identity_provisional_auth_metadata_sync.sql`
+`20260810035033_course_publication_catalog.sql` — применена к production
+10 августа 2026 года owner connection с `ON_ERROR_STOP` одной транзакцией
 
 **Legacy contract migration:**
 `20260807065038_learner_identity_legacy_contract_cleanup.sql` — применена после
@@ -19,9 +21,10 @@ Admin create/delete probe
 
 **SQL snapshot:**
 [`supabase/schema/current-schema.sql`](../../supabase/schema/current-schema.sql)
-в repository зафиксирован из проверенной post-M6 production базы. Strict
-signature `shidao-v2-contract` подтверждена 9 августа 2026 года; snapshot
-SHA-256 — `584ebb96dc8d96f1eb508e7eae836edb8125a9fefe2a59e9cb362af54bba5a26`.
+содержит свежий production dump после
+`20260810035033_course_publication_catalog.sql`, снятый штатным script через
+read-only SSH tunnel. Strict signature осталась `shidao-v2-contract`, SHA-256
+snapshot — `2b1a3f475074940e69e1dee6ba12edc8d3103a23a01c640ec342e3cb31f0af46`.
 
 ## Read order для DB-задач
 
@@ -45,6 +48,7 @@ SHA-256 — `584ebb96dc8d96f1eb508e7eae836edb8125a9fefe2a59e9cb362af54bba5a26`.
 | M4    | `20260807065038_learner_identity_legacy_contract_cleanup.sql`          | final RESTRICT cleanup dormant role helpers/types/Data API grants и rollback-only legacy security dual-writes; без удаления legacy rows/tables |
 | M5    | `20260809084500_learner_identity_auth_deferred_invariant_security.sql` | узкий `SECURITY DEFINER` boundary для deferred exactly-one invariant при реальном GoTrue commit; без расширения Auth table privileges          |
 | M6    | `20260809090000_learner_identity_provisional_auth_metadata_sync.sql`   | trusted two-phase GoTrue `app_metadata` sync для pristine provisional child Account с fail-closed защитой от позднего downgrade                |
+| C1    | `20260810035033_course_publication_catalog.sql`                        | immutable Course publication revisions, private publication Storage, independent catalog copy/duplicate и closed admin RPC                     |
 
 M1–M3 являются additive/compatible expand для roleless web. M4 была withheld из
 первого deploy и применена только после доказательства, что running и rollback
@@ -114,27 +118,133 @@ Production Auth hardening evidence 9 августа 2026 года:
 - финальный проверенный post-M6 production snapshot имеет SHA-256
   `584ebb96dc8d96f1eb508e7eae836edb8125a9fefe2a59e9cb362af54bba5a26`.
 
+Production Course publication evidence 10 августа 2026 года:
+
+- verified full-format backup
+  `/root/shidao-db-backups/shidao-postgres-before-course-catalog-20260810T052807Z.dump`:
+  size `1018939` bytes, SHA-256
+  `b76de93b2d139873628ba067a56d45b7f80a959da7fbf82d2c8334cc0fd867db`;
+- migration checksum
+  `d260e37bf420e2c9777586777318e84b1768b3bd347ccfe05d49b5c675d40c0d`
+  применена `supabase_admin` с `ON_ERROR_STOP` и завершилась `COMMIT`;
+- исходные counts сохранились: Account `19`, Course `5`, Lesson `13`,
+  Component `80`; у всех Course заполнен publication content clock;
+- четыре publication table пусты до первого пользовательского publish, имеют
+  RLS и закрыты для `anon`/`authenticated`; пять admin RPC доступны только
+  `postgres`/`service_role`;
+- private bucket `course-publication-assets` создан с лимитом 10 MiB и без
+  user Storage policies; PostgREST schema cache видит четыре table и catalog/
+  publish/clone RPC, прямой anon read получает `401/42501`;
+- service-role catalog RPC вернул пустой catalog/facets, свежий production
+  snapshot имеет SHA-256
+  `2b1a3f475074940e69e1dee6ba12edc8d3103a23a01c640ec342e3cb31f0af46`.
+
 ## Current repository tables
 
 ### Course Builder, audience и history
 
-| Table                  | Назначение                                                                                                      |
-| ---------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `account`              | единая roleless login identity; status active, provisional, suspended или deleted                               |
-| `course`               | Account-owned authoring Course                                                                                  |
-| `lesson`               | ordered Lesson с обязательным title и teacher-only summary                                                      |
-| `lesson_component`     | единственный ordered component list Lesson                                                                      |
-| `lesson_student_slide` | persisted learner presentation grouping без собственного content                                                |
-| `stored_file`          | Account-owned metadata private Storage object                                                                   |
-| `course_attachment`    | ownership-checked Course ↔ StoredFile                                                                           |
-| `learner_profile`      | canonical учебная identity; один linked profile на active/provisional Account либо offline `account_id IS NULL` |
-| `teacher_learner`      | teacher-local display name и reversible archive relation                                                        |
-| `learner_group`        | reusable Account-owned group                                                                                    |
-| `learner_group_member` | group ↔ canonical profile                                                                                       |
-| `course_learner`       | direct Course audience source                                                                                   |
-| `course_learner_group` | group Course audience source                                                                                    |
-| `lesson_run`           | конкретное назначение/проведение Lesson                                                                         |
-| `learning_record`      | expected learner, затем finalized individual result и recorder provenance                                       |
+| Table                         | Назначение                                                                                                      |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `account`                     | единая roleless login identity; status active, provisional, suspended или deleted                               |
+| `course`                      | Account-owned authoring Course; отдельный publication-content clock                                             |
+| `lesson`                      | ordered Lesson с обязательным title и teacher-only summary                                                      |
+| `lesson_component`            | единственный ordered component list Lesson                                                                      |
+| `lesson_student_slide`        | persisted learner presentation grouping без собственного content                                                |
+| `stored_file`                 | Account-owned metadata private Storage object                                                                   |
+| `course_attachment`           | ownership-checked Course ↔ StoredFile                                                                           |
+| `course_publication`          | stable catalog listing; nullable live source, publisher name snapshot, Shidao/status/current revision           |
+| `course_publication_revision` | immutable allowlisted Course/Lesson/Component/Slide/material snapshot, hash и rights audit                      |
+| `course_publication_asset`    | immutable private publication copy metadata; nullable live StoredFile provenance                                |
+| `course_publication_origin`   | immutable provenance установленного из каталога рабочего Course                                                 |
+| `learner_profile`             | canonical учебная identity; один linked profile на active/provisional Account либо offline `account_id IS NULL` |
+| `teacher_learner`             | teacher-local display name и reversible archive relation                                                        |
+| `learner_group`               | reusable Account-owned group                                                                                    |
+| `learner_group_member`        | group ↔ canonical profile                                                                                       |
+| `course_learner`              | direct Course audience source                                                                                   |
+| `course_learner_group`        | group Course audience source                                                                                    |
+| `lesson_run`                  | конкретное назначение/проведение Lesson                                                                         |
+| `learning_record`             | expected learner, затем finalized individual result и recorder provenance                                       |
+
+### Course publication repository contract (current production schema)
+
+В UI остаётся одна сущность Course. Storage разделяет редактируемый owner
+Course и immutable catalog representation:
+
+- `course_publication.source_course_id` nullable с `ON DELETE SET NULL`, поэтому
+  публикация и её revisions переживают удаление рабочего Course; partial unique
+  index сохраняет one-publication-per-live-source;
+- revision хранит `schemaVersion=1`, public Course fields и иерархию
+  `Course → Lesson → ordered Components`; Slides остаются presentation
+  projection, Lesson Step отсутствует;
+- lesson/component/slide/material `ref` являются publication-local UUID и
+  валидируются против source graph по canonical positions, а не равенству live
+  row UUID; `studentSlideRef` сверяется через position соответствующего Slide;
+- для image/file/slideshow SQL строит exact
+  `sourceStoredFileId → publicationAssetId` map, remap-ит исходный payload и
+  сравнивает весь JSONB. Поэтому `storedFileId:null` сохраняется, а подмена
+  `alt`, label, openMode или slideshow metadata отклоняется;
+- snapshot исключает teacher preferences, audience/groups/learners,
+  schedules, runs, records, reports/history и consent. `staff_only` Components
+  входят как authored teacher content, но не становятся learner projection;
+- каждое обновление создаёт новую immutable revision. Равный текущей revision
+  hash + byte-equal snapshot идемпотентно переопубликует её без копирования;
+  перед acknowledgement SQL заново сверяет exact live attachments, ready
+  StoredFile metadata и наличие immutable Storage objects. Поэтому stale
+  snapshot после detach не может ложно очистить dirty state. Возврат контента
+  A→B→A разрешён как новая revision;
+- rights audit сохраняет timestamp и внутренний code
+  `shidao_catalog_reuse_v1`. Это не выбранная Creative Commons лицензия;
+- publication asset `id` локален внутри revision (composite primary key
+  `(revision_id, id)`), поэтому повторно используемый deterministic material ref
+  безопасно встречается в нескольких revisions; assets физически копируются в
+  private bucket, максимум 24 файла,
+  каждый до 10 MiB, суммарно до 120 MiB. Live StoredFile provenance nullable
+  `ON DELETE SET NULL`, immutable publication blob и metadata сохраняются;
+- cumulative immutable history одного Account ограничена 5 GiB
+  (`octet_length(snapshot::text) + asset.size_bytes` по всем revisions).
+  Publish сериализуется на Account row; те же quota triggers защищают
+  privileged direct inserts. Same-current idempotent republish не добавляет
+  bytes и не расходует quota. Отказ имеет стабильный token
+  `course_publication_account_quota_exceeded`; retention или blob deletion эта
+  migration не добавляет;
+- переход Account из `active` в любой non-active status атомарно переводит все
+  его published listings в `unpublished`. Возврат Account в `active` ничего не
+  публикует автоматически; catalog list и clone дополнительно требуют active
+  publication owner;
+- `course.publication_content_updated_at` меняется только для allowlisted
+  Course fields и authored Lesson/Component/Slide/attachment/material
+  mutations. Excluded teacher preferences и operational fields меняют обычный
+  `updated_at`, но не publication clock;
+- immutable revision фиксирует publication clock как audit в
+  `source_course_updated_at`. Mutable listing подтверждает реально
+  опубликованное состояние в `source_content_updated_at`; оба publish paths,
+  включая idempotent acknowledgement после локального edit→revert к текущему
+  snapshot, обновляют listing clock.
+  `hasUnpublishedChanges` сравнивает два Course/publication clocks, не generic
+  `updated_at` и не immutable revision timestamp;
+- compact Course fields и counts денормализованы в `course_publication` и
+  атомарно обновляются при publish. Catalog list не переносит 16 MiB snapshot;
+  subject и level facets ограничены 100 distinct case-insensitive значениями
+  каждая. Текущий выбранный filter включается в bounded facet, если такое
+  опубликованное значение существует.
+
+Все четыре publication table имеют RLS, но не имеют policies/grants для
+`anon`/`authenticated`. `postgres` и `service_role` получают table privileges;
+browser работает только через authenticated application route. Mutation
+boundary — closed `SECURITY INVOKER`, `search_path=''` RPC:
+
+- `publish_course_revision_admin(...)` и
+  `unpublish_course_publication_admin(...)`;
+- `list_course_publication_catalog_admin(...)` — DB-side query/filter/order,
+  `limit+1`, owner-only `sourceCourseId`, bounded global subject/level facets и
+  только compact listing DTO без snapshot/owner Account UUID; inactive
+  publication owners fail closed;
+- `clone_course_publication_admin(...)` — exact current published revision,
+  exact target ID/file maps, новые owner StoredFiles и origin, без operational
+  или private Course state;
+- `duplicate_course_admin(...)` — same-owner deep copy authored graph с
+  teacher preferences и безопасным reuse существующих StoredFile links, без
+  audience/history/publication state.
 
 ### Account credential boundary
 
@@ -365,14 +475,15 @@ contacts, exact timestamps, foreign titles и private comments не возвра
 
 ## RLS/ACL summary
 
-| Surface                                        | `authenticated` direct access                            | Supported boundary           |
-| ---------------------------------------------- | -------------------------------------------------------- | ---------------------------- |
-| Course/Lesson/Component/Slide/File             | existing owner-scoped permissions                        | RLS + owner service/RPC      |
-| `learner_profile`                              | own canonical row `SELECT`; no direct mutation           | supported identity workflows |
-| `teacher_learner`, groups, audience, runs      | existing teacher-scoped read; mutation via aggregate RPC | actor ownership              |
-| raw `learning_record`                          | recorder-scoped teacher `SELECT` only                    | lifecycle RPC                |
-| Account credential/identity/observer/AI tables | none for `anon/authenticated`                            | narrow RPC/server adapter    |
-| learner-safe self/observer history             | no raw table access                                      | safe projection RPC          |
+| Surface                                        | `authenticated` direct access                            | Supported boundary                                  |
+| ---------------------------------------------- | -------------------------------------------------------- | --------------------------------------------------- |
+| Course/Lesson/Component/Slide/File             | existing owner-scoped permissions                        | RLS + owner service/RPC                             |
+| Publication/revision/asset/origin              | none                                                     | server-only service-role adapter + closed admin RPC |
+| `learner_profile`                              | own canonical row `SELECT`; no direct mutation           | supported identity workflows                        |
+| `teacher_learner`, groups, audience, runs      | existing teacher-scoped read; mutation via aggregate RPC | actor ownership                                     |
+| raw `learning_record`                          | recorder-scoped teacher `SELECT` only                    | lifecycle RPC                                       |
+| Account credential/identity/observer/AI tables | none for `anon/authenticated`                            | narrow RPC/server adapter                           |
+| learner-safe self/observer history             | no raw table access                                      | safe projection RPC                                 |
 
 M1 включает RLS и полностью закрывает direct browser access к legacy
 preference/security. Expand может сохранять только server-side rollback
@@ -396,13 +507,15 @@ Snapshot обязан сохранить:
 - `trg_auth_user_sync_provisional_account` на `auth.users.raw_app_meta_data`,
   вызывающий narrow trusted same-transaction M6 sync;
 - private bucket `storage.buckets.course-assets`;
+- private bucket `storage.buckets.course-publication-assets` с лимитом 10 MiB,
+  allowlisted MIME и без browser policies;
 - owner policies `storage.objects` SELECT/INSERT/UPDATE/DELETE;
 - grants/default ACL.
 
 ## Absent from active model
 
 В active model по-прежнему нет Methodology, Lesson Step/root Step,
-`lesson_run_participant`, Lesson snapshot, persisted Run/Record status,
+`lesson_run_participant`, operational LessonRun snapshot, persisted Run/Record status,
 Homework persistence, parsing/RAG, learner Course consumption/enrollment или
 live Student Screen. Observer capability не является Parent/Guardian role, а
 AI consent не является Course access.
@@ -430,7 +543,8 @@ DATABASE_URL='postgresql://...' npm run db:snapshot
 ```
 
 После команды review полного diff обязателен. Скрипт не применяет DDL и не
-меняет migrations. Первый roleless release исторически зафиксировал проверенный
-M1–M3 `expand` snapshot. После M4 contract rollout и M5/M6 Auth hardening тот же
-script зафиксировал текущий финальный `contract` snapshot; ручное редактирование
-dump вместо refresh не допускается.
+меняет migrations. Course publication rollout снят тем же script после
+production postflight; ручное редактирование dump вместо refresh не допускается.
+Первый roleless release исторически зафиксировал проверенный M1–M3 `expand`
+snapshot. После M4 contract rollout, M5/M6 Auth hardening и C1 Course
+publication schema script фиксирует текущий `contract` snapshot.

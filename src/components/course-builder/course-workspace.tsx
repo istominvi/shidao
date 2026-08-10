@@ -21,6 +21,10 @@ import {
 } from "@/components/course-builder/course-builder-client";
 import { AiLessonPlanDialog } from "@/components/course-builder/ai-lesson-plan-dialog";
 import { AiCourseAssistantDialog } from "@/components/course-builder/ai-course-assistant-dialog";
+import {
+  CourseActions,
+  CoursePublicationBadges,
+} from "@/components/course-builder/course-actions";
 import { CourseMaterialsPanel } from "@/components/course-builder/course-materials-panel";
 import {
   COURSE_WORKSPACE_TABS,
@@ -611,7 +615,7 @@ function CourseDescriptionPanel({ course }: { course: CourseWorkspace }) {
   ] as const;
 
   return (
-    <section className="workspace-surface">
+    <section className="course-about-section">
       <div className="workspace-panel-heading">
         <div>
           <p className="workspace-eyebrow">Основные сведения</p>
@@ -641,16 +645,40 @@ function CourseDescriptionPanel({ course }: { course: CourseWorkspace }) {
 
 function CourseSourcesPanel() {
   return (
-    <section className="workspace-surface workspace-empty-panel">
-      <span className="workspace-empty-icon workspace-empty-icon-blue">
-        <FileSearch aria-hidden="true" />
-      </span>
-      <h2>Источники ещё не подключены</h2>
-      <p>
-        Здесь появятся документы и ссылки после запуска безопасного извлечения
-        текста. Прикреплённый файл пока считается материалом, а не изученным
-        источником.
-      </p>
+    <section className="course-about-section course-about-sources">
+      <div className="workspace-panel-heading">
+        <div>
+          <p className="workspace-eyebrow">Основа для подготовки уроков</p>
+          <h2>Источники</h2>
+        </div>
+      </div>
+      <div className="workspace-empty-panel">
+        <span className="workspace-empty-icon workspace-empty-icon-blue">
+          <FileSearch aria-hidden="true" />
+        </span>
+        <h3>Источники ещё не подключены</h3>
+        <p>
+          Здесь появятся документы и ссылки после запуска безопасного извлечения
+          текста. Прикреплённый файл пока считается материалом, а не изученным
+          источником.
+        </p>
+      </div>
+    </section>
+  );
+}
+
+function CourseAboutPanel({ course }: { course: CourseWorkspace }) {
+  return (
+    <section
+      className="workspace-surface course-about-panel"
+      aria-label="Описание, источники и материалы курса"
+      tabIndex={0}
+    >
+      <CourseDescriptionPanel course={course} />
+      <CourseSourcesPanel />
+      <div className="course-about-materials">
+        <CourseMaterialsPanel course={course} />
+      </div>
     </section>
   );
 }
@@ -866,6 +894,7 @@ export function CourseWorkspaceClient({
             description={`Создано уроков: ${course.lessonCount} из ${course.targetLessonCount} · готовых вложений: ${readyAttachmentCount}`}
             actions={
               <>
+                <CoursePublicationBadges publication={course.publication} />
                 <Button
                   variant="secondary"
                   onClick={() => setAssistantOpen(true)}
@@ -889,6 +918,7 @@ export function CourseWorkspaceClient({
                   <Settings className="h-4 w-4" aria-hidden="true" />
                   Настройки
                 </Button>
+                <CourseActions course={course} onChanged={reload} />
               </>
             }
           />
@@ -943,14 +973,8 @@ export function CourseWorkspaceClient({
                     onFocusRestored={() => setReturnFocusLessonId(null)}
                   />
                 ) : null}
-                {active && item.value === "description" ? (
-                  <CourseDescriptionPanel course={course} />
-                ) : null}
-                {active && item.value === "sources" ? (
-                  <CourseSourcesPanel />
-                ) : null}
-                {active && item.value === "materials" ? (
-                  <CourseMaterialsPanel course={course} />
+                {active && item.value === "about" ? (
+                  <CourseAboutPanel course={course} />
                 ) : null}
                 {active && item.value === "history" ? (
                   <CourseHistoryPanel runs={courseRuns} />

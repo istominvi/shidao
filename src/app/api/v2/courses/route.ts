@@ -9,8 +9,15 @@ export const runtime = "nodejs";
 
 export async function GET() {
   try {
-    const { actor, service } = await getCourseBuilderContext();
-    return NextResponse.json({ courses: await service.listCourses(actor) });
+    const { actor, service, publicationService } =
+      await getCourseBuilderContext();
+    const courses = await service.listCourses(actor);
+    return NextResponse.json({
+      courses: await publicationService.enrichCoursesWithPublication(
+        actor,
+        courses,
+      ),
+    });
   } catch (error) {
     return courseBuilderApiError(error);
   }

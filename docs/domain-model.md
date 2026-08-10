@@ -11,17 +11,22 @@ Account
 ├── TeacherLearner 0..N → LearnerProfile
 ├── LearnerGroup 0..N
 │   └── LearnerGroupMember 0..N → LearnerProfile
-└── Course 0..N
-    ├── direct audience → CourseLearner 0..N → LearnerProfile
-    ├── group audience → CourseLearnerGroup 0..N → LearnerGroup
-    ├── effective audience = unique(active direct learners ∪ group members)
-    ├── CourseAttachment → StoredFile → private Storage object
-    └── Lesson 1..N
-        ├── LessonComponent 1..N
-        ├── StudentScreenSlide 1..N → component assignments
-        └── LessonRun 0..N
-            └── LearningRecord 0..N → LearnerProfile
-                └── recorded_by_account_id → Account
+├── Course 0..N
+│   ├── direct audience → CourseLearner 0..N → LearnerProfile
+│   ├── group audience → CourseLearnerGroup 0..N → LearnerGroup
+│   ├── effective audience = unique(active direct learners ∪ group members)
+│   ├── CourseAttachment → StoredFile → private Storage object
+│   └── Lesson 1..N
+│       ├── LessonComponent 1..N
+│       ├── StudentScreenSlide 1..N → component assignments
+│       └── LessonRun 0..N
+│           └── LearningRecord 0..N → LearnerProfile
+│               └── recorded_by_account_id → Account
+└── CoursePublication 0..N
+    └── current CoursePublicationRevision → immutable snapshot
+        └── CoursePublicationAsset 0..N → private immutable object
+
+CoursePublicationRevision ← CoursePublicationOrigin ← independent Course copy
 ```
 
 - `Account` is the ownership identity linked one-to-one to `auth.users`.
@@ -58,6 +63,30 @@ Account
   title, instructions, or independent component order and is not a Lesson Step.
 - `CourseAttachment` links a Course to `StoredFile`; the object itself is kept
   in the existing private `course-assets` bucket.
+- `CoursePublication` is a stable catalog listing for one working Course.
+  `CoursePublicationRevision` is its immutable, allowlisted point-in-time
+  snapshot. These are persistence details, not a second user-facing product
+  object: the interface consistently calls both the working object and the
+  catalog item a «курс» and never requires a «шаблон» workflow.
+- A published revision contains the generic Course description, Lesson titles
+  and teacher comments, the canonical ordered Components, Student Screen
+  Slides and immutable copies of ready Course attachments. It excludes private
+  Course teacher preferences, audience links, learner/group identities,
+  LessonRuns, LearningRecords, reports, schedules, AI consents and history.
+- Adding a catalog item creates a new owner-scoped Course with fresh Lesson,
+  Component, Slide and StoredFile identities. `CoursePublicationOrigin` records
+  provenance without coupling later edits: updating or unpublishing the source
+  never rewrites a previously added Course.
+- Publication dirty state compares a dedicated authored-content clock with the
+  listing's acknowledged clock; audience and private teacher preferences do
+  not participate. Immutable revision history is bounded by a 5 GiB
+  per-Account DB quota, while each revision remains limited to 24 files,
+  10 MiB each and 120 MiB total.
+- Only active viewers can receive material URLs or copy a catalog Course. A
+  publisher becoming non-active is atomically unpublished and is not
+  republished on reactivation. Persisted orphan-Storage reconciliation and a
+  source-Course deletion policy remain rollout prerequisites, not hidden
+  inheritance behavior.
 - `LessonRun` is one concrete appointment/conducting attempt of the same
   Lesson. One open row acts as the editable appointment; completed/cancelled
   rows form history. Its UI state is derived from `scheduled_at`, `started_at`,
@@ -152,6 +181,12 @@ registry object.
 ## Current physical naming
 
 - Product «Материалы курса» → `stored_file` + `course_attachment`.
+- Catalog listing and immutable revisions → `course_publication` +
+  `course_publication_revision`; revision files →
+  `course_publication_asset` + private `course-publication-assets` bucket.
+- Provenance of a Course added from the catalog →
+  `course_publication_origin`. It is metadata only, not a synchronization or
+  inheritance relation.
 - Product «Слайд экрана ученика» → `lesson_student_slide`.
 - Component assignment → `lesson_component.student_slide_id`.
 - Product «Проведение урока» → `lesson_run`.
@@ -201,7 +236,10 @@ The following remain later domains, not current tables or product capabilities:
   top of finalized LearningRecord;
 - persistent AI quotas/usage ledger and AI change sets/undo;
 - parsing/RAG sources;
-- reusable cross-Course material/template library;
+- automatic merge/update of an already added Course when a newer catalog
+  revision appears;
+- organization moderation, ratings and a populated set of official ShiDao
+  catalog courses;
 - chat/notifications and external MCP.
 
 Sequencing lives in `docs/roadmap.md`. Future domains must not add Step/root

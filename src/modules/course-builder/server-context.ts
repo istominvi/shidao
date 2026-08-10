@@ -20,6 +20,18 @@ import {
   createCourseBuilderRepository,
 } from "./repository";
 import { createCourseBuilderService } from "./service";
+import {
+  CoursePublicationAccessError,
+  CoursePublicationConflictError,
+  CoursePublicationValidationError,
+} from "@/modules/course-publications/contracts";
+import {
+  CoursePublicationMutationInFlightError,
+  CoursePublicationMutationRateLimitError,
+  CoursePublicationRepositoryError,
+  CoursePublicationStorageError,
+} from "@/modules/course-publications/errors";
+import { createCoursePublicationService } from "@/modules/course-publications/service";
 
 export async function getCourseBuilderContext() {
   const session = await readAppSession();
@@ -34,9 +46,24 @@ export async function getCourseBuilderContext() {
     authUserId: session.uid,
     accessToken,
   };
+  const service = createCourseBuilderService({ repository });
+  // Keep service-role adapters behind the server context call. Importing this
+  // shared module for pure helpers/tests must not evaluate elevated adapters.
+  const [
+    { createCoursePublicationRepository },
+    { createCoursePublicationStorageBroker },
+  ] = await Promise.all([
+    import("@/modules/course-publications/repository"),
+    import("@/modules/course-publications/storage"),
+  ]);
   return {
     actor,
-    service: createCourseBuilderService({ repository }),
+    service,
+    publicationService: createCoursePublicationService({
+      repository: createCoursePublicationRepository(),
+      storage: createCoursePublicationStorageBroker(),
+      courseService: service,
+    }),
   };
 }
 
@@ -56,7 +83,34 @@ export async function courseBuilderApiError(error: unknown) {
       { status: 400 },
     );
   }
+  if (error instanceof CoursePublicationMutationRateLimitError) {
+    return NextResponse.json(
+      { error: error.message, code: error.code },
+      {
+        status: 429,
+        headers: { "Retry-After": String(error.retryAfterSeconds) },
+      },
+    );
+  }
+  if (error instanceof CoursePublicationMutationInFlightError) {
+    return NextResponse.json(
+      { error: error.message, code: error.code },
+      { status: 409 },
+    );
+  }
+  if (error instanceof CoursePublicationValidationError) {
+    return NextResponse.json(
+      { error: error.message, code: error.code },
+      { status: 400 },
+    );
+  }
   if (error instanceof CourseBuilderAccessError) {
+    return NextResponse.json(
+      { error: error.message, code: error.code },
+      { status: 404 },
+    );
+  }
+  if (error instanceof CoursePublicationAccessError) {
     return NextResponse.json(
       { error: error.message, code: error.code },
       { status: 404 },
@@ -66,6 +120,34 @@ export async function courseBuilderApiError(error: unknown) {
     return NextResponse.json(
       { error: error.message, code: error.code },
       { status: 409 },
+    );
+  }
+  if (error instanceof CoursePublicationConflictError) {
+    return NextResponse.json(
+      { error: error.message, code: error.code },
+      { status: 409 },
+    );
+  }
+  if (error instanceof CoursePublicationRepositoryError) {
+    const status = [400, 404, 409].includes(error.status) ? error.status : 503;
+    return NextResponse.json(
+      {
+        error:
+          status === 503
+            ? "Не удалось связаться с каталогом курсов."
+            : error.message,
+        code: error.code ?? "course_publication_repository_error",
+      },
+      { status },
+    );
+  }
+  if (error instanceof CoursePublicationStorageError) {
+    return NextResponse.json(
+      {
+        error: "Не удалось выполнить операцию с материалами курса.",
+        code: "course_publication_storage_error",
+      },
+      { status: 503 },
     );
   }
   if (error instanceof CourseBuilderRepositoryError) {

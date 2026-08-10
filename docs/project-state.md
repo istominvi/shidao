@@ -7,6 +7,12 @@
 **Текущий функциональный application release:** `bafc984`
 **Последний полный automated/browser gate:** `bafc984`
 
+**Current DB-applied source slice:** реализует reusable Course catalog,
+immutable publication revisions, независимое копирование Course и private
+publication assets. Forward migration применена к production и проверена;
+application deployment этого source slice ещё не выполнен, поэтому running web
+ниже остаётся release `bafc984`.
+
 **Current production contract stage:** реализована и развёрнута полная roleless
 learner identity / observer программа. Migrations M1–M6 применены к production
 после четырёх проверенных backup и добавили atomic exactly-one
@@ -226,11 +232,49 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
 
 ### Курсы
 
-- `/courses` показывает реальные Course текущего Account. Каталог поддерживает
-  поиск по открытым полям Course, динамические фильтры по предмету и уровню,
-  фильтр наполнения, сортировку и переключение «Плитки / Таблица». Фильтрация
-  выполняется поверх owner-scoped API response и не индексирует приватные
-  пожелания преподавателя.
+- **Current source slice; production schema уже применена:** `/courses` имеет две
+  вкладки: **Мои** показывает owner-scoped
+  рабочие Course, **Каталог** — только current published revisions.
+  В UI нет отдельной сущности «шаблон».
+- Вкладка **Мои** сохраняет поиск по открытым Course fields,
+  динамические фильтры по предмету/уровню/наполнению, сортировку и
+  режимы «Плитки / Таблица». Приватные пожелания преподавателя в поиск
+  не входят.
+- **Каталог** имеет server-side search/filter, карточку курса с
+  целью, аудиторией, Lesson outline, автором и списком материалов.
+  «Добавить в мои курсы» создаёт новый independent owner Course и
+  не запускает AI/адаптацию автоматически.
+- Рабочий Course можно дублировать, опубликовать, обновить в
+  каталоге или снять с публикации. Publish/update имеет один
+  confirmation dialog и required rights/reuse checkbox; отдельного
+  preview wizard и name/PII scan нет.
+- Persistence разделяет stable `course_publication`, immutable
+  `course_publication_revision`, её private `course_publication_asset` и
+  provenance-only `course_publication_origin`. Таблицы и mutation RPC
+  закрыты от `anon`/`authenticated` direct access; web API использует
+  server-only broker после обычной Account/session authorization.
+- Snapshot включает generic Course fields, Lessons, teacher summaries,
+  ordered Components, visibility, Slides и ready materials. В него не входят
+  `teacher_preferences`, audience/groups/learners, schedule, LessonRuns,
+  LearningRecords, reports/history, AI consent и live source IDs.
+- Ready files копируются в private bucket `course-publication-assets`;
+  signed URLs короткоживущие. Добавление создаёт новые owner-scoped
+  StoredFile и remap ссылок Component; изменение/удаление source не
+  ломает уже созданную копию.
+- Catalog list строится компактным DB RPC без загрузки snapshot: поиск,
+  фильтры и cursor работают server-side, а facet-массивы ограничены 100
+  значениями. Viewer и publisher должны оставаться active; переход Account в
+  non-active атомарно снимает его Course с публикации.
+- Отдельный publication content clock отмечает только изменения allowlisted
+  authored tree. Excluded audience/preferences не создают ложный badge
+  «Есть изменения», а idempotent update повторно сверяет live materials до
+  acknowledgement.
+- Immutable publication history ограничена DB-квотой 5 GiB на Account.
+  Publish/update/catalog-copy дополнительно защищены process-local лимитом:
+  одна concurrent mutation и не более 12 запусков за 60 секунд на Account.
+  Ошибка cleanup логируется без Storage paths и пользовательского текста;
+  при неоднозначном результате gateway committed objects намеренно не
+  удаляются вслепую.
 - `/courses/new` создаёт пустой persisted draft, запускает простой
   детерминированный assembler или позволяет запросить AI-программу, проверить
   preview и отдельно применить её.
@@ -242,7 +286,8 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
   RAG не реализованы.
 - Настройки существующего Course редактируются в модальном окне.
 - Course открывается без автоматического выбора первого Lesson и содержит
-  вкладки «Уроки / Описание / Источники / Материалы / История».
+  вкладки «Уроки / О курсе / История». «О курсе» объединяет
+  секции описания, источников и course-wide материалов.
 - «Материалы» показывают course-wide список уже прикреплённых файлов.
 - «Источники» честно показывают пустое состояние до parsing/RAG. «История»
   показывает завершённые проведения всех Lessons; change history авторских
@@ -521,7 +566,10 @@ History-aware context развёрнут в release `9393080`; production provid
   cursor поверх открытого LessonRun;
 - richer per-learner metrics ждут реального Component/runtime producer;
 - persisted communication chat и notifications;
-- templates/marketplace;
+- catalog moderation, ratings, update merge в уже добавленный Course и
+  наполнение каталога утверждёнными official ShiDao Course;
+- persisted reconciliation для Storage objects, оставшихся после crash или
+  commit-unknown, и явная publication policy до появления удаления Course;
 - внешний remote MCP/API для сторонних агентов;
 - отдельный staging-контур.
 
@@ -673,6 +721,9 @@ provider requests, assistant dialog history или quota state в БД.
 - `20260809090000_learner_identity_provisional_auth_metadata_sync.sql` — M6
   trusted two-phase provisional metadata sync с pristine/same-`xmin`
   fail-closed guard и защитой от late downgrade.
+- `20260810035033_course_publication_catalog.sql` — применённый production
+  Course catalog/publication slice: immutable revisions, private publication
+  assets, independent clone/duplicate и closed admin RPC.
 
 Источники истины для текущего состояния:
 
@@ -718,6 +769,9 @@ positions, а плотность поддерживают текущие service
 | Consented AI safe history            | `src/modules/ai/shared-history.ts`, `course-context.ts`, `course-builder-service.ts`                                                                                        |
 | Historical identity execution prompt | `docs/v2/LEARNER_IDENTITY_COMPLETION_PROMPT.md`                                                                                                                             |
 | Course browser client                | `src/components/course-builder/course-builder-client.ts`                                                                                                                    |
+| Course publication domain/service    | `src/modules/course-publications/`                                                                                                                                          |
+| Course catalog/publication API       | `src/app/api/v2/course-catalog/`, `src/app/api/v2/courses/[courseId]/publication/`, `duplicate/`                                                                            |
+| Course catalog/owned UI              | `src/components/course-builder/courses-index.tsx`, `owned-courses-panel.tsx`, `course-catalog-panel.tsx`, `course-actions.tsx`                                              |
 | New Course flow                      | `src/components/course-builder/new-course-form.tsx`                                                                                                                         |
 | Course workspace                     | `src/components/course-builder/course-workspace.tsx`                                                                                                                        |
 | Course/Lesson navigation             | `src/components/course-builder/course-workspace-navigation.ts`                                                                                                              |
@@ -773,6 +827,12 @@ Current identity API добавляет namespaces `me/learning-profile`,
 `ai-consents` и recipient-bound email acceptance routes. Sensitive admin RPC
 вызываются только server adapter; browser DTO проходят strict output schemas и
 не содержат Auth IDs, token/email digests, internal email или credential state.
+
+Current unreleased catalog API добавляет authenticated
+`GET /api/v2/course-catalog`, detail по publication ID, `POST .../copy`,
+а также Course-owned `publication` и `duplicate` routes. Все elevated
+table/Storage operations остаются за server context после обычной
+Account/session authorization.
 
 Schedule reads ограничены 500 Runs на окно. Teacher Lesson/Course/Profile
 history возвращает последние 100 элементов; Course read всегда включает
@@ -871,6 +931,18 @@ document-level overflow.
 Repository-wide `npm run format:check` теперь проходит. Для текущего
 navigation/catalog release также подтверждены `326/326` unit tests, `19/19`
 production-mode browser scenarios и `git diff --check`.
+
+Для current Course publication/catalog source slice локально подтверждены
+`381/381` unit tests, `19/19` строгих production-mode browser scenarios,
+typecheck, lint, format check и production build. Schema parser прочитал
+forward migration (`90` statements) и синхронный current-schema snapshot
+(`1091` statements), их core projection совпадает. Изолированный PostgreSQL
+проверил null material refs, forged-payload rejection, stale idempotent detach,
+publication clocks, active→non-active unpublish, inactive-owner denial,
+5 GiB quota boundary и bounded facets. Forward migration применена к рабочей
+ShiDao DB после full-format backup; counts `19/5/13/80` сохранились, RLS/ACL,
+private bucket, service-role catalog RPC и PostgREST cache проверены. Web этого
+source slice пока не развёрнут.
 
 На application release `fea7f80` подтверждены typecheck, lint, 183 unit tests,
 production build и строгие 8/8 browser smoke. Coolify deployment точного SHA

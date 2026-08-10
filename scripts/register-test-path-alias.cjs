@@ -10,9 +10,12 @@ Module._resolveFilename = function resolveTestPathAlias(
   isMain,
   options,
 ) {
-  const resolvedRequest = request.startsWith("@/")
-    ? path.join(compiledRoot, request.slice(2))
-    : request;
+  const resolvedRequest =
+    request === "server-only"
+      ? require.resolve("next/dist/compiled/server-only/empty.js")
+      : request.startsWith("@/")
+        ? path.join(compiledRoot, request.slice(2))
+        : request;
 
   return resolveFilename.call(this, resolvedRequest, parent, isMain, options);
 };

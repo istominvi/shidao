@@ -55,6 +55,7 @@ function courseRow() {
     assembled_at: null,
     archived_at: null,
     created_at: NOW,
+    publication_content_updated_at: NOW,
     updated_at: NOW,
   };
 }

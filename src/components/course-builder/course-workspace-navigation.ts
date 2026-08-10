@@ -1,14 +1,11 @@
-export type CourseWorkspaceSurface =
-  "lessons" | "description" | "sources" | "materials" | "history";
+export type CourseWorkspaceSurface = "lessons" | "about" | "history";
 
 export type LessonAuthoringSurface =
   "plan" | "student" | "homework" | "materials" | "history";
 
 export const COURSE_WORKSPACE_TABS = [
   { value: "lessons", label: "Уроки" },
-  { value: "description", label: "Описание" },
-  { value: "sources", label: "Источники" },
-  { value: "materials", label: "Материалы" },
+  { value: "about", label: "О курсе" },
   { value: "history", label: "История" },
 ] as const satisfies ReadonlyArray<{
   value: CourseWorkspaceSurface;

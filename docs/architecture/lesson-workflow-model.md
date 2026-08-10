@@ -63,6 +63,10 @@ Lesson остаётся одной сущностью содержания и т
 
 - **Course / Курс** — личный persisted-документ владельца с уроками и
   course-wide вложениями.
+- **Курс в каталоге** — опубликованная immutable редакция
+  authored Course. В UI это всё ещё «курс», а не отдельный
+  «шаблон». Добавление создаёт новый независимый Course с
+  новыми внутренними ID.
 - **Lesson / Урок** — редактируемый документ внутри Course. Название обязательно
   и хранится в самой Lesson; комментарий преподавателя хранится в `summary`.
   Эту же Lesson можно назначать и проводить многократно.
@@ -324,10 +328,10 @@ Course и Lesson образуют два последовательных уро
 Вкладки Course:
 
 1. **Уроки** — полный ordered list Lesson и создание нового Lesson;
-2. **Описание** — текущие поля Course;
-3. **Источники** — честное пустое состояние до parsing/RAG;
-4. **Материалы** — course-wide attachments;
-5. **История** — завершённые проведения всех Lessons; change log авторских
+2. **О курсе** — один scrollable surface с секциями описания,
+   источников и course-wide материалов. Секция источников сохраняет
+   честное пустое состояние до parsing/RAG;
+3. **История** — завершённые проведения всех Lessons; change log авторских
    правок по-прежнему не реализован.
 
 После явного выбора Lesson header показывает backlink с названием Course и
@@ -348,6 +352,50 @@ course-wide каталога. Она не создаёт lesson attachment, не
 Текущий slice не добавляет отдельный Lesson URL или schema: Course/Lesson view
 и вкладки переключаются внутри `/courses/[courseId]`. После reload снова
 открывается Course → **Уроки**.
+
+## Course catalog and publication boundary
+
+`/courses` разделяет рабочие Course и каталог вкладками **Мои** и
+**Каталог**. Действие «Создать курс» всегда начинает пустой
+Course, а «Добавить в мои курсы» создаёт независимую копию
+выбранной published revision. Копия сразу редактируется как обычный
+owner-scoped Course. Ни адаптация, ни AI-перегенерация не запускаются
+автоматически.
+
+Публикация не открывает live owner tables. Application service создаёт
+allowlisted immutable snapshot текущей authored-редакции:
+
+- generic Course fields, Lesson title/summary, ordered Components, visibility
+  и Student Screen Slides входят;
+- ready attachments физически копируются в private immutable
+  publication Storage; signed URLs и исходные paths в snapshot не входят;
+- `teacher_preferences`, Course audience, groups/learners, schedules,
+  LessonRuns, LearningRecords, reports/history и AI consent не входят;
+- source Course/Lesson/Component/Slide/StoredFile IDs заменяются
+  publication-local keys.
+
+Перед первой публикацией и обновлением есть один confirmation dialog
+с обязательным подтверждением прав на материалы и разрешением
+другим пользователям ShiDao копировать и изменять их. Отдельного
+preview wizard, PII/name scanner и второго confirmation step нет.
+Обновление publication создаёт новую immutable revision; старые
+уже добавленные Course не меняются. Unpublish скрывает listing, но не
+удаляет owner Course и чужие копии.
+
+Catalog list использует компактную DB projection: фильтры и cursor применяются
+до чтения snapshot, facet arrays ограничены. Публикация доступна только active
+Account; переход publisher в non-active атомарно снимает его listings, а
+reactivation не публикует их снова. Allowlisted authored changes имеют
+отдельный publication content clock, поэтому audience, private preferences и
+другая operational персонализация не создают ложный dirty state.
+
+Одна revision ограничена 24 файлами, 10 MiB на файл и 120 MiB суммарно;
+immutable history одного Account — 5 GiB. Process-local guard сериализует
+Storage-writing mutation одного Account и ограничивает частоту, но не заменяет
+DB quota. При network/5xx/invalid-response commit считается unknown: сервис не
+удаляет возможно committed bytes. Persisted orphan reconciliation остаётся
+обязательным operational шагом до широкого rollout. До добавления Course DELETE
+нужна отдельная policy управления publication, переживающей удаление source.
 
 Visual contract Course routes не меняет эту навигационную или доменную модель:
 
@@ -705,6 +753,8 @@ application services и MCP не импортируют demo fixtures; все н
 - learner Course consumption и live Student Screen access;
 - cross-provider history без явного subject grant (намеренно запрещена);
 - drag-and-drop, если надёжные кнопки «выше/ниже» уже обеспечивают reorder;
+- автоматическая адаптация каталожного Course под группу, merge новых
+  publication revisions в уже добавленную копию и catalog ratings;
 - внешняя публикация MCP;
 - compatibility layer для Step/Methodology не планируется;
 - отдельные renderers по Course/Lesson ID.

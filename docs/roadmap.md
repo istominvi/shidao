@@ -34,8 +34,8 @@
 - Реализованы persisted Course, Lesson, 10 Component types и private
   course-wide attachments.
 - Реализована двухуровневая Course → Lesson навигация в визуальном языке demo:
-  пять Course tabs, пять Lesson tabs, прозрачные headers и отдельный список
-  Lesson до открытия редактора.
+  три Course tabs («Уроки / О курсе / История»), пять Lesson tabs,
+  прозрачные headers и отдельный список Lesson до открытия редактора.
 - `/courses`, `/students`, `/schedule`, Course и Lesson используют один
   `AppPageHeader` с H1 не крупнее 48 px на desktop и 32 px на mobile,
   подзаголовком, optional backlink и правой action-секцией. Header имеет
@@ -302,6 +302,40 @@ MCP actor. Полный current/source/deployment contract находится в
 teacher context. Нельзя писать «AI изучил файл», пока отдельный parsing pipeline
 не вернул подтверждённый extracted text.
 
+## P0.4: reusable Course catalog
+
+**Current source + production schema; application rollout next:** в UI остаётся
+один объект «курс». `/courses` имеет вкладки «Мои / Каталог»; отдельного
+пользовательского типа «шаблон» нет. Forward migration уже применена после
+backup и DB/RLS/ACL/Storage/PostgREST postflight.
+
+- publication создаёт immutable allowlisted revision, а не открывает
+  live owner Course;
+- в revision входят Course fields, Lessons, ordered Components, Student
+  Screen Slides и ready attachments; learner/group/schedule/history/report/
+  consent данные не входят;
+- private material bytes копируются в immutable publication Storage, а
+  при добавлении — в новые owner-scoped StoredFile;
+- добавление и duplicate создают новые Course/Lesson/Component/Slide
+  IDs без audience, Runs, records, reports и AI consent;
+- publish/update имеют один confirmation dialog с подтверждением
+  прав на материалы; preview wizard и name/PII scanner в этом slice
+  намеренно отсутствуют;
+- добавленная копия не адаптируется и не перегенерируется
+  автоматически.
+- отдельный publication content clock исключает operational/audience edits из
+  dirty state, а idempotent acknowledgement повторно проверяет live materials;
+- compact catalog RPC выполняет поиск/фильтры/cursor в БД и возвращает
+  bounded facets; inactive owner атомарно снимается с публикации;
+- immutable history защищена DB-квотой 5 GiB на Account, а Storage-writing
+  mutations — process-local concurrency/rate guard.
+
+**Next:** развернуть exact application SHA и пройти authenticated
+catalog/publish/copy browser postflight. До широкого rollout добавить persisted orphan-Storage
+reconciliation; до Course DELETE — явный unpublish/manage-by-publication flow
+или согласованную deletion policy. Официальные Course от ShiDao требуют
+отдельно утверждённого учебного контента; fixtures не публикуются.
+
 ## P1.1: persisted Homework
 
 Цель — заменить текущую заглушку отдельным Lesson-owned редактором.
@@ -418,7 +452,8 @@ real-record progress без speculative metrics.
   текущих finalized LearningRecord;
 - common/individual Homework assignment snapshots;
 - course chat и notifications;
-- templates и контролируемый importer repository archive;
+- catalog moderation, ratings, official ShiDao content и контролируемый
+  importer repository archive;
 - AI change sets, undo, quotas и billing;
 - optional staging перед публичным production;
 - внешний MCP только после OAuth/scoped tokens, permissions, rate limits,

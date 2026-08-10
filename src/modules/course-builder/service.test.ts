@@ -171,6 +171,7 @@ class InMemoryCourseBuilderRepository implements CourseBuilderRepository {
       lessonCount: 0,
       assembledAt: null,
       createdAt: NOW,
+      publicationContentUpdatedAt: NOW,
       updatedAt: NOW,
     };
     this.courses.set(id, course);

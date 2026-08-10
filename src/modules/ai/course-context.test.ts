@@ -52,6 +52,7 @@ function workspace(): CourseWorkspace {
     lessonCount: 1,
     assembledAt: null,
     createdAt: "2026-08-05T00:00:00.000Z",
+    publicationContentUpdatedAt: "2026-08-05T00:00:00.000Z",
     updatedAt: "2026-08-05T00:00:00.000Z",
     lessons: [
       {
