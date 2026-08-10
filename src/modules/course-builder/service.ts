@@ -45,6 +45,7 @@ import {
   type ComponentTypeKey,
   type LessonAddComponentInput,
 } from "./registry/contracts";
+import { extractComponentStoredFileReferences } from "./registry/stored-file-references";
 import {
   CourseBuilderRepositoryError,
   type CourseBuilderRepository,
@@ -71,24 +72,6 @@ export type CourseBuilderServiceDependencies = {
 export type CourseBuilderApplicationService = ReturnType<
   typeof createCourseBuilderService
 >;
-
-function fileReferences(typeKey: ComponentTypeKey, payload: unknown) {
-  const parsed = parseComponentPayload(typeKey, payload);
-  switch (typeKey) {
-    case "image":
-    case "file": {
-      const storedFileId = (parsed as { storedFileId: string | null })
-        .storedFileId;
-      return storedFileId ? [storedFileId] : [];
-    }
-    case "slideshow":
-      return (parsed as { slides: Array<{ storedFileId: string }> }).slides.map(
-        (slide) => slide.storedFileId,
-      );
-    default:
-      return [];
-  }
-}
 
 function attachmentLabel(filename: string) {
   return filename.replace(/\.[^.]+$/, "").trim() || "Материал курса";
@@ -177,7 +160,9 @@ export function createCourseBuilderService(
     typeKey: ComponentTypeKey,
     payload: unknown,
   ) {
-    const ids = [...new Set(fileReferences(typeKey, payload))];
+    const ids = [
+      ...new Set(extractComponentStoredFileReferences(typeKey, payload)),
+    ];
     for (const assetId of ids) {
       const attachment = await repository.getAttachment(courseId, assetId);
       if (!attachment || attachment.status !== "ready") {
@@ -328,7 +313,10 @@ export function createCourseBuilderService(
         lessons.flatMap((lesson) =>
           lesson.slides.flatMap((slide) =>
             slide.components.flatMap((component) =>
-              fileReferences(component.typeKey, component.payload),
+              extractComponentStoredFileReferences(
+                component.typeKey,
+                component.payload,
+              ),
             ),
           ),
         ),

@@ -10,8 +10,6 @@ import {
   Pencil,
   Plus,
   Save,
-  Settings,
-  Users,
   WandSparkles,
 } from "lucide-react";
 import { AppPageHeader } from "@/components/app/page-header";
@@ -35,7 +33,7 @@ import {
   type CourseWorkspaceSurface,
 } from "@/components/course-builder/course-workspace-navigation";
 import { LessonAuthoringWorkspace } from "@/components/course-builder/lesson-authoring-workspace";
-import { CourseAudienceDialog } from "@/components/lesson-runs/course-audience-dialog";
+import { CourseAudienceEditor } from "@/components/lesson-runs/course-audience-dialog";
 import {
   loadCourseAudience,
   loadCourseHistory,
@@ -151,12 +149,10 @@ function CourseBasicsForm({
   course,
   disabled,
   runMutation,
-  onSaved,
 }: {
   course: CourseWorkspace;
   disabled: boolean;
   runMutation: RunMutation;
-  onSaved: () => void;
 }) {
   const [title, setTitle] = useState(course.title);
   const [subject, setSubject] = useState(course.subject);
@@ -171,6 +167,7 @@ function CourseBasicsForm({
   const [teacherPreferences, setTeacherPreferences] = useState(
     course.teacherPreferences,
   );
+  const [saved, setSaved] = useState(false);
 
   return (
     <form
@@ -178,6 +175,7 @@ function CourseBasicsForm({
       onSubmit={(event) => {
         event.preventDefault();
         void (async () => {
+          setSaved(false);
           const saved = await runMutation("Сохраняем настройки курса…", () =>
             jsonRequest(`/api/v2/courses/${course.id}`, "PATCH", {
               title,
@@ -189,110 +187,113 @@ function CourseBasicsForm({
               teacherPreferences,
             }),
           );
-          if (saved) onSaved();
+          if (saved) setSaved(true);
         })();
       }}
     >
       <div className="grid gap-4 md:grid-cols-2">
         <Field label="Название">
           <input
-            autoFocus
             required
+            disabled={disabled}
             minLength={2}
             className="field-input"
             value={title}
-            onChange={(event) => setTitle(event.target.value)}
+            onChange={(event) => {
+              setSaved(false);
+              setTitle(event.target.value);
+            }}
           />
         </Field>
         <Field label="Предмет или тема">
           <input
             required
+            disabled={disabled}
             minLength={2}
             className="field-input"
             value={subject}
-            onChange={(event) => setSubject(event.target.value)}
+            onChange={(event) => {
+              setSaved(false);
+              setSubject(event.target.value);
+            }}
           />
         </Field>
       </div>
       <Field label="Цель курса">
         <textarea
           required
+          disabled={disabled}
           className="field-input min-h-24 resize-y"
           value={goal}
-          onChange={(event) => setGoal(event.target.value)}
+          onChange={(event) => {
+            setSaved(false);
+            setGoal(event.target.value);
+          }}
         />
       </Field>
       <div className="grid gap-4 md:grid-cols-2">
         <Field label="Уровень / исходная подготовка">
           <input
             required
+            disabled={disabled}
             className="field-input"
             value={level}
-            onChange={(event) => setLevel(event.target.value)}
+            onChange={(event) => {
+              setSaved(false);
+              setLevel(event.target.value);
+            }}
           />
         </Field>
         <Field label="Планируемое число уроков">
           <input
             required
+            disabled={disabled}
             type="number"
             min={1}
             max={60}
             className="field-input"
             value={targetLessonCount}
-            onChange={(event) => setTargetLessonCount(event.target.value)}
+            onChange={(event) => {
+              setSaved(false);
+              setTargetLessonCount(event.target.value);
+            }}
           />
         </Field>
       </div>
-      <Field label="Целевая аудитория">
+      <Field label="Описание целевой аудитории">
         <textarea
+          disabled={disabled}
           className="field-input min-h-20 resize-y"
           value={audienceDescription}
-          onChange={(event) => setAudienceDescription(event.target.value)}
+          onChange={(event) => {
+            setSaved(false);
+            setAudienceDescription(event.target.value);
+          }}
         />
       </Field>
       <Field label="Пожелания преподавателя">
         <textarea
+          disabled={disabled}
           className="field-input min-h-24 resize-y"
           value={teacherPreferences}
-          onChange={(event) => setTeacherPreferences(event.target.value)}
+          onChange={(event) => {
+            setSaved(false);
+            setTeacherPreferences(event.target.value);
+          }}
         />
       </Field>
       <div className="dialog-shell-actions">
+        {saved ? (
+          <span className="course-inline-save-status" role="status">
+            Настройки сохранены
+          </span>
+        ) : null}
         <Button type="submit" disabled={disabled}>
           <Save className="h-4 w-4" aria-hidden="true" />
           Сохранить настройки
         </Button>
       </div>
     </form>
-  );
-}
-
-function CourseSettingsDialog({
-  course,
-  disabled,
-  runMutation,
-  onClose,
-}: {
-  course: CourseWorkspace;
-  disabled: boolean;
-  runMutation: RunMutation;
-  onClose: () => void;
-}) {
-  return (
-    <DialogShell
-      title="Настройки курса"
-      description="Основные сведения, цель и пожелания преподавателя."
-      onClose={onClose}
-      panelClassName="max-w-3xl"
-    >
-      <CourseBasicsForm
-        key={course.updatedAt}
-        course={course}
-        disabled={disabled}
-        runMutation={runMutation}
-        onSaved={onClose}
-      />
-    </DialogShell>
   );
 }
 
@@ -606,43 +607,6 @@ function CourseLessonsPanel({
   );
 }
 
-function CourseDescriptionPanel({ course }: { course: CourseWorkspace }) {
-  const details = [
-    ["Предмет или тема", course.subject],
-    ["Уровень", course.level],
-    ["План уроков", String(course.targetLessonCount)],
-    ["Целевая аудитория", course.audienceDescription || "Не указана"],
-  ] as const;
-
-  return (
-    <section className="course-about-section">
-      <div className="workspace-panel-heading">
-        <div>
-          <p className="workspace-eyebrow">Основные сведения</p>
-          <h2>Описание курса</h2>
-        </div>
-      </div>
-
-      <dl className="course-description-grid">
-        {details.map(([label, value]) => (
-          <div key={label}>
-            <dt>{label}</dt>
-            <dd>{value}</dd>
-          </div>
-        ))}
-        <div className="course-description-wide">
-          <dt>Цель курса</dt>
-          <dd>{course.goal}</dd>
-        </div>
-        <div className="course-description-wide course-description-private">
-          <dt>Пожелания преподавателя · только для вас</dt>
-          <dd>{course.teacherPreferences || "Пожелания пока не добавлены."}</dd>
-        </div>
-      </dl>
-    </section>
-  );
-}
-
 function CourseSourcesPanel() {
   return (
     <section className="course-about-section course-about-sources">
@@ -667,18 +631,67 @@ function CourseSourcesPanel() {
   );
 }
 
-function CourseAboutPanel({ course }: { course: CourseWorkspace }) {
+function CourseAboutPanel({
+  course,
+  audience,
+  disabled,
+  mutationError,
+  runMutation,
+}: {
+  course: CourseWorkspace;
+  audience: CourseAudience;
+  disabled: boolean;
+  mutationError: string | null;
+  runMutation: RunMutation;
+}) {
   return (
     <section
       className="workspace-surface course-about-panel"
-      aria-label="Описание, источники и материалы курса"
+      aria-label="Настройки, аудитория и источники курса"
       tabIndex={0}
     >
-      <CourseDescriptionPanel course={course} />
+      <section className="course-about-section">
+        <div className="workspace-panel-heading">
+          <div>
+            <p className="workspace-eyebrow">Основные сведения</p>
+            <h2>Настройки курса</h2>
+          </div>
+        </div>
+        <p className="workspace-surface-note course-about-section-note">
+          Эти данные задают основу курса и контекст для подготовки уроков.
+        </p>
+        <CourseBasicsForm
+          key={course.id}
+          course={course}
+          disabled={disabled}
+          runMutation={runMutation}
+        />
+      </section>
+
+      <section id="course-audience-section" className="course-about-section">
+        <div className="workspace-panel-heading">
+          <div>
+            <p className="workspace-eyebrow">Фактический состав</p>
+            <h2 id="course-audience-heading" tabIndex={-1}>
+              Ученики и группы курса
+            </h2>
+          </div>
+        </div>
+        <p className="workspace-surface-note course-about-section-note">
+          Выберите группы и отдельных учеников. Каждый профиль учитывается один
+          раз, даже если выбран несколькими способами.
+        </p>
+        <CourseAudienceEditor
+          key={course.id}
+          courseId={course.id}
+          audience={audience}
+          disabled={disabled}
+          mutationError={mutationError}
+          runMutation={runMutation}
+        />
+      </section>
+
       <CourseSourcesPanel />
-      <div className="course-about-materials">
-        <CourseMaterialsPanel course={course} />
-      </div>
     </section>
   );
 }
@@ -714,16 +727,15 @@ export function CourseWorkspaceClient({
     EMPTY_COURSE_AUDIENCE,
   );
   const [navigation, setNavigation] = useState(createCourseWorkspaceNavigation);
-  const [settingsOpen, setSettingsOpen] = useState(false);
-  const [audienceOpen, setAudienceOpen] = useState(false);
+  const [mountedCourseSurfaces, setMountedCourseSurfaces] = useState<
+    ReadonlySet<CourseWorkspaceSurface>
+  >(() => new Set(["lessons"]));
   const [assistantOpen, setAssistantOpen] = useState(false);
   const [returnFocusLessonId, setReturnFocusLessonId] = useState<string | null>(
     null,
   );
   const [error, setError] = useState<string | null>(null);
   const [busyLabel, setBusyLabel] = useState<string | null>(null);
-  const settingsTriggerRef = useRef<HTMLButtonElement>(null);
-  const audienceTriggerRef = useRef<HTMLButtonElement>(null);
   const mutationInFlightRef = useRef(false);
 
   const reload = useCallback(async () => {
@@ -758,17 +770,52 @@ export function CourseWorkspaceClient({
         setCourseAudience(audience);
         const searchParams = new URL(window.location.href).searchParams;
         const requestedLessonId = searchParams.get("lesson");
-        if (searchParams.get("audience") === "1") setAudienceOpen(true);
-        if (
+        const requestedCourseSurface = COURSE_WORKSPACE_TABS.find(
+          (item) => item.value === searchParams.get("tab"),
+        )?.value;
+        const audienceRequested = searchParams.get("audience") === "1";
+        const validRequestedLesson = Boolean(
           requestedLessonId &&
-          workspace.lessons.some((lesson) => lesson.id === requestedLessonId)
-        ) {
+          workspace.lessons.some((lesson) => lesson.id === requestedLessonId),
+        );
+        if (requestedLessonId && validRequestedLesson) {
           setNavigation((current) =>
             openCourseWorkspaceLesson(current, requestedLessonId),
           );
+        } else if (audienceRequested || requestedCourseSurface) {
+          const nextSurface = audienceRequested
+            ? "about"
+            : (requestedCourseSurface ?? "lessons");
+          setNavigation((current) => ({
+            ...current,
+            courseSurface: nextSurface,
+          }));
+          setMountedCourseSurfaces((current) =>
+            new Set(current).add(nextSurface),
+          );
         }
-        if (requestedLessonId || searchParams.get("audience") === "1") {
-          window.history.replaceState(null, "", window.location.pathname);
+        if (requestedLessonId || audienceRequested) {
+          const nextUrl = new URL(window.location.href);
+          nextUrl.searchParams.delete("lesson");
+          nextUrl.searchParams.delete("audience");
+          if (validRequestedLesson) nextUrl.searchParams.delete("tab");
+          else if (audienceRequested) nextUrl.searchParams.set("tab", "about");
+          window.history.replaceState(
+            null,
+            "",
+            `${nextUrl.pathname}${nextUrl.search}`,
+          );
+        }
+        if (audienceRequested) {
+          window.requestAnimationFrame(() => {
+            window.requestAnimationFrame(() => {
+              const heading = document.getElementById(
+                "course-audience-heading",
+              );
+              heading?.focus({ preventScroll: true });
+              heading?.scrollIntoView({ block: "start" });
+            });
+          });
         }
       })
       .catch((caught: unknown) => {
@@ -807,31 +854,6 @@ export function CourseWorkspaceClient({
     [reload],
   );
 
-  const closeSettings = useCallback(() => {
-    if (busyLabel) return;
-    setSettingsOpen(false);
-    window.requestAnimationFrame(() => settingsTriggerRef.current?.focus());
-  }, [busyLabel]);
-
-  const closeAudience = useCallback(() => {
-    if (busyLabel) return;
-    setAudienceOpen(false);
-    window.requestAnimationFrame(() => audienceTriggerRef.current?.focus());
-  }, [busyLabel]);
-
-  useEffect(() => {
-    if (!settingsOpen) return;
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key !== "Escape") return;
-      if (settingsOpen && !busyLabel) {
-        event.preventDefault();
-        closeSettings();
-      }
-    }
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [busyLabel, closeSettings, settingsOpen]);
-
   if (!course) {
     if (error) {
       return (
@@ -856,9 +878,32 @@ export function CourseWorkspaceClient({
   const readyAttachmentCount = course.attachments.filter(
     (asset) => asset.status === "ready",
   ).length;
-  const courseTabs = COURSE_WORKSPACE_TABS.map((item) =>
-    item.value === "lessons" ? { ...item, count: course.lessons.length } : item,
-  );
+  const courseTabs = COURSE_WORKSPACE_TABS.map((item) => {
+    if (item.value === "lessons") {
+      return { ...item, count: course.lessons.length };
+    }
+    if (item.value === "materials") {
+      return { ...item, count: course.attachments.length };
+    }
+    return item;
+  });
+
+  function selectCourseSurface(courseSurface: CourseWorkspaceSurface) {
+    setMountedCourseSurfaces((current) => new Set(current).add(courseSurface));
+    setNavigation((current) => ({ ...current, courseSurface }));
+    const url = new URL(window.location.href);
+    if (courseSurface === "lessons") url.searchParams.delete("tab");
+    else url.searchParams.set("tab", courseSurface);
+    window.history.replaceState(null, "", `${url.pathname}${url.search}`);
+  }
+
+  function openLesson(lessonId: string) {
+    const url = new URL(window.location.href);
+    url.searchParams.delete("lesson");
+    url.searchParams.delete("tab");
+    window.history.replaceState(null, "", `${url.pathname}${url.search}`);
+    setNavigation((current) => openCourseWorkspaceLesson(current, lessonId));
+  }
 
   return (
     <div className="container app-page-container course-workspace-container pb-16">
@@ -891,7 +936,7 @@ export function CourseWorkspaceClient({
           <AppPageHeader
             back={{ type: "link", href: ROUTES.courses, label: "Курсы" }}
             title={course.title}
-            description={`Создано уроков: ${course.lessonCount} из ${course.targetLessonCount} · готовых вложений: ${readyAttachmentCount}`}
+            description={`Создано уроков: ${course.lessonCount} из ${course.targetLessonCount} · учеников: ${courseAudience.effectiveLearners.length} · готовых вложений: ${readyAttachmentCount}`}
             actions={
               <>
                 <CoursePublicationBadges publication={course.publication} />
@@ -901,22 +946,6 @@ export function CourseWorkspaceClient({
                 >
                   <WandSparkles className="h-4 w-4" aria-hidden="true" />
                   ИИ-ассистент
-                </Button>
-                <Button
-                  ref={audienceTriggerRef}
-                  variant="secondary"
-                  onClick={() => setAudienceOpen(true)}
-                >
-                  <Users className="h-4 w-4" aria-hidden="true" />
-                  Аудитория · {courseAudience.effectiveLearners.length}
-                </Button>
-                <Button
-                  ref={settingsTriggerRef}
-                  variant="secondary"
-                  onClick={() => setSettingsOpen(true)}
-                >
-                  <Settings className="h-4 w-4" aria-hidden="true" />
-                  Настройки
                 </Button>
                 <CourseActions course={course} onChanged={reload} />
               </>
@@ -928,9 +957,7 @@ export function CourseWorkspaceClient({
             ariaLabel="Разделы курса"
             value={navigation.courseSurface}
             items={courseTabs}
-            onChange={(courseSurface: CourseWorkspaceSurface) =>
-              setNavigation((current) => ({ ...current, courseSurface }))
-            }
+            onChange={selectCourseSurface}
           />
         </>
       )}
@@ -939,71 +966,55 @@ export function CourseWorkspaceClient({
         <StatusMessage error={error} busyLabel={busyLabel} />
       ) : null}
 
-      {!selectedLesson
-        ? COURSE_WORKSPACE_TABS.map((item) => {
-            const active = item.value === navigation.courseSurface;
+      {COURSE_WORKSPACE_TABS.map((item) => {
+        const active =
+          !selectedLesson && item.value === navigation.courseSurface;
+        const mounted = active || mountedCourseSurfaces.has(item.value);
 
-            return (
-              <div
-                key={item.value}
-                id={workspaceTabPanelId(COURSE_WORKSPACE_TABS_ID, item.value)}
-                role="tabpanel"
-                aria-labelledby={workspaceTabId(
-                  COURSE_WORKSPACE_TABS_ID,
-                  item.value,
-                )}
-                hidden={!active}
-                tabIndex={0}
-              >
-                {active && item.value === "lessons" ? (
-                  <CourseLessonsPanel
-                    lessons={course.lessons}
-                    runs={courseRuns}
-                    audience={courseAudience.effectiveLearners}
-                    disabled={Boolean(busyLabel)}
-                    mutationError={error}
-                    onSelect={(lessonId) =>
-                      setNavigation((current) =>
-                        openCourseWorkspaceLesson(current, lessonId),
-                      )
-                    }
-                    runMutation={runMutation}
-                    courseId={course.id}
-                    focusLessonId={returnFocusLessonId}
-                    onFocusRestored={() => setReturnFocusLessonId(null)}
-                  />
-                ) : null}
-                {active && item.value === "about" ? (
-                  <CourseAboutPanel course={course} />
-                ) : null}
-                {active && item.value === "history" ? (
-                  <CourseHistoryPanel runs={courseRuns} />
-                ) : null}
-              </div>
-            );
-          })
-        : null}
-
-      {settingsOpen ? (
-        <CourseSettingsDialog
-          course={course}
-          disabled={Boolean(busyLabel)}
-          runMutation={runMutation}
-          onClose={closeSettings}
-        />
-      ) : null}
-
-      {audienceOpen ? (
-        <CourseAudienceDialog
-          courseId={course.id}
-          courseTitle={course.title}
-          audience={courseAudience}
-          disabled={Boolean(busyLabel)}
-          mutationError={error}
-          runMutation={runMutation}
-          onClose={closeAudience}
-        />
-      ) : null}
+        return (
+          <div
+            key={item.value}
+            id={workspaceTabPanelId(COURSE_WORKSPACE_TABS_ID, item.value)}
+            role="tabpanel"
+            aria-labelledby={workspaceTabId(
+              COURSE_WORKSPACE_TABS_ID,
+              item.value,
+            )}
+            hidden={!active}
+            tabIndex={0}
+          >
+            {mounted && item.value === "lessons" ? (
+              <CourseLessonsPanel
+                lessons={course.lessons}
+                runs={courseRuns}
+                audience={courseAudience.effectiveLearners}
+                disabled={Boolean(busyLabel)}
+                mutationError={error}
+                onSelect={openLesson}
+                runMutation={runMutation}
+                courseId={course.id}
+                focusLessonId={returnFocusLessonId}
+                onFocusRestored={() => setReturnFocusLessonId(null)}
+              />
+            ) : null}
+            {mounted && item.value === "about" ? (
+              <CourseAboutPanel
+                course={course}
+                audience={courseAudience}
+                disabled={Boolean(busyLabel)}
+                mutationError={error}
+                runMutation={runMutation}
+              />
+            ) : null}
+            {mounted && item.value === "materials" ? (
+              <CourseMaterialsPanel course={course} onOpenLesson={openLesson} />
+            ) : null}
+            {mounted && item.value === "history" ? (
+              <CourseHistoryPanel runs={courseRuns} />
+            ) : null}
+          </div>
+        );
+      })}
 
       {assistantOpen ? (
         <AiCourseAssistantDialog

@@ -42,34 +42,61 @@ test("lesson creation stays title-first and no longer asks for a step", () => {
   assert.doesNotMatch(workspace, /Добавить шаг|Новый шаг урока|new-step-title/);
 });
 
-test("course navigation keeps settings persisted and materials course-wide", () => {
+test("course About keeps settings and audience inline while materials stay course-wide", () => {
   const workspace = source(workspacePath);
   const materials = source(
     "src/components/course-builder/course-materials-panel.tsx",
   );
+  const styles = source("src/app/globals.css");
+  const aboutStart = workspace.indexOf("function CourseAboutPanel");
+  const historyStart = workspace.indexOf("function CourseHistoryPanel");
+  const aboutPanel = workspace.slice(aboutStart, historyStart);
+  const aboutStyles = /\.course-about-panel\s*\{[^}]*\}/.exec(styles)?.[0];
 
-  assert.match(workspace, />\s*Настройки\s*</);
-  assert.match(workspace, /title="Настройки курса"/);
+  assert.ok(aboutStart >= 0, "CourseAboutPanel must remain present");
+  assert.ok(historyStart > aboutStart, "CourseAboutPanel must remain bounded");
+  assert.ok(aboutStyles, "Course About styles must remain discoverable");
   assert.match(workspace, /COURSE_WORKSPACE_TABS/);
   assert.match(
-    workspace,
-    /function CourseAboutPanel[\s\S]*?CourseDescriptionPanel course=\{course\}[\s\S]*?CourseSourcesPanel[\s\S]*?CourseMaterialsPanel course=\{course\}/,
+    aboutPanel,
+    /CourseBasicsForm[\s\S]*?CourseAudienceEditor[\s\S]*?CourseSourcesPanel/,
   );
   assert.match(
-    workspace,
-    /aria-label="Описание, источники и материалы курса"[\s\S]*?tabIndex=\{0\}/,
+    aboutPanel,
+    /aria-label="Настройки, аудитория и источники курса"[\s\S]*?tabIndex=\{0\}/,
   );
-  assert.match(materials, /course\.attachments\.map/);
-  assert.match(materials, /прикреплены ко всему курсу/);
-  assert.match(materials, /Урок не получает собственную копию файла/);
-  assert.match(materials, /содержимое пока не анализировалось/);
+  assert.match(aboutPanel, />\s*Настройки курса\s*</);
+  assert.match(aboutPanel, />\s*Ученики и группы курса\s*</);
+  assert.match(aboutPanel, /CourseSourcesPanel/);
+  assert.doesNotMatch(aboutPanel, /CourseMaterialsPanel/);
+  assert.doesNotMatch(workspace, /CourseSettingsDialog|CourseAudienceDialog/);
   assert.match(
     workspace,
-    /const saved = await runMutation\("Сохраняем настройки курса…"[\s\S]*?if \(saved\) onSaved\(\)/,
+    /item\.value === "materials"[\s\S]*?<CourseMaterialsPanel[\s\S]*?course=\{course\}/,
   );
+  assert.match(materials, /projectCourseMaterials\(course\)/);
+  assert.match(materials, /projection\.used/);
+  assert.match(materials, /projection\.unused/);
+  assert.doesNotMatch(materials, /CourseMaterialUploader/);
+  assert.match(
+    materials,
+    /event\.preventDefault\(\)[\s\S]*?onOpenLesson\(usage\.lessonId\)/,
+  );
+  assert.match(materials, /Используются в уроках/);
+  assert.match(materials, /Другие материалы курса/);
+  assert.match(materials, /общая библиотека курса/);
+  assert.match(materials, /Отдельной копии файла у урока нет/);
+  assert.match(materials, /Содержимое файлов пока не анализировалось/);
+  assert.match(
+    workspace,
+    /const saved = await runMutation\("Сохраняем настройки курса…"[\s\S]*?if \(saved\) setSaved\(true\)/,
+  );
+  assert.match(workspace, /Настройки сохранены/);
+  assert.doesNotMatch(aboutStyles, /max-height/);
+  assert.doesNotMatch(aboutStyles, /overflow(?:-y)?:\s*(?:auto|scroll)/);
 });
 
-test("course uses three consolidated tabs while lesson keeps five surfaces", () => {
+test("course uses four consolidated tabs while lesson keeps five surfaces", () => {
   const workspace = source(workspacePath);
   const authoring = source(lessonAuthoringPath);
   const tabs = source("src/components/ui/workspace-tabs.tsx");
@@ -77,7 +104,7 @@ test("course uses three consolidated tabs while lesson keeps five surfaces", () 
     "src/components/course-builder/course-workspace-navigation.ts",
   );
 
-  for (const label of ["Уроки", "О курсе", "История"]) {
+  for (const label of ["Уроки", "О курсе", "Материалы", "История"]) {
     assert.match(navigation, new RegExp(`label: "${label}"`));
   }
   assert.doesNotMatch(navigation, /label: "Описание"|label: "Источники"/);
@@ -91,6 +118,18 @@ test("course uses three consolidated tabs while lesson keeps five surfaces", () 
     assert.match(navigation, new RegExp(`label: "${label}"`));
   }
   assert.match(workspace, /ariaLabel="Разделы курса"/);
+  assert.match(
+    workspace,
+    /COURSE_WORKSPACE_TABS\.find\([\s\S]*?searchParams\.get\("tab"\)/,
+  );
+  assert.match(
+    workspace,
+    /function selectCourseSurface[\s\S]*?searchParams\.set\("tab", courseSurface\)/,
+  );
+  assert.match(
+    workspace,
+    /item\.value === "materials"[\s\S]*?count: course\.attachments\.length/,
+  );
   assert.match(authoring, /ariaLabel="Разделы урока"/);
   assert.match(tabs, /role="tablist"/);
   assert.match(tabs, /aria-controls=\{workspaceTabPanelId/);

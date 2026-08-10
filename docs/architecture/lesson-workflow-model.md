@@ -328,11 +328,22 @@ Course и Lesson образуют два последовательных уро
 Вкладки Course:
 
 1. **Уроки** — полный ordered list Lesson и создание нового Lesson;
-2. **О курсе** — один scrollable surface с секциями описания,
-   источников и course-wide материалов. Секция источников сохраняет
-   честное пустое состояние до parsing/RAG;
-3. **История** — завершённые проведения всех Lessons; change log авторских
+2. **О курсе** — одна растущая карточка без собственного вертикального scroll.
+   В ней inline находятся основные настройки Course, фактическая аудитория из
+   групп/отдельных учеников и источники. Секция источников сохраняет честное
+   пустое состояние до parsing/RAG;
+3. **Материалы** — агрегирующая библиотека всех course-wide attachments. Она
+   разделяет используемые Components и пока не используемые материалы,
+   показывает Lesson usage и learner-visible projection;
+4. **История** — завершённые проведения всех Lessons; change log авторских
    правок по-прежнему не реализован.
+
+`/courses/new` показывает ту же четырёхвкладочную структуру с активной
+**О курсе**. До persistence **Уроки** и **История** являются честными
+placeholder surfaces, **Материалы** показывают staging picker, а сама форма
+остаётся mounted при переключении вкладок. Обычное сохранение открывает
+`/courses/[courseId]?tab=about`; deterministic assemble и успешный AI Apply —
+канонический `/courses/[courseId]` с активными **Уроками**.
 
 После явного выбора Lesson header показывает backlink с названием Course и
 заголовок `Урок {position}. {lesson.title}`. Вкладки Lesson:
@@ -350,14 +361,17 @@ course-wide каталога. Она не создаёт lesson attachment, не
 отдельной честной заглушкой.
 
 Текущий slice не добавляет отдельный Lesson URL или schema: Course/Lesson view
-и вкладки переключаются внутри `/courses/[courseId]`. После reload снова
-открывается Course → **Уроки**.
+и вкладки переключаются внутри `/courses/[courseId]`. Без `tab` Course открывает
+**Уроки**; `tab=about|materials|history` сохраняет выбранную Course surface при
+reload. Перестройка navigation, inline settings/audience и pre-persistence shell
+не меняют Course/Audience/attachment contracts или физическую schema.
 
 ## Course catalog and publication boundary
 
 `/courses` разделяет рабочие Course и каталог вкладками **Мои** и
-**Каталог**. Действие «Создать курс» всегда начинает пустой
-Course, а «Добавить в мои курсы» создаёт независимую копию
+**Каталог**. Действие «Создать курс» всегда начинает пустой pre-persistence
+draft в Course shell и создаёт Course только после явного сохранения, а
+«Добавить в мои курсы» создаёт независимую копию
 выбранной published revision. Копия сразу редактируется как обычный
 owner-scoped Course. Ни адаптация, ни AI-перегенерация не запускаются
 автоматически.
@@ -550,9 +564,12 @@ Course attachment:
 OCR, parsing, embeddings и RAG — отдельный pipeline. Отсутствие этого pipeline
 не блокирует ручное использование файла в Lesson.
 
-В текущем UI новые attachments загружаются при создании Course; modal
-существующего Course пока только показывает уже прикреплённые материалы.
-Добавление материалов после создания — следующий authoring slice.
+В текущем UI новые attachments выбираются во вкладке **Материалы** при создании
+Course. В сохранённом Course одноимённая вкладка агрегирует course-wide
+attachments, строит usage по валидированным Component payloads, разделяет
+используемые и пока не используемые файлы и не создаёт отдельную Lesson
+attachment relation. Надёжное добавление новых файлов после создания Course с
+возобновлением и компенсацией незавершённой загрузки остаётся следующим срезом.
 
 ## Homework
 
@@ -783,7 +800,9 @@ release/postflight завершены. Learner Course consumption и live Studen
 9. В активном V2 нет Methodology/fixture/lesson-specific fallback.
 10. Fullscreen preview сохраняет выбранную Lesson, показывает один
     active Slide и после refresh читает persisted state.
-11. Course сначала показывает пять собственных вкладок и список Lessons;
+11. Course показывает четыре собственные вкладки; **О курсе** растёт по
+    содержимому без внутреннего vertical scroll, а **Материалы** остаются
+    course-wide библиотекой. Новый Course начинает с **О курсе**;
     выбранная Lesson показывает отдельный H1, backlink с названием Course и
     пять Lesson-вкладок.
 12. Teacher header показывает «Расписание / Ученики / Курсы», а server guard

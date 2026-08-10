@@ -7,11 +7,11 @@ export default function NewCoursePage() {
   return (
     <main className="course-demo-shell pb-12">
       <TopNav demoStyle />
-      <div className="container app-page-container space-y-6">
+      <div className="container app-page-container course-workspace-container pb-16">
         <AppPageHeader
           eyebrow="Конструктор курса"
           title="Новый курс"
-          description="Сохраните пустой курс или сразу соберите первый осмысленный урок с упорядоченными компонентами."
+          description="Заполните сведения о курсе, добавьте материалы и сохраните его, чтобы перейти к урокам."
           back={{ type: "link", href: ROUTES.courses, label: "К курсам" }}
         />
         <NewCourseForm />

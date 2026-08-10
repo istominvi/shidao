@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, type KeyboardEvent } from "react";
+import { useEffect, useRef, type KeyboardEvent } from "react";
 import type { LucideIcon } from "lucide-react";
 import { classNames } from "@/lib/ui/classnames";
 
@@ -36,7 +36,29 @@ export function WorkspaceTabs<T extends string>({
   ariaLabel,
   className,
 }: WorkspaceTabsProps<T>) {
+  const scrollRef = useRef<HTMLDivElement>(null);
   const tabRefs = useRef(new Map<T, HTMLButtonElement>());
+
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => {
+      const scroller = scrollRef.current;
+      const activeTab = tabRefs.current.get(value);
+      if (!scroller || !activeTab) return;
+
+      const scrollerRect = scroller.getBoundingClientRect();
+      const activeRect = activeTab.getBoundingClientRect();
+      const edgePadding = 12;
+      if (activeRect.left < scrollerRect.left + edgePadding) {
+        scroller.scrollLeft +=
+          activeRect.left - scrollerRect.left - edgePadding;
+      } else if (activeRect.right > scrollerRect.right - edgePadding) {
+        scroller.scrollLeft +=
+          activeRect.right - scrollerRect.right + edgePadding;
+      }
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [value]);
 
   function focusTab(index: number) {
     const item = items[index];
@@ -69,7 +91,10 @@ export function WorkspaceTabs<T extends string>({
   }
 
   return (
-    <div className={classNames("workspace-tabs-scroll", className)}>
+    <div
+      ref={scrollRef}
+      className={classNames("workspace-tabs-scroll", className)}
+    >
       <div
         className="workspace-tabs"
         role="tablist"

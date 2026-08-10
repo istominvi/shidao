@@ -13,7 +13,7 @@ import {
 test("course and lesson tabs follow the product hierarchy", () => {
   assert.deepEqual(
     COURSE_WORKSPACE_TABS.map((item) => item.label),
-    ["Уроки", "О курсе", "История"],
+    ["Уроки", "О курсе", "Материалы", "История"],
   );
   assert.deepEqual(
     LESSON_WORKSPACE_TABS.map((item) => item.label),
@@ -21,7 +21,7 @@ test("course and lesson tabs follow the product hierarchy", () => {
   );
 });
 
-test("a course opens on its lesson list without selecting the first lesson", () => {
+test("a persisted course without a tab deep link opens on its lesson list", () => {
   assert.deepEqual(createCourseWorkspaceNavigation(), {
     courseSurface: "lessons",
     selectedLessonId: null,

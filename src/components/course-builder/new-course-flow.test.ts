@@ -51,7 +51,7 @@ test("signed upload follows private Storage multipart contract", () => {
   assert.match(clientSource, /method: "PUT"/);
 });
 
-test("new course form exposes the complete persisted milestone flow", () => {
+test("new course form exposes the four-tab pre-persistence workspace", () => {
   for (const field of [
     "title",
     "subject",
@@ -65,7 +65,30 @@ test("new course form exposes the complete persisted milestone flow", () => {
   }
   assert.match(formSource, /type="file"[\s\S]*multiple/);
   assert.match(formSource, /globalThis\.crypto\.subtle\.digest/);
-  assert.match(formSource, />\s*Создать курс\s*</);
+  assert.match(formSource, /useState<CourseWorkspaceSurface>\("about"\)/);
+  assert.match(
+    formSource,
+    /<WorkspaceTabs[\s\S]*?ariaLabel="Разделы нового курса"[\s\S]*?items=\{COURSE_WORKSPACE_TABS\}/,
+  );
+  for (const surface of ["lessons", "about", "materials", "history"]) {
+    assert.match(
+      formSource,
+      new RegExp(
+        `workspaceTabPanelId\\(NEW_COURSE_WORKSPACE_TABS_ID, "${surface}"\\)`,
+      ),
+    );
+  }
+  assert.match(formSource, /Уроки появятся после сохранения/);
+  assert.match(formSource, /История появится после сохранения/);
+  assert.match(
+    formSource,
+    /<form[\s\S]*?hidden=\{activeSurface !== "about"\}[\s\S]*?onSubmit=\{handleSubmit\}/,
+  );
+  assert.match(
+    formSource,
+    /hidden=\{activeSurface !== "materials"\}[\s\S]*?Выбрать файлы или изображения/,
+  );
+  assert.match(formSource, />\s*Сохранить курс\s*</);
   assert.match(formSource, /Собрать черновик/);
   assert.match(formSource, /Создать с ИИ/);
   assert.match(formSource, /Прикреплён, не проанализирован/);
@@ -73,6 +96,15 @@ test("new course form exposes the complete persisted milestone flow", () => {
   assert.match(formSource, /generateAiCoursePlan\(courseId/);
   assert.match(formSource, /applyAiCoursePlan\(createdCourseId, aiPreview\)/);
   assert.match(formSource, /updateCourseDraft\(courseId, draftInput\)/);
+  assert.match(
+    formSource,
+    /router\.replace\([\s\S]*?intent === "create"[\s\S]*?`\$\{toCourseRoute\(courseId\)\}\?tab=about`[\s\S]*?: toCourseRoute\(courseId\)/,
+  );
+  assert.match(
+    formSource,
+    /applyAiCoursePlan\(createdCourseId, aiPreview\)[\s\S]*?router\.replace\(toCourseRoute\(createdCourseId\)\)/,
+  );
+  assert.doesNotMatch(formSource, /router\.push\(/);
 });
 
 test("new course creation resumes the persisted Course after a partial failure", () => {

@@ -26,6 +26,8 @@ const E2E_TEACHER_ID = "55555555-5555-4555-8555-555555555555";
 const E2E_SCHOOL_ID = "66666666-6666-4666-8666-666666666666";
 const E2E_COURSE_ID = "33333333-3333-4333-8333-333333333333";
 const E2E_LESSON_ID = "44444444-4444-4444-8444-444444444444";
+const E2E_COMPONENT_ID = "77777777-7777-4777-8777-777777777771";
+const E2E_STORED_FILE_ID = "77777777-7777-4777-8777-777777777772";
 const E2E_LEARNER_ANNA_ID = "88888888-8888-4888-8888-888888888881";
 const E2E_LEARNER_BORIS_ID = "88888888-8888-4888-8888-888888888882";
 const E2E_LEARNER_CLARA_ID = "88888888-8888-4888-8888-888888888883";
@@ -82,7 +84,25 @@ const E2E_LESSON_ROW = {
   position: 4,
   title: E2E_LESSON_TITLE,
   summary: "Связываем форму времени с реальными историями ученика.",
-  components: [],
+  components: [
+    {
+      id: E2E_COMPONENT_ID,
+      lesson_id: E2E_LESSON_ID,
+      type_key: "file",
+      schema_version: 1,
+      position: 1,
+      payload: {
+        storedFileId: E2E_STORED_FILE_ID,
+        label: "Карточка жизненного опыта",
+        openMode: "preview",
+      },
+      placement_config: { width: "content", display: "card" },
+      visibility: "staff_only",
+      student_slide_id: null,
+      created_at: "2026-08-05T08:40:00.000Z",
+      updated_at: "2026-08-05T09:00:00.000Z",
+    },
+  ],
   studentSlides: [],
   created_at: "2026-08-05T08:30:00.000Z",
   updated_at: "2026-08-05T09:00:00.000Z",
@@ -443,6 +463,7 @@ const e2eSupabaseReferers: string[] = [];
 type PlaywrightLocator = {
   click: () => Promise<void>;
   check: () => Promise<void>;
+  count: () => Promise<number>;
   fill: (value: string) => Promise<void>;
   inputValue: () => Promise<string>;
   press: (key: string) => Promise<void>;
@@ -1481,7 +1502,34 @@ async function handleMockSupabase(
   }
 
   if (requestUrl.pathname === "/rest/v1/course_attachment") {
-    json(response, 200, []);
+    json(response, 200, [
+      {
+        id: "77777777-7777-4777-8777-777777777773",
+        course_id: E2E_COURSE_ID,
+        stored_file_id: E2E_STORED_FILE_ID,
+        created_at: "2026-08-05T08:35:00.000Z",
+      },
+    ]);
+    return;
+  }
+
+  if (requestUrl.pathname === "/rest/v1/stored_file") {
+    json(response, 200, [
+      {
+        id: E2E_STORED_FILE_ID,
+        owner_account_id: E2E_ACCOUNT_ID,
+        storage_bucket: "course-assets",
+        storage_path: `${E2E_ACCOUNT_ID}/${E2E_COURSE_ID}/experience-card.pdf`,
+        original_filename: "experience-card.pdf",
+        mime_type: "application/pdf",
+        size_bytes: 2048,
+        checksum_sha256: "a".repeat(64),
+        status: "ready",
+        metadata: {},
+        created_at: "2026-08-05T08:35:00.000Z",
+        updated_at: "2026-08-05T08:35:00.000Z",
+      },
+    ]);
     return;
   }
 
@@ -2897,15 +2945,12 @@ test("browser smoke: mixed Course audience deduplicates direct and grouped learn
     await runtime.page.goto(`/courses/${E2E_COURSE_ID}`, {
       waitUntil: "networkidle",
     });
-    const audienceButton = runtime.page.getByRole("button", {
-      name: "Аудитория · 2",
-      exact: true,
-    });
-    await audienceButton.waitFor();
-    await audienceButton.click();
+    await runtime.page
+      .getByRole("tab", { name: "О курсе", exact: true })
+      .click();
     await runtime.page
       .getByRole("heading", {
-        name: "Аудитория курса",
+        name: "Ученики и группы курса",
         exact: true,
         level: 2,
       })
@@ -2929,8 +2974,8 @@ test("browser smoke: mixed Course audience deduplicates direct and grouped learn
           ".course-audience-picker:nth-of-type(2) input[type='checkbox']:checked",
         ),
       ).length;
-      const dialogText = document
-        .querySelector<HTMLElement>("[role='dialog']")
+      const audienceText = document
+        .querySelector<HTMLElement>("#course-audience-section")
         ?.textContent?.replace(/\s+/g, " ")
         .trim();
 
@@ -2938,7 +2983,8 @@ test("browser smoke: mixed Course audience deduplicates direct and grouped learn
         summary,
         selectedGroups,
         selectedDirectLearners,
-        dialogText,
+        audienceText,
+        hasDialog: Boolean(document.querySelector("[role='dialog']")),
       };
     });
 
@@ -2948,12 +2994,13 @@ test("browser smoke: mixed Course audience deduplicates direct and grouped learn
     );
     assert.equal(audienceContract.selectedGroups, 1);
     assert.equal(audienceContract.selectedDirectLearners, 1);
+    assert.equal(audienceContract.hasDialog, false);
     assert.match(
-      audienceContract.dialogText ?? "",
+      audienceContract.audienceText ?? "",
       /Уже входит через: Teen Talk/,
     );
     assert.match(
-      audienceContract.dialogText ?? "",
+      audienceContract.audienceText ?? "",
       /ИИ будет учитывать уникальные профили/,
     );
   } finally {
@@ -3424,6 +3471,61 @@ test("browser smoke: mobile Account menu exposes primary sections and account ac
   }
 });
 
+test("browser smoke: new Course starts on About and keeps its draft across tabs", async (t) => {
+  if (browserSmokeUnavailableReason) {
+    t.skip(browserSmokeUnavailableReason);
+    return;
+  }
+
+  const runtime = await openPage({ cookie: authenticatedCookieValue() });
+
+  try {
+    await runtime.page.goto("/courses/new", { waitUntil: "networkidle" });
+    await runtime.page
+      .getByRole("heading", { name: "Новый курс", exact: true, level: 1 })
+      .waitFor();
+
+    const aboutTab = runtime.page.getByRole("tab", {
+      name: "О курсе",
+      exact: true,
+    });
+    assert.equal(
+      await runtime.page.evaluate(
+        () =>
+          document
+            .querySelector('[role="tab"][aria-selected="true"]')
+            ?.textContent?.trim() ?? "",
+      ),
+      "О курсе",
+    );
+
+    const titleInput = runtime.page.getByLabel("Название");
+    await titleInput.fill("Черновик нового курса");
+    await runtime.page
+      .getByRole("tab", { name: "Материалы", exact: true })
+      .click();
+    await runtime.page
+      .getByRole("heading", {
+        name: "Файлы и изображения",
+        exact: true,
+        level: 2,
+      })
+      .waitFor();
+    await runtime.page.getByRole("tab", { name: "Уроки", exact: true }).click();
+    await runtime.page
+      .getByRole("heading", {
+        name: "Уроки появятся после сохранения",
+        exact: true,
+        level: 2,
+      })
+      .waitFor();
+    await aboutTab.click();
+    assert.equal(await titleInput.inputValue(), "Черновик нового курса");
+  } finally {
+    await runtime.close();
+  }
+});
+
 test("browser smoke: course opens lesson workspace and returns to the course", async (t) => {
   if (browserSmokeUnavailableReason) {
     t.skip(browserSmokeUnavailableReason);
@@ -3722,26 +3824,52 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
     assert.match(html, /aria-label="Разделы курса"/);
     assert.match(html, /Уроки/);
     assert.match(html, /О курсе/);
+    assert.match(html, /Материалы/);
     assert.match(html, /История/);
 
     await runtime.page
       .getByRole("tab", { name: "О курсе", exact: true })
       .click();
     await runtime.page
-      .getByRole("heading", { name: "Описание курса", exact: true, level: 2 })
+      .getByRole("heading", { name: "Настройки курса", exact: true, level: 2 })
+      .waitFor();
+    await runtime.page
+      .getByRole("heading", {
+        name: "Ученики и группы курса",
+        exact: true,
+        level: 2,
+      })
       .waitFor();
     await runtime.page
       .getByRole("heading", { name: "Источники", exact: true, level: 2 })
       .waitFor();
+    const aboutLayout = await runtime.page.evaluate(() => {
+      const panel = document.querySelector<HTMLElement>(".course-about-panel");
+      if (!panel) throw new Error("Course About panel is missing");
+      const style = getComputedStyle(panel);
+      return {
+        maxHeight: style.maxHeight,
+        overflowY: style.overflowY,
+      };
+    });
+    assert.equal(aboutLayout.maxHeight, "none");
+    assert.equal(aboutLayout.overflowY, "visible");
+    assert.equal(
+      await runtime.page
+        .getByRole("heading", { name: "Материалы", exact: true, level: 2 })
+        .count(),
+      0,
+    );
+    await runtime.page.getByRole("tab", { name: /^Материалы/ }).click();
     await runtime.page
       .getByRole("heading", { name: "Материалы", exact: true, level: 2 })
       .waitFor();
-    await runtime.page.getByRole("tab", { name: /^Уроки/ }).click();
-
-    const lessonButton = runtime.page.getByRole("button", {
-      name: new RegExp(E2E_LESSON_TITLE),
-    });
-    await lessonButton.click();
+    await runtime.page
+      .getByRole("link", {
+        name: `4. ${E2E_LESSON_TITLE}`,
+        exact: true,
+      })
+      .click();
 
     const lessonHeading = runtime.page.getByRole("heading", {
       name: `Урок 4. ${E2E_LESSON_TITLE}`,

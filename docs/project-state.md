@@ -274,23 +274,35 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
   Ошибка cleanup логируется без Storage paths и пользовательского текста;
   при неоднозначном результате gateway committed objects намеренно не
   удаляются вслепую.
-- `/courses/new` создаёт пустой persisted draft, запускает простой
-  детерминированный assembler или позволяет запросить AI-программу, проверить
-  preview и отдельно применить её.
+- `/courses/new` использует те же четыре вкладки, что и сохранённый Course, и
+  начинает с активной вкладки **О курсе**. До первого сохранения **Уроки** и
+  **История** показывают честные заглушки, а **Материалы** — staging-список
+  выбранных файлов; переключение вкладок не размонтирует форму и не теряет draft.
+- Обычное «Сохранить курс» создаёт persisted Course и открывает его на
+  **О курсе**. Детерминированная сборка и успешное применение AI-preview
+  открывают сохранённый Course на **Уроках**.
 - Форма сохраняет название, тему, цель, уровень, описание аудитории,
   планируемое число уроков и приватные пожелания преподавателя.
 - На форме можно загрузить изображения и документы до 10 MiB в private bucket
   `course-assets`.
 - Успешная загрузка означает только «прикреплено». Parsing, OCR, embeddings и
   RAG не реализованы.
-- Настройки существующего Course редактируются в модальном окне.
 - Course открывается без автоматического выбора первого Lesson и содержит
-  вкладки «Уроки / О курсе / История». «О курсе» объединяет
-  секции описания, источников и course-wide материалов.
-- «Материалы» показывают course-wide список уже прикреплённых файлов.
+  вкладки «Уроки / О курсе / Материалы / История».
+- **О курсе** — одна растущая вместе с содержимым карточка без собственного
+  вертикального scroll. В ней inline редактируются основные настройки и
+  фактическая аудитория из групп/отдельных учеников; здесь же остаётся секция
+  источников.
+- **Материалы** — отдельная агрегирующая библиотека всех course-wide
+  attachments. Она разделяет используемые в Components и пока не используемые
+  материалы, показывает связанные Lessons и learner-visible usage и не создаёт
+  lesson attachment. Новые файлы в текущем UI выбираются при создании Course.
 - «Источники» честно показывают пустое состояние до parsing/RAG. «История»
   показывает завершённые проведения всех Lessons; change history авторских
   правок ещё не реализована.
+- Это изменение Course navigation/layout не добавляет новую schema, сущность
+  или параллельный API: настройки, audience и attachments используют прежние
+  persisted contracts.
 - В текущем source страницы `/courses`, `/students`, `/schedule`, Course и
   Lesson используют один сплошной фон `#f5f1e8`; marketing noise и цветные page
   gradients на этих маршрутах отсутствуют.
@@ -558,7 +570,6 @@ History-aware context развёрнут в release `9393080`; production provid
 - persistent assistant/Course chat, write-capable assistant и tool calling;
 - persistent token quota/ledger, billing units, balance и AI change sets/undo;
 - parsing/RAG прикреплённых материалов;
-- добавление новых материалов из модалки существующего Course;
 - persisted Homework editor;
 - learner Course enrollment/consumption и настоящий live Student Screen access;
 - live Student Screen sync, realtime presence и teacher-controlled runtime
@@ -743,50 +754,50 @@ positions, а плотность поддерживают текущие service
 
 ## 7. Карта реализации
 
-| Область                              | Каноническое место                                                                                                                                                          |
-| ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Course/Lesson contracts              | `src/modules/course-builder/contracts.ts`                                                                                                                                   |
-| Domain/read models                   | `src/modules/course-builder/domain.ts`                                                                                                                                      |
-| Application service                  | `src/modules/course-builder/service.ts`                                                                                                                                     |
-| Supabase repository                  | `src/modules/course-builder/repository.ts`                                                                                                                                  |
-| Storage adapter                      | `src/modules/course-builder/storage.ts`                                                                                                                                     |
-| Component registry                   | `src/modules/course-builder/registry/contracts.ts`                                                                                                                          |
-| MCP tools/server                     | `src/modules/course-builder/mcp/`                                                                                                                                           |
-| AI provider adapter                  | `src/modules/ai/routerai.ts`                                                                                                                                                |
-| AI provider transport                | `src/modules/ai/lesson-provider-contracts.ts`                                                                                                                               |
-| AI request/contracts                 | `src/modules/ai/course-builder-contracts.ts`                                                                                                                                |
-| AI context/service                   | `src/modules/ai/course-context.ts`, `src/modules/ai/course-builder-service.ts`                                                                                              |
-| AI API/error boundary                | `src/app/api/v2/courses/[courseId]/ai-*/`, `assistant/`, `src/modules/ai/server-context.ts`                                                                                 |
-| AI dialogs                           | `src/components/course-builder/ai-course-plan-dialog.tsx`, `ai-lesson-plan-dialog.tsx`, `ai-course-assistant-dialog.tsx`                                                    |
-| LessonRun domain/contracts           | `src/modules/lesson-runs/domain.ts`, `contracts.ts`                                                                                                                         |
-| LessonRun service/repository         | `src/modules/lesson-runs/service.ts`, `repository.ts`, `server-context.ts`                                                                                                  |
-| LessonRun API                        | `src/app/api/v2/lesson-runs/`, `learner-profiles/`, `learner-groups/`, Course/Lesson audience/history/runs routes                                                           |
-| LessonRun UI                         | `src/components/lesson-runs/`                                                                                                                                               |
-| Learner identity contracts/service   | `src/modules/learner-identity/`                                                                                                                                             |
-| Learner identity UI/routes           | `src/components/learner-identity/`, `/learning-profile`, `/students?tab=observing`, `/settings/observers`, `/identity/invitations/*`; `/observing` — compatibility redirect |
-| Learner identity access doc          | `docs/architecture/learner-identity-access-model.md`                                                                                                                        |
-| Consented AI safe history            | `src/modules/ai/shared-history.ts`, `course-context.ts`, `course-builder-service.ts`                                                                                        |
-| Historical identity execution prompt | `docs/v2/LEARNER_IDENTITY_COMPLETION_PROMPT.md`                                                                                                                             |
-| Course browser client                | `src/components/course-builder/course-builder-client.ts`                                                                                                                    |
-| Course publication domain/service    | `src/modules/course-publications/`                                                                                                                                          |
-| Course catalog/publication API       | `src/app/api/v2/course-catalog/`, `src/app/api/v2/courses/[courseId]/publication/`, `duplicate/`                                                                            |
-| Course catalog/owned UI              | `src/components/course-builder/courses-index.tsx`, `owned-courses-panel.tsx`, `course-catalog-panel.tsx`, `course-actions.tsx`                                              |
-| New Course flow                      | `src/components/course-builder/new-course-form.tsx`                                                                                                                         |
-| Course workspace                     | `src/components/course-builder/course-workspace.tsx`                                                                                                                        |
-| Course/Lesson navigation             | `src/components/course-builder/course-workspace-navigation.ts`                                                                                                              |
-| Workspace tabs/materials             | `src/components/ui/workspace-tabs.tsx`, `src/components/course-builder/course-materials-panel.tsx`                                                                          |
-| Lesson editor/Slides                 | `src/components/course-builder/lesson-authoring-workspace.tsx`                                                                                                              |
-| Component editors/renderers          | `src/components/course-builder/component-payload-editor.tsx`, `component-renderers.tsx`                                                                                     |
-| Fullscreen preview                   | `src/components/course-builder/student-screen-preview.tsx`                                                                                                                  |
-| Account Schedule                     | `src/app/(app)/(teacher-required)/schedule/`, `src/components/teaching-hub/schedule-workspace.tsx`                                                                          |
-| Account Students                     | `src/app/(app)/(teacher-required)/students/`, `src/components/teaching-hub/students-workspace.tsx`                                                                          |
-| Legacy-named Account route boundary  | `src/app/(app)/(teacher-required)/layout.tsx`, `src/lib/server/access-guards.ts`                                                                                            |
-| V2 API routes                        | `src/app/api/v2/`                                                                                                                                                           |
-| Standalone historical demo           | `src/app/demo/`, `public/og-demo-v2.png`                                                                                                                                    |
-| Host boundary                        | `src/middleware.ts`, `src/lib/deployment-access.ts`                                                                                                                         |
-| Auth/session                         | `src/lib/auth.ts`, `src/lib/server/`                                                                                                                                        |
-| Current schema                       | `supabase/schema/current-schema.sql`                                                                                                                                        |
-| Forward history                      | `supabase/migrations/`                                                                                                                                                      |
+| Область                              | Каноническое место                                                                                                                                                                                                                                                                |
+| ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Course/Lesson contracts              | `src/modules/course-builder/contracts.ts`                                                                                                                                                                                                                                         |
+| Domain/read models                   | `src/modules/course-builder/domain.ts`                                                                                                                                                                                                                                            |
+| Application service                  | `src/modules/course-builder/service.ts`                                                                                                                                                                                                                                           |
+| Supabase repository                  | `src/modules/course-builder/repository.ts`                                                                                                                                                                                                                                        |
+| Storage adapter                      | `src/modules/course-builder/storage.ts`                                                                                                                                                                                                                                           |
+| Component registry                   | `src/modules/course-builder/registry/contracts.ts`                                                                                                                                                                                                                                |
+| MCP tools/server                     | `src/modules/course-builder/mcp/`                                                                                                                                                                                                                                                 |
+| AI provider adapter                  | `src/modules/ai/routerai.ts`                                                                                                                                                                                                                                                      |
+| AI provider transport                | `src/modules/ai/lesson-provider-contracts.ts`                                                                                                                                                                                                                                     |
+| AI request/contracts                 | `src/modules/ai/course-builder-contracts.ts`                                                                                                                                                                                                                                      |
+| AI context/service                   | `src/modules/ai/course-context.ts`, `src/modules/ai/course-builder-service.ts`                                                                                                                                                                                                    |
+| AI API/error boundary                | `src/app/api/v2/courses/[courseId]/ai-*/`, `assistant/`, `src/modules/ai/server-context.ts`                                                                                                                                                                                       |
+| AI dialogs                           | `src/components/course-builder/ai-course-plan-dialog.tsx`, `ai-lesson-plan-dialog.tsx`, `ai-course-assistant-dialog.tsx`                                                                                                                                                          |
+| LessonRun domain/contracts           | `src/modules/lesson-runs/domain.ts`, `contracts.ts`                                                                                                                                                                                                                               |
+| LessonRun service/repository         | `src/modules/lesson-runs/service.ts`, `repository.ts`, `server-context.ts`                                                                                                                                                                                                        |
+| LessonRun API                        | `src/app/api/v2/lesson-runs/`, `learner-profiles/`, `learner-groups/`, Course/Lesson audience/history/runs routes                                                                                                                                                                 |
+| LessonRun UI                         | `src/components/lesson-runs/`                                                                                                                                                                                                                                                     |
+| Learner identity contracts/service   | `src/modules/learner-identity/`                                                                                                                                                                                                                                                   |
+| Learner identity UI/routes           | `src/components/learner-identity/`, `/learning-profile`, `/students?tab=observing`, `/settings/observers`, `/identity/invitations/*`; `/observing` — compatibility redirect                                                                                                       |
+| Learner identity access doc          | `docs/architecture/learner-identity-access-model.md`                                                                                                                                                                                                                              |
+| Consented AI safe history            | `src/modules/ai/shared-history.ts`, `course-context.ts`, `course-builder-service.ts`                                                                                                                                                                                              |
+| Historical identity execution prompt | `docs/v2/LEARNER_IDENTITY_COMPLETION_PROMPT.md`                                                                                                                                                                                                                                   |
+| Course browser client                | `src/components/course-builder/course-builder-client.ts`                                                                                                                                                                                                                          |
+| Course publication domain/service    | `src/modules/course-publications/`                                                                                                                                                                                                                                                |
+| Course catalog/publication API       | `src/app/api/v2/course-catalog/`, `src/app/api/v2/courses/[courseId]/publication/`, `duplicate/`                                                                                                                                                                                  |
+| Course catalog/owned UI              | `src/components/course-builder/courses-index.tsx`, `owned-courses-panel.tsx`, `course-catalog-panel.tsx`, `course-actions.tsx`                                                                                                                                                    |
+| New Course flow                      | `src/components/course-builder/new-course-form.tsx`                                                                                                                                                                                                                               |
+| Course workspace                     | `src/components/course-builder/course-workspace.tsx`                                                                                                                                                                                                                              |
+| Course/Lesson navigation             | `src/components/course-builder/course-workspace-navigation.ts`                                                                                                                                                                                                                    |
+| Workspace tabs/materials             | `src/components/ui/workspace-tabs.tsx`, `src/components/course-builder/course-materials-panel.tsx`, `src/components/course-builder/course-materials.ts`, `src/components/course-builder/course-material-file.ts`, `src/modules/course-builder/registry/stored-file-references.ts` |
+| Lesson editor/Slides                 | `src/components/course-builder/lesson-authoring-workspace.tsx`                                                                                                                                                                                                                    |
+| Component editors/renderers          | `src/components/course-builder/component-payload-editor.tsx`, `component-renderers.tsx`                                                                                                                                                                                           |
+| Fullscreen preview                   | `src/components/course-builder/student-screen-preview.tsx`                                                                                                                                                                                                                        |
+| Account Schedule                     | `src/app/(app)/(teacher-required)/schedule/`, `src/components/teaching-hub/schedule-workspace.tsx`                                                                                                                                                                                |
+| Account Students                     | `src/app/(app)/(teacher-required)/students/`, `src/components/teaching-hub/students-workspace.tsx`                                                                                                                                                                                |
+| Legacy-named Account route boundary  | `src/app/(app)/(teacher-required)/layout.tsx`, `src/lib/server/access-guards.ts`                                                                                                                                                                                                  |
+| V2 API routes                        | `src/app/api/v2/`                                                                                                                                                                                                                                                                 |
+| Standalone historical demo           | `src/app/demo/`, `public/og-demo-v2.png`                                                                                                                                                                                                                                          |
+| Host boundary                        | `src/middleware.ts`, `src/lib/deployment-access.ts`                                                                                                                                                                                                                               |
+| Auth/session                         | `src/lib/auth.ts`, `src/lib/server/`                                                                                                                                                                                                                                              |
+| Current schema                       | `supabase/schema/current-schema.sql`                                                                                                                                                                                                                                              |
+| Forward history                      | `supabase/migrations/`                                                                                                                                                                                                                                                            |
 
 ## 8. Активные пользовательские маршруты
 

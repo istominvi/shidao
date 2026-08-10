@@ -13,13 +13,27 @@ import {
 import { ROUTES, toCourseRoute } from "@/lib/auth";
 import { Alert } from "@/components/ui/alert";
 import { AiCoursePlanDialog } from "@/components/course-builder/ai-course-plan-dialog";
+import {
+  ACCEPTED_COURSE_FILE_TYPES,
+  formatCourseFileSize,
+  resolveCourseFileMimeType,
+  validateCourseMaterialFile,
+  type CourseAssetMimeType,
+} from "@/components/course-builder/course-material-file";
+import {
+  COURSE_WORKSPACE_TABS,
+  type CourseWorkspaceSurface,
+} from "@/components/course-builder/course-workspace-navigation";
 import { Button, productButtonClassName } from "@/components/ui/button";
 import { FieldHint, FieldLabel, FormField } from "@/components/ui/form-field";
 import { Input, productControlClassName } from "@/components/ui/input";
 import { SurfaceCard } from "@/components/ui/surface-card";
 import {
-  COURSE_ASSET_MAX_BYTES,
-  COURSE_ASSET_MIME_TYPES,
+  WorkspaceTabs,
+  workspaceTabId,
+  workspaceTabPanelId,
+} from "@/components/ui/workspace-tabs";
+import {
   courseDraftInputSchema,
   prepareCourseAttachmentInputSchema,
   type CourseDraftInput,
@@ -38,7 +52,6 @@ import type { AiCoursePlanPreview } from "@/modules/ai/course-builder-contracts"
 
 type SubmitIntent = "create" | "assemble" | "ai";
 type UploadStatus = "queued" | "hashing" | "uploading" | "ready" | "error";
-type CourseAssetMimeType = (typeof COURSE_ASSET_MIME_TYPES)[number];
 
 type SelectedCourseFile = {
   localId: string;
@@ -55,65 +68,29 @@ type UploadProgress = {
   message: string;
 };
 
-const ACCEPTED_FILE_TYPES = COURSE_ASSET_MIME_TYPES.join(",");
-
-const MIME_BY_EXTENSION: Record<string, CourseAssetMimeType> = {
-  jpg: "image/jpeg",
-  jpeg: "image/jpeg",
-  png: "image/png",
-  webp: "image/webp",
-  gif: "image/gif",
-  pdf: "application/pdf",
-  docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-  pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-  txt: "text/plain",
-  md: "text/markdown",
-  markdown: "text/markdown",
-};
+const ACCEPTED_FILE_TYPES = ACCEPTED_COURSE_FILE_TYPES;
+const NEW_COURSE_WORKSPACE_TABS_ID = "new-course-workspace";
 
 function resolveMimeType(file: File): CourseAssetMimeType | null {
-  if (COURSE_ASSET_MIME_TYPES.includes(file.type as CourseAssetMimeType)) {
-    return file.type as CourseAssetMimeType;
-  }
-  const extension = file.name.split(".").pop()?.toLowerCase() ?? "";
-  return MIME_BY_EXTENSION[extension] ?? null;
-}
-
-function normalizedUploadFile(file: File, mimeType: CourseAssetMimeType) {
-  if (file.type === mimeType) return file;
-  return new File([file], file.name, {
-    type: mimeType,
-    lastModified: file.lastModified,
-  });
+  return resolveCourseFileMimeType(file);
 }
 
 function validateSelectedCourseFile({
   file,
   localId,
 }: SelectedCourseFile): ValidatedCourseFile {
-  const mimeType = resolveMimeType(file);
-  if (!mimeType) {
-    throw new Error(`Формат файла «${file.name}» не поддерживается.`);
-  }
-  if (file.size < 1) {
-    throw new Error(`Файл «${file.name}» пуст.`);
-  }
-  if (file.size > COURSE_ASSET_MAX_BYTES) {
-    throw new Error(`Файл «${file.name}» больше 10 МБ.`);
-  }
+  const validated = validateCourseMaterialFile(file);
 
   return {
     file,
     localId,
-    mimeType,
-    normalizedFile: normalizedUploadFile(file, mimeType),
+    mimeType: validated.mimeType,
+    normalizedFile: validated.file,
   };
 }
 
 function formatFileSize(sizeBytes: number) {
-  if (sizeBytes < 1024) return `${sizeBytes} Б`;
-  if (sizeBytes < 1024 * 1024) return `${Math.ceil(sizeBytes / 1024)} КБ`;
-  return `${(sizeBytes / (1024 * 1024)).toFixed(1)} МБ`;
+  return formatCourseFileSize(sizeBytes);
 }
 
 function formatError(error: unknown) {
@@ -170,6 +147,8 @@ function uploadStatusLabel(progress: UploadProgress | undefined) {
 export function NewCourseForm() {
   const router = useRouter();
   const nextFileId = useRef(1);
+  const [activeSurface, setActiveSurface] =
+    useState<CourseWorkspaceSurface>("about");
   const [selectedFiles, setSelectedFiles] = useState<SelectedCourseFile[]>([]);
   const [uploadProgress, setUploadProgress] = useState<
     Record<string, UploadProgress>
@@ -289,8 +268,11 @@ export function NewCourseForm() {
       }
 
       setProgressMessage("Курс сохранён. Открываем редактор…");
-      router.push(toCourseRoute(courseId));
-      router.refresh();
+      router.replace(
+        intent === "create"
+          ? `${toCourseRoute(courseId)}?tab=about`
+          : toCourseRoute(courseId),
+      );
     } catch (error) {
       if (activeFileId) {
         updateUploadProgress(activeFileId, {
@@ -312,8 +294,7 @@ export function NewCourseForm() {
     setProgressMessage("Сохраняем программу курса…");
     try {
       await applyAiCoursePlan(createdCourseId, aiPreview);
-      router.push(toCourseRoute(createdCourseId));
-      router.refresh();
+      router.replace(toCourseRoute(createdCourseId));
     } catch (error) {
       setErrorMessage(formatError(error));
       setProgressMessage("");
@@ -324,7 +305,15 @@ export function NewCourseForm() {
   }
 
   return (
-    <form className="space-y-5" onSubmit={handleSubmit}>
+    <div className="space-y-5">
+      <WorkspaceTabs
+        idBase={NEW_COURSE_WORKSPACE_TABS_ID}
+        ariaLabel="Разделы нового курса"
+        value={activeSurface}
+        items={COURSE_WORKSPACE_TABS}
+        onChange={setActiveSurface}
+      />
+
       {errorMessage ? (
         <Alert tone="error" title="Не удалось завершить создание курса">
           <p>{errorMessage}</p>
@@ -342,244 +331,307 @@ export function NewCourseForm() {
         </Alert>
       ) : null}
 
-      <SurfaceCard
-        title="Основа курса"
-        description="Эти данные сохраняются в курсе и задают контекст для ручной, быстрой или AI-сборки."
-      >
-        <div className="grid gap-4 md:grid-cols-2">
-          <FormField>
-            <FieldLabel htmlFor="course-title">Название</FieldLabel>
-            <Input
-              id="course-title"
-              name="title"
-              required
-              minLength={2}
-              maxLength={160}
-              autoComplete="off"
-              placeholder="Например, Китайский для путешествий"
-            />
-          </FormField>
-
-          <FormField>
-            <FieldLabel htmlFor="course-subject">Предмет или тема</FieldLabel>
-            <Input
-              id="course-subject"
-              name="subject"
-              required
-              minLength={2}
-              maxLength={160}
-              autoComplete="off"
-              placeholder="Китайский язык"
-            />
-          </FormField>
-
-          <FormField className="md:col-span-2">
-            <FieldLabel htmlFor="course-goal">Цель курса</FieldLabel>
-            <textarea
-              id="course-goal"
-              name="goal"
-              required
-              minLength={2}
-              maxLength={1200}
-              className={productControlClassName(
-                "input",
-                "!h-auto min-h-24 resize-y py-3",
-              )}
-              placeholder="Какой результат должен получить ученик?"
-            />
-          </FormField>
-
-          <FormField>
-            <FieldLabel htmlFor="course-level">
-              Уровень или исходная подготовка
-            </FieldLabel>
-            <Input
-              id="course-level"
-              name="level"
-              required
-              maxLength={240}
-              autoComplete="off"
-              placeholder="Начальный, с нуля"
-            />
-          </FormField>
-
-          <FormField>
-            <FieldLabel htmlFor="course-lesson-count">
-              Планируемое количество уроков
-            </FieldLabel>
-            <Input
-              id="course-lesson-count"
-              name="targetLessonCount"
-              type="number"
-              required
-              min={1}
-              max={60}
-              step={1}
-              defaultValue={8}
-              inputMode="numeric"
-            />
-          </FormField>
-
-          <FormField className="md:col-span-2">
-            <FieldLabel htmlFor="course-audience">
-              Целевая аудитория или описание учащегося
-            </FieldLabel>
-            <textarea
-              id="course-audience"
-              name="audienceDescription"
-              maxLength={1200}
-              className={productControlClassName(
-                "input",
-                "!h-auto min-h-20 resize-y py-3",
-              )}
-              placeholder="Необязательно: возраст, интересы, особенности обучения"
-            />
-          </FormField>
-
-          <FormField className="md:col-span-2">
-            <FieldLabel htmlFor="course-preferences">
-              Дополнительные пожелания преподавателя
-            </FieldLabel>
-            <textarea
-              id="course-preferences"
-              name="teacherPreferences"
-              maxLength={2000}
-              className={productControlClassName(
-                "input",
-                "!h-auto min-h-24 resize-y py-3",
-              )}
-              placeholder="Необязательно: темп, формат заданий, методические акценты"
-            />
-            <FieldHint>
-              Это приватный контекст преподавателя: он не показывается на экране
-              ученика.
-            </FieldHint>
-          </FormField>
-        </div>
-      </SurfaceCard>
-
-      <SurfaceCard
-        title="Файлы и изображения"
-        description="Материалы сохраняются в закрытом файловом хранилище и связываются с курсом."
-      >
-        <Alert tone="info" title="Без автоматического анализа">
-          Файл будет прикреплён к курсу, но не проанализирован: OCR, parsing и
-          RAG не входят в этот этап.
-        </Alert>
-
-        <label className="mt-4 flex cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-neutral-300 bg-neutral-50/80 px-5 py-7 text-center transition hover:border-neutral-500 hover:bg-white">
-          <Paperclip className="h-6 w-6 text-neutral-600" aria-hidden="true" />
-          <span className="mt-2 text-sm font-semibold text-neutral-900">
-            Выбрать файлы или изображения
-          </span>
-          <span className="mt-1 text-xs leading-relaxed text-neutral-500">
-            JPG, PNG, WebP, GIF, PDF, DOCX, PPTX, TXT или Markdown — до 10 МБ
-            каждый
-          </span>
-          <input
-            className="sr-only"
-            type="file"
-            multiple
-            accept={ACCEPTED_FILE_TYPES}
-            disabled={isSubmitting}
-            onChange={(event) => {
-              addFiles(event.currentTarget.files);
-              event.currentTarget.value = "";
-            }}
-          />
-        </label>
-
-        {selectedFiles.length > 0 ? (
-          <ul className="mt-4 space-y-2" aria-label="Выбранные материалы">
-            {selectedFiles.map(({ localId, file }) => {
-              const progress = uploadProgress[localId];
-              const isImage = resolveMimeType(file)?.startsWith("image/");
-              const FileIcon = isImage ? FileImage : FileText;
-              return (
-                <li
-                  key={localId}
-                  className="flex items-center gap-3 rounded-2xl border border-neutral-200 bg-white px-4 py-3"
-                >
-                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-neutral-100 text-neutral-600">
-                    <FileIcon className="h-5 w-5" aria-hidden="true" />
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold text-neutral-900">
-                      {file.name}
-                    </p>
-                    <p
-                      className={`mt-0.5 text-xs ${
-                        progress?.status === "error"
-                          ? "text-rose-700"
-                          : progress?.status === "ready"
-                            ? "text-emerald-700"
-                            : "text-neutral-500"
-                      }`}
-                    >
-                      {formatFileSize(file.size)} ·{" "}
-                      {uploadStatusLabel(progress)}
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-neutral-500 transition hover:bg-neutral-100 hover:text-neutral-900 disabled:cursor-not-allowed disabled:opacity-40"
-                    aria-label={`Убрать файл ${file.name}`}
-                    disabled={isSubmitting || progress?.status === "ready"}
-                    onClick={() => removeFile(localId)}
-                  >
-                    <Trash2 className="h-4 w-4" aria-hidden="true" />
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        ) : (
-          <p className="mt-3 text-sm text-neutral-500">
-            Вложения необязательны: пустой черновик можно создать без них.
-          </p>
+      <section
+        id={workspaceTabPanelId(NEW_COURSE_WORKSPACE_TABS_ID, "lessons")}
+        role="tabpanel"
+        aria-labelledby={workspaceTabId(
+          NEW_COURSE_WORKSPACE_TABS_ID,
+          "lessons",
         )}
-      </SurfaceCard>
+        hidden={activeSurface !== "lessons"}
+        tabIndex={0}
+      >
+        <SurfaceCard
+          title="Уроки появятся после сохранения"
+          description="Сначала заполните сведения во вкладке «О курсе». После сохранения здесь можно будет создавать и собирать уроки."
+        />
+      </section>
 
-      <div className="flex flex-col-reverse gap-3 rounded-2xl border border-neutral-200 bg-white/85 p-4 sm:flex-row sm:items-center sm:justify-between">
-        <Link
-          href={ROUTES.courses}
-          className={productButtonClassName("ghost", "w-full sm:w-auto")}
+      <form
+        id={workspaceTabPanelId(NEW_COURSE_WORKSPACE_TABS_ID, "about")}
+        role="tabpanel"
+        aria-labelledby={workspaceTabId(NEW_COURSE_WORKSPACE_TABS_ID, "about")}
+        hidden={activeSurface !== "about"}
+        tabIndex={0}
+        className="space-y-5"
+        onSubmit={handleSubmit}
+      >
+        <SurfaceCard
+          title="Основа курса"
+          description="Эти данные сохраняются в курсе и задают контекст для ручной, быстрой или AI-сборки."
         >
-          Отмена
-        </Link>
-        <div className="flex flex-col gap-2 sm:flex-row">
-          <Button
-            type="submit"
-            name="intent"
-            value="create"
-            variant="secondary"
-            disabled={isSubmitting}
-            className="w-full sm:w-auto"
+          <div className="grid gap-4 md:grid-cols-2">
+            <FormField>
+              <FieldLabel htmlFor="course-title">Название</FieldLabel>
+              <Input
+                id="course-title"
+                name="title"
+                disabled={isSubmitting}
+                required
+                minLength={2}
+                maxLength={160}
+                autoComplete="off"
+                placeholder="Например, Китайский для путешествий"
+              />
+            </FormField>
+
+            <FormField>
+              <FieldLabel htmlFor="course-subject">Предмет или тема</FieldLabel>
+              <Input
+                id="course-subject"
+                name="subject"
+                disabled={isSubmitting}
+                required
+                minLength={2}
+                maxLength={160}
+                autoComplete="off"
+                placeholder="Китайский язык"
+              />
+            </FormField>
+
+            <FormField className="md:col-span-2">
+              <FieldLabel htmlFor="course-goal">Цель курса</FieldLabel>
+              <textarea
+                id="course-goal"
+                name="goal"
+                disabled={isSubmitting}
+                required
+                minLength={2}
+                maxLength={1200}
+                className={productControlClassName(
+                  "input",
+                  "!h-auto min-h-24 resize-y py-3",
+                )}
+                placeholder="Какой результат должен получить ученик?"
+              />
+            </FormField>
+
+            <FormField>
+              <FieldLabel htmlFor="course-level">
+                Уровень или исходная подготовка
+              </FieldLabel>
+              <Input
+                id="course-level"
+                name="level"
+                disabled={isSubmitting}
+                required
+                maxLength={240}
+                autoComplete="off"
+                placeholder="Начальный, с нуля"
+              />
+            </FormField>
+
+            <FormField>
+              <FieldLabel htmlFor="course-lesson-count">
+                Планируемое количество уроков
+              </FieldLabel>
+              <Input
+                id="course-lesson-count"
+                name="targetLessonCount"
+                disabled={isSubmitting}
+                type="number"
+                required
+                min={1}
+                max={60}
+                step={1}
+                defaultValue={8}
+                inputMode="numeric"
+              />
+            </FormField>
+
+            <FormField className="md:col-span-2">
+              <FieldLabel htmlFor="course-audience">
+                Целевая аудитория или описание учащегося
+              </FieldLabel>
+              <textarea
+                id="course-audience"
+                name="audienceDescription"
+                disabled={isSubmitting}
+                maxLength={1200}
+                className={productControlClassName(
+                  "input",
+                  "!h-auto min-h-20 resize-y py-3",
+                )}
+                placeholder="Необязательно: возраст, интересы, особенности обучения"
+              />
+            </FormField>
+
+            <FormField className="md:col-span-2">
+              <FieldLabel htmlFor="course-preferences">
+                Дополнительные пожелания преподавателя
+              </FieldLabel>
+              <textarea
+                id="course-preferences"
+                name="teacherPreferences"
+                disabled={isSubmitting}
+                maxLength={2000}
+                className={productControlClassName(
+                  "input",
+                  "!h-auto min-h-24 resize-y py-3",
+                )}
+                placeholder="Необязательно: темп, формат заданий, методические акценты"
+              />
+              <FieldHint>
+                Это приватный контекст преподавателя: он не показывается на
+                экране ученика.
+              </FieldHint>
+            </FormField>
+          </div>
+        </SurfaceCard>
+
+        <div className="flex flex-col-reverse gap-3 rounded-2xl border border-neutral-200 bg-white/85 p-4 sm:flex-row sm:items-center sm:justify-between">
+          <Link
+            href={ROUTES.courses}
+            className={productButtonClassName("ghost", "w-full sm:w-auto")}
           >
-            Создать курс
-          </Button>
-          <Button
-            type="submit"
-            name="intent"
-            value="assemble"
-            disabled={isSubmitting}
-            className="w-full gap-2 sm:w-auto"
-          >
-            <WandSparkles className="h-4 w-4" aria-hidden="true" />
-            Собрать черновик без ИИ
-          </Button>
-          <Button
-            type="submit"
-            name="intent"
-            value="ai"
-            disabled={isSubmitting}
-            className="w-full gap-2 sm:w-auto"
-          >
-            <WandSparkles className="h-4 w-4" aria-hidden="true" />
-            Создать с ИИ
-          </Button>
+            Отмена
+          </Link>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Button
+              type="submit"
+              name="intent"
+              value="create"
+              variant="secondary"
+              disabled={isSubmitting}
+              className="w-full sm:w-auto"
+            >
+              Сохранить курс
+            </Button>
+            <Button
+              type="submit"
+              name="intent"
+              value="assemble"
+              disabled={isSubmitting}
+              className="w-full gap-2 sm:w-auto"
+            >
+              <WandSparkles className="h-4 w-4" aria-hidden="true" />
+              Собрать черновик без ИИ
+            </Button>
+            <Button
+              type="submit"
+              name="intent"
+              value="ai"
+              disabled={isSubmitting}
+              className="w-full gap-2 sm:w-auto"
+            >
+              <WandSparkles className="h-4 w-4" aria-hidden="true" />
+              Создать с ИИ
+            </Button>
+          </div>
         </div>
-      </div>
+      </form>
+
+      <section
+        id={workspaceTabPanelId(NEW_COURSE_WORKSPACE_TABS_ID, "materials")}
+        role="tabpanel"
+        aria-labelledby={workspaceTabId(
+          NEW_COURSE_WORKSPACE_TABS_ID,
+          "materials",
+        )}
+        hidden={activeSurface !== "materials"}
+        tabIndex={0}
+      >
+        <SurfaceCard
+          title="Файлы и изображения"
+          description="Материалы сохраняются в закрытом файловом хранилище и связываются с курсом после сохранения."
+        >
+          <Alert tone="info" title="Без автоматического анализа">
+            Файл будет прикреплён к курсу, но не проанализирован: OCR, parsing и
+            RAG не входят в этот этап.
+          </Alert>
+
+          <label className="mt-4 flex cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-neutral-300 bg-neutral-50/80 px-5 py-7 text-center transition hover:border-neutral-500 hover:bg-white">
+            <Paperclip
+              className="h-6 w-6 text-neutral-600"
+              aria-hidden="true"
+            />
+            <span className="mt-2 text-sm font-semibold text-neutral-900">
+              Выбрать файлы или изображения
+            </span>
+            <span className="mt-1 text-xs leading-relaxed text-neutral-500">
+              JPG, PNG, WebP, GIF, PDF, DOCX, PPTX, TXT или Markdown — до 10 МБ
+              каждый
+            </span>
+            <input
+              className="sr-only"
+              type="file"
+              multiple
+              accept={ACCEPTED_FILE_TYPES}
+              disabled={isSubmitting}
+              onChange={(event) => {
+                addFiles(event.currentTarget.files);
+                event.currentTarget.value = "";
+              }}
+            />
+          </label>
+
+          {selectedFiles.length > 0 ? (
+            <ul className="mt-4 space-y-2" aria-label="Выбранные материалы">
+              {selectedFiles.map(({ localId, file }) => {
+                const progress = uploadProgress[localId];
+                const isImage = resolveMimeType(file)?.startsWith("image/");
+                const FileIcon = isImage ? FileImage : FileText;
+                return (
+                  <li
+                    key={localId}
+                    className="flex items-center gap-3 rounded-2xl border border-neutral-200 bg-white px-4 py-3"
+                  >
+                    <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-neutral-100 text-neutral-600">
+                      <FileIcon className="h-5 w-5" aria-hidden="true" />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-semibold text-neutral-900">
+                        {file.name}
+                      </p>
+                      <p
+                        className={`mt-0.5 text-xs ${
+                          progress?.status === "error"
+                            ? "text-rose-700"
+                            : progress?.status === "ready"
+                              ? "text-emerald-700"
+                              : "text-neutral-500"
+                        }`}
+                      >
+                        {formatFileSize(file.size)} ·{" "}
+                        {uploadStatusLabel(progress)}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-neutral-500 transition hover:bg-neutral-100 hover:text-neutral-900 disabled:cursor-not-allowed disabled:opacity-40"
+                      aria-label={`Убрать файл ${file.name}`}
+                      disabled={isSubmitting || progress?.status === "ready"}
+                      onClick={() => removeFile(localId)}
+                    >
+                      <Trash2 className="h-4 w-4" aria-hidden="true" />
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          ) : (
+            <p className="mt-3 text-sm text-neutral-500">
+              Материалы необязательны: курс можно сохранить без них.
+            </p>
+          )}
+        </SurfaceCard>
+      </section>
+
+      <section
+        id={workspaceTabPanelId(NEW_COURSE_WORKSPACE_TABS_ID, "history")}
+        role="tabpanel"
+        aria-labelledby={workspaceTabId(
+          NEW_COURSE_WORKSPACE_TABS_ID,
+          "history",
+        )}
+        hidden={activeSurface !== "history"}
+        tabIndex={0}
+      >
+        <SurfaceCard
+          title="История появится после сохранения"
+          description="Завершённые проведения уроков будут доступны здесь, когда курс будет сохранён и начнёт использоваться."
+        />
+      </section>
 
       {progressMessage ? (
         <p
@@ -599,6 +651,6 @@ export function NewCourseForm() {
           onApply={() => void applyGeneratedCoursePlan()}
         />
       ) : null}
-    </form>
+    </div>
   );
 }

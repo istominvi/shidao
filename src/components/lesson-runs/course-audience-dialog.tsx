@@ -10,7 +10,6 @@ import {
 } from "@/components/lesson-runs/lesson-run-client";
 import type { LessonRunMutationRunner } from "@/components/lesson-runs/lesson-run-dialog";
 import { Button, productButtonClassName } from "@/components/ui/button";
-import { DialogShell } from "@/components/ui/dialog-shell";
 import type {
   CourseAudience,
   LearnerGroup,
@@ -37,22 +36,18 @@ function groupCountLabel(count: number) {
   return `${count} групп`;
 }
 
-export function CourseAudienceDialog({
+export function CourseAudienceEditor({
   courseId,
-  courseTitle,
   audience,
   disabled,
   mutationError,
   runMutation,
-  onClose,
 }: {
   courseId: string;
-  courseTitle: string;
   audience: CourseAudience;
   disabled: boolean;
   mutationError?: string | null;
   runMutation: LessonRunMutationRunner;
-  onClose: () => void;
 }) {
   const [profiles, setProfiles] = useState<LearnerProfile[] | null>(null);
   const [groups, setGroups] = useState<LearnerGroup[] | null>(null);
@@ -65,6 +60,7 @@ export function CourseAudienceDialog({
   const [query, setQuery] = useState("");
   const [loadError, setLoadError] = useState<string | null>(null);
   const [mutationFailed, setMutationFailed] = useState(false);
+  const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -86,16 +82,6 @@ export function CourseAudienceDialog({
       active = false;
     };
   }, []);
-
-  useEffect(() => {
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key !== "Escape" || disabled) return;
-      event.preventDefault();
-      onClose();
-    }
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [disabled, onClose]);
 
   const normalizedQuery = query.trim().toLocaleLowerCase("ru-RU");
   const visibleGroups = useMemo(
@@ -150,6 +136,7 @@ export function CourseAudienceDialog({
 
   async function save() {
     setMutationFailed(false);
+    setSaved(false);
     const saved = await runMutation("Сохраняем аудиторию курса…", () =>
       replaceCourseAudience(courseId, {
         directLearnerProfileIds: selectedDirectIds,
@@ -157,18 +144,11 @@ export function CourseAudienceDialog({
       }),
     );
     if (!saved) setMutationFailed(true);
-    if (saved) onClose();
+    if (saved) setSaved(true);
   }
 
   return (
-    <DialogShell
-      title="Аудитория курса"
-      description={`Добавьте группы и отдельных учеников в курс «${courseTitle}». Один ученик учитывается один раз, даже если выбран несколькими способами.`}
-      onClose={() => {
-        if (!disabled) onClose();
-      }}
-      panelClassName="max-w-3xl"
-    >
+    <div className="course-audience-editor">
       {loadError ? (
         <p className="app-alert app-alert-error" role="alert">
           {loadError}
@@ -204,7 +184,7 @@ export function CourseAudienceDialog({
             <Search className="h-4 w-4" aria-hidden="true" />
             <span className="sr-only">Найти ученика или группу</span>
             <input
-              autoFocus
+              disabled={disabled}
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Найти ученика или группу"
@@ -221,15 +201,24 @@ export function CourseAudienceDialog({
                 <div className="lesson-run-audience-actions">
                   <button
                     type="button"
-                    onClick={() =>
+                    disabled={disabled}
+                    onClick={() => {
+                      setSaved(false);
                       setSelectedGroupIds(
                         (groups ?? []).map((group) => group.id),
-                      )
-                    }
+                      );
+                    }}
                   >
                     Выбрать все группы
                   </button>
-                  <button type="button" onClick={() => setSelectedGroupIds([])}>
+                  <button
+                    type="button"
+                    disabled={disabled}
+                    onClick={() => {
+                      setSaved(false);
+                      setSelectedGroupIds([]);
+                    }}
+                  >
                     Снять группы
                   </button>
                 </div>
@@ -238,14 +227,16 @@ export function CourseAudienceDialog({
                     <label key={group.id}>
                       <input
                         type="checkbox"
+                        disabled={disabled}
                         checked={selectedGroupIds.includes(group.id)}
-                        onChange={(event) =>
+                        onChange={(event) => {
+                          setSaved(false);
                           setSelectedGroupIds((current) =>
                             event.target.checked
                               ? [...current, group.id]
                               : current.filter((id) => id !== group.id),
-                          )
-                        }
+                          );
+                        }}
                       />
                       <span className="course-audience-option-copy">
                         <strong>{group.name}</strong>
@@ -273,17 +264,23 @@ export function CourseAudienceDialog({
                 <div className="lesson-run-audience-actions">
                   <button
                     type="button"
-                    onClick={() =>
+                    disabled={disabled}
+                    onClick={() => {
+                      setSaved(false);
                       setSelectedDirectIds(
                         (profiles ?? []).map((profile) => profile.id),
-                      )
-                    }
+                      );
+                    }}
                   >
                     Выбрать всех отдельно
                   </button>
                   <button
                     type="button"
-                    onClick={() => setSelectedDirectIds([])}
+                    disabled={disabled}
+                    onClick={() => {
+                      setSaved(false);
+                      setSelectedDirectIds([]);
+                    }}
                   >
                     Снять отдельных
                   </button>
@@ -295,14 +292,16 @@ export function CourseAudienceDialog({
                       <label key={profile.id}>
                         <input
                           type="checkbox"
+                          disabled={disabled}
                           checked={selectedDirectIds.includes(profile.id)}
-                          onChange={(event) =>
+                          onChange={(event) => {
+                            setSaved(false);
                             setSelectedDirectIds((current) =>
                               event.target.checked
                                 ? [...current, profile.id]
                                 : current.filter((id) => id !== profile.id),
-                            )
-                          }
+                            );
+                          }}
                         />
                         <span className="course-audience-option-copy">
                           <strong>{profile.displayName}</strong>
@@ -348,14 +347,11 @@ export function CourseAudienceDialog({
           </div>
 
           <div className="dialog-shell-actions">
-            <Button
-              type="button"
-              variant="ghost"
-              disabled={disabled}
-              onClick={onClose}
-            >
-              Отмена
-            </Button>
+            {saved ? (
+              <span className="course-inline-save-status" role="status">
+                Аудитория сохранена
+              </span>
+            ) : null}
             <Button type="submit" disabled={disabled}>
               <Save className="h-4 w-4" aria-hidden="true" />
               Сохранить аудиторию
@@ -374,6 +370,6 @@ export function CourseAudienceDialog({
           </Link>
         </div>
       ) : null}
-    </DialogShell>
+    </div>
   );
 }
