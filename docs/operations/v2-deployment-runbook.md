@@ -260,6 +260,14 @@ Production execution log, 9 августа 2026 года (current M6 stage):
   container имеет совпадающий image tag и `SOURCE_COMMIT`, image digest
   `sha256:06e273096fcf2f385782aeb6e1552235e1ac516b2a9dfd45f65f6f9a056b02cd`,
   restart count `0`, HTTPS `200`; DB/API/schema этот follow-up не менял;
+- Course publication deployment `891` exact functional SHA
+  `9a553085487c8fd514cc716f5beec5eab3324af3` завершился `finished`; running
+  container имеет совпадающий image tag и `SOURCE_COMMIT`, image digest
+  `sha256:ad6274440d57972420978cd26a9fb46ee2063235f5a435d9be32f9f5a0f4c457`,
+  restart count `0`. Перед deploy migration
+  `20260810035033_course_publication_catalog.sql` применена после full-format
+  backup; HTTP postflight сохранил landing/demo/guest/CSRF boundaries и не
+  обнаружил runtime warning/error;
 - authenticated browser postflight прошёл roleless courses/schedule/students,
   self-profile, observer и settings surfaces без console errors. Disposable
   Account удалён после dependency audit: fixture counts `0/0/0`, production

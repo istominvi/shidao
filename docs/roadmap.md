@@ -304,10 +304,10 @@ teacher context. Нельзя писать «AI изучил файл», пок�
 
 ## P0.4: reusable Course catalog
 
-**Current source + production schema; application rollout next:** в UI остаётся
-один объект «курс». `/courses` имеет вкладки «Мои / Каталог»; отдельного
-пользовательского типа «шаблон» нет. Forward migration уже применена после
-backup и DB/RLS/ACL/Storage/PostgREST postflight.
+**Current deployed slice:** в UI остаётся один объект «курс». `/courses` имеет
+вкладки «Мои / Каталог»; отдельного пользовательского типа «шаблон» нет.
+Forward migration применена после backup и DB/RLS/ACL/Storage/PostgREST
+postflight; Coolify deployment `891` развернул exact functional SHA `9a55308`.
 
 - publication создаёт immutable allowlisted revision, а не открывает
   live owner Course;
@@ -330,11 +330,10 @@ backup и DB/RLS/ACL/Storage/PostgREST postflight.
 - immutable history защищена DB-квотой 5 GiB на Account, а Storage-writing
   mutations — process-local concurrency/rate guard.
 
-**Next:** развернуть exact application SHA и пройти authenticated
-catalog/publish/copy browser postflight. До широкого rollout добавить persisted orphan-Storage
-reconciliation; до Course DELETE — явный unpublish/manage-by-publication flow
-или согласованную deletion policy. Официальные Course от ShiDao требуют
-отдельно утверждённого учебного контента; fixtures не публикуются.
+**Next:** до широкого rollout добавить persisted orphan-Storage reconciliation;
+до Course DELETE — явный unpublish/manage-by-publication flow или согласованную
+deletion policy. Официальные Course от ShiDao требуют отдельно утверждённого
+учебного контента; fixtures не публикуются.
 
 ## P1.1: persisted Homework
 

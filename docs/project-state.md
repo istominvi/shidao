@@ -4,14 +4,13 @@
 **Актуально на:** 10 августа 2026 года
 **Активная ветка:** `main`
 **Рабочее приложение:** `https://v2.shidao.ru`
-**Текущий функциональный application release:** `bafc984`
-**Последний полный automated/browser gate:** `bafc984`
+**Текущий функциональный application release:** `9a55308`
+**Последний полный automated/browser gate:** `9a55308`
 
-**Current DB-applied source slice:** реализует reusable Course catalog,
+**Current production Course catalog slice:** реализует reusable Course catalog,
 immutable publication revisions, независимое копирование Course и private
-publication assets. Forward migration применена к production и проверена;
-application deployment этого source slice ещё не выполнен, поэтому running web
-ниже остаётся release `bafc984`.
+publication assets. Forward migration применена и проверена; Coolify deployment
+`891` развернул exact functional SHA `9a553085487c8fd514cc716f5beec5eab3324af3`.
 
 **Current production contract stage:** реализована и развёрнута полная roleless
 learner identity / observer программа. Migrations M1–M6 применены к production
@@ -232,7 +231,7 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
 
 ### Курсы
 
-- **Current source slice; production schema уже применена:** `/courses` имеет две
+- **Current production slice:** `/courses` имеет две
   вкладки: **Мои** показывает owner-scoped
   рабочие Course, **Каталог** — только current published revisions.
   В UI нет отдельной сущности «шаблон».
@@ -941,8 +940,14 @@ forward migration (`90` statements) и синхронный current-schema snaps
 publication clocks, active→non-active unpublish, inactive-owner denial,
 5 GiB quota boundary и bounded facets. Forward migration применена к рабочей
 ShiDao DB после full-format backup; counts `19/5/13/80` сохранились, RLS/ACL,
-private bucket, service-role catalog RPC и PostgREST cache проверены. Web этого
-source slice пока не развёрнут.
+private bucket, service-role catalog RPC и PostgREST cache проверены. Coolify
+deployment `891` завершился `finished`: exact SHA `9a553085487c...`, image
+digest `sha256:ad6274440d57972420978cd26a9fb46ee2063235f5a435d9be32f9f5a0f4c457`,
+restart count `0`. HTTP postflight подтвердил V2 login `200`, guest Course/
+catalog `307`, guest catalog API `401`, cross-origin publication `403`,
+same-origin guest `401`, landing `/login` `503`, demo root `200` и ноль новых
+runtime warning/error. Production authenticated publish/copy mutation не
+создавалась: её выполняет владелец на реальном Course через UI.
 
 На application release `fea7f80` подтверждены typecheck, lint, 183 unit tests,
 production build и строгие 8/8 browser smoke. Coolify deployment точного SHA
