@@ -489,93 +489,6 @@ a {
   text-transform: uppercase;
 }
 
-.workspace-lesson-list {
-  display: grid;
-  gap: 0.4rem;
-  margin-top: 1rem;
-}
-
-.workspace-lesson-row {
-  display: grid;
-  width: 100%;
-  grid-template-columns: auto auto minmax(0, 1fr) auto auto;
-  align-items: center;
-  gap: 0.7rem;
-  border: 1px solid rgba(20, 20, 20, 0.07);
-  border-radius: 0.95rem;
-  background: #f7f7f8;
-  padding: 0.7rem;
-  color: #141414;
-  font-family: inherit;
-  text-align: left;
-  cursor: pointer;
-  transition:
-    border-color 180ms ease,
-    background-color 180ms ease,
-    box-shadow 180ms ease,
-    transform 180ms ease;
-}
-
-.workspace-lesson-row:hover {
-  transform: translateY(-1px);
-  border-color: rgba(20, 20, 20, 0.16);
-  background: #fff;
-  box-shadow: 0 10px 24px rgba(20, 20, 20, 0.06);
-}
-
-.workspace-lesson-row:focus-visible {
-  outline: 2px solid rgba(20, 20, 20, 0.34);
-  outline-offset: 2px;
-}
-
-.workspace-lesson-leading-icon,
-.workspace-lesson-arrow {
-  width: 1rem;
-  height: 1rem;
-  color: #a1a1aa;
-}
-
-.workspace-lesson-number {
-  display: grid;
-  width: 2.1rem;
-  height: 2.1rem;
-  place-items: center;
-  border-radius: 0.7rem;
-  background: #141414;
-  color: #fff;
-  font-size: 0.75rem;
-  font-weight: 700;
-}
-
-.workspace-lesson-title {
-  display: grid;
-  min-width: 0;
-  gap: 0.18rem;
-}
-
-.workspace-lesson-title strong {
-  overflow: hidden;
-  font-size: 0.88rem;
-  font-weight: 600;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.workspace-lesson-title small {
-  color: #6b7280;
-  font-size: 0.72rem;
-}
-
-.workspace-lesson-status {
-  border: 1px solid rgba(20, 20, 20, 0.07);
-  border-radius: 999px;
-  background: rgba(201, 255, 79, 0.42);
-  padding: 0.3rem 0.58rem;
-  font-size: 0.68rem;
-  font-weight: 600;
-  white-space: nowrap;
-}
-
 .workspace-empty-state {
   margin-top: 0.75rem;
   border: 1px dashed rgba(20, 20, 20, 0.16);
@@ -781,15 +694,6 @@ a {
     width: 100%;
   }
 
-  .workspace-lesson-row {
-    grid-template-columns: auto minmax(0, 1fr) auto;
-  }
-
-  .workspace-lesson-leading-icon,
-  .workspace-lesson-status {
-    display: none;
-  }
-
   .workspace-material-grid {
     grid-template-columns: 1fr;
   }
@@ -952,6 +856,32 @@ a {
 .course-index-table-col-materials,
 .course-index-table-col-actions {
   width: 1%;
+}
+
+.course-lessons-table-wrap {
+  margin-top: 1rem;
+}
+
+.course-lessons-table {
+  min-width: 58rem;
+}
+
+.course-lessons-table-col-position,
+.course-lessons-table-col-plan,
+.course-lessons-table-col-student,
+.course-lessons-table-col-schedule,
+.course-lessons-table-col-updated,
+.course-lessons-table-col-actions {
+  width: 1%;
+}
+
+.course-lessons-table-col-title {
+  width: 100%;
+}
+
+.course-lessons-table-wrap:focus-visible {
+  outline: 2px solid rgba(20, 20, 20, 0.34);
+  outline-offset: 2px;
 }
 
 .course-index-table thead tr,

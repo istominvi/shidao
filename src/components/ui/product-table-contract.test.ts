@@ -24,6 +24,9 @@ const ownedCoursesSource = source(
 const catalogSource = source(
   "src/components/course-builder/course-catalog-panel.tsx",
 );
+const courseWorkspaceSource = source(
+  "src/components/course-builder/course-workspace.tsx",
+);
 
 test("product tables use the element radius instead of the card radius", () => {
   assert.match(
@@ -54,6 +57,7 @@ test("product tables use the element radius instead of the card radius", () => {
     directorySource,
     ownedCoursesSource,
     catalogSource,
+    courseWorkspaceSource,
   ]) {
     assert.match(consumer, /className="[^"]*product-table-wrap/);
   }
@@ -75,7 +79,7 @@ test("action menus share canonical element geometry without card styling", () =>
   );
 });
 
-test("Course tables use the dense Schedule row and action geometry", () => {
+test("Course index and Course Lessons tables use the dense Schedule geometry", () => {
   assert.match(
     styles,
     /\.course-index-table\s*\{[^}]*width: 100%;[^}]*min-width: 58rem;[^}]*table-layout: auto;[^}]*border-collapse: collapse;[^}]*background: #fff;/,
@@ -112,8 +116,38 @@ test("Course tables use the dense Schedule row and action geometry", () => {
     catalogSource,
     /className="course-index-table course-index-catalog-table"/,
   );
+  assert.match(
+    courseWorkspaceSource,
+    /className="product-table-wrap course-index-table-wrap course-lessons-table-wrap"/,
+  );
+  assert.match(
+    courseWorkspaceSource,
+    /<ProductTable className="course-index-table course-lessons-table">/,
+  );
+  assert.match(
+    styles,
+    /\.course-lessons-table-wrap\s*\{[^}]*margin-top: 1rem;/,
+  );
+  assert.match(styles, /\.course-lessons-table\s*\{[^}]*min-width: 58rem;/);
+  assert.match(
+    styles,
+    /\.course-lessons-table-col-position,[\s\S]*?\.course-lessons-table-col-actions\s*\{[^}]*width: 1%;/,
+  );
+  assert.match(
+    styles,
+    /\.course-lessons-table-col-title\s*\{[^}]*width: 100%;/,
+  );
+  assert.match(
+    courseWorkspaceSource,
+    /<ProductTableActionCell className="course-index-table-action-cell text-right">/,
+  );
+  assert.match(
+    courseWorkspaceSource,
+    /className="course-index-table-action-menu course-lessons-table-action-menu"/,
+  );
   assert.doesNotMatch(ownedCoursesSource, /className="h-16"/);
   assert.doesNotMatch(catalogSource, /className="h-16"/);
+  assert.doesNotMatch(courseWorkspaceSource, /className="h-16"/);
 });
 
 test("product table sort state starts ascending and toggles per column", () => {

@@ -556,6 +556,31 @@ ShiDao V2 application:
   label без круга; каждый `aria-controls` tab разрешается в matching
   `tabpanel` с обратным `aria-labelledby`, а на mobile вкладки скроллятся
   внутри strip без document overflow;
+- на сохранённом Course открыть **Уроки** и проверить, что общий `WorkspaceTabs`
+  не получил route-specific fork. Сразу под ним прозрачная toolbar поиска и
+  «Добавить урок» занимает всю content-row: computed horizontal padding `0`,
+  search начинается у левого края, action заканчивается у правого. Таблица имеет
+  видимые `№ / Урок / План / Экран ученика / Проведение / Обновлён` и пустой
+  action heading; wrapper белый, border `0`, radius 12 px, header/data rows
+  ровно 40 px, обычные cells имеют 12 px с обеих сторон, последняя action-cell —
+  4 px. Белый header и data rows используют один divider color. Каждый из шести
+  data headers при первом клике публикует `aria-sort="ascending"`, при повторном
+  — `descending`; initial load и reload начинают с `№`/`position ASC`, а
+  view-sort не отправляет mutation и не меняет authored order. Проверить поиск
+  по title/summary, filtered-empty и «Очистить поиск». Для Lesson без открытого
+  Run, но с completed history, проверить «Проводился ранее»; после изменения
+  сохранившегося Component или Student Slide колонка `Обновлён` должна
+  отражать newest child timestamp, а не только timestamp родительского Lesson;
+- в каждой Course Lesson row проверить единственный постоянно доступный
+  `MoreVertical` trigger 32 × 32 px с радиусом 8 px. Portal-menu не обрезается
+  table scroll wrapper и содержит ровно два действия: «Открыть урок» и одно
+  контекстное действие проведения (`Назначить урок`, `Изменить назначение`,
+  `Отметить результаты` или `Завершить урок`). Delete/destructive item нет.
+  Открытие Lesson и возврат восстанавливают focus на title-button; scheduling
+  item открывает существующий LessonRun dialog и не выбирает Lesson. На 375 и
+  320 px table overflow остаётся внутри wrapper, toolbar складывается без
+  document-level overflow. Старые карточные `workspace-lesson-*` rows не должны
+  присутствовать;
 - owner открывает Course, другой owner не может;
 - Lesson/Components загружаются;
 - private Component отсутствует в Student Screen;

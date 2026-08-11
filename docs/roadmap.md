@@ -35,7 +35,8 @@
   course-wide attachments.
 - Реализована двухуровневая Course → Lesson навигация в визуальном языке demo:
   четыре Course tabs («Уроки / О курсе / Материалы / История»), пять Lesson
-  tabs, прозрачные headers и отдельный список Lesson до открытия редактора.
+  tabs, прозрачные headers и отдельная плотная таблица Lesson до открытия
+  редактора. Её исходный порядок совпадает с authored `position`.
 - **О курсе** объединяет inline-настройки, фактическую аудиторию и источники в
   одной растущей карточке без внутреннего вертикального scroll; **Материалы**
   являются отдельной агрегирующей course-wide библиотекой. `/courses/new`
@@ -334,6 +335,13 @@ Course начинает с **О курсе**; обычное сохранени�
 deterministic/AI-сборка открывает **Уроки**. Вкладка сохранённого Course
 **Материалы** разделяет используемые и пока не используемые attachments и
 показывает Lesson usage.
+На **Уроках** неизменённый полноширинный `WorkspaceTabs` продолжает прозрачная
+search/create toolbar без horizontal inset. Lesson проецируются в `ProductTable`
+`№ / Урок / План / Экран ученика / Проведение / Обновлён / actions` с общей
+Schedule-геометрией `40 px / 12 px / 4 px`; шесть заголовков меняют только
+view-sort, начиная с `position ASC`. В action-cell остаётся один 32 px
+`MoreVertical`: portal-menu открывает Lesson либо контекстный flow проведения и
+не содержит удаления. Старый карточный `workspace-lesson-*` layout удалён.
 В current source code-first Component registry расширен с 10 до 20 активных
 типов: добавлены video/audio, расширенный quiz, пропуски, bank
 слов, порядок, категории, свободный ответ, HTTPS-ссылка, сборка слова и
@@ -342,7 +350,9 @@ deterministic/AI-сборка открывает **Уроки**. Вкладка 
 выбор и границы зафиксированы в
 [`docs/product/course-component-catalog.md`](./product/course-component-catalog.md).
 
-- продолжить responsive/accessibility полировку обновлённого Course workspace;
+- подтвердить production postflight responsive/accessibility контракта
+  обновлённой Course Lessons table, включая mobile contained scroll, keyboard
+  sort/menu и focus restore;
 - добавить в сохранённый Course возобновляемую загрузку новых материалов с
   явной компенсацией незавершённых Storage operations;
 - улучшить выбор/поиск Components в palette;
@@ -635,6 +645,11 @@ ProductTable surfaces Schedule/Students/Courses белые и borderless. Studen
 через headers, Catalog сохраняет server-side cursor order. Students/Groups
 сортируются через headers, а их единый «Фильтр»
 объединяет status, group membership, конкретную группу и Account connection.
+Сохранённый Course → **Уроки** также использует прозрачную full-width
+search/create toolbar и белую borderless 40 px `ProductTable`; шесть data
+headers сортируют только локальную projection с default `position ASC`.
+Последняя колонка имеет 4 px inset и один 32 px `MoreVertical` с двумя
+portal-actions: открыть Lesson и выполнить контекстное действие проведения.
 Authenticated top header и profile dropdown тоже стали сплошными белыми
 поверхностями без blur. Buttons/header controls используют единый flat
 `40 px / 12 px / .88rem / 400` contract с fully opaque contrast-aware icons,

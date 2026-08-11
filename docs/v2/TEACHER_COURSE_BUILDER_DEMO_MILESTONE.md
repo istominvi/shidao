@@ -5,8 +5,10 @@
 - **Целевая аудитория демонстрации:** заказчик
 - **Рабочий адрес:** `v2.shidao.ru`
 - **Проверенный application release:** `0c426ff`
-- **Current visual refinement:** единые `AppPageHeader` и `WorkspaceTabs`
-  развёрнуты в Coolify и прошли authenticated production postflight
+- **Historical visual refinement:** единые `AppPageHeader` и `WorkspaceTabs`
+  были развёрнуты в Coolify и прошли authenticated production postflight;
+  актуальный visual contract фиксируют `docs/project-state.md` и operations
+  runbook
 - **Component registry note:** таблица ниже — historical snapshot первого
   milestone, а не current registry
 
@@ -203,8 +205,9 @@ Course, Lesson, Students и profile dialog используют один `Worksp
 Tabs имеют высоту 40 px, roving keyboard navigation, horizontal scroll и явные
 `tab` → `tabpanel` ARIA-связи. Общая нижняя линия чёрная, имеет толщину 1 px и
 inline-inset 12 px; active tab утолщает её квадратным чёрным сегментом 4 px без
-radius. Это current deployed acceptance contract, подтверждённый browser
-postflight точного application release `77870e3`.
+radius. Это historical acceptance contract точного application release
+`77870e3`, а не описание current source: последующая канонизация сделала общий
+container и baseline edge-to-edge с `inline-inset: 0`.
 Переход Course ↔ Lesson переносит focus в новый рабочий контекст и
 восстанавливает его на строке Lesson при возврате. Эти токены не меняют landing
 или auth screens.

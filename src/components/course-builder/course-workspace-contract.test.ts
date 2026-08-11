@@ -45,6 +45,123 @@ test("lesson creation stays title-first and no longer asks for a step", () => {
   assert.doesNotMatch(workspace, /Добавить шаг|Новый шаг урока|new-step-title/);
 });
 
+test("course Lessons uses full-width controls and a dense sortable ProductTable", () => {
+  const workspace = source(workspacePath);
+  const styles = source("src/app/globals.css");
+  const teachingStyles = source("src/app/styles/teaching-hub.css");
+  const panelStart = workspace.indexOf("function CourseLessonsPanel");
+  const panelEnd = workspace.indexOf("function CourseSourcesPanel");
+  const panel = workspace.slice(panelStart, panelEnd);
+  const projectionStart = panel.indexOf("const visibleLessons");
+  const projectionEnd = panel.indexOf("useEffect", projectionStart);
+  const projection = panel.slice(projectionStart, projectionEnd);
+  const actionMenu =
+    /<ActionMenu[\s\S]*?items=\{\[[\s\S]*?\]\}[\s\S]*?\/>/.exec(panel)?.[0];
+
+  assert.ok(panelStart >= 0, "CourseLessonsPanel must remain present");
+  assert.ok(panelEnd > panelStart, "CourseLessonsPanel must remain bounded");
+  assert.match(
+    panel,
+    /className="compact-page-toolbar course-lessons-toolbar"[\s\S]*?aria-label="Управление уроками"/,
+  );
+  assert.match(
+    panel,
+    /className="compact-toolbar-search product-search-wrap"[\s\S]*?Поиск уроков[\s\S]*?placeholder="Название или описание урока…"/,
+  );
+  assert.match(
+    panel,
+    /className="compact-toolbar-rail"[\s\S]*?>\s*Добавить урок\s*</,
+  );
+  assert.match(
+    panel,
+    /className="product-table-wrap course-index-table-wrap course-lessons-table-wrap"[\s\S]*?aria-label="Таблица уроков курса"[\s\S]*?tabIndex=\{0\}/,
+  );
+  assert.match(
+    panel,
+    /<ProductTable className="course-index-table course-lessons-table">/,
+  );
+  assert.match(
+    panel,
+    /Уроки курса: план, экран ученика, проведение и дата обновления/,
+  );
+
+  for (const column of [
+    "position",
+    "title",
+    "plan",
+    "student",
+    "schedule",
+    "updated",
+    "actions",
+  ]) {
+    assert.match(panel, new RegExp(`course-lessons-table-col-${column}`));
+  }
+  for (const label of [
+    "№",
+    "Урок",
+    "План",
+    "Экран ученика",
+    "Проведение",
+    "Обновлён",
+  ]) {
+    assert.match(panel, new RegExp(`>\\s*${label}\\s*<`));
+  }
+  assert.equal(panel.match(/<ProductTableSortableHeaderCell/g)?.length, 6);
+  for (const key of [
+    "position",
+    "title",
+    "plan",
+    "student",
+    "schedule",
+    "updated",
+  ]) {
+    assert.match(
+      panel,
+      new RegExp(`nextProductTableSort\\(current, "${key}"\\)`),
+    );
+  }
+  assert.match(
+    panel,
+    /useState<ProductTableSortState<CourseLessonSortKey>>\(\{[\s\S]*?key: "position",[\s\S]*?direction: "asc"/,
+  );
+  assert.match(projection, /return \[\.\.\.matchingLessons\]\.sort/);
+  assert.doesNotMatch(projection, /jsonRequest|runMutation|method:/);
+  assert.match(
+    workspace,
+    /if \(difference !== 0\) return direction \* difference;[\s\S]*?left\.position - right\.position[\s\S]*?left\.id\.localeCompare\(right\.id\)/,
+  );
+  assert.match(panel, /<ProductTableHeaderCell aria-label="Действия" \/>/);
+  assert.match(panel, /learnerVisibleComponentCount\(lesson\)/);
+  assert.match(panel, /lesson\.studentSlides\.length/);
+  assert.match(panel, /lessonScheduleInfo\(lessonRuns\)/);
+  assert.match(panel, /courseLessonContentUpdatedAt\(lesson\)/);
+  assert.match(panel, /formatCourseLessonUpdatedAt\(lessonUpdatedAt\)/);
+
+  assert.ok(actionMenu, "Course Lesson action menu must remain discoverable");
+  assert.equal(actionMenu.match(/\bid: "/g)?.length, 2);
+  assert.match(actionMenu, /triggerIcon=\{MoreVertical\}/);
+  assert.match(actionMenu, /triggerVariant="ghost"/);
+  assert.match(actionMenu, /\sportal\s/);
+  assert.match(actionMenu, /id: "open"[\s\S]*?label: "Открыть урок"/);
+  assert.match(actionMenu, /id: "schedule"[\s\S]*?label: scheduleActionLabel/);
+  for (const contextualLabel of [
+    "Назначить урок",
+    "Изменить назначение",
+    "Отметить результаты",
+    "Завершить урок",
+  ]) {
+    assert.match(panel, new RegExp(`"${contextualLabel}"`));
+  }
+  assert.doesNotMatch(actionMenu, /Удалить|delete|destructive/);
+
+  const legacyLessonCardPattern =
+    /workspace-lesson-(?:list|item|row|leading-icon|number|title|arrow|schedule|status)/;
+  assert.doesNotMatch(panel, legacyLessonCardPattern);
+  assert.doesNotMatch(styles, legacyLessonCardPattern);
+  assert.doesNotMatch(teachingStyles, legacyLessonCardPattern);
+  assert.doesNotMatch(panel, /<section className="workspace-surface">/);
+});
+
 test("course About keeps settings and audience inline while materials stay course-wide", () => {
   const workspace = source(workspacePath);
   const materials = source(

@@ -23,8 +23,12 @@ const courseCatalogPanel = readFileSync(
   "src/components/course-builder/course-catalog-panel.tsx",
   "utf8",
 );
+const courseWorkspace = readFileSync(
+  "src/components/course-builder/course-workspace.tsx",
+  "utf8",
+);
 
-test("Schedule, Students, and both Courses toolbars are full-width", () => {
+test("Schedule, Students, Courses, and Course Lessons toolbars are full-width", () => {
   assert.match(
     globalStyles,
     /\.course-demo-shell\s*\{[^}]*--course-demo-content-inset: 0\.75rem;/,
@@ -58,6 +62,18 @@ test("Schedule, Students, and both Courses toolbars are full-width", () => {
   assert.match(
     courseCatalogPanel,
     /className="compact-page-toolbar course-catalog-toolbar"/,
+  );
+  assert.match(
+    courseWorkspace,
+    /className="compact-page-toolbar course-lessons-toolbar"[\s\S]*?aria-label="Управление уроками"/,
+  );
+  assert.match(
+    courseWorkspace,
+    /className="compact-toolbar-search product-search-wrap"[\s\S]*?Поиск уроков[\s\S]*?placeholder="Название или описание урока…"/,
+  );
+  assert.match(
+    courseWorkspace,
+    /className="compact-toolbar-rail"[\s\S]*?>\s*Добавить урок\s*</,
   );
   assert.doesNotMatch(
     globalStyles,

@@ -353,11 +353,15 @@ Teacher-private компоненты и поля не должны присут�
 
 Course и Lesson образуют два последовательных уровня навигации. Открытие
 `/courses/[courseId]` не выбирает первый Lesson автоматически: сначала
-показывается Course header и список уроков.
+показывается Course header и таблица уроков. Это presentation projection над
+тем же authored Lesson order, а не новый порядок или persisted representation.
 
 Вкладки Course:
 
-1. **Уроки** — полный ordered list Lesson и создание нового Lesson;
+1. **Уроки** — полный ordered набор Lesson в `ProductTable` и создание нового
+   Lesson. Исходная projection следует `position ASC`; клики по заголовкам
+   меняют только локальный view-sort и не переставляют Lessons в authored
+   модели;
 2. **О курсе** — одна растущая карточка без собственного вертикального scroll.
    В ней inline находятся основные настройки Course, фактическая аудитория из
    групп/отдельных учеников и источники. Секция источников сохраняет честное
@@ -481,6 +485,17 @@ Visual contract Course routes не меняет эту навигационну�
   используют Schedule-плотность 40 px для header и data rows, однострочный
   ellipsis, 12 px обычный cell inset и 4 px action-cell inset. Shared header
   белый, а row dividers используют один `--product-table-divider-color`;
+- сохранённый Course → **Уроки** продолжает неизменённый полноширинный
+  `WorkspaceTabs` прозрачной search/create toolbar без horizontal inset. Таблица
+  `№ / Урок / План / Экран ученика / Проведение / Обновлён / actions`
+  переиспользует ту же Schedule-геометрию. Шесть заголовков сортируют только
+  view projection, default остаётся `position ASC`. Последняя cell имеет 4 px
+  inset и один `MoreVertical` 32 × 32 px; portal-menu содержит «Открыть урок» и
+  контекстное действие проведения, но не delete. Прежний карточный
+  `workspace-lesson-*` layout удалён. Completed-only bounded history
+  проецируется как «Проводился ранее» без ложного total, а `Обновлён`
+  вычисляется как newest timestamp Lesson и сохранившихся Components и
+  Student Slides;
 - `WorkspaceTabs` задаёт общий 40 px tab/tabpanel contract для Course, Lesson,
   Students и profile dialog: roving keyboard focus, horizontal scroll, базовая
   линия 1 px цвета `rgba(20, 20, 20, 0.2)`; container, scroll-row и baseline
@@ -686,9 +701,10 @@ repeat/comment и компактные Course/Lesson/subject titles. UI пред
 
 ## Lesson creation
 
-Кнопка «Добавить урок» открывает modal. Текущий manual create требует название
-Lesson и создаёт пустую Lesson. Teacher comment редактируется затем в модалке
-настроек Lesson и сохраняется в `summary`.
+Кнопка «Добавить урок» находится в прозрачной полноширинной Course Lessons
+toolbar и открывает modal. Текущий manual create требует название Lesson и
+создаёт пустую Lesson. Teacher comment редактируется затем в модалке настроек
+Lesson и сохраняется в `summary`.
 
 Ручное создание сохраняет пустую Lesson и не расходует AI tokens. Начиная с
 release `3a94878` production UI включает два AI-flow:
@@ -1032,8 +1048,9 @@ release/postflight завершены. Learner Course consumption и live Studen
 11. Course показывает четыре собственные вкладки; **О курсе** растёт по
     содержимому без внутреннего vertical scroll, а **Материалы** остаются
     course-wide библиотекой. Новый Course начинает с **О курсе**;
-    выбранная Lesson показывает отдельный H1, backlink с названием Course и
-    пять Lesson-вкладок.
+    **Уроки** показывают полноширинную search/create toolbar и плотную таблицу с
+    view-only sort поверх default `position ASC`; выбранная Lesson показывает
+    отдельный H1, backlink с названием Course и пять Lesson-вкладок.
 12. Teacher header показывает «Расписание / Ученики / Курсы», а server guard
     не открывает teacher-only shells Guest, Parent или transitional Student.
 

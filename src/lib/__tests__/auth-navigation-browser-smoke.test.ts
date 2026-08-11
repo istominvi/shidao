@@ -27,6 +27,7 @@ const E2E_SCHOOL_ID = "66666666-6666-4666-8666-666666666666";
 const E2E_COURSE_ID = "33333333-3333-4333-8333-333333333333";
 const E2E_SECOND_COURSE_ID = "33333333-3333-4333-8333-333333333334";
 const E2E_LESSON_ID = "44444444-4444-4444-8444-444444444444";
+const E2E_SECOND_LESSON_ID = "44444444-4444-4444-8444-444444444445";
 const E2E_COMPONENT_ID = "77777777-7777-4777-8777-777777777771";
 const E2E_STORED_FILE_ID = "77777777-7777-4777-8777-777777777772";
 const E2E_LEARNER_ANNA_ID = "88888888-8888-4888-8888-888888888881";
@@ -120,6 +121,18 @@ const E2E_LESSON_ROW = {
   studentSlides: [],
   created_at: "2026-08-05T08:30:00.000Z",
   updated_at: "2026-08-05T09:00:00.000Z",
+};
+
+const E2E_SECOND_LESSON_ROW = {
+  id: E2E_SECOND_LESSON_ID,
+  course_id: E2E_COURSE_ID,
+  position: 2,
+  title: "Travel English · airport",
+  summary: "Практикуем диалоги в аэропорту и полезные вопросы.",
+  components: [],
+  studentSlides: [],
+  created_at: "2026-08-04T08:30:00.000Z",
+  updated_at: "2026-08-04T09:00:00.000Z",
 };
 
 const E2E_TEACHER_LEARNER_ROWS = [
@@ -340,6 +353,7 @@ let e2eScheduleFixtureRunCount: 1 | 2 = 1;
 let e2eCourseArchived = false;
 let e2eSecondCourseVisible = false;
 let e2eSecondCourseArchived = false;
+let e2eSecondLessonVisible = false;
 const e2eCompletionPayloads: E2ECompletionPayload[] = [];
 const e2eCompletedLearningRecordRows: E2ELearningRecordRow[] = [];
 
@@ -1635,24 +1649,27 @@ async function handleMockSupabase(
 
   if (requestUrl.pathname === "/rest/v1/lesson") {
     const courseFilter = requestUrl.searchParams.get("course_id");
+    const lessonFilter = readEqFilter(requestUrl, "id");
     if (courseFilter && !courseFilter.includes(E2E_COURSE_ID)) {
       json(response, 200, []);
       return;
     }
 
     const select = requestUrl.searchParams.get("select") ?? "";
+    const lessonRows = [
+      ...(e2eSecondLessonVisible ? [E2E_SECOND_LESSON_ROW] : []),
+      E2E_LESSON_ROW,
+    ].filter((lesson) => !lessonFilter || lesson.id === lessonFilter);
     json(
       response,
       200,
       select.includes("components:lesson_component")
-        ? [E2E_LESSON_ROW]
-        : [
-            {
-              id: E2E_LESSON_ID,
-              course_id: E2E_COURSE_ID,
-              title: E2E_LESSON_TITLE,
-            },
-          ],
+        ? lessonRows
+        : lessonRows.map((lesson) => ({
+            id: lesson.id,
+            course_id: lesson.course_id,
+            title: lesson.title,
+          })),
     );
     return;
   }
@@ -5318,9 +5335,18 @@ test("browser smoke: completion UI keeps private comments teacher-only and publi
     observedComment: string;
     publishObserved: boolean;
   }) {
-    await runtime.page
+    const runLessonRow = runtime.page.locator(
+      `[aria-label="Таблица уроков курса"] tbody tr:has-text("${E2E_LESSON_TITLE}")`,
+    );
+    await runLessonRow
       .getByRole("button", {
-        name: "Идёт сейчас. Настроить проведение урока",
+        name: `Действия с уроком «${E2E_LESSON_TITLE}»`,
+        exact: true,
+      })
+      .click();
+    await runtime.page
+      .getByRole("menuitem", {
+        name: "Завершить урок",
         exact: true,
       })
       .click();
@@ -6284,6 +6310,7 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
   }
 
   e2eSecondCourseVisible = true;
+  e2eSecondLessonVisible = true;
   const runtime = await openPage({ cookie: authenticatedCookieValue() });
 
   try {
@@ -6971,6 +6998,228 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
     });
     assert.ok(Math.abs(courseVisual.tabBottom - courseVisual.tabsBottom) < 0.5);
 
+    const courseLessonsVisual = await runtime.page.evaluate(() => {
+      const toolbar = document.querySelector<HTMLElement>(
+        ".course-lessons-toolbar",
+      );
+      const search = toolbar?.querySelector<HTMLElement>(
+        ".compact-toolbar-search",
+      );
+      const rail = toolbar?.querySelector<HTMLElement>(".compact-toolbar-rail");
+      const wrapper = document.querySelector<HTMLElement>(
+        ".course-lessons-table-wrap",
+      );
+      const table = wrapper?.querySelector<HTMLElement>(
+        ".course-lessons-table",
+      );
+      const headerRow = table?.querySelector<HTMLElement>("thead tr");
+      const firstRow = table?.querySelector<HTMLElement>("tbody tr");
+      const secondRow = table?.querySelector<HTMLElement>(
+        "tbody tr:nth-child(2)",
+      );
+      const firstCell = firstRow?.querySelector<HTMLElement>("td:first-child");
+      const actionCell = firstRow?.querySelector<HTMLElement>("td:last-child");
+      const actionTrigger = actionCell?.querySelector<HTMLElement>(
+        ".action-menu-trigger",
+      );
+      const headerCell = table?.querySelector<HTMLElement>("thead th");
+      if (
+        !toolbar ||
+        !search ||
+        !rail ||
+        !wrapper ||
+        !table ||
+        !headerRow ||
+        !firstRow ||
+        !secondRow ||
+        !firstCell ||
+        !actionCell ||
+        !actionTrigger ||
+        !headerCell
+      ) {
+        throw new Error("Course Lessons canonical table is missing");
+      }
+
+      const toolbarRect = toolbar.getBoundingClientRect();
+      const searchRect = search.getBoundingClientRect();
+      const railRect = rail.getBoundingClientRect();
+      const wrapperStyle = getComputedStyle(wrapper);
+      const firstCellStyle = getComputedStyle(firstCell);
+      const actionCellStyle = getComputedStyle(actionCell);
+      const actionTriggerRect = actionTrigger.getBoundingClientRect();
+      return {
+        toolbarPaddingLeft: getComputedStyle(toolbar).paddingLeft,
+        toolbarPaddingRight: getComputedStyle(toolbar).paddingRight,
+        searchStartInset: searchRect.left - toolbarRect.left,
+        railEndInset: toolbarRect.right - railRect.right,
+        wrapperBackgroundColor: wrapperStyle.backgroundColor,
+        wrapperBorderWidths: [
+          wrapperStyle.borderTopWidth,
+          wrapperStyle.borderRightWidth,
+          wrapperStyle.borderBottomWidth,
+          wrapperStyle.borderLeftWidth,
+        ],
+        wrapperBorderRadius: wrapperStyle.borderRadius,
+        wrapperBoxShadow: wrapperStyle.boxShadow,
+        wrapperOverflowX: wrapperStyle.overflowX,
+        tableBackgroundColor: getComputedStyle(table).backgroundColor,
+        headerHeight: headerRow.getBoundingClientRect().height,
+        headerCellCount: table.querySelectorAll("thead th").length,
+        rowHeights: Array.from(
+          table.querySelectorAll("tbody tr"),
+          (row) => row.getBoundingClientRect().height,
+        ),
+        firstCellPaddingLeft: firstCellStyle.paddingLeft,
+        firstCellPaddingRight: firstCellStyle.paddingRight,
+        actionCellPaddingLeft: actionCellStyle.paddingLeft,
+        actionCellPaddingRight: actionCellStyle.paddingRight,
+        actionTriggerWidth: actionTriggerRect.width,
+        actionTriggerHeight: actionTriggerRect.height,
+        headerDivider: getComputedStyle(headerCell).borderBottomColor,
+        bodyDivider: getComputedStyle(secondRow).borderTopColor,
+      };
+    });
+    assert.deepEqual(
+      {
+        toolbarPaddingLeft: courseLessonsVisual.toolbarPaddingLeft,
+        toolbarPaddingRight: courseLessonsVisual.toolbarPaddingRight,
+        searchStartInset: courseLessonsVisual.searchStartInset,
+        railEndInset: courseLessonsVisual.railEndInset,
+      },
+      {
+        toolbarPaddingLeft: "0px",
+        toolbarPaddingRight: "0px",
+        searchStartInset: 0,
+        railEndInset: 0,
+      },
+    );
+    assert.equal(
+      courseLessonsVisual.wrapperBackgroundColor,
+      "rgb(255, 255, 255)",
+    );
+    assert.deepEqual(courseLessonsVisual.wrapperBorderWidths, [
+      "0px",
+      "0px",
+      "0px",
+      "0px",
+    ]);
+    assert.equal(courseLessonsVisual.wrapperBorderRadius, "12px");
+    assert.notEqual(courseLessonsVisual.wrapperBoxShadow, "none");
+    assert.equal(courseLessonsVisual.wrapperOverflowX, "auto");
+    assert.equal(
+      courseLessonsVisual.tableBackgroundColor,
+      "rgb(255, 255, 255)",
+    );
+    assert.ok(Math.abs(courseLessonsVisual.headerHeight - 40) < 0.5);
+    assert.equal(courseLessonsVisual.headerCellCount, 7);
+    assert.ok(
+      courseLessonsVisual.rowHeights.every(
+        (height) => Math.abs(height - 40) < 0.5,
+      ),
+    );
+    assert.equal(courseLessonsVisual.firstCellPaddingLeft, "12px");
+    assert.equal(courseLessonsVisual.firstCellPaddingRight, "12px");
+    assert.equal(courseLessonsVisual.actionCellPaddingLeft, "4px");
+    assert.equal(courseLessonsVisual.actionCellPaddingRight, "4px");
+    assert.ok(Math.abs(courseLessonsVisual.actionTriggerWidth - 32) < 0.5);
+    assert.ok(Math.abs(courseLessonsVisual.actionTriggerHeight - 32) < 0.5);
+    assert.equal(
+      courseLessonsVisual.headerDivider,
+      courseLessonsVisual.bodyDivider,
+    );
+
+    const lessonPositionHeader = runtime.page.getByRole("columnheader", {
+      name: "№",
+      exact: true,
+    });
+    const lessonTitleHeader = runtime.page.getByRole("columnheader", {
+      name: "Урок",
+      exact: true,
+    });
+    assert.equal(
+      await lessonPositionHeader.getAttribute("aria-sort"),
+      "ascending",
+    );
+    assert.equal(await lessonTitleHeader.getAttribute("aria-sort"), "none");
+    assert.deepEqual(
+      await runtime.page
+        .locator('[aria-label="Таблица уроков курса"] tbody tr td:first-child')
+        .allTextContents(),
+      ["2", "4"],
+    );
+    await lessonTitleHeader
+      .getByRole("button", { name: "Урок", exact: true })
+      .click();
+    assert.equal(
+      await lessonTitleHeader.getAttribute("aria-sort"),
+      "ascending",
+    );
+    assert.deepEqual(
+      await runtime.page
+        .locator('[aria-label="Таблица уроков курса"] tbody tr td:nth-child(2)')
+        .allTextContents(),
+      [E2E_LESSON_TITLE, E2E_SECOND_LESSON_ROW.title],
+    );
+    await lessonTitleHeader
+      .getByRole("button", { name: "Урок", exact: true })
+      .click();
+    assert.equal(
+      await lessonTitleHeader.getAttribute("aria-sort"),
+      "descending",
+    );
+    assert.deepEqual(
+      await runtime.page
+        .locator('[aria-label="Таблица уроков курса"] tbody tr td:nth-child(2)')
+        .allTextContents(),
+      [E2E_SECOND_LESSON_ROW.title, E2E_LESSON_TITLE],
+    );
+
+    const lessonSearch = runtime.page.getByRole("searchbox", {
+      name: "Поиск уроков",
+      exact: true,
+    });
+    await lessonSearch.fill("airport");
+    assert.deepEqual(
+      await runtime.page
+        .locator('[aria-label="Таблица уроков курса"] tbody tr td:nth-child(2)')
+        .allTextContents(),
+      [E2E_SECOND_LESSON_ROW.title],
+    );
+    await lessonSearch.fill("");
+
+    const lessonRow = runtime.page.locator(
+      `[aria-label="Таблица уроков курса"] tbody tr:has-text("${E2E_LESSON_TITLE}")`,
+    );
+    const lessonActionTrigger = lessonRow.getByRole("button", {
+      name: `Действия с уроком «${E2E_LESSON_TITLE}»`,
+      exact: true,
+    });
+    assert.equal(
+      await lessonActionTrigger.locator(".lucide-ellipsis-vertical").count(),
+      1,
+    );
+    await lessonActionTrigger.click();
+    const lessonActionMenu = runtime.page.locator(
+      "body > .action-menu-panel-portal",
+    );
+    await lessonActionMenu
+      .getByRole("menuitem", { name: "Открыть урок", exact: true })
+      .waitFor();
+    assert.equal(await lessonActionMenu.getByRole("menuitem").count(), 2);
+    await lessonActionMenu
+      .getByRole("menuitem", { name: "Открыть урок", exact: true })
+      .press("Escape");
+    await lessonActionMenu.waitFor({ state: "detached" });
+    await lessonRow
+      .locator(".course-lessons-table-action-menu .action-menu-trigger:focus")
+      .waitFor();
+    assert.equal(
+      await lessonActionTrigger.evaluate(
+        (node) => node === document.activeElement,
+      ),
+      true,
+    );
+
     let html = await runtime.page.content();
     assert.match(html, /aria-label="Разделы курса"/);
     assert.match(html, /Уроки/);
@@ -7288,6 +7537,7 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
   } finally {
     e2eSecondCourseVisible = false;
     e2eSecondCourseArchived = false;
+    e2eSecondLessonVisible = false;
     await runtime.close();
   }
 });
@@ -7524,8 +7774,64 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
         level: 1,
       })
       .waitFor();
+    const mobileCourseLessons = await runtime.page.evaluate(() => {
+      const toolbar = document.querySelector<HTMLElement>(
+        ".course-lessons-toolbar",
+      );
+      const wrapper = document.querySelector<HTMLElement>(
+        ".course-lessons-table-wrap",
+      );
+      const addButton = toolbar?.querySelector<HTMLElement>(".product-btn");
+      if (!toolbar || !wrapper || !addButton) {
+        throw new Error("Mobile Course Lessons controls are missing");
+      }
+      const viewportWidth = document.documentElement.clientWidth;
+      const toolbarRect = toolbar.getBoundingClientRect();
+      const wrapperRect = wrapper.getBoundingClientRect();
+      const toolbarStyle = getComputedStyle(toolbar);
+      return {
+        documentClientWidth: viewportWidth,
+        documentScrollWidth: document.documentElement.scrollWidth,
+        toolbarInsideViewport:
+          toolbarRect.left >= 0 && toolbarRect.right <= viewportWidth,
+        wrapperInsideViewport:
+          wrapperRect.left >= 0 && wrapperRect.right <= viewportWidth,
+        toolbarPaddingLeft: toolbarStyle.paddingLeft,
+        toolbarPaddingRight: toolbarStyle.paddingRight,
+        addButtonHeight: getComputedStyle(addButton).height,
+        wrapperOverflowX: getComputedStyle(wrapper).overflowX,
+        wrapperClientWidth: wrapper.clientWidth,
+        wrapperScrollWidth: wrapper.scrollWidth,
+      };
+    });
+    assert.deepEqual(
+      {
+        documentClientWidth: mobileCourseLessons.documentClientWidth,
+        documentScrollWidth: mobileCourseLessons.documentScrollWidth,
+        toolbarInsideViewport: mobileCourseLessons.toolbarInsideViewport,
+        wrapperInsideViewport: mobileCourseLessons.wrapperInsideViewport,
+        toolbarPaddingLeft: mobileCourseLessons.toolbarPaddingLeft,
+        toolbarPaddingRight: mobileCourseLessons.toolbarPaddingRight,
+        addButtonHeight: mobileCourseLessons.addButtonHeight,
+        wrapperOverflowX: mobileCourseLessons.wrapperOverflowX,
+      },
+      {
+        documentClientWidth: 375,
+        documentScrollWidth: 375,
+        toolbarInsideViewport: true,
+        wrapperInsideViewport: true,
+        toolbarPaddingLeft: "0px",
+        toolbarPaddingRight: "0px",
+        addButtonHeight: "40px",
+        wrapperOverflowX: "auto",
+      },
+    );
+    assert.ok(
+      mobileCourseLessons.wrapperScrollWidth >
+        mobileCourseLessons.wrapperClientWidth,
+    );
     await runtime.page
-      .getByRole("button", { name: new RegExp(E2E_LESSON_TITLE) })
+      .getByRole("button", { name: E2E_LESSON_TITLE, exact: true })
       .click();
     await runtime.page
       .getByRole("heading", {
