@@ -1,7 +1,7 @@
 # ShiDao V2 — актуальная глобальная спецификация
 
 **Статус:** нормативные границы текущей архитектуры и будущего развития
-**Актуально на:** 10 августа 2026 года
+**Актуально на:** 12 августа 2026 года
 **Repository/branch:** `istominvi/shidao`, `main`
 **Рабочее приложение:** `v2.shidao.ru`
 **Публичный домен:** `shidao.ru` — landing-only
@@ -256,20 +256,35 @@ alias `CourseAsset` представляет linked StoredFile в Course attachm
 
 ## 12. Code-first Component platform
 
-Current P0 keys:
+Current source P0 keys:
 
 ```text
 heading
 rich_text
 callout
 quote
-divider
 image
+video
+audio
 slideshow
 single_choice_poll
 matching_game
+choice_quiz
+fill_blanks
+word_bank
+sequence
+categorize
+free_response
+external_link
+word_builder
+vocabulary_list
 file
 ```
+
+Registry содержит 20 active keys. Layout-only `divider` исключён; порядок
+задаёт Lesson, а learner grouping — Student Screen Slides. Продуктовые
+границы типов и сопоставление с ProgressMe см. в
+[`docs/product/course-component-catalog.md`](../product/course-component-catalog.md).
 
 Registry является источником key/version, category/title, Zod payload and
 placement schemas, defaults и capabilities. MCP JSON Schema генерируется из

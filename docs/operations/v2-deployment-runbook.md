@@ -108,6 +108,66 @@ Worktree должен содержать только изменения тек�
 
 ## 4. Если release содержит DB migration
 
+### Course Component contract cleanup
+
+Для exact migration
+`20260811154138_remove_divider_components.sql` release является coupled
+DB+web contract: production DB cleanup применён 11 августа 2026 года, а
+новый registry больше не читает `divider`. До переключения Coolify на
+зависимый image старый web продолжает читать Course, но попытка снова
+создать `divider` получит CHECK violation. Успешный DB rollout не является
+доказательством web deployment.
+
+Порядок выполнения:
+
+1. Через project-local `.codex/ssh-db.local.toml` выполнить read-only sanity:
+   проверить canonical таблицы/RPC, отсутствие `lesson_step`, counts
+   Component/Slide, `divider`, publication snapshot и плотность positions.
+2. Создать timestamped full-format `pg_dump -Fc`; подтвердить nonzero size,
+   `pg_restore -l` и SHA-256. Backup не заменяется schema-only snapshot.
+3. Остановить rollout, если хотя бы одна immutable publication revision
+   содержит `typeKey='divider'`; исторические revisions нельзя переписывать
+   неявно.
+4. Применить точный tracked SQL через owner `psql -X -v ON_ERROR_STOP=1`.
+   Migration сама открывает и завершает transaction; внешний `-1` не добавлять.
+5. Postflight должен показать `divider=0`, плотные Component/Slide positions,
+   ноль пустых Slides, ноль publication dividers и ноль exactly-one violations;
+   Course/Lesson counts сохраняются.
+6. Через read-only SSH tunnel запустить `npm run db:snapshot`, проверить полный
+   diff и зафиксировать новый SHA-256 snapshot в database docs.
+7. Merge/push нового web release выполнить сразу после успешного postflight;
+   затем подтвердить exact running `SOURCE_COMMIT`, image, restart count,
+   HTTPS/guest/CSRF и authenticated Course Builder smoke.
+
+Production DB execution record, 11 августа 2026 года:
+
+- preflight подтвердил PostgreSQL 15.8, canonical ShiDao identity,
+  5 Course, 16 Lesson, 104 Component, 6 Slides, `divider=15` в 12 Lesson/
+  4 Course, из них 2 learner-visible; publication divider, non-dense
+  Component/Slide positions и exactly-one violations равны `0`;
+- verified full-format backup
+  `/root/shidao-db-backups/shidao-before-remove-divider-20260811T160822Z.dump`
+  имеет size `1146321` bytes, 1427 restore-list entries и SHA-256
+  `b82027b25a7c0d96471fe46da07d9795a64c1924ba3e7522368c379755e78449`;
+- migration checksum:
+  `21791932067f8f45a5ab9fde8d2ef6db08ca661f7489a28f333c8dc52c206bd5`;
+- первый запуск под non-owner `postgres` завершился ошибкой и полным
+  rollback. Read-only repeat подтвердил неизменные `104/15` и
+  прежний CHECK, поэтому эта попытка не считается partial apply;
+- read-only owner check подтвердил `supabase_admin`; неизменённый
+  tracked SQL под этим owner с `ON_ERROR_STOP` завершился `COMMIT`;
+- postflight: 5 Course, 16 Lesson, 89 Component, 6 Slides, `divider=0`,
+  publication divider `0`, non-dense Component/Slide positions `0`, empty
+  Slides `0`, exactly-one violations `0`;
+- active CHECK требует `btrim(type_key) <> ''` и
+  `lower(btrim(type_key)) <> 'divider'`;
+- production snapshot сгенерирован в `2026-08-11T16:15:55Z`, SHA-256
+  `c6da0f149f29be13cb1a4cd0d5e4642e8ce24edc04558b2431e2dbbc4728b23c`;
+  diff от предыдущего snapshot ограничен generated timestamp и CHECK.
+
+Web merge/deploy и exact running-image postflight для этого release фиксируются
+отдельно после фактического Coolify rollout.
+
 Web с Groups/mixed audience нельзя выпускать раньше последовательного успешного
 применения `20260806190044_lesson_runs_learning_records.sql` и
 `20260806220726_learner_groups_mixed_course_audience.sql`: students/audience

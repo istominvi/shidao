@@ -3,7 +3,7 @@
 **Формат:** стратегическое видение и основа для презентации
 **Аудитория:** команда, партнёры, преподаватели, родители, потенциальные инвесторы
 **Версия:** 2.0
-**Актуально на:** 10 августа 2026 года
+**Актуально на:** 12 августа 2026 года
 **Статус:** целевая продуктовая модель; не является перечнем уже запущенных функций
 
 ## Как читать этот документ
@@ -519,21 +519,29 @@ Course templates остаются later.
 попадает на экран учащегося.
 
 В «Плане урока» находится один ordered Component list без Step/root Step.
-Преподаватель выбирает один из десяти registry types, редактирует и
-переставляет Components. Новый Component всегда private. Чтобы показать его
-учащемуся, преподаватель явно назначает Component на существующий или новый
-Student Screen Slide. Title Lesson показывается ученику автоматически.
+В current source преподаватель выбирает один из 20 registry types:
+`heading`, `rich_text`, `callout`, `quote`, `image`, `video`, `audio`,
+`slideshow`, `single_choice_poll`, `matching_game`, `choice_quiz`,
+`fill_blanks`, `word_bank`, `sequence`, `categorize`, `free_response`,
+`external_link`, `word_builder`, `vocabulary_list` и `file`. Новый
+Component всегда private. Чтобы показать его учащемуся, преподаватель явно
+назначает Component на существующий или новый Student Screen Slide. Title
+Lesson показывается ученику автоматически. Точные current/later границы
+описаны в
+[`docs/product/course-component-catalog.md`](../product/course-component-catalog.md).
 
-Текущий RouterAI Lesson planning уже может предлагать после preview:
+Current source RouterAI Lesson planning может предлагать после preview
+только то же ограниченное подмножество:
 
 - title и teacher comment Lesson;
-- `heading`, `rich_text`, `callout` и `divider` Components;
+- `heading`, `rich_text` и `callout` Components;
 - `single_choice_poll` и `matching_game` Components.
 
 Новые AI Components остаются private-by-default и записываются только после
-явного Apply; image/slideshow/file типы и назначение на Student Screen Slides AI
-не генерирует. AI-генерация Homework и индивидуальных заданий добавляется
-только после появления соответствующих persisted Homework и audience contracts.
+явного Apply; остальные 15 active registry types и назначение на Student
+Screen Slides AI не генерирует. AI-генерация Homework и индивидуальных заданий
+добавляется только после появления соответствующих persisted Homework и audience
+contracts.
 
 Свободные write-capable команды редактирования обычным языком остаются later:
 

@@ -614,7 +614,6 @@ export function createCourseBuilderService(
         text: course.goal,
         tone: "info",
       });
-      await plan("divider", {});
 
       for (const asset of course.attachments.filter(
         (attachment) => attachment.status === "ready",

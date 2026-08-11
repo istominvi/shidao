@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
+import { componentTypeKeys } from "../../modules/course-builder/registry/contracts";
 
 function source(path: string) {
   return readFileSync(join(process.cwd(), path), "utf8");
@@ -10,6 +11,8 @@ function source(path: string) {
 const workspacePath = "src/components/course-builder/course-workspace.tsx";
 const lessonAuthoringPath =
   "src/components/course-builder/lesson-authoring-workspace.tsx";
+const componentEditorPath =
+  "src/components/course-builder/component-payload-editor.tsx";
 
 test("workspace writes persisted course, lesson, and component entities", () => {
   const combined = [source(workspacePath), source(lessonAuthoringPath)].join(
@@ -355,15 +358,33 @@ test("component picker is registry-driven and grouped into Russian categories", 
   assert.match(authoring, /componentDefinitions\.filter/);
   for (const category of [
     "Текст",
-    "Изображения",
+    "Медиа",
     "Игры и активности",
-    "Оформление",
-    "Файлы",
+    "Ссылки и файлы",
   ]) {
     assert.match(authoring, new RegExp(category));
   }
+  assert.doesNotMatch(authoring, /Разделители и структура плана/);
   assert.doesNotMatch(authoring, /visibility: "staff_only"/);
   assert.match(authoring, /сразу перейти к редактированию/);
+});
+
+test("component payload editor covers every active registry type without divider", () => {
+  const editor = source(componentEditorPath);
+  const payloadSwitchStart = editor.indexOf("switch (typeKey)");
+  const placementStart = editor.indexOf("function PlacementFields");
+  assert.ok(payloadSwitchStart >= 0 && placementStart > payloadSwitchStart);
+
+  const payloadSwitch = editor.slice(payloadSwitchStart, placementStart);
+  const editorKeys = Array.from(
+    payloadSwitch.matchAll(/^\s{4}case "([a-z_]+)":/gm),
+    (match) => match[1],
+  );
+  assert.deepEqual(editorKeys, componentTypeKeys);
+  assert.doesNotMatch(editor, /case "divider"|typeKey === "divider"/);
+  assert.match(editor, /HTTPS-ссылка на видео/);
+  assert.match(editor, /Допустимые варианты разделяйте \|/);
+  assert.match(editor, /элемент = точное название категории/);
 });
 
 test("component cards persist edit, delete, order, and ordered Student Screen placement", () => {

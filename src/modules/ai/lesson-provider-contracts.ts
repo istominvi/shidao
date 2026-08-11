@@ -10,7 +10,6 @@ const aiLessonProviderBlockKindSchema = z.enum([
   "heading",
   "rich_text",
   "callout",
-  "divider",
   "single_choice_poll",
   "matching_game",
 ]);
@@ -151,8 +150,6 @@ export function toCanonicalAiLessonPlan(
                 tone: "info",
               },
             };
-          case "divider":
-            return { typeKey: "divider", payload: {} };
           case "single_choice_poll": {
             const question = firstContent(block.title, block.body);
             const choices = uniqueStrings(block.choices);
@@ -194,12 +191,7 @@ export function toCanonicalAiLessonPlan(
       },
     );
 
-    if (
-      !components.some(
-        (component) =>
-          component.typeKey !== "heading" && component.typeKey !== "divider",
-      )
-    ) {
+    if (!components.some((component) => component.typeKey !== "heading")) {
       return invalidProviderOutput(requestId);
     }
 

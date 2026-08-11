@@ -7,6 +7,8 @@
 - **Проверенный application release:** `0c426ff`
 - **Current visual refinement:** единые `AppPageHeader` и `WorkspaceTabs`
   развёрнуты в Coolify и прошли authenticated production postflight
+- **Component registry note:** таблица ниже — historical snapshot первого
+  milestone, а не current registry
 
 ## 1. Результат для заказчика
 
@@ -115,9 +117,16 @@ component order. Во время будущего live-урока learner surfac
 
 Если semantic parsing вложений ещё не реализован, UI явно показывает, что файл «прикреплён», а не «проанализирован».
 
-## 5. Первый registry компонентов
+## 5. Исторический первый registry компонентов
 
-Обязательный демонстрационный набор:
+Таблица фиксирует демонстрационный baseline release `0c426ff` от 4 августа
+2026 года и сознательно не переписывает историю. В том baseline был `divider`;
+текущий registry содержит 20 типов и исключает `divider`. Current contract и
+решение о cleanup см. в
+[`docs/product/course-component-catalog.md`](../product/course-component-catalog.md) и
+[`docs/architecture/lesson-workflow-model.md`](../architecture/lesson-workflow-model.md).
+
+Исторический демонстрационный набор:
 
 | Key                  | Название в UI     | Назначение                                    |
 | -------------------- | ----------------- | --------------------------------------------- |
@@ -144,7 +153,8 @@ component order. Во время будущего live-урока learner surfac
 - capabilities;
 - JSON Schema, генерируемую из того же источника для MCP.
 
-Текущий payload editor реализован единым switch по `ComponentTypeKey`, а
+На момент первого milestone payload editor был реализован единым switch по
+`ComponentTypeKey`, а
 teacher/Student Screen renderers — отдельной exhaustive typed map. Оба слоя
 используют registry contracts.
 

@@ -7039,6 +7039,60 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
     assert.match(html, /Домашнее задание/);
 
     await runtime.page
+      .getByRole("button", { name: "Компонент", exact: true })
+      .click();
+    const componentDialog = runtime.page.getByRole("dialog", {
+      name: "Компоненты",
+      exact: true,
+    });
+    await componentDialog.waitFor();
+    const componentCategories = componentDialog.getByRole("group", {
+      name: "Категории компонентов",
+      exact: true,
+    });
+    const expectedComponentKeysByCategory = {
+      Текст: ["heading", "rich_text", "callout", "quote"],
+      Медиа: ["image", "video", "audio", "slideshow"],
+      "Игры и активности": [
+        "single_choice_poll",
+        "matching_game",
+        "choice_quiz",
+        "fill_blanks",
+        "word_bank",
+        "sequence",
+        "categorize",
+        "free_response",
+        "word_builder",
+        "vocabulary_list",
+      ],
+      "Ссылки и файлы": ["external_link", "file"],
+    } as const;
+
+    for (const [category, expectedKeys] of Object.entries(
+      expectedComponentKeysByCategory,
+    )) {
+      await componentCategories
+        .getByRole("button", { name: category, exact: true })
+        .click();
+      const renderedKeys = await runtime.page.evaluate(() =>
+        Array.from(
+          document.querySelectorAll<HTMLElement>(
+            '[role="dialog"] [data-component-type-key]',
+          ),
+          (node) => node.dataset.componentTypeKey ?? null,
+        ),
+      );
+      assert.deepEqual(renderedKeys, expectedKeys);
+    }
+    assert.equal(
+      await componentDialog.getByText("Разделитель", { exact: true }).count(),
+      0,
+    );
+    await componentDialog
+      .getByRole("button", { name: "Закрыть", exact: true })
+      .click();
+
+    await runtime.page
       .getByRole("button", {
         name: `Вернуться: ${E2E_COURSE_TITLE}`,
         exact: true,

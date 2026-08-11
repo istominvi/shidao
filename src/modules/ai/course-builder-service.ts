@@ -53,10 +53,9 @@ const aiProviderBlockInstructions = [
   "- heading: текст заголовка в body (допустимо в title), остальные поля пустые.",
   "- rich_text: содержательный learner-facing Markdown в body; title пустой.",
   "- callout: короткая подсказка в body, необязательный заголовок в title.",
-  "- divider: все поля, кроме kind, пустые; используй только между смысловыми частями.",
   "- single_choice_poll: нейтральный вопрос в title и 2–8 вариантов в choices; правильный ответ не отмечай.",
   "- matching_game: инструкция в title и 2–8 пар left/right в matches.",
-  "Составь 4–8 разнообразных блоков. Обязательно добавь учебное содержание, а когда уместно — интерактивный блок. Не составляй урок только из heading и divider.",
+  "Составь 4–8 разнообразных блоков. Обязательно добавь учебное содержание, а когда уместно — интерактивный блок. Не составляй урок только из heading.",
 ].join("\n");
 
 export type AiCourseBuilderApplicationService = Pick<

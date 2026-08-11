@@ -31,7 +31,10 @@ function lessonPlanApplyInput(lessonId: string | null) {
           typeKey: "rich_text",
           payload: { content: "Обсудим новую тему.", format: "markdown" },
         },
-        { typeKey: "divider", payload: {} },
+        {
+          typeKey: "callout",
+          payload: { text: "Закрепите пример.", tone: "info" },
+        },
       ],
     },
   };

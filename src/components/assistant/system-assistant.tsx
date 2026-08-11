@@ -189,8 +189,6 @@ function lessonComponentPreview(component: AiLessonComponentPlan) {
           ? `${component.payload.title}: ${component.payload.text}`
           : component.payload.text,
       };
-    case "divider":
-      return { label: "Разделитель", content: "Смысловой переход" };
     case "single_choice_poll":
       return {
         label: "Опрос",

@@ -252,7 +252,10 @@ function lessonPlanPreview(lessonId: string | null): AiLessonPlanPreview {
           typeKey: "rich_text",
           payload: { content: "Обсудим новую тему.", format: "markdown" },
         },
-        { typeKey: "divider", payload: {} },
+        {
+          typeKey: "callout",
+          payload: { text: "Закрепите пример.", tone: "info" },
+        },
       ],
     },
     ...METADATA,

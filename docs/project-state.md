@@ -186,7 +186,7 @@ Shared `ProductTableHead` теперь белый, а разделители
 строк этих таблиц получают один `--product-table-divider-color`. Это UI-only
 source change без API, schema или migration;
 deployment ещё не выполнен. Для текущего follow-up зелёные typecheck, lint,
-format, production build, `git diff --check`, `454/454` unit/e2e и `22/22`
+format, production build, `git diff --check`, `456/456` unit/e2e и `22/22`
 production-browser scenarios.
 
 **Current source Students table/actions refinement (следующий deployment):**
@@ -710,18 +710,28 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
 
 ### Component registry
 
-Текущий code-first registry содержит ровно десять типов:
+Текущий source code-first registry содержит ровно 20 активных типов:
 
 ```text
 heading
 rich_text
 callout
 quote
-divider
 image
+video
+audio
 slideshow
 single_choice_poll
 matching_game
+choice_quiz
+fill_blanks
+word_bank
+sequence
+categorize
+free_response
+external_link
+word_builder
+vocabulary_list
 file
 ```
 
@@ -730,6 +740,15 @@ Zod payload/placement schemas, defaults и capabilities. Текущий payload 
 использует один switch по `ComponentTypeKey`, а teacher/Student Screen
 renderers — отдельную exhaustive typed map. JSON Schema для MCP генерируется из
 registry contracts.
+
+`video`, `audio` и `external_link` в этом срезе принимают только прямые
+HTTPS URL; upload/transcoding медиа не заявлены. Самопроверка новых
+интерактивных типов и ответ `free_response` живут только в React state
+текущего preview: learner answer persistence, scoring, attempts и teacher review
+ещё не реализованы. Отдельных voice-recording, arbitrary embed и
+image-match типов в active registry нет. Продуктовое сопоставление с
+ProgressMe и границы этого среза зафиксированы в
+[`docs/product/course-component-catalog.md`](./product/course-component-catalog.md).
 
 ### Development MCP
 
@@ -761,9 +780,10 @@ application service/contracts внутри authenticated web request.
   записывает; UI показывает preview, model и token usage, а Lessons появляются
   только после отдельного Apply.
 - Lesson planning поддерживает новую или существующую Lesson. Provider output
-  ограничен типами `heading`, `rich_text`, `callout`, `divider`,
+  по-прежнему ограничен пятью типами `heading`, `rich_text`, `callout`,
   `single_choice_poll`, `matching_game` и повторно валидируется registry/Zod
-  contracts до первой записи.
+  contracts до первой записи. Расширение ручного registry не расширяет
+  provider allowlist автоматически.
 - Provider-facing structured-output schema является плоским transport adapter.
   После ответа она преобразуется в canonical AI plan, а payload каждого
   Component повторно проходит соответствующую registry schema и обычный
@@ -1057,6 +1077,13 @@ provider requests, assistant dialog history или quota state в БД.
 - `20260810035033_course_publication_catalog.sql` — применённый production
   Course catalog/publication slice: immutable revisions, private publication
   assets, independent clone/duplicate и closed admin RPC.
+- `20260811154138_remove_divider_components.sql` — применённый production
+  D1 cleanup: удалены 15 layout-only `divider` Components из 12 Lessons/
+  4 Courses, позиции Components/Slides остались плотными, а CHECK
+  запрещает пустой `type_key` и case-insensitive `divider`. Postflight
+  сохранил 5 Course, 16 Lesson и 6 Slides; Component count стал 89,
+  publication divider, empty Slides, density и exactly-one violations равны
+  `0`. Это DB-state; он не является доказательством нового web deploy.
 
 Источники истины для текущего состояния:
 

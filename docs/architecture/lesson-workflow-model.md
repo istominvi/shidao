@@ -265,20 +265,39 @@ UI, application service и MCP используют эти же contracts. JSON 
 генерируется из того же источника. Добавление типа компонента не требует новой
 таблицы и не создаёт отдельную React-страницу для конкретной Lesson.
 
-Обязательный первый registry:
+Текущий source registry содержит 20 активных типов:
 
 ```text
 heading
 rich_text
 callout
 quote
-divider
 image
+video
+audio
 slideshow
 single_choice_poll
 matching_game
+choice_quiz
+fill_blanks
+word_bank
+sequence
+categorize
+free_response
+external_link
+word_builder
+vocabulary_list
 file
 ```
+
+Layout-only `divider` не входит в registry: порядок и группировку задают
+Lesson/Slides, а визуальное разделение не требует самостоятельного authored
+content. `video`, `audio` и `external_link` принимают только HTTPS URL.
+Интерактивные renderers в этом срезе дают preview-local самопроверку;
+ответ `free_response`, попытки, scoring и teacher review не хранятся.
+Voice recording, arbitrary third-party embed и image matching отложены до
+отдельных Storage/CSP/persistence контрактов. Матрица выбора описана в
+[`docs/product/course-component-catalog.md`](../product/course-component-catalog.md).
 
 ## Teacher plan
 

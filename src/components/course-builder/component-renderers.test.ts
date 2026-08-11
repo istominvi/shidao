@@ -46,3 +46,12 @@ test("teacher cards do not center component content while Student Screen keeps p
   );
   assert.match(source, /widthClass\(placement\.width, mode\)/);
 });
+
+test("new remote and exercise renderers stay safe, deterministic, and preview-only", () => {
+  assert.match(source, /function safeHttpsUrl/);
+  assert.match(source, /url\.protocol === "https:"/);
+  assert.doesNotMatch(source, /Math\.random/);
+  assert.doesNotMatch(source, /DividerRenderer|componentRegistry\.divider/);
+  assert.match(source, /не сохраняется/);
+  assert.match(source, /проверяет преподаватель вручную/);
+});

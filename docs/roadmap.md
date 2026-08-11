@@ -323,12 +323,19 @@ Course начинает с **О курсе**; обычное сохранени�
 deterministic/AI-сборка открывает **Уроки**. Вкладка сохранённого Course
 **Материалы** разделяет используемые и пока не используемые attachments и
 показывает Lesson usage.
+В current source code-first Component registry расширен с 10 до 20 активных
+типов: добавлены video/audio, расширенный quiz, пропуски, bank
+слов, порядок, категории, свободный ответ, HTTPS-ссылка, сборка слова и
+словарь; layout-only `divider` исключён. Текущая самопроверка живёт только
+в preview state, а learner answer persistence/scoring остаются later. Продуктовый
+выбор и границы зафиксированы в
+[`docs/product/course-component-catalog.md`](./product/course-component-catalog.md).
 
 - продолжить responsive/accessibility полировку обновлённого Course workspace;
 - добавить в сохранённый Course возобновляемую загрузку новых материалов с
   явной компенсацией незавершённых Storage operations;
 - улучшить выбор/поиск Components в palette;
-- проверить все десять editors/renderers отдельными production-safe сценариями;
+- проверить все 20 editors/renderers отдельными production-safe сценариями;
 - добавить drag-and-drop только если он не ухудшает доступность и надёжность;
 - завершить поведение удаления Course; Lesson уже предупреждает об удалении
   Runs и сохраняет finalized LearningRecord в учебных профилях;
@@ -358,7 +365,9 @@ Definition of Done:
   Zod/registry contracts перед первой записью;
 - Course outline ровно на `targetLessonCount` Lessons;
 - создание новой или дополнение существующей Lesson ограниченным набором
-  registry Components;
+  registry Components (`heading`, `rich_text`, `callout`,
+  `single_choice_poll`, `matching_game`); расширение ручного registry не
+  расширяет provider allowlist автоматически;
 - отдельные preview и explicit Apply; provider planning не выполняет записи;
 - stale-plan checks, idempotent Course retry и compensating cleanup для
   поддерживаемых apply paths;
