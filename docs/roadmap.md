@@ -247,8 +247,12 @@ Definition of Done программы:
 **Current:** primary navigation упрощена до «Расписание / Ученики / Курсы»;
 учебный профиль перенесён в Account menu, observer projection — во вкладку
 «Наблюдение» внутри «Ученики». Каталог `/courses` получил поиск, реальные
-Course-фильтры, сортировку и переключение «Плитки / Таблица» без новой schema
-или параллельного Course API. Course workspace использует четыре вкладки;
+Course-фильтры, сортировку и переключение «Карточки / Таблица» без новой schema
+или параллельного Course API. В current source Students и Courses controls
+унифицированы с Schedule: outer toolbar-card удалена, статусы Students собраны
+в segmented control, Course facets — в компактный disclosure, а view — в две
+icon-only кнопки. Published Catalog показывает только поддержанные server-side
+subject/level filters. Course workspace использует четыре вкладки;
 настройки и audience редактируются inline на растущей **О курсе**, а
 course-wide **Материалы** вынесены в отдельную агрегирующую библиотеку. Новый
 Course начинает с **О курсе**; обычное сохранение возвращает туда же, тогда как

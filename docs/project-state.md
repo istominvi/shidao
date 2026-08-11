@@ -87,6 +87,19 @@ Coolify webhook deployment exact functional SHA `587bb21` завершён со 
 Success за 2 минуты 33 секунды; running application указывает на тот же SHA.
 Authenticated production browser postflight этого slice пока не выполнен.
 
+**Current source Students/Courses controls slice (ещё не развёрнут):** панели
+управления `/students` и обеих вкладок `/courses` больше не создают отдельную
+toolbar-card: компактные 40 px controls расположены прямо на page background в
+том же визуальном контракте, что Schedule. На Students состояния «Активные /
+Архив / Ожидают ответа» объединены в один segmented control; поиск, group
+filter и сортировка сохраняют прежнюю client projection. Во вкладке Course
+**Мои** предмет, уровень и наполнение собраны в disclosure «Фильтры»,
+сортировка остаётся отдельным native select, а «Карточки / Таблица» выбираются
+двумя icon-only кнопками. Published **Каталог** использует тот же компактный
+поиск и disclosure только для реально поддержанных server-side предмета и
+уровня: фиктивные content/sort/view controls не добавлены. Это UI-only change
+без schema, migration или нового Course API.
+
 **Current System Assistant conversational action slice:** реализован один
 глобальный floating widget «ИИ» внутри protected `(app)` layout. Он доступен на
 Account surfaces, сохраняет диалог только в React state до reload/явного сброса
@@ -292,10 +305,15 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
   В UI нет отдельной сущности «шаблон».
 - Вкладка **Мои** сохраняет поиск по открытым Course fields,
   динамические фильтры по предмету/уровню/наполнению, сортировку и
-  режимы «Плитки / Таблица». Приватные пожелания преподавателя в поиск
-  не входят.
+  режимы «Карточки / Таблица». В current source эти controls собраны в одну
+  компактную строку прямо на page background: три категориальных поля находятся
+  в disclosure «Фильтры», а view выбирается icon-only segmented control.
+  Приватные пожелания преподавателя в поиск не входят.
 - **Каталог** имеет server-side search/filter, карточку курса с
   целью, аудиторией, Lesson outline, автором и списком материалов.
+  Current source показывает search и реальные subject/level facets без внешней
+  toolbar-card; content filter, произвольная сортировка и table view здесь не
+  заявляются, потому что их нет в paginated catalog API/RPC.
   «Добавить в мои курсы» создаёт новый independent owner Course и
   не запускает AI/адаптацию автоматически.
 - Рабочий Course можно дублировать, опубликовать, обновить в
@@ -396,9 +414,12 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
   независимую learner-safe вкладку «Наблюдение». Canonical observer URL —
   `/students?tab=observing`; прежний `/observing` остаётся protected
   compatibility redirect. Таблица
-  учеников поддерживает поиск, фильтр по группе и сортировку; в строке видны до
-  двух групп и счётчик «ещё N». Отдельная вкладка групп показывает только
-  reusable groups и их состав.
+  учеников поддерживает поиск, фильтр по группе и сортировку; в current source
+  «Активные / Архив / Ожидают ответа» являются одним `aria-pressed` segmented
+  control, а вся compact toolbar расположена прямо на page background. В строке
+  видны до двух групп и счётчик «ещё N». Отдельная вкладка групп показывает
+  только reusable groups и их состав и использует такой же компактный
+  search/sort row.
 - Клик по строке ученика открывает dialog «Профиль / История»: здесь можно
   изменить локальное имя и membership в нескольких группах, а история
   ограничена LearningRecord текущего преподавателя. Ученика можно создать,
@@ -917,7 +938,7 @@ positions, а плотность поддерживают текущие service
 | Course browser client                | `src/components/course-builder/course-builder-client.ts`                                                                                                                                                                                                                          |
 | Course publication domain/service    | `src/modules/course-publications/`                                                                                                                                                                                                                                                |
 | Course catalog/publication API       | `src/app/api/v2/course-catalog/`, `src/app/api/v2/courses/[courseId]/publication/`, `duplicate/`                                                                                                                                                                                  |
-| Course catalog/owned UI              | `src/components/course-builder/courses-index.tsx`, `owned-courses-panel.tsx`, `course-catalog-panel.tsx`, `course-actions.tsx`                                                                                                                                                    |
+| Course catalog/owned UI              | `src/components/course-builder/courses-index.tsx`, `owned-courses-panel.tsx`, `course-catalog-panel.tsx`, `course-filter-menu.tsx`, `course-actions.tsx`, `src/components/ui/segmented-control.tsx`                                                                               |
 | New Course flow                      | `src/components/course-builder/new-course-form.tsx`                                                                                                                                                                                                                               |
 | Course workspace                     | `src/components/course-builder/course-workspace.tsx`                                                                                                                                                                                                                              |
 | Course/Lesson navigation             | `src/components/course-builder/course-workspace-navigation.ts`                                                                                                                                                                                                                    |
@@ -926,7 +947,7 @@ positions, а плотность поддерживают текущие service
 | Component editors/renderers          | `src/components/course-builder/component-payload-editor.tsx`, `component-renderers.tsx`                                                                                                                                                                                           |
 | Fullscreen preview                   | `src/components/course-builder/student-screen-preview.tsx`                                                                                                                                                                                                                        |
 | Account Schedule                     | `src/app/(app)/(teacher-required)/schedule/`, `src/components/teaching-hub/schedule-workspace.tsx`, `src/components/teaching-hub/schedule-period.ts`                                                                                                                              |
-| Account Students                     | `src/app/(app)/(teacher-required)/students/`, `src/components/teaching-hub/students-workspace.tsx`                                                                                                                                                                                |
+| Account Students                     | `src/app/(app)/(teacher-required)/students/`, `src/components/teaching-hub/students-workspace.tsx`, `src/components/ui/segmented-control.tsx`                                                                                                                                     |
 | Legacy-named Account route boundary  | `src/app/(app)/(teacher-required)/layout.tsx`, `src/lib/server/access-guards.ts`                                                                                                                                                                                                  |
 | V2 API routes                        | `src/app/api/v2/`                                                                                                                                                                                                                                                                 |
 | Standalone historical demo           | `src/app/demo/`, `public/og-demo-v2.png`                                                                                                                                                                                                                                          |
@@ -1097,6 +1118,16 @@ production app, проверил прозрачный toolbar, реальные 
 overflow. Coolify webhook deployment exact functional SHA `587bb21` завершён
 Success за 2 минуты 33 секунды, running reference совпадает; authenticated
 production browser postflight остаётся отдельным незавершённым gate.
+
+Для current source Students/Courses controls slice локально подтверждены
+typecheck, lint, format check, `git diff --check`, `439/439` unit/e2e tests и
+`22/22` strict production-mode browser scenarios. Browser gate проверил
+прозрачные Students/Courses toolbars, 40/32 px segmented geometry,
+active/archive round-trip, Course disclosure/native filters, reset, Escape с
+возвратом focus, icon-only cards/table и mobile 375 px без document-level
+overflow. Из-за параллельных локальных Next.js процессов gate запускался в
+изолированной временной копии того же source snapshot. Schema/migration не
+менялись; deployment этого source slice ещё не выполнялся.
 
 Для current Course publication/catalog source slice локально подтверждены
 `381/381` unit tests, `19/19` строгих production-mode browser scenarios,

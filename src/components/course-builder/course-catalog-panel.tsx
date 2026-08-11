@@ -5,7 +5,6 @@ import {
   ArrowLeft,
   ArrowRight,
   BookOpen,
-  ChevronDown,
   FileText,
   LoaderCircle,
   RotateCcw,
@@ -16,9 +15,10 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { courseBuilderRequest } from "@/components/course-builder/course-builder-client";
 import { courseCountLabel } from "@/components/course-builder/course-catalog";
+import { CourseFilterMenu } from "@/components/course-builder/course-filter-menu";
 import { Button, productButtonClassName } from "@/components/ui/button";
 import { Chip } from "@/components/ui/chip";
-import { Input, Select } from "@/components/ui/input";
+import { Input } from "@/components/ui/input";
 import { SurfaceCard } from "@/components/ui/surface-card";
 import { toCourseRoute } from "@/lib/auth";
 import type {
@@ -493,82 +493,64 @@ export function CourseCatalogPanel({
         </div>
       </div>
 
-      <SurfaceCard className="mt-4 border border-white/80">
-        <div aria-busy={loadingCatalog}>
-          <div className="grid gap-4 md:grid-cols-3">
-            <label className="block min-w-0">
-              <span className="mb-1.5 block text-xs font-semibold text-neutral-700">
-                Поиск
-              </span>
-              <span className="product-search-wrap block min-w-0">
-                <Search
-                  className="product-search-icon h-4 w-4"
-                  aria-hidden="true"
-                />
-                <Input
-                  type="search"
-                  value={query}
-                  onChange={(event) => setQuery(event.target.value)}
-                  className="product-control-search"
-                  placeholder="Название, предмет или автор…"
-                  autoComplete="off"
-                />
-              </span>
-            </label>
-            <label className="block min-w-0">
-              <span className="mb-1.5 block text-xs font-semibold text-neutral-700">
-                Предмет
-              </span>
-              <span className="product-select-wrap block min-w-0">
-                <Select
-                  value={subject}
-                  onChange={(event) => setSubject(event.target.value)}
-                >
-                  <option value="all">Все предметы</option>
-                  {subjects.map((item) => (
-                    <option key={item} value={item}>
-                      {item}
-                    </option>
-                  ))}
-                </Select>
-                <ChevronDown
-                  className="product-select-icon h-4 w-4"
-                  aria-hidden="true"
-                />
-              </span>
-            </label>
-            <label className="block min-w-0">
-              <span className="mb-1.5 block text-xs font-semibold text-neutral-700">
-                Уровень
-              </span>
-              <span className="product-select-wrap block min-w-0">
-                <Select
-                  value={level}
-                  onChange={(event) => setLevel(event.target.value)}
-                >
-                  <option value="all">Все уровни</option>
-                  {levels.map((item) => (
-                    <option key={item} value={item}>
-                      {item}
-                    </option>
-                  ))}
-                </Select>
-                <ChevronDown
-                  className="product-select-icon h-4 w-4"
-                  aria-hidden="true"
-                />
-              </span>
-            </label>
-          </div>
-          <p className="mt-4 text-sm text-neutral-600" aria-live="polite">
+      <div
+        className="compact-page-toolbar course-catalog-toolbar mt-4"
+        aria-label="Управление каталогом курсов"
+        aria-busy={loadingCatalog}
+      >
+        <label className="compact-toolbar-search product-search-wrap">
+          <span className="sr-only">Поиск</span>
+          <Search className="product-search-icon h-4 w-4" aria-hidden="true" />
+          <Input
+            type="search"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            className="product-control-search"
+            placeholder="Название, предмет или автор…"
+            autoComplete="off"
+          />
+        </label>
+
+        <div className="compact-toolbar-rail">
+          <CourseFilterMenu
+            subjects={subjects}
+            levels={levels}
+            subject={subject}
+            level={level}
+            onSubjectChange={setSubject}
+            onLevelChange={setLevel}
+            label="Фильтры каталога курсов"
+          />
+
+          <p
+            className="compact-toolbar-result"
+            role="status"
+            aria-live="polite"
+          >
             {loadingCatalog
               ? "Ищем курсы…"
               : nextCursor
                 ? `Показано: ${courseCountLabel(courses.length)}`
                 : courseCountLabel(courses.length)}
           </p>
+
+          {hasFilters ? (
+            <Button
+              variant="ghost"
+              className="compact-toolbar-reset"
+              aria-label="Сбросить фильтры"
+              title="Сбросить фильтры"
+              onClick={() => {
+                setQuery("");
+                setSubject("all");
+                setLevel("all");
+              }}
+            >
+              <RotateCcw className="h-4 w-4" aria-hidden="true" />
+            </Button>
+          ) : null}
         </div>
-      </SurfaceCard>
+      </div>
 
       {loadingCatalog && courses.length === 0 ? (
         <SurfaceCard className="course-index-status mt-4 flex items-center gap-3 border border-neutral-200">

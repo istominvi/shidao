@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  ChevronDown,
   GraduationCap,
   Eye,
   LoaderCircle,
@@ -49,6 +50,7 @@ import {
   type LearnerDirectoryEntry,
 } from "@/components/teaching-hub/student-directory-table";
 import { Button } from "@/components/ui/button";
+import { SegmentedControl } from "@/components/ui/segmented-control";
 import { SurfaceCard } from "@/components/ui/surface-card";
 import {
   WorkspaceTabs,
@@ -521,47 +523,14 @@ export function StudentsWorkspace({
         ]}
       />
 
-      {view === "learners" ? (
-        <nav
-          className="flex flex-wrap gap-2"
-          aria-label="Состояние списка учеников"
-        >
-          {(
-            [
-              ["active", "Активные", activeDirectory?.length ?? 0],
-              ["archived", "Архив", archivedDirectory?.length ?? 0],
-              ["pending", "Ожидают ответа", pendingConnections.length],
-            ] as const
-          ).map(([status, label, count]) => (
-            <button
-              key={status}
-              type="button"
-              aria-current={directoryStatus === status ? "page" : undefined}
-              className={`rounded-full border px-4 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 ${
-                directoryStatus === status
-                  ? "border-neutral-950 bg-neutral-950 text-white"
-                  : "border-neutral-200 bg-white text-neutral-700 hover:border-neutral-400"
-              }`}
-              onClick={() => {
-                setDirectoryStatus(status);
-                setLearnerQuery("");
-                setGroupFilter("all");
-              }}
-            >
-              {label} · {count}
-            </button>
-          ))}
-        </nav>
-      ) : null}
-
       <section
-        className="student-directory-toolbar"
+        className="student-directory-toolbar compact-page-toolbar"
         aria-label={
           view === "learners" ? "Управление учениками" : "Управление группами"
         }
         hidden={view === "observing"}
       >
-        <label className="teaching-hub-search student-directory-search">
+        <label className="teaching-hub-search student-directory-search compact-toolbar-search">
           <Search className="h-4 w-4" aria-hidden="true" />
           <span className="sr-only">
             {view === "learners" ? "Найти ученика" : "Найти группу"}
@@ -578,60 +547,108 @@ export function StudentsWorkspace({
           />
         </label>
 
-        <div className="student-directory-controls">
+        <div className="student-directory-controls compact-toolbar-rail">
+          {view === "learners" ? (
+            <SegmentedControl<DirectoryStatus>
+              ariaLabel="Состояние списка учеников"
+              className="student-directory-status-switch"
+              value={directoryStatus}
+              onChange={(status) => {
+                setDirectoryStatus(status);
+                setLearnerQuery("");
+                setGroupFilter("all");
+              }}
+              items={[
+                {
+                  value: "active",
+                  label: "Активные",
+                  ariaLabel: `Активные · ${activeDirectory?.length ?? 0}`,
+                  count: activeDirectory?.length ?? 0,
+                },
+                {
+                  value: "archived",
+                  label: "Архив",
+                  ariaLabel: `Архив · ${archivedDirectory?.length ?? 0}`,
+                  count: archivedDirectory?.length ?? 0,
+                },
+                {
+                  value: "pending",
+                  label: "Ожидают ответа",
+                  ariaLabel: `Ожидают ответа · ${pendingConnections.length}`,
+                  count: pendingConnections.length,
+                },
+              ]}
+            />
+          ) : null}
+
           {view === "learners" && directoryStatus === "active" ? (
-            <select
-              className="student-directory-select"
-              aria-label="Фильтр по группе"
-              value={groupFilter}
-              disabled={!ready}
-              onChange={(event) => setGroupFilter(event.target.value)}
-            >
-              <option value="all">Все группы</option>
-              <option value="ungrouped">Без группы</option>
-              {(groups ?? []).map((group) => (
-                <option key={group.id} value={group.id}>
-                  {group.name}
-                </option>
-              ))}
-            </select>
+            <span className="product-select-wrap block min-w-0">
+              <select
+                className="student-directory-select appearance-none"
+                aria-label="Фильтр по группе"
+                value={groupFilter}
+                disabled={!ready}
+                onChange={(event) => setGroupFilter(event.target.value)}
+              >
+                <option value="all">Все группы</option>
+                <option value="ungrouped">Без группы</option>
+                {(groups ?? []).map((group) => (
+                  <option key={group.id} value={group.id}>
+                    {group.name}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown
+                className="product-select-icon h-4 w-4"
+                aria-hidden="true"
+              />
+            </span>
           ) : null}
 
           {view === "groups" || directoryStatus !== "pending" ? (
-            <select
-              className="student-directory-select"
-              aria-label="Сортировка"
-              value={view === "learners" ? learnerSort : groupSort}
-              disabled={!ready}
-              onChange={(event) => {
-                if (view === "learners") {
-                  setLearnerSort(event.target.value as LearnerSort);
-                } else {
-                  setGroupSort(event.target.value as GroupSort);
-                }
-              }}
-            >
-              {view === "learners" ? (
-                <>
-                  <option value="name-asc">Имя: А—Я</option>
-                  <option value="name-desc">Имя: Я—А</option>
-                  <option value="group-count">По количеству групп</option>
-                </>
-              ) : (
-                <>
-                  <option value="name-asc">Название: А—Я</option>
-                  <option value="name-desc">Название: Я—А</option>
-                  <option value="member-count">Сначала самые большие</option>
-                </>
-              )}
-            </select>
+            <span className="product-select-wrap block min-w-0">
+              <select
+                className="student-directory-select appearance-none"
+                aria-label="Сортировка"
+                value={view === "learners" ? learnerSort : groupSort}
+                disabled={!ready}
+                onChange={(event) => {
+                  if (view === "learners") {
+                    setLearnerSort(event.target.value as LearnerSort);
+                  } else {
+                    setGroupSort(event.target.value as GroupSort);
+                  }
+                }}
+              >
+                {view === "learners" ? (
+                  <>
+                    <option value="name-asc">Имя: А—Я</option>
+                    <option value="name-desc">Имя: Я—А</option>
+                    <option value="group-count">По количеству групп</option>
+                  </>
+                ) : (
+                  <>
+                    <option value="name-asc">Название: А—Я</option>
+                    <option value="name-desc">Название: Я—А</option>
+                    <option value="member-count">Сначала самые большие</option>
+                  </>
+                )}
+              </select>
+              <ChevronDown
+                className="product-select-icon h-4 w-4"
+                aria-hidden="true"
+              />
+            </span>
           ) : null}
 
           {hasFilters ? (
             <Button
               type="button"
               variant="ghost"
+              className="compact-toolbar-reset"
               disabled={busy}
+              aria-label="Сбросить фильтры"
+              title="Сбросить фильтры"
               onClick={() => {
                 if (view === "learners") {
                   setLearnerQuery("");
@@ -641,7 +658,7 @@ export function StudentsWorkspace({
                 }
               }}
             >
-              Сбросить фильтры
+              <RotateCcw className="h-4 w-4" aria-hidden="true" />
             </Button>
           ) : null}
         </div>

@@ -466,6 +466,7 @@ type PlaywrightLocator = {
   count: () => Promise<number>;
   fill: (value: string) => Promise<void>;
   inputValue: () => Promise<string>;
+  selectOption: (option: { label: string }) => Promise<string[]>;
   getAttribute: (name: string) => Promise<string | null>;
   textContent: () => Promise<string | null>;
   press: (key: string) => Promise<void>;
@@ -2808,6 +2809,12 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       const toolbar = document.querySelector<HTMLElement>(
         ".student-directory-toolbar",
       );
+      const statusSwitch = toolbar?.querySelector<HTMLElement>(
+        '[role="group"][aria-label="Состояние списка учеников"]',
+      );
+      const activeStatusButton = statusSwitch?.querySelector<HTMLElement>(
+        'button[aria-pressed="true"]',
+      );
 
       if (
         !pageHeader ||
@@ -2817,7 +2824,9 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         !tabs ||
         !tabsScroll ||
         !headerActions ||
-        !toolbar
+        !toolbar ||
+        !statusSwitch ||
+        !activeStatusButton
       ) {
         throw new Error("Students visual contract is missing");
       }
@@ -2836,6 +2845,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       const activeTabRect = activeTab.getBoundingClientRect();
       const baselineLeft = Number.parseFloat(baselineStyle.left);
       const baselineRight = Number.parseFloat(baselineStyle.right);
+      const toolbarStyle = getComputedStyle(toolbar);
 
       return {
         headerLayout: {
@@ -2882,6 +2892,16 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         },
         headerActions: headerActions.textContent?.trim() ?? "",
         toolbarText: toolbar.textContent?.trim() ?? "",
+        toolbarSurface: {
+          backgroundColor: toolbarStyle.backgroundColor,
+          borderTopWidth: toolbarStyle.borderTopWidth,
+          boxShadow: toolbarStyle.boxShadow,
+          paddingTop: toolbarStyle.paddingTop,
+        },
+        statusGeometry: {
+          shellHeight: getComputedStyle(statusSwitch).height,
+          activeButtonHeight: getComputedStyle(activeStatusButton).height,
+        },
       };
     });
 
@@ -2925,6 +2945,45 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
     );
     assert.match(studentsVisual.headerActions, /Новый ученик/);
     assert.doesNotMatch(studentsVisual.toolbarText, /Новый ученик/);
+    assert.deepEqual(studentsVisual.toolbarSurface, {
+      backgroundColor: "rgba(0, 0, 0, 0)",
+      borderTopWidth: "0px",
+      boxShadow: "none",
+      paddingTop: "0px",
+    });
+    assert.deepEqual(studentsVisual.statusGeometry, {
+      shellHeight: "40px",
+      activeButtonHeight: "32px",
+    });
+
+    const activeLearnersButton = runtime.page.getByRole("button", {
+      name: /^Активные ·/,
+    });
+    const archivedLearnersButton = runtime.page.getByRole("button", {
+      name: /^Архив ·/,
+    });
+    assert.equal(
+      await activeLearnersButton.getAttribute("aria-pressed"),
+      "true",
+    );
+    assert.equal(
+      await archivedLearnersButton.getAttribute("aria-pressed"),
+      "false",
+    );
+    await archivedLearnersButton.click();
+    await runtime.page.getByText("Архивная Ольга", { exact: true }).waitFor();
+    assert.equal(
+      await archivedLearnersButton.getAttribute("aria-pressed"),
+      "true",
+    );
+    await activeLearnersButton.click();
+    await runtime.page
+      .getByRole("table", { name: "Ученики и их группы", exact: true })
+      .waitFor();
+    assert.equal(
+      await activeLearnersButton.getAttribute("aria-pressed"),
+      "true",
+    );
 
     await runtime.page
       .getByRole("button", {
@@ -3941,15 +4000,50 @@ test("browser smoke: mobile Account menu exposes primary sections and account ac
     await runtime.page
       .getByRole("heading", { name: "Ученики", exact: true, level: 1 })
       .waitFor();
+    await runtime.page
+      .getByRole("table", { name: "Ученики и их группы", exact: true })
+      .waitFor();
 
-    const mobileContract = await runtime.page.evaluate(() => ({
-      clientWidth: document.documentElement.clientWidth,
-      scrollWidth: document.documentElement.scrollWidth,
-      heading: document.querySelector("h1")?.textContent?.trim() ?? "",
-    }));
+    const mobileContract = await runtime.page.evaluate(() => {
+      const toolbar = document.querySelector<HTMLElement>(
+        ".student-directory-toolbar",
+      );
+      const rail = toolbar?.querySelector<HTMLElement>(
+        ".student-directory-controls",
+      );
+      const statusSwitch = rail?.querySelector<HTMLElement>(
+        '[role="group"][aria-label="Состояние списка учеников"]',
+      );
+      const activeStatusButton = statusSwitch?.querySelector<HTMLElement>(
+        'button[aria-pressed="true"]',
+      );
+      if (!toolbar || !rail || !statusSwitch || !activeStatusButton) {
+        throw new Error("Mobile Students toolbar controls are missing");
+      }
+      const viewportWidth = document.documentElement.clientWidth;
+      const toolbarRect = toolbar.getBoundingClientRect();
+      return {
+        clientWidth: viewportWidth,
+        scrollWidth: document.documentElement.scrollWidth,
+        heading: document.querySelector("h1")?.textContent?.trim() ?? "",
+        toolbarInsideViewport:
+          toolbarRect.left >= 0 && toolbarRect.right <= viewportWidth,
+        railOverflowX: getComputedStyle(rail).overflowX,
+        railScrollIsContained: rail.scrollWidth > rail.clientWidth,
+        shellHeight: getComputedStyle(statusSwitch).height,
+        activeButtonHeight: getComputedStyle(activeStatusButton).height,
+        activePressed: activeStatusButton.getAttribute("aria-pressed"),
+      };
+    });
     assert.equal(mobileContract.clientWidth, 375);
     assert.equal(mobileContract.scrollWidth, mobileContract.clientWidth);
     assert.equal(mobileContract.heading, "Ученики");
+    assert.equal(mobileContract.toolbarInsideViewport, true);
+    assert.equal(mobileContract.railOverflowX, "auto");
+    assert.equal(mobileContract.railScrollIsContained, true);
+    assert.equal(mobileContract.shellHeight, "40px");
+    assert.equal(mobileContract.activeButtonHeight, "32px");
+    assert.equal(mobileContract.activePressed, "true");
   } finally {
     e2eCompletionPhase = null;
     await runtime.close();
@@ -4049,6 +4143,15 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       const userTrigger = document.querySelector<HTMLElement>(
         ".site-header-shell-demo .nav-user-trigger",
       );
+      const toolbar = document.querySelector<HTMLElement>(
+        ".course-index-toolbar",
+      );
+      const viewSwitch = toolbar?.querySelector<HTMLElement>(
+        '[role="group"][aria-label="Вид списка курсов"]',
+      );
+      const activeViewButton = viewSwitch?.querySelector<HTMLElement>(
+        'button[aria-pressed="true"]',
+      );
 
       if (
         !shell ||
@@ -4060,7 +4163,10 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
         !headerActions ||
         !primaryButton ||
         !navPill ||
-        !userTrigger
+        !userTrigger ||
+        !toolbar ||
+        !viewSwitch ||
+        !activeViewButton
       ) {
         throw new Error("Course visual contract elements are missing");
       }
@@ -4073,6 +4179,7 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       const headerStyle = getComputedStyle(header);
       const navPillStyle = getComputedStyle(navPill);
       const userTriggerStyle = getComputedStyle(userTrigger);
+      const toolbarStyle = getComputedStyle(toolbar);
       const pageHeaderRect = pageHeader.getBoundingClientRect();
       const headerActionsRect = headerActions.getBoundingClientRect();
 
@@ -4111,6 +4218,22 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
         navPillFontWeight: navPillStyle.fontWeight,
         userTriggerRadius: userTriggerStyle.borderRadius,
         userTriggerFontWeight: userTriggerStyle.fontWeight,
+        toolbarSurface: {
+          backgroundColor: toolbarStyle.backgroundColor,
+          borderTopWidth: toolbarStyle.borderTopWidth,
+          boxShadow: toolbarStyle.boxShadow,
+          paddingTop: toolbarStyle.paddingTop,
+        },
+        viewGeometry: {
+          shellHeight: getComputedStyle(viewSwitch).height,
+          activeButtonHeight: getComputedStyle(activeViewButton).height,
+        },
+        viewButtons: Array.from(viewSwitch.querySelectorAll("button")).map(
+          (button) => ({
+            label: button.getAttribute("aria-label"),
+            pressed: button.getAttribute("aria-pressed"),
+          }),
+        ),
       };
     });
 
@@ -4131,8 +4254,67 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
     assert.equal(coursesVisual.navPillFontWeight, "500");
     assert.equal(coursesVisual.userTriggerRadius, "12px");
     assert.equal(coursesVisual.userTriggerFontWeight, "500");
+    assert.deepEqual(coursesVisual.toolbarSurface, {
+      backgroundColor: "rgba(0, 0, 0, 0)",
+      borderTopWidth: "0px",
+      boxShadow: "none",
+      paddingTop: "0px",
+    });
+    assert.deepEqual(coursesVisual.viewGeometry, {
+      shellHeight: "40px",
+      activeButtonHeight: "32px",
+    });
+    assert.deepEqual(coursesVisual.viewButtons, [
+      { label: "Показать карточками", pressed: "true" },
+      { label: "Показать таблицей", pressed: "false" },
+    ]);
     assert.ok(
       Math.abs(Number.parseFloat(coursesVisual.buttonFontSize) - 14.08) < 0.1,
+    );
+
+    const courseFilterTrigger = runtime.page.locator(
+      ".course-index-toolbar .course-filter-trigger",
+    );
+    assert.equal(
+      await courseFilterTrigger.getAttribute("aria-expanded"),
+      "false",
+    );
+    await courseFilterTrigger.click();
+    const courseFilterGroup = runtime.page.getByRole("group", {
+      name: "Фильтры курсов",
+      exact: true,
+    });
+    await courseFilterGroup.waitFor();
+    assert.equal(
+      await courseFilterTrigger.getAttribute("aria-expanded"),
+      "true",
+    );
+    const courseSubjectFilter = courseFilterGroup.getByLabel("Предмет");
+    await courseSubjectFilter.selectOption({ label: "Английский язык" });
+    assert.equal(
+      await runtime.page
+        .locator(".course-index-toolbar .course-filter-count")
+        .textContent(),
+      "1",
+    );
+    await courseFilterGroup
+      .getByRole("button", { name: "Сбросить фильтры", exact: true })
+      .click();
+    assert.equal(await courseSubjectFilter.inputValue(), "all");
+    await courseFilterTrigger.press("Escape");
+    await runtime.page.evaluate(
+      () =>
+        new Promise<void>((resolve) => requestAnimationFrame(() => resolve())),
+    );
+    assert.equal(
+      await runtime.page.evaluate(() =>
+        document.activeElement?.classList.contains("course-filter-trigger"),
+      ),
+      true,
+    );
+    assert.equal(
+      await courseFilterTrigger.getAttribute("aria-expanded"),
+      "false",
     );
 
     await runtime.page
@@ -4148,6 +4330,37 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
         exact: true,
       })
       .waitFor();
+
+    const catalogFilterTrigger = runtime.page.locator(
+      ".course-catalog-toolbar .course-filter-trigger",
+    );
+    await catalogFilterTrigger.click();
+    await runtime.page
+      .getByRole("group", {
+        name: "Фильтры каталога курсов",
+        exact: true,
+      })
+      .waitFor();
+    const catalogFilterBounds = await runtime.page.evaluate(() => {
+      const popover = document.querySelector<HTMLElement>(
+        ".course-catalog-toolbar .course-filter-popover",
+      );
+      if (!popover) throw new Error("Catalog filter popover is missing");
+      const rect = popover.getBoundingClientRect();
+      return {
+        insideViewport:
+          rect.left >= 0 && rect.right <= document.documentElement.clientWidth,
+        clientWidth: document.documentElement.clientWidth,
+        scrollWidth: document.documentElement.scrollWidth,
+      };
+    });
+    assert.deepEqual(catalogFilterBounds, {
+      insideViewport: true,
+      clientWidth: catalogFilterBounds.clientWidth,
+      scrollWidth: catalogFilterBounds.clientWidth,
+    });
+    await catalogFilterTrigger.press("Escape");
+
     await runtime.page.getByRole("tab", { name: "Мои", exact: true }).click();
     await runtime.page.waitForURL(/\/courses$/);
     await courseLink.waitFor();
@@ -4166,19 +4379,19 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
     await courseLink.waitFor();
 
     await runtime.page
-      .getByRole("button", { name: "Таблица", exact: true })
+      .getByRole("button", { name: "Показать таблицей", exact: true })
       .click();
     await runtime.page
       .getByRole("region", { name: "Таблица курсов", exact: true })
       .waitFor();
-    const tableViewPressed = await runtime.page.evaluate(() =>
-      Array.from(document.querySelectorAll("button"))
-        .find((button) => button.textContent?.trim() === "Таблица")
-        ?.getAttribute("aria-pressed"),
+    assert.equal(
+      await runtime.page
+        .getByRole("button", { name: "Показать таблицей", exact: true })
+        .getAttribute("aria-pressed"),
+      "true",
     );
-    assert.equal(tableViewPressed, "true");
     await runtime.page
-      .getByRole("button", { name: "Плитки", exact: true })
+      .getByRole("button", { name: "Показать карточками", exact: true })
       .click();
     await courseLink.waitFor();
 
@@ -4482,9 +4695,76 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
   });
 
   try {
-    await runtime.page.goto(`/courses/${E2E_COURSE_ID}`, {
-      waitUntil: "networkidle",
+    await runtime.page.goto("/courses", { waitUntil: "networkidle" });
+    const mobileCourseLink = runtime.page.getByRole("link", {
+      name: E2E_COURSE_TITLE,
+      exact: true,
     });
+    await mobileCourseLink.waitFor();
+
+    const mobileCoursesToolbar = await runtime.page.evaluate(() => {
+      const toolbar = document.querySelector<HTMLElement>(
+        ".course-index-toolbar",
+      );
+      const viewSwitch = toolbar?.querySelector<HTMLElement>(
+        '[role="group"][aria-label="Вид списка курсов"]',
+      );
+      const activeViewButton = viewSwitch?.querySelector<HTMLElement>(
+        'button[aria-pressed="true"]',
+      );
+      if (!toolbar || !viewSwitch || !activeViewButton) {
+        throw new Error("Mobile Courses toolbar controls are missing");
+      }
+      const viewportWidth = document.documentElement.clientWidth;
+      const toolbarRect = toolbar.getBoundingClientRect();
+      return {
+        clientWidth: viewportWidth,
+        scrollWidth: document.documentElement.scrollWidth,
+        toolbarInsideViewport:
+          toolbarRect.left >= 0 && toolbarRect.right <= viewportWidth,
+        shellHeight: getComputedStyle(viewSwitch).height,
+        activeButtonHeight: getComputedStyle(activeViewButton).height,
+        activePressed: activeViewButton.getAttribute("aria-pressed"),
+      };
+    });
+    assert.deepEqual(mobileCoursesToolbar, {
+      clientWidth: 375,
+      scrollWidth: 375,
+      toolbarInsideViewport: true,
+      shellHeight: "40px",
+      activeButtonHeight: "32px",
+      activePressed: "true",
+    });
+
+    const mobileCourseFilterTrigger = runtime.page.locator(
+      ".course-index-toolbar .course-filter-trigger",
+    );
+    await mobileCourseFilterTrigger.click();
+    await runtime.page
+      .getByRole("group", { name: "Фильтры курсов", exact: true })
+      .waitFor();
+    const mobileFilterPopover = await runtime.page.evaluate(() => {
+      const popover = document.querySelector<HTMLElement>(
+        ".course-index-toolbar .course-filter-popover",
+      );
+      if (!popover) throw new Error("Mobile course filter popover is missing");
+      const viewportWidth = document.documentElement.clientWidth;
+      const rect = popover.getBoundingClientRect();
+      return {
+        scrollWidth: document.documentElement.scrollWidth,
+        insideViewport: rect.left >= 0 && rect.right <= viewportWidth,
+      };
+    });
+    assert.deepEqual(mobileFilterPopover, {
+      scrollWidth: 375,
+      insideViewport: true,
+    });
+    await mobileCourseFilterTrigger.press("Escape");
+
+    await Promise.all([
+      runtime.page.waitForURL(new RegExp(`/courses/${E2E_COURSE_ID}$`)),
+      mobileCourseLink.click(),
+    ]);
     await runtime.page
       .getByRole("heading", {
         name: E2E_COURSE_TITLE,

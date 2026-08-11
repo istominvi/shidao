@@ -8,12 +8,12 @@ import {
   ChevronDown,
   FolderOpen,
   LayoutGrid,
-  List,
   LoaderCircle,
   Plus,
   RotateCcw,
   Search,
   SlidersHorizontal,
+  Table2,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -21,6 +21,7 @@ import {
   CoursePublicationBadges,
 } from "@/components/course-builder/course-actions";
 import { courseBuilderRequest } from "@/components/course-builder/course-builder-client";
+import { CourseFilterMenu } from "@/components/course-builder/course-filter-menu";
 import {
   courseCountLabel,
   DEFAULT_COURSE_CATALOG_FILTERS,
@@ -350,160 +351,101 @@ export function OwnedCoursesPanel({ onOpenCatalog }: OwnedCoursesPanelProps) {
         Мои курсы
       </h2>
 
-      <SurfaceCard className="border border-white/80">
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-[minmax(16rem,1.4fr)_repeat(3,minmax(10rem,0.7fr))]">
-          <label className="block min-w-0">
-            <span className="mb-1.5 block text-xs font-semibold text-neutral-700">
-              Поиск
-            </span>
-            <span className="product-search-wrap block min-w-0">
-              <Search
-                className="product-search-icon h-4 w-4"
-                aria-hidden="true"
-              />
-              <Input
-                type="search"
-                value={filters.query}
-                onChange={(event) => updateFilter("query", event.target.value)}
-                className="product-control-search"
-                placeholder="Название, предмет, цель…"
-                autoComplete="off"
-              />
-            </span>
-          </label>
+      <div
+        className="compact-page-toolbar course-index-toolbar"
+        aria-label="Управление курсами"
+      >
+        <label className="compact-toolbar-search product-search-wrap">
+          <span className="sr-only">Поиск</span>
+          <Search className="product-search-icon h-4 w-4" aria-hidden="true" />
+          <Input
+            type="search"
+            value={filters.query}
+            onChange={(event) => updateFilter("query", event.target.value)}
+            className="product-control-search"
+            placeholder="Название, предмет, цель…"
+            autoComplete="off"
+          />
+        </label>
 
-          <label className="block min-w-0">
-            <span className="mb-1.5 block text-xs font-semibold text-neutral-700">
-              Предмет
-            </span>
-            <span className="product-select-wrap block min-w-0">
-              <Select
-                value={filters.subject}
-                onChange={(event) =>
-                  updateFilter("subject", event.target.value)
-                }
-              >
-                <option value="all">Все предметы</option>
-                {options.subjects.map((subject) => (
-                  <option key={subject} value={subject}>
-                    {subject}
-                  </option>
-                ))}
-              </Select>
-              <ChevronDown
-                className="product-select-icon h-4 w-4"
-                aria-hidden="true"
-              />
-            </span>
-          </label>
+        <div className="compact-toolbar-rail">
+          <CourseFilterMenu
+            subjects={options.subjects}
+            levels={options.levels}
+            subject={filters.subject}
+            level={filters.level}
+            content={filters.content}
+            onSubjectChange={(value) => updateFilter("subject", value)}
+            onLevelChange={(value) => updateFilter("level", value)}
+            onContentChange={(value) => updateFilter("content", value)}
+          />
 
-          <label className="block min-w-0">
-            <span className="mb-1.5 block text-xs font-semibold text-neutral-700">
-              Уровень
-            </span>
-            <span className="product-select-wrap block min-w-0">
-              <Select
-                value={filters.level}
-                onChange={(event) => updateFilter("level", event.target.value)}
-              >
-                <option value="all">Все уровни</option>
-                {options.levels.map((level) => (
-                  <option key={level} value={level}>
-                    {level}
-                  </option>
-                ))}
-              </Select>
-              <ChevronDown
-                className="product-select-icon h-4 w-4"
-                aria-hidden="true"
-              />
-            </span>
-          </label>
-
-          <label className="block min-w-0">
-            <span className="mb-1.5 block text-xs font-semibold text-neutral-700">
-              Наполнение
-            </span>
-            <span className="product-select-wrap block min-w-0">
-              <Select
-                value={filters.content}
-                onChange={(event) =>
-                  updateFilter(
-                    "content",
-                    event.target.value as CourseCatalogFilters["content"],
-                  )
-                }
-              >
-                <option value="all">Любое</option>
-                <option value="empty">Пустые</option>
-                <option value="with-lessons">С уроками</option>
-                <option value="assembled">Собранные</option>
-              </Select>
-              <ChevronDown
-                className="product-select-icon h-4 w-4"
-                aria-hidden="true"
-              />
-            </span>
-          </label>
-        </div>
-
-        <div className="mt-4 flex flex-col gap-3 border-t border-neutral-200 pt-4 md:flex-row md:items-end md:justify-between">
-          <div className="flex min-w-0 flex-wrap items-end gap-3">
-            <label className="block min-w-[13rem] flex-1 sm:flex-none">
-              <span className="mb-1.5 block text-xs font-semibold text-neutral-700">
-                Сортировка
-              </span>
-              <span className="product-select-wrap block min-w-0">
-                <Select
-                  value={filters.sort}
-                  onChange={(event) =>
-                    updateFilter(
-                      "sort",
-                      event.target.value as CourseCatalogFilters["sort"],
-                    )
-                  }
-                >
-                  <option value="updated-desc">Сначала обновлённые</option>
-                  <option value="title-asc">По названию</option>
-                  <option value="updated-asc">Давно не обновлялись</option>
-                </Select>
-                <ChevronDown
-                  className="product-select-icon h-4 w-4"
-                  aria-hidden="true"
-                />
-              </span>
-            </label>
-
-            {hasFilters ? (
-              <Button variant="ghost" onClick={resetFilters}>
-                <RotateCcw className="h-4 w-4" aria-hidden="true" />
-                Сбросить фильтры
-              </Button>
-            ) : null}
-          </div>
-
-          <div className="flex flex-wrap items-center justify-between gap-3 md:justify-end">
-            <p
-              className="text-sm text-neutral-600"
-              role="status"
-              aria-live="polite"
+          <label className="compact-toolbar-sort product-select-wrap">
+            <span className="sr-only">Сортировка</span>
+            <Select
+              aria-label="Сортировка"
+              value={filters.sort}
+              onChange={(event) =>
+                updateFilter(
+                  "sort",
+                  event.target.value as CourseCatalogFilters["sort"],
+                )
+              }
             >
-              {hasFilters
-                ? `Результаты: ${courseCountLabel(visibleCourses.length)} из ${courseCountLabel(courses.length)}`
-                : courseCountLabel(courses.length)}
-            </p>
-            <SegmentedControl
-              ariaLabel="Вид списка курсов"
-              value={view}
-              onChange={setView}
-              items={[
-                { value: "grid", label: "Плитки", icon: LayoutGrid },
-                { value: "table", label: "Таблица", icon: List },
-              ]}
+              <option value="updated-desc">Сначала обновлённые</option>
+              <option value="title-asc">По названию</option>
+              <option value="updated-asc">Давно не обновлялись</option>
+            </Select>
+            <ChevronDown
+              className="product-select-icon h-4 w-4"
+              aria-hidden="true"
             />
-          </div>
+          </label>
+
+          <p
+            className="compact-toolbar-result"
+            role="status"
+            aria-live="polite"
+          >
+            {hasFilters
+              ? `Результаты: ${courseCountLabel(visibleCourses.length)} из ${courseCountLabel(courses.length)}`
+              : courseCountLabel(courses.length)}
+          </p>
+
+          {hasFilters ? (
+            <Button
+              variant="ghost"
+              className="compact-toolbar-reset"
+              aria-label="Сбросить фильтры"
+              title="Сбросить фильтры"
+              onClick={resetFilters}
+            >
+              <RotateCcw className="h-4 w-4" aria-hidden="true" />
+            </Button>
+          ) : null}
+
+          <SegmentedControl
+            ariaLabel="Вид списка курсов"
+            value={view}
+            onChange={setView}
+            iconOnly
+            items={[
+              {
+                value: "grid",
+                label: "Карточки",
+                ariaLabel: "Показать карточками",
+                icon: LayoutGrid,
+              },
+              {
+                value: "table",
+                label: "Таблица",
+                ariaLabel: "Показать таблицей",
+                icon: Table2,
+              },
+            ]}
+          />
         </div>
-      </SurfaceCard>
+      </div>
 
       {visibleCourses.length === 0 ? (
         <SurfaceCard className="mt-4 border border-dashed border-neutral-300 text-center">

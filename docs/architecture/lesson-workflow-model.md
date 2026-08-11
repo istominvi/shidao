@@ -468,7 +468,9 @@ Current production делает `/schedule` и `/students` доступными
 - `/students` объединяет справочник TeacherLearner/LearnerProfile и
   LearnerGroup во вкладках «Ученики / Группы» с learner-safe observer
   projection во вкладке «Наблюдение»; справочник сохраняет поиск, фильтр по
-  группе и сортировку; управление relation не создаёт второй тип ученика; строка ученика показывает
+  группе и сортировку. Состояния active/archive/pending являются compact
+  `aria-pressed` segmented control, а controls лежат прямо на page background
+  без отдельной toolbar-card; управление relation не создаёт второй тип ученика; строка ученика показывает
   до двух групп и «ещё N», а имя и archive state принадлежат relation конкретного
   преподавателя; ученика можно создать, изменить и убрать из списка, а для групп
   доступен CRUD; header action меняется между «Новый ученик» и «Новая группа»,
@@ -494,8 +496,12 @@ Primary navigation для roleless Account содержит «Расписани
 Курсы». «Учебный профиль» находится в Account menu, а «Наблюдение» — третья
 вкладка `/students`; `/observing` служит compatibility redirect. Пустой
 `/courses` позволяет начать authoring; он не является Course enrollment
-учащегося. Каталог Course поддерживает поиск, фильтры, сортировку и режимы
-«Плитки / Таблица» поверх того же owner-scoped CourseSummary без второй модели.
+учащегося. Owner-scoped CourseSummary поддерживает поиск, subject/level/content
+filters, сортировку и режимы «Карточки / Таблица» без второй модели; current
+controls используют direct page-background toolbar, disclosure с native
+selects и icon-only view control. Published paginated Catalog отдельно
+поддерживает только server-side search/subject/level из catalog RPC и не
+имитирует недоступные content/sort/table capabilities.
 
 ## Scheduling, completion and deletion
 

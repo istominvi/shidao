@@ -38,6 +38,10 @@ const studentDirectoryTableSource = readFileSync(
   "src/components/teaching-hub/student-directory-table.tsx",
   "utf8",
 );
+const segmentedControlSource = readFileSync(
+  "src/components/ui/segmented-control.tsx",
+  "utf8",
+);
 const learnerProfileDialogSource = readFileSync(
   "src/components/teaching-hub/learner-profile-dialog.tsx",
   "utf8",
@@ -159,6 +163,26 @@ test("students manages one learner and group directory with durable history", ()
   assert.match(observingWorkspaceSource, /!embedded \? \(/);
   assert.match(studentsWorkspaceSource, /role="tabpanel"/);
   assert.match(studentsWorkspaceSource, /workspaceTabPanelId/);
+  assert.match(studentsWorkspaceSource, /<SegmentedControl/);
+  assert.match(
+    studentsWorkspaceSource,
+    /ariaLabel="Состояние списка учеников"/,
+  );
+  assert.match(studentsWorkspaceSource, /value: "active"/);
+  assert.match(studentsWorkspaceSource, /value: "archived"/);
+  assert.match(studentsWorkspaceSource, /value: "pending"/);
+  assert.match(studentsWorkspaceSource, /label: "Активные"/);
+  assert.match(studentsWorkspaceSource, /label: "Архив"/);
+  assert.match(studentsWorkspaceSource, /label: "Ожидают ответа"/);
+  assert.doesNotMatch(
+    studentsWorkspaceSource,
+    /aria-current=\{directoryStatus === status/,
+  );
+  assert.match(segmentedControlSource, /role="group"/);
+  assert.match(segmentedControlSource, /aria-pressed=\{isSelected\}/);
+  assert.doesNotMatch(segmentedControlSource, /role="tab(?:list)?"/);
+  assert.match(studentsWorkspaceSource, /aria-label="Фильтр по группе"/);
+  assert.match(studentsWorkspaceSource, /aria-label="Сортировка"/);
   assert.match(studentsWorkspaceSource, /Без группы/);
   assert.match(studentDirectoryTableSource, /<ProductTable/);
   assert.match(studentDirectoryTableSource, /<caption className="sr-only"/);

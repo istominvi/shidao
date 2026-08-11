@@ -10,6 +10,27 @@ import {
   hasActiveCourseCatalogFilters,
 } from "./course-catalog";
 
+const coursesIndexSource = readFileSync(
+  "src/components/course-builder/courses-index.tsx",
+  "utf8",
+);
+const ownedCoursesPanelSource = readFileSync(
+  "src/components/course-builder/owned-courses-panel.tsx",
+  "utf8",
+);
+const courseCatalogPanelSource = readFileSync(
+  "src/components/course-builder/course-catalog-panel.tsx",
+  "utf8",
+);
+const courseFilterMenuSource = readFileSync(
+  "src/components/course-builder/course-filter-menu.tsx",
+  "utf8",
+);
+const segmentedControlSource = readFileSync(
+  "src/components/ui/segmented-control.tsx",
+  "utf8",
+);
+
 function course(
   overrides: Partial<CourseSummary> & Pick<CourseSummary, "id" | "title">,
 ): CourseSummary {
@@ -147,26 +168,80 @@ test("course catalog reports active filters and Russian result labels", () => {
 });
 
 test("course catalog UI exposes accessible search, filters, views, and states", () => {
-  const source = [
-    "src/components/course-builder/courses-index.tsx",
-    "src/components/course-builder/owned-courses-panel.tsx",
-  ]
-    .map((path) => readFileSync(path, "utf8"))
-    .join("\n");
+  const source = `${coursesIndexSource}\n${ownedCoursesPanelSource}\n${courseCatalogPanelSource}`;
 
-  assert.match(source, /type="search"/);
-  assert.match(source, />\s*Предмет\s*</);
-  assert.match(source, />\s*Уровень\s*</);
-  assert.match(source, />\s*Наполнение\s*</);
-  assert.match(source, /ariaLabel="Вид списка курсов"/);
-  assert.match(source, /label: "Плитки"/);
-  assert.match(source, /label: "Таблица"/);
-  assert.match(source, /<caption className="sr-only"/);
-  assert.match(source, /role="region"/);
-  assert.match(source, /tabIndex=\{0\}/);
-  assert.match(source, /aria-live="polite"/);
-  assert.match(source, /Ничего не найдено/);
-  assert.match(source, /Сбросить фильтры/);
-  assert.match(source, /overflow-x-auto/);
+  for (const panelSource of [
+    ownedCoursesPanelSource,
+    courseCatalogPanelSource,
+  ]) {
+    assert.match(panelSource, /type="search"/);
+    assert.match(panelSource, /className="compact-page-toolbar/);
+    assert.match(panelSource, /<CourseFilterMenu/);
+    assert.match(panelSource, /aria-live="polite"/);
+    assert.match(panelSource, /Ничего не найдено/);
+  }
+
+  assert.match(ownedCoursesPanelSource, /content=\{filters\.content\}/);
+  assert.match(ownedCoursesPanelSource, /onContentChange=/);
+  assert.match(ownedCoursesPanelSource, /ariaLabel="Вид списка курсов"/);
+  assert.match(ownedCoursesPanelSource, /label: "Карточки"/);
+  assert.match(ownedCoursesPanelSource, /label: "Таблица"/);
+  assert.match(ownedCoursesPanelSource, /ariaLabel: "Показать карточками"/);
+  assert.match(ownedCoursesPanelSource, /ariaLabel: "Показать таблицей"/);
+  assert.match(ownedCoursesPanelSource, /iconOnly/);
+  assert.match(ownedCoursesPanelSource, /<caption className="sr-only"/);
+  assert.match(ownedCoursesPanelSource, /role="region"/);
+  assert.match(ownedCoursesPanelSource, /tabIndex=\{0\}/);
+  assert.match(ownedCoursesPanelSource, /overflow-x-auto/);
   assert.doesNotMatch(source, /localStorage|sessionStorage/);
+});
+
+test("shared course controls preserve pressed-button and native-filter semantics", () => {
+  assert.match(segmentedControlSource, /role="group"/);
+  assert.match(segmentedControlSource, /aria-label=\{ariaLabel\}/);
+  assert.match(segmentedControlSource, /aria-pressed=\{isSelected\}/);
+  assert.match(
+    segmentedControlSource,
+    /aria-label=\{item\.ariaLabel \?\? \(iconOnly \? item\.label : undefined\)\}/,
+  );
+  assert.match(
+    segmentedControlSource,
+    /title=\{iconOnly \? item\.label : undefined\}/,
+  );
+  assert.match(
+    segmentedControlSource,
+    /aria-busy=\{item\.busy \|\| undefined\}/,
+  );
+  assert.match(segmentedControlSource, /disabled=\{isDisabled\}/);
+  assert.match(segmentedControlSource, /inline-flex h-10[^"\n]*p-1/);
+  assert.match(segmentedControlSource, /h-8 min-h-8/);
+  assert.match(segmentedControlSource, /focus-visible:ring-inset/);
+  assert.match(
+    segmentedControlSource,
+    /isSelected[\s\S]*?bg-white text-neutral-950/,
+  );
+  assert.match(
+    segmentedControlSource,
+    /!iconOnly && item\.count !== undefined/,
+  );
+
+  assert.match(courseFilterMenuSource, /<details/);
+  assert.match(courseFilterMenuSource, /<summary/);
+  assert.match(courseFilterMenuSource, /aria-controls=\{panelId\}/);
+  assert.match(courseFilterMenuSource, /aria-expanded=\{open\}/);
+  assert.match(courseFilterMenuSource, /role="group"/);
+  assert.match(courseFilterMenuSource, /aria-label=\{label\}/);
+  assert.match(
+    courseFilterMenuSource,
+    /<label className="course-filter-field">/,
+  );
+  assert.match(courseFilterMenuSource, /<Select/);
+  assert.match(courseFilterMenuSource, /event\.key !== "Escape"/);
+  assert.match(courseFilterMenuSource, /summaryRef\.current\?\.focus\(\)/);
+  assert.match(courseFilterMenuSource, /contains\(event\.target as Node\)/);
+  assert.match(courseFilterMenuSource, /onSubjectChange\("all"\)/);
+  assert.match(courseFilterMenuSource, /onLevelChange\("all"\)/);
+  assert.match(courseFilterMenuSource, /onContentChange\?\.\("all"\)/);
+  assert.match(courseFilterMenuSource, /Сбросить фильтры/);
+  assert.doesNotMatch(courseFilterMenuSource, /role="menu/);
 });

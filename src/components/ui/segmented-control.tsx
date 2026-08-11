@@ -4,7 +4,9 @@ import { classNames } from "@/lib/ui/classnames";
 type SegmentedControlItem<T extends string> = {
   value: T;
   label: string;
+  ariaLabel?: string;
   icon?: LucideIcon;
+  count?: number;
   disabled?: boolean;
   busy?: boolean;
 };
@@ -16,6 +18,7 @@ type SegmentedControlProps<T extends string> = {
   disabled?: boolean;
   ariaLabel: string;
   className?: string;
+  iconOnly?: boolean;
 };
 
 export function SegmentedControl<T extends string>({
@@ -25,13 +28,14 @@ export function SegmentedControl<T extends string>({
   disabled = false,
   ariaLabel,
   className,
+  iconOnly = false,
 }: SegmentedControlProps<T>) {
   return (
     <div
       role="group"
       aria-label={ariaLabel}
       className={classNames(
-        "inline-flex h-10 items-center rounded-[0.95rem] border border-neutral-200 bg-neutral-100 p-0",
+        "inline-flex h-10 shrink-0 items-center gap-1 rounded-xl bg-neutral-950/[0.05] p-1 shadow-[inset_0_0_0_1px_rgba(20,20,20,0.1)]",
         className,
       )}
     >
@@ -45,20 +49,28 @@ export function SegmentedControl<T extends string>({
             key={item.value}
             type="button"
             aria-pressed={isSelected}
+            aria-label={item.ariaLabel ?? (iconOnly ? item.label : undefined)}
+            title={iconOnly ? item.label : undefined}
             disabled={isDisabled}
             onClick={() => onChange(item.value)}
             aria-busy={item.busy || undefined}
             className={classNames(
-              "inline-flex h-10 shrink-0 cursor-pointer items-center gap-1.5 rounded-[0.95rem] px-[0.9rem] text-[0.9rem] font-semibold leading-none transition",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/50",
+              "inline-flex h-8 min-h-8 shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-lg text-[0.88rem] font-medium leading-none transition",
+              iconOnly ? "w-8 px-0" : "px-3",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-neutral-900/60",
               isSelected
-                ? "bg-neutral-900 text-white shadow-[0_10px_20px_rgba(15,23,42,0.08)]"
-                : "text-neutral-600 hover:text-neutral-800",
+                ? "bg-white text-neutral-950 shadow-[0_1px_3px_rgba(20,20,20,0.1),0_4px_12px_rgba(20,20,20,0.06)]"
+                : "text-neutral-600 hover:bg-neutral-950/[0.06] hover:text-neutral-950",
               isDisabled ? "cursor-not-allowed opacity-60" : undefined,
             )}
           >
-            {Icon ? <Icon className="h-3.5 w-3.5" aria-hidden="true" /> : null}
-            {item.label}
+            {Icon ? <Icon className="h-4 w-4" aria-hidden="true" /> : null}
+            {!iconOnly ? <span>{item.label}</span> : null}
+            {!iconOnly && item.count !== undefined ? (
+              <span className="min-w-4 text-center text-[0.68rem] text-neutral-500">
+                {item.count}
+              </span>
+            ) : null}
           </button>
         );
       })}

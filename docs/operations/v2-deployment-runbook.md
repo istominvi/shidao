@@ -543,13 +543,18 @@ ShiDao V2 application:
   toolbar-card; для Schedule проверить «Неделя / Месяц», шаг стрелок,
   date picker и оба вида «Таблица / Карточки»;
 - вкладки «Ученики / Группы / Наблюдение» сохраняют общий black 1 px baseline и square
-  active-segment; поиск, group filter, keyboard focus и dialogs проверяются без
-  возврата teacher-only route gate;
+  active-segment; directory toolbar остаётся прозрачной и без outer card,
+  «Активные / Архив / Ожидают ответа» работают как один compact segmented
+  control, а поиск, group filter, sorting, reset, keyboard focus и dialogs
+  проверяются без возврата teacher-only route gate;
 - `/observing` перенаправляет на `/students?tab=observing`, reload сохраняет
   выбранную вкладку, а main navigation подсвечивает «Ученики»;
-- `/courses` проверяется в режимах «Плитки / Таблица»: поиск и combined filters
-  меняют только client projection owner-scoped списка, reset возвращает все
-  курсы, filtered-empty не подменяется пустым persisted каталогом;
+- `/courses` проверяется в режимах «Карточки / Таблица»: controls лежат прямо
+  на page background без toolbar-card, поиск и disclosure subject/level/content
+  меняют только client projection owner-scoped списка, icon-only view control
+  имеет доступные имена, reset возвращает все курсы, filtered-empty не
+  подменяется пустым persisted каталогом. Во вкладке published «Каталог» отдельно
+  проверяются только реальные server-side search/subject/level и cursor;
 - existing email и learner login/PIN создают одну Account session и не выводят
   internal Auth email/browser secret;
 - внутри directory-вкладок `/students` переключает active/archive и «Ученики /
