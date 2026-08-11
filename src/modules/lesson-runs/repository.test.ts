@@ -190,6 +190,13 @@ test("listLearnerProfiles reads active teacher_learner relations, not canonical 
   );
 });
 
+test("getCourse excludes archived courses from new lesson-run mutations", async () => {
+  await withMockSupabase([{ payload: [] }], async (repository, requests) => {
+    assert.equal(await repository.getCourse(COURSE_ID), null);
+    assert.match(requests[0]?.url ?? "", /archived_at=is\.null/);
+  });
+});
+
 test("replaceCourseAudience delegates the complete set to the atomic RPC", async () => {
   await withMockSupabase(
     [

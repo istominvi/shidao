@@ -32,7 +32,6 @@ import {
   ProductTablePrimaryCell,
   ProductTableRow,
   ProductTableTruncate,
-  productTableActionLinkClassName,
 } from "@/components/ui/product-table";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { SurfaceCard } from "@/components/ui/surface-card";
@@ -138,78 +137,91 @@ function CatalogCourseTable({
 }) {
   return (
     <div
-      className="product-table-wrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/50"
+      className="product-table-wrap course-index-table-wrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/50"
       role="region"
       aria-label="Таблица курсов каталога"
       tabIndex={0}
     >
-      <ProductTable className="min-w-[48rem]">
+      <ProductTable className="course-index-table course-index-catalog-table">
         <caption className="sr-only">
           Курсы каталога: предмет, уровень, автор и наполнение
         </caption>
+        <colgroup>
+          <col className="course-index-table-col-title" />
+          <col className="course-index-table-col-subject" />
+          <col className="course-index-table-col-level" />
+          <col className="course-index-table-col-author" />
+          <col className="course-index-table-col-lessons" />
+          <col className="course-index-table-col-materials" />
+          <col className="course-index-table-col-actions" />
+        </colgroup>
         <ProductTableHead>
           <ProductTableHeaderRow>
-            <ProductTableHeaderCell className="w-[34%]">
-              Курс
-            </ProductTableHeaderCell>
-            <ProductTableHeaderCell className="w-[24%]">
-              Предмет и уровень
-            </ProductTableHeaderCell>
-            <ProductTableHeaderCell className="w-[18%]">
-              Автор
-            </ProductTableHeaderCell>
-            <ProductTableHeaderCell className="w-[14%]">
-              Наполнение
-            </ProductTableHeaderCell>
-            <ProductTableHeaderCell className="w-[10%]">
-              <span className="sr-only">Действия</span>
-            </ProductTableHeaderCell>
+            <ProductTableHeaderCell>Курс</ProductTableHeaderCell>
+            <ProductTableHeaderCell>Предмет</ProductTableHeaderCell>
+            <ProductTableHeaderCell>Уровень</ProductTableHeaderCell>
+            <ProductTableHeaderCell>Автор</ProductTableHeaderCell>
+            <ProductTableHeaderCell>Уроки</ProductTableHeaderCell>
+            <ProductTableHeaderCell>Материалы</ProductTableHeaderCell>
+            <ProductTableHeaderCell aria-label="Действия" />
           </ProductTableHeaderRow>
         </ProductTableHead>
         <ProductTableBody>
           {courses.map((course) => (
-            <ProductTableRow key={course.id} className="h-16">
-              <ProductTablePrimaryCell>
+            <ProductTableRow key={course.id}>
+              <ProductTablePrimaryCell className="overflow-hidden">
                 <button
                   type="button"
-                  className="block w-full rounded-sm text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/50"
+                  className="course-index-table-link"
+                  title={`${course.title} — ${course.goal}`}
                   onClick={() => onOpen(course.id)}
                 >
                   <ProductTableTruncate>{course.title}</ProductTableTruncate>
-                  <ProductTableTruncate className="mt-1 text-xs font-normal text-neutral-500">
-                    {course.goal}
-                  </ProductTableTruncate>
                 </button>
               </ProductTablePrimaryCell>
-              <ProductTableCell>
-                <ProductTableTruncate>{course.subject}</ProductTableTruncate>
-                <ProductTableTruncate className="mt-1 text-xs text-neutral-500">
+              <ProductTableCell className="overflow-hidden">
+                <ProductTableTruncate title={course.subject}>
+                  {course.subject}
+                </ProductTableTruncate>
+              </ProductTableCell>
+              <ProductTableCell className="overflow-hidden">
+                <ProductTableTruncate title={course.level}>
                   {course.level}
                 </ProductTableTruncate>
               </ProductTableCell>
-              <ProductTableCell>
-                <ProductTableTruncate>
+              <ProductTableCell className="overflow-hidden">
+                <ProductTableTruncate
+                  title={
+                    course.author.isShiDao
+                      ? "ShiDao"
+                      : course.author.displayName
+                  }
+                >
                   {course.author.isShiDao
                     ? "ShiDao"
                     : course.author.displayName}
                 </ProductTableTruncate>
               </ProductTableCell>
-              <ProductTableCell>
-                <span className="block font-medium text-neutral-900">
-                  Уроки: {course.lessonCount}
-                </span>
-                <span className="mt-1 block text-xs text-neutral-500">
-                  Материалы: {course.materialCount}
-                </span>
+              <ProductTableCell className="overflow-hidden">
+                <ProductTableTruncate title={`Уроков: ${course.lessonCount}`}>
+                  {course.lessonCount}
+                </ProductTableTruncate>
               </ProductTableCell>
-              <ProductTableActionCell className="text-right">
+              <ProductTableCell className="overflow-hidden">
+                <ProductTableTruncate
+                  title={`Материалов: ${course.materialCount}`}
+                >
+                  {course.materialCount}
+                </ProductTableTruncate>
+              </ProductTableCell>
+              <ProductTableActionCell className="course-index-table-action-cell text-right">
                 <button
                   type="button"
-                  className={productTableActionLinkClassName()}
+                  className="course-index-table-open-action"
                   aria-label={`Открыть курс «${course.title}»`}
                   onClick={() => onOpen(course.id)}
                 >
-                  Открыть
+                  <ArrowRight className="h-4 w-4" aria-hidden="true" />
                 </button>
               </ProductTableActionCell>
             </ProductTableRow>

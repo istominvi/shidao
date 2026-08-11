@@ -30,7 +30,12 @@ CoursePublicationRevision ← CoursePublicationOrigin ← independent Course cop
 ```
 
 - `Account` is the ownership identity linked one-to-one to `auth.users`.
-- `Course` is an editable owner-scoped draft.
+- `Course` is an editable owner-scoped draft. Product `DELETE` is currently a
+  recoverable soft archive through `course.archived_at`: active list/get hide
+  the row, while authored children, attachments, LessonRuns and
+  LearningRecords remain physical. Published Course must be explicitly
+  unpublished first, and a Course with an open LessonRun cannot be archived.
+  Permanent deletion and archive restore UI are not current behavior.
 - `LearnerProfile` is the canonical learning identity and is not owned by a
   teacher. Every Account has exactly one linked profile; teacher-created
   offline profiles keep nullable `account_id` until recipient-bound claim or
@@ -85,8 +90,8 @@ CoursePublicationRevision ← CoursePublicationOrigin ← independent Course cop
 - Only active viewers can receive material URLs or copy a catalog Course. A
   publisher becoming non-active is atomically unpublished and is not
   republished on reactivation. Persisted orphan-Storage reconciliation and a
-  source-Course deletion policy remain rollout prerequisites, not hidden
-  inheritance behavior.
+  permanent source-Course deletion/retention policy remain rollout
+  prerequisites; current soft archive is not hidden physical deletion.
 - `LessonRun` is one concrete appointment/conducting attempt of the same
   Lesson. One open row acts as the editable appointment; completed/cancelled
   rows form history. Its UI state is derived from `scheduled_at`, `started_at`,

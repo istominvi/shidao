@@ -27,7 +27,7 @@ export default async function CoursesPage({ searchParams }: CoursesPageProps) {
       <div className="container app-page-container space-y-6">
         <AppPageHeader
           title="Курсы"
-          description="Создавайте свои курсы с нуля или добавляйте готовые из каталога."
+          description="Создавайте свои курсы с нуля или добавляйте готовые из каталога"
           actions={
             <Link
               href={ROUTES.coursesNew}

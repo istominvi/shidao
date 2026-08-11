@@ -86,6 +86,7 @@ class InMemoryCourseBuilderRepository implements CourseBuilderRepository {
   readonly studentSlides = new Map<string, LessonStudentSlide>();
   readonly assets = new Map<string, StoredAssetRecord>();
   readonly courseAttachments = new Map<string, Set<string>>();
+  readonly courseIdsWithOpenRuns = new Set<string>();
   readonly calls = {
     addComponent: 0,
     updateComponent: 0,
@@ -184,6 +185,14 @@ class InMemoryCourseBuilderRepository implements CourseBuilderRepository {
     const updated = { ...course, ...input, updatedAt: NOW };
     this.courses.set(courseId, updated);
     return { ...updated };
+  }
+
+  async hasOpenLessonRuns(courseId: string) {
+    return this.courseIdsWithOpenRuns.has(courseId);
+  }
+
+  async archiveCourse(courseId: string) {
+    return this.courses.delete(courseId);
   }
 
   async assembleDraft(input: CourseDraftAssemblyPlan) {
@@ -540,6 +549,47 @@ test("create/get enforce Account ownership and preserve normalized Course data",
       error instanceof CourseBuilderAccessError &&
       /Account/.test(error.message),
   );
+});
+
+test("archiveCourse hides an owned course without deleting its authored history", async () => {
+  const harness = createHarness();
+  const course = await harness.service.createDraft(alice, courseInput());
+  const lesson = await createLesson(harness, alice, course.id);
+
+  assert.deepEqual(await harness.service.archiveCourse(alice, course.id), {
+    courseId: course.id,
+  });
+  assert.equal(harness.repository.courses.has(course.id), false);
+  assert.equal(harness.repository.lessons.has(lesson.id), true);
+  await assert.rejects(
+    () => harness.service.getCourse(alice, course.id),
+    (error: unknown) => error instanceof CourseBuilderAccessError,
+  );
+});
+
+test("archiveCourse enforces ownership before changing the course", async () => {
+  const harness = createHarness();
+  const course = await harness.service.createDraft(alice, courseInput());
+
+  await assert.rejects(
+    () => harness.service.archiveCourse(bob, course.id),
+    (error: unknown) => error instanceof CourseBuilderAccessError,
+  );
+  assert.equal(harness.repository.courses.has(course.id), true);
+});
+
+test("archiveCourse preserves a course while it has open lesson runs", async () => {
+  const harness = createHarness();
+  const course = await harness.service.createDraft(alice, courseInput());
+  harness.repository.courseIdsWithOpenRuns.add(course.id);
+
+  await assert.rejects(
+    () => harness.service.archiveCourse(alice, course.id),
+    (error: unknown) =>
+      error instanceof CourseBuilderConflictError &&
+      error.code === "course_has_open_lesson_runs",
+  );
+  assert.equal(harness.repository.courses.has(course.id), true);
 });
 
 test("deterministic assembler is idempotent and describes attachments honestly", async () => {

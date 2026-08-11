@@ -159,35 +159,47 @@ toolbar-card: компактные 40 px controls расположены пря�
 «Ученики и группы, с которыми вы работаете или за которыми наблюдаете». Поиск
 остаётся отдельным контролом, а статус, наличие или отсутствие membership в
 группах, конкретная группа и тип связи с Account собраны в едином disclosure
-«Фильтр». Отдельного select «Сортировка» нет: Students и Groups сортируются
-кликом по заголовку столбца, повторный клик меняет направление. Во вкладке Course
-**Мои** предмет, уровень и наполнение собраны в disclosure «Фильтры»,
-сортировка остаётся отдельным native select, а «Карточки / Таблица» выбираются
-двумя icon-only кнопками; видимый result count удалён. Published **Каталог**
+«Фильтр». Отдельного select «Сортировка» нет: Students, Groups и таблица
+Course **Мои** сортируются кликом по заголовку столбца, повторный клик меняет
+направление. Во вкладке Course **Мои** предмет, уровень и наполнение собраны в
+disclosure «Фильтры», а «Карточки / Таблица» выбираются двумя icon-only
+кнопками; видимый result count удалён. Published **Каталог**
 использует тот же компактный поиск, disclosure только для реально поддержанных
 server-side предмета/уровня и такой же icon-only выбор «Карточки / Таблица».
 Повторный заголовок, поясняющий текст и видимый count удалены; фиктивные
-content/sort controls не добавлены. Это UI-only change без schema, migration
-или нового Course API.
+content/sort controls не добавлены. Подзаголовок `/courses` — «Создавайте свои
+курсы с нуля или добавляйте готовые из каталога» без завершающей точки.
 
 **Current source content controls/table surfaces (следующий deployment):**
-прозрачная панель управления Schedule снова использует всю ширину content-row
-без горизонтального inset: date/view controls остаются справа и заканчиваются
-по внешней границе строки. Обе directory-вкладки Students также имеют
-`padding-inline: 0` и занимают всю ширину строки. Обе
-вкладки Courses намеренно сохраняют горизонтальный inset 12 px. Ни одна из панелей не создаёт
+прозрачные панели управления Schedule, обеих directory-вкладок Students и
+обеих вкладок Courses используют всю ширину content-row с
+`padding-inline: 0`. Date/view controls Schedule остаются справа и
+заканчиваются по внешней границе строки. Ни одна из панелей не создаёт
 отдельную toolbar-card. Общие tokens различают карточку с радиусом
 20 px и вложенный element/control/table/menu с радиусом 12 px. Активные
 `ProductTable` wrappers Schedule, Students и Courses используют table token,
-сплошной белый фон и не имеют внешней рамки. Students table теперь повторяет
-плотный Schedule-контракт: header и data rows имеют точную высоту 40 px, а
-видимые колонки — `Ученик / Статус / Аккаунт / Группы / Добавлен / actions`.
-Shared `ProductTableHead` теперь белый, а разделители
-строк этих таблиц получают один `--product-table-divider-color`. Это UI-only
-source change без API, schema или migration;
-deployment ещё не выполнен. Для текущего follow-up зелёные typecheck, lint,
-format, production build, `git diff --check`, `456/456` unit/e2e и `22/22`
-production-browser scenarios.
+сплошной белый фон и не имеют внешней рамки. Students и обе Course-таблицы
+повторяют плотный Schedule-контракт: header и data rows имеют точную высоту
+40 px, обычные cells — inline-padding 12 px, action-cell — 4 px. Students
+показывает `Ученик / Статус / Аккаунт / Группы / Добавлен / actions`;
+Course **Мои** — `Курс / Предмет / Уровень / Уроки / Публикация / Обновлён /
+actions`, а **Каталог** — `Курс / Предмет / Уровень / Автор / Уроки /
+Материалы / actions`. Shared header белый, а разделители строк используют один
+`--product-table-divider-color`. Это current-source UI/application follow-up
+без физического изменения schema или migration; deployment ещё не выполнен.
+
+В конце каждой строки Course **Мои** находится один `MoreVertical` trigger
+32 × 32 px с portal-menu. Для неопубликованного Course меню содержит
+«Дублировать / Опубликовать / Удалить»; publication-состояния сохраняют
+действия обновления, открытия и снятия с публикации. «Удалить» требует
+подтверждения и вызывает `DELETE /api/v2/courses/[courseId]`, который выполняет
+recoverable soft archive через существующий `course.archived_at`: Course
+исчезает из active list/get, но его Lessons, Components, attachments,
+LessonRuns и LearningRecords физически сохраняются. Опубликованный Course
+получает `409 course_is_published` до явного unpublish, а Course с открытым
+LessonRun — `409 course_has_open_lesson_runs` до завершения или отмены Runs.
+Это не permanent delete и не обещание atomic concurrency между отдельными
+publication/archive действиями.
 
 **Current source Students table/actions refinement (следующий deployment):**
 каждый data-заголовок таблиц Students и Groups переключает возрастающую и
@@ -580,7 +592,16 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
   connection, а «Добавлен» — teacher-local дату relation или запроса. Архив и
   ожидание ответа отмечены прямо в строке. Вся compact
   toolbar расположена на page background во всю ширину без horizontal inset;
-  Course toolbars сохраняют собственный inset 12 px.
+  обе Course toolbars используют тот же нулевой horizontal inset.
+
+- `/courses` использует общий полноширинный `WorkspaceTabs` и прозрачные
+  full-width controls в обеих вкладках. Обе таблицы имеют 40 px header/rows и
+  однострочный ellipsis. В **Мои** шесть data-заголовков меняют
+  ascending/descending сортировку и отражают её через `aria-sort`; action
+  header не сортируется. **Каталог** сохраняет server-side cursor order и не
+  сортирует только уже загруженную страницу на клиенте. Вертикальное меню
+  owned-row переиспользует реальные duplicate/publication flows и подтверждённый
+  soft archive с publication/open-Run guards.
 - Клик по строке ученика открывает dialog «Профиль / История»: здесь можно
   изменить локальное имя и membership в нескольких группах, а история
   ограничена LearningRecord текущего преподавателя. Ученика можно создать,
@@ -922,7 +943,8 @@ History-aware context развёрнут в release `9393080`; production provid
 - catalog moderation, ratings, update merge в уже добавленный Course и
   наполнение каталога утверждёнными official ShiDao Course;
 - persisted reconciliation для Storage objects, оставшихся после crash или
-  commit-unknown, и явная publication policy до появления удаления Course;
+  commit-unknown; permanent physical Course deletion и пользовательский
+  restore архивного Course остаются отдельными future lifecycle решениями;
 - внешний remote MCP/API для сторонних агентов;
 - отдельный staging-контур.
 

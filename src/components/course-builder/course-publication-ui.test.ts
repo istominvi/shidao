@@ -12,12 +12,22 @@ const ownedPath = "src/components/course-builder/owned-courses-panel.tsx";
 const catalogPath = "src/components/course-builder/course-catalog-panel.tsx";
 const actionsPath = "src/components/course-builder/course-actions.tsx";
 const actionMenuPath = "src/components/ui/action-menu.tsx";
+const courseRoutePath = "src/app/api/v2/courses/[courseId]/route.ts";
+const courseServicePath = "src/modules/course-builder/service.ts";
 
 test("courses index exposes My and Catalog tabs with shareable catalog URLs", () => {
   const page = source(pagePath);
   const index = source(indexPath);
 
   assert.match(page, />\s*Создать курс\s*</);
+  assert.match(
+    page,
+    /description="Создавайте свои курсы с нуля или добавляйте готовые из каталога"/,
+  );
+  assert.doesNotMatch(
+    page,
+    /description="Создавайте свои курсы с нуля или добавляйте готовые из каталога\."/,
+  );
   assert.match(page, /query\.tab === "catalog"/);
   assert.match(page, /initialCatalogCourseId/);
   assert.match(index, /value: "mine", label: "Мои"/);
@@ -68,16 +78,19 @@ test("catalog shows published lessons and safe material links before copying", (
   assert.doesNotMatch(catalog, /Адаптировать под группу/);
 });
 
-test("owned course actions cover copy and publication states", () => {
+test("owned course actions cover copy, publication, and safe archive states", () => {
   const actions = source(actionsPath);
   const owned = source(ownedPath);
+  const route = source(courseRoutePath);
+  const service = source(courseServicePath);
 
   for (const label of [
     "Дублировать",
-    "Опубликовать в каталоге",
+    "Опубликовать",
     "Обновить публикацию",
     "Открыть в каталоге",
     "Снять с публикации",
+    "Удалить",
   ]) {
     assert.match(actions, new RegExp(label));
   }
@@ -86,10 +99,30 @@ test("owned course actions cover copy and publication states", () => {
   assert.match(actions, /\/duplicate/);
   assert.match(actions, /method: "POST"/);
   assert.match(owned, /<CourseActions course=\{course\}/);
+  assert.match(
+    owned,
+    /<CourseActions[\s\S]*?course=\{course\}[\s\S]*?variant="table"/,
+  );
   assert.match(owned, /CoursePublicationBadges/);
+  assert.match(actions, /triggerIcon=\{variant === "table" \? MoreVertical/);
+  assert.match(actions, /portal=\{variant === "table"\}/);
+  assert.match(actions, /id: "delete"[\s\S]*?destructive: true/);
+  assert.match(actions, /disabled: Boolean\(busyAction\) \|\| published/);
+  assert.match(actions, /Сначала снимите курс с публикации/);
+  assert.match(
+    actions,
+    /\/api\/v2\/courses\/\$\{encodeURIComponent\(course\.id\)\}`,[\s\S]*?method: "DELETE"/,
+  );
+  assert.match(route, /export async function DELETE/);
+  assert.match(route, /publication\?\.status === "published"/);
+  assert.match(route, /"course_is_published"/);
+  assert.match(route, /service\.archiveCourse\(actor, courseId\)/);
+  assert.match(service, /repository\.hasOpenLessonRuns\(course\.id\)/);
+  assert.match(service, /"course_has_open_lesson_runs"/);
+  assert.match(service, /repository\.archiveCourse\(course\.id\)/);
 });
 
-test("publish and update share one concise rights confirmation dialog", () => {
+test("publish, update, and archive share one explicit confirmation dialog", () => {
   const actions = source(actionsPath);
   const dialogCount = actions.match(/<DialogShell/g)?.length ?? 0;
 
@@ -105,6 +138,15 @@ test("publish and update share one concise rights confirmation dialog", () => {
     /Группы, ученики, расписание, история занятий и личные пожелания не публикуются/,
   );
   assert.match(actions, /JSON\.stringify\(\{ rightsConfirmed: true \}\)/);
+  assert.match(actions, /title: "Удалить курс из списка\?"/);
+  assert.match(
+    actions,
+    /Его уроки, материалы, расписание и история занятий не удаляются безвозвратно/,
+  );
+  assert.match(
+    actions,
+    /dialogMode === "publish" \|\| dialogMode === "update"/,
+  );
   assert.match(
     actions,
     /Boolean\(busyAction\) \|\| \(requiresRights && !rightsConfirmed\)/,

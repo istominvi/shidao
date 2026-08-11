@@ -619,8 +619,11 @@ success/latency/usage, Storage/parsing failures, auth failures.
 
 ## 30. CURRENT lifecycle
 
-- Delete Course/Lesson удаляет editable document children, но не finalized
-  LearningRecord.
+- Course `DELETE` выполняет recoverable soft archive через `archived_at` и
+  сохраняет editable children, attachments, Runs и finalized LearningRecord;
+  published/open-Run Course сначала требует разрешить соответствующий guard.
+  Lesson delete удаляет editable document children, но не finalized
+  LearningRecord. Permanent Course delete и restore UI остаются later.
 - Delete material не оставляет broken Component references.
 - Archive/restore изменяет только TeacherLearner текущего Account; restore не
   возвращает прежние Group/Course links.

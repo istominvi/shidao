@@ -240,6 +240,46 @@ test("deleteLesson uses the history-preserving RPC", async () => {
   });
 });
 
+test("archiveCourse performs a recoverable owner-scoped soft delete", async () => {
+  await withMockSupabase(
+    [{ payload: [{ id: COURSE_ID }] }],
+    async (repository, requests) => {
+      assert.equal(await repository.archiveCourse(COURSE_ID), true);
+      assert.equal(requests[0]?.method, "PATCH");
+      assert.match(
+        requests[0]?.url ?? "",
+        new RegExp(
+          `/rest/v1/course\\?id=eq\\.${COURSE_ID}&archived_at=is\\.null&select=id$`,
+        ),
+      );
+      assert.equal(typeof requests[0]?.body?.archived_at, "string");
+      assert.equal(
+        Number.isNaN(Date.parse(String(requests[0]?.body?.archived_at))),
+        false,
+      );
+    },
+  );
+});
+
+test("hasOpenLessonRuns checks unfinished runs for lessons in the course", async () => {
+  await withMockSupabase(
+    [
+      { payload: [{ id: LESSON_ID }] },
+      { payload: [{ id: "00000000-0000-4000-8000-000000009001" }] },
+    ],
+    async (repository, requests) => {
+      assert.equal(await repository.hasOpenLessonRuns(COURSE_ID), true);
+      assert.match(
+        requests[0]?.url ?? "",
+        new RegExp(`/rest/v1/lesson\\?select=id&course_id=eq\\.${COURSE_ID}$`),
+      );
+      assert.match(requests[1]?.url ?? "", /ended_at=is\.null/);
+      assert.match(requests[1]?.url ?? "", /cancelled_at=is\.null/);
+      assert.match(requests[1]?.url ?? "", /limit=1$/);
+    },
+  );
+});
+
 test("assembleDraft sends one validated plan to the transactional RPC", async () => {
   const resultPayload = {
     courseId: COURSE_ID,

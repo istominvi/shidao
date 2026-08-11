@@ -601,22 +601,25 @@ ShiDao V2 application:
 - в RouterAI dashboard сверить, что smoke создал ожидаемые запросы/usage и не
   вызвал неожиданный всплеск расхода.
 
-После smoke disposable Course удалить только через обычный подтверждённый UI,
-если такой delete flow входит в текущий release; иначе оставить его явно
-помеченным как smoke, не удаляя данные напрямую из БД.
+После smoke disposable Course убирать только через обычный подтверждённый UI.
+Проверить, что действие является soft archive: Course исчезает из active list,
+но Lessons, attachments, Runs и LearningRecords не удаляются физически.
+Published Course должен вернуть `409 course_is_published` до явного unpublish,
+а Course с открытым Run — `409 course_has_open_lesson_runs` до завершения или
+отмены занятия. Не трактовать этот flow как permanent delete или как atomic
+publication/archive transaction.
 
 ### Roleless navigation and learner identity
 
 - любой authenticated Account видит primary navigation `Расписание / Ученики /
 Курсы`, а Account menu — `Учебный профиль / Настройки / Выход`; Guest на
   каждом private route уходит в login;
-- `/schedule` и `/students` сохраняют единый computed page-header contract с
+- `/schedule`, `/students` и `/courses` сохраняют единый computed page-header contract с
   `/courses`, Course и Lesson; contextual actions находятся в header, а
   date/view controls — ниже него справа прямо на page background без внешней
-  toolbar-card. У прозрачных Schedule и Students controls-панелей проверить
+  toolbar-card. У прозрачных Schedule, Students и обеих Courses controls-панелей проверить
   нулевой horizontal padding: controls остаются в пределах content-row, а
-  крайний control совпадает с его внешней границей. Courses сохраняет 12 px
-  слева и справа. Для Schedule
+  крайний control совпадает с его внешней границей. Для Schedule
   проверить, что отдельного внешнего «Неделя /
   Месяц» нет: центральная кнопка compact date control открывает календарный
   popover с «День / Неделя / Месяц», выбор даты меняет опорную дату, а стрелки
@@ -693,20 +696,32 @@ ShiDao V2 application:
   возврата teacher-only route gate;
 - `/observing` перенаправляет на `/students?tab=observing`, reload сохраняет
   выбранную вкладку, а main navigation подсвечивает «Ученики»;
-- `/courses` проверяется в режимах «Карточки / Таблица»: controls лежат прямо
-  на page background без toolbar-card и имеют горизонтальный inset 12 px,
+- `/courses` показывает точный подзаголовок «Создавайте свои курсы с нуля или
+  добавляйте готовые из каталога» без точки; tabs сохраняют общий edge-to-edge
+  20%-black baseline. Раздел проверяется в режимах «Карточки / Таблица»:
+  controls обеих вкладок лежат прямо на page background без toolbar-card и без
+  horizontal inset,
   поиск и disclosure subject/level/content
   меняют только client projection owner-scoped списка, icon-only view control
   имеет доступные имена, reset возвращает все курсы, filtered-empty не
   подменяется пустым persisted каталогом. Во вкладке published «Каталог» отдельно
   проверяются только реальные server-side search/subject/level и cursor, такой
   же icon-only cards/table presentation, отсутствие повторного заголовка,
-  пояснения и видимого result count; client-only sort/content не добавляются;
+  пояснения и видимого result count; client-only sort/content не добавляются.
+  В **Мои** отдельного sort select нет: headers `Курс / Предмет / Уровень /
+Уроки / Публикация / Обновлён` переключают ascending/descending и публикуют
+  `aria-sort`; action heading остаётся пустым и несортируемым. В конце owned-row
+  проверить один `MoreVertical` trigger 32 × 32 px, portal-menu и для
+  unpublished Course точные «Дублировать / Опубликовать / Удалить». Delete
+  открывает confirmation; published item disabled с подсказкой сначала снять
+  публикацию. У **Каталог** остаётся compact icon-open action и server cursor
+  order без локальной сортировки неполного результата;
 - на Schedule/Students/Courses table view измерить общий surface contract:
   активный `ProductTable` wrapper сплошной белый, border `0`, radius `12 px`;
-  карточки сохраняют отдельный radius `20 px`. Schedule и Students используют
-  exact 40 px header/data rows; Course table сохраняет свою multiline
-  плотность. Во всех sortable Schedule/Students/Groups заголовках сортируется
+  карточки сохраняют отдельный radius `20 px`. Schedule, Students и обе Course
+  tables используют exact 40 px header/data rows, white header, общий divider,
+  однострочный ellipsis, 12 px обычный cell inset и 4 px action-cell inset. Во
+  всех sortable Schedule/Students/Groups/owned-Course заголовках сортируется
   реальная projection, action heading остаётся несортируемым;
 - existing email и learner login/PIN создают одну Account session и не выводят
   internal Auth email/browser secret;

@@ -911,6 +911,195 @@ a {
   border-color: var(--product-table-divider-color, #ececef);
 }
 
+.course-index-table-wrap {
+  box-shadow: 0 20px 52px rgba(23, 26, 32, 0.07);
+}
+
+.course-index-table {
+  width: 100%;
+  min-width: 58rem;
+  table-layout: auto;
+  border-collapse: collapse;
+  background: #fff;
+}
+
+.course-index-catalog-table {
+  min-width: 52rem;
+}
+
+.course-index-owned-table .course-index-table-col-title {
+  width: 42%;
+}
+
+.course-index-owned-table .course-index-table-col-subject,
+.course-index-owned-table .course-index-table-col-level {
+  width: 29%;
+}
+
+.course-index-catalog-table .course-index-table-col-title {
+  width: 40%;
+}
+
+.course-index-catalog-table .course-index-table-col-subject,
+.course-index-catalog-table .course-index-table-col-level,
+.course-index-catalog-table .course-index-table-col-author {
+  width: 20%;
+}
+
+.course-index-table-col-lessons,
+.course-index-table-col-publication,
+.course-index-table-col-updated,
+.course-index-table-col-materials,
+.course-index-table-col-actions {
+  width: 1%;
+}
+
+.course-index-table thead tr,
+.course-index-table thead th {
+  height: var(
+    --course-demo-table-row-height,
+    var(--course-demo-control-height, var(--product-row-height, 2.5rem))
+  );
+}
+
+.course-index-table thead {
+  background: #fff;
+}
+
+.course-index-table thead th {
+  box-sizing: border-box;
+  overflow: hidden;
+  border-bottom: 1px solid var(--product-table-divider-color, #ececef);
+  padding-block: 0;
+  padding-inline: var(--course-demo-control-padding-inline, 0.75rem);
+  color: #8b8e97;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.course-index-table tbody tr:first-child {
+  border-top-width: 0;
+}
+
+.course-index-table tbody tr {
+  height: var(
+    --course-demo-table-row-height,
+    var(--course-demo-control-height, var(--product-row-height, 2.5rem))
+  );
+  border-color: var(--product-table-divider-color, #ececef);
+  background: #fff;
+  color: #141414;
+}
+
+.course-index-table tbody tr:hover,
+.course-index-table tbody tr:focus-within {
+  background: #f7f7f8;
+}
+
+.course-index-table tbody td {
+  box-sizing: border-box;
+  height: var(
+    --course-demo-table-row-height,
+    var(--course-demo-control-height, var(--product-row-height, 2.5rem))
+  );
+  overflow: hidden;
+  padding-block: 0;
+  padding-inline: var(--course-demo-control-padding-inline, 0.75rem);
+  color: #141414;
+  font-size: var(--course-demo-control-font-size, 0.88rem);
+  font-weight: 400;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.course-index-table-link {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: var(--product-inner-control-radius, 0.5rem);
+  background: transparent;
+  padding: 0;
+  color: #141414;
+  font: inherit;
+  font-weight: 500;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.course-index-table-link:focus-visible {
+  outline: 2px solid rgba(20, 20, 20, 0.58);
+  outline-offset: 1px;
+}
+
+.course-index-table-truncate {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  color: #141414;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.course-index-table-action-cell {
+  overflow: visible !important;
+  padding-inline: var(--product-inner-control-inset, 0.25rem) !important;
+  line-height: 0;
+}
+
+.course-index-table-actions {
+  display: inline-flex;
+  width: 100%;
+  height: var(--product-inner-control-size, 2rem);
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0;
+}
+
+.course-index-table-open-action,
+.course-demo-shell .course-index-table-action-menu .action-menu-trigger {
+  display: inline-flex;
+  width: var(--product-inner-control-size, 2rem);
+  min-width: var(--product-inner-control-size, 2rem);
+  height: var(--product-inner-control-size, 2rem);
+  min-height: var(--product-inner-control-size, 2rem);
+  flex: 0 0 var(--product-inner-control-size, 2rem);
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: var(--product-inner-control-radius, 0.5rem);
+  background: transparent;
+  padding: 0;
+  color: #141414;
+  font: inherit;
+  opacity: 1;
+  box-shadow: none;
+  cursor: pointer;
+}
+
+.course-index-table-open-action:hover,
+.course-demo-shell .course-index-table-action-menu .action-menu-trigger:hover {
+  border-color: transparent;
+  background: rgba(20, 20, 20, 0.07);
+  color: #141414;
+  box-shadow: none;
+  transform: none;
+}
+
+.course-index-table-open-action:focus-visible,
+.course-demo-shell
+  .course-index-table-action-menu
+  .action-menu-trigger:focus-visible {
+  border-color: transparent;
+  outline: 2px solid rgba(20, 20, 20, 0.58);
+  outline-offset: 1px;
+  box-shadow: none;
+}
+
 .product-table-sort-button {
   border: 0;
   padding: 0;
@@ -1388,7 +1577,7 @@ a {
   border: 0;
   background: transparent;
   padding-block: 0;
-  padding-inline: var(--course-demo-content-inset, 0.75rem);
+  padding-inline: 0;
   box-shadow: none;
 }
 

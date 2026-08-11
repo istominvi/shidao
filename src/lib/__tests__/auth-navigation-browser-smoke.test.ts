@@ -25,6 +25,7 @@ const E2E_ACCOUNT_ID = "22222222-2222-4222-8222-222222222222";
 const E2E_TEACHER_ID = "55555555-5555-4555-8555-555555555555";
 const E2E_SCHOOL_ID = "66666666-6666-4666-8666-666666666666";
 const E2E_COURSE_ID = "33333333-3333-4333-8333-333333333333";
+const E2E_SECOND_COURSE_ID = "33333333-3333-4333-8333-333333333334";
 const E2E_LESSON_ID = "44444444-4444-4444-8444-444444444444";
 const E2E_COMPONENT_ID = "77777777-7777-4777-8777-777777777771";
 const E2E_STORED_FILE_ID = "77777777-7777-4777-8777-777777777772";
@@ -76,6 +77,19 @@ const E2E_COURSE_ROW = {
   created_at: "2026-08-05T08:00:00.000Z",
   updated_at: "2026-08-05T09:00:00.000Z",
   publication_content_updated_at: "2026-08-05T09:00:00.000Z",
+};
+
+const E2E_SECOND_COURSE_ROW = {
+  ...E2E_COURSE_ROW,
+  id: E2E_SECOND_COURSE_ID,
+  title: "Японский для путешествий",
+  subject: "Японский язык",
+  goal: "Освоить основные фразы для поездки.",
+  level: "Начальный",
+  target_lesson_count: 6,
+  created_at: "2026-08-06T08:00:00.000Z",
+  updated_at: "2026-08-06T09:00:00.000Z",
+  publication_content_updated_at: "2026-08-06T09:00:00.000Z",
 };
 
 const E2E_LESSON_ROW = {
@@ -323,6 +337,9 @@ const E2E_COMPLETION_RECORD_IDS = [
 let e2eCompletionPhase: 0 | 1 | 2 | null = null;
 let e2eScheduleFixtureVisible = false;
 let e2eScheduleFixtureRunCount: 1 | 2 = 1;
+let e2eCourseArchived = false;
+let e2eSecondCourseVisible = false;
+let e2eSecondCourseArchived = false;
 const e2eCompletionPayloads: E2ECompletionPayload[] = [];
 const e2eCompletedLearningRecordRows: E2ELearningRecordRow[] = [];
 
@@ -512,6 +529,9 @@ type PlaywrightLocator = {
   selectOption: (option: { label: string }) => Promise<string[]>;
   getAttribute: (name: string) => Promise<string | null>;
   textContent: () => Promise<string | null>;
+  allTextContents: () => Promise<string[]>;
+  locator: (selector: string) => PlaywrightLocator;
+  evaluate: <T>(pageFunction: (element: Element) => T) => Promise<T>;
   press: (key: string) => Promise<void>;
   getByRole: (
     role: string,
@@ -1560,12 +1580,39 @@ async function handleMockSupabase(
 
   if (requestUrl.pathname === "/rest/v1/course") {
     const requestedCourseId = readEqFilter(requestUrl, "id");
+    if (request.method === "PATCH") {
+      const body = await readJsonBody(request);
+      if (
+        (requestedCourseId === E2E_COURSE_ID ||
+          requestedCourseId === E2E_SECOND_COURSE_ID) &&
+        typeof body.archived_at === "string"
+      ) {
+        if (requestedCourseId === E2E_COURSE_ID) e2eCourseArchived = true;
+        else e2eSecondCourseArchived = true;
+        json(response, 200, [{ id: requestedCourseId }]);
+        return;
+      }
+      json(
+        response,
+        200,
+        requestedCourseId === E2E_SECOND_COURSE_ID
+          ? [E2E_SECOND_COURSE_ROW]
+          : [E2E_COURSE_ROW],
+      );
+      return;
+    }
+    const activeCourses = [
+      ...(e2eCourseArchived ? [] : [E2E_COURSE_ROW]),
+      ...(e2eSecondCourseVisible && !e2eSecondCourseArchived
+        ? [E2E_SECOND_COURSE_ROW]
+        : []),
+    ];
     json(
       response,
       200,
-      requestedCourseId && requestedCourseId !== E2E_COURSE_ID
-        ? []
-        : [E2E_COURSE_ROW],
+      requestedCourseId
+        ? activeCourses.filter((course) => course.id === requestedCourseId)
+        : activeCourses,
     );
     return;
   }
@@ -6236,6 +6283,7 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
     return;
   }
 
+  e2eSecondCourseVisible = true;
   const runtime = await openPage({ cookie: authenticatedCookieValue() });
 
   try {
@@ -6402,13 +6450,11 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       borderTopWidth: "0px",
       boxShadow: "none",
       paddingTop: "0px",
-      paddingLeft: "12px",
-      paddingRight: "12px",
+      paddingLeft: "0px",
+      paddingRight: "0px",
     });
-    assert.ok(
-      Math.abs(coursesVisual.toolbarAlignment.searchStartInset - 12) < 0.5,
-    );
-    assert.ok(Math.abs(coursesVisual.toolbarAlignment.railEndInset - 12) < 0.5);
+    assert.ok(Math.abs(coursesVisual.toolbarAlignment.searchStartInset) < 0.5);
+    assert.ok(Math.abs(coursesVisual.toolbarAlignment.railEndInset) < 0.5);
     assert.deepEqual(coursesVisual.viewGeometry, {
       shellHeight: "40px",
       activeButtonHeight: "32px",
@@ -6497,10 +6543,10 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
         railEndInset: rect.right - railRect.right,
       };
     });
-    assert.equal(catalogToolbarContract.paddingLeft, "12px");
-    assert.equal(catalogToolbarContract.paddingRight, "12px");
-    assert.ok(Math.abs(catalogToolbarContract.searchStartInset - 12) < 0.5);
-    assert.ok(Math.abs(catalogToolbarContract.railEndInset - 12) < 0.5);
+    assert.equal(catalogToolbarContract.paddingLeft, "0px");
+    assert.equal(catalogToolbarContract.paddingRight, "0px");
+    assert.ok(Math.abs(catalogToolbarContract.searchStartInset) < 0.5);
+    assert.ok(Math.abs(catalogToolbarContract.railEndInset) < 0.5);
     assert.equal(
       await catalogPanel.getByText("Готовые курсы", { exact: true }).count(),
       0,
@@ -6604,6 +6650,13 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
         throw new Error("Owned Course table surface is missing");
       }
       const wrapperStyle = getComputedStyle(wrapper);
+      const headerRow = table.tHead?.rows[0];
+      const firstRow = table.tBodies[0]?.rows[0];
+      const firstCell = firstRow?.cells[0];
+      const actionCell = firstRow?.cells[firstRow.cells.length - 1];
+      if (!headerRow || !firstRow || !firstCell || !actionCell) {
+        throw new Error("Owned Course table geometry is missing");
+      }
       return {
         wrapperBackgroundColor: wrapperStyle.backgroundColor,
         tableBackgroundColor: getComputedStyle(table).backgroundColor,
@@ -6614,20 +6667,149 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
           wrapperStyle.borderLeftWidth,
         ],
         wrapperBorderRadius: wrapperStyle.borderRadius,
+        wrapperBoxShadow: wrapperStyle.boxShadow,
+        headerHeight: headerRow.getBoundingClientRect().height,
+        rowHeights: Array.from(table.tBodies[0]?.rows ?? []).map(
+          (row) => row.getBoundingClientRect().height,
+        ),
+        firstCellPaddingLeft: getComputedStyle(firstCell).paddingLeft,
+        firstCellPaddingRight: getComputedStyle(firstCell).paddingRight,
+        actionCellPaddingLeft: getComputedStyle(actionCell).paddingLeft,
+        actionCellPaddingRight: getComputedStyle(actionCell).paddingRight,
+        headerDivider: getComputedStyle(headerRow.cells[0]!).borderBottomColor,
+        bodyDivider: getComputedStyle(firstRow).borderTopColor,
       };
     });
-    assert.deepEqual(ownedCourseTableSurface, {
-      wrapperBackgroundColor: "rgb(255, 255, 255)",
-      tableBackgroundColor: "rgb(255, 255, 255)",
-      wrapperBorderWidths: ["0px", "0px", "0px", "0px"],
-      wrapperBorderRadius: "12px",
-    });
+    assert.equal(
+      ownedCourseTableSurface.wrapperBackgroundColor,
+      "rgb(255, 255, 255)",
+    );
+    assert.equal(
+      ownedCourseTableSurface.tableBackgroundColor,
+      "rgb(255, 255, 255)",
+    );
+    assert.deepEqual(ownedCourseTableSurface.wrapperBorderWidths, [
+      "0px",
+      "0px",
+      "0px",
+      "0px",
+    ]);
+    assert.equal(ownedCourseTableSurface.wrapperBorderRadius, "12px");
+    assert.notEqual(ownedCourseTableSurface.wrapperBoxShadow, "none");
+    assert.ok(Math.abs(ownedCourseTableSurface.headerHeight - 40) < 0.5);
+    assert.ok(
+      ownedCourseTableSurface.rowHeights.every(
+        (height) => Math.abs(height - 40) < 0.5,
+      ),
+    );
+    assert.equal(ownedCourseTableSurface.firstCellPaddingLeft, "12px");
+    assert.equal(ownedCourseTableSurface.firstCellPaddingRight, "12px");
+    assert.equal(ownedCourseTableSurface.actionCellPaddingLeft, "4px");
+    assert.equal(ownedCourseTableSurface.actionCellPaddingRight, "4px");
+    assert.equal(
+      ownedCourseTableSurface.headerDivider,
+      ownedCourseTableSurface.bodyDivider,
+    );
     assert.equal(
       await runtime.page
         .getByRole("button", { name: "Показать таблицей", exact: true })
         .getAttribute("aria-pressed"),
       "true",
     );
+
+    const titleHeader = runtime.page.getByRole("columnheader", {
+      name: "Курс",
+      exact: true,
+    });
+    assert.equal(await titleHeader.getAttribute("aria-sort"), "none");
+    await titleHeader
+      .getByRole("button", { name: "Курс", exact: true })
+      .click();
+    assert.equal(await titleHeader.getAttribute("aria-sort"), "ascending");
+    assert.deepEqual(
+      await runtime.page
+        .locator('[aria-label="Таблица курсов"] tbody tr td:first-child')
+        .allTextContents(),
+      [E2E_COURSE_TITLE, E2E_SECOND_COURSE_ROW.title],
+    );
+    await titleHeader
+      .getByRole("button", { name: "Курс", exact: true })
+      .click();
+    assert.equal(await titleHeader.getAttribute("aria-sort"), "descending");
+    assert.deepEqual(
+      await runtime.page
+        .locator('[aria-label="Таблица курсов"] tbody tr td:first-child')
+        .allTextContents(),
+      [E2E_SECOND_COURSE_ROW.title, E2E_COURSE_TITLE],
+    );
+
+    const ownedCourseRow = runtime.page.locator(
+      `[aria-label="Таблица курсов"] tbody tr:has-text("${E2E_COURSE_TITLE}")`,
+    );
+    const courseActionsTrigger = ownedCourseRow.getByRole("button", {
+      name: `Действия с курсом «${E2E_COURSE_TITLE}»`,
+      exact: true,
+    });
+    assert.equal(
+      await courseActionsTrigger.locator(".lucide-ellipsis-vertical").count(),
+      1,
+    );
+    await courseActionsTrigger.click();
+    const courseActionMenu = runtime.page.locator(
+      "body > .action-menu-panel-portal",
+    );
+    await courseActionMenu.waitFor();
+    for (const label of ["Дублировать", "Опубликовать", "Удалить"]) {
+      await courseActionMenu
+        .getByRole("menuitem", { name: label, exact: true })
+        .waitFor();
+    }
+    await courseActionMenu
+      .getByRole("menuitem", { name: "Удалить", exact: true })
+      .click();
+    const deleteCourseDialog = runtime.page.getByRole("dialog", {
+      name: "Удалить курс из списка?",
+      exact: true,
+    });
+    await deleteCourseDialog.waitFor();
+    assert.equal(
+      await runtime.page.locator("body > .dialog-shell-overlay").count(),
+      1,
+    );
+    await deleteCourseDialog
+      .getByRole("button", { name: "Отмена", exact: true })
+      .click();
+    await ownedCourseRow.waitFor();
+    assert.equal(
+      await courseActionsTrigger.evaluate(
+        (node) => node === document.activeElement,
+      ),
+      true,
+    );
+
+    const secondCourseRow = runtime.page.locator(
+      `[aria-label="Таблица курсов"] tbody tr:has-text("${E2E_SECOND_COURSE_ROW.title}")`,
+    );
+    await secondCourseRow
+      .getByRole("button", {
+        name: `Действия с курсом «${E2E_SECOND_COURSE_ROW.title}»`,
+        exact: true,
+      })
+      .click();
+    await runtime.page
+      .getByRole("menuitem", { name: "Удалить", exact: true })
+      .click();
+    const confirmSecondCourseDelete = runtime.page.getByRole("dialog", {
+      name: "Удалить курс из списка?",
+      exact: true,
+    });
+    await confirmSecondCourseDelete.waitFor();
+    await confirmSecondCourseDelete
+      .getByRole("button", { name: "Удалить", exact: true })
+      .click();
+    await secondCourseRow.waitFor({ state: "detached" });
+    await ownedCourseRow.waitFor();
+
     await runtime.page
       .getByRole("button", { name: "Показать карточками", exact: true })
       .click();
@@ -7104,6 +7286,8 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
     assert.match(html, /aria-label="Разделы курса"/);
     assert.match(html, new RegExp(E2E_LESSON_TITLE));
   } finally {
+    e2eSecondCourseVisible = false;
+    e2eSecondCourseArchived = false;
     await runtime.close();
   }
 });
@@ -7221,16 +7405,16 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
         clientWidth: 375,
         scrollWidth: 375,
         toolbarInsideViewport: true,
-        toolbarPaddingLeft: "12px",
-        toolbarPaddingRight: "12px",
+        toolbarPaddingLeft: "0px",
+        toolbarPaddingRight: "0px",
         shellHeight: "40px",
         activeButtonHeight: "32px",
         activePressed: "true",
       },
     );
     assert.ok(mobileCoursesToolbar.pageHeader.contentWidth > 0);
-    assert.ok(Math.abs(mobileCoursesToolbar.searchStartInset - 12) < 0.5);
-    assert.ok(Math.abs(mobileCoursesToolbar.railEndInset - 12) < 0.5);
+    assert.ok(Math.abs(mobileCoursesToolbar.searchStartInset) < 0.5);
+    assert.ok(Math.abs(mobileCoursesToolbar.railEndInset) < 0.5);
     assert.ok(mobileCoursesToolbar.pageHeader.actionWidth > 0);
     assert.ok(
       mobileCoursesToolbar.pageHeader.headingWidth >
@@ -7308,10 +7492,10 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
     assert.deepEqual(mobileCatalogToolbar, {
       scrollWidth: 375,
       insideViewport: true,
-      paddingLeft: "12px",
-      paddingRight: "12px",
-      searchStartInset: 12,
-      railEndInset: 12,
+      paddingLeft: "0px",
+      paddingRight: "0px",
+      searchStartInset: 0,
+      railEndInset: 0,
       shellHeight: "40px",
       visibleResultCount: 0,
     });

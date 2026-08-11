@@ -446,8 +446,15 @@ immutable history одного Account — 5 GiB. Process-local guard сериа
 Storage-writing mutation одного Account и ограничивает частоту, но не заменяет
 DB quota. При network/5xx/invalid-response commit считается unknown: сервис не
 удаляет возможно committed bytes. Persisted orphan reconciliation остаётся
-обязательным operational шагом до широкого rollout. До добавления Course DELETE
-нужна отдельная policy управления publication, переживающей удаление source.
+обязательным operational шагом до широкого rollout. Current
+`DELETE /api/v2/courses/[courseId]` не выполняет physical deletion: он ставит
+существующий `course.archived_at`. Поэтому authored Lessons/Components,
+attachments, LessonRuns и LearningRecords сохраняются. Published Course должен
+быть явно снят с публикации до архивации (`409 course_is_published`), а Course
+с открытым LessonRun — завершён или отменён (`409
+course_has_open_lesson_runs`). Это recoverable storage contract, но отдельного
+restore UI пока нет; permanent delete и atomic publication/archive
+orchestration остаются later policy, а не неявным поведением этого endpoint.
 
 Visual contract Course routes не меняет эту навигационную или доменную модель:
 
@@ -470,10 +477,10 @@ Visual contract Course routes не меняет эту навигационну�
   белые кнопки сохраняют тонкую серую рамку, а menu items остаются borderless;
 - radius tokens отделяют card surface 20 px от element/control/table/menu
   surface 12 px. Активные `ProductTable` wrappers используют table token,
-  сплошной белый фон и не имеют внешней рамки. Students table использует
-  Schedule-плотность 40 px для header и data rows; Courses сохраняет свою
-  плотность. Shared header белый, а row dividers используют один
-  `--product-table-divider-color`;
+  сплошной белый фон и не имеют внешней рамки. Students и обе Courses tables
+  используют Schedule-плотность 40 px для header и data rows, однострочный
+  ellipsis, 12 px обычный cell inset и 4 px action-cell inset. Shared header
+  белый, а row dividers используют один `--product-table-divider-color`;
 - `WorkspaceTabs` задаёт общий 40 px tab/tabpanel contract для Course, Lesson,
   Students и profile dialog: roving keyboard focus, horizontal scroll, базовая
   линия 1 px цвета `rgba(20, 20, 20, 0.2)`; container, scroll-row и baseline
@@ -490,8 +497,9 @@ Visual contract Course routes не меняет эту навигационну�
 postflight на точном application release `77870e3`; flat controls и его
 Settings-расширение относятся к current source следующего deployment.
 Intrinsic header-actions, 20%-black tabs baseline и plain inline counts также
-являются current-source UI-only polish: доменная модель, API, schema и migration
-не меняются. Exact deployed release сохранял tabs inset 12 px; full-width
+являются current-source visual polish. Physical schema и migrations не
+меняются; отдельный Course soft-archive endpoint описан выше. Exact deployed
+release сохранял tabs inset 12 px; full-width
 container/baseline с нулевым inset относится только к current source.
 
 ## Roleless teaching hub navigation boundary
@@ -561,7 +569,7 @@ Current production делает `/schedule` и `/students` доступными
   переключают ascending/descending повторным кликом и используют
   `aria-sort`. Controls лежат прямо на page background без toolbar-card,
   занимают всю ширину с `padding-inline: 0` и не меняются от статуса;
-  Courses compact toolbars сохраняют inset 12 px. Students table повторяет
+  обе Courses compact toolbars используют тот же нулевой inset. Students table повторяет
   Schedule-геометрию с 40 px header/data rows и колонками
   `Ученик / Статус / Аккаунт / Группы / Добавлен / actions`. «Статус»
   показывает lifecycle relation/request, «Аккаунт» — identity connection, а
@@ -579,6 +587,19 @@ Current production делает `/schedule` и `/students` доступными
   actions; trigger/menu не превращаются в неявный row click. Это
   current-source UI/application refinement поверх существующих Group/Course
   audience boundaries без новой schema или migration;
+- `/courses` использует общий edge-to-edge `WorkspaceTabs`; подзаголовок —
+  «Создавайте свои курсы с нуля или добавляйте готовые из каталога» без
+  завершающей точки. Controls обеих вкладок прозрачны и полноширинны. Таблица
+  **Мои** имеет колонки `Курс / Предмет / Уровень / Уроки / Публикация /
+Обновлён / actions`; шесть data headers сортируют полную client-loaded
+  projection с ascending/descending и `aria-sort`. Таблица **Каталог** имеет
+  `Курс / Предмет / Уровень / Автор / Уроки / Материалы / actions` и сохраняет
+  server-side cursor order, не сортируя только загруженную страницу локально.
+  Owned-row заканчивается одним `MoreVertical` portal-menu 32 × 32 px:
+  unpublished Course получает «Дублировать / Опубликовать / Удалить», а
+  publication states сохраняют update/open/unpublish actions. «Удалить»
+  destructive только по оформлению и требует подтверждения; технически это
+  описанный выше soft archive с published/open-Run guards;
 - клик по строке открывает dialog «Профиль / История»; membership допускает
   несколько групп, а history panel читает только LearningRecord, записанные
   текущим преподавателем;

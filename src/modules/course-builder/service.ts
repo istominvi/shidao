@@ -343,6 +343,20 @@ export function createCourseBuilderService(
       return updated;
     },
 
+    async archiveCourse(actor: CourseBuilderActor, courseId: string) {
+      const course = await requireOwnedCourse(actor, courseId);
+      if (await repository.hasOpenLessonRuns(course.id)) {
+        throw new CourseBuilderConflictError(
+          "Сначала завершите или отмените запланированные занятия по этому курсу.",
+          "course_has_open_lesson_runs",
+        );
+      }
+      if (!(await repository.archiveCourse(course.id))) {
+        throw new CourseBuilderAccessError();
+      }
+      return { courseId: course.id };
+    },
+
     async addLesson(
       actor: CourseBuilderActor,
       courseId: string,

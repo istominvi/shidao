@@ -5,7 +5,6 @@ import {
   ArrowRight,
   BookOpen,
   CalendarClock,
-  ChevronDown,
   FolderOpen,
   LayoutGrid,
   LoaderCircle,
@@ -31,7 +30,7 @@ import {
 } from "@/components/course-builder/course-catalog";
 import { Button, productButtonClassName } from "@/components/ui/button";
 import { Chip } from "@/components/ui/chip";
-import { Input, Select } from "@/components/ui/input";
+import { Input } from "@/components/ui/input";
 import {
   ProductTable,
   ProductTableActionCell,
@@ -42,8 +41,10 @@ import {
   ProductTableHeaderRow,
   ProductTablePrimaryCell,
   ProductTableRow,
+  ProductTableSortableHeaderCell,
   ProductTableTruncate,
-  productTableActionLinkClassName,
+  nextProductTableSort,
+  type ProductTableSortState,
 } from "@/components/ui/product-table";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { SurfaceCard } from "@/components/ui/surface-card";
@@ -51,6 +52,8 @@ import { ROUTES, toCourseRoute } from "@/lib/auth";
 import type { CourseSummary } from "@/modules/course-builder/domain";
 
 type CourseCatalogView = "grid" | "table";
+type OwnedCourseSortKey =
+  "title" | "subject" | "level" | "lessons" | "publication" | "updated";
 
 type OwnedCoursesPanelProps = {
   onOpenCatalog: () => void;
@@ -80,6 +83,54 @@ function courseProgressLabel(course: CourseSummary) {
   if (course.assembledAt) return "Собран";
   if (course.lessonCount > 0) return "В работе";
   return "Пустой";
+}
+
+const courseTableCollator = new Intl.Collator("ru-RU", {
+  numeric: true,
+  sensitivity: "base",
+});
+
+function coursePublicationLabel(course: CourseSummary) {
+  if (course.publication?.status !== "published") return "Не опубликован";
+  return course.publication.hasUnpublishedChanges
+    ? "Есть изменения"
+    : "В каталоге";
+}
+
+function coursePublicationRank(course: CourseSummary) {
+  if (course.publication?.status !== "published") return 0;
+  return course.publication.hasUnpublishedChanges ? 2 : 1;
+}
+
+function sortOwnedCourses(
+  courses: CourseSummary[],
+  sort: ProductTableSortState<OwnedCourseSortKey>,
+) {
+  const direction = sort.direction === "asc" ? 1 : -1;
+  return [...courses].sort((left, right) => {
+    let difference = 0;
+    if (sort.key === "title") {
+      difference = courseTableCollator.compare(left.title, right.title);
+    } else if (sort.key === "subject") {
+      difference = courseTableCollator.compare(left.subject, right.subject);
+    } else if (sort.key === "level") {
+      difference = courseTableCollator.compare(left.level, right.level);
+    } else if (sort.key === "lessons") {
+      difference = left.lessonCount - right.lessonCount;
+    } else if (sort.key === "publication") {
+      difference = coursePublicationRank(left) - coursePublicationRank(right);
+    } else {
+      difference = Date.parse(left.updatedAt) - Date.parse(right.updatedAt);
+    }
+
+    if (difference !== 0) return direction * difference;
+    const titleDifference = courseTableCollator.compare(
+      left.title,
+      right.title,
+    );
+    if (titleDifference !== 0) return titleDifference;
+    return left.id.localeCompare(right.id);
+  });
 }
 
 function CourseCard({
@@ -140,80 +191,131 @@ function CourseCard({
   );
 }
 
-function CourseTable({ courses }: { courses: CourseSummary[] }) {
+function CourseTable({
+  courses,
+  sort,
+  onSort,
+  onChanged,
+}: {
+  courses: CourseSummary[];
+  sort: ProductTableSortState<OwnedCourseSortKey>;
+  onSort: (key: OwnedCourseSortKey) => void;
+  onChanged: () => void;
+}) {
   return (
     <div
-      className="product-table-wrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/50"
+      className="product-table-wrap course-index-table-wrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/50"
       role="region"
       aria-label="Таблица курсов"
       tabIndex={0}
     >
-      <ProductTable className="min-w-[56rem]">
+      <ProductTable className="course-index-table course-index-owned-table">
         <caption className="sr-only">
           Личные курсы: предмет, уровень, наполнение, публикация и дата
           обновления
         </caption>
+        <colgroup>
+          <col className="course-index-table-col-title" />
+          <col className="course-index-table-col-subject" />
+          <col className="course-index-table-col-level" />
+          <col className="course-index-table-col-lessons" />
+          <col className="course-index-table-col-publication" />
+          <col className="course-index-table-col-updated" />
+          <col className="course-index-table-col-actions" />
+        </colgroup>
         <ProductTableHead>
           <ProductTableHeaderRow>
-            <ProductTableHeaderCell className="w-[30%]">
+            <ProductTableSortableHeaderCell
+              direction={sort.key === "title" ? sort.direction : null}
+              onSort={() => onSort("title")}
+            >
               Курс
-            </ProductTableHeaderCell>
-            <ProductTableHeaderCell className="w-[20%]">
-              Предмет и уровень
-            </ProductTableHeaderCell>
-            <ProductTableHeaderCell className="w-[16%]">
-              Программа
-            </ProductTableHeaderCell>
-            <ProductTableHeaderCell className="w-[16%]">
+            </ProductTableSortableHeaderCell>
+            <ProductTableSortableHeaderCell
+              direction={sort.key === "subject" ? sort.direction : null}
+              onSort={() => onSort("subject")}
+            >
+              Предмет
+            </ProductTableSortableHeaderCell>
+            <ProductTableSortableHeaderCell
+              direction={sort.key === "level" ? sort.direction : null}
+              onSort={() => onSort("level")}
+            >
+              Уровень
+            </ProductTableSortableHeaderCell>
+            <ProductTableSortableHeaderCell
+              direction={sort.key === "lessons" ? sort.direction : null}
+              onSort={() => onSort("lessons")}
+            >
+              Уроки
+            </ProductTableSortableHeaderCell>
+            <ProductTableSortableHeaderCell
+              direction={sort.key === "publication" ? sort.direction : null}
+              onSort={() => onSort("publication")}
+            >
+              Публикация
+            </ProductTableSortableHeaderCell>
+            <ProductTableSortableHeaderCell
+              direction={sort.key === "updated" ? sort.direction : null}
+              onSort={() => onSort("updated")}
+            >
               Обновлён
-            </ProductTableHeaderCell>
-            <ProductTableHeaderCell className="w-[18%]">
-              <span className="sr-only">Действия</span>
-            </ProductTableHeaderCell>
+            </ProductTableSortableHeaderCell>
+            <ProductTableHeaderCell aria-label="Действия" />
           </ProductTableHeaderRow>
         </ProductTableHead>
         <ProductTableBody>
           {courses.map((course) => (
-            <ProductTableRow key={course.id} className="h-16">
-              <ProductTablePrimaryCell>
+            <ProductTableRow key={course.id}>
+              <ProductTablePrimaryCell className="overflow-hidden">
                 <Link
                   href={toCourseRoute(course.id)}
-                  className="block rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/50"
+                  className="course-index-table-link"
+                  title={`${course.title} — ${course.goal}`}
                 >
                   <ProductTableTruncate>{course.title}</ProductTableTruncate>
-                  <ProductTableTruncate className="mt-1 text-xs font-normal text-neutral-500">
-                    {course.goal}
-                  </ProductTableTruncate>
                 </Link>
               </ProductTablePrimaryCell>
-              <ProductTableCell>
-                <ProductTableTruncate>{course.subject}</ProductTableTruncate>
-                <ProductTableTruncate className="mt-1 text-xs text-neutral-500">
+              <ProductTableCell className="overflow-hidden">
+                <ProductTableTruncate title={course.subject}>
+                  {course.subject}
+                </ProductTableTruncate>
+              </ProductTableCell>
+              <ProductTableCell className="overflow-hidden">
+                <ProductTableTruncate title={course.level}>
                   {course.level}
                 </ProductTableTruncate>
               </ProductTableCell>
-              <ProductTableCell>
-                <span className="block font-medium text-neutral-900">
-                  {course.lessonCount} из {course.targetLessonCount}
-                </span>
-                <span className="mt-1 block text-xs text-neutral-500">
-                  {courseProgressLabel(course)}
-                </span>
-              </ProductTableCell>
-              <ProductTableCell>
-                {formatCompactUpdatedAt(course.updatedAt)}
-                <span className="mt-1 flex flex-wrap gap-1">
-                  <CoursePublicationBadges publication={course.publication} />
-                </span>
-              </ProductTableCell>
-              <ProductTableActionCell className="text-right">
-                <Link
-                  href={toCourseRoute(course.id)}
-                  className={productTableActionLinkClassName()}
-                  aria-label={`Открыть курс «${course.title}»`}
+              <ProductTableCell className="overflow-hidden">
+                <ProductTableTruncate
+                  title={`${course.lessonCount} из ${course.targetLessonCount} · ${courseProgressLabel(course)}`}
                 >
-                  Открыть
-                </Link>
+                  {course.lessonCount} из {course.targetLessonCount} ·{" "}
+                  {courseProgressLabel(course)}
+                </ProductTableTruncate>
+              </ProductTableCell>
+              <ProductTableCell className="overflow-hidden">
+                <ProductTableTruncate title={coursePublicationLabel(course)}>
+                  {coursePublicationLabel(course)}
+                </ProductTableTruncate>
+              </ProductTableCell>
+              <ProductTableCell className="overflow-hidden">
+                <time
+                  className="course-index-table-truncate"
+                  dateTime={course.updatedAt}
+                  title={formatUpdatedAt(course.updatedAt)}
+                >
+                  {formatCompactUpdatedAt(course.updatedAt)}
+                </time>
+              </ProductTableCell>
+              <ProductTableActionCell className="course-index-table-action-cell text-right">
+                <span className="course-index-table-actions">
+                  <CourseActions
+                    course={course}
+                    onChanged={onChanged}
+                    variant="table"
+                  />
+                </span>
               </ProductTableActionCell>
             </ProductTableRow>
           ))}
@@ -231,6 +333,12 @@ export function OwnedCoursesPanel({ onOpenCatalog }: OwnedCoursesPanelProps) {
     DEFAULT_COURSE_CATALOG_FILTERS,
   );
   const [view, setView] = useState<CourseCatalogView>("grid");
+  const [tableSort, setTableSort] = useState<
+    ProductTableSortState<OwnedCourseSortKey>
+  >({
+    key: "updated",
+    direction: "desc",
+  });
 
   useEffect(() => {
     let active = true;
@@ -262,6 +370,10 @@ export function OwnedCoursesPanel({ onOpenCatalog }: OwnedCoursesPanelProps) {
   const visibleCourses = useMemo(
     () => filterAndSortCourses(courses ?? [], filters),
     [courses, filters],
+  );
+  const tableCourses = useMemo(
+    () => sortOwnedCourses(visibleCourses, tableSort),
+    [tableSort, visibleCourses],
   );
   const hasFilters = hasActiveCourseCatalogFilters(filters);
 
@@ -379,28 +491,6 @@ export function OwnedCoursesPanel({ onOpenCatalog }: OwnedCoursesPanelProps) {
             onContentChange={(value) => updateFilter("content", value)}
           />
 
-          <label className="compact-toolbar-sort product-select-wrap">
-            <span className="sr-only">Сортировка</span>
-            <Select
-              aria-label="Сортировка"
-              value={filters.sort}
-              onChange={(event) =>
-                updateFilter(
-                  "sort",
-                  event.target.value as CourseCatalogFilters["sort"],
-                )
-              }
-            >
-              <option value="updated-desc">Сначала обновлённые</option>
-              <option value="title-asc">По названию</option>
-              <option value="updated-asc">Давно не обновлялись</option>
-            </Select>
-            <ChevronDown
-              className="product-select-icon h-4 w-4"
-              aria-hidden="true"
-            />
-          </label>
-
           {hasFilters ? (
             <Button
               variant="ghost"
@@ -473,7 +563,14 @@ export function OwnedCoursesPanel({ onOpenCatalog }: OwnedCoursesPanelProps) {
         </div>
       ) : (
         <div className="mt-4">
-          <CourseTable courses={visibleCourses} />
+          <CourseTable
+            courses={tableCourses}
+            sort={tableSort}
+            onSort={(key) =>
+              setTableSort((current) => nextProductTableSort(current, key))
+            }
+            onChanged={reloadCourses}
+          />
         </div>
       )}
     </section>
