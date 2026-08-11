@@ -279,9 +279,21 @@ export type SystemAssistantActionProposal = {
   signature: string;
 };
 
+export const systemAssistantQuickReplySchema = z
+  .object({
+    label: z.string().trim().min(1).max(60),
+    message: z.string().trim().min(1).max(240),
+  })
+  .strict();
+
+export type SystemAssistantQuickReply = z.infer<
+  typeof systemAssistantQuickReplySchema
+>;
+
 export type SystemAssistantReply = AiProviderMetadata & {
   message: AiAssistantMessage & { role: "assistant" };
   proposedAction: SystemAssistantActionProposal | null;
+  quickReplies: SystemAssistantQuickReply[];
   sharedHistoryUsed: boolean;
 };
 

@@ -488,6 +488,15 @@ type PlaywrightLocator = {
   }) => Promise<void>;
 };
 
+type PlaywrightRoute = {
+  request: () => { postDataJSON: () => unknown };
+  fulfill: (options: {
+    status: number;
+    contentType: string;
+    body: string;
+  }) => Promise<void>;
+};
+
 type PlaywrightChromium = {
   launch: (options?: { args?: string[] }) => Promise<{
     close: () => Promise<void>;
@@ -525,6 +534,10 @@ type PlaywrightChromium = {
           options?: { exact?: boolean },
         ) => PlaywrightLocator;
         locator: (selector: string) => PlaywrightLocator;
+        route: (
+          url: string,
+          handler: (route: PlaywrightRoute) => Promise<void> | void,
+        ) => Promise<void>;
         url: () => string;
         waitForResponse: (
           predicate: (response: { url: () => string }) => boolean,
@@ -2365,6 +2378,133 @@ test("browser smoke: protected pages expose the global assistant with keyboard f
       true,
     );
   } finally {
+    await runtime.close();
+  }
+});
+
+test("browser smoke: assistant quick reply is one-time and sends its structured message in the next request", async (t) => {
+  if (browserSmokeUnavailableReason) {
+    t.skip(browserSmokeUnavailableReason);
+    return;
+  }
+
+  const runtime = await openPage({ cookie: authenticatedCookieValue() });
+  const requestBodies: Array<{
+    messages?: Array<{ role?: string; content?: string }>;
+  }> = [];
+  let observeSecondRequest: (() => void) | undefined;
+  let releaseSecondRequest: (() => void) | undefined;
+  const secondRequestObserved = new Promise<void>((resolve) => {
+    observeSecondRequest = resolve;
+  });
+  const secondRequestReleased = new Promise<void>((resolve) => {
+    releaseSecondRequest = resolve;
+  });
+
+  try {
+    await runtime.page.route("**/api/v2/assistant", async (route) => {
+      requestBodies.push(
+        (route.request().postDataJSON() ?? {}) as {
+          messages?: Array<{ role?: string; content?: string }>;
+        },
+      );
+      const requestNumber = requestBodies.length;
+      if (requestNumber === 2) {
+        observeSecondRequest?.();
+        await secondRequestReleased;
+      }
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          result: {
+            message: {
+              role: "assistant",
+              content:
+                requestNumber === 1
+                  ? "Вам нужен пустой урок-заготовка или сразу наполненный урок с содержанием и заданиями?"
+                  : "Хорошо, подготовлю пустой урок.",
+            },
+            proposedAction: null,
+            quickReplies:
+              requestNumber === 1
+                ? [
+                    { label: "Пустой урок", message: "Пустой урок" },
+                    { label: "Готовый урок", message: "Готовый урок" },
+                  ]
+                : [],
+            sharedHistoryUsed: false,
+            requestId: `assistant-browser-${requestNumber}`,
+            model: "test-model",
+            provider: "test-provider",
+            usage: {
+              inputTokens: 10,
+              outputTokens: 5,
+              totalTokens: 15,
+              cachedInputTokens: 0,
+              reasoningTokens: 0,
+            },
+          },
+        }),
+      });
+    });
+
+    await runtime.page.goto("/schedule", { waitUntil: "networkidle" });
+    await runtime.page
+      .getByRole("button", { name: "Открыть ИИ-ассистента", exact: true })
+      .click();
+    const panel = runtime.page.getByRole("dialog", {
+      name: "Shidao ИИ",
+      exact: true,
+    });
+    const composer = panel.getByLabel("Сообщение ИИ-ассистенту");
+    await composer.fill("Сделай четвёртый урок");
+    await composer.press("Enter");
+
+    const emptyLesson = panel.getByRole("button", {
+      name: "Пустой урок",
+      exact: true,
+    });
+    const readyLesson = panel.getByRole("button", {
+      name: "Готовый урок",
+      exact: true,
+    });
+    await emptyLesson.waitFor();
+    await readyLesson.waitFor();
+    assert.equal(
+      await panel.getByText("Пустой урок", { exact: true }).count(),
+      1,
+    );
+    assert.equal(
+      await panel.getByText("Готовый урок", { exact: true }).count(),
+      1,
+    );
+
+    await emptyLesson.click();
+    await secondRequestObserved;
+    assert.equal(await emptyLesson.count(), 0);
+    assert.equal(await readyLesson.count(), 0);
+    assert.equal(requestBodies.length, 2);
+    assert.deepEqual(requestBodies[1]?.messages?.at(-1), {
+      role: "user",
+      content: "Пустой урок",
+    });
+    assert.deepEqual(
+      requestBodies[1]?.messages?.map((message) => message.content),
+      [
+        "Сделай четвёртый урок",
+        "Вам нужен пустой урок-заготовка или сразу наполненный урок с содержанием и заданиями?",
+        "Пустой урок",
+      ],
+    );
+
+    releaseSecondRequest?.();
+    await runtime.page
+      .locator(".system-assistant-message.is-assistant")
+      .getByText("Хорошо, подготовлю пустой урок.", { exact: true })
+      .waitFor();
+  } finally {
+    releaseSecondRequest?.();
     await runtime.close();
   }
 });

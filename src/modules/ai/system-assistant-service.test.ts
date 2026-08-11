@@ -941,6 +941,10 @@ test("an ambiguous numbered Lesson request asks whether it should be empty or fi
 
   assert.match(reply.message.content, /пуст.{0,80}наполн|наполн.{0,80}пуст/iu);
   assert.equal(reply.proposedAction, null);
+  assert.deepEqual(reply.quickReplies, [
+    { label: "Пустой урок", message: "Пустой урок" },
+    { label: "Готовый урок", message: "Готовый урок" },
+  ]);
   assert.match(providerMessages, /сделай 4 урок/iu);
   assert.match(
     providerMessages,
@@ -985,10 +989,71 @@ test("a mistaken numbered add_lesson turn is recovered into an empty-or-filled c
     /пуст.{0,100}(наполн|содержан)|(?:наполн|содержан).{0,100}пуст/iu,
   );
   assert.equal(reply.proposedAction, null);
+  assert.deepEqual(reply.quickReplies, [
+    { label: "Пустой урок", message: "Пустой урок" },
+    { label: "Готовый урок", message: "Готовый урок" },
+  ]);
   assert.equal(state.createCalls, 0);
   assert.equal(state.addLessonCalls, 0);
   assert.equal(state.deleteLessonCalls, 0);
 });
+
+for (const scenario of [
+  {
+    choice: "Готовый урок",
+    providerKind: "add_lesson",
+    expectedAction: "course.add_lesson_with_plan",
+    expectedPlanCalls: 1,
+  },
+  {
+    choice: "Пустой урок",
+    providerKind: "add_lesson_with_plan",
+    expectedAction: "course.add_lesson",
+    expectedPlanCalls: 0,
+  },
+] as const) {
+  test(`the ${scenario.choice} quick-reply follow-up overrides a mistaken ${scenario.providerKind} provider turn`, async () => {
+    const state = inMemoryCourseService(
+      courseWorkspace("Математика для дошкольников"),
+    );
+    const planning = inMemoryLessonPlanningService();
+    const assistant = createSystemAssistantService({
+      actor: ACTOR,
+      courseService: state.service,
+      lessonPlanningService: planning.service,
+      provider: provider({
+        ...answerTurn("Подготовлю урок для подтверждения."),
+        kind: scenario.providerKind,
+        courseRef: "current_course",
+        title: "4 урок",
+        lessonRef: "",
+        instruction: "",
+      }),
+      audit: () => undefined,
+    });
+
+    const reply = await assistant.chat({
+      ...request("course"),
+      messages: [
+        { role: "user", content: "сделай 4 урок" },
+        {
+          role: "assistant",
+          content:
+            "Вам нужен пустой урок-заготовка или сразу наполненный урок с содержанием и заданиями?",
+        },
+        { role: "user", content: scenario.choice },
+      ],
+    });
+
+    assert.equal(reply.proposedAction?.action.type, scenario.expectedAction);
+    assert.equal(reply.quickReplies.length, 0);
+    assert.equal(planning.planCalls, scenario.expectedPlanCalls);
+    assert.equal(planning.applyCalls, 0);
+    assert.equal(state.createCalls, 0);
+    assert.equal(state.addLessonCalls, 0);
+    assert.equal(state.deleteLessonCalls, 0);
+  });
+}
 
 test("a filled new Lesson is planned as one confirmed course.add_lesson_with_plan action", async () => {
   const state = inMemoryCourseService(

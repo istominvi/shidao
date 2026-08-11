@@ -186,6 +186,35 @@ test("a new user request supersedes an older pending proposal", async () => {
   );
 });
 
+test("quick replies are one-time choices on only the latest turn and send their structured message", async () => {
+  const assistant = await source(
+    "src/components/assistant/system-assistant.tsx",
+  );
+
+  assert.match(
+    assistant,
+    /type TranscriptMessage = AiAssistantMessage & \{[\s\S]*quickReplies\?: SystemAssistantQuickReply\[\]/,
+  );
+  assert.match(assistant, /const latestMessageId = messages\.at\(-1\)\?\.id/);
+  const replyRendering = between(
+    assistant,
+    "{message.quickReplies",
+    "{message.proposal",
+  );
+  assert.match(replyRendering, /message\.id === latestMessageId/);
+  assert.match(replyRendering, /message\.quickReplies\.map/);
+  assert.match(replyRendering, /quickReply\.label/);
+  assert.match(
+    replyRendering,
+    /onClick=\{\(\) => void send\(quickReply\.message\)\}/,
+  );
+  assert.match(replyRendering, /disabled=\{sending \|\| actionApplying\}/);
+
+  const send = between(assistant, "async function send(", "function submit(");
+  assert.match(send, /quickReplies: reply\.quickReplies/);
+  assert.match(send, /sendingRef\.current/);
+});
+
 test("changing Course or Lesson context invalidates pending proposals", async () => {
   const assistant = await source(
     "src/components/assistant/system-assistant.tsx",
@@ -205,6 +234,8 @@ test("changing Course or Lesson context invalidates pending proposals", async ()
     contextLifecycle,
     /Открытая страница изменилась\. Неподтверждённое действие отменено/,
   );
+  assert.match(contextLifecycle, /delete next\.quickReplies;/);
+  assert.match(contextLifecycle, /delete next\.quickRepliesContextKey;/);
 
   const send = between(assistant, "async function send(", "function submit(");
   assert.match(send, /requestPageContextKey = pageContextKey/);

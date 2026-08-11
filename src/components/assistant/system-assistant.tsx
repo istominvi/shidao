@@ -29,6 +29,7 @@ import type {
   SystemAssistantActionProposal,
   SystemAssistantActionResult,
   SystemAssistantPageContext,
+  SystemAssistantQuickReply,
 } from "@/modules/ai/system-assistant-contracts";
 import type {
   AiAssistantMessage,
@@ -42,6 +43,8 @@ const TRANSCRIPT_LIMIT = 32;
 type TranscriptMessage = AiAssistantMessage & {
   id: string;
   proposal?: SystemAssistantActionProposal;
+  quickReplies?: SystemAssistantQuickReply[];
+  quickRepliesContextKey?: string;
 };
 
 type ActionState =
@@ -409,6 +412,7 @@ export function SystemAssistant() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const transcriptEndRef = useRef<HTMLDivElement>(null);
   const shouldAutoScrollRef = useRef(true);
+  const sendingRef = useRef(false);
   const proposalContextKeysRef = useRef<Record<string, string>>({});
   const pageContextKey = `${page.surface}:${page.view ?? ""}:${page.courseId ?? ""}:${page.lessonId ?? ""}:${page.localDate ?? ""}`;
   const pageContextKeyRef = useRef(pageContextKey);
@@ -417,12 +421,22 @@ export function SystemAssistant() {
   const actionApplying = Object.values(actionStates).some(
     (state) => state.status === "applying",
   );
+  const latestMessageId = messages.at(-1)?.id;
 
   useEffect(() => setMounted(true), []);
 
   useEffect(() => {
     if (previousPageContextKeyRef.current === pageContextKey) return;
     previousPageContextKeyRef.current = pageContextKey;
+    setMessages((current) =>
+      current.map((message) => {
+        if (!message.quickReplies?.length) return message;
+        const next = { ...message };
+        delete next.quickReplies;
+        delete next.quickRepliesContextKey;
+        return next;
+      }),
+    );
     const pendingKeys = messages.flatMap((message) => {
       const key = message.proposal?.idempotencyKey;
       if (!key) return [];
@@ -501,7 +515,7 @@ export function SystemAssistant() {
 
   async function send(content: string) {
     const normalized = content.trim();
-    if (!normalized || sending || actionApplying) return;
+    if (!normalized || sendingRef.current || actionApplying) return;
     const userMessage: TranscriptMessage = {
       id: crypto.randomUUID(),
       role: "user",
@@ -530,6 +544,7 @@ export function SystemAssistant() {
     shouldAutoScrollRef.current = true;
     setMessages(nextMessages);
     setDraft("");
+    sendingRef.current = true;
     setSending(true);
     setError(null);
     try {
@@ -558,6 +573,12 @@ export function SystemAssistant() {
         id: crypto.randomUUID(),
         ...reply.message,
         ...(reply.proposedAction ? { proposal: reply.proposedAction } : {}),
+        quickReplies: reply.quickReplies,
+        ...(reply.quickReplies?.length
+          ? {
+              quickRepliesContextKey: requestPageContextKey,
+            }
+          : {}),
       };
       if (reply.proposedAction) {
         proposalContextKeysRef.current[reply.proposedAction.idempotencyKey] =
@@ -588,6 +609,7 @@ export function SystemAssistant() {
           : "Не удалось получить ответ ассистента.",
       );
     } finally {
+      sendingRef.current = false;
       setSending(false);
       window.requestAnimationFrame(() => textareaRef.current?.focus());
     }
@@ -749,6 +771,26 @@ export function SystemAssistant() {
                 >
                   {message.content}
                 </div>
+                {message.quickReplies?.length &&
+                message.id === latestMessageId &&
+                message.quickRepliesContextKey === pageContextKey ? (
+                  <div
+                    className="system-assistant-quick-replies"
+                    role="group"
+                    aria-label="Варианты ответа"
+                  >
+                    {message.quickReplies.map((quickReply) => (
+                      <button
+                        key={`${message.id}:${quickReply.message}`}
+                        type="button"
+                        disabled={sending || actionApplying}
+                        onClick={() => void send(quickReply.message)}
+                      >
+                        {quickReply.label}
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
                 {message.proposal ? (
                   <AssistantActionCard
                     proposal={message.proposal}

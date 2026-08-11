@@ -36,6 +36,7 @@
 
 .system-assistant-launcher:focus-visible,
 .system-assistant-icon-button:focus-visible,
+.system-assistant-quick-replies button:focus-visible,
 .system-assistant-prompts button:focus-visible,
 .system-assistant-composer button:focus-visible,
 .system-assistant-action-buttons button:focus-visible,
@@ -186,6 +187,36 @@
   border-bottom-right-radius: 0.28rem;
   background: #141414;
   color: #fff;
+}
+
+.system-assistant-quick-replies {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  max-width: 92%;
+}
+
+.system-assistant-quick-replies button {
+  min-height: 2.75rem;
+  border: 1px solid #141414;
+  border-radius: 999px;
+  background: #fff;
+  padding: 0.55rem 0.9rem;
+  color: #141414;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.system-assistant-quick-replies button:hover {
+  background: #141414;
+  color: #fff;
+}
+
+.system-assistant-quick-replies button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
 }
 
 .system-assistant-typing {
@@ -498,6 +529,14 @@
 
   .system-assistant-header {
     grid-template-columns: auto minmax(0, 1fr) auto auto;
+  }
+
+  .system-assistant-quick-replies {
+    max-width: 100%;
+  }
+
+  .system-assistant-quick-replies button {
+    flex: 1 1 8rem;
   }
 }
 

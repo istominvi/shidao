@@ -325,6 +325,14 @@ guard не позволяет ошибочному provider `add_lesson` сно�
 `lesson.fill` показывает новый teacher comment и все 3–20 Components, сохраняет
 existing Components/Slides и добавляет новые Components в конец.
 
+Для этого конкретного бинарного уточнения server-authored reply содержит два
+bounded варианта «Пустой урок / Готовый урок». Это не отдельный command API:
+UI показывает кнопки только под последним assistant turn в том же page context,
+а выбор добавляет обычное user message в историю и снова проходит provider и
+всю action orchestration. При отправке, новом ответе или смене Course/Lesson
+старые варианты недоступны; модель не может произвольно сформировать эти
+structured quick replies.
+
 Mutation выполняется только после отдельного подтверждения пользователя и строгого
 `POST /api/v2/assistant/actions/apply`. Apply повторно проходит Account/session
 gate, проверяет proposal signature и вызывает canonical `createDraft`,

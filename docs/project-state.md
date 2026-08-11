@@ -97,6 +97,10 @@ Account и открытой Course/Lesson, Students или выбранного 
 одну из пяти strict карточек: Course draft, пустую Lesson, новую наполненную
 Lesson, дополнение существующей Lesson или удаление Lesson. Неоднозначное
 «сделай урок» детерминированно уточняет, нужен пустой или наполненный вариант;
+current source показывает под этим вопросом две одноразовые кнопки «Пустой
+урок / Готовый урок». Выбор отправляется как обычная пользовательская реплика в
+тот же model-authored диалог, доступен только у последнего ответа в неизменном
+Course/Lesson context и исчезает после следующей реплики;
 «заполни этот урок» использует exact server-resolved current Lesson и не
 деградирует в создание ещё одной пустой Lesson. Filled flows переиспользуют
 canonical `planLesson → preview → applyLessonPlan`, показывают все создаваемые
@@ -637,6 +641,10 @@ application service/contracts внутри authenticated web request.
   в server-issued `current_course`. Если для `add_lesson` отсутствует title,
   server возвращает обычный уточняющий вопрос о названии без proposal/записи;
   после ответа пользователя следующий turn может подготовить action card.
+  Для детерминированного вопроса о пустом или наполненном Lesson server также
+  возвращает bounded `quickReplies`: UI показывает «Пустой урок / Готовый урок»
+  только под последней актуальной assistant-репликой, а click добавляет выбранный
+  текст в обычную историю и не вызывает mutation напрямую.
   Любой неизвестный непустой ref остаётся `ai_invalid_output`, без fuzzy lookup
   по UUID, title или индексу Course.
   Shared-comment scrubber применяется и к тексту, и ко всем полям proposal,

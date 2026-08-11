@@ -585,8 +585,10 @@ title без proposal или записи. Ответ с названием мо
 сам Lesson всё равно появляется только после explicit Apply. Неизвестный
 непустой Course ref отклоняется fail closed и не подменяется текущим Course.
 Неоднозначный запрос с названием Lesson сначала уточняет, нужен пустой или
-наполненный результат. Fill/delete используют exact opaque Lesson ref внутри
-уже owner-validated Course. Delete card сообщает impact, signed proposal
+наполненный результат. Для этого выбора current UI показывает одноразовые
+«Пустой урок / Готовый урок»; нажатие остаётся обычной репликой диалога и само
+по себе не вызывает `addLesson`/`applyLessonPlan`. Fill/delete используют exact
+opaque Lesson ref внутри уже owner-validated Course. Delete card сообщает impact, signed proposal
 связывает actor/action/key, а Apply повторно сравнивает authored Lesson
 fingerprint и вызывает canonical history-preserving `deleteLesson`.
 
