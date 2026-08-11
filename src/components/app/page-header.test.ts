@@ -27,6 +27,19 @@ test("active V2 pages share one page header contract without visual modifiers", 
 
   assert.match(
     styles,
+    /\.app-page-header\s*\{[^}]*--app-page-header-description-color: rgba\(20, 20, 20, 0\.5\);/,
+  );
+  assert.match(
+    styles,
+    /\.app-page-description\s*\{[^}]*color: var\(--app-page-header-description-color\);/,
+  );
+  assert.doesNotMatch(
+    styles,
+    /\.course-demo-shell \.app-page-description\s*\{[^}]*color:/,
+    "Product routes must inherit the canonical AppPageHeader subtitle color",
+  );
+  assert.match(
+    styles,
     /\.course-demo-shell \.app-page-header > \.app-page-heading,\s*\.course-demo-shell \.app-page-header > \.app-page-meta\s*\{[^}]*min-width: 0;/,
   );
   assert.match(

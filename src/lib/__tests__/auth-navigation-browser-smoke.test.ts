@@ -2915,6 +2915,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
           titleLetterSpacing: titleStyle.letterSpacing,
           descriptionFontSize: descriptionStyle.fontSize,
           descriptionLineHeight: descriptionStyle.lineHeight,
+          descriptionColor: descriptionStyle.color,
         },
         headerDescription: description.textContent?.trim() ?? "",
         headerActions: headerActions.textContent?.trim() ?? "",
@@ -3019,6 +3020,10 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
     assert.ok(scheduleContract.headerLayout.actionsRightDelta < 0.5);
     assert.ok(scheduleContract.headerLayout.actionCenterDelta < 0.5);
     assert.equal(scheduleContract.headerSignature.titleFontWeight, "400");
+    assert.equal(
+      scheduleContract.headerSignature.descriptionColor,
+      "rgba(20, 20, 20, 0.5)",
+    );
     assert.equal(
       scheduleContract.headerDescription,
       "Здесь все назначенные уроки за выбранный период.",
@@ -3317,6 +3322,9 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
           borderBottomWidths: headerCells.map(
             (cell) => getComputedStyle(cell).borderBottomWidth,
           ),
+          borderBottomColors: headerCells.map(
+            (cell) => getComputedStyle(cell).borderBottomColor,
+          ),
           boxSizing: headerCells.map(
             (cell) => getComputedStyle(cell).boxSizing,
           ),
@@ -3327,6 +3335,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
           cellHeights: bodyCells.map(
             (cell) => cell.getBoundingClientRect().height,
           ),
+          rowBorderColor: getComputedStyle(bodyRow).borderTopColor,
         },
         bodyTypography: bodyTextElements.map((element) => ({
           fontSize: getComputedStyle(element).fontSize,
@@ -3472,6 +3481,15 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       ),
     );
     assert.ok(
+      scheduleTableContract.header.borderBottomColors.every(
+        (color) => color === scheduleTableContract.bodyGeometry.rowBorderColor,
+      ),
+    );
+    assert.equal(
+      scheduleTableContract.bodyGeometry.rowBorderColor,
+      "rgb(236, 236, 239)",
+    );
+    assert.ok(
       scheduleTableContract.header.boxSizing.every(
         (boxSizing) => boxSizing === "border-box",
       ),
@@ -3485,12 +3503,9 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         );
       }),
     );
-    const headerBackgroundChannels =
-      scheduleTableContract.header.backgroundColor.match(/\d+/g)?.map(Number) ??
-      [];
-    assert.equal(headerBackgroundChannels.length, 3);
-    assert.ok(
-      headerBackgroundChannels.every((value) => value >= 245 && value < 255),
+    assert.equal(
+      scheduleTableContract.header.backgroundColor,
+      "rgb(255, 255, 255)",
     );
     assert.ok(scheduleTableContract.bodyTypography.length >= 6);
     assert.ok(
@@ -3955,6 +3970,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
           titleLetterSpacing: titleStyle.letterSpacing,
           descriptionFontSize: descriptionStyle.fontSize,
           descriptionLineHeight: descriptionStyle.lineHeight,
+          descriptionColor: descriptionStyle.color,
         },
         tabSignature: {
           height: tabStyle.height,
@@ -5929,6 +5945,7 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
           titleLetterSpacing: titleStyle.letterSpacing,
           descriptionFontSize: descriptionStyle.fontSize,
           descriptionLineHeight: descriptionStyle.lineHeight,
+          descriptionColor: descriptionStyle.color,
         },
         bodyFontFamily: getComputedStyle(document.body).fontFamily,
         buttonRadius: buttonStyle.borderRadius,
@@ -6310,6 +6327,7 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
           titleLetterSpacing: titleStyle.letterSpacing,
           descriptionFontSize: descriptionStyle.fontSize,
           descriptionLineHeight: descriptionStyle.lineHeight,
+          descriptionColor: descriptionStyle.color,
         },
         tabSignature: {
           height: tabStyle.height,
@@ -6481,6 +6499,7 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
           titleLetterSpacing: titleStyle.letterSpacing,
           descriptionFontSize: descriptionStyle.fontSize,
           descriptionLineHeight: descriptionStyle.lineHeight,
+          descriptionColor: descriptionStyle.color,
         },
         tabSignature: {
           height: tabStyle.height,

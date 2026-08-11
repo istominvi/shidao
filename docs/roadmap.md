@@ -43,7 +43,8 @@
   отдельной draft-сущности или schema.
 - `/courses`, `/students`, `/schedule`, Course и Lesson используют один
   `AppPageHeader` с H1 не крупнее 48 px на desktop и 32 px на mobile,
-  подзаголовком, optional backlink и правой action-секцией. Header имеет
+  подзаголовком canonical цвета `rgba(20, 20, 20, 0.5)`, optional backlink и
+  правой action-секцией. Header имеет
   `min-height: 200px`, растёт по контенту и вертикально центрирует actions.
   В current source heading занимает всю оставшуюся ширину, а actions — только
   intrinsic ширину содержимого и не превращаются в full-width кнопки на mobile.
@@ -266,7 +267,9 @@ subject/level filters, но использует тот же cards/table present
 получила компактные `Дата / Время` слева, `Ученики / Статус` и действия справа,
 а `Урок / Курс` делят свободную ширину. Все данные чёрные, однострочные и
 сокращаются ellipsis; header и data-row ровно 40 px, причём разделитель входит
-в высоту header, его weight равен 500. Обычные header/data cells получают
+в высоту header, его weight равен 500. Header имеет тот же белый фон, что data
+rows, а его нижний divider и разделители между строками используют один
+`--product-table-divider-color`. Обычные header/data cells получают
 канонические 12 px слева и справа; последняя body action-cell использует 4 px,
 а её единственный `MoreVertical` trigger имеет 32 × 32 px и радиус 8 px. Так
 в 40 px строке остаются одинаковые 4 px сверху, справа и снизу, как у active
@@ -279,7 +282,8 @@ option в переключателе вида.
 Общие tokens различают карточки с радиусом 20 px и
 elements/controls/tables/menus с радиусом 12 px; активные ProductTable wrappers
 белые, borderless и используют table token без изменения плотности строк
-Students/Courses. Authenticated top header/profile menu стали
+Students/Courses. Их shared header белый, а row dividers используют один
+`--product-table-divider-color`. Authenticated top header/profile menu стали
 сплошными белыми поверхностями без blur. Active V2 buttons/header controls
 унифицированы как flat `40 px / 12 px / .88rem / 400`: без inset-блика,
 подъёма и тени, с полностью непрозрачными контрастными иконками; белые кнопки
@@ -552,7 +556,8 @@ SHA `587bb21` завершён со статусом Success; authenticated prod
 postflight этого follow-up ещё не выполнен.
 
 **Current source polish:** page header использует подзаголовок «Здесь все
-назначенные уроки за выбранный период.» и короткий календарный Action
+назначенные уроки за выбранный период.» с общим для всех `AppPageHeader`
+computed-цветом `rgba(20, 20, 20, 0.5)` и короткий календарный Action
 «Назначить урок». Отдельный внешний «Неделя / Месяц» удалён: компактный
 right-aligned date control шириной 300 px на desktop показывает короткие
 русские даты без точки после сокращения месяца, открывает календарь с «День /
@@ -560,8 +565,10 @@ right-aligned date control шириной 300 px на desktop показывае
 сдвигает выбранный целый период. Рядом остаётся icon-only «Таблица / Карточки».
 После controls непустая projection начинается сразу. Таблица сплошная белая,
 без внешней рамки и с element/table radius 12 px; её header и data-row имеют
-ровно 40 px, а разделитель 1 px входит в высоту header; weight равен 500 и
-текст светлее. Обычные header/data cells используют inline-padding 12 px;
+ровно 40 px. Header использует тот же белый фон, что data rows, а его нижний
+divider 1 px входит в высоту header и через `--product-table-divider-color`
+совпадает по цвету с разделителями между строками; weight равен 500 и текст
+светлее. Обычные header/data cells используют inline-padding 12 px;
 только последняя body action-cell получает inset 4 px вокруг единственного
 `MoreVertical` trigger размером 32 × 32 px и радиусом 8 px. В точной 40 px
 строке это даёт по 4 px сверху, справа и снизу и повторяет active option

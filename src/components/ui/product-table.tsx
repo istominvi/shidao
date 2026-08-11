@@ -23,7 +23,7 @@ export function ProductTableHead({
   return (
     <thead
       className={classNames(
-        "bg-neutral-50 text-xs uppercase tracking-wide text-neutral-500",
+        "bg-white text-xs uppercase tracking-wide text-neutral-500",
         className,
       )}
       {...props}

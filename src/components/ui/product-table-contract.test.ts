@@ -24,13 +24,26 @@ const catalogSource = source(
 test("product tables use the element radius instead of the card radius", () => {
   assert.match(
     styles,
-    /:root\s*\{[^}]*--product-element-radius: 0\.75rem;[^}]*--product-card-radius: 1\.25rem;[^}]*--product-row-height: 2\.5rem;[^}]*--product-inner-control-size: 2rem;[^}]*--product-inner-control-radius: 0\.5rem;[^}]*--product-inner-control-inset: 0\.25rem;/,
+    /:root\s*\{[^}]*--product-element-radius: 0\.75rem;[^}]*--product-card-radius: 1\.25rem;[^}]*--product-row-height: 2\.5rem;[^}]*--product-table-divider-color: #ececef;[^}]*--product-inner-control-size: 2rem;[^}]*--product-inner-control-radius: 0\.5rem;[^}]*--product-inner-control-inset: 0\.25rem;/,
   );
   assert.match(
     styles,
     /\.course-demo-shell \.product-table-wrap\s*\{[^}]*overflow-x: auto;[^}]*border: 0;[^}]*--course-demo-table-radius,[^}]*--product-element-radius,[^}]*background: #fff;/,
   );
   assert.match(productTableSource, /"product-table min-w-full table-fixed/);
+  assert.match(
+    productTableSource,
+    /"bg-white text-xs uppercase tracking-wide text-neutral-500"/,
+  );
+  assert.doesNotMatch(productTableSource, /bg-neutral-50/);
+  assert.match(
+    styles,
+    /\.course-demo-shell \.product-table thead\s*\{[^}]*background: #fff;/,
+  );
+  assert.match(
+    styles,
+    /\.course-demo-shell \.product-table tbody tr\s*\{[^}]*border-color: var\(--product-table-divider-color, #ececef\);/,
+  );
 
   for (const consumer of [
     scheduleSource,

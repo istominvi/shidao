@@ -1062,12 +1062,12 @@
 }
 
 .teaching-run-table thead {
-  background: #fafafa;
+  background: #fff;
 }
 
 .teaching-run-table thead th {
   box-sizing: border-box;
-  border-bottom: 1px solid #e4e4e7;
+  border-bottom: 1px solid var(--product-table-divider-color, #ececef);
   overflow: hidden;
   padding-inline: var(--course-demo-control-padding-inline, 0.75rem);
   padding-block: 0;
@@ -1086,7 +1086,7 @@
     --course-demo-table-row-height,
     var(--course-demo-control-height, var(--product-row-height, 2.5rem))
   );
-  border-color: #ececef;
+  border-color: var(--product-table-divider-color, #ececef);
   background: #fff;
   color: #141414;
 }

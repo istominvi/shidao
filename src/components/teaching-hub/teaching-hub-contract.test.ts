@@ -275,7 +275,15 @@ test("schedule keeps the compact date control and dense one-line table contract"
   );
   assert.match(
     teachingHubStyleSource,
-    /\.teaching-run-table thead th\s*\{[^}]*box-sizing:\s*border-box;[^}]*border-bottom:\s*1px/,
+    /\.teaching-run-table thead th\s*\{[^}]*box-sizing:\s*border-box;[^}]*border-bottom:\s*1px solid var\(--product-table-divider-color, #ececef\);/,
+  );
+  assert.match(
+    teachingHubStyleSource,
+    /\.teaching-run-table thead\s*\{[^}]*background:\s*#fff;/,
+  );
+  assert.match(
+    teachingHubStyleSource,
+    /\.teaching-run-table tbody tr\s*\{[^}]*border-color:\s*var\(--product-table-divider-color, #ececef\);[^}]*background:\s*#fff;/,
   );
   assert.match(
     teachingHubStyleSource,

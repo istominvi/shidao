@@ -438,8 +438,10 @@ Visual contract Course routes не меняет эту навигационну�
   сплошной белый surface;
 - `AppPageHeader` задаёт один прозрачный layout для `/courses`, `/students`,
   `/schedule`, authenticated `/settings/*`, Course и Lesson: системный H1 веса
-  400 с максимумом 48 px на desktop и 32 px на mobile, подзаголовок, optional
-  backlink и правую action-секцию; header имеет минимальную высоту 200 px,
+  400 с максимумом 48 px на desktop и 32 px на mobile, подзаголовок canonical
+  цвета `rgba(20, 20, 20, 0.5)` через
+  `--app-page-header-description-color`, optional backlink и правую
+  action-секцию; header имеет минимальную высоту 200 px,
   растёт по контенту, heading получает всю оставшуюся ширину, а actions
   вертикально центрированы и имеют intrinsic ширину по содержимому с
   ограничением шириной контейнера;
@@ -450,7 +452,8 @@ Visual contract Course routes не меняет эту навигационну�
 - radius tokens отделяют card surface 20 px от element/control/table/menu
   surface 12 px. Активные `ProductTable` wrappers используют table token,
   сплошной белый фон и не имеют внешней рамки; это не задаёт общую 40 px
-  плотность строк Students/Courses;
+  плотность строк Students/Courses. Их shared header белый, а row dividers
+  используют один `--product-table-divider-color`;
 - `WorkspaceTabs` задаёт общий 40 px tab/tabpanel contract для Course, Lesson,
   Students и profile dialog: roving keyboard focus, horizontal scroll, базовая
   линия 1 px цвета `rgba(20, 20, 20, 0.2)` с inline-inset 12 px и квадратный
@@ -495,9 +498,12 @@ Current production делает `/schedule` и `/students` доступными
   controls не повторяет период, заголовок «Занятия» или видимый result count,
   но сохраняет доступное имя секции и caption таблицы. Белая Table projection
   не имеет внешней рамки и использует table radius 12 px; header и data-row
-  имеют exact 40 px, а divider 1 px входит в высоту header, weight 500 и более
-  светлый текст. Обычные header/data cells имеют канонический inline-padding
-  12 px. Только последняя body action-cell использует inline-inset 4 px:
+  имеют exact 40 px. Header использует тот же белый фон, что data rows; его
+  нижний divider 1 px входит в высоту header и через общий
+  `--product-table-divider-color` совпадает с разделителями между строками,
+  weight 500 и более светлый текст. Обычные header/data cells имеют
+  канонический inline-padding 12 px. Только последняя body action-cell
+  использует inline-inset 4 px:
   единственный `MoreVertical` trigger имеет размер 32 × 32 px и радиус 8 px,
   поэтому внутри точной 40 px строки сохраняет по 4 px сверху, справа и снизу
   и совпадает с геометрией active option переключателя вида. Контентные по

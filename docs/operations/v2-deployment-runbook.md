@@ -482,7 +482,13 @@ ShiDao V2 application:
   центрированы, занимают только ширину содержимого и оставляют всю свободную
   ширину heading; на 1120 px Lesson с четырьмя actions складывается без
   document overflow, а непрерывные title/description/back-label переносятся;
+  description на каждой поверхности получает один computed-цвет
+  `rgba(20, 20, 20, 0.5)` из canonical
+  `--app-page-header-description-color`;
   Course/Lesson сохраняют backlink;
+- на Schedule/Students/Courses shared `ProductTableHead` имеет computed white
+  background, а row dividers используют один
+  `--product-table-divider-color`;
 - Course и Lesson tabs используют baseline 1 px цвета
   `rgba(20, 20, 20, 0.2)` с inline-inset 12 px и квадратный чёрный active
   segment 4 px без radius; numeric count идёт обычным текстом после label без
@@ -564,9 +570,12 @@ ShiDao V2 application:
   результате сразу после controls идёт таблица или карточки без summary
   «Выбранная неделя / Занятия» и count-chip. В table view дополнительно
   проверить solid-white surface без outer border и radius 12 px; exact 40 px
-  header и data-row, причём нижний divider 1 px входит в высоту header; weight
-  500 и более светлый цвет; видимые `Дата / Время /
-Урок / Курс / Ученики / Статус` и пустой action heading. Проверить компактные
+  header и data-row, причём header имеет computed white background, а нижний
+  divider 1 px входит в высоту header и совпадает по computed-цвету с
+  разделителем между соседними data rows через
+  `--product-table-divider-color`; weight 500 и более светлый цвет; видимые
+  `Дата / Время / Урок / Курс / Ученики / Статус` и пустой action heading.
+  Проверить компактные
   content-sized rails для даты и времени и компактные rails для учеников,
   статуса и действий: первые
   два прижаты слева, последние три — справа, `Урок / Курс` делят оставшуюся

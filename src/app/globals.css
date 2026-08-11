@@ -12,6 +12,7 @@
   --product-element-radius: 0.75rem;
   --product-card-radius: 1.25rem;
   --product-row-height: 2.5rem;
+  --product-table-divider-color: #ececef;
   --product-inner-control-size: 2rem;
   --product-inner-control-radius: 0.5rem;
   --product-inner-control-inset: 0.25rem;
@@ -201,6 +202,7 @@ a {
   --app-page-header-title-line-height: 1.08;
   --app-page-header-description-size: var(--app-page-header-chip-text-size);
   --app-page-header-description-line-height: 1.6;
+  --app-page-header-description-color: rgba(20, 20, 20, 0.5);
 
   margin: 0;
   display: flex;
@@ -291,7 +293,7 @@ a {
   width: 100%;
   font-size: var(--app-page-header-description-size);
   line-height: var(--app-page-header-description-line-height);
-  color: #475569;
+  color: var(--app-page-header-description-color);
 }
 
 .course-demo-shell .app-page-header {
@@ -345,7 +347,6 @@ a {
 
 .course-demo-shell .app-page-description {
   max-width: 44rem;
-  color: #646873;
 }
 
 .app-page-title:focus-visible {
@@ -900,6 +901,14 @@ a {
 
 .course-demo-shell .product-table {
   background: #fff;
+}
+
+.course-demo-shell .product-table thead {
+  background: #fff;
+}
+
+.course-demo-shell .product-table tbody tr {
+  border-color: var(--product-table-divider-color, #ececef);
 }
 
 .course-demo-shell .course-index-error {
