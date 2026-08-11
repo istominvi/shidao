@@ -195,11 +195,24 @@ test("schedule projects persisted LessonRun appointments without a parallel even
 
 test("schedule keeps the compact date control and dense one-line table contract", () => {
   assert.match(schedulePeriodSource, /month: "short"/);
+  assert.match(schedulePeriodSource, /formatToParts\(value\)/);
+  assert.match(
+    schedulePeriodSource,
+    /part\.type === "month" \? part\.value\.replace\(\/\\\.\$\/u, ""\)/,
+  );
   assert.match(schedulePeriodSource, /Сегодня ·/);
   assert.match(schedulePeriodSource, /Неделя ·/);
   assert.match(
     teachingHubStyleSource,
     /\.teaching-date-picker\s*\{[^}]*width:\s*18\.75rem;[^}]*flex:\s*0 0 18\.75rem/,
+  );
+  assert.match(
+    teachingHubStyleSource,
+    /\.teaching-date-navigator > button\s*\{[^}]*font-family:\s*inherit;/,
+  );
+  assert.doesNotMatch(
+    teachingHubStyleSource,
+    /\.teaching-date-navigator > button\s*\{[^}]*font:\s*inherit;/,
   );
 
   for (const label of ["Дата", "Время", "Урок", "Курс", "Ученики", "Статус"]) {
@@ -211,6 +224,19 @@ test("schedule keeps the compact date control and dense one-line table contract"
     /<ProductTableHeaderCell[\s\S]*aria-label="Действия"[\s\S]*\/>/,
   );
   assert.match(scheduleWorkspaceSource, /compactTableDateFormatter/);
+  assert.match(scheduleWorkspaceSource, /formatScheduleCompactDate/);
+  assert.match(
+    scheduleWorkspaceSource,
+    /compactTableDateFormatter\.format\(scheduledAt\),[\s\S]*?· \$\{formatScheduleCompactDate\(scheduledAt\)\}/,
+  );
+  assert.match(
+    scheduleWorkspaceSource,
+    /const duration = `\$\{run\.plannedDurationMinutes\} мин`;/,
+  );
+  assert.doesNotMatch(
+    scheduleWorkspaceSource,
+    /run\.plannedDurationMinutes\} мин\./,
+  );
   assert.match(scheduleWorkspaceSource, /title=\{compactDate\}/);
   assert.match(
     scheduleWorkspaceSource,
@@ -224,6 +250,20 @@ test("schedule keeps the compact date control and dense one-line table contract"
   assert.match(scheduleWorkspaceSource, /<ActionMenu/);
   assert.match(scheduleWorkspaceSource, /triggerIcon=\{MoreVertical\}/);
   assert.match(scheduleWorkspaceSource, /label: "Открыть план"/);
+  for (const column of [
+    "date",
+    "time",
+    "lesson",
+    "course",
+    "participants",
+    "status",
+    "actions",
+  ]) {
+    assert.match(
+      scheduleWorkspaceSource,
+      new RegExp(`teaching-run-table-col-${column}`),
+    );
+  }
 
   assert.match(
     teachingHubStyleSource,
@@ -236,6 +276,46 @@ test("schedule keeps the compact date control and dense one-line table contract"
   assert.match(
     teachingHubStyleSource,
     /\.teaching-run-table thead th\s*\{[^}]*font-weight:\s*500;/,
+  );
+  assert.match(
+    teachingHubStyleSource,
+    /\.teaching-run-table\s*\{[^}]*min-width:\s*58rem;/,
+  );
+  assert.match(
+    teachingHubStyleSource,
+    /\.teaching-run-table-col-date\s*\{[^}]*width:\s*9\.25rem;/,
+  );
+  assert.match(
+    teachingHubStyleSource,
+    /\.teaching-run-table-col-time\s*\{[^}]*width:\s*8\.25rem;/,
+  );
+  assert.match(
+    teachingHubStyleSource,
+    /\.teaching-run-table-col-participants\s*\{[^}]*width:\s*6\.5rem;/,
+  );
+  assert.match(
+    teachingHubStyleSource,
+    /\.teaching-run-table-col-status\s*\{[^}]*width:\s*8rem;/,
+  );
+  assert.match(
+    teachingHubStyleSource,
+    /\.teaching-run-table-col-actions\s*\{[^}]*width:\s*7\.5rem;/,
+  );
+  assert.match(
+    teachingHubStyleSource,
+    /\.teaching-run-table tbody td\s*\{[^}]*padding-inline:\s*0\.625rem;[^}]*color:\s*#141414;/,
+  );
+  assert.match(
+    teachingHubStyleSource,
+    /\.teaching-run-table-duration\s*\{[^}]*color:\s*#141414;/,
+  );
+  assert.match(
+    teachingHubStyleSource,
+    /\.teaching-run-table-participants,[\s\S]*?\.teaching-run-table-status\s*\{[^}]*color:\s*#141414;/,
+  );
+  assert.match(
+    teachingHubStyleSource,
+    /\.teaching-schedule-view-toggle button svg\s*\{[^}]*color:\s*#141414;[^}]*opacity:\s*1;/,
   );
   assert.match(
     teachingHubStyleSource,

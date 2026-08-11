@@ -17,8 +17,8 @@ export function SettingsShell({
   children,
 }: SettingsShellProps) {
   return (
-    <main>
-      <TopNav />
+    <main className="course-demo-shell settings-product-shell">
+      <TopNav demoStyle />
       <section className="container mt-8 grid gap-4 pb-12 md:grid-cols-[280px_minmax(0,1fr)]">
         <SettingsNavigation />
 

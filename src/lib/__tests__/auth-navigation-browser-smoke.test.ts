@@ -373,7 +373,7 @@ function e2eCompletionRunRows(): E2ELessonRunRow[] {
       {
         id: E2E_COMPLETION_PRIVATE_RUN_ID,
         lesson_id: E2E_LESSON_ID,
-        scheduled_at: "2026-08-12T02:00:00.000Z",
+        scheduled_at: "2026-08-12T03:00:00.000Z",
         planned_duration_minutes: 60,
         actual_duration_minutes: null,
         started_at: null,
@@ -2587,7 +2587,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
     assert.equal(await dateTrigger.getAttribute("aria-expanded"), "false");
     assert.equal(
       (await dateTrigger.textContent())?.trim(),
-      "Неделя · 10–16 авг.",
+      "Неделя · 10–16 авг",
     );
 
     async function expectDateTriggerLabel(label: string) {
@@ -2749,32 +2749,32 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
 
     const dayWindow = await selectPeriod("День");
     assert.equal(dayWindow.to - dayWindow.from, 24 * 60 * 60 * 1_000);
-    await expectDateTriggerLabel("Сегодня · 11 авг.");
+    await expectDateTriggerLabel("Сегодня · 11 авг");
     const nextDayWindow = await shiftPeriod("Следующий день");
     assert.equal(nextDayWindow.from, dayWindow.to);
-    await expectDateTriggerLabel("Среда · 12 авг.");
+    await expectDateTriggerLabel("Среда · 12 авг");
     const restoredDayWindow = await shiftPeriod("Предыдущий день");
     assert.deepEqual(restoredDayWindow, dayWindow);
-    await expectDateTriggerLabel("Сегодня · 11 авг.");
+    await expectDateTriggerLabel("Сегодня · 11 авг");
 
     const weekWindow = await selectPeriod("Неделя");
     assert.equal(weekWindow.to - weekWindow.from, 7 * 24 * 60 * 60 * 1_000);
-    await expectDateTriggerLabel("Неделя · 10–16 авг.");
+    await expectDateTriggerLabel("Неделя · 10–16 авг");
     const nextWeekWindow = await shiftPeriod("Следующая неделя");
     assert.equal(nextWeekWindow.from, weekWindow.to);
-    await expectDateTriggerLabel("Неделя · 17–23 авг.");
+    await expectDateTriggerLabel("Неделя · 17–23 авг");
     const restoredWeekWindow = await shiftPeriod("Предыдущая неделя");
     assert.deepEqual(restoredWeekWindow, weekWindow);
-    await expectDateTriggerLabel("Неделя · 10–16 авг.");
+    await expectDateTriggerLabel("Неделя · 10–16 авг");
 
     const monthWindow = await selectPeriod("Месяц");
-    await expectDateTriggerLabel("Авг. 2026");
+    await expectDateTriggerLabel("Авг 2026");
     const nextMonthWindow = await shiftPeriod("Следующий месяц");
     assert.equal(nextMonthWindow.from, monthWindow.to);
-    await expectDateTriggerLabel("Сент. 2026");
+    await expectDateTriggerLabel("Сент 2026");
     const restoredMonthWindow = await shiftPeriod("Предыдущий месяц");
     assert.deepEqual(restoredMonthWindow, monthWindow);
-    await expectDateTriggerLabel("Авг. 2026");
+    await expectDateTriggerLabel("Авг 2026");
 
     const scheduleContract = await runtime.page.evaluate(() => {
       const shell = document.querySelector<HTMLElement>(".course-demo-shell");
@@ -2795,6 +2795,12 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       const datePicker = document.querySelector<HTMLElement>(
         ".teaching-date-picker",
       );
+      const dateTriggerControl = dateNavigator?.querySelector<HTMLElement>(
+        ".teaching-date-trigger",
+      );
+      const dateControlIcons = Array.from(
+        dateNavigator?.querySelectorAll<SVGElement>("svg") ?? [],
+      );
       const toolbarActions = document.querySelector<HTMLElement>(
         ".teaching-schedule-toolbar-actions",
       );
@@ -2804,15 +2810,30 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       const siteHeader = document.querySelector<HTMLElement>(
         ".site-header-shell-demo",
       );
-      const navLinks = Array.from(
+      const headerPrimaryButton = headerActions?.querySelector<HTMLElement>(
+        ".product-btn-primary",
+      );
+      const headerPrimaryIcon =
+        headerPrimaryButton?.querySelector<SVGElement>("svg");
+      const activeNavPill = siteHeader?.querySelector<HTMLElement>(
+        ".site-header-nav-pill.nav-pill-active",
+      );
+      const navPillElements = Array.from(
         document.querySelectorAll<HTMLAnchorElement>(
           ".site-header-shell-demo .site-header-nav-pill",
         ),
-      ).map((link) => ({
+      );
+      const navLinks = navPillElements.map((link) => ({
         label: link.textContent?.trim() ?? "",
         href: link.getAttribute("href"),
         current: link.getAttribute("aria-current"),
       }));
+      const navIcons = Array.from(
+        siteHeader?.querySelectorAll<SVGElement>(".nav-pill-icon") ?? [],
+      );
+      const userTriggerName = siteHeader?.querySelector<HTMLElement>(
+        ".nav-user-trigger-name",
+      );
 
       if (
         !shell ||
@@ -2824,8 +2845,15 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         !toolbarActions ||
         !dateNavigator ||
         !datePicker ||
+        !dateTriggerControl ||
+        dateControlIcons.length === 0 ||
         !viewToggle ||
-        !siteHeader
+        !siteHeader ||
+        !headerPrimaryButton ||
+        !headerPrimaryIcon ||
+        !activeNavPill ||
+        navIcons.length === 0 ||
+        !userTriggerName
       ) {
         throw new Error("Schedule shell contract is missing");
       }
@@ -2835,6 +2863,9 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       const descriptionStyle = getComputedStyle(description);
       const toolbarStyle = getComputedStyle(toolbar);
       const dateNavigatorStyle = getComputedStyle(dateNavigator);
+      const dateTriggerStyle = getComputedStyle(dateTriggerControl);
+      const primaryButtonStyle = getComputedStyle(headerPrimaryButton);
+      const primaryIconStyle = getComputedStyle(headerPrimaryIcon);
       const pageHeaderRect = pageHeader.getBoundingClientRect();
       const headerActionsRect = headerActions.getBoundingClientRect();
       const toolbarRect = toolbar.getBoundingClientRect();
@@ -2870,6 +2901,21 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         headerActions: headerActions.textContent?.trim() ?? "",
         headerActionIconClass:
           headerActions.querySelector("svg")?.getAttribute("class") ?? "",
+        headerPrimaryControl: {
+          fontSize: primaryButtonStyle.fontSize,
+          fontWeight: primaryButtonStyle.fontWeight,
+          backgroundColor: primaryButtonStyle.backgroundColor,
+          borderColor: primaryButtonStyle.borderColor,
+          color: primaryButtonStyle.color,
+          boxShadow: primaryButtonStyle.boxShadow,
+          transform: primaryButtonStyle.transform,
+          icon: {
+            color: primaryIconStyle.color,
+            opacity: primaryIconStyle.opacity,
+            width: primaryIconStyle.width,
+            height: primaryIconStyle.height,
+          },
+        },
         toolbarText: toolbar.textContent?.trim() ?? "",
         toolbarSurface: {
           backgroundColor: toolbarStyle.backgroundColor,
@@ -2882,6 +2928,13 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
           height: dateNavigatorStyle.height,
           width: dateNavigatorRect.width,
           pickerWidth: datePickerRect.width,
+          triggerFontSize: dateTriggerStyle.fontSize,
+          triggerFontWeight: dateTriggerStyle.fontWeight,
+          triggerColor: dateTriggerStyle.color,
+          icons: dateControlIcons.map((icon) => {
+            const style = getComputedStyle(icon);
+            return { color: style.color, opacity: style.opacity };
+          }),
         },
         controlsLayout: {
           rightDelta: Math.abs(toolbarRect.right - toolbarActionsRect.right),
@@ -2897,6 +2950,22 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
             pressed: button.getAttribute("aria-pressed"),
           }),
         ),
+        navigationControls: {
+          activePillBoxShadow: getComputedStyle(activeNavPill).boxShadow,
+          pillFontWeights: navPillElements.map(
+            (pill) => getComputedStyle(pill).fontWeight,
+          ),
+          iconStyles: navIcons.map((icon) => {
+            const style = getComputedStyle(icon);
+            const pill = icon.closest<HTMLElement>(".site-header-nav-pill");
+            return {
+              color: style.color,
+              parentColor: pill ? getComputedStyle(pill).color : "",
+              opacity: style.opacity,
+            };
+          }),
+          userNameFontWeight: getComputedStyle(userTriggerName).fontWeight,
+        },
         navLinks,
       };
     });
@@ -2918,6 +2987,21 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
     );
     assert.equal(scheduleContract.headerActions, "Назначить урок");
     assert.match(scheduleContract.headerActionIconClass, /calendar-plus/);
+    assert.deepEqual(scheduleContract.headerPrimaryControl, {
+      fontSize: "14.08px",
+      fontWeight: "400",
+      backgroundColor: "rgb(20, 20, 20)",
+      borderColor: "rgb(20, 20, 20)",
+      color: "rgb(255, 255, 255)",
+      boxShadow: "none",
+      transform: "none",
+      icon: {
+        color: "rgb(255, 255, 255)",
+        opacity: "1",
+        width: "16px",
+        height: "16px",
+      },
+    });
     assert.doesNotMatch(scheduleContract.toolbarText, /Назначить урок/);
     assert.deepEqual(scheduleContract.toolbarSurface, {
       backgroundColor: "rgba(0, 0, 0, 0)",
@@ -2930,6 +3014,17 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       "rgb(255, 255, 255)",
     );
     assert.equal(scheduleContract.dateNavigator.height, "40px");
+    assert.equal(scheduleContract.dateNavigator.triggerFontSize, "14.08px");
+    assert.equal(scheduleContract.dateNavigator.triggerFontWeight, "400");
+    assert.equal(
+      scheduleContract.dateNavigator.triggerColor,
+      "rgb(20, 20, 20)",
+    );
+    assert.ok(
+      scheduleContract.dateNavigator.icons.every(
+        ({ color, opacity }) => color === "rgb(20, 20, 20)" && opacity === "1",
+      ),
+    );
     assert.ok(
       Math.abs(scheduleContract.dateNavigator.width - 300) < 0.5,
       `date navigator width: ${scheduleContract.dateNavigator.width}`,
@@ -2948,6 +3043,22 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       { label: "Показать таблицей", pressed: "true" },
       { label: "Показать карточками", pressed: "false" },
     ]);
+    assert.equal(
+      scheduleContract.navigationControls.activePillBoxShadow,
+      "none",
+    );
+    assert.ok(
+      scheduleContract.navigationControls.pillFontWeights.every(
+        (fontWeight) => fontWeight === "400",
+      ),
+    );
+    assert.ok(
+      scheduleContract.navigationControls.iconStyles.every(
+        ({ color, parentColor, opacity }) =>
+          color === parentColor && opacity === "1",
+      ),
+    );
+    assert.equal(scheduleContract.navigationControls.userNameFontWeight, "400");
     assert.deepEqual(scheduleContract.navLinks, [
       { label: "Расписание", href: "/schedule", current: "page" },
       { label: "Ученики", href: "/students", current: null },
@@ -2990,7 +3101,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
     readScheduleWindow(await dateResponsePromise);
     await fixtureDateDialog.waitFor({ state: "detached" });
     assert.equal(await dateTrigger.getAttribute("aria-expanded"), "false");
-    await expectDateTriggerLabel("Неделя · 10–16 авг.");
+    await expectDateTriggerLabel("Неделя · 10–16 авг");
     await runtime.page.locator(".teaching-date-trigger:focus").waitFor();
     assert.equal(
       await runtime.page.evaluate(() =>
@@ -3043,9 +3154,19 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       const headerCells = Array.from(
         table?.querySelectorAll<HTMLTableCellElement>("thead th") ?? [],
       );
+      const colElements = Array.from(
+        table?.querySelectorAll<HTMLTableColElement>("colgroup col") ?? [],
+      );
       const bodyRow = table?.querySelector<HTMLTableRowElement>(
         ".teaching-run-table-row",
       );
+      const bodyCells = bodyRow ? Array.from(bodyRow.cells) : [];
+      const dateCellText = table
+        ?.querySelector<HTMLElement>(".teaching-run-table-date")
+        ?.textContent?.trim();
+      const timeCellText = table
+        ?.querySelector<HTMLElement>(".teaching-run-table-duration")
+        ?.textContent?.trim();
       const status = table?.querySelector<HTMLElement>(
         ".teaching-run-table-status",
       );
@@ -3063,6 +3184,10 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         table?.querySelectorAll<HTMLElement>(
           ".teaching-run-table-date, .teaching-run-table-duration, .teaching-run-table-truncate, .teaching-run-table-participants, .teaching-run-table-status",
         ) ?? [],
+      );
+      const bodyIcons = Array.from(
+        table?.querySelectorAll<SVGElement>(".teaching-run-table-row svg") ??
+          [],
       );
       const truncationElements = Array.from(
         table?.querySelectorAll<HTMLElement>(
@@ -3082,6 +3207,10 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         !tableHead ||
         !headerRow ||
         !bodyRow ||
+        colElements.length !== 7 ||
+        bodyCells.length !== 7 ||
+        !dateCellText ||
+        !timeCellText ||
         !status ||
         !actionCell ||
         !quickActions ||
@@ -3109,6 +3238,22 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
             wrapperStyle.borderLeftWidth,
           ],
         },
+        layout: {
+          tableLayout: tableStyle.tableLayout,
+          minWidth: tableStyle.minWidth,
+          colClasses: colElements.map((column) => column.className),
+          columnWidths: headerCells.map(
+            (cell) => cell.getBoundingClientRect().width,
+          ),
+          headerPaddings: headerCells.map((cell) => {
+            const style = getComputedStyle(cell);
+            return [style.paddingLeft, style.paddingRight];
+          }),
+          bodyPaddings: bodyCells.map((cell) => {
+            const style = getComputedStyle(cell);
+            return [style.paddingLeft, style.paddingRight];
+          }),
+        },
         header: {
           visualLabels: headerCells.map(
             (cell) => cell.textContent?.trim() ?? "",
@@ -3131,7 +3276,16 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         bodyTypography: bodyTextElements.map((element) => ({
           fontSize: getComputedStyle(element).fontSize,
           fontWeight: getComputedStyle(element).fontWeight,
+          color: getComputedStyle(element).color,
         })),
+        bodyValues: {
+          date: dateCellText,
+          time: timeCellText,
+        },
+        bodyIcons: bodyIcons.map((icon) => {
+          const style = getComputedStyle(icon);
+          return { color: style.color, opacity: style.opacity };
+        }),
         truncation: truncationElements.map((element) => ({
           title: element.getAttribute("title"),
           overflow: getComputedStyle(element).overflow,
@@ -3162,6 +3316,55 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       firstBodyRowBorderTopWidth: "0px",
       wrapperBorderWidths: ["0px", "0px", "0px", "0px"],
     });
+    assert.equal(scheduleTableContract.layout.tableLayout, "fixed");
+    assert.equal(scheduleTableContract.layout.minWidth, "928px");
+    assert.deepEqual(scheduleTableContract.layout.colClasses, [
+      "teaching-run-table-col-date",
+      "teaching-run-table-col-time",
+      "teaching-run-table-col-lesson",
+      "teaching-run-table-col-course",
+      "teaching-run-table-col-participants",
+      "teaching-run-table-col-status",
+      "teaching-run-table-col-actions",
+    ]);
+    const compactColumnWidths = [
+      [0, 148],
+      [1, 132],
+      [4, 104],
+      [5, 128],
+      [6, 120],
+    ] as const;
+    assert.ok(
+      compactColumnWidths.every(
+        ([index, expectedWidth]) =>
+          Math.abs(
+            (scheduleTableContract.layout.columnWidths[index] ?? 0) -
+              expectedWidth,
+          ) < 1,
+      ),
+    );
+    assert.ok(
+      scheduleTableContract.layout.columnWidths[2] >
+        scheduleTableContract.layout.columnWidths[0],
+    );
+    assert.ok(
+      scheduleTableContract.layout.columnWidths[3] >
+        scheduleTableContract.layout.columnWidths[1],
+    );
+    assert.ok(
+      scheduleTableContract.layout.headerPaddings.every(
+        ([left, right]) => left === "10px" && right === "10px",
+      ),
+    );
+    assert.ok(
+      scheduleTableContract.layout.bodyPaddings
+        .slice(0, -1)
+        .every(([left, right]) => left === "10px" && right === "10px"),
+    );
+    assert.deepEqual(scheduleTableContract.layout.bodyPaddings.at(-1), [
+      "4px",
+      "10px",
+    ]);
     assert.deepEqual(scheduleTableContract.header.visualLabels, [
       "Дата",
       "Время",
@@ -3211,8 +3414,20 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
     assert.ok(scheduleTableContract.bodyTypography.length >= 6);
     assert.ok(
       scheduleTableContract.bodyTypography.every(
-        ({ fontSize, fontWeight }) =>
-          fontSize === "14.08px" && fontWeight === "400",
+        ({ fontSize, fontWeight, color }) =>
+          fontSize === "14.08px" &&
+          fontWeight === "400" &&
+          color === "rgb(20, 20, 20)",
+      ),
+    );
+    assert.deepEqual(scheduleTableContract.bodyValues, {
+      date: "Среда · 12 авг",
+      time: "12:00 · 60 мин",
+    });
+    assert.ok(scheduleTableContract.bodyIcons.length >= 5);
+    assert.ok(
+      scheduleTableContract.bodyIcons.every(
+        ({ color, opacity }) => color === "rgb(20, 20, 20)" && opacity === "1",
       ),
     );
     assert.equal(scheduleTableContract.truncation.length, 4);
@@ -3341,11 +3556,31 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         );
         if (!panel) throw new Error("Profile dropdown is missing");
         const style = getComputedStyle(panel);
+        const items = Array.from(
+          panel.querySelectorAll<HTMLElement>(".nav-dropdown-item"),
+        ).filter((item) => item.offsetParent !== null);
         return {
           backgroundColor: style.backgroundColor,
           backgroundImage: style.backgroundImage,
           backdropFilter: style.backdropFilter,
           opacity: style.opacity,
+          items: items.map((item) => {
+            const itemStyle = getComputedStyle(item);
+            const icon = item.querySelector<SVGElement>("svg");
+            const iconStyle = icon ? getComputedStyle(icon) : null;
+            return {
+              borderWidths: [
+                itemStyle.borderTopWidth,
+                itemStyle.borderRightWidth,
+                itemStyle.borderBottomWidth,
+                itemStyle.borderLeftWidth,
+              ],
+              fontWeight: itemStyle.fontWeight,
+              color: itemStyle.color,
+              iconColor: iconStyle?.color ?? "",
+              iconOpacity: iconStyle?.opacity ?? "",
+            };
+          }),
         };
       }),
       {
@@ -3353,6 +3588,29 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         backgroundImage: "none",
         backdropFilter: "none",
         opacity: "1",
+        items: [
+          {
+            borderWidths: ["0px", "0px", "0px", "0px"],
+            fontWeight: "400",
+            color: "rgb(23, 23, 23)",
+            iconColor: "rgb(23, 23, 23)",
+            iconOpacity: "1",
+          },
+          {
+            borderWidths: ["0px", "0px", "0px", "0px"],
+            fontWeight: "400",
+            color: "rgb(23, 23, 23)",
+            iconColor: "rgb(23, 23, 23)",
+            iconOpacity: "1",
+          },
+          {
+            borderWidths: ["0px", "0px", "0px", "0px"],
+            fontWeight: "400",
+            color: "rgb(23, 23, 23)",
+            iconColor: "rgb(23, 23, 23)",
+            iconOpacity: "1",
+          },
+        ],
       },
     );
     await userMenuTrigger.press("Escape");
@@ -3362,6 +3620,58 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       .getByRole("button", { name: "Показать карточками", exact: true })
       .click();
     await runtime.page.locator(".teaching-run-card").waitFor();
+    assert.deepEqual(
+      await runtime.page.evaluate(() => {
+        const actions = document.querySelector<HTMLElement>(
+          ".teaching-run-card .teaching-run-actions",
+        );
+        const primary = actions?.querySelector<HTMLElement>(
+          ".product-btn-primary",
+        );
+        const secondary = actions?.querySelector<HTMLElement>(
+          ".product-btn-secondary",
+        );
+        if (!primary || !secondary) {
+          throw new Error("Schedule card button contract is missing");
+        }
+        const readButton = (button: HTMLElement) => {
+          const style = getComputedStyle(button);
+          return {
+            backgroundColor: style.backgroundColor,
+            borderColor: style.borderColor,
+            color: style.color,
+            fontSize: style.fontSize,
+            fontWeight: style.fontWeight,
+            boxShadow: style.boxShadow,
+            transform: style.transform,
+          };
+        };
+        return {
+          primary: readButton(primary),
+          secondary: readButton(secondary),
+        };
+      }),
+      {
+        primary: {
+          backgroundColor: "rgb(20, 20, 20)",
+          borderColor: "rgb(20, 20, 20)",
+          color: "rgb(255, 255, 255)",
+          fontSize: "14.08px",
+          fontWeight: "400",
+          boxShadow: "none",
+          transform: "none",
+        },
+        secondary: {
+          backgroundColor: "rgb(255, 255, 255)",
+          borderColor: "rgba(20, 20, 20, 0.14)",
+          color: "rgb(20, 20, 20)",
+          fontSize: "14.08px",
+          fontWeight: "400",
+          boxShadow: "none",
+          transform: "none",
+        },
+      },
+    );
     assert.equal(await runtime.page.locator(".teaching-run-card").count(), 1);
     assert.equal(await scheduleTable.count(), 0);
 
@@ -3536,7 +3846,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
     assert.deepEqual(studentsVisual.tabSignature, {
       height: "40px",
       radius: "0px",
-      fontWeight: "500",
+      fontWeight: "400",
       baselineHeight: "1px",
       baselineColor: "rgb(20, 20, 20)",
       baselineLeft: "12px",
@@ -3857,6 +4167,97 @@ test("browser smoke: observer settings accepts an incoming request and revokes o
       .getByRole("heading", { name: "Наблюдатели", exact: true, level: 1 })
       .waitFor();
     await runtime.page
+      .getByRole("button", { name: "Отправить приглашение", exact: true })
+      .waitFor();
+    assert.deepEqual(
+      await runtime.page.evaluate(() => {
+        const shell = document.querySelector<HTMLElement>(
+          ".settings-product-shell",
+        );
+        const header = document.querySelector<HTMLElement>(
+          ".site-header-shell-demo",
+        );
+        const userName = header?.querySelector<HTMLElement>(
+          ".nav-user-trigger-name",
+        );
+        const settingsNav = document.querySelector<HTMLElement>(
+          ".nav-settings-shell",
+        );
+        const activeSettingsItem =
+          settingsNav?.querySelector<HTMLElement>(".nav-pill-active");
+        const primaryAction = document.querySelector<HTMLElement>(
+          'form .product-btn-primary[type="submit"]',
+        );
+        const primaryIcon = primaryAction?.querySelector<SVGElement>("svg");
+        if (
+          !shell ||
+          !header ||
+          !userName ||
+          !activeSettingsItem ||
+          !primaryAction ||
+          !primaryIcon
+        ) {
+          throw new Error("Canonical Settings control contract is missing");
+        }
+        const shellStyle = getComputedStyle(shell);
+        const headerStyle = getComputedStyle(header);
+        const userNameStyle = getComputedStyle(userName);
+        const settingsItemStyle = getComputedStyle(activeSettingsItem);
+        const primaryStyle = getComputedStyle(primaryAction);
+        const primaryIconStyle = getComputedStyle(primaryIcon);
+        return {
+          shellBackground: shellStyle.backgroundColor,
+          headerBackground: headerStyle.backgroundColor,
+          headerBackdropFilter: headerStyle.backdropFilter,
+          userNameWeight: userNameStyle.fontWeight,
+          settingsItem: {
+            height: settingsItemStyle.height,
+            radius: settingsItemStyle.borderRadius,
+            fontSize: settingsItemStyle.fontSize,
+            fontWeight: settingsItemStyle.fontWeight,
+            boxShadow: settingsItemStyle.boxShadow,
+          },
+          primaryAction: {
+            height: primaryStyle.height,
+            radius: primaryStyle.borderRadius,
+            fontSize: primaryStyle.fontSize,
+            fontWeight: primaryStyle.fontWeight,
+            background: primaryStyle.backgroundColor,
+            color: primaryStyle.color,
+            boxShadow: primaryStyle.boxShadow,
+            transform: primaryStyle.transform,
+            iconColor: primaryIconStyle.color,
+            iconOpacity: primaryIconStyle.opacity,
+          },
+        };
+      }),
+      {
+        shellBackground: "rgb(245, 241, 232)",
+        headerBackground: "rgb(255, 255, 255)",
+        headerBackdropFilter: "none",
+        userNameWeight: "400",
+        settingsItem: {
+          height: "40px",
+          radius: "12px",
+          fontSize: "14.08px",
+          fontWeight: "400",
+          boxShadow: "none",
+        },
+        primaryAction: {
+          height: "40px",
+          radius: "12px",
+          fontSize: "14.08px",
+          fontWeight: "400",
+          background: "rgb(20, 20, 20)",
+          color: "rgb(255, 255, 255)",
+          boxShadow: "none",
+          transform: "none",
+          iconColor: "rgb(255, 255, 255)",
+          iconOpacity: "1",
+        },
+      },
+    );
+    await runtime.page
       .getByLabel("Email получателя")
       .fill("observer-e2e@example.test");
     await runtime.page.getByLabel("Свободная подпись").fill("бабушка");
@@ -3908,6 +4309,56 @@ test("browser smoke: trusted adult resets child credentials and learner revokes 
       .getByRole("heading", { name: "Безопасность", exact: true, level: 1 })
       .waitFor();
     await runtime.page.getByText("boris-child", { exact: false }).waitFor();
+    assert.deepEqual(
+      await runtime.page.evaluate(() => {
+        const buttons = Array.from(
+          document.querySelectorAll<HTMLButtonElement>("button.product-btn"),
+        );
+        const findButton = (label: string) =>
+          buttons.find((button) => button.textContent?.trim() === label);
+        const secondary = findButton("Сменить логин и PIN");
+        const destructive = findButton("Отозвать право");
+        if (!secondary || !destructive) {
+          throw new Error("Security Settings button variants are missing");
+        }
+        const readButton = (button: HTMLButtonElement) => {
+          const style = getComputedStyle(button);
+          return {
+            height: style.height,
+            radius: style.borderRadius,
+            fontWeight: style.fontWeight,
+            background: style.backgroundColor,
+            borderColor: style.borderColor,
+            color: style.color,
+            boxShadow: style.boxShadow,
+          };
+        };
+        return {
+          secondary: readButton(secondary),
+          destructive: readButton(destructive),
+        };
+      }),
+      {
+        secondary: {
+          height: "40px",
+          radius: "12px",
+          fontWeight: "400",
+          background: "rgb(255, 255, 255)",
+          borderColor: "rgba(20, 20, 20, 0.14)",
+          color: "rgb(20, 20, 20)",
+          boxShadow: "none",
+        },
+        destructive: {
+          height: "40px",
+          radius: "12px",
+          fontWeight: "400",
+          background: "rgb(255, 255, 255)",
+          borderColor: "rgba(20, 20, 20, 0.14)",
+          color: "rgb(190, 18, 60)",
+          boxShadow: "none",
+        },
+      },
+    );
     await runtime.page
       .getByRole("button", { name: "Сменить логин и PIN", exact: true })
       .click();
@@ -5079,11 +5530,11 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
     assert.ok(Math.abs(coursesVisual.pageHeaderLayout.height - 200) < 0.5);
     assert.ok(coursesVisual.pageHeaderLayout.actionCenterDelta < 0.5);
     assert.equal(coursesVisual.buttonRadius, "12px");
-    assert.equal(coursesVisual.buttonFontWeight, "500");
+    assert.equal(coursesVisual.buttonFontWeight, "400");
     assert.equal(coursesVisual.navPillRadius, "12px");
-    assert.equal(coursesVisual.navPillFontWeight, "500");
+    assert.equal(coursesVisual.navPillFontWeight, "400");
     assert.equal(coursesVisual.userTriggerRadius, "12px");
-    assert.equal(coursesVisual.userTriggerFontWeight, "500");
+    assert.equal(coursesVisual.userTriggerFontWeight, "400");
     assert.deepEqual(coursesVisual.toolbarSurface, {
       backgroundColor: "rgba(0, 0, 0, 0)",
       borderTopWidth: "0px",
@@ -5370,7 +5821,7 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
     assert.deepEqual(courseVisual.tabSignature, {
       height: "40px",
       radius: "0px",
-      fontWeight: "500",
+      fontWeight: "400",
       baselineHeight: "1px",
       baselineColor: "rgb(20, 20, 20)",
       baselineLeft: "12px",

@@ -437,21 +437,25 @@ Visual contract Course routes не меняет эту навигационну�
   непрозрачным белым фоном без blur; Account dropdown использует тот же
   сплошной белый surface;
 - `AppPageHeader` задаёт один прозрачный layout для `/courses`, `/students`,
-  `/schedule`, Course и Lesson: системный H1 веса 400 с максимумом 48 px
-  на desktop и 32 px на mobile, подзаголовок, optional backlink и правую
-  action-секцию; header имеет минимальную высоту 200 px, растёт по контенту,
-  а actions вертикально центрированы;
+  `/schedule`, authenticated `/settings/*`, Course и Lesson: системный H1 веса
+  400 с максимумом 48 px на desktop и 32 px на mobile, подзаголовок, optional
+  backlink и правую action-секцию; header имеет минимальную высоту 200 px,
+  растёт по контенту, а actions вертикально центрированы;
 - основные кнопки и header controls — высотой 40 px с радиусом 12 px и шрифтом
-  `.88rem/500`;
+  `.88rem/400`; primary flat без inset-блика, подъёма или тени, иконки имеют
+  единый 16 px rhythm, полную непрозрачность и наследуют контрастный цвет,
+  белые кнопки сохраняют тонкую серую рамку, а menu items остаются borderless;
 - `WorkspaceTabs` задаёт общий 40 px tab/tabpanel contract для Course, Lesson,
   Students и profile dialog: roving keyboard focus, horizontal scroll, базовая
   чёрная линия 1 px с inline-inset 12 px и квадратный чёрный active-
   сегмент 4 px без radius на этой же линии;
-- visual tokens не меняют landing, Auth, Settings или полноэкранный Student
-  Screen.
+- authenticated Settings переиспользуют тот же product shell, demo TopNav,
+  settings-navigation и shared Button variants; visual tokens не меняют
+  landing, Auth или полноэкранный Student Screen.
 
-Этот visual contract развёрнут и подтверждён authenticated browser postflight
-на точном application release `77870e3`.
+Базовый layout contract развёрнут и подтверждён authenticated browser
+postflight на точном application release `77870e3`; flat controls и его
+Settings-расширение относятся к current source следующего deployment.
 
 ## Roleless teaching hub navigation boundary
 
@@ -469,15 +473,18 @@ Current production делает `/schedule` и `/students` доступными
   целый период, а выбор даты задаёт его опорный день. В current source Action
   сокращён до «Назначить урок» и использует calendar-plus icon. Внешний
   переключатель периода удалён: right-aligned date picker шириной 300 px на
-  desktop объединяет короткую русскую подпись периода, календарный popover и
+  desktop объединяет короткую русскую подпись периода без точки после
+  сокращения месяца, календарный popover и
   внутренний selector «День / Неделя / Месяц»; полное доступное имя даты
   сохраняется, а стрелки сдвигают назад или вперёд именно выбранный период.
   Рядом остаётся icon-only «Таблица / Карточки». Непустая projection после
   controls не повторяет период, заголовок «Занятия» или видимый result count,
   но сохраняет доступное имя секции и caption таблицы. Белая Table projection
   не имеет внешней рамки; header имеет exact 40 px вместе с divider 1 px,
-  weight 500 и более светлый текст. Однострочные колонки `Дата / Время / Урок /
-Курс / Ученики / Статус` используют ellipsis и полные title, scheduled state
+  weight 500 и более светлый текст. Компактные `Дата / Время` прижаты слева,
+  `Ученики / Статус` и действия — справа, а `Урок / Курс` делят оставшуюся
+  ширину. Все данные чёрные и однострочные, используют ellipsis и полные title;
+  дата имеет вид `Среда · 12 авг`, время — `12:00 · 60 мин`, scheduled state
   остаётся plain «Ожидается». Последняя колонка не имеет видимого заголовка:
   постоянно доступное вертикальное троеточие открывает portal-menu со всеми
   действиями, а быстрые icon-only actions появляются при hover/focus строки.

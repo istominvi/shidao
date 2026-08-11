@@ -26,6 +26,7 @@ import { RunHistoryList } from "@/components/lesson-runs/run-history-list";
 import { ScheduleDatePicker } from "@/components/teaching-hub/schedule-date-picker";
 import {
   atLocalNoon,
+  formatScheduleCompactDate,
   formatSchedulePeriodLabel,
   formatLocalDateValue,
   schedulePeriodRange,
@@ -57,8 +58,6 @@ const tableDateFormatter = new Intl.DateTimeFormat("ru-RU", {
 
 const compactTableDateFormatter = new Intl.DateTimeFormat("ru-RU", {
   weekday: "long",
-  day: "numeric",
-  month: "short",
 });
 
 const timeFormatter = new Intl.DateTimeFormat("ru-RU", {
@@ -376,28 +375,25 @@ export function ScheduleWorkspace() {
                 <caption className="sr-only">
                   Занятия за {selectedPeriodLabel}
                 </caption>
+                <colgroup>
+                  <col className="teaching-run-table-col-date" />
+                  <col className="teaching-run-table-col-time" />
+                  <col className="teaching-run-table-col-lesson" />
+                  <col className="teaching-run-table-col-course" />
+                  <col className="teaching-run-table-col-participants" />
+                  <col className="teaching-run-table-col-status" />
+                  <col className="teaching-run-table-col-actions" />
+                </colgroup>
                 <ProductTableHead>
                   <ProductTableHeaderRow>
-                    <ProductTableHeaderCell className="w-[14%]">
-                      Дата
-                    </ProductTableHeaderCell>
-                    <ProductTableHeaderCell className="w-[12%]">
-                      Время
-                    </ProductTableHeaderCell>
-                    <ProductTableHeaderCell className="w-[20%]">
-                      Урок
-                    </ProductTableHeaderCell>
-                    <ProductTableHeaderCell className="w-[19%]">
-                      Курс
-                    </ProductTableHeaderCell>
-                    <ProductTableHeaderCell className="w-[10%]">
-                      Ученики
-                    </ProductTableHeaderCell>
-                    <ProductTableHeaderCell className="w-[12%]">
-                      Статус
-                    </ProductTableHeaderCell>
+                    <ProductTableHeaderCell>Дата</ProductTableHeaderCell>
+                    <ProductTableHeaderCell>Время</ProductTableHeaderCell>
+                    <ProductTableHeaderCell>Урок</ProductTableHeaderCell>
+                    <ProductTableHeaderCell>Курс</ProductTableHeaderCell>
+                    <ProductTableHeaderCell>Ученики</ProductTableHeaderCell>
+                    <ProductTableHeaderCell>Статус</ProductTableHeaderCell>
                     <ProductTableHeaderCell
-                      className="w-[13%] text-right"
+                      className="text-right"
                       aria-label="Действия"
                     />
                   </ProductTableHeaderRow>
@@ -405,11 +401,11 @@ export function ScheduleWorkspace() {
                 <ProductTableBody>
                   {visibleRuns.map((run) => {
                     const scheduledAt = new Date(run.scheduledAt);
-                    const compactDate = capitalizeRussian(
+                    const compactDate = `${capitalizeRussian(
                       compactTableDateFormatter.format(scheduledAt),
-                    );
+                    )} · ${formatScheduleCompactDate(scheduledAt)}`;
                     const formattedTime = timeFormatter.format(scheduledAt);
-                    const duration = `${run.plannedDurationMinutes} мин.`;
+                    const duration = `${run.plannedDurationMinutes} мин`;
                     const actionLabel = runActionLabel(run);
                     const actionItems: ActionMenuItem[] = [
                       {
@@ -544,7 +540,7 @@ export function ScheduleWorkspace() {
                     >
                       <span>{tableDateFormatter.format(scheduledAt)}</span>
                       <strong>{timeFormatter.format(scheduledAt)}</strong>
-                      <small>{run.plannedDurationMinutes} мин.</small>
+                      <small>{run.plannedDurationMinutes} мин</small>
                     </time>
                     <div className="teaching-run-content">
                       <p>{run.courseTitle}</p>

@@ -75,13 +75,14 @@
 }
 
 .site-header-shell-demo .site-header-nav-pill,
-.site-header-shell-demo .nav-user-trigger {
+.site-header-shell-demo .nav-user-trigger,
+.site-header-shell-demo .header-action-btn {
   box-sizing: border-box;
   height: 2.5rem;
   min-height: 2.5rem;
   padding-inline: 0.75rem;
-  font-size: 0.88rem;
-  font-weight: 500;
+  font-size: var(--course-demo-control-font-size, 0.88rem);
+  font-weight: var(--course-demo-control-font-weight, 400);
   line-height: 1.2;
 }
 
@@ -93,9 +94,37 @@
 }
 
 .site-header-shell-demo .nav-user-trigger-name {
-  font-size: 0.88rem;
-  font-weight: 500;
+  font-size: var(--course-demo-control-font-size, 0.88rem);
+  font-weight: var(--course-demo-control-font-weight, 400);
   line-height: 1.2;
+}
+
+.site-header-shell-demo .nav-pill-active {
+  box-shadow: none;
+}
+
+.site-header-shell-demo .nav-pill-icon,
+.site-header-shell-demo .nav-user-trigger > svg,
+.site-header-shell-demo .nav-user-trigger > span > svg {
+  width: var(--course-demo-control-icon-size, 1rem);
+  height: var(--course-demo-control-icon-size, 1rem);
+  flex: 0 0 var(--course-demo-control-icon-size, 1rem);
+  color: currentColor;
+  opacity: 1;
+}
+
+.site-header-shell-demo .nav-dropdown-item {
+  border: 0;
+  font-weight: var(--course-demo-control-font-weight, 400);
+}
+
+.site-header-shell-demo .nav-dropdown-item svg {
+  color: currentColor;
+  opacity: 1;
+}
+
+.site-header-shell-demo .nav-pill-active .nav-pill-icon {
+  opacity: 1;
 }
 
 .site-header-shell-marketing {
@@ -377,4 +406,18 @@
 .nav-settings-shell {
   border-radius: 1rem;
   padding: 0.75rem;
+}
+
+.course-demo-shell .nav-settings-shell .nav-pill {
+  box-sizing: border-box;
+  min-height: var(--course-demo-control-height);
+  border-radius: var(--course-demo-control-radius);
+  padding-inline: var(--course-demo-control-padding-inline);
+  font-size: var(--course-demo-control-font-size);
+  font-weight: var(--course-demo-control-font-weight);
+  line-height: var(--course-demo-control-line-height);
+}
+
+.course-demo-shell .nav-settings-shell .nav-pill-active {
+  box-shadow: none;
 }

@@ -264,6 +264,88 @@ test("course routes use the flat demo background and unified visual controls", (
   );
 });
 
+test("active product buttons and header controls share one flat 40px contract", () => {
+  const styles = source("src/app/globals.css");
+  const navigationStyles = source("src/app/styles/navigation.css");
+  const teachingStyles = source("src/app/styles/teaching-hub.css");
+
+  assert.match(
+    styles,
+    /\.course-demo-shell\s*\{[\s\S]*?--course-demo-control-height: 2\.5rem;[\s\S]*?--course-demo-control-radius: 0\.75rem;[\s\S]*?--course-demo-control-padding-inline: 0\.75rem;[\s\S]*?--course-demo-control-font-size: 0\.88rem;[\s\S]*?--course-demo-control-font-weight: 400;[\s\S]*?--course-demo-control-icon-size: 1rem;/,
+  );
+  assert.match(
+    styles,
+    /\.course-demo-shell \.product-btn\s*\{[^}]*--product-control-height: var\(--course-demo-control-height\);[^}]*border-radius: var\(--course-demo-control-radius\);[^}]*font-size: var\(--course-demo-control-font-size\);[^}]*font-weight: var\(--course-demo-control-font-weight\);[^}]*box-shadow: none;[^}]*transform: none;/,
+  );
+  assert.match(
+    styles,
+    /\.course-demo-shell \.product-btn svg\s*\{[^}]*width: var\(--course-demo-control-icon-size\);[^}]*color: currentColor;[^}]*opacity: 1;/,
+  );
+  assert.match(
+    styles,
+    /\.course-demo-shell \.product-search-icon,[\s\S]*?\.course-demo-shell \.product-select-icon\s*\{[^}]*color: var\(--course-demo-control-foreground\);[^}]*opacity: 1;/,
+  );
+  assert.match(
+    styles,
+    /\.course-demo-shell \.course-filter-trigger svg,[\s\S]*?\.course-demo-shell \.compact-toolbar-rail \[role="group"\] button svg\s*\{[^}]*color: currentColor;[^}]*opacity: 1;/,
+  );
+  assert.match(
+    styles,
+    /\.course-demo-shell \.product-btn-primary\s*\{[^}]*border-color: #141414;[^}]*background: #141414;[^}]*color: #fff;[^}]*box-shadow: none;/,
+  );
+  assert.match(
+    styles,
+    /\.course-demo-shell \.product-btn-primary:hover:not\(:disabled\)\s*\{[^}]*background: #141414;[^}]*box-shadow: none;[^}]*transform: none;/,
+  );
+  assert.match(
+    styles,
+    /\.course-demo-shell \.product-btn-secondary\s*\{[^}]*border-color: var\(--course-demo-control-border\);[^}]*background: #fff;[^}]*color: var\(--course-demo-control-foreground\);/,
+  );
+  assert.match(
+    styles,
+    /\.course-demo-shell \.product-btn-ghost\s*\{[^}]*border-color: transparent;[^}]*background: transparent;/,
+  );
+  assert.match(
+    styles,
+    /\.course-demo-shell \.product-btn\.compact-toolbar-reset\s*\{[^}]*border-color: var\(--course-demo-control-border\);[^}]*background: #fff;/,
+  );
+  assert.match(
+    styles,
+    /\.course-demo-shell \.product-btn:focus-visible:not\(:disabled\)\s*\{[^}]*box-shadow: 0 0 0 3px rgba\(20, 20, 20, 0\.12\);/,
+  );
+  assert.match(styles, /\.action-menu-item\s*\{[^}]*border: 0;/);
+
+  assert.match(
+    navigationStyles,
+    /\.site-header-shell-demo \.site-header-nav-pill,[\s\S]*?\.site-header-shell-demo \.header-action-btn\s*\{[^}]*height: 2\.5rem;[^}]*font-size: var\(--course-demo-control-font-size, 0\.88rem\);[^}]*font-weight: var\(--course-demo-control-font-weight, 400\);/,
+  );
+  assert.match(
+    navigationStyles,
+    /\.site-header-shell-demo \.nav-user-trigger-name\s*\{[^}]*font-size: var\(--course-demo-control-font-size, 0\.88rem\);[^}]*font-weight: var\(--course-demo-control-font-weight, 400\);/,
+  );
+  assert.match(
+    navigationStyles,
+    /\.site-header-shell-demo \.nav-pill-active\s*\{[^}]*box-shadow: none;/,
+  );
+  assert.match(
+    navigationStyles,
+    /\.site-header-shell-demo \.nav-pill-icon,[\s\S]*?\.site-header-shell-demo \.nav-user-trigger > span > svg\s*\{[^}]*color: currentColor;[^}]*opacity: 1;/,
+  );
+  assert.match(
+    navigationStyles,
+    /\.site-header-shell-demo \.nav-pill-active \.nav-pill-icon\s*\{[^}]*opacity: 1;/,
+  );
+  assert.match(
+    navigationStyles,
+    /\.site-header-shell-demo \.nav-dropdown-item\s*\{[^}]*border: 0;[^}]*font-weight: var\(--course-demo-control-font-weight, 400\);/,
+  );
+
+  assert.match(
+    teachingStyles,
+    /\.teaching-date-trigger\s*\{[^}]*font-size: var\(--course-demo-control-font-size\);[^}]*font-weight: var\(--course-demo-control-font-weight\);/,
+  );
+});
+
 test("component picker is registry-driven and grouped into Russian categories", () => {
   const authoring = source(lessonAuthoringPath);
 

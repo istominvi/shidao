@@ -59,31 +59,31 @@ test("period labels adapt to a day, week and month without repeating time", () =
 
   assert.equal(
     formatSchedulePeriodLabel(new Date(2026, 7, 11, 12), "day", today),
-    "Сегодня · 11 авг.",
+    "Сегодня · 11 авг",
   );
   assert.equal(
     formatSchedulePeriodLabel(new Date(2026, 7, 12, 12), "day", today),
-    "Среда · 12 авг.",
+    "Среда · 12 авг",
   );
   assert.equal(
     formatSchedulePeriodLabel(new Date(2027, 7, 12, 12), "day", today),
-    "12 авг. 2027 г.",
+    "12 авг 2027 г.",
   );
   assert.equal(
     formatSchedulePeriodLabel(new Date(2026, 7, 12, 12), "week", today),
-    "Неделя · 10–16 авг.",
+    "Неделя · 10–16 авг",
   );
   assert.equal(
     formatSchedulePeriodLabel(new Date(2026, 8, 1, 12), "week", today),
-    "Неделя · 31 авг.–6 сент.",
+    "Неделя · 31 авг–6 сент",
   );
   assert.equal(
     formatSchedulePeriodLabel(new Date(2026, 11, 31, 12), "week", today),
-    "Неделя · 28 дек. 2026 г.–3 янв. 2027 г.",
+    "Неделя · 28 дек 2026 г.–3 янв 2027 г.",
   );
   assert.equal(
     formatSchedulePeriodLabel(new Date(2026, 7, 12, 12), "month", today),
-    "Авг. 2026",
+    "Авг 2026",
   );
   assert.equal(formatScheduleMonthTitle(new Date(2026, 0, 1)), "Январь 2026");
 });

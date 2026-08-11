@@ -38,6 +38,24 @@ const compactMonthFormatter = new Intl.DateTimeFormat("ru-RU", {
   year: "numeric",
 });
 
+function formatWithoutMonthPeriod(formatter: Intl.DateTimeFormat, value: Date) {
+  return formatter
+    .formatToParts(value)
+    .map((part) =>
+      part.type === "month" ? part.value.replace(/\.$/u, "") : part.value,
+    )
+    .join("")
+    .replaceAll("\u202f", " ");
+}
+
+export function formatScheduleCompactDate(value: Date) {
+  return formatWithoutMonthPeriod(compactDateFormatter, value);
+}
+
+function formatScheduleCompactDateWithYear(value: Date) {
+  return formatWithoutMonthPeriod(compactDateWithYearFormatter, value);
+}
+
 function capitalize(value: string) {
   return value.charAt(0).toUpperCase() + value.slice(1);
 }
@@ -124,7 +142,9 @@ export function formatScheduleMonthTitle(value: Date) {
 }
 
 function formatScheduleCompactMonthTitle(value: Date) {
-  return capitalize(compactMonthFormatter.format(value).replace(" г.", ""));
+  return capitalize(
+    formatWithoutMonthPeriod(compactMonthFormatter, value).replace(" г.", ""),
+  );
 }
 
 export function formatSchedulePeriodLabel(
@@ -134,12 +154,12 @@ export function formatSchedulePeriodLabel(
 ) {
   if (period === "day") {
     if (sameLocalDay(value, today)) {
-      return `Сегодня · ${compactDateFormatter.format(value)}`;
+      return `Сегодня · ${formatScheduleCompactDate(value)}`;
     }
     if (value.getFullYear() !== today.getFullYear()) {
-      return capitalize(compactDateWithYearFormatter.format(value));
+      return capitalize(formatScheduleCompactDateWithYear(value));
     }
-    return `${capitalize(weekdayFormatter.format(value))} · ${compactDateFormatter.format(value)}`;
+    return `${capitalize(weekdayFormatter.format(value))} · ${formatScheduleCompactDate(value)}`;
   }
 
   if (period === "month") return formatScheduleCompactMonthTitle(value);
@@ -150,12 +170,12 @@ export function formatSchedulePeriodLabel(
     range.from.getFullYear() === lastDay.getFullYear() &&
     range.from.getMonth() === lastDay.getMonth()
   ) {
-    return `Неделя · ${range.from.getDate()}–${compactDateFormatter.format(lastDay)}`;
+    return `Неделя · ${range.from.getDate()}–${formatScheduleCompactDate(lastDay)}`;
   }
   if (range.from.getFullYear() === lastDay.getFullYear()) {
-    return `Неделя · ${compactDateFormatter.format(range.from)}–${compactDateFormatter.format(lastDay)}`;
+    return `Неделя · ${formatScheduleCompactDate(range.from)}–${formatScheduleCompactDate(lastDay)}`;
   }
-  return `Неделя · ${compactDateWithYearFormatter.format(range.from)}–${compactDateWithYearFormatter.format(lastDay)}`;
+  return `Неделя · ${formatScheduleCompactDateWithYear(range.from)}–${formatScheduleCompactDateWithYear(lastDay)}`;
 }
 
 export function formatSchedulePeriodAriaLabel(

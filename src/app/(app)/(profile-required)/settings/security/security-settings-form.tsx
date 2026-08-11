@@ -8,6 +8,7 @@ import {
   revokeMyLearnerRecoveryDelegate,
 } from "@/components/learner-identity/identity-client";
 import { SettingsShell } from "@/components/settings-shell";
+import { Button } from "@/components/ui/button";
 import type {
   LearnerCredentialRecoveryOverview,
   LearnerCredentialResetResult,
@@ -236,13 +237,9 @@ export function SecuritySettingsForm({
           </p>
         )}
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full rounded-2xl bg-black px-4 py-3 font-semibold text-white disabled:opacity-60"
-        >
+        <Button type="submit" disabled={loading} className="w-full">
           {loading ? "Сохраняем…" : hasPin ? "Изменить PIN" : "Создать PIN"}
-        </button>
+        </Button>
       </form>
 
       <section
@@ -281,16 +278,16 @@ export function SecuritySettingsForm({
                       Текущий логин: {learner.childAccountLogin ?? "не задан"}
                     </p>
                   </div>
-                  <button
+                  <Button
                     type="button"
+                    variant="secondary"
                     disabled={!learner.canReset || recoveryBusy}
                     onClick={() =>
                       chooseLearner(learner.grantId, learner.childAccountLogin)
                     }
-                    className="rounded-xl border border-neutral-300 px-3 py-2 text-sm font-semibold disabled:opacity-50"
                   >
                     Сменить логин и PIN
-                  </button>
+                  </Button>
                 </div>
 
                 {selectedGrantId === learner.grantId ? (
@@ -349,7 +346,7 @@ export function SecuritySettingsForm({
                       />
                     </label>
                     <div className="flex flex-wrap gap-2 sm:col-span-2">
-                      <button
+                      <Button
                         type="submit"
                         disabled={
                           recoveryBusy ||
@@ -357,18 +354,17 @@ export function SecuritySettingsForm({
                           !/^\d{4,8}$/.test(childPin) ||
                           !recoverySecret
                         }
-                        className="rounded-xl bg-black px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
                       >
                         {recoveryBusy ? "Сохраняем…" : "Сохранить новые данные"}
-                      </button>
-                      <button
+                      </Button>
+                      <Button
                         type="button"
+                        variant="ghost"
                         disabled={recoveryBusy}
-                        className="rounded-xl px-4 py-2 text-sm font-semibold"
                         onClick={() => setSelectedGrantId(null)}
                       >
                         Отмена
-                      </button>
+                      </Button>
                     </div>
                   </form>
                 ) : null}
@@ -405,16 +401,17 @@ export function SecuritySettingsForm({
                   </p>
                 </div>
                 {delegate.status === "active" ? (
-                  <button
+                  <Button
                     type="button"
+                    variant="secondary"
                     disabled={recoveryBusy}
                     onClick={() =>
                       void revokeRecoveryDelegate(delegate.grantId)
                     }
-                    className="rounded-xl border border-red-200 px-3 py-2 text-sm font-semibold text-red-700 disabled:opacity-50"
+                    className="product-btn-danger"
                   >
                     Отозвать право
-                  </button>
+                  </Button>
                 ) : null}
               </div>
             ))}

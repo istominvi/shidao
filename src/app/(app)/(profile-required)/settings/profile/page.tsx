@@ -5,6 +5,7 @@ import { FormEvent, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { SettingsShell } from "@/components/settings-shell";
 import { StatusMessage } from "@/components/product-shell";
+import { Button } from "@/components/ui/button";
 
 function ProfileSettingsPageContent() {
   const searchParams = useSearchParams();
@@ -107,13 +108,9 @@ function ProfileSettingsPageContent() {
           <StatusMessage kind="success">{emailSuccess}</StatusMessage>
         )}
 
-        <button
-          type="submit"
-          disabled={emailLoading}
-          className="w-full rounded-2xl bg-black px-4 py-3 font-semibold text-white disabled:opacity-60"
-        >
+        <Button type="submit" disabled={emailLoading} className="w-full">
           {emailLoading ? "Отправляем…" : "Запросить смену email"}
-        </button>
+        </Button>
       </form>
     </SettingsShell>
   );

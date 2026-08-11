@@ -545,7 +545,8 @@ ShiDao V2 application:
   popover с «День / Неделя / Месяц», выбор даты меняет опорную дату, а стрелки
   сдвигают назад/вперёд активный целый день, неделю либо месяц. Проверить
   desktop width date control ровно 300 px, короткие русские подписи вроде
-  `Неделя · 10–16 авг.` и полное доступное имя. Проверить закрытие Escape с
+  `Неделя · 10–16 авг` без завершающей точки у сокращения месяца и полное
+  доступное имя. Проверить закрытие Escape с
   возвратом focus, клавиатурную навигацию календаря, local timezone и отсутствие
   document-level overflow на 375 и 320 px. Рядом должны оставаться оба
   icon-only вида «Таблица / Карточки». Header показывает точный подзаголовок
@@ -556,12 +557,25 @@ ShiDao V2 application:
   «Выбранная неделя / Занятия» и count-chip. В table view дополнительно
   проверить solid-white surface без outer border; exact 40 px header вместе с
   нижним divider 1 px, weight 500 и более светлый цвет; видимые `Дата / Время /
-Урок / Курс / Ученики / Статус` и пустой action heading. Текстовые данные
-  остаются в одну строку с ellipsis и полным `title`, clock + «Ожидается» не
-  повторяет дату/время. Вертикальное троеточие постоянно доступно с клавиатуры
+Урок / Курс / Ученики / Статус` и пустой action heading. Проверить компактные
+  фиксированные rails для даты, времени, учеников, статуса и действий: первые
+  два прижаты слева, последние три — справа, `Урок / Курс` делят оставшуюся
+  ширину. Текст и иконки data-row должны иметь computed `#141414`/opacity `1`,
+  дата — `Среда · 12 авг`, время — `12:00 · 60 мин`; текст остаётся в одну
+  строку с ellipsis и полным `title`, clock + «Ожидается» не повторяет
+  дату/время. Вертикальное троеточие постоянно доступно с клавиатуры
   и touch, его portal-menu не обрезается горизонтальным scroll wrapper,
   содержит все действия, поддерживает arrows/Escape/focus restore; быстрые
-  icon-only actions появляются при hover/focus строки;
+  icon-only actions появляются при hover/focus строки. Отдельно проверить
+  canonical active V2 controls: exact `40 px / 12 px / .88rem / 400`, flat
+  primary и active navigation без inset/shadow/translate, icon opacity `1` и
+  contrast-aware `currentColor`, тонкую рамку белых buttons и border `0` у
+  menu items. Повторить этот visual check на authenticated `/settings/profile`,
+  `/settings/security` и `/settings/observers`: все три используют beige
+  product shell и solid-white demo TopNav; user/header и active side-nav имеют
+  `40 px / 12 px / .88rem / 400`, а primary/secondary/destructive actions —
+  shared Button contrast без raw Tailwind visual fork. Landing, Auth и
+  полноэкранный Student Screen при этом не должны измениться;
 - вкладки «Ученики / Группы / Наблюдение» сохраняют общий black 1 px baseline и square
   active-segment; directory toolbar остаётся прозрачной и без outer card,
   active/archive/pending находятся в одной таблице с inline-чипами и
