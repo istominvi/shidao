@@ -1,7 +1,7 @@
 # AI provider integration
 
-**Статус:** canonical contract для deployed Course AI, deployed base global
-System Assistant и current signed conversational follow-up (rollout pending)
+**Статус:** canonical contract для deployed Course AI и deployed signed
+conversational System Assistant
 
 **Актуально на:** 11 августа 2026 года
 
@@ -22,7 +22,9 @@ RouterAI no-write smoke с synthetic current Course подтверждён, auth
 production Apply ещё не выполнен и не заявляется пройденным.
 Conversational action follow-up расширяет allowlist наполнением и удалением
 Lesson, подписывает proposal и вводит one-active confirmation state machine;
-его exact deployment фиксируется после rollout текущего change set.
+exact release `246cf49d2cd07bc7109b83acec46296be874312c` развёрнут. Running image и
+HTTP/guest boundary postflight подтверждены, authenticated production action
+postflight пока не выполнялся.
 
 **Schema state:** AI authoring не добавляет provider/quota persistence; он читает
 bounded projection из `teacher_learner`, `lesson_run` и `learning_record`.
@@ -223,7 +225,7 @@ execution или MCP transport. System contract прямо запрещает у
 Следовательно, это **read-only ephemeral assistant**, а не persisted Course chat,
 change history или автономный editor.
 
-## Global System Assistant — current implementation boundary
+## Global System Assistant — current deployed boundary
 
 `SystemAssistantProvider` и единственный floating `SystemAssistant` монтируются
 в `src/app/(app)/layout.tsx` после Account guard. Public landing, Auth и
@@ -493,6 +495,20 @@ course-scoped subject consent и через sanitized server projection; teacher
 | Lesson preview UI                  | `src/components/course-builder/ai-lesson-plan-dialog.tsx`                                          |
 | System Assistant UI/context        | `src/components/assistant/`, `src/app/(app)/layout.tsx`, `src/app/styles/system-assistant.css`     |
 
+## Conversational System Assistant release acceptance
+
+Signed five-action conversational follow-up входит в exact functional release
+`246cf49d2cd07bc7109b83acec46296be874312c`. Финальный gate прошёл 435/435
+unit/contract tests, production build, 21/21 production-mode browser smoke,
+format и diff checks. Coolify webhook deployment `d5ov515oscti9n6c7x8fb3qf`
+завершился со статусом `Success` за 4 мин 16 с; running container подтвердил тот
+же `SOURCE_COMMIT` и image tag, image ID
+`sha256:21c7ab8c437d60a631e6fb68b474ec886f0c5fcf1dca1942207b5c85bab852ae`,
+restart count `0`, state `running`. Production `/login` и `/robots.txt` отвечают
+`200`, оба global assistant POST без Account session — `401`. Authenticated
+production action не применялся: запись Course/Lesson остаётся только за явным
+подтверждением владельца в обычной UI-сессии.
+
 ## Base Global System Assistant release acceptance
 
 Global System Assistant входит в functional release
@@ -507,8 +523,8 @@ restart count `0`. Production `/login`/`robots.txt` отвечают `200`, gues
 session возвращают `401`. Реальный RouterAI no-write smoke с synthetic current
 Course вернул уточнение title, затем proposal без Course Builder write;
 authenticated production Apply не выполнялся и не считается пройденным.
-Этот acceptance подтверждает base release с Course draft/пустой Lesson, но не
-rollout current signed five-action conversational follow-up.
+Этот historical acceptance подтверждает base release с Course draft/пустой
+Lesson; expanded signed follow-up подтверждён отдельным acceptance выше.
 
 Release `0276aed` подтвердил production routes/UI, server-only RouterAI
 boundary и наличие runtime secret без раскрытия его значения. Runtime закреплён

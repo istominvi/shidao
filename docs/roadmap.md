@@ -86,17 +86,17 @@
   preview → explicit apply и read-only ephemeral assistant; production runtime
   получает API key из server-side secret environment и использует проверенный
   default `google/gemini-2.5-flash-lite`.
-- **Base deployed follow-up:** один global System Assistant смонтирован в
+- **Current deployed follow-up:** один global System Assistant смонтирован в
   protected `(app)` layout вместо Course/Lesson header dialog. Он получает
   allowlisted page context, читает bounded authorized проекции Account и
   открытой страницы. Exact functional SHA `b7c6cfe` развёрнут в Coolify с двумя
-  подтверждаемыми командами: Course draft и пустая Lesson. Текущий
-  conversational follow-up добавляет новую наполненную Lesson, дополнение
+  базовыми подтверждаемыми командами: Course draft и пустая Lesson.
+  Conversational follow-up `246cf49` добавляет новую наполненную Lesson, дополнение
   открытой Lesson и удаление exact Lesson через canonical services, signed
   proposal и one-active confirmation state machine. Код и tests не меняют
-  schema; exact follow-up deployment фиксируется после rollout. Base
-  HTTP/guest/API boundary postflight и RouterAI no-write smoke зелёные;
-  authenticated production action postflight ещё не выполнен.
+  schema; exact SHA развёрнут Coolify и прошёл running-image/HTTP/guest boundary
+  postflight. Base RouterAI no-write smoke зелёный; authenticated production
+  action postflight ещё не выполнен.
 - Browser-smoke переведён на актуальную AES-GCM app-session; строгий
   production-mode gate покрывает guest/auth redirects, Course → Lesson →
   backlink, computed visual contract и mobile overflow без обращения к
@@ -335,8 +335,8 @@ course.add_lesson_with_plan | lesson.fill | lesson.delete`; chat ничего н
   durable action ledger/distributed exactly-once; delete stale compare и RPC
   остаются неатомарными без отдельной migration;
 - новая DB migration и provider/quota persistence в этот follow-up не входят;
-  deployment exact functional SHA и authenticated production action postflight
-  фиксируются после rollout этого follow-up.
+  exact functional SHA `246cf49` развёрнут; authenticated production action
+  postflight остаётся отдельным следующим operational шагом.
 
 **Next — operational hardening:**
 

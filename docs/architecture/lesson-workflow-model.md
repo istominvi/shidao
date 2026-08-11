@@ -17,15 +17,15 @@ cross-provider AI. Phased M1–M6 migrations, exact Coolify deploy и postflight
 завершены. Homework, learner Course consumption и live Student Screen sync
 остаются later.
 
-Current implementation follow-up добавляет global System Assistant в
+Current deployed follow-up добавляет global System Assistant в
 protected `(app)` layout. Он не меняет Lesson hierarchy или schema: по
 allowlisted page context читает bounded authorized проекции, а после отдельного
 explicit Apply может создать Course draft, пустую или наполненную Lesson,
 дополнить существующую Lesson либо удалить exact Lesson. Наполнение
 переиспользует canonical Lesson plan/preview/apply и не создаёт Step или второй
 Component order; удаление вызывает тот же history-preserving `deleteLesson`.
-Base release `b7c6cfe` развёрнут, exact conversational follow-up deployment
-фиксируется после rollout.
+Base release `b7c6cfe` и exact conversational follow-up `246cf49` развёрнуты;
+новая Lesson/Component schema для этого не потребовалась.
 
 ## Product decision
 
@@ -742,9 +742,9 @@ Schedule week/month follow-up не расширяет этот AI boundary: assi
 читает один разрешённый день. Видимое календарное окно нельзя описывать модели
 как полностью загруженный week/month context без отдельного contract change.
 
-Current signed conversational follow-up, rollout которого фиксируется отдельно,
-возвращает ответ или максимум одно strict proposal. Provider ничего не
-записывает. Action card и отдельный explicit Apply разрешают
+Current deployed signed conversational follow-up возвращает ответ или максимум
+одно strict proposal. Provider ничего не записывает. Action card и отдельный
+explicit Apply разрешают
 `course.create_draft`, пустой `course.add_lesson`, наполненный
 `course.add_lesson_with_plan`, `lesson.fill` и `lesson.delete`. Это не open-ended
 tool calling: произвольный update, Auth/security, audience, Students/Groups,
@@ -765,8 +765,8 @@ durable action ledger, distributed exactly-once и сериализация conc
 Lesson append остаются next hardening. Proposal HMAC действует 10 минут, но не
 заменяет durable ledger; delete fingerprint compare и RPC имеют известное
 неатомарное TOCTOU окно. Новая schema/migration в System Assistant slice
-отсутствует. Exact conversational follow-up deployment фиксируется после
-rollout.
+отсутствует. Exact conversational follow-up `246cf49` развёрнут и прошёл
+running-image/HTTP/guest postflight.
 
 Lesson planning, compatibility course-scoped Assistant и global Course context
 получают выбранные direct learners, teacher-local

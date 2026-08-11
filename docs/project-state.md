@@ -4,8 +4,8 @@
 **Актуально на:** 11 августа 2026 года
 **Активная ветка:** `main`
 **Рабочее приложение:** `https://v2.shidao.ru`
-**Текущий функциональный application release:** `b7c6cfe`
-**Последний полный automated/browser gate:** `b7c6cfe`
+**Текущий функциональный application release:** `246cf49`
+**Последний полный automated/browser gate:** `246cf49`
 
 **Current production Course catalog slice:** реализует reusable Course catalog,
 immutable publication revisions, независимое копирование Course и private
@@ -105,8 +105,14 @@ Components и до Apply ничего не записывают. Delete пока
 подписана на actor, idempotency key и exact action на 10 минут. Точное «да» или
 кнопка применяют только последнюю карточку без нового model turn; «нет», новый
 запрос или смена Course/Lesson отменяют pending proposal. Срез не добавляет
-migration или физическую schema; production rollout и authenticated action
-postflight должны быть зафиксированы после deployment exact SHA.
+migration или физическую schema. Exact release
+`246cf49d2cd07bc7109b83acec46296be874312c` развёрнут Coolify deployment
+`d5ov515oscti9n6c7x8fb3qf` со статусом `Success` за 4 мин 16 с; running
+`SOURCE_COMMIT` и image tag совпадают с exact SHA, image ID
+`sha256:21c7ab8c437d60a631e6fb68b474ec886f0c5fcf1dca1942207b5c85bab852ae`,
+restart count `0`, state `running`. `/login` и `/robots.txt` отвечают `200`, оба
+global assistant POST без Account session — `401`. Authenticated production
+action postflight намеренно не выполнялся.
 
 **Previous deployed data baseline:** поверх group/audience baseline были введены canonical
 `LearnerProfile`, teacher-local relation `teacher_learner` и явный provenance
@@ -599,7 +605,7 @@ application service/contracts внутри authenticated web request.
   server log event. Persistent quota/ledger, billing, balance и AI change sets
   отсутствуют; process-local rate limit не является пользовательской квотой.
 
-#### System Assistant — current implementation boundary
+#### System Assistant — current deployed boundary
 
 - `SystemAssistantProvider` и один floating `SystemAssistant` монтируются в
   protected `src/app/(app)/layout.tsx`, а не в public landing/Auth/demo и не в
@@ -659,12 +665,12 @@ application service/contracts внутри authenticated web request.
   известный ordering debt.
 - Контракты/service/routes/UI и contract tests находятся в
   `src/modules/ai/system-assistant-*`, `src/app/api/v2/assistant/` и
-  `src/components/assistant/`. Base global widget release `b7c6cfe` развёрнут;
-  conversational action follow-up пока существует в текущем change set и
-  фиксируется отдельным exact SHA после rollout. Для base release RouterAI
-  no-write smoke с synthetic current Course пройден, authenticated production
-  Apply остаётся отдельным непройденным postflight и не подразумевается из HTTP
-  availability.
+  `src/components/assistant/`. Base global widget release `b7c6cfe` и signed
+  conversational action follow-up `246cf49` развёрнуты. Для base release
+  RouterAI no-write smoke с synthetic current Course пройден; для follow-up
+  подтверждены exact running SHA/image и HTTP/guest boundary. Authenticated
+  production Apply остаётся отдельным непройденным postflight и не
+  подразумевается из HTTP availability.
 
 Base RouterAI routes/UI, server-only secret boundary и provider postflight
 no-write flows развёрнуты и проверены в production. Release acceptance описан в
@@ -966,15 +972,16 @@ items. Длинные `IN` hydration-запросы разбиваются на 
 `/api/v2/courses/[courseId]/`. Planning/chat routes вызывают provider; apply
 routes только валидируют preview и выполняют существующие application commands.
 
-Base deployed System Assistant добавляет authenticated
+Deployed System Assistant добавляет authenticated
 `POST /api/v2/assistant` и `POST /api/v2/assistant/actions/apply`. Они не
 заменяют Course/Lesson planning routes. В release `b7c6cfe` первый route отвечал
 или возвращал подтверждаемое создание Course draft/пустой Lesson, а второй после
 explicit Apply вызывал обычный Course Builder service. Текущий conversational
 follow-up расширяет strict allowlist наполненной новой Lesson, дополнением
 открытой Lesson и удалением exact Lesson, сохраняя тот же preview/confirmation/
-canonical-service boundary. Exact follow-up deployment фиксируется после
-rollout; authenticated production action postflight пока не выполнен.
+canonical-service boundary. Follow-up `246cf49` развёрнут и прошёл
+running-image/HTTP/guest postflight; authenticated production action postflight
+пока не выполнен.
 
 Дополнительные project surfaces:
 
