@@ -91,14 +91,18 @@ Authenticated production browser postflight этого slice пока не вы�
 управления `/students` и обеих вкладок `/courses` больше не создают отдельную
 toolbar-card: компактные 40 px controls расположены прямо на page background в
 том же визуальном контракте, что Schedule. На Students состояния «Активные /
-Архив / Ожидают ответа» объединены в один segmented control; поиск, group
-filter и сортировка сохраняют прежнюю client projection. Во вкладке Course
+Архив / Ожидают ответа» больше не переключают отдельные проекции: активные
+профили, архивные relations и исходящие pending-запросы находятся в одной
+таблице с inline-чипами и contextual actions. Поиск, group filter и сортировка
+остаются на месте и применяются к единому списку. Во вкладке Course
 **Мои** предмет, уровень и наполнение собраны в disclosure «Фильтры»,
 сортировка остаётся отдельным native select, а «Карточки / Таблица» выбираются
-двумя icon-only кнопками. Published **Каталог** использует тот же компактный
-поиск и disclosure только для реально поддержанных server-side предмета и
-уровня: фиктивные content/sort/view controls не добавлены. Это UI-only change
-без schema, migration или нового Course API.
+двумя icon-only кнопками; видимый result count удалён. Published **Каталог**
+использует тот же компактный поиск, disclosure только для реально поддержанных
+server-side предмета/уровня и такой же icon-only выбор «Карточки / Таблица».
+Повторный заголовок, поясняющий текст и видимый count удалены; фиктивные
+content/sort controls не добавлены. Это UI-only change без schema, migration
+или нового Course API.
 
 **Current System Assistant conversational action slice:** реализован один
 глобальный floating widget «ИИ» внутри protected `(app)` layout. Он доступен на
@@ -307,13 +311,16 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
   динамические фильтры по предмету/уровню/наполнению, сортировку и
   режимы «Карточки / Таблица». В current source эти controls собраны в одну
   компактную строку прямо на page background: три категориальных поля находятся
-  в disclosure «Фильтры», а view выбирается icon-only segmented control.
+  в disclosure «Фильтры», view выбирается icon-only segmented control, а
+  видимый счётчик результатов не занимает место между ними.
   Приватные пожелания преподавателя в поиск не входят.
 - **Каталог** имеет server-side search/filter, карточку курса с
   целью, аудиторией, Lesson outline, автором и списком материалов.
   Current source показывает search и реальные subject/level facets без внешней
-  toolbar-card; content filter, произвольная сортировка и table view здесь не
-  заявляются, потому что их нет в paginated catalog API/RPC.
+  toolbar-card, повторного заголовка/пояснения и видимого count. Presentation
+  переключается между карточками и таблицей для уже загруженной cursor-
+  последовательности; content filter и произвольная сортировка не заявляются,
+  потому что их нет в paginated catalog API/RPC.
   «Добавить в мои курсы» создаёт новый independent owner Course и
   не запускает AI/адаптацию автоматически.
 - Рабочий Course можно дублировать, опубликовать, обновить в
@@ -404,22 +411,28 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
 - Current production `/schedule` показывает реальные LessonRun выбранной
   локальной недели или календарного месяца. Это проекция тех же проведений, а
   не отдельная таблица Schedule events.
-- Action «Назначить урок в курсе» находится в общей page-header action-секции;
-  прозрачная панель периода/вида находится ниже заголовка прямо на фоне
+- В current source краткий Action «Назначить урок» с иконкой добавления в
+  календарь находится в общей page-header action-секции, а подзаголовок прямо
+  объясняет, что здесь находятся все назначенные уроки за выбранный период.
+  Прозрачная панель периода/вида находится ниже заголовка прямо на фоне
   страницы. «Неделя / Месяц» меняет фактическое API-окно, а соседний control —
-  таблицу или карточки. System Assistant намеренно продолжает получать только
-  опорную локальную дату, а не всё видимое окно.
+  таблицу или карточки. Непустой результат начинается сразу с выбранного вида,
+  без повторного «Выбранная неделя / Занятия» и count-chip. System Assistant
+  намеренно продолжает получать только опорную локальную дату, а не всё видимое
+  окно.
 - `/students` показывает единый teacher-scoped projection
   `TeacherLearner + LearnerProfile` во вкладках «Ученики / Группы» и
   независимую learner-safe вкладку «Наблюдение». Canonical observer URL —
   `/students?tab=observing`; прежний `/observing` остаётся protected
   compatibility redirect. Таблица
-  учеников поддерживает поиск, фильтр по группе и сортировку; в current source
-  «Активные / Архив / Ожидают ответа» являются одним `aria-pressed` segmented
-  control, а вся compact toolbar расположена прямо на page background. В строке
-  видны до двух групп и счётчик «ещё N». Отдельная вкладка групп показывает
-  только reusable groups и их состав и использует такой же компактный
-  search/sort row.
+  учеников поддерживает поиск, фильтр по группе и сортировку; active profiles,
+  archived relations и исходящие pending connection requests находятся в
+  одной таблице, поэтому controls не исчезают и не сбрасываются из-за смены
+  статуса. Архив и ожидание ответа отмечены чипами прямо в строке; там же
+  доступны restore/permanent-delete или cancel. В active-строке видны до двух
+  групп и счётчик «ещё N». Вся compact toolbar расположена прямо на page
+  background. Отдельная вкладка групп показывает только reusable groups и их
+  состав и использует такой же компактный search/sort row.
 - Клик по строке ученика открывает dialog «Профиль / История»: здесь можно
   изменить локальное имя и membership в нескольких группах, а история
   ограничена LearningRecord текущего преподавателя. Ученика можно создать,
@@ -428,12 +441,12 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
 - Header action на `/students` следует выбранной вкладке: «Новый ученик» или
   «Новая группа»; поиск, фильтры и сортировка остаются в directory toolbar.
 - Product delete ученика архивирует только `teacher_learner` текущего Account:
-  relation исчезает из активного справочника, групп и будущих Course audiences,
-  а canonical LearnerProfile, его LearningRecord и состав уже назначенного Run
-  сохраняются. Archive filter показывает relation отдельно; restore возвращает
-  только relation и не восстанавливает прежние Group/Course links. Permanent
-  delete разрешён только для пустого unclaimed profile. Удаление группы не
-  удаляет учеников или историю.
+  relation остаётся в общей таблице с чипом «В архиве», но исчезает из групп и
+  будущих Course audiences; canonical LearnerProfile, его LearningRecord и
+  состав уже назначенного Run сохраняются. Restore выполняется из этой строки,
+  возвращает только relation и не восстанавливает прежние Group/Course links.
+  Permanent delete разрешён только для пустого unclaimed profile. Удаление
+  группы не удаляет учеников или историю.
 - Course header независимо прикрепляет группы и отдельных учеников; overlap
   учитывается один раз, а header показывает число уникальных effective learners.
 - Legacy `student`, `class`, `class_student` не читаются active Course/identity
@@ -947,7 +960,7 @@ positions, а плотность поддерживают текущие service
 | Component editors/renderers          | `src/components/course-builder/component-payload-editor.tsx`, `component-renderers.tsx`                                                                                                                                                                                           |
 | Fullscreen preview                   | `src/components/course-builder/student-screen-preview.tsx`                                                                                                                                                                                                                        |
 | Account Schedule                     | `src/app/(app)/(teacher-required)/schedule/`, `src/components/teaching-hub/schedule-workspace.tsx`, `src/components/teaching-hub/schedule-period.ts`                                                                                                                              |
-| Account Students                     | `src/app/(app)/(teacher-required)/students/`, `src/components/teaching-hub/students-workspace.tsx`, `src/components/ui/segmented-control.tsx`                                                                                                                                     |
+| Account Students                     | `src/app/(app)/(teacher-required)/students/`, `src/components/teaching-hub/students-workspace.tsx`, `src/components/teaching-hub/student-directory-table.tsx`                                                                                                                     |
 | Legacy-named Account route boundary  | `src/app/(app)/(teacher-required)/layout.tsx`, `src/lib/server/access-guards.ts`                                                                                                                                                                                                  |
 | V2 API routes                        | `src/app/api/v2/`                                                                                                                                                                                                                                                                 |
 | Standalone historical demo           | `src/app/demo/`, `public/og-demo-v2.png`                                                                                                                                                                                                                                          |
@@ -1119,15 +1132,15 @@ overflow. Coolify webhook deployment exact functional SHA `587bb21` заверш
 Success за 2 минуты 33 секунды, running reference совпадает; authenticated
 production browser postflight остаётся отдельным незавершённым gate.
 
-Для current source Students/Courses controls slice локально подтверждены
+Для current source Students/Courses controls и Schedule cleanup slice локально подтверждены
 typecheck, lint, format check, `git diff --check`, `439/439` unit/e2e tests и
 `22/22` strict production-mode browser scenarios. Browser gate проверил
-прозрачные Students/Courses toolbars, 40/32 px segmented geometry,
-active/archive round-trip, Course disclosure/native filters, reset, Escape с
-возвратом focus, icon-only cards/table и mobile 375 px без document-level
-overflow. Из-за параллельных локальных Next.js процессов gate запускался в
-изолированной временной копии того же source snapshot. Schema/migration не
-менялись; deployment этого source slice ещё не выполнялся.
+новую Schedule microcopy, calendar-plus Action и прямой переход от controls к
+непустой таблице/карточкам без summary-strip; прозрачные Students/Courses
+toolbars, единый Students list с inline status, Course disclosure/native
+filters, reset, Escape с возвратом focus, icon-only cards/table и mobile 375 px
+без document-level overflow. Schema/migration не менялись; deployment этого
+source slice ещё не выполнялся.
 
 Для current Course publication/catalog source slice локально подтверждены
 `381/381` unit tests, `19/19` строгих production-mode browser scenarios,

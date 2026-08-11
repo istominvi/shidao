@@ -278,8 +278,6 @@ export function ScheduleWorkspace() {
     visibleRuns.find((run) => run.id === selectedRunId) ?? null;
   const selectedPeriodLabel =
     period === "week" ? "выбранную неделю" : "выбранный месяц";
-  const periodEyebrow =
-    period === "week" ? "Выбранная неделя" : "Выбранный месяц";
 
   return (
     <div className="teaching-hub-stack">
@@ -432,7 +430,6 @@ export function ScheduleWorkspace() {
             <CalendarDays className="h-6 w-6" aria-hidden="true" />
           </div>
           <div>
-            <p className="teaching-empty-eyebrow">{periodEyebrow}</p>
             <h2>Занятий нет</h2>
             <p>
               Откройте курс и нажмите «Назначить» рядом с нужным уроком. Он
@@ -445,18 +442,8 @@ export function ScheduleWorkspace() {
       {runs && visibleRuns.length > 0 ? (
         <section
           className="teaching-hub-section"
-          aria-labelledby="schedule-runs-title"
+          aria-label={`Назначенные уроки за ${selectedPeriodLabel}`}
         >
-          <div className="teaching-section-heading">
-            <div>
-              <p className="teaching-section-eyebrow">{periodEyebrow}</p>
-              <h2 id="schedule-runs-title">Занятия</h2>
-            </div>
-            <Chip icon={CalendarDays} tone="slate">
-              {visibleRuns.length}
-            </Chip>
-          </div>
-
           {viewMode === "table" ? (
             <div className="teaching-run-table-wrap">
               <ProductTable className="teaching-run-table">

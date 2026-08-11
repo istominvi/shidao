@@ -33,7 +33,10 @@ test("courses index exposes My and Catalog tabs with shareable catalog URLs", ()
 test("catalog shows published lessons and safe material links before copying", () => {
   const catalog = source(catalogPath);
 
-  assert.match(catalog, />Готовые курсы</);
+  assert.match(catalog, />\s*Каталог курсов\s*</);
+  assert.doesNotMatch(catalog, />Готовые курсы</);
+  assert.doesNotMatch(catalog, />Каталог<\/p>/);
+  assert.doesNotMatch(catalog, /Добавьте курс себе и измените уроки/);
   assert.match(catalog, /new URLSearchParams\(\{ limit: "50" \}\)/);
   assert.match(catalog, /params\.set\("q", normalizedQuery\)/);
   assert.match(catalog, /params\.set\("subject", subject\)/);

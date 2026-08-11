@@ -6,9 +6,11 @@ import {
   ArrowRight,
   BookOpen,
   FileText,
+  LayoutGrid,
   LoaderCircle,
   RotateCcw,
   Search,
+  Table2,
   UserRound,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -19,6 +21,20 @@ import { CourseFilterMenu } from "@/components/course-builder/course-filter-menu
 import { Button, productButtonClassName } from "@/components/ui/button";
 import { Chip } from "@/components/ui/chip";
 import { Input } from "@/components/ui/input";
+import {
+  ProductTable,
+  ProductTableActionCell,
+  ProductTableBody,
+  ProductTableCell,
+  ProductTableHead,
+  ProductTableHeaderCell,
+  ProductTableHeaderRow,
+  ProductTablePrimaryCell,
+  ProductTableRow,
+  ProductTableTruncate,
+  productTableActionLinkClassName,
+} from "@/components/ui/product-table";
+import { SegmentedControl } from "@/components/ui/segmented-control";
 import { SurfaceCard } from "@/components/ui/surface-card";
 import { toCourseRoute } from "@/lib/auth";
 import type {
@@ -42,6 +58,8 @@ type CatalogPage = {
   facets: { subjects: string[]; levels: string[] };
   nextCursor: string | null;
 };
+
+type CourseCatalogView = "grid" | "table";
 
 function catalogRequestPath({
   query,
@@ -108,6 +126,97 @@ function CatalogCourseCard({
         </Button>
       </div>
     </SurfaceCard>
+  );
+}
+
+function CatalogCourseTable({
+  courses,
+  onOpen,
+}: {
+  courses: CourseCatalogEntry[];
+  onOpen: (courseId: string) => void;
+}) {
+  return (
+    <div
+      className="overflow-x-auto rounded-[1.25rem] border border-white/80 bg-white/80 shadow-[0_10px_24px_rgba(20,20,20,0.06)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/50"
+      role="region"
+      aria-label="Таблица курсов каталога"
+      tabIndex={0}
+    >
+      <ProductTable className="min-w-[48rem]">
+        <caption className="sr-only">
+          Курсы каталога: предмет, уровень, автор и наполнение
+        </caption>
+        <ProductTableHead>
+          <ProductTableHeaderRow>
+            <ProductTableHeaderCell className="w-[34%]">
+              Курс
+            </ProductTableHeaderCell>
+            <ProductTableHeaderCell className="w-[24%]">
+              Предмет и уровень
+            </ProductTableHeaderCell>
+            <ProductTableHeaderCell className="w-[18%]">
+              Автор
+            </ProductTableHeaderCell>
+            <ProductTableHeaderCell className="w-[14%]">
+              Наполнение
+            </ProductTableHeaderCell>
+            <ProductTableHeaderCell className="w-[10%]">
+              <span className="sr-only">Действия</span>
+            </ProductTableHeaderCell>
+          </ProductTableHeaderRow>
+        </ProductTableHead>
+        <ProductTableBody>
+          {courses.map((course) => (
+            <ProductTableRow key={course.id} className="h-16">
+              <ProductTablePrimaryCell>
+                <button
+                  type="button"
+                  className="block w-full rounded-sm text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/50"
+                  onClick={() => onOpen(course.id)}
+                >
+                  <ProductTableTruncate>{course.title}</ProductTableTruncate>
+                  <ProductTableTruncate className="mt-1 text-xs font-normal text-neutral-500">
+                    {course.goal}
+                  </ProductTableTruncate>
+                </button>
+              </ProductTablePrimaryCell>
+              <ProductTableCell>
+                <ProductTableTruncate>{course.subject}</ProductTableTruncate>
+                <ProductTableTruncate className="mt-1 text-xs text-neutral-500">
+                  {course.level}
+                </ProductTableTruncate>
+              </ProductTableCell>
+              <ProductTableCell>
+                <ProductTableTruncate>
+                  {course.author.isShiDao
+                    ? "ShiDao"
+                    : course.author.displayName}
+                </ProductTableTruncate>
+              </ProductTableCell>
+              <ProductTableCell>
+                <span className="block font-medium text-neutral-900">
+                  Уроки: {course.lessonCount}
+                </span>
+                <span className="mt-1 block text-xs text-neutral-500">
+                  Материалы: {course.materialCount}
+                </span>
+              </ProductTableCell>
+              <ProductTableActionCell className="text-right">
+                <button
+                  type="button"
+                  className={productTableActionLinkClassName()}
+                  aria-label={`Открыть курс «${course.title}»`}
+                  onClick={() => onOpen(course.id)}
+                >
+                  Открыть
+                </button>
+              </ProductTableActionCell>
+            </ProductTableRow>
+          ))}
+        </ProductTableBody>
+      </ProductTable>
+    </div>
   );
 }
 
@@ -342,6 +451,7 @@ export function CourseCatalogPanel({
   const [subjects, setSubjects] = useState<string[]>([]);
   const [levels, setLevels] = useState<string[]>([]);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [view, setView] = useState<CourseCatalogView>("grid");
   const [loadingCatalog, setLoadingCatalog] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const requestContextRef = useRef("");
@@ -485,16 +595,12 @@ export function CourseCatalogPanel({
 
   return (
     <section aria-labelledby="ready-courses-heading">
-      <div className="course-catalog-heading">
-        <div>
-          <p className="workspace-eyebrow">Каталог</p>
-          <h2 id="ready-courses-heading">Готовые курсы</h2>
-          <p>Добавьте курс себе и измените уроки так, как вам нужно.</p>
-        </div>
-      </div>
+      <h2 id="ready-courses-heading" className="sr-only">
+        Каталог курсов
+      </h2>
 
       <div
-        className="compact-page-toolbar course-catalog-toolbar mt-4"
+        className="compact-page-toolbar course-catalog-toolbar"
         aria-label="Управление каталогом курсов"
         aria-busy={loadingCatalog}
       >
@@ -522,18 +628,6 @@ export function CourseCatalogPanel({
             label="Фильтры каталога курсов"
           />
 
-          <p
-            className="compact-toolbar-result"
-            role="status"
-            aria-live="polite"
-          >
-            {loadingCatalog
-              ? "Ищем курсы…"
-              : nextCursor
-                ? `Показано: ${courseCountLabel(courses.length)}`
-                : courseCountLabel(courses.length)}
-          </p>
-
           {hasFilters ? (
             <Button
               variant="ghost"
@@ -549,6 +643,33 @@ export function CourseCatalogPanel({
               <RotateCcw className="h-4 w-4" aria-hidden="true" />
             </Button>
           ) : null}
+
+          <SegmentedControl
+            ariaLabel="Вид каталога курсов"
+            value={view}
+            onChange={setView}
+            iconOnly
+            items={[
+              {
+                value: "grid",
+                label: "Карточки",
+                ariaLabel: "Показать карточками",
+                icon: LayoutGrid,
+              },
+              {
+                value: "table",
+                label: "Таблица",
+                ariaLabel: "Показать таблицей",
+                icon: Table2,
+              },
+            ]}
+          />
+
+          <p className="sr-only" role="status" aria-live="polite">
+            {loadingCatalog
+              ? "Обновляем каталог курсов."
+              : "Список курсов каталога обновлён."}
+          </p>
         </div>
       </div>
 
@@ -587,7 +708,7 @@ export function CourseCatalogPanel({
             </Button>
           ) : null}
         </SurfaceCard>
-      ) : (
+      ) : view === "grid" ? (
         <>
           <div className="mt-4 grid gap-4 md:grid-cols-2">
             {courses.map((course) => (
@@ -597,6 +718,31 @@ export function CourseCatalogPanel({
                 onOpen={() => onSelectCourse(course.id)}
               />
             ))}
+          </div>
+          {error ? (
+            <p className="app-alert app-alert-error mt-4" role="alert">
+              {error}
+            </p>
+          ) : null}
+          {nextCursor ? (
+            <div className="mt-4 flex justify-center">
+              <Button
+                variant="secondary"
+                disabled={loadingMore}
+                onClick={() => void loadMoreCourses()}
+              >
+                {loadingMore ? "Загружаем…" : "Показать ещё"}
+              </Button>
+            </div>
+          ) : null}
+        </>
+      ) : (
+        <>
+          <div className="mt-4">
+            <CatalogCourseTable
+              courses={courses}
+              onOpen={(courseId) => onSelectCourse(courseId)}
+            />
           </div>
           {error ? (
             <p className="app-alert app-alert-error mt-4" role="alert">

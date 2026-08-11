@@ -6,7 +6,13 @@
 .teaching-hub-stack,
 .teaching-hub-section {
   display: grid;
+  min-width: 0;
+  grid-template-columns: minmax(0, 1fr);
   gap: 1rem;
+}
+
+.teaching-hub-stack > * {
+  min-width: 0;
 }
 
 .teaching-hub-toolbar {
@@ -259,20 +265,9 @@
   background: rgba(201, 180, 255, 0.34);
 }
 
-.teaching-empty-eyebrow,
-.teaching-section-eyebrow {
-  margin: 0;
-  color: #727680;
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-}
-
 .teaching-schedule-empty h2,
-.teaching-students-empty h2,
-.teaching-section-heading h2 {
-  margin: 0.25rem 0 0;
+.teaching-students-empty h2 {
+  margin: 0;
   color: #141414;
   letter-spacing: -0.03em;
 }
@@ -290,20 +285,6 @@
   color: var(--teaching-muted);
   font-size: 0.85rem;
   line-height: 1.6;
-}
-
-.teaching-section-heading {
-  display: flex;
-  min-width: 0;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  padding-inline: 0.2rem;
-}
-
-.teaching-section-heading h2 {
-  font-size: 1.2rem;
-  font-weight: 650;
 }
 
 .teaching-course-grid,
@@ -1013,8 +994,7 @@
   flex-wrap: nowrap;
 }
 
-.student-directory-controls > *,
-.student-directory-status-switch {
+.student-directory-controls > * {
   flex: 0 0 auto;
 }
 
@@ -1043,6 +1023,10 @@
 }
 
 .student-directory-table-wrap {
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   overflow-x: auto;
   border: 1px solid rgba(255, 255, 255, 0.82);
   border-radius: 1.25rem;
@@ -1053,6 +1037,14 @@
 .student-directory-table {
   width: 100%;
   min-width: 0;
+}
+
+.student-directory-learners-table {
+  min-width: 44rem;
+}
+
+.student-directory-actions-column {
+  width: 7rem;
 }
 
 .student-directory-table th {
@@ -1144,6 +1136,12 @@
   height: 2rem;
   padding-inline: 0.45rem;
   font-size: 0.7rem;
+}
+
+.student-directory-icon-action.product-btn {
+  width: 2rem;
+  min-width: 2rem;
+  padding: 0;
 }
 
 .student-directory-picker {
@@ -1412,11 +1410,6 @@
   .teaching-students-empty {
     grid-template-columns: 1fr;
     min-height: 0;
-  }
-
-  .teaching-section-heading {
-    align-items: flex-start;
-    flex-direction: column;
   }
 
   .lesson-run-record-list li,

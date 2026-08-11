@@ -221,14 +221,17 @@ physical merge не обещается.
 ## Teacher directory lifecycle
 
 `/students` показывает `TeacherLearner + LearnerProfile` во вкладках
-«Ученики / Группы» с active/archive filter и отдельную learner-safe вкладку
-«Наблюдение» по active observer grants.
+«Ученики / Группы» и отдельную learner-safe вкладку «Наблюдение» по active
+observer grants. Active и archived relations, а также исходящие pending
+connection requests находятся в одном teacher directory list: состояние
+показывается inline, а поиск/group filter/sort не переключаются и не
+сбрасываются статусом.
 
 - «Убрать из списка» архивирует только relation данного Account и удаляет его
   mutable Group/Course links; canonical profile, finalized history и roster
   уже открытого Run сохраняются.
 - Restore активирует только relation. Старые Group/Course memberships скрыто
-  не возвращаются.
+  не возвращаются; действие доступно в архивной строке общего списка.
 - Archive/restore одного teacher не меняет relation другого.
 - Permanent delete разрешён только для действительно пустого unclaimed
   profile без records, Account link, invitations, grants или других teacher

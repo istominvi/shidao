@@ -541,12 +541,17 @@ ShiDao V2 application:
   `/courses`, Course и Lesson; contextual actions находятся в header, а
   date/period/view controls — ниже него прямо на page background без внешней
   toolbar-card; для Schedule проверить «Неделя / Месяц», шаг стрелок,
-  date picker и оба вида «Таблица / Карточки»;
+  date picker и оба вида «Таблица / Карточки». Header должен показывать точный
+  подзаголовок «Здесь все назначенные уроки за выбранный период.» и Action
+  «Назначить урок» с calendar-plus icon; при непустом результате сразу после
+  controls идёт таблица или карточки без summary «Выбранная неделя / Занятия»
+  и count-chip;
 - вкладки «Ученики / Группы / Наблюдение» сохраняют общий black 1 px baseline и square
   active-segment; directory toolbar остаётся прозрачной и без outer card,
-  «Активные / Архив / Ожидают ответа» работают как один compact segmented
-  control, а поиск, group filter, sorting, reset, keyboard focus и dialogs
-  проверяются без возврата teacher-only route gate;
+  active/archive/pending находятся в одной таблице с inline-чипами и
+  contextual restore/cancel actions, а поиск, group filter, sorting и reset
+  остаются одновременно видимыми и сохраняют значения после mutation/reload;
+  keyboard focus и dialogs проверяются без возврата teacher-only route gate;
 - `/observing` перенаправляет на `/students?tab=observing`, reload сохраняет
   выбранную вкладку, а main navigation подсвечивает «Ученики»;
 - `/courses` проверяется в режимах «Карточки / Таблица»: controls лежат прямо
@@ -554,13 +559,15 @@ ShiDao V2 application:
   меняют только client projection owner-scoped списка, icon-only view control
   имеет доступные имена, reset возвращает все курсы, filtered-empty не
   подменяется пустым persisted каталогом. Во вкладке published «Каталог» отдельно
-  проверяются только реальные server-side search/subject/level и cursor;
+  проверяются только реальные server-side search/subject/level и cursor, такой
+  же icon-only cards/table presentation, отсутствие повторного заголовка,
+  пояснения и видимого result count; client-only sort/content не добавляются;
 - existing email и learner login/PIN создают одну Account session и не выводят
   internal Auth email/browser secret;
-- внутри directory-вкладок `/students` переключает active/archive и «Ученики /
-  Группы»; соседняя вкладка «Наблюдение» остаётся независимой learner-safe
-  projection. Archive/restore одного teacher не меняет relation другого и не
-  возвращает старые memberships;
+- внутри directory-вкладок `/students` не скрывает archived/pending за
+  отдельным переключателем; соседняя вкладка «Наблюдение» остаётся независимой
+  learner-safe projection. Archive/restore одного teacher не меняет relation
+  другого и не возвращает старые memberships;
 - share code/QR создаёт только pending connection, recipient принимает сам;
 - blind email invitation даёт одинаковый response для existing/new address;
   tokenless acceptance page имеет no-store/no-referrer и не оставляет token в

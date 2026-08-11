@@ -2665,7 +2665,10 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
           descriptionFontSize: descriptionStyle.fontSize,
           descriptionLineHeight: descriptionStyle.lineHeight,
         },
+        headerDescription: description.textContent?.trim() ?? "",
         headerActions: headerActions.textContent?.trim() ?? "",
+        headerActionIconClass:
+          headerActions.querySelector("svg")?.getAttribute("class") ?? "",
         toolbarText: toolbar.textContent?.trim() ?? "",
         toolbarSurface: {
           backgroundColor: toolbarStyle.backgroundColor,
@@ -2700,8 +2703,13 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
     assert.ok(Math.abs(scheduleContract.headerLayout.height - 200) < 0.5);
     assert.ok(scheduleContract.headerLayout.actionCenterDelta < 0.5);
     assert.equal(scheduleContract.headerSignature.titleFontWeight, "400");
-    assert.match(scheduleContract.headerActions, /Назначить урок в курсе/);
-    assert.doesNotMatch(scheduleContract.toolbarText, /Назначить урок в курсе/);
+    assert.equal(
+      scheduleContract.headerDescription,
+      "Здесь все назначенные уроки за выбранный период.",
+    );
+    assert.equal(scheduleContract.headerActions, "Назначить урок");
+    assert.match(scheduleContract.headerActionIconClass, /calendar-plus/);
+    assert.doesNotMatch(scheduleContract.toolbarText, /Назначить урок/);
     assert.deepEqual(scheduleContract.toolbarSurface, {
       backgroundColor: "rgba(0, 0, 0, 0)",
       borderTopWidth: "0px",
@@ -2729,7 +2737,8 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
 
     let html = await runtime.page.content();
     assert.match(html, /Занятий нет/);
-    assert.match(html, /Назначить урок в курсе/);
+    assert.match(html, /Назначить урок/);
+    assert.doesNotMatch(html, /Назначить урок в курсе/);
     assert.doesNotMatch(html, /Миша Орлов|Food around the world/);
 
     resetE2eCompletionFlow();
@@ -2744,6 +2753,29 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       exact: true,
     });
     await scheduleTable.waitFor();
+    const scheduleResults = runtime.page.getByRole("region", {
+      name: "Назначенные уроки за выбранную неделю",
+      exact: true,
+    });
+    await scheduleResults.waitFor();
+    assert.equal(
+      await runtime.page
+        .locator(
+          'section[aria-label="Назначенные уроки за выбранную неделю"] > .teaching-section-heading',
+        )
+        .count(),
+      0,
+    );
+    assert.equal(
+      await runtime.page
+        .getByRole("heading", { name: "Занятия", exact: true })
+        .count(),
+      0,
+    );
+    assert.equal(
+      await runtime.page.getByText("Выбранная неделя", { exact: true }).count(),
+      0,
+    );
     assert.match(
       (await scheduleTable.textContent()) ?? "",
       /Present Perfect · жизненный опыт/,
@@ -2779,7 +2811,10 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       .getByRole("heading", { name: "Ученики", exact: true, level: 1 })
       .waitFor();
     await runtime.page
-      .getByRole("table", { name: "Ученики и их группы", exact: true })
+      .getByRole("table", {
+        name: "Ученики, их статусы и группы",
+        exact: true,
+      })
       .waitFor();
 
     html = await runtime.page.content();
@@ -2809,11 +2844,11 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       const toolbar = document.querySelector<HTMLElement>(
         ".student-directory-toolbar",
       );
-      const statusSwitch = toolbar?.querySelector<HTMLElement>(
-        '[role="group"][aria-label="Состояние списка учеников"]',
+      const groupFilter = toolbar?.querySelector<HTMLSelectElement>(
+        'select[aria-label="Фильтр по группе"]',
       );
-      const activeStatusButton = statusSwitch?.querySelector<HTMLElement>(
-        'button[aria-pressed="true"]',
+      const learnerSort = toolbar?.querySelector<HTMLSelectElement>(
+        'select[aria-label="Сортировка"]',
       );
 
       if (
@@ -2825,8 +2860,8 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         !tabsScroll ||
         !headerActions ||
         !toolbar ||
-        !statusSwitch ||
-        !activeStatusButton
+        !groupFilter ||
+        !learnerSort
       ) {
         throw new Error("Students visual contract is missing");
       }
@@ -2898,10 +2933,15 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
           boxShadow: toolbarStyle.boxShadow,
           paddingTop: toolbarStyle.paddingTop,
         },
-        statusGeometry: {
-          shellHeight: getComputedStyle(statusSwitch).height,
-          activeButtonHeight: getComputedStyle(activeStatusButton).height,
+        controlGeometry: {
+          groupFilterHeight: getComputedStyle(groupFilter).height,
+          sortHeight: getComputedStyle(learnerSort).height,
         },
+        hasStatusSwitch: Boolean(
+          toolbar.querySelector(
+            '[role="group"][aria-label="Состояние списка учеников"]',
+          ),
+        ),
       };
     });
 
@@ -2951,39 +2991,72 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       boxShadow: "none",
       paddingTop: "0px",
     });
-    assert.deepEqual(studentsVisual.statusGeometry, {
-      shellHeight: "40px",
-      activeButtonHeight: "32px",
+    assert.deepEqual(studentsVisual.controlGeometry, {
+      groupFilterHeight: "40px",
+      sortHeight: "40px",
     });
+    assert.equal(studentsVisual.hasStatusSwitch, false);
 
-    const activeLearnersButton = runtime.page.getByRole("button", {
-      name: /^Активные ·/,
-    });
-    const archivedLearnersButton = runtime.page.getByRole("button", {
-      name: /^Архив ·/,
-    });
-    assert.equal(
-      await activeLearnersButton.getAttribute("aria-pressed"),
-      "true",
-    );
-    assert.equal(
-      await archivedLearnersButton.getAttribute("aria-pressed"),
-      "false",
-    );
-    await archivedLearnersButton.click();
-    await runtime.page.getByText("Архивная Ольга", { exact: true }).waitFor();
-    assert.equal(
-      await archivedLearnersButton.getAttribute("aria-pressed"),
-      "true",
-    );
-    await activeLearnersButton.click();
-    await runtime.page
-      .getByRole("table", { name: "Ученики и их группы", exact: true })
+    const archivedRow = runtime.page.locator('tr:has-text("Архивная Ольга")');
+    const pendingRow = runtime.page.locator('tr:has-text("Новый по QR")');
+    await archivedRow.getByText("В архиве", { exact: true }).waitFor();
+    await archivedRow
+      .getByRole("button", {
+        name: "Восстановить ученика Архивная Ольга",
+        exact: true,
+      })
       .waitFor();
-    assert.equal(
-      await activeLearnersButton.getAttribute("aria-pressed"),
-      "true",
+    await pendingRow.getByText("Ожидает ответа", { exact: true }).waitFor();
+    await pendingRow
+      .getByRole("button", {
+        name: "Отменить запрос для Новый по QR",
+        exact: true,
+      })
+      .waitFor();
+    const studentActionGeometry = await runtime.page.evaluate(() => {
+      const wrapper = document.querySelector<HTMLElement>(
+        ".student-directory-table-wrap",
+      );
+      const table = document.querySelector<HTMLTableElement>(
+        ".student-directory-learners-table",
+      );
+      const archivedTableRow = Array.from(table?.rows ?? []).find((row) =>
+        row.textContent?.includes("Архивная Ольга"),
+      );
+      const groupCell = archivedTableRow?.cells[1];
+      const actionCell = archivedTableRow?.cells[2];
+      const buttons = Array.from(
+        actionCell?.querySelectorAll<HTMLButtonElement>("button") ?? [],
+      );
+      if (!wrapper || !table || !groupCell || !actionCell || !buttons.length) {
+        throw new Error("Students action-column geometry is missing");
+      }
+      const tableRect = table.getBoundingClientRect();
+      const groupRect = groupCell.getBoundingClientRect();
+      const actionRect = actionCell.getBoundingClientRect();
+      return {
+        actionWidth: actionRect.width,
+        columnsDoNotOverlap: groupRect.right <= actionRect.left + 0.5,
+        buttonsInsideActionCell: buttons.every((button) => {
+          const rect = button.getBoundingClientRect();
+          return rect.left >= actionRect.left && rect.right <= actionRect.right;
+        }),
+        tableContainedByWrapper: tableRect.width <= wrapper.scrollWidth + 0.5,
+      };
+    });
+    assert.ok(studentActionGeometry.actionWidth >= 100);
+    assert.equal(studentActionGeometry.columnsDoNotOverlap, true);
+    assert.equal(studentActionGeometry.buttonsInsideActionCell, true);
+    assert.equal(studentActionGeometry.tableContainedByWrapper, true);
+
+    const learnerSearch = runtime.page.locator(
+      'input[placeholder="Найти ученика"]',
     );
+    await learnerSearch.fill("Архивная");
+    await archivedRow.waitFor();
+    assert.equal(await runtime.page.getByLabel("Фильтр по группе").count(), 1);
+    assert.equal(await runtime.page.getByLabel("Сортировка").count(), 1);
+    await learnerSearch.fill("");
 
     await runtime.page
       .getByRole("button", {
@@ -3329,15 +3402,29 @@ test("browser smoke: QR creates only pending connection, archive restores, and o
       .click();
     await runtime.page.getByText("Новый по QR", { exact: true }).waitFor();
 
-    await runtime.page
-      .getByRole("button", { name: "Архив · 1", exact: true })
-      .click();
+    const learnerSearch = runtime.page.locator(
+      'input[placeholder="Найти ученика"]',
+    );
+    const learnerGroupFilter = runtime.page.getByLabel("Фильтр по группе");
+    const learnerSort = runtime.page.getByLabel("Сортировка");
+    await learnerSearch.fill("Архивная");
+    await learnerGroupFilter.selectOption({ label: "Без группы" });
+    await learnerSort.selectOption({ label: "Имя: Я—А" });
     await runtime.page.getByText("Архивная Ольга", { exact: true }).waitFor();
     await runtime.page
-      .getByRole("button", { name: "Восстановить", exact: true })
+      .getByRole("button", {
+        name: "Восстановить ученика Архивная Ольга",
+        exact: true,
+      })
       .click();
     await runtime.page.getByText(/Ученик снова в активном списке/).waitFor();
     assert.equal(e2eArchivedLearnerRestored, true);
+    assert.equal(await learnerSearch.inputValue(), "Архивная");
+    assert.equal(await learnerGroupFilter.inputValue(), "ungrouped");
+    assert.equal(await learnerSort.inputValue(), "name-desc");
+
+    await learnerSearch.fill("");
+    await learnerGroupFilter.selectOption({ label: "Все группы" });
 
     await runtime.page
       .getByRole("button", { name: "Новый ученик", exact: true })
@@ -3835,6 +3922,7 @@ test("browser smoke: mobile Account menu exposes primary sections and account ac
   }
 
   resetE2eCompletionFlow();
+  e2eArchivedLearnerRestored = false;
   const runtime = await openPage({
     cookie: authenticatedCookieValue(),
     viewport: { width: 375, height: 812 },
@@ -4001,7 +4089,10 @@ test("browser smoke: mobile Account menu exposes primary sections and account ac
       .getByRole("heading", { name: "Ученики", exact: true, level: 1 })
       .waitFor();
     await runtime.page
-      .getByRole("table", { name: "Ученики и их группы", exact: true })
+      .getByRole("table", {
+        name: "Ученики, их статусы и группы",
+        exact: true,
+      })
       .waitFor();
 
     const mobileContract = await runtime.page.evaluate(() => {
@@ -4011,17 +4102,45 @@ test("browser smoke: mobile Account menu exposes primary sections and account ac
       const rail = toolbar?.querySelector<HTMLElement>(
         ".student-directory-controls",
       );
-      const statusSwitch = rail?.querySelector<HTMLElement>(
-        '[role="group"][aria-label="Состояние списка учеников"]',
+      const groupFilter = rail?.querySelector<HTMLSelectElement>(
+        'select[aria-label="Фильтр по группе"]',
       );
-      const activeStatusButton = statusSwitch?.querySelector<HTMLElement>(
-        'button[aria-pressed="true"]',
+      const learnerSort = rail?.querySelector<HTMLSelectElement>(
+        'select[aria-label="Сортировка"]',
       );
-      if (!toolbar || !rail || !statusSwitch || !activeStatusButton) {
+      const tableWrap = document.querySelector<HTMLElement>(
+        ".student-directory-table-wrap",
+      );
+      const table = tableWrap?.querySelector<HTMLTableElement>(
+        ".student-directory-learners-table",
+      );
+      const archivedRow = Array.from(table?.rows ?? []).find((row) =>
+        row.textContent?.includes("Архивная Ольга"),
+      );
+      const groupCell = archivedRow?.cells[1];
+      const actionCell = archivedRow?.cells[2];
+      const actionButtons = Array.from(
+        actionCell?.querySelectorAll<HTMLButtonElement>("button") ?? [],
+      );
+      if (
+        !toolbar ||
+        !rail ||
+        !groupFilter ||
+        !learnerSort ||
+        !tableWrap ||
+        !table ||
+        !groupCell ||
+        !actionCell ||
+        !actionButtons.length
+      ) {
         throw new Error("Mobile Students toolbar controls are missing");
       }
       const viewportWidth = document.documentElement.clientWidth;
       const toolbarRect = toolbar.getBoundingClientRect();
+      const tableWrapRect = tableWrap.getBoundingClientRect();
+      const tableRect = table.getBoundingClientRect();
+      const groupRect = groupCell.getBoundingClientRect();
+      const actionRect = actionCell.getBoundingClientRect();
       return {
         clientWidth: viewportWidth,
         scrollWidth: document.documentElement.scrollWidth,
@@ -4030,9 +4149,27 @@ test("browser smoke: mobile Account menu exposes primary sections and account ac
           toolbarRect.left >= 0 && toolbarRect.right <= viewportWidth,
         railOverflowX: getComputedStyle(rail).overflowX,
         railScrollIsContained: rail.scrollWidth > rail.clientWidth,
-        shellHeight: getComputedStyle(statusSwitch).height,
-        activeButtonHeight: getComputedStyle(activeStatusButton).height,
-        activePressed: activeStatusButton.getAttribute("aria-pressed"),
+        groupFilterHeight: getComputedStyle(groupFilter).height,
+        sortHeight: getComputedStyle(learnerSort).height,
+        hasStatusSwitch: Boolean(
+          rail.querySelector(
+            '[role="group"][aria-label="Состояние списка учеников"]',
+          ),
+        ),
+        tableWrapInsideViewport:
+          tableWrapRect.left >= 0 && tableWrapRect.right <= viewportWidth,
+        tableOverflowX: getComputedStyle(tableWrap).overflowX,
+        tableScrollIsContained: tableWrap.scrollWidth > tableWrap.clientWidth,
+        columnsDoNotOverlap: groupRect.right <= actionRect.left + 0.5,
+        actionsInsideTable:
+          actionRect.left >= tableRect.left &&
+          actionRect.right <= tableRect.right &&
+          actionButtons.every((button) => {
+            const rect = button.getBoundingClientRect();
+            return (
+              rect.left >= actionRect.left && rect.right <= actionRect.right
+            );
+          }),
       };
     });
     assert.equal(mobileContract.clientWidth, 375);
@@ -4041,9 +4178,14 @@ test("browser smoke: mobile Account menu exposes primary sections and account ac
     assert.equal(mobileContract.toolbarInsideViewport, true);
     assert.equal(mobileContract.railOverflowX, "auto");
     assert.equal(mobileContract.railScrollIsContained, true);
-    assert.equal(mobileContract.shellHeight, "40px");
-    assert.equal(mobileContract.activeButtonHeight, "32px");
-    assert.equal(mobileContract.activePressed, "true");
+    assert.equal(mobileContract.groupFilterHeight, "40px");
+    assert.equal(mobileContract.sortHeight, "40px");
+    assert.equal(mobileContract.hasStatusSwitch, false);
+    assert.equal(mobileContract.tableWrapInsideViewport, true);
+    assert.equal(mobileContract.tableOverflowX, "auto");
+    assert.equal(mobileContract.tableScrollIsContained, true);
+    assert.equal(mobileContract.columnsDoNotOverlap, true);
+    assert.equal(mobileContract.actionsInsideTable, true);
   } finally {
     e2eCompletionPhase = null;
     await runtime.close();
@@ -4321,9 +4463,45 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       .getByRole("tab", { name: "Каталог", exact: true })
       .click();
     await runtime.page.waitForURL(/\/courses\?tab=catalog$/);
-    await runtime.page
-      .getByRole("heading", { name: "Готовые курсы", exact: true, level: 2 })
-      .waitFor();
+    const catalogPanel = runtime.page.getByRole("tabpanel", {
+      name: "Каталог",
+      exact: true,
+    });
+    await runtime.page.locator(".course-catalog-toolbar").waitFor();
+    assert.equal(
+      await catalogPanel.getByText("Готовые курсы", { exact: true }).count(),
+      0,
+    );
+    assert.equal(
+      await catalogPanel
+        .getByText("Добавьте курс себе и измените уроки так, как вам нужно.", {
+          exact: true,
+        })
+        .count(),
+      0,
+    );
+    assert.equal(
+      await runtime.page
+        .locator("#courses-index-panel-catalog .compact-toolbar-result")
+        .count(),
+      0,
+    );
+    const catalogView = catalogPanel.getByRole("group", {
+      name: "Вид каталога курсов",
+      exact: true,
+    });
+    assert.equal(
+      await catalogView
+        .getByRole("button", { name: "Показать карточками", exact: true })
+        .getAttribute("aria-pressed"),
+      "true",
+    );
+    assert.equal(
+      await catalogView
+        .getByRole("button", { name: "Показать таблицей", exact: true })
+        .getAttribute("aria-pressed"),
+      "false",
+    );
     await runtime.page
       .getByRole("heading", {
         name: "В каталоге пока нет курсов",
@@ -4760,6 +4938,55 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
       insideViewport: true,
     });
     await mobileCourseFilterTrigger.press("Escape");
+
+    await runtime.page
+      .getByRole("tab", { name: "Каталог", exact: true })
+      .click();
+    await runtime.page.waitForURL(/\/courses\?tab=catalog$/);
+    const mobileCatalogView = runtime.page.getByRole("group", {
+      name: "Вид каталога курсов",
+      exact: true,
+    });
+    await mobileCatalogView.waitFor();
+    const mobileCatalogToolbar = await runtime.page.evaluate(() => {
+      const toolbar = document.querySelector<HTMLElement>(
+        ".course-catalog-toolbar",
+      );
+      const viewSwitch = toolbar?.querySelector<HTMLElement>(
+        '[role="group"][aria-label="Вид каталога курсов"]',
+      );
+      if (!toolbar || !viewSwitch) {
+        throw new Error("Mobile Catalog toolbar controls are missing");
+      }
+      const viewportWidth = document.documentElement.clientWidth;
+      const rect = toolbar.getBoundingClientRect();
+      return {
+        scrollWidth: document.documentElement.scrollWidth,
+        insideViewport: rect.left >= 0 && rect.right <= viewportWidth,
+        shellHeight: getComputedStyle(viewSwitch).height,
+        visibleResultCount: toolbar.querySelectorAll(".compact-toolbar-result")
+          .length,
+      };
+    });
+    assert.deepEqual(mobileCatalogToolbar, {
+      scrollWidth: 375,
+      insideViewport: true,
+      shellHeight: "40px",
+      visibleResultCount: 0,
+    });
+    await mobileCatalogView
+      .getByRole("button", { name: "Показать таблицей", exact: true })
+      .click();
+    assert.equal(
+      await mobileCatalogView
+        .getByRole("button", { name: "Показать таблицей", exact: true })
+        .getAttribute("aria-pressed"),
+      "true",
+    );
+
+    await runtime.page.getByRole("tab", { name: "Мои", exact: true }).click();
+    await runtime.page.waitForURL(/\/courses$/);
+    await mobileCourseLink.waitFor();
 
     await Promise.all([
       runtime.page.waitForURL(new RegExp(`/courses/${E2E_COURSE_ID}$`)),

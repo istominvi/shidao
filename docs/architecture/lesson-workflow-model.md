@@ -464,17 +464,22 @@ Current production делает `/schedule` и `/students` доступными
   перехода к назначению находится в общей header action-секции. Ниже прямо на
   page background расположены compound date navigator, «Неделя / Месяц» и
   «Таблица / Карточки»; внешней toolbar-card у controls нет. Стрелки двигают
-  целый период, а выбор даты задаёт его опорный день;
+  целый период, а выбор даты задаёт его опорный день. В current source Action
+  сокращён до «Назначить урок» и использует calendar-plus icon; непустая
+  projection после controls не повторяет период, заголовок «Занятия» или
+  видимый result count, но сохраняет доступное имя секции и caption таблицы;
 - `/students` объединяет справочник TeacherLearner/LearnerProfile и
   LearnerGroup во вкладках «Ученики / Группы» с learner-safe observer
   projection во вкладке «Наблюдение»; справочник сохраняет поиск, фильтр по
-  группе и сортировку. Состояния active/archive/pending являются compact
-  `aria-pressed` segmented control, а controls лежат прямо на page background
-  без отдельной toolbar-card; управление relation не создаёт второй тип ученика; строка ученика показывает
-  до двух групп и «ещё N», а имя и archive state принадлежат relation конкретного
-  преподавателя; ученика можно создать, изменить и убрать из списка, а для групп
-  доступен CRUD; header action меняется между «Новый ученик» и «Новая группа»,
-  а на вкладке «Наблюдение» mutation action отсутствует;
+  группе и сортировку. Active profiles, archived relations и исходящие pending
+  requests показаны в одной таблице: archive/pending отмечаются inline-чипами,
+  а restore/cancel доступны в этой же строке. Controls лежат прямо на page
+  background без отдельной toolbar-card и не меняются от статуса; управление
+  relation не создаёт второй тип ученика. Active-строка показывает до двух
+  групп и «ещё N», а имя и archive state принадлежат relation конкретного
+  преподавателя; ученика можно создать, изменить и убрать из списка, а для
+  групп доступен CRUD; header action меняется между «Новый ученик» и «Новая
+  группа», а на вкладке «Наблюдение» mutation action отсутствует;
 - клик по строке открывает dialog «Профиль / История»; membership допускает
   несколько групп, а history panel читает только LearningRecord, записанные
   текущим преподавателем;
@@ -499,9 +504,11 @@ Primary navigation для roleless Account содержит «Расписани
 учащегося. Owner-scoped CourseSummary поддерживает поиск, subject/level/content
 filters, сортировку и режимы «Карточки / Таблица» без второй модели; current
 controls используют direct page-background toolbar, disclosure с native
-selects и icon-only view control. Published paginated Catalog отдельно
-поддерживает только server-side search/subject/level из catalog RPC и не
-имитирует недоступные content/sort/table capabilities.
+selects и icon-only view control; видимый result count не является control.
+Published paginated Catalog отдельно поддерживает только server-side
+search/subject/level из catalog RPC, не имитирует недоступные content/sort
+capabilities и переключает карточки/таблицу лишь как presentation уже
+загруженной cursor-последовательности.
 
 ## Scheduling, completion and deletion
 

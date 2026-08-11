@@ -1333,15 +1333,6 @@ a {
   flex: 0 0 12.5rem;
 }
 
-.compact-toolbar-result {
-  margin: 0;
-  color: #6b6e77;
-  font-size: 0.76rem;
-  font-weight: 550;
-  line-height: 1.35;
-  white-space: nowrap;
-}
-
 .product-btn.compact-toolbar-reset {
   width: var(--course-demo-control-height, 2.5rem);
   min-width: var(--course-demo-control-height, 2.5rem);
@@ -1490,11 +1481,6 @@ a {
     width: min(12rem, calc(100vw - 8.5rem));
     min-width: min(12rem, calc(100vw - 8.5rem));
     flex-basis: min(12rem, calc(100vw - 8.5rem));
-  }
-
-  .compact-toolbar-result {
-    order: 10;
-    width: 100%;
   }
 }
 
@@ -1795,21 +1781,6 @@ a {
   height: 1rem;
   margin-top: 0.18rem;
   accent-color: #141414;
-}
-
-.course-catalog-heading h2 {
-  margin: 0.18rem 0 0;
-  color: #141414;
-  font-size: clamp(1.5rem, 3vw, 2rem);
-  font-weight: 600;
-  letter-spacing: -0.04em;
-}
-
-.course-catalog-heading p:not(.workspace-eyebrow) {
-  margin: 0.4rem 0 0;
-  color: #646873;
-  font-size: 0.88rem;
-  line-height: 1.55;
 }
 
 .course-catalog-detail-header {

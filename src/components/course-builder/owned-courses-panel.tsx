@@ -23,7 +23,6 @@ import {
 import { courseBuilderRequest } from "@/components/course-builder/course-builder-client";
 import { CourseFilterMenu } from "@/components/course-builder/course-filter-menu";
 import {
-  courseCountLabel,
   DEFAULT_COURSE_CATALOG_FILTERS,
   filterAndSortCourses,
   getCourseCatalogOptions,
@@ -402,16 +401,6 @@ export function OwnedCoursesPanel({ onOpenCatalog }: OwnedCoursesPanelProps) {
             />
           </label>
 
-          <p
-            className="compact-toolbar-result"
-            role="status"
-            aria-live="polite"
-          >
-            {hasFilters
-              ? `Результаты: ${courseCountLabel(visibleCourses.length)} из ${courseCountLabel(courses.length)}`
-              : courseCountLabel(courses.length)}
-          </p>
-
           {hasFilters ? (
             <Button
               variant="ghost"
@@ -444,6 +433,12 @@ export function OwnedCoursesPanel({ onOpenCatalog }: OwnedCoursesPanelProps) {
               },
             ]}
           />
+
+          <p className="sr-only" role="status" aria-live="polite">
+            {hasFilters
+              ? "Список курсов отфильтрован."
+              : "Показаны все ваши курсы."}
+          </p>
         </div>
       </div>
 

@@ -249,10 +249,13 @@ Definition of Done программы:
 «Наблюдение» внутри «Ученики». Каталог `/courses` получил поиск, реальные
 Course-фильтры, сортировку и переключение «Карточки / Таблица» без новой schema
 или параллельного Course API. В current source Students и Courses controls
-унифицированы с Schedule: outer toolbar-card удалена, статусы Students собраны
-в segmented control, Course facets — в компактный disclosure, а view — в две
-icon-only кнопки. Published Catalog показывает только поддержанные server-side
-subject/level filters. Course workspace использует четыре вкладки;
+унифицированы с Schedule: outer toolbar-card удалена, Students показывает
+active/archive/pending в одной таблице с inline-чипами и стабильными filters,
+Course facets собраны в компактный disclosure, а view — в две icon-only
+кнопки. Published Catalog показывает только поддержанные server-side
+subject/level filters, но использует тот же cards/table presentation; повторный
+заголовок, пояснение и видимые result counts удалены. Course workspace
+использует четыре вкладки;
 настройки и audience редактируются inline на растущей **О курсе**, а
 course-wide **Материалы** вынесены в отдельную агрегирующую библиотеку. Новый
 Course начинает с **О курсе**; обычное сохранение возвращает туда же, тогда как
@@ -509,6 +512,12 @@ LessonRun за выбранную локальную неделю или кал�
 ограничен опорным выбранным днём. Coolify webhook deployment exact functional
 SHA `587bb21` завершён со статусом Success; authenticated production browser
 postflight этого follow-up ещё не выполнен.
+
+**Current source polish:** page header использует подзаголовок «Здесь все
+назначенные уроки за выбранный период.» и короткий календарный Action
+«Назначить урок». После period/view controls непустая таблица или карточки
+начинаются сразу, без повторного заголовка периода и видимого count-chip.
+Schema/API не меняются; deployment этого polish остаётся следующим шагом.
 
 **Current production contract дополнительно:** verified actual duration,
 explicit shared individual comment, cursor-paginated self/observer history и

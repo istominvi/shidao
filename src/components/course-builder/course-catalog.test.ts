@@ -177,8 +177,10 @@ test("course catalog UI exposes accessible search, filters, views, and states", 
     assert.match(panelSource, /type="search"/);
     assert.match(panelSource, /className="compact-page-toolbar/);
     assert.match(panelSource, /<CourseFilterMenu/);
-    assert.match(panelSource, /aria-live="polite"/);
     assert.match(panelSource, /Ничего не найдено/);
+    assert.doesNotMatch(panelSource, /className="compact-toolbar-result"/);
+    assert.match(panelSource, /className="sr-only" role="status"/);
+    assert.match(panelSource, /aria-live="polite"/);
   }
 
   assert.match(ownedCoursesPanelSource, /content=\{filters\.content\}/);
@@ -193,6 +195,21 @@ test("course catalog UI exposes accessible search, filters, views, and states", 
   assert.match(ownedCoursesPanelSource, /role="region"/);
   assert.match(ownedCoursesPanelSource, /tabIndex=\{0\}/);
   assert.match(ownedCoursesPanelSource, /overflow-x-auto/);
+  assert.match(courseCatalogPanelSource, /ariaLabel="Вид каталога курсов"/);
+  assert.match(courseCatalogPanelSource, /label: "Карточки"/);
+  assert.match(courseCatalogPanelSource, /label: "Таблица"/);
+  assert.match(courseCatalogPanelSource, /<CatalogCourseTable/);
+  assert.match(
+    courseCatalogPanelSource,
+    /aria-label="Таблица курсов каталога"/,
+  );
+  assert.match(courseCatalogPanelSource, /<caption className="sr-only">/);
+  assert.doesNotMatch(courseCatalogPanelSource, />Готовые курсы</);
+  assert.doesNotMatch(courseCatalogPanelSource, />Каталог<\/p>/);
+  assert.doesNotMatch(
+    courseCatalogPanelSource,
+    /Добавьте курс себе и измените уроки/,
+  );
   assert.doesNotMatch(source, /localStorage|sessionStorage/);
 });
 

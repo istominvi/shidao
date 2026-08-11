@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BookOpen } from "lucide-react";
+import { CalendarPlus } from "lucide-react";
 import { AppPageHeader } from "@/components/app/page-header";
 import { ScheduleWorkspace } from "@/components/teaching-hub/schedule-workspace";
 import { TopNav } from "@/components/top-nav";
@@ -13,14 +13,14 @@ export default function SchedulePage() {
       <div className="container app-page-container space-y-6">
         <AppPageHeader
           title="Расписание"
-          description="Все назначенные уроки за выбранную неделю или месяц. Отдельных событий расписания нет: время принадлежит конкретному проведению урока."
+          description="Здесь все назначенные уроки за выбранный период."
           actions={
             <Link
               href={ROUTES.courses}
               className={productButtonClassName("primary")}
             >
-              <BookOpen className="h-4 w-4" aria-hidden="true" />
-              Назначить урок в курсе
+              <CalendarPlus className="h-4 w-4" aria-hidden="true" />
+              Назначить урок
             </Link>
           }
         />
