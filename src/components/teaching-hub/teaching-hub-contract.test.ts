@@ -208,6 +208,10 @@ test("schedule keeps the compact date control and dense one-line table contract"
   );
   assert.match(
     teachingHubStyleSource,
+    /\.teaching-hub-toolbar\s*\{[^}]*padding-inline:\s*0;/,
+  );
+  assert.match(
+    teachingHubStyleSource,
     /\.teaching-date-navigator > button\s*\{[^}]*font-family:\s*inherit;/,
   );
   assert.doesNotMatch(
@@ -253,7 +257,15 @@ test("schedule keeps the compact date control and dense one-line table contract"
   assert.match(scheduleWorkspaceSource, /triggerIcon=\{MoreVertical\}/);
   assert.match(scheduleWorkspaceSource, /triggerVariant="ghost"/);
   assert.match(scheduleWorkspaceSource, /\sportal\s/);
-  assert.match(scheduleWorkspaceSource, /label: "Открыть план"/);
+  assert.match(scheduleWorkspaceSource, /label: "Начать урок"/);
+  assert.match(scheduleWorkspaceSource, /label: "Изменить"/);
+  assert.match(scheduleWorkspaceSource, /label: "Отменить"/);
+  assert.doesNotMatch(scheduleWorkspaceSource, /label: "Открыть план"/);
+  assert.match(scheduleWorkspaceSource, /startLessonRun\(runId\)/);
+  assert.match(scheduleWorkspaceSource, /cancelLessonRun\(runId\)/);
+  assert.match(scheduleWorkspaceSource, /openRun\(run\.id, "edit"\)/);
+  assert.match(scheduleWorkspaceSource, /initialMode=\{selectedRunMode\}/);
+  assert.match(scheduleWorkspaceSource, /window\.confirm\(/);
   for (const column of [
     "date",
     "time",
@@ -316,6 +328,10 @@ test("schedule keeps the compact date control and dense one-line table contract"
   assert.match(
     teachingHubStyleSource,
     /\.teaching-run-table tbody tr\s*\{[^}]*height:\s*var\(\s*--course-demo-table-row-height,/,
+  );
+  assert.match(
+    teachingHubStyleSource,
+    /\.teaching-run-table tbody tr\s*\{[^}]*cursor:\s*pointer;/,
   );
   assert.match(
     teachingHubStyleSource,

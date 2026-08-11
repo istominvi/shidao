@@ -23,7 +23,7 @@
   align-items: center;
   justify-content: flex-end;
   gap: 1rem;
-  padding-inline: var(--course-demo-content-inset, 0.75rem);
+  padding-inline: 0;
 }
 
 .teaching-date-picker {
@@ -1089,6 +1089,7 @@
   border-color: var(--product-table-divider-color, #ececef);
   background: #fff;
   color: #141414;
+  cursor: pointer;
 }
 
 .teaching-run-table tbody tr:hover,

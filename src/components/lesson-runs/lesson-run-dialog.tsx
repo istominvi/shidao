@@ -155,6 +155,7 @@ export function LessonRunDialog({
   disabled,
   mutationError,
   runMutation,
+  initialMode = "default",
   onClose,
 }: {
   lesson: LessonReference;
@@ -163,6 +164,7 @@ export function LessonRunDialog({
   disabled: boolean;
   mutationError?: string | null;
   runMutation: LessonRunMutationRunner;
+  initialMode?: "default" | "edit";
   onClose: () => void;
 }) {
   const run = openLessonRun(runs);
@@ -183,7 +185,9 @@ export function LessonRunDialog({
   const [actualDurationMinutes, setActualDurationMinutes] = useState(
     run?.actualDurationMinutes?.toString() ?? "",
   );
-  const [editingAttention, setEditingAttention] = useState(false);
+  const [editingAttention, setEditingAttention] = useState(
+    initialMode === "edit",
+  );
   const [mutationFailed, setMutationFailed] = useState(false);
   const [completion, setCompletion] = useState<Record<string, CompletionDraft>>(
     () =>

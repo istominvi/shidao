@@ -3051,8 +3051,8 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       borderTopWidth: "0px",
       boxShadow: "none",
       paddingTop: "0px",
-      paddingLeft: "12px",
-      paddingRight: "12px",
+      paddingLeft: "0px",
+      paddingRight: "0px",
     });
     assert.equal(
       scheduleContract.dateNavigator.backgroundColor,
@@ -3079,7 +3079,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       `date picker width: ${scheduleContract.dateNavigator.pickerWidth}`,
     );
     assert.deepEqual(scheduleContract.controlsLayout, {
-      rightDelta: 12,
+      rightDelta: 0,
       insideInlineInset: true,
       dateBeforeView: true,
       compactDateControl: true,
@@ -3336,6 +3336,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
             (cell) => cell.getBoundingClientRect().height,
           ),
           rowBorderColor: getComputedStyle(bodyRow).borderTopColor,
+          cursor: getComputedStyle(bodyRow).cursor,
         },
         bodyTypography: bodyTextElements.map((element) => ({
           fontSize: getComputedStyle(element).fontSize,
@@ -3467,6 +3468,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       scheduleTableContract.header.cellHeights.every((height) => height === 40),
     );
     assert.equal(scheduleTableContract.bodyGeometry.rowHeight, 40);
+    assert.equal(scheduleTableContract.bodyGeometry.cursor, "pointer");
     assert.ok(
       scheduleTableContract.bodyGeometry.cellHeights.every(
         (height) => height === 40,
@@ -3592,16 +3594,21 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
     await rowMenuTrigger.click();
     const rowActionMenu = runtime.page.getByRole("menu");
     await rowActionMenu.waitFor();
-    const openRunMenuItem = rowActionMenu.getByRole("menuitem", {
-      name: "Открыть",
+    const startRunMenuItem = rowActionMenu.getByRole("menuitem", {
+      name: "Начать урок",
       exact: true,
     });
-    const openPlanMenuItem = rowActionMenu.getByRole("menuitem", {
-      name: "Открыть план",
+    const editRunMenuItem = rowActionMenu.getByRole("menuitem", {
+      name: "Изменить",
       exact: true,
     });
-    await openRunMenuItem.waitFor();
-    await openPlanMenuItem.waitFor();
+    const cancelRunMenuItem = rowActionMenu.getByRole("menuitem", {
+      name: "Отменить",
+      exact: true,
+    });
+    await startRunMenuItem.waitFor();
+    await editRunMenuItem.waitFor();
+    await cancelRunMenuItem.waitFor();
     assert.deepEqual(
       await runtime.page.evaluate(() => {
         const menu = document.querySelector<HTMLElement>(
@@ -3674,21 +3681,39 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
             fontSize: "14.08px",
             fontWeight: "400",
           },
+          {
+            height: 40,
+            alignItems: "center",
+            gap: "12px",
+            paddingLeft: "12px",
+            paddingRight: "12px",
+            color: "rgb(20, 20, 20)",
+            fontSize: "14.08px",
+            fontWeight: "400",
+          },
         ],
         icons: [
+          { color: "rgb(20, 20, 20)", opacity: "1", marginTop: "0px" },
           { color: "rgb(20, 20, 20)", opacity: "1", marginTop: "0px" },
           { color: "rgb(20, 20, 20)", opacity: "1", marginTop: "0px" },
         ],
       },
     );
-    await openRunMenuItem.press("ArrowDown");
+    await startRunMenuItem.press("ArrowDown");
     assert.equal(
       await runtime.page.evaluate(
         () => document.activeElement?.textContent?.trim() ?? "",
       ),
-      "Открыть план",
+      "Изменить",
     );
-    await openPlanMenuItem.press("Escape");
+    await editRunMenuItem.press("ArrowDown");
+    assert.equal(
+      await runtime.page.evaluate(
+        () => document.activeElement?.textContent?.trim() ?? "",
+      ),
+      "Отменить",
+    );
+    await cancelRunMenuItem.press("Escape");
     await rowActionMenu.waitFor({ state: "detached" });
     await runtime.page
       .locator(".teaching-run-action-menu .action-menu-trigger:focus")
@@ -5351,10 +5376,10 @@ test("browser smoke: mobile Account menu exposes primary sections and account ac
       clientWidth: 375,
       scrollWidth: 375,
       controlsInsideViewport: true,
-      toolbarPaddingLeft: "12px",
-      toolbarPaddingRight: "12px",
-      controlsStartInset: 12,
-      controlsEndInset: 12,
+      toolbarPaddingLeft: "0px",
+      toolbarPaddingRight: "0px",
+      controlsStartInset: 0,
+      controlsEndInset: 0,
       externalPeriodSwitchCount: 0,
     });
 
@@ -5549,10 +5574,10 @@ test("browser smoke: mobile Account menu exposes primary sections and account ac
       scrollWidth: 320,
       menuInsideViewport: true,
       triggerInsideViewport: true,
-      itemHeights: [40, 40],
+      itemHeights: [40, 40, 40],
     });
     await narrowRowMenu
-      .getByRole("menuitem", { name: "Открыть", exact: true })
+      .getByRole("menuitem", { name: "Начать урок", exact: true })
       .press("Escape");
     await narrowRowMenu.waitFor({ state: "detached" });
     assert.equal(

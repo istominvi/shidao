@@ -163,18 +163,32 @@ content/sort controls не добавлены. Это UI-only change без sche
 или нового Course API.
 
 **Current source content controls/table surfaces (следующий deployment):**
-прозрачные панели управления Schedule, обеих directory-вкладок Students и
-обеих вкладок Courses получили горизонтальный inset 12 px. Поэтому первый и
-последний control визуально совпадают с внутренними границами page-header, не
-создавая отдельную toolbar-card. Общие tokens различают карточку с радиусом
+прозрачная панель управления Schedule снова использует всю ширину content-row
+без горизонтального inset: date/view controls остаются справа и заканчиваются
+по внешней границе строки. Обе directory-вкладки Students и обе вкладки
+Courses сохраняют горизонтальный inset 12 px, чтобы первый и последний control
+совпадали с внутренними границами page-header. Ни одна из панелей не создаёт
+отдельную toolbar-card. Общие tokens различают карточку с радиусом
 20 px и вложенный element/control/table/menu с радиусом 12 px. Активные
 `ProductTable` wrappers Schedule, Students и Courses используют table token,
 сплошной белый фон и не имеют внешней рамки; плотность строк Students/Courses
 этот slice не меняет. Shared `ProductTableHead` теперь белый, а разделители
 строк этих таблиц получают один `--product-table-divider-color`. Это UI-only
 source change без API, schema или migration;
-deployment ещё не выполнен. Локальные gates зелёные: typecheck, lint, format,
-`git diff --check`, `454/454` unit/e2e и `22/22` production-browser scenarios.
+deployment ещё не выполнен. Для текущего follow-up зелёные typecheck, lint,
+format, production build, `git diff --check`, `454/454` unit/e2e и `22/22`
+production-browser scenarios.
+
+**Current source Schedule row actions (следующий deployment):** каждая строка
+назначенного LessonRun показывает `cursor: pointer` при наведении. Для
+ожидающего назначения постоянное вертикальное троеточие открывает точный набор
+действий «Начать урок / Изменить / Отменить»; active Run получает «Завершить
+урок / Отменить», а completed — «Результаты». Start и cancel используют
+существующие LessonRun mutations через общий reload/busy/error boundary,
+cancel требует подтверждения, а edit открывает текущий dialog сразу в режиме
+редактирования. Клик по action trigger или пункту меню не становится неявным
+кликом по строке. Это application/UI follow-up поверх существующих API; schema
+и migrations не меняются, deployment ещё не выполнен.
 
 **Current System Assistant conversational action slice:** реализован один
 глобальный floating widget «ИИ» внутри protected `(app)` layout. Он доступен на

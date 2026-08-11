@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import {
-  BookOpen,
   CalendarDays,
   CircleAlert,
   CircleCheck,
@@ -10,13 +9,19 @@ import {
   LayoutGrid,
   LoaderCircle,
   MoreVertical,
+  Pencil,
   Play,
   Table2,
   Users,
+  XCircle,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSystemAssistantPageContext } from "@/components/assistant/system-assistant-provider";
-import { loadSchedule } from "@/components/lesson-runs/lesson-run-client";
+import {
+  cancelLessonRun,
+  loadSchedule,
+  startLessonRun,
+} from "@/components/lesson-runs/lesson-run-client";
 import {
   LessonRunDialog,
   type LessonRunMutationRunner,
@@ -66,6 +71,7 @@ const timeFormatter = new Intl.DateTimeFormat("ru-RU", {
 });
 
 type ScheduleViewMode = "table" | "cards";
+type SelectedRunMode = "default" | "edit";
 const SCHEDULE_RESULT_LIMIT = 500;
 
 function scheduleRunStatus(run: LessonRun) {
@@ -174,6 +180,8 @@ export function ScheduleWorkspace() {
   const [period, setPeriod] = useState<SchedulePeriod>("week");
   const [viewMode, setViewMode] = useState<ScheduleViewMode>("table");
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
+  const [selectedRunMode, setSelectedRunMode] =
+    useState<SelectedRunMode>("default");
   const [error, setError] = useState<string | null>(null);
   const [busyLabel, setBusyLabel] = useState<string | null>(null);
   const mutationInFlightRef = useRef(false);
@@ -248,6 +256,34 @@ export function ScheduleWorkspace() {
       }
     },
     [period, reload, selectedDate],
+  );
+
+  const openRun = useCallback(
+    (runId: string, mode: SelectedRunMode = "default") => {
+      setSelectedRunMode(mode);
+      setSelectedRunId(runId);
+    },
+    [],
+  );
+
+  const closeRun = useCallback(() => {
+    setSelectedRunId(null);
+    setSelectedRunMode("default");
+  }, []);
+
+  const startRun = useCallback(
+    (runId: string) => {
+      void runMutation("Начинаем урок…", () => startLessonRun(runId));
+    },
+    [runMutation],
+  );
+
+  const cancelRun = useCallback(
+    (runId: string) => {
+      if (!window.confirm("Отменить это проведение урока?")) return;
+      void runMutation("Отменяем проведение…", () => cancelLessonRun(runId));
+    },
+    [runMutation],
   );
 
   const visibleRuns = useMemo(
@@ -406,25 +442,62 @@ export function ScheduleWorkspace() {
                     )} · ${formatScheduleCompactDate(scheduledAt)}`;
                     const formattedTime = timeFormatter.format(scheduledAt);
                     const duration = `${run.plannedDurationMinutes} мин`;
-                    const actionLabel = runActionLabel(run);
-                    const actionItems: ActionMenuItem[] = [
-                      {
-                        id: "open",
-                        label: actionLabel,
-                        icon:
-                          lessonRunState(run) === "scheduled"
-                            ? Play
-                            : CircleCheck,
-                        disabled: Boolean(busyLabel),
-                        onSelect: () => setSelectedRunId(run.id),
-                      },
-                      {
-                        id: "open-plan",
-                        label: "Открыть план",
-                        icon: BookOpen,
-                        href: runPlanHref(run),
-                      },
-                    ];
+                    const runState = lessonRunState(run);
+                    const actionItems: ActionMenuItem[] =
+                      runState === "completed"
+                        ? [
+                            {
+                              id: "results",
+                              label: "Результаты",
+                              icon: CircleCheck,
+                              disabled: Boolean(busyLabel),
+                              onSelect: () => openRun(run.id),
+                            },
+                          ]
+                        : runState === "active"
+                          ? [
+                              {
+                                id: "complete",
+                                label: "Завершить урок",
+                                icon: CircleCheck,
+                                disabled: Boolean(busyLabel),
+                                onSelect: () => openRun(run.id),
+                              },
+                              {
+                                id: "cancel",
+                                label: "Отменить",
+                                icon: XCircle,
+                                destructive: true,
+                                separatorBefore: true,
+                                disabled: Boolean(busyLabel),
+                                onSelect: () => cancelRun(run.id),
+                              },
+                            ]
+                          : [
+                              {
+                                id: "start",
+                                label: "Начать урок",
+                                icon: Play,
+                                disabled: Boolean(busyLabel),
+                                onSelect: () => startRun(run.id),
+                              },
+                              {
+                                id: "edit",
+                                label: "Изменить",
+                                icon: Pencil,
+                                disabled: Boolean(busyLabel),
+                                onSelect: () => openRun(run.id, "edit"),
+                              },
+                              {
+                                id: "cancel",
+                                label: "Отменить",
+                                icon: XCircle,
+                                destructive: true,
+                                separatorBefore: true,
+                                disabled: Boolean(busyLabel),
+                                onSelect: () => cancelRun(run.id),
+                              },
+                            ];
                     return (
                       <ProductTableRow
                         key={run.id}
@@ -481,6 +554,7 @@ export function ScheduleWorkspace() {
                               items={actionItems}
                               triggerIcon={MoreVertical}
                               triggerVariant="ghost"
+                              disabled={Boolean(busyLabel)}
                               portal
                             />
                           </span>
@@ -532,10 +606,7 @@ export function ScheduleWorkspace() {
       ) : null}
 
       {selectedRun?.endedAt ? (
-        <CompletedRunDialog
-          run={selectedRun}
-          onClose={() => setSelectedRunId(null)}
-        />
+        <CompletedRunDialog run={selectedRun} onClose={closeRun} />
       ) : selectedRun ? (
         <LessonRunDialog
           lesson={{ id: selectedRun.lessonId, title: selectedRun.lessonTitle }}
@@ -547,7 +618,8 @@ export function ScheduleWorkspace() {
           disabled={Boolean(busyLabel)}
           mutationError={error}
           runMutation={runMutation}
-          onClose={() => setSelectedRunId(null)}
+          initialMode={selectedRunMode}
+          onClose={closeRun}
         />
       ) : null}
     </div>

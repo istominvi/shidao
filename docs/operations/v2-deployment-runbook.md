@@ -552,9 +552,11 @@ ShiDao V2 application:
 - `/schedule` и `/students` сохраняют единый computed page-header contract с
   `/courses`, Course и Lesson; contextual actions находятся в header, а
   date/view controls — ниже него справа прямо на page background без внешней
-  toolbar-card. У прозрачной controls-панели измерить по 12 px слева и справа:
-  первый и последний control должны совпасть с внутренними границами
-  page-header. Для Schedule проверить, что отдельного внешнего «Неделя /
+  toolbar-card. У прозрачной Schedule controls-панели проверить нулевой
+  horizontal padding: controls остаются справа, а последний control совпадает
+  с внешней границей content-row. Students/Courses по-прежнему имеют по 12 px
+  слева и справа и совпадают с внутренними границами page-header. Для Schedule
+  проверить, что отдельного внешнего «Неделя /
   Месяц» нет: центральная кнопка compact date control открывает календарный
   popover с «День / Неделя / Месяц», выбор даты меняет опорную дату, а стрелки
   сдвигают назад/вперёд активный целый день, неделю либо месяц. Проверить
@@ -586,10 +588,16 @@ ShiDao V2 application:
   слева и справа. Для последней body action-cell ожидать inset 4 px и
   единственный `MoreVertical` trigger 32 × 32 px с радиусом 8 px: внутри 40 px
   строки его отступы сверху, справа и снизу должны быть по 4 px, как у active
-  option в 40 px переключателе вида. Вертикальное троеточие постоянно доступно с клавиатуры
-  и touch, его portal-menu не обрезается горизонтальным scroll wrapper,
-  содержит все действия, поддерживает arrows/Escape/focus restore; других
-  action-кнопок в строке нет. Каждый пункт portal-menu имеет exact 40 px,
+  option в 40 px переключателе вида. На hover строки назначенного урока
+  computed cursor должен быть `pointer`. Вертикальное троеточие постоянно
+  доступно с клавиатуры и touch, его portal-menu не обрезается горизонтальным
+  scroll wrapper и для ожидающего Run содержит ровно «Начать урок / Изменить /
+  Отменить» в этом порядке; active Run показывает «Завершить урок / Отменить»,
+  completed — «Результаты». Проверить direct start mutation и reload, edit
+  dialog текущего Run сразу в edit mode, confirmation перед cancel,
+  arrows/Escape/focus restore и отсутствие
+  неявного row-click при взаимодействии с меню; других action-кнопок в строке
+  нет. Каждый пункт portal-menu имеет exact 40 px,
   вертикально центрированные иконку и текст, `.88rem/400` и canonical inset/gap.
   Отдельно проверить
   canonical active V2 controls: exact `40 px / 12 px / .88rem / 400`, flat

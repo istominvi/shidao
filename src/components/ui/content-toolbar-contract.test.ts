@@ -24,7 +24,7 @@ const courseCatalogPanel = readFileSync(
   "utf8",
 );
 
-test("active content toolbars share the canonical 12px inline inset", () => {
+test("Schedule is full-width while directory toolbars keep the 12px inset", () => {
   assert.match(
     globalStyles,
     /\.course-demo-shell\s*\{[^}]*--course-demo-content-inset: 0\.75rem;/,
@@ -35,7 +35,7 @@ test("active content toolbars share the canonical 12px inline inset", () => {
   );
   assert.match(
     teachingHubStyles,
-    /\.teaching-hub-toolbar\s*\{[^}]*min-width: 0;[^}]*justify-content: flex-end;[^}]*padding-inline: var\(--course-demo-content-inset, 0\.75rem\);/,
+    /\.teaching-hub-toolbar\s*\{[^}]*min-width: 0;[^}]*justify-content: flex-end;[^}]*padding-inline: 0;/,
   );
   assert.match(
     teachingHubStyles,
