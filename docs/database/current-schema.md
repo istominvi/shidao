@@ -1,15 +1,15 @@
 # Current database schema
 
 **Статус:** current production learner-identity M6 + Course publication
-catalog schema
+catalog + Course Component D1 contract schema
 
 **Production schema head:**
-`20260810035033_course_publication_catalog.sql`
+`20260811154138_remove_divider_components.sql` — применена к production
+11 августа 2026 года
 
 **Repository schema head:**
-`20260811154138_remove_divider_components.sql` — подготовленная forward
-contract cleanup для удаления authored `divider`; до production execution
-канонический snapshot остаётся на предыдущем head
+`20260811154138_remove_divider_components.sql` — совпадает с current
+production head
 
 **Legacy contract migration:**
 `20260807065038_learner_identity_legacy_contract_cleanup.sql` — применена после
@@ -22,10 +22,10 @@ Admin create/delete probe
 
 **SQL snapshot:**
 [`supabase/schema/current-schema.sql`](../../supabase/schema/current-schema.sql)
-содержит свежий production dump после
-`20260810035033_course_publication_catalog.sql`, снятый штатным script через
-read-only SSH tunnel. Strict signature осталась `shidao-v2-contract`, SHA-256
-snapshot — `2b1a3f475074940e69e1dee6ba12edc8d3103a23a01c640ec342e3cb31f0af46`.
+содержит production dump после D1, снятый штатным script через
+read-only SSH tunnel 11 августа 2026 года в `16:15:55Z`. Strict signature
+осталась `shidao-v2-contract`, SHA-256 snapshot —
+`c6da0f149f29be13cb1a4cd0d5e4642e8ce24edc04558b2431e2dbbc4728b23c`.
 
 ## Read order для DB-задач
 
@@ -50,7 +50,7 @@ snapshot — `2b1a3f475074940e69e1dee6ba12edc8d3103a23a01c640ec342e3cb31f0af46`.
 | M5    | `20260809084500_learner_identity_auth_deferred_invariant_security.sql` | узкий `SECURITY DEFINER` boundary для deferred exactly-one invariant при реальном GoTrue commit; без расширения Auth table privileges          |
 | M6    | `20260809090000_learner_identity_provisional_auth_metadata_sync.sql`   | trusted two-phase GoTrue `app_metadata` sync для pristine provisional child Account с fail-closed защитой от позднего downgrade                |
 | C1    | `20260810035033_course_publication_catalog.sql`                        | immutable Course publication revisions, private publication Storage, independent catalog copy/duplicate и closed admin RPC                     |
-| D1    | `20260811154138_remove_divider_components.sql`                         | удаление layout-only `divider`, повторная нумерация Component/Slide и CHECK-запрет повторного создания                                          |
+| D1    | `20260811154138_remove_divider_components.sql`                         | удаление layout-only `divider`, повторная нумерация Component/Slide и CHECK-запрет повторного создания                                         |
 
 M1–M3 являются additive/compatible expand для roleless web. M4 была withheld из
 первого deploy и применена только после доказательства, что running и rollback
@@ -141,26 +141,41 @@ Production Course publication evidence 10 августа 2026 года:
   snapshot имеет SHA-256
   `2b1a3f475074940e69e1dee6ba12edc8d3103a23a01c640ec342e3cb31f0af46`.
 
-### Prepared Course Component contract cleanup
+### Production Course Component contract cleanup
 
 Read-only production audit перед D1 подтвердил PostgreSQL 15.8 и canonical
 ShiDao signature по таблицам `course`, `lesson`, `lesson_component`,
 `lesson_student_slide`, `course_publication_revision`, RPC
-`delete_lesson_component(uuid)` и отсутствию `lesson_step`. До migration в
-production находятся 5 Course, 16 Lesson, 104 Component и 6 Slides:
+`delete_lesson_component(uuid)` и отсутствию `lesson_step`. Preflight counts:
+5 Course, 16 Lesson, 104 Component и 6 Slides.
 
 - 15 строк `type_key='divider'` в 12 Lesson и 4 Course;
-- 2 из них learner-visible в двух Slides; оба Slides содержат другие видимые
-  Components и не должны опустеть;
-- publication/revision catalog пуст, immutable snapshot с `divider` нет;
+- 2 из них learner-visible; publication divider count равен 0;
 - Component/Slide positions плотные, exactly-one profile violations равны 0.
 
-D1 выполняет schema preflight, блокирует authored hierarchy, удаляет
-`divider` по каждой Lesson в обратном порядке позиций, явно пересчитывает
-Component/Slide positions, сбрасывает deferred Student Screen trigger events и
-заменяет `lesson_component_type_key_check` на case-insensitive запрет
-`divider`. До production применения этот раздел описывает подготовленный
-rollout, а не завершённую очистку.
+Production execution 11 августа 2026 года:
+
+- verified full-format backup
+  `/root/shidao-db-backups/shidao-before-remove-divider-20260811T160822Z.dump`:
+  size `1146321` bytes, 1427 restore-list entries, SHA-256
+  `b82027b25a7c0d96471fe46da07d9795a64c1924ba3e7522368c379755e78449`;
+- migration checksum
+  `21791932067f8f45a5ab9fde8d2ef6db08ca661f7489a28f333c8dc52c206bd5`;
+- первый запуск под non-owner `postgres` завершился ошибкой и полным
+  transaction rollback. Повторный read-only preflight подтвердил
+  исходные `104/15` Component/divider и прежний CHECK;
+- read-only owner check подтвердил canonical owner `supabase_admin`.
+  Повторный запуск неизменённого tracked SQL от этого owner с
+  `ON_ERROR_STOP` завершился `COMMIT`;
+- postflight counts: 5 Course, 16 Lesson, 89 Component, 6 Slides;
+  `divider=0`, publication divider `0`, non-dense Component/Slide positions `0`,
+  empty Slides `0`, exactly-one violations `0`;
+- `lesson_component_type_key_check` требует
+  `btrim(type_key) <> ''` и `lower(btrim(type_key)) <> 'divider'`;
+- snapshot сгенерирован в `2026-08-11T16:15:55Z`, SHA-256
+  `c6da0f149f29be13cb1a4cd0d5e4642e8ce24edc04558b2431e2dbbc4728b23c`.
+  Review показал только generated timestamp и новый CHECK относительно
+  предыдущего schema snapshot.
 
 ## Current repository tables
 
@@ -570,4 +585,5 @@ DATABASE_URL='postgresql://...' npm run db:snapshot
 production postflight; ручное редактирование dump вместо refresh не допускается.
 Первый roleless release исторически зафиксировал проверенный M1–M3 `expand`
 snapshot. После M4 contract rollout, M5/M6 Auth hardening и C1 Course
-publication schema script фиксирует текущий `contract` snapshot.
+publication schema этот script также зафиксировал D1 cleanup в current
+`contract` snapshot.

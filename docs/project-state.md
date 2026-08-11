@@ -1077,6 +1077,13 @@ provider requests, assistant dialog history или quota state в БД.
 - `20260810035033_course_publication_catalog.sql` — применённый production
   Course catalog/publication slice: immutable revisions, private publication
   assets, independent clone/duplicate и closed admin RPC.
+- `20260811154138_remove_divider_components.sql` — применённый production
+  D1 cleanup: удалены 15 layout-only `divider` Components из 12 Lessons/
+  4 Courses, позиции Components/Slides остались плотными, а CHECK
+  запрещает пустой `type_key` и case-insensitive `divider`. Postflight
+  сохранил 5 Course, 16 Lesson и 6 Slides; Component count стал 89,
+  publication divider, empty Slides, density и exactly-one violations равны
+  `0`. Это DB-state; он не является доказательством нового web deploy.
 
 Источники истины для текущего состояния:
 

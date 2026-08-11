@@ -55,6 +55,12 @@ ShiDao хранит два обязательных слоя:
   Auth-safe exactly-one deferred invariant boundary.
 - `20260809090000_learner_identity_provisional_auth_metadata_sync.sql` — M6
   trusted two-phase GoTrue provisional metadata synchronization.
+- `20260810035033_course_publication_catalog.sql` — C1 immutable Course
+  publication revisions, private publication assets и independent catalog
+  clone/duplicate boundary.
+- `20260811154138_remove_divider_components.sql` — D1 удаление
+  layout-only `divider`, уплотнение Component/Slide positions и CHECK-запрет
+  повторного создания.
 
 Backfill details являются историей этих migrations и не должны повторяться в
 current-schema guide как действующая domain model.
