@@ -1,11 +1,17 @@
 export type SchedulePeriod = "day" | "week" | "month";
 
-const shortDateFormatter = new Intl.DateTimeFormat("ru-RU", {
+const compactDateFormatter = new Intl.DateTimeFormat("ru-RU", {
   day: "numeric",
-  month: "long",
+  month: "short",
 });
 
-const shortDateWithYearFormatter = new Intl.DateTimeFormat("ru-RU", {
+const compactDateWithYearFormatter = new Intl.DateTimeFormat("ru-RU", {
+  day: "numeric",
+  month: "short",
+  year: "numeric",
+});
+
+const dateWithYearFormatter = new Intl.DateTimeFormat("ru-RU", {
   day: "numeric",
   month: "long",
   year: "numeric",
@@ -24,6 +30,11 @@ const fullDateFormatter = new Intl.DateTimeFormat("ru-RU", {
 
 const monthFormatter = new Intl.DateTimeFormat("ru-RU", {
   month: "long",
+  year: "numeric",
+});
+
+const compactMonthFormatter = new Intl.DateTimeFormat("ru-RU", {
+  month: "short",
   year: "numeric",
 });
 
@@ -112,6 +123,10 @@ export function formatScheduleMonthTitle(value: Date) {
   return capitalize(monthFormatter.format(value).replace(" г.", ""));
 }
 
+function formatScheduleCompactMonthTitle(value: Date) {
+  return capitalize(compactMonthFormatter.format(value).replace(" г.", ""));
+}
+
 export function formatSchedulePeriodLabel(
   value: Date,
   period: SchedulePeriod,
@@ -119,15 +134,15 @@ export function formatSchedulePeriodLabel(
 ) {
   if (period === "day") {
     if (sameLocalDay(value, today)) {
-      return `Сегодня · ${shortDateFormatter.format(value)}`;
+      return `Сегодня · ${compactDateFormatter.format(value)}`;
     }
     if (value.getFullYear() !== today.getFullYear()) {
-      return capitalize(shortDateWithYearFormatter.format(value));
+      return capitalize(compactDateWithYearFormatter.format(value));
     }
-    return `${capitalize(weekdayFormatter.format(value))} · ${shortDateFormatter.format(value)}`;
+    return `${capitalize(weekdayFormatter.format(value))} · ${compactDateFormatter.format(value)}`;
   }
 
-  if (period === "month") return formatScheduleMonthTitle(value);
+  if (period === "month") return formatScheduleCompactMonthTitle(value);
 
   const range = schedulePeriodLocalRange(value, "week");
   const lastDay = addLocalDays(range.to, -1);
@@ -135,12 +150,12 @@ export function formatSchedulePeriodLabel(
     range.from.getFullYear() === lastDay.getFullYear() &&
     range.from.getMonth() === lastDay.getMonth()
   ) {
-    return `Неделя · ${range.from.getDate()}–${shortDateFormatter.format(lastDay)}`;
+    return `Неделя · ${range.from.getDate()}–${compactDateFormatter.format(lastDay)}`;
   }
   if (range.from.getFullYear() === lastDay.getFullYear()) {
-    return `Неделя · ${shortDateFormatter.format(range.from)} — ${shortDateFormatter.format(lastDay)}`;
+    return `Неделя · ${compactDateFormatter.format(range.from)}–${compactDateFormatter.format(lastDay)}`;
   }
-  return `Неделя · ${shortDateWithYearFormatter.format(range.from)} — ${shortDateWithYearFormatter.format(lastDay)}`;
+  return `Неделя · ${compactDateWithYearFormatter.format(range.from)}–${compactDateWithYearFormatter.format(lastDay)}`;
 }
 
 export function formatSchedulePeriodAriaLabel(
@@ -152,7 +167,7 @@ export function formatSchedulePeriodAriaLabel(
 
   const range = schedulePeriodLocalRange(value, "week");
   const lastDay = addLocalDays(range.to, -1);
-  return `Неделя: с ${shortDateWithYearFormatter.format(range.from)} по ${shortDateWithYearFormatter.format(lastDay)}`;
+  return `Неделя: с ${dateWithYearFormatter.format(range.from)} по ${dateWithYearFormatter.format(lastDay)}`;
 }
 
 export function formatLocalDateValue(value: Date) {

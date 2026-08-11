@@ -89,18 +89,22 @@ Authenticated production browser postflight этого slice пока не вы�
 
 **Current source Schedule calendar/table polish (ещё не развёрнут):** отдельный
 переключатель «Неделя / Месяц» удалён. Справа на фоне страницы компактный
-составной date control стоит перед icon-only выбором «Таблица / Карточки»:
-стрелки двигают назад или вперёд весь активный день, неделю либо месяц, а
-центральная кнопка показывает соответствующую подпись периода и открывает
-календарь. Выбор опорной даты выполняется в календаре, а «День / Неделя /
-Месяц» перенесены внутрь его popover. В таблице строка заголовков имеет точную
-высоту 40 px и меньший вес шрифта; столбец называется «Ученики», scheduled
-состояние показано простыми часами и текстом «Ожидается» без повторения даты и
-времени, а «Открыть план» оформлен постоянно видимой secondary-кнопкой. Текст
-строки унифицирован с `.88rem/400` control typography. Это UI-only изменение:
-LessonRun API, System Assistant boundary, schema и migrations не меняются;
-assistant по-прежнему получает только опорную локальную дату, а не всё видимое
-окно.
+составной date control шириной ровно 300 px на desktop стоит перед icon-only
+выбором «Таблица / Карточки»: стрелки двигают назад или вперёд весь активный
+день, неделю либо месяц, а центральная кнопка показывает короткую русскую
+подпись с сокращённым месяцем и открывает календарь. Полная дата остаётся в
+доступном имени и заголовке календаря; «День / Неделя / Месяц» находятся
+внутри popover. Белая таблица не имеет внешней обводки, её светло-серая строка
+заголовков имеет точную высоту 40 px вместе с разделителем 1 px, weight 500 и
+более светлый текст. Данные разнесены по `Дата / Время / Урок / Курс / Ученики
+/ Статус`, выводятся одной строкой с ellipsis и полным `title`; scheduled
+состояние остаётся plain «Ожидается». Видимый заголовок последней колонки
+отсутствует: постоянная кнопка с вертикальным троеточием открывает все действия
+в portal-menu, а быстрые icon-only действия появляются при hover/focus строки.
+Authenticated top header и profile menu теперь используют сплошной белый фон
+без blur. Это UI-only изменение: LessonRun API, System Assistant boundary,
+schema и migrations не меняются; assistant по-прежнему получает только
+опорную локальную дату, а не всё видимое окно.
 
 **Current source Students/Courses controls slice (ещё не развёрнут):** панели
 управления `/students` и обеих вкладок `/courses` больше не создают отдельную
@@ -401,8 +405,9 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
 - В текущем source страницы `/courses`, `/students`, `/schedule`, Course и
   Lesson используют один сплошной фон `#f5f1e8`; marketing noise и цветные page
   gradients на этих маршрутах отсутствуют.
-- Course header следует demo-контракту: sticky shell высотой 68 px, белая
-  полупрозрачная поверхность, радиус 20 px и контролы 40 px с радиусом 12 px.
+- Course header следует demo-контракту: sticky shell высотой 68 px, сплошная
+  белая поверхность без blur, радиус 20 px и контролы 40 px с радиусом 12 px.
+  Персональное dropdown-меню также использует непрозрачный белый фон.
 - Один `AppPageHeader` задаёт прозрачную заголовочную секцию, единый H1 с
   максимумом 48 px на desktop и 32 px на mobile, подзаголовок, optional
   backlink и правую action-секцию для `/courses`, `/students`, `/schedule`, Course
@@ -429,16 +434,21 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
 - В current source краткий Action «Назначить урок» с иконкой добавления в
   календарь находится в общей page-header action-секции, а подзаголовок прямо
   объясняет, что здесь находятся все назначенные уроки за выбранный период.
-  Справа под header находятся compact date picker и icon-only control
-  «Таблица / Карточки». Отдельного переключателя периода на странице больше
-  нет: календарный popover объединяет выбор опорной даты и режимы «День /
-  Неделя / Месяц», а стрелки date control двигают именно выбранный период.
+  Справа под header находятся 300 px compact date picker и icon-only control
+  «Таблица / Карточки». Короткая подпись использует русское сокращение месяца,
+  но доступное имя сохраняет полную дату. Отдельного переключателя периода на
+  странице больше нет: календарный popover объединяет выбор опорной даты и
+  режимы «День / Неделя / Месяц», а стрелки date control двигают именно
+  выбранный период.
   Непустой результат начинается сразу с выбранного вида, без повторного
-  «Выбранная неделя / Занятия» и count-chip. Table projection сохраняет точную
-  40 px строку заголовков, называет аудиторию «Ученики», выводит scheduled
-  state как plain «Ожидается» и постоянно показывает secondary Action
-  «Открыть план». System Assistant намеренно продолжает получать только
-  опорную локальную дату, а не всё видимое окно.
+  «Выбранная неделя / Занятия» и count-chip. Table projection — сплошная белая
+  поверхность без внешней рамки; header имеет ровно 40 px вместе с нижним
+  разделителем, weight 500 и более светлый текст. Колонки `Дата / Время / Урок
+/ Курс / Ученики / Статус` однострочные и используют ellipsis. Статус
+  остаётся plain «Ожидается», а последняя колонка без видимого заголовка
+  показывает постоянное вертикальное троеточие со всеми действиями и быстрые
+  icon-only действия при hover/focus строки. System Assistant намеренно
+  продолжает получать только опорную локальную дату, а не всё видимое окно.
 - `/students` показывает единый teacher-scoped projection
   `TeacherLearner + LearnerProfile` во вкладках «Ученики / Группы» и
   независимую learner-safe вкладку «Наблюдение». Canonical observer URL —
@@ -1160,6 +1170,15 @@ toolbars, единый Students list с inline status, Course disclosure/native
 filters, reset, Escape с возвратом focus, icon-only cards/table и mobile 375 px
 без document-level overflow. Schema/migration не менялись; deployment этого
 source slice ещё не выполнялся.
+
+Для current source Schedule dense-table polish локально подтверждены typecheck,
+lint, format check, `git diff --check`, `445/445` unit/e2e tests и `22/22`
+strict production-mode browser scenarios. Browser gate измерил desktop date
+control ровно 300 px, header таблицы ровно 40 px вместе с divider 1 px, белые
+surface без outer border/blur, однострочный ellipsis, hover quick actions,
+необрезанный portal-menu вертикального троеточия с keyboard focus restore и
+отсутствие document-level overflow на 375/320 px. API/schema/migrations не
+менялись; deployment этого source slice ещё не выполнялся.
 
 Для current Course publication/catalog source slice локально подтверждены
 `381/381` unit tests, `19/19` строгих production-mode browser scenarios,

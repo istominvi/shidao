@@ -484,6 +484,7 @@ type PlaywrightLocator = {
   check: () => Promise<void>;
   count: () => Promise<number>;
   fill: (value: string) => Promise<void>;
+  hover: () => Promise<void>;
   inputValue: () => Promise<string>;
   selectOption: (option: { label: string }) => Promise<string[]>;
   getAttribute: (name: string) => Promise<string | null>;
@@ -2567,7 +2568,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
   const runtime = await openPage({ cookie: teacherCookie });
 
   try {
-    await runtime.page.clock.setFixedTime("2026-08-11T00:00:00+10:00");
+    await runtime.page.clock.setFixedTime("2026-08-11T00:00:00.000Z");
     await runtime.page.goto("/schedule", { waitUntil: "networkidle" });
     await runtime.page
       .getByRole("heading", { name: "Расписание", exact: true, level: 1 })
@@ -2584,6 +2585,15 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
     const dateTrigger = runtime.page.locator(".teaching-date-trigger");
     assert.equal(await dateTrigger.getAttribute("aria-haspopup"), "dialog");
     assert.equal(await dateTrigger.getAttribute("aria-expanded"), "false");
+    assert.equal(
+      (await dateTrigger.textContent())?.trim(),
+      "Неделя · 10–16 авг.",
+    );
+
+    async function expectDateTriggerLabel(label: string) {
+      await dateTrigger.getByText(label, { exact: true }).waitFor();
+      assert.equal((await dateTrigger.textContent())?.trim(), label);
+    }
 
     await dateTrigger.click();
     const dateDialog = runtime.page.getByRole("dialog");
@@ -2739,23 +2749,32 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
 
     const dayWindow = await selectPeriod("День");
     assert.equal(dayWindow.to - dayWindow.from, 24 * 60 * 60 * 1_000);
+    await expectDateTriggerLabel("Сегодня · 11 авг.");
     const nextDayWindow = await shiftPeriod("Следующий день");
     assert.equal(nextDayWindow.from, dayWindow.to);
+    await expectDateTriggerLabel("Среда · 12 авг.");
     const restoredDayWindow = await shiftPeriod("Предыдущий день");
     assert.deepEqual(restoredDayWindow, dayWindow);
+    await expectDateTriggerLabel("Сегодня · 11 авг.");
 
     const weekWindow = await selectPeriod("Неделя");
     assert.equal(weekWindow.to - weekWindow.from, 7 * 24 * 60 * 60 * 1_000);
+    await expectDateTriggerLabel("Неделя · 10–16 авг.");
     const nextWeekWindow = await shiftPeriod("Следующая неделя");
     assert.equal(nextWeekWindow.from, weekWindow.to);
+    await expectDateTriggerLabel("Неделя · 17–23 авг.");
     const restoredWeekWindow = await shiftPeriod("Предыдущая неделя");
     assert.deepEqual(restoredWeekWindow, weekWindow);
+    await expectDateTriggerLabel("Неделя · 10–16 авг.");
 
     const monthWindow = await selectPeriod("Месяц");
+    await expectDateTriggerLabel("Авг. 2026");
     const nextMonthWindow = await shiftPeriod("Следующий месяц");
     assert.equal(nextMonthWindow.from, monthWindow.to);
+    await expectDateTriggerLabel("Сент. 2026");
     const restoredMonthWindow = await shiftPeriod("Предыдущий месяц");
     assert.deepEqual(restoredMonthWindow, monthWindow);
+    await expectDateTriggerLabel("Авг. 2026");
 
     const scheduleContract = await runtime.page.evaluate(() => {
       const shell = document.querySelector<HTMLElement>(".course-demo-shell");
@@ -2782,6 +2801,9 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       const viewToggle = document.querySelector<HTMLElement>(
         ".teaching-schedule-view-toggle",
       );
+      const siteHeader = document.querySelector<HTMLElement>(
+        ".site-header-shell-demo",
+      );
       const navLinks = Array.from(
         document.querySelectorAll<HTMLAnchorElement>(
           ".site-header-shell-demo .site-header-nav-pill",
@@ -2802,7 +2824,8 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         !toolbarActions ||
         !dateNavigator ||
         !datePicker ||
-        !viewToggle
+        !viewToggle ||
+        !siteHeader
       ) {
         throw new Error("Schedule shell contract is missing");
       }
@@ -2817,11 +2840,14 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       const toolbarRect = toolbar.getBoundingClientRect();
       const toolbarActionsRect = toolbarActions.getBoundingClientRect();
       const dateNavigatorRect = dateNavigator.getBoundingClientRect();
+      const datePickerRect = datePicker.getBoundingClientRect();
       const viewToggleRect = viewToggle.getBoundingClientRect();
 
       return {
         backgroundColor: getComputedStyle(shell).backgroundColor,
         backgroundImage: getComputedStyle(shell).backgroundImage,
+        siteHeaderBackgroundColor: getComputedStyle(siteHeader).backgroundColor,
+        siteHeaderBackdropFilter: getComputedStyle(siteHeader).backdropFilter,
         headerLayout: {
           minHeight: pageHeaderStyle.minHeight,
           height: pageHeaderRect.height,
@@ -2855,6 +2881,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
           backgroundColor: dateNavigatorStyle.backgroundColor,
           height: dateNavigatorStyle.height,
           width: dateNavigatorRect.width,
+          pickerWidth: datePickerRect.width,
         },
         controlsLayout: {
           rightDelta: Math.abs(toolbarRect.right - toolbarActionsRect.right),
@@ -2876,6 +2903,11 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
 
     assert.equal(scheduleContract.backgroundColor, "rgb(245, 241, 232)");
     assert.equal(scheduleContract.backgroundImage, "none");
+    assert.equal(
+      scheduleContract.siteHeaderBackgroundColor,
+      "rgb(255, 255, 255)",
+    );
+    assert.equal(scheduleContract.siteHeaderBackdropFilter, "none");
     assert.equal(scheduleContract.headerLayout.minHeight, "200px");
     assert.ok(Math.abs(scheduleContract.headerLayout.height - 200) < 0.5);
     assert.ok(scheduleContract.headerLayout.actionCenterDelta < 0.5);
@@ -2898,7 +2930,14 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       "rgb(255, 255, 255)",
     );
     assert.equal(scheduleContract.dateNavigator.height, "40px");
-    assert.ok(scheduleContract.dateNavigator.width <= 352);
+    assert.ok(
+      Math.abs(scheduleContract.dateNavigator.width - 300) < 0.5,
+      `date navigator width: ${scheduleContract.dateNavigator.width}`,
+    );
+    assert.ok(
+      Math.abs(scheduleContract.dateNavigator.pickerWidth - 300) < 0.5,
+      `date picker width: ${scheduleContract.dateNavigator.pickerWidth}`,
+    );
     assert.deepEqual(scheduleContract.controlsLayout, {
       rightDelta: 0,
       dateBeforeView: true,
@@ -2951,6 +2990,8 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
     readScheduleWindow(await dateResponsePromise);
     await fixtureDateDialog.waitFor({ state: "detached" });
     assert.equal(await dateTrigger.getAttribute("aria-expanded"), "false");
+    await expectDateTriggerLabel("Неделя · 10–16 авг.");
+    await runtime.page.locator(".teaching-date-trigger:focus").waitFor();
     assert.equal(
       await runtime.page.evaluate(() =>
         document.activeElement?.classList.contains("teaching-date-trigger"),
@@ -2991,41 +3032,112 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
     );
 
     const scheduleTableContract = await runtime.page.evaluate(() => {
+      const wrapper = document.querySelector<HTMLElement>(
+        ".teaching-run-table-wrap",
+      );
       const table = document.querySelector<HTMLTableElement>(
         ".teaching-run-table",
       );
+      const tableHead = table?.querySelector<HTMLTableSectionElement>("thead");
       const headerRow = table?.querySelector<HTMLTableRowElement>("thead tr");
       const headerCells = Array.from(
         table?.querySelectorAll<HTMLTableCellElement>("thead th") ?? [],
       );
+      const bodyRow = table?.querySelector<HTMLTableRowElement>(
+        ".teaching-run-table-row",
+      );
       const status = table?.querySelector<HTMLElement>(
         ".teaching-run-table-status",
       );
-      const openPlan = Array.from(
-        table?.querySelectorAll<HTMLAnchorElement>("a") ?? [],
-      ).find((link) => link.textContent?.trim() === "Открыть план");
+      const actionCell = table?.querySelector<HTMLElement>(
+        ".teaching-run-table-action-cell",
+      );
+      const quickActions = table?.querySelector<HTMLElement>(
+        ".teaching-run-table-quick-actions",
+      );
+      const menuTrigger = table?.querySelector<HTMLButtonElement>(
+        ".teaching-run-action-menu .action-menu-trigger",
+      );
+      const menuTriggerIcon = menuTrigger?.querySelector<SVGElement>("svg");
       const bodyTextElements = Array.from(
         table?.querySelectorAll<HTMLElement>(
-          ".teaching-run-table-time strong, .teaching-run-table-time span, .teaching-run-table-lesson strong, .teaching-run-table-lesson small, .teaching-run-table-participants, .teaching-run-table-status",
+          ".teaching-run-table-date, .teaching-run-table-duration, .teaching-run-table-truncate, .teaching-run-table-participants, .teaching-run-table-status",
         ) ?? [],
       );
-      if (!table || !headerRow || !status || !openPlan) {
+      const truncationElements = Array.from(
+        table?.querySelectorAll<HTMLElement>(
+          ".teaching-run-table-date, .teaching-run-table-duration, .teaching-run-table-truncate",
+        ) ?? [],
+      );
+      const longValue = "ОченьДлинноеНазваниеБезПробелов".repeat(8);
+      for (const element of table?.querySelectorAll<HTMLElement>(
+        ".teaching-run-table-truncate",
+      ) ?? []) {
+        element.textContent = longValue;
+      }
+
+      if (
+        !wrapper ||
+        !table ||
+        !tableHead ||
+        !headerRow ||
+        !bodyRow ||
+        !status ||
+        !actionCell ||
+        !quickActions ||
+        !menuTrigger ||
+        !menuTriggerIcon
+      ) {
         throw new Error("Schedule table visual contract is missing");
       }
+      const wrapperStyle = getComputedStyle(wrapper);
+      const tableStyle = getComputedStyle(table);
+      const tableHeadStyle = getComputedStyle(tableHead);
       const statusStyle = getComputedStyle(status);
-      const openPlanStyle = getComputedStyle(openPlan);
+      const quickActionsStyle = getComputedStyle(quickActions);
+      const menuTriggerStyle = getComputedStyle(menuTrigger);
+      const actionHeader = headerCells.at(-1);
       return {
-        headerLabels: headerCells.map((cell) => cell.textContent?.trim() ?? ""),
-        headerRowHeight: headerRow.getBoundingClientRect().height,
-        headerCellHeights: headerCells.map(
-          (cell) => cell.getBoundingClientRect().height,
-        ),
-        headerWeights: headerCells.map(
-          (cell) => getComputedStyle(cell).fontWeight,
-        ),
+        surface: {
+          wrapperBackgroundColor: wrapperStyle.backgroundColor,
+          tableBackgroundColor: tableStyle.backgroundColor,
+          firstBodyRowBorderTopWidth: getComputedStyle(bodyRow).borderTopWidth,
+          wrapperBorderWidths: [
+            wrapperStyle.borderTopWidth,
+            wrapperStyle.borderRightWidth,
+            wrapperStyle.borderBottomWidth,
+            wrapperStyle.borderLeftWidth,
+          ],
+        },
+        header: {
+          visualLabels: headerCells.map(
+            (cell) => cell.textContent?.trim() ?? "",
+          ),
+          actionAccessibleLabel: actionHeader?.getAttribute("aria-label"),
+          rowHeight: headerRow.getBoundingClientRect().height,
+          cellHeights: headerCells.map(
+            (cell) => cell.getBoundingClientRect().height,
+          ),
+          weights: headerCells.map((cell) => getComputedStyle(cell).fontWeight),
+          colors: headerCells.map((cell) => getComputedStyle(cell).color),
+          borderBottomWidths: headerCells.map(
+            (cell) => getComputedStyle(cell).borderBottomWidth,
+          ),
+          boxSizing: headerCells.map(
+            (cell) => getComputedStyle(cell).boxSizing,
+          ),
+          backgroundColor: tableHeadStyle.backgroundColor,
+        },
         bodyTypography: bodyTextElements.map((element) => ({
           fontSize: getComputedStyle(element).fontSize,
           fontWeight: getComputedStyle(element).fontWeight,
+        })),
+        truncation: truncationElements.map((element) => ({
+          title: element.getAttribute("title"),
+          overflow: getComputedStyle(element).overflow,
+          textOverflow: getComputedStyle(element).textOverflow,
+          whiteSpace: getComputedStyle(element).whiteSpace,
+          isActuallyTruncated: element.scrollWidth > element.clientWidth,
         })),
         status: {
           text: status.textContent?.trim() ?? "",
@@ -3033,27 +3145,68 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
           borderTopWidth: statusStyle.borderTopWidth,
           borderRadius: statusStyle.borderRadius,
         },
-        openPlan: {
-          borderStyle: openPlanStyle.borderStyle,
-          borderWidth: openPlanStyle.borderWidth,
-          backgroundColor: openPlanStyle.backgroundColor,
-          visibility: openPlanStyle.visibility,
+        actions: {
+          visibleText: actionCell.textContent?.trim() ?? "",
+          quickActionsOpacity: quickActionsStyle.opacity,
+          quickActionsVisibility: quickActionsStyle.visibility,
+          menuTriggerOpacity: menuTriggerStyle.opacity,
+          menuTriggerVisibility: menuTriggerStyle.visibility,
+          menuTriggerExpanded: menuTrigger.getAttribute("aria-expanded"),
+          menuTriggerIconClass: menuTriggerIcon.getAttribute("class") ?? "",
         },
       };
     });
-    assert.deepEqual(scheduleTableContract.headerLabels, [
-      "Дата и время",
+    assert.deepEqual(scheduleTableContract.surface, {
+      wrapperBackgroundColor: "rgb(255, 255, 255)",
+      tableBackgroundColor: "rgb(255, 255, 255)",
+      firstBodyRowBorderTopWidth: "0px",
+      wrapperBorderWidths: ["0px", "0px", "0px", "0px"],
+    });
+    assert.deepEqual(scheduleTableContract.header.visualLabels, [
+      "Дата",
+      "Время",
       "Урок",
+      "Курс",
       "Ученики",
       "Статус",
-      "Действия",
+      "",
     ]);
-    assert.equal(scheduleTableContract.headerRowHeight, 40);
+    assert.equal(
+      scheduleTableContract.header.actionAccessibleLabel,
+      "Действия",
+    );
+    assert.equal(scheduleTableContract.header.rowHeight, 40);
     assert.ok(
-      scheduleTableContract.headerCellHeights.every((height) => height === 40),
+      scheduleTableContract.header.cellHeights.every((height) => height === 40),
     );
     assert.ok(
-      scheduleTableContract.headerWeights.every((weight) => weight === "600"),
+      scheduleTableContract.header.weights.every((weight) => weight === "500"),
+    );
+    assert.ok(
+      scheduleTableContract.header.borderBottomWidths.every(
+        (width) => width === "1px",
+      ),
+    );
+    assert.ok(
+      scheduleTableContract.header.boxSizing.every(
+        (boxSizing) => boxSizing === "border-box",
+      ),
+    );
+    assert.ok(
+      scheduleTableContract.header.colors.every((color) => {
+        const channels = color.match(/\d+/g)?.map(Number) ?? [];
+        return (
+          channels.length >= 3 &&
+          channels.slice(0, 3).every((value) => value >= 130)
+        );
+      }),
+    );
+    const headerBackgroundChannels =
+      scheduleTableContract.header.backgroundColor.match(/\d+/g)?.map(Number) ??
+      [];
+    assert.equal(headerBackgroundChannels.length, 3);
+    assert.ok(
+      headerBackgroundChannels.every((value) => value >= 245 && value < 255),
     );
     assert.ok(scheduleTableContract.bodyTypography.length >= 6);
     assert.ok(
@@ -3061,6 +3214,21 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         ({ fontSize, fontWeight }) =>
           fontSize === "14.08px" && fontWeight === "400",
       ),
+    );
+    assert.equal(scheduleTableContract.truncation.length, 4);
+    assert.ok(
+      scheduleTableContract.truncation.every(
+        ({ title, overflow, textOverflow, whiteSpace }) =>
+          Boolean(title) &&
+          overflow === "hidden" &&
+          textOverflow === "ellipsis" &&
+          whiteSpace === "nowrap",
+      ),
+    );
+    assert.ok(
+      scheduleTableContract.truncation
+        .slice(-2)
+        .every(({ isActuallyTruncated }) => isActuallyTruncated),
     );
     assert.deepEqual(scheduleTableContract.status, {
       text: "Ожидается",
@@ -3072,12 +3240,123 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       scheduleTableContract.status.text,
       /завтра|\d{1,2}:\d{2}/i,
     );
-    assert.deepEqual(scheduleTableContract.openPlan, {
-      borderStyle: "solid",
-      borderWidth: "1px",
-      backgroundColor: "rgba(255, 255, 255, 0.98)",
-      visibility: "visible",
+    assert.deepEqual(scheduleTableContract.actions, {
+      visibleText: "",
+      quickActionsOpacity: "0",
+      quickActionsVisibility: "hidden",
+      menuTriggerOpacity: "1",
+      menuTriggerVisibility: "visible",
+      menuTriggerExpanded: "false",
+      menuTriggerIconClass: scheduleTableContract.actions.menuTriggerIconClass,
     });
+    assert.match(
+      scheduleTableContract.actions.menuTriggerIconClass,
+      /lucide-ellipsis-vertical/,
+    );
+
+    const scheduleRow = runtime.page.locator(".teaching-run-table-row");
+    await scheduleRow.hover();
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    assert.deepEqual(
+      await runtime.page.evaluate(() => {
+        const quickActions = document.querySelector<HTMLElement>(
+          ".teaching-run-table-quick-actions",
+        );
+        if (!quickActions)
+          throw new Error("Schedule quick actions are missing");
+        const style = getComputedStyle(quickActions);
+        return { opacity: style.opacity, visibility: style.visibility };
+      }),
+      { opacity: "1", visibility: "visible" },
+    );
+
+    const rowMenuTrigger = runtime.page.getByRole("button", {
+      name: /Действия с занятием/,
+    });
+    await rowMenuTrigger.click();
+    const rowActionMenu = runtime.page.getByRole("menu");
+    await rowActionMenu.waitFor();
+    const openRunMenuItem = rowActionMenu.getByRole("menuitem", {
+      name: "Открыть",
+      exact: true,
+    });
+    const openPlanMenuItem = rowActionMenu.getByRole("menuitem", {
+      name: "Открыть план",
+      exact: true,
+    });
+    await openRunMenuItem.waitFor();
+    await openPlanMenuItem.waitFor();
+    assert.deepEqual(
+      await runtime.page.evaluate(() => {
+        const menu = document.querySelector<HTMLElement>(
+          ".action-menu-panel-portal",
+        );
+        if (!menu) throw new Error("Portal action menu is missing");
+        const rect = menu.getBoundingClientRect();
+        return {
+          fullyInsideViewport:
+            rect.top >= 0 &&
+            rect.left >= 0 &&
+            rect.right <= window.innerWidth &&
+            rect.bottom <= window.innerHeight,
+          position: getComputedStyle(menu).position,
+        };
+      }),
+      { fullyInsideViewport: true, position: "fixed" },
+    );
+    await openRunMenuItem.press("ArrowDown");
+    assert.equal(
+      await runtime.page.evaluate(
+        () => document.activeElement?.textContent?.trim() ?? "",
+      ),
+      "Открыть план",
+    );
+    await openPlanMenuItem.press("Escape");
+    await rowActionMenu.waitFor({ state: "detached" });
+    await runtime.page
+      .locator(".teaching-run-action-menu .action-menu-trigger:focus")
+      .waitFor();
+    assert.equal(await rowMenuTrigger.getAttribute("aria-expanded"), "false");
+    assert.equal(
+      await runtime.page.evaluate(() =>
+        document.activeElement?.classList.contains("action-menu-trigger"),
+      ),
+      true,
+    );
+
+    const userMenuTrigger = runtime.page.getByRole("button", {
+      name: "Открыть меню пользователя",
+      exact: true,
+    });
+    await userMenuTrigger.click();
+    const profileDropdown = runtime.page.locator(".nav-dropdown-panel");
+    await profileDropdown.waitFor();
+    await runtime.page
+      .getByRole("menu", { name: "Меню пользователя", exact: true })
+      .waitFor();
+    assert.deepEqual(
+      await runtime.page.evaluate(() => {
+        const panel = document.querySelector<HTMLElement>(
+          ".nav-dropdown-panel",
+        );
+        if (!panel) throw new Error("Profile dropdown is missing");
+        const style = getComputedStyle(panel);
+        return {
+          backgroundColor: style.backgroundColor,
+          backgroundImage: style.backgroundImage,
+          backdropFilter: style.backdropFilter,
+          opacity: style.opacity,
+        };
+      }),
+      {
+        backgroundColor: "rgb(255, 255, 255)",
+        backgroundImage: "none",
+        backdropFilter: "none",
+        opacity: "1",
+      },
+    );
+    await userMenuTrigger.press("Escape");
+    await profileDropdown.waitFor({ state: "detached" });
 
     await runtime.page
       .getByRole("button", { name: "Показать карточками", exact: true })
@@ -4229,7 +4508,7 @@ test("browser smoke: mobile Account menu exposes primary sections and account ac
   });
 
   try {
-    await runtime.page.clock.setFixedTime("2026-08-11T00:00:00+10:00");
+    await runtime.page.clock.setFixedTime("2026-08-11T00:00:00.000Z");
     await runtime.page.goto("/schedule", { waitUntil: "networkidle" });
     await runtime.page
       .getByRole("heading", { name: "Занятий нет", exact: true, level: 2 })
@@ -4384,6 +4663,29 @@ test("browser smoke: mobile Account menu exposes primary sections and account ac
       tableScrollIsContained: true,
       wrapperInsideViewport: true,
     });
+
+    await runtime.page.setViewportSize({ width: 320, height: 812 });
+    const narrowTableContract = await runtime.page.evaluate(() => {
+      const wrapper = document.querySelector<HTMLElement>(
+        ".teaching-run-table-wrap",
+      );
+      if (!wrapper) throw new Error("Narrow schedule table is missing");
+      const viewportWidth = document.documentElement.clientWidth;
+      const rect = wrapper.getBoundingClientRect();
+      return {
+        clientWidth: viewportWidth,
+        scrollWidth: document.documentElement.scrollWidth,
+        tableScrollIsContained: wrapper.scrollWidth > wrapper.clientWidth,
+        wrapperInsideViewport: rect.left >= 0 && rect.right <= viewportWidth,
+      };
+    });
+    assert.deepEqual(narrowTableContract, {
+      clientWidth: 320,
+      scrollWidth: 320,
+      tableScrollIsContained: true,
+      wrapperInsideViewport: true,
+    });
+    await runtime.page.setViewportSize({ width: 375, height: 812 });
 
     await runtime.page
       .getByRole("button", { name: "Показать карточками", exact: true })

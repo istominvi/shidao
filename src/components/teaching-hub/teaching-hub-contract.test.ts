@@ -30,6 +30,14 @@ const schedulePeriodSource = readFileSync(
   "src/components/teaching-hub/schedule-period.ts",
   "utf8",
 );
+const teachingHubStyleSource = readFileSync(
+  "src/app/styles/teaching-hub.css",
+  "utf8",
+);
+const navigationStyleSource = readFileSync(
+  "src/app/styles/navigation.css",
+  "utf8",
+);
 const studentsWorkspaceSource = readFileSync(
   "src/components/teaching-hub/students-workspace.tsx",
   "utf8",
@@ -183,6 +191,68 @@ test("schedule projects persisted LessonRun appointments without a parallel even
   );
   assert.match(scheduleWorkspaceSource, /selectedRunId/);
   assert.doesNotMatch(scheduleWorkspaceSource, /ScheduleEvent|LessonSession/);
+});
+
+test("schedule keeps the compact date control and dense one-line table contract", () => {
+  assert.match(schedulePeriodSource, /month: "short"/);
+  assert.match(schedulePeriodSource, /Сегодня ·/);
+  assert.match(schedulePeriodSource, /Неделя ·/);
+  assert.match(
+    teachingHubStyleSource,
+    /\.teaching-date-picker\s*\{[^}]*width:\s*18\.75rem;[^}]*flex:\s*0 0 18\.75rem/,
+  );
+
+  for (const label of ["Дата", "Время", "Урок", "Курс", "Ученики", "Статус"]) {
+    assert.match(scheduleWorkspaceSource, new RegExp(`>\\s*${label}\\s*<`));
+  }
+  assert.doesNotMatch(scheduleWorkspaceSource, />\s*Дата и время\s*</);
+  assert.match(
+    scheduleWorkspaceSource,
+    /<ProductTableHeaderCell[\s\S]*aria-label="Действия"[\s\S]*\/>/,
+  );
+  assert.match(scheduleWorkspaceSource, /compactTableDateFormatter/);
+  assert.match(scheduleWorkspaceSource, /title=\{compactDate\}/);
+  assert.match(
+    scheduleWorkspaceSource,
+    /title=\{`\$\{formattedTime\} · \$\{duration\}`\}/,
+  );
+  assert.match(scheduleWorkspaceSource, /title=\{run\.lessonTitle\}/);
+  assert.match(scheduleWorkspaceSource, /title=\{run\.courseTitle\}/);
+  assert.match(scheduleWorkspaceSource, /teaching-run-table-truncate/);
+  assert.match(scheduleWorkspaceSource, /teaching-run-table-quick-actions/);
+  assert.match(scheduleWorkspaceSource, /teaching-run-table-quick-action/);
+  assert.match(scheduleWorkspaceSource, /<ActionMenu/);
+  assert.match(scheduleWorkspaceSource, /triggerIcon=\{MoreVertical\}/);
+  assert.match(scheduleWorkspaceSource, /label: "Открыть план"/);
+
+  assert.match(
+    teachingHubStyleSource,
+    /\.teaching-run-table-wrap\s*\{[^}]*border:\s*0;[^}]*background:\s*#fff;/,
+  );
+  assert.match(
+    teachingHubStyleSource,
+    /\.teaching-run-table thead th\s*\{[^}]*box-sizing:\s*border-box;[^}]*border-bottom:\s*1px/,
+  );
+  assert.match(
+    teachingHubStyleSource,
+    /\.teaching-run-table thead th\s*\{[^}]*font-weight:\s*500;/,
+  );
+  assert.match(
+    teachingHubStyleSource,
+    /\.teaching-run-table-quick-actions\s*\{[^}]*opacity:\s*0;[^}]*visibility:\s*hidden;/,
+  );
+  assert.match(
+    teachingHubStyleSource,
+    /\.teaching-run-table-row:hover \.teaching-run-table-quick-actions,[^}]*\{[^}]*opacity:\s*1;[^}]*visibility:\s*visible;/,
+  );
+  assert.match(
+    navigationStyleSource,
+    /\.site-header-shell-demo\s*\{[^}]*background:\s*#fff;/,
+  );
+  assert.match(
+    navigationStyleSource,
+    /\.nav-dropdown-panel\s*\{[^}]*background:\s*#fff;/,
+  );
 });
 
 test("students manages one learner and group directory with durable history", () => {

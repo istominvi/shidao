@@ -433,7 +433,9 @@ DB quota. При network/5xx/invalid-response commit считается unknown:
 Visual contract Course routes не меняет эту навигационную или доменную модель:
 
 - page background — сплошной `#f5f1e8` без цветных marketing gradients;
-- product header — sticky demo shell высотой 68 px с радиусом 20 px;
+- product header — sticky demo shell высотой 68 px с радиусом 20 px и
+  непрозрачным белым фоном без blur; Account dropdown использует тот же
+  сплошной белый surface;
 - `AppPageHeader` задаёт один прозрачный layout для `/courses`, `/students`,
   `/schedule`, Course и Lesson: системный H1 веса 400 с максимумом 48 px
   на desktop и 32 px на mobile, подзаголовок, optional backlink и правую
@@ -466,17 +468,21 @@ Current production делает `/schedule` и `/students` доступными
   «Таблица / Карточки»; внешней toolbar-card у controls нет. Стрелки двигают
   целый период, а выбор даты задаёт его опорный день. В current source Action
   сокращён до «Назначить урок» и использует calendar-plus icon. Внешний
-  переключатель периода удалён: компактный right-aligned date picker объединяет
-  центральную подпись периода, календарный popover и внутренний selector
-  «День / Неделя / Месяц»; стрелки сдвигают назад или вперёд именно выбранный
-  период. Рядом остаётся icon-only «Таблица / Карточки». Непустая projection
-  после controls не повторяет период, заголовок «Занятия» или видимый result
-  count, но сохраняет доступное имя секции и caption таблицы. Table header
-  имеет exact 40 px и weight 600; row typography — `.88rem/400`, аудитория
-  называется «Ученики», scheduled state выводится часами и plain
-  «Ожидается» без дублирования даты/времени, а «Открыть план» остаётся постоянно
-  видимой secondary-кнопкой. Этот current source polish меняет только UI:
-  LessonRun API/schema и migrations не меняются;
+  переключатель периода удалён: right-aligned date picker шириной 300 px на
+  desktop объединяет короткую русскую подпись периода, календарный popover и
+  внутренний selector «День / Неделя / Месяц»; полное доступное имя даты
+  сохраняется, а стрелки сдвигают назад или вперёд именно выбранный период.
+  Рядом остаётся icon-only «Таблица / Карточки». Непустая projection после
+  controls не повторяет период, заголовок «Занятия» или видимый result count,
+  но сохраняет доступное имя секции и caption таблицы. Белая Table projection
+  не имеет внешней рамки; header имеет exact 40 px вместе с divider 1 px,
+  weight 500 и более светлый текст. Однострочные колонки `Дата / Время / Урок /
+Курс / Ученики / Статус` используют ellipsis и полные title, scheduled state
+  остаётся plain «Ожидается». Последняя колонка не имеет видимого заголовка:
+  постоянно доступное вертикальное троеточие открывает portal-menu со всеми
+  действиями, а быстрые icon-only actions появляются при hover/focus строки.
+  Этот current source polish меняет только UI: LessonRun API/schema и
+  migrations не меняются;
 - `/students` объединяет справочник TeacherLearner/LearnerProfile и
   LearnerGroup во вкладках «Ученики / Группы» с learner-safe observer
   projection во вкладке «Наблюдение»; справочник сохраняет поиск, фильтр по

@@ -256,7 +256,11 @@ test("course routes use the flat demo background and unified visual controls", (
   );
   assert.match(
     navigationStyles,
-    /\.site-header-shell-demo\s*\{[\s\S]*?height: 4\.25rem;[\s\S]*?border-radius: 1\.25rem;/,
+    /\.site-header-shell-demo\s*\{[\s\S]*?height: 4\.25rem;[\s\S]*?border-radius: 1\.25rem;[\s\S]*?background: #fff;/,
+  );
+  assert.match(
+    navigationStyles,
+    /\.nav-dropdown-panel\s*\{[\s\S]*?background: #fff;/,
   );
 });
 

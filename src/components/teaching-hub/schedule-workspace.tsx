@@ -2,12 +2,14 @@
 
 import Link from "next/link";
 import {
+  BookOpen,
   CalendarDays,
   CircleAlert,
   CircleCheck,
   Clock3,
   LayoutGrid,
   LoaderCircle,
+  MoreVertical,
   Play,
   Table2,
   Users,
@@ -29,6 +31,7 @@ import {
   schedulePeriodRange,
   type SchedulePeriod,
 } from "@/components/teaching-hub/schedule-period";
+import { ActionMenu, type ActionMenuItem } from "@/components/ui/action-menu";
 import { Button, productButtonClassName } from "@/components/ui/button";
 import { DialogShell } from "@/components/ui/dialog-shell";
 import {
@@ -50,6 +53,12 @@ const tableDateFormatter = new Intl.DateTimeFormat("ru-RU", {
   weekday: "long",
   day: "numeric",
   month: "long",
+});
+
+const compactTableDateFormatter = new Intl.DateTimeFormat("ru-RU", {
+  weekday: "long",
+  day: "numeric",
+  month: "short",
 });
 
 const timeFormatter = new Intl.DateTimeFormat("ru-RU", {
@@ -83,7 +92,7 @@ function ScheduleRunStatus({ run }: { run: LessonRun }) {
   return (
     <span className="teaching-run-table-status">
       <Icon className="h-4 w-4" aria-hidden="true" />
-      {status.label}
+      <span className="teaching-run-table-status-label">{status.label}</span>
     </span>
   );
 }
@@ -92,6 +101,16 @@ function runActionLabel(run: LessonRun) {
   if (lessonRunState(run) === "active") return "Завершить";
   if (lessonRunState(run) === "completed") return "Результаты";
   return "Открыть";
+}
+
+function capitalizeRussian(value: string) {
+  return value.replace(/^./u, (character) =>
+    character.toLocaleUpperCase("ru-RU"),
+  );
+}
+
+function runPlanHref(run: LessonRun) {
+  return `${toCourseRoute(run.courseId)}?lesson=${encodeURIComponent(run.lessonId)}`;
 }
 
 function ScheduleRunActions({
@@ -112,7 +131,7 @@ function ScheduleRunActions({
         {runActionLabel(run)}
       </Button>
       <Link
-        href={`${toCourseRoute(run.courseId)}?lesson=${encodeURIComponent(run.lessonId)}`}
+        href={runPlanHref(run)}
         className={productButtonClassName("secondary")}
       >
         Открыть план
@@ -359,52 +378,98 @@ export function ScheduleWorkspace() {
                 </caption>
                 <ProductTableHead>
                   <ProductTableHeaderRow>
-                    <ProductTableHeaderCell className="w-[18%]">
-                      Дата и время
+                    <ProductTableHeaderCell className="w-[14%]">
+                      Дата
                     </ProductTableHeaderCell>
-                    <ProductTableHeaderCell className="w-[26%]">
+                    <ProductTableHeaderCell className="w-[12%]">
+                      Время
+                    </ProductTableHeaderCell>
+                    <ProductTableHeaderCell className="w-[20%]">
                       Урок
                     </ProductTableHeaderCell>
-                    <ProductTableHeaderCell className="w-[14%]">
+                    <ProductTableHeaderCell className="w-[19%]">
+                      Курс
+                    </ProductTableHeaderCell>
+                    <ProductTableHeaderCell className="w-[10%]">
                       Ученики
                     </ProductTableHeaderCell>
-                    <ProductTableHeaderCell className="w-[18%]">
+                    <ProductTableHeaderCell className="w-[12%]">
                       Статус
                     </ProductTableHeaderCell>
-                    <ProductTableHeaderCell className="w-[24%] text-right">
-                      Действия
-                    </ProductTableHeaderCell>
+                    <ProductTableHeaderCell
+                      className="w-[13%] text-right"
+                      aria-label="Действия"
+                    />
                   </ProductTableHeaderRow>
                 </ProductTableHead>
                 <ProductTableBody>
                   {visibleRuns.map((run) => {
                     const scheduledAt = new Date(run.scheduledAt);
+                    const compactDate = capitalizeRussian(
+                      compactTableDateFormatter.format(scheduledAt),
+                    );
+                    const formattedTime = timeFormatter.format(scheduledAt);
+                    const duration = `${run.plannedDurationMinutes} мин.`;
+                    const actionLabel = runActionLabel(run);
+                    const actionItems: ActionMenuItem[] = [
+                      {
+                        id: "open",
+                        label: actionLabel,
+                        icon:
+                          lessonRunState(run) === "scheduled"
+                            ? Play
+                            : CircleCheck,
+                        disabled: Boolean(busyLabel),
+                        onSelect: () => setSelectedRunId(run.id),
+                      },
+                      {
+                        id: "open-plan",
+                        label: "Открыть план",
+                        icon: BookOpen,
+                        href: runPlanHref(run),
+                      },
+                    ];
+                    const RunActionIcon =
+                      lessonRunState(run) === "scheduled" ? Play : CircleCheck;
                     return (
-                      <ProductTableRow key={run.id} className="h-20">
-                        <ProductTableCell>
+                      <ProductTableRow
+                        key={run.id}
+                        className="teaching-run-table-row"
+                      >
+                        <ProductTableCell className="overflow-hidden">
                           <time
                             dateTime={run.scheduledAt}
-                            className="teaching-run-table-time"
+                            className="teaching-run-table-date block truncate"
+                            title={compactDate}
                           >
-                            <strong>
-                              {tableDateFormatter
-                                .format(scheduledAt)
-                                .replace(/^./u, (character) =>
-                                  character.toLocaleUpperCase("ru-RU"),
-                                )}
-                            </strong>
-                            <span>
-                              {timeFormatter.format(scheduledAt)} ·{" "}
-                              {run.plannedDurationMinutes} мин.
-                            </span>
+                            {compactDate}
                           </time>
                         </ProductTableCell>
-                        <ProductTablePrimaryCell>
-                          <span className="teaching-run-table-lesson">
-                            <strong>{run.lessonTitle}</strong>
-                            <small>{run.courseTitle}</small>
+                        <ProductTableCell className="overflow-hidden">
+                          <time
+                            dateTime={run.scheduledAt}
+                            className="teaching-run-table-duration block truncate"
+                            title={`${formattedTime} · ${duration}`}
+                          >
+                            {formattedTime} · {duration}
+                          </time>
+                        </ProductTableCell>
+                        <ProductTablePrimaryCell className="overflow-hidden">
+                          <span
+                            className="teaching-run-table-truncate block truncate"
+                            title={run.lessonTitle}
+                          >
+                            {run.lessonTitle}
                           </span>
                         </ProductTablePrimaryCell>
+                        <ProductTableCell className="overflow-hidden">
+                          <span
+                            className="teaching-run-table-truncate block truncate"
+                            title={run.courseTitle}
+                          >
+                            {run.courseTitle}
+                          </span>
+                        </ProductTableCell>
                         <ProductTableCell>
                           <span className="teaching-run-table-participants">
                             <Users className="h-4 w-4" aria-hidden="true" />
@@ -414,21 +479,46 @@ export function ScheduleWorkspace() {
                         <ProductTableCell>
                           <ScheduleRunStatus run={run} />
                         </ProductTableCell>
-                        <ProductTableActionCell className="text-right">
+                        <ProductTableActionCell className="teaching-run-table-action-cell text-right">
                           <span className="teaching-run-table-actions">
-                            <Button
-                              type="button"
-                              disabled={Boolean(busyLabel)}
-                              onClick={() => setSelectedRunId(run.id)}
-                            >
-                              {runActionLabel(run)}
-                            </Button>
-                            <Link
-                              href={`${toCourseRoute(run.courseId)}?lesson=${encodeURIComponent(run.lessonId)}`}
-                              className={productButtonClassName("secondary")}
-                            >
-                              Открыть план
-                            </Link>
+                            <span className="teaching-run-table-quick-actions">
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                className="teaching-run-table-quick-action"
+                                disabled={Boolean(busyLabel)}
+                                aria-label={`${actionLabel}: «${run.lessonTitle}»`}
+                                title={actionLabel}
+                                onClick={() => setSelectedRunId(run.id)}
+                              >
+                                <RunActionIcon
+                                  className="h-4 w-4"
+                                  aria-hidden="true"
+                                />
+                              </Button>
+                              <Link
+                                href={runPlanHref(run)}
+                                className={productButtonClassName(
+                                  "ghost",
+                                  "teaching-run-table-quick-action",
+                                )}
+                                aria-label={`Открыть план урока «${run.lessonTitle}»`}
+                                title="Открыть план"
+                              >
+                                <BookOpen
+                                  className="h-4 w-4"
+                                  aria-hidden="true"
+                                />
+                              </Link>
+                            </span>
+                            <ActionMenu
+                              className="teaching-run-action-menu"
+                              label={`Действия с занятием «${run.lessonTitle}»`}
+                              items={actionItems}
+                              triggerIcon={MoreVertical}
+                              triggerVariant="ghost"
+                              portal
+                            />
                           </span>
                         </ProductTableActionCell>
                       </ProductTableRow>

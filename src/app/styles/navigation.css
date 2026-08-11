@@ -61,13 +61,13 @@
   min-height: 4.25rem;
   border: 0;
   border-radius: 1.25rem;
-  background: rgba(255, 255, 255, 0.84);
+  background: #fff;
   padding: 0.75rem;
   box-shadow:
     0 20px 44px rgba(20, 20, 20, 0.09),
     inset 0 0 0 1px rgba(255, 255, 255, 0.78),
     inset 0 1px 0 rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(18px);
+  backdrop-filter: none;
 }
 
 .site-header-shell-demo .site-header-brand {
@@ -304,12 +304,12 @@
 
 .nav-dropdown-panel {
   border-radius: 1rem;
-  background: rgba(255, 255, 255, 0.95);
+  background: #fff;
   padding: 0.5rem;
   box-shadow:
     0 22px 42px rgba(20, 20, 20, 0.08),
     inset 0 1px 0 rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(10px);
+  backdrop-filter: none;
 }
 
 .nav-dropdown-profile {

@@ -544,16 +544,24 @@ ShiDao V2 application:
   Месяц» нет: центральная кнопка compact date control открывает календарный
   popover с «День / Неделя / Месяц», выбор даты меняет опорную дату, а стрелки
   сдвигают назад/вперёд активный целый день, неделю либо месяц. Проверить
-  закрытие Escape с возвратом focus, клавиатурную навигацию календаря, local
-  timezone и отсутствие document-level overflow на 375 px. Рядом должны
-  оставаться оба icon-only вида «Таблица / Карточки». Header показывает точный
-  подзаголовок «Здесь все назначенные уроки за выбранный период.» и Action
-  «Назначить урок» с calendar-plus icon; при непустом результате сразу после
-  controls идёт таблица или карточки без summary «Выбранная неделя / Занятия»
-  и count-chip. В table view дополнительно проверить exact 40 px header с
-  weight 600, «Ученики», одинаковую `.88rem/400` row typography, plain
-  clock + «Ожидается» без повторной даты/времени и постоянно видимую
-  secondary-кнопку «Открыть план»;
+  desktop width date control ровно 300 px, короткие русские подписи вроде
+  `Неделя · 10–16 авг.` и полное доступное имя. Проверить закрытие Escape с
+  возвратом focus, клавиатурную навигацию календаря, local timezone и отсутствие
+  document-level overflow на 375 и 320 px. Рядом должны оставаться оба
+  icon-only вида «Таблица / Карточки». Header показывает точный подзаголовок
+  «Здесь все назначенные уроки за выбранный период.» и Action «Назначить урок»
+  с calendar-plus icon; authenticated top header и profile dropdown имеют
+  computed `rgb(255, 255, 255)` и `backdrop-filter: none`. При непустом
+  результате сразу после controls идёт таблица или карточки без summary
+  «Выбранная неделя / Занятия» и count-chip. В table view дополнительно
+  проверить solid-white surface без outer border; exact 40 px header вместе с
+  нижним divider 1 px, weight 500 и более светлый цвет; видимые `Дата / Время /
+Урок / Курс / Ученики / Статус` и пустой action heading. Текстовые данные
+  остаются в одну строку с ellipsis и полным `title`, clock + «Ожидается» не
+  повторяет дату/время. Вертикальное троеточие постоянно доступно с клавиатуры
+  и touch, его portal-menu не обрезается горизонтальным scroll wrapper,
+  содержит все действия, поддерживает arrows/Escape/focus restore; быстрые
+  icon-only actions появляются при hover/focus строки;
 - вкладки «Ученики / Группы / Наблюдение» сохраняют общий black 1 px baseline и square
   active-segment; directory toolbar остаётся прозрачной и без outer card,
   active/archive/pending находятся в одной таблице с inline-чипами и
