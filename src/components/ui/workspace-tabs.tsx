@@ -128,10 +128,12 @@ export function WorkspaceTabs<T extends string>({
               {Icon ? (
                 <Icon className="workspace-tab-icon" aria-hidden="true" />
               ) : null}
-              <span>{item.label}</span>
-              {typeof item.count === "number" ? (
-                <span className="workspace-tab-count">{item.count}</span>
-              ) : null}
+              <span className="workspace-tab-label">
+                {item.label}
+                {typeof item.count === "number" ? (
+                  <span className="workspace-tab-count">{` ${item.count}`}</span>
+                ) : null}
+              </span>
             </button>
           );
         })}

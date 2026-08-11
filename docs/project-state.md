@@ -73,6 +73,16 @@ Terminal condition identity программы закрыт.
 для title/header/action-center на пяти поверхностях, `12px / 1px / 4px`
 для tabs и пустую browser console. Схема БД в visual slice не менялась.
 
+**Current source page-header/tabs polish (next deployment):** на всех active
+product pages заголовочная колонка `AppPageHeader` получает всё свободное
+место через `minmax(0, 1fr)`, а action-секция занимает только ширину своего
+контента (`max-content`, ограниченный шириной контейнера) и больше не
+растягивает кнопки на mobile. Общий `WorkspaceTabs` использует нижний
+разделитель `rgba(20, 20, 20, 0.2)` высотой 1 px; выбранная вкладка сохраняет
+непрозрачный чёрный сегмент 4 px. Числовой счётчик теперь является обычным
+inline-текстом после названия (`Ученики 1`) без чёрного круга, отдельного
+размера или цвета. Это UI-only изменение без API, schema или migration.
+
 **Current deployed Schedule presentation slice:**
 `/schedule` загружает реальные LessonRun за локальную неделю (понедельник–
 понедельник) или календарный месяц. Внешняя поверхность toolbar удалена:
@@ -424,12 +434,17 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
   максимумом 48 px на desktop и 32 px на mobile, подзаголовок, optional
   backlink и правую action-секцию для `/courses`, `/students`, `/schedule`, Course
   и Lesson. Контейнер имеет минимальную высоту 200 px, растёт по контенту, а
-  actions вертикально центрированы. Course/Lesson сохраняют backlink, а
-  top-level разделы не создают искусственную обратную ссылку.
+  actions вертикально центрированы. Заголовочная колонка занимает всё
+  оставшееся место, а actions имеют intrinsic ширину по содержимому и не
+  растягивают кнопки даже при узком viewport. Course/Lesson сохраняют backlink,
+  а top-level разделы не создают искусственную обратную ссылку.
 - Один `WorkspaceTabs` используется в Course, Lesson, Students и profile dialog,
   сохраняет roving keyboard/ARIA contract и горизонтальный scroll. Выбранная
-  вкладка утолщает чёрную baseline 1 px с inline-inset 12 px
-  квадратным чёрным сегментом 4 px без radius. В current source кнопки,
+  вкладка перекрывает baseline 1 px цвета `rgba(20, 20, 20, 0.2)` с
+  inline-inset 12 px квадратным чёрным сегментом 4 px без radius. Числовой
+  count отображается простым продолжением label через пробел, без badge;
+  каждый tab владеет существующим persistent `tabpanel` через симметричные
+  `aria-controls / aria-labelledby`. В current source кнопки,
   header controls и вкладки используют шрифт `.88rem/400`, flat primary без
   3D-блика/подъёма, fully opaque icons и единый 16 px icon rhythm; исходный
   layout-контракт подтверждён production postflight release `77870e3`, а эта

@@ -8,6 +8,7 @@ function source(path: string) {
 
 test("active V2 pages share one page header contract without visual modifiers", () => {
   const header = source("src/components/app/page-header.tsx");
+  const styles = source("src/app/globals.css");
   const consumers = [
     source("src/app/(app)/courses/page.tsx"),
     source("src/app/(app)/courses/new/page.tsx"),
@@ -23,6 +24,32 @@ test("active V2 pages share one page header contract without visual modifiers", 
   assert.match(header, /className="app-page-back-link"/);
   assert.match(header, /className="app-page-actions"/);
   assert.doesNotMatch(header, /className\?: string/);
+
+  assert.match(
+    styles,
+    /\.course-demo-shell \.app-page-header > \.app-page-heading,\s*\.course-demo-shell \.app-page-header > \.app-page-meta\s*\{[^}]*min-width: 0;/,
+  );
+  assert.match(
+    styles,
+    /\.course-demo-shell \.app-page-header > \.app-page-actions\s*\{[^}]*width: max-content;[^}]*max-width: 100%;[^}]*align-self: flex-start;/,
+  );
+  assert.match(
+    styles,
+    /@media \(min-width: 1280px\)\s*\{[\s\S]*?\.course-demo-shell \.app-page-header\s*\{[^}]*grid-template-columns: minmax\(0, 1fr\) max-content;/,
+  );
+  assert.match(
+    styles,
+    /\.course-demo-shell \.app-page-back-link\s*\{[^}]*min-width: 0;/,
+  );
+  assert.match(
+    styles,
+    /\.course-demo-shell \.app-page-back-link > span:last-child,\s*\.course-demo-shell \.app-page-title,\s*\.course-demo-shell \.app-page-description\s*\{[^}]*min-width: 0;[^}]*overflow-wrap: anywhere;/,
+  );
+  assert.doesNotMatch(
+    styles,
+    /\.course-demo-shell \.app-page-actions \.product-btn\s*\{[^}]*flex:\s*1;/,
+    "Product page actions must keep their intrinsic width on narrow screens",
+  );
 
   for (const consumer of consumers) {
     assert.match(consumer, /<AppPageHeader/);

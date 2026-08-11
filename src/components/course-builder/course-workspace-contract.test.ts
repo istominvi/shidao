@@ -239,7 +239,7 @@ test("course routes use the flat demo background and unified visual controls", (
   );
   assert.match(
     styles,
-    /\.workspace-tabs::before\s*\{[^}]*right: var\(--workspace-tabs-inline-offset\);[^}]*left: var\(--workspace-tabs-inline-offset\);[^}]*height: 1px;[^}]*background: #141414;/,
+    /\.workspace-tabs::before\s*\{[^}]*right: var\(--workspace-tabs-inline-offset\);[^}]*left: var\(--workspace-tabs-inline-offset\);[^}]*height: 1px;[^}]*background: rgba\(20, 20, 20, 0\.2\);/,
   );
   assert.match(
     styles,

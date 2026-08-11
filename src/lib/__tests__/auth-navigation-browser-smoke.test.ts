@@ -2780,6 +2780,8 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       const shell = document.querySelector<HTMLElement>(".course-demo-shell");
       const pageHeader =
         document.querySelector<HTMLElement>(".app-page-header");
+      const pageHeading =
+        pageHeader?.querySelector<HTMLElement>(".app-page-heading");
       const title = document.querySelector<HTMLElement>(".app-page-title");
       const description = document.querySelector<HTMLElement>(
         ".app-page-description",
@@ -2838,6 +2840,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       if (
         !shell ||
         !pageHeader ||
+        !pageHeading ||
         !title ||
         !description ||
         !headerActions ||
@@ -2859,6 +2862,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       }
 
       const pageHeaderStyle = getComputedStyle(pageHeader);
+      const pageHeadingStyle = getComputedStyle(pageHeading);
       const titleStyle = getComputedStyle(title);
       const descriptionStyle = getComputedStyle(description);
       const toolbarStyle = getComputedStyle(toolbar);
@@ -2867,7 +2871,10 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       const primaryButtonStyle = getComputedStyle(headerPrimaryButton);
       const primaryIconStyle = getComputedStyle(headerPrimaryIcon);
       const pageHeaderRect = pageHeader.getBoundingClientRect();
+      const pageHeadingRect = pageHeading.getBoundingClientRect();
       const headerActionsRect = headerActions.getBoundingClientRect();
+      const headerActionContentRect =
+        headerActions.firstElementChild?.getBoundingClientRect();
       const toolbarRect = toolbar.getBoundingClientRect();
       const toolbarActionsRect = toolbarActions.getBoundingClientRect();
       const dateNavigatorRect = dateNavigator.getBoundingClientRect();
@@ -2882,6 +2889,18 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         headerLayout: {
           minHeight: pageHeaderStyle.minHeight,
           height: pageHeaderRect.height,
+          headingMinWidth: pageHeadingStyle.minWidth,
+          headingWidth: pageHeadingRect.width,
+          actionsWidth: headerActionsRect.width,
+          actionContentWidth: headerActionContentRect?.width ?? 0,
+          actionsFitContentDelta: Math.abs(
+            headerActionsRect.width - (headerActionContentRect?.width ?? 0),
+          ),
+          actionsRightDelta: Math.abs(
+            pageHeaderRect.right -
+              Number.parseFloat(pageHeaderStyle.paddingRight) -
+              headerActionsRect.right,
+          ),
           actionCenterDelta: Math.abs(
             headerActionsRect.top +
               headerActionsRect.height / 2 -
@@ -2979,6 +2998,14 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
     assert.equal(scheduleContract.siteHeaderBackdropFilter, "none");
     assert.equal(scheduleContract.headerLayout.minHeight, "200px");
     assert.ok(Math.abs(scheduleContract.headerLayout.height - 200) < 0.5);
+    assert.equal(scheduleContract.headerLayout.headingMinWidth, "0px");
+    assert.ok(
+      scheduleContract.headerLayout.headingWidth >
+        scheduleContract.headerLayout.actionsWidth,
+    );
+    assert.ok(scheduleContract.headerLayout.actionContentWidth > 0);
+    assert.ok(scheduleContract.headerLayout.actionsFitContentDelta < 0.5);
+    assert.ok(scheduleContract.headerLayout.actionsRightDelta < 0.5);
     assert.ok(scheduleContract.headerLayout.actionCenterDelta < 0.5);
     assert.equal(scheduleContract.headerSignature.titleFontWeight, "400");
     assert.equal(
@@ -3722,6 +3749,12 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       const activeTab = document.querySelector<HTMLElement>(
         ".workspace-tab-active",
       );
+      const activeTabLabel = activeTab?.querySelector<HTMLElement>(
+        "span:not(.workspace-tab-count)",
+      );
+      const activeTabCount = activeTab?.querySelector<HTMLElement>(
+        ".workspace-tab-count",
+      );
       const tabs = document.querySelector<HTMLElement>(".workspace-tabs");
       const tabsScroll = document.querySelector<HTMLElement>(
         ".workspace-tabs-scroll",
@@ -3743,6 +3776,8 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         !title ||
         !description ||
         !activeTab ||
+        !activeTabLabel ||
+        !activeTabCount ||
         !tabs ||
         !tabsScroll ||
         !headerActions ||
@@ -3758,6 +3793,8 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       const descriptionStyle = getComputedStyle(description);
       const tabsStyle = getComputedStyle(tabs);
       const tabStyle = getComputedStyle(activeTab);
+      const tabLabelStyle = getComputedStyle(activeTabLabel);
+      const tabCountStyle = getComputedStyle(activeTabCount);
       const markerStyle = getComputedStyle(activeTab, "::after");
       const baselineStyle = getComputedStyle(tabs, "::before");
       const pageHeaderRect = pageHeader.getBoundingClientRect();
@@ -3802,6 +3839,23 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
           markerColor: markerStyle.backgroundColor,
           markerRadius: markerStyle.borderRadius,
           markerBottom: markerStyle.bottom,
+        },
+        tabCount: {
+          text: activeTab.innerText.replace(/\s+/g, " ").trim(),
+          value: activeTabCount.textContent?.trim() ?? "",
+          display: tabCountStyle.display,
+          minWidth: tabCountStyle.minWidth,
+          height: tabCountStyle.height,
+          paddingLeft: tabCountStyle.paddingLeft,
+          paddingRight: tabCountStyle.paddingRight,
+          borderRadius: tabCountStyle.borderRadius,
+          backgroundColor: tabCountStyle.backgroundColor,
+          color: tabCountStyle.color,
+          labelColor: tabLabelStyle.color,
+          fontSize: tabCountStyle.fontSize,
+          labelFontSize: tabLabelStyle.fontSize,
+          fontWeight: tabCountStyle.fontWeight,
+          labelFontWeight: tabLabelStyle.fontWeight,
         },
         tabGeometry: {
           firstTabIsActive:
@@ -3848,7 +3902,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       radius: "0px",
       fontWeight: "400",
       baselineHeight: "1px",
-      baselineColor: "rgb(20, 20, 20)",
+      baselineColor: "rgba(20, 20, 20, 0.2)",
       baselineLeft: "12px",
       baselineRight: "12px",
       tabsPaddingLeft: "12px",
@@ -3858,6 +3912,40 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       markerRadius: "0px",
       markerBottom: "0px",
     });
+    assert.match(studentsVisual.tabCount.text, /^Ученики \d+$/);
+    assert.match(studentsVisual.tabCount.value, /^\d+$/);
+    assert.deepEqual(
+      {
+        display: studentsVisual.tabCount.display,
+        minWidth: studentsVisual.tabCount.minWidth,
+        height: studentsVisual.tabCount.height,
+        paddingLeft: studentsVisual.tabCount.paddingLeft,
+        paddingRight: studentsVisual.tabCount.paddingRight,
+        borderRadius: studentsVisual.tabCount.borderRadius,
+        backgroundColor: studentsVisual.tabCount.backgroundColor,
+      },
+      {
+        display: "inline",
+        minWidth: "0px",
+        height: "auto",
+        paddingLeft: "0px",
+        paddingRight: "0px",
+        borderRadius: "0px",
+        backgroundColor: "rgba(0, 0, 0, 0)",
+      },
+    );
+    assert.equal(
+      studentsVisual.tabCount.color,
+      studentsVisual.tabCount.labelColor,
+    );
+    assert.equal(
+      studentsVisual.tabCount.fontSize,
+      studentsVisual.tabCount.labelFontSize,
+    );
+    assert.equal(
+      studentsVisual.tabCount.fontWeight,
+      studentsVisual.tabCount.labelFontWeight,
+    );
     assert.equal(studentsVisual.tabGeometry.firstTabIsActive, true);
     assert.ok(Math.abs(studentsVisual.tabGeometry.activeStartInset - 12) < 0.5);
     assert.ok(
@@ -4045,6 +4133,28 @@ test("browser smoke: self profile exposes only learner-safe history and controls
         level: 1,
       })
       .waitFor();
+    const profileTabOwnership = await runtime.page.evaluate(() =>
+      Array.from(document.querySelectorAll<HTMLElement>('[role="tab"]')).map(
+        (tab) => {
+          const controls = tab.getAttribute("aria-controls") ?? "";
+          const panel = controls ? document.getElementById(controls) : null;
+          return {
+            controls,
+            panelRole: panel?.getAttribute("role") ?? "",
+            labelledBy: panel?.getAttribute("aria-labelledby") ?? "",
+            tabId: tab.id,
+          };
+        },
+      ),
+    );
+    assert.ok(profileTabOwnership.length > 0);
+    assert.equal(
+      profileTabOwnership.every(
+        ({ controls, panelRole, labelledBy, tabId }) =>
+          Boolean(controls) && panelRole === "tabpanel" && labelledBy === tabId,
+      ),
+      true,
+    );
     let html = await runtime.page.content();
     assert.match(html, /1 ч 32 мин/);
     assert.match(html, /Известное фактическое время/);
@@ -4122,6 +4232,28 @@ test("browser smoke: observer reads published history only and can leave immedia
     await runtime.page
       .getByRole("heading", { name: "Борис Волков", exact: true, level: 2 })
       .waitFor();
+    const observingTabOwnership = await runtime.page.evaluate(() =>
+      Array.from(document.querySelectorAll<HTMLElement>('[role="tab"]')).map(
+        (tab) => {
+          const controls = tab.getAttribute("aria-controls") ?? "";
+          const panel = controls ? document.getElementById(controls) : null;
+          return {
+            controls,
+            panelRole: panel?.getAttribute("role") ?? "",
+            labelledBy: panel?.getAttribute("aria-labelledby") ?? "",
+            tabId: tab.id,
+          };
+        },
+      ),
+    );
+    assert.ok(observingTabOwnership.length > 0);
+    assert.equal(
+      observingTabOwnership.every(
+        ({ controls, panelRole, labelledBy, tabId }) =>
+          Boolean(controls) && panelRole === "tabpanel" && labelledBy === tabId,
+      ),
+      true,
+    );
     await runtime.page.getByRole("tab", { name: /^История/ }).click();
     await runtime.page
       .getByText("Опубликованный комментарий для учебного профиля.", {
@@ -5726,6 +5858,8 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
     const courseVisual = await runtime.page.evaluate(() => {
       const pageHeader =
         document.querySelector<HTMLElement>(".app-page-header");
+      const pageHeading =
+        pageHeader?.querySelector<HTMLElement>(".app-page-heading");
       const title = pageHeader?.querySelector<HTMLElement>(".app-page-title");
       const description = pageHeader?.querySelector<HTMLElement>(
         ".app-page-description",
@@ -5737,6 +5871,7 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
 
       if (
         !pageHeader ||
+        !pageHeading ||
         !title ||
         !description ||
         !tab ||
@@ -5749,6 +5884,7 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       }
 
       const headerStyle = getComputedStyle(pageHeader);
+      const headingStyle = getComputedStyle(pageHeading);
       const titleStyle = getComputedStyle(title);
       const descriptionStyle = getComputedStyle(description);
       const tabsStyle = getComputedStyle(tabs);
@@ -5758,7 +5894,15 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       const tabRect = tab.getBoundingClientRect();
       const tabsRect = tabs.getBoundingClientRect();
       const pageHeaderRect = pageHeader.getBoundingClientRect();
+      const pageHeadingRect = pageHeading.getBoundingClientRect();
       const headerActionsRect = headerActions.getBoundingClientRect();
+      const actionChildRects = Array.from(headerActions.children)
+        .map((child) => child.getBoundingClientRect())
+        .filter((rect) => rect.width > 0 && rect.height > 0);
+      const actionsContentWidth = actionChildRects.length
+        ? Math.max(...actionChildRects.map((rect) => rect.right)) -
+          Math.min(...actionChildRects.map((rect) => rect.left))
+        : 0;
 
       return {
         headerBackgroundColor: headerStyle.backgroundColor,
@@ -5768,6 +5912,18 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
         headerLayout: {
           minHeight: headerStyle.minHeight,
           height: pageHeaderRect.height,
+          headingMinWidth: headingStyle.minWidth,
+          headingWidth: pageHeadingRect.width,
+          actionsWidth: headerActionsRect.width,
+          actionsContentWidth,
+          actionsFitContentDelta: Math.abs(
+            headerActionsRect.width - actionsContentWidth,
+          ),
+          actionsRightDelta: Math.abs(
+            pageHeaderRect.right -
+              Number.parseFloat(headerStyle.paddingRight) -
+              headerActionsRect.right,
+          ),
           actionCenterDelta: Math.abs(
             headerActionsRect.top +
               headerActionsRect.height / 2 -
@@ -5814,6 +5970,14 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       coursesVisual.pageHeaderLayout.height,
     );
     assert.ok(courseVisual.headerLayout.actionCenterDelta < 0.5);
+    assert.equal(courseVisual.headerLayout.headingMinWidth, "0px");
+    assert.ok(
+      courseVisual.headerLayout.headingWidth >
+        courseVisual.headerLayout.actionsWidth,
+    );
+    assert.ok(courseVisual.headerLayout.actionsContentWidth > 0);
+    assert.ok(courseVisual.headerLayout.actionsFitContentDelta < 0.5);
+    assert.ok(courseVisual.headerLayout.actionsRightDelta < 0.5);
     assert.deepEqual(
       courseVisual.headerSignature,
       coursesVisual.headerSignature,
@@ -5823,7 +5987,7 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       radius: "0px",
       fontWeight: "400",
       baselineHeight: "1px",
-      baselineColor: "rgb(20, 20, 20)",
+      baselineColor: "rgba(20, 20, 20, 0.2)",
       baselineLeft: "12px",
       baselineRight: "12px",
       tabsPaddingLeft: "12px",
@@ -5978,6 +6142,105 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
     );
     assert.deepEqual(lessonVisual.tabSignature, courseVisual.tabSignature);
 
+    await runtime.page.setViewportSize({ width: 1120, height: 900 });
+    const narrowLessonHeader = await runtime.page.evaluate(() => {
+      const pageHeader =
+        document.querySelector<HTMLElement>(".app-page-header");
+      const pageHeading =
+        pageHeader?.querySelector<HTMLElement>(".app-page-heading");
+      const title = pageHeading?.querySelector<HTMLElement>(".app-page-title");
+      const description = pageHeading?.querySelector<HTMLElement>(
+        ".app-page-description",
+      );
+      const backLabel = pageHeader?.querySelector<HTMLElement>(
+        ".app-page-back-link > span:last-child",
+      );
+      const actions =
+        pageHeader?.querySelector<HTMLElement>(".app-page-actions");
+      if (
+        !pageHeader ||
+        !pageHeading ||
+        !title ||
+        !description ||
+        !backLabel ||
+        !actions
+      ) {
+        throw new Error("Narrow Lesson header contract is missing");
+      }
+
+      const originalTitle = title.textContent;
+      const originalDescription = description.textContent;
+      const originalBackLabel = backLabel.textContent;
+      title.textContent = `Урок ${"БезПробелов".repeat(30)}`;
+      description.textContent = "ОписаниеБезПробелов".repeat(35);
+      backLabel.textContent = "КурсБезПробелов".repeat(25);
+
+      const headerStyle = getComputedStyle(pageHeader);
+      const titleStyle = getComputedStyle(title);
+      const descriptionStyle = getComputedStyle(description);
+      const backLabelStyle = getComputedStyle(backLabel);
+      const pageHeaderRect = pageHeader.getBoundingClientRect();
+      const pageHeadingRect = pageHeading.getBoundingClientRect();
+      const actionsRect = actions.getBoundingClientRect();
+      const contentWidth =
+        pageHeaderRect.width -
+        Number.parseFloat(headerStyle.paddingLeft) -
+        Number.parseFloat(headerStyle.paddingRight);
+      const contract = {
+        documentClientWidth: document.documentElement.clientWidth,
+        documentScrollWidth: document.documentElement.scrollWidth,
+        headerDisplay: headerStyle.display,
+        headerDirection: headerStyle.flexDirection,
+        headingOwnsContentDelta: Math.abs(pageHeadingRect.width - contentWidth),
+        actionsInsideHeader:
+          actionsRect.left >=
+            pageHeaderRect.left +
+              Number.parseFloat(headerStyle.paddingLeft) -
+              0.5 &&
+          actionsRect.right <=
+            pageHeaderRect.right -
+              Number.parseFloat(headerStyle.paddingRight) +
+              0.5,
+        actionsDoNotOverlapHeading:
+          actionsRect.top >= pageHeadingRect.bottom - 0.5,
+        titleWrap: titleStyle.overflowWrap,
+        descriptionWrap: descriptionStyle.overflowWrap,
+        backLabelWrap: backLabelStyle.overflowWrap,
+      };
+
+      title.textContent = originalTitle;
+      description.textContent = originalDescription;
+      backLabel.textContent = originalBackLabel;
+      return contract;
+    });
+    assert.deepEqual(
+      {
+        documentClientWidth: narrowLessonHeader.documentClientWidth,
+        documentScrollWidth: narrowLessonHeader.documentScrollWidth,
+        headerDisplay: narrowLessonHeader.headerDisplay,
+        headerDirection: narrowLessonHeader.headerDirection,
+        actionsInsideHeader: narrowLessonHeader.actionsInsideHeader,
+        actionsDoNotOverlapHeading:
+          narrowLessonHeader.actionsDoNotOverlapHeading,
+        titleWrap: narrowLessonHeader.titleWrap,
+        descriptionWrap: narrowLessonHeader.descriptionWrap,
+        backLabelWrap: narrowLessonHeader.backLabelWrap,
+      },
+      {
+        documentClientWidth: 1120,
+        documentScrollWidth: 1120,
+        headerDisplay: "flex",
+        headerDirection: "column",
+        actionsInsideHeader: true,
+        actionsDoNotOverlapHeading: true,
+        titleWrap: "anywhere",
+        descriptionWrap: "anywhere",
+        backLabelWrap: "anywhere",
+      },
+    );
+    assert.ok(narrowLessonHeader.headingOwnsContentDelta < 0.5);
+    await runtime.page.setViewportSize({ width: 1280, height: 720 });
+
     html = await runtime.page.content();
     assert.match(html, /aria-label="Разделы урока"/);
     assert.match(html, /План/);
@@ -6020,6 +6283,13 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
     await mobileCourseLink.waitFor();
 
     const mobileCoursesToolbar = await runtime.page.evaluate(() => {
+      const pageHeader =
+        document.querySelector<HTMLElement>(".app-page-header");
+      const pageHeading =
+        pageHeader?.querySelector<HTMLElement>(".app-page-heading");
+      const headerActions =
+        pageHeader?.querySelector<HTMLElement>(".app-page-actions");
+      const headerAction = headerActions?.firstElementChild;
       const toolbar = document.querySelector<HTMLElement>(
         ".course-index-toolbar",
       );
@@ -6029,14 +6299,46 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
       const activeViewButton = viewSwitch?.querySelector<HTMLElement>(
         'button[aria-pressed="true"]',
       );
-      if (!toolbar || !viewSwitch || !activeViewButton) {
+      if (
+        !pageHeader ||
+        !pageHeading ||
+        !headerActions ||
+        !headerAction ||
+        !toolbar ||
+        !viewSwitch ||
+        !activeViewButton
+      ) {
         throw new Error("Mobile Courses toolbar controls are missing");
       }
       const viewportWidth = document.documentElement.clientWidth;
+      const pageHeaderStyle = getComputedStyle(pageHeader);
+      const pageHeaderRect = pageHeader.getBoundingClientRect();
+      const pageHeadingRect = pageHeading.getBoundingClientRect();
+      const headerActionsRect = headerActions.getBoundingClientRect();
+      const headerActionRect = headerAction.getBoundingClientRect();
+      const pageHeaderContentWidth =
+        pageHeaderRect.width -
+        Number.parseFloat(pageHeaderStyle.paddingLeft) -
+        Number.parseFloat(pageHeaderStyle.paddingRight);
       const toolbarRect = toolbar.getBoundingClientRect();
       return {
         clientWidth: viewportWidth,
         scrollWidth: document.documentElement.scrollWidth,
+        pageHeader: {
+          contentWidth: pageHeaderContentWidth,
+          headingWidth: pageHeadingRect.width,
+          actionsWidth: headerActionsRect.width,
+          actionWidth: headerActionRect.width,
+          actionsFitContentDelta: Math.abs(
+            headerActionsRect.width - headerActionRect.width,
+          ),
+          headingOwnsContentDelta: Math.abs(
+            pageHeadingRect.width - pageHeaderContentWidth,
+          ),
+          actionsInsideViewport:
+            headerActionsRect.left >= 0 &&
+            headerActionsRect.right <= viewportWidth,
+        },
         toolbarInsideViewport:
           toolbarRect.left >= 0 && toolbarRect.right <= viewportWidth,
         shellHeight: getComputedStyle(viewSwitch).height,
@@ -6044,14 +6346,33 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
         activePressed: activeViewButton.getAttribute("aria-pressed"),
       };
     });
-    assert.deepEqual(mobileCoursesToolbar, {
-      clientWidth: 375,
-      scrollWidth: 375,
-      toolbarInsideViewport: true,
-      shellHeight: "40px",
-      activeButtonHeight: "32px",
-      activePressed: "true",
-    });
+    assert.deepEqual(
+      {
+        clientWidth: mobileCoursesToolbar.clientWidth,
+        scrollWidth: mobileCoursesToolbar.scrollWidth,
+        toolbarInsideViewport: mobileCoursesToolbar.toolbarInsideViewport,
+        shellHeight: mobileCoursesToolbar.shellHeight,
+        activeButtonHeight: mobileCoursesToolbar.activeButtonHeight,
+        activePressed: mobileCoursesToolbar.activePressed,
+      },
+      {
+        clientWidth: 375,
+        scrollWidth: 375,
+        toolbarInsideViewport: true,
+        shellHeight: "40px",
+        activeButtonHeight: "32px",
+        activePressed: "true",
+      },
+    );
+    assert.ok(mobileCoursesToolbar.pageHeader.contentWidth > 0);
+    assert.ok(mobileCoursesToolbar.pageHeader.actionWidth > 0);
+    assert.ok(
+      mobileCoursesToolbar.pageHeader.headingWidth >
+        mobileCoursesToolbar.pageHeader.actionsWidth,
+    );
+    assert.ok(mobileCoursesToolbar.pageHeader.actionsFitContentDelta < 0.5);
+    assert.ok(mobileCoursesToolbar.pageHeader.headingOwnsContentDelta < 0.5);
+    assert.equal(mobileCoursesToolbar.pageHeader.actionsInsideViewport, true);
 
     const mobileCourseFilterTrigger = runtime.page.locator(
       ".course-index-toolbar .course-filter-trigger",

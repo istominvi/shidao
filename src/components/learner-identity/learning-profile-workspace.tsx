@@ -12,7 +12,11 @@ import { useCallback, useEffect, useState } from "react";
 import { AppPageHeader } from "@/components/app/page-header";
 import { Button } from "@/components/ui/button";
 import { SurfaceCard } from "@/components/ui/surface-card";
-import { WorkspaceTabs } from "@/components/ui/workspace-tabs";
+import {
+  WorkspaceTabs,
+  workspaceTabId,
+  workspaceTabPanelId,
+} from "@/components/ui/workspace-tabs";
 import type {
   LearnerAiConsent,
   LearnerConnectionRequest,
@@ -45,6 +49,8 @@ import { SafeHistoryList } from "./safe-history-list";
 import { ShareCodeCard } from "./share-code-card";
 
 type Surface = "overview" | "history" | "access" | "data";
+
+const LEARNING_PROFILE_TABS_ID = "learning-profile";
 
 export function LearningProfileWorkspace() {
   const [surface, setSurface] = useState<Surface>("overview");
@@ -161,7 +167,7 @@ export function LearningProfileWorkspace() {
         description="Здесь собраны завершённые результаты по всем преподавателям и только те комментарии, которыми с вами явно поделились."
       />
       <WorkspaceTabs
-        idBase="learning-profile"
+        idBase={LEARNING_PROFILE_TABS_ID}
         ariaLabel="Разделы учебного профиля"
         value={surface}
         onChange={setSurface}
@@ -193,183 +199,114 @@ export function LearningProfileWorkspace() {
       {loading ? (
         <IdentityLoading>Загружаем учебный профиль…</IdentityLoading>
       ) : null}
-      {!loading && profile && progress ? (
-        <>
-          {surface === "overview" ? (
-            <div className="space-y-5">
-              <SurfaceCard>
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
-                      Ваш учебный профиль
-                    </p>
-                    <h1 className="mt-1 text-2xl font-black text-neutral-950">
-                      {profile.displayName}
-                    </h1>
-                    <p className="mt-2 text-sm text-neutral-600">
-                      Объединено прежних учебных профилей:{" "}
-                      {profile.mergedLineageCount}. Служебные идентификаторы и
-                      данные безопасности здесь не показываются.
-                    </p>
-                  </div>
-                  <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-900">
-                    Связан с вашим аккаунтом
-                  </span>
+      <div
+        id={workspaceTabPanelId(LEARNING_PROFILE_TABS_ID, "overview")}
+        role="tabpanel"
+        aria-labelledby={workspaceTabId(LEARNING_PROFILE_TABS_ID, "overview")}
+        hidden={surface !== "overview"}
+        tabIndex={0}
+      >
+        {!loading && profile && progress && surface === "overview" ? (
+          <div className="space-y-5">
+            <SurfaceCard>
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
+                    Ваш учебный профиль
+                  </p>
+                  <h1 className="mt-1 text-2xl font-black text-neutral-950">
+                    {profile.displayName}
+                  </h1>
+                  <p className="mt-2 text-sm text-neutral-600">
+                    Объединено прежних учебных профилей:{" "}
+                    {profile.mergedLineageCount}. Служебные идентификаторы и
+                    данные безопасности здесь не показываются.
+                  </p>
                 </div>
-              </SurfaceCard>
-              <ProgressSummary progress={progress} />
-              <ShareCodeCard
-                shareCode={shareCode}
-                busy={busy}
-                onRotate={() => void rotateCode()}
-              />
-            </div>
-          ) : null}
-          {surface === "history" ? (
-            <SafeHistoryList
-              items={history}
-              nextCursor={nextCursor}
-              loadingMore={loadingMore}
-              onLoadMore={() => void loadMore()}
+                <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-900">
+                  Связан с вашим аккаунтом
+                </span>
+              </div>
+            </SurfaceCard>
+            <ProgressSummary progress={progress} />
+            <ShareCodeCard
+              shareCode={shareCode}
+              busy={busy}
+              onRotate={() => void rotateCode()}
             />
-          ) : null}
-          {surface === "access" ? (
-            <div className="grid gap-5 lg:grid-cols-2">
-              <section className="rounded-2xl border border-neutral-200 bg-white p-5">
-                <h2 className="font-bold text-neutral-950">
-                  Запросы преподавателей
-                </h2>
-                <p className="mt-1 text-sm text-neutral-600">
-                  Код и email создают только запрос. Вы решаете, активировать ли
-                  связь.
-                </p>
-                {connections.length === 0 ? (
-                  <div className="mt-4">
-                    <IdentityEmpty
-                      title="Запросов нет"
-                      description="Поделитесь одноразовым кодом только с нужным преподавателем."
-                    />
-                  </div>
-                ) : (
-                  <ul className="mt-4 space-y-3">
-                    {connections.map((request) => (
-                      <li
-                        key={request.id}
-                        className="rounded-xl border border-neutral-200 p-3"
-                      >
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                          <strong className="text-sm">
-                            {request.counterpartyLabel}
-                          </strong>
-                          <RequestStatusBadge status={request.status} />
-                        </div>
-                        <p className="mt-1 text-xs text-neutral-500">
-                          До {formatIdentityDate(request.expiresAt)}
-                        </p>
-                        {request.status === "pending" ? (
-                          <div className="mt-3 flex gap-2">
-                            {request.direction === "incoming" ? (
-                              <>
-                                <Button
-                                  type="button"
-                                  disabled={busy}
-                                  onClick={() =>
-                                    void mutate(() =>
-                                      actOnConnection(request.id, "accept"),
-                                    )
-                                  }
-                                >
-                                  Принять
-                                </Button>
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  disabled={busy}
-                                  onClick={() =>
-                                    void mutate(() =>
-                                      actOnConnection(request.id, "reject"),
-                                    )
-                                  }
-                                >
-                                  Отклонить
-                                </Button>
-                              </>
-                            ) : (
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                disabled={busy}
-                                onClick={() =>
-                                  void mutate(() =>
-                                    actOnConnection(request.id, "cancel"),
-                                  )
-                                }
-                              >
-                                Отменить
-                              </Button>
-                            )}
-                          </div>
-                        ) : null}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </section>
-              <section className="rounded-2xl border border-neutral-200 bg-white p-5">
-                <div className="flex items-start gap-3">
-                  <BrainCircuit className="mt-0.5 h-5 w-5" aria-hidden="true" />
-                  <div>
-                    <h2 className="font-bold text-neutral-950">
-                      Персонализация с общей историей
-                    </h2>
-                    <p className="mt-1 text-sm text-neutral-600">
-                      Отдельное согласие для конкретного курса и его текущего
-                      владельца. Оно не открывает преподавателю чужие личные
-                      заметки других преподавателей.
-                    </p>
-                  </div>
+          </div>
+        ) : null}
+      </div>
+      <div
+        id={workspaceTabPanelId(LEARNING_PROFILE_TABS_ID, "history")}
+        role="tabpanel"
+        aria-labelledby={workspaceTabId(LEARNING_PROFILE_TABS_ID, "history")}
+        hidden={surface !== "history"}
+        tabIndex={0}
+      >
+        {!loading && profile && progress && surface === "history" ? (
+          <SafeHistoryList
+            items={history}
+            nextCursor={nextCursor}
+            loadingMore={loadingMore}
+            onLoadMore={() => void loadMore()}
+          />
+        ) : null}
+      </div>
+      <div
+        id={workspaceTabPanelId(LEARNING_PROFILE_TABS_ID, "access")}
+        role="tabpanel"
+        aria-labelledby={workspaceTabId(LEARNING_PROFILE_TABS_ID, "access")}
+        hidden={surface !== "access"}
+        tabIndex={0}
+      >
+        {!loading && profile && progress && surface === "access" ? (
+          <div className="grid gap-5 lg:grid-cols-2">
+            <section className="rounded-2xl border border-neutral-200 bg-white p-5">
+              <h2 className="font-bold text-neutral-950">
+                Запросы преподавателей
+              </h2>
+              <p className="mt-1 text-sm text-neutral-600">
+                Код и email создают только запрос. Вы решаете, активировать ли
+                связь.
+              </p>
+              {connections.length === 0 ? (
+                <div className="mt-4">
+                  <IdentityEmpty
+                    title="Запросов нет"
+                    description="Поделитесь одноразовым кодом только с нужным преподавателем."
+                  />
                 </div>
-                {consents.length === 0 ? (
-                  <div className="mt-4">
-                    <IdentityEmpty
-                      title="Запросов помощника нет"
-                      description="Без вашего разрешения помощник использует только историю, записанную владельцем курса."
-                    />
-                  </div>
-                ) : (
-                  <ul className="mt-4 space-y-3">
-                    {consents.map((consent) => (
-                      <li
-                        key={consent.id}
-                        className="rounded-xl border border-neutral-200 p-3"
-                      >
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                          <strong className="text-sm">
-                            {consent.courseTitle}
-                          </strong>
-                          <AiConsentStatusBadge status={consent.status} />
-                        </div>
-                        <p className="mt-1 text-xs text-neutral-600">
-                          Владелец: {consent.ownerLabel}. Цель:{" "}
-                          {consent.purpose}. До{" "}
-                          {formatIdentityDate(consent.expiresAt)}
-                        </p>
+              ) : (
+                <ul className="mt-4 space-y-3">
+                  {connections.map((request) => (
+                    <li
+                      key={request.id}
+                      className="rounded-xl border border-neutral-200 p-3"
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <strong className="text-sm">
+                          {request.counterpartyLabel}
+                        </strong>
+                        <RequestStatusBadge status={request.status} />
+                      </div>
+                      <p className="mt-1 text-xs text-neutral-500">
+                        До {formatIdentityDate(request.expiresAt)}
+                      </p>
+                      {request.status === "pending" ? (
                         <div className="mt-3 flex gap-2">
-                          {consent.status === "pending" ? (
+                          {request.direction === "incoming" ? (
                             <>
                               <Button
                                 type="button"
                                 disabled={busy}
                                 onClick={() =>
                                   void mutate(() =>
-                                    actOnAiConsent(consent.id, "grant", {
-                                      expectedRevision: consent.revision,
-                                      expiresInDays: 90,
-                                    }),
+                                    actOnConnection(request.id, "accept"),
                                   )
                                 }
                               >
-                                Разрешить
+                                Принять
                               </Button>
                               <Button
                                 type="button"
@@ -377,17 +314,89 @@ export function LearningProfileWorkspace() {
                                 disabled={busy}
                                 onClick={() =>
                                   void mutate(() =>
-                                    actOnAiConsent(consent.id, "revoke", {
-                                      expectedRevision: consent.revision,
-                                    }),
+                                    actOnConnection(request.id, "reject"),
                                   )
                                 }
                               >
                                 Отклонить
                               </Button>
                             </>
-                          ) : null}
-                          {consent.status === "active" ? (
+                          ) : (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              disabled={busy}
+                              onClick={() =>
+                                void mutate(() =>
+                                  actOnConnection(request.id, "cancel"),
+                                )
+                              }
+                            >
+                              Отменить
+                            </Button>
+                          )}
+                        </div>
+                      ) : null}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+            <section className="rounded-2xl border border-neutral-200 bg-white p-5">
+              <div className="flex items-start gap-3">
+                <BrainCircuit className="mt-0.5 h-5 w-5" aria-hidden="true" />
+                <div>
+                  <h2 className="font-bold text-neutral-950">
+                    Персонализация с общей историей
+                  </h2>
+                  <p className="mt-1 text-sm text-neutral-600">
+                    Отдельное согласие для конкретного курса и его текущего
+                    владельца. Оно не открывает преподавателю чужие личные
+                    заметки других преподавателей.
+                  </p>
+                </div>
+              </div>
+              {consents.length === 0 ? (
+                <div className="mt-4">
+                  <IdentityEmpty
+                    title="Запросов помощника нет"
+                    description="Без вашего разрешения помощник использует только историю, записанную владельцем курса."
+                  />
+                </div>
+              ) : (
+                <ul className="mt-4 space-y-3">
+                  {consents.map((consent) => (
+                    <li
+                      key={consent.id}
+                      className="rounded-xl border border-neutral-200 p-3"
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <strong className="text-sm">
+                          {consent.courseTitle}
+                        </strong>
+                        <AiConsentStatusBadge status={consent.status} />
+                      </div>
+                      <p className="mt-1 text-xs text-neutral-600">
+                        Владелец: {consent.ownerLabel}. Цель: {consent.purpose}.
+                        До {formatIdentityDate(consent.expiresAt)}
+                      </p>
+                      <div className="mt-3 flex gap-2">
+                        {consent.status === "pending" ? (
+                          <>
+                            <Button
+                              type="button"
+                              disabled={busy}
+                              onClick={() =>
+                                void mutate(() =>
+                                  actOnAiConsent(consent.id, "grant", {
+                                    expectedRevision: consent.revision,
+                                    expiresInDays: 90,
+                                  }),
+                                )
+                              }
+                            >
+                              Разрешить
+                            </Button>
                             <Button
                               type="button"
                               variant="ghost"
@@ -400,61 +409,82 @@ export function LearningProfileWorkspace() {
                                 )
                               }
                             >
-                              Отозвать
+                              Отклонить
                             </Button>
-                          ) : null}
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </section>
-            </div>
-          ) : null}
-          {surface === "data" ? (
-            <div className="grid gap-4 lg:grid-cols-2">
-              <section className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
-                <h2 className="font-bold text-amber-950">
-                  Ошибочная прямая связь
-                </h2>
-                <p className="mt-2 text-sm leading-relaxed text-amber-900">
-                  Отвязка доступна только для ошибочной прямой связи, пока
-                  учебные результаты ещё не объединялись и нет зависимых
-                  разрешений. Прежний профиль останется у связанных
-                  преподавателей без аккаунта, а у вас появится новый пустой
-                  профиль.
-                </p>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="mt-4"
-                  disabled={!profile.canSafeUnlink}
-                  onClick={() => setDestructiveMode("unlink")}
-                >
-                  Проверить возможность отвязки
-                </Button>
-              </section>
-              <section className="rounded-2xl border border-rose-200 bg-rose-50 p-5">
-                <h2 className="font-bold text-rose-950">
-                  Сброс учебных данных
-                </h2>
-                <p className="mt-2 text-sm leading-relaxed text-rose-900">
-                  Будут удалены все ваши учебные результаты, связи, приглашения,
-                  доступы наблюдателей и разрешения помощнику. Перед действием
-                  потребуется ещё раз подтвердить вход.
-                </p>
-                <Button
-                  type="button"
-                  className="mt-4 bg-rose-700 text-white"
-                  onClick={() => setDestructiveMode("erasure")}
-                >
-                  Проверить, что будет удалено
-                </Button>
-              </section>
-            </div>
-          ) : null}
-        </>
-      ) : null}
+                          </>
+                        ) : null}
+                        {consent.status === "active" ? (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            disabled={busy}
+                            onClick={() =>
+                              void mutate(() =>
+                                actOnAiConsent(consent.id, "revoke", {
+                                  expectedRevision: consent.revision,
+                                }),
+                              )
+                            }
+                          >
+                            Отозвать
+                          </Button>
+                        ) : null}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+          </div>
+        ) : null}
+      </div>
+      <div
+        id={workspaceTabPanelId(LEARNING_PROFILE_TABS_ID, "data")}
+        role="tabpanel"
+        aria-labelledby={workspaceTabId(LEARNING_PROFILE_TABS_ID, "data")}
+        hidden={surface !== "data"}
+        tabIndex={0}
+      >
+        {!loading && profile && progress && surface === "data" ? (
+          <div className="grid gap-4 lg:grid-cols-2">
+            <section className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
+              <h2 className="font-bold text-amber-950">
+                Ошибочная прямая связь
+              </h2>
+              <p className="mt-2 text-sm leading-relaxed text-amber-900">
+                Отвязка доступна только для ошибочной прямой связи, пока учебные
+                результаты ещё не объединялись и нет зависимых разрешений.
+                Прежний профиль останется у связанных преподавателей без
+                аккаунта, а у вас появится новый пустой профиль.
+              </p>
+              <Button
+                type="button"
+                variant="ghost"
+                className="mt-4"
+                disabled={!profile.canSafeUnlink}
+                onClick={() => setDestructiveMode("unlink")}
+              >
+                Проверить возможность отвязки
+              </Button>
+            </section>
+            <section className="rounded-2xl border border-rose-200 bg-rose-50 p-5">
+              <h2 className="font-bold text-rose-950">Сброс учебных данных</h2>
+              <p className="mt-2 text-sm leading-relaxed text-rose-900">
+                Будут удалены все ваши учебные результаты, связи, приглашения,
+                доступы наблюдателей и разрешения помощнику. Перед действием
+                потребуется ещё раз подтвердить вход.
+              </p>
+              <Button
+                type="button"
+                className="mt-4 bg-rose-700 text-white"
+                onClick={() => setDestructiveMode("erasure")}
+              >
+                Проверить, что будет удалено
+              </Button>
+            </section>
+          </div>
+        ) : null}
+      </div>
       {busy ? (
         <p
           className="flex items-center gap-2 text-sm text-neutral-600"

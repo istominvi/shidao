@@ -440,15 +440,20 @@ Visual contract Course routes не меняет эту навигационну�
   `/schedule`, authenticated `/settings/*`, Course и Lesson: системный H1 веса
   400 с максимумом 48 px на desktop и 32 px на mobile, подзаголовок, optional
   backlink и правую action-секцию; header имеет минимальную высоту 200 px,
-  растёт по контенту, а actions вертикально центрированы;
+  растёт по контенту, heading получает всю оставшуюся ширину, а actions
+  вертикально центрированы и имеют intrinsic ширину по содержимому с
+  ограничением шириной контейнера;
 - основные кнопки и header controls — высотой 40 px с радиусом 12 px и шрифтом
   `.88rem/400`; primary flat без inset-блика, подъёма или тени, иконки имеют
   единый 16 px rhythm, полную непрозрачность и наследуют контрастный цвет,
   белые кнопки сохраняют тонкую серую рамку, а menu items остаются borderless;
 - `WorkspaceTabs` задаёт общий 40 px tab/tabpanel contract для Course, Lesson,
   Students и profile dialog: roving keyboard focus, horizontal scroll, базовая
-  чёрная линия 1 px с inline-inset 12 px и квадратный чёрный active-
-  сегмент 4 px без radius на этой же линии;
+  линия 1 px цвета `rgba(20, 20, 20, 0.2)` с inline-inset 12 px и квадратный
+  чёрный active-сегмент 4 px без radius на этой же линии; numeric count
+  является обычным inline-текстом после label, а не отдельным badge; каждый tab
+  ссылается на постоянный matching `tabpanel`, который возвращает его id через
+  `aria-labelledby`;
 - authenticated Settings переиспользуют тот же product shell, demo TopNav,
   settings-navigation и shared Button variants; visual tokens не меняют
   landing, Auth или полноэкранный Student Screen.
@@ -456,6 +461,9 @@ Visual contract Course routes не меняет эту навигационну�
 Базовый layout contract развёрнут и подтверждён authenticated browser
 postflight на точном application release `77870e3`; flat controls и его
 Settings-расширение относятся к current source следующего deployment.
+Intrinsic header-actions, 20%-black tabs baseline и plain inline counts также
+являются current-source UI-only polish: доменная модель, API, schema и migration
+не меняются.
 
 ## Roleless teaching hub navigation boundary
 

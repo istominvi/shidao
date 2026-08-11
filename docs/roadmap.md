@@ -45,9 +45,13 @@
   `AppPageHeader` с H1 не крупнее 48 px на desktop и 32 px на mobile,
   подзаголовком, optional backlink и правой action-секцией. Header имеет
   `min-height: 200px`, растёт по контенту и вертикально центрирует actions.
+  В current source heading занимает всю оставшуюся ширину, а actions — только
+  intrinsic ширину содержимого и не превращаются в full-width кнопки на mobile.
   Course, Lesson, Students и profile dialog используют один `WorkspaceTabs`:
-  40 px, roving keyboard/ARIA, horizontal scroll, чёрная baseline 1 px с
-  inline-inset 12 px и квадратный чёрный active-сегмент 4 px без radius.
+  40 px, roving keyboard/ARIA, horizontal scroll, baseline 1 px цвета
+  `rgba(20, 20, 20, 0.2)` с inline-inset 12 px и квадратный чёрный
+  active-сегмент 4 px без radius. Counts следуют сразу за названием обычным
+  текстом без круглого badge.
   Follow-up развёрнут и подтверждён browser postflight в release `77870e3`.
 - Active app routes приведены к плоскому demo-фону `#f5f1e8` без marketing
   gradients; header, кнопки, вкладки и заголовочная типографика используют
@@ -272,7 +276,10 @@ subject/level filters, но использует тот же cards/table present
 (`profile / security / observers`) переиспользуют тот же product shell, demo
 TopNav, canonical side navigation и shared Button variants вместо raw action
 styles; landing, Auth и полноэкранный Student Screen не меняются. Это UI-only
-polish без новой schema, migration или API. Course workspace использует четыре вкладки;
+polish без новой schema, migration или API. Следующий current-source polish
+оставляет AppPageHeader actions шириной по содержимому, отдаёт свободное место
+heading и унифицирует WorkspaceTabs: 20%-black baseline и простой inline count
+без кружка. Course workspace использует четыре вкладки;
 настройки и audience редактируются inline на растущей **О курсе**, а
 course-wide **Материалы** вынесены в отдельную агрегирующую библиотеку. Новый
 Course начинает с **О курсе**; обычное сохранение возвращает туда же, тогда как

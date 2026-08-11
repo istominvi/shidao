@@ -4,7 +4,11 @@ import { Eye, History, LoaderCircle, UserRound } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { AppPageHeader } from "@/components/app/page-header";
 import { Button } from "@/components/ui/button";
-import { WorkspaceTabs } from "@/components/ui/workspace-tabs";
+import {
+  WorkspaceTabs,
+  workspaceTabId,
+  workspaceTabPanelId,
+} from "@/components/ui/workspace-tabs";
 import type {
   LearnerProgress,
   LearnerSafeHistoryItem,
@@ -21,6 +25,8 @@ import { ProgressSummary } from "./progress-summary";
 import { SafeHistoryList } from "./safe-history-list";
 
 type Surface = "progress" | "history";
+
+const OBSERVING_PROJECTION_TABS_ID = "observing-projection";
 
 type ObservingWorkspaceProps = {
   embedded?: boolean;
@@ -211,7 +217,7 @@ export function ObservingWorkspace({
               </div>
             ) : null}
             <WorkspaceTabs
-              idBase="observing-projection"
+              idBase={OBSERVING_PROJECTION_TABS_ID}
               ariaLabel="Данные наблюдаемого профиля"
               value={surface}
               onChange={setSurface}
@@ -228,17 +234,39 @@ export function ObservingWorkspace({
             {loadingProjection ? (
               <IdentityLoading>Загружаем доступные данные…</IdentityLoading>
             ) : null}
-            {!loadingProjection && surface === "progress" && progress ? (
-              <ProgressSummary progress={progress} />
-            ) : null}
-            {!loadingProjection && surface === "history" ? (
-              <SafeHistoryList
-                items={history}
-                nextCursor={nextCursor}
-                loadingMore={busy}
-                onLoadMore={() => void loadMore()}
-              />
-            ) : null}
+            <div
+              id={workspaceTabPanelId(OBSERVING_PROJECTION_TABS_ID, "progress")}
+              role="tabpanel"
+              aria-labelledby={workspaceTabId(
+                OBSERVING_PROJECTION_TABS_ID,
+                "progress",
+              )}
+              hidden={surface !== "progress"}
+              tabIndex={0}
+            >
+              {!loadingProjection && surface === "progress" && progress ? (
+                <ProgressSummary progress={progress} />
+              ) : null}
+            </div>
+            <div
+              id={workspaceTabPanelId(OBSERVING_PROJECTION_TABS_ID, "history")}
+              role="tabpanel"
+              aria-labelledby={workspaceTabId(
+                OBSERVING_PROJECTION_TABS_ID,
+                "history",
+              )}
+              hidden={surface !== "history"}
+              tabIndex={0}
+            >
+              {!loadingProjection && surface === "history" ? (
+                <SafeHistoryList
+                  items={history}
+                  nextCursor={nextCursor}
+                  loadingMore={busy}
+                  onLoadMore={() => void loadMore()}
+                />
+              ) : null}
+            </div>
             {busy ? (
               <p
                 className="flex items-center gap-2 text-sm text-neutral-600"

@@ -479,10 +479,16 @@ ShiDao V2 application:
 - `/courses`, Course и Lesson показывают одинаковые computed H1/description
   metrics через один `AppPageHeader`: H1 не крупнее 48 px на desktop и 32 px
   на mobile, `min-height: 200px` с ростом по контенту, actions вертикально
-  центрированы; Course/Lesson сохраняют backlink;
-- Course и Lesson tabs используют чёрную baseline 1 px с inline-inset 12 px и
-  квадратный чёрный active segment 4 px без radius, а на mobile скроллятся внутри
-  strip без document overflow;
+  центрированы, занимают только ширину содержимого и оставляют всю свободную
+  ширину heading; на 1120 px Lesson с четырьмя actions складывается без
+  document overflow, а непрерывные title/description/back-label переносятся;
+  Course/Lesson сохраняют backlink;
+- Course и Lesson tabs используют baseline 1 px цвета
+  `rgba(20, 20, 20, 0.2)` с inline-inset 12 px и квадратный чёрный active
+  segment 4 px без radius; numeric count идёт обычным текстом после label без
+  круга; каждый `aria-controls` tab разрешается в matching `tabpanel` с
+  обратным `aria-labelledby`, а на mobile вкладки скроллятся внутри strip без
+  document overflow;
 - owner открывает Course, другой owner не может;
 - Lesson/Components загружаются;
 - private Component отсутствует в Student Screen;
@@ -576,8 +582,9 @@ ShiDao V2 application:
   `40 px / 12 px / .88rem / 400`, а primary/secondary/destructive actions —
   shared Button contrast без raw Tailwind visual fork. Landing, Auth и
   полноэкранный Student Screen при этом не должны измениться;
-- вкладки «Ученики / Группы / Наблюдение» сохраняют общий black 1 px baseline и square
-  active-segment; directory toolbar остаётся прозрачной и без outer card,
+- вкладки «Ученики / Группы / Наблюдение» сохраняют общий 20%-black 1 px
+  baseline, square opaque active-segment и plain inline counts без badge;
+  directory toolbar остаётся прозрачной и без outer card,
   active/archive/pending находятся в одной таблице с inline-чипами и
   contextual restore/cancel actions, а поиск, group filter, sorting и reset
   остаются одновременно видимыми и сохраняют значения после mutation/reload;
