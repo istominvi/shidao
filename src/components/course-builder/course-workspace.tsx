@@ -861,16 +861,22 @@ export function CourseWorkspaceClient({
     ) ?? null;
   const handleAssistantActionApplied = useCallback(
     async (result: SystemAssistantActionResult) => {
-      if (result.type !== "course.add_lesson" || result.courseId !== courseId) {
+      if (
+        result.type === "course.create_draft" ||
+        result.courseId !== courseId
+      ) {
         return;
       }
       const workspace = await reload();
-      if (!workspace.lessons.some((lesson) => lesson.id === result.lessonId)) {
-        return;
+      if (result.type === "lesson.delete") {
+        setNavigation((current) => returnToCourseWorkspace(current));
+      } else if (
+        workspace.lessons.some((lesson) => lesson.id === result.lessonId)
+      ) {
+        setNavigation((current) =>
+          openCourseWorkspaceLesson(current, result.lessonId),
+        );
       }
-      setNavigation((current) =>
-        openCourseWorkspaceLesson(current, result.lessonId),
-      );
       const url = new URL(window.location.href);
       url.searchParams.delete("lesson");
       url.searchParams.delete("tab");

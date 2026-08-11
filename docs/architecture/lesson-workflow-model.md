@@ -4,7 +4,7 @@
 
 **Дата решения:** 5 августа 2026 года
 
-**Актуально на:** 10 августа 2026 года
+**Актуально на:** 11 августа 2026 года
 
 **Область:** Course Builder / Lesson / Components / Student Screen / audience / scheduling / learning history / course materials / homework
 
@@ -17,13 +17,15 @@ cross-provider AI. Phased M1–M6 migrations, exact Coolify deploy и postflight
 завершены. Homework, learner Course consumption и live Student Screen sync
 остаются later.
 
-Current deployed application follow-up добавляет global System Assistant в
+Current implementation follow-up добавляет global System Assistant в
 protected `(app)` layout. Он не меняет Lesson hierarchy или schema: по
 allowlisted page context читает bounded authorized проекции, а после отдельного
-explicit Apply может только создать обычный Course draft либо пустую Lesson без
-Components/Slides. Exact functional release `b7c6cfe` развёрнут; HTTP/guest/API
-boundary и RouterAI no-write smoke зелёные, authenticated production Apply ещё
-не выполнен.
+explicit Apply может создать Course draft, пустую или наполненную Lesson,
+дополнить существующую Lesson либо удалить exact Lesson. Наполнение
+переиспользует canonical Lesson plan/preview/apply и не создаёт Step или второй
+Component order; удаление вызывает тот же history-preserving `deleteLesson`.
+Base release `b7c6cfe` развёрнут, exact conversational follow-up deployment
+фиксируется после rollout.
 
 ## Product decision
 
@@ -569,19 +571,24 @@ Lesson/Component IDs и создаёт те же Lesson/Component entities че�
 service. Новые Components остаются `staff_only`; AI не создаёт Student Screen
 Slide и не публикует материал ученику автоматически.
 
-Current deployed System Assistant добавляет ещё один, более узкий create
-flow: chat может только подготовить proposal обычной пустой Lesson для точного
-owner-scoped Course. Карточка показывает Course, title и optional teacher
-comment; только отдельный Apply вызывает canonical `addLesson`. Этот flow не
-генерирует Components, не заменяет Lesson planning preview/apply и не публикует
-Student Screen. Аналогично создание Course через assistant создаёт только
-обычный Course draft, а не скрыто собранную программу.
+Current System Assistant orchestration не создаёт параллельный AI-owned Lesson
+flow. Пустая Lesson по-прежнему вызывает canonical `addLesson`; наполненная
+новая или существующая Lesson сначала проходит existing `planLesson`, показывает
+полный preview и только после подтверждения вызывает `applyLessonPlan`.
+Existing Components/Slides сохраняются, новые Components добавляются в конец
+того же ordered list и остаются `staff_only`. Аналогично создание Course через
+assistant создаёт только обычный Course draft, а не скрыто собранную программу.
 
 Если пользователь просит добавить Lesson внутри открытого Course без названия,
 server связывает запрос только с opaque `current_course` и возвращает уточнение
 title без proposal или записи. Ответ с названием может подготовить action card;
 сам Lesson всё равно появляется только после explicit Apply. Неизвестный
 непустой Course ref отклоняется fail closed и не подменяется текущим Course.
+Неоднозначный запрос с названием Lesson сначала уточняет, нужен пустой или
+наполненный результат. Fill/delete используют exact opaque Lesson ref внутри
+уже owner-validated Course. Delete card сообщает impact, signed proposal
+связывает actor/action/key, а Apply повторно сравнивает authored Lesson
+fingerprint и вызывает canonical history-preserving `deleteLesson`.
 
 ## Course materials and Storage
 
@@ -720,8 +727,8 @@ flow. Он может видеть ограниченный Course context и в
 может временно оставаться compatibility boundary, но Course/Lesson dialog и
 header actions удалены из current deployed UI.
 
-Current deployed global System Assistant монтируется один раз только в
-protected `(app)` layout. Browser передаёт strict allowlisted surface и typed
+Deployed base global System Assistant монтируется один раз только в protected
+`(app)` layout. Browser передаёт strict allowlisted surface и typed
 view текущей вкладки, Course/Lesson IDs при допустимости, локальную дату и UTC offset; DOM,
 произвольный URL/search/hash и несохранённые form values не передаются. Server
 повторно проходит universal active/provisional Account gate, user-JWT/RLS и
@@ -735,14 +742,16 @@ Schedule week/month follow-up не расширяет этот AI boundary: assi
 читает один разрешённый день. Видимое календарное окно нельзя описывать модели
 как полностью загруженный week/month context без отдельного contract change.
 
-Global chat возвращает ответ или максимум одно strict proposal. Provider ничего
-не записывает. Action card и отдельный explicit Apply разрешают только
-`course.create_draft` либо `course.add_lesson`; второй создаёт Lesson без
-Components/Slides. Это не open-ended tool calling: update/delete,
-Auth/security, audience, Students/Groups, Schedule/Run, publication и Student
-Screen mutations не входят в allowlist. Apply вызывает те же canonical
-application commands с per-request actor, поэтому результат не вводит второй
-AI-owned Course/Lesson тип и не меняет authored hierarchy.
+Current signed conversational follow-up, rollout которого фиксируется отдельно,
+возвращает ответ или максимум одно strict proposal. Provider ничего не
+записывает. Action card и отдельный explicit Apply разрешают
+`course.create_draft`, пустой `course.add_lesson`, наполненный
+`course.add_lesson_with_plan`, `lesson.fill` и `lesson.delete`. Это не open-ended
+tool calling: произвольный update, Auth/security, audience, Students/Groups,
+Schedule/Run creation, publication и Student Screen mutations не входят в
+allowlist. Apply вызывает те же canonical application commands с per-request
+actor, поэтому результат не вводит второй AI-owned Course/Lesson тип и не меняет
+authored hierarchy.
 
 Неполный `add_lesson` без title является conversational clarification, а не
 mutation и не provider-output 502. Пустой ref может означать `current_course`
@@ -753,10 +762,11 @@ mutation и не provider-output 502. Пустой ref может означат
 concurrency guard, actor+target mutex и 10-минутный idempotency result cache
 живут только в одном Node process. Restart или другая replica их не видят;
 durable action ledger, distributed exactly-once и сериализация concurrent
-Lesson append остаются next hardening. Новая schema/migration в System
-Assistant slice отсутствует. Exact functional release `b7c6cfe` развёрнут;
-RouterAI no-write smoke с synthetic current Course пройден, authenticated
-production Apply пока не выполнен.
+Lesson append остаются next hardening. Proposal HMAC действует 10 минут, но не
+заменяет durable ledger; delete fingerprint compare и RPC имеют известное
+неатомарное TOCTOU окно. Новая schema/migration в System Assistant slice
+отсутствует. Exact conversational follow-up deployment фиксируется после
+rollout.
 
 Lesson planning, compatibility course-scoped Assistant и global Course context
 получают выбранные direct learners, teacher-local
@@ -837,8 +847,9 @@ application services и MCP не импортируют demo fixtures; все н
 
 ## Not implemented yet
 
-- persisted assistant history, generalized tool calling, mutations кроме
-  подтверждаемого Course draft/пустой Lesson и durable action history;
+- persisted assistant history, generalized tool calling и mutations за
+  пределами подтверждаемого allowlist Course draft / новая пустая или
+  наполненная Lesson / fill exact Lesson / delete exact Lesson;
 - distributed assistant rate/idempotency ledger и exactly-once mutations между
   replicas;
 - persistent AI quota/ledger, billing и change sets/undo;

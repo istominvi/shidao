@@ -82,6 +82,7 @@ export async function applySystemAssistantAction(
   }>("/api/v2/assistant/actions/apply", {
     idempotencyKey: proposal.idempotencyKey,
     action: proposal.action,
+    signature: proposal.signature,
   });
   return payload.result;
 }

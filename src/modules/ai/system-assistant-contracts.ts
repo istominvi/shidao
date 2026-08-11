@@ -4,6 +4,7 @@ import {
   courseDraftInputSchema,
 } from "@/modules/course-builder/contracts";
 import {
+  aiLessonPlanApplyRequestSchema,
   aiAssistantMessageSchema,
   type AiAssistantMessage,
   type AiProviderMetadata,
@@ -140,9 +141,17 @@ export const systemAssistantRequestSchema = z
  */
 export const systemAssistantProviderTurnSchema = z
   .object({
-    kind: z.enum(["answer", "create_course", "add_lesson"]),
+    kind: z.enum([
+      "answer",
+      "create_course",
+      "add_lesson",
+      "add_lesson_with_plan",
+      "fill_lesson",
+      "delete_lesson",
+    ]),
     message: z.string().trim().min(1).max(6_000),
     courseRef: z.string().trim().max(64),
+    lessonRef: z.string().trim().max(64),
     title: z.string().trim().max(180),
     subject: z.string().trim().max(160),
     goal: z.string().trim().max(1_200),
@@ -151,6 +160,7 @@ export const systemAssistantProviderTurnSchema = z
     targetLessonCount: z.number().int().min(0).max(60),
     teacherPreferences: z.string().trim().max(2_000),
     summary: z.string().trim().max(1_200),
+    instruction: z.string().trim().max(2_000),
   })
   .strict();
 
@@ -170,15 +180,79 @@ const addLessonAssistantActionSchema = z
   })
   .strict();
 
+const addLessonWithPlanAssistantActionSchema = z
+  .object({
+    type: z.literal("course.add_lesson_with_plan"),
+    courseId: z.uuid(),
+    courseTitle: z.string().trim().min(1).max(160),
+    input: aiLessonPlanApplyRequestSchema,
+  })
+  .strict()
+  .superRefine((action, context) => {
+    if (action.input.lessonId !== null) {
+      context.addIssue({
+        code: "custom",
+        path: ["input", "lessonId"],
+        message: "План нового урока не может ссылаться на существующий урок.",
+      });
+    }
+  });
+
+const fillLessonAssistantActionSchema = z
+  .object({
+    type: z.literal("lesson.fill"),
+    courseId: z.uuid(),
+    courseTitle: z.string().trim().min(1).max(160),
+    lessonId: z.uuid(),
+    lessonTitle: z.string().trim().min(1).max(180),
+    input: aiLessonPlanApplyRequestSchema,
+  })
+  .strict()
+  .superRefine((action, context) => {
+    if (action.input.lessonId !== action.lessonId) {
+      context.addIssue({
+        code: "custom",
+        path: ["input", "lessonId"],
+        message: "План должен быть привязан к подтверждаемому уроку.",
+      });
+    }
+    if (action.input.title !== action.lessonTitle) {
+      context.addIssue({
+        code: "custom",
+        path: ["input", "title"],
+        message: "Название плана должно совпадать с подтверждаемым уроком.",
+      });
+    }
+  });
+
+const deleteLessonAssistantActionSchema = z
+  .object({
+    type: z.literal("lesson.delete"),
+    courseId: z.uuid(),
+    courseTitle: z.string().trim().min(1).max(160),
+    lessonId: z.uuid(),
+    lessonTitle: z.string().trim().min(1).max(180),
+    baseLessonFingerprint: z.string().regex(/^[a-f0-9]{64}$/),
+  })
+  .strict();
+
 export const systemAssistantActionSchema = z.discriminatedUnion("type", [
   createCourseAssistantActionSchema,
   addLessonAssistantActionSchema,
+  addLessonWithPlanAssistantActionSchema,
+  fillLessonAssistantActionSchema,
+  deleteLessonAssistantActionSchema,
 ]);
 
 export const systemAssistantApplyRequestSchema = z
   .object({
     idempotencyKey: z.uuid(),
     action: systemAssistantActionSchema,
+    signature: z
+      .string()
+      .min(64)
+      .max(512)
+      .regex(/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/),
   })
   .strict();
 
@@ -202,6 +276,7 @@ export type SystemAssistantApplyRequest = z.infer<
 export type SystemAssistantActionProposal = {
   idempotencyKey: string;
   action: SystemAssistantAction;
+  signature: string;
 };
 
 export type SystemAssistantReply = AiProviderMetadata & {
@@ -219,6 +294,23 @@ export type SystemAssistantActionResult =
     }
   | {
       type: "course.add_lesson";
+      courseId: string;
+      courseTitle: string;
+      lessonId: string;
+      lessonTitle: string;
+      href: string;
+    }
+  | {
+      type: "course.add_lesson_with_plan" | "lesson.fill";
+      courseId: string;
+      courseTitle: string;
+      lessonId: string;
+      lessonTitle: string;
+      componentIds: string[];
+      href: string;
+    }
+  | {
+      type: "lesson.delete";
       courseId: string;
       courseTitle: string;
       lessonId: string;

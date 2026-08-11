@@ -1,7 +1,7 @@
 # Текущее состояние ShiDao V2
 
 **Статус:** главный входной документ для разработки
-**Актуально на:** 10 августа 2026 года
+**Актуально на:** 11 августа 2026 года
 **Активная ветка:** `main`
 **Рабочее приложение:** `https://v2.shidao.ru`
 **Текущий функциональный application release:** `b7c6cfe`
@@ -87,30 +87,26 @@ Coolify webhook deployment exact functional SHA `587bb21` завершён со 
 Success за 2 минуты 33 секунды; running application указывает на тот же SHA.
 Authenticated production browser postflight этого slice пока не выполнен.
 
-**Current deployed System Assistant slice:** реализован один
+**Current System Assistant conversational action slice:** реализован один
 глобальный floating widget «ИИ» внутри protected `(app)` layout. Он доступен на
 Account surfaces, сохраняет диалог только в React state до reload/явного сброса
 и получает не DOM/URL, а строгий allowlisted page context. Server-side
 orchestration читает bounded owner/recorder/consent-scoped проекции текущего
 Account и открытой Course/Lesson, Students или выбранного дня Schedule.
-Ассистент может подготовить только два предложения: создать обычный Course
-draft либо добавить пустую Lesson без Components; запись выполняется отдельным
-explicit Apply после проверки action card. Для запроса «добавить урок» внутри
-открытого Course server использует только opaque `current_course`; если модель
-вернула action без обязательного title, chat отвечает уточнением названия вместо
-`ai_invalid_output`, proposal не создаётся и запись не выполняется. Неизвестный
-непустой Course ref по-прежнему отклоняется fail closed. Coolify deployment
-`nl5p1nuxnvdi392vwfopmab2` развернул exact functional SHA
-`b7c6cfe73809d2006d7fb4fafc833a93a905f4af`; running container использует тот
-же `SOURCE_COMMIT`, image digest
-`sha256:42e0767f3848f6d61322b893edf528c79fab9c2e450de0fa303231202f61d8e8`,
-restart count `0`. HTTPS/login/guest redirect и assistant routes прошли
-production postflight: `/login` и `robots.txt` отвечают `200`, guest `/courses`
-перенаправляется в `/login`, оба `POST /api/v2/assistant*` fail closed с `401`.
-Реальный RouterAI no-write smoke на synthetic current Course подтвердил
-уточнение title и follow-up proposal; authenticated production Apply не
-выполнялся и не заявляется пройденным. Срез не добавляет migration или
-физическую schema.
+Ассистент ведёт обычный model-authored диалог, а для записи может подготовить
+одну из пяти strict карточек: Course draft, пустую Lesson, новую наполненную
+Lesson, дополнение существующей Lesson или удаление Lesson. Неоднозначное
+«сделай урок» детерминированно уточняет, нужен пустой или наполненный вариант;
+«заполни этот урок» использует exact server-resolved current Lesson и не
+деградирует в создание ещё одной пустой Lesson. Filled flows переиспользуют
+canonical `planLesson → preview → applyLessonPlan`, показывают все создаваемые
+Components и до Apply ничего не записывают. Delete показывает полный impact и
+повторно проверяет owner-scoped Lesson fingerprint. Каждая карточка HMAC-
+подписана на actor, idempotency key и exact action на 10 минут. Точное «да» или
+кнопка применяют только последнюю карточку без нового model turn; «нет», новый
+запрос или смена Course/Lesson отменяют pending proposal. Срез не добавляет
+migration или физическую schema; production rollout и authenticated action
+postflight должны быть зафиксированы после deployment exact SHA.
 
 **Previous deployed data baseline:** поверх group/audience baseline были введены canonical
 `LearnerProfile`, teacher-local relation `teacher_learner` и явный provenance
@@ -603,7 +599,7 @@ application service/contracts внутри authenticated web request.
   server log event. Persistent quota/ledger, billing, balance и AI change sets
   отсутствуют; process-local rate limit не является пользовательской квотой.
 
-#### System Assistant — current deployed boundary
+#### System Assistant — current implementation boundary
 
 - `SystemAssistantProvider` и один floating `SystemAssistant` монтируются в
   protected `src/app/(app)/layout.tsx`, а не в public landing/Auth/demo и не в
@@ -627,8 +623,10 @@ application service/contracts внутри authenticated web request.
   gate через `resolveAccessPolicy`, затем используют только per-request user JWT,
   Course/Lesson ownership и RLS. Локальный `stdio` MCP и publication service-role
   adapters в этот flow не входят.
-- Chat возвращает либо текст, либо максимум одно strict proposal:
-  `course.create_draft` или `course.add_lesson`. Provider не пишет данные.
+- Chat возвращает либо свободный model-authored текст, либо максимум одно strict
+  proposal: `course.create_draft`, `course.add_lesson`,
+  `course.add_lesson_with_plan`, `lesson.fill` или `lesson.delete`. Provider не
+  пишет данные.
   На Course surface пустой provider `courseRef` однозначно нормализуется только
   в server-issued `current_course`. Если для `add_lesson` отсутствует title,
   server возвращает обычный уточняющий вопрос о названии без proposal/записи;
@@ -638,24 +636,35 @@ application service/contracts внутри authenticated web request.
   Shared-comment scrubber применяется и к тексту, и ко всем полям proposal,
   поэтому consented чужая фраза не может быть процитирована или сохранена через
   action. Browser показывает параметры action card; только отдельный
-  `POST /api/v2/assistant/actions/apply` после явного клика вызывает canonical
-  `createDraft`/`addLesson`. Новый Lesson может иметь title/teacher comment, но
-  остаётся пустым: Components и Student Screen Slides не создаются.
+  `POST /api/v2/assistant/actions/apply` после явного подтверждения вызывает
+  canonical `createDraft`/`addLesson`, existing Lesson planner/apply либо
+  history-preserving `deleteLesson`. Filled preview показывает summary и все
+  3–20 Components; existing Components/Slides сохраняются, новые Components
+  добавляются в конец и остаются `staff_only`.
+- UI держит максимум одно active proposal. Exact «да» и кнопка применяют эту
+  подписанную карточку без нового provider turn; exact «нет» отменяет её, любой
+  другой новый запрос supersede-ит старую карточку, а смена Course/Lesson context
+  делает pending proposal недоступным. Terminal stale/expired ответ требует
+  сформировать новую карточку вместо бесконечного retry.
 - Диалог не persisted. Chat ограничен 30 turns, новые uncached Apply — 20
   действиями на actor за 10 минут; concurrency guard, actor+target apply mutex и
   replay cache idempotency key существуют только в памяти одного Node process.
   Cache живёт до 10 минут и ограничен 500 результатами; restart или другая
   replica его не видит. Это не distributed quota, durable action ledger или
-  гарантия exactly-once между replicas. Proposal/action не подписаны и не
-  сохраняются server-side: Apply повторно валидирует body и ownership, но UUID
-  привязан только к process-local cache. Обычный concurrent Lesson append также
-  сохраняет известный ordering debt.
+  гарантия exactly-once между replicas. Proposal не persisted, но HMAC-подпись
+  связывает actor, exact action и idempotency key на 10 минут; Apply до mutation
+  проверяет подпись, ownership и stale fingerprints. Cache остаётся
+  process-local, а delete compare→RPC имеет известное неатомарное TOCTOU окно
+  без новой migration. Обычный concurrent Lesson append также сохраняет
+  известный ordering debt.
 - Контракты/service/routes/UI и contract tests находятся в
   `src/modules/ai/system-assistant-*`, `src/app/api/v2/assistant/` и
-  `src/components/assistant/`. Exact functional release `b7c6cfe` развёрнут;
-  RouterAI no-write smoke с synthetic current Course пройден, authenticated
-  production Apply остаётся отдельным непройденным postflight и не
-  подразумевается из HTTP availability.
+  `src/components/assistant/`. Base global widget release `b7c6cfe` развёрнут;
+  conversational action follow-up пока существует в текущем change set и
+  фиксируется отдельным exact SHA после rollout. Для base release RouterAI
+  no-write smoke с synthetic current Course пройден, authenticated production
+  Apply остаётся отдельным непройденным postflight и не подразумевается из HTTP
+  availability.
 
 Base RouterAI routes/UI, server-only secret boundary и provider postflight
 no-write flows развёрнуты и проверены в production. Release acceptance описан в
@@ -668,8 +677,7 @@ History-aware context развёрнут в release `9393080`; production provid
 
 - пользовательский выбор модели и persisted provider settings;
 - persistent assistant/Course chat, durable action history и generalized
-  tool calling; System Assistant пока умеет только подтверждаемое создание
-  Course draft и пустой Lesson;
+  tool calling за пределами allowlisted Course/Lesson actions;
 - distributed rate limit, durable idempotency/action ledger и exactly-once
   assistant mutations между replicas;
 - persistent token quota/ledger, billing units, balance и AI change sets/undo;
@@ -958,13 +966,15 @@ items. Длинные `IN` hydration-запросы разбиваются на 
 `/api/v2/courses/[courseId]/`. Planning/chat routes вызывают provider; apply
 routes только валидируют preview и выполняют существующие application commands.
 
-Current deployed System Assistant добавляет authenticated
+Base deployed System Assistant добавляет authenticated
 `POST /api/v2/assistant` и `POST /api/v2/assistant/actions/apply`. Они не
-заменяют Course/Lesson planning routes: первый отвечает или возвращает одно
-подтверждаемое create proposal, второй после explicit Apply вызывает обычный
-Course Builder service. Routes и floating UI развёрнуты в release `b7c6cfe`;
-RouterAI no-write smoke с synthetic current Course пройден, authenticated
-production Apply пока не выполнен.
+заменяют Course/Lesson planning routes. В release `b7c6cfe` первый route отвечал
+или возвращал подтверждаемое создание Course draft/пустой Lesson, а второй после
+explicit Apply вызывал обычный Course Builder service. Текущий conversational
+follow-up расширяет strict allowlist наполненной новой Lesson, дополнением
+открытой Lesson и удалением exact Lesson, сохраняя тот же preview/confirmation/
+canonical-service boundary. Exact follow-up deployment фиксируется после
+rollout; authenticated production action postflight пока не выполнен.
 
 Дополнительные project surfaces:
 

@@ -1,7 +1,7 @@
 # Roadmap ShiDao V2
 
 **Статус:** current / next / later priorities после production identity release
-**Актуально на:** 10 августа 2026 года
+**Актуально на:** 11 августа 2026 года
 
 Фактически реализованное состояние находится в
 [`docs/project-state.md`](./project-state.md). Этот документ описывает только
@@ -86,15 +86,17 @@
   preview → explicit apply и read-only ephemeral assistant; production runtime
   получает API key из server-side secret environment и использует проверенный
   default `google/gemini-2.5-flash-lite`.
-- **Current deployed follow-up:** один global System Assistant смонтирован в
+- **Base deployed follow-up:** один global System Assistant смонтирован в
   protected `(app)` layout вместо Course/Lesson header dialog. Он получает
   allowlisted page context, читает bounded authorized проекции Account и
-  открытой страницы и может только подготовить action card для создания Course
-  draft или пустой Lesson. Запись выполняется отдельным explicit Apply через
-  canonical Course Builder service. Код и tests реализованы без schema change;
-  exact functional SHA `b7c6cfe` развёрнут в Coolify. HTTP/guest/API boundary
-  postflight и RouterAI no-write smoke с synthetic current Course зелёные;
-  authenticated production Apply ещё не выполнен.
+  открытой страницы. Exact functional SHA `b7c6cfe` развёрнут в Coolify с двумя
+  подтверждаемыми командами: Course draft и пустая Lesson. Текущий
+  conversational follow-up добавляет новую наполненную Lesson, дополнение
+  открытой Lesson и удаление exact Lesson через canonical services, signed
+  proposal и one-active confirmation state machine. Код и tests не меняют
+  schema; exact follow-up deployment фиксируется после rollout. Base
+  HTTP/guest/API boundary postflight и RouterAI no-write smoke зелёные;
+  authenticated production action postflight ещё не выполнен.
 - Browser-smoke переведён на актуальную AES-GCM app-session; строгий
   production-mode gate покрывает guest/auth redirects, Course → Lesson →
   backlink, computed visual contract и mobile overflow без обращения к
@@ -301,7 +303,7 @@ Definition of Done:
 - attachment metadata без скачивания/парсинга file contents;
 - отсутствие schema migration, quota/ledger и billing.
 
-**Current deployed System Assistant follow-up:**
+**Current System Assistant conversational action follow-up:**
 
 - один floating widget живёт в protected Account layout и не показывается на
   landing/Auth/demo; прежние кнопки course-scoped assistant удалены из Course и
@@ -313,21 +315,28 @@ Definition of Done:
   user-JWT/RLS, затем даёт модели bounded Course catalog и только нужную
   surface-проекцию: current Course/Lesson + разрешённую history, Students/Groups
   либо Schedule выбранного дня;
-- provider может вернуть текст или максимум одно strict proposal
-  `course.create_draft | course.add_lesson`; chat ничего не записывает;
+- provider может вести обычный bounded диалог или вернуть максимум одно strict
+  proposal: `course.create_draft | course.add_lesson |
+course.add_lesson_with_plan | lesson.fill | lesson.delete`; chat ничего не
+  записывает;
 - запрос добавить Lesson внутри открытого Course использует только server-issued
   `current_course`; отсутствующий title превращается в уточнение названия без
   502/proposal/write, а неизвестный непустой ref отклоняется fail closed;
-- отдельный explicit Apply вызывает только canonical `createDraft` либо
-  `addLesson`. Добавленная Lesson пуста: Components/Slides не генерируются;
+- неоднозначное «сделай урок» уточняет пустой/наполненный режим. Filled new и
+  existing Lesson переиспользуют canonical plan/preview/apply, показывают все
+  Components и сохраняют существующий ordered list; delete показывает impact и
+  проходит owner/fingerprint stale check;
+- proposal HMAC-подписан на actor + idempotency key + exact action на 10 минут.
+  UI допускает только одну pending карточку: «да»/кнопка применяют её без LLM,
+  «нет», новый запрос или смена target отменяют;
 - dialog history остаётся только в React state. Rate/concurrency guard,
   actor+target mutex и 10-минутный idempotency result cache работают только в
-  памяти одного process; restart/другая replica их не видят. Proposal/action не
-  имеют persisted/signature binding с предыдущим provider turn;
+  памяти одного process; restart/другая replica их не видят. Подпись не заменяет
+  durable action ledger/distributed exactly-once; delete stale compare и RPC
+  остаются неатомарными без отдельной migration;
 - новая DB migration и provider/quota persistence в этот follow-up не входят;
-  deployment exact functional SHA `b7c6cfe` завершён; RouterAI no-write smoke
-  с synthetic current Course пройден, authenticated production Apply остаётся
-  next operational check.
+  deployment exact functional SHA и authenticated production action postflight
+  фиксируются после rollout этого follow-up.
 
 **Next — operational hardening:**
 
