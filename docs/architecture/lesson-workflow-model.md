@@ -496,7 +496,12 @@ Current production делает `/schedule` и `/students` доступными
   но сохраняет доступное имя секции и caption таблицы. Белая Table projection
   не имеет внешней рамки и использует table radius 12 px; header и data-row
   имеют exact 40 px, а divider 1 px входит в высоту header, weight 500 и более
-  светлый текст. Контентные по ширине `Дата / Время` прижаты слева,
+  светлый текст. Обычные header/data cells имеют канонический inline-padding
+  12 px. Только последняя body action-cell использует inline-inset 4 px:
+  единственный `MoreVertical` trigger имеет размер 32 × 32 px и радиус 8 px,
+  поэтому внутри точной 40 px строки сохраняет по 4 px сверху, справа и снизу
+  и совпадает с геометрией active option переключателя вида. Контентные по
+  ширине `Дата / Время` прижаты слева,
   `Ученики / Статус` и действия — справа, а `Урок / Курс` делят оставшуюся
   ширину. Все данные чёрные и однострочные, используют ellipsis и полные title;
   дата имеет вид `Среда · 12 авг`, время — `12:00 · 60 мин`, scheduled state
@@ -505,7 +510,8 @@ Current production делает `/schedule` и `/students` доступными
   действиями, других action-кнопок в строке нет. Пункты portal-menu имеют
   40 px, вертикально центрированы и используют `.88rem/400`.
   Этот current source polish меняет только UI: LessonRun API/schema и
-  migrations не меняются;
+  migrations не меняются; последняя корректировка cell/action spacing не
+  считается развёрнутой до успешного Coolify deploy и production postflight;
 - `/students` объединяет справочник TeacherLearner/LearnerProfile и
   LearnerGroup во вкладках «Ученики / Группы» с learner-safe observer
   projection во вкладке «Наблюдение»; справочник сохраняет поиск, фильтр по

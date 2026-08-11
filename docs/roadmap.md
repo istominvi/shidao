@@ -266,7 +266,11 @@ subject/level filters, но использует тот же cards/table present
 получила компактные `Дата / Время` слева, `Ученики / Статус` и действия справа,
 а `Урок / Курс` делят свободную ширину. Все данные чёрные, однострочные и
 сокращаются ellipsis; header и data-row ровно 40 px, причём разделитель входит
-в высоту header, его weight равен 500.
+в высоту header, его weight равен 500. Обычные header/data cells получают
+канонические 12 px слева и справа; последняя body action-cell использует 4 px,
+а её единственный `MoreVertical` trigger имеет 32 × 32 px и радиус 8 px. Так
+в 40 px строке остаются одинаковые 4 px сверху, справа и снизу, как у active
+option в переключателе вида.
 Последняя колонка не имеет видимого заголовка:
 вертикальное троеточие открывает все действия, других action-кнопок в строке
 нет; пункты portal-menu имеют 40 px и `.88rem/400` с вертикальным
@@ -283,7 +287,10 @@ Students/Courses. Authenticated top header/profile menu стали
 (`profile / security / observers`) переиспользуют тот же product shell, demo
 TopNav, canonical side navigation и shared Button variants вместо raw action
 styles; landing, Auth и полноэкранный Student Screen не меняются. Это UI-only
-polish без новой schema, migration или API. Следующий current-source polish
+polish без новой schema, migration или API. Последняя корректировка
+Schedule-cell/action spacing остаётся current source до успешного Coolify
+deploy и production postflight.
+Следующий current-source polish
 оставляет AppPageHeader actions шириной по содержимому, отдаёт свободное место
 heading и унифицирует WorkspaceTabs: 20%-black baseline и простой inline count
 без кружка. Course workspace использует четыре вкладки;
@@ -554,7 +561,11 @@ right-aligned date control шириной 300 px на desktop показывае
 После controls непустая projection начинается сразу. Таблица сплошная белая,
 без внешней рамки и с element/table radius 12 px; её header и data-row имеют
 ровно 40 px, а разделитель 1 px входит в высоту header; weight равен 500 и
-текст светлее. Контентные по ширине `Дата / Время` прижаты слева,
+текст светлее. Обычные header/data cells используют inline-padding 12 px;
+только последняя body action-cell получает inset 4 px вокруг единственного
+`MoreVertical` trigger размером 32 × 32 px и радиусом 8 px. В точной 40 px
+строке это даёт по 4 px сверху, справа и снизу и повторяет active option
+переключателя вида. Контентные по ширине `Дата / Время` прижаты слева,
 `Ученики / Статус` и действия — справа, а `Урок / Курс` делят свободную ширину.
 Все данные чёрные и выводятся в одну строку с ellipsis; дата имеет вид
 `Среда · 12 авг`, время — `12:00 · 60 мин`, scheduled state остаётся plain
@@ -569,7 +580,8 @@ Authenticated top header и profile dropdown тоже стали сплошны�
 поверхностями без blur. Buttons/header controls используют единый flat
 `40 px / 12 px / .88rem / 400` contract с fully opaque contrast-aware icons,
 тонкой рамкой у белых кнопок и borderless menu items. Schema/API не меняются;
-deployment этого refinement остаётся следующим шагом.
+последний spacing refinement остаётся current source до успешного Coolify
+deploy и production postflight.
 
 **Current production contract дополнительно:** verified actual duration,
 explicit shared individual comment, cursor-paginated self/observer history и

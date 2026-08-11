@@ -24,7 +24,7 @@ const catalogSource = source(
 test("product tables use the element radius instead of the card radius", () => {
   assert.match(
     styles,
-    /:root\s*\{[^}]*--product-element-radius: 0\.75rem;[^}]*--product-card-radius: 1\.25rem;[^}]*--product-row-height: 2\.5rem;/,
+    /:root\s*\{[^}]*--product-element-radius: 0\.75rem;[^}]*--product-card-radius: 1\.25rem;[^}]*--product-row-height: 2\.5rem;[^}]*--product-inner-control-size: 2rem;[^}]*--product-inner-control-radius: 0\.5rem;[^}]*--product-inner-control-inset: 0\.25rem;/,
   );
   assert.match(
     styles,

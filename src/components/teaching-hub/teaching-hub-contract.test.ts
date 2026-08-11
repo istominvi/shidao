@@ -283,6 +283,10 @@ test("schedule keeps the compact date control and dense one-line table contract"
   );
   assert.match(
     teachingHubStyleSource,
+    /\.teaching-run-table thead th\s*\{[^}]*padding-inline:\s*var\(--course-demo-control-padding-inline, 0\.75rem\);/,
+  );
+  assert.match(
+    teachingHubStyleSource,
     /\.teaching-run-table\s*\{[^}]*min-width:\s*0;[^}]*table-layout:\s*auto;/,
   );
   assert.match(
@@ -307,7 +311,7 @@ test("schedule keeps the compact date control and dense one-line table contract"
   );
   assert.match(
     teachingHubStyleSource,
-    /\.teaching-run-table tbody td\s*\{[^}]*height:\s*var\(\s*--course-demo-table-row-height,[^}]*padding-inline:\s*0\.625rem;[^}]*padding-block:\s*0;[^}]*color:\s*#141414;[^}]*vertical-align:\s*middle;[^}]*white-space:\s*nowrap;/,
+    /\.teaching-run-table tbody td\s*\{[^}]*height:\s*var\(\s*--course-demo-table-row-height,[^}]*padding-inline:\s*var\(--course-demo-control-padding-inline, 0\.75rem\);[^}]*padding-block:\s*0;[^}]*color:\s*#141414;[^}]*vertical-align:\s*middle;[^}]*white-space:\s*nowrap;/,
   );
   assert.match(
     teachingHubStyleSource,
@@ -323,7 +327,19 @@ test("schedule keeps the compact date control and dense one-line table contract"
   );
   assert.match(
     teachingHubStyleSource,
-    /\.course-demo-shell \.teaching-run-action-menu \.action-menu-trigger\s*\{[^}]*width:\s*var\(\s*--course-demo-table-row-height,[^}]*height:\s*var\(\s*--course-demo-table-row-height,/,
+    /\.teaching-schedule-view-toggle button\s*\{[^}]*height:\s*var\(--product-inner-control-size, 2rem\);[^}]*border-radius:\s*var\(--product-inner-control-radius, 0\.5rem\);/,
+  );
+  assert.match(
+    teachingHubStyleSource,
+    /\.teaching-run-table-actions\s*\{[^}]*width:\s*100%;[^}]*height:\s*var\(--product-inner-control-size, 2rem\);/,
+  );
+  assert.match(
+    teachingHubStyleSource,
+    /\.teaching-run-table-action-cell\s*\{[^}]*padding-inline:\s*var\(--product-inner-control-inset, 0\.25rem\) !important;[^}]*line-height:\s*0;/,
+  );
+  assert.match(
+    teachingHubStyleSource,
+    /\.course-demo-shell \.teaching-run-action-menu \.action-menu-trigger\s*\{[^}]*width:\s*var\(--product-inner-control-size, 2rem\);[^}]*min-width:\s*var\(--product-inner-control-size, 2rem\);[^}]*height:\s*var\(--product-inner-control-size, 2rem\);[^}]*min-height:\s*var\(--product-inner-control-size, 2rem\);[^}]*flex:\s*0 0 var\(--product-inner-control-size, 2rem\);[^}]*border-radius:\s*var\(--product-inner-control-radius, 0\.5rem\);[^}]*padding:\s*0;/,
   );
   assert.match(
     teachingHubStyleSource,

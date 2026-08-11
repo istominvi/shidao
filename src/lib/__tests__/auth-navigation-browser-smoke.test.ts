@@ -3221,6 +3221,9 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         ".teaching-run-action-menu .action-menu-trigger",
       );
       const menuTriggerIcon = menuTrigger?.querySelector<SVGElement>("svg");
+      const activeViewButton = document.querySelector<HTMLButtonElement>(
+        '.teaching-schedule-view-toggle button[aria-pressed="true"]',
+      );
       const bodyTextElements = Array.from(
         table?.querySelectorAll<HTMLElement>(
           ".teaching-run-table-date, .teaching-run-table-duration, .teaching-run-table-truncate, .teaching-run-table-participants, .teaching-run-table-status",
@@ -3256,7 +3259,8 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         !actionCell ||
         quickActionCount === undefined ||
         !menuTrigger ||
-        !menuTriggerIcon
+        !menuTriggerIcon ||
+        !activeViewButton
       ) {
         throw new Error("Schedule table visual contract is missing");
       }
@@ -3265,6 +3269,10 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       const tableHeadStyle = getComputedStyle(tableHead);
       const statusStyle = getComputedStyle(status);
       const menuTriggerStyle = getComputedStyle(menuTrigger);
+      const activeViewButtonStyle = getComputedStyle(activeViewButton);
+      const bodyRowRect = bodyRow.getBoundingClientRect();
+      const actionCellRect = actionCell.getBoundingClientRect();
+      const menuTriggerRect = menuTrigger.getBoundingClientRect();
       const actionHeader = headerCells.at(-1);
       return {
         surface: {
@@ -3350,6 +3358,31 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
           visibleText: actionCell.textContent?.trim() ?? "",
           quickActionCount,
           actionButtonCount: actionCell.querySelectorAll("button").length,
+          triggerWidth: menuTriggerRect.width,
+          triggerHeight: menuTriggerRect.height,
+          triggerMinWidth: menuTriggerStyle.minWidth,
+          triggerMinHeight: menuTriggerStyle.minHeight,
+          triggerBorderRadius: menuTriggerStyle.borderRadius,
+          triggerFlexBasis: menuTriggerStyle.flexBasis,
+          triggerPaddings: [
+            menuTriggerStyle.paddingTop,
+            menuTriggerStyle.paddingRight,
+            menuTriggerStyle.paddingBottom,
+            menuTriggerStyle.paddingLeft,
+          ],
+          triggerInsets: {
+            top: Math.round(menuTriggerRect.top - bodyRowRect.top),
+            right: Math.round(actionCellRect.right - menuTriggerRect.right),
+            bottom: Math.round(bodyRowRect.bottom - menuTriggerRect.bottom),
+            left: Math.round(menuTriggerRect.left - actionCellRect.left),
+          },
+          matchesActiveViewOption:
+            menuTriggerRect.width ===
+              activeViewButton.getBoundingClientRect().width &&
+            menuTriggerRect.height ===
+              activeViewButton.getBoundingClientRect().height &&
+            menuTriggerStyle.borderRadius ===
+              activeViewButtonStyle.borderRadius,
           menuTriggerOpacity: menuTriggerStyle.opacity,
           menuTriggerVisibility: menuTriggerStyle.visibility,
           menuTriggerExpanded: menuTrigger.getAttribute("aria-expanded"),
@@ -3395,17 +3428,17 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
     );
     assert.ok(
       scheduleTableContract.layout.headerPaddings.every(
-        ([left, right]) => left === "10px" && right === "10px",
+        ([left, right]) => left === "12px" && right === "12px",
       ),
     );
     assert.ok(
       scheduleTableContract.layout.bodyPaddings
         .slice(0, -1)
-        .every(([left, right]) => left === "10px" && right === "10px"),
+        .every(([left, right]) => left === "12px" && right === "12px"),
     );
     assert.deepEqual(scheduleTableContract.layout.bodyPaddings.at(-1), [
       "4px",
-      "10px",
+      "4px",
     ]);
     assert.deepEqual(scheduleTableContract.header.visualLabels, [
       "Дата",
@@ -3507,6 +3540,15 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       visibleText: "",
       quickActionCount: 0,
       actionButtonCount: 1,
+      triggerWidth: 32,
+      triggerHeight: 32,
+      triggerMinWidth: "32px",
+      triggerMinHeight: "32px",
+      triggerBorderRadius: "8px",
+      triggerFlexBasis: "32px",
+      triggerPaddings: ["0px", "0px", "0px", "0px"],
+      triggerInsets: { top: 4, right: 4, bottom: 4, left: 4 },
+      matchesActiveViewOption: true,
       menuTriggerOpacity: "1",
       menuTriggerVisibility: "visible",
       menuTriggerExpanded: "false",
