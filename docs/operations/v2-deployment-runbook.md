@@ -546,7 +546,9 @@ ShiDao V2 application:
 - `/schedule` и `/students` сохраняют единый computed page-header contract с
   `/courses`, Course и Lesson; contextual actions находятся в header, а
   date/view controls — ниже него справа прямо на page background без внешней
-  toolbar-card. Для Schedule проверить, что отдельного внешнего «Неделя /
+  toolbar-card. У прозрачной controls-панели измерить по 12 px слева и справа:
+  первый и последний control должны совпасть с внутренними границами
+  page-header. Для Schedule проверить, что отдельного внешнего «Неделя /
   Месяц» нет: центральная кнопка compact date control открывает календарный
   popover с «День / Неделя / Месяц», выбор даты меняет опорную дату, а стрелки
   сдвигают назад/вперёд активный целый день, неделю либо месяц. Проверить
@@ -561,18 +563,22 @@ ShiDao V2 application:
   computed `rgb(255, 255, 255)` и `backdrop-filter: none`. При непустом
   результате сразу после controls идёт таблица или карточки без summary
   «Выбранная неделя / Занятия» и count-chip. В table view дополнительно
-  проверить solid-white surface без outer border; exact 40 px header вместе с
-  нижним divider 1 px, weight 500 и более светлый цвет; видимые `Дата / Время /
+  проверить solid-white surface без outer border и radius 12 px; exact 40 px
+  header и data-row, причём нижний divider 1 px входит в высоту header; weight
+  500 и более светлый цвет; видимые `Дата / Время /
 Урок / Курс / Ученики / Статус` и пустой action heading. Проверить компактные
-  фиксированные rails для даты, времени, учеников, статуса и действий: первые
+  content-sized rails для даты и времени и компактные rails для учеников,
+  статуса и действий: первые
   два прижаты слева, последние три — справа, `Урок / Курс` делят оставшуюся
   ширину. Текст и иконки data-row должны иметь computed `#141414`/opacity `1`,
   дата — `Среда · 12 авг`, время — `12:00 · 60 мин`; текст остаётся в одну
   строку с ellipsis и полным `title`, clock + «Ожидается» не повторяет
   дату/время. Вертикальное троеточие постоянно доступно с клавиатуры
   и touch, его portal-menu не обрезается горизонтальным scroll wrapper,
-  содержит все действия, поддерживает arrows/Escape/focus restore; быстрые
-  icon-only actions появляются при hover/focus строки. Отдельно проверить
+  содержит все действия, поддерживает arrows/Escape/focus restore; других
+  action-кнопок в строке нет. Каждый пункт portal-menu имеет exact 40 px,
+  вертикально центрированные иконку и текст, `.88rem/400` и canonical inset/gap.
+  Отдельно проверить
   canonical active V2 controls: exact `40 px / 12 px / .88rem / 400`, flat
   primary и active navigation без inset/shadow/translate, icon opacity `1` и
   contrast-aware `currentColor`, тонкую рамку белых buttons и border `0` у
@@ -584,7 +590,8 @@ ShiDao V2 application:
   полноэкранный Student Screen при этом не должны измениться;
 - вкладки «Ученики / Группы / Наблюдение» сохраняют общий 20%-black 1 px
   baseline, square opaque active-segment и plain inline counts без badge;
-  directory toolbar остаётся прозрачной и без outer card,
+  directory toolbar остаётся прозрачной и без outer card, имеет горизонтальный
+  inset 12 px,
   active/archive/pending находятся в одной таблице с inline-чипами и
   contextual restore/cancel actions, а поиск, group filter, sorting и reset
   остаются одновременно видимыми и сохраняют значения после mutation/reload;
@@ -592,13 +599,18 @@ ShiDao V2 application:
 - `/observing` перенаправляет на `/students?tab=observing`, reload сохраняет
   выбранную вкладку, а main navigation подсвечивает «Ученики»;
 - `/courses` проверяется в режимах «Карточки / Таблица»: controls лежат прямо
-  на page background без toolbar-card, поиск и disclosure subject/level/content
+  на page background без toolbar-card и имеют горизонтальный inset 12 px,
+  поиск и disclosure subject/level/content
   меняют только client projection owner-scoped списка, icon-only view control
   имеет доступные имена, reset возвращает все курсы, filtered-empty не
   подменяется пустым persisted каталогом. Во вкладке published «Каталог» отдельно
   проверяются только реальные server-side search/subject/level и cursor, такой
   же icon-only cards/table presentation, отсутствие повторного заголовка,
   пояснения и видимого result count; client-only sort/content не добавляются;
+- на Schedule/Students/Courses table view измерить общий surface contract:
+  активный `ProductTable` wrapper сплошной белый, border `0`, radius `12 px`;
+  карточки сохраняют отдельный radius `20 px`. Не требовать 40 px data-row у
+  Students/Courses: в этом slice их плотность не менялась;
 - existing email и learner login/PIN создают одну Account session и не выводят
   internal Auth email/browser secret;
 - внутри directory-вкладок `/students` не скрывает archived/pending за

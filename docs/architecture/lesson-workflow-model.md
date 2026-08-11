@@ -447,6 +447,10 @@ Visual contract Course routes не меняет эту навигационну�
   `.88rem/400`; primary flat без inset-блика, подъёма или тени, иконки имеют
   единый 16 px rhythm, полную непрозрачность и наследуют контрастный цвет,
   белые кнопки сохраняют тонкую серую рамку, а menu items остаются borderless;
+- radius tokens отделяют card surface 20 px от element/control/table/menu
+  surface 12 px. Активные `ProductTable` wrappers используют table token,
+  сплошной белый фон и не имеют внешней рамки; это не задаёт общую 40 px
+  плотность строк Students/Courses;
 - `WorkspaceTabs` задаёт общий 40 px tab/tabpanel contract для Course, Lesson,
   Students и profile dialog: roving keyboard focus, horizontal scroll, базовая
   линия 1 px цвета `rgba(20, 20, 20, 0.2)` с inline-inset 12 px и квадратный
@@ -485,17 +489,21 @@ Current production делает `/schedule` и `/students` доступными
   сокращения месяца, календарный popover и
   внутренний selector «День / Неделя / Месяц»; полное доступное имя даты
   сохраняется, а стрелки сдвигают назад или вперёд именно выбранный период.
-  Рядом остаётся icon-only «Таблица / Карточки». Непустая projection после
+  Рядом остаётся icon-only «Таблица / Карточки». Прозрачная controls-панель
+  имеет горизонтальный inset 12 px и выровнена по внутренним границам
+  page-header. Непустая projection после
   controls не повторяет период, заголовок «Занятия» или видимый result count,
   но сохраняет доступное имя секции и caption таблицы. Белая Table projection
-  не имеет внешней рамки; header имеет exact 40 px вместе с divider 1 px,
-  weight 500 и более светлый текст. Компактные `Дата / Время` прижаты слева,
+  не имеет внешней рамки и использует table radius 12 px; header и data-row
+  имеют exact 40 px, а divider 1 px входит в высоту header, weight 500 и более
+  светлый текст. Контентные по ширине `Дата / Время` прижаты слева,
   `Ученики / Статус` и действия — справа, а `Урок / Курс` делят оставшуюся
   ширину. Все данные чёрные и однострочные, используют ellipsis и полные title;
   дата имеет вид `Среда · 12 авг`, время — `12:00 · 60 мин`, scheduled state
   остаётся plain «Ожидается». Последняя колонка не имеет видимого заголовка:
   постоянно доступное вертикальное троеточие открывает portal-menu со всеми
-  действиями, а быстрые icon-only actions появляются при hover/focus строки.
+  действиями, других action-кнопок в строке нет. Пункты portal-menu имеют
+  40 px, вертикально центрированы и используют `.88rem/400`.
   Этот current source polish меняет только UI: LessonRun API/schema и
   migrations не меняются;
 - `/students` объединяет справочник TeacherLearner/LearnerProfile и
@@ -504,7 +512,8 @@ Current production делает `/schedule` и `/students` доступными
   группе и сортировку. Active profiles, archived relations и исходящие pending
   requests показаны в одной таблице: archive/pending отмечаются inline-чипами,
   а restore/cancel доступны в этой же строке. Controls лежат прямо на page
-  background без отдельной toolbar-card и не меняются от статуса; управление
+  background без отдельной toolbar-card, имеют горизонтальный inset 12 px и не
+  меняются от статуса; управление
   relation не создаёт второй тип ученика. Active-строка показывает до двух
   групп и «ещё N», а имя и archive state принадлежат relation конкретного
   преподавателя; ученика можно создать, изменить и убрать из списка, а для
@@ -533,7 +542,8 @@ Primary navigation для roleless Account содержит «Расписани
 `/courses` позволяет начать authoring; он не является Course enrollment
 учащегося. Owner-scoped CourseSummary поддерживает поиск, subject/level/content
 filters, сортировку и режимы «Карточки / Таблица» без второй модели; current
-controls используют direct page-background toolbar, disclosure с native
+controls используют direct page-background toolbar с горизонтальным inset
+12 px, disclosure с native
 selects и icon-only view control; видимый result count не является control.
 Published paginated Catalog отдельно поддерживает только server-side
 search/subject/level из catalog RPC, не имитирует недоступные content/sort

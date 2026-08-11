@@ -60,7 +60,7 @@
   height: 4.25rem;
   min-height: 4.25rem;
   border: 0;
-  border-radius: 1.25rem;
+  border-radius: var(--product-card-radius, 1.25rem);
   background: #fff;
   padding: 0.75rem;
   box-shadow:
@@ -332,7 +332,7 @@
 }
 
 .nav-dropdown-panel {
-  border-radius: 1rem;
+  border-radius: var(--product-element-radius, 0.75rem);
   background: #fff;
   padding: 0.5rem;
   box-shadow:
@@ -367,7 +367,7 @@
   display: block;
   cursor: pointer;
   border: none;
-  border-radius: 0.75rem;
+  border-radius: calc(var(--product-element-radius, 0.75rem) - 0.25rem);
   padding: 0.55rem 0.75rem;
   text-align: left;
   font-size: 0.875rem;

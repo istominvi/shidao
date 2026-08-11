@@ -138,7 +138,7 @@ function CatalogCourseTable({
 }) {
   return (
     <div
-      className="overflow-x-auto rounded-[1.25rem] border border-white/80 bg-white/80 shadow-[0_10px_24px_rgba(20,20,20,0.06)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/50"
+      className="product-table-wrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/50"
       role="region"
       aria-label="Таблица курсов каталога"
       tabIndex={0}

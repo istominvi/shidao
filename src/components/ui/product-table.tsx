@@ -8,7 +8,7 @@ export function ProductTable({
   return (
     <table
       className={classNames(
-        "min-w-full table-fixed text-left text-sm",
+        "product-table min-w-full table-fixed text-left text-sm",
         className,
       )}
       {...props}

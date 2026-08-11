@@ -2941,6 +2941,8 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
           borderTopWidth: toolbarStyle.borderTopWidth,
           boxShadow: toolbarStyle.boxShadow,
           paddingTop: toolbarStyle.paddingTop,
+          paddingLeft: toolbarStyle.paddingLeft,
+          paddingRight: toolbarStyle.paddingRight,
         },
         dateNavigator: {
           backgroundColor: dateNavigatorStyle.backgroundColor,
@@ -2957,6 +2959,15 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         },
         controlsLayout: {
           rightDelta: Math.abs(toolbarRect.right - toolbarActionsRect.right),
+          insideInlineInset:
+            toolbarActionsRect.left >=
+              toolbarRect.left +
+                Number.parseFloat(toolbarStyle.paddingLeft) -
+                0.5 &&
+            toolbarActionsRect.right <=
+              toolbarRect.right -
+                Number.parseFloat(toolbarStyle.paddingRight) +
+                0.5,
           dateBeforeView: dateNavigatorRect.right <= viewToggleRect.left,
           compactDateControl: dateNavigatorRect.width <= 352,
           externalPeriodSwitchCount: document.querySelectorAll(
@@ -3035,6 +3046,8 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       borderTopWidth: "0px",
       boxShadow: "none",
       paddingTop: "0px",
+      paddingLeft: "12px",
+      paddingRight: "12px",
     });
     assert.equal(
       scheduleContract.dateNavigator.backgroundColor,
@@ -3061,7 +3074,8 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       `date picker width: ${scheduleContract.dateNavigator.pickerWidth}`,
     );
     assert.deepEqual(scheduleContract.controlsLayout, {
-      rightDelta: 0,
+      rightDelta: 12,
+      insideInlineInset: true,
       dateBeforeView: true,
       compactDateControl: true,
       externalPeriodSwitchCount: 0,
@@ -3200,9 +3214,9 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       const actionCell = table?.querySelector<HTMLElement>(
         ".teaching-run-table-action-cell",
       );
-      const quickActions = table?.querySelector<HTMLElement>(
-        ".teaching-run-table-quick-actions",
-      );
+      const quickActionCount = table?.querySelectorAll(
+        ".teaching-run-table-quick-actions, .teaching-run-table-quick-action",
+      ).length;
       const menuTrigger = table?.querySelector<HTMLButtonElement>(
         ".teaching-run-action-menu .action-menu-trigger",
       );
@@ -3240,7 +3254,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         !timeCellText ||
         !status ||
         !actionCell ||
-        !quickActions ||
+        quickActionCount === undefined ||
         !menuTrigger ||
         !menuTriggerIcon
       ) {
@@ -3250,7 +3264,6 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       const tableStyle = getComputedStyle(table);
       const tableHeadStyle = getComputedStyle(tableHead);
       const statusStyle = getComputedStyle(status);
-      const quickActionsStyle = getComputedStyle(quickActions);
       const menuTriggerStyle = getComputedStyle(menuTrigger);
       const actionHeader = headerCells.at(-1);
       return {
@@ -3264,6 +3277,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
             wrapperStyle.borderBottomWidth,
             wrapperStyle.borderLeftWidth,
           ],
+          wrapperBorderRadius: wrapperStyle.borderRadius,
         },
         layout: {
           tableLayout: tableStyle.tableLayout,
@@ -3300,6 +3314,12 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
           ),
           backgroundColor: tableHeadStyle.backgroundColor,
         },
+        bodyGeometry: {
+          rowHeight: bodyRow.getBoundingClientRect().height,
+          cellHeights: bodyCells.map(
+            (cell) => cell.getBoundingClientRect().height,
+          ),
+        },
         bodyTypography: bodyTextElements.map((element) => ({
           fontSize: getComputedStyle(element).fontSize,
           fontWeight: getComputedStyle(element).fontWeight,
@@ -3328,8 +3348,8 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         },
         actions: {
           visibleText: actionCell.textContent?.trim() ?? "",
-          quickActionsOpacity: quickActionsStyle.opacity,
-          quickActionsVisibility: quickActionsStyle.visibility,
+          quickActionCount,
+          actionButtonCount: actionCell.querySelectorAll("button").length,
           menuTriggerOpacity: menuTriggerStyle.opacity,
           menuTriggerVisibility: menuTriggerStyle.visibility,
           menuTriggerExpanded: menuTrigger.getAttribute("aria-expanded"),
@@ -3342,9 +3362,10 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       tableBackgroundColor: "rgb(255, 255, 255)",
       firstBodyRowBorderTopWidth: "0px",
       wrapperBorderWidths: ["0px", "0px", "0px", "0px"],
+      wrapperBorderRadius: "12px",
     });
-    assert.equal(scheduleTableContract.layout.tableLayout, "fixed");
-    assert.equal(scheduleTableContract.layout.minWidth, "928px");
+    assert.equal(scheduleTableContract.layout.tableLayout, "auto");
+    assert.equal(scheduleTableContract.layout.minWidth, "0px");
     assert.deepEqual(scheduleTableContract.layout.colClasses, [
       "teaching-run-table-col-date",
       "teaching-run-table-col-time",
@@ -3354,20 +3375,14 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       "teaching-run-table-col-status",
       "teaching-run-table-col-actions",
     ]);
-    const compactColumnWidths = [
-      [0, 148],
-      [1, 132],
-      [4, 104],
-      [5, 128],
-      [6, 120],
-    ] as const;
+    const compactColumnWidths = [0, 1, 4, 5, 6] as const;
     assert.ok(
       compactColumnWidths.every(
-        ([index, expectedWidth]) =>
-          Math.abs(
-            (scheduleTableContract.layout.columnWidths[index] ?? 0) -
-              expectedWidth,
-          ) < 1,
+        (index) =>
+          (scheduleTableContract.layout.columnWidths[index] ?? 0) <
+            (scheduleTableContract.layout.columnWidths[2] ?? 0) &&
+          (scheduleTableContract.layout.columnWidths[index] ?? 0) <
+            (scheduleTableContract.layout.columnWidths[3] ?? 0),
       ),
     );
     assert.ok(
@@ -3408,6 +3423,12 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
     assert.equal(scheduleTableContract.header.rowHeight, 40);
     assert.ok(
       scheduleTableContract.header.cellHeights.every((height) => height === 40),
+    );
+    assert.equal(scheduleTableContract.bodyGeometry.rowHeight, 40);
+    assert.ok(
+      scheduleTableContract.bodyGeometry.cellHeights.every(
+        (height) => height === 40,
+      ),
     );
     assert.ok(
       scheduleTableContract.header.weights.every((weight) => weight === "500"),
@@ -3451,7 +3472,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       date: "Среда · 12 авг",
       time: "12:00 · 60 мин",
     });
-    assert.ok(scheduleTableContract.bodyIcons.length >= 5);
+    assert.ok(scheduleTableContract.bodyIcons.length >= 3);
     assert.ok(
       scheduleTableContract.bodyIcons.every(
         ({ color, opacity }) => color === "rgb(20, 20, 20)" && opacity === "1",
@@ -3484,8 +3505,8 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
     );
     assert.deepEqual(scheduleTableContract.actions, {
       visibleText: "",
-      quickActionsOpacity: "0",
-      quickActionsVisibility: "hidden",
+      quickActionCount: 0,
+      actionButtonCount: 1,
       menuTriggerOpacity: "1",
       menuTriggerVisibility: "visible",
       menuTriggerExpanded: "false",
@@ -3498,18 +3519,14 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
 
     const scheduleRow = runtime.page.locator(".teaching-run-table-row");
     await scheduleRow.hover();
-    await new Promise((resolve) => setTimeout(resolve, 200));
-    assert.deepEqual(
-      await runtime.page.evaluate(() => {
-        const quickActions = document.querySelector<HTMLElement>(
-          ".teaching-run-table-quick-actions",
-        );
-        if (!quickActions)
-          throw new Error("Schedule quick actions are missing");
-        const style = getComputedStyle(quickActions);
-        return { opacity: style.opacity, visibility: style.visibility };
-      }),
-      { opacity: "1", visibility: "visible" },
+    assert.equal(
+      await runtime.page
+        .locator(
+          ".teaching-run-table-row .teaching-run-table-quick-actions, " +
+            ".teaching-run-table-row .teaching-run-table-quick-action",
+        )
+        .count(),
+      0,
     );
 
     const rowMenuTrigger = runtime.page.getByRole("button", {
@@ -3535,16 +3552,77 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         );
         if (!menu) throw new Error("Portal action menu is missing");
         const rect = menu.getBoundingClientRect();
+        const menuStyle = getComputedStyle(menu);
+        const items = Array.from(
+          menu.querySelectorAll<HTMLElement>(".action-menu-item"),
+        );
+        const icons = Array.from(
+          menu.querySelectorAll<SVGElement>(".action-menu-item-icon"),
+        );
         return {
           fullyInsideViewport:
             rect.top >= 0 &&
             rect.left >= 0 &&
             rect.right <= window.innerWidth &&
             rect.bottom <= window.innerHeight,
-          position: getComputedStyle(menu).position,
+          position: menuStyle.position,
+          borderRadius: menuStyle.borderRadius,
+          backgroundColor: menuStyle.backgroundColor,
+          items: items.map((item) => {
+            const style = getComputedStyle(item);
+            return {
+              height: item.getBoundingClientRect().height,
+              alignItems: style.alignItems,
+              gap: style.gap,
+              paddingLeft: style.paddingLeft,
+              paddingRight: style.paddingRight,
+              color: style.color,
+              fontSize: style.fontSize,
+              fontWeight: style.fontWeight,
+            };
+          }),
+          icons: icons.map((icon) => {
+            const style = getComputedStyle(icon);
+            return {
+              color: style.color,
+              opacity: style.opacity,
+              marginTop: style.marginTop,
+            };
+          }),
         };
       }),
-      { fullyInsideViewport: true, position: "fixed" },
+      {
+        fullyInsideViewport: true,
+        position: "fixed",
+        borderRadius: "12px",
+        backgroundColor: "rgb(255, 255, 255)",
+        items: [
+          {
+            height: 40,
+            alignItems: "center",
+            gap: "12px",
+            paddingLeft: "12px",
+            paddingRight: "12px",
+            color: "rgb(20, 20, 20)",
+            fontSize: "14.08px",
+            fontWeight: "400",
+          },
+          {
+            height: 40,
+            alignItems: "center",
+            gap: "12px",
+            paddingLeft: "12px",
+            paddingRight: "12px",
+            color: "rgb(20, 20, 20)",
+            fontSize: "14.08px",
+            fontWeight: "400",
+          },
+        ],
+        icons: [
+          { color: "rgb(20, 20, 20)", opacity: "1", marginTop: "0px" },
+          { color: "rgb(20, 20, 20)", opacity: "1", marginTop: "0px" },
+        ],
+      },
     );
     await openRunMenuItem.press("ArrowDown");
     assert.equal(
@@ -3764,6 +3842,12 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       const toolbar = document.querySelector<HTMLElement>(
         ".student-directory-toolbar",
       );
+      const toolbarSearch = toolbar?.querySelector<HTMLElement>(
+        ".student-directory-search",
+      );
+      const toolbarControls = toolbar?.querySelector<HTMLElement>(
+        ".student-directory-controls",
+      );
       const groupFilter = toolbar?.querySelector<HTMLSelectElement>(
         'select[aria-label="Фильтр по группе"]',
       );
@@ -3782,6 +3866,8 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         !tabsScroll ||
         !headerActions ||
         !toolbar ||
+        !toolbarSearch ||
+        !toolbarControls ||
         !groupFilter ||
         !learnerSort
       ) {
@@ -3805,6 +3891,9 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       const baselineLeft = Number.parseFloat(baselineStyle.left);
       const baselineRight = Number.parseFloat(baselineStyle.right);
       const toolbarStyle = getComputedStyle(toolbar);
+      const toolbarRect = toolbar.getBoundingClientRect();
+      const toolbarSearchRect = toolbarSearch.getBoundingClientRect();
+      const toolbarControlsRect = toolbarControls.getBoundingClientRect();
 
       return {
         headerLayout: {
@@ -3873,6 +3962,12 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
           borderTopWidth: toolbarStyle.borderTopWidth,
           boxShadow: toolbarStyle.boxShadow,
           paddingTop: toolbarStyle.paddingTop,
+          paddingLeft: toolbarStyle.paddingLeft,
+          paddingRight: toolbarStyle.paddingRight,
+        },
+        toolbarAlignment: {
+          searchStartInset: toolbarSearchRect.left - toolbarRect.left,
+          controlsEndInset: toolbarRect.right - toolbarControlsRect.right,
         },
         controlGeometry: {
           groupFilterHeight: getComputedStyle(groupFilter).height,
@@ -3965,7 +4060,15 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       borderTopWidth: "0px",
       boxShadow: "none",
       paddingTop: "0px",
+      paddingLeft: "12px",
+      paddingRight: "12px",
     });
+    assert.ok(
+      Math.abs(studentsVisual.toolbarAlignment.searchStartInset - 12) < 0.5,
+    );
+    assert.ok(
+      Math.abs(studentsVisual.toolbarAlignment.controlsEndInset - 12) < 0.5,
+    );
     assert.deepEqual(studentsVisual.controlGeometry, {
       groupFilterHeight: "40px",
       sortHeight: "40px",
@@ -4009,7 +4112,20 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       const tableRect = table.getBoundingClientRect();
       const groupRect = groupCell.getBoundingClientRect();
       const actionRect = actionCell.getBoundingClientRect();
+      const wrapperStyle = getComputedStyle(wrapper);
+      const tableStyle = getComputedStyle(table);
       return {
+        surface: {
+          wrapperBackgroundColor: wrapperStyle.backgroundColor,
+          tableBackgroundColor: tableStyle.backgroundColor,
+          wrapperBorderWidths: [
+            wrapperStyle.borderTopWidth,
+            wrapperStyle.borderRightWidth,
+            wrapperStyle.borderBottomWidth,
+            wrapperStyle.borderLeftWidth,
+          ],
+          wrapperBorderRadius: wrapperStyle.borderRadius,
+        },
         actionWidth: actionRect.width,
         columnsDoNotOverlap: groupRect.right <= actionRect.left + 0.5,
         buttonsInsideActionCell: buttons.every((button) => {
@@ -4018,6 +4134,12 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         }),
         tableContainedByWrapper: tableRect.width <= wrapper.scrollWidth + 0.5,
       };
+    });
+    assert.deepEqual(studentActionGeometry.surface, {
+      wrapperBackgroundColor: "rgb(255, 255, 255)",
+      tableBackgroundColor: "rgb(255, 255, 255)",
+      wrapperBorderWidths: ["0px", "0px", "0px", "0px"],
+      wrapperBorderRadius: "12px",
     });
     assert.ok(studentActionGeometry.actionWidth >= 100);
     assert.equal(studentActionGeometry.columnsDoNotOverlap, true);
@@ -4096,6 +4218,34 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
     await runtime.page
       .getByRole("table", { name: "Группы учеников", exact: true })
       .waitFor();
+    const groupsToolbarContract = await runtime.page.evaluate(() => {
+      const toolbar = document.querySelector<HTMLElement>(
+        ".student-directory-toolbar",
+      );
+      const search = toolbar?.querySelector<HTMLElement>(
+        ".student-directory-search",
+      );
+      const controls = toolbar?.querySelector<HTMLElement>(
+        ".student-directory-controls",
+      );
+      if (!toolbar || !search || !controls) {
+        throw new Error("Groups toolbar contract is missing");
+      }
+      const style = getComputedStyle(toolbar);
+      const rect = toolbar.getBoundingClientRect();
+      const searchRect = search.getBoundingClientRect();
+      const controlsRect = controls.getBoundingClientRect();
+      return {
+        paddingLeft: style.paddingLeft,
+        paddingRight: style.paddingRight,
+        searchStartInset: searchRect.left - rect.left,
+        controlsEndInset: rect.right - controlsRect.right,
+      };
+    });
+    assert.equal(groupsToolbarContract.paddingLeft, "12px");
+    assert.equal(groupsToolbarContract.paddingRight, "12px");
+    assert.ok(Math.abs(groupsToolbarContract.searchStartInset - 12) < 0.5);
+    assert.ok(Math.abs(groupsToolbarContract.controlsEndInset - 12) < 0.5);
     html = await runtime.page.content();
     assert.match(html, /Подготовка к экзамену/);
     assert.match(html, /2 ученика/);
@@ -5098,6 +5248,12 @@ test("browser smoke: mobile Account menu exposes primary sections and account ac
       .waitFor();
 
     const mobileScheduleContract = await runtime.page.evaluate(() => {
+      const toolbar = document.querySelector<HTMLElement>(
+        ".teaching-hub-toolbar",
+      );
+      const toolbarActions = toolbar?.querySelector<HTMLElement>(
+        ".teaching-schedule-toolbar-actions",
+      );
       const navigator = document.querySelector<HTMLElement>(
         ".teaching-date-navigator",
       );
@@ -5107,10 +5263,13 @@ test("browser smoke: mobile Account menu exposes primary sections and account ac
       const viewToggle = document.querySelector<HTMLElement>(
         ".teaching-schedule-view-toggle",
       );
-      if (!navigator || !picker || !viewToggle) {
+      if (!toolbar || !toolbarActions || !navigator || !picker || !viewToggle) {
         throw new Error("Mobile schedule controls are missing");
       }
       const viewportWidth = document.documentElement.clientWidth;
+      const toolbarStyle = getComputedStyle(toolbar);
+      const toolbarRect = toolbar.getBoundingClientRect();
+      const toolbarActionsRect = toolbarActions.getBoundingClientRect();
       const controls = [picker, navigator, viewToggle].map((element) => {
         const rect = element.getBoundingClientRect();
         return { left: rect.left, right: rect.right };
@@ -5121,6 +5280,10 @@ test("browser smoke: mobile Account menu exposes primary sections and account ac
         controlsInsideViewport: controls.every(
           ({ left, right }) => left >= 0 && right <= viewportWidth,
         ),
+        toolbarPaddingLeft: toolbarStyle.paddingLeft,
+        toolbarPaddingRight: toolbarStyle.paddingRight,
+        controlsStartInset: toolbarActionsRect.left - toolbarRect.left,
+        controlsEndInset: toolbarRect.right - toolbarActionsRect.right,
         externalPeriodSwitchCount: document.querySelectorAll(
           ".teaching-schedule-period-switch",
         ).length,
@@ -5130,6 +5293,10 @@ test("browser smoke: mobile Account menu exposes primary sections and account ac
       clientWidth: 375,
       scrollWidth: 375,
       controlsInsideViewport: true,
+      toolbarPaddingLeft: "12px",
+      toolbarPaddingRight: "12px",
+      controlsStartInset: 12,
+      controlsEndInset: 12,
       externalPeriodSwitchCount: 0,
     });
 
@@ -5233,18 +5400,30 @@ test("browser smoke: mobile Account menu exposes primary sections and account ac
       if (!wrapper) throw new Error("Mobile schedule table is missing");
       const viewportWidth = document.documentElement.clientWidth;
       const rect = wrapper.getBoundingClientRect();
+      const style = getComputedStyle(wrapper);
       return {
         clientWidth: viewportWidth,
         scrollWidth: document.documentElement.scrollWidth,
-        tableScrollIsContained: wrapper.scrollWidth > wrapper.clientWidth,
+        overflowX: style.overflowX,
+        tableWidthContainedByScroller:
+          wrapper.scrollWidth >= wrapper.clientWidth,
         wrapperInsideViewport: rect.left >= 0 && rect.right <= viewportWidth,
+        menuTriggerCount: wrapper.querySelectorAll(
+          ".teaching-run-action-menu .action-menu-trigger",
+        ).length,
+        quickActionCount: wrapper.querySelectorAll(
+          ".teaching-run-table-quick-actions, .teaching-run-table-quick-action",
+        ).length,
       };
     });
     assert.deepEqual(mobileTableContract, {
       clientWidth: 375,
       scrollWidth: 375,
-      tableScrollIsContained: true,
+      overflowX: "auto",
+      tableWidthContainedByScroller: true,
       wrapperInsideViewport: true,
+      menuTriggerCount: 1,
+      quickActionCount: 0,
     });
 
     await runtime.page.setViewportSize({ width: 320, height: 812 });
@@ -5255,19 +5434,73 @@ test("browser smoke: mobile Account menu exposes primary sections and account ac
       if (!wrapper) throw new Error("Narrow schedule table is missing");
       const viewportWidth = document.documentElement.clientWidth;
       const rect = wrapper.getBoundingClientRect();
+      const style = getComputedStyle(wrapper);
       return {
         clientWidth: viewportWidth,
         scrollWidth: document.documentElement.scrollWidth,
-        tableScrollIsContained: wrapper.scrollWidth > wrapper.clientWidth,
+        overflowX: style.overflowX,
+        tableWidthContainedByScroller:
+          wrapper.scrollWidth >= wrapper.clientWidth,
         wrapperInsideViewport: rect.left >= 0 && rect.right <= viewportWidth,
       };
     });
     assert.deepEqual(narrowTableContract, {
       clientWidth: 320,
       scrollWidth: 320,
-      tableScrollIsContained: true,
+      overflowX: "auto",
+      tableWidthContainedByScroller: true,
       wrapperInsideViewport: true,
     });
+    const narrowRowMenuTrigger = runtime.page.getByRole("button", {
+      name: /Действия с занятием/,
+    });
+    await narrowRowMenuTrigger.click();
+    const narrowRowMenu = runtime.page.getByRole("menu");
+    await narrowRowMenu.waitFor();
+    const narrowMenuContract = await runtime.page.evaluate(() => {
+      const menu = document.querySelector<HTMLElement>(
+        ".action-menu-panel-portal",
+      );
+      const trigger = document.querySelector<HTMLElement>(
+        ".teaching-run-action-menu .action-menu-trigger",
+      );
+      if (!menu || !trigger) {
+        throw new Error("Narrow schedule action menu is missing");
+      }
+      const viewportWidth = document.documentElement.clientWidth;
+      const menuRect = menu.getBoundingClientRect();
+      const triggerRect = trigger.getBoundingClientRect();
+      const items = Array.from(
+        menu.querySelectorAll<HTMLElement>(".action-menu-item"),
+      );
+      return {
+        clientWidth: viewportWidth,
+        scrollWidth: document.documentElement.scrollWidth,
+        menuInsideViewport:
+          menuRect.left >= 0 &&
+          menuRect.right <= viewportWidth &&
+          menuRect.top >= 0 &&
+          menuRect.bottom <= window.innerHeight,
+        triggerInsideViewport:
+          triggerRect.left >= 0 && triggerRect.right <= viewportWidth,
+        itemHeights: items.map((item) => item.getBoundingClientRect().height),
+      };
+    });
+    assert.deepEqual(narrowMenuContract, {
+      clientWidth: 320,
+      scrollWidth: 320,
+      menuInsideViewport: true,
+      triggerInsideViewport: true,
+      itemHeights: [40, 40],
+    });
+    await narrowRowMenu
+      .getByRole("menuitem", { name: "Открыть", exact: true })
+      .press("Escape");
+    await narrowRowMenu.waitFor({ state: "detached" });
+    assert.equal(
+      await narrowRowMenuTrigger.getAttribute("aria-expanded"),
+      "false",
+    );
     await runtime.page.setViewportSize({ width: 375, height: 812 });
 
     await runtime.page
@@ -5407,7 +5640,10 @@ test("browser smoke: mobile Account menu exposes primary sections and account ac
       }
       const viewportWidth = document.documentElement.clientWidth;
       const toolbarRect = toolbar.getBoundingClientRect();
+      const toolbarStyle = getComputedStyle(toolbar);
+      const railRect = rail.getBoundingClientRect();
       const tableWrapRect = tableWrap.getBoundingClientRect();
+      const tableWrapStyle = getComputedStyle(tableWrap);
       const tableRect = table.getBoundingClientRect();
       const groupRect = groupCell.getBoundingClientRect();
       const actionRect = actionCell.getBoundingClientRect();
@@ -5417,6 +5653,10 @@ test("browser smoke: mobile Account menu exposes primary sections and account ac
         heading: document.querySelector("h1")?.textContent?.trim() ?? "",
         toolbarInsideViewport:
           toolbarRect.left >= 0 && toolbarRect.right <= viewportWidth,
+        toolbarPaddingLeft: toolbarStyle.paddingLeft,
+        toolbarPaddingRight: toolbarStyle.paddingRight,
+        railStartInset: railRect.left - toolbarRect.left,
+        railEndInset: toolbarRect.right - railRect.right,
         railOverflowX: getComputedStyle(rail).overflowX,
         railScrollIsContained: rail.scrollWidth > rail.clientWidth,
         groupFilterHeight: getComputedStyle(groupFilter).height,
@@ -5429,6 +5669,11 @@ test("browser smoke: mobile Account menu exposes primary sections and account ac
         tableWrapInsideViewport:
           tableWrapRect.left >= 0 && tableWrapRect.right <= viewportWidth,
         tableOverflowX: getComputedStyle(tableWrap).overflowX,
+        tableSurface: {
+          backgroundColor: tableWrapStyle.backgroundColor,
+          borderTopWidth: tableWrapStyle.borderTopWidth,
+          borderRadius: tableWrapStyle.borderRadius,
+        },
         tableScrollIsContained: tableWrap.scrollWidth > tableWrap.clientWidth,
         columnsDoNotOverlap: groupRect.right <= actionRect.left + 0.5,
         actionsInsideTable:
@@ -5446,6 +5691,10 @@ test("browser smoke: mobile Account menu exposes primary sections and account ac
     assert.equal(mobileContract.scrollWidth, mobileContract.clientWidth);
     assert.equal(mobileContract.heading, "Ученики");
     assert.equal(mobileContract.toolbarInsideViewport, true);
+    assert.equal(mobileContract.toolbarPaddingLeft, "12px");
+    assert.equal(mobileContract.toolbarPaddingRight, "12px");
+    assert.ok(Math.abs(mobileContract.railStartInset - 12) < 0.5);
+    assert.ok(Math.abs(mobileContract.railEndInset - 12) < 0.5);
     assert.equal(mobileContract.railOverflowX, "auto");
     assert.equal(mobileContract.railScrollIsContained, true);
     assert.equal(mobileContract.groupFilterHeight, "40px");
@@ -5453,6 +5702,11 @@ test("browser smoke: mobile Account menu exposes primary sections and account ac
     assert.equal(mobileContract.hasStatusSwitch, false);
     assert.equal(mobileContract.tableWrapInsideViewport, true);
     assert.equal(mobileContract.tableOverflowX, "auto");
+    assert.deepEqual(mobileContract.tableSurface, {
+      backgroundColor: "rgb(255, 255, 255)",
+      borderTopWidth: "0px",
+      borderRadius: "12px",
+    });
     assert.equal(mobileContract.tableScrollIsContained, true);
     assert.equal(mobileContract.columnsDoNotOverlap, true);
     assert.equal(mobileContract.actionsInsideTable, true);
@@ -5559,6 +5813,12 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       const toolbar = document.querySelector<HTMLElement>(
         ".course-index-toolbar",
       );
+      const toolbarSearch = toolbar?.querySelector<HTMLElement>(
+        ".compact-toolbar-search",
+      );
+      const toolbarRail = toolbar?.querySelector<HTMLElement>(
+        ".compact-toolbar-rail",
+      );
       const viewSwitch = toolbar?.querySelector<HTMLElement>(
         '[role="group"][aria-label="Вид списка курсов"]',
       );
@@ -5578,6 +5838,8 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
         !navPill ||
         !userTrigger ||
         !toolbar ||
+        !toolbarSearch ||
+        !toolbarRail ||
         !viewSwitch ||
         !activeViewButton
       ) {
@@ -5593,6 +5855,9 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       const navPillStyle = getComputedStyle(navPill);
       const userTriggerStyle = getComputedStyle(userTrigger);
       const toolbarStyle = getComputedStyle(toolbar);
+      const toolbarRect = toolbar.getBoundingClientRect();
+      const toolbarSearchRect = toolbarSearch.getBoundingClientRect();
+      const toolbarRailRect = toolbarRail.getBoundingClientRect();
       const pageHeaderRect = pageHeader.getBoundingClientRect();
       const headerActionsRect = headerActions.getBoundingClientRect();
 
@@ -5636,6 +5901,12 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
           borderTopWidth: toolbarStyle.borderTopWidth,
           boxShadow: toolbarStyle.boxShadow,
           paddingTop: toolbarStyle.paddingTop,
+          paddingLeft: toolbarStyle.paddingLeft,
+          paddingRight: toolbarStyle.paddingRight,
+        },
+        toolbarAlignment: {
+          searchStartInset: toolbarSearchRect.left - toolbarRect.left,
+          railEndInset: toolbarRect.right - toolbarRailRect.right,
         },
         viewGeometry: {
           shellHeight: getComputedStyle(viewSwitch).height,
@@ -5672,7 +5943,13 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       borderTopWidth: "0px",
       boxShadow: "none",
       paddingTop: "0px",
+      paddingLeft: "12px",
+      paddingRight: "12px",
     });
+    assert.ok(
+      Math.abs(coursesVisual.toolbarAlignment.searchStartInset - 12) < 0.5,
+    );
+    assert.ok(Math.abs(coursesVisual.toolbarAlignment.railEndInset - 12) < 0.5);
     assert.deepEqual(coursesVisual.viewGeometry, {
       shellHeight: "40px",
       activeButtonHeight: "32px",
@@ -5739,6 +6016,32 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       exact: true,
     });
     await runtime.page.locator(".course-catalog-toolbar").waitFor();
+    const catalogToolbarContract = await runtime.page.evaluate(() => {
+      const toolbar = document.querySelector<HTMLElement>(
+        ".course-catalog-toolbar",
+      );
+      const search = toolbar?.querySelector<HTMLElement>(
+        ".compact-toolbar-search",
+      );
+      const rail = toolbar?.querySelector<HTMLElement>(".compact-toolbar-rail");
+      if (!toolbar || !search || !rail) {
+        throw new Error("Catalog toolbar contract is missing");
+      }
+      const style = getComputedStyle(toolbar);
+      const rect = toolbar.getBoundingClientRect();
+      const searchRect = search.getBoundingClientRect();
+      const railRect = rail.getBoundingClientRect();
+      return {
+        paddingLeft: style.paddingLeft,
+        paddingRight: style.paddingRight,
+        searchStartInset: searchRect.left - rect.left,
+        railEndInset: rect.right - railRect.right,
+      };
+    });
+    assert.equal(catalogToolbarContract.paddingLeft, "12px");
+    assert.equal(catalogToolbarContract.paddingRight, "12px");
+    assert.ok(Math.abs(catalogToolbarContract.searchStartInset - 12) < 0.5);
+    assert.ok(Math.abs(catalogToolbarContract.railEndInset - 12) < 0.5);
     assert.equal(
       await catalogPanel.getByText("Готовые курсы", { exact: true }).count(),
       0,
@@ -5833,6 +6136,33 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
     await runtime.page
       .getByRole("region", { name: "Таблица курсов", exact: true })
       .waitFor();
+    const ownedCourseTableSurface = await runtime.page.evaluate(() => {
+      const wrapper = document.querySelector<HTMLElement>(
+        '[aria-label="Таблица курсов"].product-table-wrap',
+      );
+      const table = wrapper?.querySelector<HTMLTableElement>(".product-table");
+      if (!wrapper || !table) {
+        throw new Error("Owned Course table surface is missing");
+      }
+      const wrapperStyle = getComputedStyle(wrapper);
+      return {
+        wrapperBackgroundColor: wrapperStyle.backgroundColor,
+        tableBackgroundColor: getComputedStyle(table).backgroundColor,
+        wrapperBorderWidths: [
+          wrapperStyle.borderTopWidth,
+          wrapperStyle.borderRightWidth,
+          wrapperStyle.borderBottomWidth,
+          wrapperStyle.borderLeftWidth,
+        ],
+        wrapperBorderRadius: wrapperStyle.borderRadius,
+      };
+    });
+    assert.deepEqual(ownedCourseTableSurface, {
+      wrapperBackgroundColor: "rgb(255, 255, 255)",
+      tableBackgroundColor: "rgb(255, 255, 255)",
+      wrapperBorderWidths: ["0px", "0px", "0px", "0px"],
+      wrapperBorderRadius: "12px",
+    });
     assert.equal(
       await runtime.page
         .getByRole("button", { name: "Показать таблицей", exact: true })
@@ -6293,6 +6623,12 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
       const toolbar = document.querySelector<HTMLElement>(
         ".course-index-toolbar",
       );
+      const toolbarSearch = toolbar?.querySelector<HTMLElement>(
+        ".compact-toolbar-search",
+      );
+      const toolbarRail = toolbar?.querySelector<HTMLElement>(
+        ".compact-toolbar-rail",
+      );
       const viewSwitch = toolbar?.querySelector<HTMLElement>(
         '[role="group"][aria-label="Вид списка курсов"]',
       );
@@ -6305,6 +6641,8 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
         !headerActions ||
         !headerAction ||
         !toolbar ||
+        !toolbarSearch ||
+        !toolbarRail ||
         !viewSwitch ||
         !activeViewButton
       ) {
@@ -6321,6 +6659,9 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
         Number.parseFloat(pageHeaderStyle.paddingLeft) -
         Number.parseFloat(pageHeaderStyle.paddingRight);
       const toolbarRect = toolbar.getBoundingClientRect();
+      const toolbarStyle = getComputedStyle(toolbar);
+      const toolbarSearchRect = toolbarSearch.getBoundingClientRect();
+      const toolbarRailRect = toolbarRail.getBoundingClientRect();
       return {
         clientWidth: viewportWidth,
         scrollWidth: document.documentElement.scrollWidth,
@@ -6341,6 +6682,10 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
         },
         toolbarInsideViewport:
           toolbarRect.left >= 0 && toolbarRect.right <= viewportWidth,
+        toolbarPaddingLeft: toolbarStyle.paddingLeft,
+        toolbarPaddingRight: toolbarStyle.paddingRight,
+        searchStartInset: toolbarSearchRect.left - toolbarRect.left,
+        railEndInset: toolbarRect.right - toolbarRailRect.right,
         shellHeight: getComputedStyle(viewSwitch).height,
         activeButtonHeight: getComputedStyle(activeViewButton).height,
         activePressed: activeViewButton.getAttribute("aria-pressed"),
@@ -6351,6 +6696,8 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
         clientWidth: mobileCoursesToolbar.clientWidth,
         scrollWidth: mobileCoursesToolbar.scrollWidth,
         toolbarInsideViewport: mobileCoursesToolbar.toolbarInsideViewport,
+        toolbarPaddingLeft: mobileCoursesToolbar.toolbarPaddingLeft,
+        toolbarPaddingRight: mobileCoursesToolbar.toolbarPaddingRight,
         shellHeight: mobileCoursesToolbar.shellHeight,
         activeButtonHeight: mobileCoursesToolbar.activeButtonHeight,
         activePressed: mobileCoursesToolbar.activePressed,
@@ -6359,12 +6706,16 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
         clientWidth: 375,
         scrollWidth: 375,
         toolbarInsideViewport: true,
+        toolbarPaddingLeft: "12px",
+        toolbarPaddingRight: "12px",
         shellHeight: "40px",
         activeButtonHeight: "32px",
         activePressed: "true",
       },
     );
     assert.ok(mobileCoursesToolbar.pageHeader.contentWidth > 0);
+    assert.ok(Math.abs(mobileCoursesToolbar.searchStartInset - 12) < 0.5);
+    assert.ok(Math.abs(mobileCoursesToolbar.railEndInset - 12) < 0.5);
     assert.ok(mobileCoursesToolbar.pageHeader.actionWidth > 0);
     assert.ok(
       mobileCoursesToolbar.pageHeader.headingWidth >
@@ -6412,17 +6763,28 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
       const toolbar = document.querySelector<HTMLElement>(
         ".course-catalog-toolbar",
       );
+      const search = toolbar?.querySelector<HTMLElement>(
+        ".compact-toolbar-search",
+      );
+      const rail = toolbar?.querySelector<HTMLElement>(".compact-toolbar-rail");
       const viewSwitch = toolbar?.querySelector<HTMLElement>(
         '[role="group"][aria-label="Вид каталога курсов"]',
       );
-      if (!toolbar || !viewSwitch) {
+      if (!toolbar || !search || !rail || !viewSwitch) {
         throw new Error("Mobile Catalog toolbar controls are missing");
       }
       const viewportWidth = document.documentElement.clientWidth;
       const rect = toolbar.getBoundingClientRect();
+      const style = getComputedStyle(toolbar);
+      const searchRect = search.getBoundingClientRect();
+      const railRect = rail.getBoundingClientRect();
       return {
         scrollWidth: document.documentElement.scrollWidth,
         insideViewport: rect.left >= 0 && rect.right <= viewportWidth,
+        paddingLeft: style.paddingLeft,
+        paddingRight: style.paddingRight,
+        searchStartInset: searchRect.left - rect.left,
+        railEndInset: rect.right - railRect.right,
         shellHeight: getComputedStyle(viewSwitch).height,
         visibleResultCount: toolbar.querySelectorAll(".compact-toolbar-result")
           .length,
@@ -6431,6 +6793,10 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
     assert.deepEqual(mobileCatalogToolbar, {
       scrollWidth: 375,
       insideViewport: true,
+      paddingLeft: "12px",
+      paddingRight: "12px",
+      searchStartInset: 12,
+      railEndInset: 12,
       shellHeight: "40px",
       visibleResultCount: 0,
     });

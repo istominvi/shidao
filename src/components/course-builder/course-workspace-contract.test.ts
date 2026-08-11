@@ -256,7 +256,7 @@ test("course routes use the flat demo background and unified visual controls", (
   );
   assert.match(
     navigationStyles,
-    /\.site-header-shell-demo\s*\{[\s\S]*?height: 4\.25rem;[\s\S]*?border-radius: 1\.25rem;[\s\S]*?background: #fff;/,
+    /\.site-header-shell-demo\s*\{[\s\S]*?height: 4\.25rem;[\s\S]*?border-radius: var\(--product-card-radius, 1\.25rem\);[\s\S]*?background: #fff;/,
   );
   assert.match(
     navigationStyles,
@@ -271,7 +271,7 @@ test("active product buttons and header controls share one flat 40px contract", 
 
   assert.match(
     styles,
-    /\.course-demo-shell\s*\{[\s\S]*?--course-demo-control-height: 2\.5rem;[\s\S]*?--course-demo-control-radius: 0\.75rem;[\s\S]*?--course-demo-control-padding-inline: 0\.75rem;[\s\S]*?--course-demo-control-font-size: 0\.88rem;[\s\S]*?--course-demo-control-font-weight: 400;[\s\S]*?--course-demo-control-icon-size: 1rem;/,
+    /:root\s*\{[\s\S]*?--product-element-radius: 0\.75rem;[\s\S]*?--product-card-radius: 1\.25rem;[\s\S]*?--product-row-height: 2\.5rem;[\s\S]*?\.course-demo-shell\s*\{[\s\S]*?--course-demo-element-radius: var\(--product-element-radius\);[\s\S]*?--course-demo-card-radius: var\(--product-card-radius\);[\s\S]*?--course-demo-table-radius: var\(--course-demo-element-radius\);[\s\S]*?--course-demo-table-row-height: var\(--product-row-height\);[\s\S]*?--course-demo-control-height: var\(--product-row-height\);[\s\S]*?--course-demo-control-radius: var\(--course-demo-element-radius\);[\s\S]*?--course-demo-control-padding-inline: 0\.75rem;[\s\S]*?--course-demo-content-inset: 0\.75rem;[\s\S]*?--course-demo-control-font-size: 0\.88rem;[\s\S]*?--course-demo-control-font-weight: 400;[\s\S]*?--course-demo-control-icon-size: 1rem;/,
   );
   assert.match(
     styles,
@@ -313,7 +313,10 @@ test("active product buttons and header controls share one flat 40px contract", 
     styles,
     /\.course-demo-shell \.product-btn:focus-visible:not\(:disabled\)\s*\{[^}]*box-shadow: 0 0 0 3px rgba\(20, 20, 20, 0\.12\);/,
   );
-  assert.match(styles, /\.action-menu-item\s*\{[^}]*border: 0;/);
+  assert.match(
+    styles,
+    /\.action-menu-item\s*\{[^}]*min-height: var\([^}]*--product-row-height[^}]*align-items: center;[^}]*gap: 0\.5rem;[^}]*border: 0;[^}]*padding: 0 var\(--course-demo-control-padding-inline, 0\.75rem\);[^}]*font-size: var\(--course-demo-control-font-size, 0\.88rem\);[^}]*font-weight: var\(--course-demo-control-font-weight, 400\);/,
+  );
 
   assert.match(
     navigationStyles,

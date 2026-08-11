@@ -265,10 +265,17 @@ subject/level filters, но использует тот же cards/table present
 рядом только icon-only «Таблица / Карточки». Белая таблица без внешней рамки
 получила компактные `Дата / Время` слева, `Ученики / Статус` и действия справа,
 а `Урок / Курс` делят свободную ширину. Все данные чёрные, однострочные и
-сокращаются ellipsis; header ровно 40 px вместе с разделителем и weight 500.
+сокращаются ellipsis; header и data-row ровно 40 px, причём разделитель входит
+в высоту header, его weight равен 500.
 Последняя колонка не имеет видимого заголовка:
-вертикальное троеточие открывает все действия, быстрые icon-only actions
-появляются при hover/focus. Authenticated top header/profile menu стали
+вертикальное троеточие открывает все действия, других action-кнопок в строке
+нет; пункты portal-menu имеют 40 px и `.88rem/400` с вертикальным
+центрированием. Прозрачные Schedule/Students/Courses controls имеют
+горизонтальный inset 12 px и совпадают с внутренними границами page-header.
+Общие tokens различают карточки с радиусом 20 px и
+elements/controls/tables/menus с радиусом 12 px; активные ProductTable wrappers
+белые, borderless и используют table token без изменения плотности строк
+Students/Courses. Authenticated top header/profile menu стали
 сплошными белыми поверхностями без blur. Active V2 buttons/header controls
 унифицированы как flat `40 px / 12 px / .88rem / 400`: без inset-блика,
 подъёма и тени, с полностью непрозрачными контрастными иконками; белые кнопки
@@ -545,13 +552,19 @@ right-aligned date control шириной 300 px на desktop показывае
 Неделя / Месяц» и стрелками
 сдвигает выбранный целый период. Рядом остаётся icon-only «Таблица / Карточки».
 После controls непустая projection начинается сразу. Таблица сплошная белая,
-без внешней рамки; её header имеет ровно 40 px вместе с разделителем 1 px,
-weight 500 и более светлый текст. Компактные `Дата / Время` прижаты слева,
+без внешней рамки и с element/table radius 12 px; её header и data-row имеют
+ровно 40 px, а разделитель 1 px входит в высоту header; weight равен 500 и
+текст светлее. Контентные по ширине `Дата / Время` прижаты слева,
 `Ученики / Статус` и действия — справа, а `Урок / Курс` делят свободную ширину.
 Все данные чёрные и выводятся в одну строку с ellipsis; дата имеет вид
 `Среда · 12 авг`, время — `12:00 · 60 мин`, scheduled state остаётся plain
 «Ожидается». В последней колонке постоянное вертикальное троеточие
-открывает все действия, а быстрые icon-only actions появляются при hover/focus.
+открывает все действия, а других action-кнопок в строке нет. Пункты portal-menu
+имеют 40 px, вертикальное центрирование и `.88rem/400`.
+Прозрачная controls-панель имеет горизонтальный inset 12 px. Общие radius
+tokens задают 20 px для карточек и 12 px для controls/tables/menus; активные
+ProductTable surfaces Schedule/Students/Courses белые и borderless, при этом
+плотность строк Students/Courses не изменяется.
 Authenticated top header и profile dropdown тоже стали сплошными белыми
 поверхностями без blur. Buttons/header controls используют единый flat
 `40 px / 12 px / .88rem / 400` contract с fully opaque contrast-aware icons,

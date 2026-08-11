@@ -194,7 +194,8 @@ test("course catalog UI exposes accessible search, filters, views, and states", 
   assert.match(ownedCoursesPanelSource, /<caption className="sr-only"/);
   assert.match(ownedCoursesPanelSource, /role="region"/);
   assert.match(ownedCoursesPanelSource, /tabIndex=\{0\}/);
-  assert.match(ownedCoursesPanelSource, /overflow-x-auto/);
+  assert.match(ownedCoursesPanelSource, /className="product-table-wrap/);
+  assert.match(courseCatalogPanelSource, /className="product-table-wrap/);
   assert.match(courseCatalogPanelSource, /ariaLabel="Вид каталога курсов"/);
   assert.match(courseCatalogPanelSource, /label: "Карточки"/);
   assert.match(courseCatalogPanelSource, /label: "Таблица"/);

@@ -23,6 +23,7 @@
   align-items: center;
   justify-content: flex-end;
   gap: 1rem;
+  padding-inline: var(--course-demo-content-inset, 0.75rem);
 }
 
 .teaching-date-picker {
@@ -144,7 +145,10 @@
   max-height: min(34rem, calc(100vh - 2rem));
   overflow-y: auto;
   border: 1px solid rgba(20, 20, 20, 0.1);
-  border-radius: 1rem;
+  border-radius: var(
+    --course-demo-element-radius,
+    var(--product-element-radius, 0.75rem)
+  );
   background: rgba(255, 255, 255, 0.98);
   padding: 0.75rem;
   box-shadow:
@@ -1014,40 +1018,47 @@
 .teaching-run-table-wrap {
   overflow-x: auto;
   border: 0;
-  border-radius: 1.25rem;
+  border-radius: var(
+    --course-demo-table-radius,
+    var(--course-demo-element-radius, var(--product-element-radius, 0.75rem))
+  );
   background: #fff;
   box-shadow: 0 20px 52px rgba(23, 26, 32, 0.07);
 }
 
 .teaching-run-table {
   width: 100%;
-  min-width: 58rem;
+  min-width: 0;
+  table-layout: auto;
+  border-collapse: collapse;
   background: #fff;
 }
 
-.teaching-run-table-col-date {
-  width: 9.25rem;
-}
-
+.teaching-run-table-col-date,
 .teaching-run-table-col-time {
-  width: 8.25rem;
+  width: 1%;
 }
 
-.teaching-run-table-col-participants {
-  width: 6.5rem;
+.teaching-run-table-col-lesson,
+.teaching-run-table-col-course {
+  width: 50%;
 }
 
+.teaching-run-table-col-participants,
 .teaching-run-table-col-status {
-  width: 8rem;
+  width: 1%;
 }
 
 .teaching-run-table-col-actions {
-  width: 7.5rem;
+  width: 1%;
 }
 
 .teaching-run-table thead tr,
 .teaching-run-table thead th {
-  height: var(--course-demo-control-height);
+  height: var(
+    --course-demo-table-row-height,
+    var(--course-demo-control-height, var(--product-row-height, 2.5rem))
+  );
 }
 
 .teaching-run-table thead {
@@ -1071,7 +1082,10 @@
 }
 
 .teaching-run-table tbody tr {
-  height: 3.25rem;
+  height: var(
+    --course-demo-table-row-height,
+    var(--course-demo-control-height, var(--product-row-height, 2.5rem))
+  );
   border-color: #ececef;
   background: #fff;
   color: #141414;
@@ -1083,11 +1097,26 @@
 }
 
 .teaching-run-table tbody td {
+  box-sizing: border-box;
+  height: var(
+    --course-demo-table-row-height,
+    var(--course-demo-control-height, var(--product-row-height, 2.5rem))
+  );
   overflow: hidden;
   padding-inline: 0.625rem;
+  padding-block: 0;
   color: #141414;
   font-size: var(--course-demo-control-font-size);
   font-weight: 400;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.teaching-run-table th:nth-child(3),
+.teaching-run-table th:nth-child(4),
+.teaching-run-table td:nth-child(3),
+.teaching-run-table td:nth-child(4) {
+  max-width: 0;
 }
 
 .teaching-run-table-date,
@@ -1149,7 +1178,7 @@
 .teaching-run-table-actions {
   width: 100%;
   justify-content: flex-end;
-  gap: 0.2rem;
+  gap: 0;
 }
 
 .teaching-run-table-action-cell {
@@ -1158,37 +1187,33 @@
   padding-left: 0.25rem !important;
 }
 
-.teaching-run-table-quick-actions {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.2rem;
-  opacity: 0;
-  pointer-events: none;
-  transform: translateX(0.2rem);
-  visibility: hidden;
-  transition:
-    opacity 140ms ease,
-    transform 140ms ease,
-    visibility 140ms ease;
-}
-
-.teaching-run-table-row:hover .teaching-run-table-quick-actions,
-.teaching-run-table-row:focus-within .teaching-run-table-quick-actions {
-  opacity: 1;
-  pointer-events: auto;
-  transform: translateX(0);
-  visibility: visible;
-}
-
-.course-demo-shell .teaching-run-table-quick-action.product-btn,
 .course-demo-shell .teaching-run-action-menu .action-menu-trigger {
-  width: 2rem;
-  min-width: 2rem;
-  height: 2rem;
-  min-height: 2rem;
-  flex: 0 0 2rem;
+  width: var(
+    --course-demo-table-row-height,
+    var(--course-demo-control-height, var(--product-row-height, 2.5rem))
+  );
+  min-width: var(
+    --course-demo-table-row-height,
+    var(--course-demo-control-height, var(--product-row-height, 2.5rem))
+  );
+  height: var(
+    --course-demo-table-row-height,
+    var(--course-demo-control-height, var(--product-row-height, 2.5rem))
+  );
+  min-height: var(
+    --course-demo-table-row-height,
+    var(--course-demo-control-height, var(--product-row-height, 2.5rem))
+  );
+  flex: 0 0
+    var(
+      --course-demo-table-row-height,
+      var(--course-demo-control-height, var(--product-row-height, 2.5rem))
+    );
   border-color: transparent;
-  border-radius: 0.5rem;
+  border-radius: var(
+    --course-demo-element-radius,
+    var(--product-element-radius, 0.75rem)
+  );
   background: transparent;
   padding: 0;
   color: #141414;
@@ -1196,13 +1221,11 @@
   box-shadow: none;
 }
 
-.course-demo-shell .teaching-run-table-quick-action.product-btn > svg,
 .course-demo-shell .teaching-run-action-menu .action-menu-trigger > svg {
   color: #141414;
   opacity: 1;
 }
 
-.course-demo-shell .teaching-run-table-quick-action.product-btn:hover,
 .course-demo-shell .teaching-run-action-menu .action-menu-trigger:hover {
   border-color: transparent;
   background: rgba(20, 20, 20, 0.07);
@@ -1210,7 +1233,6 @@
   transform: none;
 }
 
-.course-demo-shell .teaching-run-table-quick-action.product-btn:focus-visible,
 .course-demo-shell
   .teaching-run-action-menu
   .action-menu-trigger:focus-visible {
@@ -1218,6 +1240,42 @@
   outline: 2px solid rgba(20, 20, 20, 0.58);
   outline-offset: 1px;
   box-shadow: none;
+}
+
+.action-menu-panel-portal .action-menu-item {
+  height: var(
+    --course-demo-table-row-height,
+    var(--course-demo-control-height, var(--product-row-height, 2.5rem))
+  );
+  min-height: var(
+    --course-demo-table-row-height,
+    var(--course-demo-control-height, var(--product-row-height, 2.5rem))
+  );
+  align-items: center;
+  gap: var(--course-demo-control-padding-inline, 0.75rem);
+  border-radius: var(
+    --course-demo-element-radius,
+    var(--product-element-radius, 0.75rem)
+  );
+  padding-block: 0;
+  padding-inline: var(--course-demo-control-padding-inline, 0.75rem);
+  color: #141414;
+  font-size: var(--course-demo-control-font-size, 0.88rem);
+  font-weight: var(--course-demo-control-font-weight, 400);
+  line-height: var(--course-demo-control-line-height, 1.2);
+}
+
+.action-menu-panel-portal .action-menu-item-icon {
+  width: var(--course-demo-control-icon-size, 1rem);
+  height: var(--course-demo-control-icon-size, 1rem);
+  margin-top: 0;
+  color: #141414;
+  opacity: 1;
+}
+
+.action-menu-panel-portal .action-menu-item-label {
+  color: #141414;
+  font-weight: var(--course-demo-control-font-weight, 400);
 }
 
 .teaching-learner-grid {
@@ -1328,7 +1386,8 @@
   gap: 0.65rem;
   border: 0;
   background: transparent;
-  padding: 0;
+  padding-block: 0;
+  padding-inline: var(--course-demo-content-inset, 0.75rem);
   box-shadow: none;
 }
 
@@ -1385,15 +1444,19 @@
   max-width: 100%;
   min-width: 0;
   overflow-x: auto;
-  border: 1px solid rgba(255, 255, 255, 0.82);
-  border-radius: 1.25rem;
-  background: rgba(255, 255, 255, 0.88);
+  border: 0;
+  border-radius: var(
+    --course-demo-table-radius,
+    var(--course-demo-element-radius, var(--product-element-radius, 0.75rem))
+  );
+  background: #fff;
   box-shadow: 0 20px 52px rgba(23, 26, 32, 0.07);
 }
 
 .student-directory-table {
   width: 100%;
   min-width: 0;
+  background: #fff;
 }
 
 .student-directory-learners-table {

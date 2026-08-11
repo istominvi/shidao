@@ -370,7 +370,7 @@ export function ScheduleWorkspace() {
           aria-label={`Назначенные уроки за ${selectedPeriodLabel}`}
         >
           {viewMode === "table" ? (
-            <div className="teaching-run-table-wrap">
+            <div className="product-table-wrap teaching-run-table-wrap">
               <ProductTable className="teaching-run-table">
                 <caption className="sr-only">
                   Занятия за {selectedPeriodLabel}
@@ -425,8 +425,6 @@ export function ScheduleWorkspace() {
                         href: runPlanHref(run),
                       },
                     ];
-                    const RunActionIcon =
-                      lessonRunState(run) === "scheduled" ? Play : CircleCheck;
                     return (
                       <ProductTableRow
                         key={run.id}
@@ -477,36 +475,6 @@ export function ScheduleWorkspace() {
                         </ProductTableCell>
                         <ProductTableActionCell className="teaching-run-table-action-cell text-right">
                           <span className="teaching-run-table-actions">
-                            <span className="teaching-run-table-quick-actions">
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                className="teaching-run-table-quick-action"
-                                disabled={Boolean(busyLabel)}
-                                aria-label={`${actionLabel}: «${run.lessonTitle}»`}
-                                title={actionLabel}
-                                onClick={() => setSelectedRunId(run.id)}
-                              >
-                                <RunActionIcon
-                                  className="h-4 w-4"
-                                  aria-hidden="true"
-                                />
-                              </Button>
-                              <Link
-                                href={runPlanHref(run)}
-                                className={productButtonClassName(
-                                  "ghost",
-                                  "teaching-run-table-quick-action",
-                                )}
-                                aria-label={`Открыть план урока «${run.lessonTitle}»`}
-                                title="Открыть план"
-                              >
-                                <BookOpen
-                                  className="h-4 w-4"
-                                  aria-hidden="true"
-                                />
-                              </Link>
-                            </span>
                             <ActionMenu
                               className="teaching-run-action-menu"
                               label={`Действия с занятием «${run.lessonTitle}»`}

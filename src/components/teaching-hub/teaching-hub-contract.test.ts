@@ -245,10 +245,14 @@ test("schedule keeps the compact date control and dense one-line table contract"
   assert.match(scheduleWorkspaceSource, /title=\{run\.lessonTitle\}/);
   assert.match(scheduleWorkspaceSource, /title=\{run\.courseTitle\}/);
   assert.match(scheduleWorkspaceSource, /teaching-run-table-truncate/);
-  assert.match(scheduleWorkspaceSource, /teaching-run-table-quick-actions/);
-  assert.match(scheduleWorkspaceSource, /teaching-run-table-quick-action/);
+  assert.doesNotMatch(
+    scheduleWorkspaceSource,
+    /teaching-run-table-quick-actions|teaching-run-table-quick-action/,
+  );
   assert.match(scheduleWorkspaceSource, /<ActionMenu/);
   assert.match(scheduleWorkspaceSource, /triggerIcon=\{MoreVertical\}/);
+  assert.match(scheduleWorkspaceSource, /triggerVariant="ghost"/);
+  assert.match(scheduleWorkspaceSource, /\sportal\s/);
   assert.match(scheduleWorkspaceSource, /label: "Открыть план"/);
   for (const column of [
     "date",
@@ -279,31 +283,31 @@ test("schedule keeps the compact date control and dense one-line table contract"
   );
   assert.match(
     teachingHubStyleSource,
-    /\.teaching-run-table\s*\{[^}]*min-width:\s*58rem;/,
+    /\.teaching-run-table\s*\{[^}]*min-width:\s*0;[^}]*table-layout:\s*auto;/,
   );
   assert.match(
     teachingHubStyleSource,
-    /\.teaching-run-table-col-date\s*\{[^}]*width:\s*9\.25rem;/,
+    /\.teaching-run-table-col-date,[\s\S]*?\.teaching-run-table-col-time\s*\{[^}]*width:\s*1%;/,
   );
   assert.match(
     teachingHubStyleSource,
-    /\.teaching-run-table-col-time\s*\{[^}]*width:\s*8\.25rem;/,
+    /\.teaching-run-table-col-lesson,[\s\S]*?\.teaching-run-table-col-course\s*\{[^}]*width:\s*50%;/,
   );
   assert.match(
     teachingHubStyleSource,
-    /\.teaching-run-table-col-participants\s*\{[^}]*width:\s*6\.5rem;/,
+    /\.teaching-run-table-col-participants,[\s\S]*?\.teaching-run-table-col-status\s*\{[^}]*width:\s*1%;/,
   );
   assert.match(
     teachingHubStyleSource,
-    /\.teaching-run-table-col-status\s*\{[^}]*width:\s*8rem;/,
+    /\.teaching-run-table-col-actions\s*\{[^}]*width:\s*1%;/,
   );
   assert.match(
     teachingHubStyleSource,
-    /\.teaching-run-table-col-actions\s*\{[^}]*width:\s*7\.5rem;/,
+    /\.teaching-run-table tbody tr\s*\{[^}]*height:\s*var\(\s*--course-demo-table-row-height,/,
   );
   assert.match(
     teachingHubStyleSource,
-    /\.teaching-run-table tbody td\s*\{[^}]*padding-inline:\s*0\.625rem;[^}]*color:\s*#141414;/,
+    /\.teaching-run-table tbody td\s*\{[^}]*height:\s*var\(\s*--course-demo-table-row-height,[^}]*padding-inline:\s*0\.625rem;[^}]*padding-block:\s*0;[^}]*color:\s*#141414;[^}]*vertical-align:\s*middle;[^}]*white-space:\s*nowrap;/,
   );
   assert.match(
     teachingHubStyleSource,
@@ -319,11 +323,23 @@ test("schedule keeps the compact date control and dense one-line table contract"
   );
   assert.match(
     teachingHubStyleSource,
-    /\.teaching-run-table-quick-actions\s*\{[^}]*opacity:\s*0;[^}]*visibility:\s*hidden;/,
+    /\.course-demo-shell \.teaching-run-action-menu \.action-menu-trigger\s*\{[^}]*width:\s*var\(\s*--course-demo-table-row-height,[^}]*height:\s*var\(\s*--course-demo-table-row-height,/,
   );
   assert.match(
     teachingHubStyleSource,
-    /\.teaching-run-table-row:hover \.teaching-run-table-quick-actions,[^}]*\{[^}]*opacity:\s*1;[^}]*visibility:\s*visible;/,
+    /\.action-menu-panel-portal \.action-menu-item\s*\{[^}]*height:\s*var\(\s*--course-demo-table-row-height,[^}]*min-height:\s*var\(\s*--course-demo-table-row-height,[^}]*align-items:\s*center;[^}]*gap:\s*var\(--course-demo-control-padding-inline,[^}]*padding-inline:\s*var\(--course-demo-control-padding-inline,[^}]*color:\s*#141414;[^}]*font-size:\s*var\(--course-demo-control-font-size,[^}]*font-weight:\s*var\(--course-demo-control-font-weight,/,
+  );
+  assert.match(
+    teachingHubStyleSource,
+    /\.action-menu-panel-portal \.action-menu-item-icon\s*\{[^}]*margin-top:\s*0;[^}]*color:\s*#141414;[^}]*opacity:\s*1;/,
+  );
+  assert.doesNotMatch(
+    teachingHubStyleSource,
+    /teaching-run-table-quick-actions|teaching-run-table-quick-action/,
+  );
+  assert.match(
+    teachingHubStyleSource,
+    /\.student-directory-table-wrap\s*\{[^}]*border:\s*0;[^}]*--course-demo-table-radius,[^}]*background:\s*#fff;/,
   );
   assert.match(
     navigationStyleSource,

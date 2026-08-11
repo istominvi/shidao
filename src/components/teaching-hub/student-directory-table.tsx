@@ -97,7 +97,7 @@ export function LearnersDirectoryTable({
   onCancelRequest: (request: LearnerConnectionRequest) => void;
 }) {
   return (
-    <div className="student-directory-table-wrap">
+    <div className="product-table-wrap student-directory-table-wrap">
       <ProductTable className="student-directory-table student-directory-learners-table">
         <caption className="sr-only">Ученики, их статусы и группы</caption>
         <ProductTableHead>
@@ -300,7 +300,7 @@ export function LearnerGroupsDirectoryTable({
   onOpen: (group: LearnerGroup) => void;
 }) {
   return (
-    <div className="student-directory-table-wrap">
+    <div className="product-table-wrap student-directory-table-wrap">
       <ProductTable className="student-directory-table">
         <caption className="sr-only">Группы учеников</caption>
         <ProductTableHead>

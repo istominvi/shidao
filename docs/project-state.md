@@ -106,14 +106,17 @@ Authenticated production browser postflight этого slice пока не вы�
 Полная дата остаётся в
 доступном имени и заголовке календаря; «День / Неделя / Месяц» находятся
 внутри popover. Белая таблица не имеет внешней обводки, её светло-серая строка
-заголовков имеет точную высоту 40 px вместе с разделителем 1 px, weight 500 и
-более светлый текст. Компактные колонки `Дата / Время` прижаты слева, `Ученики
-/ Статус` и действия — справа, а `Урок / Курс` делят оставшуюся ширину. Данные
+заголовков и каждая строка данных имеют точную высоту 40 px; divider 1 px
+входит в эти 40 px header, его weight равен 500, а текст стал светлее.
+Контентные по ширине колонки `Дата / Время` прижаты слева, `Ученики / Статус`
+и действия — справа, а `Урок / Курс` делят оставшуюся ширину. Данные
 выводятся чёрным в одну строку с ellipsis и полным `title`; дата использует
 формат `Среда · 12 авг`, время — `12:00 · 60 мин`, scheduled-состояние остаётся
 plain «Ожидается». Видимый заголовок последней колонки
 отсутствует: постоянная кнопка с вертикальным троеточием открывает все действия
-в portal-menu, а быстрые icon-only действия появляются при hover/focus строки.
+в portal-menu; других кнопок действий в строке нет. Пункты portal-menu имеют
+точную высоту 40 px, вертикально центрированные иконку и текст,
+шрифт `.88rem/400` и канонические внутренние интервалы.
 Authenticated top header и profile menu теперь используют сплошной белый фон
 без blur. Active V2 buttons и header controls используют единый flat-contract
 `40 px / 12 px / .88rem / 400`: primary не имеет блика, подъёма или тени,
@@ -144,6 +147,18 @@ server-side предмета/уровня и такой же icon-only выбо�
 Повторный заголовок, поясняющий текст и видимый count удалены; фиктивные
 content/sort controls не добавлены. Это UI-only change без schema, migration
 или нового Course API.
+
+**Current source content controls/table surfaces (следующий deployment):**
+прозрачные панели управления Schedule, обеих directory-вкладок Students и
+обеих вкладок Courses получили горизонтальный inset 12 px. Поэтому первый и
+последний control визуально совпадают с внутренними границами page-header, не
+создавая отдельную toolbar-card. Общие tokens различают карточку с радиусом
+20 px и вложенный element/control/table/menu с радиусом 12 px. Активные
+`ProductTable` wrappers Schedule, Students и Courses используют table token,
+сплошной белый фон и не имеют внешней рамки; плотность строк Students/Courses
+этот slice не меняет. Это UI-only source change без API, schema или migration;
+deployment ещё не выполнен. Локальные gates зелёные: typecheck, lint, format,
+`git diff --check`, `454/454` unit/e2e и `22/22` production-browser scenarios.
 
 **Current System Assistant conversational action slice:** реализован один
 глобальный floating widget «ИИ» внутри protected `(app)` layout. Он доступен на
@@ -473,14 +488,16 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
   выбранный период.
   Непустой результат начинается сразу с выбранного вида, без повторного
   «Выбранная неделя / Занятия» и count-chip. Table projection — сплошная белая
-  поверхность без внешней рамки; header имеет ровно 40 px вместе с нижним
-  разделителем, weight 500 и более светлый текст. Компактные `Дата / Время`
-  прижаты слева, `Ученики / Статус` и действия — справа, а `Урок / Курс`
+  поверхность без внешней рамки и с element/table radius 12 px; header и
+  каждая data-row имеют ровно 40 px, причём нижний divider 1 px входит в
+  высоту header; weight равен 500, а текст светлее. Контентные по ширине
+  `Дата / Время` прижаты слева, `Ученики / Статус` и действия — справа, а `Урок / Курс`
   делят свободную ширину. Все данные строки чёрные, однострочные и используют
   ellipsis; дата имеет вид `Среда · 12 авг`, время — `12:00 · 60 мин`. Статус
   остаётся plain «Ожидается», а последняя колонка без видимого заголовка
-  показывает постоянное вертикальное троеточие со всеми действиями и быстрые
-  icon-only действия при hover/focus строки. System Assistant намеренно
+  показывает только постоянное вертикальное троеточие со всеми действиями.
+  Других кнопок действий в строке нет; пункты portal-menu имеют 40 px,
+  вертикально центрированы и используют `.88rem/400`. System Assistant намеренно
   продолжает получать только опорную локальную дату, а не всё видимое окно.
 - `/students` показывает единый teacher-scoped projection
   `TeacherLearner + LearnerProfile` во вкладках «Ученики / Группы» и
@@ -1208,10 +1225,10 @@ source slice ещё не выполнялся.
 подтверждены typecheck, lint, format check, `git diff --check`, `448/448`
 unit/e2e tests и `22/22` strict production-mode browser scenarios. Browser
 gate измерил desktop date control ровно 300 px и фактический `.88rem/400`,
-compact fixed rails таблицы, чёрные data-row text/icons, точные значения даты
+компактные rails таблицы, чёрные data-row text/icons, точные значения даты
 `Среда · 12 авг` и времени `12:00 · 60 мин`, header таблицы ровно 40 px вместе
 с divider 1 px,
-белые surface без outer border/blur, однострочный ellipsis, hover quick actions,
+белые surface без outer border/blur, однострочный ellipsis,
 необрезанный portal-menu вертикального троеточия с keyboard focus restore,
 flat primary/active navigation, bordered white secondary, borderless menu items
 и отсутствие document-level overflow на 375/320 px. API/schema/migrations не
