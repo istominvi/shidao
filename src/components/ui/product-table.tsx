@@ -1,5 +1,13 @@
+import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 import type { ComponentPropsWithoutRef, ReactNode } from "react";
+import type { ProductTableSortDirection } from "@/components/ui/product-table-sort";
 import { classNames } from "@/lib/ui/classnames";
+
+export {
+  nextProductTableSort,
+  type ProductTableSortDirection,
+  type ProductTableSortState,
+} from "@/components/ui/product-table-sort";
 
 export function ProductTable({
   className,
@@ -69,6 +77,57 @@ export function ProductTableHeaderCell({
       className={classNames("px-4 py-0 align-middle", className)}
       {...props}
     />
+  );
+}
+
+type ProductTableSortableHeaderCellProps = Omit<
+  ComponentPropsWithoutRef<"th">,
+  "aria-sort"
+> & {
+  direction: ProductTableSortDirection | null;
+  onSort: () => void;
+  buttonClassName?: string;
+};
+
+export function ProductTableSortableHeaderCell({
+  children,
+  className,
+  buttonClassName,
+  direction,
+  onSort,
+  ...props
+}: ProductTableSortableHeaderCellProps) {
+  const ariaSort =
+    direction === "asc"
+      ? "ascending"
+      : direction === "desc"
+        ? "descending"
+        : "none";
+  const SortIcon =
+    direction === "asc"
+      ? ArrowUp
+      : direction === "desc"
+        ? ArrowDown
+        : ArrowUpDown;
+
+  return (
+    <ProductTableHeaderCell
+      {...props}
+      className={classNames("product-table-sortable-header-cell", className)}
+      aria-sort={ariaSort}
+    >
+      <button
+        type="button"
+        className={classNames(
+          "product-table-sort-button inline-flex h-full w-full items-center gap-1.5 bg-transparent text-left text-inherit focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-neutral-900/60",
+          buttonClassName,
+        )}
+        onClick={onSort}
+      >
+        <span className="min-w-0 truncate">{children}</span>
+        <SortIcon className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+      </button>
+    </ProductTableHeaderCell>
   );
 }
 

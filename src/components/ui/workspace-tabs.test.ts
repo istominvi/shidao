@@ -22,6 +22,15 @@ test("workspace tabs keep their accessible tab contract and render counts as inl
 
   assert.match(
     styles,
+    /\.workspace-tabs\s*\{[^}]*--workspace-tabs-inline-offset: 0px;[^}]*padding-inline: var\(--workspace-tabs-inline-offset\);/,
+  );
+  assert.match(component, /const edgePadding = 0;/);
+  assert.match(
+    styles,
+    /\.workspace-tabs::before\s*\{[^}]*right: var\(--workspace-tabs-inline-offset\);[^}]*left: var\(--workspace-tabs-inline-offset\);/,
+  );
+  assert.match(
+    styles,
     /\.workspace-tabs::before\s*\{[^}]*height: 1px;[^}]*background: rgba\(20, 20, 20, 0\.2\);/,
   );
   assert.match(

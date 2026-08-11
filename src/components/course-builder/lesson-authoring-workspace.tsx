@@ -99,8 +99,8 @@ const CATEGORY_ITEMS = [
   },
   {
     value: "media",
-    label: "Изображения",
-    description: "Картинки и слайдшоу из материалов курса",
+    label: "Медиа",
+    description: "Изображения, слайдшоу, видео и аудио",
     icon: ImageIcon,
   },
   {
@@ -110,15 +110,9 @@ const CATEGORY_ITEMS = [
     icon: Gamepad2,
   },
   {
-    value: "layout",
-    label: "Оформление",
-    description: "Разделители и структура плана",
-    icon: Layers3,
-  },
-  {
     value: "attachment",
-    label: "Файлы",
-    description: "Материалы для скачивания или просмотра",
+    label: "Ссылки и файлы",
+    description: "Внешние ссылки и материалы для скачивания",
     icon: FileText,
   },
 ] as const satisfies ReadonlyArray<{
@@ -558,6 +552,7 @@ function ComponentPickerDialog({
             <button
               key={definition.key}
               type="button"
+              data-component-type-key={definition.key}
               disabled={disabled}
               className="rounded-2xl border border-neutral-200 bg-white p-4 text-left transition hover:border-neutral-950 hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
               onClick={() => void add(definition.key)}

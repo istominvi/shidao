@@ -569,7 +569,7 @@ test("deterministic assembler is idempotent and describes attachments honestly",
   const first = await harness.service.assembleCourse(alice, course.id);
   assert.equal(first.alreadyAssembled, false);
   assert.equal(first.lessonIds.length, 1);
-  assert.equal(first.componentIds.length, 6);
+  assert.equal(first.componentIds.length, 5);
   assert.equal(harness.repository.calls.assembleDraft, 1);
 
   const workspace = await harness.service.getCourse(alice, course.id);
@@ -578,7 +578,7 @@ test("deterministic assembler is idempotent and describes attachments honestly",
   const components = workspace.lessons[0]?.components ?? [];
   assert.deepEqual(
     components.map((component) => component.typeKey),
-    ["heading", "rich_text", "callout", "divider", "image", "file"],
+    ["heading", "rich_text", "callout", "image", "file"],
   );
   const imageComponent = components.find(
     (component) => component.typeKey === "image",

@@ -3,7 +3,7 @@
 **Статус:** canonical contract для deployed Course AI и deployed signed
 conversational System Assistant
 
-**Актуально на:** 11 августа 2026 года
+**Актуально на:** 12 августа 2026 года
 
 **Deployment state:** AI application slice развёрнут на `v2.shidao.ru` в release
 `0276aed`; server runtime получает `ROUTERAI_API_KEY` из production secret
@@ -178,13 +178,15 @@ Course generation в этом срезе создаёт программу из 
 heading
 rich_text
 callout
-divider
 single_choice_poll
 matching_game
 ```
 
-`quote`, `image`, `slideshow` и `file` намеренно не выдаются модели в этом
-срезе. План использует каноническую иерархию `Course → Lesson → ordered
+Provider allowlist намеренно не расширяется вместе с ручным registry:
+`quote`, `image`, `video`, `audio`, `slideshow`, `choice_quiz`, `fill_blanks`,
+`word_bank`, `sequence`, `categorize`, `free_response`, `external_link`,
+`word_builder`, `vocabulary_list` и `file` не выдаются модели в этом срезе.
+План использует каноническую иерархию `Course → Lesson → ordered
 Components`; Step, root Step и Methodology не создаются.
 
 До первой записи `POST .../ai-lesson-apply`:

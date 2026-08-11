@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  ChevronDown,
   GraduationCap,
   Eye,
   LoaderCircle,
@@ -27,7 +26,11 @@ import {
   updateLearnerProfile,
 } from "@/components/lesson-runs/lesson-run-client";
 import { LearnerGroupDialog } from "@/components/teaching-hub/learner-group-dialog";
-import { LearnerProfileDialog } from "@/components/teaching-hub/learner-profile-dialog";
+import { LearnerCourseDialog } from "@/components/teaching-hub/learner-course-dialog";
+import {
+  LearnerProfileDialog,
+  type LearnerDialogSurface,
+} from "@/components/teaching-hub/learner-profile-dialog";
 import { AddLearnerDialog } from "@/components/learner-identity/add-learner-dialog";
 import {
   actOnConnection,
@@ -40,9 +43,21 @@ import {
 import {
   LearnerGroupsDirectoryTable,
   LearnersDirectoryTable,
+  type LearnerDirectorySortKey,
+  type LearnerGroupDirectorySortKey,
   type LearnerDirectoryEntry,
 } from "@/components/teaching-hub/student-directory-table";
+import {
+  StudentDirectoryFilterMenu,
+  type StudentDirectoryAccountFilter,
+  type StudentDirectoryGroupFilter,
+  type StudentDirectoryStatusFilter,
+} from "@/components/teaching-hub/student-directory-filter-menu";
 import { Button } from "@/components/ui/button";
+import {
+  nextProductTableSort,
+  type ProductTableSortState,
+} from "@/components/ui/product-table";
 import { SurfaceCard } from "@/components/ui/surface-card";
 import {
   WorkspaceTabs,
@@ -60,8 +75,6 @@ import type {
 import { ROUTES } from "@/lib/auth";
 
 type DirectoryView = "learners" | "groups" | "observing";
-type LearnerSort = "name-asc" | "name-desc" | "group-count";
-type GroupSort = "name-asc" | "name-desc" | "member-count";
 
 const STUDENTS_DIRECTORY_TABS_ID = "students-directory";
 
@@ -121,12 +134,25 @@ export function StudentsWorkspace({
   const [view, setView] = useState<DirectoryView>(initialView);
   const [learnerQuery, setLearnerQuery] = useState("");
   const [groupQuery, setGroupQuery] = useState("");
-  const [groupFilter, setGroupFilter] = useState("all");
-  const [learnerSort, setLearnerSort] = useState<LearnerSort>("name-asc");
-  const [groupSort, setGroupSort] = useState<GroupSort>("name-asc");
+  const [statusFilter, setStatusFilter] =
+    useState<StudentDirectoryStatusFilter>("all");
+  const [groupFilter, setGroupFilter] =
+    useState<StudentDirectoryGroupFilter>("all");
+  const [accountFilter, setAccountFilter] =
+    useState<StudentDirectoryAccountFilter>("all");
+  const [learnerSort, setLearnerSort] = useState<
+    ProductTableSortState<LearnerDirectorySortKey>
+  >({ key: "name", direction: "asc" });
+  const [groupSort, setGroupSort] = useState<
+    ProductTableSortState<LearnerGroupDirectorySortKey>
+  >({ key: "name", direction: "asc" });
   const [learnerEditor, setLearnerEditor] = useState<{
     profile: LearnerProfile | null;
+    surface: LearnerDialogSurface;
   } | null>(null);
+  const [courseLearner, setCourseLearner] = useState<LearnerProfile | null>(
+    null,
+  );
   const [addLearnerOpen, setAddLearnerOpen] = useState(false);
   const [initialShareCode, setInitialShareCode] = useState("");
   const [groupEditor, setGroupEditor] = useState<{
@@ -221,6 +247,7 @@ export function StudentsWorkspace({
     if (
       groups &&
       groupFilter !== "all" &&
+      groupFilter !== "grouped" &&
       groupFilter !== "ungrouped" &&
       !groups.some((group) => group.id === groupFilter)
     ) {
@@ -280,37 +307,39 @@ export function StudentsWorkspace({
         entry.groups.some((group) =>
           group.name.toLocaleLowerCase("ru-RU").includes(normalizedQuery),
         );
+      const activeProfile =
+        entry.kind === "profile" && entry.status === "active";
       const matchesGroup =
         groupFilter === "all" ||
-        (groupFilter === "ungrouped"
-          ? entry.groups.length === 0
-          : entry.groups.some((group) => group.id === groupFilter));
-      return matchesQuery && matchesGroup;
+        (activeProfile &&
+          (groupFilter === "grouped"
+            ? entry.groups.length > 0
+            : groupFilter === "ungrouped"
+              ? entry.groups.length === 0
+              : entry.groups.some((group) => group.id === groupFilter)));
+      const matchesStatus =
+        statusFilter === "all" || entry.status === statusFilter;
+      const accountState =
+        entry.kind === "request"
+          ? "pending"
+          : entry.identity.identityState === "claimed" ||
+              entry.identity.identityState === "merged"
+            ? "connected"
+            : entry.identity.identityState;
+      const matchesAccount =
+        accountFilter === "all" || accountState === accountFilter;
+      return matchesQuery && matchesGroup && matchesStatus && matchesAccount;
     });
-    return filtered.sort((left, right) => {
-      if (learnerSort === "group-count") {
-        const countDifference = right.groups.length - left.groups.length;
-        if (countDifference !== 0) return countDifference;
-      }
-      const direction = learnerSort === "name-desc" ? -1 : 1;
-      const leftName =
-        left.kind === "profile"
-          ? left.profile.displayName
-          : (left.request.localDisplayName ?? "Новый ученик");
-      const rightName =
-        right.kind === "profile"
-          ? right.profile.displayName
-          : (right.request.localDisplayName ?? "Новый ученик");
-      return direction * leftName.localeCompare(rightName, "ru");
-    });
+    return filtered;
   }, [
+    accountFilter,
     activeDirectory,
     archivedDirectory,
     groupFilter,
     groups,
-    learnerSort,
     normalizedQuery,
     pendingConnections,
+    statusFilter,
   ]);
 
   const visibleGroups = useMemo(() => {
@@ -324,15 +353,8 @@ export function StudentsWorkspace({
             .includes(normalizedQuery),
         ),
     );
-    return filtered.sort((left, right) => {
-      if (groupSort === "member-count") {
-        const countDifference = right.members.length - left.members.length;
-        if (countDifference !== 0) return countDifference;
-      }
-      const direction = groupSort === "name-desc" ? -1 : 1;
-      return direction * left.name.localeCompare(right.name, "ru");
-    });
-  }, [groupSort, groups, normalizedQuery]);
+    return filtered;
+  }, [groups, normalizedQuery]);
 
   const ready =
     profiles !== null &&
@@ -342,7 +364,11 @@ export function StudentsWorkspace({
     connections !== null;
   const busy = Boolean(busyLabel);
   const hasFilters =
-    Boolean(normalizedQuery) || (view === "learners" && groupFilter !== "all");
+    Boolean(normalizedQuery) ||
+    (view === "learners" &&
+      (statusFilter !== "all" ||
+        groupFilter !== "all" ||
+        accountFilter !== "all"));
 
   async function mutate(
     label: string,
@@ -464,7 +490,7 @@ export function StudentsWorkspace({
     <div className="teaching-hub-stack">
       <AppPageHeader
         title="Ученики"
-        description="Ученики и группы, с которыми вы работаете, а также учебные профили, за которыми вы наблюдаете."
+        description="Ученики и группы, с которыми вы работаете или за которыми наблюдаете"
         actions={
           view === "learners" ? (
             <Button
@@ -550,62 +576,18 @@ export function StudentsWorkspace({
 
         <div className="student-directory-controls compact-toolbar-rail">
           {view === "learners" ? (
-            <span className="product-select-wrap block min-w-0">
-              <select
-                className="student-directory-select appearance-none"
-                aria-label="Фильтр по группе"
-                value={groupFilter}
-                disabled={!ready}
-                onChange={(event) => setGroupFilter(event.target.value)}
-              >
-                <option value="all">Все группы</option>
-                <option value="ungrouped">Без группы</option>
-                {(groups ?? []).map((group) => (
-                  <option key={group.id} value={group.id}>
-                    {group.name}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown
-                className="product-select-icon h-4 w-4"
-                aria-hidden="true"
-              />
-            </span>
-          ) : null}
-
-          <span className="product-select-wrap block min-w-0">
-            <select
-              className="student-directory-select appearance-none"
-              aria-label="Сортировка"
-              value={view === "learners" ? learnerSort : groupSort}
-              disabled={!ready}
-              onChange={(event) => {
-                if (view === "learners") {
-                  setLearnerSort(event.target.value as LearnerSort);
-                } else {
-                  setGroupSort(event.target.value as GroupSort);
-                }
-              }}
-            >
-              {view === "learners" ? (
-                <>
-                  <option value="name-asc">Имя: А—Я</option>
-                  <option value="name-desc">Имя: Я—А</option>
-                  <option value="group-count">По количеству групп</option>
-                </>
-              ) : (
-                <>
-                  <option value="name-asc">Название: А—Я</option>
-                  <option value="name-desc">Название: Я—А</option>
-                  <option value="member-count">Сначала самые большие</option>
-                </>
-              )}
-            </select>
-            <ChevronDown
-              className="product-select-icon h-4 w-4"
-              aria-hidden="true"
+            <StudentDirectoryFilterMenu
+              groups={groups ?? []}
+              status={statusFilter}
+              group={groupFilter}
+              account={accountFilter}
+              onStatusChange={setStatusFilter}
+              onGroupChange={setGroupFilter}
+              onAccountChange={setAccountFilter}
+              disabled={!ready || busy}
+              className="student-directory-filter-menu"
             />
-          </span>
+          ) : null}
 
           {hasFilters ? (
             <Button
@@ -618,7 +600,9 @@ export function StudentsWorkspace({
               onClick={() => {
                 if (view === "learners") {
                   setLearnerQuery("");
+                  setStatusFilter("all");
                   setGroupFilter("all");
+                  setAccountFilter("all");
                 } else {
                   setGroupQuery("");
                 }
@@ -685,12 +669,21 @@ export function StudentsWorkspace({
         {ready && view === "learners" ? (
           <LearnersDirectoryTable
             entries={learnerEntries}
+            sort={learnerSort}
+            onSort={(key) =>
+              setLearnerSort((current) => nextProductTableSort(current, key))
+            }
             hasFilters={hasFilters}
             disabled={busy}
-            onOpen={(profile) => {
+            onOpen={(profile, surface) => {
               setMutationError(null);
-              setLearnerEditor({ profile });
+              setLearnerEditor({ profile, surface });
             }}
+            onAddToCourse={(profile) => {
+              setMutationError(null);
+              setCourseLearner(profile);
+            }}
+            onArchive={(profile) => void removeLearner(profile)}
             onRestore={(learner) => void restoreLearner(learner)}
             onPermanentlyDelete={(learner) =>
               void permanentlyDeleteLearner(learner)
@@ -710,6 +703,10 @@ export function StudentsWorkspace({
         {ready && view === "groups" ? (
           <LearnerGroupsDirectoryTable
             groups={visibleGroups}
+            sort={groupSort}
+            onSort={(key) =>
+              setGroupSort((current) => nextProductTableSort(current, key))
+            }
             hasFilters={hasFilters}
             disabled={busy}
             onOpen={(group) => {
@@ -735,7 +732,7 @@ export function StudentsWorkspace({
 
       {learnerEditor && profiles && groups ? (
         <LearnerProfileDialog
-          key={learnerEditor.profile?.id ?? "new-learner"}
+          key={`${learnerEditor.profile?.id ?? "new-learner"}-${learnerEditor.surface}`}
           profile={learnerEditor.profile}
           identity={
             learnerEditor.profile
@@ -747,6 +744,7 @@ export function StudentsWorkspace({
           groups={groups}
           busy={busy}
           error={mutationError}
+          initialSurface={learnerEditor.surface}
           onClose={() => {
             setMutationError(null);
             setLearnerEditor(null);
@@ -771,6 +769,21 @@ export function StudentsWorkspace({
               ? () => removeLearner(learnerEditor.profile!, true)
               : null
           }
+        />
+      ) : null}
+
+      {courseLearner ? (
+        <LearnerCourseDialog
+          key={courseLearner.id}
+          learnerProfile={courseLearner}
+          disabled={busy}
+          onClose={() => setCourseLearner(null)}
+          onAdded={(courseTitle) => {
+            setCourseLearner(null);
+            setStatusMessage(
+              `Ученик «${courseLearner.displayName}» добавлен в курс «${courseTitle}».`,
+            );
+          }}
         />
       ) : null}
 

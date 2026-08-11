@@ -47,7 +47,7 @@ export function WorkspaceTabs<T extends string>({
 
       const scrollerRect = scroller.getBoundingClientRect();
       const activeRect = activeTab.getBoundingClientRect();
-      const edgePadding = 12;
+      const edgePadding = 0;
       if (activeRect.left < scrollerRect.left + edgePadding) {
         scroller.scrollLeft +=
           activeRect.left - scrollerRect.left - edgePadding;

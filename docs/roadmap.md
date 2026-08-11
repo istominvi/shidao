@@ -1,7 +1,7 @@
 # Roadmap ShiDao V2
 
 **Статус:** current / next / later priorities после production identity release
-**Актуально на:** 11 августа 2026 года
+**Актуально на:** 12 августа 2026 года
 
 Фактически реализованное состояние находится в
 [`docs/project-state.md`](./project-state.md). Этот документ описывает только
@@ -255,7 +255,11 @@ Definition of Done программы:
 Course-фильтры, сортировку и переключение «Карточки / Таблица» без новой schema
 или параллельного Course API. В current source Students и Courses controls
 унифицированы с Schedule: outer toolbar-card удалена, Students показывает
-active/archive/pending в одной таблице с inline-чипами и стабильными filters,
+active/archive/pending в одной таблице с inline status/text, full-width search и
+единым disclosure «Фильтр» для status, group membership, конкретной группы и
+Account connection. Подзаголовок страницы — «Ученики и группы, с которыми вы
+работаете или за которыми наблюдаете». Отдельный sort select у Students/Groups удалён:
+возрастающее/убывающее направление переключается кликом по sortable headers,
 Course facets собраны в компактный disclosure, а view — в две icon-only
 кнопки. Published Catalog показывает только поддержанные server-side
 subject/level filters, но использует тот же cards/table presentation; повторный
@@ -279,15 +283,25 @@ option в переключателе вида.
 Изменить / Отменить», active/completed Run получают соответствующие завершение
 или результаты; других action-кнопок в строке нет. Пункты portal-menu имеют
 40 px и `.88rem/400` с вертикальным центрированием. Строка назначенного урока
-показывает pointer при наведении. Прозрачная Schedule controls-панель снова
+показывает pointer при наведении. Видимые data-заголовки Schedule также
+переключают ascending/descending сортировку повторным кликом и отражают её
+через `aria-sort`. Прозрачная Schedule controls-панель снова
 занимает всю ширину строки без горизонтального inset, сохраняя controls справа;
-Students/Courses controls сохраняют inset 12 px и совпадают с внутренними
-границами page-header.
+Students controls теперь тоже используют всю ширину без inset; Courses
+controls сохраняют inset 12 px и совпадают с внутренними границами page-header.
 Общие tokens различают карточки с радиусом 20 px и
 elements/controls/tables/menus с радиусом 12 px; активные ProductTable wrappers
-белые, borderless и используют table token без изменения плотности строк
-Students/Courses. Их shared header белый, а row dividers используют один
-`--product-table-divider-color`. Authenticated top header/profile menu стали
+белые, borderless и используют table token. Students table получает такой же
+40 px header/data-row contract и колонки
+`Ученик / Статус / Аккаунт / Группы / Добавлен / actions`; плотность Courses
+не меняется. Их shared header белый, а row dividers используют один
+`--product-table-divider-color`. Один `MoreVertical` в каждой Students-row
+открывает contextual menu: профиль, управление группами, реальный
+«Добавить в курс…» с сохранением существующей group/direct audience и
+destructive «Убрать из списка». «Написать сообщение» остаётся disabled с явной пометкой о
+недоступности; communication layer не объявляется current-возможностью.
+Archived/pending rows получают только допустимые restore/permanent-delete или
+cancel actions. Authenticated top header/profile menu стали
 сплошными белыми поверхностями без blur. Active V2 buttons/header controls
 унифицированы как flat `40 px / 12 px / .88rem / 400`: без inset-блика,
 подъёма и тени, с полностью непрозрачными контрастными иконками; белые кнопки
@@ -298,22 +312,30 @@ styles; landing, Auth и полноэкранный Student Screen не меня
 polish без новой schema, migration или API. Последняя корректировка
 Schedule-cell/action spacing остаётся current source до успешного Coolify
 deploy и production postflight.
-Следующий current-source polish
+Current-source polish
 оставляет AppPageHeader actions шириной по содержимому, отдаёт свободное место
-heading и унифицирует WorkspaceTabs: 20%-black baseline и простой inline count
-без кружка. Course workspace использует четыре вкладки;
+heading и унифицирует WorkspaceTabs: container и 20%-black baseline занимают
+всю ширину с `inline-inset: 0`, а count остаётся простым inline-текстом без
+кружка. Course workspace использует четыре вкладки;
 настройки и audience редактируются inline на растущей **О курсе**, а
 course-wide **Материалы** вынесены в отдельную агрегирующую библиотеку. Новый
 Course начинает с **О курсе**; обычное сохранение возвращает туда же, тогда как
 deterministic/AI-сборка открывает **Уроки**. Вкладка сохранённого Course
 **Материалы** разделяет используемые и пока не используемые attachments и
 показывает Lesson usage.
+В current source code-first Component registry расширен с 10 до 20 активных
+типов: добавлены video/audio, расширенный quiz, пропуски, bank
+слов, порядок, категории, свободный ответ, HTTPS-ссылка, сборка слова и
+словарь; layout-only `divider` исключён. Текущая самопроверка живёт только
+в preview state, а learner answer persistence/scoring остаются later. Продуктовый
+выбор и границы зафиксированы в
+[`docs/product/course-component-catalog.md`](./product/course-component-catalog.md).
 
 - продолжить responsive/accessibility полировку обновлённого Course workspace;
 - добавить в сохранённый Course возобновляемую загрузку новых материалов с
   явной компенсацией незавершённых Storage operations;
 - улучшить выбор/поиск Components в palette;
-- проверить все десять editors/renderers отдельными production-safe сценариями;
+- проверить все 20 editors/renderers отдельными production-safe сценариями;
 - добавить drag-and-drop только если он не ухудшает доступность и надёжность;
 - завершить поведение удаления Course; Lesson уже предупреждает об удалении
   Runs и сохраняет finalized LearningRecord в учебных профилях;
@@ -343,7 +365,9 @@ Definition of Done:
   Zod/registry contracts перед первой записью;
 - Course outline ровно на `targetLessonCount` Lessons;
 - создание новой или дополнение существующей Lesson ограниченным набором
-  registry Components;
+  registry Components (`heading`, `rich_text`, `callout`,
+  `single_choice_poll`, `matching_game`); расширение ручного registry не
+  расширяет provider allowlist автоматически;
 - отдельные preview и explicit Apply; provider planning не выполняет записи;
 - stale-plan checks, idempotent Course retry и compensating cleanup для
   поддерживаемых apply paths;
@@ -580,7 +604,9 @@ divider 1 px входит в высоту header и через `--product-table-
 `Ученики / Статус` и действия — справа, а `Урок / Курс` делят свободную ширину.
 Все данные чёрные и выводятся в одну строку с ellipsis; дата имеет вид
 `Среда · 12 авг`, время — `12:00 · 60 мин`, scheduled state остаётся plain
-«Ожидается». Строка назначенного урока показывает pointer при наведении. В
+«Ожидается». Видимые data-заголовки переключают ascending/descending
+сортировку повторным кликом и публикуют направление через `aria-sort`.
+Строка назначенного урока показывает pointer при наведении. В
 последней колонке постоянное вертикальное троеточие ожидающего Run открывает
 «Начать урок / Изменить / Отменить», а active/completed Run получают
 соответствующие завершение или результаты; других action-кнопок в строке нет.
@@ -589,11 +615,14 @@ Start/cancel
 edit открывает dialog назначения сразу в режиме редактирования. Пункты
 portal-menu имеют 40 px, вертикальное
 центрирование и `.88rem/400`. Прозрачная Schedule controls-панель использует
-всю ширину строки без горизонтального inset; 12 px inset остаётся у
-Students/Courses. Общие radius
+всю ширину строки без горизонтального inset; Students controls также
+full-width, а 12 px inset остаётся только у Courses. Общие radius
 tokens задают 20 px для карточек и 12 px для controls/tables/menus; активные
-ProductTable surfaces Schedule/Students/Courses белые и borderless, при этом
-плотность строк Students/Courses не изменяется.
+ProductTable surfaces Schedule/Students/Courses белые и borderless. Students
+table использует 40 px header/data rows и колонки
+`Ученик / Статус / Аккаунт / Группы / Добавлен / actions`; плотность Courses
+не изменяется. Students/Groups сортируются через headers, а их единый «Фильтр»
+объединяет status, group membership, конкретную группу и Account connection.
 Authenticated top header и profile dropdown тоже стали сплошными белыми
 поверхностями без blur. Buttons/header controls используют единый flat
 `40 px / 12 px / .88rem / 400` contract с fully opaque contrast-aware icons,

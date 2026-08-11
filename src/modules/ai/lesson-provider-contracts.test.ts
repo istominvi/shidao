@@ -35,7 +35,6 @@ test("flat provider lesson converts every supported block to canonical component
         title: "Подсказка",
         body: "Сначала произнесите реплики медленно.",
       },
-      { ...EMPTY_FIELDS, kind: "divider" },
       {
         ...EMPTY_FIELDS,
         kind: "single_choice_poll",
@@ -57,14 +56,7 @@ test("flat provider lesson converts every supported block to canonical component
 
   assert.deepEqual(
     plan.components.map((component) => component.typeKey),
-    [
-      "heading",
-      "rich_text",
-      "callout",
-      "divider",
-      "single_choice_poll",
-      "matching_game",
-    ],
+    ["heading", "rich_text", "callout", "single_choice_poll", "matching_game"],
   );
   const heading = plan.components[0];
   assert.equal(heading?.typeKey, "heading");
@@ -81,10 +73,7 @@ test("flat provider lesson converts every supported block to canonical component
   if (callout?.typeKey !== "callout") assert.fail("Expected callout");
   assert.equal(callout.payload.tone, "info");
 
-  const divider = plan.components[3];
-  assert.deepEqual(divider, { typeKey: "divider", payload: {} });
-
-  const poll = plan.components[4];
+  const poll = plan.components[3];
   assert.equal(poll?.typeKey, "single_choice_poll");
   if (poll?.typeKey !== "single_choice_poll") assert.fail("Expected poll");
   assert.deepEqual(
@@ -93,7 +82,7 @@ test("flat provider lesson converts every supported block to canonical component
   );
   assert.equal(poll.payload.showResults, true);
 
-  const matching = plan.components[5];
+  const matching = plan.components[4];
   assert.equal(matching?.typeKey, "matching_game");
   if (matching?.typeKey !== "matching_game") {
     assert.fail("Expected matching game");
@@ -242,7 +231,6 @@ test("provider JSON schema keeps structure but omits incompatible size keywords"
     "heading",
     "rich_text",
     "callout",
-    "divider",
     "single_choice_poll",
     "matching_game",
   ]);

@@ -69,8 +69,11 @@ test("lesson planner accepts only canonical AI-safe registry payloads", () => {
       summary: "Нельзя",
       components: [
         { typeKey: "image", payload: { storedFileId: null, alt: "" } },
-        { typeKey: "divider", payload: {} },
-        { typeKey: "divider", payload: {} },
+        { typeKey: "heading", payload: { text: "A", level: "h2" } },
+        {
+          typeKey: "rich_text",
+          payload: { content: "B", format: "markdown" },
+        },
       ],
     }).success,
     false,
@@ -83,8 +86,11 @@ test("lesson planner accepts only canonical AI-safe registry payloads", () => {
           typeKey: "heading",
           payload: { text: "A", level: "h2", visibility: "learner_visible" },
         },
-        { typeKey: "divider", payload: {} },
-        { typeKey: "divider", payload: {} },
+        {
+          typeKey: "rich_text",
+          payload: { content: "B", format: "markdown" },
+        },
+        { typeKey: "callout", payload: { text: "C", tone: "info" } },
       ],
     }).success,
     false,

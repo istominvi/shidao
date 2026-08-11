@@ -1,7 +1,7 @@
 # ShiDao V2 domain model
 
 **Статус:** current implemented domain
-**Актуально на:** 10 августа 2026 года
+**Актуально на:** 12 августа 2026 года
 
 ## Active product hierarchy
 
@@ -135,26 +135,45 @@ The canonical details and invariants live in
 
 ## Component registry
 
-The first code-first registry contains:
+The current source code-first registry contains 20 active types:
 
 ```text
 heading
 rich_text
 callout
 quote
-divider
 image
+video
+audio
 slideshow
 single_choice_poll
 matching_game
+choice_quiz
+fill_blanks
+word_bank
+sequence
+categorize
+free_response
+external_link
+word_builder
+vocabulary_list
 file
 ```
 
 UI, application service and development MCP use the same Zod contracts. MCP
 JSON Schema is generated from those contracts.
 
-The current production RouterAI slice validates generated Lesson content
-against a deliberately limited subset of these same registry contracts before
+`divider` is not an authored component type. The media/link types added in this
+slice accept HTTPS URLs only. Interactive checks, including `free_response`,
+keep answer state only inside the current preview; learner answer persistence,
+attempts, scoring and teacher review are not part of this slice. Voice
+recording, arbitrary third-party embeds and image matching remain later work.
+The product comparison and rationale live in
+[`docs/product/course-component-catalog.md`](./product/course-component-catalog.md).
+
+The current RouterAI source contract validates generated Lesson content against
+the deliberately limited `heading`, `rich_text`, `callout`,
+`single_choice_poll` and `matching_game` subset of these same registry contracts before
 explicit Apply. Its provider-compatible flat transport schema is converted to a
 canonical typed plan and then validated again by registry payload contracts and
 `lessonAddComponentInputSchema`. It introduces no new domain entity, second

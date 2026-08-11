@@ -14,6 +14,10 @@ const studentSlidesMigration = readFileSync(
   "supabase/migrations/20260804044955_add_lesson_student_slides.sql",
   "utf8",
 );
+const dividerRemovalMigration = readFileSync(
+  "supabase/migrations/20260811154138_remove_divider_components.sql",
+  "utf8",
+);
 const snapshot = readFileSync("supabase/schema/current-schema.sql", "utf8");
 
 function migrationFunction(name: string) {
@@ -31,6 +35,56 @@ const preservedBuilderTables = [
   "stored_file",
   "course_attachment",
 ] as const;
+
+test("divider removal is guarded, deterministic, and irreversible", () => {
+  assert.match(dividerRemovalMigration, /^begin;\n/);
+  assert.match(dividerRemovalMigration, /\ncommit;\n$/);
+  assert.doesNotMatch(
+    dividerRemovalMigration,
+    /drop\s+(?:table|function|schema)[^;]*\bcascade\b/i,
+  );
+
+  for (const fragment of [
+    "shidao_schema_sanity_check_failed",
+    "course_publication_revision_contains_divider",
+    "order by component.lesson_id, component.position desc, component.id",
+    "set constraints all immediate",
+    "lower(btrim(type_key)) <> 'divider'",
+    "lesson_component_positions_are_not_dense",
+    "lesson_student_slide_positions_are_not_dense",
+    "empty_lesson_student_slide_remains",
+  ]) {
+    assert.equal(
+      dividerRemovalMigration.includes(fragment),
+      true,
+      `divider cleanup migration missing ${fragment}`,
+    );
+  }
+
+  const courseLock = dividerRemovalMigration.indexOf(
+    "lock table public.course in share row exclusive mode",
+  );
+  const lessonLock = dividerRemovalMigration.indexOf(
+    "lock table public.lesson in share row exclusive mode",
+  );
+  const componentLock = dividerRemovalMigration.indexOf(
+    "lock table public.lesson_component in share row exclusive mode",
+  );
+  const slideLock = dividerRemovalMigration.indexOf(
+    "lock table public.lesson_student_slide in share row exclusive mode",
+  );
+  const revisionLock = dividerRemovalMigration.indexOf(
+    "lock table public.course_publication_revision in share row exclusive mode",
+  );
+  assert.equal(
+    courseLock >= 0 &&
+      courseLock < lessonLock &&
+      lessonLock < componentLock &&
+      componentLock < slideLock &&
+      slideLock < revisionLock,
+    true,
+  );
+});
 
 test("Student Screen slides are one transactional forward migration", () => {
   assert.match(studentSlidesMigration, /^begin;\n/);

@@ -30,8 +30,6 @@ function componentPreview(component: AiLessonComponentPlan) {
       return [component.payload.title, component.payload.text]
         .filter(Boolean)
         .join(": ");
-    case "divider":
-      return "Смысловой разделитель";
     case "single_choice_poll":
       return component.payload.question;
     case "matching_game":
@@ -58,8 +56,6 @@ function AiComponentContent({
           <p className="whitespace-pre-wrap">{component.payload.text}</p>
         </div>
       );
-    case "divider":
-      return <p>Визуально разделит соседние части урока.</p>;
     case "single_choice_poll":
       return (
         <div className="grid gap-2">

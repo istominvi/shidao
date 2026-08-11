@@ -108,6 +108,36 @@ Worktree должен содержать только изменения тек�
 
 ## 4. Если release содержит DB migration
 
+### Course Component contract cleanup
+
+Для exact migration
+`20260811154138_remove_divider_components.sql` release является coupled
+DB+web contract: новый registry больше не читает `divider`, поэтому cleanup
+должен завершиться до переключения Coolify на новый image. Старый web в коротком
+окне между migration и deploy продолжает читать Course, но попытка снова
+создать `divider` обязана получить CHECK violation.
+
+Порядок выполнения:
+
+1. Через project-local `.codex/ssh-db.local.toml` выполнить read-only sanity:
+   проверить canonical таблицы/RPC, отсутствие `lesson_step`, counts
+   Component/Slide, `divider`, publication snapshot и плотность positions.
+2. Создать timestamped full-format `pg_dump -Fc`; подтвердить nonzero size,
+   `pg_restore -l` и SHA-256. Backup не заменяется schema-only snapshot.
+3. Остановить rollout, если хотя бы одна immutable publication revision
+   содержит `typeKey='divider'`; исторические revisions нельзя переписывать
+   неявно.
+4. Применить точный tracked SQL через owner `psql -X -v ON_ERROR_STOP=1`.
+   Migration сама открывает и завершает transaction; внешний `-1` не добавлять.
+5. Postflight должен показать `divider=0`, плотные Component/Slide positions,
+   ноль пустых Slides, ноль publication dividers и ноль exactly-one violations;
+   Course/Lesson counts сохраняются.
+6. Через read-only SSH tunnel запустить `npm run db:snapshot`, проверить полный
+   diff и зафиксировать новый SHA-256 snapshot в database docs.
+7. Merge/push нового web release выполнить сразу после успешного postflight;
+   затем подтвердить exact running `SOURCE_COMMIT`, image, restart count,
+   HTTPS/guest/CSRF и authenticated Course Builder smoke.
+
 Web с Groups/mixed audience нельзя выпускать раньше последовательного успешного
 применения `20260806190044_lesson_runs_learning_records.sql` и
 `20260806220726_learner_groups_mixed_course_audience.sql`: students/audience

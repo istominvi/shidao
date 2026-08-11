@@ -366,7 +366,7 @@ a {
 }
 
 .workspace-tabs {
-  --workspace-tabs-inline-offset: 12px;
+  --workspace-tabs-inline-offset: 0px;
 
   position: relative;
   display: flex;
@@ -909,6 +909,21 @@ a {
 
 .course-demo-shell .product-table tbody tr {
   border-color: var(--product-table-divider-color, #ececef);
+}
+
+.product-table-sort-button {
+  border: 0;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  cursor: pointer;
+}
+
+.product-table-sort-button > svg {
+  color: currentColor;
+  opacity: 1;
 }
 
 .course-demo-shell .course-index-error {

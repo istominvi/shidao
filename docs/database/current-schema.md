@@ -7,8 +7,9 @@ catalog schema
 `20260810035033_course_publication_catalog.sql`
 
 **Repository schema head:**
-`20260810035033_course_publication_catalog.sql` — применена к production
-10 августа 2026 года owner connection с `ON_ERROR_STOP` одной транзакцией
+`20260811154138_remove_divider_components.sql` — подготовленная forward
+contract cleanup для удаления authored `divider`; до production execution
+канонический snapshot остаётся на предыдущем head
 
 **Legacy contract migration:**
 `20260807065038_learner_identity_legacy_contract_cleanup.sql` — применена после
@@ -49,6 +50,7 @@ snapshot — `2b1a3f475074940e69e1dee6ba12edc8d3103a23a01c640ec342e3cb31f0af46`.
 | M5    | `20260809084500_learner_identity_auth_deferred_invariant_security.sql` | узкий `SECURITY DEFINER` boundary для deferred exactly-one invariant при реальном GoTrue commit; без расширения Auth table privileges          |
 | M6    | `20260809090000_learner_identity_provisional_auth_metadata_sync.sql`   | trusted two-phase GoTrue `app_metadata` sync для pristine provisional child Account с fail-closed защитой от позднего downgrade                |
 | C1    | `20260810035033_course_publication_catalog.sql`                        | immutable Course publication revisions, private publication Storage, independent catalog copy/duplicate и closed admin RPC                     |
+| D1    | `20260811154138_remove_divider_components.sql`                         | удаление layout-only `divider`, повторная нумерация Component/Slide и CHECK-запрет повторного создания                                          |
 
 M1–M3 являются additive/compatible expand для roleless web. M4 была withheld из
 первого deploy и применена только после доказательства, что running и rollback
@@ -138,6 +140,27 @@ Production Course publication evidence 10 августа 2026 года:
 - service-role catalog RPC вернул пустой catalog/facets, свежий production
   snapshot имеет SHA-256
   `2b1a3f475074940e69e1dee6ba12edc8d3103a23a01c640ec342e3cb31f0af46`.
+
+### Prepared Course Component contract cleanup
+
+Read-only production audit перед D1 подтвердил PostgreSQL 15.8 и canonical
+ShiDao signature по таблицам `course`, `lesson`, `lesson_component`,
+`lesson_student_slide`, `course_publication_revision`, RPC
+`delete_lesson_component(uuid)` и отсутствию `lesson_step`. До migration в
+production находятся 5 Course, 16 Lesson, 104 Component и 6 Slides:
+
+- 15 строк `type_key='divider'` в 12 Lesson и 4 Course;
+- 2 из них learner-visible в двух Slides; оба Slides содержат другие видимые
+  Components и не должны опустеть;
+- publication/revision catalog пуст, immutable snapshot с `divider` нет;
+- Component/Slide positions плотные, exactly-one profile violations равны 0.
+
+D1 выполняет schema preflight, блокирует authored hierarchy, удаляет
+`divider` по каждой Lesson в обратном порядке позиций, явно пересчитывает
+Component/Slide positions, сбрасывает deferred Student Screen trigger events и
+заменяет `lesson_component_type_key_check` на case-insensitive запрет
+`divider`. До production применения этот раздел описывает подготовленный
+rollout, а не завершённую очистку.
 
 ## Current repository tables
 

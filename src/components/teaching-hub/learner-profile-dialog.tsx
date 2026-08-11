@@ -30,7 +30,7 @@ function sameIds(left: string[], right: string[]) {
   return left.every((id) => rightSet.has(id));
 }
 
-type LearnerDialogSurface = "profile" | "history" | "connection";
+export type LearnerDialogSurface = "profile" | "history" | "connection";
 
 const LEARNER_DIALOG_TABS_ID = "learner-dialog";
 
@@ -40,6 +40,7 @@ export function LearnerProfileDialog({
   groups,
   busy,
   error,
+  initialSurface = "profile",
   onClose,
   onSave,
   onDelete,
@@ -49,6 +50,7 @@ export function LearnerProfileDialog({
   groups: LearnerGroup[];
   busy: boolean;
   error: string | null;
+  initialSurface?: LearnerDialogSurface;
   onClose: () => void;
   onSave: (displayName: string, learnerGroupIds: string[]) => Promise<void>;
   onDelete: (() => Promise<void>) | null;
@@ -67,7 +69,7 @@ export function LearnerProfileDialog({
   const [displayName, setDisplayName] = useState(profile?.displayName ?? "");
   const [selectedGroupIds, setSelectedGroupIds] = useState(initialGroupIds);
   const [groupQuery, setGroupQuery] = useState("");
-  const [surface, setSurface] = useState<LearnerDialogSurface>("profile");
+  const [surface, setSurface] = useState<LearnerDialogSurface>(initialSurface);
   const normalizedGroupQuery = groupQuery.trim().toLocaleLowerCase("ru-RU");
   const visibleGroups = groups.filter((group) =>
     group.name.toLocaleLowerCase("ru-RU").includes(normalizedGroupQuery),
@@ -149,7 +151,9 @@ export function LearnerProfileDialog({
         <label>
           <span className="field-label">Имя в моём списке</span>
           <input
-            data-dialog-initial-focus
+            data-dialog-initial-focus={
+              !profile || surface === "profile" ? "" : undefined
+            }
             required
             minLength={1}
             maxLength={160}
@@ -261,6 +265,7 @@ export function LearnerProfileDialog({
           aria-labelledby={workspaceTabId(LEARNER_DIALOG_TABS_ID, "history")}
           hidden={surface !== "history"}
           tabIndex={0}
+          data-dialog-initial-focus={surface === "history" ? "" : undefined}
         >
           {surface === "history" ? (
             <LearnerHistoryPanel profile={profile} />
@@ -275,6 +280,7 @@ export function LearnerProfileDialog({
           aria-labelledby={workspaceTabId(LEARNER_DIALOG_TABS_ID, "connection")}
           hidden={surface !== "connection"}
           tabIndex={0}
+          data-dialog-initial-focus={surface === "connection" ? "" : undefined}
         >
           {surface === "connection" ? (
             <LearnerIdentityPanel learner={identity} />
