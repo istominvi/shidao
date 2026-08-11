@@ -34,6 +34,7 @@ const teachingHubStyleSource = readFileSync(
   "src/app/styles/teaching-hub.css",
   "utf8",
 );
+const globalStyleSource = readFileSync("src/app/globals.css", "utf8");
 const navigationStyleSource = readFileSync(
   "src/app/styles/navigation.css",
   "utf8",
@@ -50,8 +51,16 @@ const studentDirectoryTableSource = readFileSync(
   "src/components/teaching-hub/student-directory-table.tsx",
   "utf8",
 );
+const studentDirectoryFilterMenuSource = readFileSync(
+  "src/components/teaching-hub/student-directory-filter-menu.tsx",
+  "utf8",
+);
 const learnerProfileDialogSource = readFileSync(
   "src/components/teaching-hub/learner-profile-dialog.tsx",
+  "utf8",
+);
+const learnerCourseDialogSource = readFileSync(
+  "src/components/teaching-hub/learner-course-dialog.tsx",
   "utf8",
 );
 const learnerGroupDialogSource = readFileSync(
@@ -80,6 +89,10 @@ const courseAudienceEditorSource = readFileSync(
 );
 const courseWorkspaceSource = readFileSync(
   "src/components/course-builder/course-workspace.tsx",
+  "utf8",
+);
+const courseBuilderClientSource = readFileSync(
+  "src/components/course-builder/course-builder-client.ts",
   "utf8",
 );
 const courseAudienceRouteSource = readFileSync(
@@ -113,6 +126,14 @@ test("teaching hub pages share the demo shell and canonical page header", () => 
   assert.doesNotMatch(schedulePageSource, /Назначить урок в курсе|<BookOpen/);
   assert.match(studentsWorkspaceSource, /<AppPageHeader/);
   assert.match(studentsWorkspaceSource, /title="Ученики"/);
+  assert.match(
+    studentsWorkspaceSource,
+    /description="Ученики и группы, с которыми вы работаете или за которыми наблюдаете"/,
+  );
+  assert.doesNotMatch(
+    studentsWorkspaceSource,
+    /а также учебные профили, за которыми вы наблюдаете/,
+  );
   assert.match(studentsWorkspaceSource, /Новый ученик/);
   assert.match(studentsWorkspaceSource, /Новая группа/);
   assert.match(studentsPageSource, /tab === "observing"/);
@@ -194,6 +215,7 @@ test("schedule projects persisted LessonRun appointments without a parallel even
 });
 
 test("schedule keeps the compact date control and dense one-line table contract", () => {
+  assert.match(globalStyleSource, /--product-row-height: 2\.5rem;/);
   assert.match(schedulePeriodSource, /month: "short"/);
   assert.match(schedulePeriodSource, /formatToParts\(value\)/);
   assert.match(
@@ -221,6 +243,23 @@ test("schedule keeps the compact date control and dense one-line table contract"
 
   for (const label of ["Дата", "Время", "Урок", "Курс", "Ученики", "Статус"]) {
     assert.match(scheduleWorkspaceSource, new RegExp(`>\\s*${label}\\s*<`));
+  }
+  assert.equal(
+    scheduleWorkspaceSource.match(/<ProductTableSortableHeaderCell/g)?.length,
+    6,
+  );
+  for (const key of [
+    "date",
+    "time",
+    "lesson",
+    "course",
+    "participants",
+    "status",
+  ]) {
+    assert.match(
+      scheduleWorkspaceSource,
+      new RegExp(`nextProductTableSort\\(current, "${key}"\\)`),
+    );
   }
   assert.doesNotMatch(scheduleWorkspaceSource, />\s*Дата и время\s*</);
   assert.match(
@@ -392,6 +431,21 @@ test("schedule keeps the compact date control and dense one-line table contract"
 });
 
 test("students manages one learner and group directory with durable history", () => {
+  const groupsTableStart = studentDirectoryTableSource.indexOf(
+    "export function LearnerGroupsDirectoryTable",
+  );
+  const learnersTableSource = studentDirectoryTableSource.slice(
+    studentDirectoryTableSource.indexOf(
+      "export function LearnersDirectoryTable",
+    ),
+    groupsTableStart,
+  );
+  const groupsTableSource = studentDirectoryTableSource.slice(groupsTableStart);
+
+  assert.ok(
+    groupsTableStart > 0,
+    "Groups table must remain a separate surface",
+  );
   assert.match(lessonRunClientSource, /\/api\/v2\/learner-profiles/);
   assert.match(lessonRunClientSource, /\/api\/v2\/learner-groups/);
   assert.match(studentsWorkspaceSource, /Новый ученик/);
@@ -411,14 +465,49 @@ test("students manages one learner and group directory with durable history", ()
   assert.match(studentsWorkspaceSource, /role="tabpanel"/);
   assert.match(studentsWorkspaceSource, /workspaceTabPanelId/);
   assert.doesNotMatch(studentsWorkspaceSource, /<SegmentedControl/);
-  assert.doesNotMatch(studentsWorkspaceSource, /directoryStatus/);
+  assert.equal(
+    studentsWorkspaceSource.match(/<StudentDirectoryFilterMenu/g)?.length,
+    1,
+  );
+  assert.match(
+    studentsWorkspaceSource,
+    /status=\{statusFilter\}[\s\S]*?group=\{groupFilter\}[\s\S]*?account=\{accountFilter\}/,
+  );
   assert.doesNotMatch(
     studentsWorkspaceSource,
-    /Состояние списка учеников|label: "Активные"|label: "Архив"/,
+    /aria-label="Сортировка"|<Select\b/,
   );
-  assert.match(studentsWorkspaceSource, /aria-label="Фильтр по группе"/);
-  assert.match(studentsWorkspaceSource, /aria-label="Сортировка"/);
-  assert.match(studentsWorkspaceSource, /Без группы/);
+  assert.match(studentDirectoryFilterMenuSource, /<span>Фильтр<\/span>/);
+  assert.match(
+    studentDirectoryFilterMenuSource,
+    /role="group"[\s\S]*?aria-label="Принадлежность к группе"/,
+  );
+  for (const label of [
+    "Состояние",
+    "Все",
+    "Активные",
+    "Ожидают ответа",
+    "В архиве",
+    "В группе",
+    "Без группы",
+    "Аккаунт",
+    "Подключён",
+    "Без аккаунта",
+    "Ожидает подключения",
+  ]) {
+    assert.match(
+      studentDirectoryFilterMenuSource,
+      new RegExp(`>\\s*${label}\\s*<`),
+    );
+  }
+  assert.match(
+    studentDirectoryFilterMenuSource,
+    /aria-pressed=\{grouped\}[\s\S]*?>\s*В группе\s*</,
+  );
+  assert.match(
+    studentDirectoryFilterMenuSource,
+    /aria-pressed=\{group === "ungrouped"\}[\s\S]*?>\s*Без группы\s*</,
+  );
   assert.match(studentsWorkspaceSource, /archivedDirectory/);
   assert.match(studentsWorkspaceSource, /pendingConnections/);
   assert.match(studentsWorkspaceSource, /kind: "profile" as const/);
@@ -428,20 +517,119 @@ test("students manages one learner and group directory with durable history", ()
     studentDirectoryTableSource,
     />Ученики, их статусы и группы<\/caption>/,
   );
-  assert.match(studentDirectoryTableSource, /onOpen/);
-  assert.match(studentDirectoryTableSource, /slice\(0, 2\)/);
-  assert.match(studentDirectoryTableSource, /ещё \{hiddenGroupCount\}/);
-  assert.match(studentDirectoryTableSource, />В архиве<\/Chip>/);
-  assert.match(studentDirectoryTableSource, /<RequestStatusBadge/);
+  assert.equal(
+    learnersTableSource.match(/<col className="student-directory-col-/g)
+      ?.length,
+    6,
+  );
+  for (const column of [
+    "name",
+    "status",
+    "account",
+    "groups",
+    "created",
+    "actions",
+  ]) {
+    assert.match(
+      learnersTableSource,
+      new RegExp(`student-directory-col-${column}`),
+    );
+  }
+  assert.equal(
+    learnersTableSource.match(/<ProductTableSortableHeaderCell/g)?.length,
+    5,
+  );
+  for (const key of ["name", "status", "account", "groups", "created"]) {
+    assert.match(
+      learnersTableSource,
+      new RegExp(`onSort=\\{\\(\\) => onSort\\("${key}"\\)\\}`),
+    );
+  }
+  assert.equal(
+    groupsTableSource.match(/<ProductTableSortableHeaderCell/g)?.length,
+    2,
+  );
+  for (const key of ["name", "members"]) {
+    assert.match(
+      groupsTableSource,
+      new RegExp(`onSort=\\{\\(\\) => onSort\\("${key}"\\)\\}`),
+    );
+  }
+  assert.match(learnersTableSource, /colSpan=\{6\}/);
+  assert.match(groupsTableSource, /colSpan=\{2\}/);
+  assert.match(learnersTableSource, /onOpen/);
+  assert.match(learnersTableSource, /slice\(0, 2\)/);
+  assert.match(learnersTableSource, /orderedGroups\.length - 2/);
+  assert.match(learnersTableSource, /<StatusText entry=\{entry\} \/>/);
+  assert.doesNotMatch(learnersTableSource, /<Chip|<RequestStatusBadge/);
   assert.match(studentDirectoryTableSource, /onRestore/);
   assert.match(studentDirectoryTableSource, /onPermanentlyDelete/);
   assert.match(studentDirectoryTableSource, /onCancelRequest/);
   assert.match(studentDirectoryTableSource, /student-directory-learners-table/);
   assert.match(studentDirectoryTableSource, /student-directory-actions-column/);
-  assert.match(studentDirectoryTableSource, /Восстановить ученика/);
-  assert.match(studentDirectoryTableSource, /Отменить запрос для/);
-  assert.match(studentDirectoryTableSource, /colSpan=\{3\}/);
-  assert.match(studentDirectoryTableSource, /colSpan=\{2\}/);
+  assert.match(studentDirectoryTableSource, /label: "Восстановить"/);
+  assert.match(studentDirectoryTableSource, /label: "Отменить запрос"/);
+  assert.match(
+    learnersTableSource,
+    /<ActionMenu[\s\S]*?triggerIcon=\{MoreVertical\}[\s\S]*?triggerVariant="ghost"[\s\S]*?\sportal\s/,
+  );
+  for (const label of [
+    "Открыть профиль",
+    "Учебная история",
+    "Изменить группы",
+    "Добавить в курс…",
+    "Связь с аккаунтом",
+    "Написать сообщение",
+    "Убрать из списка",
+  ]) {
+    assert.match(learnersTableSource, new RegExp(`label: "${label}"`));
+  }
+  assert.match(
+    learnersTableSource,
+    /id: "message",[\s\S]*?label: "Написать сообщение",[\s\S]*?hint: "Сообщения пока недоступны",[\s\S]*?disabled: true/,
+  );
+  assert.match(
+    learnersTableSource,
+    /id: "archive",[\s\S]*?label: "Убрать из списка",[\s\S]*?destructive: true,[\s\S]*?onSelect: \(\) => onArchive\(entry\.profile\)/,
+  );
+  assert.match(studentsWorkspaceSource, /<LearnerCourseDialog/);
+  assert.match(studentsWorkspaceSource, /setCourseLearner\(profile\)/);
+  assert.match(
+    courseBuilderClientSource,
+    /export async function loadOwnedCourses\(\): Promise<CourseSummary\[]>[\s\S]*?"\/api\/v2\/courses"/,
+  );
+  assert.match(learnerCourseDialogSource, /title="Добавить в курс"/);
+  assert.match(learnerCourseDialogSource, /loadOwnedCourses\(\)/);
+  assert.match(
+    learnerCourseDialogSource,
+    /loadCourseAudience\(selectedCourse\.id\)/,
+  );
+  assert.match(
+    learnerCourseDialogSource,
+    /const selectedCourseIsVisible = visibleCourses\.some/,
+  );
+  assert.match(
+    learnerCourseDialogSource,
+    /!selectedCourse \|\| !selectedCourseIsVisible \|\| controlsDisabled/,
+  );
+  assert.match(learnerCourseDialogSource, /if \(alreadyDirect\)/);
+  assert.doesNotMatch(learnerCourseDialogSource, /if \(alreadyEffective\)/);
+  assert.match(
+    learnerCourseDialogSource,
+    /replaceCourseAudience\(selectedCourse\.id,[\s\S]*?directLearnerProfileIds:[\s\S]*?learnerProfile\.id,[\s\S]*?learnerGroupIds: audience\.groups\.map/,
+  );
+  assert.match(
+    teachingHubStyleSource,
+    /\.student-directory-table thead tr,[\s\S]*?\.student-directory-table thead th\s*\{[^}]*--product-row-height, 2\.5rem/,
+  );
+  assert.match(
+    teachingHubStyleSource,
+    /\.student-directory-table tbody tr\s*\{[^}]*--product-row-height, 2\.5rem/,
+  );
+  assert.match(
+    teachingHubStyleSource,
+    /\.student-directory-table tbody td\s*\{[^}]*--product-row-height, 2\.5rem/,
+  );
   assert.doesNotMatch(studentDirectoryTableSource, /role="button"/);
   assert.match(learnerProfileDialogSource, /Учебная история сохранится/);
   assert.match(learnerProfileDialogSource, /Имя в моём списке/);
@@ -452,7 +640,19 @@ test("students manages one learner and group directory with durable history", ()
   assert.match(studentDirectoryTableSource, /Восстановить/);
   assert.match(studentDirectoryTableSource, /status: "pending"/);
   assert.match(learnerProfileDialogSource, /LearnerIdentityPanel/);
-  assert.match(learnerProfileDialogSource, /data-dialog-initial-focus/);
+  assert.match(
+    learnerProfileDialogSource,
+    /data-dialog-initial-focus=\{[\s\S]*?!profile \|\| surface === "profile"/,
+  );
+  assert.match(
+    learnerProfileDialogSource,
+    /data-dialog-initial-focus=\{surface === "history"/,
+  );
+  assert.match(
+    learnerProfileDialogSource,
+    /surface === "connection" \? "" : undefined/,
+  );
+  assert.match(learnersTableSource, /aria-label=\{fullGroupText\}/);
   assert.match(learnerGroupDialogSource, /data-dialog-initial-focus/);
   assert.match(studentsWorkspaceSource, />\s*Повторить\s*</);
   assert.match(learnerGroupDialogSource, /Уже назначенные уроки не изменятся/);

@@ -1,7 +1,7 @@
 # Текущее состояние ShiDao V2
 
 **Статус:** главный входной документ для разработки
-**Актуально на:** 11 августа 2026 года
+**Актуально на:** 12 августа 2026 года
 **Активная ветка:** `main`
 **Рабочее приложение:** `https://v2.shidao.ru`
 **Текущий функциональный application release:** `69a74a7`
@@ -81,8 +81,10 @@ product pages заголовочная колонка `AppPageHeader` получ
 canonical token `--app-page-header-description-color` со значением
 `rgba(20, 20, 20, 0.5)`, поэтому на всех его страницах computed-цвет равен 50%
 чёрного без route-specific forks. Общий `WorkspaceTabs` использует нижний
-разделитель `rgba(20, 20, 20, 0.2)` высотой 1 px; выбранная вкладка сохраняет
-непрозрачный чёрный сегмент 4 px. Числовой счётчик теперь является обычным
+разделитель `rgba(20, 20, 20, 0.2)` высотой 1 px. В current source его
+container и baseline занимают всю ширину content-row с `inline-inset: 0`;
+канонический контракт применяется ко всем consumers. Выбранная вкладка
+сохраняет непрозрачный чёрный сегмент 4 px. Числовой счётчик теперь является обычным
 inline-текстом после названия (`Ученики 1`) без чёрного круга, отдельного
 размера или цвета. Это UI-only изменение без API, schema или migration.
 
@@ -124,7 +126,9 @@ Authenticated production browser postflight этого slice пока не вы�
 нет разного по тону шва. Данные выводятся чёрным в одну строку с ellipsis и
 полным `title`; дата использует
 формат `Среда · 12 авг`, время — `12:00 · 60 мин`, scheduled-состояние остаётся
-plain «Ожидается». Видимый заголовок последней колонки
+plain «Ожидается». В current source видимые data-заголовки Schedule являются
+кнопками сортировки: первый клик включает возрастание, повторный — убывание,
+а текущее направление отражается в `aria-sort`. Видимый заголовок последней колонки
 отсутствует: постоянная кнопка с вертикальным троеточием открывает все действия
 в portal-menu; других кнопок действий в строке нет. Пункты portal-menu имеют
 точную высоту 40 px, вертикально центрированные иконку и текст,
@@ -151,8 +155,12 @@ toolbar-card: компактные 40 px controls расположены пря�
 том же визуальном контракте, что Schedule. На Students состояния «Активные /
 Архив / Ожидают ответа» больше не переключают отдельные проекции: активные
 профили, архивные relations и исходящие pending-запросы находятся в одной
-таблице с inline-чипами и contextual actions. Поиск, group filter и сортировка
-остаются на месте и применяются к единому списку. Во вкладке Course
+таблице с inline status/text и contextual actions. Подзаголовок раздела —
+«Ученики и группы, с которыми вы работаете или за которыми наблюдаете». Поиск
+остаётся отдельным контролом, а статус, наличие или отсутствие membership в
+группах, конкретная группа и тип связи с Account собраны в едином disclosure
+«Фильтр». Отдельного select «Сортировка» нет: Students и Groups сортируются
+кликом по заголовку столбца, повторный клик меняет направление. Во вкладке Course
 **Мои** предмет, уровень и наполнение собраны в disclosure «Фильтры»,
 сортировка остаётся отдельным native select, а «Карточки / Таблица» выбираются
 двумя icon-only кнопками; видимый result count удалён. Published **Каталог**
@@ -165,19 +173,36 @@ content/sort controls не добавлены. Это UI-only change без sche
 **Current source content controls/table surfaces (следующий deployment):**
 прозрачная панель управления Schedule снова использует всю ширину content-row
 без горизонтального inset: date/view controls остаются справа и заканчиваются
-по внешней границе строки. Обе directory-вкладки Students и обе вкладки
-Courses сохраняют горизонтальный inset 12 px, чтобы первый и последний control
-совпадали с внутренними границами page-header. Ни одна из панелей не создаёт
+по внешней границе строки. Обе directory-вкладки Students также имеют
+`padding-inline: 0` и занимают всю ширину строки. Обе
+вкладки Courses намеренно сохраняют горизонтальный inset 12 px. Ни одна из панелей не создаёт
 отдельную toolbar-card. Общие tokens различают карточку с радиусом
 20 px и вложенный element/control/table/menu с радиусом 12 px. Активные
 `ProductTable` wrappers Schedule, Students и Courses используют table token,
-сплошной белый фон и не имеют внешней рамки; плотность строк Students/Courses
-этот slice не меняет. Shared `ProductTableHead` теперь белый, а разделители
+сплошной белый фон и не имеют внешней рамки. Students table теперь повторяет
+плотный Schedule-контракт: header и data rows имеют точную высоту 40 px, а
+видимые колонки — `Ученик / Статус / Аккаунт / Группы / Добавлен / actions`.
+Shared `ProductTableHead` теперь белый, а разделители
 строк этих таблиц получают один `--product-table-divider-color`. Это UI-only
 source change без API, schema или migration;
 deployment ещё не выполнен. Для текущего follow-up зелёные typecheck, lint,
 format, production build, `git diff --check`, `454/454` unit/e2e и `22/22`
 production-browser scenarios.
+
+**Current source Students table/actions refinement (следующий deployment):**
+каждый data-заголовок таблиц Students и Groups переключает возрастающую и
+убывающую сортировку и отражает её в `aria-sort`; actions-column не
+сортируется. В конце каждой Students-row стоит один `MoreVertical` trigger с
+contextual portal-menu. Для active profile меню открывает профиль, управление
+группами, реальный flow «Добавить в курс…» с выбором Course, сохранением
+существующей group/direct audience и добавлением direct learner, а также
+destructive-действие «Убрать из списка». Пункт
+«Написать сообщение» видим, но disabled и явно помечен как недоступный:
+communication layer в current product не заявляется. Archived profile и
+pending request получают свои restore/permanent-delete или cancel actions.
+Trigger и пункты меню не активируют неявный row click. Это current-source
+UI/application flow поверх существующих Group/Course audience boundaries;
+schema и migrations не меняются.
 
 **Current source Schedule row actions (следующий deployment):** каждая строка
 назначенного LessonRun показывает `cursor: pointer` при наведении. Для
@@ -485,8 +510,10 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
   а top-level разделы не создают искусственную обратную ссылку.
 - Один `WorkspaceTabs` используется в Course, Lesson, Students и profile dialog,
   сохраняет roving keyboard/ARIA contract и горизонтальный scroll. Выбранная
-  вкладка перекрывает baseline 1 px цвета `rgba(20, 20, 20, 0.2)` с
-  inline-inset 12 px квадратным чёрным сегментом 4 px без radius. Числовой
+  вкладка перекрывает full-width baseline 1 px цвета
+  `rgba(20, 20, 20, 0.2)` квадратным чёрным сегментом 4 px без radius.
+  Container, baseline и scroll-row используют канонический `inline-inset: 0`
+  на всех поверхностях. Числовой
   count отображается простым продолжением label через пробел, без badge;
   каждый tab владеет существующим persistent `tabpanel` через симметричные
   `aria-controls / aria-labelledby`. В current source кнопки,
@@ -528,7 +555,9 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
   `Дата / Время` прижаты слева, `Ученики / Статус` и действия — справа, а `Урок / Курс`
   делят свободную ширину. Все данные строки чёрные, однострочные и используют
   ellipsis; дата имеет вид `Среда · 12 авг`, время — `12:00 · 60 мин`. Статус
-  остаётся plain «Ожидается», а последняя колонка без видимого заголовка
+  остаётся plain «Ожидается». Все видимые data-заголовки переключают
+  возрастающую/убывающую сортировку повторным кликом и публикуют направление
+  через `aria-sort`; action header не сортируется. Последняя колонка без видимого заголовка
   показывает только постоянное вертикальное троеточие со всеми действиями.
   Других кнопок действий в строке нет; пункты portal-menu имеют 40 px,
   вертикально центрированы и используют `.88rem/400`. System Assistant намеренно
@@ -537,23 +566,34 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
   `TeacherLearner + LearnerProfile` во вкладках «Ученики / Группы» и
   независимую learner-safe вкладку «Наблюдение». Canonical observer URL —
   `/students?tab=observing`; прежний `/observing` остаётся protected
-  compatibility redirect. Таблица
-  учеников поддерживает поиск, фильтр по группе и сортировку; active profiles,
+  compatibility redirect. Подзаголовок страницы — «Ученики и группы, с
+  которыми вы работаете или за которыми наблюдаете». Active profiles,
   archived relations и исходящие pending connection requests находятся в
   одной таблице, поэтому controls не исчезают и не сбрасываются из-за смены
-  статуса. Архив и ожидание ответа отмечены чипами прямо в строке; там же
-  доступны restore/permanent-delete или cancel. В active-строке видны до двух
-  групп и счётчик «ещё N». Вся compact toolbar расположена прямо на page
-  background. Отдельная вкладка групп показывает только reusable groups и их
-  состав и использует такой же компактный search/sort row.
+  статуса. Поиск остаётся отдельным, а status, membership «В группе / Без
+  группы», конкретная группа и связь с Account собраны в disclosure «Фильтр».
+  Separate sort select удалён: sortable headers таблиц Students и Groups
+  переключают ascending/descending повторным кликом. Students table имеет
+  40 px header/rows и колонки
+  `Ученик / Статус / Аккаунт / Группы / Добавлен / actions`. «Статус»
+  описывает lifecycle relation/request, «Аккаунт» — состояние identity
+  connection, а «Добавлен» — teacher-local дату relation или запроса. Архив и
+  ожидание ответа отмечены прямо в строке. Вся compact
+  toolbar расположена на page background во всю ширину без horizontal inset;
+  Course toolbars сохраняют собственный inset 12 px.
 - Клик по строке ученика открывает dialog «Профиль / История»: здесь можно
   изменить локальное имя и membership в нескольких группах, а история
   ограничена LearningRecord текущего преподавателя. Ученика можно создать,
-  изменить и убрать из своего списка; для групп доступен полный CRUD. Видимое
-  имя принадлежит relation текущего преподавателя, а не глобальной identity.
+  изменить и убрать из своего списка; для групп доступен полный CRUD. Один
+  `MoreVertical` в каждой строке открывает contextual menu: active profile
+  можно открыть, изменить группы, реально добавить в выбранный Course с
+  сохранением существующей audience или «Убрать из списка». «Написать сообщение»
+  показывается disabled с явной пометкой о недоступности. Archived/pending rows
+  получают только допустимые restore/permanent-delete или cancel actions.
+  Видимое имя принадлежит relation текущего преподавателя, а не глобальной identity.
 - Header action на `/students` следует выбранной вкладке: «Новый ученик» или
-  «Новая группа»; поиск, фильтры и сортировка остаются в directory toolbar.
-- Product delete ученика архивирует только `teacher_learner` текущего Account:
+  «Новая группа»; поиск и единый «Фильтр» остаются в full-width directory toolbar.
+- «Убрать из списка» архивирует только `teacher_learner` текущего Account:
   relation остаётся в общей таблице с чипом «В архиве», но исчезает из групп и
   будущих Course audiences; canonical LearnerProfile, его LearningRecord и
   состав уже назначенного Run сохраняются. Restore выполняется из этой строки,

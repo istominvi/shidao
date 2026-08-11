@@ -5,7 +5,7 @@ identity, teacher directory, observer access и consented AI history
 
 **Дата решения:** 9 августа 2026 года
 
-**Актуально на:** 10 августа 2026 года
+**Актуально на:** 12 августа 2026 года
 
 **Implementation state:** production содержит полный application/API/UI slice и
 M1–M6 contract schema. Четыре verified backup, strict expand/contract postflight,
@@ -224,12 +224,25 @@ physical merge не обещается.
 «Ученики / Группы» и отдельную learner-safe вкладку «Наблюдение» по active
 observer grants. Active и archived relations, а также исходящие pending
 connection requests находятся в одном teacher directory list: состояние
-показывается inline, а поиск/group filter/sort не переключаются и не
-сбрасываются статусом.
+показывается inline, а поиск и единый disclosure «Фильтр» не переключаются и
+не сбрасываются статусом. «Фильтр» объединяет relation status, membership «В
+группе / Без группы», конкретную группу и Account connection. Отдельного sort
+select нет: headers таблиц Students и Groups переключают ascending/descending
+повторным кликом. Full-width Students controls используют
+`padding-inline: 0`, а 40 px table показывает
+`Ученик / Статус / Аккаунт / Группы / Добавлен / actions`. Это UI-only
+presentation над теми же actor-scoped rows.
 
 - «Убрать из списка» архивирует только relation данного Account и удаляет его
   mutable Group/Course links; canonical profile, finalized history и roster
   уже открытого Run сохраняются.
+- Contextual `MoreVertical` menu active profile может открыть профиль,
+  изменить membership и запустить реальный «Добавить в курс…». Course picker
+  сохраняет существующую group/direct audience, добавляет learner как direct
+  audience только в доступном actor-owned Course и не создаёт observer grant
+  или доступ к чужой raw history.
+- «Написать сообщение» остаётся disabled и явно недоступным: эта поверхность
+  не вводит communication write boundary.
 - Restore активирует только relation. Старые Group/Course memberships скрыто
   не возвращаются; действие доступно в архивной строке общего списка.
 - Archive/restore одного teacher не меняет relation другого.

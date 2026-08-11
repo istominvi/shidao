@@ -322,6 +322,7 @@ const E2E_COMPLETION_RECORD_IDS = [
 
 let e2eCompletionPhase: 0 | 1 | 2 | null = null;
 let e2eScheduleFixtureVisible = false;
+let e2eScheduleFixtureRunCount: 1 | 2 = 1;
 const e2eCompletionPayloads: E2ECompletionPayload[] = [];
 const e2eCompletedLearningRecordRows: E2ELearningRecordRow[] = [];
 
@@ -384,6 +385,24 @@ function e2eCompletionRunRows(): E2ELessonRunRow[] {
         created_at: "2026-08-11T02:00:00.000Z",
         updated_at: "2026-08-11T02:00:00.000Z",
       },
+      ...(e2eScheduleFixtureRunCount === 2
+        ? [
+            {
+              id: E2E_COMPLETION_PUBLISHED_RUN_ID,
+              lesson_id: E2E_LESSON_ID,
+              scheduled_at: "2026-08-12T05:30:00.000Z",
+              planned_duration_minutes: 45,
+              actual_duration_minutes: null,
+              started_at: null,
+              started_at_is_actual: false,
+              ended_at: null,
+              cancelled_at: null,
+              teacher_report: null,
+              created_at: "2026-08-11T02:30:00.000Z",
+              updated_at: "2026-08-11T02:30:00.000Z",
+            },
+          ]
+        : []),
     ];
   }
   if (e2eCompletionPhase === null) return [];
@@ -477,6 +496,10 @@ let e2eMergeStatus: "pending" | "cancelled" | "completed" = "pending";
 let e2eChildActivationAcknowledged = false;
 let e2eRecoveryResetCompleted = false;
 let e2eRecoveryDelegateRevoked = false;
+let e2eCourseAudienceReplacement: {
+  directLearnerProfileIds: string[];
+  learnerGroupIds: string[];
+} | null = null;
 const e2eSupabaseReferers: string[] = [];
 
 type PlaywrightLocator = {
@@ -1485,9 +1508,26 @@ async function handleMockSupabase(
     return;
   }
 
+  if (requestUrl.pathname === "/rest/v1/rpc/replace_course_audience") {
+    const body = await readJsonBody(request);
+    e2eCourseAudienceReplacement = {
+      directLearnerProfileIds: Array.isArray(body.p_direct_learner_profile_ids)
+        ? body.p_direct_learner_profile_ids.filter(
+            (value): value is string => typeof value === "string",
+          )
+        : [],
+      learnerGroupIds: Array.isArray(body.p_learner_group_ids)
+        ? body.p_learner_group_ids.filter(
+            (value): value is string => typeof value === "string",
+          )
+        : [],
+    };
+    json(response, 200, null);
+    return;
+  }
+
   if (
     requestUrl.pathname === "/rest/v1/rpc/delete_learner_group" ||
-    requestUrl.pathname === "/rest/v1/rpc/replace_course_audience" ||
     requestUrl.pathname === "/rest/v1/rpc/replace_course_learners"
   ) {
     json(response, 200, null);
@@ -3119,6 +3159,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
 
     e2eCompletionPhase = null;
     e2eScheduleFixtureVisible = true;
+    e2eScheduleFixtureRunCount = 2;
     await dateTrigger.click();
     const fixtureDateDialog = runtime.page.getByRole("dialog");
     await fixtureDateDialog.waitFor();
@@ -3165,6 +3206,48 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       exact: true,
     });
     await scheduleResults.waitFor();
+    const scheduleTimeHeader = scheduleTable.getByRole("columnheader", {
+      name: "Время",
+      exact: true,
+    });
+    const scheduleTimeSort = scheduleTimeHeader.getByRole("button", {
+      name: "Время",
+      exact: true,
+    });
+    const scheduleRunOrder = () =>
+      runtime.page.evaluate(() =>
+        Array.from(
+          document.querySelectorAll<HTMLTimeElement>(
+            ".teaching-run-table tbody tr td:nth-child(2) time",
+          ),
+        ).map((element) => element.dateTime),
+      );
+    assert.equal(await scheduleTimeHeader.getAttribute("aria-sort"), "none");
+    await scheduleTimeSort.click();
+    assert.equal(
+      await scheduleTimeHeader.getAttribute("aria-sort"),
+      "ascending",
+    );
+    assert.deepEqual(await scheduleRunOrder(), [
+      "2026-08-12T03:00:00.000Z",
+      "2026-08-12T05:30:00.000Z",
+    ]);
+    await scheduleTimeSort.click();
+    assert.equal(
+      await scheduleTimeHeader.getAttribute("aria-sort"),
+      "descending",
+    );
+    assert.deepEqual(await scheduleRunOrder(), [
+      "2026-08-12T05:30:00.000Z",
+      "2026-08-12T03:00:00.000Z",
+    ]);
+    await scheduleTimeSort.click();
+    assert.equal(
+      await runtime.page
+        .locator(".teaching-run-table tbody .teaching-run-table-row")
+        .count(),
+      2,
+    );
     assert.equal(
       await runtime.page
         .locator(
@@ -3528,7 +3611,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         ({ color, opacity }) => color === "rgb(20, 20, 20)" && opacity === "1",
       ),
     );
-    assert.equal(scheduleTableContract.truncation.length, 4);
+    assert.equal(scheduleTableContract.truncation.length, 8);
     assert.ok(
       scheduleTableContract.truncation.every(
         ({ title, overflow, textOverflow, whiteSpace }) =>
@@ -3576,7 +3659,9 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       /lucide-ellipsis-vertical/,
     );
 
-    const scheduleRow = runtime.page.locator(".teaching-run-table-row");
+    const scheduleRow = runtime.page.locator(
+      ".teaching-run-table-row:first-child",
+    );
     await scheduleRow.hover();
     assert.equal(
       await runtime.page
@@ -3588,9 +3673,9 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       0,
     );
 
-    const rowMenuTrigger = runtime.page.getByRole("button", {
-      name: /Действия с занятием/,
-    });
+    const rowMenuTrigger = runtime.page.locator(
+      ".teaching-run-table-row:first-child .teaching-run-action-menu .action-menu-trigger",
+    );
     await rowMenuTrigger.click();
     const rowActionMenu = runtime.page.getByRole("menu");
     await rowActionMenu.waitFor();
@@ -3806,7 +3891,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
     await runtime.page
       .getByRole("button", { name: "Показать карточками", exact: true })
       .click();
-    await runtime.page.locator(".teaching-run-card").waitFor();
+    await runtime.page.locator(".teaching-run-card:first-child").waitFor();
     assert.deepEqual(
       await runtime.page.evaluate(() => {
         const actions = document.querySelector<HTMLElement>(
@@ -3859,7 +3944,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         },
       },
     );
-    assert.equal(await runtime.page.locator(".teaching-run-card").count(), 1);
+    assert.equal(await runtime.page.locator(".teaching-run-card").count(), 2);
     assert.equal(await scheduleTable.count(), 0);
 
     await runtime.page
@@ -3872,6 +3957,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       })
       .waitFor();
     e2eScheduleFixtureVisible = false;
+    e2eScheduleFixtureRunCount = 1;
 
     const studentsLink = runtime.page.getByRole("link", {
       name: "Ученики",
@@ -3930,11 +4016,8 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       const toolbarControls = toolbar?.querySelector<HTMLElement>(
         ".student-directory-controls",
       );
-      const groupFilter = toolbar?.querySelector<HTMLSelectElement>(
-        'select[aria-label="Фильтр по группе"]',
-      );
-      const learnerSort = toolbar?.querySelector<HTMLSelectElement>(
-        'select[aria-label="Сортировка"]',
+      const filterTrigger = toolbar?.querySelector<HTMLElement>(
+        ".student-directory-filter-menu .course-filter-trigger",
       );
 
       if (
@@ -3950,8 +4033,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         !toolbar ||
         !toolbarSearch ||
         !toolbarControls ||
-        !groupFilter ||
-        !learnerSort
+        !filterTrigger
       ) {
         throw new Error("Students visual contract is missing");
       }
@@ -4053,12 +4135,17 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
           controlsEndInset: toolbarRect.right - toolbarControlsRect.right,
         },
         controlGeometry: {
-          groupFilterHeight: getComputedStyle(groupFilter).height,
-          sortHeight: getComputedStyle(learnerSort).height,
+          filterTriggerHeight: getComputedStyle(filterTrigger).height,
+          filterTriggerText: filterTrigger.textContent?.trim() ?? "",
         },
-        hasStatusSwitch: Boolean(
+        hasMembershipSwitch: Boolean(
           toolbar.querySelector(
-            '[role="group"][aria-label="Состояние списка учеников"]',
+            '[role="group"][aria-label="Принадлежность к группе"]',
+          ),
+        ),
+        hasLegacySortOrGroupSelect: Boolean(
+          toolbar.querySelector(
+            'select[aria-label="Фильтр по группе"], select[aria-label="Сортировка"]',
           ),
         ),
       };
@@ -4081,10 +4168,10 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       fontWeight: "400",
       baselineHeight: "1px",
       baselineColor: "rgba(20, 20, 20, 0.2)",
-      baselineLeft: "12px",
-      baselineRight: "12px",
-      tabsPaddingLeft: "12px",
-      tabsPaddingRight: "12px",
+      baselineLeft: "0px",
+      baselineRight: "0px",
+      tabsPaddingLeft: "0px",
+      tabsPaddingRight: "0px",
       markerHeight: "4px",
       markerColor: "rgb(20, 20, 20)",
       markerRadius: "0px",
@@ -4125,11 +4212,9 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       studentsVisual.tabCount.labelFontWeight,
     );
     assert.equal(studentsVisual.tabGeometry.firstTabIsActive, true);
-    assert.ok(Math.abs(studentsVisual.tabGeometry.activeStartInset - 12) < 0.5);
-    assert.ok(
-      Math.abs(studentsVisual.tabGeometry.baselineStartInset - 12) < 0.5,
-    );
-    assert.ok(Math.abs(studentsVisual.tabGeometry.baselineEndInset - 12) < 0.5);
+    assert.ok(Math.abs(studentsVisual.tabGeometry.activeStartInset) < 0.5);
+    assert.ok(Math.abs(studentsVisual.tabGeometry.baselineStartInset) < 0.5);
+    assert.ok(Math.abs(studentsVisual.tabGeometry.baselineEndInset) < 0.5);
     assert.ok(
       Math.abs(
         studentsVisual.tabGeometry.activeStartInset -
@@ -4143,37 +4228,238 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       borderTopWidth: "0px",
       boxShadow: "none",
       paddingTop: "0px",
-      paddingLeft: "12px",
-      paddingRight: "12px",
+      paddingLeft: "0px",
+      paddingRight: "0px",
     });
-    assert.ok(
-      Math.abs(studentsVisual.toolbarAlignment.searchStartInset - 12) < 0.5,
-    );
-    assert.ok(
-      Math.abs(studentsVisual.toolbarAlignment.controlsEndInset - 12) < 0.5,
-    );
+    assert.ok(Math.abs(studentsVisual.toolbarAlignment.searchStartInset) < 0.5);
+    assert.ok(Math.abs(studentsVisual.toolbarAlignment.controlsEndInset) < 0.5);
     assert.deepEqual(studentsVisual.controlGeometry, {
-      groupFilterHeight: "40px",
-      sortHeight: "40px",
+      filterTriggerHeight: "40px",
+      filterTriggerText: "Фильтр",
     });
-    assert.equal(studentsVisual.hasStatusSwitch, false);
+    assert.equal(studentsVisual.hasMembershipSwitch, true);
+    assert.equal(studentsVisual.hasLegacySortOrGroupSelect, false);
+
+    const learnerTable = runtime.page.getByRole("table", {
+      name: "Ученики, их статусы и группы",
+      exact: true,
+    });
+    const learnerFilterTrigger = runtime.page.locator(
+      ".student-directory-filter-menu .course-filter-trigger",
+    );
+    assert.equal((await learnerFilterTrigger.textContent())?.trim(), "Фильтр");
+    assert.equal(
+      await learnerFilterTrigger.getAttribute("aria-expanded"),
+      "false",
+    );
+    await learnerFilterTrigger.click();
+    const learnerFilterPanel = runtime.page.getByRole("group", {
+      name: "Фильтры учеников",
+      exact: true,
+    });
+    await learnerFilterPanel.waitFor();
+    const learnerStatusFilter = learnerFilterPanel.getByLabel("Состояние");
+    const learnerAccountFilter = learnerFilterPanel.getByLabel("Аккаунт");
+    const learnerSpecificGroupFilter =
+      learnerFilterPanel.getByLabel("Конкретная группа");
+    const learnerMembershipSwitch = learnerFilterPanel.getByRole("group", {
+      name: "Принадлежность к группе",
+      exact: true,
+    });
+    const allMemberships = learnerMembershipSwitch.getByRole("button", {
+      name: "Все",
+      exact: true,
+    });
+    const groupedMemberships = learnerMembershipSwitch.getByRole("button", {
+      name: "В группе",
+      exact: true,
+    });
+    const ungroupedMemberships = learnerMembershipSwitch.getByRole("button", {
+      name: "Без группы",
+      exact: true,
+    });
+    assert.equal(await allMemberships.getAttribute("aria-pressed"), "true");
+    assert.equal(
+      await groupedMemberships.getAttribute("aria-pressed"),
+      "false",
+    );
+    assert.equal(
+      await ungroupedMemberships.getAttribute("aria-pressed"),
+      "false",
+    );
+    assert.notEqual(
+      await learnerSpecificGroupFilter.getAttribute("disabled"),
+      null,
+    );
+    await groupedMemberships.click();
+    assert.equal(await groupedMemberships.getAttribute("aria-pressed"), "true");
+    assert.equal(
+      await learnerSpecificGroupFilter.getAttribute("disabled"),
+      null,
+    );
+    await learnerSpecificGroupFilter.selectOption({ label: "Teen Talk" });
+    assert.equal(
+      await learnerSpecificGroupFilter.inputValue(),
+      E2E_GROUP_TEEN_ID,
+    );
+    assert.equal(await groupedMemberships.getAttribute("aria-pressed"), "true");
+    await learnerStatusFilter.selectOption({ label: "В архиве" });
+    await learnerAccountFilter.selectOption({ label: "Без аккаунта" });
+    assert.equal(
+      await runtime.page
+        .locator(
+          '.student-directory-filter-menu .course-filter-trigger [aria-label="Выбрано: 3"]',
+        )
+        .textContent(),
+      "3",
+    );
+    const learnerFilterReset = learnerFilterPanel.getByRole("button", {
+      name: "Сбросить фильтры",
+      exact: true,
+    });
+    await learnerFilterReset.click();
+    assert.equal(await learnerStatusFilter.inputValue(), "all");
+    assert.equal(await learnerSpecificGroupFilter.inputValue(), "");
+    assert.notEqual(
+      await learnerSpecificGroupFilter.getAttribute("disabled"),
+      null,
+    );
+    assert.equal(await learnerAccountFilter.inputValue(), "all");
+    assert.equal(await allMemberships.getAttribute("aria-pressed"), "true");
+    await learnerFilterTrigger.press("Escape");
+    await learnerFilterPanel.waitFor({ state: "hidden" });
+    assert.equal(
+      await learnerFilterTrigger.getAttribute("aria-expanded"),
+      "false",
+    );
+    assert.equal(
+      await runtime.page.evaluate(() =>
+        document.activeElement?.classList.contains("course-filter-trigger"),
+      ),
+      true,
+    );
+
+    const learnerStatusHeader = learnerTable.getByRole("columnheader", {
+      name: "Статус",
+      exact: true,
+    });
+    const learnerStatusSort = learnerStatusHeader.getByRole("button", {
+      name: "Статус",
+      exact: true,
+    });
+    const learnerRowNames = () =>
+      runtime.page.evaluate(() =>
+        Array.from(
+          document.querySelectorAll<HTMLElement>(
+            ".student-directory-learners-table tbody tr td:first-child strong",
+          ),
+        ).map((element) => element.textContent?.trim() ?? ""),
+      );
+    assert.equal(await learnerStatusHeader.getAttribute("aria-sort"), "none");
+    await learnerStatusSort.click();
+    assert.equal(
+      await learnerStatusHeader.getAttribute("aria-sort"),
+      "ascending",
+    );
+    assert.deepEqual(await learnerRowNames(), [
+      "Анна Петрова",
+      "Борис Волков",
+      "Клара Смирнова",
+      "Новый по QR",
+      "Архивная Ольга",
+    ]);
+    await learnerStatusSort.click();
+    assert.equal(
+      await learnerStatusHeader.getAttribute("aria-sort"),
+      "descending",
+    );
+    assert.deepEqual(await learnerRowNames(), [
+      "Архивная Ольга",
+      "Новый по QR",
+      "Анна Петрова",
+      "Борис Волков",
+      "Клара Смирнова",
+    ]);
 
     const archivedRow = runtime.page.locator('tr:has-text("Архивная Ольга")');
     const pendingRow = runtime.page.locator('tr:has-text("Новый по QR")');
     await archivedRow.getByText("В архиве", { exact: true }).waitFor();
-    await archivedRow
-      .getByRole("button", {
-        name: "Восстановить ученика Архивная Ольга",
-        exact: true,
-      })
+    const archivedActionsTrigger = archivedRow.getByRole("button", {
+      name: /Действия с учеником.*Архивная Ольга/,
+    });
+    await archivedActionsTrigger.click();
+    let learnerActionMenu = runtime.page.getByRole("menu");
+    await learnerActionMenu
+      .getByRole("menuitem", { name: "Восстановить", exact: true })
       .waitFor();
+    await learnerActionMenu.press("Escape");
+    await learnerActionMenu.waitFor({ state: "detached" });
+    assert.equal(
+      await archivedActionsTrigger.getAttribute("aria-expanded"),
+      "false",
+    );
     await pendingRow.getByText("Ожидает ответа", { exact: true }).waitFor();
-    await pendingRow
-      .getByRole("button", {
-        name: "Отменить запрос для Новый по QR",
-        exact: true,
-      })
+    const pendingActionsTrigger = pendingRow.getByRole("button", {
+      name: /Действия с учеником.*Новый по QR/,
+    });
+    await pendingActionsTrigger.click();
+    learnerActionMenu = runtime.page.getByRole("menu");
+    await learnerActionMenu
+      .getByRole("menuitem", { name: "Отменить запрос", exact: true })
       .waitFor();
+    await learnerActionMenu.press("Escape");
+    await learnerActionMenu.waitFor({ state: "detached" });
+
+    const annaActionsTrigger = runtime.page
+      .locator('tr:has-text("Анна Петрова")')
+      .getByRole("button", {
+        name: /Действия с учеником.*Анна Петрова/,
+      });
+    await annaActionsTrigger.click();
+    learnerActionMenu = runtime.page.getByRole("menu");
+    const addToCourseAction = learnerActionMenu.getByRole("menuitem", {
+      name: "Добавить в курс…",
+      exact: true,
+    });
+    await addToCourseAction.waitFor();
+    assert.equal(
+      await learnerActionMenu
+        .getByRole("menuitem", { name: /Написать сообщение/ })
+        .getAttribute("disabled"),
+      "",
+    );
+    await learnerActionMenu
+      .getByRole("menuitem", { name: "Убрать из списка", exact: true })
+      .waitFor();
+    e2eCourseAudienceReplacement = null;
+    await addToCourseAction.click();
+
+    const addToCourseDialog = runtime.page.getByRole("dialog", {
+      name: "Добавить в курс",
+      exact: true,
+    });
+    await addToCourseDialog.waitFor();
+    const addToCourseSubmit = addToCourseDialog.getByRole("button", {
+      name: "Добавить в курс",
+      exact: true,
+    });
+    assert.notEqual(await addToCourseSubmit.getAttribute("disabled"), null);
+    const courseChoice = addToCourseDialog.getByRole("radio");
+    assert.equal(await courseChoice.count(), 1);
+    await courseChoice.check();
+    assert.equal(await addToCourseSubmit.getAttribute("disabled"), null);
+    await addToCourseSubmit.click();
+    await runtime.page
+      .getByText(
+        `Ученик «Анна Петрова» добавлен в курс «${E2E_COURSE_TITLE}».`,
+        { exact: true },
+      )
+      .waitFor();
+    assert.deepEqual(e2eCourseAudienceReplacement, {
+      directLearnerProfileIds: [E2E_LEARNER_BORIS_ID, E2E_LEARNER_ANNA_ID],
+      learnerGroupIds: [E2E_GROUP_TEEN_ID],
+    });
+
     const studentActionGeometry = await runtime.page.evaluate(() => {
       const wrapper = document.querySelector<HTMLElement>(
         ".student-directory-table-wrap",
@@ -4184,8 +4470,8 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       const archivedTableRow = Array.from(table?.rows ?? []).find((row) =>
         row.textContent?.includes("Архивная Ольга"),
       );
-      const groupCell = archivedTableRow?.cells[1];
-      const actionCell = archivedTableRow?.cells[2];
+      const groupCell = archivedTableRow?.cells[3];
+      const actionCell = archivedTableRow?.cells[5];
       const buttons = Array.from(
         actionCell?.querySelectorAll<HTMLButtonElement>("button") ?? [],
       );
@@ -4198,6 +4484,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       const wrapperStyle = getComputedStyle(wrapper);
       const tableStyle = getComputedStyle(table);
       return {
+        cellCount: archivedTableRow?.cells.length ?? 0,
         surface: {
           wrapperBackgroundColor: wrapperStyle.backgroundColor,
           tableBackgroundColor: tableStyle.backgroundColor,
@@ -4224,7 +4511,9 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       wrapperBorderWidths: ["0px", "0px", "0px", "0px"],
       wrapperBorderRadius: "12px",
     });
-    assert.ok(studentActionGeometry.actionWidth >= 100);
+    assert.equal(studentActionGeometry.cellCount, 6);
+    assert.ok(studentActionGeometry.actionWidth >= 40);
+    assert.ok(studentActionGeometry.actionWidth < 100);
     assert.equal(studentActionGeometry.columnsDoNotOverlap, true);
     assert.equal(studentActionGeometry.buttonsInsideActionCell, true);
     assert.equal(studentActionGeometry.tableContainedByWrapper, true);
@@ -4234,8 +4523,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
     );
     await learnerSearch.fill("Архивная");
     await archivedRow.waitFor();
-    assert.equal(await runtime.page.getByLabel("Фильтр по группе").count(), 1);
-    assert.equal(await runtime.page.getByLabel("Сортировка").count(), 1);
+    assert.equal(await learnerFilterTrigger.count(), 1);
     await learnerSearch.fill("");
 
     await runtime.page
@@ -4325,10 +4613,10 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         controlsEndInset: rect.right - controlsRect.right,
       };
     });
-    assert.equal(groupsToolbarContract.paddingLeft, "12px");
-    assert.equal(groupsToolbarContract.paddingRight, "12px");
-    assert.ok(Math.abs(groupsToolbarContract.searchStartInset - 12) < 0.5);
-    assert.ok(Math.abs(groupsToolbarContract.controlsEndInset - 12) < 0.5);
+    assert.equal(groupsToolbarContract.paddingLeft, "0px");
+    assert.equal(groupsToolbarContract.paddingRight, "0px");
+    assert.ok(Math.abs(groupsToolbarContract.searchStartInset) < 0.5);
+    assert.ok(Math.abs(groupsToolbarContract.controlsEndInset) < 0.5);
     html = await runtime.page.content();
     assert.match(html, /Подготовка к экзамену/);
     assert.match(html, /2 ученика/);
@@ -4345,6 +4633,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
   } finally {
     e2eCompletionPhase = null;
     e2eScheduleFixtureVisible = false;
+    e2eScheduleFixtureRunCount = 1;
     await runtime.close();
   }
 });
@@ -4799,26 +5088,70 @@ test("browser smoke: QR creates only pending connection, archive restores, and o
     const learnerSearch = runtime.page.locator(
       'input[placeholder="Найти ученика"]',
     );
-    const learnerGroupFilter = runtime.page.getByLabel("Фильтр по группе");
-    const learnerSort = runtime.page.getByLabel("Сортировка");
+    const learnerFilterTrigger = runtime.page.locator(
+      ".student-directory-filter-menu .course-filter-trigger",
+    );
     await learnerSearch.fill("Архивная");
-    await learnerGroupFilter.selectOption({ label: "Без группы" });
-    await learnerSort.selectOption({ label: "Имя: Я—А" });
+    await learnerFilterTrigger.click();
+    const learnerFilterPanel = runtime.page.getByRole("group", {
+      name: "Фильтры учеников",
+      exact: true,
+    });
+    await learnerFilterPanel.waitFor();
+    const learnerStatusFilter = runtime.page.locator(
+      ".student-directory-filter-menu .course-filter-field:first-child select",
+    );
+    await learnerStatusFilter.selectOption({ label: "В архиве" });
+    const learnerNameHeader = runtime.page
+      .getByRole("table", {
+        name: "Ученики, их статусы и группы",
+        exact: true,
+      })
+      .getByRole("columnheader", { name: "Ученик", exact: true });
+    assert.equal(
+      await learnerNameHeader.getAttribute("aria-sort"),
+      "ascending",
+    );
+    await learnerNameHeader
+      .getByRole("button", { name: "Ученик", exact: true })
+      .click();
+    assert.equal(
+      await learnerNameHeader.getAttribute("aria-sort"),
+      "descending",
+    );
     await runtime.page.getByText("Архивная Ольга", { exact: true }).waitFor();
     await runtime.page
       .getByRole("button", {
-        name: "Восстановить ученика Архивная Ольга",
-        exact: true,
+        name: /Действия с учеником.*Архивная Ольга/,
       })
+      .click();
+    await runtime.page
+      .getByRole("menu")
+      .getByRole("menuitem", { name: "Восстановить", exact: true })
       .click();
     await runtime.page.getByText(/Ученик снова в активном списке/).waitFor();
     assert.equal(e2eArchivedLearnerRestored, true);
     assert.equal(await learnerSearch.inputValue(), "Архивная");
-    assert.equal(await learnerGroupFilter.inputValue(), "ungrouped");
-    assert.equal(await learnerSort.inputValue(), "name-desc");
+    assert.equal(await learnerStatusFilter.inputValue(), "archived");
+    assert.equal(
+      await learnerNameHeader.getAttribute("aria-sort"),
+      "descending",
+    );
+    assert.equal(
+      await runtime.page
+        .locator(".student-directory-filter-menu .course-filter-count")
+        .textContent(),
+      "1",
+    );
 
     await learnerSearch.fill("");
-    await learnerGroupFilter.selectOption({ label: "Все группы" });
+    await learnerFilterTrigger.click();
+    await learnerFilterPanel.waitFor();
+    await learnerFilterPanel
+      .getByRole("button", { name: "Сбросить фильтры", exact: true })
+      .click();
+    assert.equal(await learnerStatusFilter.inputValue(), "all");
+    await learnerFilterTrigger.press("Escape");
 
     await runtime.page
       .getByRole("button", { name: "Новый ученик", exact: true })
@@ -5688,11 +6021,8 @@ test("browser smoke: mobile Account menu exposes primary sections and account ac
       const rail = toolbar?.querySelector<HTMLElement>(
         ".student-directory-controls",
       );
-      const groupFilter = rail?.querySelector<HTMLSelectElement>(
-        'select[aria-label="Фильтр по группе"]',
-      );
-      const learnerSort = rail?.querySelector<HTMLSelectElement>(
-        'select[aria-label="Сортировка"]',
+      const filterTrigger = rail?.querySelector<HTMLElement>(
+        ".student-directory-filter-menu .course-filter-trigger",
       );
       const tableWrap = document.querySelector<HTMLElement>(
         ".student-directory-table-wrap",
@@ -5703,16 +6033,15 @@ test("browser smoke: mobile Account menu exposes primary sections and account ac
       const archivedRow = Array.from(table?.rows ?? []).find((row) =>
         row.textContent?.includes("Архивная Ольга"),
       );
-      const groupCell = archivedRow?.cells[1];
-      const actionCell = archivedRow?.cells[2];
+      const groupCell = archivedRow?.cells[3];
+      const actionCell = archivedRow?.cells[5];
       const actionButtons = Array.from(
         actionCell?.querySelectorAll<HTMLButtonElement>("button") ?? [],
       );
       if (
         !toolbar ||
         !rail ||
-        !groupFilter ||
-        !learnerSort ||
+        !filterTrigger ||
         !tableWrap ||
         !table ||
         !groupCell ||
@@ -5741,12 +6070,13 @@ test("browser smoke: mobile Account menu exposes primary sections and account ac
         railStartInset: railRect.left - toolbarRect.left,
         railEndInset: toolbarRect.right - railRect.right,
         railOverflowX: getComputedStyle(rail).overflowX,
+        railFlexWrap: getComputedStyle(rail).flexWrap,
         railScrollIsContained: rail.scrollWidth > rail.clientWidth,
-        groupFilterHeight: getComputedStyle(groupFilter).height,
-        sortHeight: getComputedStyle(learnerSort).height,
-        hasStatusSwitch: Boolean(
+        filterTriggerHeight: getComputedStyle(filterTrigger).height,
+        filterTriggerText: filterTrigger.textContent?.trim() ?? "",
+        hasMembershipSwitch: Boolean(
           rail.querySelector(
-            '[role="group"][aria-label="Состояние списка учеников"]',
+            '[role="group"][aria-label="Принадлежность к группе"]',
           ),
         ),
         tableWrapInsideViewport:
@@ -5758,6 +6088,7 @@ test("browser smoke: mobile Account menu exposes primary sections and account ac
           borderRadius: tableWrapStyle.borderRadius,
         },
         tableScrollIsContained: tableWrap.scrollWidth > tableWrap.clientWidth,
+        rowCellCount: archivedRow?.cells.length ?? 0,
         columnsDoNotOverlap: groupRect.right <= actionRect.left + 0.5,
         actionsInsideTable:
           actionRect.left >= tableRect.left &&
@@ -5774,15 +6105,16 @@ test("browser smoke: mobile Account menu exposes primary sections and account ac
     assert.equal(mobileContract.scrollWidth, mobileContract.clientWidth);
     assert.equal(mobileContract.heading, "Ученики");
     assert.equal(mobileContract.toolbarInsideViewport, true);
-    assert.equal(mobileContract.toolbarPaddingLeft, "12px");
-    assert.equal(mobileContract.toolbarPaddingRight, "12px");
-    assert.ok(Math.abs(mobileContract.railStartInset - 12) < 0.5);
-    assert.ok(Math.abs(mobileContract.railEndInset - 12) < 0.5);
-    assert.equal(mobileContract.railOverflowX, "auto");
-    assert.equal(mobileContract.railScrollIsContained, true);
-    assert.equal(mobileContract.groupFilterHeight, "40px");
-    assert.equal(mobileContract.sortHeight, "40px");
-    assert.equal(mobileContract.hasStatusSwitch, false);
+    assert.equal(mobileContract.toolbarPaddingLeft, "0px");
+    assert.equal(mobileContract.toolbarPaddingRight, "0px");
+    assert.ok(Math.abs(mobileContract.railStartInset) < 0.5);
+    assert.ok(Math.abs(mobileContract.railEndInset) < 0.5);
+    assert.equal(mobileContract.railOverflowX, "visible");
+    assert.equal(mobileContract.railFlexWrap, "wrap");
+    assert.equal(mobileContract.railScrollIsContained, false);
+    assert.equal(mobileContract.filterTriggerHeight, "40px");
+    assert.equal(mobileContract.filterTriggerText, "Фильтр");
+    assert.equal(mobileContract.hasMembershipSwitch, true);
     assert.equal(mobileContract.tableWrapInsideViewport, true);
     assert.equal(mobileContract.tableOverflowX, "auto");
     assert.deepEqual(mobileContract.tableSurface, {
@@ -5791,8 +6123,51 @@ test("browser smoke: mobile Account menu exposes primary sections and account ac
       borderRadius: "12px",
     });
     assert.equal(mobileContract.tableScrollIsContained, true);
+    assert.equal(mobileContract.rowCellCount, 6);
     assert.equal(mobileContract.columnsDoNotOverlap, true);
     assert.equal(mobileContract.actionsInsideTable, true);
+
+    const mobileLearnerFilterTrigger = runtime.page.locator(
+      ".student-directory-filter-menu .course-filter-trigger",
+    );
+    await mobileLearnerFilterTrigger.click();
+    const mobileLearnerFilterPanel = runtime.page.getByRole("group", {
+      name: "Фильтры учеников",
+      exact: true,
+    });
+    await mobileLearnerFilterPanel.waitFor();
+    await mobileLearnerFilterPanel.getByLabel("Состояние").waitFor();
+    await mobileLearnerFilterPanel.getByLabel("Аккаунт").waitFor();
+    await mobileLearnerFilterPanel.getByLabel("Конкретная группа").waitFor();
+    await mobileLearnerFilterPanel
+      .getByRole("group", {
+        name: "Принадлежность к группе",
+        exact: true,
+      })
+      .waitFor();
+    assert.equal(
+      await runtime.page.evaluate(() => {
+        const panel = document.querySelector<HTMLElement>(
+          ".student-directory-filter-menu .course-filter-popover",
+        );
+        if (!panel) throw new Error("Mobile Students filter panel is missing");
+        const rect = panel.getBoundingClientRect();
+        return (
+          rect.left >= 0 &&
+          rect.right <= document.documentElement.clientWidth &&
+          rect.width > 0
+        );
+      }),
+      true,
+    );
+    await mobileLearnerFilterTrigger.press("Escape");
+    await mobileLearnerFilterPanel.waitFor({ state: "hidden" });
+    assert.equal(
+      await runtime.page.evaluate(() =>
+        document.activeElement?.classList.contains("course-filter-trigger"),
+      ),
+      true,
+    );
   } finally {
     e2eCompletionPhase = null;
     e2eScheduleFixtureVisible = false;
@@ -6403,10 +6778,10 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       fontWeight: "400",
       baselineHeight: "1px",
       baselineColor: "rgba(20, 20, 20, 0.2)",
-      baselineLeft: "12px",
-      baselineRight: "12px",
-      tabsPaddingLeft: "12px",
-      tabsPaddingRight: "12px",
+      baselineLeft: "0px",
+      baselineRight: "0px",
+      tabsPaddingLeft: "0px",
+      tabsPaddingRight: "0px",
       markerHeight: "4px",
       markerColor: "rgb(20, 20, 20)",
       markerRadius: "0px",
