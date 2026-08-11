@@ -517,6 +517,16 @@ restart count `0`, state `running`. Production `/login` и `/robots.txt` отв�
 production action не применялся: запись Course/Lesson остаётся только за явным
 подтверждением владельца в обычной UI-сессии.
 
+Quick-reply follow-up входит в exact functional release
+`69a74a7c6a72f4491fef1314e32769c26fc72db7`. GitHub CI прошёл `438/438`,
+production build и отдельный Playwright click/history scenario зелёные. Coolify
+webhook deployment `qps8curjf688ndlmw95hdck2` завершился `Success` за 2 мин
+29 с; контрольный manual deployment `mbxvql93z9ctvswb0lu07ca8` — `Success` за
+22 с. Running container подтвердил exact `SOURCE_COMMIT`, image tag, image ID
+`sha256:ff300b42295b74685605a70b2dd25c29ea9e0758250be51e1f222af539f9690f`,
+restart count `0` и state `running`. HTTP login/robots — `200`, guest assistant
+POST — `401`; authenticated mutation postflight не выполнялся.
+
 ## Base Global System Assistant release acceptance
 
 Global System Assistant входит в functional release

@@ -326,8 +326,8 @@ course.add_lesson_with_plan | lesson.fill | lesson.delete`; chat ничего н
   existing Lesson переиспользуют canonical plan/preview/apply, показывают все
   Components и сохраняют существующий ordered list; delete показывает impact и
   проходит owner/fingerprint stale check;
-- current source сопровождает этот бинарный вопрос двумя structured quick
-  replies «Пустой урок / Готовый урок»: click остаётся обычным user turn,
+- deployed release `69a74a7` сопровождает этот бинарный вопрос двумя structured
+  quick replies «Пустой урок / Готовый урок»: click остаётся обычным user turn,
   варианты одноразовые и инвалидируются вместе с Course/Lesson context;
 - proposal HMAC-подписан на actor + idempotency key + exact action на 10 минут.
   UI допускает только одну pending карточку: «да»/кнопка применяют её без LLM,

@@ -4,7 +4,7 @@
 **Актуально на:** 11 августа 2026 года
 **Активная ветка:** `main`
 **Рабочее приложение:** `https://v2.shidao.ru`
-**Текущий функциональный application release:** `246cf49`
+**Текущий функциональный application release:** `69a74a7`
 **Последний полный automated/browser gate:** `246cf49`
 
 **Current production Course catalog slice:** реализует reusable Course catalog,
@@ -97,7 +97,7 @@ Account и открытой Course/Lesson, Students или выбранного 
 одну из пяти strict карточек: Course draft, пустую Lesson, новую наполненную
 Lesson, дополнение существующей Lesson или удаление Lesson. Неоднозначное
 «сделай урок» детерминированно уточняет, нужен пустой или наполненный вариант;
-current source показывает под этим вопросом две одноразовые кнопки «Пустой
+deployed follow-up показывает под этим вопросом две одноразовые кнопки «Пустой
 урок / Готовый урок». Выбор отправляется как обычная пользовательская реплика в
 тот же model-authored диалог, доступен только у последнего ответа в неизменном
 Course/Lesson context и исчезает после следующей реплики;
@@ -117,6 +117,16 @@ migration или физическую schema. Exact release
 restart count `0`, state `running`. `/login` и `/robots.txt` отвечают `200`, оба
 global assistant POST без Account session — `401`. Authenticated production
 action postflight намеренно не выполнялся.
+
+Quick-reply follow-up развернут exact functional SHA
+`69a74a7c6a72f4491fef1314e32769c26fc72db7`: GitHub CI прошёл `438/438`,
+production build и отдельный Playwright click/history scenario зелёные. Coolify
+webhook deployment `qps8curjf688ndlmw95hdck2` завершился `Success` за 2 мин
+29 с; контрольный manual deployment `mbxvql93z9ctvswb0lu07ca8` — `Success` за
+22 с. Running container подтвердил тот же `SOURCE_COMMIT`, image tag и image ID
+`sha256:ff300b42295b74685605a70b2dd25c29ea9e0758250be51e1f222af539f9690f`,
+restart count `0`, state `running`; `/login` и `/robots.txt` отвечают `200`,
+guest assistant POST — `401`.
 
 **Previous deployed data baseline:** поверх group/audience baseline были введены canonical
 `LearnerProfile`, teacher-local relation `teacher_learner` и явный provenance

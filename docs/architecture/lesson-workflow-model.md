@@ -24,8 +24,9 @@ explicit Apply может создать Course draft, пустую или на�
 дополнить существующую Lesson либо удалить exact Lesson. Наполнение
 переиспользует canonical Lesson plan/preview/apply и не создаёт Step или второй
 Component order; удаление вызывает тот же history-preserving `deleteLesson`.
-Base release `b7c6cfe` и exact conversational follow-up `246cf49` развёрнуты;
-новая Lesson/Component schema для этого не потребовалась.
+Base release `b7c6cfe`, exact conversational follow-up `246cf49` и quick-reply
+follow-up `69a74a7` развёрнуты; новая Lesson/Component schema для этого не
+потребовалась.
 
 ## Product decision
 
