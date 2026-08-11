@@ -489,12 +489,13 @@ ShiDao V2 application:
 - на Schedule/Students/Courses shared `ProductTableHead` имеет computed white
   background, а row dividers используют один
   `--product-table-divider-color`;
-- Course и Lesson tabs используют baseline 1 px цвета
-  `rgba(20, 20, 20, 0.2)` с inline-inset 12 px и квадратный чёрный active
-  segment 4 px без radius; numeric count идёт обычным текстом после label без
-  круга; каждый `aria-controls` tab разрешается в matching `tabpanel` с
-  обратным `aria-labelledby`, а на mobile вкладки скроллятся внутри strip без
-  document overflow;
+- Course, Lesson и остальные active-product `WorkspaceTabs` используют
+  edge-to-edge baseline 1 px цвета `rgba(20, 20, 20, 0.2)` без внешнего
+  inline-inset и квадратный чёрный active segment 4 px без radius; внутренний
+  padding самих tab остаётся 12 px, numeric count идёт обычным текстом после
+  label без круга; каждый `aria-controls` tab разрешается в matching
+  `tabpanel` с обратным `aria-labelledby`, а на mobile вкладки скроллятся
+  внутри strip без document overflow;
 - owner открывает Course, другой owner не может;
 - Lesson/Components загружаются;
 - private Component отсутствует в Student Screen;
@@ -552,10 +553,10 @@ ShiDao V2 application:
 - `/schedule` и `/students` сохраняют единый computed page-header contract с
   `/courses`, Course и Lesson; contextual actions находятся в header, а
   date/view controls — ниже него справа прямо на page background без внешней
-  toolbar-card. У прозрачной Schedule controls-панели проверить нулевой
-  horizontal padding: controls остаются справа, а последний control совпадает
-  с внешней границей content-row. Students/Courses по-прежнему имеют по 12 px
-  слева и справа и совпадают с внутренними границами page-header. Для Schedule
+  toolbar-card. У прозрачных Schedule и Students controls-панелей проверить
+  нулевой horizontal padding: controls остаются в пределах content-row, а
+  крайний control совпадает с его внешней границей. Courses сохраняет 12 px
+  слева и справа. Для Schedule
   проверить, что отдельного внешнего «Неделя /
   Месяц» нет: центральная кнопка compact date control открывает календарный
   popover с «День / Неделя / Месяц», выбор даты меняет опорную дату, а стрелки
@@ -609,14 +610,27 @@ ShiDao V2 application:
   `40 px / 12 px / .88rem / 400`, а primary/secondary/destructive actions —
   shared Button contrast без raw Tailwind visual fork. Landing, Auth и
   полноэкранный Student Screen при этом не должны измениться;
-- вкладки «Ученики / Группы / Наблюдение» сохраняют общий 20%-black 1 px
-  baseline, square opaque active-segment и plain inline counts без badge;
-  directory toolbar остаётся прозрачной и без outer card, имеет горизонтальный
-  inset 12 px,
-  active/archive/pending находятся в одной таблице с inline-чипами и
-  contextual restore/cancel actions, а поиск, group filter, sorting и reset
-  остаются одновременно видимыми и сохраняют значения после mutation/reload;
-  keyboard focus и dialogs проверяются без возврата teacher-only route gate;
+- `/students` показывает точный подзаголовок «Ученики и группы, с которыми вы
+  работаете или за которыми наблюдаете»; вкладки «Ученики / Группы /
+  Наблюдение» сохраняют общий edge-to-edge 20%-black 1 px baseline без
+  горизонтального inset, square opaque active-segment и plain inline counts
+  без badge;
+- directory toolbar остаётся прозрачной, без outer card и без горизонтального
+  inset. Поиск и единый disclosure «Фильтр» заменяют отдельные group/sort
+  select: внутри доступны status, membership «Все / В группе / Без группы»,
+  конкретная группа и состояние аккаунта, active-count/reset, Escape и
+  возврат focus. Active/archive/pending остаются в одной таблице с
+  contextual restore/cancel actions; сортировка выполняется кнопками в
+  заголовках, первый клик включает ascending, повторный — descending, а
+  `aria-sort` отражает направление;
+- Students table имеет exact 40 px header/data rows и колонки `Ученик / Статус
+/ Аккаунт / Группы / Добавлен / Действия`. В конце каждой строки расположен
+  keyboard/touch-доступный `MoreVertical` portal-menu; для active learner он
+  содержит профиль, учебную историю, группы, добавление в курс, связь с
+  аккаунтом и безопасное «Убрать из списка». «Написать сообщение» явно
+  disabled до появления messaging slice; добавление в курс сохраняет уже
+  выбранные direct learners и groups. Keyboard focus и dialogs проверяются без
+  возврата teacher-only route gate;
 - `/observing` перенаправляет на `/students?tab=observing`, reload сохраняет
   выбранную вкладку, а main navigation подсвечивает «Ученики»;
 - `/courses` проверяется в режимах «Карточки / Таблица»: controls лежат прямо
@@ -630,8 +644,10 @@ ShiDao V2 application:
   пояснения и видимого result count; client-only sort/content не добавляются;
 - на Schedule/Students/Courses table view измерить общий surface contract:
   активный `ProductTable` wrapper сплошной белый, border `0`, radius `12 px`;
-  карточки сохраняют отдельный radius `20 px`. Не требовать 40 px data-row у
-  Students/Courses: в этом slice их плотность не менялась;
+  карточки сохраняют отдельный radius `20 px`. Schedule и Students используют
+  exact 40 px header/data rows; Course table сохраняет свою multiline
+  плотность. Во всех sortable Schedule/Students/Groups заголовках сортируется
+  реальная projection, action heading остаётся несортируемым;
 - existing email и learner login/PIN создают одну Account session и не выводят
   internal Auth email/browser secret;
 - внутри directory-вкладок `/students` не скрывает archived/pending за

@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
+import {
+  nextProductTableSort,
+  type ProductTableSortState,
+} from "@/components/ui/product-table-sort";
 
 function source(path: string) {
   return readFileSync(path, "utf8");
@@ -69,4 +73,40 @@ test("action menus share canonical element geometry without card styling", () =>
     styles,
     /\.action-menu-item\s*\{[^}]*--course-demo-control-height,[^}]*--product-row-height,[^}]*align-items: center;[^}]*gap: 0\.5rem;[^}]*border: 0;[^}]*font-weight: var\(--course-demo-control-font-weight, 400\);/,
   );
+});
+
+test("product table sort state starts ascending and toggles per column", () => {
+  type SortKey = "name" | "groups";
+
+  const firstClick = nextProductTableSort<SortKey>(null, "name");
+  assert.deepEqual(firstClick, { key: "name", direction: "asc" });
+
+  const repeatClick = nextProductTableSort(firstClick, "name");
+  assert.deepEqual(repeatClick, { key: "name", direction: "desc" });
+
+  const newKeyClick = nextProductTableSort(repeatClick, "groups");
+  assert.deepEqual(newKeyClick, { key: "groups", direction: "asc" });
+
+  const typedState: ProductTableSortState<SortKey> = newKeyClick;
+  assert.equal(typedState.direction, "asc");
+});
+
+test("sortable product table headers keep native table and button accessibility", () => {
+  assert.match(productTableSource, /nextProductTableSort/);
+  assert.match(productTableSource, /type ProductTableSortDirection/);
+  assert.match(productTableSource, /type ProductTableSortState/);
+  assert.match(
+    productTableSource,
+    /export function ProductTableSortableHeaderCell/,
+  );
+  assert.match(
+    productTableSource,
+    /direction === "asc"[\s\S]*?"ascending"[\s\S]*?direction === "desc"[\s\S]*?"descending"[\s\S]*?"none"/,
+  );
+  assert.match(productTableSource, /aria-sort=\{ariaSort\}/);
+  assert.match(
+    productTableSource,
+    /<button[\s\S]*?type="button"[\s\S]*?onClick=\{onSort\}/,
+  );
+  assert.match(productTableSource, /<SortIcon[\s\S]*?aria-hidden="true"/);
 });

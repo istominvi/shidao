@@ -24,7 +24,7 @@ const courseCatalogPanel = readFileSync(
   "utf8",
 );
 
-test("Schedule is full-width while directory toolbars keep the 12px inset", () => {
+test("Schedule and Students are full-width while Courses keep the 12px inset", () => {
   assert.match(
     globalStyles,
     /\.course-demo-shell\s*\{[^}]*--course-demo-content-inset: 0\.75rem;/,
@@ -39,7 +39,11 @@ test("Schedule is full-width while directory toolbars keep the 12px inset", () =
   );
   assert.match(
     teachingHubStyles,
-    /\.student-directory-toolbar\s*\{[^}]*width: 100%;[^}]*max-width: 100%;[^}]*min-width: 0;[^}]*background: transparent;[^}]*padding-block: 0;[^}]*padding-inline: var\(--course-demo-content-inset, 0\.75rem\);/,
+    /\.student-directory-toolbar\s*\{[^}]*width: 100%;[^}]*max-width: 100%;[^}]*min-width: 0;[^}]*background: transparent;[^}]*padding-block: 0;[^}]*padding-inline: 0;/,
+  );
+  assert.match(
+    teachingHubStyles,
+    /\.student-directory-toolbar\.compact-page-toolbar\s*\{[^}]*padding-inline: 0;/,
   );
 
   assert.match(scheduleWorkspace, /className="teaching-hub-toolbar"/);
@@ -57,7 +61,7 @@ test("Schedule is full-width while directory toolbars keep the 12px inset", () =
   );
 });
 
-test("toolbar insets preserve the contained responsive control rails", () => {
+test("full-width toolbars preserve contained responsive control rails", () => {
   assert.match(
     globalStyles,
     /@media \(max-width: 900px\)[\s\S]*?\.compact-page-toolbar\s*\{[^}]*grid-template-columns: minmax\(0, 1fr\);/,
@@ -68,6 +72,6 @@ test("toolbar insets preserve the contained responsive control rails", () => {
   );
   assert.match(
     teachingHubStyles,
-    /\.student-directory-toolbar \.student-directory-controls\s*\{[^}]*width: 100%;[^}]*overflow-x: auto;[^}]*overflow-y: hidden;[^}]*flex-wrap: nowrap;/,
+    /@media \(max-width: 900px\)[\s\S]*?\.student-directory-toolbar \.student-directory-controls\s*\{[^}]*width: 100%;[^}]*justify-content: flex-start;[^}]*overflow: visible;[^}]*flex-wrap: wrap;[^}]*padding: 0;/,
   );
 });

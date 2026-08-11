@@ -50,6 +50,9 @@ import {
   ProductTableHeaderRow,
   ProductTablePrimaryCell,
   ProductTableRow,
+  ProductTableSortableHeaderCell,
+  nextProductTableSort,
+  type ProductTableSortState,
 } from "@/components/ui/product-table";
 import { SurfaceCard } from "@/components/ui/surface-card";
 import { toCourseRoute } from "@/lib/auth";
@@ -72,7 +75,71 @@ const timeFormatter = new Intl.DateTimeFormat("ru-RU", {
 
 type ScheduleViewMode = "table" | "cards";
 type SelectedRunMode = "default" | "edit";
+type ScheduleSortKey =
+  "date" | "time" | "lesson" | "course" | "participants" | "status";
 const SCHEDULE_RESULT_LIMIT = 500;
+
+const scheduleCollator = new Intl.Collator("ru-RU", {
+  numeric: true,
+  sensitivity: "base",
+});
+
+const scheduleStatusOrder: Record<ReturnType<typeof lessonRunState>, number> = {
+  active: 0,
+  attention: 1,
+  scheduled: 2,
+  completed: 3,
+  cancelled: 4,
+};
+
+function localMinutes(value: string) {
+  const date = new Date(value);
+  return date.getHours() * 60 + date.getMinutes();
+}
+
+function compareScheduleRuns(
+  left: LessonRun,
+  right: LessonRun,
+  key: ScheduleSortKey,
+) {
+  if (key === "date") {
+    const dateDifference =
+      new Date(left.scheduledAt).getTime() -
+      new Date(right.scheduledAt).getTime();
+    if (dateDifference !== 0) return dateDifference;
+  }
+  if (key === "time") {
+    const timeDifference =
+      localMinutes(left.scheduledAt) - localMinutes(right.scheduledAt);
+    if (timeDifference !== 0) return timeDifference;
+  } else if (key === "lesson") {
+    const lessonDifference = scheduleCollator.compare(
+      left.lessonTitle,
+      right.lessonTitle,
+    );
+    if (lessonDifference !== 0) return lessonDifference;
+  } else if (key === "course") {
+    const courseDifference = scheduleCollator.compare(
+      left.courseTitle,
+      right.courseTitle,
+    );
+    if (courseDifference !== 0) return courseDifference;
+  } else if (key === "participants") {
+    const participantDifference = left.records.length - right.records.length;
+    if (participantDifference !== 0) return participantDifference;
+  } else if (key === "status") {
+    const statusDifference =
+      scheduleStatusOrder[lessonRunState(left)] -
+      scheduleStatusOrder[lessonRunState(right)];
+    if (statusDifference !== 0) return statusDifference;
+  }
+
+  const timestampDifference =
+    new Date(left.scheduledAt).getTime() -
+    new Date(right.scheduledAt).getTime();
+  if (timestampDifference !== 0) return timestampDifference;
+  return left.id.localeCompare(right.id);
+}
 
 function scheduleRunStatus(run: LessonRun) {
   const state = lessonRunState(run);
@@ -179,6 +246,10 @@ export function ScheduleWorkspace() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [period, setPeriod] = useState<SchedulePeriod>("week");
   const [viewMode, setViewMode] = useState<ScheduleViewMode>("table");
+  const [sort, setSort] = useState<ProductTableSortState<ScheduleSortKey>>({
+    key: "date",
+    direction: "asc",
+  });
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
   const [selectedRunMode, setSelectedRunMode] =
     useState<SelectedRunMode>("default");
@@ -286,17 +357,14 @@ export function ScheduleWorkspace() {
     [runMutation],
   );
 
-  const visibleRuns = useMemo(
-    () =>
-      [...(runs ?? [])]
-        .filter((run) => !run.cancelledAt)
-        .sort(
-          (left, right) =>
-            new Date(left.scheduledAt).getTime() -
-            new Date(right.scheduledAt).getTime(),
-        ),
-    [runs],
-  );
+  const visibleRuns = useMemo(() => {
+    const direction = sort.direction === "asc" ? 1 : -1;
+    return [...(runs ?? [])]
+      .filter((run) => !run.cancelledAt)
+      .sort(
+        (left, right) => direction * compareScheduleRuns(left, right, sort.key),
+      );
+  }, [runs, sort]);
   const selectedRun =
     visibleRuns.find((run) => run.id === selectedRunId) ?? null;
   const selectedPeriodLabel =
@@ -422,12 +490,68 @@ export function ScheduleWorkspace() {
                 </colgroup>
                 <ProductTableHead>
                   <ProductTableHeaderRow>
-                    <ProductTableHeaderCell>Дата</ProductTableHeaderCell>
-                    <ProductTableHeaderCell>Время</ProductTableHeaderCell>
-                    <ProductTableHeaderCell>Урок</ProductTableHeaderCell>
-                    <ProductTableHeaderCell>Курс</ProductTableHeaderCell>
-                    <ProductTableHeaderCell>Ученики</ProductTableHeaderCell>
-                    <ProductTableHeaderCell>Статус</ProductTableHeaderCell>
+                    <ProductTableSortableHeaderCell
+                      direction={sort.key === "date" ? sort.direction : null}
+                      onSort={() =>
+                        setSort((current) =>
+                          nextProductTableSort(current, "date"),
+                        )
+                      }
+                    >
+                      Дата
+                    </ProductTableSortableHeaderCell>
+                    <ProductTableSortableHeaderCell
+                      direction={sort.key === "time" ? sort.direction : null}
+                      onSort={() =>
+                        setSort((current) =>
+                          nextProductTableSort(current, "time"),
+                        )
+                      }
+                    >
+                      Время
+                    </ProductTableSortableHeaderCell>
+                    <ProductTableSortableHeaderCell
+                      direction={sort.key === "lesson" ? sort.direction : null}
+                      onSort={() =>
+                        setSort((current) =>
+                          nextProductTableSort(current, "lesson"),
+                        )
+                      }
+                    >
+                      Урок
+                    </ProductTableSortableHeaderCell>
+                    <ProductTableSortableHeaderCell
+                      direction={sort.key === "course" ? sort.direction : null}
+                      onSort={() =>
+                        setSort((current) =>
+                          nextProductTableSort(current, "course"),
+                        )
+                      }
+                    >
+                      Курс
+                    </ProductTableSortableHeaderCell>
+                    <ProductTableSortableHeaderCell
+                      direction={
+                        sort.key === "participants" ? sort.direction : null
+                      }
+                      onSort={() =>
+                        setSort((current) =>
+                          nextProductTableSort(current, "participants"),
+                        )
+                      }
+                    >
+                      Ученики
+                    </ProductTableSortableHeaderCell>
+                    <ProductTableSortableHeaderCell
+                      direction={sort.key === "status" ? sort.direction : null}
+                      onSort={() =>
+                        setSort((current) =>
+                          nextProductTableSort(current, "status"),
+                        )
+                      }
+                    >
+                      Статус
+                    </ProductTableSortableHeaderCell>
                     <ProductTableHeaderCell
                       className="text-right"
                       aria-label="Действия"

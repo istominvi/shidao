@@ -235,7 +235,7 @@ test("course routes use the flat demo background and unified visual controls", (
   );
   assert.match(
     styles,
-    /\.workspace-tabs\s*\{[^}]*--workspace-tabs-inline-offset: 12px;[^}]*padding-inline: var\(--workspace-tabs-inline-offset\);/,
+    /\.workspace-tabs\s*\{[^}]*--workspace-tabs-inline-offset: 0px;[^}]*padding-inline: var\(--workspace-tabs-inline-offset\);/,
   );
   assert.match(
     styles,

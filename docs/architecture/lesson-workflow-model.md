@@ -4,7 +4,7 @@
 
 **Дата решения:** 5 августа 2026 года
 
-**Актуально на:** 11 августа 2026 года
+**Актуально на:** 12 августа 2026 года
 
 **Область:** Course Builder / Lesson / Components / Student Screen / audience / scheduling / learning history / course materials / homework
 
@@ -451,13 +451,15 @@ Visual contract Course routes не меняет эту навигационну�
   белые кнопки сохраняют тонкую серую рамку, а menu items остаются borderless;
 - radius tokens отделяют card surface 20 px от element/control/table/menu
   surface 12 px. Активные `ProductTable` wrappers используют table token,
-  сплошной белый фон и не имеют внешней рамки; это не задаёт общую 40 px
-  плотность строк Students/Courses. Их shared header белый, а row dividers
-  используют один `--product-table-divider-color`;
+  сплошной белый фон и не имеют внешней рамки. Students table использует
+  Schedule-плотность 40 px для header и data rows; Courses сохраняет свою
+  плотность. Shared header белый, а row dividers используют один
+  `--product-table-divider-color`;
 - `WorkspaceTabs` задаёт общий 40 px tab/tabpanel contract для Course, Lesson,
   Students и profile dialog: roving keyboard focus, horizontal scroll, базовая
-  линия 1 px цвета `rgba(20, 20, 20, 0.2)` с inline-inset 12 px и квадратный
-  чёрный active-сегмент 4 px без radius на этой же линии; numeric count
+  линия 1 px цвета `rgba(20, 20, 20, 0.2)`; container, scroll-row и baseline
+  канонически занимают всю ширину с `inline-inset: 0`. Квадратный чёрный
+  active-сегмент 4 px без radius лежит на этой же линии; numeric count
   является обычным inline-текстом после label, а не отдельным badge; каждый tab
   ссылается на постоянный matching `tabpanel`, который возвращает его id через
   `aria-labelledby`;
@@ -470,7 +472,8 @@ postflight на точном application release `77870e3`; flat controls и е�
 Settings-расширение относятся к current source следующего deployment.
 Intrinsic header-actions, 20%-black tabs baseline и plain inline counts также
 являются current-source UI-only polish: доменная модель, API, schema и migration
-не меняются.
+не меняются. Exact deployed release сохранял tabs inset 12 px; full-width
+container/baseline с нулевым inset относится только к current source.
 
 ## Roleless teaching hub navigation boundary
 
@@ -511,7 +514,9 @@ Current production делает `/schedule` и `/students` доступными
   `Ученики / Статус` и действия — справа, а `Урок / Курс` делят оставшуюся
   ширину. Все данные чёрные и однострочные, используют ellipsis и полные title;
   дата имеет вид `Среда · 12 авг`, время — `12:00 · 60 мин`, scheduled state
-  остаётся plain «Ожидается». Последняя колонка не имеет видимого заголовка:
+  остаётся plain «Ожидается». Видимые data-заголовки являются кнопками
+  сортировки: первый клик включает возрастание, повторный — убывание, а
+  направление публикуется через `aria-sort`. Последняя колонка не имеет видимого заголовка:
   строка назначенного урока показывает pointer при наведении, а постоянно
   доступное вертикальное троеточие ожидающего Run открывает точные действия
   «Начать урок / Изменить / Отменить»; active Run получает «Завершить урок /
@@ -527,17 +532,34 @@ Current production делает `/schedule` и `/students` доступными
   считается развёрнутой до успешного Coolify deploy и production postflight;
 - `/students` объединяет справочник TeacherLearner/LearnerProfile и
   LearnerGroup во вкладках «Ученики / Группы» с learner-safe observer
-  projection во вкладке «Наблюдение»; справочник сохраняет поиск, фильтр по
-  группе и сортировку. Active profiles, archived relations и исходящие pending
-  requests показаны в одной таблице: archive/pending отмечаются inline-чипами,
-  а restore/cancel доступны в этой же строке. Controls лежат прямо на page
-  background без отдельной toolbar-card, имеют горизонтальный inset 12 px и не
-  меняются от статуса; управление
-  relation не создаёт второй тип ученика. Active-строка показывает до двух
-  групп и «ещё N», а имя и archive state принадлежат relation конкретного
-  преподавателя; ученика можно создать, изменить и убрать из списка, а для
-  групп доступен CRUD; header action меняется между «Новый ученик» и «Новая
-  группа», а на вкладке «Наблюдение» mutation action отсутствует;
+  projection во вкладке «Наблюдение»; подзаголовок страницы — «Ученики и
+  группы, с которыми вы работаете или за которыми наблюдаете». Active
+  profiles, archived relations и исходящие pending requests показаны в одной
+  таблице: archive/pending отмечаются inline, а допустимые actions остаются в
+  этой же строке. Search расположен отдельно; status, membership «В группе /
+  Без группы», конкретная группа и Account connection собраны в disclosure
+  «Фильтр». Отдельного sort select нет: headers таблиц Students и Groups
+  переключают ascending/descending повторным кликом и используют
+  `aria-sort`. Controls лежат прямо на page background без toolbar-card,
+  занимают всю ширину с `padding-inline: 0` и не меняются от статуса;
+  Courses compact toolbars сохраняют inset 12 px. Students table повторяет
+  Schedule-геометрию с 40 px header/data rows и колонками
+  `Ученик / Статус / Аккаунт / Группы / Добавлен / actions`. «Статус»
+  показывает lifecycle relation/request, «Аккаунт» — identity connection, а
+  «Добавлен» — teacher-local дату relation или запроса. Имя и archive state
+  принадлежат relation конкретного преподавателя; управление relation не
+  создаёт второй тип ученика. Header action меняется между «Новый ученик» и
+  «Новая группа», а на вкладке «Наблюдение» mutation action отсутствует;
+- один `MoreVertical` в конце Students-row открывает contextual portal-menu.
+  Active profile можно открыть, изменить группы, добавить в выбранный Course
+  реальным flow с сохранением существующей group/direct audience или «Убрать
+  из списка». Пункт
+  «Написать сообщение» disabled и явно помечен как недоступный, поэтому
+  communication layer не заявляется реализованным. Archived profile и pending
+  request получают только допустимые restore/permanent-delete или cancel
+  actions; trigger/menu не превращаются в неявный row click. Это
+  current-source UI/application refinement поверх существующих Group/Course
+  audience boundaries без новой schema или migration;
 - клик по строке открывает dialog «Профиль / История»; membership допускает
   несколько групп, а history panel читает только LearningRecord, записанные
   текущим преподавателем;

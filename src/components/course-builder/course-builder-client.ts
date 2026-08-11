@@ -92,6 +92,14 @@ export async function courseBuilderRequest<T>(
   return payload as T;
 }
 
+export async function loadOwnedCourses(): Promise<CourseSummary[]> {
+  const payload = await courseBuilderRequest<{ courses: CourseSummary[] }>(
+    "/api/v2/courses",
+    { cache: "no-store" },
+  );
+  return payload.courses;
+}
+
 export async function loadCourseWorkspace(
   courseId: string,
 ): Promise<CourseWorkspace> {
