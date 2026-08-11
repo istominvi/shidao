@@ -22,6 +22,10 @@ const scheduleWorkspaceSource = readFileSync(
   "src/components/teaching-hub/schedule-workspace.tsx",
   "utf8",
 );
+const scheduleDatePickerSource = readFileSync(
+  "src/components/teaching-hub/schedule-date-picker.tsx",
+  "utf8",
+);
 const schedulePeriodSource = readFileSync(
   "src/components/teaching-hub/schedule-period.ts",
   "utf8",
@@ -113,13 +117,25 @@ test("schedule projects persisted LessonRun appointments without a parallel even
   assert.match(lessonRunClientSource, /\/api\/v2\/lesson-runs\?/);
   assert.match(scheduleWorkspaceSource, /loadSchedule/);
   assert.match(scheduleWorkspaceSource, /schedulePeriodRange/);
-  assert.match(scheduleWorkspaceSource, /shiftSchedulePeriod/);
   assert.match(scheduleWorkspaceSource, /useState<SchedulePeriod>\("week"\)/);
-  assert.match(scheduleWorkspaceSource, /aria-label="Период расписания"/);
-  assert.match(scheduleWorkspaceSource, />\s*Неделя\s*</);
-  assert.match(scheduleWorkspaceSource, />\s*Месяц\s*</);
-  assert.match(scheduleWorkspaceSource, /aria-pressed=\{period === "week"\}/);
-  assert.match(scheduleWorkspaceSource, /aria-pressed=\{period === "month"\}/);
+  assert.match(scheduleWorkspaceSource, /<ScheduleDatePicker/);
+  assert.doesNotMatch(
+    scheduleWorkspaceSource,
+    /teaching-schedule-period-switch/,
+  );
+  assert.match(scheduleDatePickerSource, /shiftSchedulePeriod/);
+  assert.match(scheduleDatePickerSource, /aria-haspopup="dialog"/);
+  assert.match(scheduleDatePickerSource, /aria-expanded=\{open\}/);
+  assert.match(scheduleDatePickerSource, /role="dialog"/);
+  assert.match(scheduleDatePickerSource, /role="grid"/);
+  assert.match(scheduleDatePickerSource, /data-date=\{dateValue\}/);
+  assert.match(scheduleDatePickerSource, /ariaLabel="Период расписания"/);
+  assert.match(scheduleDatePickerSource, /label: "День"/);
+  assert.match(scheduleDatePickerSource, /label: "Неделя"/);
+  assert.match(scheduleDatePickerSource, /label: "Месяц"/);
+  assert.match(scheduleDatePickerSource, /event\.key === "Escape"/);
+  assert.match(scheduleDatePickerSource, /closePopover\(true\)/);
+  assert.match(scheduleDatePickerSource, /handlePointerDown/);
   assert.match(scheduleWorkspaceSource, /<ProductTable/);
   assert.match(scheduleWorkspaceSource, /Показать таблицей/);
   assert.match(scheduleWorkspaceSource, /Показать карточками/);
@@ -137,6 +153,13 @@ test("schedule projects persisted LessonRun appointments without a parallel even
     />\s*(?:Все|Учитель|Родитель|Ученик)\s*</,
   );
   assert.match(schedulePeriodSource, /startOfLocalWeek/);
+  assert.match(
+    schedulePeriodSource,
+    /export type SchedulePeriod = "day" \| "week" \| "month"/,
+  );
+  assert.match(schedulePeriodSource, /period === "day"/);
+  assert.match(schedulePeriodSource, /direction \* 7/);
+  assert.match(schedulePeriodSource, /getMonth\(\) \+ direction/);
   assert.match(schedulePeriodSource, /from\.toISOString\(\)/);
   assert.match(schedulePeriodSource, /to\.toISOString\(\)/);
   assert.match(scheduleWorkspaceSource, /Занятий нет/);
@@ -149,7 +172,15 @@ test("schedule projects persisted LessonRun appointments without a parallel even
     scheduleWorkspaceSource,
     /aria-label=\{`Назначенные уроки за \$\{selectedPeriodLabel\}`\}/,
   );
-  assert.match(scheduleWorkspaceSource, /lessonRunStateLabel/);
+  assert.match(scheduleWorkspaceSource, />\s*Ученики\s*</);
+  assert.doesNotMatch(scheduleWorkspaceSource, />\s*Участники\s*</);
+  assert.match(scheduleWorkspaceSource, /label: "Ожидается"/);
+  assert.match(scheduleWorkspaceSource, /<ScheduleRunStatus run=\{run\} \/>/);
+  assert.doesNotMatch(scheduleWorkspaceSource, /<Chip/);
+  assert.match(
+    scheduleWorkspaceSource,
+    /productButtonClassName\("secondary"\)/,
+  );
   assert.match(scheduleWorkspaceSource, /selectedRunId/);
   assert.doesNotMatch(scheduleWorkspaceSource, /ScheduleEvent|LessonSession/);
 });

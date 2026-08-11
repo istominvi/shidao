@@ -87,6 +87,21 @@ Coolify webhook deployment exact functional SHA `587bb21` завершён со 
 Success за 2 минуты 33 секунды; running application указывает на тот же SHA.
 Authenticated production browser postflight этого slice пока не выполнен.
 
+**Current source Schedule calendar/table polish (ещё не развёрнут):** отдельный
+переключатель «Неделя / Месяц» удалён. Справа на фоне страницы компактный
+составной date control стоит перед icon-only выбором «Таблица / Карточки»:
+стрелки двигают назад или вперёд весь активный день, неделю либо месяц, а
+центральная кнопка показывает соответствующую подпись периода и открывает
+календарь. Выбор опорной даты выполняется в календаре, а «День / Неделя /
+Месяц» перенесены внутрь его popover. В таблице строка заголовков имеет точную
+высоту 40 px и меньший вес шрифта; столбец называется «Ученики», scheduled
+состояние показано простыми часами и текстом «Ожидается» без повторения даты и
+времени, а «Открыть план» оформлен постоянно видимой secondary-кнопкой. Текст
+строки унифицирован с `.88rem/400` control typography. Это UI-only изменение:
+LessonRun API, System Assistant boundary, schema и migrations не меняются;
+assistant по-прежнему получает только опорную локальную дату, а не всё видимое
+окно.
+
 **Current source Students/Courses controls slice (ещё не развёрнут):** панели
 управления `/students` и обеих вкладок `/courses` больше не создают отдельную
 toolbar-card: компактные 40 px controls расположены прямо на page background в
@@ -414,12 +429,16 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
 - В current source краткий Action «Назначить урок» с иконкой добавления в
   календарь находится в общей page-header action-секции, а подзаголовок прямо
   объясняет, что здесь находятся все назначенные уроки за выбранный период.
-  Прозрачная панель периода/вида находится ниже заголовка прямо на фоне
-  страницы. «Неделя / Месяц» меняет фактическое API-окно, а соседний control —
-  таблицу или карточки. Непустой результат начинается сразу с выбранного вида,
-  без повторного «Выбранная неделя / Занятия» и count-chip. System Assistant
-  намеренно продолжает получать только опорную локальную дату, а не всё видимое
-  окно.
+  Справа под header находятся compact date picker и icon-only control
+  «Таблица / Карточки». Отдельного переключателя периода на странице больше
+  нет: календарный popover объединяет выбор опорной даты и режимы «День /
+  Неделя / Месяц», а стрелки date control двигают именно выбранный период.
+  Непустой результат начинается сразу с выбранного вида, без повторного
+  «Выбранная неделя / Занятия» и count-chip. Table projection сохраняет точную
+  40 px строку заголовков, называет аудиторию «Ученики», выводит scheduled
+  state как plain «Ожидается» и постоянно показывает secondary Action
+  «Открыть план». System Assistant намеренно продолжает получать только
+  опорную локальную дату, а не всё видимое окно.
 - `/students` показывает единый teacher-scoped projection
   `TeacherLearner + LearnerProfile` во вкладках «Ученики / Группы» и
   независимую learner-safe вкладку «Наблюдение». Canonical observer URL —
@@ -959,7 +978,7 @@ positions, а плотность поддерживают текущие service
 | Lesson editor/Slides                 | `src/components/course-builder/lesson-authoring-workspace.tsx`                                                                                                                                                                                                                    |
 | Component editors/renderers          | `src/components/course-builder/component-payload-editor.tsx`, `component-renderers.tsx`                                                                                                                                                                                           |
 | Fullscreen preview                   | `src/components/course-builder/student-screen-preview.tsx`                                                                                                                                                                                                                        |
-| Account Schedule                     | `src/app/(app)/(teacher-required)/schedule/`, `src/components/teaching-hub/schedule-workspace.tsx`, `src/components/teaching-hub/schedule-period.ts`                                                                                                                              |
+| Account Schedule                     | `src/app/(app)/(teacher-required)/schedule/`, `src/components/teaching-hub/schedule-workspace.tsx`, `src/components/teaching-hub/schedule-date-picker.tsx`, `src/components/teaching-hub/schedule-period.ts`                                                                      |
 | Account Students                     | `src/app/(app)/(teacher-required)/students/`, `src/components/teaching-hub/students-workspace.tsx`, `src/components/teaching-hub/student-directory-table.tsx`                                                                                                                     |
 | Legacy-named Account route boundary  | `src/app/(app)/(teacher-required)/layout.tsx`, `src/lib/server/access-guards.ts`                                                                                                                                                                                                  |
 | V2 API routes                        | `src/app/api/v2/`                                                                                                                                                                                                                                                                 |

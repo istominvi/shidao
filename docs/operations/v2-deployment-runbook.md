@@ -539,13 +539,21 @@ ShiDao V2 application:
   каждом private route уходит в login;
 - `/schedule` и `/students` сохраняют единый computed page-header contract с
   `/courses`, Course и Lesson; contextual actions находятся в header, а
-  date/period/view controls — ниже него прямо на page background без внешней
-  toolbar-card; для Schedule проверить «Неделя / Месяц», шаг стрелок,
-  date picker и оба вида «Таблица / Карточки». Header должен показывать точный
+  date/view controls — ниже него справа прямо на page background без внешней
+  toolbar-card. Для Schedule проверить, что отдельного внешнего «Неделя /
+  Месяц» нет: центральная кнопка compact date control открывает календарный
+  popover с «День / Неделя / Месяц», выбор даты меняет опорную дату, а стрелки
+  сдвигают назад/вперёд активный целый день, неделю либо месяц. Проверить
+  закрытие Escape с возвратом focus, клавиатурную навигацию календаря, local
+  timezone и отсутствие document-level overflow на 375 px. Рядом должны
+  оставаться оба icon-only вида «Таблица / Карточки». Header показывает точный
   подзаголовок «Здесь все назначенные уроки за выбранный период.» и Action
   «Назначить урок» с calendar-plus icon; при непустом результате сразу после
   controls идёт таблица или карточки без summary «Выбранная неделя / Занятия»
-  и count-chip;
+  и count-chip. В table view дополнительно проверить exact 40 px header с
+  weight 600, «Ученики», одинаковую `.88rem/400` row typography, plain
+  clock + «Ожидается» без повторной даты/времени и постоянно видимую
+  secondary-кнопку «Открыть план»;
 - вкладки «Ученики / Группы / Наблюдение» сохраняют общий black 1 px baseline и square
   active-segment; directory toolbar остаётся прозрачной и без outer card,
   active/archive/pending находятся в одной таблице с inline-чипами и

@@ -21,15 +21,22 @@
   display: flex;
   min-width: 0;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 1rem;
+}
+
+.teaching-date-picker {
+  position: relative;
+  width: min(18.5rem, 100%);
+  max-width: 18.5rem;
+  min-width: min(14rem, 100%);
+  flex: 0 1 18.5rem;
 }
 
 .teaching-date-navigator {
   display: grid;
-  width: min(23rem, 100%);
+  width: 100%;
   height: var(--course-demo-control-height);
-  flex: 0 1 23rem;
   min-width: 0;
   grid-template-columns:
     var(--course-demo-control-height) minmax(0, 1fr)
@@ -69,12 +76,16 @@
   align-items: center;
   justify-content: center;
   gap: 0.45rem;
+  border: 0;
   border-right: 1px solid var(--teaching-control-border);
   border-left: 1px solid var(--teaching-control-border);
+  background: transparent;
   padding-inline: var(--course-demo-control-padding-inline);
   color: #141414;
+  font-family: inherit;
   font-size: var(--course-demo-control-font-size);
   font-weight: var(--course-demo-control-font-weight);
+  line-height: 1;
   text-align: center;
   cursor: pointer;
 }
@@ -86,22 +97,22 @@
   white-space: nowrap;
 }
 
-.teaching-date-trigger > svg {
+.teaching-date-trigger-icon,
+.teaching-date-trigger-chevron {
   flex: 0 0 auto;
   color: #8b8e97;
 }
 
-.teaching-date-trigger input {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  border: 0;
-  opacity: 0;
-  cursor: pointer;
+.teaching-date-trigger-chevron {
+  transition: transform 160ms ease;
 }
 
-.teaching-date-navigator > button:hover {
+.teaching-date-trigger[aria-expanded="true"] .teaching-date-trigger-chevron {
+  transform: rotate(180deg);
+}
+
+.teaching-date-navigator > button:hover,
+.teaching-date-trigger:hover {
   background: rgba(20, 20, 20, 0.05);
   color: #141414;
 }
@@ -112,10 +123,194 @@
 }
 
 .teaching-date-navigator > button:focus-visible,
-.teaching-date-trigger:focus-within {
+.teaching-date-trigger:focus-visible {
   z-index: 1;
   outline: 0;
   box-shadow: inset 0 0 0 2px rgba(20, 20, 20, 0.58);
+}
+
+.teaching-date-popover {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 0.55rem);
+  right: 0;
+  box-sizing: border-box;
+  width: min(22rem, calc(100vw - 2rem));
+  max-height: min(34rem, calc(100vh - 2rem));
+  overflow-y: auto;
+  border: 1px solid rgba(20, 20, 20, 0.1);
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.98);
+  padding: 0.75rem;
+  box-shadow:
+    0 24px 64px rgba(20, 20, 20, 0.16),
+    0 4px 16px rgba(20, 20, 20, 0.08);
+  backdrop-filter: blur(18px);
+}
+
+.teaching-date-popover:focus {
+  outline: none;
+}
+
+.teaching-date-popover-heading {
+  display: grid;
+  height: 2rem;
+  grid-template-columns: 2rem minmax(0, 1fr) 2rem;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.teaching-date-popover-heading h2 {
+  overflow: hidden;
+  margin: 0;
+  color: #141414;
+  font-size: var(--course-demo-control-font-size);
+  font-weight: 600;
+  line-height: 1;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.teaching-date-popover-heading button,
+.teaching-date-today {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 0.55rem;
+  background: transparent;
+  color: #626670;
+  font: inherit;
+  cursor: pointer;
+}
+
+.teaching-date-popover-heading button {
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+}
+
+.teaching-date-popover-heading button:hover,
+.teaching-date-today:hover {
+  background: rgba(20, 20, 20, 0.06);
+  color: #141414;
+}
+
+.teaching-date-popover-heading button:focus-visible,
+.teaching-date-today:focus-visible,
+.teaching-date-grid-cell button:focus-visible {
+  outline: 2px solid rgba(20, 20, 20, 0.58);
+  outline-offset: 1px;
+}
+
+.teaching-date-weekdays,
+.teaching-date-grid-row {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.2rem;
+}
+
+.teaching-date-weekdays {
+  margin-bottom: 0.2rem;
+}
+
+.teaching-date-weekdays span {
+  display: grid;
+  height: 1.75rem;
+  place-items: center;
+  color: #8b8e96;
+  font-size: 0.68rem;
+  font-weight: 600;
+}
+
+.teaching-date-grid {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.teaching-date-grid-cell {
+  display: grid;
+  min-width: 0;
+  place-items: center;
+}
+
+.teaching-date-grid-cell button {
+  display: inline-flex;
+  width: 100%;
+  height: 2rem;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 0.55rem;
+  background: transparent;
+  padding: 0;
+  color: #30333a;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 500;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.teaching-date-grid-cell button:hover {
+  background: rgba(20, 20, 20, 0.07);
+  color: #141414;
+}
+
+.teaching-date-grid-cell button.is-in-period {
+  background: rgba(20, 20, 20, 0.06);
+  color: #141414;
+}
+
+.teaching-date-grid-cell button.is-today:not(.is-selected) {
+  box-shadow: inset 0 0 0 1px rgba(20, 20, 20, 0.34);
+}
+
+.teaching-date-grid-cell button.is-selected {
+  background: #141414;
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(20, 20, 20, 0.2);
+}
+
+.teaching-date-grid-cell button.is-outside {
+  color: #a1a4aa;
+  opacity: 0.58;
+}
+
+.teaching-date-grid-cell button.is-selected.is-outside {
+  color: #fff;
+  opacity: 1;
+}
+
+.teaching-date-popover-footer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.55rem;
+  margin-top: 0.7rem;
+  border-top: 1px solid rgba(20, 20, 20, 0.08);
+  padding-top: 0.7rem;
+}
+
+.teaching-date-today {
+  width: max-content;
+  height: 2rem;
+  padding-inline: 0.65rem;
+  font-size: 0.78rem;
+  font-weight: 500;
+}
+
+.teaching-date-period-switch {
+  width: 100%;
+  min-width: 0;
+}
+
+.teaching-date-period-switch > button {
+  min-width: 0;
+  flex: 1;
+  padding-inline: 0.5rem;
 }
 
 .teaching-hub-search:focus-within {
@@ -124,7 +319,6 @@
 }
 
 .teaching-schedule-toolbar-actions,
-.teaching-schedule-period-switch,
 .teaching-schedule-view-toggle {
   display: flex;
   min-width: 0;
@@ -133,14 +327,14 @@
 
 .teaching-schedule-toolbar-actions {
   justify-content: flex-end;
-  gap: 1rem;
+  gap: 0.55rem;
 }
 
-.teaching-schedule-period-switch,
 .teaching-schedule-view-toggle {
   box-sizing: border-box;
   height: var(--course-demo-control-height);
   min-height: var(--course-demo-control-height);
+  flex: 0 0 auto;
   gap: 0.25rem;
   border-radius: var(--course-demo-control-radius);
   background: rgba(20, 20, 20, 0.05);
@@ -148,7 +342,6 @@
   box-shadow: inset 0 0 0 1px var(--teaching-control-border);
 }
 
-.teaching-schedule-period-switch button,
 .teaching-schedule-view-toggle button {
   display: inline-flex;
   box-sizing: border-box;
@@ -171,22 +364,16 @@
     box-shadow 160ms ease;
 }
 
-.teaching-schedule-period-switch button {
-  padding-inline: var(--course-demo-control-padding-inline);
-}
-
 .teaching-schedule-view-toggle button {
   width: 2rem;
   padding: 0;
 }
 
-.teaching-schedule-period-switch button:hover,
 .teaching-schedule-view-toggle button:hover {
   background: rgba(20, 20, 20, 0.06);
   color: #141414;
 }
 
-.teaching-schedule-period-switch button.is-active,
 .teaching-schedule-view-toggle button.is-active {
   background: #fff;
   color: #141414;
@@ -195,7 +382,6 @@
     0 4px 12px rgba(20, 20, 20, 0.06);
 }
 
-.teaching-schedule-period-switch button:focus-visible,
 .teaching-schedule-view-toggle button:focus-visible {
   outline: 2px solid rgba(20, 20, 20, 0.58);
   outline-offset: 2px;
@@ -828,6 +1014,21 @@
   min-width: 64rem;
 }
 
+.teaching-run-table thead tr,
+.teaching-run-table thead th {
+  height: var(--course-demo-control-height);
+}
+
+.teaching-run-table thead th {
+  padding-block: 0;
+  font-weight: 600;
+}
+
+.teaching-run-table tbody td {
+  font-size: var(--course-demo-control-font-size);
+  font-weight: 400;
+}
+
 .teaching-run-table-time,
 .teaching-run-table-lesson {
   display: grid;
@@ -837,26 +1038,30 @@
 .teaching-run-table-time strong,
 .teaching-run-table-lesson strong {
   color: #141414;
-  font-size: 0.82rem;
-  font-weight: 650;
+  font-size: var(--course-demo-control-font-size);
+  font-weight: 400;
 }
 
 .teaching-run-table-time span,
 .teaching-run-table-lesson small {
   color: #737780;
-  font-size: 0.7rem;
-  font-weight: 500;
+  font-size: var(--course-demo-control-font-size);
+  font-weight: 400;
 }
 
 .teaching-run-table-participants,
+.teaching-run-table-status,
 .teaching-run-table-actions {
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
 }
 
-.teaching-run-table-participants {
+.teaching-run-table-participants,
+.teaching-run-table-status {
   color: #646873;
+  font-size: var(--course-demo-control-font-size);
+  font-weight: 400;
 }
 
 .teaching-run-table-actions {
@@ -1293,20 +1498,26 @@
 }
 
 @media (max-width: 900px) {
-  .teaching-hub-toolbar,
   .teaching-section-heading-with-search {
     align-items: stretch;
     flex-direction: column;
   }
 
-  .teaching-date-navigator {
-    width: 100%;
-    flex: none;
-  }
-
   .teaching-schedule-toolbar-actions {
     width: 100%;
-    justify-content: space-between;
+    max-width: 100%;
+    justify-content: flex-end;
+    flex-wrap: nowrap;
+  }
+
+  .teaching-date-picker {
+    min-width: 0;
+    flex: 1 1 18.5rem;
+  }
+
+  .teaching-date-popover {
+    right: auto;
+    left: 0;
   }
 
   .teaching-hub-search {
@@ -1395,13 +1606,11 @@
   .course-audience-options {
     grid-template-columns: 1fr;
   }
+}
 
-  .teaching-schedule-period-switch {
-    flex: 1;
-  }
-
-  .teaching-schedule-period-switch button {
-    flex: 1;
+@media (max-width: 420px) {
+  .teaching-date-trigger-icon {
+    display: none;
   }
 }
 

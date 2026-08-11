@@ -465,9 +465,18 @@ Current production делает `/schedule` и `/students` доступными
   page background расположены compound date navigator, «Неделя / Месяц» и
   «Таблица / Карточки»; внешней toolbar-card у controls нет. Стрелки двигают
   целый период, а выбор даты задаёт его опорный день. В current source Action
-  сокращён до «Назначить урок» и использует calendar-plus icon; непустая
-  projection после controls не повторяет период, заголовок «Занятия» или
-  видимый result count, но сохраняет доступное имя секции и caption таблицы;
+  сокращён до «Назначить урок» и использует calendar-plus icon. Внешний
+  переключатель периода удалён: компактный right-aligned date picker объединяет
+  центральную подпись периода, календарный popover и внутренний selector
+  «День / Неделя / Месяц»; стрелки сдвигают назад или вперёд именно выбранный
+  период. Рядом остаётся icon-only «Таблица / Карточки». Непустая projection
+  после controls не повторяет период, заголовок «Занятия» или видимый result
+  count, но сохраняет доступное имя секции и caption таблицы. Table header
+  имеет exact 40 px и weight 600; row typography — `.88rem/400`, аудитория
+  называется «Ученики», scheduled state выводится часами и plain
+  «Ожидается» без дублирования даты/времени, а «Открыть план» остаётся постоянно
+  видимой secondary-кнопкой. Этот current source polish меняет только UI:
+  LessonRun API/schema и migrations не меняются;
 - `/students` объединяет справочник TeacherLearner/LearnerProfile и
   LearnerGroup во вкладках «Ученики / Группы» с learner-safe observer
   projection во вкладке «Наблюдение»; справочник сохраняет поиск, фильтр по
@@ -694,7 +703,8 @@ Implementation map:
 - authoring UI: `src/components/course-builder/lesson-authoring-workspace.tsx`;
 - scheduling domain/service: `src/modules/lesson-runs/`;
 - scheduling/history UI: `src/components/lesson-runs/`,
-  `src/components/teaching-hub/`;
+  `src/components/teaching-hub/`; integrated Schedule period/date control —
+  `schedule-date-picker.tsx` и `schedule-period.ts`;
 - scheduling API: `src/app/api/v2/lesson-runs/`, `learner-profiles/` и
   `learner-groups/`, Course/Lesson `audience|history|runs` routes;
 - identity contracts/service/repositories: `src/modules/learner-identity/`;
@@ -753,10 +763,11 @@ surface-specific projection: current Course/Lesson с разрешённой his
 Students/Groups либо Schedule выбранного дня. Technical/Auth/Storage IDs и file
 contents исключены.
 
-Schedule week/month follow-up не расширяет этот AI boundary: assistant получает
-только опорную `localDate` текущего period control и server-side по-прежнему
-читает один разрешённый день. Видимое календарное окно нельзя описывать модели
-как полностью загруженный week/month context без отдельного contract change.
+Schedule day/week/month presentation не расширяет этот AI boundary: assistant
+получает только опорную `localDate` integrated calendar control и server-side
+по-прежнему читает один разрешённый день. Видимое календарное окно нельзя
+описывать модели как полностью загруженный day/week/month context без отдельного
+contract change.
 
 Current deployed signed conversational follow-up возвращает ответ или максимум
 одно strict proposal. Provider ничего не записывает. Action card и отдельный

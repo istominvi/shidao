@@ -321,6 +321,7 @@ const E2E_COMPLETION_RECORD_IDS = [
 ] as const;
 
 let e2eCompletionPhase: 0 | 1 | 2 | null = null;
+let e2eScheduleFixtureVisible = false;
 const e2eCompletionPayloads: E2ECompletionPayload[] = [];
 const e2eCompletedLearningRecordRows: E2ELearningRecordRow[] = [];
 
@@ -367,6 +368,24 @@ function e2eCompletionRunRow(
 }
 
 function e2eCompletionRunRows(): E2ELessonRunRow[] {
+  if (e2eScheduleFixtureVisible) {
+    return [
+      {
+        id: E2E_COMPLETION_PRIVATE_RUN_ID,
+        lesson_id: E2E_LESSON_ID,
+        scheduled_at: "2026-08-12T02:00:00.000Z",
+        planned_duration_minutes: 60,
+        actual_duration_minutes: null,
+        started_at: null,
+        started_at_is_actual: false,
+        ended_at: null,
+        cancelled_at: null,
+        teacher_report: null,
+        created_at: "2026-08-11T02:00:00.000Z",
+        updated_at: "2026-08-11T02:00:00.000Z",
+      },
+    ];
+  }
   if (e2eCompletionPhase === null) return [];
   if (e2eCompletionPhase === 0) return [e2eCompletionRunRow(0, false)];
   if (e2eCompletionPhase === 1) {
@@ -515,6 +534,13 @@ type PlaywrightChromium = {
         }>,
       ) => Promise<void>;
       newPage: () => Promise<{
+        clock: {
+          setFixedTime: (time: string | Date | number) => Promise<void>;
+        };
+        setViewportSize: (viewport: {
+          width: number;
+          height: number;
+        }) => Promise<void>;
         goto: (
           url: string,
           options?: { waitUntil?: "domcontentloaded" | "networkidle" },
@@ -542,7 +568,7 @@ type PlaywrightChromium = {
         url: () => string;
         waitForResponse: (
           predicate: (response: { url: () => string }) => boolean,
-        ) => Promise<unknown>;
+        ) => Promise<{ url: () => string }>;
         waitForURL: (
           url: string | RegExp,
           options?: {
@@ -2541,6 +2567,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
   const runtime = await openPage({ cookie: teacherCookie });
 
   try {
+    await runtime.page.clock.setFixedTime("2026-08-11T00:00:00+10:00");
     await runtime.page.goto("/schedule", { waitUntil: "networkidle" });
     await runtime.page
       .getByRole("heading", { name: "Расписание", exact: true, level: 1 })
@@ -2549,38 +2576,186 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       .getByRole("heading", { name: "Занятий нет", exact: true, level: 2 })
       .waitFor();
 
-    const weekButton = runtime.page.getByRole("button", {
+    assert.equal(
+      await runtime.page.locator(".teaching-schedule-period-switch").count(),
+      0,
+    );
+
+    const dateTrigger = runtime.page.locator(".teaching-date-trigger");
+    assert.equal(await dateTrigger.getAttribute("aria-haspopup"), "dialog");
+    assert.equal(await dateTrigger.getAttribute("aria-expanded"), "false");
+
+    await dateTrigger.click();
+    const dateDialog = runtime.page.getByRole("dialog");
+    await dateDialog.waitFor();
+    assert.equal(await dateTrigger.getAttribute("aria-expanded"), "true");
+    const periodGroup = dateDialog.getByRole("group", {
+      name: "Период расписания",
+      exact: true,
+    });
+    const dayButton = periodGroup.getByRole("button", {
+      name: "День",
+      exact: true,
+    });
+    const weekButton = periodGroup.getByRole("button", {
       name: "Неделя",
       exact: true,
     });
-    const monthButton = runtime.page.getByRole("button", {
+    const monthButton = periodGroup.getByRole("button", {
       name: "Месяц",
       exact: true,
     });
+    assert.equal(await dayButton.getAttribute("aria-pressed"), "false");
     assert.equal(await weekButton.getAttribute("aria-pressed"), "true");
     assert.equal(await monthButton.getAttribute("aria-pressed"), "false");
 
-    await Promise.all([
-      runtime.page.waitForResponse((response) =>
-        response.url().includes("/api/v2/lesson-runs?"),
-      ),
-      monthButton.click(),
-    ]);
+    const initiallyFocusedDay = runtime.page.locator(
+      ".teaching-date-grid button:focus",
+    );
+    await initiallyFocusedDay.waitFor();
+    const initialFocusedDate =
+      await initiallyFocusedDay.getAttribute("data-date");
+    assert.ok(initialFocusedDate);
+    const nextFocusedDate = new Date(`${initialFocusedDate}T12:00:00.000Z`);
+    nextFocusedDate.setUTCDate(nextFocusedDate.getUTCDate() + 1);
+    const nextFocusedDateValue = nextFocusedDate.toISOString().slice(0, 10);
+    await initiallyFocusedDay.press("ArrowRight");
     await runtime.page
-      .getByRole("heading", { name: "Занятий нет", exact: true, level: 2 })
+      .locator(
+        `.teaching-date-grid button[data-date="${nextFocusedDateValue}"]:focus`,
+      )
       .waitFor();
-    assert.equal(await monthButton.getAttribute("aria-pressed"), "true");
+    assert.equal(
+      await runtime.page.evaluate(() =>
+        document.activeElement?.getAttribute("data-date"),
+      ),
+      nextFocusedDateValue,
+    );
 
-    await Promise.all([
-      runtime.page.waitForResponse((response) =>
-        response.url().includes("/api/v2/lesson-runs?"),
+    const currentMonthHeading =
+      (
+        await dateDialog.getByRole("heading", { level: 2 }).textContent()
+      )?.trim() ?? "";
+    await dateDialog
+      .getByRole("button", {
+        name: "Следующий месяц календаря",
+        exact: true,
+      })
+      .click();
+    await runtime.page.locator(".teaching-date-grid button:focus").waitFor();
+    const nextMonthFocusContract = await runtime.page.evaluate(() => {
+      const dialog = document.querySelector<HTMLElement>(
+        ".teaching-date-popover",
+      );
+      const grid = dialog?.querySelector<HTMLElement>(".teaching-date-grid");
+      const heading = dialog?.querySelector<HTMLHeadingElement>("h2");
+      const tabStops = Array.from(
+        grid?.querySelectorAll<HTMLButtonElement>('button[tabindex="0"]') ?? [],
+      );
+      const focusedElement = document.activeElement;
+      return {
+        monthHeading: heading?.textContent?.trim() ?? "",
+        tabStopCount: tabStops.length,
+        focusedDayIsOnlyTabStop:
+          tabStops.length === 1 && focusedElement === tabStops[0],
+        focusedDayIsInVisibleGrid: Boolean(
+          focusedElement && grid?.contains(focusedElement),
+        ),
+      };
+    });
+    assert.notEqual(nextMonthFocusContract.monthHeading, currentMonthHeading);
+    assert.deepEqual(
+      {
+        tabStopCount: nextMonthFocusContract.tabStopCount,
+        focusedDayIsOnlyTabStop: nextMonthFocusContract.focusedDayIsOnlyTabStop,
+        focusedDayIsInVisibleGrid:
+          nextMonthFocusContract.focusedDayIsInVisibleGrid,
+      },
+      {
+        tabStopCount: 1,
+        focusedDayIsOnlyTabStop: true,
+        focusedDayIsInVisibleGrid: true,
+      },
+    );
+
+    await dateDialog.press("Escape");
+    await dateDialog.waitFor({ state: "detached" });
+    await runtime.page.locator(".teaching-date-trigger:focus").waitFor();
+    assert.equal(
+      await runtime.page.evaluate(() =>
+        document.activeElement?.classList.contains("teaching-date-trigger"),
       ),
-      weekButton.click(),
-    ]);
+      true,
+    );
+
+    await dateTrigger.click();
+    await runtime.page.getByRole("dialog").waitFor();
     await runtime.page
-      .getByRole("heading", { name: "Занятий нет", exact: true, level: 2 })
-      .waitFor();
-    assert.equal(await weekButton.getAttribute("aria-pressed"), "true");
+      .getByRole("heading", { name: "Расписание", exact: true, level: 1 })
+      .click();
+    await runtime.page.getByRole("dialog").waitFor({ state: "detached" });
+
+    function readScheduleWindow(response: { url: () => string }) {
+      const query = new URL(response.url()).searchParams;
+      const from = query.get("from");
+      const to = query.get("to");
+      assert.ok(from);
+      assert.ok(to);
+      return {
+        from: new Date(from).getTime(),
+        to: new Date(to).getTime(),
+      };
+    }
+
+    async function selectPeriod(label: "День" | "Неделя" | "Месяц") {
+      await dateTrigger.click();
+      const dialog = runtime.page.getByRole("dialog");
+      await dialog.waitFor();
+      const responsePromise = runtime.page.waitForResponse((response) =>
+        response.url().includes("/api/v2/lesson-runs?"),
+      );
+      await dialog
+        .getByRole("group", {
+          name: "Период расписания",
+          exact: true,
+        })
+        .getByRole("button", { name: label, exact: true })
+        .click();
+      const window = readScheduleWindow(await responsePromise);
+      await dialog.press("Escape");
+      await dialog.waitFor({ state: "detached" });
+      return window;
+    }
+
+    async function shiftPeriod(buttonName: string) {
+      const responsePromise = runtime.page.waitForResponse((response) =>
+        response.url().includes("/api/v2/lesson-runs?"),
+      );
+      await runtime.page
+        .getByRole("button", { name: buttonName, exact: true })
+        .click();
+      return readScheduleWindow(await responsePromise);
+    }
+
+    const dayWindow = await selectPeriod("День");
+    assert.equal(dayWindow.to - dayWindow.from, 24 * 60 * 60 * 1_000);
+    const nextDayWindow = await shiftPeriod("Следующий день");
+    assert.equal(nextDayWindow.from, dayWindow.to);
+    const restoredDayWindow = await shiftPeriod("Предыдущий день");
+    assert.deepEqual(restoredDayWindow, dayWindow);
+
+    const weekWindow = await selectPeriod("Неделя");
+    assert.equal(weekWindow.to - weekWindow.from, 7 * 24 * 60 * 60 * 1_000);
+    const nextWeekWindow = await shiftPeriod("Следующая неделя");
+    assert.equal(nextWeekWindow.from, weekWindow.to);
+    const restoredWeekWindow = await shiftPeriod("Предыдущая неделя");
+    assert.deepEqual(restoredWeekWindow, weekWindow);
+
+    const monthWindow = await selectPeriod("Месяц");
+    const nextMonthWindow = await shiftPeriod("Следующий месяц");
+    assert.equal(nextMonthWindow.from, monthWindow.to);
+    const restoredMonthWindow = await shiftPeriod("Предыдущий месяц");
+    assert.deepEqual(restoredMonthWindow, monthWindow);
 
     const scheduleContract = await runtime.page.evaluate(() => {
       const shell = document.querySelector<HTMLElement>(".course-demo-shell");
@@ -2598,12 +2773,11 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       const dateNavigator = document.querySelector<HTMLElement>(
         ".teaching-date-navigator",
       );
-      const dateTrigger = document.querySelector<HTMLElement>(
-        ".teaching-date-trigger",
+      const datePicker = document.querySelector<HTMLElement>(
+        ".teaching-date-picker",
       );
-      const dateInput = dateTrigger?.querySelector<HTMLInputElement>("input");
-      const periodSwitch = document.querySelector<HTMLElement>(
-        ".teaching-schedule-period-switch",
+      const toolbarActions = document.querySelector<HTMLElement>(
+        ".teaching-schedule-toolbar-actions",
       );
       const viewToggle = document.querySelector<HTMLElement>(
         ".teaching-schedule-view-toggle",
@@ -2625,16 +2799,13 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         !description ||
         !headerActions ||
         !toolbar ||
+        !toolbarActions ||
         !dateNavigator ||
-        !dateTrigger ||
-        !dateInput ||
-        !periodSwitch ||
+        !datePicker ||
         !viewToggle
       ) {
         throw new Error("Schedule shell contract is missing");
       }
-
-      dateInput.focus();
 
       const pageHeaderStyle = getComputedStyle(pageHeader);
       const titleStyle = getComputedStyle(title);
@@ -2643,6 +2814,10 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       const dateNavigatorStyle = getComputedStyle(dateNavigator);
       const pageHeaderRect = pageHeader.getBoundingClientRect();
       const headerActionsRect = headerActions.getBoundingClientRect();
+      const toolbarRect = toolbar.getBoundingClientRect();
+      const toolbarActionsRect = toolbarActions.getBoundingClientRect();
+      const dateNavigatorRect = dateNavigator.getBoundingClientRect();
+      const viewToggleRect = viewToggle.getBoundingClientRect();
 
       return {
         backgroundColor: getComputedStyle(shell).backgroundColor,
@@ -2679,14 +2854,16 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         dateNavigator: {
           backgroundColor: dateNavigatorStyle.backgroundColor,
           height: dateNavigatorStyle.height,
+          width: dateNavigatorRect.width,
         },
-        dateFocusShadow: getComputedStyle(dateTrigger).boxShadow,
-        periodButtons: Array.from(periodSwitch.querySelectorAll("button")).map(
-          (button) => ({
-            label: button.textContent?.trim() ?? "",
-            pressed: button.getAttribute("aria-pressed"),
-          }),
-        ),
+        controlsLayout: {
+          rightDelta: Math.abs(toolbarRect.right - toolbarActionsRect.right),
+          dateBeforeView: dateNavigatorRect.right <= viewToggleRect.left,
+          compactDateControl: dateNavigatorRect.width <= 352,
+          externalPeriodSwitchCount: document.querySelectorAll(
+            ".teaching-schedule-period-switch",
+          ).length,
+        },
         viewButtons: Array.from(viewToggle.querySelectorAll("button")).map(
           (button) => ({
             label: button.getAttribute("aria-label"),
@@ -2716,15 +2893,18 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       boxShadow: "none",
       paddingTop: "0px",
     });
-    assert.deepEqual(scheduleContract.dateNavigator, {
-      backgroundColor: "rgb(255, 255, 255)",
-      height: "40px",
+    assert.equal(
+      scheduleContract.dateNavigator.backgroundColor,
+      "rgb(255, 255, 255)",
+    );
+    assert.equal(scheduleContract.dateNavigator.height, "40px");
+    assert.ok(scheduleContract.dateNavigator.width <= 352);
+    assert.deepEqual(scheduleContract.controlsLayout, {
+      rightDelta: 0,
+      dateBeforeView: true,
+      compactDateControl: true,
+      externalPeriodSwitchCount: 0,
     });
-    assert.match(scheduleContract.dateFocusShadow, /inset/);
-    assert.deepEqual(scheduleContract.periodButtons, [
-      { label: "Неделя", pressed: "true" },
-      { label: "Месяц", pressed: "false" },
-    ]);
     assert.deepEqual(scheduleContract.viewButtons, [
       { label: "Показать таблицей", pressed: "true" },
       { label: "Показать карточками", pressed: "false" },
@@ -2741,13 +2921,42 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
     assert.doesNotMatch(html, /Назначить урок в курсе/);
     assert.doesNotMatch(html, /Миша Орлов|Food around the world/);
 
-    resetE2eCompletionFlow();
-    await Promise.all([
-      runtime.page.waitForResponse((response) =>
-        response.url().includes("/api/v2/lesson-runs?"),
+    e2eCompletionPhase = null;
+    e2eScheduleFixtureVisible = true;
+    await dateTrigger.click();
+    const fixtureDateDialog = runtime.page.getByRole("dialog");
+    await fixtureDateDialog.waitFor();
+    const weekResponsePromise = runtime.page.waitForResponse((response) =>
+      response.url().includes("/api/v2/lesson-runs?"),
+    );
+    await fixtureDateDialog
+      .getByRole("group", {
+        name: "Период расписания",
+        exact: true,
+      })
+      .getByRole("button", { name: "Неделя", exact: true })
+      .click();
+    const fixtureWeekWindow = readScheduleWindow(await weekResponsePromise);
+    assert.equal(
+      fixtureWeekWindow.to - fixtureWeekWindow.from,
+      7 * 24 * 60 * 60 * 1_000,
+    );
+
+    const dateResponsePromise = runtime.page.waitForResponse((response) =>
+      response.url().includes("/api/v2/lesson-runs?"),
+    );
+    await runtime.page
+      .locator('.teaching-date-grid button[data-date="2026-08-12"]')
+      .click();
+    readScheduleWindow(await dateResponsePromise);
+    await fixtureDateDialog.waitFor({ state: "detached" });
+    assert.equal(await dateTrigger.getAttribute("aria-expanded"), "false");
+    assert.equal(
+      await runtime.page.evaluate(() =>
+        document.activeElement?.classList.contains("teaching-date-trigger"),
       ),
-      runtime.page.getByLabel("Выбрать дату расписания").fill("2026-08-07"),
-    ]);
+      true,
+    );
     const scheduleTable = runtime.page.getByRole("table", {
       name: "Занятия за выбранную неделю",
       exact: true,
@@ -2781,6 +2990,95 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       /Present Perfect · жизненный опыт/,
     );
 
+    const scheduleTableContract = await runtime.page.evaluate(() => {
+      const table = document.querySelector<HTMLTableElement>(
+        ".teaching-run-table",
+      );
+      const headerRow = table?.querySelector<HTMLTableRowElement>("thead tr");
+      const headerCells = Array.from(
+        table?.querySelectorAll<HTMLTableCellElement>("thead th") ?? [],
+      );
+      const status = table?.querySelector<HTMLElement>(
+        ".teaching-run-table-status",
+      );
+      const openPlan = Array.from(
+        table?.querySelectorAll<HTMLAnchorElement>("a") ?? [],
+      ).find((link) => link.textContent?.trim() === "Открыть план");
+      const bodyTextElements = Array.from(
+        table?.querySelectorAll<HTMLElement>(
+          ".teaching-run-table-time strong, .teaching-run-table-time span, .teaching-run-table-lesson strong, .teaching-run-table-lesson small, .teaching-run-table-participants, .teaching-run-table-status",
+        ) ?? [],
+      );
+      if (!table || !headerRow || !status || !openPlan) {
+        throw new Error("Schedule table visual contract is missing");
+      }
+      const statusStyle = getComputedStyle(status);
+      const openPlanStyle = getComputedStyle(openPlan);
+      return {
+        headerLabels: headerCells.map((cell) => cell.textContent?.trim() ?? ""),
+        headerRowHeight: headerRow.getBoundingClientRect().height,
+        headerCellHeights: headerCells.map(
+          (cell) => cell.getBoundingClientRect().height,
+        ),
+        headerWeights: headerCells.map(
+          (cell) => getComputedStyle(cell).fontWeight,
+        ),
+        bodyTypography: bodyTextElements.map((element) => ({
+          fontSize: getComputedStyle(element).fontSize,
+          fontWeight: getComputedStyle(element).fontWeight,
+        })),
+        status: {
+          text: status.textContent?.trim() ?? "",
+          backgroundColor: statusStyle.backgroundColor,
+          borderTopWidth: statusStyle.borderTopWidth,
+          borderRadius: statusStyle.borderRadius,
+        },
+        openPlan: {
+          borderStyle: openPlanStyle.borderStyle,
+          borderWidth: openPlanStyle.borderWidth,
+          backgroundColor: openPlanStyle.backgroundColor,
+          visibility: openPlanStyle.visibility,
+        },
+      };
+    });
+    assert.deepEqual(scheduleTableContract.headerLabels, [
+      "Дата и время",
+      "Урок",
+      "Ученики",
+      "Статус",
+      "Действия",
+    ]);
+    assert.equal(scheduleTableContract.headerRowHeight, 40);
+    assert.ok(
+      scheduleTableContract.headerCellHeights.every((height) => height === 40),
+    );
+    assert.ok(
+      scheduleTableContract.headerWeights.every((weight) => weight === "600"),
+    );
+    assert.ok(scheduleTableContract.bodyTypography.length >= 6);
+    assert.ok(
+      scheduleTableContract.bodyTypography.every(
+        ({ fontSize, fontWeight }) =>
+          fontSize === "14.08px" && fontWeight === "400",
+      ),
+    );
+    assert.deepEqual(scheduleTableContract.status, {
+      text: "Ожидается",
+      backgroundColor: "rgba(0, 0, 0, 0)",
+      borderTopWidth: "0px",
+      borderRadius: "0px",
+    });
+    assert.doesNotMatch(
+      scheduleTableContract.status.text,
+      /завтра|\d{1,2}:\d{2}/i,
+    );
+    assert.deepEqual(scheduleTableContract.openPlan, {
+      borderStyle: "solid",
+      borderWidth: "1px",
+      backgroundColor: "rgba(255, 255, 255, 0.98)",
+      visibility: "visible",
+    });
+
     await runtime.page
       .getByRole("button", { name: "Показать карточками", exact: true })
       .click();
@@ -2797,7 +3095,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         exact: true,
       })
       .waitFor();
-    e2eCompletionPhase = null;
+    e2eScheduleFixtureVisible = false;
 
     const studentsLink = runtime.page.getByRole("link", {
       name: "Ученики",
@@ -3136,6 +3434,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
     assert.equal(studentsCurrent, "page");
   } finally {
     e2eCompletionPhase = null;
+    e2eScheduleFixtureVisible = false;
     await runtime.close();
   }
 });
@@ -3921,7 +4220,8 @@ test("browser smoke: mobile Account menu exposes primary sections and account ac
     return;
   }
 
-  resetE2eCompletionFlow();
+  e2eCompletionPhase = null;
+  e2eScheduleFixtureVisible = false;
   e2eArchivedLearnerRestored = false;
   const runtime = await openPage({
     cookie: authenticatedCookieValue(),
@@ -3929,6 +4229,7 @@ test("browser smoke: mobile Account menu exposes primary sections and account ac
   });
 
   try {
+    await runtime.page.clock.setFixedTime("2026-08-11T00:00:00+10:00");
     await runtime.page.goto("/schedule", { waitUntil: "networkidle" });
     await runtime.page
       .getByRole("heading", { name: "Занятий нет", exact: true, level: 2 })
@@ -3938,17 +4239,17 @@ test("browser smoke: mobile Account menu exposes primary sections and account ac
       const navigator = document.querySelector<HTMLElement>(
         ".teaching-date-navigator",
       );
-      const periodSwitch = document.querySelector<HTMLElement>(
-        ".teaching-schedule-period-switch",
+      const picker = document.querySelector<HTMLElement>(
+        ".teaching-date-picker",
       );
       const viewToggle = document.querySelector<HTMLElement>(
         ".teaching-schedule-view-toggle",
       );
-      if (!navigator || !periodSwitch || !viewToggle) {
+      if (!navigator || !picker || !viewToggle) {
         throw new Error("Mobile schedule controls are missing");
       }
       const viewportWidth = document.documentElement.clientWidth;
-      const controls = [navigator, periodSwitch, viewToggle].map((element) => {
+      const controls = [picker, navigator, viewToggle].map((element) => {
         const rect = element.getBoundingClientRect();
         return { left: rect.left, right: rect.right };
       });
@@ -3958,20 +4259,104 @@ test("browser smoke: mobile Account menu exposes primary sections and account ac
         controlsInsideViewport: controls.every(
           ({ left, right }) => left >= 0 && right <= viewportWidth,
         ),
+        externalPeriodSwitchCount: document.querySelectorAll(
+          ".teaching-schedule-period-switch",
+        ).length,
       };
     });
     assert.deepEqual(mobileScheduleContract, {
       clientWidth: 375,
       scrollWidth: 375,
       controlsInsideViewport: true,
+      externalPeriodSwitchCount: 0,
     });
 
-    await Promise.all([
-      runtime.page.waitForResponse((response) =>
-        response.url().includes("/api/v2/lesson-runs?"),
-      ),
-      runtime.page.getByLabel("Выбрать дату расписания").fill("2026-08-07"),
-    ]);
+    const mobileDateTrigger = runtime.page.locator(".teaching-date-trigger");
+    await mobileDateTrigger.click();
+    await runtime.page.getByRole("dialog").waitFor();
+    const mobilePopoverContract = await runtime.page.evaluate(() => {
+      const popover = document.querySelector<HTMLElement>(
+        ".teaching-date-popover",
+      );
+      const periodSwitch = document.querySelector<HTMLElement>(
+        ".teaching-date-period-switch",
+      );
+      if (!popover || !periodSwitch) {
+        throw new Error("Mobile schedule calendar is missing");
+      }
+      const viewportWidth = document.documentElement.clientWidth;
+      const rect = popover.getBoundingClientRect();
+      return {
+        clientWidth: viewportWidth,
+        scrollWidth: document.documentElement.scrollWidth,
+        popoverInsideViewport:
+          rect.left >= 0 && rect.right <= viewportWidth && rect.width > 300,
+        periodLabels: Array.from(periodSwitch.querySelectorAll("button")).map(
+          (button) => button.textContent?.trim() ?? "",
+        ),
+      };
+    });
+    assert.deepEqual(mobilePopoverContract, {
+      clientWidth: 375,
+      scrollWidth: 375,
+      popoverInsideViewport: true,
+      periodLabels: ["День", "Неделя", "Месяц"],
+    });
+
+    await runtime.page.setViewportSize({ width: 320, height: 812 });
+    const narrowCalendarContract = await runtime.page.evaluate(() => {
+      const toolbarActions = document.querySelector<HTMLElement>(
+        ".teaching-schedule-toolbar-actions",
+      );
+      const picker = document.querySelector<HTMLElement>(
+        ".teaching-date-picker",
+      );
+      const navigator = document.querySelector<HTMLElement>(
+        ".teaching-date-navigator",
+      );
+      const viewToggle = document.querySelector<HTMLElement>(
+        ".teaching-schedule-view-toggle",
+      );
+      const popover = document.querySelector<HTMLElement>(
+        ".teaching-date-popover",
+      );
+      if (!toolbarActions || !picker || !navigator || !viewToggle || !popover) {
+        throw new Error("Narrow schedule calendar geometry is missing");
+      }
+      const viewportWidth = document.documentElement.clientWidth;
+      return {
+        clientWidth: viewportWidth,
+        scrollWidth: document.documentElement.scrollWidth,
+        allControlsInsideViewport: [
+          toolbarActions,
+          picker,
+          navigator,
+          viewToggle,
+          popover,
+        ].every((element) => {
+          const rect = element.getBoundingClientRect();
+          return rect.left >= 0 && rect.right <= viewportWidth;
+        }),
+        popoverWidth: popover.getBoundingClientRect().width,
+      };
+    });
+    assert.equal(narrowCalendarContract.clientWidth, 320);
+    assert.equal(
+      narrowCalendarContract.scrollWidth,
+      narrowCalendarContract.clientWidth,
+    );
+    assert.equal(narrowCalendarContract.allControlsInsideViewport, true);
+    assert.ok(narrowCalendarContract.popoverWidth <= 288);
+    await runtime.page.setViewportSize({ width: 375, height: 812 });
+
+    e2eScheduleFixtureVisible = true;
+    const mobileDateResponsePromise = runtime.page.waitForResponse((response) =>
+      response.url().includes("/api/v2/lesson-runs?"),
+    );
+    await runtime.page
+      .locator('.teaching-date-grid button[data-date="2026-08-12"]')
+      .click();
+    await mobileDateResponsePromise;
     await runtime.page
       .getByRole("table", {
         name: "Занятия за выбранную неделю",
@@ -4188,6 +4573,7 @@ test("browser smoke: mobile Account menu exposes primary sections and account ac
     assert.equal(mobileContract.actionsInsideTable, true);
   } finally {
     e2eCompletionPhase = null;
+    e2eScheduleFixtureVisible = false;
     await runtime.close();
   }
 });

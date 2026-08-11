@@ -2,10 +2,9 @@
 
 import Link from "next/link";
 import {
-  ArrowLeft,
-  ArrowRight,
   CalendarDays,
-  ChevronDown,
+  CircleAlert,
+  CircleCheck,
   Clock3,
   LayoutGrid,
   LoaderCircle,
@@ -20,21 +19,17 @@ import {
   LessonRunDialog,
   type LessonRunMutationRunner,
 } from "@/components/lesson-runs/lesson-run-dialog";
-import {
-  lessonRunState,
-  lessonRunStateLabel,
-} from "@/components/lesson-runs/lesson-run-format";
+import { lessonRunState } from "@/components/lesson-runs/lesson-run-format";
 import { RunHistoryList } from "@/components/lesson-runs/run-history-list";
+import { ScheduleDatePicker } from "@/components/teaching-hub/schedule-date-picker";
 import {
   atLocalNoon,
+  formatSchedulePeriodLabel,
   formatLocalDateValue,
-  parseLocalDateValue,
   schedulePeriodRange,
-  shiftSchedulePeriod,
   type SchedulePeriod,
 } from "@/components/teaching-hub/schedule-period";
 import { Button, productButtonClassName } from "@/components/ui/button";
-import { Chip, type ChipTone } from "@/components/ui/chip";
 import { DialogShell } from "@/components/ui/dialog-shell";
 import {
   ProductTable,
@@ -51,28 +46,10 @@ import { SurfaceCard } from "@/components/ui/surface-card";
 import { toCourseRoute } from "@/lib/auth";
 import type { LessonRun } from "@/modules/lesson-runs/domain";
 
-const dateFormatter = new Intl.DateTimeFormat("ru-RU", {
-  weekday: "long",
-  day: "numeric",
-  month: "long",
-});
-
-const dateWithYearFormatter = new Intl.DateTimeFormat("ru-RU", {
-  weekday: "long",
-  day: "numeric",
-  month: "long",
-  year: "numeric",
-});
-
-const shortDateFormatter = new Intl.DateTimeFormat("ru-RU", {
-  day: "numeric",
-  month: "long",
-});
-
 const tableDateFormatter = new Intl.DateTimeFormat("ru-RU", {
-  weekday: "short",
+  weekday: "long",
   day: "numeric",
-  month: "short",
+  month: "long",
 });
 
 const timeFormatter = new Intl.DateTimeFormat("ru-RU", {
@@ -80,36 +57,35 @@ const timeFormatter = new Intl.DateTimeFormat("ru-RU", {
   minute: "2-digit",
 });
 
-function formatSelectedDate(value: Date) {
-  const today = new Date();
-  if (
-    value.getFullYear() === today.getFullYear() &&
-    value.getMonth() === today.getMonth() &&
-    value.getDate() === today.getDate()
-  ) {
-    return `Сегодня · ${shortDateFormatter.format(value)}`;
-  }
-  const label =
-    value.getFullYear() === today.getFullYear()
-      ? dateFormatter.format(value)
-      : dateWithYearFormatter.format(value);
-  return label.charAt(0).toUpperCase() + label.slice(1);
-}
-
-function formatAssistantLocalDate(value: Date) {
-  return formatLocalDateValue(value);
-}
-
 type ScheduleViewMode = "table" | "cards";
 const SCHEDULE_RESULT_LIMIT = 500;
 
-function statusTone(run: LessonRun): ChipTone {
+function scheduleRunStatus(run: LessonRun) {
   const state = lessonRunState(run);
-  if (state === "active") return "emerald";
-  if (state === "attention") return "amber";
-  if (state === "completed") return "violet";
-  if (state === "cancelled") return "slate";
-  return "sky";
+  if (state === "scheduled") {
+    return { label: "Ожидается", icon: Clock3 };
+  }
+  if (state === "attention") {
+    return { label: "Нужно отметить", icon: CircleAlert };
+  }
+  if (state === "active") {
+    return { label: "Идёт сейчас", icon: Play };
+  }
+  if (state === "completed") {
+    return { label: "Проведён", icon: CircleCheck };
+  }
+  return { label: "Отменён", icon: CircleAlert };
+}
+
+function ScheduleRunStatus({ run }: { run: LessonRun }) {
+  const status = scheduleRunStatus(run);
+  const Icon = status.icon;
+  return (
+    <span className="teaching-run-table-status">
+      <Icon className="h-4 w-4" aria-hidden="true" />
+      {status.label}
+    </span>
+  );
 }
 
 function runActionLabel(run: LessonRun) {
@@ -131,18 +107,13 @@ function ScheduleRunActions({
 }) {
   return (
     <div className={className}>
-      <Chip
-        icon={lessonRunState(run) === "active" ? Play : Clock3}
-        tone={statusTone(run)}
-      >
-        {lessonRunStateLabel(run)}
-      </Chip>
+      <ScheduleRunStatus run={run} />
       <Button type="button" disabled={disabled} onClick={onOpen}>
         {runActionLabel(run)}
       </Button>
       <Link
         href={`${toCourseRoute(run.courseId)}?lesson=${encodeURIComponent(run.lessonId)}`}
-        className={productButtonClassName("ghost")}
+        className={productButtonClassName("secondary")}
       >
         Открыть план
       </Link>
@@ -194,11 +165,9 @@ export function ScheduleWorkspace() {
     courseId: null,
     lessonId: null,
     label: selectedDate
-      ? `Расписание · ${formatSelectedDate(selectedDate)}`
+      ? `Расписание · ${formatSchedulePeriodLabel(selectedDate, period)}`
       : "Расписание",
-    ...(selectedDate
-      ? { localDate: formatAssistantLocalDate(selectedDate) }
-      : {}),
+    ...(selectedDate ? { localDate: formatLocalDateValue(selectedDate) } : {}),
   });
 
   const reload = useCallback(
@@ -277,7 +246,11 @@ export function ScheduleWorkspace() {
   const selectedRun =
     visibleRuns.find((run) => run.id === selectedRunId) ?? null;
   const selectedPeriodLabel =
-    period === "week" ? "выбранную неделю" : "выбранный месяц";
+    period === "day"
+      ? "выбранный день"
+      : period === "week"
+        ? "выбранную неделю"
+        : "выбранный месяц";
 
   return (
     <div className="teaching-hub-stack">
@@ -285,81 +258,13 @@ export function ScheduleWorkspace() {
         className="teaching-hub-toolbar"
         aria-label="Навигация по расписанию"
       >
-        <div className="teaching-date-navigator">
-          <button
-            type="button"
-            aria-label={
-              period === "week" ? "Предыдущая неделя" : "Предыдущий месяц"
-            }
-            onClick={() =>
-              setSelectedDate((current) =>
-                shiftSchedulePeriod(
-                  current ?? atLocalNoon(new Date()),
-                  period,
-                  -1,
-                ),
-              )
-            }
-          >
-            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-          </button>
-          <label className="teaching-date-trigger">
-            <span aria-live="polite">
-              {selectedDate ? formatSelectedDate(selectedDate) : "Сегодня"}
-            </span>
-            <ChevronDown className="h-4 w-4" aria-hidden="true" />
-            <input
-              type="date"
-              aria-label="Выбрать дату расписания"
-              value={selectedDate ? formatLocalDateValue(selectedDate) : ""}
-              onChange={(event) => {
-                const nextDate = parseLocalDateValue(event.target.value);
-                if (nextDate) setSelectedDate(nextDate);
-              }}
-            />
-          </label>
-          <button
-            type="button"
-            aria-label={
-              period === "week" ? "Следующая неделя" : "Следующий месяц"
-            }
-            onClick={() =>
-              setSelectedDate((current) =>
-                shiftSchedulePeriod(
-                  current ?? atLocalNoon(new Date()),
-                  period,
-                  1,
-                ),
-              )
-            }
-          >
-            <ArrowRight className="h-4 w-4" aria-hidden="true" />
-          </button>
-        </div>
-
         <div className="teaching-schedule-toolbar-actions">
-          <div
-            className="teaching-schedule-period-switch"
-            role="group"
-            aria-label="Период расписания"
-          >
-            <button
-              type="button"
-              className={period === "week" ? "is-active" : undefined}
-              aria-pressed={period === "week"}
-              onClick={() => setPeriod("week")}
-            >
-              Неделя
-            </button>
-            <button
-              type="button"
-              className={period === "month" ? "is-active" : undefined}
-              aria-pressed={period === "month"}
-              onClick={() => setPeriod("month")}
-            >
-              Месяц
-            </button>
-          </div>
+          <ScheduleDatePicker
+            selectedDate={selectedDate ?? atLocalNoon(new Date())}
+            period={period}
+            onDateChange={setSelectedDate}
+            onPeriodChange={setPeriod}
+          />
           <div
             className="teaching-schedule-view-toggle"
             role="group"
@@ -419,7 +324,9 @@ export function ScheduleWorkspace() {
             Показаны первые {SCHEDULE_RESULT_LIMIT} занятий этого периода.
             {period === "month"
               ? " Переключитесь на неделю, чтобы сузить окно."
-              : " Эта неделя может быть показана не полностью."}
+              : period === "week"
+                ? " Эта неделя может быть показана не полностью."
+                : " Этот день может быть показан не полностью."}
           </p>
         </SurfaceCard>
       ) : null}
@@ -459,7 +366,7 @@ export function ScheduleWorkspace() {
                       Урок
                     </ProductTableHeaderCell>
                     <ProductTableHeaderCell className="w-[14%]">
-                      Участники
+                      Ученики
                     </ProductTableHeaderCell>
                     <ProductTableHeaderCell className="w-[18%]">
                       Статус
@@ -480,7 +387,11 @@ export function ScheduleWorkspace() {
                             className="teaching-run-table-time"
                           >
                             <strong>
-                              {tableDateFormatter.format(scheduledAt)}
+                              {tableDateFormatter
+                                .format(scheduledAt)
+                                .replace(/^./u, (character) =>
+                                  character.toLocaleUpperCase("ru-RU"),
+                                )}
                             </strong>
                             <span>
                               {timeFormatter.format(scheduledAt)} ·{" "}
@@ -501,14 +412,7 @@ export function ScheduleWorkspace() {
                           </span>
                         </ProductTableCell>
                         <ProductTableCell>
-                          <Chip
-                            icon={
-                              lessonRunState(run) === "active" ? Play : Clock3
-                            }
-                            tone={statusTone(run)}
-                          >
-                            {lessonRunStateLabel(run)}
-                          </Chip>
+                          <ScheduleRunStatus run={run} />
                         </ProductTableCell>
                         <ProductTableActionCell className="text-right">
                           <span className="teaching-run-table-actions">
@@ -521,7 +425,7 @@ export function ScheduleWorkspace() {
                             </Button>
                             <Link
                               href={`${toCourseRoute(run.courseId)}?lesson=${encodeURIComponent(run.lessonId)}`}
-                              className={productButtonClassName("ghost")}
+                              className={productButtonClassName("secondary")}
                             >
                               Открыть план
                             </Link>
@@ -557,7 +461,7 @@ export function ScheduleWorkspace() {
                       <h3>{run.lessonTitle}</h3>
                       <span>
                         <Users className="h-4 w-4" aria-hidden="true" />
-                        {run.records.length} участников
+                        {run.records.length} учеников
                       </span>
                     </div>
                     <ScheduleRunActions

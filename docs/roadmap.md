@@ -254,8 +254,13 @@ active/archive/pending в одной таблице с inline-чипами и с
 Course facets собраны в компактный disclosure, а view — в две icon-only
 кнопки. Published Catalog показывает только поддержанные server-side
 subject/level filters, но использует тот же cards/table presentation; повторный
-заголовок, пояснение и видимые result counts удалены. Course workspace
-использует четыре вкладки;
+заголовок, пояснение и видимые result counts удалены. В current source Schedule
+также сводит выбор даты и режимы «День / Неделя / Месяц» в один компактный
+календарный popover справа от страницы, оставляя рядом только icon-only
+«Таблица / Карточки»; таблица получила точный 40 px header, «Ученики», plain
+«Ожидается» и постоянно видимый secondary Action «Открыть план». Это UI-only
+polish без новой schema, migration или API. Course workspace использует четыре
+вкладки;
 настройки и audience редактируются inline на растущей **О курсе**, а
 course-wide **Материалы** вынесены в отдельную агрегирующую библиотеку. Новый
 Course начинает с **О курсе**; обычное сохранение возвращает туда же, тогда как
@@ -515,9 +520,15 @@ postflight этого follow-up ещё не выполнен.
 
 **Current source polish:** page header использует подзаголовок «Здесь все
 назначенные уроки за выбранный период.» и короткий календарный Action
-«Назначить урок». После period/view controls непустая таблица или карточки
-начинаются сразу, без повторного заголовка периода и видимого count-chip.
-Schema/API не меняются; deployment этого polish остаётся следующим шагом.
+«Назначить урок». Отдельный внешний «Неделя / Месяц» удалён: компактный
+right-aligned date control открывает календарь, в котором находятся «День /
+Неделя / Месяц», а его стрелки сдвигают назад/вперёд выбранный целый период.
+Рядом остаётся icon-only «Таблица / Карточки». После controls непустая
+projection начинается сразу; table header имеет точные 40 px и меньший вес,
+«Участники» переименованы в «Ученики», scheduled state показан plain
+«Ожидается» без дублирования даты/времени, а «Открыть план» — видимой
+secondary-кнопкой. Schema/API не меняются; deployment этого polish остаётся
+следующим шагом.
 
 **Current production contract дополнительно:** verified actual duration,
 explicit shared individual comment, cursor-paginated self/observer history и
