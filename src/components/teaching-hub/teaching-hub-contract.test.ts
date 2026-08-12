@@ -119,7 +119,7 @@ test("teaching hub pages share the demo shell and canonical page header", () => 
   assert.match(schedulePageSource, /<AppPageHeader/);
   assert.match(
     schedulePageSource,
-    /description="Здесь все назначенные уроки за выбранный период\."/,
+    /description="Здесь все назначенные уроки за выбранный период"/,
   );
   assert.match(schedulePageSource, /<CalendarPlus/);
   assert.match(schedulePageSource, /Назначить урок/);
@@ -299,6 +299,14 @@ test("schedule keeps the compact date control and dense one-line table contract"
   assert.match(scheduleWorkspaceSource, /label: "Начать урок"/);
   assert.match(scheduleWorkspaceSource, /label: "Изменить"/);
   assert.match(scheduleWorkspaceSource, /label: "Отменить"/);
+  assert.equal(
+    scheduleWorkspaceSource.match(/separatorBefore: true/g)?.length,
+    1,
+  );
+  assert.match(
+    scheduleWorkspaceSource,
+    /id: "complete",[\s\S]*?id: "cancel",[\s\S]*?separatorBefore: true/,
+  );
   assert.doesNotMatch(scheduleWorkspaceSource, /label: "Открыть план"/);
   assert.match(scheduleWorkspaceSource, /startLessonRun\(runId\)/);
   assert.match(scheduleWorkspaceSource, /cancelLessonRun\(runId\)/);
@@ -406,7 +414,7 @@ test("schedule keeps the compact date control and dense one-line table contract"
   );
   assert.match(
     teachingHubStyleSource,
-    /\.action-menu-panel-portal \.action-menu-item\s*\{[^}]*height:\s*var\(\s*--course-demo-table-row-height,[^}]*min-height:\s*var\(\s*--course-demo-table-row-height,[^}]*align-items:\s*center;[^}]*gap:\s*var\(--course-demo-control-padding-inline,[^}]*padding-inline:\s*var\(--course-demo-control-padding-inline,[^}]*color:\s*#141414;[^}]*font-size:\s*var\(--course-demo-control-font-size,[^}]*font-weight:\s*var\(--course-demo-control-font-weight,/,
+    /\.action-menu-panel-portal \.action-menu-item\s*\{[^}]*height:\s*var\(\s*--course-demo-table-row-height,[^}]*min-height:\s*var\(\s*--course-demo-table-row-height,[^}]*align-items:\s*center;[^}]*gap:\s*var\(--course-demo-control-padding-inline,[^}]*border-radius:\s*var\(--product-inner-control-radius, 0\.5rem\);[^}]*padding-inline:\s*var\(--course-demo-control-padding-inline,[^}]*color:\s*#141414;[^}]*font-size:\s*var\(--course-demo-control-font-size,[^}]*font-weight:\s*var\(--course-demo-control-font-weight,/,
   );
   assert.match(
     teachingHubStyleSource,

@@ -1,4 +1,4 @@
-import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
+import { ArrowDown, ArrowUp } from "lucide-react";
 import type { ComponentPropsWithoutRef, ReactNode } from "react";
 import type { ProductTableSortDirection } from "@/components/ui/product-table-sort";
 import { classNames } from "@/lib/ui/classnames";
@@ -104,11 +104,7 @@ export function ProductTableSortableHeaderCell({
         ? "descending"
         : "none";
   const SortIcon =
-    direction === "asc"
-      ? ArrowUp
-      : direction === "desc"
-        ? ArrowDown
-        : ArrowUpDown;
+    direction === "asc" ? ArrowUp : direction === "desc" ? ArrowDown : null;
 
   return (
     <ProductTableHeaderCell
@@ -125,7 +121,9 @@ export function ProductTableSortableHeaderCell({
         onClick={onSort}
       >
         <span className="min-w-0 truncate">{children}</span>
-        <SortIcon className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+        {SortIcon ? (
+          <SortIcon className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+        ) : null}
       </button>
     </ProductTableHeaderCell>
   );

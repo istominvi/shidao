@@ -713,7 +713,8 @@ flow как permanent delete.
   возвратом focus, клавиатурную навигацию календаря, local timezone и отсутствие
   document-level overflow на 375 и 320 px. Рядом должны оставаться оба
   icon-only вида «Таблица / Карточки». Header показывает точный подзаголовок
-  «Здесь все назначенные уроки за выбранный период.» и Action «Назначить урок»
+  «Здесь все назначенные уроки за выбранный период» без завершающей точки и
+  Action «Назначить урок»
   с calendar-plus icon; authenticated top header и profile dropdown имеют
   computed `rgb(255, 255, 255)` и `backdrop-filter: none`. При непустом
   результате сразу после controls идёт таблица или карточки без summary
@@ -724,6 +725,8 @@ flow как permanent delete.
   разделителем между соседними data rows через
   `--product-table-divider-color`; weight 500 и более светлый цвет; видимые
   `Дата / Время / Урок / Курс / Ученики / Статус` и пустой action heading.
+  В header должна быть ровно одна стрелка направления и только у активной
+  сортировки; после выбора другой колонки индикатор переносится на неё.
   Проверить компактные
   content-sized rails для даты и времени и компактные rails для учеников,
   статуса и действий: первые
@@ -744,8 +747,9 @@ flow как permanent delete.
   dialog текущего Run сразу в edit mode, confirmation перед cancel,
   arrows/Escape/focus restore и отсутствие
   неявного row-click при взаимодействии с меню; других action-кнопок в строке
-  нет. Каждый пункт portal-menu имеет exact 40 px,
-  вертикально центрированные иконку и текст, `.88rem/400` и canonical inset/gap.
+  нет. В трёхпунктовом меню нет разделителя между «Изменить» и «Отменить».
+  Каждый пункт portal-menu имеет exact 40 px, радиус 8 px как у active view
+  option, вертикально центрированные иконку и текст, `.88rem/400` и canonical inset/gap.
   Отдельно проверить
   canonical active V2 controls: exact `40 px / 12 px / .88rem / 400`, flat
   primary и active navigation без inset/shadow/translate, icon opacity `1` и

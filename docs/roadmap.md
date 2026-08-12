@@ -669,6 +669,12 @@ guards. Refinement развёрнут exact merge commit
 `84ffefecda99d3b0a9da82bf1eaf8ce76d9c6ea1` (PR #242); running image и
 HTTP/CSRF/auth boundary postflight подтверждены.
 
+**Next source Schedule micro-polish:** подзаголовок теряет завершающую точку;
+одна стрелка направления отображается только в активной sortable-колонке.
+Трёхпунктовое меню ожидающего Run больше не разделяет «Изменить / Отменить»,
+а hover-подсветка пунктов использует радиус 8 px выбранной кнопки вида. Это
+UI-only follow-up без изменения LessonRun API, schema или migrations.
+
 **Current production contract дополнительно:** verified actual duration,
 explicit shared individual comment, cursor-paginated self/observer history и
 real-record progress без speculative metrics.

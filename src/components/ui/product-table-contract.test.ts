@@ -183,5 +183,13 @@ test("sortable product table headers keep native table and button accessibility"
     productTableSource,
     /<button[\s\S]*?type="button"[\s\S]*?onClick=\{onSort\}/,
   );
-  assert.match(productTableSource, /<SortIcon[\s\S]*?aria-hidden="true"/);
+  assert.doesNotMatch(productTableSource, /ArrowUpDown/);
+  assert.match(
+    productTableSource,
+    /direction === "desc"[\s\S]*?\? ArrowDown[\s\S]*?: null/,
+  );
+  assert.match(
+    productTableSource,
+    /\{SortIcon \? \([\s\S]*?<SortIcon[\s\S]*?aria-hidden="true"[\s\S]*?: null\}/,
+  );
 });

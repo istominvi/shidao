@@ -13,7 +13,7 @@ export default function SchedulePage() {
       <div className="container app-page-container space-y-6">
         <AppPageHeader
           title="Расписание"
-          description="Здесь все назначенные уроки за выбранный период."
+          description="Здесь все назначенные уроки за выбранный период"
           actions={
             <Link
               href={ROUTES.courses}

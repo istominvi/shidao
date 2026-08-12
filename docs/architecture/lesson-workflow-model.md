@@ -580,6 +580,11 @@ Current production делает `/schedule` и `/students` доступными
   Этот current production polish меняет только UI: LessonRun API/schema и
   migrations не меняются; последняя корректировка cell/action spacing
   развёрнута и прошла running-image/HTTP boundary postflight в PR #242;
+- current source follow-up убирает завершающую точку из Schedule subtitle,
+  оставляет одну стрелку только у активной sortable-колонки и убирает
+  разделитель между «Изменить / Отменить» в трёхпунктовом меню. Радиус
+  hover-подсветки menu item равен 8 px и совпадает с active view option. Этот
+  follow-up не меняет LessonRun API, schema или migrations;
 - `/students` объединяет справочник TeacherLearner/LearnerProfile и
   LearnerGroup во вкладках «Ученики / Группы» с learner-safe observer
   projection во вкладке «Наблюдение»; подзаголовок страницы — «Ученики и

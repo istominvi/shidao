@@ -1217,10 +1217,7 @@
   );
   align-items: center;
   gap: var(--course-demo-control-padding-inline, 0.75rem);
-  border-radius: var(
-    --course-demo-element-radius,
-    var(--product-element-radius, 0.75rem)
-  );
+  border-radius: var(--product-inner-control-radius, 0.5rem);
   padding-block: 0;
   padding-inline: var(--course-demo-control-padding-inline, 0.75rem);
   color: #141414;
