@@ -1,15 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  ArrowRight,
   BookOpen,
+  CalendarClock,
   FileSearch,
   LoaderCircle,
+  MoreVertical,
   Pencil,
   Plus,
   Save,
+  Search,
   WandSparkles,
 } from "lucide-react";
 import { AppPageHeader } from "@/components/app/page-header";
@@ -19,6 +21,10 @@ import {
   loadCourseWorkspace,
 } from "@/components/course-builder/course-builder-client";
 import { AiLessonPlanDialog } from "@/components/course-builder/ai-lesson-plan-dialog";
+import {
+  courseLessonContentUpdatedAt,
+  lessonScheduleInfo,
+} from "@/components/course-builder/course-lesson-table";
 import {
   CourseActions,
   CoursePublicationBadges,
@@ -39,14 +45,31 @@ import {
   loadCourseAudience,
   loadCourseHistory,
 } from "@/components/lesson-runs/lesson-run-client";
+import { LessonRunDialog } from "@/components/lesson-runs/lesson-run-dialog";
 import {
-  LessonRunDialog,
-  LessonRunStatusButton,
-} from "@/components/lesson-runs/lesson-run-dialog";
-import { completedLessonRunCount } from "@/components/lesson-runs/lesson-run-format";
+  lessonRunState,
+  openLessonRun,
+} from "@/components/lesson-runs/lesson-run-format";
 import { RunHistoryList } from "@/components/lesson-runs/run-history-list";
+import { ActionMenu } from "@/components/ui/action-menu";
 import { Button, productButtonClassName } from "@/components/ui/button";
 import { DialogShell } from "@/components/ui/dialog-shell";
+import { Input } from "@/components/ui/input";
+import {
+  ProductTable,
+  ProductTableActionCell,
+  ProductTableBody,
+  ProductTableCell,
+  ProductTableHead,
+  ProductTableHeaderCell,
+  ProductTableHeaderRow,
+  ProductTablePrimaryCell,
+  ProductTableRow,
+  ProductTableSortableHeaderCell,
+  ProductTableTruncate,
+  nextProductTableSort,
+  type ProductTableSortState,
+} from "@/components/ui/product-table";
 import {
   WorkspaceTabs,
   workspaceTabId,
@@ -75,6 +98,81 @@ const EMPTY_COURSE_AUDIENCE: CourseAudience = {
   groups: [],
   effectiveLearners: [],
 };
+
+type CourseLessonSortKey =
+  "position" | "title" | "plan" | "student" | "schedule" | "updated";
+
+const courseLessonCollator = new Intl.Collator("ru-RU", {
+  numeric: true,
+  sensitivity: "base",
+});
+
+const courseLessonUpdatedFormatter = new Intl.DateTimeFormat("ru-RU", {
+  day: "2-digit",
+  month: "short",
+  year: "numeric",
+});
+
+function formatCourseLessonUpdatedAt(value: string) {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime())
+    ? "Неизвестно"
+    : courseLessonUpdatedFormatter.format(date);
+}
+
+function learnerVisibleComponentCount(lesson: CourseLesson) {
+  return lesson.components.filter(
+    (component) =>
+      component.visibility === "learner_visible" && component.studentSlideId,
+  ).length;
+}
+
+function compareCourseLessons(
+  left: CourseLesson,
+  right: CourseLesson,
+  key: CourseLessonSortKey,
+  runs: LessonRun[],
+  direction: 1 | -1,
+) {
+  let difference = 0;
+  if (key === "position") {
+    difference = left.position - right.position;
+  } else if (key === "title") {
+    difference = courseLessonCollator.compare(left.title, right.title);
+  } else if (key === "plan") {
+    difference = left.components.length - right.components.length;
+  } else if (key === "student") {
+    difference = left.studentSlides.length - right.studentSlides.length;
+    if (difference === 0) {
+      difference =
+        learnerVisibleComponentCount(left) -
+        learnerVisibleComponentCount(right);
+    }
+  } else if (key === "schedule") {
+    const leftSchedule = lessonScheduleInfo(
+      runs.filter((run) => run.lessonId === left.id),
+    );
+    const rightSchedule = lessonScheduleInfo(
+      runs.filter((run) => run.lessonId === right.id),
+    );
+    difference = leftSchedule.rank - rightSchedule.rank;
+    if (
+      difference === 0 &&
+      leftSchedule.timestamp !== rightSchedule.timestamp
+    ) {
+      difference = leftSchedule.timestamp - rightSchedule.timestamp;
+    }
+  } else {
+    difference =
+      Date.parse(courseLessonContentUpdatedAt(left)) -
+      Date.parse(courseLessonContentUpdatedAt(right));
+  }
+
+  if (difference !== 0) return direction * difference;
+  const positionDifference = left.position - right.position;
+  if (positionDifference !== 0) return positionDifference;
+  return left.id.localeCompare(right.id);
+}
 
 type RunMutation = (
   label: string,
@@ -329,9 +427,28 @@ function CourseLessonsPanel({
   const [scheduledLessonId, setScheduledLessonId] = useState<string | null>(
     null,
   );
+  const [query, setQuery] = useState("");
+  const [sort, setSort] = useState<ProductTableSortState<CourseLessonSortKey>>({
+    key: "position",
+    direction: "asc",
+  });
   const triggerRef = useRef<HTMLButtonElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const lessonRowRefs = useRef(new Map<string, HTMLButtonElement>());
+  const normalizedQuery = query.trim().toLocaleLowerCase("ru-RU");
+  const visibleLessons = useMemo(() => {
+    const matchingLessons = normalizedQuery
+      ? lessons.filter((lesson) =>
+          `${lesson.position} ${lesson.title} ${lesson.summary}`
+            .toLocaleLowerCase("ru-RU")
+            .includes(normalizedQuery),
+        )
+      : lessons;
+    const direction = sort.direction === "asc" ? 1 : -1;
+    return [...matchingLessons].sort((left, right) =>
+      compareCourseLessons(left, right, sort.key, runs, direction),
+    );
+  }, [lessons, normalizedQuery, runs, sort]);
 
   useEffect(() => {
     if (!focusLessonId) return;
@@ -391,76 +508,58 @@ function CourseLessonsPanel({
 
   return (
     <>
-      <section className="workspace-surface">
-        <div className="workspace-panel-heading">
-          <div>
-            <p className="workspace-eyebrow">Структура курса</p>
-            <h2 ref={headingRef} tabIndex={-1}>
-              Уроки
-            </h2>
+      <section
+        className="course-lessons-panel"
+        aria-labelledby="course-lessons-heading"
+      >
+        <h2
+          ref={headingRef}
+          id="course-lessons-heading"
+          className="sr-only"
+          tabIndex={-1}
+        >
+          Уроки курса
+        </h2>
+
+        <div
+          className="compact-page-toolbar course-lessons-toolbar"
+          aria-label="Управление уроками"
+        >
+          <label className="compact-toolbar-search product-search-wrap">
+            <span className="sr-only">Поиск уроков</span>
+            <Search
+              className="product-search-icon h-4 w-4"
+              aria-hidden="true"
+            />
+            <Input
+              type="search"
+              value={query}
+              disabled={disabled || lessons.length === 0}
+              onChange={(event) => setQuery(event.target.value)}
+              className="product-control-search"
+              placeholder="Название или описание урока…"
+              autoComplete="off"
+            />
+          </label>
+
+          <div className="compact-toolbar-rail">
+            <Button
+              ref={triggerRef}
+              type="button"
+              disabled={disabled}
+              onClick={() => {
+                setSubmissionFailed(false);
+                setDialogOpen(true);
+              }}
+            >
+              <Plus className="h-4 w-4" aria-hidden="true" />
+              Добавить урок
+            </Button>
           </div>
-          <Button
-            ref={triggerRef}
-            type="button"
-            disabled={disabled}
-            onClick={() => {
-              setSubmissionFailed(false);
-              setDialogOpen(true);
-            }}
-          >
-            <Plus className="h-4 w-4" aria-hidden="true" />
-            Добавить урок
-          </Button>
         </div>
 
-        {lessons.length > 0 ? (
-          <div className="workspace-lesson-list">
-            {lessons.map((lesson) => {
-              const lessonRuns = runs.filter(
-                (run) => run.lessonId === lesson.id,
-              );
-              return (
-                <div key={lesson.id} className="workspace-lesson-item">
-                  <button
-                    type="button"
-                    ref={(node) => {
-                      if (node) lessonRowRefs.current.set(lesson.id, node);
-                      else lessonRowRefs.current.delete(lesson.id);
-                    }}
-                    onClick={() => onSelect(lesson.id)}
-                    className="workspace-lesson-row"
-                  >
-                    <BookOpen
-                      className="workspace-lesson-leading-icon"
-                      aria-hidden="true"
-                    />
-                    <span className="workspace-lesson-number">
-                      {lesson.position}
-                    </span>
-                    <span className="workspace-lesson-title">
-                      <strong>{lesson.title}</strong>
-                      <small>
-                        Компонентов: {lesson.components.length} · проведений:{" "}
-                        {completedLessonRunCount(lessonRuns)}
-                      </small>
-                    </span>
-                    <ArrowRight
-                      className="workspace-lesson-arrow"
-                      aria-hidden="true"
-                    />
-                  </button>
-                  <LessonRunStatusButton
-                    runs={lessonRuns}
-                    disabled={disabled}
-                    className="workspace-lesson-schedule"
-                    onClick={() => setScheduledLessonId(lesson.id)}
-                  />
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="workspace-empty-state">
+        {lessons.length === 0 ? (
+          <div className="workspace-empty-state course-lessons-empty">
             <BookOpen
               className="mx-auto h-7 w-7 text-neutral-400"
               aria-hidden="true"
@@ -469,6 +568,214 @@ function CourseLessonsPanel({
             <p>
               Добавьте первый урок — он сохранится в базе как пустой черновик.
             </p>
+          </div>
+        ) : visibleLessons.length === 0 ? (
+          <div className="workspace-empty-state course-lessons-empty">
+            <Search
+              className="mx-auto h-7 w-7 text-neutral-400"
+              aria-hidden="true"
+            />
+            <h3>Ничего не найдено</h3>
+            <p>Измените запрос или очистите поиск, чтобы увидеть все уроки.</p>
+            <Button
+              type="button"
+              variant="secondary"
+              className="mt-4"
+              onClick={() => setQuery("")}
+            >
+              Очистить поиск
+            </Button>
+          </div>
+        ) : (
+          <div
+            className="product-table-wrap course-index-table-wrap course-lessons-table-wrap"
+            role="region"
+            aria-label="Таблица уроков курса"
+            tabIndex={0}
+          >
+            <ProductTable className="course-index-table course-lessons-table">
+              <caption className="sr-only">
+                Уроки курса: план, экран ученика, проведение и дата обновления
+              </caption>
+              <colgroup>
+                <col className="course-lessons-table-col-position" />
+                <col className="course-lessons-table-col-title" />
+                <col className="course-lessons-table-col-plan" />
+                <col className="course-lessons-table-col-student" />
+                <col className="course-lessons-table-col-schedule" />
+                <col className="course-lessons-table-col-updated" />
+                <col className="course-lessons-table-col-actions" />
+              </colgroup>
+              <ProductTableHead>
+                <ProductTableHeaderRow>
+                  <ProductTableSortableHeaderCell
+                    direction={sort.key === "position" ? sort.direction : null}
+                    onSort={() =>
+                      setSort((current) =>
+                        nextProductTableSort(current, "position"),
+                      )
+                    }
+                  >
+                    №
+                  </ProductTableSortableHeaderCell>
+                  <ProductTableSortableHeaderCell
+                    direction={sort.key === "title" ? sort.direction : null}
+                    onSort={() =>
+                      setSort((current) =>
+                        nextProductTableSort(current, "title"),
+                      )
+                    }
+                  >
+                    Урок
+                  </ProductTableSortableHeaderCell>
+                  <ProductTableSortableHeaderCell
+                    direction={sort.key === "plan" ? sort.direction : null}
+                    onSort={() =>
+                      setSort((current) =>
+                        nextProductTableSort(current, "plan"),
+                      )
+                    }
+                  >
+                    План
+                  </ProductTableSortableHeaderCell>
+                  <ProductTableSortableHeaderCell
+                    direction={sort.key === "student" ? sort.direction : null}
+                    onSort={() =>
+                      setSort((current) =>
+                        nextProductTableSort(current, "student"),
+                      )
+                    }
+                  >
+                    Экран ученика
+                  </ProductTableSortableHeaderCell>
+                  <ProductTableSortableHeaderCell
+                    direction={sort.key === "schedule" ? sort.direction : null}
+                    onSort={() =>
+                      setSort((current) =>
+                        nextProductTableSort(current, "schedule"),
+                      )
+                    }
+                  >
+                    Проведение
+                  </ProductTableSortableHeaderCell>
+                  <ProductTableSortableHeaderCell
+                    direction={sort.key === "updated" ? sort.direction : null}
+                    onSort={() =>
+                      setSort((current) =>
+                        nextProductTableSort(current, "updated"),
+                      )
+                    }
+                  >
+                    Обновлён
+                  </ProductTableSortableHeaderCell>
+                  <ProductTableHeaderCell aria-label="Действия" />
+                </ProductTableHeaderRow>
+              </ProductTableHead>
+              <ProductTableBody>
+                {visibleLessons.map((lesson) => {
+                  const lessonRuns = runs.filter(
+                    (run) => run.lessonId === lesson.id,
+                  );
+                  const schedule = lessonScheduleInfo(lessonRuns);
+                  const currentRun = openLessonRun(lessonRuns);
+                  const scheduleActionLabel = currentRun
+                    ? lessonRunState(currentRun) === "active"
+                      ? "Завершить урок"
+                      : lessonRunState(currentRun) === "attention"
+                        ? "Отметить результаты"
+                        : "Изменить назначение"
+                    : "Назначить урок";
+                  const visibleComponentCount =
+                    learnerVisibleComponentCount(lesson);
+                  const studentScreenLabel =
+                    lesson.studentSlides.length === 0 &&
+                    visibleComponentCount === 0
+                      ? "Не настроен"
+                      : `${lesson.studentSlides.length} сл. · ${visibleComponentCount} эл.`;
+                  const lessonUpdatedAt = courseLessonContentUpdatedAt(lesson);
+                  return (
+                    <ProductTableRow key={lesson.id}>
+                      <ProductTableCell>{lesson.position}</ProductTableCell>
+                      <ProductTablePrimaryCell className="overflow-hidden">
+                        <button
+                          type="button"
+                          ref={(node) => {
+                            if (node)
+                              lessonRowRefs.current.set(lesson.id, node);
+                            else lessonRowRefs.current.delete(lesson.id);
+                          }}
+                          className="course-index-table-link course-lessons-table-open"
+                          title={lesson.summary || lesson.title}
+                          onClick={() => onSelect(lesson.id)}
+                        >
+                          <ProductTableTruncate>
+                            {lesson.title}
+                          </ProductTableTruncate>
+                        </button>
+                      </ProductTablePrimaryCell>
+                      <ProductTableCell className="overflow-hidden">
+                        <ProductTableTruncate
+                          title={`Компонентов: ${lesson.components.length}`}
+                        >
+                          Компонентов: {lesson.components.length}
+                        </ProductTableTruncate>
+                      </ProductTableCell>
+                      <ProductTableCell className="overflow-hidden">
+                        <ProductTableTruncate
+                          title={
+                            studentScreenLabel === "Не настроен"
+                              ? studentScreenLabel
+                              : `${lesson.studentSlides.length} слайдов · ${visibleComponentCount} элементов`
+                          }
+                        >
+                          {studentScreenLabel}
+                        </ProductTableTruncate>
+                      </ProductTableCell>
+                      <ProductTableCell className="overflow-hidden">
+                        <ProductTableTruncate title={schedule.label}>
+                          {schedule.label}
+                        </ProductTableTruncate>
+                      </ProductTableCell>
+                      <ProductTableCell className="overflow-hidden">
+                        <time
+                          className="course-index-table-truncate"
+                          dateTime={lessonUpdatedAt}
+                          title={`Обновлён ${formatCourseLessonUpdatedAt(lessonUpdatedAt)}`}
+                        >
+                          {formatCourseLessonUpdatedAt(lessonUpdatedAt)}
+                        </time>
+                      </ProductTableCell>
+                      <ProductTableActionCell className="course-index-table-action-cell text-right">
+                        <span className="course-index-table-actions">
+                          <ActionMenu
+                            className="course-index-table-action-menu course-lessons-table-action-menu"
+                            label={`Действия с уроком «${lesson.title}»`}
+                            triggerIcon={MoreVertical}
+                            triggerVariant="ghost"
+                            disabled={disabled}
+                            portal
+                            items={[
+                              {
+                                id: "open",
+                                label: "Открыть урок",
+                                icon: BookOpen,
+                                onSelect: () => onSelect(lesson.id),
+                              },
+                              {
+                                id: "schedule",
+                                label: scheduleActionLabel,
+                                icon: CalendarClock,
+                                onSelect: () => setScheduledLessonId(lesson.id),
+                              },
+                            ]}
+                          />
+                        </span>
+                      </ProductTableActionCell>
+                    </ProductTableRow>
+                  );
+                })}
+              </ProductTableBody>
+            </ProductTable>
           </div>
         )}
       </section>

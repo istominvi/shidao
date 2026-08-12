@@ -240,6 +240,30 @@ test("deleteLesson uses the history-preserving RPC", async () => {
   });
 });
 
+test("archiveCourse delegates the recoverable soft archive to one RPC", async () => {
+  await withMockSupabase(
+    [{ payload: "archived" }],
+    async (repository, requests) => {
+      assert.equal(await repository.archiveCourse(COURSE_ID), "archived");
+      assert.equal(requests[0]?.method, "POST");
+      assert.equal(requests[0]?.url, `${API_URL}/rest/v1/rpc/archive_course`);
+      assert.deepEqual(requests[0]?.body, { p_course_id: COURSE_ID });
+    },
+  );
+});
+
+test("archiveCourse preserves a conflict outcome returned by the RPC", async () => {
+  await withMockSupabase(
+    [{ payload: "course_has_open_lesson_runs" }],
+    async (repository) => {
+      assert.equal(
+        await repository.archiveCourse(COURSE_ID),
+        "course_has_open_lesson_runs",
+      );
+    },
+  );
+});
+
 test("assembleDraft sends one validated plan to the transactional RPC", async () => {
   const resultPayload = {
     courseId: COURSE_ID,

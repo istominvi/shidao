@@ -196,6 +196,18 @@ test("course catalog UI exposes accessible search, filters, views, and states", 
   assert.match(ownedCoursesPanelSource, /tabIndex=\{0\}/);
   assert.match(ownedCoursesPanelSource, /className="product-table-wrap/);
   assert.match(courseCatalogPanelSource, /className="product-table-wrap/);
+  assert.match(
+    ownedCoursesPanelSource,
+    /className="product-table-wrap course-index-table-wrap/,
+  );
+  assert.match(
+    ownedCoursesPanelSource,
+    /className="course-index-table course-index-owned-table"/,
+  );
+  assert.match(
+    courseCatalogPanelSource,
+    /className="course-index-table course-index-catalog-table"/,
+  );
   assert.match(courseCatalogPanelSource, /ariaLabel="Вид каталога курсов"/);
   assert.match(courseCatalogPanelSource, /label: "Карточки"/);
   assert.match(courseCatalogPanelSource, /label: "Таблица"/);
@@ -205,6 +217,45 @@ test("course catalog UI exposes accessible search, filters, views, and states", 
     /aria-label="Таблица курсов каталога"/,
   );
   assert.match(courseCatalogPanelSource, /<caption className="sr-only">/);
+  assert.equal(
+    ownedCoursesPanelSource.match(/<ProductTableSortableHeaderCell/g)?.length,
+    6,
+  );
+  for (const key of [
+    "title",
+    "subject",
+    "level",
+    "lessons",
+    "publication",
+    "updated",
+  ]) {
+    assert.match(
+      ownedCoursesPanelSource,
+      new RegExp(`onSort=\\{\\(\\) => onSort\\("${key}"\\)\\}`),
+    );
+  }
+  assert.match(
+    ownedCoursesPanelSource,
+    /setTableSort\(\(current\) => nextProductTableSort\(current, key\)\)/,
+  );
+  assert.match(ownedCoursesPanelSource, /return \[\.\.\.courses\]\.sort/);
+  assert.match(
+    ownedCoursesPanelSource,
+    /return left\.id\.localeCompare\(right\.id\)/,
+  );
+  assert.match(
+    ownedCoursesPanelSource,
+    /<ProductTableHeaderCell aria-label="Действия" \/>/,
+  );
+  assert.match(ownedCoursesPanelSource, /variant="table"/);
+  assert.doesNotMatch(
+    ownedCoursesPanelSource,
+    /aria-label="Сортировка"|<Select\b/,
+  );
+  assert.doesNotMatch(
+    courseCatalogPanelSource,
+    /ProductTableSortableHeaderCell/,
+  );
   assert.doesNotMatch(courseCatalogPanelSource, />Готовые курсы</);
   assert.doesNotMatch(courseCatalogPanelSource, />Каталог<\/p>/);
   assert.doesNotMatch(

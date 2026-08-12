@@ -343,6 +343,27 @@ export function createCourseBuilderService(
       return updated;
     },
 
+    async archiveCourse(actor: CourseBuilderActor, courseId: string) {
+      const course = await requireOwnedCourse(actor, courseId);
+      const outcome = await repository.archiveCourse(course.id);
+      switch (outcome) {
+        case "archived":
+          return { courseId: course.id };
+        case "course_is_published":
+          throw new CourseBuilderConflictError(
+            "Сначала снимите курс с публикации в каталоге.",
+            "course_is_published",
+          );
+        case "course_has_open_lesson_runs":
+          throw new CourseBuilderConflictError(
+            "Сначала завершите или отмените запланированные занятия по этому курсу.",
+            "course_has_open_lesson_runs",
+          );
+        case "not_found":
+          throw new CourseBuilderAccessError();
+      }
+    },
+
     async addLesson(
       actor: CourseBuilderActor,
       courseId: string,

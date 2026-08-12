@@ -589,25 +589,6 @@
   font-size: 0.82rem;
 }
 
-.workspace-lesson-item {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: stretch;
-  gap: 0.45rem;
-}
-
-.workspace-lesson-item .workspace-lesson-row {
-  grid-template-columns: auto auto minmax(0, 1fr) auto;
-}
-
-.workspace-lesson-schedule {
-  align-self: stretch;
-  min-width: 10.5rem;
-  height: auto;
-  justify-content: flex-start;
-  white-space: nowrap;
-}
-
 .lesson-run-status-button {
   border-color: rgba(20, 20, 20, 0.1);
 }
@@ -1906,18 +1887,9 @@
     grid-template-columns: 1fr;
   }
 
-  .workspace-lesson-item,
   .lesson-run-audience-options,
   .teaching-learner-grid {
     grid-template-columns: 1fr;
-  }
-
-  .workspace-lesson-item .workspace-lesson-row {
-    grid-template-columns: auto minmax(0, 1fr) auto;
-  }
-
-  .workspace-lesson-schedule {
-    min-height: var(--course-demo-control-height);
   }
 
   .student-directory-toolbar {

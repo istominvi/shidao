@@ -117,6 +117,12 @@ export class CourseBuilderRepositoryError extends Error {
   }
 }
 
+export type CourseArchiveOutcome =
+  | "archived"
+  | "course_is_published"
+  | "course_has_open_lesson_runs"
+  | "not_found";
+
 export interface CourseBuilderRepository {
   getSessionInvalidBefore(): Promise<string | null>;
   getAccountId(authUserId: string): Promise<string | null>;
@@ -130,6 +136,7 @@ export interface CourseBuilderRepository {
     courseId: string,
     input: CourseUpdateInput,
   ): Promise<CourseSummary | null>;
+  archiveCourse(courseId: string): Promise<CourseArchiveOutcome>;
   assembleDraft(input: CourseDraftAssemblyPlan): Promise<AssembleCourseResult>;
   addLesson(courseId: string, input: AddLessonInput): Promise<CourseLesson>;
   getLesson(lessonId: string): Promise<CourseLesson | null>;
@@ -441,6 +448,13 @@ export function createCourseBuilderRepository(
         { method: "PATCH", body },
       );
       return rows[0] ? mapCourse(rows[0]) : null;
+    },
+
+    async archiveCourse(courseId) {
+      return request<CourseArchiveOutcome>("/rest/v1/rpc/archive_course", {
+        method: "POST",
+        body: { p_course_id: courseId },
+      });
     },
 
     async assembleDraft(input) {

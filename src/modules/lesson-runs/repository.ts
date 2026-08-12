@@ -670,7 +670,7 @@ export function createLessonRunsRepository(
 
     async getCourse(courseId) {
       const rows = await request<CourseRow[]>(
-        `/rest/v1/course?select=id,owner_account_id,title,subject&id=eq.${encodeFilter(courseId)}&limit=1`,
+        `/rest/v1/course?select=id,owner_account_id,title,subject&id=eq.${encodeFilter(courseId)}&archived_at=is.null&limit=1`,
       );
       const row = rows[0];
       return row

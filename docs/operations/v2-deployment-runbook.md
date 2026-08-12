@@ -168,6 +168,38 @@ Production DB execution record, 11 августа 2026 года:
 Web merge/deploy и exact running-image postflight для этого release фиксируются
 отдельно после фактического Coolify rollout.
 
+### A1 atomic Course archive — production execution record
+
+Exact migration `20260811231505_atomic_course_archive.sql`, SHA-256
+`7b43b023dd7692a39c1ab3702f0972c5d2252766a1093c3905b8c80fce24e8f8`,
+применена к production с `COMMIT` 12 августа 2026 года. Database half этого
+DB+web contract теперь current; зависимый web вызывает `archive_course`, но его
+Coolify rollout и running-image postflight остаются отдельным следующим шагом.
+
+Production evidence:
+
+- verified full-format backup
+  `/root/shidao-db-backups/shidao-before-atomic-course-archive-20260811T233315Z.dump`
+  имеет size `1146274` bytes, mode `600`, `1427` restore-list entries и
+  SHA-256
+  `86610eac53eee82ddba0943247876f77c16ec52c076ca1f93945d64bd4900812`;
+- неизменённый tracked SQL завершился `COMMIT`; exact postflight и rollback
+  probe прошли успешно;
+- counts не изменились: `5` active и `0` archived Course, `16` Lessons,
+  `90` Components, `6` Slides, `2` attachments/files, `2` Runs/records,
+  `0` publications/revisions; invalid invariants — `0`;
+- postflight подтвердил owner-matched `SECURITY DEFINER` RPC с закрытым ACL,
+  четыре enabled guard triggers, private owner-matched touch-helper и exact
+  column-only Course/Lesson UPDATE grants без table-level UPDATE/DELETE;
+- PostgREST видит RPC, anonymous HTTP-вызов закрыт с `401` / `42501`;
+- штатный live snapshot снят в `2026-08-12T00:22:27Z`, SHA-256
+  `055b3c3ab47afc3c3db86d92c6c7530b3735841e34e4b475101ac96056d853ec`.
+
+При зависимом web rollout подтвердить exact `SOURCE_COMMIT`, image, restart
+count, HTTPS/guest/CSRF и authenticated Course archive smoke. При неуспехе web
+rollout не откатывать migration разрушительно: исправлять новой forward change
+или вернуть совместимый web, использующий RPC.
+
 Web с Groups/mixed audience нельзя выпускать раньше последовательного успешного
 применения `20260806190044_lesson_runs_learning_records.sql` и
 `20260806220726_learner_groups_mixed_course_audience.sql`: students/audience
@@ -556,6 +588,31 @@ ShiDao V2 application:
   label без круга; каждый `aria-controls` tab разрешается в matching
   `tabpanel` с обратным `aria-labelledby`, а на mobile вкладки скроллятся
   внутри strip без document overflow;
+- на сохранённом Course открыть **Уроки** и проверить, что общий `WorkspaceTabs`
+  не получил route-specific fork. Сразу под ним прозрачная toolbar поиска и
+  «Добавить урок» занимает всю content-row: computed horizontal padding `0`,
+  search начинается у левого края, action заканчивается у правого. Таблица имеет
+  видимые `№ / Урок / План / Экран ученика / Проведение / Обновлён` и пустой
+  action heading; wrapper белый, border `0`, radius 12 px, header/data rows
+  ровно 40 px, обычные cells имеют 12 px с обеих сторон, последняя action-cell —
+  4 px. Белый header и data rows используют один divider color. Каждый из шести
+  data headers при первом клике публикует `aria-sort="ascending"`, при повторном
+  — `descending`; initial load и reload начинают с `№`/`position ASC`, а
+  view-sort не отправляет mutation и не меняет authored order. Проверить поиск
+  по title/summary, filtered-empty и «Очистить поиск». Для Lesson без открытого
+  Run, но с completed history, проверить «Проводился ранее»; после изменения
+  сохранившегося Component или Student Slide колонка `Обновлён` должна
+  отражать newest child timestamp, а не только timestamp родительского Lesson;
+- в каждой Course Lesson row проверить единственный постоянно доступный
+  `MoreVertical` trigger 32 × 32 px с радиусом 8 px. Portal-menu не обрезается
+  table scroll wrapper и содержит ровно два действия: «Открыть урок» и одно
+  контекстное действие проведения (`Назначить урок`, `Изменить назначение`,
+  `Отметить результаты` или `Завершить урок`). Delete/destructive item нет.
+  Открытие Lesson и возврат восстанавливают focus на title-button; scheduling
+  item открывает существующий LessonRun dialog и не выбирает Lesson. На 375 и
+  320 px table overflow остаётся внутри wrapper, toolbar складывается без
+  document-level overflow. Старые карточные `workspace-lesson-*` rows не должны
+  присутствовать;
 - owner открывает Course, другой owner не может;
 - Lesson/Components загружаются;
 - private Component отсутствует в Student Screen;
@@ -601,22 +658,30 @@ ShiDao V2 application:
 - в RouterAI dashboard сверить, что smoke создал ожидаемые запросы/usage и не
   вызвал неожиданный всплеск расхода.
 
-После smoke disposable Course удалить только через обычный подтверждённый UI,
-если такой delete flow входит в текущий release; иначе оставить его явно
-помеченным как smoke, не удаляя данные напрямую из БД.
+После smoke disposable Course убирать только через обычный подтверждённый UI.
+Проверить, что действие является soft archive: Course исчезает из active list,
+но Lessons, attachments, Runs и LearningRecords не удаляются физически.
+Published Course должен вернуть `409 course_is_published` до явного unpublish,
+а Course с открытым Run — `409 course_has_open_lesson_runs` до завершения или
+отмены занятия. Проверить, что application вызывает одну user-JWT RPC
+`archive_course`, а не publication/open-run preflight-read плюс direct PATCH:
+RPC атомарно проверяет active ownership и оба conflict-условия вместе с
+установкой `archived_at`; A1 reverse guards сериализуют archive, publish и open
+Run на одной Course row. Этот database contract deployed/current; UI/API smoke
+становится deployed behavior только после отдельного успешного Coolify rollout.
+Не трактовать flow как permanent delete.
 
 ### Roleless navigation and learner identity
 
 - любой authenticated Account видит primary navigation `Расписание / Ученики /
 Курсы`, а Account menu — `Учебный профиль / Настройки / Выход`; Guest на
   каждом private route уходит в login;
-- `/schedule` и `/students` сохраняют единый computed page-header contract с
+- `/schedule`, `/students` и `/courses` сохраняют единый computed page-header contract с
   `/courses`, Course и Lesson; contextual actions находятся в header, а
   date/view controls — ниже него справа прямо на page background без внешней
-  toolbar-card. У прозрачных Schedule и Students controls-панелей проверить
+  toolbar-card. У прозрачных Schedule, Students и обеих Courses controls-панелей проверить
   нулевой horizontal padding: controls остаются в пределах content-row, а
-  крайний control совпадает с его внешней границей. Courses сохраняет 12 px
-  слева и справа. Для Schedule
+  крайний control совпадает с его внешней границей. Для Schedule
   проверить, что отдельного внешнего «Неделя /
   Месяц» нет: центральная кнопка compact date control открывает календарный
   popover с «День / Неделя / Месяц», выбор даты меняет опорную дату, а стрелки
@@ -693,20 +758,32 @@ ShiDao V2 application:
   возврата teacher-only route gate;
 - `/observing` перенаправляет на `/students?tab=observing`, reload сохраняет
   выбранную вкладку, а main navigation подсвечивает «Ученики»;
-- `/courses` проверяется в режимах «Карточки / Таблица»: controls лежат прямо
-  на page background без toolbar-card и имеют горизонтальный inset 12 px,
+- `/courses` показывает точный подзаголовок «Создавайте свои курсы с нуля или
+  добавляйте готовые из каталога» без точки; tabs сохраняют общий edge-to-edge
+  20%-black baseline. Раздел проверяется в режимах «Карточки / Таблица»:
+  controls обеих вкладок лежат прямо на page background без toolbar-card и без
+  horizontal inset,
   поиск и disclosure subject/level/content
   меняют только client projection owner-scoped списка, icon-only view control
   имеет доступные имена, reset возвращает все курсы, filtered-empty не
   подменяется пустым persisted каталогом. Во вкладке published «Каталог» отдельно
   проверяются только реальные server-side search/subject/level и cursor, такой
   же icon-only cards/table presentation, отсутствие повторного заголовка,
-  пояснения и видимого result count; client-only sort/content не добавляются;
+  пояснения и видимого result count; client-only sort/content не добавляются.
+  В **Мои** отдельного sort select нет: headers `Курс / Предмет / Уровень /
+Уроки / Публикация / Обновлён` переключают ascending/descending и публикуют
+  `aria-sort`; action heading остаётся пустым и несортируемым. В конце owned-row
+  проверить один `MoreVertical` trigger 32 × 32 px, portal-menu и для
+  unpublished Course точные «Дублировать / Опубликовать / Удалить». Delete
+  открывает confirmation; published item disabled с подсказкой сначала снять
+  публикацию. У **Каталог** остаётся compact icon-open action и server cursor
+  order без локальной сортировки неполного результата;
 - на Schedule/Students/Courses table view измерить общий surface contract:
   активный `ProductTable` wrapper сплошной белый, border `0`, radius `12 px`;
-  карточки сохраняют отдельный radius `20 px`. Schedule и Students используют
-  exact 40 px header/data rows; Course table сохраняет свою multiline
-  плотность. Во всех sortable Schedule/Students/Groups заголовках сортируется
+  карточки сохраняют отдельный radius `20 px`. Schedule, Students и обе Course
+  tables используют exact 40 px header/data rows, white header, общий divider,
+  однострочный ellipsis, 12 px обычный cell inset и 4 px action-cell inset. Во
+  всех sortable Schedule/Students/Groups/owned-Course заголовках сортируется
   реальная projection, action heading остаётся несортируемым;
 - existing email и learner login/PIN создают одну Account session и не выводят
   internal Auth email/browser secret;

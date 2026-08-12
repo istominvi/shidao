@@ -35,7 +35,8 @@
   course-wide attachments.
 - Реализована двухуровневая Course → Lesson навигация в визуальном языке demo:
   четыре Course tabs («Уроки / О курсе / Материалы / История»), пять Lesson
-  tabs, прозрачные headers и отдельный список Lesson до открытия редактора.
+  tabs, прозрачные headers и отдельная плотная таблица Lesson до открытия
+  редактора. Её исходный порядок совпадает с authored `position`.
 - **О курсе** объединяет inline-настройки, фактическую аудиторию и источники в
   одной растущей карточке без внутреннего вертикального scroll; **Материалы**
   являются отдельной агрегирующей course-wide библиотекой. `/courses/new`
@@ -258,10 +259,11 @@ Course-фильтры, сортировку и переключение «Кар
 active/archive/pending в одной таблице с inline status/text, full-width search и
 единым disclosure «Фильтр» для status, group membership, конкретной группы и
 Account connection. Подзаголовок страницы — «Ученики и группы, с которыми вы
-работаете или за которыми наблюдаете». Отдельный sort select у Students/Groups удалён:
-возрастающее/убывающее направление переключается кликом по sortable headers,
-Course facets собраны в компактный disclosure, а view — в две icon-only
-кнопки. Published Catalog показывает только поддержанные server-side
+работаете или за которыми наблюдаете». Отдельный sort select у
+Students/Groups и Course **Мои** удалён: возрастающее/убывающее направление
+переключается кликом по sortable headers, Course facets собраны в компактный
+disclosure, а view — в две icon-only кнопки. Published Catalog показывает
+только поддержанные server-side
 subject/level filters, но использует тот же cards/table presentation; повторный
 заголовок, пояснение и видимые result counts удалены. В current source Schedule
 также сводит выбор даты и режимы «День / Неделя / Месяц» в один компактный
@@ -287,15 +289,19 @@ option в переключателе вида.
 переключают ascending/descending сортировку повторным кликом и отражают её
 через `aria-sort`. Прозрачная Schedule controls-панель снова
 занимает всю ширину строки без горизонтального inset, сохраняя controls справа;
-Students controls теперь тоже используют всю ширину без inset; Courses
-controls сохраняют inset 12 px и совпадают с внутренними границами page-header.
+Students controls и обе Courses controls-панели теперь тоже используют всю
+ширину без horizontal inset.
 Общие tokens различают карточки с радиусом 20 px и
 elements/controls/tables/menus с радиусом 12 px; активные ProductTable wrappers
-белые, borderless и используют table token. Students table получает такой же
-40 px header/data-row contract и колонки
-`Ученик / Статус / Аккаунт / Группы / Добавлен / actions`; плотность Courses
-не меняется. Их shared header белый, а row dividers используют один
-`--product-table-divider-color`. Один `MoreVertical` в каждой Students-row
+белые, borderless и используют table token. Students и обе Course-таблицы
+получают такой же 40 px header/data-row contract. Students показывает
+`Ученик / Статус / Аккаунт / Группы / Добавлен / actions`, Course **Мои** —
+`Курс / Предмет / Уровень / Уроки / Публикация / Обновлён / actions`, а
+**Каталог** — `Курс / Предмет / Уровень / Автор / Уроки / Материалы / actions`.
+Их shared header белый, а row dividers используют один
+`--product-table-divider-color`. Owned Course headers сортируют полную
+client-loaded projection; cursor Catalog сохраняет server order. Один
+`MoreVertical` в каждой Students-row
 открывает contextual menu: профиль, управление группами, реальный
 «Добавить в курс…» с сохранением существующей group/direct audience и
 destructive «Убрать из списка». «Написать сообщение» остаётся disabled с явной пометкой о
@@ -308,10 +314,21 @@ cancel actions. Authenticated top header/profile menu стали
 сохраняют тонкую рамку, menu items остаются borderless. Authenticated Settings
 (`profile / security / observers`) переиспользуют тот же product shell, demo
 TopNav, canonical side navigation и shared Button variants вместо raw action
-styles; landing, Auth и полноэкранный Student Screen не меняются. Это UI-only
-polish без новой schema, migration или API. Последняя корректировка
-Schedule-cell/action spacing остаётся current source до успешного Coolify
-deploy и production postflight.
+styles; landing, Auth и полноэкранный Student Screen не меняются. Эти visual
+изменения сами не требуют schema. Course **Мои** также получил постоянный
+`MoreVertical` portal-menu с реальными действиями публикации/дублирования и
+подтверждённым «Удалить». `DELETE` здесь означает recoverable soft archive
+через `course.archived_at`, а не physical delete: authored graph, attachments,
+Runs и LearningRecords сохраняются. Published Course сначала требует unpublish
+(`409 course_is_published`), Course с открытыми Runs — их завершения или отмены
+(`409 course_has_open_lesson_runs`). Current `archive_course` RPC атомарно
+проверяет эти условия вместе с active ownership и ставит `archived_at` в одной
+DB-транзакции; A1 reverse guards сериализуют archive, publish и open Run на
+одной Course row, а application больше не сочетает отдельные preflight-read с
+PATCH. A1 migration уже применена к production, exact DB postflight и live
+snapshot green. Restore UI и permanent deletion остаются later. Зависимая
+application-корректировка остаётся current source до успешного Coolify deploy и
+production web postflight.
 Current-source polish
 оставляет AppPageHeader actions шириной по содержимому, отдаёт свободное место
 heading и унифицирует WorkspaceTabs: container и 20%-black baseline занимают
@@ -323,6 +340,13 @@ Course начинает с **О курсе**; обычное сохранени�
 deterministic/AI-сборка открывает **Уроки**. Вкладка сохранённого Course
 **Материалы** разделяет используемые и пока не используемые attachments и
 показывает Lesson usage.
+На **Уроках** неизменённый полноширинный `WorkspaceTabs` продолжает прозрачная
+search/create toolbar без horizontal inset. Lesson проецируются в `ProductTable`
+`№ / Урок / План / Экран ученика / Проведение / Обновлён / actions` с общей
+Schedule-геометрией `40 px / 12 px / 4 px`; шесть заголовков меняют только
+view-sort, начиная с `position ASC`. В action-cell остаётся один 32 px
+`MoreVertical`: portal-menu открывает Lesson либо контекстный flow проведения и
+не содержит удаления. Старый карточный `workspace-lesson-*` layout удалён.
 В current source code-first Component registry расширен с 10 до 20 активных
 типов: добавлены video/audio, расширенный quiz, пропуски, bank
 слов, порядок, категории, свободный ответ, HTTPS-ссылка, сборка слова и
@@ -331,14 +355,17 @@ deterministic/AI-сборка открывает **Уроки**. Вкладка 
 выбор и границы зафиксированы в
 [`docs/product/course-component-catalog.md`](./product/course-component-catalog.md).
 
-- продолжить responsive/accessibility полировку обновлённого Course workspace;
+- подтвердить production postflight responsive/accessibility контракта
+  обновлённой Course Lessons table, включая mobile contained scroll, keyboard
+  sort/menu и focus restore;
 - добавить в сохранённый Course возобновляемую загрузку новых материалов с
   явной компенсацией незавершённых Storage operations;
 - улучшить выбор/поиск Components в palette;
 - проверить все 20 editors/renderers отдельными production-safe сценариями;
 - добавить drag-and-drop только если он не ухудшает доступность и надёжность;
-- завершить поведение удаления Course; Lesson уже предупреждает об удалении
-  Runs и сохраняет finalized LearningRecord в учебных профилях;
+- добавить отдельный restore UI для soft-archived Course и только после
+  согласованной publication/Storage retention policy решать permanent delete;
+  текущий `DELETE` намеренно архивирует и сохраняет authored/history graph;
 - добавить autosave/draft feedback там, где это уменьшает риск потери ввода;
 - сериализовать append Lesson/Component на owner parent, чтобы concurrent
   create не сталкивался по position и supported path всегда оставался dense;
@@ -474,10 +501,11 @@ postflight; Coolify deployment `891` развернул exact functional SHA `9a
 - immutable history защищена DB-квотой 5 GiB на Account, а Storage-writing
   mutations — process-local concurrency/rate guard.
 
-**Next:** до широкого rollout добавить persisted orphan-Storage reconciliation;
-до Course DELETE — явный unpublish/manage-by-publication flow или согласованную
-deletion policy. Официальные Course от ShiDao требуют отдельно утверждённого
-учебного контента; fixtures не публикуются.
+**Next:** до широкого rollout добавить persisted orphan-Storage reconciliation.
+Current Course `DELETE` является soft archive и требует явный unpublish;
+permanent delete остаётся закрыт до согласованной publication/Storage retention
+policy. Официальные Course от ShiDao требуют отдельно утверждённого учебного
+контента; fixtures не публикуются.
 
 ## P1.1: persisted Homework
 
@@ -614,20 +642,25 @@ Start/cancel
 переиспользуют существующие LessonRun mutations, cancel требует подтверждения,
 edit открывает dialog назначения сразу в режиме редактирования. Пункты
 portal-menu имеют 40 px, вертикальное
-центрирование и `.88rem/400`. Прозрачная Schedule controls-панель использует
-всю ширину строки без горизонтального inset; Students controls также
-full-width, а 12 px inset остаётся только у Courses. Общие radius
+центрирование и `.88rem/400`. Прозрачные Schedule, Students и обе Courses
+controls-панели используют всю ширину строки без горизонтального inset. Общие radius
 tokens задают 20 px для карточек и 12 px для controls/tables/menus; активные
-ProductTable surfaces Schedule/Students/Courses белые и borderless. Students
-table использует 40 px header/data rows и колонки
-`Ученик / Статус / Аккаунт / Группы / Добавлен / actions`; плотность Courses
-не изменяется. Students/Groups сортируются через headers, а их единый «Фильтр»
+ProductTable surfaces Schedule/Students/Courses белые и borderless. Students и
+обе Courses tables используют 40 px header/data rows; owned Course сортируется
+через headers, Catalog сохраняет server-side cursor order. Students/Groups
+сортируются через headers, а их единый «Фильтр»
 объединяет status, group membership, конкретную группу и Account connection.
+Сохранённый Course → **Уроки** также использует прозрачную full-width
+search/create toolbar и белую borderless 40 px `ProductTable`; шесть data
+headers сортируют только локальную projection с default `position ASC`.
+Последняя колонка имеет 4 px inset и один 32 px `MoreVertical` с двумя
+portal-actions: открыть Lesson и выполнить контекстное действие проведения.
 Authenticated top header и profile dropdown тоже стали сплошными белыми
 поверхностями без blur. Buttons/header controls используют единый flat
 `40 px / 12 px / .88rem / 400` contract с fully opaque contrast-aware icons,
-тонкой рамкой у белых кнопок и borderless menu items. Schema/API не меняются;
-последний spacing refinement остаётся current source до успешного Coolify
+тонкой рамкой у белых кнопок и borderless menu items. Physical schema не
+меняется; Course API добавляет recoverable soft archive с published/open-Run
+guards. Последний refinement остаётся current source до успешного Coolify
 deploy и production postflight.
 
 **Current production contract дополнительно:** verified actual duration,

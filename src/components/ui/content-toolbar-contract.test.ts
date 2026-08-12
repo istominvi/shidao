@@ -23,15 +23,19 @@ const courseCatalogPanel = readFileSync(
   "src/components/course-builder/course-catalog-panel.tsx",
   "utf8",
 );
+const courseWorkspace = readFileSync(
+  "src/components/course-builder/course-workspace.tsx",
+  "utf8",
+);
 
-test("Schedule and Students are full-width while Courses keep the 12px inset", () => {
+test("Schedule, Students, Courses, and Course Lessons toolbars are full-width", () => {
   assert.match(
     globalStyles,
     /\.course-demo-shell\s*\{[^}]*--course-demo-content-inset: 0\.75rem;/,
   );
   assert.match(
     globalStyles,
-    /\.compact-page-toolbar\s*\{[^}]*width: 100%;[^}]*max-width: 100%;[^}]*min-width: 0;[^}]*background: transparent;[^}]*padding-block: 0;[^}]*padding-inline: var\(--course-demo-content-inset, 0\.75rem\);/,
+    /\.compact-page-toolbar\s*\{[^}]*width: 100%;[^}]*max-width: 100%;[^}]*min-width: 0;[^}]*background: transparent;[^}]*padding-block: 0;[^}]*padding-inline: 0;/,
   );
   assert.match(
     teachingHubStyles,
@@ -58,6 +62,22 @@ test("Schedule and Students are full-width while Courses keep the 12px inset", (
   assert.match(
     courseCatalogPanel,
     /className="compact-page-toolbar course-catalog-toolbar"/,
+  );
+  assert.match(
+    courseWorkspace,
+    /className="compact-page-toolbar course-lessons-toolbar"[\s\S]*?aria-label="Управление уроками"/,
+  );
+  assert.match(
+    courseWorkspace,
+    /className="compact-toolbar-search product-search-wrap"[\s\S]*?Поиск уроков[\s\S]*?placeholder="Название или описание урока…"/,
+  );
+  assert.match(
+    courseWorkspace,
+    /className="compact-toolbar-rail"[\s\S]*?>\s*Добавить урок\s*</,
+  );
+  assert.doesNotMatch(
+    globalStyles,
+    /\.compact-page-toolbar\s*\{[^}]*padding-inline: var\(--course-demo-content-inset/,
   );
 });
 

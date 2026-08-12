@@ -1,8 +1,10 @@
 # Правила изменений базы ShiDao
 
 **Статус:** обязательная политика для всех новых DB changes
-**Текущий production/repository schema head:**
-`20260811154138_remove_divider_components.sql`
+**Текущий production schema head:**
+`20260811231505_atomic_course_archive.sql`
+**Текущий repository head:**
+`20260811231505_atomic_course_archive.sql` — совпадает с production
 
 ## 1. Источники истины
 
@@ -61,8 +63,11 @@ forward history.
 9. postflight assertions;
 10. `COMMIT` только после всех проверок.
 
-Для multi-row reorder/compaction заранее определять единый lock order. Не
-исправлять race condition только retry в UI.
+Для multi-row reorder/compaction заранее определять единый lock order. Если
+invariant связывает несколько entry points (например archive, publish и open
+Run), все прямые и обратные пути должны сериализоваться на одном parent row и
+повторно проверять состояние после ожидания lock. Не исправлять race condition
+только preflight-read или retry в UI.
 
 ## 5. RLS и Data API
 
@@ -90,6 +95,15 @@ RLS и grants решают разные задачи: grant разрешает �
 - затем узкий `GRANT EXECUTE` только требуемой роли;
 - review lock order и concurrency;
 - тесты, что direct table mutation остаётся недоступной.
+
+Для trigger-only helper без caller identity допустимо отсутствие собственного
+`auth.uid()` predicate только когда одновременно доказано, что helper:
+
+- принадлежит тому же owner, что защищаемая relation;
+- имеет `SET search_path = ''`;
+- не имеет `EXECUTE` у `PUBLIC`, `anon`, `authenticated` или `service_role`;
+- вызывается только reviewed trigger graph;
+- не расширяет browser table/column ACL.
 
 Официальные ориентиры:
 
@@ -126,7 +140,10 @@ owner path, signed access и отрицательным cross-account сцена
 - functions/triggers/RLS/policies;
 - Auth Account bootstrap trigger;
 - `course-assets` bucket invariant;
-- Storage object policies.
+- Storage object policies;
+- после A1 — atomic Course archive RPC, четыре guard triggers, immutable Lesson
+  parent, private touch-helper flags/ACL и exact column-only Course/Lesson
+  update grants.
 
 Скрипт сначала проверяет read-only ShiDao schema signature, пишет во временный
 файл и не должен менять migration history. Полученный snapshot не применяется

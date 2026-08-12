@@ -159,35 +159,70 @@ toolbar-card: компактные 40 px controls расположены пря�
 «Ученики и группы, с которыми вы работаете или за которыми наблюдаете». Поиск
 остаётся отдельным контролом, а статус, наличие или отсутствие membership в
 группах, конкретная группа и тип связи с Account собраны в едином disclosure
-«Фильтр». Отдельного select «Сортировка» нет: Students и Groups сортируются
-кликом по заголовку столбца, повторный клик меняет направление. Во вкладке Course
-**Мои** предмет, уровень и наполнение собраны в disclosure «Фильтры»,
-сортировка остаётся отдельным native select, а «Карточки / Таблица» выбираются
-двумя icon-only кнопками; видимый result count удалён. Published **Каталог**
+«Фильтр». Отдельного select «Сортировка» нет: Students, Groups и таблица
+Course **Мои** сортируются кликом по заголовку столбца, повторный клик меняет
+направление. Во вкладке Course **Мои** предмет, уровень и наполнение собраны в
+disclosure «Фильтры», а «Карточки / Таблица» выбираются двумя icon-only
+кнопками; видимый result count удалён. Published **Каталог**
 использует тот же компактный поиск, disclosure только для реально поддержанных
 server-side предмета/уровня и такой же icon-only выбор «Карточки / Таблица».
 Повторный заголовок, поясняющий текст и видимый count удалены; фиктивные
-content/sort controls не добавлены. Это UI-only change без schema, migration
-или нового Course API.
+content/sort controls не добавлены. Подзаголовок `/courses` — «Создавайте свои
+курсы с нуля или добавляйте готовые из каталога» без завершающей точки.
 
 **Current source content controls/table surfaces (следующий deployment):**
-прозрачная панель управления Schedule снова использует всю ширину content-row
-без горизонтального inset: date/view controls остаются справа и заканчиваются
-по внешней границе строки. Обе directory-вкладки Students также имеют
-`padding-inline: 0` и занимают всю ширину строки. Обе
-вкладки Courses намеренно сохраняют горизонтальный inset 12 px. Ни одна из панелей не создаёт
+прозрачные панели управления Schedule, обеих directory-вкладок Students и
+обеих вкладок Courses используют всю ширину content-row с
+`padding-inline: 0`. Date/view controls Schedule остаются справа и
+заканчиваются по внешней границе строки. Ни одна из панелей не создаёт
 отдельную toolbar-card. Общие tokens различают карточку с радиусом
 20 px и вложенный element/control/table/menu с радиусом 12 px. Активные
 `ProductTable` wrappers Schedule, Students и Courses используют table token,
-сплошной белый фон и не имеют внешней рамки. Students table теперь повторяет
-плотный Schedule-контракт: header и data rows имеют точную высоту 40 px, а
-видимые колонки — `Ученик / Статус / Аккаунт / Группы / Добавлен / actions`.
-Shared `ProductTableHead` теперь белый, а разделители
-строк этих таблиц получают один `--product-table-divider-color`. Это UI-only
-source change без API, schema или migration;
-deployment ещё не выполнен. Для текущего follow-up зелёные typecheck, lint,
-format, production build, `git diff --check`, `456/456` unit/e2e и `22/22`
-production-browser scenarios.
+сплошной белый фон и не имеют внешней рамки. Students и обе Course-таблицы
+повторяют плотный Schedule-контракт: header и data rows имеют точную высоту
+40 px, обычные cells — inline-padding 12 px, action-cell — 4 px. Students
+показывает `Ученик / Статус / Аккаунт / Группы / Добавлен / actions`;
+Course **Мои** — `Курс / Предмет / Уровень / Уроки / Публикация / Обновлён /
+actions`, а **Каталог** — `Курс / Предмет / Уровень / Автор / Уроки /
+Материалы / actions`. Shared header белый, а разделители строк используют один
+`--product-table-divider-color`. Сама table/toolbar geometry не меняет schema;
+отдельный Course archive lifecycle ниже использует уже применённый production
+A1 database contract. Deployment web source ещё не выполнен.
+
+Сохранённый Course применяет тот же контракт на вкладке **Уроки**: неизменённый
+общий `WorkspaceTabs` остаётся полноширинным, а под ним прозрачная панель поиска
+и «Добавить урок» занимает всю content-row без horizontal inset. Вместо
+карточного списка рендерится `ProductTable` с колонками `№ / Урок / План / Экран
+ученика / Проведение / Обновлён / actions`. Шесть data-заголовков переключают
+view-only ascending/descending projection; исходное состояние — канонический
+`position ASC`, сортировка не переписывает authored Lesson order. Header и
+data-row имеют 40 px, обычные cells — 12 px, action-cell — 4 px, а единственный
+`MoreVertical` trigger — 32 × 32 px. Его portal-menu содержит только «Открыть
+урок» и контекстное действие проведения; удаления Lesson в этом меню нет.
+Если открытого проведения нет, но в bounded Course history есть завершённое,
+колонка честно показывает «Проводился ранее», не выдавая неполную выборку за
+точный total. `Обновлён` берёт максимум timestamp самого Lesson и сохранившихся
+Components и Student Slides, поэтому обычное изменение плана или экрана
+ученика не оставляет в таблице устаревшую дату.
+Прежние `workspace-lesson-*` card/list classes удалены.
+
+В конце каждой строки Course **Мои** находится один `MoreVertical` trigger
+32 × 32 px с portal-menu. Для неопубликованного Course меню содержит
+«Дублировать / Опубликовать / Удалить»; publication-состояния сохраняют
+действия обновления, открытия и снятия с публикации. «Удалить» требует
+подтверждения и вызывает `DELETE /api/v2/courses/[courseId]`, который выполняет
+recoverable soft archive через существующий `course.archived_at`: Course
+исчезает из active list/get, но его Lessons, Components, attachments,
+LessonRuns и LearningRecords физически сохраняются. Опубликованный Course
+получает `409 course_is_published` до явного unpublish, а Course с открытым
+LessonRun — `409 course_has_open_lesson_runs` до завершения или отмены Runs.
+После owner-check application вызывает одну user-JWT RPC `archive_course`:
+она в одной DB-транзакции повторно проверяет active ownership, публикацию и
+открытые Runs, а при успехе ставит `archived_at`. Поэтому endpoint не делает
+раздельных publication/open-run preflight-read и direct PATCH. Reverse guards
+сериализуют archive, publish и создание/opening Run на одной Course row; это
+по-прежнему не permanent delete. A1 database contract уже deployed/current;
+этот API/UI flow остаётся current source до отдельного Coolify rollout.
 
 **Current source Students table/actions refinement (следующий deployment):**
 каждый data-заголовок таблиц Students и Groups переключает возрастающую и
@@ -479,7 +514,10 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
 - Успешная загрузка означает только «прикреплено». Parsing, OCR, embeddings и
   RAG не реализованы.
 - Course открывается без автоматического выбора первого Lesson и содержит
-  вкладки «Уроки / О курсе / Материалы / История».
+  вкладки «Уроки / О курсе / Материалы / История». **Уроки** используют
+  полноширинные search/create controls и плотную таблицу Schedule-геометрии;
+  исходная projection следует authored `position`, а альтернативная сортировка
+  заголовками остаётся только локальным представлением.
 - **О курсе** — одна растущая вместе с содержимым карточка без собственного
   вертикального scroll. В ней inline редактируются основные настройки и
   фактическая аудитория из групп/отдельных учеников; здесь же остаётся секция
@@ -580,7 +618,16 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
   connection, а «Добавлен» — teacher-local дату relation или запроса. Архив и
   ожидание ответа отмечены прямо в строке. Вся compact
   toolbar расположена на page background во всю ширину без horizontal inset;
-  Course toolbars сохраняют собственный inset 12 px.
+  обе Course toolbars используют тот же нулевой horizontal inset.
+
+- `/courses` использует общий полноширинный `WorkspaceTabs` и прозрачные
+  full-width controls в обеих вкладках. Обе таблицы имеют 40 px header/rows и
+  однострочный ellipsis. В **Мои** шесть data-заголовков меняют
+  ascending/descending сортировку и отражают её через `aria-sort`; action
+  header не сортируется. **Каталог** сохраняет server-side cursor order и не
+  сортирует только уже загруженную страницу на клиенте. Вертикальное меню
+  owned-row переиспользует реальные duplicate/publication flows и подтверждённый
+  soft archive с publication/open-Run guards.
 - Клик по строке ученика открывает dialog «Профиль / История»: здесь можно
   изменить локальное имя и membership в нескольких группах, а история
   ограничена LearningRecord текущего преподавателя. Ученика можно создать,
@@ -667,8 +714,12 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
 
 ### Уроки и компоненты
 
-- На Course → «Уроки» отображается полный список Lessons и кнопка «Добавить
-  урок»; редактор не открывается до явного выбора Lesson.
+- На Course → «Уроки» отображается полный ordered набор Lessons в таблице
+  `№ / Урок / План / Экран ученика / Проведение / Обновлён / actions`; поиск и
+  «Добавить урок» находятся в прозрачной полноширинной панели. Шесть заголовков
+  меняют только view-sort с исходным `position ASC`. В конце строки один
+  `MoreVertical` открывает «Открыть урок» и контекстное действие проведения;
+  редактор не открывается до явного выбора Lesson.
 - После выбора Lesson backlink содержит название Course, а заголовок имеет
   формат `Урок {position}. {title}`.
 - Lesson содержит вкладки «План / Экран ученика / Домашнее задание / Материалы
@@ -922,7 +973,8 @@ History-aware context развёрнут в release `9393080`; production provid
 - catalog moderation, ratings, update merge в уже добавленный Course и
   наполнение каталога утверждёнными official ShiDao Course;
 - persisted reconciliation для Storage objects, оставшихся после crash или
-  commit-unknown, и явная publication policy до появления удаления Course;
+  commit-unknown; permanent physical Course deletion и пользовательский
+  restore архивного Course остаются отдельными future lifecycle решениями;
 - внешний remote MCP/API для сторонних агентов;
 - отдельный staging-контур.
 
@@ -1084,6 +1136,23 @@ provider requests, assistant dialog history или quota state в БД.
   сохранил 5 Course, 16 Lesson и 6 Slides; Component count стал 89,
   publication divider, empty Slides, density и exactly-one violations равны
   `0`. Это DB-state; он не является доказательством нового web deploy.
+- `20260811231505_atomic_course_archive.sql` — применённый production A1:
+  owner-scoped `archive_course`, shared Course row lock для
+  archive/publish/open Run, immutable Lesson parent, четыре закрытых guard
+  trigger, column-only browser UPDATE и запрет прямого Course/Lesson DELETE.
+  Final checksum
+  `7b43b023dd7692a39c1ab3702f0972c5d2252766a1093c3905b8c80fce24e8f8`;
+  production apply завершился `COMMIT`, exact postflight/rollback probe —
+  green. Verified backup имеет size `1146274`, mode `600`, `1427` restore
+  entries и SHA-256
+  `86610eac53eee82ddba0943247876f77c16ec52c076ca1f93945d64bd4900812`.
+  Counts сохранились: `5` active/`0` archived Course, `16` Lessons,
+  `90` Components, `6` Slides, `2` attachments/files, `2` Runs/records,
+  `0` publications/revisions; invalid invariants — `0`. PostgREST видит RPC,
+  anonymous HTTP закрыт с `401` / `42501`. Live snapshot
+  `2026-08-12T00:22:27Z` имеет SHA-256
+  `055b3c3ab47afc3c3db86d92c6c7530b3735841e34e4b475101ac96056d853ec`.
+  Зависимый web UI/API остаётся current source до Coolify rollout.
 
 Источники истины для текущего состояния:
 
