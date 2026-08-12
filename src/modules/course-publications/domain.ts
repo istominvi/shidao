@@ -1,3 +1,5 @@
+import type { CourseLearningAudience } from "@/modules/course-builder/learning-audience";
+
 export type CoursePublicationStatus = "published" | "unpublished";
 
 export type OwnedCoursePublication = {
@@ -19,6 +21,7 @@ export type CourseCatalogEntry = {
   id: string;
   /** Owner-only projection. Always null for publications owned by others. */
   sourceCourseId: string | null;
+  learningAudience: CourseLearningAudience;
   title: string;
   subject: string;
   goal: string;

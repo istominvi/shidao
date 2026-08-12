@@ -27,6 +27,7 @@ export function readCatalogQuery(request: Request) {
   const params = new URL(request.url).searchParams;
   return parsePublicationContract(catalogQuerySchema, {
     q: params.get("q") ?? undefined,
+    learningAudience: params.get("learningAudience") ?? undefined,
     subject: params.get("subject") ?? undefined,
     level: params.get("level") ?? undefined,
     cursor: params.get("cursor"),

@@ -64,6 +64,14 @@ export function publicationRepositoryFailure(input: {
       input.definitelyNotCommitted,
     );
   }
+  if (token.includes("course_attestation_required_before_clone")) {
+    return new CoursePublicationRepositoryError(
+      "Сначала пройдите аттестацию по текущей версии курса.",
+      403,
+      "attestation_required_before_copy",
+      input.definitelyNotCommitted,
+    );
+  }
   if (/not_found|access_denied|owner_mismatch/.test(token)) {
     return new CoursePublicationRepositoryError(
       "Публикация курса не найдена или недоступна.",

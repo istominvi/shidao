@@ -31,6 +31,7 @@ type MockReply = {
 function courseDraft(): CourseDraftInput {
   return {
     title: "Китайский с нуля",
+    learningAudience: "children",
     subject: "Китайский язык",
     goal: "Освоить базовый диалог",
     level: "Начальный",
@@ -45,6 +46,7 @@ function courseRow() {
     id: COURSE_ID,
     owner_account_id: OWNER_ACCOUNT_ID,
     title: "Китайский с нуля",
+    learning_audience: "children",
     subject: "Китайский язык",
     goal: "Освоить базовый диалог",
     level: "Начальный",
@@ -196,6 +198,7 @@ test("createCourse matches the V2 course table and derives draft status", async 
       assert.deepEqual(requests[0]?.body, {
         owner_account_id: OWNER_ACCOUNT_ID,
         title: "Китайский с нуля",
+        learning_audience: "children",
         subject: "Китайский язык",
         goal: "Освоить базовый диалог",
         level: "Начальный",

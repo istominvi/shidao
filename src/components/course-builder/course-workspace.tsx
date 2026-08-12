@@ -55,6 +55,7 @@ import { ActionMenu } from "@/components/ui/action-menu";
 import { Button, productButtonClassName } from "@/components/ui/button";
 import { DialogShell } from "@/components/ui/dialog-shell";
 import { Input } from "@/components/ui/input";
+import { SegmentedControl } from "@/components/ui/segmented-control";
 import {
   ProductTable,
   ProductTableActionCell,
@@ -80,6 +81,7 @@ import type {
   CourseLesson,
   CourseWorkspace,
 } from "@/modules/course-builder/domain";
+import type { CourseLearningAudience } from "@/modules/course-builder/learning-audience";
 import type {
   CourseAudience,
   LearnerProfile,
@@ -258,6 +260,8 @@ function CourseBasicsForm({
   const [subject, setSubject] = useState(course.subject);
   const [goal, setGoal] = useState(course.goal);
   const [level, setLevel] = useState(course.level);
+  const [learningAudience, setLearningAudience] =
+    useState<CourseLearningAudience>(course.learningAudience);
   const [audienceDescription, setAudienceDescription] = useState(
     course.audienceDescription,
   );
@@ -282,6 +286,7 @@ function CourseBasicsForm({
               subject,
               goal,
               level,
+              learningAudience,
               audienceDescription,
               targetLessonCount: Number(targetLessonCount),
               teacherPreferences,
@@ -291,6 +296,22 @@ function CourseBasicsForm({
         })();
       }}
     >
+      <div className="block">
+        <span className="field-label">Направление обучения</span>
+        <SegmentedControl
+          ariaLabel="Направление обучения"
+          value={learningAudience}
+          onChange={(value) => {
+            setSaved(false);
+            setLearningAudience(value);
+          }}
+          disabled={disabled}
+          items={[
+            { value: "children", label: "Обучение детей" },
+            { value: "educators", label: "Обучение педагогов" },
+          ]}
+        />
+      </div>
       <div className="grid gap-4 md:grid-cols-2">
         <Field label="Название">
           <input

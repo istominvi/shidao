@@ -20,6 +20,7 @@ import type {
   SetComponentStudentScreenInput,
 } from "./contracts";
 import type { ComponentTypeKey } from "./registry/contracts";
+import type { CourseLearningAudience } from "./learning-audience";
 
 type JsonObject = Record<string, unknown>;
 
@@ -32,6 +33,7 @@ type CourseRow = {
   id: string;
   owner_account_id: string;
   title: string;
+  learning_audience: CourseLearningAudience;
   subject: string;
   goal: string;
   level: string;
@@ -201,6 +203,7 @@ function mapCourse(row: CourseRow, lessonCount = 0): CourseSummary {
     id: row.id,
     ownerAccountId: row.owner_account_id,
     title: row.title,
+    learningAudience: row.learning_audience,
     subject: row.subject,
     goal: row.goal,
     level: row.level,
@@ -417,6 +420,7 @@ export function createCourseBuilderRepository(
         body: {
           owner_account_id: ownerAccountId,
           title: input.title,
+          learning_audience: input.learningAudience,
           subject: input.subject,
           goal: input.goal,
           level: input.level,
@@ -434,6 +438,8 @@ export function createCourseBuilderRepository(
     async updateCourse(courseId, input) {
       const body: JsonObject = {};
       if (input.title !== undefined) body.title = input.title;
+      if (input.learningAudience !== undefined)
+        body.learning_audience = input.learningAudience;
       if (input.subject !== undefined) body.subject = input.subject;
       if (input.goal !== undefined) body.goal = input.goal;
       if (input.level !== undefined) body.level = input.level;

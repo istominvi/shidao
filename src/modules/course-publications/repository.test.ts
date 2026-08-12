@@ -6,6 +6,7 @@ import { createCoursePublicationRepository } from "./repository";
 const ACCOUNT_ID = "00000000-0000-4000-8000-000000000101";
 const COURSE_ID = "00000000-0000-4000-8000-000000000201";
 const PUBLICATION_ID = "00000000-0000-4000-8000-000000000301";
+const REVISION_ID = "00000000-0000-4000-8000-000000000401";
 
 async function withRepository(
   fetcher: typeof fetch,
@@ -218,6 +219,7 @@ test("catalog listing uses the compact filtered RPC contract", async () => {
       const page = await repository.listCatalog({
         actorAccountId: ACCOUNT_ID,
         q: "диалог",
+        learningAudience: "children",
         subject: "Китайский язык",
         level: "Начальный",
         offset: 24,
@@ -230,13 +232,147 @@ test("catalog listing uses the compact filtered RPC contract", async () => {
       assert.equal(page.nextOffset, 74);
     },
   );
-  assert.match(requestUrl, /\/rpc\/list_course_publication_catalog_admin$/);
+  assert.match(requestUrl, /\/rpc\/list_course_publication_catalog_v2_admin$/);
   assert.deepEqual(requestBody, {
     p_actor_account_id: ACCOUNT_ID,
     p_q: "диалог",
+    p_learning_audience: "children",
     p_subject: "Китайский язык",
     p_level: "Начальный",
     p_offset: 24,
     p_limit: 50,
+  });
+});
+
+test("catalog copy eligibility uses the narrow service-role RPC contract", async () => {
+  let requestUrl = "";
+  let requestBody: unknown;
+  await withRepository(
+    (async (input, init) => {
+      requestUrl = String(input);
+      requestBody = JSON.parse(String(init?.body));
+      return new Response(JSON.stringify({ eligible: true }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }) as typeof fetch,
+    async (repository) => {
+      await repository.assertCatalogCopyEligible(ACCOUNT_ID, PUBLICATION_ID);
+    },
+  );
+  assert.match(
+    requestUrl,
+    /\/rpc\/assert_course_publication_copy_eligible_admin$/,
+  );
+  assert.deepEqual(requestBody, {
+    p_actor_account_id: ACCOUNT_ID,
+    p_publication_id: PUBLICATION_ID,
+  });
+});
+
+test("catalog copy eligibility fails closed on a malformed RPC response", async () => {
+  await withRepository(
+    (async () =>
+      new Response(JSON.stringify({ eligible: false }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      })) as typeof fetch,
+    async (repository) => {
+      await assert.rejects(
+        repository.assertCatalogCopyEligible(ACCOUNT_ID, PUBLICATION_ID),
+        (error: unknown) =>
+          error instanceof CoursePublicationRepositoryError &&
+          error.status === 502,
+      );
+    },
+  );
+});
+
+test("publish uses the attestation-aware RPC contract", async () => {
+  let requestUrl = "";
+  let requestBody: unknown;
+  const contentSha256 = "a".repeat(64);
+  const attestation = {
+    version: 1,
+    title: "Итоговая аттестация",
+    description: "Проверка методики преподавания китайского языка.",
+    passingScorePercent: 80,
+    questions: [
+      {
+        id: "question-1",
+        prompt: "Как вводить новый тон?",
+        options: [
+          { id: "option-1", label: "Через контекст и слуховую модель" },
+          { id: "option-2", label: "Только через запись пиньинь" },
+        ],
+        correctOptionId: "option-1",
+        explanation: "Контекст связывает звучание с коммуникативной задачей.",
+      },
+    ],
+  };
+  const snapshot = {
+    schemaVersion: 1 as const,
+    course: {
+      title: "Методика преподавания китайского",
+      subject: "Китайский язык",
+      goal: "Повысить квалификацию преподавателей",
+      level: "Повышение квалификации",
+      audienceDescription: "Преподаватели китайского языка",
+      targetLessonCount: 6,
+    },
+    lessons: [],
+    materials: [],
+  };
+
+  await withRepository(
+    (async (input, init) => {
+      requestUrl = String(input);
+      requestBody = JSON.parse(String(init?.body));
+      return new Response(
+        JSON.stringify({
+          publicationId: PUBLICATION_ID,
+          sourceCourseId: COURSE_ID,
+          status: "published",
+          currentRevisionId: REVISION_ID,
+          publishedAt: "2026-08-12T00:00:00.000Z",
+          updatedAt: "2026-08-12T00:00:00.000Z",
+          sourceCourseUpdatedAt: "2026-08-12T00:00:00.000Z",
+          sourceContentUpdatedAt: "2026-08-12T00:00:00.000Z",
+          contentSha256,
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      );
+    }) as typeof fetch,
+    async (repository) => {
+      await repository.publishCourseRevision({
+        actorAccountId: ACCOUNT_ID,
+        sourceCourseId: COURSE_ID,
+        publicationId: PUBLICATION_ID,
+        revisionId: REVISION_ID,
+        contentSha256,
+        learningAudience: "educators",
+        attestation,
+        snapshot,
+        assetManifest: [],
+        rightsConfirmed: true,
+      });
+    },
+  );
+
+  assert.match(
+    requestUrl,
+    /\/rpc\/publish_course_revision_with_attestation_admin$/,
+  );
+  assert.deepEqual(requestBody, {
+    p_actor_account_id: ACCOUNT_ID,
+    p_source_course_id: COURSE_ID,
+    p_publication_id: PUBLICATION_ID,
+    p_revision_id: REVISION_ID,
+    p_content_sha256: contentSha256,
+    p_learning_audience: "educators",
+    p_attestation: attestation,
+    p_snapshot: snapshot,
+    p_asset_manifest: [],
+    p_rights_confirmed: true,
   });
 });

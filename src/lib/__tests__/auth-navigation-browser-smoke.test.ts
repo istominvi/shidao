@@ -1649,7 +1649,8 @@ async function handleMockSupabase(
   }
 
   if (
-    requestUrl.pathname === "/rest/v1/rpc/list_course_publication_catalog_admin"
+    requestUrl.pathname ===
+    "/rest/v1/rpc/list_course_publication_catalog_v2_admin"
   ) {
     json(response, 200, {
       courses: [],

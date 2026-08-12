@@ -1,6 +1,7 @@
 import type { ComponentTypeKey } from "./registry/contracts";
 import type { ComponentVisibility } from "./component-visibility";
 import type { OwnedCoursePublication } from "@/modules/course-publications/domain";
+import type { CourseLearningAudience } from "./learning-audience";
 
 export type { ComponentVisibility } from "./component-visibility";
 
@@ -11,6 +12,7 @@ export type CourseSummary = {
   id: string;
   ownerAccountId: string;
   title: string;
+  learningAudience: CourseLearningAudience;
   subject: string;
   goal: string;
   level: string;

@@ -37,11 +37,11 @@ test("service-role publication adapters are server-only and absent from client m
 test("repository sends the fixed admin RPC names and complete publish arguments", () => {
   const repository = source("src/modules/course-publications/repository.ts");
   for (const rpc of [
-    "publish_course_revision_admin",
+    "publish_course_revision_with_attestation_admin",
     "unpublish_course_publication_admin",
-    "clone_course_publication_admin",
-    "duplicate_course_admin",
-    "list_course_publication_catalog_admin",
+    "clone_course_publication_with_attestation_admin",
+    "duplicate_course_with_attestation_admin",
+    "list_course_publication_catalog_v2_admin",
   ]) {
     assert.match(repository, new RegExp(`"${rpc}"`));
   }
@@ -51,6 +51,8 @@ test("repository sends the fixed admin RPC names and complete publish arguments"
     "p_publication_id",
     "p_revision_id",
     "p_content_sha256",
+    "p_learning_audience",
+    "p_attestation",
     "p_snapshot",
     "p_asset_manifest",
     "p_rights_confirmed",
@@ -60,6 +62,7 @@ test("repository sends the fixed admin RPC names and complete publish arguments"
   assert.match(repository, /Authorization: `Bearer \$\{serviceRoleKey\}`/);
   for (const argument of [
     "p_q",
+    "p_learning_audience",
     "p_subject",
     "p_level",
     "p_offset",

@@ -66,6 +66,7 @@ function courseInput(
     targetLessonCount: 8,
     teacherPreferences: "Начинайте с короткого устного разогрева.",
     ...overrides,
+    learningAudience: overrides.learningAudience ?? "children",
   };
 }
 

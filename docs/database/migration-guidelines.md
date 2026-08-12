@@ -2,9 +2,9 @@
 
 **Статус:** обязательная политика для всех новых DB changes
 **Текущий production schema head:**
-`20260811231505_atomic_course_archive.sql`
+`20260812113000_educator_course_attestations.sql`
 **Текущий repository head:**
-`20260811231505_atomic_course_archive.sql` — совпадает с production
+`20260812113000_educator_course_attestations.sql` — совпадает с production
 
 ## 1. Источники истины
 

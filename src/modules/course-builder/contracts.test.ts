@@ -20,8 +20,42 @@ test("course draft contract normalizes the complete teacher form", () => {
   });
 
   assert.equal(parsed.title, "Китайский для путешествий");
+  assert.equal(parsed.learningAudience, "children");
+  assert.equal(parsed.learningAudience, "children");
   assert.equal(parsed.audienceDescription, "");
   assert.equal(parsed.teacherPreferences, "");
+
+  assert.equal(
+    courseDraftInputSchema.parse({
+      title: "Методика преподавания китайского",
+      learningAudience: "educators",
+      subject: "Китайский язык",
+      goal: "Повысить квалификацию преподавателей",
+      level: "Повышение квалификации",
+      targetLessonCount: 6,
+    }).learningAudience,
+    "educators",
+  );
+});
+
+test("course draft accepts the educator learning audience explicitly", () => {
+  const parsed = courseDraftInputSchema.parse({
+    title: "Методика урока китайского",
+    learningAudience: "educators",
+    subject: "Китайский язык",
+    goal: "Спроектировать урок",
+    level: "Повышение квалификации",
+    targetLessonCount: 6,
+  });
+
+  assert.equal(parsed.learningAudience, "educators");
+  assert.equal(
+    courseDraftInputSchema.safeParse({
+      ...parsed,
+      learningAudience: "parents",
+    }).success,
+    false,
+  );
 });
 
 test("attachment contract rejects unsupported and oversized files", () => {

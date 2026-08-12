@@ -67,6 +67,7 @@ function courseSummary(): CourseSummary {
     id: COURSE_ID,
     ownerAccountId: ACCOUNT_ID,
     title: "Английский для путешествий",
+    learningAudience: "children",
     subject: "Английский язык",
     goal: "Уверенно решать типичные задачи в поездке",
     level: "A2",

@@ -23,6 +23,7 @@ import type {
   TeacherLearnerStatus,
 } from "@/modules/learner-identity/domain";
 import type { CourseSummary } from "@/modules/course-builder/domain";
+import type { AccountAttestationCredential } from "@/modules/course-attestations/domain";
 
 export class IdentityClientError extends Error {
   readonly status: number;
@@ -291,6 +292,13 @@ export async function loadSelfProgress() {
     "/api/v2/me/learning-profile/progress",
   );
   return payload.progress;
+}
+
+export async function loadAccountAttestations() {
+  const payload = await requestJson<{
+    attestations: AccountAttestationCredential[];
+  }>("/api/v2/me/attestations");
+  return payload.attestations;
 }
 
 export async function rotateSelfShareCode() {

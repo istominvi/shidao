@@ -1,6 +1,10 @@
 import { z } from "zod";
 import { componentVisibilitySchema } from "@/modules/course-builder/component-visibility";
 import { componentTypeKeySchema } from "@/modules/course-builder/registry/contracts";
+import {
+  courseLearningAudienceSchema,
+  DEFAULT_COURSE_LEARNING_AUDIENCE,
+} from "@/modules/course-builder/learning-audience";
 
 export const COURSE_PUBLICATION_ASSET_BUCKET = "course-publication-assets";
 export const COURSE_ASSET_BUCKET = "course-assets";
@@ -16,6 +20,9 @@ export const copyCourseInputSchema = z
 export const catalogQuerySchema = z
   .object({
     q: z.string().trim().max(160).default(""),
+    learningAudience: courseLearningAudienceSchema.default(
+      DEFAULT_COURSE_LEARNING_AUDIENCE,
+    ),
     subject: z.string().trim().max(160).default(""),
     level: z.string().trim().max(240).default(""),
     cursor: z.string().trim().min(1).max(2_048).nullable().default(null),

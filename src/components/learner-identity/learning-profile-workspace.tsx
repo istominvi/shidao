@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  BadgeCheck,
   BrainCircuit,
   Database,
   History,
@@ -8,7 +9,7 @@ import {
   Shield,
   UserRound,
 } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { AppPageHeader } from "@/components/app/page-header";
 import { Button } from "@/components/ui/button";
 import { SurfaceCard } from "@/components/ui/surface-card";
@@ -25,9 +26,11 @@ import type {
   SelfLearningProfile,
   ShareCode,
 } from "@/modules/learner-identity/domain";
+import type { AccountAttestationCredential } from "@/modules/course-attestations/domain";
 import {
   actOnAiConsent,
   actOnConnection,
+  loadAccountAttestations,
   loadAiConsents,
   loadConnections,
   loadSelfHistory,
@@ -48,7 +51,7 @@ import { ProgressSummary } from "./progress-summary";
 import { SafeHistoryList } from "./safe-history-list";
 import { ShareCodeCard } from "./share-code-card";
 
-type Surface = "overview" | "history" | "access" | "data";
+type Surface = "overview" | "history" | "attestation" | "access" | "data";
 
 const LEARNING_PROFILE_TABS_ID = "learning-profile";
 
@@ -58,6 +61,14 @@ export function LearningProfileWorkspace() {
   const [progress, setProgress] = useState<LearnerProgress | null>(null);
   const [history, setHistory] = useState<LearnerSafeHistoryItem[]>([]);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [attestations, setAttestations] = useState<
+    AccountAttestationCredential[] | null
+  >(null);
+  const [attestationsLoading, setAttestationsLoading] = useState(false);
+  const [attestationsError, setAttestationsError] = useState<string | null>(
+    null,
+  );
+  const attestationRequestInFlightRef = useRef(false);
   const [connections, setConnections] = useState<LearnerConnectionRequest[]>(
     [],
   );
@@ -108,6 +119,43 @@ export function LearningProfileWorkspace() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  const loadAttestations = useCallback(async () => {
+    if (attestationRequestInFlightRef.current) return;
+    attestationRequestInFlightRef.current = true;
+    setAttestationsLoading(true);
+    setAttestationsError(null);
+    try {
+      setAttestations(await loadAccountAttestations());
+    } catch (caught) {
+      setAttestationsError(
+        caught instanceof Error
+          ? caught.message
+          : "Не удалось загрузить аттестации.",
+      );
+    } finally {
+      attestationRequestInFlightRef.current = false;
+      setAttestationsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (
+      surface !== "attestation" ||
+      attestations !== null ||
+      attestationsLoading ||
+      attestationsError
+    ) {
+      return;
+    }
+    void loadAttestations();
+  }, [
+    attestations,
+    attestationsError,
+    attestationsLoading,
+    loadAttestations,
+    surface,
+  ]);
 
   async function mutate(action: () => Promise<unknown>) {
     if (busy) return;
@@ -178,6 +226,12 @@ export function LearningProfileWorkspace() {
             label: "История",
             icon: History,
             count: history.length,
+          },
+          {
+            value: "attestation",
+            label: "Аттестация",
+            icon: BadgeCheck,
+            ...(attestations === null ? {} : { count: attestations.length }),
           },
           {
             value: "access",
@@ -251,6 +305,128 @@ export function LearningProfileWorkspace() {
             loadingMore={loadingMore}
             onLoadMore={() => void loadMore()}
           />
+        ) : null}
+      </div>
+      <div
+        id={workspaceTabPanelId(LEARNING_PROFILE_TABS_ID, "attestation")}
+        role="tabpanel"
+        aria-labelledby={workspaceTabId(
+          LEARNING_PROFILE_TABS_ID,
+          "attestation",
+        )}
+        hidden={surface !== "attestation"}
+        tabIndex={0}
+      >
+        {surface === "attestation" ? (
+          <div className="space-y-4">
+            <div className="rounded-2xl border border-neutral-200 bg-white p-5">
+              <div className="flex items-start gap-3">
+                <BadgeCheck
+                  className="mt-0.5 h-5 w-5 text-emerald-700"
+                  aria-hidden="true"
+                />
+                <div>
+                  <h2 className="font-bold text-neutral-950">Аттестация</h2>
+                  <p className="mt-1 text-sm leading-relaxed text-neutral-600">
+                    Здесь собраны пройденные аттестации по профессиональным
+                    курсам. Это результат внутри ShiDao, а не государственное
+                    удостоверение о повышении квалификации.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {attestationsLoading ? (
+              <IdentityLoading>Загружаем аттестации…</IdentityLoading>
+            ) : null}
+            {attestationsError ? (
+              <IdentityError
+                message={attestationsError}
+                onRetry={() => void loadAttestations()}
+              />
+            ) : null}
+            {!attestationsLoading &&
+            !attestationsError &&
+            attestations?.length === 0 ? (
+              <IdentityEmpty
+                title="Аттестаций пока нет"
+                description="После успешного прохождения итогового теста результат появится здесь."
+              />
+            ) : null}
+            {!attestationsLoading &&
+            !attestationsError &&
+            attestations &&
+            attestations.length > 0 ? (
+              <ul className="grid gap-4 lg:grid-cols-2">
+                {attestations.map((attestation) => (
+                  <li
+                    key={`${attestation.publicationId}:${attestation.revisionId}:${attestation.assessmentVersion}`}
+                    className="rounded-2xl border border-neutral-200 bg-white p-5"
+                  >
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
+                          {attestation.courseSubject}
+                        </p>
+                        <h3 className="mt-1 text-lg font-bold text-neutral-950">
+                          {attestation.courseTitle}
+                        </h3>
+                        <p className="mt-1 text-sm text-neutral-600">
+                          {attestation.assessmentTitle}
+                        </p>
+                      </div>
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-900">
+                        <BadgeCheck
+                          className="h-3.5 w-3.5"
+                          aria-hidden="true"
+                        />
+                        Аттестован по курсу
+                      </span>
+                    </div>
+
+                    <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
+                      <div>
+                        <dt className="text-neutral-500">Результат</dt>
+                        <dd className="font-semibold text-neutral-950">
+                          {attestation.scorePercent}%
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="text-neutral-500">Проходной балл</dt>
+                        <dd className="font-semibold text-neutral-950">
+                          {attestation.passingScorePercent}%
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="text-neutral-500">Пройдено</dt>
+                        <dd className="font-semibold text-neutral-950">
+                          {formatIdentityDate(attestation.completedAt)}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="text-neutral-500">Версия</dt>
+                        <dd className="font-semibold text-neutral-950">
+                          {attestation.assessmentVersion}
+                        </dd>
+                      </div>
+                    </dl>
+
+                    <div className="mt-4 border-t border-neutral-100 pt-3 text-xs leading-relaxed text-neutral-500">
+                      <p>Автор курса: {attestation.publisherDisplayName}</p>
+                      <p>
+                        {attestation.isCurrentRevision
+                          ? "Пройдена текущая редакция аттестации."
+                          : "Пройдена предыдущая редакция аттестации."}{" "}
+                        {attestation.publicationAvailable
+                          ? "Курс доступен в каталоге."
+                          : "Публикация курса сейчас недоступна."}
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </div>
         ) : null}
       </div>
       <div

@@ -1,4 +1,8 @@
 import { z } from "zod";
+import {
+  courseLearningAudienceSchema,
+  DEFAULT_COURSE_LEARNING_AUDIENCE,
+} from "./learning-audience";
 
 export const COURSE_ASSET_BUCKET = "course-assets";
 export const COURSE_ASSET_MAX_BYTES = 10 * 1024 * 1024;
@@ -22,6 +26,9 @@ const optionalTrimmedText = (max: number) =>
 
 export const courseDraftInputSchema = z.object({
   title: z.string().trim().min(2).max(160),
+  learningAudience: courseLearningAudienceSchema.default(
+    DEFAULT_COURSE_LEARNING_AUDIENCE,
+  ),
   subject: z.string().trim().min(2).max(160),
   goal: z.string().trim().min(2).max(1_200),
   level: z.string().trim().min(1).max(240),

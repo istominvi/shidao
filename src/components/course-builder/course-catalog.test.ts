@@ -50,6 +50,7 @@ function course(
     publicationContentUpdatedAt: "2026-08-01T10:00:00.000Z",
     updatedAt: "2026-08-01T10:00:00.000Z",
     ...overrides,
+    learningAudience: overrides.learningAudience ?? "children",
     id: overrides.id,
     title: overrides.title,
   };

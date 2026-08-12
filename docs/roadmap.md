@@ -512,6 +512,35 @@ permanent delete остаётся закрыт до согласованной p
 policy. Официальные Course от ShiDao требуют отдельно утверждённого учебного
 контента; fixtures не публикуются.
 
+## P0.5: educator Course и Account attestation
+
+**Current production DB; dependent web rollout и bootstrap — next.** E1
+database contract уже хранит отдельное учебное назначение
+`children | educators`, immutable educator assessment definition и
+Account attempt/award, привязанные к точной revision; score никогда не
+принимается с клиента. Server-side переключатель «Обучение детей / Обучение
+педагогов» и остальные dependent API/UI готовы в source, но ещё не current
+production.
+
+- conditional «Аттестация» показывается в published catalog detail, не в
+  owner-only Course Builder как имитация прохождения;
+- успешный текущий result даёт видимый badge «Аттестован», исторические awards
+  перечисляются в учебном профиле Account;
+- educator publication copy доступен только после current-revision award и
+  переносит authored definition, но не результат; собственный duplicate не
+  переносит попытки/awards;
+- DB rollout завершён: exact migration/rollback, schema/RLS/ACL postflight и
+  functional scoring probe прошли; current snapshot снят;
+- **Next:** развернуть dependent web и пройти authenticated browser smoke;
+- после DB+web smoke отдельный explicit demonstration-product bootstrap
+  создаст курс «Современный урок китайского языка для детей: произношение,
+  иероглифика и формирующее оценивание» и passed attempt для выбранного
+  Account, не добавляя product data в migration и не используя test fixture
+  как официальный Course.
+
+**Later:** полноценное enrollment/consumption, юридически значимые
+удостоверения, proctoring, manual assessment и expiration/retake policy.
+
 ## P1.1: persisted Homework
 
 Цель — заменить текущую заглушку отдельным Lesson-owned редактором.

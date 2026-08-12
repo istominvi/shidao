@@ -42,6 +42,7 @@ function workspace(): CourseWorkspace {
     id: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
     ownerAccountId: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
     title: "Дроби",
+    learningAudience: "children",
     subject: "Математика",
     goal: "Научиться считать",
     level: "5 класс",

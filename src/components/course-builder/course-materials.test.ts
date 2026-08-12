@@ -14,6 +14,7 @@ function workspace(): CourseWorkspace {
     id: COURSE_ID,
     ownerAccountId: "55555555-5555-4555-8555-555555555555",
     title: "Курс",
+    learningAudience: "children",
     subject: "Тема",
     goal: "Цель",
     level: "Начальный",

@@ -10,6 +10,7 @@ type CoursesPageProps = {
   searchParams: Promise<{
     tab?: string | string[];
     course?: string | string[];
+    audience?: string | string[];
   }>;
 };
 
@@ -20,6 +21,8 @@ export default async function CoursesPage({ searchParams }: CoursesPageProps) {
     initialTab === "catalog" && typeof query.course === "string"
       ? query.course
       : null;
+  const initialLearningAudience =
+    query.audience === "educators" ? "educators" : "children";
 
   return (
     <main className="course-demo-shell pb-12">
@@ -41,6 +44,7 @@ export default async function CoursesPage({ searchParams }: CoursesPageProps) {
         <CoursesIndex
           initialTab={initialTab}
           initialCatalogCourseId={initialCatalogCourseId}
+          initialLearningAudience={initialLearningAudience}
         />
       </div>
     </main>

@@ -60,6 +60,26 @@ test("account publication quota becomes a friendly conflict", () => {
   assert.doesNotMatch(error.message, /quota_exceeded|course_publication_/);
 });
 
+test("educator catalog copy requires current-revision certification", async () => {
+  const error = publicationRepositoryFailure({
+    message: "course_attestation_required_before_clone",
+    status: 403,
+    databaseCode: "42501",
+    definitelyNotCommitted: true,
+  });
+  assert.equal(error.status, 403);
+  assert.equal(error.code, "attestation_required_before_copy");
+  assert.match(error.message, /Сначала пройдите аттестацию/);
+  assert.doesNotMatch(error.message, /required_before_clone/);
+
+  const response = await courseBuilderApiError(error);
+  assert.equal(response.status, 403);
+  assert.deepEqual(await response.json(), {
+    error: "Сначала пройдите аттестацию по текущей версии курса.",
+    code: "attestation_required_before_copy",
+  });
+});
+
 test("course API exposes stable mutation rate and in-flight responses", async () => {
   const limited = await courseBuilderApiError(
     new CoursePublicationMutationRateLimitError(17),

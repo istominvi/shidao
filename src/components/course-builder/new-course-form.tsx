@@ -27,6 +27,7 @@ import {
 import { Button, productButtonClassName } from "@/components/ui/button";
 import { FieldHint, FieldLabel, FormField } from "@/components/ui/form-field";
 import { Input, productControlClassName } from "@/components/ui/input";
+import { SegmentedControl } from "@/components/ui/segmented-control";
 import { SurfaceCard } from "@/components/ui/surface-card";
 import {
   WorkspaceTabs,
@@ -49,6 +50,7 @@ import {
   uploadPreparedCourseAttachment,
 } from "./course-builder-client";
 import type { AiCoursePlanPreview } from "@/modules/ai/course-builder-contracts";
+import type { CourseLearningAudience } from "@/modules/course-builder/learning-audience";
 
 type SubmitIntent = "create" | "assemble" | "ai";
 type UploadStatus = "queued" | "hashing" | "uploading" | "ready" | "error";
@@ -119,6 +121,7 @@ function readDraftInput(form: HTMLFormElement): CourseDraftInput {
     subject: String(formData.get("subject") ?? ""),
     goal: String(formData.get("goal") ?? ""),
     level: String(formData.get("level") ?? ""),
+    learningAudience: String(formData.get("learningAudience") ?? "children"),
     audienceDescription: String(formData.get("audienceDescription") ?? ""),
     targetLessonCount: Number(formData.get("targetLessonCount")),
     teacherPreferences: String(formData.get("teacherPreferences") ?? ""),
@@ -158,6 +161,8 @@ export function NewCourseForm() {
   const [errorMessage, setErrorMessage] = useState("");
   const [createdCourseId, setCreatedCourseId] = useState<string | null>(null);
   const [aiPreview, setAiPreview] = useState<AiCoursePlanPreview | null>(null);
+  const [learningAudience, setLearningAudience] =
+    useState<CourseLearningAudience>("children");
 
   function addFiles(files: FileList | null) {
     if (!files?.length) return;
@@ -361,6 +366,25 @@ export function NewCourseForm() {
           description="Эти данные сохраняются в курсе и задают контекст для ручной, быстрой или AI-сборки."
         >
           <div className="grid gap-4 md:grid-cols-2">
+            <FormField className="md:col-span-2">
+              <p className="form-field-label">Направление обучения</p>
+              <input
+                type="hidden"
+                name="learningAudience"
+                value={learningAudience}
+              />
+              <SegmentedControl
+                ariaLabel="Направление обучения"
+                value={learningAudience}
+                onChange={setLearningAudience}
+                disabled={isSubmitting}
+                items={[
+                  { value: "children", label: "Обучение детей" },
+                  { value: "educators", label: "Обучение педагогов" },
+                ]}
+              />
+            </FormField>
+
             <FormField>
               <FieldLabel htmlFor="course-title">Название</FieldLabel>
               <Input

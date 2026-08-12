@@ -153,14 +153,23 @@ export async function courseBuilderApiError(error: unknown) {
     );
   }
   if (error instanceof CoursePublicationRepositoryError) {
-    const status = [400, 404, 409].includes(error.status) ? error.status : 503;
+    const attestationRequiredBeforeClone =
+      error.code === "attestation_required_before_copy";
+    const status = attestationRequiredBeforeClone
+      ? 403
+      : [400, 404, 409].includes(error.status)
+        ? error.status
+        : 503;
     return NextResponse.json(
       {
-        error:
-          status === 503
+        error: attestationRequiredBeforeClone
+          ? "Сначала пройдите аттестацию по текущей версии курса."
+          : status === 503
             ? "Не удалось связаться с каталогом курсов."
             : error.message,
-        code: error.code ?? "course_publication_repository_error",
+        code: attestationRequiredBeforeClone
+          ? "attestation_required_before_copy"
+          : (error.code ?? "course_publication_repository_error"),
       },
       { status },
     );

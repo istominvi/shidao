@@ -45,6 +45,11 @@ import {
   type CoursePublicationMutationGuard,
 } from "./mutation-guard";
 import type { CoursePublicationStorageBroker } from "./storage";
+import type { CourseAttestationDefinition } from "@/modules/course-attestations/domain";
+import {
+  DEFAULT_COURSE_LEARNING_AUDIENCE,
+  type CourseLearningAudience,
+} from "@/modules/course-builder/learning-audience";
 
 export const COURSE_PUBLICATION_MAX_MATERIALS = 24;
 export const COURSE_PUBLICATION_MAX_TOTAL_BYTES = 120 * 1024 * 1024;
@@ -113,10 +118,19 @@ function canonicalize(value: unknown): unknown {
   );
 }
 
-export function publicationContentSha256(snapshot: CoursePublicationSnapshot) {
+export function publicationContentSha256(
+  snapshot: CoursePublicationSnapshot,
+  metadata: {
+    learningAudience: CourseLearningAudience;
+    attestation: CourseAttestationDefinition | null;
+  } = {
+    learningAudience: DEFAULT_COURSE_LEARNING_AUDIENCE,
+    attestation: null,
+  },
+) {
   return crypto
     .createHash("sha256")
-    .update(JSON.stringify(canonicalize(snapshot)))
+    .update(JSON.stringify(canonicalize({ snapshot, ...metadata })))
     .digest("hex");
 }
 
@@ -419,6 +433,7 @@ function mapCatalogEntry(
   return {
     id: record.publicationId,
     sourceCourseId: isCurrentUser ? record.sourceCourseId : null,
+    learningAudience: record.learningAudience,
     ...course,
     lessonCount: lessons.length,
     materialCount: materials.length,
@@ -704,12 +719,30 @@ export function createCoursePublicationService(
           workspace.ownerAccountId,
           workspace.id,
         );
+        const attestation = await repository.getCourseAttestationDefinition(
+          workspace.ownerAccountId,
+          workspace.id,
+        );
+        if (workspace.learningAudience === "educators" && !attestation) {
+          throw new CoursePublicationValidationError(
+            "Добавьте аттестацию перед публикацией курса для педагогов.",
+          );
+        }
+        if (workspace.learningAudience === "children" && attestation) {
+          throw new CoursePublicationConflictError(
+            "Аттестация доступна только для курсов обучения педагогов.",
+            "course_attestation_audience_mismatch",
+          );
+        }
         const snapshot = buildCoursePublicationSnapshot({
           workspace,
           sourceAssets,
           publicationId,
         });
-        const contentSha256 = publicationContentSha256(snapshot);
+        const contentSha256 = publicationContentSha256(snapshot, {
+          learningAudience: workspace.learningAudience,
+          attestation,
+        });
         const revisionId = createId();
 
         if (existing?.contentSha256 === contentSha256) {
@@ -719,6 +752,8 @@ export function createCoursePublicationService(
             publicationId,
             revisionId,
             contentSha256,
+            learningAudience: workspace.learningAudience,
+            attestation,
             snapshot,
             assetManifest: [],
             rightsConfirmed: input.rightsConfirmed,
@@ -777,6 +812,8 @@ export function createCoursePublicationService(
             publicationId,
             revisionId,
             contentSha256,
+            learningAudience: workspace.learningAudience,
+            attestation,
             snapshot,
             assetManifest,
             rightsConfirmed: input.rightsConfirmed,
@@ -824,6 +861,7 @@ export function createCoursePublicationService(
       const page = await repository.listCatalog({
         actorAccountId,
         q: query.q,
+        learningAudience: query.learningAudience,
         subject: query.subject,
         level: query.level,
         offset: decodeCursor(query.cursor),
@@ -888,6 +926,10 @@ export function createCoursePublicationService(
         const input = parsePublicationContract(copyCourseInputSchema, rawInput);
         await assertActivePublicationActor(actorAccountId);
         const detail = await catalogDetailRecord(publicationId);
+        await repository.assertCatalogCopyEligible(
+          actorAccountId,
+          detail.publicationId,
+        );
         validateMaterialLimits(detail.assets);
         const targetCourseId = createId();
         const idMap = createIdMapFromSnapshot(detail.snapshot, createId);

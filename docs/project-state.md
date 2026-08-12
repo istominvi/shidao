@@ -12,6 +12,14 @@ immutable publication revisions, независимое копирование C
 publication assets. Forward migration применена и проверена; Coolify deployment
 `891` развернул exact functional SHA `9a553085487c8fd514cc716f5beec5eab3324af3`.
 
+**Current production E1 database stage:** migration
+`20260812113000_educator_course_attestations.sql` применена owner
+`supabase_admin` с `COMMIT` в `2026-08-12T02:35:45Z`; rollback, RLS/ACL и
+functional scoring probes прошли. Live snapshot `2026-08-12T02:53:14Z` имеет
+SHA-256
+`d96a357a8b55caa80a831b37b7e289c17025c572d79483d28ae7515b30bcf9e2`.
+Dependent E1 web rollout и демонстрационный bootstrap ещё не выполнялись.
+
 **Current production contract stage:** реализована и развёрнута полная roleless
 learner identity / observer программа. Migrations M1–M6 применены к production
 после четырёх проверенных backup и добавили atomic exactly-one
@@ -455,6 +463,30 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
   recent reauthentication из sealed session.
 
 ### Курсы
+
+- **Current production DB; dependent web rollout next:** Course и compact
+  publication имеют `learningAudience` со значениями `children` / `educators`.
+  Migration E1 backfilled все пять существующих Course как `children`; четыре
+  новые attestation tables имеют RLS и closed browser ACL.
+- **Current dependent source:** в **Каталоге** добавлен тумблер «Обучение детей
+  / Обучение педагогов»; фильтрация, facets и cursor выполняются server-side
+  внутри выбранного направления. Этот UI/API ещё не current production.
+- В dependent source у published educator Course detail условно появляется вкладка
+  **Аттестация**. Ответы проверяются против immutable publication revision;
+  до успешной отправки correct answer key не выходит в browser. Успешная
+  транзакция создаёт Account-scoped attempt и award, показывает badge
+  **«Аттестован»** у текущей revision и запись во вкладке **«Аттестация»**
+  учебного профиля. Owner Course/copy не означает прохождение; educator copy
+  допускается только после current-revision award, чтобы не раскрыть answer
+  key через авторскую projection.
+- Результат формулируется как внутренняя аттестация ShiDao, а не государственное
+  удостоверение. Канонический contract:
+  [`docs/product/educator-courses-and-attestation.md`](./product/educator-courses-and-attestation.md).
+- **Next:** развернуть и проверить exact dependent web, затем отдельным
+  explicit bootstrap создать курс «Современный урок китайского языка для
+  детей: произношение, иероглифика и формирующее оценивание» и реальную
+  пройденную попытку для явно выбранного Account. Demonstration product data
+  не входит в schema migration.
 
 - **Current production slice:** `/courses` имеет две
   вкладки: **Мои** показывает owner-scoped
@@ -1166,6 +1198,19 @@ provider requests, assistant dialog history или quota state в БД.
   `055b3c3ab47afc3c3db86d92c6c7530b3735841e34e4b475101ac96056d853ec`.
   Зависимый web UI/API развёрнут exact release PR #242; DB evidence и snapshot
   остаются неизменными.
+- `20260812113000_educator_course_attestations.sql` — применённый production
+  E1 database contract: `children | educators`, четыре RLS-protected
+  attestation tables, closed browser ACL, `10` RPC и `8` guards/triggers.
+  Migration SHA-256
+  `f5aa1d3cee3e170f48e3ba2b0b3a564b31ad826b79e61efcaf7f342c3f2ff164`
+  применена owner `supabase_admin` с `COMMIT` в `2026-08-12T02:35:45Z` после
+  verified backup и rollback probe. Counts сохранились: `19` Account,
+  `5` Course, `16` Lesson, `90` Component, `0` publication/revision; все
+  Course backfilled как `children`. Functional rollback probe подтвердил
+  privacy, stale SQLSTATE `40001` и server-derived `9/10 = 90%` award. Latest
+  live snapshot `2026-08-12T02:53:14Z` имеет SHA-256
+  `d96a357a8b55caa80a831b37b7e289c17025c572d79483d28ae7515b30bcf9e2`.
+  Dependent web rollout и demonstration bootstrap остаются next.
 
 Источники истины для текущего состояния:
 
@@ -1212,6 +1257,7 @@ positions, а плотность поддерживают текущие service
 | Historical identity execution prompt | `docs/v2/LEARNER_IDENTITY_COMPLETION_PROMPT.md`                                                                                                                                                                                                                                   |
 | Course browser client                | `src/components/course-builder/course-builder-client.ts`                                                                                                                                                                                                                          |
 | Course publication domain/service    | `src/modules/course-publications/`                                                                                                                                                                                                                                                |
+| Course attestation domain/API        | `src/modules/course-attestations/`, `src/app/api/v2/course-catalog/[publicationId]/attestation/`, `src/app/api/v2/me/attestations/`                                                                                                                                               |
 | Course catalog/publication API       | `src/app/api/v2/course-catalog/`, `src/app/api/v2/courses/[courseId]/publication/`, `duplicate/`                                                                                                                                                                                  |
 | Course catalog/owned UI              | `src/components/course-builder/courses-index.tsx`, `owned-courses-panel.tsx`, `course-catalog-panel.tsx`, `course-filter-menu.tsx`, `course-actions.tsx`, `src/components/ui/segmented-control.tsx`                                                                               |
 | New Course flow                      | `src/components/course-builder/new-course-form.tsx`                                                                                                                                                                                                                               |

@@ -24,6 +24,7 @@ import {
 import {
   buildCoursePublicationSnapshot,
   createCoursePublicationService,
+  publicationContentSha256,
 } from "./service";
 
 function uuid(sequence: number) {
@@ -132,6 +133,7 @@ function workspace(overrides: Partial<CourseWorkspace> = {}): CourseWorkspace {
       },
     ],
     ...overrides,
+    learningAudience: overrides.learningAudience ?? "children",
   };
 }
 
@@ -165,6 +167,8 @@ function repository(
       nextOffset: null,
     }),
     getCatalogPublication: async () => null,
+    assertCatalogCopyEligible: async () => undefined,
+    getCourseAttestationDefinition: async () => null,
     listSourceAssets: async () => sourceAssets(),
     publishCourseRevision: async () => {
       throw new Error("unexpected publish");
@@ -232,6 +236,7 @@ function catalogRecordFixture(): CatalogPublicationDetailRecord {
     ownerAccountId: ACCOUNT_ID,
     publisherDisplayName: "Преподаватель",
     isShiDao: false,
+    learningAudience: "children",
     publishedAt: NOW,
     revisionId: uuid(702),
     snapshot,
@@ -277,6 +282,46 @@ test("snapshot keeps all components and slides but removes private/source fields
   );
   assert.doesNotMatch(serialized, new RegExp(COURSE_ID));
   assert.doesNotMatch(serialized, new RegExp(ASSET_ID));
+});
+
+test("publication hash includes learning audience and attestation definition", () => {
+  const snapshot = buildCoursePublicationSnapshot({
+    workspace: workspace(),
+    sourceAssets: sourceAssets(),
+    publicationId: PUBLICATION_ID,
+  });
+  const childrenHash = publicationContentSha256(snapshot, {
+    learningAudience: "children",
+    attestation: null,
+  });
+  const educatorsHash = publicationContentSha256(snapshot, {
+    learningAudience: "educators",
+    attestation: null,
+  });
+  const attestedEducatorsHash = publicationContentSha256(snapshot, {
+    learningAudience: "educators",
+    attestation: {
+      version: 1,
+      title: "Итоговая аттестация",
+      description: "Проверка методики преподавания китайского языка.",
+      passingScorePercent: 80,
+      questions: [
+        {
+          id: "question-1",
+          prompt: "Как вводить новый тон?",
+          options: [
+            { id: "option-1", label: "Через слуховую модель" },
+            { id: "option-2", label: "Только через запись" },
+          ],
+          correctOptionId: "option-1",
+          explanation: "Слуховая модель предшествует анализу записи.",
+        },
+      ],
+    },
+  });
+
+  assert.notEqual(childrenHash, educatorsHash);
+  assert.notEqual(educatorsHash, attestedEducatorsHash);
 });
 
 test("pending material and empty lesson plan fail before repository or Storage writes", async () => {
@@ -481,6 +526,42 @@ test("publish and catalog copy enter the actor guard before any Storage work", a
   assert.deepEqual(broker.calls.copies, []);
 });
 
+test("catalog copy checks eligibility before any Storage work", async () => {
+  const expected = new CoursePublicationRepositoryError(
+    "Сначала пройдите аттестацию по текущей версии курса.",
+    403,
+    "attestation_required_before_copy",
+    true,
+  );
+  let eligibilityChecks = 0;
+  let cloneCalls = 0;
+  const broker = storageBroker();
+  const service = createCoursePublicationService({
+    repository: repository({
+      getCatalogPublication: async () => catalogRecordFixture(),
+      assertCatalogCopyEligible: async () => {
+        eligibilityChecks += 1;
+        throw expected;
+      },
+      clonePublication: async () => {
+        cloneCalls += 1;
+        throw new Error("unexpected clone");
+      },
+    }),
+    storage: broker.storage,
+    courseService: courseService(workspace()),
+    createId: idFactory(),
+  });
+
+  await assert.rejects(
+    service.copyCatalogCourse(ACTOR, PUBLICATION_ID),
+    (error: unknown) => error === expected,
+  );
+  assert.equal(eligibilityChecks, 1);
+  assert.equal(cloneCalls, 0);
+  assert.deepEqual(broker.calls.copies, []);
+});
+
 test("GET, unpublish and own duplicate do not enter the Storage-write guard", async () => {
   let guardCalls = 0;
   const mutationGuard: CoursePublicationMutationGuard = {
@@ -682,6 +763,7 @@ test("catalog detail exposes signed material metadata without checksum", async (
         ownerAccountId: ACCOUNT_ID,
         publisherDisplayName: "Преподаватель",
         isShiDao: false,
+        learningAudience: "children",
         publishedAt: NOW,
         revisionId: uuid(702),
         snapshot,
@@ -720,6 +802,7 @@ test("catalog sourceCourseId is owner-only and null across accounts", async () =
   ) => ({
     publicationId,
     sourceCourseId,
+    learningAudience: "children" as const,
     ...snapshot.course,
     lessonCount: snapshot.lessons.length,
     materialCount: snapshot.materials.length,
@@ -751,6 +834,7 @@ test("catalog sourceCourseId is owner-only and null across accounts", async () =
   });
   const query: CatalogQuery = {
     q: "",
+    learningAudience: "children",
     subject: "",
     level: "",
     cursor: null,

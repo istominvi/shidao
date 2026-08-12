@@ -108,6 +108,48 @@ Worktree должен содержать только изменения тек�
 
 ## 4. Если release содержит DB migration
 
+### E1 educator Course / attestation — production DB execution record
+
+Database half coupled additive E1 contract is current production; dependent
+web rollout и отдельный Chinese-course bootstrap остаются next.
+
+Production DB execution, 12 августа 2026 года:
+
+- project-local preflight подтвердил PostgreSQL 15.8, canonical ShiDao
+  Account/Course/Lesson/publication objects, A1 head, отсутствие `lesson_step`
+  и отсутствие E1 objects до apply;
+- initial counts: `19` Account, `5` Course, `16` Lesson, `90` Component,
+  `0` publication и `0` revision;
+- verified full-format backup
+  `/root/shidao-db-backups/shidao-before-educator-attestations-20260812T023442Z.dump`
+  имеет size `1158743` bytes, mode `600`, `1441` restore-list entries и
+  SHA-256
+  `eb7654393262d51642ff5b9cfb24d80df9a55608426ee02a7fb49e0bf9985ab6`;
+- exact migration `20260812113000_educator_course_attestations.sql` имеет
+  SHA-256
+  `f5aa1d3cee3e170f48e3ba2b0b3a564b31ad826b79e61efcaf7f342c3f2ff164`;
+- exact rollback probe прошёл; неизменённый tracked SQL применён owner
+  `supabase_admin` с `psql -X -v ON_ERROR_STOP=1` и завершился `COMMIT` в
+  `2026-08-12T02:35:45Z`;
+- postflight сохранил исходные counts, backfilled все `5` Course как
+  `children`, подтвердил RLS и closed browser ACL на четырёх новых tables,
+  `10` E1 RPC и `8` E1 triggers;
+- rollback-only functional probe подтвердил privacy-safe pre-pass projection,
+  stale revision с SQLSTATE `40001` и server-derived `9/10 = 90%` atomic
+  award; probe rows откатаны, поэтому publication/revision counts остались `0`;
+- production schema snapshot сгенерирован в `2026-08-12T02:53:14Z`, SHA-256
+  `d96a357a8b55caa80a831b37b7e289c17025c572d79483d28ae7515b30bcf9e2`.
+
+Remaining release sequence:
+
+1. Развернуть exact dependent web SHA и проверить оба режима Catalog,
+   educator-only «Аттестация», failed/pass paths, header badge и профиль.
+2. Только после DB+web smoke запустить отдельный idempotent Chinese-course
+   bootstrap для явно подтверждённых publisher/candidate Account. Bootstrap не
+   входит в migration и выдаёт award только через обычный scoring RPC.
+3. При неуспехе web rollout не переписывать уже применённую migration:
+   использовать совместимый web rollback или новую forward migration.
+
 ### Course Component contract cleanup
 
 Для exact migration

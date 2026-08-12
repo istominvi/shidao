@@ -29,6 +29,7 @@ function emptyCourse(targetLessonCount = 2): CourseWorkspace {
     id: COURSE_ID,
     ownerAccountId: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
     title: "Китайский для путешествий",
+    learningAudience: "children",
     subject: "Китайский язык",
     goal: "Научиться решать бытовые задачи в поездке",
     level: "С нуля",

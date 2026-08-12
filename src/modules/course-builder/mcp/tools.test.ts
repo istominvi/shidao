@@ -153,6 +153,7 @@ test("each tool validates input and delegates once with the injected actor", asy
 
   assert.deepEqual(calls[0]?.args[1], {
     title: "Китайский для путешествий",
+    learningAudience: "children",
     subject: "Китайский язык",
     goal: "Общаться в поездке",
     level: "Начальный",

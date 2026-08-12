@@ -18,6 +18,9 @@ import {
   isTrustedPostgrestRollback,
   publicationRepositoryFailure,
 } from "./errors";
+import { courseAttestationDefinitionSchema } from "@/modules/course-attestations/contracts";
+import type { CourseAttestationDefinition } from "@/modules/course-attestations/domain";
+import type { CourseLearningAudience } from "@/modules/course-builder/learning-audience";
 
 export { CoursePublicationRepositoryError } from "./errors";
 
@@ -27,6 +30,7 @@ type PublicationRow = {
   id: string;
   source_course_id: string | null;
   owner_account_id: string;
+  learning_audience: CourseLearningAudience;
   publisher_display_name: string;
   is_shidao: boolean;
   status: "published" | "unpublished";
@@ -36,6 +40,15 @@ type PublicationRow = {
   unpublished_at: string | null;
   created_at: string;
   updated_at: string;
+};
+
+type CourseAttestationRow = {
+  course_id: string;
+  version: number;
+  title: string;
+  description: string;
+  passing_score_percent: number;
+  questions: unknown;
 };
 
 type PublicationRevisionRow = {
@@ -94,6 +107,7 @@ export type CatalogPublicationRecord = {
   publicationId: string;
   sourceCourseId: string | null;
   ownerAccountId: string;
+  learningAudience: CourseLearningAudience;
   publisherDisplayName: string;
   isShiDao: boolean;
   publishedAt: string;
@@ -104,6 +118,7 @@ export type CatalogPublicationRecord = {
 export type CatalogListCourseRecord = {
   publicationId: string;
   sourceCourseId: string | null;
+  learningAudience: CourseLearningAudience;
   title: string;
   subject: string;
   goal: string;
@@ -176,6 +191,7 @@ export interface CoursePublicationRepository {
   listCatalog(input: {
     actorAccountId: string;
     q: string;
+    learningAudience: CourseLearningAudience;
     subject: string;
     level: string;
     offset: number;
@@ -184,6 +200,14 @@ export interface CoursePublicationRepository {
   getCatalogPublication(
     publicationId: string,
   ): Promise<CatalogPublicationDetailRecord | null>;
+  assertCatalogCopyEligible(
+    actorAccountId: string,
+    publicationId: string,
+  ): Promise<void>;
+  getCourseAttestationDefinition(
+    actorAccountId: string,
+    sourceCourseId: string,
+  ): Promise<CourseAttestationDefinition | null>;
   listSourceAssets(
     actorAccountId: string,
     sourceCourseId: string,
@@ -194,6 +218,8 @@ export interface CoursePublicationRepository {
     publicationId: string;
     revisionId: string;
     contentSha256: string;
+    learningAudience: CourseLearningAudience;
+    attestation: CourseAttestationDefinition | null;
     snapshot: CoursePublicationSnapshot;
     assetManifest: PublicationAssetManifestItem[];
     rightsConfirmed: true;
@@ -235,10 +261,15 @@ const publicationRpcSchema = z
 
 const clonedCourseRpcSchema = z.object({ courseId: z.uuid() }).passthrough();
 
+const catalogCopyEligibilityRpcSchema = z
+  .object({ eligible: z.literal(true) })
+  .strict();
+
 const catalogListCourseSchema = z
   .object({
     publicationId: z.uuid(),
     sourceCourseId: z.uuid().nullable(),
+    learningAudience: z.enum(["children", "educators"]),
     title: z.string(),
     subject: z.string(),
     goal: z.string(),
@@ -346,6 +377,7 @@ function mapCatalogRecord(
     publicationId: publication.id,
     sourceCourseId: publication.source_course_id,
     ownerAccountId: publication.owner_account_id,
+    learningAudience: publication.learning_audience,
     publisherDisplayName: publication.publisher_display_name,
     isShiDao: publication.is_shidao,
     publishedAt: publication.published_at,
@@ -539,10 +571,11 @@ export function createCoursePublicationRepository(
 
     listCatalog(input) {
       return rpc(
-        "list_course_publication_catalog_admin",
+        "list_course_publication_catalog_v2_admin",
         {
           p_actor_account_id: input.actorAccountId,
           p_q: input.q,
+          p_learning_audience: input.learningAudience,
           p_subject: input.subject,
           p_level: input.level,
           p_offset: input.offset,
@@ -550,6 +583,39 @@ export function createCoursePublicationRepository(
         },
         catalogListPageSchema,
       );
+    },
+
+    async getCourseAttestationDefinition(actorAccountId, sourceCourseId) {
+      const rows = await request<CourseAttestationRow[]>(
+        `/rest/v1/course_attestation?select=course_id,version,title,description,passing_score_percent,questions&course_id=eq.${encodeFilter(sourceCourseId)}&limit=1`,
+      );
+      const row = rows[0];
+      if (!row) return null;
+      const courses = await request<Array<{ id: string }>>(
+        `/rest/v1/course?select=id&id=eq.${encodeFilter(sourceCourseId)}&owner_account_id=eq.${encodeFilter(actorAccountId)}&archived_at=is.null&limit=1`,
+      );
+      if (courses.length !== 1) {
+        throw new CoursePublicationRepositoryError(
+          "course_attestation_source_not_found",
+          404,
+          "P0002",
+        );
+      }
+      const parsed = courseAttestationDefinitionSchema.safeParse({
+        version: row.version,
+        title: row.title,
+        description: row.description,
+        passingScorePercent: row.passing_score_percent,
+        questions: row.questions,
+      });
+      if (!parsed.success) {
+        throw new CoursePublicationRepositoryError(
+          "course_attestation_definition_invalid",
+          502,
+          null,
+        );
+      }
+      return parsed.data;
     },
 
     async getCatalogPublication(publicationId) {
@@ -594,6 +660,17 @@ export function createCoursePublicationRepository(
       };
     },
 
+    async assertCatalogCopyEligible(actorAccountId, publicationId) {
+      await rpc(
+        "assert_course_publication_copy_eligible_admin",
+        {
+          p_actor_account_id: actorAccountId,
+          p_publication_id: publicationId,
+        },
+        catalogCopyEligibilityRpcSchema,
+      );
+    },
+
     async listSourceAssets(actorAccountId, sourceCourseId) {
       const links = await request<CourseAttachmentRow[]>(
         `/rest/v1/course_attachment?select=stored_file_id&course_id=eq.${encodeFilter(sourceCourseId)}`,
@@ -632,13 +709,15 @@ export function createCoursePublicationRepository(
 
     publishCourseRevision(input) {
       return rpc(
-        "publish_course_revision_admin",
+        "publish_course_revision_with_attestation_admin",
         {
           p_actor_account_id: input.actorAccountId,
           p_source_course_id: input.sourceCourseId,
           p_publication_id: input.publicationId,
           p_revision_id: input.revisionId,
           p_content_sha256: input.contentSha256,
+          p_learning_audience: input.learningAudience,
+          p_attestation: input.attestation,
           p_snapshot: input.snapshot,
           p_asset_manifest: input.assetManifest,
           p_rights_confirmed: input.rightsConfirmed,
@@ -660,7 +739,7 @@ export function createCoursePublicationRepository(
 
     clonePublication(input) {
       return rpc(
-        "clone_course_publication_admin",
+        "clone_course_publication_with_attestation_admin",
         {
           p_actor_account_id: input.actorAccountId,
           p_publication_id: input.publicationId,
@@ -675,7 +754,7 @@ export function createCoursePublicationRepository(
 
     duplicateCourse(input) {
       return rpc(
-        "duplicate_course_admin",
+        "duplicate_course_with_attestation_admin",
         {
           p_actor_account_id: input.actorAccountId,
           p_source_course_id: input.sourceCourseId,
