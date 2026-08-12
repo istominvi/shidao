@@ -47,14 +47,16 @@
   подзаголовком canonical цвета `rgba(20, 20, 20, 0.5)`, optional backlink и
   правой action-секцией. Header имеет
   `min-height: 200px`, растёт по контенту и вертикально центрирует actions.
-  В current source heading занимает всю оставшуюся ширину, а actions — только
+  В current production heading занимает всю оставшуюся ширину, а actions — только
   intrinsic ширину содержимого и не превращаются в full-width кнопки на mobile.
   Course, Lesson, Students и profile dialog используют один `WorkspaceTabs`:
   40 px, roving keyboard/ARIA, horizontal scroll, baseline 1 px цвета
-  `rgba(20, 20, 20, 0.2)` с inline-inset 12 px и квадратный чёрный
+  `rgba(20, 20, 20, 0.2)` с `inline-inset: 0` и квадратный чёрный
   active-сегмент 4 px без radius. Counts следуют сразу за названием обычным
   текстом без круглого badge.
-  Follow-up развёрнут и подтверждён browser postflight в release `77870e3`.
+  Базовый follow-up был подтверждён в release `77870e3`; full-width
+  канонизация развёрнута exact merge commit
+  `84ffefecda99d3b0a9da82bf1eaf8ce76d9c6ea1` (PR #242).
 - Active app routes приведены к плоскому demo-фону `#f5f1e8` без marketing
   gradients; header, кнопки, вкладки и заголовочная типографика используют
   scoped demo-размеры и веса, не затрагивая landing/Auth.
@@ -254,7 +256,7 @@ Definition of Done программы:
 учебный профиль перенесён в Account menu, observer projection — во вкладку
 «Наблюдение» внутри «Ученики». Каталог `/courses` получил поиск, реальные
 Course-фильтры, сортировку и переключение «Карточки / Таблица» без новой schema
-или параллельного Course API. В current source Students и Courses controls
+или параллельного Course API. В current production Students и Courses controls
 унифицированы с Schedule: outer toolbar-card удалена, Students показывает
 active/archive/pending в одной таблице с inline status/text, full-width search и
 единым disclosure «Фильтр» для status, group membership, конкретной группы и
@@ -265,7 +267,7 @@ Students/Groups и Course **Мои** удалён: возрастающее/уб
 disclosure, а view — в две icon-only кнопки. Published Catalog показывает
 только поддержанные server-side
 subject/level filters, но использует тот же cards/table presentation; повторный
-заголовок, пояснение и видимые result counts удалены. В current source Schedule
+заголовок, пояснение и видимые result counts удалены. В current production Schedule
 также сводит выбор даты и режимы «День / Неделя / Месяц» в один компактный
 календарный popover справа от страницы: desktop-контрол имеет ровно 300 px,
 короткие русские подписи периода без точки после сокращения месяца и оставляет
@@ -327,9 +329,9 @@ DB-транзакции; A1 reverse guards сериализуют archive, publi
 одной Course row, а application больше не сочетает отдельные preflight-read с
 PATCH. A1 migration уже применена к production, exact DB postflight и live
 snapshot green. Restore UI и permanent deletion остаются later. Зависимая
-application-корректировка остаётся current source до успешного Coolify deploy и
-production web postflight.
-Current-source polish
+application-корректировка развёрнута production release PR #242 и прошла
+running-image/HTTP boundary postflight.
+Current production polish
 оставляет AppPageHeader actions шириной по содержимому, отдаёт свободное место
 heading и унифицирует WorkspaceTabs: container и 20%-black baseline занимают
 всю ширину с `inline-inset: 0`, а count остаётся простым inline-текстом без
@@ -347,7 +349,7 @@ Schedule-геометрией `40 px / 12 px / 4 px`; шесть заголов�
 view-sort, начиная с `position ASC`. В action-cell остаётся один 32 px
 `MoreVertical`: portal-menu открывает Lesson либо контекстный flow проведения и
 не содержит удаления. Старый карточный `workspace-lesson-*` layout удалён.
-В current source code-first Component registry расширен с 10 до 20 активных
+В current production code-first Component registry расширен с 10 до 20 активных
 типов: добавлены video/audio, расширенный quiz, пропуски, bank
 слов, порядок, категории, свободный ответ, HTTPS-ссылка, сборка слова и
 словарь; layout-only `divider` исключён. Текущая самопроверка живёт только
@@ -603,7 +605,7 @@ Learner Course consumption и live Student Screen остаются отдель�
   ожидаемого ученика;
 - UI state выводится из timestamps, persisted status отсутствует.
 
-**Current deployed follow-up:** Schedule UI проецирует те же
+**Previously deployed follow-up (presentation superseded by PR #242):** Schedule UI проецирует те же
 LessonRun за выбранную локальную неделю или календарный месяц. Панель без
 внешней карточки повторяет demo-композицию: date navigator, «Неделя / Месяц» и
 «Таблица / Карточки». API/schema не меняются; System Assistant остаётся
@@ -611,7 +613,7 @@ LessonRun за выбранную локальную неделю или кал�
 SHA `587bb21` завершён со статусом Success; authenticated production browser
 postflight этого follow-up ещё не выполнен.
 
-**Current source polish:** page header использует подзаголовок «Здесь все
+**Current production polish:** page header использует подзаголовок «Здесь все
 назначенные уроки за выбранный период.» с общим для всех `AppPageHeader`
 computed-цветом `rgba(20, 20, 20, 0.5)` и короткий календарный Action
 «Назначить урок». Отдельный внешний «Неделя / Месяц» удалён: компактный
@@ -660,8 +662,9 @@ Authenticated top header и profile dropdown тоже стали сплошны�
 `40 px / 12 px / .88rem / 400` contract с fully opaque contrast-aware icons,
 тонкой рамкой у белых кнопок и borderless menu items. Physical schema не
 меняется; Course API добавляет recoverable soft archive с published/open-Run
-guards. Последний refinement остаётся current source до успешного Coolify
-deploy и production postflight.
+guards. Refinement развёрнут exact merge commit
+`84ffefecda99d3b0a9da82bf1eaf8ce76d9c6ea1` (PR #242); running image и
+HTTP/CSRF/auth boundary postflight подтверждены.
 
 **Current production contract дополнительно:** verified actual duration,
 explicit shared individual comment, cursor-paginated self/observer history и

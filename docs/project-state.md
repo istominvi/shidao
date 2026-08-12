@@ -62,7 +62,7 @@ Authenticated production browser postflight подтвердил roleless naviga
 trusted provisional mismatches `0`, старая session перенаправлена на `/login`.
 Terminal condition identity программы закрыт.
 
-**Current deployed visual slice:** `/courses`, `/students`, `/schedule`, Course
+**Previously deployed visual baseline (superseded by PR #242):** `/courses`, `/students`, `/schedule`, Course
 и Lesson используют единый `AppPageHeader` с H1 не крупнее 48 px на desktop и
 32 px на mobile, `min-height: 200px` с ростом по контенту и вертикально
 центрированными actions. Course, Lesson, Students и profile dialog используют
@@ -73,7 +73,7 @@ Terminal condition identity программы закрыт.
 для title/header/action-center на пяти поверхностях, `12px / 1px / 4px`
 для tabs и пустую browser console. Схема БД в visual slice не менялась.
 
-**Current source page-header/tabs polish (next deployment):** на всех active
+**Current deployed page-header/tabs polish:** на всех active
 product pages заголовочная колонка `AppPageHeader` получает всё свободное
 место через `minmax(0, 1fr)`, а action-секция занимает только ширину своего
 контента (`max-content`, ограниченный шириной контейнера) и больше не
@@ -81,14 +81,14 @@ product pages заголовочная колонка `AppPageHeader` получ
 canonical token `--app-page-header-description-color` со значением
 `rgba(20, 20, 20, 0.5)`, поэтому на всех его страницах computed-цвет равен 50%
 чёрного без route-specific forks. Общий `WorkspaceTabs` использует нижний
-разделитель `rgba(20, 20, 20, 0.2)` высотой 1 px. В current source его
+разделитель `rgba(20, 20, 20, 0.2)` высотой 1 px. Его
 container и baseline занимают всю ширину content-row с `inline-inset: 0`;
 канонический контракт применяется ко всем consumers. Выбранная вкладка
 сохраняет непрозрачный чёрный сегмент 4 px. Числовой счётчик теперь является обычным
 inline-текстом после названия (`Ученики 1`) без чёрного круга, отдельного
 размера или цвета. Это UI-only изменение без API, schema или migration.
 
-**Current deployed Schedule presentation slice:**
+**Previously deployed Schedule presentation baseline (superseded by PR #242):**
 `/schedule` загружает реальные LessonRun за локальную неделю (понедельник–
 понедельник) или календарный месяц. Внешняя поверхность toolbar удалена:
 составные date navigator, переключатель «Неделя / Месяц» и независимый выбор
@@ -102,7 +102,7 @@ Coolify webhook deployment exact functional SHA `587bb21` завершён со 
 Success за 2 минуты 33 секунды; running application указывает на тот же SHA.
 Authenticated production browser postflight этого slice пока не выполнен.
 
-**Current source Schedule calendar/table refinement (следующий deployment):** отдельный
+**Current deployed Schedule calendar/table refinement:** отдельный
 переключатель «Неделя / Месяц» удалён. Справа на фоне страницы компактный
 составной date control шириной ровно 300 px на desktop стоит перед icon-only
 выбором «Таблица / Карточки»: стрелки двигают назад или вперёд весь активный
@@ -126,7 +126,7 @@ Authenticated production browser postflight этого slice пока не вы�
 нет разного по тону шва. Данные выводятся чёрным в одну строку с ellipsis и
 полным `title`; дата использует
 формат `Среда · 12 авг`, время — `12:00 · 60 мин`, scheduled-состояние остаётся
-plain «Ожидается». В current source видимые data-заголовки Schedule являются
+plain «Ожидается». Видимые data-заголовки Schedule являются
 кнопками сортировки: первый клик включает возрастание, повторный — убывание,
 а текущее направление отражается в `aria-sort`. Видимый заголовок последней колонки
 отсутствует: постоянная кнопка с вертикальным троеточием открывает все действия
@@ -146,10 +146,9 @@ Auth и полноэкранный Student Screen намеренно не вхо
 Это UI-only изменение: LessonRun API, System Assistant boundary, schema и
 migrations не меняются; assistant по-прежнему получает только опорную локальную
 дату, а не всё видимое окно. Последняя корректировка cell/action spacing
-находится в current source и не считается развёрнутой до успешного Coolify
-deploy и production postflight.
+развёрнута в production release PR #242; exact rollout evidence приведён ниже.
 
-**Current source Students/Courses controls slice (ещё не развёрнут):** панели
+**Current deployed Students/Courses controls slice:** панели
 управления `/students` и обеих вкладок `/courses` больше не создают отдельную
 toolbar-card: компактные 40 px controls расположены прямо на page background в
 том же визуальном контракте, что Schedule. На Students состояния «Активные /
@@ -170,7 +169,7 @@ server-side предмета/уровня и такой же icon-only выбо�
 content/sort controls не добавлены. Подзаголовок `/courses` — «Создавайте свои
 курсы с нуля или добавляйте готовые из каталога» без завершающей точки.
 
-**Current source content controls/table surfaces (следующий deployment):**
+**Current deployed content controls/table surfaces:**
 прозрачные панели управления Schedule, обеих directory-вкладок Students и
 обеих вкладок Courses используют всю ширину content-row с
 `padding-inline: 0`. Date/view controls Schedule остаются справа и
@@ -187,7 +186,7 @@ actions`, а **Каталог** — `Курс / Предмет / Уровень 
 Материалы / actions`. Shared header белый, а разделители строк используют один
 `--product-table-divider-color`. Сама table/toolbar geometry не меняет schema;
 отдельный Course archive lifecycle ниже использует уже применённый production
-A1 database contract. Deployment web source ещё не выполнен.
+A1 database contract. Web surface развёрнута в production release PR #242.
 
 Сохранённый Course применяет тот же контракт на вкладке **Уроки**: неизменённый
 общий `WorkspaceTabs` остаётся полноширинным, а под ним прозрачная панель поиска
@@ -222,9 +221,9 @@ LessonRun — `409 course_has_open_lesson_runs` до завершения или
 раздельных publication/open-run preflight-read и direct PATCH. Reverse guards
 сериализуют archive, publish и создание/opening Run на одной Course row; это
 по-прежнему не permanent delete. A1 database contract уже deployed/current;
-этот API/UI flow остаётся current source до отдельного Coolify rollout.
+этот API/UI flow также deployed/current в production release PR #242.
 
-**Current source Students table/actions refinement (следующий deployment):**
+**Current deployed Students table/actions refinement:**
 каждый data-заголовок таблиц Students и Groups переключает возрастающую и
 убывающую сортировку и отражает её в `aria-sort`; actions-column не
 сортируется. В конце каждой Students-row стоит один `MoreVertical` trigger с
@@ -235,11 +234,11 @@ destructive-действие «Убрать из списка». Пункт
 «Написать сообщение» видим, но disabled и явно помечен как недоступный:
 communication layer в current product не заявляется. Archived profile и
 pending request получают свои restore/permanent-delete или cancel actions.
-Trigger и пункты меню не активируют неявный row click. Это current-source
+Trigger и пункты меню не активируют неявный row click. Это current production
 UI/application flow поверх существующих Group/Course audience boundaries;
 schema и migrations не меняются.
 
-**Current source Schedule row actions (следующий deployment):** каждая строка
+**Current deployed Schedule row actions:** каждая строка
 назначенного LessonRun показывает `cursor: pointer` при наведении. Для
 ожидающего назначения постоянное вертикальное троеточие открывает точный набор
 действий «Начать урок / Изменить / Отменить»; active Run получает «Завершить
@@ -247,8 +246,8 @@ schema и migrations не меняются.
 существующие LessonRun mutations через общий reload/busy/error boundary,
 cancel требует подтверждения, а edit открывает текущий dialog сразу в режиме
 редактирования. Клик по action trigger или пункту меню не становится неявным
-кликом по строке. Это application/UI follow-up поверх существующих API; schema
-и migrations не меняются, deployment ещё не выполнен.
+кликом по строке. Это deployed application/UI follow-up поверх существующих
+API; schema и migrations не меняются.
 
 **Current System Assistant conversational action slice:** реализован один
 глобальный floating widget «ИИ» внутри protected `(app)` layout. Он доступен на
@@ -455,14 +454,14 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
   В UI нет отдельной сущности «шаблон».
 - Вкладка **Мои** сохраняет поиск по открытым Course fields,
   динамические фильтры по предмету/уровню/наполнению, сортировку и
-  режимы «Карточки / Таблица». В current source эти controls собраны в одну
+  режимы «Карточки / Таблица». В current production эти controls собраны в одну
   компактную строку прямо на page background: три категориальных поля находятся
   в disclosure «Фильтры», view выбирается icon-only segmented control, а
   видимый счётчик результатов не занимает место между ними.
   Приватные пожелания преподавателя в поиск не входят.
 - **Каталог** имеет server-side search/filter, карточку курса с
   целью, аудиторией, Lesson outline, автором и списком материалов.
-  Current source показывает search и реальные subject/level facets без внешней
+  Current production показывает search и реальные subject/level facets без внешней
   toolbar-card, повторного заголовка/пояснения и видимого count. Presentation
   переключается между карточками и таблицей для уже загруженной cursor-
   последовательности; content filter и произвольная сортировка не заявляются,
@@ -554,15 +553,15 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
   на всех поверхностях. Числовой
   count отображается простым продолжением label через пробел, без badge;
   каждый tab владеет существующим persistent `tabpanel` через симметричные
-  `aria-controls / aria-labelledby`. В current source кнопки,
+  `aria-controls / aria-labelledby`. В current production кнопки,
   header controls и вкладки используют шрифт `.88rem/400`, flat primary без
   3D-блика/подъёма, fully opaque icons и единый 16 px icon rhythm; исходный
-  layout-контракт подтверждён production postflight release `77870e3`, а эта
-  control-полировка относится к следующему deployment.
+  layout-контракт подтверждён production postflight release `77870e3`, а
+  control-полировка развёрнута production release PR #242.
 
 ### Roleless navigation, Расписание, Ученики и аудитория
 
-- В current source основная навигация любого Account содержит «Расписание /
+- В current production основная навигация любого Account содержит «Расписание /
   Ученики / Курсы» без role switch. Персональное меню справа содержит
   «Учебный профиль / Настройки / Выход».
 - `/schedule` и `/students` filesystem-совместимо остаются под прежним route
@@ -571,7 +570,7 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
 - Current production `/schedule` показывает реальные LessonRun выбранной
   локальной недели или календарного месяца. Это проекция тех же проведений, а
   не отдельная таблица Schedule events.
-- В current source краткий Action «Назначить урок» с иконкой добавления в
+- В current production краткий Action «Назначить урок» с иконкой добавления в
   календарь находится в общей page-header action-секции, а подзаголовок прямо
   объясняет, что здесь находятся все назначенные уроки за выбранный период.
   Справа под header находятся 300 px compact date picker и icon-only control
@@ -1152,7 +1151,8 @@ provider requests, assistant dialog history или quota state в БД.
   anonymous HTTP закрыт с `401` / `42501`. Live snapshot
   `2026-08-12T00:22:27Z` имеет SHA-256
   `055b3c3ab47afc3c3db86d92c6c7530b3735841e34e4b475101ac96056d853ec`.
-  Зависимый web UI/API остаётся current source до Coolify rollout.
+  Зависимый web UI/API развёрнут exact release PR #242; DB evidence и snapshot
+  остаются неизменными.
 
 Источники истины для текущего состояния:
 
@@ -1381,17 +1381,17 @@ overflow. Coolify webhook deployment exact functional SHA `587bb21` заверш
 Success за 2 минуты 33 секунды, running reference совпадает; authenticated
 production browser postflight остаётся отдельным незавершённым gate.
 
-Для current source Students/Courses controls и Schedule cleanup slice локально подтверждены
+Для deployed Students/Courses controls и Schedule cleanup slice локально подтверждены
 typecheck, lint, format check, `git diff --check`, `439/439` unit/e2e tests и
 `22/22` strict production-mode browser scenarios. Browser gate проверил
 новую Schedule microcopy, calendar-plus Action и прямой переход от controls к
 непустой таблице/карточкам без summary-strip; прозрачные Students/Courses
 toolbars, единый Students list с inline status, Course disclosure/native
 filters, reset, Escape с возвратом focus, icon-only cards/table и mobile 375 px
-без document-level overflow. Schema/migration не менялись; deployment этого
-source slice ещё не выполнялся.
+без document-level overflow. Schema/migration не менялись; slice развёрнут в
+production release PR #242.
 
-Для current source Schedule dense-table/control refinement локально
+Для deployed Schedule dense-table/control refinement локально
 подтверждены typecheck, lint, format check, `git diff --check`, `448/448`
 unit/e2e tests и `22/22` strict production-mode browser scenarios. Browser
 gate измерил desktop date control ровно 300 px и фактический `.88rem/400`,
@@ -1402,7 +1402,23 @@ gate измерил desktop date control ровно 300 px и фактическ
 необрезанный portal-menu вертикального троеточия с keyboard focus restore,
 flat primary/active navigation, bordered white secondary, borderless menu items
 и отсутствие document-level overflow на 375/320 px. API/schema/migrations не
-менялись; deployment этого source slice ещё не выполнялся.
+менялись; slice развёрнут в production release PR #242.
+
+Production rollout PR #242 завершён на merge commit
+`84ffefecda99d3b0a9da82bf1eaf8ce76d9c6ea1`. Coolify deployment
+`l56b73xj6mfblc0ni8u7yf2g` для application `g9x4d9zn60jv35r7zf0xl6xj`
+создан webhook-ом (`pull_request_id=0`, `webhook=true`, `api=false`) в
+`2026-08-12 00:34:51Z` и завершён в `00:38:42Z`. Running container использует
+exact `SOURCE_COMMIT`/image commit
+`84ffefecda99d3b0a9da82bf1eaf8ce76d9c6ea1`, image ID
+`sha256:e4a22e34c1ed1bd8b37db8087b6bbafac693414ea357798e3ddf75e3c3684d57`,
+restart count `0`; второго active production deployment нет. HTTP postflight:
+V2 `/login` и `/robots.txt` — `200`, Guest `/courses` — `307` на login;
+landing root — `200`, landing `/login` и API — `503`; demo root и `/students`
+— `200`; brand/model deep route — `421`. Guest `DELETE` fake Course UUID
+возвращает `403` без Origin, `403` с неверным Origin и `401` с exact V2 Origin,
+подтверждая CSRF-before-auth boundary без data mutation. `X-Robots-Tag` —
+`noindex, nofollow, noarchive`; release error-log filter пуст.
 
 Для current Course publication/catalog source slice локально подтверждены
 `381/381` unit tests, `19/19` строгих production-mode browser scenarios,

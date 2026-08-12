@@ -231,7 +231,9 @@ Browser ACL сужается: у `authenticated` больше нет table-level
 
 Current SQL snapshot подтверждает RPC/guards/triggers, exact ACL и отсутствие
 archived Course с published listing или открытым Run. Зависимый web UI/API
-остаётся current source до отдельного успешного Coolify rollout.
+развёрнут production release PR #242 на exact commit
+`84ffefecda99d3b0a9da82bf1eaf8ce76d9c6ea1`; это не меняет приведённые выше
+DB apply/snapshot evidence.
 
 ## Current repository tables
 
