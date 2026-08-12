@@ -29,10 +29,14 @@ test("catalog learning audience is shareable, server-filtered, and resets list s
   assert.match(catalog, /ariaLabel="Направление обучения"/);
   assert.match(catalog, /label: "Обучение детей"/);
   assert.match(catalog, /label: "Обучение педагогов"/);
+  assert.match(
+    catalog,
+    /className="compact-page-toolbar course-catalog-toolbar"[\s\S]*?className="course-catalog-toolbar-main"[\s\S]*?\{learningAudienceControl\}[\s\S]*?className="compact-toolbar-search product-search-wrap"[\s\S]*?className="compact-toolbar-rail"/,
+  );
   assert.match(catalog, /params\.set\("learningAudience", learningAudience\)/);
   assert.match(
     catalog,
-    /function changeLearningAudience[\s\S]*?setQuery\(""\)[\s\S]*?setDebouncedQuery\(""\)[\s\S]*?setSubject\("all"\)[\s\S]*?setLevel\("all"\)[\s\S]*?setCourses\(\[\]\)[\s\S]*?setNextCursor\(null\)[\s\S]*?onLearningAudienceChange\(nextAudience\)/,
+    /function changeLearningAudience[\s\S]*?setQuery\(""\)[\s\S]*?setDebouncedQuery\(""\)[\s\S]*?setSubject\("all"\)[\s\S]*?setLevel\("all"\)[\s\S]*?setCourses\(null\)[\s\S]*?setNextCursor\(null\)[\s\S]*?onLearningAudienceChange\(nextAudience\)/,
   );
 });
 

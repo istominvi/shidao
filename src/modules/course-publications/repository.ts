@@ -1,6 +1,7 @@
 import "server-only";
 
 import { z, type ZodType } from "zod";
+import { postgresUuidSchema } from "@/lib/postgres-uuid";
 import { getSupabasePublicConfig } from "@/lib/server/auth-config";
 import {
   coursePublicationSnapshotSchema,
@@ -247,10 +248,10 @@ export interface CoursePublicationRepository {
 
 const publicationRpcSchema = z
   .object({
-    publicationId: z.uuid(),
-    sourceCourseId: z.uuid(),
+    publicationId: postgresUuidSchema,
+    sourceCourseId: postgresUuidSchema,
     status: z.enum(["published", "unpublished"]),
-    currentRevisionId: z.uuid(),
+    currentRevisionId: postgresUuidSchema,
     publishedAt: z.string().nullable(),
     updatedAt: z.string(),
     sourceCourseUpdatedAt: z.string(),
@@ -259,7 +260,9 @@ const publicationRpcSchema = z
   })
   .passthrough();
 
-const clonedCourseRpcSchema = z.object({ courseId: z.uuid() }).passthrough();
+const clonedCourseRpcSchema = z
+  .object({ courseId: postgresUuidSchema })
+  .passthrough();
 
 const catalogCopyEligibilityRpcSchema = z
   .object({ eligible: z.literal(true) })
@@ -267,8 +270,8 @@ const catalogCopyEligibilityRpcSchema = z
 
 const catalogListCourseSchema = z
   .object({
-    publicationId: z.uuid(),
-    sourceCourseId: z.uuid().nullable(),
+    publicationId: postgresUuidSchema,
+    sourceCourseId: postgresUuidSchema.nullable(),
     learningAudience: z.enum(["children", "educators"]),
     title: z.string(),
     subject: z.string(),

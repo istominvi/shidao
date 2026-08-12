@@ -8,6 +8,7 @@ import {
   reorderLessonComponentInputSchema,
   setComponentStudentScreenInputSchema,
   updateLessonComponentInputSchema,
+  uuidSchema,
 } from "./contracts";
 
 test("course draft contract normalizes the complete teacher form", () => {
@@ -114,6 +115,14 @@ test("component payload edits and Student Screen placement have separate contrac
     false,
   );
   assert.equal(updateLessonComponentInputSchema.safeParse({}).success, false);
+});
+
+test("Course Builder accepts canonical PostgreSQL UUID values", () => {
+  assert.equal(
+    uuidSchema.safeParse("eb697b66-8655-6939-3d2c-cdf193935004").success,
+    true,
+  );
+  assert.equal(uuidSchema.safeParse("not-a-guid").success, false);
 });
 
 test("Lesson contracts expose direct document metadata and component ordering", () => {

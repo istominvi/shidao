@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { postgresUuidSchema } from "@/lib/postgres-uuid";
 import { componentVisibilitySchema } from "@/modules/course-builder/component-visibility";
 import { componentTypeKeySchema } from "@/modules/course-builder/registry/contracts";
 import {
@@ -32,7 +33,7 @@ export const catalogQuerySchema = z
 
 const snapshotMaterialSchema = z
   .object({
-    ref: z.uuid(),
+    ref: postgresUuidSchema,
     originalFilename: z.string().trim().min(1).max(255),
     mimeType: z.string().trim().min(1).max(255),
     sizeBytes: z.number().int().positive(),
@@ -42,27 +43,27 @@ const snapshotMaterialSchema = z
 
 const snapshotSlideSchema = z
   .object({
-    ref: z.uuid(),
+    ref: postgresUuidSchema,
     position: z.number().int().positive(),
   })
   .strict();
 
 const snapshotComponentSchema = z
   .object({
-    ref: z.uuid(),
+    ref: postgresUuidSchema,
     position: z.number().int().positive(),
     typeKey: componentTypeKeySchema,
     schemaVersion: z.number().int().positive(),
     payload: z.record(z.string(), z.unknown()),
     placement: z.record(z.string(), z.unknown()),
     visibility: componentVisibilitySchema,
-    studentSlideRef: z.uuid().nullable(),
+    studentSlideRef: postgresUuidSchema.nullable(),
   })
   .strict();
 
 const snapshotLessonSchema = z
   .object({
-    ref: z.uuid(),
+    ref: postgresUuidSchema,
     position: z.number().int().positive(),
     title: z.string().trim().min(1).max(180),
     summary: z.string().max(1_200),

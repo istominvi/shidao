@@ -26,6 +26,9 @@ const E2E_TEACHER_ID = "55555555-5555-4555-8555-555555555555";
 const E2E_SCHOOL_ID = "66666666-6666-4666-8666-666666666666";
 const E2E_COURSE_ID = "33333333-3333-4333-8333-333333333333";
 const E2E_SECOND_COURSE_ID = "33333333-3333-4333-8333-333333333334";
+const E2E_EDUCATOR_COURSE_ID = "eb697b66-8655-6939-3d2c-cdf193935004";
+const E2E_EDUCATOR_PUBLICATION_ID = "cdcccb90-aab2-302e-3736-fdf6fedd59ba";
+const E2E_EDUCATOR_REVISION_ID = "498c525d-7b9e-9123-e185-aa85aab38fda";
 const E2E_LESSON_ID = "44444444-4444-4444-8444-444444444444";
 const E2E_SECOND_LESSON_ID = "44444444-4444-4444-8444-444444444445";
 const E2E_COMPONENT_ID = "77777777-7777-4777-8777-777777777771";
@@ -51,6 +54,8 @@ const E2E_COMPLETION_PUBLISHED_RUN_ID = "88888888-8888-4888-8888-888888888896";
 const E2E_GROUP_TEEN_ID = "99999999-9999-4999-8999-999999999991";
 const E2E_GROUP_EXAM_ID = "99999999-9999-4999-8999-999999999992";
 const E2E_COURSE_TITLE = "Английский для жизни";
+const E2E_EDUCATOR_COURSE_TITLE =
+  "Современный урок китайского языка для детей: произношение, иероглифика и формирующее оценивание";
 const E2E_LESSON_TITLE = "Present Perfect · жизненный опыт";
 const E2E_SUPABASE_ACCESS_TOKEN = "e2e-supabase-user-access-token";
 const E2E_FOREIGN_ACCOUNT_ID = "22222222-2222-4222-8222-222222222229";
@@ -1652,11 +1657,63 @@ async function handleMockSupabase(
     requestUrl.pathname ===
     "/rest/v1/rpc/list_course_publication_catalog_v2_admin"
   ) {
+    const body = await readJsonBody(request);
+    const educatorCatalog = body.p_learning_audience === "educators";
     json(response, 200, {
-      courses: [],
-      facets: { subjects: [], levels: [] },
+      courses: educatorCatalog
+        ? [
+            {
+              publicationId: E2E_EDUCATOR_PUBLICATION_ID,
+              sourceCourseId: E2E_EDUCATOR_COURSE_ID,
+              learningAudience: "educators",
+              title: E2E_EDUCATOR_COURSE_TITLE,
+              subject: "Методика преподавания китайского языка",
+              goal: "Спроектировать современный урок китайского языка.",
+              level: "Профессиональное развитие педагогов",
+              audienceDescription: "Преподаватели китайского языка",
+              targetLessonCount: 6,
+              lessonCount: 6,
+              materialCount: 0,
+              publishedAt: "2026-08-12T03:10:45.000Z",
+              author: {
+                displayName: "E2E Adult",
+                isShiDao: false,
+                isCurrentUser: true,
+              },
+            },
+          ]
+        : [],
+      facets: educatorCatalog
+        ? {
+            subjects: ["Методика преподавания китайского языка"],
+            levels: ["Профессиональное развитие педагогов"],
+          }
+        : { subjects: [], levels: [] },
       nextOffset: null,
     });
+    return;
+  }
+
+  if (
+    requestUrl.pathname ===
+    "/rest/v1/rpc/list_my_course_publication_attestations"
+  ) {
+    json(response, 200, [
+      {
+        publicationId: E2E_EDUCATOR_PUBLICATION_ID,
+        revisionId: E2E_EDUCATOR_REVISION_ID,
+        courseTitle: E2E_EDUCATOR_COURSE_TITLE,
+        courseSubject: "Методика преподавания китайского языка",
+        assessmentTitle: "Итоговая аттестация",
+        publisherDisplayName: "E2E Adult",
+        scorePercent: 90,
+        passingScorePercent: 80,
+        completedAt: "2026-08-12T03:10:45.000Z",
+        assessmentVersion: 1,
+        isCurrentRevision: true,
+        publicationAvailable: true,
+      },
+    ]);
     return;
   }
 
@@ -4807,6 +4864,19 @@ test("browser smoke: self profile exposes only learner-safe history and controls
     assert.doesNotMatch(html, /FOREIGN TRAP RECORD|Чужой курс/);
 
     await runtime.page
+      .getByRole("tab", { name: "Аттестация", exact: true })
+      .click();
+    await runtime.page
+      .getByText(E2E_EDUCATOR_COURSE_TITLE, { exact: true })
+      .waitFor();
+    assert.equal(
+      await runtime.page
+        .getByText("Не удалось выполнить операцию с курсом.", { exact: true })
+        .count(),
+      0,
+    );
+
+    await runtime.page
       .getByRole("tab", { name: /Связи и помощник/, exact: false })
       .click();
     await runtime.page
@@ -6607,24 +6677,35 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       const search = toolbar?.querySelector<HTMLElement>(
         ".compact-toolbar-search",
       );
+      const audience = toolbar?.querySelector<HTMLElement>(
+        ".course-catalog-audience-control",
+      );
       const rail = toolbar?.querySelector<HTMLElement>(".compact-toolbar-rail");
-      if (!toolbar || !search || !rail) {
+      if (!toolbar || !search || !audience || !rail) {
         throw new Error("Catalog toolbar contract is missing");
       }
       const style = getComputedStyle(toolbar);
       const rect = toolbar.getBoundingClientRect();
       const searchRect = search.getBoundingClientRect();
+      const audienceRect = audience.getBoundingClientRect();
       const railRect = rail.getBoundingClientRect();
       return {
         paddingLeft: style.paddingLeft,
         paddingRight: style.paddingRight,
-        searchStartInset: searchRect.left - rect.left,
+        audienceStartInset: audienceRect.left - rect.left,
+        audienceSearchGap: searchRect.left - audienceRect.right,
+        audienceSearchCenterDelta:
+          audienceRect.top +
+          audienceRect.height / 2 -
+          (searchRect.top + searchRect.height / 2),
         railEndInset: rect.right - railRect.right,
       };
     });
     assert.equal(catalogToolbarContract.paddingLeft, "0px");
     assert.equal(catalogToolbarContract.paddingRight, "0px");
-    assert.ok(Math.abs(catalogToolbarContract.searchStartInset) < 0.5);
+    assert.ok(Math.abs(catalogToolbarContract.audienceStartInset) < 0.5);
+    assert.ok(catalogToolbarContract.audienceSearchGap >= 0);
+    assert.ok(Math.abs(catalogToolbarContract.audienceSearchCenterDelta) < 0.5);
     assert.ok(Math.abs(catalogToolbarContract.railEndInset) < 0.5);
     assert.equal(
       await catalogPanel.getByText("Готовые курсы", { exact: true }).count(),
@@ -6666,6 +6747,37 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
         exact: true,
       })
       .waitFor();
+
+    const audienceControl = catalogPanel.getByRole("group", {
+      name: "Направление обучения",
+      exact: true,
+    });
+    await audienceControl
+      .getByRole("button", { name: "Обучение педагогов", exact: true })
+      .click();
+    await runtime.page.waitForURL(/\/courses\?tab=catalog&audience=educators$/);
+    await catalogPanel
+      .getByText(E2E_EDUCATOR_COURSE_TITLE, { exact: true })
+      .waitFor();
+    assert.equal(
+      await audienceControl
+        .getByRole("button", { name: "Обучение педагогов", exact: true })
+        .getAttribute("aria-pressed"),
+      "true",
+    );
+    await runtime.page.goto("/courses?tab=catalog&audience=educators", {
+      waitUntil: "networkidle",
+    });
+    await runtime.page
+      .getByRole("tabpanel", { name: "Каталог", exact: true })
+      .getByText(E2E_EDUCATOR_COURSE_TITLE, { exact: true })
+      .waitFor();
+    assert.equal(
+      await runtime.page
+        .getByText("Не удалось связаться с каталогом курсов.", { exact: true })
+        .count(),
+      0,
+    );
 
     const catalogFilterTrigger = runtime.page.locator(
       ".course-catalog-toolbar .course-filter-trigger",

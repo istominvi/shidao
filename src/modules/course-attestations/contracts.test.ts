@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   courseAttestationDefinitionSchema,
   courseAttestationStateSchema,
+  parseAccountAttestationCredentials,
   submitCourseAttestationSchema,
 } from "./contracts";
 
@@ -202,4 +203,60 @@ test("certified state requires a passed attempt and complete review keys", () =>
       false,
     );
   }
+});
+
+test("attestation projections accept canonical PostgreSQL UUID values", () => {
+  const postgresPublicationId = "cdcccb90-aab2-302e-3736-fdf6fedd59ba";
+  const postgresRevisionId = "498c525d-7b9e-9123-e185-aa85aab38fda";
+  const postgresAttemptId = "23f8777a-e16b-e815-d42f-fc620e3d0564";
+  const certifiedQuestion = questionProjection({
+    selectedOptionId: "b",
+    correctOptionId: "b",
+    explanation: definition.questions[0].explanation,
+  });
+
+  assert.equal(
+    courseAttestationStateSchema.safeParse(
+      attestationState({
+        publicationId: postgresPublicationId,
+        revisionId: postgresRevisionId,
+        questions: [certifiedQuestion],
+        attempt: {
+          id: postgresAttemptId,
+          scorePercent: 100,
+          passed: true,
+          completedAt: "2026-08-12T10:00:00.000Z",
+          selectedOptionByQuestionId: { goal: "b" },
+        },
+        certified: true,
+      }),
+    ).success,
+    true,
+  );
+  assert.equal(
+    parseAccountAttestationCredentials([
+      {
+        publicationId: postgresPublicationId,
+        revisionId: postgresRevisionId,
+        courseTitle: "Методика преподавания китайского языка",
+        courseSubject: "Китайский язык",
+        assessmentTitle: "Итоговая аттестация",
+        publisherDisplayName: "Преподаватель",
+        scorePercent: 90,
+        passingScorePercent: 80,
+        completedAt: "2026-08-12T10:00:00.000Z",
+        assessmentVersion: 1,
+        isCurrentRevision: true,
+        publicationAvailable: true,
+      },
+    ]).length,
+    1,
+  );
+  assert.equal(
+    submitCourseAttestationSchema.safeParse({
+      expectedRevisionId: postgresRevisionId,
+      selectedOptionByQuestionId: { goal: "b" },
+    }).success,
+    true,
+  );
 });

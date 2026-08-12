@@ -1,5 +1,5 @@
 import crypto from "node:crypto";
-import { z } from "zod";
+import { postgresUuidSchema } from "@/lib/postgres-uuid";
 import { logger } from "@/lib/server/logger";
 import {
   copyCourseInputSchema,
@@ -54,7 +54,7 @@ import {
 export const COURSE_PUBLICATION_MAX_MATERIALS = 24;
 export const COURSE_PUBLICATION_MAX_TOTAL_BYTES = 120 * 1024 * 1024;
 
-const uuidSchema = z.uuid();
+const uuidSchema = postgresUuidSchema;
 
 type CourseService = Pick<
   CourseBuilderApplicationService,

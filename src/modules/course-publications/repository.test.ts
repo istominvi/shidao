@@ -7,6 +7,8 @@ const ACCOUNT_ID = "00000000-0000-4000-8000-000000000101";
 const COURSE_ID = "00000000-0000-4000-8000-000000000201";
 const PUBLICATION_ID = "00000000-0000-4000-8000-000000000301";
 const REVISION_ID = "00000000-0000-4000-8000-000000000401";
+const POSTGRES_GUID_PUBLICATION_ID = "cdcccb90-aab2-302e-3736-fdf6fedd59ba";
+const POSTGRES_GUID_COURSE_ID = "eb697b66-8655-6939-3d2c-cdf193935004";
 
 async function withRepository(
   fetcher: typeof fetch,
@@ -242,6 +244,56 @@ test("catalog listing uses the compact filtered RPC contract", async () => {
     p_offset: 24,
     p_limit: 50,
   });
+});
+
+test("catalog accepts canonical PostgreSQL UUID values without RFC version bits", async () => {
+  await withRepository(
+    (async () =>
+      new Response(
+        JSON.stringify({
+          courses: [
+            {
+              publicationId: POSTGRES_GUID_PUBLICATION_ID,
+              sourceCourseId: POSTGRES_GUID_COURSE_ID,
+              learningAudience: "educators",
+              title: "Методика преподавания китайского языка",
+              subject: "Китайский язык",
+              goal: "Спроектировать современный урок",
+              level: "Повышение квалификации",
+              audienceDescription: "Преподаватели китайского языка",
+              targetLessonCount: 6,
+              lessonCount: 6,
+              materialCount: 0,
+              publishedAt: "2026-08-12T03:10:45.000Z",
+              author: {
+                displayName: "Преподаватель",
+                isShiDao: false,
+                isCurrentUser: true,
+              },
+            },
+          ],
+          facets: { subjects: ["Китайский язык"], levels: [] },
+          nextOffset: null,
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      )) as typeof fetch,
+    async (repository) => {
+      const page = await repository.listCatalog({
+        actorAccountId: ACCOUNT_ID,
+        q: "",
+        learningAudience: "educators",
+        subject: "",
+        level: "",
+        offset: 0,
+        limit: 24,
+      });
+      assert.equal(page.courses.length, 1);
+      assert.equal(
+        page.courses[0]?.publicationId,
+        POSTGRES_GUID_PUBLICATION_ID,
+      );
+    },
+  );
 });
 
 test("catalog copy eligibility uses the narrow service-role RPC contract", async () => {

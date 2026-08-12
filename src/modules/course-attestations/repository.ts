@@ -52,6 +52,22 @@ function unwrapRpc(value: unknown) {
   return camel;
 }
 
+function parseRpcProjection<T>(
+  operation: string,
+  value: unknown,
+  parser: (input: unknown) => T,
+): T {
+  try {
+    return parser(value);
+  } catch {
+    throw new CourseAttestationRepositoryError(
+      `${operation}_response_invalid`,
+      502,
+      null,
+    );
+  }
+}
+
 export interface CourseAttestationRepository {
   getPublicationAttestation(
     publicationId: string,
@@ -114,10 +130,12 @@ export function createCourseAttestationRepository(
 
   return {
     async getPublicationAttestation(publicationId) {
-      return parseCourseAttestationState(
+      return parseRpcProjection(
+        "get_my_course_publication_attestation",
         await rpc("get_my_course_publication_attestation", {
           p_publication_id: publicationId,
         }),
+        parseCourseAttestationState,
       );
     },
 
@@ -126,18 +144,22 @@ export function createCourseAttestationRepository(
       expectedRevisionId,
       selectedOptionByQuestionId,
     ) {
-      return parseCourseAttestationState(
+      return parseRpcProjection(
+        "submit_my_course_publication_attestation",
         await rpc("submit_my_course_publication_attestation", {
           p_publication_id: publicationId,
           p_expected_revision_id: expectedRevisionId,
           p_selected_option_by_question_id: selectedOptionByQuestionId,
         }),
+        parseCourseAttestationState,
       );
     },
 
     async listAccountAttestations() {
-      return parseAccountAttestationCredentials(
+      return parseRpcProjection(
+        "list_my_course_publication_attestations",
         await rpc("list_my_course_publication_attestations", {}),
+        parseAccountAttestationCredentials,
       );
     },
   };

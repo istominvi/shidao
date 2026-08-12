@@ -64,6 +64,14 @@ test("Schedule, Students, Courses, and Course Lessons toolbars are full-width", 
     /className="compact-page-toolbar course-catalog-toolbar"/,
   );
   assert.match(
+    courseCatalogPanel,
+    /className="course-catalog-toolbar-main"[\s\S]*?\{learningAudienceControl\}[\s\S]*?className="compact-toolbar-search product-search-wrap"/,
+  );
+  assert.match(
+    globalStyles,
+    /\.course-catalog-toolbar-main\s*\{[^}]*display: flex;[^}]*min-width: 0;[^}]*flex: 1 1 auto;[^}]*align-items: center;/,
+  );
+  assert.match(
     courseWorkspace,
     /className="compact-page-toolbar course-lessons-toolbar"[\s\S]*?aria-label="Управление уроками"/,
   );
@@ -85,6 +93,10 @@ test("full-width toolbars preserve contained responsive control rails", () => {
   assert.match(
     globalStyles,
     /@media \(max-width: 900px\)[\s\S]*?\.compact-page-toolbar\s*\{[^}]*grid-template-columns: minmax\(0, 1fr\);/,
+  );
+  assert.match(
+    globalStyles,
+    /@media \(max-width: 900px\)[\s\S]*?\.course-catalog-toolbar-main\s*\{[^}]*width: 100%;[^}]*flex-wrap: wrap;/,
   );
   assert.match(
     teachingHubStyles,

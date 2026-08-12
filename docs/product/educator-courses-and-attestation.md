@@ -5,11 +5,12 @@
 
 ## Current production
 
-E1 database contract, dependent API/UI и demonstration product data применены
-к production. Exact functional commit
-`28387a9863afeccf4a6ad332dcf0f01048a69e67` развёрнут через Coolify; release
-postflight подтвердил exact `SOURCE_COMMIT`, соответствующий image, restart
-count `0` и live host/CSRF/API boundaries.
+E1 database contract и demonstration product data применены к production.
+Initial dependent API/UI commit
+`28387a9863afeccf4a6ad332dcf0f01048a69e67` развёрнут через Coolify, но
+последующая authenticated проверка выявила application parsing incident.
+Production hotfix исправляет этот application boundary без изменения уже
+выданной аттестации или database data.
 
 Каталог Course разделён по учебному назначению, а не по роли Account:
 
@@ -20,6 +21,10 @@ count `0` и live host/CSRF/API boundaries.
 по-прежнему описывает roster обычного Course и для этой классификации не
 используется. Один roleless Account может создавать, проходить и наблюдать
 разные учебные сценарии без переключения типа пользователя.
+
+Audience toggle находится в одной toolbar-строке с поиском,
+фильтрами и выбором вида. При смене направления каталог очищает masked error
+state перед отображением нового результата.
 
 У опубликованного курса для педагогов есть итоговая вкладка «Аттестация».
 Определение теста принадлежит authored Course, но попытка выполняется только
@@ -32,6 +37,23 @@ Badge «Аттестован» в заголовке относится толь
 если курс уже имеет другую редакцию или недоступен. Результат означает
 прохождение теста внутри ShiDao и не заявляется государственным удостоверением
 о повышении квалификации.
+
+## Production incident и hotfix
+
+Authenticated read-only проверка подтвердила один educator Course в catalog
+RPC и одну credential с `certified=true` в profile RPC. Следовательно, сообщения
+об отсутствии связи и невозможности выполнить операцию не отражали состояние
+сети или базы: данные и RPC projection были доступны.
+
+Причиной был более узкий application contract. Deterministic bootstrap создаёт
+publication, revision и snapshot identifiers через `md5(...)::uuid`; это
+допустимые UUID PostgreSQL, но RFC-strict `z.uuid` отклонял их при разборе
+ответа. Application использует единый PostgreSQL UUID contract на основе
+`z.guid` для этих границ и добавляет regression tests для такого формата. В тот
+же hotfix входят очистка masked error state при переключении направления и
+inline-размещение audience toggle в общей toolbar. Release gate прошёл:
+typecheck, lint, format, build, unit `527/527` и strict production-mode browser
+suite `22/22`, включая educator catalog, reload и profile credential.
 
 ## Граница безопасности
 

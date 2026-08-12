@@ -33,3 +33,18 @@ test("attestation attempt throttle preserves a bounded retry contract", async ()
     code: "attestation_attempt_rate_limited",
   });
 });
+
+test("invalid attestation RPC output stays inside the attestation error contract", async () => {
+  const response = await courseAttestationApiError(
+    new CourseAttestationRepositoryError(
+      "list_my_course_publication_attestations_response_invalid",
+      502,
+      null,
+    ),
+  );
+  assert.equal(response.status, 503);
+  assert.deepEqual(await response.json(), {
+    error: "Сервис аттестации временно недоступен.",
+    code: "attestation_unavailable",
+  });
+});

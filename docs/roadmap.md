@@ -514,12 +514,15 @@ policy. Официальные Course от ShiDao требуют отдельн�
 
 ## P0.5: educator Course и Account attestation
 
-**Current production.** E1 database contract хранит отдельное учебное назначение
-`children | educators`, immutable educator assessment definition и
-Account attempt/award, привязанные к точной revision; score никогда не
-принимается с клиента. Server-side переключатель «Обучение детей / Обучение
-педагогов», dependent API/UI и demonstration product data развёрнуты в
-production.
+**Current production.** E1 database
+contract хранит отдельное учебное назначение `children | educators`, immutable
+educator assessment definition и Account attempt/award, привязанные к точной
+revision; score никогда не принимается с клиента. Demonstration product data
+применены к production. Authenticated incident check подтвердил один educator
+Course в catalog RPC и одну `certified=true` credential в profile RPC, поэтому
+ошибка была в application parsing, а не в сети или database contract:
+допустимые PostgreSQL UUID из deterministic `md5(...)::uuid` не проходили
+RFC-strict `z.uuid`.
 
 - conditional «Аттестация» показывается в published catalog detail, не в
   owner-only Course Builder как имитация прохождения;
@@ -530,10 +533,15 @@ production.
   переносит попытки/awards;
 - DB rollout завершён: exact migration/rollback, schema/RLS/ACL postflight и
   functional scoring probe прошли; current snapshot снят;
-- dependent web deployment exact commit
-  `28387a9863afeccf4a6ad332dcf0f01048a69e67` завершён; typecheck/lint/format/
-  build, unit `522/522`, strict browser `22/22` и live host/CSRF/API postflight
-  прошли;
+- initial dependent web deployment exact commit
+  `28387a9863afeccf4a6ad332dcf0f01048a69e67` завершён; его generic
+  host/CSRF/API gates не обнаружили несовместимость parser с deterministic
+  PostgreSQL UUID;
+- application hotfix вводит общий PostgreSQL UUID contract через `z.guid`
+  для publication/revision/snapshot IDs и regression tests, очищает masked
+  error state при переключении направления и переносит audience toggle в одну
+  toolbar-строку с остальными controls; typecheck/lint/format/build, unit
+  `527/527` и strict production-mode browser `22/22` прошли;
 - отдельный demonstration-product bootstrap создал курс «Современный урок
   китайского языка для детей: произношение, иероглифика и формирующее
   оценивание», published assessment и реальный passed attempt `9/10 = 90%`

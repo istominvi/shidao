@@ -29,6 +29,19 @@ Gates: typecheck, lint, format, build, unit `522/522`, strict browser
 educator Course, реальный passed result `9/10 = 90%` и одну profile
 credential.
 
+**Current production E1 hotfix:** authenticated production
+диагностика подтвердила, что catalog RPC возвращает один educator Course, а
+profile RPC — одну credential с `certified=true`; сеть и E1 database contract
+исправны. Ошибки каталога и вкладки «Аттестация» возникали в application
+projection: допустимые PostgreSQL UUID, полученные bootstrap через
+`md5(...)::uuid`, отклонялись RFC-strict проверкой `z.uuid`. Current source
+переводит publication/revision/snapshot IDs на общий PostgreSQL UUID contract
+через `z.guid`, добавляет regression coverage, сбрасывает masked error state
+при переключении направления каталога и ставит audience toggle в одну
+toolbar-строку с поиском, фильтрами и выбором вида. Release gate: typecheck,
+lint, format, build, unit `527/527`, strict production-mode browser `22/22` с
+educator catalog, reload и profile credential.
+
 **Current production contract stage:** реализована и развёрнута полная roleless
 learner identity / observer программа. Migrations M1–M6 применены к production
 после четырёх проверенных backup и добавили atomic exactly-one
@@ -477,9 +490,11 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
   publication имеют `learningAudience` со значениями `children` / `educators`.
   Migration E1 backfilled все пять существующих Course как `children`; четыре
   новые attestation tables имеют RLS и closed browser ACL.
-- В **Каталоге** работает тумблер «Обучение детей
-  / Обучение педагогов»; фильтрация, facets и cursor выполняются server-side
-  внутри выбранного направления.
+- **Current production:** в **Каталоге** тумблер «Обучение
+  детей / Обучение педагогов» расположен в одной toolbar-строке с поиском,
+  фильтрами и выбором вида. Фильтрация, facets и cursor выполняются server-side
+  внутри выбранного направления; смена направления сбрасывает masked error
+  state перед отображением нового результата.
 - У published educator Course detail условно появляется вкладка
   **Аттестация**. Ответы проверяются против immutable publication revision;
   до успешной отправки correct answer key не выходит в browser. Успешная

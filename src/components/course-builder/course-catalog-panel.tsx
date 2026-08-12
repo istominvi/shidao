@@ -91,7 +91,7 @@ function CatalogLearningAudienceControl({
   disabled?: boolean;
 }) {
   return (
-    <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+    <div className="course-catalog-audience-control">
       <SegmentedControl
         ariaLabel="Направление обучения"
         value={value}
@@ -1016,7 +1016,7 @@ export function CourseCatalogPanel({
     setLevel("all");
     setSubjects([]);
     setLevels([]);
-    setCourses([]);
+    setCourses(null);
     setNextCursor(null);
     setLoadingCatalog(true);
     setLoadingMore(false);
@@ -1035,7 +1035,7 @@ export function CourseCatalogPanel({
   if (selectedCourseId) {
     return (
       <div>
-        {learningAudienceControl}
+        <div className="mb-4">{learningAudienceControl}</div>
         <CatalogCourseDetailView
           key={selectedCourseId}
           courseId={selectedCourseId}
@@ -1048,7 +1048,7 @@ export function CourseCatalogPanel({
   if (error && !courses) {
     return (
       <div>
-        {learningAudienceControl}
+        <div className="mb-4">{learningAudienceControl}</div>
         <SurfaceCard className="course-index-error border border-rose-200">
           <p className="text-sm font-medium text-rose-800" role="alert">
             {error}
@@ -1073,7 +1073,7 @@ export function CourseCatalogPanel({
   if (!courses) {
     return (
       <div>
-        {learningAudienceControl}
+        <div className="mb-4">{learningAudienceControl}</div>
         <SurfaceCard className="course-index-status flex items-center gap-3 border border-neutral-200">
           <LoaderCircle className="h-5 w-5 animate-spin" aria-hidden="true" />
           <p className="text-sm font-medium text-neutral-700" role="status">
@@ -1090,25 +1090,30 @@ export function CourseCatalogPanel({
         Каталог курсов
       </h2>
 
-      {learningAudienceControl}
-
       <div
         className="compact-page-toolbar course-catalog-toolbar"
         aria-label="Управление каталогом курсов"
         aria-busy={loadingCatalog}
       >
-        <label className="compact-toolbar-search product-search-wrap">
-          <span className="sr-only">Поиск</span>
-          <Search className="product-search-icon h-4 w-4" aria-hidden="true" />
-          <Input
-            type="search"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            className="product-control-search"
-            placeholder="Название, предмет или автор…"
-            autoComplete="off"
-          />
-        </label>
+        <div className="course-catalog-toolbar-main">
+          {learningAudienceControl}
+
+          <label className="compact-toolbar-search product-search-wrap">
+            <span className="sr-only">Поиск</span>
+            <Search
+              className="product-search-icon h-4 w-4"
+              aria-hidden="true"
+            />
+            <Input
+              type="search"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              className="product-control-search"
+              placeholder="Название, предмет или автор…"
+              autoComplete="off"
+            />
+          </label>
+        </div>
 
         <div className="compact-toolbar-rail">
           <CourseFilterMenu

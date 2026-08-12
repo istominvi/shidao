@@ -1,11 +1,11 @@
-import { z } from "zod";
+import { postgresUuidSchema } from "@/lib/postgres-uuid";
 import {
   submitCourseAttestationSchema,
   type SubmitCourseAttestationInput,
 } from "./contracts";
 import type { CourseAttestationRepository } from "./repository";
 
-const uuidSchema = z.uuid();
+const uuidSchema = postgresUuidSchema;
 
 export class CourseAttestationApplicationError extends Error {
   constructor(

@@ -1554,6 +1554,20 @@ a {
   flex: 0 1 20rem;
 }
 
+.course-catalog-toolbar-main {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.course-catalog-audience-control {
+  display: flex;
+  min-width: 0;
+  flex: 0 0 auto;
+}
+
 .compact-toolbar-rail {
   display: flex;
   min-width: 0;
@@ -1716,6 +1730,11 @@ a {
     width: 100%;
     max-width: none;
     min-width: 0;
+  }
+
+  .course-catalog-toolbar-main {
+    width: 100%;
+    flex-wrap: wrap;
   }
 
   .compact-toolbar-rail {

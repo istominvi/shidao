@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { postgresUuidSchema } from "@/lib/postgres-uuid";
 import {
   courseLearningAudienceSchema,
   DEFAULT_COURSE_LEARNING_AUDIENCE,
@@ -94,7 +95,7 @@ function createComponentStudentScreenInputSchema<TShape extends z.ZodRawShape>(
       .object({
         ...commonShape,
         mode: z.literal("existing"),
-        slideId: z.uuid(),
+        slideId: postgresUuidSchema,
       })
       .strict(),
     z.object({ ...commonShape, mode: z.literal("new") }).strict(),
@@ -105,7 +106,7 @@ export const setComponentStudentScreenInputSchema =
   createComponentStudentScreenInputSchema({});
 
 export const setComponentStudentScreenCommandInputSchema =
-  createComponentStudentScreenInputSchema({ componentId: z.uuid() });
+  createComponentStudentScreenInputSchema({ componentId: postgresUuidSchema });
 
 export type SetComponentStudentScreenInput = z.infer<
   typeof setComponentStudentScreenInputSchema
@@ -122,7 +123,7 @@ export type PrepareCourseAttachmentInput = z.infer<
   typeof prepareCourseAttachmentInputSchema
 >;
 
-export const uuidSchema = z.uuid();
+export const uuidSchema = postgresUuidSchema;
 
 export function parseContract<T>(schema: z.ZodType<T>, value: unknown): T {
   const result = schema.safeParse(value);

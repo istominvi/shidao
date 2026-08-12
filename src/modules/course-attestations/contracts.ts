@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { postgresUuidSchema } from "@/lib/postgres-uuid";
 import type {
   AccountAttestationCredential,
   CourseAttestationDefinition,
@@ -80,7 +81,7 @@ const safeQuestionSchema = z
 
 const attemptSchema = z
   .object({
-    id: z.uuid(),
+    id: postgresUuidSchema,
     scorePercent: z.number().int().min(0).max(100),
     passed: z.boolean(),
     completedAt: z.string(),
@@ -90,8 +91,8 @@ const attemptSchema = z
 
 export const courseAttestationStateSchema = z
   .object({
-    publicationId: z.uuid(),
-    revisionId: z.uuid(),
+    publicationId: postgresUuidSchema,
+    revisionId: postgresUuidSchema,
     title: z.string().trim().min(2).max(240),
     description: z.string().max(2_000),
     passingScorePercent: z.number().int().min(1).max(100),
@@ -246,7 +247,7 @@ export const courseAttestationStateSchema = z
 
 export const submitCourseAttestationSchema = z
   .object({
-    expectedRevisionId: z.uuid(),
+    expectedRevisionId: postgresUuidSchema,
     selectedOptionByQuestionId: z
       .record(identifierSchema, identifierSchema)
       .refine((answers) => Object.keys(answers).length <= 50, {
@@ -257,8 +258,8 @@ export const submitCourseAttestationSchema = z
 
 export const accountAttestationCredentialSchema = z
   .object({
-    publicationId: z.uuid(),
-    revisionId: z.uuid(),
+    publicationId: postgresUuidSchema,
+    revisionId: postgresUuidSchema,
     courseTitle: z.string(),
     courseSubject: z.string(),
     assessmentTitle: z.string(),
