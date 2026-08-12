@@ -1,14 +1,15 @@
 # Курсы для педагогов и аттестация
 
-**Статус:** production DB — current; dependent web rollout и демонстрационные
-данные — next
+**Статус:** current production
 **Актуально на:** 12 августа 2026 года
 
-## Current DB contract и dependent web source
+## Current production
 
-E1 database contract применён к production. Описанные ниже API/UI находятся в
-current source, но станут current production только после отдельного
-dependent web rollout.
+E1 database contract, dependent API/UI и demonstration product data применены
+к production. Exact functional commit
+`28387a9863afeccf4a6ad332dcf0f01048a69e67` развёрнут через Coolify; release
+postflight подтвердил exact `SOURCE_COMMIT`, соответствующий image, restart
+count `0` и live host/CSRF/API boundaries.
 
 Каталог Course разделён по учебному назначению, а не по роли Account:
 
@@ -50,13 +51,19 @@ Badge «Аттестован» в заголовке относится толь
 - Новая publication revision требует повторной аттестации для badge текущей
   редакции, не удаляя исторический результат из профиля.
 
-## Next: первый демонстрационный курс
+## Current production: первый демонстрационный курс
 
-После dependent web rollout, smoke и read-only проверки выбранных Account
-отдельный идемпотентный bootstrap создаст курс «Современный урок китайского
-языка для детей: произношение, иероглифика и формирующее оценивание»,
-опубликует его и отправит за выбранный Account реальную попытку 9/10 (90% при
-пороге 80%) через тот же scoring boundary.
+Отдельный идемпотентный bootstrap завершился `COMMIT` в
+`2026-08-12T03:10:45Z`. Он создал и опубликовал курс «Современный урок
+китайского языка для детей: произношение, иероглифика и формирующее
+оценивание» с шестью Lessons, шестью Components, шестью Slides и итоговым
+тестом из десяти вопросов. Реальная попытка дала `9/10 = 90%` при пороге
+`80%`, `passed=true`, и создала один Account award через обычный scoring RPC.
+
+Финальный authenticated postflight подтвердил `certified=true`, все `10`
+review keys доступны только после award, а профиль содержит одну credential по
+этому курсу. В production ровно один такой educator Course, одна published
+publication с одним immutable definition, одна attempt и одна award.
 
 Bootstrap требует явные psql vars `publisher_account_id` и
 `attested_account_id`. Значения Account UUID и email не фиксируются в tracked

@@ -4,21 +4,30 @@
 **Актуально на:** 12 августа 2026 года
 **Активная ветка:** `main`
 **Рабочее приложение:** `https://v2.shidao.ru`
-**Текущий функциональный application release:** `69a74a7`
-**Последний полный automated/browser gate:** `246cf49`
+**Текущий функциональный application release:**
+`28387a9863afeccf4a6ad332dcf0f01048a69e67`
+**Последний полный automated/browser gate:**
+`28387a9863afeccf4a6ad332dcf0f01048a69e67`
 
 **Current production Course catalog slice:** реализует reusable Course catalog,
 immutable publication revisions, независимое копирование Course и private
 publication assets. Forward migration применена и проверена; Coolify deployment
 `891` развернул exact functional SHA `9a553085487c8fd514cc716f5beec5eab3324af3`.
 
-**Current production E1 database stage:** migration
+**Current production E1 vertical slice:** migration
 `20260812113000_educator_course_attestations.sql` применена owner
 `supabase_admin` с `COMMIT` в `2026-08-12T02:35:45Z`; rollback, RLS/ACL и
 functional scoring probes прошли. Live snapshot `2026-08-12T02:53:14Z` имеет
 SHA-256
 `d96a357a8b55caa80a831b37b7e289c17025c572d79483d28ae7515b30bcf9e2`.
-Dependent E1 web rollout и демонстрационный bootstrap ещё не выполнялись.
+Dependent web deployed from exact functional commit
+`28387a9863afeccf4a6ad332dcf0f01048a69e67`; release postflight подтвердил
+exact `SOURCE_COMMIT`/image, restart count `0` и live host/CSRF/API boundaries.
+Gates: typecheck, lint, format, build, unit `522/522`, strict browser
+`22/22`. Production bootstrap завершился `COMMIT` в
+`2026-08-12T03:10:45Z`; итоговый read-only DB/RPC postflight подтвердил один
+educator Course, реальный passed result `9/10 = 90%` и одну profile
+credential.
 
 **Current production contract stage:** реализована и развёрнута полная roleless
 learner identity / observer программа. Migrations M1–M6 применены к production
@@ -464,14 +473,14 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
 
 ### Курсы
 
-- **Current production DB; dependent web rollout next:** Course и compact
+- **Current production:** Course и compact
   publication имеют `learningAudience` со значениями `children` / `educators`.
   Migration E1 backfilled все пять существующих Course как `children`; четыре
   новые attestation tables имеют RLS и closed browser ACL.
-- **Current dependent source:** в **Каталоге** добавлен тумблер «Обучение детей
+- В **Каталоге** работает тумблер «Обучение детей
   / Обучение педагогов»; фильтрация, facets и cursor выполняются server-side
-  внутри выбранного направления. Этот UI/API ещё не current production.
-- В dependent source у published educator Course detail условно появляется вкладка
+  внутри выбранного направления.
+- У published educator Course detail условно появляется вкладка
   **Аттестация**. Ответы проверяются против immutable publication revision;
   до успешной отправки correct answer key не выходит в browser. Успешная
   транзакция создаёт Account-scoped attempt и award, показывает badge
@@ -482,11 +491,15 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
 - Результат формулируется как внутренняя аттестация ShiDao, а не государственное
   удостоверение. Канонический contract:
   [`docs/product/educator-courses-and-attestation.md`](./product/educator-courses-and-attestation.md).
-- **Next:** развернуть и проверить exact dependent web, затем отдельным
-  explicit bootstrap создать курс «Современный урок китайского языка для
-  детей: произношение, иероглифика и формирующее оценивание» и реальную
-  пройденную попытку для явно выбранного Account. Demonstration product data
-  не входит в schema migration.
+- **Current demonstration product data:** bootstrap transaction завершилась
+  `COMMIT` в `2026-08-12T03:10:45Z` и создала курс «Современный урок китайского
+  языка для детей: произношение, иероглифика и формирующее оценивание». Final
+  read-only postflight: active target `1`, educator Course `1`,
+  Lessons/Components/Slides `6/6/6`, definition/questions `1/10`, published
+  publication/definition `1/1`, attempts/awards `1/1`; result `9/10 = 90%`
+  при threshold `80%`, `passed=true`. Authenticated projection вернула
+  `certified=true` и `10` post-award review keys; учебный профиль содержит одну
+  credential по этому Course. Product data не входит в schema migration.
 
 - **Current production slice:** `/courses` имеет две
   вкладки: **Мои** показывает owner-scoped
@@ -1210,7 +1223,9 @@ provider requests, assistant dialog history или quota state в БД.
   privacy, stale SQLSTATE `40001` и server-derived `9/10 = 90%` award. Latest
   live snapshot `2026-08-12T02:53:14Z` имеет SHA-256
   `d96a357a8b55caa80a831b37b7e289c17025c572d79483d28ae7515b30bcf9e2`.
-  Dependent web rollout и demonstration bootstrap остаются next.
+  Dependent web/API и demonstration bootstrap также развёрнуты production;
+  release/functional evidence зафиксированы в разделе «Курсы» выше и в
+  deployment runbook.
 
 Источники истины для текущего состояния:
 

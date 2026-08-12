@@ -108,10 +108,10 @@ Worktree должен содержать только изменения тек�
 
 ## 4. Если release содержит DB migration
 
-### E1 educator Course / attestation — production DB execution record
+### E1 educator Course / attestation — full production execution record
 
-Database half coupled additive E1 contract is current production; dependent
-web rollout и отдельный Chinese-course bootstrap остаются next.
+Database, dependent web/API и отдельный Chinese-course bootstrap являются
+current production.
 
 Production DB execution, 12 августа 2026 года:
 
@@ -140,15 +140,32 @@ Production DB execution, 12 августа 2026 года:
 - production schema snapshot сгенерирован в `2026-08-12T02:53:14Z`, SHA-256
   `d96a357a8b55caa80a831b37b7e289c17025c572d79483d28ae7515b30bcf9e2`.
 
-Remaining release sequence:
+Dependent web execution:
 
-1. Развернуть exact dependent web SHA и проверить оба режима Catalog,
-   educator-only «Аттестация», failed/pass paths, header badge и профиль.
-2. Только после DB+web smoke запустить отдельный idempotent Chinese-course
-   bootstrap для явно подтверждённых publisher/candidate Account. Bootstrap не
-   входит в migration и выдаёт award только через обычный scoring RPC.
-3. При неуспехе web rollout не переписывать уже применённую migration:
-   использовать совместимый web rollback или новую forward migration.
+- typecheck, lint, format и build прошли; unit suite `522/522`, strict
+  production-mode browser suite `22/22`;
+- Coolify deployment exact functional commit
+  `28387a9863afeccf4a6ad332dcf0f01048a69e67` завершён; release postflight
+  подтвердил exact `SOURCE_COMMIT`, соответствующий image и restart count `0`;
+- live host/CSRF/API postflight прошёл.
+
+Production product-data execution:
+
+- отдельный idempotent bootstrap, не входящий в migration, завершился
+  `COMMIT` в `2026-08-12T03:10:45Z`; account/auth identifiers в tracked
+  evidence не фиксируются;
+- финальный read-only DB/RPC postflight: active target `1`, educator Course
+  `1`, Lessons/Components/Slides `6/6/6`, authored definition `1`, questions
+  `10`, published publication/immutable definition `1/1`, attempts/awards
+  `1/1`;
+- scoring RPC вывел `9/10 = 90%` при threshold `80%`, `passed=true`;
+  authenticated projection показала `certified=true` и раскрыла все `10`
+  review keys только после award; профиль содержит одну credential и exact
+  Course «Современный урок китайского языка для детей: произношение,
+  иероглифика и формирующее оценивание».
+
+При будущем неуспехе web rollback не переписывает применённую migration:
+использовать совместимый image rollback или новую forward migration.
 
 ### Course Component contract cleanup
 

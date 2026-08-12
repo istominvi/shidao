@@ -514,12 +514,11 @@ policy. Официальные Course от ShiDao требуют отдельн�
 
 ## P0.5: educator Course и Account attestation
 
-**Current production DB; dependent web rollout и bootstrap — next.** E1
-database contract уже хранит отдельное учебное назначение
+**Current production.** E1 database contract хранит отдельное учебное назначение
 `children | educators`, immutable educator assessment definition и
 Account attempt/award, привязанные к точной revision; score никогда не
 принимается с клиента. Server-side переключатель «Обучение детей / Обучение
-педагогов» и остальные dependent API/UI готовы в source, но ещё не current
+педагогов», dependent API/UI и demonstration product data развёрнуты в
 production.
 
 - conditional «Аттестация» показывается в published catalog detail, не в
@@ -531,12 +530,15 @@ production.
   переносит попытки/awards;
 - DB rollout завершён: exact migration/rollback, schema/RLS/ACL postflight и
   functional scoring probe прошли; current snapshot снят;
-- **Next:** развернуть dependent web и пройти authenticated browser smoke;
-- после DB+web smoke отдельный explicit demonstration-product bootstrap
-  создаст курс «Современный урок китайского языка для детей: произношение,
-  иероглифика и формирующее оценивание» и passed attempt для выбранного
-  Account, не добавляя product data в migration и не используя test fixture
-  как официальный Course.
+- dependent web deployment exact commit
+  `28387a9863afeccf4a6ad332dcf0f01048a69e67` завершён; typecheck/lint/format/
+  build, unit `522/522`, strict browser `22/22` и live host/CSRF/API postflight
+  прошли;
+- отдельный demonstration-product bootstrap создал курс «Современный урок
+  китайского языка для детей: произношение, иероглифика и формирующее
+  оценивание», published assessment и реальный passed attempt `9/10 = 90%`
+  при threshold `80%`; credential видна в профиле. Product data не входит в
+  migration и не является test fixture.
 
 **Later:** полноценное enrollment/consumption, юридически значимые
 удостоверения, proctoring, manual assessment и expiration/retake policy.

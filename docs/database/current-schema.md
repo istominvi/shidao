@@ -2,8 +2,8 @@
 
 **Статус:** current production learner-identity M6 + Course publication
 catalog + Course Component D1 + A1 atomic Course archive + E1 educator Course
-и Account attestation database contract. Dependent E1 web rollout и
-демонстрационный bootstrap — next
+и Account attestation vertical slice, включая dependent web/API и
+демонстрационный bootstrap
 
 **Production schema head:**
 `20260812113000_educator_course_attestations.sql` — применена к production
@@ -243,7 +243,7 @@ DB apply/snapshot evidence.
 
 Forward migration `20260812113000_educator_course_attestations.sql` is the
 current production database contract. Dependent web deployment and the
-explicit Chinese-course bootstrap are still **next**. E1 adds:
+explicit Chinese-course bootstrap are also current production. E1 adds:
 
 - `course.learning_audience` and the denormalized
   `course_publication.learning_audience`, default/backfilled to `children`;
@@ -264,7 +264,7 @@ Correct answer keys stay in closed authored/publication tables. Browser roles
 have no direct read or write privilege on definition/result tables; pre-pass
 projection omits correct choices and scoring derives both the percentage and
 award atomically in SQL. The separate explicit Chinese-course bootstrap is
-product data and therefore is not part of E1.
+product data and therefore is not part of the E1 migration.
 
 Production DB execution evidence, 12 августа 2026 года:
 
@@ -289,8 +289,23 @@ Production DB execution evidence, 12 августа 2026 года:
 - live snapshot сгенерирован в `2026-08-12T02:53:14Z`, SHA-256
   `d96a357a8b55caa80a831b37b7e289c17025c572d79483d28ae7515b30bcf9e2`.
 
-Dependent web rollout и отдельный idempotent bootstrap остаются next и не
-следуют из этого DB execution record.
+Dependent web и bootstrap production evidence:
+
+- typecheck, lint, format и build прошли; unit suite `522/522`, strict
+  production-mode browser suite `22/22`;
+- Coolify завершил deployment exact functional commit
+  `28387a9863afeccf4a6ad332dcf0f01048a69e67`; release postflight подтвердил
+  exact `SOURCE_COMMIT`, соответствующий image и restart count `0`;
+- live host/CSRF/API postflight прошёл;
+- production bootstrap завершился `COMMIT` в `2026-08-12T03:10:45Z`;
+- финальный read-only postflight подтвердил один active target, один educator
+  Course «Современный урок китайского языка для детей: произношение,
+  иероглифика и формирующее оценивание», `6/6/6` Lessons/Components/Slides,
+  одно authored definition и `10` questions, одну publication с одним
+  immutable definition, одну attempt и одну award;
+- server-derived result равен `9/10 = 90%` при threshold `80%`,
+  `passed=true`; authenticated projection вернула `certified=true` и `10`
+  post-award review keys, профиль содержит одну credential по этому Course.
 
 ## Current repository tables
 
