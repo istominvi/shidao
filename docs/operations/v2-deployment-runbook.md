@@ -165,16 +165,16 @@ Production DB execution record, 11 августа 2026 года:
   `c6da0f149f29be13cb1a4cd0d5e4642e8ce24edc04558b2431e2dbbc4728b23c`;
   diff от предыдущего snapshot ограничен generated timestamp и CHECK.
 
-Web merge/deploy и exact running-image postflight для этого release фиксируются
-отдельно после фактического Coolify rollout.
+Зависимый web merge/deploy позже вошёл в production release PR #242; exact
+running-image/HTTP evidence зафиксирован в A1 record ниже.
 
 ### A1 atomic Course archive — production execution record
 
 Exact migration `20260811231505_atomic_course_archive.sql`, SHA-256
 `7b43b023dd7692a39c1ab3702f0972c5d2252766a1093c3905b8c80fce24e8f8`,
 применена к production с `COMMIT` 12 августа 2026 года. Database half этого
-DB+web contract теперь current; зависимый web вызывает `archive_course`, но его
-Coolify rollout и running-image postflight остаются отдельным следующим шагом.
+DB+web contract current; зависимый web вызывает `archive_course` и также
+развёрнут production release PR #242.
 
 Production evidence:
 
@@ -195,10 +195,30 @@ Production evidence:
 - штатный live snapshot снят в `2026-08-12T00:22:27Z`, SHA-256
   `055b3c3ab47afc3c3db86d92c6c7530b3735841e34e4b475101ac96056d853ec`.
 
-При зависимом web rollout подтвердить exact `SOURCE_COMMIT`, image, restart
-count, HTTPS/guest/CSRF и authenticated Course archive smoke. При неуспехе web
-rollout не откатывать migration разрушительно: исправлять новой forward change
-или вернуть совместимый web, использующий RPC.
+Web rollout evidence:
+
+- PR #242 merged в `main` exact commit
+  `84ffefecda99d3b0a9da82bf1eaf8ce76d9c6ea1`;
+- Coolify deployment `l56b73xj6mfblc0ni8u7yf2g` для application
+  `g9x4d9zn60jv35r7zf0xl6xj` создан в `2026-08-12 00:34:51Z` и завершён в
+  `00:38:42Z`; trigger metadata: `pull_request_id=0`, `webhook=true`,
+  `api=false`;
+- exact image и `SOURCE_COMMIT` совпадают с merge commit; image ID —
+  `sha256:e4a22e34c1ed1bd8b37db8087b6bbafac693414ea357798e3ddf75e3c3684d57`;
+  container running, restart count `0`, второго active production deployment
+  нет;
+- V2 `/login` и `/robots.txt` вернули `200`, Guest `/courses` — `307` на
+  login; landing root — `200`, landing `/login` и API — `503`; demo root и
+  `/students` — `200`; brand/model deep route — `421`;
+- Guest `DELETE` fake Course UUID вернул `403` без Origin, `403` с неверным
+  Origin и `401` с exact V2 Origin: CSRF-before-auth boundary подтверждён без
+  Course mutation;
+- `X-Robots-Tag` равен `noindex, nofollow, noarchive`; release error-log filter
+  пуст.
+
+При будущем неуспехе совместимого web rollout не откатывать migration
+разрушительно: исправлять новой forward change или возвращать web, использующий
+RPC.
 
 Web с Groups/mixed audience нельзя выпускать раньше последовательного успешного
 применения `20260806190044_lesson_runs_learning_records.sql` и
@@ -667,9 +687,10 @@ Published Course должен вернуть `409 course_is_published` до яв
 `archive_course`, а не publication/open-run preflight-read плюс direct PATCH:
 RPC атомарно проверяет active ownership и оба conflict-условия вместе с
 установкой `archived_at`; A1 reverse guards сериализуют archive, publish и open
-Run на одной Course row. Этот database contract deployed/current; UI/API smoke
-становится deployed behavior только после отдельного успешного Coolify rollout.
-Не трактовать flow как permanent delete.
+Run на одной Course row. Database contract и UI/API route deployed/current в
+PR #242. Release postflight проверил CSRF/auth boundary на fake UUID без
+mutation; он не выдаётся за authenticated owner archive smoke. Не трактовать
+flow как permanent delete.
 
 ### Roleless navigation and learner identity
 

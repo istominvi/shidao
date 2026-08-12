@@ -38,8 +38,9 @@ CoursePublicationRevision ← CoursePublicationOrigin ← independent Course cop
   The user-JWT `archive_course` RPC checks active ownership and both blockers
   together with setting `archived_at` in one database transaction; reverse
   guards serialize archive, publish and open Run on the same Course row. This
-  database contract is current production; the dependent API/UI remains current
-  source until its separate Coolify rollout. Permanent deletion and archive
+  database contract and the dependent API/UI are current production after PR
+  #242 rollout at exact commit
+  `84ffefecda99d3b0a9da82bf1eaf8ce76d9c6ea1`. Permanent deletion and archive
   restore UI are not current behavior.
 - `LearnerProfile` is the canonical learning identity and is not owned by a
   teacher. Every Account has exactly one linked profile; teacher-created
@@ -145,7 +146,7 @@ The canonical details and invariants live in
 
 ## Component registry
 
-The current source code-first registry contains 20 active types:
+The current production code-first registry contains 20 active types:
 
 ```text
 heading

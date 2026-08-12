@@ -460,10 +460,9 @@ course_has_open_lesson_runs`). User-JWT RPC `archive_course` проверяет 
 ownership, оба conflict-условия и ставит `archived_at` в одной DB-транзакции;
 reverse guards сериализуют archive, publish и open Run на одной Course row, а
 Lesson parent становится immutable. API не принимает решение по раздельным
-publication/Run reads. A1 database contract уже current production; зависимый
-API/UI остаётся current source до отдельного Coolify rollout. Отдельного restore
-UI пока нет, permanent delete остаётся later policy, а не неявным поведением
-этого endpoint.
+publication/Run reads. A1 database contract и зависимый API/UI уже current
+production после rollout PR #242. Отдельного restore UI пока нет, permanent
+delete остаётся later policy, а не неявным поведением этого endpoint.
 
 Visual contract Course routes не меняет эту навигационную или доменную модель:
 
@@ -513,14 +512,14 @@ Visual contract Course routes не меняет эту навигационну�
   settings-navigation и shared Button variants; visual tokens не меняют
   landing, Auth или полноэкранный Student Screen.
 
-Базовый layout contract развёрнут и подтверждён authenticated browser
-postflight на точном application release `77870e3`; flat controls и его
-Settings-расширение относятся к current source следующего deployment.
-Intrinsic header-actions, 20%-black tabs baseline и plain inline counts также
-являются current-source visual polish. Physical schema и migrations не
-меняются; отдельный Course soft-archive endpoint описан выше. Exact deployed
-release сохранял tabs inset 12 px; full-width
-container/baseline с нулевым inset относится только к current source.
+Базовый layout contract был подтверждён authenticated browser postflight на
+точном application release `77870e3`. Flat controls, Settings-расширение,
+intrinsic header-actions, 20%-black tabs baseline, plain inline counts и
+full-width container/baseline с нулевым inset теперь current production после
+rollout PR #242 exact commit
+`84ffefecda99d3b0a9da82bf1eaf8ce76d9c6ea1`. Physical schema и migrations
+этим visual refinement не меняются; отдельный Course soft-archive endpoint
+описан выше.
 
 ## Roleless teaching hub navigation boundary
 
@@ -532,14 +531,12 @@ Current production делает `/schedule` и `/students` доступными
   перенаправляется в `/login`;
 - current production `/schedule` проецирует LessonRun выбранной локальной недели
   или календарного месяца; отдельной таблицы Schedule event нет. Action
-  перехода к назначению находится в общей header action-секции. Ниже прямо на
-  page background расположены compound date navigator, «Неделя / Месяц» и
-  «Таблица / Карточки»; внешней toolbar-card у controls нет. Стрелки двигают
-  целый период, а выбор даты задаёт его опорный день. В current source Action
-  сокращён до «Назначить урок» и использует calendar-plus icon. Внешний
-  переключатель периода удалён: right-aligned date picker шириной 300 px на
-  desktop объединяет короткую русскую подпись периода без точки после
-  сокращения месяца, календарный popover и
+  перехода к назначению находится в общей header action-секции, сокращён до
+  «Назначить урок» и использует calendar-plus icon. Ниже прямо на page
+  background расположен right-aligned date picker шириной 300 px на desktop и
+  icon-only «Таблица / Карточки»; внешней toolbar-card и отдельного
+  переключателя периода нет. Date picker объединяет короткую русскую подпись
+  периода без точки после сокращения месяца, календарный popover и
   внутренний selector «День / Неделя / Месяц»; полное доступное имя даты
   сохраняется, а стрелки сдвигают назад или вперёд именно выбранный период.
   Рядом остаётся icon-only «Таблица / Карточки». Прозрачная Schedule
@@ -574,9 +571,9 @@ Current production делает `/schedule` и `/students` доступными
   строке нет; взаимодействие с trigger/menu не превращается в неявный row
   click. Пункты portal-menu имеют 40 px, вертикально центрированы и используют
   `.88rem/400`.
-  Этот current source polish меняет только UI: LessonRun API/schema и
-  migrations не меняются; последняя корректировка cell/action spacing не
-  считается развёрнутой до успешного Coolify deploy и production postflight;
+  Этот current production polish меняет только UI: LessonRun API/schema и
+  migrations не меняются; последняя корректировка cell/action spacing
+  развёрнута и прошла running-image/HTTP boundary postflight в PR #242;
 - `/students` объединяет справочник TeacherLearner/LearnerProfile и
   LearnerGroup во вкладках «Ученики / Группы» с learner-safe observer
   projection во вкладке «Наблюдение»; подзаголовок страницы — «Ученики и
@@ -604,8 +601,8 @@ Current production делает `/schedule` и `/students` доступными
   «Написать сообщение» disabled и явно помечен как недоступный, поэтому
   communication layer не заявляется реализованным. Archived profile и pending
   request получают только допустимые restore/permanent-delete или cancel
-  actions; trigger/menu не превращаются в неявный row click. Это
-  current-source UI/application refinement поверх существующих Group/Course
+  actions; trigger/menu не превращаются в неявный row click. Это current
+  production UI/application refinement поверх существующих Group/Course
   audience boundaries без новой schema или migration;
 - `/courses` использует общий edge-to-edge `WorkspaceTabs`; подзаголовок —
   «Создавайте свои курсы с нуля или добавляйте готовые из каталога» без
@@ -643,8 +640,8 @@ Primary navigation для roleless Account содержит «Расписани
 `/courses` позволяет начать authoring; он не является Course enrollment
 учащегося. Owner-scoped CourseSummary поддерживает поиск, subject/level/content
 filters, сортировку и режимы «Карточки / Таблица» без второй модели; current
-controls используют direct page-background toolbar с горизонтальным inset
-12 px, disclosure с native
+controls используют direct page-background toolbar с `padding-inline: 0`,
+disclosure с native
 selects и icon-only view control; видимый result count не является control.
 Published paginated Catalog отдельно поддерживает только server-side
 search/subject/level из catalog RPC, не имитирует недоступные content/sort
