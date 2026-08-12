@@ -94,31 +94,26 @@ const CATEGORY_ITEMS = [
   {
     value: "text",
     label: "Текст",
-    description: "Заголовки, основной текст, сноски и цитаты",
     icon: Type,
   },
   {
     value: "media",
     label: "Медиа",
-    description: "Изображения, слайдшоу, видео и аудио",
     icon: ImageIcon,
   },
   {
     value: "interactive",
     label: "Игры и активности",
-    description: "Опросы и интерактивные задания",
     icon: Gamepad2,
   },
   {
     value: "attachment",
     label: "Ссылки и файлы",
-    description: "Внешние ссылки и материалы для скачивания",
     icon: FileText,
   },
 ] as const satisfies ReadonlyArray<{
   value: ComponentCategory;
   label: string;
-  description: string;
   icon: typeof Type;
 }>;
 
@@ -503,12 +498,13 @@ function ComponentPickerDialog({
   return (
     <DialogShell
       title="Компоненты"
-      description="Выберите элемент плана. Новый компонент сначала виден только преподавателю."
       onClose={onClose}
-      panelClassName="max-w-4xl"
+      className="component-picker-dialog"
+      panelClassName="component-picker-dialog-panel max-w-4xl"
+      bodyClassName="component-picker-dialog-body"
     >
       <div
-        className="flex gap-2 overflow-x-auto border-b border-neutral-200 pb-3"
+        className="flex shrink-0 gap-2 overflow-x-auto border-b border-neutral-200 pb-3"
         role="group"
         aria-label="Категории компонентов"
       >
@@ -535,40 +531,30 @@ function ComponentPickerDialog({
         })}
       </div>
 
-      <div className="mt-5">
-        <div className="mb-4">
-          <h3 className="font-black text-neutral-950">
-            {CATEGORY_ITEMS.find((item) => item.value === category)?.label}
-          </h3>
-          <p className="mt-1 text-sm text-neutral-600">
-            {
-              CATEGORY_ITEMS.find((item) => item.value === category)
-                ?.description
-            }
-          </p>
-        </div>
-        <div className="grid gap-3 sm:grid-cols-2">
-          {definitions.map((definition) => (
-            <button
-              key={definition.key}
-              type="button"
-              data-component-type-key={definition.key}
-              disabled={disabled}
-              className="rounded-2xl border border-neutral-200 bg-white p-4 text-left transition hover:border-neutral-950 hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
-              onClick={() => void add(definition.key)}
-            >
-              <span className="flex items-center justify-between gap-3">
-                <span className="font-bold text-neutral-950">
-                  {definition.title}
-                </span>
-                <Plus className="h-4 w-4 text-neutral-500" aria-hidden="true" />
+      <div
+        key={category}
+        className="component-picker-dialog-list grid gap-3 sm:grid-cols-2"
+      >
+        {definitions.map((definition) => (
+          <button
+            key={definition.key}
+            type="button"
+            data-component-type-key={definition.key}
+            disabled={disabled}
+            className="rounded-2xl border border-neutral-200 bg-white p-4 text-left transition hover:border-neutral-950 hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
+            onClick={() => void add(definition.key)}
+          >
+            <span className="flex items-center justify-between gap-3">
+              <span className="font-bold text-neutral-950">
+                {definition.title}
               </span>
-              <span className="mt-2 block text-xs leading-5 text-neutral-500">
-                Добавить в план и сразу перейти к редактированию
-              </span>
-            </button>
-          ))}
-        </div>
+              <Plus className="h-4 w-4 text-neutral-500" aria-hidden="true" />
+            </span>
+            <span className="mt-2 block text-xs leading-5 text-neutral-500">
+              Добавить в план и сразу перейти к редактированию
+            </span>
+          </button>
+        ))}
       </div>
     </DialogShell>
   );

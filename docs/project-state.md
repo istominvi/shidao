@@ -736,7 +736,12 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
   Components/Slides/Runs и незавершённые records будут удалены, а finalized
   LearningRecord сохранятся в LearnerProfile с компактным title/subject
   context.
-- Компоненты добавляются прямо в Lesson через palette по категориям.
+- Компоненты добавляются прямо в Lesson через palette по категориям. В current
+  source её panel имеет стабильный desktop-размер `56rem × 42rem`, остаётся
+  внутри mobile viewport, а прокрутка принадлежит только списку карточек:
+  заголовок и category tabs не прыгают при переключении между 2, 4 и 10
+  элементами. Вводный subtitle и повторные category heading/description
+  удалены; close остаётся доступной кнопкой без декоративной рамки.
 - Компонент можно редактировать, удалить или переместить кнопками
   «выше/ниже».
 - Новый Component всегда создаётся `staff_only` и не показывается ученику,

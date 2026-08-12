@@ -471,8 +471,26 @@ test("active product buttons and header controls share one flat 40px contract", 
 
 test("component picker is registry-driven and grouped into Russian categories", () => {
   const authoring = source(lessonAuthoringPath);
+  const styles = source("src/app/globals.css");
+  const pickerStart = authoring.indexOf("function ComponentPickerDialog");
+  const pickerEnd = authoring.indexOf("function LessonEditorDialog");
+  const picker = authoring.slice(pickerStart, pickerEnd);
+  const panelStyles = /\.component-picker-dialog-panel\s*\{[^}]*\}/.exec(
+    styles,
+  )?.[0];
+  const bodyStyles = /\.component-picker-dialog-body\s*\{[^}]*\}/.exec(
+    styles,
+  )?.[0];
+  const listStyles = /\.component-picker-dialog-list\s*\{[^}]*\}/.exec(
+    styles,
+  )?.[0];
+  const closeStyles =
+    /\.component-picker-dialog \.dialog-shell-close,\s*\.component-picker-dialog \.dialog-shell-close:hover\s*\{[^}]*\}/.exec(
+      styles,
+    )?.[0];
 
   assert.match(authoring, /componentDefinitions\.filter/);
+  assert.ok(pickerStart >= 0 && pickerEnd > pickerStart);
   for (const category of [
     "Текст",
     "Медиа",
@@ -484,6 +502,39 @@ test("component picker is registry-driven and grouped into Russian categories", 
   assert.doesNotMatch(authoring, /Разделители и структура плана/);
   assert.doesNotMatch(authoring, /visibility: "staff_only"/);
   assert.match(authoring, /сразу перейти к редактированию/);
+  assert.match(picker, /className="component-picker-dialog"/);
+  assert.match(
+    picker,
+    /panelClassName="component-picker-dialog-panel max-w-4xl"/,
+  );
+  assert.match(picker, /bodyClassName="component-picker-dialog-body"/);
+  assert.doesNotMatch(
+    picker,
+    /Выберите элемент плана|Новый компонент сначала виден только преподавателю/,
+  );
+  assert.doesNotMatch(
+    picker,
+    /Заголовки, основной текст|Изображения, слайдшоу|Опросы и интерактивные задания|Внешние ссылки и материалы/,
+  );
+  assert.doesNotMatch(picker, /<h3|CATEGORY_ITEMS\.find/);
+
+  assert.ok(panelStyles, "component picker panel styles must remain present");
+  assert.match(panelStyles, /display: flex/);
+  assert.match(panelStyles, /width: min\(56rem, calc\(100dvw - 2rem\)\)/);
+  assert.match(panelStyles, /height: min\(42rem, calc\(100dvh - 2rem\)\)/);
+  assert.match(panelStyles, /max-height: none/);
+  assert.match(panelStyles, /overflow: hidden/);
+  assert.ok(bodyStyles, "component picker body styles must remain present");
+  assert.match(bodyStyles, /min-height: 0/);
+  assert.match(bodyStyles, /flex: 1/);
+  assert.ok(listStyles, "component picker list styles must remain present");
+  assert.match(listStyles, /overflow-y: auto/);
+  assert.match(listStyles, /scrollbar-gutter: stable/);
+  assert.ok(closeStyles, "component picker close styles must remain present");
+  assert.match(closeStyles, /height: 2\.5rem/);
+  assert.match(closeStyles, /width: 2\.5rem/);
+  assert.match(closeStyles, /border: 0/);
+  assert.match(closeStyles, /background: transparent/);
 });
 
 test("component payload editor covers every active registry type without divider", () => {

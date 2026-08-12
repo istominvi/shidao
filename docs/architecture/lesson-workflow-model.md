@@ -311,6 +311,12 @@ Voice recording, arbitrary third-party embed и image matching отложены 
 - назначить компонент на допустимый Slide, создать для него новый
   Slide или убрать его с Student Screen.
 
+Palette является одним dialog с постоянной responsive geometry. Header и
+category tabs находятся вне scroll container, а список Component cards
+занимает оставшуюся высоту и прокручивается независимо. Выбранная категория
+задаётся `aria-pressed`; отдельные heading/description с тем же названием не
+дублируются.
+
 На карточке teacher видит состояние видимости. `staff_only` означает, что
 компонент остаётся частью плана преподавателя, но отсутствует в learner API.
 Приватность обеспечивается server projection и authorization, а не только CSS.

@@ -3142,7 +3142,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
     );
     assert.equal(
       scheduleContract.headerDescription,
-      "Здесь все назначенные уроки за выбранный период.",
+      "Здесь все назначенные уроки за выбранный период",
     );
     assert.equal(scheduleContract.headerActions, "Назначить урок");
     assert.match(scheduleContract.headerActionIconClass, /calendar-plus/);
@@ -3290,6 +3290,10 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       name: "Время",
       exact: true,
     });
+    const scheduleDateHeader = scheduleTable.getByRole("columnheader", {
+      name: "Дата",
+      exact: true,
+    });
     const scheduleRunOrder = () =>
       runtime.page.evaluate(() =>
         Array.from(
@@ -3299,10 +3303,22 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         ).map((element) => element.dateTime),
       );
     assert.equal(await scheduleTimeHeader.getAttribute("aria-sort"), "none");
+    assert.equal(await scheduleTable.locator("thead svg").count(), 1);
+    assert.equal(
+      await scheduleDateHeader.locator("svg.lucide-arrow-up").count(),
+      1,
+    );
+    assert.equal(await scheduleTimeHeader.locator("svg").count(), 0);
     await scheduleTimeSort.click();
     assert.equal(
       await scheduleTimeHeader.getAttribute("aria-sort"),
       "ascending",
+    );
+    assert.equal(await scheduleTable.locator("thead svg").count(), 1);
+    assert.equal(await scheduleDateHeader.locator("svg").count(), 0);
+    assert.equal(
+      await scheduleTimeHeader.locator("svg.lucide-arrow-up").count(),
+      1,
     );
     assert.deepEqual(await scheduleRunOrder(), [
       "2026-08-12T03:00:00.000Z",
@@ -3312,6 +3328,11 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
     assert.equal(
       await scheduleTimeHeader.getAttribute("aria-sort"),
       "descending",
+    );
+    assert.equal(await scheduleTable.locator("thead svg").count(), 1);
+    assert.equal(
+      await scheduleTimeHeader.locator("svg.lucide-arrow-down").count(),
+      1,
     );
     assert.deepEqual(await scheduleRunOrder(), [
       "2026-08-12T05:30:00.000Z",
@@ -3770,6 +3791,11 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
     await startRunMenuItem.waitFor();
     await editRunMenuItem.waitFor();
     await cancelRunMenuItem.waitFor();
+    assert.equal(
+      await rowActionMenu.locator(".action-menu-separator").count(),
+      0,
+    );
+    await editRunMenuItem.hover();
     assert.deepEqual(
       await runtime.page.evaluate(() => {
         const menu = document.querySelector<HTMLElement>(
@@ -3784,6 +3810,12 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         const icons = Array.from(
           menu.querySelectorAll<SVGElement>(".action-menu-item-icon"),
         );
+        const activeViewOption = document.querySelector<HTMLElement>(
+          ".teaching-schedule-view-toggle button.is-active",
+        );
+        if (!activeViewOption) {
+          throw new Error("Active Schedule view option is missing");
+        }
         return {
           fullyInsideViewport:
             rect.top >= 0 &&
@@ -3793,6 +3825,8 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
           position: menuStyle.position,
           borderRadius: menuStyle.borderRadius,
           backgroundColor: menuStyle.backgroundColor,
+          activeViewOptionBorderRadius:
+            getComputedStyle(activeViewOption).borderRadius,
           items: items.map((item) => {
             const style = getComputedStyle(item);
             return {
@@ -3801,6 +3835,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
               gap: style.gap,
               paddingLeft: style.paddingLeft,
               paddingRight: style.paddingRight,
+              borderRadius: style.borderRadius,
               color: style.color,
               fontSize: style.fontSize,
               fontWeight: style.fontWeight,
@@ -3821,6 +3856,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         position: "fixed",
         borderRadius: "12px",
         backgroundColor: "rgb(255, 255, 255)",
+        activeViewOptionBorderRadius: "8px",
         items: [
           {
             height: 40,
@@ -3828,6 +3864,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
             gap: "12px",
             paddingLeft: "12px",
             paddingRight: "12px",
+            borderRadius: "8px",
             color: "rgb(20, 20, 20)",
             fontSize: "14.08px",
             fontWeight: "400",
@@ -3838,6 +3875,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
             gap: "12px",
             paddingLeft: "12px",
             paddingRight: "12px",
+            borderRadius: "8px",
             color: "rgb(20, 20, 20)",
             fontSize: "14.08px",
             fontWeight: "400",
@@ -3848,6 +3886,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
             gap: "12px",
             paddingLeft: "12px",
             paddingRight: "12px",
+            borderRadius: "8px",
             color: "rgb(20, 20, 20)",
             fontSize: "14.08px",
             fontWeight: "400",
@@ -7510,6 +7549,16 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       ],
       "Ссылки и файлы": ["external_link", "file"],
     } as const;
+    const componentDialogLayouts: Array<{
+      category: string;
+      width: number;
+      height: number;
+      top: number;
+      panelOverflowY: string;
+      listOverflowY: string;
+      closeBorderTopWidth: string;
+      closeBackgroundColor: string;
+    }> = [];
 
     for (const [category, expectedKeys] of Object.entries(
       expectedComponentKeysByCategory,
@@ -7526,11 +7575,111 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
         ),
       );
       assert.deepEqual(renderedKeys, expectedKeys);
+      assert.equal(
+        await componentDialog
+          .getByRole("heading", { name: category, exact: true })
+          .count(),
+        0,
+      );
+      componentDialogLayouts.push(
+        await runtime.page.evaluate(() => {
+          const panel = document.querySelector<HTMLElement>(
+            ".component-picker-dialog-panel",
+          );
+          if (!panel) throw new Error("Component dialog panel is missing");
+          const list = panel.querySelector<HTMLElement>(
+            ".component-picker-dialog-list",
+          );
+          const close = panel.querySelector<HTMLElement>(
+            '.dialog-shell-close[aria-label="Закрыть"]',
+          );
+          if (!list || !close) {
+            throw new Error("Component dialog layout contract is missing");
+          }
+          const selectedCategory = panel
+            .querySelector<HTMLElement>('[aria-pressed="true"]')
+            ?.textContent?.trim();
+          if (!selectedCategory) {
+            throw new Error("Selected component category is missing");
+          }
+          const rect = panel.getBoundingClientRect();
+          const panelStyle = getComputedStyle(panel);
+          const listStyle = getComputedStyle(list);
+          const closeStyle = getComputedStyle(close);
+          return {
+            category: selectedCategory,
+            width: rect.width,
+            height: rect.height,
+            top: rect.top,
+            panelOverflowY: panelStyle.overflowY,
+            listOverflowY: listStyle.overflowY,
+            closeBorderTopWidth: closeStyle.borderTopWidth,
+            closeBackgroundColor: closeStyle.backgroundColor,
+          };
+        }),
+      );
+    }
+    const componentDialogBaseline = componentDialogLayouts[0];
+    for (const layout of componentDialogLayouts) {
+      assert.ok(Math.abs(layout.width - componentDialogBaseline.width) < 0.5);
+      assert.ok(Math.abs(layout.height - componentDialogBaseline.height) < 0.5);
+      assert.ok(Math.abs(layout.top - componentDialogBaseline.top) < 0.5);
+      assert.equal(layout.panelOverflowY, "hidden");
+      assert.equal(layout.listOverflowY, "auto");
+      assert.equal(layout.closeBorderTopWidth, "0px");
+      assert.equal(layout.closeBackgroundColor, "rgba(0, 0, 0, 0)");
+    }
+    for (const redundantText of [
+      "Выберите элемент плана. Новый компонент сначала виден только преподавателю.",
+      "Заголовки, основной текст, сноски и цитаты",
+      "Изображения, слайдшоу, видео и аудио",
+      "Опросы и интерактивные задания",
+      "Внешние ссылки и материалы для скачивания",
+    ]) {
+      assert.equal(
+        await componentDialog.getByText(redundantText, { exact: true }).count(),
+        0,
+      );
     }
     assert.equal(
       await componentDialog.getByText("Разделитель", { exact: true }).count(),
       0,
     );
+    await componentCategories
+      .getByRole("button", { name: "Игры и активности", exact: true })
+      .click();
+    await runtime.page.setViewportSize({ width: 390, height: 500 });
+    const compactComponentDialog = await runtime.page.evaluate(() => {
+      const panel = document.querySelector<HTMLElement>(
+        ".component-picker-dialog-panel",
+      );
+      if (!panel) throw new Error("Component dialog panel is missing");
+      const list = panel.querySelector<HTMLElement>(
+        ".component-picker-dialog-list",
+      );
+      if (!list) throw new Error("Component dialog list is missing");
+      const rect = panel.getBoundingClientRect();
+      return {
+        width: rect.width,
+        height: rect.height,
+        viewportWidth: document.documentElement.clientWidth,
+        viewportHeight: document.documentElement.clientHeight,
+        listClientHeight: list.clientHeight,
+        listScrollHeight: list.scrollHeight,
+      };
+    });
+    assert.ok(
+      compactComponentDialog.width <= compactComponentDialog.viewportWidth - 32,
+    );
+    assert.ok(
+      compactComponentDialog.height <=
+        compactComponentDialog.viewportHeight - 32,
+    );
+    assert.ok(
+      compactComponentDialog.listScrollHeight >
+        compactComponentDialog.listClientHeight,
+    );
+    await runtime.page.setViewportSize({ width: 1280, height: 720 });
     await componentDialog
       .getByRole("button", { name: "Закрыть", exact: true })
       .click();

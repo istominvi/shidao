@@ -1175,6 +1175,42 @@ a {
   margin-top: 0.85rem;
 }
 
+.component-picker-dialog-panel {
+  display: flex;
+  width: min(56rem, calc(100vw - 2rem));
+  width: min(56rem, calc(100dvw - 2rem));
+  height: min(42rem, calc(100vh - 2rem));
+  height: min(42rem, calc(100dvh - 2rem));
+  max-height: none;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.component-picker-dialog-body {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+}
+
+.component-picker-dialog-list {
+  min-height: 0;
+  margin-top: 1rem;
+  padding-right: 0.25rem;
+  flex: 1;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+.component-picker-dialog .dialog-shell-close,
+.component-picker-dialog .dialog-shell-close:hover {
+  height: 2.5rem;
+  width: 2.5rem;
+  border: 0;
+  background: transparent;
+}
+
 .dialog-shell-footer {
   margin-top: 0.95rem;
 }

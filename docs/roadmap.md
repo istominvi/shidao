@@ -356,6 +356,9 @@ view-sort, начиная с `position ASC`. В action-cell остаётся о�
 в preview state, а learner answer persistence/scoring остаются later. Продуктовый
 выбор и границы зафиксированы в
 [`docs/product/course-component-catalog.md`](./product/course-component-catalog.md).
+Current-source palette больше не меняет размер между категориями: responsive
+panel ограничена viewport, а отдельный внутренний scroll сохраняет header и
+category tabs неподвижными; дублирующие category heading/description удалены.
 
 - подтвердить production postflight responsive/accessibility контракта
   обновлённой Course Lessons table, включая mobile contained scroll, keyboard
