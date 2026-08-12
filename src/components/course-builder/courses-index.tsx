@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { BookOpen, Library, type LucideIcon } from "lucide-react";
 import { useSystemAssistantPageContext } from "@/components/assistant/system-assistant-provider";
 import { CourseCatalogPanel } from "@/components/course-builder/course-catalog-panel";
 import { OwnedCoursesPanel } from "@/components/course-builder/owned-courses-panel";
@@ -21,11 +22,12 @@ type CoursesIndexProps = {
 
 const COURSES_INDEX_TABS_ID = "courses-index";
 const COURSES_INDEX_TABS = [
-  { value: "mine", label: "Мои" },
-  { value: "catalog", label: "Каталог" },
+  { value: "mine", label: "Мои", icon: BookOpen },
+  { value: "catalog", label: "Каталог", icon: Library },
 ] as const satisfies ReadonlyArray<{
   value: CoursesIndexTab;
   label: string;
+  icon: LucideIcon;
 }>;
 
 export function CoursesIndex({

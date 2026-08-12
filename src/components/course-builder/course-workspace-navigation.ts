@@ -1,3 +1,14 @@
+import {
+  BadgeCheck,
+  ClipboardCheck,
+  FolderOpen,
+  History,
+  Info,
+  ListChecks,
+  MonitorPlay,
+  type LucideIcon,
+} from "lucide-react";
+
 export type CourseWorkspaceSurface =
   "lessons" | "about" | "materials" | "history" | "attestation";
 
@@ -5,23 +16,25 @@ export type LessonAuthoringSurface =
   "plan" | "student" | "homework" | "materials" | "history";
 
 export const COURSE_WORKSPACE_TABS = [
-  { value: "lessons", label: "Уроки" },
-  { value: "about", label: "О курсе" },
-  { value: "materials", label: "Материалы" },
-  { value: "history", label: "История" },
+  { value: "lessons", label: "Уроки", icon: ListChecks },
+  { value: "about", label: "О курсе", icon: Info },
+  { value: "materials", label: "Материалы", icon: FolderOpen },
+  { value: "history", label: "История", icon: History },
 ] as const satisfies ReadonlyArray<{
   value: CourseWorkspaceSurface;
   label: string;
+  icon: LucideIcon;
 }>;
 
 export const EDUCATOR_COURSE_WORKSPACE_TABS = [
-  { value: "lessons", label: "Уроки" },
-  { value: "about", label: "О курсе" },
-  { value: "materials", label: "Материалы" },
-  { value: "attestation", label: "Аттестация" },
+  { value: "lessons", label: "Уроки", icon: ListChecks },
+  { value: "about", label: "О курсе", icon: Info },
+  { value: "materials", label: "Материалы", icon: FolderOpen },
+  { value: "attestation", label: "Аттестация", icon: BadgeCheck },
 ] as const satisfies ReadonlyArray<{
   value: CourseWorkspaceSurface;
   label: string;
+  icon: LucideIcon;
 }>;
 
 export function courseWorkspaceTabs(educatorCourse: boolean) {
@@ -31,14 +44,15 @@ export function courseWorkspaceTabs(educatorCourse: boolean) {
 }
 
 export const LESSON_WORKSPACE_TABS = [
-  { value: "plan", label: "План" },
-  { value: "student", label: "Экран ученика" },
-  { value: "homework", label: "Домашнее задание" },
-  { value: "materials", label: "Материалы" },
-  { value: "history", label: "История" },
+  { value: "plan", label: "План", icon: ListChecks },
+  { value: "student", label: "Экран ученика", icon: MonitorPlay },
+  { value: "homework", label: "Домашнее задание", icon: ClipboardCheck },
+  { value: "materials", label: "Материалы", icon: FolderOpen },
+  { value: "history", label: "История", icon: History },
 ] as const satisfies ReadonlyArray<{
   value: LessonAuthoringSurface;
   label: string;
+  icon: LucideIcon;
 }>;
 
 export type CourseWorkspaceNavigation = {

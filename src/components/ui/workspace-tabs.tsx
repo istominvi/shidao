@@ -8,7 +8,7 @@ type WorkspaceTabItem<T extends string> = {
   value: T;
   label: string;
   count?: number;
-  icon?: LucideIcon;
+  icon: LucideIcon;
 };
 
 type WorkspaceTabsProps<T extends string> = {
@@ -125,13 +125,14 @@ export function WorkspaceTabs<T extends string>({
               onClick={() => onChange(item.value)}
               onKeyDown={(event) => handleKeyDown(event, index)}
             >
-              {Icon ? (
-                <Icon className="workspace-tab-icon" aria-hidden="true" />
-              ) : null}
+              <Icon className="workspace-tab-icon" aria-hidden="true" />
               <span className="workspace-tab-label">
                 {item.label}
-                {typeof item.count === "number" ? (
-                  <span className="workspace-tab-count">{` ${item.count}`}</span>
+                {typeof item.count === "number" && item.count > 0 ? (
+                  <>
+                    {" "}
+                    <sup className="workspace-tab-count">{item.count}</sup>
+                  </>
                 ) : null}
               </span>
             </button>

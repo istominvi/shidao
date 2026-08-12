@@ -508,10 +508,13 @@ Visual contract Course routes не меняет эту навигационну�
   Student Slides;
 - `WorkspaceTabs` задаёт общий 40 px tab/tabpanel contract для Course, Lesson,
   Students и profile dialog: roving keyboard focus, horizontal scroll, базовая
-  линия 1 px цвета `rgba(20, 20, 20, 0.2)`; container, scroll-row и baseline
-  канонически занимают всю ширину с `inline-inset: 0`. Квадратный чёрный
-  active-сегмент 4 px без radius лежит на этой же линии; numeric count
-  является обычным inline-текстом после label, а не отдельным badge; каждый tab
+  линия 1.5 px и inactive label используют общий
+  `rgba(20, 20, 20, 0.5)` token; container, scroll-row и baseline канонически
+  занимают всю ширину с `inline-inset: 0`. Между tab-кнопками gap 12 px, верхние
+  углы имеют control-radius 12 px, а baseline рисуется отдельным слоем поверх
+  светлого hover-фона. Квадратный непрозрачный чёрный active-сегмент 4 px лежит
+  выше baseline. Каждый tab имеет 16 px Lucide icon; только positive numeric
+  count показывается маленьким приподнятым `sup`, а `0` отсутствует. Каждый tab
   ссылается на постоянный matching `tabpanel`, который возвращает его id через
   `aria-labelledby`;
 - authenticated Settings переиспользуют тот же product shell, demo TopNav,
@@ -526,6 +529,10 @@ rollout PR #242 exact commit
 `84ffefecda99d3b0a9da82bf1eaf8ce76d9c6ea1`. Physical schema и migrations
 этим visual refinement не меняются; отдельный Course soft-archive endpoint
 описан выше.
+
+Repository-current tabs refinement, описанный выше, остаётся production next;
+зафиксированный production release PR #242 продолжает использовать прежний
+20%-black 1 px baseline и обычные inline counts до нового web rollout.
 
 ## Roleless teaching hub navigation boundary
 

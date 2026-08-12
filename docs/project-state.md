@@ -138,6 +138,19 @@ container и baseline занимают всю ширину content-row с `inlin
 inline-текстом после названия (`Ученики 1`) без чёрного круга, отдельного
 размера или цвета. Это UI-only изменение без API, schema или migration.
 
+**Repository current tabs refinement; production next:** общий цвет
+подзаголовка и неактивных `WorkspaceTabs` вынесен в один token
+`--product-muted-foreground: rgba(20, 20, 20, 0.5)`. Baseline теперь использует
+тот же 50%-black цвет, толщину 1.5 px и отдельный paint-layer: светлый hover
+вкладки с верхними радиусами 12 px не перекрывает разделитель, а непрозрачные
+active label и сегмент 4 px остаются выше него. Gap между tab-кнопками равен
+12 px. Каждый tab consumer обязан передать 16 px Lucide icon. Положительный
+count показывается уменьшенным приподнятым `sup`, `0` не рендерится; вкладка
+«Наблюдение» получает фактическое число доступных профилей и обновляет его
+после отказа от доступа. Это UI-only source change без schema, migration или
+нового API; production сохраняет предыдущий tab-контракт до отдельного web
+rollout/postflight.
+
 **Previously deployed Schedule presentation baseline (superseded by PR #242):**
 `/schedule` загружает реальные LessonRun за локальную неделю (понедельник–
 понедельник) или календарный месяц. Внешняя поверхность toolbar удалена:
@@ -672,17 +685,21 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
   а top-level разделы не создают искусственную обратную ссылку.
 - Один `WorkspaceTabs` используется в Course, Lesson, Students и profile dialog,
   сохраняет roving keyboard/ARIA contract и горизонтальный scroll. Выбранная
-  вкладка перекрывает full-width baseline 1 px цвета
-  `rgba(20, 20, 20, 0.2)` квадратным чёрным сегментом 4 px без radius.
+  вкладка перекрывает full-width baseline 1.5 px цвета
+  `rgba(20, 20, 20, 0.5)` квадратным чёрным сегментом 4 px без radius.
   Container, baseline и scroll-row используют канонический `inline-inset: 0`
-  на всех поверхностях. Числовой
-  count отображается простым продолжением label через пробел, без badge;
+  на всех поверхностях. Неактивный label использует тот же 50%-black token,
+  tab-кнопки разделены gap 12 px и имеют верхние радиусы 12 px; baseline
+  остаётся видимым поверх hover-фона. Каждый tab имеет 16 px иконку. Только
+  положительный числовой count отображается маленьким приподнятым `sup`, без
+  badge;
   каждый tab владеет существующим persistent `tabpanel` через симметричные
   `aria-controls / aria-labelledby`. В current production кнопки,
   header controls и вкладки используют шрифт `.88rem/400`, flat primary без
   3D-блика/подъёма, fully opaque icons и единый 16 px icon rhythm; исходный
   layout-контракт подтверждён production postflight release `77870e3`, а
-  control-полировка развёрнута production release PR #242.
+  control-полировка развёрнута production release PR #242. Новый tab-refinement
+  остаётся repository current / production next.
 
 ### Roleless navigation, Расписание, Ученики и аудитория
 

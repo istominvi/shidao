@@ -36,6 +36,7 @@ import {
   actOnConnection,
   IdentityClientError,
   loadConnections,
+  loadObservedProfiles,
   loadTeacherDirectory,
   permanentlyDeleteOfflineLearner,
   restoreTeacherLearner,
@@ -162,6 +163,7 @@ export function StudentsWorkspace({
   const [loadError, setLoadError] = useState<string | null>(null);
   const [mutationError, setMutationError] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [observingCount, setObservingCount] = useState(0);
 
   useSystemAssistantPageContext({
     surface: "students",
@@ -224,6 +226,20 @@ export function StudentsWorkspace({
       active = false;
     };
   }, [reloadDirectory]);
+
+  useEffect(() => {
+    let active = true;
+    void loadObservedProfiles()
+      .then((next) => {
+        if (active) setObservingCount(next.length);
+      })
+      .catch(() => {
+        // The observing surface reports its own load error when opened.
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     setView(initialView);
@@ -545,6 +561,7 @@ export function StudentsWorkspace({
           {
             value: "observing",
             label: "Наблюдение",
+            count: observingCount,
             icon: Eye,
           },
         ]}
@@ -727,7 +744,12 @@ export function StudentsWorkspace({
         hidden={view !== "observing"}
         tabIndex={0}
       >
-        {view === "observing" ? <ObservingWorkspace embedded /> : null}
+        {view === "observing" ? (
+          <ObservingWorkspace
+            embedded
+            onProfileCountChange={setObservingCount}
+          />
+        ) : null}
       </div>
 
       {learnerEditor && profiles && groups ? (

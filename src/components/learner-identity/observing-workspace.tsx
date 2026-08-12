@@ -30,10 +30,12 @@ const OBSERVING_PROJECTION_TABS_ID = "observing-projection";
 
 type ObservingWorkspaceProps = {
   embedded?: boolean;
+  onProfileCountChange?: (count: number) => void;
 };
 
 export function ObservingWorkspace({
   embedded = false,
+  onProfileCountChange,
 }: ObservingWorkspaceProps) {
   const [profiles, setProfiles] = useState<ObserverGrant[] | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -67,6 +69,11 @@ export function ObservingWorkspace({
   useEffect(() => {
     void loadProfiles();
   }, [loadProfiles]);
+
+  useEffect(() => {
+    if (profiles !== null) onProfileCountChange?.(profiles.length);
+  }, [onProfileCountChange, profiles]);
+
   useEffect(() => {
     if (!selectedId) {
       setProgress(null);

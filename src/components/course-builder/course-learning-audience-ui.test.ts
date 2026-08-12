@@ -79,9 +79,18 @@ test("educator published workspace tracks lessons and gates server-backed attest
     /import type \{ CourseAttestationState \} from "@\/modules\/course-attestations\/domain"/,
   );
   assert.match(publishedCourse, /course\.learningAudience === "educators"/);
-  assert.match(publishedCourse, /value: "lessons", label: "Уроки"/);
-  assert.match(publishedCourse, /value: "about", label: "О курсе"/);
-  assert.match(publishedCourse, /value: "attestation", label: "Аттестация"/);
+  assert.match(
+    publishedCourse,
+    /value: "lessons"[\s\S]*?label: "Уроки"[\s\S]*?icon: ListChecks/,
+  );
+  assert.match(
+    publishedCourse,
+    /value: "about"[\s\S]*?label: "О курсе"[\s\S]*?icon: Info/,
+  );
+  assert.match(
+    publishedCourse,
+    /value: "attestation"[\s\S]*?label: "Аттестация"[\s\S]*?icon: BadgeCheck/,
+  );
   assert.match(publishedCourse, /ariaLabel="Разделы опубликованного курса"/);
   assert.match(
     publishedCourse,

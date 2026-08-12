@@ -83,10 +83,22 @@ test("catalog list opens a full read-only published-course workspace", () => {
     published,
     /\/api\/v2\/course-catalog\/\$\{encodeURIComponent\(publicationId\)\}/,
   );
-  assert.match(published, /value: "lessons", label: "Уроки"/);
-  assert.match(published, /value: "about", label: "О курсе"/);
-  assert.match(published, /value: "materials", label: "Материалы"/);
-  assert.match(published, /value: "attestation", label: "Аттестация"/);
+  assert.match(
+    published,
+    /value: "lessons"[\s\S]*?label: "Уроки"[\s\S]*?icon: ListChecks/,
+  );
+  assert.match(
+    published,
+    /value: "about"[\s\S]*?label: "О курсе"[\s\S]*?icon: Info/,
+  );
+  assert.match(
+    published,
+    /value: "materials"[\s\S]*?label: "Материалы"[\s\S]*?icon: FolderOpen/,
+  );
+  assert.match(
+    published,
+    /value: "attestation"[\s\S]*?label: "Аттестация"[\s\S]*?icon: BadgeCheck/,
+  );
   assert.match(published, /course\.lessons\.map/);
   assert.match(published, /course\.materials\.map/);
   assert.match(published, /material\.originalFilename/);

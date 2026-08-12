@@ -12,12 +12,9 @@ import {
   Eye,
   EyeOff,
   FileText,
-  FolderOpen,
   Gamepad2,
-  History,
   Image as ImageIcon,
   Layers3,
-  ListChecks,
   MonitorPlay,
   Pencil,
   Plus,
@@ -902,13 +899,6 @@ export function LessonAuthoringWorkspace({
     ...(item.value === "history"
       ? { count: completedLessonRunCount(runs) }
       : {}),
-    icon: {
-      plan: ListChecks,
-      student: MonitorPlay,
-      homework: ClipboardCheck,
-      materials: FolderOpen,
-      history: History,
-    }[item.value],
   }));
 
   function closePicker() {

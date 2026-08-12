@@ -11,10 +11,14 @@ import {
   CheckCircle2,
   Circle,
   FileText,
+  FolderOpen,
+  Info,
+  ListChecks,
   LoaderCircle,
   LockKeyhole,
   RotateCcw,
   UserRound,
+  type LucideIcon,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AppPageHeader } from "@/components/app/page-header";
@@ -422,14 +426,27 @@ export function PublishedCourseWorkspace({
     ? course.sourceCourseId
     : null;
   const tabs = [
-    { value: "lessons", label: "Уроки", count: course.lessons.length },
-    { value: "about", label: "О курсе" },
-    { value: "materials", label: "Материалы", count: course.materials.length },
-    ...(educatorCourse ? [{ value: "attestation", label: "Аттестация" }] : []),
+    {
+      value: "lessons",
+      label: "Уроки",
+      count: course.lessons.length,
+      icon: ListChecks,
+    },
+    { value: "about", label: "О курсе", icon: Info },
+    {
+      value: "materials",
+      label: "Материалы",
+      count: course.materials.length,
+      icon: FolderOpen,
+    },
+    ...(educatorCourse
+      ? [{ value: "attestation", label: "Аттестация", icon: BadgeCheck }]
+      : []),
   ] as Array<{
     value: PublishedCourseSurface;
     label: string;
     count?: number;
+    icon: LucideIcon;
   }>;
   const completedRefs = new Set(progress?.completedLessonRefs ?? []);
   const activeSlides = selectedLesson?.slides ?? [];

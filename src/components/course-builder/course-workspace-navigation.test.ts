@@ -24,6 +24,14 @@ test("course and lesson tabs follow the product hierarchy", () => {
     LESSON_WORKSPACE_TABS.map((item) => item.label),
     ["План", "Экран ученика", "Домашнее задание", "Материалы", "История"],
   );
+  assert.equal(
+    [
+      ...COURSE_WORKSPACE_TABS,
+      ...EDUCATOR_COURSE_WORKSPACE_TABS,
+      ...LESSON_WORKSPACE_TABS,
+    ].every((item) => Boolean(item.icon)),
+    true,
+  );
 });
 
 test("a persisted course without a tab deep link opens on its lesson list", () => {

@@ -4382,6 +4382,9 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       const activeTab = document.querySelector<HTMLElement>(
         ".workspace-tab-active",
       );
+      const inactiveTab = document.querySelector<HTMLElement>(
+        ".workspace-tab:not(.workspace-tab-active)",
+      );
       const activeTabLabel = activeTab?.querySelector<HTMLElement>(
         "span:not(.workspace-tab-count)",
       );
@@ -4412,6 +4415,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         !title ||
         !description ||
         !activeTab ||
+        !inactiveTab ||
         !activeTabLabel ||
         !activeTabCount ||
         !tabs ||
@@ -4430,6 +4434,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       const descriptionStyle = getComputedStyle(description);
       const tabsStyle = getComputedStyle(tabs);
       const tabStyle = getComputedStyle(activeTab);
+      const inactiveTabStyle = getComputedStyle(inactiveTab);
       const tabLabelStyle = getComputedStyle(activeTabLabel);
       const tabCountStyle = getComputedStyle(activeTabCount);
       const markerStyle = getComputedStyle(activeTab, "::after");
@@ -4470,14 +4475,21 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
           height: tabStyle.height,
           radius: tabStyle.borderRadius,
           fontWeight: tabStyle.fontWeight,
+          activeColor: tabStyle.color,
+          inactiveColor: inactiveTabStyle.color,
+          gap: tabsStyle.columnGap,
+          tabZIndex: tabStyle.zIndex,
           baselineHeight: baselineStyle.height,
           baselineColor: baselineStyle.backgroundColor,
+          baselineZIndex: baselineStyle.zIndex,
+          baselinePointerEvents: baselineStyle.pointerEvents,
           baselineLeft: baselineStyle.left,
           baselineRight: baselineStyle.right,
           tabsPaddingLeft: tabsStyle.paddingLeft,
           tabsPaddingRight: tabsStyle.paddingRight,
           markerHeight: markerStyle.height,
           markerColor: markerStyle.backgroundColor,
+          markerZIndex: markerStyle.zIndex,
           markerRadius: markerStyle.borderRadius,
           markerBottom: markerStyle.bottom,
         },
@@ -4497,6 +4509,10 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
           labelFontSize: tabLabelStyle.fontSize,
           fontWeight: tabCountStyle.fontWeight,
           labelFontWeight: tabLabelStyle.fontWeight,
+          position: tabCountStyle.position,
+          top: tabCountStyle.top,
+          lineHeight: tabCountStyle.lineHeight,
+          verticalAlign: tabCountStyle.verticalAlign,
         },
         tabGeometry: {
           firstTabIsActive:
@@ -4506,6 +4522,9 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
             tabsRect.left + baselineLeft - tabsScrollRect.left,
           baselineEndInset:
             tabsScrollRect.right - (tabsRect.right - baselineRight),
+          allTabsHaveIcons: Array.from(
+            tabs.querySelectorAll<HTMLElement>(".workspace-tab"),
+          ).every((tab) => Boolean(tab.querySelector(".workspace-tab-icon"))),
         },
         headerActions: headerActions.textContent?.trim() ?? "",
         toolbarText: toolbar.textContent?.trim() ?? "",
@@ -4551,16 +4570,23 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
     assert.ok(studentsVisual.headerLayout.actionCenterDelta < 0.5);
     assert.deepEqual(studentsVisual.tabSignature, {
       height: "40px",
-      radius: "0px",
+      radius: "12px 12px 0px 0px",
       fontWeight: "400",
-      baselineHeight: "1px",
-      baselineColor: "rgba(20, 20, 20, 0.2)",
+      activeColor: "rgb(20, 20, 20)",
+      inactiveColor: "rgba(20, 20, 20, 0.5)",
+      gap: "12px",
+      tabZIndex: "auto",
+      baselineHeight: "1.5px",
+      baselineColor: "rgba(20, 20, 20, 0.5)",
+      baselineZIndex: "1",
+      baselinePointerEvents: "none",
       baselineLeft: "0px",
       baselineRight: "0px",
       tabsPaddingLeft: "0px",
       tabsPaddingRight: "0px",
       markerHeight: "4px",
       markerColor: "rgb(20, 20, 20)",
+      markerZIndex: "2",
       markerRadius: "0px",
       markerBottom: "0px",
     });
@@ -4590,15 +4616,20 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       studentsVisual.tabCount.color,
       studentsVisual.tabCount.labelColor,
     );
-    assert.equal(
-      studentsVisual.tabCount.fontSize,
-      studentsVisual.tabCount.labelFontSize,
+    assert.ok(
+      Number.parseFloat(studentsVisual.tabCount.fontSize) <
+        Number.parseFloat(studentsVisual.tabCount.labelFontSize),
     );
     assert.equal(
       studentsVisual.tabCount.fontWeight,
       studentsVisual.tabCount.labelFontWeight,
     );
+    assert.equal(studentsVisual.tabCount.position, "relative");
+    assert.ok(Number.parseFloat(studentsVisual.tabCount.top) < 0);
+    assert.equal(studentsVisual.tabCount.lineHeight, "0px");
+    assert.equal(studentsVisual.tabCount.verticalAlign, "baseline");
     assert.equal(studentsVisual.tabGeometry.firstTabIsActive, true);
+    assert.equal(studentsVisual.tabGeometry.allTabsHaveIcons, true);
     assert.ok(Math.abs(studentsVisual.tabGeometry.activeStartInset) < 0.5);
     assert.ok(Math.abs(studentsVisual.tabGeometry.baselineStartInset) < 0.5);
     assert.ok(Math.abs(studentsVisual.tabGeometry.baselineEndInset) < 0.5);
@@ -5122,7 +5153,7 @@ test("browser smoke: observer reads published history only and can leave immedia
   try {
     await runtime.page.goto("/students", { waitUntil: "networkidle" });
     const observingEntryTab = runtime.page.getByRole("tab", {
-      name: "Наблюдение",
+      name: "Наблюдение 1",
       exact: true,
     });
     await Promise.all([
@@ -5135,7 +5166,7 @@ test("browser smoke: observer reads published history only and can leave immedia
       .getByRole("heading", { name: "Ученики", exact: true, level: 1 })
       .waitFor();
     const observingTab = runtime.page.getByRole("tab", {
-      name: "Наблюдение",
+      name: "Наблюдение 1",
       exact: true,
     });
     await observingTab.waitFor();
@@ -5198,6 +5229,15 @@ test("browser smoke: observer reads published history only and can leave immedia
       .getByText("Нет активного наблюдения", { exact: true })
       .waitFor();
     assert.equal(e2eObservedGrantLeft, true);
+    await runtime.page
+      .getByRole("tab", { name: "Наблюдение", exact: true })
+      .waitFor();
+    assert.equal(
+      await runtime.page
+        .locator("#students-directory-tab-observing .workspace-tab-count")
+        .count(),
+      0,
+    );
   } finally {
     await runtime.close();
   }
@@ -7337,6 +7377,9 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
         ".app-page-description",
       );
       const tab = document.querySelector<HTMLElement>(".workspace-tab-active");
+      const inactiveTab = document.querySelector<HTMLElement>(
+        ".workspace-tab:not(.workspace-tab-active)",
+      );
       const tabs = document.querySelector<HTMLElement>(".workspace-tabs");
       const headerActions =
         pageHeader?.querySelector<HTMLElement>(".app-page-actions");
@@ -7347,6 +7390,7 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
         !title ||
         !description ||
         !tab ||
+        !inactiveTab ||
         !tabs ||
         !headerActions
       ) {
@@ -7361,6 +7405,7 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       const descriptionStyle = getComputedStyle(description);
       const tabsStyle = getComputedStyle(tabs);
       const tabStyle = getComputedStyle(tab);
+      const inactiveTabStyle = getComputedStyle(inactiveTab);
       const markerStyle = getComputedStyle(tab, "::after");
       const baselineStyle = getComputedStyle(tabs, "::before");
       const tabRect = tab.getBoundingClientRect();
@@ -7416,16 +7461,26 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
           height: tabStyle.height,
           radius: tabStyle.borderRadius,
           fontWeight: tabStyle.fontWeight,
+          activeColor: tabStyle.color,
+          inactiveColor: inactiveTabStyle.color,
+          gap: tabsStyle.columnGap,
+          tabZIndex: tabStyle.zIndex,
           baselineHeight: baselineStyle.height,
           baselineColor: baselineStyle.backgroundColor,
+          baselineZIndex: baselineStyle.zIndex,
+          baselinePointerEvents: baselineStyle.pointerEvents,
           baselineLeft: baselineStyle.left,
           baselineRight: baselineStyle.right,
           tabsPaddingLeft: tabsStyle.paddingLeft,
           tabsPaddingRight: tabsStyle.paddingRight,
           markerHeight: markerStyle.height,
           markerColor: markerStyle.backgroundColor,
+          markerZIndex: markerStyle.zIndex,
           markerRadius: markerStyle.borderRadius,
           markerBottom: markerStyle.bottom,
+          allTabsHaveIcons: Array.from(
+            tabs.querySelectorAll<HTMLElement>(".workspace-tab"),
+          ).every((item) => Boolean(item.querySelector(".workspace-tab-icon"))),
         },
         tabBottom: tabRect.bottom,
         tabsBottom: tabsRect.bottom,
@@ -7457,18 +7512,26 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
     );
     assert.deepEqual(courseVisual.tabSignature, {
       height: "40px",
-      radius: "0px",
+      radius: "12px 12px 0px 0px",
       fontWeight: "400",
-      baselineHeight: "1px",
-      baselineColor: "rgba(20, 20, 20, 0.2)",
+      activeColor: "rgb(20, 20, 20)",
+      inactiveColor: "rgba(20, 20, 20, 0.5)",
+      gap: "12px",
+      tabZIndex: "auto",
+      baselineHeight: "1.5px",
+      baselineColor: "rgba(20, 20, 20, 0.5)",
+      baselineZIndex: "1",
+      baselinePointerEvents: "none",
       baselineLeft: "0px",
       baselineRight: "0px",
       tabsPaddingLeft: "0px",
       tabsPaddingRight: "0px",
       markerHeight: "4px",
       markerColor: "rgb(20, 20, 20)",
+      markerZIndex: "2",
       markerRadius: "0px",
       markerBottom: "0px",
+      allTabsHaveIcons: true,
     });
     assert.ok(Math.abs(courseVisual.tabBottom - courseVisual.tabsBottom) < 0.5);
 
@@ -7762,6 +7825,9 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       const headerActions =
         pageHeader?.querySelector<HTMLElement>(".app-page-actions");
       const tab = document.querySelector<HTMLElement>(".workspace-tab-active");
+      const inactiveTab = document.querySelector<HTMLElement>(
+        ".workspace-tab:not(.workspace-tab-active)",
+      );
       const tabs = document.querySelector<HTMLElement>(".workspace-tabs");
 
       if (
@@ -7771,6 +7837,7 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
         !description ||
         !headerActions ||
         !tab ||
+        !inactiveTab ||
         !tabs
       ) {
         throw new Error("Lesson visual contract elements are missing");
@@ -7781,6 +7848,7 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       const descriptionStyle = getComputedStyle(description);
       const tabsStyle = getComputedStyle(tabs);
       const tabStyle = getComputedStyle(tab);
+      const inactiveTabStyle = getComputedStyle(inactiveTab);
       const markerStyle = getComputedStyle(tab, "::after");
       const baselineStyle = getComputedStyle(tabs, "::before");
       const pageHeaderRect = pageHeader.getBoundingClientRect();
@@ -7810,16 +7878,26 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
           height: tabStyle.height,
           radius: tabStyle.borderRadius,
           fontWeight: tabStyle.fontWeight,
+          activeColor: tabStyle.color,
+          inactiveColor: inactiveTabStyle.color,
+          gap: tabsStyle.columnGap,
+          tabZIndex: tabStyle.zIndex,
           baselineHeight: baselineStyle.height,
           baselineColor: baselineStyle.backgroundColor,
+          baselineZIndex: baselineStyle.zIndex,
+          baselinePointerEvents: baselineStyle.pointerEvents,
           baselineLeft: baselineStyle.left,
           baselineRight: baselineStyle.right,
           tabsPaddingLeft: tabsStyle.paddingLeft,
           tabsPaddingRight: tabsStyle.paddingRight,
           markerHeight: markerStyle.height,
           markerColor: markerStyle.backgroundColor,
+          markerZIndex: markerStyle.zIndex,
           markerRadius: markerStyle.borderRadius,
           markerBottom: markerStyle.bottom,
+          allTabsHaveIcons: Array.from(
+            tabs.querySelectorAll<HTMLElement>(".workspace-tab"),
+          ).every((item) => Boolean(item.querySelector(".workspace-tab-icon"))),
         },
       };
     });

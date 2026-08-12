@@ -468,8 +468,20 @@ test("students manages one learner and group directory with durable history", ()
   assert.match(studentsWorkspaceSource, /label: "Ученики"/);
   assert.match(studentsWorkspaceSource, /label: "Группы"/);
   assert.match(studentsWorkspaceSource, /label: "Наблюдение"/);
-  assert.match(studentsWorkspaceSource, /<ObservingWorkspace embedded \/>/);
+  assert.match(studentsWorkspaceSource, /loadObservedProfiles/);
+  assert.match(
+    studentsWorkspaceSource,
+    /label: "Наблюдение"[\s\S]*?count: observingCount/,
+  );
+  assert.match(
+    studentsWorkspaceSource,
+    /<ObservingWorkspace[\s\S]*?embedded[\s\S]*?onProfileCountChange=\{setObservingCount\}/,
+  );
   assert.match(observingWorkspaceSource, /!embedded \? \(/);
+  assert.match(
+    observingWorkspaceSource,
+    /onProfileCountChange\?\.\(profiles\.length\)/,
+  );
   assert.match(studentsWorkspaceSource, /role="tabpanel"/);
   assert.match(studentsWorkspaceSource, /workspaceTabPanelId/);
   assert.doesNotMatch(studentsWorkspaceSource, /<SegmentedControl/);

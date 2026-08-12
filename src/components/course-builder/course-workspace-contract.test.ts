@@ -366,15 +366,15 @@ test("course routes use the flat demo background and unified visual controls", (
   );
   assert.match(
     styles,
-    /\.workspace-tabs::before\s*\{[^}]*right: var\(--workspace-tabs-inline-offset\);[^}]*left: var\(--workspace-tabs-inline-offset\);[^}]*height: 1px;[^}]*background: rgba\(20, 20, 20, 0\.2\);/,
+    /\.workspace-tabs::before\s*\{[^}]*z-index: 1;[^}]*right: var\(--workspace-tabs-inline-offset\);[^}]*left: var\(--workspace-tabs-inline-offset\);[^}]*height: 1\.5px;[^}]*background: var\(--product-muted-foreground\);/,
   );
   assert.match(
     styles,
-    /\.workspace-tab\s*\{[\s\S]*?--course-demo-control-height[\s\S]*?flex: 0 0 auto;[\s\S]*?border-radius: 0;/,
+    /\.workspace-tab\s*\{[\s\S]*?--course-demo-control-height[\s\S]*?flex: 0 0 auto;[\s\S]*?border-radius: var\(--course-demo-control-radius, 0\.75rem\)[\s\S]*?0 0;/,
   );
   assert.match(
     styles,
-    /\.workspace-tab-active::after\s*\{[^}]*bottom: 0;[^}]*height: 4px;[^}]*border-radius: 0;[^}]*background: #141414;/,
+    /\.workspace-tab-active::after\s*\{[^}]*z-index: 2;[^}]*bottom: 0;[^}]*height: 4px;[^}]*border-radius: 0;[^}]*background: #141414;/,
   );
   assert.match(topNav, /container course-top-nav/);
   assert.match(

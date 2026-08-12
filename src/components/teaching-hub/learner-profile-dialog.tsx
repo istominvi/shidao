@@ -7,6 +7,7 @@ import {
   Save,
   Trash2,
   UserPlus,
+  UserRound,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { LearnerIdentityPanel } from "@/components/learner-identity/learner-identity-panel";
@@ -120,7 +121,7 @@ export function LearnerProfileDialog({
           onChange={setSurface}
           className="student-directory-dialog-tabs"
           items={[
-            { value: "profile", label: "Профиль" },
+            { value: "profile", label: "Профиль", icon: UserRound },
             { value: "history", label: "История", icon: History },
             { value: "connection", label: "Аккаунт", icon: Link2 },
           ]}

@@ -720,10 +720,12 @@ ShiDao V2 application:
   background, а row dividers используют один
   `--product-table-divider-color`;
 - Course, Lesson и остальные active-product `WorkspaceTabs` используют
-  edge-to-edge baseline 1 px цвета `rgba(20, 20, 20, 0.2)` без внешнего
-  inline-inset и квадратный чёрный active segment 4 px без radius; внутренний
-  padding самих tab остаётся 12 px, numeric count идёт обычным текстом после
-  label без круга; каждый `aria-controls` tab разрешается в matching
+  edge-to-edge baseline 1.5 px цвета `rgba(20, 20, 20, 0.5)` без внешнего
+  inline-inset и квадратный чёрный active segment 4 px без radius. Inactive
+  label имеет тот же 50%-black цвет, gap между tab-кнопками и верхний radius
+  равны 12 px; светлый hover не перекрывает baseline. Каждый tab имеет 16 px
+  иконку. Только positive numeric count показан маленьким приподнятым `sup`, а
+  ноль не рендерится; каждый `aria-controls` tab разрешается в matching
   `tabpanel` с обратным `aria-labelledby`, а на mobile вкладки скроллятся
   внутри strip без document overflow;
 - на сохранённом Course открыть **Уроки** и проверить, что общий `WorkspaceTabs`
@@ -880,9 +882,11 @@ flow как permanent delete.
   полноэкранный Student Screen при этом не должны измениться;
 - `/students` показывает точный подзаголовок «Ученики и группы, с которыми вы
   работаете или за которыми наблюдаете»; вкладки «Ученики / Группы /
-  Наблюдение» сохраняют общий edge-to-edge 20%-black 1 px baseline без
-  горизонтального inset, square opaque active-segment и plain inline counts
-  без badge;
+  Наблюдение» сохраняют общий edge-to-edge 50%-black 1.5 px baseline без
+  горизонтального inset, opaque active-segment, иконки и raised positive
+  counts без badge. При отсутствии сущностей `0` не показывается; при наличии
+  наблюдаемых профилей «Наблюдение» показывает их фактическое число и обновляет
+  его после отказа от доступа;
 - directory toolbar остаётся прозрачной, без outer card и без горизонтального
   inset. Поиск и единый disclosure «Фильтр» заменяют отдельные group/sort
   select: внутри доступны status, membership «Все / В группе / Без группы»,

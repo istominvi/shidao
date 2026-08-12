@@ -6,7 +6,7 @@ function source(path: string) {
   return readFileSync(path, "utf8");
 }
 
-test("workspace tabs keep their accessible tab contract and render counts as inline text", () => {
+test("workspace tabs keep their accessible visual contract and raise positive counts", () => {
   const component = source("src/components/ui/workspace-tabs.tsx");
   const styles = source("src/app/globals.css");
   const countStyles = /\.workspace-tab-count\s*\{[^}]*\}/.exec(styles)?.[0];
@@ -15,9 +15,15 @@ test("workspace tabs keep their accessible tab contract and render counts as inl
   assert.match(component, /role="tab"/);
   assert.match(component, /aria-selected=\{active\}/);
   assert.match(component, /aria-controls=\{workspaceTabPanelId/);
+  assert.match(component, /icon: LucideIcon;/);
   assert.match(
     component,
-    /<span className="workspace-tab-label">[\s\S]*?\{item\.label\}[\s\S]*?<span className="workspace-tab-count">\{` \$\{item\.count\}`\}<\/span>/,
+    /<Icon className="workspace-tab-icon" aria-hidden="true" \/>/,
+  );
+  assert.match(component, /typeof item\.count === "number" && item\.count > 0/);
+  assert.match(
+    component,
+    /\{" "\}[\s\S]*?<sup className="workspace-tab-count">\{item\.count\}<\/sup>/,
   );
 
   assert.match(
@@ -29,21 +35,31 @@ test("workspace tabs keep their accessible tab contract and render counts as inl
     styles,
     /\.workspace-tabs::before\s*\{[^}]*right: var\(--workspace-tabs-inline-offset\);[^}]*left: var\(--workspace-tabs-inline-offset\);/,
   );
+  assert.match(styles, /\.workspace-tabs\s*\{[^}]*gap: 0\.75rem;/);
   assert.match(
     styles,
-    /\.workspace-tabs::before\s*\{[^}]*height: 1px;[^}]*background: rgba\(20, 20, 20, 0\.2\);/,
+    /\.workspace-tabs::before\s*\{[^}]*z-index: 1;[^}]*height: 1\.5px;[^}]*background: var\(--product-muted-foreground\);[^}]*pointer-events: none;/,
   );
   assert.match(
     styles,
-    /\.workspace-tab-active::after\s*\{[^}]*height: 4px;[^}]*background: #141414;/,
+    /\.workspace-tab\s*\{[^}]*border-radius: var\(--course-demo-control-radius, 0\.75rem\)[^}]*0 0;[^}]*color: var\(--product-muted-foreground\);/,
+  );
+  assert.match(
+    styles,
+    /\.workspace-tab-active::after\s*\{[^}]*z-index: 2;[^}]*height: 4px;[^}]*background: #141414;/,
   );
   assert.ok(countStyles, "Count styles must remain discoverable");
   assert.match(countStyles, /display: inline;/);
+  assert.match(countStyles, /position: relative;/);
+  assert.match(countStyles, /top: -0\.4em;/);
   assert.match(countStyles, /color: inherit;/);
-  assert.match(countStyles, /font: inherit;/);
+  assert.match(countStyles, /font-size: 0\.7em;/);
+  assert.match(countStyles, /font-weight: inherit;/);
+  assert.match(countStyles, /line-height: 0;/);
+  assert.match(countStyles, /vertical-align: baseline;/);
   assert.doesNotMatch(
     countStyles,
-    /min-width|height|place-items|border-radius|background|padding/,
+    /min-width|place-items|border-radius|background|padding/,
   );
 });
 

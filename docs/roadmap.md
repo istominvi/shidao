@@ -57,6 +57,10 @@
   Базовый follow-up был подтверждён в release `77870e3`; full-width
   канонизация развёрнута exact merge commit
   `84ffefecda99d3b0a9da82bf1eaf8ce76d9c6ea1` (PR #242).
+  **Repository current; production next:** baseline и inactive label используют
+  общий 50%-black token, baseline имеет толщину 1.5 px и не перекрывается
+  hover-фоном; tab gap и верхние радиусы равны 12 px. Все вкладки имеют иконки,
+  positive count показан маленьким приподнятым `sup`, а нулевой count отсутствует.
 - Active app routes приведены к плоскому demo-фону `#f5f1e8` без marketing
   gradients; header, кнопки, вкладки и заголовочная типографика используют
   scoped demo-размеры и веса, не затрагивая landing/Auth.
@@ -342,6 +346,10 @@ Course начинает с **О курсе**; обычное сохранени�
 deterministic/AI-сборка открывает **Уроки**. Вкладка сохранённого Course
 **Материалы** разделяет используемые и пока не используемые attachments и
 показывает Lesson usage.
+Repository-current tabs follow-up, ещё не развёрнутый production, переводит
+inactive labels и baseline на один 50%-black token, делает baseline 1.5 px,
+gap и верхние радиусы 12 px, добавляет иконку каждому tab и показывает только
+positive count как маленький приподнятый `sup`.
 На **Уроках** неизменённый полноширинный `WorkspaceTabs` продолжает прозрачная
 search/create toolbar без horizontal inset. Lesson проецируются в `ProductTable`
 `№ / Урок / План / Экран ученика / Проведение / Обновлён / actions` с общей
