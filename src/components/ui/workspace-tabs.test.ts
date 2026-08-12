@@ -54,7 +54,7 @@ test("workspace tabs keep their accessible visual contract and raise positive co
   assert.match(countStyles, /top: -0\.4em;/);
   assert.match(countStyles, /color: inherit;/);
   assert.match(countStyles, /font-size: 0\.7em;/);
-  assert.match(countStyles, /font-weight: inherit;/);
+  assert.match(countStyles, /font-weight: 500;/);
   assert.match(countStyles, /line-height: 0;/);
   assert.match(countStyles, /vertical-align: baseline;/);
   assert.doesNotMatch(

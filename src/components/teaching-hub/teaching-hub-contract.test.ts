@@ -484,7 +484,26 @@ test("students manages one learner and group directory with durable history", ()
   );
   assert.match(studentsWorkspaceSource, /role="tabpanel"/);
   assert.match(studentsWorkspaceSource, /workspaceTabPanelId/);
-  assert.doesNotMatch(studentsWorkspaceSource, /<SegmentedControl/);
+  assert.match(studentsWorkspaceSource, /useState<DirectoryLayout>\("table"\)/);
+  assert.match(studentsWorkspaceSource, /<SegmentedControl/);
+  assert.match(studentsWorkspaceSource, /"Вид списка учеников"/);
+  assert.match(studentsWorkspaceSource, /"Вид списка групп"/);
+  assert.match(
+    studentsWorkspaceSource,
+    /items=\{\[\s*\{[\s\S]*?value: "table"[\s\S]*?ariaLabel: "Показать таблицей"[\s\S]*?\},\s*\{[\s\S]*?value: "cards"[\s\S]*?ariaLabel: "Показать карточками"/,
+  );
+  assert.match(studentsWorkspaceSource, /<LearnersDirectoryCards/);
+  assert.match(studentsWorkspaceSource, /<LearnerGroupsDirectoryCards/);
+  assert.match(
+    studentDirectoryTableSource,
+    /export function LearnersDirectoryCards/,
+  );
+  assert.match(
+    studentDirectoryTableSource,
+    /export function LearnerGroupsDirectoryCards/,
+  );
+  assert.match(studentDirectoryTableSource, /aria-label="Карточки учеников"/);
+  assert.match(studentDirectoryTableSource, /aria-label="Карточки групп"/);
   assert.equal(
     studentsWorkspaceSource.match(/<StudentDirectoryFilterMenu/g)?.length,
     1,
@@ -602,14 +621,14 @@ test("students manages one learner and group directory with durable history", ()
     "Написать сообщение",
     "Убрать из списка",
   ]) {
-    assert.match(learnersTableSource, new RegExp(`label: "${label}"`));
+    assert.match(studentDirectoryTableSource, new RegExp(`label: "${label}"`));
   }
   assert.match(
-    learnersTableSource,
+    studentDirectoryTableSource,
     /id: "message",[\s\S]*?label: "Написать сообщение",[\s\S]*?hint: "Сообщения пока недоступны",[\s\S]*?disabled: true/,
   );
   assert.match(
-    learnersTableSource,
+    studentDirectoryTableSource,
     /id: "archive",[\s\S]*?label: "Убрать из списка",[\s\S]*?destructive: true,[\s\S]*?onSelect: \(\) => onArchive\(entry\.profile\)/,
   );
   assert.match(studentsWorkspaceSource, /<LearnerCourseDialog/);

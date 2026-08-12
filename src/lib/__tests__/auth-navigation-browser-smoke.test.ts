@@ -4409,6 +4409,12 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       const filterTrigger = toolbar?.querySelector<HTMLElement>(
         ".student-directory-filter-menu .course-filter-trigger",
       );
+      const viewSwitch = toolbar?.querySelector<HTMLElement>(
+        '[role="group"][aria-label="Вид списка учеников"]',
+      );
+      const activeViewButton = viewSwitch?.querySelector<HTMLElement>(
+        'button[aria-pressed="true"]',
+      );
 
       if (
         !pageHeader ||
@@ -4424,7 +4430,9 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         !toolbar ||
         !toolbarSearch ||
         !toolbarControls ||
-        !filterTrigger
+        !filterTrigger ||
+        !viewSwitch ||
+        !activeViewButton
       ) {
         throw new Error("Students visual contract is missing");
       }
@@ -4543,7 +4551,21 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         controlGeometry: {
           filterTriggerHeight: getComputedStyle(filterTrigger).height,
           filterTriggerText: filterTrigger.textContent?.trim() ?? "",
+          viewSwitchHeight: getComputedStyle(viewSwitch).height,
+          activeViewButtonHeight: getComputedStyle(activeViewButton).height,
+          viewSwitchInsideControls:
+            viewSwitch.parentElement === toolbarControls,
+          filterBeforeViewSwitch: Boolean(
+            filterTrigger.compareDocumentPosition(viewSwitch) &
+            Node.DOCUMENT_POSITION_FOLLOWING,
+          ),
         },
+        viewButtons: Array.from(viewSwitch.querySelectorAll("button")).map(
+          (button) => ({
+            label: button.getAttribute("aria-label"),
+            pressed: button.getAttribute("aria-pressed"),
+          }),
+        ),
         hasMembershipSwitch: Boolean(
           toolbar.querySelector(
             '[role="group"][aria-label="Принадлежность к группе"]',
@@ -4620,10 +4642,8 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       Number.parseFloat(studentsVisual.tabCount.fontSize) <
         Number.parseFloat(studentsVisual.tabCount.labelFontSize),
     );
-    assert.equal(
-      studentsVisual.tabCount.fontWeight,
-      studentsVisual.tabCount.labelFontWeight,
-    );
+    assert.equal(studentsVisual.tabCount.fontWeight, "500");
+    assert.equal(studentsVisual.tabCount.labelFontWeight, "400");
     assert.equal(studentsVisual.tabCount.position, "relative");
     assert.ok(Number.parseFloat(studentsVisual.tabCount.top) < 0);
     assert.equal(studentsVisual.tabCount.lineHeight, "0px");
@@ -4654,14 +4674,59 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
     assert.deepEqual(studentsVisual.controlGeometry, {
       filterTriggerHeight: "40px",
       filterTriggerText: "Фильтр",
+      viewSwitchHeight: "40px",
+      activeViewButtonHeight: "32px",
+      viewSwitchInsideControls: true,
+      filterBeforeViewSwitch: true,
     });
+    assert.deepEqual(studentsVisual.viewButtons, [
+      { label: "Показать таблицей", pressed: "true" },
+      { label: "Показать карточками", pressed: "false" },
+    ]);
     assert.equal(studentsVisual.hasMembershipSwitch, true);
     assert.equal(studentsVisual.hasLegacySortOrGroupSelect, false);
+
+    const learnerViewSwitch = runtime.page.getByRole("group", {
+      name: "Вид списка учеников",
+      exact: true,
+    });
+    await learnerViewSwitch
+      .getByRole("button", { name: "Показать карточками", exact: true })
+      .click();
+    const learnerCards = runtime.page.getByRole("region", {
+      name: "Карточки учеников",
+      exact: true,
+    });
+    await learnerCards.waitFor();
+    assert.equal(
+      await runtime.page
+        .getByRole("table", {
+          name: "Ученики, их статусы и группы",
+          exact: true,
+        })
+        .count(),
+      0,
+    );
+    await learnerCards
+      .getByRole("button", {
+        name: "Профиль ученика Анна Петрова",
+        exact: true,
+      })
+      .waitFor();
+    await learnerCards
+      .getByRole("button", {
+        name: /Действия с учеником.*Архивная Ольга/,
+      })
+      .waitFor();
+    await learnerViewSwitch
+      .getByRole("button", { name: "Показать таблицей", exact: true })
+      .click();
 
     const learnerTable = runtime.page.getByRole("table", {
       name: "Ученики, их статусы и группы",
       exact: true,
     });
+    await learnerTable.waitFor();
     const learnerFilterTrigger = runtime.page.locator(
       ".student-directory-filter-menu .course-filter-trigger",
     );
@@ -5007,6 +5072,26 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
     await runtime.page
       .getByRole("table", { name: "Группы учеников", exact: true })
       .waitFor();
+    const groupViewSwitch = runtime.page.getByRole("group", {
+      name: "Вид списка групп",
+      exact: true,
+    });
+    assert.deepEqual(
+      await runtime.page.evaluate(() =>
+        Array.from(
+          document.querySelectorAll<HTMLButtonElement>(
+            '[role="group"][aria-label="Вид списка групп"] button',
+          ),
+        ).map((button) => ({
+          label: button.getAttribute("aria-label"),
+          pressed: button.getAttribute("aria-pressed"),
+        })),
+      ),
+      [
+        { label: "Показать таблицей", pressed: "true" },
+        { label: "Показать карточками", pressed: "false" },
+      ],
+    );
     const groupsToolbarContract = await runtime.page.evaluate(() => {
       const toolbar = document.querySelector<HTMLElement>(
         ".student-directory-toolbar",
@@ -5039,6 +5124,30 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
     assert.match(html, /Подготовка к экзамену/);
     assert.match(html, /2 ученика/);
     assert.match(html, /Новая группа/);
+
+    await groupViewSwitch
+      .getByRole("button", { name: "Показать карточками", exact: true })
+      .click();
+    const groupCards = runtime.page.getByRole("region", {
+      name: "Карточки групп",
+      exact: true,
+    });
+    await groupCards.waitFor();
+    await groupCards
+      .getByRole("button", { name: "Группа Teen Talk", exact: true })
+      .waitFor();
+    assert.equal(
+      await runtime.page
+        .getByRole("table", { name: "Группы учеников", exact: true })
+        .count(),
+      0,
+    );
+    await groupViewSwitch
+      .getByRole("button", { name: "Показать таблицей", exact: true })
+      .click();
+    await runtime.page
+      .getByRole("table", { name: "Группы учеников", exact: true })
+      .waitFor();
 
     const studentsCurrent = await runtime.page.evaluate(() =>
       document
@@ -6473,6 +6582,12 @@ test("browser smoke: mobile Account menu exposes primary sections and account ac
       const filterTrigger = rail?.querySelector<HTMLElement>(
         ".student-directory-filter-menu .course-filter-trigger",
       );
+      const viewSwitch = rail?.querySelector<HTMLElement>(
+        '[role="group"][aria-label="Вид списка учеников"]',
+      );
+      const activeViewButton = viewSwitch?.querySelector<HTMLElement>(
+        'button[aria-pressed="true"]',
+      );
       const tableWrap = document.querySelector<HTMLElement>(
         ".student-directory-table-wrap",
       );
@@ -6491,6 +6606,8 @@ test("browser smoke: mobile Account menu exposes primary sections and account ac
         !toolbar ||
         !rail ||
         !filterTrigger ||
+        !viewSwitch ||
+        !activeViewButton ||
         !tableWrap ||
         !table ||
         !groupCell ||
@@ -6523,6 +6640,18 @@ test("browser smoke: mobile Account menu exposes primary sections and account ac
         railScrollIsContained: rail.scrollWidth > rail.clientWidth,
         filterTriggerHeight: getComputedStyle(filterTrigger).height,
         filterTriggerText: filterTrigger.textContent?.trim() ?? "",
+        viewSwitchHeight: getComputedStyle(viewSwitch).height,
+        activeViewButtonHeight: getComputedStyle(activeViewButton).height,
+        viewSwitchInsideViewport: (() => {
+          const rect = viewSwitch.getBoundingClientRect();
+          return rect.left >= 0 && rect.right <= viewportWidth;
+        })(),
+        viewButtons: Array.from(viewSwitch.querySelectorAll("button")).map(
+          (button) => ({
+            label: button.getAttribute("aria-label"),
+            pressed: button.getAttribute("aria-pressed"),
+          }),
+        ),
         hasMembershipSwitch: Boolean(
           rail.querySelector(
             '[role="group"][aria-label="Принадлежность к группе"]',
@@ -6563,6 +6692,13 @@ test("browser smoke: mobile Account menu exposes primary sections and account ac
     assert.equal(mobileContract.railScrollIsContained, false);
     assert.equal(mobileContract.filterTriggerHeight, "40px");
     assert.equal(mobileContract.filterTriggerText, "Фильтр");
+    assert.equal(mobileContract.viewSwitchHeight, "40px");
+    assert.equal(mobileContract.activeViewButtonHeight, "32px");
+    assert.equal(mobileContract.viewSwitchInsideViewport, true);
+    assert.deepEqual(mobileContract.viewButtons, [
+      { label: "Показать таблицей", pressed: "true" },
+      { label: "Показать карточками", pressed: "false" },
+    ]);
     assert.equal(mobileContract.hasMembershipSwitch, true);
     assert.equal(mobileContract.tableWrapInsideViewport, true);
     assert.equal(mobileContract.tableOverflowX, "auto");
@@ -6637,6 +6773,64 @@ test("browser smoke: new Course starts on About and keeps its draft across tabs"
     await runtime.page
       .getByRole("heading", { name: "Новый курс", exact: true, level: 1 })
       .waitFor();
+    const newCourseHeader = await runtime.page.evaluate(() => {
+      const header = document.querySelector<HTMLElement>(".app-page-header");
+      const content = header?.querySelector<HTMLElement>(
+        ".app-page-header-content",
+      );
+      const heading = header?.querySelector<HTMLElement>(".app-page-heading");
+      const title = header?.querySelector<HTMLElement>(".app-page-title");
+      const back = header?.querySelector<HTMLElement>(".app-page-back-link");
+      const icon = back?.querySelector<HTMLElement>(".app-page-back-link-icon");
+      if (!header || !content || !heading || !title || !back || !icon) {
+        throw new Error("New Course header contract is missing");
+      }
+
+      const headerStyle = getComputedStyle(header);
+      const headerRect = header.getBoundingClientRect();
+      const contentRect = content.getBoundingClientRect();
+      const headingRect = heading.getBoundingClientRect();
+      const titleRect = title.getBoundingClientRect();
+      const backRect = back.getBoundingClientRect();
+      const innerWidth =
+        headerRect.width -
+        Number.parseFloat(headerStyle.paddingLeft) -
+        Number.parseFloat(headerStyle.paddingRight);
+
+      return {
+        display: headerStyle.display,
+        hasActionsClass: header.classList.contains(
+          "app-page-header-with-actions",
+        ),
+        actionCount: header.querySelectorAll(".app-page-actions").length,
+        contentOwnsInnerWidth: Math.abs(contentRect.width - innerWidth),
+        titleOwnsContentWidth: Math.abs(titleRect.width - contentRect.width),
+        backColor: getComputedStyle(back).color,
+        iconColor: getComputedStyle(icon).color,
+        headerToBackGap: backRect.top - headerRect.top,
+        backToHeadingGap: headingRect.top - backRect.bottom,
+      };
+    });
+    assert.deepEqual(
+      {
+        display: newCourseHeader.display,
+        hasActionsClass: newCourseHeader.hasActionsClass,
+        actionCount: newCourseHeader.actionCount,
+        backColor: newCourseHeader.backColor,
+        iconColor: newCourseHeader.iconColor,
+      },
+      {
+        display: "flex",
+        hasActionsClass: false,
+        actionCount: 0,
+        backColor: "rgb(20, 20, 20)",
+        iconColor: "rgb(20, 20, 20)",
+      },
+    );
+    assert.ok(newCourseHeader.contentOwnsInnerWidth < 0.5);
+    assert.ok(newCourseHeader.titleOwnsContentWidth < 0.5);
+    assert.ok(Math.abs(newCourseHeader.headerToBackGap - 20) < 0.5);
+    assert.ok(Math.abs(newCourseHeader.backToHeadingGap - 20) < 0.5);
 
     const aboutTab = runtime.page.getByRole("tab", {
       name: "О курсе",
@@ -6863,8 +7057,8 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       activeButtonHeight: "32px",
     });
     assert.deepEqual(coursesVisual.viewButtons, [
-      { label: "Показать карточками", pressed: "true" },
-      { label: "Показать таблицей", pressed: "false" },
+      { label: "Показать таблицей", pressed: "true" },
+      { label: "Показать карточками", pressed: "false" },
     ]);
     assert.ok(
       Math.abs(Number.parseFloat(coursesVisual.buttonFontSize) - 14.08) < 0.1,
@@ -6983,17 +7177,22 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       name: "Вид каталога курсов",
       exact: true,
     });
-    assert.equal(
-      await catalogView
-        .getByRole("button", { name: "Показать карточками", exact: true })
-        .getAttribute("aria-pressed"),
-      "true",
-    );
-    assert.equal(
-      await catalogView
-        .getByRole("button", { name: "Показать таблицей", exact: true })
-        .getAttribute("aria-pressed"),
-      "false",
+    assert.equal(await catalogView.getByRole("button").count(), 2);
+    assert.deepEqual(
+      await runtime.page.evaluate(() =>
+        Array.from(
+          document.querySelectorAll<HTMLButtonElement>(
+            '[role="group"][aria-label="Вид каталога курсов"] button',
+          ),
+        ).map((button) => ({
+          label: button.getAttribute("aria-label"),
+          pressed: button.getAttribute("aria-pressed"),
+        })),
+      ),
+      [
+        { label: "Показать таблицей", pressed: "true" },
+        { label: "Показать карточками", pressed: "false" },
+      ],
     );
     await runtime.page
       .getByRole("heading", {
@@ -7102,6 +7301,50 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
     await publishedHeaderActions
       .getByText("Аттестован", { exact: true })
       .waitFor();
+    const publishedHeaderGeometry = await runtime.page.evaluate(() => {
+      const header = document.querySelector<HTMLElement>(
+        ".published-course-workspace .app-page-header",
+      );
+      const content = header?.querySelector<HTMLElement>(
+        ".app-page-header-content",
+      );
+      const title = header?.querySelector<HTMLElement>(".app-page-title");
+      const actions = header?.querySelector<HTMLElement>(".app-page-actions");
+      if (!header || !content || !title || !actions) {
+        throw new Error("Published Course header geometry is missing");
+      }
+
+      const headerStyle = getComputedStyle(header);
+      const headerRect = header.getBoundingClientRect();
+      const contentRect = content.getBoundingClientRect();
+      const titleRect = title.getBoundingClientRect();
+      const actionsRect = actions.getBoundingClientRect();
+      const actionChildRects = Array.from(actions.children)
+        .map((child) => child.getBoundingClientRect())
+        .filter((rect) => rect.width > 0 && rect.height > 0);
+      const actionContentWidth = actionChildRects.length
+        ? Math.max(...actionChildRects.map((rect) => rect.right)) -
+          Math.min(...actionChildRects.map((rect) => rect.left))
+        : 0;
+
+      return {
+        titleUsesHeadingColumn: Math.abs(titleRect.width - contentRect.width),
+        actionsFitContent: Math.abs(actionsRect.width - actionContentWidth),
+        columnGap: actionsRect.left - contentRect.right,
+        remainingWidthDelta: Math.abs(
+          contentRect.width -
+            (headerRect.width -
+              Number.parseFloat(headerStyle.paddingLeft) -
+              Number.parseFloat(headerStyle.paddingRight) -
+              actionsRect.width -
+              24),
+        ),
+      };
+    });
+    assert.ok(publishedHeaderGeometry.titleUsesHeadingColumn < 0.5);
+    assert.ok(publishedHeaderGeometry.actionsFitContent < 0.5);
+    assert.ok(Math.abs(publishedHeaderGeometry.columnGap - 24) < 0.5);
+    assert.ok(publishedHeaderGeometry.remainingWidthDelta < 0.5);
     assert.equal(
       await runtime.page
         .getByRole("button", { name: "Добавить в мои курсы", exact: true })
@@ -7372,6 +7615,9 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
         document.querySelector<HTMLElement>(".app-page-header");
       const pageHeading =
         pageHeader?.querySelector<HTMLElement>(".app-page-heading");
+      const pageHeaderContent = pageHeader?.querySelector<HTMLElement>(
+        ".app-page-header-content",
+      );
       const title = pageHeader?.querySelector<HTMLElement>(".app-page-title");
       const description = pageHeader?.querySelector<HTMLElement>(
         ".app-page-description",
@@ -7383,16 +7629,33 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       const tabs = document.querySelector<HTMLElement>(".workspace-tabs");
       const headerActions =
         pageHeader?.querySelector<HTMLElement>(".app-page-actions");
+      const backLink = pageHeader?.querySelector<HTMLElement>(
+        ".app-page-back-link",
+      );
+      const backIcon = backLink?.querySelector<HTMLElement>(
+        ".app-page-back-link-icon",
+      );
+      const backLabel = backLink?.querySelector<HTMLElement>(
+        ".app-page-back-link-label",
+      );
+      const siteHeader = document.querySelector<HTMLElement>(
+        ".site-header-shell-demo",
+      );
 
       if (
         !pageHeader ||
         !pageHeading ||
+        !pageHeaderContent ||
         !title ||
         !description ||
         !tab ||
         !inactiveTab ||
         !tabs ||
-        !headerActions
+        !headerActions ||
+        !backLink ||
+        !backIcon ||
+        !backLabel ||
+        !siteHeader
       ) {
         throw new Error(
           "Course workspace visual contract elements are missing",
@@ -7411,8 +7674,12 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       const tabRect = tab.getBoundingClientRect();
       const tabsRect = tabs.getBoundingClientRect();
       const pageHeaderRect = pageHeader.getBoundingClientRect();
+      const pageHeaderContentRect = pageHeaderContent.getBoundingClientRect();
       const pageHeadingRect = pageHeading.getBoundingClientRect();
+      const titleRect = title.getBoundingClientRect();
       const headerActionsRect = headerActions.getBoundingClientRect();
+      const backLinkRect = backLink.getBoundingClientRect();
+      const siteHeaderRect = siteHeader.getBoundingClientRect();
       const actionChildRects = Array.from(headerActions.children)
         .map((child) => child.getBoundingClientRect())
         .filter((rect) => rect.width > 0 && rect.height > 0);
@@ -7431,6 +7698,7 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
           height: pageHeaderRect.height,
           headingMinWidth: headingStyle.minWidth,
           headingWidth: pageHeadingRect.width,
+          titleWidthDelta: Math.abs(titleRect.width - pageHeadingRect.width),
           actionsWidth: headerActionsRect.width,
           actionsContentWidth,
           actionsFitContentDelta: Math.abs(
@@ -7441,11 +7709,27 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
               Number.parseFloat(headerStyle.paddingRight) -
               headerActionsRect.right,
           ),
+          columnGap: headerActionsRect.left - pageHeaderContentRect.right,
+          remainingWidthDelta: Math.abs(
+            pageHeaderContentRect.width -
+              (pageHeaderRect.width -
+                Number.parseFloat(headerStyle.paddingLeft) -
+                Number.parseFloat(headerStyle.paddingRight) -
+                headerActionsRect.width -
+                24),
+          ),
           actionCenterDelta: Math.abs(
             headerActionsRect.top +
               headerActionsRect.height / 2 -
               (pageHeaderRect.top + pageHeaderRect.height / 2),
           ),
+          backLink: {
+            color: getComputedStyle(backLink).color,
+            iconColor: getComputedStyle(backIcon).color,
+            labelWhiteSpace: getComputedStyle(backLabel).whiteSpace,
+            headerToBackGap: backLinkRect.top - siteHeaderRect.bottom,
+            backToHeadingGap: pageHeadingRect.top - backLinkRect.bottom,
+          },
         },
         headerSignature: {
           titleFontFamily: titleStyle.fontFamily,
@@ -7506,6 +7790,33 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
     assert.ok(courseVisual.headerLayout.actionsContentWidth > 0);
     assert.ok(courseVisual.headerLayout.actionsFitContentDelta < 0.5);
     assert.ok(courseVisual.headerLayout.actionsRightDelta < 0.5);
+    assert.ok(courseVisual.headerLayout.titleWidthDelta < 0.5);
+    assert.ok(courseVisual.headerLayout.remainingWidthDelta < 0.5);
+    assert.ok(Math.abs(courseVisual.headerLayout.columnGap - 24) < 0.5);
+    assert.deepEqual(
+      {
+        color: courseVisual.headerLayout.backLink.color,
+        iconColor: courseVisual.headerLayout.backLink.iconColor,
+        labelWhiteSpace: courseVisual.headerLayout.backLink.labelWhiteSpace,
+      },
+      {
+        color: "rgb(20, 20, 20)",
+        iconColor: "rgb(20, 20, 20)",
+        labelWhiteSpace: "nowrap",
+      },
+    );
+    assert.ok(
+      Math.abs(courseVisual.headerLayout.backLink.headerToBackGap - 20) < 0.5,
+    );
+    assert.ok(
+      Math.abs(courseVisual.headerLayout.backLink.backToHeadingGap - 20) < 0.5,
+    );
+    assert.ok(
+      Math.abs(
+        courseVisual.headerLayout.backLink.headerToBackGap -
+          courseVisual.headerLayout.backLink.backToHeadingGap,
+      ) < 0.5,
+    );
     assert.deepEqual(
       courseVisual.headerSignature,
       coursesVisual.headerSignature,
@@ -7922,21 +8233,33 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
         document.querySelector<HTMLElement>(".app-page-header");
       const pageHeading =
         pageHeader?.querySelector<HTMLElement>(".app-page-heading");
+      const pageHeaderContent = pageHeader?.querySelector<HTMLElement>(
+        ".app-page-header-content",
+      );
       const title = pageHeading?.querySelector<HTMLElement>(".app-page-title");
       const description = pageHeading?.querySelector<HTMLElement>(
         ".app-page-description",
       );
       const backLabel = pageHeader?.querySelector<HTMLElement>(
-        ".app-page-back-link > span:last-child",
+        ".app-page-back-link-label",
+      );
+      const backLink = pageHeader?.querySelector<HTMLElement>(
+        ".app-page-back-link",
+      );
+      const backIcon = backLink?.querySelector<HTMLElement>(
+        ".app-page-back-link-icon",
       );
       const actions =
         pageHeader?.querySelector<HTMLElement>(".app-page-actions");
       if (
         !pageHeader ||
         !pageHeading ||
+        !pageHeaderContent ||
         !title ||
         !description ||
         !backLabel ||
+        !backLink ||
+        !backIcon ||
         !actions
       ) {
         throw new Error("Narrow Lesson header contract is missing");
@@ -7954,7 +8277,10 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       const descriptionStyle = getComputedStyle(description);
       const backLabelStyle = getComputedStyle(backLabel);
       const pageHeaderRect = pageHeader.getBoundingClientRect();
+      const pageHeaderContentRect = pageHeaderContent.getBoundingClientRect();
       const pageHeadingRect = pageHeading.getBoundingClientRect();
+      const backLinkRect = backLink.getBoundingClientRect();
+      const backLabelRect = backLabel.getBoundingClientRect();
       const actionsRect = actions.getBoundingClientRect();
       const contentWidth =
         pageHeaderRect.width -
@@ -7976,10 +8302,22 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
               Number.parseFloat(headerStyle.paddingRight) +
               0.5,
         actionsDoNotOverlapHeading:
-          actionsRect.top >= pageHeadingRect.bottom - 0.5,
+          actionsRect.top >= pageHeaderContentRect.bottom - 0.5,
         titleWrap: titleStyle.overflowWrap,
         descriptionWrap: descriptionStyle.overflowWrap,
         backLabelWrap: backLabelStyle.overflowWrap,
+        backLabelOverflow: backLabelStyle.overflow,
+        backLabelTextOverflow: backLabelStyle.textOverflow,
+        backLabelWhiteSpace: backLabelStyle.whiteSpace,
+        backLabelIsClipped: backLabel.scrollWidth > backLabel.clientWidth,
+        backLabelSingleLineDelta: Math.abs(
+          backLabelRect.height - Number.parseFloat(backLabelStyle.lineHeight),
+        ),
+        backColor: getComputedStyle(backLink).color,
+        backIconColor: getComputedStyle(backIcon).color,
+        backIconFlexShrink: getComputedStyle(backIcon).flexShrink,
+        headerToBackGap: backLinkRect.top - pageHeaderRect.top,
+        backToHeadingGap: pageHeadingRect.top - backLinkRect.bottom,
       };
 
       title.textContent = originalTitle;
@@ -7999,6 +8337,13 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
         titleWrap: narrowLessonHeader.titleWrap,
         descriptionWrap: narrowLessonHeader.descriptionWrap,
         backLabelWrap: narrowLessonHeader.backLabelWrap,
+        backLabelOverflow: narrowLessonHeader.backLabelOverflow,
+        backLabelTextOverflow: narrowLessonHeader.backLabelTextOverflow,
+        backLabelWhiteSpace: narrowLessonHeader.backLabelWhiteSpace,
+        backLabelIsClipped: narrowLessonHeader.backLabelIsClipped,
+        backColor: narrowLessonHeader.backColor,
+        backIconColor: narrowLessonHeader.backIconColor,
+        backIconFlexShrink: narrowLessonHeader.backIconFlexShrink,
       },
       {
         documentClientWidth: 1120,
@@ -8009,10 +8354,26 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
         actionsDoNotOverlapHeading: true,
         titleWrap: "anywhere",
         descriptionWrap: "anywhere",
-        backLabelWrap: "anywhere",
+        backLabelWrap: "normal",
+        backLabelOverflow: "hidden",
+        backLabelTextOverflow: "ellipsis",
+        backLabelWhiteSpace: "nowrap",
+        backLabelIsClipped: true,
+        backColor: "rgb(20, 20, 20)",
+        backIconColor: "rgb(20, 20, 20)",
+        backIconFlexShrink: "0",
       },
     );
     assert.ok(narrowLessonHeader.headingOwnsContentDelta < 0.5);
+    assert.ok(narrowLessonHeader.backLabelSingleLineDelta < 0.5);
+    assert.ok(Math.abs(narrowLessonHeader.headerToBackGap - 20) < 0.5);
+    assert.ok(Math.abs(narrowLessonHeader.backToHeadingGap - 20) < 0.5);
+    assert.ok(
+      Math.abs(
+        narrowLessonHeader.headerToBackGap -
+          narrowLessonHeader.backToHeadingGap,
+      ) < 0.5,
+    );
     await runtime.page.setViewportSize({ width: 1280, height: 720 });
 
     html = await runtime.page.content();
@@ -8299,7 +8660,11 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
         railEndInset: toolbarRect.right - toolbarRailRect.right,
         shellHeight: getComputedStyle(viewSwitch).height,
         activeButtonHeight: getComputedStyle(activeViewButton).height,
+        activeLabel: activeViewButton.getAttribute("aria-label"),
         activePressed: activeViewButton.getAttribute("aria-pressed"),
+        viewButtons: Array.from(viewSwitch.querySelectorAll("button")).map(
+          (button) => button.getAttribute("aria-label"),
+        ),
       };
     });
     assert.deepEqual(
@@ -8311,7 +8676,9 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
         toolbarPaddingRight: mobileCoursesToolbar.toolbarPaddingRight,
         shellHeight: mobileCoursesToolbar.shellHeight,
         activeButtonHeight: mobileCoursesToolbar.activeButtonHeight,
+        activeLabel: mobileCoursesToolbar.activeLabel,
         activePressed: mobileCoursesToolbar.activePressed,
+        viewButtons: mobileCoursesToolbar.viewButtons,
       },
       {
         clientWidth: 375,
@@ -8321,7 +8688,9 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
         toolbarPaddingRight: "0px",
         shellHeight: "40px",
         activeButtonHeight: "32px",
+        activeLabel: "Показать таблицей",
         activePressed: "true",
+        viewButtons: ["Показать таблицей", "Показать карточками"],
       },
     );
     assert.ok(mobileCoursesToolbar.pageHeader.contentWidth > 0);
@@ -8509,9 +8878,25 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
     await runtime.page.getByRole("tab", { name: /^История/ }).waitFor();
 
     const mobileVisual = await runtime.page.evaluate(() => {
-      const title = document.querySelector<HTMLElement>(
-        ".app-page-header .app-page-title",
+      const pageHeader =
+        document.querySelector<HTMLElement>(".app-page-header");
+      const pageHeaderContent = pageHeader?.querySelector<HTMLElement>(
+        ".app-page-header-content",
       );
+      const pageHeading =
+        pageHeader?.querySelector<HTMLElement>(".app-page-heading");
+      const title = pageHeader?.querySelector<HTMLElement>(".app-page-title");
+      const backLink = pageHeader?.querySelector<HTMLElement>(
+        ".app-page-back-link",
+      );
+      const backIcon = backLink?.querySelector<HTMLElement>(
+        ".app-page-back-link-icon",
+      );
+      const backLabel = backLink?.querySelector<HTMLElement>(
+        ".app-page-back-link-label",
+      );
+      const actions =
+        pageHeader?.querySelector<HTMLElement>(".app-page-actions");
       const header = document.querySelector<HTMLElement>(
         ".site-header-shell-demo",
       );
@@ -8522,17 +8907,41 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
         '.workspace-tab[aria-selected="true"]',
       );
 
-      if (!title || !header || !tabStrip || !selectedTab) {
+      if (
+        !pageHeader ||
+        !pageHeaderContent ||
+        !pageHeading ||
+        !title ||
+        !backLink ||
+        !backIcon ||
+        !backLabel ||
+        !actions ||
+        !header ||
+        !tabStrip ||
+        !selectedTab
+      ) {
         throw new Error("Mobile Course visual contract elements are missing");
       }
 
+      const originalBackLabel = backLabel.textContent;
+      backLabel.textContent = "МобильныйКурсБезПробелов".repeat(20);
+
       const titleStyle = getComputedStyle(title);
+      const backLinkStyle = getComputedStyle(backLink);
+      const backIconStyle = getComputedStyle(backIcon);
+      const backLabelStyle = getComputedStyle(backLabel);
+      const pageHeaderRect = pageHeader.getBoundingClientRect();
+      const pageHeaderContentRect = pageHeaderContent.getBoundingClientRect();
+      const pageHeadingRect = pageHeading.getBoundingClientRect();
       const titleRect = title.getBoundingClientRect();
       const headerRect = header.getBoundingClientRect();
+      const backLinkRect = backLink.getBoundingClientRect();
+      const backLabelRect = backLabel.getBoundingClientRect();
+      const actionsRect = actions.getBoundingClientRect();
       const tabStripRect = tabStrip.getBoundingClientRect();
       const selectedTabRect = selectedTab.getBoundingClientRect();
 
-      return {
+      const contract = {
         documentClientWidth: document.documentElement.clientWidth,
         documentScrollWidth: document.documentElement.scrollWidth,
         headerLeft: headerRect.left,
@@ -8541,6 +8950,28 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
         titleRight: titleRect.right,
         titleFontSize: titleStyle.fontSize,
         titleFontWeight: titleStyle.fontWeight,
+        pageHeader: {
+          actionsInsideViewport:
+            actionsRect.left >= 0 &&
+            actionsRect.right <= document.documentElement.clientWidth,
+          actionsBelowContent:
+            actionsRect.top >= pageHeaderContentRect.bottom - 0.5,
+          backColor: backLinkStyle.color,
+          backIconColor: backIconStyle.color,
+          backIconFlexShrink: backIconStyle.flexShrink,
+          backLabelOverflow: backLabelStyle.overflow,
+          backLabelTextOverflow: backLabelStyle.textOverflow,
+          backLabelWhiteSpace: backLabelStyle.whiteSpace,
+          backLabelIsClipped: backLabel.scrollWidth > backLabel.clientWidth,
+          backLabelSingleLineDelta: Math.abs(
+            backLabelRect.height - Number.parseFloat(backLabelStyle.lineHeight),
+          ),
+          headerToBackGap: backLinkRect.top - pageHeaderRect.top,
+          backToHeadingGap: pageHeadingRect.top - backLinkRect.bottom,
+          backInsideHeader:
+            backLinkRect.left >= pageHeaderRect.left &&
+            backLinkRect.right <= pageHeaderRect.right,
+        },
         tabStripClientWidth: tabStrip.clientWidth,
         tabStripScrollWidth: tabStrip.scrollWidth,
         tabStripScrollLeft: tabStrip.scrollLeft,
@@ -8552,6 +8983,8 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
         tabStripLeft: tabStripRect.left,
         tabStripRight: tabStripRect.right,
       };
+      backLabel.textContent = originalBackLabel;
+      return contract;
     });
 
     assert.equal(mobileVisual.documentClientWidth, 375);
@@ -8565,6 +8998,41 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
     assert.ok(mobileVisual.titleRight <= mobileVisual.documentClientWidth);
     assert.equal(mobileVisual.titleFontSize, "32px");
     assert.equal(mobileVisual.titleFontWeight, "400");
+    assert.deepEqual(
+      {
+        actionsInsideViewport: mobileVisual.pageHeader.actionsInsideViewport,
+        actionsBelowContent: mobileVisual.pageHeader.actionsBelowContent,
+        backColor: mobileVisual.pageHeader.backColor,
+        backIconColor: mobileVisual.pageHeader.backIconColor,
+        backIconFlexShrink: mobileVisual.pageHeader.backIconFlexShrink,
+        backLabelOverflow: mobileVisual.pageHeader.backLabelOverflow,
+        backLabelTextOverflow: mobileVisual.pageHeader.backLabelTextOverflow,
+        backLabelWhiteSpace: mobileVisual.pageHeader.backLabelWhiteSpace,
+        backLabelIsClipped: mobileVisual.pageHeader.backLabelIsClipped,
+        backInsideHeader: mobileVisual.pageHeader.backInsideHeader,
+      },
+      {
+        actionsInsideViewport: true,
+        actionsBelowContent: true,
+        backColor: "rgb(20, 20, 20)",
+        backIconColor: "rgb(20, 20, 20)",
+        backIconFlexShrink: "0",
+        backLabelOverflow: "hidden",
+        backLabelTextOverflow: "ellipsis",
+        backLabelWhiteSpace: "nowrap",
+        backLabelIsClipped: true,
+        backInsideHeader: true,
+      },
+    );
+    assert.ok(mobileVisual.pageHeader.backLabelSingleLineDelta < 0.5);
+    assert.ok(Math.abs(mobileVisual.pageHeader.headerToBackGap - 16) < 0.5);
+    assert.ok(Math.abs(mobileVisual.pageHeader.backToHeadingGap - 16) < 0.5);
+    assert.ok(
+      Math.abs(
+        mobileVisual.pageHeader.headerToBackGap -
+          mobileVisual.pageHeader.backToHeadingGap,
+      ) < 0.5,
+    );
     assert.equal(mobileVisual.tabStripOverflowX, "auto");
     assert.ok(
       mobileVisual.tabStripScrollWidth > mobileVisual.tabStripClientWidth,

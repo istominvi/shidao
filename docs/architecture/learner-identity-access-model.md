@@ -231,7 +231,13 @@ select нет: headers таблиц Students и Groups переключают as
 повторным кликом. Full-width Students controls используют
 `padding-inline: 0`, а 40 px table показывает
 `Ученик / Статус / Аккаунт / Группы / Добавлен / actions`. Это UI-only
-presentation над теми же actor-scoped rows.
+presentation над теми же actor-scoped rows. Справа от «Фильтр» расположен
+icon-only presentation control: **Таблица** слева и выбрана изначально,
+**Карточки** справа. Табличный и карточный виды используют одну
+filtered/sorted выборку, одинаковые identity/status labels и тот же набор
+допустимых contextual actions; на вкладке «Группы» переключатель работает над
+тем же `LearnerGroup[]`. Выбор вида не создаёт persisted preference или
+отдельный API.
 
 - «Убрать из списка» архивирует только relation данного Account и удаляет его
   mutable Group/Course links; canonical profile, finalized history и roster

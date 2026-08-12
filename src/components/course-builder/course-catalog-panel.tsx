@@ -505,7 +505,7 @@ export function CourseCatalogPanel({
   const [subjects, setSubjects] = useState<string[]>([]);
   const [levels, setLevels] = useState<string[]>([]);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
-  const [view, setView] = useState<CourseCatalogView>("grid");
+  const [view, setView] = useState<CourseCatalogView>("table");
   const [loadingCatalog, setLoadingCatalog] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const requestContextRef = useRef("");
@@ -697,16 +697,16 @@ export function CourseCatalogPanel({
             iconOnly
             items={[
               {
-                value: "grid",
-                label: "Карточки",
-                ariaLabel: "Показать карточками",
-                icon: LayoutGrid,
-              },
-              {
                 value: "table",
                 label: "Таблица",
                 ariaLabel: "Показать таблицей",
                 icon: Table2,
+              },
+              {
+                value: "grid",
+                label: "Карточки",
+                ariaLabel: "Показать карточками",
+                icon: LayoutGrid,
               },
             ]}
           />

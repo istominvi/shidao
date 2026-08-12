@@ -3,10 +3,12 @@
 import {
   GraduationCap,
   Eye,
+  LayoutGrid,
   LoaderCircle,
   Plus,
   RotateCcw,
   Search,
+  Table2,
   UserPlus,
   Users,
 } from "lucide-react";
@@ -42,7 +44,9 @@ import {
   restoreTeacherLearner,
 } from "@/components/learner-identity/identity-client";
 import {
+  LearnerGroupsDirectoryCards,
   LearnerGroupsDirectoryTable,
+  LearnersDirectoryCards,
   LearnersDirectoryTable,
   type LearnerDirectorySortKey,
   type LearnerGroupDirectorySortKey,
@@ -60,6 +64,7 @@ import {
   type ProductTableSortState,
 } from "@/components/ui/product-table";
 import { SurfaceCard } from "@/components/ui/surface-card";
+import { SegmentedControl } from "@/components/ui/segmented-control";
 import {
   WorkspaceTabs,
   workspaceTabId,
@@ -76,6 +81,7 @@ import type {
 import { ROUTES } from "@/lib/auth";
 
 type DirectoryView = "learners" | "groups" | "observing";
+type DirectoryLayout = "table" | "cards";
 
 const STUDENTS_DIRECTORY_TABS_ID = "students-directory";
 
@@ -133,6 +139,7 @@ export function StudentsWorkspace({
   >(null);
   const [groups, setGroups] = useState<LearnerGroup[] | null>(null);
   const [view, setView] = useState<DirectoryView>(initialView);
+  const [layout, setLayout] = useState<DirectoryLayout>("table");
   const [learnerQuery, setLearnerQuery] = useState("");
   const [groupQuery, setGroupQuery] = useState("");
   const [statusFilter, setStatusFilter] =
@@ -628,6 +635,29 @@ export function StudentsWorkspace({
               <RotateCcw className="h-4 w-4" aria-hidden="true" />
             </Button>
           ) : null}
+
+          <SegmentedControl
+            ariaLabel={
+              view === "learners" ? "Вид списка учеников" : "Вид списка групп"
+            }
+            value={layout}
+            onChange={setLayout}
+            iconOnly
+            items={[
+              {
+                value: "table",
+                label: "Таблица",
+                ariaLabel: "Показать таблицей",
+                icon: Table2,
+              },
+              {
+                value: "cards",
+                label: "Карточки",
+                ariaLabel: "Показать карточками",
+                icon: LayoutGrid,
+              },
+            ]}
+          />
         </div>
       </section>
 
@@ -684,29 +714,52 @@ export function StudentsWorkspace({
         tabIndex={0}
       >
         {ready && view === "learners" ? (
-          <LearnersDirectoryTable
-            entries={learnerEntries}
-            sort={learnerSort}
-            onSort={(key) =>
-              setLearnerSort((current) => nextProductTableSort(current, key))
-            }
-            hasFilters={hasFilters}
-            disabled={busy}
-            onOpen={(profile, surface) => {
-              setMutationError(null);
-              setLearnerEditor({ profile, surface });
-            }}
-            onAddToCourse={(profile) => {
-              setMutationError(null);
-              setCourseLearner(profile);
-            }}
-            onArchive={(profile) => void removeLearner(profile)}
-            onRestore={(learner) => void restoreLearner(learner)}
-            onPermanentlyDelete={(learner) =>
-              void permanentlyDeleteLearner(learner)
-            }
-            onCancelRequest={(request) => void cancelConnection(request)}
-          />
+          layout === "table" ? (
+            <LearnersDirectoryTable
+              entries={learnerEntries}
+              sort={learnerSort}
+              onSort={(key) =>
+                setLearnerSort((current) => nextProductTableSort(current, key))
+              }
+              hasFilters={hasFilters}
+              disabled={busy}
+              onOpen={(profile, surface) => {
+                setMutationError(null);
+                setLearnerEditor({ profile, surface });
+              }}
+              onAddToCourse={(profile) => {
+                setMutationError(null);
+                setCourseLearner(profile);
+              }}
+              onArchive={(profile) => void removeLearner(profile)}
+              onRestore={(learner) => void restoreLearner(learner)}
+              onPermanentlyDelete={(learner) =>
+                void permanentlyDeleteLearner(learner)
+              }
+              onCancelRequest={(request) => void cancelConnection(request)}
+            />
+          ) : (
+            <LearnersDirectoryCards
+              entries={learnerEntries}
+              sort={learnerSort}
+              hasFilters={hasFilters}
+              disabled={busy}
+              onOpen={(profile, surface) => {
+                setMutationError(null);
+                setLearnerEditor({ profile, surface });
+              }}
+              onAddToCourse={(profile) => {
+                setMutationError(null);
+                setCourseLearner(profile);
+              }}
+              onArchive={(profile) => void removeLearner(profile)}
+              onRestore={(learner) => void restoreLearner(learner)}
+              onPermanentlyDelete={(learner) =>
+                void permanentlyDeleteLearner(learner)
+              }
+              onCancelRequest={(request) => void cancelConnection(request)}
+            />
+          )
         ) : null}
       </div>
 
@@ -718,19 +771,32 @@ export function StudentsWorkspace({
         tabIndex={0}
       >
         {ready && view === "groups" ? (
-          <LearnerGroupsDirectoryTable
-            groups={visibleGroups}
-            sort={groupSort}
-            onSort={(key) =>
-              setGroupSort((current) => nextProductTableSort(current, key))
-            }
-            hasFilters={hasFilters}
-            disabled={busy}
-            onOpen={(group) => {
-              setMutationError(null);
-              setGroupEditor({ group });
-            }}
-          />
+          layout === "table" ? (
+            <LearnerGroupsDirectoryTable
+              groups={visibleGroups}
+              sort={groupSort}
+              onSort={(key) =>
+                setGroupSort((current) => nextProductTableSort(current, key))
+              }
+              hasFilters={hasFilters}
+              disabled={busy}
+              onOpen={(group) => {
+                setMutationError(null);
+                setGroupEditor({ group });
+              }}
+            />
+          ) : (
+            <LearnerGroupsDirectoryCards
+              groups={visibleGroups}
+              sort={groupSort}
+              hasFilters={hasFilters}
+              disabled={busy}
+              onOpen={(group) => {
+                setMutationError(null);
+                setGroupEditor({ group });
+              }}
+            />
+          )
         ) : null}
       </div>
 

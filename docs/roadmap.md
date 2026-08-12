@@ -49,18 +49,23 @@
   `min-height: 200px`, растёт по контенту и вертикально центрирует actions.
   В current production heading занимает всю оставшуюся ширину, а actions — только
   intrinsic ширину содержимого и не превращаются в full-width кнопки на mobile.
-  Course, Lesson, Students и profile dialog используют один `WorkspaceTabs`:
-  40 px, roving keyboard/ARIA, horizontal scroll, baseline 1 px цвета
-  `rgba(20, 20, 20, 0.2)` с `inline-inset: 0` и квадратный чёрный
-  active-сегмент 4 px без radius. Counts следуют сразу за названием обычным
-  текстом без круглого badge.
+  Repository-current follow-up снимает внутренний лимит H1 `24ch`, сохраняет
+  desktop gap 24 px и делает все backlinks непрозрачно чёрными, однострочными с
+  ellipsis и равным page-header inset сверху и снизу; rollout этого follow-up —
+  next.
+  Все product consumers, включая Courses index, owner/new/published Course,
+  Lesson, Students, learning/observing profile и learner dialog, используют
+  один `WorkspaceTabs`: 40 px, roving keyboard/ARIA, horizontal scroll,
+  baseline 1.5 px и inactive label общего 50%-black цвета с
+  `inline-inset: 0`, gap 12 px, верхние радиусы 12 px и квадратный чёрный
+  active-сегмент 4 px. Каждый tab передаёт 16 px иконку; только positive count
+  показывается маленьким приподнятым `sup`, а `0` не рендерится.
   Базовый follow-up был подтверждён в release `77870e3`; full-width
   канонизация развёрнута exact merge commit
   `84ffefecda99d3b0a9da82bf1eaf8ce76d9c6ea1` (PR #242).
-  **Repository current; production next:** baseline и inactive label используют
-  общий 50%-black token, baseline имеет толщину 1.5 px и не перекрывается
-  hover-фоном; tab gap и верхние радиусы равны 12 px. Все вкладки имеют иконки,
-  positive count показан маленьким приподнятым `sup`, а нулевой count отсутствует.
+  Текущий refinement развёрнут exact source
+  `0c8946f95ebeb31e02955a110fc057f761f07ea9`; running container evidence
+  зафиксирован в [`docs/project-state.md`](./project-state.md).
 - Active app routes приведены к плоскому demo-фону `#f5f1e8` без marketing
   gradients; header, кнопки, вкладки и заголовочная типографика используют
   scoped demo-размеры и веса, не затрагивая landing/Auth.
@@ -337,19 +342,28 @@ application-корректировка развёрнута production release P
 running-image/HTTP boundary postflight.
 Current production polish
 оставляет AppPageHeader actions шириной по содержимому, отдаёт свободное место
-heading и унифицирует WorkspaceTabs: container и 20%-black baseline занимают
-всю ширину с `inline-inset: 0`, а count остаётся простым inline-текстом без
-кружка. Course workspace использует четыре вкладки;
+heading и унифицирует WorkspaceTabs: container и 50%-black baseline толщиной
+1.5 px занимают всю ширину с `inline-inset: 0`, а positive count показывается
+маленьким `sup`. Course workspace использует четыре вкладки;
 настройки и audience редактируются inline на растущей **О курсе**, а
 course-wide **Материалы** вынесены в отдельную агрегирующую библиотеку. Новый
 Course начинает с **О курсе**; обычное сохранение возвращает туда же, тогда как
 deterministic/AI-сборка открывает **Уроки**. Вкладка сохранённого Course
 **Материалы** разделяет используемые и пока не используемые attachments и
 показывает Lesson usage.
-Repository-current tabs follow-up, ещё не развёрнутый production, переводит
-inactive labels и baseline на один 50%-black token, делает baseline 1.5 px,
-gap и верхние радиусы 12 px, добавляет иконку каждому tab и показывает только
-positive count как маленький приподнятый `sup`.
+Repository-current page-header follow-up отдаёт оставшуюся heading-колонку уже
+самому H1 без `24ch`, фиксирует 24 px между ней и intrinsic actions и переводит
+backlink в один непрозрачно-чёрный ряд с ellipsis; равный вертикальный rhythm
+следует page-header inset. Production rollout этого UI-only follow-up — next.
+Current production tabs refinement переводит inactive labels и baseline на
+один 50%-black token, задаёт baseline 1.5 px, gap и верхние радиусы 12 px,
+добавляет иконку каждому tab и показывает только positive count как маленький
+приподнятый `sup`. Repository-current follow-up задаёт этому count weight 500,
+чтобы уменьшенная цифра оставалась визуально сопоставимой с основным label.
+`/students` получает справа от «Фильтр» общий icon-only выбор **Таблица /
+Карточки**: таблица слева и выбрана изначально, обе проекции сохраняют текущую
+filtered/sorted выборку и contextual actions; тот же режим работает для групп.
+Обе вкладки `/courses` переходят на тот же порядок и исходный табличный вид.
 На **Уроках** неизменённый полноширинный `WorkspaceTabs` продолжает прозрачная
 search/create toolbar без horizontal inset. Lesson проецируются в `ProductTable`
 `№ / Урок / План / Экран ученика / Проведение / Обновлён / actions` с общей

@@ -186,7 +186,15 @@ test("course catalog UI exposes accessible search, filters, views, and states", 
 
   assert.match(ownedCoursesPanelSource, /content=\{filters\.content\}/);
   assert.match(ownedCoursesPanelSource, /onContentChange=/);
+  assert.match(
+    ownedCoursesPanelSource,
+    /useState<CourseCatalogView>\("table"\)/,
+  );
   assert.match(ownedCoursesPanelSource, /ariaLabel="Вид списка курсов"/);
+  assert.match(
+    ownedCoursesPanelSource,
+    /ariaLabel="Вид списка курсов"[\s\S]*?items=\{\[\s*\{[\s\S]*?value: "table"[\s\S]*?\},\s*\{[\s\S]*?value: "grid"/,
+  );
   assert.match(ownedCoursesPanelSource, /label: "Карточки"/);
   assert.match(ownedCoursesPanelSource, /label: "Таблица"/);
   assert.match(ownedCoursesPanelSource, /ariaLabel: "Показать карточками"/);
@@ -209,7 +217,15 @@ test("course catalog UI exposes accessible search, filters, views, and states", 
     courseCatalogPanelSource,
     /className="course-index-table course-index-catalog-table"/,
   );
+  assert.match(
+    courseCatalogPanelSource,
+    /useState<CourseCatalogView>\("table"\)/,
+  );
   assert.match(courseCatalogPanelSource, /ariaLabel="Вид каталога курсов"/);
+  assert.match(
+    courseCatalogPanelSource,
+    /ariaLabel="Вид каталога курсов"[\s\S]*?items=\{\[\s*\{[\s\S]*?value: "table"[\s\S]*?\},\s*\{[\s\S]*?value: "grid"/,
+  );
   assert.match(courseCatalogPanelSource, /label: "Карточки"/);
   assert.match(courseCatalogPanelSource, /label: "Таблица"/);
   assert.match(courseCatalogPanelSource, /<CatalogCourseTable/);

@@ -335,7 +335,7 @@ export function OwnedCoursesPanel({ onOpenCatalog }: OwnedCoursesPanelProps) {
   const [filters, setFilters] = useState<CourseCatalogFilters>(
     DEFAULT_COURSE_CATALOG_FILTERS,
   );
-  const [view, setView] = useState<CourseCatalogView>("grid");
+  const [view, setView] = useState<CourseCatalogView>("table");
   const [tableSort, setTableSort] = useState<
     ProductTableSortState<OwnedCourseSortKey>
   >({
@@ -513,16 +513,16 @@ export function OwnedCoursesPanel({ onOpenCatalog }: OwnedCoursesPanelProps) {
             iconOnly
             items={[
               {
-                value: "grid",
-                label: "Карточки",
-                ariaLabel: "Показать карточками",
-                icon: LayoutGrid,
-              },
-              {
                 value: "table",
                 label: "Таблица",
                 ariaLabel: "Показать таблицей",
                 icon: Table2,
+              },
+              {
+                value: "grid",
+                label: "Карточки",
+                ariaLabel: "Показать карточками",
+                icon: LayoutGrid,
               },
             ]}
           />

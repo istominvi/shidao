@@ -14,14 +14,23 @@ test("active V2 pages share one page header contract without visual modifiers", 
     source("src/app/(app)/courses/new/page.tsx"),
     source("src/components/course-builder/course-workspace.tsx"),
     source("src/components/course-builder/lesson-authoring-workspace.tsx"),
+    source("src/components/course-builder/published-course-workspace.tsx"),
     source("src/components/teaching-hub/students-workspace.tsx"),
     source("src/app/(app)/(teacher-required)/schedule/page.tsx"),
+    source("src/components/learner-identity/learning-profile-workspace.tsx"),
+    source("src/components/learner-identity/observing-workspace.tsx"),
+    source("src/components/learner-identity/invitation-accept-workspace.tsx"),
+    source("src/components/settings-shell.tsx"),
   ];
 
   assert.match(header, /type: "link"/);
   assert.match(header, /type: "button"/);
-  assert.match(header, /<header className="app-page-header">/);
+  assert.match(header, /"app-page-header"/);
+  assert.match(header, /back && "app-page-header-with-back"/);
+  assert.match(header, /Boolean\(actions\) && "app-page-header-with-actions"/);
+  assert.match(header, /className="app-page-header-content"/);
   assert.match(header, /className="app-page-back-link"/);
+  assert.match(header, /className="app-page-back-link-label"/);
   assert.match(header, /className="app-page-actions"/);
   assert.doesNotMatch(header, /className\?: string/);
 
@@ -44,7 +53,7 @@ test("active V2 pages share one page header contract without visual modifiers", 
   );
   assert.match(
     styles,
-    /\.course-demo-shell \.app-page-header > \.app-page-heading,\s*\.course-demo-shell \.app-page-header > \.app-page-meta\s*\{[^}]*min-width: 0;/,
+    /\.app-page-header\s*\{[^}]*--app-page-header-back-gap: var\(--app-page-header-padding-block\);/,
   );
   assert.match(
     styles,
@@ -52,15 +61,46 @@ test("active V2 pages share one page header contract without visual modifiers", 
   );
   assert.match(
     styles,
-    /@media \(min-width: 1280px\)\s*\{[\s\S]*?\.course-demo-shell \.app-page-header\s*\{[^}]*grid-template-columns: minmax\(0, 1fr\) max-content;/,
+    /@media \(min-width: 1280px\)\s*\{[\s\S]*?\.course-demo-shell \.app-page-header-with-actions\s*\{[^}]*grid-template-columns: minmax\(0, 1fr\) max-content;[^}]*column-gap: 1\.5rem;/,
   );
   assert.match(
     styles,
-    /\.course-demo-shell \.app-page-back-link\s*\{[^}]*min-width: 0;/,
+    /\.course-demo-shell\s*\.app-page-header-with-actions\s*> \.app-page-header-content\s*\{[^}]*align-self: stretch;[^}]*justify-content: center;/,
   );
   assert.match(
     styles,
-    /\.course-demo-shell \.app-page-back-link > span:last-child,\s*\.course-demo-shell \.app-page-title,\s*\.course-demo-shell \.app-page-description\s*\{[^}]*min-width: 0;[^}]*overflow-wrap: anywhere;/,
+    /\.course-demo-shell\s*\.app-page-header-with-actions\.app-page-header-with-back\s*> \.app-page-header-content\s*\{[^}]*justify-content: flex-start;/,
+  );
+  assert.match(
+    styles,
+    /\.app-page-header-with-back \.app-page-back-link\s*\{[^}]*margin-bottom: calc\([\s\S]*?var\(--app-page-header-back-gap\) - var\(--app-page-header-space\)[\s\S]*?\);/,
+  );
+  assert.match(
+    styles,
+    /\.app-page-back-link\s*\{[^}]*min-width: 0;[^}]*max-width: min\(100%, 38rem\);[^}]*text-align: left;[^}]*color: #141414;/,
+  );
+  assert.match(styles, /\.app-page-back-link-icon\s*\{[^}]*flex: 0 0 auto;/);
+  assert.match(
+    styles,
+    /\.app-page-back-link-label\s*\{[^}]*min-width: 0;[^}]*overflow: hidden;[^}]*text-overflow: ellipsis;[^}]*white-space: nowrap;/,
+  );
+  assert.match(styles, /\.app-page-back-link:hover\s*\{[^}]*color: #141414;/);
+  assert.match(
+    styles,
+    /\.app-page-back-link:focus-visible\s*\{[^}]*color: #141414;/,
+  );
+  assert.match(
+    styles,
+    /\.app-page-title\s*\{[^}]*width: 100%;[^}]*max-width: none;/,
+  );
+  assert.doesNotMatch(styles, /\.app-page-title\s*\{[^}]*24ch/);
+  assert.match(
+    styles,
+    /\.course-demo-shell \.app-page-title,\s*\.course-demo-shell \.app-page-description\s*\{[^}]*min-width: 0;[^}]*overflow-wrap: anywhere;/,
+  );
+  assert.doesNotMatch(
+    styles,
+    /\.app-page-back-link-label\s*\{[^}]*overflow-wrap: anywhere;/,
   );
   assert.doesNotMatch(
     styles,

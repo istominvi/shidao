@@ -4,9 +4,10 @@
 **Актуально на:** 12 августа 2026 года
 **Активная ветка:** `main`
 **Рабочее приложение:** `https://v2.shidao.ru`
-**Текущий функциональный application release:**
-`22b486a7163453019d9720cb4fe0f36ed7c0228d`
-**Последний полный automated/browser gate:**
+**Текущий deployed application source / последний release gate:**
+`0c8946f95ebeb31e02955a110fc057f761f07ea9`
+(`560/560` unit/API, `22/22` strict production-mode browser scenarios)
+**Исторический functional E2 baseline:**
 `22b486a7163453019d9720cb4fe0f36ed7c0228d`
 
 **Current production Course catalog slice:** реализует reusable Course catalog,
@@ -123,33 +124,50 @@ Terminal condition identity программы закрыт.
 для title/header/action-center на пяти поверхностях, `12px / 1px / 4px`
 для tabs и пустую browser console. Схема БД в visual slice не менялась.
 
-**Current deployed page-header/tabs polish:** на всех active
-product pages заголовочная колонка `AppPageHeader` получает всё свободное
-место через `minmax(0, 1fr)`, а action-секция занимает только ширину своего
-контента (`max-content`, ограниченный шириной контейнера) и больше не
-растягивает кнопки на mobile. Подзаголовок этого единого компонента использует
-canonical token `--app-page-header-description-color` со значением
-`rgba(20, 20, 20, 0.5)`, поэтому на всех его страницах computed-цвет равен 50%
-чёрного без route-specific forks. Общий `WorkspaceTabs` использует нижний
-разделитель `rgba(20, 20, 20, 0.2)` высотой 1 px. Его
-container и baseline занимают всю ширину content-row с `inline-inset: 0`;
-канонический контракт применяется ко всем consumers. Выбранная вкладка
-сохраняет непрозрачный чёрный сегмент 4 px. Числовой счётчик теперь является обычным
-inline-текстом после названия (`Ученики 1`) без чёрного круга, отдельного
-размера или цвета. Это UI-only изменение без API, schema или migration.
+**Current deployed page-header/tabs contract:** на всех active product pages
+заголовочная колонка `AppPageHeader` получает всё свободное место через
+`minmax(0, 1fr)`, а action-секция занимает только ширину своего контента и не
+растягивает кнопки на mobile. Подзаголовок использует canonical 50%-black
+token. `WorkspaceTabs` получает тот же `--product-muted-foreground` для
+inactive labels и baseline высотой 1.5 px; отдельный paint-layer оставляет
+baseline видимой поверх hover-фона. Container и baseline занимают всю ширину с
+`inline-inset: 0`, gap и верхние радиусы равны 12 px, каждый consumer передаёт
+16 px Lucide icon, а непрозрачный active-сегмент имеет 4 px. Только
+положительный count показывается уменьшенным приподнятым `sup`; `0` не
+рендерится. Вкладка «Наблюдение» получает фактическое число доступных профилей и
+обновляет его после отказа от доступа. Это UI-only изменение без API, schema
+или migration. Exact source
+`0c8946f95ebeb31e02955a110fc057f761f07ea9` работает в container
+`g9x4d9zn60jv35r7zf0xl6xj-083519444597`: image tag и `SOURCE_COMMIT`
+совпадают с source, image ID
+`sha256:8119de725edeb042eaf1fcecb38d3fa5052aaf44e81e9fb3965d6c594b1731d1`,
+restart count `0`, container started `2026-08-12T08:37:57.909983639Z` и остаётся
+running. Текущий HTTP smoke подтвердил V2 `/login` и `/robots.txt` `200`, guest
+`/courses` `307` в `https://v2.shidao.ru/login` и landing `/` `200`. Release
+gate прошёл `560/560` unit/API и `22/22` strict production-mode browser
+scenarios.
 
-**Repository current tabs refinement; production next:** общий цвет
-подзаголовка и неактивных `WorkspaceTabs` вынесен в один token
-`--product-muted-foreground: rgba(20, 20, 20, 0.5)`. Baseline теперь использует
-тот же 50%-black цвет, толщину 1.5 px и отдельный paint-layer: светлый hover
-вкладки с верхними радиусами 12 px не перекрывает разделитель, а непрозрачные
-active label и сегмент 4 px остаются выше него. Gap между tab-кнопками равен
-12 px. Каждый tab consumer обязан передать 16 px Lucide icon. Положительный
-count показывается уменьшенным приподнятым `sup`, `0` не рендерится; вкладка
-«Наблюдение» получает фактическое число доступных профилей и обновляет его
-после отказа от доступа. Это UI-only source change без schema, migration или
-нового API; production сохраняет предыдущий tab-контракт до отдельного web
-rollout/postflight.
+**Repository current page-header refinement; production next:** общий
+`AppPageHeader` больше не ограничивает H1 значением `24ch`: на desktop
+action-секция первой получает intrinsic ширину содержимого, между колонками
+остаётся 24 px, а heading и сам title занимают всё остальное место. Link- и
+button-варианты backlink используют непрозрачный `#141414` вместе со стрелкой
+во всех состояниях. Label остаётся в одной строке, ограничен шириной header до
+38 rem и обрезается через ellipsis; стрелка не сжимается. Расстояние от верхней
+границы page header до backlink равно расстоянию от backlink до heading: 20 px
+на desktop и 16 px на mobile. Production сохраняет предыдущую геометрию до
+отдельного web rollout. Это UI-only изменение без API, schema или migration;
+production-mode browser gate проходит `22/22` сценария.
+
+**Repository current directory presentation refinement; production next:**
+уменьшенный `WorkspaceTabs` count сохраняет superscript-геометрию, но получает
+`font-weight: 500`, на один шаг плотнее основного текста вкладки. `/students`
+добавляет справа от disclosure «Фильтр» общий icon-only выбор вида: **Таблица**
+слева и активна изначально, **Карточки** справа. Обе проекции используют те же
+фильтры, сортировку и полный набор contextual actions для учеников; группы
+получают тот же переключатель и открываются из таблицы или карточки. В обеих
+вкладках `/courses` порядок также **Таблица / Карточки**, исходный вид —
+таблица. Это UI-only изменение без API, schema или migration.
 
 **Previously deployed Schedule presentation baseline (superseded by PR #242):**
 `/schedule` загружает реальные LessonRun за локальную неделю (понедельник–
@@ -681,9 +699,14 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
   и Lesson. Контейнер имеет минимальную высоту 200 px, растёт по контенту, а
   actions вертикально центрированы. Заголовочная колонка занимает всё
   оставшееся место, а actions имеют intrinsic ширину по содержимому и не
-  растягивают кнопки даже при узком viewport. Course/Lesson сохраняют backlink,
-  а top-level разделы не создают искусственную обратную ссылку.
-- Один `WorkspaceTabs` используется в Course, Lesson, Students и profile dialog,
+  растягивают кнопки даже при узком viewport. В repository-current source сам
+  H1 заполняет эту колонку без прежнего лимита `24ch`; desktop column-gap равен
+  24 px. Course/Lesson backlink и его стрелка непрозрачно чёрные, label
+  однострочный с ellipsis, а вертикальные интервалы над и под ним равны
+  page-header inset. Top-level разделы не создают искусственную обратную ссылку.
+- Один `WorkspaceTabs` используется во всех product consumers, включая Courses
+  index, owner/new/published Course, Lesson, Students, learning/observing profile
+  и learner dialog,
   сохраняет roving keyboard/ARIA contract и горизонтальный scroll. Выбранная
   вкладка перекрывает full-width baseline 1.5 px цвета
   `rgba(20, 20, 20, 0.5)` квадратным чёрным сегментом 4 px без radius.
@@ -692,14 +715,14 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
   tab-кнопки разделены gap 12 px и имеют верхние радиусы 12 px; baseline
   остаётся видимым поверх hover-фона. Каждый tab имеет 16 px иконку. Только
   положительный числовой count отображается маленьким приподнятым `sup`, без
-  badge;
+  badge, с weight 500 — на один шаг плотнее основного текста вкладки;
   каждый tab владеет существующим persistent `tabpanel` через симметричные
   `aria-controls / aria-labelledby`. В current production кнопки,
   header controls и вкладки используют шрифт `.88rem/400`, flat primary без
   3D-блика/подъёма, fully opaque icons и единый 16 px icon rhythm; исходный
   layout-контракт подтверждён production postflight release `77870e3`, а
-  control-полировка развёрнута production release PR #242. Новый tab-refinement
-  остаётся repository current / production next.
+  control-полировка развёрнута production release PR #242. Текущий
+  tab-refinement развёрнут exact source `0c8946f95ebeb31e02955a110fc057f761f07ea9`.
 
 ### Roleless navigation, Расписание, Ученики и аудитория
 
@@ -759,11 +782,17 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
   connection, а «Добавлен» — teacher-local дату relation или запроса. Архив и
   ожидание ответа отмечены прямо в строке. Вся compact
   toolbar расположена на page background во всю ширину без horizontal inset;
-  обе Course toolbars используют тот же нулевой horizontal inset.
+  справа от «Фильтр» находится icon-only переключатель **Таблица / Карточки**.
+  Таблица расположена слева и выбрана изначально; обе проекции используют одну
+  filtered/sorted выборку и одинаковые contextual actions. На вкладке «Группы»
+  тот же выбор переключает таблицу и карточки групп. Обе Course toolbars
+  используют тот же нулевой horizontal inset.
 
 - `/courses` использует общий полноширинный `WorkspaceTabs` и прозрачные
   full-width controls в обеих вкладках. Обе таблицы имеют 40 px header/rows и
-  однострочный ellipsis. В **Мои** шесть data-заголовков меняют
+  однострочный ellipsis. В обеих вкладках icon-only control расположен в
+  порядке **Таблица / Карточки**, и таблица является исходным видом. В **Мои**
+  шесть data-заголовков меняют
   ascending/descending сортировку и отражают её через `aria-sort`; action
   header не сортируется. **Каталог** сохраняет server-side cursor order и не
   сортирует только уже загруженную страницу на клиенте. Вертикальное меню

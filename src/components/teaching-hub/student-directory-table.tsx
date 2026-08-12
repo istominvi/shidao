@@ -233,6 +233,125 @@ function StatusText({ entry }: { entry: LearnerDirectoryEntry }) {
   );
 }
 
+type LearnerDirectoryActions = {
+  disabled: boolean;
+  onOpen: (
+    profile: LearnerProfile,
+    surface: "profile" | "history" | "connection",
+  ) => void;
+  onAddToCourse: (profile: LearnerProfile) => void;
+  onArchive: (profile: LearnerProfile) => void;
+  onRestore: (learner: TeacherLearnerDirectoryItem) => void;
+  onPermanentlyDelete: (learner: TeacherLearnerDirectoryItem) => void;
+  onCancelRequest: (request: LearnerConnectionRequest) => void;
+};
+
+function learnerDirectoryActionItems(
+  entry: LearnerDirectoryEntry,
+  {
+    disabled,
+    onOpen,
+    onAddToCourse,
+    onArchive,
+    onRestore,
+    onPermanentlyDelete,
+    onCancelRequest,
+  }: LearnerDirectoryActions,
+): ActionMenuItem[] {
+  if (entry.kind === "request") {
+    return [
+      {
+        id: "cancel-request",
+        label: "Отменить запрос",
+        icon: XCircle,
+        destructive: true,
+        disabled,
+        onSelect: () => onCancelRequest(entry.request),
+      },
+    ];
+  }
+
+  if (entry.status === "archived") {
+    return [
+      {
+        id: "restore",
+        label: "Восстановить",
+        icon: RotateCcw,
+        disabled,
+        onSelect: () => onRestore(entry.identity),
+      },
+      ...(entry.identity.canPermanentlyDelete
+        ? [
+            {
+              id: "permanent-delete",
+              label: "Удалить пустой профиль",
+              icon: Trash2,
+              destructive: true,
+              separatorBefore: true,
+              disabled,
+              onSelect: () => onPermanentlyDelete(entry.identity),
+            } satisfies ActionMenuItem,
+          ]
+        : []),
+    ];
+  }
+
+  return [
+    {
+      id: "open",
+      label: "Открыть профиль",
+      icon: UserRound,
+      disabled,
+      onSelect: () => onOpen(entry.profile, "profile"),
+    },
+    {
+      id: "history",
+      label: "Учебная история",
+      icon: History,
+      disabled,
+      onSelect: () => onOpen(entry.profile, "history"),
+    },
+    {
+      id: "groups",
+      label: "Изменить группы",
+      icon: UsersRound,
+      separatorBefore: true,
+      disabled,
+      onSelect: () => onOpen(entry.profile, "profile"),
+    },
+    {
+      id: "course",
+      label: "Добавить в курс…",
+      icon: BookPlus,
+      disabled,
+      onSelect: () => onAddToCourse(entry.profile),
+    },
+    {
+      id: "connection",
+      label: "Связь с аккаунтом",
+      icon: Link2,
+      disabled,
+      onSelect: () => onOpen(entry.profile, "connection"),
+    },
+    {
+      id: "message",
+      label: "Написать сообщение",
+      hint: "Сообщения пока недоступны",
+      icon: MessageSquare,
+      disabled: true,
+    },
+    {
+      id: "archive",
+      label: "Убрать из списка",
+      icon: Archive,
+      destructive: true,
+      separatorBefore: true,
+      disabled,
+      onSelect: () => onArchive(entry.profile),
+    },
+  ];
+}
+
 export function LearnersDirectoryTable({
   entries,
   sort,
@@ -342,96 +461,15 @@ export function LearnersDirectoryTable({
                 orderedGroups.length > 0
                   ? orderedGroups.map((group) => group.name).join(", ")
                   : groupText;
-              const actionItems: ActionMenuItem[] =
-                entry.kind === "request"
-                  ? [
-                      {
-                        id: "cancel-request",
-                        label: "Отменить запрос",
-                        icon: XCircle,
-                        destructive: true,
-                        disabled,
-                        onSelect: () => onCancelRequest(entry.request),
-                      },
-                    ]
-                  : entry.status === "archived"
-                    ? [
-                        {
-                          id: "restore",
-                          label: "Восстановить",
-                          icon: RotateCcw,
-                          disabled,
-                          onSelect: () => onRestore(entry.identity),
-                        },
-                        ...(entry.identity.canPermanentlyDelete
-                          ? [
-                              {
-                                id: "permanent-delete",
-                                label: "Удалить пустой профиль",
-                                icon: Trash2,
-                                destructive: true,
-                                separatorBefore: true,
-                                disabled,
-                                onSelect: () =>
-                                  onPermanentlyDelete(entry.identity),
-                              } satisfies ActionMenuItem,
-                            ]
-                          : []),
-                      ]
-                    : [
-                        {
-                          id: "open",
-                          label: "Открыть профиль",
-                          icon: UserRound,
-                          disabled,
-                          onSelect: () => onOpen(entry.profile, "profile"),
-                        },
-                        {
-                          id: "history",
-                          label: "Учебная история",
-                          icon: History,
-                          disabled,
-                          onSelect: () => onOpen(entry.profile, "history"),
-                        },
-                        {
-                          id: "groups",
-                          label: "Изменить группы",
-                          icon: UsersRound,
-                          separatorBefore: true,
-                          disabled,
-                          onSelect: () => onOpen(entry.profile, "profile"),
-                        },
-                        {
-                          id: "course",
-                          label: "Добавить в курс…",
-                          icon: BookPlus,
-                          disabled,
-                          onSelect: () => onAddToCourse(entry.profile),
-                        },
-                        {
-                          id: "connection",
-                          label: "Связь с аккаунтом",
-                          icon: Link2,
-                          disabled,
-                          onSelect: () => onOpen(entry.profile, "connection"),
-                        },
-                        {
-                          id: "message",
-                          label: "Написать сообщение",
-                          hint: "Сообщения пока недоступны",
-                          icon: MessageSquare,
-                          disabled: true,
-                        },
-                        {
-                          id: "archive",
-                          label: "Убрать из списка",
-                          icon: Archive,
-                          destructive: true,
-                          separatorBefore: true,
-                          disabled,
-                          onSelect: () => onArchive(entry.profile),
-                        },
-                      ];
+              const actionItems = learnerDirectoryActionItems(entry, {
+                disabled,
+                onOpen,
+                onAddToCourse,
+                onArchive,
+                onRestore,
+                onPermanentlyDelete,
+                onCancelRequest,
+              });
 
               return (
                 <ProductTableRow
@@ -531,6 +569,146 @@ export function LearnersDirectoryTable({
         </ProductTableBody>
       </ProductTable>
     </div>
+  );
+}
+
+export function LearnersDirectoryCards({
+  entries,
+  sort,
+  hasFilters,
+  disabled,
+  onOpen,
+  onAddToCourse,
+  onArchive,
+  onRestore,
+  onPermanentlyDelete,
+  onCancelRequest,
+}: {
+  entries: LearnerDirectoryEntry[];
+  sort: ProductTableSortState<LearnerDirectorySortKey>;
+  hasFilters: boolean;
+  disabled: boolean;
+  onOpen: (
+    profile: LearnerProfile,
+    surface: "profile" | "history" | "connection",
+  ) => void;
+  onAddToCourse: (profile: LearnerProfile) => void;
+  onArchive: (profile: LearnerProfile) => void;
+  onRestore: (learner: TeacherLearnerDirectoryItem) => void;
+  onPermanentlyDelete: (learner: TeacherLearnerDirectoryItem) => void;
+  onCancelRequest: (request: LearnerConnectionRequest) => void;
+}) {
+  const orderedEntries = sortLearnerDirectoryEntries(entries, sort);
+
+  return (
+    <section
+      className="student-directory-card-grid"
+      aria-label="Карточки учеников"
+    >
+      {orderedEntries.length === 0 ? (
+        <div className="student-directory-card-empty" role="status">
+          {hasFilters ? "Ничего не найдено" : "Учеников пока нет"}
+        </div>
+      ) : (
+        orderedEntries.map((entry) => {
+          const displayName = learnerDirectoryDisplayName(entry);
+          const canOpen = entry.kind === "profile" && entry.status === "active";
+          const orderedGroups = [...entry.groups].sort((left, right) =>
+            directoryCollator.compare(left.name, right.name),
+          );
+          const groupText =
+            entry.kind !== "profile" || entry.status !== "active"
+              ? "—"
+              : orderedGroups.length === 0
+                ? "Без группы"
+                : orderedGroups.map((group) => group.name).join(", ");
+          const actionItems = learnerDirectoryActionItems(entry, {
+            disabled,
+            onOpen,
+            onAddToCourse,
+            onArchive,
+            onRestore,
+            onPermanentlyDelete,
+            onCancelRequest,
+          });
+
+          return (
+            <article
+              key={stableEntryKey(entry)}
+              className="student-directory-card"
+            >
+              <div className="student-directory-card-header">
+                {canOpen && entry.kind === "profile" ? (
+                  <button
+                    type="button"
+                    className="student-directory-card-person"
+                    disabled={disabled}
+                    aria-label={`Профиль ученика ${displayName}`}
+                    onClick={() => onOpen(entry.profile, "profile")}
+                  >
+                    <span
+                      className="teaching-learner-avatar"
+                      aria-hidden="true"
+                    >
+                      {initials(displayName)}
+                    </span>
+                    <strong title={displayName}>{displayName}</strong>
+                  </button>
+                ) : (
+                  <span className="student-directory-card-person">
+                    <span
+                      className="teaching-learner-avatar"
+                      aria-hidden="true"
+                    >
+                      {initials(displayName)}
+                    </span>
+                    <strong title={displayName}>{displayName}</strong>
+                  </span>
+                )}
+
+                <ActionMenu
+                  className="student-directory-action-menu"
+                  label={`Действия с учеником «${displayName}»`}
+                  items={actionItems}
+                  triggerIcon={MoreVertical}
+                  triggerVariant="ghost"
+                  disabled={disabled}
+                  portal
+                />
+              </div>
+
+              <StatusText entry={entry} />
+
+              <dl className="student-directory-card-details">
+                <div>
+                  <dt>Аккаунт</dt>
+                  <dd title={learnerDirectoryAccountLabel(entry)}>
+                    {learnerDirectoryAccountLabel(entry)}
+                  </dd>
+                </div>
+                <div>
+                  <dt>Группы</dt>
+                  <dd title={groupText}>{groupText}</dd>
+                </div>
+                <div>
+                  <dt>Добавлен</dt>
+                  <dd>
+                    <time
+                      dateTime={learnerDirectoryCreatedAt(entry)}
+                      title={fullDateFormatter.format(
+                        new Date(learnerDirectoryCreatedAt(entry)),
+                      )}
+                    >
+                      {formatCompactDate(learnerDirectoryCreatedAt(entry))}
+                    </time>
+                  </dd>
+                </div>
+              </dl>
+            </article>
+          );
+        })
+      )}
+    </section>
   );
 }
 
@@ -636,5 +814,76 @@ export function LearnerGroupsDirectoryTable({
         </ProductTableBody>
       </ProductTable>
     </div>
+  );
+}
+
+export function LearnerGroupsDirectoryCards({
+  groups,
+  sort,
+  hasFilters,
+  disabled,
+  onOpen,
+}: {
+  groups: LearnerGroup[];
+  sort: ProductTableSortState<LearnerGroupDirectorySortKey>;
+  hasFilters: boolean;
+  disabled: boolean;
+  onOpen: (group: LearnerGroup) => void;
+}) {
+  const orderedGroups = sortLearnerGroupsDirectory(groups, sort);
+
+  return (
+    <section
+      className="student-directory-card-grid"
+      aria-label="Карточки групп"
+    >
+      {orderedGroups.length === 0 ? (
+        <div className="student-directory-card-empty" role="status">
+          {hasFilters ? "Ничего не найдено" : "Групп пока нет"}
+        </div>
+      ) : (
+        orderedGroups.map((group) => {
+          const members = [...group.members].sort((left, right) =>
+            directoryCollator.compare(left.displayName, right.displayName),
+          );
+          const preview = members
+            .map((member) => member.displayName)
+            .join(", ");
+
+          return (
+            <article key={group.id} className="student-directory-card">
+              <button
+                type="button"
+                className="student-directory-card-person student-directory-card-group-trigger"
+                disabled={disabled}
+                aria-label={`Группа ${group.name}`}
+                onClick={() => onOpen(group)}
+              >
+                <span
+                  className="student-directory-group-icon"
+                  aria-hidden="true"
+                >
+                  <Users className="h-4 w-4" />
+                </span>
+                <strong title={group.name}>{group.name}</strong>
+              </button>
+
+              <dl className="student-directory-card-details">
+                <div>
+                  <dt>Ученики</dt>
+                  <dd>{learnerCountLabel(members.length)}</dd>
+                </div>
+                <div className="student-directory-card-detail-wide">
+                  <dt>Состав группы</dt>
+                  <dd title={preview || "Нет учеников"}>
+                    {preview || "Нет учеников"}
+                  </dd>
+                </div>
+              </dl>
+            </article>
+          );
+        })
+      )}
+    </section>
   );
 }

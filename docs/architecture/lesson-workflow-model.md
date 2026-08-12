@@ -484,7 +484,12 @@ Visual contract Course routes не меняет эту навигационну�
   action-секцию; header имеет минимальную высоту 200 px,
   растёт по контенту, heading получает всю оставшуюся ширину, а actions
   вертикально центрированы и имеют intrinsic ширину по содержимому с
-  ограничением шириной контейнера;
+  ограничением шириной контейнера. В repository-current follow-up сам H1 больше
+  не имеет лимита `24ch` и заполняет heading-колонку; desktop column-gap равен
+  24 px. Backlink и стрелка используют непрозрачный `#141414`, label остаётся в
+  одной строке и обрезается ellipsis, а интервалы над и под backlink совпадают с
+  page-header block-inset (20 px desktop, 16 px mobile). Этот UI-only follow-up
+  является production next и не меняет Lesson hierarchy, API или schema;
 - основные кнопки и header controls — высотой 40 px с радиусом 12 px и шрифтом
   `.88rem/400`; primary flat без inset-блика, подъёма или тени, иконки имеют
   единый 16 px rhythm, полную непрозрачность и наследуют контрастный цвет,
@@ -514,7 +519,7 @@ Visual contract Course routes не меняет эту навигационну�
   углы имеют control-radius 12 px, а baseline рисуется отдельным слоем поверх
   светлого hover-фона. Квадратный непрозрачный чёрный active-сегмент 4 px лежит
   выше baseline. Каждый tab имеет 16 px Lucide icon; только positive numeric
-  count показывается маленьким приподнятым `sup`, а `0` отсутствует. Каждый tab
+  count показывается маленьким приподнятым `sup` с weight 500, а `0` отсутствует. Каждый tab
   ссылается на постоянный matching `tabpanel`, который возвращает его id через
   `aria-labelledby`;
 - authenticated Settings переиспользуют тот же product shell, demo TopNav,
@@ -530,9 +535,10 @@ rollout PR #242 exact commit
 этим visual refinement не меняются; отдельный Course soft-archive endpoint
 описан выше.
 
-Repository-current tabs refinement, описанный выше, остаётся production next;
-зафиксированный production release PR #242 продолжает использовать прежний
-20%-black 1 px baseline и обычные inline counts до нового web rollout.
+Tabs refinement, описанный выше, является current production после rollout
+exact source `0c8946f95ebeb31e02955a110fc057f761f07ea9`: общий 50%-black token,
+baseline 1.5 px, gap и верхние радиусы 12 px, 16 px icons и только положительные
+counts в `sup`. Physical schema и API этим rollout не менялись.
 
 ## Roleless teaching hub navigation boundary
 
@@ -630,6 +636,9 @@ Current production делает `/schedule` и `/students` доступными
   projection с ascending/descending и `aria-sort`. Таблица **Каталог** имеет
   `Курс / Предмет / Уровень / Автор / Уроки / Материалы / actions` и сохраняет
   server-side cursor order, не сортируя только загруженную страницу локально.
+  Icon-only presentation control обеих вкладок расположен в порядке **Таблица
+  / Карточки** и изначально выбирает таблицу; смена вида не меняет Course query,
+  filters или persisted данные.
   Owned-row заканчивается одним `MoreVertical` portal-menu 32 × 32 px:
   unpublished Course получает «Дублировать / Опубликовать / Удалить», а
   publication states сохраняют update/open/unpublish actions. «Удалить»

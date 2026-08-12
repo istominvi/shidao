@@ -1624,6 +1624,135 @@
   line-height: 0;
 }
 
+.student-directory-card-grid {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 19rem), 1fr));
+  gap: 0.75rem;
+}
+
+.course-demo-shell .student-directory-card {
+  display: grid;
+  min-width: 0;
+  align-content: start;
+  gap: 0.8rem;
+  border: 1px solid rgba(255, 255, 255, 0.82);
+  border-radius: var(
+    --course-demo-card-radius,
+    var(--product-card-radius, 1.25rem)
+  );
+  background: #fff;
+  padding: 0.9rem;
+  box-shadow: 0 20px 52px rgba(23, 26, 32, 0.07);
+}
+
+.student-directory-card-header {
+  display: flex;
+  min-width: 0;
+  align-items: flex-start;
+  gap: 0.55rem;
+}
+
+.student-directory-card-person {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 0.65rem;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: #141414;
+  font: inherit;
+  text-align: left;
+}
+
+button.student-directory-card-person {
+  cursor: pointer;
+}
+
+button.student-directory-card-person:disabled {
+  cursor: default;
+}
+
+button.student-directory-card-person:focus-visible {
+  border-radius: var(--product-inner-control-radius, 0.5rem);
+  outline: 2px solid rgba(20, 20, 20, 0.58);
+  outline-offset: 2px;
+}
+
+.student-directory-card-person .teaching-learner-avatar,
+.student-directory-card-person .student-directory-group-icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  flex: 0 0 2.5rem;
+}
+
+.student-directory-card-person > strong {
+  min-width: 0;
+  overflow: hidden;
+  color: #141414;
+  font-size: 0.92rem;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.student-directory-card-header .student-directory-action-menu {
+  flex: 0 0 auto;
+}
+
+.student-directory-card-details {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem 0.8rem;
+  margin: 0;
+  border-top: 1px solid rgba(20, 20, 20, 0.08);
+  padding-top: 0.75rem;
+}
+
+.student-directory-card-details > div {
+  min-width: 0;
+}
+
+.student-directory-card-details dt {
+  color: rgba(20, 20, 20, 0.5);
+  font-size: 0.68rem;
+  font-weight: 500;
+  line-height: 1.25;
+}
+
+.student-directory-card-details dd {
+  overflow: hidden;
+  margin: 0.22rem 0 0;
+  color: #141414;
+  font-size: 0.8rem;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.student-directory-card-detail-wide {
+  grid-column: 1 / -1;
+}
+
+.student-directory-card-empty {
+  display: grid;
+  min-height: 7rem;
+  grid-column: 1 / -1;
+  place-items: center;
+  border-radius: var(
+    --course-demo-card-radius,
+    var(--product-card-radius, 1.25rem)
+  );
+  background: #fff;
+  padding: 1rem;
+  color: rgba(20, 20, 20, 0.5);
+  font-size: var(--course-demo-control-font-size, 0.88rem);
+}
+
 .course-demo-shell .student-directory-action-menu .action-menu-trigger {
   width: var(--product-inner-control-size, 2rem);
   min-width: var(--product-inner-control-size, 2rem);

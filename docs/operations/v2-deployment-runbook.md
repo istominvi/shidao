@@ -218,6 +218,22 @@ Dependent web/API execution evidence:
   `https://v2.shidao.ru` Origin без session дошёл до auth boundary и вернул
   `401`.
 
+Current deployed source follow-up:
+
+- exact repository commit и `SOURCE_COMMIT`:
+  `0c8946f95ebeb31e02955a110fc057f761f07ea9`;
+- running container `g9x4d9zn60jv35r7zf0xl6xj-083519444597` использует
+  image tag
+  `g9x4d9zn60jv35r7zf0xl6xj:0c8946f95ebeb31e02955a110fc057f761f07ea9`
+  и image ID
+  `sha256:8119de725edeb042eaf1fcecb38d3fa5052aaf44e81e9fb3965d6c594b1731d1`;
+- container имеет status `running`, restart count `0` и started at
+  `2026-08-12T08:37:57.909983639Z`;
+- повторный HTTP smoke подтвердил V2 `/login` и `/robots.txt` `200`, guest
+  `/courses` `307` в `https://v2.shidao.ru/login` и landing root `200`.
+- release gate exact source прошёл `560/560` unit/API и `22/22` strict
+  production-mode browser scenarios.
+
 E2 database, web/API release и HTTP host/CSRF/auth boundaries являются current
 production.
 
@@ -710,12 +726,17 @@ ShiDao V2 application:
   metrics через один `AppPageHeader`: H1 не крупнее 48 px на desktop и 32 px
   на mobile, `min-height: 200px` с ростом по контенту, actions вертикально
   центрированы, занимают только ширину содержимого и оставляют всю свободную
-  ширину heading; на 1120 px Lesson с четырьмя actions складывается без
-  document overflow, а непрерывные title/description/back-label переносятся;
+  ширину heading и H1; desktop gap между heading и actions равен 24 px. На 1120
+  px Lesson с четырьмя actions складывается без document overflow,
+  непрерывные title/description переносятся, а back-label остаётся в одной
+  строке и обрезается ellipsis;
   description на каждой поверхности получает один computed-цвет
   `rgba(20, 20, 20, 0.5)` из canonical
   `--app-page-header-description-color`;
-  Course/Lesson сохраняют backlink;
+  Course/Lesson сохраняют backlink: link/button, стрелка, normal/hover/focus
+  имеют computed `rgb(20, 20, 20)`, стрелка не сжимается, а расстояние от
+  верхней границы page header до backlink совпадает с расстоянием от backlink
+  до heading (`20 px` desktop, `16 px` mobile);
 - на Schedule/Students/Courses shared `ProductTableHead` имеет computed white
   background, а row dividers используют один
   `--product-table-divider-color`;
@@ -724,8 +745,8 @@ ShiDao V2 application:
   inline-inset и квадратный чёрный active segment 4 px без radius. Inactive
   label имеет тот же 50%-black цвет, gap между tab-кнопками и верхний radius
   равны 12 px; светлый hover не перекрывает baseline. Каждый tab имеет 16 px
-  иконку. Только positive numeric count показан маленьким приподнятым `sup`, а
-  ноль не рендерится; каждый `aria-controls` tab разрешается в matching
+  иконку. Только positive numeric count показан маленьким приподнятым `sup` с
+  weight 500, а ноль не рендерится; каждый `aria-controls` tab разрешается в matching
   `tabpanel` с обратным `aria-labelledby`, а на mobile вкладки скроллятся
   внутри strip без document overflow;
 - на сохранённом Course открыть **Уроки** и проверить, что общий `WorkspaceTabs`
@@ -895,6 +916,10 @@ flow как permanent delete.
   contextual restore/cancel actions; сортировка выполняется кнопками в
   заголовках, первый клик включает ascending, повторный — descending, а
   `aria-sort` отражает направление;
+- справа от Students «Фильтр» проверить icon-only control в порядке **Таблица /
+  Карточки**: таблица активна при первом открытии, карточки показывают ту же
+  filtered выборку и те же contextual actions; повторить переключение на
+  вкладке «Группы»;
 - Students table имеет exact 40 px header/data rows и колонки `Ученик / Статус
 / Аккаунт / Группы / Добавлен / Действия`. В конце каждой строки расположен
   keyboard/touch-доступный `MoreVertical` portal-menu; для active learner он
@@ -907,9 +932,10 @@ flow как permanent delete.
   выбранную вкладку, а main navigation подсвечивает «Ученики»;
 - `/courses` показывает точный подзаголовок «Создавайте свои курсы с нуля или
   добавляйте готовые из каталога» без точки; tabs сохраняют общий edge-to-edge
-  20%-black baseline. Раздел проверяется в режимах «Карточки / Таблица»:
+  50%-black baseline 1.5 px. Раздел проверяется в режимах «Карточки / Таблица»:
   controls обеих вкладок лежат прямо на page background без toolbar-card и без
-  horizontal inset,
+  horizontal inset. В обеих вкладках icon-only control идёт **Таблица /
+  Карточки** слева направо, и при первом открытии активна таблица;
   поиск и disclosure subject/level/content
   меняют только client projection owner-scoped списка, icon-only view control
   имеет доступные имена, reset возвращает все курсы, filtered-empty не
