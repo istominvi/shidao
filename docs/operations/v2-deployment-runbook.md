@@ -167,14 +167,13 @@ Production product-data execution:
 При будущем неуспехе web rollback не переписывает применённую migration:
 использовать совместимый image rollback или новую forward migration.
 
-### E2 educator governance / self-learning — database current, dependent web next
+### E2 educator governance / self-learning — full production execution record
 
 Forward migration
 `20260812150745_educator_course_governance_progress.sql` применена к production
 ShiDao DB с `COMMIT` в `2026-08-12T07:34:36Z`. SHA-256 exact migration:
 `ccd0ac3a40df305bb43c095733663ca03ff854ae6ffc1cca9e59fd3485ea2c26`.
-Dependent E2 web/API source ещё не развёрнут; application release остаётся на
-предыдущем recorded SHA.
+Dependent E2 web/API также развёрнут и является current production.
 
 Production DB execution evidence, 12 августа 2026 года:
 
@@ -201,22 +200,26 @@ Production DB execution evidence, 12 августа 2026 года:
    `6df94ceabbc902b66b4c592998f1770ea62442a68255ddd6133a3b9d75745949`, все
    `71` schema-contract tests прошли.
 
-Dependent web rollout остаётся **next**:
+Dependent web/API execution evidence:
 
-1. Прогнать typecheck, lint, Prettier check, production build, полный unit suite
-   и strict production-mode browser suite на exact source.
-2. Развернуть exact dependent web release и подтвердить `SOURCE_COMMIT`, image
-   digest, restart count, HTTPS/guest/host/CSRF/API boundaries.
-3. Authenticated production postflight должен проверить audience toggle только
-   в toolbar списка, отдельный `/courses/catalog/[publicationId]` workspace,
-   learner-safe Lessons/Materials, одновременно `ShiDao` и имя эксперта,
-   persisted last-opened/completion после reload, `100%` unlock, badge
-   «Аттестован» и profile credential. Ни header, ни меню, ни API не должны
-   предлагать educator add/copy/duplicate/roster/run actions; детский copy flow
-   должен остаться рабочим.
-4. После web/authenticated postflight записать exact release SHA и image
-   evidence. До этого только E2 database contract, а не полный application
-   slice, называется current production.
+- exact functional commit и `SOURCE_COMMIT`:
+  `22b486a7163453019d9720cb4fe0f36ed7c0228d`;
+- Coolify deployment `ikw0bj347reelzotaqo15a39` начался
+  `2026-08-12T07:56:00Z` и завершился `2026-08-12T07:58:39Z` со status
+  `Success`; duration `2m39s`;
+- container `g9x4d9zn60jv35r7zf0xl6xj-075600861579` запущен с image tag exact
+  commit и image ID
+  `sha256:214e954aed0355c1881ea778e65dcb7f4c4cabcde4d7ac2e3f6022322bd8e027`;
+  restart count `0`;
+- V2 `/login` и `/robots.txt` вернули `200`; guest `/courses` вернул `307` в
+  login;
+- landing root вернул `200`, а landing `/login` и `/api/*` — `503`;
+- unsafe request без Origin и с wrong Origin вернул `403`; запрос с exact
+  `https://v2.shidao.ru` Origin без session дошёл до auth boundary и вернул
+  `401`.
+
+E2 database, web/API release и HTTP host/CSRF/auth boundaries являются current
+production.
 
 При неуспехе dependent web после committed migration не переписывать migration
 и не восстанавливать старую E1-схему поверх новых progress данных. Использовать

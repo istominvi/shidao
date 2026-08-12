@@ -7,6 +7,9 @@
 `20260812150745_educator_course_governance_progress.sql` — совпадает с
 production; E2 применена `2026-08-12T07:34:36Z`, current snapshot снят
 `2026-08-12T07:43:11Z`.
+**Текущий dependent E2 web/API release:**
+`22b486a7163453019d9720cb4fe0f36ed7c0228d` — Coolify rollout и HTTP postflight
+завершены `2026-08-12T07:58:39Z`.
 
 ## 1. Источники истины
 

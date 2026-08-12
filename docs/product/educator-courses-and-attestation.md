@@ -1,6 +1,6 @@
 # Курсы для педагогов и аттестация
 
-**Статус:** production database current; dependent web rollout next
+**Статус:** current production database + web/API
 
 **Актуально на:** 12 августа 2026 года
 
@@ -9,18 +9,14 @@
 В production уже применён базовый E1 database contract: назначение курса
 `children | educators`, immutable определение аттестации, Account attempts и
 awards. Там же опубликован демонстрационный курс для преподавателя китайского
-языка и сохранён ранее выданный результат. Записанный dependent web release
-`28387a9863afeccf4a6ad332dcf0f01048a69e67` имеет известный UUID parsing
-incident; исправляющий его source ещё не имеет отдельного production deployment
-evidence.
+языка и сохранён ранее выданный результат. UUID parsing incident исправлен
+current production release `22b486a7163453019d9720cb4fe0f36ed7c0228d`.
 
 E2 migration `20260812150745_educator_course_governance_progress.sql` применена
 к production DB с `COMMIT` в `2026-08-12T07:34:36Z`; DB postflight и current
 snapshot `2026-08-12T07:43:11Z` подтвердили governance, approved revision,
 self-learning progress и official no-copy/no-roster/no-Run contract. Зависимые
-API/UI реализованы в repository, но ещё не имеют отдельного production web
-deployment evidence. Ниже **current database** относится к production DB, а
-application surfaces остаются repository current / production next.
+API/UI развёрнуты тем же coupled E2 rollout и являются current production.
 
 ## Одна модель Course, два учебных назначения
 
@@ -162,20 +158,21 @@ attempt/award, `90%` при threshold `80%` и отсутствие copy origin,
 group assignment и LessonRun. Current snapshot имеет SHA-256
 `6df94ceabbc902b66b4c592998f1770ea62442a68255ddd6133a3b9d75745949`.
 
-UUID parsing hotfix и dependent E2 API/UI входят в следующий web rollout. Эти
-DB-факты не являются доказательством deployment отдельного workspace и toolbar
-в running application.
+UUID parsing hotfix и dependent E2 API/UI развёрнуты в exact functional commit
+`22b486a7163453019d9720cb4fe0f36ed7c0228d`.
 
-## Production next
+## Production web/API evidence
 
-Для завершения dependent application rollout необходимо отдельно:
-
-1. пройти release gates и развернуть exact dependent web release;
-2. подтвердить `SOURCE_COMMIT`, image digest, restart и host/CSRF/API
-   boundaries;
-3. подтвердить authenticated catalog, approved-revision visibility, named
-   expert + ShiDao, persisted resume/progress, `100%` attestation gate, badge и
-   profile credential без copy/duplicate/roster/run действий.
+- Coolify deployment `ikw0bj347reelzotaqo15a39` развернул exact functional
+  commit `22b486a7163453019d9720cb4fe0f36ed7c0228d` с `Success` за `2m39s`:
+  `2026-08-12T07:56:00Z` — `2026-08-12T07:58:39Z`.
+- Container `g9x4d9zn60jv35r7zf0xl6xj-075600861579` использует image tag exact
+  commit и image ID
+  `sha256:214e954aed0355c1881ea778e65dcb7f4c4cabcde4d7ac2e3f6022322bd8e027`;
+  `SOURCE_COMMIT` exact, restart count `0`.
+- HTTP postflight: V2 login/robots `200`, guest Courses `307` в login, landing
+  root `200`, landing login/API `503`, missing/wrong CSRF Origin `403`, exact
+  V2 Origin без session `401`.
 
 ## Later
 

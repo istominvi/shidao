@@ -3,7 +3,7 @@
 **Статус:** current production learner-identity M6 + Course publication
 catalog + Course Component D1 + A1 atomic Course archive + E1 educator Course
 и Account attestation + E2 educator governance/self-learning database
-contract. Dependent E2 web/API deployment остаётся next.
+contract. Dependent E2 web/API release также current production.
 
 **Production schema head:**
 `20260812150745_educator_course_governance_progress.sql` — применена к
@@ -317,7 +317,8 @@ production database head. Она добавляет trusted-author capability
 `approved_revision_id`, revision-scoped self-enrollment/Lesson completion и
 server-side `100%` attestation gate. Educator revisions имеют official-learning
 license и не участвуют в catalog copy/duplicate, roster, group assignment или
-LessonRun. Зависимый E2 web/API source пока не развёрнут и остаётся **next**.
+LessonRun. Зависимый E2 web/API source развёрнут из exact functional commit
+`22b486a7163453019d9720cb4fe0f36ed7c0228d` и является current production.
 
 Production DB execution evidence, 12 августа 2026 года:
 
@@ -342,6 +343,17 @@ Production DB execution evidence, 12 августа 2026 года:
   прошли postflight;
 - live snapshot сгенерирован в `2026-08-12T07:43:11Z`, SHA-256
   `6df94ceabbc902b66b4c592998f1770ea62442a68255ddd6133a3b9d75745949`.
+
+Dependent web/API rollout завершён Coolify deployment
+`ikw0bj347reelzotaqo15a39` (`2026-08-12T07:56:00Z` —
+`2026-08-12T07:58:39Z`, Success, `2m39s`). Container
+`g9x4d9zn60jv35r7zf0xl6xj-075600861579` использует image tag exact functional
+commit и image ID
+`sha256:214e954aed0355c1881ea778e65dcb7f4c4cabcde4d7ac2e3f6022322bd8e027`;
+`SOURCE_COMMIT` совпал, restart count `0`. HTTP postflight подтвердил V2
+login/robots `200`, guest `/courses` `307` в login, landing root `200`,
+landing login/API `503`, missing/wrong CSRF Origin `403` и exact V2 Origin без
+session `401`.
 
 ## Current repository tables
 

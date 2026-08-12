@@ -520,15 +520,15 @@ attempt/award, привязанные к exact revision; score никогда н
 клиента. Migration, initial dependent web/API и demonstration product data
 развёрнуты. Production содержит один educator Course для преподавателя
 китайского языка и реальный DB/RPC passed result `9/10 = 90%` с credential.
-UUID parsing/toolbar hotfix имеет green repository gate, но не отдельную
-running-image запись и входит в следующий dependent web rollout.
+UUID parsing/toolbar hotfix развёрнут в exact functional web commit
+`22b486a7163453019d9720cb4fe0f36ed7c0228d`.
 
-**Current production database; dependent web next.** Forward migration
+**Current production.** Forward migration
 `20260812150745_educator_course_governance_progress.sql` применена с `COMMIT` в
 `2026-08-12T07:34:36Z`; current snapshot снят `2026-08-12T07:43:11Z` и имеет
 SHA-256
 `6df94ceabbc902b66b4c592998f1770ea62442a68255ddd6133a3b9d75745949`.
-Database contract и dependent repository source реализуют окончательную
+Database contract и deployed dependent source реализуют окончательную
 governance/consumption модель:
 
 - `account.can_author_educator_courses` с default `false` является свежим
@@ -561,10 +561,12 @@ governance/consumption модель:
   schedule и LessonRun. Это self-learning Course текущего Account, а не Course
   для проведения занятий.
 
-**Production next:** развернуть exact dependent web release после release gates
-и выполнить authenticated postflight approved catalog/workspace/progress/gate/
-badge/profile/no-copy boundaries. До этого current production называется E2
-database contract, а не полный application slice.
+Dependent web rollout завершён Coolify deployment `ikw0bj347reelzotaqo15a39`
+в `2026-08-12T07:58:39Z`: `SOURCE_COMMIT` и image tag совпали с exact commit,
+image ID —
+`sha256:214e954aed0355c1881ea778e65dcb7f4c4cabcde4d7ac2e3f6022322bd8e027`,
+restart count `0`, HTTP host/CSRF/auth postflight green. DB и web/API slice
+являются current production.
 
 **Later:** admin UI для capability/review, юридически значимые удостоверения,
 proctoring, manual/free-response assessment, expiration/retake policy и
