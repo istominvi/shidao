@@ -14,6 +14,7 @@ test("every Account gets the same capability-neutral primary navigation", () => 
       { id: "schedule", label: "Расписание", href: ROUTES.schedule },
       { id: "students", label: "Ученики", href: ROUTES.students },
       { id: "courses", label: "Курсы", href: ROUTES.courses },
+      { id: "store", label: "Магазин", href: ROUTES.store },
     ],
   );
   assert.ok(PRIMARY_NAV_CONFIG.account.items.every((item) => item.icon));
@@ -32,4 +33,10 @@ test("Account navigation activates only the matching route tree", () => {
   );
   assert.equal(students?.isActive(ROUTES.observing), true);
   assert.equal(students?.isActive(`${ROUTES.observing}/profile`), true);
+
+  const store = PRIMARY_NAV_CONFIG.account.items.find(
+    (item) => item.id === "store",
+  );
+  assert.equal(store?.isActive(`${ROUTES.store}/product-1`), true);
+  assert.equal(store?.isActive("/storefront"), false);
 });

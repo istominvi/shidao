@@ -37,6 +37,9 @@ test("isProtectedAppRoute covers private app trees", () => {
   assert.equal(isProtectedAppRoute("/groups/class-1"), false);
   assert.equal(isProtectedAppRoute("/courses"), true);
   assert.equal(isProtectedAppRoute("/courses/course-1/student-preview"), true);
+  assert.equal(isProtectedAppRoute(ROUTES.store), true);
+  assert.equal(isProtectedAppRoute(`${ROUTES.store}/product-1`), true);
+  assert.equal(isProtectedAppRoute("/storefront"), false);
   assert.equal(isProtectedAppRoute(ROUTES.learningProfile), true);
   assert.equal(isProtectedAppRoute(`${ROUTES.learningProfile}/history`), true);
   assert.equal(isProtectedAppRoute(ROUTES.observing), true);

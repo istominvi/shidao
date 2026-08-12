@@ -594,6 +594,46 @@ restart count `0`, HTTP host/CSRF/auth postflight green. DB и web/API slice
 proctoring, manual/free-response assessment, expiration/retake policy и
 optional self-study deadlines.
 
+## P1.0: учебный магазин и commerce boundary
+
+Цель — дать преподавателю и ученику простой путь к физическим материалам для
+занятий, не выдавая UI-прототип за работающую коммерцию.
+
+**Repository current; production next:** `/store` добавлен четвёртым пунктом
+universal Account navigation. Типизированный статический каталог поддерживает
+категории, поиск, audience/price/availability filters, сортировку, карточки и
+таблицу. Header action открывает локальную корзину и checkout с именем,
+телефоном, email и адресом. Последний шаг явно помечен как demo: card fields,
+network request, persisted order и оплата отсутствуют. Stable product slug
+позволяет открыть `/store?product=<slug>`, но Lesson contracts пока не
+изменяются.
+
+**Next:** отдельно спроектировать Product/Order/Inventory, admin catalog,
+изображения и документы, delivery/legal contract и платёжного провайдера.
+Только после этого добавить forward migration, canonical services/API,
+idempotent order/payment flow и reconciliation с обновлением current-schema
+snapshot/docs.
+
+**Later:** типизированная Lesson Component → Product ссылка через общий
+component registry и Course Builder services/MCP adapter, а также реальная
+доставка и внешние commerce integrations. Learner projection получает только
+публичные сведения товара и не раскрывает teacher-private content.
+
+Definition of Done текущего demo:
+
+- guest `/store` fail-closed следует действующему login flow, Account видит
+  четвёртый nav item и active state;
+- каталог, фильтры, сортировка и оба вида используют один детерминированный
+  набор;
+- cart quantity/subtotal и checkout validation работают с клавиатуры и на
+  mobile без page-level overflow;
+- UI не запрашивает банковские реквизиты, не выполняет order/payment request и
+  честно завершает сценарий сообщением «заказ не создан»;
+- reload сбрасывает cart/form; API, schema, Storage и migrations не меняются.
+
+Полный контракт:
+[`docs/product/store-demo.md`](./product/store-demo.md).
+
 ## P1.1: persisted Homework
 
 Цель — заменить текущую заглушку отдельным Lesson-owned редактором.

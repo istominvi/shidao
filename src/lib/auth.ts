@@ -17,6 +17,7 @@ export const ROUTES = {
   schedule: "/schedule",
   students: "/students",
   courses: "/courses",
+  store: "/store",
   coursesNew: "/courses/new",
   learningProfile: "/learning-profile",
   observing: "/observing",

@@ -6,6 +6,7 @@ export const PRIVATE_ROUTE_PREFIXES = [
   ROUTES.schedule,
   ROUTES.students,
   ROUTES.courses,
+  ROUTES.store,
   ROUTES.learningProfile,
   ROUTES.observing,
 ] as const;

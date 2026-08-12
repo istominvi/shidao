@@ -70,8 +70,8 @@ test("Account navigation has no role switch client or teacher-only guard", () =>
   const teacherGroup = source("src/app/(app)/(teacher-required)/layout.tsx");
 
   assert.doesNotMatch(sessionMenu, /preferences\/profile|SegmentedControl/);
-  const primaryNavIndices = ["Расписание", "Ученики", "Курсы"].map((label) =>
-    accountNav.indexOf(`label: "${label}"`),
+  const primaryNavIndices = ["Расписание", "Ученики", "Курсы", "Магазин"].map(
+    (label) => accountNav.indexOf(`label: "${label}"`),
   );
   assert.ok(primaryNavIndices.every((index) => index >= 0));
   assert.deepEqual(

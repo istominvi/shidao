@@ -390,13 +390,15 @@ test("e2e smoke: authenticated user on / receives auth-aware header contract", a
   assert.match(html, /E2E Adult/);
 });
 
-test("e2e smoke: guest reaching protected route is redirected to /login", async () => {
-  const response = await fetch(`http://127.0.0.1:${appPort}/courses`, {
-    redirect: "manual",
-  });
+test("e2e smoke: guest reaching protected routes is redirected to /login", async () => {
+  for (const pathname of ["/courses", "/store"]) {
+    const response = await fetch(`http://127.0.0.1:${appPort}${pathname}`, {
+      redirect: "manual",
+    });
 
-  assert.equal(response.status, 307);
-  assert.equal(response.headers.get("location"), "/login");
+    assert.equal(response.status, 307);
+    assert.equal(response.headers.get("location"), "/login");
+  }
 });
 
 test("e2e smoke: authenticated /login redirects by access policy and /settings/security opens", async () => {

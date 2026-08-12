@@ -102,6 +102,24 @@ Navigation/catalog follow-up `bafc984d0bc7bfb6cb795170a09ba2aabfb98441`
 restart count `0`. Production `/` и `/login` отвечают `200`, guest `/observing`
 fail-closed перенаправляется в `/login`, browser console пуста.
 
+**Repository current Store demo; production next:** защищённая Account-страница
+`/store` добавляет четвёртый primary nav item «Магазин» с иконкой
+`ShoppingBag`. Страница использует общие `AppPageHeader`, `WorkspaceTabs`,
+toolbar, cards/table и `DialogShell`: статический каталог учебных товаров можно
+искать, фильтровать, сортировать и просматривать в двух режимах; кнопка
+«Корзина» находится в header action-секции. Корзина, контактная форма и
+последовательность `cart → delivery → payment demo → success` существуют
+только в React state. Полей банковской карты, сетевой отправки, записи заказа,
+оплаты, доставки, новой API/schema/migration нет; финал явно сообщает, что
+заказ не создан. Stable product slug поддерживает будущий deep link вида
+`/store?product=<slug>` без изменения Lesson contracts. Production сохраняет
+предыдущую трёхпунктную навигацию до отдельного web rollout. Канонический
+контракт с current/next/later границами находится в
+[`docs/product/store-demo.md`](./product/store-demo.md). Repository gate:
+typecheck, lint, format, production build, `575/575` unit/API и `23/23` strict
+production-mode browser scenarios, включая Store deep link, cart/checkout,
+focus return и mobile no-overflow.
+
 Authenticated production browser postflight подтвердил roleless navigation и
 реальные пустые состояния `/courses`, `/schedule`, `/students`, всех вкладок
 `/learning-profile`, `/students?tab=observing`, `/settings/profile`,

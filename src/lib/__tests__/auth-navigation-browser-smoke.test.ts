@@ -2723,7 +2723,12 @@ test("browser smoke: guest on protected routes is redirected to /login", async (
     return;
   }
 
-  for (const protectedPath of ["/courses", "/schedule", "/students"]) {
+  for (const protectedPath of [
+    "/courses",
+    "/schedule",
+    "/students",
+    "/store",
+  ]) {
     const runtime = await openPage();
     try {
       await runtime.page.goto(protectedPath, { waitUntil: "domcontentloaded" });
@@ -2731,6 +2736,134 @@ test("browser smoke: guest on protected routes is redirected to /login", async (
     } finally {
       await runtime.close();
     }
+  }
+});
+
+test("browser smoke: Store cart and checkout remain an explicit local demo", async (t) => {
+  if (browserSmokeUnavailableReason) {
+    t.skip(browserSmokeUnavailableReason);
+    return;
+  }
+
+  const runtime = await openPage({ cookie: authenticatedCookieValue() });
+
+  try {
+    await runtime.page.goto(
+      "/store?product=propisi-pervye-kitaiskie-ieroglify",
+      { waitUntil: "networkidle" },
+    );
+    await runtime.page
+      .getByRole("heading", { name: "Магазин", exact: true, level: 1 })
+      .waitFor();
+    await runtime.page
+      .getByText("Демо · без оплаты", { exact: true })
+      .waitFor();
+    const workbookTab = runtime.page.getByRole("tab", {
+      name: /Прописи и тетради/,
+    });
+    await workbookTab.waitFor();
+    assert.equal(await workbookTab.getAttribute("aria-selected"), "true");
+    assert.equal(
+      await runtime.page.evaluate(() => document.activeElement?.id),
+      "store-product-store-product-001",
+    );
+
+    await runtime.page
+      .getByRole("button", {
+        name: "Добавить в корзину: Прописи «Первые китайские иероглифы»",
+        exact: true,
+      })
+      .click();
+    await runtime.page
+      .getByRole("button", {
+        name: "Открыть корзину, товаров: 1",
+        exact: true,
+      })
+      .click();
+
+    let dialog = runtime.page.getByRole("dialog", {
+      name: "Корзина",
+      exact: true,
+    });
+    await dialog.waitFor();
+    await dialog
+      .getByRole("button", {
+        name: "Увеличить количество: Прописи «Первые китайские иероглифы»",
+        exact: true,
+      })
+      .click();
+    await dialog.getByText("2 товара", { exact: true }).waitFor();
+    await dialog
+      .getByRole("button", { name: "Оформить заказ", exact: true })
+      .click();
+
+    dialog = runtime.page.getByRole("dialog", {
+      name: "Куда доставить",
+      exact: true,
+    });
+    await dialog.waitFor();
+    await dialog.getByLabel("Получатель").fill("E2E Adult");
+    await dialog.getByLabel("Телефон").fill("+7 900 000-00-00");
+    await dialog.getByLabel("Email").fill("adult-e2e@example.test");
+    await dialog.getByLabel("Адрес доставки").fill("Чита, улица Ленина, дом 1");
+    await dialog
+      .getByRole("button", { name: "Продолжить", exact: true })
+      .click();
+
+    dialog = runtime.page.getByRole("dialog", {
+      name: "Проверка заказа",
+      exact: true,
+    });
+    await dialog.waitFor();
+    await dialog.getByText(/Платёжная система пока не подключена/).waitFor();
+    assert.equal(await dialog.locator('[autocomplete^="cc-"]').count(), 0);
+    await dialog
+      .getByRole("button", { name: "Завершить демо-заказ", exact: true })
+      .click();
+
+    dialog = runtime.page.getByRole("dialog", {
+      name: "Демо завершено",
+      exact: true,
+    });
+    await dialog.waitFor();
+    await dialog
+      .getByRole("heading", {
+        name: "Заказ не создан — это была демонстрация",
+        exact: true,
+      })
+      .waitFor();
+    await dialog
+      .getByRole("button", { name: "Вернуться в магазин", exact: true })
+      .click();
+    await runtime.page
+      .getByRole("button", { name: "Открыть корзину", exact: true })
+      .waitFor();
+    assert.equal(
+      await runtime.page.evaluate(() =>
+        document.activeElement?.getAttribute("aria-label"),
+      ),
+      "Открыть корзину",
+    );
+
+    await runtime.page.setViewportSize({ width: 900, height: 812 });
+    assert.deepEqual(
+      await runtime.page.evaluate(() => ({
+        clientWidth: document.documentElement.clientWidth,
+        scrollWidth: document.documentElement.scrollWidth,
+      })),
+      { clientWidth: 900, scrollWidth: 900 },
+    );
+
+    await runtime.page.setViewportSize({ width: 375, height: 812 });
+    assert.deepEqual(
+      await runtime.page.evaluate(() => ({
+        clientWidth: document.documentElement.clientWidth,
+        scrollWidth: document.documentElement.scrollWidth,
+      })),
+      { clientWidth: 375, scrollWidth: 375 },
+    );
+  } finally {
+    await runtime.close();
   }
 });
 
@@ -3497,6 +3630,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       { label: "Расписание", href: "/schedule", current: "page" },
       { label: "Ученики", href: "/students", current: null },
       { label: "Курсы", href: "/courses", current: null },
+      { label: "Магазин", href: "/store", current: null },
     ]);
 
     let html = await runtime.page.content();
@@ -6526,6 +6660,9 @@ test("browser smoke: mobile Account menu exposes primary sections and account ac
       .waitFor();
     await runtime.page
       .getByRole("menuitem", { name: "Курсы", exact: true })
+      .waitFor();
+    await runtime.page
+      .getByRole("menuitem", { name: "Магазин", exact: true })
       .waitFor();
     const learningProfileMenuItem = runtime.page.getByRole("menuitem", {
       name: "Учебный профиль",
