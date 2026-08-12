@@ -168,12 +168,11 @@ function CatalogCourseTable({
     >
       <ProductTable className="course-index-table course-index-catalog-table">
         <caption className="sr-only">
-          Курсы каталога: предмет, уровень, автор и наполнение
+          Курсы каталога: предмет, автор и наполнение
         </caption>
         <colgroup>
           <col className="course-index-table-col-title" />
           <col className="course-index-table-col-subject" />
-          <col className="course-index-table-col-level" />
           <col className="course-index-table-col-author" />
           <col className="course-index-table-col-lessons" />
           <col className="course-index-table-col-materials" />
@@ -183,7 +182,6 @@ function CatalogCourseTable({
           <ProductTableHeaderRow>
             <ProductTableHeaderCell>Курс</ProductTableHeaderCell>
             <ProductTableHeaderCell>Предмет</ProductTableHeaderCell>
-            <ProductTableHeaderCell>Уровень</ProductTableHeaderCell>
             <ProductTableHeaderCell>Автор</ProductTableHeaderCell>
             <ProductTableHeaderCell>Уроки</ProductTableHeaderCell>
             <ProductTableHeaderCell>Материалы</ProductTableHeaderCell>
@@ -206,11 +204,6 @@ function CatalogCourseTable({
               <ProductTableCell className="overflow-hidden">
                 <ProductTableTruncate title={course.subject}>
                   {course.subject}
-                </ProductTableTruncate>
-              </ProductTableCell>
-              <ProductTableCell className="overflow-hidden">
-                <ProductTableTruncate title={course.level}>
-                  {course.level}
                 </ProductTableTruncate>
               </ProductTableCell>
               <ProductTableCell className="overflow-hidden">

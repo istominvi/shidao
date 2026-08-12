@@ -642,6 +642,62 @@ async function assertCanonicalFirstBodyRowTypography(
   );
 }
 
+async function assertCourseTableFitsAndTruncates(
+  table: PlaywrightLocator,
+  label: string,
+) {
+  const contract = await table.evaluate((element) => {
+    const courseTable = element as HTMLTableElement;
+    const wrapper = courseTable.closest<HTMLElement>(".product-table-wrap");
+    const firstRow = courseTable.tBodies[0]?.rows[0];
+    const titleTarget = firstRow?.cells[0]?.querySelector<HTMLElement>(
+      ".course-index-table-link > span",
+    );
+    if (!wrapper || !firstRow || !titleTarget) {
+      throw new Error("Course table truncation contract is missing");
+    }
+
+    const originalTitle = titleTarget.textContent;
+    titleTarget.textContent = "ОченьДлинноеНазваниеКурсаБезПробелов".repeat(12);
+    const tableRect = courseTable.getBoundingClientRect();
+    const wrapperRect = wrapper.getBoundingClientRect();
+    const titleStyle = getComputedStyle(titleTarget);
+    const result = {
+      tableLayout: getComputedStyle(courseTable).tableLayout,
+      tableInsideWrapper: tableRect.right <= wrapperRect.right + 0.5,
+      headerLabels: Array.from(courseTable.tHead?.rows[0]?.cells ?? []).map(
+        (cell) => cell.textContent?.trim() ?? "",
+      ),
+      columnCount: firstRow.cells.length,
+      titleOverflow: titleStyle.overflow,
+      titleTextOverflow: titleStyle.textOverflow,
+      titleWhiteSpace: titleStyle.whiteSpace,
+      titleIsTruncated: titleTarget.scrollWidth > titleTarget.clientWidth,
+    };
+    titleTarget.textContent = originalTitle;
+    return result;
+  });
+
+  assert.equal(contract.tableLayout, "fixed", `${label}: fixed layout`);
+  assert.equal(contract.tableInsideWrapper, true, `${label}: fits wrapper`);
+  assert.equal(contract.headerLabels.includes("Уровень"), false);
+  assert.equal(contract.columnCount, 6);
+  assert.deepEqual(
+    {
+      overflow: contract.titleOverflow,
+      textOverflow: contract.titleTextOverflow,
+      whiteSpace: contract.titleWhiteSpace,
+      truncated: contract.titleIsTruncated,
+    },
+    {
+      overflow: "hidden",
+      textOverflow: "ellipsis",
+      whiteSpace: "nowrap",
+      truncated: true,
+    },
+  );
+}
+
 type PlaywrightRoute = {
   request: () => { postDataJSON: () => unknown };
   fulfill: (options: {
@@ -7444,6 +7500,10 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       catalogPanel.locator(".course-index-catalog-table"),
       "Каталог",
     );
+    await assertCourseTableFitsAndTruncates(
+      catalogPanel.locator(".course-index-catalog-table"),
+      "Каталог",
+    );
     assert.equal(
       await audienceControl
         .getByRole("button", { name: "Обучение педагогов", exact: true })
@@ -7684,6 +7744,10 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       .getByRole("region", { name: "Таблица курсов", exact: true })
       .waitFor();
     await assertCanonicalFirstBodyRowTypography(
+      runtime.page.locator(".course-index-owned-table"),
+      "Мои курсы",
+    );
+    await assertCourseTableFitsAndTruncates(
       runtime.page.locator(".course-index-owned-table"),
       "Мои курсы",
     );

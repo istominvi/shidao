@@ -943,10 +943,12 @@ flow как permanent delete.
   проверяются только реальные server-side search/subject/level и cursor, такой
   же icon-only cards/table presentation, отсутствие повторного заголовка,
   пояснения и видимого result count; client-only sort/content не добавляются.
-  В **Мои** отдельного sort select нет: headers `Курс / Предмет / Уровень /
-Уроки / Публикация / Обновлён` переключают ascending/descending и публикуют
-  `aria-sort`; action heading остаётся пустым и несортируемым. В конце owned-row
-  проверить один `MoreVertical` trigger 32 × 32 px, portal-menu и для
+  В **Мои** отдельного sort select нет: headers `Курс / Предмет / Уроки /
+Публикация / Обновлён` переключают ascending/descending и публикуют
+  `aria-sort`; action heading остаётся пустым и несортируемым. Проверить, что
+  fixed-layout таблица не шире desktop wrapper, длинные значения имеют computed
+  ellipsis, а колонки «Уровень» нет ни в **Мои**, ни в **Каталог**. В конце
+  owned-row проверить один `MoreVertical` trigger 32 × 32 px, portal-menu и для
   unpublished Course точные «Дублировать / Опубликовать / Удалить». Delete
   открывает confirmation; published item disabled с подсказкой сначала снять
   публикацию. У **Каталог** остаётся compact icon-open action и server cursor

@@ -884,23 +884,57 @@ a {
   min-width: 52rem;
 }
 
-.course-index-owned-table .course-index-table-col-title {
-  width: 42%;
+.course-index-owned-table,
+.course-index-catalog-table {
+  table-layout: fixed;
 }
 
-.course-index-owned-table .course-index-table-col-subject,
-.course-index-owned-table .course-index-table-col-level {
-  width: 29%;
+.course-index-owned-table .course-index-table-col-title {
+  width: 38%;
+}
+
+.course-index-owned-table .course-index-table-col-subject {
+  width: 24%;
+}
+
+.course-index-owned-table .course-index-table-col-lessons {
+  width: 13%;
+}
+
+.course-index-owned-table .course-index-table-col-publication {
+  width: 11%;
+}
+
+.course-index-owned-table .course-index-table-col-updated {
+  width: 9%;
+}
+
+.course-index-owned-table .course-index-table-col-actions {
+  width: 5%;
 }
 
 .course-index-catalog-table .course-index-table-col-title {
-  width: 40%;
+  width: 34%;
 }
 
-.course-index-catalog-table .course-index-table-col-subject,
-.course-index-catalog-table .course-index-table-col-level,
+.course-index-catalog-table .course-index-table-col-subject {
+  width: 24%;
+}
+
 .course-index-catalog-table .course-index-table-col-author {
   width: 20%;
+}
+
+.course-index-catalog-table .course-index-table-col-lessons {
+  width: 8%;
+}
+
+.course-index-catalog-table .course-index-table-col-materials {
+  width: 9%;
+}
+
+.course-index-catalog-table .course-index-table-col-actions {
+  width: 5%;
 }
 
 .course-index-table-col-lessons,

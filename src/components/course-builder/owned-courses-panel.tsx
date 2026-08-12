@@ -53,7 +53,7 @@ import type { CourseSummary } from "@/modules/course-builder/domain";
 
 type CourseCatalogView = "grid" | "table";
 type OwnedCourseSortKey =
-  "title" | "subject" | "level" | "lessons" | "publication" | "updated";
+  "title" | "subject" | "lessons" | "publication" | "updated";
 
 type OwnedCoursesPanelProps = {
   onOpenCatalog: () => void;
@@ -113,8 +113,6 @@ function sortOwnedCourses(
       difference = courseTableCollator.compare(left.title, right.title);
     } else if (sort.key === "subject") {
       difference = courseTableCollator.compare(left.subject, right.subject);
-    } else if (sort.key === "level") {
-      difference = courseTableCollator.compare(left.level, right.level);
     } else if (sort.key === "lessons") {
       difference = left.lessonCount - right.lessonCount;
     } else if (sort.key === "publication") {
@@ -214,13 +212,11 @@ function CourseTable({
     >
       <ProductTable className="course-index-table course-index-owned-table">
         <caption className="sr-only">
-          Личные курсы: предмет, уровень, наполнение, публикация и дата
-          обновления
+          Личные курсы: предмет, наполнение, публикация и дата обновления
         </caption>
         <colgroup>
           <col className="course-index-table-col-title" />
           <col className="course-index-table-col-subject" />
-          <col className="course-index-table-col-level" />
           <col className="course-index-table-col-lessons" />
           <col className="course-index-table-col-publication" />
           <col className="course-index-table-col-updated" />
@@ -239,12 +235,6 @@ function CourseTable({
               onSort={() => onSort("subject")}
             >
               Предмет
-            </ProductTableSortableHeaderCell>
-            <ProductTableSortableHeaderCell
-              direction={sort.key === "level" ? sort.direction : null}
-              onSort={() => onSort("level")}
-            >
-              Уровень
             </ProductTableSortableHeaderCell>
             <ProductTableSortableHeaderCell
               direction={sort.key === "lessons" ? sort.direction : null}
@@ -282,11 +272,6 @@ function CourseTable({
               <ProductTableCell className="overflow-hidden">
                 <ProductTableTruncate title={course.subject}>
                   {course.subject}
-                </ProductTableTruncate>
-              </ProductTableCell>
-              <ProductTableCell className="overflow-hidden">
-                <ProductTableTruncate title={course.level}>
-                  {course.level}
                 </ProductTableTruncate>
               </ProductTableCell>
               <ProductTableCell className="overflow-hidden">

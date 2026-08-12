@@ -307,8 +307,9 @@ elements/controls/tables/menus с радиусом 12 px; активные Produ
 белые, borderless и используют table token. Students и обе Course-таблицы
 получают такой же 40 px header/data-row contract. Students показывает
 `Ученик / Статус / Аккаунт / Группы / Добавлен / actions`, Course **Мои** —
-`Курс / Предмет / Уровень / Уроки / Публикация / Обновлён / actions`, а
-**Каталог** — `Курс / Предмет / Уровень / Автор / Уроки / Материалы / actions`.
+`Курс / Предмет / Уроки / Публикация / Обновлён / actions`, а **Каталог** —
+`Курс / Предмет / Автор / Уроки / Материалы / actions`. Course tables используют
+fixed column layout и ellipsis вместо вытеснения правой колонки за контейнер.
 Их shared header белый, а row dividers используют один
 `--product-table-divider-color`. Owned Course headers сортируют полную
 client-loaded projection; cursor Catalog сохраняет server order. Один

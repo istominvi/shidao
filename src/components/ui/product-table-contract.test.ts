@@ -109,6 +109,18 @@ test("Course index and Course Lessons tables use the dense Schedule geometry", (
   );
   assert.match(
     styles,
+    /\.course-index-owned-table,\s*\.course-index-catalog-table\s*\{[^}]*table-layout: fixed;/,
+  );
+  assert.match(
+    styles,
+    /\.course-index-owned-table \.course-index-table-col-title\s*\{[^}]*width: 38%;[\s\S]*?\.course-index-owned-table \.course-index-table-col-actions\s*\{[^}]*width: 5%;/,
+  );
+  assert.match(
+    styles,
+    /\.course-index-catalog-table \.course-index-table-col-title\s*\{[^}]*width: 34%;[\s\S]*?\.course-index-catalog-table \.course-index-table-col-actions\s*\{[^}]*width: 5%;/,
+  );
+  assert.match(
+    styles,
     /\.course-index-table thead tr,[\s\S]*?\.course-index-table thead th\s*\{[^}]*height: var\(\s*--course-demo-table-row-height,/,
   );
   assert.match(
@@ -138,6 +150,16 @@ test("Course index and Course Lessons tables use the dense Schedule geometry", (
   assert.match(
     catalogSource,
     /className="course-index-table course-index-catalog-table"/,
+  );
+  assert.doesNotMatch(ownedCoursesSource, /course-index-table-col-level/);
+  assert.doesNotMatch(catalogSource, /course-index-table-col-level/);
+  assert.doesNotMatch(
+    ownedCoursesSource,
+    /<ProductTableSortableHeaderCell[\s\S]*?>\s*Уровень\s*<\/ProductTableSortableHeaderCell>/,
+  );
+  assert.doesNotMatch(
+    catalogSource,
+    /<ProductTableHeaderCell>Уровень<\/ProductTableHeaderCell>/,
   );
   assert.match(
     courseWorkspaceSource,

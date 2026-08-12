@@ -236,16 +236,9 @@ test("course catalog UI exposes accessible search, filters, views, and states", 
   assert.match(courseCatalogPanelSource, /<caption className="sr-only">/);
   assert.equal(
     ownedCoursesPanelSource.match(/<ProductTableSortableHeaderCell/g)?.length,
-    6,
+    5,
   );
-  for (const key of [
-    "title",
-    "subject",
-    "level",
-    "lessons",
-    "publication",
-    "updated",
-  ]) {
+  for (const key of ["title", "subject", "lessons", "publication", "updated"]) {
     assert.match(
       ownedCoursesPanelSource,
       new RegExp(`onSort=\\{\\(\\) => onSort\\("${key}"\\)\\}`),
@@ -263,6 +256,16 @@ test("course catalog UI exposes accessible search, filters, views, and states", 
   assert.match(
     ownedCoursesPanelSource,
     /<ProductTableHeaderCell aria-label="Действия" \/>/,
+  );
+  assert.doesNotMatch(ownedCoursesPanelSource, /course-index-table-col-level/);
+  assert.doesNotMatch(courseCatalogPanelSource, /course-index-table-col-level/);
+  assert.doesNotMatch(
+    ownedCoursesPanelSource,
+    /<ProductTableSortableHeaderCell[\s\S]*?>\s*Уровень\s*<\/ProductTableSortableHeaderCell>/,
+  );
+  assert.doesNotMatch(
+    courseCatalogPanelSource,
+    /<ProductTableHeaderCell>Уровень<\/ProductTableHeaderCell>/,
   );
   assert.match(ownedCoursesPanelSource, /variant="table"/);
   assert.doesNotMatch(

@@ -308,9 +308,11 @@ content/sort controls не добавлены. Подзаголовок `/course
 повторяют плотный Schedule-контракт: header и data rows имеют точную высоту
 40 px, обычные cells — inline-padding 12 px, action-cell — 4 px. Students
 показывает `Ученик / Статус / Аккаунт / Группы / Добавлен / actions`;
-Course **Мои** — `Курс / Предмет / Уровень / Уроки / Публикация / Обновлён /
-actions`, а **Каталог** — `Курс / Предмет / Уровень / Автор / Уроки /
-Материалы / actions`. Shared header белый, а разделители строк используют один
+Course **Мои** — `Курс / Предмет / Уроки / Публикация / Обновлён / actions`, а
+**Каталог** — `Курс / Предмет / Автор / Уроки / Материалы / actions`. Обе
+Course-таблицы используют fixed layout, а текстовые ячейки обрезаются ellipsis,
+не выталкивая последнюю колонку за контейнер. Shared header белый, а разделители
+строк используют один
 `--product-table-divider-color`. Сама table/toolbar geometry не меняет schema;
 отдельный Course archive lifecycle ниже использует уже применённый production
 A1 database contract. Web surface развёрнута в production release PR #242.
