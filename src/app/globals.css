@@ -14,6 +14,10 @@
   --product-card-radius: 1.25rem;
   --product-row-height: 2.5rem;
   --product-table-divider-color: #ececef;
+  --product-table-body-color: #141414;
+  --product-table-body-font-size: 0.88rem;
+  --product-table-body-font-weight: 400;
+  --product-table-body-line-height: 1.3;
   --product-inner-control-size: 2rem;
   --product-inner-control-radius: 0.5rem;
   --product-inner-control-inset: 0.25rem;
@@ -298,16 +302,6 @@ a {
 .app-page-back-link:focus-visible {
   outline: none;
   box-shadow: 0 0 0 3px rgba(20, 20, 20, 0.18);
-}
-
-.app-page-eyebrow {
-  margin: 0;
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.17em;
-  text-transform: uppercase;
-  color: #0f766e;
-  line-height: 1.3;
 }
 
 .app-page-title {
@@ -854,6 +848,26 @@ a {
   border-color: var(--product-table-divider-color, #ececef);
 }
 
+.course-demo-shell
+  .product-table
+  tbody
+  > tr
+  > :is(td, th):not(.product-table-action-cell),
+.course-demo-shell
+  .product-table
+  tbody
+  > tr
+  > :is(td, th):not(.product-table-action-cell)
+  :where(a, button, span, strong, time) {
+  color: var(--product-table-body-color, #141414);
+  font-family: inherit;
+  font-size: var(--product-table-body-font-size, 0.88rem);
+  font-style: normal;
+  font-weight: var(--product-table-body-font-weight, 400);
+  letter-spacing: normal;
+  line-height: var(--product-table-body-line-height, 1.3);
+}
+
 .course-index-table-wrap {
   box-shadow: 0 20px 52px rgba(23, 26, 32, 0.07);
 }
@@ -993,7 +1007,6 @@ a {
   padding: 0;
   color: #141414;
   font: inherit;
-  font-weight: 500;
   text-align: left;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1232,14 +1245,96 @@ a {
   flex-direction: column;
 }
 
+.component-picker-categories {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 0.5rem;
+  overflow-x: auto;
+  border: 0;
+  padding-bottom: 0.75rem;
+}
+
+.component-picker-category {
+  display: inline-flex;
+  min-height: 2.5rem;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 0.5rem;
+  border: 0;
+  border-radius: var(
+    --course-demo-control-radius,
+    var(--product-element-radius, 0.75rem)
+  );
+  background: #f5f5f5;
+  padding-inline: 0.75rem;
+  color: #404040;
+  font-size: 0.875rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background-color 180ms ease,
+    color 180ms ease;
+}
+
+.component-picker-category:hover {
+  background: #e5e5e5;
+}
+
+.component-picker-category.is-active {
+  background: #141414;
+  color: #fff;
+}
+
 .component-picker-dialog-list {
+  display: grid;
   min-height: 0;
+  grid-auto-rows: auto;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+  align-items: start;
+  gap: 0.75rem;
   margin-top: 1rem;
   padding-right: 0.25rem;
   flex: 1;
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
+}
+
+.component-picker-card {
+  align-self: start;
+  border: 1px solid #e5e7eb;
+  border-radius: var(
+    --course-demo-element-radius,
+    var(--product-element-radius, 0.75rem)
+  );
+  background: #fff;
+  padding: 1rem;
+  color: inherit;
+  text-align: left;
+  transition:
+    border-color 180ms ease,
+    background-color 180ms ease;
+}
+
+.component-picker-card:not(:disabled) {
+  cursor: pointer;
+}
+
+.component-picker-card:not(:disabled):hover {
+  border-color: #141414;
+  background: #fff;
+}
+
+.component-picker-card:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+@media (min-width: 640px) {
+  .component-picker-dialog-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 .component-picker-dialog .dialog-shell-close,
@@ -1971,6 +2066,114 @@ a {
   color: #737373;
 }
 
+.lesson-plan-workspace {
+  display: grid;
+  gap: 1rem;
+}
+
+.lesson-plan-toolbar {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  box-shadow: none;
+}
+
+.lesson-plan-toolbar-search {
+  width: min(20rem, 100%);
+  max-width: 20rem;
+  min-width: 10rem;
+  flex: 0 1 20rem;
+}
+
+.lesson-plan-toolbar-search .product-control-search {
+  width: 100%;
+}
+
+.lesson-plan-toolbar-actions {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.55rem;
+  margin-left: auto;
+}
+
+.lesson-component-card {
+  position: relative;
+  border: 1px solid #e5e7eb;
+  border-radius: var(
+    --course-demo-element-radius,
+    var(--product-element-radius, 0.75rem)
+  );
+  background: #fff;
+  padding: 4rem 1rem 1rem;
+  box-shadow: 0 10px 24px rgba(20, 20, 20, 0.06);
+  transition: border-color 180ms ease;
+}
+
+.lesson-component-card:hover {
+  border-color: #d4d4d4;
+  box-shadow: 0 10px 24px rgba(20, 20, 20, 0.06);
+}
+
+.lesson-plan-filter-empty {
+  border: 1px dashed #d4d4d4;
+  border-radius: var(
+    --course-demo-element-radius,
+    var(--product-element-radius, 0.75rem)
+  );
+  background: rgba(255, 255, 255, 0.7);
+  padding: 3.5rem 1.5rem;
+  color: #a3a3a3;
+  text-align: center;
+}
+
+.lesson-plan-filter-empty svg {
+  margin-inline: auto;
+}
+
+.lesson-plan-filter-empty h3 {
+  margin: 0.75rem 0 0;
+  color: #171717;
+  font-weight: 700;
+}
+
+.lesson-plan-filter-empty p {
+  margin: 0.5rem 0 0;
+  color: #525252;
+  font-size: 0.875rem;
+}
+
+@media (min-width: 768px) {
+  .lesson-component-card {
+    padding: 1.25rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .lesson-plan-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .lesson-plan-toolbar-search {
+    width: 100%;
+    max-width: none;
+    flex-basis: auto;
+  }
+
+  .lesson-plan-toolbar-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+}
+
 .role-choice-card {
   border-radius: 1.35rem;
   border: 1px solid rgba(20, 20, 20, 0.11);
@@ -2295,6 +2498,18 @@ a {
   gap: 0.5rem;
 }
 
+.published-course-header-summary {
+  display: grid;
+  justify-items: end;
+  gap: 0.5rem;
+}
+
+.published-course-header-status,
+.published-course-header-author {
+  display: flex;
+  justify-content: flex-end;
+}
+
 .published-course-progress {
   border: 1px solid rgba(20, 20, 20, 0.08);
   border-radius: var(
@@ -2539,6 +2754,16 @@ a {
   }
 
   .published-course-workspace .app-page-actions {
+    justify-content: flex-start;
+  }
+
+  .published-course-header-summary {
+    width: 100%;
+    justify-items: start;
+  }
+
+  .published-course-header-status,
+  .published-course-header-author {
     justify-content: flex-start;
   }
 

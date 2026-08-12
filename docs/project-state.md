@@ -187,6 +187,26 @@ production-mode browser gate проходит `22/22` сценария.
 вкладках `/courses` порядок также **Таблица / Карточки**, исходный вид —
 таблица. Это UI-only изменение без API, schema или migration.
 
+**Repository current table/header/authoring refinement; production next:**
+все active `ProductTable` data rows, включая Course, Lessons, Schedule,
+Students, Groups и subject progress, используют один Schedule-derived contract:
+непрозрачный `#141414`, `.88rem`, weight `400` и line-height `1.3`.
+Header rows и action cells сохраняют отдельную семантику. `AppPageHeader`
+больше не принимает и не рендерит eyebrow: product page header состоит только
+из backlink, H1, description, meta и actions. В заголовке собственного
+published educator Course чёрный бренд-chip `ShiDao` удалён; статус
+«Аттестован» расположен над author row, а author row использует текущий login
+из Account session вместо display name. Для чужой публикации остаётся
+immutable publisher label, поскольку отдельного публичного author handle в
+current schema нет. Catalog toolbar располагает audience selector между
+filters/reset и выбором вида. План Lesson больше не имеет внешней белой
+`workspace-surface` и заголовков «Структура урока / План»: поиск компонентов
+стоит слева, две actions — справа. Palette делит ссылки и файлы на отдельные
+presentation-категории; category rail не имеет divider, а compact cards не
+растягиваются по свободной высоте. Authored Component cards используют
+element-radius 12 px и стандартную table-shadow. Это UI-only изменение без API,
+schema или migration.
+
 **Previously deployed Schedule presentation baseline (superseded by PR #242):**
 `/schedule` загружает реальные LessonRun за локальную неделю (понедельник–
 понедельник) или календарный месяц. Внешняя поверхность toolbar удалена:

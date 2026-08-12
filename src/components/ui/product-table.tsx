@@ -150,7 +150,7 @@ export function ProductTablePrimaryCell({
 }: ComponentPropsWithoutRef<"td">) {
   return (
     <ProductTableCell
-      className={classNames("text-neutral-950 font-medium", className)}
+      className={classNames("text-neutral-950", className)}
       {...props}
     />
   );
@@ -162,7 +162,10 @@ export function ProductTableActionCell({
 }: ComponentPropsWithoutRef<"td">) {
   return (
     <ProductTableCell
-      className={classNames("whitespace-nowrap", className)}
+      className={classNames(
+        "product-table-action-cell whitespace-nowrap",
+        className,
+      )}
       {...props}
     />
   );

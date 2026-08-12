@@ -65,8 +65,12 @@ approval курс отсутствует в каталоге. После approva
 `is_shidao=true`. Если автор отправил новую revision, прежняя approved revision
 остаётся доступной, пока новая не одобрена.
 
-В карточке, таблице и заголовке published educator Course одновременно
-показываются бренд `ShiDao` и имя эксперта-автора, а не один из них.
+В карточке и таблице сохраняется catalog publisher label. В заголовке
+собственного published educator Course отдельный чёрный бренд-chip `ShiDao` не
+дублируется: «Аттестован» занимает верхнюю строку, ниже показывается author login
+текущей Account session. Для чужой публикации current schema пока предоставляет
+только immutable publisher label; отдельный публичный author handle не
+смоделирован и learner login alias для этой цели не используется.
 
 ## Published workspace и learner-safe projection
 

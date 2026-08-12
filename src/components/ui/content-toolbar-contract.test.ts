@@ -60,12 +60,16 @@ test("Schedule, Students, Courses, and Course Lessons toolbars are full-width", 
     /className="compact-page-toolbar course-index-toolbar"/,
   );
   assert.match(
+    ownedCoursesPanel,
+    /className="compact-page-toolbar course-index-toolbar"[\s\S]*?className="compact-toolbar-search product-search-wrap"[\s\S]*?className="compact-toolbar-rail"[\s\S]*?<CourseFilterMenu[\s\S]*?<SegmentedControl[\s\S]*?ariaLabel="Вид списка курсов"/,
+  );
+  assert.match(
     courseCatalogPanel,
     /className="compact-page-toolbar course-catalog-toolbar"/,
   );
   assert.match(
     courseCatalogPanel,
-    /className="course-catalog-toolbar-main"[\s\S]*?\{learningAudienceControl\}[\s\S]*?className="compact-toolbar-search product-search-wrap"/,
+    /className="course-catalog-toolbar-main"[\s\S]*?className="compact-toolbar-search product-search-wrap"[\s\S]*?className="compact-toolbar-rail"[\s\S]*?<CourseFilterMenu[\s\S]*?\{learningAudienceControl\}[\s\S]*?<SegmentedControl[\s\S]*?ariaLabel="Вид каталога курсов"/,
   );
   assert.match(
     globalStyles,

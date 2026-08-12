@@ -36,6 +36,7 @@ import {
   workspaceTabPanelId,
 } from "@/components/ui/workspace-tabs";
 import { toCourseRoute } from "@/lib/auth";
+import { useSessionView } from "@/components/use-session-view";
 import type { CourseAttestationState } from "@/modules/course-attestations/domain";
 import type { CoursePublicationProgress } from "@/modules/course-consumption/domain";
 import type {
@@ -95,6 +96,7 @@ export function PublishedCourseWorkspace({
   catalogAudience: "children" | "educators";
 }) {
   const router = useRouter();
+  const { state: sessionState } = useSessionView();
   const [course, setCourse] = useState<CourseCatalogDetail | null>(null);
   const [progress, setProgress] = useState<CoursePublicationProgress | null>(
     null,
@@ -422,6 +424,10 @@ export function PublishedCourseWorkspace({
   }
 
   const educatorCourse = course.learningAudience === "educators";
+  const authorLogin =
+    course.author.isCurrentUser && sessionState.kind === "account"
+      ? (sessionState.email ?? course.author.displayName)
+      : course.author.displayName;
   const ownSourceCourseId = course.author.isCurrentUser
     ? course.sourceCourseId
     : null;
@@ -458,7 +464,6 @@ export function PublishedCourseWorkspace({
   return (
     <div className="container app-page-container course-workspace-container published-course-workspace pb-16">
       <AppPageHeader
-        eyebrow={educatorCourse ? "Повышение квалификации" : "Курс из каталога"}
         back={{
           type: "link",
           href: catalogHref(course.learningAudience),
@@ -468,15 +473,24 @@ export function PublishedCourseWorkspace({
         description={`${course.subject} · ${course.level}`}
         actions={
           <>
-            {attestation?.certified ? (
-              <Chip icon={BadgeCheck} tone="emerald">
-                Аттестован
-              </Chip>
-            ) : null}
-            {course.author.isShiDao ? <Chip tone="inverse">ShiDao</Chip> : null}
-            {educatorCourse || !course.author.isShiDao ? (
+            {educatorCourse ? (
+              <div className="published-course-header-summary">
+                {attestation?.certified ? (
+                  <div className="published-course-header-status">
+                    <Chip icon={BadgeCheck} tone="emerald">
+                      Аттестован
+                    </Chip>
+                  </div>
+                ) : null}
+                <div className="published-course-header-author">
+                  <Chip icon={UserRound} tone="neutral">
+                    Автор: {authorLogin}
+                  </Chip>
+                </div>
+              </div>
+            ) : !course.author.isShiDao ? (
               <Chip icon={UserRound} tone="neutral">
-                Автор: {course.author.displayName}
+                Автор: {authorLogin}
               </Chip>
             ) : null}
             {!educatorCourse && ownSourceCourseId ? (

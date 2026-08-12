@@ -644,8 +644,6 @@ export function CourseCatalogPanel({
         aria-busy={loadingCatalog}
       >
         <div className="course-catalog-toolbar-main">
-          {learningAudienceControl}
-
           <label className="compact-toolbar-search product-search-wrap">
             <span className="sr-only">Поиск</span>
             <Search
@@ -689,6 +687,8 @@ export function CourseCatalogPanel({
               <RotateCcw className="h-4 w-4" aria-hidden="true" />
             </Button>
           ) : null}
+
+          {learningAudienceControl}
 
           <SegmentedControl
             ariaLabel="Вид каталога курсов"

@@ -354,7 +354,9 @@ deterministic/AI-сборка открывает **Уроки**. Вкладка 
 Repository-current page-header follow-up отдаёт оставшуюся heading-колонку уже
 самому H1 без `24ch`, фиксирует 24 px между ней и intrinsic actions и переводит
 backlink в один непрозрачно-чёрный ряд с ellipsis; равный вертикальный rhythm
-следует page-header inset. Production rollout этого UI-only follow-up — next.
+следует page-header inset. Тот же repository-current refinement полностью
+удаляет optional eyebrow из `AppPageHeader` API и product consumers.
+Production rollout этих UI-only follow-up — next.
 Current production tabs refinement переводит inactive labels и baseline на
 один 50%-black token, задаёт baseline 1.5 px, gap и верхние радиусы 12 px,
 добавляет иконку каждому tab и показывает только positive count как маленький
@@ -381,13 +383,24 @@ view-sort, начиная с `position ASC`. В action-cell остаётся о�
 Current-source palette больше не меняет размер между категориями: responsive
 panel ограничена viewport, а отдельный внутренний scroll сохраняет header и
 category tabs неподвижными; дублирующие category heading/description удалены.
+Карточки используют content-sized auto rows и прижаты к верхнему левому краю;
+category divider удалён, а tabs и доступные Component cards имеют pointer.
+«Ссылки» и «Файлы» являются отдельными presentation-категориями над прежним
+registry `attachment`. План Lesson больше не обёрнут в `workspace-surface` и не
+дублирует «Структура урока / План»: прозрачный toolbar содержит реальный поиск
+по названиям уже добавленных компонентов слева и actions справа. Component
+cards используют element-radius и стандартную table-shadow.
+
+Repository-current body typography закрепляет Schedule как канон для всех
+active product tables: `#141414 / .88rem / 400 / 1.3`; различия primary-cell
+weight и локальные muted colors удалены, header typography не меняется.
 
 - подтвердить production postflight responsive/accessibility контракта
   обновлённой Course Lessons table, включая mobile contained scroll, keyboard
   sort/menu и focus restore;
 - добавить в сохранённый Course возобновляемую загрузку новых материалов с
   явной компенсацией незавершённых Storage operations;
-- улучшить выбор/поиск Components в palette;
+- проверить production usability поиска Components в длинном Lesson plan;
 - проверить все 20 editors/renderers отдельными production-safe сценариями;
 - добавить drag-and-drop только если он не ухудшает доступность и надёжность;
 - добавить отдельный restore UI для soft-archived Course и только после

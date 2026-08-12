@@ -71,7 +71,6 @@ function ProfileSettingsPageContent() {
 
   return (
     <SettingsShell
-      eyebrow="Личное"
       title="Профиль и email"
       description="Для безопасности подтвердите действие текущим паролем."
     >

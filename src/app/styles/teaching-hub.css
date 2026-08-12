@@ -1555,8 +1555,7 @@
 .student-directory-person > strong {
   overflow: hidden;
   color: #141414;
-  font-size: var(--course-demo-control-font-size);
-  font-weight: 500;
+  font: inherit;
   text-overflow: ellipsis;
   white-space: nowrap;
 }

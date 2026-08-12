@@ -34,7 +34,7 @@ test("catalog learning audience is shareable, server-filtered, and resets list s
   assert.match(catalog, /label: "Обучение педагогов"/);
   assert.match(
     catalog,
-    /className="compact-page-toolbar course-catalog-toolbar"[\s\S]*?className="course-catalog-toolbar-main"[\s\S]*?\{learningAudienceControl\}[\s\S]*?className="compact-toolbar-search product-search-wrap"[\s\S]*?className="compact-toolbar-rail"/,
+    /className="compact-page-toolbar course-catalog-toolbar"[\s\S]*?className="course-catalog-toolbar-main"[\s\S]*?className="compact-toolbar-search product-search-wrap"[\s\S]*?className="compact-toolbar-rail"[\s\S]*?<CourseFilterMenu[\s\S]*?\{learningAudienceControl\}[\s\S]*?<SegmentedControl[\s\S]*?ariaLabel="Вид каталога курсов"/,
   );
   assert.equal(
     catalog.match(/\{learningAudienceControl\}/g)?.length,
@@ -126,8 +126,16 @@ test("educator published workspace tracks lessons and gates server-backed attest
   );
   assert.match(publishedCourse, /<Chip icon=\{BadgeCheck\} tone="emerald">/);
   assert.match(publishedCourse, />\s*Аттестован\s*</);
-  assert.match(publishedCourse, /course\.author\.isShiDao \? \(/);
-  assert.match(publishedCourse, /Автор: \{course\.author\.displayName\}/);
+  assert.match(
+    publishedCourse,
+    /className="published-course-header-summary"[\s\S]*?className="published-course-header-status"[\s\S]*?Аттестован[\s\S]*?className="published-course-header-author"[\s\S]*?Автор: \{authorLogin\}/,
+  );
+  assert.match(
+    publishedCourse,
+    /course\.author\.isCurrentUser && sessionState\.kind === "account"[\s\S]*?sessionState\.email \?\? course\.author\.displayName/,
+  );
+  assert.doesNotMatch(publishedCourse, /tone="inverse"/);
+  assert.doesNotMatch(publishedCourse, />\s*ShiDao\s*</);
   assert.match(publishedCourse, /resumeLesson/);
   assert.match(publishedCourse, />\s*Продолжить\s*</);
   assert.match(catalog, /attestation\.certified && attestation\.attempt/);

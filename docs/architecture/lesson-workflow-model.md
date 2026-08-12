@@ -317,6 +317,18 @@ category tabs находятся вне scroll container, а список Compon
 задаётся `aria-pressed`; отдельные heading/description с тем же названием не
 дублируются.
 
+Presentation отдельно показывает «Ссылки» и «Файлы», хотя оба типа сохраняют
+registry category `attachment`. Category rail не имеет разделителя, а
+auto-sized cards прижаты к началу grid и не растягиваются до высоты dialog.
+Category controls и доступные cards используют pointer.
+
+На поверхности «План» нет дополнительной card-подложки или повторного
+заголовка. Прозрачный toolbar показывает поиск по названиям уже добавленных
+Components слева (если список непустой) и действия AI/добавления справа.
+Authored Component card использует тот же 12 px element radius и стандартную
+тень, что table surfaces; фильтрация не меняет canonical `position` и не
+создаёт второй порядок.
+
 На карточке teacher видит состояние видимости. `staff_only` означает, что
 компонент остаётся частью плана преподавателя, но отсутствует в learner API.
 Приватность обеспечивается server projection и authorization, а не только CSS.
@@ -489,7 +501,9 @@ Visual contract Course routes не меняет эту навигационну�
   24 px. Backlink и стрелка используют непрозрачный `#141414`, label остаётся в
   одной строке и обрезается ellipsis, а интервалы над и под backlink совпадают с
   page-header block-inset (20 px desktop, 16 px mobile). Этот UI-only follow-up
-  является production next и не меняет Lesson hierarchy, API или schema;
+  является production next и не меняет Lesson hierarchy, API или schema.
+  Надзаголовок/eyebrow не входит в `AppPageHeader` API и не может появиться на
+  отдельном product route;
 - основные кнопки и header controls — высотой 40 px с радиусом 12 px и шрифтом
   `.88rem/400`; primary flat без inset-блика, подъёма или тени, иконки имеют
   единый 16 px rhythm, полную непрозрачность и наследуют контрастный цвет,
@@ -499,7 +513,10 @@ Visual contract Course routes не меняет эту навигационну�
   сплошной белый фон и не имеют внешней рамки. Students и обе Courses tables
   используют Schedule-плотность 40 px для header и data rows, однострочный
   ellipsis, 12 px обычный cell inset и 4 px action-cell inset. Shared header
-  белый, а row dividers используют один `--product-table-divider-color`;
+  белый, а row dividers используют один `--product-table-divider-color`.
+  Все body cells и их видимые text descendants используют один Schedule-derived
+  typography contract `#141414 / .88rem / 400 / line-height 1.3`; header row и
+  action-cell намеренно не входят в этот selector;
 - сохранённый Course → **Уроки** продолжает неизменённый полноширинный
   `WorkspaceTabs` прозрачной search/create toolbar без horizontal inset. Таблица
   `№ / Урок / План / Экран ученика / Проведение / Обновлён / actions`

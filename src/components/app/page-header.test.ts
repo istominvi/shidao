@@ -21,6 +21,15 @@ test("active V2 pages share one page header contract without visual modifiers", 
     source("src/components/learner-identity/observing-workspace.tsx"),
     source("src/components/learner-identity/invitation-accept-workspace.tsx"),
     source("src/components/settings-shell.tsx"),
+    source("src/components/store/store-workspace.tsx"),
+  ];
+  const productHeaderApiConsumers = [
+    ...consumers,
+    source("src/app/(app)/(profile-required)/settings/profile/page.tsx"),
+    source(
+      "src/app/(app)/(profile-required)/settings/security/security-settings-form.tsx",
+    ),
+    source("src/components/learner-identity/observers-settings-workspace.tsx"),
   ];
 
   assert.match(header, /type: "link"/);
@@ -33,6 +42,12 @@ test("active V2 pages share one page header contract without visual modifiers", 
   assert.match(header, /className="app-page-back-link-label"/);
   assert.match(header, /className="app-page-actions"/);
   assert.doesNotMatch(header, /className\?: string/);
+  assert.doesNotMatch(header, /eyebrow/i);
+  assert.doesNotMatch(styles, /\.app-page-eyebrow/);
+
+  for (const consumer of productHeaderApiConsumers) {
+    assert.doesNotMatch(consumer, /eyebrow=/);
+  }
 
   assert.match(
     styles,

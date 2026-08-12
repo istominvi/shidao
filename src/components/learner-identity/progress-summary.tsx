@@ -68,7 +68,7 @@ export function ProgressSummary({ progress }: { progress: LearnerProgress }) {
       </p>
       {progress.subjects.length > 0 ? (
         <div className="overflow-x-auto rounded-2xl border border-neutral-200 bg-white">
-          <table className="w-full min-w-[620px] text-left text-sm">
+          <table className="product-table w-full min-w-[620px] text-left text-sm">
             <caption className="sr-only">Прогресс по предметам</caption>
             <thead className="border-b border-neutral-200 bg-neutral-50 text-neutral-600">
               <tr>

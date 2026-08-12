@@ -27,6 +27,9 @@ const catalogSource = source(
 const courseWorkspaceSource = source(
   "src/components/course-builder/course-workspace.tsx",
 );
+const progressSummarySource = source(
+  "src/components/learner-identity/progress-summary.tsx",
+);
 
 test("product tables use the element radius instead of the card radius", () => {
   assert.match(
@@ -50,6 +53,26 @@ test("product tables use the element radius instead of the card radius", () => {
   assert.match(
     styles,
     /\.course-demo-shell \.product-table tbody tr\s*\{[^}]*border-color: var\(--product-table-divider-color, #ececef\);/,
+  );
+  assert.match(
+    styles,
+    /:root\s*\{[^}]*--product-table-body-color: #141414;[^}]*--product-table-body-font-size: 0\.88rem;[^}]*--product-table-body-font-weight: 400;[^}]*--product-table-body-line-height: 1\.3;/,
+  );
+  assert.match(
+    styles,
+    /\.course-demo-shell[\s\S]*?\.product-table[\s\S]*?tbody[\s\S]*?> tr[\s\S]*?> :is\(td, th\):not\(\.product-table-action-cell\)[\s\S]*?color: var\(--product-table-body-color, #141414\);[\s\S]*?font-size: var\(--product-table-body-font-size, 0\.88rem\);[\s\S]*?font-weight: var\(--product-table-body-font-weight, 400\);[\s\S]*?line-height: var\(--product-table-body-line-height, 1\.3\);/,
+  );
+  assert.match(
+    productTableSource,
+    /"product-table-action-cell whitespace-nowrap"/,
+  );
+  assert.doesNotMatch(
+    productTableSource,
+    /className=\{classNames\("text-neutral-950 font-medium"/,
+  );
+  assert.match(
+    progressSummarySource,
+    /<table className="product-table w-full min-w-\[620px\]/,
   );
 
   for (const consumer of [

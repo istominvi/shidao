@@ -97,7 +97,6 @@ export function ObserversSettingsWorkspace() {
 
   return (
     <SettingsShell
-      eyebrow="Доступ"
       title="Наблюдатели"
       description="Только вы управляете доступом к своему учебному профилю для чтения. Подпись связи — текст для удобства, а не роль или дополнительное разрешение."
     >

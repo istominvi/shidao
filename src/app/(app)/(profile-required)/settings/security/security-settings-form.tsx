@@ -186,7 +186,6 @@ export function SecuritySettingsForm({
 
   return (
     <SettingsShell
-      eyebrow="Личное"
       title="Безопасность"
       description={`Статус: ${hasPin ? "PIN настроен" : "PIN не настроен"}. Здесь также можно восстановить доступ к отдельному аккаунту учащегося.`}
     >

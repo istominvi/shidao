@@ -491,6 +491,15 @@ test("component picker is registry-driven and grouped into Russian categories", 
   const listStyles = /\.component-picker-dialog-list\s*\{[^}]*\}/.exec(
     styles,
   )?.[0];
+  const categoryStyles = /\.component-picker-categories\s*\{[^}]*\}/.exec(
+    styles,
+  )?.[0];
+  const categoryButtonStyles = /\.component-picker-category\s*\{[^}]*\}/.exec(
+    styles,
+  )?.[0];
+  const cardStyles = /\.component-picker-card\s*\{[^}]*\}/.exec(styles)?.[0];
+  const enabledCardStyles =
+    /\.component-picker-card:not\(:disabled\)\s*\{[^}]*\}/.exec(styles)?.[0];
   const closeStyles =
     /\.component-picker-dialog \.dialog-shell-close,\s*\.component-picker-dialog \.dialog-shell-close:hover\s*\{[^}]*\}/.exec(
       styles,
@@ -502,10 +511,15 @@ test("component picker is registry-driven and grouped into Russian categories", 
     "Текст",
     "Медиа",
     "Игры и активности",
-    "Ссылки и файлы",
+    "Ссылки",
+    "Файлы",
   ]) {
     assert.match(authoring, new RegExp(category));
   }
+  assert.match(
+    authoring,
+    /category === "link"[\s\S]*?definition\.key === "external_link"[\s\S]*?category === "file"[\s\S]*?definition\.key === "file"/,
+  );
   assert.doesNotMatch(authoring, /Разделители и структура плана/);
   assert.doesNotMatch(authoring, /visibility: "staff_only"/);
   assert.match(authoring, /сразу перейти к редактированию/);
@@ -515,6 +529,10 @@ test("component picker is registry-driven and grouped into Russian categories", 
     /panelClassName="component-picker-dialog-panel max-w-4xl"/,
   );
   assert.match(picker, /bodyClassName="component-picker-dialog-body"/);
+  assert.match(picker, /className="component-picker-categories"/);
+  assert.match(picker, /className={`component-picker-category/);
+  assert.match(picker, /className="component-picker-card"/);
+  assert.doesNotMatch(picker, /border-b border-neutral-200/);
   assert.doesNotMatch(
     picker,
     /Выберите элемент плана|Новый компонент сначала виден только преподавателю/,
@@ -535,8 +553,23 @@ test("component picker is registry-driven and grouped into Russian categories", 
   assert.match(bodyStyles, /min-height: 0/);
   assert.match(bodyStyles, /flex: 1/);
   assert.ok(listStyles, "component picker list styles must remain present");
+  assert.match(listStyles, /display: grid/);
+  assert.match(listStyles, /grid-auto-rows: auto/);
+  assert.match(listStyles, /align-content: start/);
+  assert.match(listStyles, /align-items: start/);
   assert.match(listStyles, /overflow-y: auto/);
   assert.match(listStyles, /scrollbar-gutter: stable/);
+  assert.ok(categoryStyles, "component picker category rail must be styled");
+  assert.match(categoryStyles, /border: 0/);
+  assert.ok(
+    categoryButtonStyles,
+    "component picker category buttons must be styled",
+  );
+  assert.match(categoryButtonStyles, /cursor: pointer/);
+  assert.ok(cardStyles, "component picker cards must be styled");
+  assert.match(cardStyles, /align-self: start/);
+  assert.ok(enabledCardStyles, "enabled picker card styles must be explicit");
+  assert.match(enabledCardStyles, /cursor: pointer/);
   assert.ok(closeStyles, "component picker close styles must remain present");
   assert.match(closeStyles, /height: 2\.5rem/);
   assert.match(closeStyles, /width: 2\.5rem/);
@@ -564,7 +597,13 @@ test("component payload editor covers every active registry type without divider
 
 test("component cards persist edit, delete, order, and ordered Student Screen placement", () => {
   const authoring = source(lessonAuthoringPath);
+  const styles = source("src/app/globals.css");
+  const cardStyles = /\.lesson-component-card\s*\{[^}]*\}/.exec(styles)?.[0];
+  const cardHoverStyles = /\.lesson-component-card:hover\s*\{[^}]*\}/.exec(
+    styles,
+  )?.[0];
 
+  assert.match(authoring, /<article className="lesson-component-card group">/);
   assert.match(authoring, /Сохраняем компонент…/);
   assert.match(authoring, /Удаляем компонент…/);
   assert.match(authoring, /Меняем порядок компонентов…/);
@@ -591,6 +630,70 @@ test("component cards persist edit, delete, order, and ordered Student Screen pl
   );
   assert.doesNotMatch(authoring, /На экране ученика|Только преподавателю/);
   assert.doesNotMatch(authoring, /border-b border-neutral-100 pb-3/);
+  assert.ok(cardStyles, "lesson component card styles must remain present");
+  assert.match(
+    cardStyles,
+    /border-radius: var\([\s\S]*?--course-demo-element-radius/,
+  );
+  assert.doesNotMatch(cardStyles, /--course-demo-card-radius/);
+  assert.match(cardStyles, /box-shadow: 0 10px 24px rgba\(20, 20, 20, 0\.06\)/);
+  assert.ok(
+    cardHoverStyles,
+    "lesson component hover styles must remain present",
+  );
+  assert.match(
+    cardHoverStyles,
+    /box-shadow: 0 10px 24px rgba\(20, 20, 20, 0\.06\)/,
+  );
+});
+
+test("lesson plan uses a transparent toolbar and filters authored components by title", () => {
+  const authoring = source(lessonAuthoringPath);
+  const styles = source("src/app/globals.css");
+  const planStart = authoring.indexOf('{active && item.value === "plan" ? (');
+  const studentStart = authoring.indexOf(
+    '{active && item.value === "student" ? (',
+  );
+  const plan = authoring.slice(planStart, studentStart);
+  const toolbarStyles = /\.lesson-plan-toolbar\s*\{[^}]*\}/.exec(styles)?.[0];
+  const actionStyles = /\.lesson-plan-toolbar-actions\s*\{[^}]*\}/.exec(
+    styles,
+  )?.[0];
+
+  assert.ok(planStart >= 0 && studentStart > planStart);
+  assert.match(plan, /className="lesson-plan-workspace"/);
+  assert.match(plan, /className="lesson-plan-toolbar"/);
+  assert.doesNotMatch(plan, /workspace-surface/);
+  assert.doesNotMatch(plan, /Структура урока|<h2>\s*План\s*<\/h2>/);
+  assert.match(plan, /lesson\.components\.length > 0/);
+  assert.match(plan, /type="search"/);
+  assert.match(plan, /value=\{componentQuery\}/);
+  assert.match(plan, /setComponentQuery\(event\.target\.value\)/);
+  assert.match(plan, /placeholder="Найти компонент"/);
+  assert.match(plan, />\s*Заполнить с ИИ\s*</);
+  assert.match(plan, />\s*Компонент\s*</);
+  assert.match(plan, /query=\{componentQuery\}/);
+
+  assert.match(authoring, /query\.trim\(\)\.toLocaleLowerCase\("ru-RU"\)/);
+  assert.match(
+    authoring,
+    /getComponentDefinition\(component\.typeKey\)[\s\S]*?\.title\.toLocaleLowerCase\("ru-RU"\)[\s\S]*?\.includes\(normalizedQuery\)/,
+  );
+  assert.match(authoring, /if \(!normalizedQuery\) return true/);
+  assert.match(
+    authoring,
+    /components\.length > 0 && visibleComponents\.length === 0/,
+  );
+  assert.match(authoring, /Компоненты не найдены/);
+  assert.match(authoring, /setComponentQuery\(""\)[\s\S]*?\[lesson\.id\]/);
+
+  assert.ok(toolbarStyles, "lesson plan toolbar styles must remain present");
+  assert.match(toolbarStyles, /border: 0/);
+  assert.match(toolbarStyles, /background: transparent/);
+  assert.match(toolbarStyles, /box-shadow: none/);
+  assert.ok(actionStyles, "lesson plan action rail must remain present");
+  assert.match(actionStyles, /justify-content: flex-end/);
+  assert.match(actionStyles, /margin-left: auto/);
 });
 
 test("Student Screen surfaces render one ordered slide without legacy step groups", () => {

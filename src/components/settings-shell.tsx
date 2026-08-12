@@ -4,14 +4,12 @@ import { TopNav } from "@/components/top-nav";
 import { SettingsNavigation } from "@/components/settings-navigation";
 
 type SettingsShellProps = {
-  eyebrow?: string;
   title: string;
   description: string;
   children: ReactNode;
 };
 
 export function SettingsShell({
-  eyebrow,
   title,
   description,
   children,
@@ -23,11 +21,7 @@ export function SettingsShell({
         <SettingsNavigation />
 
         <div className="glass rounded-3xl p-6 md:p-8">
-          <AppPageHeader
-            eyebrow={eyebrow}
-            title={title}
-            description={description}
-          />
+          <AppPageHeader title={title} description={description} />
           {children}
         </div>
       </section>

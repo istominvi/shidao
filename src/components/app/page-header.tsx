@@ -19,7 +19,6 @@ type AppPageHeaderBack =
 type AppPageHeaderProps = {
   title: ReactNode;
   description?: ReactNode;
-  eyebrow?: ReactNode;
   back?: AppPageHeaderBack;
   meta?: ReactNode;
   actions?: ReactNode;
@@ -29,7 +28,6 @@ type AppPageHeaderProps = {
 export function AppPageHeader({
   title,
   description,
-  eyebrow,
   back,
   meta,
   actions,
@@ -41,8 +39,6 @@ export function AppPageHeader({
     (typeof resolvedBackLabel === "string"
       ? `Вернуться: ${resolvedBackLabel}`
       : undefined);
-  const hasHeadingBlock = Boolean(eyebrow || title || description);
-
   return (
     <header
       className={classNames(
@@ -80,21 +76,18 @@ export function AppPageHeader({
             </span>
           </button>
         ) : null}
-        {hasHeadingBlock ? (
-          <div className="app-page-heading">
-            {eyebrow ? <p className="app-page-eyebrow">{eyebrow}</p> : null}
-            <h1
-              ref={headingRef}
-              className="app-page-title"
-              tabIndex={headingRef ? -1 : undefined}
-            >
-              {title}
-            </h1>
-            {description ? (
-              <p className="app-page-description">{description}</p>
-            ) : null}
-          </div>
-        ) : null}
+        <div className="app-page-heading">
+          <h1
+            ref={headingRef}
+            className="app-page-title"
+            tabIndex={headingRef ? -1 : undefined}
+          >
+            {title}
+          </h1>
+          {description ? (
+            <p className="app-page-description">{description}</p>
+          ) : null}
+        </div>
         {meta ? <div className="app-page-meta">{meta}</div> : null}
       </div>
       {actions ? <div className="app-page-actions">{actions}</div> : null}

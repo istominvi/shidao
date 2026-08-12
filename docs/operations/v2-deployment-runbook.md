@@ -958,6 +958,15 @@ flow как permanent delete.
   однострочный ellipsis, 12 px обычный cell inset и 4 px action-cell inset. Во
   всех sortable Schedule/Students/Groups/owned-Course заголовках сортируется
   реальная projection, action heading остаётся несортируемым;
+- в каждой непустой data row Schedule, owned/catalog Course, Course Lessons,
+  Students, Groups и subject progress проверить единый computed typography
+  contract `rgb(20, 20, 20) / .88rem / 400 / line-height 1.3`; header rows и
+  action cells проверяются отдельно;
+- на published educator Course проверить отсутствие `.app-page-eyebrow` и
+  чёрного `ShiDao` chip, вертикальный порядок «Аттестован» над author login;
+  на Lesson plan — отсутствие внешней surface/повторного заголовка, прозрачный
+  search/actions toolbar, content-sized palette cards без category divider и
+  pointer на category/card controls;
 - existing email и learner login/PIN создают одну Account session и не выводят
   internal Auth email/browser secret;
 - внутри directory-вкладок `/students` не скрывает archived/pending за

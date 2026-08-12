@@ -11,14 +11,16 @@ import {
   ClipboardCheck,
   Eye,
   EyeOff,
-  FileText,
   Gamepad2,
   Image as ImageIcon,
   Layers3,
+  Link2,
   MonitorPlay,
+  Paperclip,
   Pencil,
   Plus,
   Save,
+  Search,
   Trash2,
   Type,
   WandSparkles,
@@ -62,7 +64,6 @@ import type { LearnerProfile, LessonRun } from "@/modules/lesson-runs/domain";
 import {
   componentDefinitions,
   getComponentDefinition,
-  type ComponentCategory,
   type ComponentTypeKey,
 } from "@/modules/course-builder/registry/contracts";
 
@@ -87,6 +88,9 @@ type LessonAuthoringWorkspaceProps = {
   learners: LearnerProfile[];
 };
 
+type ComponentPickerCategory =
+  "text" | "media" | "interactive" | "link" | "file";
+
 const CATEGORY_ITEMS = [
   {
     value: "text",
@@ -104,12 +108,17 @@ const CATEGORY_ITEMS = [
     icon: Gamepad2,
   },
   {
-    value: "attachment",
-    label: "Ссылки и файлы",
-    icon: FileText,
+    value: "link",
+    label: "Ссылки",
+    icon: Link2,
+  },
+  {
+    value: "file",
+    label: "Файлы",
+    icon: Paperclip,
   },
 ] as const satisfies ReadonlyArray<{
-  value: ComponentCategory;
+  value: ComponentPickerCategory;
   label: string;
   icon: typeof Type;
 }>;
@@ -253,7 +262,7 @@ function ComponentCard({
   }
 
   return (
-    <article className="group relative rounded-[1.25rem] border border-neutral-200 bg-white p-4 pt-16 shadow-sm transition hover:border-neutral-300 hover:shadow-md md:p-5 md:pt-5">
+    <article className="lesson-component-card group">
       <div className="absolute right-3 top-3 z-10 flex max-w-[calc(100%-1.5rem)] flex-wrap justify-end gap-1">
         <Button
           variant="ghost"
@@ -456,9 +465,13 @@ function ComponentPickerDialog({
   onClose: () => void;
   onCreated: (componentId: string) => void;
 }) {
-  const [category, setCategory] = useState<ComponentCategory>("text");
-  const definitions = componentDefinitions.filter(
-    (definition) => definition.category === category,
+  const [category, setCategory] = useState<ComponentPickerCategory>("text");
+  const definitions = componentDefinitions.filter((definition) =>
+    category === "link"
+      ? definition.key === "external_link"
+      : category === "file"
+        ? definition.key === "file"
+        : definition.category === category,
   );
 
   useEffect(() => {
@@ -501,7 +514,7 @@ function ComponentPickerDialog({
       bodyClassName="component-picker-dialog-body"
     >
       <div
-        className="flex shrink-0 gap-2 overflow-x-auto border-b border-neutral-200 pb-3"
+        className="component-picker-categories"
         role="group"
         aria-label="Категории компонентов"
       >
@@ -514,10 +527,8 @@ function ComponentPickerDialog({
               type="button"
               aria-pressed={selected}
               data-dialog-initial-focus={selected ? "true" : undefined}
-              className={`inline-flex min-h-10 shrink-0 items-center gap-2 rounded-xl px-3 text-sm font-bold transition ${
-                selected
-                  ? "bg-neutral-950 text-white"
-                  : "bg-neutral-100 text-neutral-700 hover:bg-neutral-200"
+              className={`component-picker-category ${
+                selected ? "is-active" : ""
               }`}
               onClick={() => setCategory(item.value)}
             >
@@ -528,17 +539,14 @@ function ComponentPickerDialog({
         })}
       </div>
 
-      <div
-        key={category}
-        className="component-picker-dialog-list grid gap-3 sm:grid-cols-2"
-      >
+      <div key={category} className="component-picker-dialog-list">
         {definitions.map((definition) => (
           <button
             key={definition.key}
             type="button"
             data-component-type-key={definition.key}
             disabled={disabled}
-            className="rounded-2xl border border-neutral-200 bg-white p-4 text-left transition hover:border-neutral-950 hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
+            className="component-picker-card"
             onClick={() => void add(definition.key)}
           >
             <span className="flex items-center justify-between gap-3">
@@ -650,6 +658,7 @@ function LessonEditorDialog({
 function LessonPlan({
   course,
   lesson,
+  query,
   editingComponentId,
   disabled,
   runMutation,
@@ -657,6 +666,7 @@ function LessonPlan({
 }: {
   course: CourseWorkspace;
   lesson: CourseLesson;
+  query: string;
   editingComponentId: string | null;
   disabled: boolean;
   runMutation: CourseBuilderMutationRunner;
@@ -667,10 +677,19 @@ function LessonPlan({
     [course.attachments],
   );
   const components = lesson.components;
+  const normalizedQuery = query.trim().toLocaleLowerCase("ru-RU");
+  const visibleComponents = components
+    .map((component, index) => ({ component, index }))
+    .filter(({ component }) => {
+      if (!normalizedQuery) return true;
+      return getComponentDefinition(component.typeKey)
+        .title.toLocaleLowerCase("ru-RU")
+        .includes(normalizedQuery);
+    });
 
   return (
     <section className="grid gap-4" aria-label="Компоненты плана урока">
-      {components.map((component, index) => (
+      {visibleComponents.map(({ component, index }) => (
         <ComponentCard
           key={component.id}
           component={component}
@@ -699,6 +718,13 @@ function LessonPlan({
           <p className="mt-2 text-sm leading-6 text-neutral-600">
             Нажмите «Компонент» выше и выберите первый элемент плана.
           </p>
+        </div>
+      ) : null}
+      {components.length > 0 && visibleComponents.length === 0 ? (
+        <div className="lesson-plan-filter-empty" role="status">
+          <Search className="h-7 w-7" aria-hidden="true" />
+          <h3>Компоненты не найдены</h3>
+          <p>Измените запрос, чтобы снова увидеть элементы плана.</p>
         </div>
       ) : null}
     </section>
@@ -885,6 +911,7 @@ export function LessonAuthoringWorkspace({
   const [aiPlannerOpen, setAiPlannerOpen] = useState(false);
   const [lessonEditorOpen, setLessonEditorOpen] = useState(false);
   const [lessonRunDialogOpen, setLessonRunDialogOpen] = useState(false);
+  const [componentQuery, setComponentQuery] = useState("");
   const [editingComponentId, setEditingComponentId] = useState<string | null>(
     null,
   );
@@ -923,6 +950,10 @@ export function LessonAuthoringWorkspace({
     });
     return () => window.cancelAnimationFrame(frame);
   }, []);
+
+  useEffect(() => {
+    setComponentQuery("");
+  }, [lesson.id]);
 
   return (
     <div className="min-w-0">
@@ -1020,44 +1051,61 @@ export function LessonAuthoringWorkspace({
             tabIndex={0}
           >
             {active && item.value === "plan" ? (
-              <section className="workspace-surface">
-                <div className="workspace-panel-heading">
-                  <div>
-                    <p className="workspace-eyebrow">Структура урока</p>
-                    <h2>План</h2>
+              <div className="lesson-plan-workspace">
+                <div
+                  className="lesson-plan-toolbar"
+                  aria-label="Управление компонентами плана"
+                >
+                  {lesson.components.length > 0 ? (
+                    <label className="lesson-plan-toolbar-search product-search-wrap">
+                      <span className="sr-only">Поиск компонентов</span>
+                      <Search
+                        className="product-search-icon h-4 w-4"
+                        aria-hidden="true"
+                      />
+                      <input
+                        type="search"
+                        className="product-control product-control-search"
+                        value={componentQuery}
+                        onChange={(event) =>
+                          setComponentQuery(event.target.value)
+                        }
+                        placeholder="Найти компонент"
+                        autoComplete="off"
+                      />
+                    </label>
+                  ) : null}
+                  <div className="lesson-plan-toolbar-actions">
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      disabled={disabled}
+                      onClick={() => setAiPlannerOpen(true)}
+                    >
+                      <WandSparkles className="h-4 w-4" aria-hidden="true" />
+                      Заполнить с ИИ
+                    </Button>
+                    <Button
+                      ref={pickerTriggerRef}
+                      type="button"
+                      disabled={disabled}
+                      onClick={() => setPickerOpen(true)}
+                    >
+                      <Plus className="h-4 w-4" aria-hidden="true" />
+                      Компонент
+                    </Button>
                   </div>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    disabled={disabled}
-                    onClick={() => setAiPlannerOpen(true)}
-                  >
-                    <WandSparkles className="h-4 w-4" aria-hidden="true" />
-                    Заполнить с ИИ
-                  </Button>
-                  <Button
-                    ref={pickerTriggerRef}
-                    type="button"
-                    disabled={disabled}
-                    onClick={() => setPickerOpen(true)}
-                  >
-                    <Plus className="h-4 w-4" aria-hidden="true" />
-                    Компонент
-                  </Button>
                 </div>
-                <div className="mt-4">
-                  <LessonPlan
-                    course={course}
-                    lesson={lesson}
-                    editingComponentId={editingComponentId}
-                    disabled={disabled}
-                    runMutation={runMutation}
-                    onEditingComponentConsumed={() =>
-                      setEditingComponentId(null)
-                    }
-                  />
-                </div>
-              </section>
+                <LessonPlan
+                  course={course}
+                  lesson={lesson}
+                  query={componentQuery}
+                  editingComponentId={editingComponentId}
+                  disabled={disabled}
+                  runMutation={runMutation}
+                  onEditingComponentConsumed={() => setEditingComponentId(null)}
+                />
+              </div>
             ) : null}
             {active && item.value === "student" ? (
               <StudentLessonSurface course={course} lesson={lesson} />

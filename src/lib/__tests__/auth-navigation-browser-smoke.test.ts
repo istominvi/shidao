@@ -583,6 +583,65 @@ type PlaywrightLocator = {
   }) => Promise<void>;
 };
 
+type ProductTableBodyTypography = {
+  color: string;
+  fontSize: string;
+  fontWeight: string;
+  lineHeight: string;
+};
+
+async function assertCanonicalFirstBodyRowTypography(
+  table: PlaywrightLocator,
+  label: string,
+) {
+  const typography = await table
+    .locator("tbody tr:first-child")
+    .evaluate<ProductTableBodyTypography[]>((element) => {
+      const row = element as HTMLTableRowElement;
+      const dataCells = Array.from(row.cells).filter(
+        (cell) =>
+          !cell.matches(
+            ".course-index-table-action-cell, .teaching-run-table-action-cell, .student-directory-action-cell, .product-table-action-cell",
+          ),
+      );
+      const hasDirectText = (candidate: HTMLElement) =>
+        candidate.getAttribute("aria-hidden") !== "true" &&
+        Array.from(candidate.childNodes).some(
+          (node) =>
+            node.nodeType === Node.TEXT_NODE &&
+            Boolean(node.textContent?.trim()),
+        );
+      const textElements = dataCells.flatMap((cell) => {
+        const descendants = Array.from(
+          cell.querySelectorAll<HTMLElement>("a, button, span, strong, time"),
+        ).filter(hasDirectText);
+        return hasDirectText(cell) ? [cell, ...descendants] : descendants;
+      });
+
+      return textElements.map((textElement) => {
+        const style = getComputedStyle(textElement);
+        return {
+          color: style.color,
+          fontSize: style.fontSize,
+          fontWeight: style.fontWeight,
+          lineHeight: style.lineHeight,
+        };
+      });
+    });
+
+  assert.ok(typography.length > 0, `${label}: body typography is missing`);
+  assert.ok(
+    typography.every(
+      ({ color, fontSize, fontWeight, lineHeight }) =>
+        color === "rgb(20, 20, 20)" &&
+        Math.abs(Number.parseFloat(fontSize) - 14.08) < 0.02 &&
+        fontWeight === "400" &&
+        Math.abs(Number.parseFloat(lineHeight) - 18.304) < 0.02,
+    ),
+    `${label}: first body row must use the canonical Schedule typography`,
+  );
+}
+
 type PlaywrightRoute = {
   request: () => { postDataJSON: () => unknown };
   fulfill: (options: {
@@ -2707,6 +2766,7 @@ test("browser smoke: authenticated user on / sees auth-aware header", async (t) 
     await runtime.page.goto("/api/auth/session", { waitUntil: "networkidle" });
     const sessionHtml = await runtime.page.content();
     assert.match(sessionHtml, /E2E Adult/);
+    assert.match(sessionHtml, /adult-e2e@example\.test/);
 
     await runtime.page.goto("/", { waitUntil: "networkidle" });
     const html = await runtime.page.content();
@@ -3683,6 +3743,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       exact: true,
     });
     await scheduleTable.waitFor();
+    await assertCanonicalFirstBodyRowTypography(scheduleTable, "Расписание");
     const scheduleResults = runtime.page.getByRole("region", {
       name: "Назначенные уроки за выбранную неделю",
       exact: true,
@@ -3928,6 +3989,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
           fontSize: getComputedStyle(element).fontSize,
           fontWeight: getComputedStyle(element).fontWeight,
           color: getComputedStyle(element).color,
+          lineHeight: getComputedStyle(element).lineHeight,
         })),
         bodyValues: {
           date: dateCellText,
@@ -4098,10 +4160,11 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
     assert.ok(scheduleTableContract.bodyTypography.length >= 6);
     assert.ok(
       scheduleTableContract.bodyTypography.every(
-        ({ fontSize, fontWeight, color }) =>
-          fontSize === "14.08px" &&
+        ({ fontSize, fontWeight, color, lineHeight }) =>
+          Math.abs(Number.parseFloat(fontSize) - 14.08) < 0.02 &&
           fontWeight === "400" &&
-          color === "rgb(20, 20, 20)",
+          color === "rgb(20, 20, 20)" &&
+          Math.abs(Number.parseFloat(lineHeight) - 18.304) < 0.02,
       ),
     );
     assert.deepEqual(scheduleTableContract.bodyValues, {
@@ -4861,6 +4924,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       exact: true,
     });
     await learnerTable.waitFor();
+    await assertCanonicalFirstBodyRowTypography(learnerTable, "Ученики");
     const learnerFilterTrigger = runtime.page.locator(
       ".student-directory-filter-menu .course-filter-trigger",
     );
@@ -5203,9 +5267,12 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
     await runtime.page
       .getByRole("tab", { name: "Группы 2", exact: true })
       .click();
-    await runtime.page
-      .getByRole("table", { name: "Группы учеников", exact: true })
-      .waitFor();
+    const groupTable = runtime.page.getByRole("table", {
+      name: "Группы учеников",
+      exact: true,
+    });
+    await groupTable.waitFor();
+    await assertCanonicalFirstBodyRowTypography(groupTable, "Группы");
     const groupViewSwitch = runtime.page.getByRole("group", {
       name: "Вид списка групп",
       exact: true,
@@ -7266,7 +7333,11 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
         ".course-catalog-audience-control",
       );
       const rail = toolbar?.querySelector<HTMLElement>(".compact-toolbar-rail");
-      if (!toolbar || !search || !audience || !rail) {
+      const filter = rail?.querySelector<HTMLElement>(".course-filter-menu");
+      const view = rail?.querySelector<HTMLElement>(
+        '[role="group"][aria-label="Вид каталога курсов"]',
+      );
+      if (!toolbar || !search || !audience || !rail || !filter || !view) {
         throw new Error("Catalog toolbar contract is missing");
       }
       const style = getComputedStyle(toolbar);
@@ -7274,24 +7345,44 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       const searchRect = search.getBoundingClientRect();
       const audienceRect = audience.getBoundingClientRect();
       const railRect = rail.getBoundingClientRect();
+      const filterRect = filter.getBoundingClientRect();
+      const viewRect = view.getBoundingClientRect();
+      const centerY = (elementRect: DOMRect) =>
+        elementRect.top + elementRect.height / 2;
       return {
         paddingLeft: style.paddingLeft,
         paddingRight: style.paddingRight,
-        audienceStartInset: audienceRect.left - rect.left,
-        audienceSearchGap: searchRect.left - audienceRect.right,
-        audienceSearchCenterDelta:
-          audienceRect.top +
-          audienceRect.height / 2 -
-          (searchRect.top + searchRect.height / 2),
+        searchStartInset: searchRect.left - rect.left,
+        filterAudienceGap: audienceRect.left - filterRect.right,
+        audienceViewGap: viewRect.left - audienceRect.right,
+        audienceFilterCenterDelta: centerY(audienceRect) - centerY(filterRect),
+        audienceViewCenterDelta: centerY(audienceRect) - centerY(viewRect),
         railEndInset: rect.right - railRect.right,
+        searchBeforeRail: Boolean(
+          search.compareDocumentPosition(rail) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+        ),
+        filterBeforeAudience: Boolean(
+          filter.compareDocumentPosition(audience) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+        ),
+        audienceBeforeView: Boolean(
+          audience.compareDocumentPosition(view) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+        ),
       };
     });
     assert.equal(catalogToolbarContract.paddingLeft, "0px");
     assert.equal(catalogToolbarContract.paddingRight, "0px");
-    assert.ok(Math.abs(catalogToolbarContract.audienceStartInset) < 0.5);
-    assert.ok(catalogToolbarContract.audienceSearchGap >= 0);
-    assert.ok(Math.abs(catalogToolbarContract.audienceSearchCenterDelta) < 0.5);
+    assert.ok(Math.abs(catalogToolbarContract.searchStartInset) < 0.5);
+    assert.ok(catalogToolbarContract.filterAudienceGap >= 0);
+    assert.ok(catalogToolbarContract.audienceViewGap >= 0);
+    assert.ok(Math.abs(catalogToolbarContract.audienceFilterCenterDelta) < 0.5);
+    assert.ok(Math.abs(catalogToolbarContract.audienceViewCenterDelta) < 0.5);
     assert.ok(Math.abs(catalogToolbarContract.railEndInset) < 0.5);
+    assert.equal(catalogToolbarContract.searchBeforeRail, true);
+    assert.equal(catalogToolbarContract.filterBeforeAudience, true);
+    assert.equal(catalogToolbarContract.audienceBeforeView, true);
     assert.equal(
       await catalogPanel.getByText("Готовые курсы", { exact: true }).count(),
       0,
@@ -7349,6 +7440,10 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
     await catalogPanel
       .getByText(E2E_EDUCATOR_COURSE_TITLE, { exact: true })
       .waitFor();
+    await assertCanonicalFirstBodyRowTypography(
+      catalogPanel.locator(".course-index-catalog-table"),
+      "Каталог",
+    );
     assert.equal(
       await audienceControl
         .getByRole("button", { name: "Обучение педагогов", exact: true })
@@ -7431,9 +7526,18 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
     const publishedHeaderActions = runtime.page.locator(
       ".published-course-workspace .app-page-actions",
     );
-    await publishedHeaderActions.getByText("ShiDao", { exact: true }).waitFor();
+    assert.equal(
+      await runtime.page
+        .locator(".published-course-workspace .app-page-eyebrow")
+        .count(),
+      0,
+    );
+    assert.equal(
+      await publishedHeaderActions.getByText("ShiDao", { exact: true }).count(),
+      0,
+    );
     await publishedHeaderActions
-      .getByText("Автор: E2E Adult", { exact: true })
+      .getByText("Автор: adult-e2e@example.test", { exact: true })
       .waitFor();
     await publishedHeaderActions
       .getByText("Аттестован", { exact: true })
@@ -7447,7 +7551,20 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       );
       const title = header?.querySelector<HTMLElement>(".app-page-title");
       const actions = header?.querySelector<HTMLElement>(".app-page-actions");
-      if (!header || !content || !title || !actions) {
+      const attestation = actions?.querySelector<HTMLElement>(
+        ".published-course-header-status",
+      );
+      const author = actions?.querySelector<HTMLElement>(
+        ".published-course-header-author",
+      );
+      if (
+        !header ||
+        !content ||
+        !title ||
+        !actions ||
+        !attestation ||
+        !author
+      ) {
         throw new Error("Published Course header geometry is missing");
       }
 
@@ -7456,6 +7573,8 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       const contentRect = content.getBoundingClientRect();
       const titleRect = title.getBoundingClientRect();
       const actionsRect = actions.getBoundingClientRect();
+      const attestationRect = attestation.getBoundingClientRect();
+      const authorRect = author.getBoundingClientRect();
       const actionChildRects = Array.from(actions.children)
         .map((child) => child.getBoundingClientRect())
         .filter((rect) => rect.width > 0 && rect.height > 0);
@@ -7467,6 +7586,7 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       return {
         titleUsesHeadingColumn: Math.abs(titleRect.width - contentRect.width),
         actionsFitContent: Math.abs(actionsRect.width - actionContentWidth),
+        attestationAboveAuthor: attestationRect.bottom <= authorRect.top,
         columnGap: actionsRect.left - contentRect.right,
         remainingWidthDelta: Math.abs(
           contentRect.width -
@@ -7480,6 +7600,7 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
     });
     assert.ok(publishedHeaderGeometry.titleUsesHeadingColumn < 0.5);
     assert.ok(publishedHeaderGeometry.actionsFitContent < 0.5);
+    assert.equal(publishedHeaderGeometry.attestationAboveAuthor, true);
     assert.ok(Math.abs(publishedHeaderGeometry.columnGap - 24) < 0.5);
     assert.ok(publishedHeaderGeometry.remainingWidthDelta < 0.5);
     assert.equal(
@@ -7562,6 +7683,10 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
     await runtime.page
       .getByRole("region", { name: "Таблица курсов", exact: true })
       .waitFor();
+    await assertCanonicalFirstBodyRowTypography(
+      runtime.page.locator(".course-index-owned-table"),
+      "Мои курсы",
+    );
     const ownedCourseTableSurface = await runtime.page.evaluate(() => {
       const wrapper = document.querySelector<HTMLElement>(
         '[aria-label="Таблица курсов"].product-table-wrap',
@@ -7983,6 +8108,10 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
     });
     assert.ok(Math.abs(courseVisual.tabBottom - courseVisual.tabsBottom) < 0.5);
 
+    await assertCanonicalFirstBodyRowTypography(
+      runtime.page.locator(".course-lessons-table"),
+      "Уроки курса",
+    );
     const courseLessonsVisual = await runtime.page.evaluate(() => {
       const toolbar = document.querySelector<HTMLElement>(
         ".course-lessons-toolbar",
@@ -8546,7 +8675,8 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
         "word_builder",
         "vocabulary_list",
       ],
-      "Ссылки и файлы": ["external_link", "file"],
+      Ссылки: ["external_link"],
+      Файлы: ["file"],
     } as const;
     const componentDialogLayouts: Array<{
       category: string;
@@ -8555,6 +8685,16 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       top: number;
       panelOverflowY: string;
       listOverflowY: string;
+      categoriesBorderBottomWidth: string;
+      categoryButtonCursors: string[];
+      enabledCardCursors: string[];
+      cardContentSizing: Array<{
+        height: number;
+        contentBottomInset: number;
+        paddingBottom: number;
+        borderBottomWidth: number;
+      }>;
+      lastCardBottomGap: number;
       closeBorderTopWidth: string;
       closeBackgroundColor: string;
     }> = [];
@@ -8589,10 +8729,13 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
           const list = panel.querySelector<HTMLElement>(
             ".component-picker-dialog-list",
           );
+          const categories = panel.querySelector<HTMLElement>(
+            ".component-picker-categories",
+          );
           const close = panel.querySelector<HTMLElement>(
             '.dialog-shell-close[aria-label="Закрыть"]',
           );
-          if (!list || !close) {
+          if (!list || !categories || !close) {
             throw new Error("Component dialog layout contract is missing");
           }
           const selectedCategory = panel
@@ -8604,7 +8747,14 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
           const rect = panel.getBoundingClientRect();
           const panelStyle = getComputedStyle(panel);
           const listStyle = getComputedStyle(list);
+          const categoriesStyle = getComputedStyle(categories);
           const closeStyle = getComputedStyle(close);
+          const cards = Array.from(
+            list.querySelectorAll<HTMLButtonElement>(
+              ".component-picker-card:not(:disabled)",
+            ),
+          );
+          const cardRects = cards.map((card) => card.getBoundingClientRect());
           return {
             category: selectedCategory,
             width: rect.width,
@@ -8612,6 +8762,36 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
             top: rect.top,
             panelOverflowY: panelStyle.overflowY,
             listOverflowY: listStyle.overflowY,
+            categoriesBorderBottomWidth: categoriesStyle.borderBottomWidth,
+            categoryButtonCursors: Array.from(
+              categories.querySelectorAll<HTMLElement>(
+                ".component-picker-category",
+              ),
+              (button) => getComputedStyle(button).cursor,
+            ),
+            enabledCardCursors: cards.map(
+              (card) => getComputedStyle(card).cursor,
+            ),
+            cardContentSizing: cards.map((card, index) => {
+              const lastContent = card.lastElementChild as HTMLElement | null;
+              if (!lastContent) {
+                throw new Error("Component picker card content is missing");
+              }
+              const cardStyle = getComputedStyle(card);
+              return {
+                height: cardRects[index].height,
+                contentBottomInset:
+                  cardRects[index].bottom -
+                  lastContent.getBoundingClientRect().bottom,
+                paddingBottom: Number.parseFloat(cardStyle.paddingBottom),
+                borderBottomWidth: Number.parseFloat(
+                  cardStyle.borderBottomWidth,
+                ),
+              };
+            }),
+            lastCardBottomGap:
+              list.getBoundingClientRect().bottom -
+              Math.max(...cardRects.map((cardRect) => cardRect.bottom)),
             closeBorderTopWidth: closeStyle.borderTopWidth,
             closeBackgroundColor: closeStyle.backgroundColor,
           };
@@ -8625,9 +8805,30 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       assert.ok(Math.abs(layout.top - componentDialogBaseline.top) < 0.5);
       assert.equal(layout.panelOverflowY, "hidden");
       assert.equal(layout.listOverflowY, "auto");
+      assert.equal(layout.categoriesBorderBottomWidth, "0px");
+      assert.ok(
+        layout.categoryButtonCursors.every((cursor) => cursor === "pointer"),
+      );
+      assert.ok(
+        layout.enabledCardCursors.every((cursor) => cursor === "pointer"),
+      );
       assert.equal(layout.closeBorderTopWidth, "0px");
       assert.equal(layout.closeBackgroundColor, "rgba(0, 0, 0, 0)");
     }
+    const textCategoryLayout = componentDialogLayouts.find(
+      ({ category }) => category === "Текст",
+    );
+    assert.ok(textCategoryLayout, "Text component category layout is missing");
+    assert.ok(textCategoryLayout.cardContentSizing.length > 0);
+    assert.ok(
+      textCategoryLayout.cardContentSizing.every(
+        ({ height, contentBottomInset, paddingBottom, borderBottomWidth }) =>
+          height > 0 &&
+          Math.abs(contentBottomInset - paddingBottom - borderBottomWidth) <
+            0.5,
+      ),
+    );
+    assert.ok(textCategoryLayout.lastCardBottomGap > 0.5);
     for (const redundantText of [
       "Выберите элемент плана. Новый компонент сначала виден только преподавателю.",
       "Заголовки, основной текст, сноски и цитаты",
@@ -8887,7 +9088,11 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
       const viewSwitch = toolbar?.querySelector<HTMLElement>(
         '[role="group"][aria-label="Вид каталога курсов"]',
       );
-      if (!toolbar || !search || !rail || !viewSwitch) {
+      const filter = rail?.querySelector<HTMLElement>(".course-filter-menu");
+      const audience = rail?.querySelector<HTMLElement>(
+        ".course-catalog-audience-control",
+      );
+      if (!toolbar || !search || !rail || !viewSwitch || !filter || !audience) {
         throw new Error("Mobile Catalog toolbar controls are missing");
       }
       const viewportWidth = document.documentElement.clientWidth;
@@ -8895,6 +9100,7 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
       const style = getComputedStyle(toolbar);
       const searchRect = search.getBoundingClientRect();
       const railRect = rail.getBoundingClientRect();
+      const audienceRect = audience.getBoundingClientRect();
       return {
         scrollWidth: document.documentElement.scrollWidth,
         insideViewport: rect.left >= 0 && rect.right <= viewportWidth,
@@ -8902,6 +9108,23 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
         paddingRight: style.paddingRight,
         searchStartInset: searchRect.left - rect.left,
         railEndInset: rect.right - railRect.right,
+        audienceInsideViewport:
+          audienceRect.left >= 0 && audienceRect.right <= viewportWidth,
+        audienceInsideRail:
+          audienceRect.left >= railRect.left &&
+          audienceRect.right <= railRect.right,
+        searchBeforeRail: Boolean(
+          search.compareDocumentPosition(rail) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+        ),
+        filterBeforeAudience: Boolean(
+          filter.compareDocumentPosition(audience) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+        ),
+        audienceBeforeView: Boolean(
+          audience.compareDocumentPosition(viewSwitch) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+        ),
         shellHeight: getComputedStyle(viewSwitch).height,
         visibleResultCount: toolbar.querySelectorAll(".compact-toolbar-result")
           .length,
@@ -8914,6 +9137,11 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
       paddingRight: "0px",
       searchStartInset: 0,
       railEndInset: 0,
+      audienceInsideViewport: true,
+      audienceInsideRail: true,
+      searchBeforeRail: true,
+      filterBeforeAudience: true,
+      audienceBeforeView: true,
       shellHeight: "40px",
       visibleResultCount: 0,
     });
