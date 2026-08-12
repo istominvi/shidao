@@ -35,7 +35,12 @@ CoursePublicationRevision ← CoursePublicationOrigin ← independent Course cop
   the row, while authored children, attachments, LessonRuns and
   LearningRecords remain physical. Published Course must be explicitly
   unpublished first, and a Course with an open LessonRun cannot be archived.
-  Permanent deletion and archive restore UI are not current behavior.
+  The user-JWT `archive_course` RPC checks active ownership and both blockers
+  together with setting `archived_at` in one database transaction; reverse
+  guards serialize archive, publish and open Run on the same Course row. This
+  database contract is current production; the dependent API/UI remains current
+  source until its separate Coolify rollout. Permanent deletion and archive
+  restore UI are not current behavior.
 - `LearnerProfile` is the canonical learning identity and is not owned by a
   teacher. Every Account has exactly one linked profile; teacher-created
   offline profiles keep nullable `account_id` until recipient-bound claim or

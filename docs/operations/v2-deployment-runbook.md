@@ -168,6 +168,38 @@ Production DB execution record, 11 августа 2026 года:
 Web merge/deploy и exact running-image postflight для этого release фиксируются
 отдельно после фактического Coolify rollout.
 
+### A1 atomic Course archive — production execution record
+
+Exact migration `20260811231505_atomic_course_archive.sql`, SHA-256
+`7b43b023dd7692a39c1ab3702f0972c5d2252766a1093c3905b8c80fce24e8f8`,
+применена к production с `COMMIT` 12 августа 2026 года. Database half этого
+DB+web contract теперь current; зависимый web вызывает `archive_course`, но его
+Coolify rollout и running-image postflight остаются отдельным следующим шагом.
+
+Production evidence:
+
+- verified full-format backup
+  `/root/shidao-db-backups/shidao-before-atomic-course-archive-20260811T233315Z.dump`
+  имеет size `1146274` bytes, mode `600`, `1427` restore-list entries и
+  SHA-256
+  `86610eac53eee82ddba0943247876f77c16ec52c076ca1f93945d64bd4900812`;
+- неизменённый tracked SQL завершился `COMMIT`; exact postflight и rollback
+  probe прошли успешно;
+- counts не изменились: `5` active и `0` archived Course, `16` Lessons,
+  `90` Components, `6` Slides, `2` attachments/files, `2` Runs/records,
+  `0` publications/revisions; invalid invariants — `0`;
+- postflight подтвердил owner-matched `SECURITY DEFINER` RPC с закрытым ACL,
+  четыре enabled guard triggers, private owner-matched touch-helper и exact
+  column-only Course/Lesson UPDATE grants без table-level UPDATE/DELETE;
+- PostgREST видит RPC, anonymous HTTP-вызов закрыт с `401` / `42501`;
+- штатный live snapshot снят в `2026-08-12T00:22:27Z`, SHA-256
+  `055b3c3ab47afc3c3db86d92c6c7530b3735841e34e4b475101ac96056d853ec`.
+
+При зависимом web rollout подтвердить exact `SOURCE_COMMIT`, image, restart
+count, HTTPS/guest/CSRF и authenticated Course archive smoke. При неуспехе web
+rollout не откатывать migration разрушительно: исправлять новой forward change
+или вернуть совместимый web, использующий RPC.
+
 Web с Groups/mixed audience нельзя выпускать раньше последовательного успешного
 применения `20260806190044_lesson_runs_learning_records.sql` и
 `20260806220726_learner_groups_mixed_course_audience.sql`: students/audience
@@ -631,8 +663,13 @@ ShiDao V2 application:
 но Lessons, attachments, Runs и LearningRecords не удаляются физически.
 Published Course должен вернуть `409 course_is_published` до явного unpublish,
 а Course с открытым Run — `409 course_has_open_lesson_runs` до завершения или
-отмены занятия. Не трактовать этот flow как permanent delete или как atomic
-publication/archive transaction.
+отмены занятия. Проверить, что application вызывает одну user-JWT RPC
+`archive_course`, а не publication/open-run preflight-read плюс direct PATCH:
+RPC атомарно проверяет active ownership и оба conflict-условия вместе с
+установкой `archived_at`; A1 reverse guards сериализуют archive, publish и open
+Run на одной Course row. Этот database contract deployed/current; UI/API smoke
+становится deployed behavior только после отдельного успешного Coolify rollout.
+Не трактовать flow как permanent delete.
 
 ### Roleless navigation and learner identity
 

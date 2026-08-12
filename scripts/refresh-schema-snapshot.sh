@@ -179,6 +179,21 @@ SHIDAO_SCHEMA_SIGNATURE="$({
            'public.delete_lesson_with_history(uuid)'
          ) is not null
          and to_regprocedure(
+           'public.archive_course(uuid)'
+         ) is not null
+         and to_regprocedure(
+           'public.guard_course_archive_invariants()'
+         ) is not null
+         and to_regprocedure(
+           'public.guard_course_publication_active_source()'
+         ) is not null
+         and to_regprocedure(
+           'public.guard_lesson_course_immutable()'
+         ) is not null
+         and to_regprocedure(
+           'public.guard_lesson_run_active_course()'
+         ) is not null
+         and to_regprocedure(
            'public.current_account_auth_context()'
          ) is not null
          and to_regprocedure(
@@ -354,6 +369,269 @@ SHIDAO_SCHEMA_SIGNATURE="$({
                from public.learner_profile as profile
                where profile.account_id = account.id
              ) <> 1
+         )
+         and exists (
+           select 1
+           from pg_proc as procedure
+           where procedure.oid = to_regprocedure(
+             'public.archive_course(uuid)'
+           )
+             and procedure.prosecdef
+             and procedure.proconfig @> array['search_path=\"\"']
+             and procedure.proowner = (
+               select relation.relowner
+               from pg_class as relation
+               where relation.oid = 'public.course'::regclass
+             )
+             and not exists (
+               select 1
+               from aclexplode(
+                 coalesce(
+                   procedure.proacl,
+                   acldefault('f', procedure.proowner)
+                 )
+               ) as acl_entry
+               where acl_entry.grantee = 0
+                 and acl_entry.privilege_type = 'EXECUTE'
+             )
+         )
+         and not exists (
+           select 1
+           from unnest(array['anon', 'service_role']) as actor(role_name)
+           where has_function_privilege(
+             actor.role_name,
+             'public.archive_course(uuid)',
+             'EXECUTE'
+           )
+         )
+         and has_function_privilege(
+           'authenticated',
+           'public.archive_course(uuid)',
+           'EXECUTE'
+         )
+         and not exists (
+           select 1
+           from pg_proc as procedure
+           where procedure.oid in (
+             to_regprocedure('public.guard_course_archive_invariants()'),
+             to_regprocedure('public.guard_course_publication_active_source()'),
+             to_regprocedure('public.guard_lesson_course_immutable()'),
+             to_regprocedure('public.guard_lesson_run_active_course()')
+           )
+             and (
+               procedure.prosecdef
+               or procedure.proconfig is null
+               or not (procedure.proconfig @> array['search_path=\"\"'])
+               or procedure.proowner <> (
+                 select relation.relowner
+                 from pg_class as relation
+                 where relation.oid = 'public.course'::regclass
+               )
+             )
+         )
+         and not exists (
+           select 1
+           from unnest(array[
+             'public.guard_course_archive_invariants()',
+             'public.guard_course_publication_active_source()',
+             'public.guard_lesson_course_immutable()',
+             'public.guard_lesson_run_active_course()'
+           ]) as guarded(signature)
+           cross join unnest(array['anon', 'authenticated', 'service_role'])
+             as actor(role_name)
+           where has_function_privilege(
+             actor.role_name,
+             guarded.signature,
+             'EXECUTE'
+           )
+         )
+         and not exists (
+           select 1
+           from pg_proc as procedure
+           where procedure.oid in (
+             to_regprocedure('public.touch_course_from_authoring_child()'),
+             to_regprocedure('public.touch_courses_from_stored_file()')
+           )
+             and (
+               not procedure.prosecdef
+               or procedure.proconfig is null
+               or not (procedure.proconfig @> array['search_path=\"\"'])
+               or procedure.proowner <> (
+                 select relation.relowner
+                 from pg_class as relation
+                 where relation.oid = 'public.course'::regclass
+               )
+             )
+         )
+         and not exists (
+           select 1
+           from unnest(array[
+             'public.touch_course_from_authoring_child()',
+             'public.touch_courses_from_stored_file()'
+           ]) as guarded(signature)
+           cross join unnest(array['anon', 'authenticated', 'service_role'])
+             as actor(role_name)
+           where has_function_privilege(
+             actor.role_name,
+             guarded.signature,
+             'EXECUTE'
+           )
+         )
+         and not has_table_privilege(
+           'authenticated', 'public.course', 'UPDATE'
+         )
+         and not has_table_privilege(
+           'authenticated', 'public.course', 'DELETE'
+         )
+         and not has_column_privilege(
+           'authenticated', 'public.course', 'archived_at', 'UPDATE'
+         )
+         and (
+           select bool_and(
+             has_column_privilege(
+               'authenticated', 'public.course', allowed.column_name, 'UPDATE'
+             )
+           )
+           from unnest(array[
+             'title', 'subject', 'goal', 'level', 'audience_description',
+             'target_lesson_count', 'teacher_preferences', 'audience_type',
+             'settings', 'assembled_at'
+           ]) as allowed(column_name)
+         )
+         and not exists (
+           select 1
+           from pg_attribute as attribute
+           where attribute.attrelid = 'public.course'::regclass
+             and attribute.attnum > 0
+             and not attribute.attisdropped
+             and attribute.attname <> all(array[
+               'title', 'subject', 'goal', 'level', 'audience_description',
+               'target_lesson_count', 'teacher_preferences', 'audience_type',
+               'settings', 'assembled_at'
+             ])
+             and has_column_privilege(
+               'authenticated',
+               'public.course',
+               attribute.attname,
+               'UPDATE'
+             )
+         )
+         and not has_table_privilege(
+           'authenticated', 'public.lesson', 'UPDATE'
+         )
+         and not has_table_privilege(
+           'authenticated', 'public.lesson', 'DELETE'
+         )
+         and not has_column_privilege(
+           'authenticated', 'public.lesson', 'course_id', 'UPDATE'
+         )
+         and (
+           select bool_and(
+             has_column_privilege(
+               'authenticated', 'public.lesson', allowed.column_name, 'UPDATE'
+             )
+           )
+           from unnest(array[
+             'position', 'title', 'summary',
+             'estimated_duration_minutes', 'settings'
+           ]) as allowed(column_name)
+         )
+         and not exists (
+           select 1
+           from pg_attribute as attribute
+           where attribute.attrelid = 'public.lesson'::regclass
+             and attribute.attnum > 0
+             and not attribute.attisdropped
+             and attribute.attname <> all(array[
+               'position', 'title', 'summary',
+               'estimated_duration_minutes', 'settings'
+             ])
+             and has_column_privilege(
+               'authenticated',
+               'public.lesson',
+               attribute.attname,
+               'UPDATE'
+             )
+         )
+         and not exists (
+           select 1
+           from (values
+             (
+               'public.course'::regclass,
+               'trg_course_archive_invariants',
+               to_regprocedure('public.guard_course_archive_invariants()'),
+               19::smallint,
+               array['archived_at']::text[]
+             ),
+             (
+               'public.course_publication'::regclass,
+               'trg_course_publication_active_source',
+               to_regprocedure('public.guard_course_publication_active_source()'),
+               23::smallint,
+               array['status', 'source_course_id']::text[]
+             ),
+             (
+               'public.lesson'::regclass,
+               'trg_lesson_course_immutable',
+               to_regprocedure('public.guard_lesson_course_immutable()'),
+               19::smallint,
+               array['course_id']::text[]
+             ),
+             (
+               'public.lesson_run'::regclass,
+               'trg_lesson_run_active_course',
+               to_regprocedure('public.guard_lesson_run_active_course()'),
+               23::smallint,
+               array['lesson_id', 'ended_at', 'cancelled_at']::text[]
+             )
+           ) as required_trigger(
+             relation_id,
+             trigger_name,
+             function_id,
+             trigger_type,
+             column_names
+           )
+           where not exists (
+             select 1
+             from pg_trigger as trigger
+             where trigger.tgrelid = required_trigger.relation_id
+               and trigger.tgname = required_trigger.trigger_name
+               and trigger.tgfoid = required_trigger.function_id
+               and trigger.tgtype = required_trigger.trigger_type
+               and not trigger.tgisinternal
+               and trigger.tgenabled = 'O'
+               and trigger.tgqual is null
+               and (
+                 select array_agg(
+                   attribute.attname::text
+                   order by attribute.attname::text
+                 )
+                 from unnest(trigger.tgattr::smallint[]) as column_ref(attnum)
+                 join pg_attribute as attribute
+                   on attribute.attrelid = trigger.tgrelid
+                  and attribute.attnum = column_ref.attnum
+               ) = (
+                 select array_agg(column_name order by column_name)
+                 from unnest(required_trigger.column_names) as column_name
+               )
+           )
+         )
+         and not exists (
+           select 1
+           from public.course as course
+           join public.course_publication as publication
+             on publication.source_course_id = course.id
+           where course.archived_at is not null
+             and publication.status = 'published'
+         )
+         and not exists (
+           select 1
+           from public.course as course
+           join public.lesson as lesson on lesson.course_id = course.id
+           join public.lesson_run as run on run.lesson_id = lesson.id
+           where course.archived_at is not null
+             and run.ended_at is null
+             and run.cancelled_at is null
          )
          and exists (
            select 1
@@ -889,7 +1167,16 @@ for required in \
   "CREATE FUNCTION public.build_cross_provider_learner_context" \
   "CREATE FUNCTION public.schedule_lesson_run" \
   "CREATE FUNCTION public.complete_lesson_run_v2" \
-  "CREATE FUNCTION public.delete_lesson_with_history"; do
+  "CREATE FUNCTION public.delete_lesson_with_history" \
+  "CREATE FUNCTION public.archive_course" \
+  "CREATE FUNCTION public.guard_course_archive_invariants" \
+  "CREATE FUNCTION public.guard_course_publication_active_source" \
+  "CREATE FUNCTION public.guard_lesson_course_immutable" \
+  "CREATE FUNCTION public.guard_lesson_run_active_course" \
+  "CREATE TRIGGER trg_course_archive_invariants" \
+  "CREATE TRIGGER trg_course_publication_active_source" \
+  "CREATE TRIGGER trg_lesson_course_immutable" \
+  "CREATE TRIGGER trg_lesson_run_active_course"; do
   if ! grep -Fq "${required}" "${TMP_RESULT}"; then
     echo "Refusing to replace snapshot: generated result is missing ${required}." >&2
     exit 1

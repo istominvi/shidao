@@ -1568,6 +1568,29 @@ async function handleMockSupabase(
     return;
   }
 
+  if (requestUrl.pathname === "/rest/v1/rpc/archive_course") {
+    const body = await readJsonBody(request);
+    const requestedCourseId = body.p_course_id;
+    const courseIsVisible =
+      (requestedCourseId === E2E_COURSE_ID && !e2eCourseArchived) ||
+      (requestedCourseId === E2E_SECOND_COURSE_ID &&
+        e2eSecondCourseVisible &&
+        !e2eSecondCourseArchived);
+
+    if (!courseIsVisible) {
+      json(response, 200, "not_found");
+      return;
+    }
+
+    if (requestedCourseId === E2E_COURSE_ID) {
+      e2eCourseArchived = true;
+    } else {
+      e2eSecondCourseArchived = true;
+    }
+    json(response, 200, "archived");
+    return;
+  }
+
   if (requestUrl.pathname === "/rest/v1/account") {
     const requestedAuthUserId = readEqFilter(requestUrl, "auth_user_id");
     const requestedAccountId = readEqFilter(requestUrl, "id");
@@ -1595,17 +1618,6 @@ async function handleMockSupabase(
   if (requestUrl.pathname === "/rest/v1/course") {
     const requestedCourseId = readEqFilter(requestUrl, "id");
     if (request.method === "PATCH") {
-      const body = await readJsonBody(request);
-      if (
-        (requestedCourseId === E2E_COURSE_ID ||
-          requestedCourseId === E2E_SECOND_COURSE_ID) &&
-        typeof body.archived_at === "string"
-      ) {
-        if (requestedCourseId === E2E_COURSE_ID) e2eCourseArchived = true;
-        else e2eSecondCourseArchived = true;
-        json(response, 200, [{ id: requestedCourseId }]);
-        return;
-      }
       json(
         response,
         200,

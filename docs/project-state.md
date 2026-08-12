@@ -185,8 +185,9 @@ content/sort controls не добавлены. Подзаголовок `/course
 Course **Мои** — `Курс / Предмет / Уровень / Уроки / Публикация / Обновлён /
 actions`, а **Каталог** — `Курс / Предмет / Уровень / Автор / Уроки /
 Материалы / actions`. Shared header белый, а разделители строк используют один
-`--product-table-divider-color`. Это current-source UI/application follow-up
-без физического изменения schema или migration; deployment ещё не выполнен.
+`--product-table-divider-color`. Сама table/toolbar geometry не меняет schema;
+отдельный Course archive lifecycle ниже использует уже применённый production
+A1 database contract. Deployment web source ещё не выполнен.
 
 Сохранённый Course применяет тот же контракт на вкладке **Уроки**: неизменённый
 общий `WorkspaceTabs` остаётся полноширинным, а под ним прозрачная панель поиска
@@ -215,8 +216,13 @@ recoverable soft archive через существующий `course.archived_at
 LessonRuns и LearningRecords физически сохраняются. Опубликованный Course
 получает `409 course_is_published` до явного unpublish, а Course с открытым
 LessonRun — `409 course_has_open_lesson_runs` до завершения или отмены Runs.
-Это не permanent delete и не обещание atomic concurrency между отдельными
-publication/archive действиями.
+После owner-check application вызывает одну user-JWT RPC `archive_course`:
+она в одной DB-транзакции повторно проверяет active ownership, публикацию и
+открытые Runs, а при успехе ставит `archived_at`. Поэтому endpoint не делает
+раздельных publication/open-run preflight-read и direct PATCH. Reverse guards
+сериализуют archive, publish и создание/opening Run на одной Course row; это
+по-прежнему не permanent delete. A1 database contract уже deployed/current;
+этот API/UI flow остаётся current source до отдельного Coolify rollout.
 
 **Current source Students table/actions refinement (следующий deployment):**
 каждый data-заголовок таблиц Students и Groups переключает возрастающую и
@@ -1130,6 +1136,23 @@ provider requests, assistant dialog history или quota state в БД.
   сохранил 5 Course, 16 Lesson и 6 Slides; Component count стал 89,
   publication divider, empty Slides, density и exactly-one violations равны
   `0`. Это DB-state; он не является доказательством нового web deploy.
+- `20260811231505_atomic_course_archive.sql` — применённый production A1:
+  owner-scoped `archive_course`, shared Course row lock для
+  archive/publish/open Run, immutable Lesson parent, четыре закрытых guard
+  trigger, column-only browser UPDATE и запрет прямого Course/Lesson DELETE.
+  Final checksum
+  `7b43b023dd7692a39c1ab3702f0972c5d2252766a1093c3905b8c80fce24e8f8`;
+  production apply завершился `COMMIT`, exact postflight/rollback probe —
+  green. Verified backup имеет size `1146274`, mode `600`, `1427` restore
+  entries и SHA-256
+  `86610eac53eee82ddba0943247876f77c16ec52c076ca1f93945d64bd4900812`.
+  Counts сохранились: `5` active/`0` archived Course, `16` Lessons,
+  `90` Components, `6` Slides, `2` attachments/files, `2` Runs/records,
+  `0` publications/revisions; invalid invariants — `0`. PostgREST видит RPC,
+  anonymous HTTP закрыт с `401` / `42501`. Live snapshot
+  `2026-08-12T00:22:27Z` имеет SHA-256
+  `055b3c3ab47afc3c3db86d92c6c7530b3735841e34e4b475101ac96056d853ec`.
+  Зависимый web UI/API остаётся current source до Coolify rollout.
 
 Источники истины для текущего состояния:
 

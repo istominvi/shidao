@@ -117,6 +117,12 @@ export class CourseBuilderRepositoryError extends Error {
   }
 }
 
+export type CourseArchiveOutcome =
+  | "archived"
+  | "course_is_published"
+  | "course_has_open_lesson_runs"
+  | "not_found";
+
 export interface CourseBuilderRepository {
   getSessionInvalidBefore(): Promise<string | null>;
   getAccountId(authUserId: string): Promise<string | null>;
@@ -130,8 +136,7 @@ export interface CourseBuilderRepository {
     courseId: string,
     input: CourseUpdateInput,
   ): Promise<CourseSummary | null>;
-  hasOpenLessonRuns(courseId: string): Promise<boolean>;
-  archiveCourse(courseId: string): Promise<boolean>;
+  archiveCourse(courseId: string): Promise<CourseArchiveOutcome>;
   assembleDraft(input: CourseDraftAssemblyPlan): Promise<AssembleCourseResult>;
   addLesson(courseId: string, input: AddLessonInput): Promise<CourseLesson>;
   getLesson(lessonId: string): Promise<CourseLesson | null>;
@@ -445,26 +450,11 @@ export function createCourseBuilderRepository(
       return rows[0] ? mapCourse(rows[0]) : null;
     },
 
-    async hasOpenLessonRuns(courseId) {
-      const lessons = await request<Array<{ id: string }>>(
-        `/rest/v1/lesson?select=id&course_id=eq.${encodeFilter(courseId)}`,
-      );
-      if (lessons.length === 0) return false;
-      const rows = await request<Array<{ id: string }>>(
-        `/rest/v1/lesson_run?select=id&lesson_id=in.(${inFilter(lessons.map((lesson) => lesson.id))})&ended_at=is.null&cancelled_at=is.null&limit=1`,
-      );
-      return rows.length > 0;
-    },
-
     async archiveCourse(courseId) {
-      const rows = await request<Array<{ id: string }>>(
-        `/rest/v1/course?id=eq.${encodeFilter(courseId)}&archived_at=is.null&select=id`,
-        {
-          method: "PATCH",
-          body: { archived_at: new Date().toISOString() },
-        },
-      );
-      return rows.length > 0;
+      return request<CourseArchiveOutcome>("/rest/v1/rpc/archive_course", {
+        method: "POST",
+        body: { p_course_id: courseId },
+      });
     },
 
     async assembleDraft(input) {

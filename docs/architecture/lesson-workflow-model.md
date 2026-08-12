@@ -456,9 +456,14 @@ DB quota. При network/5xx/invalid-response commit считается unknown:
 attachments, LessonRuns и LearningRecords сохраняются. Published Course должен
 быть явно снят с публикации до архивации (`409 course_is_published`), а Course
 с открытым LessonRun — завершён или отменён (`409
-course_has_open_lesson_runs`). Это recoverable storage contract, но отдельного
-restore UI пока нет; permanent delete и atomic publication/archive
-orchestration остаются later policy, а не неявным поведением этого endpoint.
+course_has_open_lesson_runs`). User-JWT RPC `archive_course` проверяет active
+ownership, оба conflict-условия и ставит `archived_at` в одной DB-транзакции;
+reverse guards сериализуют archive, publish и open Run на одной Course row, а
+Lesson parent становится immutable. API не принимает решение по раздельным
+publication/Run reads. A1 database contract уже current production; зависимый
+API/UI остаётся current source до отдельного Coolify rollout. Отдельного restore
+UI пока нет, permanent delete остаётся later policy, а не неявным поведением
+этого endpoint.
 
 Visual contract Course routes не меняет эту навигационную или доменную модель:
 

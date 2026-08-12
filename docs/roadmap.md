@@ -314,16 +314,21 @@ cancel actions. Authenticated top header/profile menu стали
 сохраняют тонкую рамку, menu items остаются borderless. Authenticated Settings
 (`profile / security / observers`) переиспользуют тот же product shell, demo
 TopNav, canonical side navigation и shared Button variants вместо raw action
-styles; landing, Auth и полноэкранный Student Screen не меняются. Physical
-schema и migrations не меняются. Course **Мои** также получил постоянный
+styles; landing, Auth и полноэкранный Student Screen не меняются. Эти visual
+изменения сами не требуют schema. Course **Мои** также получил постоянный
 `MoreVertical` portal-menu с реальными действиями публикации/дублирования и
 подтверждённым «Удалить». `DELETE` здесь означает recoverable soft archive
 через `course.archived_at`, а не physical delete: authored graph, attachments,
 Runs и LearningRecords сохраняются. Published Course сначала требует unpublish
 (`409 course_is_published`), Course с открытыми Runs — их завершения или отмены
-(`409 course_has_open_lesson_runs`). Restore UI, permanent deletion и atomic
-publication/archive orchestration остаются later. Последняя корректировка
-остаётся current source до успешного Coolify deploy и production postflight.
+(`409 course_has_open_lesson_runs`). Current `archive_course` RPC атомарно
+проверяет эти условия вместе с active ownership и ставит `archived_at` в одной
+DB-транзакции; A1 reverse guards сериализуют archive, publish и open Run на
+одной Course row, а application больше не сочетает отдельные preflight-read с
+PATCH. A1 migration уже применена к production, exact DB postflight и live
+snapshot green. Restore UI и permanent deletion остаются later. Зависимая
+application-корректировка остаётся current source до успешного Coolify deploy и
+production web postflight.
 Current-source polish
 оставляет AppPageHeader actions шириной по содержимому, отдаёт свободное место
 heading и унифицирует WorkspaceTabs: container и 20%-black baseline занимают

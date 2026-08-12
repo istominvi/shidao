@@ -18,7 +18,15 @@ const dividerRemovalMigration = readFileSync(
   "supabase/migrations/20260811154138_remove_divider_components.sql",
   "utf8",
 );
+const atomicCourseArchiveMigration = readFileSync(
+  "supabase/migrations/20260811231505_atomic_course_archive.sql",
+  "utf8",
+);
 const snapshot = readFileSync("supabase/schema/current-schema.sql", "utf8");
+const snapshotWorkflow = readFileSync(
+  "scripts/refresh-schema-snapshot.sh",
+  "utf8",
+);
 
 function migrationFunction(name: string) {
   const start = studentSlidesMigration.indexOf(`function public.${name}(`);
@@ -26,6 +34,16 @@ function migrationFunction(name: string) {
   const end = studentSlidesMigration.indexOf("\n$$;", start);
   assert.notEqual(end, -1, `unterminated function ${name}`);
   return studentSlidesMigration.slice(start, end + 4);
+}
+
+function atomicArchiveFunction(name: string) {
+  const start = atomicCourseArchiveMigration.indexOf(
+    `create function public.${name}(`,
+  );
+  assert.notEqual(start, -1, `missing atomic archive function ${name}`);
+  const end = atomicCourseArchiveMigration.indexOf("\n$function$;", start);
+  assert.notEqual(end, -1, `unterminated atomic archive function ${name}`);
+  return atomicCourseArchiveMigration.slice(start, end + 12);
 }
 
 const preservedBuilderTables = [
@@ -616,4 +634,204 @@ test("private Course Storage is size, MIME and Account-folder restricted", () =>
       `missing Storage ${operation} policy`,
     );
   }
+});
+
+test("Course archive is one guarded transaction with stable outcomes", () => {
+  assert.match(atomicCourseArchiveMigration, /^begin;\n/);
+  assert.match(atomicCourseArchiveMigration, /\ncommit;\n$/);
+  assert.doesNotMatch(
+    atomicCourseArchiveMigration,
+    /drop\s+(?:table|function|schema)[^;]*\bcascade\b/i,
+  );
+
+  const courseLock = atomicCourseArchiveMigration.indexOf(
+    "lock table public.course in share row exclusive mode",
+  );
+  const publicationLock = atomicCourseArchiveMigration.indexOf(
+    "lock table public.course_publication in share row exclusive mode",
+  );
+  const lessonLock = atomicCourseArchiveMigration.indexOf(
+    "lock table public.lesson in share row exclusive mode",
+  );
+  const runLock = atomicCourseArchiveMigration.indexOf(
+    "lock table public.lesson_run in share row exclusive mode",
+  );
+  assert.equal(
+    courseLock >= 0 &&
+      courseLock < publicationLock &&
+      publicationLock < lessonLock &&
+      lessonLock < runLock,
+    true,
+  );
+
+  const archive = atomicArchiveFunction("archive_course");
+  for (const fragment of [
+    "security definer",
+    "set search_path = ''",
+    "v_actor_user_id uuid := (select auth.uid())",
+    "account.auth_user_id = v_actor_user_id",
+    "account.status = 'active'",
+    "for update of course",
+    "return 'course_is_published'",
+    "return 'course_has_open_lesson_runs'",
+    "set archived_at = clock_timestamp()",
+    "return 'archived'",
+  ]) {
+    assert.equal(
+      archive.includes(fragment),
+      true,
+      `archive RPC missing ${fragment}`,
+    );
+  }
+  assert.match(
+    atomicCourseArchiveMigration,
+    /revoke all on function public\.archive_course\(uuid\)[\s\S]*?grant execute on function public\.archive_course\(uuid\) to authenticated;/,
+  );
+  assert.match(
+    atomicCourseArchiveMigration,
+    /pg_get_userbyid\([\s\S]*?'public\.course'::regclass[\s\S]*?\) <> current_user/,
+  );
+  assert.match(
+    atomicCourseArchiveMigration,
+    /course_archive_guard_function_contract_invalid/,
+  );
+  assert.equal(
+    (atomicCourseArchiveMigration.match(/procedure\.proconfig is null/g) ?? [])
+      .length >= 2,
+    true,
+  );
+});
+
+test("archive, publication, Lesson ownership, and open Runs share DB guards", () => {
+  const guards = [
+    ["guard_course_archive_invariants", "course_is_published"],
+    ["guard_course_publication_active_source", "for update of course"],
+    ["guard_lesson_course_immutable", "lesson_course_move_forbidden"],
+    ["guard_lesson_run_active_course", "for update of course"],
+  ] as const;
+
+  for (const [name, fragment] of guards) {
+    const guard = atomicArchiveFunction(name);
+    assert.match(guard, /set search_path = ''/);
+    assert.equal(guard.includes(fragment), true, `${name} missing ${fragment}`);
+    assert.doesNotMatch(guard, /security definer/);
+  }
+
+  for (const [table, trigger] of [
+    ["course", "trg_course_archive_invariants"],
+    ["course_publication", "trg_course_publication_active_source"],
+    ["lesson", "trg_lesson_course_immutable"],
+    ["lesson_run", "trg_lesson_run_active_course"],
+  ]) {
+    assert.match(
+      atomicCourseArchiveMigration,
+      new RegExp(
+        `create trigger ${trigger}[\\s\\S]*?on public\\.${table}|create trigger ${trigger}[\\s\\S]*?public\\.${table}`,
+      ),
+    );
+  }
+});
+
+test("browser cannot bypass archive or move Lessons through direct table ACL", () => {
+  assert.match(
+    atomicCourseArchiveMigration,
+    /revoke update, delete on table public\.course from authenticated;/,
+  );
+  assert.match(
+    atomicCourseArchiveMigration,
+    /revoke update, delete on table public\.lesson from authenticated;/,
+  );
+  assert.match(
+    atomicCourseArchiveMigration,
+    /alter function public\.touch_course_from_authoring_child\(\) security definer;/,
+  );
+  assert.match(
+    atomicCourseArchiveMigration,
+    /alter function public\.touch_courses_from_stored_file\(\) security definer;/,
+  );
+  assert.equal(
+    atomicCourseArchiveMigration.match(/attribute\.attname <> all/g)?.length,
+    2,
+  );
+  assert.match(
+    atomicCourseArchiveMigration,
+    /trigger_row\.tgfoid = required_trigger\.function_id[\s\S]*?trigger_row\.tgtype = required_trigger\.trigger_type[\s\S]*?trigger_row\.tgenabled = 'O'[\s\S]*?trigger_row\.tgqual is null[\s\S]*?trigger_row\.tgattr::smallint\[\]/,
+  );
+  assert.equal(snapshotWorkflow.match(/attribute\.attname <> all/g)?.length, 2);
+  assert.equal(
+    snapshotWorkflow.match(/procedure\.proconfig is null/g)?.length,
+    2,
+  );
+  assert.match(
+    snapshotWorkflow,
+    /trigger\.tgfoid = required_trigger\.function_id[\s\S]*?trigger\.tgtype = required_trigger\.trigger_type[\s\S]*?trigger\.tgenabled = 'O'[\s\S]*?trigger\.tgqual is null[\s\S]*?trigger\.tgattr::smallint\[\]/,
+  );
+
+  for (const fragment of [
+    "public.archive_course(uuid)",
+    "public.guard_course_archive_invariants()",
+    "public.guard_course_publication_active_source()",
+    "public.guard_lesson_course_immutable()",
+    "public.guard_lesson_run_active_course()",
+    "trg_course_archive_invariants",
+    "trg_course_publication_active_source",
+    "trg_lesson_course_immutable",
+    "trg_lesson_run_active_course",
+  ]) {
+    assert.equal(
+      snapshotWorkflow.includes(fragment),
+      true,
+      `snapshot workflow missing ${fragment}`,
+    );
+  }
+});
+
+test("current snapshot mirrors the A1 archive RPC and invariant triggers", () => {
+  for (const functionName of [
+    "archive_course",
+    "guard_course_archive_invariants",
+    "guard_course_publication_active_source",
+    "guard_lesson_course_immutable",
+    "guard_lesson_run_active_course",
+  ]) {
+    assert.match(
+      snapshot,
+      new RegExp(`CREATE FUNCTION public\\.${functionName}\\(`),
+    );
+  }
+  for (const trigger of [
+    "trg_course_archive_invariants",
+    "trg_course_publication_active_source",
+    "trg_lesson_course_immutable",
+    "trg_lesson_run_active_course",
+  ]) {
+    assert.match(snapshot, new RegExp(`CREATE TRIGGER ${trigger}`));
+  }
+});
+
+test("current snapshot mirrors A1 private helpers and column-only ACL", () => {
+  assert.match(
+    snapshot,
+    /CREATE FUNCTION public\.touch_course_from_authoring_child\(\) RETURNS trigger\s+LANGUAGE plpgsql SECURITY DEFINER/,
+  );
+  assert.match(
+    snapshot,
+    /CREATE FUNCTION public\.touch_courses_from_stored_file\(\) RETURNS trigger\s+LANGUAGE plpgsql SECURITY DEFINER/,
+  );
+  assert.doesNotMatch(
+    snapshot,
+    /GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE public\.course TO authenticated;/,
+  );
+  assert.doesNotMatch(
+    snapshot,
+    /GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE public\.lesson TO authenticated;/,
+  );
+  assert.match(
+    snapshot,
+    /GRANT UPDATE\(title\) ON TABLE public\.course TO authenticated;/,
+  );
+  assert.match(
+    snapshot,
+    /GRANT UPDATE\("position"\) ON TABLE public\.lesson TO authenticated;/,
+  );
 });

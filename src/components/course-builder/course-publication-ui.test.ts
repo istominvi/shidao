@@ -14,6 +14,8 @@ const actionsPath = "src/components/course-builder/course-actions.tsx";
 const actionMenuPath = "src/components/ui/action-menu.tsx";
 const courseRoutePath = "src/app/api/v2/courses/[courseId]/route.ts";
 const courseServicePath = "src/modules/course-builder/service.ts";
+const courseRepositoryPath = "src/modules/course-builder/repository.ts";
+const courseServerContextPath = "src/modules/course-builder/server-context.ts";
 
 test("courses index exposes My and Catalog tabs with shareable catalog URLs", () => {
   const page = source(pagePath);
@@ -83,6 +85,11 @@ test("owned course actions cover copy, publication, and safe archive states", ()
   const owned = source(ownedPath);
   const route = source(courseRoutePath);
   const service = source(courseServicePath);
+  const repository = source(courseRepositoryPath);
+  const serverContext = source(courseServerContextPath);
+  const deleteRoute = route.slice(
+    route.indexOf("export async function DELETE"),
+  );
 
   for (const label of [
     "Дублировать",
@@ -113,13 +120,29 @@ test("owned course actions cover copy, publication, and safe archive states", ()
     actions,
     /\/api\/v2\/courses\/\$\{encodeURIComponent\(course\.id\)\}`,[\s\S]*?method: "DELETE"/,
   );
-  assert.match(route, /export async function DELETE/);
-  assert.match(route, /publication\?\.status === "published"/);
-  assert.match(route, /"course_is_published"/);
-  assert.match(route, /service\.archiveCourse\(actor, courseId\)/);
-  assert.match(service, /repository\.hasOpenLessonRuns\(course\.id\)/);
-  assert.match(service, /"course_has_open_lesson_runs"/);
+  assert.match(deleteRoute, /export async function DELETE/);
+  assert.match(deleteRoute, /await getActiveCourseBuilderContext\(\)/);
+  assert.doesNotMatch(
+    deleteRoute,
+    /publication\?\.status === "published"|getPublicationForCourse/,
+  );
+  assert.match(deleteRoute, /service\.archiveCourse\(actor, courseId\)/);
+  assert.doesNotMatch(service, /repository\.hasOpenLessonRuns/);
   assert.match(service, /repository\.archiveCourse\(course\.id\)/);
+  assert.match(service, /case "course_is_published"/);
+  assert.match(service, /"course_has_open_lesson_runs"/);
+  assert.match(service, /case "not_found"/);
+  assert.match(repository, /"\/rest\/v1\/rpc\/archive_course"/);
+  assert.match(repository, /body: \{ p_course_id: courseId \}/);
+  assert.doesNotMatch(repository, /async hasOpenLessonRuns/);
+  assert.match(
+    serverContext,
+    /error instanceof CourseBuilderAccessError[\s\S]*?status: 404/,
+  );
+  assert.match(
+    serverContext,
+    /error instanceof CourseBuilderConflictError[\s\S]*?status: 409/,
+  );
 });
 
 test("publish, update, and archive share one explicit confirmation dialog", () => {
