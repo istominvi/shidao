@@ -34,7 +34,7 @@ import {
 } from "@/modules/course-publications/errors";
 import { createCoursePublicationService } from "@/modules/course-publications/service";
 
-async function getCourseBuilderActorContext() {
+async function getCourseBuilderActorContext(canAuthorEducatorCourses = false) {
   const session = await readAppSession();
   if (!session) throw new SupabaseUserReauthenticationRequiredError();
   const accessToken = await requireSupabaseUserAccessToken();
@@ -46,6 +46,7 @@ async function getCourseBuilderActorContext() {
   const actor: CourseBuilderActor = {
     authUserId: session.uid,
     accessToken,
+    canAuthorEducatorCourses,
   };
   const service = createCourseBuilderService({ repository });
   return { actor, service };
@@ -62,7 +63,9 @@ export async function getActiveCourseBuilderContext() {
   if (resolution.status !== "account") {
     throw new SupabaseUserReauthenticationRequiredError();
   }
-  const context = await getCourseBuilderActorContext();
+  const context = await getCourseBuilderActorContext(
+    resolution.context.canAuthorEducatorCourses,
+  );
   if (context.actor.authUserId !== resolution.context.authUserId) {
     throw new SupabaseUserReauthenticationRequiredError();
   }
@@ -70,7 +73,7 @@ export async function getActiveCourseBuilderContext() {
 }
 
 export async function getCourseBuilderContext() {
-  const { actor, service } = await getCourseBuilderActorContext();
+  const { actor, service } = await getActiveCourseBuilderContext();
   // Keep service-role adapters behind the server context call. Importing this
   // shared module for pure helpers/tests must not evaluate elevated adapters.
   const [
@@ -87,6 +90,23 @@ export async function getCourseBuilderContext() {
       repository: createCoursePublicationRepository(),
       storage: createCoursePublicationStorageBroker(),
       courseService: service,
+    }),
+  };
+}
+
+export async function getCourseConsumptionContext() {
+  const context = await getActiveCourseBuilderContext();
+  const [
+    { createCourseConsumptionRepository },
+    { createCourseConsumptionService },
+  ] = await Promise.all([
+    import("@/modules/course-consumption/repository"),
+    import("@/modules/course-consumption/service"),
+  ]);
+  return {
+    ...context,
+    consumptionService: createCourseConsumptionService({
+      repository: createCourseConsumptionRepository(context.actor.accessToken),
     }),
   };
 }

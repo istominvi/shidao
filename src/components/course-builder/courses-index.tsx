@@ -16,7 +16,6 @@ type CoursesIndexTab = "mine" | "catalog";
 
 type CoursesIndexProps = {
   initialTab?: CoursesIndexTab;
-  initialCatalogCourseId?: string | null;
   initialLearningAudience?: CourseLearningAudience;
 };
 
@@ -31,14 +30,10 @@ const COURSES_INDEX_TABS = [
 
 export function CoursesIndex({
   initialTab = "mine",
-  initialCatalogCourseId = null,
   initialLearningAudience = "children",
 }: CoursesIndexProps) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<CoursesIndexTab>(initialTab);
-  const [selectedCatalogCourseId, setSelectedCatalogCourseId] = useState<
-    string | null
-  >(initialCatalogCourseId);
   const [catalogLearningAudience, setCatalogLearningAudience] =
     useState<CourseLearningAudience>(initialLearningAudience);
 
@@ -52,29 +47,24 @@ export function CoursesIndex({
 
   useEffect(() => {
     setActiveTab(initialTab);
-    setSelectedCatalogCourseId(initialCatalogCourseId);
     setCatalogLearningAudience(initialLearningAudience);
-  }, [initialCatalogCourseId, initialLearningAudience, initialTab]);
+  }, [initialLearningAudience, initialTab]);
 
   function catalogQuery({
-    courseId,
     learningAudience = catalogLearningAudience,
   }: {
-    courseId?: string | null;
     learningAudience?: CourseLearningAudience;
   } = {}) {
     const query = new URLSearchParams({ tab: "catalog" });
     if (learningAudience === "educators") {
       query.set("audience", "educators");
     }
-    if (courseId) query.set("course", courseId);
     return query;
   }
 
   function selectTab(tab: CoursesIndexTab) {
     setActiveTab(tab);
     if (tab === "mine") {
-      setSelectedCatalogCourseId(null);
       router.replace("/courses", { scroll: false });
       return;
     }
@@ -85,22 +75,18 @@ export function CoursesIndex({
     router.replace(catalogHref, { scroll: false });
   }
 
-  function selectCatalogCourse(courseId: string | null) {
-    setSelectedCatalogCourseId(courseId);
-    const query = catalogQuery({ courseId });
-    const href = `/courses?${query.toString()}`;
-    if (courseId) {
-      router.push(href, { scroll: false });
-      return;
-    }
-    router.replace(href, { scroll: false });
+  function openCatalogCourse(courseId: string) {
+    const query =
+      catalogLearningAudience === "educators" ? "?audience=educators" : "";
+    router.push(`/courses/catalog/${encodeURIComponent(courseId)}${query}`, {
+      scroll: false,
+    });
   }
 
   function selectCatalogLearningAudience(
     learningAudience: CourseLearningAudience,
   ) {
     setCatalogLearningAudience(learningAudience);
-    setSelectedCatalogCourseId(null);
     router.replace(
       `/courses?${catalogQuery({ learningAudience }).toString()}`,
       { scroll: false },
@@ -134,8 +120,7 @@ export function CoursesIndex({
             ) : (
               <CourseCatalogPanel
                 active={active}
-                selectedCourseId={selectedCatalogCourseId}
-                onSelectCourse={selectCatalogCourse}
+                onOpenCourse={openCatalogCourse}
                 learningAudience={catalogLearningAudience}
                 onLearningAudienceChange={selectCatalogLearningAudience}
               />

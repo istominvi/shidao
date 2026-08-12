@@ -553,6 +553,71 @@ test("create/get enforce Account ownership and preserve normalized Course data",
   );
 });
 
+test("educator course creation requires the fresh Account authoring capability", async () => {
+  const harness = createHarness();
+
+  await assert.rejects(
+    () =>
+      harness.service.createDraft(
+        alice,
+        courseInput({ learningAudience: "educators" }),
+      ),
+    (error: unknown) =>
+      error instanceof CourseBuilderAccessError &&
+      /курсов для педагогов/.test(error.message),
+  );
+
+  const course = await harness.service.createDraft(
+    { ...alice, canAuthorEducatorCourses: true },
+    courseInput({ learningAudience: "educators" }),
+  );
+  assert.equal(course.learningAudience, "educators");
+});
+
+test("course learning audience is immutable after creation", async () => {
+  const harness = createHarness();
+  const course = await harness.service.createDraft(alice, courseInput());
+
+  await assert.rejects(
+    () =>
+      harness.service.updateCourse(alice, course.id, {
+        learningAudience: "educators",
+      }),
+    (error: unknown) =>
+      error instanceof CourseBuilderConflictError &&
+      error.code === "course_learning_audience_immutable",
+  );
+  assert.equal(
+    (await harness.service.getCourse(alice, course.id)).learningAudience,
+    "children",
+  );
+});
+
+test("revoked capability freezes educator course mutations but keeps owner reads", async () => {
+  const harness = createHarness();
+  const course = await harness.service.createDraft(
+    { ...alice, canAuthorEducatorCourses: true },
+    courseInput({ learningAudience: "educators" }),
+  );
+
+  assert.equal(
+    (await harness.service.getCourse(alice, course.id)).id,
+    course.id,
+  );
+  await assert.rejects(
+    () => harness.service.updateCourse(alice, course.id, { title: "Новое" }),
+    (error: unknown) => error instanceof CourseBuilderAccessError,
+  );
+  await assert.rejects(
+    () =>
+      harness.service.addLesson(alice, course.id, {
+        title: "Урок",
+        summary: "",
+      }),
+    (error: unknown) => error instanceof CourseBuilderAccessError,
+  );
+});
+
 test("archiveCourse hides an owned course without deleting its authored history", async () => {
   const harness = createHarness();
   const course = await harness.service.createDraft(alice, courseInput());

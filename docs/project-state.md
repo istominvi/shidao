@@ -10,9 +10,10 @@
 `28387a9863afeccf4a6ad332dcf0f01048a69e67`
 
 **Current production Course catalog slice:** реализует reusable Course catalog,
-immutable publication revisions, независимое копирование Course и private
-publication assets. Forward migration применена и проверена; Coolify deployment
-`891` развернул exact functional SHA `9a553085487c8fd514cc716f5beec5eab3324af3`.
+immutable publication revisions, независимое копирование детских Course и
+private publication assets. Forward migration применена и проверена; Coolify
+deployment `891` развернул exact functional SHA
+`9a553085487c8fd514cc716f5beec5eab3324af3`.
 
 **Current production E1 vertical slice:** migration
 `20260812113000_educator_course_attestations.sql` применена owner
@@ -29,8 +30,8 @@ Gates: typecheck, lint, format, build, unit `522/522`, strict browser
 educator Course, реальный passed result `9/10 = 90%` и одну profile
 credential.
 
-**Current production E1 hotfix:** authenticated production
-диагностика подтвердила, что catalog RPC возвращает один educator Course, а
+**Repository current E1 incident hotfix; production next:** authenticated
+production диагностика подтвердила, что catalog RPC возвращает один educator Course, а
 profile RPC — одну credential с `certified=true`; сеть и E1 database contract
 исправны. Ошибки каталога и вкладки «Аттестация» возникали в application
 projection: допустимые PostgreSQL UUID, полученные bootstrap через
@@ -40,7 +41,22 @@ projection: допустимые PostgreSQL UUID, полученные bootstrap
 при переключении направления каталога и ставит audience toggle в одну
 toolbar-строку с поиском, фильтрами и выбором вида. Release gate: typecheck,
 lint, format, build, unit `527/527`, strict production-mode browser `22/22` с
-educator catalog, reload и profile credential.
+educator catalog, reload и profile credential. Отдельного running
+`SOURCE_COMMIT`/image evidence для этого hotfix в документе нет; записанный
+production application release остаётся `28387a9`.
+
+**Current production E2 database; dependent web next:** forward migration
+`20260812150745_educator_course_governance_progress.sql` применена с `COMMIT` в
+`2026-08-12T07:34:36Z`. Она реализует trusted-author capability, обязательный
+admin review exact educator revision, catalog по `approved_revision_id`,
+Account-scoped revision progress, server-side `100%` attestation gate и
+official no-copy/no-roster/no-LessonRun invariants. Postflight подтвердил
+`19` Account, `6` Course, одну publication/revision/attempt/award, educator
+catalog `1` и derived progress `6/6 = 100%`; аттестация осталась `90%` при
+пороге `80%`. Current snapshot снят `2026-08-12T07:43:11Z`, SHA-256
+`6df94ceabbc902b66b4c592998f1770ea62442a68255ddd6133a3b9d75745949`, `71`
+schema-contract tests green. Зависимый E2 web/API source остаётся repository
+current / production next; recorded application release всё ещё `28387a9`.
 
 **Current production contract stage:** реализована и развёрнута полная roleless
 learner identity / observer программа. Migrations M1–M6 применены к production
@@ -486,23 +502,54 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
 
 ### Курсы
 
-- **Current production:** Course и compact
+- **Current production baseline:** Course и compact
   publication имеют `learningAudience` со значениями `children` / `educators`.
   Migration E1 backfilled все пять существующих Course как `children`; четыре
   новые attestation tables имеют RLS и closed browser ACL.
-- **Current production:** в **Каталоге** тумблер «Обучение
+- **Repository current; production next:** в **Каталоге** тумблер «Обучение
   детей / Обучение педагогов» расположен в одной toolbar-строке с поиском,
   фильтрами и выбором вида. Фильтрация, facets и cursor выполняются server-side
   внутри выбранного направления; смена направления сбрасывает masked error
   state перед отображением нового результата.
-- У published educator Course detail условно появляется вкладка
-  **Аттестация**. Ответы проверяются против immutable publication revision;
-  до успешной отправки correct answer key не выходит в browser. Успешная
+- **Current production database; dependent UI/API next:**
+  `account.can_author_educator_courses` с default `false` является
+  DB-backed capability доверенного автора. Только active Account с этим флагом
+  видит выбор направления при создании Course и может менять educator content;
+  capability не даёт права одобрить собственную publication.
+- **Current production database; dependent UI/API next:** отправка educator revision требует
+  authored attestation и создаёт review `pending`. Только server-side admin
+  review RPC переводит exact current revision в `approved` или `rejected`;
+  отдельного admin UI ещё нет. До первого approval Course отсутствует в
+  каталоге, а при pending update прежняя `approved_revision_id` остаётся
+  learner-visible. Все educator publications имеют `is_shidao=true`; каталог,
+  таблица и header показывают одновременно `ShiDao` и имя эксперта-автора.
+- **Repository current; production next:** catalog item открывается отдельным
+  route `/courses/catalog/[publicationId]` со своим header/backlink и вкладками
+  **«Уроки / О курсе / Материалы / Аттестация»**. Audience toggle остаётся
+  только фильтром toolbar списка и не рендерится внутри Course. Старый
+  `?course=` служит compatibility redirect.
+- **Repository current; production next:** published detail строится из
+  immutable approved revision как learner-safe projection. Browser получает
+  только `learner_visible` Components, назначенные на Slides, без Lesson
+  `summary`, `staff_only`, teacher preferences, audience, runs/history и AI
+  consent. Explicit publication materials доступны через краткоживущие signed
+  URLs.
+- **Current production database; dependent workspace UI/API next:** Account progress хранится отдельно
+  для exact publication revision: last opened Lesson, completed Lesson refs,
+  counts, percent и complete. Workspace позволяет продолжить с сохранённого
+  Lesson. Вкладка **«Аттестация»** видна, но и GET, и submit теста server-side
+  заблокированы до `100%` Lessons текущей approved revision.
+- **Current production DB guards; dependent UI/API next:** educator Course нельзя добавить в
+  «Мои», скопировать или дублировать даже после award. Для него запрещены
+  groups/direct learners, roster, scheduling и LessonRun; это только
+  самостоятельное обучение текущего Account. Детский catalog Course сохраняет
+  прежний copy/open-source flow.
+- Ответы аттестации проверяются против exact immutable approved revision; до
+  успешного результата correct answer key не выходит в browser. Успешная
   транзакция создаёт Account-scoped attempt и award, показывает badge
-  **«Аттестован»** у текущей revision и запись во вкладке **«Аттестация»**
-  учебного профиля. Owner Course/copy не означает прохождение; educator copy
-  допускается только после current-revision award, чтобы не раскрыть answer
-  key через авторскую projection.
+  **«Аттестован»** в header и запись во вкладке **«Аттестация»** учебного
+  профиля. Исторический award сохраняется после смены approved revision, но не
+  считается current.
 - Результат формулируется как внутренняя аттестация ShiDao, а не государственное
   удостоверение. Канонический contract:
   [`docs/product/educator-courses-and-attestation.md`](./product/educator-courses-and-attestation.md).
@@ -534,12 +581,14 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
   переключается между карточками и таблицей для уже загруженной cursor-
   последовательности; content filter и произвольная сортировка не заявляются,
   потому что их нет в paginated catalog API/RPC.
-  «Добавить в мои курсы» создаёт новый independent owner Course и
-  не запускает AI/адаптацию автоматически.
-- Рабочий Course можно дублировать, опубликовать, обновить в
-  каталоге или снять с публикации. Publish/update имеет один
-  confirmation dialog и required rights/reuse checkbox; отдельного
-  preview wizard и name/PII scan нет.
+  Для детского Course «Добавить в мои курсы» создаёт новый independent owner
+  Course и не запускает AI/адаптацию автоматически; educator Course исключён
+  из copy flow.
+- Рабочий детский Course можно дублировать, опубликовать, обновить в
+  каталоге или снять с публикации. Educator Course можно отправить на review,
+  обновить или снять с публикации, но нельзя дублировать. Publish/update имеет
+  один confirmation dialog и required rights/reuse checkbox; отдельного preview
+  wizard и name/PII scan нет.
 - Persistence разделяет stable `course_publication`, immutable
   `course_publication_revision`, её private `course_publication_asset` и
   provenance-only `course_publication_origin`. Таблицы и mutation RPC
@@ -571,6 +620,10 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
   начинает с активной вкладки **О курсе**. До первого сохранения **Уроки** и
   **История** показывают честные заглушки, а **Материалы** — staging-список
   выбранных файлов; переключение вкладок не размонтирует форму и не теряет draft.
+- **Repository current; production next:** authorized educator authoring
+  заменяет owner-вкладку **«История»** на **«Аттестация»**; здесь автор
+  редактирует definition, а не проходит тест. У Account без trusted-author
+  capability форма остаётся children-only и не показывает audience toggle.
 - Обычное «Сохранить курс» создаёт persisted Course и открывает его на
   **О курсе**. Детерминированная сборка и успешное применение AI-preview
   открывают сохранённый Course на **Уроках**.
@@ -1037,13 +1090,15 @@ History-aware context развёрнут в release `9393080`; production provid
 - persistent token quota/ledger, billing units, balance и AI change sets/undo;
 - parsing/RAG прикреплённых материалов;
 - persisted Homework editor;
-- learner Course enrollment/consumption и настоящий live Student Screen access;
+- LearnerProfile-scoped enrollment/consumption детского Course и настоящий live
+  Student Screen access; repository-current self-learning educator Course
+  описан отдельно и не является LessonRun/live flow;
 - live Student Screen sync, realtime presence и teacher-controlled runtime
   cursor поверх открытого LessonRun;
 - richer per-learner metrics ждут реального Component/runtime producer;
 - persisted communication chat и notifications;
-- catalog moderation, ratings, update merge в уже добавленный Course и
-  наполнение каталога утверждёнными official ShiDao Course;
+- общий catalog moderation UI, ratings, update merge в уже добавленный Course и
+  additional official content за пределами educator review flow;
 - persisted reconciliation для Storage objects, оставшихся после crash или
   commit-unknown; permanent physical Course deletion и пользовательский
   restore архивного Course остаются отдельными future lifecycle решениями;
@@ -1241,6 +1296,16 @@ provider requests, assistant dialog history или quota state в БД.
   Dependent web/API и demonstration bootstrap также развёрнуты production;
   release/functional evidence зафиксированы в разделе «Курсы» выше и в
   deployment runbook.
+- `20260812150745_educator_course_governance_progress.sql` — current production
+  forward migration, применённая с `COMMIT` в `2026-08-12T07:34:36Z`. Она добавляет
+  `account.can_author_educator_courses`, `approved_revision_id`, immutable
+  educator revision review, revision-scoped self-enrollment/Lesson completion,
+  progress RPC и `100%` attestation gate. DB guards запрещают educator
+  copy/duplicate, roster и LessonRun; existing approved educator publication и
+  historical award получили derived backfill без tracked Account identifiers.
+  Production postflight и snapshot evidence зафиксированы в
+  [`docs/database/current-schema.md`](./database/current-schema.md) и deployment
+  runbook; dependent web/API rollout остаётся next.
 
 Источники истины для текущего состояния:
 
@@ -1287,9 +1352,11 @@ positions, а плотность поддерживают текущие service
 | Historical identity execution prompt | `docs/v2/LEARNER_IDENTITY_COMPLETION_PROMPT.md`                                                                                                                                                                                                                                   |
 | Course browser client                | `src/components/course-builder/course-builder-client.ts`                                                                                                                                                                                                                          |
 | Course publication domain/service    | `src/modules/course-publications/`                                                                                                                                                                                                                                                |
-| Course attestation domain/API        | `src/modules/course-attestations/`, `src/app/api/v2/course-catalog/[publicationId]/attestation/`, `src/app/api/v2/me/attestations/`                                                                                                                                               |
+| Course attestation domain/API        | `src/modules/course-attestations/`, `src/app/api/v2/course-catalog/[publicationId]/attestation/`, `src/app/api/v2/courses/[courseId]/attestation/`, `src/app/api/v2/me/attestations/`                                                                                             |
+| Course consumption progress          | `src/modules/course-consumption/`, `src/app/api/v2/course-catalog/[publicationId]/progress/`                                                                                                                                                                                      |
 | Course catalog/publication API       | `src/app/api/v2/course-catalog/`, `src/app/api/v2/courses/[courseId]/publication/`, `duplicate/`                                                                                                                                                                                  |
 | Course catalog/owned UI              | `src/components/course-builder/courses-index.tsx`, `owned-courses-panel.tsx`, `course-catalog-panel.tsx`, `course-filter-menu.tsx`, `course-actions.tsx`, `src/components/ui/segmented-control.tsx`                                                                               |
+| Published Course workspace           | `src/app/(app)/courses/catalog/[publicationId]/`, `src/components/course-builder/published-course-workspace.tsx`, `published-course-progress-queue.ts`                                                                                                                            |
 | New Course flow                      | `src/components/course-builder/new-course-form.tsx`                                                                                                                                                                                                                               |
 | Course workspace                     | `src/components/course-builder/course-workspace.tsx`                                                                                                                                                                                                                              |
 | Course/Lesson navigation             | `src/components/course-builder/course-workspace-navigation.ts`                                                                                                                                                                                                                    |
@@ -1351,6 +1418,11 @@ Current deployed catalog API добавляет authenticated
 а также Course-owned `publication` и `duplicate` routes. Все elevated
 table/Storage operations остаются за server context после обычной
 Account/session authorization.
+
+Repository-current dependent API дополнительно добавляет separate published
+route `/courses/catalog/[publicationId]`, `GET|PUT .../progress`, owner
+`GET|PUT .../attestation` и approved-revision-only educator detail. Эти routes
+не считаются production до coupled migration/web rollout.
 
 Schedule reads ограничены 500 Runs на окно. Teacher Lesson/Course/Profile
 history возвращает последние 100 элементов; Course read всегда включает

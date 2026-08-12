@@ -72,6 +72,14 @@ export function publicationRepositoryFailure(input: {
       input.definitelyNotCommitted,
     );
   }
+  if (token.includes("educator_course_duplicate_forbidden")) {
+    return new CoursePublicationRepositoryError(
+      "Курс для педагогов нельзя дублировать.",
+      409,
+      "educator_course_duplicate_forbidden",
+      input.definitelyNotCommitted,
+    );
+  }
   if (/not_found|access_denied|owner_mismatch/.test(token)) {
     return new CoursePublicationRepositoryError(
       "Публикация курса не найдена или недоступна.",

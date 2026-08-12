@@ -80,6 +80,25 @@ test("educator catalog copy requires current-revision certification", async () =
   });
 });
 
+test("educator own-course duplicate denial keeps a stable product response", async () => {
+  const error = publicationRepositoryFailure({
+    message: "educator_course_duplicate_forbidden",
+    status: 403,
+    databaseCode: "42501",
+    definitelyNotCommitted: true,
+  });
+  assert.equal(error.status, 409);
+  assert.equal(error.code, "educator_course_duplicate_forbidden");
+  assert.equal(error.message, "Курс для педагогов нельзя дублировать.");
+
+  const response = await courseBuilderApiError(error);
+  assert.equal(response.status, 409);
+  assert.deepEqual(await response.json(), {
+    error: "Курс для педагогов нельзя дублировать.",
+    code: "educator_course_duplicate_forbidden",
+  });
+});
+
 test("course API exposes stable mutation rate and in-flight responses", async () => {
   const limited = await courseBuilderApiError(
     new CoursePublicationMutationRateLimitError(17),

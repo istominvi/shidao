@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Plus } from "lucide-react";
 import { AppPageHeader } from "@/components/app/page-header";
 import { CoursesIndex } from "@/components/course-builder/courses-index";
@@ -17,12 +18,16 @@ type CoursesPageProps = {
 export default async function CoursesPage({ searchParams }: CoursesPageProps) {
   const query = await searchParams;
   const initialTab = query.tab === "catalog" ? "catalog" : "mine";
-  const initialCatalogCourseId =
-    initialTab === "catalog" && typeof query.course === "string"
-      ? query.course
-      : null;
   const initialLearningAudience =
     query.audience === "educators" ? "educators" : "children";
+
+  if (initialTab === "catalog" && typeof query.course === "string") {
+    const audienceQuery =
+      initialLearningAudience === "educators" ? "?audience=educators" : "";
+    redirect(
+      `/courses/catalog/${encodeURIComponent(query.course)}${audienceQuery}`,
+    );
+  }
 
   return (
     <main className="course-demo-shell pb-12">
@@ -43,7 +48,6 @@ export default async function CoursesPage({ searchParams }: CoursesPageProps) {
         />
         <CoursesIndex
           initialTab={initialTab}
-          initialCatalogCourseId={initialCatalogCourseId}
           initialLearningAudience={initialLearningAudience}
         />
       </div>

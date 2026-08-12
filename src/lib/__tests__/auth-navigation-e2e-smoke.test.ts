@@ -134,6 +134,7 @@ async function handleMockSupabase(
         locale: "ru",
         timezone: "Asia/Chita",
         has_pin: true,
+        can_author_educator_courses: true,
         sessions_invalid_before: null,
       },
     ]);

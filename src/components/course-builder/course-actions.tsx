@@ -23,7 +23,7 @@ import type { OwnedCoursePublication } from "@/modules/course-publications/domai
 
 type CourseActionTarget = Pick<
   CourseSummary,
-  "id" | "title" | "lessonCount" | "publication"
+  "id" | "title" | "lessonCount" | "learningAudience" | "publication"
 >;
 
 type CourseActionDialogMode = "publish" | "update" | "unpublish" | "delete";
@@ -75,12 +75,48 @@ function isPublished(publication: OwnedCoursePublication | null | undefined) {
   return publication?.status === "published";
 }
 
+function isCatalogVisible(
+  publication: OwnedCoursePublication | null | undefined,
+  educatorCourse: boolean,
+) {
+  return (
+    isPublished(publication) &&
+    (!educatorCourse || Boolean(publication?.approvedRevisionId))
+  );
+}
+
 export function CoursePublicationBadges({
   publication,
+  learningAudience = "children",
 }: {
   publication: OwnedCoursePublication | null | undefined;
+  learningAudience?: CourseSummary["learningAudience"];
 }) {
-  if (!isPublished(publication)) return null;
+  const educatorCourse = learningAudience === "educators";
+  if (educatorCourse) {
+    if (!publication) return null;
+    return (
+      <>
+        {isCatalogVisible(publication, true) ? (
+          <Chip tone="emerald">В каталоге</Chip>
+        ) : null}
+        {publication.reviewStatus === "pending" ? (
+          <Chip tone="amber">На проверке</Chip>
+        ) : null}
+        {publication.reviewStatus === "approved" ? (
+          <Chip tone="emerald">Проверка пройдена</Chip>
+        ) : null}
+        {publication.reviewStatus === "rejected" ? (
+          <Chip tone="rose">Нужны исправления</Chip>
+        ) : null}
+        {publication.hasUnpublishedChanges ? (
+          <Chip tone="amber">Есть изменения</Chip>
+        ) : null}
+      </>
+    );
+  }
+
+  if (!publication || !isPublished(publication)) return null;
 
   return (
     <>
@@ -105,6 +141,19 @@ export function CourseActions({
   const [busyAction, setBusyAction] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const published = isPublished(course.publication);
+  const educatorCourse = course.learningAudience === "educators";
+  const catalogVisible = isCatalogVisible(course.publication, educatorCourse);
+  const reviewStatus = educatorCourse
+    ? (course.publication?.reviewStatus ?? null)
+    : null;
+  const pendingReview = reviewStatus === "pending";
+  const rejectedReview = reviewStatus === "rejected";
+  const rejectedInitialPublication =
+    educatorCourse &&
+    rejectedReview &&
+    published &&
+    !course.publication?.approvedRevisionId;
+  const publicationLocked = published || pendingReview;
 
   function openDialog(mode: CourseActionDialogMode) {
     setActionError(null);
@@ -204,20 +253,41 @@ export function CourseActions({
     }
   }
 
-  const items: ActionMenuItem[] = [
-    {
-      id: "duplicate",
-      label: busyAction === "duplicate" ? "Дублируем…" : "Дублировать",
-      icon: BookCopy,
-      disabled: Boolean(busyAction),
-      onSelect: () => void duplicateCourse(),
-    },
-  ];
+  const items: ActionMenuItem[] = educatorCourse
+    ? []
+    : [
+        {
+          id: "duplicate",
+          label: busyAction === "duplicate" ? "Дублируем…" : "Дублировать",
+          icon: BookCopy,
+          disabled: Boolean(busyAction),
+          onSelect: () => void duplicateCourse(),
+        },
+      ];
 
-  if (!published) {
+  if (educatorCourse && pendingReview) {
+    if (catalogVisible) {
+      items.push({
+        id: "open-publication",
+        label: "Открыть одобренную редакцию",
+        icon: ExternalLink,
+        href: `/courses/catalog/${encodeURIComponent(course.publication!.id)}?audience=educators`,
+        separatorBefore: true,
+      });
+    }
+    items.push({
+      id: "unpublish",
+      label: "Отозвать с проверки",
+      icon: Undo2,
+      destructive: true,
+      separatorBefore: !catalogVisible,
+      disabled: Boolean(busyAction),
+      onSelect: () => openDialog("unpublish"),
+    });
+  } else if (!published && !rejectedReview) {
     items.push({
       id: "publish",
-      label: "Опубликовать",
+      label: educatorCourse ? "Отправить на проверку" : "Опубликовать",
       icon: Send,
       separatorBefore: true,
       disabled: Boolean(busyAction) || course.lessonCount === 0,
@@ -228,31 +298,39 @@ export function CourseActions({
       onSelect: () => openDialog("publish"),
     });
   } else {
-    if (course.publication?.hasUnpublishedChanges) {
+    if (course.publication?.hasUnpublishedChanges || rejectedReview) {
       items.push({
         id: "update-publication",
-        label: "Обновить публикацию",
+        label: educatorCourse
+          ? "Отправить новую редакцию"
+          : "Обновить публикацию",
         icon: RefreshCw,
         separatorBefore: true,
         disabled: Boolean(busyAction),
         onSelect: () => openDialog("update"),
       });
     }
-    items.push({
-      id: "open-publication",
-      label: "Открыть в каталоге",
-      icon: ExternalLink,
-      href: `/courses?tab=catalog&course=${encodeURIComponent(course.publication!.id)}`,
-      separatorBefore: !course.publication?.hasUnpublishedChanges,
-    });
-    items.push({
-      id: "unpublish",
-      label: "Снять с публикации",
-      icon: Undo2,
-      destructive: true,
-      disabled: Boolean(busyAction),
-      onSelect: () => openDialog("unpublish"),
-    });
+    if (catalogVisible) {
+      items.push({
+        id: "open-publication",
+        label: "Открыть в каталоге",
+        icon: ExternalLink,
+        href: `/courses/catalog/${encodeURIComponent(course.publication!.id)}?audience=${course.learningAudience}`,
+        separatorBefore: !course.publication?.hasUnpublishedChanges,
+      });
+    }
+    if (!educatorCourse || published) {
+      items.push({
+        id: "unpublish",
+        label: rejectedInitialPublication
+          ? "Снять отклонённую публикацию"
+          : "Снять с публикации",
+        icon: Undo2,
+        destructive: true,
+        disabled: Boolean(busyAction),
+        onSelect: () => openDialog("unpublish"),
+      });
+    }
   }
 
   if (variant === "table") {
@@ -262,13 +340,52 @@ export function CourseActions({
       icon: Trash2,
       destructive: true,
       separatorBefore: true,
-      disabled: Boolean(busyAction) || published,
-      hint: published ? "Сначала снимите курс с публикации" : undefined,
+      disabled: Boolean(busyAction) || publicationLocked,
+      hint: pendingReview
+        ? "Сначала отзовите курс с проверки"
+        : rejectedInitialPublication
+          ? "Сначала снимите отклонённую публикацию"
+          : publicationLocked
+            ? "Сначала снимите курс с публикации"
+            : undefined,
       onSelect: () => openDialog("delete"),
     });
   }
 
-  const dialogCopy = dialogMode ? PUBLICATION_DIALOG_COPY[dialogMode] : null;
+  const dialogCopy = dialogMode
+    ? educatorCourse && dialogMode === "publish"
+      ? {
+          title: "Отправить курс на проверку?",
+          body: "Неизменяемая редакция курса и аттестации уйдёт администратору ShiDao. До одобрения курс не появится в каталоге; слушатели смогут учиться сами, без копирования курса и проведения занятий по нему.",
+          confirmLabel: "Отправить на проверку",
+          busyLabel: "Отправляем…",
+        }
+      : educatorCourse && dialogMode === "update"
+        ? {
+            title: "Отправить новую редакцию?",
+            body: "Новая неизменяемая редакция уроков, материалов и аттестации пройдёт повторную проверку. Если прежняя редакция уже одобрена, она останется доступна в каталоге до одобрения новой.",
+            confirmLabel: "Отправить новую редакцию",
+            busyLabel: "Отправляем…",
+          }
+        : educatorCourse && dialogMode === "unpublish"
+          ? {
+              title: pendingReview
+                ? "Отозвать курс с проверки?"
+                : rejectedInitialPublication
+                  ? "Снять отклонённую публикацию?"
+                  : "Снять фирменный курс с публикации?",
+              body: pendingReview
+                ? catalogVisible
+                  ? "Текущая редакция больше не будет ожидать проверки. Ранее одобренная редакция останется в каталоге, а авторский курс — в вашем рабочем пространстве."
+                  : "Текущая редакция больше не будет ожидать проверки. Авторский курс останется в вашем рабочем пространстве."
+                : rejectedInitialPublication
+                  ? "Отклонённая редакция перестанет считаться опубликованной. После этого рабочий курс можно удалить или отправить на проверку новой редакцией."
+                  : "Курс перестанет быть доступен слушателям в каталоге. Авторский курс и результаты уже завершённых аттестаций сохранятся.",
+              confirmLabel: pendingReview ? "Отозвать" : "Снять публикацию",
+              busyLabel: pendingReview ? "Отзываем…" : "Снимаем…",
+            }
+          : PUBLICATION_DIALOG_COPY[dialogMode]
+    : null;
   const requiresRights = dialogMode === "publish" || dialogMode === "update";
   const dialog =
     dialogMode && dialogCopy ? (
@@ -289,9 +406,9 @@ export function CourseActions({
               onChange={(event) => setRightsConfirmed(event.target.checked)}
             />
             <span>
-              Я подтверждаю, что имею права на материалы и разрешаю
-              пользователям ShiDao копировать, изменять и использовать их в
-              своих курсах.
+              {educatorCourse
+                ? "Я подтверждаю права на материалы и разрешаю ShiDao проверить и опубликовать этот фирменный курс."
+                : "Я подтверждаю, что имею права на материалы и разрешаю пользователям ShiDao копировать, изменять и использовать их в своих курсах."}
             </span>
           </label>
         ) : null}

@@ -50,6 +50,7 @@ import {
   DEFAULT_COURSE_LEARNING_AUDIENCE,
   type CourseLearningAudience,
 } from "@/modules/course-builder/learning-audience";
+import type { ComponentTypeKey } from "@/modules/course-builder/registry/contracts";
 
 export const COURSE_PUBLICATION_MAX_MATERIALS = 24;
 export const COURSE_PUBLICATION_MAX_TOTAL_BYTES = 120 * 1024 * 1024;
@@ -410,6 +411,9 @@ function mapOwnedPublication(
         updatedAt: string;
         sourceCourseUpdatedAt: string;
         sourceContentUpdatedAt: string;
+        reviewStatus?: "pending" | "approved" | "rejected" | null;
+        reviewRevisionId?: string | null;
+        approvedRevisionId?: string | null;
       },
   publicationContentUpdatedAt: string,
 ): OwnedCoursePublication {
@@ -421,6 +425,9 @@ function mapOwnedPublication(
     updatedAt: record.updatedAt,
     hasUnpublishedChanges:
       publicationContentUpdatedAt !== record.sourceContentUpdatedAt,
+    reviewStatus: record.reviewStatus ?? null,
+    reviewRevisionId: record.reviewRevisionId ?? null,
+    approvedRevisionId: record.approvedRevisionId ?? null,
   };
 }
 
@@ -692,6 +699,14 @@ export function createCoursePublicationService(
           rawInput,
         );
         const workspace = await ownedWorkspace(actor, sourceCourseId);
+        if (
+          workspace.learningAudience === "educators" &&
+          actor.canAuthorEducatorCourses !== true
+        ) {
+          throw new CoursePublicationAccessError(
+            "Публикация курса для педагогов недоступна этому аккаунту.",
+          );
+        }
         if (workspace.lessons.length === 0) {
           throw new CoursePublicationValidationError(
             "Добавьте хотя бы один урок перед публикацией курса.",
@@ -906,12 +921,37 @@ export function createCoursePublicationService(
       );
       return {
         ...mapCatalogEntry(detail, actorAccountId),
-        lessons: detail.snapshot.lessons.map((lesson) => ({
-          position: lesson.position,
-          title: lesson.title,
-          summary: lesson.summary,
-          estimatedDurationMinutes: lesson.estimatedDurationMinutes,
-        })),
+        revisionId: detail.revisionId,
+        lessons: [...detail.snapshot.lessons]
+          .sort((left, right) => left.position - right.position)
+          .map((lesson) => ({
+            id: lesson.ref,
+            position: lesson.position,
+            title: lesson.title,
+            estimatedDurationMinutes: lesson.estimatedDurationMinutes,
+            slides: [...lesson.slides]
+              .sort((left, right) => left.position - right.position)
+              .map((slide) => ({
+                id: slide.ref,
+                position: slide.position,
+                components: [...lesson.components]
+                  .filter(
+                    (component) =>
+                      component.visibility === "learner_visible" &&
+                      component.studentSlideRef === slide.ref,
+                  )
+                  .sort((left, right) => left.position - right.position)
+                  .map((component) => ({
+                    id: component.ref,
+                    position: component.position,
+                    typeKey: component.typeKey as ComponentTypeKey,
+                    schemaVersion: component.schemaVersion,
+                    payload: structuredClone(component.payload),
+                    placement: structuredClone(component.placement),
+                  })),
+              }))
+              .filter((slide) => slide.components.length > 0),
+          })),
         materials,
       };
     },
@@ -926,6 +966,12 @@ export function createCoursePublicationService(
         const input = parsePublicationContract(copyCourseInputSchema, rawInput);
         await assertActivePublicationActor(actorAccountId);
         const detail = await catalogDetailRecord(publicationId);
+        if (detail.learningAudience === "educators") {
+          throw new CoursePublicationConflictError(
+            "Курс для педагогов проходит внутри ShiDao и не добавляется в личные курсы.",
+            "educator_course_not_copyable",
+          );
+        }
         await repository.assertCatalogCopyEligible(
           actorAccountId,
           detail.publicationId,
@@ -1002,6 +1048,12 @@ export function createCoursePublicationService(
     ): Promise<CopiedCourseResult> {
       const input = parsePublicationContract(copyCourseInputSchema, rawInput);
       const workspace = await ownedWorkspace(actor, sourceCourseId);
+      if (workspace.learningAudience === "educators") {
+        throw new CoursePublicationConflictError(
+          "Курс для педагогов нельзя дублировать.",
+          "educator_course_duplicate_forbidden",
+        );
+      }
       const targetCourseId = createId();
       const result = await repository.duplicateCourse({
         actorAccountId: workspace.ownerAccountId,

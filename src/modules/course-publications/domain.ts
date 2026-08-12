@@ -1,6 +1,8 @@
 import type { CourseLearningAudience } from "@/modules/course-builder/learning-audience";
+import type { ComponentTypeKey } from "@/modules/course-builder/registry/contracts";
 
 export type CoursePublicationStatus = "published" | "unpublished";
+export type EducatorCourseReviewStatus = "pending" | "approved" | "rejected";
 
 export type OwnedCoursePublication = {
   id: string;
@@ -9,6 +11,9 @@ export type OwnedCoursePublication = {
   publishedAt: string | null;
   updatedAt: string;
   hasUnpublishedChanges: boolean;
+  reviewStatus: EducatorCourseReviewStatus | null;
+  reviewRevisionId: string | null;
+  approvedRevisionId: string | null;
 };
 
 export type CourseCatalogAuthor = {
@@ -35,10 +40,26 @@ export type CourseCatalogEntry = {
 };
 
 export type CourseCatalogLesson = {
+  id: string;
   position: number;
   title: string;
-  summary: string;
   estimatedDurationMinutes: number | null;
+  slides: CourseCatalogSlide[];
+};
+
+export type CourseCatalogComponent = {
+  id: string;
+  position: number;
+  typeKey: ComponentTypeKey;
+  schemaVersion: number;
+  payload: Record<string, unknown>;
+  placement: Record<string, unknown>;
+};
+
+export type CourseCatalogSlide = {
+  id: string;
+  position: number;
+  components: CourseCatalogComponent[];
 };
 
 export type CourseCatalogMaterial = {
@@ -50,6 +71,7 @@ export type CourseCatalogMaterial = {
 };
 
 export type CourseCatalogDetail = CourseCatalogEntry & {
+  revisionId: string;
   lessons: CourseCatalogLesson[];
   materials: CourseCatalogMaterial[];
 };
@@ -91,8 +113,12 @@ export type PublicationSnapshotComponent = {
   studentSlideRef: string | null;
 };
 
-export type PublicationSnapshotLesson = CourseCatalogLesson & {
+export type PublicationSnapshotLesson = {
   ref: string;
+  position: number;
+  title: string;
+  summary: string;
+  estimatedDurationMinutes: number | null;
   components: PublicationSnapshotComponent[];
   slides: PublicationSnapshotSlide[];
 };

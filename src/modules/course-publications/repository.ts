@@ -36,11 +36,23 @@ type PublicationRow = {
   is_shidao: boolean;
   status: "published" | "unpublished";
   current_revision_id: string;
+  approved_revision_id: string | null;
   source_content_updated_at: string;
   published_at: string | null;
   unpublished_at: string | null;
   created_at: string;
   updated_at: string;
+};
+
+type EducatorCourseRevisionReviewRow = {
+  revision_id: string;
+  publication_id: string;
+  status: "pending" | "approved" | "rejected";
+};
+
+type CoursePublicationAttestationIdentityRow = {
+  revision_id: string;
+  publication_id: string;
 };
 
 type CourseAttestationRow = {
@@ -91,6 +103,8 @@ type StoredFileRow = {
   status: "pending" | "ready";
 };
 
+const SHIDAO_OFFICIAL_LEARNING_LICENSE = "shidao_official_learning_v1";
+
 export type OwnedPublicationRecord = {
   publicationId: string;
   sourceCourseId: string;
@@ -102,6 +116,9 @@ export type OwnedPublicationRecord = {
   sourceCourseUpdatedAt: string;
   sourceContentUpdatedAt: string;
   contentSha256: string;
+  reviewStatus: "pending" | "approved" | "rejected" | null;
+  reviewRevisionId: string | null;
+  approvedRevisionId: string | null;
 };
 
 export type CatalogPublicationRecord = {
@@ -177,6 +194,9 @@ export type PublicationRpcRecord = {
   sourceCourseUpdatedAt: string;
   sourceContentUpdatedAt: string;
   contentSha256: string;
+  reviewStatus: "pending" | "approved" | "rejected" | null;
+  reviewRevisionId: string | null;
+  approvedRevisionId: string | null;
 };
 
 export interface CoursePublicationRepository {
@@ -257,6 +277,16 @@ const publicationRpcSchema = z
     sourceCourseUpdatedAt: z.string(),
     sourceContentUpdatedAt: z.string(),
     contentSha256: z.string().regex(/^[a-f0-9]{64}$/i),
+    reviewStatus: z
+      .enum(["pending", "approved", "rejected"])
+      .nullish()
+      .transform((value) => value ?? null),
+    reviewRevisionId: postgresUuidSchema
+      .nullish()
+      .transform((value) => value ?? null),
+    approvedRevisionId: postgresUuidSchema
+      .nullish()
+      .transform((value) => value ?? null),
   })
   .passthrough();
 
@@ -369,7 +399,11 @@ function mapCatalogRecord(
   publication: PublicationRow,
   revision: PublicationRevisionRow,
 ): CatalogPublicationRecord {
-  if (!publication.published_at) {
+  const catalogPublishedAt =
+    publication.learning_audience === "educators"
+      ? revision.published_at
+      : publication.published_at;
+  if (!catalogPublishedAt) {
     throw new CoursePublicationRepositoryError(
       "course_publication_published_at_missing",
       502,
@@ -383,7 +417,7 @@ function mapCatalogRecord(
     learningAudience: publication.learning_audience,
     publisherDisplayName: publication.publisher_display_name,
     isShiDao: publication.is_shidao,
-    publishedAt: publication.published_at,
+    publishedAt: catalogPublishedAt,
     revisionId: revision.id,
     snapshot: parseSnapshot(revision.snapshot),
   };
@@ -392,6 +426,7 @@ function mapCatalogRecord(
 function mapOwnedRecord(
   publication: PublicationRow,
   revision: PublicationRevisionRow,
+  review: EducatorCourseRevisionReviewRow | null,
 ): OwnedPublicationRecord {
   if (!publication.source_course_id) {
     throw new CoursePublicationRepositoryError(
@@ -411,6 +446,9 @@ function mapOwnedRecord(
     sourceCourseUpdatedAt: revision.source_course_updated_at,
     sourceContentUpdatedAt: publication.source_content_updated_at,
     contentSha256: revision.content_sha256,
+    reviewStatus: review?.status ?? null,
+    reviewRevisionId: review?.revision_id ?? null,
+    approvedRevisionId: publication.approved_revision_id ?? null,
   };
 }
 
@@ -520,6 +558,13 @@ export function createCoursePublicationRepository(
     );
   }
 
+  async function reviewsByRevisionIds(ids: string[]) {
+    if (ids.length === 0) return [];
+    return request<EducatorCourseRevisionReviewRow[]>(
+      `/rest/v1/educator_course_revision_review?select=revision_id,publication_id,status&revision_id=in.(${inFilter(ids)})`,
+    );
+  }
+
   async function isActiveAccount(actorAccountId: string) {
     const rows = await request<Array<{ id: string }>>(
       `/rest/v1/account?select=id&id=eq.${encodeFilter(actorAccountId)}&status=eq.active&limit=1`,
@@ -536,7 +581,10 @@ export function createCoursePublicationRepository(
       );
       const publication = rows[0];
       if (!publication) return null;
-      const revisions = await revisionsByIds([publication.current_revision_id]);
+      const [revisions, reviews] = await Promise.all([
+        revisionsByIds([publication.current_revision_id]),
+        reviewsByRevisionIds([publication.current_revision_id]),
+      ]);
       const revision = revisions[0];
       if (!revision) {
         throw new CoursePublicationRepositoryError(
@@ -545,7 +593,7 @@ export function createCoursePublicationRepository(
           null,
         );
       }
-      return mapOwnedRecord(publication, revision);
+      return mapOwnedRecord(publication, revision, reviews[0] ?? null);
     },
 
     async listOwnedPublications(actorAccountId, sourceCourseIds) {
@@ -553,11 +601,18 @@ export function createCoursePublicationRepository(
       const publications = await request<PublicationRow[]>(
         `/rest/v1/course_publication?select=*&owner_account_id=eq.${encodeFilter(actorAccountId)}&source_course_id=in.(${inFilter(sourceCourseIds)})`,
       );
-      const revisions = await revisionsByIds(
-        publications.map((publication) => publication.current_revision_id),
+      const revisionIds = publications.map(
+        (publication) => publication.current_revision_id,
       );
+      const [revisions, reviews] = await Promise.all([
+        revisionsByIds(revisionIds),
+        reviewsByRevisionIds(revisionIds),
+      ]);
       const revisionById = new Map(
         revisions.map((revision) => [revision.id, revision]),
+      );
+      const reviewByRevisionId = new Map(
+        reviews.map((review) => [review.revision_id, review]),
       );
       return publications.map((publication) => {
         const revision = revisionById.get(publication.current_revision_id);
@@ -568,7 +623,11 @@ export function createCoursePublicationRepository(
             null,
           );
         }
-        return mapOwnedRecord(publication, revision);
+        return mapOwnedRecord(
+          publication,
+          revision,
+          reviewByRevisionId.get(publication.current_revision_id) ?? null,
+        );
       });
     },
 
@@ -628,14 +687,52 @@ export function createCoursePublicationRepository(
       const publication = publications[0];
       if (!publication) return null;
       if (!(await isActiveAccount(publication.owner_account_id))) return null;
-      const revisions = await revisionsByIds([publication.current_revision_id]);
+      const catalogRevisionId =
+        publication.learning_audience === "educators"
+          ? publication.is_shidao
+            ? publication.approved_revision_id
+            : null
+          : publication.current_revision_id;
+      if (!catalogRevisionId) return null;
+      const revisions = await revisionsByIds([catalogRevisionId]);
       const revision = revisions[0];
       if (!revision) {
+        if (publication.learning_audience === "educators") return null;
         throw new CoursePublicationRepositoryError(
           "course_publication_revision_missing",
           502,
           null,
         );
+      }
+      if (publication.learning_audience === "educators") {
+        if (
+          revision.id !== catalogRevisionId ||
+          revision.publication_id !== publication.id ||
+          revision.license_code !== SHIDAO_OFFICIAL_LEARNING_LICENSE
+        ) {
+          return null;
+        }
+        const [reviews, attestations] = await Promise.all([
+          request<EducatorCourseRevisionReviewRow[]>(
+            `/rest/v1/educator_course_revision_review?select=revision_id,publication_id,status&revision_id=eq.${encodeFilter(catalogRevisionId)}&publication_id=eq.${encodeFilter(publication.id)}&status=eq.approved&limit=1`,
+          ),
+          request<CoursePublicationAttestationIdentityRow[]>(
+            `/rest/v1/course_publication_attestation?select=revision_id,publication_id&revision_id=eq.${encodeFilter(catalogRevisionId)}&publication_id=eq.${encodeFilter(publication.id)}&limit=1`,
+          ),
+        ]);
+        const review = reviews[0];
+        const attestation = attestations[0];
+        if (
+          !review ||
+          review.revision_id !== catalogRevisionId ||
+          review.publication_id !== publication.id ||
+          review.status !== "approved" ||
+          !attestation ||
+          attestation.revision_id !== catalogRevisionId ||
+          attestation.publication_id !== publication.id
+        ) {
+          return null;
+        }
       }
       const assets = await request<PublicationAssetRow[]>(
         `/rest/v1/course_publication_asset?select=*&revision_id=eq.${encodeFilter(revision.id)}&order=created_at.asc`,

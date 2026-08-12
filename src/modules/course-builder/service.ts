@@ -130,6 +130,22 @@ export function createCourseBuilderService(
     return course;
   }
 
+  async function requireMutableOwnedCourse(
+    actor: CourseBuilderActor,
+    courseIdValue: string,
+  ) {
+    const course = await requireOwnedCourse(actor, courseIdValue);
+    if (
+      course.learningAudience === "educators" &&
+      actor.canAuthorEducatorCourses !== true
+    ) {
+      throw new CourseBuilderAccessError(
+        "Редактирование курса для педагогов недоступно этому аккаунту.",
+      );
+    }
+    return course;
+  }
+
   async function requireOwnedLesson(
     actor: CourseBuilderActor,
     lessonIdValue: string,
@@ -137,7 +153,7 @@ export function createCourseBuilderService(
     const lessonId = parseContract(uuidSchema, lessonIdValue);
     const lesson = await repository.getLesson(lessonId);
     if (!lesson) throw new CourseBuilderAccessError("Урок не найден.");
-    await requireOwnedCourse(actor, lesson.courseId);
+    await requireMutableOwnedCourse(actor, lesson.courseId);
     return lesson;
   }
 
@@ -278,6 +294,14 @@ export function createCourseBuilderService(
       rawInput: CourseDraftInput | unknown,
     ) {
       const input = parseContract(courseDraftInputSchema, rawInput);
+      if (
+        input.learningAudience === "educators" &&
+        actor.canAuthorEducatorCourses !== true
+      ) {
+        throw new CourseBuilderAccessError(
+          "Создание курсов для педагогов недоступно этому аккаунту.",
+        );
+      }
       const accountId = await requireAccountId(actor);
       return repository.createCourse(accountId, input);
     },
@@ -336,8 +360,17 @@ export function createCourseBuilderService(
       courseId: string,
       rawInput: CourseUpdateInput | unknown,
     ) {
-      await requireOwnedCourse(actor, courseId);
+      const course = await requireMutableOwnedCourse(actor, courseId);
       const input = parseContract(courseUpdateInputSchema, rawInput);
+      if (
+        input.learningAudience !== undefined &&
+        input.learningAudience !== course.learningAudience
+      ) {
+        throw new CourseBuilderConflictError(
+          "Направление обучения выбирается при создании курса и не меняется.",
+          "course_learning_audience_immutable",
+        );
+      }
       const updated = await repository.updateCourse(courseId, input);
       if (!updated) throw new CourseBuilderAccessError();
       return updated;
@@ -369,7 +402,7 @@ export function createCourseBuilderService(
       courseId: string,
       rawInput: AddLessonInput | unknown,
     ): Promise<CourseLesson> {
-      await requireOwnedCourse(actor, courseId);
+      await requireMutableOwnedCourse(actor, courseId);
       return repository.addLesson(
         courseId,
         parseContract(addLessonInputSchema, rawInput),
@@ -513,7 +546,7 @@ export function createCourseBuilderService(
       courseId: string,
       rawInput: PrepareCourseAttachmentInput | unknown,
     ): Promise<PreparedCourseAttachment> {
-      const course = await requireOwnedCourse(actor, courseId);
+      const course = await requireMutableOwnedCourse(actor, courseId);
       const input = parseContract(prepareCourseAttachmentInputSchema, rawInput);
       const accountId = course.ownerAccountId;
       const assetId = createId();
@@ -553,7 +586,7 @@ export function createCourseBuilderService(
       courseId: string,
       assetIdValue: string,
     ) {
-      await requireOwnedCourse(actor, courseId);
+      await requireMutableOwnedCourse(actor, courseId);
       const assetId = parseContract(uuidSchema, assetIdValue);
       const ref = await repository.getAttachmentStorageRef(courseId, assetId);
       if (!ref || ref.asset.status !== "pending") {
@@ -579,7 +612,7 @@ export function createCourseBuilderService(
       actor: CourseBuilderActor,
       courseId: string,
     ): Promise<AssembleCourseResult> {
-      const course = await requireOwnedCourse(actor, courseId);
+      const course = await requireMutableOwnedCourse(actor, courseId);
       if (course.assembledAt) {
         return {
           courseId: course.id,

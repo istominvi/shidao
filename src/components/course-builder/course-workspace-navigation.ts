@@ -1,5 +1,5 @@
 export type CourseWorkspaceSurface =
-  "lessons" | "about" | "materials" | "history";
+  "lessons" | "about" | "materials" | "history" | "attestation";
 
 export type LessonAuthoringSurface =
   "plan" | "student" | "homework" | "materials" | "history";
@@ -13,6 +13,22 @@ export const COURSE_WORKSPACE_TABS = [
   value: CourseWorkspaceSurface;
   label: string;
 }>;
+
+export const EDUCATOR_COURSE_WORKSPACE_TABS = [
+  { value: "lessons", label: "Уроки" },
+  { value: "about", label: "О курсе" },
+  { value: "materials", label: "Материалы" },
+  { value: "attestation", label: "Аттестация" },
+] as const satisfies ReadonlyArray<{
+  value: CourseWorkspaceSurface;
+  label: string;
+}>;
+
+export function courseWorkspaceTabs(educatorCourse: boolean) {
+  return educatorCourse
+    ? EDUCATOR_COURSE_WORKSPACE_TABS
+    : COURSE_WORKSPACE_TABS;
+}
 
 export const LESSON_WORKSPACE_TABS = [
   { value: "plan", label: "План" },

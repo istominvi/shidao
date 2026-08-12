@@ -492,8 +492,9 @@ postflight; Coolify deployment `891` развернул exact functional SHA `9a
   consent данные не входят;
 - private material bytes копируются в immutable publication Storage, а
   при добавлении — в новые owner-scoped StoredFile;
-- добавление и duplicate создают новые Course/Lesson/Component/Slide
-  IDs без audience, Runs, records, reports и AI consent;
+- для детских publications добавление и duplicate создают новые
+  Course/Lesson/Component/Slide IDs без audience, Runs, records, reports и AI
+  consent; educator Course исключён из обоих flows;
 - publish/update имеют один confirmation dialog с подтверждением
   прав на материалы; preview wizard и name/PII scanner в этом slice
   намеренно отсутствуют;
@@ -509,47 +510,65 @@ postflight; Coolify deployment `891` развернул exact functional SHA `9a
 **Next:** до широкого rollout добавить persisted orphan-Storage reconciliation.
 Current Course `DELETE` является soft archive и требует явный unpublish;
 permanent delete остаётся закрыт до согласованной publication/Storage retention
-policy. Официальные Course от ShiDao требуют отдельно утверждённого учебного
-контента; fixtures не публикуются.
+policy. Fixtures не публикуются.
 
 ## P0.5: educator Course и Account attestation
 
-**Current production.** E1 database
-contract хранит отдельное учебное назначение `children | educators`, immutable
-educator assessment definition и Account attempt/award, привязанные к точной
-revision; score никогда не принимается с клиента. Demonstration product data
-применены к production. Authenticated incident check подтвердил один educator
-Course в catalog RPC и одну `certified=true` credential в profile RPC, поэтому
-ошибка была в application parsing, а не в сети или database contract:
-допустимые PostgreSQL UUID из deterministic `md5(...)::uuid` не проходили
-RFC-strict `z.uuid`.
+**Current production baseline.** E1 database contract хранит
+`children | educators`, immutable assessment definition и Account
+attempt/award, привязанные к exact revision; score никогда не принимается с
+клиента. Migration, initial dependent web/API и demonstration product data
+развёрнуты. Production содержит один educator Course для преподавателя
+китайского языка и реальный DB/RPC passed result `9/10 = 90%` с credential.
+UUID parsing/toolbar hotfix имеет green repository gate, но не отдельную
+running-image запись и входит в следующий dependent web rollout.
 
-- conditional «Аттестация» показывается в published catalog detail, не в
-  owner-only Course Builder как имитация прохождения;
-- успешный текущий result даёт видимый badge «Аттестован», исторические awards
-  перечисляются в учебном профиле Account;
-- educator publication copy доступен только после current-revision award и
-  переносит authored definition, но не результат; собственный duplicate не
-  переносит попытки/awards;
-- DB rollout завершён: exact migration/rollback, schema/RLS/ACL postflight и
-  functional scoring probe прошли; current snapshot снят;
-- initial dependent web deployment exact commit
-  `28387a9863afeccf4a6ad332dcf0f01048a69e67` завершён; его generic
-  host/CSRF/API gates не обнаружили несовместимость parser с deterministic
-  PostgreSQL UUID;
-- application hotfix вводит общий PostgreSQL UUID contract через `z.guid`
-  для publication/revision/snapshot IDs и regression tests, очищает masked
-  error state при переключении направления и переносит audience toggle в одну
-  toolbar-строку с остальными controls; typecheck/lint/format/build, unit
-  `527/527` и strict production-mode browser `22/22` прошли;
-- отдельный demonstration-product bootstrap создал курс «Современный урок
-  китайского языка для детей: произношение, иероглифика и формирующее
-  оценивание», published assessment и реальный passed attempt `9/10 = 90%`
-  при threshold `80%`; credential видна в профиле. Product data не входит в
-  migration и не является test fixture.
+**Current production database; dependent web next.** Forward migration
+`20260812150745_educator_course_governance_progress.sql` применена с `COMMIT` в
+`2026-08-12T07:34:36Z`; current snapshot снят `2026-08-12T07:43:11Z` и имеет
+SHA-256
+`6df94ceabbc902b66b4c592998f1770ea62442a68255ddd6133a3b9d75745949`.
+Database contract и dependent repository source реализуют окончательную
+governance/consumption модель:
 
-**Later:** полноценное enrollment/consumption, юридически значимые
-удостоверения, proctoring, manual assessment и expiration/retake policy.
+- `account.can_author_educator_courses` с default `false` является свежим
+  DB-backed trusted-author capability; только такой active Account видит
+  audience choice в create flow и может редактировать educator content;
+- authored educator Course переиспользует обычные Lesson/Components/Slides и
+  attachments, но вместо owner **«Истории»** имеет definition-вкладку
+  **«Аттестация»**;
+- каждая publication revision сначала получает review `pending`; до admin
+  approval она не видна в каталоге. Approved content читается только по
+  `approved_revision_id`; pending update не вытесняет прежнюю approved revision;
+- отдельный admin UI остаётся later, но service-only approve/reject RPC и DB
+  gate уже входят в repository contract;
+- educator publication всегда official ShiDao content. Карточка, таблица и
+  published header показывают `ShiDao` вместе с именем эксперта-автора;
+- catalog audience toggle остаётся только в общей toolbar списка. Item
+  открывает отдельный `/courses/catalog/[publicationId]` workspace с собственным
+  header/backlink и вкладками **«Уроки / О курсе / Материалы / Аттестация»**;
+- published API отдаёт learner-safe immutable projection: только
+  `learner_visible` Components, назначенные на Slides, без Lesson summary,
+  staff-only/operational data; course-wide publication materials получают
+  краткоживущие signed URLs;
+- Account self-enrollment и Lesson completion сохраняют last opened Lesson,
+  completed refs/counts/percent и resume для exact approved revision;
+- **«Аттестация»** блокируется до `100%` Lessons и UI, и обоими server RPC;
+  успешный current-revision result показывает badge в header и credential в
+  профиле, а historical award остаётся отдельной записью;
+- educator Course никогда не копируется из каталога и не дублируется, включая
+  состояние после award; DB/UI также запрещают roster, groups/direct learners,
+  schedule и LessonRun. Это self-learning Course текущего Account, а не Course
+  для проведения занятий.
+
+**Production next:** развернуть exact dependent web release после release gates
+и выполнить authenticated postflight approved catalog/workspace/progress/gate/
+badge/profile/no-copy boundaries. До этого current production называется E2
+database contract, а не полный application slice.
+
+**Later:** admin UI для capability/review, юридически значимые удостоверения,
+proctoring, manual/free-response assessment, expiration/retake policy и
+optional self-study deadlines.
 
 ## P1.1: persisted Homework
 
@@ -734,8 +753,8 @@ real-record progress без speculative metrics.
   текущих finalized LearningRecord;
 - common/individual Homework assignment snapshots;
 - course chat и notifications;
-- catalog moderation, ratings, official ShiDao content и контролируемый
-  importer repository archive;
+- общий catalog moderation UI за пределами educator review, ratings и
+  контролируемый importer repository archive;
 - AI change sets, undo, quotas и billing;
 - optional staging перед публичным production;
 - внешний MCP только после OAuth/scoped tokens, permissions, rate limits,

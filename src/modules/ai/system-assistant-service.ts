@@ -145,6 +145,7 @@ const PAGE_VIEW_LABELS: Record<
   course_about: "О курсе",
   course_materials: "Материалы курса",
   course_history: "История курса",
+  course_attestation: "Аттестация курса",
   lesson_plan: "План урока",
   lesson_student: "Экран ученика",
   lesson_homework: "Домашнее задание",

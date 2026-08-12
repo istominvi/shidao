@@ -51,7 +51,7 @@ test("signed upload follows private Storage multipart contract", () => {
   assert.match(clientSource, /method: "PUT"/);
 });
 
-test("new course form exposes the four-tab pre-persistence workspace", () => {
+test("new course form exposes audience-aware pre-persistence workspaces", () => {
   for (const field of [
     "title",
     "subject",
@@ -68,7 +68,7 @@ test("new course form exposes the four-tab pre-persistence workspace", () => {
   assert.match(formSource, /useState<CourseWorkspaceSurface>\("about"\)/);
   assert.match(
     formSource,
-    /<WorkspaceTabs[\s\S]*?ariaLabel="Разделы нового курса"[\s\S]*?items=\{COURSE_WORKSPACE_TABS\}/,
+    /<WorkspaceTabs[\s\S]*?ariaLabel="Разделы нового курса"[\s\S]*?items=\{workspaceTabs\}/,
   );
   for (const surface of ["lessons", "about", "materials", "history"]) {
     assert.match(
@@ -80,6 +80,9 @@ test("new course form exposes the four-tab pre-persistence workspace", () => {
   }
   assert.match(formSource, /Уроки появятся после сохранения/);
   assert.match(formSource, /История появится после сохранения/);
+  assert.match(formSource, /Аттестация появится после сохранения/);
+  assert.match(formSource, /EDUCATOR_COURSE_WORKSPACE_TABS/);
+  assert.match(formSource, /canAuthorEducatorCourses \? \(/);
   assert.match(
     formSource,
     /<form[\s\S]*?hidden=\{activeSurface !== "about"\}[\s\S]*?onSubmit=\{handleSubmit\}/,
@@ -162,7 +165,11 @@ test("courses pages read persisted data inside the roleless Account tree", () =>
   assert.match(ownedCoursesSource, /courseBuilderRequest/);
   assert.match(ownedCoursesSource, /\/api\/v2\/courses/);
   assert.match(ownedCoursesSource, /toCourseRoute\(course\.id\)/);
-  assert.match(newCoursePageSource, /<NewCourseForm \/>/);
+  assert.match(newCoursePageSource, /resolveAccessPolicy\(\)/);
+  assert.match(
+    newCoursePageSource,
+    /<NewCourseForm[\s\S]*?canAuthorEducatorCourses=\{canAuthorEducatorCourses\}/,
+  );
   assert.match(appLayoutSource, /resolveAppLayoutRedirect/);
   assert.doesNotMatch(appLayoutSource, /activeProfile !== "teacher"/);
   assert.match(primaryNavSource, /label: "Курсы"/);

@@ -1,6 +1,7 @@
 import { postgresUuidSchema } from "@/lib/postgres-uuid";
 import {
   submitCourseAttestationSchema,
+  replaceCourseAttestationDefinitionInputSchema,
   type SubmitCourseAttestationInput,
 } from "./contracts";
 import type { CourseAttestationRepository } from "./repository";
@@ -44,8 +45,21 @@ function parseSubmission(value: unknown): SubmitCourseAttestationInput {
 
 export function createCourseAttestationService(dependencies: {
   repository: CourseAttestationRepository;
+  requireAuthoredEducatorCourse?: (courseId: string) => Promise<void>;
 }) {
-  const { repository } = dependencies;
+  const { repository, requireAuthoredEducatorCourse } = dependencies;
+
+  async function authorizeCourseAuthor(courseId: string) {
+    if (!requireAuthoredEducatorCourse) {
+      throw new CourseAttestationApplicationError(
+        "Редактирование аттестации недоступно.",
+        "educator_course_authoring_denied",
+        403,
+      );
+    }
+    await requireAuthoredEducatorCourse(courseId);
+  }
+
   return {
     getPublicationAttestation(publicationId: string) {
       return repository.getPublicationAttestation(
@@ -64,6 +78,30 @@ export function createCourseAttestationService(dependencies: {
 
     listAccountAttestations() {
       return repository.listAccountAttestations();
+    },
+
+    async getAuthoredCourseAttestation(courseIdValue: string) {
+      const courseId = parsePublicationId(courseIdValue);
+      await authorizeCourseAuthor(courseId);
+      return repository.getAuthoredCourseAttestation(courseId);
+    },
+
+    async replaceAuthoredCourseAttestation(
+      courseIdValue: string,
+      rawInput: unknown,
+    ) {
+      const courseId = parsePublicationId(courseIdValue);
+      await authorizeCourseAuthor(courseId);
+      const parsed =
+        replaceCourseAttestationDefinitionInputSchema.safeParse(rawInput);
+      if (!parsed.success) {
+        throw new CourseAttestationApplicationError(
+          parsed.error.issues[0]?.message ?? "Проверьте настройки аттестации.",
+          "validation_error",
+          400,
+        );
+      }
+      return repository.replaceAuthoredCourseAttestation(courseId, parsed.data);
     },
   };
 }

@@ -47,24 +47,42 @@ const authoredQuestionSchema = z
     }
   });
 
+const attestationDefinitionInputShape = {
+  title: z.string().trim().min(2).max(240),
+  description: z.string().trim().max(2_000),
+  passingScorePercent: z.number().int().min(1).max(100),
+  questions: z.array(authoredQuestionSchema).min(1).max(50),
+} satisfies z.ZodRawShape;
+
+function validateUniqueQuestionIds(
+  assessment: { questions: Array<{ id: string }> },
+  context: z.RefinementCtx,
+) {
+  const questionIds = assessment.questions.map((question) => question.id);
+  if (new Set(questionIds).size !== questionIds.length) {
+    context.addIssue({
+      code: "custom",
+      message: "Идентификаторы вопросов должны быть уникальны.",
+    });
+  }
+}
+
 export const courseAttestationDefinitionSchema = z
   .object({
     version: z.number().int().positive(),
-    title: z.string().trim().min(2).max(240),
-    description: z.string().trim().max(2_000),
-    passingScorePercent: z.number().int().min(1).max(100),
-    questions: z.array(authoredQuestionSchema).min(1).max(50),
+    ...attestationDefinitionInputShape,
   })
   .strict()
-  .superRefine((assessment, context) => {
-    const questionIds = assessment.questions.map((question) => question.id);
-    if (new Set(questionIds).size !== questionIds.length) {
-      context.addIssue({
-        code: "custom",
-        message: "Идентификаторы вопросов должны быть уникальны.",
-      });
-    }
-  });
+  .superRefine(validateUniqueQuestionIds);
+
+export const replaceCourseAttestationDefinitionInputSchema = z
+  .object(attestationDefinitionInputShape)
+  .strict()
+  .superRefine(validateUniqueQuestionIds);
+
+export type ReplaceCourseAttestationDefinitionInput = z.infer<
+  typeof replaceCourseAttestationDefinitionInputSchema
+>;
 
 const safeQuestionSchema = z
   .object({

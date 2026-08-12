@@ -1,8 +1,5 @@
 "use client";
-
-import Link from "next/link";
 import {
-  ArrowLeft,
   ArrowRight,
   BadgeCheck,
   BookOpen,
@@ -13,14 +10,11 @@ import {
   RotateCcw,
   Search,
   Table2,
-  UserRound,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import { courseBuilderRequest } from "@/components/course-builder/course-builder-client";
-import { courseCountLabel } from "@/components/course-builder/course-catalog";
 import { CourseFilterMenu } from "@/components/course-builder/course-filter-menu";
-import { Button, productButtonClassName } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { Chip } from "@/components/ui/chip";
 import { Input } from "@/components/ui/input";
 import {
@@ -37,31 +31,16 @@ import {
 } from "@/components/ui/product-table";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { SurfaceCard } from "@/components/ui/surface-card";
-import {
-  WorkspaceTabs,
-  workspaceTabId,
-  workspaceTabPanelId,
-} from "@/components/ui/workspace-tabs";
-import { toCourseRoute } from "@/lib/auth";
 import type { CourseAttestationState } from "@/modules/course-attestations/domain";
 import type { CourseLearningAudience } from "@/modules/course-builder/learning-audience";
-import type {
-  CourseCatalogDetail,
-  CourseCatalogEntry,
-} from "@/modules/course-publications/domain";
+import type { CourseCatalogEntry } from "@/modules/course-publications/domain";
 
 type CourseCatalogPanelProps = {
   active: boolean;
-  selectedCourseId: string | null;
-  onSelectCourse: (courseId: string | null) => void;
+  onOpenCourse: (courseId: string) => void;
   learningAudience: CourseLearningAudience;
   onLearningAudienceChange: (audience: CourseLearningAudience) => void;
 };
-
-function formatFileSize(sizeBytes: number) {
-  if (sizeBytes < 1024 * 1024) return `${Math.ceil(sizeBytes / 1024)} КБ`;
-  return `${(sizeBytes / (1024 * 1024)).toFixed(1)} МБ`;
-}
 
 type CatalogPage = {
   courses: CourseCatalogEntry[];
@@ -70,16 +49,12 @@ type CatalogPage = {
 };
 
 type CourseCatalogView = "grid" | "table";
-type CatalogDetailTab = "overview" | "attestation";
 
-const CATALOG_DETAIL_TABS_ID = "course-catalog-detail";
-const CATALOG_DETAIL_TABS = [
-  { value: "overview", label: "О курсе" },
-  { value: "attestation", label: "Аттестация" },
-] as const satisfies ReadonlyArray<{
-  value: CatalogDetailTab;
-  label: string;
-}>;
+function catalogAuthorLabel(course: CourseCatalogEntry) {
+  return course.author.isShiDao
+    ? `ShiDao · ${course.author.displayName}`
+    : course.author.displayName;
+}
 
 function CatalogLearningAudienceControl({
   value,
@@ -152,7 +127,7 @@ function CatalogCourseCard({
       description={`${course.subject} · ${course.level}`}
       actions={
         <Chip tone={course.author.isShiDao ? "inverse" : "neutral"}>
-          {course.author.isShiDao ? "ShiDao" : course.author.displayName}
+          {catalogAuthorLabel(course)}
         </Chip>
       }
     >
@@ -239,16 +214,8 @@ function CatalogCourseTable({
                 </ProductTableTruncate>
               </ProductTableCell>
               <ProductTableCell className="overflow-hidden">
-                <ProductTableTruncate
-                  title={
-                    course.author.isShiDao
-                      ? "ShiDao"
-                      : course.author.displayName
-                  }
-                >
-                  {course.author.isShiDao
-                    ? "ShiDao"
-                    : course.author.displayName}
+                <ProductTableTruncate title={catalogAuthorLabel(course)}>
+                  {catalogAuthorLabel(course)}
                 </ProductTableTruncate>
               </ProductTableCell>
               <ProductTableCell className="overflow-hidden">
@@ -291,7 +258,7 @@ function formatAttestationCompletedAt(value: string) {
   }).format(completedAt);
 }
 
-function CourseAttestationPanel({
+export function CourseAttestationPanel({
   attestation,
   loading,
   error,
@@ -522,376 +489,9 @@ function CourseAttestationPanel({
   );
 }
 
-function CatalogCourseDetailView({
-  courseId,
-  onBack,
-}: {
-  courseId: string;
-  onBack: () => void;
-}) {
-  const router = useRouter();
-  const [course, setCourse] = useState<CourseCatalogDetail | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [copyBusy, setCopyBusy] = useState(false);
-  const [reloadKey, setReloadKey] = useState(0);
-  const [activeTab, setActiveTab] = useState<CatalogDetailTab>("overview");
-  const [attestation, setAttestation] = useState<CourseAttestationState | null>(
-    null,
-  );
-  const [attestationLoading, setAttestationLoading] = useState(false);
-  const [attestationSubmitting, setAttestationSubmitting] = useState(false);
-  const [attestationError, setAttestationError] = useState<string | null>(null);
-  const [attestationReloadKey, setAttestationReloadKey] = useState(0);
-
-  useEffect(() => {
-    let active = true;
-    setCourse(null);
-    setError(null);
-    void courseBuilderRequest<{ course: CourseCatalogDetail }>(
-      `/api/v2/course-catalog/${encodeURIComponent(courseId)}`,
-      { cache: "no-store" },
-    )
-      .then((payload) => {
-        if (active) setCourse(payload.course);
-      })
-      .catch((caught: unknown) => {
-        if (!active) return;
-        setError(
-          caught instanceof Error
-            ? caught.message
-            : "Не удалось открыть курс из каталога.",
-        );
-      });
-    return () => {
-      active = false;
-    };
-  }, [courseId, reloadKey]);
-
-  useEffect(() => {
-    setActiveTab("overview");
-  }, [courseId]);
-
-  useEffect(() => {
-    if (course?.learningAudience !== "educators") {
-      setAttestation(null);
-      setAttestationError(null);
-      setAttestationLoading(false);
-      return;
-    }
-
-    let active = true;
-    setAttestationLoading(true);
-    setAttestationError(null);
-    void courseBuilderRequest<{ attestation: CourseAttestationState }>(
-      `/api/v2/course-catalog/${encodeURIComponent(courseId)}/attestation`,
-      { cache: "no-store" },
-    )
-      .then((payload) => {
-        if (active) setAttestation(payload.attestation);
-      })
-      .catch((caught: unknown) => {
-        if (!active) return;
-        setAttestationError(
-          caught instanceof Error
-            ? caught.message
-            : "Не удалось загрузить аттестацию.",
-        );
-      })
-      .finally(() => {
-        if (active) setAttestationLoading(false);
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [attestationReloadKey, course?.learningAudience, courseId]);
-
-  async function copyCourse() {
-    if (copyBusy) return;
-    setCopyBusy(true);
-    setError(null);
-    try {
-      const payload = await courseBuilderRequest<{ courseId: string }>(
-        `/api/v2/course-catalog/${encodeURIComponent(courseId)}/copy`,
-        { method: "POST" },
-      );
-      router.push(toCourseRoute(payload.courseId));
-    } catch (caught) {
-      setError(
-        caught instanceof Error ? caught.message : "Не удалось добавить курс.",
-      );
-      setCopyBusy(false);
-    }
-  }
-
-  async function submitAttestation(
-    expectedRevisionId: string,
-    selectedOptionByQuestionId: Record<string, string>,
-  ) {
-    if (attestationSubmitting) return;
-    setAttestationSubmitting(true);
-    setAttestationError(null);
-    try {
-      const payload = await courseBuilderRequest<{
-        attestation: CourseAttestationState;
-      }>(`/api/v2/course-catalog/${encodeURIComponent(courseId)}/attestation`, {
-        method: "POST",
-        body: JSON.stringify({
-          expectedRevisionId,
-          selectedOptionByQuestionId,
-        }),
-      });
-      setAttestation(payload.attestation);
-    } catch (caught) {
-      setAttestationError(
-        caught instanceof Error
-          ? caught.message
-          : "Не удалось завершить аттестацию.",
-      );
-    } finally {
-      setAttestationSubmitting(false);
-    }
-  }
-
-  if (error && !course) {
-    return (
-      <SurfaceCard className="course-index-error border border-rose-200">
-        <p className="text-sm font-medium text-rose-800" role="alert">
-          {error}
-        </p>
-        <div className="mt-4 flex flex-wrap gap-3">
-          <Button variant="secondary" onClick={onBack}>
-            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-            Назад к каталогу
-          </Button>
-          <Button
-            variant="secondary"
-            onClick={() => setReloadKey((current) => current + 1)}
-          >
-            <RotateCcw className="h-4 w-4" aria-hidden="true" />
-            Повторить
-          </Button>
-        </div>
-      </SurfaceCard>
-    );
-  }
-
-  if (!course) {
-    return (
-      <SurfaceCard className="course-index-status flex items-center gap-3 border border-neutral-200">
-        <LoaderCircle className="h-5 w-5 animate-spin" aria-hidden="true" />
-        <p className="text-sm font-medium text-neutral-700" role="status">
-          Загружаем курс из каталога…
-        </p>
-      </SurfaceCard>
-    );
-  }
-
-  const ownSourceCourseId = course.author.isCurrentUser
-    ? course.sourceCourseId
-    : null;
-  const educatorCourse = course.learningAudience === "educators";
-
-  return (
-    <article className="course-catalog-detail">
-      <Button variant="ghost" onClick={onBack}>
-        <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-        Назад к каталогу
-      </Button>
-
-      <SurfaceCard className="mt-4 border border-white/80">
-        <div className="course-catalog-detail-header">
-          <div className="min-w-0">
-            <p className="workspace-eyebrow">Готовый курс</p>
-            <h2>{course.title}</h2>
-            <p>
-              {course.subject} · {course.level}
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center justify-end gap-2">
-            {attestation?.certified ? (
-              <Chip icon={BadgeCheck} tone="emerald">
-                Аттестован
-              </Chip>
-            ) : null}
-            <Chip
-              icon={course.author.isShiDao ? undefined : UserRound}
-              tone={course.author.isShiDao ? "inverse" : "neutral"}
-            >
-              {course.author.isShiDao ? "ShiDao" : course.author.displayName}
-            </Chip>
-          </div>
-        </div>
-
-        {educatorCourse ? (
-          <WorkspaceTabs
-            idBase={CATALOG_DETAIL_TABS_ID}
-            ariaLabel="Разделы курса для педагогов"
-            value={activeTab}
-            items={CATALOG_DETAIL_TABS}
-            onChange={setActiveTab}
-            className="mt-5"
-          />
-        ) : null}
-
-        <div
-          id={
-            educatorCourse
-              ? workspaceTabPanelId(CATALOG_DETAIL_TABS_ID, "overview")
-              : undefined
-          }
-          role={educatorCourse ? "tabpanel" : undefined}
-          aria-labelledby={
-            educatorCourse
-              ? workspaceTabId(CATALOG_DETAIL_TABS_ID, "overview")
-              : undefined
-          }
-          hidden={educatorCourse && activeTab !== "overview"}
-          tabIndex={educatorCourse ? 0 : undefined}
-        >
-          <div className="course-catalog-detail-grid">
-            <section>
-              <h3>О курсе</h3>
-              <p>{course.goal}</p>
-            </section>
-            <section>
-              <h3>Кому подходит</h3>
-              <p>{course.audienceDescription || "Аудитория не указана."}</p>
-            </section>
-          </div>
-
-          <section className="course-catalog-detail-section">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <h3>Уроки курса</h3>
-              <Chip icon={BookOpen} tone="violet">
-                {courseCountLabel(course.lessonCount)}
-              </Chip>
-            </div>
-            <ol className="course-catalog-lesson-list">
-              {course.lessons.map((lesson) => (
-                <li key={`${lesson.position}-${lesson.title}`}>
-                  <span>{lesson.position}</span>
-                  <div>
-                    <strong>{lesson.title}</strong>
-                    {lesson.summary ? <p>{lesson.summary}</p> : null}
-                    {lesson.estimatedDurationMinutes ? (
-                      <small>{lesson.estimatedDurationMinutes} мин</small>
-                    ) : null}
-                  </div>
-                </li>
-              ))}
-            </ol>
-          </section>
-
-          <section className="course-catalog-detail-section">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <h3>Материалы</h3>
-              <Chip icon={FileText} tone="slate">
-                {course.materials.length}
-              </Chip>
-            </div>
-            {course.materials.length > 0 ? (
-              <ul className="course-catalog-material-list">
-                {course.materials.map((material) => (
-                  <li key={material.id}>
-                    <span className="min-w-0">
-                      <strong>{material.originalFilename}</strong>
-                      <small>
-                        {material.mimeType} ·{" "}
-                        {formatFileSize(material.sizeBytes)}
-                      </small>
-                    </span>
-                    <a
-                      href={material.downloadUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      aria-label={`Открыть материал «${material.originalFilename}»`}
-                      className={productButtonClassName("ghost")}
-                    >
-                      Открыть
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="mt-3 text-sm text-neutral-600">
-                В публикации нет прикреплённых материалов.
-              </p>
-            )}
-          </section>
-
-          <div className="course-catalog-detail-actions">
-            {error ? (
-              <p className="app-alert app-alert-error" role="alert">
-                {error}
-              </p>
-            ) : null}
-            <p>
-              После добавления появится ваша независимая копия. Уроки можно
-              изменить или создать заново.
-            </p>
-            {ownSourceCourseId ? (
-              <Link
-                href={toCourseRoute(ownSourceCourseId)}
-                className={productButtonClassName("primary")}
-              >
-                Открыть мой курс
-                <ArrowRight className="h-4 w-4" aria-hidden="true" />
-              </Link>
-            ) : educatorCourse && !attestation?.certified ? (
-              <div className="flex flex-wrap items-center justify-end gap-3">
-                <p className="!flex-none text-sm font-medium text-neutral-700">
-                  Сначала пройдите аттестацию
-                </p>
-                <Button
-                  variant="secondary"
-                  onClick={() => setActiveTab("attestation")}
-                >
-                  Перейти к аттестации
-                  <ArrowRight className="h-4 w-4" aria-hidden="true" />
-                </Button>
-              </div>
-            ) : (
-              <Button disabled={copyBusy} onClick={() => void copyCourse()}>
-                {copyBusy ? "Добавляем…" : "Добавить в мои курсы"}
-              </Button>
-            )}
-          </div>
-        </div>
-
-        {educatorCourse ? (
-          <div
-            id={workspaceTabPanelId(CATALOG_DETAIL_TABS_ID, "attestation")}
-            role="tabpanel"
-            aria-labelledby={workspaceTabId(
-              CATALOG_DETAIL_TABS_ID,
-              "attestation",
-            )}
-            hidden={activeTab !== "attestation"}
-            tabIndex={0}
-            className="pt-5"
-          >
-            <CourseAttestationPanel
-              attestation={attestation}
-              loading={attestationLoading}
-              error={attestationError}
-              submitting={attestationSubmitting}
-              onRetry={() => setAttestationReloadKey((current) => current + 1)}
-              onSubmit={(expectedRevisionId, answers) =>
-                void submitAttestation(expectedRevisionId, answers)
-              }
-            />
-          </div>
-        ) : null}
-      </SurfaceCard>
-    </article>
-  );
-}
-
 export function CourseCatalogPanel({
   active,
-  selectedCourseId,
-  onSelectCourse,
+  onOpenCourse,
   learningAudience,
   onLearningAudienceChange,
 }: CourseCatalogPanelProps) {
@@ -1032,58 +632,6 @@ export function CourseCatalogPanel({
     />
   );
 
-  if (selectedCourseId) {
-    return (
-      <div>
-        <div className="mb-4">{learningAudienceControl}</div>
-        <CatalogCourseDetailView
-          key={selectedCourseId}
-          courseId={selectedCourseId}
-          onBack={() => onSelectCourse(null)}
-        />
-      </div>
-    );
-  }
-
-  if (error && !courses) {
-    return (
-      <div>
-        <div className="mb-4">{learningAudienceControl}</div>
-        <SurfaceCard className="course-index-error border border-rose-200">
-          <p className="text-sm font-medium text-rose-800" role="alert">
-            {error}
-          </p>
-          <Button
-            variant="secondary"
-            className="mt-4"
-            onClick={() => {
-              setError(null);
-              setCourses(null);
-              setReloadKey((current) => current + 1);
-            }}
-          >
-            <RotateCcw className="h-4 w-4" aria-hidden="true" />
-            Повторить
-          </Button>
-        </SurfaceCard>
-      </div>
-    );
-  }
-
-  if (!courses) {
-    return (
-      <div>
-        <div className="mb-4">{learningAudienceControl}</div>
-        <SurfaceCard className="course-index-status flex items-center gap-3 border border-neutral-200">
-          <LoaderCircle className="h-5 w-5 animate-spin" aria-hidden="true" />
-          <p className="text-sm font-medium text-neutral-700" role="status">
-            Загружаем каталог…
-          </p>
-        </SurfaceCard>
-      </div>
-    );
-  }
-
   return (
     <section aria-labelledby="ready-courses-heading">
       <h2 id="ready-courses-heading" className="sr-only">
@@ -1171,7 +719,32 @@ export function CourseCatalogPanel({
         </div>
       </div>
 
-      {loadingCatalog && courses.length === 0 ? (
+      {error && !courses ? (
+        <SurfaceCard className="course-index-error mt-4 border border-rose-200">
+          <p className="text-sm font-medium text-rose-800" role="alert">
+            {error}
+          </p>
+          <Button
+            variant="secondary"
+            className="mt-4"
+            onClick={() => {
+              setError(null);
+              setCourses(null);
+              setReloadKey((current) => current + 1);
+            }}
+          >
+            <RotateCcw className="h-4 w-4" aria-hidden="true" />
+            Повторить
+          </Button>
+        </SurfaceCard>
+      ) : !courses ? (
+        <SurfaceCard className="course-index-status mt-4 flex items-center gap-3 border border-neutral-200">
+          <LoaderCircle className="h-5 w-5 animate-spin" aria-hidden="true" />
+          <p className="text-sm font-medium text-neutral-700" role="status">
+            Загружаем каталог…
+          </p>
+        </SurfaceCard>
+      ) : loadingCatalog && courses.length === 0 ? (
         <SurfaceCard className="course-index-status mt-4 flex items-center gap-3 border border-neutral-200">
           <LoaderCircle className="h-5 w-5 animate-spin" aria-hidden="true" />
           <p className="text-sm font-medium text-neutral-700" role="status">
@@ -1213,7 +786,7 @@ export function CourseCatalogPanel({
               <CatalogCourseCard
                 key={course.id}
                 course={course}
-                onOpen={() => onSelectCourse(course.id)}
+                onOpen={() => onOpenCourse(course.id)}
               />
             ))}
           </div>
@@ -1237,10 +810,7 @@ export function CourseCatalogPanel({
       ) : (
         <>
           <div className="mt-4">
-            <CatalogCourseTable
-              courses={courses}
-              onOpen={(courseId) => onSelectCourse(courseId)}
-            />
+            <CatalogCourseTable courses={courses} onOpen={onOpenCourse} />
           </div>
           {error ? (
             <p className="app-alert app-alert-error mt-4" role="alert">

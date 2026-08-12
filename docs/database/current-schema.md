@@ -2,15 +2,15 @@
 
 **Статус:** current production learner-identity M6 + Course publication
 catalog + Course Component D1 + A1 atomic Course archive + E1 educator Course
-и Account attestation vertical slice, включая dependent web/API и
-демонстрационный bootstrap
+и Account attestation + E2 educator governance/self-learning database
+contract. Dependent E2 web/API deployment остаётся next.
 
 **Production schema head:**
-`20260812113000_educator_course_attestations.sql` — применена к production
-12 августа 2026 года в `2026-08-12T02:35:45Z`
+`20260812150745_educator_course_governance_progress.sql` — применена к
+production 12 августа 2026 года в `2026-08-12T07:34:36Z`
 
 **Repository schema head:**
-`20260812113000_educator_course_attestations.sql` — совпадает с current
+`20260812150745_educator_course_governance_progress.sql` — совпадает с current
 production и generated snapshot
 
 **Legacy contract migration:**
@@ -24,10 +24,10 @@ Admin create/delete probe
 
 **SQL snapshot:**
 [`supabase/schema/current-schema.sql`](../../supabase/schema/current-schema.sql)
-содержит live production dump после E1, снятый штатным script через read-only
-SSH tunnel в `2026-08-12T02:53:14Z`. Strict signature осталась
+содержит live production dump после E2, снятый штатным script через read-only
+SSH tunnel в `2026-08-12T07:43:11Z`. Strict signature осталась
 `shidao-v2-contract`, SHA-256 snapshot —
-`d96a357a8b55caa80a831b37b7e289c17025c572d79483d28ae7515b30bcf9e2`.
+`6df94ceabbc902b66b4c592998f1770ea62442a68255ddd6133a3b9d75745949`.
 Локальный PostgreSQL 16 dump не принимается как замена production 15.8
 snapshot из-за version/encoding/default-ACL drift.
 
@@ -57,6 +57,7 @@ snapshot из-за version/encoding/default-ACL drift.
 | D1    | `20260811154138_remove_divider_components.sql`                         | удаление layout-only `divider`, повторная нумерация Component/Slide и CHECK-запрет повторного создания                                         |
 | A1    | `20260811231505_atomic_course_archive.sql`                             | atomic owner-scoped Course soft archive, reverse publication/Run guards, immutable Lesson parent и narrow Course/Lesson browser ACL            |
 | E1    | `20260812113000_educator_course_attestations.sql`                      | `children \| educators`, immutable publication attestation, server-side scoring, Account attempts/awards и audience-scoped catalog             |
+| E2    | `20260812150745_educator_course_governance_progress.sql`               | trusted educator author capability, exact revision review/approval, self-learning progress, attestation gate и official no-copy invariants     |
 
 M1–M3 являются additive/compatible expand для roleless web. M4 была withheld из
 первого deploy и применена только после доказательства, что running и rollback
@@ -307,35 +308,73 @@ Dependent web и bootstrap production evidence:
   `passed=true`; authenticated projection вернула `certified=true` и `10`
   post-award review keys, профиль содержит одну credential по этому Course.
 
+### Production E2 educator governance / self-learning database contract
+
+Forward migration
+`20260812150745_educator_course_governance_progress.sql` является current
+production database head. Она добавляет trusted-author capability
+`account.can_author_educator_courses`, exact review/approval educator revision,
+`approved_revision_id`, revision-scoped self-enrollment/Lesson completion и
+server-side `100%` attestation gate. Educator revisions имеют official-learning
+license и не участвуют в catalog copy/duplicate, roster, group assignment или
+LessonRun. Зависимый E2 web/API source пока не развёрнут и остаётся **next**.
+
+Production DB execution evidence, 12 августа 2026 года:
+
+- exact migration SHA-256
+  `ccd0ac3a40df305bb43c095733663ca03ff854ae6ffc1cca9e59fd3485ea2c26`;
+- verified full-format backup
+  `/root/shidao-db-backups/shidao-before-educator-governance-20260812T071511Z.dump`
+  имеет size `1259425` bytes, mode `600`, `1541` restore-list entries и SHA-256
+  `cf8e68638f79c631c714ebed43a17a58ceedb508faa96d4de62a8f414a5a3f98`;
+- первый rollback probe выявил конфликт legacy license backfill с immutable
+  revision trigger и полностью откатился. Повторная проверка подтвердила
+  прежние counts и reuse license; исправленный rollback probe v2 прошёл;
+- exact tracked migration завершилась `COMMIT` в
+  `2026-08-12T07:34:36Z`;
+- postflight сохранил `19` Account, `6` Course, одну publication, одну revision,
+  одну attempt и одну award. Existing educator publication осталась official и
+  approved; связанный award получил complete progress `6/6 = 100%`;
+- authored attestation result сохранился как `90%` при threshold `80%`, catalog
+  возвращает одну approved educator publication;
+- educator origin, direct/group roster и LessonRun равны `0`; RLS, closed ACL,
+  revision license/immutable triggers и authenticated progress/attestation RPC
+  прошли postflight;
+- live snapshot сгенерирован в `2026-08-12T07:43:11Z`, SHA-256
+  `6df94ceabbc902b66b4c592998f1770ea62442a68255ddd6133a3b9d75745949`.
+
 ## Current repository tables
 
 ### Course Builder, audience и history
 
-| Table                            | Назначение                                                                                                      |
-| -------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `account`                        | единая roleless login identity; status active, provisional, suspended или deleted                               |
-| `course`                         | Account-owned authoring Course; `learning_audience`, publication clock и recoverable `archived_at` lifecycle    |
-| `lesson`                         | ordered Lesson с обязательным title/teacher-only summary и immutable Course parent                              |
-| `lesson_component`               | единственный ordered component list Lesson                                                                      |
-| `lesson_student_slide`           | persisted learner presentation grouping без собственного content                                                |
-| `stored_file`                    | Account-owned metadata private Storage object                                                                   |
-| `course_attachment`              | ownership-checked Course ↔ StoredFile                                                                           |
-| `course_publication`             | stable catalog listing; learning audience, nullable source, publisher snapshot, status/current revision         |
-| `course_publication_revision`    | immutable allowlisted Course/Lesson/Component/Slide/material snapshot, hash и rights audit                      |
-| `course_attestation`             | owner-authored current test definition for an educator Course                                                   |
-| `course_publication_attestation` | immutable answer-key sidecar for one publication revision                                                       |
-| `course_attestation_attempt`     | immutable Account answer/score audit for one exact publication revision                                         |
-| `course_attestation_award`       | durable Account credential issued only from a passed attempt                                                    |
-| `course_publication_asset`       | immutable private publication copy metadata; nullable live StoredFile provenance                                |
-| `course_publication_origin`      | immutable provenance установленного из каталога рабочего Course                                                 |
-| `learner_profile`                | canonical учебная identity; один linked profile на active/provisional Account либо offline `account_id IS NULL` |
-| `teacher_learner`                | teacher-local display name и reversible archive relation                                                        |
-| `learner_group`                  | reusable Account-owned group                                                                                    |
-| `learner_group_member`           | group ↔ canonical profile                                                                                       |
-| `course_learner`                 | direct Course audience source                                                                                   |
-| `course_learner_group`           | group Course audience source                                                                                    |
-| `lesson_run`                     | конкретное назначение/проведение Lesson; новый/open Run требует active parent Course                            |
-| `learning_record`                | expected learner, затем finalized individual result и recorder provenance                                       |
+| Table                                  | Назначение                                                                                                      |
+| -------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `account`                              | единая roleless login identity; status и trusted educator-author capability                                     |
+| `course`                               | Account-owned authoring Course; `learning_audience`, publication clock и recoverable `archived_at` lifecycle    |
+| `lesson`                               | ordered Lesson с обязательным title/teacher-only summary и immutable Course parent                              |
+| `lesson_component`                     | единственный ordered component list Lesson                                                                      |
+| `lesson_student_slide`                 | persisted learner presentation grouping без собственного content                                                |
+| `stored_file`                          | Account-owned metadata private Storage object                                                                   |
+| `course_attachment`                    | ownership-checked Course ↔ StoredFile                                                                           |
+| `course_publication`                   | stable catalog listing; audience, current candidate и nullable exact approved educator revision                 |
+| `course_publication_revision`          | immutable allowlisted snapshot, hash, rights audit и reuse/official-learning license                            |
+| `educator_course_revision_review`      | service-reviewed pending/approved/rejected audit exact educator revision                                        |
+| `course_publication_self_enrollment`   | Account progress/resume parent для exact approved publication revision                                          |
+| `course_publication_lesson_completion` | completed Lesson refs для exact Account/publication revision                                                    |
+| `course_attestation`                   | owner-authored current test definition for an educator Course                                                   |
+| `course_publication_attestation`       | immutable answer-key sidecar for one publication revision                                                       |
+| `course_attestation_attempt`           | immutable Account answer/score audit for one exact publication revision                                         |
+| `course_attestation_award`             | durable Account credential issued only from a passed attempt                                                    |
+| `course_publication_asset`             | immutable private publication copy metadata; nullable live StoredFile provenance                                |
+| `course_publication_origin`            | immutable provenance установленного из каталога рабочего Course                                                 |
+| `learner_profile`                      | canonical учебная identity; один linked profile на active/provisional Account либо offline `account_id IS NULL` |
+| `teacher_learner`                      | teacher-local display name и reversible archive relation                                                        |
+| `learner_group`                        | reusable Account-owned group                                                                                    |
+| `learner_group_member`                 | group ↔ canonical profile                                                                                       |
+| `course_learner`                       | direct Course audience source                                                                                   |
+| `course_learner_group`                 | group Course audience source                                                                                    |
+| `lesson_run`                           | конкретное назначение/проведение Lesson; новый/open Run требует active parent Course                            |
+| `learning_record`                      | expected learner, затем finalized individual result и recorder provenance                                       |
 
 ### Course publication repository contract and current A1 archive lifecycle
 
@@ -696,9 +735,11 @@ Current A1 public snapshot дополнительно сохраняет `archiv
 ## Absent from active model
 
 В active model по-прежнему нет Methodology, Lesson Step/root Step,
-`lesson_run_participant`, operational LessonRun snapshot, persisted Run/Record status,
-Homework persistence, parsing/RAG, learner Course consumption/enrollment или
-live Student Screen. Observer capability не является Parent/Guardian role, а
+`lesson_run_participant`, operational LessonRun snapshot, persisted Run/Record
+status, Homework persistence, parsing/RAG, learner enrollment/consumption
+детского Course или live Student Screen. E2 educator self-learning progress —
+отдельный Account-scoped contract без roster/Run. Observer capability не
+является Parent/Guardian role, а
 AI consent не является Course access.
 
 ## Snapshot refresh workflow
@@ -706,7 +747,8 @@ AI consent не является Course access.
 `scripts/refresh-schema-snapshot.sh` принимает ровно два строгих compatibility
 stage: `expand` сохраняет полный legacy compatibility contract, `contract`
 требует завершённый M4 cleanup. Оба stage дополнительно требуют полный M1–M3
-identity contract, M5/M6 Auth hardening и repository A1 contract. В обоих
+identity contract, M5/M6 Auth hardening и current A1/E1/E2 database contract.
+В обоих
 signature проверяет:
 
 - все M1–M3 tables/functions/columns и exactly-one invariant;
@@ -718,6 +760,9 @@ signature проверяет:
 - отсутствие Step/Methodology/participant/snapshot/status;
 - atomic Course archive RPC, четыре reverse-path guard trigger, immutable
   Lesson parent, exact Course/Lesson column ACL и закрытые touch-helper;
+- E1 attestation tables/RPC/ACL и E2 trusted-author/review/progress tables,
+  official revision license trigger, approved-revision invariants и closed
+  browser ACL;
 - сохранность cross-schema Auth/Storage section.
 
 Перед refresh выполнить read-only ShiDao identity/schema sanity check:
@@ -735,4 +780,8 @@ publication schema этот script зафиксировал D1 cleanup в curren
 snapshot. После production A1 тот же workflow зафиксировал snapshot
 `2026-08-12T00:22:27Z` с archive RPC, guards и narrowed ACL. После production
 E1 current snapshot `2026-08-12T02:53:14Z` дополнительно фиксирует Course
-audience, четыре attestation tables, их RLS/ACL, `10` RPC и `8` triggers.
+audience, четыре attestation tables, их RLS/ACL, `10` RPC и `8` triggers. После
+production E2 current snapshot `2026-08-12T07:43:11Z` фиксирует trusted-author
+capability, exact review/approval, revision-scoped progress, official license
+и no-copy/no-roster/no-Run guards; SHA-256
+`6df94ceabbc902b66b4c592998f1770ea62442a68255ddd6133a3b9d75745949`.

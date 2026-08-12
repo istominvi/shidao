@@ -96,6 +96,13 @@ test("context verifies getUser identity before creating the RLS repository", asy
       calls.push(`repository:${accessToken}`);
       return repository;
     },
+    resolveAccountContext: async () => {
+      calls.push("account-context");
+      return {
+        authUserId: ACTOR_ID,
+        canAuthorEducatorCourses: true,
+      };
+    },
     createService: (dependencies) => {
       assert.equal(dependencies.repository, repository);
       calls.push("service");
@@ -107,11 +114,13 @@ test("context verifies getUser identity before creating the RLS repository", asy
   assert.deepEqual(context.actor, {
     authUserId: ACTOR_ID,
     accessToken: userJwt(),
+    canAuthorEducatorCourses: true,
   });
   assert.equal(context.service, service);
   assert.deepEqual(calls, [
     `https://supabase.shidao.test|public-anon-key|${userJwt()}`,
     `repository:${userJwt()}`,
+    "account-context",
     "service",
   ]);
 });

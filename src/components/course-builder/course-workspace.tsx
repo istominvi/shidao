@@ -30,9 +30,10 @@ import {
   CoursePublicationBadges,
 } from "@/components/course-builder/course-actions";
 import { CourseMaterialsPanel } from "@/components/course-builder/course-materials-panel";
+import { CourseAttestationEditor } from "@/components/course-builder/course-attestation-editor";
 import {
-  COURSE_WORKSPACE_TABS,
   LESSON_WORKSPACE_TABS,
+  courseWorkspaceTabs,
   createCourseWorkspaceNavigation,
   openCourseWorkspaceLesson,
   reconcileCourseWorkspaceNavigation,
@@ -55,7 +56,6 @@ import { ActionMenu } from "@/components/ui/action-menu";
 import { Button, productButtonClassName } from "@/components/ui/button";
 import { DialogShell } from "@/components/ui/dialog-shell";
 import { Input } from "@/components/ui/input";
-import { SegmentedControl } from "@/components/ui/segmented-control";
 import {
   ProductTable,
   ProductTableActionCell,
@@ -81,7 +81,6 @@ import type {
   CourseLesson,
   CourseWorkspace,
 } from "@/modules/course-builder/domain";
-import type { CourseLearningAudience } from "@/modules/course-builder/learning-audience";
 import type {
   CourseAudience,
   LearnerProfile,
@@ -100,6 +99,22 @@ const EMPTY_COURSE_AUDIENCE: CourseAudience = {
   groups: [],
   effectiveLearners: [],
 };
+
+async function loadOwnedCourseProjection(courseId: string) {
+  const workspace = await loadCourseWorkspace(courseId);
+  if (workspace.learningAudience === "educators") {
+    return {
+      workspace,
+      runs: [] as LessonRun[],
+      audience: EMPTY_COURSE_AUDIENCE,
+    };
+  }
+  const [runs, audience] = await Promise.all([
+    loadCourseHistory(courseId),
+    loadCourseAudience(courseId),
+  ]);
+  return { workspace, runs, audience };
+}
 
 type CourseLessonSortKey =
   "position" | "title" | "plan" | "student" | "schedule" | "updated";
@@ -260,8 +275,6 @@ function CourseBasicsForm({
   const [subject, setSubject] = useState(course.subject);
   const [goal, setGoal] = useState(course.goal);
   const [level, setLevel] = useState(course.level);
-  const [learningAudience, setLearningAudience] =
-    useState<CourseLearningAudience>(course.learningAudience);
   const [audienceDescription, setAudienceDescription] = useState(
     course.audienceDescription,
   );
@@ -286,7 +299,6 @@ function CourseBasicsForm({
               subject,
               goal,
               level,
-              learningAudience,
               audienceDescription,
               targetLessonCount: Number(targetLessonCount),
               teacherPreferences,
@@ -296,22 +308,6 @@ function CourseBasicsForm({
         })();
       }}
     >
-      <div className="block">
-        <span className="field-label">Направление обучения</span>
-        <SegmentedControl
-          ariaLabel="Направление обучения"
-          value={learningAudience}
-          onChange={(value) => {
-            setSaved(false);
-            setLearningAudience(value);
-          }}
-          disabled={disabled}
-          items={[
-            { value: "children", label: "Обучение детей" },
-            { value: "educators", label: "Обучение педагогов" },
-          ]}
-        />
-      </div>
       <div className="grid gap-4 md:grid-cols-2">
         <Field label="Название">
           <input
@@ -429,6 +425,7 @@ function CourseLessonsPanel({
   courseId,
   focusLessonId,
   onFocusRestored,
+  teachingEnabled,
 }: {
   lessons: CourseLesson[];
   runs: LessonRun[];
@@ -440,6 +437,7 @@ function CourseLessonsPanel({
   courseId: string;
   focusLessonId: string | null;
   onFocusRestored: () => void;
+  teachingEnabled: boolean;
 }) {
   const [newLessonTitle, setNewLessonTitle] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -616,14 +614,18 @@ function CourseLessonsPanel({
           >
             <ProductTable className="course-index-table course-lessons-table">
               <caption className="sr-only">
-                Уроки курса: план, экран ученика, проведение и дата обновления
+                {teachingEnabled
+                  ? "Уроки курса: план, экран ученика, проведение и дата обновления"
+                  : "Уроки курса: план, экран слушателя и дата обновления"}
               </caption>
               <colgroup>
                 <col className="course-lessons-table-col-position" />
                 <col className="course-lessons-table-col-title" />
                 <col className="course-lessons-table-col-plan" />
                 <col className="course-lessons-table-col-student" />
-                <col className="course-lessons-table-col-schedule" />
+                {teachingEnabled ? (
+                  <col className="course-lessons-table-col-schedule" />
+                ) : null}
                 <col className="course-lessons-table-col-updated" />
                 <col className="course-lessons-table-col-actions" />
               </colgroup>
@@ -669,16 +671,20 @@ function CourseLessonsPanel({
                   >
                     Экран ученика
                   </ProductTableSortableHeaderCell>
-                  <ProductTableSortableHeaderCell
-                    direction={sort.key === "schedule" ? sort.direction : null}
-                    onSort={() =>
-                      setSort((current) =>
-                        nextProductTableSort(current, "schedule"),
-                      )
-                    }
-                  >
-                    Проведение
-                  </ProductTableSortableHeaderCell>
+                  {teachingEnabled ? (
+                    <ProductTableSortableHeaderCell
+                      direction={
+                        sort.key === "schedule" ? sort.direction : null
+                      }
+                      onSort={() =>
+                        setSort((current) =>
+                          nextProductTableSort(current, "schedule"),
+                        )
+                      }
+                    >
+                      Проведение
+                    </ProductTableSortableHeaderCell>
+                  ) : null}
                   <ProductTableSortableHeaderCell
                     direction={sort.key === "updated" ? sort.direction : null}
                     onSort={() =>
@@ -714,6 +720,24 @@ function CourseLessonsPanel({
                       ? "Не настроен"
                       : `${lesson.studentSlides.length} сл. · ${visibleComponentCount} эл.`;
                   const lessonUpdatedAt = courseLessonContentUpdatedAt(lesson);
+                  const lessonActionItems = [
+                    {
+                      id: "open",
+                      label: "Открыть урок",
+                      icon: BookOpen,
+                      onSelect: () => onSelect(lesson.id),
+                    },
+                    ...(teachingEnabled
+                      ? [
+                          {
+                            id: "schedule",
+                            label: scheduleActionLabel,
+                            icon: CalendarClock,
+                            onSelect: () => setScheduledLessonId(lesson.id),
+                          },
+                        ]
+                      : []),
+                  ];
                   return (
                     <ProductTableRow key={lesson.id}>
                       <ProductTableCell>{lesson.position}</ProductTableCell>
@@ -752,11 +776,13 @@ function CourseLessonsPanel({
                           {studentScreenLabel}
                         </ProductTableTruncate>
                       </ProductTableCell>
-                      <ProductTableCell className="overflow-hidden">
-                        <ProductTableTruncate title={schedule.label}>
-                          {schedule.label}
-                        </ProductTableTruncate>
-                      </ProductTableCell>
+                      {teachingEnabled ? (
+                        <ProductTableCell className="overflow-hidden">
+                          <ProductTableTruncate title={schedule.label}>
+                            {schedule.label}
+                          </ProductTableTruncate>
+                        </ProductTableCell>
+                      ) : null}
                       <ProductTableCell className="overflow-hidden">
                         <time
                           className="course-index-table-truncate"
@@ -775,20 +801,7 @@ function CourseLessonsPanel({
                             triggerVariant="ghost"
                             disabled={disabled}
                             portal
-                            items={[
-                              {
-                                id: "open",
-                                label: "Открыть урок",
-                                icon: BookOpen,
-                                onSelect: () => onSelect(lesson.id),
-                              },
-                              {
-                                id: "schedule",
-                                label: scheduleActionLabel,
-                                icon: CalendarClock,
-                                onSelect: () => setScheduledLessonId(lesson.id),
-                              },
-                            ]}
+                            items={lessonActionItems}
                           />
                         </span>
                       </ProductTableActionCell>
@@ -922,7 +935,7 @@ function CourseLessonsPanel({
         />
       ) : null}
 
-      {scheduledLessonId ? (
+      {teachingEnabled && scheduledLessonId ? (
         <LessonRunDialog
           lesson={lessons.find((lesson) => lesson.id === scheduledLessonId)!}
           runs={runs.filter((run) => run.lessonId === scheduledLessonId)}
@@ -974,10 +987,15 @@ function CourseAboutPanel({
   mutationError: string | null;
   runMutation: RunMutation;
 }) {
+  const educatorCourse = course.learningAudience === "educators";
   return (
     <section
       className="workspace-surface course-about-panel"
-      aria-label="Настройки, аудитория и источники курса"
+      aria-label={
+        educatorCourse
+          ? "Настройки и источники курса"
+          : "Настройки, аудитория и источники курса"
+      }
       tabIndex={0}
     >
       <section className="course-about-section">
@@ -998,28 +1016,31 @@ function CourseAboutPanel({
         />
       </section>
 
-      <section id="course-audience-section" className="course-about-section">
-        <div className="workspace-panel-heading">
-          <div>
-            <p className="workspace-eyebrow">Фактический состав</p>
-            <h2 id="course-audience-heading" tabIndex={-1}>
-              Ученики и группы курса
-            </h2>
+      {!educatorCourse ? (
+        <section id="course-audience-section" className="course-about-section">
+          <div className="workspace-panel-heading">
+            <div>
+              <p className="workspace-eyebrow">Фактический состав</p>
+              <h2 id="course-audience-heading" tabIndex={-1}>
+                Ученики и группы курса
+              </h2>
+            </div>
           </div>
-        </div>
-        <p className="workspace-surface-note course-about-section-note">
-          Выберите группы и отдельных учеников. Каждый профиль учитывается один
-          раз, даже если выбран несколькими способами.
-        </p>
-        <CourseAudienceEditor
-          key={course.id}
-          courseId={course.id}
-          audience={audience}
-          disabled={disabled}
-          mutationError={mutationError}
-          runMutation={runMutation}
-        />
-      </section>
+          <p className="workspace-surface-note course-about-section-note">
+            {
+              "Выберите группы и отдельных учеников. Каждый профиль учитывается один раз, даже если выбран несколькими способами."
+            }
+          </p>
+          <CourseAudienceEditor
+            key={course.id}
+            courseId={course.id}
+            audience={audience}
+            disabled={disabled}
+            mutationError={mutationError}
+            runMutation={runMutation}
+          />
+        </section>
+      ) : null}
 
       <CourseSourcesPanel />
     </section>
@@ -1068,11 +1089,8 @@ export function CourseWorkspaceClient({
   const mutationInFlightRef = useRef(false);
 
   const reload = useCallback(async () => {
-    const [workspace, runs, audience] = await Promise.all([
-      loadCourseWorkspace(courseId),
-      loadCourseHistory(courseId),
-      loadCourseAudience(courseId),
-    ]);
+    const { workspace, runs, audience } =
+      await loadOwnedCourseProjection(courseId);
     setCourse(workspace);
     setCourseRuns(runs);
     setCourseAudience(audience);
@@ -1087,22 +1105,23 @@ export function CourseWorkspaceClient({
 
   useEffect(() => {
     let active = true;
-    void Promise.all([
-      loadCourseWorkspace(courseId),
-      loadCourseHistory(courseId),
-      loadCourseAudience(courseId),
-    ])
-      .then(([workspace, runs, audience]) => {
+    void loadOwnedCourseProjection(courseId)
+      .then(({ workspace, runs, audience }) => {
         if (!active) return;
         setCourse(workspace);
         setCourseRuns(runs);
         setCourseAudience(audience);
         const searchParams = new URL(window.location.href).searchParams;
         const requestedLessonId = searchParams.get("lesson");
-        const requestedCourseSurface = COURSE_WORKSPACE_TABS.find(
+        const availableTabs = courseWorkspaceTabs(
+          workspace.learningAudience === "educators",
+        );
+        const requestedCourseSurface = availableTabs.find(
           (item) => item.value === searchParams.get("tab"),
         )?.value;
-        const audienceRequested = searchParams.get("audience") === "1";
+        const audienceRequested =
+          workspace.learningAudience === "children" &&
+          searchParams.get("audience") === "1";
         const validRequestedLesson = Boolean(
           requestedLessonId &&
           workspace.lessons.some((lesson) => lesson.id === requestedLessonId),
@@ -1212,6 +1231,8 @@ export function CourseWorkspaceClient({
     },
     [courseId, reload],
   );
+  const educatorCourse = course?.learningAudience === "educators";
+  const availableCourseTabs = courseWorkspaceTabs(educatorCourse === true);
   useSystemAssistantPageContext(
     course
       ? {
@@ -1223,7 +1244,7 @@ export function CourseWorkspaceClient({
           lessonId: selectedLesson?.id ?? null,
           label: selectedLesson
             ? `${course.title} · Урок ${selectedLesson.position}. ${selectedLesson.title} · ${LESSON_WORKSPACE_TABS.find((item) => item.value === navigation.lessonSurface)?.label ?? "План"}`
-            : `Курс «${course.title}» · ${COURSE_WORKSPACE_TABS.find((item) => item.value === navigation.courseSurface)?.label ?? "Уроки"}`,
+            : `Курс «${course.title}» · ${availableCourseTabs.find((item) => item.value === navigation.courseSurface)?.label ?? "Уроки"}`,
           onActionApplied: handleAssistantActionApplied,
         }
       : null,
@@ -1249,7 +1270,7 @@ export function CourseWorkspaceClient({
   const readyAttachmentCount = course.attachments.filter(
     (asset) => asset.status === "ready",
   ).length;
-  const courseTabs = COURSE_WORKSPACE_TABS.map((item) => {
+  const courseTabs = availableCourseTabs.map((item) => {
     if (item.value === "lessons") {
       return { ...item, count: course.lessons.length };
     }
@@ -1307,10 +1328,17 @@ export function CourseWorkspaceClient({
           <AppPageHeader
             back={{ type: "link", href: ROUTES.courses, label: "Курсы" }}
             title={course.title}
-            description={`Создано уроков: ${course.lessonCount} из ${course.targetLessonCount} · учеников: ${courseAudience.effectiveLearners.length} · готовых вложений: ${readyAttachmentCount}`}
+            description={
+              educatorCourse
+                ? `Курс для самостоятельного обучения педагогов · уроков: ${course.lessonCount} из ${course.targetLessonCount} · готовых вложений: ${readyAttachmentCount}`
+                : `Создано уроков: ${course.lessonCount} из ${course.targetLessonCount} · учеников: ${courseAudience.effectiveLearners.length} · готовых вложений: ${readyAttachmentCount}`
+            }
             actions={
               <>
-                <CoursePublicationBadges publication={course.publication} />
+                <CoursePublicationBadges
+                  publication={course.publication}
+                  learningAudience={course.learningAudience}
+                />
                 <CourseActions course={course} onChanged={reload} />
               </>
             }
@@ -1330,7 +1358,7 @@ export function CourseWorkspaceClient({
         <StatusMessage error={error} busyLabel={busyLabel} />
       ) : null}
 
-      {COURSE_WORKSPACE_TABS.map((item) => {
+      {availableCourseTabs.map((item) => {
         const active =
           !selectedLesson && item.value === navigation.courseSurface;
         const mounted = active || mountedCourseSurfaces.has(item.value);
@@ -1359,6 +1387,7 @@ export function CourseWorkspaceClient({
                 courseId={course.id}
                 focusLessonId={returnFocusLessonId}
                 onFocusRestored={() => setReturnFocusLessonId(null)}
+                teachingEnabled={!educatorCourse}
               />
             ) : null}
             {mounted && item.value === "about" ? (
@@ -1375,6 +1404,9 @@ export function CourseWorkspaceClient({
             ) : null}
             {mounted && item.value === "history" ? (
               <CourseHistoryPanel runs={courseRuns} />
+            ) : null}
+            {mounted && item.value === "attestation" ? (
+              <CourseAttestationEditor courseId={course.id} />
             ) : null}
           </div>
         );

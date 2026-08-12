@@ -1,10 +1,13 @@
 import { getSupabasePublicConfig } from "@/lib/server/auth-config";
 import {
   parseAccountAttestationCredentials,
+  parseCourseAttestationDefinition,
   parseCourseAttestationState,
+  type ReplaceCourseAttestationDefinitionInput,
 } from "./contracts";
 import type {
   AccountAttestationCredential,
+  CourseAttestationDefinition,
   CourseAttestationState,
 } from "./domain";
 
@@ -78,6 +81,13 @@ export interface CourseAttestationRepository {
     selectedOptionByQuestionId: Record<string, string>,
   ): Promise<CourseAttestationState>;
   listAccountAttestations(): Promise<AccountAttestationCredential[]>;
+  getAuthoredCourseAttestation(
+    courseId: string,
+  ): Promise<CourseAttestationDefinition | null>;
+  replaceAuthoredCourseAttestation(
+    courseId: string,
+    input: ReplaceCourseAttestationDefinitionInput,
+  ): Promise<CourseAttestationDefinition>;
 }
 
 export function createCourseAttestationRepository(
@@ -160,6 +170,32 @@ export function createCourseAttestationRepository(
         "list_my_course_publication_attestations",
         await rpc("list_my_course_publication_attestations", {}),
         parseAccountAttestationCredentials,
+      );
+    },
+
+    async getAuthoredCourseAttestation(courseId) {
+      const value = await rpc("get_my_authored_course_attestation", {
+        p_course_id: courseId,
+      });
+      if (value === null) return null;
+      return parseRpcProjection(
+        "get_my_authored_course_attestation",
+        value,
+        parseCourseAttestationDefinition,
+      );
+    },
+
+    async replaceAuthoredCourseAttestation(courseId, input) {
+      return parseRpcProjection(
+        "replace_my_course_attestation",
+        await rpc("replace_my_course_attestation", {
+          p_course_id: courseId,
+          p_title: input.title,
+          p_description: input.description,
+          p_passing_score_percent: input.passingScorePercent,
+          p_questions: input.questions,
+        }),
+        parseCourseAttestationDefinition,
       );
     },
   };

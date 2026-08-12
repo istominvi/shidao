@@ -29,6 +29,13 @@ const E2E_SECOND_COURSE_ID = "33333333-3333-4333-8333-333333333334";
 const E2E_EDUCATOR_COURSE_ID = "eb697b66-8655-6939-3d2c-cdf193935004";
 const E2E_EDUCATOR_PUBLICATION_ID = "cdcccb90-aab2-302e-3736-fdf6fedd59ba";
 const E2E_EDUCATOR_REVISION_ID = "498c525d-7b9e-9123-e185-aa85aab38fda";
+const E2E_EDUCATOR_LESSON_REF = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1";
+const E2E_EDUCATOR_SLIDE_REF = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa2";
+const E2E_EDUCATOR_LEARNER_COMPONENT_REF =
+  "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa3";
+const E2E_EDUCATOR_STAFF_COMPONENT_REF = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa4";
+const E2E_EDUCATOR_ATTESTATION_ATTEMPT_ID =
+  "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa5";
 const E2E_LESSON_ID = "44444444-4444-4444-8444-444444444444";
 const E2E_SECOND_LESSON_ID = "44444444-4444-4444-8444-444444444445";
 const E2E_COMPONENT_ID = "77777777-7777-4777-8777-777777777771";
@@ -56,6 +63,10 @@ const E2E_GROUP_EXAM_ID = "99999999-9999-4999-8999-999999999992";
 const E2E_COURSE_TITLE = "Английский для жизни";
 const E2E_EDUCATOR_COURSE_TITLE =
   "Современный урок китайского языка для детей: произношение, иероглифика и формирующее оценивание";
+const E2E_EDUCATOR_LESSON_TITLE = "Цели современного урока";
+const E2E_EDUCATOR_LEARNER_TEXT =
+  "Наблюдаемая цель описывает действие ученика.";
+const E2E_EDUCATOR_PRIVATE_TEXT = "PRIVATE EDUCATOR PLAN — только автору курса";
 const E2E_LESSON_TITLE = "Present Perfect · жизненный опыт";
 const E2E_SUPABASE_ACCESS_TOKEN = "e2e-supabase-user-access-token";
 const E2E_FOREIGN_ACCOUNT_ID = "22222222-2222-4222-8222-222222222229";
@@ -71,6 +82,7 @@ const E2E_COURSE_ROW = {
   id: E2E_COURSE_ID,
   owner_account_id: E2E_ACCOUNT_ID,
   title: E2E_COURSE_TITLE,
+  learning_audience: "children",
   subject: "Английский язык",
   goal: "Научиться уверенно рассказывать о жизненном опыте.",
   level: "A2–B1",
@@ -1019,6 +1031,7 @@ async function handleMockSupabase(
         locale: "ru",
         timezone: "Asia/Chita",
         has_pin: true,
+        can_author_educator_courses: true,
         sessions_invalid_before: null,
       },
     ]);
@@ -1649,6 +1662,154 @@ async function handleMockSupabase(
   }
 
   if (requestUrl.pathname === "/rest/v1/course_publication") {
+    const requestedPublicationId = readEqFilter(requestUrl, "id");
+    json(
+      response,
+      200,
+      requestedPublicationId === E2E_EDUCATOR_PUBLICATION_ID
+        ? [
+            {
+              id: E2E_EDUCATOR_PUBLICATION_ID,
+              source_course_id: E2E_EDUCATOR_COURSE_ID,
+              owner_account_id: E2E_ACCOUNT_ID,
+              learning_audience: "educators",
+              publisher_display_name: "E2E Adult",
+              is_shidao: true,
+              status: "published",
+              current_revision_id: E2E_EDUCATOR_REVISION_ID,
+              approved_revision_id: E2E_EDUCATOR_REVISION_ID,
+              source_content_updated_at: "2026-08-12T03:10:45.000Z",
+              published_at: "2026-08-12T03:10:45.000Z",
+              unpublished_at: null,
+              created_at: "2026-08-12T03:10:45.000Z",
+              updated_at: "2026-08-12T03:10:45.000Z",
+            },
+          ]
+        : [],
+    );
+    return;
+  }
+
+  if (requestUrl.pathname === "/rest/v1/course_publication_revision") {
+    const requestedRevisionIds = readInFilter(requestUrl, "id");
+    const revision = {
+      id: E2E_EDUCATOR_REVISION_ID,
+      publication_id: E2E_EDUCATOR_PUBLICATION_ID,
+      revision_number: 1,
+      source_course_updated_at: "2026-08-12T03:10:45.000Z",
+      content_sha256: "a".repeat(64),
+      snapshot: {
+        schemaVersion: 1,
+        course: {
+          title: E2E_EDUCATOR_COURSE_TITLE,
+          subject: "Методика преподавания китайского языка",
+          goal: "Спроектировать современный урок китайского языка.",
+          level: "Профессиональное развитие педагогов",
+          audienceDescription: "Преподаватели китайского языка",
+          targetLessonCount: 1,
+        },
+        lessons: [
+          {
+            ref: E2E_EDUCATOR_LESSON_REF,
+            position: 1,
+            title: E2E_EDUCATOR_LESSON_TITLE,
+            summary: E2E_EDUCATOR_PRIVATE_TEXT,
+            estimatedDurationMinutes: 20,
+            components: [
+              {
+                ref: E2E_EDUCATOR_STAFF_COMPONENT_REF,
+                position: 1,
+                typeKey: "heading",
+                schemaVersion: 1,
+                payload: { text: E2E_EDUCATOR_PRIVATE_TEXT, level: "h2" },
+                placement: { width: "content", textAlign: "start" },
+                visibility: "staff_only",
+                studentSlideRef: null,
+              },
+              {
+                ref: E2E_EDUCATOR_LEARNER_COMPONENT_REF,
+                position: 2,
+                typeKey: "rich_text",
+                schemaVersion: 1,
+                payload: {
+                  content: E2E_EDUCATOR_LEARNER_TEXT,
+                  format: "markdown",
+                },
+                placement: { width: "content", textAlign: "start" },
+                visibility: "learner_visible",
+                studentSlideRef: E2E_EDUCATOR_SLIDE_REF,
+              },
+            ],
+            slides: [{ ref: E2E_EDUCATOR_SLIDE_REF, position: 1 }],
+          },
+        ],
+        materials: [],
+      },
+      rights_confirmed_at: "2026-08-12T03:10:45.000Z",
+      license_code: "shidao_official_learning_v1",
+      published_at: "2026-08-12T03:10:45.000Z",
+    };
+    json(
+      response,
+      200,
+      !requestedRevisionIds ||
+        requestedRevisionIds.includes(E2E_EDUCATOR_REVISION_ID)
+        ? [revision]
+        : [],
+    );
+    return;
+  }
+
+  if (requestUrl.pathname === "/rest/v1/educator_course_revision_review") {
+    const requestedRevisionId = readEqFilter(requestUrl, "revision_id");
+    const requestedPublicationId = readEqFilter(requestUrl, "publication_id");
+    const requestedStatus = readEqFilter(requestUrl, "status");
+    const matchesFixture =
+      (!requestedRevisionId ||
+        requestedRevisionId === E2E_EDUCATOR_REVISION_ID) &&
+      (!requestedPublicationId ||
+        requestedPublicationId === E2E_EDUCATOR_PUBLICATION_ID) &&
+      (!requestedStatus || requestedStatus === "approved");
+    json(
+      response,
+      200,
+      matchesFixture
+        ? [
+            {
+              revision_id: E2E_EDUCATOR_REVISION_ID,
+              publication_id: E2E_EDUCATOR_PUBLICATION_ID,
+              status: "approved",
+            },
+          ]
+        : [],
+    );
+    return;
+  }
+
+  if (requestUrl.pathname === "/rest/v1/course_publication_attestation") {
+    const requestedRevisionId = readEqFilter(requestUrl, "revision_id");
+    const requestedPublicationId = readEqFilter(requestUrl, "publication_id");
+    const matchesFixture =
+      (!requestedRevisionId ||
+        requestedRevisionId === E2E_EDUCATOR_REVISION_ID) &&
+      (!requestedPublicationId ||
+        requestedPublicationId === E2E_EDUCATOR_PUBLICATION_ID);
+    json(
+      response,
+      200,
+      matchesFixture
+        ? [
+            {
+              revision_id: E2E_EDUCATOR_REVISION_ID,
+              publication_id: E2E_EDUCATOR_PUBLICATION_ID,
+            },
+          ]
+        : [],
+    );
+    return;
+  }
+
+  if (requestUrl.pathname === "/rest/v1/course_publication_asset") {
     json(response, 200, []);
     return;
   }
@@ -1677,7 +1838,7 @@ async function handleMockSupabase(
               publishedAt: "2026-08-12T03:10:45.000Z",
               author: {
                 displayName: "E2E Adult",
-                isShiDao: false,
+                isShiDao: true,
                 isCurrentUser: true,
               },
             },
@@ -1690,6 +1851,59 @@ async function handleMockSupabase(
           }
         : { subjects: [], levels: [] },
       nextOffset: null,
+    });
+    return;
+  }
+
+  if (
+    requestUrl.pathname === "/rest/v1/rpc/get_my_course_publication_progress" ||
+    requestUrl.pathname ===
+      "/rest/v1/rpc/set_my_course_publication_lesson_progress"
+  ) {
+    json(response, 200, {
+      publicationId: E2E_EDUCATOR_PUBLICATION_ID,
+      revisionId: E2E_EDUCATOR_REVISION_ID,
+      lastOpenedLessonRef: E2E_EDUCATOR_LESSON_REF,
+      completedLessonRefs: [E2E_EDUCATOR_LESSON_REF],
+      completedLessonCount: 1,
+      totalLessonCount: 1,
+      percent: 100,
+      complete: true,
+    });
+    return;
+  }
+
+  if (
+    requestUrl.pathname === "/rest/v1/rpc/get_my_course_publication_attestation"
+  ) {
+    json(response, 200, {
+      publicationId: E2E_EDUCATOR_PUBLICATION_ID,
+      revisionId: E2E_EDUCATOR_REVISION_ID,
+      title: "Итоговая аттестация",
+      description: "Проверка методики преподавания китайского языка.",
+      passingScorePercent: 80,
+      version: 1,
+      questions: [
+        {
+          id: "goal",
+          prompt: "Какая цель урока наблюдаема?",
+          options: [
+            { id: "action", label: "Действие ученика" },
+            { id: "topic", label: "Название темы" },
+          ],
+          selectedOptionId: "action",
+          correctOptionId: "action",
+          explanation: "Цель описывает наблюдаемое действие ученика.",
+        },
+      ],
+      attempt: {
+        id: E2E_EDUCATOR_ATTESTATION_ATTEMPT_ID,
+        scorePercent: 100,
+        passed: true,
+        completedAt: "2026-08-12T03:10:45.000Z",
+        selectedOptionByQuestionId: { goal: "action" },
+      },
+      certified: true,
     });
     return;
   }
@@ -6808,6 +7022,102 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       scrollWidth: catalogFilterBounds.clientWidth,
     });
     await catalogFilterTrigger.press("Escape");
+
+    await catalogPanel
+      .getByRole("button", {
+        name: E2E_EDUCATOR_COURSE_TITLE,
+        exact: true,
+      })
+      .click();
+    await runtime.page.waitForURL(
+      new RegExp(
+        `/courses/catalog/${E2E_EDUCATOR_PUBLICATION_ID}\\?audience=educators$`,
+      ),
+    );
+    await runtime.page
+      .getByRole("heading", {
+        name: E2E_EDUCATOR_COURSE_TITLE,
+        exact: true,
+        level: 1,
+      })
+      .waitFor();
+    assert.equal(
+      await runtime.page
+        .getByRole("group", { name: "Направление обучения", exact: true })
+        .count(),
+      0,
+    );
+    for (const tabName of ["Уроки", "О курсе", "Материалы", "Аттестация"]) {
+      await runtime.page
+        .getByRole("tab", { name: new RegExp(`^${tabName}`) })
+        .waitFor();
+    }
+    const publishedHeaderActions = runtime.page.locator(
+      ".published-course-workspace .app-page-actions",
+    );
+    await publishedHeaderActions.getByText("ShiDao", { exact: true }).waitFor();
+    await publishedHeaderActions
+      .getByText("Автор: E2E Adult", { exact: true })
+      .waitFor();
+    await publishedHeaderActions
+      .getByText("Аттестован", { exact: true })
+      .waitFor();
+    assert.equal(
+      await runtime.page
+        .getByRole("button", { name: "Добавить в мои курсы", exact: true })
+        .count(),
+      0,
+    );
+    await runtime.page
+      .getByRole("button", { name: "Продолжить", exact: true })
+      .click();
+    await runtime.page
+      .getByText(E2E_EDUCATOR_LEARNER_TEXT, { exact: true })
+      .waitFor();
+    const publishedLessonHeading = runtime.page.getByRole("heading", {
+      name: E2E_EDUCATOR_LESSON_TITLE,
+      exact: true,
+      level: 2,
+    });
+    await publishedLessonHeading.waitFor();
+    await runtime.page
+      .locator(".published-course-lesson-heading h2:focus")
+      .waitFor();
+    assert.equal(
+      await publishedLessonHeading.evaluate(
+        (node) => node === document.activeElement,
+      ),
+      true,
+    );
+    assert.equal(
+      await runtime.page
+        .getByRole("button", {
+          name: `Снять отметку о прохождении урока «${E2E_EDUCATOR_LESSON_TITLE}»`,
+          exact: true,
+        })
+        .getAttribute("aria-pressed"),
+      "true",
+    );
+    assert.equal(
+      await runtime.page.getByText(E2E_EDUCATOR_PRIVATE_TEXT).count(),
+      0,
+    );
+    await runtime.page
+      .getByRole("tab", { name: "Аттестация", exact: true })
+      .click();
+    await runtime.page
+      .getByText("Аттестация пройдена", { exact: true })
+      .waitFor();
+    assert.equal(
+      await runtime.page
+        .getByText("Не удалось выполнить операцию с курсом.", { exact: true })
+        .count(),
+      0,
+    );
+    await runtime.page
+      .getByRole("link", { name: "Вернуться: Каталог", exact: true })
+      .click();
+    await runtime.page.waitForURL(/\/courses\?tab=catalog&audience=educators$/);
 
     await runtime.page.getByRole("tab", { name: "Мои", exact: true }).click();
     await runtime.page.waitForURL(/\/courses$/);

@@ -51,6 +51,7 @@ test("current Account context uses the user JWT and validates its strict shape",
             locale: "ru",
             timezone: "Asia/Chita",
             has_pin: true,
+            can_author_educator_courses: true,
             sessions_invalid_before: "2026-08-07T00:00:00.000Z",
           },
         ]);
@@ -60,6 +61,7 @@ test("current Account context uses the user JWT and validates its strict shape",
     assert.equal(context.authUserId, "user-1");
     assert.equal(context.verifiedEmail, "verified@example.test");
     assert.equal(context.hasPin, true);
+    assert.equal(context.canAuthorEducatorCourses, true);
   });
 });
 
@@ -76,6 +78,7 @@ test("current Account context never exposes a synthetic learner auth email", asy
             locale: "ru",
             timezone: "Asia/Chita",
             has_pin: true,
+            can_author_educator_courses: false,
             sessions_invalid_before: null,
           },
         ])) as typeof fetch,

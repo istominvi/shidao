@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   CoursePublicationAccessError,
+  CoursePublicationConflictError,
   CoursePublicationValidationError,
   type CatalogQuery,
 } from "./contracts";
@@ -562,6 +563,65 @@ test("catalog copy checks eligibility before any Storage work", async () => {
   assert.deepEqual(broker.calls.copies, []);
 });
 
+test("educator publications cannot be copied or cloned", async () => {
+  let eligibilityChecks = 0;
+  let cloneCalls = 0;
+  const broker = storageBroker();
+  const service = createCoursePublicationService({
+    repository: repository({
+      getCatalogPublication: async () => ({
+        ...catalogRecordFixture(),
+        learningAudience: "educators",
+        isShiDao: true,
+      }),
+      assertCatalogCopyEligible: async () => {
+        eligibilityChecks += 1;
+      },
+      clonePublication: async () => {
+        cloneCalls += 1;
+        throw new Error("unexpected clone");
+      },
+    }),
+    storage: broker.storage,
+    courseService: courseService(workspace()),
+    createId: idFactory(),
+  });
+
+  await assert.rejects(
+    service.copyCatalogCourse(ACTOR, PUBLICATION_ID),
+    (error: unknown) =>
+      error instanceof CoursePublicationConflictError &&
+      error.code === "educator_course_not_copyable",
+  );
+  assert.equal(eligibilityChecks, 0);
+  assert.equal(cloneCalls, 0);
+  assert.deepEqual(broker.calls.copies, []);
+});
+
+test("owned educator courses cannot be duplicated past the application boundary", async () => {
+  let duplicateCalls = 0;
+  const service = createCoursePublicationService({
+    repository: repository({
+      duplicateCourse: async () => {
+        duplicateCalls += 1;
+        throw new Error("unexpected duplicate");
+      },
+    }),
+    storage: storageBroker().storage,
+    courseService: courseService(workspace({ learningAudience: "educators" })),
+    createId: idFactory(),
+  });
+
+  await assert.rejects(
+    service.duplicateOwnCourse(ACTOR, COURSE_ID),
+    (error: unknown) =>
+      error instanceof CoursePublicationConflictError &&
+      error.code === "educator_course_duplicate_forbidden" &&
+      error.message === "Курс для педагогов нельзя дублировать.",
+  );
+  assert.equal(duplicateCalls, 0);
+});
+
 test("GET, unpublish and own duplicate do not enter the Storage-write guard", async () => {
   let guardCalls = 0;
   const mutationGuard: CoursePublicationMutationGuard = {
@@ -580,6 +640,9 @@ test("GET, unpublish and own duplicate do not enter the Storage-write guard", as
     sourceCourseUpdatedAt: NOW,
     sourceContentUpdatedAt: NOW,
     contentSha256: "b".repeat(64),
+    reviewStatus: null,
+    reviewRevisionId: null,
+    approvedRevisionId: null,
   };
   const service = createCoursePublicationService({
     repository: repository({
@@ -669,6 +732,9 @@ test("publish and unpublish return a clean state from the publication content cl
     sourceCourseUpdatedAt: "2026-08-09T00:00:00.000Z",
     sourceContentUpdatedAt: NOW,
     contentSha256: "b".repeat(64),
+    reviewStatus: null,
+    reviewRevisionId: null,
+    approvedRevisionId: null,
   };
   const service = createCoursePublicationService({
     repository: repository({
@@ -711,6 +777,9 @@ test("dirty publication state compares only publication content timestamps", asy
     sourceCourseUpdatedAt: "2026-08-09T00:00:00.000Z",
     sourceContentUpdatedAt: NOW,
     contentSha256: "b".repeat(64),
+    reviewStatus: null,
+    reviewRevisionId: null,
+    approvedRevisionId: null,
   };
   const cleanService = createCoursePublicationService({
     repository: repository({
@@ -748,7 +817,7 @@ test("dirty publication state compares only publication content timestamps", asy
   );
 });
 
-test("catalog detail exposes signed material metadata without checksum", async () => {
+test("catalog detail exposes only learner slides and signed material metadata", async () => {
   const snapshot = buildCoursePublicationSnapshot({
     workspace: workspace(),
     sourceAssets: sourceAssets(),
@@ -784,6 +853,18 @@ test("catalog detail exposes signed material metadata without checksum", async (
     courseService: courseService(workspace()),
   });
   const detail = await service.getCatalogDetail(ACTOR, PUBLICATION_ID);
+  assert.equal(detail.revisionId, uuid(702));
+  assert.equal(detail.lessons.length, 1);
+  assert.equal(detail.lessons[0]!.id, snapshot.lessons[0]!.ref);
+  assert.equal(detail.lessons[0]!.slides.length, 1);
+  assert.equal(detail.lessons[0]!.slides[0]!.components.length, 1);
+  assert.equal(
+    detail.lessons[0]!.slides[0]!.components[0]!.payload.label,
+    "Задание",
+  );
+  const serializedLessons = JSON.stringify(detail.lessons);
+  assert.doesNotMatch(serializedLessons, /Комментарий преподавателя|Карточки/);
+  assert.doesNotMatch(serializedLessons, /staff_only|learner_visible/);
   assert.equal(detail.materials.length, 1);
   assert.equal("checksumSha256" in detail.materials[0]!, false);
   assert.match(detail.materials[0]!.downloadUrl, /^https:\/\//);

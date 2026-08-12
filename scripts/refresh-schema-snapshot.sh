@@ -136,11 +136,27 @@ SHIDAO_SCHEMA_SIGNATURE="$({
           ('public.list_my_course_publication_attestations()')
       ), attestation_admin_rpc(signature) as (
         values
-          ('public.publish_course_revision_with_attestation_admin(uuid,uuid,uuid,uuid,text,jsonb,jsonb,boolean,text,jsonb)'),
-          ('public.clone_course_publication_with_attestation_admin(uuid,uuid,uuid,text,jsonb,jsonb)'),
-          ('public.duplicate_course_with_attestation_admin(uuid,uuid,uuid,text,jsonb)'),
           ('public.list_course_publication_catalog_v2_admin(uuid,text,text,text,text,integer,integer)'),
           ('public.assert_course_publication_copy_eligible_admin(uuid,uuid)')
+      ), educator_governance_definer_admin_rpc(signature) as (
+        values
+          ('public.publish_course_revision_with_attestation_admin(uuid,uuid,uuid,uuid,text,jsonb,jsonb,boolean,text,jsonb)'),
+          ('public.clone_course_publication_with_attestation_admin(uuid,uuid,uuid,text,jsonb,jsonb)'),
+          ('public.duplicate_course_with_attestation_admin(uuid,uuid,uuid,text,jsonb)')
+      ), educator_governance_table(table_name) as (
+        values
+          ('educator_course_revision_review'),
+          ('course_publication_self_enrollment'),
+          ('course_publication_lesson_completion')
+      ), educator_governance_user_rpc(signature) as (
+        values
+          ('public.get_my_course_publication_progress(uuid)'),
+          ('public.set_my_course_publication_lesson_progress(uuid,uuid,uuid,boolean)')
+      ), educator_governance_admin_rpc(signature) as (
+        values
+          ('public.approve_educator_course_revision_admin(uuid,uuid,uuid)'),
+          ('public.reject_educator_course_revision_admin(uuid,uuid,uuid,text)'),
+          ('public.unpublish_course_publication_admin(uuid,uuid)')
       )
       select case
         when to_regclass('public.account') is not null
@@ -178,6 +194,9 @@ SHIDAO_SCHEMA_SIGNATURE="$({
          and to_regclass('public.course_publication_attestation') is not null
          and to_regclass('public.course_attestation_attempt') is not null
          and to_regclass('public.course_attestation_award') is not null
+         and to_regclass('public.educator_course_revision_review') is not null
+         and to_regclass('public.course_publication_self_enrollment') is not null
+         and to_regclass('public.course_publication_lesson_completion') is not null
          and to_regclass('public.methodology') is null
          and to_regclass('public.lesson_step') is null
          and to_regclass('public.lesson_run_participant') is null
@@ -205,6 +224,199 @@ SHIDAO_SCHEMA_SIGNATURE="$({
            'public.course_publication',
            'learning_audience',
            'UPDATE'
+         )
+         and exists (
+           select 1
+           from information_schema.columns
+           where table_schema = 'public'
+             and table_name = 'account'
+             and column_name = 'can_author_educator_courses'
+             and data_type = 'boolean'
+             and is_nullable = 'NO'
+             and column_default = 'false'
+         )
+         and exists (
+           select 1
+           from information_schema.columns
+           where table_schema = 'public'
+             and table_name = 'course_publication'
+             and column_name = 'approved_revision_id'
+             and data_type = 'uuid'
+             and is_nullable = 'YES'
+         )
+         and exists (
+           select 1
+           from pg_trigger as trigger
+           join pg_proc as procedure on procedure.oid = trigger.tgfoid
+           where trigger.tgrelid =
+               'public.course_publication_revision'::regclass
+             and trigger.tgname =
+               'trg_course_publication_revision_license_insert'
+             and not trigger.tgisinternal
+             and trigger.tgenabled = 'O'
+             and trigger.tgtype = 7
+             and not procedure.prosecdef
+             and procedure.proconfig @> array['search_path=\"\"']
+         )
+         and exists (
+           select 1
+           from pg_trigger as trigger
+           where trigger.tgrelid =
+               'public.course_publication_revision'::regclass
+             and trigger.tgname =
+               'trg_course_publication_revision_immutable'
+             and not trigger.tgisinternal
+             and trigger.tgenabled = 'O'
+             and trigger.tgfoid = to_regprocedure(
+               'public.reject_course_publication_immutable_update()'
+             )
+         )
+         and has_function_privilege(
+           'postgres',
+           'public.set_course_publication_revision_license_on_insert()',
+           'EXECUTE'
+         )
+         and not exists (
+           select 1
+           from unnest(array['anon', 'authenticated', 'service_role'])
+             as actor(role_name)
+           where has_function_privilege(
+             actor.role_name,
+             'public.set_course_publication_revision_license_on_insert()',
+             'EXECUTE'
+           )
+         )
+         and not exists (
+           select 1
+           from public.course_publication_revision as revision
+           join public.course_publication as publication
+             on publication.id = revision.publication_id
+           where publication.learning_audience = 'educators'
+             and revision.license_code <>
+               'shidao_official_learning_v1'
+         )
+         and not exists (
+           select 1
+           from educator_governance_table
+           join pg_class as relation
+             on relation.oid = to_regclass(
+               'public.' || educator_governance_table.table_name
+             )
+           where not relation.relrowsecurity
+         )
+         and not exists (
+           select 1
+           from educator_governance_table
+           cross join unnest(array['anon', 'authenticated'])
+             as actor(role_name)
+           cross join checked_table_privilege
+           where has_table_privilege(
+             actor.role_name,
+             'public.' || educator_governance_table.table_name,
+             checked_table_privilege.privilege_name
+           )
+         )
+         and not exists (
+           select 1
+           from educator_governance_user_rpc
+           left join pg_proc as procedure
+             on procedure.oid = to_regprocedure(
+               educator_governance_user_rpc.signature
+             )
+           where procedure.oid is null
+              or not procedure.prosecdef
+              or procedure.proconfig is null
+              or not (procedure.proconfig @> array['search_path=\"\"'])
+         )
+         and not exists (
+           select 1
+           from educator_governance_user_rpc
+           cross join unnest(array['anon', 'service_role'])
+             as actor(role_name)
+           where has_function_privilege(
+             actor.role_name,
+             educator_governance_user_rpc.signature,
+             'EXECUTE'
+           )
+         )
+         and not exists (
+           select 1
+           from educator_governance_user_rpc
+           cross join unnest(array['postgres', 'authenticated'])
+             as actor(role_name)
+           where not has_function_privilege(
+             actor.role_name,
+             educator_governance_user_rpc.signature,
+             'EXECUTE'
+           )
+         )
+         and not exists (
+           select 1
+           from educator_governance_admin_rpc
+           left join pg_proc as procedure
+             on procedure.oid = to_regprocedure(
+               educator_governance_admin_rpc.signature
+             )
+           where procedure.oid is null
+              or procedure.prosecdef
+              or procedure.proconfig is null
+              or not (procedure.proconfig @> array['search_path=\"\"'])
+         )
+         and not exists (
+           select 1
+           from educator_governance_admin_rpc
+           cross join unnest(array['anon', 'authenticated'])
+             as actor(role_name)
+           where has_function_privilege(
+             actor.role_name,
+             educator_governance_admin_rpc.signature,
+             'EXECUTE'
+           )
+         )
+         and not exists (
+           select 1
+           from educator_governance_definer_admin_rpc
+           left join pg_proc as procedure
+             on procedure.oid = to_regprocedure(
+               educator_governance_definer_admin_rpc.signature
+             )
+           where procedure.oid is null
+              or not procedure.prosecdef
+              or procedure.proconfig is null
+              or not (procedure.proconfig @> array['search_path=\"\"'])
+         )
+         and not exists (
+           select 1
+           from educator_governance_definer_admin_rpc
+           cross join unnest(array['anon', 'authenticated'])
+             as actor(role_name)
+           where has_function_privilege(
+             actor.role_name,
+             educator_governance_definer_admin_rpc.signature,
+             'EXECUTE'
+           )
+         )
+         and not exists (
+           select 1
+           from educator_governance_definer_admin_rpc
+           cross join unnest(array['postgres', 'service_role'])
+             as actor(role_name)
+           where not has_function_privilege(
+             actor.role_name,
+             educator_governance_definer_admin_rpc.signature,
+             'EXECUTE'
+           )
+         )
+         and not exists (
+           select 1
+           from educator_governance_admin_rpc
+           cross join unnest(array['postgres', 'service_role'])
+             as actor(role_name)
+           where not has_function_privilege(
+             actor.role_name,
+             educator_governance_admin_rpc.signature,
+             'EXECUTE'
+           )
          )
          and not exists (
            select 1

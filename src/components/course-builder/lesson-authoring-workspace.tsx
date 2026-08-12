@@ -883,6 +883,7 @@ export function LessonAuthoringWorkspace({
   runs,
   learners,
 }: LessonAuthoringWorkspaceProps) {
+  const teachingEnabled = course.learningAudience === "children";
   const [pickerOpen, setPickerOpen] = useState(false);
   const [aiPlannerOpen, setAiPlannerOpen] = useState(false);
   const [lessonEditorOpen, setLessonEditorOpen] = useState(false);
@@ -893,7 +894,10 @@ export function LessonAuthoringWorkspace({
   const pickerTriggerRef = useRef<HTMLButtonElement>(null);
   const lessonSettingsTriggerRef = useRef<HTMLButtonElement>(null);
   const lessonHeadingRef = useRef<HTMLHeadingElement>(null);
-  const lessonTabs = LESSON_WORKSPACE_TABS.map((item) => ({
+  const availableLessonTabs = LESSON_WORKSPACE_TABS.filter(
+    (item) => teachingEnabled || item.value !== "history",
+  );
+  const lessonTabs = availableLessonTabs.map((item) => ({
     ...item,
     ...(item.value === "history"
       ? { count: completedLessonRunCount(runs) }
@@ -946,11 +950,13 @@ export function LessonAuthoringWorkspace({
         }
         actions={
           <>
-            <LessonRunStatusButton
-              runs={runs}
-              disabled={disabled}
-              onClick={() => setLessonRunDialogOpen(true)}
-            />
+            {teachingEnabled ? (
+              <LessonRunStatusButton
+                runs={runs}
+                disabled={disabled}
+                onClick={() => setLessonRunDialogOpen(true)}
+              />
+            ) : null}
             <Button
               variant="secondary"
               disabled={disabled}
@@ -975,7 +981,9 @@ export function LessonAuthoringWorkspace({
               onClick={() => {
                 if (
                   !window.confirm(
-                    `Удалить урок «${lesson.title}»? План, назначение и история проведений будут удалены. Завершённые индивидуальные результаты сохранятся в учебных профилях.`,
+                    teachingEnabled
+                      ? `Удалить урок «${lesson.title}»? План, назначение и история проведений будут удалены. Завершённые индивидуальные результаты сохранятся в учебных профилях.`
+                      : `Удалить урок «${lesson.title}» вместе с его компонентами?`,
                   )
                 ) {
                   return;
@@ -1005,7 +1013,7 @@ export function LessonAuthoringWorkspace({
 
       {status ? <div className="mt-4">{status}</div> : null}
 
-      {LESSON_WORKSPACE_TABS.map((item) => {
+      {availableLessonTabs.map((item) => {
         const active = item.value === surface;
 
         return (
@@ -1087,7 +1095,7 @@ export function LessonAuthoringWorkspace({
         />
       ) : null}
 
-      {lessonRunDialogOpen ? (
+      {teachingEnabled && lessonRunDialogOpen ? (
         <LessonRunDialog
           lesson={lesson}
           runs={runs}

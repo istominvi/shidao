@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { getCurrentAccountAuthContext } from "@/lib/server/account-auth";
 import { uuidSchema } from "../contracts";
 import type { CourseBuilderActor } from "../domain";
 import {
@@ -195,6 +196,10 @@ export type CourseBuilderMcpContextResolverDependencies = Readonly<{
   resolveUser?: SupabaseUserResolver;
   createRepository?: (accessToken: string) => CourseBuilderRepository;
   createService?: typeof createCourseBuilderService;
+  resolveAccountContext?: (accessToken: string) => Promise<{
+    authUserId: string;
+    canAuthorEducatorCourses: boolean;
+  }>;
 }>;
 
 /**
@@ -230,10 +235,6 @@ export function createCourseBuilderMcpContextResolver(
       );
     }
 
-    const actor: CourseBuilderActor = {
-      authUserId: authenticatedUserId.data,
-      accessToken: environment.accessToken,
-    };
     const repository = (
       dependencies.createRepository ?? createCourseBuilderRepository
     )(environment.accessToken);
@@ -248,6 +249,32 @@ export function createCourseBuilderMcpContextResolver(
         "Supabase user JWT выпущен до глобального session cutoff.",
       );
     }
+    let accountContext: {
+      authUserId: string;
+      canAuthorEducatorCourses: boolean;
+    };
+    try {
+      accountContext = await (
+        dependencies.resolveAccountContext ?? getCurrentAccountAuthContext
+      )(environment.accessToken);
+    } catch {
+      throw new CourseBuilderMcpAuthenticationError(
+        "Не удалось получить актуальные права Account для MCP.",
+      );
+    }
+    if (
+      accountContext.authUserId.toLowerCase() !==
+      authenticatedUserId.data.toLowerCase()
+    ) {
+      throw new CourseBuilderMcpAuthenticationError(
+        "Account-контекст не совпадает с Auth-пользователем MCP.",
+      );
+    }
+    const actor: CourseBuilderActor = {
+      authUserId: authenticatedUserId.data,
+      accessToken: environment.accessToken,
+      canAuthorEducatorCourses: accountContext.canAuthorEducatorCourses,
+    };
     const service = (dependencies.createService ?? createCourseBuilderService)({
       repository,
     });

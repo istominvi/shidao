@@ -9,6 +9,7 @@ export type AccountAuthContext = {
   locale: string;
   timezone: string;
   hasPin: boolean;
+  canAuthorEducatorCourses: boolean;
   sessionsInvalidBefore: string | null;
 };
 
@@ -37,6 +38,7 @@ type RpcAccountContextRow = {
   locale?: unknown;
   timezone?: unknown;
   has_pin?: unknown;
+  can_author_educator_courses?: unknown;
   sessions_invalid_before?: unknown;
 };
 
@@ -113,6 +115,7 @@ function parseAccountContext(payload: unknown): AccountAuthContext {
     typeof row.locale !== "string" ||
     typeof row.timezone !== "string" ||
     typeof row.has_pin !== "boolean" ||
+    typeof row.can_author_educator_courses !== "boolean" ||
     !(
       row.sessions_invalid_before === null ||
       typeof row.sessions_invalid_before === "string"
@@ -140,6 +143,7 @@ function parseAccountContext(payload: unknown): AccountAuthContext {
     locale: row.locale,
     timezone: row.timezone,
     hasPin: row.has_pin,
+    canAuthorEducatorCourses: row.can_author_educator_courses,
     sessionsInvalidBefore: row.sessions_invalid_before,
   };
 }

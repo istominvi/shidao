@@ -10,6 +10,10 @@ const pagePath = "src/app/(app)/courses/page.tsx";
 const indexPath = "src/components/course-builder/courses-index.tsx";
 const ownedPath = "src/components/course-builder/owned-courses-panel.tsx";
 const catalogPath = "src/components/course-builder/course-catalog-panel.tsx";
+const publishedCoursePath =
+  "src/components/course-builder/published-course-workspace.tsx";
+const publishedCoursePagePath =
+  "src/app/(app)/courses/catalog/[publicationId]/page.tsx";
 const actionsPath = "src/components/course-builder/course-actions.tsx";
 const actionMenuPath = "src/components/ui/action-menu.tsx";
 const courseRoutePath = "src/app/api/v2/courses/[courseId]/route.ts";
@@ -17,9 +21,10 @@ const courseServicePath = "src/modules/course-builder/service.ts";
 const courseRepositoryPath = "src/modules/course-builder/repository.ts";
 const courseServerContextPath = "src/modules/course-builder/server-context.ts";
 
-test("courses index exposes My and Catalog tabs with shareable catalog URLs", () => {
+test("courses index exposes list tabs and sends course details to a standalone route", () => {
   const page = source(pagePath);
   const index = source(indexPath);
+  const publishedPage = source(publishedCoursePagePath);
 
   assert.match(page, />\s*Создать курс\s*</);
   assert.match(
@@ -31,7 +36,13 @@ test("courses index exposes My and Catalog tabs with shareable catalog URLs", ()
     /description="Создавайте свои курсы с нуля или добавляйте готовые из каталога\."/,
   );
   assert.match(page, /query\.tab === "catalog"/);
-  assert.match(page, /initialCatalogCourseId/);
+  assert.match(page, /typeof query\.course === "string"/);
+  assert.match(page, /redirect\(/);
+  assert.match(
+    page,
+    /\/courses\/catalog\/\$\{encodeURIComponent\(query\.course\)\}/,
+  );
+  assert.doesNotMatch(page, /initialCatalogCourseId/);
   assert.match(index, /value: "mine", label: "Мои"/);
   assert.match(index, /value: "catalog", label: "Каталог"/);
   assert.match(index, /ariaLabel="Разделы курсов"/);
@@ -39,11 +50,17 @@ test("courses index exposes My and Catalog tabs with shareable catalog URLs", ()
   assert.match(index, /workspaceTabId/);
   assert.match(index, /workspaceTabPanelId/);
   assert.match(index, /\/courses\?tab=catalog/);
-  assert.match(index, /query\.set\("course", courseId\)/);
+  assert.match(
+    index,
+    /router\.push\(\s*`\/courses\/catalog\/\$\{encodeURIComponent\(courseId\)\}\$\{query\}`/,
+  );
+  assert.doesNotMatch(index, /query\.set\("course", courseId\)/);
+  assert.match(publishedPage, /<PublishedCourseWorkspace/);
 });
 
-test("catalog shows published lessons and safe material links before copying", () => {
+test("catalog list opens a full read-only published-course workspace", () => {
   const catalog = source(catalogPath);
+  const published = source(publishedCoursePath);
 
   assert.match(catalog, />\s*Каталог курсов\s*</);
   assert.doesNotMatch(catalog, />Готовые курсы</);
@@ -59,25 +76,41 @@ test("catalog shows published lessons and safe material links before copying", (
     /setTimeout\(\(\) => setDebouncedQuery\(query\), 300\)/,
   );
   assert.match(catalog, /Показать ещё/);
+  assert.match(catalog, /onOpenCourse\(course\.id\)/);
+  assert.doesNotMatch(catalog, /CatalogCourseDetailView/);
+  assert.doesNotMatch(catalog, /selectedCourseId/);
   assert.match(
-    catalog,
-    /\/api\/v2\/course-catalog\/\$\{encodeURIComponent\(courseId\)\}/,
+    published,
+    /\/api\/v2\/course-catalog\/\$\{encodeURIComponent\(publicationId\)\}/,
   );
-  assert.match(catalog, /course\.lessons\.map/);
-  assert.match(catalog, /course\.materials\.map/);
-  assert.match(catalog, /material\.originalFilename/);
-  assert.match(catalog, /href=\{material\.downloadUrl\}/);
+  assert.match(published, /value: "lessons", label: "Уроки"/);
+  assert.match(published, /value: "about", label: "О курсе"/);
+  assert.match(published, /value: "materials", label: "Материалы"/);
+  assert.match(published, /value: "attestation", label: "Аттестация"/);
+  assert.match(published, /course\.lessons\.map/);
+  assert.match(published, /course\.materials\.map/);
+  assert.match(published, /material\.originalFilename/);
+  assert.match(published, /href=\{materialUrl\}/);
   assert.match(
-    catalog,
+    published,
     /aria-label=\{`Открыть материал «\$\{material\.originalFilename\}»`\}/,
   );
-  assert.match(catalog, /target="_blank"/);
-  assert.match(catalog, /rel="noreferrer"/);
-  assert.match(catalog, />\s*Открыть мой курс\s*</);
-  assert.match(catalog, /Добавить в мои курсы/);
-  assert.match(catalog, /\/copy/);
-  assert.match(catalog, /router\.push\(toCourseRoute\(payload\.courseId\)\)/);
-  assert.doesNotMatch(catalog, /Адаптировать под группу/);
+  assert.match(published, /target="_blank"/);
+  assert.match(published, /rel="noreferrer"/);
+  assert.match(published, />\s*Открыть мой курс\s*</);
+  assert.match(published, /Добавить в мои курсы/);
+  assert.match(published, /\/copy/);
+  assert.match(published, /router\.push\(toCourseRoute\(payload\.courseId\)\)/);
+  assert.match(published, /!educatorCourse && ownSourceCourseId/);
+  assert.match(
+    published,
+    /if \(!course \|\| course\.learningAudience === "educators" \|\| copyBusy\)/,
+  );
+  assert.match(
+    published,
+    /!educatorCourse && ownSourceCourseId[\s\S]*?: !educatorCourse \? \(/,
+  );
+  assert.doesNotMatch(published, /Адаптировать под группу/);
 });
 
 test("owned course actions cover copy, publication, and safe archive states", () => {
@@ -114,7 +147,30 @@ test("owned course actions cover copy, publication, and safe archive states", ()
   assert.match(actions, /triggerIcon=\{variant === "table" \? MoreVertical/);
   assert.match(actions, /portal=\{variant === "table"\}/);
   assert.match(actions, /id: "delete"[\s\S]*?destructive: true/);
-  assert.match(actions, /disabled: Boolean\(busyAction\) \|\| published/);
+  assert.match(
+    actions,
+    /disabled: Boolean\(busyAction\) \|\| publicationLocked/,
+  );
+  assert.match(actions, /const pendingReview = reviewStatus === "pending"/);
+  assert.match(
+    actions,
+    /const publicationLocked = published \|\| pendingReview/,
+  );
+  assert.match(actions, /label: "Отозвать с проверки"/);
+  assert.match(
+    actions,
+    /label: educatorCourse[\s\S]*?\? "Отправить новую редакцию"/,
+  );
+  assert.match(actions, /reviewStatus === "rejected"/);
+  assert.match(actions, /approvedRevisionId/);
+  assert.match(actions, /const rejectedInitialPublication =/);
+  assert.match(actions, /if \(!educatorCourse \|\| published\)/);
+  assert.match(actions, /Снять отклонённую публикацию/);
+  assert.match(
+    actions,
+    /Отклонённая редакция перестанет считаться опубликованной/,
+  );
+  assert.match(actions, /Сначала снимите отклонённую публикацию/);
   assert.match(actions, /Сначала снимите курс с публикации/);
   assert.match(
     actions,

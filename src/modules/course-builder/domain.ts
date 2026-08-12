@@ -102,6 +102,8 @@ export type StudentScreenCourse = Pick<CourseWorkspace, "id" | "title"> & {
 export type CourseBuilderActor = {
   authUserId: string;
   accessToken: string;
+  /** Fresh Account capability, absent/false for non-browser adapters. */
+  canAuthorEducatorCourses?: boolean;
 };
 
 export type PreparedCourseAttachment = {

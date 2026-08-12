@@ -22,6 +22,7 @@ import {
 } from "@/components/course-builder/course-material-file";
 import {
   COURSE_WORKSPACE_TABS,
+  EDUCATOR_COURSE_WORKSPACE_TABS,
   type CourseWorkspaceSurface,
 } from "@/components/course-builder/course-workspace-navigation";
 import { Button, productButtonClassName } from "@/components/ui/button";
@@ -147,7 +148,11 @@ function uploadStatusLabel(progress: UploadProgress | undefined) {
   }
 }
 
-export function NewCourseForm() {
+export function NewCourseForm({
+  canAuthorEducatorCourses,
+}: {
+  canAuthorEducatorCourses: boolean;
+}) {
   const router = useRouter();
   const nextFileId = useRef(1);
   const [activeSurface, setActiveSurface] =
@@ -163,6 +168,10 @@ export function NewCourseForm() {
   const [aiPreview, setAiPreview] = useState<AiCoursePlanPreview | null>(null);
   const [learningAudience, setLearningAudience] =
     useState<CourseLearningAudience>("children");
+  const workspaceTabs =
+    learningAudience === "educators"
+      ? EDUCATOR_COURSE_WORKSPACE_TABS
+      : COURSE_WORKSPACE_TABS;
 
   function addFiles(files: FileList | null) {
     if (!files?.length) return;
@@ -315,7 +324,7 @@ export function NewCourseForm() {
         idBase={NEW_COURSE_WORKSPACE_TABS_ID}
         ariaLabel="Разделы нового курса"
         value={activeSurface}
-        items={COURSE_WORKSPACE_TABS}
+        items={workspaceTabs}
         onChange={setActiveSurface}
       />
 
@@ -366,24 +375,35 @@ export function NewCourseForm() {
           description="Эти данные сохраняются в курсе и задают контекст для ручной, быстрой или AI-сборки."
         >
           <div className="grid gap-4 md:grid-cols-2">
-            <FormField className="md:col-span-2">
-              <p className="form-field-label">Направление обучения</p>
-              <input
-                type="hidden"
-                name="learningAudience"
-                value={learningAudience}
-              />
-              <SegmentedControl
-                ariaLabel="Направление обучения"
-                value={learningAudience}
-                onChange={setLearningAudience}
-                disabled={isSubmitting}
-                items={[
-                  { value: "children", label: "Обучение детей" },
-                  { value: "educators", label: "Обучение педагогов" },
-                ]}
-              />
-            </FormField>
+            <input
+              type="hidden"
+              name="learningAudience"
+              value={canAuthorEducatorCourses ? learningAudience : "children"}
+            />
+            {canAuthorEducatorCourses ? (
+              <FormField className="md:col-span-2">
+                <p className="form-field-label">Направление обучения</p>
+                <SegmentedControl
+                  ariaLabel="Направление обучения"
+                  value={learningAudience}
+                  onChange={(value) => {
+                    setLearningAudience(value);
+                    setActiveSurface((surface) =>
+                      value === "educators" && surface === "history"
+                        ? "about"
+                        : value === "children" && surface === "attestation"
+                          ? "about"
+                          : surface,
+                    );
+                  }}
+                  disabled={isSubmitting || createdCourseId !== null}
+                  items={[
+                    { value: "children", label: "Обучение детей" },
+                    { value: "educators", label: "Обучение педагогов" },
+                  ]}
+                />
+              </FormField>
+            ) : null}
 
             <FormField>
               <FieldLabel htmlFor="course-title">Название</FieldLabel>
@@ -641,21 +661,41 @@ export function NewCourseForm() {
         </SurfaceCard>
       </section>
 
-      <section
-        id={workspaceTabPanelId(NEW_COURSE_WORKSPACE_TABS_ID, "history")}
-        role="tabpanel"
-        aria-labelledby={workspaceTabId(
-          NEW_COURSE_WORKSPACE_TABS_ID,
-          "history",
-        )}
-        hidden={activeSurface !== "history"}
-        tabIndex={0}
-      >
-        <SurfaceCard
-          title="История появится после сохранения"
-          description="Завершённые проведения уроков будут доступны здесь, когда курс будет сохранён и начнёт использоваться."
-        />
-      </section>
+      {learningAudience === "educators" ? (
+        <section
+          id={workspaceTabPanelId(NEW_COURSE_WORKSPACE_TABS_ID, "attestation")}
+          role="tabpanel"
+          aria-labelledby={workspaceTabId(
+            NEW_COURSE_WORKSPACE_TABS_ID,
+            "attestation",
+          )}
+          hidden={activeSurface !== "attestation"}
+          tabIndex={0}
+        >
+          <SurfaceCard
+            title="Аттестация появится после сохранения"
+            description="Сохраните курс, затем добавьте проверочные вопросы, правильные ответы и проходной балл."
+          />
+        </section>
+      ) : null}
+
+      {learningAudience === "children" ? (
+        <section
+          id={workspaceTabPanelId(NEW_COURSE_WORKSPACE_TABS_ID, "history")}
+          role="tabpanel"
+          aria-labelledby={workspaceTabId(
+            NEW_COURSE_WORKSPACE_TABS_ID,
+            "history",
+          )}
+          hidden={activeSurface !== "history"}
+          tabIndex={0}
+        >
+          <SurfaceCard
+            title="История появится после сохранения"
+            description="Завершённые проведения уроков будут доступны здесь, когда курс будет сохранён и начнёт использоваться."
+          />
+        </section>
+      ) : null}
 
       {progressMessage ? (
         <p

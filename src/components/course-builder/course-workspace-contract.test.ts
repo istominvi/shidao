@@ -55,8 +55,9 @@ test("course Lessons uses full-width controls and a dense sortable ProductTable"
   const projectionStart = panel.indexOf("const visibleLessons");
   const projectionEnd = panel.indexOf("useEffect", projectionStart);
   const projection = panel.slice(projectionStart, projectionEnd);
-  const actionMenu =
-    /<ActionMenu[\s\S]*?items=\{\[[\s\S]*?\]\}[\s\S]*?\/>/.exec(panel)?.[0];
+  const actionMenu = /const lessonActionItems =[\s\S]*?\n\s*];/.exec(
+    panel,
+  )?.[0];
 
   assert.ok(panelStart >= 0, "CourseLessonsPanel must remain present");
   assert.ok(panelEnd > panelStart, "CourseLessonsPanel must remain bounded");
@@ -139,9 +140,9 @@ test("course Lessons uses full-width controls and a dense sortable ProductTable"
 
   assert.ok(actionMenu, "Course Lesson action menu must remain discoverable");
   assert.equal(actionMenu.match(/\bid: "/g)?.length, 2);
-  assert.match(actionMenu, /triggerIcon=\{MoreVertical\}/);
-  assert.match(actionMenu, /triggerVariant="ghost"/);
-  assert.match(actionMenu, /\sportal\s/);
+  assert.match(panel, /triggerIcon=\{MoreVertical\}/);
+  assert.match(panel, /triggerVariant="ghost"/);
+  assert.match(panel, /\sportal\s/);
   assert.match(actionMenu, /id: "open"[\s\S]*?label: "Открыть урок"/);
   assert.match(actionMenu, /id: "schedule"[\s\S]*?label: scheduleActionLabel/);
   for (const contextualLabel of [
@@ -162,7 +163,7 @@ test("course Lessons uses full-width controls and a dense sortable ProductTable"
   assert.doesNotMatch(panel, /<section className="workspace-surface">/);
 });
 
-test("course About keeps settings and audience inline while materials stay course-wide", () => {
+test("course About keeps child audience conditional while materials stay course-wide", () => {
   const workspace = source(workspacePath);
   const materials = source(
     "src/components/course-builder/course-materials-panel.tsx",
@@ -176,14 +177,14 @@ test("course About keeps settings and audience inline while materials stay cours
   assert.ok(aboutStart >= 0, "CourseAboutPanel must remain present");
   assert.ok(historyStart > aboutStart, "CourseAboutPanel must remain bounded");
   assert.ok(aboutStyles, "Course About styles must remain discoverable");
-  assert.match(workspace, /COURSE_WORKSPACE_TABS/);
+  assert.match(workspace, /courseWorkspaceTabs/);
   assert.match(
     aboutPanel,
     /CourseBasicsForm[\s\S]*?CourseAudienceEditor[\s\S]*?CourseSourcesPanel/,
   );
   assert.match(
     aboutPanel,
-    /aria-label="Настройки, аудитория и источники курса"[\s\S]*?tabIndex=\{0\}/,
+    /educatorCourse[\s\S]*?"Настройки и источники курса"[\s\S]*?: "Настройки, аудитория и источники курса"/,
   );
   assert.match(aboutPanel, />\s*Настройки курса\s*</);
   assert.match(aboutPanel, />\s*Ученики и группы курса\s*</);
@@ -216,7 +217,7 @@ test("course About keeps settings and audience inline while materials stay cours
   assert.doesNotMatch(aboutStyles, /overflow(?:-y)?:\s*(?:auto|scroll)/);
 });
 
-test("course uses four consolidated tabs while lesson keeps five surfaces", () => {
+test("course uses audience-aware four-tab sets while lesson history is teaching-only", () => {
   const workspace = source(workspacePath);
   const authoring = source(lessonAuthoringPath);
   const tabs = source("src/components/ui/workspace-tabs.tsx");
@@ -227,6 +228,8 @@ test("course uses four consolidated tabs while lesson keeps five surfaces", () =
   for (const label of ["Уроки", "О курсе", "Материалы", "История"]) {
     assert.match(navigation, new RegExp(`label: "${label}"`));
   }
+  assert.match(navigation, /EDUCATOR_COURSE_WORKSPACE_TABS/);
+  assert.match(navigation, /label: "Аттестация"/);
   assert.doesNotMatch(navigation, /label: "Описание"|label: "Источники"/);
   for (const label of [
     "План",
@@ -240,7 +243,7 @@ test("course uses four consolidated tabs while lesson keeps five surfaces", () =
   assert.match(workspace, /ariaLabel="Разделы курса"/);
   assert.match(
     workspace,
-    /COURSE_WORKSPACE_TABS\.find\([\s\S]*?searchParams\.get\("tab"\)/,
+    /courseWorkspaceTabs\([\s\S]*?searchParams\.get\("tab"\)/,
   );
   assert.match(
     workspace,
@@ -269,6 +272,10 @@ test("course uses four consolidated tabs while lesson keeps five surfaces", () =
     /LessonHistorySurface lesson=\{lesson\} runs=\{runs\}/,
   );
   assert.match(authoring, /LessonRunStatusButton/);
+  assert.match(
+    authoring,
+    /availableLessonTabs = LESSON_WORKSPACE_TABS\.filter\([\s\S]*?teachingEnabled/,
+  );
   assert.match(authoring, /Завершённые индивидуальные результаты сохранятся/);
   assert.doesNotMatch(authoring, /\/api\/teacher\//);
   assert.match(tabs, /aria-orientation="horizontal"/);

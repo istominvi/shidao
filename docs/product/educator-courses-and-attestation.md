@@ -1,101 +1,186 @@
 # Курсы для педагогов и аттестация
 
-**Статус:** current production
+**Статус:** production database current; dependent web rollout next
+
 **Актуально на:** 12 августа 2026 года
 
-## Current production
+## Граница статусов
 
-E1 database contract и demonstration product data применены к production.
-Initial dependent API/UI commit
-`28387a9863afeccf4a6ad332dcf0f01048a69e67` развёрнут через Coolify, но
-последующая authenticated проверка выявила application parsing incident.
-Production hotfix исправляет этот application boundary без изменения уже
-выданной аттестации или database data.
+В production уже применён базовый E1 database contract: назначение курса
+`children | educators`, immutable определение аттестации, Account attempts и
+awards. Там же опубликован демонстрационный курс для преподавателя китайского
+языка и сохранён ранее выданный результат. Записанный dependent web release
+`28387a9863afeccf4a6ad332dcf0f01048a69e67` имеет известный UUID parsing
+incident; исправляющий его source ещё не имеет отдельного production deployment
+evidence.
 
-Каталог Course разделён по учебному назначению, а не по роли Account:
+E2 migration `20260812150745_educator_course_governance_progress.sql` применена
+к production DB с `COMMIT` в `2026-08-12T07:34:36Z`; DB postflight и current
+snapshot `2026-08-12T07:43:11Z` подтвердили governance, approved revision,
+self-learning progress и official no-copy/no-roster/no-Run contract. Зависимые
+API/UI реализованы в repository, но ещё не имеют отдельного production web
+deployment evidence. Ниже **current database** относится к production DB, а
+application surfaces остаются repository current / production next.
+
+## Одна модель Course, два учебных назначения
+
+Курс для педагогов не является вторым Course type. Он использует ту же
+каноническую authored-иерархию `Course → Lesson → ordered Components`,
+Student Screen Slides, course-wide attachments и immutable publication
+revision. Назначение хранится отдельно:
 
 - `children` — «Обучение детей»;
 - `educators` — «Обучение педагогов».
 
-Это отдельное поле `course.learning_audience`; operational `audience_type`
-по-прежнему описывает roster обычного Course и для этой классификации не
-используется. Один roleless Account может создавать, проходить и наблюдать
-разные учебные сценарии без переключения типа пользователя.
+Это поле `course.learning_audience`; operational `audience_type` по-прежнему
+описывает roster обычного детского Course и для этой классификации не
+используется. Для educator Course оно обязано оставаться `none`.
 
-Audience toggle находится в одной toolbar-строке с поиском,
-фильтрами и выбором вида. При смене направления каталог очищает masked error
-state перед отображением нового результата.
+В каталоге audience toggle является только фильтром списка. Он расположен в
+одной toolbar-строке с поиском, фильтрами и выбором вида и не переносится на
+страницу открытого курса. Фильтрация, facets и cursor выполняются server-side
+внутри выбранного направления.
 
-У опубликованного курса для педагогов есть итоговая вкладка «Аттестация».
-Определение теста принадлежит authored Course, но попытка выполняется только
-против immutable current publication revision. Клиент передаёт выбранные
-варианты; score и факт прохождения вычисляет одна транзакционная DB-функция по
-закрытому answer key. Успешный результат создаёт durable Account award.
+## Доверенный автор и обязательное согласование
 
-Badge «Аттестован» в заголовке относится только к текущей опубликованной
-редакции. Учебный профиль сохраняет ранее выданные результаты и явно отмечает,
-если курс уже имеет другую редакцию или недоступен. Результат означает
-прохождение теста внутри ShiDao и не заявляется государственным удостоверением
-о повышении квалификации.
+Возможность создавать official educator Course задаёт canonical Account-флаг
+`account.can_author_educator_courses`. Он имеет default `false`, не берётся из
+редактируемого Auth metadata/JWT claim и возвращается свежим
+`current_account_auth_context()`.
 
-## Production incident и hotfix
+- Обычный Account создаёт только Course для обучения детей.
+- Active Account с capability видит в `/courses/new` выбор «Обучение детей /
+  Обучение педагогов».
+- После создания `learning_audience` курса immutable. Отзыв capability
+  останавливает дальнейшие educator content mutations, но не меняет Course на
+  детский.
+- Capability даёт право подготовить и отправить educator revision, но не право
+  самостоятельно одобрить её для каталога.
 
-Authenticated read-only проверка подтвердила один educator Course в catalog
-RPC и одну credential с `certified=true` в profile RPC. Следовательно, сообщения
-об отсутствии связи и невозможности выполнить операцию не отражали состояние
-сети или базы: данные и RPC projection были доступны.
+У educator Course авторская вкладка «Аттестация» содержит обязательное
+определение итогового теста: вопросы, варианты, правильные ответы, объяснения и
+проходной балл. Публикация без валидного определения запрещена.
 
-Причиной был более узкий application contract. Deterministic bootstrap создаёт
-publication, revision и snapshot identifiers через `md5(...)::uuid`; это
-допустимые UUID PostgreSQL, но RFC-strict `z.uuid` отклонял их при разборе
-ответа. Application использует единый PostgreSQL UUID contract на основе
-`z.guid` для этих границ и добавляет regression tests для такого формата. В тот
-же hotfix входят очистка masked error state при переключении направления и
-inline-размещение audience toggle в общей toolbar. Release gate прошёл:
-typecheck, lint, format, build, unit `527/527` и strict production-mode browser
-suite `22/22`, включая educator catalog, reload и profile credential.
+Каждая отправленная educator revision получает review state
+`pending | approved | rejected`. Только server-side admin review RPC может
+одобрить или отклонить её; отдельный admin UI пока не реализован. До первого
+approval курс отсутствует в каталоге. После approval каталог и published detail
+читают только `course_publication.approved_revision_id` с official license и
+`is_shidao=true`. Если автор отправил новую revision, прежняя approved revision
+остаётся доступной, пока новая не одобрена.
 
-## Граница безопасности
+В карточке, таблице и заголовке published educator Course одновременно
+показываются бренд `ShiDao` и имя эксперта-автора, а не один из них.
 
-- Владелец Course не считается участником и не получает результат от факта
-  владения или копирования.
-- До успешной отправки browser projection не содержит правильных ответов и
-  объяснений.
-- Attempts и awards закрыты от прямой браузерной записи; выдача происходит
-  вместе со scoring.
-- Отправка содержит ожидаемый revision ID; если Course обновился между
-  загрузкой и проверкой, сервер отклоняет устаревшую форму. На одну revision
-  принимается не более пяти попыток Account за 15 минут.
-- Educator publication можно скопировать в авторский Course только после
-  аттестации по current revision: иначе копия раскрыла бы владельцу answer key.
-  После допуска переносится определение теста, но попытки и awards не
-  копируются. Допуск проверяется до Storage copy и повторно внутри DB clone.
-- Новая publication revision требует повторной аттестации для badge текущей
-  редакции, не удаляя исторический результат из профиля.
+## Published workspace и learner-safe projection
 
-## Current production: первый демонстрационный курс
+Открытие catalog item ведёт на отдельный route
+`/courses/catalog/[publicationId]`. Compatibility-параметр старого inline
+detail перенаправляет туда. Published workspace имеет собственный заголовок,
+ссылку назад в выбранное направление каталога и вкладки:
 
-Отдельный идемпотентный bootstrap завершился `COMMIT` в
-`2026-08-12T03:10:45Z`. Он создал и опубликовал курс «Современный урок
-китайского языка для детей: произношение, иероглифика и формирующее
-оценивание» с шестью Lessons, шестью Components, шестью Slides и итоговым
-тестом из десяти вопросов. Реальная попытка дала `9/10 = 90%` при пороге
-`80%`, `passed=true`, и создала один Account award через обычный scoring RPC.
+1. **Уроки**;
+2. **О курсе**;
+3. **Материалы**;
+4. **Аттестация** — только у educator Course.
 
-Финальный authenticated postflight подтвердил `certified=true`, все `10`
-review keys доступны только после award, а профиль содержит одну credential по
-этому курсу. В production ровно один такой educator Course, одна published
-publication с одним immutable definition, одна attempt и одна award.
+Это content-read-only опыт самостоятельного обучения, а не owner Course
+Builder: Account может сохранять свой progress и попытку, но не менять authored
+Course. Published API строит learner-safe projection из immutable approved
+revision:
 
-Bootstrap требует явные psql vars `publisher_account_id` и
-`attested_account_id`. Значения Account UUID и email не фиксируются в tracked
-files; demonstration product data живут в отдельном bootstrap, а не в schema
-migration.
+- Lesson title и estimated duration доступны;
+- показываются только `learner_visible` Components, назначенные на Student
+  Screen Slides, с сохранением authored order;
+- Lesson `summary`, `staff_only` Components, teacher preferences, roster,
+  groups, LessonRuns, LearningRecords, reports/history и AI consent не выходят
+  в browser;
+- явно включённые в publication course-wide materials открываются через
+  краткоживущие signed URLs; Storage paths и credentials не раскрываются.
+
+Детский catalog Course сохраняет прежнее действие «Добавить в мои курсы» или
+«Открыть мой курс» для владельца source. Educator Course нельзя добавить в
+«Мои», скопировать из каталога или дублировать даже после аттестации. У него нет
+roster, groups/direct learners, scheduling, LessonRun и действий проведения:
+по нему учится только сам Account.
+
+## Persisted progress и допуск к аттестации
+
+Самостоятельное прохождение educator Course хранится на Account и exact
+approved revision:
+
+- `course_publication_self_enrollment` хранит начало и последний открытый
+  Lesson;
+- `course_publication_lesson_completion` хранит завершённые Lessons;
+- `get_my_course_publication_progress(...)` возвращает last opened Lesson,
+  ordered completed refs, completed/total counts, percent и complete;
+- `set_my_course_publication_lesson_progress(...)` атомарно обновляет resume
+  pointer и completion выбранного Lesson с expected revision guard.
+
+Workspace показывает прогресс, позволяет продолжить с последнего открытого
+урока и последовательно сохраняет открытия/отметки, не применяя устаревший
+ответ к другой publication или revision. Progress новой approved revision
+отделён от предыдущей.
+
+Вкладка «Аттестация» видна сразу, но заблокирована до `100%` Lessons. Этот gate
+проверяется не только в UI: и чтение теста, и его отправка server-side требуют
+полного progress той же approved revision. Historical award из E1 migration
+backfill получает revision-scoped enrollment и completions без tracked Account
+UUID/email literals.
+
+## Аттестация и результат
+
+Попытка выполняется только против exact immutable approved revision. Browser
+передаёт выбранные варианты, но score и факт прохождения вычисляет одна
+транзакционная DB-функция по закрытому answer key.
+
+- До успешной аттестации correct answer IDs и explanations не возвращаются.
+- Submit содержит expected revision ID; stale форма отклоняется.
+- На одну revision принимается не более пяти попыток Account за 15 минут.
+- Attempts и awards закрыты от прямой browser table-записи.
+- Успешный result создаёт durable Account award, показывает badge
+  «Аттестован» уже в заголовке курса и добавляет credential во вкладку
+  «Аттестация» учебного профиля.
+- Новая approved revision требует отдельного полного progress и нового award;
+  исторический результат остаётся в профиле и помечается как не относящийся к
+  current revision.
+
+Результат означает внутреннюю аттестацию ShiDao. Он не является
+государственным удостоверением о повышении квалификации.
+
+## Current production database baseline
+
+E1 migration `20260812113000_educator_course_attestations.sql`, initial
+dependent web/API release и product-data bootstrap развёрнуты. Bootstrap создал
+курс «Современный урок китайского языка для детей: произношение, иероглифика и
+формирующее оценивание» с шестью Lessons, шестью Components, шестью Slides и
+десятью вопросами. Реальная DB/RPC попытка дала `9/10 = 90%` при пороге `80%`,
+`passed=true`; profile RPC содержит одну credential. E2 database migration
+добавила trusted-author/review/progress contract; postflight подтвердил одну
+official approved educator publication, derived progress `6/6 = 100%`, одну
+attempt/award, `90%` при threshold `80%` и отсутствие copy origin, roster,
+group assignment и LessonRun. Current snapshot имеет SHA-256
+`6df94ceabbc902b66b4c592998f1770ea62442a68255ddd6133a3b9d75745949`.
+
+UUID parsing hotfix и dependent E2 API/UI входят в следующий web rollout. Эти
+DB-факты не являются доказательством deployment отдельного workspace и toolbar
+в running application.
+
+## Production next
+
+Для завершения dependent application rollout необходимо отдельно:
+
+1. пройти release gates и развернуть exact dependent web release;
+2. подтвердить `SOURCE_COMMIT`, image digest, restart и host/CSRF/API
+   boundaries;
+3. подтвердить authenticated catalog, approved-revision visibility, named
+   expert + ShiDao, persisted resume/progress, `100%` attestation gate, badge и
+   profile credential без copy/duplicate/roster/run действий.
 
 ## Later
 
+- admin UI для выдачи author capability и review educator revisions;
 - лицензированный issuer, юридически значимое удостоверение и проверяемый
   certificate number;
-- enrollment/consumption всей программы курса, progress и deadlines;
 - proctoring, ручная проверка и задания со свободным ответом;
-- policy повторных попыток и срок действия результата.
+- согласованная expiration/retake policy и optional self-study deadlines.

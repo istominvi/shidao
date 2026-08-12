@@ -2,9 +2,11 @@
 
 **Статус:** обязательная политика для всех новых DB changes
 **Текущий production schema head:**
-`20260812113000_educator_course_attestations.sql`
+`20260812150745_educator_course_governance_progress.sql`
 **Текущий repository head:**
-`20260812113000_educator_course_attestations.sql` — совпадает с production
+`20260812150745_educator_course_governance_progress.sql` — совпадает с
+production; E2 применена `2026-08-12T07:34:36Z`, current snapshot снят
+`2026-08-12T07:43:11Z`.
 
 ## 1. Источники истины
 

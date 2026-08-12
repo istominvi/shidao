@@ -760,8 +760,8 @@ test("browser cannot bypass archive or move Lessons through direct table ACL", (
   assert.equal(snapshotWorkflow.match(/attribute\.attname <> all/g)?.length, 2);
   assert.equal(
     snapshotWorkflow.match(/procedure\.proconfig is null/g)?.length,
-    4,
-    "snapshot workflow must retain the two A1 and two E1 function-mode checks",
+    7,
+    "snapshot workflow must retain the two A1, two E1, and three E2 function-mode checks",
   );
   assert.match(
     snapshotWorkflow,

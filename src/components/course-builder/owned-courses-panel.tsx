@@ -155,7 +155,10 @@ function CourseCard({
       description={`${course.subject} · ${course.level}`}
       actions={
         <div className="flex items-center gap-2">
-          <CoursePublicationBadges publication={course.publication} />
+          <CoursePublicationBadges
+            publication={course.publication}
+            learningAudience={course.learningAudience}
+          />
           <CourseActions course={course} onChanged={onChanged} />
         </div>
       }

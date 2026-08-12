@@ -7,8 +7,57 @@ const ACCOUNT_ID = "00000000-0000-4000-8000-000000000101";
 const COURSE_ID = "00000000-0000-4000-8000-000000000201";
 const PUBLICATION_ID = "00000000-0000-4000-8000-000000000301";
 const REVISION_ID = "00000000-0000-4000-8000-000000000401";
+const APPROVED_REVISION_ID = "00000000-0000-4000-8000-000000000402";
+const OTHER_PUBLICATION_ID = "00000000-0000-4000-8000-000000000302";
 const POSTGRES_GUID_PUBLICATION_ID = "cdcccb90-aab2-302e-3736-fdf6fedd59ba";
 const POSTGRES_GUID_COURSE_ID = "eb697b66-8655-6939-3d2c-cdf193935004";
+
+function educatorCatalogPublication(overrides: Record<string, unknown> = {}) {
+  return {
+    id: PUBLICATION_ID,
+    source_course_id: COURSE_ID,
+    owner_account_id: ACCOUNT_ID,
+    learning_audience: "educators",
+    publisher_display_name: "Автор курса",
+    is_shidao: true,
+    status: "published",
+    current_revision_id: REVISION_ID,
+    approved_revision_id: APPROVED_REVISION_ID,
+    source_content_updated_at: "2026-08-12T00:00:00.000Z",
+    published_at: "2026-08-13T00:00:00.000Z",
+    unpublished_at: null,
+    created_at: "2026-08-12T00:00:00.000Z",
+    updated_at: "2026-08-12T00:00:00.000Z",
+    ...overrides,
+  };
+}
+
+function educatorCatalogRevision(overrides: Record<string, unknown> = {}) {
+  return {
+    id: APPROVED_REVISION_ID,
+    publication_id: PUBLICATION_ID,
+    revision_number: 1,
+    source_course_updated_at: "2026-08-12T00:00:00.000Z",
+    content_sha256: "a".repeat(64),
+    snapshot: {
+      schemaVersion: 1,
+      course: {
+        title: "Методика преподавания китайского языка",
+        subject: "Китайский язык",
+        goal: "Проектировать современный урок",
+        level: "Повышение квалификации",
+        audienceDescription: "Преподаватели китайского языка",
+        targetLessonCount: 1,
+      },
+      lessons: [],
+      materials: [],
+    },
+    rights_confirmed_at: "2026-08-12T00:00:00.000Z",
+    license_code: "shidao_official_learning_v1",
+    published_at: "2026-08-12T00:00:00.000Z",
+    ...overrides,
+  };
+}
 
 async function withRepository(
   fetcher: typeof fetch,
@@ -198,6 +247,317 @@ test("catalog detail fails closed before revision/assets for an inactive publish
   );
 });
 
+test("educator catalog detail reads only the approved ShiDao revision", async () => {
+  const requestUrls: string[] = [];
+  await withRepository(
+    (async (input) => {
+      const url = String(input);
+      requestUrls.push(url);
+      if (url.includes("/rest/v1/course_publication?")) {
+        return Response.json([educatorCatalogPublication()]);
+      }
+      if (url.includes("/rest/v1/account?")) {
+        return new Response(JSON.stringify([{ id: ACCOUNT_ID }]), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+      if (url.includes("/rest/v1/course_publication_revision?")) {
+        return Response.json([educatorCatalogRevision()]);
+      }
+      if (url.includes("/rest/v1/educator_course_revision_review?")) {
+        return Response.json([
+          {
+            revision_id: APPROVED_REVISION_ID,
+            publication_id: PUBLICATION_ID,
+            status: "approved",
+          },
+        ]);
+      }
+      if (url.includes("/rest/v1/course_publication_attestation?")) {
+        return Response.json([
+          {
+            revision_id: APPROVED_REVISION_ID,
+            publication_id: PUBLICATION_ID,
+          },
+        ]);
+      }
+      if (url.includes("/rest/v1/course_publication_asset?")) {
+        return new Response("[]", {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+      throw new Error(`unexpected request: ${url}`);
+    }) as typeof fetch,
+    async (repository) => {
+      const detail = await repository.getCatalogPublication(PUBLICATION_ID);
+      assert.equal(detail?.revisionId, APPROVED_REVISION_ID);
+      assert.equal(detail?.publishedAt, "2026-08-12T00:00:00.000Z");
+    },
+  );
+  const revisionRequest = requestUrls.find((url) =>
+    url.includes("/rest/v1/course_publication_revision?"),
+  );
+  const assetRequest = requestUrls.find((url) =>
+    url.includes("/rest/v1/course_publication_asset?"),
+  );
+  const reviewRequest = requestUrls.find((url) =>
+    url.includes("/rest/v1/educator_course_revision_review?"),
+  );
+  const attestationRequest = requestUrls.find((url) =>
+    url.includes("/rest/v1/course_publication_attestation?"),
+  );
+  assert.match(revisionRequest ?? "", new RegExp(APPROVED_REVISION_ID));
+  assert.doesNotMatch(revisionRequest ?? "", new RegExp(REVISION_ID));
+  assert.match(
+    reviewRequest ?? "",
+    new RegExp(
+      `revision_id=eq\\.${APPROVED_REVISION_ID}.*publication_id=eq\\.${PUBLICATION_ID}.*status=eq\\.approved`,
+    ),
+  );
+  assert.match(
+    attestationRequest ?? "",
+    new RegExp(
+      `revision_id=eq\\.${APPROVED_REVISION_ID}.*publication_id=eq\\.${PUBLICATION_ID}`,
+    ),
+  );
+  assert.match(assetRequest ?? "", new RegExp(APPROVED_REVISION_ID));
+});
+
+test("educator detail fails closed without approval or ShiDao status", async () => {
+  for (const publication of [
+    { is_shidao: true, approved_revision_id: null },
+    { is_shidao: false, approved_revision_id: REVISION_ID },
+  ]) {
+    const requestUrls: string[] = [];
+    await withRepository(
+      (async (input) => {
+        const url = String(input);
+        requestUrls.push(url);
+        if (url.includes("/rest/v1/course_publication?")) {
+          return new Response(
+            JSON.stringify([
+              {
+                id: PUBLICATION_ID,
+                owner_account_id: ACCOUNT_ID,
+                learning_audience: "educators",
+                status: "published",
+                current_revision_id: REVISION_ID,
+                ...publication,
+              },
+            ]),
+            { status: 200, headers: { "Content-Type": "application/json" } },
+          );
+        }
+        if (url.includes("/rest/v1/account?")) {
+          return new Response(JSON.stringify([{ id: ACCOUNT_ID }]), {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          });
+        }
+        throw new Error(`unexpected request: ${url}`);
+      }) as typeof fetch,
+      async (repository) => {
+        assert.equal(
+          await repository.getCatalogPublication(PUBLICATION_ID),
+          null,
+        );
+      },
+    );
+    assert.equal(
+      requestUrls.some((url) =>
+        /course_publication_(?:revision|asset)/.test(url),
+      ),
+      false,
+    );
+  }
+});
+
+test("educator detail fails closed when approved offering eligibility drifts", async () => {
+  const approvedReview = {
+    revision_id: APPROVED_REVISION_ID,
+    publication_id: PUBLICATION_ID,
+    status: "approved",
+  };
+  const persistedAttestation = {
+    revision_id: APPROVED_REVISION_ID,
+    publication_id: PUBLICATION_ID,
+  };
+  const cases: Array<{
+    name: string;
+    revisionRows: unknown[];
+    reviewRows: unknown[];
+    attestationRows: unknown[];
+  }> = [
+    {
+      name: "missing approved revision",
+      revisionRows: [],
+      reviewRows: [approvedReview],
+      attestationRows: [persistedAttestation],
+    },
+    {
+      name: "mismatched revision id",
+      revisionRows: [educatorCatalogRevision({ id: REVISION_ID })],
+      reviewRows: [approvedReview],
+      attestationRows: [persistedAttestation],
+    },
+    {
+      name: "mismatched revision publication",
+      revisionRows: [
+        educatorCatalogRevision({ publication_id: OTHER_PUBLICATION_ID }),
+      ],
+      reviewRows: [approvedReview],
+      attestationRows: [persistedAttestation],
+    },
+    {
+      name: "non-official license",
+      revisionRows: [
+        educatorCatalogRevision({ license_code: "shidao_catalog_reuse_v1" }),
+      ],
+      reviewRows: [approvedReview],
+      attestationRows: [persistedAttestation],
+    },
+    {
+      name: "missing approved review",
+      revisionRows: [educatorCatalogRevision()],
+      reviewRows: [],
+      attestationRows: [persistedAttestation],
+    },
+    {
+      name: "review not approved",
+      revisionRows: [educatorCatalogRevision()],
+      reviewRows: [{ ...approvedReview, status: "pending" }],
+      attestationRows: [persistedAttestation],
+    },
+    {
+      name: "mismatched review revision",
+      revisionRows: [educatorCatalogRevision()],
+      reviewRows: [{ ...approvedReview, revision_id: REVISION_ID }],
+      attestationRows: [persistedAttestation],
+    },
+    {
+      name: "mismatched review publication",
+      revisionRows: [educatorCatalogRevision()],
+      reviewRows: [{ ...approvedReview, publication_id: OTHER_PUBLICATION_ID }],
+      attestationRows: [persistedAttestation],
+    },
+    {
+      name: "missing persisted attestation",
+      revisionRows: [educatorCatalogRevision()],
+      reviewRows: [approvedReview],
+      attestationRows: [],
+    },
+    {
+      name: "mismatched attestation revision",
+      revisionRows: [educatorCatalogRevision()],
+      reviewRows: [approvedReview],
+      attestationRows: [{ ...persistedAttestation, revision_id: REVISION_ID }],
+    },
+    {
+      name: "mismatched attestation publication",
+      revisionRows: [educatorCatalogRevision()],
+      reviewRows: [approvedReview],
+      attestationRows: [
+        {
+          ...persistedAttestation,
+          publication_id: OTHER_PUBLICATION_ID,
+        },
+      ],
+    },
+  ];
+
+  for (const scenario of cases) {
+    const requestUrls: string[] = [];
+    await withRepository(
+      (async (input) => {
+        const url = String(input);
+        requestUrls.push(url);
+        if (url.includes("/rest/v1/course_publication?")) {
+          return Response.json([educatorCatalogPublication()]);
+        }
+        if (url.includes("/rest/v1/account?")) {
+          return Response.json([{ id: ACCOUNT_ID }]);
+        }
+        if (url.includes("/rest/v1/course_publication_revision?")) {
+          return Response.json(scenario.revisionRows);
+        }
+        if (url.includes("/rest/v1/educator_course_revision_review?")) {
+          return Response.json(scenario.reviewRows);
+        }
+        if (url.includes("/rest/v1/course_publication_attestation?")) {
+          return Response.json(scenario.attestationRows);
+        }
+        if (url.includes("/rest/v1/course_publication_asset?")) {
+          return Response.json([]);
+        }
+        throw new Error(`unexpected request: ${url}`);
+      }) as typeof fetch,
+      async (repository) => {
+        assert.equal(
+          await repository.getCatalogPublication(PUBLICATION_ID),
+          null,
+          scenario.name,
+        );
+      },
+    );
+    assert.equal(
+      requestUrls.some((url) =>
+        url.includes("/rest/v1/course_publication_asset?"),
+      ),
+      false,
+      `${scenario.name}: assets must stay hidden`,
+    );
+  }
+});
+
+test("child catalog detail keeps the current-revision path without educator gates", async () => {
+  const requestUrls: string[] = [];
+  await withRepository(
+    (async (input) => {
+      const url = String(input);
+      requestUrls.push(url);
+      if (url.includes("/rest/v1/course_publication?")) {
+        return Response.json([
+          educatorCatalogPublication({
+            learning_audience: "children",
+            is_shidao: false,
+            approved_revision_id: null,
+          }),
+        ]);
+      }
+      if (url.includes("/rest/v1/account?")) {
+        return Response.json([{ id: ACCOUNT_ID }]);
+      }
+      if (url.includes("/rest/v1/course_publication_revision?")) {
+        return Response.json([
+          educatorCatalogRevision({
+            id: REVISION_ID,
+            license_code: "shidao_catalog_reuse_v1",
+          }),
+        ]);
+      }
+      if (url.includes("/rest/v1/course_publication_asset?")) {
+        return Response.json([]);
+      }
+      throw new Error(`unexpected request: ${url}`);
+    }) as typeof fetch,
+    async (repository) => {
+      const detail = await repository.getCatalogPublication(PUBLICATION_ID);
+      assert.equal(detail?.learningAudience, "children");
+      assert.equal(detail?.revisionId, REVISION_ID);
+    },
+  );
+  assert.equal(
+    requestUrls.some((url) =>
+      /educator_course_revision_review|course_publication_attestation/.test(
+        url,
+      ),
+    ),
+    false,
+  );
+});
+
 test("catalog listing uses the compact filtered RPC contract", async () => {
   let requestUrl = "";
   let requestBody: unknown;
@@ -244,6 +604,81 @@ test("catalog listing uses the compact filtered RPC contract", async () => {
     p_offset: 24,
     p_limit: 50,
   });
+});
+
+test("owned educator publication persists review and approval projection", async () => {
+  const requestUrls: string[] = [];
+  await withRepository(
+    (async (input) => {
+      const url = String(input);
+      requestUrls.push(url);
+      if (url.includes("/rest/v1/course_publication?")) {
+        return Response.json([
+          {
+            id: PUBLICATION_ID,
+            source_course_id: COURSE_ID,
+            owner_account_id: ACCOUNT_ID,
+            learning_audience: "educators",
+            publisher_display_name: "Автор",
+            is_shidao: true,
+            status: "published",
+            current_revision_id: REVISION_ID,
+            approved_revision_id: null,
+            source_content_updated_at: "2026-08-12T00:00:00.000Z",
+            published_at: null,
+            unpublished_at: null,
+            created_at: "2026-08-12T00:00:00.000Z",
+            updated_at: "2026-08-12T00:00:00.000Z",
+          },
+        ]);
+      }
+      if (url.includes("/rest/v1/course_publication_revision?")) {
+        return Response.json([
+          {
+            id: REVISION_ID,
+            publication_id: PUBLICATION_ID,
+            revision_number: 1,
+            source_course_updated_at: "2026-08-12T00:00:00.000Z",
+            content_sha256: "a".repeat(64),
+            snapshot: {
+              schemaVersion: 1,
+              course: {},
+              lessons: [],
+              materials: [],
+            },
+            rights_confirmed_at: "2026-08-12T00:00:00.000Z",
+            license_code: "SHIDAO-CATALOG",
+            published_at: "2026-08-12T00:00:00.000Z",
+          },
+        ]);
+      }
+      if (url.includes("/rest/v1/educator_course_revision_review?")) {
+        return Response.json([
+          {
+            revision_id: REVISION_ID,
+            publication_id: PUBLICATION_ID,
+            status: "pending",
+          },
+        ]);
+      }
+      throw new Error(`unexpected request: ${url}`);
+    }) as typeof fetch,
+    async (repository) => {
+      const publication = await repository.getOwnedPublication(
+        ACCOUNT_ID,
+        COURSE_ID,
+      );
+      assert.equal(publication?.reviewStatus, "pending");
+      assert.equal(publication?.reviewRevisionId, REVISION_ID);
+      assert.equal(publication?.approvedRevisionId, null);
+    },
+  );
+  assert.equal(
+    requestUrls.some((url) =>
+      url.includes("/rest/v1/educator_course_revision_review?"),
+    ),
+    true,
+  );
 });
 
 test("catalog accepts canonical PostgreSQL UUID values without RFC version bits", async () => {
@@ -391,12 +826,15 @@ test("publish uses the attestation-aware RPC contract", async () => {
           sourceCourseUpdatedAt: "2026-08-12T00:00:00.000Z",
           sourceContentUpdatedAt: "2026-08-12T00:00:00.000Z",
           contentSha256,
+          reviewStatus: "pending",
+          reviewRevisionId: REVISION_ID,
+          approvedRevisionId: null,
         }),
         { status: 200, headers: { "Content-Type": "application/json" } },
       );
     }) as typeof fetch,
     async (repository) => {
-      await repository.publishCourseRevision({
+      const result = await repository.publishCourseRevision({
         actorAccountId: ACCOUNT_ID,
         sourceCourseId: COURSE_ID,
         publicationId: PUBLICATION_ID,
@@ -408,6 +846,9 @@ test("publish uses the attestation-aware RPC contract", async () => {
         assetManifest: [],
         rightsConfirmed: true,
       });
+      assert.equal(result.reviewStatus, "pending");
+      assert.equal(result.reviewRevisionId, REVISION_ID);
+      assert.equal(result.approvedRevisionId, null);
     },
   );
 

@@ -19,6 +19,7 @@ export const systemAssistantPageViewSchema = z.enum([
   "course_about",
   "course_materials",
   "course_history",
+  "course_attestation",
   "lesson_plan",
   "lesson_student",
   "lesson_homework",

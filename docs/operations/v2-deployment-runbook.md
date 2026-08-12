@@ -167,6 +167,62 @@ Production product-data execution:
 При будущем неуспехе web rollback не переписывает применённую migration:
 использовать совместимый image rollback или новую forward migration.
 
+### E2 educator governance / self-learning — database current, dependent web next
+
+Forward migration
+`20260812150745_educator_course_governance_progress.sql` применена к production
+ShiDao DB с `COMMIT` в `2026-08-12T07:34:36Z`. SHA-256 exact migration:
+`ccd0ac3a40df305bb43c095733663ca03ff854ae6ffc1cca9e59fd3485ea2c26`.
+Dependent E2 web/API source ещё не развёрнут; application release остаётся на
+предыдущем recorded SHA.
+
+Production DB execution evidence, 12 августа 2026 года:
+
+1. Project-local read-only sanity подтвердил canonical ShiDao
+   Account/Course/Lesson/publication objects и applied E1 head.
+2. До записи создан full-format backup
+   `/root/shidao-db-backups/shidao-before-educator-governance-20260812T071511Z.dump`:
+   `1 259 425` bytes, mode `600`, `1541` restore-list entries, SHA-256
+   `cf8e68638f79c631c714ebed43a17a58ceedb508faa96d4de62a8f414a5a3f98`.
+3. Первый rollback-only probe безопасно обнаружил conflict legacy license
+   backfill с immutable revision trigger; транзакция полностью откатилась, а
+   прежние counts и reuse license сохранились. Исправленный probe v2 прошёл и
+   снова сохранил исходные counts/license до production `COMMIT`.
+4. Postflight подтвердил `19` Account, `6` Course, одну publication, одну
+   revision, одну attempt и один award. Educator publication является official,
+   имеет approved revision и одна строка видна в educator catalog.
+5. Historical awarded Account получил derived progress `6/6 = 100%` по exact
+   approved revision. Аттестация сохранила `90%` при threshold `80%`.
+6. Origin/copy, roster, group assignment и LessonRun для educator publication
+   отсутствуют. RLS, closed ACL, capability/review/license triggers и
+   authenticated progress/attestation RPC прошли postflight.
+7. Read-only current-schema refresh завершён в `2026-08-12T07:43:11Z`; SHA-256
+   snapshot
+   `6df94ceabbc902b66b4c592998f1770ea62442a68255ddd6133a3b9d75745949`, все
+   `71` schema-contract tests прошли.
+
+Dependent web rollout остаётся **next**:
+
+1. Прогнать typecheck, lint, Prettier check, production build, полный unit suite
+   и strict production-mode browser suite на exact source.
+2. Развернуть exact dependent web release и подтвердить `SOURCE_COMMIT`, image
+   digest, restart count, HTTPS/guest/host/CSRF/API boundaries.
+3. Authenticated production postflight должен проверить audience toggle только
+   в toolbar списка, отдельный `/courses/catalog/[publicationId]` workspace,
+   learner-safe Lessons/Materials, одновременно `ShiDao` и имя эксперта,
+   persisted last-opened/completion после reload, `100%` unlock, badge
+   «Аттестован» и profile credential. Ни header, ни меню, ни API не должны
+   предлагать educator add/copy/duplicate/roster/run actions; детский copy flow
+   должен остаться рабочим.
+4. После web/authenticated postflight записать exact release SHA и image
+   evidence. До этого только E2 database contract, а не полный application
+   slice, называется current production.
+
+При неуспехе dependent web после committed migration не переписывать migration
+и не восстанавливать старую E1-схему поверх новых progress данных. Использовать
+только заранее проверенный совместимый image rollback либо новую forward
+migration.
+
 ### Course Component contract cleanup
 
 Для exact migration

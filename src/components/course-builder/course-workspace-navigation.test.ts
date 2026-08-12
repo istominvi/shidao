@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   COURSE_WORKSPACE_TABS,
+  EDUCATOR_COURSE_WORKSPACE_TABS,
   LESSON_WORKSPACE_TABS,
   createCourseWorkspaceNavigation,
   formatLessonWorkspaceTitle,
@@ -14,6 +15,10 @@ test("course and lesson tabs follow the product hierarchy", () => {
   assert.deepEqual(
     COURSE_WORKSPACE_TABS.map((item) => item.label),
     ["Уроки", "О курсе", "Материалы", "История"],
+  );
+  assert.deepEqual(
+    EDUCATOR_COURSE_WORKSPACE_TABS.map((item) => item.label),
+    ["Уроки", "О курсе", "Материалы", "Аттестация"],
   );
   assert.deepEqual(
     LESSON_WORKSPACE_TABS.map((item) => item.label),

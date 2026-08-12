@@ -11,6 +11,9 @@ const coursesIndex = source("src/components/course-builder/courses-index.tsx");
 const catalog = source(
   "src/components/course-builder/course-catalog-panel.tsx",
 );
+const publishedCourse = source(
+  "src/components/course-builder/published-course-workspace.tsx",
+);
 const newCourse = source("src/components/course-builder/new-course-form.tsx");
 const courseWorkspace = source(
   "src/components/course-builder/course-workspace.tsx",
@@ -23,7 +26,7 @@ test("catalog learning audience is shareable, server-filtered, and resets list s
     /initialLearningAudience=\{initialLearningAudience\}/,
   );
   assert.match(coursesIndex, /query\.set\("audience", "educators"\)/);
-  assert.match(coursesIndex, /setSelectedCatalogCourseId\(null\)/);
+  assert.doesNotMatch(coursesIndex, /setSelectedCatalogCourseId/);
   assert.match(coursesIndex, /onLearningAudienceChange=/);
 
   assert.match(catalog, /ariaLabel="Направление обучения"/);
@@ -33,6 +36,12 @@ test("catalog learning audience is shareable, server-filtered, and resets list s
     catalog,
     /className="compact-page-toolbar course-catalog-toolbar"[\s\S]*?className="course-catalog-toolbar-main"[\s\S]*?\{learningAudienceControl\}[\s\S]*?className="compact-toolbar-search product-search-wrap"[\s\S]*?className="compact-toolbar-rail"/,
   );
+  assert.equal(
+    catalog.match(/\{learningAudienceControl\}/g)?.length,
+    1,
+    "the audience switch belongs to the catalog toolbar only",
+  );
+  assert.doesNotMatch(publishedCourse, /CatalogLearningAudienceControl/);
   assert.match(catalog, /params\.set\("learningAudience", learningAudience\)/);
   assert.match(
     catalog,
@@ -40,7 +49,7 @@ test("catalog learning audience is shareable, server-filtered, and resets list s
   );
 });
 
-test("new and existing course forms persist the learning audience", () => {
+test("only authorized creators choose educator audience and persisted audience is immutable", () => {
   assert.match(
     newCourse,
     /learningAudience: String\(formData\.get\("learningAudience"\)/,
@@ -50,43 +59,74 @@ test("new and existing course forms persist the learning audience", () => {
   assert.match(newCourse, /ariaLabel="Направление обучения"/);
   assert.match(newCourse, /label: "Обучение детей"/);
   assert.match(newCourse, /label: "Обучение педагогов"/);
+  assert.match(newCourse, /canAuthorEducatorCourses \? \(/);
+  assert.match(
+    newCourse,
+    /value=\{canAuthorEducatorCourses \? learningAudience : "children"\}/,
+  );
 
   assert.match(courseWorkspace, /course\.learningAudience/);
-  assert.match(
+  assert.doesNotMatch(
     courseWorkspace,
     /jsonRequest\([\s\S]*?"PATCH"[\s\S]*?learningAudience,/,
   );
-  assert.match(courseWorkspace, /ariaLabel="Направление обучения"/);
-  assert.match(courseWorkspace, /label: "Обучение детей"/);
-  assert.match(courseWorkspace, /label: "Обучение педагогов"/);
+  assert.doesNotMatch(courseWorkspace, /ariaLabel="Направление обучения"/);
 });
 
-test("educator catalog detail uses server-backed attestation and locks passed review", () => {
+test("educator published workspace tracks lessons and gates server-backed attestation", () => {
   assert.match(
     catalog,
     /import type \{ CourseAttestationState \} from "@\/modules\/course-attestations\/domain"/,
   );
-  assert.match(catalog, /course\.learningAudience === "educators"/);
-  assert.match(catalog, /value: "overview", label: "О курсе"/);
-  assert.match(catalog, /value: "attestation", label: "Аттестация"/);
-  assert.match(catalog, /ariaLabel="Разделы курса для педагогов"/);
+  assert.match(publishedCourse, /course\.learningAudience === "educators"/);
+  assert.match(publishedCourse, /value: "lessons", label: "Уроки"/);
+  assert.match(publishedCourse, /value: "about", label: "О курсе"/);
+  assert.match(publishedCourse, /value: "attestation", label: "Аттестация"/);
+  assert.match(publishedCourse, /ariaLabel="Разделы опубликованного курса"/);
   assert.match(
-    catalog,
-    /\/api\/v2\/course-catalog\/\$\{encodeURIComponent\(courseId\)\}\/attestation/,
+    publishedCourse,
+    /\/api\/v2\/course-catalog\/\$\{encodeURIComponent\(publicationId\)\}\/progress/,
   );
-  assert.match(catalog, /method: "POST"/);
   assert.match(
-    catalog,
-    /body: JSON\.stringify\(\{[\s\S]*?expectedRevisionId,[\s\S]*?selectedOptionByQuestionId,[\s\S]*?\}\)/,
+    publishedCourse,
+    /method: "PUT"[\s\S]*?expectedRevisionId: revisionId[\s\S]*?lessonRef,[\s\S]*?completed/,
   );
-  assert.match(catalog, /<Chip icon=\{BadgeCheck\} tone="emerald">/);
-  assert.match(catalog, />\s*Аттестован\s*</);
+  assert.match(publishedCourse, /createPublishedCourseProgressQueue/);
+  assert.match(
+    publishedCourse,
+    /progressQueue\.enqueue\(\{[\s\S]*?kind: "open",[\s\S]*?lessonRef: lesson\.id/,
+  );
+  assert.match(
+    publishedCourse,
+    /progressQueue\.activate\(null\)[\s\S]*?setActiveSurface\("lessons"\)/,
+  );
+  assert.match(
+    publishedCourse,
+    /<h2 ref=\{lessonHeadingRef\} tabIndex=\{-1\}>/,
+  );
+  assert.match(
+    publishedCourse,
+    /aria-pressed=\{completedRefs\.has\(selectedLesson\.id\)\}/,
+  );
+  assert.match(publishedCourse, /Снять отметку о прохождении урока/);
+  assert.match(publishedCourse, /!progress\?\.complete/);
+  assert.match(publishedCourse, /Аттестация откроется после курса/);
+  assert.match(
+    publishedCourse,
+    /course\?\.learningAudience !== "educators" \|\|[\s\S]*?!progress\?\.complete/,
+  );
+  assert.match(publishedCourse, /<Chip icon=\{BadgeCheck\} tone="emerald">/);
+  assert.match(publishedCourse, />\s*Аттестован\s*</);
+  assert.match(publishedCourse, /course\.author\.isShiDao \? \(/);
+  assert.match(publishedCourse, /Автор: \{course\.author\.displayName\}/);
+  assert.match(publishedCourse, /resumeLesson/);
+  assert.match(publishedCourse, />\s*Продолжить\s*</);
   assert.match(catalog, /attestation\.certified && attestation\.attempt/);
   assert.match(catalog, /Правильный ответ/);
   assert.match(catalog, /question\.explanation/);
   assert.match(catalog, /type="radio"/);
   assert.match(
-    catalog,
-    /educatorCourse && !attestation\?\.certified[\s\S]*?Сначала пройдите аттестацию[\s\S]*?setActiveTab\("attestation"\)[\s\S]*?Перейти к аттестации/,
+    publishedCourse,
+    /method: "POST"[\s\S]*?expectedRevisionId,[\s\S]*?selectedOptionByQuestionId/,
   );
 });
