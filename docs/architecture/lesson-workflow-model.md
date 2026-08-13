@@ -316,7 +316,14 @@ plain-text `title`, Markdown `content` или оба поля, но не payload
 сливаются только при одинаковых visibility, `student_slide_id` и placement,
 чтобы приватное содержимое не пересекало learner projection. Immutable
 publication revisions остаются точными историческими snapshots. Physical DB
-schema не меняется.
+schema не меняется. Current production data postflight: `17` authored headings
+преобразованы, `11` safe adjacent pairs объединены, итог — `85` Components,
+`heading=0`, `rich_text=44` (`11` combined / `6` title-only / `27` body-only),
+invalid shapes, empty Slides и density violations равны `0`. Immutable
+publication revision и её content hash не изменились. Coupled rollout соблюдал
+web-first порядок: exact compatible source
+`dea92ca2c9af99fd5738e95fa9ca511aa10ca3da` был развёрнут до verified backup и
+DB apply; старый image больше не является допустимым rollback target.
 
 Current production Store demo не меняет registry или Lesson schema. Пока
 преподаватель может использовать обычный `external_link` с абсолютным HTTPS URL
@@ -343,7 +350,7 @@ category tabs находятся вне scroll container, а список Compon
 задаётся `aria-pressed`; отдельные heading/description с тем же названием не
 дублируются.
 
-Current source дополняет каждую из 19 вручную создаваемых palette cards коротким
+Current production дополняет каждую из 19 вручную создаваемых palette cards коротким
 назначением и representative статическим mini-preview. Preview является только
 неинтерактивной presentation-подсказкой: он не сохраняется в payload, не
 использует production teacher/learner renderer и не создаёт второй Component
@@ -376,7 +383,7 @@ Authored Component card использует 12 px element radius, белый ф
 чёрную тень `0 3px 6px #0000000d`; на hover/focus тень сохраняет offset `3px`,
 но плавно становится `0 3px 12px #0000001a`, не двигая layout, а при
 reduced-motion transition отключается. Фильтрация не меняет canonical
-`position` и не создаёт второй порядок. В current source карточка содержит
+`position` и не создаёт второй порядок. В current production карточка содержит
 только production teacher renderer; номер/type остаются доступным именем, но не
 образуют отдельный
 видимый normal-flow header. Группа 32 px действий располагается в overlay,
@@ -586,7 +593,7 @@ Visual contract Course routes не меняет эту навигационну�
   `.88rem/400`; primary flat без inset-блика, подъёма или тени, иконки имеют
   единый 16 px rhythm, полную непрозрачность и наследуют контрастный цвет,
   белые кнопки сохраняют тонкую серую рамку, а menu items остаются borderless;
-- в current source все product buttons внутри `AppPageHeader` уточняют этот
+- в current production все product buttons внутри `AppPageHeader` уточняют этот
   контракт для будущих page backgrounds: белый surface остаётся высотой
   `40 px`, получает border `0` и общий двухслойный
   `--product-raised-control-shadow`, совпадающий с selected-состоянием
@@ -597,7 +604,7 @@ Visual contract Course routes не меняет эту навигационну�
   применяется к непосредственным action-кнопкам и вложенному menu trigger, но
   не затрагивает buttons открываемого из header dialog, menu items или controls
   вне header actions. Сам пользовательский выбор фона Course этим UI-only
-  source slice не реализован;
+  slice не реализован;
 - в current production общий contextual `ActionMenu`, открываемый
   `MoreHorizontal`/`MoreVertical` в Course actions, Lesson rows, Schedule и
   Students, использует токенизированные белый surface, element-radius 12 px и
@@ -606,7 +613,7 @@ Visual contract Course routes не меняет эту навигационну�
   состав/порядок действий, 40 px item geometry, destructive/disabled states,
   portal positioning, keyboard navigation и focus restore сохраняются.
   Filter/calendar popovers, Account menu и native `select` остаются отдельными
-  компонентами; этот source slice не меняет API/schema/migrations;
+  компонентами; этот UI slice не меняет API/schema/migrations;
 - radius tokens отделяют card surface 20 px от element/control/table/menu
   surface 12 px. Активные `ProductTable` wrappers используют table token,
   сплошной белый фон и не имеют внешней рамки. Students и обе Courses tables
@@ -629,7 +636,7 @@ Visual contract Course routes не меняет эту навигационну�
   Student Slides;
 - `WorkspaceTabs` задаёт общий 40 px tab/tabpanel contract для Course, Lesson,
   Students и profile dialog: roving keyboard focus, horizontal scroll, базовая
-  линия 1.5 px и inactive label используют общий
+  линия 1.2 px и inactive label используют общий
   `rgba(20, 20, 20, 0.5)` token; container, scroll-row и baseline канонически
   занимают всю ширину с `inline-inset: 0`. Между tab-кнопками gap 12 px, верхние
   углы имеют control-radius 12 px, а baseline рисуется отдельным слоем поверх
@@ -651,18 +658,19 @@ rollout PR #242 exact commit
 этим visual refinement не меняются; отдельный Course soft-archive endpoint
 описан выше.
 
-Tabs refinement, описанный выше, является current production после rollout
-exact source `0c8946f95ebeb31e02955a110fc057f761f07ea9`: общий 50%-black token,
+Предыдущий deployed tabs refinement exact source
+`0c8946f95ebeb31e02955a110fc057f761f07ea9` ввёл общий 50%-black token,
 baseline 1.5 px, gap и верхние радиусы 12 px, 16 px icons и только положительные
 counts в `sup`. Physical schema и API этим rollout не менялись.
 
-Current source follow-up уменьшает production baseline `1.5 px` до визуальных
+Current production follow-up уменьшает прежний baseline `1.5 px` до визуальных
 `1.2 px` и устраняет зависимость от растеризации дробной высоты Chromium:
 отдельный paint-layer имеет высоту `3 px`, `scaleY(0.4)` и transform-origin на
 нижней грани. Поэтому линия остаётся привязана к низу tab row и не влияет на 40 px
 layout; active segment 4 px по-прежнему перекрывает её через более высокий
 z-index. Это общий `WorkspaceTabs` UI-only contract без route-specific forks,
-API, schema или migration; production rollout остаётся next.
+API, schema или migration; он развёрнут exact source
+`dea92ca2c9af99fd5738e95fa9ca511aa10ca3da`.
 
 ## Roleless teaching hub navigation boundary
 

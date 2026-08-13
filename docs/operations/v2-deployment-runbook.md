@@ -234,7 +234,7 @@ Superseded deployed source follow-up:
 - release gate exact source прошёл `560/560` unit/API и `22/22` strict
   production-mode browser scenarios.
 
-Current application rollout, 12 августа 2026 года:
+Superseded application rollout evidence, 12 августа 2026 года:
 
 - Store release `6135c07` добавил protected `/store`, четвёртый primary nav
   item и client-state cart/checkout без commerce API/schema/migration;
@@ -263,55 +263,64 @@ production.
 только заранее проверенный совместимый image rollback либо новую forward
 migration.
 
-### Unified Text authored-data migration — current source, rollout pending
+### Unified Text authored-data migration — production execution record
 
 Exact tracked migration
 `20260813063716_unify_heading_rich_text_components.sql` является data-only
 cleanup поверх неизменной physical schema. Она переводит каждый authored
 `lesson_component.type_key='heading'` в title-only `rich_text` и объединяет
-только непосредственно следующий body-only `rich_text`, если одновременно
-совпадают visibility, `student_slide_id` и placement. Пары с разной
-teacher/learner видимостью или Slide остаются двумя `rich_text` Components.
-Immutable `course_publication_revision` snapshots не переписываются и
-продолжают читаться legacy runtime renderer.
+только непосредственно следующий body-only `rich_text`, если совпадают
+visibility, `student_slide_id` и placement. Пары с разной teacher/learner
+видимостью или Slide остаются двумя `rich_text` Components. Immutable
+`course_publication_revision` snapshots не переписываются и продолжают
+читаться legacy runtime renderer.
 
-Этот rollout имеет обязательный порядок: старый production image требует
-`rich_text.content` и не умеет читать title-only payload, поэтому применять
-migration до web deployment запрещено.
+Web-first rollout выполнен полностью:
 
-1. Пройти полный release gate и развернуть новый web image, в котором runtime
-   registry читает все 20 keys, `rich_text` принимает title-only/body-only/both,
-   а authored-create set из 19 keys исключает `heading` в picker, REST `POST`,
-   MCP, AI и deterministic assembler.
-2. Подтвердить exact running `SOURCE_COMMIT`, restart count `0`, обычный
-   HTTP/CSRF/Auth postflight и authenticated Course Builder smoke на старых
-   `heading` и body-only `rich_text` до записи в DB.
-3. Через project-local DB connection выполнить read-only ShiDao sanity:
-   canonical tables/triggers, текущий migration head, counts Course/Lesson/
-   Component/Slide, число authored `heading`, число непосредственных
-   `heading → rich_text` и отсутствие нарушений dense positions/empty Slides.
-4. Создать timestamped full-format `pg_dump -Fc`; подтвердить nonzero size,
-   mode `600`, успешный `pg_restore --list` и SHA-256.
-5. Применить exact tracked SQL под owner через
-   `psql -X -v ON_ERROR_STOP=1`; migration управляет собственной transaction,
-   внешний `-1` не добавлять.
-6. Postflight должен показать `heading=0` только в authored
-   `lesson_component`, ожидаемое уменьшение rows ровно на число безопасно
-   объединённых пар, плотные Component positions, ноль пустых Slides и
-   неизменные Course/Lesson counts. Сравнить immutable publication snapshot
-   до/после и подтвердить, что он не изменён.
-7. Проверить reload title-only, body-only и combined `rich_text`, learner
-   projection privacy, edit/PATCH, reorder/delete и новый create через
-   picker/REST/MCP/AI. Старый image после DB apply больше не является допустимым
-   rollback target; при дефекте использовать совместимый forward fix, а
-   восстановление backup — только как отдельный согласованный rollback с
-   остановленной записью.
+- release gate exact source `dea92ca2c9af99fd5738e95fa9ca511aa10ca3da`
+  прошёл typecheck, lint, format, production build, `581/581` unit/API,
+  `23/23` strict production-mode browser scenarios и `72/72`
+  schema/migration subset;
+- Coolify deployment `xivwq5nkaak141mc0tw5ysce` (`id=943`) создан
+  `2026-08-13T06:58:23Z` и завершён `2026-08-13T07:01:09Z`;
+- container `g9x4d9zn60jv35r7zf0xl6xj-065823494924` использует matching
+  image/`SOURCE_COMMIT`, image ID
+  `sha256:f0f07ffd8b18ee5faadff5a1f01d0ea5e663807ec6f83754b16d43b64e18379d`,
+  status running, restart count `0`;
+- production HTTP postflight: V2 `/login` `200`, guest `/courses` `307` в
+  login, landing root `200`, landing `/login` `503`. In-app production session
+  была unauthenticated, поэтому authenticated production browser smoke не
+  заявляется; functional evidence — exact local strict browser suite `23/23`.
 
-На момент описания current source новый web image не развёрнут и migration к
-production не применена. Поскольку physical schema не меняется, generated
-`supabase/schema/current-schema.sql` не обновляется только ради этого data
-cleanup; execution evidence добавляется в database docs после фактического
-postflight.
+DB execution после подтверждения compatible web:
+
+- read-only ShiDao sanity подтвердил `19` Account, `6` Course, `22` Lesson,
+  `96` Components, из них `heading=17`, `rich_text=38`; safe adjacent pairs —
+  `11`, remaining headings — `6`;
+- verified full-format backup
+  `/root/shidao-db-backups/shidao-before-unify-heading-rich-text-20260813T070512Z.dump`
+  имеет size `1324116`, mode `600`, `1610` restore entries и SHA-256
+  `ee169345af886fd97a3060273b03d20f37dec380a82bbc43eb759e8f098ed775`;
+- exact migration SHA-256 —
+  `874251c80e2a82bbf79897cb12755d606f9e1b546a9a3f51951dfaae89c5e1a3`;
+  `psql` зафиксировал `COMMIT`, maximum `updated_at` преобразованных строк —
+  `2026-08-13T07:05:50.169297Z`;
+- postflight: `85` Components, `heading=0`, `rich_text=44`, shapes
+  `combined=11 / title-only=6 / body-only=27 / invalid=0`; `12` Slides,
+  empty Slides `0`, dense-position violations `0`, enabled Component triggers
+  `6`. Exact runtime registry parser принял все `85` PostgREST rows;
+- publication осталась `1` revision, snapshot bytes `9056`, content hash
+  `0c4aa4246c6b5fb0ac4f136c5387496b531ed0988956d45312471feb9268d32e`,
+  `6` snapshot Components, все `rich_text`. Physical schema и generated
+  `supabase/schema/current-schema.sql` не изменились.
+
+Self-hosted contour не содержит relation
+`supabase_migrations.schema_migrations`. Поэтому не заявляется несуществующая
+migration-history row: доказательство применения — exact tracked SQL checksum,
+наблюдаемый `COMMIT` и измеримый read-only postflight.
+Старый image после DB apply не является допустимым rollback target; при дефекте
+нужен совместимый forward fix, а восстановление backup возможно только как
+отдельный согласованный rollback с остановленной записью.
 
 ### Course Component contract cleanup
 
@@ -1054,7 +1063,8 @@ flow как permanent delete.
   чёрного `ShiDao` chip, вертикальный порядок «Аттестован» над author login;
   на Lesson plan — отсутствие внешней surface/повторного заголовка, прозрачный
   search/actions toolbar, content-sized palette cards без category divider и
-  pointer на category/card controls. Для component-authoring source slice
+  pointer на category/card controls. Для current production component-authoring
+  slice
   дополнительно проверить representative preview у 19 вручную создаваемых
   типов: manual picker не содержит `heading`, а «Текст» показывает labels ровно
   «Заголовок» и «Текст» и принимает title-only, body-only или оба поля, но не

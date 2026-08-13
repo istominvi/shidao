@@ -3,16 +3,20 @@
 **Статус:** current production learner-identity M6 + Course publication
 catalog + Course Component D1 + A1 atomic Course archive + E1 educator Course
 и Account attestation + E2 educator governance/self-learning database
-contract. Dependent E2 web/API release также current production.
+contract + U1 unified Text authored data. Dependent web/API release также
+current production.
 
 **Production schema head:**
 `20260812150745_educator_course_governance_progress.sql`.
 Она применена к production 12 августа 2026 года в `2026-08-12T07:34:36Z`.
 
-**Repository migration head:**
-`20260813063716_unify_heading_rich_text_components.sql` — current source
-data-only migration; production apply ещё не выполнен. Она не меняет physical
-schema, поэтому generated snapshot по-прежнему совпадает с production E2 head
+**Production authored-data / repository migration head:**
+exact tracked `20260813063716_unify_heading_rich_text_components.sql` применён
+production; `psql` зафиксировал `COMMIT`, а maximum `updated_at`
+преобразованных строк — `2026-08-13T07:05:50.169297Z`. Self-hosted contour не
+содержит relation `supabase_migrations.schema_migrations`, поэтому history row
+не заявляется. Migration не меняет physical schema, и generated snapshot
+по-прежнему совпадает с production E2 schema head
 `20260812150745_educator_course_governance_progress.sql`.
 
 **Legacy contract migration:**
@@ -60,20 +64,52 @@ snapshot из-за version/encoding/default-ACL drift.
 | A1    | `20260811231505_atomic_course_archive.sql`                             | atomic owner-scoped Course soft archive, reverse publication/Run guards, immutable Lesson parent и narrow Course/Lesson browser ACL            |
 | E1    | `20260812113000_educator_course_attestations.sql`                      | `children \| educators`, immutable publication attestation, server-side scoring, Account attempts/awards и audience-scoped catalog             |
 | E2    | `20260812150745_educator_course_governance_progress.sql`               | trusted educator author capability, exact revision review/approval, self-learning progress, attestation gate и official no-copy invariants     |
-| U1    | `20260813063716_unify_heading_rich_text_components.sql`                | current source/pending production: data-only unified Text cleanup без physical-schema и immutable-publication changes                          |
+| U1    | `20260813063716_unify_heading_rich_text_components.sql`                | applied production data-only unified Text cleanup без physical-schema и immutable-publication changes                                          |
 
 M1–M3 являются additive/compatible expand для roleless web. M4 была withheld из
 первого deploy и применена только после доказательства, что running и rollback
 images не зависят от старого contract. M5 и M6 — атомарные forward security
 fixes поверх post-M4 contract; они не восстанавливают legacy role/ACL surface.
 
-U1 применим только после compatible web deployment: текущий production image
-не читает title-only `rich_text`. После verified full-format backup migration
-переводит authored `heading` в title-only `rich_text` и объединяет только
-непосредственные `heading → rich_text` при одинаковых visibility,
+U1 был применён только после compatible web deployment и verified full-format
+backup. Он перевёл authored `heading` в title-only `rich_text` и объединил
+только непосредственные `heading → rich_text` при одинаковых visibility,
 `student_slide_id` и placement. Immutable `course_publication_revision`
-snapshots остаются неизменными; до фактического apply это current source, а не
-production DB state.
+snapshots остались неизменными.
+
+### Production U1 unified Text authored-data cleanup
+
+Web-first/DB-second rollout завершён 13 августа 2026 года:
+
+- compatible source `dea92ca2c9af99fd5738e95fa9ca511aa10ca3da` был развёрнут
+  Coolify deployment `xivwq5nkaak141mc0tw5ysce` до DB apply; running container
+  `g9x4d9zn60jv35r7zf0xl6xj-065823494924`, image ID
+  `sha256:f0f07ffd8b18ee5faadff5a1f01d0ea5e663807ec6f83754b16d43b64e18379d`,
+  restart count `0`;
+- preflight: `19` Account, `6` Course, `22` Lesson, `96` Components,
+  `heading=17`, `rich_text=38`, safe adjacent pairs `11`, remaining headings
+  `6`;
+- verified backup
+  `/root/shidao-db-backups/shidao-before-unify-heading-rich-text-20260813T070512Z.dump`:
+  size `1324116`, mode `600`, `1610` restore entries, SHA-256
+  `ee169345af886fd97a3060273b03d20f37dec380a82bbc43eb759e8f098ed775`;
+- migration SHA-256
+  `874251c80e2a82bbf79897cb12755d606f9e1b546a9a3f51951dfaae89c5e1a3`;
+  exact SQL завершил `COMMIT`, maximum `updated_at` преобразованных строк —
+  `2026-08-13T07:05:50.169297Z`;
+- postflight: `85` Components, `heading=0`, `rich_text=44`; shapes
+  `combined=11`, `title-only=6`, `body-only=27`, invalid `0`; `12` Slides,
+  empty `0`, dense violations `0`, enabled Component triggers `6`; registry
+  parser принял все `85` PostgREST rows;
+- immutable publication осталась одной revision: `9056` snapshot bytes,
+  content hash
+  `0c4aa4246c6b5fb0ac4f136c5387496b531ed0988956d45312471feb9268d32e`,
+  `6` snapshot Components, все `rich_text`.
+
+Physical schema, ACL/RLS/functions/triggers shape и generated SQL snapshot не
+изменились. Production HTTP postflight был guest-only; authenticated browser
+coverage подтверждена exact local strict suite, а authenticated production
+browser smoke не заявляется.
 
 Production expand evidence 9 августа 2026 года:
 
@@ -331,7 +367,8 @@ server-side `100%` attestation gate. Educator revisions имеют official-lear
 license и не участвуют в catalog copy/duplicate, roster, group assignment или
 LessonRun. Зависимый E2 web/API впервые развёрнут из exact functional commit
 `22b486a7163453019d9720cb4fe0f36ed7c0228d`; current deployed source
-`9e66fb548bef176486673149f466b269fd436b21` сохраняет этот contract.
+сохраняет этот contract, а exact current functional source —
+`dea92ca2c9af99fd5738e95fa9ca511aa10ca3da`.
 
 Production DB execution evidence, 12 августа 2026 года:
 
@@ -383,11 +420,10 @@ postflight:
 - повторный HTTP smoke подтвердил V2 `/login` и `/robots.txt` `200`, guest
   `/courses` `307` в `https://v2.shidao.ru/login` и landing root `200`.
 
-Текущий application source `9e66fb548bef176486673149f466b269fd436b21`
-подтверждён running image и guest `/store → /login` postflight. Последующие
-Store и UI-only commits не добавляли database objects, migrations, Storage
-buckets или commerce persistence; current database head и snapshot выше не
-изменились.
+Functional application source `dea92ca2c9af99fd5738e95fa9ca511aa10ca3da`
+подтверждён matching running image и guest HTTP postflight. Unified Text
+data cleanup не добавлял database objects, Storage buckets или physical-schema
+shape; current schema head и generated snapshot выше не изменились.
 
 ## Current repository tables
 

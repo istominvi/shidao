@@ -73,7 +73,7 @@
 сохранены, добавлены 11 новых, а `divider` удалён. Точный канонический
 список хранится в code-first registry, а не в этой матрице.
 
-### Current source: 19 вариантов ручного выбора и локальный draft
+### Current production: 19 вариантов создания и локальный draft
 
 Palette показывает короткое назначение и статический representative
 mini-preview у 19 вручную создаваемых типов. В текстовой категории «Текст»
@@ -108,8 +108,15 @@ assembler. Tracked data migration
 `heading` в title-only `rich_text` и объединяет только непосредственную пару
 `heading → rich_text`, когда совпадают visibility, `student_slide_id` и
 placement. Immutable publication revisions не переписываются. Migration не
-меняет physical DB schema; до production apply обязательна выкладка нового web,
-который уже умеет читать title-only payload.
+меняет physical DB schema и применена production после compatible web rollout и
+verified backup. Pre/postflight: `96 → 85` authored Components,
+`heading 17 → 0`, `rich_text 38 → 44`; итоговые формы — `11` combined,
+`6` title-only, `27` body-only, invalid `0`. `12` Slides остаются непустыми,
+positions плотными. Одна immutable publication revision сохранила прежние
+`9056` bytes/content hash и все `6` snapshot Components.
+Functional production source `dea92ca2c9af99fd5738e95fa9ca511aa10ca3da`
+развёрнут до DB apply; production guest HTTP и полный local strict release gate
+green. Authenticated production browser smoke отдельно не заявляется.
 
 После создания teacher card остаётся renderer-only и не имеет внешнего border.
 Едва заметная чёрная тень `0 3px 6px #0000000d` на hover/focus сохраняет offset,

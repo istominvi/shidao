@@ -3,19 +3,32 @@
 **Статус:** обязательная политика для всех новых DB changes
 **Текущий production schema head:**
 `20260812150745_educator_course_governance_progress.sql`
-**Текущий repository migration head:**
-`20260813063716_unify_heading_rich_text_components.sql` — current source
-data-only migration, production apply ещё не выполнен. Physical schema не
-меняется, поэтому current generated snapshot остаётся E2 snapshot
+**Текущий authored-data / repository migration head:**
+exact tracked `20260813063716_unify_heading_rich_text_components.sql` применён
+production; `psql` зафиксировал `COMMIT`, а maximum `updated_at`
+преобразованных строк — `2026-08-13T07:05:50.169297Z`. Physical schema не
+изменилась, поэтому current generated snapshot остаётся E2 snapshot
 `2026-08-12T07:46:11Z`, SHA-256
 `a34a5a5919ea406050a5c0cb7f39310d1a9e807725e608166f63becb8f2260a4`.
-**Текущий deployed source:**
-`8e5d169dab72dc285c0fdfe8991646152d9904c7`; running container
-`g9x4d9zn60jv35r7zf0xl6xj-061859307830` имеет matching image tag и
-`SOURCE_COMMIT`, restart count `0`, started at `2026-08-13T06:21:36.30711298Z`.
-Этот image предшествует title-only `rich_text` contract, поэтому migration
-`20260813063716` нельзя применять до следующего совместимого web deployment и
-проверенного full-format backup.
+**Совместимый functional rollout source:**
+`dea92ca2c9af99fd5738e95fa9ca511aa10ca3da`; running container
+`g9x4d9zn60jv35r7zf0xl6xj-065823494924` имеет matching image/
+`SOURCE_COMMIT`, image ID
+`sha256:f0f07ffd8b18ee5faadff5a1f01d0ea5e663807ec6f83754b16d43b64e18379d`,
+restart count `0`. Он был развёрнут и проверен до U1 backup/apply.
+
+U1 execution evidence: backup
+`/root/shidao-db-backups/shidao-before-unify-heading-rich-text-20260813T070512Z.dump`
+имеет size `1324116`, mode `600`, `1610` restore entries и SHA-256
+`ee169345af886fd97a3060273b03d20f37dec380a82bbc43eb759e8f098ed775`;
+migration SHA-256 —
+`874251c80e2a82bbf79897cb12755d606f9e1b546a9a3f51951dfaae89c5e1a3`.
+Self-hosted contour не имеет relation
+`supabase_migrations.schema_migrations`, поэтому не следует выдумывать history
+row: использовать checksum, наблюдаемый `COMMIT`, timestamp преобразованных
+строк и измеримый postflight. Для U1 он равен `96 → 85` Components,
+`heading 17 → 0`, `rich_text 38 → 44`, invalid shapes/empty Slides/dense
+violations `0`; immutable publication revision не изменилась.
 
 ## 1. Источники истины
 
@@ -148,7 +161,7 @@ owner path, signed access и отрицательным cross-account сцена
 generated SQL snapshot не переписывается только ради нового содержимого строк.
 В таком случае обновляются migration history, current-state/application docs и
 измеримый execution postflight; `docs/database/current-schema.md` явно
-разделяет production head и ещё не применённый repository migration head.
+разделяет physical schema head и применённый data-only migration head.
 
 `npm run db:snapshot` можно использовать только после read-only sanity check и
 только если review diff подтверждает, что сохранены:

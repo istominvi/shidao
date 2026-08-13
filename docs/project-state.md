@@ -4,10 +4,10 @@
 **Актуально на:** 13 августа 2026 года
 **Активная ветка:** `main`
 **Рабочее приложение:** `https://v2.shidao.ru`
-**Текущий deployed application source / последний release gate:**
-`8e5d169dab72dc285c0fdfe8991646152d9904c7`
-(`579/579` unit/API, `23/23` strict production-mode browser scenarios,
-typecheck, lint, format и production build)
+**Текущий functional application source / последний runtime release gate:**
+`dea92ca2c9af99fd5738e95fa9ca511aa10ca3da`
+(`581/581` unit/API, `23/23` strict production-mode browser scenarios,
+`72/72` schema/migration subset, typecheck, lint, format и production build)
 **Исторический functional E2 baseline:**
 `22b486a7163453019d9720cb4fe0f36ed7c0228d`
 
@@ -117,11 +117,12 @@ toolbar, cards/table и `DialogShell`: статический каталог у�
 `/store?product=<slug>` без изменения Lesson contracts. Канонический
 контракт с current/next/later границами находится в
 [`docs/product/store-demo.md`](./product/store-demo.md). Current deployed gate:
-typecheck, lint, format, production build, `579/579` unit/API и `23/23` strict
-production-mode browser scenarios, включая Store deep link, cart/checkout,
-focus return и mobile no-overflow.
+typecheck, lint, format, production build, `581/581` unit/API, `23/23` strict
+production-mode browser scenarios и `72/72` schema/migration subset, включая
+Store deep link, cart/checkout, focus return и mobile no-overflow.
 
-Authenticated production browser postflight подтвердил roleless navigation и
+Historical identity-program acceptance на прежнем совместимом production
+release подтвердила authenticated browser postflight: roleless navigation и
 реальные пустые состояния `/courses`, `/schedule`, `/students`, всех вкладок
 `/learning-profile`, `/students?tab=observing`, `/settings/profile`,
 `/settings/security` и `/settings/observers`; browser console пуста. CSRF
@@ -207,7 +208,7 @@ presentation-категории; category rail не имеет divider, а compa
 element-radius 12 px и стандартную table-shadow. Это UI-only изменение без API,
 schema или migration.
 
-**Current source component-authoring refinement (next production deployment):**
+**Current production component-authoring and unified Text:**
 runtime registry по-прежнему поддерживает все 20 Component types, а ручная
 palette показывает 19 создаваемых карточек с коротким назначением и статическим
 неинтерактивным мини-образцом. Отдельный `heading` исключён из authored-create
@@ -236,13 +237,32 @@ Tracked data migration
 `heading` в title-only `rich_text` и объединяет только непосредственные пары
 `heading → rich_text` с одинаковыми visibility, `student_slide_id` и placement.
 Immutable publication revisions она намеренно не переписывает; physical DB
-schema не меняется. Rollout ещё не выполнен: сначала должен быть развёрнут и
-проверен совместимый web image, затем создан full-format backup и только после
-этого применён migration. Старый production image title-only payload читать не
-умеет, поэтому обратный порядок запрещён.
+schema не меняется. Coupled rollout выполнен в безопасном порядке: сначала
+развёрнут совместимый web image, затем создан verified full-format backup и
+применён exact tracked migration. До migration production содержал `96`
+Components (`17 heading`, `38 rich_text`): `11` безопасных непосредственных пар
+объединены, ещё `6` headings стали title-only. Postflight показывает `85`
+Components, `heading=0`, `rich_text=44` (`11` combined, `6` title-only, `27`
+body-only, invalid `0`), `12` Slides, empty/dense violations `0` и `6` enabled
+Component triggers. Registry parser прочитал все `85` PostgREST rows.
+Immutable publication сохранила одну revision, `9056` snapshot bytes, прежний
+content hash
+`0c4aa4246c6b5fb0ac4f136c5387496b531ed0988956d45312471feb9268d32e` и `6`
+snapshot Components, все `rich_text`; physical schema/snapshot не менялись.
+Перед записью создан backup
+`/root/shidao-db-backups/shidao-before-unify-heading-rich-text-20260813T070512Z.dump`:
+size `1324116`, mode `600`, `1610` restore entries, SHA-256
+`ee169345af886fd97a3060273b03d20f37dec380a82bbc43eb759e8f098ed775`.
+Migration SHA-256
+`874251c80e2a82bbf79897cb12755d606f9e1b546a9a3f51951dfaae89c5e1a3`;
+`psql` зафиксировал `COMMIT`, а maximum `updated_at` преобразованных строк —
+`2026-08-13T07:05:50.169297Z`.
+Self-hosted contour не имеет relation
+`supabase_migrations.schema_migrations`, поэтому отдельная history row не
+заявляется: evidence — exact SQL checksum, transaction и измеримый postflight.
 
-**Current source page-header action-button refinement (next production
-deployment):** все product buttons внутри `AppPageHeader` имеют белую заливку,
+**Current production page-header action-button refinement:** все product buttons
+внутри `AppPageHeader` имеют белую заливку,
 внешнюю высоту `40 px` и border `0`. Их контур на белом или пользовательском
 фоне задаёт общий `--product-raised-control-shadow`, дословно совпадающий с
 тенью выбранной белой кнопки переключателя вида Расписания:
@@ -253,18 +273,18 @@ Lesson action «Удалить» сохраняет danger-цвет и confirmat
 2 px outline. В `forced-colors` исчезающая системная тень заменяется системной
 рамкой. Scope ограничен непосредственными action-кнопками заголовка и вложенным
 trigger контекстного меню; buttons открываемого из header dialog, menu items и
-обычные controls не меняются. Это UI-only source change без API, schema, migration или
-реализации выбора фона Course; production rollout/postflight ещё не заявлены.
+обычные controls не меняются. Это UI-only change без API, schema, migration или
+реализации выбора фона Course; rollout входит в exact deployed source ниже.
 
-**Current source WorkspaceTabs fractional-baseline refinement (next production
-deployment):** общий разделитель под вкладками уменьшен с production baseline
+**Current production WorkspaceTabs fractional-baseline refinement:** общий
+разделитель под вкладками уменьшен с прежнего baseline
 `1.5 px` до визуальных `1.2 px`. Псевдоэлемент рисуется высотой `3 px` и
 сжимается по вертикали через `scaleY(0.4)` от нижней грани; линия не сдвигается
 относительно контента, а 4 px active
 segment продолжает лежать над ней. Изменение действует через единый
 `WorkspaceTabs` на всех его product consumers, не меняет 40 px tab geometry,
-horizontal scroll, ARIA/keyboard contract, API, schema или migrations.
-Production rollout/postflight ещё не заявлены.
+horizontal scroll, ARIA/keyboard contract, API, schema или migrations. Rollout
+входит в exact deployed source ниже.
 
 **Current production contextual ActionMenu refinement:** все контекстные меню,
 открываемые горизонтальным или вертикальным
@@ -277,21 +297,21 @@ Production rollout/postflight ещё не заявлены.
 destructive/disabled states, portal positioning, keyboard navigation и focus
 restore не меняются. Filter/calendar popovers, Account menu и native `select`
 не являются contextual `ActionMenu` и этим scoped slice не затрагиваются; API,
-schema и migrations также не меняются. Exact release
-`8e5d169dab72dc285c0fdfe8991646152d9904c7` прошёл typecheck, lint, format,
-production build, `579/579` unit/API и `23/23` strict production-mode browser
-scenarios; running source и HTTP postflight подтверждены ниже.
+schema и migrations также не меняются. Refinement впервые прошёл gate и rollout
+в exact release `8e5d169dab72dc285c0fdfe8991646152d9904c7`; он сохраняется в
+текущем source, для которого running image и HTTP postflight подтверждены ниже.
 
-**Current production application evidence:** running container
-`g9x4d9zn60jv35r7zf0xl6xj-061859307830` использует exact image tag
-`g9x4d9zn60jv35r7zf0xl6xj:8e5d169dab72dc285c0fdfe8991646152d9904c7` и
-совпадающий `SOURCE_COMMIT`.
-Container запущен `2026-08-13T06:21:36.30711298Z`, имеет restart count `0` и
-остаётся running. Read-only HTTP postflight подтвердил `/login` `200`,
-`/robots.txt` `200` с `Disallow: /` и guest `/store` `307` в `/login`. Store,
-page-header/directory refinements, общий table/authoring polish и Course table
-overflow fix входят в этот exact source; database schema/migrations ими не
-менялись.
+**Current production application evidence:** Coolify deployment
+`xivwq5nkaak141mc0tw5ysce` (`id=943`) создан
+`2026-08-13T06:58:23Z` и завершён `2026-08-13T07:01:09Z`. Running container
+`g9x4d9zn60jv35r7zf0xl6xj-065823494924` использует exact image/
+`SOURCE_COMMIT` `dea92ca2c9af99fd5738e95fa9ca511aa10ca3da`, image ID
+`sha256:f0f07ffd8b18ee5faadff5a1f01d0ea5e663807ec6f83754b16d43b64e18379d`,
+имеет restart count `0` и status running. Read-only production HTTP postflight
+подтвердил V2 `/login` `200`, guest `/courses` `307` в login, landing root
+`200` и landing `/login` `503`. Authenticated production browser session не
+была доступна; функциональная browser-проверка — exact локальный strict suite
+`23/23`, поэтому authenticated production smoke здесь не заявляется.
 
 **Previously deployed Schedule presentation baseline (superseded by PR #242):**
 `/schedule` загружает реальные LessonRun за локальную неделю (понедельник–
@@ -402,7 +422,8 @@ Course-таблицы используют fixed layout, а текстовые �
 `--product-table-divider-color`. Сама table/toolbar geometry не меняет schema;
 отдельный Course archive lifecycle ниже использует уже применённый production
 A1 database contract. Базовая surface была развёрнута в production release PR
-#242, а fixed-layout Course overflow fix — в текущем exact source `9e66fb5`.
+#242, а fixed-layout Course overflow fix впервые вошёл в exact source
+`9e66fb5` и сохраняется в текущем deployed source.
 
 Сохранённый Course применяет тот же контракт на вкладке **Уроки**: неизменённый
 общий `WorkspaceTabs` остаётся полноширинным, а под ним прозрачная панель поиска
@@ -858,7 +879,7 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
   index, owner/new/published Course, Lesson, Students, learning/observing profile
   и learner dialog,
   сохраняет roving keyboard/ARIA contract и горизонтальный scroll. Выбранная
-  вкладка перекрывает full-width baseline 1.5 px цвета
+  вкладка перекрывает full-width baseline 1.2 px цвета
   `rgba(20, 20, 20, 0.5)` квадратным чёрным сегментом 4 px без radius.
   Container, baseline и scroll-row используют канонический `inline-inset: 0`
   на всех поверхностях. Неактивный label использует тот же 50%-black token,
@@ -871,8 +892,11 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
   header controls и вкладки используют шрифт `.88rem/400`, flat primary без
   3D-блика/подъёма, fully opaque icons и единый 16 px icon rhythm; исходный
   layout-контракт подтверждён production postflight release `77870e3`, а
-  control-полировка развёрнута production release PR #242. Текущий
-  tab-refinement развёрнут exact source `0c8946f95ebeb31e02955a110fc057f761f07ea9`.
+  control-полировка развёрнута production release PR #242. Предыдущий
+  1.5 px tab-refinement вошёл в exact source
+  `0c8946f95ebeb31e02955a110fc057f761f07ea9`; текущий 1.2 px paint-layer
+  развёрнут functional source
+  `dea92ca2c9af99fd5738e95fa9ca511aa10ca3da`.
 
 ### Roleless navigation, Расписание, Ученики и аудитория
 
@@ -1077,7 +1101,7 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
   Сохранённые `heading` и прежние body-only `rich_text` остаются совместимыми с
   runtime renderer/editor и schema version `1`.
 - Компонент можно редактировать, удалить или переместить кнопками
-  «выше/ниже». В current source persisted card всегда показывает только
+  «выше/ниже». В current production persisted card всегда показывает только
   production teacher renderer. Группа 32 px actions располагается поверх
   карточки и раскрывается через hover/focus-within; на touch/coarse-pointer она
   остаётся доступной без hover. Pencil открывает отдельный modal editor, а не
@@ -1540,6 +1564,11 @@ provider requests, assistant dialog history или quota state в БД.
   Production postflight и snapshot evidence зафиксированы в
   [`docs/database/current-schema.md`](./database/current-schema.md) и deployment
   runbook; dependent web/API rollout также current production.
+- `20260813063716_unify_heading_rich_text_components.sql` — applied production
+  data migration без physical-schema change: authored `heading` устранены,
+  безопасные adjacent пары объединены, privacy/Slide/placement boundaries и
+  immutable publication revision сохранены. Exact backup/checksum/counts и
+  coupled web-first rollout зафиксированы выше и в database/runbook docs.
 
 Источники истины для текущего состояния:
 

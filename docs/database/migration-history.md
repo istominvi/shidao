@@ -68,12 +68,18 @@ ShiDao хранит два обязательных слоя:
   capability, обязательный admin review exact educator revision,
   `approved_revision_id`, official license, Account-scoped self-learning
   progress и абсолютные no-copy/no-roster/no-LessonRun guards.
-- `20260813063716_unify_heading_rich_text_components.sql` — current source,
-  production apply ещё не выполнен: data-only перевод authored `heading` в
-  title-only `rich_text` и объединение только непосредственных
-  `heading → rich_text` с одинаковыми visibility, `student_slide_id` и
-  placement. Immutable publication revisions и physical schema не меняются;
-  compatible web должен быть развёрнут и проверен до backup/apply.
+- `20260813063716_unify_heading_rich_text_components.sql` — applied production
+  data-only перевод authored `heading` в title-only `rich_text` и объединение
+  только непосредственных `heading → rich_text` с одинаковыми visibility,
+  `student_slide_id` и placement. Compatible web был развёрнут до verified
+  backup/apply; postflight: `96 → 85` Components, `heading 17 → 0`,
+  `rich_text 38 → 44`, invalid/empty/density violations `0`. Immutable
+  publication revision и physical schema не изменились. Self-hosted contour не
+  имеет relation `supabase_migrations.schema_migrations`, поэтому применение
+  подтверждают exact SQL SHA-256
+  `874251c80e2a82bbf79897cb12755d606f9e1b546a9a3f51951dfaae89c5e1a3`,
+  наблюдаемый `COMMIT`, maximum `updated_at` преобразованных строк
+  `2026-08-13T07:05:50.169297Z` и read-only postflight, а не history row.
 
 Backfill details являются историей этих migrations и не должны повторяться в
 current-schema guide как действующая domain model.

@@ -78,10 +78,10 @@ npm run mcp:course-builder
 
 `test:browser` удобен локально и может пропустить smoke без доступного browser;
 `test:browser:ci` требует полноценного production-mode browser smoke и падает,
-если окружение к нему не готово. Текущий deployed source —
-`8e5d169dab72dc285c0fdfe8991646152d9904c7`; этот exact deployed release прошёл
-`579/579` unit/API и `23/23` strict production-mode browser scenarios,
-typecheck, lint, format и production build.
+если окружение к нему не готово. Текущий functional release source —
+`dea92ca2c9af99fd5738e95fa9ca511aa10ca3da`; этот exact deployed release прошёл
+`581/581` unit/API, `23/23` strict production-mode browser scenarios,
+`72/72` schema/migration subset, typecheck, lint, format и production build.
 Functional E2 release
 `22b486a7163453019d9720cb4fe0f36ed7c0228d` сохранён как исторический baseline,
 а exact gate и running-container evidence находятся в
@@ -138,9 +138,13 @@ Account/learner identity slice. Current production primary navigation содер
 menu, а observer projection —
 во вкладке «Наблюдение» внутри «Ученики».
 
-Двадцать типов компонентов определены в code-first registry. UI, application
-service и development-only MCP используют общие Zod contracts; MCP не работает
-s таблицами напрямую и не опубликован как внешний endpoint. Server-only
+Двадцать runtime-типов компонентов определены в code-first registry; отдельный
+authored-create set содержит 19 типов и не создаёт legacy `heading`. Единый
+`rich_text` принимает заголовок, основной текст или оба поля. Сохранённые планы
+production уже приведены к этой модели data migration, а immutable publication
+revision сохранена без изменений. UI, application service и development-only
+MCP используют общие Zod contracts; MCP не работает с таблицами напрямую и не
+опубликован как внешний endpoint. Server-only
 RouterAI preview/apply и global System Assistant с подтверждаемым mutation
 allowlist уже реализованы; parsing/RAG,
 persisted Homework, live sessions и LearnerProfile-scoped consumption детского

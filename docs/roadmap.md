@@ -55,7 +55,7 @@
   Все product consumers, включая Courses index, owner/new/published Course,
   Lesson, Students, learning/observing profile и learner dialog, используют
   один `WorkspaceTabs`: 40 px, roving keyboard/ARIA, horizontal scroll,
-  baseline 1.5 px и inactive label общего 50%-black цвета с
+  baseline 1.2 px и inactive label общего 50%-black цвета с
   `inline-inset: 0`, gap 12 px, верхние радиусы 12 px и квадратный чёрный
   active-сегмент 4 px. Каждый tab передаёт 16 px иконку; только positive count
   показывается маленьким приподнятым `sup`, а `0` не рендерится.
@@ -63,7 +63,7 @@
   канонизация развёрнута exact merge commit
   `84ffefecda99d3b0a9da82bf1eaf8ce76d9c6ea1` (PR #242).
   Текущий совокупный UI contract развёрнут exact source
-  `8e5d169dab72dc285c0fdfe8991646152d9904c7`; running container evidence
+  `dea92ca2c9af99fd5738e95fa9ca511aa10ca3da`; running container evidence
   зафиксирован в [`docs/project-state.md`](./project-state.md).
 - Active app routes приведены к плоскому demo-фону `#f5f1e8` без marketing
   gradients; header, кнопки, вкладки и заголовочная типографика используют
@@ -346,7 +346,7 @@ running-image/HTTP boundary postflight.
 Current production polish
 оставляет AppPageHeader actions шириной по содержимому, отдаёт свободное место
 heading и унифицирует WorkspaceTabs: container и 50%-black baseline толщиной
-1.5 px занимают всю ширину с `inline-inset: 0`, а positive count показывается
+1.2 px занимают всю ширину с `inline-inset: 0`, а positive count показывается
 маленьким `sup`. Course workspace использует четыре вкладки;
 настройки и audience редактируются inline на растущей **О курсе**, а
 course-wide **Материалы** вынесены в отдельную агрегирующую библиотеку. Новый
@@ -360,7 +360,7 @@ backlink в один непрозрачно-чёрный ряд с ellipsis; р�
 следует page-header inset. Тот же current refinement полностью
 удаляет optional eyebrow из `AppPageHeader` API и product consumers.
 Current production tabs refinement переводит inactive labels и baseline на
-один 50%-black token, задаёт baseline 1.5 px, gap и верхние радиусы 12 px,
+один 50%-black token, задаёт baseline 1.2 px, gap и верхние радиусы 12 px,
 добавляет иконку каждому tab и показывает только positive count как маленький
 приподнятый `sup`. Current production follow-up задаёт этому count weight 500,
 чтобы уменьшенная цифра оставалась визуально сопоставимой с основным label.
@@ -393,7 +393,7 @@ registry `attachment`. План Lesson больше не обёрнут в `work
 по названиям уже добавленных компонентов слева и actions справа. Component
 cards используют element-radius и стандартную table-shadow.
 
-**Current source / next production deployment:** palette получает
+**Current production:** palette получает
 representative static preview и короткое назначение для 19 вручную создаваемых
 вариантов поверх 20-типового runtime registry. Legacy `heading` остаётся
 read/render/modal edit/PATCH/publication-compatible, но исключён из всех
@@ -415,25 +415,31 @@ Tracked data migration `20260813063716_unify_heading_rich_text_components.sql`
 переводит authored heading в title-only text и безопасно объединяет только
 непосредственные пары с одинаковыми visibility/Slide/placement; immutable
 publication revisions остаются исторически точными. Physical schema не
-меняется. Production sequence остаётся next: сначала compatible web deployment,
-затем verified backup и migration apply/postflight.
+меняется. Safe rollout завершён в порядке compatible web → verified backup →
+migration apply/postflight: `96 → 85` Components, `heading 17 → 0`,
+`rich_text 38 → 44`, invalid shapes/empty Slides/dense violations `0`.
+Exact source `dea92ca2c9af99fd5738e95fa9ca511aa10ca3da` развёрнут Coolify deployment
+`xivwq5nkaak141mc0tw5ysce`; gate прошёл `581/581` unit/API, `23/23` local
+strict browser и `72/72` schema/migration tests. Production guest HTTP и DB
+postflight green; authenticated production browser smoke не заявляется.
 
-**Current source / next production deployment:** все product buttons в
+**Current production:** все product buttons в
 `AppPageHeader` имеют белый surface высотой `40 px`, border `0` и общий
 двухслойный `--product-raised-control-shadow`, совпадающий с selected-состоянием
 переключателя вида Расписания. Primary header actions получают чёрные
 текст/иконку, Lesson «Удалить» сохраняет danger-цвет, а keyboard focus —
 отдельный 2 px outline поверх неизменной тени. Изменение scoped только к header
 actions, не добавляет сам выбор фона Course и не меняет API/schema/migrations;
-production postflight остаётся next.
+rollout входит в exact functional source
+`dea92ca2c9af99fd5738e95fa9ca511aa10ca3da`.
 
-**Current source / next production deployment:** общий `WorkspaceTabs`
+**Current production:** общий `WorkspaceTabs`
 уменьшает visual baseline с `1.5 px` до `1.2 px`, рисуя paint-layer высотой
 `3 px` и сжимая его `scaleY(0.4)` от нижней грани. Такой способ исключает округление
 обычной дробной CSS-высоты до одного или двух пикселей, не меняет 40 px tab
 layout, scroll, interaction или 4 px active segment и применяется сразу ко всем
-product consumers. API/schema/migrations не меняются; production postflight
-остаётся next.
+product consumers. API/schema/migrations не меняются; rollout входит в exact
+functional source `dea92ca2c9af99fd5738e95fa9ca511aa10ca3da`.
 
 **Current production:** shared contextual `ActionMenu` для Course, Lesson rows,
 Schedule и Students канонизирован через
@@ -443,8 +449,9 @@ Schedule и Students канонизирован через
 consumers. Item geometry, destructive/disabled states, portal/keyboard/focus
 contracts не меняются. Filter/calendar popovers, Account menu и native
 `select` остаются отдельными семантическими компонентами; API/schema/migrations
-не менялись. Exact release `8e5d169dab72dc285c0fdfe8991646152d9904c7`
-и production postflight подтверждены.
+не менялись. Refinement впервые развёрнут exact release
+`8e5d169dab72dc285c0fdfe8991646152d9904c7` и сохраняется в текущем source;
+production postflight подтверждён.
 
 Current production body typography закрепляет Schedule как канон для всех
 active product tables: `#141414 / .88rem / 400 / 1.3`; различия primary-cell
@@ -657,7 +664,7 @@ image ID —
 `sha256:214e954aed0355c1881ea778e65dcb7f4c4cabcde4d7ac2e3f6022322bd8e027`,
 restart count `0`, HTTP host/CSRF/auth postflight green. Это functional E2
 baseline `22b486a7163453019d9720cb4fe0f36ed7c0228d`; текущий deployed application
-source — `8e5d169dab72dc285c0fdfe8991646152d9904c7`. DB и web/API slice являются
+source — `dea92ca2c9af99fd5738e95fa9ca511aa10ca3da`. DB и web/API slice являются
 current production.
 
 **Later:** admin UI для capability/review, юридически значимые удостоверения,
