@@ -2,7 +2,9 @@
 
 **Статус:** обязательная политика для всех новых DB changes
 **Текущий production schema head:**
-`20260812150745_educator_course_governance_progress.sql`
+`20260813113041_fix_educator_course_content_guard_acl.sql`; generated snapshot
+снят `2026-08-13T11:43:48Z`, SHA-256
+`0a6eab37e1bbecc0084e281496346e5436fcbd1ac2b42e102e89951e71ff258e`.
 **Текущий authored-data / repository migration head:**
 exact tracked `20260813063716_unify_heading_rich_text_components.sql` применён
 production; `psql` зафиксировал `COMMIT`, а maximum `updated_at`
@@ -128,6 +130,18 @@ RLS и grants решают разные задачи: grant разрешает �
 - не имеет `EXECUTE` у `PUBLIC`, `anon`, `authenticated` или `service_role`;
 - вызывается только reviewed trigger graph;
 - не расширяет browser table/column ACL.
+
+У `SECURITY INVOKER` trigger нужно отдельно проверить ACL всего nested call
+graph. Сам trigger запускается PostgreSQL без runtime `EXECUTE` проверки роли
+на trigger function, но вызванная из него обычная функция уже исполняется с
+правами исходного DML caller. Поэтому закрытый helper нельзя просто вызвать из
+invoker guard и нельзя открывать `EXECUTE` browser role только ради обхода
+ошибки. Если predicate использует уже доступные caller grants/RLS, его следует
+встроить в trigger; альтернативный `SECURITY DEFINER` boundary требует полного
+review по правилам выше. Regression gate обязан выполнять реальный
+`SET LOCAL ROLE authenticated` owner DML, а не только проверять
+`pg_trigger.tgenabled` и function existence. Этот contract применяется к
+E2A-исправлению educator Course content guard.
 
 Официальные ориентиры:
 

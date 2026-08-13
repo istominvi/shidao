@@ -22,6 +22,10 @@ const unifiedTextMigration = readFileSync(
   "supabase/migrations/20260813063716_unify_heading_rich_text_components.sql",
   "utf8",
 );
+const educatorCourseContentGuardFixMigration = readFileSync(
+  "supabase/migrations/20260813113041_fix_educator_course_content_guard_acl.sql",
+  "utf8",
+);
 const atomicCourseArchiveMigration = readFileSync(
   "supabase/migrations/20260811231505_atomic_course_archive.sql",
   "utf8",
@@ -50,6 +54,19 @@ function atomicArchiveFunction(name: string) {
   return atomicCourseArchiveMigration.slice(start, end + 12);
 }
 
+function educatorContentGuardFixFunction(name: string) {
+  const start = educatorCourseContentGuardFixMigration.indexOf(
+    `create or replace function public.${name}(`,
+  );
+  assert.notEqual(start, -1, `missing educator content guard fix ${name}`);
+  const end = educatorCourseContentGuardFixMigration.indexOf(
+    "\n$function$;",
+    start,
+  );
+  assert.notEqual(end, -1, `unterminated educator content guard fix ${name}`);
+  return educatorCourseContentGuardFixMigration.slice(start, end + 12);
+}
+
 const preservedBuilderTables = [
   "account",
   "course",
@@ -57,6 +74,64 @@ const preservedBuilderTables = [
   "stored_file",
   "course_attachment",
 ] as const;
+
+test("authenticated component edits use an inline SECURITY INVOKER educator guard", () => {
+  assert.match(educatorCourseContentGuardFixMigration, /^begin;\n/);
+  assert.match(educatorCourseContentGuardFixMigration, /\ncommit;\n$/);
+  assert.match(
+    educatorCourseContentGuardFixMigration,
+    /v_expected_trigger_count constant integer := 7/,
+  );
+
+  const guard = educatorContentGuardFixFunction(
+    "guard_educator_course_content_mutation",
+  );
+  assert.match(guard, /security invoker[\s\S]*set search_path = ''/);
+  assert.doesNotMatch(guard, /security definer/);
+  assert.doesNotMatch(guard, /educator_course_author_can_mutate/);
+  assert.match(guard, /course\.learning_audience = 'children'/);
+  assert.match(guard, /account\.status = 'active'/);
+  assert.match(guard, /account\.can_author_educator_courses/);
+
+  assert.match(
+    educatorCourseContentGuardFixMigration,
+    /revoke all on function public\.guard_educator_course_content_mutation\(\)[\s\S]*from public, anon, authenticated, service_role;[\s\S]*grant execute on function public\.guard_educator_course_content_mutation\(\)[\s\S]*to postgres;/,
+  );
+  assert.doesNotMatch(
+    educatorCourseContentGuardFixMigration,
+    /grant execute on function public\.educator_course_author_can_mutate\(uuid\)[\s\S]{0,80}to authenticated/,
+  );
+  assert.match(
+    educatorCourseContentGuardFixMigration,
+    /has_function_privilege\([\s\S]*?'authenticated',[\s\S]*?'public\.educator_course_author_can_mutate\(uuid\)',[\s\S]*?'EXECUTE'[\s\S]*?\)/,
+  );
+
+  for (const fragment of [
+    "educator_course_content_guard_trigger",
+    "educator_course_author_can_mutate(uuid)",
+    "guard_educator_course_content_mutation()",
+    "pg_get_functiondef",
+    "trg_lesson_component_educator_content_mutation",
+  ]) {
+    assert.equal(
+      snapshotWorkflow.includes(fragment),
+      true,
+      `snapshot workflow missing educator guard contract ${fragment}`,
+    );
+  }
+  assert.match(
+    snapshotWorkflow,
+    /procedure\.oid = to_regprocedure\([\s\S]*?'public\.guard_educator_course_content_mutation\(\)'[\s\S]*?and not procedure\.prosecdef[\s\S]*?and position\([\s\S]*?'educator_course_author_can_mutate'[\s\S]*?in pg_get_functiondef\(procedure\.oid\)[\s\S]*?\) = 0/,
+  );
+  assert.match(
+    snapshotWorkflow,
+    /from educator_course_content_guard_trigger as required_trigger[\s\S]*?trigger\.tgfoid = to_regprocedure\([\s\S]*?'public\.guard_educator_course_content_mutation\(\)'/,
+  );
+  assert.match(
+    snapshotWorkflow,
+    /unnest\(array\['anon', 'authenticated', 'service_role'\]\)[\s\S]*?'public\.guard_educator_course_content_mutation\(\)'/,
+  );
+});
 
 test("heading cleanup preserves projections and folds safe adjacent text", () => {
   assert.match(unifiedTextMigration, /^begin;\n/);

@@ -56,13 +56,38 @@ Account-scoped revision progress, server-side `100%` attestation gate и
 official no-copy/no-roster/no-LessonRun invariants. Postflight подтвердил
 `19` Account, `6` Course, одну publication/revision/attempt/award, educator
 catalog `1` и derived progress `6/6 = 100%`; аттестация осталась `90%` при
-пороге `80%`. Current snapshot снят `2026-08-12T07:46:11Z`, SHA-256
+пороге `80%`. Historical E2 snapshot снят `2026-08-12T07:46:11Z`, SHA-256
 `a34a5a5919ea406050a5c0cb7f39310d1a9e807725e608166f63becb8f2260a4`, `71`
 schema-contract tests green. Зависимый E2 web/API source развёрнут из exact
 functional baseline `22b486a7163453019d9720cb4fe0f36ed7c0228d`: deployment завершён
 `2026-08-12T07:58:39Z`, image ID
 `sha256:214e954aed0355c1881ea778e65dcb7f4c4cabcde4d7ac2e3f6022322bd8e027`,
 `SOURCE_COMMIT` exact, restart count `0`, HTTP host/CSRF/auth postflight green.
+
+**Current production authenticated authoring ACL hotfix:** E2 оставил
+`guard_educator_course_content_mutation()` в режиме `SECURITY INVOKER`, но
+внутри guard вызывал закрытый
+`educator_course_author_can_mutate(uuid)`. Поэтому разрешённый RLS/ACL
+authenticated write к Component или другой дочерней Course content table
+останавливался до проверки audience/capability с PostgreSQL `42501`:
+`permission denied for function educator_course_author_can_mutate`. Forward
+migration `20260813113041_fix_educator_course_content_guard_acl.sql` применена
+production с `COMMIT`: guard остаётся invoker-функцией, тот же predicate
+встроен непосредственно в trigger, а helper не открыт для
+`authenticated`/`anon`. Migration checksum —
+`f159188b067bb8a8a6bfe837a3d366a68ab40e42876a79db88dd54d1f01b322f`;
+rollback rehearsal дошла до `NOTIFY` и завершилась `ROLLBACK`. Verified backup
+имеет size `1324276`, mode `600`, `1595` restore entries и SHA-256
+`0b3a6c2d9d5100d721ccd1988a8494a4719e9323f2b13838abfc5011148ae6a7`.
+Postflight `12/12` подтвердил owner/invoker/search-path, closed ACL, inline
+predicate, семь triggers и отсутствие policy drift; counts
+Account/Course/Lesson/Component остались `19/6/22/85`. Authenticated educator
+`rich_text` same-value `UPDATE` прошёл внутри rollback
+(`rollback_verified=true`). Current live snapshot снят
+`2026-08-13T11:43:48Z`, SHA-256
+`0a6eab37e1bbecc0084e281496346e5436fcbd1ac2b42e102e89951e71ff258e`.
+Это DB-only исправление уже действует для существующего web image; отдельный
+Coolify deployment не требовался.
 
 **Current production contract stage:** реализована и развёрнута полная roleless
 learner identity / observer программа. Migrations M1–M6 применены к production
@@ -1594,6 +1619,16 @@ provider requests, assistant dialog history или quota state в БД.
   безопасные adjacent пары объединены, privacy/Slide/placement boundaries и
   immutable publication revision сохранены. Exact backup/checksum/counts и
   coupled web-first rollout зафиксированы выше и в database/runbook docs.
+- `20260813113041_fix_educator_course_content_guard_acl.sql` — applied
+  production forward fix: переписывает только
+  `guard_educator_course_content_mutation()` как `SECURITY INVOKER` с
+  inlined audience/capability predicate, сохраняя закрытый ACL helper
+  `educator_course_author_can_mutate(uuid)`. Исправление предназначено для
+  authenticated direct DML Course Builder, включая сохранение Text Component;
+  exact apply завершился `COMMIT`, postflight `12/12` и rollback-verified
+  authenticated educator `rich_text` update прошли. Current snapshot
+  `2026-08-13T11:43:48Z` имеет SHA-256
+  `0a6eab37e1bbecc0084e281496346e5436fcbd1ac2b42e102e89951e71ff258e`.
 
 Источники истины для текущего состояния:
 

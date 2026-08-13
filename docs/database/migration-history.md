@@ -80,6 +80,15 @@ ShiDao хранит два обязательных слоя:
   `874251c80e2a82bbf79897cb12755d606f9e1b546a9a3f51951dfaae89c5e1a3`,
   наблюдаемый `COMMIT`, maximum `updated_at` преобразованных строк
   `2026-08-13T07:05:50.169297Z` и read-only postflight, а не history row.
+- `20260813113041_fix_educator_course_content_guard_acl.sql` — applied
+  production forward correction после E2: сохраняет
+  `guard_educator_course_content_mutation()` как `SECURITY INVOKER`, убирает
+  nested вызов закрытого `educator_course_author_can_mutate(uuid)` и встраивает
+  эквивалентный audience/capability predicate. Helper остаётся без `EXECUTE` у
+  browser roles; RLS/table grants и authored rows не меняются. Exact apply
+  завершился `COMMIT`; postflight `12/12`, unchanged counts `19/6/22/85`,
+  rollback-verified authenticated educator `rich_text` update и live snapshot
+  `2026-08-13T11:43:48Z` подтверждены.
 
 Backfill details являются историей этих migrations и не должны повторяться в
 current-schema guide как действующая domain model.

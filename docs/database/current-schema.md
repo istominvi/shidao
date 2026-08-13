@@ -2,22 +2,21 @@
 
 **Статус:** current production learner-identity M6 + Course publication
 catalog + Course Component D1 + A1 atomic Course archive + E1 educator Course
-и Account attestation + E2 educator governance/self-learning database
-contract + U1 unified Text authored data. Dependent web/API release также
-current production.
+и Account attestation + E2 educator governance/self-learning + E2A authenticated
+content-guard correction + U1 unified Text authored data. Dependent web/API
+release также current production; E2A действует без отдельного web deploy.
 
 **Production schema head:**
-`20260812150745_educator_course_governance_progress.sql`.
-Она применена к production 12 августа 2026 года в `2026-08-12T07:34:36Z`.
+`20260813113041_fix_educator_course_content_guard_acl.sql`.
+Она применена к production с exact `COMMIT` 13 августа 2026 года.
 
 **Production authored-data / repository migration head:**
 exact tracked `20260813063716_unify_heading_rich_text_components.sql` применён
 production; `psql` зафиксировал `COMMIT`, а maximum `updated_at`
 преобразованных строк — `2026-08-13T07:05:50.169297Z`. Self-hosted contour не
 содержит relation `supabase_migrations.schema_migrations`, поэтому history row
-не заявляется. Migration не меняет physical schema, и generated snapshot
-по-прежнему совпадает с production E2 schema head
-`20260812150745_educator_course_governance_progress.sql`.
+не заявляется. Migration не меняет table shape; generated snapshot теперь
+фиксирует E2A function definition и ACL поверх тех же U1 authored rows.
 
 **Legacy contract migration:**
 `20260807065038_learner_identity_legacy_contract_cleanup.sql` — применена после
@@ -30,10 +29,10 @@ Admin create/delete probe
 
 **SQL snapshot:**
 [`supabase/schema/current-schema.sql`](../../supabase/schema/current-schema.sql)
-содержит live production dump после E2, снятый штатным script через read-only
-SSH tunnel в `2026-08-12T07:46:11Z`. Strict signature осталась
+содержит live production dump после E2A, снятый штатным script через read-only
+SSH tunnel в `2026-08-13T11:43:48Z`. Strict signature осталась
 `shidao-v2-contract`, SHA-256 snapshot —
-`a34a5a5919ea406050a5c0cb7f39310d1a9e807725e608166f63becb8f2260a4`.
+`0a6eab37e1bbecc0084e281496346e5436fcbd1ac2b42e102e89951e71ff258e`.
 Локальный PostgreSQL 16 dump не принимается как замена production 15.8
 snapshot из-за version/encoding/default-ACL drift.
 
@@ -65,6 +64,7 @@ snapshot из-за version/encoding/default-ACL drift.
 | E1    | `20260812113000_educator_course_attestations.sql`                      | `children \| educators`, immutable publication attestation, server-side scoring, Account attempts/awards и audience-scoped catalog             |
 | E2    | `20260812150745_educator_course_governance_progress.sql`               | trusted educator author capability, exact revision review/approval, self-learning progress, attestation gate и official no-copy invariants     |
 | U1    | `20260813063716_unify_heading_rich_text_components.sql`                | applied production data-only unified Text cleanup без physical-schema и immutable-publication changes                                          |
+| E2A   | `20260813113041_fix_educator_course_content_guard_acl.sql`             | applied production invoker guard correction с inlined predicate и неизменным закрытым helper ACL                                               |
 
 M1–M3 являются additive/compatible expand для roleless web. M4 была withheld из
 первого deploy и применена только после доказательства, что running и rollback
@@ -110,6 +110,23 @@ Physical schema, ACL/RLS/functions/triggers shape и generated SQL snapshot не
 изменились. Production HTTP postflight был guest-only; authenticated browser
 coverage подтверждена exact local strict suite, а authenticated production
 browser smoke не заявляется.
+
+### Production E2A authenticated content-guard correction
+
+E2A изменила только definition invoker guard: встроила эквивалентный
+join `course → account` и predicate `children OR (active AND capability)`, а
+helper сохраняет прежний closed ACL. RLS, column/table grants, trigger set и
+authored rows не изменены. Migration checksum —
+`f159188b067bb8a8a6bfe837a3d366a68ab40e42876a79db88dd54d1f01b322f`;
+rehearsal под `supabase_admin` дошла до `NOTIFY` и откатилась. Перед exact
+`COMMIT` создан verified backup
+`/root/shidao-db-backups/shidao-before-educator-content-guard-fix-20260813T113940Z.dump`:
+size `1324276`, mode `600`, `1595` restore entries, SHA-256
+`0b3a6c2d9d5100d721ccd1988a8494a4719e9323f2b13838abfc5011148ae6a7`.
+Postflight `12/12` подтвердил `SECURITY INVOKER`, пустой `search_path`,
+отсутствие nested helper call, closed helper ACL, семь enabled triggers и
+отсутствие policy drift. Counts `19/6/22/85` не изменились; authenticated
+educator `rich_text` same-value update прошёл с `rollback_verified=true`.
 
 Production expand evidence 9 августа 2026 года:
 
@@ -799,6 +816,10 @@ contacts, exact timestamps, foreign titles и private comments не возвра
 | raw `learning_record`                          | recorder-scoped teacher `SELECT` only                                                                                           | lifecycle RPC                                                |
 | Account credential/identity/observer/AI tables | none for `anon/authenticated`                                                                                                   | narrow RPC/server adapter                                    |
 | learner-safe self/observer history             | no raw table access                                                                                                             | safe projection RPC                                          |
+
+E2A устранила прежнюю техническую блокировку owner-scoped
+Course/Component/Slide/File mutations nested helper ACL, не расширив целевую
+RLS-модель.
 
 M1 включает RLS и полностью закрывает direct browser access к legacy
 preference/security. Expand может сохранять только server-side rollback

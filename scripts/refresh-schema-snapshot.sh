@@ -157,6 +157,15 @@ SHIDAO_SCHEMA_SIGNATURE="$({
           ('public.approve_educator_course_revision_admin(uuid,uuid,uuid)'),
           ('public.reject_educator_course_revision_admin(uuid,uuid,uuid,text)'),
           ('public.unpublish_course_publication_admin(uuid,uuid)')
+      ), educator_course_content_guard_trigger(table_name, trigger_name) as (
+        values
+          ('course', 'trg_course_educator_content_mutation'),
+          ('course_attachment', 'trg_course_attachment_educator_content_mutation'),
+          ('course_attestation', 'trg_course_attestation_educator_content_mutation'),
+          ('lesson', 'trg_lesson_educator_content_mutation'),
+          ('lesson_component', 'trg_lesson_component_educator_content_mutation'),
+          ('lesson_student_slide', 'trg_lesson_student_slide_educator_content_mutation'),
+          ('stored_file', 'trg_stored_file_educator_content_mutation')
       )
       select case
         when to_regclass('public.account') is not null
@@ -243,6 +252,77 @@ SHIDAO_SCHEMA_SIGNATURE="$({
              and column_name = 'approved_revision_id'
              and data_type = 'uuid'
              and is_nullable = 'YES'
+         )
+         and exists (
+           select 1
+           from pg_proc as procedure
+           where procedure.oid = to_regprocedure(
+             'public.guard_educator_course_content_mutation()'
+           )
+             and not procedure.prosecdef
+             and procedure.proconfig @> array['search_path=\"\"']
+             and position(
+               'educator_course_author_can_mutate'
+               in pg_get_functiondef(procedure.oid)
+             ) = 0
+             and position(
+               'course.learning_audience = ''children'''
+               in pg_get_functiondef(procedure.oid)
+             ) > 0
+             and position(
+               'account.can_author_educator_courses'
+               in pg_get_functiondef(procedure.oid)
+             ) > 0
+         )
+         and not exists (
+           select 1
+           from educator_course_content_guard_trigger as required_trigger
+           where not exists (
+             select 1
+             from pg_trigger as trigger
+             where trigger.tgrelid = to_regclass(
+                 'public.' || required_trigger.table_name
+               )
+               and trigger.tgname = required_trigger.trigger_name
+               and trigger.tgfoid = to_regprocedure(
+                 'public.guard_educator_course_content_mutation()'
+               )
+               and not trigger.tgisinternal
+               and trigger.tgenabled = 'O'
+           )
+         )
+         and has_function_privilege(
+           'postgres',
+           'public.guard_educator_course_content_mutation()',
+           'EXECUTE'
+         )
+         and not exists (
+           select 1
+           from unnest(array['anon', 'authenticated', 'service_role'])
+             as actor(role_name)
+           where has_function_privilege(
+             actor.role_name,
+             'public.guard_educator_course_content_mutation()',
+             'EXECUTE'
+           )
+         )
+         and not exists (
+           select 1
+           from unnest(array['anon', 'authenticated']) as actor(role_name)
+           where has_function_privilege(
+             actor.role_name,
+             'public.educator_course_author_can_mutate(uuid)',
+             'EXECUTE'
+           )
+         )
+         and not exists (
+           select 1
+           from unnest(array['postgres', 'service_role']) as actor(role_name)
+           where not has_function_privilege(
+             actor.role_name,
+             'public.educator_course_author_can_mutate(uuid)',
+             'EXECUTE'
+           )
          )
          and exists (
            select 1

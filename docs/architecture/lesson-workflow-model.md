@@ -529,6 +529,19 @@ approved snapshot, сохраняет revision-scoped last opened/completed Less
 scheduling и LessonRun для educator Course закрыты DB и application guards.
 Полный contract: [«Курсы для педагогов и аттестация»](../product/educator-courses-and-attestation.md).
 
+E2 trigger graph имел execution-context defect: invoker guard дочерних Course
+writes вызывал закрытый helper `educator_course_author_can_mutate(uuid)`,
+поэтому authenticated caller без `EXECUTE` получал `42501` до вычисления
+predicate. Current production forward correction
+`20260813113041_fix_educator_course_content_guard_acl.sql` не превратила этот
+helper в browser RPC и не перевела guard в `SECURITY DEFINER`: тот же
+audience/capability predicate встроен в `SECURITY INVOKER` trigger, где чтения
+по-прежнему ограничены grants/RLS caller. Exact apply завершился `COMMIT`;
+postflight `12/12` подтвердил invoker/search-path/closed ACL/inline predicate,
+семь trigger assignments и отсутствие policy drift. Authenticated educator
+`rich_text` same-value update прошёл с `rollback_verified=true`; отдельный web
+deploy для вступления DB-only correction в силу не требовался.
+
 Публикация не открывает live owner tables. Application service создаёт
 allowlisted immutable snapshot текущей authored-редакции:
 
@@ -1027,6 +1040,8 @@ Implementation map:
 - LessonRun migration: `20260806190044_lesson_runs_learning_records.sql`.
 - educator governance/progress migration:
   `20260812150745_educator_course_governance_progress.sql`.
+- educator content-guard ACL correction:
+  `20260813113041_fix_educator_course_content_guard_acl.sql`.
 - Groups/mixed audience migration:
   `20260806220726_learner_groups_mixed_course_audience.sql`.
 - Canonical learner identity migration:

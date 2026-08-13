@@ -322,6 +322,40 @@ migration-history row: доказательство применения — exa
 нужен совместимый forward fix, а восстановление backup возможно только как
 отдельный согласованный rollback с остановленной записью.
 
+### Educator Course content-guard ACL hotfix — production execution record
+
+Production symptom: authenticated сохранение Text Component возвращает
+`42501 permission denied for function educator_course_author_can_mutate`.
+Current E2 `SECURITY INVOKER` trigger guard достигает закрытого helper раньше
+audience/capability predicate. Это не требует выдавать browser `EXECUTE` и не
+оправдывает перевод guard в `SECURITY DEFINER`.
+
+Applied forward migration:
+`20260813113041_fix_educator_course_content_guard_acl.sql`. Она переписывает
+только `guard_educator_course_content_mutation()` как invoker function с
+inlined predicate, сохраняет `educator_course_author_can_mutate(uuid)` закрытым
+для `PUBLIC`/`anon`/`authenticated`, не меняет RLS/table grants и не делает
+backfill. Execution evidence:
+
+- migration SHA-256
+  `f159188b067bb8a8a6bfe837a3d366a68ab40e42876a79db88dd54d1f01b322f`;
+- rehearsal под `supabase_admin` прошла до `NOTIFY`, затем `ROLLBACK`;
+- verified backup
+  `/root/shidao-db-backups/shidao-before-educator-content-guard-fix-20260813T113940Z.dump`:
+  size `1324276`, mode `600`, `1595` restore entries, SHA-256
+  `0b3a6c2d9d5100d721ccd1988a8494a4719e9323f2b13838abfc5011148ae6a7`;
+- exact migration применена с `COMMIT`;
+- postflight `12/12` подтвердил owner/invoker/search-path, closed helper ACL,
+  inline predicate, семь enabled triggers и отсутствие policy drift;
+- counts Account/Course/Lesson/Component сохранились `19/6/22/85`;
+- authenticated educator `rich_text` same-value `UPDATE` прошёл внутри
+  rollback, `rollback_verified=true`;
+- current snapshot снят `2026-08-13T11:43:48Z`, SHA-256
+  `0a6eab37e1bbecc0084e281496346e5436fcbd1ac2b42e102e89951e71ff258e`.
+
+Fix полностью DB-side и вступил в силу для уже запущенного compatible web
+image; отдельный Coolify deployment не требовался.
+
 ### Course Component contract cleanup
 
 Для exact migration

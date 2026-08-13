@@ -436,6 +436,20 @@ exact functional source `288fac3d7ab909cab0e26bffb6a0c156f9e12d81`
 прошёл typecheck, lint, format, `585/585` unit/API и `23/23` strict
 production-mode browser scenarios; production guest HTTP postflight green.
 
+**Current production — P0 authenticated authoring ACL hotfix:** регрессия E2
+trigger graph, из-за которой разрешённое сохранение Text Component и другие
+authenticated Course-child mutations получали `42501 permission denied for
+function educator_course_author_can_mutate` раньше audience/capability-проверки,
+устранена forward migration
+`20260813113041_fix_educator_course_content_guard_acl.sql`. Trigger guard
+остаётся `SECURITY INVOKER`, predicate встроен в его тело, helper закрыт для
+`PUBLIC`, `anon` и `authenticated`, RLS/table grants не расширены. Exact apply
+завершился `COMMIT`; `12/12` postflight, семь triggers и rollback-verified
+authenticated educator `rich_text` update прошли, counts `19/6/22/85` не
+изменились. Current snapshot `2026-08-13T11:43:48Z` имеет SHA-256
+`0a6eab37e1bbecc0084e281496346e5436fcbd1ac2b42e102e89951e71ff258e`.
+Исправление DB-only и уже действует без отдельного Coolify deployment.
+
 **Current production:** все product buttons в
 `AppPageHeader` имеют белый surface высотой `40 px`, border `0` и общий
 двухслойный `--product-raised-control-shadow`, совпадающий с selected-состоянием

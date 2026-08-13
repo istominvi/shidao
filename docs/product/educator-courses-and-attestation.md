@@ -1,8 +1,9 @@
 # Курсы для педагогов и аттестация
 
-**Статус:** current production database + web/API
+**Статус:** current production database + web/API + authenticated authoring ACL
+hotfix
 
-**Актуально на:** 12 августа 2026 года
+**Актуально на:** 13 августа 2026 года
 
 ## Граница статусов
 
@@ -13,10 +14,12 @@ awards. Там же опубликован демонстрационный ку
 current production release `22b486a7163453019d9720cb4fe0f36ed7c0228d`.
 
 E2 migration `20260812150745_educator_course_governance_progress.sql` применена
-к production DB с `COMMIT` в `2026-08-12T07:34:36Z`; DB postflight и current
+к production DB с `COMMIT` в `2026-08-12T07:34:36Z`; DB postflight и E2
 snapshot `2026-08-12T07:46:11Z` подтвердили governance, approved revision,
-self-learning progress и official no-copy/no-roster/no-Run contract. Зависимые
-API/UI развёрнуты тем же coupled E2 rollout и являются current production.
+self-learning progress и official no-copy/no-roster/no-Run contract. Current
+E2A content-guard ACL correction применена отдельно и отражена в snapshot
+`2026-08-13T11:43:48Z`. Зависимые API/UI развёрнуты прежним coupled E2 rollout
+и остаются current production без дополнительного web deployment.
 
 ## Одна модель Course, два учебных назначения
 
@@ -52,6 +55,30 @@ revision. Назначение хранится отдельно:
   детский.
 - Capability даёт право подготовить и отправить educator revision, но не право
   самостоятельно одобрить её для каталога.
+
+### Current production authenticated authoring ACL hotfix
+
+E2 schema использовала семь Course/content triggers через общий
+`SECURITY INVOKER` guard. Guard вызывал закрытый
+`educator_course_author_can_mutate(uuid)`, а обычный authenticated owner не
+имеет и не должен получать прямой `EXECUTE` этого helper. В результате
+разрешённый Component update (включая сохранение нового Text), а также другие
+прямые Course-child mutations завершались `42501 permission denied`
+раньше проверки `learning_audience` и author capability. Это дефект
+execution-context/ACL, а не повреждение Component payload или authored данных.
+
+Production forward migration
+`20260813113041_fix_educator_course_content_guard_acl.sql` встроила тот же
+predicate в invoker guard. Helper остаётся закрытым для browser roles; RLS,
+table grants, capability semantics и семь trigger assignments не расширяются.
+Exact apply завершился `COMMIT`. Postflight `12/12` подтвердил owner/invoker,
+пустой `search_path`, closed ACL, inline predicate, семь triggers и отсутствие
+policy drift; Account/Course/Lesson/Component counts остались `19/6/22/85`.
+Authenticated educator `rich_text` same-value `UPDATE` прошёл внутри rollback
+(`rollback_verified=true`). Current snapshot `2026-08-13T11:43:48Z` имеет
+SHA-256
+`0a6eab37e1bbecc0084e281496346e5436fcbd1ac2b42e102e89951e71ff258e`.
+Отдельный web/Coolify deployment для DB-only исправления не требовался.
 
 У educator Course авторская вкладка «Аттестация» содержит обязательное
 определение итогового теста: вопросы, варианты, правильные ответы, объяснения и
@@ -159,8 +186,9 @@ dependent web/API release и product-data bootstrap развёрнуты. Bootst
 добавила trusted-author/review/progress contract; postflight подтвердил одну
 official approved educator publication, derived progress `6/6 = 100%`, одну
 attempt/award, `90%` при threshold `80%` и отсутствие copy origin, roster,
-group assignment и LessonRun. Current snapshot имеет SHA-256
-`a34a5a5919ea406050a5c0cb7f39310d1a9e807725e608166f63becb8f2260a4`.
+group assignment и LessonRun. Последующий content-guard ACL hotfix применён
+без изменения данных. Current snapshot `2026-08-13T11:43:48Z` имеет SHA-256
+`0a6eab37e1bbecc0084e281496346e5436fcbd1ac2b42e102e89951e71ff258e`.
 
 UUID parsing hotfix и dependent E2 API/UI развёрнуты в exact functional commit
 `22b486a7163453019d9720cb4fe0f36ed7c0228d`.

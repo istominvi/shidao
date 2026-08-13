@@ -73,6 +73,64 @@ select pg_temp.assert_true(
   'E2 governance migration is not applied'
 );
 
+select pg_temp.assert_true(
+  exists (
+    select 1
+    from pg_proc as procedure
+    where procedure.oid = to_regprocedure(
+        'public.guard_educator_course_content_mutation()'
+      )
+      and not procedure.prosecdef
+      and procedure.proconfig @> array['search_path=""']
+      and position(
+        'educator_course_author_can_mutate'
+        in pg_get_functiondef(procedure.oid)
+      ) = 0
+      and position(
+        'account.can_author_educator_courses'
+        in pg_get_functiondef(procedure.oid)
+      ) > 0
+      and position(
+        'course.learning_audience = ''children'''
+        in pg_get_functiondef(procedure.oid)
+      ) > 0
+      and position(
+        'account.status = ''active'''
+        in pg_get_functiondef(procedure.oid)
+      ) > 0
+  ),
+  'educator content guard SECURITY INVOKER fix is not applied'
+);
+
+select pg_temp.assert_true(
+  not has_function_privilege(
+    'authenticated',
+    'public.educator_course_author_can_mutate(uuid)',
+    'EXECUTE'
+  )
+  and not has_function_privilege(
+    'anon',
+    'public.educator_course_author_can_mutate(uuid)',
+    'EXECUTE'
+  )
+  and not has_function_privilege(
+    'authenticated',
+    'public.guard_educator_course_content_mutation()',
+    'EXECUTE'
+  )
+  and not has_function_privilege(
+    'anon',
+    'public.guard_educator_course_content_mutation()',
+    'EXECUTE'
+  )
+  and not has_function_privilege(
+    'service_role',
+    'public.guard_educator_course_content_mutation()',
+    'EXECUTE'
+  ),
+  'educator content guard fix opened a browser or service RPC ACL'
+);
+
 set local session_replication_role = replica;
 insert into auth.users (
   id,
@@ -180,6 +238,25 @@ values (
   'Урок 2',
   '',
   30
+);
+
+insert into public.lesson_component (
+  id,
+  lesson_id,
+  position,
+  type_key,
+  schema_version,
+  payload,
+  placement_config
+)
+values (
+  'e2000000-0000-4000-8000-000000000071',
+  'e2000000-0000-4000-8000-000000000061',
+  1,
+  'rich_text',
+  1,
+  '{"title":"Черновик","format":"markdown"}'::jsonb,
+  '{}'::jsonb
 );
 
 insert into public.course_attestation (
@@ -318,6 +395,47 @@ select set_config(
 );
 
 set local role authenticated;
+update public.lesson_component
+set payload = '{"title":"Сохранённый текст","format":"markdown"}'::jsonb
+where id = 'e2000000-0000-4000-8000-000000000071';
+
+select pg_temp.assert_true(
+  exists (
+    select 1
+    from public.lesson_component as component
+    where component.id = 'e2000000-0000-4000-8000-000000000071'
+      and component.payload ->> 'title' = 'Сохранённый текст'
+  ),
+  'authenticated educator could not save a Text component'
+);
+
+reset role;
+select set_config(
+  'request.jwt.claim.sub',
+  'e2000000-0000-4000-8000-000000000002',
+  true
+);
+set local role authenticated;
+
+with changed as (
+  update public.lesson_component
+  set payload = '{"title":"Чужое изменение","format":"markdown"}'::jsonb
+  where id = 'e2000000-0000-4000-8000-000000000071'
+  returning 1
+)
+select pg_temp.assert_true(
+  (select count(*) = 0 from changed),
+  'authenticated educator mutated another Account component'
+);
+
+reset role;
+select set_config(
+  'request.jwt.claim.sub',
+  'e2000000-0000-4000-8000-000000000001',
+  true
+);
+set local role authenticated;
+
 select pg_temp.assert_true(
   (select count(*) from public.account) = 1
   and exists (
@@ -598,6 +716,21 @@ $$;
 update public.account
 set can_author_educator_courses = false
 where id = 'e2000000-0000-4000-8000-000000000011';
+
+set local role authenticated;
+do $$
+begin
+  begin
+    update public.lesson_component
+    set payload = '{"title":"Запрещённое сохранение","format":"markdown"}'::jsonb
+    where id = 'e2000000-0000-4000-8000-000000000071';
+    raise exception 'revoked_author_edited_component' using errcode = 'XX000';
+  exception when sqlstate '42501' then
+    if sqlerrm <> 'educator_course_authoring_not_allowed' then raise; end if;
+  end;
+end
+$$;
+reset role;
 
 do $$
 begin
