@@ -212,13 +212,17 @@ palette всех 20 Component types показывает короткое наз
 статический неинтерактивный мини-образец; `heading`, `rich_text`, `callout` и
 `quote` визуально различимы до добавления в Lesson. Образцы не используют
 production renderer, не создают вложенные controls и не меняют registry
-defaults. Authored Component card получила normal-flow header: номер и название
-используют canonical `.88rem/400`, action controls — `32 × 32 px`. Outer card
-не имеет padding; header использует `4 / 4 / 4 / 12 px`, а content — `12 px`
-со всех сторон. Scoped editor использует нейтральный divider, обычные labels и
-однострочные input/select высотой `40 px` с той же `.88rem/400` типографикой.
-Это UI-only source change без новых API, schema, migration или второго
-Component order; production rollout/postflight ещё не заявлены.
+defaults. Выбор типа переключает тот же dialog на локальный draft из canonical
+defaults: persisted Component ещё не существует, возврат в каталог или закрытие
+ничего не записывает, а единственный `POST` выполняется по явному «Сохранить
+компонент». Persisted Component card остаётся renderer-only; 32 px action
+controls находятся в hover/focus overlay и не занимают отдельный normal-flow
+header. Pencil открывает отдельный modal editor, где отмена не меняет Component,
+а явное сохранение отправляет `PATCH`. Оба editor surface используют обычные
+labels и однострочные input/select высотой `40 px` с canonical `.88rem/400`
+типографикой. Это UI-only source change поверх существующих API без новых schema,
+migration или второго Component order; production rollout/postflight ещё не
+заявлены.
 
 **Previously deployed Schedule presentation baseline (superseded by PR #242):**
 `/schedule` загружает реальные LessonRun за локальную неделю (понедельник–
@@ -968,12 +972,18 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
   неинтерактивный образец своего типа; это presentation metadata, а не
   persisted payload или production renderer. Вводный subtitle и повторные
   category heading/description удалены; close остаётся доступной кнопкой без
-  декоративной рамки.
+  декоративной рамки. Выбор карточки открывает настоящий payload editor внутри
+  того же dialog, но работает с локальной копией canonical defaults. До явного
+  «Сохранить компонент» `POST` не отправляется и Component не занимает позицию;
+  возврат в каталог или закрытие dialog удаляет только локальный draft.
 - Компонент можно редактировать, удалить или переместить кнопками
-  «выше/ниже». В current source outer card не имеет padding, 40 px normal-flow
-  header использует inset `4 / 4 / 4 / 12 px`, а content — `12 px` в круг;
-  meta и editor labels используют `.88rem/400`, icon actions — 32 px, а
-  однострочные editor controls — canonical 40 px.
+  «выше/ниже». В current source persisted card всегда показывает только
+  production teacher renderer. Группа 32 px actions располагается поверх
+  карточки и раскрывается через hover/focus-within; на touch/coarse-pointer она
+  остаётся доступной без hover. Pencil открывает отдельный modal editor, а не
+  заменяет renderer внутри карточки. Отмена/закрытие не отправляют mutation;
+  `PATCH` с payload/placement выполняется только по явному сохранению. Editor
+  labels используют `.88rem/400`, а однострочные controls — canonical 40 px.
 - Новый Component всегда создаётся `staff_only` и не показывается ученику,
   пока преподаватель явно не назначит его на Slide.
 

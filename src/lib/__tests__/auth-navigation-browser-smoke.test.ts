@@ -8712,6 +8712,19 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
     assert.match(html, /Экран ученика/);
     assert.match(html, /Домашнее задание/);
 
+    let componentCreateRequestCount = 0;
+    await runtime.page.route(
+      `**/api/v2/lessons/${E2E_LESSON_ID}/components`,
+      async (route) => {
+        componentCreateRequestCount += 1;
+        await route.fulfill({
+          status: 503,
+          contentType: "application/json",
+          body: JSON.stringify({ error: "Unexpected component persistence" }),
+        });
+      },
+    );
+
     await runtime.page
       .getByRole("button", { name: "Компонент", exact: true })
       .click();
@@ -8967,6 +8980,34 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
     ]);
     assert.equal(textPreviewContract.quoteBorderLeftWidth, "2px");
     assert.equal(textPreviewContract.quoteTextFontStyle, "italic");
+    await componentDialog
+      .locator('[data-component-type-key="heading"]')
+      .click();
+    const draftHeadingDialog = runtime.page.getByRole("dialog", {
+      name: "Новый компонент · Заголовок",
+      exact: true,
+    });
+    await draftHeadingDialog.waitFor();
+    await draftHeadingDialog.locator(".component-payload-editor").waitFor();
+    await runtime.page.evaluate(
+      () =>
+        new Promise<void>((resolve) =>
+          window.requestAnimationFrame(() =>
+            window.requestAnimationFrame(() => resolve()),
+          ),
+        ),
+    );
+    assert.equal(componentCreateRequestCount, 0);
+    assert.equal(
+      await runtime.page.locator(".lesson-component-card").count(),
+      1,
+    );
+    await draftHeadingDialog
+      .getByRole("button", { name: "Назад к компонентам", exact: true })
+      .click();
+    await draftHeadingDialog.waitFor({ state: "detached" });
+    await componentDialog.waitFor();
+    assert.equal(componentCreateRequestCount, 0);
     for (const redundantText of [
       "Выберите элемент плана. Новый компонент сначала виден только преподавателю.",
       "Заголовки, основной текст, сноски и цитаты",
@@ -9022,207 +9063,254 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       .getByRole("button", { name: "Закрыть", exact: true })
       .click();
 
-    const fileComponentCard = runtime.page.locator(".lesson-component-card");
-    assert.equal(
-      await fileComponentCard
-        .locator(".lesson-component-card-title")
-        .textContent(),
-      "1. Файл",
+    const fileComponentCard = runtime.page.locator(
+      '.lesson-component-card[data-component-type-key="file"]',
     );
-    await fileComponentCard
-      .getByRole("button", { name: "Редактировать «Файл»", exact: true })
-      .click();
-    const fileComponentEditor = fileComponentCard.locator(
+    assert.equal(await fileComponentCard.count(), 1);
+    assert.equal(
+      await fileComponentCard.locator(".lesson-component-card-header").count(),
+      0,
+    );
+    assert.equal(
+      await fileComponentCard.locator(".lesson-component-card-title").count(),
+      0,
+    );
+    assert.equal(
+      await fileComponentCard.locator(".component-payload-editor").count(),
+      0,
+    );
+    const fileComponentActions = fileComponentCard.locator(
+      ".lesson-component-card-actions",
+    );
+    const fileComponentEdit = fileComponentCard.getByRole("button", {
+      name: "Редактировать «Файл»",
+      exact: true,
+    });
+    assert.equal(
+      await fileComponentEdit.getAttribute("aria-haspopup"),
+      "dialog",
+    );
+    const fileComponentCardVisual = await fileComponentCard.evaluate((card) => {
+      const label = card.querySelector<HTMLElement>(
+        ".lesson-component-card-label",
+      );
+      const actions = card.querySelector<HTMLElement>(
+        ".lesson-component-card-actions",
+      );
+      const content = card.querySelector<HTMLElement>(
+        ".lesson-component-card-content",
+      );
+      if (!label || !actions || !content) {
+        throw new Error("Overlay component card contract is missing");
+      }
+      const cardStyle = getComputedStyle(card);
+      const actionsStyle = getComputedStyle(actions);
+      const contentStyle = getComputedStyle(content);
+      const labelRect = label.getBoundingClientRect();
+      const actionsRect = actions.getBoundingClientRect();
+      const actionButtons = Array.from(
+        actions.querySelectorAll<HTMLButtonElement>("button"),
+        (button) => {
+          const rect = button.getBoundingClientRect();
+          return { width: rect.width, height: rect.height };
+        },
+      );
+      return {
+        accessibleLabel: label.textContent?.trim(),
+        accessibleLabelWidth: labelRect.width,
+        accessibleLabelHeight: labelRect.height,
+        cardPadding: cardStyle.padding,
+        cardOverflow: cardStyle.overflow,
+        actionsPosition: actionsStyle.position,
+        actionsTop: actionsStyle.top,
+        actionsRight: actionsStyle.right,
+        actionsHeight: actionsRect.height,
+        actionsOpacity: actionsStyle.opacity,
+        actionsPointerEvents: actionsStyle.pointerEvents,
+        actionsBackground: actionsStyle.backgroundColor,
+        actionButtons,
+        contentPadding: contentStyle.padding,
+        documentClientWidth: document.documentElement.clientWidth,
+        documentScrollWidth: document.documentElement.scrollWidth,
+      };
+    });
+    assert.equal(fileComponentCardVisual.accessibleLabel, "1. Файл");
+    assert.ok(fileComponentCardVisual.accessibleLabelWidth <= 1);
+    assert.ok(fileComponentCardVisual.accessibleLabelHeight <= 1);
+    assert.equal(fileComponentCardVisual.cardPadding, "0px");
+    assert.equal(fileComponentCardVisual.cardOverflow, "visible");
+    assert.equal(fileComponentCardVisual.actionsPosition, "absolute");
+    assert.equal(fileComponentCardVisual.actionsTop, "4px");
+    assert.equal(fileComponentCardVisual.actionsRight, "4px");
+    assert.ok(Math.abs(fileComponentCardVisual.actionsHeight - 40) < 0.5);
+    assert.equal(fileComponentCardVisual.actionsOpacity, "0");
+    assert.equal(fileComponentCardVisual.actionsPointerEvents, "none");
+    assert.equal(
+      fileComponentCardVisual.actionsBackground,
+      "rgba(255, 255, 255, 0.88)",
+    );
+    assert.equal(fileComponentCardVisual.actionButtons.length, 5);
+    assert.ok(
+      fileComponentCardVisual.actionButtons.every(
+        ({ width, height }) =>
+          Math.abs(width - 32) < 0.5 && Math.abs(height - 32) < 0.5,
+      ),
+    );
+    assert.equal(fileComponentCardVisual.contentPadding, "12px");
+    assert.equal(
+      fileComponentCardVisual.documentScrollWidth,
+      fileComponentCardVisual.documentClientWidth,
+    );
+
+    await fileComponentCard.hover();
+    await runtime.page.evaluate(
+      () => new Promise<void>((resolve) => window.setTimeout(resolve, 180)),
+    );
+    assert.deepEqual(
+      await fileComponentActions.evaluate((actions) => {
+        const style = getComputedStyle(actions);
+        return { opacity: style.opacity, pointerEvents: style.pointerEvents };
+      }),
+      { opacity: "1", pointerEvents: "auto" },
+    );
+    await runtime.page
+      .getByRole("button", { name: "Компонент", exact: true })
+      .hover();
+    await runtime.page.evaluate(
+      () => new Promise<void>((resolve) => window.setTimeout(resolve, 180)),
+    );
+    assert.equal(
+      await fileComponentActions.evaluate(
+        (actions) => getComputedStyle(actions).opacity,
+      ),
+      "0",
+    );
+    await fileComponentEdit.evaluate((button) => {
+      (button as HTMLElement).focus();
+    });
+    await runtime.page.evaluate(
+      () => new Promise<void>((resolve) => window.setTimeout(resolve, 180)),
+    );
+    assert.deepEqual(
+      await fileComponentActions.evaluate((actions) => {
+        const style = getComputedStyle(actions);
+        return {
+          opacity: style.opacity,
+          pointerEvents: style.pointerEvents,
+          editFocused:
+            actions.querySelector('[aria-label="Редактировать «Файл»"]') ===
+            document.activeElement,
+        };
+      }),
+      { opacity: "1", pointerEvents: "auto", editFocused: true },
+    );
+
+    await fileComponentEdit.click();
+    const fileComponentDialog = runtime.page.getByRole("dialog", {
+      name: "1. Файл",
+      exact: true,
+    });
+    await fileComponentDialog.waitFor();
+    assert.equal(
+      await fileComponentDialog
+        .getByText(
+          "Редактирование компонента: настройте содержимое и отображение.",
+          { exact: true },
+        )
+        .count(),
+      1,
+    );
+    const fileComponentEditor = fileComponentDialog.locator(
       ".component-payload-editor",
     );
     await fileComponentEditor.waitFor();
-    const fileComponentEditorVisual = await fileComponentCard.evaluate(
-      (card) => {
-        const header = card.querySelector<HTMLElement>(
-          ".lesson-component-card-header",
-        );
-        const actions = card.querySelector<HTMLElement>(
-          ".lesson-component-card-actions",
-        );
-        const title = card.querySelector<HTMLElement>(
-          ".lesson-component-card-title",
-        );
-        const content = card.querySelector<HTMLElement>(
-          ".lesson-component-card-content",
-        );
-        const editor = card.querySelector<HTMLElement>(
+    assert.equal(
+      await fileComponentCard.locator(".component-payload-editor").count(),
+      0,
+    );
+    assert.equal(
+      await runtime.page.locator(".dialog-shell-overlay").count(),
+      1,
+    );
+    const fileComponentDialogVisual = await fileComponentDialog.evaluate(
+      (dialog) => {
+        const editor = dialog.querySelector<HTMLElement>(
           ".component-payload-editor",
         );
-        if (!header || !actions || !title || !content || !editor) {
-          throw new Error("Component editor visual contract is missing");
-        }
         const controls = Array.from(
-          editor.querySelectorAll<HTMLInputElement | HTMLSelectElement>(
+          dialog.querySelectorAll<HTMLInputElement | HTMLSelectElement>(
             "input.field-input:not([type='checkbox']), select.field-input:not([multiple])",
           ),
         );
-        const fieldLabels = Array.from(
-          editor.querySelectorAll<HTMLElement>(".field-label"),
-        );
-        const actionButtons = Array.from(
-          actions.querySelectorAll<HTMLButtonElement>("button"),
-        );
-        if (
-          controls.length === 0 ||
-          fieldLabels.length === 0 ||
-          actionButtons.length === 0
-        ) {
-          throw new Error("Component editor controls are missing");
+        if (!editor || controls.length === 0) {
+          throw new Error("Modal component editor controls are missing");
         }
-        const headerRect = header.getBoundingClientRect();
-        const contentRect = content.getBoundingClientRect();
-        const editorRect = editor.getBoundingClientRect();
-        const cardStyle = getComputedStyle(card);
-        const headerStyle = getComputedStyle(header);
-        const contentStyle = getComputedStyle(content);
-        const titleStyle = getComputedStyle(title);
+        const dialogRect = dialog.getBoundingClientRect();
         const editorStyle = getComputedStyle(editor);
         return {
-          cardPadding: {
-            top: cardStyle.paddingTop,
-            right: cardStyle.paddingRight,
-            bottom: cardStyle.paddingBottom,
-            left: cardStyle.paddingLeft,
-          },
-          headerPosition: headerStyle.position,
-          actionsPosition: getComputedStyle(actions).position,
-          headerHeight: headerRect.height,
-          headerPadding: {
-            top: headerStyle.paddingTop,
-            right: headerStyle.paddingRight,
-            bottom: headerStyle.paddingBottom,
-            left: headerStyle.paddingLeft,
-          },
-          contentPadding: {
-            top: contentStyle.paddingTop,
-            right: contentStyle.paddingRight,
-            bottom: contentStyle.paddingBottom,
-            left: contentStyle.paddingLeft,
-          },
-          contentMarginTop: contentStyle.marginTop,
-          headerContentContainerGap: contentRect.top - headerRect.bottom,
-          headerEditorGap: editorRect.top - headerRect.bottom,
-          actionsEditorGap:
-            editorRect.top - actions.getBoundingClientRect().bottom,
-          titleFontSize: titleStyle.fontSize,
-          titleFontWeight: titleStyle.fontWeight,
+          ariaModal: dialog.getAttribute("aria-modal"),
+          dialogWidth: dialogRect.width,
+          dialogInsideViewport:
+            dialogRect.left >= 0 &&
+            dialogRect.right <= document.documentElement.clientWidth &&
+            dialogRect.top >= 0 &&
+            dialogRect.bottom <= document.documentElement.clientHeight,
+          editorBorderTopWidth: editorStyle.borderTopWidth,
+          editorPaddingTop: editorStyle.paddingTop,
           editorFontSize: editorStyle.fontSize,
           editorFontWeight: editorStyle.fontWeight,
-          fieldLabelTypography: fieldLabels.map((label) => {
-            const style = getComputedStyle(label);
-            return { fontSize: style.fontSize, fontWeight: style.fontWeight };
-          }),
+          firstControlFocused: editor.contains(document.activeElement),
           controls: controls.map((control) => {
             const style = getComputedStyle(control);
             return {
-              tagName: control.tagName,
               height: control.getBoundingClientRect().height,
               fontSize: style.fontSize,
               fontWeight: style.fontWeight,
             };
           }),
-          actionButtons: actionButtons.map((button) => {
-            const rect = button.getBoundingClientRect();
-            return { width: rect.width, height: rect.height };
-          }),
+          bodyOverflow: document.body.style.overflow,
           documentClientWidth: document.documentElement.clientWidth,
           documentScrollWidth: document.documentElement.scrollWidth,
-          cardClientWidth: card.clientWidth,
-          cardScrollWidth: card.scrollWidth,
-          contentClientWidth: content.clientWidth,
-          contentScrollWidth: content.scrollWidth,
-          editorClientWidth: editor.clientWidth,
-          editorScrollWidth: editor.scrollWidth,
         };
       },
     );
-    assert.deepEqual(fileComponentEditorVisual.cardPadding, {
-      top: "0px",
-      right: "0px",
-      bottom: "0px",
-      left: "0px",
-    });
-    assert.equal(fileComponentEditorVisual.headerPosition, "static");
-    assert.equal(fileComponentEditorVisual.actionsPosition, "static");
-    assert.ok(Math.abs(fileComponentEditorVisual.headerHeight - 40) < 0.5);
-    assert.deepEqual(fileComponentEditorVisual.headerPadding, {
-      top: "4px",
-      right: "4px",
-      bottom: "4px",
-      left: "12px",
-    });
-    assert.deepEqual(fileComponentEditorVisual.contentPadding, {
-      top: "12px",
-      right: "12px",
-      bottom: "12px",
-      left: "12px",
-    });
-    assert.equal(fileComponentEditorVisual.contentMarginTop, "0px");
+    assert.equal(fileComponentDialogVisual.ariaModal, "true");
+    assert.ok(fileComponentDialogVisual.dialogWidth <= 768);
+    assert.equal(fileComponentDialogVisual.dialogInsideViewport, true);
+    assert.equal(fileComponentDialogVisual.editorBorderTopWidth, "0px");
+    assert.equal(fileComponentDialogVisual.editorPaddingTop, "0px");
+    assert.equal(fileComponentDialogVisual.editorFontSize, "14.08px");
+    assert.equal(fileComponentDialogVisual.editorFontWeight, "400");
+    assert.equal(fileComponentDialogVisual.firstControlFocused, true);
     assert.ok(
-      Math.abs(fileComponentEditorVisual.headerContentContainerGap) < 0.5,
-    );
-    assert.ok(Math.abs(fileComponentEditorVisual.headerEditorGap - 12) < 0.5);
-    assert.ok(Math.abs(fileComponentEditorVisual.actionsEditorGap - 16) < 0.5);
-    for (const typography of [
-      {
-        fontSize: fileComponentEditorVisual.titleFontSize,
-        fontWeight: fileComponentEditorVisual.titleFontWeight,
-      },
-      {
-        fontSize: fileComponentEditorVisual.editorFontSize,
-        fontWeight: fileComponentEditorVisual.editorFontWeight,
-      },
-      ...fileComponentEditorVisual.fieldLabelTypography,
-    ]) {
-      assert.equal(typography.fontSize, "14.08px");
-      assert.equal(typography.fontWeight, "400");
-    }
-    assert.ok(
-      fileComponentEditorVisual.controls.some(
-        ({ tagName }) => tagName === "INPUT",
+      fileComponentDialogVisual.controls.every(
+        ({ height, fontSize, fontWeight }) =>
+          Math.abs(height - 40) < 0.5 &&
+          fontSize === "14.08px" &&
+          fontWeight === "400",
       ),
     );
-    assert.ok(
-      fileComponentEditorVisual.controls.some(
-        ({ tagName }) => tagName === "SELECT",
-      ),
-    );
-    for (const control of fileComponentEditorVisual.controls) {
-      assert.ok(Math.abs(control.height - 40) < 0.5);
-      assert.equal(control.fontSize, "14.08px");
-      assert.equal(control.fontWeight, "400");
-    }
-    assert.ok(
-      fileComponentEditorVisual.actionButtons.every(
-        ({ width, height }) =>
-          Math.abs(width - 32) < 0.5 && Math.abs(height - 32) < 0.5,
-      ),
-    );
+    assert.equal(fileComponentDialogVisual.bodyOverflow, "hidden");
     assert.equal(
-      fileComponentEditorVisual.documentScrollWidth,
-      fileComponentEditorVisual.documentClientWidth,
-    );
-    assert.ok(
-      fileComponentEditorVisual.cardScrollWidth <=
-        fileComponentEditorVisual.cardClientWidth + 0.5,
-    );
-    assert.ok(
-      fileComponentEditorVisual.contentScrollWidth <=
-        fileComponentEditorVisual.contentClientWidth + 0.5,
-    );
-    assert.ok(
-      fileComponentEditorVisual.editorScrollWidth <=
-        fileComponentEditorVisual.editorClientWidth + 0.5,
+      fileComponentDialogVisual.documentScrollWidth,
+      fileComponentDialogVisual.documentClientWidth,
     );
     await fileComponentEditor
       .getByRole("button", { name: "Отмена", exact: true })
       .click();
-    await fileComponentEditor.waitFor({ state: "detached" });
+    await fileComponentDialog.waitFor({ state: "detached" });
+    await runtime.page.evaluate(
+      () =>
+        new Promise<void>((resolve) =>
+          window.requestAnimationFrame(() => resolve()),
+        ),
+    );
+    assert.equal(
+      await fileComponentEdit.evaluate(
+        (button) => document.activeElement === button,
+      ),
+      true,
+    );
 
     await runtime.page
       .getByRole("button", {

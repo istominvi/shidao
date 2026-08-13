@@ -329,16 +329,30 @@ registry category `attachment`. Category rail не имеет разделите
 auto-sized cards прижаты к началу grid и не растягиваются до высоты dialog.
 Category controls и доступные cards используют pointer.
 
+Выбор Component type не является mutation. Тот же dialog переключается из
+каталога в локальный draft, созданный из `defaultPayload/defaultPlacement`
+registry; до явного «Сохранить компонент» persisted row и позиция в Lesson не
+возникают. Возврат в каталог, отмена или закрытие отбрасывают только этот draft.
+Save отправляет существующий `POST /api/v2/lessons/:lessonId/components`, после
+чего application service повторно валидирует type-specific payload/placement и
+создаёт обычный `staff_only` Component. Ошибка сохраняет draft открытым для
+исправления; picker не вводит параллельный create contract.
+
 На поверхности «План» нет дополнительной card-подложки или повторного
 заголовка. Прозрачный toolbar показывает поиск по названиям уже добавленных
 Components слева (если список непустой) и действия AI/добавления справа.
 Authored Component card использует тот же 12 px element radius и стандартную
 тень, что table surfaces; фильтрация не меняет canonical `position` и не
-создаёт второй порядок. В current source meta и actions находятся в normal
-flow: номер/title и form labels используют canonical `.88rem/400`, icon actions
-имеют 32 px. Outer card не имеет padding; 40 px header получает inset
-`4 / 4 / 4 / 12 px`, content — `12 px` в круг, а однострочные editor
-input/select — 40 px. Эти scoped presentation rules не меняют learner renderer.
+создаёт второй порядок. В current source карточка содержит только production
+teacher renderer; номер/type остаются доступным именем, но не образуют отдельный
+видимый normal-flow header. Группа 32 px действий располагается в overlay,
+раскрывается на hover/focus-within и остаётся доступной на устройствах без
+hover. Pencil открывает отдельный modal editor поверх неизменённого renderer.
+Отмена/закрытие отбрасывают локальные изменения, а только явное сохранение
+отправляет существующий `PATCH /api/v2/components/:componentId` с
+payload/placement. Form labels используют canonical `.88rem/400`, однострочные
+input/select — 40 px. Эти scoped presentation rules не меняют learner renderer,
+registry, authored order или schema.
 
 На карточке teacher видит состояние видимости. `staff_only` означает, что
 компонент остаётся частью плана преподавателя, но отсутствует в learner API.

@@ -396,12 +396,15 @@ cards используют element-radius и стандартную table-shadow
 representative static preview и короткое назначение для каждого из 20 типов,
 поэтому текстовые `Заголовок / Текст / Сноска / Цитата` различимы до создания.
 Preview остаётся UI-only и не подменяет registry defaults или production
-renderer. Authored Component card переводится на normal-flow header с
-canonical `.88rem/400` и 32 px icon actions: у outer card padding отсутствует,
-header получает `4 / 4 / 4 / 12 px`, content — `12 px` в круг. Scoped payload
-editor использует нейтральную surface, обычные labels и 40 px input/select с
-той же типографикой. API, schema, migrations и authored order не меняются;
-production postflight этого source slice остаётся next.
+renderer. Выбор типа открывает внутри того же dialog локальный draft из
+canonical defaults; возврат или закрытие ничего не создают, а `POST` происходит
+только по «Сохранить компонент». Persisted Component card остаётся
+renderer-only: 32 px controls вынесены в hover/focus overlay, а Pencil открывает
+отдельный modal payload editor. Отмена не отправляет mutation, `PATCH` выполняет
+только явное сохранение. Оба editor surface используют обычные labels и 40 px
+input/select с canonical `.88rem/400`. Существующие API, schema, migrations и
+authored order не меняются; production postflight этого source slice остаётся
+next.
 
 Repository-current body typography закрепляет Schedule как канон для всех
 active product tables: `#141414 / .88rem / 400 / 1.3`; различия primary-cell

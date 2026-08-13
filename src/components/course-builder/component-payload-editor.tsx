@@ -12,9 +12,11 @@ import {
 } from "@/modules/course-builder/registry/contracts";
 
 type ComponentPayloadEditorProps = {
-  component: LessonComponent;
+  component: Pick<LessonComponent, "typeKey" | "payload" | "placement">;
   assets: CourseAsset[];
   disabled?: boolean;
+  saveError?: string | null;
+  cancelLabel?: string;
   onSave: (input: {
     payload: Record<string, unknown>;
     placement: Record<string, unknown>;
@@ -1415,6 +1417,8 @@ export function ComponentPayloadEditor({
   component,
   assets,
   disabled,
+  saveError,
+  cancelLabel = "Отмена",
   onSave,
   onCancel,
 }: ComponentPayloadEditorProps) {
@@ -1481,12 +1485,17 @@ export function ComponentPayloadEditor({
           {validationMessage}
         </p>
       ) : null}
+      {saveError ? (
+        <p className="text-sm font-medium text-rose-700" role="alert">
+          {saveError}
+        </p>
+      ) : null}
       <div className="component-payload-editor-actions">
         <Button disabled={disabled} onClick={() => void save()}>
           Сохранить компонент
         </Button>
         <Button variant="ghost" disabled={disabled} onClick={onCancel}>
-          Отмена
+          {cancelLabel}
         </Button>
       </div>
     </div>

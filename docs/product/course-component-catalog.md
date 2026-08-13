@@ -71,7 +71,7 @@
 сохранены, добавлены 11 новых, а `divider` удалён. Точный канонический
 список хранится в code-first registry, а не в этой матрице.
 
-### Current source: наглядный выбор типа
+### Current source: наглядный выбор типа и локальный draft
 
 Palette показывает у каждого из 20 типов короткое назначение и статический
 representative mini-preview. Для текстовой категории образец повторяет ключевую
@@ -82,8 +82,17 @@ representative mini-preview. Для текстовой категории обр
 Это UI-only presentation map, exhaustive по `ComponentTypeKey`. Он не меняет
 `defaultPayload/defaultPlacement`, не рендерит настоящие input/button/media
 внутри кнопки добавления, не делает network requests и не становится частью
-serializable registry/MCP schema. После выбора по-прежнему создаётся обычный
-private Component с canonical defaults и открывается его настоящий редактор.
+serializable registry/MCP schema. Выбор образца открывает настоящий editor в том
+же dialog, но пока только для локального draft из canonical defaults. Component
+не создаётся и не занимает позицию до явного «Сохранить компонент»; возврат к
+каталогу или закрытие ничего не записывает. Save создаёт обычный private
+Component через существующий application-service contract.
+
+После создания teacher card остаётся renderer-only: управление показывается в
+hover/focus overlay, а Pencil открывает отдельный modal editor. Cancel/close не
+изменяют persisted payload/placement; существующий `PATCH` вызывается только по
+явному сохранению. Это presentation/editor orchestration, а не новый registry,
+API или storage contract.
 
 ### Почему `divider` не нужен
 

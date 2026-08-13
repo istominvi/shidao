@@ -154,6 +154,72 @@ function assetMapFor(assets: CourseAsset[]) {
   ) as SignedCourseComponentAssetMap;
 }
 
+function ComponentEditorDialog({
+  component,
+  displayPosition,
+  assets,
+  disabled,
+  mutationError,
+  runMutation,
+  onClose,
+}: {
+  component: LessonComponent;
+  displayPosition: number;
+  assets: CourseAsset[];
+  disabled: boolean;
+  mutationError: string | null;
+  runMutation: CourseBuilderMutationRunner;
+  onClose: () => void;
+}) {
+  const definition = getComponentDefinition(component.typeKey);
+  const [saveAttempted, setSaveAttempted] = useState(false);
+
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key !== "Escape" || disabled) return;
+      event.preventDefault();
+      onClose();
+    }
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [disabled, onClose]);
+
+  return (
+    <DialogShell
+      title={`${displayPosition}. ${definition.title}`}
+      description="Редактирование компонента: настройте содержимое и отображение."
+      onClose={() => {
+        if (!disabled) onClose();
+      }}
+      closeLabel={`Закрыть редактор «${definition.title}»`}
+      className="component-editor-dialog"
+      panelClassName="component-editor-dialog-panel max-w-3xl"
+      bodyClassName="component-editor-dialog-body"
+    >
+      <ComponentPayloadEditor
+        component={component}
+        assets={assets}
+        disabled={disabled}
+        saveError={saveAttempted ? mutationError : null}
+        onCancel={onClose}
+        onSave={async (input) => {
+          setSaveAttempted(true);
+          let committed = false;
+          const saved = await runMutation("Сохраняем компонент…", async () => {
+            await jsonRequest(
+              `/api/v2/components/${component.id}`,
+              "PATCH",
+              input,
+            );
+            committed = true;
+          });
+          if (saved || committed) onClose();
+        }}
+      />
+    </DialogShell>
+  );
+}
+
 function ComponentCard({
   component,
   displayPosition,
@@ -163,10 +229,9 @@ function ComponentCard({
   studentSlides,
   assets,
   assetMap,
-  initiallyEditing,
   disabled,
+  mutationError,
   runMutation,
-  onInitialEditorConsumed,
 }: {
   component: LessonComponent;
   displayPosition: number;
@@ -176,18 +241,18 @@ function ComponentCard({
   studentSlides: CourseLesson["studentSlides"];
   assets: CourseAsset[];
   assetMap: SignedCourseComponentAssetMap;
-  initiallyEditing: boolean;
   disabled: boolean;
+  mutationError: string | null;
   runMutation: CourseBuilderMutationRunner;
-  onInitialEditorConsumed: () => void;
 }) {
-  const [editing, setEditing] = useState(initiallyEditing);
+  const [editing, setEditing] = useState(false);
   const [studentScreenPopoverOpen, setStudentScreenPopoverOpen] =
     useState(false);
-  const initialEditorConsumedRef = useRef(false);
+  const editTriggerRef = useRef<HTMLButtonElement>(null);
   const studentScreenTriggerRef = useRef<HTMLButtonElement>(null);
   const studentScreenPopoverRef = useRef<HTMLDivElement>(null);
   const studentScreenPopoverId = useId();
+  const accessibleLabelId = useId();
   const definition = getComponentDefinition(component.typeKey);
   const learnerVisible = component.studentSlideId !== null;
   const currentStudentSlidePosition = studentSlides.find(
@@ -202,15 +267,6 @@ function ComponentCard({
       ),
     [component.id, lessonComponents, studentSlides],
   );
-  const hoverActionClass =
-    "component-card-action transition-opacity md:!opacity-0 md:group-hover:!opacity-100 md:group-focus-within:!opacity-100";
-
-  useEffect(() => {
-    if (!initiallyEditing || initialEditorConsumedRef.current) return;
-    initialEditorConsumedRef.current = true;
-    onInitialEditorConsumed();
-  }, [initiallyEditing, onInitialEditorConsumed]);
-
   useEffect(() => {
     if (!studentScreenPopoverOpen) return;
 
@@ -265,23 +321,35 @@ function ComponentCard({
     );
   }
 
+  function closeEditor() {
+    if (disabled) return;
+    setEditing(false);
+    window.requestAnimationFrame(() => editTriggerRef.current?.focus());
+  }
+
   return (
-    <article className="lesson-component-card group">
-      <header className="lesson-component-card-header">
-        <p className="lesson-component-card-title">
-          <span className="lesson-component-card-position">
-            {displayPosition}.
-          </span>{" "}
-          {definition.title}
-        </p>
+    <>
+      <article
+        className="lesson-component-card group"
+        aria-labelledby={accessibleLabelId}
+        data-component-type-key={component.typeKey}
+      >
+        <h3
+          id={accessibleLabelId}
+          className="lesson-component-card-label sr-only"
+        >
+          {displayPosition}. {definition.title}
+        </h3>
         <div
-          className="lesson-component-card-actions"
+          className={`lesson-component-card-actions ${
+            studentScreenPopoverOpen ? "is-open" : ""
+          }`}
           role="group"
-          aria-label={`Управление компонентом «${definition.title}»`}
+          aria-label={`Управление компонентом ${displayPosition} «${definition.title}»`}
         >
           <Button
             variant="ghost"
-            className={hoverActionClass}
+            className="component-card-action"
             disabled={disabled || indexInLesson === 0}
             aria-label={`Переместить «${definition.title}» выше`}
             title="Переместить выше"
@@ -299,7 +367,7 @@ function ComponentCard({
           </Button>
           <Button
             variant="ghost"
-            className={hoverActionClass}
+            className="component-card-action"
             disabled={disabled || indexInLesson === componentCount - 1}
             aria-label={`Переместить «${definition.title}» ниже`}
             title="Переместить ниже"
@@ -316,18 +384,20 @@ function ComponentCard({
             <ArrowDown className="h-4 w-4" aria-hidden="true" />
           </Button>
           <Button
+            ref={editTriggerRef}
             variant="ghost"
-            className={hoverActionClass}
+            className="component-card-action"
             disabled={disabled}
-            aria-label={`${editing ? "Закрыть редактор" : "Редактировать"} «${definition.title}»`}
-            title={editing ? "Закрыть редактор" : "Редактировать"}
-            onClick={() => setEditing((value) => !value)}
+            aria-haspopup="dialog"
+            aria-label={`Редактировать «${definition.title}»`}
+            title="Редактировать"
+            onClick={() => setEditing(true)}
           >
             <Pencil className="h-4 w-4" aria-hidden="true" />
           </Button>
           <Button
             variant="ghost"
-            className={`${hoverActionClass} component-card-action-danger`}
+            className="component-card-action component-card-action-danger"
             disabled={disabled}
             aria-label={`Удалить «${definition.title}»`}
             title="Удалить"
@@ -348,7 +418,7 @@ function ComponentCard({
               className={`component-card-visibility-action transition ${
                 learnerVisible
                   ? "component-card-visibility-action-active border-sky-200 bg-sky-100 text-sky-800 hover:bg-sky-200"
-                  : "component-card-visibility-action-inactive text-neutral-500 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100"
+                  : "component-card-visibility-action-inactive text-neutral-500"
               }`}
               disabled={disabled}
               aria-haspopup="dialog"
@@ -435,53 +505,52 @@ function ComponentCard({
             ) : null}
           </div>
         </div>
-      </header>
 
-      <div className="lesson-component-card-content">
-        {editing ? (
-          <ComponentPayloadEditor
-            key={`${component.id}:${component.updatedAt}`}
-            component={component}
-            assets={assets}
-            disabled={disabled}
-            onCancel={() => setEditing(false)}
-            onSave={async (input) => {
-              const saved = await runMutation("Сохраняем компонент…", () =>
-                jsonRequest(
-                  `/api/v2/components/${component.id}`,
-                  "PATCH",
-                  input,
-                ),
-              );
-              if (saved) setEditing(false);
-            }}
-          />
-        ) : (
+        <div className="lesson-component-card-content">
           <CourseComponentRenderer
             component={component}
             assets={assetMap}
             mode="teacher"
           />
-        )}
-      </div>
-    </article>
+        </div>
+      </article>
+
+      {editing ? (
+        <ComponentEditorDialog
+          key={component.id}
+          component={component}
+          displayPosition={displayPosition}
+          assets={assets}
+          disabled={disabled}
+          mutationError={mutationError}
+          runMutation={runMutation}
+          onClose={closeEditor}
+        />
+      ) : null}
+    </>
   );
 }
 
 function ComponentPickerDialog({
   lessonId,
+  assets,
   disabled,
+  mutationError,
   runMutation,
   onClose,
-  onCreated,
 }: {
   lessonId: string;
+  assets: CourseAsset[];
   disabled: boolean;
+  mutationError: string | null;
   runMutation: CourseBuilderMutationRunner;
   onClose: () => void;
-  onCreated: (componentId: string) => void;
 }) {
   const [category, setCategory] = useState<ComponentPickerCategory>("text");
+  const [selectedTypeKey, setSelectedTypeKey] =
+    useState<ComponentTypeKey | null>(null);
+  const [saveAttempted, setSaveAttempted] = useState(false);
+  const categoryTriggerRef = useRef<HTMLButtonElement>(null);
   const definitions = componentDefinitions.filter((definition) =>
     category === "link"
       ? definition.key === "external_link"
@@ -489,6 +558,20 @@ function ComponentPickerDialog({
         ? definition.key === "file"
         : definition.category === category,
   );
+  const selectedDefinition = selectedTypeKey
+    ? getComponentDefinition(selectedTypeKey)
+    : null;
+  const draftComponent = useMemo<Pick<
+    LessonComponent,
+    "typeKey" | "payload" | "placement"
+  > | null>(() => {
+    if (!selectedDefinition || !selectedTypeKey) return null;
+    return {
+      typeKey: selectedTypeKey,
+      payload: structuredClone(selectedDefinition.defaultPayload),
+      placement: structuredClone(selectedDefinition.defaultPlacement),
+    };
+  }, [selectedDefinition, selectedTypeKey]);
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
@@ -500,87 +583,137 @@ function ComponentPickerDialog({
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [disabled, onClose]);
 
-  async function add(typeKey: ComponentTypeKey) {
-    const definition = getComponentDefinition(typeKey);
-    let createdComponentId: string | null = null;
+  async function add(input: {
+    payload: Record<string, unknown>;
+    placement: Record<string, unknown>;
+  }) {
+    if (!selectedDefinition || !selectedTypeKey) return;
+    setSaveAttempted(true);
+    let committed = false;
     const saved = await runMutation(
-      `Добавляем «${definition.title}»…`,
+      `Добавляем «${selectedDefinition.title}»…`,
       async () => {
-        const response = await jsonRequest<{ component: LessonComponent }>(
+        await jsonRequest<{ component: LessonComponent }>(
           `/api/v2/lessons/${lessonId}/components`,
           "POST",
-          {
-            typeKey,
-            payload: structuredClone(definition.defaultPayload),
-            placement: structuredClone(definition.defaultPlacement),
-          },
+          { typeKey: selectedTypeKey, ...input },
         );
-        createdComponentId = response.component.id;
+        committed = true;
       },
     );
-    if (saved && createdComponentId) onCreated(createdComponentId);
+    if (saved || committed) onClose();
+  }
+
+  function returnToCatalog() {
+    if (disabled) return;
+    const previousTypeKey = selectedTypeKey;
+    setSelectedTypeKey(null);
+    setSaveAttempted(false);
+    window.requestAnimationFrame(() => {
+      const previousCard = previousTypeKey
+        ? document.querySelector<HTMLElement>(
+            `.component-picker-dialog [data-component-type-key="${previousTypeKey}"]`,
+          )
+        : null;
+      (previousCard ?? categoryTriggerRef.current)?.focus();
+    });
   }
 
   return (
     <DialogShell
-      title="Компоненты"
-      onClose={onClose}
-      className="component-picker-dialog"
+      title={
+        selectedDefinition
+          ? `Новый компонент · ${selectedDefinition.title}`
+          : "Компоненты"
+      }
+      description={
+        selectedDefinition
+          ? componentPickerPresentations[selectedDefinition.key].description
+          : undefined
+      }
+      onClose={() => {
+        if (!disabled) onClose();
+      }}
+      className={`component-picker-dialog ${
+        selectedDefinition ? "component-editor-dialog is-configuring" : ""
+      }`}
       panelClassName="component-picker-dialog-panel max-w-4xl"
       bodyClassName="component-picker-dialog-body"
     >
-      <div
-        className="component-picker-categories"
-        role="group"
-        aria-label="Категории компонентов"
-      >
-        {CATEGORY_ITEMS.map((item) => {
-          const Icon = item.icon;
-          const selected = item.value === category;
-          return (
-            <button
-              key={item.value}
-              type="button"
-              aria-pressed={selected}
-              data-dialog-initial-focus={selected ? "true" : undefined}
-              className={`component-picker-category ${
-                selected ? "is-active" : ""
-              }`}
-              onClick={() => setCategory(item.value)}
-            >
-              <Icon className="h-4 w-4" aria-hidden="true" />
-              {item.label}
-            </button>
-          );
-        })}
-      </div>
-
-      <div key={category} className="component-picker-dialog-list">
-        {definitions.map((definition) => (
-          <button
-            key={definition.key}
-            type="button"
-            data-component-type-key={definition.key}
-            disabled={disabled}
-            className="component-picker-card"
-            aria-label={`Добавить компонент «${definition.title}». ${componentPickerPresentations[definition.key].description}`}
-            onClick={() => void add(definition.key)}
+      {selectedDefinition && draftComponent ? (
+        <ComponentPayloadEditor
+          key={selectedDefinition.key}
+          component={draftComponent}
+          assets={assets}
+          disabled={disabled}
+          saveError={saveAttempted ? mutationError : null}
+          cancelLabel="Назад к компонентам"
+          onCancel={returnToCatalog}
+          onSave={add}
+        />
+      ) : (
+        <>
+          <div
+            className="component-picker-categories"
+            role="group"
+            aria-label="Категории компонентов"
           >
-            <span className="component-picker-card-heading">
-              <span className="component-picker-card-title">
-                {definition.title}
-              </span>
-              <span className="component-picker-card-add" aria-hidden="true">
-                <Plus className="h-4 w-4" />
-              </span>
-            </span>
-            <span className="component-picker-card-description">
-              {componentPickerPresentations[definition.key].description}
-            </span>
-            <ComponentPickerPreview typeKey={definition.key} />
-          </button>
-        ))}
-      </div>
+            {CATEGORY_ITEMS.map((item) => {
+              const Icon = item.icon;
+              const selected = item.value === category;
+              return (
+                <button
+                  key={item.value}
+                  ref={selected ? categoryTriggerRef : undefined}
+                  type="button"
+                  aria-pressed={selected}
+                  data-dialog-initial-focus={selected ? "true" : undefined}
+                  className={`component-picker-category ${
+                    selected ? "is-active" : ""
+                  }`}
+                  onClick={() => setCategory(item.value)}
+                >
+                  <Icon className="h-4 w-4" aria-hidden="true" />
+                  {item.label}
+                </button>
+              );
+            })}
+          </div>
+
+          <div key={category} className="component-picker-dialog-list">
+            {definitions.map((definition) => (
+              <button
+                key={definition.key}
+                type="button"
+                data-component-type-key={definition.key}
+                disabled={disabled}
+                className="component-picker-card"
+                aria-label={`Настроить компонент «${definition.title}». ${componentPickerPresentations[definition.key].description}`}
+                onClick={() => {
+                  setSaveAttempted(false);
+                  setSelectedTypeKey(definition.key);
+                }}
+              >
+                <span className="component-picker-card-heading">
+                  <span className="component-picker-card-title">
+                    {definition.title}
+                  </span>
+                  <span
+                    className="component-picker-card-add"
+                    aria-hidden="true"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </span>
+                </span>
+                <span className="component-picker-card-description">
+                  {componentPickerPresentations[definition.key].description}
+                </span>
+                <ComponentPickerPreview typeKey={definition.key} />
+              </button>
+            ))}
+          </div>
+        </>
+      )}
     </DialogShell>
   );
 }
@@ -679,18 +812,16 @@ function LessonPlan({
   course,
   lesson,
   query,
-  editingComponentId,
   disabled,
+  mutationError,
   runMutation,
-  onEditingComponentConsumed,
 }: {
   course: CourseWorkspace;
   lesson: CourseLesson;
   query: string;
-  editingComponentId: string | null;
   disabled: boolean;
+  mutationError: string | null;
   runMutation: CourseBuilderMutationRunner;
-  onEditingComponentConsumed: () => void;
 }) {
   const assetMap = useMemo(
     () => assetMapFor(course.attachments),
@@ -720,10 +851,9 @@ function LessonPlan({
           studentSlides={lesson.studentSlides}
           assets={course.attachments}
           assetMap={assetMap}
-          initiallyEditing={component.id === editingComponentId}
           disabled={disabled}
+          mutationError={mutationError}
           runMutation={runMutation}
-          onInitialEditorConsumed={onEditingComponentConsumed}
         />
       ))}
       {components.length === 0 ? (
@@ -932,9 +1062,6 @@ export function LessonAuthoringWorkspace({
   const [lessonEditorOpen, setLessonEditorOpen] = useState(false);
   const [lessonRunDialogOpen, setLessonRunDialogOpen] = useState(false);
   const [componentQuery, setComponentQuery] = useState("");
-  const [editingComponentId, setEditingComponentId] = useState<string | null>(
-    null,
-  );
   const pickerTriggerRef = useRef<HTMLButtonElement>(null);
   const lessonSettingsTriggerRef = useRef<HTMLButtonElement>(null);
   const lessonHeadingRef = useRef<HTMLHeadingElement>(null);
@@ -1120,10 +1247,9 @@ export function LessonAuthoringWorkspace({
                   course={course}
                   lesson={lesson}
                   query={componentQuery}
-                  editingComponentId={editingComponentId}
                   disabled={disabled}
+                  mutationError={mutationError}
                   runMutation={runMutation}
-                  onEditingComponentConsumed={() => setEditingComponentId(null)}
                 />
               </div>
             ) : null}
@@ -1168,13 +1294,11 @@ export function LessonAuthoringWorkspace({
       {pickerOpen ? (
         <ComponentPickerDialog
           lessonId={lesson.id}
+          assets={course.attachments}
           disabled={disabled}
+          mutationError={mutationError}
           runMutation={runMutation}
           onClose={closePicker}
-          onCreated={(componentId) => {
-            setEditingComponentId(componentId);
-            setPickerOpen(false);
-          }}
         />
       ) : null}
 

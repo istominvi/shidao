@@ -514,6 +514,15 @@ test("component picker is registry-driven and grouped into Russian categories", 
     "} satisfies Record<ComponentTypeKey, ComponentPickerPresentation>;",
     presentationMapStart,
   );
+  const addStart = picker.indexOf("async function add(");
+  const addEnd = picker.indexOf("function returnToCatalog", addStart);
+  const addFlow = picker.slice(addStart, addEnd);
+  const typeCardStart = picker.lastIndexOf(
+    "<button",
+    picker.indexOf("data-component-type-key={definition.key}"),
+  );
+  const typeCardEnd = picker.indexOf("</button>", typeCardStart);
+  const typeCard = picker.slice(typeCardStart, typeCardEnd);
 
   assert.ok(
     presentationMapStart >= 0 && presentationMapEnd > presentationMapStart,
@@ -566,8 +575,67 @@ test("component picker is registry-driven and grouped into Russian categories", 
     /category === "link"[\s\S]*?definition\.key === "external_link"[\s\S]*?category === "file"[\s\S]*?definition\.key === "file"/,
   );
   assert.doesNotMatch(authoring, /Разделители и структура плана/);
-  assert.doesNotMatch(authoring, /visibility: "staff_only"/);
-  assert.match(picker, /className="component-picker-dialog"/);
+  assert.match(
+    picker,
+    /const \[selectedTypeKey, setSelectedTypeKey\] =\s*useState<ComponentTypeKey \| null>\(null\)/,
+  );
+  assert.match(
+    picker,
+    /useMemo<Pick<[\s\S]*?LessonComponent,[\s\S]*?"typeKey" \| "payload" \| "placement"[\s\S]*?> \| null>/,
+  );
+  assert.match(picker, /typeKey: selectedTypeKey/);
+  assert.match(
+    picker,
+    /payload: structuredClone\(selectedDefinition\.defaultPayload\)/,
+  );
+  assert.match(
+    picker,
+    /placement: structuredClone\(selectedDefinition\.defaultPlacement\)/,
+  );
+  assert.doesNotMatch(
+    picker.slice(
+      picker.indexOf("const draftComponent"),
+      picker.indexOf("useEffect", picker.indexOf("const draftComponent")),
+    ),
+    /\bid:|\bposition:|\bvisibility:|\bcreatedAt:|\bupdatedAt:/,
+    "a local draft must not impersonate a persisted LessonComponent",
+  );
+  assert.match(
+    picker,
+    /selectedDefinition && draftComponent \? \([\s\S]*?<ComponentPayloadEditor[\s\S]*?component=\{draftComponent\}[\s\S]*?onCancel=\{returnToCatalog\}[\s\S]*?onSave=\{add\}/,
+  );
+  assert.match(
+    picker,
+    /selectedDefinition[\s\S]*?`Новый компонент · \$\{selectedDefinition\.title\}`[\s\S]*?: "Компоненты"/,
+  );
+  assert.ok(
+    typeCardStart >= 0 && typeCardEnd > typeCardStart,
+    "component type selection must remain a bounded picker-card action",
+  );
+  assert.match(
+    typeCard,
+    /onClick=\{\(\) => \{[\s\S]*?setSelectedTypeKey\(definition\.key\);[\s\S]*?\}\}/,
+  );
+  assert.doesNotMatch(
+    typeCard,
+    /runMutation|jsonRequest|"POST"|onClose/,
+    "choosing a type must only open a local draft editor",
+  );
+  assert.ok(addStart >= 0 && addEnd > addStart, "draft save flow must exist");
+  assert.equal(
+    picker.match(/\/api\/v2\/lessons\/\$\{lessonId\}\/components/g)?.length,
+    1,
+    "the picker must expose exactly one persisted create path",
+  );
+  assert.match(
+    addFlow,
+    /jsonRequest<[\s\S]*?`\/api\/v2\/lessons\/\$\{lessonId\}\/components`[\s\S]*?"POST"[\s\S]*?\{ typeKey: selectedTypeKey, \.\.\.input \}/,
+  );
+  assert.match(addFlow, /setSaveAttempted\(true\)/);
+  assert.match(addFlow, /committed = true/);
+  assert.match(addFlow, /if \(saved \|\| committed\) onClose\(\)/);
+  assert.doesNotMatch(picker, /onCreated|createdComponentId/);
+  assert.match(picker, /component-picker-dialog \$\{/);
   assert.match(
     picker,
     /panelClassName="component-picker-dialog-panel max-w-4xl"/,
@@ -701,53 +769,96 @@ test("component editor keeps canonical scoped typography and compact control geo
   assert.match(textareaStyles, /height: auto/);
 });
 
-test("component cards persist edit, delete, order, and ordered Student Screen placement", () => {
+test("component cards render content with accessible overlay actions and modal editing", () => {
   const authoring = source(lessonAuthoringPath);
   const styles = source("src/app/globals.css");
   const cardStyles = /\.lesson-component-card\s*\{[^}]*\}/.exec(styles)?.[0];
   const cardHoverStyles = /\.lesson-component-card:hover\s*\{[^}]*\}/.exec(
     styles,
   )?.[0];
-  const cardHeaderStyles = /\.lesson-component-card-header\s*\{[^}]*\}/.exec(
-    styles,
-  )?.[0];
-  const cardTitleStyles = /\.lesson-component-card-title\s*\{[^}]*\}/.exec(
-    styles,
-  )?.[0];
   const cardActionStyles = /\.lesson-component-card-actions\s*\{[^}]*\}/.exec(
     styles,
   )?.[0];
+  const visibleActionStyles =
+    /\.lesson-component-card:hover \.lesson-component-card-actions,[\s\S]*?\.lesson-component-card-actions\.is-open\s*\{[^}]*\}/.exec(
+      styles,
+    )?.[0];
   const cardContentStyles = /\.lesson-component-card-content\s*\{[^}]*\}/.exec(
     styles,
   )?.[0];
+  const modalEditorStyles =
+    /\.component-editor-dialog \.component-payload-editor\s*\{[^}]*\}/.exec(
+      styles,
+    )?.[0];
+  const editorDialogStart = authoring.indexOf("function ComponentEditorDialog");
   const componentCardStart = authoring.indexOf("function ComponentCard");
   const componentCardEnd = authoring.indexOf(
     "function ComponentPickerDialog",
     componentCardStart,
   );
+  const editorDialog = authoring.slice(editorDialogStart, componentCardStart);
   const componentCard = authoring.slice(componentCardStart, componentCardEnd);
-  const headerStart = componentCard.indexOf(
-    '<header className="lesson-component-card-header">',
-  );
-  const actionsStart = componentCard.indexOf(
-    'className="lesson-component-card-actions"',
-    headerStart,
-  );
-  const headerEnd = componentCard.indexOf("</header>", actionsStart);
-  const contentStart = componentCard.indexOf(
-    '<div className="lesson-component-card-content">',
-    headerEnd,
-  );
 
-  assert.match(authoring, /<article className="lesson-component-card group">/);
   assert.ok(
-    headerStart >= 0 &&
-      actionsStart > headerStart &&
-      headerEnd > actionsStart &&
-      contentStart > headerEnd,
-    "component title and actions must share a normal-flow header before content",
+    editorDialogStart >= 0 && componentCardStart > editorDialogStart,
+    "persisted component editing must remain a separate dialog",
   );
-  assert.doesNotMatch(componentCard, /absolute right-3 top-3/);
+  assert.match(
+    componentCard,
+    /<article[\s\S]*?className="lesson-component-card group"[\s\S]*?aria-labelledby=\{accessibleLabelId\}[\s\S]*?data-component-type-key=\{component\.typeKey\}/,
+  );
+  assert.match(
+    componentCard,
+    /<h3[\s\S]*?id=\{accessibleLabelId\}[\s\S]*?className="lesson-component-card-label sr-only"[\s\S]*?>[\s\S]*?\{displayPosition\}\. \{definition\.title\}[\s\S]*?<\/h3>/,
+  );
+  assert.doesNotMatch(
+    componentCard,
+    /lesson-component-card-header|lesson-component-card-title|lesson-component-card-position|<header/,
+    "technical component meta must not render as a visible card header",
+  );
+  assert.match(
+    componentCard,
+    /className=\{`lesson-component-card-actions \$\{[\s\S]*?role="group"[\s\S]*?aria-label=\{`Управление компонентом \$\{displayPosition\} «\$\{definition\.title\}»`\}/,
+  );
+  assert.match(
+    componentCard,
+    /<div className="lesson-component-card-content">[\s\S]*?<CourseComponentRenderer[\s\S]*?mode="teacher"/,
+  );
+  assert.doesNotMatch(
+    componentCard,
+    /<ComponentPayloadEditor/,
+    "the card must keep rendering content while editing happens in a modal",
+  );
+  assert.match(
+    componentCard,
+    /aria-haspopup="dialog"[\s\S]*?aria-label=\{`Редактировать «\$\{definition\.title\}»`\}[\s\S]*?onClick=\{\(\) => setEditing\(true\)\}/,
+  );
+  assert.match(
+    componentCard,
+    /\{editing \? \([\s\S]*?<ComponentEditorDialog[\s\S]*?onClose=\{closeEditor\}/,
+  );
+  assert.match(
+    componentCard,
+    /function closeEditor\(\)[\s\S]*?setEditing\(false\)[\s\S]*?editTriggerRef\.current\?\.focus\(\)/,
+  );
+  assert.match(
+    componentCard,
+    /ref=\{editTriggerRef\}[\s\S]*?aria-haspopup="dialog"/,
+  );
+  assert.match(
+    editorDialog,
+    /<DialogShell[\s\S]*?title=\{`\$\{displayPosition\}\. \$\{definition\.title\}`\}[\s\S]*?description="Редактирование компонента: настройте содержимое и отображение\."/,
+  );
+  assert.match(
+    editorDialog,
+    /<ComponentPayloadEditor[\s\S]*?onSave=\{async \(input\) => \{/,
+  );
+  assert.match(
+    editorDialog,
+    /jsonRequest\([\s\S]*?`\/api\/v2\/components\/\$\{component\.id\}`,[\s\S]*?"PATCH",[\s\S]*?input,[\s\S]*?\)/,
+  );
+  assert.match(editorDialog, /committed = true/);
+  assert.match(editorDialog, /if \(saved \|\| committed\) onClose\(\)/);
   assert.match(authoring, /Сохраняем компонент…/);
   assert.match(authoring, /Удаляем компонент…/);
   assert.match(authoring, /Меняем порядок компонентов…/);
@@ -766,8 +877,6 @@ test("component cards persist edit, delete, order, and ordered Student Screen pl
   assert.match(authoring, /getStudentSlidePlacementOptions/);
   assert.match(authoring, /Новый слайд/);
   assert.match(authoring, /Убрать с экрана/);
-  assert.match(authoring, /group-hover:opacity-100/);
-  assert.match(authoring, /if \(saved\) setEditing\(false\)/);
   assert.match(
     authoring,
     /learnerVisible[\s\S]*?border-sky-200 bg-sky-100 text-sky-800/,
@@ -791,32 +900,31 @@ test("component cards persist edit, delete, order, and ordered Student Screen pl
     /box-shadow: 0 10px 24px rgba\(20, 20, 20, 0\.06\)/,
   );
   assert.ok(
-    cardHeaderStyles,
-    "component card header styles must remain present",
+    cardActionStyles,
+    "component action rail styles must remain present",
   );
-  assert.match(cardHeaderStyles, /display: flex/);
+  assert.match(cardActionStyles, /position: absolute/);
+  assert.match(cardActionStyles, /z-index: 10/);
   assert.match(
-    cardHeaderStyles,
-    /min-height: var\(--product-row-height, 2\.5rem\)/,
-  );
-  assert.match(cardHeaderStyles, /align-items: center/);
-  assert.match(cardHeaderStyles, /justify-content: space-between/);
-  assert.match(
-    cardHeaderStyles,
-    /padding: var\(--product-inner-control-inset, 0\.25rem\)[\s\S]*?var\(--course-demo-content-inset, 0\.75rem\)/,
-  );
-  assert.ok(cardTitleStyles, "component card title styles must remain present");
-  assert.match(
-    cardTitleStyles,
-    /font-size: var\(--course-demo-control-font-size, 0\.88rem\)/,
+    cardActionStyles,
+    /top: var\(--product-inner-control-inset, 0\.25rem\)/,
   );
   assert.match(
-    cardTitleStyles,
-    /font-weight: var\(--course-demo-control-font-weight, 400\)/,
+    cardActionStyles,
+    /right: var\(--product-inner-control-inset, 0\.25rem\)/,
   );
-  assert.ok(cardActionStyles, "component action rail must remain in flow");
   assert.match(cardActionStyles, /display: flex/);
-  assert.match(cardActionStyles, /flex: 0 0 auto/);
+  assert.match(cardActionStyles, /flex-wrap: nowrap/);
+  assert.match(cardActionStyles, /background: rgba\(255, 255, 255, 0\.88\)/);
+  assert.match(cardActionStyles, /opacity: 0/);
+  assert.match(cardActionStyles, /pointer-events: none/);
+  assert.match(cardActionStyles, /backdrop-filter: blur\(8px\)/);
+  assert.ok(
+    visibleActionStyles,
+    "hover, focus, and open state must reveal the overlay action rail",
+  );
+  assert.match(visibleActionStyles, /opacity: 1/);
+  assert.match(visibleActionStyles, /pointer-events: auto/);
   assert.ok(
     cardContentStyles,
     "component content spacing must remain explicit",
@@ -826,6 +934,9 @@ test("component cards persist edit, delete, order, and ordered Student Screen pl
     /padding: var\(--course-demo-content-inset, 0\.75rem\)/,
   );
   assert.doesNotMatch(cardContentStyles, /margin-top/);
+  assert.ok(modalEditorStyles, "modal component editor reset must be scoped");
+  assert.match(modalEditorStyles, /border-top: 0/);
+  assert.match(modalEditorStyles, /padding-top: 0/);
 });
 
 test("lesson plan uses a transparent toolbar and filters authored components by title", () => {

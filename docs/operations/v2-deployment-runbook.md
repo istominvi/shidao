@@ -971,11 +971,17 @@ flow как permanent delete.
   pointer на category/card controls. Для component-authoring source slice
   дополнительно проверить representative preview у всех 20 типов и явные
   различия `Заголовок / Текст / Сноска / Цитата`; preview не содержит
-  вложенных focusable controls. Открытый payload editor должен иметь
-  outer padding `0`, normal-flow header exact 40 px с inset
-  `4 / 4 / 4 / 12 px`, content inset `12 px`, meta/labels `.88rem/400`, icon
-  actions `32 × 32 px` и однострочные input/select exact 40 px без desktop
-  или mobile overflow;
+  вложенных focusable controls. Выбор type должен открыть локальный draft editor
+  внутри того же dialog без `POST`; возврат в каталог, Cancel, close/backdrop и
+  Escape не меняют число Components. Только «Сохранить компонент» отправляет
+  один `POST`, после reload появляется ровно один `staff_only` Component.
+  Persisted card показывает только teacher renderer; группа actions не занимает
+  normal-flow header, появляется на hover и focus-within, а на touch остаётся
+  доступной. Pencil открывает отдельный modal editor: Cancel/close/Escape не
+  отправляют `PATCH`, Save отправляет один `PATCH`, и после reload renderer
+  показывает сохранённые payload/placement. В обоих editor flows labels имеют
+  `.88rem/400`, однострочные input/select — exact 40 px; длинные формы скроллятся
+  внутри dialog без desktop/mobile document overflow;
 - existing email и learner login/PIN создают одну Account session и не выводят
   internal Auth email/browser secret;
 - внутри directory-вкладок `/students` не скрывает archived/pending за
