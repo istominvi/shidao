@@ -403,7 +403,7 @@ test("schedule keeps the compact date control and dense one-line table contract"
   );
   assert.match(
     teachingHubStyleSource,
-    /\.course-demo-shell \.teaching-run-action-menu \.action-menu-trigger\s*\{[^}]*width:\s*var\(--product-inner-control-size, 2rem\);[^}]*min-width:\s*var\(--product-inner-control-size, 2rem\);[^}]*height:\s*var\(--product-inner-control-size, 2rem\);[^}]*min-height:\s*var\(--product-inner-control-size, 2rem\);[^}]*flex:\s*0 0 var\(--product-inner-control-size, 2rem\);[^}]*border-radius:\s*var\(--product-inner-control-radius, 0\.5rem\);[^}]*padding:\s*0;/,
+    /\.course-demo-shell[\s\S]*?\.teaching-run-action-menu[\s\S]*?\.product-btn\.action-menu-trigger\s*\{[^}]*width:\s*var\(--product-inner-control-size, 2rem\);[^}]*min-width:\s*var\(--product-inner-control-size, 2rem\);[^}]*height:\s*var\(--product-inner-control-size, 2rem\);[^}]*min-height:\s*var\(--product-inner-control-size, 2rem\);[^}]*flex:\s*0 0 var\(--product-inner-control-size, 2rem\);[^}]*border-radius:\s*var\(--product-inner-control-radius, 0\.5rem\);[^}]*padding:\s*0;/,
   );
   assert.match(
     teachingHubStyleSource,

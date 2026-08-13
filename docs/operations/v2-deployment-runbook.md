@@ -1039,9 +1039,17 @@ flow как permanent delete.
   Отдельно проверить
   canonical active V2 controls: exact `40 px / 12 px / .88rem / 400`, active
   navigation без inset/shadow/translate, icon opacity `1` и contrast-aware
-  `currentColor`. Все buttons внутри `AppPageHeader` должны быть белыми, иметь
-  border `0` и ту же computed двухслойную shadow, что selected button
-  переключателя вида Расписания; menu items сохраняют border `0`. Повторить
+  `currentColor`. Все канонические `.product-btn` должны быть белыми, иметь
+  border `0` и ту же computed base shadow
+  `oklch(0 0 0 / 0.2) 0px 1px 4px 0px`, что selected button переключателя
+  вида Расписания. После завершения transition hover должен давать blur
+  `6 px`, а pointer-down `:active` — `2 px`; `transform` во всех состояниях
+  остаётся `none`; при `prefers-reduced-motion` transition отключён. Проверить,
+  что row ellipsis и Component-card icon-actions остаются transparent/no-shadow.
+  У compound toggles не должно быть постоянной внешней обводки, selected white
+  option использует только base shadow и не получает `6/2 px` button states;
+  keyboard focus сохраняет видимый outline. Menu items сохраняют border `0`.
+  Повторить
   этот visual check на authenticated `/settings/profile`,
   `/settings/security` и `/settings/observers`: все три используют beige
   product shell и solid-white demo TopNav; user/header и active side-nav имеют

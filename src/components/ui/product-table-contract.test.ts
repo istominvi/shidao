@@ -142,7 +142,7 @@ test("Course index and Course Lessons tables use the dense Schedule geometry", (
   );
   assert.match(
     styles,
-    /\.course-demo-shell \.course-index-table-action-menu \.action-menu-trigger\s*\{[^}]*width: var\(--product-inner-control-size, 2rem\);[^}]*min-width: var\(--product-inner-control-size, 2rem\);[^}]*height: var\(--product-inner-control-size, 2rem\);[^}]*min-height: var\(--product-inner-control-size, 2rem\);[^}]*border-radius: var\(--product-inner-control-radius, 0\.5rem\);[^}]*padding: 0;/,
+    /\.course-demo-shell[\s\S]*?\.course-index-table-action-menu[\s\S]*?\.product-btn\.action-menu-trigger\s*\{[^}]*width: var\(--product-inner-control-size, 2rem\);[^}]*min-width: var\(--product-inner-control-size, 2rem\);[^}]*height: var\(--product-inner-control-size, 2rem\);[^}]*min-height: var\(--product-inner-control-size, 2rem\);[^}]*border-radius: var\(--product-inner-control-radius, 0\.5rem\);[^}]*padding: 0;/,
   );
   assert.match(
     ownedCoursesSource,

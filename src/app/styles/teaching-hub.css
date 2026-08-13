@@ -345,10 +345,11 @@
   min-height: var(--course-demo-control-height);
   flex: 0 0 auto;
   gap: 0.25rem;
+  border: 0;
   border-radius: var(--course-demo-control-radius);
   background: rgba(20, 20, 20, 0.05);
   padding: var(--product-inner-control-inset, 0.25rem);
-  box-shadow: inset 0 0 0 1px var(--teaching-control-border);
+  box-shadow: none;
 }
 
 .teaching-schedule-view-toggle button {
@@ -1168,7 +1169,7 @@
   line-height: 0;
 }
 
-.course-demo-shell .teaching-run-action-menu .action-menu-trigger {
+.course-demo-shell .teaching-run-action-menu .product-btn.action-menu-trigger {
   width: var(--product-inner-control-size, 2rem);
   min-width: var(--product-inner-control-size, 2rem);
   height: var(--product-inner-control-size, 2rem);
@@ -1183,12 +1184,20 @@
   box-shadow: none;
 }
 
-.course-demo-shell .teaching-run-action-menu .action-menu-trigger > svg {
+.course-demo-shell
+  .teaching-run-action-menu
+  .product-btn.action-menu-trigger
+  > svg {
   color: #141414;
   opacity: 1;
 }
 
-.course-demo-shell .teaching-run-action-menu .action-menu-trigger:hover {
+.course-demo-shell
+  .teaching-run-action-menu
+  .product-btn.action-menu-trigger:hover:not(:disabled),
+.course-demo-shell
+  .teaching-run-action-menu
+  .product-btn.action-menu-trigger:active:not(:disabled) {
   border-color: transparent;
   background: rgba(20, 20, 20, 0.07);
   box-shadow: none;
@@ -1197,7 +1206,7 @@
 
 .course-demo-shell
   .teaching-run-action-menu
-  .action-menu-trigger:focus-visible {
+  .product-btn.action-menu-trigger:focus-visible:not(:disabled) {
   border-color: transparent;
   outline: 2px solid rgba(20, 20, 20, 0.58);
   outline-offset: 1px;
@@ -1750,7 +1759,9 @@ button.student-directory-card-person:focus-visible {
   font-size: var(--course-demo-control-font-size, 0.88rem);
 }
 
-.course-demo-shell .student-directory-action-menu .action-menu-trigger {
+.course-demo-shell
+  .student-directory-action-menu
+  .product-btn.action-menu-trigger {
   width: var(--product-inner-control-size, 2rem);
   min-width: var(--product-inner-control-size, 2rem);
   height: var(--product-inner-control-size, 2rem);
@@ -1765,12 +1776,20 @@ button.student-directory-card-person:focus-visible {
   box-shadow: none;
 }
 
-.course-demo-shell .student-directory-action-menu .action-menu-trigger > svg {
+.course-demo-shell
+  .student-directory-action-menu
+  .product-btn.action-menu-trigger
+  > svg {
   color: #141414;
   opacity: 1;
 }
 
-.course-demo-shell .student-directory-action-menu .action-menu-trigger:hover {
+.course-demo-shell
+  .student-directory-action-menu
+  .product-btn.action-menu-trigger:hover:not(:disabled),
+.course-demo-shell
+  .student-directory-action-menu
+  .product-btn.action-menu-trigger:active:not(:disabled) {
   border-color: transparent;
   background: rgba(20, 20, 20, 0.07);
   box-shadow: none;
@@ -1779,7 +1798,7 @@ button.student-directory-card-person:focus-visible {
 
 .course-demo-shell
   .student-directory-action-menu
-  .action-menu-trigger:focus-visible {
+  .product-btn.action-menu-trigger:focus-visible:not(:disabled) {
   border-color: transparent;
   outline: 2px solid rgba(20, 20, 20, 0.58);
   outline-offset: 1px;

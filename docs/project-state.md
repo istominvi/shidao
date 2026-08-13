@@ -318,6 +318,21 @@ trigger контекстного меню; buttons открываемого из
 обычные controls не меняются. Это UI-only change без API, schema, migration или
 реализации выбора фона Course; rollout входит в exact deployed source ниже.
 
+**Next production canonical product-button elevation:** текущий source применяет
+один raised-surface contract ко всем каноническим `.product-btn`, а не только к
+actions заголовка. Обычная кнопка имеет белый surface, border `0` и exact
+однослойную тень `0 1px 4px 0px oklch(0 0 0 / 0.2)`; hover плавно увеличивает
+только blur до `6 px`, а transient pressed `:active` уменьшает его до `2 px`.
+`transform` остаётся `none`, поэтому эффект подъёма/нажатия не сдвигает layout
+или hit target. Danger actions сохраняют красный текст, keyboard focus —
+отдельный 2 px outline, forced-colors — системный контур, а
+`prefers-reduced-motion` отключает transition. Плоские служебные icon-actions
+в строках таблиц и на Component cards намеренно остаются transparent/no-shadow.
+У составных тумблеров убрана постоянная внешняя inset-обводка; выбранная белая
+option использует только базовую `4 px` тень без button hover/pressed states и
+сохраняет собственный focus outline. API, schema и migrations не меняются;
+production rollout этого follow-up пока не заявлен.
+
 **Current production WorkspaceTabs fractional-baseline refinement:** общий
 разделитель под вкладками уменьшен с прежнего baseline
 `1.5 px` до визуальных `1.2 px`. Псевдоэлемент рисуется высотой `3 px` и

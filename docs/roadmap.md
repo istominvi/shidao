@@ -460,6 +460,17 @@ actions, не добавляет сам выбор фона Course и не ме�
 rollout входит в exact functional source
 `dea92ca2c9af99fd5738e95fa9ca511aa10ca3da`.
 
+**Next production:** единый raised-control contract распространяется на все
+канонические `.product-btn`: белый borderless surface и однослойная базовая тень
+`0 1px 4px 0px oklch(0 0 0 / 0.2)`. Hover плавно увеличивает blur до `6 px`,
+а pressed `:active` уменьшает его до `2 px`; положение и geometry не меняются.
+Keyboard outline и forced-colors fallback остаются отдельными доступными
+индикаторами, reduced-motion отключает transition, danger actions сохраняют
+красный текст. Строчные ellipsis и Component-card icon-actions остаются
+плоскими. У compound toggles удаляется внешняя inset-обводка, а выбранная белая
+option получает только base shadow без динамических button states. Это UI-only
+follow-up без API/schema/migration и пока без production rollout evidence.
+
 **Current production:** общий `WorkspaceTabs`
 уменьшает visual baseline с `1.5 px` до `1.2 px`, рисуя paint-layer высотой
 `3 px` и сжимая его `scaleY(0.4)` от нижней грани. Такой способ исключает округление

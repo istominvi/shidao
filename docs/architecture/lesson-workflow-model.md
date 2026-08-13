@@ -628,6 +628,16 @@ Visual contract Course routes не меняет эту навигационну�
   не затрагивает buttons открываемого из header dialog, menu items или controls
   вне header actions. Сам пользовательский выбор фона Course этим UI-only
   slice не реализован;
+- next production refinement распространяет единый raised contract на все
+  канонические `.product-btn`: белый borderless surface и exact однослойная
+  тень `4 px` rest / `6 px` hover / `2 px` pressed при цвете
+  `oklch(0 0 0 / 0.2)`. Анимируется только `box-shadow`; `transform: none`,
+  focus outline, danger color и forced-colors fallback сохраняются, а
+  reduced-motion отключает transition. Плоские ellipsis в строках и
+  Component-card icon-actions остаются transparent/no-shadow. У compound
+  toggles удаляется внешняя inset-обводка, а selected white option использует
+  только base shadow без hover/pressed-анимации. API/schema/Lesson hierarchy не
+  меняются, production rollout этого refinement пока не заявлен;
 - в current production общий contextual `ActionMenu`, открываемый
   `MoreHorizontal`/`MoreVertical` в Course actions, Lesson rows, Schedule и
   Students, использует токенизированные белый surface, element-radius 12 px и

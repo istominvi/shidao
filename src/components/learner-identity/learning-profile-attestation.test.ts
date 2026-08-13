@@ -41,6 +41,14 @@ test("attestation client reads the bounded self endpoint", () => {
   );
 });
 
+test("learning-profile destructive action keeps the shared raised danger variant", () => {
+  assert.match(
+    workspace,
+    /<Button\s+type="button"\s+variant="secondary"\s+className="product-btn-danger mt-4"[\s\S]*?>\s*Проверить, что будет удалено\s*<\/Button>/,
+  );
+  assert.doesNotMatch(workspace, /bg-rose-700 text-white/);
+});
+
 test("attestation surface covers loading, error, empty, and credential states", () => {
   assert.match(
     workspace,

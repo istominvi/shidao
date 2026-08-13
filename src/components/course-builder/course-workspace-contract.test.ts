@@ -398,20 +398,29 @@ test("course routes use the flat demo background and unified visual controls", (
   );
 });
 
-test("active product buttons and header controls share one flat 40px contract", () => {
+test("product buttons share one animated raised-control shadow contract", () => {
   const styles = source("src/app/globals.css");
   const navigationStyles = source("src/app/styles/navigation.css");
   const teachingStyles = source("src/app/styles/teaching-hub.css");
-  const headerActionSurfaceStyles =
-    /\.course-demo-shell \.app-page-actions > \.product-btn,[\s\S]*?\.action-menu-trigger:focus-visible:not\(:disabled\)\s*\{[^}]*\}/.exec(
-      styles,
-    )?.[0] ?? "";
+  const segmentedControl = source("src/components/ui/segmented-control.tsx");
+  const studentFilter = source(
+    "src/components/teaching-hub/student-directory-filter-menu.tsx",
+  );
+  const learningProfile = source(
+    "src/components/learner-identity/learning-profile-workspace.tsx",
+  );
   const forcedColorsStyles =
     /@media \(forced-colors: active\)\s*\{[\s\S]*?\.action-menu-item:focus-visible\s*\{[^}]*\}\s*\}/.exec(
       styles,
     )?.[0] ?? "";
-  const headerActionFocusStyles =
-    /\.course-demo-shell\s*\n\s*\.app-page-actions\s*\n\s*> \.product-btn:focus-visible:not\(:disabled\),[\s\S]*?\.action-menu-trigger:focus-visible:not\(:disabled\)\s*\{\s*outline:[^}]*\}/.exec(
+  const reducedMotionStyles =
+    /@media \(prefers-reduced-motion: reduce\)\s*\{[\s\S]*?\n\}/.exec(
+      styles,
+    )?.[0] ?? "";
+  const productFocusStyles =
+    /\.product-btn:focus-visible\s*\{[^}]*\}/.exec(styles)?.[0] ?? "";
+  const courseProductFocusStyles =
+    /\.course-demo-shell \.product-btn:focus-visible:not\(:disabled\)\s*\{[^}]*\}/.exec(
       styles,
     )?.[0] ?? "";
 
@@ -421,12 +430,16 @@ test("active product buttons and header controls share one flat 40px contract", 
   );
   assert.match(
     styles,
-    /:root\s*\{[^}]*--product-raised-control-shadow:\s*0 1px 3px rgba\(20, 20, 20, 0\.1\), 0 4px 12px rgba\(20, 20, 20, 0\.06\);/,
+    /:root\s*\{[^}]*--product-raised-control-shadow:\s*0 1px 4px 0px oklch\(0 0 0 \/ 0\.2\);[^}]*--product-raised-control-shadow-hover:\s*0 1px 6px 0px oklch\(0 0 0 \/ 0\.2\);[^}]*--product-raised-control-shadow-pressed:\s*0 1px 2px 0px oklch\(0 0 0 \/ 0\.2\);/,
   );
   assert.doesNotMatch(styles, /--course-demo-header-action-border/);
   assert.match(
     styles,
-    /\.course-demo-shell \.product-btn\s*\{[^}]*--product-control-height: var\(--course-demo-control-height\);[^}]*border-radius: var\(--course-demo-control-radius\);[^}]*font-size: var\(--course-demo-control-font-size\);[^}]*font-weight: var\(--course-demo-control-font-weight\);[^}]*box-shadow: none;[^}]*transform: none;/,
+    /\.product-btn\s*\{[^}]*border: 0;[^}]*background: #fff;[^}]*color: #171717;[^}]*box-shadow: var\(--product-raised-control-shadow\);[^}]*transform: none;[^}]*transition:\s*transform 180ms ease,\s*border-color 180ms ease,\s*box-shadow 180ms ease,\s*background-color 180ms ease;/,
+  );
+  assert.match(
+    styles,
+    /\.course-demo-shell \.product-btn\s*\{[^}]*--product-control-height: var\(--course-demo-control-height\);[^}]*border: 0;[^}]*border-radius: var\(--course-demo-control-radius\);[^}]*background: #fff;[^}]*font-size: var\(--course-demo-control-font-size\);[^}]*font-weight: var\(--course-demo-control-font-weight\);[^}]*box-shadow: var\(--product-raised-control-shadow\);[^}]*transform: none;/,
   );
   assert.match(
     styles,
@@ -442,63 +455,135 @@ test("active product buttons and header controls share one flat 40px contract", 
   );
   assert.match(
     styles,
-    /\.course-demo-shell \.product-btn-primary\s*\{[^}]*border-color: #141414;[^}]*background: #141414;[^}]*color: #fff;[^}]*box-shadow: none;/,
+    /\.product-btn:hover:not\(:disabled\)\s*\{[^}]*border: 0;[^}]*background: #fff;[^}]*box-shadow: var\(--product-raised-control-shadow-hover\);[^}]*transform: none;/,
   );
   assert.match(
     styles,
-    /\.course-demo-shell \.product-btn-primary:hover:not\(:disabled\)\s*\{[^}]*background: #141414;[^}]*box-shadow: none;[^}]*transform: none;/,
+    /\.product-btn:active:not\(:disabled\)\s*\{[^}]*border: 0;[^}]*background: #fff;[^}]*box-shadow: var\(--product-raised-control-shadow-pressed\);[^}]*transform: none;/,
   );
   assert.match(
     styles,
-    /\.course-demo-shell \.product-btn-secondary\s*\{[^}]*border-color: var\(--course-demo-control-border\);[^}]*background: #fff;[^}]*color: var\(--course-demo-control-foreground\);/,
-  );
-  assert.match(headerActionSurfaceStyles, /> \.course-actions-wrap/);
-  assert.match(headerActionSurfaceStyles, /> \.product-btn:hover:not/);
-  assert.match(headerActionSurfaceStyles, /> \.product-btn:focus-visible:not/);
-  assert.match(
-    headerActionSurfaceStyles,
-    /border: 0;[^}]*background: #fff;[^}]*box-shadow: var\(--product-raised-control-shadow\);[^}]*transform: none;/,
+    /\.course-demo-shell \.product-btn:hover:not\(:disabled\)\s*\{[^}]*border: 0;[^}]*background: #fff;[^}]*box-shadow: var\(--product-raised-control-shadow-hover\);[^}]*transform: none;/,
   );
   assert.match(
     styles,
-    /\.course-demo-shell \.app-page-actions > \.product-btn-primary\s*\{[^}]*color: var\(--course-demo-control-foreground\);/,
-  );
-  assert.match(headerActionFocusStyles, /> \.product-btn:focus-visible:not/);
-  assert.match(
-    headerActionFocusStyles,
-    /\.action-menu-trigger:focus-visible:not/,
+    /\.course-demo-shell \.product-btn:active:not\(:disabled\)\s*\{[^}]*border: 0;[^}]*background: #fff;[^}]*box-shadow: var\(--product-raised-control-shadow-pressed\);[^}]*transform: none;/,
   );
   assert.match(
-    headerActionFocusStyles,
+    styles,
+    /\.course-demo-shell \.product-btn-primary\s*\{[^}]*border: 0;[^}]*background: #fff;[^}]*color: var\(--course-demo-control-foreground\);[^}]*box-shadow: var\(--product-raised-control-shadow\);/,
+  );
+  assert.match(
+    styles,
+    /\.course-demo-shell \.product-btn-secondary\s*\{[^}]*border: 0;[^}]*background: #fff;[^}]*color: var\(--course-demo-control-foreground\);/,
+  );
+  assert.match(
+    styles,
+    /\.course-demo-shell \.product-btn-ghost\s*\{[^}]*border: 0;[^}]*background: #fff;[^}]*color: var\(--course-demo-control-foreground\);/,
+  );
+  assert.match(
+    productFocusStyles,
     /outline: 2px solid rgba\(20, 20, 20, 0\.58\);[^}]*outline-offset: 2px;/,
+  );
+  assert.doesNotMatch(productFocusStyles, /box-shadow/);
+  assert.match(
+    courseProductFocusStyles,
+    /outline: 2px solid rgba\(20, 20, 20, 0\.58\);[^}]*outline-offset: 2px;/,
+  );
+  assert.doesNotMatch(courseProductFocusStyles, /box-shadow/);
+  assert.match(reducedMotionStyles, /\.product-btn,/);
+  assert.match(reducedMotionStyles, /transition: none;/);
+
+  assert.match(
+    styles,
+    /\.product-btn\.component-card-action,[\s\S]*?\.product-btn\.component-card-visibility-action\s*\{[^}]*border: 0;[^}]*background: transparent;[^}]*box-shadow: none;/,
+  );
+  assert.match(
+    styles,
+    /\.course-index-table-action-menu\s*\.product-btn\.action-menu-trigger:hover:not\(:disabled\),[\s\S]*?\.product-btn\.action-menu-trigger:active:not\(:disabled\)\s*\{[^}]*background: rgba\(20, 20, 20, 0\.07\);[^}]*box-shadow: none;[^}]*transform: none;/,
+  );
+  assert.match(
+    teachingStyles,
+    /\.teaching-run-action-menu\s*\.product-btn\.action-menu-trigger:hover:not\(:disabled\),[\s\S]*?\.product-btn\.action-menu-trigger:active:not\(:disabled\)\s*\{[^}]*background: rgba\(20, 20, 20, 0\.07\);[^}]*box-shadow: none;/,
+  );
+
+  assert.match(
+    styles,
+    /\.product-segmented-control\s*\{[^}]*border: 0;[^}]*box-shadow: none;/,
+  );
+  assert.match(
+    styles,
+    /\.product-segmented-control-option-selected\s*\{[^}]*box-shadow: var\(--product-raised-control-shadow\);/,
+  );
+  assert.match(
+    styles,
+    /\.product-segmented-control-option:focus-visible\s*\{[^}]*outline: 2px solid rgba\(20, 20, 20, 0\.58\);[^}]*outline-offset: -2px;/,
+  );
+  assert.doesNotMatch(
+    styles,
+    /\.product-segmented-control-option-selected(?::hover|:active)/,
+  );
+  assert.match(segmentedControl, /product-segmented-control inline-flex/);
+  assert.match(
+    segmentedControl,
+    /product-segmented-control-option inline-flex/,
+  );
+  assert.match(
+    segmentedControl,
+    /isSelected[\s\S]*?product-segmented-control-option-selected bg-white text-neutral-950/,
+  );
+  assert.doesNotMatch(
+    segmentedControl,
+    /shadow-\[inset|shadow-\[0_1px_3px|focus-visible:ring|focus-visible:outline-none|product-raised-control-shadow-hover|product-raised-control-shadow-pressed/,
+  );
+  assert.match(studentFilter, /product-segmented-control grid/);
+  assert.match(
+    studentFilter,
+    /product-segmented-control-option-selected bg-white text-neutral-950/,
+  );
+  assert.equal(
+    studentFilter.match(
+      /product-segmented-control-option-selected bg-white text-neutral-950/g,
+    )?.length,
+    3,
+  );
+  assert.doesNotMatch(studentFilter, /shadow-sm/);
+  assert.match(
+    learningProfile,
+    /variant="secondary"\s+className="product-btn-danger mt-4"[\s\S]*?>\s*Проверить, что будет удалено/,
+  );
+  assert.doesNotMatch(learningProfile, /bg-rose-700 text-white/);
+  assert.match(
+    teachingStyles,
+    /\.teaching-schedule-view-toggle\s*\{[^}]*border: 0;[^}]*background: rgba\(20, 20, 20, 0\.05\);[^}]*box-shadow: none;/,
   );
   assert.match(
     teachingStyles,
     /\.teaching-schedule-view-toggle button\.is-active\s*\{[^}]*background: #fff;[^}]*box-shadow: var\(--product-raised-control-shadow\);/,
   );
-  assert.match(forcedColorsStyles, /> \.product-btn:hover:not/);
-  assert.match(forcedColorsStyles, /> \.product-btn:focus-visible:not/);
-  assert.match(forcedColorsStyles, /\.action-menu-trigger:hover:not/);
-  assert.match(forcedColorsStyles, /\.action-menu-trigger:focus-visible:not/);
+  assert.doesNotMatch(
+    teachingStyles,
+    /\.teaching-schedule-view-toggle button\.is-active(?::hover|:active)/,
+  );
+
+  assert.match(forcedColorsStyles, /\.product-btn\.product-btn,/);
+  assert.match(forcedColorsStyles, /\.product-btn\.product-btn:hover:not/);
+  assert.match(forcedColorsStyles, /\.product-btn\.product-btn:active:not/);
+  assert.match(
+    forcedColorsStyles,
+    /\.product-btn\.product-btn:focus-visible:not/,
+  );
   assert.match(
     forcedColorsStyles,
     /border: 1px solid ButtonText;[^}]*background: ButtonFace;[^}]*color: ButtonText;[^}]*box-shadow: none;/,
   );
-  assert.doesNotMatch(
-    styles,
-    /\.course-demo-shell \.app-page-actions \.product-btn(?:,|\s*\{)/,
+  assert.match(
+    forcedColorsStyles,
+    /\.product-segmented-control,[\s\S]*?\.teaching-schedule-view-toggle\s*\{[^}]*outline: 1px solid CanvasText;[^}]*outline-offset: -1px;[^}]*box-shadow: none;/,
   );
   assert.match(
-    styles,
-    /\.course-demo-shell \.product-btn-ghost\s*\{[^}]*border-color: transparent;[^}]*background: transparent;/,
-  );
-  assert.match(
-    styles,
-    /\.course-demo-shell \.product-btn\.compact-toolbar-reset\s*\{[^}]*border-color: var\(--course-demo-control-border\);[^}]*background: #fff;/,
-  );
-  assert.match(
-    styles,
-    /\.course-demo-shell \.product-btn:focus-visible:not\(:disabled\)\s*\{[^}]*box-shadow: 0 0 0 3px rgba\(20, 20, 20, 0\.12\);/,
+    forcedColorsStyles,
+    /\.product-segmented-control-option-selected,[\s\S]*?button\.is-active\s*\{[^}]*border: 1px solid Highlight;[^}]*background: Highlight;[^}]*color: HighlightText;[^}]*box-shadow: none;/,
   );
   assert.match(
     styles,

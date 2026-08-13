@@ -78,6 +78,9 @@ const E2E_PUBLISHED_SELF_COMMENT =
   "Опубликованный комментарий E2E Adult из completion UI.";
 const E2E_PRIVATE_OBSERVED_COMMENT =
   "PRIVATE OBSERVED COMMENT — только преподавателю";
+const E2E_RAISED_CONTROL_SHADOW = "oklch(0 0 0 / 0.2) 0px 1px 4px 0px";
+const E2E_RAISED_CONTROL_HOVER_SHADOW = "oklch(0 0 0 / 0.2) 0px 1px 6px 0px";
+const E2E_RAISED_CONTROL_PRESSED_SHADOW = "oklch(0 0 0 / 0.2) 0px 1px 2px 0px";
 
 const E2E_COURSE_ROW = {
   id: E2E_COURSE_ID,
@@ -766,10 +769,16 @@ type PlaywrightChromium = {
         clock: {
           setFixedTime: (time: string | Date | number) => Promise<void>;
         };
+        mouse: {
+          down: () => Promise<void>;
+          move: (x: number, y: number) => Promise<void>;
+          up: () => Promise<void>;
+        };
         setViewportSize: (viewport: {
           width: number;
           height: number;
         }) => Promise<void>;
+        waitForTimeout: (timeout: number) => Promise<void>;
         goto: (
           url: string,
           options?: { waitUntil?: "domcontentloaded" | "networkidle" },
@@ -3654,6 +3663,10 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
           },
         },
         raisedControlShadow: getComputedStyle(activeViewButton).boxShadow,
+        viewToggleSurface: {
+          borderTopWidth: getComputedStyle(viewToggle).borderTopWidth,
+          boxShadow: getComputedStyle(viewToggle).boxShadow,
+        },
         toolbarText: toolbar.textContent?.trim() ?? "",
         toolbarSurface: {
           backgroundColor: toolbarStyle.backgroundColor,
@@ -3754,8 +3767,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       backgroundColor: "rgb(255, 255, 255)",
       borderTopWidth: "0px",
       color: "rgb(20, 20, 20)",
-      boxShadow:
-        "rgba(20, 20, 20, 0.1) 0px 1px 3px 0px, rgba(20, 20, 20, 0.06) 0px 4px 12px 0px",
+      boxShadow: E2E_RAISED_CONTROL_SHADOW,
       transform: "none",
       icon: {
         color: "rgb(20, 20, 20)",
@@ -3768,6 +3780,41 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       scheduleContract.headerPrimaryControl.boxShadow,
       scheduleContract.raisedControlShadow,
     );
+    assert.deepEqual(scheduleContract.viewToggleSurface, {
+      borderTopWidth: "0px",
+      boxShadow: "none",
+    });
+    const scheduleHeaderPrimaryButton = runtime.page.getByRole("link", {
+      name: "Назначить урок",
+      exact: true,
+    });
+    await scheduleHeaderPrimaryButton.hover();
+    await runtime.page.waitForTimeout(220);
+    assert.deepEqual(
+      await scheduleHeaderPrimaryButton.evaluate((button) => {
+        const style = getComputedStyle(button);
+        return {
+          backgroundColor: style.backgroundColor,
+          boxShadow: style.boxShadow,
+          transform: style.transform,
+        };
+      }),
+      {
+        backgroundColor: "rgb(255, 255, 255)",
+        boxShadow: E2E_RAISED_CONTROL_HOVER_SHADOW,
+        transform: "none",
+      },
+    );
+    await runtime.page.mouse.down();
+    await runtime.page.waitForTimeout(220);
+    assert.equal(
+      await scheduleHeaderPrimaryButton.evaluate(
+        (button) => getComputedStyle(button).boxShadow,
+      ),
+      E2E_RAISED_CONTROL_PRESSED_SHADOW,
+    );
+    await runtime.page.mouse.move(0, 0);
+    await runtime.page.mouse.up();
     assert.doesNotMatch(scheduleContract.toolbarText, /Назначить урок/);
     assert.deepEqual(scheduleContract.toolbarSurface, {
       backgroundColor: "rgba(0, 0, 0, 0)",
@@ -4384,6 +4431,38 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
     const rowMenuTrigger = runtime.page.locator(
       ".teaching-run-table-row:first-child .teaching-run-action-menu .action-menu-trigger",
     );
+    assert.deepEqual(
+      await rowMenuTrigger.evaluate((button) => {
+        const style = getComputedStyle(button);
+        return {
+          backgroundColor: style.backgroundColor,
+          boxShadow: style.boxShadow,
+        };
+      }),
+      { backgroundColor: "rgba(0, 0, 0, 0)", boxShadow: "none" },
+    );
+    await rowMenuTrigger.hover();
+    await runtime.page.waitForTimeout(220);
+    assert.deepEqual(
+      await rowMenuTrigger.evaluate((button) => {
+        const style = getComputedStyle(button);
+        return {
+          backgroundColor: style.backgroundColor,
+          boxShadow: style.boxShadow,
+        };
+      }),
+      { backgroundColor: "rgba(20, 20, 20, 0.07)", boxShadow: "none" },
+    );
+    await runtime.page.mouse.down();
+    await runtime.page.waitForTimeout(220);
+    assert.equal(
+      await rowMenuTrigger.evaluate(
+        (button) => getComputedStyle(button).boxShadow,
+      ),
+      "none",
+    );
+    await runtime.page.mouse.move(0, 0);
+    await runtime.page.mouse.up();
     await rowMenuTrigger.click();
     const rowActionMenu = runtime.page.getByRole("menu");
     await rowActionMenu.waitFor();
@@ -4647,7 +4726,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
           const style = getComputedStyle(button);
           return {
             backgroundColor: style.backgroundColor,
-            borderColor: style.borderColor,
+            borderTopWidth: style.borderTopWidth,
             color: style.color,
             fontSize: style.fontSize,
             fontWeight: style.fontWeight,
@@ -4662,21 +4741,21 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       }),
       {
         primary: {
-          backgroundColor: "rgb(20, 20, 20)",
-          borderColor: "rgb(20, 20, 20)",
-          color: "rgb(255, 255, 255)",
+          backgroundColor: "rgb(255, 255, 255)",
+          borderTopWidth: "0px",
+          color: "rgb(20, 20, 20)",
           fontSize: "14.08px",
           fontWeight: "400",
-          boxShadow: "none",
+          boxShadow: E2E_RAISED_CONTROL_SHADOW,
           transform: "none",
         },
         secondary: {
           backgroundColor: "rgb(255, 255, 255)",
-          borderColor: "rgba(20, 20, 20, 0.14)",
+          borderTopWidth: "0px",
           color: "rgb(20, 20, 20)",
           fontSize: "14.08px",
           fontWeight: "400",
-          boxShadow: "none",
+          boxShadow: E2E_RAISED_CONTROL_SHADOW,
           transform: "none",
         },
       },
@@ -4909,7 +4988,10 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
           filterTriggerHeight: getComputedStyle(filterTrigger).height,
           filterTriggerText: filterTrigger.textContent?.trim() ?? "",
           viewSwitchHeight: getComputedStyle(viewSwitch).height,
+          viewSwitchBoxShadow: getComputedStyle(viewSwitch).boxShadow,
           activeViewButtonHeight: getComputedStyle(activeViewButton).height,
+          activeViewButtonBoxShadow:
+            getComputedStyle(activeViewButton).boxShadow,
           viewSwitchInsideControls:
             viewSwitch.parentElement === toolbarControls,
           filterBeforeViewSwitch: Boolean(
@@ -5034,7 +5116,9 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       filterTriggerHeight: "40px",
       filterTriggerText: "Фильтр",
       viewSwitchHeight: "40px",
+      viewSwitchBoxShadow: "none",
       activeViewButtonHeight: "32px",
+      activeViewButtonBoxShadow: E2E_RAISED_CONTROL_SHADOW,
       viewSwitchInsideControls: true,
       filterBeforeViewSwitch: true,
     });
@@ -5044,6 +5128,29 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
     ]);
     assert.equal(studentsVisual.hasMembershipSwitch, true);
     assert.equal(studentsVisual.hasLegacySortOrGroupSelect, false);
+
+    const activeLearnerViewButton = runtime.page.getByRole("button", {
+      name: "Показать таблицей",
+      exact: true,
+    });
+    await activeLearnerViewButton.hover();
+    await runtime.page.waitForTimeout(220);
+    assert.equal(
+      await activeLearnerViewButton.evaluate(
+        (button) => getComputedStyle(button).boxShadow,
+      ),
+      E2E_RAISED_CONTROL_SHADOW,
+    );
+    await runtime.page.mouse.down();
+    await runtime.page.waitForTimeout(220);
+    assert.equal(
+      await activeLearnerViewButton.evaluate(
+        (button) => getComputedStyle(button).boxShadow,
+      ),
+      E2E_RAISED_CONTROL_SHADOW,
+    );
+    await runtime.page.mouse.move(0, 0);
+    await runtime.page.mouse.up();
 
     const learnerViewSwitch = runtime.page.getByRole("group", {
       name: "Вид списка учеников",
@@ -5815,6 +5922,7 @@ test("browser smoke: observer settings accepts an incoming request and revokes o
             fontSize: primaryStyle.fontSize,
             fontWeight: primaryStyle.fontWeight,
             background: primaryStyle.backgroundColor,
+            borderTopWidth: primaryStyle.borderTopWidth,
             color: primaryStyle.color,
             boxShadow: primaryStyle.boxShadow,
             transform: primaryStyle.transform,
@@ -5840,11 +5948,12 @@ test("browser smoke: observer settings accepts an incoming request and revokes o
           radius: "12px",
           fontSize: "14.08px",
           fontWeight: "400",
-          background: "rgb(20, 20, 20)",
-          color: "rgb(255, 255, 255)",
-          boxShadow: "none",
+          background: "rgb(255, 255, 255)",
+          borderTopWidth: "0px",
+          color: "rgb(20, 20, 20)",
+          boxShadow: E2E_RAISED_CONTROL_SHADOW,
           transform: "none",
-          iconColor: "rgb(255, 255, 255)",
+          iconColor: "rgb(20, 20, 20)",
           iconOpacity: "1",
         },
       },
@@ -5920,7 +6029,7 @@ test("browser smoke: trusted adult resets child credentials and learner revokes 
             radius: style.borderRadius,
             fontWeight: style.fontWeight,
             background: style.backgroundColor,
-            borderColor: style.borderColor,
+            borderTopWidth: style.borderTopWidth,
             color: style.color,
             boxShadow: style.boxShadow,
           };
@@ -5936,18 +6045,18 @@ test("browser smoke: trusted adult resets child credentials and learner revokes 
           radius: "12px",
           fontWeight: "400",
           background: "rgb(255, 255, 255)",
-          borderColor: "rgba(20, 20, 20, 0.14)",
+          borderTopWidth: "0px",
           color: "rgb(20, 20, 20)",
-          boxShadow: "none",
+          boxShadow: E2E_RAISED_CONTROL_SHADOW,
         },
         destructive: {
           height: "40px",
           radius: "12px",
           fontWeight: "400",
           background: "rgb(255, 255, 255)",
-          borderColor: "rgba(20, 20, 20, 0.14)",
+          borderTopWidth: "0px",
           color: "rgb(190, 18, 60)",
-          boxShadow: "none",
+          boxShadow: E2E_RAISED_CONTROL_SHADOW,
         },
       },
     );
@@ -8781,10 +8890,7 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       assert.equal(button.borderTopWidth, "0px");
       assert.equal(button.borderBottomWidth, "0px");
       assert.equal(button.backgroundColor, "rgb(255, 255, 255)");
-      assert.equal(
-        button.boxShadow,
-        "rgba(20, 20, 20, 0.1) 0px 1px 3px 0px, rgba(20, 20, 20, 0.06) 0px 4px 12px 0px",
-      );
+      assert.equal(button.boxShadow, E2E_RAISED_CONTROL_SHADOW);
     }
     const lessonDeleteAction = lessonVisual.headerActionButtons.find(
       (button) => button.label === "Удалить",
@@ -8798,6 +8904,7 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       exact: true,
     });
     await lessonDeleteButton.hover();
+    await runtime.page.waitForTimeout(220);
     assert.deepEqual(
       await lessonDeleteButton.evaluate((button) => {
         const style = getComputedStyle(button);
@@ -8810,8 +8917,7 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       {
         borderTopWidth: "0px",
         backgroundColor: "rgb(255, 255, 255)",
-        boxShadow:
-          "rgba(20, 20, 20, 0.1) 0px 1px 3px 0px, rgba(20, 20, 20, 0.06) 0px 4px 12px 0px",
+        boxShadow: E2E_RAISED_CONTROL_HOVER_SHADOW,
       },
     );
     assert.deepEqual(lessonVisual.tabSignature, courseVisual.tabSignature);

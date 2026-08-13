@@ -30,6 +30,7 @@ const segmentedControlSource = readFileSync(
   "src/components/ui/segmented-control.tsx",
   "utf8",
 );
+const globalStyles = readFileSync("src/app/globals.css", "utf8");
 
 function course(
   overrides: Partial<CourseSummary> & Pick<CourseSummary, "id" | "title">,
@@ -304,7 +305,16 @@ test("shared course controls preserve pressed-button and native-filter semantics
   assert.match(segmentedControlSource, /disabled=\{isDisabled\}/);
   assert.match(segmentedControlSource, /inline-flex h-10[^"\n]*p-1/);
   assert.match(segmentedControlSource, /h-8 min-h-8/);
-  assert.match(segmentedControlSource, /focus-visible:ring-inset/);
+  assert.match(segmentedControlSource, /product-segmented-control/);
+  assert.match(segmentedControlSource, /product-segmented-control-option/);
+  assert.match(
+    globalStyles,
+    /\.product-segmented-control-option:focus-visible\s*\{[^}]*outline: 2px solid rgba\(20, 20, 20, 0\.58\);[^}]*outline-offset: -2px;/,
+  );
+  assert.doesNotMatch(
+    segmentedControlSource,
+    /shadow-\[inset|shadow-\[0_1px_3px|focus-visible:ring|focus-visible:outline-none/,
+  );
   assert.match(
     segmentedControlSource,
     /isSelected[\s\S]*?bg-white text-neutral-950/,

@@ -41,6 +41,11 @@ test("portal action menus escape overflow while preserving interaction boundarie
 });
 
 test("contextual action menus use one borderless surface without separators", () => {
+  const forcedColorsStyles =
+    /@media \(forced-colors: active\)\s*\{[\s\S]*?\.action-menu-item:focus-visible\s*\{[^}]*\}\s*\}/.exec(
+      styles,
+    )?.[0] ?? "";
+
   assert.match(
     styles,
     /:root\s*\{[^}]*--product-context-menu-surface: #fff;[^}]*--product-context-menu-radius: var\(--product-element-radius\);[^}]*--product-context-menu-shadow: 0 18px 46px rgba\(20, 20, 20, 0\.18\);/,
@@ -58,7 +63,7 @@ test("contextual action menus use one borderless surface without separators", ()
     assert.doesNotMatch(consumer, /separatorBefore/);
   }
   assert.match(
-    styles,
-    /@media \(forced-colors: active\)\s*\{[^}]*\.app-page-actions[^}]*\{[^}]*\}[^}]*\.action-menu-panel\s*\{[^}]*border: 1px solid CanvasText;[^}]*box-shadow: none;[^}]*\}\s*\.action-menu-item:focus-visible\s*\{[^}]*outline: 2px solid Highlight;[^}]*outline-offset: -2px;/,
+    forcedColorsStyles,
+    /\.action-menu-panel\s*\{[^}]*border: 1px solid CanvasText;[^}]*box-shadow: none;[^}]*\}\s*\.action-menu-item:focus-visible\s*\{[^}]*outline: 2px solid Highlight;[^}]*outline-offset: -2px;/,
   );
 });

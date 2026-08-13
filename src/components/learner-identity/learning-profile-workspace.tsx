@@ -652,7 +652,8 @@ export function LearningProfileWorkspace() {
               </p>
               <Button
                 type="button"
-                className="mt-4 bg-rose-700 text-white"
+                variant="secondary"
+                className="product-btn-danger mt-4"
                 onClick={() => setDestructiveMode("erasure")}
               >
                 Проверить, что будет удалено

@@ -35,7 +35,7 @@ export function SegmentedControl<T extends string>({
       role="group"
       aria-label={ariaLabel}
       className={classNames(
-        "inline-flex h-10 shrink-0 items-center gap-1 rounded-xl bg-neutral-950/[0.05] p-1 shadow-[inset_0_0_0_1px_rgba(20,20,20,0.1)]",
+        "product-segmented-control inline-flex h-10 shrink-0 items-center gap-1 rounded-xl bg-neutral-950/[0.05] p-1",
         className,
       )}
     >
@@ -55,11 +55,10 @@ export function SegmentedControl<T extends string>({
             onClick={() => onChange(item.value)}
             aria-busy={item.busy || undefined}
             className={classNames(
-              "inline-flex h-8 min-h-8 shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-lg text-[0.88rem] font-medium leading-none transition",
+              "product-segmented-control-option inline-flex h-8 min-h-8 shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-lg text-[0.88rem] font-medium leading-none transition",
               iconOnly ? "w-8 px-0" : "px-3",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-neutral-900/60",
               isSelected
-                ? "bg-white text-neutral-950 shadow-[0_1px_3px_rgba(20,20,20,0.1),0_4px_12px_rgba(20,20,20,0.06)]"
+                ? "product-segmented-control-option-selected bg-white text-neutral-950"
                 : "text-neutral-600 hover:bg-neutral-950/[0.06] hover:text-neutral-950",
               isDisabled ? "cursor-not-allowed opacity-60" : undefined,
             )}

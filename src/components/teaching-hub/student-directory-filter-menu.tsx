@@ -154,16 +154,16 @@ export function StudentDirectoryFilterMenu({
         <div className="course-filter-field">
           <span>Принадлежность к группе</span>
           <div
-            className="grid grid-cols-3 gap-1 rounded-xl bg-neutral-100 p-1"
+            className="product-segmented-control grid grid-cols-3 gap-1 rounded-xl bg-neutral-100 p-1"
             role="group"
             aria-label="Принадлежность к группе"
           >
             <button
               type="button"
               className={classNames(
-                "min-h-8 rounded-lg px-2 text-xs transition-colors",
+                "product-segmented-control-option min-h-8 rounded-lg px-2 text-xs transition-colors",
                 group === "all"
-                  ? "bg-white text-neutral-950 shadow-sm"
+                  ? "product-segmented-control-option-selected bg-white text-neutral-950"
                   : "text-neutral-600 hover:text-neutral-950",
               )}
               aria-pressed={group === "all"}
@@ -175,9 +175,9 @@ export function StudentDirectoryFilterMenu({
             <button
               type="button"
               className={classNames(
-                "min-h-8 rounded-lg px-2 text-xs transition-colors",
+                "product-segmented-control-option min-h-8 rounded-lg px-2 text-xs transition-colors",
                 grouped
-                  ? "bg-white text-neutral-950 shadow-sm"
+                  ? "product-segmented-control-option-selected bg-white text-neutral-950"
                   : "text-neutral-600 hover:text-neutral-950",
               )}
               aria-pressed={grouped}
@@ -189,9 +189,9 @@ export function StudentDirectoryFilterMenu({
             <button
               type="button"
               className={classNames(
-                "min-h-8 rounded-lg px-2 text-xs transition-colors",
+                "product-segmented-control-option min-h-8 rounded-lg px-2 text-xs transition-colors",
                 group === "ungrouped"
-                  ? "bg-white text-neutral-950 shadow-sm"
+                  ? "product-segmented-control-option-selected bg-white text-neutral-950"
                   : "text-neutral-600 hover:text-neutral-950",
               )}
               aria-pressed={group === "ungrouped"}
