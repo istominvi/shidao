@@ -47,6 +47,16 @@ test("teacher cards do not center component content while Student Screen keeps p
   assert.match(source, /widthClass\(placement\.width, mode\)/);
 });
 
+test("rich text renders an optional plain-text title while legacy headings remain supported", () => {
+  assert.match(source, /function HeadingRenderer/);
+  assert.match(source, /heading: HeadingRenderer/);
+  assert.match(
+    source,
+    /function RichTextRenderer[\s\S]*?payload\.title \? \([\s\S]*?\{payload\.title\}[\s\S]*?: null[\s\S]*?<SafeRichText content=\{payload\.content\} \/>/,
+  );
+  assert.doesNotMatch(source, /dangerouslySetInnerHTML/);
+});
+
 test("new remote and exercise renderers stay safe, deterministic, and preview-only", () => {
   assert.match(source, /function safeHttpsUrl/);
   assert.match(source, /url\.protocol === "https:"/);

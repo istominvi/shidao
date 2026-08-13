@@ -560,6 +560,11 @@ test("component picker is registry-driven and grouped into Russian categories", 
   );
 
   assert.match(authoring, /componentDefinitions\.filter/);
+  assert.match(
+    picker,
+    /if \(definition\.key === "heading"\) return false;/,
+    "the legacy heading type must stay out of the manual picker",
+  );
   assert.ok(pickerStart >= 0 && pickerEnd > pickerStart);
   for (const category of [
     "Текст",
@@ -702,6 +707,10 @@ test("component payload editor covers every active registry type without divider
   );
   assert.deepEqual(editorKeys, componentTypeKeys);
   assert.doesNotMatch(editor, /case "divider"|typeKey === "divider"/);
+  assert.match(
+    payloadSwitch,
+    /case "rich_text":[\s\S]*?<Field label="Заголовок \(необязательно\)">[\s\S]*?<input[\s\S]*?delete next\.title[\s\S]*?<Field label="Текст">[\s\S]*?<textarea/,
+  );
   assert.match(editor, /HTTPS-ссылка на видео/);
   assert.match(editor, /Допустимые варианты разделяйте \|/);
   assert.match(editor, /элемент = точное название категории/);
@@ -776,6 +785,12 @@ test("component cards render content with accessible overlay actions and modal e
   const cardHoverStyles = /\.lesson-component-card:hover\s*\{[^}]*\}/.exec(
     styles,
   )?.[0];
+  const cardFocusStyles =
+    /\.lesson-component-card:focus-within\s*\{[^}]*\}/.exec(styles)?.[0];
+  const reducedMotionStyles =
+    /@media \(prefers-reduced-motion: reduce\)\s*\{[\s\S]*?\.lesson-component-card\s*\{[^}]*\}/.exec(
+      styles,
+    )?.[0];
   const cardActionStyles = /\.lesson-component-card-actions\s*\{[^}]*\}/.exec(
     styles,
   )?.[0];
@@ -890,15 +905,33 @@ test("component cards render content with accessible overlay actions and modal e
   );
   assert.doesNotMatch(cardStyles, /--course-demo-card-radius/);
   assert.match(cardStyles, /padding: 0/);
-  assert.match(cardStyles, /box-shadow: 0 10px 24px rgba\(20, 20, 20, 0\.06\)/);
+  assert.match(cardStyles, /border: 0/);
+  assert.match(cardStyles, /background: #fff/);
+  assert.match(cardStyles, /box-shadow: 0 3px 6px 0 rgba\(76, 76, 155, 0\.1\)/);
+  assert.match(cardStyles, /transition: box-shadow 180ms ease/);
+  assert.doesNotMatch(cardStyles, /border-color/);
   assert.ok(
     cardHoverStyles,
     "lesson component hover styles must remain present",
   );
   assert.match(
     cardHoverStyles,
-    /box-shadow: 0 10px 24px rgba\(20, 20, 20, 0\.06\)/,
+    /box-shadow: 0 6px 12px 0 rgba\(76, 76, 155, 0\.2\)/,
   );
+  assert.match(
+    styles,
+    /@media \(hover: hover\) and \(pointer: fine\)\s*\{[\s\S]*?\.lesson-component-card:hover/,
+  );
+  assert.ok(cardFocusStyles, "keyboard focus must lift the component card");
+  assert.match(
+    cardFocusStyles,
+    /box-shadow: 0 6px 12px 0 rgba\(76, 76, 155, 0\.2\)/,
+  );
+  assert.ok(
+    reducedMotionStyles,
+    "card shadow animation must respect reduced motion",
+  );
+  assert.match(reducedMotionStyles, /transition: none/);
   assert.ok(
     cardActionStyles,
     "component action rail styles must remain present",

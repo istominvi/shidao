@@ -27,6 +27,7 @@ test("flat provider lesson converts every supported block to canonical component
       {
         ...EMPTY_FIELDS,
         kind: "rich_text",
+        title: "Ключевые фразы",
         body: "Прочитайте **диалог** и выделите приветствие.",
       },
       {
@@ -67,6 +68,7 @@ test("flat provider lesson converts every supported block to canonical component
   assert.equal(richText?.typeKey, "rich_text");
   if (richText?.typeKey !== "rich_text") assert.fail("Expected rich text");
   assert.equal(richText.payload.format, "markdown");
+  assert.equal(richText.payload.title, "Ключевые фразы");
 
   const callout = plan.components[2];
   assert.equal(callout?.typeKey, "callout");

@@ -208,20 +208,24 @@ element-radius 12 px и стандартную table-shadow. Это UI-only из
 schema или migration.
 
 **Current source component-authoring refinement (next production deployment):**
-palette всех 20 Component types показывает короткое назначение и отдельный
-статический неинтерактивный мини-образец; `heading`, `rich_text`, `callout` и
-`quote` визуально различимы до добавления в Lesson. Образцы не используют
-production renderer, не создают вложенные controls и не меняют registry
-defaults. Выбор типа переключает тот же dialog на локальный draft из canonical
-defaults: persisted Component ещё не существует, возврат в каталог или закрытие
-ничего не записывает, а единственный `POST` выполняется по явному «Сохранить
-компонент». Persisted Component card остаётся renderer-only; 32 px action
-controls находятся в hover/focus overlay и не занимают отдельный normal-flow
-header. Pencil открывает отдельный modal editor, где отмена не меняет Component,
-а явное сохранение отправляет `PATCH`. Оба editor surface используют обычные
-labels и однострочные input/select высотой `40 px` с canonical `.88rem/400`
-типографикой. Это UI-only source change поверх существующих API без новых schema,
-migration или второго Component order; production rollout/postflight ещё не
+runtime registry по-прежнему поддерживает все 20 Component types, а ручная
+palette показывает 19 создаваемых карточек с коротким назначением и статическим
+неинтерактивным мини-образцом. Отдельный `heading` скрыт только из ручного
+выбора, но старые Components этого типа продолжают рендериться и редактироваться.
+`rich_text` с тем же schema version `1` принимает необязательный plain-text
+`title` перед обязательным `content`; прежние payload без `title` остаются
+валидными. Образцы не используют production renderer и не создают вложенные
+controls. Выбор типа переключает тот же dialog на локальный draft: persisted
+Component ещё не существует, а единственный `POST` выполняется по явному
+«Сохранить компонент». Persisted Component card остаётся renderer-only и теперь
+является белой surface без border: базовая холодная тень `0 3px 6px` на
+hover/focus удваивает offset, blur и alpha до `0 6px 12px` с плавным переходом,
+не меняя геометрию; reduced-motion отключает анимацию. 32 px action controls
+остаются в hover/focus overlay. Pencil открывает отдельный modal editor, где
+отмена не меняет Component, а явное сохранение отправляет `PATCH`. Оба editor
+surface используют обычные labels и однострочные input/select высотой `40 px`
+с canonical `.88rem/400` типографикой. API routes, physical DB schema,
+migrations и authored order не меняются; production rollout/postflight ещё не
 заявлены.
 
 **Previously deployed Schedule presentation baseline (superseded by PR #242):**
@@ -976,6 +980,10 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
   того же dialog, но работает с локальной копией canonical defaults. До явного
   «Сохранить компонент» `POST` не отправляется и Component не занимает позицию;
   возврат в каталог или закрытие dialog удаляет только локальный draft.
+  Ручной каталог показывает 19 вариантов: legacy `heading` из него исключён,
+  а «Текст» (`rich_text`) объединяет необязательный заголовок и обязательный
+  основной текст. Сохранённые `heading` и прежние `rich_text` без заголовка
+  остаются совместимыми с renderer/editor и schema version `1`.
 - Компонент можно редактировать, удалить или переместить кнопками
   «выше/ниже». В current source persisted card всегда показывает только
   production teacher renderer. Группа 32 px actions располагается поверх
@@ -984,6 +992,9 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
   заменяет renderer внутри карточки. Отмена/закрытие не отправляют mutation;
   `PATCH` с payload/placement выполняется только по явному сохранению. Editor
   labels используют `.88rem/400`, а однострочные controls — canonical 40 px.
+  Сама authored card белая, без внешней обводки; её холодная тень меняется с
+  `0 3px 6px` на `0 6px 12px` при hover/focus с анимацией, но без смещения
+  layout.
 - Новый Component всегда создаётся `staff_only` и не показывается ученику,
   пока преподаватель явно не назначит его на Slide.
 
@@ -1035,6 +1046,12 @@ Zod payload/placement schemas, defaults и capabilities. Текущий payload 
 использует один switch по `ComponentTypeKey`, а teacher/Student Screen
 renderers — отдельную exhaustive typed map. JSON Schema для MCP генерируется из
 registry contracts.
+
+Manual picker является presentation-проекцией из 19 создаваемых вариантов, а
+не вторым registry: `heading` сохранён в 20-типовом runtime/MCP contract для
+совместимости существующих Lessons и AI, но не показывается при ручном
+добавлении. Payload `rich_text` версии `1` обратно совместимо расширен
+необязательным `title`; основной `content` остаётся обязательным.
 
 `video`, `audio` и `external_link` в этом срезе принимают только прямые
 HTTPS URL; upload/transcoding медиа не заявлены. Самопроверка новых

@@ -197,8 +197,13 @@ function RichTextRenderer({ component, mode }: RegisteredRendererProps) {
 
   return (
     <div
-      className={`${widthClass(placement.width, mode)} ${textAlignClass(placement.textAlign)}`}
+      className={`${widthClass(placement.width, mode)} ${textAlignClass(placement.textAlign)} grid gap-3`}
     >
+      {payload.title ? (
+        <p className="text-xl font-semibold leading-tight tracking-tight text-neutral-950">
+          {payload.title}
+        </p>
+      ) : null}
       <SafeRichText content={payload.content} />
     </div>
   );

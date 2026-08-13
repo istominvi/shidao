@@ -551,13 +551,14 @@ function ComponentPickerDialog({
     useState<ComponentTypeKey | null>(null);
   const [saveAttempted, setSaveAttempted] = useState(false);
   const categoryTriggerRef = useRef<HTMLButtonElement>(null);
-  const definitions = componentDefinitions.filter((definition) =>
-    category === "link"
+  const definitions = componentDefinitions.filter((definition) => {
+    if (definition.key === "heading") return false;
+    return category === "link"
       ? definition.key === "external_link"
       : category === "file"
         ? definition.key === "file"
-        : definition.category === category,
-  );
+        : definition.category === category;
+  });
   const selectedDefinition = selectedTypeKey
     ? getComponentDefinition(selectedTypeKey)
     : null;

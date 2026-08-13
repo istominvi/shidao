@@ -51,7 +51,7 @@ const aiProviderBlockInstructions = [
   "Каждый block обязан содержать все поля kind, title, body, choices и matches.",
   "Неиспользуемые строки оставляй пустыми, а неиспользуемые массивы — пустыми массивами.",
   "- heading: текст заголовка в body (допустимо в title), остальные поля пустые.",
-  "- rich_text: содержательный learner-facing Markdown в body; title пустой.",
+  "- rich_text: необязательный короткий заголовок в title и содержательный learner-facing Markdown в body.",
   "- callout: короткая подсказка в body, необязательный заголовок в title.",
   "- single_choice_poll: нейтральный вопрос в title и 2–8 вариантов в choices; правильный ответ не отмечай.",
   "- matching_game: инструкция в title и 2–8 пар left/right в matches.",

@@ -174,6 +174,13 @@ file
 UI, application service and development MCP use the same Zod contracts. MCP
 JSON Schema is generated from those contracts.
 
+The current-source manual picker is a 19-option presentation projection over
+this 20-key runtime registry. It omits standalone `heading`, while existing
+heading Components and the API/MCP/AI contracts remain supported. `rich_text`
+schema version `1` is extended backward-compatibly with an optional plain-text
+`title`; required Markdown `content` and old payloads without `title` remain
+unchanged. This does not change the physical JSONB schema or require a migration.
+
 `divider` is not an authored component type. The media/link types added in this
 slice accept HTTPS URLs only. Interactive checks, including `free_response`,
 keep answer state only inside the current preview; learner answer persistence,

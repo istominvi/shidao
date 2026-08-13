@@ -25,7 +25,9 @@ function componentPreview(component: AiLessonComponentPlan) {
     case "heading":
       return component.payload.text;
     case "rich_text":
-      return component.payload.content;
+      return [component.payload.title, component.payload.content]
+        .filter(Boolean)
+        .join(": ");
     case "callout":
       return [component.payload.title, component.payload.text]
         .filter(Boolean)
@@ -46,7 +48,14 @@ function AiComponentContent({
     case "heading":
       return <p>{component.payload.text}</p>;
     case "rich_text":
-      return <p className="whitespace-pre-wrap">{component.payload.content}</p>;
+      return (
+        <div className="grid gap-1">
+          {component.payload.title ? (
+            <strong>{component.payload.title}</strong>
+          ) : null}
+          <p className="whitespace-pre-wrap">{component.payload.content}</p>
+        </div>
+      );
     case "callout":
       return (
         <div className="grid gap-1">

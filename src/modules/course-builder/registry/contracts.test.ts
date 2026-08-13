@@ -112,6 +112,57 @@ test("every definition default payload and placement validates", () => {
   }
 });
 
+test("rich text accepts an optional title without invalidating legacy payloads", () => {
+  assert.deepEqual(
+    componentRegistry.rich_text.payloadSchema.parse({
+      content: "Старый текст без заголовка",
+      format: "markdown",
+    }),
+    { content: "Старый текст без заголовка", format: "markdown" },
+  );
+  assert.deepEqual(
+    componentRegistry.rich_text.payloadSchema.parse({
+      title: "  Новая тема  ",
+      content: "  Основной текст  ",
+      format: "markdown",
+    }),
+    {
+      title: "Новая тема",
+      content: "Основной текст",
+      format: "markdown",
+    },
+  );
+  assert.equal(
+    componentRegistry.rich_text.payloadSchema.safeParse({
+      title: "",
+      content: "Основной текст",
+      format: "markdown",
+    }).success,
+    false,
+  );
+  assert.equal(
+    componentRegistry.rich_text.payloadSchema.safeParse({
+      title: "Т".repeat(241),
+      content: "Основной текст",
+      format: "markdown",
+    }).success,
+    false,
+  );
+  assert.equal(
+    componentRegistry.rich_text.payloadSchema.safeParse({
+      title: "Тема без основного текста",
+      format: "markdown",
+    }).success,
+    false,
+  );
+  assert.equal(
+    "title" in componentRegistry.rich_text.defaultPayload,
+    false,
+    "the canonical draft must keep the new heading optional",
+  );
+  assert.equal(componentRegistry.rich_text.version, 1);
+});
+
 test("new component capabilities match the current manual-authoring slice", () => {
   const newKeys = EXPECTED_KEYS.filter((key) =>
     [
@@ -626,6 +677,14 @@ test("JSON Schemas are generated from every registry schema", () => {
     assert.equal(generated.placement.type, "object");
     assert.doesNotThrow(() => JSON.stringify(generated));
   }
+
+  const richTextJsonSchema = componentJsonSchemas.rich_text.payload as {
+    properties?: Record<string, unknown>;
+    required?: string[];
+  };
+  assert.ok(richTextJsonSchema.properties?.title);
+  assert.ok(richTextJsonSchema.required?.includes("content"));
+  assert.equal(richTextJsonSchema.required?.includes("title"), false);
 
   assert.equal(
     lessonAddComponentInputJsonSchema.$schema,

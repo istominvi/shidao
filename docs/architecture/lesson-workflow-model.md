@@ -299,6 +299,14 @@ Voice recording, arbitrary third-party embed и image matching отложены 
 отдельных Storage/CSP/persistence контрактов. Матрица выбора описана в
 [`docs/product/course-component-catalog.md`](../product/course-component-catalog.md).
 
+Ручной picker не обязан показывать все runtime keys. В current source он
+показывает 19 создаваемых вариантов и исключает отдельный `heading`; сам key,
+его editor/renderer и MCP/AI contract остаются в registry для существующих
+Lessons. Новый ручной текст создаётся как `rich_text`: optional plain-text
+`title` + required Markdown `content`. Это обратно совместимое расширение
+payload schema version `1`, поэтому старые payload без `title` продолжают
+читаться без конвертации Components, изменения order/Slide refs или migration.
+
 ## Teacher plan
 
 План выбранной Lesson показывает `lesson.components` в ascending `position`.
@@ -317,12 +325,17 @@ category tabs находятся вне scroll container, а список Compon
 задаётся `aria-pressed`; отдельные heading/description с тем же названием не
 дублируются.
 
-Current source дополняет каждую palette card коротким назначением и
-representative статическим mini-preview. Preview является только
+Current source дополняет каждую из 19 вручную создаваемых palette cards коротким
+назначением и representative статическим mini-preview. Preview является только
 неинтерактивной presentation-подсказкой: он не сохраняется в payload, не
 использует production teacher/learner renderer и не создаёт второй Component
 registry или order. Поэтому interactive и media samples не содержат реальных
 controls, playback или network requests.
+
+Текстовая категория ручного picker содержит «Текст», «Сноска» и «Цитата».
+«Текст» заранее показывает сочетание заголовка и абзацев; отдельный `heading`
+не предлагается для нового ручного Component, но сохранённые блоки этого типа
+остаются полностью доступными для просмотра и modal editing.
 
 Presentation отдельно показывает «Ссылки» и «Файлы», хотя оба типа сохраняют
 registry category `attachment`. Category rail не имеет разделителя, а
@@ -341,10 +354,13 @@ Save отправляет существующий `POST /api/v2/lessons/:lesson
 На поверхности «План» нет дополнительной card-подложки или повторного
 заголовка. Прозрачный toolbar показывает поиск по названиям уже добавленных
 Components слева (если список непустой) и действия AI/добавления справа.
-Authored Component card использует тот же 12 px element radius и стандартную
-тень, что table surfaces; фильтрация не меняет canonical `position` и не
-создаёт второй порядок. В current source карточка содержит только production
-teacher renderer; номер/type остаются доступным именем, но не образуют отдельный
+Authored Component card использует 12 px element radius, белый фон без border и
+холодную тень `0 3px 6px rgba(76, 76, 155, 0.1)`; на hover/focus тень плавно
+становится `0 6px 12px rgba(76, 76, 155, 0.2)`, не двигая layout, а при
+reduced-motion transition отключается. Фильтрация не меняет canonical
+`position` и не создаёт второй порядок. В current source карточка содержит
+только production teacher renderer; номер/type остаются доступным именем, но не
+образуют отдельный
 видимый normal-flow header. Группа 32 px действий располагается в overlay,
 раскрывается на hover/focus-within и остаётся доступной на устройствах без
 hover. Pencil открывает отдельный modal editor поверх неизменённого renderer.
@@ -352,7 +368,8 @@ hover. Pencil открывает отдельный modal editor поверх н
 отправляет существующий `PATCH /api/v2/components/:componentId` с
 payload/placement. Form labels используют canonical `.88rem/400`, однострочные
 input/select — 40 px. Эти scoped presentation rules не меняют learner renderer,
-registry, authored order или schema.
+authored order или physical DB schema; code-first `rich_text` extension описано
+выше отдельно.
 
 На карточке teacher видит состояние видимости. `staff_only` означает, что
 компонент остаётся частью плана преподавателя, но отсутствует в learner API.

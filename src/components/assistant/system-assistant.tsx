@@ -181,7 +181,12 @@ function lessonComponentPreview(component: AiLessonComponentPlan) {
     case "heading":
       return { label: "Заголовок", content: component.payload.text };
     case "rich_text":
-      return { label: "Текст", content: component.payload.content };
+      return {
+        label: "Текст",
+        content: component.payload.title
+          ? `${component.payload.title}: ${component.payload.content}`
+          : component.payload.content,
+      };
     case "callout":
       return {
         label: "Акцент",

@@ -519,8 +519,10 @@ Course templates остаются later.
 попадает на экран учащегося.
 
 В «Плане урока» находится один ordered Component list без Step/root Step.
-В current source преподаватель выбирает один из 20 registry types:
-`heading`, `rich_text`, `callout`, `quote`, `image`, `video`, `audio`,
+Runtime registry поддерживает 20 types, но current source ручного picker
+показывает 19: отдельный `heading` сохранён только для совместимости старых
+Lessons/AI/MCP, а `rich_text` объединяет optional заголовок и required текст.
+Остальные ручные варианты: `callout`, `quote`, `image`, `video`, `audio`,
 `slideshow`, `single_choice_poll`, `matching_game`, `choice_quiz`,
 `fill_blanks`, `word_bank`, `sequence`, `categorize`, `free_response`,
 `external_link`, `word_builder`, `vocabulary_list` и `file`. Новый

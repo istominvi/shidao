@@ -393,18 +393,21 @@ registry `attachment`. План Lesson больше не обёрнут в `work
 cards используют element-radius и стандартную table-shadow.
 
 **Current source / next production deployment:** palette получает
-representative static preview и короткое назначение для каждого из 20 типов,
-поэтому текстовые `Заголовок / Текст / Сноска / Цитата` различимы до создания.
-Preview остаётся UI-only и не подменяет registry defaults или production
-renderer. Выбор типа открывает внутри того же dialog локальный draft из
-canonical defaults; возврат или закрытие ничего не создают, а `POST` происходит
-только по «Сохранить компонент». Persisted Component card остаётся
-renderer-only: 32 px controls вынесены в hover/focus overlay, а Pencil открывает
-отдельный modal payload editor. Отмена не отправляет mutation, `PATCH` выполняет
-только явное сохранение. Оба editor surface используют обычные labels и 40 px
-input/select с canonical `.88rem/400`. Существующие API, schema, migrations и
-authored order не меняются; production postflight этого source slice остаётся
-next.
+representative static preview и короткое назначение для 19 вручную создаваемых
+вариантов поверх 20-типового runtime registry. Legacy `heading` остаётся
+render/edit-compatible, но не показывается в ручном picker; «Текст»
+(`rich_text`) объединяет необязательный заголовок и обязательный основной текст,
+не меняя schema version `1` и сохраняя старые payload без `title`. Выбор типа
+открывает внутри того же dialog локальный draft из canonical defaults; возврат
+или закрытие ничего не создают, а `POST` происходит только по «Сохранить
+компонент». Persisted Component card остаётся renderer-only: белая surface не
+имеет border, базовая холодная тень `0 3px 6px` плавно усиливается до
+`0 6px 12px` на hover/focus без изменения геометрии, 32 px controls вынесены в
+overlay, а Pencil открывает отдельный modal payload editor. Отмена не отправляет
+mutation, `PATCH` выполняет только явное сохранение. Оба editor surface
+используют обычные labels и 40 px input/select с canonical `.88rem/400`.
+Существующие API routes, physical DB schema, migrations и authored order не
+меняются; production postflight этого source slice остаётся next.
 
 Repository-current body typography закрепляет Schedule как канон для всех
 active product tables: `#141414 / .88rem / 400 / 1.3`; различия primary-cell

@@ -138,7 +138,11 @@ export function toCanonicalAiLessonPlan(
             if (!block.body) return invalidProviderOutput(requestId);
             return {
               typeKey: "rich_text",
-              payload: { content: block.body, format: "markdown" },
+              payload: {
+                ...(block.title ? { title: block.title } : {}),
+                content: block.body,
+                format: "markdown",
+              },
             };
           case "callout":
             if (!block.body) return invalidProviderOutput(requestId);

@@ -65,9 +65,12 @@ export const componentPickerPresentations = {
     ),
   },
   rich_text: {
-    description: "Абзацы основного текста с простым форматированием.",
+    description: "Заголовок и основной текст с простым форматированием.",
     preview: (
       <span className="grid gap-2">
+        <span className="text-[0.72rem] font-semibold leading-none text-neutral-900">
+          Новая тема
+        </span>
         <span className="flex gap-1.5">
           <PreviewLine width="w-12" strong />
           <PreviewLine width="w-20" />

@@ -35,7 +35,11 @@ test("lesson planner accepts only canonical AI-safe registry payloads", () => {
       { typeKey: "heading", payload: { text: "Разминка", level: "h2" } },
       {
         typeKey: "rich_text",
-        payload: { content: "Сравним **1/2** и **1/3**.", format: "markdown" },
+        payload: {
+          title: "Сравнение дробей",
+          content: "Сравним **1/2** и **1/3**.",
+          format: "markdown",
+        },
       },
       {
         typeKey: "single_choice_poll",
@@ -63,6 +67,21 @@ test("lesson planner accepts only canonical AI-safe registry payloads", () => {
     width: "content",
     compact: false,
   });
+
+  assert.equal(
+    aiLessonPlanSchema.safeParse({
+      summary: "Текст без основного содержания недопустим.",
+      components: [
+        { typeKey: "heading", payload: { text: "A", level: "h2" } },
+        {
+          typeKey: "rich_text",
+          payload: { title: "Только заголовок", format: "markdown" },
+        },
+        { typeKey: "callout", payload: { text: "C", tone: "info" } },
+      ],
+    }).success,
+    false,
+  );
 
   assert.equal(
     aiLessonPlanSchema.safeParse({

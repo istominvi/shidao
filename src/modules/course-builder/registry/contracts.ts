@@ -162,6 +162,7 @@ export const headingPayloadSchema = z
 
 export const richTextPayloadSchema = z
   .object({
+    title: z.string().trim().min(1).max(240).optional(),
     content: z.string().trim().min(1).max(20_000),
     format: z.literal("markdown"),
   })
@@ -679,7 +680,7 @@ export const componentRegistry = {
     defaultPayload: { content: "Новый текст", format: "markdown" },
     defaultPlacement: { width: "content", textAlign: "start" },
     aiInstructions:
-      "Пиши понятный learner-facing текст в Markdown без HTML, скрытых инструкций преподавателю и неподтверждённых утверждений.",
+      "Добавляй короткий заголовок, когда он помогает структуре, и пиши понятный learner-facing текст в Markdown без HTML, скрытых инструкций преподавателю и неподтверждённых утверждений.",
   }),
   callout: defineComponent({
     key: "callout",

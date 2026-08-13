@@ -8738,7 +8738,7 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       exact: true,
     });
     const expectedComponentKeysByCategory = {
-      Текст: ["heading", "rich_text", "callout", "quote"],
+      Текст: ["rich_text", "callout", "quote"],
       Медиа: ["image", "video", "audio", "slideshow"],
       "Игры и активности": [
         "single_choice_poll",
@@ -8928,12 +8928,11 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
         if (!node) throw new Error(`Missing ${typeKey} component preview`);
         return node;
       };
-      const heading = preview("heading");
       const richText = preview("rich_text");
       const callout = preview("callout");
       const quote = preview("quote");
-      const headingSample = Array.from(
-        heading.querySelectorAll<HTMLElement>("span"),
+      const richTextTitle = Array.from(
+        richText.querySelectorAll<HTMLElement>("span"),
       ).find(
         (node) =>
           node.children.length === 0 &&
@@ -8942,16 +8941,19 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       const calloutSample = callout.firstElementChild as HTMLElement | null;
       const quoteSample = quote.firstElementChild as HTMLElement | null;
       const quoteText = quoteSample?.firstElementChild as HTMLElement | null;
-      if (!headingSample || !calloutSample || !quoteSample || !quoteText) {
+      if (!richTextTitle || !calloutSample || !quoteSample || !quoteText) {
         throw new Error("Text component preview structure is incomplete");
       }
-      const headingStyle = getComputedStyle(headingSample);
+      const richTextTitleStyle = getComputedStyle(richTextTitle);
       const calloutStyle = getComputedStyle(calloutSample);
       const quoteStyle = getComputedStyle(quoteSample);
       return {
-        headingText: heading.textContent?.trim(),
-        headingFontSize: headingStyle.fontSize,
-        headingFontWeight: headingStyle.fontWeight,
+        legacyHeadingCount: document.querySelectorAll(
+          '[role="dialog"] [data-component-type-key="heading"]',
+        ).length,
+        richTextTitle: richTextTitle.textContent?.trim(),
+        richTextTitleFontSize: richTextTitleStyle.fontSize,
+        richTextTitleFontWeight: richTextTitleStyle.fontWeight,
         richTextVisibleLineCount: richText.querySelectorAll(
           "span[class*='rounded-full']",
         ).length,
@@ -8965,9 +8967,10 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
         quoteTextFontStyle: getComputedStyle(quoteText).fontStyle,
       };
     });
-    assert.equal(textPreviewContract.headingText, "Новая тема");
-    assert.equal(textPreviewContract.headingFontSize, "12.48px");
-    assert.equal(textPreviewContract.headingFontWeight, "600");
+    assert.equal(textPreviewContract.legacyHeadingCount, 0);
+    assert.equal(textPreviewContract.richTextTitle, "Новая тема");
+    assert.equal(textPreviewContract.richTextTitleFontSize, "11.52px");
+    assert.equal(textPreviewContract.richTextTitleFontWeight, "600");
     assert.ok(textPreviewContract.richTextVisibleLineCount >= 4);
     assert.notEqual(
       textPreviewContract.calloutBackgroundColor,
@@ -8981,14 +8984,25 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
     assert.equal(textPreviewContract.quoteBorderLeftWidth, "2px");
     assert.equal(textPreviewContract.quoteTextFontStyle, "italic");
     await componentDialog
-      .locator('[data-component-type-key="heading"]')
+      .locator('[data-component-type-key="rich_text"]')
       .click();
-    const draftHeadingDialog = runtime.page.getByRole("dialog", {
-      name: "Новый компонент · Заголовок",
+    const draftTextDialog = runtime.page.getByRole("dialog", {
+      name: "Новый компонент · Текст",
       exact: true,
     });
-    await draftHeadingDialog.waitFor();
-    await draftHeadingDialog.locator(".component-payload-editor").waitFor();
+    await draftTextDialog.waitFor();
+    await draftTextDialog.locator(".component-payload-editor").waitFor();
+    assert.equal(
+      await draftTextDialog.getByLabel("Заголовок (необязательно)").count(),
+      1,
+    );
+    assert.equal(
+      await draftTextDialog
+        .locator('.component-editor-field:has(> .field-label:text-is("Текст"))')
+        .locator("textarea")
+        .count(),
+      1,
+    );
     await runtime.page.evaluate(
       () =>
         new Promise<void>((resolve) =>
@@ -9002,10 +9016,10 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       await runtime.page.locator(".lesson-component-card").count(),
       1,
     );
-    await draftHeadingDialog
+    await draftTextDialog
       .getByRole("button", { name: "Назад к компонентам", exact: true })
       .click();
-    await draftHeadingDialog.waitFor({ state: "detached" });
+    await draftTextDialog.waitFor({ state: "detached" });
     await componentDialog.waitFor();
     assert.equal(componentCreateRequestCount, 0);
     for (const redundantText of [
@@ -9120,6 +9134,25 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
         accessibleLabelWidth: labelRect.width,
         accessibleLabelHeight: labelRect.height,
         cardPadding: cardStyle.padding,
+        cardBorderWidths: [
+          cardStyle.borderTopWidth,
+          cardStyle.borderRightWidth,
+          cardStyle.borderBottomWidth,
+          cardStyle.borderLeftWidth,
+        ],
+        cardBackground: cardStyle.backgroundColor,
+        cardBoxShadow: cardStyle.boxShadow,
+        cardTransitionProperty: cardStyle.transitionProperty,
+        cardTransitionDuration: cardStyle.transitionDuration,
+        cardRect: (() => {
+          const rect = card.getBoundingClientRect();
+          return {
+            top: rect.top,
+            left: rect.left,
+            width: rect.width,
+            height: rect.height,
+          };
+        })(),
         cardOverflow: cardStyle.overflow,
         actionsPosition: actionsStyle.position,
         actionsTop: actionsStyle.top,
@@ -9138,6 +9171,19 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
     assert.ok(fileComponentCardVisual.accessibleLabelWidth <= 1);
     assert.ok(fileComponentCardVisual.accessibleLabelHeight <= 1);
     assert.equal(fileComponentCardVisual.cardPadding, "0px");
+    assert.deepEqual(fileComponentCardVisual.cardBorderWidths, [
+      "0px",
+      "0px",
+      "0px",
+      "0px",
+    ]);
+    assert.equal(fileComponentCardVisual.cardBackground, "rgb(255, 255, 255)");
+    assert.equal(
+      fileComponentCardVisual.cardBoxShadow,
+      "rgba(76, 76, 155, 0.1) 0px 3px 6px 0px",
+    );
+    assert.equal(fileComponentCardVisual.cardTransitionProperty, "box-shadow");
+    assert.equal(fileComponentCardVisual.cardTransitionDuration, "0.18s");
     assert.equal(fileComponentCardVisual.cardOverflow, "visible");
     assert.equal(fileComponentCardVisual.actionsPosition, "absolute");
     assert.equal(fileComponentCardVisual.actionsTop, "4px");
@@ -9164,32 +9210,58 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
 
     await fileComponentCard.hover();
     await runtime.page.evaluate(
-      () => new Promise<void>((resolve) => window.setTimeout(resolve, 180)),
+      () => new Promise<void>((resolve) => window.setTimeout(resolve, 220)),
     );
     assert.deepEqual(
       await fileComponentActions.evaluate((actions) => {
         const style = getComputedStyle(actions);
-        return { opacity: style.opacity, pointerEvents: style.pointerEvents };
+        const card = actions.closest<HTMLElement>(".lesson-component-card");
+        if (!card) throw new Error("Component card is missing");
+        const cardRect = card.getBoundingClientRect();
+        return {
+          opacity: style.opacity,
+          pointerEvents: style.pointerEvents,
+          cardBoxShadow: getComputedStyle(card).boxShadow,
+          cardRect: {
+            top: cardRect.top,
+            left: cardRect.left,
+            width: cardRect.width,
+            height: cardRect.height,
+          },
+        };
       }),
-      { opacity: "1", pointerEvents: "auto" },
+      {
+        opacity: "1",
+        pointerEvents: "auto",
+        cardBoxShadow: "rgba(76, 76, 155, 0.2) 0px 6px 12px 0px",
+        cardRect: fileComponentCardVisual.cardRect,
+      },
     );
     await runtime.page
       .getByRole("button", { name: "Компонент", exact: true })
       .hover();
     await runtime.page.evaluate(
-      () => new Promise<void>((resolve) => window.setTimeout(resolve, 180)),
+      () => new Promise<void>((resolve) => window.setTimeout(resolve, 220)),
     );
-    assert.equal(
-      await fileComponentActions.evaluate(
-        (actions) => getComputedStyle(actions).opacity,
-      ),
-      "0",
+    assert.deepEqual(
+      await fileComponentActions.evaluate((actions) => {
+        const card = actions.closest<HTMLElement>(".lesson-component-card");
+        if (!card) throw new Error("Component card is missing");
+        return {
+          opacity: getComputedStyle(actions).opacity,
+          cardBoxShadow: getComputedStyle(card).boxShadow,
+        };
+      }),
+      {
+        opacity: "0",
+        cardBoxShadow: "rgba(76, 76, 155, 0.1) 0px 3px 6px 0px",
+      },
     );
     await fileComponentEdit.evaluate((button) => {
       (button as HTMLElement).focus();
     });
     await runtime.page.evaluate(
-      () => new Promise<void>((resolve) => window.setTimeout(resolve, 180)),
+      () => new Promise<void>((resolve) => window.setTimeout(resolve, 220)),
     );
     assert.deepEqual(
       await fileComponentActions.evaluate((actions) => {
@@ -9197,12 +9269,20 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
         return {
           opacity: style.opacity,
           pointerEvents: style.pointerEvents,
+          cardBoxShadow: getComputedStyle(
+            actions.closest<HTMLElement>(".lesson-component-card")!,
+          ).boxShadow,
           editFocused:
             actions.querySelector('[aria-label="Редактировать «Файл»"]') ===
             document.activeElement,
         };
       }),
-      { opacity: "1", pointerEvents: "auto", editFocused: true },
+      {
+        opacity: "1",
+        pointerEvents: "auto",
+        cardBoxShadow: "rgba(76, 76, 155, 0.2) 0px 6px 12px 0px",
+        editFocused: true,
+      },
     );
 
     await fileComponentEdit.click();

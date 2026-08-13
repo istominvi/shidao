@@ -151,19 +151,34 @@ function PayloadFields({
       );
     case "rich_text":
       return (
-        <Field label="Текст (безопасный Markdown)">
-          <textarea
-            className={textareaClassName()}
-            value={stringValue(payload.content)}
-            onChange={(event) =>
-              onChange({
-                ...payload,
-                content: event.target.value,
-                format: "markdown",
-              })
-            }
-          />
-        </Field>
+        <div className="grid gap-4">
+          <Field label="Заголовок (необязательно)">
+            <input
+              className="field-input"
+              value={stringValue(payload.title)}
+              onChange={(event) => {
+                const title = event.target.value;
+                const next = { ...payload };
+                if (title.trim()) next.title = title;
+                else delete next.title;
+                onChange(next);
+              }}
+            />
+          </Field>
+          <Field label="Текст">
+            <textarea
+              className={textareaClassName()}
+              value={stringValue(payload.content)}
+              onChange={(event) =>
+                onChange({
+                  ...payload,
+                  content: event.target.value,
+                  format: "markdown",
+                })
+              }
+            />
+          </Field>
+        </div>
       );
     case "callout":
       return (

@@ -969,13 +969,21 @@ flow как permanent delete.
   на Lesson plan — отсутствие внешней surface/повторного заголовка, прозрачный
   search/actions toolbar, content-sized palette cards без category divider и
   pointer на category/card controls. Для component-authoring source slice
-  дополнительно проверить representative preview у всех 20 типов и явные
-  различия `Заголовок / Текст / Сноска / Цитата`; preview не содержит
+  дополнительно проверить representative preview у 19 вручную создаваемых
+  типов: manual picker не содержит `heading`, а «Текст» показывает и редактирует
+  optional «Заголовок» + required «Текст»; exhaustive presentation/renderer
+  contract при этом сохраняет все 20 runtime keys. Старый fixture `heading` и
+  `rich_text` без `title` должен по-прежнему рендериться и открываться в editor;
+  новый `rich_text` с `title` должен переживать reload. Preview не содержит
   вложенных focusable controls. Выбор type должен открыть локальный draft editor
   внутри того же dialog без `POST`; возврат в каталог, Cancel, close/backdrop и
   Escape не меняют число Components. Только «Сохранить компонент» отправляет
   один `POST`, после reload появляется ровно один `staff_only` Component.
-  Persisted card показывает только teacher renderer; группа actions не занимает
+  Persisted card показывает только teacher renderer, имеет white background,
+  border `0` и base shadow exact
+  `rgba(76, 76, 155, 0.1) 0px 3px 6px 0px`. На hover/focus exact shadow —
+  `rgba(76, 76, 155, 0.2) 0px 6px 12px 0px`, transition `180ms`, а card rect не
+  меняется; reduced-motion отключает transition. Группа actions не занимает
   normal-flow header, появляется на hover и focus-within, а на touch остаётся
   доступной. Pencil открывает отдельный modal editor: Cancel/close/Escape не
   отправляют `PATCH`, Save отправляет один `PATCH`, и после reload renderer

@@ -2188,7 +2188,7 @@ a {
 
 .lesson-component-card {
   position: relative;
-  border: 1px solid #e5e7eb;
+  border: 0;
   border-radius: var(
     --course-demo-element-radius,
     var(--product-element-radius, 0.75rem)
@@ -2196,13 +2196,18 @@ a {
   background: #fff;
   overflow: visible;
   padding: 0;
-  box-shadow: 0 10px 24px rgba(20, 20, 20, 0.06);
-  transition: border-color 180ms ease;
+  box-shadow: 0 3px 6px 0 rgba(76, 76, 155, 0.1);
+  transition: box-shadow 180ms ease;
 }
 
-.lesson-component-card:hover {
-  border-color: #d4d4d4;
-  box-shadow: 0 10px 24px rgba(20, 20, 20, 0.06);
+@media (hover: hover) and (pointer: fine) {
+  .lesson-component-card:hover {
+    box-shadow: 0 6px 12px 0 rgba(76, 76, 155, 0.2);
+  }
+}
+
+.lesson-component-card:focus-within {
+  box-shadow: 0 6px 12px 0 rgba(76, 76, 155, 0.2);
 }
 
 .lesson-component-card-actions {
@@ -2399,6 +2404,12 @@ a {
 
   .lesson-component-card-content {
     padding-top: 3.75rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lesson-component-card {
+    transition: none;
   }
 }
 
