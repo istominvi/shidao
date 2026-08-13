@@ -5,8 +5,8 @@
 **Активная ветка:** `main`
 **Рабочее приложение:** `https://v2.shidao.ru`
 **Текущий deployed application source / последний release gate:**
-`9e66fb548bef176486673149f466b269fd436b21`
-(`575/575` unit/API, `23/23` strict production-mode browser scenarios,
+`8e5d169dab72dc285c0fdfe8991646152d9904c7`
+(`579/579` unit/API, `23/23` strict production-mode browser scenarios,
 typecheck, lint, format и production build)
 **Исторический functional E2 baseline:**
 `22b486a7163453019d9720cb4fe0f36ed7c0228d`
@@ -116,8 +116,8 @@ toolbar, cards/table и `DialogShell`: статический каталог у�
 поддерживает deep link вида
 `/store?product=<slug>` без изменения Lesson contracts. Канонический
 контракт с current/next/later границами находится в
-[`docs/product/store-demo.md`](./product/store-demo.md). Current source gate:
-typecheck, lint, format, production build, `575/575` unit/API и `23/23` strict
+[`docs/product/store-demo.md`](./product/store-demo.md). Current deployed gate:
+typecheck, lint, format, production build, `579/579` unit/API и `23/23` strict
 production-mode browser scenarios, включая Store deep link, cart/checkout,
 focus return и mobile no-overflow.
 
@@ -210,12 +210,15 @@ schema или migration.
 **Current source component-authoring refinement (next production deployment):**
 runtime registry по-прежнему поддерживает все 20 Component types, а ручная
 palette показывает 19 создаваемых карточек с коротким назначением и статическим
-неинтерактивным мини-образцом. Отдельный `heading` скрыт только из ручного
-выбора, но старые Components этого типа продолжают рендериться и редактироваться.
-`rich_text` с тем же schema version `1` принимает необязательный plain-text
-`title` перед обязательным `content`; прежние payload без `title` остаются
-валидными. Образцы не используют production renderer и не создают вложенные
-controls. Выбор типа переключает тот же dialog на локальный draft: persisted
+неинтерактивным мини-образцом. Отдельный `heading` исключён из authored-create
+set во всех entry points: picker, REST `POST`, development MCP, AI planning и
+deterministic assembler. Он остаётся двадцатым legacy runtime key для
+read/render/modal edit/PATCH и immutable publication revisions. `rich_text` с
+тем же schema version `1` принимает `title`, `content` или оба поля и отклоняет
+payload, где оба значения пусты; прежние body-only payload остаются валидными.
+Form labels — ровно «Заголовок» и «Текст», без «(необязательно)». Образцы не
+используют production renderer и не создают вложенные controls. Выбор типа
+переключает тот же dialog на локальный draft: persisted
 Component ещё не существует, а единственный `POST` выполняется по явному
 «Сохранить компонент». Persisted Component card остаётся renderer-only и теперь
 является белой surface без border: базовая чёрная тень
@@ -226,40 +229,45 @@ overlay без border/box-shadow на общей белой подложке `rg
 открывает отдельный modal editor, где
 отмена не меняет Component, а явное сохранение отправляет `PATCH`. Оба editor
 surface используют обычные labels и однострочные input/select высотой `40 px`
-с canonical `.88rem/400` типографикой. API routes, physical DB schema,
-migrations и authored order не меняются; production rollout/postflight ещё не
-заявлены.
+с canonical `.88rem/400` типографикой.
+
+Tracked data migration
+`20260813063716_unify_heading_rich_text_components.sql` переводит authored
+`heading` в title-only `rich_text` и объединяет только непосредственные пары
+`heading → rich_text` с одинаковыми visibility, `student_slide_id` и placement.
+Immutable publication revisions она намеренно не переписывает; physical DB
+schema не меняется. Rollout ещё не выполнен: сначала должен быть развёрнут и
+проверен совместимый web image, затем создан full-format backup и только после
+этого применён migration. Старый production image title-only payload читать не
+умеет, поэтому обратный порядок запрещён.
 
 **Current source page-header action-button refinement (next production
-deployment):** белые secondary actions внутри `AppPageHeader` сохраняют общий
-внешний размер `40 px` и border `1 px`, поэтому внутренняя белая область имеет
-высоту `38 px`. Рамка использует тот же 50%-black token
-`rgba(20, 20, 20, 0.5)`, что и подзаголовок, а
-`background-clip: padding-box` не рисует белую заливку под полупрозрачным
-пикселем: цвет рамки смешивается с фоном страницы. Lesson action «Удалить»
-переходит с `ghost` на тот же bordered secondary geometry, сохраняя красные
-текст/иконку и confirmation flow. Scope ограничен action-секцией заголовка;
-menu items и обычные ghost controls остаются borderless. Это UI-only source
-change без API, schema, migration или реализации выбора фона Course;
-локально подтверждены typecheck, lint, format, production build, `578/578`
-unit/API и `23/23` strict production-mode browser scenarios. Production
-rollout/postflight ещё не заявлены.
+deployment):** все product buttons внутри `AppPageHeader` имеют белую заливку,
+внешнюю высоту `40 px` и border `0`. Их контур на белом или пользовательском
+фоне задаёт общий `--product-raised-control-shadow`, дословно совпадающий с
+тенью выбранной белой кнопки переключателя вида Расписания:
+`0 1px 3px rgba(20, 20, 20, 0.1), 0 4px 12px rgba(20, 20, 20, 0.06)`.
+Прежние primary header actions становятся белыми с чёрными текстом/иконкой;
+Lesson action «Удалить» сохраняет danger-цвет и confirmation flow. Hover не
+сдвигает surface и не убирает тень, а keyboard focus дополнительно обозначен
+2 px outline. В `forced-colors` исчезающая системная тень заменяется системной
+рамкой. Scope ограничен непосредственными action-кнопками заголовка и вложенным
+trigger контекстного меню; buttons открываемого из header dialog, menu items и
+обычные controls не меняются. Это UI-only source change без API, schema, migration или
+реализации выбора фона Course; production rollout/postflight ещё не заявлены.
 
 **Current source WorkspaceTabs fractional-baseline refinement (next production
-deployment):** общий разделитель под вкладками сохраняет визуальную толщину
-`1.5 px`, но больше не полагается на дробную высоту paint-box, которую Chromium
-может растеризовать как целый пиксель. Псевдоэлемент рисуется высотой `3 px` и
-сжимается по вертикали через `scaleY(0.5)` от нижней грани; итоговая толщина
-остаётся `1.5 px`, линия не сдвигается относительно контента, а 4 px active
+deployment):** общий разделитель под вкладками уменьшен с production baseline
+`1.5 px` до визуальных `1.2 px`. Псевдоэлемент рисуется высотой `3 px` и
+сжимается по вертикали через `scaleY(0.4)` от нижней грани; линия не сдвигается
+относительно контента, а 4 px active
 segment продолжает лежать над ней. Изменение действует через единый
 `WorkspaceTabs` на всех его product consumers, не меняет 40 px tab geometry,
 horizontal scroll, ARIA/keyboard contract, API, schema или migrations.
-Локально подтверждены typecheck, lint, format, production build, `578/578`
-unit/API и `23/23` strict production-mode browser scenarios. Production
-rollout/postflight ещё не заявлены.
+Production rollout/postflight ещё не заявлены.
 
-**Current source contextual ActionMenu refinement (next production
-deployment):** все контекстные меню, открываемые горизонтальным или вертикальным
+**Current production contextual ActionMenu refinement:** все контекстные меню,
+открываемые горизонтальным или вертикальным
 троеточием в Course, Lesson rows, Schedule и Students, используют один
 канонический surface contract: `--product-context-menu-surface: #fff`, общий
 12 px radius и `--product-context-menu-shadow: 0 18px 46px rgba(20, 20, 20,
@@ -269,15 +277,16 @@ deployment):** все контекстные меню, открываемые г
 destructive/disabled states, portal positioning, keyboard navigation и focus
 restore не меняются. Filter/calendar popovers, Account menu и native `select`
 не являются contextual `ActionMenu` и этим scoped slice не затрагиваются; API,
-schema и migrations также не меняются. Локально подтверждены typecheck, lint,
-format, production build, `579/579` unit/API и `23/23` strict production-mode
-browser scenarios. Production rollout/postflight ещё не заявлены.
+schema и migrations также не меняются. Exact release
+`8e5d169dab72dc285c0fdfe8991646152d9904c7` прошёл typecheck, lint, format,
+production build, `579/579` unit/API и `23/23` strict production-mode browser
+scenarios; running source и HTTP postflight подтверждены ниже.
 
 **Current production application evidence:** running container
-`g9x4d9zn60jv35r7zf0xl6xj-115759805389` использует exact image tag
-`9e66fb548bef176486673149f466b269fd436b21` и image ID
-`sha256:8b2eb3609531ba08fca946dde633dc1946821ade3ec1b408be09bafd4ef172d7`.
-Container запущен `2026-08-12T12:00:37.589103216Z`, имеет restart count `0` и
+`g9x4d9zn60jv35r7zf0xl6xj-061859307830` использует exact image tag
+`g9x4d9zn60jv35r7zf0xl6xj:8e5d169dab72dc285c0fdfe8991646152d9904c7` и
+совпадающий `SOURCE_COMMIT`.
+Container запущен `2026-08-13T06:21:36.30711298Z`, имеет restart count `0` и
 остаётся running. Read-only HTTP postflight подтвердил `/login` `200`,
 `/robots.txt` `200` с `Disallow: /` и guest `/store` `307` в `/login`. Store,
 page-header/directory refinements, общий table/authoring polish и Course table
@@ -1062,10 +1071,11 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
   того же dialog, но работает с локальной копией canonical defaults. До явного
   «Сохранить компонент» `POST` не отправляется и Component не занимает позицию;
   возврат в каталог или закрытие dialog удаляет только локальный draft.
-  Ручной каталог показывает 19 вариантов: legacy `heading` из него исключён,
-  а «Текст» (`rich_text`) объединяет необязательный заголовок и обязательный
-  основной текст. Сохранённые `heading` и прежние `rich_text` без заголовка
-  остаются совместимыми с renderer/editor и schema version `1`.
+  Каталог показывает 19 authored-create вариантов: legacy `heading` исключён
+  также из REST `POST`, MCP, AI и deterministic assembler. «Текст» (`rich_text`)
+  принимает заголовок, основной текст или оба поля, но не оба пустыми.
+  Сохранённые `heading` и прежние body-only `rich_text` остаются совместимыми с
+  runtime renderer/editor и schema version `1`.
 - Компонент можно редактировать, удалить или переместить кнопками
   «выше/ниже». В current source persisted card всегда показывает только
   production teacher renderer. Группа 32 px actions располагается поверх
@@ -1130,11 +1140,12 @@ Zod payload/placement schemas, defaults и capabilities. Текущий payload 
 renderers — отдельную exhaustive typed map. JSON Schema для MCP генерируется из
 registry contracts.
 
-Manual picker является presentation-проекцией из 19 создаваемых вариантов, а
-не вторым registry: `heading` сохранён в 20-типовом runtime/MCP contract для
-совместимости существующих Lessons и AI, но не показывается при ручном
-добавлении. Payload `rich_text` версии `1` обратно совместимо расширен
-необязательным `title`; основной `content` остаётся обязательным.
+Authored-create projection содержит 19 вариантов и не является вторым registry:
+`heading` сохранён в 20-типовом runtime contract для чтения, renderer,
+modal edit/PATCH и immutable publication revisions, но исключён из picker,
+REST `POST`, development MCP, AI и deterministic assembler. Payload `rich_text`
+версии `1` принимает `title`, `content` или оба поля и требует хотя бы одно
+непустое значение.
 
 `video`, `audio` и `external_link` в этом срезе принимают только прямые
 HTTPS URL; upload/transcoding медиа не заявлены. Самопроверка новых
@@ -1175,10 +1186,11 @@ application service/contracts внутри authenticated web request.
   записывает; UI показывает preview, model и token usage, а Lessons появляются
   только после отдельного Apply.
 - Lesson planning поддерживает новую или существующую Lesson. Provider output
-  по-прежнему ограничен пятью типами `heading`, `rich_text`, `callout`,
+  ограничен четырьмя создаваемыми типами `rich_text`, `callout`,
   `single_choice_poll`, `matching_game` и повторно валидируется registry/Zod
-  contracts до первой записи. Расширение ручного registry не расширяет
-  provider allowlist автоматически.
+  contracts до первой записи. `rich_text` может быть title-only, body-only или
+  содержать оба поля; legacy `heading` AI больше не создаёт. Расширение ручного
+  registry не расширяет provider allowlist автоматически.
 - Provider-facing structured-output schema является плоским transport adapter.
   После ответа она преобразуется в canonical AI plan, а payload каждого
   Component повторно проходит соответствующую registry schema и обычный

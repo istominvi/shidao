@@ -68,6 +68,12 @@ ShiDao хранит два обязательных слоя:
   capability, обязательный admin review exact educator revision,
   `approved_revision_id`, official license, Account-scoped self-learning
   progress и абсолютные no-copy/no-roster/no-LessonRun guards.
+- `20260813063716_unify_heading_rich_text_components.sql` — current source,
+  production apply ещё не выполнен: data-only перевод authored `heading` в
+  title-only `rich_text` и объединение только непосредственных
+  `heading → rich_text` с одинаковыми visibility, `student_slide_id` и
+  placement. Immutable publication revisions и physical schema не меняются;
+  compatible web должен быть развёрнут и проверен до backup/apply.
 
 Backfill details являются историей этих migrations и не должны повторяться в
 current-schema guide как действующая domain model.
@@ -84,5 +90,7 @@ current-schema guide как действующая domain model.
 - affected tables/functions/policies;
 - backfill/invariant counts;
 - RLS/ACL negative tests;
-- synchronized current-schema snapshots;
+- synchronized current-schema docs и generated SQL snapshot, когда меняется
+  physical schema; для data-only migration — явное подтверждение неизменной
+  physical shape вместо ложного dump refresh;
 - application tests/build и production postflight.

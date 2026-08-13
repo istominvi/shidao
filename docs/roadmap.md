@@ -63,7 +63,7 @@
   канонизация развёрнута exact merge commit
   `84ffefecda99d3b0a9da82bf1eaf8ce76d9c6ea1` (PR #242).
   Текущий совокупный UI contract развёрнут exact source
-  `9e66fb548bef176486673149f466b269fd436b21`; running container evidence
+  `8e5d169dab72dc285c0fdfe8991646152d9904c7`; running container evidence
   зафиксирован в [`docs/project-state.md`](./project-state.md).
 - Active app routes приведены к плоскому demo-фону `#f5f1e8` без marketing
   gradients; header, кнопки, вкладки и заголовочная типографика используют
@@ -396,9 +396,12 @@ cards используют element-radius и стандартную table-shadow
 **Current source / next production deployment:** palette получает
 representative static preview и короткое назначение для 19 вручную создаваемых
 вариантов поверх 20-типового runtime registry. Legacy `heading` остаётся
-render/edit-compatible, но не показывается в ручном picker; «Текст»
-(`rich_text`) объединяет необязательный заголовок и обязательный основной текст,
-не меняя schema version `1` и сохраняя старые payload без `title`. Выбор типа
+read/render/modal edit/PATCH/publication-compatible, но исключён из всех
+authored-create entry points: picker, REST `POST`, development MCP, AI и
+deterministic assembler. «Текст» (`rich_text`) принимает заголовок, основной
+текст или оба поля, требует хотя бы одно непустое значение, не меняет schema
+version `1` и сохраняет старые body-only payload. Labels — ровно «Заголовок» и
+«Текст», без «(необязательно)». Выбор типа
 открывает внутри того же dialog локальный draft из canonical defaults; возврат
 или закрытие ничего не создают, а `POST` происходит только по «Сохранить
 компонент». Persisted Component card остаётся renderer-only: белая surface не
@@ -408,36 +411,40 @@ offset `3px`, но плавно меняется до `0 3px 12px #0000001a` б�
 белой подложке `rgba(255, 255, 255, 0.5)`, а Pencil открывает отдельный modal payload editor. Отмена не отправляет
 mutation, `PATCH` выполняет только явное сохранение. Оба editor surface
 используют обычные labels и 40 px input/select с canonical `.88rem/400`.
-Существующие API routes, physical DB schema, migrations и authored order не
-меняются; production postflight этого source slice остаётся next.
+Tracked data migration `20260813063716_unify_heading_rich_text_components.sql`
+переводит authored heading в title-only text и безопасно объединяет только
+непосредственные пары с одинаковыми visibility/Slide/placement; immutable
+publication revisions остаются исторически точными. Physical schema не
+меняется. Production sequence остаётся next: сначала compatible web deployment,
+затем verified backup и migration apply/postflight.
 
-**Current source / next production deployment:** белые secondary actions в
-`AppPageHeader` получают 50%-black рамку из общего muted token. Внешняя
-геометрия остаётся `40 px` с border `1 px`, белая заливка занимает внутренние
-`38 px` и через `background-clip: padding-box` не лежит под полупрозрачной
-рамкой, поэтому та смешивается с фактическим page background. Lesson
-«Удалить» использует тот же secondary surface с danger-цветом вместо
-borderless `ghost`. Изменение scoped только к header actions, не добавляет сам
-выбор фона Course и не меняет API/schema/migrations; production postflight
-остаётся next.
+**Current source / next production deployment:** все product buttons в
+`AppPageHeader` имеют белый surface высотой `40 px`, border `0` и общий
+двухслойный `--product-raised-control-shadow`, совпадающий с selected-состоянием
+переключателя вида Расписания. Primary header actions получают чёрные
+текст/иконку, Lesson «Удалить» сохраняет danger-цвет, а keyboard focus —
+отдельный 2 px outline поверх неизменной тени. Изменение scoped только к header
+actions, не добавляет сам выбор фона Course и не меняет API/schema/migrations;
+production postflight остаётся next.
 
 **Current source / next production deployment:** общий `WorkspaceTabs`
-сохраняет визуальный baseline `1.5 px`, рисуя paint-layer высотой `3 px` и
-сжимая его `scaleY(0.5)` от нижней грани. Такой способ исключает округление
+уменьшает visual baseline с `1.5 px` до `1.2 px`, рисуя paint-layer высотой
+`3 px` и сжимая его `scaleY(0.4)` от нижней грани. Такой способ исключает округление
 обычной дробной CSS-высоты до одного или двух пикселей, не меняет 40 px tab
 layout, scroll, interaction или 4 px active segment и применяется сразу ко всем
 product consumers. API/schema/migrations не меняются; production postflight
 остаётся next.
 
-**Current source / next production deployment:** shared contextual
-`ActionMenu` для Course, Lesson rows, Schedule и Students канонизирован через
+**Current production:** shared contextual `ActionMenu` для Course, Lesson rows,
+Schedule и Students канонизирован через
 общие surface/radius/shadow tokens. Панель белая, с единственной тенью
 `0 18px 46px rgba(20, 20, 20, 0.18)` и без обычной обводки; separator API,
 линии и separator DOM удалены во всех `MoreHorizontal`/`MoreVertical`
 consumers. Item geometry, destructive/disabled states, portal/keyboard/focus
 contracts не меняются. Filter/calendar popovers, Account menu и native
 `select` остаются отдельными семантическими компонентами; API/schema/migrations
-не меняются, production postflight остаётся next.
+не менялись. Exact release `8e5d169dab72dc285c0fdfe8991646152d9904c7`
+и production postflight подтверждены.
 
 Current production body typography закрепляет Schedule как канон для всех
 active product tables: `#141414 / .88rem / 400 / 1.3`; различия primary-cell
@@ -480,9 +487,9 @@ Definition of Done:
   Zod/registry contracts перед первой записью;
 - Course outline ровно на `targetLessonCount` Lessons;
 - создание новой или дополнение существующей Lesson ограниченным набором
-  registry Components (`heading`, `rich_text`, `callout`,
-  `single_choice_poll`, `matching_game`); расширение ручного registry не
-  расширяет provider allowlist автоматически;
+  authored-create Components (`rich_text`, `callout`, `single_choice_poll`,
+  `matching_game`); legacy `heading` AI не создаёт, а расширение ручного
+  registry не расширяет provider allowlist автоматически;
 - отдельные preview и explicit Apply; provider planning не выполняет записи;
 - stale-plan checks, idempotent Course retry и compensating cleanup для
   поддерживаемых apply paths;
@@ -650,7 +657,7 @@ image ID —
 `sha256:214e954aed0355c1881ea778e65dcb7f4c4cabcde4d7ac2e3f6022322bd8e027`,
 restart count `0`, HTTP host/CSRF/auth postflight green. Это functional E2
 baseline `22b486a7163453019d9720cb4fe0f36ed7c0228d`; текущий deployed application
-source — `9e66fb548bef176486673149f466b269fd436b21`. DB и web/API slice являются
+source — `8e5d169dab72dc285c0fdfe8991646152d9904c7`. DB и web/API slice являются
 current production.
 
 **Later:** admin UI для capability/review, юридически значимые удостоверения,

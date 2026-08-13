@@ -7,7 +7,6 @@ import {
 import { RouterAiError } from "./routerai";
 
 const aiLessonProviderBlockKindSchema = z.enum([
-  "heading",
   "rich_text",
   "callout",
   "single_choice_poll",
@@ -126,24 +125,28 @@ export function toCanonicalAiLessonPlan(
     const components: AiLessonPlan["components"] = providerPlan.blocks.map(
       (block): AiLessonPlan["components"][number] => {
         switch (block.kind) {
-          case "heading": {
-            const text = firstContent(block.body, block.title);
-            if (!text) return invalidProviderOutput(requestId);
-            return {
-              typeKey: "heading",
-              payload: { text, level: "h2" },
-            };
-          }
-          case "rich_text":
-            if (!block.body) return invalidProviderOutput(requestId);
+          case "rich_text": {
+            if (!block.title && !block.body) {
+              return invalidProviderOutput(requestId);
+            }
+            if (!block.title) {
+              return {
+                typeKey: "rich_text",
+                payload: {
+                  content: block.body,
+                  format: "markdown",
+                },
+              };
+            }
             return {
               typeKey: "rich_text",
               payload: {
-                ...(block.title ? { title: block.title } : {}),
-                content: block.body,
+                title: block.title,
+                ...(block.body ? { content: block.body } : {}),
                 format: "markdown",
               },
             };
+          }
           case "callout":
             if (!block.body) return invalidProviderOutput(requestId);
             return {
@@ -194,10 +197,6 @@ export function toCanonicalAiLessonPlan(
         }
       },
     );
-
-    if (!components.some((component) => component.typeKey !== "heading")) {
-      return invalidProviderOutput(requestId);
-    }
 
     return aiLessonPlanSchema.parse({
       summary: providerPlan.summary,

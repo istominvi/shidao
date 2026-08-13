@@ -27,6 +27,12 @@ export const componentTypeKeySchema = z.enum(componentTypeKeys);
 
 export type ComponentTypeKey = z.infer<typeof componentTypeKeySchema>;
 
+export type CreatableComponentTypeKey = Exclude<ComponentTypeKey, "heading">;
+
+export const creatableComponentTypeKeys = componentTypeKeys.filter(
+  (key): key is CreatableComponentTypeKey => key !== "heading",
+);
+
 export const componentCategorySchema = z.enum([
   "text",
   "media",
@@ -160,13 +166,40 @@ export const headingPayloadSchema = z
   })
   .strict();
 
-export const richTextPayloadSchema = z
-  .object({
-    title: z.string().trim().min(1).max(240).optional(),
-    content: z.string().trim().min(1).max(20_000),
-    format: z.literal("markdown"),
-  })
-  .strict();
+const richTextTitleSchema = z.string().trim().min(1).max(240);
+const richTextContentSchema = z.string().trim().min(1).max(20_000);
+
+export const richTextPayloadSchema = z.union(
+  [
+    z
+      .object({
+        title: richTextTitleSchema,
+        content: richTextContentSchema.optional(),
+        format: z.literal("markdown"),
+      })
+      .strict(),
+    z
+      .object({
+        title: richTextTitleSchema.optional(),
+        content: richTextContentSchema,
+        format: z.literal("markdown"),
+      })
+      .strict(),
+  ],
+  {
+    error: (issue) => {
+      if (!issue.input || typeof issue.input !== "object") return undefined;
+      const input = issue.input as Record<string, unknown>;
+      const hasTitle =
+        typeof input.title === "string" && input.title.trim().length > 0;
+      const hasContent =
+        typeof input.content === "string" && input.content.trim().length > 0;
+      return hasTitle || hasContent
+        ? undefined
+        : "Заполните заголовок или текст.";
+    },
+  },
+);
 
 export const calloutPayloadSchema = z
   .object({
@@ -663,11 +696,11 @@ export const componentRegistry = {
     category: "text",
     payloadSchema: headingPayloadSchema,
     placementSchema: textPlacementSchema,
-    capabilities: defaultCapabilities,
+    capabilities: manualOnlyCapabilities,
     defaultPayload: { text: "Новый заголовок", level: "h2" },
     defaultPlacement: { width: "content", textAlign: "start" },
     aiInstructions:
-      "Создавай короткий заголовок, который точно описывает текущую часть урока. Не дублируй название урока без необходимости.",
+      "Legacy-тип только для чтения и ручного редактирования исторических данных. Новые заголовки создавай в поле title компонента rich_text.",
   }),
   rich_text: defineComponent({
     key: "rich_text",
@@ -680,7 +713,7 @@ export const componentRegistry = {
     defaultPayload: { content: "Новый текст", format: "markdown" },
     defaultPlacement: { width: "content", textAlign: "start" },
     aiInstructions:
-      "Добавляй короткий заголовок, когда он помогает структуре, и пиши понятный learner-facing текст в Markdown без HTML, скрытых инструкций преподавателю и неподтверждённых утверждений.",
+      "Заполняй title, content или оба поля: короткий заголовок помогает структуре, а content содержит понятный learner-facing Markdown без HTML, скрытых инструкций преподавателю и неподтверждённых утверждений.",
   }),
   callout: defineComponent({
     key: "callout",
@@ -1075,6 +1108,10 @@ export const componentDefinitions = componentTypeKeys.map(
   (key) => componentRegistry[key],
 );
 
+export const creatableComponentDefinitions = creatableComponentTypeKeys.map(
+  (key) => componentRegistry[key],
+);
+
 export function isComponentTypeKey(value: unknown): value is ComponentTypeKey {
   return componentTypeKeySchema.safeParse(value).success;
 }
@@ -1109,15 +1146,15 @@ export function parseComponentPlacement<TKey extends ComponentTypeKey>(
 }
 
 export type LessonAddComponentInput = {
-  [TKey in ComponentTypeKey]: {
+  [TKey in CreatableComponentTypeKey]: {
     lessonId: string;
     typeKey: TKey;
     payload: ComponentPayload<TKey>;
     placement: ComponentPlacement<TKey>;
   };
-}[ComponentTypeKey];
+}[CreatableComponentTypeKey];
 
-const addComponentVariantSchemas = componentTypeKeys.map((typeKey) => {
+const addComponentVariantSchemas = creatableComponentTypeKeys.map((typeKey) => {
   const definition = componentRegistry[typeKey];
   return z
     .object({

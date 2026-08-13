@@ -3446,6 +3446,8 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       const viewToggle = document.querySelector<HTMLElement>(
         ".teaching-schedule-view-toggle",
       );
+      const activeViewButton =
+        viewToggle?.querySelector<HTMLElement>("button.is-active");
       const siteHeader = document.querySelector<HTMLElement>(
         ".site-header-shell-demo",
       );
@@ -3488,6 +3490,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         !dateTriggerControl ||
         dateControlIcons.length === 0 ||
         !viewToggle ||
+        !activeViewButton ||
         !siteHeader ||
         !headerPrimaryButton ||
         !headerPrimaryIcon ||
@@ -3562,7 +3565,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
           fontSize: primaryButtonStyle.fontSize,
           fontWeight: primaryButtonStyle.fontWeight,
           backgroundColor: primaryButtonStyle.backgroundColor,
-          borderColor: primaryButtonStyle.borderColor,
+          borderTopWidth: primaryButtonStyle.borderTopWidth,
           color: primaryButtonStyle.color,
           boxShadow: primaryButtonStyle.boxShadow,
           transform: primaryButtonStyle.transform,
@@ -3573,6 +3576,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
             height: primaryIconStyle.height,
           },
         },
+        raisedControlShadow: getComputedStyle(activeViewButton).boxShadow,
         toolbarText: toolbar.textContent?.trim() ?? "",
         toolbarSurface: {
           backgroundColor: toolbarStyle.backgroundColor,
@@ -3670,18 +3674,23 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
     assert.deepEqual(scheduleContract.headerPrimaryControl, {
       fontSize: "14.08px",
       fontWeight: "400",
-      backgroundColor: "rgb(20, 20, 20)",
-      borderColor: "rgb(20, 20, 20)",
-      color: "rgb(255, 255, 255)",
-      boxShadow: "none",
+      backgroundColor: "rgb(255, 255, 255)",
+      borderTopWidth: "0px",
+      color: "rgb(20, 20, 20)",
+      boxShadow:
+        "rgba(20, 20, 20, 0.1) 0px 1px 3px 0px, rgba(20, 20, 20, 0.06) 0px 4px 12px 0px",
       transform: "none",
       icon: {
-        color: "rgb(255, 255, 255)",
+        color: "rgb(20, 20, 20)",
         opacity: "1",
         width: "16px",
         height: "16px",
       },
     });
+    assert.equal(
+      scheduleContract.headerPrimaryControl.boxShadow,
+      scheduleContract.raisedControlShadow,
+    );
     assert.doesNotMatch(scheduleContract.toolbarText, /Назначить урок/);
     assert.deepEqual(scheduleContract.toolbarSurface, {
       backgroundColor: "rgba(0, 0, 0, 0)",
@@ -4754,8 +4763,11 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
           tabZIndex: tabStyle.zIndex,
           baselinePaintHeight: baselineStyle.height,
           baselineScaleY,
-          baselineVisualHeight:
-            Number.parseFloat(baselineStyle.height) * Math.abs(baselineScaleY),
+          baselineVisualHeight: Number(
+            (
+              Number.parseFloat(baselineStyle.height) * Math.abs(baselineScaleY)
+            ).toFixed(3),
+          ),
           baselineColor: baselineStyle.backgroundColor,
           baselineZIndex: baselineStyle.zIndex,
           baselinePointerEvents: baselineStyle.pointerEvents,
@@ -4867,8 +4879,8 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       gap: "12px",
       tabZIndex: "auto",
       baselinePaintHeight: "3px",
-      baselineScaleY: 0.5,
-      baselineVisualHeight: 1.5,
+      baselineScaleY: 0.4,
+      baselineVisualHeight: 1.2,
       baselineColor: "rgba(20, 20, 20, 0.5)",
       baselineZIndex: "1",
       baselinePointerEvents: "none",
@@ -8145,8 +8157,11 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
           tabZIndex: tabStyle.zIndex,
           baselinePaintHeight: baselineStyle.height,
           baselineScaleY,
-          baselineVisualHeight:
-            Number.parseFloat(baselineStyle.height) * Math.abs(baselineScaleY),
+          baselineVisualHeight: Number(
+            (
+              Number.parseFloat(baselineStyle.height) * Math.abs(baselineScaleY)
+            ).toFixed(3),
+          ),
           baselineColor: baselineStyle.backgroundColor,
           baselineZIndex: baselineStyle.zIndex,
           baselinePointerEvents: baselineStyle.pointerEvents,
@@ -8227,8 +8242,8 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       gap: "12px",
       tabZIndex: "auto",
       baselinePaintHeight: "3px",
-      baselineScaleY: 0.5,
-      baselineVisualHeight: 1.5,
+      baselineScaleY: 0.4,
+      baselineVisualHeight: 1.2,
       baselineColor: "rgba(20, 20, 20, 0.5)",
       baselineZIndex: "1",
       baselinePointerEvents: "none",
@@ -8628,7 +8643,7 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
             borderBottomWidth: style.borderBottomWidth,
             borderColor: style.borderColor,
             backgroundColor: style.backgroundColor,
-            backgroundClip: style.backgroundClip,
+            boxShadow: style.boxShadow,
             color: style.color,
           };
         }),
@@ -8642,8 +8657,11 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
           tabZIndex: tabStyle.zIndex,
           baselinePaintHeight: baselineStyle.height,
           baselineScaleY,
-          baselineVisualHeight:
-            Number.parseFloat(baselineStyle.height) * Math.abs(baselineScaleY),
+          baselineVisualHeight: Number(
+            (
+              Number.parseFloat(baselineStyle.height) * Math.abs(baselineScaleY)
+            ).toFixed(3),
+          ),
           baselineColor: baselineStyle.backgroundColor,
           baselineZIndex: baselineStyle.zIndex,
           baselinePointerEvents: baselineStyle.pointerEvents,
@@ -8678,14 +8696,16 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
     assert.equal(lessonVisual.headerActionButtons.length, 4);
     for (const button of lessonVisual.headerActionButtons) {
       assert.equal(button.offsetHeight, 40);
-      assert.equal(button.clientHeight, 38);
+      assert.equal(button.clientHeight, 40);
       assert.equal(button.height, "40px");
       assert.equal(button.boxSizing, "border-box");
-      assert.equal(button.borderTopWidth, "1px");
-      assert.equal(button.borderBottomWidth, "1px");
-      assert.equal(button.borderColor, "rgba(20, 20, 20, 0.5)");
+      assert.equal(button.borderTopWidth, "0px");
+      assert.equal(button.borderBottomWidth, "0px");
       assert.equal(button.backgroundColor, "rgb(255, 255, 255)");
-      assert.equal(button.backgroundClip, "padding-box");
+      assert.equal(
+        button.boxShadow,
+        "rgba(20, 20, 20, 0.1) 0px 1px 3px 0px, rgba(20, 20, 20, 0.06) 0px 4px 12px 0px",
+      );
     }
     const lessonDeleteAction = lessonVisual.headerActionButtons.find(
       (button) => button.label === "Удалить",
@@ -8703,15 +8723,16 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       await lessonDeleteButton.evaluate((button) => {
         const style = getComputedStyle(button);
         return {
-          borderColor: style.borderColor,
+          borderTopWidth: style.borderTopWidth,
           backgroundColor: style.backgroundColor,
-          backgroundClip: style.backgroundClip,
+          boxShadow: style.boxShadow,
         };
       }),
       {
-        borderColor: "rgba(20, 20, 20, 0.5)",
+        borderTopWidth: "0px",
         backgroundColor: "rgb(255, 255, 255)",
-        backgroundClip: "padding-box",
+        boxShadow:
+          "rgba(20, 20, 20, 0.1) 0px 1px 3px 0px, rgba(20, 20, 20, 0.06) 0px 4px 12px 0px",
       },
     );
     assert.deepEqual(lessonVisual.tabSignature, courseVisual.tabSignature);
@@ -9151,17 +9172,15 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
     });
     await draftTextDialog.waitFor();
     await draftTextDialog.locator(".component-payload-editor").waitFor();
-    assert.equal(
-      await draftTextDialog.getByLabel("Заголовок (необязательно)").count(),
-      1,
+    const draftRichTextFields = draftTextDialog.locator(
+      ".component-payload-editor > .grid:first-child",
     );
-    assert.equal(
-      await draftTextDialog
-        .locator('.component-editor-field:has(> .field-label:text-is("Текст"))')
-        .locator("textarea")
-        .count(),
-      1,
+    assert.deepEqual(
+      await draftRichTextFields.locator(".field-label").allTextContents(),
+      ["Заголовок", "Текст"],
     );
+    assert.equal(await draftRichTextFields.locator("input").count(), 1);
+    assert.equal(await draftRichTextFields.locator("textarea").count(), 1);
     await runtime.page.evaluate(
       () =>
         new Promise<void>((resolve) =>
@@ -10074,8 +10093,11 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
         tabStripOverflowX: getComputedStyle(tabStrip).overflowX,
         baselinePaintHeight: baselineStyle.height,
         baselineScaleY,
-        baselineVisualHeight:
-          Number.parseFloat(baselineStyle.height) * Math.abs(baselineScaleY),
+        baselineVisualHeight: Number(
+          (
+            Number.parseFloat(baselineStyle.height) * Math.abs(baselineScaleY)
+          ).toFixed(3),
+        ),
         selectedTab: selectedTab.textContent?.trim() ?? "",
         selectedTabAriaSelected: selectedTab.getAttribute("aria-selected"),
         selectedTabLeft: selectedTabRect.left,
@@ -10139,8 +10161,8 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
     );
     assert.ok(mobileVisual.tabStripScrollLeft > 0);
     assert.equal(mobileVisual.baselinePaintHeight, "3px");
-    assert.equal(mobileVisual.baselineScaleY, 0.5);
-    assert.equal(mobileVisual.baselineVisualHeight, 1.5);
+    assert.equal(mobileVisual.baselineScaleY, 0.4);
+    assert.equal(mobileVisual.baselineVisualHeight, 1.2);
     assert.match(mobileVisual.selectedTab, /^История/);
     assert.equal(mobileVisual.selectedTabAriaSelected, "true");
     assert.ok(mobileVisual.selectedTabLeft >= mobileVisual.tabStripLeft - 1);

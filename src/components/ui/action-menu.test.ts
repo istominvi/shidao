@@ -59,6 +59,6 @@ test("contextual action menus use one borderless surface without separators", ()
   }
   assert.match(
     styles,
-    /@media \(forced-colors: active\)\s*\{\s*\.action-menu-panel\s*\{[^}]*border: 1px solid CanvasText;[^}]*box-shadow: none;[^}]*\}\s*\.action-menu-item:focus-visible\s*\{[^}]*outline: 2px solid Highlight;[^}]*outline-offset: -2px;/,
+    /@media \(forced-colors: active\)\s*\{[^}]*\.app-page-actions[^}]*\{[^}]*\}[^}]*\.action-menu-panel\s*\{[^}]*border: 1px solid CanvasText;[^}]*box-shadow: none;[^}]*\}\s*\.action-menu-item:focus-visible\s*\{[^}]*outline: 2px solid Highlight;[^}]*outline-offset: -2px;/,
   );
 });

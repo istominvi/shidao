@@ -38,7 +38,7 @@ test("workspace tabs keep their accessible visual contract and raise positive co
   assert.match(styles, /\.workspace-tabs\s*\{[^}]*gap: 0\.75rem;/);
   assert.match(
     styles,
-    /\.workspace-tabs::before\s*\{[^}]*z-index: 1;[^}]*bottom: 0;[^}]*height: 3px;[^}]*background: var\(--product-muted-foreground\);[^}]*transform: scaleY\(0\.5\);[^}]*transform-origin: center bottom;[^}]*pointer-events: none;/,
+    /\.workspace-tabs::before\s*\{[^}]*z-index: 1;[^}]*bottom: 0;[^}]*height: 3px;[^}]*background: var\(--product-muted-foreground\);[^}]*transform: scaleY\(0\.4\);[^}]*transform-origin: center bottom;[^}]*pointer-events: none;/,
   );
   assert.match(
     styles,

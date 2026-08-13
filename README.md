@@ -79,8 +79,8 @@ npm run mcp:course-builder
 `test:browser` удобен локально и может пропустить smoke без доступного browser;
 `test:browser:ci` требует полноценного production-mode browser smoke и падает,
 если окружение к нему не готово. Текущий deployed source —
-`9e66fb548bef176486673149f466b269fd436b21`; этот exact deployed release прошёл
-`575/575` unit/API и `23/23` strict production-mode browser scenarios,
+`8e5d169dab72dc285c0fdfe8991646152d9904c7`; этот exact deployed release прошёл
+`579/579` unit/API и `23/23` strict production-mode browser scenarios,
 typecheck, lint, format и production build.
 Functional E2 release
 `22b486a7163453019d9720cb4fe0f36ed7c0228d` сохранён как исторический baseline,

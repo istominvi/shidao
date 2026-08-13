@@ -178,14 +178,12 @@ function verifiedMessage(result: SystemAssistantActionResult) {
 
 function lessonComponentPreview(component: AiLessonComponentPlan) {
   switch (component.typeKey) {
-    case "heading":
-      return { label: "Заголовок", content: component.payload.text };
     case "rich_text":
       return {
         label: "Текст",
-        content: component.payload.title
-          ? `${component.payload.title}: ${component.payload.content}`
-          : component.payload.content,
+        content: [component.payload.title, component.payload.content]
+          .filter(Boolean)
+          .join(": "),
       };
     case "callout":
       return {

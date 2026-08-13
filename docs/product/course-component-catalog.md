@@ -52,22 +52,22 @@
 переносим учебную задачу, но не копируем названия, provider-specific payload или
 внутреннюю модель стороннего продукта.
 
-### Current production registry: 20 runtime-supported типов
+### Current runtime registry: 20 supported типов
 
-| Тип ShiDao                            | Задача                                               | Граница текущего среза                                      |
-| ------------------------------------- | ---------------------------------------------------- | ----------------------------------------------------------- |
-| `rich_text`, `callout`, `quote`       | Объяснение с optional title, акцент и цитата         | 3 варианта ручной текстовой категории                       |
-| `heading`                             | Совместимость отдельного заголовка                   | Runtime/editor/MCP сохранены; из ручного picker скрыт       |
-| `image`, `slideshow`, `file`          | Изображение, галерея и attachment                    | Существующие Storage/reference контракты                    |
-| `video`, `audio`                      | Видео; аудио с optional transcript                   | Только прямой HTTPS URL, без upload/transcoding             |
-| `single_choice_poll`, `matching_game` | Один выбор и сопоставление пар                       | Текущие interactive блоки                                   |
-| `choice_quiz`                         | Один или несколько правильных вариантов              | Самопроверка только в preview state                         |
-| `fill_blanks`, `word_bank`            | Ввод ответов в пропуски и выбор из банка             | Самопроверка только в preview state                         |
-| `sequence`, `categorize`              | Восстановление порядка и распределение по категориям | Доступные select/move controls; самопроверка не персистится |
-| `free_response`                       | Короткий или развёрнутый свободный ответ             | Текст живёт только в preview; teacher review нет            |
-| `external_link`                       | Кнопка на внешний материал                           | Только HTTPS URL; контент не встраивается                   |
-| `word_builder`                        | Сборка слова из букв                                 | Самопроверка только в preview state                         |
-| `vocabulary_list`                     | Список терминов с переводом/определением             | Карточки/список; не добавляет слова в learner profile       |
+| Тип ShiDao                            | Задача                                                     | Граница текущего среза                                                 |
+| ------------------------------------- | ---------------------------------------------------------- | ---------------------------------------------------------------------- |
+| `rich_text`, `callout`, `quote`       | Текст с заголовком и/или основным текстом, акцент и цитата | 3 варианта ручной текстовой категории                                  |
+| `heading`                             | Совместимость отдельного заголовка                         | Только legacy runtime/editor/PATCH/publication; новое создание закрыто |
+| `image`, `slideshow`, `file`          | Изображение, галерея и attachment                          | Существующие Storage/reference контракты                               |
+| `video`, `audio`                      | Видео; аудио с optional transcript                         | Только прямой HTTPS URL, без upload/transcoding                        |
+| `single_choice_poll`, `matching_game` | Один выбор и сопоставление пар                             | Текущие interactive блоки                                              |
+| `choice_quiz`                         | Один или несколько правильных вариантов                    | Самопроверка только в preview state                                    |
+| `fill_blanks`, `word_bank`            | Ввод ответов в пропуски и выбор из банка                   | Самопроверка только в preview state                                    |
+| `sequence`, `categorize`              | Восстановление порядка и распределение по категориям       | Доступные select/move controls; самопроверка не персистится            |
+| `free_response`                       | Короткий или развёрнутый свободный ответ                   | Текст живёт только в preview; teacher review нет                       |
+| `external_link`                       | Кнопка на внешний материал                                 | Только HTTPS URL; контент не встраивается                              |
+| `word_builder`                        | Сборка слова из букв                                       | Самопроверка только в preview state                                    |
+| `vocabulary_list`                     | Список терминов с переводом/определением                   | Карточки/список; не добавляет слова в learner profile                  |
 
 Всего в registry остаётся 20 типов: девять прежних содержательных типов
 сохранены, добавлены 11 новых, а `divider` удалён. Точный канонический
@@ -77,14 +77,16 @@
 
 Palette показывает короткое назначение и статический representative
 mini-preview у 19 вручную создаваемых типов. В текстовой категории «Текст»
-показывает необязательный заголовок вместе с обычными абзацами, рядом остаются
+показывает заголовок вместе с обычными абзацами, рядом остаются
 поясняющий callout и цитата с левой линией/автором. Отдельный `heading` не
 показывается, чтобы преподавателю не приходилось собирать один смысловой
 текстовый блок из двух Components. Он остаётся двадцатым runtime key только для
-совместимости уже сохранённых Lessons, MCP и текущего AI subset.
+чтения, рендера, modal editing/PATCH уже сохранённых Lessons и immutable
+publication revisions.
 
-Presentation map остаётся exhaustive по всем 20 `ComponentTypeKey`, хотя DOM
-picker показывает 19. Он не рендерит настоящие input/button/media
+Presentation map остаётся exhaustive по 19 создаваемым типам, а runtime
+renderer/editor — по всем 20 `ComponentTypeKey`. DOM picker не рендерит
+настоящие input/button/media
 внутри кнопки добавления, не делает network requests и не становится частью
 serializable registry. Выбор образца открывает настоящий editor в том же dialog,
 но пока только для локального draft из canonical defaults. Component
@@ -92,11 +94,22 @@ serializable registry. Выбор образца открывает настоя
 каталогу или закрытие ничего не записывает. Save создаёт обычный private
 Component через существующий application-service contract.
 
-`rich_text` schema version `1` обратно совместимо принимает optional
-plain-text `title` и required Markdown `content`. Пустое поле заголовка не
-сохраняется; прежние payload `{ content, format }` остаются валидными. Physical
-DB schema и Component order не меняются, миграция или массовая конвертация
-`heading` не выполняются.
+`rich_text` schema version `1` принимает plain-text `title`, Markdown `content`
+или оба поля одновременно, но отклоняет payload, где оба значения пусты.
+Пустые поля не сохраняются; прежние payload `{ content, format }` остаются
+валидными. В editor эти поля подписаны ровно «Заголовок» и «Текст», без
+суффикса «(необязательно)»: необязательность задаёт общий contract, а не
+дублирующая подпись.
+
+Authored-create contract содержит 19 типов и исключает `heading` одинаково в
+picker, REST `POST`, development MCP, AI provider/plan и deterministic
+assembler. Tracked data migration
+`20260813063716_unify_heading_rich_text_components.sql` переводит authored
+`heading` в title-only `rich_text` и объединяет только непосредственную пару
+`heading → rich_text`, когда совпадают visibility, `student_slide_id` и
+placement. Immutable publication revisions не переписываются. Migration не
+меняет physical DB schema; до production apply обязательна выкладка нового web,
+который уже умеет читать title-only payload.
 
 После создания teacher card остаётся renderer-only и не имеет внешнего border.
 Едва заметная чёрная тень `0 3px 6px #0000000d` на hover/focus сохраняет offset,
@@ -127,17 +140,16 @@ API или storage contract.
 
 ## AI boundary
 
-Расширение ручного registry не меняет provider contract. AI Lesson planning
-по-прежнему может предлагать только:
+AI Lesson planning может предлагать только создаваемые типы:
 
 ```text
-heading
 rich_text
 callout
 single_choice_poll
 matching_game
 ```
 
-Каждый provider payload повторно валидируется общими registry contracts до Apply.
+`rich_text` может содержать заголовок, основной текст или оба поля. Каждый
+provider payload повторно валидируется общими registry contracts до Apply.
 Новые 11 типов не попадают в AI allowlist без отдельного provider-schema,
 prompt, preview и fault-regression среза.

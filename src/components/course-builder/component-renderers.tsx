@@ -204,7 +204,7 @@ function RichTextRenderer({ component, mode }: RegisteredRendererProps) {
           {payload.title}
         </p>
       ) : null}
-      <SafeRichText content={payload.content} />
+      {payload.content ? <SafeRichText content={payload.content} /> : null}
     </div>
   );
 }

@@ -21,7 +21,7 @@ test("flat provider lesson converts every supported block to canonical component
     blocks: [
       {
         ...EMPTY_FIELDS,
-        kind: "heading",
+        kind: "rich_text",
         title: "Знакомство",
       },
       {
@@ -57,12 +57,21 @@ test("flat provider lesson converts every supported block to canonical component
 
   assert.deepEqual(
     plan.components.map((component) => component.typeKey),
-    ["heading", "rich_text", "callout", "single_choice_poll", "matching_game"],
+    [
+      "rich_text",
+      "rich_text",
+      "callout",
+      "single_choice_poll",
+      "matching_game",
+    ],
   );
-  const heading = plan.components[0];
-  assert.equal(heading?.typeKey, "heading");
-  if (heading?.typeKey !== "heading") assert.fail("Expected heading");
-  assert.deepEqual(heading.payload, { text: "Знакомство", level: "h2" });
+  const titleOnly = plan.components[0];
+  assert.equal(titleOnly?.typeKey, "rich_text");
+  if (titleOnly?.typeKey !== "rich_text") assert.fail("Expected rich text");
+  assert.deepEqual(titleOnly.payload, {
+    title: "Знакомство",
+    format: "markdown",
+  });
 
   const richText = plan.components[1];
   assert.equal(richText?.typeKey, "rich_text");
@@ -107,8 +116,8 @@ test("provider conversion rejects invalid content for every content-bearing kind
   const validBaseBlocks = [
     {
       ...EMPTY_FIELDS,
-      kind: "heading",
-      body: "Разминка",
+      kind: "rich_text",
+      title: "Разминка",
     },
     {
       ...EMPTY_FIELDS,
@@ -122,7 +131,6 @@ test("provider conversion rejects invalid content for every content-bearing kind
     },
   ];
   const invalidBlocks = [
-    { ...EMPTY_FIELDS, kind: "heading" },
     { ...EMPTY_FIELDS, kind: "rich_text" },
     { ...EMPTY_FIELDS, kind: "callout" },
     {
@@ -166,8 +174,8 @@ test("provider conversion rejects semantically empty interactive output safely",
           blocks: [
             {
               ...EMPTY_FIELDS,
-              kind: "heading",
-              body: "Проверка",
+              kind: "rich_text",
+              title: "Проверка",
             },
             {
               ...EMPTY_FIELDS,
@@ -230,7 +238,6 @@ test("provider JSON schema keeps structure but omits incompatible size keywords"
     "matches",
   ]);
   assert.deepEqual(blockProperties.kind?.enum, [
-    "heading",
     "rich_text",
     "callout",
     "single_choice_poll",

@@ -24,16 +24,20 @@ function lessonPlanApplyInput(lessonId: string | null) {
       summary: "Практический урок с короткими заданиями.",
       components: [
         {
-          typeKey: "heading",
-          payload: { text: "Разминка", level: "h2" },
-        },
-        {
           typeKey: "rich_text",
-          payload: { content: "Обсудим новую тему.", format: "markdown" },
+          payload: {
+            title: "Разминка",
+            content: "Обсудим новую тему.",
+            format: "markdown",
+          },
         },
         {
           typeKey: "callout",
           payload: { text: "Закрепите пример.", tone: "info" },
+        },
+        {
+          typeKey: "rich_text",
+          payload: { content: "Подведите итог.", format: "markdown" },
         },
       ],
     },

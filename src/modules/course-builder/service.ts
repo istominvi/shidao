@@ -43,6 +43,7 @@ import {
   parseComponentPayload,
   parseComponentPlacement,
   type ComponentTypeKey,
+  type CreatableComponentTypeKey,
   type LessonAddComponentInput,
 } from "./registry/contracts";
 import { extractComponentStoredFileReferences } from "./registry/stored-file-references";
@@ -636,7 +637,7 @@ export function createCourseBuilderService(
 
       const components: CourseDraftAssemblyComponent[] = [];
       const plan = async (
-        typeKey: ComponentTypeKey,
+        typeKey: CreatableComponentTypeKey,
         rawPayload: Record<string, unknown>,
       ) => {
         const definition = getComponentDefinition(typeKey);
@@ -654,8 +655,8 @@ export function createCourseBuilderService(
         });
       };
 
-      await plan("heading", { text: course.title, level: "h2" });
       await plan("rich_text", {
+        title: course.title,
         content: `**Тема:** ${course.subject}\n\n**Уровень:** ${course.level}${
           course.audienceDescription
             ? `\n\n**Для кого:** ${course.audienceDescription}`

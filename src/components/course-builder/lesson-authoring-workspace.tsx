@@ -66,9 +66,9 @@ import type {
 } from "@/modules/course-builder/domain";
 import type { LearnerProfile, LessonRun } from "@/modules/lesson-runs/domain";
 import {
-  componentDefinitions,
+  creatableComponentDefinitions,
   getComponentDefinition,
-  type ComponentTypeKey,
+  type CreatableComponentTypeKey,
 } from "@/modules/course-builder/registry/contracts";
 
 export type CourseBuilderMutationRunner = (
@@ -548,11 +548,10 @@ function ComponentPickerDialog({
 }) {
   const [category, setCategory] = useState<ComponentPickerCategory>("text");
   const [selectedTypeKey, setSelectedTypeKey] =
-    useState<ComponentTypeKey | null>(null);
+    useState<CreatableComponentTypeKey | null>(null);
   const [saveAttempted, setSaveAttempted] = useState(false);
   const categoryTriggerRef = useRef<HTMLButtonElement>(null);
-  const definitions = componentDefinitions.filter((definition) => {
-    if (definition.key === "heading") return false;
+  const definitions = creatableComponentDefinitions.filter((definition) => {
     return category === "link"
       ? definition.key === "external_link"
       : category === "file"

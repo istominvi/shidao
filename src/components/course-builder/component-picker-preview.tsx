@@ -9,7 +9,7 @@ import {
   Volume2,
 } from "lucide-react";
 import type { ReactNode } from "react";
-import type { ComponentTypeKey } from "@/modules/course-builder/registry/contracts";
+import type { CreatableComponentTypeKey } from "@/modules/course-builder/registry/contracts";
 
 export type ComponentPickerPresentation = Readonly<{
   description: string;
@@ -52,18 +52,6 @@ function ChoiceRow({
 }
 
 export const componentPickerPresentations = {
-  heading: {
-    description: "Короткое название раздела или смыслового блока.",
-    preview: (
-      <span className="grid gap-2">
-        <span className="text-[0.78rem] font-semibold leading-none text-neutral-900">
-          Новая тема
-        </span>
-        <PreviewLine width="w-24" />
-        <PreviewLine width="w-16" />
-      </span>
-    ),
-  },
   rich_text: {
     description: "Заголовок и основной текст с простым форматированием.",
     preview: (
@@ -376,13 +364,13 @@ export const componentPickerPresentations = {
       </span>
     ),
   },
-} satisfies Record<ComponentTypeKey, ComponentPickerPresentation>;
+} satisfies Record<CreatableComponentTypeKey, ComponentPickerPresentation>;
 
 export function ComponentPickerPreview({
   typeKey,
   className,
 }: {
-  typeKey: ComponentTypeKey;
+  typeKey: CreatableComponentTypeKey;
   className?: string;
 }) {
   const presentation = componentPickerPresentations[typeKey];

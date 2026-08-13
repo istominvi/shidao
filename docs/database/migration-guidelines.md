@@ -3,17 +3,19 @@
 **Статус:** обязательная политика для всех новых DB changes
 **Текущий production schema head:**
 `20260812150745_educator_course_governance_progress.sql`
-**Текущий repository head:**
-`20260812150745_educator_course_governance_progress.sql` — совпадает с
-production; E2 применена `2026-08-12T07:34:36Z`, current snapshot снят
+**Текущий repository migration head:**
+`20260813063716_unify_heading_rich_text_components.sql` — current source
+data-only migration, production apply ещё не выполнен. Physical schema не
+меняется, поэтому current generated snapshot остаётся E2 snapshot
 `2026-08-12T07:46:11Z`, SHA-256
 `a34a5a5919ea406050a5c0cb7f39310d1a9e807725e608166f63becb8f2260a4`.
 **Текущий deployed source:**
-`9e66fb548bef176486673149f466b269fd436b21`; running container
-`g9x4d9zn60jv35r7zf0xl6xj-115759805389` имеет matching image tag, image ID
-`sha256:8b2eb3609531ba08fca946dde633dc1946821ade3ec1b408be09bafd4ef172d7`,
-restart count `0`, started at `2026-08-12T12:00:37.589103216Z`. Store и
-последующие UI-only commits не меняли database head или snapshot.
+`8e5d169dab72dc285c0fdfe8991646152d9904c7`; running container
+`g9x4d9zn60jv35r7zf0xl6xj-061859307830` имеет matching image tag и
+`SOURCE_COMMIT`, restart count `0`, started at `2026-08-13T06:21:36.30711298Z`.
+Этот image предшествует title-only `rich_text` contract, поэтому migration
+`20260813063716` нельзя применять до следующего совместимого web deployment и
+проверенного full-format backup.
 
 ## 1. Источники истины
 
@@ -141,6 +143,12 @@ owner path, signed access и отрицательным cross-account сцена
 - `docs/database/current-schema.md`;
 - `docs/project-state.md`, если изменился продуктовый capability;
 - schema-contract tests.
+
+Для чистой data migration без изменения tables/functions/triggers/RLS/ACL
+generated SQL snapshot не переписывается только ради нового содержимого строк.
+В таком случае обновляются migration history, current-state/application docs и
+измеримый execution postflight; `docs/database/current-schema.md` явно
+разделяет production head и ещё не применённый repository migration head.
 
 `npm run db:snapshot` можно использовать только после read-only sanity check и
 только если review diff подтверждает, что сохранены:

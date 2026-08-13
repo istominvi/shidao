@@ -2,7 +2,10 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
-import { componentTypeKeys } from "../../modules/course-builder/registry/contracts";
+import {
+  componentTypeKeys,
+  creatableComponentTypeKeys,
+} from "../../modules/course-builder/registry/contracts";
 
 function source(path: string) {
   return readFileSync(join(process.cwd(), path), "utf8");
@@ -368,7 +371,7 @@ test("course routes use the flat demo background and unified visual controls", (
   );
   assert.match(
     styles,
-    /\.workspace-tabs::before\s*\{[^}]*z-index: 1;[^}]*right: var\(--workspace-tabs-inline-offset\);[^}]*bottom: 0;[^}]*left: var\(--workspace-tabs-inline-offset\);[^}]*height: 3px;[^}]*background: var\(--product-muted-foreground\);[^}]*transform: scaleY\(0\.5\);[^}]*transform-origin: center bottom;/,
+    /\.workspace-tabs::before\s*\{[^}]*z-index: 1;[^}]*right: var\(--workspace-tabs-inline-offset\);[^}]*bottom: 0;[^}]*left: var\(--workspace-tabs-inline-offset\);[^}]*height: 3px;[^}]*background: var\(--product-muted-foreground\);[^}]*transform: scaleY\(0\.4\);[^}]*transform-origin: center bottom;/,
   );
   assert.match(
     styles,
@@ -397,6 +400,18 @@ test("active product buttons and header controls share one flat 40px contract", 
   const styles = source("src/app/globals.css");
   const navigationStyles = source("src/app/styles/navigation.css");
   const teachingStyles = source("src/app/styles/teaching-hub.css");
+  const headerActionSurfaceStyles =
+    /\.course-demo-shell \.app-page-actions > \.product-btn,[\s\S]*?\.action-menu-trigger:focus-visible:not\(:disabled\)\s*\{[^}]*\}/.exec(
+      styles,
+    )?.[0] ?? "";
+  const forcedColorsStyles =
+    /@media \(forced-colors: active\)\s*\{[\s\S]*?\.action-menu-item:focus-visible\s*\{[^}]*\}\s*\}/.exec(
+      styles,
+    )?.[0] ?? "";
+  const headerActionFocusStyles =
+    /\.course-demo-shell\s*\n\s*\.app-page-actions\s*\n\s*> \.product-btn:focus-visible:not\(:disabled\),[\s\S]*?\.action-menu-trigger:focus-visible:not\(:disabled\)\s*\{\s*outline:[^}]*\}/.exec(
+      styles,
+    )?.[0] ?? "";
 
   assert.match(
     styles,
@@ -404,8 +419,9 @@ test("active product buttons and header controls share one flat 40px contract", 
   );
   assert.match(
     styles,
-    /\.course-demo-shell\s*\{[^}]*--course-demo-header-action-border: var\(--product-muted-foreground\);/,
+    /:root\s*\{[^}]*--product-raised-control-shadow:\s*0 1px 3px rgba\(20, 20, 20, 0\.1\), 0 4px 12px rgba\(20, 20, 20, 0\.06\);/,
   );
+  assert.doesNotMatch(styles, /--course-demo-header-action-border/);
   assert.match(
     styles,
     /\.course-demo-shell \.product-btn\s*\{[^}]*--product-control-height: var\(--course-demo-control-height\);[^}]*border-radius: var\(--course-demo-control-radius\);[^}]*font-size: var\(--course-demo-control-font-size\);[^}]*font-weight: var\(--course-demo-control-font-weight\);[^}]*box-shadow: none;[^}]*transform: none;/,
@@ -434,9 +450,41 @@ test("active product buttons and header controls share one flat 40px contract", 
     styles,
     /\.course-demo-shell \.product-btn-secondary\s*\{[^}]*border-color: var\(--course-demo-control-border\);[^}]*background: #fff;[^}]*color: var\(--course-demo-control-foreground\);/,
   );
+  assert.match(headerActionSurfaceStyles, /> \.course-actions-wrap/);
+  assert.match(headerActionSurfaceStyles, /> \.product-btn:hover:not/);
+  assert.match(headerActionSurfaceStyles, /> \.product-btn:focus-visible:not/);
+  assert.match(
+    headerActionSurfaceStyles,
+    /border: 0;[^}]*background: #fff;[^}]*box-shadow: var\(--product-raised-control-shadow\);[^}]*transform: none;/,
+  );
   assert.match(
     styles,
-    /\.course-demo-shell \.app-page-actions \.product-btn-secondary,[\s\S]*?\.app-page-actions[\s\S]*?\.product-btn-secondary:hover:not\(:disabled\),[\s\S]*?\.app-page-actions[\s\S]*?\.product-btn-secondary:focus-visible:not\(:disabled\)\s*\{[^}]*border-color: var\(--course-demo-header-action-border\);[^}]*background-color: #fff;[^}]*background-clip: padding-box;/,
+    /\.course-demo-shell \.app-page-actions > \.product-btn-primary\s*\{[^}]*color: var\(--course-demo-control-foreground\);/,
+  );
+  assert.match(headerActionFocusStyles, /> \.product-btn:focus-visible:not/);
+  assert.match(
+    headerActionFocusStyles,
+    /\.action-menu-trigger:focus-visible:not/,
+  );
+  assert.match(
+    headerActionFocusStyles,
+    /outline: 2px solid rgba\(20, 20, 20, 0\.58\);[^}]*outline-offset: 2px;/,
+  );
+  assert.match(
+    teachingStyles,
+    /\.teaching-schedule-view-toggle button\.is-active\s*\{[^}]*background: #fff;[^}]*box-shadow: var\(--product-raised-control-shadow\);/,
+  );
+  assert.match(forcedColorsStyles, /> \.product-btn:hover:not/);
+  assert.match(forcedColorsStyles, /> \.product-btn:focus-visible:not/);
+  assert.match(forcedColorsStyles, /\.action-menu-trigger:hover:not/);
+  assert.match(forcedColorsStyles, /\.action-menu-trigger:focus-visible:not/);
+  assert.match(
+    forcedColorsStyles,
+    /border: 1px solid ButtonText;[^}]*background: ButtonFace;[^}]*color: ButtonText;[^}]*box-shadow: none;/,
+  );
+  assert.doesNotMatch(
+    styles,
+    /\.course-demo-shell \.app-page-actions \.product-btn(?:,|\s*\{)/,
   );
   assert.match(
     styles,
@@ -461,7 +509,7 @@ test("active product buttons and header controls share one flat 40px contract", 
     );
   assert.ok(
     lessonDeleteButton,
-    "Lesson header delete must share the bordered secondary action geometry",
+    "Lesson header delete must share the raised secondary action geometry",
   );
 
   assert.match(
@@ -528,7 +576,7 @@ test("component picker is registry-driven and grouped into Russian categories", 
     "export const componentPickerPresentations = {",
   );
   const presentationMapEnd = presentations.indexOf(
-    "} satisfies Record<ComponentTypeKey, ComponentPickerPresentation>;",
+    "} satisfies Record<CreatableComponentTypeKey, ComponentPickerPresentation>;",
     presentationMapStart,
   );
   const addStart = picker.indexOf("async function add(");
@@ -557,7 +605,7 @@ test("component picker is registry-driven and grouped into Russian categories", 
   );
   assert.deepEqual(
     presentationEntries.map(({ key }) => key),
-    componentTypeKeys,
+    creatableComponentTypeKeys,
   );
   assert.ok(
     presentationEntries.every(
@@ -576,12 +624,8 @@ test("component picker is registry-driven and grouped into Russian categories", 
     /className="component-picker-card-description"[\s\S]*?componentPickerPresentations\[definition\.key\]\.description/,
   );
 
-  assert.match(authoring, /componentDefinitions\.filter/);
-  assert.match(
-    picker,
-    /if \(definition\.key === "heading"\) return false;/,
-    "the legacy heading type must stay out of the manual picker",
-  );
+  assert.match(authoring, /creatableComponentDefinitions\.filter/);
+  assert.doesNotMatch(presentations, /^  heading:/m);
   assert.ok(pickerStart >= 0 && pickerEnd > pickerStart);
   for (const category of [
     "Текст",
@@ -599,7 +643,7 @@ test("component picker is registry-driven and grouped into Russian categories", 
   assert.doesNotMatch(authoring, /Разделители и структура плана/);
   assert.match(
     picker,
-    /const \[selectedTypeKey, setSelectedTypeKey\] =\s*useState<ComponentTypeKey \| null>\(null\)/,
+    /const \[selectedTypeKey, setSelectedTypeKey\] =\s*useState<CreatableComponentTypeKey \| null>\(null\)/,
   );
   assert.match(
     picker,
@@ -718,6 +762,9 @@ test("component payload editor covers every active registry type without divider
   assert.ok(payloadSwitchStart >= 0 && placementStart > payloadSwitchStart);
 
   const payloadSwitch = editor.slice(payloadSwitchStart, placementStart);
+  const richTextStart = payloadSwitch.indexOf('case "rich_text":');
+  const calloutStart = payloadSwitch.indexOf('case "callout":', richTextStart);
+  const richTextEditor = payloadSwitch.slice(richTextStart, calloutStart);
   const editorKeys = Array.from(
     payloadSwitch.matchAll(/^\s{4}case "([a-z_]+)":/gm),
     (match) => match[1],
@@ -726,7 +773,11 @@ test("component payload editor covers every active registry type without divider
   assert.doesNotMatch(editor, /case "divider"|typeKey === "divider"/);
   assert.match(
     payloadSwitch,
-    /case "rich_text":[\s\S]*?<Field label="Заголовок \(необязательно\)">[\s\S]*?<input[\s\S]*?delete next\.title[\s\S]*?<Field label="Текст">[\s\S]*?<textarea/,
+    /case "rich_text":[\s\S]*?<Field label="Заголовок">[\s\S]*?<input[\s\S]*?delete next\.title[\s\S]*?<Field label="Текст">[\s\S]*?<textarea[\s\S]*?delete next\.content/,
+  );
+  assert.doesNotMatch(
+    richTextEditor,
+    /Заголовок \(необязательно\)|Текст \(необязательно\)/,
   );
   assert.match(editor, /HTTPS-ссылка на видео/);
   assert.match(editor, /Допустимые варианты разделяйте \|/);

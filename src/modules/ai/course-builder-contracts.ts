@@ -2,7 +2,6 @@ import { z } from "zod";
 import {
   calloutPayloadSchema,
   getComponentDefinition,
-  headingPayloadSchema,
   lessonAddComponentInputSchema,
   matchingGamePayloadSchema,
   richTextPayloadSchema,
@@ -45,13 +44,6 @@ export const aiCoursePlanApplyRequestSchema = z
   })
   .strict();
 
-const headingPlanSchema = z
-  .object({
-    typeKey: z.literal("heading"),
-    payload: headingPayloadSchema,
-  })
-  .strict();
-
 const richTextPlanSchema = z
   .object({
     typeKey: z.literal("rich_text"),
@@ -81,7 +73,6 @@ const matchingGamePlanSchema = z
   .strict();
 
 export const aiLessonComponentPlanSchema = z.discriminatedUnion("typeKey", [
-  headingPlanSchema,
   richTextPlanSchema,
   calloutPlanSchema,
   singleChoicePollPlanSchema,

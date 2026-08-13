@@ -263,9 +263,11 @@ exhaustive typed map. Оба слоя используют registry schemas/type
 contract tests. Registry остаётся источником contracts/JSON Schema, а React
 implementation не встраивается в serializable definition.
 
-UI, application service и MCP используют эти же contracts. JSON Schema для MCP
-генерируется из того же источника. Добавление типа компонента не требует новой
-таблицы и не создаёт отдельную React-страницу для конкретной Lesson.
+UI, application service и MCP используют эти же contracts. Runtime registry
+остаётся полным для чтения и изменения уже сохранённых данных, а отдельная
+authored-create projection генерирует JSON Schema только для создаваемых типов.
+Добавление типа компонента не требует новой таблицы и не создаёт отдельную
+React-страницу для конкретной Lesson.
 
 Текущий production registry содержит 20 активных типов:
 
@@ -301,13 +303,20 @@ Voice recording, arbitrary third-party embed и image matching отложены 
 отдельных Storage/CSP/persistence контрактов. Матрица выбора описана в
 [`docs/product/course-component-catalog.md`](../product/course-component-catalog.md).
 
-Ручной picker не обязан показывать все runtime keys. В current source он
-показывает 19 создаваемых вариантов и исключает отдельный `heading`; сам key,
-его editor/renderer и MCP/AI contract остаются в registry для существующих
-Lessons. Новый ручной текст создаётся как `rich_text`: optional plain-text
-`title` + required Markdown `content`. Это обратно совместимое расширение
-payload schema version `1`, поэтому старые payload без `title` продолжают
-читаться без конвертации Components, изменения order/Slide refs или migration.
+Authored-create set содержит 19 типов и исключает отдельный `heading` не только
+из ручного picker, но и из REST `POST`, development MCP, AI planning и
+deterministic assembler. Сам key остаётся двадцатым runtime contract для
+чтения, renderer, modal editor/PATCH и immutable publication revisions.
+
+Новый текст создаётся как `rich_text` schema version `1`: допускаются
+plain-text `title`, Markdown `content` или оба поля, но не payload, где оба поля
+пусты. Это сохраняет чтение прежних body-only payload. Tracked data migration
+`20260813063716_unify_heading_rich_text_components.sql` преобразует authored
+`heading` в title-only `rich_text`; непосредственные `heading → rich_text`
+сливаются только при одинаковых visibility, `student_slide_id` и placement,
+чтобы приватное содержимое не пересекало learner projection. Immutable
+publication revisions остаются точными историческими snapshots. Physical DB
+schema не меняется.
 
 Current production Store demo не меняет registry или Lesson schema. Пока
 преподаватель может использовать обычный `external_link` с абсолютным HTTPS URL
@@ -343,8 +352,8 @@ controls, playback или network requests.
 
 Текстовая категория ручного picker содержит «Текст», «Сноска» и «Цитата».
 «Текст» заранее показывает сочетание заголовка и абзацев; отдельный `heading`
-не предлагается для нового ручного Component, но сохранённые блоки этого типа
-остаются полностью доступными для просмотра и modal editing.
+не предлагается для нового Component ни одним authoring entry point, но
+сохранённые блоки этого типа остаются доступными для просмотра и modal editing.
 
 Presentation отдельно показывает «Ссылки» и «Файлы», хотя оба типа сохраняют
 registry category `attachment`. Category rail не имеет разделителя, а
@@ -378,9 +387,11 @@ hover. Overlay и его кнопки не имеют border/box-shadow; общ�
 Отмена/закрытие отбрасывают локальные изменения, а только явное сохранение
 отправляет существующий `PATCH /api/v2/components/:componentId` с
 payload/placement. Form labels используют canonical `.88rem/400`, однострочные
-input/select — 40 px. Эти scoped presentation rules не меняют learner renderer,
-authored order или physical DB schema; code-first `rich_text` extension описано
-выше отдельно.
+input/select — 40 px. Поля `rich_text` подписаны ровно «Заголовок» и «Текст»,
+без «(необязательно)»; каждое можно оставить пустым отдельно, но Save отклоняет
+одновременную пустоту обоих. Эти scoped presentation rules не меняют learner
+renderer, authored order или physical DB schema; code-first `rich_text`
+extension описано выше отдельно.
 
 На карточке teacher видит состояние видимости. `staff_only` означает, что
 компонент остаётся частью плана преподавателя, но отсутствует в learner API.
@@ -575,15 +586,19 @@ Visual contract Course routes не меняет эту навигационну�
   `.88rem/400`; primary flat без inset-блика, подъёма или тени, иконки имеют
   единый 16 px rhythm, полную непрозрачность и наследуют контрастный цвет,
   белые кнопки сохраняют тонкую серую рамку, а menu items остаются borderless;
-- в current source белые secondary actions внутри `AppPageHeader` уточняют этот
-  контракт для будущих page backgrounds: внешний border-box остаётся `40 px`,
-  border `1 px` использует общий 50%-black token, а белый background с
-  `background-clip: padding-box` занимает внутренние `38 px` и не осветляет
-  полупрозрачную рамку из-под неё. Lesson «Удалить» получает тот же secondary
-  surface с danger-цветом вместо `ghost`; правило не затрагивает menu items,
-  dialog ghost controls или primary actions. Сам пользовательский выбор фона
-  Course этим UI-only source slice не реализован;
-- в current source общий contextual `ActionMenu`, открываемый
+- в current source все product buttons внутри `AppPageHeader` уточняют этот
+  контракт для будущих page backgrounds: белый surface остаётся высотой
+  `40 px`, получает border `0` и общий двухслойный
+  `--product-raised-control-shadow`, совпадающий с selected-состоянием
+  переключателя вида Расписания. Primary header actions получают чёрные
+  текст/иконку, Lesson «Удалить» сохраняет danger-цвет, hover — геометрию и
+  тень, а keyboard focus дополнительно получает 2 px outline. В
+  `forced-colors` вместо исчезающей тени возвращается системная рамка. Правило
+  применяется к непосредственным action-кнопкам и вложенному menu trigger, но
+  не затрагивает buttons открываемого из header dialog, menu items или controls
+  вне header actions. Сам пользовательский выбор фона Course этим UI-only
+  source slice не реализован;
+- в current production общий contextual `ActionMenu`, открываемый
   `MoreHorizontal`/`MoreVertical` в Course actions, Lesson rows, Schedule и
   Students, использует токенизированные белый surface, element-radius 12 px и
   одну тень `0 18px 46px rgba(20, 20, 20, 0.18)` без обычной рамки. Shared item
@@ -641,10 +656,10 @@ exact source `0c8946f95ebeb31e02955a110fc057f761f07ea9`: общий 50%-black to
 baseline 1.5 px, gap и верхние радиусы 12 px, 16 px icons и только положительные
 counts в `sup`. Physical schema и API этим rollout не менялись.
 
-Current source follow-up сохраняет этот визуальный baseline `1.5 px`, но
-устраняет зависимость от растеризации дробной высоты Chromium: отдельный
-paint-layer имеет высоту `3 px`, `scaleY(0.5)` и transform-origin на нижней
-грани. Поэтому линия остаётся привязана к низу tab row и не влияет на 40 px
+Current source follow-up уменьшает production baseline `1.5 px` до визуальных
+`1.2 px` и устраняет зависимость от растеризации дробной высоты Chromium:
+отдельный paint-layer имеет высоту `3 px`, `scaleY(0.4)` и transform-origin на
+нижней грани. Поэтому линия остаётся привязана к низу tab row и не влияет на 40 px
 layout; active segment 4 px по-прежнему перекрывает её через более высокий
 z-index. Это общий `WorkspaceTabs` UI-only contract без route-specific forks,
 API, schema или migration; production rollout остаётся next.

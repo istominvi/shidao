@@ -22,8 +22,6 @@ function compactPreview(value: string) {
 
 function componentPreview(component: AiLessonComponentPlan) {
   switch (component.typeKey) {
-    case "heading":
-      return component.payload.text;
     case "rich_text":
       return [component.payload.title, component.payload.content]
         .filter(Boolean)
@@ -45,15 +43,15 @@ function AiComponentContent({
   component: AiLessonComponentPlan;
 }) {
   switch (component.typeKey) {
-    case "heading":
-      return <p>{component.payload.text}</p>;
     case "rich_text":
       return (
         <div className="grid gap-1">
           {component.payload.title ? (
             <strong>{component.payload.title}</strong>
           ) : null}
-          <p className="whitespace-pre-wrap">{component.payload.content}</p>
+          {component.payload.content ? (
+            <p className="whitespace-pre-wrap">{component.payload.content}</p>
+          ) : null}
         </div>
       );
     case "callout":

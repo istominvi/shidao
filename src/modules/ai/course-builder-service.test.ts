@@ -194,12 +194,9 @@ const LESSON_PLAN: AiLessonPlan = {
   summary: "Научиться знакомиться и представляться.",
   components: [
     {
-      typeKey: "heading",
-      payload: { text: "Приветствие", level: "h2" },
-    },
-    {
       typeKey: "rich_text",
       payload: {
+        title: "Приветствие",
         content: "Разберите короткий диалог знакомства.",
         format: "markdown",
       },
@@ -212,6 +209,13 @@ const LESSON_PLAN: AiLessonPlan = {
         tone: "info",
       },
     },
+    {
+      typeKey: "rich_text",
+      payload: {
+        content: "Потренируйтесь представляться в парах.",
+        format: "markdown",
+      },
+    },
   ],
 };
 
@@ -219,15 +223,8 @@ const LESSON_PROVIDER_PLAN = {
   summary: LESSON_PLAN.summary,
   blocks: [
     {
-      kind: "heading",
-      title: "",
-      body: "Приветствие",
-      choices: [],
-      matches: [],
-    },
-    {
       kind: "rich_text",
-      title: "",
+      title: "Приветствие",
       body: "Разберите короткий диалог знакомства.",
       choices: [],
       matches: [],
@@ -236,6 +233,13 @@ const LESSON_PROVIDER_PLAN = {
       kind: "callout",
       title: "Подсказка",
       body: "Сначала произнесите фразу медленно.",
+      choices: [],
+      matches: [],
+    },
+    {
+      kind: "rich_text",
+      title: "",
+      body: "Потренируйтесь представляться в парах.",
       choices: [],
       matches: [],
     },

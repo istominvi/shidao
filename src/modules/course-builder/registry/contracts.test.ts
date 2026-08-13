@@ -7,6 +7,8 @@ import {
   componentRegistry,
   componentTypeKeySchema,
   componentTypeKeys,
+  creatableComponentDefinitions,
+  creatableComponentTypeKeys,
   findComponentDefinition,
   getComponentDefinition,
   lessonAddComponentInputJsonSchema,
@@ -52,6 +54,14 @@ test("registry exposes exactly the twenty current component keys", () => {
   assert.deepEqual(
     componentDefinitions.map((definition) => definition.key),
     EXPECTED_KEYS,
+  );
+  assert.deepEqual(
+    creatableComponentTypeKeys,
+    EXPECTED_KEYS.filter((key) => key !== "heading"),
+  );
+  assert.deepEqual(
+    creatableComponentDefinitions.map((definition) => definition.key),
+    creatableComponentTypeKeys,
   );
 
   for (const definition of componentDefinitions) {
@@ -112,13 +122,20 @@ test("every definition default payload and placement validates", () => {
   }
 });
 
-test("rich text accepts an optional title without invalidating legacy payloads", () => {
+test("rich text requires either a title or body while keeping both fields independent", () => {
   assert.deepEqual(
     componentRegistry.rich_text.payloadSchema.parse({
       content: "Старый текст без заголовка",
       format: "markdown",
     }),
     { content: "Старый текст без заголовка", format: "markdown" },
+  );
+  assert.deepEqual(
+    componentRegistry.rich_text.payloadSchema.parse({
+      title: "  Только заголовок  ",
+      format: "markdown",
+    }),
+    { title: "Только заголовок", format: "markdown" },
   );
   assert.deepEqual(
     componentRegistry.rich_text.payloadSchema.parse({
@@ -148,12 +165,29 @@ test("rich text accepts an optional title without invalidating legacy payloads",
     }).success,
     false,
   );
-  assert.equal(
-    componentRegistry.rich_text.payloadSchema.safeParse({
-      title: "Тема без основного текста",
+  const emptyPayload = componentRegistry.rich_text.payloadSchema.safeParse({
+    format: "markdown",
+  });
+  assert.equal(emptyPayload.success, false);
+  assert.ok(
+    !emptyPayload.success &&
+      emptyPayload.error.issues.some(
+        (issue) => issue.message === "Заполните заголовок или текст.",
+      ),
+  );
+  const whitespacePayload = componentRegistry.rich_text.payloadSchema.safeParse(
+    {
+      title: "  ",
+      content: "\n\t",
       format: "markdown",
-    }).success,
-    false,
+    },
+  );
+  assert.equal(whitespacePayload.success, false);
+  assert.ok(
+    !whitespacePayload.success &&
+      whitespacePayload.error.issues.some(
+        (issue) => issue.message === "Заполните заголовок или текст.",
+      ),
   );
   assert.equal(
     "title" in componentRegistry.rich_text.defaultPayload,
@@ -161,6 +195,8 @@ test("rich text accepts an optional title without invalidating legacy payloads",
     "the canonical draft must keep the new heading optional",
   );
   assert.equal(componentRegistry.rich_text.version, 1);
+  assert.equal(componentRegistry.heading.capabilities.aiCreatable, false);
+  assert.equal(componentRegistry.heading.capabilities.aiEditable, false);
 });
 
 test("new component capabilities match the current manual-authoring slice", () => {
@@ -620,13 +656,13 @@ test("free response keeps minimum length within maximum length", () => {
 test("dynamic add-component schema selects payload and placement by type key", () => {
   const parsed = parseLessonAddComponentInput({
     lessonId: LESSON_ID,
-    typeKey: "heading",
-    payload: componentRegistry.heading.defaultPayload,
-    placement: componentRegistry.heading.defaultPlacement,
+    typeKey: "rich_text",
+    payload: { title: "Только заголовок", format: "markdown" },
+    placement: componentRegistry.rich_text.defaultPlacement,
   });
 
-  assert.equal(parsed.typeKey, "heading");
-  assert.equal(parsed.payload.text, "Новый заголовок");
+  assert.equal(parsed.typeKey, "rich_text");
+  assert.equal(parsed.payload.title, "Только заголовок");
   assert.equal("visibility" in parsed, false);
 
   assert.equal(
@@ -635,6 +671,16 @@ test("dynamic add-component schema selects payload and placement by type key", (
       typeKey: "heading",
       payload: componentRegistry.heading.defaultPayload,
       placement: componentRegistry.heading.defaultPlacement,
+    }).success,
+    false,
+  );
+
+  assert.equal(
+    lessonAddComponentInputSchema.safeParse({
+      lessonId: LESSON_ID,
+      typeKey: "rich_text",
+      payload: componentRegistry.rich_text.defaultPayload,
+      placement: componentRegistry.rich_text.defaultPlacement,
       visibility: "learner_visible",
     }).success,
     false,
@@ -643,10 +689,10 @@ test("dynamic add-component schema selects payload and placement by type key", (
   assert.equal(
     lessonAddComponentInputSchema.safeParse({
       lessonId: LESSON_ID,
-      typeKey: "heading",
+      typeKey: "rich_text",
       position: 1,
-      payload: componentRegistry.heading.defaultPayload,
-      placement: componentRegistry.heading.defaultPlacement,
+      payload: componentRegistry.rich_text.defaultPayload,
+      placement: componentRegistry.rich_text.defaultPlacement,
     }).success,
     false,
   );
@@ -654,7 +700,7 @@ test("dynamic add-component schema selects payload and placement by type key", (
   assert.equal(
     lessonAddComponentInputSchema.safeParse({
       lessonId: LESSON_ID,
-      typeKey: "heading",
+      typeKey: "rich_text",
       payload: componentRegistry.file.defaultPayload,
       placement: componentRegistry.file.defaultPlacement,
     }).success,
@@ -673,22 +719,58 @@ test("JSON Schemas are generated from every registry schema", () => {
       generated.placement.$schema,
       "https://json-schema.org/draft/2020-12/schema",
     );
-    assert.equal(generated.payload.type, "object");
+    if (key === "rich_text") {
+      assert.ok(Array.isArray(generated.payload.anyOf));
+    } else {
+      assert.equal(generated.payload.type, "object");
+    }
     assert.equal(generated.placement.type, "object");
     assert.doesNotThrow(() => JSON.stringify(generated));
   }
 
   const richTextJsonSchema = componentJsonSchemas.rich_text.payload as {
-    properties?: Record<string, unknown>;
-    required?: string[];
+    anyOf?: Array<{
+      additionalProperties?: boolean;
+      properties?: Record<string, unknown>;
+      required?: string[];
+    }>;
   };
-  assert.ok(richTextJsonSchema.properties?.title);
-  assert.ok(richTextJsonSchema.required?.includes("content"));
-  assert.equal(richTextJsonSchema.required?.includes("title"), false);
+  assert.equal(richTextJsonSchema.anyOf?.length, 2);
+  assert.ok(
+    richTextJsonSchema.anyOf?.every(
+      (branch) =>
+        branch.additionalProperties === false &&
+        branch.properties?.title &&
+        branch.properties?.content &&
+        branch.properties?.format &&
+        branch.required?.includes("format"),
+    ),
+  );
+  assert.ok(
+    richTextJsonSchema.anyOf?.some(
+      (branch) =>
+        branch.properties?.title &&
+        branch.required?.includes("title") &&
+        !branch.required.includes("content"),
+    ),
+  );
+  assert.ok(
+    richTextJsonSchema.anyOf?.some(
+      (branch) =>
+        branch.properties?.content &&
+        branch.required?.includes("content") &&
+        !branch.required.includes("title"),
+    ),
+  );
 
   assert.equal(
     lessonAddComponentInputJsonSchema.$schema,
     "https://json-schema.org/draft/2020-12/schema",
   );
-  assert.doesNotThrow(() => JSON.stringify(lessonAddComponentInputJsonSchema));
+  const addComponentJson = JSON.stringify(lessonAddComponentInputJsonSchema);
+  assert.doesNotThrow(() => JSON.parse(addComponentJson));
+  for (const typeKey of creatableComponentTypeKeys) {
+    assert.match(addComponentJson, new RegExp(`"const":"${typeKey}"`));
+  }
+  assert.doesNotMatch(addComponentJson, /"const":"heading"/);
 });

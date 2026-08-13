@@ -152,7 +152,7 @@ function PayloadFields({
     case "rich_text":
       return (
         <div className="grid gap-4">
-          <Field label="Заголовок (необязательно)">
+          <Field label="Заголовок">
             <input
               className="field-input"
               value={stringValue(payload.title)}
@@ -169,13 +169,16 @@ function PayloadFields({
             <textarea
               className={textareaClassName()}
               value={stringValue(payload.content)}
-              onChange={(event) =>
-                onChange({
+              onChange={(event) => {
+                const content = event.target.value;
+                const next: Record<string, unknown> = {
                   ...payload,
-                  content: event.target.value,
                   format: "markdown",
-                })
-              }
+                };
+                if (content.trim()) next.content = content;
+                else delete next.content;
+                onChange(next);
+              }}
             />
           </Field>
         </div>

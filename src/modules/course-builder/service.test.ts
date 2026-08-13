@@ -715,7 +715,7 @@ test("deterministic assembler is idempotent and describes attachments honestly",
   const first = await harness.service.assembleCourse(alice, course.id);
   assert.equal(first.alreadyAssembled, false);
   assert.equal(first.lessonIds.length, 1);
-  assert.equal(first.componentIds.length, 5);
+  assert.equal(first.componentIds.length, 4);
   assert.equal(harness.repository.calls.assembleDraft, 1);
 
   const workspace = await harness.service.getCourse(alice, course.id);
@@ -724,8 +724,9 @@ test("deterministic assembler is idempotent and describes attachments honestly",
   const components = workspace.lessons[0]?.components ?? [];
   assert.deepEqual(
     components.map((component) => component.typeKey),
-    ["heading", "rich_text", "callout", "image", "file"],
+    ["rich_text", "callout", "image", "file"],
   );
+  assert.equal(components[0]?.payload.title, "Китайский с нуля");
   const imageComponent = components.find(
     (component) => component.typeKey === "image",
   );
@@ -786,14 +787,26 @@ test("direct component authoring validates before persistence", async () => {
     title: "Урок без шагов в интерфейсе",
     summary: "Приватный комментарий",
   });
-  const headingDefinition = getComponentDefinition("heading");
+  const textDefinition = getComponentDefinition("rich_text");
+
+  await assert.rejects(
+    () =>
+      harness.service.addComponent(alice, {
+        lessonId: lesson.id,
+        typeKey: "heading",
+        payload: { text: "Новый отдельный заголовок", level: "h2" },
+        placement: getComponentDefinition("heading").defaultPlacement,
+      }),
+    (error: unknown) => error instanceof CourseBuilderValidationError,
+  );
+  assert.equal(harness.repository.calls.addComponent, 0);
 
   await assert.rejects(() =>
     harness.service.addComponent(alice, {
       lessonId: lesson.id,
-      typeKey: "heading",
-      payload: { text: "", level: "h2" },
-      placement: headingDefinition.defaultPlacement,
+      typeKey: "rich_text",
+      payload: { format: "markdown" },
+      placement: textDefinition.defaultPlacement,
     }),
   );
   assert.equal(harness.repository.components.size, 0);
@@ -822,9 +835,9 @@ test("direct component authoring validates before persistence", async () => {
     () =>
       harness.service.addComponent(bob, {
         lessonId: lesson.id,
-        typeKey: "heading",
-        payload: headingDefinition.defaultPayload,
-        placement: headingDefinition.defaultPlacement,
+        typeKey: "rich_text",
+        payload: textDefinition.defaultPayload,
+        placement: textDefinition.defaultPlacement,
       }),
     (error: unknown) => error instanceof CourseBuilderAccessError,
   );
@@ -832,18 +845,57 @@ test("direct component authoring validates before persistence", async () => {
 
   await harness.service.addComponent(alice, {
     lessonId: lesson.id,
-    typeKey: "heading",
-    payload: headingDefinition.defaultPayload,
-    placement: headingDefinition.defaultPlacement,
+    typeKey: "rich_text",
+    payload: { title: "Только заголовок", format: "markdown" },
+    placement: textDefinition.defaultPlacement,
   });
   await harness.service.addComponent(alice, {
     lessonId: lesson.id,
-    typeKey: "heading",
-    payload: { text: "Второй заголовок", level: "h3" },
-    placement: headingDefinition.defaultPlacement,
+    typeKey: "rich_text",
+    payload: { content: "Только основной текст", format: "markdown" },
+    placement: textDefinition.defaultPlacement,
   });
 
   assert.equal(harness.repository.components.size, 2);
+});
+
+test("legacy heading remains readable and editable without being creatable", async () => {
+  const harness = createHarness();
+  const course = await harness.service.createDraft(alice, courseInput());
+  const lesson = await harness.service.addLesson(alice, course.id, {
+    title: "Урок с историческим заголовком",
+    summary: "",
+  });
+  const legacyHeading: LessonComponent = {
+    id: uuid(9_001),
+    lessonId: lesson.id,
+    position: 1,
+    typeKey: "heading",
+    schemaVersion: 1,
+    payload: { text: "Исторический заголовок", level: "h2" },
+    placement: { width: "content", textAlign: "start" },
+    visibility: "staff_only",
+    studentSlideId: null,
+    createdAt: NOW,
+    updatedAt: NOW,
+  };
+  harness.repository.components.set(legacyHeading.id, legacyHeading);
+
+  const workspace = await harness.service.getCourse(alice, course.id);
+  assert.equal(workspace.lessons[0]?.components[0]?.typeKey, "heading");
+
+  const updated = await harness.service.updateComponent(
+    alice,
+    legacyHeading.id,
+    {
+      payload: { text: "Исправленный заголовок", level: "h3" },
+    },
+  );
+  assert.deepEqual(updated.payload, {
+    text: "Исправленный заголовок",
+    level: "h3",
+  });
+  assert.equal(harness.repository.calls.updateComponent, 1);
 });
 
 test("assembler refuses to overwrite manually authored content", async () => {
@@ -876,17 +928,17 @@ test("component add/update/reorder share registry validation and ownership", asy
     payload: { text: "Путь в тысячу ли начинается с первого шага." },
     placement: quoteDefinition.defaultPlacement,
   });
-  const headingDefinition = getComponentDefinition("heading");
-  const heading = await harness.service.addComponent(alice, {
+  const textDefinition = getComponentDefinition("rich_text");
+  const text = await harness.service.addComponent(alice, {
     lessonId: lesson.id,
-    typeKey: "heading",
-    payload: { text: "Начало", level: "h3" },
-    placement: headingDefinition.defaultPlacement,
+    typeKey: "rich_text",
+    payload: { title: "Начало", format: "markdown" },
+    placement: textDefinition.defaultPlacement,
   });
 
   assert.equal(quote.lessonId, lesson.id);
-  assert.equal(heading.lessonId, lesson.id);
-  assert.equal(heading.position, 2);
+  assert.equal(text.lessonId, lesson.id);
+  assert.equal(text.position, 2);
   assert.equal(harness.repository.components.get(quote.id)?.position, 1);
   assert.equal(quote.schemaVersion, quoteDefinition.version);
   assert.equal(quote.visibility, "staff_only");
@@ -933,7 +985,7 @@ test("component add/update/reorder share registry validation and ownership", asy
     toPosition: 1,
   });
   assert.equal(reordered.position, 1);
-  assert.equal(harness.repository.components.get(heading.id)?.position, 2);
+  assert.equal(harness.repository.components.get(text.id)?.position, 2);
   await assert.rejects(
     () => harness.service.reorderComponent(alice, quote.id, { toPosition: 0 }),
     (error: unknown) => error instanceof CourseBuilderValidationError,
@@ -951,10 +1003,10 @@ test("illegal Student Screen target becomes a stable friendly conflict", async (
   const harness = createHarness();
   const course = await harness.service.createDraft(alice, courseInput());
   const lesson = await createLesson(harness, alice, course.id);
-  const definition = getComponentDefinition("heading");
+  const definition = getComponentDefinition("rich_text");
   const component = await harness.service.addComponent(alice, {
     lessonId: lesson.id,
-    typeKey: "heading",
+    typeKey: "rich_text",
     payload: definition.defaultPayload,
     placement: definition.defaultPlacement,
   });

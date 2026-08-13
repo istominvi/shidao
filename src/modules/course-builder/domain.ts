@@ -1,4 +1,7 @@
-import type { ComponentTypeKey } from "./registry/contracts";
+import type {
+  ComponentTypeKey,
+  CreatableComponentTypeKey,
+} from "./registry/contracts";
 import type { ComponentVisibility } from "./component-visibility";
 import type { OwnedCoursePublication } from "@/modules/course-publications/domain";
 import type { CourseLearningAudience } from "./learning-audience";
@@ -124,7 +127,7 @@ export type AssembleCourseResult = {
 };
 
 export type CourseDraftAssemblyComponent = {
-  typeKey: ComponentTypeKey;
+  typeKey: CreatableComponentTypeKey;
   schemaVersion: number;
   payload: Record<string, unknown>;
   placement: Record<string, unknown>;

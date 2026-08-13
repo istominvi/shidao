@@ -172,15 +172,21 @@ Course generation в этом срезе создаёт программу из 
 ## Lesson generation: preview → apply
 
 `POST .../ai-lesson-plan` строит preview для новой Lesson или дополнения
-существующей. Допустимы 3–20 Components из ограниченного registry-подмножества:
+существующей. Допустимы 3–20 Components из ограниченного authored-create
+подмножества:
 
 ```text
-heading
 rich_text
 callout
 single_choice_poll
 matching_game
 ```
+
+`rich_text` schema version `1` позволяет модели заполнить `title`, `content`
+или оба поля и отклоняет одновременную пустоту обоих. Legacy `heading` остаётся
+в runtime registry только для чтения/render/edit/PATCH уже сохранённых Lessons
+и immutable publication revisions; AI provider schema и Apply больше не могут
+создать его.
 
 Provider allowlist намеренно не расширяется вместе с ручным registry:
 `quote`, `image`, `video`, `audio`, `slideshow`, `choice_quiz`, `fill_blanks`,

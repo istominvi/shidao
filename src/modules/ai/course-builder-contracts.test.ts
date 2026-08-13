@@ -32,7 +32,10 @@ test("lesson planner accepts only canonical AI-safe registry payloads", () => {
   const valid = aiLessonPlanSchema.parse({
     summary: "Научиться сравнивать дроби.",
     components: [
-      { typeKey: "heading", payload: { text: "Разминка", level: "h2" } },
+      {
+        typeKey: "rich_text",
+        payload: { title: "Разминка", format: "markdown" },
+      },
       {
         typeKey: "rich_text",
         payload: {
@@ -70,13 +73,28 @@ test("lesson planner accepts only canonical AI-safe registry payloads", () => {
 
   assert.equal(
     aiLessonPlanSchema.safeParse({
-      summary: "Текст без основного содержания недопустим.",
+      summary: "Текст может содержать только заголовок.",
       components: [
-        { typeKey: "heading", payload: { text: "A", level: "h2" } },
         {
           typeKey: "rich_text",
           payload: { title: "Только заголовок", format: "markdown" },
         },
+        {
+          typeKey: "rich_text",
+          payload: { content: "Только текст", format: "markdown" },
+        },
+        { typeKey: "callout", payload: { text: "C", tone: "info" } },
+      ],
+    }).success,
+    true,
+  );
+
+  assert.equal(
+    aiLessonPlanSchema.safeParse({
+      summary: "Полностью пустой текст недопустим.",
+      components: [
+        { typeKey: "rich_text", payload: { format: "markdown" } },
+        { typeKey: "callout", payload: { text: "B", tone: "info" } },
         { typeKey: "callout", payload: { text: "C", tone: "info" } },
       ],
     }).success,
@@ -88,7 +106,7 @@ test("lesson planner accepts only canonical AI-safe registry payloads", () => {
       summary: "Нельзя",
       components: [
         { typeKey: "image", payload: { storedFileId: null, alt: "" } },
-        { typeKey: "heading", payload: { text: "A", level: "h2" } },
+        { typeKey: "rich_text", payload: { title: "A", format: "markdown" } },
         {
           typeKey: "rich_text",
           payload: { content: "B", format: "markdown" },
@@ -102,8 +120,12 @@ test("lesson planner accepts only canonical AI-safe registry payloads", () => {
       summary: "Лишнее поле",
       components: [
         {
-          typeKey: "heading",
-          payload: { text: "A", level: "h2", visibility: "learner_visible" },
+          typeKey: "rich_text",
+          payload: {
+            title: "A",
+            format: "markdown",
+            visibility: "learner_visible",
+          },
         },
         {
           typeKey: "rich_text",

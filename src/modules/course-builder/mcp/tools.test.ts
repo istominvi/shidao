@@ -2,7 +2,10 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import type { CourseBuilderActor } from "../domain";
-import { componentRegistry } from "../registry/contracts";
+import {
+  componentRegistry,
+  creatableComponentTypeKeys,
+} from "../registry/contracts";
 import {
   courseBuilderMcpInputContracts,
   courseBuilderMcpInputJsonSchemas,
@@ -86,9 +89,10 @@ test("JSON Schema is generated from the canonical application and registry contr
     addComponentJson,
     /visibility|learner_visible|staff_only/,
   );
-  for (const typeKey of Object.keys(componentRegistry)) {
+  for (const typeKey of creatableComponentTypeKeys) {
     assert.match(addComponentJson, new RegExp(`"const":"${typeKey}"`));
   }
+  assert.doesNotMatch(addComponentJson, /"const":"heading"/);
   assert.match(addComponentJson, /storedFileId/);
   assert.match(addComponentJson, /showResults/);
   assert.match(addComponentJson, /shuffle/);
@@ -125,9 +129,9 @@ test("each tool validates input and delegates once with the injected actor", asy
   });
   await byName.get("lesson.add_component")?.execute({
     lessonId: LESSON_ID,
-    typeKey: "heading",
-    payload: componentRegistry.heading.defaultPayload,
-    placement: componentRegistry.heading.defaultPlacement,
+    typeKey: "rich_text",
+    payload: { title: "Знакомство", format: "markdown" },
+    placement: componentRegistry.rich_text.defaultPlacement,
   });
   await byName.get("lesson.set_component_student_screen")?.execute({
     componentId: COMPONENT_ID,
@@ -170,9 +174,9 @@ test("each tool validates input and delegates once with the injected actor", asy
   ]);
   assert.deepEqual(calls[3]?.args[1], {
     lessonId: LESSON_ID,
-    typeKey: "heading",
-    payload: componentRegistry.heading.defaultPayload,
-    placement: componentRegistry.heading.defaultPlacement,
+    typeKey: "rich_text",
+    payload: { title: "Знакомство", format: "markdown" },
+    placement: componentRegistry.rich_text.defaultPlacement,
   });
   assert.deepEqual(calls[4]?.args.slice(1), [COMPONENT_ID, { mode: "new" }]);
   assert.deepEqual(calls[5]?.args.slice(1), [COMPONENT_ID, { toPosition: 2 }]);
@@ -196,8 +200,8 @@ test("invalid tool input never reaches the application service", async () => {
     addComponent?.execute({
       lessonId: LESSON_ID,
       typeKey: "heading",
-      payload: componentRegistry.file.defaultPayload,
-      placement: componentRegistry.file.defaultPlacement,
+      payload: componentRegistry.heading.defaultPayload,
+      placement: componentRegistry.heading.defaultPlacement,
     }) ?? Promise.reject(new Error("tool not found")),
   );
   assert.deepEqual(calls, []);

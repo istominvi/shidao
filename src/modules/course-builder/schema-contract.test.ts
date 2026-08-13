@@ -18,6 +18,10 @@ const dividerRemovalMigration = readFileSync(
   "supabase/migrations/20260811154138_remove_divider_components.sql",
   "utf8",
 );
+const unifiedTextMigration = readFileSync(
+  "supabase/migrations/20260813063716_unify_heading_rich_text_components.sql",
+  "utf8",
+);
 const atomicCourseArchiveMigration = readFileSync(
   "supabase/migrations/20260811231505_atomic_course_archive.sql",
   "utf8",
@@ -53,6 +57,44 @@ const preservedBuilderTables = [
   "stored_file",
   "course_attachment",
 ] as const;
+
+test("heading cleanup preserves projections and folds safe adjacent text", () => {
+  assert.match(unifiedTextMigration, /^begin;\n/);
+  assert.match(unifiedTextMigration, /\ncommit;\n$/);
+  assert.doesNotMatch(
+    unifiedTextMigration,
+    /drop\s+(?:table|function|schema)[^;]*\bcascade\b/i,
+  );
+  assert.doesNotMatch(
+    unifiedTextMigration,
+    /(?:update|delete\s+from)\s+public\.course_publication_revision/i,
+  );
+
+  for (const fragment of [
+    "shidao_schema_sanity_check_failed",
+    "heading.visibility = body.visibility",
+    "heading.student_slide_id is not distinct from body.student_slide_id",
+    "heading.placement_config = body.placement_config",
+    "body.position = heading.position + 1",
+    "type_key = 'rich_text'",
+    "'title', btrim(heading.payload ->> 'text')",
+    "'content', merge_row.body_content",
+    "order by merge_row.lesson_id, merge_row.body_position desc",
+    "set constraints all immediate",
+    "heading_components_remain",
+    "heading_component_conversion_mismatch",
+    "heading_component_merge_content_mismatch",
+    "lesson_component_count_mismatch",
+    "lesson_component_positions_are_not_dense",
+    "empty_lesson_student_slide_remains",
+  ]) {
+    assert.equal(
+      unifiedTextMigration.includes(fragment),
+      true,
+      `unified text migration missing ${fragment}`,
+    );
+  }
+});
 
 test("divider removal is guarded, deterministic, and irreversible", () => {
   assert.match(dividerRemovalMigration, /^begin;\n/);

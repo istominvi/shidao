@@ -80,7 +80,8 @@ export const courseBuilderMcpToolDescriptions = {
   "course.create_draft": "Создать черновик курса преподавателя.",
   "course.get": "Получить доступный преподавателю Course workspace.",
   "course.add_lesson": "Добавить Lesson в Course.",
-  "lesson.add_component": "Добавить компонент registry прямо в Lesson.",
+  "lesson.add_component":
+    "Добавить в Lesson новый поддерживаемый компонент registry.",
   "lesson.set_component_student_screen":
     "Скрыть компонент или назначить его на существующий либо новый слайд Student Screen.",
   "lesson.reorder_component":

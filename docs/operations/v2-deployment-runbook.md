@@ -263,6 +263,56 @@ production.
 только заранее проверенный совместимый image rollback либо новую forward
 migration.
 
+### Unified Text authored-data migration — current source, rollout pending
+
+Exact tracked migration
+`20260813063716_unify_heading_rich_text_components.sql` является data-only
+cleanup поверх неизменной physical schema. Она переводит каждый authored
+`lesson_component.type_key='heading'` в title-only `rich_text` и объединяет
+только непосредственно следующий body-only `rich_text`, если одновременно
+совпадают visibility, `student_slide_id` и placement. Пары с разной
+teacher/learner видимостью или Slide остаются двумя `rich_text` Components.
+Immutable `course_publication_revision` snapshots не переписываются и
+продолжают читаться legacy runtime renderer.
+
+Этот rollout имеет обязательный порядок: старый production image требует
+`rich_text.content` и не умеет читать title-only payload, поэтому применять
+migration до web deployment запрещено.
+
+1. Пройти полный release gate и развернуть новый web image, в котором runtime
+   registry читает все 20 keys, `rich_text` принимает title-only/body-only/both,
+   а authored-create set из 19 keys исключает `heading` в picker, REST `POST`,
+   MCP, AI и deterministic assembler.
+2. Подтвердить exact running `SOURCE_COMMIT`, restart count `0`, обычный
+   HTTP/CSRF/Auth postflight и authenticated Course Builder smoke на старых
+   `heading` и body-only `rich_text` до записи в DB.
+3. Через project-local DB connection выполнить read-only ShiDao sanity:
+   canonical tables/triggers, текущий migration head, counts Course/Lesson/
+   Component/Slide, число authored `heading`, число непосредственных
+   `heading → rich_text` и отсутствие нарушений dense positions/empty Slides.
+4. Создать timestamped full-format `pg_dump -Fc`; подтвердить nonzero size,
+   mode `600`, успешный `pg_restore --list` и SHA-256.
+5. Применить exact tracked SQL под owner через
+   `psql -X -v ON_ERROR_STOP=1`; migration управляет собственной transaction,
+   внешний `-1` не добавлять.
+6. Postflight должен показать `heading=0` только в authored
+   `lesson_component`, ожидаемое уменьшение rows ровно на число безопасно
+   объединённых пар, плотные Component positions, ноль пустых Slides и
+   неизменные Course/Lesson counts. Сравнить immutable publication snapshot
+   до/после и подтвердить, что он не изменён.
+7. Проверить reload title-only, body-only и combined `rich_text`, learner
+   projection privacy, edit/PATCH, reorder/delete и новый create через
+   picker/REST/MCP/AI. Старый image после DB apply больше не является допустимым
+   rollback target; при дефекте использовать совместимый forward fix, а
+   восстановление backup — только как отдельный согласованный rollback с
+   остановленной записью.
+
+На момент описания current source новый web image не развёрнут и migration к
+production не применена. Поскольку physical schema не меняется, generated
+`supabase/schema/current-schema.sql` не обновляется только ради этого data
+cleanup; execution evidence добавляется в database docs после фактического
+postflight.
+
 ### Course Component contract cleanup
 
 Для exact migration
@@ -765,7 +815,7 @@ ShiDao V2 application:
   background, а row dividers используют один
   `--product-table-divider-color`;
 - Course, Lesson и остальные active-product `WorkspaceTabs` используют
-  edge-to-edge baseline 1.5 px цвета `rgba(20, 20, 20, 0.5)` без внешнего
+  edge-to-edge baseline 1.2 px цвета `rgba(20, 20, 20, 0.5)` без внешнего
   inline-inset и квадратный чёрный active segment 4 px без radius. Inactive
   label имеет тот же 50%-black цвет, gap между tab-кнопками и верхний radius
   равны 12 px; светлый hover не перекрывает baseline. Каждый tab имеет 16 px
@@ -926,10 +976,12 @@ flow как permanent delete.
   Каждый пункт portal-menu имеет exact 40 px, радиус 8 px как у active view
   option, вертикально центрированные иконку и текст, `.88rem/400` и canonical inset/gap.
   Отдельно проверить
-  canonical active V2 controls: exact `40 px / 12 px / .88rem / 400`, flat
-  primary и active navigation без inset/shadow/translate, icon opacity `1` и
-  contrast-aware `currentColor`, тонкую рамку белых buttons и border `0` у
-  menu items. Повторить этот visual check на authenticated `/settings/profile`,
+  canonical active V2 controls: exact `40 px / 12 px / .88rem / 400`, active
+  navigation без inset/shadow/translate, icon opacity `1` и contrast-aware
+  `currentColor`. Все buttons внутри `AppPageHeader` должны быть белыми, иметь
+  border `0` и ту же computed двухслойную shadow, что selected button
+  переключателя вида Расписания; menu items сохраняют border `0`. Повторить
+  этот visual check на authenticated `/settings/profile`,
   `/settings/security` и `/settings/observers`: все три используют beige
   product shell и solid-white demo TopNav; user/header и active side-nav имеют
   `40 px / 12 px / .88rem / 400`, а primary/secondary/destructive actions —
@@ -937,7 +989,7 @@ flow как permanent delete.
   полноэкранный Student Screen при этом не должны измениться;
 - `/students` показывает точный подзаголовок «Ученики и группы, с которыми вы
   работаете или за которыми наблюдаете»; вкладки «Ученики / Группы /
-  Наблюдение» сохраняют общий edge-to-edge 50%-black 1.5 px baseline без
+  Наблюдение» сохраняют общий edge-to-edge 50%-black 1.2 px baseline без
   горизонтального inset, opaque active-segment, иконки и raised positive
   counts без badge. При отсутствии сущностей `0` не показывается; при наличии
   наблюдаемых профилей «Наблюдение» показывает их фактическое число и обновляет
@@ -966,7 +1018,7 @@ flow как permanent delete.
   выбранную вкладку, а main navigation подсвечивает «Ученики»;
 - `/courses` показывает точный подзаголовок «Создавайте свои курсы с нуля или
   добавляйте готовые из каталога» без точки; tabs сохраняют общий edge-to-edge
-  50%-black baseline 1.5 px. Раздел проверяется в режимах «Карточки / Таблица»:
+  50%-black baseline 1.2 px. Раздел проверяется в режимах «Карточки / Таблица»:
   controls обеих вкладок лежат прямо на page background без toolbar-card и без
   horizontal inset. В обеих вкладках icon-only control идёт **Таблица /
   Карточки** слева направо, и при первом открытии активна таблица;
@@ -1004,11 +1056,13 @@ flow как permanent delete.
   search/actions toolbar, content-sized palette cards без category divider и
   pointer на category/card controls. Для component-authoring source slice
   дополнительно проверить representative preview у 19 вручную создаваемых
-  типов: manual picker не содержит `heading`, а «Текст» показывает и редактирует
-  optional «Заголовок» + required «Текст»; exhaustive presentation/renderer
-  contract при этом сохраняет все 20 runtime keys. Старый fixture `heading` и
-  `rich_text` без `title` должен по-прежнему рендериться и открываться в editor;
-  новый `rich_text` с `title` должен переживать reload. Preview не содержит
+  типов: manual picker не содержит `heading`, а «Текст» показывает labels ровно
+  «Заголовок» и «Текст» и принимает title-only, body-only или оба поля, но не
+  оба пустыми. Authored-create contract picker/REST POST/MCP/AI/deterministic
+  assembler содержит 19 keys, runtime renderer/editor — все 20. Старый fixture
+  `heading` и `rich_text` без `title` должен по-прежнему рендериться и
+  открываться в editor; новый title-only и combined `rich_text` должен
+  переживать reload. Preview не содержит
   вложенных focusable controls. Выбор type должен открыть локальный draft editor
   внутри того же dialog без `POST`; возврат в каталог, Cancel, close/backdrop и
   Escape не меняют число Components. Только «Сохранить компонент» отправляет

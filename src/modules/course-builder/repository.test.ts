@@ -282,9 +282,9 @@ test("assembleDraft sends one validated plan to the transactional RPC", async ()
         lesson: { title: "Введение", summary: "Первый урок" },
         components: [
           {
-            typeKey: "heading",
+            typeKey: "rich_text",
             schemaVersion: 1,
-            payload: { text: "Знакомство", level: "h2" },
+            payload: { title: "Знакомство", format: "markdown" },
             placement: { width: "content", textAlign: "start" },
           },
         ],
@@ -303,9 +303,9 @@ test("assembleDraft sends one validated plan to the transactional RPC", async ()
         p_lesson_summary: "Первый урок",
         p_components: [
           {
-            typeKey: "heading",
+            typeKey: "rich_text",
             schemaVersion: 1,
-            payload: { text: "Знакомство", level: "h2" },
+            payload: { title: "Знакомство", format: "markdown" },
             placement: { width: "content", textAlign: "start" },
           },
         ],

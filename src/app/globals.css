@@ -21,6 +21,8 @@
   --product-inner-control-size: 2rem;
   --product-inner-control-radius: 0.5rem;
   --product-inner-control-inset: 0.25rem;
+  --product-raised-control-shadow:
+    0 1px 3px rgba(20, 20, 20, 0.1), 0 4px 12px rgba(20, 20, 20, 0.06);
   --product-context-menu-surface: #fff;
   --product-context-menu-radius: var(--product-element-radius);
   --product-context-menu-shadow: 0 18px 46px rgba(20, 20, 20, 0.18);
@@ -78,7 +80,6 @@ a {
   --course-demo-control-font-weight: 400;
   --course-demo-control-line-height: 1.2;
   --course-demo-control-border: rgba(20, 20, 20, 0.14);
-  --course-demo-header-action-border: var(--product-muted-foreground);
   --course-demo-control-foreground: #141414;
   --course-demo-control-icon-size: 1rem;
   min-height: 100vh;
@@ -417,10 +418,10 @@ a {
   right: var(--workspace-tabs-inline-offset);
   bottom: 0;
   left: var(--workspace-tabs-inline-offset);
-  /* Chromium snaps a direct 1.5px paint box; draw at 2x and scale it. */
+  /* Chromium snaps a fractional paint box; scale an integer-height layer. */
   height: 3px;
   background: var(--product-muted-foreground);
-  transform: scaleY(0.5);
+  transform: scaleY(0.4);
   transform-origin: center bottom;
   content: "";
   pointer-events: none;
@@ -2079,16 +2080,42 @@ a {
   color: var(--course-demo-control-foreground);
 }
 
-.course-demo-shell .app-page-actions .product-btn-secondary,
+.course-demo-shell .app-page-actions > .product-btn,
 .course-demo-shell
   .app-page-actions
-  .product-btn-secondary:hover:not(:disabled),
+  > .course-actions-wrap
+  .action-menu-trigger,
+.course-demo-shell .app-page-actions > .product-btn:hover:not(:disabled),
 .course-demo-shell
   .app-page-actions
-  .product-btn-secondary:focus-visible:not(:disabled) {
-  border-color: var(--course-demo-header-action-border);
-  background-color: #fff;
-  background-clip: padding-box;
+  > .course-actions-wrap
+  .action-menu-trigger:hover:not(:disabled),
+.course-demo-shell
+  .app-page-actions
+  > .product-btn:focus-visible:not(:disabled),
+.course-demo-shell
+  .app-page-actions
+  > .course-actions-wrap
+  .action-menu-trigger:focus-visible:not(:disabled) {
+  border: 0;
+  background: #fff;
+  box-shadow: var(--product-raised-control-shadow);
+  transform: none;
+}
+
+.course-demo-shell .app-page-actions > .product-btn-primary {
+  color: var(--course-demo-control-foreground);
+}
+
+.course-demo-shell
+  .app-page-actions
+  > .product-btn:focus-visible:not(:disabled),
+.course-demo-shell
+  .app-page-actions
+  > .course-actions-wrap
+  .action-menu-trigger:focus-visible:not(:disabled) {
+  outline: 2px solid rgba(20, 20, 20, 0.58);
+  outline-offset: 2px;
 }
 
 .product-btn-secondary:hover:not(:disabled) {
@@ -2601,6 +2628,29 @@ a {
 }
 
 @media (forced-colors: active) {
+  .course-demo-shell .app-page-actions > .product-btn,
+  .course-demo-shell .app-page-actions > .product-btn:hover:not(:disabled),
+  .course-demo-shell
+    .app-page-actions
+    > .product-btn:focus-visible:not(:disabled),
+  .course-demo-shell
+    .app-page-actions
+    > .course-actions-wrap
+    .action-menu-trigger,
+  .course-demo-shell
+    .app-page-actions
+    > .course-actions-wrap
+    .action-menu-trigger:hover:not(:disabled),
+  .course-demo-shell
+    .app-page-actions
+    > .course-actions-wrap
+    .action-menu-trigger:focus-visible:not(:disabled) {
+    border: 1px solid ButtonText;
+    background: ButtonFace;
+    color: ButtonText;
+    box-shadow: none;
+  }
+
   .action-menu-panel {
     border: 1px solid CanvasText;
     box-shadow: none;

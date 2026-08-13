@@ -9,9 +9,11 @@ contract. Dependent E2 web/API release также current production.
 `20260812150745_educator_course_governance_progress.sql`.
 Она применена к production 12 августа 2026 года в `2026-08-12T07:34:36Z`.
 
-**Repository schema head:**
-`20260812150745_educator_course_governance_progress.sql` — совпадает с current
-production и generated snapshot
+**Repository migration head:**
+`20260813063716_unify_heading_rich_text_components.sql` — current source
+data-only migration; production apply ещё не выполнен. Она не меняет physical
+schema, поэтому generated snapshot по-прежнему совпадает с production E2 head
+`20260812150745_educator_course_governance_progress.sql`.
 
 **Legacy contract migration:**
 `20260807065038_learner_identity_legacy_contract_cleanup.sql` — применена после
@@ -58,11 +60,20 @@ snapshot из-за version/encoding/default-ACL drift.
 | A1    | `20260811231505_atomic_course_archive.sql`                             | atomic owner-scoped Course soft archive, reverse publication/Run guards, immutable Lesson parent и narrow Course/Lesson browser ACL            |
 | E1    | `20260812113000_educator_course_attestations.sql`                      | `children \| educators`, immutable publication attestation, server-side scoring, Account attempts/awards и audience-scoped catalog             |
 | E2    | `20260812150745_educator_course_governance_progress.sql`               | trusted educator author capability, exact revision review/approval, self-learning progress, attestation gate и official no-copy invariants     |
+| U1    | `20260813063716_unify_heading_rich_text_components.sql`                | current source/pending production: data-only unified Text cleanup без physical-schema и immutable-publication changes                          |
 
 M1–M3 являются additive/compatible expand для roleless web. M4 была withheld из
 первого deploy и применена только после доказательства, что running и rollback
 images не зависят от старого contract. M5 и M6 — атомарные forward security
 fixes поверх post-M4 contract; они не восстанавливают legacy role/ACL surface.
+
+U1 применим только после compatible web deployment: текущий production image
+не читает title-only `rich_text`. После verified full-format backup migration
+переводит authored `heading` в title-only `rich_text` и объединяет только
+непосредственные `heading → rich_text` при одинаковых visibility,
+`student_slide_id` и placement. Immutable `course_publication_revision`
+snapshots остаются неизменными; до фактического apply это current source, а не
+production DB state.
 
 Production expand evidence 9 августа 2026 года:
 
