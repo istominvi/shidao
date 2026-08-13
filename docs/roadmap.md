@@ -423,7 +423,7 @@ Exact source `dea92ca2c9af99fd5738e95fa9ca511aa10ca3da` развёрнут Cooli
 strict browser и `72/72` schema/migration tests. Production guest HTTP и DB
 postflight green; authenticated production browser smoke не заявляется.
 
-**Current source follow-up (deployment pending):** Student Screen action на
+**Current production follow-up:** Student Screen action на
 authored Component card использует тот же `MonitorPlay`, что и вкладка «Экран
 ученика», и работает как прямой `aria-pressed` toggle. Неактивная кнопка
 скрывается вне hover/focus; активная голубая кнопка остаётся видимой постоянно
@@ -431,7 +431,10 @@ authored Component card использует тот же `MonitorPlay`, что �
 learner-visible соседа, затем ближайшего следующего, иначе создаёт новый;
 повторное нажатие снимает назначение. Persisted результат переживает reload.
 Это UI/application-service follow-up без schema или API-shape изменений;
-production SHA и deployment будут записаны только после postflight.
+exact functional source `288fac3d7ab909cab0e26bffb6a0c156f9e12d81`
+развёрнут Coolify deployment `jf5f0j9yp1cwkkf2880d65f4` (`id=945`). Gate
+прошёл typecheck, lint, format, `585/585` unit/API и `23/23` strict
+production-mode browser scenarios; production guest HTTP postflight green.
 
 **Current production:** все product buttons в
 `AppPageHeader` имеют белый surface высотой `40 px`, border `0` и общий

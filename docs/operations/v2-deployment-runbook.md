@@ -658,6 +658,24 @@ rollout и доставить совместимый forward fix; применё
 
 ## 5. Web deployment
 
+### Student Screen component toggle — production execution record
+
+UI-only rollout выполнен без DB migration и изменения API shape:
+
+- exact functional source `288fac3d7ab909cab0e26bffb6a0c156f9e12d81`
+  прошёл typecheck, lint, format, `585/585` unit/API и `23/23` strict
+  production-mode browser scenarios;
+- Coolify deployment `jf5f0j9yp1cwkkf2880d65f4` (`id=945`) создан
+  `2026-08-13T07:54:17Z` и завершён `2026-08-13T07:56:55Z`;
+- container `g9x4d9zn60jv35r7zf0xl6xj-075417820319` использует matching image tag и
+  `SOURCE_COMMIT`, image ID
+  `sha256:ede707702a94192ddce00f8830f4b79bcfa4eb77d6c2b43f397db5b0476b0587`,
+  status running, restart count `0`;
+- production HTTP postflight: V2 `/login` `200`, guest `/courses` `307` в
+  `https://v2.shidao.ru/login`, landing root `200`, landing `/login` `503`.
+  Authenticated production browser session отдельно не заявляется; functional
+  evidence — exact local strict browser suite `23/23`.
+
 1. Сделать небольшой законченный commit в `main`.
 2. Push exact commit в `origin/main`.
 3. Запустить deployment существующего Coolify application через

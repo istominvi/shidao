@@ -128,7 +128,7 @@ modal editor. Cancel/close не
 явному сохранению. Это presentation/editor orchestration, а не новый registry,
 API или storage contract.
 
-Current source делает отдельное исключение для действия Student Screen.
+Current production делает отдельное исключение для действия Student Screen.
 Вместо `Eye/EyeOff` оно использует тот же Lucide `MonitorPlay`, что и вкладка
 «Экран ученика», и является прямым `aria-pressed` toggle: неактивная кнопка
 скрыта вне hover/focus, а активная голубая кнопка размером `32 px` видна
@@ -136,7 +136,10 @@ Current source делает отдельное исключение для де�
 learner-visible соседа, затем ближайшего следующего, иначе новый Slide;
 повторное нажатие снимает назначение. Состояние сохраняется существующей
 Student Screen mutation и переживает reload. Это не меняет registry, payload,
-physical schema или API shape; production deployment пока не заявляется.
+physical schema или API shape.
+Exact functional source `288fac3d7ab909cab0e26bffb6a0c156f9e12d81`
+развёрнут Coolify deployment `jf5f0j9yp1cwkkf2880d65f4` (`id=945`); production
+guest HTTP postflight и matching running-container check прошли.
 
 ### Почему `divider` не нужен
 

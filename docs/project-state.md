@@ -232,7 +232,7 @@ overlay без border/box-shadow на общей белой подложке `rg
 surface используют обычные labels и однострочные input/select высотой `40 px`
 с canonical `.88rem/400` типографикой.
 
-**Current source follow-up (production deploy ещё не подтверждён):** действие
+**Current production follow-up:** действие
 Student Screen больше не использует семантику `Eye/EyeOff`. Оно показывает тот
 же Lucide `MonitorPlay`, что и вкладка «Экран ученика», и является прямым
 `aria-pressed` toggle. Неактивная кнопка скрыта вне hover/focus вместе с
@@ -241,7 +241,13 @@ Student Screen больше не использует семантику `Eye/Ey
 Slide ближайшего предыдущего learner-visible соседа, затем ближайшего
 следующего, а при отсутствии обоих создаёт новый Slide. Повторное нажатие
 убирает Component с Student Screen. Результат сохраняется существующей mutation
-и остаётся тем же после reload; schema и API shape не меняются.
+и остаётся тем же после reload; schema и API shape не меняются. Exact functional
+source `288fac3d7ab909cab0e26bffb6a0c156f9e12d81` развёрнут Coolify deployment
+`jf5f0j9yp1cwkkf2880d65f4` (`id=945`): matching container/image и
+`SOURCE_COMMIT`, restart count `0`; release gate прошёл `585/585` unit/API и
+`23/23` strict production-mode browser scenarios. Guest production HTTP
+postflight green; authenticated production browser session отдельно не
+заявляется.
 
 Tracked data migration
 `20260813063716_unify_heading_rich_text_components.sql` переводит authored
