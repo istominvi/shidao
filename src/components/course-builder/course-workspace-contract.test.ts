@@ -816,7 +816,7 @@ test("component cards render content with accessible overlay actions and modal e
       styles,
     )?.[0];
   const componentActionFocusStyles =
-    /\.course-demo-shell[\s\S]*?\.lesson-component-card-actions[\s\S]*?\.product-btn\.component-card-action:focus-visible:not\(:disabled\),[\s\S]*?\.product-btn\.component-card-visibility-action:focus-visible:not\(:disabled\)\s*\{[^}]*\}/.exec(
+    /\.lesson-component-card-actions[\s\S]*?\.product-btn\.component-card-action:focus-visible:not\(:disabled\),[\s\S]*?\.product-btn\.component-card-visibility-action:focus-visible:not\(:disabled\)\s*\{[^}]*\}/.exec(
       styles,
     )?.[0];
   const visibleActionStyles =

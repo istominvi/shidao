@@ -2154,7 +2154,6 @@ a {
 }
 
 .product-btn.component-card-visibility-action-active {
-  border-color: #bae6fd;
   background: #e0f2fe;
   color: #075985;
 }
@@ -2266,11 +2265,9 @@ a {
   box-shadow: none;
 }
 
-.course-demo-shell
-  .lesson-component-card-actions
+.lesson-component-card-actions
   .product-btn.component-card-action:focus-visible:not(:disabled),
-.course-demo-shell
-  .lesson-component-card-actions
+.lesson-component-card-actions
   .product-btn.component-card-visibility-action:focus-visible:not(:disabled) {
   border: 0;
   background: rgba(20, 20, 20, 0.08);

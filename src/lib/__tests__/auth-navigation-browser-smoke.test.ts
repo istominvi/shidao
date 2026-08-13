@@ -9424,9 +9424,11 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
         cardRect: fileComponentCardVisual.cardRect,
       },
     );
-    await runtime.page
-      .getByRole("button", { name: "Компонент", exact: true })
-      .hover();
+    const componentTrigger = runtime.page.getByRole("button", {
+      name: "Компонент",
+      exact: true,
+    });
+    await componentTrigger.hover();
     await runtime.page.evaluate(
       () => new Promise<void>((resolve) => window.setTimeout(resolve, 220)),
     );
@@ -9444,9 +9446,7 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
         cardBoxShadow: "rgba(0, 0, 0, 0.05) 0px 3px 6px 0px",
       },
     );
-    await fileComponentEdit.evaluate((button) => {
-      (button as HTMLElement).focus();
-    });
+    await componentTrigger.press("Tab");
     await runtime.page.evaluate(
       () => new Promise<void>((resolve) => window.setTimeout(resolve, 220)),
     );
