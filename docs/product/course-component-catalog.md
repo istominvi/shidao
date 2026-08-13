@@ -128,6 +128,16 @@ modal editor. Cancel/close не
 явному сохранению. Это presentation/editor orchestration, а не новый registry,
 API или storage contract.
 
+Current source делает отдельное исключение для действия Student Screen.
+Вместо `Eye/EyeOff` оно использует тот же Lucide `MonitorPlay`, что и вкладка
+«Экран ученика», и является прямым `aria-pressed` toggle: неактивная кнопка
+скрыта вне hover/focus, а активная голубая кнопка размером `32 px` видна
+постоянно. При включении Component получает Slide ближайшего предыдущего
+learner-visible соседа, затем ближайшего следующего, иначе новый Slide;
+повторное нажатие снимает назначение. Состояние сохраняется существующей
+Student Screen mutation и переживает reload. Это не меняет registry, payload,
+physical schema или API shape; production deployment пока не заявляется.
+
 ### Почему `divider` не нужен
 
 Это наше product inference. В ShiDao порядок задаёт единый ordered list Lesson,

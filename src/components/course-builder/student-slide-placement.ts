@@ -13,6 +13,9 @@ export type StudentSlidePlacementOptions = {
   canCreateNew: boolean;
 };
 
+export type StudentScreenToggleInput =
+  { mode: "hide" } | { mode: "existing"; slideId: string } | { mode: "new" };
+
 /**
  * Keeps Student Screen grouping monotonic with the one canonical Lesson
  * component order. The current component is intentionally excluded when its
@@ -64,4 +67,56 @@ export function getStudentSlidePlacementOptions(
       !successor ||
       predecessor.studentSlideId !== successor.studentSlideId,
   };
+}
+
+/**
+ * Turns the Student Screen membership control into a deterministic toggle.
+ * A newly shown component joins the preceding visible component's Slide when
+ * possible, then the following visible component's Slide, and only creates a
+ * Slide when the Lesson has no visible neighbour.
+ */
+export function getStudentScreenToggleInput(
+  components: StudentSlidePlacementComponent[],
+  currentComponentId: string,
+  slides: StudentSlidePlacementSlide[],
+): StudentScreenToggleInput | null {
+  const currentIndex = components.findIndex(
+    (component) => component.id === currentComponentId,
+  );
+  if (currentIndex < 0) return null;
+
+  const current = components[currentIndex]!;
+  if (current.studentSlideId !== null) return { mode: "hide" };
+
+  const validSlideIds = new Set(
+    getStudentSlidePlacementOptions(
+      components,
+      currentComponentId,
+      slides,
+    ).existingSlides.map((slide) => slide.id),
+  );
+  const predecessor = components
+    .slice(0, currentIndex)
+    .reverse()
+    .find(
+      (component) =>
+        component.studentSlideId !== null &&
+        validSlideIds.has(component.studentSlideId),
+    );
+  if (predecessor?.studentSlideId) {
+    return { mode: "existing", slideId: predecessor.studentSlideId };
+  }
+
+  const successor = components
+    .slice(currentIndex + 1)
+    .find(
+      (component) =>
+        component.studentSlideId !== null &&
+        validSlideIds.has(component.studentSlideId),
+    );
+  if (successor?.studentSlideId) {
+    return { mode: "existing", slideId: successor.studentSlideId };
+  }
+
+  return { mode: "new" };
 }

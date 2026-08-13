@@ -7,10 +7,7 @@ import {
   ArrowLeft,
   ArrowRight,
   ArrowUp,
-  Check,
   ClipboardCheck,
-  Eye,
-  EyeOff,
   Gamepad2,
   Image as ImageIcon,
   Layers3,
@@ -43,7 +40,7 @@ import {
   type SignedCourseComponentAssetMap,
 } from "@/components/course-builder/component-renderers";
 import { courseBuilderRequest } from "@/components/course-builder/course-builder-client";
-import { getStudentSlidePlacementOptions } from "@/components/course-builder/student-slide-placement";
+import { getStudentScreenToggleInput } from "@/components/course-builder/student-slide-placement";
 import {
   LessonRunDialog,
   LessonRunStatusButton,
@@ -246,79 +243,38 @@ function ComponentCard({
   runMutation: CourseBuilderMutationRunner;
 }) {
   const [editing, setEditing] = useState(false);
-  const [studentScreenPopoverOpen, setStudentScreenPopoverOpen] =
-    useState(false);
   const editTriggerRef = useRef<HTMLButtonElement>(null);
   const studentScreenTriggerRef = useRef<HTMLButtonElement>(null);
-  const studentScreenPopoverRef = useRef<HTMLDivElement>(null);
-  const studentScreenPopoverId = useId();
   const accessibleLabelId = useId();
   const definition = getComponentDefinition(component.typeKey);
   const learnerVisible = component.studentSlideId !== null;
   const currentStudentSlidePosition = studentSlides.find(
     (slide) => slide.id === component.studentSlideId,
   )?.position;
-  const placementOptions = useMemo(
+  const studentScreenToggleInput = useMemo(
     () =>
-      getStudentSlidePlacementOptions(
+      getStudentScreenToggleInput(
         lessonComponents,
         component.id,
         studentSlides,
       ),
     [component.id, lessonComponents, studentSlides],
   );
-  useEffect(() => {
-    if (!studentScreenPopoverOpen) return;
 
-    window.requestAnimationFrame(() =>
-      studentScreenPopoverRef.current
-        ?.querySelector<HTMLButtonElement>("button:not([disabled])")
-        ?.focus(),
-    );
-
-    function handlePointerDown(event: PointerEvent) {
-      if (
-        event.target instanceof Node &&
-        !studentScreenPopoverRef.current?.contains(event.target) &&
-        !studentScreenTriggerRef.current?.contains(event.target)
-      ) {
-        setStudentScreenPopoverOpen(false);
-      }
-    }
-
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key !== "Escape") return;
-      event.preventDefault();
-      setStudentScreenPopoverOpen(false);
-      studentScreenTriggerRef.current?.focus();
-    }
-
-    document.addEventListener("pointerdown", handlePointerDown);
-    document.addEventListener("keydown", handleKeyDown);
-    return () => {
-      document.removeEventListener("pointerdown", handlePointerDown);
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [studentScreenPopoverOpen]);
-
-  async function updateStudentScreen(
-    input:
-      | { mode: "hide" }
-      | { mode: "existing"; slideId: string }
-      | { mode: "new" },
-  ) {
+  async function toggleStudentScreen(releasePointerFocus: boolean) {
+    if (!studentScreenToggleInput) return;
     const saved = await runMutation("Обновляем экран ученика…", () =>
       jsonRequest(
         `/api/v2/components/${component.id}/student-screen`,
         "POST",
-        input,
+        studentScreenToggleInput,
       ),
     );
-    if (!saved) return;
-    setStudentScreenPopoverOpen(false);
-    window.requestAnimationFrame(() =>
-      studentScreenTriggerRef.current?.focus(),
-    );
+    if (saved && releasePointerFocus) {
+      window.requestAnimationFrame(() =>
+        studentScreenTriggerRef.current?.blur(),
+      );
+    }
   }
 
   function closeEditor() {
@@ -342,7 +298,7 @@ function ComponentCard({
         </h3>
         <div
           className={`lesson-component-card-actions ${
-            studentScreenPopoverOpen ? "is-open" : ""
+            learnerVisible ? "has-student-screen-component" : ""
           }`}
           role="group"
           aria-label={`Управление компонентом ${displayPosition} «${definition.title}»`}
@@ -411,7 +367,7 @@ function ComponentCard({
           >
             <Trash2 className="h-4 w-4" aria-hidden="true" />
           </Button>
-          <div className="relative">
+          <div className="component-card-student-screen-control">
             <Button
               ref={studentScreenTriggerRef}
               variant="ghost"
@@ -420,89 +376,24 @@ function ComponentCard({
                   ? "component-card-visibility-action-active bg-sky-100 text-sky-800 hover:bg-sky-200"
                   : "component-card-visibility-action-inactive text-neutral-500"
               }`}
-              disabled={disabled}
-              aria-haspopup="dialog"
-              aria-expanded={studentScreenPopoverOpen}
-              aria-controls={
-                studentScreenPopoverOpen ? studentScreenPopoverId : undefined
-              }
+              disabled={disabled || studentScreenToggleInput === null}
+              aria-pressed={learnerVisible}
               aria-label={
                 learnerVisible
-                  ? currentStudentSlidePosition === undefined
-                    ? `«${definition.title}» показывается ученику. Настроить`
-                    : `«${definition.title}» показывается на слайде ${currentStudentSlidePosition}. Настроить`
-                  : `«${definition.title}» не показывается ученику. Настроить`
+                  ? `Убрать «${definition.title}» с экрана ученика`
+                  : `Показать «${definition.title}» на экране ученика`
               }
-              title="Настроить экран ученика"
-              onClick={() => setStudentScreenPopoverOpen((isOpen) => !isOpen)}
+              title={
+                learnerVisible
+                  ? currentStudentSlidePosition === undefined
+                    ? "Убрать с экрана ученика"
+                    : `Убрать со слайда ${currentStudentSlidePosition}`
+                  : "Показать на экране ученика"
+              }
+              onClick={(event) => void toggleStudentScreen(event.detail > 0)}
             >
-              {learnerVisible ? (
-                <Eye className="h-4 w-4" aria-hidden="true" />
-              ) : (
-                <EyeOff className="h-4 w-4" aria-hidden="true" />
-              )}
+              <MonitorPlay className="h-4 w-4" aria-hidden="true" />
             </Button>
-
-            {studentScreenPopoverOpen ? (
-              <div
-                ref={studentScreenPopoverRef}
-                id={studentScreenPopoverId}
-                role="dialog"
-                aria-label={`Слайд для компонента «${definition.title}»`}
-                className="absolute right-0 top-11 z-30 w-72 rounded-2xl border border-neutral-200 bg-white p-2 text-left shadow-xl"
-              >
-                <p className="px-2 pb-2 pt-1 text-xs font-bold uppercase tracking-[0.12em] text-neutral-500">
-                  Экран ученика
-                </p>
-                <div className="grid gap-1">
-                  {placementOptions.existingSlides.map((slide) => {
-                    const selected = component.studentSlideId === slide.id;
-                    return (
-                      <button
-                        key={slide.id}
-                        type="button"
-                        disabled={disabled || selected}
-                        aria-pressed={selected}
-                        className="flex min-h-10 items-center justify-between gap-3 rounded-xl px-3 py-2 text-sm font-semibold text-neutral-800 transition hover:bg-neutral-100 disabled:cursor-default disabled:bg-sky-50 disabled:text-sky-800"
-                        onClick={() =>
-                          void updateStudentScreen({
-                            mode: "existing",
-                            slideId: slide.id,
-                          })
-                        }
-                      >
-                        <span>Слайд {slide.position}</span>
-                        {selected ? (
-                          <Check className="h-4 w-4" aria-hidden="true" />
-                        ) : null}
-                      </button>
-                    );
-                  })}
-                  {placementOptions.canCreateNew ? (
-                    <button
-                      type="button"
-                      disabled={disabled}
-                      className="flex min-h-10 items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-neutral-800 transition hover:bg-neutral-100"
-                      onClick={() => void updateStudentScreen({ mode: "new" })}
-                    >
-                      <Plus className="h-4 w-4" aria-hidden="true" />
-                      Новый слайд
-                    </button>
-                  ) : null}
-                  {learnerVisible ? (
-                    <button
-                      type="button"
-                      disabled={disabled}
-                      className="flex min-h-10 items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-50"
-                      onClick={() => void updateStudentScreen({ mode: "hide" })}
-                    >
-                      <EyeOff className="h-4 w-4" aria-hidden="true" />
-                      Убрать с экрана
-                    </button>
-                  ) : null}
-                </div>
-              </div>
-            ) : null}
           </div>
         </div>
 
@@ -950,7 +841,7 @@ function StudentLessonSurface({
         ) : (
           <div className="grid place-items-center rounded-[1.25rem] border border-dashed border-neutral-300 bg-white/70 px-6 py-12 text-center">
             <div>
-              <EyeOff
+              <MonitorPlay
                 className="mx-auto h-7 w-7 text-neutral-400"
                 aria-hidden="true"
               />
@@ -958,8 +849,8 @@ function StudentLessonSurface({
                 Экран ученика пока пуст
               </h3>
               <p className="mt-2 max-w-xl text-sm leading-6 text-neutral-600">
-                В плане урока нажмите значок глаза у нужного компонента и
-                добавьте его на первый слайд.
+                В плане урока нажмите кнопку «Экран ученика» у нужного
+                компонента.
               </p>
             </div>
           </div>

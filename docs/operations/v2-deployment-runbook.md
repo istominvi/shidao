@@ -1085,7 +1085,15 @@ flow как permanent delete.
   имеют border `0`, box-shadow `none`, rail background exact
   `rgba(255, 255, 255, 0.5)`. Группа actions не занимает
   normal-flow header, появляется на hover и focus-within, а на touch остаётся
-  доступной. Pencil открывает отдельный modal editor: Cancel/close/Escape не
+  доступной. Единственное desktop-исключение — active Student Screen action:
+  вне hover/focus на learner-visible card видна только голубая 32 px кнопка с
+  тем же `MonitorPlay`, что у вкладки; inactive action скрыт, а `Eye/EyeOff` в
+  card control отсутствуют. Проверить direct `aria-pressed` toggle: включение
+  выбирает Slide ближайшего предыдущего learner-visible соседа, затем
+  ближайшего следующего, иначе создаёт новый; повторное нажатие выполняет hide.
+  После каждого действия reload сохраняет состояние, а learner preview/API
+  соответственно включает или исключает Component. Pencil открывает отдельный
+  modal editor: Cancel/close/Escape не
   отправляют `PATCH`, Save отправляет один `PATCH`, и после reload renderer
   показывает сохранённые payload/placement. В обоих editor flows labels имеют
   `.88rem/400`, однострочные input/select — exact 40 px; длинные формы скроллятся

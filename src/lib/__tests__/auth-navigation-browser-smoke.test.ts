@@ -39,6 +39,7 @@ const E2E_EDUCATOR_ATTESTATION_ATTEMPT_ID =
 const E2E_LESSON_ID = "44444444-4444-4444-8444-444444444444";
 const E2E_SECOND_LESSON_ID = "44444444-4444-4444-8444-444444444445";
 const E2E_COMPONENT_ID = "77777777-7777-4777-8777-777777777771";
+const E2E_STUDENT_SLIDE_ID = "77777777-7777-4777-8777-777777777770";
 const E2E_STORED_FILE_ID = "77777777-7777-4777-8777-777777777772";
 const E2E_LEARNER_ANNA_ID = "88888888-8888-4888-8888-888888888881";
 const E2E_LEARNER_BORIS_ID = "88888888-8888-4888-8888-888888888882";
@@ -110,7 +111,7 @@ const E2E_SECOND_COURSE_ROW = {
   publication_content_updated_at: "2026-08-06T09:00:00.000Z",
 };
 
-const E2E_LESSON_ROW = {
+const E2E_LESSON_BASE_ROW = {
   id: E2E_LESSON_ID,
   course_id: E2E_COURSE_ID,
   position: 4,
@@ -139,6 +140,44 @@ const E2E_LESSON_ROW = {
   created_at: "2026-08-05T08:30:00.000Z",
   updated_at: "2026-08-05T09:00:00.000Z",
 };
+
+type E2EStudentScreenRpcPayload = {
+  p_component_id: string;
+  p_mode: "hide" | "existing" | "new";
+  p_slide_id: string | null;
+};
+
+let e2eComponentLearnerVisible = false;
+const e2eStudentScreenRpcPayloads: E2EStudentScreenRpcPayload[] = [];
+
+function e2eLessonComponentRow() {
+  const component = E2E_LESSON_BASE_ROW.components[0]!;
+  return {
+    ...component,
+    visibility: e2eComponentLearnerVisible
+      ? ("learner_visible" as const)
+      : ("staff_only" as const),
+    student_slide_id: e2eComponentLearnerVisible ? E2E_STUDENT_SLIDE_ID : null,
+  };
+}
+
+function e2eLessonRow() {
+  return {
+    ...E2E_LESSON_BASE_ROW,
+    components: [e2eLessonComponentRow()],
+    studentSlides: e2eComponentLearnerVisible
+      ? [
+          {
+            id: E2E_STUDENT_SLIDE_ID,
+            lesson_id: E2E_LESSON_ID,
+            position: 1,
+            created_at: "2026-08-05T09:00:00.000Z",
+            updated_at: "2026-08-05T09:00:00.000Z",
+          },
+        ]
+      : [],
+  };
+}
 
 const E2E_SECOND_LESSON_ROW = {
   id: E2E_SECOND_LESSON_ID,
@@ -2046,6 +2085,44 @@ async function handleMockSupabase(
     return;
   }
 
+  if (
+    requestUrl.pathname === "/rest/v1/lesson_component" &&
+    request.method === "GET"
+  ) {
+    const requestedComponentId = readEqFilter(requestUrl, "id");
+    json(
+      response,
+      200,
+      !requestedComponentId || requestedComponentId === E2E_COMPONENT_ID
+        ? [e2eLessonComponentRow()]
+        : [],
+    );
+    return;
+  }
+
+  if (
+    requestUrl.pathname ===
+      "/rest/v1/rpc/set_lesson_component_student_screen" &&
+    request.method === "POST"
+  ) {
+    const payload = (await readJsonBody(request)) as E2EStudentScreenRpcPayload;
+    if (
+      payload.p_component_id !== E2E_COMPONENT_ID ||
+      !["hide", "existing", "new"].includes(payload.p_mode) ||
+      (payload.p_mode === "existing" &&
+        payload.p_slide_id !== E2E_STUDENT_SLIDE_ID) ||
+      (payload.p_mode !== "existing" && payload.p_slide_id !== null)
+    ) {
+      json(response, 400, { message: "unexpected Student Screen payload" });
+      return;
+    }
+
+    e2eStudentScreenRpcPayloads.push(payload);
+    e2eComponentLearnerVisible = payload.p_mode !== "hide";
+    json(response, 200, [e2eLessonComponentRow()]);
+    return;
+  }
+
   if (requestUrl.pathname === "/rest/v1/lesson") {
     const courseFilter = requestUrl.searchParams.get("course_id");
     const lessonFilter = readEqFilter(requestUrl, "id");
@@ -2057,7 +2134,7 @@ async function handleMockSupabase(
     const select = requestUrl.searchParams.get("select") ?? "";
     const lessonRows = [
       ...(e2eSecondLessonVisible ? [E2E_SECOND_LESSON_ROW] : []),
-      E2E_LESSON_ROW,
+      e2eLessonRow(),
     ].filter((lesson) => !lessonFilter || lesson.id === lessonFilter);
     json(
       response,
@@ -7196,6 +7273,8 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
 
   e2eSecondCourseVisible = true;
   e2eSecondLessonVisible = true;
+  e2eComponentLearnerVisible = false;
+  e2eStudentScreenRpcPayloads.length = 0;
   const runtime = await openPage({ cookie: authenticatedCookieValue() });
 
   try {
@@ -9274,6 +9353,36 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
     const fileComponentActions = fileComponentCard.locator(
       ".lesson-component-card-actions",
     );
+    async function readComponentActionVisual(actionLocator: PlaywrightLocator) {
+      return actionLocator.evaluate((element) => {
+        const action = element as HTMLElement;
+        const style = getComputedStyle(action);
+        const rect = action.getBoundingClientRect();
+        let effectiveOpacity = 1;
+        let rendered = true;
+        let current: HTMLElement | null = action;
+        while (current) {
+          const currentStyle = getComputedStyle(current);
+          effectiveOpacity *= Number(currentStyle.opacity);
+          rendered &&=
+            currentStyle.display !== "none" &&
+            currentStyle.visibility !== "hidden";
+          current = current.parentElement;
+        }
+        const hit = document.elementFromPoint(
+          rect.left + rect.width / 2,
+          rect.top + rect.height / 2,
+        );
+        return {
+          effectiveOpacity,
+          rendered,
+          hitTested: hit === action || (hit !== null && action.contains(hit)),
+          background: style.backgroundColor,
+          color: style.color,
+          pointerEvents: style.pointerEvents,
+        };
+      });
+    }
     const fileComponentEdit = fileComponentCard.getByRole("button", {
       name: "Редактировать «Файл»",
       exact: true,
@@ -9630,6 +9739,141 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       true,
     );
 
+    await componentTrigger.hover();
+    await componentTrigger.evaluate((element) =>
+      (element as HTMLElement).focus(),
+    );
+    await runtime.page.evaluate(
+      () => new Promise<void>((resolve) => window.setTimeout(resolve, 180)),
+    );
+
+    const showOnStudentScreen = fileComponentCard.getByRole("button", {
+      name: "Показать «Файл» на экране ученика",
+      exact: true,
+    });
+    assert.equal(
+      await showOnStudentScreen.getAttribute("aria-pressed"),
+      "false",
+    );
+    assert.equal(
+      await showOnStudentScreen.locator("svg.lucide-monitor-play").count(),
+      1,
+    );
+    const lessonStudentScreenTab = runtime.page.getByRole("tab", {
+      name: "Экран ученика",
+      exact: true,
+    });
+    assert.equal(
+      await lessonStudentScreenTab.locator("svg.lucide-monitor-play").count(),
+      1,
+    );
+    const inactiveStudentScreenVisual =
+      await readComponentActionVisual(showOnStudentScreen);
+    assert.equal(inactiveStudentScreenVisual.effectiveOpacity, 0);
+    assert.equal(inactiveStudentScreenVisual.hitTested, false);
+
+    await fileComponentCard.hover();
+    await runtime.page.evaluate(
+      () => new Promise<void>((resolve) => window.setTimeout(resolve, 180)),
+    );
+    await showOnStudentScreen.click();
+    const hideFromStudentScreen = fileComponentCard.getByRole("button", {
+      name: "Убрать «Файл» с экрана ученика",
+      exact: true,
+    });
+    await hideFromStudentScreen.waitFor();
+    assert.deepEqual(e2eStudentScreenRpcPayloads, [
+      {
+        p_component_id: E2E_COMPONENT_ID,
+        p_mode: "new",
+        p_slide_id: null,
+      },
+    ]);
+
+    await componentTrigger.hover();
+    await componentTrigger.evaluate((element) =>
+      (element as HTMLElement).focus(),
+    );
+    await runtime.page.evaluate(
+      () => new Promise<void>((resolve) => window.setTimeout(resolve, 180)),
+    );
+    assert.equal(
+      await hideFromStudentScreen.getAttribute("aria-pressed"),
+      "true",
+    );
+    assert.equal(
+      await hideFromStudentScreen.locator("svg.lucide-monitor-play").count(),
+      1,
+    );
+    assert.deepEqual(await readComponentActionVisual(hideFromStudentScreen), {
+      effectiveOpacity: 1,
+      rendered: true,
+      hitTested: true,
+      background: "rgb(224, 242, 254)",
+      color: "rgb(7, 89, 133)",
+      pointerEvents: "auto",
+    });
+    const inactiveEditVisual =
+      await readComponentActionVisual(fileComponentEdit);
+    assert.equal(inactiveEditVisual.effectiveOpacity, 0);
+    assert.equal(inactiveEditVisual.hitTested, false);
+
+    await lessonStudentScreenTab.click();
+    const lessonStudentScreenPanel = runtime.page.locator(
+      "#lesson-workspace-panel-student",
+    );
+    await lessonStudentScreenPanel.waitFor();
+    const visibleStudentScreenText =
+      (await lessonStudentScreenPanel.textContent()) ?? "";
+    assert.match(visibleStudentScreenText, /Слайд 1 из 1/);
+    assert.match(
+      visibleStudentScreenText,
+      /Файл пока не прикреплён или недоступен\./,
+    );
+    assert.doesNotMatch(visibleStudentScreenText, /Экран ученика пока пуст/);
+    await runtime.page.getByRole("tab", { name: "План", exact: true }).click();
+    await hideFromStudentScreen.waitFor();
+    await componentTrigger.hover();
+    await componentTrigger.evaluate((element) =>
+      (element as HTMLElement).focus(),
+    );
+    await hideFromStudentScreen.click();
+    await showOnStudentScreen.waitFor();
+    assert.deepEqual(e2eStudentScreenRpcPayloads, [
+      {
+        p_component_id: E2E_COMPONENT_ID,
+        p_mode: "new",
+        p_slide_id: null,
+      },
+      {
+        p_component_id: E2E_COMPONENT_ID,
+        p_mode: "hide",
+        p_slide_id: null,
+      },
+    ]);
+    await componentTrigger.hover();
+    await componentTrigger.evaluate((element) =>
+      (element as HTMLElement).focus(),
+    );
+    await runtime.page.evaluate(
+      () => new Promise<void>((resolve) => window.setTimeout(resolve, 180)),
+    );
+    assert.equal(
+      await showOnStudentScreen.getAttribute("aria-pressed"),
+      "false",
+    );
+    const hiddenAgainStudentScreenVisual =
+      await readComponentActionVisual(showOnStudentScreen);
+    assert.equal(hiddenAgainStudentScreenVisual.effectiveOpacity, 0);
+    assert.equal(hiddenAgainStudentScreenVisual.hitTested, false);
+    await lessonStudentScreenTab.click();
+    await lessonStudentScreenPanel.waitFor();
+    assert.match(
+      (await lessonStudentScreenPanel.textContent()) ?? "",
+      /Экран ученика пока пуст/,
+    );
+    await runtime.page.getByRole("tab", { name: "План", exact: true }).click();
+
     await runtime.page
       .getByRole("button", {
         name: `Вернуться: ${E2E_COURSE_TITLE}`,
@@ -9645,6 +9889,8 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
     e2eSecondCourseVisible = false;
     e2eSecondCourseArchived = false;
     e2eSecondLessonVisible = false;
+    e2eComponentLearnerVisible = false;
+    e2eStudentScreenRpcPayloads.length = 0;
     await runtime.close();
   }
 });

@@ -390,7 +390,10 @@ reduced-motion transition отключается. Фильтрация не ме
 раскрывается на hover/focus-within и остаётся доступной на устройствах без
 hover. Overlay и его кнопки не имеют border/box-shadow; общая белая подложка —
 `rgba(255, 255, 255, 0.5)`. Pencil открывает отдельный modal editor поверх
-неизменённого renderer.
+неизменённого renderer. Единственное desktop-исключение из скрытия rail —
+активное действие Student Screen: его голубая кнопка `MonitorPlay` размером
+32 px видна постоянно, а неактивная кнопка скрывается вместе с остальными
+действиями.
 Отмена/закрытие отбрасывают локальные изменения, а только явное сохранение
 отправляет существующий `PATCH /api/v2/components/:componentId` с
 payload/placement. Form labels используют canonical `.88rem/400`, однострочные
@@ -400,9 +403,16 @@ input/select — 40 px. Поля `rich_text` подписаны ровно «З�
 renderer, authored order или physical DB schema; code-first `rich_text`
 extension описано выше отдельно.
 
-На карточке teacher видит состояние видимости. `staff_only` означает, что
-компонент остаётся частью плана преподавателя, но отсутствует в learner API.
-Приватность обеспечивается server projection и authorization, а не только CSS.
+На карточке teacher видит не абстрактное состояние «видимый/невидимый», а
+назначение Component на Student Screen. Кнопка использует тот же Lucide
+`MonitorPlay`, что и вкладка «Экран ученика», и публикует прямое состояние через
+`aria-pressed`. Для `staff_only` нажатие выбирает Slide ближайшего предыдущего
+learner-visible соседа, затем ближайшего следующего, а при отсутствии обоих
+создаёт новый Slide. Для уже назначенного Component повторное нажатие снимает
+назначение. Mutation сохраняет `visibility`/`student_slide_id`, поэтому
+состояние переживает reload. `staff_only` Component остаётся частью плана
+преподавателя, но отсутствует в learner API; приватность обеспечивается server
+projection и authorization, а не только CSS.
 
 ## Student Screen
 

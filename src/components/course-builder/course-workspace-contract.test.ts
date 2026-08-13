@@ -18,6 +18,8 @@ const componentEditorPath =
   "src/components/course-builder/component-payload-editor.tsx";
 const componentPickerPreviewPath =
   "src/components/course-builder/component-picker-preview.tsx";
+const courseWorkspaceNavigationPath =
+  "src/components/course-builder/course-workspace-navigation.ts";
 
 test("workspace writes persisted course, lesson, and component entities", () => {
   const combined = [source(workspacePath), source(lessonAuthoringPath)].join(
@@ -848,6 +850,7 @@ test("component editor keeps canonical scoped typography and compact control geo
 
 test("component cards render content with accessible overlay actions and modal editing", () => {
   const authoring = source(lessonAuthoringPath);
+  const navigation = source(courseWorkspaceNavigationPath);
   const styles = source("src/app/globals.css");
   const cardStyles = /\.lesson-component-card\s*\{[^}]*\}/.exec(styles)?.[0];
   const cardHoverStyles = /\.lesson-component-card:hover\s*\{[^}]*\}/.exec(
@@ -871,7 +874,27 @@ test("component cards render content with accessible overlay actions and modal e
       styles,
     )?.[0];
   const visibleActionStyles =
-    /\.lesson-component-card:hover \.lesson-component-card-actions,[\s\S]*?\.lesson-component-card-actions\.is-open\s*\{[^}]*\}/.exec(
+    /\.lesson-component-card:hover \.lesson-component-card-actions,[\s\S]*?\.lesson-component-card:focus-within \.lesson-component-card-actions\s*\{[^}]*\}/.exec(
+      styles,
+    )?.[0];
+  const persistentActionRailStyles =
+    /\.lesson-component-card-actions\.has-student-screen-component\s*\{[^}]*\}/.exec(
+      styles,
+    )?.[0];
+  const persistentHiddenActionStyles =
+    /\.lesson-component-card-actions\.has-student-screen-component\s*> \.component-card-action\s*\{[^}]*\}/.exec(
+      styles,
+    )?.[0];
+  const persistentStudentScreenControlStyles =
+    /\.lesson-component-card-actions\.has-student-screen-component\s*> \.component-card-student-screen-control\s*\{[^}]*\}/.exec(
+      styles,
+    )?.[0];
+  const revealedPersistentActionStyles =
+    /\.lesson-component-card:hover\s+\.lesson-component-card-actions\.has-student-screen-component\s*> \.component-card-action,[\s\S]*?\.lesson-component-card:focus-within\s+\.lesson-component-card-actions\.has-student-screen-component\s*> \.component-card-action\s*\{[^}]*\}/.exec(
+      styles,
+    )?.[0];
+  const activeStudentScreenActionStyles =
+    /\.lesson-component-card-actions \.component-card-visibility-action-active\s*\{[^}]*\}/.exec(
       styles,
     )?.[0];
   const cardContentStyles = /\.lesson-component-card-content\s*\{[^}]*\}/.exec(
@@ -889,6 +912,17 @@ test("component cards render content with accessible overlay actions and modal e
   );
   const editorDialog = authoring.slice(editorDialogStart, componentCardStart);
   const componentCard = authoring.slice(componentCardStart, componentCardEnd);
+  const studentScreenControlStart = componentCard.indexOf(
+    '<div className="component-card-student-screen-control">',
+  );
+  const studentScreenControlEnd = componentCard.indexOf(
+    '<div className="lesson-component-card-content">',
+    studentScreenControlStart,
+  );
+  const studentScreenControl = componentCard.slice(
+    studentScreenControlStart,
+    studentScreenControlEnd,
+  );
 
   assert.ok(
     editorDialogStart >= 0 && componentCardStart > editorDialogStart,
@@ -910,6 +944,10 @@ test("component cards render content with accessible overlay actions and modal e
   assert.match(
     componentCard,
     /className=\{`lesson-component-card-actions \$\{[\s\S]*?role="group"[\s\S]*?aria-label=\{`Управление компонентом \$\{displayPosition\} «\$\{definition\.title\}»`\}/,
+  );
+  assert.match(
+    componentCard,
+    /learnerVisible \? "has-student-screen-component" : ""/,
   );
   assert.match(
     componentCard,
@@ -958,16 +996,46 @@ test("component cards render content with accessible overlay actions and modal e
     authoring,
     /\/api\/v2\/components\/\$\{component\.id\}\/student-screen/,
   );
-  for (const mode of ['mode: "existing"', 'mode: "new"', 'mode: "hide"']) {
-    assert.match(authoring, new RegExp(mode));
-  }
-  assert.match(authoring, /aria-haspopup="dialog"/);
-  assert.match(authoring, /aria-expanded=\{studentScreenPopoverOpen\}/);
-  assert.match(authoring, /показывается на слайде/);
-  assert.match(authoring, /не показывается ученику/);
-  assert.match(authoring, /getStudentSlidePlacementOptions/);
-  assert.match(authoring, /Новый слайд/);
-  assert.match(authoring, /Убрать с экрана/);
+  assert.match(
+    componentCard,
+    /getStudentScreenToggleInput\([\s\S]*?lessonComponents,[\s\S]*?component\.id,[\s\S]*?studentSlides/,
+  );
+  assert.match(
+    componentCard,
+    /async function toggleStudentScreen\([\s\S]*?studentScreenToggleInput[\s\S]*?jsonRequest\([\s\S]*?studentScreenToggleInput/,
+  );
+  assert.ok(
+    studentScreenControlStart >= 0 &&
+      studentScreenControlEnd > studentScreenControlStart,
+    "the Student Screen toggle must remain an explicit component-card control",
+  );
+  assert.match(studentScreenControl, /aria-pressed=\{learnerVisible\}/);
+  assert.match(
+    studentScreenControl,
+    /Убрать «\$\{definition\.title\}» с экрана ученика/,
+  );
+  assert.match(
+    studentScreenControl,
+    /Показать «\$\{definition\.title\}» на экране ученика/,
+  );
+  assert.match(
+    studentScreenControl,
+    /onClick=\{\(event\) =>[\s\S]*?toggleStudentScreen\(event\.detail > 0\)/,
+  );
+  assert.match(
+    studentScreenControl,
+    /<MonitorPlay className="h-4 w-4" aria-hidden="true" \/>/,
+  );
+  assert.doesNotMatch(studentScreenControl, /<Eye(?:Off)?\b/);
+  assert.doesNotMatch(
+    studentScreenControl,
+    /aria-haspopup|aria-expanded|role="dialog"/,
+  );
+  assert.match(
+    navigation,
+    /value: "student", label: "Экран ученика", icon: MonitorPlay/,
+    "the card toggle and Student Screen tab must use the same MonitorPlay icon",
+  );
   assert.match(
     authoring,
     /learnerVisible[\s\S]*?component-card-visibility-action-active bg-sky-100 text-sky-800/,
@@ -1044,10 +1112,40 @@ test("component cards render content with accessible overlay actions and modal e
   assert.match(cardActionStyles, /backdrop-filter: blur\(8px\)/);
   assert.ok(
     visibleActionStyles,
-    "hover, focus, and open state must reveal the overlay action rail",
+    "hover and focus must reveal the overlay action rail",
   );
   assert.match(visibleActionStyles, /opacity: 1/);
   assert.match(visibleActionStyles, /pointer-events: auto/);
+  assert.ok(
+    persistentActionRailStyles,
+    "a learner-visible component must keep its Student Screen action rail mounted outside hover",
+  );
+  assert.match(persistentActionRailStyles, /background: transparent/);
+  assert.match(persistentActionRailStyles, /opacity: 1/);
+  assert.match(persistentActionRailStyles, /pointer-events: none/);
+  assert.match(persistentActionRailStyles, /backdrop-filter: none/);
+  assert.ok(
+    persistentHiddenActionStyles,
+    "non-Student-Screen actions must remain hidden outside hover",
+  );
+  assert.match(persistentHiddenActionStyles, /opacity: 0/);
+  assert.match(persistentHiddenActionStyles, /pointer-events: none/);
+  assert.ok(
+    persistentStudentScreenControlStyles,
+    "the active Student Screen control must remain interactive outside hover",
+  );
+  assert.match(persistentStudentScreenControlStyles, /pointer-events: auto/);
+  assert.ok(
+    revealedPersistentActionStyles,
+    "hover and keyboard focus must restore the other actions",
+  );
+  assert.match(revealedPersistentActionStyles, /opacity: 1/);
+  assert.match(revealedPersistentActionStyles, /pointer-events: auto/);
+  assert.ok(
+    activeStudentScreenActionStyles,
+    "the persistent Student Screen action must retain its blue selected state",
+  );
+  assert.match(activeStudentScreenActionStyles, /background: #e0f2fe/);
   assert.ok(
     cardContentStyles,
     "component content spacing must remain explicit",

@@ -2275,12 +2275,61 @@ a {
   pointer-events: none;
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
-  transition: opacity 150ms ease;
+  transition:
+    opacity 150ms ease,
+    background-color 150ms ease;
 }
 
 .lesson-component-card:hover .lesson-component-card-actions,
-.lesson-component-card:focus-within .lesson-component-card-actions,
-.lesson-component-card-actions.is-open {
+.lesson-component-card:focus-within .lesson-component-card-actions {
+  background: rgba(255, 255, 255, 0.5);
+  opacity: 1;
+  pointer-events: auto;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+
+.lesson-component-card-actions.has-student-screen-component {
+  background: transparent;
+  opacity: 1;
+  pointer-events: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+.lesson-component-card-actions.has-student-screen-component
+  > .component-card-action {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.lesson-component-card-actions.has-student-screen-component
+  > .component-card-student-screen-control {
+  pointer-events: auto;
+}
+
+.lesson-component-card-actions.has-student-screen-component
+  .component-card-visibility-action-active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.lesson-component-card:hover
+  .lesson-component-card-actions.has-student-screen-component,
+.lesson-component-card:focus-within
+  .lesson-component-card-actions.has-student-screen-component {
+  background: rgba(255, 255, 255, 0.5);
+  pointer-events: auto;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+
+.lesson-component-card:hover
+  .lesson-component-card-actions.has-student-screen-component
+  > .component-card-action,
+.lesson-component-card:focus-within
+  .lesson-component-card-actions.has-student-screen-component
+  > .component-card-action {
   opacity: 1;
   pointer-events: auto;
 }
@@ -2290,6 +2339,14 @@ a {
   border: 0;
   background: transparent;
   box-shadow: none;
+  transition:
+    background-color 150ms ease,
+    color 150ms ease,
+    opacity 150ms ease;
+}
+
+.component-card-student-screen-control {
+  display: flex;
 }
 
 .lesson-component-card-actions
@@ -2301,6 +2358,14 @@ a {
   box-shadow: none;
   outline: 2px solid rgba(20, 20, 20, 0.55);
   outline-offset: -2px;
+}
+
+.lesson-component-card-actions
+  .product-btn.component-card-visibility-action-active:focus-visible:not(
+    :disabled
+  ) {
+  background: #e0f2fe;
+  color: #075985;
 }
 
 .lesson-component-card-actions .component-card-action:hover:not(:disabled),
@@ -2457,7 +2522,17 @@ a {
 }
 
 @media (max-width: 640px), (hover: none), (pointer: coarse) {
-  .lesson-component-card-actions {
+  .lesson-component-card-actions,
+  .lesson-component-card-actions.has-student-screen-component {
+    background: rgba(255, 255, 255, 0.5);
+    opacity: 1;
+    pointer-events: auto;
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+  }
+
+  .lesson-component-card-actions.has-student-screen-component
+    > .component-card-action {
     opacity: 1;
     pointer-events: auto;
   }

@@ -423,6 +423,16 @@ Exact source `dea92ca2c9af99fd5738e95fa9ca511aa10ca3da` развёрнут Cooli
 strict browser и `72/72` schema/migration tests. Production guest HTTP и DB
 postflight green; authenticated production browser smoke не заявляется.
 
+**Current source follow-up (deployment pending):** Student Screen action на
+authored Component card использует тот же `MonitorPlay`, что и вкладка «Экран
+ученика», и работает как прямой `aria-pressed` toggle. Неактивная кнопка
+скрывается вне hover/focus; активная голубая кнопка остаётся видимой постоянно
+при размере `32 px`. Включение переиспользует Slide ближайшего предыдущего
+learner-visible соседа, затем ближайшего следующего, иначе создаёт новый;
+повторное нажатие снимает назначение. Persisted результат переживает reload.
+Это UI/application-service follow-up без schema или API-shape изменений;
+production SHA и deployment будут записаны только после postflight.
+
 **Current production:** все product buttons в
 `AppPageHeader` имеют белый surface высотой `40 px`, border `0` и общий
 двухслойный `--product-raised-control-shadow`, совпадающий с selected-состоянием
@@ -476,7 +486,8 @@ weight и локальные muted colors удалены, header typography не
 Definition of Done:
 
 - Course можно полноценно поддерживать после первоначального создания;
-- teacher понимает видимость и Slide каждого Component без скрытых правил;
+- teacher без hover видит, назначен ли Component на Student Screen, а
+  детерминированный toggle выбирает Slide без скрытых правил;
 - keyboard/focus/dialog behavior проходит accessibility smoke;
 - reload и повторный вход не меняют состояние.
 
