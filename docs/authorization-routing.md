@@ -120,10 +120,12 @@ learner enrollment.
 /onboarding
 /courses
 /courses/new
+/courses/catalog/[publicationId]
 /courses/[courseId]
 /courses/[courseId]/student-preview
 /schedule
 /students
+/store
 /learning-profile
 /observing
 /settings/profile
@@ -139,9 +141,17 @@ Teacher/Parent/Student role.
 Resource access остаётся relation/ownership-scoped:
 
 - Course authoring — owner Account only;
+- `/courses/catalog/[publicationId]` — authenticated read-only projection
+  approved publication revision. Детский Course может быть скопирован в новый
+  owner Course; official educator Course хранит только Account-scoped progress
+  и аттестацию и никогда не предоставляет authoring, roster или LessonRun;
 - `/students` — teacher-local `teacher_learner`, groups и recorder-scoped raw
   history текущего Account; вкладка `?tab=observing` использует отдельные
   active observer grants и safe projection;
+- `/store` — current production client-state UI-only demo: статический
+  ассортимент учебных товаров и React-state cart/checkout. Он не читает Course,
+  Lesson, roster или LearningRecord, не вызывает order/payment API и не пишет
+  в database/Storage;
 - `/learning-profile` — linked subject safe history/progress, share code,
   consent и subject lifecycle;
 - `/observing` — protected compatibility redirect на
@@ -149,10 +159,10 @@ Resource access остаётся relation/ownership-scoped:
 - `/settings/observers` — subject-controlled invitations/grants;
 - Student Screen по-прежнему owner preview, не learner Course access.
 
-Primary navigation для каждого Account:
+Primary navigation для каждого Account в current production UI:
 
 ```text
-Расписание / Ученики / Курсы
+Расписание / Ученики / Курсы / Магазин
 ```
 
 Account menu:
@@ -200,6 +210,23 @@ history, LessonRun and LearnerGroup routes сохраняются. Teacher profi
 /api/v2/learner-directory
 /api/v2/learner-directory/[learnerProfileId]/[restore|delete]
 ```
+
+Current catalog/self-learning boundary:
+
+```text
+/api/v2/course-catalog
+/api/v2/course-catalog/[publicationId]
+/api/v2/course-catalog/[publicationId]/copy          # children only
+/api/v2/course-catalog/[publicationId]/progress      # educator revision
+/api/v2/course-catalog/[publicationId]/attestation   # educator revision
+/api/v2/courses/[courseId]/publication
+/api/v2/courses/[courseId]/duplicate                 # children only
+/api/v2/courses/[courseId]/attestation               # trusted educator author
+/api/v2/me/attestations
+```
+
+Все catalog/attestation endpoints требуют Account session. Browser не получает
+answer key до успешной current-revision аттестации; score вычисляется в DB.
 
 ### Discovery, invitation and merge
 
@@ -297,6 +324,15 @@ snapshot, Coolify deploy и authenticated browser/API postflight заверше�
 **Next:** дальнейшая authoring/accessibility полировка по roadmap без возврата
 role switch или отдельной identity-модели.
 
-**Later:** learner Course consumption/enrollment, live Student Screen,
-Homework/RAG, communication, billing and external MCP. Identity completion does
-not imply any of those capabilities.
+**Current outside identity:** authenticated Account может самостоятельно
+проходить approved educator publication; этот revision-scoped progress и
+аттестация не предоставляют доступ к детскому Course или LearnerProfile.
+
+**Current production outside identity:** `/store` доступен
+любому authenticated Account как client-state demo без реального заказа, оплаты,
+delivery или persistence. Его границы описаны в
+[`docs/product/store-demo.md`](./product/store-demo.md).
+
+**Later:** enrollment/consumption детских Course через LearnerProfile, live
+Student Screen, Homework/RAG, communication, billing and external MCP. Identity
+completion does not imply any of those capabilities.

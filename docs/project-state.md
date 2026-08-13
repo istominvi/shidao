@@ -1,12 +1,13 @@
 # Текущее состояние ShiDao V2
 
 **Статус:** главный входной документ для разработки
-**Актуально на:** 12 августа 2026 года
+**Актуально на:** 13 августа 2026 года
 **Активная ветка:** `main`
 **Рабочее приложение:** `https://v2.shidao.ru`
 **Текущий deployed application source / последний release gate:**
-`0c8946f95ebeb31e02955a110fc057f761f07ea9`
-(`560/560` unit/API, `22/22` strict production-mode browser scenarios)
+`9e66fb548bef176486673149f466b269fd436b21`
+(`575/575` unit/API, `23/23` strict production-mode browser scenarios,
+typecheck, lint, format и production build)
 **Исторический functional E2 baseline:**
 `22b486a7163453019d9720cb4fe0f36ed7c0228d`
 
@@ -36,7 +37,7 @@ production диагностика подтвердила, что catalog RPC в�
 profile RPC — одну credential с `certified=true`; сеть и E1 database contract
 исправны. Ошибки каталога и вкладки «Аттестация» возникали в application
 projection: допустимые PostgreSQL UUID, полученные bootstrap через
-`md5(...)::uuid`, отклонялись RFC-strict проверкой `z.uuid`. Current source
+`md5(...)::uuid`, отклонялись RFC-strict проверкой `z.uuid`. Current production
 переводит publication/revision/snapshot IDs на общий PostgreSQL UUID contract
 через `z.guid`, добавляет regression coverage, сбрасывает masked error state
 при переключении направления каталога и ставит audience toggle в одну
@@ -55,10 +56,10 @@ Account-scoped revision progress, server-side `100%` attestation gate и
 official no-copy/no-roster/no-LessonRun invariants. Postflight подтвердил
 `19` Account, `6` Course, одну publication/revision/attempt/award, educator
 catalog `1` и derived progress `6/6 = 100%`; аттестация осталась `90%` при
-пороге `80%`. Current snapshot снят `2026-08-12T07:43:11Z`, SHA-256
-`6df94ceabbc902b66b4c592998f1770ea62442a68255ddd6133a3b9d75745949`, `71`
+пороге `80%`. Current snapshot снят `2026-08-12T07:46:11Z`, SHA-256
+`a34a5a5919ea406050a5c0cb7f39310d1a9e807725e608166f63becb8f2260a4`, `71`
 schema-contract tests green. Зависимый E2 web/API source развёрнут из exact
-functional commit `22b486a7163453019d9720cb4fe0f36ed7c0228d`: deployment завершён
+functional baseline `22b486a7163453019d9720cb4fe0f36ed7c0228d`: deployment завершён
 `2026-08-12T07:58:39Z`, image ID
 `sha256:214e954aed0355c1881ea778e65dcb7f4c4cabcde4d7ac2e3f6022322bd8e027`,
 `SOURCE_COMMIT` exact, restart count `0`, HTTP host/CSRF/auth postflight green.
@@ -102,7 +103,7 @@ Navigation/catalog follow-up `bafc984d0bc7bfb6cb795170a09ba2aabfb98441`
 restart count `0`. Production `/` и `/login` отвечают `200`, guest `/observing`
 fail-closed перенаправляется в `/login`, browser console пуста.
 
-**Repository current Store demo; production next:** защищённая Account-страница
+**Current production Store demo:** защищённая Account-страница
 `/store` добавляет четвёртый primary nav item «Магазин» с иконкой
 `ShoppingBag`. Страница использует общие `AppPageHeader`, `WorkspaceTabs`,
 toolbar, cards/table и `DialogShell`: статический каталог учебных товаров можно
@@ -111,11 +112,11 @@ toolbar, cards/table и `DialogShell`: статический каталог у�
 последовательность `cart → delivery → payment demo → success` существуют
 только в React state. Полей банковской карты, сетевой отправки, записи заказа,
 оплаты, доставки, новой API/schema/migration нет; финал явно сообщает, что
-заказ не создан. Stable product slug поддерживает будущий deep link вида
-`/store?product=<slug>` без изменения Lesson contracts. Production сохраняет
-предыдущую трёхпунктную навигацию до отдельного web rollout. Канонический
+заказ не создан. Стабильный в текущем demo-каталоге product slug уже
+поддерживает deep link вида
+`/store?product=<slug>` без изменения Lesson contracts. Канонический
 контракт с current/next/later границами находится в
-[`docs/product/store-demo.md`](./product/store-demo.md). Repository gate:
+[`docs/product/store-demo.md`](./product/store-demo.md). Current source gate:
 typecheck, lint, format, production build, `575/575` unit/API и `23/23` strict
 production-mode browser scenarios, включая Store deep link, cart/checkout,
 focus return и mobile no-overflow.
@@ -142,7 +143,7 @@ Terminal condition identity программы закрыт.
 для title/header/action-center на пяти поверхностях, `12px / 1px / 4px`
 для tabs и пустую browser console. Схема БД в visual slice не менялась.
 
-**Current deployed page-header/tabs contract:** на всех active product pages
+**Superseded production page-header/tabs evidence:** на всех active product pages
 заголовочная колонка `AppPageHeader` получает всё свободное место через
 `minmax(0, 1fr)`, а action-секция занимает только ширину своего контента и не
 растягивает кнопки на mobile. Подзаголовок использует canonical 50%-black
@@ -159,13 +160,13 @@ baseline видимой поверх hover-фона. Container и baseline за�
 `g9x4d9zn60jv35r7zf0xl6xj-083519444597`: image tag и `SOURCE_COMMIT`
 совпадают с source, image ID
 `sha256:8119de725edeb042eaf1fcecb38d3fa5052aaf44e81e9fb3965d6c594b1731d1`,
-restart count `0`, container started `2026-08-12T08:37:57.909983639Z` и остаётся
-running. Текущий HTTP smoke подтвердил V2 `/login` и `/robots.txt` `200`, guest
+restart count `0`, container started `2026-08-12T08:37:57.909983639Z`. Тогдашний
+HTTP smoke подтвердил V2 `/login` и `/robots.txt` `200`, guest
 `/courses` `307` в `https://v2.shidao.ru/login` и landing `/` `200`. Release
 gate прошёл `560/560` unit/API и `22/22` strict production-mode browser
 scenarios.
 
-**Repository current page-header refinement; production next:** общий
+**Current production page-header refinement:** общий
 `AppPageHeader` больше не ограничивает H1 значением `24ch`: на desktop
 action-секция первой получает intrinsic ширину содержимого, между колонками
 остаётся 24 px, а heading и сам title занимают всё остальное место. Link- и
@@ -173,11 +174,10 @@ button-варианты backlink используют непрозрачный `
 во всех состояниях. Label остаётся в одной строке, ограничен шириной header до
 38 rem и обрезается через ellipsis; стрелка не сжимается. Расстояние от верхней
 границы page header до backlink равно расстоянию от backlink до heading: 20 px
-на desktop и 16 px на mobile. Production сохраняет предыдущую геометрию до
-отдельного web rollout. Это UI-only изменение без API, schema или migration;
-production-mode browser gate проходит `22/22` сценария.
+на desktop и 16 px на mobile. Это UI-only изменение без API, schema или
+migration.
 
-**Repository current directory presentation refinement; production next:**
+**Current production directory presentation refinement:**
 уменьшенный `WorkspaceTabs` count сохраняет superscript-геометрию, но получает
 `font-weight: 500`, на один шаг плотнее основного текста вкладки. `/students`
 добавляет справа от disclosure «Фильтр» общий icon-only выбор вида: **Таблица**
@@ -187,7 +187,7 @@ production-mode browser gate проходит `22/22` сценария.
 вкладках `/courses` порядок также **Таблица / Карточки**, исходный вид —
 таблица. Это UI-only изменение без API, schema или migration.
 
-**Repository current table/header/authoring refinement; production next:**
+**Current production table/header/authoring refinement:**
 все active `ProductTable` data rows, включая Course, Lessons, Schedule,
 Students, Groups и subject progress, используют один Schedule-derived contract:
 непрозрачный `#141414`, `.88rem`, weight `400` и line-height `1.3`.
@@ -218,15 +218,71 @@ palette показывает 19 создаваемых карточек с ко�
 controls. Выбор типа переключает тот же dialog на локальный draft: persisted
 Component ещё не существует, а единственный `POST` выполняется по явному
 «Сохранить компонент». Persisted Component card остаётся renderer-only и теперь
-является белой surface без border: базовая холодная тень `0 3px 6px` на
-hover/focus удваивает offset, blur и alpha до `0 6px 12px` с плавным переходом,
-не меняя геометрию; reduced-motion отключает анимацию. 32 px action controls
-остаются в hover/focus overlay. Pencil открывает отдельный modal editor, где
+является белой surface без border: базовая чёрная тень
+`0 3px 6px #0000000d` на hover/focus сохраняет offset `3px`, но увеличивает
+blur до `12px` и alpha до `#0000001a` с плавным переходом, не меняя геометрию;
+reduced-motion отключает анимацию. 32 px action controls остаются в hover/focus
+overlay без border/box-shadow на общей белой подложке `rgba(255, 255, 255, 0.5)`. Pencil
+открывает отдельный modal editor, где
 отмена не меняет Component, а явное сохранение отправляет `PATCH`. Оба editor
 surface используют обычные labels и однострочные input/select высотой `40 px`
 с canonical `.88rem/400` типографикой. API routes, physical DB schema,
 migrations и authored order не меняются; production rollout/postflight ещё не
 заявлены.
+
+**Current source page-header action-button refinement (next production
+deployment):** белые secondary actions внутри `AppPageHeader` сохраняют общий
+внешний размер `40 px` и border `1 px`, поэтому внутренняя белая область имеет
+высоту `38 px`. Рамка использует тот же 50%-black token
+`rgba(20, 20, 20, 0.5)`, что и подзаголовок, а
+`background-clip: padding-box` не рисует белую заливку под полупрозрачным
+пикселем: цвет рамки смешивается с фоном страницы. Lesson action «Удалить»
+переходит с `ghost` на тот же bordered secondary geometry, сохраняя красные
+текст/иконку и confirmation flow. Scope ограничен action-секцией заголовка;
+menu items и обычные ghost controls остаются borderless. Это UI-only source
+change без API, schema, migration или реализации выбора фона Course;
+локально подтверждены typecheck, lint, format, production build, `578/578`
+unit/API и `23/23` strict production-mode browser scenarios. Production
+rollout/postflight ещё не заявлены.
+
+**Current source WorkspaceTabs fractional-baseline refinement (next production
+deployment):** общий разделитель под вкладками сохраняет визуальную толщину
+`1.5 px`, но больше не полагается на дробную высоту paint-box, которую Chromium
+может растеризовать как целый пиксель. Псевдоэлемент рисуется высотой `3 px` и
+сжимается по вертикали через `scaleY(0.5)` от нижней грани; итоговая толщина
+остаётся `1.5 px`, линия не сдвигается относительно контента, а 4 px active
+segment продолжает лежать над ней. Изменение действует через единый
+`WorkspaceTabs` на всех его product consumers, не меняет 40 px tab geometry,
+horizontal scroll, ARIA/keyboard contract, API, schema или migrations.
+Локально подтверждены typecheck, lint, format, production build, `578/578`
+unit/API и `23/23` strict production-mode browser scenarios. Production
+rollout/postflight ещё не заявлены.
+
+**Current source contextual ActionMenu refinement (next production
+deployment):** все контекстные меню, открываемые горизонтальным или вертикальным
+троеточием в Course, Lesson rows, Schedule и Students, используют один
+канонический surface contract: `--product-context-menu-surface: #fff`, общий
+12 px radius и `--product-context-menu-shadow: 0 18px 46px rgba(20, 20, 20,
+0.18)`. У панели нет обычной рамки, а `separatorBefore`, визуальный divider и
+его DOM/ARIA-узел удалены из shared `ActionMenu`, поэтому отдельный consumer не
+может вернуть разделитель. Порядок и состав действий, 40 px menu items,
+destructive/disabled states, portal positioning, keyboard navigation и focus
+restore не меняются. Filter/calendar popovers, Account menu и native `select`
+не являются contextual `ActionMenu` и этим scoped slice не затрагиваются; API,
+schema и migrations также не меняются. Локально подтверждены typecheck, lint,
+format, production build, `579/579` unit/API и `23/23` strict production-mode
+browser scenarios. Production rollout/postflight ещё не заявлены.
+
+**Current production application evidence:** running container
+`g9x4d9zn60jv35r7zf0xl6xj-115759805389` использует exact image tag
+`9e66fb548bef176486673149f466b269fd436b21` и image ID
+`sha256:8b2eb3609531ba08fca946dde633dc1946821ade3ec1b408be09bafd4ef172d7`.
+Container запущен `2026-08-12T12:00:37.589103216Z`, имеет restart count `0` и
+остаётся running. Read-only HTTP postflight подтвердил `/login` `200`,
+`/robots.txt` `200` с `Disallow: /` и guest `/store` `307` в `/login`. Store,
+page-header/directory refinements, общий table/authoring polish и Course table
+overflow fix входят в этот exact source; database schema/migrations ими не
+менялись.
 
 **Previously deployed Schedule presentation baseline (superseded by PR #242):**
 `/schedule` загружает реальные LessonRun за локальную неделю (понедельник–
@@ -288,7 +344,7 @@ migrations не меняются; assistant по-прежнему получае
 дату, а не всё видимое окно. Последняя корректировка cell/action spacing
 развёрнута в production release PR #242; exact rollout evidence приведён ниже.
 
-**Current source Schedule micro-polish (следующий deployment):** подзаголовок
+**Current production Schedule micro-polish:** подзаголовок
 «Здесь все назначенные уроки за выбранный период» больше не заканчивается
 точкой. В sortable header только активная колонка показывает одну стрелку
 текущего направления; у остальных колонок индикатора нет. В трёхпунктовом
@@ -336,7 +392,8 @@ Course-таблицы используют fixed layout, а текстовые �
 строк используют один
 `--product-table-divider-color`. Сама table/toolbar geometry не меняет schema;
 отдельный Course archive lifecycle ниже использует уже применённый production
-A1 database contract. Web surface развёрнута в production release PR #242.
+A1 database contract. Базовая surface была развёрнута в production release PR
+#242, а fixed-layout Course overflow fix — в текущем exact source `9e66fb5`.
 
 Сохранённый Course применяет тот же контракт на вкладке **Уроки**: неизменённый
 общий `WorkspaceTabs` остаётся полноширинным, а под ним прозрачная панель поиска
@@ -588,13 +645,34 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
   LearnerProfile. Onboarding меняет общие Account fields и не выбирает роль.
 - Existing learner login/PIN работает через `account_login_alias` и
   `account_security`; active login path не читает legacy Student.
-- Primary navigation одинакова для каждого Account и содержит только рабочие
-  разделы в порядке «Расписание / Ученики / Курсы». «Учебный профиль» находится
-  в меню Account справа перед «Настройки / Выход»; observer projection открыт
+- В current production primary navigation одинакова для каждого Account и
+  содержит «Расписание / Ученики / Курсы / Магазин»; «Учебный профиль» остаётся в
+  меню Account справа перед «Настройки / Выход», а observer projection —
   третьей вкладкой «Наблюдение» внутри «Ученики».
 - Существующая app-session поддерживает глобальную и пользовательскую
   инвалидизацию; destructive identity/credential flows дополнительно требуют
   recent reauthentication из sealed session.
+
+### Магазин
+
+- **Current production:** `/store` — Account-level UI-only
+  demo учебного магазина. Каталог содержит учебники и методические книги,
+  прописи и тетради, карточки, канцелярию и обучающие игры. Категории, поиск,
+  audience/price/availability filters, сортировка и режимы «Карточки / Таблица»
+  вычисляются над типизированными fixtures в application code.
+- Кнопка «Корзина» находится в action-секции общего `AppPageHeader`. В одном
+  `DialogShell` можно менять количество и удалять позиции, затем заполнить имя,
+  телефон, email и адрес. Платёжный экран — честная заглушка без card fields и
+  network request; завершение очищает локальную корзину и сообщает, что заказ
+  не создан.
+- Корзина и checkout не переживают reload и не используют cookies,
+  `localStorage`, API, Supabase или Storage. Реальные Product/Order/Inventory,
+  оплата, доставка и admin catalog остаются next после отдельного
+  product/security/schema решения.
+- У товара есть стабильный в текущем demo-каталоге slug.
+  `/store?product=<slug>` выбирает категорию,
+  прокручивает каталог и переводит focus к известному товару; Lesson registry и
+  authored hierarchy в этом срезе не меняются.
 
 ### Курсы
 
@@ -670,13 +748,15 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
   в disclosure «Фильтры», view выбирается icon-only segmented control, а
   видимый счётчик результатов не занимает место между ними.
   Приватные пожелания преподавателя в поиск не входят.
-- **Каталог** имеет server-side search/filter, карточку курса с
-  целью, аудиторией, Lesson outline, автором и списком материалов.
-  Current production показывает search и реальные subject/level facets без внешней
-  toolbar-card, повторного заголовка/пояснения и видимого count. Presentation
-  переключается между карточками и таблицей для уже загруженной cursor-
-  последовательности; content filter и произвольная сортировка не заявляются,
-  потому что их нет в paginated catalog API/RPC.
+- **Каталог** имеет server-side audience/search/subject/level filtering.
+  Карточка и строка списка показывают компактные публичные метаданные, автора и
+  counts; Lesson outline, описание и материалы открываются в отдельном
+  published workspace, а не разворачиваются внутри списка. Current production
+  показывает search и реальные subject/level facets без внешней toolbar-card,
+  повторного заголовка/пояснения и видимого count. Presentation переключается
+  между карточками и таблицей для уже загруженной cursor-последовательности;
+  content filter и произвольная сортировка не заявляются, потому что их нет в
+  paginated catalog API/RPC.
   Для детского Course «Добавить в мои курсы» создаёт новый independent owner
   Course и не запускает AI/адаптацию автоматически; educator Course исключён
   из copy flow.
@@ -760,7 +840,7 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
   и Lesson. Контейнер имеет минимальную высоту 200 px, растёт по контенту, а
   actions вертикально центрированы. Заголовочная колонка занимает всё
   оставшееся место, а actions имеют intrinsic ширину по содержимому и не
-  растягивают кнопки даже при узком viewport. В repository-current source сам
+  растягивают кнопки даже при узком viewport. В current production сам
   H1 заполняет эту колонку без прежнего лимита `24ch`; desktop column-gap равен
   24 px. Course/Lesson backlink и его стрелка непрозрачно чёрные, label
   однострочный с ellipsis, а вертикальные интервалы над и под ним равны
@@ -788,8 +868,10 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
 ### Roleless navigation, Расписание, Ученики и аудитория
 
 - В current production основная навигация любого Account содержит «Расписание /
-  Ученики / Курсы» без role switch. Персональное меню справа содержит
+  Ученики / Курсы / Магазин» без role switch. Персональное меню справа содержит
   «Учебный профиль / Настройки / Выход».
+- «Магазин» остаётся тем же universal Account route и не вводит роль продавца
+  или покупателя.
 - `/schedule` и `/students` filesystem-совместимо остаются под прежним route
   group, но layout проверяет только Account session. Guest/degraded session
   перенаправляется в `/login`.
@@ -992,9 +1074,10 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
   заменяет renderer внутри карточки. Отмена/закрытие не отправляют mutation;
   `PATCH` с payload/placement выполняется только по явному сохранению. Editor
   labels используют `.88rem/400`, а однострочные controls — canonical 40 px.
-  Сама authored card белая, без внешней обводки; её холодная тень меняется с
-  `0 3px 6px` на `0 6px 12px` при hover/focus с анимацией, но без смещения
-  layout.
+  Сама authored card белая, без внешней обводки; её чёрная тень меняется с
+  `0 3px 6px #0000000d` на `0 3px 12px #0000001a` при hover/focus с анимацией,
+  но без смещения layout. Overlay actions не имеют border/box-shadow и лежат на
+  общей белой подложке `rgba(255, 255, 255, 0.5)`.
 - Новый Component всегда создаётся `staff_only` и не показывается ученику,
   пока преподаватель явно не назначит его на Slide.
 
@@ -1227,12 +1310,15 @@ History-aware context развёрнут в release `9393080`; production provid
 - parsing/RAG прикреплённых материалов;
 - persisted Homework editor;
 - LearnerProfile-scoped enrollment/consumption детского Course и настоящий live
-  Student Screen access; repository-current self-learning educator Course
-  описан отдельно и не является LessonRun/live flow;
+  Student Screen access; current production Account-scoped self-learning
+  educator Course описан отдельно и не является LessonRun/live flow;
 - live Student Screen sync, realtime presence и teacher-controlled runtime
   cursor поверх открытого LessonRun;
 - richer per-learner metrics ждут реального Component/runtime producer;
 - persisted communication chat и notifications;
+- реальные Product/Order/Inventory, admin catalog, persisted cart/checkout,
+  оплата и доставка; current production `/store` является только client-state
+  UI-demo и не создаёт заказ;
 - общий catalog moderation UI, ratings, update merge в уже добавленный Course и
   additional official content за пределами educator review flow;
 - persisted reconciliation для Storage objects, оставшихся после crash или
@@ -1502,6 +1588,7 @@ positions, а плотность поддерживают текущие service
 | Fullscreen preview                   | `src/components/course-builder/student-screen-preview.tsx`                                                                                                                                                                                                                        |
 | Account Schedule                     | `src/app/(app)/(teacher-required)/schedule/`, `src/components/teaching-hub/schedule-workspace.tsx`, `src/components/teaching-hub/schedule-date-picker.tsx`, `src/components/teaching-hub/schedule-period.ts`                                                                      |
 | Account Students                     | `src/app/(app)/(teacher-required)/students/`, `src/components/teaching-hub/students-workspace.tsx`, `src/components/teaching-hub/student-directory-table.tsx`                                                                                                                     |
+| Account Store demo                   | `src/app/(app)/store/`, `src/components/store/`, `src/app/styles/store.css`, `docs/product/store-demo.md`                                                                                                                                                                         |
 | Legacy-named Account route boundary  | `src/app/(app)/(teacher-required)/layout.tsx`, `src/lib/server/access-guards.ts`                                                                                                                                                                                                  |
 | V2 API routes                        | `src/app/api/v2/`                                                                                                                                                                                                                                                                 |
 | Standalone historical demo           | `src/app/demo/`, `public/og-demo-v2.png`                                                                                                                                                                                                                                          |
@@ -1524,9 +1611,11 @@ positions, а плотность поддерживают текущие service
 /onboarding
 /schedule                         # любой authenticated Account
 /students                         # любой authenticated Account
+/store                            # client-state UI-only demo для любого Account
 /courses
 /courses/new
 /courses/[courseId]
+/courses/catalog/[publicationId]     # отдельный published learning workspace
 /courses/[courseId]/student-preview
 /learning-profile
 /observing                        # compatibility redirect → /students?tab=observing
@@ -1555,10 +1644,12 @@ Current deployed catalog API добавляет authenticated
 table/Storage operations остаются за server context после обычной
 Account/session authorization.
 
-Current production API дополнительно добавляет separate published
-route `/courses/catalog/[publicationId]`, `GET|PUT .../progress`, owner
-`GET|PUT .../attestation` и approved-revision-only educator detail. Эти routes
-развёрнуты вместе с coupled E2 migration/web rollout.
+Current production consumption surface дополнительно включает separate
+published route `/courses/catalog/[publicationId]`. Его API обслуживает
+approved-revision-only educator detail, `GET|PUT .../progress` и published
+`GET|POST .../attestation`; owner definition использует `GET|PUT
+/api/v2/courses/[courseId]/attestation`. Эти routes развёрнуты вместе с coupled
+E2 migration/web rollout.
 
 Schedule reads ограничены 500 Runs на окно. Teacher Lesson/Course/Profile
 history возвращает последние 100 элементов; Course read всегда включает
@@ -1647,7 +1738,7 @@ browser postflight exact functional SHA зафиксированы выше. Н�
   cancel-before-start paths были отклонены; authenticated Profile DELETE
   отсутствует.
 
-Это acceptance current repository и isolated clone. Production migration
+Это acceptance LessonRun release и isolated clone. Production migration
 дополнительно применена 7 августа 2026 года: четыре таблицы и шесть RPC видны
 PostgREST, RLS/ACL прошли проверку, owner workflow прошёл внутри rollback-probe,
 а cross-account probe увидел 0 чужих строк. Coolify deployment точного SHA
@@ -1665,11 +1756,11 @@ Supabase access/refresh tokens. Строгий gate сам собирает prod
 backlink обратно к Course, computed visual contract и mobile 375 px без
 document-level overflow.
 
-Repository-wide `npm run format:check` теперь проходит. Для текущего
-navigation/catalog release также подтверждены `326/326` unit tests, `19/19`
+Repository-wide `npm run format:check` проходит. Для historical
+navigation/catalog release `bafc984` подтверждены `326/326` unit tests, `19/19`
 production-mode browser scenarios и `git diff --check`.
 
-Для current Schedule presentation release локально подтверждены
+Для Schedule presentation release локально подтверждены
 typecheck, lint, format check, `git diff --check`, `411/411` unit/contract tests
 и `21/21` strict production-mode browser scenarios. Browser gate собрал
 production app, проверил прозрачный toolbar, реальные week/month API windows,
@@ -1717,7 +1808,7 @@ landing root — `200`, landing `/login` и API — `503`; demo root и `/studen
 подтверждая CSRF-before-auth boundary без data mutation. `X-Robots-Tag` —
 `noindex, nofollow, noarchive`; release error-log filter пуст.
 
-Для current Course publication/catalog source slice локально подтверждены
+Для C1 Course publication/catalog release локально подтверждены
 `381/381` unit tests, `19/19` строгих production-mode browser scenarios,
 typecheck, lint, format check и production build. Schema parser прочитал
 forward migration (`90` statements) и синхронный current-schema snapshot

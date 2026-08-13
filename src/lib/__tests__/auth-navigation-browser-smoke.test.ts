@@ -4317,7 +4317,9 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
     await editRunMenuItem.waitFor();
     await cancelRunMenuItem.waitFor();
     assert.equal(
-      await rowActionMenu.locator(".action-menu-separator").count(),
+      await rowActionMenu
+        .locator('[role="separator"], .action-menu-separator')
+        .count(),
       0,
     );
     await editRunMenuItem.hover();
@@ -4350,6 +4352,13 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
           position: menuStyle.position,
           borderRadius: menuStyle.borderRadius,
           backgroundColor: menuStyle.backgroundColor,
+          borderWidths: [
+            menuStyle.borderTopWidth,
+            menuStyle.borderRightWidth,
+            menuStyle.borderBottomWidth,
+            menuStyle.borderLeftWidth,
+          ],
+          boxShadow: menuStyle.boxShadow,
           activeViewOptionBorderRadius:
             getComputedStyle(activeViewOption).borderRadius,
           items: items.map((item) => {
@@ -4381,6 +4390,8 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         position: "fixed",
         borderRadius: "12px",
         backgroundColor: "rgb(255, 255, 255)",
+        borderWidths: ["0px", "0px", "0px", "0px"],
+        boxShadow: "rgba(20, 20, 20, 0.18) 0px 18px 46px 0px",
         activeViewOptionBorderRadius: "8px",
         items: [
           {
@@ -4700,6 +4711,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       const tabCountStyle = getComputedStyle(activeTabCount);
       const markerStyle = getComputedStyle(activeTab, "::after");
       const baselineStyle = getComputedStyle(tabs, "::before");
+      const baselineScaleY = new DOMMatrixReadOnly(baselineStyle.transform).m22;
       const pageHeaderRect = pageHeader.getBoundingClientRect();
       const headerActionsRect = headerActions.getBoundingClientRect();
       const tabsScrollRect = tabsScroll.getBoundingClientRect();
@@ -4740,7 +4752,10 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
           inactiveColor: inactiveTabStyle.color,
           gap: tabsStyle.columnGap,
           tabZIndex: tabStyle.zIndex,
-          baselineHeight: baselineStyle.height,
+          baselinePaintHeight: baselineStyle.height,
+          baselineScaleY,
+          baselineVisualHeight:
+            Number.parseFloat(baselineStyle.height) * Math.abs(baselineScaleY),
           baselineColor: baselineStyle.backgroundColor,
           baselineZIndex: baselineStyle.zIndex,
           baselinePointerEvents: baselineStyle.pointerEvents,
@@ -4851,7 +4866,9 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       inactiveColor: "rgba(20, 20, 20, 0.5)",
       gap: "12px",
       tabZIndex: "auto",
-      baselineHeight: "1.5px",
+      baselinePaintHeight: "3px",
+      baselineScaleY: 0.5,
+      baselineVisualHeight: 1.5,
       baselineColor: "rgba(20, 20, 20, 0.5)",
       baselineZIndex: "1",
       baselinePointerEvents: "none",
@@ -5129,6 +5146,32 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
     await learnerActionMenu
       .getByRole("menuitem", { name: "Восстановить", exact: true })
       .waitFor();
+    assert.deepEqual(
+      await learnerActionMenu.evaluate((menu) => {
+        const style = getComputedStyle(menu);
+        return {
+          borderWidths: [
+            style.borderTopWidth,
+            style.borderRightWidth,
+            style.borderBottomWidth,
+            style.borderLeftWidth,
+          ],
+          borderRadius: style.borderRadius,
+          backgroundColor: style.backgroundColor,
+          boxShadow: style.boxShadow,
+          separatorCount: menu.querySelectorAll(
+            '[role="separator"], .action-menu-separator',
+          ).length,
+        };
+      }),
+      {
+        borderWidths: ["0px", "0px", "0px", "0px"],
+        borderRadius: "12px",
+        backgroundColor: "rgb(255, 255, 255)",
+        boxShadow: "rgba(20, 20, 20, 0.18) 0px 18px 46px 0px",
+        separatorCount: 0,
+      },
+    );
     await learnerActionMenu.press("Escape");
     await learnerActionMenu.waitFor({ state: "detached" });
     assert.equal(
@@ -7874,6 +7917,30 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
         .getByRole("menuitem", { name: label, exact: true })
         .waitFor();
     }
+    const courseActionMenuSurface = await courseActionMenu.evaluate((menu) => {
+      const style = getComputedStyle(menu);
+      return {
+        borderWidths: [
+          style.borderTopWidth,
+          style.borderRightWidth,
+          style.borderBottomWidth,
+          style.borderLeftWidth,
+        ],
+        borderRadius: style.borderRadius,
+        backgroundColor: style.backgroundColor,
+        boxShadow: style.boxShadow,
+        separatorCount: menu.querySelectorAll(
+          '[role="separator"], .action-menu-separator',
+        ).length,
+      };
+    });
+    assert.deepEqual(courseActionMenuSurface, {
+      borderWidths: ["0px", "0px", "0px", "0px"],
+      borderRadius: "12px",
+      backgroundColor: "rgb(255, 255, 255)",
+      boxShadow: "rgba(20, 20, 20, 0.18) 0px 18px 46px 0px",
+      separatorCount: 0,
+    });
     await courseActionMenu
       .getByRole("menuitem", { name: "Удалить", exact: true })
       .click();
@@ -7997,6 +8064,7 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       const inactiveTabStyle = getComputedStyle(inactiveTab);
       const markerStyle = getComputedStyle(tab, "::after");
       const baselineStyle = getComputedStyle(tabs, "::before");
+      const baselineScaleY = new DOMMatrixReadOnly(baselineStyle.transform).m22;
       const tabRect = tab.getBoundingClientRect();
       const tabsRect = tabs.getBoundingClientRect();
       const pageHeaderRect = pageHeader.getBoundingClientRect();
@@ -8075,7 +8143,10 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
           inactiveColor: inactiveTabStyle.color,
           gap: tabsStyle.columnGap,
           tabZIndex: tabStyle.zIndex,
-          baselineHeight: baselineStyle.height,
+          baselinePaintHeight: baselineStyle.height,
+          baselineScaleY,
+          baselineVisualHeight:
+            Number.parseFloat(baselineStyle.height) * Math.abs(baselineScaleY),
           baselineColor: baselineStyle.backgroundColor,
           baselineZIndex: baselineStyle.zIndex,
           baselinePointerEvents: baselineStyle.pointerEvents,
@@ -8155,7 +8226,9 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       inactiveColor: "rgba(20, 20, 20, 0.5)",
       gap: "12px",
       tabZIndex: "auto",
-      baselineHeight: "1.5px",
+      baselinePaintHeight: "3px",
+      baselineScaleY: 0.5,
+      baselineVisualHeight: 1.5,
       baselineColor: "rgba(20, 20, 20, 0.5)",
       baselineZIndex: "1",
       baselinePointerEvents: "none",
@@ -8384,6 +8457,24 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       .getByRole("menuitem", { name: "Открыть урок", exact: true })
       .waitFor();
     assert.equal(await lessonActionMenu.getByRole("menuitem").count(), 2);
+    const lessonActionMenuSurface = await lessonActionMenu.evaluate((menu) => {
+      const style = getComputedStyle(menu);
+      return {
+        borderWidths: [
+          style.borderTopWidth,
+          style.borderRightWidth,
+          style.borderBottomWidth,
+          style.borderLeftWidth,
+        ],
+        borderRadius: style.borderRadius,
+        backgroundColor: style.backgroundColor,
+        boxShadow: style.boxShadow,
+        separatorCount: menu.querySelectorAll(
+          '[role="separator"], .action-menu-separator',
+        ).length,
+      };
+    });
+    assert.deepEqual(lessonActionMenuSurface, courseActionMenuSurface);
     await lessonActionMenu
       .getByRole("menuitem", { name: "Открыть урок", exact: true })
       .press("Escape");
@@ -8470,6 +8561,11 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
         ".workspace-tab:not(.workspace-tab-active)",
       );
       const tabs = document.querySelector<HTMLElement>(".workspace-tabs");
+      const headerActionButtons = Array.from(
+        headerActions?.querySelectorAll<HTMLButtonElement>(
+          ".product-btn-secondary",
+        ) ?? [],
+      );
 
       if (
         !shell ||
@@ -8483,6 +8579,9 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       ) {
         throw new Error("Lesson visual contract elements are missing");
       }
+      if (headerActionButtons.length !== 4) {
+        throw new Error("Lesson header action button contract is incomplete");
+      }
 
       const pageHeaderStyle = getComputedStyle(pageHeader);
       const titleStyle = getComputedStyle(title);
@@ -8492,6 +8591,7 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       const inactiveTabStyle = getComputedStyle(inactiveTab);
       const markerStyle = getComputedStyle(tab, "::after");
       const baselineStyle = getComputedStyle(tabs, "::before");
+      const baselineScaleY = new DOMMatrixReadOnly(baselineStyle.transform).m22;
       const pageHeaderRect = pageHeader.getBoundingClientRect();
       const headerActionsRect = headerActions.getBoundingClientRect();
       return {
@@ -8515,6 +8615,23 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
           descriptionLineHeight: descriptionStyle.lineHeight,
           descriptionColor: descriptionStyle.color,
         },
+        headerActionButtons: headerActionButtons.map((button) => {
+          const style = getComputedStyle(button);
+          return {
+            label: button.textContent?.trim().replace(/\s+/g, " ") ?? "",
+            isDanger: button.classList.contains("product-btn-danger"),
+            offsetHeight: button.offsetHeight,
+            clientHeight: button.clientHeight,
+            height: style.height,
+            boxSizing: style.boxSizing,
+            borderTopWidth: style.borderTopWidth,
+            borderBottomWidth: style.borderBottomWidth,
+            borderColor: style.borderColor,
+            backgroundColor: style.backgroundColor,
+            backgroundClip: style.backgroundClip,
+            color: style.color,
+          };
+        }),
         tabSignature: {
           height: tabStyle.height,
           radius: tabStyle.borderRadius,
@@ -8523,7 +8640,10 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
           inactiveColor: inactiveTabStyle.color,
           gap: tabsStyle.columnGap,
           tabZIndex: tabStyle.zIndex,
-          baselineHeight: baselineStyle.height,
+          baselinePaintHeight: baselineStyle.height,
+          baselineScaleY,
+          baselineVisualHeight:
+            Number.parseFloat(baselineStyle.height) * Math.abs(baselineScaleY),
           baselineColor: baselineStyle.backgroundColor,
           baselineZIndex: baselineStyle.zIndex,
           baselinePointerEvents: baselineStyle.pointerEvents,
@@ -8554,6 +8674,45 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
     assert.deepEqual(
       lessonVisual.headerSignature,
       coursesVisual.headerSignature,
+    );
+    assert.equal(lessonVisual.headerActionButtons.length, 4);
+    for (const button of lessonVisual.headerActionButtons) {
+      assert.equal(button.offsetHeight, 40);
+      assert.equal(button.clientHeight, 38);
+      assert.equal(button.height, "40px");
+      assert.equal(button.boxSizing, "border-box");
+      assert.equal(button.borderTopWidth, "1px");
+      assert.equal(button.borderBottomWidth, "1px");
+      assert.equal(button.borderColor, "rgba(20, 20, 20, 0.5)");
+      assert.equal(button.backgroundColor, "rgb(255, 255, 255)");
+      assert.equal(button.backgroundClip, "padding-box");
+    }
+    const lessonDeleteAction = lessonVisual.headerActionButtons.find(
+      (button) => button.label === "Удалить",
+    );
+    assert.ok(lessonDeleteAction);
+    assert.equal(lessonDeleteAction.isDanger, true);
+    assert.equal(lessonDeleteAction.color, "rgb(190, 18, 60)");
+
+    const lessonDeleteButton = runtime.page.getByRole("button", {
+      name: "Удалить",
+      exact: true,
+    });
+    await lessonDeleteButton.hover();
+    assert.deepEqual(
+      await lessonDeleteButton.evaluate((button) => {
+        const style = getComputedStyle(button);
+        return {
+          borderColor: style.borderColor,
+          backgroundColor: style.backgroundColor,
+          backgroundClip: style.backgroundClip,
+        };
+      }),
+      {
+        borderColor: "rgba(20, 20, 20, 0.5)",
+        backgroundColor: "rgb(255, 255, 255)",
+        backgroundClip: "padding-box",
+      },
     );
     assert.deepEqual(lessonVisual.tabSignature, courseVisual.tabSignature);
 
@@ -9126,7 +9285,18 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
         actions.querySelectorAll<HTMLButtonElement>("button"),
         (button) => {
           const rect = button.getBoundingClientRect();
-          return { width: rect.width, height: rect.height };
+          const style = getComputedStyle(button);
+          return {
+            width: rect.width,
+            height: rect.height,
+            borderWidths: [
+              style.borderTopWidth,
+              style.borderRightWidth,
+              style.borderBottomWidth,
+              style.borderLeftWidth,
+            ],
+            boxShadow: style.boxShadow,
+          };
         },
       );
       return {
@@ -9161,6 +9331,13 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
         actionsOpacity: actionsStyle.opacity,
         actionsPointerEvents: actionsStyle.pointerEvents,
         actionsBackground: actionsStyle.backgroundColor,
+        actionsBorderWidths: [
+          actionsStyle.borderTopWidth,
+          actionsStyle.borderRightWidth,
+          actionsStyle.borderBottomWidth,
+          actionsStyle.borderLeftWidth,
+        ],
+        actionsBoxShadow: actionsStyle.boxShadow,
         actionButtons,
         contentPadding: contentStyle.padding,
         documentClientWidth: document.documentElement.clientWidth,
@@ -9180,7 +9357,7 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
     assert.equal(fileComponentCardVisual.cardBackground, "rgb(255, 255, 255)");
     assert.equal(
       fileComponentCardVisual.cardBoxShadow,
-      "rgba(76, 76, 155, 0.1) 0px 3px 6px 0px",
+      "rgba(0, 0, 0, 0.05) 0px 3px 6px 0px",
     );
     assert.equal(fileComponentCardVisual.cardTransitionProperty, "box-shadow");
     assert.equal(fileComponentCardVisual.cardTransitionDuration, "0.18s");
@@ -9193,13 +9370,23 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
     assert.equal(fileComponentCardVisual.actionsPointerEvents, "none");
     assert.equal(
       fileComponentCardVisual.actionsBackground,
-      "rgba(255, 255, 255, 0.88)",
+      "rgba(255, 255, 255, 0.5)",
     );
+    assert.deepEqual(fileComponentCardVisual.actionsBorderWidths, [
+      "0px",
+      "0px",
+      "0px",
+      "0px",
+    ]);
+    assert.equal(fileComponentCardVisual.actionsBoxShadow, "none");
     assert.equal(fileComponentCardVisual.actionButtons.length, 5);
     assert.ok(
       fileComponentCardVisual.actionButtons.every(
-        ({ width, height }) =>
-          Math.abs(width - 32) < 0.5 && Math.abs(height - 32) < 0.5,
+        ({ width, height, borderWidths, boxShadow }) =>
+          Math.abs(width - 32) < 0.5 &&
+          Math.abs(height - 32) < 0.5 &&
+          borderWidths.every((value) => value === "0px") &&
+          boxShadow === "none",
       ),
     );
     assert.equal(fileComponentCardVisual.contentPadding, "12px");
@@ -9233,7 +9420,7 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       {
         opacity: "1",
         pointerEvents: "auto",
-        cardBoxShadow: "rgba(76, 76, 155, 0.2) 0px 6px 12px 0px",
+        cardBoxShadow: "rgba(0, 0, 0, 0.1) 0px 3px 12px 0px",
         cardRect: fileComponentCardVisual.cardRect,
       },
     );
@@ -9254,7 +9441,7 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       }),
       {
         opacity: "0",
-        cardBoxShadow: "rgba(76, 76, 155, 0.1) 0px 3px 6px 0px",
+        cardBoxShadow: "rgba(0, 0, 0, 0.05) 0px 3px 6px 0px",
       },
     );
     await fileComponentEdit.evaluate((button) => {
@@ -9272,6 +9459,34 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
           cardBoxShadow: getComputedStyle(
             actions.closest<HTMLElement>(".lesson-component-card")!,
           ).boxShadow,
+          editBorderWidths: (() => {
+            const edit = actions.querySelector<HTMLElement>(
+              '[aria-label="Редактировать «Файл»"]',
+            );
+            if (!edit) throw new Error("Edit action is missing");
+            const editStyle = getComputedStyle(edit);
+            return [
+              editStyle.borderTopWidth,
+              editStyle.borderRightWidth,
+              editStyle.borderBottomWidth,
+              editStyle.borderLeftWidth,
+            ];
+          })(),
+          editBoxShadow: getComputedStyle(
+            actions.querySelector<HTMLElement>(
+              '[aria-label="Редактировать «Файл»"]',
+            )!,
+          ).boxShadow,
+          editOutlineStyle: getComputedStyle(
+            actions.querySelector<HTMLElement>(
+              '[aria-label="Редактировать «Файл»"]',
+            )!,
+          ).outlineStyle,
+          editOutlineWidth: getComputedStyle(
+            actions.querySelector<HTMLElement>(
+              '[aria-label="Редактировать «Файл»"]',
+            )!,
+          ).outlineWidth,
           editFocused:
             actions.querySelector('[aria-label="Редактировать «Файл»"]') ===
             document.activeElement,
@@ -9280,7 +9495,11 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       {
         opacity: "1",
         pointerEvents: "auto",
-        cardBoxShadow: "rgba(76, 76, 155, 0.2) 0px 6px 12px 0px",
+        cardBoxShadow: "rgba(0, 0, 0, 0.1) 0px 3px 12px 0px",
+        editBorderWidths: ["0px", "0px", "0px", "0px"],
+        editBoxShadow: "none",
+        editOutlineStyle: "solid",
+        editOutlineWidth: "2px",
         editFocused: true,
       },
     );
@@ -9776,6 +9995,7 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
       const tabStrip = document.querySelector<HTMLElement>(
         ".workspace-tabs-scroll",
       );
+      const tabs = tabStrip?.querySelector<HTMLElement>(".workspace-tabs");
       const selectedTab = document.querySelector<HTMLElement>(
         '.workspace-tab[aria-selected="true"]',
       );
@@ -9791,6 +10011,7 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
         !actions ||
         !header ||
         !tabStrip ||
+        !tabs ||
         !selectedTab
       ) {
         throw new Error("Mobile Course visual contract elements are missing");
@@ -9813,6 +10034,8 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
       const actionsRect = actions.getBoundingClientRect();
       const tabStripRect = tabStrip.getBoundingClientRect();
       const selectedTabRect = selectedTab.getBoundingClientRect();
+      const baselineStyle = getComputedStyle(tabs, "::before");
+      const baselineScaleY = new DOMMatrixReadOnly(baselineStyle.transform).m22;
 
       const contract = {
         documentClientWidth: document.documentElement.clientWidth,
@@ -9849,6 +10072,10 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
         tabStripScrollWidth: tabStrip.scrollWidth,
         tabStripScrollLeft: tabStrip.scrollLeft,
         tabStripOverflowX: getComputedStyle(tabStrip).overflowX,
+        baselinePaintHeight: baselineStyle.height,
+        baselineScaleY,
+        baselineVisualHeight:
+          Number.parseFloat(baselineStyle.height) * Math.abs(baselineScaleY),
         selectedTab: selectedTab.textContent?.trim() ?? "",
         selectedTabAriaSelected: selectedTab.getAttribute("aria-selected"),
         selectedTabLeft: selectedTabRect.left,
@@ -9911,6 +10138,9 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
       mobileVisual.tabStripScrollWidth > mobileVisual.tabStripClientWidth,
     );
     assert.ok(mobileVisual.tabStripScrollLeft > 0);
+    assert.equal(mobileVisual.baselinePaintHeight, "3px");
+    assert.equal(mobileVisual.baselineScaleY, 0.5);
+    assert.equal(mobileVisual.baselineVisualHeight, 1.5);
     assert.match(mobileVisual.selectedTab, /^История/);
     assert.equal(mobileVisual.selectedTabAriaSelected, "true");
     assert.ok(mobileVisual.selectedTabLeft >= mobileVisual.tabStripLeft - 1);

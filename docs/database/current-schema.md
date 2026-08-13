@@ -6,8 +6,8 @@ catalog + Course Component D1 + A1 atomic Course archive + E1 educator Course
 contract. Dependent E2 web/API release также current production.
 
 **Production schema head:**
-`20260812150745_educator_course_governance_progress.sql` — применена к
-production 12 августа 2026 года в `2026-08-12T07:34:36Z`
+`20260812150745_educator_course_governance_progress.sql`.
+Она применена к production 12 августа 2026 года в `2026-08-12T07:34:36Z`.
 
 **Repository schema head:**
 `20260812150745_educator_course_governance_progress.sql` — совпадает с current
@@ -25,9 +25,9 @@ Admin create/delete probe
 **SQL snapshot:**
 [`supabase/schema/current-schema.sql`](../../supabase/schema/current-schema.sql)
 содержит live production dump после E2, снятый штатным script через read-only
-SSH tunnel в `2026-08-12T07:43:11Z`. Strict signature осталась
+SSH tunnel в `2026-08-12T07:46:11Z`. Strict signature осталась
 `shidao-v2-contract`, SHA-256 snapshot —
-`6df94ceabbc902b66b4c592998f1770ea62442a68255ddd6133a3b9d75745949`.
+`a34a5a5919ea406050a5c0cb7f39310d1a9e807725e608166f63becb8f2260a4`.
 Локальный PostgreSQL 16 dump не принимается как замена production 15.8
 snapshot из-за version/encoding/default-ACL drift.
 
@@ -242,9 +242,9 @@ DB apply/snapshot evidence.
 
 ### Production E1 educator Course / attestation contract
 
-Forward migration `20260812113000_educator_course_attestations.sql` is the
-current production database contract. Dependent web deployment and the
-explicit Chinese-course bootstrap are also current production. E1 adds:
+Forward migration `20260812113000_educator_course_attestations.sql` остаётся
+историческим E1-слоем под current E2 database contract. Dependent E1 web
+deployment и explicit Chinese-course bootstrap также были выполнены. E1 adds:
 
 - `course.learning_audience` and the denormalized
   `course_publication.learning_audience`, default/backfilled to `children`;
@@ -257,9 +257,10 @@ explicit Chinese-course bootstrap are also current production. E1 adds:
   projection, stale-revision-checked and rate-limited server-side scoring, and
   profile awards;
 - service-only publication/clone/duplicate/catalog wrappers that preserve the
-  audience and definition but never copy attempts or awards; educator clone
-  additionally requires an award on the current revision, with a read-only
-  eligibility preflight before Storage work and the same guard inside clone.
+  audience and definition but never copy attempts or awards. В историческом E1
+  educator clone разрешался только после award на current revision. Current E2
+  supersedes этот compatibility rule: educator Course нельзя copy, clone или
+  duplicate независимо от award; reuse остаётся только для `children`.
 
 Correct answer keys stay in closed authored/publication tables. Browser roles
 have no direct read or write privilege on definition/result tables; pre-pass
@@ -317,8 +318,9 @@ production database head. Она добавляет trusted-author capability
 `approved_revision_id`, revision-scoped self-enrollment/Lesson completion и
 server-side `100%` attestation gate. Educator revisions имеют official-learning
 license и не участвуют в catalog copy/duplicate, roster, group assignment или
-LessonRun. Зависимый E2 web/API source развёрнут из exact functional commit
-`22b486a7163453019d9720cb4fe0f36ed7c0228d` и является current production.
+LessonRun. Зависимый E2 web/API впервые развёрнут из exact functional commit
+`22b486a7163453019d9720cb4fe0f36ed7c0228d`; current deployed source
+`9e66fb548bef176486673149f466b269fd436b21` сохраняет этот contract.
 
 Production DB execution evidence, 12 августа 2026 года:
 
@@ -341,8 +343,8 @@ Production DB execution evidence, 12 августа 2026 года:
 - educator origin, direct/group roster и LessonRun равны `0`; RLS, closed ACL,
   revision license/immutable triggers и authenticated progress/attestation RPC
   прошли postflight;
-- live snapshot сгенерирован в `2026-08-12T07:43:11Z`, SHA-256
-  `6df94ceabbc902b66b4c592998f1770ea62442a68255ddd6133a3b9d75745949`.
+- live snapshot сгенерирован в `2026-08-12T07:46:11Z`, SHA-256
+  `a34a5a5919ea406050a5c0cb7f39310d1a9e807725e608166f63becb8f2260a4`.
 
 Dependent web/API rollout завершён Coolify deployment
 `ikw0bj347reelzotaqo15a39` (`2026-08-12T07:56:00Z` —
@@ -354,6 +356,27 @@ commit и image ID
 login/robots `200`, guest `/courses` `307` в login, landing root `200`,
 landing login/API `503`, missing/wrong CSRF Origin `403` и exact V2 Origin без
 session `401`.
+
+Superseded deployed source был подтверждён отдельным read-only runtime
+postflight:
+
+- exact repository commit и `SOURCE_COMMIT`:
+  `0c8946f95ebeb31e02955a110fc057f761f07ea9`;
+- running container `g9x4d9zn60jv35r7zf0xl6xj-083519444597` использует
+  image tag
+  `g9x4d9zn60jv35r7zf0xl6xj:0c8946f95ebeb31e02955a110fc057f761f07ea9`
+  и image ID
+  `sha256:8119de725edeb042eaf1fcecb38d3fa5052aaf44e81e9fb3965d6c594b1731d1`;
+- container имеет status `running`, restart count `0` и started at
+  `2026-08-12T08:37:57.909983639Z`;
+- повторный HTTP smoke подтвердил V2 `/login` и `/robots.txt` `200`, guest
+  `/courses` `307` в `https://v2.shidao.ru/login` и landing root `200`.
+
+Текущий application source `9e66fb548bef176486673149f466b269fd436b21`
+подтверждён running image и guest `/store → /login` postflight. Последующие
+Store и UI-only commits не добавляли database objects, migrations, Storage
+buckets или commerce persistence; current database head и snapshot выше не
+изменились.
 
 ## Current repository tables
 
@@ -415,8 +438,10 @@ Course и immutable catalog representation:
   StoredFile metadata и наличие immutable Storage objects. Поэтому stale
   snapshot после detach не может ложно очистить dirty state. Возврат контента
   A→B→A разрешён как новая revision;
-- rights audit сохраняет timestamp и внутренний code
-  `shidao_catalog_reuse_v1`. Это не выбранная Creative Commons лицензия;
+- rights audit сохраняет timestamp и внутренний license code: child catalog
+  reuse использует `shidao_catalog_reuse_v1`, educator revision —
+  `shidao_official_learning_v1`. Это не выбранная Creative Commons лицензия;
+  official educator license не разрешает copy/clone/duplicate;
 - publication asset `id` локален внутри revision (composite primary key
   `(revision_id, id)`), поэтому повторно используемый deterministic material ref
   безопасно встречается в нескольких revisions; assets физически копируются в
@@ -454,13 +479,14 @@ Course и immutable catalog representation:
   каждая. Текущий выбранный filter включается в bounded facet, если такое
   опубликованное значение существует.
 
-Все четыре publication table имеют RLS, но не имеют policies/grants для
-`anon`/`authenticated`. `postgres` и `service_role` получают table privileges;
-browser работает только через authenticated application route. Mutation
-boundary — closed `SECURITY INVOKER`, `search_path=''` RPC:
+Все publication/review/progress tables имеют RLS, но не имеют прямого
+browser-access сверх явно описанных self projections. `postgres` и
+`service_role` получают необходимые table privileges; browser работает через
+authenticated application route.
 
-- `publish_course_revision_admin(...)` и
-  `unpublish_course_publication_admin(...)`;
+Исторический C1 implementation boundary сохранён в snapshot для child catalog:
+
+- `publish_course_revision_admin(...)`;
 - `list_course_publication_catalog_admin(...)` — DB-side query/filter/order,
   `limit+1`, owner-only `sourceCourseId`, bounded global subject/level facets и
   только compact listing DTO без snapshot/owner Account UUID; inactive
@@ -471,6 +497,20 @@ boundary — closed `SECURITY INVOKER`, `search_path=''` RPC:
 - `duplicate_course_admin(...)` — same-owner deep copy authored graph с
   teacher preferences и безопасным reuse существующих StoredFile links, без
   audience/history/publication state.
+
+Current E2 application boundary использует audience/attestation-aware wrappers:
+
+- `publish_course_revision_with_attestation_admin(...)` и E2-overridden
+  `unpublish_course_publication_admin(...)`; educator publish создаёт exact
+  review candidate, а unpublish закрывает pending review как withdrawal;
+- `list_course_publication_catalog_v2_admin(...)` показывает educator listing
+  только по exact `approved_revision_id`;
+- `clone_course_publication_with_attestation_admin(...)` и
+  `duplicate_course_with_attestation_admin(...)` сохраняют child reuse, но
+  fail closed для educator Course;
+- `approve_educator_course_revision_admin(...)` и
+  `reject_educator_course_revision_admin(...)` являются service-only exact
+  revision review boundary.
 
 ### Account credential boundary
 
@@ -706,7 +746,7 @@ contacts, exact timestamps, foreign titles и private comments не возвра
 | Course/Lesson                                  | owner `SELECT/INSERT` + allowlisted authored-column `UPDATE`; no direct `DELETE`, `archived_at` или `course_id` update после A1 | RLS + owner service, `archive_course` и Lesson lifecycle RPC |
 | Component/Slide/File                           | existing owner-scoped permissions                                                                                               | RLS + owner service/RPC                                      |
 | Publication/revision/asset/origin              | none                                                                                                                            | server-only service-role adapter + closed admin RPC          |
-| Attestation definition/attempt/award           | none; only allowlisted `course.learning_audience` is direct-updatable                                                           | owner/self aggregate RPC + service-only publication wrappers |
+| Attestation definition/attempt/award           | none; `course.learning_audience` задаётся при create и затем immutable                                                          | owner/self aggregate RPC + service-only publication wrappers |
 | `learner_profile`                              | own canonical row `SELECT`; no direct mutation                                                                                  | supported identity workflows                                 |
 | `teacher_learner`, groups, audience, runs      | existing teacher-scoped read; mutation via aggregate RPC                                                                        | actor ownership                                              |
 | raw `learning_record`                          | recorder-scoped teacher `SELECT` only                                                                                           | lifecycle RPC                                                |
@@ -793,7 +833,7 @@ snapshot. После production A1 тот же workflow зафиксировал
 `2026-08-12T00:22:27Z` с archive RPC, guards и narrowed ACL. После production
 E1 current snapshot `2026-08-12T02:53:14Z` дополнительно фиксирует Course
 audience, четыре attestation tables, их RLS/ACL, `10` RPC и `8` triggers. После
-production E2 current snapshot `2026-08-12T07:43:11Z` фиксирует trusted-author
+production E2 current snapshot `2026-08-12T07:46:11Z` фиксирует trusted-author
 capability, exact review/approval, revision-scoped progress, official license
 и no-copy/no-roster/no-Run guards; SHA-256
-`6df94ceabbc902b66b4c592998f1770ea62442a68255ddd6133a3b9d75745949`.
+`a34a5a5919ea406050a5c0cb7f39310d1a9e807725e608166f63becb8f2260a4`.

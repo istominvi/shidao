@@ -94,12 +94,13 @@ test("product tables use the element radius instead of the card radius", () => {
 test("action menus share canonical element geometry without card styling", () => {
   assert.match(
     styles,
-    /\.action-menu-panel\s*\{[^}]*--course-demo-element-radius,[^}]*--product-element-radius,[^}]*background: #fff;[^}]*padding: 0\.25rem;/,
+    /\.action-menu-panel\s*\{[^}]*border: 0;[^}]*--product-context-menu-radius,[^}]*--course-demo-element-radius,[^}]*--product-element-radius,[^}]*background: var\(--product-context-menu-surface, #fff\);[^}]*padding: 0\.25rem;[^}]*--product-context-menu-shadow,/,
   );
   assert.match(
     styles,
     /\.action-menu-item\s*\{[^}]*--course-demo-control-height,[^}]*--product-row-height,[^}]*align-items: center;[^}]*gap: 0\.5rem;[^}]*border: 0;[^}]*font-weight: var\(--course-demo-control-font-weight, 400\);/,
   );
+  assert.doesNotMatch(styles, /\.action-menu-separator/);
 });
 
 test("Course index and Course Lessons tables use the dense Schedule geometry", () => {

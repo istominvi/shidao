@@ -14,7 +14,7 @@ current production release `22b486a7163453019d9720cb4fe0f36ed7c0228d`.
 
 E2 migration `20260812150745_educator_course_governance_progress.sql` применена
 к production DB с `COMMIT` в `2026-08-12T07:34:36Z`; DB postflight и current
-snapshot `2026-08-12T07:43:11Z` подтвердили governance, approved revision,
+snapshot `2026-08-12T07:46:11Z` подтвердили governance, approved revision,
 self-learning progress и official no-copy/no-roster/no-Run contract. Зависимые
 API/UI развёрнуты тем же coupled E2 rollout и являются current production.
 
@@ -160,10 +160,14 @@ dependent web/API release и product-data bootstrap развёрнуты. Bootst
 official approved educator publication, derived progress `6/6 = 100%`, одну
 attempt/award, `90%` при threshold `80%` и отсутствие copy origin, roster,
 group assignment и LessonRun. Current snapshot имеет SHA-256
-`6df94ceabbc902b66b4c592998f1770ea62442a68255ddd6133a3b9d75745949`.
+`a34a5a5919ea406050a5c0cb7f39310d1a9e807725e608166f63becb8f2260a4`.
 
 UUID parsing hotfix и dependent E2 API/UI развёрнуты в exact functional commit
 `22b486a7163453019d9720cb4fe0f36ed7c0228d`.
+
+Последующие общие UI-only refinements развёрнуты из exact source
+`9e66fb548bef176486673149f466b269fd436b21`; они не изменяют educator schema,
+progress или attestation semantics.
 
 ## Production web/API evidence
 
@@ -177,6 +181,10 @@ UUID parsing hotfix и dependent E2 API/UI развёрнуты в exact functio
 - HTTP postflight: V2 login/robots `200`, guest Courses `307` в login, landing
   root `200`, landing login/API `503`, missing/wrong CSRF Origin `403`, exact
   V2 Origin без session `401`.
+- Current container после UI-only rollout использует exact image tag
+  `9e66fb548bef176486673149f466b269fd436b21`, image ID
+  `sha256:8b2eb3609531ba08fca946dde633dc1946821ade3ec1b408be09bafd4ef172d7`
+  и restart count `0`.
 
 ## Later
 

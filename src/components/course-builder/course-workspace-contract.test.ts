@@ -368,7 +368,7 @@ test("course routes use the flat demo background and unified visual controls", (
   );
   assert.match(
     styles,
-    /\.workspace-tabs::before\s*\{[^}]*z-index: 1;[^}]*right: var\(--workspace-tabs-inline-offset\);[^}]*left: var\(--workspace-tabs-inline-offset\);[^}]*height: 1\.5px;[^}]*background: var\(--product-muted-foreground\);/,
+    /\.workspace-tabs::before\s*\{[^}]*z-index: 1;[^}]*right: var\(--workspace-tabs-inline-offset\);[^}]*bottom: 0;[^}]*left: var\(--workspace-tabs-inline-offset\);[^}]*height: 3px;[^}]*background: var\(--product-muted-foreground\);[^}]*transform: scaleY\(0\.5\);[^}]*transform-origin: center bottom;/,
   );
   assert.match(
     styles,
@@ -404,6 +404,10 @@ test("active product buttons and header controls share one flat 40px contract", 
   );
   assert.match(
     styles,
+    /\.course-demo-shell\s*\{[^}]*--course-demo-header-action-border: var\(--product-muted-foreground\);/,
+  );
+  assert.match(
+    styles,
     /\.course-demo-shell \.product-btn\s*\{[^}]*--product-control-height: var\(--course-demo-control-height\);[^}]*border-radius: var\(--course-demo-control-radius\);[^}]*font-size: var\(--course-demo-control-font-size\);[^}]*font-weight: var\(--course-demo-control-font-weight\);[^}]*box-shadow: none;[^}]*transform: none;/,
   );
   assert.match(
@@ -432,6 +436,10 @@ test("active product buttons and header controls share one flat 40px contract", 
   );
   assert.match(
     styles,
+    /\.course-demo-shell \.app-page-actions \.product-btn-secondary,[\s\S]*?\.app-page-actions[\s\S]*?\.product-btn-secondary:hover:not\(:disabled\),[\s\S]*?\.app-page-actions[\s\S]*?\.product-btn-secondary:focus-visible:not\(:disabled\)\s*\{[^}]*border-color: var\(--course-demo-header-action-border\);[^}]*background-color: #fff;[^}]*background-clip: padding-box;/,
+  );
+  assert.match(
+    styles,
     /\.course-demo-shell \.product-btn-ghost\s*\{[^}]*border-color: transparent;[^}]*background: transparent;/,
   );
   assert.match(
@@ -445,6 +453,15 @@ test("active product buttons and header controls share one flat 40px contract", 
   assert.match(
     styles,
     /\.action-menu-item\s*\{[^}]*min-height: var\([^}]*--product-row-height[^}]*align-items: center;[^}]*gap: 0\.5rem;[^}]*border: 0;[^}]*padding: 0 var\(--course-demo-control-padding-inline, 0\.75rem\);[^}]*font-size: var\(--course-demo-control-font-size, 0\.88rem\);[^}]*font-weight: var\(--course-demo-control-font-weight, 400\);/,
+  );
+
+  const lessonDeleteButton =
+    /<Button\s+variant="secondary"\s+className="product-btn-danger"[\s\S]*?>\s*<Trash2[\s\S]*?>\s*Удалить\s*<\/Button>/.exec(
+      source(lessonAuthoringPath),
+    );
+  assert.ok(
+    lessonDeleteButton,
+    "Lesson header delete must share the bordered secondary action geometry",
   );
 
   assert.match(
@@ -788,12 +805,20 @@ test("component cards render content with accessible overlay actions and modal e
   const cardFocusStyles =
     /\.lesson-component-card:focus-within\s*\{[^}]*\}/.exec(styles)?.[0];
   const reducedMotionStyles =
-    /@media \(prefers-reduced-motion: reduce\)\s*\{[\s\S]*?\.lesson-component-card\s*\{[^}]*\}/.exec(
+    /@media \(prefers-reduced-motion: reduce\)\s*\{[\s\S]*?\.lesson-component-card,[\s\S]*?\.lesson-component-card-actions,[\s\S]*?\.component-card-action,[\s\S]*?\.component-card-visibility-action\s*\{[^}]*\}/.exec(
       styles,
     )?.[0];
   const cardActionStyles = /\.lesson-component-card-actions\s*\{[^}]*\}/.exec(
     styles,
   )?.[0];
+  const componentActionStyles =
+    /\.product-btn\.component-card-action,[\s\S]*?\.product-btn\.component-card-visibility-action\s*\{[^}]*\}/.exec(
+      styles,
+    )?.[0];
+  const componentActionFocusStyles =
+    /\.course-demo-shell[\s\S]*?\.lesson-component-card-actions[\s\S]*?\.product-btn\.component-card-action:focus-visible:not\(:disabled\),[\s\S]*?\.product-btn\.component-card-visibility-action:focus-visible:not\(:disabled\)\s*\{[^}]*\}/.exec(
+      styles,
+    )?.[0];
   const visibleActionStyles =
     /\.lesson-component-card:hover \.lesson-component-card-actions,[\s\S]*?\.lesson-component-card-actions\.is-open\s*\{[^}]*\}/.exec(
       styles,
@@ -894,8 +919,9 @@ test("component cards render content with accessible overlay actions and modal e
   assert.match(authoring, /Убрать с экрана/);
   assert.match(
     authoring,
-    /learnerVisible[\s\S]*?border-sky-200 bg-sky-100 text-sky-800/,
+    /learnerVisible[\s\S]*?component-card-visibility-action-active bg-sky-100 text-sky-800/,
   );
+  assert.doesNotMatch(authoring, /border-sky-200/);
   assert.doesNotMatch(authoring, /На экране ученика|Только преподавателю/);
   assert.doesNotMatch(authoring, /border-b border-neutral-100 pb-3/);
   assert.ok(cardStyles, "lesson component card styles must remain present");
@@ -907,26 +933,20 @@ test("component cards render content with accessible overlay actions and modal e
   assert.match(cardStyles, /padding: 0/);
   assert.match(cardStyles, /border: 0/);
   assert.match(cardStyles, /background: #fff/);
-  assert.match(cardStyles, /box-shadow: 0 3px 6px 0 rgba\(76, 76, 155, 0\.1\)/);
+  assert.match(cardStyles, /box-shadow: 0 3px 6px 0 #0000000d/);
   assert.match(cardStyles, /transition: box-shadow 180ms ease/);
   assert.doesNotMatch(cardStyles, /border-color/);
   assert.ok(
     cardHoverStyles,
     "lesson component hover styles must remain present",
   );
-  assert.match(
-    cardHoverStyles,
-    /box-shadow: 0 6px 12px 0 rgba\(76, 76, 155, 0\.2\)/,
-  );
+  assert.match(cardHoverStyles, /box-shadow: 0 3px 12px 0 #0000001a/);
   assert.match(
     styles,
     /@media \(hover: hover\) and \(pointer: fine\)\s*\{[\s\S]*?\.lesson-component-card:hover/,
   );
   assert.ok(cardFocusStyles, "keyboard focus must lift the component card");
-  assert.match(
-    cardFocusStyles,
-    /box-shadow: 0 6px 12px 0 rgba\(76, 76, 155, 0\.2\)/,
-  );
+  assert.match(cardFocusStyles, /box-shadow: 0 3px 12px 0 #0000001a/);
   assert.ok(
     reducedMotionStyles,
     "card shadow animation must respect reduced motion",
@@ -935,6 +955,26 @@ test("component cards render content with accessible overlay actions and modal e
   assert.ok(
     cardActionStyles,
     "component action rail styles must remain present",
+  );
+  assert.match(cardActionStyles, /border: 0/);
+  assert.match(cardActionStyles, /background: rgba\(255, 255, 255, 0\.5\)/);
+  assert.match(cardActionStyles, /box-shadow: none/);
+  assert.ok(
+    componentActionStyles,
+    "component action styles must remain present",
+  );
+  assert.match(componentActionStyles, /border: 0/);
+  assert.match(componentActionStyles, /background: transparent/);
+  assert.match(componentActionStyles, /box-shadow: none/);
+  assert.ok(
+    componentActionFocusStyles,
+    "component actions must keep a borderless keyboard focus indicator",
+  );
+  assert.match(componentActionFocusStyles, /border: 0/);
+  assert.match(componentActionFocusStyles, /box-shadow: none/);
+  assert.match(
+    componentActionFocusStyles,
+    /outline: 2px solid rgba\(20, 20, 20, 0\.55\)/,
   );
   assert.match(cardActionStyles, /position: absolute/);
   assert.match(cardActionStyles, /z-index: 10/);
@@ -948,7 +988,6 @@ test("component cards render content with accessible overlay actions and modal e
   );
   assert.match(cardActionStyles, /display: flex/);
   assert.match(cardActionStyles, /flex-wrap: nowrap/);
-  assert.match(cardActionStyles, /background: rgba\(255, 255, 255, 0\.88\)/);
   assert.match(cardActionStyles, /opacity: 0/);
   assert.match(cardActionStyles, /pointer-events: none/);
   assert.match(cardActionStyles, /backdrop-filter: blur\(8px\)/);

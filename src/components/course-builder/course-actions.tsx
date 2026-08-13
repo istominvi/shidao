@@ -272,7 +272,6 @@ export function CourseActions({
         label: "Открыть одобренную редакцию",
         icon: ExternalLink,
         href: `/courses/catalog/${encodeURIComponent(course.publication!.id)}?audience=educators`,
-        separatorBefore: true,
       });
     }
     items.push({
@@ -280,7 +279,6 @@ export function CourseActions({
       label: "Отозвать с проверки",
       icon: Undo2,
       destructive: true,
-      separatorBefore: !catalogVisible,
       disabled: Boolean(busyAction),
       onSelect: () => openDialog("unpublish"),
     });
@@ -289,7 +287,6 @@ export function CourseActions({
       id: "publish",
       label: educatorCourse ? "Отправить на проверку" : "Опубликовать",
       icon: Send,
-      separatorBefore: true,
       disabled: Boolean(busyAction) || course.lessonCount === 0,
       hint:
         course.lessonCount === 0
@@ -305,7 +302,6 @@ export function CourseActions({
           ? "Отправить новую редакцию"
           : "Обновить публикацию",
         icon: RefreshCw,
-        separatorBefore: true,
         disabled: Boolean(busyAction),
         onSelect: () => openDialog("update"),
       });
@@ -316,7 +312,6 @@ export function CourseActions({
         label: "Открыть в каталоге",
         icon: ExternalLink,
         href: `/courses/catalog/${encodeURIComponent(course.publication!.id)}?audience=${course.learningAudience}`,
-        separatorBefore: !course.publication?.hasUnpublishedChanges,
       });
     }
     if (!educatorCourse || published) {
@@ -339,7 +334,6 @@ export function CourseActions({
       label: "Удалить",
       icon: Trash2,
       destructive: true,
-      separatorBefore: true,
       disabled: Boolean(busyAction) || publicationLocked,
       hint: pendingReview
         ? "Сначала отзовите курс с проверки"

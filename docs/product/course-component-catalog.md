@@ -1,11 +1,12 @@
 # Каталог компонентов Course Builder
 
-**Статус:** current-source product decision
-**Актуально на:** 12 августа 2026 года
+**Статус:** current production registry + product decision
+**Актуально на:** 13 августа 2026 года
 
 Этот документ фиксирует проверенные публичные возможности ProgressMe,
-нашу продуктовую интерпретацию и фактическую границу ShiDao. Он не
-является заявлением о production deployment или завершённой очистке данных.
+нашу продуктовую интерпретацию и фактическую границу ShiDao. Текущий
+20-типовый registry и D1 cleanup развёрнуты в production; сведения о стороннем
+продукте не являются утверждением о его внутренней архитектуре.
 
 ## Что подтверждено официальными материалами ProgressMe
 
@@ -98,9 +99,11 @@ DB schema и Component order не меняются, миграция или ма
 `heading` не выполняются.
 
 После создания teacher card остаётся renderer-only и не имеет внешнего border.
-Едва заметная холодная тень `0 3px 6px` удваивает offset, blur и alpha на
-hover/focus с анимацией, не смещая content. Управление показывается в
-hover/focus overlay, а Pencil открывает отдельный modal editor. Cancel/close не
+Едва заметная чёрная тень `0 3px 6px #0000000d` на hover/focus сохраняет offset,
+но увеличивает blur до `12px` и alpha до `#0000001a`, не смещая content.
+Управление не имеет border/box-shadow и показывается в hover/focus overlay на
+общей белой подложке `rgba(255, 255, 255, 0.5)`, а Pencil открывает отдельный
+modal editor. Cancel/close не
 изменяют persisted payload/placement; существующий `PATCH` вызывается только по
 явному сохранению. Это presentation/editor orchestration, а не новый registry,
 API или storage contract.

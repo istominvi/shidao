@@ -1,9 +1,10 @@
 # ShiDao V2
 
 ShiDao V2 — работающее roleless Account-приложение с Course Builder на Next.js
-и текущем self-hosted Supabase. Текущий source содержит разделы «Расписание»,
-«Ученики» и «Курсы», reusable Groups, смешанную аудиторию Course, историю
-проведений и learner identity/self/observer surfaces.
+и текущем self-hosted Supabase. Current production содержит разделы «Расписание»,
+«Ученики», «Курсы» и UI-only demo «Магазин», reusable Groups, смешанную аудиторию детского Course,
+историю проведений, learner identity/self/observer surfaces и official
+educator Course с Account-scoped самообучением, progress и аттестацией.
 Каноническая модель:
 
 ```text
@@ -12,11 +13,15 @@ Account → TeacherLearner → canonical LearnerProfile
         └── Course → Lesson → ordered Components
                             ├── Student Screen Slides
                             └── LessonRun → LearningRecord
+
+Account → approved educator Course revision
+        └── self-enrollment → Lesson completion → Attestation attempt/award
 ```
 
 Фактическое состояние приложения и карта кода:
 [`docs/project-state.md`](docs/project-state.md). Следующие этапы:
-[`docs/roadmap.md`](docs/roadmap.md).
+[`docs/roadmap.md`](docs/roadmap.md). Границы магазина:
+[`docs/product/store-demo.md`](docs/product/store-demo.md).
 
 ## Быстрый старт
 
@@ -73,17 +78,22 @@ npm run mcp:course-builder
 
 `test:browser` удобен локально и может пропустить smoke без доступного browser;
 `test:browser:ci` требует полноценного production-mode browser smoke и падает,
-если окружение к нему не готово. Последний полный gate на functional release
-`bafc984` прошёл `326/326` unit tests и `19/19` production-mode browser
-scenarios; exact evidence хранится в
+если окружение к нему не готово. Текущий deployed source —
+`9e66fb548bef176486673149f466b269fd436b21`; этот exact deployed release прошёл
+`575/575` unit/API и `23/23` strict production-mode browser scenarios,
+typecheck, lint, format и production build.
+Functional E2 release
+`22b486a7163453019d9720cb4fe0f36ed7c0228d` сохранён как исторический baseline,
+а exact gate и running-container evidence находятся в
 [`docs/project-state.md`](docs/project-state.md).
 
 ## Канонические пользовательские поверхности
 
 - Публично: `/`, `/login`, `/join`, `/join/check-email`,
   `/forgot-password`, `/reset-password`, `/auth/confirm`.
-- Приложение: `/onboarding`, `/schedule`, `/students`, `/courses`,
+- Приложение: `/onboarding`, `/schedule`, `/students`, `/store`, `/courses`,
   `/courses/new`, `/courses/[courseId]`,
+  `/courses/catalog/[publicationId]`,
   `/courses/[courseId]/student-preview`, `/learning-profile`,
   `/settings/profile`, `/settings/security`, `/settings/observers` и
   `/identity/invitations/[invitationId]`. Все эти shells используют Account
@@ -110,7 +120,9 @@ Lesson непосредственно владеет одним упорядоч
 - материалы хранятся как course-wide attachments в private Storage;
 - сущности Lesson Step/root Step в активной V2 нет.
 
-Primary Account navigation содержит «Расписание / Ученики / Курсы».
+Current production primary Account navigation содержит «Расписание / Ученики /
+Курсы / Магазин». `/store` является client-state UI-only demo: реального
+заказа, оплаты, доставки, API или schema для commerce нет.
 `/schedule` и `/students` используют persisted LessonRun, canonical LearnerProfile,
 teacher-local `teacher_learner`, Groups и LearningRecord. В Course независимо
 прикрепляются отдельные ученики и группы; пересечения дедуплицируются. Один
@@ -121,16 +133,20 @@ teacher-local `teacher_learner`, Groups и LearningRecord. В Course незав�
 
 Account claim, invitations, observers, duplicate-profile merge, learner-safe
 history/progress и consented cross-provider AI context реализованы в roleless
-Account/learner identity slice. Primary navigation содержит «Расписание /
-Ученики / Курсы»; учебный профиль находится в Account menu, а observer
-projection — во вкладке «Наблюдение» внутри «Ученики».
+Account/learner identity slice. Current production primary navigation содержит
+«Расписание / Ученики / Курсы / Магазин». Учебный профиль находится в Account
+menu, а observer projection —
+во вкладке «Наблюдение» внутри «Ученики».
 
-Десять типов компонентов определены в code-first registry. UI, application
+Двадцать типов компонентов определены в code-first registry. UI, application
 service и development-only MCP используют общие Zod contracts; MCP не работает
-с таблицами напрямую и не опубликован как внешний endpoint. Server-only
-RouterAI preview/apply и read-only Assistant уже реализованы; parsing/RAG,
-persisted Homework, live sessions и learner-facing Course consumption пока
-отсутствуют.
+s таблицами напрямую и не опубликован как внешний endpoint. Server-only
+RouterAI preview/apply и global System Assistant с подтверждаемым mutation
+allowlist уже реализованы; parsing/RAG,
+persisted Homework, live sessions и LearnerProfile-scoped consumption детского
+Course пока отсутствуют. Account-scoped самостоятельное прохождение approved
+educator Course, revision progress и аттестация уже являются current
+production.
 
 Подробная каноническая модель: `docs/architecture/lesson-workflow-model.md`.
 
@@ -141,6 +157,10 @@ persisted Homework, live sessions и learner-facing Course consumption пока
 - Auth и routing: `docs/authorization-routing.md`
 - Модель урока: `docs/architecture/lesson-workflow-model.md`
 - Identity и доступ: `docs/architecture/learner-identity-access-model.md`
+- Курсы для педагогов и аттестация:
+  `docs/product/educator-courses-and-attestation.md`
+- Каталог типов компонентов: `docs/product/course-component-catalog.md`
+- Демо-магазин: `docs/product/store-demo.md`
 - Реализованный первый milestone: `docs/v2/TEACHER_COURSE_BUILDER_DEMO_MILESTONE.md`
 - Development MCP: `docs/v2/COURSE_BUILDER_MCP.md`
 - Текущая схема БД: `docs/database/current-schema.md`, `supabase/schema/current-schema.sql`

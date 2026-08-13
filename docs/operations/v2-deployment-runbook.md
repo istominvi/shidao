@@ -195,9 +195,9 @@ Production DB execution evidence, 12 августа 2026 года:
 6. Origin/copy, roster, group assignment и LessonRun для educator publication
    отсутствуют. RLS, closed ACL, capability/review/license triggers и
    authenticated progress/attestation RPC прошли postflight.
-7. Read-only current-schema refresh завершён в `2026-08-12T07:43:11Z`; SHA-256
+7. Read-only current-schema refresh завершён в `2026-08-12T07:46:11Z`; SHA-256
    snapshot
-   `6df94ceabbc902b66b4c592998f1770ea62442a68255ddd6133a3b9d75745949`, все
+   `a34a5a5919ea406050a5c0cb7f39310d1a9e807725e608166f63becb8f2260a4`, все
    `71` schema-contract tests прошли.
 
 Dependent web/API execution evidence:
@@ -218,7 +218,7 @@ Dependent web/API execution evidence:
   `https://v2.shidao.ru` Origin без session дошёл до auth boundary и вернул
   `401`.
 
-Current deployed source follow-up:
+Superseded deployed source follow-up:
 
 - exact repository commit и `SOURCE_COMMIT`:
   `0c8946f95ebeb31e02955a110fc057f761f07ea9`;
@@ -233,6 +233,27 @@ Current deployed source follow-up:
   `/courses` `307` в `https://v2.shidao.ru/login` и landing root `200`.
 - release gate exact source прошёл `560/560` unit/API и `22/22` strict
   production-mode browser scenarios.
+
+Current application rollout, 12 августа 2026 года:
+
+- Store release `6135c07` добавил protected `/store`, четвёртый primary nav
+  item и client-state cart/checkout без commerce API/schema/migration;
+- последующие UI-only commits `aa0fbb6` и `9e66fb5` добавили общий
+  table/header/Lesson-authoring polish и fixed-layout Course overflow fix;
+- running container `g9x4d9zn60jv35r7zf0xl6xj-115759805389` использует
+  exact image tag
+  `g9x4d9zn60jv35r7zf0xl6xj:9e66fb548bef176486673149f466b269fd436b21`
+  и image ID
+  `sha256:8b2eb3609531ba08fca946dde633dc1946821ade3ec1b408be09bafd4ef172d7`;
+- container имеет status `running`, restart count `0` и started at
+  `2026-08-12T12:00:37.589103216Z`;
+- read-only HTTP postflight подтвердил V2 `/login` `200`, `/robots.txt` `200`
+  с `Disallow: /` и guest `/store` `307` в `/login`;
+- exact deployed source `9e66fb548bef176486673149f466b269fd436b21` повторно
+  прошёл `575/575` unit/API, `23/23` strict production-mode browser scenarios,
+  typecheck, lint, format и production build. Browser scenarios покрывают authenticated
+  catalog/cart/checkout локально; отдельный authenticated production order
+  smoke не заявлен, потому что demo не отправляет и не сохраняет заказ.
 
 E2 database, web/API release и HTTP host/CSRF/auth boundaries являются current
 production.
@@ -545,7 +566,10 @@ Snapshot helper auto-detects only two complete states. `expand` requires every
 M1–M3 identity object/invariant plus полный known compatibility helper/type/ACL
 set. Обе допустимые signature требуют M5/M6 Auth hardening; `contract`
 дополнительно требует полное отсутствие M4 targets. Частично применённый
-cleanup или Auth hardening отклоняется.
+cleanup или Auth hardening отклоняется. Current `contract` также требует C1,
+D1, A1, E1 и E2 invariants, включая exact review/progress/official-license
+shape, no-copy educator guards и current E2 wrapper signatures; наличие только
+исторических C1 RPC не считается достаточным.
 
 Для каждого stage фиксируются commit SHA, migration set и production postflight.
 Нельзя оставлять старый Coolify image как rollback-кандидат после применения
@@ -835,11 +859,16 @@ flow как permanent delete.
 
 ### Roleless navigation and learner identity
 
-- любой authenticated Account видит primary navigation `Расписание / Ученики /
-Курсы`, а Account menu — `Учебный профиль / Настройки / Выход`; Guest на
+- в current production любой authenticated Account видит четыре primary items:
+  `Расписание`, `Ученики`, `Курсы`, `Магазин`; Account menu сохраняет
+  `Учебный профиль`, `Настройки`, `Выход`. Guest на
   каждом private route уходит в login;
-- `/schedule`, `/students` и `/courses` сохраняют единый computed page-header contract с
-  `/courses`, Course и Lesson; contextual actions находятся в header, а
+- `/store` открывает каталог, categories/search/filters/sort и оба вида; cart →
+  delivery → payment-demo → success работает без unsafe network request,
+  банковских полей или утверждения о созданном заказе. На 375 px нет
+  document-level overflow; Guest `/store` уходит в login;
+- `/schedule`, `/students`, `/store` и `/courses` сохраняют единый computed
+  page-header contract с Course и Lesson; contextual actions находятся в header, а
   date/view controls — ниже него справа прямо на page background без внешней
   toolbar-card. У прозрачных Schedule, Students и обеих Courses controls-панелей проверить
   нулевой horizontal padding: controls остаются в пределах content-row, а
@@ -888,7 +917,12 @@ flow как permanent delete.
   dialog текущего Run сразу в edit mode, confirmation перед cancel,
   arrows/Escape/focus restore и отсутствие
   неявного row-click при взаимодействии с меню; других action-кнопок в строке
-  нет. В трёхпунктовом меню нет разделителя между «Изменить» и «Отменить».
+  нет. Ни одно contextual `ActionMenu` с горизонтальным или вертикальным
+  троеточием не содержит separator line/DOM. Course actions, Course Lesson,
+  Schedule и Students используют одинаковую белую панель: normal-mode border
+  `0`, radius `12 px` и единственную computed shadow
+  `rgba(20, 20, 20, 0.18) 0px 18px 46px 0px`; forced-colors может вернуть
+  системную рамку вместо невидимой тени.
   Каждый пункт portal-menu имеет exact 40 px, радиус 8 px как у active view
   option, вертикально центрированные иконку и текст, `.88rem/400` и canonical inset/gap.
   Отдельно проверить
@@ -981,9 +1015,11 @@ flow как permanent delete.
   один `POST`, после reload появляется ровно один `staff_only` Component.
   Persisted card показывает только teacher renderer, имеет white background,
   border `0` и base shadow exact
-  `rgba(76, 76, 155, 0.1) 0px 3px 6px 0px`. На hover/focus exact shadow —
-  `rgba(76, 76, 155, 0.2) 0px 6px 12px 0px`, transition `180ms`, а card rect не
-  меняется; reduced-motion отключает transition. Группа actions не занимает
+  `rgba(0, 0, 0, 0.05) 0px 3px 6px 0px`. На hover/focus exact shadow —
+  `rgba(0, 0, 0, 0.1) 0px 3px 12px 0px`, transition `180ms`, а card rect не
+  меняется; reduced-motion отключает transition. Action rail и каждая кнопка
+  имеют border `0`, box-shadow `none`, rail background exact
+  `rgba(255, 255, 255, 0.5)`. Группа actions не занимает
   normal-flow header, появляется на hover и focus-within, а на touch остаётся
   доступной. Pencil открывает отдельный modal editor: Cancel/close/Escape не
   отправляют `PATCH`, Save отправляет один `PATCH`, и после reload renderer

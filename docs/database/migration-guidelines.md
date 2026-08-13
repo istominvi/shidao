@@ -6,10 +6,14 @@
 **Текущий repository head:**
 `20260812150745_educator_course_governance_progress.sql` — совпадает с
 production; E2 применена `2026-08-12T07:34:36Z`, current snapshot снят
-`2026-08-12T07:43:11Z`.
-**Текущий dependent E2 web/API release:**
-`22b486a7163453019d9720cb4fe0f36ed7c0228d` — Coolify rollout и HTTP postflight
-завершены `2026-08-12T07:58:39Z`.
+`2026-08-12T07:46:11Z`, SHA-256
+`a34a5a5919ea406050a5c0cb7f39310d1a9e807725e608166f63becb8f2260a4`.
+**Текущий deployed source:**
+`9e66fb548bef176486673149f466b269fd436b21`; running container
+`g9x4d9zn60jv35r7zf0xl6xj-115759805389` имеет matching image tag, image ID
+`sha256:8b2eb3609531ba08fca946dde633dc1946821ade3ec1b408be09bafd4ef172d7`,
+restart count `0`, started at `2026-08-12T12:00:37.589103216Z`. Store и
+последующие UI-only commits не меняли database head или snapshot.
 
 ## 1. Источники истины
 

@@ -61,6 +61,13 @@ ShiDao хранит два обязательных слоя:
 - `20260811154138_remove_divider_components.sql` — D1 удаление
   layout-only `divider`, уплотнение Component/Slide positions и CHECK-запрет
   повторного создания.
+- `20260812113000_educator_course_attestations.sql` — E1 назначение Course
+  `children | educators`, immutable publication-attestation sidecar,
+  server-scored Account attempts/awards и profile credentials.
+- `20260812150745_educator_course_governance_progress.sql` — E2 trusted-author
+  capability, обязательный admin review exact educator revision,
+  `approved_revision_id`, official license, Account-scoped self-learning
+  progress и абсолютные no-copy/no-roster/no-LessonRun guards.
 
 Backfill details являются историей этих migrations и не должны повторяться в
 current-schema guide как действующая domain model.

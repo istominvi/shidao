@@ -1,6 +1,6 @@
 # Демо-магазин ShiDao
 
-**Статус:** current repository UI-only demo
+**Статус:** current production UI-only demo
 **Актуально на:** 12 августа 2026 года
 
 ## Назначение
@@ -22,7 +22,8 @@
   поиск, аудитория, цена, наличие и сортировка работают только над этим
   локальным набором. Один и тот же отфильтрованный результат можно смотреть
   как карточки или таблицу.
-- У каждого товара есть стабильный человекочитаемый `slug`. Ссылка
+- У каждого товара есть стабильный в текущем demo-каталоге человекочитаемый
+  `slug`. Ссылка
   `/store?product=<slug>` открывает тот же каталог и переводит внимание к
   указанному товару; она не добавляет товар в корзину и не создаёт заказ.
   Неизвестный `slug` безопасно оставляет пользователя в каталоге.
@@ -47,6 +48,9 @@ Checkout запрашивает только имя, телефон, email и а
 - demo-статус не должен называться успешной покупкой или подтверждённым
   заказом;
 - типизированная ссылка Lesson Component → Product ещё не реализована;
+- преподаватель уже может вручную использовать обычный `external_link` с
+  абсолютным HTTPS URL `https://v2.shidao.ru/store?product=<slug>`, но это не
+  Product relation и не гарантия наличия;
 - teacher-private данные Lesson, Course, roster и LearningRecord не попадают в
   витрину или URL товара.
 
@@ -83,6 +87,12 @@ Checkout запрашивает только имя, телефон, email и а
    slug не ломает страницу и не меняет корзину.
 7. Основной путь доступен с клавиатуры; dialog focus/return-focus работает, а
    mobile viewport не получает page-level horizontal overflow.
+
+Production rollout подтверждён running source
+`9e66fb548bef176486673149f466b269fd436b21`: guest `/store` следует текущему
+auth boundary (`307 → /login`). Полный authenticated checkout остаётся
+покрытым release browser suite; отдельный authenticated production order smoke
+не требуется, поскольку order/payment request в этом demo отсутствует.
 
 ## Next
 

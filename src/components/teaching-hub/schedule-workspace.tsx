@@ -592,7 +592,6 @@ export function ScheduleWorkspace() {
                                 label: "Отменить",
                                 icon: XCircle,
                                 destructive: true,
-                                separatorBefore: true,
                                 disabled: Boolean(busyLabel),
                                 onSelect: () => cancelRun(run.id),
                               },

@@ -25,6 +25,8 @@ project-state/current schema, она не реализована.
 - [`docs/architecture/lesson-workflow-model.md`](../architecture/lesson-workflow-model.md)
 - [`docs/architecture/learner-identity-access-model.md`](../architecture/learner-identity-access-model.md)
 - [`docs/database/current-schema.md`](../database/current-schema.md)
+- [`docs/product/educator-courses-and-attestation.md`](../product/educator-courses-and-attestation.md)
+- [`docs/product/store-demo.md`](../product/store-demo.md)
 - [`docs/v2/COURSE_BUILDER_MCP.md`](./COURSE_BUILDER_MCP.md)
 - [`docs/operations/v2-deployment-runbook.md`](../operations/v2-deployment-runbook.md)
 - [`docs/operations/v1-recovery-runbook.md`](../operations/v1-recovery-runbook.md)
@@ -40,9 +42,10 @@ Builder с реальными данными, private materials, code-first Comp
 Screen preview; canonical learner directory, Groups, Course audience,
 LessonRun/history; learner-safe self/observer profile и consented AI context;
 RouterAI preview/assistant и internal MCP. Primary navigation содержит
-«Расписание / Ученики / Курсы», Account menu — «Учебный профиль / Настройки /
-Выход», а `/courses` поддерживает поиск, фильтры, сортировку и режимы «Плитки /
-Таблица».
+«Расписание / Ученики / Курсы / Магазин», Account menu — «Учебный профиль /
+Настройки / Выход», а `/courses` поддерживает поиск, фильтры, сортировку и
+режимы «Карточки / Таблица». Current production `/store` является UI-only demo
+без Product/Order schema, API, оплаты или доставки.
 
 ## 3. Неподвижные границы реконструкции
 
@@ -101,6 +104,12 @@ Auth User
         ├── direct CourseLearner → LearnerProfile
         ├── CourseLearnerGroup → LearnerGroup
         ├── CourseAttachment → StoredFile
+        ├── CourseAttestation 0..1
+        ├── CoursePublication 0..1
+        │   └── immutable PublicationRevision 1..N
+        │       ├── PublicationAsset 0..N
+        │       ├── EducatorRevisionReview 0..1
+        │       └── PublicationAttestation 0..1
         └── Lesson 1..N
             ├── LessonComponent 1..N
             ├── LessonStudentSlide 1..N
@@ -109,6 +118,12 @@ Auth User
 
 Offline LearnerProfile
 └── account_id IS NULL до recipient-bound claim/activation
+
+Account educator self-learning
+└── PublicationSelfEnrollment → approved educator PublicationRevision
+    ├── LessonCompletion 0..N
+    ├── AttestationAttempt 0..N
+    └── AttestationAward 0..1 per approved revision/assessment version
 ```
 
 Каноническая authored hierarchy:
@@ -119,6 +134,10 @@ Course → Lesson → ordered Components
 
 Student Screen Slide является только persisted presentation projection. Он не
 является authored parent, Step или вторым component list.
+
+Current `/store` намеренно отсутствует в persisted hierarchy: его каталог и
+cart/checkout являются application fixtures и client state, а Product, Order и
+Inventory остаются NEXT domains.
 
 ## 6. Course
 
@@ -140,7 +159,7 @@ relations.
 
 Current `/courses` каталог выполняет client-side поиск по публичным Course
 полям, фильтрует по предмету, уровню и наполнению, сортирует результаты и
-переключается между «Плитки / Таблица». Это не добавляет новую schema или
+переключается между «Карточки / Таблица». Это не добавляет новую schema или
 параллельный Course API.
 
 ## 7. Lesson
@@ -256,7 +275,7 @@ alias `CourseAsset` представляет linked StoredFile в Course attachm
 
 ## 12. Code-first Component platform
 
-Current source P0 keys:
+Current production P0 keys:
 
 ```text
 heading
@@ -377,9 +396,10 @@ web callers и Data API grants после M4 от них не зависят.
   requests принимает только с exact Origin `https://v2.shidao.ru`;
   landing/cross-subdomain/missing Origin fail closed и покрыты regression tests.
 - V2 не индексируется.
-- Browser-smoke использует current AES-GCM app-session; latest functional gate
-  прошёл `326/326` unit tests и `19/19` production-mode scenarios, включая
-  roleless navigation, identity/observer flows и Course catalog.
+- Browser-smoke использует current AES-GCM app-session; gate exact deployed
+  release `9e66fb548bef176486673149f466b269fd436b21` прошёл `575/575` unit/API tests и
+  `23/23` strict production-mode scenarios, включая roleless navigation,
+  identity/observer flows, Course catalog и Store.
 - M1 закрыла broad `user_preference`/`user_security` ACL и active callers
   перенесены на `account_preference`/`account_security`; M4 отозвала legacy Data
   API grants и оставила legacy rows только для recovery.
@@ -399,11 +419,13 @@ credentials из ignored legacy cheatsheet; это не расширяет Auth/
 
 ## 18. CURRENT navigation/catalog; NEXT P0.2 authoring completion
 
-CURRENT primary navigation: «Расписание / Ученики / Курсы». «Учебный профиль»
-находится в Account menu перед «Настройки / Выход», observer projection —
-третья вкладка «Наблюдение» внутри `/students`; `/observing` является protected
-compatibility redirect. `/courses` уже имеет поиск, реальные фильтры, сортировку
-и «Плитки / Таблица» без новой schema/API.
+CURRENT production primary navigation: «Расписание / Ученики / Курсы /
+Магазин». «Учебный профиль» находится в Account menu перед «Настройки / Выход»,
+observer projection — третья вкладка «Наблюдение» внутри `/students`;
+`/observing` является protected compatibility redirect. `/courses` уже имеет
+поиск, реальные фильтры, сортировку и «Карточки / Таблица» без новой schema/API.
+`/store` — client-state UI-only demo без persisted cart/order, payment API или
+commerce schema; настоящий commerce является отдельным этапом.
 
 NEXT улучшает существующий Course Builder, не меняя hierarchy:
 
@@ -417,7 +439,7 @@ NEXT улучшает существующий Course Builder, не меняя h
 
 CURRENT AI integration использует server-only OpenAI-compatible RouterAI adapter
 с default `google/gemini-2.5-flash-lite`, validated preview → explicit Apply и
-read-only ephemeral Assistant:
+ephemeral global System Assistant с подтверждаемыми actions:
 
 - provider/model adapter находится вне domain contracts;
 - structured output повторно валидируется registry/application schemas;
@@ -426,11 +448,17 @@ read-only ephemeral Assistant:
 - preview fingerprint, stale checks и supported compensation покрывают Apply;
 - request/model/token usage возвращаются честно, но persistent quota/billing нет;
 - attachment не считается прочитанным до отдельного parsing result.
+- provider возвращает текст либо максимум одно strict proposal из текущего
+  Course/Lesson allowlist и сам не пишет данные;
+- только отдельный signed action card после явного подтверждения вызывает
+  canonical application service для Course draft, Lesson add/fill/delete;
+- подпись, stale checks, mutex и idempotency cache process-local; durable action
+  ledger и exactly-once между replicas отсутствуют.
 
 NEXT operational hardening добавляет distributed rate limit/usage ledger только
-когда они действительно нужны, наблюдает первый real Apply по metadata-only logs
-и не превращает Assistant в write-capable agent без отдельного change-set
-contract.
+когда они действительно нужны, завершает authenticated production Apply
+postflight и проектирует durable change-set/action-ledger contract для более
+широкого mutation allowlist.
 
 Internal AI может переиспользовать tool definitions/contracts. Production web
 не обязан публиковать MCP transport.
@@ -488,8 +516,10 @@ OCR, broad web crawling, DRM и audio transcription — LATER.
 теперь является историческим execution/acceptance contract с выполненным
 terminal condition, а не описанием NEXT schema.
 
-NEXT/LATER вне identity completion: learner Course consumption/enrollment, live
-Student Screen runtime и richer Component-produced learner metrics.
+CURRENT вне identity completion: Account-scoped self-learning approved educator
+publication с revision progress и аттестацией. NEXT/LATER: enrollment и
+consumption детских Course через LearnerProfile, live Student Screen runtime и
+richer Component-produced learner metrics.
 
 ## 23. CURRENT Group and mixed audience
 
@@ -746,6 +776,11 @@ Current authoritative objects:
 account
 account_login_alias / account_security / account_preference
 course
+course_attestation / course_attestation_attempt / course_attestation_award
+course_publication / course_publication_revision / course_publication_asset
+course_publication_origin / educator_course_revision_review
+course_publication_self_enrollment / course_publication_lesson_completion
+course_publication_attestation
 lesson
 lesson_component
 lesson_student_slide
@@ -770,8 +805,9 @@ class / class_teacher / class_student
 user_preference / user_security
 ```
 
-Course/lesson/file, audience/history, Account credential и identity/
-observer/AI-consent groups выше являются active V2 contract. Legacy
+Course/publication/educator learning, lesson/file, audience/history, Account
+credential и identity/observer/AI-consent groups выше являются active V2
+contract. Legacy
 `parent`/`teacher`/`student`, school/class membership, `user_preference` и
 `user_security` физически сохранены как dormant recovery data без active web
 callers и ordinary Data API grants; это не active compatibility model. Полная

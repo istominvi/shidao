@@ -1,7 +1,7 @@
 # ShiDao V2 domain model
 
 **Статус:** current implemented domain
-**Актуально на:** 12 августа 2026 года
+**Актуально на:** 13 августа 2026 года
 
 ## Active product hierarchy
 
@@ -11,22 +11,32 @@ Account
 ├── TeacherLearner 0..N → LearnerProfile
 ├── LearnerGroup 0..N
 │   └── LearnerGroupMember 0..N → LearnerProfile
-├── Course 0..N
-│   ├── direct audience → CourseLearner 0..N → LearnerProfile
-│   ├── group audience → CourseLearnerGroup 0..N → LearnerGroup
-│   ├── effective audience = unique(active direct learners ∪ group members)
+├── Course 0..N [learning_audience = children | educators]
+│   ├── children-only direct audience → CourseLearner 0..N → LearnerProfile
+│   ├── children-only group audience → CourseLearnerGroup 0..N → LearnerGroup
+│   ├── children-only effective audience = unique(direct ∪ group members)
 │   ├── CourseAttachment → StoredFile → private Storage object
+│   ├── educator-only CourseAttestation → authored assessment definition
 │   └── Lesson 1..N
 │       ├── LessonComponent 1..N
 │       ├── StudentScreenSlide 1..N → component assignments
-│       └── LessonRun 0..N
+│       └── children-only LessonRun 0..N
 │           └── LearningRecord 0..N → LearnerProfile
 │               └── recorded_by_account_id → Account
-└── CoursePublication 0..N
-    └── current CoursePublicationRevision → immutable snapshot
-        └── CoursePublicationAsset 0..N → private immutable object
+├── CoursePublication 0..N
+│   ├── current_revision_id → latest submitted immutable revision
+│   ├── approved_revision_id → approved immutable revision visible in catalog
+│   └── CoursePublicationRevision 1..N → immutable snapshot
+│       ├── EducatorCourseRevisionReview → pending | approved | rejected
+│       ├── CoursePublicationAsset 0..N → private immutable object
+│       └── CoursePublicationAttestation 0..1 → closed assessment snapshot
+└── educator self-learning on exact approved revision
+    ├── CoursePublicationSelfEnrollment 0..N
+    ├── CoursePublicationLessonCompletion 0..N
+    ├── CourseAttestationAttempt 0..N
+    └── CourseAttestationAward 0..N
 
-CoursePublicationRevision ← CoursePublicationOrigin ← independent Course copy
+CoursePublicationRevision ← CoursePublicationOrigin ← independent child Course copy
 ```
 
 - `Account` is the ownership identity linked one-to-one to `auth.users`.
@@ -84,20 +94,51 @@ CoursePublicationRevision ← CoursePublicationOrigin ← independent Course cop
   Slides and immutable copies of ready Course attachments. It excludes private
   Course teacher preferences, audience links, learner/group identities,
   LessonRuns, LearningRecords, reports, schedules, AI consents and history.
-- Adding a catalog item creates a new owner-scoped Course with fresh Lesson,
-  Component, Slide and StoredFile identities. `CoursePublicationOrigin` records
-  provenance without coupling later edits: updating or unpublishing the source
-  never rewrites a previously added Course.
+- Adding a child catalog item creates a new owner-scoped Course with fresh
+  Lesson, Component, Slide and StoredFile identities.
+  `CoursePublicationOrigin` records provenance without coupling later edits:
+  updating or unpublishing the source never rewrites a previously added Course.
+  Educator publications never create this copy/origin.
 - Publication dirty state compares a dedicated authored-content clock with the
   listing's acknowledged clock; audience and private teacher preferences do
   not participate. Immutable revision history is bounded by a 5 GiB
   per-Account DB quota, while each revision remains limited to 24 files,
   10 MiB each and 120 MiB total.
-- Only active viewers can receive material URLs or copy a catalog Course. A
-  publisher becoming non-active is atomically unpublished and is not
-  republished on reactivation. Persisted orphan-Storage reconciliation and a
-  permanent source-Course deletion/retention policy remain rollout
+- Only active viewers can receive material URLs, and only a child publication
+  can be copied. A publisher becoming non-active is atomically unpublished and
+  is not republished on reactivation. Persisted orphan-Storage reconciliation
+  and a permanent source-Course deletion/retention policy remain rollout
   prerequisites; current soft archive is not hidden physical deletion.
+- `Course.learning_audience` classifies one shared authored model as
+  `children` or `educators`; it does not create a second Course entity. Only an
+  active Account with fresh `account.can_author_educator_courses=true` can
+  create or mutate an educator Course. The value is immutable after creation.
+- Every submitted educator revision receives an
+  `EducatorCourseRevisionReview` state `pending | approved | rejected`.
+  Catalog list, published detail, progress and attempts resolve exclusively
+  through `CoursePublication.approved_revision_id`; a pending replacement does
+  not displace the previously approved revision. Separate admin review UI is
+  later, while the server-only review contract is current.
+- Official status is persisted, not inferred from the author's display name:
+  approved educator listings require `course_publication.is_shidao=true` and
+  revision license `shidao_official_learning_v1`. Catalog UI still shows both
+  the ShiDao brand and the expert author's name.
+- An educator publication is official ShiDao self-learning content for the
+  authenticated Account. Its enrollment, last-opened Lesson and Lesson
+  completions are persisted against the exact approved revision; a newly
+  approved revision therefore starts a separate progress context.
+- The educator attestation definition is authored with the working Course and
+  copied into the immutable publication revision without exposing its answer
+  key. Reading or submitting the test requires `100%` Lesson completion for
+  that same revision. The server derives score/pass state and writes attempts
+  and durable Account awards; a client never supplies the score.
+- Educator Course cannot be copied from the catalog or duplicated, and it has
+  no roster, direct/group audience, schedule, LessonRun or teaching actions.
+  Child Course keeps its existing independent-copy and teaching lifecycle.
+- `/courses` is the catalog/owned list surface; its `children | educators`
+  toggle is a list filter. Selecting an item opens the separate read-only
+  published workspace `/courses/catalog/[publicationId]` with its own header
+  and tabs. It is distinct from the owner Course Builder workspace.
 - `LessonRun` is one concrete appointment/conducting attempt of the same
   Lesson. One open row acts as the editable appointment; completed/cancelled
   rows form history. Its UI state is derived from `scheduled_at`, `started_at`,
@@ -201,7 +242,8 @@ Operational acceptance release `0276aed` подтвердил default
 `google/gemini-2.5-flash-lite` через provider и authenticated no-write smoke;
 это не изменило domain model.
 
-Lesson planning and the read-only assistant now also receive a bounded
+Lesson planning and the compatibility course-scoped read-only assistant receive
+a bounded
 projection of completed Course Runs, the selected groups/direct learners and
 finalized LearningRecords recorded by the current teacher for the effective
 learners across that teacher's courses. Names come from TeacherLearner, overlap
@@ -221,6 +263,12 @@ registry object.
 - Catalog listing and immutable revisions → `course_publication` +
   `course_publication_revision`; revision files →
   `course_publication_asset` + private `course-publication-assets` bucket.
+- Educator revision review → `educator_course_revision_review`; approved
+  catalog pointer → `course_publication.approved_revision_id`.
+- Educator self-learning → `course_publication_self_enrollment` +
+  `course_publication_lesson_completion`; authored/published assessment →
+  `course_attestation` + `course_publication_attestation`; results →
+  `course_attestation_attempt` + `course_attestation_award`.
 - Provenance of a Course added from the catalog →
   `course_publication_origin`. It is metadata only, not a synchronization or
   inheritance relation.
@@ -275,8 +323,12 @@ The following remain later domains, not current tables or product capabilities:
 - parsing/RAG sources;
 - automatic merge/update of an already added Course when a newer catalog
   revision appears;
-- organization moderation, ratings and a populated set of official ShiDao
-  catalog courses;
+- organization moderation UI, ratings and additional official ShiDao catalog
+  courses beyond the current educator review flow;
+- LearnerProfile-scoped enrollment/consumption of child Course; current
+  educator self-learning is Account-scoped and does not imply this access;
+- Product/Order/Inventory, persisted cart/checkout, payment and delivery;
+  current `/store` is a client-state UI demo and adds no commerce domain tables;
 - chat/notifications and external MCP.
 
 Sequencing lives in `docs/roadmap.md`. Future domains must not add Step/root

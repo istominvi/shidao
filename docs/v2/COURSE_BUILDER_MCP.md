@@ -126,8 +126,10 @@ directly, without starting this `stdio` transport or inventing a static MCP
 actor.
 
 Course and Lesson generation use validated preview → explicit Apply; the
-assistant is read-only and does not call MCP tools. Attachments remain metadata
-only until a separate parsing pipeline succeeds. Provider-compatible flat
+compatibility course-scoped assistant is read-only and does not call MCP tools.
+The global System Assistant is a separate signed-confirmation web flow and also
+does not call this development MCP transport. Attachments remain metadata only
+until a separate parsing pipeline succeeds. Provider-compatible flat
 structured output is an AI transport detail: it is converted back into the
 canonical registry-backed plan before Apply and is not reused as an MCP schema.
 The canonical boundary and deployment state are documented in

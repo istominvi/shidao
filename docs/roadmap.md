@@ -1,7 +1,7 @@
 # Roadmap ShiDao V2
 
 **Статус:** current / next / later priorities после production identity release
-**Актуально на:** 12 августа 2026 года
+**Актуально на:** 13 августа 2026 года
 
 Фактически реализованное состояние находится в
 [`docs/project-state.md`](./project-state.md). Этот документ описывает только
@@ -31,7 +31,7 @@
 - `shidao.ru` переведён в landing-only, V2 работает на `v2.shidao.ru`.
 - Старый Methodology/Step/runtime код удалён из активного приложения.
 - Каноническая модель стала `Course → Lesson → ordered Components`.
-- Реализованы persisted Course, Lesson, 10 Component types и private
+- Реализованы persisted Course, Lesson, 20 Component types и private
   course-wide attachments.
 - Реализована двухуровневая Course → Lesson навигация в визуальном языке demo:
   четыре Course tabs («Уроки / О курсе / Материалы / История»), пять Lesson
@@ -49,10 +49,9 @@
   `min-height: 200px`, растёт по контенту и вертикально центрирует actions.
   В current production heading занимает всю оставшуюся ширину, а actions — только
   intrinsic ширину содержимого и не превращаются в full-width кнопки на mobile.
-  Repository-current follow-up снимает внутренний лимит H1 `24ch`, сохраняет
+  Current production follow-up снимает внутренний лимит H1 `24ch`, сохраняет
   desktop gap 24 px и делает все backlinks непрозрачно чёрными, однострочными с
-  ellipsis и равным page-header inset сверху и снизу; rollout этого follow-up —
-  next.
+  ellipsis и равным page-header inset сверху и снизу.
   Все product consumers, включая Courses index, owner/new/published Course,
   Lesson, Students, learning/observing profile и learner dialog, используют
   один `WorkspaceTabs`: 40 px, roving keyboard/ARIA, horizontal scroll,
@@ -63,8 +62,8 @@
   Базовый follow-up был подтверждён в release `77870e3`; full-width
   канонизация развёрнута exact merge commit
   `84ffefecda99d3b0a9da82bf1eaf8ce76d9c6ea1` (PR #242).
-  Текущий refinement развёрнут exact source
-  `0c8946f95ebeb31e02955a110fc057f761f07ea9`; running container evidence
+  Текущий совокупный UI contract развёрнут exact source
+  `9e66fb548bef176486673149f466b269fd436b21`; running container evidence
   зафиксирован в [`docs/project-state.md`](./project-state.md).
 - Active app routes приведены к плоскому demo-фону `#f5f1e8` без marketing
   gradients; header, кнопки, вкладки и заголовочная типографика используют
@@ -95,12 +94,14 @@
 - Реализованы private-by-default Components и persisted Student Screen Slides.
 - Реализован fullscreen Student Screen preview.
 - Реализован development-only MCP из шести tools поверх application service.
-- Lesson planning и read-only Assistant получают состав выбранных групп и
+- Lesson planning и compatibility course-scoped read-only Assistant получают
+  состав выбранных групп и
   отдельных учеников, а также bounded finalized learning history эффективной
   аудитории без технических IDs; отсутствие не трактуется как непонимание.
 - В release `0276aed` развёрнуты и проверены RouterAI provider adapter,
   Course/Lesson
-  preview → explicit apply и read-only ephemeral assistant; production runtime
+  preview → explicit apply и compatibility course-scoped read-only assistant;
+  production runtime
   получает API key из server-side secret environment и использует проверенный
   default `google/gemini-2.5-flash-lite`.
 - **Current deployed follow-up:** один global System Assistant смонтирован в
@@ -261,9 +262,10 @@ Definition of Done программы:
 Цель — превратить рабочий технический редактор в уверенный ежедневный
 инструмент преподавателя без изменения доменной модели.
 
-**Current:** primary navigation упрощена до «Расписание / Ученики / Курсы»;
-учебный профиль перенесён в Account menu, observer projection — во вкладку
-«Наблюдение» внутри «Ученики». Каталог `/courses` получил поиск, реальные
+**Current production:** primary navigation содержит «Расписание / Ученики /
+Курсы / Магазин» без role switch. Учебный профиль перенесён в Account menu,
+observer projection —
+во вкладку «Наблюдение» внутри «Ученики». Каталог `/courses` получил поиск, реальные
 Course-фильтры, сортировку и переключение «Карточки / Таблица» без новой schema
 или параллельного Course API. В current production Students и Courses controls
 унифицированы с Schedule: outer toolbar-card удалена, Students показывает
@@ -352,16 +354,15 @@ Course начинает с **О курсе**; обычное сохранени�
 deterministic/AI-сборка открывает **Уроки**. Вкладка сохранённого Course
 **Материалы** разделяет используемые и пока не используемые attachments и
 показывает Lesson usage.
-Repository-current page-header follow-up отдаёт оставшуюся heading-колонку уже
+Current production page-header follow-up отдаёт оставшуюся heading-колонку уже
 самому H1 без `24ch`, фиксирует 24 px между ней и intrinsic actions и переводит
 backlink в один непрозрачно-чёрный ряд с ellipsis; равный вертикальный rhythm
-следует page-header inset. Тот же repository-current refinement полностью
+следует page-header inset. Тот же current refinement полностью
 удаляет optional eyebrow из `AppPageHeader` API и product consumers.
-Production rollout этих UI-only follow-up — next.
 Current production tabs refinement переводит inactive labels и baseline на
 один 50%-black token, задаёт baseline 1.5 px, gap и верхние радиусы 12 px,
 добавляет иконку каждому tab и показывает только positive count как маленький
-приподнятый `sup`. Repository-current follow-up задаёт этому count weight 500,
+приподнятый `sup`. Current production follow-up задаёт этому count weight 500,
 чтобы уменьшенная цифра оставалась визуально сопоставимой с основным label.
 `/students` получает справа от «Фильтр» общий icon-only выбор **Таблица /
 Карточки**: таблица слева и выбрана изначально, обе проекции сохраняют текущую
@@ -381,7 +382,7 @@ view-sort, начиная с `position ASC`. В action-cell остаётся о�
 в preview state, а learner answer persistence/scoring остаются later. Продуктовый
 выбор и границы зафиксированы в
 [`docs/product/course-component-catalog.md`](./product/course-component-catalog.md).
-Current-source palette больше не меняет размер между категориями: responsive
+Current production palette больше не меняет размер между категориями: responsive
 panel ограничена viewport, а отдельный внутренний scroll сохраняет header и
 category tabs неподвижными; дублирующие category heading/description удалены.
 Карточки используют content-sized auto rows и прижаты к верхнему левому краю;
@@ -401,15 +402,44 @@ render/edit-compatible, но не показывается в ручном picke
 открывает внутри того же dialog локальный draft из canonical defaults; возврат
 или закрытие ничего не создают, а `POST` происходит только по «Сохранить
 компонент». Persisted Component card остаётся renderer-only: белая surface не
-имеет border, базовая холодная тень `0 3px 6px` плавно усиливается до
-`0 6px 12px` на hover/focus без изменения геометрии, 32 px controls вынесены в
-overlay, а Pencil открывает отдельный modal payload editor. Отмена не отправляет
+имеет border, базовая чёрная тень `0 3px 6px #0000000d` на hover/focus сохраняет
+offset `3px`, но плавно меняется до `0 3px 12px #0000001a` без изменения
+геометрии. 32 px controls вынесены в borderless/shadowless overlay на общей
+белой подложке `rgba(255, 255, 255, 0.5)`, а Pencil открывает отдельный modal payload editor. Отмена не отправляет
 mutation, `PATCH` выполняет только явное сохранение. Оба editor surface
 используют обычные labels и 40 px input/select с canonical `.88rem/400`.
 Существующие API routes, physical DB schema, migrations и authored order не
 меняются; production postflight этого source slice остаётся next.
 
-Repository-current body typography закрепляет Schedule как канон для всех
+**Current source / next production deployment:** белые secondary actions в
+`AppPageHeader` получают 50%-black рамку из общего muted token. Внешняя
+геометрия остаётся `40 px` с border `1 px`, белая заливка занимает внутренние
+`38 px` и через `background-clip: padding-box` не лежит под полупрозрачной
+рамкой, поэтому та смешивается с фактическим page background. Lesson
+«Удалить» использует тот же secondary surface с danger-цветом вместо
+borderless `ghost`. Изменение scoped только к header actions, не добавляет сам
+выбор фона Course и не меняет API/schema/migrations; production postflight
+остаётся next.
+
+**Current source / next production deployment:** общий `WorkspaceTabs`
+сохраняет визуальный baseline `1.5 px`, рисуя paint-layer высотой `3 px` и
+сжимая его `scaleY(0.5)` от нижней грани. Такой способ исключает округление
+обычной дробной CSS-высоты до одного или двух пикселей, не меняет 40 px tab
+layout, scroll, interaction или 4 px active segment и применяется сразу ко всем
+product consumers. API/schema/migrations не меняются; production postflight
+остаётся next.
+
+**Current source / next production deployment:** shared contextual
+`ActionMenu` для Course, Lesson rows, Schedule и Students канонизирован через
+общие surface/radius/shadow tokens. Панель белая, с единственной тенью
+`0 18px 46px rgba(20, 20, 20, 0.18)` и без обычной обводки; separator API,
+линии и separator DOM удалены во всех `MoreHorizontal`/`MoreVertical`
+consumers. Item geometry, destructive/disabled states, portal/keyboard/focus
+contracts не меняются. Filter/calendar popovers, Account menu и native
+`select` остаются отдельными семантическими компонентами; API/schema/migrations
+не меняются, production postflight остаётся next.
+
+Current production body typography закрепляет Schedule как канон для всех
 active product tables: `#141414 / .88rem / 400 / 1.3`; различия primary-cell
 weight и локальные muted colors удалены, header typography не меняется.
 
@@ -457,8 +487,8 @@ Definition of Done:
 - stale-plan checks, idempotent Course retry и compensating cleanup для
   поддерживаемых apply paths;
 - новые AI Components private-by-default и не публикуются на Student Screen;
-- read-only ephemeral assistant с Course/selected Lesson context, без tools,
-  mutation commands и persisted chat history;
+- compatibility course-scoped read-only assistant с Course/selected Lesson
+  context, без tools, mutation commands и persisted chat history;
 - понятные provider errors и сохранение ручного workflow;
 - фактические request ID/model/token usage в ответе и metadata-only server log;
 - process-local rate/concurrency limit без новой persistence;
@@ -578,9 +608,9 @@ UUID parsing/toolbar hotfix развёрнут в exact functional web commit
 
 **Current production.** Forward migration
 `20260812150745_educator_course_governance_progress.sql` применена с `COMMIT` в
-`2026-08-12T07:34:36Z`; current snapshot снят `2026-08-12T07:43:11Z` и имеет
+`2026-08-12T07:34:36Z`; current snapshot снят `2026-08-12T07:46:11Z` и имеет
 SHA-256
-`6df94ceabbc902b66b4c592998f1770ea62442a68255ddd6133a3b9d75745949`.
+`a34a5a5919ea406050a5c0cb7f39310d1a9e807725e608166f63becb8f2260a4`.
 Database contract и deployed dependent source реализуют окончательную
 governance/consumption модель:
 
@@ -614,12 +644,14 @@ governance/consumption модель:
   schedule и LessonRun. Это self-learning Course текущего Account, а не Course
   для проведения занятий.
 
-Dependent web rollout завершён Coolify deployment `ikw0bj347reelzotaqo15a39`
+Initial E2 web rollout завершён Coolify deployment `ikw0bj347reelzotaqo15a39`
 в `2026-08-12T07:58:39Z`: `SOURCE_COMMIT` и image tag совпали с exact commit,
 image ID —
 `sha256:214e954aed0355c1881ea778e65dcb7f4c4cabcde4d7ac2e3f6022322bd8e027`,
-restart count `0`, HTTP host/CSRF/auth postflight green. DB и web/API slice
-являются current production.
+restart count `0`, HTTP host/CSRF/auth postflight green. Это functional E2
+baseline `22b486a7163453019d9720cb4fe0f36ed7c0228d`; текущий deployed application
+source — `9e66fb548bef176486673149f466b269fd436b21`. DB и web/API slice являются
+current production.
 
 **Later:** admin UI для capability/review, юридически значимые удостоверения,
 proctoring, manual/free-response assessment, expiration/retake policy и
@@ -630,13 +662,14 @@ optional self-study deadlines.
 Цель — дать преподавателю и ученику простой путь к физическим материалам для
 занятий, не выдавая UI-прототип за работающую коммерцию.
 
-**Repository current; production next:** `/store` добавлен четвёртым пунктом
+**Current production:** `/store` добавлен четвёртым пунктом
 universal Account navigation. Типизированный статический каталог поддерживает
 категории, поиск, audience/price/availability filters, сортировку, карточки и
 таблицу. Header action открывает локальную корзину и checkout с именем,
 телефоном, email и адресом. Последний шаг явно помечен как demo: card fields,
-network request, persisted order и оплата отсутствуют. Stable product slug
-позволяет открыть `/store?product=<slug>`, но Lesson contracts пока не
+network request, persisted order и оплата отсутствуют. Стабильный в текущем
+demo-каталоге product slug позволяет открыть `/store?product=<slug>`, но Lesson
+contracts пока не
 изменяются.
 
 **Next:** отдельно спроектировать Product/Order/Inventory, admin catalog,
@@ -744,9 +777,11 @@ claim/access slice. Заполненный `account_id` позволяет Accou
 собственную canonical identity row; Course, records и teacher-local data этим не
 открываются. Полный current/next/later boundary находится в
 [`docs/architecture/learner-identity-access-model.md`](./architecture/learner-identity-access-model.md).
-Learner Course consumption и live Student Screen остаются отдельным later slice
-и не входят в P0.Identity. Наличие linked profile/observer grant/AI consent не
-создаёт Course enrollment.
+LearnerProfile-scoped consumption детского Course и live Student Screen
+остаются отдельным later slice и не входят в P0.Identity. Наличие linked
+profile/observer grant/AI consent не создаёт Course enrollment. Current
+Account-scoped self-learning educator Course — отдельный уже реализованный flow
+и не выдаёт доступ к детскому Course.
 
 ## P2: LessonRun и live lesson
 
@@ -822,7 +857,7 @@ guards. Refinement развёрнут exact merge commit
 `84ffefecda99d3b0a9da82bf1eaf8ce76d9c6ea1` (PR #242); running image и
 HTTP/CSRF/auth boundary postflight подтверждены.
 
-**Next source Schedule micro-polish:** подзаголовок теряет завершающую точку;
+**Current production Schedule micro-polish:** подзаголовок теряет завершающую точку;
 одна стрелка направления отображается только в активной sortable-колонке.
 Трёхпунктовое меню ожидающего Run больше не разделяет «Изменить / Отменить»,
 а hover-подсветка пунктов использует радиус 8 px выбранной кнопки вида. Это

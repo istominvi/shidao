@@ -417,7 +417,7 @@ function ComponentCard({
               variant="ghost"
               className={`component-card-visibility-action transition ${
                 learnerVisible
-                  ? "component-card-visibility-action-active border-sky-200 bg-sky-100 text-sky-800 hover:bg-sky-200"
+                  ? "component-card-visibility-action-active bg-sky-100 text-sky-800 hover:bg-sky-200"
                   : "component-card-visibility-action-inactive text-neutral-500"
               }`}
               disabled={disabled}
@@ -1144,7 +1144,7 @@ export function LessonAuthoringWorkspace({
               Настройки урока
             </Button>
             <Button
-              variant="ghost"
+              variant="secondary"
               className="product-btn-danger"
               disabled={disabled}
               onClick={() => {

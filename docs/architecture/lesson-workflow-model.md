@@ -4,7 +4,7 @@
 
 **Дата решения:** 5 августа 2026 года
 
-**Актуально на:** 12 августа 2026 года
+**Актуально на:** 13 августа 2026 года
 
 **Область:** Course Builder / Lesson / Components / Student Screen / audience / scheduling / learning history / course materials / homework
 
@@ -14,8 +14,10 @@ Current production дополнительно содержит roleless learner 
 exactly-one Account profile, claim/merge/observer, learner-safe
 history/progress, explicit shared comments, actual duration и consented
 cross-provider AI. Phased M1–M6 migrations, exact Coolify deploy и postflight
-завершены. Homework, learner Course consumption и live Student Screen sync
-остаются later.
+завершены. Account-scoped самостоятельное прохождение approved educator
+publications с revision progress и аттестацией также является current
+production. Homework, enrollment/consumption детских Course через
+LearnerProfile и live Student Screen sync остаются later.
 
 Current deployed follow-up добавляет global System Assistant в
 protected `(app)` layout. Он не меняет Lesson hierarchy или schema: по
@@ -265,7 +267,7 @@ UI, application service и MCP используют эти же contracts. JSON 
 генерируется из того же источника. Добавление типа компонента не требует новой
 таблицы и не создаёт отдельную React-страницу для конкретной Lesson.
 
-Текущий source registry содержит 20 активных типов:
+Текущий production registry содержит 20 активных типов:
 
 ```text
 heading
@@ -306,6 +308,13 @@ Lessons. Новый ручной текст создаётся как `rich_text
 `title` + required Markdown `content`. Это обратно совместимое расширение
 payload schema version `1`, поэтому старые payload без `title` продолжают
 читаться без конвертации Components, изменения order/Slide refs или migration.
+
+Current production Store demo не меняет registry или Lesson schema. Пока
+преподаватель может использовать обычный `external_link` с абсолютным HTTPS URL
+вида `https://v2.shidao.ru/store?product=<slug>`; Store выбирает и фокусирует
+известный товар, но ссылка не является persisted Product relation и не
+гарантирует наличие. Типизированная Lesson Component → Product связь остаётся
+later и должна пройти через этот же registry/application-service/MCP boundary.
 
 ## Teacher plan
 
@@ -355,15 +364,17 @@ Save отправляет существующий `POST /api/v2/lessons/:lesson
 заголовка. Прозрачный toolbar показывает поиск по названиям уже добавленных
 Components слева (если список непустой) и действия AI/добавления справа.
 Authored Component card использует 12 px element radius, белый фон без border и
-холодную тень `0 3px 6px rgba(76, 76, 155, 0.1)`; на hover/focus тень плавно
-становится `0 6px 12px rgba(76, 76, 155, 0.2)`, не двигая layout, а при
+чёрную тень `0 3px 6px #0000000d`; на hover/focus тень сохраняет offset `3px`,
+но плавно становится `0 3px 12px #0000001a`, не двигая layout, а при
 reduced-motion transition отключается. Фильтрация не меняет canonical
 `position` и не создаёт второй порядок. В current source карточка содержит
 только production teacher renderer; номер/type остаются доступным именем, но не
 образуют отдельный
 видимый normal-flow header. Группа 32 px действий располагается в overlay,
 раскрывается на hover/focus-within и остаётся доступной на устройствах без
-hover. Pencil открывает отдельный modal editor поверх неизменённого renderer.
+hover. Overlay и его кнопки не имеют border/box-shadow; общая белая подложка —
+`rgba(255, 255, 255, 0.5)`. Pencil открывает отдельный modal editor поверх
+неизменённого renderer.
 Отмена/закрытие отбрасывают локальные изменения, а только явное сохранение
 отправляет существующий `PATCH /api/v2/components/:componentId` с
 payload/placement. Form labels используют canonical `.88rem/400`, однострочные
@@ -473,10 +484,22 @@ compatibility, но его dialog больше не является часть�
 `/courses` разделяет рабочие Course и каталог вкладками **Мои** и
 **Каталог**. Действие «Создать курс» всегда начинает пустой pre-persistence
 draft в Course shell и создаёт Course только после явного сохранения, а
-«Добавить в мои курсы» создаёт независимую копию
-выбранной published revision. Копия сразу редактируется как обычный
-owner-scoped Course. Ни адаптация, ни AI-перегенерация не запускаются
-автоматически.
+«Добавить в мои курсы» для детской published revision создаёт независимую
+owner-scoped копию. Копия сразу редактируется как обычный Course; ни адаптация,
+ни AI-перегенерация не запускаются автоматически. Official educator
+publication открывается напрямую в read-only self-learning workspace и никогда
+не копируется или не дублируется, включая состояние после аттестации.
+
+Назначение Course хранится в `course.learning_audience` (`children |
+educators`) и не совпадает с roster-полем `audience_type`. Educator authoring
+доступен только active Account с DB-backed
+`can_author_educator_courses`; отправленная revision проходит server-side admin
+review и попадает в каталог только через `approved_revision_id` с official
+license. В `/courses/catalog/[publicationId]` Account читает learner-safe
+approved snapshot, сохраняет revision-scoped last opened/completed Lessons и
+получает доступ к аттестации только после `100%` уроков. Roster, groups,
+scheduling и LessonRun для educator Course закрыты DB и application guards.
+Полный contract: [«Курсы для педагогов и аттестация»](../product/educator-courses-and-attestation.md).
 
 Публикация не открывает live owner tables. Application service создаёт
 allowlisted immutable snapshot текущей authored-редакции:
@@ -490,10 +513,12 @@ allowlisted immutable snapshot текущей authored-редакции:
 - source Course/Lesson/Component/Slide/StoredFile IDs заменяются
   publication-local keys.
 
-Перед первой публикацией и обновлением есть один confirmation dialog
-с обязательным подтверждением прав на материалы и разрешением
-другим пользователям ShiDao копировать и изменять их. Отдельного
-preview wizard, PII/name scanner и второго confirmation step нет.
+Перед первой публикацией и обновлением есть один confirmation dialog с
+обязательным подтверждением прав на материалы. Для детского Course consent
+разрешает другим пользователям ShiDao копировать и изменять published content;
+для educator Course consent покрывает official публикацию ShiDao, а revision
+проходит обязательное admin review и остаётся no-copy. Отдельного preview
+wizard, PII/name scanner и второго confirmation step нет.
 Обновление publication создаёт новую immutable revision; старые
 уже добавленные Course не меняются. Unpublish скрывает listing, но не
 удаляет owner Course и чужие копии.
@@ -538,18 +563,35 @@ Visual contract Course routes не меняет эту навигационну�
   action-секцию; header имеет минимальную высоту 200 px,
   растёт по контенту, heading получает всю оставшуюся ширину, а actions
   вертикально центрированы и имеют intrinsic ширину по содержимому с
-  ограничением шириной контейнера. В repository-current follow-up сам H1 больше
+  ограничением шириной контейнера. В current production сам H1 больше
   не имеет лимита `24ch` и заполняет heading-колонку; desktop column-gap равен
   24 px. Backlink и стрелка используют непрозрачный `#141414`, label остаётся в
   одной строке и обрезается ellipsis, а интервалы над и под backlink совпадают с
   page-header block-inset (20 px desktop, 16 px mobile). Этот UI-only follow-up
-  является production next и не меняет Lesson hierarchy, API или schema.
+  не меняет Lesson hierarchy, API или schema.
   Надзаголовок/eyebrow не входит в `AppPageHeader` API и не может появиться на
   отдельном product route;
 - основные кнопки и header controls — высотой 40 px с радиусом 12 px и шрифтом
   `.88rem/400`; primary flat без inset-блика, подъёма или тени, иконки имеют
   единый 16 px rhythm, полную непрозрачность и наследуют контрастный цвет,
   белые кнопки сохраняют тонкую серую рамку, а menu items остаются borderless;
+- в current source белые secondary actions внутри `AppPageHeader` уточняют этот
+  контракт для будущих page backgrounds: внешний border-box остаётся `40 px`,
+  border `1 px` использует общий 50%-black token, а белый background с
+  `background-clip: padding-box` занимает внутренние `38 px` и не осветляет
+  полупрозрачную рамку из-под неё. Lesson «Удалить» получает тот же secondary
+  surface с danger-цветом вместо `ghost`; правило не затрагивает menu items,
+  dialog ghost controls или primary actions. Сам пользовательский выбор фона
+  Course этим UI-only source slice не реализован;
+- в current source общий contextual `ActionMenu`, открываемый
+  `MoreHorizontal`/`MoreVertical` в Course actions, Lesson rows, Schedule и
+  Students, использует токенизированные белый surface, element-radius 12 px и
+  одну тень `0 18px 46px rgba(20, 20, 20, 0.18)` без обычной рамки. Shared item
+  contract больше не содержит `separatorBefore`, divider или separator DOM;
+  состав/порядок действий, 40 px item geometry, destructive/disabled states,
+  portal positioning, keyboard navigation и focus restore сохраняются.
+  Filter/calendar popovers, Account menu и native `select` остаются отдельными
+  компонентами; этот source slice не меняет API/schema/migrations;
 - radius tokens отделяют card surface 20 px от element/control/table/menu
   surface 12 px. Активные `ProductTable` wrappers используют table token,
   сплошной белый фон и не имеют внешней рамки. Students и обе Courses tables
@@ -598,6 +640,14 @@ Tabs refinement, описанный выше, является current productio
 exact source `0c8946f95ebeb31e02955a110fc057f761f07ea9`: общий 50%-black token,
 baseline 1.5 px, gap и верхние радиусы 12 px, 16 px icons и только положительные
 counts в `sup`. Physical schema и API этим rollout не менялись.
+
+Current source follow-up сохраняет этот визуальный baseline `1.5 px`, но
+устраняет зависимость от растеризации дробной высоты Chromium: отдельный
+paint-layer имеет высоту `3 px`, `scaleY(0.5)` и transform-origin на нижней
+грани. Поэтому линия остаётся привязана к низу tab row и не влияет на 40 px
+layout; active segment 4 px по-прежнему перекрывает её через более высокий
+z-index. Это общий `WorkspaceTabs` UI-only contract без route-specific forks,
+API, schema или migration; production rollout остаётся next.
 
 ## Roleless teaching hub navigation boundary
 
@@ -652,7 +702,7 @@ Current production делает `/schedule` и `/students` доступными
   Этот current production polish меняет только UI: LessonRun API/schema и
   migrations не меняются; последняя корректировка cell/action spacing
   развёрнута и прошла running-image/HTTP boundary postflight в PR #242;
-- current source follow-up убирает завершающую точку из Schedule subtitle,
+- current production follow-up убирает завершающую точку из Schedule subtitle,
   оставляет одну стрелку только у активной sortable-колонки и убирает
   разделитель между «Изменить / Отменить» в трёхпунктовом меню. Радиус
   hover-подсветки menu item равен 8 px и совпадает с active view option. Этот
@@ -722,19 +772,20 @@ actions`; пять data headers сортируют полную client-loaded pr
   self/observer surfaces и subject lifecycle реализованы отдельным
   learner-identity service/API, не внутри Course Builder.
 
-Primary navigation для roleless Account содержит «Расписание / Ученики /
-Курсы». «Учебный профиль» находится в Account menu, а «Наблюдение» — третья
-вкладка `/students`; `/observing` служит compatibility redirect. Пустой
+Current production primary navigation для roleless Account содержит
+«Расписание / Ученики / Курсы / Магазин». «Учебный профиль» находится в Account menu, а
+«Наблюдение» — третья вкладка `/students`; `/observing` служит compatibility redirect. Пустой
 `/courses` позволяет начать authoring; он не является Course enrollment
 учащегося. Owner-scoped CourseSummary поддерживает поиск, subject/level/content
 filters, сортировку и режимы «Карточки / Таблица» без второй модели; current
 controls используют direct page-background toolbar с `padding-inline: 0`,
 disclosure с native
 selects и icon-only view control; видимый result count не является control.
-Published paginated Catalog отдельно поддерживает только server-side
-search/subject/level из catalog RPC, не имитирует недоступные content/sort
-capabilities и переключает карточки/таблицу лишь как presentation уже
-загруженной cursor-последовательности.
+Published paginated Catalog отдельно поддерживает server-side
+audience/search/subject/level из catalog RPC, не имитирует недоступные
+content/sort capabilities и переключает карточки/таблицу лишь как presentation
+уже загруженной cursor-последовательности. Audience toggle находится только в
+toolbar списка; открытый item имеет собственный Course header и tabs.
 
 ## Scheduling, completion and deletion
 
@@ -919,6 +970,12 @@ Implementation map:
 - System Assistant UI/context: `src/components/assistant/`,
   `src/app/(app)/layout.tsx`, `src/app/styles/system-assistant.css`;
 - authoring UI: `src/components/course-builder/lesson-authoring-workspace.tsx`;
+- publication/catalog: `src/modules/course-publications/`,
+  `src/components/course-builder/course-catalog-panel.tsx`;
+- published self-learning workspace: `src/app/(app)/courses/catalog/[publicationId]/`,
+  `src/components/course-builder/published-course-workspace.tsx`;
+- revision progress и attestation: `src/modules/course-consumption/`,
+  `src/modules/course-attestations/`, `src/app/api/v2/course-catalog/`;
 - scheduling domain/service: `src/modules/lesson-runs/`;
 - scheduling/history UI: `src/components/lesson-runs/`,
   `src/components/teaching-hub/`; integrated Schedule period/date control —
@@ -935,6 +992,8 @@ Implementation map:
 - current schema: `supabase/schema/current-schema.sql`;
 - Slide migration: `20260804044955_add_lesson_student_slides.sql`;
 - LessonRun migration: `20260806190044_lesson_runs_learning_records.sql`.
+- educator governance/progress migration:
+  `20260812150745_educator_course_governance_progress.sql`.
 - Groups/mixed audience migration:
   `20260806220726_learner_groups_mixed_course_audience.sql`.
 - Canonical learner identity migration:
@@ -1102,7 +1161,9 @@ application services и MCP не импортируют demo fixtures; все н
 - persisted homework editor;
 - live Student Screen sync, realtime presence и runtime cursor;
 - richer learner metrics без реального Component/runtime producer;
-- learner Course consumption и live Student Screen access;
+- enrollment/consumption детских Course через LearnerProfile и live Student
+  Screen access; Account-scoped self-learning educator publications уже
+  реализован;
 - cross-provider history без явного subject grant (намеренно запрещена);
 - drag-and-drop, если надёжные кнопки «выше/ниже» уже обеспечивают reorder;
 - автоматическая адаптация каталожного Course под группу, merge новых
@@ -1114,8 +1175,9 @@ application services и MCP не импортируют demo fixtures; все н
 Roleless Account bootstrap, invitation/claim, physical profile merge,
 self/observer history, real-record progress и consented cross-provider AI уже
 реализованы в current production и не меняют authored hierarchy Lesson. Phased
-release/postflight завершены. Learner Course consumption и live Student Screen
-остаются later.
+release/postflight завершены. Enrollment/consumption детских Course через
+LearnerProfile и live Student Screen остаются later; educator self-learning
+является current production.
 
 ## Shipped acceptance baseline
 

@@ -435,9 +435,13 @@ Account прошёл authenticated browser navigation/self/observer/security sur
 disposable fixture удалён без orphan rows, а stale session закрыта. Identity
 terminal condition выполнен.
 
-**Next / later, вне identity completion:** learner Course consumption/enrollment,
-live Student Screen, persisted Homework, richer Component-produced metrics,
-communication, billing and external MCP.
+**Current outside identity:** Account-scoped self-learning approved educator
+publication хранит собственные revision progress и аттестацию; это не является
+LearnerProfile enrollment и не расширяет Course audience.
+
+**Next / later, вне identity completion:** enrollment/consumption детских
+Course через LearnerProfile, live Student Screen, persisted Homework, richer
+Component-produced metrics, communication, billing and external MCP.
 
 Lesson/Run authored invariants remain canonical in
 [`lesson-workflow-model.md`](./lesson-workflow-model.md). Provider transport and

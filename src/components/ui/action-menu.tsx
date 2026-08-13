@@ -25,7 +25,6 @@ export type ActionMenuItem = {
   disabled?: boolean;
   hint?: string;
   destructive?: boolean;
-  separatorBefore?: boolean;
 };
 
 type ActionMenuProps = {
@@ -253,9 +252,6 @@ export function ActionMenu({
 
         return (
           <div key={item.id}>
-            {item.separatorBefore ? (
-              <div className="action-menu-separator" role="separator" />
-            ) : null}
             {item.href && !item.disabled ? (
               <Link
                 ref={(node) => {

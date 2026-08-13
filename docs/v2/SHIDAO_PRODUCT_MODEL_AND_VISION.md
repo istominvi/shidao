@@ -3,7 +3,7 @@
 **Формат:** стратегическое видение и основа для презентации
 **Аудитория:** команда, партнёры, преподаватели, родители, потенциальные инвесторы
 **Версия:** 2.0
-**Актуально на:** 12 августа 2026 года
+**Актуально на:** 13 августа 2026 года
 **Статус:** целевая продуктовая модель; не является перечнем уже запущенных функций
 
 ## Как читать этот документ
@@ -26,9 +26,10 @@ recipient-bound claim/child activation, physical merge, archive/restore,
 self/observer history/progress и subject-controlled AI consent. M1–M6, четыре
 verified backup, DB/API postflight, реальный GoTrue Admin create/delete probe,
 exact functional Coolify SHA `01aa88a` и authenticated browser acceptance
-завершены. Navigation/catalog follow-up `bafc984` добавил итоговую Account IA,
-поиск/фильтры и «Плитки / Таблица» для Course и прошёл `326/326` unit,
-`19/19` production-mode browser gate и exact Coolify deployment `889`. Learner Course consumption,
+завершены. Current production также включает governed official educator
+publications: trusted-author capability, admin review exact revision,
+learner-safe read-only workspace, Account-scoped progress и аттестацию после
+`100%` уроков. Enrollment/consumption детских Course через LearnerProfile,
 live-проведение, richer Component metrics, persisted Homework, parsing/RAG,
 подписки, billing и внешний MCP/API остаются **later**. Настоящее время в
 стратегических разделах не заменяет implementation/deployment evidence.
@@ -508,8 +509,10 @@ ShiDao должен со временем понимать больше:
   Course;
 - после сохранения открыть Settings и просмотреть Materials.
 
-Прикрепление learners/Groups к Course audience, назначение LessonRun и RouterAI
-preview/apply уже работают. Learner Course enrollment/consumption и reusable
+Прикрепление learners/Groups к детскому Course audience, назначение LessonRun и
+RouterAI preview/apply уже работают. Official educator publications уже имеют
+отдельное Account-scoped self-learning без roster и LessonRun. Enrollment и
+consumption детских Course через LearnerProfile, а также generalized reusable
 Course templates остаются later.
 
 ## Шаг 2. Подготовить урок
@@ -532,7 +535,7 @@ Lesson показывается ученику автоматически. То�
 описаны в
 [`docs/product/course-component-catalog.md`](../product/course-component-catalog.md).
 
-Current source RouterAI Lesson planning может предлагать после preview
+Current production RouterAI Lesson planning может предлагать после preview
 только то же ограниченное подмножество:
 
 - title и teacher comment Lesson;
@@ -829,7 +832,7 @@ ShiDao работает с самим обучением:
 
 Готовый курс не всегда подходит конкретному человеку.
 
-ShiDao позволяет:
+Для персональных и детских Course ShiDao позволяет:
 
 - взять шаблон;
 - скопировать его;
@@ -837,6 +840,10 @@ ShiDao позволяет:
 - добавить собственные материалы;
 - изменить под группу;
 - перестроить с помощью AI.
+
+Official educator Course образует другую границу: approved revision читается
+напрямую, показывает ShiDao и автора-эксперта и не копируется даже после
+аттестации.
 
 ## 15.6 Не зависит от одного преподавателя
 
@@ -871,7 +878,9 @@ ShiDao позволяет:
 
 ## 16.4 Персональный курс как документ
 
-Курс принадлежит пользователю и легко копируется, редактируется и адаптируется.
+Owner-scoped персональный или детский Course легко копируется, редактируется и
+адаптируется. Official educator publication остаётся immutable approved
+self-learning content и не превращается в пользовательскую копию.
 
 ## 16.5 Материалы и будущая библиотека
 
@@ -966,11 +975,11 @@ ShiDao строится не как оболочка над одной модн�
 
 1. Auth и один current Account на пользователя.
 2. Реальные Course в PostgreSQL, draft creation form и owner-scoped каталог с
-   поиском, фильтрами, сортировкой и режимами «Плитки / Таблица».
+   поиском, фильтрами, сортировкой и режимами «Карточки / Таблица».
 3. Приватная загрузка Course materials в Storage при создании Course.
 4. Lesson с обязательным title, teacher-only summary и плотным порядком.
 5. Один ordered Component list без Step/root Step/Methodology.
-6. Десять code-first Component types с общими UI/service/MCP contracts.
+6. Двадцать code-first Component types с общими UI/service/MCP contracts.
 7. Private-by-default Components и явное назначение на persisted Student
    Screen Slides.
 8. Teacher plan и Student Screen preview с reload persistence.
@@ -989,7 +998,7 @@ ShiDao строится не как оболочка над одной модн�
 
 1. Universal roleless Account с exactly-one canonical profile, Account
    login/PIN/session boundary, primary navigation «Расписание / Ученики /
-   Курсы» и Account menu «Учебный профиль / Настройки / Выход».
+   Курсы / Магазин» и Account menu «Учебный профиль / Настройки / Выход».
 2. Share-code/blind-email discovery, recipient-bound offline claim/child
    activation, physical duplicate merge и stale-safe lineage.
 3. Archive/restore, safe empty-offline delete, subject unlink/erasure reset,
@@ -1006,7 +1015,23 @@ GoTrue Admin lifecycle probe. M5 закрывает deferred exactly-one Auth bo
 downgrade. Exact functional web SHA `01aa88a` и authenticated browser postflight
 завершены и зафиксированы в project-state.
 
-## Следующая продуктовая версия после identity rollout
+## Current production Course и Store contracts
+
+1. Published Course catalog хранит immutable revisions и private publication
+   assets; детские Course можно копировать в новый owner Course.
+2. Official educator Course проходит exact-revision review, открывается как
+   Account-scoped self-learning без копирования, roster или LessonRun и хранит
+   revision progress, attestation attempts и award.
+3. `/store` — четвёртый universal Account route со статическим каталогом,
+   фильтрами, карточками/таблицей и client-state cart/checkout. Это UI-only demo:
+   Product/Order/Inventory schema, API, persisted order, оплата и доставка не
+   реализованы.
+4. Global System Assistant возвращает текст либо одно signed proposal из
+   закрытого Course/Lesson allowlist; mutation выполняется canonical service
+   только после явного подтверждения. Chat, proposal cache и idempotency пока
+   process-local и не являются durable action ledger.
+
+## Следующие продуктовые срезы
 
 1. Завершить ручной teacher authoring: upload из существующего Course,
    accessibility и UX polish.
@@ -1014,11 +1039,15 @@ downgrade. Exact functional web SHA `01aa88a` и authenticated browser postfligh
 3. Реализовать persisted common Homework как отдельную Lesson surface.
 4. Добавить parsing статуса/текста загруженных источников; RAG — только после
    проверяемого extraction baseline.
+5. Для настоящего магазина отдельно спроектировать Product/Order/Inventory,
+   admin catalog, legal delivery и payment boundary; текущий demo не расширять
+   скрытой persistence.
 
 ## Позднее
 
-- learner Course consumption и live Student Screen access поверх явных
-  enrollment/capability boundaries;
+- enrollment/consumption детских Course через LearnerProfile и live Student
+  Screen access поверх явных enrollment/capability boundaries; Account-scoped
+  educator self-learning уже current;
 - live sync и AI-conducted lesson поверх LessonRun;
 - individual Homework assignments и immutable snapshots;
 - расширенные learning metrics/events, chat, notifications и vocabulary progress;

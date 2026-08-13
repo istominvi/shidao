@@ -21,6 +21,9 @@
   --product-inner-control-size: 2rem;
   --product-inner-control-radius: 0.5rem;
   --product-inner-control-inset: 0.25rem;
+  --product-context-menu-surface: #fff;
+  --product-context-menu-radius: var(--product-element-radius);
+  --product-context-menu-shadow: 0 18px 46px rgba(20, 20, 20, 0.18);
   --product-muted-foreground: rgba(20, 20, 20, 0.5);
   --brand-blue: #70b7ff;
   --brand-green: #c9ff4f;
@@ -75,6 +78,7 @@ a {
   --course-demo-control-font-weight: 400;
   --course-demo-control-line-height: 1.2;
   --course-demo-control-border: rgba(20, 20, 20, 0.14);
+  --course-demo-header-action-border: var(--product-muted-foreground);
   --course-demo-control-foreground: #141414;
   --course-demo-control-icon-size: 1rem;
   min-height: 100vh;
@@ -413,8 +417,11 @@ a {
   right: var(--workspace-tabs-inline-offset);
   bottom: 0;
   left: var(--workspace-tabs-inline-offset);
-  height: 1.5px;
+  /* Chromium snaps a direct 1.5px paint box; draw at 2x and scale it. */
+  height: 3px;
   background: var(--product-muted-foreground);
+  transform: scaleY(0.5);
+  transform-origin: center bottom;
   content: "";
   pointer-events: none;
 }
@@ -2072,6 +2079,18 @@ a {
   color: var(--course-demo-control-foreground);
 }
 
+.course-demo-shell .app-page-actions .product-btn-secondary,
+.course-demo-shell
+  .app-page-actions
+  .product-btn-secondary:hover:not(:disabled),
+.course-demo-shell
+  .app-page-actions
+  .product-btn-secondary:focus-visible:not(:disabled) {
+  border-color: var(--course-demo-header-action-border);
+  background-color: #fff;
+  background-clip: padding-box;
+}
+
 .product-btn-secondary:hover:not(:disabled) {
   border-color: rgba(20, 20, 20, 0.22);
   background: rgba(255, 255, 255, 1);
@@ -2118,9 +2137,9 @@ a {
 .product-btn.component-card-visibility-action {
   width: var(--product-inner-control-size);
   height: var(--product-inner-control-size);
-  border: 1px solid transparent;
+  border: 0;
   border-radius: var(--product-inner-control-radius);
-  background: #fff;
+  background: transparent;
   padding: 0;
   box-shadow: none;
 }
@@ -2196,18 +2215,18 @@ a {
   background: #fff;
   overflow: visible;
   padding: 0;
-  box-shadow: 0 3px 6px 0 rgba(76, 76, 155, 0.1);
+  box-shadow: 0 3px 6px 0 #0000000d;
   transition: box-shadow 180ms ease;
 }
 
 @media (hover: hover) and (pointer: fine) {
   .lesson-component-card:hover {
-    box-shadow: 0 6px 12px 0 rgba(76, 76, 155, 0.2);
+    box-shadow: 0 3px 12px 0 #0000001a;
   }
 }
 
 .lesson-component-card:focus-within {
-  box-shadow: 0 6px 12px 0 rgba(76, 76, 155, 0.2);
+  box-shadow: 0 3px 12px 0 #0000001a;
 }
 
 .lesson-component-card-actions {
@@ -2221,12 +2240,11 @@ a {
   align-items: center;
   justify-content: flex-end;
   gap: var(--product-inner-control-inset);
+  border: 0;
   border-radius: var(--course-demo-control-radius, 0.75rem);
-  background: rgba(255, 255, 255, 0.88);
+  background: rgba(255, 255, 255, 0.5);
   padding: var(--product-inner-control-inset);
-  box-shadow:
-    inset 0 0 0 1px rgba(20, 20, 20, 0.08),
-    0 4px 12px rgba(20, 20, 20, 0.1);
+  box-shadow: none;
   opacity: 0;
   pointer-events: none;
   -webkit-backdrop-filter: blur(8px);
@@ -2243,13 +2261,37 @@ a {
 
 .lesson-component-card-actions .component-card-action,
 .lesson-component-card-actions .component-card-visibility-action {
+  border: 0;
   background: transparent;
+  box-shadow: none;
+}
+
+.course-demo-shell
+  .lesson-component-card-actions
+  .product-btn.component-card-action:focus-visible:not(:disabled),
+.course-demo-shell
+  .lesson-component-card-actions
+  .product-btn.component-card-visibility-action:focus-visible:not(:disabled) {
+  border: 0;
+  background: rgba(20, 20, 20, 0.08);
+  box-shadow: none;
+  outline: 2px solid rgba(20, 20, 20, 0.55);
+  outline-offset: -2px;
 }
 
 .lesson-component-card-actions .component-card-action:hover:not(:disabled),
 .lesson-component-card-actions
   .component-card-visibility-action:hover:not(:disabled) {
+  border: 0;
   background: rgba(20, 20, 20, 0.06);
+  box-shadow: none;
+  transform: none;
+}
+
+.lesson-component-card-actions
+  .component-card-action-danger:hover:not(:disabled) {
+  background: rgba(244, 63, 94, 0.1);
+  color: #9f1239;
 }
 
 .lesson-component-card-actions .component-card-visibility-action-active {
@@ -2408,8 +2450,17 @@ a {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .lesson-component-card {
+  .lesson-component-card,
+  .lesson-component-card-actions,
+  .lesson-component-card-actions .component-card-action,
+  .lesson-component-card-actions .component-card-visibility-action {
     transition: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .lesson-component-card-actions .product-btn:focus-visible {
+    outline-color: Highlight;
   }
 }
 
@@ -2463,14 +2514,17 @@ a {
   min-width: 15rem;
   max-width: min(20rem, calc(100vw - 2rem));
   overflow: hidden;
-  border: 1px solid rgba(20, 20, 20, 0.12);
+  border: 0;
   border-radius: var(
-    --course-demo-element-radius,
-    var(--product-element-radius, 0.75rem)
+    --product-context-menu-radius,
+    var(--course-demo-element-radius, var(--product-element-radius, 0.75rem))
   );
-  background: #fff;
+  background: var(--product-context-menu-surface, #fff);
   padding: 0.25rem;
-  box-shadow: 0 18px 46px rgba(20, 20, 20, 0.18);
+  box-shadow: var(
+    --product-context-menu-shadow,
+    0 18px 46px rgba(20, 20, 20, 0.18)
+  );
 }
 
 .action-menu-item {
@@ -2543,16 +2597,22 @@ a {
   background: #fff1f2;
 }
 
-.action-menu-separator {
-  height: 1px;
-  margin: 0.3rem 0.45rem;
-  background: #e4e4e7;
-}
-
 .course-actions-wrap {
   position: relative;
   display: inline-flex;
   align-items: center;
+}
+
+@media (forced-colors: active) {
+  .action-menu-panel {
+    border: 1px solid CanvasText;
+    box-shadow: none;
+  }
+
+  .action-menu-item:focus-visible {
+    outline: 2px solid Highlight;
+    outline-offset: -2px;
+  }
 }
 
 .course-action-inline-error {

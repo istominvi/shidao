@@ -21,6 +21,12 @@
 - [Development Course Builder MCP](./v2/COURSE_BUILDER_MCP.md)
 - [Реализованный Teacher Course Builder milestone](./v2/TEACHER_COURSE_BUILDER_DEMO_MILESTONE.md)
 
+## Current: продуктовые контракты
+
+- [Демо-магазин учебных товаров](./product/store-demo.md)
+- [Курсы для педагогов и аттестация](./product/educator-courses-and-attestation.md)
+- [Каталог типов компонентов Course](./product/course-component-catalog.md)
+
 ## Current: база и operations
 
 - [Current schema guide](./database/current-schema.md)

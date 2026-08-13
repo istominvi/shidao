@@ -299,14 +299,7 @@ test("schedule keeps the compact date control and dense one-line table contract"
   assert.match(scheduleWorkspaceSource, /label: "Начать урок"/);
   assert.match(scheduleWorkspaceSource, /label: "Изменить"/);
   assert.match(scheduleWorkspaceSource, /label: "Отменить"/);
-  assert.equal(
-    scheduleWorkspaceSource.match(/separatorBefore: true/g)?.length,
-    1,
-  );
-  assert.match(
-    scheduleWorkspaceSource,
-    /id: "complete",[\s\S]*?id: "cancel",[\s\S]*?separatorBefore: true/,
-  );
+  assert.doesNotMatch(scheduleWorkspaceSource, /separatorBefore/);
   assert.doesNotMatch(scheduleWorkspaceSource, /label: "Открыть план"/);
   assert.match(scheduleWorkspaceSource, /startLessonRun\(runId\)/);
   assert.match(scheduleWorkspaceSource, /cancelLessonRun\(runId\)/);
