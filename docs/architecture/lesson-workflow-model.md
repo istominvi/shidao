@@ -317,6 +317,13 @@ category tabs находятся вне scroll container, а список Compon
 задаётся `aria-pressed`; отдельные heading/description с тем же названием не
 дублируются.
 
+Current source дополняет каждую palette card коротким назначением и
+representative статическим mini-preview. Preview является только
+неинтерактивной presentation-подсказкой: он не сохраняется в payload, не
+использует production teacher/learner renderer и не создаёт второй Component
+registry или order. Поэтому interactive и media samples не содержат реальных
+controls, playback или network requests.
+
 Presentation отдельно показывает «Ссылки» и «Файлы», хотя оба типа сохраняют
 registry category `attachment`. Category rail не имеет разделителя, а
 auto-sized cards прижаты к началу grid и не растягиваются до высоты dialog.
@@ -327,7 +334,10 @@ Category controls и доступные cards используют pointer.
 Components слева (если список непустой) и действия AI/добавления справа.
 Authored Component card использует тот же 12 px element radius и стандартную
 тень, что table surfaces; фильтрация не меняет canonical `position` и не
-создаёт второй порядок.
+создаёт второй порядок. В current source meta и actions находятся в normal
+flow: номер/title и form labels используют canonical `.88rem/400`, icon actions
+имеют 32 px, до content сохраняется 16 px, а однострочные editor input/select —
+40 px. Эти scoped presentation rules не меняют learner renderer.
 
 На карточке teacher видит состояние видимости. `staff_only` означает, что
 компонент остаётся частью плана преподавателя, но отсутствует в learner API.

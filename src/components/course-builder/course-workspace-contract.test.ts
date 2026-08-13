@@ -13,6 +13,8 @@ const lessonAuthoringPath =
   "src/components/course-builder/lesson-authoring-workspace.tsx";
 const componentEditorPath =
   "src/components/course-builder/component-payload-editor.tsx";
+const componentPickerPreviewPath =
+  "src/components/course-builder/component-picker-preview.tsx";
 
 test("workspace writes persisted course, lesson, and component entities", () => {
   const combined = [source(workspacePath), source(lessonAuthoringPath)].join(
@@ -478,6 +480,7 @@ test("active product buttons and header controls share one flat 40px contract", 
 
 test("component picker is registry-driven and grouped into Russian categories", () => {
   const authoring = source(lessonAuthoringPath);
+  const presentations = source(componentPickerPreviewPath);
   const styles = source("src/app/globals.css");
   const pickerStart = authoring.indexOf("function ComponentPickerDialog");
   const pickerEnd = authoring.indexOf("function LessonEditorDialog");
@@ -504,6 +507,48 @@ test("component picker is registry-driven and grouped into Russian categories", 
     /\.component-picker-dialog \.dialog-shell-close,\s*\.component-picker-dialog \.dialog-shell-close:hover\s*\{[^}]*\}/.exec(
       styles,
     )?.[0];
+  const presentationMapStart = presentations.indexOf(
+    "export const componentPickerPresentations = {",
+  );
+  const presentationMapEnd = presentations.indexOf(
+    "} satisfies Record<ComponentTypeKey, ComponentPickerPresentation>;",
+    presentationMapStart,
+  );
+
+  assert.ok(
+    presentationMapStart >= 0 && presentationMapEnd > presentationMapStart,
+    "component picker presentations must remain a discoverable exhaustive map",
+  );
+  const presentationMap = presentations.slice(
+    presentationMapStart,
+    presentationMapEnd,
+  );
+  const presentationEntries = Array.from(
+    presentationMap.matchAll(
+      /^  ([a-z_]+): \{\n\s{4}description: "([^"]+)",\n\s{4}preview: \(/gm,
+    ),
+    (match) => ({ key: match[1], description: match[2] }),
+  );
+  assert.deepEqual(
+    presentationEntries.map(({ key }) => key),
+    componentTypeKeys,
+  );
+  assert.ok(
+    presentationEntries.every(
+      ({ description }) => description.trim().length > 0,
+    ),
+    "every component picker presentation must explain its purpose",
+  );
+  assert.match(presentations, /data-component-preview=\{typeKey\}/);
+  assert.match(authoring, /componentPickerPresentations/);
+  assert.match(
+    authoring,
+    /<ComponentPickerPreview typeKey=\{definition\.key\} \/>/,
+  );
+  assert.match(
+    picker,
+    /className="component-picker-card-description"[\s\S]*?componentPickerPresentations\[definition\.key\]\.description/,
+  );
 
   assert.match(authoring, /componentDefinitions\.filter/);
   assert.ok(pickerStart >= 0 && pickerEnd > pickerStart);
@@ -522,7 +567,6 @@ test("component picker is registry-driven and grouped into Russian categories", 
   );
   assert.doesNotMatch(authoring, /Разделители и структура плана/);
   assert.doesNotMatch(authoring, /visibility: "staff_only"/);
-  assert.match(authoring, /сразу перейти к редактированию/);
   assert.match(picker, /className="component-picker-dialog"/);
   assert.match(
     picker,
@@ -595,6 +639,68 @@ test("component payload editor covers every active registry type without divider
   assert.match(editor, /элемент = точное название категории/);
 });
 
+test("component editor keeps canonical scoped typography and compact control geometry", () => {
+  const editor = source(componentEditorPath);
+  const styles = source("src/app/globals.css");
+  const editorStyles = /\.component-payload-editor\s*\{[^}]*\}/.exec(
+    styles,
+  )?.[0];
+  const labelStyles =
+    /\.component-payload-editor \.field-label\s*\{[^}]*\}/.exec(styles)?.[0];
+  const inputStyles =
+    /\.component-payload-editor \.field-input\s*\{[^}]*\}/.exec(styles)?.[0];
+  const textareaStyles =
+    /\.component-payload-editor \.component-editor-textarea\s*\{[^}]*\}/.exec(
+      styles,
+    )?.[0];
+
+  assert.match(editor, /className="component-payload-editor"/);
+  assert.match(editor, /className="component-editor-field"/);
+  assert.match(editor, /component-editor-select/);
+  assert.match(editor, /component-editor-textarea/);
+  assert.ok(editorStyles, "component editor styles must remain scoped");
+  assert.match(editorStyles, /gap: 1rem/);
+  assert.match(
+    editorStyles,
+    /font-size: var\(--course-demo-control-font-size, 0\.88rem\)/,
+  );
+  assert.match(
+    editorStyles,
+    /font-weight: var\(--course-demo-control-font-weight, 400\)/,
+  );
+  assert.ok(labelStyles, "component editor label styles must remain scoped");
+  assert.match(
+    labelStyles,
+    /font-size: var\(--course-demo-control-font-size, 0\.88rem\)/,
+  );
+  assert.match(
+    labelStyles,
+    /font-weight: var\(--course-demo-control-font-weight, 400\)/,
+  );
+  assert.ok(inputStyles, "component editor input styles must remain scoped");
+  assert.match(
+    inputStyles,
+    /min-height: var\(--course-demo-control-height, 2\.5rem\)/,
+  );
+  assert.match(
+    inputStyles,
+    /height: var\(--course-demo-control-height, 2\.5rem\)/,
+  );
+  assert.match(
+    inputStyles,
+    /font-size: var\(--course-demo-control-font-size, 0\.88rem\)/,
+  );
+  assert.match(
+    inputStyles,
+    /font-weight: var\(--course-demo-control-font-weight, 400\)/,
+  );
+  assert.ok(
+    textareaStyles,
+    "multiline component fields must override compact control height",
+  );
+  assert.match(textareaStyles, /height: auto/);
+});
+
 test("component cards persist edit, delete, order, and ordered Student Screen placement", () => {
   const authoring = source(lessonAuthoringPath);
   const styles = source("src/app/globals.css");
@@ -602,8 +708,46 @@ test("component cards persist edit, delete, order, and ordered Student Screen pl
   const cardHoverStyles = /\.lesson-component-card:hover\s*\{[^}]*\}/.exec(
     styles,
   )?.[0];
+  const cardHeaderStyles = /\.lesson-component-card-header\s*\{[^}]*\}/.exec(
+    styles,
+  )?.[0];
+  const cardTitleStyles = /\.lesson-component-card-title\s*\{[^}]*\}/.exec(
+    styles,
+  )?.[0];
+  const cardActionStyles = /\.lesson-component-card-actions\s*\{[^}]*\}/.exec(
+    styles,
+  )?.[0];
+  const cardContentStyles = /\.lesson-component-card-content\s*\{[^}]*\}/.exec(
+    styles,
+  )?.[0];
+  const componentCardStart = authoring.indexOf("function ComponentCard");
+  const componentCardEnd = authoring.indexOf(
+    "function ComponentPickerDialog",
+    componentCardStart,
+  );
+  const componentCard = authoring.slice(componentCardStart, componentCardEnd);
+  const headerStart = componentCard.indexOf(
+    '<header className="lesson-component-card-header">',
+  );
+  const actionsStart = componentCard.indexOf(
+    'className="lesson-component-card-actions"',
+    headerStart,
+  );
+  const headerEnd = componentCard.indexOf("</header>", actionsStart);
+  const contentStart = componentCard.indexOf(
+    '<div className="lesson-component-card-content">',
+    headerEnd,
+  );
 
   assert.match(authoring, /<article className="lesson-component-card group">/);
+  assert.ok(
+    headerStart >= 0 &&
+      actionsStart > headerStart &&
+      headerEnd > actionsStart &&
+      contentStart > headerEnd,
+    "component title and actions must share a normal-flow header before content",
+  );
+  assert.doesNotMatch(componentCard, /absolute right-3 top-3/);
   assert.match(authoring, /Сохраняем компонент…/);
   assert.match(authoring, /Удаляем компонент…/);
   assert.match(authoring, /Меняем порядок компонентов…/);
@@ -645,6 +789,30 @@ test("component cards persist edit, delete, order, and ordered Student Screen pl
     cardHoverStyles,
     /box-shadow: 0 10px 24px rgba\(20, 20, 20, 0\.06\)/,
   );
+  assert.ok(
+    cardHeaderStyles,
+    "component card header styles must remain present",
+  );
+  assert.match(cardHeaderStyles, /display: flex/);
+  assert.match(cardHeaderStyles, /align-items: center/);
+  assert.match(cardHeaderStyles, /justify-content: space-between/);
+  assert.ok(cardTitleStyles, "component card title styles must remain present");
+  assert.match(
+    cardTitleStyles,
+    /font-size: var\(--course-demo-control-font-size, 0\.88rem\)/,
+  );
+  assert.match(
+    cardTitleStyles,
+    /font-weight: var\(--course-demo-control-font-weight, 400\)/,
+  );
+  assert.ok(cardActionStyles, "component action rail must remain in flow");
+  assert.match(cardActionStyles, /display: flex/);
+  assert.match(cardActionStyles, /flex: 0 0 auto/);
+  assert.ok(
+    cardContentStyles,
+    "component content spacing must remain explicit",
+  );
+  assert.match(cardContentStyles, /margin-top: 1rem/);
 });
 
 test("lesson plan uses a transparent toolbar and filters authored components by title", () => {

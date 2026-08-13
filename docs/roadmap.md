@@ -392,6 +392,16 @@ registry `attachment`. План Lesson больше не обёрнут в `work
 по названиям уже добавленных компонентов слева и actions справа. Component
 cards используют element-radius и стандартную table-shadow.
 
+**Current source / next production deployment:** palette получает
+representative static preview и короткое назначение для каждого из 20 типов,
+поэтому текстовые `Заголовок / Текст / Сноска / Цитата` различимы до создания.
+Preview остаётся UI-only и не подменяет registry defaults или production
+renderer. Authored Component card переводится на normal-flow header с
+canonical `.88rem/400`, 32 px icon actions и 16 px до content; scoped payload
+editor — на нейтральную surface, обычные labels и 40 px input/select с той же
+типографикой. API, schema, migrations и authored order не меняются; production
+postflight этого source slice остаётся next.
+
 Repository-current body typography закрепляет Schedule как канон для всех
 active product tables: `#141414 / .88rem / 400 / 1.3`; различия primary-cell
 weight и локальные muted colors удалены, header typography не меняется.

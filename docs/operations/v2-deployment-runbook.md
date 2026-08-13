@@ -968,7 +968,13 @@ flow как permanent delete.
   чёрного `ShiDao` chip, вертикальный порядок «Аттестован» над author login;
   на Lesson plan — отсутствие внешней surface/повторного заголовка, прозрачный
   search/actions toolbar, content-sized palette cards без category divider и
-  pointer на category/card controls;
+  pointer на category/card controls. Для component-authoring source slice
+  дополнительно проверить representative preview у всех 20 типов и явные
+  различия `Заголовок / Текст / Сноска / Цитата`; preview не содержит
+  вложенных focusable controls. Открытый payload editor должен иметь
+  normal-flow header, exact 16 px до content, meta/labels `.88rem/400`, icon
+  actions `32 × 32 px` и однострочные input/select exact 40 px без desktop или
+  mobile overflow;
 - existing email и learner login/PIN создают одну Account session и не выводят
   internal Auth email/browser secret;
 - внутри directory-вкладок `/students` не скрывает archived/pending за

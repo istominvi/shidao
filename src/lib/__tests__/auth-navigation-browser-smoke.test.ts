@@ -8778,6 +8778,15 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
         ),
       );
       assert.deepEqual(renderedKeys, expectedKeys);
+      const renderedPreviewKeys = await runtime.page.evaluate(() =>
+        Array.from(
+          document.querySelectorAll<HTMLElement>(
+            '[role="dialog"] [data-component-preview]',
+          ),
+          (node) => node.dataset.componentPreview ?? null,
+        ),
+      );
+      assert.deepEqual(renderedPreviewKeys, expectedKeys);
       assert.equal(
         await componentDialog
           .getByRole("heading", { name: category, exact: true })
@@ -8837,16 +8846,18 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
               (card) => getComputedStyle(card).cursor,
             ),
             cardContentSizing: cards.map((card, index) => {
-              const lastContent = card.lastElementChild as HTMLElement | null;
-              if (!lastContent) {
-                throw new Error("Component picker card content is missing");
+              const preview = card.querySelector<HTMLElement>(
+                "[data-component-preview]",
+              );
+              if (!preview) {
+                throw new Error("Component picker card preview is missing");
               }
               const cardStyle = getComputedStyle(card);
               return {
                 height: cardRects[index].height,
                 contentBottomInset:
                   cardRects[index].bottom -
-                  lastContent.getBoundingClientRect().bottom,
+                  preview.getBoundingClientRect().bottom,
                 paddingBottom: Number.parseFloat(cardStyle.paddingBottom),
                 borderBottomWidth: Number.parseFloat(
                   cardStyle.borderBottomWidth,
@@ -8893,6 +8904,69 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       ),
     );
     assert.ok(textCategoryLayout.lastCardBottomGap > 0.5);
+    await componentCategories
+      .getByRole("button", { name: "Текст", exact: true })
+      .click();
+    const textPreviewContract = await runtime.page.evaluate(() => {
+      const preview = (typeKey: string) => {
+        const node = document.querySelector<HTMLElement>(
+          `[role="dialog"] [data-component-preview="${typeKey}"]`,
+        );
+        if (!node) throw new Error(`Missing ${typeKey} component preview`);
+        return node;
+      };
+      const heading = preview("heading");
+      const richText = preview("rich_text");
+      const callout = preview("callout");
+      const quote = preview("quote");
+      const headingSample = Array.from(
+        heading.querySelectorAll<HTMLElement>("span"),
+      ).find(
+        (node) =>
+          node.children.length === 0 &&
+          node.textContent?.trim() === "Новая тема",
+      );
+      const calloutSample = callout.firstElementChild as HTMLElement | null;
+      const quoteSample = quote.firstElementChild as HTMLElement | null;
+      const quoteText = quoteSample?.firstElementChild as HTMLElement | null;
+      if (!headingSample || !calloutSample || !quoteSample || !quoteText) {
+        throw new Error("Text component preview structure is incomplete");
+      }
+      const headingStyle = getComputedStyle(headingSample);
+      const calloutStyle = getComputedStyle(calloutSample);
+      const quoteStyle = getComputedStyle(quoteSample);
+      return {
+        headingText: heading.textContent?.trim(),
+        headingFontSize: headingStyle.fontSize,
+        headingFontWeight: headingStyle.fontWeight,
+        richTextVisibleLineCount: richText.querySelectorAll(
+          "span[class*='rounded-full']",
+        ).length,
+        calloutBackgroundColor: calloutStyle.backgroundColor,
+        calloutBorderTopWidth: calloutStyle.borderTopWidth,
+        quoteLines: Array.from(
+          quoteSample.querySelectorAll<HTMLElement>(":scope > span"),
+          (line) => line.textContent?.trim(),
+        ),
+        quoteBorderLeftWidth: quoteStyle.borderLeftWidth,
+        quoteTextFontStyle: getComputedStyle(quoteText).fontStyle,
+      };
+    });
+    assert.equal(textPreviewContract.headingText, "Новая тема");
+    assert.equal(textPreviewContract.headingFontSize, "12.48px");
+    assert.equal(textPreviewContract.headingFontWeight, "600");
+    assert.ok(textPreviewContract.richTextVisibleLineCount >= 4);
+    assert.notEqual(
+      textPreviewContract.calloutBackgroundColor,
+      "rgba(0, 0, 0, 0)",
+    );
+    assert.equal(textPreviewContract.calloutBorderTopWidth, "1px");
+    assert.deepEqual(textPreviewContract.quoteLines, [
+      "«Важная мысль урока»",
+      "— Автор",
+    ]);
+    assert.equal(textPreviewContract.quoteBorderLeftWidth, "2px");
+    assert.equal(textPreviewContract.quoteTextFontStyle, "italic");
     for (const redundantText of [
       "Выберите элемент плана. Новый компонент сначала виден только преподавателю.",
       "Заголовки, основной текст, сноски и цитаты",
@@ -8947,6 +9021,157 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
     await componentDialog
       .getByRole("button", { name: "Закрыть", exact: true })
       .click();
+
+    const fileComponentCard = runtime.page.locator(".lesson-component-card");
+    assert.equal(
+      await fileComponentCard
+        .locator(".lesson-component-card-title")
+        .textContent(),
+      "1. Файл",
+    );
+    await fileComponentCard
+      .getByRole("button", { name: "Редактировать «Файл»", exact: true })
+      .click();
+    const fileComponentEditor = fileComponentCard.locator(
+      ".component-payload-editor",
+    );
+    await fileComponentEditor.waitFor();
+    const fileComponentEditorVisual = await fileComponentCard.evaluate(
+      (card) => {
+        const header = card.querySelector<HTMLElement>(
+          ".lesson-component-card-header",
+        );
+        const actions = card.querySelector<HTMLElement>(
+          ".lesson-component-card-actions",
+        );
+        const title = card.querySelector<HTMLElement>(
+          ".lesson-component-card-title",
+        );
+        const content = card.querySelector<HTMLElement>(
+          ".lesson-component-card-content",
+        );
+        const editor = card.querySelector<HTMLElement>(
+          ".component-payload-editor",
+        );
+        if (!header || !actions || !title || !content || !editor) {
+          throw new Error("Component editor visual contract is missing");
+        }
+        const controls = Array.from(
+          editor.querySelectorAll<HTMLInputElement | HTMLSelectElement>(
+            "input.field-input:not([type='checkbox']), select.field-input:not([multiple])",
+          ),
+        );
+        const fieldLabels = Array.from(
+          editor.querySelectorAll<HTMLElement>(".field-label"),
+        );
+        const actionButtons = Array.from(
+          actions.querySelectorAll<HTMLButtonElement>("button"),
+        );
+        if (
+          controls.length === 0 ||
+          fieldLabels.length === 0 ||
+          actionButtons.length === 0
+        ) {
+          throw new Error("Component editor controls are missing");
+        }
+        const headerRect = header.getBoundingClientRect();
+        const contentRect = content.getBoundingClientRect();
+        const titleStyle = getComputedStyle(title);
+        const editorStyle = getComputedStyle(editor);
+        return {
+          headerPosition: getComputedStyle(header).position,
+          actionsPosition: getComputedStyle(actions).position,
+          headerContentGap: contentRect.top - headerRect.bottom,
+          titleFontSize: titleStyle.fontSize,
+          titleFontWeight: titleStyle.fontWeight,
+          editorFontSize: editorStyle.fontSize,
+          editorFontWeight: editorStyle.fontWeight,
+          fieldLabelTypography: fieldLabels.map((label) => {
+            const style = getComputedStyle(label);
+            return { fontSize: style.fontSize, fontWeight: style.fontWeight };
+          }),
+          controls: controls.map((control) => {
+            const style = getComputedStyle(control);
+            return {
+              tagName: control.tagName,
+              height: control.getBoundingClientRect().height,
+              fontSize: style.fontSize,
+              fontWeight: style.fontWeight,
+            };
+          }),
+          actionButtons: actionButtons.map((button) => {
+            const rect = button.getBoundingClientRect();
+            return { width: rect.width, height: rect.height };
+          }),
+          documentClientWidth: document.documentElement.clientWidth,
+          documentScrollWidth: document.documentElement.scrollWidth,
+          cardClientWidth: card.clientWidth,
+          cardScrollWidth: card.scrollWidth,
+          contentClientWidth: content.clientWidth,
+          contentScrollWidth: content.scrollWidth,
+          editorClientWidth: editor.clientWidth,
+          editorScrollWidth: editor.scrollWidth,
+        };
+      },
+    );
+    assert.equal(fileComponentEditorVisual.headerPosition, "static");
+    assert.equal(fileComponentEditorVisual.actionsPosition, "static");
+    assert.ok(Math.abs(fileComponentEditorVisual.headerContentGap - 16) < 0.5);
+    for (const typography of [
+      {
+        fontSize: fileComponentEditorVisual.titleFontSize,
+        fontWeight: fileComponentEditorVisual.titleFontWeight,
+      },
+      {
+        fontSize: fileComponentEditorVisual.editorFontSize,
+        fontWeight: fileComponentEditorVisual.editorFontWeight,
+      },
+      ...fileComponentEditorVisual.fieldLabelTypography,
+    ]) {
+      assert.equal(typography.fontSize, "14.08px");
+      assert.equal(typography.fontWeight, "400");
+    }
+    assert.ok(
+      fileComponentEditorVisual.controls.some(
+        ({ tagName }) => tagName === "INPUT",
+      ),
+    );
+    assert.ok(
+      fileComponentEditorVisual.controls.some(
+        ({ tagName }) => tagName === "SELECT",
+      ),
+    );
+    for (const control of fileComponentEditorVisual.controls) {
+      assert.ok(Math.abs(control.height - 40) < 0.5);
+      assert.equal(control.fontSize, "14.08px");
+      assert.equal(control.fontWeight, "400");
+    }
+    assert.ok(
+      fileComponentEditorVisual.actionButtons.every(
+        ({ width, height }) =>
+          Math.abs(width - 32) < 0.5 && Math.abs(height - 32) < 0.5,
+      ),
+    );
+    assert.equal(
+      fileComponentEditorVisual.documentScrollWidth,
+      fileComponentEditorVisual.documentClientWidth,
+    );
+    assert.ok(
+      fileComponentEditorVisual.cardScrollWidth <=
+        fileComponentEditorVisual.cardClientWidth + 0.5,
+    );
+    assert.ok(
+      fileComponentEditorVisual.contentScrollWidth <=
+        fileComponentEditorVisual.contentClientWidth + 0.5,
+    );
+    assert.ok(
+      fileComponentEditorVisual.editorScrollWidth <=
+        fileComponentEditorVisual.editorClientWidth + 0.5,
+    );
+    await fileComponentEditor
+      .getByRole("button", { name: "Отмена", exact: true })
+      .click();
+    await fileComponentEditor.waitFor({ state: "detached" });
 
     await runtime.page
       .getByRole("button", {

@@ -83,7 +83,7 @@ function Field({
   hint?: string;
 }) {
   return (
-    <label className="block">
+    <label className="component-editor-field">
       <span className="field-label">{label}</span>
       {children}
       {hint ? (
@@ -96,11 +96,11 @@ function Field({
 }
 
 function selectClassName() {
-  return "field-input min-h-11 bg-white";
+  return "field-input component-editor-select bg-white";
 }
 
 function textareaClassName() {
-  return "field-input min-h-28 resize-y";
+  return "field-input component-editor-textarea resize-y";
 }
 
 function PayloadFields({
@@ -379,7 +379,7 @@ function PayloadFields({
               }
             />
           </Field>
-          <label className="flex items-center gap-2 text-sm font-semibold">
+          <label className="flex items-center gap-2 component-editor-checkbox">
             <input
               type="checkbox"
               className="auth-checkbox"
@@ -439,7 +439,7 @@ function PayloadFields({
               ))}
             </select>
           </Field>
-          <label className="flex items-center gap-2 text-sm font-semibold">
+          <label className="flex items-center gap-2 component-editor-checkbox">
             <input
               type="checkbox"
               className="auth-checkbox"
@@ -486,7 +486,7 @@ function PayloadFields({
               }}
             />
           </Field>
-          <label className="flex items-center gap-2 text-sm font-semibold">
+          <label className="flex items-center gap-2 component-editor-checkbox">
             <input
               type="checkbox"
               className="auth-checkbox"
@@ -542,7 +542,7 @@ function PayloadFields({
               }}
             />
           </Field>
-          <label className="flex items-center gap-2 text-sm font-semibold">
+          <label className="flex items-center gap-2 component-editor-checkbox">
             <input
               type="checkbox"
               className="auth-checkbox"
@@ -598,7 +598,7 @@ function PayloadFields({
             />
           </Field>
           <div className="grid gap-3 md:grid-cols-2">
-            <label className="flex items-center gap-2 text-sm font-semibold">
+            <label className="flex items-center gap-2 component-editor-checkbox">
               <input
                 type="checkbox"
                 className="auth-checkbox"
@@ -624,7 +624,7 @@ function PayloadFields({
               />
               Разрешить несколько ответов
             </label>
-            <label className="flex items-center gap-2 text-sm font-semibold">
+            <label className="flex items-center gap-2 component-editor-checkbox">
               <input
                 type="checkbox"
                 className="auth-checkbox"
@@ -769,7 +769,7 @@ function PayloadFields({
               />
             </Field>
           </div>
-          <label className="flex items-center gap-2 text-sm font-semibold">
+          <label className="flex items-center gap-2 component-editor-checkbox">
             <input
               type="checkbox"
               className="auth-checkbox"
@@ -827,7 +827,7 @@ function PayloadFields({
               }
             />
           </Field>
-          <label className="flex items-center gap-2 text-sm font-semibold">
+          <label className="flex items-center gap-2 component-editor-checkbox">
             <input
               type="checkbox"
               className="auth-checkbox"
@@ -921,7 +921,7 @@ function PayloadFields({
               />
             </Field>
           </div>
-          <label className="flex items-center gap-2 text-sm font-semibold">
+          <label className="flex items-center gap-2 component-editor-checkbox">
             <input
               type="checkbox"
               className="auth-checkbox"
@@ -1050,7 +1050,7 @@ function PayloadFields({
               }
             />
           </Field>
-          <label className="flex items-center gap-2 text-sm font-semibold">
+          <label className="flex items-center gap-2 component-editor-checkbox">
             <input
               type="checkbox"
               className="auth-checkbox"
@@ -1098,7 +1098,7 @@ function PayloadFields({
               }
             />
           </Field>
-          <label className="flex items-center gap-2 text-sm font-semibold">
+          <label className="flex items-center gap-2 component-editor-checkbox">
             <input
               type="checkbox"
               className="auth-checkbox"
@@ -1350,7 +1350,7 @@ function PlacementFields({
       typeKey === "free_response" ||
       typeKey === "word_builder" ||
       typeKey === "vocabulary_list" ? (
-        <label className="flex items-center gap-2 self-end pb-3 text-sm font-semibold">
+        <label className="flex items-center gap-2 self-end pb-3 component-editor-checkbox">
           <input
             type="checkbox"
             className="auth-checkbox"
@@ -1464,10 +1464,7 @@ export function ComponentPayloadEditor({
   }
 
   return (
-    <div
-      ref={editorRef}
-      className="grid gap-4 rounded-2xl border border-sky-200 bg-sky-50/50 p-4"
-    >
+    <div ref={editorRef} className="component-payload-editor">
       <PayloadFields
         typeKey={component.typeKey}
         payload={payload}
@@ -1484,7 +1481,7 @@ export function ComponentPayloadEditor({
           {validationMessage}
         </p>
       ) : null}
-      <div className="flex flex-wrap gap-2">
+      <div className="component-payload-editor-actions">
         <Button disabled={disabled} onClick={() => void save()}>
           Сохранить компонент
         </Button>

@@ -35,6 +35,10 @@ import {
 } from "@/components/course-builder/course-workspace-navigation";
 import { ComponentPayloadEditor } from "@/components/course-builder/component-payload-editor";
 import {
+  ComponentPickerPreview,
+  componentPickerPresentations,
+} from "@/components/course-builder/component-picker-preview";
+import {
   CourseComponentRenderer,
   type SignedCourseComponentAssetMap,
 } from "@/components/course-builder/component-renderers";
@@ -263,191 +267,203 @@ function ComponentCard({
 
   return (
     <article className="lesson-component-card group">
-      <div className="absolute right-3 top-3 z-10 flex max-w-[calc(100%-1.5rem)] flex-wrap justify-end gap-1">
-        <Button
-          variant="ghost"
-          className={hoverActionClass}
-          disabled={disabled || indexInLesson === 0}
-          aria-label={`Переместить «${definition.title}» выше`}
-          title="Переместить выше"
-          onClick={() =>
-            void runMutation("Меняем порядок компонентов…", () =>
-              jsonRequest(
-                `/api/v2/components/${component.id}/reorder`,
-                "POST",
-                { toPosition: component.position - 1 },
-              ),
-            )
-          }
-        >
-          <ArrowUp className="h-4 w-4" aria-hidden="true" />
-        </Button>
-        <Button
-          variant="ghost"
-          className={hoverActionClass}
-          disabled={disabled || indexInLesson === componentCount - 1}
-          aria-label={`Переместить «${definition.title}» ниже`}
-          title="Переместить ниже"
-          onClick={() =>
-            void runMutation("Меняем порядок компонентов…", () =>
-              jsonRequest(
-                `/api/v2/components/${component.id}/reorder`,
-                "POST",
-                { toPosition: component.position + 1 },
-              ),
-            )
-          }
-        >
-          <ArrowDown className="h-4 w-4" aria-hidden="true" />
-        </Button>
-        <Button
-          variant="ghost"
-          className={hoverActionClass}
-          disabled={disabled}
-          aria-label={`${editing ? "Закрыть редактор" : "Редактировать"} «${definition.title}»`}
-          title={editing ? "Закрыть редактор" : "Редактировать"}
-          onClick={() => setEditing((value) => !value)}
-        >
-          <Pencil className="h-4 w-4" aria-hidden="true" />
-        </Button>
-        <Button
-          variant="ghost"
-          className={`${hoverActionClass} component-card-action-danger`}
-          disabled={disabled}
-          aria-label={`Удалить «${definition.title}»`}
-          title="Удалить"
-          onClick={() => {
-            if (!window.confirm(`Удалить компонент «${definition.title}»?`))
-              return;
-            void runMutation("Удаляем компонент…", () =>
-              jsonRequest(`/api/v2/components/${component.id}`, "DELETE"),
-            );
-          }}
-        >
-          <Trash2 className="h-4 w-4" aria-hidden="true" />
-        </Button>
-        <div className="relative">
-          <Button
-            ref={studentScreenTriggerRef}
-            variant="ghost"
-            className={`component-card-visibility-action transition ${
-              learnerVisible
-                ? "component-card-visibility-action-active border-sky-200 bg-sky-100 text-sky-800 hover:bg-sky-200"
-                : "component-card-visibility-action-inactive text-neutral-500 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100"
-            }`}
-            disabled={disabled}
-            aria-haspopup="dialog"
-            aria-expanded={studentScreenPopoverOpen}
-            aria-controls={
-              studentScreenPopoverOpen ? studentScreenPopoverId : undefined
-            }
-            aria-label={
-              learnerVisible
-                ? currentStudentSlidePosition === undefined
-                  ? `«${definition.title}» показывается ученику. Настроить`
-                  : `«${definition.title}» показывается на слайде ${currentStudentSlidePosition}. Настроить`
-                : `«${definition.title}» не показывается ученику. Настроить`
-            }
-            title="Настроить экран ученика"
-            onClick={() => setStudentScreenPopoverOpen((isOpen) => !isOpen)}
-          >
-            {learnerVisible ? (
-              <Eye className="h-4 w-4" aria-hidden="true" />
-            ) : (
-              <EyeOff className="h-4 w-4" aria-hidden="true" />
-            )}
-          </Button>
-
-          {studentScreenPopoverOpen ? (
-            <div
-              ref={studentScreenPopoverRef}
-              id={studentScreenPopoverId}
-              role="dialog"
-              aria-label={`Слайд для компонента «${definition.title}»`}
-              className="absolute right-0 top-11 z-30 w-72 rounded-2xl border border-neutral-200 bg-white p-2 text-left shadow-xl"
-            >
-              <p className="px-2 pb-2 pt-1 text-xs font-bold uppercase tracking-[0.12em] text-neutral-500">
-                Экран ученика
-              </p>
-              <div className="grid gap-1">
-                {placementOptions.existingSlides.map((slide) => {
-                  const selected = component.studentSlideId === slide.id;
-                  return (
-                    <button
-                      key={slide.id}
-                      type="button"
-                      disabled={disabled || selected}
-                      aria-pressed={selected}
-                      className="flex min-h-10 items-center justify-between gap-3 rounded-xl px-3 py-2 text-sm font-semibold text-neutral-800 transition hover:bg-neutral-100 disabled:cursor-default disabled:bg-sky-50 disabled:text-sky-800"
-                      onClick={() =>
-                        void updateStudentScreen({
-                          mode: "existing",
-                          slideId: slide.id,
-                        })
-                      }
-                    >
-                      <span>Слайд {slide.position}</span>
-                      {selected ? (
-                        <Check className="h-4 w-4" aria-hidden="true" />
-                      ) : null}
-                    </button>
-                  );
-                })}
-                {placementOptions.canCreateNew ? (
-                  <button
-                    type="button"
-                    disabled={disabled}
-                    className="flex min-h-10 items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-neutral-800 transition hover:bg-neutral-100"
-                    onClick={() => void updateStudentScreen({ mode: "new" })}
-                  >
-                    <Plus className="h-4 w-4" aria-hidden="true" />
-                    Новый слайд
-                  </button>
-                ) : null}
-                {learnerVisible ? (
-                  <button
-                    type="button"
-                    disabled={disabled}
-                    className="flex min-h-10 items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-50"
-                    onClick={() => void updateStudentScreen({ mode: "hide" })}
-                  >
-                    <EyeOff className="h-4 w-4" aria-hidden="true" />
-                    Убрать с экрана
-                  </button>
-                ) : null}
-              </div>
-            </div>
-          ) : null}
-        </div>
-      </div>
-
-      <div className="mb-3 md:pr-48">
-        <p className="text-xs font-bold uppercase tracking-[0.14em] text-neutral-500">
-          {displayPosition}. {definition.title}
+      <header className="lesson-component-card-header">
+        <p className="lesson-component-card-title">
+          <span className="lesson-component-card-position">
+            {displayPosition}.
+          </span>{" "}
+          {definition.title}
         </p>
-      </div>
+        <div
+          className="lesson-component-card-actions"
+          role="group"
+          aria-label={`Управление компонентом «${definition.title}»`}
+        >
+          <Button
+            variant="ghost"
+            className={hoverActionClass}
+            disabled={disabled || indexInLesson === 0}
+            aria-label={`Переместить «${definition.title}» выше`}
+            title="Переместить выше"
+            onClick={() =>
+              void runMutation("Меняем порядок компонентов…", () =>
+                jsonRequest(
+                  `/api/v2/components/${component.id}/reorder`,
+                  "POST",
+                  { toPosition: component.position - 1 },
+                ),
+              )
+            }
+          >
+            <ArrowUp className="h-4 w-4" aria-hidden="true" />
+          </Button>
+          <Button
+            variant="ghost"
+            className={hoverActionClass}
+            disabled={disabled || indexInLesson === componentCount - 1}
+            aria-label={`Переместить «${definition.title}» ниже`}
+            title="Переместить ниже"
+            onClick={() =>
+              void runMutation("Меняем порядок компонентов…", () =>
+                jsonRequest(
+                  `/api/v2/components/${component.id}/reorder`,
+                  "POST",
+                  { toPosition: component.position + 1 },
+                ),
+              )
+            }
+          >
+            <ArrowDown className="h-4 w-4" aria-hidden="true" />
+          </Button>
+          <Button
+            variant="ghost"
+            className={hoverActionClass}
+            disabled={disabled}
+            aria-label={`${editing ? "Закрыть редактор" : "Редактировать"} «${definition.title}»`}
+            title={editing ? "Закрыть редактор" : "Редактировать"}
+            onClick={() => setEditing((value) => !value)}
+          >
+            <Pencil className="h-4 w-4" aria-hidden="true" />
+          </Button>
+          <Button
+            variant="ghost"
+            className={`${hoverActionClass} component-card-action-danger`}
+            disabled={disabled}
+            aria-label={`Удалить «${definition.title}»`}
+            title="Удалить"
+            onClick={() => {
+              if (!window.confirm(`Удалить компонент «${definition.title}»?`))
+                return;
+              void runMutation("Удаляем компонент…", () =>
+                jsonRequest(`/api/v2/components/${component.id}`, "DELETE"),
+              );
+            }}
+          >
+            <Trash2 className="h-4 w-4" aria-hidden="true" />
+          </Button>
+          <div className="relative">
+            <Button
+              ref={studentScreenTriggerRef}
+              variant="ghost"
+              className={`component-card-visibility-action transition ${
+                learnerVisible
+                  ? "component-card-visibility-action-active border-sky-200 bg-sky-100 text-sky-800 hover:bg-sky-200"
+                  : "component-card-visibility-action-inactive text-neutral-500 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100"
+              }`}
+              disabled={disabled}
+              aria-haspopup="dialog"
+              aria-expanded={studentScreenPopoverOpen}
+              aria-controls={
+                studentScreenPopoverOpen ? studentScreenPopoverId : undefined
+              }
+              aria-label={
+                learnerVisible
+                  ? currentStudentSlidePosition === undefined
+                    ? `«${definition.title}» показывается ученику. Настроить`
+                    : `«${definition.title}» показывается на слайде ${currentStudentSlidePosition}. Настроить`
+                  : `«${definition.title}» не показывается ученику. Настроить`
+              }
+              title="Настроить экран ученика"
+              onClick={() => setStudentScreenPopoverOpen((isOpen) => !isOpen)}
+            >
+              {learnerVisible ? (
+                <Eye className="h-4 w-4" aria-hidden="true" />
+              ) : (
+                <EyeOff className="h-4 w-4" aria-hidden="true" />
+              )}
+            </Button>
 
-      {editing ? (
-        <ComponentPayloadEditor
-          key={`${component.id}:${component.updatedAt}`}
-          component={component}
-          assets={assets}
-          disabled={disabled}
-          onCancel={() => setEditing(false)}
-          onSave={async (input) => {
-            const saved = await runMutation("Сохраняем компонент…", () =>
-              jsonRequest(`/api/v2/components/${component.id}`, "PATCH", input),
-            );
-            if (saved) setEditing(false);
-          }}
-        />
-      ) : (
-        <CourseComponentRenderer
-          component={component}
-          assets={assetMap}
-          mode="teacher"
-        />
-      )}
+            {studentScreenPopoverOpen ? (
+              <div
+                ref={studentScreenPopoverRef}
+                id={studentScreenPopoverId}
+                role="dialog"
+                aria-label={`Слайд для компонента «${definition.title}»`}
+                className="absolute right-0 top-11 z-30 w-72 rounded-2xl border border-neutral-200 bg-white p-2 text-left shadow-xl"
+              >
+                <p className="px-2 pb-2 pt-1 text-xs font-bold uppercase tracking-[0.12em] text-neutral-500">
+                  Экран ученика
+                </p>
+                <div className="grid gap-1">
+                  {placementOptions.existingSlides.map((slide) => {
+                    const selected = component.studentSlideId === slide.id;
+                    return (
+                      <button
+                        key={slide.id}
+                        type="button"
+                        disabled={disabled || selected}
+                        aria-pressed={selected}
+                        className="flex min-h-10 items-center justify-between gap-3 rounded-xl px-3 py-2 text-sm font-semibold text-neutral-800 transition hover:bg-neutral-100 disabled:cursor-default disabled:bg-sky-50 disabled:text-sky-800"
+                        onClick={() =>
+                          void updateStudentScreen({
+                            mode: "existing",
+                            slideId: slide.id,
+                          })
+                        }
+                      >
+                        <span>Слайд {slide.position}</span>
+                        {selected ? (
+                          <Check className="h-4 w-4" aria-hidden="true" />
+                        ) : null}
+                      </button>
+                    );
+                  })}
+                  {placementOptions.canCreateNew ? (
+                    <button
+                      type="button"
+                      disabled={disabled}
+                      className="flex min-h-10 items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-neutral-800 transition hover:bg-neutral-100"
+                      onClick={() => void updateStudentScreen({ mode: "new" })}
+                    >
+                      <Plus className="h-4 w-4" aria-hidden="true" />
+                      Новый слайд
+                    </button>
+                  ) : null}
+                  {learnerVisible ? (
+                    <button
+                      type="button"
+                      disabled={disabled}
+                      className="flex min-h-10 items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-50"
+                      onClick={() => void updateStudentScreen({ mode: "hide" })}
+                    >
+                      <EyeOff className="h-4 w-4" aria-hidden="true" />
+                      Убрать с экрана
+                    </button>
+                  ) : null}
+                </div>
+              </div>
+            ) : null}
+          </div>
+        </div>
+      </header>
+
+      <div className="lesson-component-card-content">
+        {editing ? (
+          <ComponentPayloadEditor
+            key={`${component.id}:${component.updatedAt}`}
+            component={component}
+            assets={assets}
+            disabled={disabled}
+            onCancel={() => setEditing(false)}
+            onSave={async (input) => {
+              const saved = await runMutation("Сохраняем компонент…", () =>
+                jsonRequest(
+                  `/api/v2/components/${component.id}`,
+                  "PATCH",
+                  input,
+                ),
+              );
+              if (saved) setEditing(false);
+            }}
+          />
+        ) : (
+          <CourseComponentRenderer
+            component={component}
+            assets={assetMap}
+            mode="teacher"
+          />
+        )}
+      </div>
     </article>
   );
 }
@@ -547,17 +563,21 @@ function ComponentPickerDialog({
             data-component-type-key={definition.key}
             disabled={disabled}
             className="component-picker-card"
+            aria-label={`Добавить компонент «${definition.title}». ${componentPickerPresentations[definition.key].description}`}
             onClick={() => void add(definition.key)}
           >
-            <span className="flex items-center justify-between gap-3">
-              <span className="font-bold text-neutral-950">
+            <span className="component-picker-card-heading">
+              <span className="component-picker-card-title">
                 {definition.title}
               </span>
-              <Plus className="h-4 w-4 text-neutral-500" aria-hidden="true" />
+              <span className="component-picker-card-add" aria-hidden="true">
+                <Plus className="h-4 w-4" />
+              </span>
             </span>
-            <span className="mt-2 block text-xs leading-5 text-neutral-500">
-              Добавить в план и сразу перейти к редактированию
+            <span className="component-picker-card-description">
+              {componentPickerPresentations[definition.key].description}
             </span>
+            <ComponentPickerPreview typeKey={definition.key} />
           </button>
         ))}
       </div>

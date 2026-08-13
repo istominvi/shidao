@@ -71,6 +71,20 @@
 сохранены, добавлены 11 новых, а `divider` удалён. Точный канонический
 список хранится в code-first registry, а не в этой матрице.
 
+### Current source: наглядный выбор типа
+
+Palette показывает у каждого из 20 типов короткое назначение и статический
+representative mini-preview. Для текстовой категории образец повторяет ключевую
+форму результата: крупную строку заголовка, обычные абзацы, цветной
+поясняющий callout и цитату с левой линией/автором. Медиа и упражнения получают
+такие же безопасные декоративные схемы.
+
+Это UI-only presentation map, exhaustive по `ComponentTypeKey`. Он не меняет
+`defaultPayload/defaultPlacement`, не рендерит настоящие input/button/media
+внутри кнопки добавления, не делает network requests и не становится частью
+serializable registry/MCP schema. После выбора по-прежнему создаётся обычный
+private Component с canonical defaults и открывается его настоящий редактор.
+
 ### Почему `divider` не нужен
 
 Это наше product inference. В ShiDao порядок задаёт единый ordered list Lesson,

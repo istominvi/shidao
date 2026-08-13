@@ -207,6 +207,19 @@ presentation-категории; category rail не имеет divider, а compa
 element-radius 12 px и стандартную table-shadow. Это UI-only изменение без API,
 schema или migration.
 
+**Current source component-authoring refinement (next production deployment):**
+palette всех 20 Component types показывает короткое назначение и отдельный
+статический неинтерактивный мини-образец; `heading`, `rich_text`, `callout` и
+`quote` визуально различимы до добавления в Lesson. Образцы не используют
+production renderer, не создают вложенные controls и не меняют registry
+defaults. Authored Component card получила normal-flow header: номер и название
+используют canonical `.88rem/400`, action controls — `32 × 32 px`, а между
+ними и содержимым остаётся `16 px`. Scoped editor использует нейтральный
+divider, обычные labels и однострочные input/select высотой `40 px` с той же
+`.88rem/400` типографикой. Это UI-only source change без новых API, schema,
+migration или второго Component order; production rollout/postflight ещё не
+заявлены.
+
 **Previously deployed Schedule presentation baseline (superseded by PR #242):**
 `/schedule` загружает реальные LessonRun за локальную неделю (понедельник–
 понедельник) или календарный месяц. Внешняя поверхность toolbar удалена:
@@ -951,10 +964,15 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
   source её panel имеет стабильный desktop-размер `56rem × 42rem`, остаётся
   внутри mobile viewport, а прокрутка принадлежит только списку карточек:
   заголовок и category tabs не прыгают при переключении между 2, 4 и 10
-  элементами. Вводный subtitle и повторные category heading/description
-  удалены; close остаётся доступной кнопкой без декоративной рамки.
+  элементами. Каждая карточка до добавления показывает назначение и статический
+  неинтерактивный образец своего типа; это presentation metadata, а не
+  persisted payload или production renderer. Вводный subtitle и повторные
+  category heading/description удалены; close остаётся доступной кнопкой без
+  декоративной рамки.
 - Компонент можно редактировать, удалить или переместить кнопками
-  «выше/ниже».
+  «выше/ниже». В current source normal-flow header отделён от содержимого на
+  16 px; meta и editor labels используют `.88rem/400`, icon actions — 32 px,
+  а однострочные editor controls — canonical 40 px.
 - Новый Component всегда создаётся `staff_only` и не показывается ученику,
   пока преподаватель явно не назначит его на Slide.
 
@@ -1452,7 +1470,7 @@ positions, а плотность поддерживают текущие service
 | Course/Lesson navigation             | `src/components/course-builder/course-workspace-navigation.ts`                                                                                                                                                                                                                    |
 | Workspace tabs/materials             | `src/components/ui/workspace-tabs.tsx`, `src/components/course-builder/course-materials-panel.tsx`, `src/components/course-builder/course-materials.ts`, `src/components/course-builder/course-material-file.ts`, `src/modules/course-builder/registry/stored-file-references.ts` |
 | Lesson editor/Slides                 | `src/components/course-builder/lesson-authoring-workspace.tsx`                                                                                                                                                                                                                    |
-| Component editors/renderers          | `src/components/course-builder/component-payload-editor.tsx`, `component-renderers.tsx`                                                                                                                                                                                           |
+| Component picker/editors/renderers   | `src/components/course-builder/component-picker-preview.tsx`, `component-payload-editor.tsx`, `component-renderers.tsx`                                                                                                                                                           |
 | Fullscreen preview                   | `src/components/course-builder/student-screen-preview.tsx`                                                                                                                                                                                                                        |
 | Account Schedule                     | `src/app/(app)/(teacher-required)/schedule/`, `src/components/teaching-hub/schedule-workspace.tsx`, `src/components/teaching-hub/schedule-date-picker.tsx`, `src/components/teaching-hub/schedule-period.ts`                                                                      |
 | Account Students                     | `src/app/(app)/(teacher-required)/students/`, `src/components/teaching-hub/students-workspace.tsx`, `src/components/teaching-hub/student-directory-table.tsx`                                                                                                                     |
