@@ -972,9 +972,10 @@ flow как permanent delete.
   дополнительно проверить representative preview у всех 20 типов и явные
   различия `Заголовок / Текст / Сноска / Цитата`; preview не содержит
   вложенных focusable controls. Открытый payload editor должен иметь
-  normal-flow header, exact 16 px до content, meta/labels `.88rem/400`, icon
-  actions `32 × 32 px` и однострочные input/select exact 40 px без desktop или
-  mobile overflow;
+  outer padding `0`, normal-flow header exact 40 px с inset
+  `4 / 4 / 4 / 12 px`, content inset `12 px`, meta/labels `.88rem/400`, icon
+  actions `32 × 32 px` и однострочные input/select exact 40 px без desktop
+  или mobile overflow;
 - existing email и learner login/PIN создают одну Account session и не выводят
   internal Auth email/browser secret;
 - внутри directory-вкладок `/students` не скрывает archived/pending за

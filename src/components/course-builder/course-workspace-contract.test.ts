@@ -780,6 +780,7 @@ test("component cards persist edit, delete, order, and ordered Student Screen pl
     /border-radius: var\([\s\S]*?--course-demo-element-radius/,
   );
   assert.doesNotMatch(cardStyles, /--course-demo-card-radius/);
+  assert.match(cardStyles, /padding: 0/);
   assert.match(cardStyles, /box-shadow: 0 10px 24px rgba\(20, 20, 20, 0\.06\)/);
   assert.ok(
     cardHoverStyles,
@@ -794,8 +795,16 @@ test("component cards persist edit, delete, order, and ordered Student Screen pl
     "component card header styles must remain present",
   );
   assert.match(cardHeaderStyles, /display: flex/);
+  assert.match(
+    cardHeaderStyles,
+    /min-height: var\(--product-row-height, 2\.5rem\)/,
+  );
   assert.match(cardHeaderStyles, /align-items: center/);
   assert.match(cardHeaderStyles, /justify-content: space-between/);
+  assert.match(
+    cardHeaderStyles,
+    /padding: var\(--product-inner-control-inset, 0\.25rem\)[\s\S]*?var\(--course-demo-content-inset, 0\.75rem\)/,
+  );
   assert.ok(cardTitleStyles, "component card title styles must remain present");
   assert.match(
     cardTitleStyles,
@@ -812,7 +821,11 @@ test("component cards persist edit, delete, order, and ordered Student Screen pl
     cardContentStyles,
     "component content spacing must remain explicit",
   );
-  assert.match(cardContentStyles, /margin-top: 1rem/);
+  assert.match(
+    cardContentStyles,
+    /padding: var\(--course-demo-content-inset, 0\.75rem\)/,
+  );
+  assert.doesNotMatch(cardContentStyles, /margin-top/);
 });
 
 test("lesson plan uses a transparent toolbar and filters authored components by title", () => {

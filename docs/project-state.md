@@ -213,12 +213,12 @@ palette всех 20 Component types показывает короткое наз
 `quote` визуально различимы до добавления в Lesson. Образцы не используют
 production renderer, не создают вложенные controls и не меняют registry
 defaults. Authored Component card получила normal-flow header: номер и название
-используют canonical `.88rem/400`, action controls — `32 × 32 px`, а между
-ними и содержимым остаётся `16 px`. Scoped editor использует нейтральный
-divider, обычные labels и однострочные input/select высотой `40 px` с той же
-`.88rem/400` типографикой. Это UI-only source change без новых API, schema,
-migration или второго Component order; production rollout/postflight ещё не
-заявлены.
+используют canonical `.88rem/400`, action controls — `32 × 32 px`. Outer card
+не имеет padding; header использует `4 / 4 / 4 / 12 px`, а content — `12 px`
+со всех сторон. Scoped editor использует нейтральный divider, обычные labels и
+однострочные input/select высотой `40 px` с той же `.88rem/400` типографикой.
+Это UI-only source change без новых API, schema, migration или второго
+Component order; production rollout/postflight ещё не заявлены.
 
 **Previously deployed Schedule presentation baseline (superseded by PR #242):**
 `/schedule` загружает реальные LessonRun за локальную неделю (понедельник–
@@ -970,9 +970,10 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
   category heading/description удалены; close остаётся доступной кнопкой без
   декоративной рамки.
 - Компонент можно редактировать, удалить или переместить кнопками
-  «выше/ниже». В current source normal-flow header отделён от содержимого на
-  16 px; meta и editor labels используют `.88rem/400`, icon actions — 32 px,
-  а однострочные editor controls — canonical 40 px.
+  «выше/ниже». В current source outer card не имеет padding, 40 px normal-flow
+  header использует inset `4 / 4 / 4 / 12 px`, а content — `12 px` в круг;
+  meta и editor labels используют `.88rem/400`, icon actions — 32 px, а
+  однострочные editor controls — canonical 40 px.
 - Новый Component всегда создаётся `staff_only` и не показывается ученику,
   пока преподаватель явно не назначит его на Slide.
 

@@ -2194,7 +2194,7 @@ a {
     var(--product-element-radius, 0.75rem)
   );
   background: #fff;
-  padding: 1rem;
+  padding: 0;
   box-shadow: 0 10px 24px rgba(20, 20, 20, 0.06);
   transition: border-color 180ms ease;
 }
@@ -2207,10 +2207,14 @@ a {
 .lesson-component-card-header {
   display: flex;
   min-width: 0;
-  min-height: var(--product-inner-control-size);
+  min-height: var(--product-row-height, 2.5rem);
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
+  padding: var(--product-inner-control-inset, 0.25rem)
+    var(--product-inner-control-inset, 0.25rem)
+    var(--product-inner-control-inset, 0.25rem)
+    var(--course-demo-content-inset, 0.75rem);
 }
 
 .lesson-component-card-title {
@@ -2238,7 +2242,7 @@ a {
 
 .lesson-component-card-content {
   min-width: 0;
-  margin-top: 1rem;
+  padding: var(--course-demo-content-inset, 0.75rem);
 }
 
 .component-payload-editor {

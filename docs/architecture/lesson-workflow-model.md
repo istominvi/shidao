@@ -336,8 +336,9 @@ Authored Component card использует тот же 12 px element radius и
 тень, что table surfaces; фильтрация не меняет canonical `position` и не
 создаёт второй порядок. В current source meta и actions находятся в normal
 flow: номер/title и form labels используют canonical `.88rem/400`, icon actions
-имеют 32 px, до content сохраняется 16 px, а однострочные editor input/select —
-40 px. Эти scoped presentation rules не меняют learner renderer.
+имеют 32 px. Outer card не имеет padding; 40 px header получает inset
+`4 / 4 / 4 / 12 px`, content — `12 px` в круг, а однострочные editor
+input/select — 40 px. Эти scoped presentation rules не меняют learner renderer.
 
 На карточке teacher видит состояние видимости. `staff_only` означает, что
 компонент остаётся частью плана преподавателя, но отсутствует в learner API.

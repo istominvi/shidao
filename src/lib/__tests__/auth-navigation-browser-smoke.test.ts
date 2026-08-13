@@ -9076,12 +9076,39 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
         }
         const headerRect = header.getBoundingClientRect();
         const contentRect = content.getBoundingClientRect();
+        const editorRect = editor.getBoundingClientRect();
+        const cardStyle = getComputedStyle(card);
+        const headerStyle = getComputedStyle(header);
+        const contentStyle = getComputedStyle(content);
         const titleStyle = getComputedStyle(title);
         const editorStyle = getComputedStyle(editor);
         return {
-          headerPosition: getComputedStyle(header).position,
+          cardPadding: {
+            top: cardStyle.paddingTop,
+            right: cardStyle.paddingRight,
+            bottom: cardStyle.paddingBottom,
+            left: cardStyle.paddingLeft,
+          },
+          headerPosition: headerStyle.position,
           actionsPosition: getComputedStyle(actions).position,
-          headerContentGap: contentRect.top - headerRect.bottom,
+          headerHeight: headerRect.height,
+          headerPadding: {
+            top: headerStyle.paddingTop,
+            right: headerStyle.paddingRight,
+            bottom: headerStyle.paddingBottom,
+            left: headerStyle.paddingLeft,
+          },
+          contentPadding: {
+            top: contentStyle.paddingTop,
+            right: contentStyle.paddingRight,
+            bottom: contentStyle.paddingBottom,
+            left: contentStyle.paddingLeft,
+          },
+          contentMarginTop: contentStyle.marginTop,
+          headerContentContainerGap: contentRect.top - headerRect.bottom,
+          headerEditorGap: editorRect.top - headerRect.bottom,
+          actionsEditorGap:
+            editorRect.top - actions.getBoundingClientRect().bottom,
           titleFontSize: titleStyle.fontSize,
           titleFontWeight: titleStyle.fontWeight,
           editorFontSize: editorStyle.fontSize,
@@ -9114,9 +9141,33 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
         };
       },
     );
+    assert.deepEqual(fileComponentEditorVisual.cardPadding, {
+      top: "0px",
+      right: "0px",
+      bottom: "0px",
+      left: "0px",
+    });
     assert.equal(fileComponentEditorVisual.headerPosition, "static");
     assert.equal(fileComponentEditorVisual.actionsPosition, "static");
-    assert.ok(Math.abs(fileComponentEditorVisual.headerContentGap - 16) < 0.5);
+    assert.ok(Math.abs(fileComponentEditorVisual.headerHeight - 40) < 0.5);
+    assert.deepEqual(fileComponentEditorVisual.headerPadding, {
+      top: "4px",
+      right: "4px",
+      bottom: "4px",
+      left: "12px",
+    });
+    assert.deepEqual(fileComponentEditorVisual.contentPadding, {
+      top: "12px",
+      right: "12px",
+      bottom: "12px",
+      left: "12px",
+    });
+    assert.equal(fileComponentEditorVisual.contentMarginTop, "0px");
+    assert.ok(
+      Math.abs(fileComponentEditorVisual.headerContentContainerGap) < 0.5,
+    );
+    assert.ok(Math.abs(fileComponentEditorVisual.headerEditorGap - 12) < 0.5);
+    assert.ok(Math.abs(fileComponentEditorVisual.actionsEditorGap - 16) < 0.5);
     for (const typography of [
       {
         fontSize: fileComponentEditorVisual.titleFontSize,
