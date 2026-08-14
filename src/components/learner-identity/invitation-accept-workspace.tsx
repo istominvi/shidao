@@ -13,6 +13,7 @@ import { useCallback, useEffect, useState } from "react";
 import { AppPageHeader } from "@/components/app/page-header";
 import { Button, productButtonClassName } from "@/components/ui/button";
 import { useSessionView } from "@/components/use-session-view";
+import { profileTabHref } from "@/lib/navigation/profile-nav";
 import type {
   InvitationAcceptance,
   LearnerMergePreview,
@@ -419,7 +420,7 @@ export function InvitationAcceptWorkspace({
                 решение не связано с активацией аккаунта учащегося.
               </p>
               <Link
-                href="/settings/observers"
+                href={profileTabHref("observers")}
                 className="mt-3 inline-flex text-sm font-semibold underline underline-offset-4"
               >
                 Открыть запросы наблюдателя

@@ -128,6 +128,7 @@ learner enrollment.
 /store
 /learning-profile
 /observing
+/settings
 /settings/profile
 /settings/security
 /settings/observers
@@ -152,11 +153,16 @@ Resource access остаётся relation/ownership-scoped:
   ассортимент учебных товаров и React-state cart/checkout. Он не читает Course,
   Lesson, roster или LearningRecord, не вызывает order/payment API и не пишет
   в database/Storage;
-- `/learning-profile` — linked subject safe history/progress, share code,
+- `/learning-profile` — единый Account/profile section; query `tab` принимает
+  только `history | attestation | observers | settings`, а отсутствие/неверное
+  значение открывает `profile`. Вкладки содержат linked subject safe
+  history/progress, share code, observer grants, Account security/email, AI
   consent и subject lifecycle;
 - `/observing` — protected compatibility redirect на
   `/students?tab=observing`;
-- `/settings/observers` — subject-controlled invitations/grants;
+- `/settings`, `/settings/profile`, `/settings/security` и
+  `/settings/observers` — protected compatibility redirects в соответствующие
+  вкладки `/learning-profile`; email-change flags сохраняются;
 - Student Screen по-прежнему owner preview, не learner Course access.
 
 Primary navigation для каждого Account в current production UI:
@@ -168,14 +174,12 @@ Primary navigation для каждого Account в current production UI:
 Account menu:
 
 ```text
-Учебный профиль / Настройки / Выход
+Профиль / История / Аттестация / Наблюдатели / Настройки / Выход
 ```
 
-Settings navigation:
-
-```text
-Профиль и email / Безопасность / Наблюдатели
-```
+Trigger Account menu не показывает имя: только avatar `40 × 40 px` с радиусом
+`12 px`. Dropdown header показывает ФИО и публичный email без avatar; следующий
+divider идёт от края до края. Отдельной Settings navigation больше нет.
 
 ## V2 API namespaces
 

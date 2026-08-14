@@ -7,29 +7,13 @@ function source(path: string) {
   return readFileSync(join(process.cwd(), path), "utf8");
 }
 
-test("authenticated Settings reuse the canonical active product shell", () => {
-  const shell = source("src/components/settings-shell.tsx");
-  const navigationStyles = source("src/app/styles/navigation.css");
-
-  assert.match(
-    shell,
-    /<main className="course-demo-shell settings-product-shell">/,
+test("profile, observers, and account settings share one product workspace", () => {
+  const page = source("src/app/(app)/learning-profile/page.tsx");
+  const workspace = source(
+    "src/components/learner-identity/learning-profile-workspace.tsx",
   );
-  assert.match(shell, /<TopNav demoStyle \/>/);
-  assert.match(shell, /<SettingsNavigation \/>/);
-  assert.match(
-    navigationStyles,
-    /\.course-demo-shell \.nav-settings-shell \.nav-pill\s*\{[^}]*min-height: var\(--course-demo-control-height\);[^}]*border-radius: var\(--course-demo-control-radius\);[^}]*font-size: var\(--course-demo-control-font-size\);[^}]*font-weight: var\(--course-demo-control-font-weight\);/,
-  );
-  assert.match(
-    navigationStyles,
-    /\.course-demo-shell \.nav-settings-shell \.nav-pill-active\s*\{[^}]*box-shadow: none;/,
-  );
-});
-
-test("Settings actions use shared button variants without raw visual forks", () => {
-  const profile = source(
-    "src/app/(app)/(profile-required)/settings/profile/page.tsx",
+  const accountSettings = source(
+    "src/components/account/account-settings-panel.tsx",
   );
   const security = source(
     "src/app/(app)/(profile-required)/settings/security/security-settings-form.tsx",
@@ -38,17 +22,64 @@ test("Settings actions use shared button variants without raw visual forks", () 
     "src/components/learner-identity/observers-settings-workspace.tsx",
   );
 
-  for (const settingsSource of [profile, security, observers]) {
+  assert.match(page, /<TopNav demoStyle \/>/);
+  assert.match(page, /<LearningProfileWorkspace/);
+  assert.match(workspace, /value: "profile", label: "Профиль"/);
+  assert.match(workspace, /value: "observers",\s*label: "Наблюдатели"/);
+  assert.match(workspace, /value: "settings",\s*label: "Настройки"/);
+  assert.match(workspace, /<AccountSettingsPanel/);
+  assert.match(workspace, /<ObserversSettingsWorkspace/);
+  assert.match(workspace, /Promise\.allSettled/);
+  assert.match(
+    workspace,
+    /historyResult\.status === "fulfilled"[\s\S]*?unavailableSections\.push\("история занятий"\)/,
+  );
+  assert.match(
+    workspace,
+    /session\.kind === "account" && surface === "settings"/,
+  );
+  assert.doesNotMatch(
+    workspace,
+    /!loading && profile && progress[\s\S]{0,160}<ObserversSettingsWorkspace/,
+  );
+  assert.doesNotMatch(
+    workspace,
+    /!loading &&[\s\S]{0,80}session\.kind === "account"[\s\S]{0,80}surface === "settings"/,
+  );
+  assert.match(workspace, /onHasPinChange=\{setHasPin\}/);
+  assert.doesNotMatch(workspace, /value: "data"|value: "access"/);
+
+  for (const panel of [accountSettings, security, observers]) {
+    assert.doesNotMatch(panel, /SettingsShell|nav-settings-shell/);
+  }
+});
+
+test("account settings actions and one-line fields use shared primitives", () => {
+  const accountSettings = source(
+    "src/components/account/account-settings-panel.tsx",
+  );
+  const security = source(
+    "src/app/(app)/(profile-required)/settings/security/security-settings-form.tsx",
+  );
+  const observers = source(
+    "src/components/learner-identity/observers-settings-workspace.tsx",
+  );
+
+  for (const settingsSource of [accountSettings, security, observers]) {
     assert.match(
       settingsSource,
-      /import \{ Button \} from "@\/components\/ui\/button"/,
+      /import \{ Button(?:, productButtonClassName)? \} from "@\/components\/ui\/button"/,
     );
     assert.doesNotMatch(settingsSource, /<button\b/);
   }
 
+  assert.match(accountSettings, /import \{ Input \}/);
+  assert.match(observers, /import \{ Input \}/);
+  assert.doesNotMatch(accountSettings, /<input\b/);
+  assert.doesNotMatch(observers, /<input\b/);
   assert.match(
-    profile,
-    /<Button[\s\S]*?type="submit"[\s\S]*?disabled=\{emailLoading\}[\s\S]*?className="w-full"/,
+    accountSettings,
+    /<Button type="submit" disabled=\{emailLoading\}>/,
   );
   assert.match(
     security,
@@ -56,8 +87,22 @@ test("Settings actions use shared button variants without raw visual forks", () 
   );
   assert.match(security, /variant="secondary"[\s\S]*?>\s*Сменить логин и PIN/);
   assert.match(security, /variant="ghost"[\s\S]*?>\s*Отмена/);
-  assert.match(
-    security,
-    /variant="secondary"[\s\S]*?className="product-btn-danger"[\s\S]*?>\s*Отозвать право/,
+  assert.equal((security.match(/id="security"/g) ?? []).length, 1);
+});
+
+test("legacy settings URLs redirect into the canonical profile tabs", () => {
+  const profile = source(
+    "src/app/(app)/(profile-required)/settings/profile/page.tsx",
   );
+  const security = source(
+    "src/app/(app)/(profile-required)/settings/security/page.tsx",
+  );
+  const observers = source("src/app/(app)/settings/observers/page.tsx");
+  const root = source("src/app/(app)/settings/page.tsx");
+
+  assert.match(profile, /profileTabHref\("settings"\)/);
+  assert.match(profile, /profileSettingsStatusHref\("emailChanged"\)/);
+  assert.match(security, /profileTabHref\("settings"\)[\s\S]*#security/);
+  assert.match(observers, /profileTabHref\("observers"\)/);
+  assert.match(root, /profileTabHref\("settings"\)/);
 });

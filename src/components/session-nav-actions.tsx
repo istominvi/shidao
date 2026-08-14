@@ -1,11 +1,24 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import type { LucideIcon } from "lucide-react";
-import { BookOpenCheck, LogOut, Menu, Settings } from "lucide-react";
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import {
+  BadgeCheck,
+  History,
+  LogOut,
+  Settings,
+  UserRound,
+  UsersRound,
+} from "lucide-react";
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type KeyboardEvent as ReactKeyboardEvent,
+} from "react";
 import { isInternalAuthEmail, ROUTES } from "@/lib/auth";
 import { signOutViaServer } from "@/lib/auth-flow";
 import { useSessionView } from "@/components/use-session-view";
@@ -15,6 +28,11 @@ import {
   navigationDropdownItemClass,
 } from "@/components/navigation/primitives";
 import { PageTransitionLink } from "@/components/navigation/page-transition-link";
+import {
+  PROFILE_NAV_ITEMS,
+  profileTabHref,
+  type ProfileTab,
+} from "@/lib/navigation/profile-nav";
 
 type SessionNavActionsProps = {
   state: SessionAccountView;
@@ -39,6 +57,14 @@ const MENU_WIDTH = 288;
 const MENU_GAP = 8;
 const VIEWPORT_PADDING = 8;
 
+const PROFILE_MENU_ICONS: Record<ProfileTab, LucideIcon> = {
+  profile: UserRound,
+  history: History,
+  attestation: BadgeCheck,
+  observers: UsersRound,
+  settings: Settings,
+};
+
 async function readActionError(
   response: Response,
   fallback: string,
@@ -51,7 +77,6 @@ async function readActionError(
 
 export function SessionNavActions({
   state,
-  variant = "top-nav",
   portalMenu = false,
   mobileNavItems = [],
 }: SessionNavActionsProps) {
@@ -59,6 +84,7 @@ export function SessionNavActions({
   const router = useRouter();
   const { refetchSession } = useSessionView();
   const containerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
   const [menuPosition, setMenuPosition] = useState<MenuPosition | null>(null);
@@ -101,6 +127,24 @@ export function SessionNavActions({
     );
   }, []);
 
+  const menuItems = useCallback(() => {
+    if (!menuRef.current) return [];
+    return Array.from(
+      menuRef.current.querySelectorAll<HTMLElement>(
+        '[role="menuitem"]:not([aria-disabled="true"]):not(:disabled)',
+      ),
+    );
+  }, []);
+
+  const focusMenuItem = useCallback(
+    (position: "first" | "last") => {
+      const items = menuItems();
+      const item = position === "first" ? items[0] : items.at(-1);
+      item?.focus();
+    },
+    [menuItems],
+  );
+
   useEffect(() => {
     if (!open) return;
 
@@ -108,7 +152,11 @@ export function SessionNavActions({
       if (!isEventWithinMenu(event)) setOpen(false);
     };
     const onEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setOpen(false);
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setOpen(false);
+        triggerRef.current?.focus();
+      }
     };
 
     document.addEventListener("pointerdown", onPointerDown, true);
@@ -118,6 +166,12 @@ export function SessionNavActions({
       document.removeEventListener("keydown", onEscape);
     };
   }, [isEventWithinMenu, open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const frame = window.requestAnimationFrame(() => focusMenuItem("first"));
+    return () => window.cancelAnimationFrame(frame);
+  }, [focusMenuItem, open]);
 
   useEffect(() => {
     if (!open || !portalMenu) return;
@@ -156,12 +210,39 @@ export function SessionNavActions({
     }
   }
 
+  function handleMenuKeyDown(event: ReactKeyboardEvent<HTMLDivElement>) {
+    const items = menuItems();
+    if (items.length === 0) return;
+    const currentIndex = items.findIndex(
+      (item) => item === document.activeElement,
+    );
+    let nextIndex: number | null = null;
+
+    if (event.key === "ArrowDown") {
+      nextIndex = currentIndex < 0 ? 0 : (currentIndex + 1) % items.length;
+    } else if (event.key === "ArrowUp") {
+      nextIndex =
+        currentIndex < 0
+          ? items.length - 1
+          : (currentIndex - 1 + items.length) % items.length;
+    } else if (event.key === "Home") {
+      nextIndex = 0;
+    } else if (event.key === "End") {
+      nextIndex = items.length - 1;
+    }
+
+    if (nextIndex === null) return;
+    event.preventDefault();
+    items[nextIndex]?.focus();
+  }
+
   const menu = (
     <NavigationDropdownPanel
       ref={menuRef}
       id={menuId}
       role="menu"
       aria-label="Меню пользователя"
+      onKeyDown={handleMenuKeyDown}
       className={`w-[18rem] max-w-[calc(100vw-16px)] ${portalMenu ? "fixed z-[260]" : "absolute right-0 z-[120] mt-2"}`}
       style={
         portalMenu && menuPosition
@@ -174,9 +255,6 @@ export function SessionNavActions({
       }
     >
       <div className="nav-dropdown-profile">
-        <div className="nav-dropdown-avatar" aria-hidden="true">
-          {state.initials ?? "U"}
-        </div>
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold text-neutral-900">
             {state.fullName ?? "Пользователь"}
@@ -197,7 +275,7 @@ export function SessionNavActions({
         </div>
       ) : null}
 
-      <div className="border-t border-black/5 px-1 py-1.5">
+      <div className="nav-dropdown-items">
         {mobileNavItems.length > 0 ? (
           <div className="mb-1 md:hidden">
             {mobileNavItems.map((item) => (
@@ -234,36 +312,28 @@ export function SessionNavActions({
             aria-hidden="true"
           />
         ) : null}
-        <Link
-          href={ROUTES.learningProfile}
-          className={navigationDropdownItemClass()}
-          onClick={() => setOpen(false)}
-          role="menuitem"
-        >
-          <span className="inline-flex items-center gap-2.5">
-            <BookOpenCheck
-              size={16}
-              className="text-neutral-500"
-              aria-hidden="true"
-            />
-            Учебный профиль
-          </span>
-        </Link>
-        <Link
-          href={ROUTES.settingsProfile}
-          className={navigationDropdownItemClass()}
-          onClick={() => setOpen(false)}
-          role="menuitem"
-        >
-          <span className="inline-flex items-center gap-2.5">
-            <Settings
-              size={16}
-              className="text-neutral-500"
-              aria-hidden="true"
-            />
-            Настройки
-          </span>
-        </Link>
+        {PROFILE_NAV_ITEMS.map((item) => {
+          const Icon = PROFILE_MENU_ICONS[item.id];
+          return (
+            <PageTransitionLink
+              key={item.id}
+              href={profileTabHref(item.id)}
+              className={navigationDropdownItemClass()}
+              onClick={() => setOpen(false)}
+              role="menuitem"
+              scroll={false}
+            >
+              <span className="inline-flex items-center gap-2.5">
+                <Icon
+                  size={16}
+                  className="text-neutral-500"
+                  aria-hidden="true"
+                />
+                {item.label}
+              </span>
+            </PageTransitionLink>
+          );
+        })}
 
         <button
           className={navigationDropdownItemClass("text-neutral-700")}
@@ -285,34 +355,17 @@ export function SessionNavActions({
   return (
     <div ref={containerRef} className="relative">
       <button
+        ref={triggerRef}
         type="button"
         onClick={() => setOpen((prev) => !prev)}
         aria-haspopup="menu"
         aria-expanded={open}
         aria-controls={menuId}
-        aria-label={
-          variant === "top-nav" ? "Открыть меню пользователя" : undefined
-        }
-        className={`nav-user-trigger inline-flex cursor-pointer items-center gap-1.5 ${variant === "landing" ? "w-full justify-center sm:w-auto" : ""}`}
+        aria-label="Открыть меню пользователя"
+        className="nav-user-trigger inline-flex cursor-pointer items-center justify-center"
       >
-        {variant === "top-nav" ? (
-          <span className="inline-flex md:hidden" aria-hidden="true">
-            <Menu size={18} />
-          </span>
-        ) : null}
-        <span
-          className={`nav-user-trigger-avatar size-6 items-center justify-center rounded-full bg-black text-[11px] font-bold text-white ${variant === "top-nav" ? "hidden md:inline-flex" : "inline-flex"}`}
-        >
+        <span className="nav-user-trigger-avatar inline-flex items-center justify-center bg-black font-bold text-white">
           {state.initials ?? "U"}
-        </span>
-        {variant !== "top-nav" ? (
-          <span className="sr-only">Открыть меню пользователя</span>
-        ) : null}
-        {variant === "top-nav" ? (
-          <span className="sr-only md:hidden">Открыть меню пользователя</span>
-        ) : null}
-        <span className="nav-user-trigger-name hidden max-w-[16ch] truncate text-sm font-semibold leading-tight text-neutral-900 md:block">
-          {state.fullName ?? "Пользователь"}
         </span>
       </button>
 

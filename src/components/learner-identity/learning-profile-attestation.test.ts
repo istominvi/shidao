@@ -12,16 +12,16 @@ const workspace = source(
 );
 const client = source("src/components/learner-identity/identity-client.ts");
 
-test("learning profile exposes a lazy account attestation surface", () => {
-  assert.match(workspace, /type Surface =[^;]*"attestation"/);
+test("unified learning profile exposes the account attestation tab", () => {
+  assert.match(workspace, /initialSurface: ProfileTab/);
   assert.match(
     workspace,
     /value: "attestation",\s*label: "Аттестация",\s*icon: BadgeCheck/,
   );
-  assert.match(workspace, /surface !== "attestation"/);
   assert.match(workspace, /attestations !== null/);
   assert.match(workspace, /attestationRequestInFlightRef\.current/);
   assert.match(workspace, /void loadAttestations\(\)/);
+  assert.match(workspace, /profileTabHref\(nextSurface\)/);
 
   const initialProfileLoad = workspace.match(
     /const load = useCallback\([\s\S]*?\n  }, \[\]\);/,

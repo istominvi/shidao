@@ -18,14 +18,7 @@ const PAGE_HEADER_CONSUMER_PATHS = [
   "src/components/learner-identity/learning-profile-workspace.tsx",
   "src/components/learner-identity/observing-workspace.tsx",
   "src/components/learner-identity/invitation-accept-workspace.tsx",
-  "src/components/settings-shell.tsx",
   "src/components/store/store-workspace.tsx",
-] as const;
-
-const SETTINGS_SHELL_CONSUMER_PATHS = [
-  "src/app/(app)/(profile-required)/settings/profile/page.tsx",
-  "src/app/(app)/(profile-required)/settings/security/security-settings-form.tsx",
-  "src/components/learner-identity/observers-settings-workspace.tsx",
 ] as const;
 
 function jsxElements(path: string, componentName: string) {
@@ -120,17 +113,9 @@ test("active V2 pages share one page header contract without visual modifiers", 
     source("src/components/learner-identity/learning-profile-workspace.tsx"),
     source("src/components/learner-identity/observing-workspace.tsx"),
     source("src/components/learner-identity/invitation-accept-workspace.tsx"),
-    source("src/components/settings-shell.tsx"),
     source("src/components/store/store-workspace.tsx"),
   ];
-  const productHeaderApiConsumers = [
-    ...consumers,
-    source("src/app/(app)/(profile-required)/settings/profile/page.tsx"),
-    source(
-      "src/app/(app)/(profile-required)/settings/security/security-settings-form.tsx",
-    ),
-    source("src/components/learner-identity/observers-settings-workspace.tsx"),
-  ];
+  const productHeaderApiConsumers = consumers;
 
   assert.match(header, /type: "link"/);
   assert.match(header, /type: "button"/);
@@ -331,18 +316,6 @@ test("every page-header consumer keeps metrics and action rails structurally cle
         containsChip,
         false,
         `${path} must place informational chips in meta, not actions`,
-      );
-    }
-  }
-
-  for (const path of SETTINGS_SHELL_CONSUMER_PATHS) {
-    const { elements } = jsxElements(path, "SettingsShell");
-    assert.ok(elements.length > 0, `${path} must render SettingsShell`);
-    for (const element of elements) {
-      assert.equal(
-        jsxAttribute(element, "description"),
-        undefined,
-        `${path} must not restore the explanatory SettingsShell description prop`,
       );
     }
   }

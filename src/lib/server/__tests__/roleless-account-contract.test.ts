@@ -67,6 +67,7 @@ test("active request validation has no role or school-switch contract", () => {
 test("Account navigation has no role switch client or teacher-only guard", () => {
   const sessionMenu = source("src/components/session-nav-actions.tsx");
   const accountNav = source("src/lib/navigation/primary-nav.ts");
+  const profileNav = source("src/lib/navigation/profile-nav.ts");
   const teacherGroup = source("src/app/(app)/(teacher-required)/layout.tsx");
 
   assert.doesNotMatch(sessionMenu, /preferences\/profile|SegmentedControl/);
@@ -79,12 +80,24 @@ test("Account navigation has no role switch client or teacher-only guard", () =>
     [...primaryNavIndices].sort((left, right) => left - right),
   );
   assert.doesNotMatch(accountNav, /Мой учебный профиль|label: "Наблюдение"/);
-  assert.match(sessionMenu, /ROUTES\.learningProfile/);
-  assert.match(sessionMenu, /Учебный профиль/);
-  assert.ok(
-    sessionMenu.indexOf("Учебный профиль") < sessionMenu.indexOf("Настройки") &&
-      sessionMenu.indexOf("Настройки") < sessionMenu.indexOf("Выход"),
+  const profileMenuIndices = [
+    "Профиль",
+    "История",
+    "Аттестация",
+    "Наблюдатели",
+    "Настройки",
+  ].map((label) => profileNav.indexOf(`label: "${label}"`));
+  assert.ok(profileMenuIndices.every((index) => index >= 0));
+  assert.deepEqual(
+    profileMenuIndices,
+    [...profileMenuIndices].sort((left, right) => left - right),
   );
+  assert.match(sessionMenu, /PROFILE_NAV_ITEMS\.map/);
+  assert.match(sessionMenu, /profileTabHref\(item\.id\)/);
+  assert.ok(
+    sessionMenu.indexOf("PROFILE_NAV_ITEMS.map") < sessionMenu.indexOf("Выход"),
+  );
+  assert.doesNotMatch(sessionMenu, /nav-user-trigger-name/);
   assert.doesNotMatch(teacherGroup, /activeProfile|teacher/);
 });
 

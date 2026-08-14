@@ -1,4 +1,5 @@
 import { ROUTES } from "./auth";
+import { profileSettingsStatusHref } from "./navigation/profile-nav";
 import { isSafeRelativePath } from "./routes";
 import type { AccessResolution } from "./server/access-policy";
 
@@ -50,7 +51,7 @@ export function afterConfirm(type: string) {
     case "recovery":
       return ROUTES.resetPassword;
     case "email_change":
-      return `${ROUTES.settingsProfile}?emailChanged=1`;
+      return profileSettingsStatusHref("emailChanged");
     default:
       return `${ROUTES.login}?confirmed=0`;
   }

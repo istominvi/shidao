@@ -8,6 +8,7 @@ import {
   onAuthPageWhenAuthenticated,
 } from "../auth-redirects";
 import { ROUTES } from "../auth";
+import { profileSettingsStatusHref } from "../navigation/profile-nav";
 
 test("post-auth redirects default to Account courses and reject external paths", () => {
   assert.equal(afterLogin(), ROUTES.courses);
@@ -36,7 +37,7 @@ test("confirmation redirects remain coherent", () => {
   assert.equal(afterConfirm("recovery"), ROUTES.resetPassword);
   assert.equal(
     afterConfirm("email_change"),
-    `${ROUTES.settingsProfile}?emailChanged=1`,
+    profileSettingsStatusHref("emailChanged"),
   );
 });
 

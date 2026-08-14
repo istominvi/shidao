@@ -985,9 +985,10 @@ flow как permanent delete.
 
 ### Roleless navigation and learner identity
 
-- в current production любой authenticated Account видит четыре primary items:
-  `Расписание`, `Ученики`, `Курсы`, `Магазин`; Account menu сохраняет
-  `Учебный профиль`, `Настройки`, `Выход`. Guest на
+- любой authenticated Account видит четыре primary items: `Расписание`,
+  `Ученики`, `Курсы`, `Магазин`; для current-source release проверить Account
+  menu в порядке `Профиль`, `История`, `Аттестация`, `Наблюдатели`, `Настройки`,
+  `Выход`. Guest на
   каждом private route уходит в login;
 - `/store` открывает каталог, categories/search/filters/sort и оба вида; cart →
   delivery → payment-demo → success работает без unsafe network request,
@@ -1073,12 +1074,14 @@ flow как permanent delete.
   option использует только base shadow и не получает hover/pressed button states,
   а shell имеет computed background `oklch(0.19 0 0 / 0.1)`; keyboard focus
   сохраняет видимый outline. Menu items сохраняют border `0`.
-  Повторить
-  этот visual check на authenticated `/settings/profile`,
-  `/settings/security` и `/settings/observers`: все три используют beige
-  product shell и solid-white demo TopNav; user/header и active side-nav имеют
-  `40 px / 12 px / .88rem / 400`, а primary/secondary/destructive actions —
-  shared Button contrast без raw Tailwind visual fork. Auth-кнопки, построенные
+  Повторить этот visual check на authenticated `/learning-profile` и вкладках
+  `?tab=observers|settings`: единый раздел использует beige product shell и
+  solid-white demo TopNav; Account trigger/avatar имеют ровно `40 × 40 px` и
+  radius `12 px`, видимого имени рядом нет. Dropdown header содержит ФИО/email
+  без avatar, divider под ним совпадает с обоими краями dropdown. Tabs и
+  primary/secondary/destructive actions используют shared product controls без
+  raw Tailwind visual fork. Старые `/settings/*` должны перенаправлять в нужную
+  вкладку и не рендерить отдельный side-nav. Auth-кнопки, построенные
   на canonical `.product-btn`, следуют тому же контракту; raw Landing controls
   и non-product controls полноэкранного Student Screen не должны измениться;
 - для ещё не развёрнутого current-source follow-up выполнить отдельный
@@ -1232,10 +1235,12 @@ flow как permanent delete.
 - child activation создаёт отдельный learner Account с login/PIN, требует
   recovery acknowledgement; adult recipient Account не становится learner
   target; отдельный login открывает новый Account profile;
-- `/learning-profile` показывает self safe history/progress; private comment
-  отсутствует, explicit shared comment виден; known duration не подменяет
-  unknown нулём;
-- `/settings/observers` создаёт/accepts/revokes invitation, вкладка
+- `/learning-profile` показывает один H1 с ФИО, вкладки `Профиль / История /
+Аттестация / Наблюдатели / Настройки` и метрику активной вкладки; private
+  comment отсутствует, explicit shared comment виден, known duration не
+  подменяет unknown нулём;
+- `/learning-profile?tab=observers` первым показывает active `observed_by`,
+  создаёт/accepts/revokes invitation, а вкладка
   `/students?tab=observing` показывает read-only profile; после revoke следующий
   read немедленно fail closed;
 - subject может отозвать recovery delegate; delegate reset login/PIN требует

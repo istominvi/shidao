@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ROUTES } from "@/lib/auth";
+import { profileSettingsStatusHref } from "@/lib/navigation/profile-nav";
 import { apiError, parseJsonWithSchema } from "@/lib/server/api";
 import { getPublicSiteUrl } from "@/lib/server/auth-config";
 import { requestCurrentAccountEmailChange } from "@/lib/server/account-auth";
@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
     const redirectTo = new URL("/auth/confirm", getPublicSiteUrl());
     redirectTo.searchParams.set(
       "next",
-      `${ROUTES.settingsProfile}?emailChangeRequested=1`,
+      profileSettingsStatusHref("emailChangeRequested"),
     );
 
     await requestCurrentAccountEmailChange({

@@ -3628,8 +3628,10 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       const navIcons = Array.from(
         siteHeader?.querySelectorAll<SVGElement>(".nav-pill-icon") ?? [],
       );
-      const userTriggerName = siteHeader?.querySelector<HTMLElement>(
-        ".nav-user-trigger-name",
+      const userTrigger =
+        siteHeader?.querySelector<HTMLElement>(".nav-user-trigger");
+      const userAvatar = userTrigger?.querySelector<HTMLElement>(
+        ".nav-user-trigger-avatar",
       );
 
       if (
@@ -3652,7 +3654,8 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         !headerPrimaryIcon ||
         !activeNavPill ||
         navIcons.length === 0 ||
-        !userTriggerName
+        !userTrigger ||
+        !userAvatar
       ) {
         throw new Error("Schedule shell contract is missing");
       }
@@ -3676,6 +3679,9 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       const dateNavigatorRect = dateNavigator.getBoundingClientRect();
       const datePickerRect = datePicker.getBoundingClientRect();
       const viewToggleRect = viewToggle.getBoundingClientRect();
+      const userTriggerRect = userTrigger.getBoundingClientRect();
+      const userAvatarRect = userAvatar.getBoundingClientRect();
+      const userAvatarStyle = getComputedStyle(userAvatar);
 
       return {
         backgroundColor: getComputedStyle(shell).backgroundColor,
@@ -3797,7 +3803,16 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
               opacity: style.opacity,
             };
           }),
-          userNameFontWeight: getComputedStyle(userTriggerName).fontWeight,
+          userControl: {
+            triggerWidth: userTriggerRect.width,
+            triggerHeight: userTriggerRect.height,
+            avatarWidth: userAvatarRect.width,
+            avatarHeight: userAvatarRect.height,
+            avatarRadius: userAvatarStyle.borderRadius,
+            visibleNameCount: userTrigger.querySelectorAll(
+              ".nav-user-trigger-name",
+            ).length,
+          },
         },
         navLinks,
       };
@@ -3983,7 +3998,14 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
           color === parentColor && opacity === "1",
       ),
     );
-    assert.equal(scheduleContract.navigationControls.userNameFontWeight, "400");
+    assert.deepEqual(scheduleContract.navigationControls.userControl, {
+      triggerWidth: 40,
+      triggerHeight: 40,
+      avatarWidth: 40,
+      avatarHeight: 40,
+      avatarRadius: "12px",
+      visibleNameCount: 0,
+    });
     assert.deepEqual(scheduleContract.navLinks, [
       { label: "Расписание", href: "/schedule", current: "page" },
       { label: "Ученики", href: "/students", current: null },
@@ -4780,6 +4802,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
             const icon = item.querySelector<SVGElement>("svg");
             const iconStyle = icon ? getComputedStyle(icon) : null;
             return {
+              label: item.textContent?.trim() ?? "",
               borderWidths: [
                 itemStyle.borderTopWidth,
                 itemStyle.borderRightWidth,
@@ -4800,28 +4823,20 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         backdropFilter: "none",
         opacity: "1",
         items: [
-          {
-            borderWidths: ["0px", "0px", "0px", "0px"],
-            fontWeight: "400",
-            color: "rgb(23, 23, 23)",
-            iconColor: "rgb(23, 23, 23)",
-            iconOpacity: "1",
-          },
-          {
-            borderWidths: ["0px", "0px", "0px", "0px"],
-            fontWeight: "400",
-            color: "rgb(23, 23, 23)",
-            iconColor: "rgb(23, 23, 23)",
-            iconOpacity: "1",
-          },
-          {
-            borderWidths: ["0px", "0px", "0px", "0px"],
-            fontWeight: "400",
-            color: "rgb(23, 23, 23)",
-            iconColor: "rgb(23, 23, 23)",
-            iconOpacity: "1",
-          },
-        ],
+          "Профиль",
+          "История",
+          "Аттестация",
+          "Наблюдатели",
+          "Настройки",
+          "Выход",
+        ].map((label) => ({
+          label,
+          borderWidths: ["0px", "0px", "0px", "0px"],
+          fontWeight: "400",
+          color: "rgb(23, 23, 23)",
+          iconColor: "rgb(23, 23, 23)",
+          iconOpacity: "1",
+        })),
       },
     );
     await userMenuTrigger.press("Escape");
@@ -6169,11 +6184,15 @@ test("browser smoke: self profile exposes only learner-safe history and controls
     await runtime.page.goto("/learning-profile", { waitUntil: "networkidle" });
     await runtime.page
       .getByRole("heading", {
-        name: "Мой учебный профиль",
+        name: "E2E Adult",
         exact: true,
         level: 1,
       })
       .waitFor();
+    assert.equal(
+      await runtime.page.getByRole("heading", { level: 1 }).count(),
+      1,
+    );
     const profileTabOwnership = await runtime.page.evaluate(() =>
       Array.from(document.querySelectorAll<HTMLElement>('[role="tab"]')).map(
         (tab) => {
@@ -6210,7 +6229,7 @@ test("browser smoke: self profile exposes only learner-safe history and controls
     assert.doesNotMatch(html, /FOREIGN TRAP RECORD|Чужой курс/);
 
     await runtime.page
-      .getByRole("tab", { name: "Аттестация", exact: true })
+      .getByRole("tab", { name: /^Аттестация/, exact: false })
       .click();
     await runtime.page
       .getByText(E2E_EDUCATOR_COURSE_TITLE, { exact: true })
@@ -6223,7 +6242,7 @@ test("browser smoke: self profile exposes only learner-safe history and controls
     );
 
     await runtime.page
-      .getByRole("tab", { name: /Связи и помощник/, exact: false })
+      .getByRole("tab", { name: /^Настройки/, exact: false })
       .click();
     await runtime.page
       .getByText("Персонализация с общей историей", { exact: true })
@@ -6355,31 +6374,29 @@ test("browser smoke: observer settings accepts an incoming request and revokes o
   e2eObserverInviteCreated = false;
   const runtime = await openPage({ cookie: authenticatedCookieValue() });
   try {
-    await runtime.page.goto("/settings/observers", {
+    await runtime.page.goto("/learning-profile?tab=observers", {
       waitUntil: "networkidle",
     });
     await runtime.page
-      .getByRole("heading", { name: "Наблюдатели", exact: true, level: 1 })
+      .getByRole("heading", { name: "E2E Adult", exact: true, level: 1 })
       .waitFor();
     await runtime.page
       .getByRole("button", { name: "Отправить приглашение", exact: true })
       .waitFor();
     assert.deepEqual(
       await runtime.page.evaluate(() => {
-        const shell = document.querySelector<HTMLElement>(
-          ".settings-product-shell",
-        );
+        const shell = document.querySelector<HTMLElement>(".course-demo-shell");
         const header = document.querySelector<HTMLElement>(
           ".site-header-shell-demo",
         );
-        const userName = header?.querySelector<HTMLElement>(
-          ".nav-user-trigger-name",
+        const userTrigger =
+          header?.querySelector<HTMLElement>(".nav-user-trigger");
+        const userAvatar = userTrigger?.querySelector<HTMLElement>(
+          ".nav-user-trigger-avatar",
         );
-        const settingsNav = document.querySelector<HTMLElement>(
-          ".nav-settings-shell",
+        const activeTab = document.querySelector<HTMLElement>(
+          "#learning-profile-tab-observers",
         );
-        const activeSettingsItem =
-          settingsNav?.querySelector<HTMLElement>(".nav-pill-active");
         const primaryAction = document.querySelector<HTMLElement>(
           'form .product-btn-primary[type="submit"]',
         );
@@ -6387,31 +6404,44 @@ test("browser smoke: observer settings accepts an incoming request and revokes o
         if (
           !shell ||
           !header ||
-          !userName ||
-          !activeSettingsItem ||
+          !userTrigger ||
+          !userAvatar ||
+          !activeTab ||
           !primaryAction ||
           !primaryIcon
         ) {
-          throw new Error("Canonical Settings control contract is missing");
+          throw new Error("Unified observer control contract is missing");
         }
         const shellStyle = getComputedStyle(shell);
         const headerStyle = getComputedStyle(header);
-        const userNameStyle = getComputedStyle(userName);
-        const settingsItemStyle = getComputedStyle(activeSettingsItem);
         const primaryStyle = getComputedStyle(primaryAction);
         const primaryIconStyle = getComputedStyle(primaryIcon);
+        const userTriggerRect = userTrigger.getBoundingClientRect();
+        const userAvatarRect = userAvatar.getBoundingClientRect();
+        const sectionHeadings = Array.from(
+          document.querySelectorAll<HTMLHeadingElement>("h2"),
+        ).map((heading) => heading.textContent?.trim() ?? "");
         return {
           shellBackground: shellStyle.backgroundColor,
           headerBackground: headerStyle.backgroundColor,
           headerBackdropFilter: headerStyle.backdropFilter,
-          userNameWeight: userNameStyle.fontWeight,
-          settingsItem: {
-            height: settingsItemStyle.height,
-            radius: settingsItemStyle.borderRadius,
-            fontSize: settingsItemStyle.fontSize,
-            fontWeight: settingsItemStyle.fontWeight,
-            boxShadow: settingsItemStyle.boxShadow,
+          userControl: {
+            triggerWidth: userTriggerRect.width,
+            triggerHeight: userTriggerRect.height,
+            avatarWidth: userAvatarRect.width,
+            avatarHeight: userAvatarRect.height,
+            avatarRadius: getComputedStyle(userAvatar).borderRadius,
+            visibleNameCount: header.querySelectorAll(".nav-user-trigger-name")
+              .length,
           },
+          activeTabSelected: activeTab.getAttribute("aria-selected"),
+          legacySettingsShellCount: document.querySelectorAll(
+            ".settings-product-shell, .nav-settings-shell",
+          ).length,
+          activeObserversBeforeInvite:
+            sectionHeadings.indexOf("Активные наблюдатели") >= 0 &&
+            sectionHeadings.indexOf("Активные наблюдатели") <
+              sectionHeadings.indexOf("Пригласить наблюдателя"),
           primaryAction: {
             height: primaryStyle.height,
             radius: primaryStyle.borderRadius,
@@ -6431,14 +6461,17 @@ test("browser smoke: observer settings accepts an incoming request and revokes o
         shellBackground: "rgb(245, 241, 232)",
         headerBackground: "rgb(255, 255, 255)",
         headerBackdropFilter: "none",
-        userNameWeight: "400",
-        settingsItem: {
-          height: "40px",
-          radius: "12px",
-          fontSize: "14.08px",
-          fontWeight: "400",
-          boxShadow: "none",
+        userControl: {
+          triggerWidth: 40,
+          triggerHeight: 40,
+          avatarWidth: 40,
+          avatarHeight: 40,
+          avatarRadius: "12px",
+          visibleNameCount: 0,
         },
+        activeTabSelected: "true",
+        legacySettingsShellCount: 0,
+        activeObserversBeforeInvite: true,
         primaryAction: {
           height: "40px",
           radius: "12px",
@@ -6470,16 +6503,20 @@ test("browser smoke: observer settings accepts an incoming request and revokes o
     await runtime.page.getByText("Принято", { exact: true }).waitFor();
     assert.equal(e2eObserverInvitationAccepted, true);
 
-    await runtime.page.evaluate(() => {
-      window.confirm = () => true;
-      const card = Array.from(document.querySelectorAll("li")).find((item) =>
-        item.textContent?.includes("Доверенный наблюдатель"),
-      );
-      const button = Array.from(card?.querySelectorAll("button") ?? []).find(
-        (candidate) => candidate.textContent?.includes("Отозвать"),
-      );
-      button?.click();
+    const activeObserverCard = runtime.page.locator(
+      'li:has-text("Доверенный наблюдатель")',
+    );
+    await activeObserverCard
+      .getByRole("button", { name: "Отозвать", exact: true })
+      .click();
+    const revokeDialog = runtime.page.getByRole("dialog", {
+      name: "Отозвать доступ?",
+      exact: true,
     });
+    await revokeDialog.waitFor();
+    await revokeDialog
+      .getByRole("button", { name: "Отозвать доступ", exact: true })
+      .click();
     await runtime.page
       .getByText("Наблюдателей пока нет", { exact: true })
       .waitFor();
@@ -6499,11 +6536,20 @@ test("browser smoke: trusted adult resets child credentials and learner revokes 
   e2eRecoveryDelegateRevoked = false;
   const runtime = await openPage({ cookie: authenticatedCookieValue() });
   try {
-    await runtime.page.goto("/settings/security", {
+    await runtime.page.goto("/learning-profile?tab=settings#security", {
       waitUntil: "networkidle",
     });
     await runtime.page
-      .getByRole("heading", { name: "Безопасность", exact: true, level: 1 })
+      .getByRole("heading", { name: "E2E Adult", exact: true, level: 1 })
+      .waitFor();
+    assert.equal(
+      await runtime.page
+        .locator("#learning-profile-tab-settings")
+        .getAttribute("aria-selected"),
+      "true",
+    );
+    await runtime.page
+      .getByRole("heading", { name: "Мой PIN-код", exact: true, level: 2 })
       .waitFor();
     await runtime.page.getByText("boris-child", { exact: false }).waitFor();
     assert.deepEqual(
@@ -7515,6 +7561,70 @@ test("browser smoke: mobile Account menu exposes primary sections and account ac
       .getByRole("button", { name: "Открыть меню пользователя", exact: true })
       .click();
 
+    assert.deepEqual(
+      await runtime.page.evaluate(() => {
+        const trigger =
+          document.querySelector<HTMLElement>(".nav-user-trigger");
+        const avatar = trigger?.querySelector<HTMLElement>(
+          ".nav-user-trigger-avatar",
+        );
+        const menu = document.querySelector<HTMLElement>(
+          '[role="menu"][aria-label="Меню пользователя"]',
+        );
+        const profileHeader = menu?.querySelector<HTMLElement>(
+          ".nav-dropdown-profile",
+        );
+        const items = menu?.querySelector<HTMLElement>(".nav-dropdown-items");
+        if (!trigger || !avatar || !menu || !profileHeader || !items) {
+          throw new Error("Mobile account menu contract is missing");
+        }
+        const triggerRect = trigger.getBoundingClientRect();
+        const avatarRect = avatar.getBoundingClientRect();
+        const menuRect = menu.getBoundingClientRect();
+        const itemsRect = items.getBoundingClientRect();
+        return {
+          trigger: {
+            width: triggerRect.width,
+            height: triggerRect.height,
+            avatarWidth: avatarRect.width,
+            avatarHeight: avatarRect.height,
+            avatarRadius: getComputedStyle(avatar).borderRadius,
+          },
+          profileName: profileHeader
+            .querySelector("p:first-child")
+            ?.textContent?.trim(),
+          profileEmail: profileHeader
+            .querySelector("p:last-child")
+            ?.textContent?.trim(),
+          profileAvatarCount: profileHeader.querySelectorAll(
+            ".nav-user-trigger-avatar",
+          ).length,
+          divider: {
+            borderTopWidth: getComputedStyle(items).borderTopWidth,
+            leftDelta: Math.abs(itemsRect.left - menuRect.left),
+            rightDelta: Math.abs(itemsRect.right - menuRect.right),
+          },
+        };
+      }),
+      {
+        trigger: {
+          width: 40,
+          height: 40,
+          avatarWidth: 40,
+          avatarHeight: 40,
+          avatarRadius: "12px",
+        },
+        profileName: "E2E Adult",
+        profileEmail: "adult-e2e@example.test",
+        profileAvatarCount: 0,
+        divider: {
+          borderTopWidth: "1px",
+          leftDelta: 0,
+          rightDelta: 0,
+        },
+      },
+    );
+
     await runtime.page
       .getByRole("menuitem", { name: "Расписание", exact: true })
       .waitFor();
@@ -7525,10 +7635,19 @@ test("browser smoke: mobile Account menu exposes primary sections and account ac
       .getByRole("menuitem", { name: "Магазин", exact: true })
       .waitFor();
     const learningProfileMenuItem = runtime.page.getByRole("menuitem", {
-      name: "Учебный профиль",
+      name: "Профиль",
       exact: true,
     });
     await learningProfileMenuItem.waitFor();
+    await runtime.page
+      .getByRole("menuitem", { name: "История", exact: true })
+      .waitFor();
+    await runtime.page
+      .getByRole("menuitem", { name: "Аттестация", exact: true })
+      .waitFor();
+    await runtime.page
+      .getByRole("menuitem", { name: "Наблюдатели", exact: true })
+      .waitFor();
     await runtime.page
       .getByRole("menuitem", { name: "Настройки", exact: true })
       .waitFor();
@@ -7536,13 +7655,32 @@ test("browser smoke: mobile Account menu exposes primary sections and account ac
       .getByRole("menuitem", { name: "Выход", exact: true })
       .waitFor();
 
+    const accountMenu = runtime.page.getByRole("menu", {
+      name: "Меню пользователя",
+      exact: true,
+    });
+    await accountMenu.press("End");
+    assert.equal(
+      await runtime.page.evaluate(() =>
+        document.activeElement?.textContent?.trim(),
+      ),
+      "Выход",
+    );
+    await accountMenu.press("Home");
+    assert.equal(
+      await runtime.page.evaluate(() =>
+        document.activeElement?.textContent?.trim(),
+      ),
+      "Расписание",
+    );
+
     await Promise.all([
       runtime.page.waitForURL(/\/learning-profile$/),
       learningProfileMenuItem.click(),
     ]);
     await runtime.page
       .getByRole("heading", {
-        name: "Мой учебный профиль",
+        name: "E2E Adult",
         exact: true,
         level: 1,
       })

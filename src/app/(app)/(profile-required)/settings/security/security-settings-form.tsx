@@ -7,7 +7,6 @@ import {
   resetRecoverableLearnerCredentials,
   revokeMyLearnerRecoveryDelegate,
 } from "@/components/learner-identity/identity-client";
-import { SettingsShell } from "@/components/settings-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type {
@@ -17,10 +16,12 @@ import type {
 
 type SecuritySettingsFormProps = {
   initialHasPin: boolean;
+  onHasPinChange?: (hasPin: boolean) => void;
 };
 
 export function SecuritySettingsForm({
   initialHasPin,
+  onHasPinChange,
 }: SecuritySettingsFormProps) {
   const [hasPin, setHasPin] = useState(initialHasPin);
   const [newPin, setNewPin] = useState("");
@@ -80,6 +81,7 @@ export function SecuritySettingsForm({
         throw new Error(payload?.error ?? "Не удалось сохранить PIN.");
 
       setHasPin(true);
+      onHasPinChange?.(true);
       setCurrentSecret("");
       setNewPin("");
       setSuccess("PIN успешно сохранён.");
@@ -185,11 +187,8 @@ export function SecuritySettingsForm({
     }
   }
 
-  return (
-    <SettingsShell
-      title="Безопасность"
-      metric={hasPin ? "PIN настроен" : "PIN не настроен"}
-    >
+  const content = (
+    <>
       <form
         onSubmit={onSubmit}
         className="mt-6 space-y-4 rounded-3xl border border-black/10 bg-white p-5"
@@ -431,7 +430,21 @@ export function SecuritySettingsForm({
           {recoverySuccess}
         </p>
       ) : null}
-    </SettingsShell>
+    </>
+  );
+
+  return (
+    <section id="security" aria-labelledby="security-settings-title">
+      <div className="flex flex-wrap items-end justify-between gap-2">
+        <h2 id="security-settings-title" className="text-xl font-bold">
+          Безопасность
+        </h2>
+        <p className="text-sm text-neutral-600">
+          {hasPin ? "PIN настроен" : "PIN не настроен"}
+        </p>
+      </div>
+      {content}
+    </section>
   );
 }
 

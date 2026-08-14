@@ -5,7 +5,7 @@ identity, teacher directory, observer access и consented AI history
 
 **Дата решения:** 9 августа 2026 года
 
-**Актуально на:** 12 августа 2026 года
+**Актуально на:** 14 августа 2026 года
 
 **Implementation state:** production содержит полный application/API/UI slice и
 M1–M6 contract schema. Четыре verified backup, strict expand/contract postflight,
@@ -300,11 +300,17 @@ Observer — explicit read-only grant, не Parent/Guardian role.
 
 UI surfaces:
 
-- `/settings/observers` — мои observers/pending invitations;
+- `/learning-profile?tab=observers` — grants `observed_by` (люди, наблюдающие
+  за subject), управление их подписями и отзывом, а также исходящие invitations;
+  входящие invitations наблюдать за другим profile отделены ниже и не входят в
+  count собственных observers;
 - `/students?tab=observing` — profiles, на которые текущему Account дан active
   grant; прежний `/observing` перенаправляет сюда;
-- `/learning-profile` — self history/progress/share code, AI consents и
-  destructive self lifecycle.
+- `/learning-profile` — единый раздел с вкладками `Профиль / История /
+  Аттестация / Наблюдатели / Настройки`: self history/progress/share code,
+  Account settings, AI consents и destructive self lifecycle;
+- прежние `/settings`, `/settings/profile`, `/settings/security` и
+  `/settings/observers` — только compatibility redirects в этот раздел.
 
 ## Subject-only unlink и erasure
 
@@ -390,8 +396,8 @@ closed как stale.
 - learner-safe AI adapter:
   `src/modules/ai/shared-history.ts`, `course-context.ts`,
   `course-builder-service.ts`;
-- UI: `src/components/learner-identity/`, `/learning-profile`,
-  `/students?tab=observing`, `/settings/observers`,
+- UI: `src/components/learner-identity/`, `src/components/account/`,
+  `/learning-profile`, `/students?tab=observing`, compatibility `/settings/*`,
   `/identity/invitations/[invitationId]`; `/observing` — compatibility redirect;
 - API: `/api/v2/me/learning-profile/*`, `/api/v2/learner-directory/*`,
   `/api/v2/learner-connections/*`, `/api/v2/identity-invitations/*`,
@@ -434,6 +440,10 @@ history/progress, erasure and AI consent.
 Account прошёл authenticated browser navigation/self/observer/security surfaces,
 disposable fixture удалён без orphan rows, а stale session закрыта. Identity
 terminal condition выполнен.
+
+**Current source UI:** self profile, observer management and Account settings
+объединены в адресуемые вкладки `/learning-profile`; это не меняет observer,
+consent, credential или subject-lifecycle authorization boundaries.
 
 **Current outside identity:** Account-scoped self-learning approved educator
 publication хранит собственные revision progress и аттестацию; это не является

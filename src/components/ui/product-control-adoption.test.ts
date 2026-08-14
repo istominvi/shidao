@@ -47,11 +47,14 @@ test("ordinary product CTAs use the canonical raised button primitive", () => {
 
 test("standalone account fields adopt the canonical single-line input primitive", () => {
   const onboarding = source("src/app/(app)/onboarding/page-client.tsx");
-  const profile = source(
-    "src/app/(app)/(profile-required)/settings/profile/page.tsx",
+  const accountSettings = source(
+    "src/components/account/account-settings-panel.tsx",
   );
   const security = source(
     "src/app/(app)/(profile-required)/settings/security/security-settings-form.tsx",
+  );
+  const observers = source(
+    "src/components/learner-identity/observers-settings-workspace.tsx",
   );
 
   assert.match(
@@ -65,8 +68,14 @@ test("standalone account fields adopt the canonical single-line input primitive"
     /rounded-2xl border border-black\/10 bg-white/,
   );
 
-  assert.match(profile, /import \{ Input \} from "@\/components\/ui\/input"/);
-  assert.equal((profile.match(/<Input/g) ?? []).length, 2);
+  assert.match(
+    accountSettings,
+    /import \{ Input \} from "@\/components\/ui\/input"/,
+  );
+  assert.equal((accountSettings.match(/<Input/g) ?? []).length, 2);
   assert.match(security, /import \{ Input \} from "@\/components\/ui\/input"/);
   assert.equal((security.match(/<Input/g) ?? []).length, 5);
+  assert.match(observers, /import \{ Input \} from "@\/components\/ui\/input"/);
+  assert.equal((observers.match(/<Input/g) ?? []).length, 3);
+  assert.doesNotMatch(observers, /window\.(prompt|confirm)/);
 });

@@ -175,6 +175,13 @@ final snapshot, DB/API/GoTrue postflight, exact functional web SHA `01aa88a` и
 authenticated browser acceptance завершены. Identity program complete.
 Homework, RAG, billing, templates и live Student Screen по-прежнему не входят.
 
+**Current source UI follow-up:** `/learning-profile` стал единым адресуемым
+разделом с вкладками `Профиль / История / Аттестация / Наблюдатели / Настройки`.
+Отдельный settings shell удалён; старые `/settings/*` остаются compatibility
+redirects. Teacher connection requests, AI consents и subject lifecycle не
+удалены, а перенесены в соответствующие вкладки. Это UI/routing slice без schema
+или migration.
+
 Согласованный target:
 
 - один roleless Account может одновременно преподавать, учиться и наблюдать;
@@ -212,10 +219,11 @@ Homework, RAG, billing, templates и live Student Screen по-прежнему �
 5. **Archive/lifecycle:** архивный список, restore без скрытого возврата прежних
    memberships, permanent delete только пустого unclaimed profile и
    subject-only learning-data erasure/reset.
-6. **Observer:** self-managed invite/accept/revoke, раздел «Наблюдение» и узкая
-   read-only finalized projection. В current UI это третья вкладка раздела
-   «Ученики», а не отдельный primary navigation item. Teacher relation не
-   выдаёт observer access.
+6. **Observer:** self-managed invite/accept/revoke и узкая read-only finalized
+   projection. Собственные наблюдатели находятся во вкладке `Наблюдатели`
+   единого профиля; profiles, которые наблюдает текущий Account, остаются в
+   третьей вкладке `Наблюдение` раздела `Ученики`. Teacher relation не выдаёт
+   observer access.
 7. **Progress:** nullable verified actual duration, pagination и aggregate
    projection из реальных LearningRecord по canonical lineage. Scheduled
    fallback не считается фактическим start; generic learner metrics ждут
@@ -271,9 +279,9 @@ Definition of Done программы:
 инструмент преподавателя без изменения доменной модели.
 
 **Current production:** primary navigation содержит «Расписание / Ученики /
-Курсы / Магазин» без role switch. Учебный профиль перенесён в Account menu,
-observer projection —
-во вкладку «Наблюдение» внутри «Ученики». Каталог `/courses` получил поиск, реальные
+Курсы / Магазин» без role switch. **Current source** Account menu открывает пять
+адресуемых вкладок единого профиля; observer projection чужих profiles остаётся
+во вкладке «Наблюдение» внутри «Ученики». Каталог `/courses` получил поиск, реальные
 Course-фильтры, сортировку и переключение «Карточки / Таблица» без новой schema
 или параллельного Course API. В current production Students и Courses controls
 унифицированы с Schedule: outer toolbar-card удалена, Students показывает

@@ -401,7 +401,7 @@ test("e2e smoke: guest reaching protected routes is redirected to /login", async
   }
 });
 
-test("e2e smoke: authenticated /login redirects by access policy and /settings/security opens", async () => {
+test("e2e smoke: authenticated /login redirects and legacy security URL stays compatible", async () => {
   const cookie = authenticatedCookieHeader();
 
   const loginResponse = await fetch(`http://127.0.0.1:${appPort}/login`, {
@@ -422,10 +422,19 @@ test("e2e smoke: authenticated /login redirects by access policy and /settings/s
       redirect: "manual",
     },
   );
-  const securityHtml = await securityResponse.text();
+  assert.equal(securityResponse.status, 307);
+  assert.equal(
+    securityResponse.headers.get("location"),
+    "/learning-profile?tab=settings#security",
+  );
 
-  assert.equal(securityResponse.status, 200);
-  assert.match(securityHtml, /Мой PIN-код/);
+  const canonicalResponse = await fetch(
+    `http://127.0.0.1:${appPort}/learning-profile?tab=settings`,
+    { headers: { cookie } },
+  );
+  const canonicalHtml = await canonicalResponse.text();
+  assert.equal(canonicalResponse.status, 200);
+  assert.match(canonicalHtml, /E2E Adult/);
 });
 
 test("API e2e: learner directory returns the exact public DTO and fails closed on injected RPC secrets", async () => {

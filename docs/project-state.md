@@ -113,9 +113,10 @@ boundary, safe discovery/recipient-bound claim и child activation, physical
 merge/lineage, archive/restore, self/observer history/progress, subject erasure
 и consented cross-provider AI. Application/API/UI находятся в
 `src/modules/learner-identity/`, `src/components/learner-identity/` и новых
-routes `/learning-profile`, `/students?tab=observing`, `/settings/observers`,
-`/identity/invitations/[invitationId]`; прежний `/observing` сохранён только как
-protected compatibility redirect. Security slice также закрывает production
+routes `/learning-profile`, `/students?tab=observing`,
+`/identity/invitations/[invitationId]`; прежние `/observing` и `/settings/*`
+сохранены только как protected compatibility redirects. Security slice также
+закрывает production
 host allowlist и CSRF до exact `v2.shidao.ru` Origin. Coolify завершил roleless
 deployments точных SHA `5944d31f86f7d3795ec9f17928cb311ecbdfdd21` и
 `5d650a390abcc944780a716f909248f5493c10a9`. После read-only dependency audit
@@ -126,11 +127,26 @@ post-commit downgrade. Strict DB/RLS/ACL/PostgREST postflight и реальны�
 disposable GoTrue Admin create/delete probe зелёные; production snapshot
 SHA-256 —
 `584ebb96dc8d96f1eb508e7eae836edb8125a9fefe2a59e9cb362af54bba5a26`.
+
 Coolify deployment `887` завершил exact functional SHA
 `01aa88a042ad38d744c6f33a44bc216c91815e59`; running container использует тот
 же `SOURCE_COMMIT`, image digest
 `sha256:cf8b6400187d880ab6c6f73a9af037b92cb476b09dd4832e6fd52ea13a132389`,
 restart count `0`, HTTPS `200`.
+
+**Current source profile navigation:** собственный профиль и Account settings
+собраны в одном разделе `/learning-profile` с адресуемыми вкладками `Профиль /
+История / Аттестация / Наблюдатели / Настройки`. Account menu повторяет этот
+порядок и завершает список действием `Выход`; trigger показывает только
+квадратный avatar `40 × 40 px` с радиусом `12 px`, а dropdown header — ФИО и
+email без второй avatar. Заголовок раздела использует ФИО Account, метрику
+активной вкладки и действие `Выход`. `Наблюдатели` показывает grants направления
+`observed_by` первыми; входящие приглашения наблюдать за другим профилем отделены
+ниже. Прежние `/settings`, `/settings/profile`, `/settings/security` и
+`/settings/observers` сохранены как compatibility redirects. Отдельные вкладки
+`Данные` и `Связи и помощник` удалены: teacher connection requests перенесены в
+`Профиль`, AI consents и subject-only unlink/erasure — в `Настройки`. UI/API
+используют прежние audited identity boundaries; schema и migrations не менялись.
 
 Navigation/catalog follow-up `bafc984d0bc7bfb6cb795170a09ba2aabfb98441`
 упростил primary Account navigation до «Расписание / Ученики / Курсы», перенёс

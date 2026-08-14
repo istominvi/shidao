@@ -3,14 +3,22 @@
 import {
   BadgeCheck,
   BrainCircuit,
-  Database,
   History,
   LoaderCircle,
-  Shield,
+  LogOut,
+  Settings,
   UserRound,
+  UsersRound,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  AccountSettingsPanel,
+  type AccountEmailStatus,
+} from "@/components/account/account-settings-panel";
 import { AppPageHeader } from "@/components/app/page-header";
+import { useSystemAssistantPageContext } from "@/components/assistant/system-assistant-provider";
+import { useSessionView } from "@/components/use-session-view";
 import { Button } from "@/components/ui/button";
 import { SurfaceCard } from "@/components/ui/surface-card";
 import {
@@ -23,10 +31,13 @@ import type {
   LearnerConnectionRequest,
   LearnerProgress,
   LearnerSafeHistoryItem,
+  ObserverOverview,
   SelfLearningProfile,
   ShareCode,
 } from "@/modules/learner-identity/domain";
 import type { AccountAttestationCredential } from "@/modules/course-attestations/domain";
+import { signOutViaServer } from "@/lib/auth-flow";
+import { profileTabHref, type ProfileTab } from "@/lib/navigation/profile-nav";
 import {
   actOnAiConsent,
   actOnConnection,
@@ -50,13 +61,22 @@ import {
 import { ProgressSummary } from "./progress-summary";
 import { SafeHistoryList } from "./safe-history-list";
 import { ShareCodeCard } from "./share-code-card";
-
-type Surface = "overview" | "history" | "attestation" | "access" | "data";
+import { ObserversSettingsWorkspace } from "./observers-settings-workspace";
 
 const LEARNING_PROFILE_TABS_ID = "learning-profile";
 
-export function LearningProfileWorkspace() {
-  const [surface, setSurface] = useState<Surface>("overview");
+type LearningProfileWorkspaceProps = {
+  initialSurface: ProfileTab;
+  emailStatus: AccountEmailStatus;
+};
+
+export function LearningProfileWorkspace({
+  initialSurface,
+  emailStatus,
+}: LearningProfileWorkspaceProps) {
+  const router = useRouter();
+  const { state: session, refetchSession } = useSessionView();
+  const [surface, setSurface] = useState<ProfileTab>(initialSurface);
   const [profile, setProfile] = useState<SelfLearningProfile | null>(null);
   const [progress, setProgress] = useState<LearnerProgress | null>(null);
   const [history, setHistory] = useState<LearnerSafeHistoryItem[]>([]);
@@ -78,33 +98,105 @@ export function LearningProfileWorkspace() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [signingOut, setSigningOut] = useState(false);
+  const [signOutError, setSignOutError] = useState<string | null>(null);
+  const [hasPin, setHasPin] = useState(
+    session.kind === "account" ? session.hasPin : false,
+  );
+  const [observerSummary, setObserverSummary] = useState<{
+    active: number;
+    pending: number;
+  } | null>(null);
   const [destructiveMode, setDestructiveMode] = useState<
     "unlink" | "erasure" | null
   >(null);
+
+  useEffect(() => {
+    setSurface(initialSurface);
+  }, [initialSurface]);
+
+  useEffect(() => {
+    if (session.kind === "account") setHasPin(session.hasPin);
+  }, [session]);
+
+  useSystemAssistantPageContext({
+    surface:
+      surface === "observers"
+        ? "observer_settings"
+        : surface === "settings"
+          ? "profile_settings"
+          : "learning_profile",
+    courseId: null,
+    lessonId: null,
+    label:
+      surface === "observers"
+        ? "Профиль · Наблюдатели"
+        : surface === "settings"
+          ? "Профиль · Настройки"
+          : `Профиль · ${surface === "profile" ? "Профиль" : surface === "history" ? "История" : "Аттестация"}`,
+  });
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       const [
-        nextProfile,
-        nextProgress,
-        historyPage,
-        nextConnections,
-        nextConsents,
-      ] = await Promise.all([
+        profileResult,
+        progressResult,
+        historyResult,
+        connectionsResult,
+        consentsResult,
+      ] = await Promise.allSettled([
         loadSelfLearningProfile(),
         loadSelfProgress(),
         loadSelfHistory(),
         loadConnections(),
         loadAiConsents(),
       ]);
-      setProfile(nextProfile);
-      setProgress(nextProgress);
-      setHistory(historyPage.items);
-      setNextCursor(historyPage.nextCursor);
-      setConnections(nextConnections);
-      setConsents(nextConsents);
+
+      const unavailableSections: string[] = [];
+      if (profileResult.status === "fulfilled") {
+        setProfile(profileResult.value);
+      }
+      if (progressResult.status === "fulfilled") {
+        setProgress(progressResult.value);
+      }
+      if (historyResult.status === "fulfilled") {
+        setHistory(historyResult.value.items);
+        setNextCursor(historyResult.value.nextCursor);
+      } else {
+        unavailableSections.push("история занятий");
+      }
+      if (connectionsResult.status === "fulfilled") {
+        setConnections(connectionsResult.value);
+      } else {
+        unavailableSections.push("запросы преподавателей");
+      }
+      if (consentsResult.status === "fulfilled") {
+        setConsents(consentsResult.value);
+      } else {
+        unavailableSections.push("разрешения помощнику");
+      }
+
+      const requiredFailure =
+        profileResult.status === "rejected"
+          ? profileResult.reason
+          : progressResult.status === "rejected"
+            ? progressResult.reason
+            : null;
+      if (requiredFailure) {
+        setError(
+          requiredFailure instanceof Error
+            ? requiredFailure.message
+            : "Не удалось загрузить учебный профиль.",
+        );
+      } else if (unavailableSections.length > 0) {
+        setError(
+          `Профиль загружен, но временно недоступны: ${unavailableSections.join(
+            ", ",
+          )}.`,
+        );
+      }
     } catch (caught) {
       setError(
         caught instanceof Error
@@ -140,22 +232,11 @@ export function LearningProfileWorkspace() {
   }, []);
 
   useEffect(() => {
-    if (
-      surface !== "attestation" ||
-      attestations !== null ||
-      attestationsLoading ||
-      attestationsError
-    ) {
+    if (attestations !== null || attestationsLoading || attestationsError) {
       return;
     }
     void loadAttestations();
-  }, [
-    attestations,
-    attestationsError,
-    attestationsLoading,
-    loadAttestations,
-    surface,
-  ]);
+  }, [attestations, attestationsError, attestationsLoading, loadAttestations]);
 
   async function mutate(action: () => Promise<unknown>) {
     if (busy) return;
@@ -208,28 +289,113 @@ export function LearningProfileWorkspace() {
     }
   }
 
+  function changeSurface(nextSurface: ProfileTab) {
+    setSurface(nextSurface);
+    router.replace(profileTabHref(nextSurface), { scroll: false });
+  }
+
+  const handleObserverOverview = useCallback((overview: ObserverOverview) => {
+    setObserverSummary({
+      active: overview.grants.filter(
+        (grant) => grant.direction === "observed_by",
+      ).length,
+      pending: overview.invitations.filter(
+        (invitation) =>
+          invitation.direction === "outgoing" &&
+          (invitation.status === "pending" || invitation.status === "bound"),
+      ).length,
+    });
+  }, []);
+
+  async function handleSignOut() {
+    if (signingOut) return;
+    setSigningOut(true);
+    setSignOutError(null);
+    try {
+      const response = await signOutViaServer();
+      if (!response.ok) {
+        const payload = (await response.json().catch(() => null)) as {
+          error?: string;
+        } | null;
+        throw new Error(payload?.error ?? "Не удалось выйти из аккаунта.");
+      }
+
+      await refetchSession();
+      router.push("/login");
+      router.refresh();
+    } catch (caught) {
+      setSignOutError(
+        caught instanceof Error
+          ? caught.message
+          : "Не удалось выйти из аккаунта.",
+      );
+      setSigningOut(false);
+    }
+  }
+
+  const headerMetric = (() => {
+    switch (surface) {
+      case "profile":
+        return progress
+          ? `Завершённых занятий: ${progress.finalizedRunCount} · предметов: ${progress.subjects.length}`
+          : undefined;
+      case "history":
+        return progress
+          ? `Записей: ${progress.finalizedRunCount} · посещено: ${progress.attendedRunCount}`
+          : undefined;
+      case "attestation":
+        return attestations ? `Аттестаций: ${attestations.length}` : undefined;
+      case "observers":
+        return observerSummary
+          ? `Наблюдателей: ${observerSummary.active} · приглашений: ${observerSummary.pending}`
+          : undefined;
+      case "settings":
+        return session.kind === "account"
+          ? hasPin
+            ? "PIN настроен"
+            : "PIN не настроен"
+          : undefined;
+      default: {
+        const _exhaustive: never = surface;
+        return _exhaustive;
+      }
+    }
+  })();
+
+  const profileTitle =
+    session.kind === "account"
+      ? (session.fullName ?? profile?.displayName ?? "Профиль")
+      : (profile?.displayName ?? "Профиль");
+
   return (
     <div className="space-y-6">
       <AppPageHeader
-        title="Мой учебный профиль"
-        metric={
-          !loading && progress
-            ? `Завершённых занятий: ${progress.finalizedRunCount} · предметов: ${progress.subjects.length}`
-            : undefined
+        title={profileTitle}
+        metric={headerMetric}
+        actions={
+          <Button
+            type="button"
+            disabled={signingOut}
+            aria-busy={signingOut}
+            onClick={() => void handleSignOut()}
+          >
+            <LogOut aria-hidden="true" />
+            {signingOut ? "Выход…" : "Выход"}
+          </Button>
         }
       />
       <WorkspaceTabs
         idBase={LEARNING_PROFILE_TABS_ID}
-        ariaLabel="Разделы учебного профиля"
+        ariaLabel="Разделы профиля"
         value={surface}
-        onChange={setSurface}
+        onChange={changeSurface}
         items={[
-          { value: "overview", label: "Обзор", icon: UserRound },
+          { value: "profile", label: "Профиль", icon: UserRound },
           {
             value: "history",
             label: "История",
             icon: History,
-            count: history.length,
+            ...(progress === null ? {} : { count: progress.finalizedRunCount }),
           },
           {
             value: "attestation",
@@ -238,19 +404,22 @@ export function LearningProfileWorkspace() {
             ...(attestations === null ? {} : { count: attestations.length }),
           },
           {
-            value: "access",
-            label: "Связи и помощник",
-            icon: Shield,
-            count:
-              connections.filter(
-                (item) =>
-                  item.status === "pending" && item.direction === "incoming",
-              ).length +
-              consents.filter((item) => item.status === "pending").length,
+            value: "observers",
+            label: "Наблюдатели",
+            icon: UsersRound,
+            ...(observerSummary === null
+              ? {}
+              : { count: observerSummary.active }),
           },
-          { value: "data", label: "Данные", icon: Database },
+          {
+            value: "settings",
+            label: "Настройки",
+            icon: Settings,
+            count: consents.filter((item) => item.status === "pending").length,
+          },
         ]}
       />
+      {signOutError ? <IdentityError message={signOutError} /> : null}
       {error ? (
         <IdentityError message={error} onRetry={() => void load()} />
       ) : null}
@@ -258,40 +427,103 @@ export function LearningProfileWorkspace() {
         <IdentityLoading>Загружаем учебный профиль…</IdentityLoading>
       ) : null}
       <div
-        id={workspaceTabPanelId(LEARNING_PROFILE_TABS_ID, "overview")}
+        id={workspaceTabPanelId(LEARNING_PROFILE_TABS_ID, "profile")}
         role="tabpanel"
-        aria-labelledby={workspaceTabId(LEARNING_PROFILE_TABS_ID, "overview")}
-        hidden={surface !== "overview"}
+        aria-labelledby={workspaceTabId(LEARNING_PROFILE_TABS_ID, "profile")}
+        hidden={surface !== "profile"}
         tabIndex={0}
       >
-        {!loading && profile && progress && surface === "overview" ? (
+        {!loading && profile && progress && surface === "profile" ? (
           <div className="space-y-5">
-            <SurfaceCard>
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
-                    Ваш учебный профиль
-                  </p>
-                  <h1 className="mt-1 text-2xl font-black text-neutral-950">
-                    {profile.displayName}
-                  </h1>
-                  <p className="mt-2 text-sm text-neutral-600">
-                    Объединено прежних учебных профилей:{" "}
-                    {profile.mergedLineageCount}. Служебные идентификаторы и
-                    данные безопасности здесь не показываются.
-                  </p>
-                </div>
+            <SurfaceCard
+              title="Учебный профиль"
+              description={`Создан ${formatIdentityDate(profile.createdAt)} · объединено прежних профилей: ${profile.mergedLineageCount}`}
+              actions={
                 <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-900">
-                  Связан с вашим аккаунтом
+                  Связан с аккаунтом
                 </span>
-              </div>
-            </SurfaceCard>
+              }
+            />
             <ProgressSummary progress={progress} />
             <ShareCodeCard
               shareCode={shareCode}
               busy={busy}
               onRotate={() => void rotateCode()}
             />
+            <SurfaceCard
+              title="Запросы преподавателей"
+              description="Код и email создают только запрос. Вы сами решаете, активировать ли связь."
+            >
+              {connections.length === 0 ? (
+                <IdentityEmpty
+                  title="Запросов нет"
+                  description="Поделитесь одноразовым кодом только с нужным преподавателем."
+                />
+              ) : (
+                <ul className="space-y-3">
+                  {connections.map((request) => (
+                    <li
+                      key={request.id}
+                      className="rounded-xl border border-neutral-200 p-3"
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <strong className="text-sm">
+                          {request.counterpartyLabel}
+                        </strong>
+                        <RequestStatusBadge status={request.status} />
+                      </div>
+                      <p className="mt-1 text-xs text-neutral-500">
+                        До {formatIdentityDate(request.expiresAt)}
+                      </p>
+                      {request.status === "pending" ? (
+                        <div className="mt-3 flex gap-2">
+                          {request.direction === "incoming" ? (
+                            <>
+                              <Button
+                                type="button"
+                                disabled={busy}
+                                onClick={() =>
+                                  void mutate(() =>
+                                    actOnConnection(request.id, "accept"),
+                                  )
+                                }
+                              >
+                                Принять
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                disabled={busy}
+                                onClick={() =>
+                                  void mutate(() =>
+                                    actOnConnection(request.id, "reject"),
+                                  )
+                                }
+                              >
+                                Отклонить
+                              </Button>
+                            </>
+                          ) : (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              disabled={busy}
+                              onClick={() =>
+                                void mutate(() =>
+                                  actOnConnection(request.id, "cancel"),
+                                )
+                              }
+                            >
+                              Отменить
+                            </Button>
+                          )}
+                        </div>
+                      ) : null}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </SurfaceCard>
           </div>
         ) : null}
       </div>
@@ -302,7 +534,7 @@ export function LearningProfileWorkspace() {
         hidden={surface !== "history"}
         tabIndex={0}
       >
-        {!loading && profile && progress && surface === "history" ? (
+        {!loading && surface === "history" ? (
           <SafeHistoryList
             items={history}
             nextCursor={nextCursor}
@@ -434,59 +666,78 @@ export function LearningProfileWorkspace() {
         ) : null}
       </div>
       <div
-        id={workspaceTabPanelId(LEARNING_PROFILE_TABS_ID, "access")}
+        id={workspaceTabPanelId(LEARNING_PROFILE_TABS_ID, "observers")}
         role="tabpanel"
-        aria-labelledby={workspaceTabId(LEARNING_PROFILE_TABS_ID, "access")}
-        hidden={surface !== "access"}
+        aria-labelledby={workspaceTabId(LEARNING_PROFILE_TABS_ID, "observers")}
+        hidden={surface !== "observers"}
         tabIndex={0}
       >
-        {!loading && profile && progress && surface === "access" ? (
-          <div className="grid gap-5 lg:grid-cols-2">
-            <section className="rounded-2xl border border-neutral-200 bg-white p-5">
-              <h2 className="font-bold text-neutral-950">
-                Запросы преподавателей
-              </h2>
-              <p className="mt-1 text-sm text-neutral-600">
-                Код и email создают только запрос. Вы решаете, активировать ли
-                связь.
-              </p>
-              {connections.length === 0 ? (
-                <div className="mt-4">
+        <ObserversSettingsWorkspace onOverviewChange={handleObserverOverview} />
+      </div>
+      <div
+        id={workspaceTabPanelId(LEARNING_PROFILE_TABS_ID, "settings")}
+        role="tabpanel"
+        aria-labelledby={workspaceTabId(LEARNING_PROFILE_TABS_ID, "settings")}
+        hidden={surface !== "settings"}
+        tabIndex={0}
+      >
+        {session.kind === "account" && surface === "settings" ? (
+          <div className="space-y-6">
+            <AccountSettingsPanel
+              initialHasPin={hasPin}
+              emailStatus={emailStatus}
+              onHasPinChange={setHasPin}
+            />
+
+            {!loading ? (
+              <SurfaceCard
+                title={
+                  <span className="inline-flex items-center gap-2">
+                    <BrainCircuit className="h-5 w-5" aria-hidden="true" />
+                    Персонализация с общей историей
+                  </span>
+                }
+                description="Разрешение действует только для конкретного курса и его текущего владельца и не открывает чужие личные заметки."
+              >
+                {consents.length === 0 ? (
                   <IdentityEmpty
-                    title="Запросов нет"
-                    description="Поделитесь одноразовым кодом только с нужным преподавателем."
+                    title="Запросов помощника нет"
+                    description="Без вашего разрешения помощник использует только историю, записанную владельцем курса."
                   />
-                </div>
-              ) : (
-                <ul className="mt-4 space-y-3">
-                  {connections.map((request) => (
-                    <li
-                      key={request.id}
-                      className="rounded-xl border border-neutral-200 p-3"
-                    >
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <strong className="text-sm">
-                          {request.counterpartyLabel}
-                        </strong>
-                        <RequestStatusBadge status={request.status} />
-                      </div>
-                      <p className="mt-1 text-xs text-neutral-500">
-                        До {formatIdentityDate(request.expiresAt)}
-                      </p>
-                      {request.status === "pending" ? (
-                        <div className="mt-3 flex gap-2">
-                          {request.direction === "incoming" ? (
+                ) : (
+                  <ul className="space-y-3">
+                    {consents.map((consent) => (
+                      <li
+                        key={consent.id}
+                        className="rounded-xl border border-neutral-200 p-3"
+                      >
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <strong className="text-sm">
+                            {consent.courseTitle}
+                          </strong>
+                          <AiConsentStatusBadge status={consent.status} />
+                        </div>
+                        <p className="mt-1 text-xs text-neutral-600">
+                          Владелец: {consent.ownerLabel}. Цель:{" "}
+                          {consent.purpose}. До{" "}
+                          {formatIdentityDate(consent.expiresAt)}
+                        </p>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {consent.status === "pending" ? (
                             <>
                               <Button
                                 type="button"
                                 disabled={busy}
                                 onClick={() =>
                                   void mutate(() =>
-                                    actOnConnection(request.id, "accept"),
+                                    actOnAiConsent(consent.id, "grant", {
+                                      expectedRevision: consent.revision,
+                                      expiresInDays: 90,
+                                    }),
                                   )
                                 }
                               >
-                                Принять
+                                Разрешить
                               </Button>
                               <Button
                                 type="button"
@@ -494,89 +745,17 @@ export function LearningProfileWorkspace() {
                                 disabled={busy}
                                 onClick={() =>
                                   void mutate(() =>
-                                    actOnConnection(request.id, "reject"),
+                                    actOnAiConsent(consent.id, "revoke", {
+                                      expectedRevision: consent.revision,
+                                    }),
                                   )
                                 }
                               >
                                 Отклонить
                               </Button>
                             </>
-                          ) : (
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              disabled={busy}
-                              onClick={() =>
-                                void mutate(() =>
-                                  actOnConnection(request.id, "cancel"),
-                                )
-                              }
-                            >
-                              Отменить
-                            </Button>
-                          )}
-                        </div>
-                      ) : null}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </section>
-            <section className="rounded-2xl border border-neutral-200 bg-white p-5">
-              <div className="flex items-start gap-3">
-                <BrainCircuit className="mt-0.5 h-5 w-5" aria-hidden="true" />
-                <div>
-                  <h2 className="font-bold text-neutral-950">
-                    Персонализация с общей историей
-                  </h2>
-                  <p className="mt-1 text-sm text-neutral-600">
-                    Отдельное согласие для конкретного курса и его текущего
-                    владельца. Оно не открывает преподавателю чужие личные
-                    заметки других преподавателей.
-                  </p>
-                </div>
-              </div>
-              {consents.length === 0 ? (
-                <div className="mt-4">
-                  <IdentityEmpty
-                    title="Запросов помощника нет"
-                    description="Без вашего разрешения помощник использует только историю, записанную владельцем курса."
-                  />
-                </div>
-              ) : (
-                <ul className="mt-4 space-y-3">
-                  {consents.map((consent) => (
-                    <li
-                      key={consent.id}
-                      className="rounded-xl border border-neutral-200 p-3"
-                    >
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <strong className="text-sm">
-                          {consent.courseTitle}
-                        </strong>
-                        <AiConsentStatusBadge status={consent.status} />
-                      </div>
-                      <p className="mt-1 text-xs text-neutral-600">
-                        Владелец: {consent.ownerLabel}. Цель: {consent.purpose}.
-                        До {formatIdentityDate(consent.expiresAt)}
-                      </p>
-                      <div className="mt-3 flex gap-2">
-                        {consent.status === "pending" ? (
-                          <>
-                            <Button
-                              type="button"
-                              disabled={busy}
-                              onClick={() =>
-                                void mutate(() =>
-                                  actOnAiConsent(consent.id, "grant", {
-                                    expectedRevision: consent.revision,
-                                    expiresInDays: 90,
-                                  }),
-                                )
-                              }
-                            >
-                              Разрешить
-                            </Button>
+                          ) : null}
+                          {consent.status === "active" ? (
                             <Button
                               type="button"
                               variant="ghost"
@@ -589,80 +768,66 @@ export function LearningProfileWorkspace() {
                                 )
                               }
                             >
-                              Отклонить
+                              Отозвать
                             </Button>
-                          </>
-                        ) : null}
-                        {consent.status === "active" ? (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            disabled={busy}
-                            onClick={() =>
-                              void mutate(() =>
-                                actOnAiConsent(consent.id, "revoke", {
-                                  expectedRevision: consent.revision,
-                                }),
-                              )
-                            }
-                          >
-                            Отозвать
-                          </Button>
-                        ) : null}
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </section>
-          </div>
-        ) : null}
-      </div>
-      <div
-        id={workspaceTabPanelId(LEARNING_PROFILE_TABS_ID, "data")}
-        role="tabpanel"
-        aria-labelledby={workspaceTabId(LEARNING_PROFILE_TABS_ID, "data")}
-        hidden={surface !== "data"}
-        tabIndex={0}
-      >
-        {!loading && profile && progress && surface === "data" ? (
-          <div className="grid gap-4 lg:grid-cols-2">
-            <section className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
-              <h2 className="font-bold text-amber-950">
-                Ошибочная прямая связь
-              </h2>
-              <p className="mt-2 text-sm leading-relaxed text-amber-900">
-                Отвязка доступна только для ошибочной прямой связи, пока учебные
-                результаты ещё не объединялись и нет зависимых разрешений.
-                Прежний профиль останется у связанных преподавателей без
-                аккаунта, а у вас появится новый пустой профиль.
-              </p>
-              <Button
-                type="button"
-                variant="ghost"
-                className="mt-4"
-                disabled={!profile.canSafeUnlink}
-                onClick={() => setDestructiveMode("unlink")}
-              >
-                Проверить возможность отвязки
-              </Button>
-            </section>
-            <section className="rounded-2xl border border-rose-200 bg-rose-50 p-5">
-              <h2 className="font-bold text-rose-950">Сброс учебных данных</h2>
-              <p className="mt-2 text-sm leading-relaxed text-rose-900">
-                Будут удалены все ваши учебные результаты, связи, приглашения,
-                доступы наблюдателей и разрешения помощнику. Перед действием
-                потребуется ещё раз подтвердить вход.
-              </p>
-              <Button
-                type="button"
-                variant="secondary"
-                className="product-btn-danger mt-4"
-                onClick={() => setDestructiveMode("erasure")}
-              >
-                Проверить, что будет удалено
-              </Button>
-            </section>
+                          ) : null}
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </SurfaceCard>
+            ) : null}
+
+            {profile ? (
+              <section aria-labelledby="learning-profile-lifecycle-title">
+                <h2
+                  id="learning-profile-lifecycle-title"
+                  className="text-xl font-bold"
+                >
+                  Управление учебными данными
+                </h2>
+                <div className="mt-4 grid gap-4 lg:grid-cols-2">
+                  <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
+                    <h3 className="font-bold text-amber-950">
+                      Ошибочная прямая связь
+                    </h3>
+                    <p className="mt-2 text-sm leading-relaxed text-amber-900">
+                      Отвязка доступна только до объединения результатов и при
+                      отсутствии зависимых разрешений. У аккаунта появится новый
+                      пустой профиль.
+                    </p>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="mt-4"
+                      disabled={!profile.canSafeUnlink}
+                      onClick={() => setDestructiveMode("unlink")}
+                    >
+                      Проверить возможность отвязки
+                    </Button>
+                  </div>
+                  <div className="rounded-2xl border border-rose-200 bg-rose-50 p-5">
+                    <h3 className="font-bold text-rose-950">
+                      Сброс учебных данных
+                    </h3>
+                    <p className="mt-2 text-sm leading-relaxed text-rose-900">
+                      Будут удалены учебные результаты, связи, приглашения,
+                      доступы наблюдателей и разрешения помощнику. Потребуется
+                      повторное подтверждение входа.
+                    </p>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      className="product-btn-danger mt-4"
+                      onClick={() => setDestructiveMode("erasure")}
+                    >
+                      Проверить, что будет удалено
+                    </Button>
+                  </div>
+                </div>
+              </section>
+            ) : null}
           </div>
         ) : null}
       </div>

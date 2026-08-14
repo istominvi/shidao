@@ -650,8 +650,13 @@ test("product buttons share one animated raised-control elevation contract", () 
   );
   assert.match(
     navigationStyles,
-    /\.site-header-shell-demo \.nav-user-trigger-name\s*\{[^}]*font-size: var\(--course-demo-control-font-size, 0\.88rem\);[^}]*font-weight: var\(--course-demo-control-font-weight, 400\);/,
+    /\.site-header-shell-demo \.nav-user-trigger\s*\{[^}]*width: 2\.5rem;[^}]*height: 2\.5rem;[^}]*padding: 0;/,
   );
+  assert.match(
+    navigationStyles,
+    /\.site-header-shell-demo \.nav-user-trigger-avatar\s*\{[^}]*width: 2\.5rem;[^}]*height: 2\.5rem;[^}]*border-radius: var\(--course-demo-control-radius, 0\.75rem\);/,
+  );
+  assert.doesNotMatch(navigationStyles, /nav-user-trigger-name/);
   assert.match(
     navigationStyles,
     /\.site-header-shell-demo \.nav-pill-active\s*\{[^}]*box-shadow: none;/,

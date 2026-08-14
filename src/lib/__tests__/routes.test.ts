@@ -8,6 +8,12 @@ import {
   isSettingsRoute,
 } from "../routes";
 import { ROUTES, toCourseRoute, toCourseStudentPreviewRoute } from "../auth";
+import {
+  PROFILE_NAV_ITEMS,
+  profileSettingsStatusHref,
+  profileTabHref,
+  resolveProfileTab,
+} from "../navigation/profile-nav";
 
 test("isRouteWithin matches exact route and nested route", () => {
   assert.equal(isRouteWithin(ROUTES.settings, ROUTES.settings), true);
@@ -79,4 +85,24 @@ test("isSafeRelativePath rejects external and protocol-relative redirects", () =
   assert.equal(isSafeRelativePath("/%5cmalicious.example"), false);
   assert.equal(isSafeRelativePath("/safe%0d%0aLocation:evil"), false);
   assert.equal(isSafeRelativePath("dashboard"), false);
+});
+
+test("profile tabs have stable addressable URLs and fail closed to profile", () => {
+  assert.deepEqual(
+    PROFILE_NAV_ITEMS.map((item) => item.id),
+    ["profile", "history", "attestation", "observers", "settings"],
+  );
+  assert.equal(profileTabHref("profile"), ROUTES.learningProfile);
+  assert.equal(
+    profileTabHref("observers"),
+    `${ROUTES.learningProfile}?tab=observers`,
+  );
+  assert.equal(
+    profileSettingsStatusHref("emailChanged"),
+    `${ROUTES.learningProfile}?tab=settings&emailChanged=1`,
+  );
+  assert.equal(resolveProfileTab("history"), "history");
+  assert.equal(resolveProfileTab(["settings", "history"]), "settings");
+  assert.equal(resolveProfileTab("unknown"), "profile");
+  assert.equal(resolveProfileTab(undefined), "profile");
 });

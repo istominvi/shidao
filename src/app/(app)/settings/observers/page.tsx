@@ -1,5 +1,6 @@
-import { ObserversSettingsWorkspace } from "@/components/learner-identity/observers-settings-workspace";
+import { redirect } from "next/navigation";
+import { profileTabHref } from "@/lib/navigation/profile-nav";
 
-export default function ObserversSettingsPage() {
-  return <ObserversSettingsWorkspace />;
+export default function LegacyObserversSettingsPage() {
+  redirect(profileTabHref("observers"));
 }

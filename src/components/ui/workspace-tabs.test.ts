@@ -102,7 +102,7 @@ test("identity workspace tabs keep persistent owned tab panels", () => {
         "src/components/learner-identity/learning-profile-workspace.tsx",
       ),
       idConstant: "LEARNING_PROFILE_TABS_ID",
-      values: ["overview", "history", "attestation", "access", "data"],
+      values: ["profile", "history", "attestation", "observers", "settings"],
     },
     {
       component: source(
