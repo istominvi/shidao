@@ -1,8 +1,8 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Plus } from "lucide-react";
 import { AppPageHeader } from "@/components/app/page-header";
 import { CoursesIndex } from "@/components/course-builder/courses-index";
+import { PageTransitionLink } from "@/components/navigation/page-transition-link";
 import { TopNav } from "@/components/top-nav";
 import { productButtonClassName } from "@/components/ui/button";
 import { ROUTES } from "@/lib/auth";
@@ -35,15 +35,15 @@ export default async function CoursesPage({ searchParams }: CoursesPageProps) {
       <div className="container app-page-container space-y-6">
         <AppPageHeader
           title="Курсы"
-          description="Создавайте свои курсы с нуля или добавляйте готовые из каталога"
           actions={
-            <Link
+            <PageTransitionLink
               href={ROUTES.coursesNew}
+              direction="forward"
               className={productButtonClassName("primary")}
             >
               <Plus className="h-4 w-4" aria-hidden="true" />
               Создать курс
-            </Link>
+            </PageTransitionLink>
           }
         />
         <CoursesIndex

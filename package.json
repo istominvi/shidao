@@ -12,7 +12,7 @@
     "test:compile": "tsc -p tsconfig.test.json",
     "test:unit": "npm run test:compile && node scripts/run-node-tests.mjs --exclude browser-smoke",
     "test:browser": "npm run test:compile && node scripts/run-node-tests.mjs --include browser-smoke",
-    "test:browser:ci": "REQUIRE_BROWSER_SMOKE=1 BROWSER_SMOKE_SERVER_MODE=prod npm run test:browser",
+    "test:browser:ci": "node scripts/run-browser-ci.mjs",
     "test:all": "npm run test:unit && npm run test:browser",
     "mcp:course-builder": "tsx scripts/course-builder-mcp.ts",
     "format": "prettier --write .",

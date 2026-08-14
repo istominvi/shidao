@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import {
+  CalendarPlus,
   CalendarDays,
   CircleAlert,
   CircleCheck,
@@ -16,7 +16,9 @@ import {
   XCircle,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { AppPageHeader } from "@/components/app/page-header";
 import { useSystemAssistantPageContext } from "@/components/assistant/system-assistant-provider";
+import { PageTransitionLink } from "@/components/navigation/page-transition-link";
 import {
   cancelLessonRun,
   loadSchedule,
@@ -55,7 +57,7 @@ import {
   type ProductTableSortState,
 } from "@/components/ui/product-table";
 import { SurfaceCard } from "@/components/ui/surface-card";
-import { toCourseRoute } from "@/lib/auth";
+import { ROUTES, toCourseRoute } from "@/lib/auth";
 import type { LessonRun } from "@/modules/lesson-runs/domain";
 
 const tableDateFormatter = new Intl.DateTimeFormat("ru-RU", {
@@ -202,12 +204,12 @@ function ScheduleRunActions({
       <Button type="button" disabled={disabled} onClick={onOpen}>
         {runActionLabel(run)}
       </Button>
-      <Link
+      <PageTransitionLink
         href={runPlanHref(run)}
         className={productButtonClassName("secondary")}
       >
         Открыть план
-      </Link>
+      </PageTransitionLink>
     </div>
   );
 }
@@ -376,6 +378,23 @@ export function ScheduleWorkspace() {
 
   return (
     <div className="teaching-hub-stack">
+      <AppPageHeader
+        title="Расписание"
+        metric={
+          selectedDate && runs
+            ? `${formatSchedulePeriodLabel(selectedDate, period)} · ${runs.length >= SCHEDULE_RESULT_LIMIT ? "показано" : "занятий"}: ${visibleRuns.length}`
+            : undefined
+        }
+        actions={
+          <PageTransitionLink
+            href={ROUTES.courses}
+            className={productButtonClassName("primary")}
+          >
+            <CalendarPlus className="h-4 w-4" aria-hidden="true" />
+            Назначить урок
+          </PageTransitionLink>
+        }
+      />
       <section
         className="teaching-hub-toolbar"
         aria-label="Навигация по расписанию"

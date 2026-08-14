@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { MoreHorizontal, type LucideIcon } from "lucide-react";
 import { createPortal } from "react-dom";
 import {
@@ -14,6 +13,7 @@ import {
   type KeyboardEvent,
 } from "react";
 import { productButtonClassName } from "@/components/ui/button";
+import { PageTransitionLink } from "@/components/navigation/page-transition-link";
 import { classNames } from "@/lib/ui/classnames";
 
 export type ActionMenuItem = {
@@ -253,7 +253,7 @@ export function ActionMenu({
         return (
           <div key={item.id}>
             {item.href && !item.disabled ? (
-              <Link
+              <PageTransitionLink
                 ref={(node) => {
                   if (node) itemRefs.current.set(item.id, node);
                   else itemRefs.current.delete(item.id);
@@ -265,7 +265,7 @@ export function ActionMenu({
                 onClick={() => closeMenu({ restoreFocus: false })}
               >
                 {content}
-              </Link>
+              </PageTransitionLink>
             ) : (
               <button
                 ref={(node) => {

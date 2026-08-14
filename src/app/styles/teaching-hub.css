@@ -1252,6 +1252,19 @@
   font-weight: var(--course-demo-control-font-weight, 400);
 }
 
+.action-menu-panel-portal .action-menu-item-destructive,
+.action-menu-panel-portal .action-menu-item-destructive .action-menu-item-icon,
+.action-menu-panel-portal
+  .action-menu-item-destructive
+  .action-menu-item-label {
+  color: #be123c;
+}
+
+.action-menu-panel-portal .action-menu-item-destructive:hover:not(:disabled),
+.action-menu-panel-portal .action-menu-item-destructive:focus-visible {
+  background: #fff1f2;
+}
+
 .action-menu-panel-portal .action-menu-item:disabled,
 .action-menu-panel-portal .action-menu-item:disabled .action-menu-item-icon,
 .action-menu-panel-portal .action-menu-item:disabled .action-menu-item-label {

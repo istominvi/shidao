@@ -109,11 +109,13 @@ export function LessonRunStatusButton({
   disabled,
   onClick,
   className = "",
+  variant = "secondary",
 }: {
   runs: LessonRun[];
   disabled?: boolean;
   onClick: () => void;
   className?: string;
+  variant?: "primary" | "secondary";
 }) {
   const currentRun = openLessonRun(runs);
   const completedCount = completedLessonRunCount(runs);
@@ -127,7 +129,7 @@ export function LessonRunStatusButton({
   return (
     <Button
       type="button"
-      variant="secondary"
+      variant={variant}
       className={`lesson-run-status-button lesson-run-status-${state ?? "empty"} ${className}`}
       disabled={disabled}
       onClick={(event) => {

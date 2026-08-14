@@ -9,6 +9,7 @@ function source(path: string) {
 test("workspace tabs keep their accessible visual contract and raise positive counts", () => {
   const component = source("src/components/ui/workspace-tabs.tsx");
   const styles = source("src/app/globals.css");
+  const motionStyles = source("src/app/styles/page-motion.css");
   const countStyles = /\.workspace-tab-count\s*\{[^}]*\}/.exec(styles)?.[0];
 
   assert.match(component, /role="tablist"/);
@@ -48,9 +49,32 @@ test("workspace tabs keep their accessible visual contract and raise positive co
     styles,
     /\.workspace-tab\s*\{[^}]*border-radius: var\(--course-demo-control-radius, 0\.75rem\)[^}]*0 0;[^}]*color: var\(--product-secondary-foreground\);/,
   );
+  assert.match(component, /className="workspace-tabs-indicator"/);
+  assert.match(component, /activeTab\.getBoundingClientRect\(\)/);
+  assert.match(component, /left: activeTabRect\.left - tabsRect\.left/);
+  assert.match(component, /width: activeTabRect\.width/);
+  assert.match(component, /new ResizeObserver\(updateIndicator\)/);
+  assert.match(component, /data-indicator-ready=\{indicator\.ready/);
+  assert.match(component, /indicator\.ready && indicatorMotionReady/);
+  assert.match(component, /panel\.animate\(/);
+  assert.doesNotMatch(component, /panelAnimationFrameRef/);
+  assert.match(component, /animation\.finished/);
+  assert.match(component, /duration: 260/);
+  assert.match(component, /prefers-reduced-motion: reduce/);
+  assert.match(component, /directionOverride/);
+  assert.match(component, /event\.key === "ArrowRight"[\s\S]*?"forward"/);
+  assert.match(component, /event\.key === "ArrowLeft"[\s\S]*?"back"/);
   assert.match(
-    styles,
-    /\.workspace-tab-active::after\s*\{[^}]*z-index: 2;[^}]*height: 4px;[^}]*background: #141414;/,
+    motionStyles,
+    /\.workspace-tabs-indicator\s*\{[^}]*height: 4px;[^}]*background: #141414;[^}]*transition: none;/,
+  );
+  assert.match(
+    motionStyles,
+    /\.workspace-tabs-indicator\[data-motion-ready="true"\]\s*\{[^}]*transition:[^}]*width 360ms[^}]*transform 360ms/,
+  );
+  assert.match(
+    motionStyles,
+    /\.workspace-tabs\[data-indicator-ready="true"\] \.workspace-tab-active::after\s*\{[^}]*display: none;/,
   );
   assert.match(
     styles,

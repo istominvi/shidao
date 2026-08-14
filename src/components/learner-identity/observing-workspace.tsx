@@ -160,7 +160,9 @@ export function ObservingWorkspace({
       {!embedded ? (
         <AppPageHeader
           title="Наблюдение"
-          description="История людей, которые явно дали вам доступ, доступна только для чтения. Наблюдатель не может менять учебные данные."
+          metric={
+            profiles === null ? undefined : `Профилей: ${profiles.length}`
+          }
         />
       ) : null}
       {error ? (

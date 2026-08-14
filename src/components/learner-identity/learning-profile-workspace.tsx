@@ -212,7 +212,11 @@ export function LearningProfileWorkspace() {
     <div className="space-y-6">
       <AppPageHeader
         title="Мой учебный профиль"
-        description="Здесь собраны завершённые результаты по всем преподавателям и только те комментарии, которыми с вами явно поделились."
+        metric={
+          !loading && progress
+            ? `Завершённых занятий: ${progress.finalizedRunCount} · предметов: ${progress.subjects.length}`
+            : undefined
+        }
       />
       <WorkspaceTabs
         idBase={LEARNING_PROFILE_TABS_ID}

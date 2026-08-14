@@ -23,6 +23,7 @@ import {
   WandSparkles,
 } from "lucide-react";
 import { AppPageHeader } from "@/components/app/page-header";
+import { AppPageHeaderActions } from "@/components/app/page-header-actions";
 import { AiLessonPlanDialog } from "@/components/course-builder/ai-lesson-plan-dialog";
 import { CourseMaterialsPanel } from "@/components/course-builder/course-materials-panel";
 import {
@@ -954,7 +955,6 @@ export function LessonAuthoringWorkspace({
   const [lessonRunDialogOpen, setLessonRunDialogOpen] = useState(false);
   const [componentQuery, setComponentQuery] = useState("");
   const pickerTriggerRef = useRef<HTMLButtonElement>(null);
-  const lessonSettingsTriggerRef = useRef<HTMLButtonElement>(null);
   const lessonHeadingRef = useRef<HTMLHeadingElement>(null);
   const availableLessonTabs = LESSON_WORKSPACE_TABS.filter(
     (item) => teachingEnabled || item.value !== "history",
@@ -975,9 +975,24 @@ export function LessonAuthoringWorkspace({
   function closeLessonEditor() {
     if (disabled) return;
     setLessonEditorOpen(false);
-    window.requestAnimationFrame(() =>
-      lessonSettingsTriggerRef.current?.focus(),
-    );
+  }
+
+  function deleteLesson() {
+    if (
+      !window.confirm(
+        teachingEnabled
+          ? `Удалить урок «${lesson.title}»? План, назначение и история проведений будут удалены. Завершённые индивидуальные результаты сохранятся в учебных профилях.`
+          : `Удалить урок «${lesson.title}» вместе с его компонентами?`,
+      )
+    ) {
+      return;
+    }
+    void (async () => {
+      const deleted = await runMutation("Удаляем урок…", () =>
+        jsonRequest(`/api/v2/lessons/${lesson.id}`, "DELETE"),
+      );
+      if (deleted) onBackToCourse();
+    })();
   }
 
   useEffect(() => {
@@ -1003,62 +1018,55 @@ export function LessonAuthoringWorkspace({
           label: course.title,
         }}
         title={formatLessonWorkspaceTitle(lesson.position, lesson.title)}
-        description={
-          lesson.summary ||
-          `Компонентов: ${lesson.components.length} · слайдов экрана ученика: ${lesson.studentSlides.length}`
-        }
+        metric={`Компонентов: ${lesson.components.length} · слайдов: ${lesson.studentSlides.length} · проведений: ${completedLessonRunCount(runs)}`}
         actions={
-          <>
-            {teachingEnabled ? (
-              <LessonRunStatusButton
-                runs={runs}
-                disabled={disabled}
-                onClick={() => setLessonRunDialogOpen(true)}
-              />
-            ) : null}
-            <Button
-              variant="secondary"
-              disabled={disabled}
-              onClick={() => setAiPlannerOpen(true)}
-            >
-              <WandSparkles className="h-4 w-4" aria-hidden="true" />
-              Дополнить с ИИ
-            </Button>
-            <Button
-              ref={lessonSettingsTriggerRef}
-              variant="secondary"
-              disabled={disabled}
-              onClick={() => setLessonEditorOpen(true)}
-            >
-              <Pencil className="h-4 w-4" aria-hidden="true" />
-              Настройки урока
-            </Button>
-            <Button
-              variant="secondary"
-              className="product-btn-danger"
-              disabled={disabled}
-              onClick={() => {
-                if (
-                  !window.confirm(
-                    teachingEnabled
-                      ? `Удалить урок «${lesson.title}»? План, назначение и история проведений будут удалены. Завершённые индивидуальные результаты сохранятся в учебных профилях.`
-                      : `Удалить урок «${lesson.title}» вместе с его компонентами?`,
-                  )
-                ) {
-                  return;
-                }
-                void (async () => {
-                  const deleted = await runMutation("Удаляем урок…", () =>
-                    jsonRequest(`/api/v2/lessons/${lesson.id}`, "DELETE"),
-                  );
-                  if (deleted) onBackToCourse();
-                })();
-              }}
-            >
-              <Trash2 className="h-4 w-4" aria-hidden="true" />
-              Удалить
-            </Button>
-          </>
+          <AppPageHeaderActions
+            primary={
+              teachingEnabled ? (
+                <LessonRunStatusButton
+                  runs={runs}
+                  disabled={disabled}
+                  onClick={() => setLessonRunDialogOpen(true)}
+                  variant="primary"
+                />
+              ) : (
+                <Button
+                  disabled={disabled}
+                  onClick={() => setAiPlannerOpen(true)}
+                >
+                  <WandSparkles className="h-4 w-4" aria-hidden="true" />
+                  Дополнить с ИИ
+                </Button>
+              )
+            }
+            overflowLabel={`Другие действия с уроком «${lesson.title}»`}
+            overflowDisabled={disabled}
+            overflowItems={[
+              ...(teachingEnabled
+                ? [
+                    {
+                      id: "ai",
+                      label: "Дополнить с ИИ",
+                      icon: WandSparkles,
+                      onSelect: () => setAiPlannerOpen(true),
+                    },
+                  ]
+                : []),
+              {
+                id: "settings",
+                label: "Настройки урока",
+                icon: Pencil,
+                onSelect: () => setLessonEditorOpen(true),
+              },
+              {
+                id: "delete",
+                label: "Удалить",
+                icon: Trash2,
+                destructive: true,
+                onSelect: deleteLesson,
+              },
+            ]}
+          />
         }
       />
 

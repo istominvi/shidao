@@ -14,6 +14,8 @@ const publishedCoursePath =
   "src/components/course-builder/published-course-workspace.tsx";
 const publishedCoursePagePath =
   "src/app/(app)/courses/catalog/[publicationId]/page.tsx";
+const courseWorkspacePath =
+  "src/components/course-builder/course-workspace.tsx";
 const actionsPath = "src/components/course-builder/course-actions.tsx";
 const actionMenuPath = "src/components/ui/action-menu.tsx";
 const courseRoutePath = "src/app/api/v2/courses/[courseId]/route.ts";
@@ -27,14 +29,12 @@ test("courses index exposes list tabs and sends course details to a standalone r
   const publishedPage = source(publishedCoursePagePath);
 
   assert.match(page, />\s*Создать курс\s*</);
-  assert.match(
-    page,
-    /description="Создавайте свои курсы с нуля или добавляйте готовые из каталога"/,
-  );
   assert.doesNotMatch(
     page,
-    /description="Создавайте свои курсы с нуля или добавляйте готовые из каталога\."/,
+    /Создавайте свои курсы с нуля или добавляйте готовые из каталога/,
   );
+  assert.match(page, /<PageTransitionLink/);
+  assert.match(page, /direction="forward"/);
   assert.match(page, /query\.tab === "catalog"/);
   assert.match(page, /typeof query\.course === "string"/);
   assert.match(page, /redirect\(/);
@@ -52,7 +52,7 @@ test("courses index exposes list tabs and sends course details to a standalone r
   assert.match(index, /\/courses\?tab=catalog/);
   assert.match(
     index,
-    /router\.push\(\s*`\/courses\/catalog\/\$\{encodeURIComponent\(courseId\)\}\$\{query\}`/,
+    /pageTransition\.navigate\(href, \{ direction: "forward", scroll: false \}\)/,
   );
   assert.doesNotMatch(index, /query\.set\("course", courseId\)/);
   assert.match(publishedPage, /<PublishedCourseWorkspace/);
@@ -112,7 +112,12 @@ test("catalog list opens a full read-only published-course workspace", () => {
   assert.match(published, />\s*Открыть мой курс\s*</);
   assert.match(published, /Добавить в мои курсы/);
   assert.match(published, /\/copy/);
-  assert.match(published, /router\.push\(toCourseRoute\(payload\.courseId\)\)/);
+  assert.match(
+    published,
+    /pageTransition\.navigate\(href, \{ direction: "forward" \}\)/,
+  );
+  assert.match(published, /metric=\{/);
+  assert.match(published, /Уроков: \$\{course\.lessons\.length\}/);
   assert.match(published, /!educatorCourse && ownSourceCourseId/);
   assert.match(
     published,
@@ -128,6 +133,7 @@ test("catalog list opens a full read-only published-course workspace", () => {
 test("owned course actions cover copy, publication, and safe archive states", () => {
   const actions = source(actionsPath);
   const owned = source(ownedPath);
+  const workspace = source(courseWorkspacePath);
   const route = source(courseRoutePath);
   const service = source(courseServicePath);
   const repository = source(courseRepositoryPath);
@@ -156,8 +162,16 @@ test("owned course actions cover copy, publication, and safe archive states", ()
     /<CourseActions[\s\S]*?course=\{course\}[\s\S]*?variant="table"/,
   );
   assert.match(owned, /CoursePublicationBadges/);
-  assert.match(actions, /triggerIcon=\{variant === "table" \? MoreVertical/);
-  assert.match(actions, /portal=\{variant === "table"\}/);
+  assert.match(actions, /triggerIcon=\{MoreVertical\}/);
+  assert.match(
+    actions,
+    /triggerVariant=\{variant === "table"[\s\S]*?\sportal\s/,
+  );
+  assert.match(workspace, /const hasPublicationBadges = Boolean\(/);
+  assert.match(
+    workspace,
+    /meta=\{\s*hasPublicationBadges \? \([\s\S]*?<CoursePublicationBadges[\s\S]*?\) : (?:null|undefined)\s*\}/,
+  );
   assert.match(actions, /id: "delete"[\s\S]*?destructive: true/);
   assert.match(
     actions,

@@ -9,6 +9,7 @@ import {
 import { GUEST_SESSION_VIEW } from "@/lib/session-view";
 import { readSessionViewServer } from "@/lib/server/session-view";
 import "./globals.css";
+import "./styles/page-motion.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL(

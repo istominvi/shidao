@@ -300,6 +300,14 @@ test("lesson metadata moves into a transparent page header and remains editable"
   );
   assert.match(authoring, /formatLessonWorkspaceTitle/);
   assert.match(authoring, /headingRef=\{lessonHeadingRef\}/);
+  assert.match(authoring, /metric=\{`Компонентов:/);
+  assert.doesNotMatch(
+    authoring.slice(
+      authoring.indexOf("<AppPageHeader"),
+      authoring.indexOf("<WorkspaceTabs", authoring.indexOf("<AppPageHeader")),
+    ),
+    /lesson\.summary/,
+  );
   assert.match(authoring, /closest\("header"\)\?\.scrollIntoView/);
   assert.match(authoring, /focus\(\{ preventScroll: true \}\)/);
   assert.match(workspace, /lessonRowRefs\.current\.get\(focusLessonId\)/);
@@ -609,13 +617,13 @@ test("product buttons share one animated raised-control elevation contract", () 
     /\.action-menu-item\s*\{[^}]*min-height: var\([^}]*--product-row-height[^}]*align-items: center;[^}]*gap: 0\.5rem;[^}]*border: 0;[^}]*padding: 0 var\(--course-demo-control-padding-inline, 0\.75rem\);[^}]*font-size: var\(--course-demo-control-font-size, 0\.88rem\);[^}]*font-weight: var\(--course-demo-control-font-weight, 400\);/,
   );
 
-  const lessonDeleteButton =
-    /<Button\s+variant="secondary"\s+className="product-btn-danger"[\s\S]*?>\s*<Trash2[\s\S]*?>\s*Удалить\s*<\/Button>/.exec(
-      source(lessonAuthoringPath),
-    );
-  assert.ok(
-    lessonDeleteButton,
-    "Lesson header delete must share the raised secondary action geometry",
+  const lessonAuthoring = source(lessonAuthoringPath);
+  assert.match(lessonAuthoring, /<AppPageHeaderActions/);
+  assert.match(lessonAuthoring, /primary=\{/);
+  assert.match(lessonAuthoring, /overflowItems=\{/);
+  assert.match(
+    lessonAuthoring,
+    /id: "delete"[\s\S]*?label: "Удалить"[\s\S]*?icon: Trash2[\s\S]*?destructive: true/,
   );
 
   assert.match(

@@ -1,4 +1,3 @@
-import Link from "next/link";
 import {
   forwardRef,
   type ComponentPropsWithoutRef,
@@ -6,6 +5,7 @@ import {
   type MouseEventHandler,
   type ReactNode,
 } from "react";
+import { PageTransitionLink } from "@/components/navigation/page-transition-link";
 import { classNames } from "@/lib/ui/classnames";
 
 type HeaderShellProps = {
@@ -42,7 +42,7 @@ export function NavPillLink({
   onClick,
 }: NavPillLinkProps) {
   return (
-    <Link
+    <PageTransitionLink
       href={href}
       aria-current={ariaCurrent}
       scroll={scroll}
@@ -54,7 +54,7 @@ export function NavPillLink({
       onClick={onClick}
     >
       {children}
-    </Link>
+    </PageTransitionLink>
   );
 }
 

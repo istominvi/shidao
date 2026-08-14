@@ -11,6 +11,22 @@
 **Исторический functional E2 baseline:**
 `22b486a7163453019d9720cb4fe0f36ed7c0228d`
 
+**Current source / next runtime release — page headers and motion:** supporting
+copy в `AppPageHeader` теперь действительно optional и допускает только
+метрику выбранной сущности; поясняющий, рекламный и инструктивный текст из
+заголовков удалён. Header action rail показывает не больше одной основной
+кнопки, а остальные действия Lesson находятся в общем квадратном
+`MoreVertical` menu с сохранением destructive, keyboard и focus-return
+семантики. Primary navigation использует persistent native View Transition
+boundary: движение `Расписание → Ученики → Курсы → Магазин` и drill-in уводит
+старый header влево, обратное движение/backlink — вправо. Shared
+`WorkspaceTabs` получил один измеряемый плавный indicator и лёгкий вход
+активной панели; `prefers-reduced-motion` оставляет все переходы мгновенными.
+Это UI-only изменение в `src/components/app/`,
+`src/components/navigation/`, `src/components/ui/workspace-tabs.tsx` и
+`src/app/styles/page-motion.css`; API, schema, migrations и Lesson hierarchy
+не меняются.
+
 **Current production Course catalog slice:** реализует reusable Course catalog,
 immutable publication revisions, независимое копирование детских Course и
 private publication assets. Forward migration применена и проверена; Coolify
@@ -475,13 +491,14 @@ migrations не меняются; assistant по-прежнему получае
 дату, а не всё видимое окно. Последняя корректировка cell/action spacing
 развёрнута в production release PR #242; exact rollout evidence приведён ниже.
 
-**Current production Schedule micro-polish:** подзаголовок
-«Здесь все назначенные уроки за выбранный период» больше не заканчивается
-точкой. В sortable header только активная колонка показывает одну стрелку
-текущего направления; у остальных колонок индикатора нет. В трёхпунктовом
-меню ожидающего Run удалён разделитель между «Изменить» и «Отменить», а радиус
-hover-подсветки каждого пункта уменьшен до канонических 8 px — как у выбранной
-кнопки переключателя вида. Это UI-only изменение без API, schema или migration.
+**Current source Schedule header:** optional supporting line показывает
+выбранный локальный период и точное число загруженных занятий; при достижении
+hard limit она честно говорит «Показано», а не заявляет total. Прежнее
+пояснение «Здесь все назначенные уроки…» удалено. В sortable header только
+активная колонка показывает одну стрелку текущего направления; у остальных
+колонок индикатора нет. В трёхпунктовом меню ожидающего Run нет разделителя
+между «Изменить» и «Отменить», а радиус hover каждого пункта равен 8 px. Это
+UI-only изменение без API, schema или migration.
 
 **Current deployed Students/Courses controls slice:** панели
 управления `/students` и обеих вкладок `/courses` больше не создают отдельную
@@ -489,8 +506,9 @@ toolbar-card: компактные 40 px controls расположены пря�
 том же визуальном контракте, что Schedule. На Students состояния «Активные /
 Архив / Ожидают ответа» больше не переключают отдельные проекции: активные
 профили, архивные relations и исходящие pending-запросы находятся в одной
-таблице с inline status/text и contextual actions. Подзаголовок раздела —
-«Ученики и группы, с которыми вы работаете или за которыми наблюдаете». Поиск
+таблице с inline status/text и contextual actions. Current source header
+показывает active/archive/pending counts, число Groups либо наблюдаемых
+Profiles в зависимости от вкладки; прежний explanatory subtitle удалён. Поиск
 остаётся отдельным контролом, а статус, наличие или отсутствие membership в
 группах, конкретная группа и тип связи с Account собраны в едином disclosure
 «Фильтр». Отдельного select «Сортировка» нет: Students, Groups и таблица
@@ -501,8 +519,9 @@ disclosure «Фильтры», а «Карточки / Таблица» выби
 использует тот же компактный поиск, disclosure только для реально поддержанных
 server-side предмета/уровня и такой же icon-only выбор «Карточки / Таблица».
 Повторный заголовок, поясняющий текст и видимый count удалены; фиктивные
-content/sort controls не добавлены. Подзаголовок `/courses` — «Создавайте свои
-курсы с нуля или добавляйте готовые из каталога» без завершающей точки.
+content/sort controls не добавлены. `/courses` не показывает supporting line,
+пока page-level честная метрика не доступна; прежний instructional subtitle
+удалён.
 
 **Current deployed content controls/table surfaces:**
 прозрачные панели управления Schedule, обеих directory-вкладок Students и

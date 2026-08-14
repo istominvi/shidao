@@ -1,14 +1,114 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
+import ts from "typescript";
 
 function source(path: string) {
   return readFileSync(path, "utf8");
 }
 
+const PAGE_HEADER_CONSUMER_PATHS = [
+  "src/app/(app)/courses/page.tsx",
+  "src/app/(app)/courses/new/page.tsx",
+  "src/components/course-builder/course-workspace.tsx",
+  "src/components/course-builder/lesson-authoring-workspace.tsx",
+  "src/components/course-builder/published-course-workspace.tsx",
+  "src/components/teaching-hub/students-workspace.tsx",
+  "src/components/teaching-hub/schedule-workspace.tsx",
+  "src/components/learner-identity/learning-profile-workspace.tsx",
+  "src/components/learner-identity/observing-workspace.tsx",
+  "src/components/learner-identity/invitation-accept-workspace.tsx",
+  "src/components/settings-shell.tsx",
+  "src/components/store/store-workspace.tsx",
+] as const;
+
+const SETTINGS_SHELL_CONSUMER_PATHS = [
+  "src/app/(app)/(profile-required)/settings/profile/page.tsx",
+  "src/app/(app)/(profile-required)/settings/security/security-settings-form.tsx",
+  "src/components/learner-identity/observers-settings-workspace.tsx",
+] as const;
+
+function jsxElements(path: string, componentName: string) {
+  const file = ts.createSourceFile(
+    path,
+    source(path),
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TSX,
+  );
+  const elements: Array<ts.JsxOpeningLikeElement> = [];
+
+  function visit(node: ts.Node) {
+    if (
+      (ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node)) &&
+      node.tagName.getText(file) === componentName
+    ) {
+      elements.push(node);
+    }
+    ts.forEachChild(node, visit);
+  }
+
+  visit(file);
+  return { elements, file };
+}
+
+function jsxAttribute(
+  element: ts.JsxOpeningLikeElement,
+  name: string,
+): ts.JsxAttribute | undefined {
+  return element.attributes.properties.find(
+    (attribute): attribute is ts.JsxAttribute =>
+      ts.isJsxAttribute(attribute) && attribute.name.getText() === name,
+  );
+}
+
+function expressionFor(attribute: ts.JsxAttribute) {
+  assert.ok(
+    attribute.initializer && ts.isJsxExpression(attribute.initializer),
+    `${attribute.name.getText()} must use a JSX expression`,
+  );
+  assert.ok(attribute.initializer.expression);
+  return attribute.initializer.expression;
+}
+
+function assertSingleActionRoot(
+  expression: ts.Expression,
+  context: string,
+  allowedRoots: ReadonlySet<string>,
+) {
+  if (ts.isParenthesizedExpression(expression)) {
+    assertSingleActionRoot(expression.expression, context, allowedRoots);
+    return;
+  }
+  if (ts.isConditionalExpression(expression)) {
+    assertSingleActionRoot(expression.whenTrue, context, allowedRoots);
+    assertSingleActionRoot(expression.whenFalse, context, allowedRoots);
+    return;
+  }
+  if (
+    expression.kind === ts.SyntaxKind.NullKeyword ||
+    expression.kind === ts.SyntaxKind.UndefinedKeyword
+  ) {
+    return;
+  }
+
+  assert.ok(
+    ts.isJsxElement(expression) || ts.isJsxSelfClosingElement(expression),
+    `${context} must render at most one direct action control; use AppPageHeaderActions for overflow`,
+  );
+  const tagName = ts.isJsxElement(expression)
+    ? expression.openingElement.tagName.getText()
+    : expression.tagName.getText();
+  assert.ok(
+    allowedRoots.has(tagName),
+    `${context} must render one control root, not a wrapper that can hide multiple direct actions`,
+  );
+}
+
 test("active V2 pages share one page header contract without visual modifiers", () => {
   const header = source("src/components/app/page-header.tsx");
   const styles = source("src/app/globals.css");
+  const motionStyles = source("src/app/styles/page-motion.css");
   const consumers = [
     source("src/app/(app)/courses/page.tsx"),
     source("src/app/(app)/courses/new/page.tsx"),
@@ -16,7 +116,7 @@ test("active V2 pages share one page header contract without visual modifiers", 
     source("src/components/course-builder/lesson-authoring-workspace.tsx"),
     source("src/components/course-builder/published-course-workspace.tsx"),
     source("src/components/teaching-hub/students-workspace.tsx"),
-    source("src/app/(app)/(teacher-required)/schedule/page.tsx"),
+    source("src/components/teaching-hub/schedule-workspace.tsx"),
     source("src/components/learner-identity/learning-profile-workspace.tsx"),
     source("src/components/learner-identity/observing-workspace.tsx"),
     source("src/components/learner-identity/invitation-accept-workspace.tsx"),
@@ -34,6 +134,10 @@ test("active V2 pages share one page header contract without visual modifiers", 
 
   assert.match(header, /type: "link"/);
   assert.match(header, /type: "button"/);
+  assert.match(header, /metric\?: ReactNode/);
+  assert.doesNotMatch(header, /description\?: ReactNode/);
+  assert.match(header, /direction="back"/);
+  assert.match(header, /pageTransition\.runUpdate\("back", back\.onClick\)/);
   assert.match(header, /"app-page-header"/);
   assert.match(header, /back && "app-page-header-with-back"/);
   assert.match(header, /Boolean\(actions\) && "app-page-header-with-actions"/);
@@ -44,6 +148,16 @@ test("active V2 pages share one page header contract without visual modifiers", 
   assert.doesNotMatch(header, /className\?: string/);
   assert.doesNotMatch(header, /eyebrow/i);
   assert.doesNotMatch(styles, /\.app-page-eyebrow/);
+  assert.match(motionStyles, /view-transition-name: app-page-header/);
+  assert.match(
+    motionStyles,
+    /data-page-transition-direction="forward"[\s\S]*?app-page-header-exit-left/,
+  );
+  assert.match(
+    motionStyles,
+    /data-page-transition-direction="back"[\s\S]*?app-page-header-exit-right/,
+  );
+  assert.match(motionStyles, /prefers-reduced-motion: reduce/);
 
   for (const consumer of productHeaderApiConsumers) {
     assert.doesNotMatch(consumer, /eyebrow=/);
@@ -130,4 +244,119 @@ test("active V2 pages share one page header contract without visual modifiers", 
       /course-index-page-header|course-builder-page-header|teaching-hub-page-header|workspace-page-header/,
     );
   }
+});
+
+test("page headers reserve optional supporting copy for entity metrics and collapse lesson actions", () => {
+  const actions = source("src/components/app/page-header-actions.tsx");
+  const lesson = source(
+    "src/components/course-builder/lesson-authoring-workspace.tsx",
+  );
+  const lessonHeader = lesson.slice(
+    lesson.indexOf("<AppPageHeader"),
+    lesson.indexOf("<WorkspaceTabs", lesson.indexOf("<AppPageHeader")),
+  );
+  const schedule = source("src/components/teaching-hub/schedule-workspace.tsx");
+  const courses = source("src/app/(app)/courses/page.tsx");
+  const students = source("src/components/teaching-hub/students-workspace.tsx");
+
+  assert.match(actions, /primary\?: ReactNode/);
+  assert.match(actions, /triggerIcon=\{MoreVertical\}/);
+  assert.match(actions, /portal/);
+  assert.match(lessonHeader, /<AppPageHeaderActions/);
+  assert.match(lessonHeader, /primary=\{/);
+  assert.match(lessonHeader, /overflowItems=\{/);
+  assert.match(lessonHeader, /destructive: true/);
+  assert.match(lessonHeader, /metric=\{`Компонентов:/);
+  assert.doesNotMatch(lessonHeader, /lesson\.summary/);
+
+  for (const consumer of [schedule, courses, students]) {
+    assert.doesNotMatch(
+      consumer,
+      /Здесь все назначенные|Создавайте свои курсы|с которыми вы работаете/,
+    );
+  }
+});
+
+test("every page-header consumer keeps metrics and action rails structurally clean", () => {
+  const explanatoryCopy =
+    /Здесь|Создавайте|Заполните|Только вы|История людей|ShiDao проверяет|Курс для самостоятельного|lesson\.summary/;
+  const allowedHeaderActionRoots = new Set([
+    "AppPageHeaderActions",
+    "Button",
+    "CourseActions",
+    "PageTransitionLink",
+  ]);
+
+  for (const path of PAGE_HEADER_CONSUMER_PATHS) {
+    const { elements, file } = jsxElements(path, "AppPageHeader");
+    assert.ok(elements.length > 0, `${path} must render AppPageHeader`);
+
+    for (const element of elements) {
+      assert.equal(
+        jsxAttribute(element, "description"),
+        undefined,
+        `${path} must not restore the explanatory description prop`,
+      );
+
+      const metric = jsxAttribute(element, "metric");
+      if (metric) {
+        assert.doesNotMatch(
+          metric.getText(file),
+          explanatoryCopy,
+          `${path} header supporting copy must remain an entity metric`,
+        );
+      }
+
+      const actions = jsxAttribute(element, "actions");
+      if (!actions) continue;
+      const expression = expressionFor(actions);
+      assertSingleActionRoot(
+        expression,
+        `${path} AppPageHeader actions`,
+        allowedHeaderActionRoots,
+      );
+
+      let containsChip = false;
+      function visitAction(node: ts.Node) {
+        if (
+          (ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node)) &&
+          node.tagName.getText(file) === "Chip"
+        ) {
+          containsChip = true;
+        }
+        ts.forEachChild(node, visitAction);
+      }
+      visitAction(expression);
+      assert.equal(
+        containsChip,
+        false,
+        `${path} must place informational chips in meta, not actions`,
+      );
+    }
+  }
+
+  for (const path of SETTINGS_SHELL_CONSUMER_PATHS) {
+    const { elements } = jsxElements(path, "SettingsShell");
+    assert.ok(elements.length > 0, `${path} must render SettingsShell`);
+    for (const element of elements) {
+      assert.equal(
+        jsxAttribute(element, "description"),
+        undefined,
+        `${path} must not restore the explanatory SettingsShell description prop`,
+      );
+    }
+  }
+
+  const lessonActions = jsxElements(
+    "src/components/course-builder/lesson-authoring-workspace.tsx",
+    "AppPageHeaderActions",
+  );
+  assert.equal(lessonActions.elements.length, 1);
+  const lessonPrimary = jsxAttribute(lessonActions.elements[0], "primary");
+  assert.ok(lessonPrimary);
+  assertSingleActionRoot(
+    expressionFor(lessonPrimary),
+    "Lesson AppPageHeaderActions primary",
+    new Set(["Button", "LessonRunStatusButton"]),
+  );
 });

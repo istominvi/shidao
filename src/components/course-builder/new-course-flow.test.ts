@@ -101,11 +101,11 @@ test("new course form exposes audience-aware pre-persistence workspaces", () => 
   assert.match(formSource, /updateCourseDraft\(courseId, draftInput\)/);
   assert.match(
     formSource,
-    /router\.replace\([\s\S]*?intent === "create"[\s\S]*?`\$\{toCourseRoute\(courseId\)\}\?tab=about`[\s\S]*?: toCourseRoute\(courseId\)/,
+    /const href =[\s\S]*?intent === "create"[\s\S]*?`\$\{toCourseRoute\(courseId\)\}\?tab=about`[\s\S]*?: toCourseRoute\(courseId\)[\s\S]*?pageTransition\.navigate\(href, \{ direction: "forward", replace: true \}\)[\s\S]*?router\.replace\(href\)/,
   );
   assert.match(
     formSource,
-    /applyAiCoursePlan\(createdCourseId, aiPreview\)[\s\S]*?router\.replace\(toCourseRoute\(createdCourseId\)\)/,
+    /applyAiCoursePlan\(createdCourseId, aiPreview\)[\s\S]*?const href = toCourseRoute\(createdCourseId\)[\s\S]*?pageTransition\.navigate\(href, \{ direction: "forward", replace: true \}\)[\s\S]*?router\.replace\(href\)/,
   );
   assert.doesNotMatch(formSource, /router\.push\(/);
 });

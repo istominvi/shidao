@@ -1,5 +1,8 @@
-import Link from "next/link";
+"use client";
+
 import type { ReactNode, Ref } from "react";
+import { PageTransitionLink } from "@/components/navigation/page-transition-link";
+import { usePageTransition } from "@/components/navigation/page-transition-provider";
 import { classNames } from "@/lib/ui/classnames";
 
 type AppPageHeaderBack =
@@ -18,7 +21,7 @@ type AppPageHeaderBack =
 
 type AppPageHeaderProps = {
   title: ReactNode;
-  description?: ReactNode;
+  metric?: ReactNode;
   back?: AppPageHeaderBack;
   meta?: ReactNode;
   actions?: ReactNode;
@@ -27,12 +30,13 @@ type AppPageHeaderProps = {
 
 export function AppPageHeader({
   title,
-  description,
+  metric,
   back,
   meta,
   actions,
   headingRef,
 }: AppPageHeaderProps) {
+  const pageTransition = usePageTransition();
   const resolvedBackLabel = back?.label ?? "Назад";
   const resolvedBackAriaLabel =
     back?.ariaLabel ??
@@ -49,8 +53,9 @@ export function AppPageHeader({
     >
       <div className="app-page-header-content">
         {back?.type === "link" ? (
-          <Link
+          <PageTransitionLink
             href={back.href}
+            direction="back"
             className="app-page-back-link"
             aria-label={resolvedBackAriaLabel}
           >
@@ -60,13 +65,19 @@ export function AppPageHeader({
             <span className="app-page-back-link-label">
               {resolvedBackLabel}
             </span>
-          </Link>
+          </PageTransitionLink>
         ) : back ? (
           <button
             type="button"
             className="app-page-back-link"
             aria-label={resolvedBackAriaLabel}
-            onClick={back.onClick}
+            onClick={() => {
+              if (pageTransition) {
+                pageTransition.runUpdate("back", back.onClick);
+              } else {
+                back.onClick();
+              }
+            }}
           >
             <span className="app-page-back-link-icon" aria-hidden="true">
               ←
@@ -84,8 +95,8 @@ export function AppPageHeader({
           >
             {title}
           </h1>
-          {description ? (
-            <p className="app-page-description">{description}</p>
+          {metric ? (
+            <p className="app-page-description app-page-metric">{metric}</p>
           ) : null}
         </div>
         {meta ? <div className="app-page-meta">{meta}</div> : null}

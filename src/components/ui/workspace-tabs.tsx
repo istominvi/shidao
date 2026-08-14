@@ -1,6 +1,13 @@
 "use client";
 
-import { useEffect, useRef, type KeyboardEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type KeyboardEvent,
+} from "react";
 import type { LucideIcon } from "lucide-react";
 import { classNames } from "@/lib/ui/classnames";
 
@@ -37,7 +44,85 @@ export function WorkspaceTabs<T extends string>({
   className,
 }: WorkspaceTabsProps<T>) {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const tabsRef = useRef<HTMLDivElement>(null);
   const tabRefs = useRef(new Map<T, HTMLButtonElement>());
+  const panelAnimationRef = useRef<Animation | null>(null);
+  const previousValueRef = useRef(value);
+  const pendingPanelTransitionRef = useRef<{
+    direction: "forward" | "back";
+    from: T;
+    to: T;
+  } | null>(null);
+  const [indicatorMotionReady, setIndicatorMotionReady] = useState(false);
+  const [indicator, setIndicator] = useState({
+    left: 0,
+    width: 0,
+    ready: false,
+  });
+
+  const updateIndicator = useCallback(() => {
+    const tabs = tabsRef.current;
+    const activeTab = tabRefs.current.get(value);
+    if (!tabs || !activeTab) {
+      setIndicator((current) =>
+        current.ready ? { left: 0, width: 0, ready: false } : current,
+      );
+      return;
+    }
+
+    const tabsRect = tabs.getBoundingClientRect();
+    const activeTabRect = activeTab.getBoundingClientRect();
+    const nextIndicator = {
+      left: activeTabRect.left - tabsRect.left,
+      width: activeTabRect.width,
+      ready: true,
+    };
+    setIndicator((current) => {
+      if (
+        current.left === nextIndicator.left &&
+        current.width === nextIndicator.width &&
+        current.ready
+      ) {
+        return current;
+      }
+      return nextIndicator;
+    });
+  }, [value]);
+
+  useLayoutEffect(() => {
+    updateIndicator();
+    const tabs = tabsRef.current;
+    if (!tabs) return;
+
+    if (typeof ResizeObserver === "undefined") {
+      window.addEventListener("resize", updateIndicator);
+      return () => window.removeEventListener("resize", updateIndicator);
+    }
+
+    const observer = new ResizeObserver(updateIndicator);
+    observer.observe(tabs);
+    for (const tab of tabRefs.current.values()) observer.observe(tab);
+    return () => observer.disconnect();
+  }, [items, updateIndicator]);
+
+  useEffect(() => {
+    if (!indicator.ready) {
+      setIndicatorMotionReady(false);
+      return;
+    }
+
+    const frame = window.requestAnimationFrame(() =>
+      setIndicatorMotionReady(true),
+    );
+    return () => window.cancelAnimationFrame(frame);
+  }, [indicator.ready]);
+
+  useEffect(
+    () => () => {
+      panelAnimationRef.current?.cancel();
+    },
+    [],
+  );
 
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => {
@@ -60,10 +145,84 @@ export function WorkspaceTabs<T extends string>({
     return () => window.cancelAnimationFrame(frame);
   }, [value]);
 
-  function focusTab(index: number) {
+  useLayoutEffect(() => {
+    const previousValue = previousValueRef.current;
+    if (previousValue === value) return;
+
+    const pendingTransition = pendingPanelTransitionRef.current;
+    const previousIndex = items.findIndex(
+      (item) => item.value === previousValue,
+    );
+    const nextIndex = items.findIndex((item) => item.value === value);
+    const direction =
+      pendingTransition?.from === previousValue &&
+      pendingTransition.to === value
+        ? pendingTransition.direction
+        : nextIndex >= previousIndex
+          ? "forward"
+          : "back";
+
+    previousValueRef.current = value;
+    pendingPanelTransitionRef.current = null;
+
+    panelAnimationRef.current?.cancel();
+    panelAnimationRef.current = null;
+
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    const panel = document.getElementById(workspaceTabPanelId(idBase, value));
+    if (!panel || panel.hidden || typeof panel.animate !== "function") return;
+
+    const animation = panel.animate(
+      [
+        {
+          opacity: 0.45,
+          clipPath:
+            direction === "forward" ? "inset(0 0 0 10px)" : "inset(0 10px 0 0)",
+        },
+        { opacity: 1, clipPath: "inset(0)" },
+      ],
+      {
+        duration: 260,
+        easing: "cubic-bezier(0.22, 1, 0.36, 1)",
+      },
+    );
+    panelAnimationRef.current = animation;
+    void animation.finished
+      .catch(() => undefined)
+      .finally(() => {
+        if (panelAnimationRef.current === animation) {
+          panelAnimationRef.current = null;
+        }
+      });
+  }, [idBase, items, value]);
+
+  function selectTab(
+    nextValue: T,
+    nextIndex: number,
+    directionOverride?: "forward" | "back",
+  ) {
+    if (nextValue === value) return;
+    const currentIndex = items.findIndex((item) => item.value === value);
+    const direction =
+      directionOverride ?? (nextIndex >= currentIndex ? "forward" : "back");
+    pendingPanelTransitionRef.current = {
+      direction,
+      from: value,
+      to: nextValue,
+    };
+    try {
+      onChange(nextValue);
+    } catch (error) {
+      pendingPanelTransitionRef.current = null;
+      throw error;
+    }
+  }
+
+  function focusTab(index: number, direction?: "forward" | "back") {
     const item = items[index];
     if (!item) return;
-    onChange(item.value);
+    selectTab(item.value, index, direction);
     window.requestAnimationFrame(() =>
       tabRefs.current.get(item.value)?.focus(),
     );
@@ -87,7 +246,13 @@ export function WorkspaceTabs<T extends string>({
 
     if (nextIndex === null) return;
     event.preventDefault();
-    focusTab(nextIndex);
+    const direction =
+      event.key === "ArrowRight"
+        ? "forward"
+        : event.key === "ArrowLeft"
+          ? "back"
+          : undefined;
+    focusTab(nextIndex, direction);
   }
 
   return (
@@ -96,11 +261,25 @@ export function WorkspaceTabs<T extends string>({
       className={classNames("workspace-tabs-scroll", className)}
     >
       <div
+        ref={tabsRef}
         className="workspace-tabs"
         role="tablist"
         aria-label={ariaLabel}
         aria-orientation="horizontal"
+        data-indicator-ready={indicator.ready || undefined}
       >
+        <span
+          className="workspace-tabs-indicator"
+          aria-hidden="true"
+          data-ready={indicator.ready || undefined}
+          data-motion-ready={
+            (indicator.ready && indicatorMotionReady) || undefined
+          }
+          style={{
+            width: `${indicator.width}px`,
+            transform: `translate3d(${indicator.left}px, 0, 0)`,
+          }}
+        />
         {items.map((item, index) => {
           const active = item.value === value;
           const Icon = item.icon;
@@ -122,7 +301,7 @@ export function WorkspaceTabs<T extends string>({
                 "workspace-tab",
                 active && "workspace-tab-active",
               )}
-              onClick={() => onChange(item.value)}
+              onClick={() => selectTab(item.value, index)}
               onKeyDown={(event) => handleKeyDown(event, index)}
             >
               <Icon className="workspace-tab-icon" aria-hidden="true" />

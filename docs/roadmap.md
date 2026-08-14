@@ -44,8 +44,9 @@
   отдельной draft-сущности или schema.
 - `/courses`, `/students`, `/schedule`, Course и Lesson используют один
   `AppPageHeader` с H1 не крупнее 48 px на desktop и 32 px на mobile,
-  подзаголовком canonical цвета `rgba(20, 20, 20, 0.5)`, optional backlink и
-  правой action-секцией. Header имеет
+  optional entity-metric, optional backlink и правой action-секцией. Метрика
+  не заменяется пояснением назначения страницы; если честной метрики нет,
+  supporting line отсутствует. Header имеет
   `min-height: 200px`, растёт по контенту и вертикально центрирует actions.
   В current production heading занимает всю оставшуюся ширину, а actions — только
   intrinsic ширину содержимого и не превращаются в full-width кнопки на mobile.
@@ -59,6 +60,13 @@
   `inline-inset: 0`, gap 12 px, верхние радиусы 12 px и квадратный чёрный
   active-сегмент 4 px. Каждый tab передаёт 16 px иконку; только positive count
   показывается маленьким приподнятым `sup`, а `0` не рендерится.
+  Current-source motion follow-up заменяет отдельные active pseudo-elements
+  одним измеряемым indicator: он мягко меняет ширину и положение, а новая
+  tab-panel слегка проявляется по направлению выбора. Header action rail
+  оставляет не больше одной основной кнопки; дополнительные Lesson actions
+  находятся в квадратном `MoreVertical` menu. Persistent transition boundary
+  анимирует направление primary navigation и Course drill-in/back, а
+  `prefers-reduced-motion` полностью отключает motion.
   Базовый follow-up был подтверждён в release `77870e3`; full-width
   канонизация развёрнута exact merge commit
   `84ffefecda99d3b0a9da82bf1eaf8ce76d9c6ea1` (PR #242).
@@ -271,8 +279,8 @@ Course-фильтры, сортировку и переключение «Кар
 унифицированы с Schedule: outer toolbar-card удалена, Students показывает
 active/archive/pending в одной таблице с inline status/text, full-width search и
 единым disclosure «Фильтр» для status, group membership, конкретной группы и
-Account connection. Подзаголовок страницы — «Ученики и группы, с которыми вы
-работаете или за которыми наблюдаете». Отдельный sort select у
+Account connection. Current source показывает в header только counts текущей
+Students-вкладки; прежнее пояснение назначения раздела удалено. Отдельный sort select у
 Students/Groups и Course **Мои** удалён: возрастающее/убывающее направление
 переключается кликом по sortable headers, Course facets собраны в компактный
 disclosure, а view — в две icon-only кнопки. Published Catalog показывает
@@ -950,6 +958,17 @@ HTTP/CSRF/auth boundary postflight подтверждены.
 Трёхпунктовое меню ожидающего Run больше не разделяет «Изменить / Отменить»,
 а hover-подсветка пунктов использует радиус 8 px выбранной кнопки вида. Это
 UI-only follow-up без изменения LessonRun API, schema или migrations.
+
+**Current source / next production header-motion follow-up:** прежние
+поясняющие Schedule/Students/Courses и другие page subtitles заменены точными
+метриками выбранной сущности либо полностью опущены. Lesson header всегда
+показывает counts Components/Slides/Runs вместо teacher-private comment;
+видимой остаётся одна частая кнопка проведения (или AI для educator Course),
+а AI/settings/delete собраны в keyboard-accessible vertical overflow. Переходы
+между primary sections и Course → Lesson/back получают зеркальный fade/slide,
+вкладки — moving indicator и мягкий panel entrance. Нет новой motion
+dependency: используется browser View Transition API с безопасным fallback и
+полным reduced-motion bypass. Это UI-only slice без schema/API/migration.
 
 **Current production contract дополнительно:** verified actual duration,
 explicit shared individual comment, cursor-paginated self/observer history и

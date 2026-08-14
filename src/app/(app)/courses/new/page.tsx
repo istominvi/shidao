@@ -16,7 +16,6 @@ export default async function NewCoursePage() {
       <div className="container app-page-container course-workspace-container pb-16">
         <AppPageHeader
           title="Новый курс"
-          description="Заполните сведения о курсе, добавьте материалы и сохраните его, чтобы перейти к урокам."
           back={{ type: "link", href: ROUTES.courses, label: "К курсам" }}
         />
         <NewCourseForm canAuthorEducatorCourses={canAuthorEducatorCourses} />

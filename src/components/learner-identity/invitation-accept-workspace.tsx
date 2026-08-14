@@ -333,10 +333,7 @@ export function InvitationAcceptWorkspace({
 
   return (
     <div className="space-y-6">
-      <AppPageHeader
-        title="Адресованное приглашение"
-        description="ShiDao проверяет срок действия, подтверждённый email и точный аккаунт получателя. Для другого аккаунта приглашение останется недоступным."
-      />
+      <AppPageHeader title="Адресованное приглашение" />
       {sessionResolved && !session.authenticated ? (
         <div className="rounded-3xl border border-neutral-200 bg-white p-6">
           <KeyRound className="h-7 w-7" aria-hidden="true" />

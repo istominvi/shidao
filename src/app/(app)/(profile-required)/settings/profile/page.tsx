@@ -71,10 +71,7 @@ function ProfileSettingsPageContent() {
   }
 
   return (
-    <SettingsShell
-      title="Профиль и email"
-      description="Для безопасности подтвердите действие текущим паролем."
-    >
+    <SettingsShell title="Профиль и email">
       {queryStatus && (
         <div className="mt-4">
           <StatusMessage kind={queryStatus.kind}>

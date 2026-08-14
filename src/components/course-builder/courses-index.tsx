@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { BookOpen, Library, type LucideIcon } from "lucide-react";
 import { useSystemAssistantPageContext } from "@/components/assistant/system-assistant-provider";
+import { usePageTransition } from "@/components/navigation/page-transition-provider";
 import { CourseCatalogPanel } from "@/components/course-builder/course-catalog-panel";
 import { OwnedCoursesPanel } from "@/components/course-builder/owned-courses-panel";
 import {
@@ -35,6 +36,7 @@ export function CoursesIndex({
   initialLearningAudience = "children",
 }: CoursesIndexProps) {
   const router = useRouter();
+  const pageTransition = usePageTransition();
   const [activeTab, setActiveTab] = useState<CoursesIndexTab>(initialTab);
   const [catalogLearningAudience, setCatalogLearningAudience] =
     useState<CourseLearningAudience>(initialLearningAudience);
@@ -80,9 +82,12 @@ export function CoursesIndex({
   function openCatalogCourse(courseId: string) {
     const query =
       catalogLearningAudience === "educators" ? "?audience=educators" : "";
-    router.push(`/courses/catalog/${encodeURIComponent(courseId)}${query}`, {
-      scroll: false,
-    });
+    const href = `/courses/catalog/${encodeURIComponent(courseId)}${query}`;
+    if (pageTransition) {
+      pageTransition.navigate(href, { direction: "forward", scroll: false });
+    } else {
+      router.push(href, { scroll: false });
+    }
   }
 
   function selectCatalogLearningAudience(

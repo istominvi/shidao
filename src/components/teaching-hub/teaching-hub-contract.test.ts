@@ -115,20 +115,24 @@ test("teaching hub pages share the demo shell and canonical page header", () => 
     );
   }
 
-  assert.match(schedulePageSource, /title="Расписание"/);
-  assert.match(schedulePageSource, /<AppPageHeader/);
+  assert.match(scheduleWorkspaceSource, /title="Расписание"/);
+  assert.match(scheduleWorkspaceSource, /<AppPageHeader/);
   assert.match(
-    schedulePageSource,
-    /description="Здесь все назначенные уроки за выбранный период"/,
+    scheduleWorkspaceSource,
+    /metric=\{[\s\S]*?formatSchedulePeriodLabel[\s\S]*?visibleRuns\.length/,
   );
-  assert.match(schedulePageSource, /<CalendarPlus/);
-  assert.match(schedulePageSource, /Назначить урок/);
-  assert.doesNotMatch(schedulePageSource, /Назначить урок в курсе|<BookOpen/);
+  assert.doesNotMatch(scheduleWorkspaceSource, /Здесь все назначенные/);
+  assert.match(scheduleWorkspaceSource, /<CalendarPlus/);
+  assert.match(scheduleWorkspaceSource, /Назначить урок/);
+  assert.doesNotMatch(
+    scheduleWorkspaceSource,
+    /Назначить урок в курсе|<BookOpen/,
+  );
   assert.match(studentsWorkspaceSource, /<AppPageHeader/);
   assert.match(studentsWorkspaceSource, /title="Ученики"/);
   assert.match(
     studentsWorkspaceSource,
-    /description="Ученики и группы, с которыми вы работаете или за которыми наблюдаете"/,
+    /metric=\{[\s\S]*?Активных:[\s\S]*?Групп:[\s\S]*?Профилей:/,
   );
   assert.doesNotMatch(
     studentsWorkspaceSource,
@@ -192,7 +196,7 @@ test("schedule projects persisted LessonRun appointments without a parallel even
   assert.match(schedulePeriodSource, /from\.toISOString\(\)/);
   assert.match(schedulePeriodSource, /to\.toISOString\(\)/);
   assert.match(scheduleWorkspaceSource, /Занятий нет/);
-  assert.match(schedulePageSource, /Назначить урок/);
+  assert.match(scheduleWorkspaceSource, /Назначить урок/);
   assert.doesNotMatch(
     scheduleWorkspaceSource,
     /periodEyebrow|teaching-(?:empty|section)-eyebrow|teaching-section-heading|schedule-runs-title/,

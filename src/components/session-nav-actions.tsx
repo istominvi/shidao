@@ -14,6 +14,7 @@ import {
   NavigationDropdownPanel,
   navigationDropdownItemClass,
 } from "@/components/navigation/primitives";
+import { PageTransitionLink } from "@/components/navigation/page-transition-link";
 
 type SessionNavActionsProps = {
   state: SessionAccountView;
@@ -200,7 +201,7 @@ export function SessionNavActions({
         {mobileNavItems.length > 0 ? (
           <div className="mb-1 md:hidden">
             {mobileNavItems.map((item) => (
-              <Link
+              <PageTransitionLink
                 key={item.id}
                 href={item.href}
                 className={navigationDropdownItemClass(
@@ -223,7 +224,7 @@ export function SessionNavActions({
                   ) : null}
                   {item.label}
                 </span>
-              </Link>
+              </PageTransitionLink>
             ))}
           </div>
         ) : null}

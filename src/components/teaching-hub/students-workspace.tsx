@@ -513,7 +513,17 @@ export function StudentsWorkspace({
     <div className="teaching-hub-stack">
       <AppPageHeader
         title="Ученики"
-        description="Ученики и группы, с которыми вы работаете или за которыми наблюдаете"
+        metric={
+          view === "learners" &&
+          activeDirectory !== null &&
+          archivedDirectory !== null
+            ? `Активных: ${activeDirectory.length} · в архиве: ${archivedDirectory.length} · ожидают: ${pendingConnections.length}`
+            : view === "groups" && groups !== null
+              ? `Групп: ${groups.length}`
+              : view === "observing"
+                ? `Профилей: ${observingCount}`
+                : undefined
+        }
         actions={
           view === "learners" ? (
             <Button

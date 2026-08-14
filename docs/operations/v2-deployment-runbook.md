@@ -857,15 +857,15 @@ ShiDao V2 application:
 ### Course Builder
 
 - `/courses` читает реальные данные;
-- `/courses`, Course и Lesson показывают одинаковые computed H1/description
-  metrics через один `AppPageHeader`: H1 не крупнее 48 px на desktop и 32 px
+- `/courses`, Course и Lesson показывают одинаковые computed H1/optional metric
+  через один `AppPageHeader`: H1 не крупнее 48 px на desktop и 32 px
   на mobile, `min-height: 200px` с ростом по контенту, actions вертикально
   центрированы, занимают только ширину содержимого и оставляют всю свободную
   ширину heading и H1; desktop gap между heading и actions равен 24 px. На 1120
-  px Lesson с четырьмя actions складывается без document overflow,
-  непрерывные title/description переносятся, а back-label остаётся в одной
+  px Lesson с одной primary и одним square overflow складывается без document overflow,
+  непрерывные title/metric переносятся, а back-label остаётся в одной
   строке и обрезается ellipsis;
-  description на каждой поверхности получает один computed-цвет
+  metric, когда она существует, получает один computed-цвет
   `oklch(0.19 0 0 / 0.6)` из canonical
   `--app-page-header-description-color`;
   Course/Lesson сохраняют backlink: link/button, стрелка, normal/hover/focus
@@ -883,7 +883,15 @@ ShiDao V2 application:
   иконку. Только positive numeric count показан маленьким приподнятым `sup` с
   weight 500, а ноль не рендерится; каждый `aria-controls` tab разрешается в matching
   `tabpanel` с обратным `aria-labelledby`, а на mobile вкладки скроллятся
-  внутри strip без document overflow;
+  внутри strip без document overflow. При смене вкладки один общий indicator
+  плавно меняет measured `left/width`, а active panel мягко проявляется в
+  направлении выбора; после rapid clicks indicator точно совпадает с active
+  tab. При reduced motion indicator и panel меняются мгновенно;
+- при primary navigation `Расписание → Ученики → Курсы → Магазин` old page
+  header уходит влево с fade, new приходит справа; обратное движение зеркально.
+  Открытие Course/Lesson — forward, backlink — back. Проверить именованный
+  `app-page-header` View Transition, отсутствие root cross-fade/layout shift и
+  мгновенную навигацию при `prefers-reduced-motion: reduce`;
 - на сохранённом Course открыть **Уроки** и проверить, что общий `WorkspaceTabs`
   не получил route-specific fork. Сразу под ним прозрачная toolbar поиска и
   «Добавить урок» занимает всю content-row: computed horizontal padding `0`,
@@ -909,6 +917,13 @@ ShiDao V2 application:
   320 px table overflow остаётся внутри wrapper, toolbar складывается без
   document-level overflow. Старые карточные `workspace-lesson-*` rows не должны
   присутствовать;
+- после открытия Lesson supporting line содержит только counts Components,
+  Slides и завершённых Runs, но не `lesson.summary`. В child Course видима одна
+  primary кнопка проведения и справа один `MoreVertical` 40 × 40 px; menu
+  содержит «Дополнить с ИИ / Настройки урока / Удалить», причём delete остаётся
+  destructive и требует confirmation. Для educator Course primary — AI, menu
+  содержит settings/delete. Arrow/Home/End/Escape и возврат focus к trigger
+  после dialog обязательны;
 - owner открывает Course, другой owner не может;
 - Lesson/Components загружаются;
 - private Component отсутствует в Student Screen;
@@ -993,8 +1008,9 @@ flow как permanent delete.
   доступное имя. Проверить закрытие Escape с
   возвратом focus, клавиатурную навигацию календаря, local timezone и отсутствие
   document-level overflow на 375 и 320 px. Рядом должны оставаться оба
-  icon-only вида «Таблица / Карточки». Header показывает точный подзаголовок
-  «Здесь все назначенные уроки за выбранный период» без завершающей точки и
+  icon-only вида «Таблица / Карточки». Header показывает только фактическую
+  метрику выбранного периода (`<короткий период> · занятий: N`, либо
+  `показано: N` при hard limit), не прежнее объяснение назначения страницы, и
   Action «Назначить урок»
   с calendar-plus icon; authenticated top header и profile dropdown имеют
   computed `rgb(255, 255, 255)` и `backdrop-filter: none`. При непустом
@@ -1093,8 +1109,8 @@ flow как permanent delete.
   panels не должны получить entry/static-surface contract автоматически. В
   `forced-colors` entry control использует `Field`/`FieldText`, системную рамку
   и `Highlight` focus без box-shadow;
-- `/students` показывает точный подзаголовок «Ученики и группы, с которыми вы
-  работаете или за которыми наблюдаете»; вкладки «Ученики / Группы /
+- `/students` показывает только метрику выбранной вкладки: active/archive/
+  pending counts, число Groups или наблюдаемых Profiles; вкладки «Ученики / Группы /
   Наблюдение» сохраняют общий edge-to-edge 40%-black 1.2 px baseline без
   горизонтального inset, opaque active-segment, иконки и raised positive
   counts без badge. При отсутствии сущностей `0` не показывается; при наличии
@@ -1122,8 +1138,7 @@ flow как permanent delete.
   возврата teacher-only route gate;
 - `/observing` перенаправляет на `/students?tab=observing`, reload сохраняет
   выбранную вкладку, а main navigation подсвечивает «Ученики»;
-- `/courses` показывает точный подзаголовок «Создавайте свои курсы с нуля или
-  добавляйте готовые из каталога» без точки; tabs сохраняют общий edge-to-edge
+- `/courses` не показывает instructional subtitle; tabs сохраняют общий edge-to-edge
   baseline 1.2 px цвета `oklch(0.19 0 0 / 0.4)`, а inactive text/icon —
   `oklch(0.19 0 0 / 0.6)`. Раздел проверяется в режимах «Карточки / Таблица»:
   controls обеих вкладок лежат прямо на page background без toolbar-card и без

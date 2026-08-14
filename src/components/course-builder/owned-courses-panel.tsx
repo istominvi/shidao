@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import {
   ArrowRight,
   BookOpen,
@@ -21,6 +20,7 @@ import {
 } from "@/components/course-builder/course-actions";
 import { courseBuilderRequest } from "@/components/course-builder/course-builder-client";
 import { CourseFilterMenu } from "@/components/course-builder/course-filter-menu";
+import { PageTransitionLink } from "@/components/navigation/page-transition-link";
 import {
   DEFAULT_COURSE_CATALOG_FILTERS,
   filterAndSortCourses,
@@ -143,12 +143,12 @@ function CourseCard({
       as="article"
       className="flex h-full flex-col border border-white/80"
       title={
-        <Link
+        <PageTransitionLink
           href={toCourseRoute(course.id)}
           className="transition hover:text-sky-700 focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/50"
         >
           {course.title}
-        </Link>
+        </PageTransitionLink>
       }
       description={`${course.subject} · ${course.level}`}
       actions={
@@ -179,14 +179,14 @@ function CourseCard({
         <p className="text-xs text-neutral-500">
           {formatUpdatedAt(course.updatedAt)}
         </p>
-        <Link
+        <PageTransitionLink
           href={toCourseRoute(course.id)}
           className={productButtonClassName("secondary")}
           aria-label={`Открыть курс «${course.title}»`}
         >
           Открыть курс
           <ArrowRight className="h-4 w-4" aria-hidden="true" />
-        </Link>
+        </PageTransitionLink>
       </div>
     </SurfaceCard>
   );
@@ -261,13 +261,13 @@ function CourseTable({
           {courses.map((course) => (
             <ProductTableRow key={course.id}>
               <ProductTablePrimaryCell className="overflow-hidden">
-                <Link
+                <PageTransitionLink
                   href={toCourseRoute(course.id)}
                   className="course-index-table-link"
                   title={`${course.title} — ${course.goal}`}
                 >
                   <ProductTableTruncate>{course.title}</ProductTableTruncate>
-                </Link>
+                </PageTransitionLink>
               </ProductTablePrimaryCell>
               <ProductTableCell className="overflow-hidden">
                 <ProductTableTruncate title={course.subject}>
@@ -429,13 +429,13 @@ export function OwnedCoursesPanel({ onOpenCatalog }: OwnedCoursesPanelProps) {
           Создайте курс с нуля или выберите готовый в каталоге.
         </p>
         <div className="mt-5 flex flex-wrap justify-center gap-3">
-          <Link
+          <PageTransitionLink
             href={ROUTES.coursesNew}
             className={productButtonClassName("primary")}
           >
             <Plus className="h-4 w-4" aria-hidden="true" />
             Создать курс
-          </Link>
+          </PageTransitionLink>
           <Button variant="secondary" onClick={onOpenCatalog}>
             Открыть каталог
           </Button>

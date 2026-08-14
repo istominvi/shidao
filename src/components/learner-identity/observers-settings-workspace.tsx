@@ -98,7 +98,11 @@ export function ObserversSettingsWorkspace() {
   return (
     <SettingsShell
       title="Наблюдатели"
-      description="Только вы управляете доступом к своему учебному профилю для чтения. Подпись связи — текст для удобства, а не роль или дополнительное разрешение."
+      metric={
+        overview
+          ? `Наблюдателей: ${myObservers.length} · приглашений: ${outgoing.length + incoming.length}`
+          : undefined
+      }
     >
       <div className="mt-6 space-y-6">
         {error ? (

@@ -41,6 +41,7 @@ import {
   type CourseWorkspaceSurface,
 } from "@/components/course-builder/course-workspace-navigation";
 import { LessonAuthoringWorkspace } from "@/components/course-builder/lesson-authoring-workspace";
+import { usePageTransition } from "@/components/navigation/page-transition-provider";
 import { CourseAudienceEditor } from "@/components/lesson-runs/course-audience-dialog";
 import {
   loadCourseAudience,
@@ -1072,6 +1073,7 @@ function WorkspaceSkeleton() {
 export function CourseWorkspaceClient({
   courseId,
 }: CourseWorkspaceClientProps) {
+  const pageTransition = usePageTransition();
   const [course, setCourse] = useState<CourseWorkspace | null>(null);
   const [courseRuns, setCourseRuns] = useState<LessonRun[]>([]);
   const [courseAudience, setCourseAudience] = useState<CourseAudience>(
@@ -1279,6 +1281,15 @@ export function CourseWorkspaceClient({
     }
     return item;
   });
+  const hasPublicationBadges = Boolean(
+    course.publication &&
+    (educatorCourse
+      ? (course.publication.status === "published" &&
+          course.publication.approvedRevisionId) ||
+        course.publication.reviewStatus ||
+        course.publication.hasUnpublishedChanges
+      : course.publication.status === "published"),
+  );
 
   function selectCourseSurface(courseSurface: CourseWorkspaceSurface) {
     setMountedCourseSurfaces((current) => new Set(current).add(courseSurface));
@@ -1290,11 +1301,15 @@ export function CourseWorkspaceClient({
   }
 
   function openLesson(lessonId: string) {
-    const url = new URL(window.location.href);
-    url.searchParams.delete("lesson");
-    url.searchParams.delete("tab");
-    window.history.replaceState(null, "", `${url.pathname}${url.search}`);
-    setNavigation((current) => openCourseWorkspaceLesson(current, lessonId));
+    const update = () => {
+      const url = new URL(window.location.href);
+      url.searchParams.delete("lesson");
+      url.searchParams.delete("tab");
+      window.history.replaceState(null, "", `${url.pathname}${url.search}`);
+      setNavigation((current) => openCourseWorkspaceLesson(current, lessonId));
+    };
+    if (pageTransition) pageTransition.runUpdate("forward", update);
+    else update();
   }
 
   return (
@@ -1328,20 +1343,20 @@ export function CourseWorkspaceClient({
           <AppPageHeader
             back={{ type: "link", href: ROUTES.courses, label: "Курсы" }}
             title={course.title}
-            description={
+            metric={
               educatorCourse
-                ? `Курс для самостоятельного обучения педагогов · уроков: ${course.lessonCount} из ${course.targetLessonCount} · готовых вложений: ${readyAttachmentCount}`
-                : `Создано уроков: ${course.lessonCount} из ${course.targetLessonCount} · учеников: ${courseAudience.effectiveLearners.length} · готовых вложений: ${readyAttachmentCount}`
+                ? `Уроков: ${course.lessonCount} из ${course.targetLessonCount} · вложений: ${readyAttachmentCount}`
+                : `Уроков: ${course.lessonCount} из ${course.targetLessonCount} · учеников: ${courseAudience.effectiveLearners.length} · вложений: ${readyAttachmentCount}`
             }
-            actions={
-              <>
+            meta={
+              hasPublicationBadges ? (
                 <CoursePublicationBadges
                   publication={course.publication}
                   learningAudience={course.learningAudience}
                 />
-                <CourseActions course={course} onChanged={reload} />
-              </>
+              ) : null
             }
+            actions={<CourseActions course={course} onChanged={reload} />}
           />
 
           <WorkspaceTabs

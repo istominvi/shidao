@@ -507,6 +507,17 @@ optional selected `lessonId`, а fullscreen preview — текущую preview L
 передаются. Старый course-scoped assistant route может временно оставаться как
 compatibility, но его dialog больше не является частью Course/Lesson UI.
 
+Current-source header contract не выводит teacher comment `lesson.summary` в
+заголовок Lesson: supporting line содержит только counts ordered Components,
+persisted Student Slides и завершённых LessonRuns. Для child Course
+`LessonRunStatusButton` остаётся единственным видимым primary action; AI,
+settings и destructive delete находятся справа в одном квадратном
+`MoreVertical` menu. Для educator Course, где LessonRun запрещён, единственный
+visible primary — AI, а settings/delete остаются в том же overflow. Открытие
+Lesson запускает forward header transition, backlink — зеркальный back
+transition; это presentation-only state поверх того же `/courses/[courseId]`
+и не создаёт Lesson route или второй authored order.
+
 ## Course catalog and publication boundary
 
 `/courses` разделяет рабочие Course и каталог вкладками **Мои** и
@@ -598,10 +609,13 @@ Visual contract Course routes не меняет эту навигационну�
   сплошной белый surface;
 - `AppPageHeader` задаёт один прозрачный layout для `/courses`, `/students`,
   `/schedule`, authenticated `/settings/*`, Course и Lesson: системный H1 веса
-  400 с максимумом 48 px на desktop и 32 px на mobile, подзаголовок canonical
-  цвета `rgba(20, 20, 20, 0.5)` через
+  400 с максимумом 48 px на desktop и 32 px на mobile, optional metric
+  canonical цвета `rgba(20, 20, 20, 0.5)` через
   `--app-page-header-description-color`, optional backlink и правую
-  action-секцию; header имеет минимальную высоту 200 px,
+  action-секцию. Supporting line существует только для числового/статусного
+  измерения выбранной сущности; объяснение назначения страницы, инструкция,
+  tagline или private teacher comment туда не попадают. Header имеет
+  минимальную высоту 200 px,
   растёт по контенту, heading получает всю оставшуюся ширину, а actions
   вертикально центрированы и имеют intrinsic ширину по содержимому с
   ограничением шириной контейнера. В current production сам H1 больше
@@ -612,6 +626,19 @@ Visual contract Course routes не меняет эту навигационну�
   не меняет Lesson hierarchy, API или schema.
   Надзаголовок/eyebrow не входит в `AppPageHeader` API и не может появиться на
   отдельном product route;
+- current-source action contract допускает не больше одного visible primary
+  control в page header. Дополнительные entity actions находятся справа в
+  одном 40 × 40 px `MoreVertical` overflow; status/author chips относятся к
+  `meta`, а не к action rail. Shared `ActionMenu` сохраняет portal,
+  Arrow/Home/End/Escape, destructive/disabled state и возврат фокуса;
+- protected app layout содержит persistent navigation-motion boundary над
+  меняющимися страницами. Native `document.startViewTransition` именует только
+  `app-page-header`: движение вправо по primary order
+  `Расписание → Ученики → Курсы → Магазин` и drill-in уводят old header влево
+  и вводят new справа; движение влево и backlink зеркальны. Query-only tab
+  changes не анимируют весь header. При отсутствии API остаётся безопасный
+  entrance fallback, а `prefers-reduced-motion` выполняет навигацию и локальный
+  Course/Lesson state update без анимации;
 - основные кнопки и header controls — высотой 40 px с радиусом 12 px и шрифтом
   `.88rem/400`; primary flat без inset-блика, подъёма или тени, иконки имеют
   единый 16 px rhythm, полную непрозрачность и наследуют контрастный цвет,
@@ -708,7 +735,14 @@ Visual contract Course routes не меняет эту навигационну�
   занимают всю ширину с `inline-inset: 0`. Между tab-кнопками gap 12 px, верхние
   углы имеют control-radius 12 px, а baseline рисуется отдельным слоем поверх
   светлого hover-фона. Квадратный непрозрачный чёрный active-сегмент 4 px лежит
-  выше baseline. Каждый tab имеет 16 px Lucide icon; только positive numeric
+  выше baseline. Current source реализует его одним absolute indicator,
+  измеряющим `offsetLeft/offsetWidth` активной кнопки и плавно меняющим
+  `transform/width`; выбранная persistent panel получает короткий directional
+  opacity/clipped-reveal entrance без layout animation и горизонтального
+  document overflow. Быстрый повторный выбор
+  отменяет прежнюю panel animation, ResizeObserver сохраняет indicator после
+  resize, а reduced-motion делает оба эффекта мгновенными. Каждый tab имеет
+  16 px Lucide icon; только positive numeric
   count показывается маленьким приподнятым `sup` с weight 500, а `0` отсутствует. Каждый tab
   ссылается на постоянный matching `tabpanel`, который возвращает его id через
   `aria-labelledby`;
@@ -797,10 +831,14 @@ Current production делает `/schedule` и `/students` доступными
   разделитель между «Изменить / Отменить» в трёхпунктовом меню. Радиус
   hover-подсветки menu item равен 8 px и совпадает с active view option. Этот
   follow-up не меняет LessonRun API, schema или migrations;
+- current source заменяет Schedule subtitle на метрику выбранного периода и
+  количества загруженных LessonRuns (`Показано`, если достигнут hard limit), а
+  Students header — на counts текущей вкладки. Объясняющий текст о назначении
+  разделов больше не принадлежит page header;
 - `/students` объединяет справочник TeacherLearner/LearnerProfile и
   LearnerGroup во вкладках «Ученики / Группы» с learner-safe observer
-  projection во вкладке «Наблюдение»; подзаголовок страницы — «Ученики и
-  группы, с которыми вы работаете или за которыми наблюдаете». Active
+  projection во вкладке «Наблюдение»; header показывает метрики active/archive/
+  pending relations, количество Groups либо наблюдаемых Profiles. Active
   profiles, archived relations и исходящие pending requests показаны в одной
   таблице: archive/pending отмечаются inline, а допустимые actions остаются в
   этой же строке. Search расположен отдельно; status, membership «В группе /
@@ -827,9 +865,10 @@ Current production делает `/schedule` и `/students` доступными
   actions; trigger/menu не превращаются в неявный row click. Это current
   production UI/application refinement поверх существующих Group/Course
   audience boundaries без новой schema или migration;
-- `/courses` использует общий edge-to-edge `WorkspaceTabs`; подзаголовок —
-  «Создавайте свои курсы с нуля или добавляйте готовые из каталога» без
-  завершающей точки. Controls обеих вкладок прозрачны и полноширинны. Таблица
+- `/courses` использует общий edge-to-edge `WorkspaceTabs`; page supporting
+  line отсутствует, пока route не владеет честной общей метрикой. Прежний
+  instructional subtitle удалён. Controls обеих вкладок прозрачны и
+  полноширинны. Таблица
   **Мои** имеет колонки `Курс / Предмет / Уроки / Публикация / Обновлён /
 actions`; пять data headers сортируют полную client-loaded projection с
   ascending/descending и `aria-sort`. Таблица **Каталог** имеет

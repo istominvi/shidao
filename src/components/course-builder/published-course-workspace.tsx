@@ -22,6 +22,8 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AppPageHeader } from "@/components/app/page-header";
+import { PageTransitionLink } from "@/components/navigation/page-transition-link";
+import { usePageTransition } from "@/components/navigation/page-transition-provider";
 import { courseBuilderRequest } from "@/components/course-builder/course-builder-client";
 import {
   CourseComponentRenderer,
@@ -96,6 +98,7 @@ export function PublishedCourseWorkspace({
   catalogAudience: "children" | "educators";
 }) {
   const router = useRouter();
+  const pageTransition = usePageTransition();
   const { state: sessionState } = useSessionView();
   const [course, setCourse] = useState<CourseCatalogDetail | null>(null);
   const [progress, setProgress] = useState<CoursePublicationProgress | null>(
@@ -325,7 +328,10 @@ export function PublishedCourseWorkspace({
         `/api/v2/course-catalog/${encodeURIComponent(course.id)}/copy`,
         { method: "POST" },
       );
-      router.push(toCourseRoute(payload.courseId));
+      const href = toCourseRoute(payload.courseId);
+      if (pageTransition)
+        pageTransition.navigate(href, { direction: "forward" });
+      else router.push(href);
     } catch (caught) {
       setCopyError(
         caught instanceof Error ? caught.message : "Не удалось добавить курс.",
@@ -470,43 +476,48 @@ export function PublishedCourseWorkspace({
           label: "Каталог",
         }}
         title={course.title}
-        description={`${course.subject} · ${course.level}`}
-        actions={
-          <>
-            {educatorCourse ? (
-              <div className="published-course-header-summary">
-                {attestation?.certified ? (
-                  <div className="published-course-header-status">
-                    <Chip icon={BadgeCheck} tone="emerald">
-                      Аттестован
-                    </Chip>
-                  </div>
-                ) : null}
-                <div className="published-course-header-author">
-                  <Chip icon={UserRound} tone="neutral">
-                    Автор: {authorLogin}
+        metric={
+          educatorCourse && progress
+            ? `Пройдено: ${progress.completedLessonCount} из ${progress.totalLessonCount} · ${progress.percent}%`
+            : `Уроков: ${course.lessons.length} · материалов: ${course.materials.length}`
+        }
+        meta={
+          educatorCourse ? (
+            <div className="published-course-header-summary">
+              {attestation?.certified ? (
+                <div className="published-course-header-status">
+                  <Chip icon={BadgeCheck} tone="emerald">
+                    Аттестован
                   </Chip>
                 </div>
+              ) : null}
+              <div className="published-course-header-author">
+                <Chip icon={UserRound} tone="neutral">
+                  Автор: {authorLogin}
+                </Chip>
               </div>
-            ) : !course.author.isShiDao ? (
-              <Chip icon={UserRound} tone="neutral">
-                Автор: {authorLogin}
-              </Chip>
-            ) : null}
-            {!educatorCourse && ownSourceCourseId ? (
-              <Link
-                href={toCourseRoute(ownSourceCourseId)}
-                className={productButtonClassName("primary")}
-              >
-                Открыть мой курс
-                <ArrowRight className="h-4 w-4" aria-hidden="true" />
-              </Link>
-            ) : !educatorCourse ? (
-              <Button disabled={copyBusy} onClick={() => void copyCourse()}>
-                {copyBusy ? "Добавляем…" : "Добавить в мои курсы"}
-              </Button>
-            ) : null}
-          </>
+            </div>
+          ) : !course.author.isShiDao ? (
+            <Chip icon={UserRound} tone="neutral">
+              Автор: {authorLogin}
+            </Chip>
+          ) : null
+        }
+        actions={
+          !educatorCourse && ownSourceCourseId ? (
+            <PageTransitionLink
+              href={toCourseRoute(ownSourceCourseId)}
+              direction="forward"
+              className={productButtonClassName("primary")}
+            >
+              Открыть мой курс
+              <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            </PageTransitionLink>
+          ) : !educatorCourse ? (
+            <Button disabled={copyBusy} onClick={() => void copyCourse()}>
+              {copyBusy ? "Добавляем…" : "Добавить в мои курсы"}
+            </Button>
+          ) : null
         }
       />
 

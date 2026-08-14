@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useRef, useState, type FormEvent } from "react";
 import {
@@ -11,6 +10,8 @@ import {
   WandSparkles,
 } from "lucide-react";
 import { ROUTES, toCourseRoute } from "@/lib/auth";
+import { usePageTransition } from "@/components/navigation/page-transition-provider";
+import { PageTransitionLink } from "@/components/navigation/page-transition-link";
 import { Alert } from "@/components/ui/alert";
 import { AiCoursePlanDialog } from "@/components/course-builder/ai-course-plan-dialog";
 import {
@@ -154,6 +155,7 @@ export function NewCourseForm({
   canAuthorEducatorCourses: boolean;
 }) {
   const router = useRouter();
+  const pageTransition = usePageTransition();
   const nextFileId = useRef(1);
   const [activeSurface, setActiveSurface] =
     useState<CourseWorkspaceSurface>("about");
@@ -282,11 +284,15 @@ export function NewCourseForm({
       }
 
       setProgressMessage("Курс сохранён. Открываем редактор…");
-      router.replace(
+      const href =
         intent === "create"
           ? `${toCourseRoute(courseId)}?tab=about`
-          : toCourseRoute(courseId),
-      );
+          : toCourseRoute(courseId);
+      if (pageTransition) {
+        pageTransition.navigate(href, { direction: "forward", replace: true });
+      } else {
+        router.replace(href);
+      }
     } catch (error) {
       if (activeFileId) {
         updateUploadProgress(activeFileId, {
@@ -308,7 +314,12 @@ export function NewCourseForm({
     setProgressMessage("Сохраняем программу курса…");
     try {
       await applyAiCoursePlan(createdCourseId, aiPreview);
-      router.replace(toCourseRoute(createdCourseId));
+      const href = toCourseRoute(createdCourseId);
+      if (pageTransition) {
+        pageTransition.navigate(href, { direction: "forward", replace: true });
+      } else {
+        router.replace(href);
+      }
     } catch (error) {
       setErrorMessage(formatError(error));
       setProgressMessage("");
@@ -334,12 +345,13 @@ export function NewCourseForm({
           {createdCourseId ? (
             <p className="mt-2">
               Сам курс уже сохранён. Вторая копия не будет создана.{" "}
-              <Link
+              <PageTransitionLink
                 className="font-semibold underline underline-offset-2"
                 href={toCourseRoute(createdCourseId)}
+                direction="forward"
               >
                 Открыть сохранённый курс
-              </Link>
+              </PageTransitionLink>
             </p>
           ) : null}
         </Alert>
@@ -524,12 +536,13 @@ export function NewCourseForm({
         </SurfaceCard>
 
         <div className="flex flex-col-reverse gap-3 rounded-2xl border border-neutral-200 bg-white/85 p-4 sm:flex-row sm:items-center sm:justify-between">
-          <Link
+          <PageTransitionLink
             href={ROUTES.courses}
+            direction="back"
             className={productButtonClassName("ghost", "w-full sm:w-auto")}
           >
             Отмена
-          </Link>
+          </PageTransitionLink>
           <div className="flex flex-col gap-2 sm:flex-row">
             <Button
               type="submit"

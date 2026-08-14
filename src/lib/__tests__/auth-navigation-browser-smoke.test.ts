@@ -791,6 +791,9 @@ type PlaywrightChromium = {
           width: number;
           height: number;
         }) => Promise<void>;
+        emulateMedia: (options: {
+          reducedMotion: "reduce" | "no-preference";
+        }) => Promise<void>;
         waitForTimeout: (timeout: number) => Promise<void>;
         goto: (
           url: string,
@@ -3335,6 +3338,33 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
     await runtime.page
       .getByRole("heading", { name: "Расписание", exact: true, level: 1 })
       .waitFor();
+    await runtime.page.evaluate(() => {
+      const transitionWindow = window as typeof window & {
+        __e2ePageTransitionDirections?: string[];
+        __e2ePageTransitionObserver?: MutationObserver;
+      };
+      transitionWindow.__e2ePageTransitionObserver?.disconnect();
+      transitionWindow.__e2ePageTransitionDirections = [];
+      transitionWindow.__e2ePageTransitionObserver = new MutationObserver(
+        () => {
+          const direction =
+            document.documentElement.dataset.pageTransitionDirection;
+          if (
+            direction &&
+            transitionWindow.__e2ePageTransitionDirections?.at(-1) !== direction
+          ) {
+            transitionWindow.__e2ePageTransitionDirections?.push(direction);
+          }
+        },
+      );
+      transitionWindow.__e2ePageTransitionObserver.observe(
+        document.documentElement,
+        {
+          attributes: true,
+          attributeFilter: ["data-page-transition-direction"],
+        },
+      );
+    });
     await runtime.page
       .getByRole("heading", { name: "Занятий нет", exact: true, level: 2 })
       .waitFor();
@@ -3795,10 +3825,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       scheduleContract.headerSignature.descriptionColor,
       E2E_MUTED_FOREGROUND,
     );
-    assert.equal(
-      scheduleContract.headerDescription,
-      "Здесь все назначенные уроки за выбранный период",
-    );
+    assert.equal(scheduleContract.headerDescription, "Авг 2026 · занятий: 0");
     assert.equal(scheduleContract.headerActions, "Назначить урок");
     assert.match(scheduleContract.headerActionIconClass, /calendar-plus/);
     assert.deepEqual(scheduleContract.headerPrimaryControl, {
@@ -4683,7 +4710,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
             paddingLeft: "12px",
             paddingRight: "12px",
             borderRadius: "8px",
-            color: "rgb(20, 20, 20)",
+            color: "rgb(190, 18, 60)",
             fontSize: "14.08px",
             fontWeight: "400",
           },
@@ -4691,7 +4718,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         icons: [
           { color: "rgb(20, 20, 20)", opacity: "1", marginTop: "0px" },
           { color: "rgb(20, 20, 20)", opacity: "1", marginTop: "0px" },
-          { color: "rgb(20, 20, 20)", opacity: "1", marginTop: "0px" },
+          { color: "rgb(190, 18, 60)", opacity: "1", marginTop: "0px" },
         ],
       },
     );
@@ -4887,6 +4914,32 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         exact: true,
       })
       .waitFor();
+    assert.ok(
+      (
+        await runtime.page.evaluate(
+          () =>
+            (
+              window as typeof window & {
+                __e2ePageTransitionDirections?: string[];
+              }
+            ).__e2ePageTransitionDirections ?? [],
+        )
+      ).includes("forward"),
+      "Schedule → Students must use the forward header transition",
+    );
+    await runtime.page
+      .locator('.workspace-tabs-indicator[data-motion-ready="true"]')
+      .waitFor();
+    await runtime.page.evaluate(async () => {
+      const indicator = document.querySelector<HTMLElement>(
+        ".workspace-tabs-indicator",
+      );
+      await Promise.all(
+        (indicator?.getAnimations() ?? []).map((animation) =>
+          animation.finished.catch(() => undefined),
+        ),
+      );
+    });
 
     html = await runtime.page.content();
     assert.match(html, /Анна Петрова/);
@@ -4919,6 +4972,9 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         ".workspace-tab-count",
       );
       const tabs = document.querySelector<HTMLElement>(".workspace-tabs");
+      const indicator = tabs?.querySelector<HTMLElement>(
+        ".workspace-tabs-indicator",
+      );
       const tabsScroll = document.querySelector<HTMLElement>(
         ".workspace-tabs-scroll",
       );
@@ -4961,6 +5017,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         !activeTabLabel ||
         !activeTabCount ||
         !tabs ||
+        !indicator ||
         !tabsScroll ||
         !headerActions ||
         !toolbar ||
@@ -4986,6 +5043,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       const tabLabelStyle = getComputedStyle(activeTabLabel);
       const tabCountStyle = getComputedStyle(activeTabCount);
       const markerStyle = getComputedStyle(activeTab, "::after");
+      const indicatorStyle = getComputedStyle(indicator);
       const baselineStyle = getComputedStyle(tabs, "::before");
       const baselineScaleY = new DOMMatrixReadOnly(baselineStyle.transform).m22;
       const pageHeaderRect = pageHeader.getBoundingClientRect();
@@ -4993,6 +5051,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       const tabsScrollRect = tabsScroll.getBoundingClientRect();
       const tabsRect = tabs.getBoundingClientRect();
       const activeTabRect = activeTab.getBoundingClientRect();
+      const indicatorRect = indicator.getBoundingClientRect();
       const baselineLeft = Number.parseFloat(baselineStyle.left);
       const baselineRight = Number.parseFloat(baselineStyle.right);
       const toolbarStyle = getComputedStyle(toolbar);
@@ -5058,6 +5117,15 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
           markerZIndex: markerStyle.zIndex,
           markerRadius: markerStyle.borderRadius,
           markerBottom: markerStyle.bottom,
+          markerDisplay: markerStyle.display,
+          indicatorHeight: indicatorStyle.height,
+          indicatorColor: indicatorStyle.backgroundColor,
+          indicatorZIndex: indicatorStyle.zIndex,
+          indicatorRadius: indicatorStyle.borderRadius,
+          indicatorBottom: indicatorStyle.bottom,
+          indicatorReady: indicator.dataset.ready,
+          indicatorTransitionProperty: indicatorStyle.transitionProperty,
+          indicatorTransitionDuration: indicatorStyle.transitionDuration,
         },
         tabCount: {
           text: activeTab.innerText.replace(/\s+/g, " ").trim(),
@@ -5084,6 +5152,12 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
           firstTabIsActive:
             activeTab === tabs.querySelector<HTMLElement>(".workspace-tab"),
           activeStartInset: activeTabRect.left - tabsScrollRect.left,
+          indicatorStartDelta: Math.abs(
+            indicatorRect.left - activeTabRect.left,
+          ),
+          indicatorWidthDelta: Math.abs(
+            indicatorRect.width - activeTabRect.width,
+          ),
           baselineStartInset:
             tabsRect.left + baselineLeft - tabsScrollRect.left,
           baselineEndInset:
@@ -5197,6 +5271,15 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       markerZIndex: "2",
       markerRadius: "0px",
       markerBottom: "0px",
+      markerDisplay: "none",
+      indicatorHeight: "4px",
+      indicatorColor: "rgb(20, 20, 20)",
+      indicatorZIndex: "2",
+      indicatorRadius: "0px",
+      indicatorBottom: "0px",
+      indicatorReady: "true",
+      indicatorTransitionProperty: "width, transform, opacity",
+      indicatorTransitionDuration: "0.36s, 0.36s, 0.12s",
     });
     assert.match(studentsVisual.tabCount.text, /^Ученики \d+$/);
     assert.match(studentsVisual.tabCount.value, /^\d+$/);
@@ -5237,6 +5320,8 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
     assert.equal(studentsVisual.tabGeometry.firstTabIsActive, true);
     assert.equal(studentsVisual.tabGeometry.allTabsHaveIcons, true);
     assert.ok(Math.abs(studentsVisual.tabGeometry.activeStartInset) < 0.5);
+    assert.ok(studentsVisual.tabGeometry.indicatorStartDelta < 0.5);
+    assert.ok(studentsVisual.tabGeometry.indicatorWidthDelta < 0.5);
     assert.ok(Math.abs(studentsVisual.tabGeometry.baselineStartInset) < 0.5);
     assert.ok(Math.abs(studentsVisual.tabGeometry.baselineEndInset) < 0.5);
     assert.ok(
@@ -5902,6 +5987,60 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       exact: true,
     });
     await groupTable.waitFor();
+    await runtime.page.evaluate(async () => {
+      await new Promise<void>((resolve) =>
+        window.requestAnimationFrame(() => resolve()),
+      );
+      await new Promise<void>((resolve) =>
+        window.requestAnimationFrame(() => resolve()),
+      );
+      const indicator = document.querySelector<HTMLElement>(
+        ".workspace-tabs-indicator",
+      );
+      if (!indicator) throw new Error("Moving tab indicator is missing");
+      await Promise.all(
+        indicator
+          .getAnimations()
+          .map((animation) => animation.finished.catch(() => undefined)),
+      );
+    });
+    const movedTabIndicator = await runtime.page.evaluate(() => {
+      const tabs = document.querySelector<HTMLElement>(".workspace-tabs");
+      const activeTab = tabs?.querySelector<HTMLElement>(
+        '.workspace-tab[aria-selected="true"]',
+      );
+      const indicator = tabs?.querySelector<HTMLElement>(
+        ".workspace-tabs-indicator",
+      );
+      if (!tabs || !activeTab || !indicator) {
+        throw new Error("Moving tab indicator contract is missing");
+      }
+      const tabsRect = tabs.getBoundingClientRect();
+      const activeRect = activeTab.getBoundingClientRect();
+      const indicatorRect = indicator.getBoundingClientRect();
+      return {
+        activeLabel: activeTab.textContent?.replace(/\s+/g, " ").trim() ?? "",
+        movedRight: indicatorRect.left > tabsRect.left,
+        startDelta: Math.abs(indicatorRect.left - activeRect.left),
+        widthDelta: Math.abs(indicatorRect.width - activeRect.width),
+      };
+    });
+    assert.match(movedTabIndicator.activeLabel, /^Группы 2$/);
+    assert.equal(movedTabIndicator.movedRight, true);
+    assert.ok(movedTabIndicator.startDelta < 0.5);
+    assert.ok(movedTabIndicator.widthDelta < 0.5);
+
+    await runtime.page.emulateMedia({ reducedMotion: "reduce" });
+    const reducedIndicatorDuration = await runtime.page
+      .locator(".workspace-tabs-indicator")
+      .evaluate((indicator) =>
+        Number.parseFloat(getComputedStyle(indicator).transitionDuration),
+      );
+    assert.ok(
+      reducedIndicatorDuration <= 0.00001,
+      `Reduced-motion indicator must be effectively instant, got ${reducedIndicatorDuration}s`,
+    );
+    await runtime.page.emulateMedia({ reducedMotion: "no-preference" });
     await assertCanonicalFirstBodyRowTypography(groupTable, "Группы");
     const groupViewSwitch = runtime.page.getByRole("group", {
       name: "Вид списка групп",
@@ -5988,6 +6127,27 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         ?.getAttribute("aria-current"),
     );
     assert.equal(studentsCurrent, "page");
+
+    const scheduleLink = runtime.page.getByRole("link", {
+      name: "Расписание",
+      exact: true,
+    });
+    await Promise.all([
+      runtime.page.waitForURL(/\/schedule$/),
+      scheduleLink.click(),
+    ]);
+    await runtime.page
+      .getByRole("heading", { name: "Расписание", exact: true, level: 1 })
+      .waitFor();
+    const primaryTransitionDirections = await runtime.page.evaluate(
+      () =>
+        (
+          window as typeof window & {
+            __e2ePageTransitionDirections?: string[];
+          }
+        ).__e2ePageTransitionDirections ?? [],
+    );
+    assert.equal(primaryTransitionDirections.at(-1), "back");
   } finally {
     e2eCompletionPhase = null;
     e2eScheduleFixtureVisible = false;
@@ -7779,7 +7939,6 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
         !pageHeader ||
         !header ||
         !title ||
-        !description ||
         !headerActions ||
         !primaryButton ||
         !navPill ||
@@ -7798,7 +7957,6 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       const shellStyle = getComputedStyle(shell);
       const pageHeaderStyle = getComputedStyle(pageHeader);
       const titleStyle = getComputedStyle(title);
-      const descriptionStyle = getComputedStyle(description);
       const buttonStyle = getComputedStyle(primaryButton);
       const headerStyle = getComputedStyle(header);
       const navPillStyle = getComputedStyle(navPill);
@@ -7825,6 +7983,7 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
         titleFontFamily: titleStyle.fontFamily,
         titleFontSize: titleStyle.fontSize,
         titleFontWeight: titleStyle.fontWeight,
+        hasDescription: Boolean(description),
         pageHeaderLayout: {
           minHeight: pageHeaderStyle.minHeight,
           height: pageHeaderRect.height,
@@ -7840,9 +7999,6 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
           titleFontWeight: titleStyle.fontWeight,
           titleLineHeight: titleStyle.lineHeight,
           titleLetterSpacing: titleStyle.letterSpacing,
-          descriptionFontSize: descriptionStyle.fontSize,
-          descriptionLineHeight: descriptionStyle.lineHeight,
-          descriptionColor: descriptionStyle.color,
         },
         bodyFontFamily: getComputedStyle(document.body).fontFamily,
         buttonRadius: buttonStyle.borderRadius,
@@ -7896,6 +8052,7 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
     assert.equal(coursesVisual.titleFontFamily, coursesVisual.bodyFontFamily);
     assert.equal(coursesVisual.titleFontSize, "48px");
     assert.equal(coursesVisual.titleFontWeight, "400");
+    assert.equal(coursesVisual.hasDescription, false);
     assert.equal(coursesVisual.pageHeaderLayout.minHeight, "200px");
     assert.ok(Math.abs(coursesVisual.pageHeaderLayout.height - 200) < 0.5);
     assert.ok(coursesVisual.pageHeaderLayout.actionCenterDelta < 0.5);
@@ -8197,8 +8354,8 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
         .getByRole("tab", { name: new RegExp(`^${tabName}`) })
         .waitFor();
     }
-    const publishedHeaderActions = runtime.page.locator(
-      ".published-course-workspace .app-page-actions",
+    const publishedHeaderMeta = runtime.page.locator(
+      ".published-course-workspace .app-page-meta",
     );
     assert.equal(
       await runtime.page
@@ -8207,15 +8364,21 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       0,
     );
     assert.equal(
-      await publishedHeaderActions.getByText("ShiDao", { exact: true }).count(),
+      await publishedHeaderMeta.getByText("ShiDao", { exact: true }).count(),
       0,
     );
-    await publishedHeaderActions
+    await publishedHeaderMeta
       .getByText("Автор: adult-e2e@example.test", { exact: true })
       .waitFor();
-    await publishedHeaderActions
+    await publishedHeaderMeta
       .getByText("Аттестован", { exact: true })
       .waitFor();
+    assert.equal(
+      await runtime.page
+        .locator(".published-course-workspace .app-page-actions")
+        .count(),
+      0,
+    );
     const publishedHeaderGeometry = await runtime.page.evaluate(() => {
       const header = document.querySelector<HTMLElement>(
         ".published-course-workspace .app-page-header",
@@ -8224,21 +8387,15 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
         ".app-page-header-content",
       );
       const title = header?.querySelector<HTMLElement>(".app-page-title");
+      const meta = header?.querySelector<HTMLElement>(".app-page-meta");
       const actions = header?.querySelector<HTMLElement>(".app-page-actions");
-      const attestation = actions?.querySelector<HTMLElement>(
+      const attestation = meta?.querySelector<HTMLElement>(
         ".published-course-header-status",
       );
-      const author = actions?.querySelector<HTMLElement>(
+      const author = meta?.querySelector<HTMLElement>(
         ".published-course-header-author",
       );
-      if (
-        !header ||
-        !content ||
-        !title ||
-        !actions ||
-        !attestation ||
-        !author
-      ) {
+      if (!header || !content || !title || !meta || !attestation || !author) {
         throw new Error("Published Course header geometry is missing");
       }
 
@@ -8246,37 +8403,27 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       const headerRect = header.getBoundingClientRect();
       const contentRect = content.getBoundingClientRect();
       const titleRect = title.getBoundingClientRect();
-      const actionsRect = actions.getBoundingClientRect();
       const attestationRect = attestation.getBoundingClientRect();
       const authorRect = author.getBoundingClientRect();
-      const actionChildRects = Array.from(actions.children)
-        .map((child) => child.getBoundingClientRect())
-        .filter((rect) => rect.width > 0 && rect.height > 0);
-      const actionContentWidth = actionChildRects.length
-        ? Math.max(...actionChildRects.map((rect) => rect.right)) -
-          Math.min(...actionChildRects.map((rect) => rect.left))
-        : 0;
 
       return {
         titleUsesHeadingColumn: Math.abs(titleRect.width - contentRect.width),
-        actionsFitContent: Math.abs(actionsRect.width - actionContentWidth),
+        metaInsideContent: content.contains(meta),
+        hasActions: Boolean(actions),
         attestationAboveAuthor: attestationRect.bottom <= authorRect.top,
-        columnGap: actionsRect.left - contentRect.right,
-        remainingWidthDelta: Math.abs(
+        contentWidthDelta: Math.abs(
           contentRect.width -
             (headerRect.width -
               Number.parseFloat(headerStyle.paddingLeft) -
-              Number.parseFloat(headerStyle.paddingRight) -
-              actionsRect.width -
-              24),
+              Number.parseFloat(headerStyle.paddingRight)),
         ),
       };
     });
     assert.ok(publishedHeaderGeometry.titleUsesHeadingColumn < 0.5);
-    assert.ok(publishedHeaderGeometry.actionsFitContent < 0.5);
+    assert.equal(publishedHeaderGeometry.metaInsideContent, true);
+    assert.equal(publishedHeaderGeometry.hasActions, false);
     assert.equal(publishedHeaderGeometry.attestationAboveAuthor, true);
-    assert.ok(Math.abs(publishedHeaderGeometry.columnGap - 24) < 0.5);
-    assert.ok(publishedHeaderGeometry.remainingWidthDelta < 0.5);
+    assert.ok(publishedHeaderGeometry.contentWidthDelta < 0.5);
     assert.equal(
       await runtime.page
         .getByRole("button", { name: "Добавить в мои курсы", exact: true })
@@ -8583,8 +8730,13 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       .click();
     await courseLink.waitFor();
 
+    const forwardPageTransition = runtime.page.locator(
+      'html[data-page-transition-direction="forward"]',
+    );
+    await forwardPageTransition.waitFor({ state: "detached" });
     await Promise.all([
       runtime.page.waitForURL(new RegExp(`/courses/${E2E_COURSE_ID}$`)),
+      forwardPageTransition.waitFor(),
       courseLink.click(),
     ]);
 
@@ -8594,6 +8746,20 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       level: 1,
     });
     await courseHeading.waitFor();
+    await forwardPageTransition.waitFor({ state: "detached" });
+    await runtime.page
+      .locator('.workspace-tabs-indicator[data-motion-ready="true"]')
+      .waitFor();
+    await runtime.page.evaluate(async () => {
+      const indicator = document.querySelector<HTMLElement>(
+        ".workspace-tabs-indicator",
+      );
+      await Promise.all(
+        (indicator?.getAnimations() ?? []).map((animation) =>
+          animation.finished.catch(() => undefined),
+        ),
+      );
+    });
     const courseVisual = await runtime.page.evaluate(() => {
       const pageHeader =
         document.querySelector<HTMLElement>(".app-page-header");
@@ -8611,6 +8777,9 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
         ".workspace-tab:not(.workspace-tab-active)",
       );
       const tabs = document.querySelector<HTMLElement>(".workspace-tabs");
+      const indicator = tabs?.querySelector<HTMLElement>(
+        ".workspace-tabs-indicator",
+      );
       const headerActions =
         pageHeader?.querySelector<HTMLElement>(".app-page-actions");
       const backLink = pageHeader?.querySelector<HTMLElement>(
@@ -8635,15 +8804,33 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
         !tab ||
         !inactiveTab ||
         !tabs ||
+        !indicator ||
         !headerActions ||
         !backLink ||
         !backIcon ||
         !backLabel ||
         !siteHeader
       ) {
-        throw new Error(
-          "Course workspace visual contract elements are missing",
-        );
+        const missing = [
+          ["pageHeader", pageHeader],
+          ["pageHeading", pageHeading],
+          ["pageHeaderContent", pageHeaderContent],
+          ["title", title],
+          ["description", description],
+          ["tab", tab],
+          ["inactiveTab", inactiveTab],
+          ["tabs", tabs],
+          ["indicator", indicator],
+          ["headerActions", headerActions],
+          ["backLink", backLink],
+          ["backIcon", backIcon],
+          ["backLabel", backLabel],
+          ["siteHeader", siteHeader],
+        ]
+          .filter(([, element]) => !element)
+          .map(([name]) => name)
+          .join(", ");
+        throw new Error(`Course workspace elements missing: ${missing}`);
       }
 
       const headerStyle = getComputedStyle(pageHeader);
@@ -8654,6 +8841,7 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       const tabStyle = getComputedStyle(tab);
       const inactiveTabStyle = getComputedStyle(inactiveTab);
       const markerStyle = getComputedStyle(tab, "::after");
+      const indicatorStyle = getComputedStyle(indicator);
       const baselineStyle = getComputedStyle(tabs, "::before");
       const baselineScaleY = new DOMMatrixReadOnly(baselineStyle.transform).m22;
       const tabRect = tab.getBoundingClientRect();
@@ -8753,6 +8941,15 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
           markerZIndex: markerStyle.zIndex,
           markerRadius: markerStyle.borderRadius,
           markerBottom: markerStyle.bottom,
+          markerDisplay: markerStyle.display,
+          indicatorHeight: indicatorStyle.height,
+          indicatorColor: indicatorStyle.backgroundColor,
+          indicatorZIndex: indicatorStyle.zIndex,
+          indicatorRadius: indicatorStyle.borderRadius,
+          indicatorBottom: indicatorStyle.bottom,
+          indicatorReady: indicator.dataset.ready,
+          indicatorTransitionProperty: indicatorStyle.transitionProperty,
+          indicatorTransitionDuration: indicatorStyle.transitionDuration,
           allTabsHaveIcons: Array.from(
             tabs.querySelectorAll<HTMLElement>(".workspace-tab"),
           ).every((item) => Boolean(item.querySelector(".workspace-tab-icon"))),
@@ -8809,7 +9006,13 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       ) < 0.5,
     );
     assert.deepEqual(
-      courseVisual.headerSignature,
+      {
+        titleFontFamily: courseVisual.headerSignature.titleFontFamily,
+        titleFontSize: courseVisual.headerSignature.titleFontSize,
+        titleFontWeight: courseVisual.headerSignature.titleFontWeight,
+        titleLineHeight: courseVisual.headerSignature.titleLineHeight,
+        titleLetterSpacing: courseVisual.headerSignature.titleLetterSpacing,
+      },
       coursesVisual.headerSignature,
     );
     assert.deepEqual(courseVisual.tabSignature, {
@@ -8835,6 +9038,15 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       markerZIndex: "2",
       markerRadius: "0px",
       markerBottom: "0px",
+      markerDisplay: "none",
+      indicatorHeight: "4px",
+      indicatorColor: "rgb(20, 20, 20)",
+      indicatorZIndex: "2",
+      indicatorRadius: "0px",
+      indicatorBottom: "0px",
+      indicatorReady: "true",
+      indicatorTransitionProperty: "width, transform, opacity",
+      indicatorTransitionDuration: "0.36s, 0.36s, 0.12s",
       allTabsHaveIcons: true,
     });
     assert.ok(Math.abs(courseVisual.tabBottom - courseVisual.tabsBottom) < 0.5);
@@ -9132,12 +9344,12 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
     await runtime.page
       .getByRole("heading", { name: "Материалы", exact: true, level: 2 })
       .waitFor();
-    await runtime.page
-      .getByRole("link", {
-        name: `4. ${E2E_LESSON_TITLE}`,
-        exact: true,
-      })
-      .click();
+    const lessonLink = runtime.page.getByRole("link", {
+      name: `4. ${E2E_LESSON_TITLE}`,
+      exact: true,
+    });
+    await forwardPageTransition.waitFor({ state: "detached" });
+    await Promise.all([forwardPageTransition.waitFor(), lessonLink.click()]);
 
     const lessonHeading = runtime.page.getByRole("heading", {
       name: `Урок 4. ${E2E_LESSON_TITLE}`,
@@ -9145,6 +9357,20 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       level: 1,
     });
     await lessonHeading.waitFor();
+    await forwardPageTransition.waitFor({ state: "detached" });
+    await runtime.page
+      .locator('.workspace-tabs-indicator[data-motion-ready="true"]')
+      .waitFor();
+    await runtime.page.evaluate(async () => {
+      const indicator = document.querySelector<HTMLElement>(
+        ".workspace-tabs-indicator",
+      );
+      await Promise.all(
+        (indicator?.getAnimations() ?? []).map((animation) =>
+          animation.finished.catch(() => undefined),
+        ),
+      );
+    });
     const lessonVisual = await runtime.page.evaluate(() => {
       const shell = document.querySelector<HTMLElement>(".course-demo-shell");
       const pageHeader =
@@ -9160,11 +9386,16 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
         ".workspace-tab:not(.workspace-tab-active)",
       );
       const tabs = document.querySelector<HTMLElement>(".workspace-tabs");
-      const headerActionButtons = Array.from(
-        headerActions?.querySelectorAll<HTMLButtonElement>(
-          ".product-btn-secondary",
-        ) ?? [],
+      const indicator = tabs?.querySelector<HTMLElement>(
+        ".workspace-tabs-indicator",
       );
+      const primaryAction = headerActions?.querySelector<HTMLButtonElement>(
+        ".product-btn-primary",
+      );
+      const overflowAction = headerActions?.querySelector<HTMLButtonElement>(
+        ".app-page-overflow-menu .action-menu-trigger",
+      );
+      const overflowIcon = overflowAction?.querySelector<SVGElement>("svg");
 
       if (
         !shell ||
@@ -9174,12 +9405,13 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
         !headerActions ||
         !tab ||
         !inactiveTab ||
-        !tabs
+        !tabs ||
+        !indicator ||
+        !primaryAction ||
+        !overflowAction ||
+        !overflowIcon
       ) {
         throw new Error("Lesson visual contract elements are missing");
-      }
-      if (headerActionButtons.length !== 4) {
-        throw new Error("Lesson header action button contract is incomplete");
       }
 
       const pageHeaderStyle = getComputedStyle(pageHeader);
@@ -9189,10 +9421,14 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       const tabStyle = getComputedStyle(tab);
       const inactiveTabStyle = getComputedStyle(inactiveTab);
       const markerStyle = getComputedStyle(tab, "::after");
+      const indicatorStyle = getComputedStyle(indicator);
       const baselineStyle = getComputedStyle(tabs, "::before");
       const baselineScaleY = new DOMMatrixReadOnly(baselineStyle.transform).m22;
       const pageHeaderRect = pageHeader.getBoundingClientRect();
       const headerActionsRect = headerActions.getBoundingClientRect();
+      const primaryActionStyle = getComputedStyle(primaryAction);
+      const overflowActionStyle = getComputedStyle(overflowAction);
+      const overflowIconStyle = getComputedStyle(overflowIcon);
       return {
         shellBackgroundImage: getComputedStyle(shell).backgroundImage,
         headerLayout: {
@@ -9214,23 +9450,27 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
           descriptionLineHeight: descriptionStyle.lineHeight,
           descriptionColor: descriptionStyle.color,
         },
-        headerActionButtons: headerActionButtons.map((button) => {
-          const style = getComputedStyle(button);
-          return {
-            label: button.textContent?.trim().replace(/\s+/g, " ") ?? "",
-            isDanger: button.classList.contains("product-btn-danger"),
-            offsetHeight: button.offsetHeight,
-            clientHeight: button.clientHeight,
-            height: style.height,
-            boxSizing: style.boxSizing,
-            borderTopWidth: style.borderTopWidth,
-            borderBottomWidth: style.borderBottomWidth,
-            borderColor: style.borderColor,
-            backgroundColor: style.backgroundColor,
-            boxShadow: style.boxShadow,
-            color: style.color,
-          };
-        }),
+        metric: description.textContent?.trim() ?? "",
+        actionButtonCount:
+          headerActions.querySelectorAll<HTMLButtonElement>(".product-btn")
+            .length,
+        primaryAction: {
+          label: primaryAction.textContent?.trim().replace(/\s+/g, " ") ?? "",
+          height: primaryActionStyle.height,
+          backgroundColor: primaryActionStyle.backgroundColor,
+          boxShadow: primaryActionStyle.boxShadow,
+        },
+        overflowAction: {
+          label: overflowAction.getAttribute("aria-label"),
+          hasPopup: overflowAction.getAttribute("aria-haspopup"),
+          height: overflowActionStyle.height,
+          width: overflowActionStyle.width,
+          backgroundColor: overflowActionStyle.backgroundColor,
+          boxShadow: overflowActionStyle.boxShadow,
+          iconClass: overflowIcon.getAttribute("class"),
+          iconWidth: overflowIconStyle.width,
+          iconHeight: overflowIconStyle.height,
+        },
         tabSignature: {
           height: tabStyle.height,
           radius: tabStyle.borderRadius,
@@ -9258,6 +9498,15 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
           markerZIndex: markerStyle.zIndex,
           markerRadius: markerStyle.borderRadius,
           markerBottom: markerStyle.bottom,
+          markerDisplay: markerStyle.display,
+          indicatorHeight: indicatorStyle.height,
+          indicatorColor: indicatorStyle.backgroundColor,
+          indicatorZIndex: indicatorStyle.zIndex,
+          indicatorRadius: indicatorStyle.borderRadius,
+          indicatorBottom: indicatorStyle.bottom,
+          indicatorReady: indicator.dataset.ready,
+          indicatorTransitionProperty: indicatorStyle.transitionProperty,
+          indicatorTransitionDuration: indicatorStyle.transitionDuration,
           allTabsHaveIcons: Array.from(
             tabs.querySelectorAll<HTMLElement>(".workspace-tab"),
           ).every((item) => Boolean(item.querySelector(".workspace-tab-icon"))),
@@ -9274,50 +9523,136 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
     );
     assert.ok(lessonVisual.headerLayout.actionCenterDelta < 0.5);
     assert.deepEqual(
-      lessonVisual.headerSignature,
+      {
+        titleFontFamily: lessonVisual.headerSignature.titleFontFamily,
+        titleFontSize: lessonVisual.headerSignature.titleFontSize,
+        titleFontWeight: lessonVisual.headerSignature.titleFontWeight,
+        titleLineHeight: lessonVisual.headerSignature.titleLineHeight,
+        titleLetterSpacing: lessonVisual.headerSignature.titleLetterSpacing,
+      },
       coursesVisual.headerSignature,
     );
-    assert.equal(lessonVisual.headerActionButtons.length, 4);
-    for (const button of lessonVisual.headerActionButtons) {
-      assert.equal(button.offsetHeight, 40);
-      assert.equal(button.clientHeight, 40);
-      assert.equal(button.height, "40px");
-      assert.equal(button.boxSizing, "border-box");
-      assert.equal(button.borderTopWidth, "0px");
-      assert.equal(button.borderBottomWidth, "0px");
-      assert.equal(button.backgroundColor, "rgb(255, 255, 255)");
-      assert.equal(button.boxShadow, E2E_RAISED_CONTROL_SHADOW);
-    }
-    const lessonDeleteAction = lessonVisual.headerActionButtons.find(
-      (button) => button.label === "Удалить",
+    assert.equal(
+      lessonVisual.metric,
+      "Компонентов: 1 · слайдов: 0 · проведений: 0",
     );
-    assert.ok(lessonDeleteAction);
-    assert.equal(lessonDeleteAction.isDanger, true);
-    assert.equal(lessonDeleteAction.color, "rgb(190, 18, 60)");
-
-    const lessonDeleteButton = runtime.page.getByRole("button", {
-      name: "Удалить",
-      exact: true,
+    assert.equal(lessonVisual.actionButtonCount, 2);
+    assert.deepEqual(lessonVisual.primaryAction, {
+      label: "Назначить",
+      height: "40px",
+      backgroundColor: "rgb(255, 255, 255)",
+      boxShadow: E2E_RAISED_CONTROL_SHADOW,
     });
-    await lessonDeleteButton.hover();
-    await runtime.page.waitForTimeout(220);
     assert.deepEqual(
-      await lessonDeleteButton.evaluate((button) => {
-        const style = getComputedStyle(button);
-        return {
-          borderTopWidth: style.borderTopWidth,
-          backgroundColor: style.backgroundColor,
-          boxShadow: style.boxShadow,
-          transform: style.transform,
-        };
-      }),
       {
-        borderTopWidth: "0px",
+        ...lessonVisual.overflowAction,
+        iconClass: undefined,
+      },
+      {
+        label: `Другие действия с уроком «${E2E_LESSON_TITLE}»`,
+        hasPopup: "menu",
+        height: "40px",
+        width: "40px",
         backgroundColor: "rgb(255, 255, 255)",
-        boxShadow: E2E_RAISED_CONTROL_HOVER_SHADOW,
-        transform: E2E_RAISED_CONTROL_HOVER_TRANSFORM,
+        boxShadow: E2E_RAISED_CONTROL_SHADOW,
+        iconClass: undefined,
+        iconWidth: "16px",
+        iconHeight: "16px",
       },
     );
+    assert.match(
+      lessonVisual.overflowAction.iconClass ?? "",
+      /\blucide-ellipsis-vertical\b/,
+    );
+
+    const lessonOverflowTrigger = runtime.page.getByRole("button", {
+      name: `Другие действия с уроком «${E2E_LESSON_TITLE}»`,
+      exact: true,
+    });
+    await lessonOverflowTrigger.click();
+    const lessonHeaderActionMenu = runtime.page.locator(
+      "body > .action-menu-panel-portal",
+    );
+    await lessonHeaderActionMenu
+      .getByRole("menuitem", { name: "Дополнить с ИИ", exact: true })
+      .waitFor();
+    assert.deepEqual(
+      (
+        await lessonHeaderActionMenu.getByRole("menuitem").allTextContents()
+      ).map((label) => label.trim()),
+      ["Дополнить с ИИ", "Настройки урока", "Удалить"],
+    );
+    assert.equal(
+      await lessonHeaderActionMenu
+        .getByRole("menuitem", { name: "Удалить", exact: true })
+        .evaluate((item) => getComputedStyle(item).color),
+      "rgb(190, 18, 60)",
+    );
+
+    await lessonHeaderActionMenu
+      .getByRole("menuitem", { name: "Дополнить с ИИ", exact: true })
+      .click();
+    const aiLessonDialog = runtime.page.getByRole("dialog", {
+      name: "Дополнить урок с помощью ИИ",
+      exact: true,
+    });
+    await aiLessonDialog.waitFor();
+    await aiLessonDialog
+      .getByRole("button", { name: "Закрыть", exact: true })
+      .click();
+    await aiLessonDialog.waitFor({ state: "detached" });
+
+    await lessonOverflowTrigger.click();
+    await lessonHeaderActionMenu
+      .getByRole("menuitem", { name: "Настройки урока", exact: true })
+      .click();
+    const lessonSettingsDialog = runtime.page.getByRole("dialog", {
+      name: "Редактировать урок",
+      exact: true,
+    });
+    await lessonSettingsDialog.waitFor();
+    await lessonSettingsDialog
+      .getByRole("button", { name: "Закрыть", exact: true })
+      .click();
+    await lessonSettingsDialog.waitFor({ state: "detached" });
+
+    await runtime.page.evaluate(() => {
+      const state = window as typeof window & {
+        __e2eLessonDeleteConfirm?: string;
+        __e2eOriginalConfirm?: typeof window.confirm;
+      };
+      state.__e2eOriginalConfirm = window.confirm;
+      window.confirm = (message?: string) => {
+        state.__e2eLessonDeleteConfirm = String(message ?? "");
+        return false;
+      };
+    });
+    await lessonOverflowTrigger.click();
+    await lessonHeaderActionMenu
+      .getByRole("menuitem", { name: "Удалить", exact: true })
+      .click();
+    const lessonDeleteConfirm = await runtime.page.evaluate(() => {
+      const state = window as typeof window & {
+        __e2eLessonDeleteConfirm?: string;
+        __e2eOriginalConfirm?: typeof window.confirm;
+      };
+      const message = state.__e2eLessonDeleteConfirm ?? "";
+      if (state.__e2eOriginalConfirm) {
+        window.confirm = state.__e2eOriginalConfirm;
+        delete state.__e2eOriginalConfirm;
+      }
+      delete state.__e2eLessonDeleteConfirm;
+      return message;
+    });
+    assert.match(
+      lessonDeleteConfirm,
+      new RegExp(`Удалить урок «${E2E_LESSON_TITLE}»\\?`),
+    );
+    assert.match(
+      lessonDeleteConfirm,
+      /Завершённые индивидуальные результаты сохранятся/,
+    );
+    await lessonHeading.waitFor();
     assert.deepEqual(lessonVisual.tabSignature, courseVisual.tabSignature);
 
     await runtime.page.setViewportSize({ width: 1120, height: 900 });
@@ -10414,13 +10749,17 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
     );
     await runtime.page.getByRole("tab", { name: "План", exact: true }).click();
 
-    await runtime.page
-      .getByRole("button", {
-        name: `Вернуться: ${E2E_COURSE_TITLE}`,
-        exact: true,
-      })
-      .click();
+    const backPageTransition = runtime.page.locator(
+      'html[data-page-transition-direction="back"]',
+    );
+    const courseBackButton = runtime.page.getByRole("button", {
+      name: `Вернуться: ${E2E_COURSE_TITLE}`,
+      exact: true,
+    });
+    await backPageTransition.waitFor({ state: "detached" });
+    await Promise.all([backPageTransition.waitFor(), courseBackButton.click()]);
     await courseHeading.waitFor();
+    await backPageTransition.waitFor({ state: "detached" });
 
     html = await runtime.page.content();
     assert.match(html, /aria-label="Разделы курса"/);

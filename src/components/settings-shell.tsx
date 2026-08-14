@@ -5,15 +5,11 @@ import { SettingsNavigation } from "@/components/settings-navigation";
 
 type SettingsShellProps = {
   title: string;
-  description: string;
+  metric?: ReactNode;
   children: ReactNode;
 };
 
-export function SettingsShell({
-  title,
-  description,
-  children,
-}: SettingsShellProps) {
+export function SettingsShell({ title, metric, children }: SettingsShellProps) {
   return (
     <main className="course-demo-shell settings-product-shell">
       <TopNav demoStyle />
@@ -21,7 +17,7 @@ export function SettingsShell({
         <SettingsNavigation />
 
         <div className="glass rounded-3xl p-6 md:p-8">
-          <AppPageHeader title={title} description={description} />
+          <AppPageHeader title={title} metric={metric} />
           {children}
         </div>
       </section>

@@ -12,6 +12,7 @@ import {
 import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
+import { usePageTransition } from "@/components/navigation/page-transition-provider";
 import { courseBuilderRequest } from "@/components/course-builder/course-builder-client";
 import { ActionMenu, type ActionMenuItem } from "@/components/ui/action-menu";
 import { Button } from "@/components/ui/button";
@@ -134,6 +135,7 @@ export function CourseActions({
   variant = "default",
 }: CourseActionsProps) {
   const router = useRouter();
+  const pageTransition = usePageTransition();
   const [dialogMode, setDialogMode] = useState<CourseActionDialogMode | null>(
     null,
   );
@@ -188,7 +190,10 @@ export function CourseActions({
         `/api/v2/courses/${encodeURIComponent(course.id)}/duplicate`,
         { method: "POST" },
       );
-      router.push(toCourseRoute(payload.courseId));
+      const href = toCourseRoute(payload.courseId);
+      if (pageTransition)
+        pageTransition.navigate(href, { direction: "forward" });
+      else router.push(href);
     } catch (caught) {
       setActionError(
         caught instanceof Error
@@ -443,9 +448,9 @@ export function CourseActions({
           className={
             variant === "table" ? "course-index-table-action-menu" : undefined
           }
-          triggerIcon={variant === "table" ? MoreVertical : undefined}
+          triggerIcon={MoreVertical}
           triggerVariant={variant === "table" ? "ghost" : "secondary"}
-          portal={variant === "table"}
+          portal
         />
         {actionError && !dialogMode ? (
           <p className="course-action-inline-error" role="alert">

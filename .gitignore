@@ -1,5 +1,6 @@
 node_modules
 .next
+.next-browser-smoke
 
 # local env files (secrets — never commit)
 .env*.local

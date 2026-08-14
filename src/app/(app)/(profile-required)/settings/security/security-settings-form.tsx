@@ -188,7 +188,7 @@ export function SecuritySettingsForm({
   return (
     <SettingsShell
       title="Безопасность"
-      description={`Статус: ${hasPin ? "PIN настроен" : "PIN не настроен"}. Здесь также можно восстановить доступ к отдельному аккаунту учащегося.`}
+      metric={hasPin ? "PIN настроен" : "PIN не настроен"}
     >
       <form
         onSubmit={onSubmit}

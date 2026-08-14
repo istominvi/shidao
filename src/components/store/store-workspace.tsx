@@ -342,7 +342,7 @@ export function StoreWorkspace({
     <>
       <AppPageHeader
         title="Магазин"
-        description="Учебники, материалы и полезные вещи для занятий — без лишнего"
+        metric={`Товаров: ${visibleProducts.length} · в корзине: ${cart.count}`}
         meta={<span className="store-demo-label">Демо · без оплаты</span>}
         actions={
           <Button
