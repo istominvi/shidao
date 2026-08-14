@@ -977,24 +977,28 @@ ShiDao V2 application:
   `app-page-header` View Transition, отсутствие root cross-fade/layout shift и
   промежуточных Course loading-cards. Native named View Transition должен быть
   только у `app-page-header`: primary-nav pill не имеет собственного
-  `view-transition-name`. При click один локальный чёрный indicator должен за
-  `180 ms` optimistic переместить `width/transform` к выбранному link до route
-  navigation — без серого ghost, второго чёрного слоя и snapshot-scale. Glyphs
-  визуально остаются `#000` вне pill и `#fff` внутри даже во время handoff.
+  `view-transition-name`. Каждый click должен синхронно dispatch-ить route
+  navigation, пока один локальный чёрный indicator параллельно за `180 ms`
+  перемещает `width/transform` к выбранному link; pill motion не должен
+  gate-ить routing. Серый ghost, второй чёрный слой и snapshot-scale
+  отсутствуют. Glyphs визуально остаются `#000` вне pill и `#fff` внутри даже
+  во время motion.
   Проверить computed `background: rgb(255, 255, 255)` и `isolation: isolate` у
   nav-track, `z-index: auto` у nav-list и фактические тёмные пиксели inactive
   glyphs. С задержанным RSC/data response быстро нажать два-три разных primary
-  links: каждый следующий intent должен немедленно перецеливать pill и
-  supersede-ить предыдущий timer/pending route; после всех timeout/response
-  остаётся только последний URL, active link и matching pill. В течение
-  handoff/load links и keyboard focus остаются рабочими, cursor не меняется на
+  links: каждый click должен отправить navigation синхронно, следующий intent —
+  немедленно перецелить pill и supersede-ить предыдущий pre-commit/pending
+  route. После завершения всех задержанных response только последний intent
+  может commit-ить URL; active link и pill обязаны совпасть с ним, а stale
+  response не должен кратко вернуть промежуточный route. В течение pill
+  motion/load links и keyboard focus остаются рабочими, cursor не меняется на
   wait, а pointer-blocking overlay/disabled navigation не появляется.
   Зафиксировать, что async route load и ожидание ready header не находятся
   внутри native `document.startViewTransition`; native named element
   `app-page-header` используется только для синхронного update, а committed
   route получает interruptible CSS entrance. Superseded observer/entrance не
   должен срабатывать позже. При `prefers-reduced-motion: reduce` pill меняется
-  без перехода и navigation не ждёт эти `180 ms`, а page-header transition
+  без перехода, route dispatch остаётся синхронным, а page-header transition
   также отключён;
 - на сохранённом Course открыть **Уроки** и проверить, что общий `WorkspaceTabs`
   не получил route-specific fork. Сразу под ним прозрачная toolbar поиска и

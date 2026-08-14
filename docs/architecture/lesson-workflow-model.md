@@ -645,25 +645,27 @@ Visual contract Course routes не меняет эту навигационну�
   и backlink зеркальны.
   Primary order: `Расписание`, `Ученики`, `Курсы`, `Магазин`. Primary-nav
   active-pill намеренно не является named/native View Transition. Это один
-  локальный измеряемый слой: до route navigation optimistic handoff за `180 ms`
-  меняет его `width/transform` к нажатому пункту. Каждый следующий primary
-  intent отменяет предыдущий handoff timer и pending route state, сразу
-  перецеливает тот же pill и становится единственным intent, которому разрешён
-  navigation commit. Поэтому browser не создаёт отдельные old/new pill
+  локальный измеряемый слой: каждый click синхронно dispatch-ит route navigation
+  и в том же interaction перецеливает pill; его `width/transform` анимируются
+  `180 ms` параллельно и не gate-ят routing. Каждый следующий primary intent
+  немедленно supersede-ит предыдущий pre-commit/pending route state, синхронно
+  dispatch-ит новый URL и становится единственным intent, которому разрешён
+  navigation commit; stale response старого intent обязан остаться без commit.
+  Поэтому browser не создаёт отдельные old/new pill
   snapshots, серый ghost, второй чёрный слой или snapshot-scale.
   Один glyph-layer визуально остаётся `#000` вне чёрного pill и `#fff` внутри
   него без задержки цвета. Его isolated nav-track даёт непрозрачный белый
   backdrop, а nav-list намеренно не образует отдельный stacking context, чтобы
-  `mix-blend-mode` видел и белый track, и чёрный pill. Ни handoff, ни pending
+  `mix-blend-mode` видел и белый track, и чёрный pill. Ни pill motion, ни pending
   route не добавляют pointer-blocking overlay, wait cursor или disabled state:
   links, keyboard focus и повторные intents остаются интерактивными. Query-only
   tab changes не анимируют весь header. Bounded observer принимает только
   latest intent, поэтому owner/published Course не показывают промежуточную
   loading-card, а async metric не появляется после H1 отдельным скачком.
-  Superseded observer/timer/entrance state отменяется и не может позже вернуть
+  Superseded observer/navigation/entrance state отменяется и не может позже вернуть
   устаревший URL или animation. При отсутствии API остаётся безопасный entrance
   fallback, а `prefers-reduced-motion` выполняет навигацию и локальный
-  Course/Lesson state update без анимации и без pre-navigation wait;
+  Course/Lesson state update без анимации, сохраняя синхронный route dispatch;
 - основные кнопки и header controls — высотой 40 px с радиусом 12 px и шрифтом
   `.88rem/400`; ordinary control использует белый surface, общий product
   border и raised base/hover/pressed contract, иконки имеют единый 16 px rhythm,

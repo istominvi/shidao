@@ -28,10 +28,12 @@ commit готового header включается отменяемый CSS ent
 допустимым named element для синхронного native update остаётся
 `app-page-header`. Чёрный active-pill
 primary navigation остаётся одним локальным измеряемым indicator: нажатие
-сначала выполняет optimistic handoff его `width/transform` к выбранному пункту
-за `180 ms`, затем продолжает route navigation. Быстрый следующий primary
-intent отменяет предыдущий handoff/pending navigation, сразу перенаправляет тот
-же pill и становится единственным актуальным target. Для pill не используется
+синхронно отправляет route navigation и одновременно перенаправляет его
+`width/transform` к выбранному пункту; локальная анимация длится `180 ms`, но
+никогда не gate-ит router dispatch. Быстрый следующий primary intent немедленно
+supersede-ит предыдущий pre-commit/pending route, сразу перенаправляет тот же
+pill и становится единственным актуальным target; stale response больше не
+может commit-ить прежний URL. Для pill не используется
 отдельный named/native View Transition, поэтому параллельные серый ghost,
 второй чёрный слой и snapshot-scale отсутствуют. Один слой glyphs визуально
 остаётся строго `#000` вне чёрного pill и `#fff` внутри него без запаздывающей

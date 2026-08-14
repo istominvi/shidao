@@ -42,7 +42,6 @@ type SiteHeaderProps = {
 };
 
 const EMPTY_ACTIVE_PILL = { left: 0, width: 0, ready: false };
-const PRIMARY_NAV_HANDOFF_MS = 180;
 
 type NavNavigateEvent = {
   preventDefault: () => void;
@@ -65,16 +64,9 @@ export function SiteHeader({
   const hasNav = navItems.length > 0;
   const navTrackRef = useRef<HTMLElement>(null);
   const navItemRefs = useRef(new Map<string, HTMLLIElement>());
-  const navigationHandoffTimerRef = useRef<number | null>(null);
   const activeNavItemId = navItems.find((item) => item.active)?.id ?? null;
   const [activePillMotionReady, setActivePillMotionReady] = useState(false);
   const [activePill, setActivePill] = useState(EMPTY_ACTIVE_PILL);
-
-  const cancelNavigationHandoff = useCallback(() => {
-    if (navigationHandoffTimerRef.current === null) return;
-    window.clearTimeout(navigationHandoffTimerRef.current);
-    navigationHandoffTimerRef.current = null;
-  }, []);
 
   const updateActivePillForItem = useCallback(
     (itemId: string | null) => {
@@ -148,8 +140,6 @@ export function SiteHeader({
     return () => window.cancelAnimationFrame(frame);
   }, [activePill.ready]);
 
-  useEffect(() => () => cancelNavigationHandoff(), [cancelNavigationHandoff]);
-
   const handleNavClick = (
     event: MouseEvent<HTMLAnchorElement>,
     href: string,
@@ -189,41 +179,20 @@ export function SiteHeader({
       return;
     }
 
-    const navigationPending = pageTransition.isNavigationPending();
-    const reducedMotion = window.matchMedia(
-      "(prefers-reduced-motion: reduce)",
-    ).matches;
-
-    if (item.active && !navigationPending) {
-      if (navigationHandoffTimerRef.current !== null) {
-        event.preventDefault();
-        cancelNavigationHandoff();
-        updateActivePillForItem(activeNavItemId);
-      }
-      return;
-    }
-
     event.preventDefault();
-    updateActivePillForItem(item.id);
-    cancelNavigationHandoff();
 
-    const navigate = () =>
-      pageTransition.navigate(item.href, {
-        scroll: item.scroll,
-      });
-
-    // Once a route request is in flight, a second intent must supersede it
-    // synchronously. Waiting for another local handoff risks losing that
-    // intent if the first route commits and unmounts this header meanwhile.
-    if (navigationPending || reducedMotion) {
-      navigate();
+    if (item.active && !pageTransition.isNavigationPending()) {
+      updateActivePillForItem(activeNavItemId);
       return;
     }
 
-    navigationHandoffTimerRef.current = window.setTimeout(() => {
-      navigationHandoffTimerRef.current = null;
-      navigate();
-    }, PRIMARY_NAV_HANDOFF_MS);
+    updateActivePillForItem(item.id);
+    // Visual motion and routing start together. Navigation must never depend
+    // on a timer owned by this route-local header: the current route can
+    // remount while it is loading and would otherwise erase a newer click.
+    pageTransition.navigate(item.href, {
+      scroll: item.scroll,
+    });
   };
 
   return (

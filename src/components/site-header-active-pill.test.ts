@@ -22,7 +22,8 @@ test("Account TopNav alone enables one measured desktop active pill", () => {
     /const navItemRefs = useRef\(new Map<string, HTMLLIElement>\(\)\)/,
   );
   assert.match(header, /const activeNavItemId = navItems\.find/);
-  assert.match(header, /const PRIMARY_NAV_HANDOFF_MS = 180/);
+  assert.doesNotMatch(header, /PRIMARY_NAV_HANDOFF_MS/);
+  assert.doesNotMatch(header, /navigationHandoffTimerRef/);
   assert.match(header, /navTrack\.getBoundingClientRect\(\)/);
   assert.match(header, /activeItem\.getBoundingClientRect\(\)/);
   assert.match(header, /left: activeItemRect\.left - navTrackRect\.left/);
@@ -41,21 +42,17 @@ test("Account TopNav alone enables one measured desktop active pill", () => {
   assert.match(header, /aria-hidden="true"/);
   assert.match(header, /data-ready=\{activePill\.ready/);
   assert.match(header, /activePill\.ready && activePillMotionReady/);
-  assert.match(
-    header,
-    /event\.preventDefault\(\);\s*updateActivePillForItem\(item\.id\)/,
-  );
+  assert.match(header, /event\.preventDefault\(\)/);
   assert.match(
     header,
     /pageTransition\.navigate\(item\.href, \{\s*scroll: item\.scroll,/,
   );
   assert.match(header, /pageTransition\.isNavigationPending\(\)/);
-  assert.match(header, /if \(navigationPending \|\| reducedMotion\)/);
   assert.match(
     header,
-    /window\.matchMedia\(\s*"\(prefers-reduced-motion: reduce\)",?\s*\)\.matches/,
+    /updateActivePillForItem\(item\.id\);[\s\S]*?pageTransition\.navigate\(item\.href/,
   );
-  assert.match(header, /window\.setTimeout\([\s\S]*?PRIMARY_NAV_HANDOFF_MS\)/);
+  assert.doesNotMatch(header, /window\.setTimeout/);
   assert.match(header, /width: `\$\{activePill\.width\}px`/);
   assert.match(
     header,

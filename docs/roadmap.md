@@ -71,14 +71,17 @@
   navigation и RSC/data wait выполняются вне native View Transition. После
   ready commit используется отменяемый CSS entrance; named native element
   остаётся только `app-page-header` для синхронных updates. Единственный
-  локальный black indicator выполняет optimistic `width/transform` handoff к
-  выбранному primary button за `180 ms` до route navigation; собственный
+  локальный black indicator анимирует `width/transform` к выбранному primary
+  button за `180 ms` одновременно с синхронным route dispatch и никогда его не
+  задерживает; собственный
   named/native pill transition удалён, поэтому серый ghost, второй чёрный слой
   и snapshot-scale не возникают. Glyphs визуально остаются `#000` вне pill и
   `#fff` внутри: isolated nav-track имеет непрозрачный белый backdrop, а
-  nav-list не создаёт отдельный stacking context. Новый быстрый intent отменяет
-  прежний timer/pending route, немедленно перецеливает тот же pill и выигрывает;
-  ожидание данных не блокирует cursor, links, focus или следующие клики.
+  nav-list не создаёт отдельный stacking context. Новый быстрый intent
+  немедленно supersede-ит прежний pre-commit/pending route, перецеливает тот же
+  pill и синхронно dispatch-ит новый URL; stale response не может commit-ить
+  старый target. Ожидание данных не блокирует cursor, links, focus или следующие
+  клики.
   Owner/published Course больше не подменяют готовый header текстовой
   loading-card; boundary bounded-временем ждёт real header.
   `prefers-reduced-motion` полностью отключает motion.
@@ -1039,11 +1042,13 @@ UI-only follow-up без изменения LessonRun API, schema или migrati
 а AI/settings/delete собраны в keyboard-accessible vertical overflow. Переходы
 между primary sections и Course → Lesson/back получают зеркальный fade/slide,
 а вкладки сохраняют свой moving indicator. Primary header использует один
-локальный black active-pill: optimistic pre-navigation handoff меняет его
-`width/transform` за `180 ms`, без named/native pill View Transition, второго
+локальный black active-pill: каждый click синхронно dispatch-ит route
+navigation, а `width/transform` параллельно анимируются `180 ms` без routing
+gate, named/native pill View Transition, второго
 чёрного слоя, серого ghost или snapshot-scale. Glyphs визуально имеют `#000`
-вне pill и `#fff` внутри. Rapid primary intent supersede-ит предыдущий handoff
-и pending route, не блокируя cursor/link/focus. Асинхронная route navigation и
+вне pill и `#fff` внутри. Rapid primary intent немедленно supersede-ит
+предыдущий pre-commit/pending route; stale response не может commit-ить старый
+URL, а cursor/link/focus остаются активными. Асинхронная route navigation и
 RSC/data load никогда не удерживаются внутри native
 `document.startViewTransition`: после ready commit применяется interruptible
 CSS entrance, а `app-page-header` остаётся единственным named element для

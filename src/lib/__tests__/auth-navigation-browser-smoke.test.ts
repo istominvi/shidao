@@ -858,7 +858,11 @@ async function assertCourseTableFitsAndTruncates(
 }
 
 type PlaywrightRoute = {
-  request: () => { postDataJSON: () => unknown };
+  request: () => {
+    postDataJSON: () => unknown;
+    url: () => string;
+  };
+  continue: () => Promise<void>;
   fulfill: (options: {
     status: number;
     contentType: string;
@@ -3489,17 +3493,52 @@ test("browser smoke: authenticated /login redirects by access policy", async (t)
   }
 });
 
-test("browser smoke: primary navigation uses one fast local handoff", async (t) => {
+test("browser smoke: primary navigation uses one fast local pill while route navigation is pending", async (t) => {
   if (browserSmokeUnavailableReason) {
     t.skip(browserSmokeUnavailableReason);
     return;
   }
 
   const runtime = await openPage({ cookie: authenticatedCookieValue() });
+  let resolveStudentsRscGate: (() => void) | null = null;
+  let markStudentsRscObserved: (() => void) | null = null;
+  const studentsRscGate = new Promise<void>((resolve) => {
+    resolveStudentsRscGate = resolve;
+  });
+  const studentsRscObserved = new Promise<void>((resolve) => {
+    markStudentsRscObserved = resolve;
+  });
+  const releaseStudentsRsc = () => {
+    resolveStudentsRscGate?.();
+    resolveStudentsRscGate = null;
+  };
 
   try {
+    await runtime.page.route("**/students*", async (route) => {
+      const requestUrl = new URL(route.request().url());
+      const isStudentsRsc =
+        requestUrl.pathname === "/students" &&
+        requestUrl.searchParams.has("_rsc");
+      if (!isStudentsRsc) {
+        await route.continue();
+        return;
+      }
+
+      markStudentsRscObserved?.();
+      markStudentsRscObserved = null;
+      await studentsRscGate;
+      try {
+        await route.continue();
+      } catch {
+        // The browser may cancel a prefetch when the context is closing.
+      }
+    });
+
     await runtime.page.clock.setFixedTime("2026-08-11T00:00:00.000Z");
-    await runtime.page.goto("/schedule", { waitUntil: "networkidle" });
+    await runtime.page.goto("/schedule", { waitUntil: "domcontentloaded" });
+    await runtime.page
+      .getByRole("heading", { name: "Расписание", exact: true, level: 1 })
+      .waitFor();
     await runtime.page
       .locator(
         '.site-header-nav-active-pill[data-ready="true"][data-motion-ready="true"]',
@@ -3562,16 +3601,12 @@ test("browser smoke: primary navigation uses one fast local handoff", async (t) 
     );
 
     const handoff = await runtime.page.evaluate(() => {
-      const root = document.documentElement;
       const track = document.querySelector<HTMLElement>(
         ".site-header-nav-track",
       );
       const list = track?.querySelector<HTMLElement>(".site-header-nav-list");
       const pill = track?.querySelector<HTMLElement>(
         ".site-header-nav-active-pill",
-      );
-      const activeLink = track?.querySelector<HTMLAnchorElement>(
-        '.site-header-nav-pill[aria-current="page"]',
       );
       const targetLink = track?.querySelector<HTMLAnchorElement>(
         '.site-header-nav-pill[href="/students"]',
@@ -3583,7 +3618,6 @@ test("browser smoke: primary navigation uses one fast local handoff", async (t) 
         !track ||
         !list ||
         !pill ||
-        !activeLink ||
         !targetLink ||
         !targetContent ||
         !targetIcon
@@ -3594,11 +3628,8 @@ test("browser smoke: primary navigation uses one fast local handoff", async (t) 
       const targetLinkStyle = getComputedStyle(targetLink);
       const targetContentStyle = getComputedStyle(targetContent);
       return {
-        pathname: window.location.pathname,
-        pageTransitionDirection: root.dataset.pageTransitionDirection ?? null,
         pillCount: track.querySelectorAll(".site-header-nav-active-pill")
           .length,
-        activeHref: activeLink.getAttribute("href"),
         pillLeft: pill.getBoundingClientRect().left,
         pillBackgroundColor: pillStyle.backgroundColor,
         pillViewTransitionName: pillStyle.viewTransitionName,
@@ -3631,10 +3662,7 @@ test("browser smoke: primary navigation uses one fast local handoff", async (t) 
 
     assert.deepEqual(
       {
-        pathname: handoff.pathname,
-        pageTransitionDirection: handoff.pageTransitionDirection,
         pillCount: handoff.pillCount,
-        activeHref: handoff.activeHref,
         pillBackgroundColor: handoff.pillBackgroundColor,
         pillViewTransitionName: handoff.pillViewTransitionName,
         pillZIndex: handoff.pillZIndex,
@@ -3650,10 +3678,7 @@ test("browser smoke: primary navigation uses one fast local handoff", async (t) 
         transitionDurations: handoff.transitionDurations,
       },
       {
-        pathname: "/schedule",
-        pageTransitionDirection: null,
         pillCount: 1,
-        activeHref: "/schedule",
         pillBackgroundColor: "rgb(0, 0, 0)",
         pillViewTransitionName: "none",
         pillZIndex: "0",
@@ -3671,12 +3696,33 @@ test("browser smoke: primary navigation uses one fast local handoff", async (t) 
     );
     assert.ok(
       handoff.pillLeft > start.pillLeft + 0.5,
-      "The one local pill must leave Schedule before route navigation starts",
+      "The one local pill must leave Schedule immediately when Students is chosen",
     );
     assert.ok(
       handoff.pillLeft < start.targetLeft - 0.5,
       "The handoff sample must capture the pill before it reaches Students",
     );
+
+    let observedTimeout: ReturnType<typeof setTimeout> | null = null;
+    try {
+      await Promise.race([
+        studentsRscObserved,
+        new Promise<void>((_, reject) => {
+          observedTimeout = setTimeout(
+            () =>
+              reject(
+                new Error(
+                  "Students navigation did not reach the gated Next RSC request",
+                ),
+              ),
+            5_000,
+          );
+        }),
+      ]);
+    } finally {
+      if (observedTimeout) clearTimeout(observedTimeout);
+    }
+    releaseStudentsRsc();
 
     await runtime.page.waitForURL(/\/students$/);
     await runtime.page
@@ -3689,6 +3735,7 @@ test("browser smoke: primary navigation uses one fast local handoff", async (t) 
       "/students",
     );
   } finally {
+    releaseStudentsRsc();
     await runtime.close();
   }
 });
@@ -3851,6 +3898,218 @@ test("browser smoke: latest primary navigation click wins while the first destin
     releaseStudentDirectoryRpc();
     e2eStudentDirectoryRpcGate = null;
     e2eStudentDirectoryRpcObserved = null;
+    await runtime.close();
+  }
+});
+
+test("browser smoke: Store supersedes a pre-commit Courses RSC navigation", async (t) => {
+  if (browserSmokeUnavailableReason) {
+    t.skip(browserSmokeUnavailableReason);
+    return;
+  }
+
+  const runtime = await openPage({ cookie: authenticatedCookieValue() });
+  let releaseCoursesRscGate: (() => void) | null = null;
+  let markCoursesRscObserved: (() => void) | null = null;
+  let markAllCoursesRscSettled: (() => void) | null = null;
+  let coursesRscGateReleased = false;
+  let pendingCoursesRscRequests = 0;
+  const coursesRscGate = new Promise<void>((resolve) => {
+    releaseCoursesRscGate = resolve;
+  });
+  const coursesRscObserved = new Promise<void>((resolve) => {
+    markCoursesRscObserved = resolve;
+  });
+  const allCoursesRscSettled = new Promise<void>((resolve) => {
+    markAllCoursesRscSettled = resolve;
+  });
+  const releaseCoursesRsc = () => {
+    if (coursesRscGateReleased) return;
+    coursesRscGateReleased = true;
+    releaseCoursesRscGate?.();
+    releaseCoursesRscGate = null;
+    if (pendingCoursesRscRequests === 0) {
+      markAllCoursesRscSettled?.();
+      markAllCoursesRscSettled = null;
+    }
+  };
+
+  try {
+    await runtime.page.route("**/courses*", async (route) => {
+      const requestUrl = new URL(route.request().url());
+      const isCoursesRsc =
+        requestUrl.pathname === "/courses" &&
+        requestUrl.searchParams.has("_rsc");
+      if (!isCoursesRsc || coursesRscGateReleased) {
+        await route.continue();
+        return;
+      }
+
+      pendingCoursesRscRequests += 1;
+      markCoursesRscObserved?.();
+      markCoursesRscObserved = null;
+      await coursesRscGate;
+      try {
+        await route.continue();
+      } catch {
+        // A superseded RSC request may already be cancelled by the browser.
+      } finally {
+        pendingCoursesRscRequests -= 1;
+        if (coursesRscGateReleased && pendingCoursesRscRequests === 0) {
+          markAllCoursesRscSettled?.();
+          markAllCoursesRscSettled = null;
+        }
+      }
+    });
+
+    await runtime.page.clock.setFixedTime("2026-08-11T00:00:00.000Z");
+    await runtime.page.goto("/students", { waitUntil: "domcontentloaded" });
+    await runtime.page
+      .getByRole("heading", { name: "Ученики", exact: true, level: 1 })
+      .waitFor();
+    await runtime.page
+      .locator(
+        '.site-header-nav-active-pill[data-ready="true"][data-motion-ready="true"]',
+      )
+      .waitFor();
+
+    await runtime.page.evaluate(() => {
+      const testWindow = window as typeof window & {
+        __e2ePrimaryNavCommits?: Array<{
+          activeHref: string | null;
+          heading: string | null;
+          pathname: string;
+        }>;
+      };
+      const capture = () => {
+        const next = {
+          activeHref:
+            document
+              .querySelector<HTMLAnchorElement>(
+                '.site-header-nav-pill[aria-current="page"]',
+              )
+              ?.getAttribute("href") ?? null,
+          heading:
+            document.querySelector<HTMLElement>("h1")?.textContent?.trim() ??
+            null,
+          pathname: window.location.pathname,
+        };
+        const previous = testWindow.__e2ePrimaryNavCommits?.at(-1);
+        if (
+          previous?.activeHref === next.activeHref &&
+          previous.heading === next.heading &&
+          previous.pathname === next.pathname
+        ) {
+          return;
+        }
+        testWindow.__e2ePrimaryNavCommits?.push(next);
+      };
+      testWindow.__e2ePrimaryNavCommits = [];
+      capture();
+      new MutationObserver(capture).observe(document.documentElement, {
+        attributes: true,
+        childList: true,
+        subtree: true,
+      });
+    });
+
+    await runtime.page
+      .getByRole("link", { name: "Курсы", exact: true })
+      .click();
+
+    let observedTimeout: ReturnType<typeof setTimeout> | null = null;
+    try {
+      await Promise.all([
+        runtime.page.waitForTimeout(220),
+        Promise.race([
+          coursesRscObserved,
+          new Promise<void>((_, reject) => {
+            observedTimeout = setTimeout(
+              () =>
+                reject(
+                  new Error(
+                    "Courses navigation did not reach the gated Next RSC request",
+                  ),
+                ),
+              5_000,
+            );
+          }),
+        ]),
+      ]);
+    } finally {
+      if (observedTimeout) clearTimeout(observedTimeout);
+    }
+
+    assert.deepEqual(
+      await runtime.page.evaluate(() => ({
+        activeHref:
+          document
+            .querySelector<HTMLAnchorElement>(
+              '.site-header-nav-pill[aria-current="page"]',
+            )
+            ?.getAttribute("href") ?? null,
+        heading:
+          document.querySelector<HTMLElement>("h1")?.textContent?.trim() ??
+          null,
+        pathname: window.location.pathname,
+      })),
+      {
+        activeHref: "/students",
+        heading: "Ученики",
+        pathname: "/students",
+      },
+      "The gated Courses RSC request must leave the committed Students tree interactive",
+    );
+
+    await runtime.page
+      .getByRole("link", { name: "Магазин", exact: true })
+      .click();
+    await runtime.page.waitForURL(/\/store$/, { timeout: 5_000 });
+    await runtime.page
+      .getByRole("heading", { name: "Магазин", exact: true, level: 1 })
+      .waitFor();
+    assert.equal(coursesRscGateReleased, false);
+
+    releaseCoursesRsc();
+    await allCoursesRscSettled;
+    await runtime.page.waitForTimeout(250);
+
+    const finalContract = await runtime.page.evaluate(() => {
+      const testWindow = window as typeof window & {
+        __e2ePrimaryNavCommits?: Array<{
+          activeHref: string | null;
+          heading: string | null;
+          pathname: string;
+        }>;
+      };
+      return {
+        activeHref:
+          document
+            .querySelector<HTMLAnchorElement>(
+              '.site-header-nav-pill[aria-current="page"]',
+            )
+            ?.getAttribute("href") ?? null,
+        coursesCommitSeen:
+          testWindow.__e2ePrimaryNavCommits?.some(
+            (entry) =>
+              entry.pathname === "/courses" ||
+              entry.activeHref === "/courses" ||
+              entry.heading === "Курсы",
+          ) ?? false,
+        heading:
+          document.querySelector<HTMLElement>("h1")?.textContent?.trim() ??
+          null,
+        pathname: window.location.pathname,
+      };
+    });
+    assert.deepEqual(finalContract, {
+      activeHref: "/store",
+      coursesCommitSeen: false,
+      heading: "Магазин",
+      pathname: "/store",
+    });
+  } finally {
+    releaseCoursesRsc();
     await runtime.close();
   }
 });
@@ -8859,6 +9118,9 @@ test("browser smoke: mobile Account menu exposes primary sections and account ac
         exact: true,
       })
       .waitFor();
+    await runtime.page
+      .locator("html[data-page-transition-direction]")
+      .waitFor({ state: "detached" });
 
     const mobileContract = await runtime.page.evaluate(() => {
       const toolbar = document.querySelector<HTMLElement>(
@@ -12482,6 +12744,9 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
         level: 1,
       })
       .waitFor();
+    await runtime.page
+      .locator("html[data-page-transition-direction]")
+      .waitFor({ state: "detached" });
     const mobileCourseLessons = await runtime.page.evaluate(() => {
       const toolbar = document.querySelector<HTMLElement>(
         ".course-lessons-toolbar",
