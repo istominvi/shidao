@@ -21,7 +21,7 @@
   --product-inner-control-size: 2rem;
   --product-inner-control-radius: 0.5rem;
   --product-inner-control-inset: 0.25rem;
-  --product-raised-control-shadow: 0 1px 6px 0px oklch(0% 0 0 / 0.1);
+  --product-raised-control-shadow: 0 1px 6px 0px oklch(0% 0 0 / 0.05);
   --product-raised-control-shadow-hover: 0 4px 10px -2px oklch(0% 0 0 / 0.16);
   --product-raised-control-shadow-pressed: 0 1px 3px 0px oklch(0% 0 0 / 0.14);
   --product-raised-control-hover-translate-y: -1px;

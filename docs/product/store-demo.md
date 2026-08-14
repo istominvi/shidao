@@ -106,7 +106,7 @@ machine.
 
 Store product cards и canonical table wrapper используют статический
 `--product-raised-surface-shadow`, равный базовой тени кнопки
-`0 1px 6px 0px oklch(0% 0 0 / 0.1)`, без card hover/pressed lift, transform или
+`0 1px 6px 0px oklch(0% 0 0 / 0.05)`, без card hover/pressed lift, transform или
 shadow-transition. Deep-link и programmatic focus товара сохраняют отдельный
 3 px outline поверх неизменной base-тени; existing white background, card/table
 radius, table row hover и horizontal scroll не меняются. В `forced-colors`
@@ -114,7 +114,7 @@ surface shadow заменяется системным outline.
 
 Поиск каталога и однострочные поля checkout «Получатель / Телефон / Email»
 получают белый borderless surface и статическую тень
-`0 1px 6px 0px oklch(0% 0 0 / 0.1)`, canonical foreground/типографику,
+`0 1px 6px 0px oklch(0% 0 0 / 0.05)`, canonical foreground/типографику,
 непрозрачные placeholder/icon и отдельный 2 px focus halo. Hover не меняет
 тень или геометрию. Select внутри filter popover и многострочный адрес доставки
 не получают entry shadow; dialog/menu/popover surfaces также исключены. Это UI-only

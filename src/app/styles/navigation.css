@@ -8,6 +8,7 @@
   --header-shell-bg: rgba(255, 255, 255, 0.82);
   --header-shell-shadow:
     0 22px 42px rgba(20, 20, 20, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  --product-header-shell-shadow: 0px 6px 12px oklch(0 0 0 / 0.05);
   --header-nav-gap: 0.35rem;
   --header-pill-height: 2.5rem;
   --header-pill-radius: 0.95rem;
@@ -63,10 +64,7 @@
   border-radius: var(--product-card-radius, 1.25rem);
   background: #fff;
   padding: 0.75rem;
-  box-shadow:
-    0 20px 44px rgba(20, 20, 20, 0.09),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.78),
-    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  box-shadow: var(--product-header-shell-shadow);
   backdrop-filter: none;
 }
 

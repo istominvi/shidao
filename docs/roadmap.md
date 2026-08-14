@@ -470,7 +470,7 @@ rollout входит в exact functional source
 
 **Next production:** единый raised-control contract распространяется на все
 канонические `.product-btn`: белый borderless surface и однослойная базовая тень
-`0 1px 6px 0px oklch(0% 0 0 / 0.1)`. Один общий `.product-btn` state-contract
+`0 1px 6px 0px oklch(0% 0 0 / 0.05)`. Один общий `.product-btn` state-contract
 обслуживает header, toolbar и filter CTA без контекстных shadow/transform fork.
 Fine-pointer hover использует `0 4px 10px -2px oklch(0% 0 0 / 0.16)` и
 поднимает surface через `translateY(-1px)` без scale, а pressed `:active`
@@ -483,8 +483,10 @@ Keyboard outline и forced-colors fallback остаются отдельными
 option получает только base shadow без динамических button states; shell имеет
 фон `oklch(0.19 0 0 / 0.1)`. Подзаголовки страниц и inactive tab text/icon
 получают `oklch(0.19 0 0 / 0.6)`, а отдельный 1.2 px tab baseline —
-`oklch(0.19 0 0 / 0.4)`. Это UI-only follow-up без API/schema/migration и пока
-без production rollout evidence.
+`oklch(0.19 0 0 / 0.4)`. Белый sticky product TopNav сохраняет
+`68 px / 20 px`, но получает одну тень
+`0px 6px 12px oklch(0 0 0 / 0.05)` без inset-слоёв. Это UI-only follow-up без
+API/schema/migration и пока без production rollout evidence.
 
 **Current source / Next production acceptance:** обычные CTA Auth recovery,
 check-email, onboarding, identity invitation/completion и retry-state
@@ -506,7 +508,7 @@ Component/Run-history/Students/Store cards и progress stats использую�
 
 Shared `Input` и canonical однострочные text/search fields получают белый
 borderless surface и статический `--product-entry-control-shadow`, равный
-базовым `0 1px 6px 0px oklch(0% 0 0 / 0.1)`, единые foreground/типографику и
+базовым `0 1px 6px 0px oklch(0% 0 0 / 0.05)`, единые foreground/типографику и
 непрозрачные placeholder/icons. Hover не меняет shadow/transform, а click или
 keyboard focus добавляет отдельный 2 px halo без изменения геометрии. Select,
 textarea, checkbox/radio/file, multiline editor, dialog/menu/popover surfaces,

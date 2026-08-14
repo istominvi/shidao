@@ -604,8 +604,9 @@ delete остаётся later policy, а не неявным поведение�
 Visual contract Course routes не меняет эту навигационную или доменную модель:
 
 - page background — сплошной `#f5f1e8` без цветных marketing gradients;
-- product header — sticky demo shell высотой 68 px с радиусом 20 px и
-  непрозрачным белым фоном без blur; Account dropdown использует тот же
+- product header — sticky demo shell высотой 68 px с радиусом 20 px,
+  непрозрачным белым фоном без blur и одной тенью
+  `0px 6px 12px oklch(0 0 0 / 0.05)`; Account dropdown использует тот же
   сплошной белый surface;
 - `AppPageHeader` задаёт один прозрачный layout для `/courses`, `/students`,
   `/schedule`, authenticated `/settings/*`, Course и Lesson: системный H1 веса
@@ -657,7 +658,7 @@ Visual contract Course routes не меняет эту навигационну�
   slice не реализован;
 - next production refinement распространяет единый raised contract на все
   канонические `.product-btn`: белый borderless surface и exact однослойная
-  тень `0 1px 6px 0px oklch(0% 0 0 / 0.1)`. Header, toolbar и filter CTA
+  тень `0 1px 6px 0px oklch(0% 0 0 / 0.05)`. Header, toolbar и filter CTA
   используют один state-contract без context fork: fine-pointer hover получает
   `0 4px 10px -2px oklch(0% 0 0 / 0.16)` и `translateY(-1px)` без scale,
   pressed возвращается на исходную позицию с
@@ -691,7 +692,7 @@ Visual contract Course routes не меняет эту навигационну�
   тень системным контуром;
 - canonical однострочные text/search entry controls получают белый borderless
   surface и статический `--product-entry-control-shadow`, равный базовой тени
-  `0 1px 6px 0px oklch(0% 0 0 / 0.1)`, общий foreground/типографику и
+  `0 1px 6px 0px oklch(0% 0 0 / 0.05)`, общий foreground/типографику и
   непрозрачные placeholder/icons через `currentColor`. Hover не меняет shadow
   или transform; click/keyboard focus добавляет отдельный 2 px halo и сохраняет
   геометрию. Forced colors использует `Field`/`FieldText` и системную рамку. Select,

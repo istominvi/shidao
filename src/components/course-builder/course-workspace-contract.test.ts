@@ -347,11 +347,18 @@ test("course routes use the flat demo background and unified visual controls", (
   )?.[0];
   const demoPageHeaderStyles =
     /\.course-demo-shell \.app-page-header\s*\{[^}]*\}/.exec(styles)?.[0];
+  const productHeaderStyles = /\.site-header-shell-demo\s*\{[^}]*\}/.exec(
+    navigationStyles,
+  )?.[0];
 
   assert.ok(courseShellStyles, "Course shell styles must remain discoverable");
   assert.ok(
     demoPageHeaderStyles,
     "Demo page-header styles must remain discoverable",
+  );
+  assert.ok(
+    productHeaderStyles,
+    "Product header styles must remain discoverable",
   );
   assert.match(courseShellStyles, /background: #f5f1e8;/);
   assert.doesNotMatch(courseShellStyles, /gradient/i);
@@ -398,8 +405,19 @@ test("course routes use the flat demo background and unified visual controls", (
   );
   assert.match(
     navigationStyles,
-    /\.site-header-shell-demo\s*\{[\s\S]*?height: 4\.25rem;[\s\S]*?border-radius: var\(--product-card-radius, 1\.25rem\);[\s\S]*?background: #fff;/,
+    /:root\s*\{[^}]*--product-header-shell-shadow: 0px 6px 12px oklch\(0 0 0 \/ 0\.05\);/,
   );
+  assert.match(productHeaderStyles, /height: 4\.25rem;/);
+  assert.match(
+    productHeaderStyles,
+    /border-radius: var\(--product-card-radius, 1\.25rem\);/,
+  );
+  assert.match(productHeaderStyles, /background: #fff;/);
+  assert.match(
+    productHeaderStyles,
+    /box-shadow: var\(--product-header-shell-shadow\);/,
+  );
+  assert.doesNotMatch(productHeaderStyles, /inset|20px 44px/);
   assert.match(
     navigationStyles,
     /\.nav-dropdown-panel\s*\{[\s\S]*?background: #fff;/,
@@ -434,7 +452,7 @@ test("product buttons share one animated raised-control elevation contract", () 
   );
   assert.match(
     styles,
-    /:root\s*\{[^}]*--product-raised-control-shadow:\s*0 1px 6px 0px oklch\(0% 0 0 \/ 0\.1\);[^}]*--product-raised-control-shadow-hover:\s*0 4px 10px -2px\s+oklch\(0% 0 0 \/ 0\.16\);[^}]*--product-raised-control-shadow-pressed:\s*0 1px 3px 0px\s+oklch\(0% 0 0 \/ 0\.14\);[^}]*--product-raised-control-hover-translate-y: -1px;[^}]*--product-raised-control-transition: 160ms\s+cubic-bezier\(0\.2, 0\.8, 0\.2, 1\);/,
+    /:root\s*\{[^}]*--product-raised-control-shadow:\s*0 1px 6px 0px oklch\(0% 0 0 \/ 0\.05\);[^}]*--product-raised-control-shadow-hover:\s*0 4px 10px -2px\s+oklch\(0% 0 0 \/ 0\.16\);[^}]*--product-raised-control-shadow-pressed:\s*0 1px 3px 0px\s+oklch\(0% 0 0 \/ 0\.14\);[^}]*--product-raised-control-hover-translate-y: -1px;[^}]*--product-raised-control-transition: 160ms\s+cubic-bezier\(0\.2, 0\.8, 0\.2, 1\);/,
   );
   assert.match(
     styles,

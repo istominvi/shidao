@@ -78,11 +78,12 @@ const E2E_PUBLISHED_SELF_COMMENT =
   "Опубликованный комментарий E2E Adult из completion UI.";
 const E2E_PRIVATE_OBSERVED_COMMENT =
   "PRIVATE OBSERVED COMMENT — только преподавателю";
-const E2E_RAISED_CONTROL_SHADOW = "oklch(0 0 0 / 0.1) 0px 1px 6px 0px";
+const E2E_RAISED_CONTROL_SHADOW = "oklch(0 0 0 / 0.05) 0px 1px 6px 0px";
 const E2E_RAISED_CONTROL_HOVER_SHADOW = "oklch(0 0 0 / 0.16) 0px 4px 10px -2px";
 const E2E_RAISED_CONTROL_PRESSED_SHADOW = "oklch(0 0 0 / 0.14) 0px 1px 3px 0px";
 const E2E_RAISED_SURFACE_SHADOW = E2E_RAISED_CONTROL_SHADOW;
 const E2E_ENTRY_CONTROL_SHADOW = E2E_RAISED_SURFACE_SHADOW;
+const E2E_PRODUCT_HEADER_SHADOW = "oklch(0 0 0 / 0.05) 0px 6px 12px 0px";
 const E2E_RAISED_CONTROL_HOVER_TRANSFORM = "matrix(1, 0, 0, 1, 0, -1)";
 const E2E_FOCUS_HALO_COLOR = "rgba(20, 20, 20, 0.58)";
 const E2E_MUTED_FOREGROUND = "oklch(0.19 0 0 / 0.6)";
@@ -7980,6 +7981,7 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
         topNavPosition: getComputedStyle(topNav).position,
         headerHeight: headerStyle.height,
         headerRadius: headerStyle.borderRadius,
+        headerBoxShadow: headerStyle.boxShadow,
         titleFontFamily: titleStyle.fontFamily,
         titleFontSize: titleStyle.fontSize,
         titleFontWeight: titleStyle.fontWeight,
@@ -8049,6 +8051,7 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
     assert.equal(coursesVisual.topNavPosition, "sticky");
     assert.equal(coursesVisual.headerHeight, "68px");
     assert.equal(coursesVisual.headerRadius, "20px");
+    assert.equal(coursesVisual.headerBoxShadow, E2E_PRODUCT_HEADER_SHADOW);
     assert.equal(coursesVisual.titleFontFamily, coursesVisual.bodyFontFamily);
     assert.equal(coursesVisual.titleFontSize, "48px");
     assert.equal(coursesVisual.titleFontWeight, "400");

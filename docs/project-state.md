@@ -337,7 +337,7 @@ trigger контекстного меню; buttons открываемого из
 **Next production canonical control elevation and muted-color refinement:** текущий source применяет
 один raised-surface contract ко всем каноническим `.product-btn`, а не только к
 actions заголовка. Обычная кнопка имеет белый surface, border `0` и exact
-однослойную тень `0 1px 6px 0px oklch(0% 0 0 / 0.1)`. Все ordinary buttons
+однослойную тень `0 1px 6px 0px oklch(0% 0 0 / 0.05)`. Все ordinary buttons
 получают rest/hover/pressed только из общего `.product-btn`, поэтому header и
 toolbar/filter controls не имеют контекстных fork. На fine-pointer hover тень
 становится `0 4px 10px -2px oklch(0% 0 0 / 0.16)`, а surface сдвигается через
@@ -355,7 +355,10 @@ option использует только базовую тень без button h
 16 px иконки `WorkspaceTabs` используют отдельный foreground
 `oklch(0.19 0 0 / 0.6)`, тогда как baseline остаётся визуально `1.2 px`, но
 получает независимый цвет `oklch(0.19 0 0 / 0.4)`. API, schema и migrations не
-меняются; production rollout этого follow-up пока не заявлен.
+меняются. Белый sticky product TopNav сохраняет геометрию `68 px / 20 px`, но
+вместо прежнего многослойного эффекта использует одну exact-тень
+`0px 6px 12px oklch(0 0 0 / 0.05)`. Production rollout этого follow-up пока
+не заявлен.
 
 **Current source / Next production ordinary-control, static-surface and
 entry-field refinement:** поверх этого ещё не развёрнутого raised-control
@@ -382,7 +385,7 @@ history cards, Students cards, Store product cards и progress-stat cards.
 
 Канонические однострочные text/search entry controls имеют белый borderless
 surface и статический `--product-entry-control-shadow`, являющийся alias той же
-базовой тени `0 1px 6px 0px oklch(0% 0 0 / 0.1)`. Они не поднимаются и не
+базовой тени `0 1px 6px 0px oklch(0% 0 0 / 0.05)`. Они не поднимаются и не
 меняют тень на hover/pressed, сохраняют общий foreground/типографику,
 непрозрачные placeholder и сопровождающие search/select icons через
 `currentColor`; click/keyboard focus добавляет отдельный 2 px halo и не меняет

@@ -1057,10 +1057,13 @@ flow как permanent delete.
   navigation без inset/shadow/translate, icon opacity `1` и contrast-aware
   `currentColor`. Все канонические `.product-btn` должны быть белыми, иметь
   border `0` и ту же computed base shadow
-  `oklch(0 0 0 / 0.1) 0px 1px 6px 0px`, что selected button переключателя
+  `oklch(0 0 0 / 0.05) 0px 1px 6px 0px`, что selected button переключателя
   вида Расписания. Header и toolbar/filter CTA должны использовать один
   `.product-btn` state-contract и сохранять одинаковые width/height во всех
-  состояниях. После завершения transition hover должен давать
+  состояниях. Белый `.site-header-shell-demo` сохраняет `68 px / 20 px` и
+  имеет единственную computed shadow
+  `oklch(0 0 0 / 0.05) 0px 6px 12px 0px` без inset-слоёв. После завершения
+  transition hover должен давать
   `oklch(0 0 0 / 0.16) 0px 4px 10px -2px` и
   `matrix(1, 0, 0, 1, 0, -1)` без scale, а pointer-down `:active` —
   `oklch(0 0 0 / 0.14) 0px 1px 3px 0px` и `transform: none`; при
@@ -1088,7 +1091,7 @@ flow как permanent delete.
   items, flat row/Component icon-actions, compound toggles и filter popover
   panels не должны получить ordinary button lift;
 - в том же Next-acceptance сравнить computed `box-shadow` с
-  `oklch(0 0 0 / 0.1) 0px 1px 6px 0px` у shared `SurfaceCard`, Schedule,
+  `oklch(0 0 0 / 0.05) 0px 1px 6px 0px` у shared `SurfaceCard`, Schedule,
   Students/Groups, owned/catalog Course, Course Lessons, Store и subject
   progress table wrappers, authored Component, Run-history, Students/Store и
   progress-stat cards. У поверхности нет hover/pressed transform или
@@ -1100,7 +1103,7 @@ flow как permanent delete.
   через `CanvasText`/`Highlight` outline;
 - для canonical однострочных `Input`, `input.field-input`, product search,
   Schedule/Students search и dialog picker search проверить белый borderless
-  surface, computed static shadow `oklch(0 0 0 / 0.1) 0px 1px 6px 0px`, scope
+  surface, computed static shadow `oklch(0 0 0 / 0.05) 0px 1px 6px 0px`, scope
   typography/foreground и непрозрачные placeholder/icons. Hover не должен
   менять shadow, transform или rect; click/keyboard focus добавляет отдельный
   2 px halo, сохраняя base shadow и геометрию. Select, textarea,
