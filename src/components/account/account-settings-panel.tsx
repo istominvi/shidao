@@ -2,6 +2,7 @@
 
 import { type FormEvent, useMemo, useState } from "react";
 import { SecuritySettingsForm } from "@/app/(app)/(profile-required)/settings/security/security-settings-form";
+import { AvatarSettingsForm } from "@/components/account/avatar-settings-form";
 import { StatusMessage } from "@/components/product-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -82,6 +83,13 @@ export function AccountSettingsPanel({
 
   return (
     <div className="space-y-6">
+      <SurfaceCard
+        title="Аватар"
+        description="Выберите фирменный вариант или загрузите своё изображение. Без аватара профиль оставить нельзя."
+      >
+        <AvatarSettingsForm />
+      </SurfaceCard>
+
       <SurfaceCard
         title="Профиль и email"
         description="Смена email завершится только после подтверждения нового адреса."

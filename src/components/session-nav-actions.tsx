@@ -19,6 +19,7 @@ import {
   useState,
   type KeyboardEvent as ReactKeyboardEvent,
 } from "react";
+import { AvatarImage } from "@/components/account/avatar-image";
 import { isInternalAuthEmail, ROUTES } from "@/lib/auth";
 import { signOutViaServer } from "@/lib/auth-flow";
 import { useSessionView } from "@/components/use-session-view";
@@ -364,9 +365,14 @@ export function SessionNavActions({
         aria-label="Открыть меню пользователя"
         className="nav-user-trigger inline-flex cursor-pointer items-center justify-center"
       >
-        <span className="nav-user-trigger-avatar inline-flex items-center justify-center bg-black font-bold text-white">
-          {state.initials ?? "U"}
-        </span>
+        <AvatarImage
+          avatar={state.avatar}
+          initials={state.initials}
+          alt=""
+          size={40}
+          className="nav-user-trigger-avatar"
+          priority
+        />
       </button>
 
       {open && (portalMenu ? createPortal(menu, document.body) : menu)}

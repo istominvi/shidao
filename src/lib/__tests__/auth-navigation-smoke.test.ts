@@ -18,6 +18,11 @@ const account: SessionAccountView = {
   hasPin: true,
   locale: "ru",
   timezone: "Asia/Chita",
+  avatar: {
+    kind: "preset",
+    presetKey: "sd-avatar-v1-01",
+    revision: 1,
+  },
 };
 
 test("smoke: guest and Account header contracts are deterministic", () => {

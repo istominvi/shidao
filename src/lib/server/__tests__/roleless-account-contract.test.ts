@@ -15,6 +15,7 @@ test("active auth and shell resolve only the universal Account context", () => {
     "src/app/api/onboarding/route.ts",
     "src/app/api/settings/security/pin/route.ts",
     "src/app/api/settings/profile/email/route.ts",
+    "src/app/api/settings/profile/avatar/route.ts",
     "src/app/api/auth/reset-password/route.ts",
   ].map(source);
   const combined = activeSources.join("\n");

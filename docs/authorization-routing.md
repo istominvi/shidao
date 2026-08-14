@@ -181,6 +181,17 @@ Trigger Account menu не показывает имя: только avatar `40 �
 `12 px`. Dropdown header показывает ФИО и публичный email без avatar; следующий
 divider идёт от края до края. Отдельной Settings navigation больше нет.
 
+Avatar обязателен на Account DB boundary. Header получает только safe session
+projection `kind/presetKey/revision`: preset читается из immutable local asset,
+custom image — через same-origin authenticated `/api/settings/profile/avatar`.
+Private Storage path, signed token и Account id в browser SessionView не
+выдаются. У private bucket нет browser policies: GET/POST route сначала
+проверяет app session и revocation, а Storage и pointer writes выполняет только
+server credential. POST принимает либо allowlisted preset key с expected
+revision, либо multipart JPEG/PNG/WebP до 5 MiB; server сохраняет только
+нормализованный `512 × 512` WebP. Cross-account path, direct browser write и
+stale revision fail closed.
+
 ## V2 API namespaces
 
 ### Auth/session

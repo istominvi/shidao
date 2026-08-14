@@ -182,12 +182,26 @@ redirects. Teacher connection requests, AI consents и subject lifecycle не
 удалены, а перенесены в соответствующие вкладки. Это UI/routing slice без schema
 или migration.
 
+**Current Account avatar follow-up:** AV1 DB-first contract применён к
+production; каждый Account имеет ровно одно
+avatar state: один из 20 immutable ShiDao presets либо private custom WebP.
+Настройки дают обязательную radio-selection и безопасную загрузку собственного
+изображения; Account menu отображает результат вместо initials. Preset fallback
+и backfill закрепляют обязательность для signup/provisional/existing Accounts,
+а private Storage/RPC/session boundary не открывает object path browser payload.
+Этот vertical slice включает forward migration, typed manifest/assets,
+server-side image normalization, API/UI, schema snapshot и regression tests;
+он не превращает avatar в learner/observer capability и не расширяет Course
+access.
+
 Согласованный target:
 
 - один roleless Account может одновременно преподавать, учиться и наблюдать;
 - каждый active Account имеет ровно один canonical LearnerProfile как
   transaction-safe DB invariant, а offline profiles остаются unclaimed до
   consented connection;
+- каждый Account имеет обязательный Account-owned avatar без зависимости от
+  learner role/profile; custom photo остаётся private Account data;
 - преподавание и observer access являются отношениями, а не глобальными ролями;
 - teacher raw history остаётся recorder-scoped;
 - subject/observer получают learner-safe finalized history и progress;

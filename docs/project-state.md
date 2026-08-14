@@ -148,6 +148,24 @@ email без второй avatar. Заголовок раздела исполь
 `Профиль`, AI consents и subject-only unlink/erasure — в `Настройки`. UI/API
 используют прежние audited identity boundaries; schema и migrations не менялись.
 
+**Current Account avatar follow-up:** AV1 DB-first contract применён к
+production, а avatar теперь является обязательным
+состоянием `Account`, а не декоративными initials. В настройках единого профиля
+можно выбрать один из 20 оригинальных ShiDao presets либо загрузить JPEG/PNG/
+WebP до 5 MiB. Сервер декодирует untrusted input, ограничивает исходник
+`4096 × 4096`, применяет orientation и center crop, сохраняет только opaque
+`512 × 512` WebP без исходных metadata в private `profile-avatars`. Смена
+versioned: server-only upload → optimistic Account pointer switch → проверенный
+cleanup прежнего object; у bucket/setter нет browser write policy/EXECUTE, а
+commit-unknown сверяется повторным canonical read. Browser SessionView не
+получает Storage path или token. Header показывает выбранное изображение
+`40 × 40 px`/`12 px`, а при
+ошибке загрузки безопасно возвращается к initials. Existing и новые Accounts
+получают валидный preset на DB boundary; exact-one state хранится в
+`public.account`. Typed manifest и 20 оптимизированных assets находятся в
+`src/lib/account-avatar.ts` и `public/avatars/presets/`, визуальный/privacy
+контракт — в `docs/product/account-avatars.md`.
+
 Navigation/catalog follow-up `bafc984d0bc7bfb6cb795170a09ba2aabfb98441`
 упростил primary Account navigation до «Расписание / Ученики / Курсы», перенёс
 «Учебный профиль» в Account menu, а observer projection — в третью вкладку

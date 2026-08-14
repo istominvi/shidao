@@ -1,5 +1,16 @@
 import { isInternalAuthEmail, normalizeIdentifier } from "@/lib/auth";
+import {
+  isAvatarPresetKey,
+  type AccountAvatarView,
+  type AvatarPresetKey,
+} from "@/lib/account-avatar";
 import { getSupabasePublicConfig } from "@/lib/server/auth-config";
+import { isOwnProfileAvatarStoragePath } from "@/lib/server/profile-avatar-storage";
+
+export type AccountAvatarAuthContext = AccountAvatarView & {
+  storagePath: string | null;
+  updatedAt: string;
+};
 
 export type AccountAuthContext = {
   accountId: string;
@@ -11,6 +22,7 @@ export type AccountAuthContext = {
   hasPin: boolean;
   canAuthorEducatorCourses: boolean;
   sessionsInvalidBefore: string | null;
+  avatar: AccountAvatarAuthContext;
 };
 
 export type AccountLoginAlias = {
@@ -40,6 +52,19 @@ type RpcAccountContextRow = {
   has_pin?: unknown;
   can_author_educator_courses?: unknown;
   sessions_invalid_before?: unknown;
+  avatar_kind?: unknown;
+  avatar_preset_key?: unknown;
+  avatar_storage_path?: unknown;
+  avatar_revision?: unknown;
+  avatar_updated_at?: unknown;
+};
+
+type RpcAvatarMutationRow = {
+  avatar_kind?: unknown;
+  avatar_preset_key?: unknown;
+  avatar_revision?: unknown;
+  avatar_updated_at?: unknown;
+  previous_storage_path?: unknown;
 };
 
 type RpcAliasRow = {
@@ -48,6 +73,24 @@ type RpcAliasRow = {
 };
 
 type Fetcher = typeof fetch;
+
+class AccountAuthRpcError extends Error {
+  constructor(
+    functionName: string,
+    readonly status: number,
+    readonly rpcCode: string | null,
+  ) {
+    super(`Account auth RPC ${functionName} failed (${status}).`);
+    this.name = "AccountAuthRpcError";
+  }
+}
+
+export class AccountAvatarRevisionConflictError extends Error {
+  constructor() {
+    super("Account avatar was changed by another request.");
+    this.name = "AccountAvatarRevisionConflictError";
+  }
+}
 
 function getServiceRoleKey() {
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -94,9 +137,14 @@ async function callRpc(
   if (!response.ok) {
     // RPC payloads can contain PINs and account identifiers. Deliberately do not
     // attach the request/response body to logs or thrown errors.
-    throw new Error(
-      `Account auth RPC ${functionName} failed (${response.status}).`,
-    );
+    const rpcCode =
+      result &&
+      typeof result === "object" &&
+      "code" in result &&
+      typeof result.code === "string"
+        ? result.code
+        : null;
+    throw new AccountAuthRpcError(functionName, response.status, rpcCode);
   }
   return result;
 }
@@ -119,7 +167,11 @@ function parseAccountContext(payload: unknown): AccountAuthContext {
     !(
       row.sessions_invalid_before === null ||
       typeof row.sessions_invalid_before === "string"
-    )
+    ) ||
+    !(row.avatar_kind === "preset" || row.avatar_kind === "custom") ||
+    !Number.isSafeInteger(row.avatar_revision) ||
+    (row.avatar_revision as number) < 1 ||
+    typeof row.avatar_updated_at !== "string"
   ) {
     throw new Error("Account auth context is unavailable.");
   }
@@ -129,6 +181,21 @@ function parseAccountContext(payload: unknown): AccountAuthContext {
     !Number.isFinite(Date.parse(row.sessions_invalid_before))
   ) {
     throw new Error("Account session cutoff is invalid.");
+  }
+
+  if (!Number.isFinite(Date.parse(row.avatar_updated_at))) {
+    throw new Error("Account avatar timestamp is invalid.");
+  }
+
+  const avatarInvariantHolds =
+    (row.avatar_kind === "preset" &&
+      isAvatarPresetKey(row.avatar_preset_key) &&
+      row.avatar_storage_path === null) ||
+    (row.avatar_kind === "custom" &&
+      row.avatar_preset_key === null &&
+      isOwnProfileAvatarStoragePath(row.avatar_storage_path, row.account_id));
+  if (!avatarInvariantHolds) {
+    throw new Error("Account avatar context is invalid.");
   }
 
   return {
@@ -145,6 +212,80 @@ function parseAccountContext(payload: unknown): AccountAuthContext {
     hasPin: row.has_pin,
     canAuthorEducatorCourses: row.can_author_educator_courses,
     sessionsInvalidBefore: row.sessions_invalid_before,
+    avatar: {
+      kind: row.avatar_kind,
+      presetKey: row.avatar_preset_key as AvatarPresetKey | null,
+      storagePath: row.avatar_storage_path as string | null,
+      revision: row.avatar_revision as number,
+      updatedAt: row.avatar_updated_at,
+    },
+  };
+}
+
+export type SetCurrentAccountAvatarInput =
+  | {
+      accountId: string;
+      actorAuthUserId: string;
+      expectedRevision: number;
+      kind: "preset";
+      presetKey: AvatarPresetKey;
+    }
+  | {
+      accountId: string;
+      actorAuthUserId: string;
+      expectedRevision: number;
+      kind: "custom";
+      storagePath: string;
+    };
+
+export type SetCurrentAccountAvatarResult = {
+  avatar: AccountAvatarView & { updatedAt: string };
+  previousStoragePath: string | null;
+};
+
+function parseAvatarMutationResult(
+  payload: unknown,
+  input: SetCurrentAccountAvatarInput,
+): SetCurrentAccountAvatarResult {
+  const row = firstRpcRow<RpcAvatarMutationRow>(payload);
+  if (
+    !row ||
+    !(row.avatar_kind === "preset" || row.avatar_kind === "custom") ||
+    !Number.isSafeInteger(row.avatar_revision) ||
+    (row.avatar_revision as number) < 1 ||
+    typeof row.avatar_updated_at !== "string" ||
+    !Number.isFinite(Date.parse(row.avatar_updated_at)) ||
+    !(
+      row.previous_storage_path === null ||
+      isOwnProfileAvatarStoragePath(row.previous_storage_path, input.accountId)
+    )
+  ) {
+    throw new Error("Account avatar update response is invalid.");
+  }
+
+  const revision = row.avatar_revision as number;
+  const stateMatchesRequest =
+    revision === input.expectedRevision + 1 &&
+    ((input.kind === "preset" &&
+      row.avatar_kind === "preset" &&
+      row.avatar_preset_key === input.presetKey) ||
+      (input.kind === "custom" &&
+        row.avatar_kind === "custom" &&
+        row.avatar_preset_key === null));
+  if (!stateMatchesRequest) {
+    throw new Error(
+      "Account avatar update response does not match the request.",
+    );
+  }
+
+  return {
+    avatar: {
+      kind: row.avatar_kind,
+      presetKey: row.avatar_preset_key as AvatarPresetKey | null,
+      revision,
+      updatedAt: row.avatar_updated_at,
+    },
+    previousStoragePath: row.previous_storage_path,
   };
 }
 
@@ -424,6 +565,54 @@ export async function updateCurrentAccountProfile(
     },
     { accessToken, fetcher: options.fetcher },
   );
+}
+
+export async function setCurrentAccountAvatar(
+  input: SetCurrentAccountAvatarInput,
+  options: { fetcher?: Fetcher } = {},
+) {
+  if (
+    !Number.isSafeInteger(input.expectedRevision) ||
+    input.expectedRevision < 1
+  ) {
+    throw new Error("Account avatar revision is invalid.");
+  }
+  if (
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(
+      input.actorAuthUserId,
+    ) ||
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(
+      input.accountId,
+    ) ||
+    (input.kind === "preset" && !isAvatarPresetKey(input.presetKey)) ||
+    (input.kind === "custom" &&
+      !isOwnProfileAvatarStoragePath(input.storagePath, input.accountId))
+  ) {
+    throw new Error("Account avatar update is invalid.");
+  }
+
+  try {
+    return parseAvatarMutationResult(
+      await callRpc(
+        "set_current_account_avatar",
+        {
+          p_actor_auth_user_id: input.actorAuthUserId,
+          p_avatar_kind: input.kind,
+          p_avatar_preset_key: input.kind === "preset" ? input.presetKey : null,
+          p_avatar_storage_path:
+            input.kind === "custom" ? input.storagePath : null,
+          p_expected_revision: input.expectedRevision,
+        },
+        { admin: true, fetcher: options.fetcher },
+      ),
+      input,
+    );
+  } catch (error) {
+    if (error instanceof AccountAuthRpcError && error.rpcCode === "40001") {
+      throw new AccountAvatarRevisionConflictError();
+    }
+    throw error;
+  }
 }
 
 export async function revokeAccountSessionsAdmin(

@@ -108,6 +108,49 @@ Worktree должен содержать только изменения тек�
 
 ## 4. Если release содержит DB migration
 
+### AV1 Account avatars — production DB execution record
+
+Forward migration `20260814050347_account_profile_avatars.sql` применена к
+production ShiDao DB с `COMMIT` 14 августа 2026 года. Она является DB-first
+expand contract: старый web игнорирует добавленные поля, а зависимый avatar
+web/API нельзя разворачивать до успешного postflight.
+
+Production evidence:
+
+- project-local read-only sanity подтвердил PostgreSQL `15.8`, owner
+  `supabase_admin`, canonical Account/Course/Lesson/Component и исходные counts
+  `19/6/22/84`; пять avatar columns, setter и bucket до apply отсутствовали;
+- первая rollback-only rehearsal обнаружила pending event у initially-deferred
+  Account/Profile constraint trigger и полностью откатилась. Migration получила
+  явный `SET CONSTRAINTS` после backfill; повторная exact rehearsal прошла до
+  `NOTIFY` и завершилась `ROLLBACK`;
+- final migration SHA-256 —
+  `001f6d9161ce53797456e0e886486fce1a9aa9ab13fe1cd769f764b9f2025201`;
+- verified full-format backup
+  `/root/shidao-db-backups/shidao-before-account-profile-avatars-20260814T054813Z.dump`
+  имеет size `1325301`, mode `600`, `1610` restore-list entries и SHA-256
+  `2f434b64fffc8a96c4e2cf78e3d2997917f43a500ebfe3991b4f2da3fd4a5838`;
+- exact tracked SQL применён owner `supabase_admin` через
+  `psql -X -v ON_ERROR_STOP=1`; output завершился `COMMIT`;
+- read-only postflight сохранил counts `19/6/22/84`, подтвердил пять validated
+  avatar constraints, `19/19` валидных preset Accounts с revision `1`, ноль
+  custom objects и сохранённый `account.updated_at` для всех backfilled rows;
+- `profile-avatars` приватен, имеет limit `1048576` и allowlist
+  `{image/webp}`; browser Storage policies равны `0`;
+- setter остаётся `SECURITY DEFINER`, owner `supabase_admin`, пустой
+  `search_path`; `EXECUTE` есть только у `postgres/service_role`, у
+  `PUBLIC/anon/authenticated` отсутствует. Auth context содержит все пять AV1
+  полей;
+- штатный read-only snapshot снят в `2026-08-14T05:53:08Z`, strict stage
+  `contract`, SHA-256
+  `3ca847164526568def44d2deed9a6b1d6cd1742e168462376b4f41fe6383ef97`.
+
+Self-hosted contour по-прежнему не содержит
+`supabase_migrations.schema_migrations`; evidence применения — exact tracked
+checksum, наблюдаемый `COMMIT` и измеримый postflight. При дефекте использовать
+совместимый web rollback или новую forward migration; восстановление backup —
+отдельная остановленная операция.
+
 ### E1 educator Course / attestation — full production execution record
 
 Database, dependent web/API и отдельный Chinese-course bootstrap являются

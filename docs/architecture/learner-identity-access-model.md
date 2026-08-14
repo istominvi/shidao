@@ -76,6 +76,42 @@ Onboarding редактирует общие `display_name/locale/timezone` Acco
 `/students?tab=observing`. Authoring Course по-прежнему owner-only и не
 означает learner enrollment.
 
+## Account avatar boundary
+
+Avatar принадлежит login identity `Account`, а не `LearnerProfile`: offline
+profiles без Account не обязаны иметь avatar, а observer/teacher relations не
+создают собственную копию изображения. Auth metadata, `account_preference` и
+Course `stored_file` не являются authority.
+
+Каждый Account имеет ровно одно валидное состояние:
+
+- `preset` с allowlisted key `sd-avatar-v1-01` … `sd-avatar-v1-20` и `NULL`
+  Storage path;
+- `custom` с `NULL` preset key и owner-scoped UUID WebP path.
+
+Existing Accounts получают deterministic preset backfill, новые — preset
+default в той же Account row, поэтому signup и provisional activation не могут
+создать avatar-less Account. UI не предлагает действие «убрать avatar».
+
+Custom upload использует отдельный private bucket `profile-avatars`. Browser
+принимает JPEG/PNG/WebP до 5 MiB, но server повторно проверяет magic bytes и
+decode metadata, запрещает animation/pixel bombs, применяет EXIF orientation,
+center crop `512 × 512` и сохраняет только opaque WebP без source metadata.
+Каждая версия имеет новый UUID path. У bucket нет browser Storage policies;
+после app-session/revocation проверки same-origin server route использует
+service credential для Storage и narrow server-only RPC. RPC получает
+проверенный server-ом Auth user id, под row lock проверяет expected revision,
+exact Account folder и существование object. Pointer switch атомарен. При
+неоднозначном результате route повторно читает canonical state и не удаляет
+новый object без доказательства, что он не current; cleanup прежнего object
+выполняется только после подтверждённого switch.
+
+Public `SessionView` содержит только `{ kind, presetKey, revision }`. Storage
+path, Account UUID и signed token в avatar projection не входят; current custom
+image отдаёт same-origin authenticated route. Подробный визуальный и
+accessibility контракт находится в
+[`docs/product/account-avatars.md`](../product/account-avatars.md).
+
 ## Account credential boundary
 
 Existing learner login/PIN перенесены из active legacy Student path в:
@@ -307,7 +343,7 @@ UI surfaces:
 - `/students?tab=observing` — profiles, на которые текущему Account дан active
   grant; прежний `/observing` перенаправляет сюда;
 - `/learning-profile` — единый раздел с вкладками `Профиль / История /
-  Аттестация / Наблюдатели / Настройки`: self history/progress/share code,
+Аттестация / Наблюдатели / Настройки`: self history/progress/share code,
   Account settings, AI consents и destructive self lifecycle;
 - прежние `/settings`, `/settings/profile`, `/settings/security` и
   `/settings/observers` — только compatibility redirects в этот раздел.

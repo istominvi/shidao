@@ -244,6 +244,114 @@ SHIDAO_SCHEMA_SIGNATURE="$({
              and is_nullable = 'NO'
              and column_default = 'false'
          )
+         and (
+           select count(*)
+           from information_schema.columns
+           where table_schema = 'public'
+             and table_name = 'account'
+             and (
+               (
+                 column_name = 'avatar_kind'
+                 and data_type = 'text'
+                 and is_nullable = 'NO'
+                 and column_default = '''preset''::text'
+               )
+               or (
+                 column_name = 'avatar_preset_key'
+                 and data_type = 'text'
+                 and is_nullable = 'YES'
+                 and column_default = '''sd-avatar-v1-01''::text'
+               )
+               or (
+                 column_name = 'avatar_storage_path'
+                 and data_type = 'text'
+                 and is_nullable = 'YES'
+                 and column_default is null
+               )
+               or (
+                 column_name = 'avatar_revision'
+                 and data_type = 'integer'
+                 and is_nullable = 'NO'
+                 and column_default = '1'
+               )
+               or (
+                 column_name = 'avatar_updated_at'
+                 and data_type = 'timestamp with time zone'
+                 and is_nullable = 'NO'
+                 and column_default = 'now()'
+               )
+             )
+         ) = 5
+         and not has_column_privilege(
+           'authenticated',
+           'public.account',
+           'avatar_kind',
+           'UPDATE'
+         )
+         and exists (
+           select 1
+           from pg_proc as procedure
+           where procedure.oid = to_regprocedure(
+             'public.set_current_account_avatar(uuid,text,text,text,integer)'
+           )
+             and procedure.prosecdef
+             and procedure.proconfig @> array['search_path=\"\"']
+             and procedure.proowner = (
+               select relation.relowner
+               from pg_class as relation
+               where relation.oid = 'public.account'::regclass
+             )
+             and not exists (
+               select 1
+               from aclexplode(
+                 coalesce(
+                   procedure.proacl,
+                   acldefault('f', procedure.proowner)
+                 )
+               ) as acl_entry
+               where acl_entry.grantee = 0
+                 and acl_entry.privilege_type = 'EXECUTE'
+             )
+         )
+         and has_function_privilege(
+           'postgres',
+           'public.set_current_account_avatar(uuid,text,text,text,integer)',
+           'EXECUTE'
+         )
+         and has_function_privilege(
+           'service_role',
+           'public.set_current_account_avatar(uuid,text,text,text,integer)',
+           'EXECUTE'
+         )
+         and not exists (
+           select 1
+           from unnest(array['anon', 'authenticated']) as actor(role_name)
+           where has_function_privilege(
+             actor.role_name,
+             'public.set_current_account_avatar(uuid,text,text,text,integer)',
+             'EXECUTE'
+           )
+         )
+         and exists (
+           select 1
+           from storage.buckets as bucket
+           where bucket.id = 'profile-avatars'
+             and bucket.name = 'profile-avatars'
+             and not bucket.public
+             and bucket.file_size_limit = 1048576
+             and bucket.allowed_mime_types = array['image/webp']::text[]
+         )
+         and not exists (
+           select 1
+           from pg_policies as policy
+           where policy.schemaname = 'storage'
+             and policy.tablename = 'objects'
+             and (
+               policy.policyname like 'profile_avatars_%'
+               or coalesce(policy.qual, '') like '%profile-avatars%'
+               or coalesce(policy.with_check, '') like '%profile-avatars%'
+             )
+         )
          and exists (
            select 1
            from information_schema.columns
@@ -1515,7 +1623,10 @@ for required_cross_schema_line in \
   "AFTER UPDATE OF raw_app_meta_data ON auth.users" \
   "(OLD.raw_app_meta_data ->> 'identity_status') IS DISTINCT FROM" \
   "(OLD.raw_app_meta_data ->> 'activation_invitation_id') IS DISTINCT FROM" \
-  "EXECUTE FUNCTION public.sync_provisional_account_from_auth_metadata();"; do
+  "EXECUTE FUNCTION public.sync_provisional_account_from_auth_metadata();" \
+  "'profile-avatars'," \
+  "ARRAY['image/webp']::text[]" \
+  "No storage.objects policy exists for profile-avatars"; do
   if ! grep -Fq -- "${required_cross_schema_line}" "${TMP_CROSS}"; then
     echo "Refusing to refresh: reviewed cross-schema section is missing ${required_cross_schema_line}." >&2
     exit 1
@@ -1527,19 +1638,28 @@ if [[ "$(grep -Fc -- "IS DISTINCT FROM" "${TMP_CROSS}")" -ne 2 ]]; then
   exit 1
 fi
 
-PG_DUMP_RESTRICT_KEY_ARGS=()
-if pg_dump --help 2>&1 | grep -Fq -- "--restrict-key"; then
-  PG_DUMP_RESTRICT_KEY_ARGS+=(
-    "--restrict-key=shidaoSchemaSnapshot20260807"
-  )
+if grep -Fq -- "CREATE POLICY profile_avatars_" "${TMP_CROSS}" \
+  || grep -Fq -- "bucket_id = 'profile-avatars'" "${TMP_CROSS}"; then
+  echo "Refusing to refresh: reviewed profile avatar Storage boundary is not server-only." >&2
+  exit 1
 fi
 
-pg_dump \
-  --schema-only \
-  --no-owner \
-  "${PG_DUMP_RESTRICT_KEY_ARGS[@]}" \
-  --schema=public \
-  "${DATABASE_URL}" > "${TMP_PUBLIC}"
+if pg_dump --help 2>&1 | grep -Fq -- "--restrict-key"; then
+  pg_dump \
+    --schema-only \
+    --no-owner \
+    --restrict-key=shidaoSchemaSnapshot20260807 \
+    --schema=public \
+    "${DATABASE_URL}" > "${TMP_PUBLIC}"
+else
+  # macOS still ships Bash 3.2, where expanding an empty array under `set -u`
+  # raises an unbound-variable error. Keep the no-restrict-key branch explicit.
+  pg_dump \
+    --schema-only \
+    --no-owner \
+    --schema=public \
+    "${DATABASE_URL}" > "${TMP_PUBLIC}"
+fi
 
 {
   echo "-- CURRENT SCHEMA SNAPSHOT (post-migration reference)"
@@ -1565,6 +1685,12 @@ for required in \
   "trg_auth_user_create_account" \
   "trg_auth_user_sync_provisional_account" \
   "course_assets_owner_select" \
+  "No storage.objects policy exists for profile-avatars" \
+  "avatar_kind text" \
+  "avatar_preset_key text" \
+  "avatar_storage_path text" \
+  "avatar_revision integer" \
+  "avatar_updated_at timestamp with time zone" \
   "CREATE TABLE public.lesson_run" \
   "CREATE TABLE public.learning_record" \
   "CREATE TABLE public.teacher_learner" \
@@ -1614,6 +1740,7 @@ for required in \
   "CREATE FUNCTION public.enforce_account_exactly_one_learner_profile" \
   "CREATE FUNCTION public.sync_provisional_account_from_auth_metadata" \
   "CREATE FUNCTION public.current_account_auth_context" \
+  "CREATE FUNCTION public.set_current_account_avatar" \
   "CREATE FUNCTION public.resolve_account_login_alias" \
   "CREATE FUNCTION public.verify_account_pin_credential" \
   "CREATE FUNCTION public.list_teacher_learner_directory" \

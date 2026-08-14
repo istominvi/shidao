@@ -799,7 +799,10 @@ type PlaywrightChromium = {
         goto: (
           url: string,
           options?: { waitUntil?: "domcontentloaded" | "networkidle" },
-        ) => Promise<void>;
+        ) => Promise<{
+          status: () => number;
+          json: () => Promise<unknown>;
+        } | null>;
         content: () => Promise<string>;
         evaluate: <T>(pageFunction: () => T) => Promise<T>;
         getByRole: (
@@ -1213,6 +1216,11 @@ async function handleMockSupabase(
         has_pin: true,
         can_author_educator_courses: true,
         sessions_invalid_before: null,
+        avatar_kind: "preset",
+        avatar_preset_key: "sd-avatar-v1-01",
+        avatar_storage_path: null,
+        avatar_revision: 1,
+        avatar_updated_at: "2026-08-14T00:00:00.000Z",
       },
     ]);
     return;
@@ -2922,10 +2930,26 @@ test("browser smoke: authenticated user on / sees auth-aware header", async (t) 
   const runtime = await openPage({ cookie: authenticatedCookieValue() });
 
   try {
-    await runtime.page.goto("/api/auth/session", { waitUntil: "networkidle" });
-    const sessionHtml = await runtime.page.content();
-    assert.match(sessionHtml, /E2E Adult/);
-    assert.match(sessionHtml, /adult-e2e@example\.test/);
+    const sessionResponse = await runtime.page.goto("/api/auth/session", {
+      waitUntil: "networkidle",
+    });
+    assert.ok(sessionResponse);
+    assert.equal(sessionResponse.status(), 200);
+    const sessionPayload = (await sessionResponse.json()) as Record<
+      string,
+      unknown
+    >;
+    assert.equal(sessionPayload.fullName, "E2E Adult");
+    assert.equal(sessionPayload.email, "adult-e2e@example.test");
+    assert.deepEqual(sessionPayload.avatar, {
+      kind: "preset",
+      presetKey: "sd-avatar-v1-01",
+      revision: 1,
+    });
+    assert.doesNotMatch(
+      JSON.stringify(sessionPayload),
+      /avatar_storage_path|storagePath|profile-avatars/,
+    );
 
     await runtime.page.goto("/", { waitUntil: "networkidle" });
     const html = await runtime.page.content();
@@ -7568,6 +7592,7 @@ test("browser smoke: mobile Account menu exposes primary sections and account ac
         const avatar = trigger?.querySelector<HTMLElement>(
           ".nav-user-trigger-avatar",
         );
+        const avatarImage = avatar?.querySelector<HTMLImageElement>("img");
         const menu = document.querySelector<HTMLElement>(
           '[role="menu"][aria-label="Меню пользователя"]',
         );
@@ -7575,11 +7600,19 @@ test("browser smoke: mobile Account menu exposes primary sections and account ac
           ".nav-dropdown-profile",
         );
         const items = menu?.querySelector<HTMLElement>(".nav-dropdown-items");
-        if (!trigger || !avatar || !menu || !profileHeader || !items) {
+        if (
+          !trigger ||
+          !avatar ||
+          !avatarImage ||
+          !menu ||
+          !profileHeader ||
+          !items
+        ) {
           throw new Error("Mobile account menu contract is missing");
         }
         const triggerRect = trigger.getBoundingClientRect();
         const avatarRect = avatar.getBoundingClientRect();
+        const avatarImageRect = avatarImage.getBoundingClientRect();
         const menuRect = menu.getBoundingClientRect();
         const itemsRect = items.getBoundingClientRect();
         return {
@@ -7589,6 +7622,10 @@ test("browser smoke: mobile Account menu exposes primary sections and account ac
             avatarWidth: avatarRect.width,
             avatarHeight: avatarRect.height,
             avatarRadius: getComputedStyle(avatar).borderRadius,
+            imageTag: avatarImage.tagName,
+            imageWidth: avatarImageRect.width,
+            imageHeight: avatarImageRect.height,
+            imageObjectFit: getComputedStyle(avatarImage).objectFit,
           },
           profileName: profileHeader
             .querySelector("p:first-child")
@@ -7599,6 +7636,7 @@ test("browser smoke: mobile Account menu exposes primary sections and account ac
           profileAvatarCount: profileHeader.querySelectorAll(
             ".nav-user-trigger-avatar",
           ).length,
+          profileImageCount: profileHeader.querySelectorAll("img").length,
           divider: {
             borderTopWidth: getComputedStyle(items).borderTopWidth,
             leftDelta: Math.abs(itemsRect.left - menuRect.left),
@@ -7613,10 +7651,15 @@ test("browser smoke: mobile Account menu exposes primary sections and account ac
           avatarWidth: 40,
           avatarHeight: 40,
           avatarRadius: "12px",
+          imageTag: "IMG",
+          imageWidth: 40,
+          imageHeight: 40,
+          imageObjectFit: "cover",
         },
         profileName: "E2E Adult",
         profileEmail: "adult-e2e@example.test",
         profileAvatarCount: 0,
+        profileImageCount: 0,
         divider: {
           borderTopWidth: "1px",
           leftDelta: 0,

@@ -1,3 +1,8 @@
+import {
+  isAvatarPresetKey,
+  type AccountAvatarView,
+} from "@/lib/account-avatar";
+
 type SessionIdentity = {
   fullName?: string | null;
   email?: string | null;
@@ -15,6 +20,7 @@ export type SessionAccountView = SessionIdentity & {
   hasPin: boolean;
   locale: string;
   timezone: string;
+  avatar: AccountAvatarView;
 };
 
 export type SessionDegradedView = SessionIdentity & {
@@ -49,6 +55,32 @@ function pickIdentity(input: Record<string, unknown>): SessionIdentity {
   };
 }
 
+function pickAccountAvatar(input: unknown): AccountAvatarView | null {
+  if (
+    !isRecord(input) ||
+    !(input.kind === "preset" || input.kind === "custom") ||
+    !Number.isSafeInteger(input.revision) ||
+    (input.revision as number) < 1
+  ) {
+    return null;
+  }
+
+  if (input.kind === "preset") {
+    if (!isAvatarPresetKey(input.presetKey)) return null;
+    return {
+      kind: "preset",
+      presetKey: input.presetKey,
+      revision: input.revision as number,
+    };
+  }
+  if (input.presetKey !== null) return null;
+  return {
+    kind: "custom",
+    presetKey: null,
+    revision: input.revision as number,
+  };
+}
+
 export function toSessionView(input: unknown): SessionView {
   if (!isRecord(input) || typeof input.kind !== "string") {
     return GUEST_SESSION_VIEW;
@@ -57,12 +89,14 @@ export function toSessionView(input: unknown): SessionView {
   switch (input.kind) {
     case "guest":
       return GUEST_SESSION_VIEW;
-    case "account":
+    case "account": {
+      const avatar = pickAccountAvatar(input.avatar);
       if (
         input.authenticated !== true ||
         typeof input.hasPin !== "boolean" ||
         typeof input.locale !== "string" ||
-        typeof input.timezone !== "string"
+        typeof input.timezone !== "string" ||
+        avatar === null
       ) {
         return GUEST_SESSION_VIEW;
       }
@@ -72,8 +106,10 @@ export function toSessionView(input: unknown): SessionView {
         hasPin: input.hasPin,
         locale: input.locale,
         timezone: input.timezone,
+        avatar,
         ...pickIdentity(input),
       };
+    }
     case "degraded":
       if (input.authenticated !== true) return GUEST_SESSION_VIEW;
       return {

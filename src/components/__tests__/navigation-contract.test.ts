@@ -26,6 +26,11 @@ const account: SessionAccountView = {
   hasPin: true,
   locale: "ru",
   timezone: "Asia/Chita",
+  avatar: {
+    kind: "preset",
+    presetKey: "sd-avatar-v1-01",
+    revision: 1,
+  },
 };
 
 test("TopNav resolves guest actions without exposing them on private routes", () => {

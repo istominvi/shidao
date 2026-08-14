@@ -136,6 +136,11 @@ async function handleMockSupabase(
         has_pin: true,
         can_author_educator_courses: true,
         sessions_invalid_before: null,
+        avatar_kind: "preset",
+        avatar_preset_key: "sd-avatar-v1-01",
+        avatar_storage_path: null,
+        avatar_revision: 1,
+        avatar_updated_at: "2026-08-14T00:00:00.000Z",
       },
     ]);
     return;
@@ -388,6 +393,35 @@ test("e2e smoke: authenticated user on / receives auth-aware header contract", a
 
   assert.equal(response.status, 200);
   assert.match(html, /E2E Adult/);
+});
+
+test("API e2e: public session exposes avatar state without its private Storage path", async () => {
+  const response = await fetch(`http://127.0.0.1:${appPort}/api/auth/session`, {
+    headers: { cookie: authenticatedCookieHeader() },
+  });
+  const payload = (await response.json()) as Record<string, unknown>;
+
+  assert.equal(response.status, 200);
+  assert.match(response.headers.get("cache-control") ?? "", /no-store/);
+  assert.deepEqual(payload, {
+    kind: "account",
+    authenticated: true,
+    hasPin: true,
+    fullName: "E2E Adult",
+    email: "adult-e2e@example.test",
+    initials: "EA",
+    locale: "ru",
+    timezone: "Asia/Chita",
+    avatar: {
+      kind: "preset",
+      presetKey: "sd-avatar-v1-01",
+      revision: 1,
+    },
+  });
+  assert.doesNotMatch(
+    JSON.stringify(payload),
+    /avatar_storage_path|storagePath|profile-avatars/,
+  );
 });
 
 test("e2e smoke: guest reaching protected routes is redirected to /login", async () => {

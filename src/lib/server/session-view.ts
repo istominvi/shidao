@@ -25,6 +25,11 @@ export async function readSessionViewServer(): Promise<SessionView> {
         initials: toInitials(ctx.fullName, ctx.email),
         locale: ctx.locale,
         timezone: ctx.timezone,
+        avatar: {
+          kind: ctx.avatar.kind,
+          presetKey: ctx.avatar.presetKey,
+          revision: ctx.avatar.revision,
+        },
       };
     }
     default: {

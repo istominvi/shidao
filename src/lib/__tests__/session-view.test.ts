@@ -15,6 +15,12 @@ test("toSessionView keeps only the roleless Account contract", () => {
       initials: "TA",
       locale: "ru",
       timezone: "Asia/Chita",
+      avatar: {
+        kind: "custom",
+        presetKey: null,
+        revision: 7,
+        storagePath: "must-not-leave-the-server",
+      },
       activeProfile: "teacher",
       ignored: "field",
     }),
@@ -27,6 +33,11 @@ test("toSessionView keeps only the roleless Account contract", () => {
       initials: "TA",
       locale: "ru",
       timezone: "Asia/Chita",
+      avatar: {
+        kind: "custom",
+        presetKey: null,
+        revision: 7,
+      },
     },
   );
 });
@@ -34,6 +45,54 @@ test("toSessionView keeps only the roleless Account contract", () => {
 test("legacy role-shaped or incomplete payloads fail closed to guest", () => {
   for (const payload of [
     { kind: "account", authenticated: true, hasPin: false },
+    {
+      kind: "account",
+      authenticated: true,
+      hasPin: false,
+      locale: "ru",
+      timezone: "Asia/Chita",
+      avatar: {
+        kind: "preset",
+        presetKey: "not-a-real-preset",
+        revision: 1,
+      },
+    },
+    {
+      kind: "account",
+      authenticated: true,
+      hasPin: false,
+      locale: "ru",
+      timezone: "Asia/Chita",
+      avatar: {
+        kind: "preset",
+        presetKey: "sd-avatar-v1-01",
+        revision: 0,
+      },
+    },
+    {
+      kind: "account",
+      authenticated: true,
+      hasPin: false,
+      locale: "ru",
+      timezone: "Asia/Chita",
+      avatar: {
+        kind: "preset",
+        presetKey: "sd-avatar-v1-01",
+        revision: Number.MAX_SAFE_INTEGER + 1,
+      },
+    },
+    {
+      kind: "account",
+      authenticated: true,
+      hasPin: false,
+      locale: "ru",
+      timezone: "Asia/Chita",
+      avatar: {
+        kind: "custom",
+        presetKey: "sd-avatar-v1-01",
+        revision: 1,
+      },
+    },
     { kind: "adult", authenticated: true, hasPin: false },
     { kind: "student", authenticated: true, hasPin: true },
     null,

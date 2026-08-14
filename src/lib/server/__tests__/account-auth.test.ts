@@ -1,12 +1,14 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  AccountAvatarRevisionConflictError,
   getCurrentAccountAuthContext,
   mintSupabaseSessionForAccount,
   requestCurrentAccountEmailChange,
   revokeAccountSessionsAdmin,
   resolveAccountLoginAlias,
   setCurrentAccountPin,
+  setCurrentAccountAvatar,
   updateCurrentAccountPassword,
 } from "../account-auth";
 
@@ -53,6 +55,11 @@ test("current Account context uses the user JWT and validates its strict shape",
             has_pin: true,
             can_author_educator_courses: true,
             sessions_invalid_before: "2026-08-07T00:00:00.000Z",
+            avatar_kind: "preset",
+            avatar_preset_key: "sd-avatar-v1-01",
+            avatar_storage_path: null,
+            avatar_revision: 1,
+            avatar_updated_at: "2026-08-14T00:00:00.000Z",
           },
         ]);
       }) as typeof fetch,
@@ -62,6 +69,13 @@ test("current Account context uses the user JWT and validates its strict shape",
     assert.equal(context.verifiedEmail, "verified@example.test");
     assert.equal(context.hasPin, true);
     assert.equal(context.canAuthorEducatorCourses, true);
+    assert.deepEqual(context.avatar, {
+      kind: "preset",
+      presetKey: "sd-avatar-v1-01",
+      storagePath: null,
+      revision: 1,
+      updatedAt: "2026-08-14T00:00:00.000Z",
+    });
   });
 });
 
@@ -80,11 +94,158 @@ test("current Account context never exposes a synthetic learner auth email", asy
             has_pin: true,
             can_author_educator_courses: false,
             sessions_invalid_before: null,
+            avatar_kind: "preset",
+            avatar_preset_key: "sd-avatar-v1-02",
+            avatar_storage_path: null,
+            avatar_revision: 1,
+            avatar_updated_at: "2026-08-14T00:00:00.000Z",
           },
         ])) as typeof fetch,
     });
 
     assert.equal(context.verifiedEmail, null);
+  });
+});
+
+test("current Account context rejects a custom avatar outside its Account folder", async () => {
+  await withSupabaseEnv(async () => {
+    await assert.rejects(
+      getCurrentAccountAuthContext("user-jwt", {
+        fetcher: (async () =>
+          Response.json([
+            {
+              account_id: "22222222-2222-4222-8222-222222222222",
+              auth_user_id: "user-1",
+              verified_email: "account@example.test",
+              display_name: "Account",
+              locale: "ru",
+              timezone: "Asia/Chita",
+              has_pin: false,
+              can_author_educator_courses: false,
+              sessions_invalid_before: null,
+              avatar_kind: "custom",
+              avatar_preset_key: null,
+              avatar_storage_path:
+                "99999999-9999-4999-8999-999999999999/33333333-3333-4333-8333-333333333333.webp",
+              avatar_revision: 1,
+              avatar_updated_at: "2026-08-14T00:00:00.000Z",
+            },
+          ])) as typeof fetch,
+      }),
+      /avatar context is invalid/,
+    );
+  });
+});
+
+test("avatar setter uses service credentials, an explicit actor and a public-safe result", async () => {
+  await withSupabaseEnv(async () => {
+    const accountId = "22222222-2222-4222-8222-222222222222";
+    const actorAuthUserId = "11111111-1111-4111-8111-111111111111";
+    const result = await setCurrentAccountAvatar(
+      {
+        accountId,
+        actorAuthUserId,
+        expectedRevision: 4,
+        kind: "preset",
+        presetKey: "sd-avatar-v1-20",
+      },
+      {
+        fetcher: (async (input, init) => {
+          assert.equal(
+            input,
+            "https://supabase.example.test/rest/v1/rpc/set_current_account_avatar",
+          );
+          const headers = new Headers(init?.headers);
+          assert.equal(headers.get("apikey"), "service-key");
+          assert.equal(headers.get("authorization"), "Bearer service-key");
+          assert.deepEqual(JSON.parse(String(init?.body)), {
+            p_actor_auth_user_id: actorAuthUserId,
+            p_avatar_kind: "preset",
+            p_avatar_preset_key: "sd-avatar-v1-20",
+            p_avatar_storage_path: null,
+            p_expected_revision: 4,
+          });
+          return Response.json([
+            {
+              avatar_kind: "preset",
+              avatar_preset_key: "sd-avatar-v1-20",
+              avatar_revision: 5,
+              avatar_updated_at: "2026-08-14T01:00:00.000Z",
+              previous_storage_path: `${accountId}/33333333-3333-4333-8333-333333333333.webp`,
+            },
+          ]);
+        }) as typeof fetch,
+      },
+    );
+
+    assert.deepEqual(result, {
+      avatar: {
+        kind: "preset",
+        presetKey: "sd-avatar-v1-20",
+        revision: 5,
+        updatedAt: "2026-08-14T01:00:00.000Z",
+      },
+      previousStoragePath: `${accountId}/33333333-3333-4333-8333-333333333333.webp`,
+    });
+  });
+});
+
+test("avatar setter maps SQL serialization failures to a revision conflict", async () => {
+  await withSupabaseEnv(async () => {
+    await assert.rejects(
+      setCurrentAccountAvatar(
+        {
+          accountId: "22222222-2222-4222-8222-222222222222",
+          actorAuthUserId: "11111111-1111-4111-8111-111111111111",
+          expectedRevision: 4,
+          kind: "preset",
+          presetKey: "sd-avatar-v1-01",
+        },
+        {
+          fetcher: (async () =>
+            Response.json(
+              { code: "40001", message: "do not echo this response" },
+              { status: 409 },
+            )) as typeof fetch,
+        },
+      ),
+      AccountAvatarRevisionConflictError,
+    );
+  });
+});
+
+test("avatar setter errors never reflect service credentials or provider bodies", async () => {
+  await withSupabaseEnv(async () => {
+    await assert.rejects(
+      setCurrentAccountAvatar(
+        {
+          accountId: "22222222-2222-4222-8222-222222222222",
+          actorAuthUserId: "11111111-1111-4111-8111-111111111111",
+          expectedRevision: 4,
+          kind: "preset",
+          presetKey: "sd-avatar-v1-01",
+        },
+        {
+          fetcher: (async () =>
+            Response.json(
+              { code: "XX000", message: "provider-secret-response" },
+              { status: 500 },
+            )) as typeof fetch,
+        },
+      ),
+      (error: unknown) => {
+        assert.ok(error instanceof Error);
+        assert.match(
+          error.message,
+          /set_current_account_avatar failed \(500\)/,
+        );
+        assert.doesNotMatch(
+          error.message,
+          /service-key|provider-secret-response/,
+        );
+        return true;
+      },
+    );
   });
 });
 
