@@ -20,22 +20,29 @@ copy в `AppPageHeader` теперь действительно optional и до
 заголовков удалён. Header action rail показывает не больше одной основной
 кнопки, а остальные действия Lesson находятся в общем квадратном
 `MoreVertical` menu с сохранением destructive, keyboard и focus-return
-семантики. Primary navigation использует persistent native View Transition
-boundary: движение `Расписание → Ученики → Курсы → Магазин` и drill-in уводит
-старый header влево, обратное движение/backlink — вправо. Чёрный active-pill
+семантики. Persistent navigation-motion boundary сохраняет направление:
+движение `Расписание → Ученики → Курсы → Магазин` и drill-in уводит старый
+header влево, обратное движение/backlink — вправо. Асинхронная route navigation
+и ожидание RSC/data выполняются вне `document.startViewTransition`; после
+commit готового header включается отменяемый CSS entrance. Единственным
+допустимым named element для синхронного native update остаётся
+`app-page-header`. Чёрный active-pill
 primary navigation остаётся одним локальным измеряемым indicator: нажатие
 сначала выполняет optimistic handoff его `width/transform` к выбранному пункту
-за `180 ms`, затем продолжает route navigation. Для pill не используется
+за `180 ms`, затем продолжает route navigation. Быстрый следующий primary
+intent отменяет предыдущий handoff/pending navigation, сразу перенаправляет тот
+же pill и становится единственным актуальным target. Для pill не используется
 отдельный named/native View Transition, поэтому параллельные серый ghost,
-второй чёрный слой и snapshot-scale отсутствуют; именованным native transition
-остаётся только `app-page-header`. Один слой glyphs визуально остаётся строго
-`#000` вне чёрного pill и `#fff` внутри него без запаздывающей смены цвета:
-nav-track задаёт непрозрачный белый isolated backdrop, а nav-list не создаёт
-вложенный stacking context, который отрезал бы glyphs от backdrop и оставлял
-неактивный текст белым.
+второй чёрный слой и snapshot-scale отсутствуют. Один слой glyphs визуально
+остаётся строго `#000` вне чёрного pill и `#fff` внутри него без запаздывающей
+смены цвета: nav-track задаёт непрозрачный белый isolated backdrop, а nav-list
+не создаёт вложенный stacking context, который отрезал бы glyphs от backdrop и
+оставлял неактивный текст белым. Handoff и route load не создают блокирующий
+overlay: cursor, links, keyboard focus и повторные клики остаются интерактивными.
 Асинхронная метрика резервирует строку уже в первом frame, а H1, metric, meta и
-actions проявляются вместе; transition boundary по возможности ждёт готовый
-header в пределах bounded timeout. Фиксированный `min-height: 200px` удалён:
+actions проявляются вместе; bounded observer ожидает готовый header вне native
+View Transition и игнорирует superseded intent. Фиксированный
+`min-height: 200px` удалён:
 высота `AppPageHeader` определяется только фактическим содержимым и padding.
 Временные owner/published Course loading cards удалены, error surfaces
 сохранены. `prefers-reduced-motion` оставляет все переходы мгновенными. Это

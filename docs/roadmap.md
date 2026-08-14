@@ -67,15 +67,20 @@
   tab-panel слегка проявляется по направлению выбора. Header action rail
   оставляет не больше одной основной кнопки; дополнительные Lesson actions
   находятся в квадратном `MoreVertical` menu. Persistent transition boundary
-  анимирует направление primary navigation и Course drill-in/back. Единственный
+  анимирует направление primary navigation и Course drill-in/back, но route
+  navigation и RSC/data wait выполняются вне native View Transition. После
+  ready commit используется отменяемый CSS entrance; named native element
+  остаётся только `app-page-header` для синхронных updates. Единственный
   локальный black indicator выполняет optimistic `width/transform` handoff к
   выбранному primary button за `180 ms` до route navigation; собственный
   named/native pill transition удалён, поэтому серый ghost, второй чёрный слой
   и snapshot-scale не возникают. Glyphs визуально остаются `#000` вне pill и
   `#fff` внутри: isolated nav-track имеет непрозрачный белый backdrop, а
-  nav-list не создаёт отдельный stacking context. Единственным named native
-  View Transition остаётся `app-page-header`. Owner/published Course больше не подменяют готовый header
-  текстовой loading-card; boundary bounded-временем ждёт real header.
+  nav-list не создаёт отдельный stacking context. Новый быстрый intent отменяет
+  прежний timer/pending route, немедленно перецеливает тот же pill и выигрывает;
+  ожидание данных не блокирует cursor, links, focus или следующие клики.
+  Owner/published Course больше не подменяют готовый header текстовой
+  loading-card; boundary bounded-временем ждёт real header.
   `prefers-reduced-motion` полностью отключает motion.
   Базовый follow-up был подтверждён в release `77870e3`; full-width
   канонизация развёрнута exact merge commit
@@ -1030,8 +1035,12 @@ UI-only follow-up без изменения LessonRun API, schema или migrati
 локальный black active-pill: optimistic pre-navigation handoff меняет его
 `width/transform` за `180 ms`, без named/native pill View Transition, второго
 чёрного слоя, серого ghost или snapshot-scale. Glyphs визуально имеют `#000`
-вне pill и `#fff` внутри; native named View Transition используется только для
-`app-page-header`. Async metric-slot исключает промежуточный H1 без метрики, а
+вне pill и `#fff` внутри. Rapid primary intent supersede-ит предыдущий handoff
+и pending route, не блокируя cursor/link/focus. Асинхронная route navigation и
+RSC/data load никогда не удерживаются внутри native
+`document.startViewTransition`: после ready commit применяется interruptible
+CSS entrance, а `app-page-header` остаётся единственным named element для
+синхронных native updates. Async metric-slot исключает промежуточный H1 без метрики, а
 content-driven header height заменяет прежние 200 px. Owner/published Course
 loading-card удалён. Нет новой motion dependency: используется browser View
 Transition API с безопасным fallback и полным reduced-motion bypass. Это

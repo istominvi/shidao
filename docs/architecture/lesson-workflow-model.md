@@ -635,24 +635,35 @@ Visual contract Course routes не меняет эту навигационну�
   `meta`, а не к action rail. Shared `ActionMenu` сохраняет portal,
   Arrow/Home/End/Escape, destructive/disabled state и возврат фокуса;
 - protected app layout содержит persistent navigation-motion boundary над
-  меняющимися страницами. Native `document.startViewTransition` именует только
-  `app-page-header`. Движение вправо по primary order и drill-in уводят old
-  header влево и вводят new справа; движение влево и backlink зеркальны.
+  меняющимися страницами. Async route navigation, RSC/data load и ожидание
+  ready header не входят в callback/promise native
+  `document.startViewTransition`: router начинает работу вне native snapshot
+  lifecycle, а после ready commit boundary запускает interruptible CSS
+  entrance. `app-page-header` остаётся единственным named element и
+  используется только для синхронного native update. Движение вправо по primary
+  order и drill-in уводят old header влево и вводят new справа; движение влево
+  и backlink зеркальны.
   Primary order: `Расписание`, `Ученики`, `Курсы`, `Магазин`. Primary-nav
   active-pill намеренно не является named/native View Transition. Это один
-  локальный измеряемый слой: до route navigation optimistic handoff за `180 ms` меняет его
-  `width/transform` к нажатому пункту. Поэтому browser не создаёт отдельные
-  old/new pill snapshots, серый ghost, второй чёрный слой или snapshot-scale.
+  локальный измеряемый слой: до route navigation optimistic handoff за `180 ms`
+  меняет его `width/transform` к нажатому пункту. Каждый следующий primary
+  intent отменяет предыдущий handoff timer и pending route state, сразу
+  перецеливает тот же pill и становится единственным intent, которому разрешён
+  navigation commit. Поэтому browser не создаёт отдельные old/new pill
+  snapshots, серый ghost, второй чёрный слой или snapshot-scale.
   Один glyph-layer визуально остаётся `#000` вне чёрного pill и `#fff` внутри
   него без задержки цвета. Его isolated nav-track даёт непрозрачный белый
   backdrop, а nav-list намеренно не образует отдельный stacking context, чтобы
-  `mix-blend-mode` видел и белый track, и чёрный pill. Query-only tab changes не анимируют весь header.
-  Boundary ждёт появления непустого готового header через bounded observer,
-  поэтому owner/published Course не показывают промежуточную loading-card, а
-  async metric не появляется после H1 отдельным скачком. При отсутствии API
-  остаётся безопасный entrance fallback, а `prefers-reduced-motion` выполняет
-  навигацию и локальный Course/Lesson state update без анимации и без
-  pre-navigation wait;
+  `mix-blend-mode` видел и белый track, и чёрный pill. Ни handoff, ни pending
+  route не добавляют pointer-blocking overlay, wait cursor или disabled state:
+  links, keyboard focus и повторные intents остаются интерактивными. Query-only
+  tab changes не анимируют весь header. Bounded observer принимает только
+  latest intent, поэтому owner/published Course не показывают промежуточную
+  loading-card, а async metric не появляется после H1 отдельным скачком.
+  Superseded observer/timer/entrance state отменяется и не может позже вернуть
+  устаревший URL или animation. При отсутствии API остаётся безопасный entrance
+  fallback, а `prefers-reduced-motion` выполняет навигацию и локальный
+  Course/Lesson state update без анимации и без pre-navigation wait;
 - основные кнопки и header controls — высотой 40 px с радиусом 12 px и шрифтом
   `.88rem/400`; ordinary control использует белый surface, общий product
   border и raised base/hover/pressed contract, иконки имеют единый 16 px rhythm,

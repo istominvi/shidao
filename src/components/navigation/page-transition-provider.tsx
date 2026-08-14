@@ -36,6 +36,7 @@ type NavigateOptions = {
 
 type PageTransitionContextValue = {
   navigate: (href: string, options?: NavigateOptions) => void;
+  isNavigationPending: () => boolean;
   runUpdate: (direction: PageTransitionDirection, update: () => void) => void;
 };
 
@@ -54,11 +55,11 @@ function reducedMotionRequested() {
 
 function setTransitionState(
   direction: PageTransitionDirection,
-  fallback: boolean,
+  fallbackPhase: false | "exit" | "enter",
 ) {
   document.documentElement.dataset.pageTransitionDirection = direction;
-  if (fallback) {
-    document.documentElement.dataset.pageTransitionFallback = "true";
+  if (fallbackPhase) {
+    document.documentElement.dataset.pageTransitionFallback = fallbackPhase;
   } else {
     delete document.documentElement.dataset.pageTransitionFallback;
   }
@@ -102,12 +103,6 @@ function observeReadyPageHeader(onReady: () => void) {
   return observer;
 }
 
-type PendingRoute = {
-  targetPathname: string;
-  complete: () => void;
-  startHeaderWait: () => void;
-};
-
 type PendingFallbackRoute = {
   direction: PageTransitionDirection;
   targetPathname: string;
@@ -117,13 +112,24 @@ type PendingFallbackRoute = {
   headerObserver: MutationObserver | null;
 };
 
+type PendingNavigationIntent = {
+  targetPathname: string;
+};
+
+type CancelTransitionOptions = {
+  clearNavigationIntent?: boolean;
+  preserveTransitionState?: boolean;
+};
+
 export function PageTransitionProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const pathnameRef = useRef(pathname);
   const activeTransitionRef = useRef<BrowserViewTransition | null>(null);
-  const pendingRouteRef = useRef<PendingRoute | null>(null);
   const pendingFallbackRouteRef = useRef<PendingFallbackRoute | null>(null);
+  const pendingNavigationIntentRef = useRef<PendingNavigationIntent | null>(
+    null,
+  );
   const fallbackClearTimerRef = useRef<number | null>(null);
   const transitionTokenRef = useRef(0);
 
@@ -145,38 +151,40 @@ export function PageTransitionProvider({ children }: { children: ReactNode }) {
     [clearStateForToken],
   );
 
-  const cancelOngoingTransition = useCallback(() => {
-    transitionTokenRef.current += 1;
+  const cancelOngoingTransition = useCallback(
+    (options: CancelTransitionOptions = {}) => {
+      transitionTokenRef.current += 1;
+      if (options.clearNavigationIntent !== false) {
+        pendingNavigationIntentRef.current = null;
+      }
 
-    pendingRouteRef.current?.complete();
-    pendingRouteRef.current = null;
+      const pendingFallback = pendingFallbackRouteRef.current;
+      if (pendingFallback) {
+        window.clearTimeout(pendingFallback.timeoutId);
+        pendingFallback.headerObserver?.disconnect();
+        pendingFallbackRouteRef.current = null;
+      }
 
-    const pendingFallback = pendingFallbackRouteRef.current;
-    if (pendingFallback) {
-      window.clearTimeout(pendingFallback.timeoutId);
-      pendingFallback.headerObserver?.disconnect();
-      pendingFallbackRouteRef.current = null;
-    }
+      if (fallbackClearTimerRef.current !== null) {
+        window.clearTimeout(fallbackClearTimerRef.current);
+        fallbackClearTimerRef.current = null;
+      }
 
-    if (fallbackClearTimerRef.current !== null) {
-      window.clearTimeout(fallbackClearTimerRef.current);
-      fallbackClearTimerRef.current = null;
-    }
-
-    try {
-      activeTransitionRef.current?.skipTransition?.();
-    } catch {
-      // A completed browser transition no longer needs to be skipped.
-    }
-    activeTransitionRef.current = null;
-    clearTransitionState();
-  }, []);
+      try {
+        activeTransitionRef.current?.skipTransition?.();
+      } catch {
+        // A completed browser transition no longer needs to be skipped.
+      }
+      activeTransitionRef.current = null;
+      if (!options.preserveTransitionState) clearTransitionState();
+    },
+    [],
+  );
 
   useLayoutEffect(() => {
     pathnameRef.current = pathname;
-    const pending = pendingRouteRef.current;
-    if (pending?.targetPathname === pathname) {
-      pending.startHeaderWait();
+    if (pendingNavigationIntentRef.current?.targetPathname === pathname) {
+      pendingNavigationIntentRef.current = null;
     }
 
     const pendingFallback = pendingFallbackRouteRef.current;
@@ -192,7 +200,7 @@ export function PageTransitionProvider({ children }: { children: ReactNode }) {
 
       // The ready route header is committed at this point, so the fallback
       // animation is applied only to the incoming header.
-      setTransitionState(pendingFallback.direction, true);
+      setTransitionState(pendingFallback.direction, "enter");
       scheduleFallbackStateClear(pendingFallback.token);
     });
   }, [pathname, scheduleFallbackStateClear]);
@@ -207,22 +215,22 @@ export function PageTransitionProvider({ children }: { children: ReactNode }) {
   const runUpdate = useCallback(
     (direction: PageTransitionDirection, update: () => void) => {
       if (reducedMotionRequested()) {
-        cancelOngoingTransition();
+        cancelOngoingTransition({ clearNavigationIntent: false });
         update();
         return;
       }
 
       const transitionDocument = document as ViewTransitionDocument;
       if (!transitionDocument.startViewTransition) {
-        cancelOngoingTransition();
+        cancelOngoingTransition({ clearNavigationIntent: false });
         const token = ++transitionTokenRef.current;
         flushSync(update);
-        setTransitionState(direction, true);
+        setTransitionState(direction, "enter");
         scheduleFallbackStateClear(token);
         return;
       }
 
-      cancelOngoingTransition();
+      cancelOngoingTransition({ clearNavigationIntent: false });
       const token = ++transitionTokenRef.current;
       setTransitionState(direction, false);
       let transition: BrowserViewTransition;
@@ -268,8 +276,8 @@ export function PageTransitionProvider({ children }: { children: ReactNode }) {
         }
       };
 
-      if (targetPathname === pathnameRef.current || reducedMotionRequested()) {
-        cancelOngoingTransition();
+      if (targetPathname === pathnameRef.current) {
+        cancelOngoingTransition({ clearNavigationIntent: true });
         navigateNow();
         return;
       }
@@ -277,30 +285,28 @@ export function PageTransitionProvider({ children }: { children: ReactNode }) {
       const direction =
         options.direction ??
         resolvePageTransitionDirection(pathnameRef.current, targetPathname);
-      const transitionDocument = document as ViewTransitionDocument;
+      const reducedMotion = reducedMotionRequested();
+      const preserveFallbackExit =
+        !reducedMotion &&
+        pendingNavigationIntentRef.current !== null &&
+        document.documentElement.dataset.pageTransitionFallback === "exit" &&
+        document.documentElement.dataset.pageTransitionDirection === direction;
 
-      if (!transitionDocument.startViewTransition) {
-        cancelOngoingTransition();
-        const token = ++transitionTokenRef.current;
-        const timeoutId = window.setTimeout(() => {
-          if (pendingFallbackRouteRef.current?.token !== token) return;
-          pendingFallbackRouteRef.current.headerObserver?.disconnect();
-          pendingFallbackRouteRef.current = null;
-        }, TRANSITION_TIMEOUT_MS);
-        pendingFallbackRouteRef.current = {
-          direction,
-          targetPathname,
-          timeoutId,
-          token,
-          headerWaitStarted: false,
-          headerObserver: null,
-        };
+      cancelOngoingTransition({
+        clearNavigationIntent: true,
+        preserveTransitionState: preserveFallbackExit,
+      });
+      const token = ++transitionTokenRef.current;
+      const navigationIntent: PendingNavigationIntent = { targetPathname };
+      pendingNavigationIntentRef.current = navigationIntent;
+
+      if (reducedMotion) {
         try {
           navigateNow();
         } catch (error) {
-          window.clearTimeout(timeoutId);
-          pendingFallbackRouteRef.current?.headerObserver?.disconnect();
-          pendingFallbackRouteRef.current = null;
+          if (pendingNavigationIntentRef.current === navigationIntent) {
+            pendingNavigationIntentRef.current = null;
+          }
           if (transitionTokenRef.current === token) {
             transitionTokenRef.current += 1;
           }
@@ -309,89 +315,52 @@ export function PageTransitionProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      cancelOngoingTransition();
-      const token = ++transitionTokenRef.current;
-      let completeRoute!: () => void;
-      let routeTimeoutId: number | null = null;
-      let routeHeaderObserver: MutationObserver | null = null;
-      let headerWaitStarted = false;
-      const routeCommitted = new Promise<void>((resolve) => {
-        let complete = false;
-        completeRoute = () => {
-          if (complete) return;
-          complete = true;
-          if (routeTimeoutId !== null) window.clearTimeout(routeTimeoutId);
-          routeHeaderObserver?.disconnect();
-          routeHeaderObserver = null;
-          resolve();
-        };
-        routeTimeoutId = window.setTimeout(() => {
-          if (pendingRouteRef.current === pendingRoute) {
-            pendingRouteRef.current = null;
-          }
-          completeRoute();
-        }, TRANSITION_TIMEOUT_MS);
-      });
-      const startHeaderWait = () => {
-        if (headerWaitStarted) return;
-        headerWaitStarted = true;
-        routeHeaderObserver = observeReadyPageHeader(() => {
-          if (
-            pendingRouteRef.current !== pendingRoute ||
-            transitionTokenRef.current !== token
-          ) {
-            return;
-          }
-          pendingRouteRef.current = null;
-          completeRoute();
-        });
-      };
-      const pendingRoute: PendingRoute = {
-        targetPathname,
-        complete: completeRoute,
-        startHeaderWait,
-      };
-      pendingRouteRef.current = pendingRoute;
-      setTransitionState(direction, false);
-
-      let transition: BrowserViewTransition;
-      let navigationStarted = false;
-      try {
-        transition = transitionDocument.startViewTransition(async () => {
-          if (transitionTokenRef.current !== token) return;
-          navigationStarted = true;
-          navigateNow();
-          await routeCommitted;
-        });
-      } catch {
-        pendingRouteRef.current = null;
-        completeRoute();
-        clearStateForToken(token);
-        if (!navigationStarted) navigateNow();
-        return;
+      if (!preserveFallbackExit) {
+        setTransitionState(direction, "exit");
       }
-      activeTransitionRef.current = transition;
-      void transition.finished
-        .catch(() => undefined)
-        .finally(() => {
-          if (pendingRouteRef.current?.complete === completeRoute) {
-            pendingRouteRef.current = null;
-          }
-          completeRoute();
-          if (
-            activeTransitionRef.current !== transition ||
-            transitionTokenRef.current !== token
-          ) {
-            return;
-          }
-          activeTransitionRef.current = null;
-          clearStateForToken(token);
-        });
+
+      const timeoutId = window.setTimeout(() => {
+        if (pendingFallbackRouteRef.current?.token !== token) return;
+        pendingFallbackRouteRef.current.headerObserver?.disconnect();
+        pendingFallbackRouteRef.current = null;
+        clearStateForToken(token);
+      }, TRANSITION_TIMEOUT_MS);
+      pendingFallbackRouteRef.current = {
+        direction,
+        targetPathname,
+        timeoutId,
+        token,
+        headerWaitStarted: false,
+        headerObserver: null,
+      };
+      try {
+        navigateNow();
+      } catch (error) {
+        window.clearTimeout(timeoutId);
+        pendingFallbackRouteRef.current?.headerObserver?.disconnect();
+        pendingFallbackRouteRef.current = null;
+        if (pendingNavigationIntentRef.current === navigationIntent) {
+          pendingNavigationIntentRef.current = null;
+        }
+        if (transitionTokenRef.current === token) {
+          transitionTokenRef.current += 1;
+        }
+        throw error;
+      }
+      return;
     },
     [cancelOngoingTransition, clearStateForToken, router],
   );
 
-  const value = useMemo(() => ({ navigate, runUpdate }), [navigate, runUpdate]);
+  const isNavigationPending = useCallback(
+    () => pendingNavigationIntentRef.current !== null,
+    [],
+  );
+
+  const value = useMemo(
+    () => ({ isNavigationPending, navigate, runUpdate }),
+    [isNavigationPending, navigate, runUpdate],
+  );
 
   return (
     <PageTransitionContext.Provider value={value}>

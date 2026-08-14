@@ -79,6 +79,8 @@ test("app layout keeps a persistent, reduced-motion-aware transition boundary", 
   assert.match(provider, /TRANSITION_TIMEOUT_MS = 1_600/);
   assert.match(provider, /transitionTokenRef/);
   assert.match(provider, /pendingFallbackRouteRef/);
+  assert.match(provider, /pendingNavigationIntentRef/);
+  assert.match(provider, /isNavigationPending/);
   assert.match(provider, /activeTransitionRef\.current !== transition/);
   assert.match(provider, /READY_PAGE_HEADER_SELECTOR/);
   assert.match(
@@ -87,17 +89,26 @@ test("app layout keeps a persistent, reduced-motion-aware transition boundary", 
   );
   assert.match(provider, /new MutationObserver/);
   assert.match(provider, /attributeFilter: \["data-page-header-pending"\]/);
-  assert.match(provider, /routeHeaderObserver\?\.disconnect\(\)/);
-  assert.match(provider, /pending\.startHeaderWait\(\)/);
   assert.match(
     provider,
     /startViewTransition\(\(\) => \{\s*if \(transitionTokenRef\.current !== token\) return;/,
   );
+  assert.doesNotMatch(provider, /startViewTransition\(async/);
   assert.match(
     provider,
-    /startViewTransition\(async \(\) => \{\s*if \(transitionTokenRef\.current !== token\) return;/,
+    /pendingNavigationIntentRef\.current = navigationIntent/,
   );
-  assert.match(provider, /window\.clearTimeout\(routeTimeoutId\)/);
+  assert.match(provider, /dataset\.pageTransitionFallback === "exit"/);
+  assert.match(provider, /dataset\.pageTransitionDirection === direction/);
+  assert.match(provider, /setTransitionState\(direction, "exit"\)/);
+  assert.match(
+    provider,
+    /setTransitionState\(pendingFallback\.direction, "enter"\)/,
+  );
+  assert.match(
+    provider,
+    /cancelOngoingTransition\(\{ clearNavigationIntent: false \}\)/,
+  );
   assert.match(link, /onNavigate=/);
   assert.match(link, /consumerPreventedNavigation/);
 });

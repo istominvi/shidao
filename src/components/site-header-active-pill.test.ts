@@ -47,11 +47,13 @@ test("Account TopNav alone enables one measured desktop active pill", () => {
   );
   assert.match(
     header,
-    /pageTransition\.navigate\(item\.href, \{ scroll: item\.scroll \}\)/,
+    /pageTransition\.navigate\(item\.href, \{\s*scroll: item\.scroll,/,
   );
+  assert.match(header, /pageTransition\.isNavigationPending\(\)/);
+  assert.match(header, /if \(navigationPending \|\| reducedMotion\)/);
   assert.match(
     header,
-    /window\.matchMedia\("\(prefers-reduced-motion: reduce\)"\)\.matches/,
+    /window\.matchMedia\(\s*"\(prefers-reduced-motion: reduce\)",?\s*\)\.matches/,
   );
   assert.match(header, /window\.setTimeout\([\s\S]*?PRIMARY_NAV_HANDOFF_MS\)/);
   assert.match(header, /width: `\$\{activePill\.width\}px`/);
@@ -108,6 +110,7 @@ test("active pill preserves SSR fallback and uses one fast local motion layer", 
     styles,
     /\.site-header-nav-pill,[\s\S]*?\.site-header-nav-pill:hover,[\s\S]*?\.site-header-nav-pill:focus-visible\s*\{\s*color: #000;/,
   );
+  assert.match(styles, /\.site-header-nav-pill\s*\{\s*cursor: pointer;/);
   assert.match(
     styles,
     /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.site-header-nav-active-pill\[data-motion-ready="true"\][\s\S]*?transition: none;/,

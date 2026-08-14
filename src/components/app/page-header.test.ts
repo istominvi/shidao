@@ -148,6 +148,22 @@ test("active V2 pages share one page header contract without visual modifiers", 
     motionStyles,
     /data-page-transition-direction="back"[\s\S]*?app-page-header-exit-right/,
   );
+  assert.match(
+    motionStyles,
+    /data-page-transition-fallback="exit"[\s\S]*?app-page-header-exit-left/,
+  );
+  assert.match(
+    motionStyles,
+    /data-page-transition-fallback="enter"[\s\S]*?app-page-header-enter-right/,
+  );
+  assert.match(
+    motionStyles,
+    /:root\[data-page-transition-direction\][\s\S]*?view-transition-name: none;/,
+  );
+  assert.match(
+    motionStyles,
+    /::view-transition\s*\{[^}]*pointer-events: none;/,
+  );
   assert.match(motionStyles, /prefers-reduced-motion: reduce/);
   assert.match(
     motionStyles,

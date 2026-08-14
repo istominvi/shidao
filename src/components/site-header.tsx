@@ -189,12 +189,12 @@ export function SiteHeader({
       return;
     }
 
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      cancelNavigationHandoff();
-      return;
-    }
+    const navigationPending = pageTransition.isNavigationPending();
+    const reducedMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
 
-    if (item.active) {
+    if (item.active && !navigationPending) {
       if (navigationHandoffTimerRef.current !== null) {
         event.preventDefault();
         cancelNavigationHandoff();
@@ -206,9 +206,23 @@ export function SiteHeader({
     event.preventDefault();
     updateActivePillForItem(item.id);
     cancelNavigationHandoff();
+
+    const navigate = () =>
+      pageTransition.navigate(item.href, {
+        scroll: item.scroll,
+      });
+
+    // Once a route request is in flight, a second intent must supersede it
+    // synchronously. Waiting for another local handoff risks losing that
+    // intent if the first route commits and unmounts this header meanwhile.
+    if (navigationPending || reducedMotion) {
+      navigate();
+      return;
+    }
+
     navigationHandoffTimerRef.current = window.setTimeout(() => {
       navigationHandoffTimerRef.current = null;
-      pageTransition.navigate(item.href, { scroll: item.scroll });
+      navigate();
     }, PRIMARY_NAV_HANDOFF_MS);
   };
 

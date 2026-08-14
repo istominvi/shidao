@@ -983,9 +983,19 @@ ShiDao V2 application:
   визуально остаются `#000` вне pill и `#fff` внутри даже во время handoff.
   Проверить computed `background: rgb(255, 255, 255)` и `isolation: isolate` у
   nav-track, `z-index: auto` у nav-list и фактические тёмные пиксели inactive
-  glyphs; при
-  `prefers-reduced-motion: reduce` pill меняется без перехода и navigation не
-  ждёт эти `180 ms`, а page-header transition также отключён;
+  glyphs. С задержанным RSC/data response быстро нажать два-три разных primary
+  links: каждый следующий intent должен немедленно перецеливать pill и
+  supersede-ить предыдущий timer/pending route; после всех timeout/response
+  остаётся только последний URL, active link и matching pill. В течение
+  handoff/load links и keyboard focus остаются рабочими, cursor не меняется на
+  wait, а pointer-blocking overlay/disabled navigation не появляется.
+  Зафиксировать, что async route load и ожидание ready header не находятся
+  внутри native `document.startViewTransition`; native named element
+  `app-page-header` используется только для синхронного update, а committed
+  route получает interruptible CSS entrance. Superseded observer/entrance не
+  должен срабатывать позже. При `prefers-reduced-motion: reduce` pill меняется
+  без перехода и navigation не ждёт эти `180 ms`, а page-header transition
+  также отключён;
 - на сохранённом Course открыть **Уроки** и проверить, что общий `WorkspaceTabs`
   не получил route-specific fork. Сразу под ним прозрачная toolbar поиска и
   «Добавить урок» занимает всю content-row: computed horizontal padding `0`,

@@ -600,6 +600,8 @@ let e2eRecoveryResetCompleted = false;
 let e2eRecoveryDelegateRevoked = false;
 let e2eStudentDirectoryRpcDelayMs = 0;
 let e2eStudentDirectoryRpcReleaseAt = 0;
+let e2eStudentDirectoryRpcGate: Promise<void> | null = null;
+let e2eStudentDirectoryRpcObserved: (() => void) | null = null;
 let e2eCourseAudienceReplacement: {
   directLearnerProfileIds: string[];
   learnerGroupIds: string[];
@@ -1251,6 +1253,11 @@ async function handleMockSupabase(
 
   if (requestUrl.pathname === "/rest/v1/rpc/list_teacher_learner_directory") {
     const body = await readJsonBody(request);
+    if (body.p_status === "active" && e2eStudentDirectoryRpcGate) {
+      e2eStudentDirectoryRpcObserved?.();
+      e2eStudentDirectoryRpcObserved = null;
+      await e2eStudentDirectoryRpcGate;
+    }
     if (body.p_status === "active" && e2eStudentDirectoryRpcDelayMs > 0) {
       if (e2eStudentDirectoryRpcReleaseAt === 0) {
         e2eStudentDirectoryRpcReleaseAt =
@@ -3592,6 +3599,168 @@ test("browser smoke: primary navigation uses one fast local handoff", async (t) 
       "/students",
     );
   } finally {
+    await runtime.close();
+  }
+});
+
+test("browser smoke: latest primary navigation click wins while the first destination is pending", async (t) => {
+  if (browserSmokeUnavailableReason) {
+    t.skip(browserSmokeUnavailableReason);
+    return;
+  }
+
+  const runtime = await openPage({ cookie: authenticatedCookieValue() });
+  let resolveStudentDirectoryRpc: (() => void) | null = null;
+  const releaseStudentDirectoryRpc = () => {
+    resolveStudentDirectoryRpc?.();
+    resolveStudentDirectoryRpc = null;
+  };
+
+  try {
+    await runtime.page.clock.setFixedTime("2026-08-11T00:00:00.000Z");
+    await runtime.page.goto("/schedule", { waitUntil: "networkidle" });
+    await runtime.page
+      .locator(
+        '.site-header-nav-active-pill[data-ready="true"][data-motion-ready="true"]',
+      )
+      .waitFor();
+
+    const studentDirectoryRpcObserved = new Promise<void>((resolve) => {
+      e2eStudentDirectoryRpcObserved = resolve;
+    });
+    e2eStudentDirectoryRpcGate = new Promise<void>((resolve) => {
+      resolveStudentDirectoryRpc = resolve;
+    });
+
+    await runtime.page.evaluate(() => {
+      const testWindow = window as typeof window & {
+        __e2ePrimaryNavTrustedClicks?: Array<{
+          href: string | null;
+          trusted: boolean;
+        }>;
+      };
+      testWindow.__e2ePrimaryNavTrustedClicks = [];
+      document.addEventListener(
+        "click",
+        (event) => {
+          if (!(event.target instanceof Element)) return;
+          const link = event.target.closest<HTMLAnchorElement>(
+            ".site-header-nav-pill",
+          );
+          if (!link) return;
+          testWindow.__e2ePrimaryNavTrustedClicks?.push({
+            href: link.getAttribute("href"),
+            trusted: event.isTrusted,
+          });
+        },
+        true,
+      );
+    });
+
+    const storeLink = runtime.page.locator(
+      '.site-header-nav-pill[href="/store"]',
+    );
+    const storeBox = await storeLink.boundingBox();
+    assert.ok(storeBox, "Store must have a clickable primary-nav box");
+    const storePoint = {
+      x: storeBox.x + storeBox.width / 2,
+      y: storeBox.y + storeBox.height / 2,
+    };
+
+    await runtime.page
+      .getByRole("link", { name: "Ученики", exact: true })
+      .click();
+
+    let observedTimeout: ReturnType<typeof setTimeout> | null = null;
+    try {
+      await Promise.race([
+        studentDirectoryRpcObserved,
+        new Promise<void>((_, reject) => {
+          observedTimeout = setTimeout(
+            () =>
+              reject(
+                new Error(
+                  "Students navigation did not reach the gated directory request",
+                ),
+              ),
+            5_000,
+          );
+        }),
+      ]);
+    } finally {
+      if (observedTimeout) clearTimeout(observedTimeout);
+    }
+
+    const hitContract = await storeLink.evaluate((element) => {
+      const store = element as HTMLAnchorElement;
+      const rect = store.getBoundingClientRect();
+      const hitTarget = document.elementFromPoint(
+        rect.left + rect.width / 2,
+        rect.top + rect.height / 2,
+      );
+      const hitLink =
+        hitTarget instanceof Element
+          ? hitTarget.closest<HTMLAnchorElement>(".site-header-nav-pill")
+          : null;
+      const style = hitLink ? getComputedStyle(hitLink) : null;
+      return {
+        href: hitLink?.getAttribute("href") ?? null,
+        cursor: style?.cursor ?? null,
+        pointerEvents: style?.pointerEvents ?? null,
+        ariaDisabled: hitLink?.getAttribute("aria-disabled") ?? null,
+        disabled: hitLink?.hasAttribute("disabled") ?? null,
+      };
+    });
+
+    await runtime.page.mouse.move(storePoint.x, storePoint.y);
+    await runtime.page.mouse.down();
+    await runtime.page.mouse.up();
+
+    const trustedClick = await runtime.page.evaluate(() => {
+      const clicks = (
+        window as typeof window & {
+          __e2ePrimaryNavTrustedClicks?: Array<{
+            href: string | null;
+            trusted: boolean;
+          }>;
+        }
+      ).__e2ePrimaryNavTrustedClicks;
+      return clicks?.[clicks.length - 1] ?? null;
+    });
+
+    assert.deepEqual(
+      { ...hitContract, trustedClick },
+      {
+        href: "/store",
+        cursor: "pointer",
+        pointerEvents: "auto",
+        ariaDisabled: null,
+        disabled: false,
+        trustedClick: { href: "/store", trusted: true },
+      },
+      "Primary navigation must remain hit-testable while the first destination is unresolved",
+    );
+
+    await runtime.page.waitForURL(/\/store$/, { timeout: 5_000 });
+    await runtime.page
+      .getByRole("heading", { name: "Магазин", exact: true, level: 1 })
+      .waitFor();
+
+    releaseStudentDirectoryRpc();
+    await runtime.page.waitForTimeout(250);
+
+    assert.equal(new URL(runtime.page.url()).pathname, "/store");
+    assert.equal(
+      await runtime.page
+        .locator('.site-header-nav-pill[aria-current="page"]')
+        .evaluate((link) => link.getAttribute("href")),
+      "/store",
+      "The released stale Students request must not replace the latest Store navigation",
+    );
+  } finally {
+    releaseStudentDirectoryRpc();
+    e2eStudentDirectoryRpcGate = null;
+    e2eStudentDirectoryRpcObserved = null;
     await runtime.close();
   }
 });

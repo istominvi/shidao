@@ -244,6 +244,10 @@
     opacity 220ms ease;
 }
 
+.site-header-nav-pill {
+  cursor: pointer;
+}
+
 .nav-pill-content {
   display: inline-flex;
   align-items: center;
