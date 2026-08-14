@@ -51,11 +51,11 @@ test("active V2 pages share one page header contract without visual modifiers", 
 
   assert.match(
     styles,
-    /:root\s*\{[^}]*--product-muted-foreground: rgba\(20, 20, 20, 0\.5\);/,
+    /:root\s*\{[^}]*--product-secondary-foreground: oklch\(0\.19 0 0 \/ 0\.6\);/,
   );
   assert.match(
     styles,
-    /\.app-page-header\s*\{[^}]*--app-page-header-description-color: var\(--product-muted-foreground\);/,
+    /\.app-page-header\s*\{[^}]*--app-page-header-description-color: var\(--product-secondary-foreground\);/,
   );
   assert.match(
     styles,

@@ -35,7 +35,7 @@ export function SegmentedControl<T extends string>({
       role="group"
       aria-label={ariaLabel}
       className={classNames(
-        "product-segmented-control inline-flex h-10 shrink-0 items-center gap-1 rounded-xl bg-neutral-950/[0.05] p-1",
+        "product-segmented-control inline-flex h-10 shrink-0 items-center gap-1 rounded-xl p-1",
         className,
       )}
     >

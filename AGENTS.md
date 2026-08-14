@@ -119,3 +119,38 @@ Every completed vertical slice must update, in the same work:
 Use explicit status language: **current**, **next**, or **later**. Do not write
 planned AI, parsing, Homework, live, learner, billing, or external MCP behavior
 as if it already exists.
+
+## Automatic Git delivery
+
+For tasks that request implementation or repository changes, after the
+implementation, required documentation, and task-relevant checks are complete:
+
+1. Review the final diff for scope, secrets, generated artifacts, and unintended
+   changes.
+2. Stage only the files or hunks that belong to the current task; preserve
+   unrelated worktree changes.
+3. Create one descriptive commit without waiting for additional confirmation.
+4. Push the current branch to its configured upstream with a normal
+   fast-forward push, then report the commit and push result.
+
+Current ShiDao product work normally stays on `main`. When already on `main`,
+push `main` directly so Coolify can pick up the release; do not create a feature
+branch or pull request unless the user explicitly asks for one.
+
+Do not turn review, diagnosis, planning, or other read-only tasks into commits.
+Follow any explicit user boundary exactly: `do not commit` means leave the
+changes uncommitted; `commit but do not push` means create only the local
+commit; `keep this local` means do not push and do not infer permission to
+commit when the wording is ambiguous.
+
+Do not automatically commit or push incomplete work, changes whose relevant
+checks fail or cannot be completed, diffs containing secrets or unintended
+artifacts, or task changes that cannot be safely separated from unrelated user
+work. Report the blocker and leave the worktree intact.
+
+Never force-push, amend or rewrite existing commits, bypass branch protection,
+change remotes, or automatically resolve remote divergence with merge or
+rebase. If no upstream is configured, the remote is ahead or diverged, a normal
+push would be non-fast-forward, or authentication, permissions, or branch
+protection blocks the push, keep any safely created task commit local, stop,
+and report the exact blocker.

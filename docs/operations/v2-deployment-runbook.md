@@ -866,7 +866,7 @@ ShiDao V2 application:
   непрерывные title/description переносятся, а back-label остаётся в одной
   строке и обрезается ellipsis;
   description на каждой поверхности получает один computed-цвет
-  `rgba(20, 20, 20, 0.5)` из canonical
+  `oklch(0.19 0 0 / 0.6)` из canonical
   `--app-page-header-description-color`;
   Course/Lesson сохраняют backlink: link/button, стрелка, normal/hover/focus
   имеют computed `rgb(20, 20, 20)`, стрелка не сжимается, а расстояние от
@@ -876,9 +876,9 @@ ShiDao V2 application:
   background, а row dividers используют один
   `--product-table-divider-color`;
 - Course, Lesson и остальные active-product `WorkspaceTabs` используют
-  edge-to-edge baseline 1.2 px цвета `rgba(20, 20, 20, 0.5)` без внешнего
+  edge-to-edge baseline 1.2 px цвета `oklch(0.19 0 0 / 0.4)` без внешнего
   inline-inset и квадратный чёрный active segment 4 px без radius. Inactive
-  label имеет тот же 50%-black цвет, gap между tab-кнопками и верхний radius
+  label и 16 px иконка имеют цвет `oklch(0.19 0 0 / 0.6)`, gap между tab-кнопками и верхний radius
   равны 12 px; светлый hover не перекрывает baseline. Каждый tab имеет 16 px
   иконку. Только positive numeric count показан маленьким приподнятым `sup` с
   weight 500, а ноль не рендерится; каждый `aria-controls` tab разрешается в matching
@@ -1041,24 +1041,27 @@ flow как permanent delete.
   navigation без inset/shadow/translate, icon opacity `1` и contrast-aware
   `currentColor`. Все канонические `.product-btn` должны быть белыми, иметь
   border `0` и ту же computed base shadow
-  `oklch(0 0 0 / 0.2) 0px 1px 4px 0px`, что selected button переключателя
+  `oklch(0 0 0 / 0.2) 0px 1px 3px 0px`, что selected button переключателя
   вида Расписания. После завершения transition hover должен давать blur
-  `6 px`, а pointer-down `:active` — `2 px`; `transform` во всех состояниях
-  остаётся `none`; при `prefers-reduced-motion` transition отключён. Проверить,
+  `6 px` и `matrix(1, 0, 0, 1, 0, -1)`, а pointer-down `:active` — `1 px` и
+  `transform: none`; при `prefers-reduced-motion` transition и translate
+  отключены. Проверить,
   что row ellipsis и Component-card icon-actions остаются transparent/no-shadow.
   У compound toggles не должно быть постоянной внешней обводки, selected white
-  option использует только base shadow и не получает `6/2 px` button states;
-  keyboard focus сохраняет видимый outline. Menu items сохраняют border `0`.
+  option использует только base shadow и не получает `6/1 px` button states,
+  а shell имеет computed background `oklch(0.19 0 0 / 0.1)`; keyboard focus
+  сохраняет видимый outline. Menu items сохраняют border `0`.
   Повторить
   этот visual check на authenticated `/settings/profile`,
   `/settings/security` и `/settings/observers`: все три используют beige
   product shell и solid-white demo TopNav; user/header и active side-nav имеют
   `40 px / 12 px / .88rem / 400`, а primary/secondary/destructive actions —
-  shared Button contrast без raw Tailwind visual fork. Landing, Auth и
-  полноэкранный Student Screen при этом не должны измениться;
+  shared Button contrast без raw Tailwind visual fork. Auth-кнопки, построенные
+  на canonical `.product-btn`, следуют тому же контракту; raw Landing controls
+  и non-product controls полноэкранного Student Screen не должны измениться;
 - `/students` показывает точный подзаголовок «Ученики и группы, с которыми вы
   работаете или за которыми наблюдаете»; вкладки «Ученики / Группы /
-  Наблюдение» сохраняют общий edge-to-edge 50%-black 1.2 px baseline без
+  Наблюдение» сохраняют общий edge-to-edge 40%-black 1.2 px baseline без
   горизонтального inset, opaque active-segment, иконки и raised positive
   counts без badge. При отсутствии сущностей `0` не показывается; при наличии
   наблюдаемых профилей «Наблюдение» показывает их фактическое число и обновляет
@@ -1087,7 +1090,8 @@ flow как permanent delete.
   выбранную вкладку, а main navigation подсвечивает «Ученики»;
 - `/courses` показывает точный подзаголовок «Создавайте свои курсы с нуля или
   добавляйте готовые из каталога» без точки; tabs сохраняют общий edge-to-edge
-  50%-black baseline 1.2 px. Раздел проверяется в режимах «Карточки / Таблица»:
+  baseline 1.2 px цвета `oklch(0.19 0 0 / 0.4)`, а inactive text/icon —
+  `oklch(0.19 0 0 / 0.6)`. Раздел проверяется в режимах «Карточки / Таблица»:
   controls обеих вкладок лежат прямо на page background без toolbar-card и без
   horizontal inset. В обеих вкладках icon-only control идёт **Таблица /
   Карточки** слева направо, и при первом открытии активна таблица;

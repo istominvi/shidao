@@ -33,20 +33,28 @@ test("workspace tabs keep their accessible visual contract and raise positive co
   assert.match(component, /const edgePadding = 0;/);
   assert.match(
     styles,
+    /:root\s*\{[^}]*--product-secondary-foreground: oklch\(0\.19 0 0 \/ 0\.6\);[^}]*--product-workspace-tabs-divider-color: oklch\(0\.19 0 0 \/ 0\.4\);/,
+  );
+  assert.match(
+    styles,
     /\.workspace-tabs::before\s*\{[^}]*right: var\(--workspace-tabs-inline-offset\);[^}]*left: var\(--workspace-tabs-inline-offset\);/,
   );
   assert.match(styles, /\.workspace-tabs\s*\{[^}]*gap: 0\.75rem;/);
   assert.match(
     styles,
-    /\.workspace-tabs::before\s*\{[^}]*z-index: 1;[^}]*bottom: 0;[^}]*height: 3px;[^}]*background: var\(--product-muted-foreground\);[^}]*transform: scaleY\(0\.4\);[^}]*transform-origin: center bottom;[^}]*pointer-events: none;/,
+    /\.workspace-tabs::before\s*\{[^}]*z-index: 1;[^}]*bottom: 0;[^}]*height: 3px;[^}]*background: var\(--product-workspace-tabs-divider-color\);[^}]*transform: scaleY\(0\.4\);[^}]*transform-origin: center bottom;[^}]*pointer-events: none;/,
   );
   assert.match(
     styles,
-    /\.workspace-tab\s*\{[^}]*border-radius: var\(--course-demo-control-radius, 0\.75rem\)[^}]*0 0;[^}]*color: var\(--product-muted-foreground\);/,
+    /\.workspace-tab\s*\{[^}]*border-radius: var\(--course-demo-control-radius, 0\.75rem\)[^}]*0 0;[^}]*color: var\(--product-secondary-foreground\);/,
   );
   assert.match(
     styles,
     /\.workspace-tab-active::after\s*\{[^}]*z-index: 2;[^}]*height: 4px;[^}]*background: #141414;/,
+  );
+  assert.match(
+    styles,
+    /\.workspace-tab-icon\s*\{[^}]*width: 1rem;[^}]*height: 1rem;[^}]*color: currentColor;[^}]*opacity: 1;/,
   );
   assert.ok(countStyles, "Count styles must remain discoverable");
   assert.match(countStyles, /display: inline;/);

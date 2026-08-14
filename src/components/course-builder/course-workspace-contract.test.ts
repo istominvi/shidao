@@ -373,7 +373,7 @@ test("course routes use the flat demo background and unified visual controls", (
   );
   assert.match(
     styles,
-    /\.workspace-tabs::before\s*\{[^}]*z-index: 1;[^}]*right: var\(--workspace-tabs-inline-offset\);[^}]*bottom: 0;[^}]*left: var\(--workspace-tabs-inline-offset\);[^}]*height: 3px;[^}]*background: var\(--product-muted-foreground\);[^}]*transform: scaleY\(0\.4\);[^}]*transform-origin: center bottom;/,
+    /\.workspace-tabs::before\s*\{[^}]*z-index: 1;[^}]*right: var\(--workspace-tabs-inline-offset\);[^}]*bottom: 0;[^}]*left: var\(--workspace-tabs-inline-offset\);[^}]*height: 3px;[^}]*background: var\(--product-workspace-tabs-divider-color\);[^}]*transform: scaleY\(0\.4\);[^}]*transform-origin: center bottom;/,
   );
   assert.match(
     styles,
@@ -398,7 +398,7 @@ test("course routes use the flat demo background and unified visual controls", (
   );
 });
 
-test("product buttons share one animated raised-control shadow contract", () => {
+test("product buttons share one animated raised-control elevation contract", () => {
   const styles = source("src/app/globals.css");
   const navigationStyles = source("src/app/styles/navigation.css");
   const teachingStyles = source("src/app/styles/teaching-hub.css");
@@ -430,7 +430,7 @@ test("product buttons share one animated raised-control shadow contract", () => 
   );
   assert.match(
     styles,
-    /:root\s*\{[^}]*--product-raised-control-shadow:\s*0 1px 4px 0px oklch\(0 0 0 \/ 0\.2\);[^}]*--product-raised-control-shadow-hover:\s*0 1px 6px 0px oklch\(0 0 0 \/ 0\.2\);[^}]*--product-raised-control-shadow-pressed:\s*0 1px 2px 0px oklch\(0 0 0 \/ 0\.2\);/,
+    /:root\s*\{[^}]*--product-raised-control-shadow:\s*0 1px 3px 0px oklch\(0 0 0 \/ 0\.2\);[^}]*--product-raised-control-shadow-hover:\s*0 1px 6px 0px oklch\(0 0 0 \/ 0\.2\);[^}]*--product-raised-control-shadow-pressed:\s*0 1px 1px 0px oklch\(0 0 0 \/ 0\.2\);/,
   );
   assert.doesNotMatch(styles, /--course-demo-header-action-border/);
   assert.match(
@@ -455,7 +455,7 @@ test("product buttons share one animated raised-control shadow contract", () => 
   );
   assert.match(
     styles,
-    /\.product-btn:hover:not\(:disabled\)\s*\{[^}]*border: 0;[^}]*background: #fff;[^}]*box-shadow: var\(--product-raised-control-shadow-hover\);[^}]*transform: none;/,
+    /\.product-btn:hover:not\(:disabled\)\s*\{[^}]*border: 0;[^}]*background: #fff;[^}]*box-shadow: var\(--product-raised-control-shadow-hover\);/,
   );
   assert.match(
     styles,
@@ -463,7 +463,7 @@ test("product buttons share one animated raised-control shadow contract", () => 
   );
   assert.match(
     styles,
-    /\.course-demo-shell \.product-btn:hover:not\(:disabled\)\s*\{[^}]*border: 0;[^}]*background: #fff;[^}]*box-shadow: var\(--product-raised-control-shadow-hover\);[^}]*transform: none;/,
+    /\.course-demo-shell \.product-btn:hover:not\(:disabled\)\s*\{[^}]*border: 0;[^}]*background: #fff;[^}]*box-shadow: var\(--product-raised-control-shadow-hover\);/,
   );
   assert.match(
     styles,
@@ -491,8 +491,14 @@ test("product buttons share one animated raised-control shadow contract", () => 
     /outline: 2px solid rgba\(20, 20, 20, 0\.58\);[^}]*outline-offset: 2px;/,
   );
   assert.doesNotMatch(courseProductFocusStyles, /box-shadow/);
-  assert.match(reducedMotionStyles, /\.product-btn,/);
+  assert.doesNotMatch(courseProductFocusStyles, /transform/);
+  assert.match(
+    styles,
+    /@media \(hover: hover\) and \(pointer: fine\)\s*\{[\s\S]*?\.product-btn:hover:not\(:disabled\),[\s\S]*?\.course-demo-shell \.product-btn-primary:hover:not\(:disabled\)\s*\{[^}]*transform: translateY\(-1px\);[^}]*\}[\s\S]*?\.product-btn:active:not\(:disabled\),[\s\S]*?\.course-demo-shell \.product-btn:active:not\(:disabled\)\s*\{[^}]*transform: none;/,
+  );
+  assert.match(reducedMotionStyles, /\.product-btn\.product-btn,/);
   assert.match(reducedMotionStyles, /transition: none;/);
+  assert.match(reducedMotionStyles, /transform: none;/);
 
   assert.match(
     styles,
@@ -509,7 +515,7 @@ test("product buttons share one animated raised-control shadow contract", () => 
 
   assert.match(
     styles,
-    /\.product-segmented-control\s*\{[^}]*border: 0;[^}]*box-shadow: none;/,
+    /\.product-segmented-control\s*\{[^}]*border: 0;[^}]*background: var\(--product-segmented-control-background\);[^}]*box-shadow: none;/,
   );
   assert.match(
     styles,
@@ -534,7 +540,7 @@ test("product buttons share one animated raised-control shadow contract", () => 
   );
   assert.doesNotMatch(
     segmentedControl,
-    /shadow-\[inset|shadow-\[0_1px_3px|focus-visible:ring|focus-visible:outline-none|product-raised-control-shadow-hover|product-raised-control-shadow-pressed/,
+    /bg-neutral-950\/\[0\.05\]|shadow-\[inset|shadow-\[0_1px_3px|focus-visible:ring|focus-visible:outline-none|product-raised-control-shadow-hover|product-raised-control-shadow-pressed/,
   );
   assert.match(studentFilter, /product-segmented-control grid/);
   assert.match(
@@ -548,6 +554,7 @@ test("product buttons share one animated raised-control shadow contract", () => 
     3,
   );
   assert.doesNotMatch(studentFilter, /shadow-sm/);
+  assert.doesNotMatch(studentFilter, /bg-neutral-100/);
   assert.match(
     learningProfile,
     /variant="secondary"\s+className="product-btn-danger mt-4"[\s\S]*?>\s*Проверить, что будет удалено/,
@@ -555,7 +562,7 @@ test("product buttons share one animated raised-control shadow contract", () => 
   assert.doesNotMatch(learningProfile, /bg-rose-700 text-white/);
   assert.match(
     teachingStyles,
-    /\.teaching-schedule-view-toggle\s*\{[^}]*border: 0;[^}]*background: rgba\(20, 20, 20, 0\.05\);[^}]*box-shadow: none;/,
+    /\.teaching-schedule-view-toggle\s*\{[^}]*border: 0;[^}]*background: var\(--product-segmented-control-background\);[^}]*box-shadow: none;/,
   );
   assert.match(
     teachingStyles,
@@ -575,7 +582,7 @@ test("product buttons share one animated raised-control shadow contract", () => 
   );
   assert.match(
     forcedColorsStyles,
-    /border: 1px solid ButtonText;[^}]*background: ButtonFace;[^}]*color: ButtonText;[^}]*box-shadow: none;/,
+    /border: 1px solid ButtonText;[^}]*background: ButtonFace;[^}]*color: ButtonText;[^}]*box-shadow: none;[^}]*transform: none;/,
   );
   assert.match(
     forcedColorsStyles,

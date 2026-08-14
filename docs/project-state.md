@@ -318,20 +318,25 @@ trigger контекстного меню; buttons открываемого из
 обычные controls не меняются. Это UI-only change без API, schema, migration или
 реализации выбора фона Course; rollout входит в exact deployed source ниже.
 
-**Next production canonical product-button elevation:** текущий source применяет
+**Next production canonical control elevation and muted-color refinement:** текущий source применяет
 один raised-surface contract ко всем каноническим `.product-btn`, а не только к
 actions заголовка. Обычная кнопка имеет белый surface, border `0` и exact
-однослойную тень `0 1px 4px 0px oklch(0 0 0 / 0.2)`; hover плавно увеличивает
-только blur до `6 px`, а transient pressed `:active` уменьшает его до `2 px`.
-`transform` остаётся `none`, поэтому эффект подъёма/нажатия не сдвигает layout
-или hit target. Danger actions сохраняют красный текст, keyboard focus —
+однослойную тень `0 1px 3px 0px oklch(0 0 0 / 0.2)`. На fine-pointer hover
+blur увеличивается до `6 px`, а surface сдвигается через
+`transform: translateY(-1px)` без layout reflow; transient pressed `:active`
+возвращает кнопку на исходную позицию и уменьшает blur до `1 px`. Danger actions
+сохраняют красный текст, keyboard focus —
 отдельный 2 px outline, forced-colors — системный контур, а
-`prefers-reduced-motion` отключает transition. Плоские служебные icon-actions
+`prefers-reduced-motion` отключает transition и вертикальный сдвиг. Плоские служебные icon-actions
 в строках таблиц и на Component cards намеренно остаются transparent/no-shadow.
 У составных тумблеров убрана постоянная внешняя inset-обводка; выбранная белая
-option использует только базовую `4 px` тень без button hover/pressed states и
-сохраняет собственный focus outline. API, schema и migrations не меняются;
-production rollout этого follow-up пока не заявлен.
+option использует только базовую `3 px` тень без button hover/pressed states,
+сохраняет собственный focus outline, а фон compound shell задан отдельным
+`oklch(0.19 0 0 / 0.1)` token. Подзаголовок `AppPageHeader`, inactive text и
+16 px иконки `WorkspaceTabs` используют отдельный foreground
+`oklch(0.19 0 0 / 0.6)`, тогда как baseline остаётся визуально `1.2 px`, но
+получает независимый цвет `oklch(0.19 0 0 / 0.4)`. API, schema и migrations не
+меняются; production rollout этого follow-up пока не заявлен.
 
 **Current production WorkspaceTabs fractional-baseline refinement:** общий
 разделитель под вкладками уменьшен с прежнего baseline

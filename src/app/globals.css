@@ -21,13 +21,16 @@
   --product-inner-control-size: 2rem;
   --product-inner-control-radius: 0.5rem;
   --product-inner-control-inset: 0.25rem;
-  --product-raised-control-shadow: 0 1px 4px 0px oklch(0 0 0 / 0.2);
+  --product-raised-control-shadow: 0 1px 3px 0px oklch(0 0 0 / 0.2);
   --product-raised-control-shadow-hover: 0 1px 6px 0px oklch(0 0 0 / 0.2);
-  --product-raised-control-shadow-pressed: 0 1px 2px 0px oklch(0 0 0 / 0.2);
+  --product-raised-control-shadow-pressed: 0 1px 1px 0px oklch(0 0 0 / 0.2);
   --product-context-menu-surface: #fff;
   --product-context-menu-radius: var(--product-element-radius);
   --product-context-menu-shadow: 0 18px 46px rgba(20, 20, 20, 0.18);
   --product-muted-foreground: rgba(20, 20, 20, 0.5);
+  --product-secondary-foreground: oklch(0.19 0 0 / 0.6);
+  --product-workspace-tabs-divider-color: oklch(0.19 0 0 / 0.4);
+  --product-segmented-control-background: oklch(0.19 0 0 / 0.1);
   --brand-blue: #70b7ff;
   --brand-green: #c9ff4f;
   --brand-purple: #c9b4ff;
@@ -215,7 +218,7 @@ a {
   --app-page-header-title-line-height: 1.08;
   --app-page-header-description-size: var(--app-page-header-chip-text-size);
   --app-page-header-description-line-height: 1.6;
-  --app-page-header-description-color: var(--product-muted-foreground);
+  --app-page-header-description-color: var(--product-secondary-foreground);
 
   margin: 0;
   display: flex;
@@ -421,7 +424,7 @@ a {
   left: var(--workspace-tabs-inline-offset);
   /* Chromium snaps a fractional paint box; scale an integer-height layer. */
   height: 3px;
-  background: var(--product-muted-foreground);
+  background: var(--product-workspace-tabs-divider-color);
   transform: scaleY(0.4);
   transform-origin: center bottom;
   content: "";
@@ -441,7 +444,7 @@ a {
     var(--course-demo-control-radius, 0.75rem) 0 0;
   background: transparent;
   padding: 0.55rem var(--course-demo-control-padding-inline, 0.75rem);
-  color: var(--product-muted-foreground);
+  color: var(--product-secondary-foreground);
   font-family: inherit;
   font-size: var(--course-demo-control-font-size, 0.88rem);
   font-weight: var(--course-demo-control-font-weight, 500);
@@ -481,6 +484,8 @@ a {
 .workspace-tab-icon {
   width: 1rem;
   height: 1rem;
+  color: currentColor;
+  opacity: 1;
 }
 
 .workspace-tab-label {
@@ -1990,6 +1995,7 @@ a {
 
 .product-segmented-control {
   border: 0;
+  background: var(--product-segmented-control-background);
   box-shadow: none;
 }
 
@@ -2058,14 +2064,12 @@ a {
   border: 0;
   background: #fff;
   box-shadow: var(--product-raised-control-shadow-hover);
-  transform: none;
 }
 
 .product-btn:hover:not(:disabled) {
   border: 0;
   background: #fff;
   box-shadow: var(--product-raised-control-shadow-hover);
-  transform: none;
 }
 
 .product-btn:active:not(:disabled) {
@@ -2107,7 +2111,6 @@ a {
   border: 0;
   background: #fff;
   box-shadow: var(--product-raised-control-shadow-hover);
-  transform: none;
 }
 
 .product-btn-secondary {
@@ -2168,7 +2171,19 @@ a {
 .course-demo-shell .product-btn:focus-visible:not(:disabled) {
   outline: 2px solid rgba(20, 20, 20, 0.58);
   outline-offset: 2px;
-  transform: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .product-btn:hover:not(:disabled),
+  .course-demo-shell .product-btn:hover:not(:disabled),
+  .course-demo-shell .product-btn-primary:hover:not(:disabled) {
+    transform: translateY(-1px);
+  }
+
+  .product-btn:active:not(:disabled),
+  .course-demo-shell .product-btn:active:not(:disabled) {
+    transform: none;
+  }
 }
 
 .product-btn.component-card-action,
@@ -2563,7 +2578,13 @@ a {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .product-btn,
+  .product-btn.product-btn,
+  .product-btn.product-btn:hover:not(:disabled),
+  .product-btn.product-btn:active:not(:disabled) {
+    transition: none;
+    transform: none;
+  }
+
   .lesson-component-card,
   .lesson-component-card-actions,
   .lesson-component-card-actions .component-card-action,
@@ -2726,6 +2747,7 @@ a {
     background: ButtonFace;
     color: ButtonText;
     box-shadow: none;
+    transform: none;
   }
 
   .product-btn.product-btn:focus-visible:not(:disabled) {

@@ -630,14 +630,18 @@ Visual contract Course routes не меняет эту навигационну�
   slice не реализован;
 - next production refinement распространяет единый raised contract на все
   канонические `.product-btn`: белый borderless surface и exact однослойная
-  тень `4 px` rest / `6 px` hover / `2 px` pressed при цвете
-  `oklch(0 0 0 / 0.2)`. Анимируется только `box-shadow`; `transform: none`,
-  focus outline, danger color и forced-colors fallback сохраняются, а
-  reduced-motion отключает transition. Плоские ellipsis в строках и
+  тень `3 px` rest / `6 px` hover / `1 px` pressed при цвете
+  `oklch(0 0 0 / 0.2)`. Fine-pointer hover дополнительно использует
+  `translateY(-1px)`, pressed возвращается на исходную позицию; focus outline,
+  danger color и forced-colors fallback сохраняются, а reduced-motion отключает
+  transition и translate. Плоские ellipsis в строках и
   Component-card icon-actions остаются transparent/no-shadow. У compound
   toggles удаляется внешняя inset-обводка, а selected white option использует
-  только base shadow без hover/pressed-анимации. API/schema/Lesson hierarchy не
-  меняются, production rollout этого refinement пока не заявлен;
+  только base shadow без hover/pressed-анимации; фон shell равен
+  `oklch(0.19 0 0 / 0.1)`. Подзаголовок `AppPageHeader` и inactive tab
+  text/icon используют `oklch(0.19 0 0 / 0.6)`, а независимый 1.2 px baseline —
+  `oklch(0.19 0 0 / 0.4)`. API/schema/Lesson hierarchy не меняются, production
+  rollout этого refinement пока не заявлен;
 - в current production общий contextual `ActionMenu`, открываемый
   `MoreHorizontal`/`MoreVertical` в Course actions, Lesson rows, Schedule и
   Students, использует токенизированные белый surface, element-radius 12 px и

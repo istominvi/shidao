@@ -391,6 +391,10 @@ test("schedule keeps the compact date control and dense one-line table contract"
   );
   assert.match(
     teachingHubStyleSource,
+    /\.teaching-schedule-view-toggle\s*\{[^}]*border:\s*0;[^}]*background:\s*var\(--product-segmented-control-background\);[^}]*box-shadow:\s*none;/,
+  );
+  assert.match(
+    teachingHubStyleSource,
     /\.teaching-schedule-view-toggle button\s*\{[^}]*height:\s*var\(--product-inner-control-size, 2rem\);[^}]*border-radius:\s*var\(--product-inner-control-radius, 0\.5rem\);/,
   );
   assert.match(

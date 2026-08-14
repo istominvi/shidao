@@ -154,7 +154,7 @@ export function StudentDirectoryFilterMenu({
         <div className="course-filter-field">
           <span>Принадлежность к группе</span>
           <div
-            className="product-segmented-control grid grid-cols-3 gap-1 rounded-xl bg-neutral-100 p-1"
+            className="product-segmented-control grid grid-cols-3 gap-1 rounded-xl p-1"
             role="group"
             aria-label="Принадлежность к группе"
           >

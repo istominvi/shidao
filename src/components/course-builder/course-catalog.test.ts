@@ -309,11 +309,19 @@ test("shared course controls preserve pressed-button and native-filter semantics
   assert.match(segmentedControlSource, /product-segmented-control-option/);
   assert.match(
     globalStyles,
+    /:root\s*\{[^}]*--product-segmented-control-background: oklch\(0\.19 0 0 \/ 0\.1\);/,
+  );
+  assert.match(
+    globalStyles,
+    /\.product-segmented-control\s*\{[^}]*border: 0;[^}]*background: var\(--product-segmented-control-background\);[^}]*box-shadow: none;/,
+  );
+  assert.match(
+    globalStyles,
     /\.product-segmented-control-option:focus-visible\s*\{[^}]*outline: 2px solid rgba\(20, 20, 20, 0\.58\);[^}]*outline-offset: -2px;/,
   );
   assert.doesNotMatch(
     segmentedControlSource,
-    /shadow-\[inset|shadow-\[0_1px_3px|focus-visible:ring|focus-visible:outline-none/,
+    /bg-neutral-950\/\[0\.05\]|shadow-\[inset|shadow-\[0_1px_3px|focus-visible:ring|focus-visible:outline-none/,
   );
   assert.match(
     segmentedControlSource,

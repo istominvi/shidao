@@ -78,9 +78,13 @@ const E2E_PUBLISHED_SELF_COMMENT =
   "Опубликованный комментарий E2E Adult из completion UI.";
 const E2E_PRIVATE_OBSERVED_COMMENT =
   "PRIVATE OBSERVED COMMENT — только преподавателю";
-const E2E_RAISED_CONTROL_SHADOW = "oklch(0 0 0 / 0.2) 0px 1px 4px 0px";
+const E2E_RAISED_CONTROL_SHADOW = "oklch(0 0 0 / 0.2) 0px 1px 3px 0px";
 const E2E_RAISED_CONTROL_HOVER_SHADOW = "oklch(0 0 0 / 0.2) 0px 1px 6px 0px";
-const E2E_RAISED_CONTROL_PRESSED_SHADOW = "oklch(0 0 0 / 0.2) 0px 1px 2px 0px";
+const E2E_RAISED_CONTROL_PRESSED_SHADOW = "oklch(0 0 0 / 0.2) 0px 1px 1px 0px";
+const E2E_RAISED_CONTROL_HOVER_TRANSFORM = "matrix(1, 0, 0, 1, 0, -1)";
+const E2E_MUTED_FOREGROUND = "oklch(0.19 0 0 / 0.6)";
+const E2E_WORKSPACE_TABS_DIVIDER = "oklch(0.19 0 0 / 0.4)";
+const E2E_SEGMENTED_CONTROL_BACKGROUND = "oklch(0.19 0 0 / 0.1)";
 
 const E2E_COURSE_ROW = {
   id: E2E_COURSE_ID,
@@ -3664,6 +3668,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         },
         raisedControlShadow: getComputedStyle(activeViewButton).boxShadow,
         viewToggleSurface: {
+          backgroundColor: getComputedStyle(viewToggle).backgroundColor,
           borderTopWidth: getComputedStyle(viewToggle).borderTopWidth,
           boxShadow: getComputedStyle(viewToggle).boxShadow,
         },
@@ -3753,7 +3758,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
     assert.equal(scheduleContract.headerSignature.titleFontWeight, "400");
     assert.equal(
       scheduleContract.headerSignature.descriptionColor,
-      "rgba(20, 20, 20, 0.5)",
+      E2E_MUTED_FOREGROUND,
     );
     assert.equal(
       scheduleContract.headerDescription,
@@ -3781,6 +3786,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       scheduleContract.raisedControlShadow,
     );
     assert.deepEqual(scheduleContract.viewToggleSurface, {
+      backgroundColor: E2E_SEGMENTED_CONTROL_BACKGROUND,
       borderTopWidth: "0px",
       boxShadow: "none",
     });
@@ -3802,16 +3808,23 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       {
         backgroundColor: "rgb(255, 255, 255)",
         boxShadow: E2E_RAISED_CONTROL_HOVER_SHADOW,
-        transform: "none",
+        transform: E2E_RAISED_CONTROL_HOVER_TRANSFORM,
       },
     );
     await runtime.page.mouse.down();
     await runtime.page.waitForTimeout(220);
-    assert.equal(
-      await scheduleHeaderPrimaryButton.evaluate(
-        (button) => getComputedStyle(button).boxShadow,
-      ),
-      E2E_RAISED_CONTROL_PRESSED_SHADOW,
+    assert.deepEqual(
+      await scheduleHeaderPrimaryButton.evaluate((button) => {
+        const style = getComputedStyle(button);
+        return {
+          boxShadow: style.boxShadow,
+          transform: style.transform,
+        };
+      }),
+      {
+        boxShadow: E2E_RAISED_CONTROL_PRESSED_SHADOW,
+        transform: "none",
+      },
     );
     await runtime.page.mouse.move(0, 0);
     await runtime.page.mouse.up();
@@ -4437,9 +4450,14 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         return {
           backgroundColor: style.backgroundColor,
           boxShadow: style.boxShadow,
+          transform: style.transform,
         };
       }),
-      { backgroundColor: "rgba(0, 0, 0, 0)", boxShadow: "none" },
+      {
+        backgroundColor: "rgba(0, 0, 0, 0)",
+        boxShadow: "none",
+        transform: "none",
+      },
     );
     await rowMenuTrigger.hover();
     await runtime.page.waitForTimeout(220);
@@ -4449,17 +4467,26 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         return {
           backgroundColor: style.backgroundColor,
           boxShadow: style.boxShadow,
+          transform: style.transform,
         };
       }),
-      { backgroundColor: "rgba(20, 20, 20, 0.07)", boxShadow: "none" },
+      {
+        backgroundColor: "rgba(20, 20, 20, 0.07)",
+        boxShadow: "none",
+        transform: "none",
+      },
     );
     await runtime.page.mouse.down();
     await runtime.page.waitForTimeout(220);
-    assert.equal(
-      await rowMenuTrigger.evaluate(
-        (button) => getComputedStyle(button).boxShadow,
-      ),
-      "none",
+    assert.deepEqual(
+      await rowMenuTrigger.evaluate((button) => {
+        const style = getComputedStyle(button);
+        return {
+          boxShadow: style.boxShadow,
+          transform: style.transform,
+        };
+      }),
+      { boxShadow: "none", transform: "none" },
     );
     await runtime.page.mouse.move(0, 0);
     await runtime.page.mouse.up();
@@ -4814,6 +4841,9 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       const inactiveTab = document.querySelector<HTMLElement>(
         ".workspace-tab:not(.workspace-tab-active)",
       );
+      const inactiveTabIcon = inactiveTab?.querySelector<HTMLElement>(
+        ".workspace-tab-icon",
+      );
       const activeTabLabel = activeTab?.querySelector<HTMLElement>(
         "span:not(.workspace-tab-count)",
       );
@@ -4851,6 +4881,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         !description ||
         !activeTab ||
         !inactiveTab ||
+        !inactiveTabIcon ||
         !activeTabLabel ||
         !activeTabCount ||
         !tabs ||
@@ -4872,6 +4903,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       const tabsStyle = getComputedStyle(tabs);
       const tabStyle = getComputedStyle(activeTab);
       const inactiveTabStyle = getComputedStyle(inactiveTab);
+      const inactiveTabIconStyle = getComputedStyle(inactiveTabIcon);
       const tabLabelStyle = getComputedStyle(activeTabLabel);
       const tabCountStyle = getComputedStyle(activeTabCount);
       const markerStyle = getComputedStyle(activeTab, "::after");
@@ -4915,6 +4947,8 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
           fontWeight: tabStyle.fontWeight,
           activeColor: tabStyle.color,
           inactiveColor: inactiveTabStyle.color,
+          inactiveIconColor: inactiveTabIconStyle.color,
+          inactiveIconOpacity: inactiveTabIconStyle.opacity,
           gap: tabsStyle.columnGap,
           tabZIndex: tabStyle.zIndex,
           baselinePaintHeight: baselineStyle.height,
@@ -4988,6 +5022,8 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
           filterTriggerHeight: getComputedStyle(filterTrigger).height,
           filterTriggerText: filterTrigger.textContent?.trim() ?? "",
           viewSwitchHeight: getComputedStyle(viewSwitch).height,
+          viewSwitchBackgroundColor:
+            getComputedStyle(viewSwitch).backgroundColor,
           viewSwitchBoxShadow: getComputedStyle(viewSwitch).boxShadow,
           activeViewButtonHeight: getComputedStyle(activeViewButton).height,
           activeViewButtonBoxShadow:
@@ -5034,13 +5070,15 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       radius: "12px 12px 0px 0px",
       fontWeight: "400",
       activeColor: "rgb(20, 20, 20)",
-      inactiveColor: "rgba(20, 20, 20, 0.5)",
+      inactiveColor: E2E_MUTED_FOREGROUND,
+      inactiveIconColor: E2E_MUTED_FOREGROUND,
+      inactiveIconOpacity: "1",
       gap: "12px",
       tabZIndex: "auto",
       baselinePaintHeight: "3px",
       baselineScaleY: 0.4,
       baselineVisualHeight: 1.2,
-      baselineColor: "rgba(20, 20, 20, 0.5)",
+      baselineColor: E2E_WORKSPACE_TABS_DIVIDER,
       baselineZIndex: "1",
       baselinePointerEvents: "none",
       baselineLeft: "0px",
@@ -5116,6 +5154,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       filterTriggerHeight: "40px",
       filterTriggerText: "Фильтр",
       viewSwitchHeight: "40px",
+      viewSwitchBackgroundColor: E2E_SEGMENTED_CONTROL_BACKGROUND,
       viewSwitchBoxShadow: "none",
       activeViewButtonHeight: "32px",
       activeViewButtonBoxShadow: E2E_RAISED_CONTROL_SHADOW,
@@ -5135,19 +5174,27 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
     });
     await activeLearnerViewButton.hover();
     await runtime.page.waitForTimeout(220);
-    assert.equal(
-      await activeLearnerViewButton.evaluate(
-        (button) => getComputedStyle(button).boxShadow,
-      ),
-      E2E_RAISED_CONTROL_SHADOW,
+    assert.deepEqual(
+      await activeLearnerViewButton.evaluate((button) => {
+        const style = getComputedStyle(button);
+        return {
+          boxShadow: style.boxShadow,
+          transform: style.transform,
+        };
+      }),
+      { boxShadow: E2E_RAISED_CONTROL_SHADOW, transform: "none" },
     );
     await runtime.page.mouse.down();
     await runtime.page.waitForTimeout(220);
-    assert.equal(
-      await activeLearnerViewButton.evaluate(
-        (button) => getComputedStyle(button).boxShadow,
-      ),
-      E2E_RAISED_CONTROL_SHADOW,
+    assert.deepEqual(
+      await activeLearnerViewButton.evaluate((button) => {
+        const style = getComputedStyle(button);
+        return {
+          boxShadow: style.boxShadow,
+          transform: style.transform,
+        };
+      }),
+      { boxShadow: E2E_RAISED_CONTROL_SHADOW, transform: "none" },
     );
     await runtime.page.mouse.move(0, 0);
     await runtime.page.mouse.up();
@@ -5216,6 +5263,12 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       name: "Принадлежность к группе",
       exact: true,
     });
+    assert.equal(
+      await learnerMembershipSwitch.evaluate(
+        (group) => getComputedStyle(group).backgroundColor,
+      ),
+      E2E_SEGMENTED_CONTROL_BACKGROUND,
+    );
     const allMemberships = learnerMembershipSwitch.getByRole("button", {
       name: "Все",
       exact: true,
@@ -8426,13 +8479,13 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       radius: "12px 12px 0px 0px",
       fontWeight: "400",
       activeColor: "rgb(20, 20, 20)",
-      inactiveColor: "rgba(20, 20, 20, 0.5)",
+      inactiveColor: E2E_MUTED_FOREGROUND,
       gap: "12px",
       tabZIndex: "auto",
       baselinePaintHeight: "3px",
       baselineScaleY: 0.4,
       baselineVisualHeight: 1.2,
-      baselineColor: "rgba(20, 20, 20, 0.5)",
+      baselineColor: E2E_WORKSPACE_TABS_DIVIDER,
       baselineZIndex: "1",
       baselinePointerEvents: "none",
       baselineLeft: "0px",
@@ -8912,12 +8965,14 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
           borderTopWidth: style.borderTopWidth,
           backgroundColor: style.backgroundColor,
           boxShadow: style.boxShadow,
+          transform: style.transform,
         };
       }),
       {
         borderTopWidth: "0px",
         backgroundColor: "rgb(255, 255, 255)",
         boxShadow: E2E_RAISED_CONTROL_HOVER_SHADOW,
+        transform: E2E_RAISED_CONTROL_HOVER_TRANSFORM,
       },
     );
     assert.deepEqual(lessonVisual.tabSignature, courseVisual.tabSignature);

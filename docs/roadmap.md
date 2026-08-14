@@ -462,14 +462,19 @@ rollout входит в exact functional source
 
 **Next production:** единый raised-control contract распространяется на все
 канонические `.product-btn`: белый borderless surface и однослойная базовая тень
-`0 1px 4px 0px oklch(0 0 0 / 0.2)`. Hover плавно увеличивает blur до `6 px`,
-а pressed `:active` уменьшает его до `2 px`; положение и geometry не меняются.
+`0 1px 3px 0px oklch(0 0 0 / 0.2)`. Fine-pointer hover плавно увеличивает blur
+до `6 px` и поднимает surface через `translateY(-1px)`, а pressed `:active`
+возвращает его на исходную позицию и уменьшает blur до `1 px`; layout и hit
+target не меняются.
 Keyboard outline и forced-colors fallback остаются отдельными доступными
-индикаторами, reduced-motion отключает transition, danger actions сохраняют
+индикаторами, reduced-motion отключает transition и translate, danger actions сохраняют
 красный текст. Строчные ellipsis и Component-card icon-actions остаются
 плоскими. У compound toggles удаляется внешняя inset-обводка, а выбранная белая
-option получает только base shadow без динамических button states. Это UI-only
-follow-up без API/schema/migration и пока без production rollout evidence.
+option получает только base shadow без динамических button states; shell имеет
+фон `oklch(0.19 0 0 / 0.1)`. Подзаголовки страниц и inactive tab text/icon
+получают `oklch(0.19 0 0 / 0.6)`, а отдельный 1.2 px tab baseline —
+`oklch(0.19 0 0 / 0.4)`. Это UI-only follow-up без API/schema/migration и пока
+без production rollout evidence.
 
 **Current production:** общий `WorkspaceTabs`
 уменьшает visual baseline с `1.5 px` до `1.2 px`, рисуя paint-layer высотой
