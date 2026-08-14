@@ -42,6 +42,10 @@ test("Store is an Account page built from the shared product shell", () => {
     filters,
     /className=\{productButtonClassName\(\s*"secondary",\s*"course-filter-trigger",?\s*\)\}/,
   );
+  assert.match(
+    filters,
+    /className="product-dropdown-surface course-filter-popover"/,
+  );
   assert.match(filters, /event\.key !== "Escape"/);
   assert.match(filters, /Для преподавателя/);
   assert.match(filters, /Только в наличии/);
@@ -54,6 +58,14 @@ test("Store is an Account page built from the shared product shell", () => {
 });
 
 test("Store filters and cards adopt canonical raised surfaces", () => {
+  assert.match(
+    globalStyles,
+    /:root\s*\{[^}]*--product-dropdown-inset: 0\.375rem;[^}]*--product-dropdown-shadow: 0 18px 46px rgba\(20, 20, 20, 0\.18\);/,
+  );
+  assert.match(
+    globalStyles,
+    /\.product-dropdown-surface\s*\{[^}]*border: 0;[^}]*padding: var\(--product-dropdown-inset, 0\.375rem\);[^}]*backdrop-filter: none;/,
+  );
   assert.match(
     globalStyles,
     /:root\s*\{[^}]*--product-surface-border: 1px solid oklch\(0 0 0 \/ 0\.1\);[^}]*--product-raised-surface-shadow: var\(--product-raised-control-shadow\);/,

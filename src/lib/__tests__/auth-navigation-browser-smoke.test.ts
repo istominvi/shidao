@@ -93,6 +93,7 @@ const E2E_FOCUS_HALO_COLOR = "rgba(20, 20, 20, 0.58)";
 const E2E_MUTED_FOREGROUND = "oklch(0.19 0 0 / 0.6)";
 const E2E_WORKSPACE_TABS_DIVIDER = "oklch(0.19 0 0 / 0.4)";
 const E2E_SEGMENTED_CONTROL_BACKGROUND = "oklch(0.19 0 0 / 0.1)";
+const E2E_DROPDOWN_SHADOW = "rgba(20, 20, 20, 0.18) 0px 18px 46px 0px";
 
 const E2E_COURSE_ROW = {
   id: E2E_COURSE_ID,
@@ -658,6 +659,95 @@ type ProductTableBodyTypography = {
   fontWeight: string;
   lineHeight: string;
 };
+
+type ProductDropdownSurfaceContract = {
+  padding: string[];
+  borderWidths: string[];
+  borderRadius: string;
+  backgroundColor: string;
+  boxShadow: string;
+  backdropFilter: string;
+  edgeInsets: { start: number; end: number };
+  dividerBorderTopWidths: string[];
+  separatorCount: number;
+};
+
+async function assertCanonicalProductDropdownSurface(
+  surface: PlaywrightLocator,
+  label: string,
+) {
+  const contract = await surface.evaluate<ProductDropdownSurfaceContract>(
+    (element) => {
+      const panel = element as HTMLElement;
+      const panelStyle = getComputedStyle(panel);
+      const panelRect = panel.getBoundingClientRect();
+      const edgeProbe = Array.from(
+        panel.querySelectorAll<HTMLElement>(
+          ".action-menu-item, .nav-dropdown-item, .course-filter-field, .teaching-date-popover-heading",
+        ),
+      ).find((candidate) => candidate.offsetParent !== null);
+      if (!edgeProbe) {
+        throw new Error("Dropdown edge probe is missing");
+      }
+      const probeRect = edgeProbe.getBoundingClientRect();
+      const dividers = Array.from(
+        panel.querySelectorAll<HTMLElement>(
+          ".nav-dropdown-items, .course-filter-actions, .teaching-date-popover-footer",
+        ),
+      );
+      return {
+        padding: [
+          panelStyle.paddingTop,
+          panelStyle.paddingRight,
+          panelStyle.paddingBottom,
+          panelStyle.paddingLeft,
+        ],
+        borderWidths: [
+          panelStyle.borderTopWidth,
+          panelStyle.borderRightWidth,
+          panelStyle.borderBottomWidth,
+          panelStyle.borderLeftWidth,
+        ],
+        borderRadius: panelStyle.borderRadius,
+        backgroundColor: panelStyle.backgroundColor,
+        boxShadow: panelStyle.boxShadow,
+        backdropFilter: panelStyle.backdropFilter,
+        edgeInsets: {
+          start: Number((probeRect.left - panelRect.left).toFixed(3)),
+          end: Number((panelRect.right - probeRect.right).toFixed(3)),
+        },
+        dividerBorderTopWidths: dividers.map(
+          (divider) => getComputedStyle(divider).borderTopWidth,
+        ),
+        separatorCount: panel.querySelectorAll(
+          '[role="separator"], .action-menu-separator',
+        ).length,
+      };
+    },
+  );
+
+  assert.deepEqual(
+    {
+      ...contract,
+      dividerBorderTopWidthsAreZero: contract.dividerBorderTopWidths.every(
+        (width) => width === "0px",
+      ),
+    },
+    {
+      padding: ["6px", "6px", "6px", "6px"],
+      borderWidths: ["0px", "0px", "0px", "0px"],
+      borderRadius: "12px",
+      backgroundColor: "rgb(255, 255, 255)",
+      boxShadow: E2E_DROPDOWN_SHADOW,
+      backdropFilter: "none",
+      edgeInsets: { start: 6, end: 6 },
+      dividerBorderTopWidths: contract.dividerBorderTopWidths,
+      separatorCount: 0,
+      dividerBorderTopWidthsAreZero: true,
+    },
+    `${label} must use the canonical 6px borderless dropdown surface`,
+  );
+}
 
 async function assertCanonicalFirstBodyRowTypography(
   table: PlaywrightLocator,
@@ -3833,6 +3923,10 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
     await dateTrigger.click();
     const dateDialog = runtime.page.getByRole("dialog");
     await dateDialog.waitFor();
+    await assertCanonicalProductDropdownSurface(
+      dateDialog,
+      "Schedule calendar popover",
+    );
     assert.equal(await dateTrigger.getAttribute("aria-expanded"), "true");
     const periodGroup = dateDialog.getByRole("group", {
       name: "Период расписания",
@@ -5080,6 +5174,10 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
     await rowMenuTrigger.click();
     const rowActionMenu = runtime.page.getByRole("menu");
     await rowActionMenu.waitFor();
+    await assertCanonicalProductDropdownSurface(
+      rowActionMenu,
+      "Schedule row action menu",
+    );
     const startRunMenuItem = rowActionMenu.getByRole("menuitem", {
       name: "Начать урок",
       exact: true,
@@ -5170,7 +5268,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         borderRadius: "12px",
         backgroundColor: "rgb(255, 255, 255)",
         borderWidths: ["0px", "0px", "0px", "0px"],
-        boxShadow: "rgba(20, 20, 20, 0.18) 0px 18px 46px 0px",
+        boxShadow: E2E_DROPDOWN_SHADOW,
         activeViewOptionBorderRadius: "8px",
         items: [
           {
@@ -5248,6 +5346,17 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
     await userMenuTrigger.click();
     const profileDropdown = runtime.page.locator(".nav-dropdown-panel");
     await profileDropdown.waitFor();
+    await assertCanonicalProductDropdownSurface(
+      profileDropdown,
+      "Account profile menu",
+    );
+    await profileDropdown.locator(".nav-dropdown-item:focus").waitFor();
+    assert.equal(
+      await runtime.page.evaluate(
+        () => document.activeElement?.textContent?.trim() ?? "",
+      ),
+      "Профиль",
+    );
     await runtime.page
       .getByRole("menu", { name: "Меню пользователя", exact: true })
       .waitFor();
@@ -6432,6 +6541,10 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       exact: true,
     });
     await learnerFilterPanel.waitFor();
+    await assertCanonicalProductDropdownSurface(
+      learnerFilterPanel,
+      "Students filter popover",
+    );
     const learnerStatusFilter = learnerFilterPanel.getByLabel("Состояние");
     const learnerAccountFilter = learnerFilterPanel.getByLabel("Аккаунт");
     const learnerSpecificGroupFilter =
@@ -6594,7 +6707,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         borderWidths: ["0px", "0px", "0px", "0px"],
         borderRadius: "12px",
         backgroundColor: "rgb(255, 255, 255)",
-        boxShadow: "rgba(20, 20, 20, 0.18) 0px 18px 46px 0px",
+        boxShadow: E2E_DROPDOWN_SHADOW,
         separatorCount: 0,
       },
     );
@@ -8634,7 +8747,7 @@ test("browser smoke: mobile Account menu exposes primary sections and account ac
             ".nav-user-trigger-avatar",
           ).length,
           profileImageCount: profileHeader.querySelectorAll("img").length,
-          divider: {
+          itemRail: {
             borderTopWidth: getComputedStyle(items).borderTopWidth,
             leftDelta: Math.abs(itemsRect.left - menuRect.left),
             rightDelta: Math.abs(itemsRect.right - menuRect.right),
@@ -8657,10 +8770,10 @@ test("browser smoke: mobile Account menu exposes primary sections and account ac
         profileEmail: "adult-e2e@example.test",
         profileAvatarCount: 0,
         profileImageCount: 0,
-        divider: {
-          borderTopWidth: "1px",
-          leftDelta: 0,
-          rightDelta: 0,
+        itemRail: {
+          borderTopWidth: "0px",
+          leftDelta: 6,
+          rightDelta: 6,
         },
       },
     );
@@ -8896,6 +9009,10 @@ test("browser smoke: mobile Account menu exposes primary sections and account ac
       exact: true,
     });
     await mobileLearnerFilterPanel.waitFor();
+    await assertCanonicalProductDropdownSurface(
+      mobileLearnerFilterPanel,
+      "Students filter popover",
+    );
     await mobileLearnerFilterPanel.getByLabel("Состояние").waitFor();
     await mobileLearnerFilterPanel.getByLabel("Аккаунт").waitFor();
     await mobileLearnerFilterPanel.getByLabel("Конкретная группа").waitFor();
@@ -9860,7 +9977,7 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       borderWidths: ["0px", "0px", "0px", "0px"],
       borderRadius: "12px",
       backgroundColor: "rgb(255, 255, 255)",
-      boxShadow: "rgba(20, 20, 20, 0.18) 0px 18px 46px 0px",
+      boxShadow: E2E_DROPDOWN_SHADOW,
       separatorCount: 0,
     });
     await courseActionMenu

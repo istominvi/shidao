@@ -168,6 +168,10 @@ test("schedule projects persisted LessonRun appointments without a parallel even
   assert.match(scheduleDatePickerSource, /aria-haspopup="dialog"/);
   assert.match(scheduleDatePickerSource, /aria-expanded=\{open\}/);
   assert.match(scheduleDatePickerSource, /role="dialog"/);
+  assert.match(
+    scheduleDatePickerSource,
+    /className="product-dropdown-surface teaching-date-popover"/,
+  );
   assert.match(scheduleDatePickerSource, /role="grid"/);
   assert.match(scheduleDatePickerSource, /data-date=\{dateValue\}/);
   assert.match(scheduleDatePickerSource, /ariaLabel="Период расписания"/);
@@ -446,8 +450,17 @@ test("schedule keeps the compact date control and dense one-line table contract"
     /\.site-header-shell-demo\s*\{[^}]*background:\s*#fff;/,
   );
   assert.match(
-    navigationStyleSource,
-    /\.nav-dropdown-panel\s*\{[^}]*background:\s*#fff;/,
+    globalStyleSource,
+    /\.product-dropdown-surface\s*\{[^}]*background:\s*var\(--product-dropdown-background, #fff\);/,
+  );
+  assert.doesNotMatch(
+    /\.teaching-date-popover\s*\{[^}]*\}/.exec(teachingHubStyleSource)?.[0] ??
+      "",
+    /border(?:-radius)?:|background:|padding:|box-shadow:|backdrop-filter:/,
+  );
+  assert.match(
+    teachingHubStyleSource,
+    /\.teaching-date-popover-footer\s*\{[^}]*border-top:\s*0;[^}]*padding-top:\s*0;/,
   );
 });
 
@@ -534,6 +547,10 @@ test("students manages one learner and group directory with durable history", ()
     /aria-label="Сортировка"|<Select\b/,
   );
   assert.match(studentDirectoryFilterMenuSource, /<span>Фильтр<\/span>/);
+  assert.match(
+    studentDirectoryFilterMenuSource,
+    /className="product-dropdown-surface course-filter-popover"/,
+  );
   assert.match(
     studentDirectoryFilterMenuSource,
     /role="group"[\s\S]*?aria-label="Принадлежность к группе"/,

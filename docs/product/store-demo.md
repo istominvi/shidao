@@ -98,10 +98,17 @@ auth boundary (`307 → /login`). Полный authenticated checkout остаё
 
 Current production переводит disclosure «Фильтры» на shared secondary
 `.product-btn`, сохраняя нативный `summary`, `aria-expanded`, Escape/focus-return
-и прежнюю filter-popover семантику. Сама popover panel, category tabs,
-cards/table segmented toggle, cart quantity icon-actions и `DialogShell` не
-становятся ordinary raised CTA. Обычные CTA магазина остаются на shared
-`Button`; этот follow-up не меняет cart/checkout state machine.
+и прежнюю filter-popover семантику. В current source / next production сама
+filter panel входит в universal dropdown contract вместе с Course/Students filters, Account menu, contextual
+`ActionMenu` и Schedule calendar: внутренний panel inset ровно `6 px`, белый фон,
+element-radius `12 px`, обычный `border: 0`, одна тень
+`0 18px 46px rgba(20, 20, 20, 0.18)` и `backdrop-filter: none`. Разделитель над
+filter actions удалён; локальные panel padding, border, blur и дополнительные
+тени не возвращаются. В forced-colors тень заменяется системной границей
+`1px solid CanvasText` на `Canvas`. Category tabs, cards/table segmented toggle,
+cart quantity icon-actions и `DialogShell` не становятся ordinary raised CTA
+или dropdown surfaces. Обычные CTA магазина остаются на shared `Button`; этот
+follow-up не меняет cart/checkout state machine.
 
 Store product cards и canonical table wrapper используют статический
 `--product-raised-surface-shadow`, равный базовой тени кнопки
@@ -123,8 +130,10 @@ Base `.product-control` / `.field-input`, включая filter select и мно
 непрозрачные placeholder/icon и отдельный 2 px focus halo. Hover не меняет
 тень, border или геометрию. Select внутри filter popover и многострочный адрес
 доставки сохраняют base boundary, но не получают single-line height/entry
-shadow; dialog/menu/popover surfaces также исключены. Compound toggles остаются
-borderless. Это UI-only acceptance без Product/Order/Inventory, API,
+shadow. Native `select`, standalone `DialogShell` и demo-only surfaces исключены
+из universal dropdown contract; сама filter panel отдельно получает описанный
+выше dropdown surface, но не entry/static-surface shadow. Compound toggles
+остаются borderless. Это UI-only acceptance без Product/Order/Inventory, API,
 persistence, schema, migration,
 оплаты или delivery integration. Visual rollout входит в exact current
 functional application source `1d4e5deff83cbdc1b479b16e4220cf799327009f`.

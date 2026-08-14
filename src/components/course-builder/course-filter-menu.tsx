@@ -105,7 +105,7 @@ export function CourseFilterMenu({
 
       <div
         id={panelId}
-        className="course-filter-popover"
+        className="product-dropdown-surface course-filter-popover"
         role="group"
         aria-label={label}
       >

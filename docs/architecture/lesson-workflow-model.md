@@ -738,15 +738,23 @@ Visual contract Course routes не меняет эту навигационну�
   Student Screen content renderers и raw utility
   panels исключены. Этот current production UI slice не меняет API, schema,
   Lesson hierarchy или learner projection;
-- в current production общий contextual `ActionMenu`, открываемый
-  `MoreHorizontal`/`MoreVertical` в Course actions, Lesson rows, Schedule и
-  Students, использует токенизированные белый surface, element-radius 12 px и
-  одну тень `0 18px 46px rgba(20, 20, 20, 0.18)` без обычной рамки. Shared item
-  contract больше не содержит `separatorBefore`, divider или separator DOM;
-  состав/порядок действий, 40 px item geometry, destructive/disabled states,
-  portal positioning, keyboard navigation и focus restore сохраняются.
-  Filter/calendar popovers, Account menu и native `select` остаются отдельными
-  компонентами; этот UI slice не меняет API/schema/migrations;
+- в current source / next production общий `.product-dropdown-surface`
+  канонизирует четыре активных семейства: contextual `ActionMenu`, открываемый
+  `MoreHorizontal`/`MoreVertical`; Account/profile menu; Course/Students/Store
+  filter popovers; Schedule calendar/date popover. Все панели используют
+  внутренний panel inset `6 px`, белый фон, element-radius `12 px`, обычный
+  `border: 0`,
+  одну тень `0 18px 46px rgba(20, 20, 20, 0.18)` и не используют backdrop blur.
+  `separatorBefore`, divider/separator DOM и визуальные линии отсутствуют не
+  только в `ActionMenu`, но и между profile groups, filter actions и calendar
+  footer. В forced-colors тень отключается, а системные `Canvas`/
+  `1px solid CanvasText` возвращают различимую границу. Состав/порядок действий,
+  item geometry, destructive/disabled states, native summary/date-picker
+  semantics, portal positioning, keyboard navigation и focus restore
+  сохраняются. Native `select`, самостоятельные modal dialogs и
+  reference/demo-only surfaces исключены; calendar panel входит в contract как
+  dropdown, несмотря на dialog semantics. Этот UI slice не меняет
+  API/schema/migrations;
 - radius tokens отделяют card surface 20 px от element/control/table/menu
   surface 12 px. Активные `ProductTable` wrappers используют table token,
   сплошной белый фон и не имеют внешней рамки. Students и обе Courses tables

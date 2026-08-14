@@ -181,8 +181,15 @@ Account menu:
 ```
 
 Trigger Account menu не показывает имя: только avatar `40 × 40 px` с радиусом
-`12 px`. Dropdown header показывает ФИО и публичный email без avatar; следующий
-divider идёт от края до края. Отдельной Settings navigation больше нет.
+`12 px`. Dropdown header показывает ФИО и публичный email без avatar;
+разделителя под ним или между группами пунктов нет. Account menu входит в общий
+dropdown surface contract вместе с contextual `ActionMenu`,
+Course/Students/Store filters и Schedule calendar. Панель имеет ровно `6 px`
+внутреннего inset, белый фон, radius `12 px`, обычный `border: 0`, одну тень
+`0 18px 46px rgba(20, 20, 20, 0.18)` и не использует blur. В forced-colors тень
+уступает системной границе `1px solid CanvasText` на `Canvas`. Native `select`,
+самостоятельные modal dialogs и reference/demo-only surfaces в этот contract не
+входят. Отдельной Settings navigation больше нет.
 
 Avatar обязателен на Account DB boundary. Header получает только safe session
 projection `kind/presetKey/revision`: preset читается из immutable local asset,

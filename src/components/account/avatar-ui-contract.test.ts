@@ -69,8 +69,14 @@ test("account settings keep avatar choices compact and require confirmation", ()
 
 test("header uses a square avatar image and dropdown keeps identity text only", () => {
   const navigation = source("src/components/session-nav-actions.tsx");
+  const navigationPrimitives = source(
+    "src/components/navigation/primitives.tsx",
+  );
   const avatarImage = source("src/components/account/avatar-image.tsx");
   const navigationCss = source("src/app/styles/navigation.css");
+  const globalStyles = source("src/app/globals.css");
+  const navPanelStyles =
+    /\.nav-dropdown-panel\s*\{[^}]*\}/.exec(navigationCss)?.[0] ?? "";
 
   assert.match(
     navigation,
@@ -93,5 +99,37 @@ test("header uses a square avatar image and dropdown keeps identity text only", 
   assert.match(
     navigationCss,
     /--header-pill-height: 2\.5rem[\s\S]*?\.nav-user-trigger-avatar\s*\{[\s\S]*?border-radius: var\(--product-element-radius/,
+  );
+  assert.match(
+    navigationPrimitives,
+    /className=\{classNames\(\s*"product-dropdown-surface",\s*"nav-dropdown-panel"/,
+  );
+  assert.doesNotMatch(
+    navPanelStyles,
+    /border(?:-radius)?:|background:|padding:|box-shadow:|backdrop-filter:/,
+  );
+  assert.match(
+    globalStyles,
+    /\.product-dropdown-surface\s*\{[^}]*border: 0;[^}]*--product-element-radius, 0\.75rem[^}]*padding: var\(--product-dropdown-inset, 0\.375rem\);[^}]*backdrop-filter: none;/,
+  );
+  assert.match(
+    navigationCss,
+    /\.nav-dropdown-profile\s*\{[^}]*padding: 0 0 var\(--product-dropdown-inset, 0\.375rem\);[^}]*\}[\s\S]*?\.nav-dropdown-items\s*\{[^}]*margin: 0;[^}]*border-top: 0;[^}]*padding: 0;/,
+  );
+  assert.doesNotMatch(
+    navigation,
+    /className="my-0\.5 border-t border-black\/5 md:hidden"/,
+  );
+  assert.match(
+    navigation,
+    /querySelectorAll<HTMLElement>\([\s\S]*?role="menuitem"[\s\S]*?\.filter\(\(item\) => item\.getClientRects\(\)\.length > 0\)/,
+  );
+  assert.match(
+    navigationCss,
+    /\.nav-dropdown-item:focus-visible\s*\{[^}]*outline: none;[^}]*box-shadow: 0 0 0 2px rgba\(20, 20, 20, 0\.18\);/,
+  );
+  assert.match(
+    globalStyles,
+    /@media \(forced-colors: active\)\s*\{[\s\S]*?\.product-dropdown-surface\s*\{[^}]*border: 1px solid CanvasText;[^}]*background: Canvas;[^}]*box-shadow: none;[^}]*\}[\s\S]*?\.nav-dropdown-item:focus-visible,[\s\S]*?outline: 2px solid Highlight;[^}]*outline-offset: -2px;[^}]*box-shadow: none;/,
   );
 });

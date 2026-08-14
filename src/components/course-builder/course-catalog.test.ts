@@ -353,6 +353,10 @@ test("shared course controls preserve pressed-button and native-filter semantics
   assert.match(courseFilterMenuSource, /aria-label=\{label\}/);
   assert.match(
     courseFilterMenuSource,
+    /className="product-dropdown-surface course-filter-popover"/,
+  );
+  assert.match(
+    courseFilterMenuSource,
     /<label className="course-filter-field">/,
   );
   assert.match(courseFilterMenuSource, /<Select/);
@@ -364,6 +368,14 @@ test("shared course controls preserve pressed-button and native-filter semantics
   assert.match(courseFilterMenuSource, /onContentChange\?\.\("all"\)/);
   assert.match(courseFilterMenuSource, /Сбросить фильтры/);
   assert.doesNotMatch(courseFilterMenuSource, /role="menu/);
+  assert.doesNotMatch(
+    /\.course-filter-popover\s*\{[^}]*\}/.exec(globalStyles)?.[0] ?? "",
+    /border(?:-radius)?:|background:|padding:|box-shadow:|backdrop-filter:/,
+  );
+  assert.match(
+    globalStyles,
+    /\.course-filter-actions\s*\{[^}]*border-top: 0;[^}]*padding-top: 0;/,
+  );
 });
 
 test("course tables and filter CTA adopt canonical raised surfaces", () => {

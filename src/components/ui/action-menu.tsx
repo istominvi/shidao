@@ -212,6 +212,7 @@ export function ActionMenu({
       ref={menuRef}
       id={menuId}
       className={classNames(
+        "product-dropdown-surface",
         "action-menu-panel",
         portal && "action-menu-panel-portal",
       )}

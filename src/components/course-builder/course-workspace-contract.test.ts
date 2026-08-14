@@ -419,8 +419,8 @@ test("course routes use the flat demo background and unified visual controls", (
   );
   assert.doesNotMatch(productHeaderStyles, /inset|20px 44px/);
   assert.match(
-    navigationStyles,
-    /\.nav-dropdown-panel\s*\{[\s\S]*?background: #fff;/,
+    styles,
+    /\.product-dropdown-surface\s*\{[^}]*border: 0;[^}]*border-radius: var\([^}]*--product-dropdown-radius,[^}]*background: var\(--product-dropdown-background, #fff\);[^}]*padding: var\(--product-dropdown-inset, 0\.375rem\);/,
   );
 });
 
@@ -455,10 +455,12 @@ test("product buttons share one animated raised-control elevation contract", () 
   const learningProfile = source(
     "src/components/learner-identity/learning-profile-workspace.tsx",
   );
-  const forcedColorsStyles =
-    /@media \(forced-colors: active\)\s*\{[\s\S]*?\.action-menu-item:focus-visible\s*\{[^}]*\}\s*\}/.exec(
-      styles,
-    )?.[0] ?? "";
+  const forcedColorsStart = styles.indexOf("@media (forced-colors: active)");
+  const forcedColorsEnd = styles.indexOf(
+    ".course-action-inline-error",
+    forcedColorsStart,
+  );
+  const forcedColorsStyles = styles.slice(forcedColorsStart, forcedColorsEnd);
   const reducedMotionStyles =
     /@media \(prefers-reduced-motion: reduce\)\s*\{[\s\S]*?\n\}/.exec(
       styles,

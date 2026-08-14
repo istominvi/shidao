@@ -134,7 +134,7 @@ export function SessionNavActions({
       menuRef.current.querySelectorAll<HTMLElement>(
         '[role="menuitem"]:not([aria-disabled="true"]):not(:disabled)',
       ),
-    );
+    ).filter((item) => item.getClientRects().length > 0);
   }, []);
 
   const focusMenuItem = useCallback(
@@ -269,7 +269,7 @@ export function SessionNavActions({
       {actionError ? (
         <div
           aria-live="assertive"
-          className="mx-3 mb-2 rounded-xl border border-red-200 bg-red-50 px-2.5 py-2 text-xs font-medium text-red-700"
+          className="mb-1 rounded-xl border border-red-200 bg-red-50 px-2.5 py-2 text-xs font-medium text-red-700"
           role="alert"
         >
           {actionError}
@@ -306,12 +306,6 @@ export function SessionNavActions({
               </PageTransitionLink>
             ))}
           </div>
-        ) : null}
-        {mobileNavItems.length > 0 ? (
-          <div
-            className="my-0.5 border-t border-black/5 md:hidden"
-            aria-hidden="true"
-          />
         ) : null}
         {PROFILE_NAV_ITEMS.map((item) => {
           const Icon = PROFILE_MENU_ICONS[item.id];

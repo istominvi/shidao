@@ -41,18 +41,53 @@ test("portal action menus escape overflow while preserving interaction boundarie
 });
 
 test("contextual action menus use one borderless surface without separators", () => {
-  const forcedColorsStyles =
-    /@media \(forced-colors: active\)\s*\{[\s\S]*?\.action-menu-item:focus-visible\s*\{[^}]*\}\s*\}/.exec(
-      styles,
-    )?.[0] ?? "";
+  const rootStyles = /:root\s*\{[^}]*\}/.exec(styles)?.[0] ?? "";
+  const dropdownStyles =
+    /\.product-dropdown-surface\s*\{[^}]*\}/.exec(styles)?.[0] ?? "";
+  const actionPanelStyles =
+    /\.action-menu-panel\s*\{[^}]*\}/.exec(styles)?.[0] ?? "";
+  const forcedColorsStart = styles.indexOf("@media (forced-colors: active)");
+  const forcedColorsEnd = styles.indexOf(
+    ".course-action-inline-error",
+    forcedColorsStart,
+  );
+  const forcedColorsStyles = styles.slice(forcedColorsStart, forcedColorsEnd);
 
   assert.match(
-    styles,
-    /:root\s*\{[^}]*--product-context-menu-surface: #fff;[^}]*--product-context-menu-radius: var\(--product-element-radius\);[^}]*--product-context-menu-shadow: 0 18px 46px rgba\(20, 20, 20, 0\.18\);/,
+    rootStyles,
+    /--product-dropdown-background: #fff;[^}]*--product-dropdown-radius: var\(--product-element-radius\);[^}]*--product-dropdown-inset: 0\.375rem;[^}]*--product-dropdown-shadow: 0 18px 46px rgba\(20, 20, 20, 0\.18\);/,
   );
   assert.match(
-    styles,
-    /\.action-menu-panel\s*\{[^}]*border: 0;[^}]*border-radius: var\([^}]*--product-context-menu-radius,[^}]*background: var\(--product-context-menu-surface, #fff\);[^}]*box-shadow: var\([^}]*--product-context-menu-shadow,[^}]*0 18px 46px rgba\(20, 20, 20, 0\.18\)[^}]*\);/,
+    rootStyles,
+    /--product-context-menu-surface: var\(--product-dropdown-background\);[^}]*--product-context-menu-radius: var\(--product-dropdown-radius\);[^}]*--product-context-menu-inset: var\(--product-dropdown-inset\);[^}]*--product-context-menu-shadow: var\(--product-dropdown-shadow\);/,
+  );
+  assert.match(dropdownStyles, /border: 0;/);
+  assert.match(
+    dropdownStyles,
+    /border-radius: var\(\s*--product-dropdown-radius,\s*var\(--product-element-radius, 0\.75rem\)\s*\);/,
+  );
+  assert.match(
+    dropdownStyles,
+    /background: var\(--product-dropdown-background, #fff\);/,
+  );
+  assert.match(
+    dropdownStyles,
+    /padding: var\(--product-dropdown-inset, 0\.375rem\);/,
+  );
+  assert.match(
+    dropdownStyles,
+    /box-shadow: var\(\s*--product-dropdown-shadow,\s*0 18px 46px rgba\(20, 20, 20, 0\.18\)\s*\);/,
+  );
+  assert.equal(dropdownStyles.match(/box-shadow:/g)?.length, 1);
+  assert.match(dropdownStyles, /backdrop-filter: none;/);
+  assert.doesNotMatch(dropdownStyles, /\bblur\(|box-shadow:[^;]*\binset\b/);
+  assert.match(
+    actionMenuSource,
+    /className=\{classNames\(\s*"product-dropdown-surface",\s*"action-menu-panel"/,
+  );
+  assert.doesNotMatch(
+    actionPanelStyles,
+    /border(?:-radius)?:|background:|padding:|box-shadow:|backdrop-filter:/,
   );
   assert.doesNotMatch(styles, /\.action-menu-separator/);
   assert.doesNotMatch(
@@ -64,6 +99,10 @@ test("contextual action menus use one borderless surface without separators", ()
   }
   assert.match(
     forcedColorsStyles,
-    /\.action-menu-panel\s*\{[^}]*border: 1px solid CanvasText;[^}]*box-shadow: none;[^}]*\}\s*\.action-menu-item:focus-visible\s*\{[^}]*outline: 2px solid Highlight;[^}]*outline-offset: -2px;/,
+    /\.product-dropdown-surface\s*\{[^}]*border: 1px solid CanvasText;[^}]*background: Canvas;[^}]*box-shadow: none;/,
+  );
+  assert.match(
+    forcedColorsStyles,
+    /\.nav-dropdown-item:focus-visible,\s*\.action-menu-item:focus-visible\s*\{[^}]*outline: 2px solid Highlight;[^}]*outline-offset: -2px;[^}]*box-shadow: none;/,
   );
 });

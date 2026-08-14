@@ -305,7 +305,7 @@ export function ScheduleDatePicker({
         <div
           ref={panelRef}
           id={panelId}
-          className="teaching-date-popover"
+          className="product-dropdown-surface teaching-date-popover"
           role="dialog"
           aria-modal="true"
           aria-labelledby={monthHeadingId}

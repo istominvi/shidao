@@ -514,20 +514,31 @@ segment продолжает лежать над ней. Изменение де
 horizontal scroll, ARIA/keyboard contract, API, schema или migrations. Rollout
 входит в exact deployed source ниже.
 
-**Current production contextual ActionMenu refinement:** все контекстные меню,
-открываемые горизонтальным или вертикальным
-троеточием в Course, Lesson rows, Schedule и Students, используют один
-канонический surface contract: `--product-context-menu-surface: #fff`, общий
-12 px radius и `--product-context-menu-shadow: 0 18px 46px rgba(20, 20, 20,
-0.18)`. У панели нет обычной рамки, а `separatorBefore`, визуальный divider и
-его DOM/ARIA-узел удалены из shared `ActionMenu`, поэтому отдельный consumer не
-может вернуть разделитель. Порядок и состав действий, 40 px menu items,
-destructive/disabled states, portal positioning, keyboard navigation и focus
-restore не меняются. Filter/calendar popovers, Account menu и native `select`
-не являются contextual `ActionMenu` и этим scoped slice не затрагиваются; API,
-schema и migrations также не меняются. Refinement впервые прошёл gate и rollout
-в exact release `8e5d169dab72dc285c0fdfe8991646152d9904c7`; он сохраняется в
-current production release.
+**Historical contextual ActionMenu baseline, retained in current source:**
+release `8e5d169dab72dc285c0fdfe8991646152d9904c7` впервые убрал обычную рамку,
+`separatorBefore`, визуальный divider и separator DOM/ARIA-узел у shared
+`ActionMenu` для Course, Lesson rows, Schedule и Students. Порядок и состав
+действий, 40 px menu items, destructive/disabled states, portal positioning,
+keyboard navigation и focus restore не менялись. Тогда filter/calendar
+popovers и Account menu ещё были отдельным visual scope; это ограничение
+исторического release не описывает текущий universal contract ниже.
+
+**Current source / next production universal dropdown refinement:** общий
+`.product-dropdown-surface` теперь канонизирует четыре активных семейства:
+shared contextual `ActionMenu`, Account/profile menu, Course/Students/Store
+filter popovers и Schedule calendar/date popover. Каждая панель имеет ровно
+`6 px` внутреннего inset (`--product-dropdown-inset: 0.375rem`), белый фон, общий
+element-radius `12 px`, обычный `border: 0`, `backdrop-filter: none` и одну
+тень `0 18px 46px rgba(20, 20, 20, 0.18)`. Внутренние separator/divider линии
+удалены также из profile menu, filter actions и calendar footer; consumers не
+добавляют собственную рамку, blur, вторую тень или отличающийся panel padding.
+В forced-colors декоративная тень отключается, а границу панели восстанавливает
+системный `1px solid CanvasText` на `Canvas`. Item geometry, destructive/
+disabled states, native summary/date-picker semantics, portal/keyboard/focus
+contracts не меняются. Native `select`, самостоятельные modal dialogs и
+reference/demo-only surfaces не получают universal dropdown class; calendar
+panel остаётся в contract как dropdown, хотя использует dialog semantics. Это
+UI-only изменение без API, schema или migrations.
 
 **Historical production application evidence для U1 baseline:** Coolify deployment
 `xivwq5nkaak141mc0tw5ysce` (`id=943`) создан

@@ -11,6 +11,7 @@ function source(path: string) {
 }
 
 const styles = source("src/app/globals.css");
+const actionMenuSource = source("src/components/ui/action-menu.tsx");
 const productTableSource = source("src/components/ui/product-table.tsx");
 const scheduleSource = source(
   "src/components/teaching-hub/schedule-workspace.tsx",
@@ -113,12 +114,20 @@ test("product tables use the element radius instead of the card radius", () => {
 
 test("action menus share canonical element geometry without card styling", () => {
   assert.match(
+    actionMenuSource,
+    /className=\{classNames\(\s*"product-dropdown-surface",\s*"action-menu-panel"/,
+  );
+  assert.match(
     styles,
-    /\.action-menu-panel\s*\{[^}]*border: 0;[^}]*--product-context-menu-radius,[^}]*--course-demo-element-radius,[^}]*--product-element-radius,[^}]*background: var\(--product-context-menu-surface, #fff\);[^}]*padding: 0\.25rem;[^}]*--product-context-menu-shadow,/,
+    /\.product-dropdown-surface\s*\{[^}]*border: 0;[^}]*--product-dropdown-radius,[^}]*--product-element-radius, 0\.75rem[^}]*background: var\(--product-dropdown-background, #fff\);[^}]*padding: var\(--product-dropdown-inset, 0\.375rem\);[^}]*--product-dropdown-shadow,/,
   );
   assert.match(
     styles,
     /\.action-menu-item\s*\{[^}]*--course-demo-control-height,[^}]*--product-row-height,[^}]*align-items: center;[^}]*gap: 0\.5rem;[^}]*border: 0;[^}]*font-weight: var\(--course-demo-control-font-weight, 400\);/,
+  );
+  assert.doesNotMatch(
+    /\.action-menu-panel\s*\{[^}]*\}/.exec(styles)?.[0] ?? "",
+    /border(?:-radius)?:|background:|padding:|box-shadow:|backdrop-filter:/,
   );
   assert.doesNotMatch(styles, /\.action-menu-separator/);
 });

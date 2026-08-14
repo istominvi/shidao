@@ -1151,12 +1151,21 @@ flow как permanent delete.
   dialog текущего Run сразу в edit mode, confirmation перед cancel,
   arrows/Escape/focus restore и отсутствие
   неявного row-click при взаимодействии с меню; других action-кнопок в строке
-  нет. Ни одно contextual `ActionMenu` с горизонтальным или вертикальным
-  троеточием не содержит separator line/DOM. Course actions, Course Lesson,
-  Schedule и Students используют одинаковую белую панель: normal-mode border
-  `0`, radius `12 px` и единственную computed shadow
-  `rgba(20, 20, 20, 0.18) 0px 18px 46px 0px`; forced-colors может вернуть
-  системную рамку вместо невидимой тени.
+  нет. Проверить единый `.product-dropdown-surface` на представителе каждого
+  из четырёх активных семейств: contextual `ActionMenu` Course/Lesson/
+  Schedule/Students, Account/profile menu, Course/Students/Store filter
+  popover и Schedule calendar/date popover. Во всех случаях computed panel
+  padding должен быть ровно `6 px`, фон — `rgb(255, 255, 255)`, radius —
+  `12 px`, normal-mode border — `0`, `backdrop-filter` — `none`, а
+  box-shadow — единственной
+  `rgba(20, 20, 20, 0.18) 0px 18px 46px 0px`. Ни одно из четырёх семейств не
+  содержит separator line/DOM: дополнительно проверить отсутствие линии после
+  profile header, над filter actions и над calendar footer. Consumer не должен
+  возвращать локальные panel padding, border, blur или вторую тень. В
+  forced-colors тень отключается, а panel получает `Canvas` и системную рамку
+  `1px solid CanvasText`. Native `select`, самостоятельный modal dialog и
+  reference/demo-only surface не должны получать universal dropdown class;
+  календарная panel остаётся в contract, несмотря на `role="dialog"`.
   Каждый пункт portal-menu имеет exact 40 px, радиус 8 px как у active view
   option, вертикально центрированные иконку и текст, `.88rem/400` и canonical inset/gap.
   Отдельно проверить
@@ -1192,7 +1201,7 @@ flow как permanent delete.
   `?tab=observers|settings`: единый раздел использует beige product shell и
   solid-white demo TopNav; Account trigger/avatar имеют ровно `40 × 40 px` и
   radius `12 px`, видимого имени рядом нет. Dropdown header содержит ФИО/email
-  без avatar, divider под ним совпадает с обоими краями dropdown. Tabs и
+  без avatar; divider под ним и между группами пунктов отсутствует. Tabs и
   primary/secondary/destructive actions используют shared product controls без
   raw Tailwind visual fork. Старые `/settings/*` должны перенаправлять в нужную
   вкладку и не рендерить отдельный side-nav. Auth-кнопки, построенные

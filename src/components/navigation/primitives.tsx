@@ -78,7 +78,11 @@ export const NavigationDropdownPanel = forwardRef<
   return (
     <div
       ref={ref}
-      className={classNames("nav-dropdown-panel", className)}
+      className={classNames(
+        "product-dropdown-surface",
+        "nav-dropdown-panel",
+        className,
+      )}
       style={style}
       {...props}
     >

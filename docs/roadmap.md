@@ -584,17 +584,24 @@ layout, scroll, interaction или 4 px active segment и применяется
 product consumers. API/schema/migrations не меняются; rollout входит в exact
 functional source `dea92ca2c9af99fd5738e95fa9ca511aa10ca3da`.
 
-**Current production:** shared contextual `ActionMenu` для Course, Lesson rows,
-Schedule и Students канонизирован через
-общие surface/radius/shadow tokens. Панель белая, с единственной тенью
-`0 18px 46px rgba(20, 20, 20, 0.18)` и без обычной обводки; separator API,
-линии и separator DOM удалены во всех `MoreHorizontal`/`MoreVertical`
-consumers. Item geometry, destructive/disabled states, portal/keyboard/focus
-contracts не меняются. Filter/calendar popovers, Account menu и native
-`select` остаются отдельными семантическими компонентами; API/schema/migrations
-не менялись. Refinement впервые развёрнут exact release
-`8e5d169dab72dc285c0fdfe8991646152d9904c7` и сохраняется в текущем source;
-production postflight подтверждён.
+**Current source / next production:** один universal dropdown surface
+обслуживает четыре активных семейства: contextual `ActionMenu` для Course,
+Lesson rows, Schedule и Students; Account/profile menu; Course/Students/Store
+filter popovers; Schedule calendar/date popover. Панель использует общий
+внутренний inset `6 px`, белый фон, element-radius `12 px`, обычный `border: 0`,
+ровно одну
+тень `0 18px 46px rgba(20, 20, 20, 0.18)` и `backdrop-filter: none`.
+Separator/divider линии отсутствуют во всех четырёх семействах, включая
+profile menu, filter actions и calendar footer; локальные padding, border, blur
+и дополнительные shadow forks удалены. Forced-colors отключает тень и
+возвращает системную границу `1px solid CanvasText` на `Canvas`. Native
+`select`, самостоятельные modal dialogs и reference/demo-only surfaces
+исключены; calendar panel остаётся dropdown surface независимо от своей dialog
+семантики. Item geometry, destructive/disabled states, summary/portal/
+keyboard/focus contracts и API/schema/migrations не меняются. Исторический
+ActionMenu-only baseline впервые был развёрнут exact release
+`8e5d169dab72dc285c0fdfe8991646152d9904c7`; universal follow-up расширяет его
+scope без ретроспективного изменения этого release.
 
 Current production body typography закрепляет Schedule как канон для всех
 active product tables: `#141414 / .88rem / 400 / 1.3`; различия primary-cell
