@@ -937,9 +937,14 @@ ShiDao V2 application:
   header уходит влево с fade, new приходит справа; обратное движение зеркально.
   Открытие Course/Lesson — forward, backlink — back. Проверить именованный
   `app-page-header` View Transition, отсутствие root cross-fade/layout shift и
-  промежуточных Course loading-cards. Чёрный `app-primary-nav-active-pill`
-  должен плавно переезжать к active primary link; при
-  `prefers-reduced-motion: reduce` оба перехода происходят мгновенно;
+  промежуточных Course loading-cards. Native named View Transition должен быть
+  только у `app-page-header`: primary-nav pill не имеет собственного
+  `view-transition-name`. При click один локальный чёрный indicator должен за
+  `180 ms` optimistic переместить `width/transform` к выбранному link до route
+  navigation — без серого ghost, второго чёрного слоя и snapshot-scale. Glyphs
+  визуально остаются `#000` вне pill и `#fff` внутри даже во время handoff; при
+  `prefers-reduced-motion: reduce` pill меняется без перехода и navigation не
+  ждёт эти `180 ms`, а page-header transition также отключён;
 - на сохранённом Course открыть **Уроки** и проверить, что общий `WorkspaceTabs`
   не получил route-specific fork. Сразу под ним прозрачная toolbar поиска и
   «Добавить урок» занимает всю content-row: computed horizontal padding `0`,

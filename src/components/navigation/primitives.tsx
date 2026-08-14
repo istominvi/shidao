@@ -30,6 +30,9 @@ type NavPillLinkProps = {
   ariaCurrent?: "page";
   scroll?: boolean;
   onClick?: MouseEventHandler<HTMLAnchorElement>;
+  onNavigate?: ComponentPropsWithoutRef<
+    typeof PageTransitionLink
+  >["onNavigate"];
 };
 
 export function NavPillLink({
@@ -40,6 +43,7 @@ export function NavPillLink({
   ariaCurrent,
   scroll,
   onClick,
+  onNavigate,
 }: NavPillLinkProps) {
   return (
     <PageTransitionLink
@@ -52,6 +56,7 @@ export function NavPillLink({
         className,
       )}
       onClick={onClick}
+      onNavigate={onNavigate}
     >
       {children}
     </PageTransitionLink>

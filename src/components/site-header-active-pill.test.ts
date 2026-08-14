@@ -22,6 +22,7 @@ test("Account TopNav alone enables one measured desktop active pill", () => {
     /const navItemRefs = useRef\(new Map<string, HTMLLIElement>\(\)\)/,
   );
   assert.match(header, /const activeNavItemId = navItems\.find/);
+  assert.match(header, /const PRIMARY_NAV_HANDOFF_MS = 180/);
   assert.match(header, /navTrack\.getBoundingClientRect\(\)/);
   assert.match(header, /activeItem\.getBoundingClientRect\(\)/);
   assert.match(header, /left: activeItemRect\.left - navTrackRect\.left/);
@@ -40,6 +41,19 @@ test("Account TopNav alone enables one measured desktop active pill", () => {
   assert.match(header, /aria-hidden="true"/);
   assert.match(header, /data-ready=\{activePill\.ready/);
   assert.match(header, /activePill\.ready && activePillMotionReady/);
+  assert.match(
+    header,
+    /event\.preventDefault\(\);\s*updateActivePillForItem\(item\.id\)/,
+  );
+  assert.match(
+    header,
+    /pageTransition\.navigate\(item\.href, \{ scroll: item\.scroll \}\)/,
+  );
+  assert.match(
+    header,
+    /window\.matchMedia\("\(prefers-reduced-motion: reduce\)"\)\.matches/,
+  );
+  assert.match(header, /window\.setTimeout\([\s\S]*?PRIMARY_NAV_HANDOFF_MS\)/);
   assert.match(header, /width: `\$\{activePill\.width\}px`/);
   assert.match(
     header,
@@ -52,7 +66,7 @@ test("Account TopNav alone enables one measured desktop active pill", () => {
   );
 });
 
-test("active pill preserves SSR fallback and shares WorkspaceTabs motion", () => {
+test("active pill preserves SSR fallback and uses one fast local motion layer", () => {
   const styles = source("src/app/styles/navigation.css");
 
   assert.match(
@@ -69,26 +83,36 @@ test("active pill preserves SSR fallback and shares WorkspaceTabs motion", () =>
   );
   assert.match(
     styles,
-    /\.site-header-nav-active-pill\[data-motion-ready="true"\]\s*\{[^}]*width 360ms cubic-bezier\(0\.22, 1, 0\.36, 1\),[^}]*transform 360ms cubic-bezier\(0\.22, 1, 0\.36, 1\),[^}]*opacity 120ms ease;/,
+    /\.site-header-nav-active-pill\[data-motion-ready="true"\]\s*\{[^}]*width 180ms cubic-bezier\(0\.22, 1, 0\.36, 1\),[^}]*transform 180ms cubic-bezier\(0\.22, 1, 0\.36, 1\);/,
   );
   assert.match(
     styles,
-    /\.site-header-nav-active-pill\[data-ready="true"\]\s*\{[^}]*view-transition-name: app-primary-nav-active-pill;[^}]*opacity: 1;/,
+    /\.site-header-nav-active-pill\[data-ready="true"\]\s*\{\s*opacity: 1;/,
+  );
+  assert.doesNotMatch(styles, /app-primary-nav-active-pill/);
+  assert.match(
+    styles,
+    /\.site-header-nav-track\[data-active-pill-ready="true"\][\s\S]*?\.site-header-nav-pill[\s\S]*?background: transparent;/,
   );
   assert.match(
     styles,
-    /\.site-header-nav-track\[data-active-pill-ready="true"\][\s\S]*?\.nav-pill-active[\s\S]*?background: transparent;/,
+    /\.site-header-nav-track\[data-active-pill-ready="true"\] \.nav-pill-content\s*\{[^}]*color: #fff;[^}]*mix-blend-mode: difference;/,
+  );
+  assert.match(styles, /--header-pill-text: #000;/);
+  assert.match(
+    styles,
+    /\.site-header-nav-track\s*\{[^}]*--header-pill-active-bg: #000;/,
+  );
+  assert.doesNotMatch(
+    styles,
+    /\.site-header-nav-track\s*\{[^}]*isolation:\s*isolate/,
   );
   assert.match(
     styles,
-    /:root\[data-page-transition-direction\]:not\([\s\S]*?data-page-transition-fallback="true"[\s\S]*?\.site-header-nav-active-pill\s*\{\s*transition: none;/,
+    /\.site-header-nav-pill,[\s\S]*?\.site-header-nav-pill:hover,[\s\S]*?\.site-header-nav-pill:focus-visible\s*\{\s*color: #000;/,
   );
   assert.match(
     styles,
-    /::view-transition-group\(app-primary-nav-active-pill\)\s*\{[^}]*animation-duration: 360ms;[^}]*animation-timing-function: cubic-bezier\(0\.22, 1, 0\.36, 1\);/,
-  );
-  assert.match(
-    styles,
-    /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.site-header-nav-active-pill\[data-motion-ready="true"\][\s\S]*?transition: none;[\s\S]*?::view-transition-group\(app-primary-nav-active-pill\)[\s\S]*?animation: none;/,
+    /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.site-header-nav-active-pill\[data-motion-ready="true"\][\s\S]*?transition: none;/,
   );
 });

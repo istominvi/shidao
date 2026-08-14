@@ -13,7 +13,7 @@
   --header-pill-height: 2.5rem;
   --header-pill-radius: 0.95rem;
   --header-pill-padding-x: 0.9rem;
-  --header-pill-text: #171717;
+  --header-pill-text: #000;
   --header-pill-hover-bg: rgba(20, 20, 20, 0.06);
   --header-pill-active-bg: #141414;
   --header-pill-active-border: transparent;
@@ -179,7 +179,7 @@
 
 .site-header-nav-track {
   position: relative;
-  isolation: isolate;
+  --header-pill-active-bg: #000;
 }
 
 .site-header-nav-active-pill {
@@ -205,13 +205,11 @@
 
 .site-header-nav-active-pill[data-motion-ready="true"] {
   transition:
-    width 360ms cubic-bezier(0.22, 1, 0.36, 1),
-    transform 360ms cubic-bezier(0.22, 1, 0.36, 1),
-    opacity 120ms ease;
+    width 180ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 180ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .site-header-nav-active-pill[data-ready="true"] {
-  view-transition-name: app-primary-nav-active-pill;
   opacity: 1;
 }
 
@@ -252,11 +250,11 @@
 }
 
 .nav-pill-icon {
-  opacity: 0.8;
+  opacity: 1;
 }
 
 .nav-pill-active .nav-pill-icon {
-  opacity: 0.92;
+  opacity: 1;
 }
 
 .nav-pill-inactive {
@@ -273,7 +271,7 @@
 .nav-pill:hover,
 .nav-pill:focus-visible {
   background: var(--header-pill-hover-bg);
-  color: #141414;
+  color: #000;
 }
 
 .nav-pill-active:hover,
@@ -282,41 +280,34 @@
   color: #fff;
 }
 
-.site-header-nav-track[data-active-pill-ready="true"] .nav-pill-active,
-.site-header-nav-track[data-active-pill-ready="true"] .nav-pill-active:hover,
+.site-header-nav-pill,
+.site-header-nav-pill:hover,
+.site-header-nav-pill:focus-visible {
+  color: #000;
+}
+
+.site-header-nav-track[data-active-pill-ready="true"] .site-header-nav-pill,
 .site-header-nav-track[data-active-pill-ready="true"]
-  .nav-pill-active:focus-visible {
+  .site-header-nav-pill:hover,
+.site-header-nav-track[data-active-pill-ready="true"]
+  .site-header-nav-pill:focus-visible {
   background: transparent;
+}
+
+/*
+ * One white layer blended over the white shell and the black moving pill
+ * keeps every glyph visually black outside the pill and white inside it.
+ * There is no delayed active-text color swap while the pill is in flight.
+ */
+.site-header-nav-track[data-active-pill-ready="true"] .nav-pill-content {
   color: #fff;
-}
-
-:root[data-page-transition-direction]:not(
-    [data-page-transition-fallback="true"]
-  )
-  .site-header-nav-active-pill {
-  transition: none;
-}
-
-::view-transition-group(app-primary-nav-active-pill) {
-  animation-duration: 360ms;
-  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-::view-transition-old(app-primary-nav-active-pill),
-::view-transition-new(app-primary-nav-active-pill) {
-  mix-blend-mode: normal;
+  mix-blend-mode: difference;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .site-header-nav-active-pill,
   .site-header-nav-active-pill[data-motion-ready="true"] {
     transition: none;
-  }
-
-  ::view-transition-group(app-primary-nav-active-pill),
-  ::view-transition-old(app-primary-nav-active-pill),
-  ::view-transition-new(app-primary-nav-active-pill) {
-    animation: none;
   }
 }
 
@@ -330,6 +321,17 @@
   .site-header-nav-track[data-active-pill-ready="true"]
     .nav-pill-active:focus-visible {
     background: Highlight;
+    color: HighlightText;
+  }
+
+  .site-header-nav-track[data-active-pill-ready="true"] .nav-pill-content {
+    color: ButtonText;
+    mix-blend-mode: normal;
+  }
+
+  .site-header-nav-track[data-active-pill-ready="true"]
+    .nav-pill-active
+    .nav-pill-content {
     color: HighlightText;
   }
 }

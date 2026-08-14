@@ -3361,6 +3361,185 @@ test("browser smoke: authenticated /login redirects by access policy", async (t)
   }
 });
 
+test("browser smoke: primary navigation uses one fast local handoff", async (t) => {
+  if (browserSmokeUnavailableReason) {
+    t.skip(browserSmokeUnavailableReason);
+    return;
+  }
+
+  const runtime = await openPage({ cookie: authenticatedCookieValue() });
+
+  try {
+    await runtime.page.clock.setFixedTime("2026-08-11T00:00:00.000Z");
+    await runtime.page.goto("/schedule", { waitUntil: "networkidle" });
+    await runtime.page
+      .locator(
+        '.site-header-nav-active-pill[data-ready="true"][data-motion-ready="true"]',
+      )
+      .waitFor();
+
+    const start = await runtime.page.evaluate(() => {
+      const track = document.querySelector<HTMLElement>(
+        ".site-header-nav-track",
+      );
+      const pill = track?.querySelector<HTMLElement>(
+        ".site-header-nav-active-pill",
+      );
+      const target = track?.querySelector<HTMLAnchorElement>(
+        '.site-header-nav-pill[href="/students"]',
+      );
+      if (!track || !pill || !target) {
+        throw new Error("Primary navigation start geometry is missing");
+      }
+      return {
+        pillLeft: pill.getBoundingClientRect().left,
+        targetLeft: target.getBoundingClientRect().left,
+      };
+    });
+
+    const studentsLink = runtime.page.getByRole("link", {
+      name: "Ученики",
+      exact: true,
+    });
+    await studentsLink.click();
+    await runtime.page.evaluate(
+      () =>
+        new Promise<void>((resolve) =>
+          window.requestAnimationFrame(() =>
+            window.requestAnimationFrame(() => resolve()),
+          ),
+        ),
+    );
+
+    const handoff = await runtime.page.evaluate(() => {
+      const root = document.documentElement;
+      const track = document.querySelector<HTMLElement>(
+        ".site-header-nav-track",
+      );
+      const list = track?.querySelector<HTMLElement>(".site-header-nav-list");
+      const pill = track?.querySelector<HTMLElement>(
+        ".site-header-nav-active-pill",
+      );
+      const activeLink = track?.querySelector<HTMLAnchorElement>(
+        '.site-header-nav-pill[aria-current="page"]',
+      );
+      const targetLink = track?.querySelector<HTMLAnchorElement>(
+        '.site-header-nav-pill[href="/students"]',
+      );
+      const targetContent =
+        targetLink?.querySelector<HTMLElement>(".nav-pill-content");
+      const targetIcon = targetLink?.querySelector<SVGElement>("svg");
+      if (
+        !track ||
+        !list ||
+        !pill ||
+        !activeLink ||
+        !targetLink ||
+        !targetContent ||
+        !targetIcon
+      ) {
+        throw new Error("Primary navigation handoff contract is missing");
+      }
+      const pillStyle = getComputedStyle(pill);
+      const targetLinkStyle = getComputedStyle(targetLink);
+      const targetContentStyle = getComputedStyle(targetContent);
+      return {
+        pathname: window.location.pathname,
+        pageTransitionDirection: root.dataset.pageTransitionDirection ?? null,
+        pillCount: track.querySelectorAll(".site-header-nav-active-pill")
+          .length,
+        activeHref: activeLink.getAttribute("href"),
+        pillLeft: pill.getBoundingClientRect().left,
+        pillBackgroundColor: pillStyle.backgroundColor,
+        pillViewTransitionName: pillStyle.viewTransitionName,
+        pillZIndex: pillStyle.zIndex,
+        listZIndex: getComputedStyle(list).zIndex,
+        trackIsolation: getComputedStyle(track).isolation,
+        targetBackgroundColor: targetLinkStyle.backgroundColor,
+        targetLinkColor: targetLinkStyle.color,
+        targetContentColor: targetContentStyle.color,
+        targetContentMixBlendMode: targetContentStyle.mixBlendMode,
+        targetIconOpacity: getComputedStyle(targetIcon).opacity,
+        transitionProperties: pill
+          .getAnimations()
+          .filter(
+            (animation): animation is CSSTransition =>
+              animation instanceof CSSTransition,
+          )
+          .map((animation) => animation.transitionProperty)
+          .sort(),
+        transitionDurations: pill
+          .getAnimations()
+          .map((animation) => animation.effect?.getComputedTiming().duration)
+          .filter(
+            (duration): duration is number => typeof duration === "number",
+          )
+          .sort((left, right) => left - right),
+      };
+    });
+
+    assert.deepEqual(
+      {
+        pathname: handoff.pathname,
+        pageTransitionDirection: handoff.pageTransitionDirection,
+        pillCount: handoff.pillCount,
+        activeHref: handoff.activeHref,
+        pillBackgroundColor: handoff.pillBackgroundColor,
+        pillViewTransitionName: handoff.pillViewTransitionName,
+        pillZIndex: handoff.pillZIndex,
+        listZIndex: handoff.listZIndex,
+        trackIsolation: handoff.trackIsolation,
+        targetBackgroundColor: handoff.targetBackgroundColor,
+        targetLinkColor: handoff.targetLinkColor,
+        targetContentColor: handoff.targetContentColor,
+        targetContentMixBlendMode: handoff.targetContentMixBlendMode,
+        targetIconOpacity: handoff.targetIconOpacity,
+        transitionProperties: handoff.transitionProperties,
+        transitionDurations: handoff.transitionDurations,
+      },
+      {
+        pathname: "/schedule",
+        pageTransitionDirection: null,
+        pillCount: 1,
+        activeHref: "/schedule",
+        pillBackgroundColor: "rgb(0, 0, 0)",
+        pillViewTransitionName: "none",
+        pillZIndex: "0",
+        listZIndex: "1",
+        trackIsolation: "auto",
+        targetBackgroundColor: "rgba(0, 0, 0, 0)",
+        targetLinkColor: "rgb(0, 0, 0)",
+        targetContentColor: "rgb(255, 255, 255)",
+        targetContentMixBlendMode: "difference",
+        targetIconOpacity: "1",
+        transitionProperties: ["transform", "width"],
+        transitionDurations: [180, 180],
+      },
+    );
+    assert.ok(
+      handoff.pillLeft > start.pillLeft + 0.5,
+      "The one local pill must leave Schedule before route navigation starts",
+    );
+    assert.ok(
+      handoff.pillLeft < start.targetLeft - 0.5,
+      "The handoff sample must capture the pill before it reaches Students",
+    );
+
+    await runtime.page.waitForURL(/\/students$/);
+    await runtime.page
+      .getByRole("heading", { name: "Ученики", exact: true, level: 1 })
+      .waitFor();
+    assert.equal(
+      await runtime.page
+        .locator('.site-header-nav-pill[aria-current="page"]')
+        .evaluate((link) => link.getAttribute("href")),
+      "/students",
+    );
+  } finally {
+    await runtime.close();
+  }
+});
+
 test("browser smoke: Account navigates Schedule → Students with honest V2 states", async (t) => {
   if (browserSmokeUnavailableReason) {
     t.skip(browserSmokeUnavailableReason);
@@ -5030,10 +5209,10 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         ready: "true",
         motionReady: "true",
         opacity: "1",
-        transitionProperty: "width, transform, opacity",
-        transitionDuration: "0.36s, 0.36s, 0.12s",
+        transitionProperty: "width, transform",
+        transitionDuration: "0.18s, 0.18s",
         transitionTimingFunction:
-          "cubic-bezier(0.22, 1, 0.36, 1), cubic-bezier(0.22, 1, 0.36, 1), ease",
+          "cubic-bezier(0.22, 1, 0.36, 1), cubic-bezier(0.22, 1, 0.36, 1)",
       },
     );
     assert.ok(scheduleNavActivePill.leftDelta < 0.5);
@@ -5264,10 +5443,10 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         ready: "true",
         motionReady: "true",
         opacity: "1",
-        transitionProperty: "width, transform, opacity",
-        transitionDuration: "0.36s, 0.36s, 0.12s",
+        transitionProperty: "width, transform",
+        transitionDuration: "0.18s, 0.18s",
         transitionTimingFunction:
-          "cubic-bezier(0.22, 1, 0.36, 1), cubic-bezier(0.22, 1, 0.36, 1), ease",
+          "cubic-bezier(0.22, 1, 0.36, 1), cubic-bezier(0.22, 1, 0.36, 1)",
       },
     );
     assert.ok(studentsNavActivePill.leftDelta < 0.5);

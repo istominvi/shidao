@@ -67,9 +67,13 @@
   tab-panel слегка проявляется по направлению выбора. Header action rail
   оставляет не больше одной основной кнопки; дополнительные Lesson actions
   находятся в квадратном `MoreVertical` menu. Persistent transition boundary
-  анимирует направление primary navigation и Course drill-in/back, а отдельный
-  измеряемый black indicator переезжает между active primary buttons с тем же
-  easing, что и tabs. Owner/published Course больше не подменяют готовый header
+  анимирует направление primary navigation и Course drill-in/back. Единственный
+  локальный black indicator выполняет optimistic `width/transform` handoff к
+  выбранному primary button за `180 ms` до route navigation; собственный
+  named/native pill transition удалён, поэтому серый ghost, второй чёрный слой
+  и snapshot-scale не возникают. Glyphs визуально остаются `#000` вне pill и
+  `#fff` внутри, а единственным named native View Transition остаётся
+  `app-page-header`. Owner/published Course больше не подменяют готовый header
   текстовой loading-card; boundary bounded-временем ждёт real header.
   `prefers-reduced-motion` полностью отключает motion.
   Базовый follow-up был подтверждён в release `77870e3`; full-width
@@ -995,8 +999,12 @@ UI-only follow-up без изменения LessonRun API, schema или migrati
 видимой остаётся одна частая кнопка проведения (или AI для educator Course),
 а AI/settings/delete собраны в keyboard-accessible vertical overflow. Переходы
 между primary sections и Course → Lesson/back получают зеркальный fade/slide,
-вкладки и black active-pill primary header — moving indicator с одинаковым
-premium easing. Async metric-slot исключает промежуточный H1 без метрики, а
+а вкладки сохраняют свой moving indicator. Primary header использует один
+локальный black active-pill: optimistic pre-navigation handoff меняет его
+`width/transform` за `180 ms`, без named/native pill View Transition, второго
+чёрного слоя, серого ghost или snapshot-scale. Glyphs визуально имеют `#000`
+вне pill и `#fff` внутри; native named View Transition используется только для
+`app-page-header`. Async metric-slot исключает промежуточный H1 без метрики, а
 content-driven header height заменяет прежние 200 px. Owner/published Course
 loading-card удалён. Нет новой motion dependency: используется browser View
 Transition API с безопасным fallback и полным reduced-motion bypass. Это

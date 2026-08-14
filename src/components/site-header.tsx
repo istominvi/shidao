@@ -15,6 +15,7 @@ import {
   NavPillLink,
   NavigationHeaderShell,
 } from "@/components/navigation/primitives";
+import { usePageTransition } from "@/components/navigation/page-transition-provider";
 import { classNames } from "@/lib/ui/classnames";
 
 export type SiteHeaderNavItem = {
@@ -41,6 +42,11 @@ type SiteHeaderProps = {
 };
 
 const EMPTY_ACTIVE_PILL = { left: 0, width: 0, ready: false };
+const PRIMARY_NAV_HANDOFF_MS = 180;
+
+type NavNavigateEvent = {
+  preventDefault: () => void;
+};
 
 export function SiteHeader({
   variant,
@@ -55,46 +61,63 @@ export function SiteHeader({
   anchorOffset = 96,
   movingActivePill = false,
 }: SiteHeaderProps) {
+  const pageTransition = usePageTransition();
   const hasNav = navItems.length > 0;
   const navTrackRef = useRef<HTMLElement>(null);
   const navItemRefs = useRef(new Map<string, HTMLLIElement>());
+  const navigationHandoffTimerRef = useRef<number | null>(null);
   const activeNavItemId = navItems.find((item) => item.active)?.id ?? null;
   const [activePillMotionReady, setActivePillMotionReady] = useState(false);
   const [activePill, setActivePill] = useState(EMPTY_ACTIVE_PILL);
 
-  const updateActivePill = useCallback(() => {
-    const navTrack = navTrackRef.current;
-    const activeItem = activeNavItemId
-      ? navItemRefs.current.get(activeNavItemId)
-      : null;
-    if (!movingActivePill || !navTrack || !activeItem) {
-      setActivePill((current) => (current.ready ? EMPTY_ACTIVE_PILL : current));
-      return;
-    }
+  const cancelNavigationHandoff = useCallback(() => {
+    if (navigationHandoffTimerRef.current === null) return;
+    window.clearTimeout(navigationHandoffTimerRef.current);
+    navigationHandoffTimerRef.current = null;
+  }, []);
 
-    const navTrackRect = navTrack.getBoundingClientRect();
-    const activeItemRect = activeItem.getBoundingClientRect();
-    if (navTrackRect.width <= 0 || activeItemRect.width <= 0) {
-      setActivePill((current) => (current.ready ? EMPTY_ACTIVE_PILL : current));
-      return;
-    }
-
-    const nextActivePill = {
-      left: activeItemRect.left - navTrackRect.left,
-      width: activeItemRect.width,
-      ready: true,
-    };
-    setActivePill((current) => {
-      if (
-        current.left === nextActivePill.left &&
-        current.width === nextActivePill.width &&
-        current.ready
-      ) {
-        return current;
+  const updateActivePillForItem = useCallback(
+    (itemId: string | null) => {
+      const navTrack = navTrackRef.current;
+      const activeItem = itemId ? navItemRefs.current.get(itemId) : null;
+      if (!movingActivePill || !navTrack || !activeItem) {
+        setActivePill((current) =>
+          current.ready ? EMPTY_ACTIVE_PILL : current,
+        );
+        return;
       }
-      return nextActivePill;
-    });
-  }, [activeNavItemId, movingActivePill]);
+
+      const navTrackRect = navTrack.getBoundingClientRect();
+      const activeItemRect = activeItem.getBoundingClientRect();
+      if (navTrackRect.width <= 0 || activeItemRect.width <= 0) {
+        setActivePill((current) =>
+          current.ready ? EMPTY_ACTIVE_PILL : current,
+        );
+        return;
+      }
+
+      const nextActivePill = {
+        left: activeItemRect.left - navTrackRect.left,
+        width: activeItemRect.width,
+        ready: true,
+      };
+      setActivePill((current) => {
+        if (
+          current.left === nextActivePill.left &&
+          current.width === nextActivePill.width &&
+          current.ready
+        ) {
+          return current;
+        }
+        return nextActivePill;
+      });
+    },
+    [movingActivePill],
+  );
+
+  const updateActivePill = useCallback(() => {
+    updateActivePillForItem(activeNavItemId);
+  }, [activeNavItemId, updateActivePillForItem]);
 
   useLayoutEffect(() => {
     if (!movingActivePill) return;
@@ -125,6 +148,8 @@ export function SiteHeader({
     return () => window.cancelAnimationFrame(frame);
   }, [activePill.ready]);
 
+  useEffect(() => () => cancelNavigationHandoff(), [cancelNavigationHandoff]);
+
   const handleNavClick = (
     event: MouseEvent<HTMLAnchorElement>,
     href: string,
@@ -154,6 +179,37 @@ export function SiteHeader({
     });
     window.history.replaceState(null, "", href);
     window.dispatchEvent(new Event("hashchange"));
+  };
+
+  const handleNavNavigate = (
+    event: NavNavigateEvent,
+    item: SiteHeaderNavItem,
+  ) => {
+    if (!movingActivePill || !pageTransition) {
+      return;
+    }
+
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      cancelNavigationHandoff();
+      return;
+    }
+
+    if (item.active) {
+      if (navigationHandoffTimerRef.current !== null) {
+        event.preventDefault();
+        cancelNavigationHandoff();
+        updateActivePillForItem(activeNavItemId);
+      }
+      return;
+    }
+
+    event.preventDefault();
+    updateActivePillForItem(item.id);
+    cancelNavigationHandoff();
+    navigationHandoffTimerRef.current = window.setTimeout(() => {
+      navigationHandoffTimerRef.current = null;
+      pageTransition.navigate(item.href, { scroll: item.scroll });
+    }, PRIMARY_NAV_HANDOFF_MS);
   };
 
   return (
@@ -216,6 +272,7 @@ export function SiteHeader({
                       className="site-header-nav-pill text-sm font-semibold"
                       scroll={item.scroll}
                       onClick={(event) => handleNavClick(event, item.href)}
+                      onNavigate={(event) => handleNavNavigate(event, item)}
                     >
                       <span className="nav-pill-content">
                         {item.icon ? (

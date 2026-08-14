@@ -20,8 +20,13 @@ copy в `AppPageHeader` теперь действительно optional и до
 семантики. Primary navigation использует persistent native View Transition
 boundary: движение `Расписание → Ученики → Курсы → Магазин` и drill-in уводит
 старый header влево, обратное движение/backlink — вправо. Чёрный active-pill
-primary navigation теперь является отдельным измеряемым indicator и переезжает
-между пунктами с тем же premium easing, что и indicator `WorkspaceTabs`.
+primary navigation остаётся одним локальным измеряемым indicator: нажатие
+сначала выполняет optimistic handoff его `width/transform` к выбранному пункту
+за `180 ms`, затем продолжает route navigation. Для pill не используется
+отдельный named/native View Transition, поэтому параллельные серый ghost,
+второй чёрный слой и snapshot-scale отсутствуют; именованным native transition
+остаётся только `app-page-header`. Один слой glyphs визуально остаётся строго
+`#000` вне чёрного pill и `#fff` внутри него без запаздывающей смены цвета.
 Асинхронная метрика резервирует строку уже в первом frame, а H1, metric, meta и
 actions проявляются вместе; transition boundary по возможности ждёт готовый
 header в пределах bounded timeout. Фиксированный `min-height: 200px` удалён:

@@ -635,16 +635,22 @@ Visual contract Course routes не меняет эту навигационну�
   `meta`, а не к action rail. Shared `ActionMenu` сохраняет portal,
   Arrow/Home/End/Escape, destructive/disabled state и возврат фокуса;
 - protected app layout содержит persistent navigation-motion boundary над
-  меняющимися страницами. Native `document.startViewTransition` именует
-  `app-page-header` и отдельный `app-primary-nav-active-pill`: движение вправо по primary order
-  `Расписание → Ученики → Курсы → Магазин` и drill-in уводят old header влево
-  и вводят new справа; движение влево и backlink зеркальны. Query-only tab
-  changes не анимируют весь header. Boundary ждёт появления непустого готового
-  header через bounded observer, поэтому owner/published Course не показывают
-  промежуточную loading-card, а async metric не появляется после H1 отдельным
-  скачком. При отсутствии API остаётся безопасный entrance fallback, а
-  `prefers-reduced-motion` выполняет навигацию и локальный Course/Lesson state
-  update без анимации;
+  меняющимися страницами. Native `document.startViewTransition` именует только
+  `app-page-header`. Движение вправо по primary order и drill-in уводят old
+  header влево и вводят new справа; движение влево и backlink зеркальны.
+  Primary order: `Расписание`, `Ученики`, `Курсы`, `Магазин`. Primary-nav
+  active-pill намеренно не является named/native View Transition. Это один
+  локальный измеряемый слой: до route navigation optimistic handoff за `180 ms` меняет его
+  `width/transform` к нажатому пункту. Поэтому browser не создаёт отдельные
+  old/new pill snapshots, серый ghost, второй чёрный слой или snapshot-scale.
+  Один glyph-layer визуально остаётся `#000` вне чёрного pill и `#fff` внутри
+  него без задержки цвета. Query-only tab changes не анимируют весь header.
+  Boundary ждёт появления непустого готового header через bounded observer,
+  поэтому owner/published Course не показывают промежуточную loading-card, а
+  async metric не появляется после H1 отдельным скачком. При отсутствии API
+  остаётся безопасный entrance fallback, а `prefers-reduced-motion` выполняет
+  навигацию и локальный Course/Lesson state update без анимации и без
+  pre-navigation wait;
 - основные кнопки и header controls — высотой 40 px с радиусом 12 px и шрифтом
   `.88rem/400`; primary flat без inset-блика, подъёма или тени, иконки имеют
   единый 16 px rhythm, полную непрозрачность и наследуют контрастный цвет,
