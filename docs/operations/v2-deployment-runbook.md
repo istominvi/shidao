@@ -151,6 +151,44 @@ checksum, наблюдаемый `COMMIT` и измеримый postflight. Пр
 совместимый web rollback или новую forward migration; восстановление backup —
 отдельная остановленная операция.
 
+### Unified Profile и Account avatar — production web execution record
+
+Dependent UI/API/routing slice развёрнут exact application commit
+`4462da2248dd97bf6ab5c0a35f9a781844473874` 14 августа 2026 года.
+
+- release gate: `640/640` unit/API, `24/24` strict production-mode browser
+  scenarios, typecheck, test compile, repository-wide format check и production
+  build внутри browser gate;
+- Coolify deployment `960` (`mtsryny7vgiyw6622cc6b77l`) завершён
+  `2026-08-14T08:18:23Z`; running container
+  `g9x4d9zn60jv35r7zf0xl6xj-081541652045` имеет matching image/
+  `SOURCE_COMMIT`, image ID
+  `sha256:b7ba6d8a0484e0521456dd33c2c027b1f08306ecd7c4db4e43c7d6066f873b43`
+  и restart count `0`;
+- Guest `/profile`, `/profile?tab=settings` и legacy
+  `/learning-profile?tab=settings` вернули `307 → /login`; authenticated
+  redirect semantics покрыты strict browser gate, но не выдаются за отдельный
+  guest production postflight;
+- exact deployed Profile chunk содержит canonical `/profile`, команды
+  «Выбрать аватар» и «Загрузить фото»;
+- все 20 preset assets отвечают прямым `200 image/webp`, без redirect и без
+  участия `/_next/image`; runtime error-log filter по profile/avatar пуст.
+
+При следующем Profile/avatar rollout повторять этот gate вместе с AV1 DB
+postflight: новый web не должен ослаблять private Storage, explicit-save modal
+flow или compatibility redirects.
+
+### Primary navigation glyph contrast — production postflight
+
+Functional follow-up source `1d4e5deff83cbdc1b479b16e4220cf799327009f`
+оставляет прежний moving-pill contract, но задаёт opaque-white isolated
+nav-track и убирает отдельный stacking context у nav-list. Публичный production
+HTML ссылается на `/_next/static/css/4bc8e9a9d672cadc.css`; этот bundle содержит
+`.site-header-nav-track` с `background:#fff` и `isolation:isolate`, а Guest
+`/profile` возвращает `307 → /login`. Это bounded public-bundle/HTTP smoke, а
+не заявление о separately inspected authenticated session или container
+metadata; полный Profile/avatar matching-container record остаётся выше.
+
 ### E1 educator Course / attestation — full production execution record
 
 Database, dependent web/API и отдельный Chinese-course bootstrap являются
@@ -953,7 +991,9 @@ ShiDao V2 application:
   «Добавить урок» занимает всю content-row: computed horizontal padding `0`,
   search начинается у левого края, action заканчивается у правого. Таблица имеет
   видимые `№ / Урок / План / Экран ученика / Проведение / Обновлён` и пустой
-  action heading; wrapper белый, border `0`, radius 12 px, header/data rows
+  action heading; wrapper белый, имеет общий product border,
+  `background-clip: padding-box`, статическую raised-surface тень и radius
+  12 px, header/data rows
   ровно 40 px, обычные cells имеют 12 px с обеих сторон, последняя action-cell —
   4 px. Белый header и data rows используют один divider color. Каждый из шести
   data headers при первом клике публикует `aria-sort="ascending"`, при повторном
@@ -1042,7 +1082,7 @@ flow как permanent delete.
 ### Roleless navigation and learner identity
 
 - любой authenticated Account видит четыре primary items: `Расписание`,
-  `Ученики`, `Курсы`, `Магазин`; для current-source release проверить Account
+  `Ученики`, `Курсы`, `Магазин`; для current production проверить Account
   menu в порядке `Профиль`, `История`, `Аттестация`, `Наблюдатели`, `Настройки`,
   `Выход`. Guest на
   каждом private route уходит в login;
@@ -1148,16 +1188,14 @@ flow как permanent delete.
   вкладку и не рендерить отдельный side-nav. Auth-кнопки, построенные
   на canonical `.product-btn`, следуют тому же контракту; raw Landing controls
   и non-product controls полноэкранного Student Screen не должны измениться;
-- для ещё не развёрнутого current-source follow-up выполнить отдельный
-  Next-acceptance; исторические deployed Component-shadow значения ниже до
-  rollout не переписываются. Проверить, что Auth recovery/check-email,
+- для current production surface follow-up проверить, что Auth recovery/check-email,
   onboarding, identity invitation/completion и retry CTA используют shared
   `Button`/`productButtonClassName`, а disclosure-trigger «Фильтры» в Course,
   Students и Store имеет secondary `.product-btn`, сохраняя `summary`,
   `aria-expanded`, Escape/focus-return и disabled boundary. Contextual menu
   items, flat row/Component icon-actions, compound toggles и filter popover
   panels не должны получить ordinary button lift;
-- в том же Next-acceptance проверить общий computed border
+- в том же acceptance проверить общий computed border
   `1px solid oklch(0 0 0 / 0.1)` и `background-clip: padding-box`, затем
   сравнить computed `box-shadow` с
   `oklch(0 0 0 / 0.05) 0px 1px 6px 0px` у shared `SurfaceCard`, Schedule,
@@ -1239,7 +1277,8 @@ flow как permanent delete.
   публикацию. У **Каталог** остаётся compact icon-open action и server cursor
   order без локальной сортировки неполного результата;
 - на Schedule/Students/Courses table view измерить общий surface contract:
-  активный `ProductTable` wrapper сплошной белый, border `0`, radius `12 px`;
+  активный `ProductTable` wrapper сплошной белый, имеет общий product border,
+  `background-clip: padding-box`, статическую raised-surface тень и radius `12 px`;
   карточки сохраняют отдельный radius `20 px`. Schedule, Students и обе Course
   tables используют exact 40 px header/data rows, white header, общий divider,
   однострочный ellipsis, 12 px обычный cell inset и 4 px action-cell inset. Во
@@ -1268,10 +1307,10 @@ flow как permanent delete.
   Escape не меняют число Components. Только «Сохранить компонент» отправляет
   один `POST`, после reload появляется ровно один `staff_only` Component.
   Persisted card показывает только teacher renderer, имеет white background,
-  border `0` и base shadow exact
-  `rgba(0, 0, 0, 0.05) 0px 3px 6px 0px`. На hover/focus exact shadow —
-  `rgba(0, 0, 0, 0.1) 0px 3px 12px 0px`, transition `180ms`, а card rect не
-  меняется; reduced-motion отключает transition. Action rail и каждая кнопка
+  общий product border, `background-clip: padding-box` и статическую
+  `--product-raised-surface-shadow`. Hover сохраняет exact shadow и rect;
+  focus-within добавляет отдельный outline без изменения base shadow. Action
+  rail и каждая кнопка
   имеют border `0`, box-shadow `none`, rail background exact
   `rgba(255, 255, 255, 0.5)`. Группа actions не занимает
   normal-flow header, появляется на hover и focus-within, а на touch остаётся
@@ -1310,6 +1349,24 @@ flow как permanent delete.
 Аттестация / Наблюдатели / Настройки` и метрику активной вкладки; private
   comment отсутствует, explicit shared comment виден, known duration не
   подменяет unknown нулём;
+- на каждой вкладке Profile верхнеуровневые content cards непрозрачно белые,
+  имеют одинаковый radius `20 px`, общий product border,
+  `background-clip: padding-box` и статическую raised-surface тень; вложенные
+  rows сохраняют белый фон/radius/border без второй тени, а table/empty states
+  не вводят отдельный полупрозрачный visual fork;
+- в `?tab=settings` до открытия picker нет сетки presets и preset radio.
+  Компактная avatar card показывает только текущий avatar и команды «Загрузить
+  фото / Выбрать аватар». Preset dialog загружает `20/20` прямых
+  `/avatars/presets/*.webp`, не вызывает `/_next/image`, держит Save disabled до
+  выбора и не меняет Account до явного сохранения. Upload открывает native file
+  picker, затем отдельный preview dialog; «Выбрать другое фото» / «Отмена» /
+  Escape не сохраняют файл, focus возвращается trigger. На viewport
+  `375 × 812` preset grid имеет
+  четыре колонки, а прокрутка остаётся внутри modal без document overflow;
+- `/learning-profile` переносит query в `/profile`, `/settings` и
+  `/settings/profile` ведут в `?tab=settings`, `/settings/security` — в
+  `?tab=settings#security`, `/settings/observers` — в `?tab=observers`; ни один
+  legacy URL не рендерит отдельный settings shell;
 - `/profile?tab=observers` первым показывает active `observed_by`,
   создаёт/accepts/revokes invitation, а вкладка
   `/students?tab=observing` показывает read-only profile; после revoke следующий

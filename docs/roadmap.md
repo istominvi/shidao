@@ -62,7 +62,7 @@
   `inline-inset: 0`, gap 12 px, верхние радиусы 12 px и квадратный чёрный
   active-сегмент 4 px. Каждый tab передаёт 16 px иконку; только positive count
   показывается маленьким приподнятым `sup`, а `0` не рендерится.
-  Current-source motion follow-up заменяет отдельные active pseudo-elements
+  Current production motion follow-up заменяет отдельные active pseudo-elements
   одним измеряемым indicator: он мягко меняет ширину и положение, а новая
   tab-panel слегка проявляется по направлению выбора. Header action rail
   оставляет не больше одной основной кнопки; дополнительные Lesson actions
@@ -81,7 +81,7 @@
   канонизация развёрнута exact merge commit
   `84ffefecda99d3b0a9da82bf1eaf8ce76d9c6ea1` (PR #242).
   Текущий совокупный UI contract развёрнут exact source
-  `dea92ca2c9af99fd5738e95fa9ca511aa10ca3da`; running container evidence
+  `1d4e5deff83cbdc1b479b16e4220cf799327009f`; Profile/avatar rollout evidence
   зафиксирован в [`docs/project-state.md`](./project-state.md).
 - Active app routes приведены к плоскому demo-фону `#f5f1e8` без marketing
   gradients; header, кнопки, вкладки и заголовочная типографика используют
@@ -185,7 +185,7 @@ final snapshot, DB/API/GoTrue postflight, exact functional web SHA `01aa88a` и
 authenticated browser acceptance завершены. Identity program complete.
 Homework, RAG, billing, templates и live Student Screen по-прежнему не входят.
 
-**Current source UI follow-up:** `/profile` стал единым адресуемым
+**Current production UI follow-up:** `/profile` стал единым адресуемым
 разделом с вкладками `Профиль / История / Аттестация / Наблюдатели / Настройки`.
 Отдельный settings shell удалён; старые `/learning-profile` и `/settings/*`
 остаются compatibility redirects. Teacher connection requests, AI consents и
@@ -198,8 +198,10 @@ avatar settings показывают только текущий avatar и дв�
 **Current Account avatar follow-up:** AV1 DB-first contract применён к
 production; каждый Account имеет ровно одно
 avatar state: один из 20 immutable ShiDao presets либо private custom WebP.
-Настройки дают обязательную radio-selection и безопасную загрузку собственного
-изображения; Account menu отображает результат вместо initials. Preset fallback
+Обязательным является само Account avatar state; radio-selection появляется
+только внутри модального выбора preset, а отдельный upload flow безопасно
+нормализует собственное изображение. Account menu отображает результат вместо
+initials. Preset fallback
 и backfill закрепляют обязательность для signup/provisional/existing Accounts,
 а private Storage/RPC/session boundary не открывает object path browser payload.
 Этот vertical slice включает forward migration, typed manifest/assets,
@@ -306,7 +308,7 @@ Definition of Done программы:
 инструмент преподавателя без изменения доменной модели.
 
 **Current production:** primary navigation содержит «Расписание / Ученики /
-Курсы / Магазин» без role switch. **Current source** Account menu открывает пять
+Курсы / Магазин» без role switch. Account menu открывает пять
 адресуемых вкладок единого профиля; observer projection чужих profiles остаётся
 во вкладке «Наблюдение» внутри «Ученики». Каталог `/courses` получил поиск, реальные
 Course-фильтры, сортировку и переключение «Карточки / Таблица» без новой schema
@@ -314,7 +316,7 @@ Course-фильтры, сортировку и переключение «Кар
 унифицированы с Schedule: outer toolbar-card удалена, Students показывает
 active/archive/pending в одной таблице с inline status/text, full-width search и
 единым disclosure «Фильтр» для status, group membership, конкретной группы и
-Account connection. Current source показывает в header только counts текущей
+Account connection. Current production показывает в header только counts текущей
 Students-вкладки; прежнее пояснение назначения раздела удалено. Отдельный sort select у
 Students/Groups и Course **Мои** удалён: возрастающее/убывающее направление
 переключается кликом по sortable headers, Course facets собраны в компактный
@@ -325,8 +327,9 @@ subject/level filters, но использует тот же cards/table present
 также сводит выбор даты и режимы «День / Неделя / Месяц» в один компактный
 календарный popover справа от страницы: desktop-контрол имеет ровно 300 px,
 короткие русские подписи периода без точки после сокращения месяца и оставляет
-рядом только icon-only «Таблица / Карточки». Белая таблица без внешней рамки
-получила компактные `Дата / Время` слева, `Ученики / Статус` и действия справа,
+рядом только icon-only «Таблица / Карточки». Белая таблица использует общий
+product border, clipped background и статическую surface-тень; компактные
+`Дата / Время` находятся слева, `Ученики / Статус` и действия — справа,
 а `Урок / Курс` делят свободную ширину. Все данные чёрные, однострочные и
 сокращаются ellipsis; header и data-row ровно 40 px, причём разделитель входит
 в высоту header, его weight равен 500. Header имеет тот же белый фон, что data
@@ -349,7 +352,8 @@ Students controls и обе Courses controls-панели теперь тоже 
 ширину без horizontal inset.
 Общие tokens различают карточки с радиусом 20 px и
 elements/controls/tables/menus с радиусом 12 px; активные ProductTable wrappers
-белые, borderless и используют table token. Students и обе Course-таблицы
+белые, используют общий product border, `background-clip: padding-box` и
+статическую raised-surface тень. Students и обе Course-таблицы
 получают такой же 40 px header/data-row contract. Students показывает
 `Ученик / Статус / Аккаунт / Группы / Добавлен / actions`, Course **Мои** —
 `Курс / Предмет / Уроки / Публикация / Обновлён / actions`, а **Каталог** —
@@ -366,12 +370,13 @@ destructive «Убрать из списка». «Написать сообще�
 Archived/pending rows получают только допустимые restore/permanent-delete или
 cancel actions. Authenticated top header/profile menu стали
 сплошными белыми поверхностями без blur. Active V2 buttons/header controls
-унифицированы как flat `40 px / 12 px / .88rem / 400`: без inset-блика,
-подъёма и тени, с полностью непрозрачными контрастными иконками; белые кнопки
-сохраняют тонкую рамку, menu items остаются borderless. Authenticated Settings
-(`profile / security / observers`) переиспользуют тот же product shell, demo
-TopNav, canonical side navigation и shared Button variants вместо raw action
-styles; landing, Auth и полноэкранный Student Screen не меняются. Эти visual
+унифицированы как raised `40 px / 12 px / .88rem / 400`: общий белый surface,
+product border, base shadow, hover lift, pressed/focus и reduced-motion states,
+с полностью непрозрачными контрастными иконками; contextual menu items остаются
+плоскими. Отдельный Settings shell и side navigation удалены: `/settings/*`
+перенаправляет в соответствующие вкладки `/profile`, использующие тот же
+product shell, TopNav и shared controls; landing, Auth и полноэкранный Student
+Screen не меняются. Эти visual
 изменения сами не требуют schema. Course **Мои** также получил постоянный
 `MoreVertical` portal-menu с реальными действиями публикации/дублирования и
 подтверждённым «Удалить». `DELETE` здесь означает recoverable soft archive
@@ -493,7 +498,7 @@ authenticated educator `rich_text` update прошли, counts `19/6/22/85` не
 `0a6eab37e1bbecc0084e281496346e5436fcbd1ac2b42e102e89951e71ff258e`.
 Исправление DB-only и уже действует без отдельного Coolify deployment.
 
-**Current production:** все product buttons в
+**Superseded production baseline:** все product buttons в
 `AppPageHeader` имеют белый surface высотой `40 px`, border `0` и общий
 двухслойный `--product-raised-control-shadow`, совпадающий с selected-состоянием
 переключателя вида Расписания. Primary header actions получают чёрные
@@ -503,7 +508,7 @@ actions, не добавляет сам выбор фона Course и не ме�
 rollout входит в exact functional source
 `dea92ca2c9af99fd5738e95fa9ca511aa10ca3da`.
 
-**Next production:** единый raised-control contract распространяется на все
+**Current production:** единый raised-control contract распространяется на все
 канонические `.product-btn`: белый surface, общий
 `--product-surface-border: 1px solid oklch(0 0 0 / .1)`,
 `background-clip: padding-box` и однослойная базовая тень
@@ -527,9 +532,10 @@ option получает только base shadow без динамических
 `oklch(0.19 0 0 / 0.4)`. Белый sticky product TopNav сохраняет
 `68 px / 20 px`, но получает одну тень
 `0px 6px 12px oklch(0 0 0 / 0.05)` без inset-слоёв. Это UI-only follow-up без
-API/schema/migration и пока без production rollout evidence.
+API/schema/migration; contract развёрнут в release `10888d5` и сохраняется в
+текущем functional application source `1d4e5deff83cbdc1b479b16e4220cf799327009f`.
 
-**Current source / Next production acceptance:** обычные CTA Auth recovery,
+**Current production acceptance:** обычные CTA Auth recovery,
 check-email, onboarding, identity invitation/completion и retry-state
 переиспользуют shared `Button`/`productButtonClassName`; disclosure-trigger
 «Фильтры» в Course, Students и Store становится обычной secondary
@@ -562,8 +568,8 @@ keyboard focus добавляет отдельный 2 px halo без измен
 геометрии. Select и textarea сохраняют base boundary, но не получают
 single-line height/entry shadow; checkbox/radio/file, dialog/menu/popover
 surfaces, Student Screen content и raw utility panels исключены. Изменение
-остаётся UI-only, не меняет schema/API/Lesson hierarchy и ещё не имеет production
-rollout evidence.
+остаётся UI-only, не меняет schema/API/Lesson hierarchy и входит в текущий
+exact application release.
 
 **Current production:** общий `WorkspaceTabs`
 уменьшает visual baseline с `1.5 px` до `1.2 px`, рисуя paint-layer высотой
@@ -797,7 +803,7 @@ image ID —
 `sha256:214e954aed0355c1881ea778e65dcb7f4c4cabcde4d7ac2e3f6022322bd8e027`,
 restart count `0`, HTTP host/CSRF/auth postflight green. Это functional E2
 baseline `22b486a7163453019d9720cb4fe0f36ed7c0228d`; текущий deployed application
-source — `dea92ca2c9af99fd5738e95fa9ca511aa10ca3da`. DB и web/API slice являются
+source — `1d4e5deff83cbdc1b479b16e4220cf799327009f`. DB и web/API slice являются
 current production.
 
 **Later:** admin UI для capability/review, юридически значимые удостоверения,
@@ -951,7 +957,7 @@ LessonRun за выбранную локальную неделю или кал�
 SHA `587bb21` завершён со статусом Success; authenticated production browser
 postflight этого follow-up ещё не выполнен.
 
-**Current production polish:** page header использует подзаголовок «Здесь все
+**Previously deployed presentation baseline (superseded):** page header использует подзаголовок «Здесь все
 назначенные уроки за выбранный период.» с общим для всех `AppPageHeader`
 computed-цветом `rgba(20, 20, 20, 0.5)` и короткий календарный Action
 «Назначить урок». Отдельный внешний «Неделя / Месяц» удалён: компактный
@@ -985,20 +991,23 @@ portal-menu имеют 40 px, вертикальное
 центрирование и `.88rem/400`. Прозрачные Schedule, Students и обе Courses
 controls-панели используют всю ширину строки без горизонтального inset. Общие radius
 tokens задают 20 px для карточек и 12 px для controls/tables/menus; активные
-ProductTable surfaces Schedule/Students/Courses белые и borderless. Students и
+ProductTable surfaces Schedule/Students/Courses белые, имеют общий product
+border, clipped background и статическую raised-surface тень. Students и
 обе Courses tables используют 40 px header/data rows; owned Course сортируется
 через headers, Catalog сохраняет server-side cursor order. Students/Groups
 сортируются через headers, а их единый «Фильтр»
 объединяет status, group membership, конкретную группу и Account connection.
 Сохранённый Course → **Уроки** также использует прозрачную full-width
-search/create toolbar и белую borderless 40 px `ProductTable`; шесть data
+search/create toolbar и белую 40 px `ProductTable` с тем же surface contract;
+шесть data
 headers сортируют только локальную projection с default `position ASC`.
 Последняя колонка имеет 4 px inset и один 32 px `MoreVertical` с двумя
 portal-actions: открыть Lesson и выполнить контекстное действие проведения.
 Authenticated top header и profile dropdown тоже стали сплошными белыми
-поверхностями без blur. Buttons/header controls используют единый flat
+поверхностями без blur. Buttons/header controls используют единый raised
 `40 px / 12 px / .88rem / 400` contract с fully opaque contrast-aware icons,
-тонкой рамкой у белых кнопок и borderless menu items. Physical schema не
+общим product border и base/hover/pressed states; menu items остаются
+borderless. Physical schema не
 меняется; Course API добавляет recoverable soft archive с published/open-Run
 guards. Refinement развёрнут exact merge commit
 `84ffefecda99d3b0a9da82bf1eaf8ce76d9c6ea1` (PR #242); running image и
@@ -1010,7 +1019,7 @@ HTTP/CSRF/auth boundary postflight подтверждены.
 а hover-подсветка пунктов использует радиус 8 px выбранной кнопки вида. Это
 UI-only follow-up без изменения LessonRun API, schema или migrations.
 
-**Current source / next production header-motion follow-up:** прежние
+**Current production header-motion follow-up:** прежние
 поясняющие Schedule/Students/Courses и другие page subtitles заменены точными
 метриками выбранной сущности либо полностью опущены. Lesson header всегда
 показывает counts Components/Slides/Runs вместо teacher-private comment;

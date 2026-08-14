@@ -507,7 +507,7 @@ optional selected `lessonId`, а fullscreen preview — текущую preview L
 передаются. Старый course-scoped assistant route может временно оставаться как
 compatibility, но его dialog больше не является частью Course/Lesson UI.
 
-Current-source header contract не выводит teacher comment `lesson.summary` в
+Current production header contract не выводит teacher comment `lesson.summary` в
 заголовок Lesson: supporting line содержит только counts ordered Components,
 persisted Student Slides и завершённых LessonRuns. Для child Course
 `LessonRunStatusButton` остаётся единственным видимым primary action; AI,
@@ -609,7 +609,7 @@ Visual contract Course routes не меняет эту навигационну�
   `0px 6px 12px oklch(0 0 0 / 0.05)`; Account dropdown использует тот же
   сплошной белый surface;
 - `AppPageHeader` задаёт один прозрачный layout для `/courses`, `/students`,
-  `/schedule`, authenticated `/settings/*`, Course и Lesson: системный H1 веса
+  `/schedule`, authenticated `/profile`, Course и Lesson: системный H1 веса
   400 с максимумом 48 px на desktop и 32 px на mobile, optional metric
   canonical цвета `rgba(20, 20, 20, 0.5)` через
   `--app-page-header-description-color`, optional backlink и правую
@@ -629,7 +629,7 @@ Visual contract Course routes не меняет эту навигационну�
   не меняет Lesson hierarchy, API или schema.
   Надзаголовок/eyebrow не входит в `AppPageHeader` API и не может появиться на
   отдельном product route;
-- current-source action contract допускает не больше одного visible primary
+- current production action contract допускает не больше одного visible primary
   control в page header. Дополнительные entity actions находятся справа в
   одном 40 × 40 px `MoreVertical` overflow; status/author chips относятся к
   `meta`, а не к action rail. Shared `ActionMenu` сохраняет portal,
@@ -654,11 +654,12 @@ Visual contract Course routes не меняет эту навигационну�
   навигацию и локальный Course/Lesson state update без анимации и без
   pre-navigation wait;
 - основные кнопки и header controls — высотой 40 px с радиусом 12 px и шрифтом
-  `.88rem/400`; primary flat без inset-блика, подъёма или тени, иконки имеют
-  единый 16 px rhythm, полную непрозрачность и наследуют контрастный цвет,
-  белые кнопки сохраняют тонкую серую рамку, а menu items остаются borderless;
-- в current production все product buttons внутри `AppPageHeader` уточняют этот
-  контракт для будущих page backgrounds: белый surface остаётся высотой
+  `.88rem/400`; ordinary control использует белый surface, общий product
+  border и raised base/hover/pressed contract, иконки имеют единый 16 px rhythm,
+  полную непрозрачность и наследуют контрастный цвет, а contextual menu items
+  остаются плоскими и borderless;
+- исторический header-only baseline для всех product buttons внутри
+  `AppPageHeader` задавал белый surface высотой
   `40 px`, получает border `0` и общий двухслойный
   `--product-raised-control-shadow`, совпадающий с selected-состоянием
   переключателя вида Расписания. Primary header actions получают чёрные
@@ -669,7 +670,7 @@ Visual contract Course routes не меняет эту навигационну�
   не затрагивает buttons открываемого из header dialog, menu items или controls
   вне header actions. Сам пользовательский выбор фона Course этим UI-only
   slice не реализован;
-- next production refinement распространяет единый raised contract на все
+- current production refinement распространяет единый raised contract на все
   канонические `.product-btn`: белый surface,
   `--product-surface-border: 1px solid oklch(0 0 0 / .1)`,
   `background-clip: padding-box` и exact однослойная тень
@@ -689,9 +690,9 @@ Visual contract Course routes не меняет эту навигационну�
   только base shadow без hover/pressed-анимации; фон shell равен
   `oklch(0.19 0 0 / 0.1)`. Подзаголовок `AppPageHeader` и inactive tab
   text/icon используют `oklch(0.19 0 0 / 0.6)`, а независимый 1.2 px baseline —
-  `oklch(0.19 0 0 / 0.4)`. API/schema/Lesson hierarchy не меняются, production
-  rollout этого refinement пока не заявлен;
-- current source / next production acceptance расширяет shared visual contract
+  `oklch(0.19 0 0 / 0.4)`. API/schema/Lesson hierarchy не меняются; refinement
+  развёрнут в release `10888d5` и сохраняется в current application release;
+- current production acceptance расширяет shared visual contract
   без изменения доменной модели. Обычные Auth recovery/check-email,
   onboarding, identity invitation/completion и retry CTA используют
   `Button`/`productButtonClassName`; disclosure-trigger «Фильтры» в Course,
@@ -724,8 +725,8 @@ Visual contract Course routes не меняет эту навигационну�
   рамку. Select и textarea сохраняют base boundary, но не получают single-line
   height/entry shadow; checkbox/radio/file input, dialog/menu/popover surfaces,
   Student Screen content renderers и raw utility
-  panels исключены. Этот current-source UI slice не меняет API, schema, Lesson
-  hierarchy или learner projection и пока не имеет production rollout;
+  panels исключены. Этот current production UI slice не меняет API, schema,
+  Lesson hierarchy или learner projection;
 - в current production общий contextual `ActionMenu`, открываемый
   `MoreHorizontal`/`MoreVertical` в Course actions, Lesson rows, Schedule и
   Students, использует токенизированные белый surface, element-radius 12 px и
@@ -762,7 +763,7 @@ Visual contract Course routes не меняет эту навигационну�
   занимают всю ширину с `inline-inset: 0`. Между tab-кнопками gap 12 px, верхние
   углы имеют control-radius 12 px, а baseline рисуется отдельным слоем поверх
   светлого hover-фона. Квадратный непрозрачный чёрный active-сегмент 4 px лежит
-  выше baseline. Current source реализует его одним absolute indicator,
+  выше baseline. Current production реализует его одним absolute indicator,
   измеряющим `offsetLeft/offsetWidth` активной кнопки и плавно меняющим
   `transform/width`; выбранная persistent panel получает короткий directional
   opacity/clipped-reveal entrance без layout animation и горизонтального
@@ -773,9 +774,10 @@ Visual contract Course routes не меняет эту навигационну�
   count показывается маленьким приподнятым `sup` с weight 500, а `0` отсутствует. Каждый tab
   ссылается на постоянный matching `tabpanel`, который возвращает его id через
   `aria-labelledby`;
-- authenticated Settings переиспользуют тот же product shell, demo TopNav,
-  settings-navigation и shared Button variants; visual tokens не меняют
-  landing, Auth или полноэкранный Student Screen.
+- отдельный authenticated Settings shell удалён: compatibility `/settings/*`
+  перенаправляет в адресуемые вкладки `/profile`, использующие тот же product
+  shell, TopNav и shared controls; visual tokens не меняют landing, Auth или
+  полноэкранный Student Screen.
 
 Базовый layout contract был подтверждён authenticated browser postflight на
 точном application release `77870e3`. Flat controls, Settings-расширение,
@@ -858,7 +860,7 @@ Current production делает `/schedule` и `/students` доступными
   разделитель между «Изменить / Отменить» в трёхпунктовом меню. Радиус
   hover-подсветки menu item равен 8 px и совпадает с active view option. Этот
   follow-up не меняет LessonRun API, schema или migrations;
-- current source заменяет Schedule subtitle на метрику выбранного периода и
+- current production заменяет Schedule subtitle на метрику выбранного периода и
   количества загруженных LessonRuns (`Показано`, если достигнут hard limit), а
   Students header — на counts текущей вкладки. Объясняющий текст о назначении
   разделов больше не принадлежит page header;
@@ -1139,9 +1141,9 @@ Implementation map:
 - scheduling API: `src/app/api/v2/lesson-runs/`, `learner-profiles/` и
   `learner-groups/`, Course/Lesson `audience|history|runs` routes;
 - identity contracts/service/repositories: `src/modules/learner-identity/`;
-- identity/self/observer UI: `src/components/learner-identity/`,
-  `/profile`, `/students?tab=observing`; `/learning-profile` и
-  `/settings/observers` — compatibility redirects;
+- identity/self/observer UI: `src/components/profile/`,
+  `src/components/learner-identity/`, `/profile`, `/students?tab=observing`;
+  `/learning-profile` и `/settings/*` — compatibility redirects;
   `/observing` — compatibility redirect;
 - consented AI projection: `src/modules/ai/shared-history.ts`;
 - canonical learner identity/access contract:

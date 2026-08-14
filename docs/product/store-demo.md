@@ -88,27 +88,26 @@ Checkout запрашивает только имя, телефон, email и а
 7. Основной путь доступен с клавиатуры; dialog focus/return-focus работает, а
    mobile viewport не получает page-level horizontal overflow.
 
-Production rollout подтверждён running source
-`9e66fb548bef176486673149f466b269fd436b21`: guest `/store` следует текущему
+Historical Store baseline был подтверждён running source
+`9e66fb548bef176486673149f466b269fd436b21`: guest `/store` следовал текущему
 auth boundary (`307 → /login`). Полный authenticated checkout остаётся
 покрытым release browser suite; отдельный authenticated production order smoke
 не требуется, поскольку order/payment request в этом demo отсутствует.
 
-## Current source / Next production visual acceptance
+## Current production visual acceptance
 
-Ещё не развёрнутый current source переводит disclosure «Фильтры» на shared
-secondary `.product-btn`, сохраняя нативный `summary`, `aria-expanded`,
-Escape/focus-return и прежнюю filter-popover семантику. Сама popover panel,
-category tabs, cards/table segmented toggle, cart quantity icon-actions и
-`DialogShell` не становятся ordinary raised CTA. Обычные CTA магазина уже
-остаются на shared `Button`; этот follow-up не меняет cart/checkout state
-machine.
+Current production переводит disclosure «Фильтры» на shared secondary
+`.product-btn`, сохраняя нативный `summary`, `aria-expanded`, Escape/focus-return
+и прежнюю filter-popover семантику. Сама popover panel, category tabs,
+cards/table segmented toggle, cart quantity icon-actions и `DialogShell` не
+становятся ordinary raised CTA. Обычные CTA магазина остаются на shared
+`Button`; этот follow-up не меняет cart/checkout state machine.
 
 Store product cards и canonical table wrapper используют статический
 `--product-raised-surface-shadow`, равный базовой тени кнопки
 `0 1px 6px 0px oklch(0% 0 0 / 0.05)`, без card hover/pressed lift, transform или
 shadow-transition. Plain cards/table также используют
-`--product-surface-border: 1px solid oklch(0 0 0 / .1)` и
+`--product-surface-border: 1px solid oklch(0 0 0 / 0.1)` и
 `background-clip: padding-box`, поэтому рамка смешивается с фоном каталога, а
 не с белой заливкой. Semantic/dashed `SurfaceCard` borders при этом не
 перезаписываются. Deep-link и programmatic focus товара сохраняют отдельный
@@ -127,7 +126,8 @@ Base `.product-control` / `.field-input`, включая filter select и мно
 shadow; dialog/menu/popover surfaces также исключены. Compound toggles остаются
 borderless. Это UI-only acceptance без Product/Order/Inventory, API,
 persistence, schema, migration,
-оплаты или delivery integration; production rollout пока не заявлен.
+оплаты или delivery integration. Visual rollout входит в exact current
+functional application source `1d4e5deff83cbdc1b479b16e4220cf799327009f`.
 
 ## Next
 

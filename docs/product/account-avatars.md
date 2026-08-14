@@ -1,6 +1,10 @@
 # Account avatars
 
-Status: **current** for the ShiDao V2 Account profile surface.
+Status: **current production** for the ShiDao V2 Account profile surface.
+
+Current functional application source:
+`1d4e5deff83cbdc1b479b16e4220cf799327009f`; initial unified Profile/avatar
+rollout: `4462da2248dd97bf6ab5c0a35f9a781844473874`.
 
 ## Product contract
 
@@ -38,7 +42,9 @@ radio state, visible border and check mark.
 Production assets live at
 `public/avatars/presets/sd-avatar-v1-XX.webp`. Each file is opaque sRGB WebP,
 `512 × 512`, with no baked border or corner radius. UI surfaces apply their own
-crop and the shared `12 px` product radius.
+crop and the shared `12 px` product radius. Picker images use `next/image` only
+as an unoptimized renderer, so the browser requests those static WebP paths
+directly and never routes presets through `/_next/image`.
 
 ## Visual language and provenance
 
@@ -92,3 +98,37 @@ Storage path, signed token or internal Account identifier.
   `Выбрать другое фото`; choosing a file alone never mutates the Account.
 - If an image cannot load, render the Account initials without changing or
   clearing the saved avatar.
+
+## Implementation map
+
+- manifest, stable keys and browser projection helpers:
+  `src/lib/account-avatar.ts`;
+- shared renderer and compact settings flow:
+  `src/components/account/avatar-image.tsx` and
+  `src/components/account/avatar-settings-form.tsx`;
+- Account settings/profile integration:
+  `src/components/account/account-settings-panel.tsx`,
+  `src/app/(app)/profile/page.tsx` and `src/lib/navigation/profile-nav.ts`;
+- same-origin API and normalization/storage/reconciliation boundary:
+  `src/app/api/settings/profile/avatar/route.ts` and
+  `src/lib/server/profile-avatar-*.ts`;
+- immutable preset assets: `public/avatars/presets/`;
+- physical Account/Storage contract:
+  `supabase/migrations/20260814050347_account_profile_avatars.sql`.
+
+## Current production acceptance
+
+Exact release `4462da2248dd97bf6ab5c0a35f9a781844473874` is deployed. Production
+postflight confirmed all twenty `/avatars/presets/sd-avatar-v1-XX.webp` files
+return direct `200 image/webp` responses with no redirects; the deployed
+profile chunk contains the canonical `/profile`, `Выбрать аватар` and
+`Загрузить фото` flows. The protected profile URLs continue to send a guest to
+`/login`.
+
+The strict production-build browser suite verifies that settings render no
+preset grid before the modal opens; opening it renders all twenty direct WebP,
+four columns at a `375 px` viewport and a scrollable dialog. It also verifies
+keyboard/radio selection, explicit save, cancel/backdrop/Escape focus return,
+and the custom-file preview/choose-another/cancel/save flow. These checks do not
+claim a separate authenticated production mutation smoke; Account writes remain
+covered by the API, optimistic-revision and server-image contract suites.

@@ -7,13 +7,16 @@ identity, teacher directory, observer access и consented AI history
 
 **Актуально на:** 14 августа 2026 года
 
-**Implementation state:** production содержит полный application/API/UI slice и
-M1–M6 contract schema. Четыре verified backup, strict expand/contract postflight,
-два roleless Coolify images (`5944d31`, `5d650a3`), read-only dependency audit и
-production Auth-trigger postflight завершены. Coolify exact functional SHA
-`01aa88a` и authenticated production browser postflight также завершены;
-identity release terminal condition закрыт. Точные deployed SHA и migration
-stage сверяются по
+**Implementation state:** production содержит полный application/API/UI slice,
+M1–M6 contract schema и Account-avatar contract. Четыре verified backup, strict
+expand/contract postflight, два roleless Coolify images (`5944d31`, `5d650a3`),
+read-only dependency audit и production Auth-trigger postflight завершены.
+Identity completion baseline с exact functional SHA `01aa88a` и authenticated
+production browser postflight остаётся историческим evidence; текущий
+functional application source
+`1d4e5deff83cbdc1b479b16e4220cf799327009f` дополнительно содержит единый
+`/profile`, compatibility redirects, обязательный avatar и modal
+selection/upload. Точные deployed SHA и migration stage сверяются по
 [`docs/project-state.md`](../project-state.md).
 
 ## Product decision
@@ -428,19 +431,30 @@ closed как stale.
   `20260807065038_learner_identity_legacy_contract_cleanup.sql`,
   `20260809084500_learner_identity_auth_deferred_invariant_security.sql`,
   `20260809090000_learner_identity_provisional_auth_metadata_sync.sql`;
+- Account avatar contract:
+  `20260814050347_account_profile_avatars.sql`;
 - domain/contracts/service/repositories:
   `src/modules/learner-identity/`;
 - learner-safe AI adapter:
   `src/modules/ai/shared-history.ts`, `course-context.ts`,
   `course-builder-service.ts`;
-- UI: `src/components/learner-identity/`, `src/components/account/`,
-  `/profile`, `/students?tab=observing`, compatibility `/learning-profile` и
-  `/settings/*`,
-  `/identity/invitations/[invitationId]`; `/observing` — compatibility redirect;
+- profile/navigation UI: `src/app/(app)/profile/`, `src/components/profile/`,
+  `src/components/learner-identity/learning-profile-workspace.tsx`,
+  `src/lib/navigation/profile-nav.ts`;
+- Account/avatar UI: `src/components/account/avatar-image.tsx`,
+  `src/components/account/avatar-settings-form.tsx`,
+  `src/components/account/account-settings-panel.tsx`;
+- current routes: `/profile`, `/students?tab=observing`,
+  `/identity/invitations/[invitationId]`; `/learning-profile`, `/settings/*` и
+  `/observing` — protected compatibility redirects;
 - API: `/api/v2/me/learning-profile/*`, `/api/v2/learner-directory/*`,
   `/api/v2/learner-connections/*`, `/api/v2/identity-invitations/*`,
   `/api/v2/learner-merges/*`, `/api/v2/observers/*`,
   `/api/v2/observations/*`, `/api/v2/ai-consents/*` and recipient email routes;
+- Account avatar API/server boundary:
+  `/api/settings/profile/avatar`, `src/lib/server/profile-avatar-image.ts`,
+  `src/lib/server/profile-avatar-storage.ts` и
+  `src/lib/server/profile-avatar-reconciliation.ts`;
 - current schema guide: `docs/database/current-schema.md`;
 - physical snapshot: `supabase/schema/current-schema.sql` after the applicable
   verified expand/contract refresh.
@@ -472,16 +486,24 @@ concurrency, strict signature и DB acceptance matrices зелёные.
 including roleless navigation, Account credential boundary, discovery,
 recipient-bound claim/child activation, M5 deferred invariant boundary, M6
 two-phase Auth metadata sync, merge, archive/restore, self/observer
-history/progress, erasure and AI consent.
+history/progress, erasure, AI consent и exactly-one Account avatar.
 
-**Current acceptance:** exact functional web SHA `01aa88a` развернут, roleless
-Account прошёл authenticated browser navigation/self/observer/security surfaces,
-disposable fixture удалён без orphan rows, а stale session закрыта. Identity
-terminal condition выполнен.
+**Current acceptance:** Profile/avatar release
+`4462da2248dd97bf6ab5c0a35f9a781844473874` развернут и сохраняется в current
+source `1d4e5deff83cbdc1b479b16e4220cf799327009f`. `/profile` содержит пять
+адресуемых вкладок, а прежние profile/settings URLs остаются только
+compatibility redirects. Strict production-build browser acceptance проверяет,
+что preset dialog загружает двадцать direct WebP только после открытия,
+применяет выбор только по явному `Сохранить`, отменяет его по close/backdrop/
+Escape и возвращает focus; upload проходит отдельный preview/confirm flow.
+Исторический identity baseline `01aa88a` по-прежнему подтверждает
+authenticated self/observer/security navigation, удаление disposable fixture
+без orphan rows и закрытие stale session. Identity terminal condition выполнен.
 
-**Current source UI:** self profile, observer management and Account settings
-объединены в адресуемые вкладки `/profile`; это не меняет observer,
-consent, credential или subject-lifecycle authorization boundaries.
+**Current production UI:** self profile, history, attestation, observer
+management и Account settings объединены в адресуемые вкладки `/profile`;
+compact avatar card открывает отдельные preset и upload dialogs. Это не меняет
+observer, consent, credential или subject-lifecycle authorization boundaries.
 
 **Current outside identity:** Account-scoped self-learning approved educator
 publication хранит собственные revision progress и аттестацию; это не является

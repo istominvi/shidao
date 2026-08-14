@@ -1,7 +1,7 @@
 # ShiDao V2 — актуальная глобальная спецификация
 
 **Статус:** нормативные границы текущей архитектуры и будущего развития
-**Актуально на:** 12 августа 2026 года
+**Актуально на:** 14 августа 2026 года
 **Repository/branch:** `istominvi/shidao`, `main`
 **Рабочее приложение:** `v2.shidao.ru`
 **Публичный домен:** `shidao.ru` — landing-only
@@ -26,6 +26,7 @@ project-state/current schema, она не реализована.
 - [`docs/architecture/learner-identity-access-model.md`](../architecture/learner-identity-access-model.md)
 - [`docs/database/current-schema.md`](../database/current-schema.md)
 - [`docs/product/educator-courses-and-attestation.md`](../product/educator-courses-and-attestation.md)
+- [`docs/product/account-avatars.md`](../product/account-avatars.md)
 - [`docs/product/store-demo.md`](../product/store-demo.md)
 - [`docs/v2/COURSE_BUILDER_MCP.md`](./COURSE_BUILDER_MCP.md)
 - [`docs/operations/v2-deployment-runbook.md`](../operations/v2-deployment-runbook.md)
@@ -42,10 +43,13 @@ Builder с реальными данными, private materials, code-first Comp
 Screen preview; canonical learner directory, Groups, Course audience,
 LessonRun/history; learner-safe self/observer profile и consented AI context;
 RouterAI preview/assistant и internal MCP. Primary navigation содержит
-«Расписание / Ученики / Курсы / Магазин», Account menu — «Учебный профиль /
-Настройки / Выход», а `/courses` поддерживает поиск, фильтры, сортировку и
-режимы «Карточки / Таблица». Current production `/store` является UI-only demo
-без Product/Order schema, API, оплаты или доставки.
+«Расписание / Ученики / Курсы / Магазин», Account menu — «Профиль / История /
+Аттестация / Наблюдатели / Настройки / Выход». Первые пять пунктов открывают
+соответствующую вкладку единого раздела `/profile`; прежние
+`/learning-profile` и `/settings/*` сохранены только как protected compatibility
+redirects. `/courses` поддерживает поиск, фильтры, сортировку и два режима
+представления — «Карточки» и «Таблица». Current production `/store` является
+UI-only demo без Product/Order schema, API, оплаты или доставки.
 
 ## 3. Неподвижные границы реконструкции
 
@@ -373,6 +377,12 @@ Active login/PIN/onboarding/profile/session используют Account boundar
 `user_security` физически сохранены только как dormant recovery data: active
 web callers и Data API grants после M4 от них не зависят.
 
+Каждый active/provisional Account имеет обязательный avatar state: один из 20
+immutable фирменных presets или private server-normalized custom image. Avatar
+принадлежит `account`, не LearnerProfile/Auth metadata/preferences; пустого
+состояния у Account нет, а offline LearnerProfile получает это требование
+только после активации Account.
+
 ## 16. Current security
 
 - Course documents owner-scoped through Account and RLS.
@@ -396,9 +406,11 @@ web callers и Data API grants после M4 от них не зависят.
   requests принимает только с exact Origin `https://v2.shidao.ru`;
   landing/cross-subdomain/missing Origin fail closed и покрыты regression tests.
 - V2 не индексируется.
-- Browser-smoke использует current AES-GCM app-session; gate exact deployed
-  release `9e66fb548bef176486673149f466b269fd436b21` прошёл `575/575` unit/API tests и
-  `23/23` strict production-mode scenarios, включая roleless navigation,
+- Browser-smoke использует current AES-GCM app-session; current functional
+  source `1d4e5deff83cbdc1b479b16e4220cf799327009f` прошёл `640/640` unit/API tests,
+  `24/24` strict production-mode browser scenarios, typecheck, test compile,
+  repository format check и production build. Gate включает roleless
+  navigation, единый Account profile, avatar preset/custom flows,
   identity/observer flows, Course catalog и Store.
 - M1 закрыла broad `user_preference`/`user_security` ACL и active callers
   перенесены на `account_preference`/`account_security`; M4 отозвала legacy Data
@@ -420,10 +432,14 @@ credentials из ignored legacy cheatsheet; это не расширяет Auth/
 ## 18. CURRENT navigation/catalog; NEXT P0.2 authoring completion
 
 CURRENT production primary navigation: «Расписание / Ученики / Курсы /
-Магазин». «Учебный профиль» находится в Account menu перед «Настройки / Выход»,
-observer projection — третья вкладка «Наблюдение» внутри `/students`;
-`/observing` является protected compatibility redirect. `/courses` уже имеет
-поиск, реальные фильтры, сортировку и «Карточки / Таблица» без новой schema/API.
+Магазин». Account menu перечисляет «Профиль / История / Аттестация /
+Наблюдатели / Настройки / Выход»; первые пять действий открывают вкладки
+canonical `/profile`. Старые `/learning-profile`, `/settings`,
+`/settings/profile`, `/settings/security` и `/settings/observers` являются
+protected compatibility redirects в соответствующие profile tabs. Observer
+projection остаётся третьей вкладкой «Наблюдение» внутри `/students`, а
+`/observing` — её protected compatibility redirect. `/courses` уже имеет поиск,
+реальные фильтры, сортировку и «Карточки / Таблица» без новой schema/API.
 `/store` — client-state UI-only demo без persisted cart/order, payment API или
 commerce schema; настоящий commerce является отдельным этапом.
 
@@ -495,6 +511,8 @@ OCR, broad web crawling, DRM и audio transcription — LATER.
 
 - `Account` — единственная login identity; global role не определяет navigation
   или access.
+- Каждый Account имеет обязательный preset/custom avatar; каноническое
+  состояние принадлежит Account и не переносится в learner identity.
 - Каждый `active | provisional` Account transaction-safe связан ровно с одним
   canonical LearnerProfile; offline profiles имеют `account_id IS NULL`.
 - Auth bootstrap и deterministic backfill обеспечивают exactly-one invariant
@@ -773,7 +791,7 @@ authorization, reload and error state must be demonstrated.
 Current authoritative objects:
 
 ```text
-account
+account (including required preset/custom avatar state)
 account_login_alias / account_security / account_preference
 course
 course_attestation / course_attestation_attempt / course_attestation_award

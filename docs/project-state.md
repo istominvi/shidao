@@ -4,14 +4,17 @@
 **Актуально на:** 14 августа 2026 года
 **Активная ветка:** `main`
 **Рабочее приложение:** `https://v2.shidao.ru`
-**Текущий functional application source / последний runtime release gate:**
-`dea92ca2c9af99fd5738e95fa9ca511aa10ca3da`
-(`581/581` unit/API, `23/23` strict production-mode browser scenarios,
-`72/72` schema/migration subset, typecheck, lint, format и production build)
+**Текущий functional application source:**
+`1d4e5deff83cbdc1b479b16e4220cf799327009f`
+(`640/640` unit/API, `24/24` strict production-mode browser scenarios,
+typecheck, test compile, repository-wide format check и production build внутри
+browser gate)
+**Exact matching-container Profile/avatar rollout:**
+`4462da2248dd97bf6ab5c0a35f9a781844473874`
 **Исторический functional E2 baseline:**
 `22b486a7163453019d9720cb4fe0f36ed7c0228d`
 
-**Current source / next runtime release — page headers and motion:** supporting
+**Current production — page headers and motion:** supporting
 copy в `AppPageHeader` теперь действительно optional и допускает только
 метрику выбранной сущности; поясняющий, рекламный и инструктивный текст из
 заголовков удалён. Header action rail показывает не больше одной основной
@@ -39,6 +42,13 @@ header в пределах bounded timeout. Фиксированный `min-heig
 UI-only изменение в `src/components/app/`, `src/components/navigation/`,
 `src/components/site-header.tsx`, `src/components/ui/workspace-tabs.tsx` и
 `src/app/styles/`; API, schema, migrations и Lesson hierarchy не меняются.
+Follow-up source `1d4e5deff83cbdc1b479b16e4220cf799327009f` исправляет контраст
+glyphs без изменения геометрии: public production CSS
+`/_next/static/css/4bc8e9a9d672cadc.css` содержит opaque-white
+`.site-header-nav-track` с `isolation:isolate`, а nav-list не имеет отдельного
+`z-index`. Guest `/profile` продолжает fail closed через `307 → /login`.
+Это public-bundle/HTTP postflight; он не подменяет matching-container evidence
+Profile/avatar release `4462da2`, зафиксированное ниже.
 
 **Current production Course catalog slice:** реализует reusable Course catalog,
 immutable publication revisions, независимое копирование детских Course и
@@ -112,7 +122,7 @@ Postflight `12/12` подтвердил owner/invoker/search-path, closed ACL, i
 predicate, семь triggers и отсутствие policy drift; counts
 Account/Course/Lesson/Component остались `19/6/22/85`. Authenticated educator
 `rich_text` same-value `UPDATE` прошёл внутри rollback
-(`rollback_verified=true`). Current live snapshot снят
+(`rollback_verified=true`). Historical E2A snapshot снят
 `2026-08-13T11:43:48Z`, SHA-256
 `0a6eab37e1bbecc0084e281496346e5436fcbd1ac2b42e102e89951e71ff258e`.
 Это DB-only исправление уже действует для существующего web image; отдельный
@@ -148,13 +158,16 @@ Coolify deployment `887` завершил exact functional SHA
 `sha256:cf8b6400187d880ab6c6f73a9af037b92cb476b09dd4832e6fd52ea13a132389`,
 restart count `0`, HTTPS `200`.
 
-**Current source profile navigation:** собственный профиль и Account settings
+**Current production profile navigation:** собственный профиль и Account settings
 собраны в одном разделе `/profile` с адресуемыми вкладками `Профиль /
 История / Аттестация / Наблюдатели / Настройки`. Account menu повторяет этот
 порядок и завершает список действием `Выход`; trigger показывает только
 квадратный avatar `40 × 40 px` с радиусом `12 px`, а dropdown header — ФИО и
 email без второй avatar. Заголовок раздела использует ФИО Account, метрику
-активной вкладки и действие `Выход`. `Наблюдатели` показывает grants направления
+активной вкладки и действие `Выход`. Метрика `Профиль` показывает завершённые
+занятия и предметы, `История` — записи и посещённые занятия, `Аттестация` —
+число credentials, `Наблюдатели` — active observers и pending исходящие
+приглашения, `Настройки` — состояние PIN. `Наблюдатели` показывает grants направления
 `observed_by` первыми; входящие приглашения наблюдать за другим профилем отделены
 ниже. Прежние `/learning-profile`, `/settings`, `/settings/profile`,
 `/settings/security` и `/settings/observers` сохранены как compatibility
@@ -169,7 +182,20 @@ redirects с переносом query; security redirect сохраняет `#se
 двадцать presets открываются в modal picker, а локальный файл — в отдельном
 preview dialog до явного сохранения.
 
-**Current Account avatar follow-up:** AV1 DB-first contract применён к
+Этот UI/routing slice развёрнут exact release
+`4462da2248dd97bf6ab5c0a35f9a781844473874`. Coolify deployment `960`
+(`mtsryny7vgiyw6622cc6b77l`) завершён `2026-08-14T08:18:23Z`; running
+container `g9x4d9zn60jv35r7zf0xl6xj-081541652045` использует matching image и
+`SOURCE_COMMIT`, image ID
+`sha256:b7ba6d8a0484e0521456dd33c2c027b1f08306ecd7c4db4e43c7d6066f873b43`,
+restart count `0`. Guest `/profile`, `/profile?tab=settings` и legacy
+`/learning-profile?tab=settings` fail closed через `307 → /login`; все 20
+preset WebP отвечают прямым `200 image/webp` без redirect. Exact deployed
+profile chunk содержит `/profile`, «Выбрать аватар» и «Загрузить фото».
+Authenticated compatibility redirect отдельно не заявляется из guest
+postflight; функциональный contract покрыт strict browser suite `24/24`.
+
+**Current production Account avatar follow-up:** AV1 DB-first contract применён к
 production, а avatar теперь является обязательным
 состоянием `Account`, а не декоративными initials. В настройках единого профиля
 можно выбрать один из 20 оригинальных ShiDao presets либо загрузить JPEG/PNG/
@@ -212,7 +238,7 @@ toolbar, cards/table и `DialogShell`: статический каталог у�
 поддерживает deep link вида
 `/store?product=<slug>` без изменения Lesson contracts. Канонический
 контракт с current/next/later границами находится в
-[`docs/product/store-demo.md`](./product/store-demo.md). Current deployed gate:
+[`docs/product/store-demo.md`](./product/store-demo.md). Historical Store release gate:
 typecheck, lint, format, production build, `581/581` unit/API, `23/23` strict
 production-mode browser scenarios и `72/72` schema/migration subset, включая
 Store deep link, cart/checkout, focus return и mobile no-overflow.
@@ -374,7 +400,7 @@ Self-hosted contour не имеет relation
 `supabase_migrations.schema_migrations`, поэтому отдельная history row не
 заявляется: evidence — exact SQL checksum, transaction и измеримый postflight.
 
-**Current production page-header action-button refinement:** все product buttons
+**Superseded production page-header-only action-button refinement:** все product buttons
 внутри `AppPageHeader` имеют белую заливку,
 внешнюю высоту `40 px` и border `0`. Их контур на белом или пользовательском
 фоне задаёт общий `--product-raised-control-shadow`, дословно совпадающий с
@@ -389,7 +415,7 @@ trigger контекстного меню; buttons открываемого из
 обычные controls не меняются. Это UI-only change без API, schema, migration или
 реализации выбора фона Course; rollout входит в exact deployed source ниже.
 
-**Next production canonical control elevation and muted-color refinement:** текущий source применяет
+**Current production canonical control elevation and muted-color refinement:** текущий release применяет
 один raised-surface contract ко всем каноническим `.product-btn`, а не только к
 actions заголовка. Обычная кнопка имеет белый surface, общий
 `--product-surface-border: 1px solid oklch(0 0 0 / .1)`,
@@ -421,11 +447,11 @@ option использует только базовую тень без button h
 получает независимый цвет `oklch(0.19 0 0 / 0.4)`. API, schema и migrations не
 меняются. Белый sticky product TopNav сохраняет геометрию `68 px / 20 px`, но
 вместо прежнего многослойного эффекта использует одну exact-тень
-`0px 6px 12px oklch(0 0 0 / 0.05)`. Production rollout этого follow-up пока
-не заявлен.
+`0px 6px 12px oklch(0 0 0 / 0.05)`. Contract развёрнут и сохраняется в exact
+functional source `1d4e5deff83cbdc1b479b16e4220cf799327009f`.
 
-**Current source / Next production ordinary-control, static-surface and
-entry-field refinement:** поверх этого ещё не развёрнутого raised-control
+**Current production ordinary-control, static-surface and entry-field
+refinement:** поверх общего raised-control
 контракта оставшиеся обычные CTA в Auth recovery/check-email, onboarding,
 identity invitation/completion и retry-state переведены на shared `Button` /
 `productButtonClassName`; raw text/password поля Account profile/security — на
@@ -467,9 +493,9 @@ Component card и Store deep-link/focus highlight используют отде�
 textarea сохраняют base boundary, но не получают single-line height или entry
 shadow. Checkbox, radio, file input, dialog/menu/popover surfaces, Student
 Screen content renderers и utility-only raw panels не получают entry или
-static surface contract автоматически. Это UI-only current-source изменение без API,
-schema или migrations; production rollout и deployed acceptance пока не
-заявлены.
+static surface contract автоматически. Это UI-only production изменение без
+API, schema или migrations; оно входит в exact current release и его strict
+browser acceptance.
 
 **Current production WorkspaceTabs fractional-baseline refinement:** общий
 разделитель под вкладками уменьшен с прежнего baseline
@@ -494,9 +520,9 @@ restore не меняются. Filter/calendar popovers, Account menu и native 
 не являются contextual `ActionMenu` и этим scoped slice не затрагиваются; API,
 schema и migrations также не меняются. Refinement впервые прошёл gate и rollout
 в exact release `8e5d169dab72dc285c0fdfe8991646152d9904c7`; он сохраняется в
-текущем source, для которого running image и HTTP postflight подтверждены ниже.
+current production release.
 
-**Current production application evidence:** Coolify deployment
+**Historical production application evidence для U1 baseline:** Coolify deployment
 `xivwq5nkaak141mc0tw5ysce` (`id=943`) создан
 `2026-08-13T06:58:23Z` и завершён `2026-08-13T07:01:09Z`. Running container
 `g9x4d9zn60jv35r7zf0xl6xj-065823494924` использует exact image/
@@ -530,7 +556,8 @@ Authenticated production browser postflight этого slice пока не вы�
 подпись с сокращённым месяцем без завершающей точки и открывает календарь.
 Полная дата остаётся в
 доступном имени и заголовке календаря; «День / Неделя / Месяц» находятся
-внутри popover. Белая таблица не имеет внешней обводки, её светло-серая строка
+внутри popover. Белая таблица имеет общий product surface border,
+`background-clip: padding-box` и статическую raised-surface тень; её строка
 заголовков и каждая строка данных имеют точную высоту 40 px; divider 1 px
 входит в эти 40 px header, его weight равен 500, а текст стал светлее.
 Обычные header/data cells используют канонический inline-padding 12 px.
@@ -554,21 +581,22 @@ plain «Ожидается». Видимые data-заголовки Schedule я
 точную высоту 40 px, вертикально центрированные иконку и текст,
 шрифт `.88rem/400` и канонические внутренние интервалы.
 Authenticated top header и profile menu теперь используют сплошной белый фон
-без blur. Active V2 buttons и header controls используют единый flat-contract
-`40 px / 12 px / .88rem / 400`: primary не имеет блика, подъёма или тени,
-иконки полностью непрозрачны и наследуют контрастный цвет, белые кнопки
-сохраняют тонкую серую рамку, а пункты меню остаются без неё. Authenticated
-`/settings/profile`, `/settings/security` и `/settings/observers` теперь
-переиспользуют тот же `course-demo-shell`, demo TopNav, canonical side
-navigation и shared Button variants; прежние raw action-button forks из
-Profile/Security удалены, включая secondary и destructive semantics. Landing,
+без blur. Active V2 buttons и header controls используют единый raised-contract
+`40 px / 12 px / .88rem / 400`: белый surface, product border, базовая тень,
+pointer hover lift и отдельный pressed/focus contract; иконки полностью
+непрозрачны и наследуют контрастный цвет, а contextual menu items остаются
+плоскими без обычной рамки. Отдельный Settings shell и side navigation удалены:
+`/settings`, `/settings/profile`, `/settings/security` и
+`/settings/observers` являются compatibility redirects в соответствующие
+вкладки единого `/profile`, где используются общий product shell, TopNav и
+shared controls. Landing,
 Auth и полноэкранный Student Screen намеренно не входят в этот selector scope.
 Это UI-only изменение: LessonRun API, System Assistant boundary, schema и
 migrations не меняются; assistant по-прежнему получает только опорную локальную
 дату, а не всё видимое окно. Последняя корректировка cell/action spacing
 развёрнута в production release PR #242; exact rollout evidence приведён ниже.
 
-**Current source Schedule header:** optional supporting line показывает
+**Current production Schedule header:** optional supporting line показывает
 выбранный локальный период и точное число загруженных занятий; при достижении
 hard limit она честно говорит «Показано», а не заявляет total. Прежнее
 пояснение «Здесь все назначенные уроки…» удалено. В sortable header только
@@ -583,7 +611,7 @@ toolbar-card: компактные 40 px controls расположены пря�
 том же визуальном контракте, что Schedule. На Students состояния «Активные /
 Архив / Ожидают ответа» больше не переключают отдельные проекции: активные
 профили, архивные relations и исходящие pending-запросы находятся в одной
-таблице с inline status/text и contextual actions. Current source header
+таблице с inline status/text и contextual actions. Current production header
 показывает active/archive/pending counts, число Groups либо наблюдаемых
 Profiles в зависимости от вкладки; прежний explanatory subtitle удалён. Поиск
 остаётся отдельным контролом, а статус, наличие или отсутствие membership в
@@ -1113,8 +1141,9 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
   локальной недели или календарного месяца. Это проекция тех же проведений, а
   не отдельная таблица Schedule events.
 - В current production краткий Action «Назначить урок» с иконкой добавления в
-  календарь находится в общей page-header action-секции, а подзаголовок прямо
-  объясняет, что здесь находятся все назначенные уроки за выбранный период.
+  календарь находится в общей page-header action-секции, а строка под H1
+  показывает выбранный период и точное число загруженных занятий (`Показано`
+  при достижении hard limit), не объясняющий текст о назначении страницы.
   Справа под header находятся 300 px compact date picker и icon-only control
   «Таблица / Карточки». Короткая подпись использует русское сокращение месяца
   без завершающей точки, но доступное имя сохраняет полную дату. Отдельного
@@ -1124,7 +1153,8 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
   выбранный период.
   Непустой результат начинается сразу с выбранного вида, без повторного
   «Выбранная неделя / Занятия» и count-chip. Table projection — сплошная белая
-  поверхность без внешней рамки и с element/table radius 12 px; header и
+  поверхность с общим product border, `background-clip: padding-box`,
+  статической raised-surface тенью и element/table radius 12 px; header и
   каждая data-row имеют ровно 40 px, причём нижний divider 1 px входит в
   высоту header; weight равен 500, а текст светлее. Обычные header/data cells
   имеют inline-padding 12 px; только последняя body action-cell использует
@@ -1215,8 +1245,9 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
   post-factum input; scheduled fallback и unknown не превращаются в duration.
 - Статусы интерфейса вычисляются из timestamps; отдельной persisted state
   machine нет.
-- Все surfaces используют тот же плоский бежевый demo visual language, header,
-  кнопки, карточки и типографику, что и Course routes.
+- Все surfaces используют тот же бежевый product language, opaque-white
+  content surfaces, raised controls, карточки и типографику, что и Course
+  routes.
 
 ### Learner identity, self profile и observer — current production contract
 
@@ -1241,11 +1272,11 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
 - `/profile` показывает linked self profile, cursor-paginated
   learner-safe history, real-record progress, share code, AI consents и
   preview/confirm destructive actions.
-- `/settings/observers` управляет pending/active observers, free display labels
-  и revoke; вкладка `/students?tab=observing` показывает несколько observed
-  profiles и только read-only learner-safe history/progress. `/observing`
-  перенаправляет на эту вкладку. Teacher relation и observer grant не создают
-  друг друга.
+- `/profile?tab=observers` управляет pending/active observers, free display
+  labels и revoke; прежний `/settings/observers` только перенаправляет туда.
+  Вкладка `/students?tab=observing` показывает несколько observed profiles и
+  только read-only learner-safe history/progress. `/observing` перенаправляет
+  на эту вкладку. Teacher relation и observer grant не создают друг друга.
 - Subject/observer не имеют raw `learning_record SELECT`; safe projection
   физически исключает drafts, superseded rows, private comments, recorder IDs,
   teacher-local directory, roster и group teacher report.
@@ -1285,7 +1316,7 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
   LearningRecord сохранятся в LearnerProfile с компактным title/subject
   context.
 - Компоненты добавляются прямо в Lesson через palette по категориям. В current
-  source её panel имеет стабильный desktop-размер `56rem × 42rem`, остаётся
+  production её panel имеет стабильный desktop-размер `56rem × 42rem`, остаётся
   внутри mobile viewport, а прокрутка принадлежит только списку карточек:
   заголовок и category tabs не прыгают при переключении между 2, 4 и 10
   элементами. Каждая карточка до добавления показывает назначение и статический
@@ -1309,10 +1340,12 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
   заменяет renderer внутри карточки. Отмена/закрытие не отправляют mutation;
   `PATCH` с payload/placement выполняется только по явному сохранению. Editor
   labels используют `.88rem/400`, а однострочные controls — canonical 40 px.
-  Сама authored card белая, без внешней обводки; её чёрная тень меняется с
-  `0 3px 6px #0000000d` на `0 3px 12px #0000001a` при hover/focus с анимацией,
-  но без смещения layout. Overlay actions не имеют border/box-shadow и лежат на
-  общей белой подложке `rgba(255, 255, 255, 0.5)`. В current source активное
+  Сама authored card белая, использует общий product surface border,
+  `background-clip: padding-box` и статическую
+  `--product-raised-surface-shadow`; hover не меняет тень и не смещает layout,
+  а focus-within добавляет отдельный outline. Overlay actions не имеют
+  border/box-shadow и лежат на общей белой подложке
+  `rgba(255, 255, 255, 0.5)`. В current production активное
   действие Student Screen является исключением из скрытия rail: его голубая
   32 px кнопка `MonitorPlay` видна и вне hover/focus, тогда как неактивная
   кнопка и остальные действия остаются скрытыми.
@@ -1321,7 +1354,7 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
 
 ### Экран ученика
 
-- В current source кнопка «Экран ученика» использует ту же иконку `MonitorPlay`,
+- В current production кнопка «Экран ученика» использует ту же иконку `MonitorPlay`,
   что и одноимённая вкладка, и передаёт состояние через `aria-pressed`.
 - У `staff_only` Component неактивная кнопка видна только при hover/focus.
   Нажатие назначает Component на Slide ближайшего предыдущего видимого соседа,
@@ -1785,9 +1818,18 @@ provider requests, assistant dialog history или quota state в БД.
   `educator_course_author_can_mutate(uuid)`. Исправление предназначено для
   authenticated direct DML Course Builder, включая сохранение Text Component;
   exact apply завершился `COMMIT`, postflight `12/12` и rollback-verified
-  authenticated educator `rich_text` update прошли. Current snapshot
+  authenticated educator `rich_text` update прошли. E2A snapshot на этом stage
   `2026-08-13T11:43:48Z` имеет SHA-256
   `0a6eab37e1bbecc0084e281496346e5436fcbd1ac2b42e102e89951e71ff258e`.
+- `20260814050347_account_profile_avatars.sql` — current production schema head.
+  AV1 добавляет exact-one `preset | custom` avatar state в `public.account`,
+  private server-only Storage bucket `profile-avatars`, revision-aware setter и
+  расширение Account auth context. Exact migration применена `COMMIT` после
+  read-only sanity, verified backup и rollback rehearsal; browser Storage
+  policies равны `0`, setter `EXECUTE` закрыт для
+  `PUBLIC`/`anon`/`authenticated`. Current snapshot снят
+  `2026-08-14T05:53:08Z`, SHA-256
+  `3ca847164526568def44d2deed9a6b1d6cd1742e168462376b4f41fe6383ef97`.
 
 Источники истины для текущего состояния:
 
@@ -1828,7 +1870,9 @@ positions, а плотность поддерживают текущие service
 | LessonRun API                        | `src/app/api/v2/lesson-runs/`, `learner-profiles/`, `learner-groups/`, Course/Lesson audience/history/runs routes                                                                                                                                                                 |
 | LessonRun UI                         | `src/components/lesson-runs/`                                                                                                                                                                                                                                                     |
 | Learner identity contracts/service   | `src/modules/learner-identity/`                                                                                                                                                                                                                                                   |
-| Learner identity UI/routes           | `src/components/learner-identity/`, `/profile`, `/students?tab=observing`, `/identity/invitations/*`; `/learning-profile`, `/settings/*` и `/observing` — compatibility redirects                                                                                                 |
+| Learner identity UI/routes           | `src/app/(app)/profile/`, `src/components/profile/`, `src/components/learner-identity/`, `/profile`, `/students?tab=observing`, `/identity/invitations/*`; `/learning-profile`, `/settings/*` и `/observing` — compatibility redirects                                            |
+| Account profile/avatar UI            | `src/components/account/`, `src/components/account/avatar-settings-form.tsx`, `src/lib/navigation/profile-nav.ts`                                                                                                                                                                 |
+| Account avatar API                   | `src/app/api/settings/profile/avatar/`, `src/lib/account-avatar.ts`, `src/lib/server/profile-avatar-image.ts`, `src/lib/server/profile-avatar-storage.ts`, `src/lib/server/profile-avatar-reconciliation.ts`                                                                      |
 | Learner identity access doc          | `docs/architecture/learner-identity-access-model.md`                                                                                                                                                                                                                              |
 | Consented AI safe history            | `src/modules/ai/shared-history.ts`, `course-context.ts`, `course-builder-service.ts`                                                                                                                                                                                              |
 | Historical identity execution prompt | `docs/v2/LEARNER_IDENTITY_COMPLETION_PROMPT.md`                                                                                                                                                                                                                                   |
@@ -1880,9 +1924,10 @@ positions, а плотность поддерживают текущие service
 /profile
 /learning-profile                 # compatibility redirect → /profile
 /observing                        # compatibility redirect → /students?tab=observing
-/settings/profile
-/settings/security
-/settings/observers
+/settings                         # compatibility redirect → /profile?tab=settings
+/settings/profile                 # compatibility redirect → /profile?tab=settings
+/settings/security                # compatibility redirect → /profile?tab=settings#security
+/settings/observers               # compatibility redirect → /profile?tab=observers
 ```
 
 V2 API находится под `/api/v2/` и включает `learner-profiles`, Course
@@ -1984,6 +2029,17 @@ browser postflight exact functional SHA зафиксированы выше. Н�
 
 `test:browser` допускает локальный skip без browser, а `test:browser:ci`
 является строгим production-mode gate.
+
+Полный Profile/avatar application release
+`4462da2248dd97bf6ab5c0a35f9a781844473874` прошёл `640/640` unit/API,
+`24/24` strict production-mode browser scenarios, typecheck, test compile,
+repository-wide format check и production build внутри browser gate. Profile
+acceptance проверяет canonical `/profile`, пять URL-addressable вкладок,
+compatibility redirects с query/hash, единый opaque-white surface contract,
+один H1 и честные метрики вкладок. Avatar acceptance подтверждает отсутствие
+preset grid до открытия modal, прямую загрузку всех `20/20` static WebP без
+`/_next/image`, explicit Save для preset и custom preview, Cancel/Escape с
+возвратом фокуса и mobile layout `375 × 812` без document-level overflow.
 
 Для базового LessonRun slice локально подтверждены:
 

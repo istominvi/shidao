@@ -4,7 +4,8 @@
 
 **Канонический app host:** `v2.shidao.ru`
 
-**Последний подтверждённый production release:** см.
+**Текущий functional application source:**
+`1d4e5deff83cbdc1b479b16e4220cf799327009f`; подробный release evidence см. в
 [`docs/project-state.md`](./project-state.md). Описанные ниже roleless routes,
 host/CSRF hardening и identity invitation flows прошли M1–M6 production apply,
 exact Coolify SHA и browser/API postflight.
@@ -128,11 +129,11 @@ learner enrollment.
 /store
 /profile
 /learning-profile                 # compatibility redirect → /profile
-/observing
-/settings
-/settings/profile
-/settings/security
-/settings/observers
+/observing                        # compatibility redirect → /students?tab=observing
+/settings                         # compatibility redirect → /profile?tab=settings
+/settings/profile                 # compatibility redirect → /profile?tab=settings
+/settings/security                # compatibility redirect → /profile?tab=settings#security
+/settings/observers               # compatibility redirect → /profile?tab=observers
 ```
 
 Guest/degraded session redirectится на `/login`. Folder names
@@ -193,6 +194,21 @@ server credential. POST принимает либо allowlisted preset key с ex
 revision, либо multipart JPEG/PNG/WebP до 5 MiB; server сохраняет только
 нормализованный `512 × 512` WebP. Cross-account path, direct browser write и
 stale revision fail closed.
+
+Вкладка «Настройки» показывает compact avatar card с текущим изображением и
+двумя действиями: `Загрузить фото` и `Выбрать аватар`. Preset modal рендерит
+двадцать static WebP только после открытия; `next/image` работает в
+`unoptimized` mode, поэтому browser запрашивает
+`/avatars/presets/sd-avatar-v1-XX.webp` напрямую, без `/_next/image`. Radio
+selection является только preview и сохраняется исключительно по явному
+`Сохранить`; close/backdrop/Escape/`Отмена` ничего не меняют. Upload сначала
+открывает native file picker, затем отдельный square preview с тем же explicit
+save contract.
+
+Implementation: `src/app/(app)/profile/`, `src/components/profile/`,
+`src/lib/navigation/profile-nav.ts`,
+`src/components/account/avatar-settings-form.tsx` и
+`src/app/api/settings/profile/avatar/route.ts`.
 
 ## V2 API namespaces
 

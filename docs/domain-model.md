@@ -1,12 +1,13 @@
 # ShiDao V2 domain model
 
 **Статус:** current implemented domain
-**Актуально на:** 13 августа 2026 года
+**Актуально на:** 14 августа 2026 года
 
 ## Active product hierarchy
 
 ```text
 Account
+├── canonical avatar exactly 1 → preset key XOR custom Storage object
 ├── own identity → LearnerProfile exactly 1
 ├── TeacherLearner 0..N → LearnerProfile
 ├── LearnerGroup 0..N
@@ -40,6 +41,13 @@ CoursePublicationRevision ← CoursePublicationOrigin ← independent child Cour
 ```
 
 - `Account` is the ownership identity linked one-to-one to `auth.users`.
+- `Account` owns exactly one mandatory canonical avatar state, independently
+  of Auth metadata and LearnerProfile. A preset state contains one of 20
+  allowlisted keys and no Storage path; a custom state contains one immutable
+  Account-scoped WebP path in the private `profile-avatars` bucket and no
+  preset key. Existing and new Accounts always receive a preset fallback, so
+  the supported UI can replace an avatar but cannot leave it empty; revision
+  matching protects concurrent replacements.
 - `Course` is an editable owner-scoped draft. Product `DELETE` is currently a
   recoverable soft archive through `course.archived_at`: active list/get hide
   the row, while authored children, attachments, LessonRuns and
@@ -215,7 +223,7 @@ file
 UI, application service and development MCP use the same Zod contracts. MCP
 JSON Schema is generated from those contracts.
 
-The current-source manual picker is a 19-option presentation projection over
+The current production manual picker is a 19-option presentation projection over
 this 20-key runtime registry. It omits standalone `heading`, while existing
 heading Components and the API/MCP/AI contracts remain supported. `rich_text`
 schema version `1` is extended backward-compatibly with an optional plain-text
@@ -278,6 +286,10 @@ registry object.
 - Product «Индивидуальная учебная запись» → `learning_record`.
 - Canonical learner identity → `learner_profile`; teacher-local directory
   context → `teacher_learner`.
+- Canonical Account avatar → mutually exclusive `account.avatar_preset_key` or
+  `account.avatar_storage_path`, selected by `account.avatar_kind` and updated
+  through the revision-aware server boundary; custom WebP objects live in the
+  private `profile-avatars` bucket.
 - Learner directory groups → `learner_group` + `learner_group_member`.
 - Course audience sources → `course_learner` + `course_learner_group`;
   effective learners are a query projection, not another table.

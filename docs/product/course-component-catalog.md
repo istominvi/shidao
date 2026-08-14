@@ -114,27 +114,28 @@ verified backup. Pre/postflight: `96 → 85` authored Components,
 `6` title-only, `27` body-only, invalid `0`. `12` Slides остаются непустыми,
 positions плотными. Одна immutable publication revision сохранила прежние
 `9056` bytes/content hash и все `6` snapshot Components.
-Functional production source `dea92ca2c9af99fd5738e95fa9ca511aa10ca3da`
-развёрнут до DB apply; production guest HTTP и полный local strict release gate
-green. Authenticated production browser smoke отдельно не заявляется.
+Historical D1 cleanup source
+`dea92ca2c9af99fd5738e95fa9ca511aa10ca3da` был развёрнут до DB apply;
+production guest HTTP и полный local strict release gate были green.
+Authenticated production browser smoke для этого historical slice отдельно не
+заявлялся.
 
-После создания teacher card остаётся renderer-only и не имеет внешнего border.
-Едва заметная чёрная тень `0 3px 6px #0000000d` на hover/focus сохраняет offset,
-но увеличивает blur до `12px` и alpha до `#0000001a`, не смещая content.
-Управление не имеет border/box-shadow и показывается в hover/focus overlay на
-общей белой подложке `rgba(255, 255, 255, 0.5)`, а Pencil открывает отдельный
-modal editor. Cancel/close не
-изменяют persisted payload/placement; существующий `PATCH` вызывается только по
-явному сохранению. Это presentation/editor orchestration, а не новый registry,
-API или storage contract.
+После создания teacher card остаётся renderer-only white surface с радиусом
+`12 px`, общим product border, clipped background и одной статической raised
+shadow. Hover/focus не меняет её геометрию или тень. Управление не имеет
+border/box-shadow и показывается в hover/focus overlay на общей белой подложке
+`rgba(255, 255, 255, 0.5)`, а Pencil открывает отдельный modal editor.
+Cancel/close не изменяют persisted payload/placement; существующий `PATCH`
+вызывается только по явному сохранению. Это presentation/editor orchestration,
+а не новый registry, API или storage contract.
 
-### Current source / Next production visual acceptance
+### Current production visual acceptance
 
-Ещё не развёрнутый current source заменяет прежнюю динамическую тень authored
-Component card на общий статический
+Current production заменил прежнюю динамическую тень authored Component card на
+общий статический
 `--product-raised-surface-shadow: var(--product-raised-control-shadow)`. Белый
 12 px element surface получает
-`--product-surface-border: 1px solid oklch(0 0 0 / .1)` и
+`--product-surface-border: 1px solid oklch(0 0 0 / 0.1)` и
 `background-clip: padding-box`: полупрозрачная рамка смешивается с фоном под
 card, а не с белой заливкой. Surface не получает hover/pressed transform или
 shadow-transition и сохраняет одну base-тень
@@ -158,7 +159,8 @@ preview/student content renderers, component-picker choice cards и
 filter-trigger adoption относится к shared application controls, но не
 превращает Component overlay actions или picker cards в raised buttons. Это
 UI-only acceptance без registry, payload, API, schema, ordering, Slide или
-learner-projection изменений; production rollout пока не заявлен.
+learner-projection изменений. Visual rollout входит в exact current application
+functional source `1d4e5deff83cbdc1b479b16e4220cf799327009f`.
 
 Current production делает отдельное исключение для действия Student Screen.
 Вместо `Eye/EyeOff` оно использует тот же Lucide `MonitorPlay`, что и вкладка

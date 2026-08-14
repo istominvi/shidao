@@ -4,8 +4,8 @@
 catalog + Course Component D1 + A1 atomic Course archive + E1 educator Course
 и Account attestation + E2 educator governance/self-learning + E2A authenticated
 content-guard correction + U1 unified Text authored data + AV1 Account avatars.
-AV1 DB-first contract применён; зависимый web/API source входит в текущий
-release.
+AV1 DB-first contract применён; зависимый web/API contract сохраняется в
+текущем functional source `1d4e5deff83cbdc1b479b16e4220cf799327009f`.
 
 **Production schema head:**
 `20260814050347_account_profile_avatars.sql`. Она применена к production с
@@ -15,7 +15,7 @@ rehearsal и verified backup. Migration добавляет обязательн�
 revision-aware setter RPC. Exact SHA-256 —
 `001f6d9161ce53797456e0e886486fce1a9aa9ab13fe1cd769f764b9f2025201`.
 
-**Production authored-data / repository migration head:**
+**Последняя применённая authored-data-only migration:**
 exact tracked `20260813063716_unify_heading_rich_text_components.sql` применён
 production; `psql` зафиксировал `COMMIT`, а maximum `updated_at`
 преобразованных строк — `2026-08-13T07:05:50.169297Z`. Self-hosted contour не
@@ -382,16 +382,16 @@ Dependent web и bootstrap production evidence:
 ### Production E2 educator governance / self-learning database contract
 
 Forward migration
-`20260812150745_educator_course_governance_progress.sql` является current
-production database head. Она добавляет trusted-author capability
+`20260812150745_educator_course_governance_progress.sql` является базой
+текущего educator contract под последующими E2A и AV1 migrations. Она
+добавляет trusted-author capability
 `account.can_author_educator_courses`, exact review/approval educator revision,
 `approved_revision_id`, revision-scoped self-enrollment/Lesson completion и
 server-side `100%` attestation gate. Educator revisions имеют official-learning
 license и не участвуют в catalog copy/duplicate, roster, group assignment или
 LessonRun. Зависимый E2 web/API впервые развёрнут из exact functional commit
-`22b486a7163453019d9720cb4fe0f36ed7c0228d`; current deployed source
-сохраняет этот contract, а exact current functional source —
-`dea92ca2c9af99fd5738e95fa9ca511aa10ca3da`.
+`22b486a7163453019d9720cb4fe0f36ed7c0228d`; текущий application release
+`1d4e5deff83cbdc1b479b16e4220cf799327009f` сохраняет этот contract.
 
 Production DB execution evidence, 12 августа 2026 года:
 
@@ -443,10 +443,13 @@ postflight:
 - повторный HTTP smoke подтвердил V2 `/login` и `/robots.txt` `200`, guest
   `/courses` `307` в `https://v2.shidao.ru/login` и landing root `200`.
 
-Functional application source `dea92ca2c9af99fd5738e95fa9ca511aa10ca3da`
-подтверждён matching running image и guest HTTP postflight. Unified Text
-data cleanup не добавлял database objects, Storage buckets или physical-schema
-shape; current schema head и generated snapshot выше не изменились.
+Исторический U1-compatible application source
+`dea92ca2c9af99fd5738e95fa9ca511aa10ca3da` подтверждён matching running image
+и guest HTTP postflight. Unified Text data cleanup не добавлял database
+objects, Storage buckets или physical-schema shape. Текущий application
+source `1d4e5deff83cbdc1b479b16e4220cf799327009f` сохраняет этот contract, а
+актуальные AV1 schema head и generated snapshot зафиксированы в начале
+документа.
 
 ## Current repository tables
 
@@ -958,3 +961,8 @@ production E2 current snapshot `2026-08-12T07:46:11Z` фиксирует trusted
 capability, exact review/approval, revision-scoped progress, official license
 и no-copy/no-roster/no-Run guards; SHA-256
 `a34a5a5919ea406050a5c0cb7f39310d1a9e807725e608166f63becb8f2260a4`.
+После E2A тот же workflow зафиксировал исправленный content-guard contract, а
+после production AV1 — обязательное Account avatar state, private
+`profile-avatars` bucket и server-only setter. Текущий snapshot снят
+`2026-08-14T05:53:08Z`, SHA-256
+`3ca847164526568def44d2deed9a6b1d6cd1742e168462376b4f41fe6383ef97`.

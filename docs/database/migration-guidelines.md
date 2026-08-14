@@ -2,22 +2,26 @@
 
 **Статус:** обязательная политика для всех новых DB changes
 **Текущий production schema head:**
-`20260813113041_fix_educator_course_content_guard_acl.sql`; generated snapshot
-снят `2026-08-13T11:43:48Z`, SHA-256
-`0a6eab37e1bbecc0084e281496346e5436fcbd1ac2b42e102e89951e71ff258e`.
-**Текущий authored-data / repository migration head:**
+`20260814050347_account_profile_avatars.sql`; generated snapshot снят
+`2026-08-14T05:53:08Z`, SHA-256
+`3ca847164526568def44d2deed9a6b1d6cd1742e168462376b4f41fe6383ef97`.
+**Последняя применённая authored-data-only migration:**
 exact tracked `20260813063716_unify_heading_rich_text_components.sql` применён
 production; `psql` зафиксировал `COMMIT`, а maximum `updated_at`
-преобразованных строк — `2026-08-13T07:05:50.169297Z`. Physical schema не
-изменилась, поэтому current generated snapshot остаётся E2 snapshot
-`2026-08-12T07:46:11Z`, SHA-256
-`a34a5a5919ea406050a5c0cb7f39310d1a9e807725e608166f63becb8f2260a4`.
-**Совместимый functional rollout source:**
-`dea92ca2c9af99fd5738e95fa9ca511aa10ca3da`; running container
-`g9x4d9zn60jv35r7zf0xl6xj-065823494924` имеет matching image/
-`SOURCE_COMMIT`, image ID
-`sha256:f0f07ffd8b18ee5faadff5a1f01d0ea5e663807ec6f83754b16d43b64e18379d`,
-restart count `0`. Он был развёрнут и проверен до U1 backup/apply.
+преобразованных строк — `2026-08-13T07:05:50.169297Z`. Она не меняла
+physical schema; последующий E2A и AV1 schema rollout отражены в current
+snapshot выше.
+**Текущий application rollout source:**
+`1d4e5deff83cbdc1b479b16e4220cf799327009f`; он сохраняет U1/E2A contracts и
+является текущим зависимым web/API release для обязательного Account avatar.
+
+Исторический U1-compatible source
+`dea92ca2c9af99fd5738e95fa9ca511aa10ca3da` был развёрнут и проверен до U1
+backup/apply. Его running container
+`g9x4d9zn60jv35r7zf0xl6xj-065823494924` имел matching image/`SOURCE_COMMIT`,
+image ID
+`sha256:f0f07ffd8b18ee5faadff5a1f01d0ea5e663807ec6f83754b16d43b64e18379d`
+и restart count `0`.
 
 U1 execution evidence: backup
 `/root/shidao-db-backups/shidao-before-unify-heading-rich-text-20260813T070512Z.dump`
@@ -187,7 +191,10 @@ generated SQL snapshot не переписывается только ради �
 - Storage object policies;
 - после A1 — atomic Course archive RPC, четыре guard triggers, immutable Lesson
   parent, private touch-helper flags/ACL и exact column-only Course/Lesson
-  update grants.
+  update grants;
+- после AV1 — mandatory Account avatar columns/check, revision-aware
+  server-only setter ACL, private `profile-avatars` bucket и отсутствие
+  browser Storage policies для него.
 
 Скрипт сначала проверяет read-only ShiDao schema signature, пишет во временный
 файл и не должен менять migration history. Полученный snapshot не применяется

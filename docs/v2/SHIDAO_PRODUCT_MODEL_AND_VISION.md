@@ -3,7 +3,7 @@
 **Формат:** стратегическое видение и основа для презентации
 **Аудитория:** команда, партнёры, преподаватели, родители, потенциальные инвесторы
 **Версия:** 2.0
-**Актуально на:** 13 августа 2026 года
+**Актуально на:** 14 августа 2026 года
 **Статус:** целевая продуктовая модель; не является перечнем уже запущенных функций
 
 ## Как читать этот документ
@@ -25,8 +25,13 @@ Current production contract завершает roleless Account/profile identity
 recipient-bound claim/child activation, physical merge, archive/restore,
 self/observer history/progress и subject-controlled AI consent. M1–M6, четыре
 verified backup, DB/API postflight, реальный GoTrue Admin create/delete probe,
-exact functional Coolify SHA `01aa88a` и authenticated browser acceptance
-завершены. Current production также включает governed official educator
+identity completion release `01aa88a` и его authenticated production browser
+acceptance завершены. Current functional source
+`1d4e5deff83cbdc1b479b16e4220cf799327009f` прошёл `640/640` unit/API tests,
+`24/24` strict production-mode browser scenarios, typecheck, test compile,
+repository format check и production build; exact Profile/avatar
+matching-container rollout зафиксирован отдельно для `4462da2`. Current
+production также включает governed official educator
 publications: trusted-author capability, admin review exact revision,
 learner-safe read-only workspace, Account-scoped progress и аттестацию после
 `100%` уроков. Enrollment/consumption детских Course через LearnerProfile,
@@ -419,6 +424,11 @@ teacher-local имя/state, а `LearningRecord` отдельно знает reco
 consent. Единая identity по-прежнему не является автоматическим согласием на
 общий доступ.
 
+Account также владеет обязательным avatar state: пользователь выбирает один из
+20 фирменных presets либо загружает private server-normalized custom image.
+Avatar не хранится в LearnerProfile/Auth metadata/preferences, а активный
+Account не может остаться без него.
+
 ---
 
 # 8. Главная сущность ShiDao — не курс, а образовательный путь человека
@@ -522,7 +532,7 @@ Course templates остаются later.
 попадает на экран учащегося.
 
 В «Плане урока» находится один ordered Component list без Step/root Step.
-Runtime registry поддерживает 20 types, но current source ручного picker
+Runtime registry поддерживает 20 types, но current production ручного picker
 показывает 19: отдельный `heading` сохранён только для совместимости старых
 Lessons/AI/MCP, а `rich_text` объединяет optional заголовок и required текст.
 Остальные ручные варианты: `callout`, `quote`, `image`, `video`, `audio`,
@@ -993,12 +1003,20 @@ ShiDao строится не как оболочка над одной модн�
     `course.create_draft`, `course.get`, `course.add_lesson`,
     `lesson.add_component`, `lesson.set_component_student_screen`,
     `lesson.reorder_component`.
+13. Единый Account profile на canonical `/profile` с вкладками «Профиль /
+    История / Аттестация / Наблюдатели / Настройки», compact avatar settings и
+    modal preset/custom flows; старые profile/settings URLs работают только как
+    protected compatibility redirects.
 
 ## Current production identity contract
 
 1. Universal roleless Account с exactly-one canonical profile, Account
    login/PIN/session boundary, primary navigation «Расписание / Ученики /
-   Курсы / Магазин» и Account menu «Учебный профиль / Настройки / Выход».
+   Курсы / Магазин» и Account menu «Профиль / История / Аттестация /
+   Наблюдатели / Настройки / Выход». Первые пять пунктов открывают вкладки
+   canonical `/profile`; `/learning-profile` и `/settings/*` являются
+   protected compatibility redirects. Каждый Account имеет обязательный avatar:
+   один из 20 presets либо custom image.
 2. Share-code/blind-email discovery, recipient-bound offline claim/child
    activation, physical duplicate merge и stale-safe lineage.
 3. Archive/restore, safe empty-offline delete, subject unlink/erasure reset,
@@ -1012,8 +1030,12 @@ ShiDao строится не как оболочка над одной модн�
 roleless deployments, dependency audit, production DB/API postflight и реальный
 GoTrue Admin lifecycle probe. M5 закрывает deferred exactly-one Auth boundary,
 а M6 безопасно поддерживает двухфазную запись provisional metadata без позднего
-downgrade. Exact functional web SHA `01aa88a` и authenticated browser postflight
-завершены и зафиксированы в project-state.
+downgrade. Historical identity release `01aa88a` имеет authenticated production
+browser postflight. Current functional source
+`1d4e5deff83cbdc1b479b16e4220cf799327009f` прошёл `640/640` unit/API tests,
+`24/24` strict production-mode browser scenarios, typecheck, test compile,
+repository format check и production build; evidence зафиксирован в
+project-state.
 
 ## Current production Course и Store contracts
 

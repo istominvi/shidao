@@ -79,9 +79,11 @@ npm run mcp:course-builder
 `test:browser` удобен локально и может пропустить smoke без доступного browser;
 `test:browser:ci` требует полноценного production-mode browser smoke и падает,
 если окружение к нему не готово. Текущий functional release source —
-`dea92ca2c9af99fd5738e95fa9ca511aa10ca3da`; этот exact deployed release прошёл
-`581/581` unit/API, `23/23` strict production-mode browser scenarios,
-`72/72` schema/migration subset, typecheck, lint, format и production build.
+`1d4e5deff83cbdc1b479b16e4220cf799327009f`; текущий source прошёл `640/640`
+unit/API и `24/24` strict production-mode browser scenarios, а также typecheck,
+test compile, repository-wide format check и production build внутри browser
+gate. Exact matching-container Profile/avatar rollout зафиксирован для его
+родительского release `4462da2248dd97bf6ab5c0a35f9a781844473874`.
 Functional E2 release
 `22b486a7163453019d9720cb4fe0f36ed7c0228d` сохранён как исторический baseline,
 а exact gate и running-container evidence находятся в
@@ -136,9 +138,14 @@ teacher-local `teacher_learner`, Groups и LearningRecord. В Course незав�
 Account claim, invitations, observers, duplicate-profile merge, learner-safe
 history/progress и consented cross-provider AI context реализованы в roleless
 Account/learner identity slice. Current production primary navigation содержит
-«Расписание / Ученики / Курсы / Магазин». Учебный профиль находится в Account
-menu, а observer projection —
-во вкладке «Наблюдение» внутри «Ученики».
+«Расписание / Ученики / Курсы / Магазин». Единый раздел `/profile` объединяет
+вкладки «Профиль / История / Аттестация / Наблюдатели / Настройки», а Account
+menu повторяет их и завершает список действием «Выход». Observer projection
+чужих профилей остаётся во вкладке «Наблюдение» внутри «Ученики».
+Каждый Account имеет обязательный avatar: один из 20 фирменных presets либо
+private custom WebP. В настройках видны только текущий avatar и команды
+«Загрузить фото / Выбрать аватар»; выбор и preview происходят в модальных
+окнах и ничего не сохраняют без явного подтверждения.
 
 Двадцать runtime-типов компонентов определены в code-first registry; отдельный
 authored-create set содержит 19 типов и не создаёт legacy `heading`. Единый
@@ -163,6 +170,7 @@ production.
 - Auth и routing: `docs/authorization-routing.md`
 - Модель урока: `docs/architecture/lesson-workflow-model.md`
 - Identity и доступ: `docs/architecture/learner-identity-access-model.md`
+- Аватары Account: `docs/product/account-avatars.md`
 - Курсы для педагогов и аттестация:
   `docs/product/educator-courses-and-attestation.md`
 - Каталог типов компонентов: `docs/product/course-component-catalog.md`
