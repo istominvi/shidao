@@ -46,7 +46,7 @@ export function AvatarImage({
           height={size}
           sizes={`${size}px`}
           priority={priority}
-          unoptimized={avatar.kind === "custom"}
+          unoptimized
           className="h-full w-full object-cover"
           onError={() => setFailedSrc(src)}
         />
