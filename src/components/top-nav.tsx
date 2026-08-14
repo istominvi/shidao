@@ -99,6 +99,7 @@ export function TopNav({ demoStyle = false }: { demoStyle?: boolean }) {
         navAriaLabel={primaryNavConfig?.ariaLabel}
         navItems={navItems}
         actions={navAction}
+        movingActivePill={primaryNavId === "account"}
       />
     </div>
   );

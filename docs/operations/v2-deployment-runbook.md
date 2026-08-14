@@ -902,9 +902,12 @@ ShiDao V2 application:
 - `/courses` читает реальные данные;
 - `/courses`, Course и Lesson показывают одинаковые computed H1/optional metric
   через один `AppPageHeader`: H1 не крупнее 48 px на desktop и 32 px
-  на mobile, `min-height: 200px` с ростом по контенту, actions вертикально
-  центрированы, занимают только ширину содержимого и оставляют всю свободную
-  ширину heading и H1; desktop gap между heading и actions равен 24 px. На 1120
+  на mobile; искусственного `min-height` нет, высоту задают фактические
+  title/metric/meta/actions и block padding. Actions вертикально центрированы,
+  занимают только ширину содержимого и оставляют всю свободную ширину heading
+  и H1; desktop gap между heading и actions равен 24 px. Асинхронная metric
+  резервирует одну строку до ответа, но H1, metric, meta и actions впервые
+  становятся видимыми вместе без изменения геометрии header. На 1120
   px Lesson с одной primary и одним square overflow складывается без document overflow,
   непрерывные title/metric переносятся, а back-label остаётся в одной
   строке и обрезается ellipsis;
@@ -934,7 +937,9 @@ ShiDao V2 application:
   header уходит влево с fade, new приходит справа; обратное движение зеркально.
   Открытие Course/Lesson — forward, backlink — back. Проверить именованный
   `app-page-header` View Transition, отсутствие root cross-fade/layout shift и
-  мгновенную навигацию при `prefers-reduced-motion: reduce`;
+  промежуточных Course loading-cards. Чёрный `app-primary-nav-active-pill`
+  должен плавно переезжать к active primary link; при
+  `prefers-reduced-motion: reduce` оба перехода происходят мгновенно;
 - на сохранённом Course открыть **Уроки** и проверить, что общий `WorkspaceTabs`
   не получил route-specific fork. Сразу под ним прозрачная toolbar поиска и
   «Добавить урок» занимает всю content-row: computed horizontal padding `0`,

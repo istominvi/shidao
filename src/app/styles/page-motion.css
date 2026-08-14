@@ -2,6 +2,31 @@
   view-transition-name: app-page-header;
 }
 
+.app-page-header[data-page-header-async-metric] > .app-page-header-content,
+.app-page-header[data-page-header-async-metric] > .app-page-actions {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+  transition:
+    opacity 280ms ease,
+    transform 360ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.app-page-header[data-page-header-pending] > .app-page-header-content,
+.app-page-header[data-page-header-pending] > .app-page-actions {
+  visibility: hidden;
+  opacity: 0;
+  transform: translate3d(0, 6px, 0);
+}
+
+:root[data-page-transition-direction]
+  .app-page-header[data-page-header-async-metric]
+  > .app-page-header-content,
+:root[data-page-transition-direction]
+  .app-page-header[data-page-header-async-metric]
+  > .app-page-actions {
+  transition: none;
+}
+
 ::view-transition-old(root),
 ::view-transition-new(root) {
   animation: none;
@@ -124,6 +149,11 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .app-page-header[data-page-header-async-metric] > .app-page-header-content,
+  .app-page-header[data-page-header-async-metric] > .app-page-actions {
+    transition: none;
+  }
+
   .workspace-tabs-indicator {
     transition: none;
   }

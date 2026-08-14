@@ -14,7 +14,6 @@ import {
   FolderOpen,
   Info,
   ListChecks,
-  LoaderCircle,
   LockKeyhole,
   RotateCcw,
   UserRound,
@@ -395,36 +394,31 @@ export function PublishedCourseWorkspace({
   }
 
   if (!course) {
+    if (!error) return null;
+
     return (
       <div className="container app-page-container py-12">
-        {error ? (
-          <SurfaceCard className="border border-rose-200">
-            <p className="text-sm font-medium text-rose-800" role="alert">
-              {error}
-            </p>
-            <div className="mt-4 flex flex-wrap gap-3">
-              <Link
-                href={catalogHref(catalogAudience)}
-                className={productButtonClassName("secondary")}
-              >
-                <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-                Назад к каталогу
-              </Link>
-              <Button
-                variant="secondary"
-                onClick={() => setReloadKey((value) => value + 1)}
-              >
-                <RotateCcw className="h-4 w-4" aria-hidden="true" />
-                Повторить
-              </Button>
-            </div>
-          </SurfaceCard>
-        ) : (
-          <SurfaceCard className="flex items-center gap-3 border border-neutral-200">
-            <LoaderCircle className="h-5 w-5 animate-spin" aria-hidden="true" />
-            <p role="status">Загружаем курс…</p>
-          </SurfaceCard>
-        )}
+        <SurfaceCard className="border border-rose-200">
+          <p className="text-sm font-medium text-rose-800" role="alert">
+            {error}
+          </p>
+          <div className="mt-4 flex flex-wrap gap-3">
+            <Link
+              href={catalogHref(catalogAudience)}
+              className={productButtonClassName("secondary")}
+            >
+              <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+              Назад к каталогу
+            </Link>
+            <Button
+              variant="secondary"
+              onClick={() => setReloadKey((value) => value + 1)}
+            >
+              <RotateCcw className="h-4 w-4" aria-hidden="true" />
+              Повторить
+            </Button>
+          </div>
+        </SurfaceCard>
       </div>
     );
   }

@@ -170,7 +170,8 @@ export function StudentsWorkspace({
   const [loadError, setLoadError] = useState<string | null>(null);
   const [mutationError, setMutationError] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
-  const [observingCount, setObservingCount] = useState(0);
+  const [observingCount, setObservingCount] = useState<number | null>(null);
+  const [observingCountPending, setObservingCountPending] = useState(true);
 
   useSystemAssistantPageContext({
     surface: "students",
@@ -242,10 +243,18 @@ export function StudentsWorkspace({
       })
       .catch(() => {
         // The observing surface reports its own load error when opened.
+      })
+      .finally(() => {
+        if (active) setObservingCountPending(false);
       });
     return () => {
       active = false;
     };
+  }, []);
+
+  const handleObservingCountChange = useCallback((count: number) => {
+    setObservingCount(count);
+    setObservingCountPending(false);
   }, []);
 
   useEffect(() => {
@@ -392,6 +401,15 @@ export function StudentsWorkspace({
       (statusFilter !== "all" ||
         groupFilter !== "all" ||
         accountFilter !== "all"));
+  const headerMetricPending =
+    view === "learners"
+      ? loadError === null &&
+        (activeDirectory === null ||
+          archivedDirectory === null ||
+          connections === null)
+      : view === "groups"
+        ? loadError === null && groups === null
+        : observingCountPending;
 
   async function mutate(
     label: string,
@@ -520,10 +538,11 @@ export function StudentsWorkspace({
             ? `Активных: ${activeDirectory.length} · в архиве: ${archivedDirectory.length} · ожидают: ${pendingConnections.length}`
             : view === "groups" && groups !== null
               ? `Групп: ${groups.length}`
-              : view === "observing"
+              : view === "observing" && observingCount !== null
                 ? `Профилей: ${observingCount}`
                 : undefined
         }
+        metricPending={headerMetricPending}
         actions={
           view === "learners" ? (
             <Button
@@ -578,7 +597,7 @@ export function StudentsWorkspace({
           {
             value: "observing",
             label: "Наблюдение",
-            count: observingCount,
+            ...(observingCount === null ? {} : { count: observingCount }),
             icon: Eye,
           },
         ]}
@@ -824,7 +843,7 @@ export function StudentsWorkspace({
         {view === "observing" ? (
           <ObservingWorkspace
             embedded
-            onProfileCountChange={setObservingCount}
+            onProfileCountChange={handleObservingCountChange}
           />
         ) : null}
       </div>

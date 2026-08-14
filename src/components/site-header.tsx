@@ -2,7 +2,15 @@
 
 import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
-import { type MouseEvent, type ReactNode } from "react";
+import {
+  type MouseEvent,
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import {
   NavPillLink,
   NavigationHeaderShell,
@@ -29,7 +37,10 @@ type SiteHeaderProps = {
   shellClassName?: string;
   smoothAnchorScroll?: boolean;
   anchorOffset?: number;
+  movingActivePill?: boolean;
 };
+
+const EMPTY_ACTIVE_PILL = { left: 0, width: 0, ready: false };
 
 export function SiteHeader({
   variant,
@@ -42,8 +53,77 @@ export function SiteHeader({
   shellClassName,
   smoothAnchorScroll = false,
   anchorOffset = 96,
+  movingActivePill = false,
 }: SiteHeaderProps) {
   const hasNav = navItems.length > 0;
+  const navTrackRef = useRef<HTMLElement>(null);
+  const navItemRefs = useRef(new Map<string, HTMLLIElement>());
+  const activeNavItemId = navItems.find((item) => item.active)?.id ?? null;
+  const [activePillMotionReady, setActivePillMotionReady] = useState(false);
+  const [activePill, setActivePill] = useState(EMPTY_ACTIVE_PILL);
+
+  const updateActivePill = useCallback(() => {
+    const navTrack = navTrackRef.current;
+    const activeItem = activeNavItemId
+      ? navItemRefs.current.get(activeNavItemId)
+      : null;
+    if (!movingActivePill || !navTrack || !activeItem) {
+      setActivePill((current) => (current.ready ? EMPTY_ACTIVE_PILL : current));
+      return;
+    }
+
+    const navTrackRect = navTrack.getBoundingClientRect();
+    const activeItemRect = activeItem.getBoundingClientRect();
+    if (navTrackRect.width <= 0 || activeItemRect.width <= 0) {
+      setActivePill((current) => (current.ready ? EMPTY_ACTIVE_PILL : current));
+      return;
+    }
+
+    const nextActivePill = {
+      left: activeItemRect.left - navTrackRect.left,
+      width: activeItemRect.width,
+      ready: true,
+    };
+    setActivePill((current) => {
+      if (
+        current.left === nextActivePill.left &&
+        current.width === nextActivePill.width &&
+        current.ready
+      ) {
+        return current;
+      }
+      return nextActivePill;
+    });
+  }, [activeNavItemId, movingActivePill]);
+
+  useLayoutEffect(() => {
+    if (!movingActivePill) return;
+    updateActivePill();
+    const navTrack = navTrackRef.current;
+    if (!navTrack) return;
+
+    if (typeof ResizeObserver === "undefined") {
+      window.addEventListener("resize", updateActivePill);
+      return () => window.removeEventListener("resize", updateActivePill);
+    }
+
+    const observer = new ResizeObserver(updateActivePill);
+    observer.observe(navTrack);
+    for (const item of navItemRefs.current.values()) observer.observe(item);
+    return () => observer.disconnect();
+  }, [movingActivePill, navItems, updateActivePill]);
+
+  useEffect(() => {
+    if (!activePill.ready) {
+      setActivePillMotionReady(false);
+      return;
+    }
+
+    const frame = window.requestAnimationFrame(() =>
+      setActivePillMotionReady(true),
+    );
+    return () => window.cancelAnimationFrame(frame);
+  }, [activePill.ready]);
 
   const handleNavClick = (
     event: MouseEvent<HTMLAnchorElement>,
@@ -100,10 +180,35 @@ export function SiteHeader({
               variant === "product" && "site-header-nav-scroll-product",
             )}
           >
-            <nav aria-label={navAriaLabel}>
+            <nav
+              ref={navTrackRef}
+              className={movingActivePill ? "site-header-nav-track" : undefined}
+              aria-label={navAriaLabel}
+              data-active-pill-ready={activePill.ready || undefined}
+            >
+              {movingActivePill ? (
+                <span
+                  className="site-header-nav-active-pill"
+                  aria-hidden="true"
+                  data-ready={activePill.ready || undefined}
+                  data-motion-ready={
+                    (activePill.ready && activePillMotionReady) || undefined
+                  }
+                  style={{
+                    width: `${activePill.width}px`,
+                    transform: `translate3d(${activePill.left}px, 0, 0)`,
+                  }}
+                />
+              ) : null}
               <ul className="site-header-nav-list">
                 {navItems.map((item) => (
-                  <li key={item.id}>
+                  <li
+                    key={item.id}
+                    ref={(node) => {
+                      if (node) navItemRefs.current.set(item.id, node);
+                      else navItemRefs.current.delete(item.id);
+                    }}
+                  >
                     <NavPillLink
                       href={item.href}
                       active={item.active}

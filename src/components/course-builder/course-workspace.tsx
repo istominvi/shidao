@@ -1059,17 +1059,6 @@ function CourseHistoryPanel({ runs }: { runs: LessonRun[] }) {
   );
 }
 
-function WorkspaceSkeleton() {
-  return (
-    <div className="container app-page-container py-12" role="status">
-      <div className="flex items-center gap-3 rounded-3xl border border-neutral-200 bg-white/80 p-6 text-neutral-700 shadow-sm">
-        <LoaderCircle className="h-5 w-5 animate-spin" aria-hidden="true" />
-        Загружаем курс, уроки и компоненты из базы…
-      </div>
-    </div>
-  );
-}
-
 export function CourseWorkspaceClient({
   courseId,
 }: CourseWorkspaceClientProps) {
@@ -1266,7 +1255,7 @@ export function CourseWorkspaceClient({
         </div>
       );
     }
-    return <WorkspaceSkeleton />;
+    return null;
   }
 
   const readyAttachmentCount = course.attachments.filter(

@@ -120,6 +120,7 @@ test("active V2 pages share one page header contract without visual modifiers", 
   assert.match(header, /type: "link"/);
   assert.match(header, /type: "button"/);
   assert.match(header, /metric\?: ReactNode/);
+  assert.match(header, /metricPending\?: boolean/);
   assert.doesNotMatch(header, /description\?: ReactNode/);
   assert.match(header, /direction="back"/);
   assert.match(header, /pageTransition\.runUpdate\("back", back\.onClick\)/);
@@ -130,6 +131,11 @@ test("active V2 pages share one page header contract without visual modifiers", 
   assert.match(header, /className="app-page-back-link"/);
   assert.match(header, /className="app-page-back-link-label"/);
   assert.match(header, /className="app-page-actions"/);
+  assert.match(header, /data-page-header-pending=/);
+  assert.match(header, /data-page-header-async-metric=/);
+  assert.match(header, /data-page-header-metric-placeholder=/);
+  assert.match(header, /metricPending === true && !hasRevealed/);
+  assert.match(header, /if \(!metricPending\) setHasRevealed\(true\)/);
   assert.doesNotMatch(header, /className\?: string/);
   assert.doesNotMatch(header, /eyebrow/i);
   assert.doesNotMatch(styles, /\.app-page-eyebrow/);
@@ -143,6 +149,15 @@ test("active V2 pages share one page header contract without visual modifiers", 
     /data-page-transition-direction="back"[\s\S]*?app-page-header-exit-right/,
   );
   assert.match(motionStyles, /prefers-reduced-motion: reduce/);
+  assert.match(
+    motionStyles,
+    /data-page-header-pending[\s\S]*?visibility: hidden;[\s\S]*?opacity: 0;/,
+  );
+  assert.match(
+    motionStyles,
+    /:root\[data-page-transition-direction\][\s\S]*?data-page-header-async-metric[\s\S]*?transition: none;/,
+    "Native route snapshots must capture resolved header content at full opacity",
+  );
 
   for (const consumer of productHeaderApiConsumers) {
     assert.doesNotMatch(consumer, /eyebrow=/);
@@ -159,6 +174,10 @@ test("active V2 pages share one page header contract without visual modifiers", 
   assert.match(
     styles,
     /\.app-page-description\s*\{[^}]*color: var\(--app-page-header-description-color\);/,
+  );
+  assert.match(
+    styles,
+    /\.app-page-metric\[data-page-header-metric-placeholder\]\s*\{[^}]*block-size: 1lh;[^}]*overflow: hidden;/,
   );
   assert.doesNotMatch(
     styles,
@@ -243,6 +262,9 @@ test("page headers reserve optional supporting copy for entity metrics and colla
   const schedule = source("src/components/teaching-hub/schedule-workspace.tsx");
   const courses = source("src/app/(app)/courses/page.tsx");
   const students = source("src/components/teaching-hub/students-workspace.tsx");
+  const learningProfile = source(
+    "src/components/learner-identity/learning-profile-workspace.tsx",
+  );
 
   assert.match(actions, /primary\?: ReactNode/);
   assert.match(actions, /triggerIcon=\{MoreVertical\}/);
@@ -259,6 +281,9 @@ test("page headers reserve optional supporting copy for entity metrics and colla
       consumer,
       /Здесь все назначенные|Создавайте свои курсы|с которыми вы работаете/,
     );
+  }
+  for (const consumer of [schedule, students, learningProfile]) {
+    assert.match(consumer, /metricPending=\{headerMetricPending\}/);
   }
 });
 

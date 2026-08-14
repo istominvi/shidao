@@ -615,11 +615,13 @@ Visual contract Course routes не меняет эту навигационну�
   `--app-page-header-description-color`, optional backlink и правую
   action-секцию. Supporting line существует только для числового/статусного
   измерения выбранной сущности; объяснение назначения страницы, инструкция,
-  tagline или private teacher comment туда не попадают. Header имеет
-  минимальную высоту 200 px,
-  растёт по контенту, heading получает всю оставшуюся ширину, а actions
-  вертикально центрированы и имеют intrinsic ширину по содержимому с
-  ограничением шириной контейнера. В current production сам H1 больше
+  tagline или private teacher comment туда не попадают. Header не имеет
+  искусственной минимальной высоты: размер задают только фактические
+  title/metric/meta/actions и block padding. Асинхронная metric заранее
+  резервирует ровно одну будущую строку, а весь header раскрывается одним
+  готовым frame после data/error resolution. Heading получает всю оставшуюся
+  ширину, а actions вертикально центрированы и имеют intrinsic ширину по
+  содержимому с ограничением шириной контейнера. В current production сам H1 больше
   не имеет лимита `24ch` и заполняет heading-колонку; desktop column-gap равен
   24 px. Backlink и стрелка используют непрозрачный `#141414`, label остаётся в
   одной строке и обрезается ellipsis, а интервалы над и под backlink совпадают с
@@ -633,13 +635,16 @@ Visual contract Course routes не меняет эту навигационну�
   `meta`, а не к action rail. Shared `ActionMenu` сохраняет portal,
   Arrow/Home/End/Escape, destructive/disabled state и возврат фокуса;
 - protected app layout содержит persistent navigation-motion boundary над
-  меняющимися страницами. Native `document.startViewTransition` именует только
-  `app-page-header`: движение вправо по primary order
+  меняющимися страницами. Native `document.startViewTransition` именует
+  `app-page-header` и отдельный `app-primary-nav-active-pill`: движение вправо по primary order
   `Расписание → Ученики → Курсы → Магазин` и drill-in уводят old header влево
   и вводят new справа; движение влево и backlink зеркальны. Query-only tab
-  changes не анимируют весь header. При отсутствии API остаётся безопасный
-  entrance fallback, а `prefers-reduced-motion` выполняет навигацию и локальный
-  Course/Lesson state update без анимации;
+  changes не анимируют весь header. Boundary ждёт появления непустого готового
+  header через bounded observer, поэтому owner/published Course не показывают
+  промежуточную loading-card, а async metric не появляется после H1 отдельным
+  скачком. При отсутствии API остаётся безопасный entrance fallback, а
+  `prefers-reduced-motion` выполняет навигацию и локальный Course/Lesson state
+  update без анимации;
 - основные кнопки и header controls — высотой 40 px с радиусом 12 px и шрифтом
   `.88rem/400`; primary flat без inset-блика, подъёма или тени, иконки имеют
   единый 16 px rhythm, полную непрозрачность и наследуют контрастный цвет,

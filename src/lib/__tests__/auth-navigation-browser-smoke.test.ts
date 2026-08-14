@@ -594,6 +594,8 @@ let e2eMergeStatus: "pending" | "cancelled" | "completed" = "pending";
 let e2eChildActivationAcknowledged = false;
 let e2eRecoveryResetCompleted = false;
 let e2eRecoveryDelegateRevoked = false;
+let e2eStudentDirectoryRpcDelayMs = 0;
+let e2eStudentDirectoryRpcReleaseAt = 0;
 let e2eCourseAudienceReplacement: {
   directLearnerProfileIds: string[];
   learnerGroupIds: string[];
@@ -1236,6 +1238,18 @@ async function handleMockSupabase(
 
   if (requestUrl.pathname === "/rest/v1/rpc/list_teacher_learner_directory") {
     const body = await readJsonBody(request);
+    if (body.p_status === "active" && e2eStudentDirectoryRpcDelayMs > 0) {
+      if (e2eStudentDirectoryRpcReleaseAt === 0) {
+        e2eStudentDirectoryRpcReleaseAt =
+          Date.now() + e2eStudentDirectoryRpcDelayMs;
+      }
+      const remainingDelay = e2eStudentDirectoryRpcReleaseAt - Date.now();
+      if (remainingDelay > 0) {
+        await new Promise<void>((resolve) =>
+          setTimeout(resolve, remainingDelay),
+        );
+      }
+    }
     if (body.p_status === "archived") {
       json(
         response,
@@ -3849,8 +3863,11 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       "rgb(255, 255, 255)",
     );
     assert.equal(scheduleContract.siteHeaderBackdropFilter, "none");
-    assert.equal(scheduleContract.headerLayout.minHeight, "200px");
-    assert.ok(Math.abs(scheduleContract.headerLayout.height - 200) < 0.5);
+    assert.ok(
+      ["auto", "0px"].includes(scheduleContract.headerLayout.minHeight),
+    );
+    assert.ok(scheduleContract.headerLayout.height > 0);
+    assert.ok(scheduleContract.headerLayout.height < 200);
     assert.equal(scheduleContract.headerLayout.headingMinWidth, "0px");
     assert.ok(
       scheduleContract.headerLayout.headingWidth >
@@ -4937,14 +4954,175 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
     e2eScheduleFixtureVisible = false;
     e2eScheduleFixtureRunCount = 1;
 
+    async function readPrimaryNavActivePill() {
+      await runtime.page
+        .locator(
+          '.site-header-nav-active-pill[data-ready="true"][data-motion-ready="true"]',
+        )
+        .waitFor();
+      await runtime.page.evaluate(async () => {
+        await new Promise<void>((resolve) =>
+          window.requestAnimationFrame(() => resolve()),
+        );
+        const activePill = document.querySelector<HTMLElement>(
+          ".site-header-nav-active-pill",
+        );
+        await Promise.all(
+          (activePill?.getAnimations() ?? []).map((animation) =>
+            animation.finished.catch(() => undefined),
+          ),
+        );
+      });
+      return runtime.page.evaluate(() => {
+        const track = document.querySelector<HTMLElement>(
+          ".site-header-nav-track",
+        );
+        const activePill = track?.querySelector<HTMLElement>(
+          ".site-header-nav-active-pill",
+        );
+        const activeLink = track?.querySelector<HTMLAnchorElement>(
+          '.site-header-nav-pill[aria-current="page"]',
+        );
+        if (!track || !activePill || !activeLink) {
+          throw new Error("Primary navigation active-pill contract is missing");
+        }
+        const activePillRect = activePill.getBoundingClientRect();
+        const activeLinkRect = activeLink.getBoundingClientRect();
+        const style = getComputedStyle(activePill);
+        return {
+          activeHref: activeLink.getAttribute("href"),
+          activeLabel: activeLink.textContent?.trim() ?? "",
+          trackReady: track.dataset.activePillReady,
+          ready: activePill.dataset.ready,
+          motionReady: activePill.dataset.motionReady,
+          opacity: style.opacity,
+          left: activePillRect.left,
+          width: activePillRect.width,
+          leftDelta: Math.abs(activePillRect.left - activeLinkRect.left),
+          topDelta: Math.abs(activePillRect.top - activeLinkRect.top),
+          widthDelta: Math.abs(activePillRect.width - activeLinkRect.width),
+          heightDelta: Math.abs(activePillRect.height - activeLinkRect.height),
+          transitionProperty: style.transitionProperty,
+          transitionDuration: style.transitionDuration,
+          transitionTimingFunction: style.transitionTimingFunction,
+        };
+      });
+    }
+
+    const scheduleNavActivePill = await readPrimaryNavActivePill();
+    assert.deepEqual(
+      {
+        activeHref: scheduleNavActivePill.activeHref,
+        activeLabel: scheduleNavActivePill.activeLabel,
+        trackReady: scheduleNavActivePill.trackReady,
+        ready: scheduleNavActivePill.ready,
+        motionReady: scheduleNavActivePill.motionReady,
+        opacity: scheduleNavActivePill.opacity,
+        transitionProperty: scheduleNavActivePill.transitionProperty,
+        transitionDuration: scheduleNavActivePill.transitionDuration,
+        transitionTimingFunction:
+          scheduleNavActivePill.transitionTimingFunction,
+      },
+      {
+        activeHref: "/schedule",
+        activeLabel: "Расписание",
+        trackReady: "true",
+        ready: "true",
+        motionReady: "true",
+        opacity: "1",
+        transitionProperty: "width, transform, opacity",
+        transitionDuration: "0.36s, 0.36s, 0.12s",
+        transitionTimingFunction:
+          "cubic-bezier(0.22, 1, 0.36, 1), cubic-bezier(0.22, 1, 0.36, 1), ease",
+      },
+    );
+    assert.ok(scheduleNavActivePill.leftDelta < 0.5);
+    assert.ok(scheduleNavActivePill.topDelta < 0.5);
+    assert.ok(scheduleNavActivePill.widthDelta < 0.5);
+    assert.ok(scheduleNavActivePill.heightDelta < 0.5);
+
+    e2eStudentDirectoryRpcDelayMs = 450;
+    e2eStudentDirectoryRpcReleaseAt = 0;
     const studentsLink = runtime.page.getByRole("link", {
       name: "Ученики",
       exact: true,
     });
+    const primaryForwardPageTransition = runtime.page.locator(
+      'html[data-page-transition-direction="forward"]',
+    );
+    await primaryForwardPageTransition.waitFor({ state: "detached" });
     await Promise.all([
       runtime.page.waitForURL(/\/students$/),
+      primaryForwardPageTransition.waitFor(),
       studentsLink.click(),
     ]);
+    const pendingStudentsHeader = runtime.page.locator(
+      ".app-page-header[data-page-header-pending]",
+    );
+    await pendingStudentsHeader.waitFor({ state: "attached" });
+    const pendingStudentsHeaderFrame = await pendingStudentsHeader.evaluate(
+      (element) => {
+        const header = element as HTMLElement;
+        const content = header.querySelector<HTMLElement>(
+          ".app-page-header-content",
+        );
+        const metric = header.querySelector<HTMLElement>(".app-page-metric");
+        const actions = header.querySelector<HTMLElement>(".app-page-actions");
+        const title = header.querySelector<HTMLElement>(".app-page-title");
+        if (!content || !metric || !actions || !title) {
+          throw new Error("Pending Students header contract is missing");
+        }
+        const rect = header.getBoundingClientRect();
+        return {
+          pending: header.hasAttribute("data-page-header-pending"),
+          ariaBusy: header.getAttribute("aria-busy"),
+          title: title.textContent?.trim() ?? "",
+          action: actions.textContent?.trim().replace(/\s+/g, " ") ?? "",
+          metricText: metric.textContent?.trim() ?? "",
+          metricPlaceholder: metric.hasAttribute(
+            "data-page-header-metric-placeholder",
+          ),
+          metricAriaHidden: metric.getAttribute("aria-hidden"),
+          contentOpacity: getComputedStyle(content).opacity,
+          actionsOpacity: getComputedStyle(actions).opacity,
+          contentVisibility: getComputedStyle(content).visibility,
+          actionsVisibility: getComputedStyle(actions).visibility,
+          top: rect.top,
+          height: rect.height,
+        };
+      },
+    );
+    assert.deepEqual(
+      {
+        pending: pendingStudentsHeaderFrame.pending,
+        ariaBusy: pendingStudentsHeaderFrame.ariaBusy,
+        title: pendingStudentsHeaderFrame.title,
+        action: pendingStudentsHeaderFrame.action,
+        metricText: pendingStudentsHeaderFrame.metricText,
+        metricPlaceholder: pendingStudentsHeaderFrame.metricPlaceholder,
+        metricAriaHidden: pendingStudentsHeaderFrame.metricAriaHidden,
+        contentOpacity: pendingStudentsHeaderFrame.contentOpacity,
+        actionsOpacity: pendingStudentsHeaderFrame.actionsOpacity,
+        contentVisibility: pendingStudentsHeaderFrame.contentVisibility,
+        actionsVisibility: pendingStudentsHeaderFrame.actionsVisibility,
+      },
+      {
+        pending: true,
+        ariaBusy: "true",
+        title: "Ученики",
+        action: "Новый ученик",
+        metricText: "",
+        metricPlaceholder: true,
+        metricAriaHidden: "true",
+        contentOpacity: "0",
+        actionsOpacity: "0",
+        contentVisibility: "hidden",
+        actionsVisibility: "hidden",
+      },
+    );
+    assert.ok(pendingStudentsHeaderFrame.height > 0);
+    assert.ok(pendingStudentsHeaderFrame.height < 200);
+
     await runtime.page
       .getByRole("heading", { name: "Ученики", exact: true, level: 1 })
       .waitFor();
@@ -4954,6 +5132,91 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         exact: true,
       })
       .waitFor();
+    await pendingStudentsHeader.waitFor({ state: "detached" });
+    await primaryForwardPageTransition.waitFor({ state: "detached" });
+    e2eStudentDirectoryRpcDelayMs = 0;
+    e2eStudentDirectoryRpcReleaseAt = 0;
+    await runtime.page.evaluate(async () => {
+      await new Promise<void>((resolve) =>
+        window.requestAnimationFrame(() => resolve()),
+      );
+      const header = document.querySelector<HTMLElement>(".app-page-header");
+      await Promise.all(
+        (header?.getAnimations({ subtree: true }) ?? []).map((animation) =>
+          animation.finished.catch(() => undefined),
+        ),
+      );
+    });
+    const resolvedStudentsHeaderFrame = await runtime.page.evaluate(() => {
+      const header = document.querySelector<HTMLElement>(".app-page-header");
+      const content = header?.querySelector<HTMLElement>(
+        ".app-page-header-content",
+      );
+      const title = header?.querySelector<HTMLElement>(".app-page-title");
+      const metric = header?.querySelector<HTMLElement>(".app-page-metric");
+      const actions = header?.querySelector<HTMLElement>(".app-page-actions");
+      if (!header || !content || !title || !metric || !actions) {
+        throw new Error("Resolved Students header contract is missing");
+      }
+      const rect = header.getBoundingClientRect();
+      return {
+        pending: header.hasAttribute("data-page-header-pending"),
+        ariaBusy: header.getAttribute("aria-busy"),
+        title: title.textContent?.trim() ?? "",
+        metric: metric.textContent?.trim() ?? "",
+        action: actions.textContent?.trim().replace(/\s+/g, " ") ?? "",
+        metricPlaceholder: metric.hasAttribute(
+          "data-page-header-metric-placeholder",
+        ),
+        metricAriaHidden: metric.getAttribute("aria-hidden"),
+        contentOpacity: getComputedStyle(content).opacity,
+        actionsOpacity: getComputedStyle(actions).opacity,
+        contentVisibility: getComputedStyle(content).visibility,
+        actionsVisibility: getComputedStyle(actions).visibility,
+        top: rect.top,
+        height: rect.height,
+      };
+    });
+    assert.deepEqual(
+      {
+        pending: resolvedStudentsHeaderFrame.pending,
+        ariaBusy: resolvedStudentsHeaderFrame.ariaBusy,
+        title: resolvedStudentsHeaderFrame.title,
+        action: resolvedStudentsHeaderFrame.action,
+        metricPlaceholder: resolvedStudentsHeaderFrame.metricPlaceholder,
+        metricAriaHidden: resolvedStudentsHeaderFrame.metricAriaHidden,
+        contentOpacity: resolvedStudentsHeaderFrame.contentOpacity,
+        actionsOpacity: resolvedStudentsHeaderFrame.actionsOpacity,
+        contentVisibility: resolvedStudentsHeaderFrame.contentVisibility,
+        actionsVisibility: resolvedStudentsHeaderFrame.actionsVisibility,
+      },
+      {
+        pending: false,
+        ariaBusy: null,
+        title: "Ученики",
+        action: "Новый ученик",
+        metricPlaceholder: false,
+        metricAriaHidden: null,
+        contentOpacity: "1",
+        actionsOpacity: "1",
+        contentVisibility: "visible",
+        actionsVisibility: "visible",
+      },
+    );
+    assert.match(
+      resolvedStudentsHeaderFrame.metric,
+      /^Активных: \d+ · в архиве: \d+ · ожидают: \d+$/,
+    );
+    assert.ok(
+      Math.abs(
+        resolvedStudentsHeaderFrame.top - pendingStudentsHeaderFrame.top,
+      ) < 0.5,
+    );
+    assert.ok(
+      Math.abs(
+        resolvedStudentsHeaderFrame.height - pendingStudentsHeaderFrame.height,
+      ) < 0.5,
+    );
     assert.ok(
       (
         await runtime.page.evaluate(
@@ -4980,6 +5243,41 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         ),
       );
     });
+    const studentsNavActivePill = await readPrimaryNavActivePill();
+    assert.deepEqual(
+      {
+        activeHref: studentsNavActivePill.activeHref,
+        activeLabel: studentsNavActivePill.activeLabel,
+        trackReady: studentsNavActivePill.trackReady,
+        ready: studentsNavActivePill.ready,
+        motionReady: studentsNavActivePill.motionReady,
+        opacity: studentsNavActivePill.opacity,
+        transitionProperty: studentsNavActivePill.transitionProperty,
+        transitionDuration: studentsNavActivePill.transitionDuration,
+        transitionTimingFunction:
+          studentsNavActivePill.transitionTimingFunction,
+      },
+      {
+        activeHref: "/students",
+        activeLabel: "Ученики",
+        trackReady: "true",
+        ready: "true",
+        motionReady: "true",
+        opacity: "1",
+        transitionProperty: "width, transform, opacity",
+        transitionDuration: "0.36s, 0.36s, 0.12s",
+        transitionTimingFunction:
+          "cubic-bezier(0.22, 1, 0.36, 1), cubic-bezier(0.22, 1, 0.36, 1), ease",
+      },
+    );
+    assert.ok(studentsNavActivePill.leftDelta < 0.5);
+    assert.ok(studentsNavActivePill.topDelta < 0.5);
+    assert.ok(studentsNavActivePill.widthDelta < 0.5);
+    assert.ok(studentsNavActivePill.heightDelta < 0.5);
+    assert.ok(studentsNavActivePill.left > scheduleNavActivePill.left);
+    assert.ok(
+      Math.abs(studentsNavActivePill.width - scheduleNavActivePill.width) > 0.5,
+    );
 
     html = await runtime.page.content();
     assert.match(html, /Анна Петрова/);
@@ -5279,12 +5577,9 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       studentsVisual.headerSignature,
       scheduleContract.headerSignature,
     );
-    assert.equal(studentsVisual.headerLayout.minHeight, "200px");
-    assert.ok(Math.abs(studentsVisual.headerLayout.height - 200) < 0.5);
-    assert.equal(
-      studentsVisual.headerLayout.height,
-      scheduleContract.headerLayout.height,
-    );
+    assert.ok(["auto", "0px"].includes(studentsVisual.headerLayout.minHeight));
+    assert.ok(studentsVisual.headerLayout.height > 0);
+    assert.ok(studentsVisual.headerLayout.height < 200);
     assert.ok(studentsVisual.headerLayout.actionCenterDelta < 0.5);
     assert.deepEqual(studentsVisual.tabSignature, {
       height: "40px",
@@ -6080,6 +6375,15 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       reducedIndicatorDuration <= 0.00001,
       `Reduced-motion indicator must be effectively instant, got ${reducedIndicatorDuration}s`,
     );
+    const reducedNavPillDuration = await runtime.page
+      .locator(".site-header-nav-active-pill")
+      .evaluate((indicator) =>
+        Number.parseFloat(getComputedStyle(indicator).transitionDuration),
+      );
+    assert.ok(
+      reducedNavPillDuration <= 0.00001,
+      `Reduced-motion nav pill must be effectively instant, got ${reducedNavPillDuration}s`,
+    );
     await runtime.page.emulateMedia({ reducedMotion: "no-preference" });
     await assertCanonicalFirstBodyRowTypography(groupTable, "Группы");
     const groupViewSwitch = runtime.page.getByRole("group", {
@@ -6192,6 +6496,8 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
     e2eCompletionPhase = null;
     e2eScheduleFixtureVisible = false;
     e2eScheduleFixtureRunCount = 1;
+    e2eStudentDirectoryRpcDelayMs = 0;
+    e2eStudentDirectoryRpcReleaseAt = 0;
     await runtime.close();
   }
 });
@@ -8237,8 +8543,11 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
     assert.equal(coursesVisual.titleFontSize, "48px");
     assert.equal(coursesVisual.titleFontWeight, "400");
     assert.equal(coursesVisual.hasDescription, false);
-    assert.equal(coursesVisual.pageHeaderLayout.minHeight, "200px");
-    assert.ok(Math.abs(coursesVisual.pageHeaderLayout.height - 200) < 0.5);
+    assert.ok(
+      ["auto", "0px"].includes(coursesVisual.pageHeaderLayout.minHeight),
+    );
+    assert.ok(coursesVisual.pageHeaderLayout.height > 0);
+    assert.ok(coursesVisual.pageHeaderLayout.height < 200);
     assert.ok(coursesVisual.pageHeaderLayout.actionCenterDelta < 0.5);
     assert.equal(coursesVisual.buttonRadius, "12px");
     assert.equal(coursesVisual.buttonFontWeight, "400");
@@ -8914,6 +9223,41 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       .click();
     await courseLink.waitFor();
 
+    await runtime.page.evaluate(() => {
+      const deprecatedLoaderText =
+        "Загружаем курс, уроки и компоненты из базы…";
+      const testWindow = window as typeof window & {
+        __e2eDeprecatedCourseLoaderSeen?: boolean;
+        __e2eDeprecatedCourseLoaderObserver?: MutationObserver;
+      };
+      testWindow.__e2eDeprecatedCourseLoaderObserver?.disconnect();
+      testWindow.__e2eDeprecatedCourseLoaderSeen =
+        document.body.textContent?.includes(deprecatedLoaderText) ?? false;
+      const observer = new MutationObserver((records) => {
+        const mutationIncludesDeprecatedLoader = records.some(
+          (record) =>
+            record.oldValue?.includes(deprecatedLoaderText) ||
+            record.target.textContent?.includes(deprecatedLoaderText) ||
+            Array.from(record.addedNodes).some((node) =>
+              node.textContent?.includes(deprecatedLoaderText),
+            ),
+        );
+        if (
+          mutationIncludesDeprecatedLoader ||
+          document.body.textContent?.includes(deprecatedLoaderText)
+        ) {
+          testWindow.__e2eDeprecatedCourseLoaderSeen = true;
+        }
+      });
+      observer.observe(document.body, {
+        childList: true,
+        subtree: true,
+        characterData: true,
+        characterDataOldValue: true,
+      });
+      testWindow.__e2eDeprecatedCourseLoaderObserver = observer;
+    });
+
     const forwardPageTransition = runtime.page.locator(
       'html[data-page-transition-direction="forward"]',
     );
@@ -8931,6 +9275,85 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
     });
     await courseHeading.waitFor();
     await forwardPageTransition.waitFor({ state: "detached" });
+    const courseLoaderTransitionContract = await runtime.page.evaluate(() => {
+      const deprecatedLoaderText =
+        "Загружаем курс, уроки и компоненты из базы…";
+      const testWindow = window as typeof window & {
+        __e2eDeprecatedCourseLoaderSeen?: boolean;
+        __e2eDeprecatedCourseLoaderObserver?: MutationObserver;
+      };
+      const pendingRecords =
+        testWindow.__e2eDeprecatedCourseLoaderObserver?.takeRecords() ?? [];
+      if (
+        pendingRecords.some(
+          (record) =>
+            record.oldValue?.includes(deprecatedLoaderText) ||
+            record.target.textContent?.includes(deprecatedLoaderText) ||
+            Array.from(record.addedNodes).some((node) =>
+              node.textContent?.includes(deprecatedLoaderText),
+            ),
+        )
+      ) {
+        testWindow.__e2eDeprecatedCourseLoaderSeen = true;
+      }
+      testWindow.__e2eDeprecatedCourseLoaderObserver?.disconnect();
+      delete testWindow.__e2eDeprecatedCourseLoaderObserver;
+
+      const header = document.querySelector<HTMLElement>(".app-page-header");
+      const title = header?.querySelector<HTMLElement>(".app-page-title");
+      const metric = header?.querySelector<HTMLElement>(".app-page-metric");
+      const actions = header?.querySelector<HTMLElement>(".app-page-actions");
+      const action = actions?.querySelector<HTMLButtonElement>("button");
+      if (!header || !title || !metric || !actions || !action) {
+        throw new Error("Resolved Course header contract is missing");
+      }
+      return {
+        deprecatedLoaderSeen:
+          testWindow.__e2eDeprecatedCourseLoaderSeen === true,
+        deprecatedLoaderPresent:
+          document.body.textContent?.includes(deprecatedLoaderText) ?? false,
+        pending: header.hasAttribute("data-page-header-pending"),
+        title: title.textContent?.trim() ?? "",
+        metric: metric.textContent?.trim() ?? "",
+        metricPlaceholder: metric.hasAttribute(
+          "data-page-header-metric-placeholder",
+        ),
+        actionLabel: action.getAttribute("aria-label"),
+        titleVisible: getComputedStyle(title).visibility,
+        metricVisible: getComputedStyle(metric).visibility,
+        actionsVisible: getComputedStyle(actions).visibility,
+      };
+    });
+    assert.deepEqual(
+      {
+        deprecatedLoaderSeen:
+          courseLoaderTransitionContract.deprecatedLoaderSeen,
+        deprecatedLoaderPresent:
+          courseLoaderTransitionContract.deprecatedLoaderPresent,
+        pending: courseLoaderTransitionContract.pending,
+        title: courseLoaderTransitionContract.title,
+        metricPlaceholder: courseLoaderTransitionContract.metricPlaceholder,
+        actionLabel: courseLoaderTransitionContract.actionLabel,
+        titleVisible: courseLoaderTransitionContract.titleVisible,
+        metricVisible: courseLoaderTransitionContract.metricVisible,
+        actionsVisible: courseLoaderTransitionContract.actionsVisible,
+      },
+      {
+        deprecatedLoaderSeen: false,
+        deprecatedLoaderPresent: false,
+        pending: false,
+        title: E2E_COURSE_TITLE,
+        metricPlaceholder: false,
+        actionLabel: `Действия с курсом «${E2E_COURSE_TITLE}»`,
+        titleVisible: "visible",
+        metricVisible: "visible",
+        actionsVisible: "visible",
+      },
+    );
+    assert.match(
+      courseLoaderTransitionContract.metric,
+      /^Уроков: \d+ из \d+ · учеников: \d+ · вложений: \d+$/,
+    );
     await runtime.page
       .locator('.workspace-tabs-indicator[data-motion-ready="true"]')
       .waitFor();
@@ -9147,12 +9570,9 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
     assert.equal(courseVisual.headerBackgroundImage, "none");
     assert.equal(courseVisual.headerBorderWidth, "0px");
     assert.equal(courseVisual.headerShadow, "none");
-    assert.equal(courseVisual.headerLayout.minHeight, "200px");
-    assert.ok(Math.abs(courseVisual.headerLayout.height - 200) < 0.5);
-    assert.equal(
-      courseVisual.headerLayout.height,
-      coursesVisual.pageHeaderLayout.height,
-    );
+    assert.ok(["auto", "0px"].includes(courseVisual.headerLayout.minHeight));
+    assert.ok(courseVisual.headerLayout.height > 0);
+    assert.ok(courseVisual.headerLayout.height < 200);
     assert.ok(courseVisual.headerLayout.actionCenterDelta < 0.5);
     assert.equal(courseVisual.headerLayout.headingMinWidth, "0px");
     assert.ok(
@@ -9699,12 +10119,9 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
     });
 
     assert.equal(lessonVisual.shellBackgroundImage, "none");
-    assert.equal(lessonVisual.headerLayout.minHeight, "200px");
-    assert.ok(Math.abs(lessonVisual.headerLayout.height - 200) < 0.5);
-    assert.equal(
-      lessonVisual.headerLayout.height,
-      coursesVisual.pageHeaderLayout.height,
-    );
+    assert.ok(["auto", "0px"].includes(lessonVisual.headerLayout.minHeight));
+    assert.ok(lessonVisual.headerLayout.height > 0);
+    assert.ok(lessonVisual.headerLayout.height < 200);
     assert.ok(lessonVisual.headerLayout.actionCenterDelta < 0.5);
     assert.deepEqual(
       {

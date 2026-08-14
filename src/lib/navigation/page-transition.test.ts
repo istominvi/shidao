@@ -80,6 +80,15 @@ test("app layout keeps a persistent, reduced-motion-aware transition boundary", 
   assert.match(provider, /transitionTokenRef/);
   assert.match(provider, /pendingFallbackRouteRef/);
   assert.match(provider, /activeTransitionRef\.current !== transition/);
+  assert.match(provider, /READY_PAGE_HEADER_SELECTOR/);
+  assert.match(
+    provider,
+    /\.app-page-header:not\(\[data-page-header-pending\]\)/,
+  );
+  assert.match(provider, /new MutationObserver/);
+  assert.match(provider, /attributeFilter: \["data-page-header-pending"\]/);
+  assert.match(provider, /routeHeaderObserver\?\.disconnect\(\)/);
+  assert.match(provider, /pending\.startHeaderWait\(\)/);
   assert.match(
     provider,
     /startViewTransition\(\(\) => \{\s*if \(transitionTokenRef\.current !== token\) return;/,

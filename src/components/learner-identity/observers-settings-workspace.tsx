@@ -24,10 +24,12 @@ import {
 
 type ObserversSettingsWorkspaceProps = {
   onOverviewChange?: (overview: ObserverOverview) => void;
+  onOverviewPendingChange?: (pending: boolean) => void;
 };
 
 export function ObserversSettingsWorkspace({
   onOverviewChange,
+  onOverviewPendingChange,
 }: ObserversSettingsWorkspaceProps = {}) {
   const [overview, setOverview] = useState<ObserverOverview | null>(null);
   const [email, setEmail] = useState("");
@@ -50,6 +52,7 @@ export function ObserversSettingsWorkspace({
   );
 
   const load = useCallback(async () => {
+    onOverviewPendingChange?.(true);
     setError(null);
     try {
       commitOverview(await loadObserverOverview());
@@ -59,8 +62,10 @@ export function ObserversSettingsWorkspace({
           ? caught.message
           : "Не удалось загрузить наблюдателей.",
       );
+    } finally {
+      onOverviewPendingChange?.(false);
     }
-  }, [commitOverview]);
+  }, [commitOverview, onOverviewPendingChange]);
   useEffect(() => {
     void load();
   }, [load]);

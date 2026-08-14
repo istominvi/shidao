@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode, Ref } from "react";
+import { useEffect, useState, type ReactNode, type Ref } from "react";
 import { PageTransitionLink } from "@/components/navigation/page-transition-link";
 import { usePageTransition } from "@/components/navigation/page-transition-provider";
 import { classNames } from "@/lib/ui/classnames";
@@ -22,6 +22,7 @@ type AppPageHeaderBack =
 type AppPageHeaderProps = {
   title: ReactNode;
   metric?: ReactNode;
+  metricPending?: boolean;
   back?: AppPageHeaderBack;
   meta?: ReactNode;
   actions?: ReactNode;
@@ -31,18 +32,28 @@ type AppPageHeaderProps = {
 export function AppPageHeader({
   title,
   metric,
+  metricPending,
   back,
   meta,
   actions,
   headingRef,
 }: AppPageHeaderProps) {
   const pageTransition = usePageTransition();
+  const [hasRevealed, setHasRevealed] = useState(metricPending !== true);
+  const usesAsyncMetric = metricPending !== undefined;
+  const firstRevealPending = metricPending === true && !hasRevealed;
+  const hasMetric = metric !== null && metric !== undefined && metric !== false;
   const resolvedBackLabel = back?.label ?? "Назад";
   const resolvedBackAriaLabel =
     back?.ariaLabel ??
     (typeof resolvedBackLabel === "string"
       ? `Вернуться: ${resolvedBackLabel}`
       : undefined);
+
+  useEffect(() => {
+    if (!metricPending) setHasRevealed(true);
+  }, [metricPending]);
+
   return (
     <header
       className={classNames(
@@ -50,6 +61,9 @@ export function AppPageHeader({
         back && "app-page-header-with-back",
         Boolean(actions) && "app-page-header-with-actions",
       )}
+      data-page-header-async-metric={usesAsyncMetric ? "" : undefined}
+      data-page-header-pending={firstRevealPending ? "" : undefined}
+      aria-busy={metricPending || undefined}
     >
       <div className="app-page-header-content">
         {back?.type === "link" ? (
@@ -95,8 +109,14 @@ export function AppPageHeader({
           >
             {title}
           </h1>
-          {metric ? (
-            <p className="app-page-description app-page-metric">{metric}</p>
+          {hasMetric || usesAsyncMetric ? (
+            <p
+              className="app-page-description app-page-metric"
+              data-page-header-metric-placeholder={hasMetric ? undefined : ""}
+              aria-hidden={hasMetric ? undefined : true}
+            >
+              {hasMetric ? metric : "\u00a0"}
+            </p>
           ) : null}
         </div>
         {meta ? <div className="app-page-meta">{meta}</div> : null}

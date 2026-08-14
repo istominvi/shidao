@@ -121,6 +121,10 @@ test("teaching hub pages share the demo shell and canonical page header", () => 
     scheduleWorkspaceSource,
     /metric=\{[\s\S]*?formatSchedulePeriodLabel[\s\S]*?visibleRuns\.length/,
   );
+  assert.match(
+    scheduleWorkspaceSource,
+    /headerMetricPending[\s\S]*?metricPending=\{headerMetricPending\}/,
+  );
   assert.doesNotMatch(scheduleWorkspaceSource, /Здесь все назначенные/);
   assert.match(scheduleWorkspaceSource, /<CalendarPlus/);
   assert.match(scheduleWorkspaceSource, /Назначить урок/);
@@ -133,6 +137,10 @@ test("teaching hub pages share the demo shell and canonical page header", () => 
   assert.match(
     studentsWorkspaceSource,
     /metric=\{[\s\S]*?Активных:[\s\S]*?Групп:[\s\S]*?Профилей:/,
+  );
+  assert.match(
+    studentsWorkspaceSource,
+    /observingCountPending[\s\S]*?headerMetricPending[\s\S]*?metricPending=\{headerMetricPending\}/,
   );
   assert.doesNotMatch(
     studentsWorkspaceSource,
@@ -476,7 +484,11 @@ test("students manages one learner and group directory with durable history", ()
   );
   assert.match(
     studentsWorkspaceSource,
-    /<ObservingWorkspace[\s\S]*?embedded[\s\S]*?onProfileCountChange=\{setObservingCount\}/,
+    /<ObservingWorkspace[\s\S]*?embedded[\s\S]*?onProfileCountChange=\{handleObservingCountChange\}/,
+  );
+  assert.match(
+    studentsWorkspaceSource,
+    /handleObservingCountChange[\s\S]*?setObservingCount\(count\)[\s\S]*?setObservingCountPending\(false\)/,
   );
   assert.match(observingWorkspaceSource, /!embedded \? \(/);
   assert.match(

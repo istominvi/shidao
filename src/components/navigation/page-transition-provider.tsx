@@ -45,6 +45,8 @@ const PageTransitionContext = createContext<PageTransitionContextValue | null>(
 
 const TRANSITION_TIMEOUT_MS = 1_600;
 const FALLBACK_DURATION_MS = 420;
+const READY_PAGE_HEADER_SELECTOR =
+  ".app-page-header:not([data-page-header-pending])";
 
 function reducedMotionRequested() {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -68,9 +70,42 @@ function clearTransitionState() {
   delete root.dataset.pageTransitionFallback;
 }
 
+function readyPageHeaderExists() {
+  return document.querySelector(READY_PAGE_HEADER_SELECTOR) !== null;
+}
+
+function observeReadyPageHeader(onReady: () => void) {
+  if (readyPageHeaderExists()) {
+    onReady();
+    return null;
+  }
+
+  const observer = new MutationObserver(() => {
+    if (!readyPageHeaderExists()) return;
+    observer.disconnect();
+    onReady();
+  });
+  observer.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ["data-page-header-pending"],
+    childList: true,
+    subtree: true,
+  });
+
+  // Do not miss a header committed between the first query and observer setup.
+  if (readyPageHeaderExists()) {
+    observer.disconnect();
+    onReady();
+    return null;
+  }
+
+  return observer;
+}
+
 type PendingRoute = {
   targetPathname: string;
   complete: () => void;
+  startHeaderWait: () => void;
 };
 
 type PendingFallbackRoute = {
@@ -78,6 +113,8 @@ type PendingFallbackRoute = {
   targetPathname: string;
   timeoutId: number;
   token: number;
+  headerWaitStarted: boolean;
+  headerObserver: MutationObserver | null;
 };
 
 export function PageTransitionProvider({ children }: { children: ReactNode }) {
@@ -117,6 +154,7 @@ export function PageTransitionProvider({ children }: { children: ReactNode }) {
     const pendingFallback = pendingFallbackRouteRef.current;
     if (pendingFallback) {
       window.clearTimeout(pendingFallback.timeoutId);
+      pendingFallback.headerObserver?.disconnect();
       pendingFallbackRouteRef.current = null;
     }
 
@@ -138,22 +176,25 @@ export function PageTransitionProvider({ children }: { children: ReactNode }) {
     pathnameRef.current = pathname;
     const pending = pendingRouteRef.current;
     if (pending?.targetPathname === pathname) {
-      pendingRouteRef.current = null;
-      pending.complete();
+      pending.startHeaderWait();
     }
 
     const pendingFallback = pendingFallbackRouteRef.current;
     if (pendingFallback?.targetPathname !== pathname) return;
+    if (pendingFallback.headerWaitStarted) return;
 
-    window.clearTimeout(pendingFallback.timeoutId);
-    pendingFallbackRouteRef.current = null;
-    if (transitionTokenRef.current !== pendingFallback.token) return;
+    pendingFallback.headerWaitStarted = true;
+    pendingFallback.headerObserver = observeReadyPageHeader(() => {
+      if (pendingFallbackRouteRef.current !== pendingFallback) return;
+      window.clearTimeout(pendingFallback.timeoutId);
+      pendingFallbackRouteRef.current = null;
+      if (transitionTokenRef.current !== pendingFallback.token) return;
 
-    // The route DOM is committed at this point, so the fallback animation is
-    // applied only to the incoming header. Applying it before router.push()
-    // would incorrectly animate the outgoing header as an entrance.
-    setTransitionState(pendingFallback.direction, true);
-    scheduleFallbackStateClear(pendingFallback.token);
+      // The ready route header is committed at this point, so the fallback
+      // animation is applied only to the incoming header.
+      setTransitionState(pendingFallback.direction, true);
+      scheduleFallbackStateClear(pendingFallback.token);
+    });
   }, [pathname, scheduleFallbackStateClear]);
 
   useLayoutEffect(
@@ -243,6 +284,7 @@ export function PageTransitionProvider({ children }: { children: ReactNode }) {
         const token = ++transitionTokenRef.current;
         const timeoutId = window.setTimeout(() => {
           if (pendingFallbackRouteRef.current?.token !== token) return;
+          pendingFallbackRouteRef.current.headerObserver?.disconnect();
           pendingFallbackRouteRef.current = null;
         }, TRANSITION_TIMEOUT_MS);
         pendingFallbackRouteRef.current = {
@@ -250,11 +292,14 @@ export function PageTransitionProvider({ children }: { children: ReactNode }) {
           targetPathname,
           timeoutId,
           token,
+          headerWaitStarted: false,
+          headerObserver: null,
         };
         try {
           navigateNow();
         } catch (error) {
           window.clearTimeout(timeoutId);
+          pendingFallbackRouteRef.current?.headerObserver?.disconnect();
           pendingFallbackRouteRef.current = null;
           if (transitionTokenRef.current === token) {
             transitionTokenRef.current += 1;
@@ -268,20 +313,45 @@ export function PageTransitionProvider({ children }: { children: ReactNode }) {
       const token = ++transitionTokenRef.current;
       let completeRoute!: () => void;
       let routeTimeoutId: number | null = null;
+      let routeHeaderObserver: MutationObserver | null = null;
+      let headerWaitStarted = false;
       const routeCommitted = new Promise<void>((resolve) => {
         let complete = false;
         completeRoute = () => {
           if (complete) return;
           complete = true;
           if (routeTimeoutId !== null) window.clearTimeout(routeTimeoutId);
+          routeHeaderObserver?.disconnect();
+          routeHeaderObserver = null;
           resolve();
         };
-        routeTimeoutId = window.setTimeout(
-          completeRoute,
-          TRANSITION_TIMEOUT_MS,
-        );
+        routeTimeoutId = window.setTimeout(() => {
+          if (pendingRouteRef.current === pendingRoute) {
+            pendingRouteRef.current = null;
+          }
+          completeRoute();
+        }, TRANSITION_TIMEOUT_MS);
       });
-      pendingRouteRef.current = { targetPathname, complete: completeRoute };
+      const startHeaderWait = () => {
+        if (headerWaitStarted) return;
+        headerWaitStarted = true;
+        routeHeaderObserver = observeReadyPageHeader(() => {
+          if (
+            pendingRouteRef.current !== pendingRoute ||
+            transitionTokenRef.current !== token
+          ) {
+            return;
+          }
+          pendingRouteRef.current = null;
+          completeRoute();
+        });
+      };
+      const pendingRoute: PendingRoute = {
+        targetPathname,
+        complete: completeRoute,
+        startHeaderWait,
+      };
+      pendingRouteRef.current = pendingRoute;
       setTransitionState(direction, false);
 
       let transition: BrowserViewTransition;

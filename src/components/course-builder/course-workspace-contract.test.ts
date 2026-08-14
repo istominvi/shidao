@@ -372,12 +372,12 @@ test("course routes use the flat demo background and unified visual controls", (
     demoPageHeaderStyles,
     /--app-page-header-title-size: clamp\(2rem, 3\.8vw, 3rem\);/,
   );
-  assert.match(demoPageHeaderStyles, /min-height: 200px;/);
   assert.doesNotMatch(
     demoPageHeaderStyles,
-    /(?:^|\n)\s*height:\s*200px;/,
-    "The canonical header must be able to grow beyond its 200px minimum",
+    /(?:^|\n)\s*(?:min-)?height:/,
+    "The canonical header height must come only from content and padding",
   );
+  assert.doesNotMatch(demoPageHeaderStyles, /justify-content:/);
   assert.match(
     styles,
     /\.course-demo-shell \.product-btn\s*\{[\s\S]*?--course-demo-control-radius[\s\S]*?--course-demo-control-font-weight/,
@@ -422,6 +422,26 @@ test("course routes use the flat demo background and unified visual controls", (
     navigationStyles,
     /\.nav-dropdown-panel\s*\{[\s\S]*?background: #fff;/,
   );
+});
+
+test("course workspaces keep the route empty until a real header or error is ready", () => {
+  const workspace = source(workspacePath);
+  const published = source(
+    "src/components/course-builder/published-course-workspace.tsx",
+  );
+
+  assert.doesNotMatch(workspace, /WorkspaceSkeleton/);
+  assert.doesNotMatch(
+    workspace,
+    /Загружаем курс, уроки и компоненты из баз[ы]/,
+  );
+  assert.match(
+    workspace,
+    /if \(!course\)[\s\S]*?if \(error\)[\s\S]*?return null;/,
+  );
+  assert.doesNotMatch(published, /Загружаем курс(?:…)/);
+  assert.match(published, /if \(!course\) \{\s*if \(!error\) return null;/);
+  assert.match(published, /role="alert"/);
 });
 
 test("product buttons share one animated raised-control elevation contract", () => {

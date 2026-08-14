@@ -375,6 +375,8 @@ export function ScheduleWorkspace() {
       : period === "week"
         ? "выбранную неделю"
         : "выбранный месяц";
+  const headerMetricPending =
+    error === null && (selectedDate === null || runs === null);
 
   return (
     <div className="teaching-hub-stack">
@@ -385,6 +387,7 @@ export function ScheduleWorkspace() {
             ? `${formatSchedulePeriodLabel(selectedDate, period)} · ${runs.length >= SCHEDULE_RESULT_LIMIT ? "показано" : "занятий"}: ${visibleRuns.length}`
             : undefined
         }
+        metricPending={headerMetricPending}
         actions={
           <PageTransitionLink
             href={ROUTES.courses}

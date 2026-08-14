@@ -346,6 +346,11 @@ a {
   color: var(--app-page-header-description-color);
 }
 
+.app-page-metric[data-page-header-metric-placeholder] {
+  block-size: 1lh;
+  overflow: hidden;
+}
+
 .course-demo-shell .app-page-header {
   --app-page-header-padding-block: 20px;
   --app-page-header-padding-inline: 12px;
@@ -353,13 +358,7 @@ a {
   --app-page-header-title-line-height: 0.96;
   --app-page-header-description-size: 0.9rem;
   --app-page-header-description-line-height: 1.55;
-  min-height: 200px;
-  justify-content: center;
   scroll-margin-top: 6.25rem;
-}
-
-.course-demo-shell .app-page-header-with-back {
-  justify-content: flex-start;
 }
 
 .course-demo-shell .app-page-header > .app-page-header-content,

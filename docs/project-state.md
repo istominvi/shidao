@@ -19,13 +19,18 @@ copy в `AppPageHeader` теперь действительно optional и до
 `MoreVertical` menu с сохранением destructive, keyboard и focus-return
 семантики. Primary navigation использует persistent native View Transition
 boundary: движение `Расписание → Ученики → Курсы → Магазин` и drill-in уводит
-старый header влево, обратное движение/backlink — вправо. Shared
-`WorkspaceTabs` получил один измеряемый плавный indicator и лёгкий вход
-активной панели; `prefers-reduced-motion` оставляет все переходы мгновенными.
-Это UI-only изменение в `src/components/app/`,
-`src/components/navigation/`, `src/components/ui/workspace-tabs.tsx` и
-`src/app/styles/page-motion.css`; API, schema, migrations и Lesson hierarchy
-не меняются.
+старый header влево, обратное движение/backlink — вправо. Чёрный active-pill
+primary navigation теперь является отдельным измеряемым indicator и переезжает
+между пунктами с тем же premium easing, что и indicator `WorkspaceTabs`.
+Асинхронная метрика резервирует строку уже в первом frame, а H1, metric, meta и
+actions проявляются вместе; transition boundary по возможности ждёт готовый
+header в пределах bounded timeout. Фиксированный `min-height: 200px` удалён:
+высота `AppPageHeader` определяется только фактическим содержимым и padding.
+Временные owner/published Course loading cards удалены, error surfaces
+сохранены. `prefers-reduced-motion` оставляет все переходы мгновенными. Это
+UI-only изменение в `src/components/app/`, `src/components/navigation/`,
+`src/components/site-header.tsx`, `src/components/ui/workspace-tabs.tsx` и
+`src/app/styles/`; API, schema, migrations и Lesson hierarchy не меняются.
 
 **Current production Course catalog slice:** реализует reusable Course catalog,
 immutable publication revisions, независимое копирование детских Course и
@@ -1025,10 +1030,13 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
 - Один `AppPageHeader` задаёт прозрачную заголовочную секцию, единый H1 с
   максимумом 48 px на desktop и 32 px на mobile, подзаголовок, optional
   backlink и правую action-секцию для `/courses`, `/students`, `/schedule`, Course
-  и Lesson. Контейнер имеет минимальную высоту 200 px, растёт по контенту, а
-  actions вертикально центрированы. Заголовочная колонка занимает всё
-  оставшееся место, а actions имеют intrinsic ширину по содержимому и не
-  растягивают кнопки даже при узком viewport. В current production сам
+  и Lesson. Высота контейнера следует фактическому title/metric/meta/actions и
+  padding без искусственного minimum; actions вертикально центрированы в
+  собственной content-row. Заголовочная колонка занимает всё оставшееся место,
+  а actions имеют intrinsic ширину по содержимому и не растягивают кнопки даже
+  при узком viewport. Асинхронная метрика занимает будущую строку до ответа,
+  но весь header становится видимым только вместе с её финальным значением или
+  error-state. В current production сам
   H1 заполняет эту колонку без прежнего лимита `24ch`; desktop column-gap равен
   24 px. Course/Lesson backlink и его стрелка непрозрачно чёрные, label
   однострочный с ellipsis, а вертикальные интервалы над и под ним равны

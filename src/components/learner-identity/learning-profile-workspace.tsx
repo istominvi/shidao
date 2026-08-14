@@ -107,6 +107,7 @@ export function LearningProfileWorkspace({
     active: number;
     pending: number;
   } | null>(null);
+  const [observerSummaryPending, setObserverSummaryPending] = useState(true);
   const [destructiveMode, setDestructiveMode] = useState<
     "unlink" | "erasure" | null
   >(null);
@@ -361,6 +362,23 @@ export function LearningProfileWorkspace({
       }
     }
   })();
+  const headerMetricPending = (() => {
+    switch (surface) {
+      case "profile":
+      case "history":
+        return loading && error === null;
+      case "attestation":
+        return attestations === null && attestationsError === null;
+      case "observers":
+        return observerSummaryPending;
+      case "settings":
+        return false;
+      default: {
+        const _exhaustive: never = surface;
+        return _exhaustive;
+      }
+    }
+  })();
 
   const profileTitle =
     session.kind === "account"
@@ -372,6 +390,7 @@ export function LearningProfileWorkspace({
       <AppPageHeader
         title={profileTitle}
         metric={headerMetric}
+        metricPending={headerMetricPending}
         actions={
           <Button
             type="button"
@@ -672,7 +691,10 @@ export function LearningProfileWorkspace({
         hidden={surface !== "observers"}
         tabIndex={0}
       >
-        <ObserversSettingsWorkspace onOverviewChange={handleObserverOverview} />
+        <ObserversSettingsWorkspace
+          onOverviewChange={handleObserverOverview}
+          onOverviewPendingChange={setObserverSummaryPending}
+        />
       </div>
       <div
         id={workspaceTabPanelId(LEARNING_PROFILE_TABS_ID, "settings")}

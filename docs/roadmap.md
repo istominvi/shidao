@@ -46,10 +46,12 @@
   `AppPageHeader` с H1 не крупнее 48 px на desktop и 32 px на mobile,
   optional entity-metric, optional backlink и правой action-секцией. Метрика
   не заменяется пояснением назначения страницы; если честной метрики нет,
-  supporting line отсутствует. Header имеет
-  `min-height: 200px`, растёт по контенту и вертикально центрирует actions.
-  В current production heading занимает всю оставшуюся ширину, а actions — только
-  intrinsic ширину содержимого и не превращаются в full-width кнопки на mobile.
+  supporting line отсутствует. Высота Header определяется содержимым и padding
+  без искусственного minimum; actions центрируются относительно content-row.
+  Асинхронные метрики заранее резервируют одну строку, но title, metric, meta и
+  actions становятся видимыми одним готовым frame. В current production
+  heading занимает всю оставшуюся ширину, а actions — только intrinsic ширину
+  содержимого и не превращаются в full-width кнопки на mobile.
   Current production follow-up снимает внутренний лимит H1 `24ch`, сохраняет
   desktop gap 24 px и делает все backlinks непрозрачно чёрными, однострочными с
   ellipsis и равным page-header inset сверху и снизу.
@@ -65,7 +67,10 @@
   tab-panel слегка проявляется по направлению выбора. Header action rail
   оставляет не больше одной основной кнопки; дополнительные Lesson actions
   находятся в квадратном `MoreVertical` menu. Persistent transition boundary
-  анимирует направление primary navigation и Course drill-in/back, а
+  анимирует направление primary navigation и Course drill-in/back, а отдельный
+  измеряемый black indicator переезжает между active primary buttons с тем же
+  easing, что и tabs. Owner/published Course больше не подменяют готовый header
+  текстовой loading-card; boundary bounded-временем ждёт real header.
   `prefers-reduced-motion` полностью отключает motion.
   Базовый follow-up был подтверждён в release `77870e3`; full-width
   канонизация развёрнута exact merge commit
@@ -990,9 +995,12 @@ UI-only follow-up без изменения LessonRun API, schema или migrati
 видимой остаётся одна частая кнопка проведения (или AI для educator Course),
 а AI/settings/delete собраны в keyboard-accessible vertical overflow. Переходы
 между primary sections и Course → Lesson/back получают зеркальный fade/slide,
-вкладки — moving indicator и мягкий panel entrance. Нет новой motion
-dependency: используется browser View Transition API с безопасным fallback и
-полным reduced-motion bypass. Это UI-only slice без schema/API/migration.
+вкладки и black active-pill primary header — moving indicator с одинаковым
+premium easing. Async metric-slot исключает промежуточный H1 без метрики, а
+content-driven header height заменяет прежние 200 px. Owner/published Course
+loading-card удалён. Нет новой motion dependency: используется browser View
+Transition API с безопасным fallback и полным reduced-motion bypass. Это
+UI-only slice без schema/API/migration.
 
 **Current production contract дополнительно:** verified actual duration,
 explicit shared individual comment, cursor-paginated self/observer history и
